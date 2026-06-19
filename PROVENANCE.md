@@ -1,0 +1,34 @@
+# Provenance log
+
+Every constant, address, data table, and algorithm in zerobas must appear here
+with an independent **allowed** source, or be explicitly **quarantined**. An
+unexplained magic value blocks release.
+
+- **sourced** — traced to an allowed source (see README.md for the list).
+- **quarantined** — no allowed source found; derived from spec or stubbed,
+  **never copied** from a reference ROM or any MSX-BASIC / GW-BASIC disassembly.
+
+The behavioural source `spec-bload-r.md` is this project's own black-box oracle
+observation, captured in the `msx-preservation` repo
+(`cbios-basic/docs/spec-bload-r.md`).
+
+## first light: `BLOAD"CAS:",R` (src/main.asm, src/bload.asm, src/sysvars.inc)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| Cartridge ROM header layout (`AB`, INIT, STATEMENT, DEVICE, TEXT, 6 reserved) | 16 bytes at $4000 | MSX2 Technical Handbook, cartridge ROM format | sourced |
+| ROM page span | $4000–$7FFF (16 KB) | MSX2 Technical Handbook, memory map | sourced |
+| TAPION entry point | $00E1 | MSX Assembly Page BIOS call list / MSX2 Tech Handbook | sourced |
+| TAPIN entry point | $00E4 | MSX Assembly Page BIOS call list / MSX2 Tech Handbook | sourced |
+| TAPIOF entry point | $00E7 | MSX Assembly Page BIOS call list / MSX2 Tech Handbook | sourced |
+| TAPION/TAPIN failure convention | CF set = fail | MSX Assembly Page BIOS call list | sourced |
+| TAPIN trashes all registers | — | MSX Assembly Page BIOS call list ("Changes: all") | sourced |
+| Binary-file id byte | $D0 | MSX2 Technical Handbook, BSAVE file format | sourced |
+| File-header block size | 16 bytes (10× id + 6 filename) | spec-bload-r.md §1 (oracle) + MSX2 Tech Handbook | sourced |
+| Data-header layout | start(LE), end(LE), exec(LE) | spec-bload-r.md §1 (oracle) + MSX2 Tech Handbook | sourced |
+| Load is verbatim into start..end | — | spec-bload-r.md §2 (oracle) | sourced |
+| `,R` handoff = jump to exec address | — | spec-bload-r.md §3 (oracle) | sourced |
+| Two tape header tones (one per block ⇒ two TAPION calls) | — | spec-bload-r.md §1 (.cas block layout) + oracle-confirmed (probe PASS on VG-8020) | sourced |
+| RAM scratch addresses ($E020–$E025), error marker ($E010) | — | own choice (free page-3 RAM, avoids demo regions) | sourced |
+
+No quarantined items.

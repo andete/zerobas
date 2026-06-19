@@ -1,0 +1,13 @@
+# Built ROM artifact — regenerate with `make`.
+*.rom
+
+# Cassette images and other test inputs (not source material).
+*.cas
+*.wav
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
