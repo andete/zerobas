@@ -39,6 +39,15 @@
 ; Keyboard line editor + read/eval loop (defines `repl`, `print_string`).
                 include "src/repl.asm"
 
+; Integer variable store (defines `var_get`, `var_set`, `clear_vars`).
+                include "src/vars.asm"
+
+; 16-bit integer expression evaluator (defines `eval`).
+                include "src/expr.asm"
+
+; The POKE statement handler (defines `do_poke`).
+                include "src/poke.asm"
+
 ; The BLOAD statement handler and the ,R handoff (defines `do_bload`).
                 include "src/bload.asm"
 

@@ -1,41 +1,51 @@
 ; interp.asm — the tokeniser + execution-loop front-end.
 ;
-; Replaces the old "INIT *is* the BLOAD" tracer bullet with a real (if tiny)
-; interpreter spine: crunch an ASCII line into tokens, then dispatch on the
-; leading token. For now the line is a fixed ROM string; a later phase reads it
-; from the keyboard. The end-to-end behaviour (cassette load + ,R handoff) is
-; unchanged — only *how the statement is reached* changes.
+; A small interpreter spine: crunch an ASCII line into tokens, then walk the
+; line statement-by-statement (separated by ':'), dispatching each on its
+; leading token. Statements implemented: BLOAD (cassette load + ,R handoff),
+; POKE, a single-letter variable assignment, and REM (comment). PEEK is a
+; function handled inside the expression evaluator.
 ;
-; Derived only from cbios-basic/docs/spec-tokenise.md (this project's own
-; black-box oracle observation). No disassembly.
+; Derived only from this project's own black-box oracle observations
+; (cbios-basic/docs/spec-tokenise.md, spec-tokens-statements.md) and the public
+; MSX-BASIC language reference. No disassembly.
 
 ; --- INIT entry (cartridge header points here) -----------------------------
 init:
                 ei                          ; keyboard ISR must run for CHGET
+                call    clear_vars          ; deterministic variable table
                 call    show_title          ; startup header lines
                 jp      repl                ; read/eval loop (never returns)
 
 ; --- tokenise: ASCII line -> token stream ----------------------------------
 ; in:  HL = source (0-terminated ASCII), DE = destination buffer
 ; out: destination holds tokens, 0x00-terminated
-; spec-tokenise.md: keyword -> single token byte (case-folded); string literals
-; and all other bytes copied verbatim; line terminated by 0x00.
+; spec-tokenise.md / spec-tokens-statements.md: a keyword crunches to its token
+; byte(s) (case-folded); string literals and other bytes are copied verbatim;
+; REM (and the '\'' abbreviation) keep the rest of the line verbatim; the line
+; is terminated by 0x00.
 tokenise:
                 ld      a,(hl)
                 or      a
                 jr      z,tk_end
-                cp      '"'                 ; string literal: copy verbatim, no crunch
+                cp      '"'                 ; string literal: copy verbatim
                 jr      z,tk_string
-                call    match_kw            ; CF set -> A=token, HL past keyword
-                jr      c,tk_emit
+                cp      QUOTE_REM           ; "'" comment -> treat as REM
+                jr      z,tk_apos
+                call    match_kw            ; CF set: token(s) emitted, A=first
+                jr      nc,tk_copy
+                cp      REM_TOKEN           ; REM swallows the rest of the line
+                jr      z,tk_rem_rest
+                jr      tokenise
+tk_copy:
                 ld      a,(hl)              ; not a keyword: copy this byte
-                inc     hl
-tk_emit:
                 ld      (de),a
                 inc     de
+                inc     hl
                 jr      tokenise
 tk_string:
-                ld      (de),a              ; opening quote
+                ld      a,(hl)              ; opening quote
+                ld      (de),a
                 inc     de
                 inc     hl
 tk_str_loop:
@@ -48,60 +58,94 @@ tk_str_loop:
                 cp      '"'                 ; copy through the closing quote
                 jr      nz,tk_str_loop
                 jr      tokenise
+tk_apos:
+                ld      a,REM_TOKEN         ; "'" crunches to a REM comment
+                ld      (de),a
+                inc     de
+                inc     hl                  ; skip the "'"
+tk_rem_rest:
+                ld      a,(hl)              ; rest of line copied verbatim
+                or      a
+                jr      z,tk_end
+                ld      (de),a
+                inc     de
+                inc     hl
+                jr      tk_rem_rest
 tk_end:
                 xor     a
                 ld      (de),a              ; 0x00 terminator
                 ret
 
 ; --- match_kw: is a table keyword present at (HL)? -------------------------
-; in:  HL = source position
-; out: CF set   -> match:    A = token byte, HL advanced past the keyword
-;      CF clear -> no match: HL unchanged
-; Preserves caller's DE. Uses IX as the table cursor.
+; in:  HL = source position, DE = destination cursor
+; out: CF set   -> match: token byte(s) emitted to (DE), DE advanced, HL past
+;                  the keyword, A = first token byte
+;      CF clear -> no match: HL and DE unchanged
+; Uses IX as the table cursor and IY as the keyword-char walker.
 match_kw:
-                push    de                  ; preserve caller's dst pointer
+                push    iy
                 ld      ix,kwtable
 mk_entry:
                 ld      a,(ix+0)            ; keyword length (0 = end of table)
                 or      a
                 jr      z,mk_none
                 push    hl                  ; remember source start
-                ld      b,a                 ; B = chars to compare
                 push    ix
-                pop     de
-                inc     de                  ; DE -> keyword text
+                pop     iy
+                inc     iy                  ; IY -> keyword chars
+                ld      b,a                 ; B = chars to compare
 mk_cmp:
-                ld      a,(de)              ; keyword char (stored uppercase)
+                ld      a,(iy+0)            ; keyword char (stored uppercase)
                 ld      c,a
                 ld      a,(hl)              ; source char
                 call    upcase              ; case-fold before comparing
                 cp      c
                 jr      nz,mk_fail
                 inc     hl
-                inc     de
+                inc     iy
                 djnz    mk_cmp
-                ld      a,(de)              ; matched: DE -> token byte
-                pop     bc                  ; discard source start (HL is advanced)
-                pop     de                  ; restore caller dst
+                ; matched: IY -> token-length byte, HL advanced past keyword
+                pop     bc                  ; discard saved source start
+                ld      a,(iy+0)            ; token length
+                ld      b,a
+                inc     iy                  ; IY -> token bytes
+                ld      c,(iy+0)            ; remember first token byte
+mk_emit:
+                ld      a,(iy+0)
+                ld      (de),a
+                inc     iy
+                inc     de
+                djnz    mk_emit
+                ld      a,c                 ; A = first token byte
+                pop     iy                  ; restore caller IY
                 scf
                 ret
 mk_fail:
-                ld      a,(ix+0)            ; this entry's length
-                add     a,2                 ; stride = 1(len) + len + 1(token)
-                ld      c,a
-                ld      b,0
-                add     ix,bc               ; IX -> next entry
                 pop     hl                  ; restore source start
+                ld      a,(ix+0)            ; klen
+                ld      b,0
+                ld      c,a
+                inc     bc                  ; skip [klen][chars]
+                add     ix,bc               ; IX -> token-length byte
+                ld      a,(ix+0)            ; tlen
+                ld      b,0
+                ld      c,a
+                inc     bc                  ; skip [tlen][tokens]
+                add     ix,bc               ; IX -> next entry
                 jr      mk_entry
 mk_none:
-                pop     de                  ; restore caller dst
+                pop     iy                  ; restore caller IY
                 or      a                   ; CF clear (no match)
                 ret
 
-; keyword -> token table. Layout per entry: [len][UPPERCASE chars...][token].
-; Terminated by a 0 length byte. Source: spec-tokenise.md (oracle).
+; keyword -> token table. Entry layout: [klen][UPPERCASE chars][tlen][token...].
+; Terminated by a 0 length byte. Tokens are oracle-sourced (spec-tokenise.md,
+; spec-tokens-statements.md). PEEK is a two-byte function token ($FF $97).
 kwtable:
-                db      5,"BLOAD",BLOAD_TOKEN
+                db      5,"BLOAD",1,BLOAD_TOKEN
+                db      4,"POKE",1,POKE_TOKEN
+                db      4,"PEEK",2,PEEK_PREFIX,PEEK_TOKEN
+                db      3,"REM",1,REM_TOKEN
                 db      0
 
 ; --- upcase: fold A to uppercase if it is 'a'..'z' -------------------------
@@ -114,23 +158,75 @@ upcase:
                 sub     $20
                 ret
 
-; --- exec: dispatch on the leading token -----------------------------------
-; in: HL = token buffer (0x00-terminated). Returns to the REPL (or hands off
-; via BLOAD,R and never returns).
+; --- is_letter: CF set if A is 'A'..'Z' or 'a'..'z' (A preserved) ----------
+is_letter:
+                push    af
+                call    upcase
+                cp      'A'
+                jr      c,il_no
+                cp      'Z'+1
+                jr      nc,il_no
+                pop     af
+                scf
+                ret
+il_no:
+                pop     af
+                or      a                   ; CF clear
+                ret
+
+; --- exec: walk the line, dispatching each statement -----------------------
+; in: HL = token buffer (0x00-terminated). Statements are separated by ':'.
+; Returns to the REPL at end of line (or hands off via BLOAD,R, never to return).
 exec:
+exec_stmt:
                 call    skip_spaces         ; leading spaces are skipped (spec §5)
                 ld      a,(hl)
                 or      a
-                ret     z                   ; empty line -> back to the prompt
+                ret     z                   ; end of line -> back to the prompt
+                cp      COLON               ; ':' separator / empty statement
+                jr      z,ex_sep
                 cp      BLOAD_TOKEN
                 jp      z,ex_bload
-                jp      stmt_error          ; no other statement implemented yet
+                cp      POKE_TOKEN
+                jp      z,ex_poke
+                cp      REM_TOKEN
+                jr      z,ex_rem
+                call    is_letter           ; bare letter -> assignment
+                jr      c,ex_let
+                jp      stmt_error
+ex_sep:
+                inc     hl
+                jr      exec_stmt
+ex_rem:
+                ret                         ; rest of line is a comment -> done
 ex_bload:
                 inc     hl                  ; HL -> args (past the BLOAD token)
                 jp      do_bload
+ex_poke:
+                inc     hl                  ; HL -> args (past the POKE token)
+                jp      do_poke
+
+; --- ex_let: single-letter assignment  <var> = <expr> ----------------------
+ex_let:
+                ld      a,(hl)              ; variable name
+                push    af
+                inc     hl
+                call    skip_spaces
+                ld      a,(hl)
+                cp      '='                 ; '=' is kept verbatim by our crunch
+                jr      nz,ex_let_err
+                inc     hl
+                call    eval                ; DE = value, HL = cursor
+                pop     af                  ; A = variable name
+                push    hl                  ; guard cursor across var_set
+                call    var_set             ; var[name] = DE
+                pop     hl
+                jp      exec_stmt           ; continue the line
+ex_let_err:
+                pop     af
+                jp      stmt_error
 
 ; --- skip_spaces: advance HL past 0x20 bytes -------------------------------
-; in/out: HL. Preserves nothing but HL (A clobbered).
 skip_spaces:
                 ld      a,(hl)
                 cp      ' '

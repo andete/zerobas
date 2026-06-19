@@ -70,6 +70,53 @@ No quarantined items.
 | Line editor + read/eval loop algorithm | — | **own code** (original); not derived from any disassembly | sourced |
 | Prompt text "zb>" | — | **own content**, deliberately unlike MSX-BASIC's "Ok" | sourced |
 | Error text "syntax error" / "load error" | — | own wording (plain English; not copied) | sourced |
-| `LINEBUF` ($E060), `LINEMAX` (64) | — | own choice (free page-3 RAM, single page) | sourced |
+| `LINEBUF`, `LINEMAX` | — | own choice (free page-3 RAM) | sourced |
+
+No quarantined items.
+
+## REM / POKE / PEEK statement slice
+
+Behavioural source: `cbios-basic/docs/spec-tokens-statements.md` (this project's
+own black-box oracle observation) and the public MSX-BASIC *language* reference.
+
+### Keyword tokens (src/sysvars.inc, src/interp.asm `kwtable`)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `POKE` token | `$98` | spec-tokens-statements.md (oracle KBUF dump); cross-checks MSX Assembly Page token table | sourced |
+| `PEEK` token | `$FF $97` (two-byte function token) | spec-tokens-statements.md (oracle); MSX Assembly Page token table | sourced |
+| `REM` token | `$8F` | spec-tokens-statements.md (oracle); MSX Assembly Page token table | sourced |
+| `'` treated as REM (emit `$8F`, copy rest verbatim) | — | spec-tokens-statements.md (oracle: `'` → `$3A $8F $E6`); zerobas simplifies to the REM token (own design) | sourced |
+| REM/`'` keep the rest of the line verbatim | — | spec-tokens-statements.md §2 (oracle) | sourced |
+| Multi-byte token table entry layout `[klen][chars][tlen][tokens]` | — | own code (generalises the single-byte table for `PEEK`) | sourced |
+
+### Statement loop, dispatch, assignment (src/interp.asm)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `:` statement separator (`$3A`); per-statement dispatch loop | — | own code; `:` is ASCII (public) and the documented MSX-BASIC separator (language reference) | sourced |
+| `<letter> = <expr>` assignment | — | own code; assignment semantics from the public MSX-BASIC language reference | sourced |
+| `is_letter` (`'A'`..`'Z'` test) | — | ASCII (public) | sourced |
+
+### Expression evaluator (src/expr.asm)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| 16-bit integer grammar (`+ - *`, unary `-`, parens, `PEEK`, decimal & `&H` literals, variables) | — | **own code** (precedence-climbing); not derived from any disassembly | sourced |
+| Numbers/operators parsed from verbatim ASCII at run time (no numeric-constant tokenisation) | — | own design, consistent with spec-tokens-statements.md §3–4 (reference *does* tokenise constants; we deliberately do not) | sourced |
+| `PEEK(addr)` reads one byte; `POKE addr,value` writes the low byte | — | public MSX-BASIC language reference | sourced |
+| `&H` hex / decimal digit values; `mul16` shift-add | — | ASCII + standard binary arithmetic (public) | sourced |
+
+### Variable store (src/vars.asm)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| 26 single-letter `A`–`Z` integer variables, 2 bytes each | — | **own code / own choice**; a named 16-bit cell follows the public language reference, the table layout is ours | sourced |
+
+### RAM additions (src/sysvars.inc)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `LINEBUF` ($E100, 96), `TOKBUF` ($E160), `VARTAB` ($E1C0, 52 bytes) | — | own choice (free page-3 RAM in page $E1, clear of the $C000/$E000 demo regions) | sourced |
 
 No quarantined items.

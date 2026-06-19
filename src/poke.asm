@@ -1,0 +1,30 @@
+; poke.asm — the POKE statement handler.
+;
+;   POKE addr,value
+;
+; Writes the low byte of `value` to memory address `addr`. Both are 16-bit
+; integer expressions (see expr.asm). PEEK is the read counterpart and lives in
+; the evaluator, not here.
+;
+; Clean-room: original code. POKE *semantics* (write one byte to an address)
+; from the public MSX-BASIC language reference. No disassembly.
+;
+; Entry: do_poke, HL -> the bytes after the POKE token. On success continues the
+; statement loop (jp exec_stmt), so `poke ...:poke ...` chains on one line.
+
+do_poke:
+                call    eval                ; DE = address, HL = cursor
+                push    de                  ; save address
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','                 ; comma required
+                jr      nz,poke_err
+                inc     hl
+                call    eval                ; DE = value, HL = cursor
+                pop     bc                  ; BC = address
+                ld      a,e                 ; low byte of value
+                ld      (bc),a              ; the POKE
+                jp      exec_stmt           ; HL = cursor; run the next statement
+poke_err:
+                pop     bc                  ; discard saved address
+                jp      stmt_error

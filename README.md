@@ -45,11 +45,22 @@ Requires [pasmo](https://pasmo.speccy.org/) (the assembler C-BIOS uses):
 make            # -> basic.rom (16 KB cartridge)
 ```
 
-## Current status — interactive REPL over `BLOAD"CAS:",R`
+## Current status — REM / POKE / PEEK + `BLOAD"CAS:",R`
 
-The build now has a real (if tiny) interpreter spine with a keyboard prompt. On
-boot the cartridge INIT prints a startup header, then runs a read/eval loop:
-read a typed line, tokenise it, dispatch the statement, repeat.
+The build has a real (if tiny) interpreter spine with a keyboard prompt, a
+16-bit integer expression evaluator, single-letter integer variables, and a
+`:`-separated statement loop. Statements: `BLOAD` (cassette load + `,R`
+handoff), `POKE`, `REM` (and its `'` abbreviation), a `<letter> = <expr>`
+assignment, and `PEEK(...)` as an expression function. On boot the cartridge
+INIT prints a startup header, then runs a read/eval loop: read a typed line,
+tokenise it, dispatch each statement, repeat.
+
+Expressions are 16-bit unsigned integers: decimal and `&H` hex literals,
+single-letter variables `A`–`Z`, `PEEK(expr)`, parentheses, unary `-`, and
+`+ - *` (with `*` binding tighter). Our tokeniser keeps numbers and operators
+**verbatim** and the evaluator parses them at run time — we deliberately do not
+replicate MSX-BASIC's numeric-constant tokens (see
+`spec-tokens-statements.md §3`); only keyword tokens are oracle-sourced.
 
 0. **header** — `INITXT` brings up the text screen; `CHPUT` prints a couple of
    original left-aligned lines (the same role as MSX-BASIC's top-of-screen
@@ -57,11 +68,15 @@ read a typed line, tokenise it, dispatch the statement, repeat.
 1. **prompt + line editor** — print `zb>` (deliberately *not* `Ok`, so zerobas
    is never mistaken for stock MSX-BASIC) and read a line via `CHGET`, echoing
    with Backspace editing until Enter
-2. **tokenise** the line → `BLOAD` crunches to the single token byte `$CF`
-   (case-folded); the `"CAS:"` string and `,R` option are kept verbatim; the
-   line is `$00`-terminated (see `spec-tokenise.md`)
-3. **execute** — dispatch the leading token; `$CF` goes to the BLOAD handler,
-   an empty line just reprompts, anything else prints `syntax error`
+2. **tokenise** the line → keywords crunch to their oracle-sourced token bytes,
+   case-folded (`BLOAD`→`$CF`, `POKE`→`$98`, `PEEK`→`$FF $97`, `REM`→`$8F`);
+   string literals and everything else (numbers, operators) are kept verbatim;
+   `REM` (and `'`) keep the rest of the line verbatim; the line is `$00`-
+   terminated (see `spec-tokenise.md`, `spec-tokens-statements.md`)
+3. **execute** — walk the line statement-by-statement (`:` separated),
+   dispatching each on its leading token: `POKE`, a `<letter> = <expr>`
+   assignment, `REM` (ends the line), `BLOAD`; an empty line reprompts and
+   anything else prints `syntax error`
 4. the **BLOAD handler** parses `"CAS:"` (device) and optional `,R`, then:
    - `TAPION` — open tape, skip the file-header tone
    - read + verify the 16-byte file header (binary id `$D0`)
@@ -73,20 +88,33 @@ read a typed line, tokenise it, dispatch the statement, repeat.
 This is the *interpreter half* of BLOAD. The *device half* (decoding the
 cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`.
 
+### Limitations (this slice)
+
+- **Direct-mode only** — no stored, numbered program (`RUN`) yet, so
+  `DATA`/`READ`/`RESTORE`, `FOR…NEXT`, and multi-line programs are out of scope.
+  A stored-program model is the natural next milestone.
+- Variables are single-letter integers (`A`–`Z`); no strings, arrays, or
+  multi-character names. Expressions have `+ - *` and `PEEK` only (no `/`,
+  comparisons, or string ops).
+
 ### Validation
 
-Run the oracle probe (in the `msx-preservation` repo) against this ROM:
+Run the oracle probes (in the `msx-preservation` repo) against this ROM:
 
 ```sh
+# BLOAD pipeline (tokenise → execute → cassette load → ,R handoff)
 python3 cbios-basic/tools/basic_probe_bload.py \
-    --machine Philips_VG_8020 \
+    --machine Philips_VG_8020 --cart /path/to/zerobas/basic.rom
+
+# REM / POKE / PEEK / expression evaluator (results read back from RAM)
+python3 cbios-basic/tools/basic_probe_statements.py \
     --cart /path/to/zerobas/basic.rom
 ```
 
-The cartridge boots to its prompt, the probe types `bload"cas:",r` + Enter, and
-zerobas loads a self-authored test binary from a `.cas` and hands off to it.
-Expected: `PASS marker JONG at 0xE000` and `PASS PC at landmark` — byte-for-byte
-identical to the reference MSX-BASIC's own behaviour.
+The cartridge boots to its prompt, the probe types a line + Enter, and the
+result is observed by dumping RAM (no PRINT). Expected: `ALL PASS` for the
+statements probe, and `PASS marker JONG at 0xE000` / `PASS PC at landmark` for
+BLOAD — byte-for-byte identical to the reference MSX-BASIC's own behaviour.
 
 ### Note on C-BIOS
 
@@ -106,12 +134,15 @@ zerobas/
 ├── PROVENANCE.md      # provenance log (sourced / quarantined)
 ├── Makefile           # pasmo -> basic.rom, padded to 16 KB
 ├── src/
-│   ├── main.asm       # cartridge header + page padding
-│   ├── interp.asm     # tokeniser + executor (INIT entry, dispatch)
+│   ├── main.asm       # cartridge header + includes + page padding
+│   ├── interp.asm     # tokeniser + statement-loop executor (INIT entry)
 │   ├── title.asm      # startup header lines (INITXT + CHPUT)
 │   ├── repl.asm       # keyboard line editor + read/eval loop (zb> prompt)
+│   ├── vars.asm       # integer variable store (A..Z, 16-bit)
+│   ├── expr.asm       # 16-bit integer expression evaluator (incl. PEEK)
+│   ├── poke.asm       # the POKE statement handler
 │   ├── bload.asm      # the BLOAD statement handler + ,R handoff
-│   └── sysvars.inc    # BIOS entry points + RAM scratch (all cited)
+│   └── sysvars.inc    # BIOS entry points + tokens + RAM scratch (all cited)
 └── tools/
     └── pad_rom.py     # pad/verify the ROM to exactly 16 KB
 ```

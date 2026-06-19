@@ -22,18 +22,30 @@ TAPIOF          equ     $00E7   ; stop the tape motor
 BINARY_ID       equ     $D0
 
 ; --- Tokeniser / executor --------------------------------------------------
-; Source: spec-tokenise.md (this project's own black-box oracle observation).
-; A keyword crunches to a single token byte; BLOAD was observed to be $CF.
-BLOAD_TOKEN     equ     $CF
+; Keyword tokens. Each value is an oracle observation (the crunch buffer KBUF
+; dump), cross-checked against the MSX Assembly Page token table.
+; Source: spec-tokenise.md (BLOAD) and spec-tokens-statements.md (REM/POKE/PEEK).
+BLOAD_TOKEN     equ     $CF     ; spec-tokenise.md
+REM_TOKEN       equ     $8F     ; spec-tokens-statements.md; swallows rest of line
+POKE_TOKEN      equ     $98     ; spec-tokens-statements.md
+; PEEK is a *function* token: a $FF prefix followed by a second byte.
+PEEK_PREFIX     equ     $FF     ; spec-tokens-statements.md (function-token prefix)
+PEEK_TOKEN      equ     $97     ; spec-tokens-statements.md
+; ASCII bytes the tokeniser / evaluator treat specially (all public ASCII).
+COLON           equ     $3A     ; ':' statement separator
+QUOTE_REM       equ     $27     ; "'" — apostrophe comment, treated as REM
 
 ; --- RAM scratch (page-3 RAM; NOT part of the ROM image) -------------------
-; Chosen to avoid the demo blob's regions ($C000 load, $E000 "JONG" marker).
-; These hold the three address words read from the .cas data header.
+; Chosen to avoid the demo blob's regions ($C000 load, $E000 "JONG" marker /
+; POKE test target). All "own choice — free RAM"; see PROVENANCE.md.
 CURPTR          equ     $E020   ; current load pointer (2 bytes)
 ENDPTR          equ     $E022   ; final load address  (2 bytes)
 EXECPTR         equ     $E024   ; execution address   (2 bytes)
 ERRMARK         equ     $E010   ; error landmark marker byte
 RUNFLAG         equ     $E02F   ; 1 = ,R handoff requested (set while parsing)
-TOKBUF          equ     $E030   ; crunch buffer: the tokenised line (0-terminated)
-LINEBUF         equ     $E060   ; ASCII input line from the keyboard (LINEMAX bytes)
-LINEMAX         equ     64      ; LINEBUF capacity; $E060..$E09F stays in page $E0
+; Buffers and the variable table live in page $E1, clear of $E000.
+LINEBUF         equ     $E100   ; ASCII input line from the keyboard (LINEMAX bytes)
+LINEMAX         equ     96      ; LINEBUF capacity; $E100..$E15F stays in page $E1
+TOKBUF          equ     $E160   ; crunch buffer: the tokenised line (0-terminated)
+VARTAB          equ     $E1C0   ; 26 integer variables A..Z, 2 bytes each (52 bytes)
+VARCOUNT        equ     26      ; A..Z
