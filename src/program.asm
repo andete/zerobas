@@ -140,13 +140,19 @@ new_prog:
                 ld      (TXTBASE),hl        ; $0000 end marker at the base
                 ret
 
-; --- run_prog: execute the stored program top-to-bottom (RUN) ----------------
-; Clears variables, then for each line feeds its token body to `exec`. No
-; control flow yet (sequential only); BLOAD,R inside a line still hands off.
+; --- run_prog: execute the stored program (RUN) ------------------------------
+; Clears variables, then runs lines from CURLINE. A statement may redirect the
+; flow: GOTO sets GOTOFLAG + GOTOTGT (branch to a line), END/STOP sets ENDFLAG
+; (stop). Otherwise execution falls through to the next line. BLOAD,R hands off.
 run_prog:
                 call    clear_vars
+                xor     a
+                ld      (GOTOFLAG),a
+                ld      (ENDFLAG),a
                 ld      hl,TXTBASE
+                ld      (CURLINE),hl
 rp_lp:
+                ld      hl,(CURLINE)
                 ld      e,(hl)              ; DE = link to next line
                 inc     hl
                 ld      d,(hl)
@@ -154,14 +160,64 @@ rp_lp:
                 ld      a,d
                 or      e
                 ret     z                   ; $0000 link -> end of program
-                push    de                  ; remember next line
                 inc     hl                  ; skip link (2) + lineno (2)
                 inc     hl
                 inc     hl
                 inc     hl                  ; HL -> token body
-                call    exec                ; run this line (may hand off, no return)
-                pop     hl                  ; HL = next line
+                call    exec                ; run line (may set flags or hand off)
+                ld      a,(ENDFLAG)
+                or      a
+                ret     nz                  ; END / STOP
+                ld      a,(GOTOFLAG)
+                or      a
+                jr      nz,rp_goto
+                ld      hl,(CURLINE)        ; fall through to the next line
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)
+                ex      de,hl               ; HL = link (next line)
+                ld      (CURLINE),hl
                 jr      rp_lp
+rp_goto:
+                xor     a
+                ld      (GOTOFLAG),a
+                ld      hl,(GOTOTGT)
+                ld      (CURLINE),hl
+                jr      rp_lp
+
+; --- find_line_bc: locate a stored line by number ----------------------------
+; in: BC = line number. out: CF set + HL = the line's link-field address if
+; found; CF clear otherwise. Clobbers A, DE, HL.
+find_line_bc:
+                ld      hl,TXTBASE
+flb_lp:
+                ld      e,(hl)              ; DE = link
+                inc     hl
+                ld      d,(hl)
+                dec     hl
+                ld      a,d
+                or      e
+                jr      z,flb_no            ; $0000 -> not found
+                push    hl                  ; compare line number at HL+2,+3
+                inc     hl
+                inc     hl
+                ld      a,(hl)
+                cp      c
+                jr      nz,flb_next
+                inc     hl
+                ld      a,(hl)
+                cp      b
+                jr      nz,flb_next
+                pop     hl                  ; match: HL = link field
+                scf
+                ret
+flb_next:
+                pop     hl                  ; HL = current slot; DE = its link
+                ex      de,hl               ; HL = next line
+                jr      flb_lp
+flb_no:
+                or      a                   ; CF clear
+                ret
 
 ; --- store_line: insert / replace / delete a numbered line -------------------
 ; in: BC = line number, HL = crunched token body (0-terminated, in TOKBUF).

@@ -44,6 +44,7 @@ tk_nondigit:
                 jr      nc,tk_notkw
                 cp      REM_TOKEN           ; REM swallows the rest of the line
                 jp      z,tk_rem_rest
+                call    branch_lineno       ; GOTO/GOSUB/THEN/… <n> -> $0E,<n LE>
                 jp      tokenise
 tk_notkw:
                 ld      a,(hl)              ; not a keyword
@@ -314,6 +315,77 @@ mk_none:
                 or      a                   ; CF clear (no match)
                 ret
 
+; --- branch_lineno: emit a line-number reference after a branch keyword ------
+; A = first token byte just emitted by match_kw, HL = source cursor (after the
+; keyword), DE = dest cursor. If the keyword was GOTO/GOSUB/THEN/RESTORE/RUN, copy
+; any spaces verbatim then, if a decimal number follows, emit it as the
+; line-number identification code $0E,<value LE> (Figure 2.12) instead of the
+; ordinary integer encoding. Otherwise returns unchanged. (ON…GOTO lists and
+; ELSE <line> are not specially handled yet — single target only.)
+branch_lineno:
+                cp      GOTO_TOKEN
+                jr      z,bl_yes
+                cp      GOSUB_TOKEN
+                jr      z,bl_yes
+                cp      THEN_TOKEN
+                jr      z,bl_yes
+                cp      RESTORE_TOKEN
+                jr      z,bl_yes
+                cp      RUN_TOKEN
+                jr      z,bl_yes
+                ret                         ; not a branch keyword
+bl_yes:
+                ld      a,(hl)              ; copy spaces verbatim
+                cp      ' '
+                jr      nz,bl_num
+                ld      (de),a
+                inc     de
+                inc     hl
+                jr      bl_yes
+bl_num:
+                cp      '0'                 ; a decimal number must follow
+                ret     c
+                cp      '9'+1
+                ret     nc
+                push    de                  ; park dest while accumulating
+                ld      de,0                ; DE = value
+bl_acc:
+                ld      a,(hl)
+                cp      '0'
+                jr      c,bl_done
+                cp      '9'+1
+                jr      nc,bl_done
+                sub     '0'
+                ld      c,a
+                push    hl                  ; DE = DE*10 + C
+                ld      h,d
+                ld      l,e
+                add     hl,hl
+                add     hl,hl
+                add     hl,de
+                add     hl,hl
+                ld      e,c
+                ld      d,0
+                add     hl,de
+                ex      de,hl
+                pop     hl
+                inc     hl
+                jr      bl_acc
+bl_done:
+                ld      b,d
+                ld      c,e                 ; BC = line number
+                pop     de                  ; restore dest cursor
+                ld      a,LINENO_TOKEN      ; $0E
+                ld      (de),a
+                inc     de
+                ld      a,c                 ; value low
+                ld      (de),a
+                inc     de
+                ld      a,b                 ; value high
+                ld      (de),a
+                inc     de
+                ret
+
 ; keyword -> token table. Entry layout: [klen][UPPERCASE chars][tlen][token...].
 ; Terminated by a 0 length byte. Tokens are oracle-sourced (spec-tokenise.md,
 ; spec-tokens-statements.md). PEEK is a two-byte function token ($FF $97).
@@ -322,6 +394,27 @@ kwtable:
                 db      4,"POKE",1,POKE_TOKEN
                 db      4,"PEEK",2,PEEK_PREFIX,PEEK_TOKEN
                 db      3,"REM",1,REM_TOKEN
+                ; Step B control flow (spec-controlflow.md; MSX2 TH Table 2.20).
+                db      4,"GOTO",1,GOTO_TOKEN
+                db      5,"GOSUB",1,GOSUB_TOKEN
+                db      6,"RETURN",1,RETURN_TOKEN
+                db      2,"IF",1,IF_TOKEN
+                db      4,"THEN",1,THEN_TOKEN
+                db      4,"ELSE",2,COLON,ELSE_TOKEN
+                db      3,"FOR",1,FOR_TOKEN
+                db      2,"TO",1,TO_TOKEN
+                db      4,"STEP",1,STEP_TOKEN
+                db      4,"NEXT",1,NEXT_TOKEN
+                db      4,"DATA",1,DATA_TOKEN
+                db      4,"READ",1,READ_TOKEN
+                db      7,"RESTORE",1,RESTORE_TOKEN
+                db      3,"RUN",1,RUN_TOKEN
+                db      3,"NEW",1,NEW_TOKEN
+                db      3,"END",1,END_TOKEN
+                db      4,"STOP",1,STOP_TOKEN
+                db      2,"ON",1,ON_TOKEN
+                db      5,"PRINT",1,PRINT_TOKEN
+                db      3,"LET",1,LET_TOKEN
                 db      0
 
 ; --- upcase: fold A to uppercase if it is 'a'..'z' -------------------------
@@ -367,12 +460,30 @@ exec_stmt:
                 jp      z,ex_poke
                 cp      REM_TOKEN
                 jr      z,ex_rem
+                cp      DATA_TOKEN          ; DATA: skipped at run time (like REM)
+                jr      z,ex_rem
+                cp      GOTO_TOKEN
+                jp      z,ex_goto
+                cp      IF_TOKEN
+                jp      z,ex_if
+                cp      END_TOKEN
+                jr      z,ex_end
+                cp      STOP_TOKEN
+                jr      z,ex_end
+                cp      ELSE_TOKEN          ; reached after a true THEN clause -> done
+                jr      z,ex_rem
+                cp      LET_TOKEN
+                jp      z,ex_letkw
                 call    is_letter           ; bare letter -> assignment
                 jr      c,ex_let
                 jp      stmt_error
 ex_sep:
                 inc     hl
                 jr      exec_stmt
+ex_end:
+                ld      a,1                 ; END / STOP -> stop the run
+                ld      (ENDFLAG),a
+                ret
 ex_rem:
                 ret                         ; rest of line is a comment -> done
 ex_bload:
@@ -419,3 +530,140 @@ stmt_error:
                 ret
 err_syntax:
                 db      "syntax error",13,10,0
+
+; --- ex_letkw: optional LET keyword before an assignment -------------------
+ex_letkw:
+                inc     hl                  ; past the LET token
+                call    skip_spaces
+                jp      ex_let              ; reuse <letter> = <expr>
+
+; --- ex_goto: GOTO <line> --------------------------------------------------
+; The target is the line-number reference $0E,<lineno LE> (the tokeniser emits
+; this for a number after GOTO/THEN). Resolves it to the line's address, parks it
+; in GOTOTGT and raises GOTOFLAG; the RUN loop performs the branch. `ex_goto_at`
+; is the same with HL already on the $0E token (used by IF…THEN <line>).
+ex_goto:
+                inc     hl                  ; past the GOTO token
+ex_goto_at:
+                call    skip_spaces
+                ld      a,(hl)
+                cp      LINENO_TOKEN        ; $0E expected
+                jp      nz,stmt_error
+                inc     hl
+                ld      c,(hl)              ; target line number, LE
+                inc     hl
+                ld      b,(hl)
+                inc     hl
+                call    find_line_bc        ; CF set + HL = line addr if found
+                jr      nc,ex_goto_undef
+                ld      (GOTOTGT),hl
+                ld      a,1
+                ld      (GOTOFLAG),a
+                ret
+ex_goto_undef:
+                ld      a,$DB               ; "undefined line" landmark
+                ld      (ERRMARK),a
+                ld      hl,err_line
+                jp      print_string
+err_line:
+                db      "undefined line",13,10,0
+
+; --- ex_if: IF <expr> THEN <clause> [ELSE <clause>] ------------------------
+; A clause is either a line number (implicit GOTO) or statements. Condition is
+; true when the expression is non-zero (no comparison operators yet).
+ex_if:
+                inc     hl                  ; past the IF token
+                call    skip_spaces
+                call    eval                ; DE = condition, HL after expr
+                call    skip_spaces
+                ld      a,(hl)
+                cp      THEN_TOKEN
+                jr      z,if_then
+                cp      GOTO_TOKEN          ; allow `IF <expr> GOTO <line>`
+                jr      z,if_goto_form
+                jp      stmt_error
+if_goto_form:
+                ld      a,d                 ; condition true?
+                or      e
+                jr      z,if_false
+                jp      exec_stmt           ; true: let exec run the GOTO at HL
+if_then:
+                inc     hl                  ; past THEN
+                call    skip_spaces
+                ld      a,d                 ; condition true?
+                or      e
+                jr      z,if_false
+                ld      a,(hl)              ; true: line number -> GOTO, else run
+                cp      LINENO_TOKEN
+                jr      z,if_branch
+                jp      exec_stmt
+if_branch:
+                jp      ex_goto_at          ; HL on $0E -> conditional GOTO
+if_false:
+                call    if_skip_to_else     ; scan to ELSE token or end of line
+                or      a
+                ret     z                   ; no ELSE -> line done
+                inc     hl                  ; past the ELSE ($A1) token
+                call    skip_spaces
+                ld      a,(hl)
+                cp      LINENO_TOKEN
+                jr      z,if_branch
+                jp      exec_stmt           ; ELSE <statements>
+
+; --- if_skip_to_else: token-aware scan to the ELSE token or EOL -------------
+; out: HL on the $A1 ELSE token (A = $A1) or on the 0 terminator (A = 0).
+; Steps over operand bytes so a value that happens to equal $A1/$00 is not
+; mistaken for a delimiter.
+if_skip_to_else:
+                ld      a,(hl)
+                or      a
+                ret     z                   ; end of line
+                cp      ELSE_TOKEN
+                ret     z                   ; ELSE found
+                call    tok_skip
+                jr      if_skip_to_else
+
+; --- tok_skip: advance HL past one token, including its operand bytes -------
+tok_skip:
+                ld      a,(hl)
+                inc     hl
+                cp      HEX_TOKEN           ; $0C ,word
+                jr      z,tsk2
+                cp      INT2_TOKEN          ; $1C ,word
+                jr      z,tsk2
+                cp      LINENO_TOKEN        ; $0E ,word
+                jr      z,tsk2
+                cp      LINEADDR_TOKEN      ; $0D ,word
+                jr      z,tsk2
+                cp      OCT_TOKEN           ; $0B ,word
+                jr      z,tsk2
+                cp      INT1_TOKEN          ; $0F ,byte
+                jr      z,tsk1
+                cp      PEEK_PREFIX         ; $FF ,function-token byte
+                jr      z,tsk1
+                cp      '"'                 ; string literal
+                jr      z,tsk_str
+                cp      REM_TOKEN           ; REM -> rest of line
+                jr      z,tsk_rem
+                ret                         ; 0-operand token / plain byte
+tsk1:
+                inc     hl
+                ret
+tsk2:
+                inc     hl
+                inc     hl
+                ret
+tsk_str:
+                ld      a,(hl)
+                or      a
+                ret     z
+                inc     hl
+                cp      '"'
+                jr      nz,tsk_str
+                ret
+tsk_rem:
+                ld      a,(hl)
+                or      a
+                ret     z
+                inc     hl
+                jr      tsk_rem

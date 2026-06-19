@@ -133,16 +133,21 @@ cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`.
 
 ### Limitations (this slice)
 
-- **Stored programs (Step B) — first cut.** Numbered lines are now stored at the
+- **Stored programs + control flow (Step B).** Numbered lines are stored at the
   real text base (`TXTTAB`/`$F676` = `$8001`, oracle-confirmed) in the real
   line-link format, with insert / replace / delete by line number, plus `NEW`
-  and a `RUN` that executes the stored lines top-to-bottom; Step A's
-  byte-identical crunch is what makes those stored bodies match a real ROM's.
-  *Sequential execution only:* `GOTO`/`GOSUB`, `FOR…NEXT`, and `DATA`/`READ`/
-  `RESTORE` are still out — they need the `$0E`-style line-number-reference
-  tokens (not yet oracle-captured) and control-flow state. `RUN`/`NEW` are
-  recognised as editor commands (no keyword token invented). This slice is
-  assemble-verified; an oracle probe for stored-program bytes is the next step.
+  and `RUN`. The tokeniser knows the full control-flow keyword set
+  (`GOTO`/`GOSUB`/`IF`/`THEN`/`ELSE`/`FOR`/`TO`/`STEP`/`NEXT`/`DATA`/`READ`/
+  `RESTORE`/`END`/…, from MSX2 Technical Handbook Table 2.20) and emits the `$0E`
+  line-number identification code (Figure 2.12) for branch targets, so a stored
+  program is byte-identical to a real ROM's. The executor runs `GOTO`,
+  `IF … THEN … [ELSE …]` (line-number or statement clauses), and `END`/`STOP`
+  via a redirectable run loop with a line resolver. **Still out:** `FOR…NEXT`,
+  `GOSUB`/`RETURN`, `DATA`/`READ` (need loop/return stacks + mid-line resume);
+  and `IF` conditions are non-zero tests until comparison operators (`=`/`<`/`>`)
+  land in the evaluator. See [`spec-controlflow.md`](https://github.com/andete/msx-preservation/blob/main/basic-spec/docs/spec-controlflow.md).
+  Assemble-verified; an oracle probe for stored-program + branch bytes is the
+  next validation step.
 - Variables are single-letter integers (`A`–`Z`); no strings, arrays, or
   multi-character names. Expressions have `+ - *` and `PEEK` only (no `/`,
   comparisons, or string ops).

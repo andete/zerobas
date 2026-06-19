@@ -83,3 +83,37 @@ SL_NUM          equ     $E030   ; store_line: target line number (2)
 SL_SLOT         equ     $E032   ; store_line: insertion slot address (2)
 SL_SIZE         equ     $E034   ; store_line: new line size in bytes (2)
 SL_TOK          equ     $E036   ; store_line: saved token-body pointer (2)
+
+; --- Step B control flow: keyword tokens + line-number references ----------
+; Keyword tokens from MSX2 Technical Handbook Table 2.20; the line-number
+; identification codes from Figure 2.12. See basic-spec/docs/spec-controlflow.md.
+; Allowed-source-sourced; every value that overlaps an existing oracle token
+; (POKE/BLOAD/PEEK/REM/= + - *) matches it.
+GOTO_TOKEN      equ     $89
+GOSUB_TOKEN     equ     $8D
+RETURN_TOKEN    equ     $8E
+IF_TOKEN        equ     $8B
+THEN_TOKEN      equ     $DA
+ELSE_TOKEN      equ     $A1     ; in the stream ELSE is COLON,$A1 (like REM = $3A $8F)
+FOR_TOKEN       equ     $82
+TO_TOKEN        equ     $D9
+STEP_TOKEN      equ     $DC
+NEXT_TOKEN      equ     $83
+DATA_TOKEN      equ     $84
+READ_TOKEN      equ     $87
+RESTORE_TOKEN   equ     $8C
+RUN_TOKEN       equ     $8A
+NEW_TOKEN       equ     $94
+END_TOKEN       equ     $81
+STOP_TOKEN      equ     $90
+ON_TOKEN        equ     $95
+PRINT_TOKEN     equ     $91
+LET_TOKEN       equ     $88
+LINENO_TOKEN    equ     $0E     ; line number reference (before RUN): $0E,<lineno LE>
+LINEADDR_TOKEN  equ     $0D     ; line number reference (after RUN): $0D,<addr LE>
+OCT_TOKEN       equ     $0B     ; &O constant: $0B,<value16 LE>
+; Runtime control-flow state (page $E0).
+CURLINE         equ     $E038   ; link-field addr of the line being executed (2)
+GOTOTGT         equ     $E03A   ; pending branch-target line addr (2)
+GOTOFLAG        equ     $E03C   ; 1 = a branch (GOTO) is pending
+ENDFLAG         equ     $E03D   ; 1 = END/STOP reached, stop the run
