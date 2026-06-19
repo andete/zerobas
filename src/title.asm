@@ -26,5 +26,5 @@ st_loop:
 ; whatever the interpreter does next, as on a booted MSX.
 banner_text:
                 db      "zerobas version 0.1",13,10
-                db      "clean-room MSX-BASIC cartridge loader",13,10,13,10
+                db      "clean-room MSX-BASIC program loader",13,10,13,10
                 db      0
