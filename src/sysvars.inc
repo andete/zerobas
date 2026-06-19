@@ -63,3 +63,23 @@ LINEMAX         equ     96      ; LINEBUF capacity; $E100..$E15F stays in page $
 TOKBUF          equ     $E160   ; crunch buffer: the tokenised line (0-terminated)
 VARTAB          equ     $E1C0   ; 26 integer variables A..Z, 2 bytes each (52 bytes)
 VARCOUNT        equ     26      ; A..Z
+
+; --- Step B: stored-program text area (numbered lines) ---------------------
+; Numbered lines are stored in the real MSX line-link format at the real text
+; base, so a stored program's bytes match a reference ROM's (Step A's crunch
+; gives byte-identical line bodies; storing at the same base gives identical
+; link pointers). Each line: [link:2 LE][lineno:2 LE][tokens...][00]; the
+; program ends with a link word of $0000.
+; Source: TXTTAB sysvar $F676 and its post-boot value $8001 are oracle-confirmed
+; (msx-preservation/basic-spec spec-bload-r.md §4 — "sourced"); the line-link
+; layout is MSX2 Technical Handbook / MSX Assembly Page (allowed), same
+; provenance as the BIOS and token constants used elsewhere here.
+TXTTAB          equ     $F676   ; sysvar: pointer to the BASIC text base
+TXTBASE         equ     $8001   ; text base (oracle: TXTTAB value after boot)
+TXTMAX          equ     $C000   ; text must stay below the $C000 BLOAD region
+PRGEND          equ     $E026   ; addr of the $0000 end-of-program marker (2 bytes)
+; Step B scratch (page $E0, clear of LINEBUF/VARTAB in page $E1).
+SL_NUM          equ     $E030   ; store_line: target line number (2)
+SL_SLOT         equ     $E032   ; store_line: insertion slot address (2)
+SL_SIZE         equ     $E034   ; store_line: new line size in bytes (2)
+SL_TOK          equ     $E036   ; store_line: saved token-body pointer (2)

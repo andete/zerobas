@@ -6,7 +6,7 @@
 ; contract to read a BSAVE-format binary, places the bytes in RAM, and (for ,R)
 ; performs the handoff by jumping to the exec address.
 ;
-; Derived only from cbios-basic/docs/spec-bload-r.md and spec-tokenise.md (this
+; Derived only from basic-spec/docs/spec-bload-r.md and spec-tokenise.md (this
 ; project's own black-box oracle observations) + the MSX2 Technical Handbook.
 ; No disassembly.
 ;

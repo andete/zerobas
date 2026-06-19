@@ -10,7 +10,7 @@ unexplained magic value blocks release.
 
 The behavioural source `spec-bload-r.md` is this project's own black-box oracle
 observation, captured in the `msx-preservation` repo
-(`cbios-basic/docs/spec-bload-r.md`).
+(`basic-spec/docs/spec-bload-r.md`).
 
 ## first light: `BLOAD"CAS:",R` (src/main.asm, src/bload.asm, src/sysvars.inc)
 
@@ -78,7 +78,7 @@ No quarantined items.
 
 ## REM / POKE / PEEK statement slice
 
-Behavioural source: `cbios-basic/docs/spec-tokens-statements.md` (this project's
+Behavioural source: `basic-spec/docs/spec-tokens-statements.md` (this project's
 own black-box oracle observation) and the public MSX-BASIC *language* reference.
 
 ### Keyword tokens (src/sysvars.inc, src/interp.asm `kwtable`)
@@ -113,7 +113,7 @@ own black-box oracle observation) and the public MSX-BASIC *language* reference.
 
 Earlier slices kept numbers/operators verbatim; that is **reversed** here so a
 crunched line is byte-for-byte identical to a real ROM's. Behavioural source:
-`cbios-basic/docs/spec-tokens-statements.md §3/§4` (this project's own black-box
+`basic-spec/docs/spec-tokens-statements.md §3/§4` (this project's own black-box
 oracle observation — the fidelity sweep). Verified by `basic_probe_crunch.py`
 (zerobas `TOKBUF` == reference `KBUF`, per line).
 

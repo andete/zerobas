@@ -7,13 +7,14 @@
 ; function handled inside the expression evaluator.
 ;
 ; Derived only from this project's own black-box oracle observations
-; (cbios-basic/docs/spec-tokenise.md, spec-tokens-statements.md) and the public
+; (basic-spec/docs/spec-tokenise.md, spec-tokens-statements.md) and the public
 ; MSX-BASIC language reference. No disassembly.
 
 ; --- INIT entry (cartridge header points here) -----------------------------
 init:
                 ei                          ; keyboard ISR must run for CHGET
                 call    clear_vars          ; deterministic variable table
+                call    new_prog            ; empty stored program (Step B)
                 call    show_title          ; startup header lines
                 jp      repl                ; read/eval loop (never returns)
 

@@ -51,6 +51,9 @@
 ; The BLOAD statement handler and the ,R handoff (defines `do_bload`).
                 include "src/bload.asm"
 
+; Stored numbered-line program: storage, NEW, RUN (defines `dispatch_line`).
+                include "src/program.asm"
+
 ; --- pad to a full 16 KB page ($4000-$7FFF) -------------------------------
 ; Fill with $00 (not $FF): empty C-BIOS page 1 is $00, so when this image is
 ; shipped as a slot-0 page-1 *patch* (see build-patches.sh) the diff carries

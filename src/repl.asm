@@ -1,7 +1,9 @@
 ; repl.asm — keyboard line editor + read/eval loop.
 ;
 ; Reads a line from the keyboard via the BIOS (CHGET), echoes it with simple
-; editing (Backspace), and on Enter tokenises and executes it, then loops.
+; editing (Backspace/DEL), and on Enter hands the line to `dispatch_line`
+; (store a numbered line, RUN, NEW, or tokenise+execute a direct line), then
+; loops.
 ;
 ; The prompt is deliberately "zb>", NOT the original interpreter's "Ok": zerobas
 ; should never be mistaken for stock MSX-BASIC.
@@ -13,11 +15,7 @@ repl:
                 ld      hl,prompt_text
                 call    print_string
                 call    read_line           ; LINEBUF <- typed line (ASCII, 0-term)
-                ld      hl,LINEBUF
-                ld      de,TOKBUF
-                call    tokenise
-                ld      hl,TOKBUF
-                call    exec                ; may hand off (no return) or return
+                call    dispatch_line       ; store / RUN / NEW / direct-execute
                 jr      repl
 
 ; --- print_string: CHPUT a 0-terminated string at (HL) --------------------
@@ -33,7 +31,9 @@ print_string:
 
 ; --- read_line: edit a line into LINEBUF, echoing as we go -----------------
 ; Returns with LINEBUF holding the typed ASCII line, 0-terminated. Handles
-; Backspace ($08) and Enter ($0D); other control characters are ignored.
+; Backspace ($08), DEL ($7F), and Enter ($0D); other control characters are
+; ignored. (openMSX maps the Mac Backspace key to the MSX DEL key, so C-BIOS's
+; CHGET delivers $7F rather than $08 -- both are treated as erase-left here.)
 ; HL is the write cursor; it is guarded across every BIOS call (CHGET/CHPUT
 ; make no register guarantees).
 read_line:
@@ -45,6 +45,8 @@ rl_loop:
                 cp      13                  ; Enter -> finish
                 jr      z,rl_enter
                 cp      8                   ; Backspace -> erase
+                jr      z,rl_bs
+                cp      $7F                 ; DEL (Mac Backspace via C-BIOS) -> erase
                 jr      z,rl_bs
                 cp      32                  ; ignore other control chars
                 jr      c,rl_loop

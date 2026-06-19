@@ -34,7 +34,7 @@ read by a contributor or fed into any tool or model. A reference ROM is only
 ever an *oracle*: identical inputs in, observed outputs out.
 
 The behavioural specifications zerobas is built from live in the companion
-analysis repo (`msx-preservation`, under `cbios-basic/docs/`), produced by
+analysis repo (`msx-preservation`, under `basic-spec/docs/`), produced by
 driving a real MSX in openMSX as a black box.
 
 ## Build
@@ -108,7 +108,8 @@ for byte. (Decimal `≥ 32768` — which the reference stores as a float — plu
    header before its prompt — no reference text copied)
 1. **prompt + line editor** — print `zb>` (deliberately *not* `Ok`, so zerobas
    is never mistaken for stock MSX-BASIC) and read a line via `CHGET`, echoing
-   with Backspace editing until Enter
+   with Backspace editing until Enter (both `$08` and `$7F`/DEL erase left, so
+   the Mac Backspace key — which openMSX delivers as the MSX DEL key — works)
 2. **tokenise** the line → **byte-identical to a real MSX-BASIC ROM**: keywords
    (`BLOAD`→`$CF`, `POKE`→`$98`, `PEEK`→`$FF $97`, `REM`→`$8F`), the integer/`&H`
    constants, and the `= + - *` operators all crunch to the reference's exact
@@ -132,12 +133,16 @@ cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`.
 
 ### Limitations (this slice)
 
-- **Direct-mode only** — no stored, numbered program (`RUN`) yet, so
-  `DATA`/`READ`/`RESTORE`, `FOR…NEXT`, and multi-line programs are out of scope.
-  Storing numbered lines at the real text-area address (`TXTTAB`/`$F676`, which
-  the reference puts at `$8001`) in the real line format, plus `RUN`/`NEW`, is
-  the next milestone (**Step B**) — and Step A's byte-identical crunch is what
-  makes those stored programs match a real ROM's.
+- **Stored programs (Step B) — first cut.** Numbered lines are now stored at the
+  real text base (`TXTTAB`/`$F676` = `$8001`, oracle-confirmed) in the real
+  line-link format, with insert / replace / delete by line number, plus `NEW`
+  and a `RUN` that executes the stored lines top-to-bottom; Step A's
+  byte-identical crunch is what makes those stored bodies match a real ROM's.
+  *Sequential execution only:* `GOTO`/`GOSUB`, `FOR…NEXT`, and `DATA`/`READ`/
+  `RESTORE` are still out — they need the `$0E`-style line-number-reference
+  tokens (not yet oracle-captured) and control-flow state. `RUN`/`NEW` are
+  recognised as editor commands (no keyword token invented). This slice is
+  assemble-verified; an oracle probe for stored-program bytes is the next step.
 - Variables are single-letter integers (`A`–`Z`); no strings, arrays, or
   multi-character names. Expressions have `+ - *` and `PEEK` only (no `/`,
   comparisons, or string ops).
@@ -152,15 +157,15 @@ Run the oracle probes (in the `msx-preservation` repo) against this ROM:
 
 ```sh
 # BLOAD pipeline (tokenise → execute → cassette load → ,R handoff)
-python3 cbios-basic/tools/basic_probe_bload.py \
+python3 basic-spec/tools/basic_probe_bload.py \
     --machine Philips_VG_8020 --cart /path/to/zerobas/basic.rom
 
 # REM / POKE / PEEK / expression evaluator (results read back from RAM)
-python3 cbios-basic/tools/basic_probe_statements.py \
+python3 basic-spec/tools/basic_probe_statements.py \
     --cart /path/to/zerobas/basic.rom
 
 # Step A: byte-identical crunch — zerobas TOKBUF vs reference KBUF, per line
-python3 cbios-basic/tools/basic_probe_crunch.py \
+python3 basic-spec/tools/basic_probe_crunch.py \
     --machine Philips_VG_8020 --cart /path/to/zerobas/basic.rom
 ```
 
@@ -171,13 +176,19 @@ BLOAD — byte-for-byte identical to the reference MSX-BASIC's own behaviour.
 
 ### Note on C-BIOS
 
-C-BIOS's cassette routines (`TAPION`/`TAPIN`/`TAPIOF`) are **stubs that always
-fail** — so a cassette `BLOAD` cannot complete under bare C-BIOS today (the ROM
-reaches `BLOAD`, calls `TAPION`, gets a failure, and takes its error path; this
-is observable as the byte `$EE` at `$E010`). zerobas's interpreter-half code is
-correct regardless; making cassette work under C-BIOS is a C-BIOS task. The
-realistic game-loader path on C-BIOS is **disk**, where a disk-interface ROM
-provides the device half (`PHYDIO` / the `H.*` hooks) — a future transport here.
+C-BIOS's *own* cassette routines (`TAPION`/`TAPIN`/`TAPIOF`) are **stubs that
+always fail** — so on bare C-BIOS a cassette `BLOAD` cannot complete (the ROM
+reaches `BLOAD`, calls `TAPION`, gets a failure, and takes its error path,
+observable as the byte `$EE` at `$E010`). The sibling
+[cbios-tape](https://github.com/andete/cbios-tape) patch supplies real
+`TAPION`/`TAPIN`/`TAPIOF` in page 0, and the zerobas machine installer
+([tools/install-openmsx-machine.py](tools/install-openmsx-machine.py)) applies
+**both** IPS patches — cbios-tape (page 0) then zerobas (page 1) — so the full
+cassette `BLOAD` pipeline now completes end-to-end: C-BIOS + cbios-tape (device
+half) + zerobas (interpreter half).
+
+The next transport is **disk**, where a disk-interface ROM provides the device
+half (`PHYDIO` / the `H.*` hooks) — a future transport here.
 
 ## Layout
 
