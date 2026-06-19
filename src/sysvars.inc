@@ -112,6 +112,10 @@ LET_TOKEN       equ     $88
 LINENO_TOKEN    equ     $0E     ; line number reference (before RUN): $0E,<lineno LE>
 LINEADDR_TOKEN  equ     $0D     ; line number reference (after RUN): $0D,<addr LE>
 OCT_TOKEN       equ     $0B     ; &O constant: $0B,<value16 LE>
+; Relational operators (Table 2.20). '=' is EQ_TOKEN ($EF) above; compound forms
+; (<=, >=, <>) are two consecutive operator tokens, combined by the evaluator.
+GT_TOKEN        equ     $EE     ; '>'
+LT_TOKEN        equ     $F0     ; '<'
 ; Runtime control-flow state (page $E0).
 CURLINE         equ     $E038   ; link-field addr of the line being executed (2)
 GOTOTGT         equ     $E03A   ; pending branch-target line addr (2)

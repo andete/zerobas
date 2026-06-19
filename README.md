@@ -142,15 +142,16 @@ cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`.
   line-number identification code (Figure 2.12) for branch targets, so a stored
   program is byte-identical to a real ROM's. The executor runs `GOTO`,
   `IF … THEN … [ELSE …]` (line-number or statement clauses), and `END`/`STOP`
-  via a redirectable run loop with a line resolver. **Still out:** `FOR…NEXT`,
-  `GOSUB`/`RETURN`, `DATA`/`READ` (need loop/return stacks + mid-line resume);
-  and `IF` conditions are non-zero tests until comparison operators (`=`/`<`/`>`)
-  land in the evaluator. See [`spec-controlflow.md`](https://github.com/andete/msx-preservation/blob/main/basic-spec/docs/spec-controlflow.md).
+  via a redirectable run loop with a line resolver. Conditions use real
+  comparison operators — `=` `<` `>` and the compound `<=` `>=` `<>` (signed
+  16-bit, yielding `-1`/`0`). **Still out:** `FOR…NEXT`, `GOSUB`/`RETURN`,
+  `DATA`/`READ` (need loop/return stacks + mid-line resume). See
+  [`spec-controlflow.md`](https://github.com/andete/msx-preservation/blob/main/basic-spec/docs/spec-controlflow.md).
   Assemble-verified; an oracle probe for stored-program + branch bytes is the
   next validation step.
 - Variables are single-letter integers (`A`–`Z`); no strings, arrays, or
-  multi-character names. Expressions have `+ - *` and `PEEK` only (no `/`,
-  comparisons, or string ops).
+  multi-character names. Expressions have `+ - *`, the comparisons
+  `= < > <= >= <>`, and `PEEK` (no `/`, no string ops).
 - **Crunch fidelity scope:** decimal integer constants `0`–`32767`, `&H` hex
   (`0`–`FFFF`), and `= + - *` are byte-identical. Decimal `≥ 32768` (a float on
   the reference), `&O`/`&B`, floating-point, and line-number-reference tokens are

@@ -56,6 +56,10 @@ tk_notkw:
                 jp      z,tk_op_minus
                 cp      '*'
                 jp      z,tk_op_star
+                cp      '<'
+                jp      z,tk_op_lt
+                cp      '>'
+                jp      z,tk_op_gt
                 call    is_letter           ; variable / option letter
                 jr      c,tk_copy_up
 tk_copy:
@@ -122,6 +126,12 @@ tk_op_minus:
                 jr      tk_op_emit
 tk_op_star:
                 ld      a,STAR_TOKEN
+                jr      tk_op_emit
+tk_op_lt:
+                ld      a,LT_TOKEN
+                jr      tk_op_emit
+tk_op_gt:
+                ld      a,GT_TOKEN
 tk_op_emit:
                 ld      (de),a
                 inc     de

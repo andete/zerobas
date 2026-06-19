@@ -3,10 +3,14 @@
 ; Evaluates an expression from the token/char stream. Grammar (small,
 ; precedence-climbing):
 ;
+;   rel    := expr [ relop expr ]   (relop: < = > and compound <= >= <>)
 ;   expr   := term  { ('+' | '-') term }
 ;   term   := factor { '*' factor }
-;   factor := const | letter(variable) | 'PEEK' '(' expr ')'
-;           | '(' expr ')' | '-' factor
+;   factor := const | letter(variable) | 'PEEK' '(' rel ')'
+;           | '(' rel ')' | '-' factor
+;
+; A comparison yields -1 (true) or 0 (false). `eval` enters at `rel`; the bare
+; arithmetic entry `ev_e` is still used where a relational makes no sense.
 ;
 ; The stream is the *crunched* token line (spec-tokens-statements.md §3/§4):
 ; constants arrive as their real MSX-BASIC tokens ($11+n digit, $0F+byte,
@@ -27,10 +31,97 @@ eval:
                 push    ix
                 push    hl
                 pop     ix                  ; IX = cursor
-                call    ev_e
+                call    ev_rel
                 push    ix
                 pop     hl                  ; HL = cursor (advanced)
                 pop     ix
+                ret
+
+; --- ev_rel: relational layer (lowest precedence) --------------------------
+; rel := arith [ relop arith ]   (relop is one or two of  <  =  > ).
+; A comparison yields -1 (true) or 0 (false), per MSX-BASIC, using a signed
+; 16-bit compare. Relop tokens: '<' $F0, '=' $EF, '>' $EE (Table 2.20); the
+; compound forms (<=, >=, <>) arrive as two operator tokens and are merged.
+ev_rel:
+                call    ev_e                ; DE = lhs (arithmetic)
+                call    ev_sp
+                ld      a,(ix+0)
+                call    relop_bit
+                ret     nc                  ; no relational operator -> plain value
+                ld      c,b                 ; C = requested relation bits
+                inc     ix
+                call    ev_sp
+                ld      a,(ix+0)
+                call    relop_bit           ; a second relop? (<=, >=, <>)
+                jr      nc,evr_rhs
+                ld      a,c
+                or      b
+                ld      c,a                 ; merge the two relation bits
+                inc     ix
+evr_rhs:
+                push    de                  ; lhs
+                push    bc                  ; relation bits (in C)
+                call    ev_e                ; DE = rhs
+                pop     bc                  ; C = bits
+                pop     hl                  ; HL = lhs
+                call    cmp16_bits          ; A = actual relation bit (1/2/4)
+                and     c                   ; intersect requested with actual
+                jr      z,evr_false
+                ld      de,$FFFF            ; true = -1
+                ret
+evr_false:
+                ld      de,0                ; false = 0
+                ret
+
+; --- relop_bit: A = token -> CF set & B = relation bit, else CF clear -------
+; '<' -> 1 (less), '=' -> 2 (equal), '>' -> 4 (greater).
+relop_bit:
+                cp      LT_TOKEN
+                jr      z,rb_lt
+                cp      EQ_TOKEN
+                jr      z,rb_eq
+                cp      GT_TOKEN
+                jr      z,rb_gt
+                or      a                   ; CF clear -> not a relop
+                ret
+rb_lt:
+                ld      b,1
+                scf
+                ret
+rb_eq:
+                ld      b,2
+                scf
+                ret
+rb_gt:
+                ld      b,4
+                scf
+                ret
+
+; --- cmp16_bits: signed compare HL(lhs) vs DE(rhs) -> A = 1/2/4 -------------
+; 1 = lhs<rhs, 2 = equal, 4 = lhs>rhs. Clobbers A, HL, flags (DE preserved).
+cmp16_bits:
+                ld      a,h
+                cp      d
+                jr      nz,c16_ne
+                ld      a,l
+                cp      e
+                jr      nz,c16_ne
+                ld      a,2                 ; equal
+                ret
+c16_ne:
+                or      a
+                sbc     hl,de               ; lhs - rhs; signed: less iff S xor V
+                jp      pe,c16_vset
+                jp      m,c16_lt            ; V clear -> less iff S set
+                jr      c16_gt
+c16_vset:
+                jp      p,c16_lt            ; V set  -> less iff S clear
+                jr      c16_gt
+c16_lt:
+                ld      a,1
+                ret
+c16_gt:
+                ld      a,4
                 ret
 
 ; --- ev_sp: skip spaces in the IX stream -----------------------------------
@@ -163,7 +254,7 @@ ev_f_neg:
 
 ev_f_paren:
                 inc     ix                  ; '('
-                call    ev_e                ; DE = inner value
+                call    ev_rel              ; DE = inner value (relationals allowed)
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      ')'
