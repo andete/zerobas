@@ -1,18 +1,56 @@
-; bload.asm — the BLOAD"CAS:",R tracer bullet.
+; bload.asm — the BLOAD statement handler.
 ;
 ; This is the *interpreter half* of BLOAD: it does NOT decode the cassette
-; signal itself (that is the BIOS "device half" — TAPION/TAPIN). It drives the
-; documented cassette BIOS contract to read a BSAVE-format binary, places the
-; bytes in RAM, and performs the ,R handoff by jumping to the exec address.
+; signal itself (that is the BIOS "device half" — TAPION/TAPIN). It parses its
+; arguments from the crunched token stream, drives the documented cassette BIOS
+; contract to read a BSAVE-format binary, places the bytes in RAM, and (for ,R)
+; performs the handoff by jumping to the exec address.
 ;
-; Derived only from cbios-basic/docs/spec-bload-r.md (this project's own
-; black-box oracle observation) + the MSX2 Technical Handbook. No disassembly.
+; Derived only from cbios-basic/docs/spec-bload-r.md and spec-tokenise.md (this
+; project's own black-box oracle observations) + the MSX2 Technical Handbook.
+; No disassembly.
 ;
-; For this first build the line is not tokenised: INIT *is* the BLOAD. A later
-; phase adds the tokeniser / execution loop in front of this routine.
+; Entry: do_bload, HL -> the bytes after the BLOAD token. spec-tokenise.md: the
+; arguments are kept verbatim as ASCII, i.e. `"CAS:",R` followed by 0x00.
 
-; INIT entry (cartridge header points here; lands at $4010 by construction).
-init:
+do_bload:
+                ; --- parse: "<device>" [ ,R ] ------------------------------
+                call    skip_spaces
+                ld      a,(hl)
+                cp      '"'                 ; opening quote required
+                jp      nz,load_error
+                inc     hl
+                ld      de,dev_cas          ; compare device name to "CAS:"
+parse_dev:
+                ld      a,(de)
+                or      a
+                jr      z,parse_dev_end     ; matched all of "CAS:"
+                cp      (hl)
+                jp      nz,load_error       ; unsupported device
+                inc     hl
+                inc     de
+                jr      parse_dev
+parse_dev_end:
+                ld      a,(hl)
+                cp      '"'                 ; closing quote required
+                jp      nz,load_error
+                inc     hl
+                ; optional ,R
+                xor     a
+                ld      (RUNFLAG),a         ; default: no handoff
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jr      nz,open_tape        ; no option -> plain load
+                inc     hl
+                call    skip_spaces
+                ld      a,(hl)
+                cp      'R'                 ; only ,R is supported
+                jr      nz,open_tape
+                ld      a,1
+                ld      (RUNFLAG),a
+
+open_tape:
                 ; --- open the tape and skip the file-header block's tone ---
                 call    TAPION              ; sync block 1 (file header)
                 jp      c,load_error
@@ -75,14 +113,21 @@ load_done:
                 call    TAPIOF              ; motor off
 
                 ; --- ,R handoff: jump to the exec address -------------------
-                ; spec-bload-r.md §3.
+                ; spec-bload-r.md §3. Only when ,R was given.
+                ld      a,(RUNFLAG)
+                or      a
+                ret     z                   ; plain BLOAD: return to caller
                 ld      hl,(EXECPTR)
                 jp      (hl)
 
+; device name accepted by this build. Source: spec-bload-r.md §5 ("CAS:").
+dev_cas:
+                db      "CAS:",0
+
 ; --- error path: stop the tape, drop a marker, halt at a fixed landmark -----
-; Reached when a cassette BIOS call fails (CF set) or the file is not binary.
-; Under bare C-BIOS this fires immediately: its TAPION/TAPIN are stubs that
-; always set CF (see reference/cbios/src/main.asm). That is the documented gap.
+; Reached when a cassette BIOS call fails (CF set), the file is not binary, or
+; the arguments do not parse. Under bare C-BIOS this fires immediately: its
+; TAPION/TAPIN are stubs that always set CF. That is the documented gap.
 load_error:
                 call    TAPIOF
                 ld      a,$EE

@@ -15,6 +15,11 @@ TAPIOF          equ     $00E7   ; stop the tape motor
 ; Source: MSX2 Technical Handbook, BSAVE file format ("D0" x10 = binary).
 BINARY_ID       equ     $D0
 
+; --- Tokeniser / executor --------------------------------------------------
+; Source: spec-tokenise.md (this project's own black-box oracle observation).
+; A keyword crunches to a single token byte; BLOAD was observed to be $CF.
+BLOAD_TOKEN     equ     $CF
+
 ; --- RAM scratch (page-3 RAM; NOT part of the ROM image) -------------------
 ; Chosen to avoid the demo blob's regions ($C000 load, $E000 "JONG" marker).
 ; These hold the three address words read from the .cas data header.
@@ -22,3 +27,5 @@ CURPTR          equ     $E020   ; current load pointer (2 bytes)
 ENDPTR          equ     $E022   ; final load address  (2 bytes)
 EXECPTR         equ     $E024   ; execution address   (2 bytes)
 ERRMARK         equ     $E010   ; error landmark marker byte
+RUNFLAG         equ     $E02F   ; 1 = ,R handoff requested (set while parsing)
+TOKBUF          equ     $E030   ; crunch buffer: the tokenised line (0-terminated)

@@ -10,8 +10,9 @@
 ; disassembly or a reference ROM disassembly. See PROVENANCE.md.
 ;
 ; Runtime model: this is an "AB" cartridge. The BIOS finds the header at $4000
-; during boot and calls INIT. INIT never returns — it runs the loader and hands
-; off to the loaded binary. C-BIOS's CALBAS ($0159) is therefore never touched.
+; during boot and calls INIT. INIT never returns — it tokenises a line, the
+; executor dispatches it, and the BLOAD handler hands off to the loaded binary.
+; C-BIOS's CALBAS ($0159) is therefore never touched.
 ; ===========================================================================
 
                 include "src/sysvars.inc"
@@ -28,7 +29,11 @@
                 dw      0               ; TEXT (BASIC program pointer) (none)
                 dw      0,0,0           ; reserved (pads header to 16 bytes)
 
-; The loader and the ,R handoff. Defines `init:` at $4010.
+; Interpreter front-end: defines `init` (the cartridge header points at it),
+; the tokeniser, and the executor.
+                include "src/interp.asm"
+
+; The BLOAD statement handler and the ,R handoff (defines `do_bload`).
                 include "src/bload.asm"
 
 ; --- pad to a full 16 KB page ($4000-$7FFF) -------------------------------

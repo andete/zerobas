@@ -45,22 +45,28 @@ Requires [pasmo](https://pasmo.speccy.org/) (the assembler C-BIOS uses):
 make            # -> basic.rom (16 KB cartridge)
 ```
 
-## Current status — first light: `BLOAD"CAS:",R`
+## Current status — tokeniser + executor over `BLOAD"CAS:",R`
 
-The first working build is a **tracer bullet**: a single vertical slice that
-proves the whole pipeline end to end before any breadth work. The cartridge
-INIT (no tokeniser yet) reads a BSAVE-format binary from cassette via the
-documented BIOS contract and performs the `,R` handoff:
+The build now has a real (if tiny) interpreter spine. The cartridge INIT
+tokenises an ASCII line, the executor dispatches on the leading token, and the
+BLOAD handler parses its own arguments before loading and handing off:
 
-1. `TAPION` — open tape, skip the file-header tone
-2. read + verify the 16-byte file header (binary id `$D0`)
-3. `TAPION` — skip the data-block tone
-4. read the 6-byte address header (start / end / exec, little-endian)
-5. load the payload bytes verbatim into RAM
-6. `TAPIOF`, then `JP (exec)` — the `,R` handoff
+1. **tokenise** `BLOAD"CAS:",R` → `BLOAD` crunches to the single token byte
+   `$CF` (case-folded); the `"CAS:"` string and `,R` option are kept verbatim;
+   the line is `$00`-terminated (see `spec-tokenise.md`)
+2. **execute** — skip leading spaces, read the first token, dispatch `$CF` to
+   the BLOAD handler
+3. the **BLOAD handler** parses `"CAS:"` (device) and the optional `,R`, then:
+   - `TAPION` — open tape, skip the file-header tone
+   - read + verify the 16-byte file header (binary id `$D0`)
+   - `TAPION` — skip the data-block tone
+   - read the 6-byte address header (start / end / exec, little-endian)
+   - load the payload bytes verbatim into RAM
+   - `TAPIOF`, then (for `,R`) `JP (exec)` — the handoff
 
 This is the *interpreter half* of BLOAD. The *device half* (decoding the
-cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`.
+cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`. The line is still a
+fixed ROM string; reading it from the keyboard is a later phase.
 
 ### Validation
 
@@ -95,7 +101,8 @@ zerobas/
 ├── Makefile           # pasmo -> basic.rom, padded to 16 KB
 ├── src/
 │   ├── main.asm       # cartridge header + page padding
-│   ├── bload.asm      # the BLOAD"CAS:",R tracer bullet
+│   ├── interp.asm     # tokeniser + executor (INIT entry, dispatch)
+│   ├── bload.asm      # the BLOAD statement handler + ,R handoff
 │   └── sysvars.inc    # BIOS entry points + RAM scratch (all cited)
 └── tools/
     └── pad_rom.py     # pad/verify the ROM to exactly 16 KB

@@ -32,3 +32,19 @@ observation, captured in the `msx-preservation` repo
 | RAM scratch addresses ($E020–$E025), error marker ($E010) | — | own choice (free page-3 RAM, avoids demo regions) | sourced |
 
 No quarantined items.
+
+## tokeniser + executor (src/interp.asm)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `BLOAD` keyword token | $CF | spec-tokenise.md (oracle KBUF dump); cross-checks MSX Assembly Page token table | sourced |
+| Keywords crunch to one token byte, case-folded | — | spec-tokenise.md §1–2 (oracle) | sourced |
+| Non-keyword bytes (strings, punctuation, options) kept verbatim | — | spec-tokenise.md §3 (oracle) | sourced |
+| Crunched-line terminator | $00 | spec-tokenise.md §4 (oracle) | sourced |
+| Leading spaces skipped at execution | — | spec-tokenise.md §5 (oracle) | sourced |
+| `'a'`..`'z'` → uppercase via `− $20` (upcase) | — | ASCII (public) | sourced |
+| `RUNFLAG` ($E02F), `TOKBUF` ($E030) | — | own choice (free page-3 RAM) | sourced |
+
+No quarantined items. Note: this build's keyword table holds a single entry
+(`BLOAD`→$CF); the in-quote verbatim copy means keyword substrings inside string
+literals are not mis-crunched.
