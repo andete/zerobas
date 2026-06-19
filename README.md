@@ -141,14 +141,20 @@ cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`.
   `RESTORE`/`END`/…, from MSX2 Technical Handbook Table 2.20) and emits the `$0E`
   line-number identification code (Figure 2.12) for branch targets, so a stored
   program is byte-identical to a real ROM's. The executor runs `GOTO`,
+  `GOSUB`/`RETURN`, `FOR … TO … [STEP …] … NEXT [var]`,
   `IF … THEN … [ELSE …]` (line-number or statement clauses), and `END`/`STOP`
-  via a redirectable run loop with a line resolver. Conditions use real
+  via a redirectable run loop with a line resolver. `GOSUB`/`RETURN` and
+  `FOR`/`NEXT` use control stacks and a *mid-line resume* path (RETURN comes
+  back to the statement after `GOSUB`; a continuing `NEXT` re-enters the loop
+  body), so subroutines and loops nest and span lines. Conditions use real
   comparison operators — `=` `<` `>` and the compound `<=` `>=` `<>` (signed
-  16-bit, yielding `-1`/`0`). **Still out:** `FOR…NEXT`, `GOSUB`/`RETURN`,
-  `DATA`/`READ` (need loop/return stacks + mid-line resume). See
+  16-bit, yielding `-1`/`0`). The `FOR` loop is bottom-tested (the body always
+  runs at least once), matching the VG-8020 oracle. **Still out:** `DATA`/`READ`
+  and `ON … GOTO`/`ELSE <line>` branch lists. See
   [`spec-controlflow.md`](https://github.com/andete/msx-preservation/blob/main/basic-spec/docs/spec-controlflow.md).
-  Assemble-verified; an oracle probe for stored-program + branch bytes is the
-  next validation step.
+  Validated on openMSX by `basic_probe_controlflow.py` and `basic_probe_loops.py`
+  (stored programs + branches + loops) and `basic_probe_crunch.py` (byte-identical
+  tokenisation).
 - Variables are single-letter integers (`A`–`Z`); no strings, arrays, or
   multi-character names. Expressions have `+ - *`, the comparisons
   `= < > <= >= <>`, and `PEEK` (no `/`, no string ops).
@@ -173,6 +179,14 @@ python3 basic-spec/tools/basic_probe_statements.py \
 # Step A: byte-identical crunch — zerobas TOKBUF vs reference KBUF, per line
 python3 basic-spec/tools/basic_probe_crunch.py \
     --machine Philips_VG_8020 --cart /path/to/zerobas/basic.rom
+
+# Step B: stored programs + control flow (GOTO / IF…THEN…ELSE / comparisons)
+python3 basic-spec/tools/basic_probe_controlflow.py \
+    --cart /path/to/zerobas/basic.rom
+
+# Step B: subroutines + loops (GOSUB/RETURN, FOR…NEXT incl. nesting)
+python3 basic-spec/tools/basic_probe_loops.py \
+    --cart /path/to/zerobas/basic.rom
 ```
 
 The cartridge boots to its prompt, the probe types a line + Enter, and the

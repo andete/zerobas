@@ -121,3 +121,24 @@ CURLINE         equ     $E038   ; link-field addr of the line being executed (2)
 GOTOTGT         equ     $E03A   ; pending branch-target line addr (2)
 GOTOFLAG        equ     $E03C   ; 1 = a branch (GOTO) is pending
 ENDFLAG         equ     $E03D   ; 1 = END/STOP reached, stop the run
+; Mid-line resume: GOTO branches to a line *start*, but RETURN and NEXT must
+; resume at an exact token position (the statement after GOSUB / the FOR loop
+; body). When RESUMEFLAG is set the RUN loop runs from RESUMEPTR instead of
+; recomputing the body from CURLINE; the resuming statement sets CURLINE to the
+; line that holds RESUMEPTR so the post-statement "advance to next line" works.
+RESUMEPTR       equ     $E03E   ; mid-line resume token pointer (2)
+RESUMEFLAG      equ     $E040   ; 1 = resume at RESUMEPTR (set by RETURN / NEXT)
+; Control stacks (page $E0, below LINEBUF at $E100). Both grow upward; the
+; pointer addresses the next free slot, and the stack is empty when it equals
+; its base. GOSUB frame = [curline:2][resume:2] (4 bytes). FOR frame =
+; [var:1][limit:2][step:2][curline:2][resume:2] (9 bytes).
+GSP             equ     $E041   ; GOSUB return-stack pointer (2)
+FSP             equ     $E043   ; FOR-stack pointer (2)
+FOR_CUR         equ     $E045   ; scratch: a working copy of one FOR frame (9)
+FOR_NEW         equ     $E04E   ; scratch: NEXT's freshly-stepped loop value (2)
+GOSUB_STK       equ     $E050   ; GOSUB return-stack base
+GOSUB_DEPTH     equ     8
+GOSUB_STK_END   equ     GOSUB_STK + GOSUB_DEPTH*4   ; $E070
+FOR_STK         equ     $E070   ; FOR-stack base
+FOR_DEPTH       equ     8
+FOR_STK_END     equ     FOR_STK + FOR_DEPTH*9       ; $E0B8 (stays below LINEBUF)

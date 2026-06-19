@@ -474,6 +474,14 @@ exec_stmt:
                 jr      z,ex_rem
                 cp      GOTO_TOKEN
                 jp      z,ex_goto
+                cp      GOSUB_TOKEN
+                jp      z,ex_gosub
+                cp      RETURN_TOKEN
+                jp      z,ex_return
+                cp      FOR_TOKEN
+                jp      z,ex_for
+                cp      NEXT_TOKEN
+                jp      z,ex_next
                 cp      IF_TOKEN
                 jp      z,ex_if
                 cp      END_TOKEN

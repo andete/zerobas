@@ -15,10 +15,10 @@
 ;
 ; CLEAN-ROOM: the leading line number is parsed as plain ASCII *before* crunch
 ; (no token involved), and RUN/NEW are recognised as editor commands before
-; crunch — so this module needs no new keyword-token bytes (RUN/NEW tokens and
-; the $0E line-number-reference tokens are not yet oracle-captured, so GOTO /
-; FOR…NEXT remain out of scope). Line-link layout + text base are allowed-source
-; / oracle-confirmed (see sysvars.inc). No disassembly.
+; crunch. Control-flow keyword tokens and the $0E line-number-reference code come
+; from the MSX2 Technical Handbook (Table 2.20 / Figure 2.12, an allowed source;
+; see sysvars.inc and spec-controlflow.md). The line-link layout + text base are
+; allowed-source / oracle-confirmed. No disassembly.
 
 ; --- dispatch_line: decide what to do with the freshly read LINEBUF ----------
 ; Called by the REPL after read_line. Leading digit -> store/replace/delete a
@@ -141,17 +141,28 @@ new_prog:
                 ret
 
 ; --- run_prog: execute the stored program (RUN) ------------------------------
-; Clears variables, then runs lines from CURLINE. A statement may redirect the
-; flow: GOTO sets GOTOFLAG + GOTOTGT (branch to a line), END/STOP sets ENDFLAG
-; (stop). Otherwise execution falls through to the next line. BLOAD,R hands off.
+; Clears variables and the control stacks, then runs lines from CURLINE. A
+; statement may redirect the flow: GOTO sets GOTOFLAG + GOTOTGT (branch to a
+; line start); RETURN / a continuing NEXT set RESUMEFLAG + RESUMEPTR (resume at
+; an exact token position, CURLINE already pointing at its line); END/STOP set
+; ENDFLAG (stop). Otherwise execution falls through to the next line. BLOAD,R
+; hands off.
 run_prog:
                 call    clear_vars
                 xor     a
                 ld      (GOTOFLAG),a
                 ld      (ENDFLAG),a
+                ld      (RESUMEFLAG),a
+                ld      hl,GOSUB_STK        ; empty return stack
+                ld      (GSP),hl
+                ld      hl,FOR_STK          ; empty FOR stack
+                ld      (FSP),hl
                 ld      hl,TXTBASE
                 ld      (CURLINE),hl
 rp_lp:
+                ld      a,(RESUMEFLAG)      ; resume mid-line (RETURN / NEXT)?
+                or      a
+                jr      nz,rp_resume
                 ld      hl,(CURLINE)
                 ld      e,(hl)              ; DE = link to next line
                 inc     hl
@@ -164,10 +175,19 @@ rp_lp:
                 inc     hl
                 inc     hl
                 inc     hl                  ; HL -> token body
+                jr      rp_exec
+rp_resume:
+                xor     a
+                ld      (RESUMEFLAG),a
+                ld      hl,(RESUMEPTR)      ; HL -> exact statement to resume at
+rp_exec:
                 call    exec                ; run line (may set flags or hand off)
                 ld      a,(ENDFLAG)
                 or      a
                 ret     nz                  ; END / STOP
+                ld      a,(RESUMEFLAG)      ; RETURN / continuing NEXT -> resume
+                or      a
+                jr      nz,rp_lp
                 ld      a,(GOTOFLAG)
                 or      a
                 jr      nz,rp_goto
@@ -421,3 +441,244 @@ rl_more:
                 ld      (hl),d
                 ex      de,hl               ; HL = next-line address
                 jr      rl_lp
+
+; --- ex_gosub: GOSUB <line> --------------------------------------------------
+; Push a return frame [CURLINE:2][resume-ptr:2] (resume = the token position
+; right after this GOSUB statement), then branch to the target line exactly like
+; GOTO. RETURN pops the frame and resumes there. (HL enters on the GOSUB token.)
+ex_gosub:
+                inc     hl                  ; past the GOSUB token
+                call    skip_spaces
+                ld      a,(hl)
+                cp      LINENO_TOKEN        ; $0E,<lineno LE> expected
+                jp      nz,stmt_error
+                inc     hl
+                ld      c,(hl)              ; target line number, LE
+                inc     hl
+                ld      b,(hl)
+                inc     hl                  ; HL = resume point (after the statement)
+                push    bc                  ; guard target line number
+                ; bounds: GSP must stay below GOSUB_STK_END
+                push    hl                  ; save resume ptr
+                ld      hl,(GSP)
+                ld      de,GOSUB_STK_END
+                or      a
+                sbc     hl,de
+                jr      nc,egs_over         ; GSP >= end -> too many GOSUBs
+                ld      de,(GSP)            ; write frame at GSP
+                ld      hl,(CURLINE)
+                ld      a,l
+                ld      (de),a
+                inc     de
+                ld      a,h
+                ld      (de),a
+                inc     de
+                pop     hl                  ; HL = resume ptr
+                ld      a,l
+                ld      (de),a
+                inc     de
+                ld      a,h
+                ld      (de),a
+                inc     de
+                ld      (GSP),de            ; advance (push complete)
+                pop     bc                  ; BC = target line number
+                call    find_line_bc        ; CF set + HL = line addr if found
+                jp      nc,ex_goto_undef
+                ld      (GOTOTGT),hl
+                ld      a,1
+                ld      (GOTOFLAG),a
+                ret
+egs_over:
+                pop     hl                  ; discard saved resume ptr
+                pop     bc                  ; discard saved target
+                ld      a,$CE               ; control-stack overflow landmark
+                ld      (ERRMARK),a
+                ld      hl,err_stack
+                jp      print_string
+
+; --- ex_return: RETURN -------------------------------------------------------
+; Pop the top GOSUB frame and resume at its saved (CURLINE, resume-ptr) via the
+; RUN loop's mid-line resume path. (HL enters on the RETURN token.)
+ex_return:
+                ld      hl,(GSP)            ; empty stack -> RETURN without GOSUB
+                ld      de,GOSUB_STK
+                or      a
+                sbc     hl,de
+                jp      z,ex_ret_under
+                ld      hl,(GSP)
+                dec     hl                  ; pop 4 bytes, reading high-to-low
+                ld      b,(hl)              ; resume ptr high
+                dec     hl
+                ld      c,(hl)              ; resume ptr low   -> BC = resume ptr
+                dec     hl
+                ld      d,(hl)              ; curline high
+                dec     hl
+                ld      e,(hl)              ; curline low      -> DE = saved CURLINE
+                ld      (GSP),hl            ; GSP -= 4 (popped)
+                ld      (CURLINE),de
+                ld      (RESUMEPTR),bc
+                ld      a,1
+                ld      (RESUMEFLAG),a
+                ret
+ex_ret_under:
+                ld      a,$CD               ; "return without gosub" landmark
+                ld      (ERRMARK),a
+                ld      hl,err_noret
+                jp      print_string
+
+; --- ex_for: FOR <var> = <init> TO <limit> [STEP <step>] ---------------------
+; Assign init to the loop variable, then push a frame
+; [var:1][limit:2][step:2][CURLINE:2][resume-ptr:2] and fall through to run the
+; loop body (the statements following FOR). NEXT consults the top frame.
+ex_for:
+                inc     hl                  ; past the FOR token
+                call    skip_spaces
+                ld      a,(hl)
+                call    is_letter
+                jp      nc,stmt_error
+                call    upcase
+                ld      (FOR_CUR),a         ; frame[0] = loop variable name
+                inc     hl                  ; consume the letter
+                call    skip_spaces
+                ld      a,(hl)
+                cp      EQ_TOKEN            ; '=' -> $EF
+                jp      nz,stmt_error
+                inc     hl
+                call    eval                ; DE = initial value, HL advanced
+                ld      a,(FOR_CUR)
+                push    hl                  ; guard cursor across var_set
+                call    var_set             ; var := initial value
+                pop     hl
+                call    skip_spaces
+                ld      a,(hl)
+                cp      TO_TOKEN           ; TO -> $D9
+                jp      nz,stmt_error
+                inc     hl
+                call    eval                ; DE = limit
+                ld      (FOR_CUR+1),de      ; frame[1..2] = limit
+                call    skip_spaces
+                ld      a,(hl)
+                cp      STEP_TOKEN         ; STEP -> $DC (optional)
+                jr      z,ef_step
+                ld      de,1                ; default step = +1
+                jr      ef_havestep
+ef_step:
+                inc     hl
+                call    eval                ; DE = step
+ef_havestep:
+                ld      (FOR_CUR+3),de      ; frame[3..4] = step
+                ld      (FOR_CUR+7),hl      ; frame[7..8] = resume ptr (loop body)
+                ld      de,(CURLINE)
+                ld      (FOR_CUR+5),de      ; frame[5..6] = CURLINE
+                ld      hl,(FSP)            ; bounds: FSP must stay below FOR_STK_END
+                ld      de,FOR_STK_END
+                or      a
+                sbc     hl,de
+                jr      nc,ef_over          ; too many nested FORs
+                ld      hl,FOR_CUR          ; push the 9-byte frame
+                ld      de,(FSP)
+                ld      bc,9
+                ldir
+                ld      (FSP),de            ; advance FSP by 9
+                ld      hl,(FOR_CUR+7)      ; HL = loop body -> run it
+                jp      exec_stmt
+ef_over:
+                ld      a,$CE
+                ld      (ERRMARK),a
+                ld      hl,err_stack
+                jp      print_string
+
+; --- ex_next: NEXT [<var>] ---------------------------------------------------
+; Step the loop variable of the matching FOR frame, test against the limit, and
+; either resume at the frame's body (loop continues) or pop the frame and run on
+; (loop ends). A named NEXT closes any inner frames above the matching one.
+ex_next:
+                inc     hl                  ; past the NEXT token
+                call    skip_spaces
+                ld      a,(hl)
+                call    is_letter
+                jr      nc,nx_top           ; bare NEXT -> the top frame
+                call    upcase
+                ld      c,a                 ; C = named loop variable
+                inc     hl                  ; consume the letter
+                jr      nx_find
+nx_top:
+                ld      c,0                 ; 0 = match the top frame (no letter)
+nx_find:
+                push    hl                  ; save the post-NEXT cursor
+                ld      hl,(FSP)            ; empty stack -> NEXT without FOR
+                ld      de,FOR_STK
+                or      a
+                sbc     hl,de
+                jp      z,nx_nofor
+nx_scan:
+                ld      hl,(FSP)            ; HL = top frame base (FSP - 9)
+                ld      de,9
+                or      a
+                sbc     hl,de
+                ld      a,c
+                or      a
+                jr      z,nx_have           ; bare NEXT accepts the top frame
+                ld      a,(hl)              ; frame's loop variable
+                cp      c
+                jr      z,nx_have           ; named NEXT matches this frame
+                ld      (FSP),hl            ; mismatch -> close this inner frame
+                ld      hl,(FSP)
+                ld      de,FOR_STK
+                or      a
+                sbc     hl,de
+                jp      z,nx_nofor          ; ran out -> no matching FOR
+                jr      nx_scan
+nx_have:
+                push    hl                  ; save the frame base (for pop / keep)
+                ld      de,FOR_CUR          ; work on a copy of the frame
+                ld      bc,9
+                ldir
+                ld      a,(FOR_CUR)         ; var := var + step
+                call    var_get             ; DE = current value
+                ld      hl,(FOR_CUR+3)      ; step
+                add     hl,de               ; HL = stepped value
+                ld      (FOR_NEW),hl
+                ex      de,hl               ; DE = stepped value
+                ld      a,(FOR_CUR)
+                call    var_set
+                ld      hl,(FOR_CUR+3)      ; loop test depends on the step sign
+                bit     7,h
+                jr      nz,nx_neg
+                ld      hl,(FOR_NEW)        ; step >= 0: end when value > limit
+                ld      de,(FOR_CUR+1)
+                call    cmp16_bits          ; 1=<, 2==, 4=>
+                cp      4
+                jr      z,nx_end
+                jr      nx_again
+nx_neg:
+                ld      hl,(FOR_NEW)        ; step < 0: end when value < limit
+                ld      de,(FOR_CUR+1)
+                call    cmp16_bits
+                cp      1
+                jr      z,nx_end
+nx_again:
+                pop     hl                  ; frame stays on the stack
+                ld      hl,(FOR_CUR+5)      ; resume at the loop body
+                ld      (CURLINE),hl
+                ld      hl,(FOR_CUR+7)
+                ld      (RESUMEPTR),hl
+                ld      a,1
+                ld      (RESUMEFLAG),a
+                pop     bc                  ; discard the post-NEXT cursor
+                ret
+nx_end:
+                pop     hl                  ; frame base -> pop the frame
+                ld      (FSP),hl
+                pop     hl                  ; restore the post-NEXT cursor
+                jp      exec_stmt           ; run on past NEXT
+nx_nofor:
+                pop     hl                  ; discard the saved cursor
+                ld      a,$CB               ; "next without for" landmark
+                ld      (ERRMARK),a
+                ld      hl,err_nofor
+                jp      print_string
+
+err_stack:      db      "out of memory",13,10,0
+err_noret:      db      "return without gosub",13,10,0
+err_nofor:      db      "next without for",13,10,0
