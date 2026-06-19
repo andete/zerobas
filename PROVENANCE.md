@@ -48,3 +48,14 @@ No quarantined items.
 No quarantined items. Note: this build's keyword table holds a single entry
 (`BLOAD`→$CF); the in-quote verbatim copy means keyword substrings inside string
 literals are not mis-crunched.
+
+## startup header (src/title.asm)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| INITXT entry point | $006C | MSX Assembly Page BIOS call list / MSX2 Tech Handbook | sourced |
+| CHPUT entry point | $00A2 | MSX Assembly Page BIOS call list / MSX2 Tech Handbook | sourced |
+| Header text ("zerobas version 0.1 / clean-room MSX-BASIC cartridge loader") | — | **own content** (project branding). Same *role* as MSX-BASIC's top-of-screen header before its prompt; **no** reference header text copied (that would be a clean-room violation and a false copyright claim) | sourced |
+| CR/LF control codes ($0D/$0A) for CHPUT | — | ASCII / MSX2 Tech Handbook (console control codes) | sourced |
+
+No quarantined items.

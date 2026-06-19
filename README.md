@@ -47,10 +47,14 @@ make            # -> basic.rom (16 KB cartridge)
 
 ## Current status — tokeniser + executor over `BLOAD"CAS:",R`
 
-The build now has a real (if tiny) interpreter spine. The cartridge INIT
-tokenises an ASCII line, the executor dispatches on the leading token, and the
-BLOAD handler parses its own arguments before loading and handing off:
+The build now has a real (if tiny) interpreter spine. On boot the cartridge
+INIT first prints a startup header (a couple of original left-aligned lines, the
+same role as MSX-BASIC's top-of-screen header before its prompt — no reference
+text copied), then tokenises an ASCII line, the executor dispatches on the
+leading token, and the BLOAD handler parses its own arguments before loading
+and handing off:
 
+0. **header** — `INITXT` brings up the text screen; `CHPUT` prints the lines
 1. **tokenise** `BLOAD"CAS:",R` → `BLOAD` crunches to the single token byte
    `$CF` (case-folded); the `"CAS:"` string and `,R` option are kept verbatim;
    the line is `$00`-terminated (see `spec-tokenise.md`)
@@ -102,6 +106,7 @@ zerobas/
 ├── src/
 │   ├── main.asm       # cartridge header + page padding
 │   ├── interp.asm     # tokeniser + executor (INIT entry, dispatch)
+│   ├── title.asm      # startup header lines (INITXT + CHPUT)
 │   ├── bload.asm      # the BLOAD statement handler + ,R handoff
 │   └── sysvars.inc    # BIOS entry points + RAM scratch (all cited)
 └── tools/

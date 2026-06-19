@@ -5,7 +5,7 @@
 
 PASMO ?= pasmo
 SRC   := src/main.asm
-DEPS  := src/interp.asm src/bload.asm src/sysvars.inc
+DEPS  := src/interp.asm src/title.asm src/bload.asm src/sysvars.inc
 ROM   := basic.rom
 
 $(ROM): $(SRC) $(DEPS)

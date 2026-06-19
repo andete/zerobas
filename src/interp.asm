@@ -11,6 +11,7 @@
 
 ; --- INIT entry (cartridge header points here) -----------------------------
 init:
+                call    show_title          ; zerobas startup banner
                 ld      hl,basic_line       ; ASCII source line (0-terminated)
                 ld      de,TOKBUF           ; crunch destination
                 call    tokenise

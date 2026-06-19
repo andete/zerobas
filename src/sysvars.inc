@@ -4,6 +4,11 @@
 ; PROVENANCE.md). No value is taken from any MSX-BASIC / GW-BASIC disassembly
 ; or from a reference ROM disassembly.
 
+; --- Screen BIOS entry points ----------------------------------------------
+; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook.
+INITXT          equ     $006C   ; init SCREEN 0 (TEXT1) and enable the display
+CHPUT           equ     $00A2   ; output the character in A at the cursor
+
 ; --- Cassette BIOS entry points -------------------------------------------
 ; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook,
 ;         cassette I/O chapter.

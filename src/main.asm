@@ -33,6 +33,9 @@
 ; the tokeniser, and the executor.
                 include "src/interp.asm"
 
+; Startup banner (defines `show_title`).
+                include "src/title.asm"
+
 ; The BLOAD statement handler and the ,R handoff (defines `do_bload`).
                 include "src/bload.asm"
 
