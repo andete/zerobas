@@ -59,3 +59,17 @@ literals are not mis-crunched.
 | CR/LF control codes ($0D/$0A) for CHPUT | — | ASCII / MSX2 Tech Handbook (console control codes) | sourced |
 
 No quarantined items.
+
+## REPL / keyboard line editor (src/repl.asm)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| CHGET entry point | $009F | MSX Assembly Page BIOS call list / MSX2 Tech Handbook | sourced |
+| `EI` before keyboard input | — | the keyboard ISR must run for CHGET; standard MSX practice (MSX2 Tech Handbook) | sourced |
+| Backspace / Enter codes ($08 / $0D) | — | ASCII / MSX2 Tech Handbook (console codes) | sourced |
+| Line editor + read/eval loop algorithm | — | **own code** (original); not derived from any disassembly | sourced |
+| Prompt text "zb>" | — | **own content**, deliberately unlike MSX-BASIC's "Ok" | sourced |
+| Error text "syntax error" / "load error" | — | own wording (plain English; not copied) | sourced |
+| `LINEBUF` ($E060), `LINEMAX` (64) | — | own choice (free page-3 RAM, single page) | sourced |
+
+No quarantined items.

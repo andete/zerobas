@@ -45,22 +45,24 @@ Requires [pasmo](https://pasmo.speccy.org/) (the assembler C-BIOS uses):
 make            # -> basic.rom (16 KB cartridge)
 ```
 
-## Current status — tokeniser + executor over `BLOAD"CAS:",R`
+## Current status — interactive REPL over `BLOAD"CAS:",R`
 
-The build now has a real (if tiny) interpreter spine. On boot the cartridge
-INIT first prints a startup header (a couple of original left-aligned lines, the
-same role as MSX-BASIC's top-of-screen header before its prompt — no reference
-text copied), then tokenises an ASCII line, the executor dispatches on the
-leading token, and the BLOAD handler parses its own arguments before loading
-and handing off:
+The build now has a real (if tiny) interpreter spine with a keyboard prompt. On
+boot the cartridge INIT prints a startup header, then runs a read/eval loop:
+read a typed line, tokenise it, dispatch the statement, repeat.
 
-0. **header** — `INITXT` brings up the text screen; `CHPUT` prints the lines
-1. **tokenise** `BLOAD"CAS:",R` → `BLOAD` crunches to the single token byte
-   `$CF` (case-folded); the `"CAS:"` string and `,R` option are kept verbatim;
-   the line is `$00`-terminated (see `spec-tokenise.md`)
-2. **execute** — skip leading spaces, read the first token, dispatch `$CF` to
-   the BLOAD handler
-3. the **BLOAD handler** parses `"CAS:"` (device) and the optional `,R`, then:
+0. **header** — `INITXT` brings up the text screen; `CHPUT` prints a couple of
+   original left-aligned lines (the same role as MSX-BASIC's top-of-screen
+   header before its prompt — no reference text copied)
+1. **prompt + line editor** — print `zb>` (deliberately *not* `Ok`, so zerobas
+   is never mistaken for stock MSX-BASIC) and read a line via `CHGET`, echoing
+   with Backspace editing until Enter
+2. **tokenise** the line → `BLOAD` crunches to the single token byte `$CF`
+   (case-folded); the `"CAS:"` string and `,R` option are kept verbatim; the
+   line is `$00`-terminated (see `spec-tokenise.md`)
+3. **execute** — dispatch the leading token; `$CF` goes to the BLOAD handler,
+   an empty line just reprompts, anything else prints `syntax error`
+4. the **BLOAD handler** parses `"CAS:"` (device) and optional `,R`, then:
    - `TAPION` — open tape, skip the file-header tone
    - read + verify the 16-byte file header (binary id `$D0`)
    - `TAPION` — skip the data-block tone
@@ -69,8 +71,7 @@ and handing off:
    - `TAPIOF`, then (for `,R`) `JP (exec)` — the handoff
 
 This is the *interpreter half* of BLOAD. The *device half* (decoding the
-cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`. The line is still a
-fixed ROM string; reading it from the keyboard is a later phase.
+cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`.
 
 ### Validation
 
@@ -82,9 +83,10 @@ python3 cbios-basic/tools/basic_probe_bload.py \
     --cart /path/to/zerobas/basic.rom
 ```
 
-The cartridge boots, auto-loads a self-authored test binary from a `.cas`, and
-hands off to it. Expected: `PASS marker JONG at 0xE000` and `PASS PC at landmark`
-— byte-for-byte identical to the reference MSX-BASIC's own behaviour.
+The cartridge boots to its prompt, the probe types `bload"cas:",r` + Enter, and
+zerobas loads a self-authored test binary from a `.cas` and hands off to it.
+Expected: `PASS marker JONG at 0xE000` and `PASS PC at landmark` — byte-for-byte
+identical to the reference MSX-BASIC's own behaviour.
 
 ### Note on C-BIOS
 
@@ -107,6 +109,7 @@ zerobas/
 │   ├── main.asm       # cartridge header + page padding
 │   ├── interp.asm     # tokeniser + executor (INIT entry, dispatch)
 │   ├── title.asm      # startup header lines (INITXT + CHPUT)
+│   ├── repl.asm       # keyboard line editor + read/eval loop (zb> prompt)
 │   ├── bload.asm      # the BLOAD statement handler + ,R handoff
 │   └── sysvars.inc    # BIOS entry points + RAM scratch (all cited)
 └── tools/

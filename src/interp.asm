@@ -11,17 +11,9 @@
 
 ; --- INIT entry (cartridge header points here) -----------------------------
 init:
-                call    show_title          ; zerobas startup banner
-                ld      hl,basic_line       ; ASCII source line (0-terminated)
-                ld      de,TOKBUF           ; crunch destination
-                call    tokenise
-                ld      hl,TOKBUF
-                jp      exec                ; dispatches; BLOAD+,R never returns
-
-; The direct-mode line this build runs. spec-tokenise.md: keywords crunch,
-; everything else (the "CAS:" string and the ,R option) is kept verbatim.
-basic_line:
-                db      "BLOAD",'"',"CAS:",'"',",R",0
+                ei                          ; keyboard ISR must run for CHGET
+                call    show_title          ; startup header lines
+                jp      repl                ; read/eval loop (never returns)
 
 ; --- tokenise: ASCII line -> token stream ----------------------------------
 ; in:  HL = source (0-terminated ASCII), DE = destination buffer
@@ -123,10 +115,13 @@ upcase:
                 ret
 
 ; --- exec: dispatch on the leading token -----------------------------------
-; in: HL = token buffer (0x00-terminated)
+; in: HL = token buffer (0x00-terminated). Returns to the REPL (or hands off
+; via BLOAD,R and never returns).
 exec:
                 call    skip_spaces         ; leading spaces are skipped (spec §5)
                 ld      a,(hl)
+                or      a
+                ret     z                   ; empty line -> back to the prompt
                 cp      BLOAD_TOKEN
                 jp      z,ex_bload
                 jp      stmt_error          ; no other statement implemented yet
@@ -143,9 +138,12 @@ skip_spaces:
                 inc     hl
                 jr      skip_spaces
 
-; --- stmt_error: unknown statement — drop a marker and halt ----------------
+; --- stmt_error: unknown statement — report and return to the prompt -------
 stmt_error:
                 ld      a,$DD               ; distinct from BLOAD's $EE tape error
                 ld      (ERRMARK),a
-stmt_halt:
-                jr      stmt_halt
+                ld      hl,err_syntax
+                call    print_string
+                ret
+err_syntax:
+                db      "syntax error",13,10,0

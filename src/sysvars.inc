@@ -4,9 +4,10 @@
 ; PROVENANCE.md). No value is taken from any MSX-BASIC / GW-BASIC disassembly
 ; or from a reference ROM disassembly.
 
-; --- Screen BIOS entry points ----------------------------------------------
+; --- Screen / console BIOS entry points ------------------------------------
 ; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook.
 INITXT          equ     $006C   ; init SCREEN 0 (TEXT1) and enable the display
+CHGET           equ     $009F   ; wait for a character from the keyboard -> A
 CHPUT           equ     $00A2   ; output the character in A at the cursor
 
 ; --- Cassette BIOS entry points -------------------------------------------
@@ -34,3 +35,5 @@ EXECPTR         equ     $E024   ; execution address   (2 bytes)
 ERRMARK         equ     $E010   ; error landmark marker byte
 RUNFLAG         equ     $E02F   ; 1 = ,R handoff requested (set while parsing)
 TOKBUF          equ     $E030   ; crunch buffer: the tokenised line (0-terminated)
+LINEBUF         equ     $E060   ; ASCII input line from the keyboard (LINEMAX bytes)
+LINEMAX         equ     64      ; LINEBUF capacity; $E060..$E09F stays in page $E0

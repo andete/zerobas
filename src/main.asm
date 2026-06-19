@@ -33,8 +33,11 @@
 ; the tokeniser, and the executor.
                 include "src/interp.asm"
 
-; Startup banner (defines `show_title`).
+; Startup header (defines `show_title`).
                 include "src/title.asm"
+
+; Keyboard line editor + read/eval loop (defines `repl`, `print_string`).
+                include "src/repl.asm"
 
 ; The BLOAD statement handler and the ,R handoff (defines `do_bload`).
                 include "src/bload.asm"

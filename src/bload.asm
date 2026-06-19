@@ -25,7 +25,10 @@ parse_dev:
                 ld      a,(de)
                 or      a
                 jr      z,parse_dev_end     ; matched all of "CAS:"
-                cp      (hl)
+                ld      c,a                 ; expected (uppercase) char
+                ld      a,(hl)              ; typed char
+                call    upcase              ; case-insensitive (typed may be lower)
+                cp      c
                 jp      nz,load_error       ; unsupported device
                 inc     hl
                 inc     de
@@ -45,6 +48,7 @@ parse_dev_end:
                 inc     hl
                 call    skip_spaces
                 ld      a,(hl)
+                call    upcase              ; accept ,r as well as ,R
                 cp      'R'                 ; only ,R is supported
                 jr      nz,open_tape
                 ld      a,1
@@ -124,13 +128,16 @@ load_done:
 dev_cas:
                 db      "CAS:",0
 
-; --- error path: stop the tape, drop a marker, halt at a fixed landmark -----
+; --- error path: stop the tape, drop a marker, report, return to the prompt -
 ; Reached when a cassette BIOS call fails (CF set), the file is not binary, or
 ; the arguments do not parse. Under bare C-BIOS this fires immediately: its
-; TAPION/TAPIN are stubs that always set CF. That is the documented gap.
+; TAPION/TAPIN are stubs that always set CF (observable as $EE at ERRMARK).
 load_error:
                 call    TAPIOF
                 ld      a,$EE
                 ld      (ERRMARK),a
-err_halt:
-                jr      err_halt
+                ld      hl,err_io
+                call    print_string
+                ret
+err_io:
+                db      "load error",13,10,0
