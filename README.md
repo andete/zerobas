@@ -45,6 +45,40 @@ Requires [pasmo](https://pasmo.speccy.org/) (the assembler C-BIOS uses):
 make            # -> basic.rom (16 KB cartridge)
 ```
 
+## Two ways to run it: cartridge, or patched in next to the BIOS
+
+`basic.rom` is an "AB" cartridge: drop it into any MSX slot and the BIOS finds
+the header at `$4000` and calls INIT. That works, but it isn't where BASIC lives
+on a real machine — there it sits in **slot 0 page 1 (`$4000-$7FFF`), right next
+to the BIOS in page 0**, as one ROM. C-BIOS has no BASIC, so it leaves that page
+almost empty — exactly the space zerobas is built for.
+
+So zerobas can also ship as a **patch** that drops it into a stock C-BIOS main
+ROM — the same delivery mechanism as the sibling [cbios-tape](https://github.com/andete/cbios-tape)
+project, and the same legal firewall: C-BIOS and zerobas stay separate trees and
+are combined only at apply-time. C-BIOS's cold-boot cartridge scan reaches its
+own slot-0 page 1, finds zerobas's "AB" header, and calls INIT — so **no
+boot-vector patch is needed**; the cartridge header does double duty.
+
+```sh
+make patches    # -> zerobas-msx1.ips + zerobas-msx1.bps (vs a stock C-BIOS main ROM)
+```
+
+`build-patches.sh` splices `basic.rom` into page 1, checks that the only stock
+bytes it overwrites are C-BIOS's unimplemented-call `unknown@` stubs (none
+reachable by a direct `CALL`/`JP`), and emits both patch formats. To use it in
+openMSX without touching any ROM, the installer writes `*_BASIC` machines that
+apply the IPS on load:
+
+```sh
+python3 tools/install-openmsx-machine.py   # -> C-BIOS_MSX1[_EU/_BR/_JP]_BASIC
+openmsx -machine C-BIOS_MSX1_BASIC         # boots straight to the zb> prompt
+```
+
+(zerobas is MSX1 BASIC, so only the MSX1 C-BIOS variants are targeted. The BPS
+is CRC-locked to one stock ROM and fails cleanly on a mismatch; the IPS is
+universal and is what the installer uses.)
+
 ## Current status — byte-identical crunch + REM / POKE / PEEK + `BLOAD"CAS:",R`
 
 The build has a real (if tiny) interpreter spine with a keyboard prompt, a
@@ -151,9 +185,12 @@ provides the device half (`PHYDIO` / the `H.*` hooks) — a future transport her
 zerobas/
 ├── README.md
 ├── PROVENANCE.md      # provenance log (sourced / quarantined)
-├── Makefile           # pasmo -> basic.rom, padded to 16 KB
+├── Makefile           # pasmo -> basic.rom (16 KB); `make patches` -> .ips/.bps
+├── build-patches.sh   # splice into a stock C-BIOS page 1 -> zerobas-msx1.ips/.bps
+├── zerobas-msx1.ips   # slot-0 page-1 patch, IPS (universal; used by installer)
+├── zerobas-msx1.bps   # slot-0 page-1 patch, BPS (CRC-locked, checksummed)
 ├── src/
-│   ├── main.asm       # cartridge header + includes + page padding
+│   ├── main.asm       # cartridge header + includes + page padding ($00 fill)
 │   ├── interp.asm     # tokeniser + statement-loop executor (INIT entry)
 │   ├── title.asm      # startup header lines (INITXT + CHPUT)
 │   ├── repl.asm       # keyboard line editor + read/eval loop (zb> prompt)
@@ -163,5 +200,8 @@ zerobas/
 │   ├── bload.asm      # the BLOAD statement handler + ,R handoff
 │   └── sysvars.inc    # BIOS entry points + tokens + RAM scratch (all cited)
 └── tools/
-    └── pad_rom.py     # pad/verify the ROM to exactly 16 KB
+    ├── pad_rom.py     # pad/verify the ROM to exactly 16 KB
+    ├── rom_patch.py   # make/apply/inspect IPS + BPS patches (shared w/ cbios-tape)
+    ├── overlay_page1.py        # splice zerobas into C-BIOS page 1 + vet the splice
+    └── install-openmsx-machine.py  # write *_BASIC machines that patch on load
 ```

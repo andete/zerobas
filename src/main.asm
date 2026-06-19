@@ -52,4 +52,8 @@
                 include "src/bload.asm"
 
 ; --- pad to a full 16 KB page ($4000-$7FFF) -------------------------------
-                ds      $8000 - $, $FF
+; Fill with $00 (not $FF): empty C-BIOS page 1 is $00, so when this image is
+; shipped as a slot-0 page-1 *patch* (see build-patches.sh) the diff carries
+; only zerobas's real code, not 16 KB of padding. As a cartridge the fill byte
+; is never executed, so $00 vs $FF is immaterial there.
+                ds      $8000 - $, $00

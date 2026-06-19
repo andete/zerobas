@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Pad (or verify) a raw ROM image to an exact size, filling with $FF.
+"""Pad (or verify) a raw ROM image to an exact size, filling with $00.
+
+$00 matches empty C-BIOS page 1, keeping the slot-0 page-1 patch minimal (see
+build-patches.sh). main.asm already pads with `ds`, so this is normally a no-op
+size check.
 
 Usage: pad_rom.py <rom> <size>
 """
@@ -14,7 +18,7 @@ def main() -> int:
         print(f"{path}: {len(data)} bytes exceeds target {size}", file=sys.stderr)
         return 1
     if len(data) < size:
-        data += b"\xff" * (size - len(data))
+        data += b"\x00" * (size - len(data))
         with open(path, "wb") as f:
             f.write(data)
     print(f"{path}: {size} bytes")

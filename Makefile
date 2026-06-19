@@ -16,4 +16,10 @@ $(ROM): $(SRC) $(DEPS)
 clean:
 	rm -f $(ROM)
 
-.PHONY: clean
+# Slot-0 page-1 patches: ship zerobas patched into a stock C-BIOS main ROM, the
+# real-hardware layout (BASIC next to the BIOS) instead of an external cartridge.
+# Pass a stock ROM as STOCK=... or let build-patches.sh auto-detect openMSX's.
+patches: $(ROM) build-patches.sh tools/rom_patch.py tools/overlay_page1.py
+	sh build-patches.sh $(STOCK)
+
+.PHONY: clean patches
