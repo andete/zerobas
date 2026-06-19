@@ -229,17 +229,17 @@ store_line:
                 ld      a,(hl)
                 or      a
                 jr      z,sl_delete         ; empty body -> delete only
-                ; size = 4 (link+lineno) + body length including the 00
-                ld      d,h
-                ld      e,l
-                ld      bc,4                ; BC counts header + body bytes
-sl_meas:
-                ld      a,(de)
-                inc     de
-                inc     bc
+                ; line size = 4 (link+lineno) + body length (incl 00), found by a
+                ; token-aware walk so embedded 00 operand bytes don't truncate it.
+                call    skip_to_eol         ; HL (= TOKBUF) -> past the body's 00
+                ld      de,(SL_TOK)
                 or      a
-                jr      nz,sl_meas
-                ld      (SL_SIZE),bc        ; full line size
+                sbc     hl,de               ; HL = body length incl. terminator
+                ld      bc,4
+                add     hl,bc               ; HL = full line size
+                ld      (SL_SIZE),hl
+                ld      b,h
+                ld      c,l                 ; BC = size (for the bounds check)
                 ; bounds: PRGEND + size must stay below TXTMAX
                 ld      hl,(PRGEND)
                 add     hl,bc
@@ -260,14 +260,14 @@ sl_meas:
                 ld      a,(SL_NUM+1)
                 ld      (hl),a
                 inc     hl
-                ld      de,(SL_TOK)         ; copy body incl. its 00 terminator
-sl_copy:
-                ld      a,(de)
-                ld      (hl),a
-                inc     hl
-                inc     de
-                or      a
-                jr      nz,sl_copy
+                ld      de,(SL_TOK)         ; source = tokenised body
+                ex      de,hl               ; HL = source, DE = dest (after lineno)
+                ld      bc,(SL_SIZE)        ; body length = full size - 4 header bytes
+                dec     bc
+                dec     bc
+                dec     bc
+                dec     bc
+                ldir                        ; copy body incl. its 00 terminator
                 jp      relink
 sl_delete:
                 call    prog_find_del       ; deletes a matching line if present
@@ -321,6 +321,9 @@ pfd_here:
                 ld      (SL_SLOT),hl
                 ret
 pfd_next:
+                ld      e,(hl)              ; reload link (the compare clobbered DE
+                inc     hl                  ;  with SL_NUM), then advance to it
+                ld      d,(hl)
                 ex      de,hl               ; HL = link -> next line
                 jr      pfd_lp
 
@@ -329,17 +332,12 @@ pfd_next:
 ; shrinks PRGEND. Clobbers A, BC, DE, HL.
 delete_at:
                 ld      hl,(SL_SLOT)
-                ld      d,h                 ; find the next line: skip header + body
-                ld      e,l
-                inc     de
-                inc     de
-                inc     de
-                inc     de
-da_scan:
-                ld      a,(de)
-                inc     de
-                or      a
-                jr      nz,da_scan          ; DE = next-line address (past the 00)
+                inc     hl                  ; skip link(2)+lineno(2) -> body
+                inc     hl
+                inc     hl
+                inc     hl
+                call    skip_to_eol         ; HL = next-line address (token-aware)
+                ex      de,hl               ; DE = next-line address
                 ; count = (PRGEND+2) - next   (bytes to move, incl. end marker)
                 push    de                  ; next (move source)
                 ld      hl,(PRGEND)
@@ -403,21 +401,19 @@ og_end:
 relink:
                 ld      hl,TXTBASE
 rl_lp:
-                ld      a,(hl)              ; $0000 link -> end marker, done
-                inc     hl
-                or      (hl)
-                dec     hl
-                ret     z
+                ld      a,(PRGEND+1)        ; reached the end marker (HL == PRGEND)?
+                cp      h                   ; (a fresh line's link is a placeholder
+                jr      nz,rl_more          ;  0000, so we cannot stop on link==0)
+                ld      a,(PRGEND)
+                cp      l
+                ret     z                   ; HL == PRGEND -> all lines linked
+rl_more:
                 push    hl                  ; remember this link field
                 inc     hl                  ; skip link (2) + lineno (2)
                 inc     hl
                 inc     hl
                 inc     hl
-rl_scan:
-                ld      a,(hl)              ; scan body to its 00
-                inc     hl
-                or      a
-                jr      nz,rl_scan          ; HL = start of the next line
+                call    skip_to_eol         ; HL = next line (token-aware end-find)
                 ex      de,hl               ; DE = next-line address
                 pop     hl                  ; HL = link field to fill
                 ld      (hl),e

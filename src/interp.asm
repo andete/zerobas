@@ -677,3 +677,17 @@ tsk_rem:
                 ret     z
                 inc     hl
                 jr      tsk_rem
+
+; --- skip_to_eol: HL at a token body -> HL just past the line's 00 terminator -
+; Token-aware (steps whole tokens via tok_skip), so an operand byte equal to 00
+; (e.g. the low byte of &HD000 -> $0C $00 $D0) is not mistaken for the
+; terminator. Used to find a stored line's length and its next-line address.
+skip_to_eol:
+                ld      a,(hl)
+                or      a
+                jr      z,ste_done
+                call    tok_skip
+                jr      skip_to_eol
+ste_done:
+                inc     hl                  ; advance past the 00 terminator
+                ret
