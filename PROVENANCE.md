@@ -45,9 +45,11 @@ No quarantined items.
 | `'a'`..`'z'` → uppercase via `− $20` (upcase) | — | ASCII (public) | sourced |
 | `RUNFLAG` ($E02F), `TOKBUF` ($E030) | — | own choice (free page-3 RAM) | sourced |
 
-No quarantined items. Note: this build's keyword table holds a single entry
-(`BLOAD`→$CF); the in-quote verbatim copy means keyword substrings inside string
-literals are not mis-crunched.
+No quarantined items. Note: this documents the original BLOAD-only build, whose
+keyword table held a single entry (`BLOAD`→$CF). The "non-keyword bytes kept
+verbatim" row above is **superseded by Step A** for numbers and operators (they
+now crunch to real tokens) — see the *Step A* section below; string literals and
+the `REM`/`'` comment tail are still copied verbatim.
 
 ## startup header (src/title.asm)
 
@@ -102,10 +104,31 @@ own black-box oracle observation) and the public MSX-BASIC *language* reference.
 
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
-| 16-bit integer grammar (`+ - *`, unary `-`, parens, `PEEK`, decimal & `&H` literals, variables) | — | **own code** (precedence-climbing); not derived from any disassembly | sourced |
-| Numbers/operators parsed from verbatim ASCII at run time (no numeric-constant tokenisation) | — | own design, consistent with spec-tokens-statements.md §3–4 (reference *does* tokenise constants; we deliberately do not) | sourced |
+| 16-bit integer grammar (`+ - *`, unary `-`, parens, `PEEK`, integer & `&H` constants, variables) | — | **own code** (precedence-climbing); not derived from any disassembly | sourced |
+| Evaluator **decodes the crunched tokens** (constant tokens carry binary value; operator tokens drive precedence) — see Step A below | — | own code; the token bytes it decodes are oracle-sourced (spec-tokens-statements.md §3/§4) | sourced |
 | `PEEK(addr)` reads one byte; `POKE addr,value` writes the low byte | — | public MSX-BASIC language reference | sourced |
-| `&H` hex / decimal digit values; `mul16` shift-add | — | ASCII + standard binary arithmetic (public) | sourced |
+| `mul16` shift-add | — | standard binary arithmetic (public) | sourced |
+
+### Step A: byte-identical crunch + token-decoding (src/interp.asm, src/expr.asm, src/sysvars.inc)
+
+Earlier slices kept numbers/operators verbatim; that is **reversed** here so a
+crunched line is byte-for-byte identical to a real ROM's. Behavioural source:
+`cbios-basic/docs/spec-tokens-statements.md §3/§4` (this project's own black-box
+oracle observation — the fidelity sweep). Verified by `basic_probe_crunch.py`
+(zerobas `TOKBUF` == reference `KBUF`, per line).
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| Digit constant tokens `0`–`9` | `$11 + n` | spec-tokens-statements.md §3 (oracle); MSX Assembly Page token table | sourced |
+| One-byte int constant (`10`–`255`) | `$0F`, value | spec-tokens-statements.md §3 (oracle) | sourced |
+| Two-byte int constant (`256`–`32767`) | `$1C`, value LE | spec-tokens-statements.md §3 (oracle) | sourced |
+| `&H` hex constant | `$0C`, value16 LE | spec-tokens-statements.md §3 (oracle) | sourced |
+| Operator tokens `= + - *` | `$EF $F1 $F2 $F3` | spec-tokens-statements.md §4 (oracle) | sourced |
+| `'` crunch (now byte-exact) | `$3A $8F $E6` | spec-tokens-statements.md §3 (oracle) | sourced |
+| Letters upcased outside string literals (vars + options) | — | spec-tokens-statements.md §4 (oracle: `a`→`A`, `,r`→`,R`; strings preserved) | sourced |
+| `(` `)` `,` `:` and space kept verbatim | `$28 $29 $2C $3A $20` | spec-tokens-statements.md §4 (oracle) | sourced |
+| Tokeniser constant/operator crunch + evaluator token-decode algorithm | — | **own code** (reproduces the observed output); not derived from any disassembly | sourced |
+| Out of scope (not emitted): `&O`/`&B`, float (decimal `≥ 32768`), line-number-reference tokens | — | recorded in spec-tokens-statements.md as observed-but-deferred | sourced |
 
 ### Variable store (src/vars.asm)
 

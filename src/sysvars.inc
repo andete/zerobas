@@ -34,6 +34,20 @@ PEEK_TOKEN      equ     $97     ; spec-tokens-statements.md
 ; ASCII bytes the tokeniser / evaluator treat specially (all public ASCII).
 COLON           equ     $3A     ; ':' statement separator
 QUOTE_REM       equ     $27     ; "'" — apostrophe comment, treated as REM
+APOS_MARK       equ     $E6     ; "remark-quote" marker emitted after `'`'s REM token
+
+; --- Step A: byte-identical constant + operator tokens --------------------
+; Captured byte-exact from the reference (spec-tokens-statements.md §3/§4,
+; fidelity sweep). Numbers/operators are no longer kept verbatim: the tokeniser
+; emits these exact tokens so a crunched line matches a real ROM's KBUF.
+INT_DIGIT_BASE  equ     $11     ; digits 0..9 -> $11+n (one byte, no value byte)
+INT1_TOKEN      equ     $0F     ; one-byte int 10..255: $0F, <value>
+INT2_TOKEN      equ     $1C     ; two-byte int 256..32767: $1C, <value LE>
+HEX_TOKEN       equ     $0C     ; &H constant: $0C, <value16 LE>  (full 0..FFFF)
+EQ_TOKEN        equ     $EF     ; '='
+PLUS_TOKEN      equ     $F1     ; '+'
+MINUS_TOKEN     equ     $F2     ; '-'
+STAR_TOKEN      equ     $F3     ; '*'
 
 ; --- RAM scratch (page-3 RAM; NOT part of the ROM image) -------------------
 ; Chosen to avoid the demo blob's regions ($C000 load, $E000 "JONG" marker /

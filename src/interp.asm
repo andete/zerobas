@@ -27,22 +27,48 @@ init:
 tokenise:
                 ld      a,(hl)
                 or      a
-                jr      z,tk_end
+                jp      z,tk_end
                 cp      '"'                 ; string literal: copy verbatim
-                jr      z,tk_string
+                jp      z,tk_string
                 cp      QUOTE_REM           ; "'" comment -> treat as REM
-                jr      z,tk_apos
-                call    match_kw            ; CF set: token(s) emitted, A=first
-                jr      nc,tk_copy
+                jp      z,tk_apos
+                cp      '0'                 ; digit -> numeric constant
+                jr      c,tk_nondigit
+                cp      '9'+1
+                jp      c,tk_number         ; '0'..'9'
+tk_nondigit:
+                cp      '&'                 ; "&H" hex constant
+                jp      z,tk_hex
+                call    match_kw            ; CF set: keyword token(s) emitted
+                jr      nc,tk_notkw
                 cp      REM_TOKEN           ; REM swallows the rest of the line
-                jr      z,tk_rem_rest
-                jr      tokenise
+                jp      z,tk_rem_rest
+                jp      tokenise
+tk_notkw:
+                ld      a,(hl)              ; not a keyword
+                cp      '='
+                jp      z,tk_op_eq
+                cp      '+'
+                jp      z,tk_op_plus
+                cp      '-'
+                jp      z,tk_op_minus
+                cp      '*'
+                jp      z,tk_op_star
+                call    is_letter           ; variable / option letter
+                jr      c,tk_copy_up
 tk_copy:
-                ld      a,(hl)              ; not a keyword: copy this byte
+                ld      a,(hl)              ; punctuation / space: copy verbatim
                 ld      (de),a
                 inc     de
                 inc     hl
-                jr      tokenise
+                jp      tokenise
+tk_copy_up:
+                ld      a,(hl)              ; letters upcased outside strings (§4)
+                call    upcase
+                ld      (de),a
+                inc     de
+                inc     hl
+                jp      tokenise
 tk_string:
                 ld      a,(hl)              ; opening quote
                 ld      (de),a
@@ -59,7 +85,13 @@ tk_str_loop:
                 jr      nz,tk_str_loop
                 jr      tokenise
 tk_apos:
-                ld      a,REM_TOKEN         ; "'" crunches to a REM comment
+                ld      a,COLON             ; "'" -> $3A $8F $E6 (spec §3, byte-exact)
+                ld      (de),a
+                inc     de
+                ld      a,REM_TOKEN
+                ld      (de),a
+                inc     de
+                ld      a,APOS_MARK
                 ld      (de),a
                 inc     de
                 inc     hl                  ; skip the "'"
@@ -75,6 +107,149 @@ tk_end:
                 xor     a
                 ld      (de),a              ; 0x00 terminator
                 ret
+
+; --- tk_op_*: emit an operator token (spec §4) -----------------------------
+tk_op_eq:
+                ld      a,EQ_TOKEN
+                jr      tk_op_emit
+tk_op_plus:
+                ld      a,PLUS_TOKEN
+                jr      tk_op_emit
+tk_op_minus:
+                ld      a,MINUS_TOKEN
+                jr      tk_op_emit
+tk_op_star:
+                ld      a,STAR_TOKEN
+tk_op_emit:
+                ld      (de),a
+                inc     de
+                inc     hl
+                jp      tokenise
+
+; --- tk_number: crunch a decimal integer constant (spec §3) ----------------
+;   0..9   -> $11+n          10..255 -> $0F,<byte>
+;   256..  -> $1C,<word LE>  (>=32768 diverges from the reference's float form,
+;                             which is out of scope this step — use &H instead)
+; HL = source cursor, DE = destination cursor. DE is parked on the stack while
+; the value is accumulated in DE; HL is parked during each *10 step.
+tk_number:
+                push    de                  ; save destination cursor
+                ld      de,0                ; DE = accumulated value
+tk_num_lp:
+                ld      a,(hl)
+                cp      '0'
+                jr      c,tk_num_done
+                cp      '9'+1
+                jr      nc,tk_num_done
+                sub     '0'                 ; A = digit
+                ld      c,a
+                push    hl                  ; DE = DE*10 + C
+                ld      h,d
+                ld      l,e
+                add     hl,hl               ; 2*acc
+                add     hl,hl               ; 4*acc
+                add     hl,de               ; 5*acc
+                add     hl,hl               ; 10*acc
+                ld      e,c
+                ld      d,0
+                add     hl,de               ; +digit
+                ex      de,hl               ; DE = new acc
+                pop     hl                  ; restore source cursor
+                inc     hl
+                jr      tk_num_lp
+tk_num_done:
+                ld      b,d
+                ld      c,e                 ; BC = value
+                pop     de                  ; restore destination cursor
+                ld      a,b
+                or      a
+                jr      nz,tk_num_w         ; >=256 -> two-byte form
+                ld      a,c
+                cp      10
+                jr      nc,tk_num_b         ; 10..255 -> one-byte form
+                add     a,INT_DIGIT_BASE    ; 0..9 -> $11+n
+                ld      (de),a
+                inc     de
+                jp      tokenise
+tk_num_b:
+                ld      a,INT1_TOKEN
+                ld      (de),a
+                inc     de
+                ld      a,c
+                ld      (de),a
+                inc     de
+                jp      tokenise
+tk_num_w:
+                ld      a,INT2_TOKEN
+                ld      (de),a
+                inc     de
+                ld      a,c                 ; value low
+                ld      (de),a
+                inc     de
+                ld      a,b                 ; value high
+                ld      (de),a
+                inc     de
+                jp      tokenise
+
+; --- tk_hex: crunch a "&H" hex constant -> $0C,<word LE> (spec §3) ----------
+; "&O"/"&B"/bare "&" are out of scope: emit the '&' verbatim and resume.
+tk_hex:
+                inc     hl                  ; past '&'
+                ld      a,(hl)
+                call    upcase
+                cp      'H'
+                jr      z,tk_hex_h
+                dec     hl                  ; not &H -> copy the '&' verbatim
+                jp      tk_copy
+tk_hex_h:
+                inc     hl                  ; past 'H'
+                push    de                  ; save destination cursor
+                ld      de,0                ; DE = value
+tk_hex_lp:
+                ld      a,(hl)
+                call    upcase
+                cp      '0'
+                jr      c,tk_hex_done
+                cp      '9'+1
+                jr      c,tk_hex_dig        ; '0'..'9'
+                cp      'A'
+                jr      c,tk_hex_done
+                cp      'F'+1
+                jr      nc,tk_hex_done
+                sub     'A'-10              ; 'A'..'F' -> 10..15
+                jr      tk_hex_acc
+tk_hex_dig:
+                sub     '0'
+tk_hex_acc:
+                ld      c,a                 ; nibble
+                push    hl                  ; DE = DE*16 + nibble
+                ld      h,d
+                ld      l,e
+                add     hl,hl
+                add     hl,hl
+                add     hl,hl
+                add     hl,hl               ; acc*16
+                ld      e,c
+                ld      d,0
+                add     hl,de               ; + nibble
+                ex      de,hl               ; DE = new value
+                pop     hl
+                inc     hl
+                jr      tk_hex_lp
+tk_hex_done:
+                ld      b,d
+                ld      c,e                 ; BC = value
+                pop     de                  ; restore destination cursor
+                ld      a,HEX_TOKEN
+                ld      (de),a
+                inc     de
+                ld      a,c                 ; value low
+                ld      (de),a
+                inc     de
+                ld      a,b                 ; value high
+                ld      (de),a
+                inc     de
+                jp      tokenise
 
 ; --- match_kw: is a table keyword present at (HL)? -------------------------
 ; in:  HL = source position, DE = destination cursor
@@ -213,7 +388,7 @@ ex_let:
                 inc     hl
                 call    skip_spaces
                 ld      a,(hl)
-                cp      '='                 ; '=' is kept verbatim by our crunch
+                cp      EQ_TOKEN            ; '=' crunches to $EF (spec §4)
                 jr      nz,ex_let_err
                 inc     hl
                 call    eval                ; DE = value, HL = cursor

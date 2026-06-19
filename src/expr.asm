@@ -5,13 +5,15 @@
 ;
 ;   expr   := term  { ('+' | '-') term }
 ;   term   := factor { '*' factor }
-;   factor := number | '&H' hex | letter(variable) | 'PEEK' '(' expr ')'
+;   factor := const | letter(variable) | 'PEEK' '(' expr ')'
 ;           | '(' expr ')' | '-' factor
 ;
-; Numbers and operators are plain ASCII in our stream (zerobas keeps them
-; verbatim — see spec-tokens-statements.md §3/§4 — and parses them here at
-; execution time). PEEK arrives as its oracle-sourced two-byte function token
-; ($FF $97). All arithmetic is unsigned 16-bit, low-word on overflow.
+; The stream is the *crunched* token line (spec-tokens-statements.md §3/§4):
+; constants arrive as their real MSX-BASIC tokens ($11+n digit, $0F+byte,
+; $1C+word, $0C+word for &H) carrying a binary value; operators are tokens
+; ('+' $F1, '-' $F2, '*' $F3); '(' ')' stay verbatim; PEEK is its two-byte
+; function token ($FF $97); a variable is a single upcased letter. The evaluator
+; *decodes* these tokens. All arithmetic is unsigned 16-bit, low-word on overflow.
 ;
 ; Clean-room: original code. POKE/PEEK *semantics* from the public MSX-BASIC
 ; language reference; the evaluator algorithm is our own. No disassembly.
@@ -40,14 +42,15 @@ ev_sp:
                 jr      ev_sp
 
 ; --- ev_e: expr := term { (+|-) term } -------------------------------------
+; Operators are now tokens: '+' = PLUS_TOKEN ($F1), '-' = MINUS_TOKEN ($F2).
 ev_e:
                 call    ev_t                ; DE = first term
 ev_e_lp:
                 call    ev_sp
                 ld      a,(ix+0)
-                cp      '+'
+                cp      PLUS_TOKEN
                 jr      z,ev_e_add
-                cp      '-'
+                cp      MINUS_TOKEN
                 jr      z,ev_e_sub
                 ret
 ev_e_add:
@@ -74,7 +77,7 @@ ev_t:
 ev_t_lp:
                 call    ev_sp
                 ld      a,(ix+0)
-                cp      '*'
+                cp      STAR_TOKEN          ; '*'
                 ret     nz
                 inc     ix
                 push    de                  ; lhs
@@ -85,22 +88,29 @@ ev_t_lp:
                 jr      ev_t_lp
 
 ; --- ev_f: factor ----------------------------------------------------------
+; Decodes the crunched tokens (spec §3): constant tokens carry their binary
+; value; '(' / ')' stay verbatim; PEEK is $FF $97; a bare upcased letter is a
+; variable; unary minus is MINUS_TOKEN.
 ev_f:
                 call    ev_sp
                 ld      a,(ix+0)
-                cp      '-'
+                cp      MINUS_TOKEN         ; unary minus
                 jp      z,ev_f_neg
                 cp      '('
                 jp      z,ev_f_paren
-                cp      '&'
-                jp      z,ev_f_hex
                 cp      PEEK_PREFIX         ; $FF -> PEEK function token
                 jp      z,ev_f_peek
-                cp      '0'
-                jr      c,ev_f_var          ; below '0' -> try variable
-                cp      '9'+1
-                jr      c,ev_f_dec          ; '0'..'9' -> decimal literal
-                ; fall through: letter -> variable
+                cp      HEX_TOKEN           ; $0C -> 2-byte LE value
+                jp      z,ev_f_word
+                cp      INT2_TOKEN          ; $1C -> 2-byte LE value
+                jp      z,ev_f_word
+                cp      INT1_TOKEN          ; $0F -> 1-byte value
+                jp      z,ev_f_byte
+                cp      INT_DIGIT_BASE      ; $11
+                jr      c,ev_f_var
+                cp      $1A+1               ; $11..$1A -> digit token
+                jp      c,ev_f_digit
+                ; fall through: letter -> variable (or error)
 ev_f_var:
                 ld      a,(ix+0)
                 call    upcase
@@ -115,6 +125,31 @@ ev_f_err:
                 ld      a,$DD               ; expression error marker
                 ld      (ERRMARK),a
                 ld      de,0
+                ret
+
+; constant decoders --------------------------------------------------------
+ev_f_digit:                                 ; $11..$1A -> value 0..9
+                ld      a,(ix+0)
+                sub     INT_DIGIT_BASE
+                ld      e,a
+                ld      d,0
+                inc     ix
+                ret
+ev_f_byte:                                  ; $0F,<byte>
+                inc     ix
+                ld      a,(ix+0)
+                ld      e,a
+                ld      d,0
+                inc     ix
+                ret
+ev_f_word:                                  ; $0C/$1C,<word LE>
+                inc     ix
+                ld      a,(ix+0)
+                ld      e,a                 ; value low
+                inc     ix
+                ld      a,(ix+0)
+                ld      d,a                 ; value high
+                inc     ix
                 ret
 
 ev_f_neg:
@@ -156,75 +191,6 @@ ev_f_peek:
                 ex      de,hl               ; HL = address
                 ld      e,(hl)              ; read one byte
                 ld      d,0                 ; PEEK yields 0..255
-                ret
-
-; --- ev_f_dec: decimal literal -> DE ---------------------------------------
-ev_f_dec:
-                ld      de,0
-ev_f_dec_lp:
-                ld      a,(ix+0)
-                cp      '0'
-                jr      c,ev_f_dec_end
-                cp      '9'+1
-                jr      nc,ev_f_dec_end
-                sub     '0'                 ; A = digit 0..9
-                push    af
-                ld      h,d
-                ld      l,e                 ; HL = acc
-                add     hl,hl               ; 2*acc
-                add     hl,hl               ; 4*acc
-                add     hl,de               ; 5*acc  (DE still = acc)
-                add     hl,hl               ; 10*acc
-                ex      de,hl               ; DE = 10*acc
-                pop     af
-                add     a,e
-                ld      e,a
-                jr      nc,ev_f_dec_nc
-                inc     d
-ev_f_dec_nc:
-                inc     ix
-                jr      ev_f_dec_lp
-ev_f_dec_end:
-                ret
-
-; --- ev_f_hex: '&H' hex literal -> DE --------------------------------------
-ev_f_hex:
-                inc     ix                  ; skip '&'
-                ld      a,(ix+0)
-                call    upcase
-                cp      'H'
-                jp      nz,ev_f_err         ; only &H supported
-                inc     ix
-                ld      de,0
-ev_f_hex_lp:
-                ld      a,(ix+0)
-                call    upcase
-                cp      '0'
-                jr      c,ev_f_hex_end
-                cp      '9'+1
-                jr      c,ev_f_hex_dig      ; '0'..'9'
-                cp      'A'
-                jr      c,ev_f_hex_end
-                cp      'F'+1
-                jr      nc,ev_f_hex_end
-                sub     'A'-10              ; 'A'..'F' -> 10..15
-                jr      ev_f_hex_acc
-ev_f_hex_dig:
-                sub     '0'
-ev_f_hex_acc:
-                push    af                  ; save nibble
-                ex      de,hl               ; HL = acc
-                add     hl,hl
-                add     hl,hl
-                add     hl,hl
-                add     hl,hl               ; acc * 16
-                ex      de,hl               ; DE = acc*16
-                pop     af
-                add     a,e                 ; low nibble of DE*16 is 0 -> no carry
-                ld      e,a
-                inc     ix
-                jr      ev_f_hex_lp
-ev_f_hex_end:
                 ret
 
 ; --- mul16: HL = (HL * DE) low 16 bits -------------------------------------

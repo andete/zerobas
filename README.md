@@ -45,7 +45,7 @@ Requires [pasmo](https://pasmo.speccy.org/) (the assembler C-BIOS uses):
 make            # -> basic.rom (16 KB cartridge)
 ```
 
-## Current status — REM / POKE / PEEK + `BLOAD"CAS:",R`
+## Current status — byte-identical crunch + REM / POKE / PEEK + `BLOAD"CAS:",R`
 
 The build has a real (if tiny) interpreter spine with a keyboard prompt, a
 16-bit integer expression evaluator, single-letter integer variables, and a
@@ -57,10 +57,17 @@ tokenise it, dispatch each statement, repeat.
 
 Expressions are 16-bit unsigned integers: decimal and `&H` hex literals,
 single-letter variables `A`–`Z`, `PEEK(expr)`, parentheses, unary `-`, and
-`+ - *` (with `*` binding tighter). Our tokeniser keeps numbers and operators
-**verbatim** and the evaluator parses them at run time — we deliberately do not
-replicate MSX-BASIC's numeric-constant tokens (see
-`spec-tokens-statements.md §3`); only keyword tokens are oracle-sourced.
+`+ - *` (with `*` binding tighter). As of **Step A** the tokeniser crunches
+**byte-identically** to a real MSX-BASIC ROM: integer constants (`$11+n` /
+`$0F`,b / `$1C`,w-LE), `&H` constants (`$0C`,w-LE), and the operators
+`= + - *` (`$EF $F1 $F2 $F3`) all use the reference's exact token bytes
+(oracle-sourced, `spec-tokens-statements.md §3/§4`); letters are upcased outside
+string literals; and the evaluator *decodes* these tokens at run time. This is
+verified against the reference VG-8020 by a differential crunch test
+(`basic_probe_crunch.py`): zerobas's `TOKBUF` equals the reference's `KBUF`, byte
+for byte. (Decimal `≥ 32768` — which the reference stores as a float — plus
+`&O`/`&B` and line-number references are out of scope for now; use `&H` for
+16-bit values.)
 
 0. **header** — `INITXT` brings up the text screen; `CHPUT` prints a couple of
    original left-aligned lines (the same role as MSX-BASIC's top-of-screen
@@ -68,11 +75,12 @@ replicate MSX-BASIC's numeric-constant tokens (see
 1. **prompt + line editor** — print `zb>` (deliberately *not* `Ok`, so zerobas
    is never mistaken for stock MSX-BASIC) and read a line via `CHGET`, echoing
    with Backspace editing until Enter
-2. **tokenise** the line → keywords crunch to their oracle-sourced token bytes,
-   case-folded (`BLOAD`→`$CF`, `POKE`→`$98`, `PEEK`→`$FF $97`, `REM`→`$8F`);
-   string literals and everything else (numbers, operators) are kept verbatim;
-   `REM` (and `'`) keep the rest of the line verbatim; the line is `$00`-
-   terminated (see `spec-tokenise.md`, `spec-tokens-statements.md`)
+2. **tokenise** the line → **byte-identical to a real MSX-BASIC ROM**: keywords
+   (`BLOAD`→`$CF`, `POKE`→`$98`, `PEEK`→`$FF $97`, `REM`→`$8F`), the integer/`&H`
+   constants, and the `= + - *` operators all crunch to the reference's exact
+   token bytes; letters are upcased outside string literals; string literals and
+   the `REM`/`'` comment tail are kept verbatim; the line is `$00`-terminated
+   (see `spec-tokenise.md`, `spec-tokens-statements.md`)
 3. **execute** — walk the line statement-by-statement (`:` separated),
    dispatching each on its leading token: `POKE`, a `<letter> = <expr>`
    assignment, `REM` (ends the line), `BLOAD`; an empty line reprompts and
@@ -92,10 +100,17 @@ cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`.
 
 - **Direct-mode only** — no stored, numbered program (`RUN`) yet, so
   `DATA`/`READ`/`RESTORE`, `FOR…NEXT`, and multi-line programs are out of scope.
-  A stored-program model is the natural next milestone.
+  Storing numbered lines at the real text-area address (`TXTTAB`/`$F676`, which
+  the reference puts at `$8001`) in the real line format, plus `RUN`/`NEW`, is
+  the next milestone (**Step B**) — and Step A's byte-identical crunch is what
+  makes those stored programs match a real ROM's.
 - Variables are single-letter integers (`A`–`Z`); no strings, arrays, or
   multi-character names. Expressions have `+ - *` and `PEEK` only (no `/`,
   comparisons, or string ops).
+- **Crunch fidelity scope:** decimal integer constants `0`–`32767`, `&H` hex
+  (`0`–`FFFF`), and `= + - *` are byte-identical. Decimal `≥ 32768` (a float on
+  the reference), `&O`/`&B`, floating-point, and line-number-reference tokens are
+  not yet emitted.
 
 ### Validation
 
@@ -109,6 +124,10 @@ python3 cbios-basic/tools/basic_probe_bload.py \
 # REM / POKE / PEEK / expression evaluator (results read back from RAM)
 python3 cbios-basic/tools/basic_probe_statements.py \
     --cart /path/to/zerobas/basic.rom
+
+# Step A: byte-identical crunch — zerobas TOKBUF vs reference KBUF, per line
+python3 cbios-basic/tools/basic_probe_crunch.py \
+    --machine Philips_VG_8020 --cart /path/to/zerobas/basic.rom
 ```
 
 The cartridge boots to its prompt, the probe types a line + Enter, and the
