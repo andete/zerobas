@@ -284,7 +284,10 @@ RAM outside known regions.
 
 > These addresses are provisional. Before finalising, verify against both
 > zerobas-core's RAM map (PROVENANCE.md §RAM additions) and the C-BIOS system
-> variable table to confirm the window is genuinely free.
+> variable table to confirm the window is free *at rest* — and against oracle
+> probe #3's disturbed-RAM footprint to confirm it is also free *during a disk
+> call*. The window is own-choice; the probes only rule out collisions, they do
+> not dictate the layout.
 
 ---
 
@@ -299,7 +302,14 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
 2. **DSKIO sector read** — read sector 0 (boot sector) and confirm BPB fields
    match the known test image; validates FAT12 and FDC layers together.
 3. **BDOS FCB round-trip** — open a known file via FCB, read its first 128-byte
-   record, close it; confirms BDOS calling convention and DTA contents.
+   record, close it; confirms BDOS calling convention and DTA contents. **Also
+   capture the disturbed-RAM footprint:** dump page-3 (and page-0 around the DTA)
+   before and after the call; the delta is the RAM the BIOS/BDOS call path
+   clobbers on its own (DTA, sector buffer, stack growth, disk bookkeeping
+   sysvars). zerobas-disk's scratch window must sit clear of that footprint —
+   addresses that look "free" at rest can still be trashed mid-call, which a
+   static sysvar-map check would miss. (We pick our *own* scratch addresses, so
+   this is collision-avoidance, not a layout to copy.)
 4. **BLOAD"A:file",R end-to-end** — load a BSAVE binary from disk and confirm
    the BSAVE header parse + load-into-RAM + jump-to-exec path matches the
    cassette path's oracle spec.
