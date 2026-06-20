@@ -441,19 +441,23 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
 1. **FDC register map probe** — ~~confirm the CF-3300 WD2793 base address and
    drive-select latch by writing known patterns and reading status~~ **Resolved
    from an allowed source:** the register addresses and the drive/side/motor
-   latch bit map are now taken directly from openMSX `src/fdc/NationalFDC.cc`
-   (allowed for hardware register maps), so the FDC §TBD rows are sourced, not
-   owed. Runtime confirmation comes for free when probe 2 (sector read) passes.
+   latch bit map are taken directly from openMSX `src/fdc/NationalFDC.cc`
+   (allowed for hardware register maps). **Runtime-confirmed:** probe 2 below now
+   reads real sectors through this register map on openMSX, so the map is
+   exercised, not just sourced.
 2. **DSKIO sector read** — read sector 0 (boot sector) and confirm BPB fields
    match the known test image; validates FAT12 and FDC layers together.
-   **Functionally validated (not yet differential).** A functional self-test on
-   openMSX (`C-BIOS_MSX1_*_DISK` machine layout + `disk/test720.dsk`, driving
-   the slot-3-1 routines via `CALSLT`) confirms the FDC driver + FAT12 layer
-   read the real image correctly: `fat_mount` derives the BPB geometry,
-   `fat_find` locates a file, and `fat_read_file_sector` returns correct record
-   content across a cluster-chain hop with clean EOF. This proves the code
-   *works*; the *differential* oracle (byte-for-byte vs the CF-3300 reference)
-   is still owed and blocked on the proprietary `cf-3300_*.rom` files.
+   **DONE — differential oracle PASS.** `disk-spec/tools/disk_probe_dskio.py`
+   (in the `msx-preservation` repo) reads the same `disk/test720.dsk` on the real
+   National CF-3300 reference and on our `*_BASIC_DISK` machine by calling the
+   standard DSKIO entry ($4010, MSX2 TH) via `CALSLT`, and compares the returned
+   bytes + carry/A. Result: zerobas-disk's DSKIO is **byte-identical to the
+   CF-3300 reference** (sector 0 and sector 14; both `A=0, Cy=0`, both equal to
+   the on-disk bytes). Strictly black-box: only returned data + flags observed,
+   the reference disk ROM's code was never read. (A prior functional self-test
+   via the FAT12 helpers — `fat_mount`/`fat_find`/`fat_read_file_sector` — also
+   passed: geometry derived, file found, records correct across a cluster hop,
+   clean EOF.)
 3. **BDOS FCB round-trip** — open a known file via FCB, read its first 128-byte
    record, close it; confirms BDOS calling convention and DTA contents. **Also
    capture the disturbed-RAM footprint:** dump page-3 (and page-0 around the DTA)
@@ -476,12 +480,14 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
    the BSAVE header parse + load-into-RAM + jump-to-exec path matches the
    cassette path's oracle spec.
 
-> **Functional vs differential.** The validations marked above are *functional*
+> **Functional vs differential.** Probe 2 (DSKIO sector read) is now a *passed
+> differential oracle* against the real CF-3300 (see above). The remaining
+> validations (BDOS FCB round-trip, BLOAD end-to-end) are so far *functional*
 > self-tests on openMSX (our ROM + our `disk/test720.dsk`, built by
-> `tools/make_test_dsk.py` from the Microsoft FAT spec + ECMA-107 — both allowed
-> sources, no disk-ROM bytes). They confirm the code behaves correctly. The
-> *differential oracle* probes (identical inputs to the CF-3300 reference, observed
-> outputs compared) remain owed and are blocked on the proprietary CF-3300 ROMs.
+> `tools/make_test_dsk.py` from the Microsoft FAT spec + ECMA-107 — allowed
+> sources, no disk-ROM bytes); their *differential* counterparts vs the CF-3300
+> reference are still owed. All reference use is strictly black-box (observed
+> outputs only); the CF-3300 disk ROM is never read or disassembled.
 
 ---
 

@@ -166,9 +166,17 @@ See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
       functional validation is deferred: it needs the openMSX machine config +
       a test `.dsk` + oracle probe 3 — so this lands **implemented, not yet
       oracle-confirmed**.)
-- [ ] **Oracle probes** (in msx-preservation repo) — black-box observation of
+- [~] **Oracle probes** (in msx-preservation repo) — black-box observation of
       BDOS return values and FCB state on a reference machine with a known
       `.dsk` image
+      (`disk-spec/tools/disk_probe_dskio.py` in msx-preservation: differential
+      DSKIO sector read vs the real National CF-3300 — **PASS, byte-identical**
+      (sector 0 + sector 14, return codes and data). Strictly black-box: calls
+      the standard $4010 DSKIO entry via CALSLT and observes only returned data
+      + carry/A; the reference disk ROM is never read/disassembled. Still owed:
+      the BDOS FCB round-trip differential (probe 3) and BLOAD end-to-end
+      (probe 4) — these depend on resolving how the reference exposes file I/O
+      under Disk BASIC vs MSX-DOS, and on the boot-scan/DTA findings above.)
 - [x] **openMSX machine config** — machine XML that places zerobas-disk in
       internal slot 3-1, declares an FDC extension, attaches a test `.dsk`
       image, and pairs with the existing zerobas + zerobas-tape IPS patches in
