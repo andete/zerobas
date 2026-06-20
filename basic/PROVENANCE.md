@@ -1250,3 +1250,133 @@ and the four controlflow/loops/data/statements regression probes all still pass.
 The matching `do_tape_prog` fix is exercised by the same length-driven path;
 on-device end-to-end tape load remains gated on the separate zerobas-tape
 `$00`-run TAPIN framing limitation (§Phase 1 cassette load, unchanged).
+
+## SAVE / BSAVE statement tokens — oracle-locked (tokeniser bytes only; no handler yet)
+
+zerobas has **no** `SAVE` or `BSAVE` statement support yet. The disk-WRITE
+workstream will add `BSAVE"A:F",start,end[,exec]` and `SAVE"A:F"[,A]` interpreter
+statements (the write complement of the `§disk BLOAD execute` / `§disk LOAD` read
+paths). Before that lands, this section **oracle-LOCKS the tokeniser bytes** for
+both verbs so the later interpreter agent has a sourced target. It documents the
+crunch bytes ONLY — no handler, no dispatch, no `kwtable` entry is added here, and
+the crunch is **deliberately not yet byte-identical** (zerobas keeps `SAVE`/`BSAVE`
+as verbatim ASCII until the interpreter agent adds the tokens — see "what zerobas
+does today" below).
+
+This is the same clean-room method that locked `BLOAD`/`CLOAD`/`LOAD`/`RUN`
+(§first light, §Phase 1 cassette load, §disk RUN) and POKE/PEEK/VPOKE/VPEEK
+(§REM/POKE/PEEK, §Phase 1 memory / I-O access): the token byte is **OBSERVED** from
+the reference VG-8020's crunch buffer KBUF and cross-checked against the **MSX2
+Technical Handbook Table 2.20** / MSX Assembly Page token table. No disassembly was
+read; the reference ROM is a black box (identical line in, observed crunch out).
+
+**Oracle (`basic_probe_crunch.py`, scratch CRUNCH_ONLY test lines — the
+freeze-`bload"cas:",r` LEADS so the SAVE/BSAVE body is crunched but never executed,
+and the probe was RESTORED to pristine after; never committed).** Each line below
+is shown with its full crunch; the leading `CF 22 63 61 73 3A 22 2C 52 3A` is the
+prepended `BLOAD"CAS:",R:` and the SAVE/BSAVE body follows it. The Philips VG-8020
+reference crunches:
+
+- `bsave"cas:name",&hc000,&hc031,&hc000`
+  → `… 52 3A` **`D0`** `22 63 61 73 3A 6E 61 6D 65 22` `2C 0C …` —
+  **BSAVE = `$D0`** (single-byte statement token), then the quoted filename
+  `"cas:name"` verbatim, `,` (`$2C`), then the `&H` addresses.
+- `bsave"a:prog.bin",&hc000,&hc031`
+  → `… 52 3A` **`D0`** `22 61 3A 70 72 6F 67 2E 62 69 6E 22` `2C 0C …` —
+  same `$D0`, disk filename `"a:prog.bin"` verbatim.
+- `bsave"x",&hc0c1,&hc031,&hc0c2` (short name + non-zero-low-byte addresses so the
+  48-byte dump / terminator scan captures the FULL tail)
+  → `… 52 3A` **`D0`** `22 78 22` `2C` `0C C1 C0` `2C` `0C 31 C0` `2C` `0C C2 C0` `00`
+  — `$D0` `"x"` then **three** comma-separated `&H` addresses, each
+  `$0C,<value16 LE>` (HEX_TOKEN, the same encoding as elsewhere — see §Step A),
+  commas verbatim `$2C`, `$00` terminator.
+- `bsave"x",&hc0c1,&hc031`
+  → `… 52 3A` **`D0`** `22 78 22` `2C` `0C C1 C0` `2C` `0C 31 C0` `00`
+  — the two-address (no-exec) form: `$D0` `"x"` `,` start `,` end `$00`.
+- `save"cas:name"`
+  → `… 52 3A` **`BA`** `22 63 61 73 3A 6E 61 6D 65 22` `00` —
+  **SAVE = `$BA`** (single-byte statement token), then `"cas:name"` verbatim, `$00`.
+- `save"a:prog",a`
+  → `… 52 3A` **`BA`** `22 61 3A 70 72 6F 67 22` `2C` **`41`** `00` —
+  same `$BA`, `"a:prog"` verbatim, `,` (`$2C`), then the ASCII-save flag as the
+  **upcased letter `A` = `$41` kept VERBATIM** (NOT a token), `$00`.
+
+**Decoded result.**
+
+| Verb | Statement token (observed) | Form | Argument crunch (observed) |
+|------|----------------------------|------|----------------------------|
+| `BSAVE` | **`$D0`** | single-byte statement token (NOT `$FF`-prefixed) | `"filename"` verbatim ASCII (like BLOAD); each `&H` address → `$0C,<value16 LE>` (HEX_TOKEN); commas verbatim `$2C`; optional 3rd (exec) address present or absent |
+| `SAVE` | **`$BA`** | single-byte statement token (NOT `$FF`-prefixed) | `"filename"` verbatim ASCII; optional `,A` → comma `$2C` + the letter `A` (`$41`) as **upcased verbatim ASCII**, NOT a special token (exactly how zerobas already upcases option letters like BLOAD's `,R`) |
+
+**Cross-check (MSX2 TH Table 2.20 / MSX Assembly Page token table).** `$BA` = SAVE
+and `$D0` = BSAVE are the documented statement-token values; both observations
+agree with the table. Both are **single-byte statement tokens** — the task's "could
+BSAVE be a `$FF`-prefixed function-style token like PEEK/VPEEK?" question resolves
+**NO**: BSAVE/SAVE crunch like the other *statements* (POKE `$98`, VPOKE `$C6`,
+OUT `$9C`, CLOAD `$9B`, LOAD `$B5`, RUN `$8A`), not like the `$FF`-prefixed
+*functions* (PEEK `$FF $97`, VPEEK `$FF $98`, INP `$FF $90`).
+
+**Surprise / note — `$D0` is dual-use across two distinct namespaces.** The BSAVE
+*crunch token* `$D0` is the SAME byte value as the **cassette binary-file id byte**
+`BIN_ID $D0` (§first light: "Binary-file id byte | $D0", the 10× header byte of a
+tape BSAVE image). These do NOT collide: one is a keyword token in the crunch line
+buffer (KBUF/TOKBUF), the other is a data byte on tape — different namespaces,
+different consumers. (Likewise the on-disk BSAVE marker is `$FE` and the on-disk
+tokenised-BASIC marker is `$FF`, both already sourced in §disk BLOAD execute /
+§disk LOAD — those are file-format markers, again unrelated to the `$D0`/`$BA`
+*crunch* tokens locked here.) The interpreter agent should keep the keyword-token
+constants (`$D0`/`$BA`) and the file-id/marker constants (`$D0`/`$FE`/`$FF`)
+clearly named so the coincidence is not mistaken for a relationship.
+
+**What zerobas does today (why the crunch is not yet byte-identical).** With no
+`SAVE`/`BSAVE` in `kwtable`, zerobas's tokeniser keeps the keyword as verbatim
+ASCII: it crunches `bsave"x",…` to `… 42 53 41 56 45 22 78 22 …` (`BSAVE` =
+`42 53 41 56 45`) and `save"…"` to `… 53 41 56 45 22 …` (`SAVE` = `53 41 56 45`),
+where the reference emits the single `$D0` / `$BA` token. So a scratch crunch run
+shows these four lines as **FAIL** (zb verbatim-ASCII vs ref token) — that is the
+EXPECTED pre-implementation state, NOT a regression: the existing committed test
+set (`LINES` / `CRUNCH_ONLY`) is unchanged and still **ALL PASS**, and these
+SAVE/BSAVE probe lines were scratch-only and removed (probe restored to pristine).
+Once the interpreter agent adds `$D0`/`$BA` to `kwtable` + handlers, the crunch
+will become byte-identical and these lines move into the committed probe set
+(`basic_probe_crunch.py` and/or a dedicated `basic_probe_save.py`, mirroring how
+`basic_probe_cload.py` locked CLOAD/LOAD).
+
+**Implementation guidance for the later interpreter agent (NOT done here).** When
+the WRITE statements are built, add to `basic/sysvars.inc` near the other load
+tokens:
+
+    SAVE_TOKEN      equ     $BA     ; SAVE "dev:name"[,A]  (oracle-confirmed; PROVENANCE §SAVE/BSAVE)
+    BSAVE_TOKEN     equ     $D0     ; BSAVE "dev:name",start,end[,exec] (oracle-confirmed; PROVENANCE §SAVE/BSAVE)
+
+(These equs are intentionally **NOT** added now: an unused equ would trip pasmo's
+"never used" warning and `basic.rom` must stay 0-warnings / byte-identical — see
+the matching commented pointer in `basic/sysvars.inc`.) The argument parse mirrors
+the existing patterns: the filename parses like BLOAD's `"CAS:"`/`"A:"` device
+string (`do_bload`/`parse_disk_fcb`), the `&H` addresses evaluate through the
+ordinary expression evaluator (the `$0C` HEX_TOKEN decode in `ev_f`, §Step A), the
+commas are statement-internal separators, and SAVE's `,A` is a one-letter
+ASCII-save flag (the `$41` is just the upcased option letter, parsed like BLOAD's
+`,R` RUNFLAG). The on-disk SAVE/BSAVE *file formats* the handler must write are
+already sourced in §disk BLOAD execute (`$FE` BSAVE header
+`[$FE][start:2 LE][end:2 LE][exec:2 LE]` + raw data) and §disk LOAD (`$FF`
+tokenised-BASIC marker + line-link image); the cassette SAVE/BSAVE formats in
+§first light (10× id byte + 6-char name + the three addresses). This section adds
+ONLY the missing piece: the two crunch tokens.
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `BSAVE` statement token | `$D0` (single-byte; NOT `$FF`-prefixed) | OBSERVED in VG-8020 KBUF via `basic_probe_crunch.py` (scratch, restored); cross-checks MSX2 TH Table 2.20 | sourced |
+| `SAVE` statement token | `$BA` (single-byte; NOT `$FF`-prefixed) | OBSERVED in VG-8020 KBUF via `basic_probe_crunch.py` (scratch, restored); cross-checks MSX2 TH Table 2.20 | sourced |
+| BSAVE filename kept verbatim ASCII after the token (like BLOAD's `"CAS:"`/`"A:"`) | — | oracle (`bsave"cas:name"…`/`bsave"a:prog.bin"…` crunch) | sourced |
+| BSAVE address args: each `&H` address → `$0C,<value16 LE>` (HEX_TOKEN), commas verbatim `$2C`; 2-address (start,end) and 3-address (start,end,exec) forms both observed | — | oracle (`bsave"x",&hc0c1,&hc031[,&hc0c2]` crunch); the `$0C` HEX_TOKEN is already sourced (§Step A) | sourced |
+| SAVE filename kept verbatim ASCII after the token | — | oracle (`save"cas:name"`/`save"a:prog"` crunch) | sourced |
+| SAVE `,A` ASCII-save flag crunches as comma `$2C` + the letter `A` (`$41`) upcased VERBATIM — NOT a token | — | oracle (`save"a:prog",a` → `… BA … 2C 41 00`); same upcasing as BLOAD's `,R` option letter | sourced |
+| `$D0` BSAVE crunch token vs `$D0` cassette binary-file id (§first light): same byte, DIFFERENT namespaces (keyword token vs tape data byte) — not a collision | — | observed (both already sourced); cross-namespace coincidence noted | sourced |
+| `SAVE_TOKEN`/`BSAVE_TOKEN` equs in basic/sysvars.inc | NOT added yet (would trip pasmo "never used") | deferred to the interpreter agent that adds the handlers | sourced |
+
+No quarantined items: both token bytes are oracle-OBSERVED and Table-2.20
+cross-checked, exactly like every other load/store token in this log. The only
+own-design choices are deferred to the future handler (file-format writing,
+already pre-sourced in the disk read sections) and are out of scope here — this
+task documents the **tokeniser bytes only**.

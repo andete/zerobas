@@ -81,6 +81,13 @@ BLOAD_TOKEN     equ     $CF     ; spec-tokenise.md
 ; kept verbatim, exactly like BLOAD's argument.
 CLOAD_TOKEN     equ     $9B     ; CLOAD ["filename"] (cassette tokenised-BASIC load)
 LOAD_TOKEN      equ     $B5     ; LOAD "CAS:filename" (unified tape load)
+; SAVE / BSAVE statement tokens are oracle-LOCKED (Philips VG-8020 KBUF via
+; basic_probe_crunch.py; cross-checked MSX2 TH Table 2.20) but NOT yet equ'd:
+; the WRITE workstream has no handler yet, and an unused equ would trip pasmo's
+; "never used" warning (basic.rom must stay 0-warnings). Confirmed values, to be
+; added by the interpreter agent when the handlers land: SAVE = $BA, BSAVE = $D0
+; (both single-byte statement tokens, NOT $FF-prefixed). See PROVENANCE.md
+; "SAVE / BSAVE statement tokens — oracle-locked" for the full KBUF evidence.
 REM_TOKEN       equ     $8F     ; spec-tokens-statements.md; swallows rest of line
 POKE_TOKEN      equ     $98     ; spec-tokens-statements.md
 ; PEEK is a *function* token: a $FF prefix followed by a second byte.
