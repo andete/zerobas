@@ -18,7 +18,7 @@
 ; C-BIOS's CALBAS ($0159) is therefore never touched.
 ; ===========================================================================
 
-                include "src/sysvars.inc"
+                include "basic/sysvars.inc"
 
                 org     $4000
 
@@ -34,37 +34,37 @@
 
 ; Interpreter front-end: defines `init` (the cartridge header points at it),
 ; the tokeniser, and the executor.
-                include "src/interp.asm"
+                include "basic/interp.asm"
 
 ; Startup header (defines `show_title`).
-                include "src/title.asm"
+                include "basic/title.asm"
 
 ; Keyboard line editor + read/eval loop (defines `repl`, `print_string`).
-                include "src/repl.asm"
+                include "basic/repl.asm"
 
 ; Integer variable store (defines `var_get`, `var_set`, `clear_vars`).
-                include "src/vars.asm"
+                include "basic/vars.asm"
 
 ; 16-bit integer expression evaluator (defines `eval`).
-                include "src/expr.asm"
+                include "basic/expr.asm"
 
 ; The POKE statement handler (defines `do_poke`).
-                include "src/poke.asm"
+                include "basic/poke.asm"
 
 ; The CLEAR statement handler (defines `ex_clear`).
-                include "src/clear.asm"
+                include "basic/clear.asm"
 
 ; DEF USR statement + USR() function (defines `ex_def`, `ev_usr`, `clear_usrtab`).
-                include "src/usr.asm"
+                include "basic/usr.asm"
 
 ; The PRINT statement (defines `ex_print`, `print_number`, `print_crlf`).
-                include "src/print.asm"
+                include "basic/print.asm"
 
 ; The BLOAD statement handler and the ,R handoff (defines `do_bload`).
-                include "src/bload.asm"
+                include "basic/bload.asm"
 
 ; Stored numbered-line program: storage, NEW, RUN (defines `dispatch_line`).
-                include "src/program.asm"
+                include "basic/program.asm"
 
 ; --- pad to a full 16 KB page ($4000-$7FFF) -------------------------------
 ; Fill with $00 (not $FF): empty C-BIOS page 1 is $00, so when this image is

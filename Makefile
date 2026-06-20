@@ -4,13 +4,13 @@
 # zerobas — build the 16 KB cartridge ROM.
 #
 # Requires pasmo (the assembler C-BIOS uses). Build from the repo root so the
-# `include` paths in src/main.asm resolve.
+# `include` paths in basic/main.asm resolve.
 
 PASMO ?= pasmo
-SRC   := src/main.asm
-DEPS  := src/interp.asm src/title.asm src/repl.asm src/vars.asm src/expr.asm \
-         src/poke.asm src/clear.asm src/usr.asm src/print.asm src/bload.asm \
-         src/program.asm src/sysvars.inc
+SRC   := basic/main.asm
+DEPS  := basic/interp.asm basic/title.asm basic/repl.asm basic/vars.asm basic/expr.asm \
+         basic/poke.asm basic/clear.asm basic/usr.asm basic/print.asm basic/bload.asm \
+         basic/program.asm basic/sysvars.inc
 ROM   := basic.rom
 
 $(ROM): $(SRC) $(DEPS)
