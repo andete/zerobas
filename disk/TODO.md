@@ -255,6 +255,45 @@ See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
       regression probes — all green; the EOF tightening did NOT regress BLOAD/LOAD/
       RUN (they stop at the BSAVE end / $0000 link before EOF). See
       disk/PROVENANCE.md §BDOS interface.)
+- [x] **BDOS WRITE FILE API + FAT12 write-back substrate** — implement the FCB
+      WRITE subset a `SAVE`/`BSAVE"A:FILE"` path needs and the FAT12 write-back
+      layer underneath, differential-confirmed vs real MSX-DOS 1.
+      (`disk/disk.asm`: `bdos_entry` now also dispatches **Create ($16)**,
+      **Sequential Write ($15)**, and a write-flushing **Close ($10)** (the read
+      Close behaviour is preserved). Create finds/makes a root-dir slot and writes
+      a fresh entry (name, attribute **$00** — oracle-corrected to match MSX-DOS,
+      which does NOT set the archive bit — zeroed size/cluster, date/time $0000).
+      Sequential Write buffers a 128-byte record from the DTA into `SECTOR_BUF` and
+      flushes a full 512-byte sector when the buffer fills, allocating/extending the
+      cluster chain. Close flushes the partial final sector (zero-padded), then
+      stamps the dir entry's true first cluster (+26) and byte count (+28). The
+      FAT12 write-back substrate (new helpers): **`fat_alloc_cluster`** (sector-by-
+      sector free-cluster scan → claim first $000, mark $FFF EOC), **`fat_write_fat_
+      entry`** (12-bit pack — the inverse of `fat_next_cluster`'s unpack, incl. the
+      512-byte straddle — synced to **all** FAT copies per `BPB_NUMFATS`),
+      **`fat_dir_create`** / **`fat_dir_update`**, and **`fat_flush_data_sector`**.
+      The file DATA accumulates in `SECTOR_BUF`; the FAT/dir METADATA helpers use an
+      independent 512-byte `WBUF` so a cluster scan or dir stamp never disturbs the
+      in-flight data sector. New write-position scratch at $E546.. + numFATs/secPerFAT
+      cache + `WBUF` $E560 (disk/PROVENANCE.md §Scratch RAM). disk.rom 16384 / 7
+      baseline warnings (no new "never used"); basic.rom **byte-identical**.
+      **DIFFERENTIAL ORACLE PASS** (`disk-spec/tools/disk_probe_fwrite.py`,
+      msx-preservation, on /tmp scratch copies only — never a committed image):
+      (1) **functional** — Create + 11× Sequential Write (1408 B = 11 records, a
+      sub-sector, sub-cluster size exercising a partial final sector + cluster hop +
+      multi-FAT sync) + Close, read back through our own bdos_open/seqread
+      byte-identical with correct size + EOF; (2) **cross-machine** — genuine MSX-DOS
+      1 (National_CF-3300, ORACLE.COM auto-run via AUTOEXEC) Opens + SeqReads the
+      file OUR ROM wrote byte-identical (our FAT chain + dir entry are valid to real
+      MSX-DOS); (3) **structural** — the same name+content file written by OUR ROM vs
+      by an MSX-DOS WRITER.COM on separate images: byte-identical DATA (each walked
+      via its OWN chain) + identical dir entry excluding date/time (+22..25) and the
+      free-list-dependent first cluster. **Intentional divergences:** date/time
+      stamp = $0000 (no RTC — documented, not fabricated); truncate-if-exists
+      orphans the old chain (loader-create subset, quarantined). All 14 disk +
+      basic regression probes + crunch still PASS; crunch byte-identical. See
+      disk/PROVENANCE.md §BDOS WRITE interface + §FAT12 write-back layer + §Oracle
+      probe 6.)
 - [x] **openMSX machine config** — machine XML that places zerobas-disk in
       internal slot 3-1, declares an FDC extension, attaches a test `.dsk`
       image, and pairs with the existing zerobas + zerobas-tape IPS patches in

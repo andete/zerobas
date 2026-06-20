@@ -525,6 +525,94 @@ variable; zerobas calls through that vector using CP/M-compatible FCB calls.
 > oracle-confirmed byte-identical vs real MSX-DOS 1.03 across a cluster-multiple
 > file (narrow) and a 1500-byte sub-record-EOF file (PART A).
 
+### BDOS WRITE interface (Create / Sequential Write / write-flushing Close)
+
+The disk ROM also implements the CP/M-compatible FCB WRITE subset a `SAVE` /
+`BSAVE"A:FILE"` path needs: Create a file, append 128-byte records to it, and
+make it durable at Close. The single-open-file model of the read side is
+preserved (one file open for read OR write at a time); the write position lives
+in dedicated scratch (§Scratch RAM), not in the FCB bookkeeping fields (the same
+documented divergence as the read side). The whole write surface is
+**differential oracle-confirmed vs real MSX-DOS 1** by `disk_probe_fwrite.py`
+(msx-preservation): functional read-back, cross-machine MSX-DOS read, and a
+structural image diff.
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| FCB Create call number | $16 | MSX2 TH, MSX-DOS BDOS call table | sourced |
+| FCB Sequential Write call number | $15 | MSX2 TH, MSX-DOS BDOS call table | sourced |
+| Create: find/make a root-dir slot for the FCB's 8.3 name; write name + attribute + zeroed size/cluster; ready for writing from offset 0 | — | own code composing the FAT12 write-back layer; FCB name offset + Create call number sourced above | sourced |
+| Create return value | A = $00 created / $FF error (disk full / write protect / dir full) | MSX2 TH, BDOS conventions | sourced |
+| Sequential Write: buffer the next 128-byte record from the DTA (`BDOS_DTA`) into `SECTOR_BUF`; flush a full 512-byte sector to the file, allocating/extending the cluster chain | — | own code; 128-byte record + settable DTA sourced (read side); FAT12 write-back below | sourced |
+| Sequential Write return value | A = $00 ok / $01 disk full / $FF not-open | MSX2 TH, BDOS conventions (seq-write disk-full code $01) | sourced |
+| Write granularity is the 128-byte record (a file written via Sequential Write is always a 128-byte multiple; no sub-record byte count) | — | CP/M / MSX-DOS FCB sequential-write semantics (MSX2 TH, FCB sequential I/O) | sourced |
+| Close (write file): flush the partial final 512-byte sector (zero-padded tail), persist the cluster chain (EOC already linked during allocation), rewrite the dir entry's first cluster (+26) and true byte count (+28) | — | own code; dir-entry field offsets from Microsoft FAT spec §3.4 (below) | sourced |
+| Close (write) return value | A = $00 ok / $FF I/O error | MSX2 TH, BDOS conventions | sourced |
+| Close (read file) behaviour unchanged (no dirty state → A = $00) | — | preserves the read-side Close | sourced |
+| Directory-entry attribute byte (+11) on Create | **$00 (normal file)** | **ORACLE OBSERVATION** (`disk_probe_fwrite.py` PART 3): real MSX-DOS 1 Create writes attribute $00 — it does NOT set the archive bit; we match it byte-for-byte. (An earlier draft used $20/archive; the oracle showed $00.) | oracle-confirmed |
+| Create + 11× Sequential Write (1408 B) + Close → our own Open/SeqRead reads it back byte-identical, correct size, correct EOF | — | **FUNCTIONAL PASS** (`disk_probe_fwrite.py` PART 1): exercises a partial final data sector (384 of 512 B), a cluster-chain hop, and the multi-FAT sync | oracle-confirmed |
+| The file OUR ROM writes is Opened + Sequentially Read **byte-identical by genuine MSX-DOS 1** (correct data + EOF) | — | **CROSS-MACHINE PASS** (`disk_probe_fwrite.py` PART 2): proves our FAT chain + directory entry are valid to real MSX-DOS, not just to our own reader | oracle-confirmed |
+| Same name+content file written by OUR ROM vs by MSX-DOS → identical DATA + identical dir entry **excluding date/time (+22..25) and the free-list-dependent first cluster (+26..27)** | — | **STRUCTURAL PASS** (`disk_probe_fwrite.py` PART 3): each image's data recovered by walking its OWN FAT chain (proving both chains valid); the dir entry matches MSX-DOS apart from the documented timestamp divergence and the cluster pointer (the MSX-DOS image also carries WRITER.COM/AUTOEXEC, so its free list differs) | oracle-confirmed |
+
+> **Date/time stamp — intentional divergence (no fabricated clock).** MSX-DOS
+> stamps the directory entry's last-modified date/time (+22..25) from the system
+> clock. zerobas has **no RTC / clock source**, so Create/Close write these four
+> bytes as **$0000**. This is a deliberate divergence in the SAME spirit as the
+> read-side FCB-bookkeeping divergence: the file's NAME, SIZE, FIRST-CLUSTER, FAT
+> CHAIN, and DATA all match genuine MSX-DOS byte-for-byte (proven by
+> `disk_probe_fwrite.py`); only the timestamp differs. We do **not** invent a
+> clock. The structural differential explicitly masks +22..25 and reports the
+> observed MSX-DOS value (e.g. `$00002108`) alongside our `$00000000`.
+
+> **Implementation note.** Realised in `disk/disk.asm` as `bdos_create` /
+> `bdos_seqwrite` / the write branch of `bdos_close`, on top of a FAT12
+> write-back substrate (§FAT12 write-back layer): `fat_dir_create`,
+> `fat_alloc_cluster`, `fat_write_fat_entry`, `fat_flush_data_sector`,
+> `fat_dir_update`. The file DATA accumulates in `SECTOR_BUF`; the FAT/dir
+> METADATA helpers use an independent second buffer `WBUF` so a cluster scan or
+> directory stamp never disturbs the in-flight data sector. New write-position
+> scratch lives after `BDOS_BYTESLEFT` (§Scratch RAM). Disk-full / write-protect
+> surface as $01 / $FF respectively (the underlying DSKIO write-protect code 0 is
+> mapped up to a BDOS error).
+
+---
+
+## FAT12 write-back layer
+
+The write twin of the read FAT12 layer (§FAT12 layer), built from the Microsoft
+FAT specification. All structures are realised, not lifted; the physical sector
+write goes through the already differential-confirmed `dskio` write path.
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| Free-cluster allocation: linear scan from cluster 2 to the total-cluster bound, claim the first `$000` entry | — | Microsoft FAT spec §3.2 ($000 = free); total clusters = 2 + (totalSectors − firstData) / secPerClus (§3.3) | sourced |
+| Free-cluster scan reads the FAT **sector-by-sector** into `WBUF` (one read per FAT sector, up to 341 12-bit entries tested from RAM), not one disk read per cluster | — | own design (performance); the first free cluster can be hundreds of clusters into a populated disk | sourced |
+| Newly allocated cluster marked end-of-chain | `$FFF` (EOC) | Microsoft FAT spec §3.2 ($FF8–$FFF = end-of-chain; we write $FFF) | sourced |
+| 12-bit FAT entry **pack** (write) — even cluster: low byte = v[7:0], high nibble of next byte = v[11:8]; odd cluster: low nibble of byte = v[3:0], next byte = v[11:4] | — | Microsoft FAT spec §3.2 — the exact inverse of the read-side `fat_next_cluster` unpack; sector-straddle ($1FF boundary) handled by spilling into the following FAT sector | sourced |
+| Chain LINK: point the previous tail cluster's FAT entry at the new cluster | — | own code over the 12-bit pack above (Microsoft FAT spec §3.2) | sourced |
+| Multi-FAT sync: every FAT-entry change is written to **all** FAT copies (`BPB_NUMFATS`), copy k's sector = base + k × secPerFAT | — | Microsoft FAT spec §3.1 (NumFATs identical copies); numFATs / secPerFAT cached at mount so the sync needs no boot-sector re-read mid-flush | sourced |
+| Directory-entry create: find a free root-dir slot ($00 end-marker or $E5 deleted) or the existing same-named entry; write name (+0..10), attribute (+11), zero +12..31 | — | Microsoft FAT spec §3.4 (dir entry layout, $00/$E5 slot markers) | sourced |
+| Directory-entry first-cluster field | +26..27 (word LE) | Microsoft FAT spec §3.4 | sourced |
+| Directory-entry file-size field | +28..31 (dword LE) | Microsoft FAT spec §3.4 | sourced |
+| Directory-entry date/time fields | +22..25 = $0000 (intentional divergence, no clock — see §BDOS WRITE) | own design (documented divergence) | sourced |
+| Data write: buffer record bytes into `SECTOR_BUF`, write full 512-byte sectors at `firstData + (cluster−2)×secPerClus + sectorInCluster`, zero-pad the partial final sector | — | Microsoft FAT spec §3.3 (data-sector math); own buffering | sourced |
+| Truncate-if-exists: Create reusing an existing same-named dir slot orphans the old chain (does not free it) | — | own design simplification (loader-create subset); acceptable because the read/round-trip and cross-machine probes confirm the new chain + size are correct | quarantined |
+| Whole FAT12 write-back differential-confirmed vs MSX-DOS 1 | — | **oracle PASS** (`disk_probe_fwrite.py`): functional read-back, cross-machine MSX-DOS read, structural image diff — see §BDOS WRITE | oracle-confirmed |
+
+> **Implementation note.** The write-back helpers live in `disk/disk.asm` after
+> the read FAT12 layer. They share the read helpers' geometry scratch (`FAT_*`)
+> and the 512-byte `WBUF` metadata buffer; the data buffer is `SECTOR_BUF`. The
+> 12-bit straddle case (an entry split across a 512-byte FAT-sector boundary, e.g.
+> cluster 341/682 on a 720 KB image) is handled symmetrically to the read path —
+> the following FAT sector is loaded for the spilling nibble and written back too.
+
+> **Truncate-orphan quarantine.** Re-Creating an existing file reuses its dir
+> slot but does NOT walk + free its old cluster chain, so the old chain leaks as
+> lost clusters. This is an own-design simplification for the loader's
+> create-fresh use; the produced file (new chain, size, data) is correct and
+> oracle-confirmed. A full implementation would free the old chain first; that is
+> deferred (no current caller re-Creates over a populated file).
+
 ---
 
 ## Scratch RAM
@@ -558,6 +646,18 @@ RAM outside known regions.
 | BDOS sequential-read record index | $E4BF (1 byte) | own choice (free page-3 RAM after FAT scratch; next 128-byte record within SECTOR_BUF, 0..4) | sourced |
 | BDOS settable DTA pointer (`BDOS_DTA`) | $E4C0–$E4C1 (word) | own choice (free page-3 RAM after the record index); default $0080, set via BDOS $1A | sourced |
 | BDOS bytes-remaining counter (`BDOS_BYTESLEFT`) | $E542–$E545 (4-byte LE) | own choice (free page-3 RAM past basic-core's `DISK_DTA` buffer $E4C2..$E541, clear of every disk + basic region — see basic/sysvars.inc); seeded from `FAT_FILESIZE` by Open, decremented per record to bound the partial final record + EOF | sourced |
+| BDOS/FAT12 WRITE-back scratch | $E546–$E559 (20 bytes) | own choice (free page-3 RAM after `BDOS_BYTESLEFT`, clear of every disk + basic region) | sourced |
+| — write mode flag (`BDOS_WRMODE`, 1 = file open for write) | $E546 (1 byte) | own choice | sourced |
+| — chain-tail cluster being filled (`BDOS_WRCLUS`) | $E547–$E548 (word) | own choice | sourced |
+| — file's first cluster, 0 until allocated (`BDOS_WRFIRST`) | $E549–$E54A (word) | own choice | sourced |
+| — sector index within current cluster (`BDOS_WRSECIDX`) | $E54B (1 byte) | own choice | sourced |
+| — bytes buffered in SECTOR_BUF (`BDOS_WRBUFLEN`, 0..512) | $E54C–$E54D (word) | own choice | sourced |
+| — total bytes written = final file size (`BDOS_WRBYTES`) | $E54E–$E551 (4-byte LE) | own choice | sourced |
+| — open file's dir-entry sector (`BDOS_DIRSEC`) | $E552–$E553 (word) | own choice | sourced |
+| — open file's dir-entry byte offset (`BDOS_DIROFF`) | $E554–$E555 (word) | own choice | sourced |
+| — write-helper transients (`FAT_WRTMP`, `FAT_WRTMP2`) | $E556–$E559 (2 words) | own choice (saved value / free-cluster-scan cached sector) | sourced |
+| numFATs / secPerFAT cached at mount (`FAT_NUMFATS`, `FAT_SECPERFAT`) | $E55A–$E55C (3 bytes) | own choice (so multi-FAT sync needs no boot-sector re-read mid-flush) | sourced |
+| Write-back FAT/dir metadata buffer (`WBUF`, 512 bytes) | $E560–$E75F | own choice (free page-3 RAM after the write scratch); keeps FAT/dir reads off `SECTOR_BUF` so in-flight write data is undisturbed | sourced |
 
 > **FAT12 geometry is derived, not stored as constants.** `fat_mount` reads the
 > boot sector and computes the first-FAT / first-root / root-sector-count /
@@ -655,6 +755,26 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
    This proves our WD2793 Write Sector sequence yields a sector the real hardware/
    ROM accepts. Strictly black-box: CALSLT into $4010 (MSX2 TH), only returned
    data + carry/A observed; the reference disk ROM is never read or disassembled.
+6. **BDOS FCB WRITE round-trip** — prove the Create / Sequential Write /
+   write-flushing Close subset produces a real, MSX-DOS-compatible FAT12 file.
+   **DONE — differential oracle PASS.** `disk-spec/tools/disk_probe_fwrite.py`
+   (msx-preservation) operates only on /tmp copies of the seed disk (never a
+   committed image): (a) **functional** — on `C-BIOS_MSX1_BASIC_DISK` a stub
+   Set-DTA + Create + 11× Sequential Write (a 1408-byte payload: a 128-byte-record
+   multiple but not a sector or cluster multiple, so it exercises a partial final
+   data sector + a cluster hop + multi-FAT sync) + Close via CALSLT to
+   `bdos_entry`, then a fresh boot reads it back through our own bdos_open/seqread
+   **byte-identical** with the correct size + EOF; (b) **cross-machine** — genuine
+   **MSX-DOS 1** (booted on `National_CF-3300`, an ORACLE.COM auto-run via
+   AUTOEXEC.BAT) Opens + Sequentially Reads the file OUR ROM wrote **byte-identical**
+   (proving our FAT chain + dir entry are valid to real MSX-DOS); (c) **structural**
+   — the same name+content file written by OUR ROM and by an MSX-DOS WRITER.COM on
+   separate /tmp images have **byte-identical DATA** (each recovered by walking its
+   OWN FAT chain) and an **identical dir entry excluding the date/time bytes
+   (+22..25)** and the free-list-dependent first cluster. The date/time divergence
+   (zerobas has no clock) is the only intended mismatch; the attribute byte was
+   oracle-corrected to $00 to match MSX-DOS. Strictly black-box: BDOS results +
+   delivered bytes only; MSXDOS.SYS / COMMAND.COM never read or disassembled.
 
 > **Functional vs differential.** Probe 2 (DSKIO sector read) is now a *passed
 > differential oracle* against the real CF-3300 (see above). The remaining
@@ -672,7 +792,10 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
 Before release, every constant and address in `disk/disk.asm` must map to a
 `sourced` row above, be `quarantined` with a round-trip justification, or have
 an oracle probe confirming the value. There are no `TBD`/blocked rows: the FDC
-register map is sourced from openMSX, the read + write + BDOS paths are
-differential-confirmed (§Oracle probes 2, 3 & 5 — the WRITE path's CF-3300
-cross-machine read is byte-identical), and GETDPB is an intentional,
-sourced stub (§DPB).
+register map is sourced from openMSX, the read + write + BDOS-read + BDOS-write
+paths are differential-confirmed (§Oracle probes 2, 3, 5 & 6 — the physical WRITE
+path's CF-3300 cross-machine read is byte-identical, and the FCB WRITE subset
+produces a file MSX-DOS 1 reads byte-identical), and GETDPB is an intentional,
+sourced stub (§DPB). The two remaining `quarantined` write-side items are the
+truncate-orphan simplification (re-Create leaks the old chain) and the
+date/time-stamp divergence (no clock) — both documented and oracle-bounded.
