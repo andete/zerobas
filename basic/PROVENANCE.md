@@ -892,14 +892,14 @@ do not over-claim "byte-identical vs reference" where no reference exists.
    (`basic_probe_crunch.py`, ALL PASS). This is a genuine differential oracle, on
    the tokeniser only.
 
-**Inherited limitation (not newly introduced): streamed line-link load stops at
-the first `$00`.** `disk_prog_load`'s body streamer mirrors `do_tape_prog` and
-copies a line's token body until the first `$00`, so a tokenised program with an
-embedded `$00` *operand* byte (e.g. the high byte of an `&H` 16-bit literal
-`$0C $7B $00`) would be truncated — on **both** tape and disk LOAD/RUN. This is a
-pre-existing `do_tape_prog` limitation inherited verbatim, documented in full in
-§disk LOAD (Divergences); a token-aware streamed copy is deferred and would
-equally fix `do_tape_prog`.
+**Embedded-`$00` streamed load — FIXED (length-driven body copy).** An earlier
+`disk_prog_load` / `do_tape_prog` body streamer copied a line's token body until
+the first `$00`, so a tokenised program with an embedded `$00` *operand* byte
+(e.g. the high byte of an `&H` 16-bit literal `$0C $7B $00`, or `&HD100` →
+`$0C $00 $D1`) was truncated mid-line — on **both** tape and disk LOAD/RUN. Both
+readers now copy each body by the length DERIVED FROM THE SAVED LINK-WORD
+DIFFERENCES, so embedded `$00`s round-trip. See *§disk LOAD — embedded-`$00`
+length-driven body copy*.
 
 ## disk-BLOAD scratch FCB — filename parse (basic/bload.asm, basic/sysvars.inc)
 
@@ -1080,18 +1080,19 @@ store overflow past `TXTMAX` mirrors `ctp_oom` (`dpl_oom`: close, `new_prog`,
 | `LOAD` statement token (reused, no new token) | $B5 | oracle-confirmed via `basic_probe_crunch.py` (already sourced, §Phase 1 cassette load) | sourced |
 
 **Divergences / judgment calls.**
-- **Streamed body store is not token-aware (shared with `do_tape_prog`).** Both
-  `ctp_body` and `dpl_body` copy a line's token body until the FIRST `$00`, so a
-  token operand byte that is itself `$00` (e.g. the high byte of an `&H` value
-  `$0C $7B $00`) would be mistaken for the line terminator. The in-RAM store
-  editor (`store_line`) uses the token-aware `skip_to_eol`, but a *streamed* load
-  has no length up front. This is a pre-existing `do_tape_prog` limitation
-  inherited verbatim, not introduced here; the realistic common case (operands
-  with no embedded `$00`) loads correctly. The test fixture is built to avoid
-  embedded `$00` (encodes `123` as the 1-byte `INT1` form `$0F $7B`, not the
-  `&H` form), so it is a faithful exercise of the shared loop. A fully robust
-  streamed loader (token-aware body copy) is deferred and would equally fix
-  `do_tape_prog`.
+- **Streamed body store is LENGTH-DRIVEN (shared design with `do_tape_prog`).**
+  A line's token body legitimately contains `$00` bytes — the two-byte int token
+  `$1C lo hi`, the `&H`/`&O` constants `$0C/$0B lo hi`, and line-number refs all
+  carry operand `$00`s (e.g. `&H7B` → `$0C $7B $00`, `&HD100` → `$0C $00 $D1`).
+  An earlier version copied each body until the FIRST `$00`, mistaking such an
+  operand byte for the line terminator and truncating the line; this was fixed
+  (see *§disk LOAD — embedded-`$00` length-driven body copy* below). Both
+  `dpl_body` and `do_tape_prog`'s `ctp_body` now derive each line's body length
+  from the saved link-word differences and copy EXACTLY that many bytes, so
+  embedded `$00`s round-trip. The fixture file `PROG2.BAS`
+  (`10 POKE &HD100,&H7B`, two interior `$00`s) is the regression that pins this;
+  `PROG.BAS` keeps the no-embedded-`$00` baseline (`123` as the 1-byte `INT1`
+  form `$0F $7B`) so the two fixtures bracket the fix.
 - LOAD",R" runs via `jp run_prog` (program.asm) after `disk_prog_load` returns;
   plain LOAD returns to the REPL. `disk_prog_load` is left cleanly callable by the
   next item's `RUN"filename"` (which adds only the run-after-load decision).
@@ -1169,3 +1170,64 @@ regression probes (controlflow/loops/data/statements), `disk_probe_init.py`,
 `disk_probe_bload_fcb.py` (landmark refreshed for the shifted `do_disk_bload`
 address), `disk_probe_bload_disk.py`, `disk_probe_load_disk.py`, and the
 `disk_probe_dskio.py` differential (vs the CF-3300 reference) all still pass.
+
+## disk LOAD — embedded-`$00` length-driven body copy (basic/cload.asm, basic/sysvars.inc)
+
+A tokenised line's token body legitimately contains `$00` bytes: the two-byte
+int token `$1C lo hi`, the `&H`/`&O` constant tokens `$0C`/`$0B lo hi`, and the
+line-number reference tokens all carry operand `$00`s — e.g. `256` → `$1C 00 01`,
+`&HD100` → `$0C 00 D1`, `&H7B` → `$0C 7B 00`. The original streamed program
+readers (`do_tape_prog`'s `ctp_body` and `disk_prog_load`'s `dpl_body`) copied a
+line's body until the FIRST `$00`, treating that byte as the line terminator —
+so any saved program with an embedded `$00` operand was **truncated mid-line on
+load**, corrupting it. This was a real bug on **both** tape LOAD/`CLOAD` and disk
+LOAD/RUN, masked only because the test fixtures deliberately avoided embedded
+`$00`.
+
+**Fix: length-driven copy.** The line boundary is not the first `$00`; it is
+defined by the link words. In the streamed line-link image
+(`[link:2 LE][lineno:2 LE][tokens…][00]` per line) the saved link words are the
+saving machine's consecutive absolute line addresses, so a line's full length is
+`(this line's link) − (previous line's link)` and its body length is that minus
+the 4-byte link+lineno header. Both `ctp_body` and `dpl_body` now:
+
+1. read the 2-byte link word `L_n` (`$0000` ⇒ end of program, unchanged);
+2. compute `body_len = L_n − A_n − 4`, where `A_n` is the previous line's link
+   word, held in new RAM scratch `CLINK` and seeded with `TXTBASE` for the first
+   line (`A_0` = the saving machine's text base, assumed `== TXTBASE` $8001, the
+   MSX disk-BASIC base — true for every realistic saved file and the fixtures);
+3. store the link word + 2-byte line number verbatim, then copy EXACTLY
+   `body_len` body bytes — embedded `$00`s and all — landing precisely on the
+   next link word.
+
+`relink` (program.asm) then recomputes the links exactly as before; it already
+walked lines with the token-aware `skip_to_eol` (which steps `$0C`/`$1C`/… and
+their operand bytes), so relink never had this bug — only the streamed *copy*
+did. The existing `TXTMAX` bounds checks, the `$0000` end-of-program detection,
+and the disk reader's real-EOF handling (`dpl_err`, file close on error) are all
+preserved; the per-line body length is guarded on the Z80 stack across the
+register-trashing `TAPIN` / `disk_getbyte` reads (`ctp_err_pop`/`ctp_oom_pop`,
+`dpl_err_pop`/`dpl_oom_pop` drop it before the shared error paths so the stack
+stays balanced). The tape and disk loops stay parallel mirrors (different byte
+source + error handling), matching the existing structure.
+
+| Item | Value | Source | Status |
+| --- | --- | --- | --- |
+| Line boundary defined by saved link-word differences (`body_len = L_n − A_n − 4`), NOT the first `$00` | — | the line-link layout (program.asm, already sourced): each link is the saving machine's absolute address of the next line | sourced |
+| First line's predecessor address `A_0` = saving machine's text base, assumed `== TXTBASE` ($8001) | — | **own design** — only the first line is base-dependent (all later lines use base-independent link differences); $8001 is the MSX disk-BASIC text base and what the fixtures/relink use. A saved file from a different text base would mis-size only its first line; documented assumption | quarantined |
+| `CLINK` ($E02D) — previous link word / current line's saving-machine start address (2) | — | own choice (free page-3 RAM, the 2-byte gap after `CLPTR`) | sourced |
+| Length-driven `ctp_body`/`dpl_body` copy algorithm; stack-guarded body counter | — | **own code**; not derived from any disassembly | sourced |
+
+**Functional validation (openMSX).** Build is clean (`basic.rom` 16384 bytes, 0
+warnings); the tokeniser is untouched so the crunch stays byte-identical. New
+regression `disk_probe_load_embedded_nul.py` (in msx-preservation) loads
+`PROG2.BAS` (`10 POKE &HD100,&H7B`, body `98 20 0C 00 D1 2C 0C 7B 00 00` with two
+interior `$00`s) and asserts the store at `$8001` is byte-identical to the
+relinked image for both `LOAD"A:PROG2.BAS"` (no auto-run) and `LOAD…,R` (RUN
+fires the post-`$00` POKE, `($D100)`=$7B) — a pre-fix load truncated at the first
+interior `$00` and could never reach that POKE. The existing
+`disk_probe_load_disk.py`, `disk_probe_run_disk.py`, `disk_probe_bload_disk.py`
+and the four controlflow/loops/data/statements regression probes all still pass.
+The matching `do_tape_prog` fix is exercised by the same length-driven path;
+on-device end-to-end tape load remains gated on the separate zerobas-tape
+`$00`-run TAPIN framing limitation (§Phase 1 cassette load, unchanged).

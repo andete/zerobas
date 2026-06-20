@@ -123,6 +123,10 @@ EXECPTR         equ     $E024   ; execution address   (2 bytes)
 ERRMARK         equ     $E010   ; error landmark marker byte
 RUNFLAG         equ     $E02F   ; 1 = ,R handoff requested (set while parsing)
 CLPTR           equ     $E02B   ; CLOAD/LOAD: store cursor into the program area (2)
+CLINK           equ     $E02D   ; CLOAD/LOAD: saved link word of the current line
+                                ; (= the saving machine's absolute start address of
+                                ; the line; used to derive each line's body length
+                                ; from consecutive link-word differences) (2)
 TKNAME          equ     $E028   ; tokeniser: 1 = previous char was part of a name
                                 ; (so a following digit stays verbatim, not crunched)
 TKRADIX         equ     $E029   ; tokeniser: &H/&O accumulator radix (16 or 8)

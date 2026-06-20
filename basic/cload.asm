@@ -195,6 +195,12 @@ ctp_skip_hdr:
                 ; --- start a fresh program: store cursor at the text base ---
                 ld      hl,TXTBASE
                 ld      (CLPTR),hl
+                ld      (CLINK),hl          ; A_0 = the saving machine's text base.
+                                            ; The saved link words are consecutive
+                                            ; absolute addresses; the first line's
+                                            ; predecessor address is the saving
+                                            ; machine's text base, assumed == ours
+                                            ; (TXTBASE $8001, the MSX disk-BASIC base)
 
                 ; --- read the program image, stopping at the $0000 end-link --
                 ; The device half does NOT signal a clean end of data: once the
@@ -203,29 +209,51 @@ ctp_skip_hdr:
                 ; ends — at the $0000 link word that terminates the line-link
                 ; chain — never reading a byte past it.
                 ;
+                ; LENGTH-DRIVEN copy. A token body legitimately contains $00 bytes
+                ; (e.g. INT2 `$1C lo hi`, &H `$0C lo hi`, line-number refs), so the
+                ; first $00 is NOT the line boundary. The boundary is defined by the
+                ; saved link words: each link is the saving machine's absolute
+                ; address of the NEXT line, so this line's full length is
+                ; (this link) - (previous link) and its body length is that minus the
+                ; 4-byte link+lineno header. We copy EXACTLY that many body bytes —
+                ; embedded $00s included — landing precisely on the next link word.
+                ;
                 ; Per line: read the 2-byte link word; $0000 -> end of program.
-                ; Otherwise store the line verbatim — link word, 2-byte line
-                ; number, then the token body up to and including its $00 — and
-                ; loop. The saved links are stored as-is (relink recomputes them
-                ; below), so the only thing we interpret from the stream is the
-                ; per-line $00 terminator and the terminating $0000 link.
+                ; Otherwise store link word + 2-byte line number verbatim, then copy
+                ; the computed body byte count. The saved links are stored as-is;
+                ; relink (token-aware) recomputes them below.
 ctp_line:
                 call    TAPIN               ; link low
                 jp      c,load_error
                 ld      c,a
                 call    TAPIN               ; link high
                 jp      c,load_error
-                ld      b,a                 ; BC = saved link word
+                ld      b,a                 ; BC = saved link word L_n = A_{n+1}
                 ld      a,b
                 or      c
                 jr      z,ctp_done          ; $0000 link -> program complete
 
+                ; body length = L_n - A_n - 4   (A_n = CLINK = previous link word)
+                ld      hl,(CLINK)          ; HL = A_n
+                ld      (CLINK),bc          ; advance CLINK = L_n for the next line
+                ld      a,c
+                sub     l
+                ld      e,a
+                ld      a,b
+                sbc     a,h
+                ld      d,a                 ; DE = L_n - A_n = full line length
+                dec     de
+                dec     de
+                dec     de
+                dec     de                  ; DE = body length (incl. its $00 term)
+
                 ; bounds: this line's header (>=4 bytes) must fit below TXTMAX
+                push    de                  ; guard body length across TAPIN/stores
                 ld      hl,(CLPTR)
                 ld      de,TXTMAX-4
                 or      a
                 sbc     hl,de
-                jp      nc,ctp_oom
+                jp      nc,ctp_oom_pop
 
                 ; store the (saved) link word verbatim; relink fixes it later
                 ld      hl,(CLPTR)
@@ -237,36 +265,48 @@ ctp_line:
 
                 ; line number (2 bytes)
                 call    TAPIN
-                jp      c,load_error
+                jp      c,ctp_err_pop
                 ld      hl,(CLPTR)
                 ld      (hl),a
                 inc     hl
                 ld      (CLPTR),hl
                 call    TAPIN
-                jp      c,load_error
+                jp      c,ctp_err_pop
                 ld      hl,(CLPTR)
                 ld      (hl),a
                 inc     hl
                 ld      (CLPTR),hl
+                pop     de                  ; DE = body length
 
-                ; token body: read + store until the $00 terminator (inclusive)
+                ; token body: copy EXACTLY DE bytes (embedded $00s and all)
 ctp_body:
-                call    TAPIN
-                jp      c,load_error
-                ld      c,a                 ; guard the byte (TAPIN trashes all regs)
+                ld      a,d
+                or      e
+                jr      z,ctp_line          ; whole body copied -> next line
+                push    de                  ; guard remaining count across TAPIN
                 ld      hl,(CLPTR)          ; bounds check
                 ld      de,TXTMAX
                 or      a
                 sbc     hl,de
-                jp      nc,ctp_oom
+                jp      nc,ctp_oom_pop
+                call    TAPIN
+                jp      c,ctp_err_pop
                 ld      hl,(CLPTR)
-                ld      a,c
                 ld      (hl),a
                 inc     hl
                 ld      (CLPTR),hl
-                or      a                   ; line's $00 terminator?
-                jr      nz,ctp_body
-                jr      ctp_line            ; next line
+                pop     de                  ; DE = remaining count
+                dec     de
+                jr      ctp_body
+
+; ctp_err_pop / ctp_oom_pop — body length / remaining count is on the stack; drop
+; it before taking the shared error / out-of-memory path so the stack stays balanced.
+ctp_err_pop:
+                pop     de
+                jp      load_error
+ctp_oom_pop:
+                pop     de
+                jp      ctp_oom
 
 ctp_done:
                 call    TAPIOF              ; motor off (program fully read)
@@ -349,28 +389,51 @@ disk_prog_load:
                 ; (5) start a fresh program: store cursor at the text base.
                 ld      hl,TXTBASE
                 ld      (CLPTR),hl
+                ld      (CLINK),hl          ; A_0 = saving machine's text base (== ours)
                 ; --- read the line-link image, stopping at the $0000 end-link ---
+                ; LENGTH-DRIVEN, exactly like do_tape_prog's ctp_line/ctp_body: a
+                ; token body may contain $00 bytes, so the line boundary is taken
+                ; from the saved link-word differences, NOT the first $00. This
+                ; line's body length = (this link) - (previous link) - 4; we copy
+                ; exactly that many body bytes (embedded $00s included), landing on
+                ; the next link word. The saved links are stored as-is; relink
+                ; (token-aware) recomputes them below.
+                ;
                 ; Per line: read the 2-byte link word; $0000 -> end of program.
-                ; Otherwise store the line verbatim (link word, 2-byte line number,
-                ; token body up to and including its $00) and loop. The saved links
-                ; are stored as-is; relink recomputes them below.
+                ; Otherwise store link word + 2-byte line number verbatim, then copy
+                ; the computed body byte count and loop.
 dpl_line:
                 call    disk_getbyte        ; link low
                 jp      c,dpl_err           ; EOF mid-program -> truncated -> error
                 ld      c,a
                 call    disk_getbyte        ; link high
                 jp      c,dpl_err
-                ld      b,a                 ; BC = saved link word
+                ld      b,a                 ; BC = saved link word L_n = A_{n+1}
                 ld      a,b
                 or      c
                 jr      z,dpl_done          ; $0000 link -> program complete
 
+                ; body length = L_n - A_n - 4   (A_n = CLINK = previous link word)
+                ld      hl,(CLINK)          ; HL = A_n
+                ld      (CLINK),bc          ; advance CLINK = L_n for the next line
+                ld      a,c
+                sub     l
+                ld      e,a
+                ld      a,b
+                sbc     a,h
+                ld      d,a                 ; DE = L_n - A_n = full line length
+                dec     de
+                dec     de
+                dec     de
+                dec     de                  ; DE = body length (incl. its $00 term)
+
                 ; bounds: this line's header (>=4 bytes) must fit below TXTMAX
+                push    de                  ; guard body length across disk_getbyte
                 ld      hl,(CLPTR)
                 ld      de,TXTMAX-4
                 or      a
                 sbc     hl,de
-                jp      nc,dpl_oom
+                jp      nc,dpl_oom_pop
 
                 ; store the (saved) link word verbatim; relink fixes it later
                 ld      hl,(CLPTR)
@@ -382,36 +445,48 @@ dpl_line:
 
                 ; line number (2 bytes)
                 call    disk_getbyte
-                jp      c,dpl_err
+                jp      c,dpl_err_pop
                 ld      hl,(CLPTR)
                 ld      (hl),a
                 inc     hl
                 ld      (CLPTR),hl
                 call    disk_getbyte
-                jp      c,dpl_err
+                jp      c,dpl_err_pop
                 ld      hl,(CLPTR)
                 ld      (hl),a
                 inc     hl
                 ld      (CLPTR),hl
+                pop     de                  ; DE = body length
 
-                ; token body: read + store until the $00 terminator (inclusive)
+                ; token body: copy EXACTLY DE bytes (embedded $00s and all)
 dpl_body:
-                call    disk_getbyte
-                jp      c,dpl_err
-                ld      c,a                 ; guard the byte (disk_getbyte trashes regs)
+                ld      a,d
+                or      e
+                jr      z,dpl_line          ; whole body copied -> next line
+                push    de                  ; guard remaining count across disk_getbyte
                 ld      hl,(CLPTR)          ; bounds check
                 ld      de,TXTMAX
                 or      a
                 sbc     hl,de
-                jp      nc,dpl_oom
+                jp      nc,dpl_oom_pop
+                call    disk_getbyte
+                jp      c,dpl_err_pop
                 ld      hl,(CLPTR)
-                ld      a,c
                 ld      (hl),a
                 inc     hl
                 ld      (CLPTR),hl
-                or      a                   ; line's $00 terminator?
-                jr      nz,dpl_body
-                jr      dpl_line            ; next line
+                pop     de                  ; DE = remaining count
+                dec     de
+                jr      dpl_body
+
+; dpl_err_pop / dpl_oom_pop — drop the stacked body length / remaining count, then
+; take the file-closing error / out-of-memory path (stack stays balanced).
+dpl_err_pop:
+                pop     de
+                jp      dpl_err
+dpl_oom_pop:
+                pop     de
+                jp      dpl_oom
 
 dpl_done:
                 ; (6) close the file (program fully read).

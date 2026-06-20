@@ -209,33 +209,48 @@ def make_bsave_file(start: int, end: int, exec_: int, body: bytes) -> bytes:
 # stored image is dumped from RAM):
 #   POKE_TOKEN $98 | ' ' $20 | &HD002 = HEX_TOKEN $0C + 02 D0 | ',' $2C |
 #   123 = INT1_TOKEN $0F + 7B | line-terminator $00
-# NB: the value 123 ($7B) is encoded as the 1-byte INT1 form ($0F $7B), NOT the
-# &H 16-bit form ($0C $7B $00), DELIBERATELY: an &H value's high byte would be an
-# embedded $00 inside the body, and the streamed line-link reader (disk_prog_load,
-# like do_tape_prog's ctp_body) is not token-aware — it stops the body at the
-# FIRST $00. A body with no embedded $00 keeps the fixture a faithful exercise of
-# the shared ctp_body-style loop. See basic/PROVENANCE.md §disk LOAD.
+#
+# PROG2.BAS is the embedded-$00 REGRESSION fixture (`10 POKE &HD100,&H7B`): its
+# body carries TWO embedded $00 operand bytes — the &HD100 address high-byte-low
+# pairing `$0C 00 D1` (an interior $00 with a whole statement tail after it) and
+# the &H7B value's high byte `$0C 7B 00`. The pre-fix streamed line-link reader
+# stopped a line body at the FIRST $00, so it truncated this line mid-body; the
+# length-driven reader (§disk LOAD) copies the exact computed body length, so the
+# line round-trips byte-identical. PROG.BAS deliberately AVOIDS embedded $00 (it
+# encodes 123 as the 1-byte INT1 form `$0F 7B`) so the two fixtures bracket the
+# fix: PROG.BAS is the no-embedded-$00 baseline, PROG2.BAS the embedded-$00 case.
 BAS_TXTBASE = 0x8001      # in-memory text base (TXTBASE; relink recomputes links)
 BAS_MARKER_ADDR = 0xD002  # landmark RAM address the POKEd line writes to
 BAS_MARKER_BYTE = 0x7B    # the landmark byte (123 decimal; distinct from BSAVE's $5A@$D000)
+BAS2_MARKER_ADDR = 0xD100  # PROG2.BAS landmark (distinct from PROG.BAS / PROG.BIN)
+BAS2_MARKER_BYTE = 0x7B    # &H7B low byte (the value the embedded-$00 POKE writes)
 POKE_TOKEN = 0x98
 HEX_TOKEN = 0x0C
 INT1_TOKEN = 0x0F
 
 
-def build_basic_program() -> bytes:
-    """Hand-build the in-memory line-link image (WITHOUT the leading $FF marker).
+def wrap_basic_line(body: bytes, lineno: int = 10,
+                    txtbase: int = BAS_TXTBASE) -> bytes:
+    """Wrap a single line body into the in-memory line-link image (no $FF marker).
 
-    One line `10 POKE &HD002,123`. A real SAVEd file carries the saving machine's
-    absolute link pointer as each line's link word; the loader's relink recomputes
-    them, so the value is a don't-care EXCEPT it must be NON-ZERO (a $0000 link
-    word is the program-end marker, so a $0000 first-line link would be read as
-    "empty program"). We use the genuine in-memory link the saving machine would
-    have written (TXTBASE + line length = address of the end-link), which is also
-    exactly what relink recomputes. The per-line $00 terminator and the final
-    $0000 end-link word must be exact.
+    A real SAVEd file carries the saving machine's absolute link pointer as each
+    line's link word; the loader's relink recomputes them, so the value is a
+    don't-care EXCEPT it must be NON-ZERO (a $0000 link word is the program-end
+    marker, so a $0000 first-line link would be read as "empty program"). We use
+    the genuine in-memory link the saving machine would have written (txtbase +
+    line length = address of the end-link), which is also exactly what relink
+    recomputes. The per-line $00 terminator and the final $0000 end-link must be
+    exact.
     """
-    body = bytes([
+    line_len = 4 + len(body)                                  # link(2)+lineno(2)+body
+    link = txtbase + line_len                                 # non-zero placeholder
+    line = struct.pack("<HH", link, lineno) + body            # link, lineno
+    return line + struct.pack("<H", 0x0000)                   # final $0000 link
+
+
+def prog_bas_body() -> bytes:
+    """`10 POKE &HD002,123` — the baseline (NO embedded $00; 123 = 1-byte INT1)."""
+    return bytes([
         POKE_TOKEN,                                            # POKE
         0x20,                                                  # ' ' (kept verbatim)
         HEX_TOKEN, BAS_MARKER_ADDR & 0xFF, BAS_MARKER_ADDR >> 8,  # &HD002 (LE)
@@ -243,22 +258,39 @@ def build_basic_program() -> bytes:
         INT1_TOKEN, BAS_MARKER_BYTE,                          # 123 (1-byte INT1)
         0x00,                                                  # line terminator
     ])
-    line_len = 4 + len(body)                                  # link(2)+lineno(2)+body
-    link = BAS_TXTBASE + line_len                             # non-zero placeholder
-    line = struct.pack("<HH", link, 10) + body                # link, lineno=10
-    return line + struct.pack("<H", 0x0000)                   # final $0000 link
 
 
-def make_basic_file() -> bytes:
+def prog2_bas_body() -> bytes:
+    """`10 POKE &HD100,&H7B` — the embedded-$00 regression body.
+
+    &HD100 = `$0C 00 D1` (interior $00, statement tail after) and &H7B =
+    `$0C 7B 00` (value high-byte $00). The pre-fix reader stopped at the first
+    interior $00 and truncated; the length-driven reader copies the whole body.
+    """
+    return bytes([
+        POKE_TOKEN,                                            # POKE
+        0x20,                                                  # ' ' (verbatim)
+        HEX_TOKEN, BAS2_MARKER_ADDR & 0xFF, BAS2_MARKER_ADDR >> 8,  # &HD100 -> $0C 00 D1
+        0x2C,                                                  # ',' (verbatim)
+        HEX_TOKEN, BAS2_MARKER_BYTE, 0x00,                    # &H7B -> $0C 7B 00
+        0x00,                                                  # line terminator
+    ])
+
+
+def make_basic_file(body: bytes | None = None) -> bytes:
     """A tokenised-BASIC disk file: $FF marker + the in-memory program image."""
-    return bytes([0xFF]) + build_basic_program()
+    if body is None:
+        body = prog_bas_body()
+    return bytes([0xFF]) + wrap_basic_line(body)
 
 
-def relinked_image() -> bytes:
+def relinked_image(body: bytes | None = None) -> bytes:
     """The line-link image AS IT SHOULD LOOK in the store after relink, so a probe
     can compare TXTBASE bytes directly. relink sets each line's link to the
     address of the next line's link field (absolute, at BAS_TXTBASE)."""
-    prog = build_basic_program()
+    if body is None:
+        body = prog_bas_body()
+    prog = wrap_basic_line(body)
     # split off the trailing $0000 end-link; the single line is the rest
     line = prog[:-2]
     next_addr = BAS_TXTBASE + len(line)        # address of the $0000 end-link
@@ -283,9 +315,13 @@ def main():
     start, end, exec_, body = build_bsave_payload()
     prog_bin = make_bsave_file(start, end, exec_, body)
     img.add_file("PROG", "BIN", prog_bin)
-    # PROG.BAS: a real on-disk TOKENISED BASIC program for the LOAD"filename" path.
+    # PROG.BAS: a real on-disk TOKENISED BASIC program for the LOAD"filename" path
+    # (baseline: NO embedded $00 operand byte).
     prog_bas = make_basic_file()
     img.add_file("PROG", "BAS", prog_bas)
+    # PROG2.BAS: the embedded-$00 LOAD regression fixture (`10 POKE &HD100,&H7B`).
+    prog2_bas = make_basic_file(prog2_bas_body())
+    img.add_file("PROG2", "BAS", prog2_bas)
 
     open(out, "wb").write(img.finish())
     print(f"wrote {out} ({TOTAL_SECTORS * SECTOR} bytes)")
@@ -297,10 +333,15 @@ def main():
           f"writes ${MARKER_BYTE:02X}->${MARKER_ADDR:04X}, JR$ at "
           f"${start + LANDMARK_OFF:04X}; data tail {DATA_TAIL.hex()}")
     print(f"  PROG.BAS : {len(prog_bas)} bytes tokenised BASIC "
-          f"(marker $FF + 1 line `10 POKE &H{BAS_MARKER_ADDR:04X},&H{BAS_MARKER_BYTE:02X}`); "
+          f"(marker $FF + 1 line `10 POKE &H{BAS_MARKER_ADDR:04X},{BAS_MARKER_BYTE}`); "
           f"file {prog_bas.hex()}")
     print(f"             relinked store image @ ${BAS_TXTBASE:04X}: "
           f"{relinked_image().hex()}")
+    print(f"  PROG2.BAS: {len(prog2_bas)} bytes tokenised BASIC, EMBEDDED-$00 "
+          f"regression (marker $FF + 1 line `10 POKE &H{BAS2_MARKER_ADDR:04X},&H{BAS2_MARKER_BYTE:02X}`); "
+          f"file {prog2_bas.hex()}")
+    print(f"             relinked store image @ ${BAS_TXTBASE:04X}: "
+          f"{relinked_image(prog2_bas_body()).hex()}")
     print(f"  geometry : firstFAT={FIRST_FAT} firstRoot={FIRST_ROOT} "
           f"rootSecs={ROOT_SECS} firstData={FIRST_DATA}")
 
