@@ -169,27 +169,91 @@ No quarantined items.
 
 ### CF-3300 (National connection style) register addresses
 
-> **Source gap — TBD.** The WD2793 registers are memory-mapped into the slot's
-> address space on the CF-3300 using National Panasonic's connection style. The
-> exact base address within the $4000–$BFFF window must come from an open
-> hardware source (CF-3300 schematics or openMSX source code). These addresses
-> are **not yet sourced**; no FDC driver code will be written until this row is
-> filled in.
+> **Source resolved — openMSX `src/fdc/NationalFDC.cc`.** The WD2793 registers
+> are memory-mapped into the slot's address space using National Panasonic's
+> connection style. openMSX decodes them with `address & 0x3FC7`, giving the
+> canonical addresses $7FB8–$7FBC (mirrored across $7F80–$7FBF and into page 2).
+> Since zerobas-disk runs from ROM page 1 (slot 3-1, $4000–$7FFF), the driver
+> uses the $7FB8 window directly. openMSX is an allowed source for hardware
+> register addresses and port maps (see [`README.md`](../README.md) / source list).
 
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
-| FDC register base address (memory-mapped) | TBD | CF-3300 schematic or openMSX source (GPL) | **TBD** |
-| Drive-select / side-select latch address | TBD | CF-3300 schematic or openMSX source (GPL) | **TBD** |
-| Drive-select bit assignment (drive A / B) | TBD | CF-3300 schematic or openMSX source (GPL) | **TBD** |
-| Side-select bit assignment (side 0 / 1) | TBD | CF-3300 schematic or openMSX source (GPL) | **TBD** |
-| Motor-on bit / latch | TBD | CF-3300 schematic or openMSX source (GPL) | **TBD** |
-| Interrupt / DRQ polling vs interrupt line | TBD | CF-3300 schematic or openMSX source (GPL) | **TBD** |
+| Status/Command register (read=status, write=command) | $7FB8 | openMSX `NationalFDC.cc` (`0x3F80` → `getStatusReg`/`setCommandReg`) | sourced |
+| Track register | $7FB9 | openMSX `NationalFDC.cc` (`0x3F81` → `get/setTrackReg`) | sourced |
+| Sector register | $7FBA | openMSX `NationalFDC.cc` (`0x3F82` → `get/setSectorReg`) | sourced |
+| Data register | $7FBB | openMSX `NationalFDC.cc` (`0x3F83` → `get/setDataReg`) | sourced |
+| Drive/side/motor latch (write) + IRQ/DRQ status (read) | $7FBC | openMSX `NationalFDC.cc` (`0x3F84`–`0x3F87`) | sourced |
+| Drive-select bit: drive A | latch bit 0 ($01) | openMSX `NationalFDC.cc` writeMem (`value & 3 == 1` → Drive::A) | sourced |
+| Drive-select bit: drive B | latch bit 1 ($02) | openMSX `NationalFDC.cc` writeMem (`value & 3 == 2` → Drive::B) | sourced |
+| Side-select bit | latch bit 2 ($04) | openMSX `NationalFDC.cc` writeMem (`value & 0x04` → setSide) | sourced |
+| Motor-on bit | latch bit 3 ($08) | openMSX `NationalFDC.cc` writeMem (`value & 0x08` → setMotor) | sourced |
+| Status-read at $7FBC: INTRQ | bit 7 ($80) | openMSX `NationalFDC.cc` readMem (`getIRQ` → bit 7) | sourced |
+| Status-read at $7FBC: DRQ (active-low) | bit 6 ($40), 0 = DRQ active | openMSX `NationalFDC.cc` readMem (`getDTRQ` → clears bit 6) | sourced |
+| DRQ/BUSY polling model | poll WD2793 status reg ($7FB8): bit 1 = DRQ, bit 0 = BUSY | WD2793 DS (status register, Type II); IRQ/DRQ lines not wired to Z80 INT per `NationalFDC.cc` comment | sourced |
 
-> Until the TBD rows above are resolved from an open source, the FDC driver
-> section of the code cannot be written. The oracle probe that reads / writes a
-> sector will serve as the round-trip validation once addresses are in.
+> **Driver polls the status register, not the $7FBC IRQ/DRQ latch.** openMSX's
+> `NationalFDC.cc` notes the IRQ/DRQ lines are *not* connected to the Z80
+> interrupt request, so the driver runs fully polled: it reads the WD2793 status
+> register at $7FB8 and tests bit 1 (DRQ) and bit 0 (BUSY). This is the standard
+> WD179x polled-transfer model from the datasheet and needs no machine-specific
+> $7FBC reads.
 
-No quarantined items yet (pending TBD resolution).
+> **A note on the stale "Philips/NMS" wording in `TODO.md`.** The FDC TODO bullet
+> still says "Philips/NMS-style port addresses" from before the CF-3300 reference
+> was chosen. The reference machine and this provenance section are National
+> connection style (memory-mapped, not I/O-port); the implementation follows the
+> CF-3300/National map above.
+
+### WD2793 command flag bits (datasheet)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| Type I head-load flag (h) | bit 3 ($08) | WD2793 DS; openMSX `WD2793.cc` `H_FLAG` | sourced |
+| Type I verify flag (V) | bit 2 ($04) | WD2793 DS; openMSX `WD2793.cc` `V_FLAG` | sourced |
+| Type I step-rate bits | bits 1-0 ($03), 00 = 6 ms @1 MHz | WD2793 DS; openMSX `WD2793.cc` `STEP_SPEED` + `timePerStep` | sourced |
+| Restore command (calibrate to track 0) | $0C ($00 + h + V, rate 0) | WD2793 DS command table | sourced |
+| Seek command (to track in Data reg) | $1C ($10 + h + V, rate 0) | WD2793 DS command table | sourced |
+| Read Sector command (single record) | $80 | WD2793 DS command table | sourced |
+| Force Interrupt | $D0 | WD2793 DS command table | sourced |
+| WD2793 reset → Track register = 0 | — | openMSX `WD2793.cc` `reset()` (`trackReg = 0`); informs the restore-on-retry recovery | sourced |
+
+### Logical-sector → physical CHS mapping (720 KB)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| sectors per track | 9 | ECMA-107 / MS FAT spec (BPB) | sourced |
+| sides | 2 | ECMA-107 | sourced |
+| sector number = (LBA mod 9) + 1 | 1..9 | ECMA-107 CHS layout; standard LBA→CHS | sourced |
+| head/side = (LBA / 9) mod 2 | 0/1 | ECMA-107 CHS layout | sourced |
+| track = LBA / 18 | 0..79 | ECMA-107 CHS layout | sourced |
+
+### DSKIO register interface and error codes
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| DSKIO input: A=drive, B=#sectors, C=media, DE=start logical sector, HL=buffer | — | MSX2 TH, disk ROM interface (DSKIO) | sourced |
+| DSKIO direction: carry reset = read, carry set = write | — | MSX2 TH, disk ROM interface (DSKIO) | sourced |
+| DSKIO output: carry set = error, A = error code, B = sectors not transferred | — | MSX2 TH, disk ROM interface (DSKIO) | sourced |
+| Error code: write protected | 0 | MSX2 TH, DSKIO error codes | sourced |
+| Error code: not ready | 2 | MSX2 TH, DSKIO error codes | sourced |
+| Error code: data (CRC) error | 4 | MSX2 TH, DSKIO error codes | sourced |
+| Error code: record not found | 8 | MSX2 TH, DSKIO error codes | sourced |
+| Error code: other (lost data, etc.) | 12 | MSX2 TH, DSKIO error codes | sourced |
+| WD2793 status → DSKIO error mapping (NOTRDY→2, RNF→8, CRC→4, LOST→12) | — | own mapping; WD2793 DS status bits ↔ MSX2 TH error codes | sourced |
+| Restore-on-error retry (one retry: restore + reseek + reread) | — | own design; recovers a stale Track register after reset (see WD2793 reset row) | sourced |
+
+> **Single-drive simplification.** The CF-3300 declares `<drives>1</drives>`; the
+> driver always selects drive A (latch bit 0) and ignores the DSKIO drive number
+> and media-descriptor byte. Write support is deferred: a DSKIO write request
+> returns error code 0 (write protected).
+
+> **FDC registers shadow ROM offsets $3FB8–$3FBF.** Because the WD2793 device
+> intercepts reads at $7FB8–$7FBF (ROM offsets $3FB8–$3FBF), those bytes of the
+> ROM image are not readable as code/data. They fall inside the zero-padding
+> region of this 16 KB ROM, so nothing important is placed there.
+
+No quarantined items.
 
 ---
 
@@ -238,6 +302,17 @@ No quarantined items yet (pending TBD resolution).
 | Deleted entry marker | $E5 at offset 0 | Microsoft FAT spec §3.4 | sourced |
 | End-of-directory marker | $00 at offset 0 | Microsoft FAT spec §3.4 | sourced |
 | Filename comparison | case-insensitive, space-padding ignored, 8.3 split | Microsoft FAT spec §3.4; own code | sourced |
+| Volume-label / subdirectory entries skipped in search | attribute bits $08 / $10 | Microsoft FAT spec §3.4 (attribute byte); own search policy | sourced |
+
+> **Implementation note.** This whole section is now realised in `disk/disk.asm`
+> (`fat_mount`, `fat_find` / `name_cmp`, `fat_next_cluster`, `fat_open`,
+> `fat_read_file_sector`). Every value above is read from the on-disk BPB / FAT /
+> directory at run time — none is hard-coded — so the rows are format
+> definitions, not magic constants in the binary. The single straddle case in
+> the 12-bit FAT entry (an entry split across a 512-byte sector boundary) is
+> handled by reading the following FAT sector for the high byte. A FAT read
+> error during chain-walk is not separately reported; it yields a bogus link
+> that the end-of-chain test (`>= $0FF8`) treats as EOF.
 
 No quarantined items.
 
@@ -302,7 +377,31 @@ RAM outside known regions.
 | Candidate disk scratch origin | $E260 (first free byte after zerobas-core VARTAB end $E23F + gap) | own choice (free page-3 RAM; no collision with zerobas-core or system sysvars) | sourced |
 | FCB work area | $E260–$E287 (36 bytes for FCB) | own choice | sourced |
 | DPB work area | $E288–$E299 (18 bytes for DPB copy) | own choice | sourced |
-| Sector buffer (512 bytes) | $E2A0–$E4A0 | own choice (free page-3 RAM) | sourced |
+| FDC driver state | $E29A–$E29F (6 bytes) | own choice (gap between DPB and sector buffer) | sourced |
+| — remaining sector count | $E29A (1 byte) | own choice | sourced |
+| — current logical sector | $E29B–$E29C (word) | own choice | sourced |
+| — current transfer address | $E29D–$E29E (word) | own choice | sourced |
+| — read attempt counter | $E29F (1 byte) | own choice | sourced |
+| Sector buffer (512 bytes) | $E2A0–$E49F | own choice (free page-3 RAM) | sourced |
+| FAT12 geometry + iterator state | $E4A0–$E4B1 (18 bytes) | own choice (free page-3 RAM after the sector buffer) | sourced |
+| — sectors per cluster | $E4A0 (1 byte) | own choice | sourced |
+| — first FAT sector | $E4A1–$E4A2 (word) | own choice | sourced |
+| — first root-dir sector | $E4A3–$E4A4 (word) | own choice | sourced |
+| — root-dir sector count | $E4A5–$E4A6 (word) | own choice | sourced |
+| — first data sector | $E4A7–$E4A8 (word) | own choice | sourced |
+| — current cluster (open file) | $E4A9–$E4AA (word) | own choice | sourced |
+| — sector index within cluster | $E4AB (1 byte) | own choice | sourced |
+| — found file first cluster | $E4AC–$E4AD (word) | own choice | sourced |
+| — found file size (bytes) | $E4AE–$E4B1 (4 bytes) | own choice | sourced |
+| FAT12 transient work vars | $E4B2–$E4BE (13 bytes) | own choice (parity, byte-index, FAT sector, two FAT bytes, name pointer, dir-scan cursor + remaining) | sourced |
+
+> **FAT12 geometry is derived, not stored as constants.** `fat_mount` reads the
+> boot sector and computes the first-FAT / first-root / root-sector-count /
+> first-data sector numbers from the on-disk BPB (Microsoft FAT spec §3.1/§3.3),
+> validating only that the sector size is 512 bytes (so the 512-byte
+> `SECTOR_BUF` is always large enough). No geometry is hard-coded, so the layer
+> serves any FAT12 image the BPB describes; the 720 KB DPB values elsewhere in
+> this document are oracle-compare targets, not inputs to this code.
 
 > These addresses are provisional. Before finalising, verify against both
 > zerobas-core's RAM map (PROVENANCE.md §RAM additions) and the C-BIOS system
@@ -318,9 +417,12 @@ RAM outside known regions.
 Before any code section is declared complete, the following black-box probes
 must be run against the CF-3300 in openMSX and added to `msx-preservation`:
 
-1. **FDC register map probe** — confirm the CF-3300 WD2793 base address and
-   drive-select latch by writing known patterns and reading status; fills in
-   the TBD rows in the FDC section.
+1. **FDC register map probe** — ~~confirm the CF-3300 WD2793 base address and
+   drive-select latch by writing known patterns and reading status~~ **Resolved
+   from an allowed source:** the register addresses and the drive/side/motor
+   latch bit map are now taken directly from openMSX `src/fdc/NationalFDC.cc`
+   (allowed for hardware register maps), so the FDC §TBD rows are sourced, not
+   owed. Runtime confirmation comes for free when probe 2 (sector read) passes.
 2. **DSKIO sector read** — read sector 0 (boot sector) and confirm BPB fields
    match the known test image; validates FAT12 and FDC layers together.
 3. **BDOS FCB round-trip** — open a known file via FCB, read its first 128-byte

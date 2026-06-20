@@ -110,12 +110,38 @@ See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
       total-clusters encoding in the MSX2 TH DPB layout are ambiguous without
       the TH text — oracle probe 2 (DSKIO sector-read) must confirm them.
       GETDPB remains carry-set stub. bdos_entry stub returns A=$FF.)
-- [ ] **FDC driver** — WD2793 register I/O at the Philips/NMS-style port
-      addresses; track/sector/head addressing; read-sector command and
+- [x] **FDC driver** — WD2793 register I/O at the National memory-mapped
+      register addresses; track/sector/head addressing; read-sector command and
       result-phase read; error handling (write support deferred)
-- [ ] **FAT12 layer** — boot sector / BPB parse; FAT12 cluster-chain walk;
+      (`disk/disk.asm`: register map sourced from openMSX `NationalFDC.cc`
+      ($7FB8 status/cmd, $7FB9 track, $7FBA sector, $7FBB data, $7FBC
+      drive/side/motor latch); WD2793 status/command bits from the datasheet.
+      `dskio` does the full DSKIO read path: logical→CHS via `div9`, per-sector
+      seek+read, polled 512-byte transfer (status-reg DRQ/BUSY — IRQ/DRQ lines
+      aren't wired to the Z80 per `NationalFDC.cc`), DSKIO error-code mapping,
+      and one restore+retry to recover a stale Track register. `mtoff` drops the
+      motor; `phyd_handler` routes to `dskio`. Writes deferred (return
+      write-protected). The "Philips/NMS-style" phrasing was stale — the CF-3300
+      reference is National connection style. The FDC §TBD rows in
+      [`PROVENANCE.md`](PROVENANCE.md) are now resolved/sourced. End-to-end
+      read is exercised once the openMSX machine config + test `.dsk` land.)
+- [x] **FAT12 layer** — boot sector / BPB parse; FAT12 cluster-chain walk;
       root directory search (8.3 name, case-insensitive); sequential sector
       read for a file's data
+      (`disk/disk.asm`: read-only FAT12 as internal helpers on top of the DSKIO
+      core. `fat_mount` reads the boot sector and derives geometry from the BPB
+      (validates 512 B/sector, then computes first-FAT / first-root / root-sector-
+      count / first-data sectors); `fat_find` scans the root directory 16 entries
+      per sector with a case-insensitive 8.3 compare, skipping deleted / volume /
+      directory entries, and returns first cluster + file size; `fat_next_cluster`
+      follows the 12-bit chain including the sector-straddle case (e.g. cluster
+      682 on a full 720 KB image); `fat_open` + `fat_read_file_sector` iterate the
+      chain a data sector at a time. All geometry comes from the on-disk BPB, so
+      the code is geometry-agnostic. FAT12 scratch added at $E4A0–$E4BE
+      (PROVENANCE §Scratch RAM). Code ends at $4359, clear of the $7FB8 FDC
+      shadow. Not yet reachable — the BDOS/FCB layer (next item) calls these;
+      end-to-end validation waits on the openMSX machine config + oracle probe 2.
+      pasmo flags the four FAT12 entry points as "never used" until then.)
 - [ ] **BDOS hook** — intercept the BDOS jump vector; implement FCB-based
       `Open` ($0F), `Sequential Read` ($14), `Close` ($10); error returns per
       MSX-DOS spec
