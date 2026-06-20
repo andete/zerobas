@@ -21,9 +21,10 @@
 ; (zerobas is a standalone BASIC, not Disk BASIC). The disk subsystem reaches the
 ; physical driver through the six fixed-offset entry points at $4010..$401F.
 ;
-; STATUS: INIT publishes the BDOS entry + DTA default. The FDC read driver is
-; implemented (WD2793, National memory-mapped register map, polled sector read;
-; writes deferred). The FAT12 read layer is implemented (BPB parse, cluster-
+; STATUS: INIT publishes the BDOS entry + DTA default. The FDC driver is
+; implemented (WD2793, National memory-mapped register map, polled sector read
+; AND polled sector write — physical write primitive). The FAT12 read layer is
+; implemented (BPB parse, cluster-
 ; chain walk, root-directory 8.3 search, sequential file-sector read) as
 ; internal helpers. The BDOS/FCB layer is implemented (bdos_entry dispatches
 ; Open $0F / Sequential Read $14 / Close $10 on top of the FAT12 helpers); it is
@@ -146,6 +147,7 @@ ST_NOTRDY       equ     $80     ; drive not ready
 CMD_RESTORE     equ     $0C     ; restore to track 0  ($00 + headload + verify)
 CMD_SEEK        equ     $1C     ; seek to (Data reg)  ($10 + headload + verify)
 CMD_READ        equ     $80     ; read sector, single record
+CMD_WRITE       equ     $A0     ; write sector, single record (Type II, $A0 base)
 CMD_FORCEINT    equ     $D0     ; force interrupt (abort)
 
 ; --- ROM skeleton -----------------------------------------------------------
@@ -211,8 +213,8 @@ init:
 ;        DE = start logical sector; HL = transfer address
 ;   out: Cy = 0 ok; Cy = 1 error with A = error code, B = sectors not done
 ; Single-drive machine: drive number and media byte are ignored (always drive
-; A). Writes are deferred (return write-protected). See PROVENANCE.md §FDC /
-; §DSKIO interface.
+; A). Both directions are implemented: read via fdc_read_phys, write via
+; fdc_write_phys. See PROVENANCE.md §FDC / §DSKIO interface.
 dskio:
                 jr      c, dskio_write
                 ; --- read path ---
@@ -259,12 +261,43 @@ dskio_err:
                 ld      b, a            ; B = sectors not transferred
                 pop     af
                 ret                     ; Cy still set, A = error code
+; --- write path -------------------------------------------------------------
+; Mirrors the read loop's structure exactly: loop the sector count, convert each
+; logical sector -> CHS via div9, and call fdc_write_phys (the write twin of
+; fdc_read_phys). On entry Cy = 1 (write direction); registers as for read.
 dskio_write:
-                ; write support deferred: report write-protected
-                ld      a, 0            ; error code 0 = write protected
-                ld      b, 0
-                scf
-                ret
+                ld      a, b
+                or      a
+                jr      z, dskio_ok     ; zero sectors -> nothing to do
+                ld      (FDC_CNT), a
+                ld      (FDC_LSEC), de
+                ld      (FDC_DEST), hl
+dskio_wnext:
+                ld      a, (FDC_CNT)
+                or      a
+                jr      z, dskio_ok
+                ; logical sector -> CHS (track/side/sector), same as the read path
+                ld      hl, (FDC_LSEC)
+                call    div9            ; B = track*2+head, L = sector-1 (H=0)
+                ld      a, l
+                inc     a
+                ld      c, a            ; C = sector (1..9)
+                ld      a, b
+                and     1
+                ld      e, a            ; E = side (0/1)
+                srl     b
+                ld      d, b            ; D = track (0..79)
+                ld      hl, (FDC_DEST)
+                call    fdc_write_phys
+                jr      c, dskio_err
+                ld      (FDC_DEST), hl  ; HL advanced by 512 on success
+                ld      hl, (FDC_LSEC)
+                inc     hl
+                ld      (FDC_LSEC), hl
+                ld      a, (FDC_CNT)
+                dec     a
+                ld      (FDC_CNT), a
+                jr      dskio_wnext
 
 ; fdc_read_phys — read one physical sector into (HL).
 ;   in:  D = track, E = side (0/1), C = sector (1..9), HL = buffer
@@ -365,6 +398,130 @@ fdc_rd_n3:
                 scf
                 ret
 fdc_rd_ok:
+                or      a               ; A = 0, Cy = 0
+                ret
+
+; fdc_write_phys — write one physical sector from (HL).
+;   in:  D = track, E = side (0/1), C = sector (1..9), HL = buffer
+;   out: Cy = 0 ok, HL advanced 512; Cy = 1 error, A = DSKIO error code
+; The write twin of fdc_read_phys: selects drive A + side + motor, seeks to the
+; target track, then issues the WD2793 Write Sector command (CMD_WRITE = $A0,
+; single record) and feeds the 512-byte payload to the data register on DRQ.
+; Retries once via a restore if the first attempt fails (recovers a stale Track
+; register after a reset), exactly like the read path. A genuine write-protected
+; disk is reported up front (no retry) by fdc_write_data's status check.
+fdc_write_phys:
+                ld      a, CTRL_DRIVE_A + CTRL_MOTOR
+                bit     0, e
+                jr      z, fdc_wp_nos
+                or      CTRL_SIDE
+fdc_wp_nos:
+                ld      (FDC_CTRL), a
+                call    fdc_settle      ; motor spin-up / head settle
+                ld      a, 2
+                ld      (FDC_TRY), a    ; up to two attempts
+fdc_wp_attempt:
+                ; seek to target track (track number via Data register)
+                ld      a, d
+                ld      (FDC_DATA), a
+                ld      a, CMD_SEEK
+                ld      (FDC_STATUS), a
+                call    fdc_wait_ready
+                ; issue write-sector and transfer the data
+                ld      a, c
+                ld      (FDC_SECTOR), a
+                ld      hl, (FDC_DEST)  ; reload buffer start each attempt
+                ld      a, CMD_WRITE
+                ld      (FDC_STATUS), a
+                call    fdc_write_data
+                ret     nc              ; success: Cy = 0, HL = buffer + 512
+                ; failure: A = error code, Cy = 1
+                cp      0               ; error code 0 = write protected -> no retry
+                jr      z, fdc_wp_fail
+                push    af
+                ld      a, (FDC_TRY)
+                dec     a
+                ld      (FDC_TRY), a
+                jr      z, fdc_wp_fail2
+                pop     af
+                call    fdc_restore     ; recalibrate, then retry
+                jr      fdc_wp_attempt
+fdc_wp_fail2:
+                pop     af              ; restore error code + carry
+fdc_wp_fail:
+                ret
+
+; fdc_write_data — transfer 512 bytes from (HL) to a write-sector command.
+;   in:  HL = buffer; a WRITE command has just been written
+;   out: Cy = 0 ok, HL += 512; Cy = 1 error with A = DSKIO error code
+; Polled transfer, the exact write twin of fdc_read_data: 512 = 2 x 256
+; (E = block counter, B = byte counter), so the sector (C) and track (D)
+; registers survive for a possible retry. The WD2793 asserts DRQ when it is ready
+; for the next data byte; the driver polls the status register at $7FB8 and writes
+; each byte to the data register. After the last byte it polls for BUSY-clear and
+; reads the result-phase status: bit 6 ($40) on a Type-II write is WRITE FAULT /
+; write-protect -> DSKIO write-protected (code 0); RNF/CRC/LOST/NOTRDY map exactly
+; as the read path does.  (WD2793 DS: Write Sector, status register Type II.)
+fdc_write_data:
+                ld      e, 2            ; two 256-byte halves
+fdc_wr_blk:
+                ld      b, 0            ; djnz 0 -> 256 iterations
+fdc_wr_wait:
+                ld      a, (FDC_STATUS)
+                bit     1, a            ; DRQ?
+                jr      nz, fdc_wr_byte
+                bit     0, a            ; BUSY?
+                jr      nz, fdc_wr_wait
+                jr      fdc_wr_status   ; finished with no DRQ -> short/error
+fdc_wr_byte:
+                ld      a, (hl)
+                ld      (FDC_DATA), a
+                inc     hl
+                djnz    fdc_wr_wait
+                dec     e
+                jr      nz, fdc_wr_blk
+fdc_wr_drain:
+                ld      a, (FDC_STATUS) ; all 512 written; wait for command end
+                bit     0, a
+                jr      nz, fdc_wr_drain
+fdc_wr_status:
+                ld      a, (FDC_STATUS)
+                ; write-protect / write-fault (bit 6, $40) -> DSKIO code 0 first,
+                ; so a protected disk reports write-protected rather than retrying.
+                and     ST_WP
+                jr      z, fdc_wr_chk
+                xor     a               ; A = 0 = write protected
+                scf
+                ret
+fdc_wr_chk:
+                ld      a, (FDC_STATUS)
+                and     ST_NOTRDY + ST_RNF + ST_CRC + ST_LOST
+                jr      z, fdc_wr_ok
+                ld      b, a            ; keep the error bits
+                and     ST_NOTRDY
+                jr      z, fdc_wr_n1
+                ld      a, 2            ; not ready
+                scf
+                ret
+fdc_wr_n1:
+                ld      a, b
+                and     ST_RNF
+                jr      z, fdc_wr_n2
+                ld      a, 8            ; record not found
+                scf
+                ret
+fdc_wr_n2:
+                ld      a, b
+                and     ST_CRC
+                jr      z, fdc_wr_n3
+                ld      a, 4            ; CRC / data error
+                scf
+                ret
+fdc_wr_n3:
+                ld      a, 12           ; lost data / other
+                scf
+                ret
+fdc_wr_ok:
                 or      a               ; A = 0, Cy = 0
                 ret
 

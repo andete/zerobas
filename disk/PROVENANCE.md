@@ -235,8 +235,21 @@ No quarantined items.
 | Restore command (calibrate to track 0) | $0C ($00 + h + V, rate 0) | WD2793 DS command table | sourced |
 | Seek command (to track in Data reg) | $1C ($10 + h + V, rate 0) | WD2793 DS command table | sourced |
 | Read Sector command (single record) | $80 | WD2793 DS command table | sourced |
+| Write Sector command (single record) | $A0 | WD2793 DS command table | sourced |
 | Force Interrupt | $D0 | WD2793 DS command table | sourced |
 | WD2793 reset → Track register = 0 | — | openMSX `WD2793.cc` `reset()` (`trackReg = 0`); informs the restore-on-retry recovery | sourced |
+
+> **Write Sector command byte + flag bits (`CMD_WRITE = $A0`).** The WD2793 Type-II
+> command word is `1 0 m S E C a0`: bit 7-5 = `100` selects Write Sector, bit 4
+> `m` = multiple-record (0 = single record), bit 3 `S` = side-compare enable
+> (0 = no side compare — the driver does not compare the side field, exactly as the
+> Read path leaves it 0), bit 2 `E` = 15 ms head-settle delay (0), bit 1 `C` =
+> side-compare value (don't-care when S=0), bit 0 `a0` = data-address-mark select
+> (0 = write a **normal** data mark `$FB`, 1 = a **deleted** data mark `$F8`). The
+> driver writes `$A0` = all those flag bits clear: single record, no side compare,
+> no settle delay, **normal data mark**. This is the exact write twin of the Read
+> Sector `$80` the driver already uses (also all-flags-clear single record). Source:
+> WD2793 datasheet, Write Sector command word + flag-bit table.
 
 ### Logical-sector → physical CHS mapping (720 KB)
 
@@ -263,10 +276,40 @@ No quarantined items.
 | WD2793 status → DSKIO error mapping (NOTRDY→2, RNF→8, CRC→4, LOST→12) | — | own mapping; WD2793 DS status bits ↔ MSX2 TH error codes | sourced |
 | Restore-on-error retry (one retry: restore + reseek + reread) | — | own design; recovers a stale Track register after reset (see WD2793 reset row) | sourced |
 
+### DSKIO WRITE path (`dskio_write` / `fdc_write_phys` / `fdc_write_data`)
+
+The write direction mirrors the read direction structurally: `dskio_write` loops
+the sector count, converts each logical sector → CHS with the same `div9`, and
+calls `fdc_write_phys` (the twin of `fdc_read_phys`). `fdc_write_phys` latches
+drive A + side + motor via `FDC_CTRL` ($7FBC), Type-I-seeks to the track, then
+issues the `$A0` Write Sector command and runs the polled 512-byte transfer
+(`fdc_write_data`): poll `FDC_STATUS` ($7FB8) bit 1 (DRQ) and write each byte to
+`FDC_DATA` ($7FBB) — the exact write twin of the read loop's DRQ poll. Then it
+polls BUSY-clear and checks the result-phase status. One restore+reseek+rewrite
+retry recovers a stale Track register, like the read path; a genuine
+write-protected disk is reported up front with **no** retry.
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| DSKIO write request: Cy=1 on entry → `dskio_write` | — | MSX2 TH, disk ROM interface (DSKIO direction) | sourced |
+| Write Sector command issued | $A0 (single record, normal data mark) | WD2793 DS command word (see §command flag bits) | sourced |
+| Polled write transfer: on DRQ (status bit 1) write next byte to Data reg ($7FBB) | — | WD2793 DS (Type II DRQ-paced data transfer); IRQ/DRQ not wired to Z80 per `NationalFDC.cc` → status-polled, like the read path | sourced |
+| Result-phase status read after BUSY clears | $7FB8 | WD2793 DS (Type II result phase) | sourced |
+| Write-protect / write-fault: status bit 6 ($40, `ST_WP`) set → DSKIO error code **0** (write protected) | — | WD2793 DS (Type II bit 6 = Write Fault; Type I bit 6 = Write Protect — same bit, $40) ↔ MSX2 TH DSKIO write-protected code 0 | sourced |
+| WP/write-fault reported up front, no restore-retry | — | own design; a protected medium will not be cured by a recalibrate, so retrying is pointless (and could mask the WP) | sourced |
+| Write status → DSKIO error mapping (WP/fault→0, NOTRDY→2, RNF→8, CRC→4, LOST→12) | — | own mapping; WD2793 DS Type-II status bits ↔ MSX2 TH DSKIO error codes (identical to the read mapping plus the WP/fault→0 row) | sourced |
+| `B` = sectors-not-written on error, like the read path's `dskio_err` | — | MSX2 TH, disk ROM interface (DSKIO output: B = sectors not transferred) | sourced |
+| WRITE round-trip + persistence + CF-3300 cross-machine read all byte-identical | — | **differential oracle PASS** (`disk_probe_write.py`, msx-preservation): our `dskio_write` writes a distinctive 512-byte pattern to a /tmp scratch image, our read path reads it back identical, a fresh reboot reads it identical (persisted to the image file), and the **genuine National CF-3300's own disk ROM** DSKIO-reads the sector **byte-identical** to what we wrote | oracle-confirmed |
+
 > **Single-drive simplification.** The CF-3300 declares `<drives>1</drives>`; the
 > driver always selects drive A (latch bit 0) and ignores the DSKIO drive number
-> and media-descriptor byte. Write support is deferred: a DSKIO write request
-> returns error code 0 (write protected).
+> and media-descriptor byte. **Write support is now implemented** (`dskio_write` /
+> `fdc_write_phys` / `fdc_write_data`, rows above): a DSKIO write request performs
+> the real WD2793 Write Sector sequence and is differential-confirmed against the
+> CF-3300 reference. A genuinely write-protected medium still returns error code 0
+> (write protected), which is the same code the old stub returned for the now-real
+> WP case. This is the physical sector-write primitive only; FAT12/BDOS write
+> logic is a separate, later workstream.
 
 > **FDC registers shadow ROM offsets $3FB8–$3FBF.** Because the WD2793 device
 > intercepts reads at $7FB8–$7FBF (ROM offsets $3FB8–$3FBF), those bytes of the
@@ -599,6 +642,19 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
 4. **BLOAD"A:file",R end-to-end** — load a BSAVE binary from disk and confirm
    the BSAVE header parse + load-into-RAM + jump-to-exec path matches the
    cassette path's oracle spec.
+5. **DSKIO sector WRITE** — prove `dskio_write` produces a real, correctly
+   formatted sector, bidirectionally and black-box. **DONE — differential oracle
+   PASS.** `disk-spec/tools/disk_probe_write.py` (msx-preservation) makes a /tmp
+   scratch COPY of the test image (never the committed one — openMSX `-diska`
+   writes back), then: (a) **round-trip** on `C-BIOS_MSX1_BASIC_DISK` — a stub
+   DSKIO-WRITEs a distinctive 512-byte pattern to a high data sector and our
+   already-validated read path reads it back **identical**; (b) **persistence** —
+   a fresh reboot reads the sector back **identical** (the write reached the image
+   file); (c) **cross-machine differential** — the genuine **National CF-3300**'s
+   own disk ROM DSKIO-reads that same sector **byte-identical** to what we wrote.
+   This proves our WD2793 Write Sector sequence yields a sector the real hardware/
+   ROM accepts. Strictly black-box: CALSLT into $4010 (MSX2 TH), only returned
+   data + carry/A observed; the reference disk ROM is never read or disassembled.
 
 > **Functional vs differential.** Probe 2 (DSKIO sector read) is now a *passed
 > differential oracle* against the real CF-3300 (see above). The remaining
@@ -616,6 +672,7 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
 Before release, every constant and address in `disk/disk.asm` must map to a
 `sourced` row above, be `quarantined` with a round-trip justification, or have
 an oracle probe confirming the value. There are no `TBD`/blocked rows: the FDC
-register map is sourced from openMSX, the read + BDOS paths are
-differential-confirmed (§Oracle probes 2 & 3), and GETDPB is an intentional,
+register map is sourced from openMSX, the read + write + BDOS paths are
+differential-confirmed (§Oracle probes 2, 3 & 5 — the WRITE path's CF-3300
+cross-machine read is byte-identical), and GETDPB is an intentional,
 sourced stub (§DPB).

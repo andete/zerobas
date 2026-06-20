@@ -129,8 +129,8 @@ See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
       SYSTEM only (refreshed `EXP_BDOS` for the code shift). See disk/PROVENANCE.md
       §INIT and §DPB.)
 - [x] **FDC driver** — WD2793 register I/O at the National memory-mapped
-      register addresses; track/sector/head addressing; read-sector command and
-      result-phase read; error handling (write support deferred)
+      register addresses; track/sector/head addressing; read-sector AND
+      write-sector command + result-phase read; error handling
       (`disk/disk.asm`: register map sourced from openMSX `NationalFDC.cc`
       ($7FB8 status/cmd, $7FB9 track, $7FBA sector, $7FBB data, $7FBC
       drive/side/motor latch); WD2793 status/command bits from the datasheet.
@@ -138,11 +138,23 @@ See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
       seek+read, polled 512-byte transfer (status-reg DRQ/BUSY — IRQ/DRQ lines
       aren't wired to the Z80 per `NationalFDC.cc`), DSKIO error-code mapping,
       and one restore+retry to recover a stale Track register. `mtoff` drops the
-      motor; `phyd_handler` routes to `dskio`. Writes deferred (return
-      write-protected). The "Philips/NMS-style" phrasing was stale — the CF-3300
-      reference is National connection style. The FDC §TBD rows in
-      [`PROVENANCE.md`](PROVENANCE.md) are now resolved/sourced. End-to-end
-      read is exercised once the openMSX machine config + test `.dsk` land.)
+      motor; `phyd_handler` routes to `dskio`. The "Philips/NMS-style" phrasing
+      was stale — the CF-3300 reference is National connection style. The FDC
+      §TBD rows in [`PROVENANCE.md`](PROVENANCE.md) are now resolved/sourced.
+      **WRITE SUPPORT NOW IMPLEMENTED** — `dskio_write` mirrors the read loop
+      (count loop + `div9` CHS) and calls the new `fdc_write_phys`/
+      `fdc_write_data`: drive/side/motor latch, Type-I seek, then the WD2793
+      **Write Sector** command (`CMD_WRITE = $A0`, single record, normal data
+      mark — WD2793 DS) and a polled 512-byte transfer (poll `FDC_STATUS` DRQ,
+      write each byte to `FDC_DATA`), then result-phase status. Write-protect /
+      write-fault (status bit 6 $40) → DSKIO code 0 (no retry); NOTRDY→2,
+      RNF→8, CRC→4, LOST→12, `B` = sectors-not-written, exactly like the read
+      path. **Differential oracle PASS** (`disk_probe_write.py`, msx-preservation):
+      our write to a /tmp scratch image round-trips through our read path, persists
+      across a reboot, and is read **byte-identical by the genuine National CF-3300**
+      disk ROM. This is the physical sector-write primitive only; FAT12/BDOS write
+      logic is a later workstream. disk.rom 16384, 7 baseline warnings (`ST_WP`
+      now used); basic.rom byte-identical.)
 - [x] **FAT12 layer** — boot sector / BPB parse; FAT12 cluster-chain walk;
       root directory search (8.3 name, case-insensitive); sequential sector
       read for a file's data
