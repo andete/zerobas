@@ -1,6 +1,6 @@
 # Disk ROM support plan (MSX1)
 
-Two workstreams — a new `cbios-disk` sibling repo (hardware layer) and zerobas
+Two workstreams — a new `zerobas-disk` sibling repo (hardware layer) and zerobas
 interpreter extensions (language layer) — mirroring the zerobas-tape model.
 
 ## Reference machine: National CF-3300 (MSX1, JP, 1985)
@@ -41,20 +41,27 @@ fixed I/O ports. The BIOS boot scan finds the disk ROM's "AB" header in the
 internal slot just as it finds zerobas in slot 0 page 1; cartridge slots 1 and
 2 remain free for user cartridges.
 
-Consequences for cbios-disk:
+Consequences for zerobas-disk:
 
 - **Standalone ROM** — not an IPS patch on an existing ROM (unlike zerobas-tape,
-  which patches C-BIOS page 0 in-place). cbios-disk is a fresh 16/32 KB ROM
+  which patches C-BIOS page 0 in-place). zerobas-disk is a fresh 16/32 KB ROM
   placed in a new slot.
 - **openMSX placement** — machine XML uses a `<primary slot="3"><secondary
-  slot="1">` block pointing at the cbios-disk ROM; no `<cartridgeX>` element.
+  slot="1">` block pointing at the zerobas-disk ROM; no `<cartridgeX>` element.
 - **FDC hardware** — declared as a separate FDC extension in the machine XML
   (WD2793-based, Philips/NMS-style latch + drive-select at fixed I/O ports).
   A `.dsk` image is attached to the configured drive.
 
+## Naming convention
+
+All sub-components of zerobas follow the `zerobas-<component>` scheme:
+`zerobas-tape`, `zerobas-disk`, and any future transport or hardware layer.
+This applies to the component name, its patch/ROM output filenames, and any
+references in docs, scripts, and installers.
+
 ## Repository structure
 
-zerobas-tape and cbios-disk both live inside the zerobas repo (not as sibling
+zerobas-tape and zerobas-disk both live inside the zerobas repo (not as sibling
 repos). zerobas-tape will be migrated in from its current standalone repo.
 `src/` is renamed to `basic/` to make the three components visually symmetric:
 
@@ -62,7 +69,7 @@ repos). zerobas-tape will be migrated in from its current standalone repo.
 zerobas/
   basic/    ← BASIC interpreter ROM (renamed from src/)
   tape/     ← zerobas-tape (migrated in)
-  disk/     ← cbios-disk (new)
+  disk/     ← zerobas-disk (new)
   tools/
 ```
 
@@ -72,7 +79,7 @@ no sibling-repo auto-detection needed. The Makefile gains `tape.ips` and
 
 ---
 
-## cbios-disk (new separate repo)
+## zerobas-disk (new separate repo)
 
 Goal: a clean-room MSX1 disk ROM that fills the role zerobas-tape fills for
 cassette. Provides the physical FDC driver, FAT12 read layer, and BDOS hooks
@@ -111,7 +118,7 @@ so zerobas's `BLOAD"A:FILE"` can reach a real FAT12 disk image.
 - [ ] **Oracle probes** (in msx-preservation repo) — black-box observation of
       BDOS return values and FCB state on a reference machine with a known
       `.dsk` image
-- [ ] **openMSX machine config** — machine XML that places cbios-disk in
+- [ ] **openMSX machine config** — machine XML that places zerobas-disk in
       internal slot 3-1, declares an FDC extension, attaches a test `.dsk`
       image, and pairs with the existing zerobas + zerobas-tape IPS patches in
       slot 0
@@ -122,7 +129,7 @@ so zerobas's `BLOAD"A:FILE"` can reach a real FAT12 disk image.
 
 ## zerobas interpreter extensions (this repo)
 
-Small delta on top of the existing `src/bload.asm` once cbios-disk's BDOS API
+Small delta on top of the existing `src/bload.asm` once zerobas-disk's BDOS API
 is stable.
 
 ### TODO
@@ -148,7 +155,7 @@ is stable.
 ## openMSX integration (this repo, `tools/`)
 
 - [ ] **Extend `install-openmsx-machine.py`** — add `--disk-rom` option;
-      auto-detect cbios-disk ROM next to this repo (sibling `cbios-disk/`
+      auto-detect zerobas-disk ROM next to this repo (sibling `zerobas-disk/`
       dir); generate `*_BASIC_DISK` machine variants that add the internal
       slot 3-1 block and FDC extension alongside the existing zerobas + tape
       patches
@@ -160,9 +167,9 @@ is stable.
 ## Sequencing
 
 ```
-cbios-disk: ROM skeleton + FDC driver
+zerobas-disk: ROM skeleton + FDC driver
           ↓
-cbios-disk: FAT12 layer + BDOS hooks
+zerobas-disk: FAT12 layer + BDOS hooks
           ↓
 zerobas: disk BLOAD (bload.asm extension)   ← can start once BDOS API is stable
           ↓
