@@ -241,9 +241,9 @@ zerobas/
 │   └── sysvars.inc    # BIOS entry points + tokens + RAM scratch (all cited)
 ├── tape/
 │   ├── tape.asm       # cassette BIOS patch (TAPION / TAPIN / TAPIOF)
-│   ├── build-patches.sh        # assemble tape.asm -> cbios-tape-msx1.ips/.bps
-│   ├── cbios-tape-msx1.ips     # page-0 tape patch, IPS (used by installer)
-│   ├── cbios-tape-msx1.bps     # page-0 tape patch, BPS (CRC-locked)
+│   ├── build-patches.sh        # assemble tape.asm -> zerobas-tape-msx1.ips/.bps
+│   ├── zerobas-tape-msx1.ips     # page-0 tape patch, IPS (used by installer)
+│   ├── zerobas-tape-msx1.bps     # page-0 tape patch, BPS (CRC-locked)
 │   ├── PROVENANCE.md  # tape-component provenance log
 │   ├── DESIGN.md      # design notes for the tape patch
 │   ├── docs/          # cassette spec and feasibility notes

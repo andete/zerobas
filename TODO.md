@@ -96,8 +96,8 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
 ## Deferred track — disk transport
 
 Not Phase 1 or 2: the device half is a disk-interface ROM (`PHYDIO` / the
-`H.*` hooks), a whole separate project on the [zerobas-tape](https://github.com/andete/zerobas-tape)
-model — kept a separate tree, combined only at runtime. The interpreter side is
+`H.*` hooks), modelled on the [`tape/`](tape/) component — kept in `disk/`,
+combined only at runtime. The interpreter side is
 small once that ROM exists: disk-filename parsing in `BLOAD`/`LOAD`, `RUN"file"`,
 the BSAVE-header read, and the `,R` handoff — all mirroring
 [basic/bload.asm](basic/bload.asm).

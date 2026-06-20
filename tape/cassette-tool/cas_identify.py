@@ -8,7 +8,7 @@ Decodes the FSK byte stream (via the vendored cas_decode.py) and scans it for th
 MSX cassette file-type markers -- ten identical lead bytes followed by a 6-char
 filename -- reporting each file found, with the load/exec addresses for binary
 files. Useful both for cataloguing real tape captures and as the byte-level
-reference when checking the cbios-tape read path against real audio.
+reference when checking the zerobas-tape read path against real audio.
 
   python3 cassette-tool/cas_identify.py /path/to/tape.wav
   python3 cassette-tool/cas_identify.py tape.wav --bytes 64   # also dump head

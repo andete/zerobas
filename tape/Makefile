@@ -1,14 +1,14 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: BSD-2-Clause
 
-# cbios-tape -- build the IPS/BPS cassette-BIOS patches.
+# zerobas-tape -- build the IPS/BPS cassette-BIOS patches.
 #
 # Requires pasmo (the assembler C-BIOS uses) and python3. No C-BIOS tree is
 # needed: the patch is assembled from src/tape.asm alone. A stock C-BIOS v0.29
 # ROM is used only to stamp the BPS CRC32 + verify; override its path with STOCK=.
 
-IPS := cbios-tape-msx1.ips
-BPS := cbios-tape-msx1.bps
+IPS := zerobas-tape-msx1.ips
+BPS := zerobas-tape-msx1.bps
 SRC := tape.asm
 STOCK ?=
 

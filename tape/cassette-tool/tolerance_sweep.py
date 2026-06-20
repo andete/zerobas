@@ -11,7 +11,7 @@ template (so this stays decoupled from any particular decoder): `{wav}` is
 substituted with the degraded file's path and the command must exit 0 on a
 successful decode.
 
-Example -- map the cbios-tape read path's speed-error lock range:
+Example -- map the zerobas-tape read path's speed-error lock range:
 
   python3 cassette-tool/tolerance_sweep.py clean.wav \\
     --param speed --values=-30,-20,-10,0,10,20,30 \\

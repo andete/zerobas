@@ -1,7 +1,7 @@
 # cassette-tool — MSX cassette-tape audio utilities
 
 Host-side tools for working with **MSX cassette audio** (WAV captures of the FSK
-signal). The first concrete need: stress-testing the [`cbios-tape`](../README.md)
+signal). The first concrete need: stress-testing the [`zerobas-tape`](../README.md)
 clean-room read path against impairments a real tape + audio chain introduce —
 because everything proven there so far round-trips only against *synthetic*
 signals (the clean, square, jitter-free output of its own write path under
@@ -27,15 +27,15 @@ Both are stdlib-only (no numpy/scipy), matching the rest of the repo's tooling.
 
 ## Workflow
 
-1. Record a clean baseline WAV (e.g. with a cbios-tape write probe under
+1. Record a clean baseline WAV (e.g. with a zerobas-tape write probe under
    `omsx_run.py --record`).
 2. Degrade it: `degrade_wav.py clean.wav out.wav --lowpass 4000 --noise 0.04`.
-3. Read it back through the cbios-tape read probes (`omsx_run.py --cassette out.wav`
+3. Read it back through the zerobas-tape read probes (`omsx_run.py --cassette out.wav`
    + `bios_probe_tap*.py --analyze`) and check it still round-trips.
 4. Map a bound with `tolerance_sweep.py`, whose `--decode` runs step 3 on each
    degraded file.
 
-## First tolerance envelope (cbios-tape read path, 1200 baud)
+## First tolerance envelope (zerobas-tape read path, 1200 baud)
 
 Measured against the BSAVE two-block file round-trip
 (`bios_probe_tapfile.py`). Indicative, not exhaustive:
@@ -49,7 +49,7 @@ Measured against the BSAVE two-block file round-trip
 The noise result is the headline finding: the synthetic round-trips entirely hid
 it. Whether to harden the reader (the input is 1-bit, so true hysteresis is a
 hardware property the emulator models — not something TAPIN can add) or to treat
-it as an input-conditioning requirement is an open question for cbios-tape.
+it as an input-conditioning requirement is an open question for zerobas-tape.
 
 ## Real captures (validated)
 
@@ -90,7 +90,7 @@ Running `cas_identify.py` across the whole `~/Documents/msx/msx/tapes` tree
 These are catalogued as known limits, not yet fixed — surfacing them was the
 point of the scan.
 
-**What real audio proved for the cbios-tape read path:**
+**What real audio proved for the zerobas-tape read path:**
 - The host decoder reads every capture perfectly (full HERO tape = ASCII BASIC
   loader + binary machine code, exact bytes).
 - The BIOS reader (`TAPION`+`TAPIN`) reads **both blocks** of a real capture
@@ -111,12 +111,12 @@ point of the scan.
 ## Still wanted
 
 - **`.cas` ↔ WAV codec.** An independent host encoder/decoder of the MSX cassette
-  format, to cross-check the cbios-tape byte I/O (two implementations agreeing on
+  format, to cross-check the zerobas-tape byte I/O (two implementations agreeing on
   the format is strong evidence neither copied the original).
 
-## Relationship to `cbios-tape/`
+## Relationship to `zerobas-tape/`
 
-[`cbios-tape`](../README.md) is the **on-MSX BIOS code** that reads and
+[`zerobas-tape`](../README.md) is the **on-MSX BIOS code** that reads and
 writes the tape signal. This project is the **host-side audio tooling** that feeds
 and checks it. They meet at the cassette WAV format but live on opposite sides of
 the machine boundary.

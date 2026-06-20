@@ -4,7 +4,7 @@
 
 """Make, apply, and inspect ROM patches in IPS and BPS formats.
 
-Used by the cbios-tape side project to ship the clean-room cassette routines as a
+Used by the zerobas-tape component to ship the clean-room cassette routines as a
 *patch* against a pristine C-BIOS ROM rather than a modified ROM: the patch
 carries only our added bytes, the user supplies their own stock C-BIOS.
 
@@ -238,8 +238,8 @@ def records_bps(patch: bytes):
 
 # ----------------------------------------------------- forge from regions
 # Build a patch from explicit (offset, data) regions rather than by diffing two
-# full ROMs. This lets the cbios-tape patch be built from *our* assembled code
-# alone (cbios-tape/src/tape.asm) -- no C-BIOS ROM is needed to make the IPS. A
+# full ROMs. This lets the zerobas-tape patch be built from *our* assembled code
+# alone (tape/tape.asm) -- no C-BIOS ROM is needed to make the IPS. A
 # stock ROM is still required for BPS, which embeds source/target CRC32.
 
 def apply_regions(source: bytes, regions) -> bytes:

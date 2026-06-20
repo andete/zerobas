@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: BSD-2-Clause
 
-"""Tier-1 deterministic regression for the full cbios-tape stack.
+"""Tier-1 deterministic regression for the full zerobas-tape stack.
 
 Self-contained -- uses only clean-room content (no copyrighted ROMs, no game
 tapes). Every input is generated from code, so the suite is reproducible
@@ -13,7 +13,7 @@ msx-preservation repo at tools/omsx/bios_probe_realtape.py.
 What it asserts:
 
   1. .cas BLOAD (3744 baud) on the rolled-together shipping target
-     C-BIOS_MSX1_EU_BASIC -- stock C-BIOS + cbios-tape IPS + zerobas IPS, no
+     C-BIOS_MSX1_EU_BASIC -- stock C-BIOS + zerobas-tape IPS + zerobas IPS, no
      cart, no VG-8020 ROM. Proves the open stack BLOAD"CAS:",R-s a .cas end to
      end (the 3744 read-margin path).
 
@@ -29,11 +29,11 @@ What it asserts:
      match. Guards the slower bauds against regression.
 
   4. Open-stack WAV BLOAD at 1200 and 2400: zerobas BLOADs a tape written by the
-     cbios-tape write path and runs it (,R handoff). The end-to-end open stack on
+     zerobas-tape write path and runs it (,R handoff). The end-to-end open stack on
      a recorded WAV.
 
 Prerequisites (local setup, not committed): the C-BIOS_MSX1_EU_BASIC and
-C-BIOS_MSX1_EU_TAPE openMSX machines (install with zerobas/cbios-tape's
+C-BIOS_MSX1_EU_TAPE openMSX machines (install with zerobas/zerobas-tape's
 install-openmsx-machine.py) and a built zerobas basic.rom.
 
   make test
@@ -144,7 +144,7 @@ def t_openstack(openstack, baud: int, zerobas: str) -> tuple[str, bool, str]:
     rc, out = _run([sys.executable, openstack, "--cart", zerobas,
                     "--baud", str(baud)])
     ok = (rc == 0) and ("PASS  open-stack BLOAD" in out)
-    detail = "zerobas + C-BIOS + cbios-tape, ,R handoff" if ok else \
+    detail = "zerobas + C-BIOS + zerobas-tape, ,R handoff" if ok else \
              (out.strip().splitlines()[-1] if out.strip() else "no output")
     return (f"open-stack WAV BLOAD @{baud}", ok, detail)
 
@@ -186,7 +186,7 @@ def main() -> int:
                 lambda: t_openstack(openstack, 2400, args.zerobas),
             ]
 
-    print("Tier-1 cbios-tape full-stack regression\n")
+    print("Tier-1 zerobas-tape full-stack regression\n")
     results = []
     for t in tests:
         name, ok, detail = t()

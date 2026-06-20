@@ -4,7 +4,7 @@
 
 """Apply parameterised, in-spec tape degradations to a cassette WAV.
 
-The cbios-tape read path (TAPION/TAPIN) has so far only been proven against
+The zerobas-tape read path (TAPION/TAPIN) has so far only been proven against
 *synthetic* recordings -- the clean, square, jitter-free output of its own write
 path under openMSX. That proves the codec is self-consistent, not that it
 tolerates a real tape. This tool takes a clean recording and applies the kinds of
@@ -30,7 +30,7 @@ Impairments (compose in this order: time-base, then waveform, then level):
 
 Output is 8-bit unsigned mono at the input framerate -- what openMSX's
 cassetteplayer expects. Verify a degraded file by mounting it with
-`omsx_run.py --cassette` and reading it back with the cbios-tape read probes.
+`omsx_run.py --cassette` and reading it back with the zerobas-tape read probes.
 
   # clean file from the write probe, then degrade and re-read:
   python3 cassette-tool/degrade_wav.py in.wav out.wav --lowpass 5000 --noise 0.03

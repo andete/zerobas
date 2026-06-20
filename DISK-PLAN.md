@@ -1,7 +1,7 @@
 # Disk ROM support plan (MSX1)
 
 Two workstreams — a new `cbios-disk` sibling repo (hardware layer) and zerobas
-interpreter extensions (language layer) — mirroring the cbios-tape model.
+interpreter extensions (language layer) — mirroring the zerobas-tape model.
 
 ## Reference machine: National CF-3300 (MSX1, JP, 1985)
 
@@ -43,7 +43,7 @@ internal slot just as it finds zerobas in slot 0 page 1; cartridge slots 1 and
 
 Consequences for cbios-disk:
 
-- **Standalone ROM** — not an IPS patch on an existing ROM (unlike cbios-tape,
+- **Standalone ROM** — not an IPS patch on an existing ROM (unlike zerobas-tape,
   which patches C-BIOS page 0 in-place). cbios-disk is a fresh 16/32 KB ROM
   placed in a new slot.
 - **openMSX placement** — machine XML uses a `<primary slot="3"><secondary
@@ -54,14 +54,14 @@ Consequences for cbios-disk:
 
 ## Repository structure
 
-cbios-tape and cbios-disk both live inside the zerobas repo (not as sibling
-repos). cbios-tape will be migrated in from its current standalone repo.
+zerobas-tape and cbios-disk both live inside the zerobas repo (not as sibling
+repos). zerobas-tape will be migrated in from its current standalone repo.
 `src/` is renamed to `basic/` to make the three components visually symmetric:
 
 ```
 zerobas/
   basic/    ← BASIC interpreter ROM (renamed from src/)
-  tape/     ← cbios-tape (migrated in)
+  tape/     ← zerobas-tape (migrated in)
   disk/     ← cbios-disk (new)
   tools/
 ```
@@ -74,7 +74,7 @@ no sibling-repo auto-detection needed. The Makefile gains `tape.ips` and
 
 ## cbios-disk (new separate repo)
 
-Goal: a clean-room MSX1 disk ROM that fills the role cbios-tape fills for
+Goal: a clean-room MSX1 disk ROM that fills the role zerobas-tape fills for
 cassette. Provides the physical FDC driver, FAT12 read layer, and BDOS hooks
 so zerobas's `BLOAD"A:FILE"` can reach a real FAT12 disk image.
 
@@ -113,7 +113,7 @@ so zerobas's `BLOAD"A:FILE"` can reach a real FAT12 disk image.
       `.dsk` image
 - [ ] **openMSX machine config** — machine XML that places cbios-disk in
       internal slot 3-1, declares an FDC extension, attaches a test `.dsk`
-      image, and pairs with the existing zerobas + cbios-tape IPS patches in
+      image, and pairs with the existing zerobas + zerobas-tape IPS patches in
       slot 0
 - [ ] **Makefile** — build ROM with pasmo; no patch-generation step needed
       (standalone ROM, not an IPS)

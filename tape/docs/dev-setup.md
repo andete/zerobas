@@ -13,7 +13,7 @@ local-only. The legal reasoning is in [`feasibility.md`](feasibility.md) and
 `src/tape.asm` and the patch build are in this repo. To rebuild the patch:
 
 ```sh
-make        # -> cbios-tape-msx1.ips + .bps
+make        # -> zerobas-tape-msx1.ips + .bps
 ```
 
 `pasmo` assembles `src/tape.asm` to just the bytes the patch adds; **no C-BIOS is

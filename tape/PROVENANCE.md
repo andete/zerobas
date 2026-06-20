@@ -1,6 +1,6 @@
 # Provenance log
 
-Every address, constant, and algorithm in cbios-tape must appear here with an
+Every address, constant, and algorithm in zerobas-tape must appear here with an
 independent **allowed** source, or be explicitly **quarantined**. An unexplained
 magic value blocks release.
 
@@ -13,7 +13,7 @@ magic value blocks release.
 For a cassette signal, a quarantined *timing* constant is acceptable as long as the
 resulting **waveform round-trips against the oracle**: the format (frequencies,
 framing) is the interface, not the loop-iteration count. The behavioural oracle
-observations cbios-tape is built from are captured in
+observations zerobas-tape is built from are captured in
 [`docs/spec-cassette.md`](docs/spec-cassette.md) here, by driving a real MSX /
 openMSX as a black box.
 

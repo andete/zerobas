@@ -31,7 +31,7 @@ not the implementation.**
   rates*, which a black-box memory diff can't see. The oracle therefore has to drive
   an actual tape signal (see *How we validate*), not just break-and-dump.
 
-This repo (`cbios-tape`) holds the **feasibility note, the behavioural spec, and the
+This repo (`zerobas-tape`) holds the **feasibility note, the behavioural spec, and the
 implementation**. The validation harness — openMSX probes, `omsx_run.py`, oracle
 captures — lives in the companion
 [`msx-preservation`](https://github.com/andete/msx-preservation) analysis repo.
@@ -188,7 +188,7 @@ offered upstream. That decision is deferred to after Phase 4; until then the fir
 holds and nothing is folded into C-BIOS.
 
 **Interim distribution: an IPS / BPS patch.** Until any upstreaming, the build ships
-as a **patch against a stock C-BIOS v0.29 ROM** (this repo's `cbios-tape-msx1.ips`/
+as a **patch against a stock C-BIOS v0.29 ROM** (this repo's `zerobas-tape-msx1.ips`/
 `.bps`), not a modified ROM — both an IPS (universal) and a BPS (embeds a
 source-ROM CRC so a wrong base fails cleanly instead of silently corrupting).
 Applying it requires the user to already hold C-BIOS, and it pins the result to an

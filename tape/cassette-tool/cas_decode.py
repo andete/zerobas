@@ -4,8 +4,8 @@
 
 """Decode an MSX cassette FSK recording (WAV) back to bytes.
 
-Oracle infrastructure for the cbios-tape side project (see
-cbios-tape/docs/feasibility.md): when a probe cart drives the BIOS write path
+Oracle infrastructure for the zerobas-tape side project (see
+zerobas-tape/docs/feasibility.md): when a probe cart drives the BIOS write path
 (TAPOON/TAPOUT) and openMSX records the CAS-out signal with `cassetteplayer new`,
 this turns that WAV back into the byte stream so the spec's "to capture" rows can
 be filled and a write->read round-trip asserted. It observes only signal edges --

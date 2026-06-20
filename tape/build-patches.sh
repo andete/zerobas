@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: BSD-2-Clause
 
-# Build the cbios-tape ROM patches (IPS + BPS) from tape.asm alone.
+# Build the zerobas-tape ROM patches (IPS + BPS) from tape.asm alone.
 #
 # No C-BIOS is compiled. pasmo assembles the self-contained cassette source into
 # just the bytes the patch adds, and ../tools/rom_patch.py slices the two changed
@@ -36,11 +36,11 @@ forge() {   # forge OUT [--source ROM]
 }
 
 if [ -f "$STOCK" ]; then
-    forge "$HERE/cbios-tape-msx1.ips" --source "$STOCK"
-    forge "$HERE/cbios-tape-msx1.bps" --source "$STOCK"
+    forge "$HERE/zerobas-tape-msx1.ips" --source "$STOCK"
+    forge "$HERE/zerobas-tape-msx1.bps" --source "$STOCK"
 else
     echo "note: stock ROM not found ($STOCK)"
     echo "      building IPS only (BPS needs the stock ROM for its CRC32)."
     echo "      pass it: sh build-patches.sh /path/to/cbios_main_msx1_eu.rom"
-    forge "$HERE/cbios-tape-msx1.ips"
+    forge "$HERE/zerobas-tape-msx1.ips"
 fi

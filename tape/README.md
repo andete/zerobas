@@ -1,4 +1,4 @@
-# tape — cbios-tape cassette patch
+# tape — zerobas-tape cassette patch
 
 **Makes cassette loading and saving work in openMSX's free C-BIOS.**
 
@@ -19,7 +19,7 @@ openmsx -machine C-BIOS_MSX1_EU_BASIC
 ## Building the patch
 
 ```sh
-make -C tape    # -> tape/cbios-tape-msx1.ips + tape/cbios-tape-msx1.bps
+make -C tape    # -> tape/zerobas-tape-msx1.ips + tape/zerobas-tape-msx1.bps
 ```
 
 Requires [pasmo](https://pasmo.speccy.org/). The pre-built patches are already

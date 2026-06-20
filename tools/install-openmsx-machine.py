@@ -7,7 +7,7 @@
 For each MSX1 C-BIOS machine openMSX ships this writes a "<name>_BASIC" machine
 that is byte-for-byte the stock machine with two load-time patches on its main ROM:
 zerobas in slot-0 page 1 (BASIC next to the BIOS, the way a real MSX is laid out),
-and the cbios-tape cassette patch in page 0. C-BIOS's cold-boot cartridge scan
+and the zerobas-tape cassette patch in page 0. C-BIOS's cold-boot cartridge scan
 finds zerobas's "AB" header in page 1 and calls it, so the machine boots straight
 to the zerobas prompt with no cartridge inserted -- and because the tape patch fills
 in C-BIOS's failing cassette stubs, zerobas's `BLOAD"CAS:",R` actually completes.
@@ -34,7 +34,7 @@ import argparse, glob, os, re, sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IPS = os.path.join(REPO, "zerobas-msx1.ips")
-TAPE_IPS = os.path.join(REPO, "tape", "cbios-tape-msx1.ips")
+TAPE_IPS = os.path.join(REPO, "tape", "zerobas-tape-msx1.ips")
 
 # Where openMSX keeps its bundled machines + ROMs, by platform default.
 SHARE_CANDIDATES = [

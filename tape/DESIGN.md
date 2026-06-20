@@ -1,4 +1,4 @@
-# cbios-tape
+# zerobas-tape
 
 A **clean-room reimplementation of the MSX cassette (tape) BIOS routines** that
 C-BIOS leaves unimplemented, shipped as a tiny **patch** against a stock C-BIOS
@@ -6,17 +6,18 @@ v0.29 ROM. Scoped to *just* the seven cassette entry points (`$00E1`–`$00F3`) 
 the work-area state they touch — the read and write signal paths C-BIOS ships as
 stubs.
 
-cbios-tape is a deliberately **separate project**. It is combined with C-BIOS only
-*at runtime* — as a binary patch the user applies to their own ROM — never merged
-into the C-BIOS source tree. This is a legal firewall: a provenance challenge to
-the cassette code can never contaminate the mature, uncontested BIOS it plugs into.
+zerobas-tape is a **component of the zerobas project** (`tape/`). It is combined
+with C-BIOS only *at runtime* — as a binary patch applied to the user's own ROM —
+never merged into the C-BIOS source tree. This is a legal firewall: a provenance
+challenge to the cassette code can never contaminate the mature, uncontested BIOS
+it plugs into.
 
 ## The gap it fills
 
 C-BIOS ships tape **stubs**, not a tape subsystem. Against a real Philips VG-8020 as
 oracle: `STMOTR` (motor relay) and the session-terminate calls work, but
 `TAPION`/`TAPIN` (read) block forever and `TAPOON`/`TAPOUT` (write) are no-ops.
-cbios-tape implements that missing signal layer: FSK leader detection with
+zerobas-tape implements that missing signal layer: FSK leader detection with
 auto-baud, byte framing, and the write waveform, at both 1200 and 2400 baud.
 
 ## Traceability is the whole point
@@ -43,7 +44,7 @@ listing — including the cassette routines of any reference ROM (e.g. the VG-80
 used as the oracle). A reference ROM is only ever an *oracle*: identical inputs in,
 observed bytes/edges out.
 
-The behavioural specifications cbios-tape is built from live in [`docs/`](docs/)
+The behavioural specifications zerobas-tape is built from live in [`docs/`](docs/)
 here, produced by driving a real MSX (and openMSX) as a black box.
 
 ## Build
@@ -51,7 +52,7 @@ here, produced by driving a real MSX (and openMSX) as a black box.
 Requires [pasmo](https://pasmo.speccy.org/) and `python3`:
 
 ```sh
-make                        # -> cbios-tape-msx1.ips + .bps
+make                        # -> zerobas-tape-msx1.ips + .bps
 ```
 
 `pasmo` assembles `src/tape.asm` to just the bytes the patch adds, then
@@ -87,7 +88,7 @@ stubs (`0x16B2`), which are left untouched. The code lives entirely in the first
 
 ```sh
 python3 tools/rom_patch.py apply cbios_main_msx1_eu.rom \
-    cbios-tape-msx1.bps  cbios_main_msx1_eu_tape.rom
+    zerobas-tape-msx1.bps  cbios_main_msx1_eu_tape.rom
 ```
 
 Standard patchers work too (`flips`, `Lunar IPS`, emulators' patch-on-load). **BPS**
@@ -143,7 +144,7 @@ a read cart reads it back, and the bytes must match. See
 ## Note on C-BIOS
 
 C-BIOS (https://github.com/cbios/cbios, BSD 2-clause) is the open MSX BIOS this
-patch targets. cbios-tape carries **no** stock-C-BIOS code: the patch's only
+patch targets. zerobas-tape carries **no** stock-C-BIOS code: the patch's only
 substantive region is our clean-room code written over `0x00` fill, and the other
 is seven vector addresses. The original stubs stay byte-for-byte in place, and — now
 that we ship our own motor routine — the patch calls into no stock C-BIOS code at all.
