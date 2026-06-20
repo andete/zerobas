@@ -77,6 +77,7 @@ CAS_LHALF24:    equ     50              ; 2400 baud low  tone ~2400 Hz half cycl
 
 CAS_LONGLEN:    equ     4000            ; long header (new file), full hi-freq cycles
 CAS_SHORTLEN:   equ     2000            ; short header (between blocks)
+CAS_FLUSHLEN:   equ     32              ; trailing carrier cycles flushed at TAPOOF
 
 ; TAPION lock: skip CAS_SKIP edges to clear the motor-restart spin-up, then
 ; average LOWLIM over CAS_RUNLEN leader halves. CAS_RUNLEN stays 16 (the >>4
@@ -532,7 +533,7 @@ tapout_next:
 ; Stops writing on the tape: flush a trailing carrier, motor off.
 tapoof:
                 call    cas_short       ; flush a short trailing carrier (cached baud)
-                ld      de,32
+                ld      de,CAS_FLUSHLEN
 tapoof_lp:
                 call    cas_cycle
                 dec     de

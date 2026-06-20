@@ -155,7 +155,7 @@ Each phase ships something useful and stands alone.
   own repo, not here.)
 - **Phase 2 — Read path: read one byte.** **Done.** `TAPION` (leader detect +
   auto-baud threshold via `LOWLIM`) and `TAPIN` (start-bit hunt + half-period
-  classification, LSB-first) are implemented in `src/tape.asm` and **close the loop**:
+  classification, LSB-first) are implemented in `tape.asm` and **close the loop**:
   the recording our write path produced, fed back as cassette media, is read back
   by `TAPION`+`TAPIN` to the exact 6-byte pattern (carry=0), with a realistic ~2 s
   leader. Hardware correction landed here too — CAS-in is **PSG R14 bit 7**, not

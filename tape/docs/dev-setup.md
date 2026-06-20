@@ -1,7 +1,7 @@
 # Dev setup: validating the cassette patch under openMSX
 
 The cassette implementation and its patch build live **here** in this repo
-(`src/tape.asm`, `make` → the `.ips`/`.bps`). The **validation harness** — the
+(`tape.asm`, `make` → the `.ips`/`.bps`). The **validation harness** — the
 openMSX probes and the real-machine oracle captures — lives in the companion
 [`msx-preservation` analysis repo](https://github.com/andete/msx-preservation)
 (`tools/omsx_run.py`, `tools/omsx/bios_probe_tap*.py`); the oracle WAV captures are
@@ -10,13 +10,13 @@ local-only. The legal reasoning is in [`feasibility.md`](feasibility.md) and
 
 ## Where the build lives
 
-`src/tape.asm` and the patch build are in this repo. To rebuild the patch:
+`tape.asm` and the patch build are in this repo. To rebuild the patch:
 
 ```sh
 make        # -> zerobas-tape-msx1.ips + .bps
 ```
 
-`pasmo` assembles `src/tape.asm` to just the bytes the patch adds; **no C-BIOS is
+`pasmo` assembles `tape.asm` to just the bytes the patch adds; **no C-BIOS is
 compiled**. See [`../README.md`](../README.md) and [`../PROVENANCE.md`](../PROVENANCE.md).
 
 ## Boot in openMSX (patch applied on load)
@@ -37,7 +37,7 @@ python3 tools/omsx_run.py --machine C-BIOS_MSX1_EU_TAPE --cart /tmp/sentinel.rom
 
 ## The validate loop
 
-1. **Edit** the routines in `src/tape.asm` (this repo).
+1. **Edit** the routines in `tape.asm` (this repo).
 2. **Build:** `make` (regenerates the IPS the machine loads).
 3. **Test** with `--machine C-BIOS_MSX1_EU_TAPE`, using the probe harness in the
    `msx-preservation` repo:

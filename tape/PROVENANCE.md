@@ -114,12 +114,14 @@ until the recording round-trips through the host decoder and against the oracle.
 | CAS_HHALF24 / CAS_LHALF24 (2400 baud) | 24 / 50 | same, one octave up (4800/2400 Hz) | quarantined |
 | CAS_LONGLEN / CAS_SHORTLEN (leader cycles) | 4000 / 2000 | documented leader is a continuous carrier; lengths chosen long enough to lock (new file vs between blocks) | quarantined |
 | CAS_SKIP / CAS_RUNLEN (auto-baud window) | 32 / 16 | our own lock algorithm: skip the motor-restart spin-up transient, then average 16 clean leader halves | quarantined |
+| CAS_FLATMAX (leading-silence timeout budget) | 1500 | our own dead-tape guard: flat-timeout iterations (~3 ms each) tolerated before the first edge; ~1500 covers ~5 s, covering openMSX's ~2 s `LONG_SILENCE` pre-leader gap with margin, and only spent while the signal is absent | quarantined |
+| CAS_FLUSHLEN (TAPOOF trailing carrier) | 32 | our own write-tail length: short high-freq carrier flushed after the last byte so the final stop bits clear the decoder; chosen long enough to register, short enough to not bloat the tail | quarantined |
 | LOWLIM derivation | 1.75 × avg-short, in quarter-count units | our own discrimination threshold: a real long half is ~2×, the leader→data transition half ~1.5×, so 1.75× rejects the artifact with symmetric margin | quarantined |
 | CASIN_R14 | 14 | PSG register number carrying CAS-in (see hardware table) | sourced |
 
 ## Audit
 
-Before release, every constant and table in [`src/tape.asm`](src/tape.asm) must map
+Before release, every constant and table in [`tape.asm`](tape.asm) must map
 to a `sourced` row above or be `quarantined` with a round-trip justification. The
 quarantined rows are all timing-loop counts or our own algorithms, each validated by
 the cassette signal round-tripping byte-for-byte against the oracle (both bauds; real

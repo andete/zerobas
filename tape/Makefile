@@ -4,7 +4,7 @@
 # zerobas-tape -- build the IPS/BPS cassette-BIOS patches.
 #
 # Requires pasmo (the assembler C-BIOS uses) and python3. No C-BIOS tree is
-# needed: the patch is assembled from src/tape.asm alone. A stock C-BIOS v0.29
+# needed: the patch is assembled from tape.asm alone. A stock C-BIOS v0.29
 # ROM is used only to stamp the BPS CRC32 + verify; override its path with STOCK=.
 
 IPS := zerobas-tape-msx1.ips

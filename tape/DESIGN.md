@@ -31,7 +31,7 @@ code distributable.
   oracle observation) or `quarantined` (no copied source; derived from the
   documented format + CPU clock, justified by oracle round-trip, never lifted from
   a reference ROM).
-- **Inline citations** — non-obvious values in [`src/tape.asm`](src/tape.asm) name
+- **Inline citations** — non-obvious values in [`tape.asm`](tape.asm) name
   their basis in a comment (e.g. `; CAS-in is PSG R14 bit 7`, the FSK derivation).
 
 **Allowed sources:** the MSX2 Technical Handbook, the MSX Assembly Page
@@ -55,7 +55,7 @@ Requires [pasmo](https://pasmo.speccy.org/) and `python3`:
 make                        # -> zerobas-tape-msx1.ips + .bps
 ```
 
-`pasmo` assembles `src/tape.asm` to just the bytes the patch adds, then
+`pasmo` assembles `tape.asm` to just the bytes the patch adds, then
 `tools/rom_patch.py forge` slices the two changed regions out (vectors at `0xE2`,
 code from `0x3A72` to the `tape_end` label). **No C-BIOS is compiled.** A stock
 C-BIOS v0.29 ROM is the patch *target*, not a build input — it is used only to
