@@ -10,16 +10,13 @@ one item — do **one item per session** to keep context lean.
 ## Status today
 
 Working: byte-identical tokeniser (keywords, integer / `&H` constants,
-`= + - * < >`), stored numbered-line programs (insert / replace / delete,
-`NEW`, `RUN`), control flow (`GOTO`, `GOSUB`/`RETURN`, `FOR`/`NEXT`,
-`IF`/`THEN`/`ELSE`, `END`/`STOP`), `DATA`/`READ`/`RESTORE`, comparisons,
-`POKE`/`PEEK`, single-letter 16-bit integer variables, and cassette
+`= + - * / \ < >`, `MOD`/`AND`/`OR`/`XOR`/`NOT`), stored numbered-line programs
+(insert / replace / delete, `NEW`, `RUN`), control flow (`GOTO`,
+`GOSUB`/`RETURN`, `FOR`/`NEXT`, `IF`/`THEN`/`ELSE`, `ON … GOTO`/`GOSUB`,
+`END`/`STOP`), `DATA`/`READ`/`RESTORE`, comparisons, `POKE`/`PEEK`, `PRINT`,
+`CLEAR`, `DEF USR`/`USR`, the screen-setup verbs (`SCREEN`, `COLOR`, `CLS`,
+`WIDTH`, `KEY OFF`/`ON`), multi-character 16-bit integer variables, and cassette
 `BLOAD"CAS:",R`.
-
-Two reserved-but-unimplemented tokens to note: **`PRINT`**
-([basic/interp.asm](basic/interp.asm), kwtable) and **`ON`**
-([basic/sysvars.inc](basic/sysvars.inc)) both crunch but have no executor — they
-die with `syntax error` at run time.
 
 ## Phase 1 — enough BASIC to boot loader stubs
 
@@ -47,7 +44,12 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
       crunch byte-identical, output verified in openMSX. `TAB(`/`SPC(` + string
       vars/`CHR$` still to do — need the Phase-2 string engine.)
 - [x] `ON expr GOTO/GOSUB` — `branch_lineno` extended with comma-list loop; `ex_on`/`eon_seek_nth` handler added; all 7 functional probes (A=1..N, N=0 fallthrough, N>count fallthrough) pass
-- [ ] `SCREEN`, `COLOR`, `CLS`, `KEY OFF`, `WIDTH` — pre-handoff screen setup (thin BIOS/VDP wrappers)
+- [x] `SCREEN`, `COLOR`, `CLS`, `KEY OFF`, `WIDTH` — pre-handoff screen setup (thin BIOS/VDP wrappers)
+      (basic/screen.asm: thin wrappers over CHGMOD/CHGCLR/CLS/ERAFNK/DSPFNK; new `OFF`
+      token $EB added; crunch byte-identical incl. all 7 verbs; 9/9 functional probes
+      pass `basic_probe_screen.py`. Divergences: SCREEN's extra args evaluated+ignored;
+      COLOR doesn't repaint drawn text; KEY only does OFF/ON, `KEY n,"str"`/`KEY LIST`
+      error — all Phase-2 scope.)
 
 ### Expressions / variables
 - [x] Multi-character variable names — single-letter only is a hard wall

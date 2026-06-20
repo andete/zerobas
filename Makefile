@@ -9,8 +9,8 @@
 PASMO ?= pasmo
 SRC   := basic/main.asm
 DEPS  := basic/interp.asm basic/title.asm basic/repl.asm basic/vars.asm basic/expr.asm \
-         basic/poke.asm basic/clear.asm basic/usr.asm basic/print.asm basic/bload.asm \
-         basic/program.asm basic/sysvars.inc
+         basic/poke.asm basic/clear.asm basic/usr.asm basic/print.asm basic/screen.asm \
+         basic/bload.asm basic/program.asm basic/sysvars.inc
 ROM   := basic.rom
 
 $(ROM): $(SRC) $(DEPS)

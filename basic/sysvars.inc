@@ -9,10 +9,28 @@
 
 ; --- Screen / console BIOS entry points ------------------------------------
 ; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook.
+CHGMOD          equ     $005F   ; switch screen mode; A = mode 0..3 (SCREEN n)
+CHGCLR          equ     $0062   ; apply FORCLR/BAKCLR/BDRCLR; A = screen mode (COLOR)
 INITXT          equ     $006C   ; init SCREEN 0 (TEXT1) and enable the display
 CHGET           equ     $009F   ; wait for a character from the keyboard -> A
 CHPUT           equ     $00A2   ; output the character in A at the cursor
+CLS             equ     $00C3   ; clear the screen; zero flag must be set on entry
+ERAFNK          equ     $00CC   ; erase the function-key display line (KEY OFF)
+DSPFNK          equ     $00CF   ; display the function-key line (KEY ON)
 CSRX            equ     $F3DD   ; cursor column (1-based); C-BIOS sysvars / PRINT comma zones
+
+; --- Screen work-area system variables (C-BIOS; allowed) -------------------
+; Source: C-BIOS system variables (BSD 2-clause), cross-checked against the MSX2
+; Technical Handbook work-area appendix / MSX Assembly Page. CHGCLR reads the
+; three colour bytes; CHGMOD/INITXT read the per-mode line lengths; SCRMOD holds
+; the current screen mode (CHGMOD writes it).
+LINL40          equ     $F3AE   ; text columns for SCREEN 0 (WIDTH default)
+LINL32          equ     $F3AF   ; text columns for SCREEN 1 (WIDTH default)
+LINLEN          equ     $F3B0   ; current line length (active width)
+FORCLR          equ     $F3E9   ; foreground colour
+BAKCLR          equ     $F3EA   ; background colour
+BDRCLR          equ     $F3EB   ; border colour
+SCRMOD          equ     $FCAF   ; current screen mode (0..3)
 
 ; --- Cassette BIOS entry points -------------------------------------------
 ; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook,
@@ -146,6 +164,7 @@ SCREEN_TOKEN    equ     $C5     ; SCREEN
 COLOR_TOKEN     equ     $BD     ; COLOR
 WIDTH_TOKEN     equ     $A0     ; WIDTH
 KEY_TOKEN       equ     $CC     ; KEY
+OFF_TOKEN       equ     $EB     ; OFF (KEY OFF); dev-workflow.md tokeniser quirk, oracle-observed
 LINENO_TOKEN    equ     $0E     ; line number reference (before RUN): $0E,<lineno LE>
 LINEADDR_TOKEN  equ     $0D     ; line number reference (after RUN): $0D,<addr LE>
 OCT_TOKEN       equ     $0B     ; &O constant: $0B,<value16 LE>

@@ -60,6 +60,9 @@
 ; The PRINT statement (defines `ex_print`, `print_number`, `print_crlf`).
                 include "basic/print.asm"
 
+; Screen-setup verbs SCREEN/COLOR/CLS/WIDTH/KEY (defines `ex_screen`, …).
+                include "basic/screen.asm"
+
 ; The BLOAD statement handler and the ,R handoff (defines `do_bload`).
                 include "basic/bload.asm"
 

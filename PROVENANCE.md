@@ -266,6 +266,44 @@ RETURN resuming correctly at the statement after the ON…GOSUB).
 
 No quarantined items.
 
+## Phase 1: screen-setup verbs SCREEN / COLOR / CLS / WIDTH / KEY (basic/screen.asm, basic/sysvars.inc, basic/interp.asm)
+
+Thin wrappers over the documented C-BIOS screen entry points — the pre-handoff
+screen setup a loader stub does before `BLOAD` (`SCREEN n : COLOR f,b,d : CLS`,
+`KEY OFF`). zerobas owns no VDP programming of its own; each verb calls down
+through the BIOS jump table the way the real BASIC does (see
+`docs/msx1-basic-bios-coupling.md`). Statement *semantics* are from the public
+MSX-BASIC *language* reference; the statement tokens are from MSX2 TH Table 2.20
+(`CLS=$9F`, `WIDTH=$A0`, `COLOR=$BD`, `SCREEN=$C5`, `KEY=$CC`, already listed in
+the DEF USR section), and `OFF=$EB`, the BIOS entry points and the work-area
+addresses below are from the MSX Assembly Page / MSX2 TH / C-BIOS.
+
+The new `OFF` keyword and every verb crunch byte-identical to the live VG-8020
+reference via `basic_probe_crunch.py` (`screen 2`, `color 15,1,1`, `cls`,
+`width 32`, `key off`, `key on`, `screen 1,1` all PASS). Functional behaviour was
+verified on `Philips_VG_8020` in openMSX with `basic_probe_screen.py` (9/9 PASS:
+SCREEN→SCRMOD, the ignored extra `SCREEN 1,1` arg, COLOR→FORCLR/BAKCLR/BDRCLR
+incl. omitted-fg, WIDTH→LINLEN, CLS→cursor home, KEY OFF/ON continue the line).
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `OFF` keyword token (`KEY OFF`) | `$EB` | MSX2 TH Table 2.20 / MSX Assembly Page token table; crunch byte-identical (oracle) | sourced |
+| `CHGMOD` (SCREEN: switch mode, A = mode) | `$005F` | MSX Assembly Page BIOS list / MSX2 TH | sourced |
+| `CHGCLR` (COLOR: apply colours, A = mode) | `$0062` | MSX Assembly Page BIOS list / MSX2 TH | sourced |
+| `CLS` (clear screen; zero flag set on entry) | `$00C3` | MSX Assembly Page BIOS list / MSX2 TH | sourced |
+| `ERAFNK` / `DSPFNK` (KEY OFF / KEY ON) | `$00CC` / `$00CF` | MSX Assembly Page BIOS list / MSX2 TH | sourced |
+| `FORCLR` / `BAKCLR` / `BDRCLR` work vars | `$F3E9` / `$F3EA` / `$F3EB` | C-BIOS system variables (BSD 2-clause); cross-checked MSX2 TH work-area appendix | sourced |
+| `LINL40` / `LINL32` / `LINLEN` (WIDTH) | `$F3AE` / `$F3AF` / `$F3B0` | C-BIOS system variables (BSD 2-clause); MSX2 TH work-area appendix | sourced |
+| `SCRMOD` current screen mode | `$FCAF` | C-BIOS system variables (BSD 2-clause); MSX2 TH work-area appendix | sourced |
+| `SCREEN [mode][,…]`, `COLOR [fg][,bg][,border]`, `CLS`, `WIDTH n`, `KEY OFF/ON` syntax | — | public MSX-BASIC language reference | sourced |
+| SCREEN's extra args (sprite size, key click, …) evaluated and ignored — only the display mode is applied | — | own design (minimal; documented in basic/screen.asm) | sourced |
+| COLOR applies colours via CHGCLR but does not repaint drawn text; omitted args keep the current colour | — | own design (matches the BIOS-call effect; full repaint is Phase 2) | sourced |
+| KEY recognises only `OFF` / `ON`; `KEY <n>,"str"` (redefine) and `KEY LIST` raise syntax error | — | own design (loader-stub scope; full KEY is Phase 2) | sourced |
+| WIDTH records the line length in LINLEN + the per-mode default, then re-runs CHGMOD to apply it | — | own code; mirrors the language-reference WIDTH effect | sourced |
+| SCREEN/COLOR/CLS/WIDTH/KEY parse + dispatch algorithm | — | **own code** (mirrors the CLEAR/PRINT arg-parse pattern); not derived from any disassembly | sourced |
+
+No quarantined items.
+
 ### RAM additions (src/sysvars.inc)
 
 | Item | Value | Source (allowed) | Status |

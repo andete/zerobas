@@ -502,6 +502,7 @@ kwtable:
                 db      5,"COLOR",1,COLOR_TOKEN
                 db      5,"WIDTH",1,WIDTH_TOKEN
                 db      3,"KEY",1,KEY_TOKEN
+                db      3,"OFF",1,OFF_TOKEN
                 ; Phase 1: logical / bitwise + MOD operator keywords (Table 2.20).
                 db      3,"AND",1,AND_TOKEN
                 db      2,"OR",1,OR_TOKEN
@@ -546,7 +547,7 @@ exec_stmt:
                 or      a
                 ret     z                   ; end of line -> back to the prompt
                 cp      COLON               ; ':' separator / empty statement
-                jr      z,ex_sep
+                jp      z,ex_sep
                 cp      BLOAD_TOKEN
                 jp      z,ex_bload
                 cp      POKE_TOKEN
@@ -557,6 +558,16 @@ exec_stmt:
                 jp      z,ex_def
                 cp      PRINT_TOKEN
                 jp      z,ex_print
+                cp      CLS_TOKEN
+                jp      z,ex_cls
+                cp      SCREEN_TOKEN
+                jp      z,ex_screen
+                cp      COLOR_TOKEN
+                jp      z,ex_color
+                cp      WIDTH_TOKEN
+                jp      z,ex_width
+                cp      KEY_TOKEN
+                jp      z,ex_key
                 cp      REM_TOKEN
                 jr      z,ex_rem
                 cp      DATA_TOKEN          ; DATA: skip this statement at run time
@@ -592,7 +603,7 @@ exec_stmt:
                 jp      stmt_error
 ex_sep:
                 inc     hl
-                jr      exec_stmt
+                jp      exec_stmt
 ex_end:
                 ld      a,1                 ; END / STOP -> stop the run
                 ld      (ENDFLAG),a
