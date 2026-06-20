@@ -168,7 +168,30 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
 ## Deferred track — disk transport
 
 Not Phase 1 or 2. See [`disk/TODO.md`](disk/TODO.md) for the full plan and
-status. The interpreter-side items (disk-filename parsing in `BLOAD`/`LOAD`,
-`RUN"file"`, BSAVE-header read, `,R` handoff) are small once the
-[`disk/`](disk/) ROM's BDOS API is stable — they mirror
-[`basic/bload.asm`](basic/bload.asm).
+status. The disk-interface ROM (`disk/`) is implemented and functionally
+validated on openMSX — FDC driver + FAT12 read path + BDOS dispatcher all pass
+against the test image, and the differential DSKIO oracle matches the National
+CF-3300 byte-for-byte. The disk track is now gated on **one `basic/` item**,
+which is why it leads the list below.
+
+### Priority — next `basic/` task (gating blocker for the whole disk path)
+
+- [ ] **Init disk ROMs from zerobas-BASIC's INIT** — found during openMSX
+      validation. C-BIOS scans slot 0 (zerobas-BASIC) before slot 3-1, and
+      zerobas-BASIC's INIT enters the REPL without ever returning, so the disk
+      ROM's INIT in slot 3-1 never runs in the combined machine — its hooks and
+      SYSTEM/BDOS vector are never installed (in isolation the disk INIT runs
+      and installs correctly). Before taking over the REPL, zerobas-BASIC's INIT
+      must walk the slots (1/2/3 + subslots), find each `"AB"` extension-ROM
+      header, and `CALSLT` its INIT (which returns). This is an interpreter
+      change, so it lands on `main`; it blocks every interpreter-side disk item
+      below. Until it lands, the disk path can only be exercised on a
+      disk-ROM-only machine. See [`disk/TODO.md`](disk/TODO.md).
+
+The remaining interpreter-side items (disk-filename parsing in `BLOAD`/`LOAD`,
+`RUN"file"`, BSAVE-header read, `,R` handoff) are small once that blocker is
+cleared and the [`disk/`](disk/) ROM's BDOS API is stable — they mirror
+[`basic/bload.asm`](basic/bload.asm). Two integration notes from validation:
+reach disk entry points via an inter-slot call (`CALSLT`), and don't rely on the
+`$0080` DTA (page 0 is BIOS ROM under Disk BASIC) — the BLOAD path must choose
+its own transfer buffer.
