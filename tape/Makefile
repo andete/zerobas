@@ -9,10 +9,10 @@
 
 IPS := cbios-tape-msx1.ips
 BPS := cbios-tape-msx1.bps
-SRC := src/tape.asm
+SRC := tape.asm
 STOCK ?=
 
-patches: $(SRC) tools/rom_patch.py build-patches.sh
+patches: $(SRC) ../tools/rom_patch.py build-patches.sh
 	sh build-patches.sh $(STOCK)
 
 test: patches

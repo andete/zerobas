@@ -7,12 +7,12 @@
 For each MSX1 C-BIOS machine openMSX ships this writes a "<name>_BASIC" machine
 that is byte-for-byte the stock machine with two load-time patches on its main ROM:
 zerobas in slot-0 page 1 (BASIC next to the BIOS, the way a real MSX is laid out),
-and the sibling cbios-tape cassette patch in page 0. C-BIOS's cold-boot cartridge
-scan finds zerobas's "AB" header in page 1 and calls it, so the machine boots
-straight to the zerobas prompt with no cartridge inserted -- and because the tape
-patch fills in C-BIOS's failing cassette stubs, zerobas's `BLOAD"CAS:",R` actually
-completes. The two patches touch disjoint regions (page 0 vs page 1), so they
-compose cleanly; both are always applied.
+and the cbios-tape cassette patch in page 0. C-BIOS's cold-boot cartridge scan
+finds zerobas's "AB" header in page 1 and calls it, so the machine boots straight
+to the zerobas prompt with no cartridge inserted -- and because the tape patch fills
+in C-BIOS's failing cassette stubs, zerobas's `BLOAD"CAS:",R` actually completes.
+The two patches touch disjoint regions (page 0 vs page 1), so they compose cleanly;
+both are always applied.
 
 It does NOT copy or modify any ROM. The generated config points at openMSX's own
 bundled ROMs by absolute path and lists the .ips files as load-time <patches>
@@ -21,8 +21,7 @@ entries, so openMSX still loads the pristine ROM and patches it in memory each b
     python3 tools/install-openmsx-machine.py            # auto-detect everything
     python3 tools/install-openmsx-machine.py --dry-run   # show what it would write
     python3 tools/install-openmsx-machine.py --share /path/to/openmsx/share \
-                                             --user  /path/to/.openMSX \
-                                             --tape-ips /path/to/cbios-tape-msx1.ips
+                                             --user  /path/to/.openMSX
 
 Then launch openMSX and pick e.g. "C-BIOS_MSX1_EU_BASIC", or:
     openmsx -machine C-BIOS_MSX1_EU_BASIC
@@ -35,13 +34,7 @@ import argparse, glob, os, re, sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IPS = os.path.join(REPO, "zerobas-msx1.ips")
-
-# The cbios-tape cassette patch is built in its own sibling repo. We always pair
-# it with zerobas so BLOAD/CSAVE work; auto-detect it next to this repo.
-TAPE_IPS_CANDIDATES = [
-    os.path.join(REPO, os.pardir, "cbios-tape", "cbios-tape-msx1.ips"),
-    os.path.join(REPO, "cbios-tape-msx1.ips"),
-]
+TAPE_IPS = os.path.join(REPO, "tape", "cbios-tape-msx1.ips")
 
 # Where openMSX keeps its bundled machines + ROMs, by platform default.
 SHARE_CANDIDATES = [
@@ -95,24 +88,15 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--share", help="openMSX share dir (contains machines/)")
     ap.add_argument("--user", help="openMSX user dir (e.g. ~/.openMSX)")
-    ap.add_argument("--tape-ips", help="cbios-tape patch (default: sibling repo)")
     ap.add_argument("--dry-run", action="store_true", help="print, don't write")
     args = ap.parse_args()
 
     if not os.path.isfile(IPS):
         sys.exit(f"error: patch not found: {IPS} (run `sh build-patches.sh` first)")
-
-    tape_ips = args.tape_ips
-    if not tape_ips:
-        tape_ips = next((p for p in TAPE_IPS_CANDIDATES if os.path.isfile(p)), None)
-    if not tape_ips or not os.path.isfile(tape_ips):
-        sys.exit("error: cbios-tape patch not found -- zerobas machines always "
-                 "pair it so cassette BLOAD/CSAVE work. Build it in the cbios-tape "
-                 "repo (`make`) or pass --tape-ips /path/to/cbios-tape-msx1.ips "
-                 f"(looked in: {', '.join(os.path.normpath(p) for p in TAPE_IPS_CANDIDATES)})")
-    tape_ips = os.path.abspath(tape_ips)
+    if not os.path.isfile(TAPE_IPS):
+        sys.exit(f"error: tape patch not found: {TAPE_IPS} (run `make -C tape` first)")
     # Tape patch first (page 0), then zerobas (page 1) -- order is immaterial.
-    ips_list = [tape_ips, IPS]
+    ips_list = [TAPE_IPS, IPS]
 
     share = args.share or first_existing(SHARE_CANDIDATES, "openMSX share dir")
     user = args.user or first_existing(USER_CANDIDATES, "openMSX user dir")
@@ -131,7 +115,7 @@ def main():
     print(f"source machines : {share_machines}")
     print(f"install into    : {user_machines}")
     print(f"zerobas patch   : {IPS}")
-    print(f"tape patch      : {tape_ips}\n")
+    print(f"tape patch      : {TAPE_IPS}\n")
     for src in stock:
         base = os.path.splitext(os.path.basename(src))[0]      # C-BIOS_MSX1_EU
         out = os.path.join(user_machines, f"{base}_BASIC.xml")

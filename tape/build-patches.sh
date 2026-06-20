@@ -2,10 +2,10 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: BSD-2-Clause
 
-# Build the cbios-tape ROM patches (IPS + BPS) from src/tape.asm alone.
+# Build the cbios-tape ROM patches (IPS + BPS) from tape.asm alone.
 #
 # No C-BIOS is compiled. pasmo assembles the self-contained cassette source into
-# just the bytes the patch adds, and tools/rom_patch.py slices the two changed
+# just the bytes the patch adds, and ../tools/rom_patch.py slices the two changed
 # regions straight out of it:
 #
 #   * 0x00E2-0x00F5  -- the seven repointed cassette jump vectors (incl. STMOTR)
@@ -18,15 +18,15 @@
 #   sh build-patches.sh [/path/to/cbios_main_msx1_eu.rom]
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd)
-SRC="$HERE/src/tape.asm"
-PATCH="$HERE/tools/rom_patch.py"
+SRC="$HERE/tape.asm"
+PATCH="$HERE/../tools/rom_patch.py"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
 # Stock ROM (binary target), for BPS CRCs + verification. Override with $1.
 STOCK="${1:-/Applications/openMSX.app/Contents/Resources/share/machines/cbios_main_msx1_eu.rom}"
 
-echo "assembling src/tape.asm (our code only)..."
+echo "assembling tape.asm (our code only)..."
 pasmo --bin "$SRC" "$WORK/tape.bin" "$WORK/tape.sym"
 
 forge() {   # forge OUT [--source ROM]
