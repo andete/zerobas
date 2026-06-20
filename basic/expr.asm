@@ -10,6 +10,8 @@
 ;   expr   := term  { ('+' | '-') term }
 ;   term   := factor { '*' factor }
 ;   factor := const | letter(variable) | 'PEEK' '(' rel ')'
+;           | 'VPEEK' '(' rel ')' | 'INP' '(' rel ')'
+;           | 'VARPTR' '(' var ')' | 'BASE' '(' rel ')'
 ;           | '(' rel ')' | '-' factor
 ;
 ; A comparison yields -1 (true) or 0 (false). `eval` enters at `rel`; the bare
@@ -320,10 +322,14 @@ ev_f:
                 jp      z,ev_f_neg
                 cp      '('
                 jp      z,ev_f_paren
-                cp      PEEK_PREFIX         ; $FF -> PEEK function token
-                jp      z,ev_f_peek
+                cp      PEEK_PREFIX         ; $FF -> PEEK / VPEEK / INP function token
+                jp      z,ev_f_ff
                 cp      USR_TOKEN           ; $DD -> USR[n](arg) function
                 jp      z,ev_usr
+                cp      VARPTR_TOKEN        ; $E7 -> VARPTR(var) function
+                jp      z,ev_f_varptr
+                cp      BASE_TOKEN          ; $C9 -> BASE(n) function
+                jp      z,ev_f_base
                 cp      HEX_TOKEN           ; $0C -> 2-byte LE value (&H)
                 jp      z,ev_f_word
                 cp      OCT_TOKEN           ; $0B -> 2-byte LE value (&O)
@@ -398,26 +404,138 @@ ev_f_paren:
                 inc     ix
                 ret
 
-ev_f_peek:
-                inc     ix                  ; skip $FF prefix
-                ld      a,(ix+0)
-                cp      PEEK_TOKEN          ; $97
-                jp      nz,ev_f_err
-                inc     ix                  ; skip $97
+; --- ev_f_ff: a $FF-prefixed function token (PEEK / VPEEK / INP) -----------
+; All three take a single parenthesised expression; they differ only in how the
+; argument is used. We parse "( <expr> )" once, then read from RAM (PEEK), VRAM
+; (VPEEK) or a Z80 port (INP). The second token byte selects the read.
+ev_f_ff:
+                inc     ix                  ; skip the $FF prefix
+                ld      a,(ix+0)            ; the function selector byte
+                cp      PEEK_TOKEN          ; $97 -> PEEK
+                jr      z,ev_ff_arg
+                cp      VPEEK_TOKEN         ; $98 -> VPEEK
+                jr      z,ev_ff_arg
+                cp      INP_TOKEN           ; $90 -> INP
+                jr      z,ev_ff_arg
+                jp      ev_f_err            ; unknown $FF function
+ev_ff_arg:
+                ld      c,a                 ; C = selector (survives the parse)
+                inc     ix                  ; skip the selector byte
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      '('
                 jp      nz,ev_f_err
                 inc     ix
-                call    ev_xor              ; DE = address (full expression)
+                push    bc                  ; guard the selector across the eval
+                call    ev_xor              ; DE = argument (full expression)
+                pop     bc
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      ')'
                 jp      nz,ev_f_err
                 inc     ix
+                ld      a,c                 ; dispatch on the selector
+                cp      VPEEK_TOKEN
+                jr      z,ev_ff_vpeek
+                cp      INP_TOKEN
+                jr      z,ev_ff_inp
+                ; PEEK: read one byte of RAM at the address in DE.
                 ex      de,hl               ; HL = address
                 ld      e,(hl)              ; read one byte
                 ld      d,0                 ; PEEK yields 0..255
+                ret
+ev_ff_vpeek:                                ; VPEEK: read one byte of VRAM (DE = addr)
+                ex      de,hl               ; HL = VRAM address (RDVRM wants it here)
+                call    RDVRM               ; A = VRAM[HL]; makes no register guarantees
+                ld      e,a
+                ld      d,0                 ; VPEEK yields 0..255
+                ret
+ev_ff_inp:                                  ; INP: read one Z80 port (DE = port)
+                ld      b,d
+                ld      c,e                 ; BC = port (in (a),(c) reads from BC)
+                in      a,(c)               ; A = port input
+                ld      e,a
+                ld      d,0                 ; INP yields 0..255
+                ret
+
+; --- ev_f_varptr: VARPTR(<var>) -> address of the variable's value field -----
+; Returns the address of the 2-byte value cell in zerobas's own variable table
+; (VARTAB), NOT the reference ROM's variable-area address — zerobas's table is
+; its own layout, so VARPTR yields OUR address. This is a documented divergence
+; (PROVENANCE.md): a loader stub that pokes through VARPTR sees a valid, writable
+; 16-bit cell, which is all the loader use needs. If the variable does not yet
+; exist it is created (value 0) so the returned address is always valid.
+ev_f_varptr:
+                inc     ix                  ; skip the VARPTR token
+                call    ev_sp
+                ld      a,(ix+0)
+                cp      '('
+                jp      nz,ev_f_err
+                inc     ix
+                call    ev_sp
+                ld      a,(ix+0)
+                call    is_letter           ; the argument must be a variable name
+                jp      nc,ev_f_err
+                push    ix
+                pop     hl                  ; HL = cursor at the name
+                call    var_name_key        ; BC = key, HL past the name
+                push    hl
+                pop     ix                  ; IX = advanced cursor
+                ; ensure the variable exists: read its value, write it back. A new
+                ; variable is allocated with its current (0) value; an existing one
+                ; is left unchanged. Then var_find gives the entry address.
+                push    bc
+                call    var_get_key         ; DE = current value (0 if unset)
+                pop     bc
+                push    bc
+                call    var_set_key         ; allocate-if-new, value unchanged
+                pop     bc
+                call    var_find            ; CF set, HL = entry address
+                jr      nc,vptr_none        ; table full -> address 0 (defensive)
+                inc     hl
+                inc     hl                  ; HL = value field (entry+2)
+                ex      de,hl               ; DE = the value-field address
+                call    ev_sp
+                ld      a,(ix+0)
+                cp      ')'
+                jp      nz,ev_f_err
+                inc     ix
+                ret
+vptr_none:
+                ld      de,0                ; table full: no address (own-design)
+                call    ev_sp
+                ld      a,(ix+0)
+                cp      ')'
+                jp      nz,ev_f_err
+                inc     ix
+                ret
+
+; --- ev_f_base: BASE(<n>) -> a VDP table base address ----------------------
+; BASE(n) returns the base address of a VDP table for the current screen mode
+; (name / colour / pattern-generator / sprite-attribute / sprite-pattern, per
+; group of 5 starting at n=0). zerobas drives the screen entirely through the
+; C-BIOS CHGMOD path and keeps no per-mode VDP table-base map of its own, and
+; reproducing the reference's exact BASE() value table would require a forbidden
+; source. So BASE is **descoped**: the argument is parsed and evaluated, and the
+; function returns 0 with an expression-error marker (ERRMARK), rather than
+; fabricating an address. This is a documented divergence (PROVENANCE.md);
+; loader stubs that need real VDP table bases are out of scope for now.
+ev_f_base:
+                inc     ix                  ; skip the BASE token
+                call    ev_sp
+                ld      a,(ix+0)
+                cp      '('
+                jp      nz,ev_f_err
+                inc     ix
+                call    ev_xor              ; evaluate + discard the index argument
+                call    ev_sp
+                ld      a,(ix+0)
+                cp      ')'
+                jp      nz,ev_f_err
+                inc     ix
+                ld      a,$DD               ; BASE is descoped -> expression-error marker
+                ld      (ERRMARK),a
+                ld      de,0                ; ...and a 0 result (no fabricated address)
                 ret
 
 ; --- mul16: HL = (HL * DE) low 16 bits -------------------------------------

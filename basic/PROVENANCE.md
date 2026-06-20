@@ -420,3 +420,90 @@ Functional in openMSX (`Philips_VG_8020`, BLOAD-landmark freeze): `a=&o17`→15,
 | `tk_hex` radix dispatch (`&H`/`&O`) + octal `*8` accumulator; `TKRADIX`/`TKRTOK` scratch | — | **own code**, forward of this project's oracle-sourced tokeniser; no disassembly | sourced |
 | `ev_f` decode of `$0B` (reuses `ev_f_word`) | — | **own code**, mirrors the `$0C`/`$1C` decode | sourced |
 | `&B` binary literal kept verbatim (no token) | — | own design: oracle shows the reference emits no `&B` token, so none is fabricated | quarantined |
+
+## Phase 1: memory / I-O access — VPOKE / VPEEK / OUT / INP / VARPTR / BASE (basic/vdpio.asm, basic/expr.asm, basic/interp.asm, basic/sysvars.inc)
+
+The pokes-and-ports primitives a loader stub uses around `BLOAD`: write/read
+VDP video RAM (`VPOKE`/`VPEEK`), write/read a Z80 I/O port (`OUT`/`INP`), take a
+variable's address (`VARPTR`), and query a VDP table base (`BASE`).
+
+**Oracle (`basic_probe_crunch.py`, scratch test lines, restored to pristine
+after).** The reference Philips VG-8020 crunches:
+
+- `vpoke &h1800,65` → `… C6 20 0C 00 18 2C 41` — **VPOKE = `$C6`** (1-byte
+  statement token), then the args.
+- `out &h99,0` → `… 9C 20 0C 99 00` — **OUT = `$9C`** (1-byte statement token).
+- `a=vpeek(&h1800)` → `… 41 EF FF 98 28 …` — **VPEEK = `$FF $98`** (function token,
+  the same `$FF`-prefix two-byte form as PEEK `$FF $97`).
+- `a=inp(&ha8)` → `… 41 EF FF 90 28 …` — **INP = `$FF $90`** (function token,
+  `$FF`-prefix form).
+- `a=varptr(b)` → `… 41 EF E7 28 42 29` — **VARPTR = `$E7`** (single-byte function
+  token, NOT `$FF`-prefixed).
+- `a=base(0)` → `… 41 EF C9 28 11 29` — **BASE = `$C9`** (single-byte function
+  token, NOT `$FF`-prefixed).
+
+All six cross-check against MSX2 Technical Handbook Table 2.20. They were then
+verified byte-identical with zerobas's own crunch via `basic_probe_crunch.py`
+(all 6 PASS) before the probe was restored to pristine.
+
+**Implementation.** `VPOKE`/`OUT` are added to the `exec_stmt` dispatch
+(`ex_vpoke`/`ex_out`) and handled in `basic/vdpio.asm`, mirroring `do_poke`'s
+two-expression arg-parse: VPOKE writes the value's low byte to VRAM via
+`WRTVRM ($004D)` (HL = VRAM address, A = byte); OUT issues a raw `out (c),a` with
+BC = port. `VPEEK`/`INP`/`VARPTR`/`BASE` are function factors in `basic/expr.asm`'s
+`ev_f`: the `$FF`-prefix factor was generalised from PEEK-only into `ev_f_ff`,
+which parses `( <expr> )` once and dispatches on the selector byte — PEEK reads
+RAM, VPEEK reads VRAM via `RDVRM ($004A)` (HL = VRAM address → A), INP reads a
+port via `in a,(c)`. VARPTR (`$E7`) and BASE (`$C9`) are dispatched directly in
+`ev_f` (they are single-byte, not `$FF`-prefixed). `detok` (basic/list.asm)
+renders all six with no new code: it is table-driven, so VPOKE/OUT/VARPTR/BASE
+fall out of the single-byte `detok_kw` scan and VPEEK/INP out of the 2-byte
+`detok_kw2` scan once they are in `kwtable`. `tok_skip` needs no change — these
+carry no in-stream operand bytes (the function arguments are ordinary
+parenthesised expressions, already steppable).
+
+**VARPTR own-address-map (quarantined).** VARPTR returns the address of the
+variable's 2-byte value cell **in zerobas's own variable table (VARTAB)**, which
+has zerobas's own layout — *not* the reference ROM's variable-area address map.
+This is a deliberate, documented divergence: a loader stub that pokes through
+VARPTR sees a valid, writable 16-bit cell, which is all the loader use needs, but
+the numeric address differs from a real MSX. If the variable does not yet exist
+it is allocated (value 0) so the returned address is always valid. Verified by
+`basic_probe_vdpio.py` (`b=&h1234:a=varptr(b)` → PEEK(a),PEEK(a+1) = `34 12`).
+
+**BASE descope (quarantined).** `BASE(n)` is parsed and its argument evaluated,
+but it returns 0 and sets ERRMARK (`$DD` at `$E010`) rather than a VDP table base
+address. zerobas drives the screen entirely through the C-BIOS CHGMOD path and
+keeps no per-mode VDP table-base map of its own; reproducing the reference's exact
+BASE() value table would require a forbidden source, so BASE is descoped (the line
+still continues — only the BASE *value* is unavailable). Loader stubs needing real
+VDP table bases are out of scope for now.
+
+Validated: `make` builds a clean 16384-byte `basic.rom`, no warnings. The crunch
+probe stays byte-identical (full ALL PASS, plus the 6 new keywords PASS in a
+scratch run, probe restored). The controlflow / loops / data / statements
+regression probes all stay ALL PASS. Functional `basic_probe_vdpio.py` 6/6 PASS
+on `Philips_VG_8020` (VPOKE/VPEEK round-trip 65 and 200; INP read completes + line
+runs; OUT completes + line runs; VARPTR cell = `34 12`; BASE returns 0 + ERRMARK
+`$DD`, line continues). LIST round-trips the six keywords on screen.
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `VPOKE` statement token | `$C6` | MSX2 TH Table 2.20; oracle-confirmed byte-identical via `basic_probe_crunch.py` | sourced |
+| `OUT` statement token | `$9C` | MSX2 TH Table 2.20; oracle-confirmed byte-identical | sourced |
+| `VPEEK` function token | `$FF $98` | MSX2 TH Table 2.20; oracle-confirmed byte-identical | sourced |
+| `INP` function token | `$FF $90` | MSX2 TH Table 2.20; oracle-confirmed byte-identical | sourced |
+| `VARPTR` function token | `$E7` (single-byte) | MSX2 TH Table 2.20; oracle-confirmed byte-identical | sourced |
+| `BASE` function token | `$C9` (single-byte) | MSX2 TH Table 2.20; oracle-confirmed byte-identical | sourced |
+| `WRTVRM` (VPOKE: write A to VRAM[HL]) | `$004D` | MSX Assembly Page BIOS list / MSX2 TH (VDP I/O) | sourced |
+| `RDVRM` (VPEEK: read VRAM[HL] → A) | `$004A` | MSX Assembly Page BIOS list / MSX2 TH (VDP I/O) | sourced |
+| `VPOKE`/`VPEEK`/`OUT`/`INP` semantics (write/read VRAM; write/read a Z80 port; low byte; 0..255 read) | — | public MSX-BASIC language reference + Z80 `out (c),a` / `in a,(c)` (hardware) | sourced |
+| VPOKE/OUT handlers + `ev_f_ff` $FF-prefix dispatcher (PEEK/VPEEK/INP) + INP `in a,(c)` | — | **own code** (mirrors `do_poke` / `ev_f_peek`); not derived from any disassembly | sourced |
+| `VARPTR(var)` returns the address of the value cell in **zerobas's own** VARTAB (not the reference's variable-area map); allocates the variable if new | — | **own design** — zerobas's table layout is its own; valid+writable cell, sufficient for loader pokes; numeric address diverges from a real MSX | quarantined |
+| `BASE(n)` descoped: argument parsed+evaluated, returns 0 + sets ERRMARK (no fabricated VDP table-base map) | — | **own design** — reproducing the reference's per-mode VDP table-base values would need a forbidden source; descoped, not fabricated | quarantined |
+| `VPOKE_TOKEN`/`OUT_TOKEN`/`VPEEK_TOKEN`/`INP_TOKEN`/`VARPTR_TOKEN`/`BASE_TOKEN` constants | — | own naming over the oracle-/Table-2.20-sourced token bytes | sourced |
+
+The VARPTR own-address-map and the BASE descope are the two **quarantined**
+items: both are deliberate own-design simplifications (loader-stub scope), not
+values lifted from any reference ROM or disassembly. A future oracle probe could
+pin BASE's real per-mode table-base values if a stub ever needs them.

@@ -16,7 +16,9 @@ Working: byte-identical tokeniser (keywords, integer / `&H` / `&O` constants,
 `END`/`STOP`), `DATA`/`READ`/`RESTORE`, comparisons, `POKE`/`PEEK`, `PRINT`,
 `CLEAR`, `DEF USR`/`USR`, the screen-setup verbs (`SCREEN`, `COLOR`, `CLS`,
 `WIDTH`, `KEY OFF`/`ON`), `LIST` (de-tokenised whole-program listing),
-multi-character 16-bit integer variables, and cassette `BLOAD"CAS:",R`.
+the memory / I-O access primitives (`VPOKE`/`VPEEK`, `OUT`/`INP`, `VARPTR`;
+`BASE` descoped), multi-character 16-bit integer variables, and cassette
+`BLOAD"CAS:",R`.
 
 ## Phase 1 — enough BASIC to boot loader stubs
 
@@ -69,7 +71,19 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
       quarantined in basic/PROVENANCE.md), not a fabricated token. Validated:
       crunch + 4 control-flow/loops/data/statements regressions ALL PASS;
       functional `&o17`→15, `&o12`→10, `&o400`→256, `&o177777`→65535 in openMSX.)
-- [ ] `VARPTR`, `VPOKE`/`VPEEK`/`BASE`, `INP`/`OUT` — common in pokes
+- [x] `VARPTR`, `VPOKE`/`VPEEK`/`BASE`, `INP`/`OUT` — common in pokes
+      (basic/vdpio.asm: VPOKE/OUT statement handlers; basic/expr.asm: VPEEK/INP/
+      VARPTR/BASE function factors. Tokens oracle-confirmed byte-identical via
+      basic_probe_crunch.py: VPOKE=$C6, OUT=$9C, VPEEK=$FF$98, INP=$FF$90,
+      VARPTR=$E7, BASE=$C9 (cross-checks MSX2 TH Table 2.20). VPOKE/VPEEK use
+      WRTVRM $004D / RDVRM $004A; OUT/INP do raw Z80 `out (c),a` / `in a,(c)`.
+      detok renders all six (table-driven, no new render code). Functional
+      `basic_probe_vdpio.py` 6/6 PASS. Divergences: VARPTR returns zerobas's OWN
+      variable-table value-cell address (its table layout is its own design, not
+      the reference's variable-area map) — valid+writable, sufficient for loader
+      pokes; BASE is descoped — argument parsed+evaluated but BASE(n) returns 0
+      and sets ERRMARK (reproducing the reference's per-mode VDP table-base map
+      would need a forbidden source). Both quarantined in basic/PROVENANCE.md.)
 - [ ] String literals / variables *enough for `PRINT`* (full string engine is Phase 2)
 
 ### Usability

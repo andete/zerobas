@@ -19,6 +19,11 @@ ERAFNK          equ     $00CC   ; erase the function-key display line (KEY OFF)
 DSPFNK          equ     $00CF   ; display the function-key line (KEY ON)
 CSRX            equ     $F3DD   ; cursor column (1-based); C-BIOS sysvars / PRINT comma zones
 
+; --- VDP VRAM access BIOS entry points (VPOKE / VPEEK) ---------------------
+; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook, VDP I/O.
+WRTVRM          equ     $004D   ; write A to VRAM address HL (VPOKE)
+RDVRM           equ     $004A   ; read VRAM address HL -> A (VPEEK)
+
 ; --- Screen work-area system variables (C-BIOS; allowed) -------------------
 ; Source: C-BIOS system variables (BSD 2-clause), cross-checked against the MSX2
 ; Technical Handbook work-area appendix / MSX Assembly Page. CHGCLR reads the
@@ -53,6 +58,16 @@ POKE_TOKEN      equ     $98     ; spec-tokens-statements.md
 ; PEEK is a *function* token: a $FF prefix followed by a second byte.
 PEEK_PREFIX     equ     $FF     ; spec-tokens-statements.md (function-token prefix)
 PEEK_TOKEN      equ     $97     ; spec-tokens-statements.md
+; Memory / I-O access tokens (MSX2 TH Table 2.20; oracle-confirmed byte-for-byte
+; via basic_probe_crunch.py — see PROVENANCE.md). VPOKE / OUT are one-byte
+; statement tokens; VPEEK / INP are $FF-prefixed two-byte function tokens (like
+; PEEK); VARPTR / BASE are single-byte function tokens (no $FF prefix).
+VPOKE_TOKEN     equ     $C6     ; VPOKE addr,value (statement)
+OUT_TOKEN       equ     $9C     ; OUT port,value   (statement)
+VPEEK_TOKEN     equ     $98     ; VPEEK(addr) -> $FF $98 (function)
+INP_TOKEN       equ     $90     ; INP(port)   -> $FF $90 (function)
+VARPTR_TOKEN    equ     $E7     ; VARPTR(var) (single-byte function token)
+BASE_TOKEN      equ     $C9     ; BASE(n)     (single-byte function token)
 ; ASCII bytes the tokeniser / evaluator treat specially (all public ASCII).
 COLON           equ     $3A     ; ':' statement separator
 QUOTE_REM       equ     $27     ; "'" — apostrophe comment, treated as REM

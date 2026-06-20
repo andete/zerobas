@@ -51,6 +51,9 @@
 ; The POKE statement handler (defines `do_poke`).
                 include "basic/poke.asm"
 
+; The VPOKE / OUT statement handlers (defines `do_vpoke`, `do_out`).
+                include "basic/vdpio.asm"
+
 ; The CLEAR statement handler (defines `ex_clear`).
                 include "basic/clear.asm"
 

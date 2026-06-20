@@ -540,6 +540,19 @@ kwtable:
                 db      5,"WIDTH",1,WIDTH_TOKEN
                 db      3,"KEY",1,KEY_TOKEN
                 db      3,"OFF",1,OFF_TOKEN
+                ; Phase 1: memory / I-O access (MSX2 TH Table 2.20; oracle-
+                ; confirmed). VPOKE/OUT = 1-byte statement tokens; VPEEK/INP =
+                ; $FF-prefixed function tokens; VARPTR/BASE = 1-byte function
+                ; tokens. VPEEK precedes VPOKE so the longer-matching reserved
+                ; word is found first when both share the "VP" prefix (match_kw
+                ; compares the full keyword, so order is not strictly required,
+                ; but this keeps the more specific entries adjacent).
+                db      5,"VPOKE",1,VPOKE_TOKEN
+                db      5,"VPEEK",2,PEEK_PREFIX,VPEEK_TOKEN
+                db      3,"OUT",1,OUT_TOKEN
+                db      3,"INP",2,PEEK_PREFIX,INP_TOKEN
+                db      6,"VARPTR",1,VARPTR_TOKEN
+                db      4,"BASE",1,BASE_TOKEN
                 ; Phase 1: logical / bitwise + MOD operator keywords (Table 2.20).
                 db      3,"AND",1,AND_TOKEN
                 db      2,"OR",1,OR_TOKEN
@@ -589,6 +602,10 @@ exec_stmt:
                 jp      z,ex_bload
                 cp      POKE_TOKEN
                 jp      z,ex_poke
+                cp      VPOKE_TOKEN
+                jp      z,ex_vpoke
+                cp      OUT_TOKEN
+                jp      z,ex_out
                 cp      CLEAR_TOKEN
                 jp      z,ex_clear
                 cp      DEF_TOKEN
@@ -665,6 +682,12 @@ ex_bload:
 ex_poke:
                 inc     hl                  ; HL -> args (past the POKE token)
                 jp      do_poke
+ex_vpoke:
+                inc     hl                  ; HL -> args (past the VPOKE token)
+                jp      do_vpoke
+ex_out:
+                inc     hl                  ; HL -> args (past the OUT token)
+                jp      do_out
 
 ; --- ex_let: variable assignment  <var> = <expr> --------------------------
 ; The name may be multi-character (significant to 2 chars; see vars.asm).
