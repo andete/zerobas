@@ -1,3 +1,6 @@
+; Copyright (c) 2026 Joost Yervante Damad
+; SPDX-License-Identifier: BSD-2-Clause
+
 ; zerobas — main.asm
 ; ===========================================================================
 ; A clean-room, game-loader-scoped MSX1 BASIC, built as a standalone 16 KB
@@ -47,6 +50,15 @@
 
 ; The POKE statement handler (defines `do_poke`).
                 include "src/poke.asm"
+
+; The CLEAR statement handler (defines `ex_clear`).
+                include "src/clear.asm"
+
+; DEF USR statement + USR() function (defines `ex_def`, `ev_usr`, `clear_usrtab`).
+                include "src/usr.asm"
+
+; The PRINT statement (defines `ex_print`, `print_number`, `print_crlf`).
+                include "src/print.asm"
 
 ; The BLOAD statement handler and the ,R handoff (defines `do_bload`).
                 include "src/bload.asm"

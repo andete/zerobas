@@ -1,3 +1,6 @@
+; Copyright (c) 2026 Joost Yervante Damad
+; SPDX-License-Identifier: BSD-2-Clause
+
 ; sysvars.inc — BIOS entry points and RAM scratch for zerobas.
 ;
 ; CLEAN-ROOM: every address below is traced to an allowed source (see
@@ -9,6 +12,7 @@
 INITXT          equ     $006C   ; init SCREEN 0 (TEXT1) and enable the display
 CHGET           equ     $009F   ; wait for a character from the keyboard -> A
 CHPUT           equ     $00A2   ; output the character in A at the cursor
+CSRX            equ     $F3DD   ; cursor column (1-based); C-BIOS sysvars / PRINT comma zones
 
 ; --- Cassette BIOS entry points -------------------------------------------
 ; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook,
@@ -57,12 +61,21 @@ ENDPTR          equ     $E022   ; final load address  (2 bytes)
 EXECPTR         equ     $E024   ; execution address   (2 bytes)
 ERRMARK         equ     $E010   ; error landmark marker byte
 RUNFLAG         equ     $E02F   ; 1 = ,R handoff requested (set while parsing)
+TKNAME          equ     $E028   ; tokeniser: 1 = previous char was part of a name
+                                ; (so a following digit stays verbatim, not crunched)
+NUMBUF          equ     $E0C0   ; PRINT: decimal-format scratch (8 bytes, 0-term)
 ; Buffers and the variable table live in page $E1, clear of $E000.
 LINEBUF         equ     $E100   ; ASCII input line from the keyboard (LINEMAX bytes)
 LINEMAX         equ     96      ; LINEBUF capacity; $E100..$E15F stays in page $E1
 TOKBUF          equ     $E160   ; crunch buffer: the tokenised line (0-terminated)
-VARTAB          equ     $E1C0   ; 26 integer variables A..Z, 2 bytes each (52 bytes)
-VARCOUNT        equ     26      ; A..Z
+; Variable table: dynamically-allocated 4-byte entries [name0][name1][value:2].
+; Names are significant to 2 characters (public MSX-BASIC language reference);
+; name1 = 0 for a 1-char name. A name0 of 0 marks the first free slot. Phase 1
+; grew this from the single-letter A..Z store to multi-character names.
+VARTAB          equ     $E1C0   ; base of the variable table
+VARENTSZ        equ     4       ; [name0:1][name1:1][value:2]
+VARSLOTS        equ     32      ; max distinct variables (128 bytes -> $E240)
+VAREND          equ     VARTAB + VARSLOTS*VARENTSZ
 
 ; --- Step B: stored-program text area (numbered lines) ---------------------
 ; Numbered lines are stored in the real MSX line-link format at the real text
@@ -78,6 +91,18 @@ TXTTAB          equ     $F676   ; sysvar: pointer to the BASIC text base
 TXTBASE         equ     $8001   ; text base (oracle: TXTTAB value after boot)
 TXTMAX          equ     $C000   ; text must stay below the $C000 BLOAD region
 PRGEND          equ     $E026   ; addr of the $0000 end-of-program marker (2 bytes)
+
+; --- Phase 1: CLEAR memory-top sysvar --------------------------------------
+; HIMEM is the documented home of CLEAR's "highest address BASIC may use"
+; argument (CLEAR [<strings>][,<himem>]). zerobas has no allocator that consults
+; it yet (fixed RAM layout), so ex_clear stores it record-only; see clear.asm.
+; Source: C-BIOS system variables (BSD 2-clause; address $FC4A), cross-checked
+; against the MSX2 Technical Handbook work-area appendix / MSX Assembly Page.
+HIMEM           equ     $FC4A   ; highest RAM address BASIC may use (2 bytes)
+; USRTAB: the 10 DEF USR vectors (USR0..USR9), 2 bytes each, $F39A..$F3AD.
+; Source: C-BIOS system variables (BSD 2-clause). On C-BIOS (no BASIC) this is
+; unused work-area RAM, so DEF USR writing it is safe and observable.
+USRTAB          equ     $F39A   ; 10 USR jump vectors, 2 bytes each
 ; Step B scratch (page $E0, clear of LINEBUF/VARTAB in page $E1).
 SL_NUM          equ     $E030   ; store_line: target line number (2)
 SL_SLOT         equ     $E032   ; store_line: insertion slot address (2)
@@ -109,6 +134,18 @@ STOP_TOKEN      equ     $90
 ON_TOKEN        equ     $95
 PRINT_TOKEN     equ     $91
 LET_TOKEN       equ     $88
+CLEAR_TOKEN     equ     $92     ; Table 2.20 (cross-checks MSX Assembly Page token table)
+; Phase 1 statement / function tokens (MSX2 Technical Handbook Table 2.20; the
+; overlaps DEF=$97, ON=$95, PRINT=$91, LIST=$93, GOTO=$89, GOSUB=$8D all match
+; the values already oracle-confirmed elsewhere here — strong corroboration).
+DEF_TOKEN       equ     $97     ; DEF (statement; PEEK's $97 is the 2nd byte after $FF)
+USR_TOKEN       equ     $DD     ; USR (function token, single byte; DEF USR target)
+LIST_TOKEN      equ     $93     ; LIST
+CLS_TOKEN       equ     $9F     ; CLS
+SCREEN_TOKEN    equ     $C5     ; SCREEN
+COLOR_TOKEN     equ     $BD     ; COLOR
+WIDTH_TOKEN     equ     $A0     ; WIDTH
+KEY_TOKEN       equ     $CC     ; KEY
 LINENO_TOKEN    equ     $0E     ; line number reference (before RUN): $0E,<lineno LE>
 LINEADDR_TOKEN  equ     $0D     ; line number reference (after RUN): $0D,<addr LE>
 OCT_TOKEN       equ     $0B     ; &O constant: $0B,<value16 LE>
@@ -116,6 +153,14 @@ OCT_TOKEN       equ     $0B     ; &O constant: $0B,<value16 LE>
 ; (<=, >=, <>) are two consecutive operator tokens, combined by the evaluator.
 GT_TOKEN        equ     $EE     ; '>'
 LT_TOKEN        equ     $F0     ; '<'
+; Phase 1: division + logical/bitwise operators (MSX2 TH Table 2.20).
+DIV_TOKEN       equ     $F4     ; '/'  (real division; zerobas approximates with int divide)
+IDIV_TOKEN      equ     $FC     ; '\'  integer division
+MOD_TOKEN       equ     $FB     ; MOD  remainder
+AND_TOKEN       equ     $F6     ; AND  (bitwise)
+OR_TOKEN        equ     $F7     ; OR   (bitwise)
+XOR_TOKEN       equ     $F8     ; XOR  (bitwise)
+NOT_TOKEN       equ     $E0     ; NOT  (bitwise complement, unary)
 ; Runtime control-flow state (page $E0).
 CURLINE         equ     $E038   ; link-field addr of the line being executed (2)
 GOTOTGT         equ     $E03A   ; pending branch-target line addr (2)

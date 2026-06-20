@@ -1,3 +1,6 @@
+; Copyright (c) 2026 Joost Yervante Damad
+; SPDX-License-Identifier: BSD-2-Clause
+
 ; interp.asm — the tokeniser + execution-loop front-end.
 ;
 ; A small interpreter spine: crunch an ASCII line into tokens, then walk the
@@ -14,6 +17,7 @@
 init:
                 ei                          ; keyboard ISR must run for CHGET
                 call    clear_vars          ; deterministic variable table
+                call    clear_usrtab        ; zero the DEF USR vectors
                 call    new_prog            ; empty stored program (Step B)
                 call    show_title          ; startup header lines
                 jp      repl                ; read/eval loop (never returns)
@@ -25,7 +29,16 @@ init:
 ; byte(s) (case-folded); string literals and other bytes are copied verbatim;
 ; REM (and the '\'' abbreviation) keep the rest of the line verbatim; the line
 ; is terminated by 0x00.
+; External entry: reset the in-name flag, then run the per-char loop. Internal
+; jumps target tk_loop (which preserves the flag across characters).
 tokenise:
+                xor     a
+                ld      (TKNAME),a          ; a fresh line starts outside any name
+tk_loop:
+                ld      a,(TKNAME)
+                ld      b,a                 ; B = were we inside a name? (digit rule)
+                xor     a
+                ld      (TKNAME),a          ; default after this char: not in a name
                 ld      a,(hl)
                 or      a
                 jp      z,tk_end
@@ -33,21 +46,38 @@ tokenise:
                 jp      z,tk_string
                 cp      QUOTE_REM           ; "'" comment -> treat as REM
                 jp      z,tk_apos
-                cp      '0'                 ; digit -> numeric constant
+                cp      '0'                 ; a digit?
                 jr      c,tk_nondigit
                 cp      '9'+1
-                jp      c,tk_number         ; '0'..'9'
+                jr      nc,tk_nondigit
+                ; A digit continues a name (verbatim) only if we were in one;
+                ; otherwise it begins a numeric constant. This is why `A1` keeps
+                ; the '1' as $31 while `=1` crunches `1` to a number token.
+                ld      a,b
+                or      a
+                jr      nz,tk_namedig
+                jp      tk_number           ; '0'..'9' starting a numeric constant
+tk_namedig:
+                ld      a,1
+                ld      (TKNAME),a          ; the digit extends the name
+                ld      a,(hl)              ; copy it verbatim
+                ld      (de),a
+                inc     de
+                inc     hl
+                jp      tk_loop
 tk_nondigit:
                 cp      '&'                 ; "&H" hex constant
                 jp      z,tk_hex
-                call    match_kw            ; CF set: keyword token(s) emitted
-                jr      nc,tk_notkw
+                call    match_kw            ; keyword match runs at EVERY position, so
+                jr      nc,tk_notkw         ; reserved words inside a name still tokenise
+                                            ; (SCORE -> SC,OR,E); TKNAME stays 0 here, so
+                                            ; a keyword correctly breaks the name.
                 cp      REM_TOKEN           ; REM swallows the rest of the line
                 jp      z,tk_rem_rest
                 cp      DATA_TOKEN          ; DATA body is stored verbatim (to ':')
                 jp      z,tk_data_rest
                 call    branch_lineno       ; GOTO/GOSUB/THEN/… <n> -> $0E,<n LE>
-                jp      tokenise
+                jp      tk_loop
 tk_notkw:
                 ld      a,(hl)              ; not a keyword
                 cp      '='
@@ -62,21 +92,29 @@ tk_notkw:
                 jp      z,tk_op_lt
                 cp      '>'
                 jp      z,tk_op_gt
-                call    is_letter           ; variable / option letter
+                cp      '/'
+                jp      z,tk_op_div
+                cp      '\'
+                jp      z,tk_op_idiv
+                cp      '?'                 ; '?' abbreviates PRINT
+                jp      z,tk_print_q
+                call    is_letter           ; a letter starts / continues a name
                 jr      c,tk_copy_up
 tk_copy:
                 ld      a,(hl)              ; punctuation / space: copy verbatim
                 ld      (de),a
                 inc     de
                 inc     hl
-                jp      tokenise
+                jp      tk_loop
 tk_copy_up:
-                ld      a,(hl)              ; letters upcased outside strings (§4)
+                ld      a,(hl)              ; a name letter, upcased (§4)
                 call    upcase
                 ld      (de),a
                 inc     de
                 inc     hl
-                jp      tokenise
+                ld      a,1
+                ld      (TKNAME),a          ; now inside a name
+                jp      tk_loop
 tk_string:
                 ld      a,(hl)              ; opening quote
                 ld      (de),a
@@ -91,7 +129,7 @@ tk_str_loop:
                 inc     hl
                 cp      '"'                 ; copy through the closing quote
                 jr      nz,tk_str_loop
-                jr      tokenise
+                jp      tk_loop
 tk_apos:
                 ld      a,COLON             ; "'" -> $3A $8F $E6 (spec §3, byte-exact)
                 ld      (de),a
@@ -116,7 +154,7 @@ tk_data_rest:                               ; DATA body verbatim up to ':' or EO
                 or      a                   ;  ':' ends DATA, the next statement is
                 jp      z,tk_end            ;  crunched normally). Quoted ':' inside
                 cp      COLON               ;  DATA is not special-cased (no strings).
-                jp      z,tokenise
+                jp      z,tk_loop
                 ld      (de),a
                 inc     de
                 inc     hl
@@ -148,7 +186,16 @@ tk_op_emit:
                 ld      (de),a
                 inc     de
                 inc     hl
-                jp      tokenise
+                jp      tk_loop
+tk_print_q:                                 ; '?' -> PRINT token (oracle: ? -> $91)
+                ld      a,PRINT_TOKEN
+                jr      tk_op_emit
+tk_op_div:
+                ld      a,DIV_TOKEN
+                jr      tk_op_emit
+tk_op_idiv:
+                ld      a,IDIV_TOKEN
+                jr      tk_op_emit
 
 ; --- tk_number: crunch a decimal integer constant (spec §3) ----------------
 ;   0..9   -> $11+n          10..255 -> $0F,<byte>
@@ -194,7 +241,7 @@ tk_num_done:
                 add     a,INT_DIGIT_BASE    ; 0..9 -> $11+n
                 ld      (de),a
                 inc     de
-                jp      tokenise
+                jp      tk_loop
 tk_num_b:
                 ld      a,INT1_TOKEN
                 ld      (de),a
@@ -202,7 +249,7 @@ tk_num_b:
                 ld      a,c
                 ld      (de),a
                 inc     de
-                jp      tokenise
+                jp      tk_loop
 tk_num_w:
                 ld      a,INT2_TOKEN
                 ld      (de),a
@@ -213,7 +260,7 @@ tk_num_w:
                 ld      a,b                 ; value high
                 ld      (de),a
                 inc     de
-                jp      tokenise
+                jp      tk_loop
 
 ; --- tk_hex: crunch a "&H" hex constant -> $0C,<word LE> (spec §3) ----------
 ; "&O"/"&B"/bare "&" are out of scope: emit the '&' verbatim and resume.
@@ -273,7 +320,7 @@ tk_hex_done:
                 ld      a,b                 ; value high
                 ld      (de),a
                 inc     de
-                jp      tokenise
+                jp      tk_loop
 
 ; --- match_kw: is a table keyword present at (HL)? -------------------------
 ; in:  HL = source position, DE = destination cursor
@@ -437,6 +484,23 @@ kwtable:
                 db      2,"ON",1,ON_TOKEN
                 db      5,"PRINT",1,PRINT_TOKEN
                 db      3,"LET",1,LET_TOKEN
+                ; Phase 1: CLEAR [<strings>][,<himem>] (MSX2 TH Table 2.20).
+                db      5,"CLEAR",1,CLEAR_TOKEN
+                ; Phase 1: DEF USR / USR + screen verbs (MSX2 TH Table 2.20).
+                db      3,"DEF",1,DEF_TOKEN
+                db      3,"USR",1,USR_TOKEN
+                db      4,"LIST",1,LIST_TOKEN
+                db      3,"CLS",1,CLS_TOKEN
+                db      6,"SCREEN",1,SCREEN_TOKEN
+                db      5,"COLOR",1,COLOR_TOKEN
+                db      5,"WIDTH",1,WIDTH_TOKEN
+                db      3,"KEY",1,KEY_TOKEN
+                ; Phase 1: logical / bitwise + MOD operator keywords (Table 2.20).
+                db      3,"AND",1,AND_TOKEN
+                db      2,"OR",1,OR_TOKEN
+                db      3,"XOR",1,XOR_TOKEN
+                db      3,"NOT",1,NOT_TOKEN
+                db      3,"MOD",1,MOD_TOKEN
                 db      0
 
 ; --- upcase: fold A to uppercase if it is 'a'..'z' -------------------------
@@ -480,6 +544,12 @@ exec_stmt:
                 jp      z,ex_bload
                 cp      POKE_TOKEN
                 jp      z,ex_poke
+                cp      CLEAR_TOKEN
+                jp      z,ex_clear
+                cp      DEF_TOKEN
+                jp      z,ex_def
+                cp      PRINT_TOKEN
+                jp      z,ex_print
                 cp      REM_TOKEN
                 jr      z,ex_rem
                 cp      DATA_TOKEN          ; DATA: skip this statement at run time
@@ -537,24 +607,24 @@ ex_poke:
                 inc     hl                  ; HL -> args (past the POKE token)
                 jp      do_poke
 
-; --- ex_let: single-letter assignment  <var> = <expr> ----------------------
+; --- ex_let: variable assignment  <var> = <expr> --------------------------
+; The name may be multi-character (significant to 2 chars; see vars.asm).
 ex_let:
-                ld      a,(hl)              ; variable name
-                push    af
-                inc     hl
+                call    var_name_key        ; BC = key, HL past the name
+                push    bc                  ; save key across '=' + eval
                 call    skip_spaces
                 ld      a,(hl)
                 cp      EQ_TOKEN            ; '=' crunches to $EF (spec §4)
                 jr      nz,ex_let_err
                 inc     hl
-                call    eval                ; DE = value, HL = cursor
-                pop     af                  ; A = variable name
-                push    hl                  ; guard cursor across var_set
-                call    var_set             ; var[name] = DE
+                call    eval                ; DE = value, HL = cursor (BC clobbered)
+                pop     bc                  ; BC = key
+                push    hl                  ; guard cursor across var_set_key
+                call    var_set_key         ; var[key] = DE
                 pop     hl
                 jp      exec_stmt           ; continue the line
 ex_let_err:
-                pop     af
+                pop     bc
                 jp      stmt_error
 
 ; --- skip_spaces: advance HL past 0x20 bytes -------------------------------

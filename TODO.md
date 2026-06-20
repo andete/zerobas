@@ -30,15 +30,31 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
 `/` + `AND`/`OR` → `ON GOTO` → screen-setup verbs → `LIST`.
 
 ### Statements
-- [ ] `CLEAR [strings][,himem]` — nearly every stub sets memory top before `BLOAD`
-- [ ] `DEF USR[n]=addr` + `USR[n](x)` function — the non-`,R` jump into loaded code
-- [ ] `PRINT` (+ `;` `,` separators, string literals, `TAB`) — wire up the existing token
+- [x] `CLEAR [strings][,himem]` — nearly every stub sets memory top before `BLOAD`
+      (src/clear.asm: full syntax parses; string-space accepted+ignored, himem
+      recorded to HIMEM `$FC4A`. Oracle `basic_probe_clear.py` still owed.)
+- [x] `DEF USR[n]=addr` + `USR[n](x)` function — the non-`,R` jump into loaded code
+      (src/usr.asm: vectors in USRTAB `$F39A`; crunch byte-identical. USR calling
+      convention is own-design integer-only — DAC/VALTYP convention oracle follow-up owed.)
+- [ ] `CLOAD ["filename"]` — load a BASIC program from cassette; needed when a stub
+      chain-loads a BASIC payload rather than a binary (complement to `BLOAD"CAS:"`)
+- [ ] `LOAD "CAS:filename"` — MSX-BASIC unified tape-load form; shares cassette I/O
+      path with `CLOAD` but uses the `OPEN`-style filename syntax
+- [x] `PRINT` (+ `;` `,` separators, string literals, `TAB`) — wire up the existing token
+      (src/print.asm: numeric + string-literal items, `;`/`,` zones, `?` abbrev;
+      crunch byte-identical, output verified in openMSX. `TAB(`/`SPC(` + string
+      vars/`CHR$` still to do — need the Phase-2 string engine.)
 - [ ] `ON expr GOTO/GOSUB` — token exists; needs a handler + a branch-target list in `branch_lineno`
 - [ ] `SCREEN`, `COLOR`, `CLS`, `KEY OFF`, `WIDTH` — pre-handoff screen setup (thin BIOS/VDP wrappers)
 
 ### Expressions / variables
-- [ ] Multi-character variable names — single-letter only is a hard wall
-- [ ] `/`, `\`, `MOD`, and `AND`/`OR`/`NOT`/`XOR` — address / poke math
+- [x] Multi-character variable names — single-letter only is a hard wall
+      (src/vars.asm: 2 significant chars, key store; crunch byte-identical incl.
+      digit-in-name; 2-char round-trip verified in openMSX)
+- [x] `/`, `\`, `MOD`, and `AND`/`OR`/`NOT`/`XOR` — address / poke math
+      (src/expr.asm: full precedence ladder; crunch byte-identical, all ops verified
+      in openMSX. `/` is integer + division is unsigned — documented divergences from
+      MSX signed/float arithmetic; div-by-zero → 0. `^` still deferred to Phase 2.)
 - [ ] `&O` / `&B` literals — tokens reserved, not yet emitted
 - [ ] `VARPTR`, `VPOKE`/`VPEEK`/`BASE`, `INP`/`OUT` — common in pokes
 - [ ] String literals / variables *enough for `PRINT`* (full string engine is Phase 2)
@@ -67,6 +83,11 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
 - [ ] **Error handling** — `ON ERROR GOTO`, `RESUME`, `ERR`/`ERL`, `ERROR n`,
       numbered error messages
 - [ ] **Interrupt traps** — `ON INTERVAL/KEY/SPRITE/STOP GOSUB`
+- [ ] **Screen-editor REPL** — real MSX BASIC does not use a sequential prompt
+      loop; Enter reads the *current cursor line from VRAM* (not a dedicated
+      input buffer), so the user can cursor-up to any visible output, edit it
+      in place, and re-enter it. Needs cursor-key handling and VDP line-readback.
+      Our `repl.asm` is a deliberate simplification; full replacement is Phase 2.
 - [ ] **Editor / program management** — full `LIST`, `DELETE`, `RENUM`, `AUTO`,
       `TRON`/`TROFF`, `SWAP`, `WAIT`, `ERASE`, `FRE`, full `CLEAR` semantics
 
