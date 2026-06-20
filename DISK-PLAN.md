@@ -98,8 +98,9 @@ so zerobas's `BLOAD"A:FILE"` can reach a real FAT12 disk image.
 
 ### TODO
 
-- [ ] **Provenance doc** — list every constant/address with source before
+- [x] **Provenance doc** — list every constant/address with source before
       writing any code; same discipline as zerobas's `PROVENANCE.md`
+      (`disk/PROVENANCE.md`)
 - [ ] **ROM skeleton** — 16 or 32 KB ROM; MSX "AB" header; INIT vector;
       standard disk ROM entry-point stubs at fixed offsets (`+$10` DSKIO,
       `+$13` DSKCHG, `+$16` GETDPB, `+$19` CHOICE, `+$1C` DSKFMT,
