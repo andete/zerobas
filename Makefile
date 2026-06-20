@@ -28,6 +28,15 @@ $(DISK_ROM): $(DISK_SRC)
 
 disk: $(DISK_ROM)
 
+# A 720 KB FAT12 test image with deterministic content, for disk integration
+# tests (see disk/TODO.md). Reproducible from the Microsoft FAT spec generator.
+DISK_TEST_DSK := disk/test720.dsk
+
+$(DISK_TEST_DSK): tools/make_test_dsk.py
+	python3 tools/make_test_dsk.py $(DISK_TEST_DSK)
+
+test-dsk: $(DISK_TEST_DSK)
+
 clean:
 	rm -f $(ROM) $(DISK_ROM)
 
@@ -37,4 +46,4 @@ clean:
 patches: $(ROM) build-patches.sh tools/rom_patch.py tools/overlay_page1.py
 	sh build-patches.sh $(STOCK)
 
-.PHONY: clean patches disk
+.PHONY: clean patches disk test-dsk

@@ -14,12 +14,22 @@ in C-BIOS's failing cassette stubs, zerobas's `BLOAD"CAS:",R` actually completes
 The two patches touch disjoint regions (page 0 vs page 1), so they compose cleanly;
 both are always applied.
 
+With `--disk-rom`, it ALSO writes a "<name>_BASIC_DISK" variant for each machine:
+the same two patches, plus slot 3 expanded so that slot 3-1 holds the standalone
+zerobas-disk ROM behind a National-style memory-mapped WD2793 FDC (the CF-3300
+connection style), with slot 3-0 keeping the 64 KB RAM. C-BIOS's boot scan finds
+the disk ROM's "AB" header in slot 3-1 page 1 and calls its INIT, installing the
+disk hooks + BDOS vector. Attach a FAT12 image to drive A to exercise the stack:
+    openmsx -machine C-BIOS_MSX1_BASIC_DISK -diska disk/test720.dsk
+
 It does NOT copy or modify any ROM. The generated config points at openMSX's own
 bundled ROMs by absolute path and lists the .ips files as load-time <patches>
 entries, so openMSX still loads the pristine ROM and patches it in memory each boot.
+The disk ROM is referenced by absolute path too.
 
     python3 tools/install-openmsx-machine.py            # auto-detect everything
     python3 tools/install-openmsx-machine.py --dry-run   # show what it would write
+    python3 tools/install-openmsx-machine.py --disk-rom disk.rom   # + _DISK variants
     python3 tools/install-openmsx-machine.py --share /path/to/openmsx/share \
                                              --user  /path/to/.openMSX
 
@@ -35,6 +45,7 @@ import argparse, glob, os, re, sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IPS = os.path.join(REPO, "zerobas-msx1.ips")
 TAPE_IPS = os.path.join(REPO, "tape", "zerobas-tape-msx1.ips")
+DISK_ROM = os.path.join(REPO, "disk.rom")
 
 # Where openMSX keeps its bundled machines + ROMs, by platform default.
 SHARE_CANDIDATES = [
@@ -83,11 +94,56 @@ def patch_config(text: str, share_machines: str, ips_list) -> str:
     return text
 
 
+def expand_slot3(text: str, disk_rom_abs: str) -> str:
+    """Expand the (unexpanded) slot-3 RAM block of a stock C-BIOS MSX1 machine
+    into subslots: 3-0 keeps the 64 KB RAM, 3-1 holds the zerobas-disk ROM behind
+    a National-style memory-mapped WD2793 (CF-3300 connection style; the register
+    map our driver targets at $7FB8). Slots 3-2 / 3-3 are left empty.
+
+    The stock block is:
+        <primary slot="3">
+          <RAM id="Main RAM">
+            <mem base="0x0000" size="0x10000"/>
+          </RAM>
+        </primary>
+    """
+    pat = re.compile(r'[ \t]*<primary slot="3">.*?</primary>\s*', re.DOTALL)
+    block = (
+        '    <primary slot="3">\n\n'
+        '      <secondary slot="0">\n'
+        '        <RAM id="Main RAM">\n'
+        '          <mem base="0x0000" size="0x10000"/>\n'
+        '        </RAM>\n'
+        '      </secondary>\n\n'
+        '      <secondary slot="1">\n'
+        '        <WD2793 id="zerobas-disk FDC">\n'
+        '          <connectionstyle>National</connectionstyle>\n'
+        '          <drives>1</drives>\n'
+        '          <rom>\n'
+        f'            <filename>{disk_rom_abs}</filename>\n'
+        '          </rom>\n'
+        '          <mem base="0x4000" size="0x8000"/>\n'
+        '        </WD2793>\n'
+        '      </secondary>\n\n'
+        '      <secondary slot="2"/>\n\n'
+        '      <secondary slot="3"/>\n\n'
+        '    </primary>\n\n'
+    )
+    text, n = pat.subn(block, text)
+    if n != 1:
+        raise RuntimeError(f"expected exactly one slot-3 primary block, found {n}")
+    return text
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--share", help="openMSX share dir (contains machines/)")
     ap.add_argument("--user", help="openMSX user dir (e.g. ~/.openMSX)")
+    ap.add_argument("--disk-rom", nargs="?", const=DISK_ROM, default=None,
+                    metavar="ROM",
+                    help="also write _BASIC_DISK variants with zerobas-disk in "
+                         f"slot 3-1 (default ROM: {DISK_ROM})")
     ap.add_argument("--dry-run", action="store_true", help="print, don't write")
     args = ap.parse_args()
 
@@ -97,6 +153,12 @@ def main():
         sys.exit(f"error: tape patch not found: {TAPE_IPS} (run `make -C tape` first)")
     # Tape patch first (page 0), then zerobas (page 1) -- order is immaterial.
     ips_list = [TAPE_IPS, IPS]
+
+    disk_rom = None
+    if args.disk_rom is not None:
+        disk_rom = os.path.abspath(args.disk_rom)
+        if not os.path.isfile(disk_rom):
+            sys.exit(f"error: disk ROM not found: {disk_rom} (run `make disk` first)")
 
     share = args.share or first_existing(SHARE_CANDIDATES, "openMSX share dir")
     user = args.user or first_existing(USER_CANDIDATES, "openMSX user dir")
@@ -115,17 +177,30 @@ def main():
     print(f"source machines : {share_machines}")
     print(f"install into    : {user_machines}")
     print(f"zerobas patch   : {IPS}")
-    print(f"tape patch      : {TAPE_IPS}\n")
+    print(f"tape patch      : {TAPE_IPS}")
+    if disk_rom:
+        print(f"disk ROM        : {disk_rom}")
+    print()
     for src in stock:
         base = os.path.splitext(os.path.basename(src))[0]      # C-BIOS_MSX1_EU
+        stock_text = open(src).read()
         out = os.path.join(user_machines, f"{base}_BASIC.xml")
-        out_text = patch_config(open(src).read(), share_machines, ips_list)
+        out_text = patch_config(stock_text, share_machines, ips_list)
         if args.dry_run:
             print(f"would write {os.path.basename(out)}")
         else:
             open(out, "w").write(out_text)
             print(f"wrote {base}_BASIC   (-> machine \"{base}_BASIC\")")
-    print("\nDone. Launch openMSX and pick one of the *_BASIC machines.")
+        if disk_rom:
+            dout = os.path.join(user_machines, f"{base}_BASIC_DISK.xml")
+            dtext = expand_slot3(out_text, disk_rom)
+            if args.dry_run:
+                print(f"would write {os.path.basename(dout)}")
+            else:
+                open(dout, "w").write(dtext)
+                print(f"wrote {base}_BASIC_DISK  (-> machine \"{base}_BASIC_DISK\")")
+    tail = " (attach a FAT12 image: -diska disk/test720.dsk)" if disk_rom else ""
+    print(f"\nDone. Launch openMSX and pick one of the *_BASIC machines.{tail}")
 
 
 if __name__ == "__main__":

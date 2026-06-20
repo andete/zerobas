@@ -446,6 +446,14 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
    owed. Runtime confirmation comes for free when probe 2 (sector read) passes.
 2. **DSKIO sector read** — read sector 0 (boot sector) and confirm BPB fields
    match the known test image; validates FAT12 and FDC layers together.
+   **Functionally validated (not yet differential).** A functional self-test on
+   openMSX (`C-BIOS_MSX1_*_DISK` machine layout + `disk/test720.dsk`, driving
+   the slot-3-1 routines via `CALSLT`) confirms the FDC driver + FAT12 layer
+   read the real image correctly: `fat_mount` derives the BPB geometry,
+   `fat_find` locates a file, and `fat_read_file_sector` returns correct record
+   content across a cluster-chain hop with clean EOF. This proves the code
+   *works*; the *differential* oracle (byte-for-byte vs the CF-3300 reference)
+   is still owed and blocked on the proprietary `cf-3300_*.rom` files.
 3. **BDOS FCB round-trip** — open a known file via FCB, read its first 128-byte
    record, close it; confirms BDOS calling convention and DTA contents. **Also
    capture the disturbed-RAM footprint:** dump page-3 (and page-0 around the DTA)
@@ -455,9 +463,25 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
    addresses that look "free" at rest can still be trashed mid-call, which a
    static sysvar-map check would miss. (We pick our *own* scratch addresses, so
    this is collision-avoidance, not a layout to copy.)
+   **Partially validated functionally:** `bdos_entry` Open ($0F) and Close ($10)
+   return A=$00 through the dispatcher (call-number dispatch + FCB+1 name
+   extraction confirmed). Two findings to fold into the design: (a) the disk ROM
+   INIT does not run in the combined `*_BASIC_DISK` machine because zerobas-BASIC
+   (slot 0) preempts the C-BIOS boot scan before slot 3-1 — the interpreter's
+   INIT must initialise disk ROMs before taking over (see disk/TODO.md); (b) the
+   $0080 DTA assumes page-0 RAM (MSX-DOS), which does not hold under Disk BASIC
+   (page 0 is BIOS ROM), so SeqRead's DTA copy was not exercised and the BLOAD
+   path must supply its own buffer. Differential round-trip vs CF-3300 still owed.
 4. **BLOAD"A:file",R end-to-end** — load a BSAVE binary from disk and confirm
    the BSAVE header parse + load-into-RAM + jump-to-exec path matches the
    cassette path's oracle spec.
+
+> **Functional vs differential.** The validations marked above are *functional*
+> self-tests on openMSX (our ROM + our `disk/test720.dsk`, built by
+> `tools/make_test_dsk.py` from the Microsoft FAT spec + ECMA-107 — both allowed
+> sources, no disk-ROM bytes). They confirm the code behaves correctly. The
+> *differential oracle* probes (identical inputs to the CF-3300 reference, observed
+> outputs compared) remain owed and are blocked on the proprietary CF-3300 ROMs.
 
 ---
 
