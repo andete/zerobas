@@ -22,6 +22,9 @@ that makes the code distributable.
 - **Inline citations** — every non-obvious value or algorithm in the `.asm`
   files names its source in a comment (e.g. `; spec-bload-r.md §3`,
   `; MSX2 Technical Handbook, cassette I/O`).
+- **[`docs/dev-workflow.md`](docs/dev-workflow.md)** — how to add a feature and
+  prove it correct: the per-feature checklist, the openMSX validation harness,
+  and the tokeniser quirks a new session must know.
 
 **Allowed sources:** the MSX2 Technical Handbook, the MSX Assembly Page
 (`map.grauw.nl`), public MSX-BASIC *language* reference, hardware datasheets
@@ -54,10 +57,9 @@ to the BIOS in page 0**, as one ROM. C-BIOS has no BASIC, so it leaves that page
 almost empty — exactly the space zerobas is built for.
 
 So zerobas can also ship as a **patch** that drops it into a stock C-BIOS main
-ROM — the same delivery mechanism as the sibling [cbios-tape](https://github.com/andete/cbios-tape)
-project, and the same legal firewall: C-BIOS and zerobas stay separate trees and
-are combined only at apply-time. C-BIOS's cold-boot cartridge scan reaches its
-own slot-0 page 1, finds zerobas's "AB" header, and calls INIT — so **no
+ROM — the same legal firewall: C-BIOS and zerobas stay separate trees and are
+combined only at apply-time. C-BIOS's cold-boot cartridge scan reaches its own
+slot-0 page 1, finds zerobas's "AB" header, and calls INIT — so **no
 boot-vector patch is needed**; the cartridge header does double duty.
 
 ```sh
@@ -207,16 +209,15 @@ BLOAD — byte-for-byte identical to the reference MSX-BASIC's own behaviour.
 C-BIOS's *own* cassette routines (`TAPION`/`TAPIN`/`TAPIOF`) are **stubs that
 always fail** — so on bare C-BIOS a cassette `BLOAD` cannot complete (the ROM
 reaches `BLOAD`, calls `TAPION`, gets a failure, and takes its error path,
-observable as the byte `$EE` at `$E010`). The sibling
-[cbios-tape](https://github.com/andete/cbios-tape) patch supplies real
-`TAPION`/`TAPIN`/`TAPIOF` in page 0, and the zerobas machine installer
+observable as the byte `$EE` at `$E010`). The [`tape/`](tape/) component of
+this repo supplies real `TAPION`/`TAPIN`/`TAPIOF` in page 0, and the installer
 ([tools/install-openmsx-machine.py](tools/install-openmsx-machine.py)) applies
-**both** IPS patches — cbios-tape (page 0) then zerobas (page 1) — so the full
-cassette `BLOAD` pipeline now completes end-to-end: C-BIOS + cbios-tape (device
-half) + zerobas (interpreter half).
+**both** IPS patches — tape (page 0) then zerobas (page 1) — so the full
+cassette `BLOAD` pipeline completes end-to-end: C-BIOS + tape (device half) +
+zerobas (interpreter half).
 
-The next transport is **disk**, where a disk-interface ROM provides the device
-half (`PHYDIO` / the `H.*` hooks) — a future transport here.
+The next transport is **disk** (`disk/` — in progress), where a disk-interface
+ROM provides the device half (`PHYDIO` / the `H.*` hooks).
 
 ## Layout
 
@@ -228,7 +229,7 @@ zerobas/
 ├── build-patches.sh   # splice into a stock C-BIOS page 1 -> zerobas-msx1.ips/.bps
 ├── zerobas-msx1.ips   # slot-0 page-1 patch, IPS (universal; used by installer)
 ├── zerobas-msx1.bps   # slot-0 page-1 patch, BPS (CRC-locked, checksummed)
-├── src/
+├── basic/
 │   ├── main.asm       # cartridge header + includes + page padding ($00 fill)
 │   ├── interp.asm     # tokeniser + statement-loop executor (INIT entry)
 │   ├── title.asm      # startup header lines (INITXT + CHPUT)
@@ -238,9 +239,18 @@ zerobas/
 │   ├── poke.asm       # the POKE statement handler
 │   ├── bload.asm      # the BLOAD statement handler + ,R handoff
 │   └── sysvars.inc    # BIOS entry points + tokens + RAM scratch (all cited)
+├── tape/
+│   ├── tape.asm       # cassette BIOS patch (TAPION / TAPIN / TAPIOF)
+│   ├── build-patches.sh        # assemble tape.asm -> cbios-tape-msx1.ips/.bps
+│   ├── cbios-tape-msx1.ips     # page-0 tape patch, IPS (used by installer)
+│   ├── cbios-tape-msx1.bps     # page-0 tape patch, BPS (CRC-locked)
+│   ├── PROVENANCE.md  # tape-component provenance log
+│   ├── DESIGN.md      # design notes for the tape patch
+│   ├── docs/          # cassette spec and feasibility notes
+│   └── cassette-tool/ # host-side WAV/CAS analysis tools
 └── tools/
     ├── pad_rom.py     # pad/verify the ROM to exactly 16 KB
-    ├── rom_patch.py   # make/apply/inspect IPS + BPS patches (shared w/ cbios-tape)
+    ├── rom_patch.py   # make/apply/inspect IPS + BPS patches
     ├── overlay_page1.py        # splice zerobas into C-BIOS page 1 + vet the splice
     └── install-openmsx-machine.py  # write *_BASIC machines that patch on load
 ```
