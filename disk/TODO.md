@@ -297,10 +297,39 @@ once the BDOS API is stable.
       drive 1/`TEST    BIN`, bare `TEST.BIN`→drive 1, `B:HI.TXT`→drive 2/`HI      TXT`;
       crunch + 4 regression probes pass; `BLOAD"CAS:",R` still loads + hands off.
       See basic/PROVENANCE.md §disk-BLOAD scratch FCB.)
-- [ ] **Disk BLOAD execute** — open the file via BDOS FCB; read and verify
-      the BSAVE header (10× `$D0` + 6-char name + start/end/exec — same format
-      as tape); load data bytes into RAM; close file; share `,R` handoff logic
-      with the cassette path
+- [x] **Disk BLOAD execute** — open the file via BDOS FCB; read and verify
+      the BSAVE header; load data bytes into RAM; close file; share `,R` handoff
+      logic with the cassette path.
+      **CORRECTION — the disk BSAVE header is NOT the cassette format.** The
+      original wording ("10× `$D0` + 6-char name + start/end/exec — same format
+      as tape") described the CASSETTE header. A BSAVE binary file *on disk* uses
+      a shorter 7-byte header `[$FE][start:2 LE][end:2 LE][exec:2 LE]` immediately
+      followed by the raw data — no 10×$D0 block and no filename in the body (the
+      name is the directory entry). Source: MSX-BASIC file formats (MSX Wiki / MSX
+      Resource Center, an allowed public MSX-BASIC language reference). Data bytes
+      run start..end inclusive. See basic/PROVENANCE.md §disk BLOAD execute and
+      disk/PROVENANCE.md §BDOS interface.
+      (`basic/bload.asm`: `do_disk_bload` is now real. It checks `DISKSLOT_OK`
+      (recorded by the INIT scan, `basic/initext.asm`), then reaches the disk
+      ROM's `bdos_entry` across slots with `CALSLT` — slot id from `DISKSLOT`,
+      entry address from SYSTEM $F37D. Sequence: BDOS $1A Set-DTA → a writable
+      page-3 buffer `DISK_DTA` ($E4C2; the $0080 default is BIOS ROM under Disk
+      BASIC and silently fails); $0F Open (DE=`DISK_FCB`, require A=$00); $14
+      SeqRead streaming (a `disk_getbyte` helper pulls bytes one at a time from
+      the 128-byte record, refilling via SeqRead — the 7-byte header is not
+      record-aligned with the data); parse $FE + start/end/exec into the existing
+      `CURPTR`/`ENDPTR`/`EXECPTR`; load bytes start..end inclusive; $10 Close. The
+      `,R` exec handoff is shared with the cassette path via `load_handoff`. On
+      any post-Open error the file is closed before `load_error`.
+      `disk/disk.asm` gained BDOS $1A Set-DTA + a settable `BDOS_DTA` var (default
+      $0080 for MSX-DOS compat). **Validated end-to-end** (openMSX,
+      `disk-spec/tools/disk_probe_bload_disk.py`) on `C-BIOS_MSX1_BASIC_DISK` with
+      `-diska disk/test720.dsk`: `BLOAD"A:PROG.BIN",R` lands the bytes at
+      $C000..$C031, PC reaches the $C010 `JR$` landmark (handoff fired) and
+      ($D000)=$5A (exec ran); plain `BLOAD"A:PROG.BIN"` loads the bytes but leaves
+      ($D000) at its sentinel (no exec). Crunch byte-identical; the 4 regression
+      probes, `disk_probe_init.py`, `disk_probe_bload_fcb.py`, and the
+      `disk_probe_dskio.py` differential (vs CF-3300) all still pass.)
 - [ ] **`LOAD"filename"`** — load a tokenized BASIC file from disk (different
       format from BSAVE binary); parse program-line format and rebuild the
       program store; needed for disk-based loader stubs
@@ -327,9 +356,14 @@ once the BDOS API is stable.
       carries `TEST.BIN` (2048 B = two clusters = 16 records; record r filled
       with byte r+1, so a sequential read is trivially checkable and the read
       crosses a cluster-chain boundary) and `HI.TXT` (so the dir search has to
-      pick the right entry). Not literal BSAVE binaries yet — the BDOS/FAT12
-      layer reads raw records, so deterministic content is what the integration
-      test needs; a real BSAVE payload can be added when disk BLOAD lands.)
+      pick the right entry). The image also carries `PROG.BIN`, a REAL on-disk
+      BSAVE binary (`[$FE][start][end][exec]` + raw data; layout documented in the
+      script from the MSX-BASIC file formats reference) added for the disk BLOAD
+      execute item — its payload writes a landmark byte ($5A→$D000) then self-loops
+      at `JR $`, with a deterministic 0..31 data tail, so the disk BLOAD probe can
+      check both the loaded bytes and the `,R` exec handoff. `TEST.BIN`/`HI.TXT`
+      stay raw-record content for the FAT12/BDOS layer tests; `PROG.BIN` is added
+      after them so the dir search still has to pick the right entry.)
 - [ ] **Valid MSX boot sector in the test image** *(found during validation)* —
       the current boot sector is filler (`EB FE 90` + zeros). A real disk machine
       reads sector 0 and *executes* its boot code (at offset $1E), so inserting

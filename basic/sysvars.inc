@@ -302,6 +302,43 @@ SCAN_IY         equ     $E0D9   ; CALSLT slot word: high byte = slot (IYh) (2)
 DISK_FCB        equ     $E0DB   ; scratch FCB ($E0DB..$E0E6, 12 bytes)
 DISK_FCB_DRV    equ     DISK_FCB        ; +0: drive code (0=default,1=A,2=B)
 DISK_FCB_NAME   equ     DISK_FCB + 1    ; +1..+11: 8.3 name field (11 bytes)
+; Disk-ROM slot id recorded by the INIT scan (initext.asm) when it inits an
+; external "AB" ROM, so BLOAD can CALSLT the disk ROM's bdos_entry across slots.
+; The combined machine has exactly one external AB ROM (the disk ROM), so this is
+; unambiguous; a multi-ROM setup would need per-ROM tracking (documented limit,
+; see PROVENANCE.md §disk-ROM slot capture). DISKSLOT_OK = 1 once a slot was
+; recorded; bdos_entry's address is read at load time from the SYSTEM sysvar
+; ($F37D), which the disk INIT filled. Free page-3 RAM in the $E0E7.. gap (after
+; the FCB, before LINEBUF at $E100). See basic/PROVENANCE.md §disk-ROM slot capture.
+DISKSLOT        equ     $E0E7   ; disk ROM slot id for CALSLT (1)
+DISKSLOT_OK     equ     $E0E8   ; 1 = DISKSLOT holds a valid disk-ROM slot id
+; do_disk_bload streaming state (page $E0, $E0E9.. gap, dead outside a BLOAD).
+DTA_OFF         equ     $E0E9   ; next unread byte index in DISK_DTA (0..128)
+DTA_VALID       equ     $E0EA   ; bytes available in DISK_DTA this record (0..128)
+BDOS_RES        equ     $E0EB   ; last BDOS result byte (A) returned across CALSLT
+; BLOAD's own Disk Transfer Area: a writable 128-byte page-3 buffer the BLOAD
+; path hands to BDOS $1A so each SeqRead record lands here (the $0080 default is
+; BIOS ROM under Disk BASIC and would silently fail). Placed at $E4C2, just past
+; the disk ROM's own scratch top ($E4C1 = BDOS_DTA word), so it is clear of the
+; disk ROM's SECTOR_BUF/FAT scratch ($E2A0-$E4C1) AND of every basic RAM region
+; (basic's highest page-3 use is STRSCR $E380; TOKBUF/VARTAB live in page $E1).
+; 128 bytes: $E4C2..$E541. See basic/PROVENANCE.md §disk-BLOAD DTA buffer.
+DISK_DTA        equ     $E4C2   ; BLOAD's 128-byte SeqRead transfer buffer
+SYSTEM_VEC      equ     $F37D   ; SYSTEM sysvar: disk ROM's bdos_entry address (word)
+; BDOS FCB call numbers BLOAD passes to the disk ROM's bdos_entry (C = call #,
+; DE = FCB / pointer, A = result). Same MSX-DOS BDOS table as disk/disk.asm; the
+; two sides must agree. Source: MSX2 Technical Handbook / MSX-DOS BDOS call table.
+BDOS_OPEN       equ     $0F     ; FCB Open               (DE = FCB; A=$00 ok/$FF fail)
+BDOS_CLOSE      equ     $10     ; FCB Close              (DE = FCB)
+BDOS_SEQRD      equ     $14     ; FCB Sequential Read    (A=$00 record / $01 EOF)
+BDOS_SETDTA     equ     $1A     ; Set DTA Address        (DE = new DTA)
+; Disk BSAVE on-disk binary-file header (MSX-BASIC file formats — MSX Wiki /
+; MSX Resource Center, an allowed public language reference). 7 bytes, then raw
+; data: [$FE][start:2 LE][end:2 LE][exec:2 LE]. This is the DISK format and is
+; DIFFERENT from the cassette header (10x $D0 + 6-char name + addresses); the
+; filename lives in the directory entry, not the file body. Data bytes run
+; start..end inclusive.
+BSAVE_DISK_ID   equ     $FE     ; on-disk BSAVE binary-file marker
 ; Control stacks (page $E0, below LINEBUF at $E100). Both grow upward; the
 ; pointer addresses the next free slot, and the stack is empty when it equals
 ; its base. GOSUB frame = [curline:2][resume:2] (4 bytes). FOR frame =

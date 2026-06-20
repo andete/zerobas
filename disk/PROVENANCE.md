@@ -352,11 +352,14 @@ variable; zerobas calls through that vector using CP/M-compatible FCB calls.
 | FCB Open call number | $0F | MSX2 TH, MSX-DOS BDOS call table | sourced |
 | FCB Close call number | $10 | MSX2 TH, MSX-DOS BDOS call table | sourced |
 | FCB Sequential Read call number | $14 | MSX2 TH, MSX-DOS BDOS call table | sourced |
+| Set DTA Address call number (DE = new DTA) | $1A | MSX2 TH, MSX-DOS BDOS call table | sourced |
 | BDOS return value on success | A = $00 | MSX2 TH, BDOS call conventions | sourced |
 | BDOS return value on error | A = $FF (Open) / $01 (SeqRead end-of-file) | MSX2 TH, BDOS call conventions | sourced |
 | Dispatcher: switch on call number in C, A=$FF for unsupported calls | — | own code; call-number-in-C convention sourced above | sourced |
 | Open: FCB+1..+11 name → `fat_find`; map found/not-found to A=$00/$FF | — | own code composing the FAT12 layer; FCB name offset + return values sourced above | sourced |
-| Sequential Read: deliver SECTOR_BUF in 128-byte records to the DTA, refill via `fat_read_file_sector` at record 4 | — | own code; 128-byte record + DTA $0080 sourced above | sourced |
+| Sequential Read: deliver SECTOR_BUF in 128-byte records to the **settable** DTA (`BDOS_DTA`), refill via `fat_read_file_sector` at record 4 | — | own code; 128-byte record sourced above; settable DTA via $1A sourced below | sourced |
+| Set DTA ($1A): store DE into `BDOS_DTA`; subsequent SeqReads copy to it | — | own code; $1A call number + DE=DTA convention sourced (MSX2 TH / MSX-DOS) | sourced |
+| `BDOS_DTA` default | $0080 | MSX2 TH, BDOS conventions (MSX-DOS default); INIT seeds it | sourced |
 | Records per sector = 512 / 128 = 4 | $04 | own derivation (sector size ÷ record size) | sourced |
 | Single open file: position in FAT iterator + BDOS_RECIDX, FCB extent (+12) / current-record (+32) fields unused | — | own design simplification (read-only loader subset) | quarantined |
 | SeqRead EOF granularity = cluster-chain end (last record may pad past FAT_FILESIZE) | — | own design; CP/M record semantics. Exact byte bounding deferred to oracle probe 3 | quarantined |
@@ -390,8 +393,11 @@ variable; zerobas calls through that vector using CP/M-compatible FCB calls.
 > pointer from DE (sourced). The remaining unsourced piece — the exact register
 > save/restore contract the zerobas BLOAD caller must honour around the vector —
 > is filed `quarantined` in the table above, pending oracle probe 3 (BDOS FCB
-> round-trip). The DTA is the documented fixed default ($0080), so no DMA-address
-> set-up call is needed for this read-only subset.
+> round-trip). The DTA defaults to the documented $0080 but is now **settable**
+> via BDOS $1A: under the combined Disk-BASIC machine page 0 is BIOS ROM, so a
+> SeqRead to $0080 silently fails — the BLOAD path issues $1A first to point the
+> DTA at a writable page-3 buffer it controls (see disk BLOAD execute in
+> basic/PROVENANCE.md). Confirmed end-to-end by `disk_probe_bload_disk.py`.
 
 > **Implementation note.** Realised in `disk/disk.asm` as `bdos_entry` plus
 > `bdos_open` / `bdos_seqread` / `bdos_close`, on top of the FAT12 helpers
@@ -435,6 +441,7 @@ RAM outside known regions.
 | — found file size (bytes) | $E4AE–$E4B1 (4 bytes) | own choice | sourced |
 | FAT12 transient work vars | $E4B2–$E4BE (13 bytes) | own choice (parity, byte-index, FAT sector, two FAT bytes, name pointer, dir-scan cursor + remaining) | sourced |
 | BDOS sequential-read record index | $E4BF (1 byte) | own choice (free page-3 RAM after FAT scratch; next 128-byte record within SECTOR_BUF, 0..4) | sourced |
+| BDOS settable DTA pointer (`BDOS_DTA`) | $E4C0–$E4C1 (word) | own choice (free page-3 RAM after the record index); default $0080, set via BDOS $1A | sourced |
 
 > **FAT12 geometry is derived, not stored as constants.** `fat_mount` reads the
 > boot sector and computes the first-FAT / first-root / root-sector-count /

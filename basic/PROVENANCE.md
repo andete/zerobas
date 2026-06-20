@@ -812,6 +812,7 @@ returns.
 | Scan policy: only primaries *after* our own page-1 primary (and their expanded subslots) | — | **own design** — matches the BIOS scan order so slots C-BIOS already initialised, and zerobas's own non-returning INIT, are never re-entered | quarantined |
 | INIT scan scratch: `SCAN_PRIM` $E0D5, `SCAN_SLOT` $E0D6, `SCAN_INIT` $E0D7, `SCAN_IY` $E0D9 | — | own choice (free page-$E0 RAM in the $E0D5–$E0FF gap; used once at INIT, entirely under `di`, dead afterwards) | sourced |
 | Scan runs under `di` (uninterrupted slot switching), `ei` on completion | — | own code; standard practice for RDSLT/CALSLT slot switching | sourced |
+| disk-ROM slot capture: `DISKSLOT` $E0E7, `DISKSLOT_OK` $E0E8 | — | own choice (free page-$E0 RAM). The scan records the slot id (`SCAN_SLOT`) of each external `"AB"` ROM it inits, so BLOAD can later `CALSLT` the disk ROM's `bdos_entry` across slots (the entry *address* comes from the disk INIT's SYSTEM $F37D). Last-one-wins; the combined machine has exactly one external AB ROM (the disk), so it is unambiguous | sourced |
 
 The only **quarantined** item is the scan *policy* (primaries after our own): an
 original own-design choice. It is the cleanest correct behaviour for the standard
@@ -823,9 +824,9 @@ sysvar, and the header/slot-id formats are allowed-source-sourced.
 
 **Functional validation (openMSX, `disk_probe_init.py` in msx-preservation).** On
 the combined `C-BIOS_MSX1_BASIC_DISK` machine, after boot the three locations the
-disk ROM's INIT writes now carry its values: `SYSTEM` ($F37D) = `$4168`
-(bdos_entry), `H.PHYD` ($FF3E) = `JP $4165` (phyd_handler), `H.DSKIO` ($FF4B) =
-`JP $4048` (dskio). Differential control with the pre-scan ROM: all three read the
+disk ROM's INIT writes now carry its values: `SYSTEM` ($F37D) = `$416E`
+(bdos_entry), `H.PHYD` ($FF3E) = `JP $416B` (phyd_handler), `H.DSKIO` ($FF4B) =
+`JP $404E` (dskio). Differential control with the pre-scan ROM: all three read the
 C-BIOS defaults ($C9 / $C9C9 — INIT did not run). Crunch byte-identical and the
 four regression probes still pass (the scan runs harmlessly before the REPL).
 
@@ -856,11 +857,11 @@ typos), the parser **rejects** (via `load_error`) anything that does not fit 8.3
 more than 8 name chars, more than 3 ext chars, a second `.`, or an empty name
 (e.g. `""`, `".EXT"`, `"A:"`). This is a deliberate, documented simplification.
 
-**Placeholder.** `do_disk_bload` deliberately does NOT read the disk yet — it
-falls through to `load_error`. The FCB it leaves at `DISK_FCB` is ready to be
-handed to the disk ROM's `bdos_entry` (C=`BDOS_F_OPEN`, DE=`DISK_FCB`) by the
-next TODO item ("Disk BLOAD execute"). The `,R` (RUNFLAG) parse is shared between
-the tape and disk paths via `parse_close_run`.
+**`do_disk_bload` reads the disk** (since the "Disk BLOAD execute" item — see the
+next section). It hands the FCB at `DISK_FCB` to the disk ROM's `bdos_entry`
+(C=`BDOS_OPEN`, DE=`DISK_FCB`) across slots. The `,R` (RUNFLAG) parse is shared
+between the tape and disk paths via `parse_close_run`, and the exec handoff via
+`load_handoff`.
 
 **Functional validation (openMSX, `disk_probe_bload_fcb.py` in msx-preservation).**
 On `C-BIOS_MSX1_BASIC` (the parse path is pure interpreter code that never touches
@@ -873,3 +874,77 @@ name; `BLOAD"B:HI.TXT"` → drive 2, name `HI      TXT`. Strictly an observation
 zerobas's own scratch RAM; no ROM is read or disassembled. Crunch byte-identical
 and the four regression probes still pass; `BLOAD"CAS:",R` end-to-end still loads
 + hands off (`basic_probe_bload.py`).
+
+## disk BLOAD execute (basic/bload.asm, basic/sysvars.inc; disk/disk.asm BDOS $1A)
+
+`do_disk_bload` now performs a real disk load: it opens the file named in
+`DISK_FCB` through the disk ROM's BDOS FCB layer, reads + verifies the on-disk
+BSAVE header, streams the data bytes into RAM, closes the file, and shares the
+`,R` exec handoff with the cassette path (`load_handoff`). Three integration
+problems from earlier validation are solved here.
+
+**A — reaching `bdos_entry` across slots.** The disk ROM's `bdos_entry` lives in
+slot 3-1, so it is reached with an inter-slot `CALSLT` ($001C), not a near call.
+The slot id comes from `DISKSLOT` (recorded by the INIT scan, previous section);
+the entry *address* is read at load time from the SYSTEM sysvar `$F37D`
+(`SYSTEM_VEC`) the disk INIT filled. `bdos_call` builds the slot word in RAM
+(reusing the dead post-INIT `SCAN_IY`) and CALSLTs `bdos_entry`. Limitation
+(documented): last-recorded external AB ROM wins — unambiguous on the combined
+machine (one disk ROM), would need per-ROM tracking for multi-ROM setups.
+
+**B — DTA in page-0 ROM under Disk BASIC.** The disk ROM's SeqRead copies each
+128-byte record to the DTA, default $0080. Under the combined Disk-BASIC machine
+page 0 is BIOS ROM, so $0080 is not writable and a SeqRead there silently fails.
+BLOAD therefore issues BDOS **$1A Set-DTA** (`BDOS_SETDTA`) first, pointing the
+DTA at its own writable page-3 buffer `DISK_DTA` ($E4C2, 128 bytes, clear of the
+disk ROM's SECTOR_BUF/FAT scratch $E2A0–$E4C1 and of all basic RAM). disk.asm
+gained the `$1A` dispatch + a settable `BDOS_DTA` variable (default $0080 for
+MSX-DOS compatibility) — see disk/PROVENANCE.md §BDOS Set-DTA.
+
+**C — disk BSAVE header is NOT the cassette format.** The on-disk BSAVE
+binary-file header is **7 bytes** `[$FE][start:2 LE][end:2 LE][exec:2 LE]`
+immediately followed by the raw data — no 10×$D0 block and no filename in the
+file body (the name is the directory entry). This differs from the cassette
+header (10×$D0 + 6-char name + the three addresses), which the TODO text wrongly
+called "same format as tape" — corrected in disk/TODO.md. BLOAD verifies the
+`$FE` marker (else `load_error`), parses start/end/exec into the existing
+`CURPTR`/`ENDPTR`/`EXECPTR`, and loads bytes start..end inclusive like the tape
+`load_loop`. Source for the header layout: **MSX-BASIC file formats** (MSX Wiki /
+MSX Resource Center) — an allowed public MSX-BASIC language reference.
+
+| Item | Value | Source | Status |
+| --- | --- | --- | --- |
+| BDOS call `Open` | $0F | MSX2 Technical Handbook / MSX-DOS BDOS call table | sourced |
+| BDOS call `Close` | $10 | MSX2 TH / MSX-DOS BDOS call table | sourced |
+| BDOS call `Sequential Read` | $14 | MSX2 TH / MSX-DOS BDOS call table | sourced |
+| BDOS call `Set DTA Address` (DE = new DTA) | $1A | MSX2 TH / MSX-DOS BDOS call table | sourced |
+| BDOS calling convention: C = call #, DE = FCB/pointer, A = result | — | MSX2 TH / MSX-DOS BDOS conventions | sourced |
+| disk BSAVE header: `[$FE][start:2 LE][end:2 LE][exec:2 LE]` + raw data, start..end inclusive | — | MSX-BASIC file formats (MSX Wiki / MSX Resource Center), public language reference | sourced |
+| `BSAVE_DISK_ID` marker | $FE | as above | sourced |
+| `SYSTEM_VEC` (disk ROM's `bdos_entry` address, set by disk INIT) | $F37D | MSX2 TH work area / C-BIOS system variables | sourced |
+| `CALSLT` (IYh = slot, IX = addr) for the inter-slot BDOS call | $001C | MSX Assembly Page BIOS call list / MSX2 TH | sourced |
+| `DISK_DTA` 128-byte SeqRead buffer | $E4C2 | own choice (free page-3 RAM past the disk ROM's scratch top $E4C1; clear of all basic RAM) | sourced |
+| Streaming state: `DTA_OFF` $E0E9, `DTA_VALID` $E0EA, `BDOS_RES` $E0EB | — | own choice (free page-$E0 RAM; dead outside a BLOAD). 128-byte records are not header-aligned with the data, so bytes are pulled one at a time via `disk_getbyte`, refilling via SeqRead when the record is exhausted | sourced |
+
+**Divergences / judgment calls.**
+- The byte-at-a-time `disk_getbyte` over a 128-byte SeqRead record handles the
+  non-record-aligned 7-byte header + data cleanly; EOF (SeqRead A≠0) mid-stream
+  before reaching `end` takes `load_error`.
+- On any error after Open (bad `$FE`, short read), `disk_load_err` closes the file
+  before erroring — no leaked open file.
+- `DISKSLOT_OK` = 0 (no disk ROM found by the INIT scan) makes `do_disk_bload`
+  fall straight to `load_error`, so the parser-only `disk_probe_bload_fcb.py` on
+  the plain (diskless) machine still reaches its FCB-read landmark and bails.
+
+**Functional validation (openMSX, `disk_probe_bload_disk.py` in msx-preservation).**
+On `C-BIOS_MSX1_BASIC_DISK` with `-diska disk/test720.dsk` (which now carries a
+real BSAVE `PROG.BIN`: header `$FE` start=$C000 end=$C031 exec=$C000; the payload
+writes $5A→$D000, self-loops at `JR $` $C010, then a 0..31 data tail):
+`BLOAD"A:PROG.BIN",R` — the data bytes land byte-identical at $C000..$C031, PC
+reaches the $C010 landmark (the `,R` handoff fired) and ($D000)=$5A (the loaded
+code executed); `BLOAD"A:PROG.BIN"` (no `,R`) — the same bytes load but ($D000)
+stays at its pre-poisoned sentinel $A5 (no exec). The read path is the same one
+`disk_probe_dskio.py` confirms byte-identical to the CF-3300 reference. Crunch
+byte-identical and the four regression probes still pass; `disk_probe_init.py`
+and `disk_probe_bload_fcb.py` still pass; `BLOAD"CAS:",R` end-to-end still loads
++ hands off.

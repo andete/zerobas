@@ -24,6 +24,25 @@ BDOS record size exercise: per-sector refill (4 records/sector), a cluster-chain
 hop (after record 8), and cluster-chain EOF (after record 16). HI.TXT is a small
 second entry so the directory search has to pick the right one.
 
+PROG.BIN is a REAL BSAVE binary for the disk BLOAD execute path. The on-disk
+BSAVE binary-file format (MSX-BASIC file formats — MSX Wiki / MSX Resource
+Center, an allowed public language reference) is a 7-byte header followed by the
+raw machine code, with NO 10x$D0 block and NO filename in the body (the name is
+the directory entry):
+
+    byte 0      : $FE                 binary-file id
+    bytes 1-2   : start address (LE)  where the data loads
+    bytes 3-4   : end   address (LE)  last load address (inclusive)
+    bytes 5-6   : exec  address (LE)  ,R jumps here
+    bytes 7..   : the data bytes, loaded into [start..end] inclusive
+
+This differs from the CASSETTE header (10x $D0 + 6-char filename + the same three
+addresses); see disk/PROVENANCE.md / disk/TODO.md. PROG.BIN's payload is a tiny
+hand-assembled blob that (a) writes a deterministic landmark to MARKER_ADDR so a
+probe can confirm the bytes landed, then (b) self-loops at JR $ so a probe can
+break there and confirm the ,R exec handoff fired. A deterministic data tail
+after the code is trivially checkable byte-for-byte at [start..end].
+
     python3 tools/make_test_dsk.py [out.dsk]      # default: disk/test720.dsk
 """
 from __future__ import annotations
@@ -128,6 +147,45 @@ class Fat12Image:
         return bytes(self.data)
 
 
+# --- PROG.BIN: a real BSAVE binary for the disk BLOAD execute path ----------
+# Payload contract (mirrored by disk-spec/tools/disk_probe_bload_disk.py):
+#   start = exec = PROG_LOAD; the blob writes MARKER (one byte) to MARKER_ADDR,
+#   then a deterministic data tail follows the code, then JR $ at PROG_LOAD+
+#   LANDMARK_OFF is the break landmark for the ,R handoff. end = last data byte.
+PROG_LOAD = 0xC000        # load + exec address (page-3 RAM, free of basic state)
+MARKER_ADDR = 0xD000      # where the executed blob writes its landmark byte
+MARKER_BYTE = 0x5A        # the landmark a probe asserts after the ,R handoff
+LANDMARK_OFF = 16         # JR $ sits at PROG_LOAD + LANDMARK_OFF (fixed)
+DATA_TAIL = bytes(range(32))   # 0,1,..,31 — trivially checkable data after code
+
+
+def build_bsave_payload() -> tuple[int, int, int, bytes]:
+    """Hand-assemble PROG.BIN's body (data only) + return (start, end, exec, data).
+
+    Layout inside [start..end]:
+      +0  : LD A,MARKER_BYTE ; LD (MARKER_ADDR),A   (executed code)
+      ... : NOP padding to LANDMARK_OFF
+      +LANDMARK_OFF : JR $                          (self-loop landmark)
+      ... : DATA_TAIL                               (deterministic, checkable)
+    """
+    code = bytearray()
+    code += bytes([0x3E, MARKER_BYTE])                        # LD A,MARKER_BYTE
+    code += bytes([0x32, MARKER_ADDR & 0xFF, MARKER_ADDR >> 8])  # LD (nn),A
+    assert len(code) <= LANDMARK_OFF, "code overflows the landmark offset"
+    code += bytes(LANDMARK_OFF - len(code))                   # NOP pad
+    code += bytes([0x18, 0xFE])                               # JR $  (landmark)
+    body = bytes(code) + DATA_TAIL
+    start = PROG_LOAD
+    end = PROG_LOAD + len(body) - 1                           # inclusive
+    exec_ = PROG_LOAD
+    return start, end, exec_, body
+
+
+def make_bsave_file(start: int, end: int, exec_: int, body: bytes) -> bytes:
+    """Wrap a payload in the 7-byte on-disk BSAVE header (MSX-BASIC file formats)."""
+    return struct.pack("<BHHH", 0xFE, start, end, exec_) + body
+
+
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -140,12 +198,21 @@ def main():
         test_bin += bytes([(r + 1) & 0xFF]) * 128
     img.add_file("TEST", "BIN", bytes(test_bin))
     img.add_file("HI", "TXT", b"Hello from zerobas-disk!\r\n")
+    # PROG.BIN: a real BSAVE binary (added AFTER the others so the dir search must
+    # skip TEST.BIN / HI.TXT to find it).
+    start, end, exec_, body = build_bsave_payload()
+    prog_bin = make_bsave_file(start, end, exec_, body)
+    img.add_file("PROG", "BIN", prog_bin)
 
     open(out, "wb").write(img.finish())
     print(f"wrote {out} ({TOTAL_SECTORS * SECTOR} bytes)")
     print(f"  TEST.BIN : {len(test_bin)} bytes, first cluster 2 "
           f"(sectors {FIRST_DATA}.. ); record r = 128 x byte(r+1)")
     print(f"  HI.TXT   : 26 bytes")
+    print(f"  PROG.BIN : {len(prog_bin)} bytes BSAVE "
+          f"(hdr $FE start=${start:04X} end=${end:04X} exec=${exec_:04X}); "
+          f"writes ${MARKER_BYTE:02X}->${MARKER_ADDR:04X}, JR$ at "
+          f"${start + LANDMARK_OFF:04X}; data tail {DATA_TAIL.hex()}")
     print(f"  geometry : firstFAT={FIRST_FAT} firstRoot={FIRST_ROOT} "
           f"rootSecs={ROOT_SECS} firstData={FIRST_DATA}")
 

@@ -114,9 +114,12 @@ load_next:
 
 load_done:
                 call    TAPIOF              ; motor off
+                ; fall through to the shared ,R handoff tail.
 
-                ; --- ,R handoff: jump to the exec address -------------------
-                ; spec-bload-r.md §3. Only when ,R was given.
+; load_handoff — shared ,R exec handoff (cassette + disk paths). spec-bload-r.md
+; §3 / disk BLOAD: plain BLOAD returns; ,R jumps to the exec address (RUNFLAG was
+; set by the parser; CURPTR/ENDPTR/EXECPTR are filled by whichever load ran).
+load_handoff:
                 ld      a,(RUNFLAG)
                 or      a
                 ret     z                   ; plain BLOAD: return to caller
@@ -181,12 +184,157 @@ build_name:
                 ; is set. Hand off to the (placeholder) disk loader.
                 jp      do_disk_bload
 
-; do_disk_bload — PLACEHOLDER. The scratch FCB at DISK_FCB is ready to be
-; passed to the disk ROM's bdos_entry (C=BDOS_F_OPEN, DE=DISK_FCB) by the NEXT
-; TODO item ("Disk BLOAD execute"). For now it falls through cleanly to
-; load_error so the ROM behaves safely. DO NOT implement the disk read here.
+; do_disk_bload — real disk load via the disk ROM's BDOS FCB layer.
+;
+; The FCB at DISK_FCB is fully built (drive code + 8.3 name) and RUNFLAG is set.
+; We reach the disk ROM's bdos_entry across slots with CALSLT ($001C): the slot
+; id is DISKSLOT (recorded by the INIT scan, initext.asm) and the entry address
+; is the SYSTEM sysvar ($F37D) the disk INIT filled. We then:
+;   $1A Set-DTA -> DISK_DTA  (page-0 $0080 is BIOS ROM under Disk BASIC, unusable)
+;   $0F Open    -> require A=$00
+;   $14 SeqRead -> a 128-byte record stream; the first 7 bytes are the on-disk
+;                  BSAVE header [$FE][start:2 LE][end:2 LE][exec:2 LE], the rest
+;                  is data loaded into [start..end] inclusive.
+;   $10 Close
+; Then share the ,R handoff tail with the cassette path.
+;
+; SeqRead delivers 128-byte records but the 7-byte header is not record-aligned
+; with the data, so we stream byte-by-byte through disk_getbyte (refilling a
+; record via SeqRead when the buffer is exhausted) and track the byte offset in
+; DTA_OFF/DTA_VALID. Sources: BDOS call numbers + Set-DTA — MSX2 TH / MSX-DOS
+; BDOS table; disk BSAVE header — MSX-BASIC file formats (MSX Wiki / MSX Resource
+; Center). See basic/PROVENANCE.md §disk BLOAD execute.
 do_disk_bload:
+                ; (1) disk ROM slot must have been recorded by the INIT scan.
+                ld      a,(DISKSLOT_OK)
+                or      a
+                jp      z,load_error
+                ; (3) Set-DTA -> our writable buffer; mark the record empty so the
+                ; first disk_getbyte triggers a SeqRead.
+                ld      a,128
+                ld      (DTA_OFF),a         ; OFF==VALID -> buffer exhausted
+                ld      (DTA_VALID),a
+                ld      c,BDOS_SETDTA
+                ld      de,DISK_DTA
+                call    bdos_call
+                ; (4) Open the file (DE = FCB). A=$00 required.
+                ld      c,BDOS_OPEN
+                ld      de,DISK_FCB
+                call    bdos_call
+                or      a
+                jp      nz,load_error       ; not found / I-O error
+                ; (5a) header byte 0 must be the BSAVE disk marker $FE.
+                call    disk_getbyte
+                jp      c,load_error
+                cp      BSAVE_DISK_ID
+                jp      nz,disk_load_err    ; close, then error
+                ; header bytes 1..6: start(LE), end(LE), exec(LE) into the same
+                ; CURPTR/ENDPTR/EXECPTR vars the tape path uses.
+                call    disk_getbyte
+                jp      c,disk_load_err
+                ld      (CURPTR),a          ; start low
+                call    disk_getbyte
+                jp      c,disk_load_err
+                ld      (CURPTR+1),a        ; start high
+                call    disk_getbyte
+                jp      c,disk_load_err
+                ld      (ENDPTR),a          ; end low
+                call    disk_getbyte
+                jp      c,disk_load_err
+                ld      (ENDPTR+1),a        ; end high
+                call    disk_getbyte
+                jp      c,disk_load_err
+                ld      (EXECPTR),a         ; exec low
+                call    disk_getbyte
+                jp      c,disk_load_err
+                ld      (EXECPTR+1),a       ; exec high
+                ; (5b) stream data bytes into [start..end] inclusive.
+disk_load_loop:
+                call    disk_getbyte
+                jp      c,disk_load_err     ; ran out before reaching end -> error
+                ld      hl,(CURPTR)
+                ld      (hl),a              ; store the byte
+                ld      de,(ENDPTR)
+                ld      a,h
+                cp      d
+                jr      nz,disk_load_next   ; high bytes differ -> more to do
+                ld      a,l
+                cp      e
+                jr      z,disk_load_fin     ; cur == end -> last byte stored
+disk_load_next:
+                inc     hl
+                ld      (CURPTR),hl
+                jr      disk_load_loop
+disk_load_fin:
+                ; (6) close the file.
+                ld      c,BDOS_CLOSE
+                ld      de,DISK_FCB
+                call    bdos_call
+                ; (7) shared ,R handoff tail.
+                jp      load_handoff
+
+; disk_load_err — close the open file, then take the normal error path.
+disk_load_err:
+                ld      c,BDOS_CLOSE
+                ld      de,DISK_FCB
+                call    bdos_call
                 jp      load_error
+
+; disk_getbyte — return the next byte of the open file's data stream in A.
+; Refills DISK_DTA via a SeqRead ($14) when the current 128-byte record is
+; exhausted; CF set on EOF (no more data). State: DTA_OFF = next index into
+; DISK_DTA, DTA_VALID = bytes in this record (always 128 from our SeqRead).
+;   out: CF clear, A = byte; or CF set = EOF. Clobbers A/B/C/D/E/H/L (CALSLT
+;        clobbers everything across the SeqRead; we restore from RAM each time).
+disk_getbyte:
+                ld      a,(DTA_OFF)
+                ld      b,a
+                ld      a,(DTA_VALID)
+                cp      b
+                jr      nz,dgb_have         ; bytes still left in DISK_DTA
+                ; record exhausted: SeqRead the next 128 bytes.
+                ld      c,BDOS_SEQRD
+                ld      de,DISK_FCB
+                call    bdos_call
+                or      a
+                jr      nz,dgb_eof          ; A=$01 EOF (or any non-zero) -> done
+                xor     a
+                ld      (DTA_OFF),a         ; back to byte 0 of the fresh record
+                ld      a,128
+                ld      (DTA_VALID),a
+                ld      b,0                 ; B = current offset (0)
+dgb_have:
+                ; fetch DISK_DTA[B], then advance DTA_OFF.
+                ld      hl,DISK_DTA
+                ld      d,0
+                ld      e,b
+                add     hl,de
+                ld      a,b
+                inc     a
+                ld      (DTA_OFF),a
+                ld      a,(hl)              ; A = the byte
+                or      a                   ; clear CF (A may be anything; OR clears C)
+                ret
+dgb_eof:
+                scf
+                ret
+
+; bdos_call — inter-slot call into the disk ROM's bdos_entry.
+;   in:  C = BDOS call number, DE = FCB / pointer
+;   out: A = BDOS result (also stored to BDOS_RES). Slot id = DISKSLOT, entry
+;        address = the SYSTEM sysvar ($F37D). DISKSLOT_OK must already be 1.
+; CALSLT ($001C) clobbers AF/BC/DE/HL/IX/IY; callers keep their state in RAM.
+; CALSLT reads the slot from IYh, so we build the slot word in RAM: low byte is
+; don't-care, high byte = DISKSLOT. SCAN_IY (the INIT-scan CALSLT word, $E0D9) is
+; dead once the REPL is running, so we reuse it rather than spend new RAM.
+bdos_call:
+                ld      a,(DISKSLOT)
+                ld      (SCAN_IY+1),a       ; IYh = disk ROM slot id
+                ld      iy,(SCAN_IY)
+                ld      ix,(SYSTEM_VEC)     ; entry address = bdos_entry ($F37D)
+                call    CALSLT
+                ld      (BDOS_RES),a
+                ret
 
 ; build_83_name — convert the filename at HL into the 11-byte 8.3 field at
 ; DISK_FCB_NAME (8 name + 3 ext, space-padded $20, upper-case).

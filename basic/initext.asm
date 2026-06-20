@@ -33,6 +33,8 @@
 ; init_ext_roms: run the remaining boot-scan INITs. Called from `init` just
 ; before `repl`. Clobbers AF/BC/DE/HL/IX/IY (we are pre-REPL, nothing live).
 init_ext_roms:
+                xor     a
+                ld      (DISKSLOT_OK),a     ; no disk-ROM slot recorded yet
                 di                          ; slot switching must be uninterrupted
                 in      a,(PSLTREG)         ; primary slot select register
                 rrca
@@ -111,6 +113,16 @@ try_init_slot:
                 ld      iy,(SCAN_IY)
                 ld      ix,(SCAN_INIT)
                 call    CALSLT
+                ; Record this external AB ROM's slot id for cross-slot BDOS calls
+                ; from BLOAD (it CALSLTs the disk ROM's bdos_entry). On the
+                ; combined machine the disk ROM is the only external AB ROM the
+                ; scan reaches, so its slot is unambiguous; a multi-ROM setup
+                ; would need per-ROM tracking (last-one-wins here — documented
+                ; limitation, PROVENANCE.md §disk-ROM slot capture).
+                ld      a,(SCAN_SLOT)
+                ld      (DISKSLOT),a
+                ld      a,1
+                ld      (DISKSLOT_OK),a
                 ret
 
 ; rdslt_scan: A = RDSLT(slot=(SCAN_SLOT), addr=HL). RDSLT preserves HL, so the

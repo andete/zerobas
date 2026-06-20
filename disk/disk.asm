@@ -77,17 +77,27 @@ FAT_DIRREM      equ     $E4BD   ; root-dir sectors remaining to scan (word)
 ; INIT installed. Call number in C, FCB pointer in DE; result in A (MSX2 TH,
 ; MSX-DOS BDOS call conventions). Names in the FCB are an 11-byte 8.3 field at
 ; +1 (8 name + 3 ext, space-padded, upper-case) — exactly the layout fat_find
-; consumes. The DTA is the fixed default at $0080 in page 0.
+; consumes. The DTA defaults to $0080 (page 0) but is settable via BDOS $1A —
+; BLOAD points it at a writable page-3 buffer (page 0 is BIOS ROM under Disk
+; BASIC, so the $0080 default would silently fail there).
 BDOS_F_OPEN     equ     $0F     ; FCB Open           (MSX2 TH, MSX-DOS BDOS table)
 BDOS_F_CLOSE    equ     $10     ; FCB Close          (MSX2 TH, MSX-DOS BDOS table)
 BDOS_F_SEQRD    equ     $14     ; FCB Sequential Read(MSX2 TH, MSX-DOS BDOS table)
-DTA             equ     $0080   ; default Disk Transfer Area (MSX2 TH, BDOS conv.)
+BDOS_F_SETDTA   equ     $1A     ; Set DTA Address (DE=new DTA) (MSX2 TH, MSX-DOS BDOS table)
+DTA_DEFAULT     equ     $0080   ; default Disk Transfer Area (MSX2 TH, BDOS conv.)
 RECSIZE         equ     128     ; sequential-read record size (MSX2 TH, FCB seq I/O)
 RECPERSEC       equ     4       ; 512 / 128 = records per 512-byte sector (own deriv.)
 ; BDOS sequential-read position (own choice; free page-3 RAM after FAT scratch).
 ; Records consumed from SECTOR_BUF so far; RECPERSEC means "buffer exhausted,
 ; refill on next read". File position otherwise lives in the FAT iterator.
 BDOS_RECIDX     equ     $E4BF   ; next 128-byte record within SECTOR_BUF (0..4)
+; Settable DTA pointer (BDOS call $1A). Under MSX-DOS the default DTA is page-0
+; RAM at $0080; under the combined Disk-BASIC machine page 0 is BIOS ROM, so a
+; SeqRead to $0080 silently fails. BDOS $1A lets the caller (BLOAD) point the
+; record transfer at a writable buffer it controls. Default preserves MSX-DOS
+; compatibility. Own choice for the variable location: free page-3 RAM after the
+; BDOS record index. See disk/PROVENANCE.md §BDOS interface.
+BDOS_DTA        equ     $E4C0   ; current DTA pointer (word; default DTA_DEFAULT)
 
 ; --- BPB field offsets within the boot sector (Microsoft FAT spec §3.1) -----
 BPB_BYTSPERSEC  equ     11      ; bytes per sector (word LE)
@@ -180,6 +190,10 @@ init:
                 call    install_hook
                 ld      hl, bdos_entry
                 ld      (SYSTEM), hl
+                ; default the settable DTA to the MSX-DOS default ($0080) so a
+                ; SeqRead before any $1A behaves as MSX-DOS does.
+                ld      hl, DTA_DEFAULT
+                ld      (BDOS_DTA), hl
                 ret
 
 ; install_hook: write a JP instruction into a 5-byte hook slot.
@@ -476,7 +490,18 @@ bdos_entry:
                 jr      z, bdos_seqread
                 cp      BDOS_F_CLOSE
                 jr      z, bdos_close
+                cp      BDOS_F_SETDTA
+                jr      z, bdos_setdta
                 ld      a, $FF          ; unsupported call
+                ret
+
+; bdos_setdta ($1A) — set the Disk Transfer Area address.
+;   in:  DE = new DTA pointer
+;   out: (no documented result; A undefined per MSX-DOS) — we leave A as-is
+; Stores DE into BDOS_DTA; subsequent SeqReads copy each 128-byte record there
+; instead of the $0080 default. (MSX2 TH / MSX-DOS BDOS call table.)
+bdos_setdta:
+                ld      (BDOS_DTA), de
                 ret
 
 ; bdos_open ($0F) — open the file named in the FCB.
@@ -503,7 +528,7 @@ bdos_open_err:
                 ld      a, $FF
                 ret
 
-; bdos_seqread ($14) — read the next 128-byte record into the DTA ($0080).
+; bdos_seqread ($14) — read the next 128-byte record into the DTA (BDOS_DTA).
 ; Refills SECTOR_BUF from the cluster chain when the four records of the current
 ; sector are exhausted; EOF is reported when the chain ends.
 ;   out: A = $00 record delivered / $01 end-of-file (MSX2 TH, BDOS conventions)
@@ -531,7 +556,7 @@ bsr_have:
                 add     hl, hl          ; HL = RECIDX * 128
                 ld      de, SECTOR_BUF
                 add     hl, de          ; HL = source record in SECTOR_BUF
-                ld      de, DTA
+                ld      de, (BDOS_DTA)  ; settable DTA (BDOS $1A); default $0080
                 ld      bc, RECSIZE
                 ldir                    ; copy 128 bytes to the DTA
                 ld      a, (BDOS_RECIDX)
