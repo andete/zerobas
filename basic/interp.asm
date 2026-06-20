@@ -262,25 +262,51 @@ tk_num_w:
                 inc     de
                 jp      tk_loop
 
-; --- tk_hex: crunch a "&H" hex constant -> $0C,<word LE> (spec §3) ----------
-; "&O"/"&B"/bare "&" are out of scope: emit the '&' verbatim and resume.
+; --- tk_hex: crunch "&H" hex / "&O" octal constants -> $0C / $0B,<word LE> ---
+; Oracle (basic_probe_crunch.py): the reference crunches `&H<hex>` to
+; $0C,<value16 LE> and `&O<oct>` to $0B,<value16 LE> (HEX_TOKEN / OCT_TOKEN),
+; full 0..&HFFFF — same shape as $1C int constants. `&B` and a bare `&` are
+; copied VERBATIM: the VG-8020 has no `&B` binary token (oracle showed
+; `a=&b1010` crunches to `& B 1 0 1 0` ASCII), so we must not invent one — `&B`
+; is a documented own-design descope (PROVENANCE.md, quarantined). The single
+; accumulator loop is parameterised by base (B) and token (C): hex *16 over
+; 0-9 A-F, octal *8 over 0-7.
 tk_hex:
                 inc     hl                  ; past '&'
                 ld      a,(hl)
                 call    upcase
                 cp      'H'
                 jr      z,tk_hex_h
-                dec     hl                  ; not &H -> copy the '&' verbatim
+                cp      'O'
+                jr      z,tk_hex_o
+                dec     hl                  ; not &H/&O (&B, bare &) -> copy '&' verbatim
                 jp      tk_copy
 tk_hex_h:
-                inc     hl                  ; past 'H'
+                ld      a,16                ; hex: radix 16, accumulate over 0-9 A-F
+                ld      (TKRADIX),a
+                ld      a,HEX_TOKEN
+                ld      (TKRTOK),a
+                jr      tk_hex_go
+tk_hex_o:
+                ld      a,8                 ; octal: radix 8, accumulate over 0-7
+                ld      (TKRADIX),a
+                ld      a,OCT_TOKEN
+                ld      (TKRTOK),a
+tk_hex_go:
+                inc     hl                  ; past the H / O
                 push    de                  ; save destination cursor
                 ld      de,0                ; DE = value
 tk_hex_lp:
                 ld      a,(hl)
                 call    upcase
                 cp      '0'
-                jr      c,tk_hex_done
+                jr      c,tk_hex_done       ; below '0' -> end of digits
+                ld      c,a                 ; C = the upcased source char
+                ld      a,(TKRADIX)
+                cp      8
+                jr      z,tk_hex_oct        ; octal: only '0'..'7'
+                ; hex digit test: '0'..'9','A'..'F'
+                ld      a,c
                 cp      '9'+1
                 jr      c,tk_hex_dig        ; '0'..'9'
                 cp      'A'
@@ -289,20 +315,31 @@ tk_hex_lp:
                 jr      nc,tk_hex_done
                 sub     'A'-10              ; 'A'..'F' -> 10..15
                 jr      tk_hex_acc
+tk_hex_oct:                                 ; octal digit test: '0'..'7'
+                ld      a,c
+                cp      '7'+1
+                jr      nc,tk_hex_done
+                sub     '0'                 ; '0'..'7' -> 0..7
+                jr      tk_hex_acc
 tk_hex_dig:
-                sub     '0'
+                ld      a,c
+                sub     '0'                 ; '0'..'9' -> 0..9
 tk_hex_acc:
-                ld      c,a                 ; nibble
-                push    hl                  ; DE = DE*16 + nibble
+                ld      c,a                 ; digit value
+                push    hl                  ; DE = DE*radix + digit
                 ld      h,d
                 ld      l,e
-                add     hl,hl
-                add     hl,hl
-                add     hl,hl
-                add     hl,hl               ; acc*16
+                ld      a,(TKRADIX)
+                add     hl,hl               ; *2  (both radices)
+                add     hl,hl               ; *4
+                add     hl,hl               ; *8
+                cp      8
+                jr      z,tk_hex_mac        ; octal stops at *8
+                add     hl,hl               ; *16 (hex)
+tk_hex_mac:
                 ld      e,c
                 ld      d,0
-                add     hl,de               ; + nibble
+                add     hl,de               ; + digit
                 ex      de,hl               ; DE = new value
                 pop     hl
                 inc     hl
@@ -311,7 +348,7 @@ tk_hex_done:
                 ld      b,d
                 ld      c,e                 ; BC = value
                 pop     de                  ; restore destination cursor
-                ld      a,HEX_TOKEN
+                ld      a,(TKRTOK)          ; HEX_TOKEN ($0C) or OCT_TOKEN ($0B)
                 ld      (de),a
                 inc     de
                 ld      a,c                 ; value low

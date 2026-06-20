@@ -369,3 +369,54 @@ an out-of-order multi-line insert that lists in number order).
 | `LIST <n>` / `LIST <n>-<m>` line-range arguments deferred (trailing arg parsed-past + ignored) | — | own design (Phase 2 scope; documented in basic/list.asm) | sourced |
 
 No quarantined items.
+
+## Phase 1: `&O` / `&B` integer literals (basic/interp.asm, basic/expr.asm, basic/sysvars.inc)
+
+`&O<octal>` now crunches and evaluates; `&B<binary>` is a documented descope.
+
+**Oracle (`basic_probe_crunch.py`, scratch test lines, restored to pristine
+after).** The reference Philips VG-8020 crunches:
+
+- `a=&o17` → `… 41 EF 0B 0F 00` — i.e. `$0B` (OCT_TOKEN) then `0F 00` = 15 LE
+  (octal 17 = 15). `&o777` → `0B FF 01` (511), `&o177777` → `0B FF FF` (65535).
+  So `&O` is `$0B,<value16 LE>`, full `0..&HFFFF`, the same shape as `&H`/`$1C`.
+- `a=&b1010` → `… 41 EF 26 42 31 30 31 30 00` — `&`(`$26`) `B`(`$42`) then the
+  ASCII digits verbatim. **The reference has NO `&B` binary token**: it copies
+  `&B…` through as text. So `&B` is *not* tokenised specially, and inventing a
+  token would diverge from the oracle.
+
+**Implementation.** `tk_hex` (basic/interp.asm) is generalised from `&H`-only to
+dispatch on the character after `&`: `H` → radix 16 / `HEX_TOKEN $0C`, `O` →
+radix 8 / `OCT_TOKEN $0B` (radix + token held in new RAM scratch `TKRADIX`
+`$E029` / `TKRTOK` `$E02A`); `&B` and a bare `&` fall through to copy the `&`
+verbatim, exactly as the oracle does. The single accumulator loop multiplies by
+the radix via shifts (`*8` for octal, `*16` for hex) and emits the stored token +
+16-bit LE value. `ev_f` (basic/expr.asm) decodes `$0B` through the existing
+`ev_f_word` path (identical 2-byte-LE decode to `$0C`/`$1C`). `detok`
+(basic/list.asm) already rendered `$0B` → `&O…` (`dt_oct`), so no change there.
+
+**`&B` descope (quarantined).** Because the oracle shows the reference emits no
+`&B` token, zerobas keeps `&B…` verbatim (byte-identical to the reference). This
+means `&B` is *not* an evaluable binary literal in zerobas — a deliberate
+own-design descope, not a fabricated encoding. Should a future need arise it
+would be an explicit own-design extension; for now it is quarantined as
+"no allowed token to match."
+
+No disassembly was read. `OCT_TOKEN $0B` is from MSX2 TH Table 2.20 and was
+oracle-confirmed byte-for-byte by the crunch probe; the tokeniser/decoder
+extension is **own code** (forward/reverse of this project's oracle-sourced
+tokeniser).
+
+Validated: `make` builds a clean 16384-byte `basic.rom`, no warnings. The crunch
+probe is byte-identical incl. `&o17`/`&o777`/`&o0`/`&o177777` (all `$0B,…`) and
+`&b0`/`&b1`/`&b1010`/`&b1111111111111111` (all verbatim, matching the reference).
+The controlflow / loops / data / statements regression probes all stay ALL PASS.
+Functional in openMSX (`Philips_VG_8020`, BLOAD-landmark freeze): `a=&o17`→15,
+`a=&o12`→10, `a=&o400`→256, `a=&o177777`→65535.
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `&O` octal constant token | `$0B` (`OCT_TOKEN`), `$0B,<value16 LE>` | MSX2 TH Table 2.20; oracle-confirmed byte-identical via `basic_probe_crunch.py` | sourced |
+| `tk_hex` radix dispatch (`&H`/`&O`) + octal `*8` accumulator; `TKRADIX`/`TKRTOK` scratch | — | **own code**, forward of this project's oracle-sourced tokeniser; no disassembly | sourced |
+| `ev_f` decode of `$0B` (reuses `ev_f_word`) | — | **own code**, mirrors the `$0C`/`$1C` decode | sourced |
+| `&B` binary literal kept verbatim (no token) | — | own design: oracle shows the reference emits no `&B` token, so none is fabricated | quarantined |

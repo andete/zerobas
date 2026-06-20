@@ -324,7 +324,9 @@ ev_f:
                 jp      z,ev_f_peek
                 cp      USR_TOKEN           ; $DD -> USR[n](arg) function
                 jp      z,ev_usr
-                cp      HEX_TOKEN           ; $0C -> 2-byte LE value
+                cp      HEX_TOKEN           ; $0C -> 2-byte LE value (&H)
+                jp      z,ev_f_word
+                cp      OCT_TOKEN           ; $0B -> 2-byte LE value (&O)
                 jp      z,ev_f_word
                 cp      INT2_TOKEN          ; $1C -> 2-byte LE value
                 jp      z,ev_f_word

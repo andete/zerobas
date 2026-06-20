@@ -9,7 +9,7 @@ one item — do **one item per session** to keep context lean.
 
 ## Status today
 
-Working: byte-identical tokeniser (keywords, integer / `&H` constants,
+Working: byte-identical tokeniser (keywords, integer / `&H` / `&O` constants,
 `= + - * / \ < >`, `MOD`/`AND`/`OR`/`XOR`/`NOT`), stored numbered-line programs
 (insert / replace / delete, `NEW`, `RUN`), control flow (`GOTO`,
 `GOSUB`/`RETURN`, `FOR`/`NEXT`, `IF`/`THEN`/`ELSE`, `ON … GOTO`/`GOSUB`,
@@ -59,7 +59,16 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
       (basic/expr.asm: full precedence ladder; crunch byte-identical, all ops verified
       in openMSX. `/` is integer + division is unsigned — documented divergences from
       MSX signed/float arithmetic; div-by-zero → 0. `^` still deferred to Phase 2.)
-- [ ] `&O` / `&B` literals — tokens reserved, not yet emitted
+- [x] `&O` / `&B` literals — `&O` octal now emitted + evaluated; `&B` descoped
+      (basic/interp.asm: `tk_hex` generalised to dispatch `&H`/`&O` on a radix
+      (16/8) + token ($0C/$0B) pair; `&O` crunches byte-identical to the VG-8020
+      as `$0B,<value16 LE>`, full `0..&HFFFF`; `ev_f` decodes `$0B` like `$0C`;
+      `detok` already rendered `&O`. Oracle showed the reference has NO `&B`
+      binary token — it copies `&B…` verbatim as ASCII — so `&B` is a documented
+      own-design descope (kept verbatim, byte-identical to the reference; marked
+      quarantined in basic/PROVENANCE.md), not a fabricated token. Validated:
+      crunch + 4 control-flow/loops/data/statements regressions ALL PASS;
+      functional `&o17`→15, `&o12`→10, `&o400`→256, `&o177777`→65535 in openMSX.)
 - [ ] `VARPTR`, `VPOKE`/`VPEEK`/`BASE`, `INP`/`OUT` — common in pokes
 - [ ] String literals / variables *enough for `PRINT`* (full string engine is Phase 2)
 

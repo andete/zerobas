@@ -81,6 +81,8 @@ ERRMARK         equ     $E010   ; error landmark marker byte
 RUNFLAG         equ     $E02F   ; 1 = ,R handoff requested (set while parsing)
 TKNAME          equ     $E028   ; tokeniser: 1 = previous char was part of a name
                                 ; (so a following digit stays verbatim, not crunched)
+TKRADIX         equ     $E029   ; tokeniser: &H/&O accumulator radix (16 or 8)
+TKRTOK          equ     $E02A   ; tokeniser: &H/&O constant token to emit ($0C/$0B)
 NUMBUF          equ     $E0C0   ; PRINT: decimal-format scratch (8 bytes, 0-term)
 ; Buffers and the variable table live in page $E1, clear of $E000.
 LINEBUF         equ     $E100   ; ASCII input line from the keyboard (LINEMAX bytes)
