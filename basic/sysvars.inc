@@ -18,6 +18,12 @@ CLS             equ     $00C3   ; clear the screen; zero flag must be set on ent
 ERAFNK          equ     $00CC   ; erase the function-key display line (KEY OFF)
 DSPFNK          equ     $00CF   ; display the function-key line (KEY ON)
 CSRX            equ     $F3DD   ; cursor column (1-based); C-BIOS sysvars / PRINT comma zones
+; BREAKX: test the Ctrl-STOP key combination by directly scanning keyboard matrix
+; row 6 (no side effects, no ISR dependency). CF set on return = Ctrl-STOP held,
+; CF clear = not held. Source: MSX Assembly Page BIOS call list / MSX2 Technical
+; Handbook; oracle-confirmed working on C-BIOS_MSX1 (bios_probe_breakx.py: carry
+; clear when no key pressed, identical to the reference VG-8020).
+BREAKX          equ     $00B7   ; check Ctrl-STOP via keyboard matrix; CF set = pressed
 
 ; --- VDP VRAM access BIOS entry points (VPOKE / VPEEK) ---------------------
 ; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook, VDP I/O.
@@ -208,6 +214,10 @@ NEW_TOKEN       equ     $94
 END_TOKEN       equ     $81
 STOP_TOKEN      equ     $90
 ON_TOKEN        equ     $95
+CONT_TOKEN      equ     $99     ; CONT (resume a STOPped/broken program). Oracle-
+                                ; confirmed byte-identical via basic_probe_crunch.py
+                                ; against the Philips VG-8020 (`cont` -> $99);
+                                ; cross-checks MSX2 TH Table 2.20.
 PRINT_TOKEN     equ     $91
 LET_TOKEN       equ     $88
 CLEAR_TOKEN     equ     $92     ; Table 2.20 (cross-checks MSX Assembly Page token table)
@@ -250,6 +260,17 @@ ENDFLAG         equ     $E03D   ; 1 = END/STOP reached, stop the run
 ; line that holds RESUMEPTR so the post-statement "advance to next line" works.
 RESUMEPTR       equ     $E03E   ; mid-line resume token pointer (2)
 RESUMEFLAG      equ     $E040   ; 1 = resume at RESUMEPTR (set by RETURN / NEXT)
+; CONT / Ctrl-STOP break-resume state (own-design; see PROVENANCE.md). When a
+; running program is broken by the STOP statement or by Ctrl-STOP (BREAKX), the
+; run loop records exactly where to resume: CONTLINE = the link-field address of
+; the line that was interrupted (same meaning as CURLINE), CONTPTR = the token
+; position at which to continue (the statement after STOP, or the start of the
+; next line for a Ctrl-STOP between lines). CONTVALID = 1 means "a CONT resume
+; point is live". Editing the program (store_line / NEW) clears CONTVALID so CONT
+; then errors with "Can't CONTINUE", matching the reference's behaviour.
+CONTLINE        equ     $E0D0   ; saved CURLINE for CONT (2)
+CONTPTR         equ     $E0D2   ; saved resume token pointer for CONT (2)
+CONTVALID       equ     $E0D4   ; 1 = a CONT resume point is valid (1)
 ; Control stacks (page $E0, below LINEBUF at $E100). Both grow upward; the
 ; pointer addresses the next free slot, and the stack is empty when it equals
 ; its base. GOSUB frame = [curline:2][resume:2] (4 bytes). FOR frame =

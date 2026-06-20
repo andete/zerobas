@@ -13,7 +13,8 @@ Working: byte-identical tokeniser (keywords, integer / `&H` / `&O` constants,
 `= + - * / \ < >`, `MOD`/`AND`/`OR`/`XOR`/`NOT`), stored numbered-line programs
 (insert / replace / delete, `NEW`, `RUN`), control flow (`GOTO`,
 `GOSUB`/`RETURN`, `FOR`/`NEXT`, `IF`/`THEN`/`ELSE`, `ON … GOTO`/`GOSUB`,
-`END`/`STOP`), `DATA`/`READ`/`RESTORE`, comparisons, `POKE`/`PEEK`, `PRINT`,
+`END`/`STOP`, `CONT` + Ctrl-STOP break/resume), `DATA`/`READ`/`RESTORE`,
+comparisons, `POKE`/`PEEK`, `PRINT`,
 `CLEAR`, `DEF USR`/`USR`, the screen-setup verbs (`SCREEN`, `COLOR`, `CLS`,
 `WIDTH`, `KEY OFF`/`ON`), `LIST` (de-tokenised whole-program listing),
 the memory / I-O access primitives (`VPOKE`/`VPEEK`, `OUT`/`INP`, `VARPTR`;
@@ -116,7 +117,25 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
       decode); crunch + all regression probes still pass. Divergence: only the
       no-arg whole-program form — `LIST n` / `LIST n-m` range args are Phase 2,
       a trailing argument is parsed-past + ignored.)
-- [ ] `CONT`, Ctrl-STOP / break handling
+- [x] `CONT`, Ctrl-STOP / break handling
+      (basic/program.asm: the RUN loop polls BIOS `BREAKX` ($00B7) between
+      statements/lines and on every FOR/NEXT iteration; a press branches to
+      `do_break`, which saves the resume state and prints `break in <line>`. The
+      `STOP` statement (`ex_stop`) records resume = the statement after STOP, then
+      `do_break`; `CONT` (`ex_cont`) restores `CURLINE`/`RESUMEPTR` and re-enters
+      the run loop via the existing `RESUMEFLAG` mid-line resume path. `CONTVALID`
+      is cleared at RUN entry, on `store_line` (edit), and on `NEW`, so CONT after
+      a clean/STOP-less completion or an edit gives `can't continue` (ERRMARK $C9).
+      CONT token oracle-confirmed byte-identical via basic_probe_crunch.py
+      (`cont`→$99, cross-checks MSX2 TH Table 2.20); BREAKX oracle-confirmed on
+      C-BIOS_MSX1 (bios_probe_breakx.py — CF clear when not pressed, so no
+      false-breaks). Functional `basic_probe_cont.py` 7/7 PASS on C-BIOS_MSX1:
+      STOP halts, STOP→CONT resumes incl. across a line boundary, all three
+      can't-continue cases, and a real Ctrl-STOP keyboard-matrix press breaking an
+      infinite loop back to the REPL. Divergences: the resume-state RAM layout
+      (CONTLINE/CONTPTR/CONTVALID) and lowercase `break in`/`can't continue`
+      wording are own-design — zerobas's run loop is its own design, not the
+      reference's CONTXT/OLDLIN sysvars — both quarantined in basic/PROVENANCE.md.)
 
 ## Phase 2 — complete MSX1 BASIC
 

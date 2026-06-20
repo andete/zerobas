@@ -531,6 +531,11 @@ kwtable:
                 db      3,"END",1,END_TOKEN
                 db      4,"STOP",1,STOP_TOKEN
                 db      2,"ON",1,ON_TOKEN
+                ; Phase 1: CONT (resume after STOP / Ctrl-STOP). Oracle-confirmed
+                ; CONT -> $99 (MSX2 TH Table 2.20). NOTE: "ON" must precede "CONT"
+                ; only by table coincidence — match_kw compares the full keyword,
+                ; so order is free; CONT will not shadow ON.
+                db      4,"CONT",1,CONT_TOKEN
                 db      5,"PRINT",1,PRINT_TOKEN
                 db      3,"LET",1,LET_TOKEN
                 ; Phase 1: CLEAR [<strings>][,<himem>] (MSX2 TH Table 2.20).
@@ -658,7 +663,9 @@ exec_stmt:
                 cp      END_TOKEN
                 jr      z,ex_end
                 cp      STOP_TOKEN
-                jr      z,ex_end
+                jp      z,ex_stop
+                cp      CONT_TOKEN
+                jp      z,ex_cont
                 cp      ELSE_TOKEN          ; reached after a true THEN clause -> done
                 jr      z,ex_rem
                 cp      LET_TOKEN

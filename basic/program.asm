@@ -136,6 +136,8 @@ pl_lp:
 ; --- new_prog: clear the stored program (NEW) --------------------------------
 ; Empty program = a $0000 link word at the text base. Clobbers A, HL.
 new_prog:
+                xor     a
+                ld      (CONTVALID),a       ; NEW wipes the program -> no CONT resume
                 ld      hl,TXTBASE
                 ld      (TXTTAB),hl         ; keep the real sysvar consistent ($8001)
                 ld      (PRGEND),hl         ; end marker sits at the base
@@ -153,6 +155,7 @@ new_prog:
 run_prog:
                 call    clear_vars
                 xor     a
+                ld      (CONTVALID),a       ; a fresh RUN has no CONT resume point yet
                 ld      (GOTOFLAG),a
                 ld      (ENDFLAG),a
                 ld      (RESUMEFLAG),a
@@ -187,6 +190,14 @@ rp_resume:
                 ld      (RESUMEFLAG),a
                 ld      hl,(RESUMEPTR)      ; HL -> exact statement to resume at
 rp_exec:
+                ; Ctrl-STOP poll: between statements/lines, before running the
+                ; next one. BREAKX ($00B7) scans keyboard matrix row 6 (CF set =
+                ; Ctrl-STOP held). If pressed, break here — resume point is HL
+                ; (the statement about to run), CURLINE already correct.
+                push    hl                  ; guard the resume pointer across BREAKX
+                call    BREAKX
+                pop     hl
+                jr      c,rp_break
                 call    exec                ; run line (may set flags or hand off)
                 ld      a,(ENDFLAG)
                 or      a
@@ -210,6 +221,83 @@ rp_goto:
                 ld      hl,(GOTOTGT)
                 ld      (CURLINE),hl
                 jr      rp_lp
+rp_break:
+                ; Ctrl-STOP pressed between lines/statements. HL = the statement
+                ; that was about to run -> the CONT resume point. do_break records
+                ; it, prints "Break in <line>", and sets ENDFLAG; we then return
+                ; to the REPL (the run is suspended, not torn down).
+                call    do_break
+                ret
+
+; --- do_break: record a CONT resume point and report "Break in <line>" -------
+; in: HL = the token position to resume at; CURLINE = the line being interrupted
+;     (its link-field address). Used by both Ctrl-STOP (resume = next statement
+;     to run) and the STOP statement (resume = statement after STOP).
+; Saves CONTLINE/CONTPTR, raises CONTVALID, prints the break message, and sets
+; ENDFLAG so the run loop unwinds back to the REPL. Clobbers A, BC, DE, HL.
+do_break:
+                ld      (CONTPTR),hl        ; resume token pointer
+                ld      hl,(CURLINE)
+                ld      (CONTLINE),hl       ; line to resume in (link-field addr)
+                ld      a,1
+                ld      (CONTVALID),a       ; a CONT resume point is now live
+                ld      a,1
+                ld      (ENDFLAG),a         ; stop the run, fall back to the REPL
+                ; report: "break in <lineno>" + CR/LF. The line number is at
+                ; CURLINE+2 (the lineno field after the 2-byte link).
+                ld      hl,brk_msg
+                call    print_string
+                ld      hl,(CURLINE)
+                inc     hl
+                inc     hl
+                ld      e,(hl)              ; lineno LE -> DE
+                inc     hl
+                ld      d,(hl)
+                ex      de,hl               ; HL = line number
+                call    ln_div_entry        ; print HL as bare unsigned decimal
+                jp      print_crlf
+brk_msg:        db      "break in ",0
+
+; --- ex_stop: STOP statement — break and record a CONT resume point ----------
+; STOP halts the program exactly like END, but ALSO records where to continue so
+; a following CONT resumes at the statement after STOP. (END does not: it ends
+; the run with no resume point, so CONT after END is "Can't CONTINUE".)
+; HL enters on the STOP token.
+ex_stop:
+                inc     hl                  ; HL = resume point (statement after STOP)
+                jp      do_break            ; record + "Break in <line>", set ENDFLAG
+
+; --- ex_cont: CONT statement — resume a STOPped / broken program -------------
+; If a CONT resume point is live (set by STOP or Ctrl-STOP and not invalidated by
+; a program edit), restore CURLINE + RESUMEPTR and re-enter the run loop via its
+; mid-line resume path. Otherwise report "Can't CONTINUE". CONT consumes the
+; resume point (CONTVALID -> 0) so a second bare CONT does not re-resume a run
+; that has since finished. Reached as a direct-mode statement from the REPL.
+ex_cont:
+                ld      a,(CONTVALID)
+                or      a
+                jr      z,ex_cont_no        ; nothing to continue
+                xor     a
+                ld      (CONTVALID),a       ; consume the resume point
+                ; re-arm the run loop's flags and stacks are already intact from
+                ; the suspended run (we never cleared them on break); just point
+                ; the loop at the saved resume position and run.
+                xor     a
+                ld      (ENDFLAG),a
+                ld      (GOTOFLAG),a
+                ld      hl,(CONTLINE)
+                ld      (CURLINE),hl
+                ld      hl,(CONTPTR)
+                ld      (RESUMEPTR),hl
+                ld      a,1
+                ld      (RESUMEFLAG),a      ; resume mid-line at CONTPTR
+                jp      rp_lp               ; re-enter the run loop
+ex_cont_no:
+                ld      a,$C9               ; "can't continue" landmark (distinct byte)
+                ld      (ERRMARK),a
+                ld      hl,err_cont
+                jp      print_string
+err_cont:       db      "can't continue",13,10,0
 
 ; --- find_line_bc: locate a stored line by number ----------------------------
 ; in: BC = line number. out: CF set + HL = the line's link-field address if
@@ -250,6 +338,8 @@ flb_no:
 ; An empty body (first byte 00) deletes the line; otherwise the line replaces
 ; any existing line of the same number, else is inserted in number order.
 store_line:
+                xor     a
+                ld      (CONTVALID),a       ; editing the program invalidates CONT
                 ld      (SL_NUM),bc
                 ld      (SL_TOK),hl
                 ld      a,(hl)

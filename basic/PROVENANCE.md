@@ -693,3 +693,96 @@ empty-/full-string behaviour, and the deliberate Phase-2 descope are the
 "enough for PRINT" loader scope — none is a value lifted from any reference ROM
 or disassembly. The oracle confirms `$` is part of the name (no fabricated
 token), and the crunch stays byte-identical.
+
+## Phase 1: CONT + Ctrl-STOP break handling (basic/interp.asm, basic/program.asm, basic/sysvars.inc)
+
+Run-control: while a program is RUNning, Ctrl-STOP interrupts it at the current
+line and returns to the REPL with a `break in <line>` indication; the `STOP`
+statement does the same at its point in the line. `CONT` resumes a stopped /
+broken program from where it stopped. If there is nothing to continue (never ran,
+ran to completion, or the program was edited since the break), `CONT` reports
+`can't continue`.
+
+**Oracle (CONT token; `basic_probe_crunch.py`, scratch test lines `cont`, `stop`,
+`cont:print 1`, restored to pristine after).** The reference Philips VG-8020
+crunches `cont` to a single statement token **`$99`** (`… 52 3A 99 00`), and
+`cont:print 1` to `… 99 3A 91 20 12 00` — i.e. CONT is one byte, no operands,
+followed normally by `:PRINT 1`. `STOP` was already oracle-confirmed as `$90`.
+CONT = `$99` cross-checks MSX2 TH Table 2.20. The byte was read from the reference
+and is not fabricated; after the read the crunch probe was restored to pristine
+(never committed).
+
+**Ctrl-STOP polling — BIOS BREAKX `$00B7`.** The run loop polls Ctrl-STOP between
+statements/lines with `BREAKX` (`$00B7`), which scans keyboard matrix row 6 with
+no side effects and returns CF set when Ctrl-STOP is held, CF clear otherwise.
+This is the documented MSX Assembly Page / MSX2 Technical Handbook contract, and
+it is oracle-confirmed working **identically on C-BIOS_MSX1** (msx-preservation
+`tools/omsx/bios_probe_breakx.py`; `docs/cbios-probe-results.md`: "$00B7 BREAKX —
+pass … carry clear on both. IDENTICAL"). So the Ctrl-STOP functional check runs on
+the default C-BIOS_MSX1 machine — no Philips fallback was needed (the Philips-only
+rule applies only to tape `bload"cas:",r` landmark probes).
+
+**CONT resume-state RAM layout (own-design, quarantined).** On a break, the run
+loop records the minimal state needed to continue: `CONTLINE` (`$E0D0`, 2) = the
+link-field address of the interrupted line (same meaning as the run loop's
+`CURLINE`), `CONTPTR` (`$E0D2`, 2) = the exact token position to resume at, and
+`CONTVALID` (`$E0D4`, 1) = 1 when a resume point is live. CONT restores these via
+the existing mid-line resume path (`RESUMEFLAG`/`RESUMEPTR`, the same mechanism
+RETURN/NEXT use) and re-enters the run loop **without** re-clearing variables or
+the GOSUB/FOR/DATA state, so the suspended run continues with its full context.
+The resume *point* differs by break source: a Ctrl-STOP saves the statement that
+was about to run (so CONT re-runs from there); the `STOP` statement saves the
+position right after the STOP token (so CONT runs the statement after STOP).
+`CONTVALID` is cleared at RUN entry, on a program edit (`store_line`), and on
+`NEW`, so CONT after a clean completion / a STOP-less run / an edit gives
+`can't continue`. This three-word layout and the choice of resume points are
+own-design (zerobas's run loop is its own design — not the reference's CONTXT /
+OLDTXT / OLDLIN sysvar set, reproducing which would need a forbidden source);
+sufficient for the loader-stub scope.
+
+**Message text.** `break in <line>` and `can't continue` reproduce the *role* and
+the documented observable wording of MSX-BASIC's `Break in <line>` and
+`Can't CONTINUE` messages (MSX2 TH error/message list — an allowed source), but in
+zerobas's existing **lowercase** style (matching `syntax error`, `out of memory`,
+`undefined line`, …), so the wording is a documented own-design approximation, not
+copied verbatim from any disassembly. The line number is printed via the existing
+`ln_div_entry` bare-decimal formatter (already sourced); `can't continue` also
+sets the error landmark `$C9` at `ERRMARK` (`$E010`), distinct from the other
+landmark bytes.
+
+Validated: `make` builds a clean 16384-byte `basic.rom`, no warnings (no
+jr-out-of-range — the dispatch entries use `jp`). The crunch probe stays
+byte-identical incl. the new `cont` → `$99` (full ALL PASS). The controlflow /
+loops / data / statements regression probes all stay ALL PASS — confirming the
+BREAKX poll in the run loop does not change normal completion and never
+false-breaks (BREAKX reads CF clear / not-pressed during normal runs on
+C-BIOS_MSX1; oracle-confirmed by `bios_probe_breakx.py` / `cbios-probe-results.md`
+and re-confirmed by every program here running to completion). Functional
+`basic_probe_cont.py` (msx-preservation) on `C-BIOS_MSX1`, 7/7 ALL PASS, via
+fixed-emulated-time RAM capture (`debug read_block` of POKE sentinels at $D000/
+$D001 and `ERRMARK` $E010 — robust where a bload-LANDMARK freeze was not): STOP
+halts before the post-STOP statement (T=01); STOP→CONT resumes (T=02), incl.
+across a line boundary (T=01,U=09); bare CONT / CONT after a STOP-less RUN / CONT
+after a program edit all give `can't continue` ($C9); and a real Ctrl-STOP
+keyboard-matrix press (openMSX `keymatrixdown` CTRL row6/bit1 + STOP row7/bit4)
+breaks an *infinite* `goto` loop back to the REPL — proven by a direct POKE typed
+after the press executing (U=09), where the same loop without the press never
+yields (control: U stays cleared).
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `CONT` statement token | `$99` | oracle-confirmed byte-identical via `basic_probe_crunch.py`; cross-checks MSX2 TH Table 2.20 | sourced |
+| `STOP` statement token | `$90` | already oracle-confirmed (controlflow); re-confirmed here | sourced |
+| `BREAKX` Ctrl-STOP poll entry | `$00B7` (CF set = pressed) | MSX Assembly Page BIOS call list / MSX2 TH; oracle-confirmed working on C-BIOS_MSX1 (`bios_probe_breakx.py`, `cbios-probe-results.md`) | sourced |
+| Ctrl-STOP poll between statements/lines in the run loop | — | own code (poll point is ours); BREAKX contract is sourced | sourced |
+| CONT resume-state layout: `CONTLINE` ($E0D0), `CONTPTR` ($E0D2), `CONTVALID` ($E0D4) | — | **own design** — minimal resume state in free page-$E0 RAM; NOT the reference's CONTXT/OLDLIN sysvar set | quarantined |
+| Resume points: STOP → after the STOP token; Ctrl-STOP → the statement about to run | — | **own design**; reuses the existing RESUMEFLAG/RESUMEPTR mid-line resume path | quarantined |
+| `CONTVALID` cleared on RUN / `store_line` (edit) / `NEW` → `can't continue` thereafter | — | own code reproducing the language-reference "Can't CONTINUE after edit / no run" behaviour | sourced |
+| `break in <line>` / `can't continue` message wording | — | **own design** lowercase approximation of MSX-BASIC's `Break in <line>` / `Can't CONTINUE` (role + observable text from MSX2 TH message list); not copied from any disassembly | quarantined |
+| `can't continue` error landmark | `$C9` at `ERRMARK` ($E010) | own choice (distinct landmark byte) | sourced |
+
+The CONT resume-state layout, the choice of resume points, and the lowercase
+message wording are the **quarantined** items: all are original own-design choices
+(zerobas's run loop and message style are its own), not values lifted from any
+reference ROM or disassembly. The CONT token byte and the BREAKX entry are both
+oracle-confirmed / allowed-source-sourced.
