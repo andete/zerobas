@@ -453,7 +453,14 @@ bl_done:
                 ld      a,b                 ; value high
                 ld      (de),a
                 inc     de
-                ret
+                ; extend for ON…GOTO/GOSUB comma-separated lists
+                ld      a,(hl)
+                cp      ','
+                ret     nz                  ; no comma -> single target, done
+                ld      (de),a              ; emit the comma verbatim
+                inc     de
+                inc     hl                  ; past the comma
+                jr      bl_yes              ; loop: spaces then next number
 
 ; keyword -> token table. Entry layout: [klen][UPPERCASE chars][tlen][token...].
 ; Terminated by a 0 length byte. Tokens are oracle-sourced (spec-tokenise.md,
@@ -562,6 +569,8 @@ exec_stmt:
                 jp      z,ex_goto
                 cp      GOSUB_TOKEN
                 jp      z,ex_gosub
+                cp      ON_TOKEN
+                jp      z,ex_on
                 cp      RETURN_TOKEN
                 jp      z,ex_return
                 cp      FOR_TOKEN

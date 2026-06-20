@@ -243,6 +243,29 @@ behaviour are **quarantined**: they are deliberate own-design simplifications of
 MSX's signed-integer/float arithmetic (Phase 2), chosen to serve loader address
 math. A future oracle probe should pin the exact signed/float semantics.
 
+## `ON expr GOTO/GOSUB` (basic/interp.asm, basic/program.asm)
+
+Semantics from the **public MSX-BASIC language reference**: evaluate the 1-based
+index expression; find the Nth comma-separated branch target; branch (GOTO) or
+call (GOSUB) to it; fall through if N=0 or N > count.  Token `ON=$95` was already
+oracle-confirmed (MSX2 TH Table 2.20).  Comma-separated `$0E,<lineno LE>` target
+lists reuse the existing `branch_lineno` format — the tokeniser loop was extended
+with a comma-list continuation so `branch_lineno` emits multiple `$0E,lo,hi`
+entries separated by verbatim commas, matching the reference oracle.
+
+Verified: all 7 functional probes pass on `Philips_VG_8020` in openMSX (ON GOTO
+A=1,3,0-fallthrough,>count-fallthrough; ON GOSUB A=1,A=2,0-fallthrough with
+RETURN resuming correctly at the statement after the ON…GOSUB).
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `ON expr GOTO/GOSUB` semantics (1-based index, N=0 and N>count fall through) | — | public MSX-BASIC language reference | sourced |
+| `ON_TOKEN` `$95` | — | MSX2 TH Table 2.20 (already sourced) | sourced |
+| Comma-separated `$0E,lo,hi` target list in crunched stream | — | **own code** consistent with the existing `branch_lineno` format; oracle-compatible | sourced |
+| `eon_seek_nth` scan algorithm; GOSUB frame layout and resume pointer | — | **own code** (standard linear scan + stack frame); not from any disassembly | sourced |
+
+No quarantined items.
+
 ### RAM additions (src/sysvars.inc)
 
 | Item | Value | Source (allowed) | Status |

@@ -951,3 +951,153 @@ dp_hdone:
 dp_hbad:
                 ld      de,0
                 ret
+
+; --- ex_on: ON <expr> GOTO/GOSUB <line>[,<line>...] -------------------------
+; Evaluates expr (1-based index N). Finds the Nth branch target in the
+; comma-separated $0E list and branches (GOTO) or calls (GOSUB) to it.
+; N=0 or N > count of targets falls through to the next statement.
+; Source: public MSX-BASIC language reference (ON…GOTO/GOSUB semantics).
+ex_on:
+                inc     hl                  ; past ON_TOKEN
+                call    eval                ; DE = N (1-based index), HL past expression
+                call    skip_spaces
+                ld      a,(hl)
+                cp      GOTO_TOKEN
+                jr      z,eon_goto
+                cp      GOSUB_TOKEN
+                jr      z,eon_gosub
+                jp      stmt_error
+
+eon_goto:
+                inc     hl                  ; past GOTO token
+                call    eon_seek_nth        ; BC = line number, HL past list; CF set if found
+                jp      nc,exec_stmt        ; N=0 or N > count -> fall through
+                call    find_line_bc
+                jp      nc,ex_goto_undef
+                ld      (GOTOTGT),hl
+                ld      a,1
+                ld      (GOTOFLAG),a
+                ret
+
+eon_gosub:
+                inc     hl                  ; past GOSUB token
+                call    eon_seek_nth        ; BC = line number, HL past list; CF set if found
+                jp      nc,exec_stmt        ; N=0 or N > count -> fall through
+                ; push GOSUB frame [CURLINE:2][resume:2]; resume = HL (past the list)
+                push    bc                  ; guard target line number
+                push    hl                  ; save resume ptr
+                ld      hl,(GSP)
+                ld      de,GOSUB_STK_END
+                or      a
+                sbc     hl,de
+                jr      nc,eon_over
+                ld      de,(GSP)
+                ld      hl,(CURLINE)
+                ld      a,l
+                ld      (de),a
+                inc     de
+                ld      a,h
+                ld      (de),a
+                inc     de
+                pop     hl                  ; HL = resume ptr
+                ld      a,l
+                ld      (de),a
+                inc     de
+                ld      a,h
+                ld      (de),a
+                inc     de
+                ld      (GSP),de
+                pop     bc                  ; BC = target line number
+                call    find_line_bc
+                jp      nc,ex_goto_undef
+                ld      (GOTOTGT),hl
+                ld      a,1
+                ld      (GOTOFLAG),a
+                ret
+eon_over:
+                pop     hl                  ; discard resume ptr
+                pop     bc                  ; discard target
+                ld      a,$CE
+                ld      (ERRMARK),a
+                ld      hl,err_stack
+                jp      print_string
+
+; --- eon_seek_nth: find Nth $0E entry in an ON...GOTO/GOSUB target list ------
+; in:  HL = first token after the GOTO/GOSUB token, DE = N (1-based index)
+; out: CF set + BC = Nth line number, HL past the full target list
+;      CF clear + HL past the full target list (N=0 or N > count)
+; Token stream: [$20*] $0E lo hi [, [$20*] $0E lo hi ...]
+; Clobbers A, BC, DE, HL.
+eon_seek_nth:
+                ld      a,d
+                or      e
+                jr      z,esn_scan          ; N=0: scan past list, return CF clear
+; Phase 1: count down to the Nth entry.
+esn_p1:
+                call    skip_spaces
+                ld      a,(hl)
+                cp      LINENO_TOKEN        ; $0E expected
+                jr      nz,esn_nocf         ; list shorter than N -> not found
+                inc     hl
+                ld      c,(hl)              ; lineno lo
+                inc     hl
+                ld      b,(hl)              ; lineno hi -> BC = this entry's line number
+                inc     hl                  ; HL past this $0E,lo,hi
+                dec     de
+                ld      a,d
+                or      e
+                jr      z,esn_found         ; DE == 0 -> this was the Nth entry
+                ; still counting: expect a comma before the next entry
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jr      nz,esn_nocf         ; no comma -> list shorter than N
+                inc     hl                  ; past comma
+                jr      esn_p1
+; Phase 2: Nth entry found (BC = line number). Scan past any remaining entries.
+esn_found:
+                push    bc                  ; guard the found line number
+esn_p2:
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jr      nz,esn_ok           ; no more commas -> HL past the list
+                inc     hl                  ; past comma
+                call    skip_spaces
+                ld      a,(hl)
+                cp      LINENO_TOKEN
+                jr      nz,esn_ok           ; malformed: stop here
+                inc     hl
+                inc     hl
+                inc     hl                  ; skip $0E,lo,hi
+                jr      esn_p2
+esn_ok:
+                pop     bc                  ; BC = Nth line number
+                scf
+                ret
+; N=0: scan past the entire list and return CF clear.
+esn_scan:
+                call    skip_spaces
+                ld      a,(hl)
+                cp      LINENO_TOKEN
+                jr      nz,esn_nocf         ; no entries at all
+                inc     hl
+                inc     hl
+                inc     hl                  ; skip first $0E,lo,hi
+esn_scan_lp:
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jr      nz,esn_nocf         ; no more commas -> done
+                inc     hl                  ; past comma
+                call    skip_spaces
+                ld      a,(hl)
+                cp      LINENO_TOKEN
+                jr      nz,esn_nocf
+                inc     hl
+                inc     hl
+                inc     hl                  ; skip $0E,lo,hi
+                jr      esn_scan_lp
+esn_nocf:
+                or      a                   ; CF clear
+                ret

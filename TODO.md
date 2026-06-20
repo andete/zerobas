@@ -46,7 +46,7 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
       (basic/print.asm: numeric + string-literal items, `;`/`,` zones, `?` abbrev;
       crunch byte-identical, output verified in openMSX. `TAB(`/`SPC(` + string
       vars/`CHR$` still to do — need the Phase-2 string engine.)
-- [ ] `ON expr GOTO/GOSUB` — token exists; needs a handler + a branch-target list in `branch_lineno`
+- [x] `ON expr GOTO/GOSUB` — `branch_lineno` extended with comma-list loop; `ex_on`/`eon_seek_nth` handler added; all 7 functional probes (A=1..N, N=0 fallthrough, N>count fallthrough) pass
 - [ ] `SCREEN`, `COLOR`, `CLS`, `KEY OFF`, `WIDTH` — pre-handoff screen setup (thin BIOS/VDP wrappers)
 
 ### Expressions / variables
