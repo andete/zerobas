@@ -14,27 +14,29 @@
 ; disassembly. See disk/PROVENANCE.md.
 ;
 ; Runtime model: this is an "AB" disk-interface ROM. At boot the BIOS finds the
-; header at $4000 and calls INIT, which installs the H.DSKIO / H.PHYD hooks and
-; the SYSTEM (BDOS) vector, then returns to the BIOS boot scan. The BIOS disk
-; subsystem reaches the driver through the six fixed-offset entry points at
-; $4010..$401F.
+; header at $4000 and calls INIT, which publishes the BDOS entry point via the
+; SYSTEM ($F37D) sysvar (and seeds the default DTA), then returns to the BIOS
+; boot scan. zerobas-BASIC reaches the file layer through that SYSTEM-vector
+; BDOS entry across slots with CALSLT — NOT through the Disk-BASIC H.* hooks
+; (zerobas is a standalone BASIC, not Disk BASIC). The disk subsystem reaches the
+; physical driver through the six fixed-offset entry points at $4010..$401F.
 ;
-; STATUS: INIT installs hooks and SYSTEM vector. The FDC read driver is
+; STATUS: INIT publishes the BDOS entry + DTA default. The FDC read driver is
 ; implemented (WD2793, National memory-mapped register map, polled sector read;
 ; writes deferred). The FAT12 read layer is implemented (BPB parse, cluster-
 ; chain walk, root-directory 8.3 search, sequential file-sector read) as
 ; internal helpers. The BDOS/FCB layer is implemented (bdos_entry dispatches
 ; Open $0F / Sequential Read $14 / Close $10 on top of the FAT12 helpers); it is
-; reached through the SYSTEM vector and is the bridge zerobas's BLOAD path will
-; call. GETDPB is a stub pending the DSKIO oracle probe that will confirm the
-; exact MSX DPB field encoding. End-to-end disk I/O is implemented but not yet
-; oracle-confirmed (needs the openMSX machine config + a test .dsk + probe 3).
+; reached through the SYSTEM vector and is the bridge zerobas's BLOAD path
+; calls. GETDPB is an intentional stub: zerobas's self-contained FAT12 path
+; derives geometry from the BPB directly and never calls the $4016 GETDPB entry
+; (see getdpb / disk/PROVENANCE.md §DPB). End-to-end disk I/O is implemented and
+; the read + BDOS paths are differentially oracle-confirmed (disk_probe_dskio /
+; disk_probe_bdos in msx-preservation).
 ; ===========================================================================
 
 ; --- System addresses (disk/PROVENANCE.md §INIT / §BDOS) -------------------
-; Sources: MSX2 Technical Handbook, work area / hook table.
-H_PHYD          equ     $FF3E   ; H.PHYD: physical disk I/O hook (5 bytes)
-H_DSKIO         equ     $FF4B   ; H.DSKIO: disk-BASIC disk I/O hook (5 bytes)
+; Sources: MSX2 Technical Handbook, work area.
 SYSTEM          equ     $F37D   ; SYSTEM sysvar: BDOS entry-point word
 
 ; --- Disk scratch RAM (disk/PROVENANCE.md §Scratch RAM) --------------------
@@ -168,48 +170,30 @@ CMD_FORCEINT    equ     $D0     ; force interrupt (abort)
                 jp      mtoff           ; +$1F  motors off           ($401F)
 
 ; --- INIT -------------------------------------------------------------------
-; Called by the BIOS boot scan. Installs H.PHYD and H.DSKIO hooks in the system
-; hook RAM (5-byte slots at $FF3E and $FF4B), and writes the BDOS entry-point
-; address into the SYSTEM sysvar ($F37D). Then returns cleanly so the BIOS
-; continues its boot sequence.
+; Called by the BIOS boot scan (or by zerobas-BASIC's slot scan, which finishes
+; the scan C-BIOS skips — see basic/initext.asm). INIT publishes the BDOS
+; entry-point address into the SYSTEM sysvar ($F37D) and seeds the default DTA,
+; then returns cleanly so the boot sequence continues.
 ;
-; Hook slot layout (MSX2 TH, hook table): a 5-byte slot patched with
-; JP nn ($C3, addr_lo, addr_hi) + 2 padding bytes. The BIOS calls the slot with
-; CALL; our JP redirects to the handler, and the handler's RET returns to the
-; original CALL site (the BIOS's own return address is already on the stack).
+; zerobas reaches the file layer through this SYSTEM-vector BDOS entry, called
+; across slots with CALSLT (the entry *address* is read back from $F37D, the
+; slot from the INIT scan's DISKSLOT capture). We deliberately install NO
+; Disk-BASIC H.* hooks: an oracle observation of the National CF-3300 reference
+; (disk/PROVENANCE.md §INIT) showed the real disk ROM hooks via RST 30h (CALLF)
+; inter-slot calls at different addresses — a plain JP at $FF3E/$FF4B cannot
+; cross slots and $FF4B is not even 5-byte-aligned in the hook table, so the old
+; JP hooks were both mis-addressed AND dead (zerobas is a standalone BASIC, not
+; Disk BASIC — it never drives the H.* chain). The SYSTEM-vector→CALSLT path is
+; differentially oracle-confirmed (disk_probe_bdos.py vs real MSX-DOS 1).
 ;
-; Source: H.PHYD $FF3E, H.DSKIO $FF4B — MSX2 TH, work area / hook table.
-;         SYSTEM $F37D — MSX2 TH, work area; C-BIOS systemvars.asm.
-;         JP opcode $C3, hook slot 5 bytes — MSX2 TH (all H.* hooks are 5-byte).
+; Source: SYSTEM $F37D — MSX2 TH, work area; C-BIOS systemvars.asm.
 init:
-                ld      hl, H_PHYD
-                ld      de, phyd_handler
-                call    install_hook
-                ld      hl, H_DSKIO
-                ld      de, dskio
-                call    install_hook
                 ld      hl, bdos_entry
                 ld      (SYSTEM), hl
                 ; default the settable DTA to the MSX-DOS default ($0080) so a
                 ; SeqRead before any $1A behaves as MSX-DOS does.
                 ld      hl, DTA_DEFAULT
                 ld      (BDOS_DTA), hl
-                ret
-
-; install_hook: write a JP instruction into a 5-byte hook slot.
-; in:  HL = hook address in page-3 RAM, DE = target handler address
-; out: (HL)..(HL+4) = $C3, target_lo, target_hi, $00, $00
-; trashes: A, HL
-install_hook:
-                ld      (hl), $C3       ; Z80 JP opcode
-                inc     hl
-                ld      (hl), e
-                inc     hl
-                ld      (hl), d
-                inc     hl
-                ld      (hl), $00       ; padding (hook slots are 5 bytes)
-                inc     hl
-                ld      (hl), $00
                 ret
 
 ; --- Disk entry-point handlers ---------------------------------------------
@@ -431,14 +415,17 @@ dskchg:
                 scf
                 ret
 
-; getdpb — build the Drive Parameter Block from the BPB.
-; Called by the BIOS after reading the boot sector; HL points to the BPB.
-; Must fill the 18-byte DPB at DPB_AREA and return with HL = DPB_AREA.
+; getdpb — build the Drive Parameter Block from the BPB ($4016 disk-ROM entry).
 ;
-; STUB: DPB field encoding (directory mask, directory shift, total-clusters
-; encoding) needs the MSX2 TH DPB layout chapter and the DSKIO oracle probe
-; (see disk/PROVENANCE.md §Oracle probes, probe 2) before the BPB-to-DPB
-; computation can be written correctly. Returns carry set (error) for now.
+; INTENTIONAL STUB (returns carry set). GETDPB exists only for Disk-BASIC /
+; MSX-DOS callers that consume a DPB; zerobas is a standalone BASIC and reaches
+; the file layer through its own self-contained FAT12 path (fat_mount derives
+; every geometry value straight from the on-disk BPB — see fat_mount), so
+; nothing in the BLOAD / LOAD / RUN flow calls the standard $4016 GETDPB entry.
+; Implementing it would add no reachable behaviour, and the MSX DPB field
+; encoding (directory mask/shift, total-cluster encoding) is not cleanly sourced
+; from an allowed reference. So GETDPB stays a deliberate carry-set stub rather
+; than dead, partly-guessed code. See disk/PROVENANCE.md §DPB (decision rationale).
 getdpb:
                 scf
                 ret
@@ -462,13 +449,6 @@ mtoff:
                 xor     a
                 ld      (FDC_CTRL), a
                 ret
-
-; phyd_handler — physical disk I/O (behind the H.PHYD hook).
-; The BIOS PHYDIO entry uses the same register convention as DSKIO; for this
-; single FAT12 drive the physical and logical sector paths coincide, so route
-; it straight to the DSKIO read core.
-phyd_handler:
-                jp      dskio
 
 ; bdos_entry — BDOS dispatcher (written into the SYSTEM sysvar by INIT).
 ; CP/M-compatible calling convention (MSX2 TH, MSX-DOS BDOS conventions):

@@ -61,93 +61,93 @@ No quarantined items.
 
 ---
 
-## INIT: system hook installation
+## INIT: BDOS entry publication (resolved design)
 
-The disk ROM's INIT routine (called by BIOS at boot) currently installs `JP`
-instructions into two hook slots and writes the SYSTEM sysvar. **An oracle
-observation has since contradicted this design — see the box below.** The hook
-area is 5-byte slots in page-3 RAM, 5-byte-aligned from $FD9A.
+The disk ROM's INIT routine (called by the boot scan) **publishes the BDOS entry
+point** via the SYSTEM ($F37D) sysvar and seeds the default DTA, then returns. It
+installs **no** Disk-BASIC H.* hooks. This is the settled design: an earlier draft
+installed `JP phyd_handler`/`JP dskio` into hook slots at $FF3E/$FF4B — that code
+was **removed as oracle-contradicted dead code** (see the box below).
 
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
-| H.DSKIO hook address | $FF4B | (claimed MSX2 TH) | **WRONG — oracle-contradicted** |
-| H.PHYD hook address | $FF3E | (claimed MSX2 TH) | **WRONG — oracle-contradicted** |
-| Hook slot size | 5 bytes | MSX2 TH; oracle (hooks are 5-byte-aligned from $FD9A) | sourced |
-| Cross-slot hook mechanism: `RST 30h` (CALLF) + slot byte + dw target | — | **oracle observation** (CF-3300 disk ROM, see box) | sourced |
-| `JP nnnn` opcode for hook | $C3 | Z80 instruction set | **WRONG approach — JP can't cross slots** |
-| SYSTEM sysvar write: LD ($F37D),HL with HL = bdos_entry | — | own code | **quarantined — oracle-contradicted** |
-| INIT does NOT need to identify its own slot | — | own design | **WRONG — cross-slot hooks need the slot byte** |
-| BDOS entry stub: A=$FF / RET | — | own design; A=$FF documented BDOS error | sourced |
+| SYSTEM sysvar | $F37D | MSX2 TH, work area; C-BIOS `systemvars.asm` | sourced |
+| SYSTEM sysvar write: `LD ($F37D),HL` with HL = bdos_entry | — | own code; reached cross-slot via CALSLT, differentially confirmed (`disk_probe_bdos.py` vs MSX-DOS 1) | sourced |
+| Default DTA seed: `LD (BDOS_DTA),HL` with HL = $0080 | — | own code; $0080 = MSX-DOS default DTA (MSX2 TH, BDOS conv.) | sourced |
+| INIT installs NO H.* hooks | — | own design; zerobas is a standalone BASIC (not Disk BASIC), reaches the file layer via the SYSTEM-vector BDOS entry + CALSLT, never the H.* chain | sourced |
+| BDOS entry dispatcher: A=$FF for unsupported calls | — | own design; A=$FF documented BDOS error | sourced |
 
-> **ORACLE FINDING (probe 3 investigation) — the hook/SYSTEM design is wrong and
-> must be redesigned.** Observing the **National CF-3300** reference in openMSX
-> after boot (RAM only — the disk ROM's code was never read), the real disk ROM
-> integrates very differently from what our INIT does:
+> **WHY no H.* hooks — oracle finding (probe-3 investigation), now actioned.**
+> Observing the **National CF-3300** reference in openMSX after boot (RAM only —
+> the disk ROM's code was never read), the real disk ROM integrates very
+> differently from the old draft:
 > - It installs **`RST 30h` (CALLF) inter-slot calls** — `$F7`, a slot byte, a
 >   2-byte target — at hook-table entries **$FD9F (H.TIMI, timer), $FDEF, $FDF9,
 >   $FFA7, $FFAC**, all with slot byte **$87 = expanded slot 3-1** and targets in
->   the disk ROM's page-1 range. This is the standard MSX cross-slot hook: a
->   plain `JP` (what we install) **cannot cross slots**, so our hooks would only
->   work if slot 3-1 happened to be paged into page 1 at call time.
+>   the disk ROM's page-1 range. A plain `JP` (the old draft's approach) **cannot
+>   cross slots**, so the old hooks would only work if slot 3-1 happened to be
+>   paged into page 1 at call time.
 > - It does **NOT** touch **$FF3E** or **$FF4B** (both still `$C9` after boot).
 >   $FF4B is not even 5-byte-aligned in the hook table (`$FF4B − $FD9A = 433`,
->   not ÷5), so our "H.DSKIO = $FF4B" was never a valid hook slot. Our
->   H.PHYD/H.DSKIO addresses are wrong.
-> - **$F37D** holds **$31C3** (a BIOS-ROM, page-0 address), not a disk-ROM BDOS
->   entry. The reference does not expose file I/O via an FCB BDOS at a SYSTEM
->   vector in Disk BASIC (that is an MSX-DOS construct); it uses the disk-ROM
->   entry-point table ($4010…) plus the BASIC expansion/CALLF hook chain.
+>   not ÷5), so the old "H.DSKIO = $FF4B" was never a valid hook slot.
+> - **$F37D** holds **$31C3** (a BIOS-ROM, page-0 address) on the reference,
+>   because Disk BASIC exposes file I/O through the disk-ROM entry table ($4010…)
+>   plus the BASIC expansion/CALLF chain, not an FCB BDOS at a SYSTEM vector.
 >
-> **What is confirmed correct:** the **$4010 entry-point table** (DSKIO etc.)
-> reached via an inter-slot call — our DSKIO is byte-identical to the reference
-> there (probe 2). **Redesign direction:** because zerobas controls both the
-> BASIC ROM and the disk ROM, the simplest robust integration is for
-> zerobas-BASIC to locate the disk ROM's slot and call its `$4010` entry table
-> (and our FAT12 helpers) via `CALSLT`/`RST 30h`, rather than relying on the
-> mis-addressed `JP` hooks + SYSTEM vector. The exact hook names/addresses, if we
-> do hook, must be taken from the MSX2 TH hook table (allowed) — not guessed.
-> See disk/TODO.md (INIT redesign item).
+> **Resolution applied.** The mis-addressed `JP` hooks at $FF3E/$FF4B were
+> **removed** from `disk/disk.asm` (along with the now-unused `phyd_handler` shim,
+> the `install_hook` writer, and the `H_PHYD`/`H_DSKIO` equs). They were both
+> wrong *and* dead: zerobas is a standalone BASIC, not Disk BASIC, so it never
+> drives the H.* chain. zerobas reaches the file layer through the **SYSTEM-vector
+> BDOS entry**, located via `$F37D` and called across slots with `CALSLT` (the
+> slot id captured by the INIT scan in `basic/initext.asm`). That path is
+> **differentially oracle-confirmed byte-identical vs real MSX-DOS 1**
+> (`disk_probe_bdos.py`, msx-preservation), and the underlying $4010 DSKIO read is
+> differential-confirmed vs the CF-3300 (`disk_probe_dskio.py`, probe 2). So INIT
+> now only publishes the BDOS entry + DTA default. `disk_probe_init.py` was
+> updated to a SYSTEM-only assertion (the meaningful "the scan ran and published
+> the BDOS entry" check; the H.* assertions were removed with the hooks).
 
 ---
 
-## Drive Parameter Block (DPB) — 720 KB 3.5" drive
+## DPB / GETDPB — intentionally unimplemented (decision)
 
-MSX2 TH defines the DPB layout that `GETDPB` must fill in. The 720 KB geometry
-values follow the FAT12 / ECMA-107 standard for 3.5" DSDD media.
+**Decision: `getdpb` ($4016) is a deliberate carry-set stub, not a pending TODO.**
 
-**GETDPB is currently a stub (carry set).** Writing the BPB→DPB computation
-requires knowing the exact MSX DPB field encoding, which has two ambiguous
-fields (directory mask / directory shift) and one likely-wrong value inherited
-from a draft note (total clusters $059E). These are blocked on **oracle probe 2**
-(DSKIO sector-read of the boot sector — listed in §Oracle probes). No GETDPB
-code will be written until those rows are confirmed or re-sourced from MSX2 TH.
+The Drive Parameter Block is a Disk-BASIC / MSX-DOS data structure: those hosts
+call the disk ROM's $4016 GETDPB entry to obtain a DPB describing the mounted
+volume's geometry. zerobas is a **standalone BASIC** with a **self-contained
+FAT12 read path** (`fat_mount` derives every geometry value — first-FAT /
+first-root / root-sector-count / first-data sector, sectors-per-cluster — directly
+from the on-disk BPB at mount time; see §FAT12 layer). Nothing in zerobas's BLOAD
+/ LOAD / RUN flow calls $4016, and there is no Disk-BASIC/MSX-DOS host present to
+call it either. Implementing GETDPB would therefore add **no reachable behaviour**.
+
+Independently, the exact MSX DPB field encoding has two fields (directory mask /
+directory shift) and a total-cluster encoding that are **not cleanly sourced** from
+an allowed reference — they cannot be derived from the MSX2 TH text alone without
+guessing, and the only confirmation route would be a reference-ROM disassembly
+(forbidden). So even if we wanted GETDPB, we could not write it clean-room without
+inventing an encoding.
+
+For both reasons — **not a loader need** and **not cleanly sourceable** — GETDPB
+stays an intentional stub that returns carry set (error), which is the documented
+"operation failed / unsupported" disk-ROM convention (MSX2 TH, disk ROM interface).
+This is a sourced design decision, **not** a blocked/pending item.
+
+The 720 KB DPB field values that earlier drafts tabulated as oracle-compare targets
+are dropped from this provenance: they are neither emitted by any code in
+`disk/disk.asm` (so they are not magic constants requiring a trace) nor needed by
+the self-contained FAT path. The geometry constants that *do* matter to the driver
+(720 KB CHS layout, BPB field offsets) are sourced in the §FDC driver and §FAT12
+layer sections.
 
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
-| DPB size | 18 bytes | MSX2 TH, DPB layout | sourced |
-| DPB +0: media type byte | $F9 | MSX2 TH (DSDD 3.5" media descriptor); ECMA-107 | sourced |
-| DPB +1: sector size (bytes, power-of-2 encoded) | $02 | MSX2 TH DPB layout; interpreted as log2(512/128)=2 (own interpretation — oracle owed) | quarantined |
-| DPB +2: directory mask | $0F | MSX2 TH DPB layout; encoding unclear without TH text — own analysis gives $07 for 2 sec/clus, not $0F | **TBD — oracle needed** |
-| DPB +3: directory shift | $04 | MSX2 TH DPB layout; inconsistent with 2 sec/clus derivation (gives $05); own analysis gives $04 only for 1 sec/clus | **TBD — oracle needed** |
-| DPB +4–5: FAT size (sectors per FAT copy) | $0003 (LE) | MSX2 TH DPB layout; 3 sectors × 512 = 1536 bytes ≥ 713 clusters × 12/8 = 1070 bytes → 3 ✓ | sourced |
-| DPB +6: fat_max (FAT copies) | $02 | MSX2 TH DPB layout | sourced |
-| DPB +7–8: first dir sector | $0007 (LE) | 1 reserved + 2 × 3 FAT sectors = 7; derivable from BPB | sourced |
-| DPB +9–10: first data sector | $000E (LE) | 7 + ceil(112×32/512) = 7+7 = 14; derivable from BPB | sourced |
-| DPB +11–12: total clusters | $02C9 (LE) = 713 | (1440−14)/2 = 713 data clusters; own derivation. Draft note had $059E (=1438) which is wrong — 713≠1438 | **quarantined — oracle needed** |
-| DPB +13–14: fat_loc (first FAT sector) | $0001 (LE) | sector 1 follows the boot sector; derivable from BPB | sourced |
-| DPB +15–16: dir entries | $0070 (LE) = 112 | MSX2 TH DPB layout; ECMA-107 / MS FAT spec | sourced |
-| DPB +17: reserved/unused | $00 | MSX2 TH DPB layout | sourced |
-| Disk geometry: tracks | 80 | ECMA-107, 3.5" DSDD | sourced |
-| Disk geometry: sectors/track | 9 | ECMA-107, 3.5" DSDD | sourced |
-| Disk geometry: sides | 2 | ECMA-107, 3.5" DSDD | sourced |
-| Sectors per cluster | 2 | ECMA-107 / MS FAT spec for 720 KB; consistent with FAT size = 3 sectors (see +4–5 above) | sourced |
-| Total sectors | 1440 (80 × 2 × 9) | derivable from geometry | sourced |
-
-> **DPB value derivation.** Most DPB fields are redundant with the on-disk BPB;
-> GETDPB should derive them by reading the BPB from the boot sector and computing
-> from it, so the same code works for any FAT12 geometry the BPB describes. The
-> fixed constants above are the *expected* values for a 720 KB image and serve
-> as oracle-compare targets.
+| GETDPB ($4016) returns carry set (operation unsupported) | — | own design; carry-set = failed/unsupported per MSX2 TH disk ROM interface; not a loader need (self-contained FAT path derives geometry from the BPB) | sourced |
+| Disk geometry: tracks / sectors-per-track / sides | 80 / 9 / 2 | ECMA-107, 3.5" DSDD (used by the CHS map, §FDC driver) | sourced |
+| Sectors per cluster (720 KB) | 2 | ECMA-107 / MS FAT spec (read from the BPB at mount, not hard-coded) | sourced |
+| Total sectors (720 KB) | 1440 (80 × 2 × 9) | derivable from geometry | sourced |
 
 No quarantined items.
 
@@ -449,8 +449,8 @@ RAM outside known regions.
 > first-data sector numbers from the on-disk BPB (Microsoft FAT spec §3.1/§3.3),
 > validating only that the sector size is 512 bytes (so the 512-byte
 > `SECTOR_BUF` is always large enough). No geometry is hard-coded, so the layer
-> serves any FAT12 image the BPB describes; the 720 KB DPB values elsewhere in
-> this document are oracle-compare targets, not inputs to this code.
+> serves any FAT12 image the BPB describes; GETDPB is an intentional stub (§DPB),
+> so there is no DPB-construction path to feed.
 
 > These addresses are provisional. Before finalising, verify against both
 > zerobas-core's RAM map (PROVENANCE.md §RAM additions) and the C-BIOS system
@@ -536,5 +536,7 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
 
 Before release, every constant and address in `disk/disk.asm` must map to a
 `sourced` row above, be `quarantined` with a round-trip justification, or have
-an oracle probe confirming the value. The TBD rows in the FDC section are a
-**hard blocker** on writing that code.
+an oracle probe confirming the value. There are no `TBD`/blocked rows: the FDC
+register map is sourced from openMSX, the read + BDOS paths are
+differential-confirmed (§Oracle probes 2 & 3), and GETDPB is an intentional,
+sourced stub (§DPB).

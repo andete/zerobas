@@ -823,12 +823,14 @@ is not reached — not the case for the slot-3-1 disk reference. Every BIOS entr
 sysvar, and the header/slot-id formats are allowed-source-sourced.
 
 **Functional validation (openMSX, `disk_probe_init.py` in msx-preservation).** On
-the combined `C-BIOS_MSX1_BASIC_DISK` machine, after boot the three locations the
-disk ROM's INIT writes now carry its values: `SYSTEM` ($F37D) = `$416E`
-(bdos_entry), `H.PHYD` ($FF3E) = `JP $416B` (phyd_handler), `H.DSKIO` ($FF4B) =
-`JP $404E` (dskio). Differential control with the pre-scan ROM: all three read the
-C-BIOS defaults ($C9 / $C9C9 — INIT did not run). Crunch byte-identical and the
-four regression probes still pass (the scan runs harmlessly before the REPL).
+the combined `C-BIOS_MSX1_BASIC_DISK` machine, after boot the location the disk
+ROM's INIT publishes now carries its value: `SYSTEM` ($F37D) = `bdos_entry`. (The
+disk INIT formerly also installed `JP` hooks at `H.PHYD` $FF3E / `H.DSKIO` $FF4B;
+those were removed from `disk/disk.asm` as oracle-contradicted dead code — see
+disk/PROVENANCE.md §INIT — so the probe now asserts SYSTEM only.) Differential
+control with the pre-scan ROM: `SYSTEM` reads the C-BIOS default ($31C3 — INIT did
+not run). Crunch byte-identical and the four regression probes still pass (the scan
+runs harmlessly before the REPL).
 
 ## disk BLOAD / LOAD / RUN surface — consolidated index
 

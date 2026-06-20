@@ -102,26 +102,32 @@ See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
       stubs fail cleanly with carry set, CHOICE returns HL=0. Built via
       `make disk` → `disk.rom`, padded to 16384 bytes. Corrected the
       PROVENANCE header rows: INIT is a word at $4002, not a JP at $4003.)
-- [~] **INIT** — install disk hooks in system hook RAM; set up the Drive
-      Parameter Block (DPB) for a single 720 KB 3.5" drive
-      (Current code installs `JP phyd_handler`/`JP dskio` at $FF3E/$FF4B and
-      writes SYSTEM/$F37D → bdos_entry via `install_hook`.
-      DPB / GETDPB blocked on the MSX2 TH DPB field encoding (dir mask/shift,
-      total-clusters); GETDPB remains a carry-set stub.
-      **NEEDS REDESIGN — oracle-contradicted (probe 3 investigation).** Observing
-      the CF-3300 reference (RAM only): the real disk ROM hooks via `RST 30h`
-      (CALLF) inter-slot calls with slot byte $87 at hook entries $FD9F/$FDEF/
-      $FDF9/$FFA7/$FFAC — NOT at $FF3E/$FF4B, and NOT with `JP` (a `JP` can't
-      cross slots). $FF4B isn't even 5-byte-aligned in the hook table, so our
-      H.DSKIO address is invalid. $F37D holds a BIOS-ROM address on the
-      reference, not a BDOS entry. The fix: drop the mis-addressed `JP` hooks +
-      SYSTEM vector; integrate the disk ROM the standard way — its $4010 entry
-      table reached via an inter-slot call. Since zerobas owns both ROMs, the
-      cleanest path is for zerobas-BASIC to locate the disk-ROM slot and CALSLT
-      its $4010 entries directly (ties into the boot-init item below). Real hook
-      names/addresses, if we hook at all, must come from the MSX2 TH hook table.
-      See disk/PROVENANCE.md §INIT. The $4010 entry table itself is correct and
-      differential-confirmed (probe 2).)
+- [x] **INIT** — publish the BDOS entry point via the SYSTEM sysvar; decide the
+      Drive Parameter Block (DPB) question
+      (**RESOLVED.** INIT now only writes `SYSTEM ($F37D) → bdos_entry` and seeds
+      the default DTA ($0080), then RETs. The mis-addressed `JP phyd_handler` /
+      `JP dskio` hooks at $FF3E/$FF4B were **removed as oracle-contradicted dead
+      code** — along with the now-unused `phyd_handler` shim, the `install_hook`
+      writer, and the `H_PHYD`/`H_DSKIO` equs. Two reasons they had to go: (a)
+      oracle-contradicted — the CF-3300 reference (RAM observation, probe-3
+      investigation) hooks via `RST 30h` (CALLF) inter-slot calls with slot byte
+      $87 at hook entries $FD9F/$FDEF/$FDF9/$FFA7/$FFAC, NOT at $FF3E/$FF4B and NOT
+      with `JP` (a `JP` can't cross slots); $FF4B isn't even 5-byte-aligned in the
+      hook table; (b) functionally dead — zerobas is a standalone BASIC, not Disk
+      BASIC, so it never drives the H.* chain. zerobas reaches the file layer
+      through the **SYSTEM-vector BDOS entry**, located via $F37D and called across
+      slots with CALSLT (slot id from the INIT scan in `basic/initext.asm`). That
+      path is now **differentially oracle-confirmed byte-identical vs real MSX-DOS
+      1** (`disk_probe_bdos.py`), and the underlying $4010 DSKIO read is
+      differential-confirmed vs the CF-3300 (`disk_probe_dskio.py`, probe 2).
+      **GETDPB decision:** `getdpb` ($4016) stays an **intentional carry-set stub**
+      — the DPB is a Disk-BASIC/MSX-DOS structure, zerobas's self-contained FAT12
+      path (`fat_mount`) derives all geometry from the BPB directly and never calls
+      $4016, and the MSX DPB field encoding (dir mask/shift, total-cluster encoding)
+      is not cleanly sourceable clean-room. De-quarantined: documented as a sourced
+      design decision, not a blocked item. `disk_probe_init.py` updated to assert
+      SYSTEM only (refreshed `EXP_BDOS` for the code shift). See disk/PROVENANCE.md
+      §INIT and §DPB.)
 - [x] **FDC driver** — WD2793 register I/O at the National memory-mapped
       register addresses; track/sector/head addressing; read-sector command and
       result-phase read; error handling (write support deferred)
