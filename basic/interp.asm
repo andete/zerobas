@@ -617,6 +617,8 @@ exec_stmt:
                 jp      z,ex_cload
                 cp      LOAD_TOKEN
                 jp      z,ex_load
+                cp      RUN_TOKEN
+                jp      z,ex_run
                 cp      POKE_TOKEN
                 jp      z,ex_poke
                 cp      VPOKE_TOKEN
@@ -704,6 +706,9 @@ ex_cload:
 ex_load:
                 inc     hl                  ; HL -> args (past the LOAD token)
                 jp      do_load
+ex_run:
+                inc     hl                  ; HL -> args (past the RUN token)
+                jp      do_run
 ex_poke:
                 inc     hl                  ; HL -> args (past the POKE token)
                 jp      do_poke

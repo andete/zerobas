@@ -114,6 +114,40 @@ dl_is_disk:
                 ret     z
                 jp      run_prog            ; RUN the loaded program (program.asm)
 
+; --- do_run: RUN | RUN <lineno> | RUN "A:name" ------------------------------
+; Entry: HL -> the bytes after the RUN token (verbatim ASCII args).
+;
+; RUN"filename" is a thin wrapper: load a tokenised BASIC program from disk
+; (exactly as LOAD"name" does — same parse_disk_fcb + disk_prog_load path) and
+; then RUN it. The implicit run is the only difference from LOAD"name": there is
+; no ,R option, running is the whole point.
+;
+; Two cases, dispatched on the first non-space char after RUN:
+;   '"'  -> RUN"A:name": a disk program load-then-run. inc past the quote, build
+;           the FCB (parse_disk_fcb), consume the closing quote (parse_close_run,
+;           which also tolerates a trailing ,R harmlessly — running is implicit
+;           either way), load the tokenised program, then jp run_prog.
+;   else -> a bare tokenised RUN, or RUN<lineno> (the tokeniser stored the line
+;           number as a line-ref token after RUN_TOKEN). Both run the stored
+;           program from the start; we ignore any line number, matching the
+;           direct-mode bare-RUN semantics in program.asm's dl_cmd path. Just
+;           jp run_prog.
+;
+; Mirrors do_load's disk path exactly (parse_disk_fcb + disk_prog_load), so
+; RUN"file" parses identically to LOAD"file" minus the implicit run. The load
+; logic is NOT duplicated.
+do_run:
+                call    skip_spaces
+                ld      a,(hl)
+                cp      '"'                 ; a quoted filename -> disk load+run
+                jp      nz,run_prog         ; bare RUN / RUN<lineno> -> run stored
+                inc     hl                  ; past the opening quote
+                call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
+                call    parse_close_run     ; consume closing quote (and any ,R)
+                jp      c,load_error
+                call    disk_prog_load      ; load the tokenised program into TXTBASE
+                jp      run_prog            ; ...and run it (running is implicit)
+
 ; --- skip_quoted: HL on the opening '"' -> HL past the closing '"' ------------
 ; Used by CLOAD to discard its optional quoted filename. Clobbers A.
 skip_quoted:

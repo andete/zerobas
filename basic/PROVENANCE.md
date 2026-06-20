@@ -1039,3 +1039,62 @@ byte-identical; the four regression probes, `basic_probe_cload.py`,
 `basic_probe_bload.py`, `disk_probe_init.py`, `disk_probe_bload_fcb.py`,
 `disk_probe_bload_disk.py`, and the `disk_probe_dskio.py` differential (vs the
 CF-3300 reference) all still pass.
+
+## disk RUN — RUN"filename" (basic/cload.asm, basic/interp.asm)
+
+A thin wrapper: `RUN"A:name"` (and `"B:"`/bare) loads a tokenised BASIC program
+from disk and then RUNs it — i.e. LOAD then RUN, with the run implicit (there is
+no `,R` option; running is the whole point). It reuses the LOAD plumbing
+verbatim (`parse_disk_fcb` + `disk_prog_load`) and adds nothing to the load
+logic — only the always-run decision.
+
+**Dispatch path.** `RUN` already has a token, `RUN_TOKEN` ($8A). A *bare* `RUN`
+or `RUN <lineno>` typed in direct mode is handled earlier as raw ASCII in
+`basic/program.asm`'s `dl_cmd` (`is_cmd` matches "RUN" only when followed by a
+delimiter — end / space / colon) and runs the stored program from the start
+without ever reaching the executor. But `RUN"file"` has a `"` right after RUN
+(not a delimiter), so `dl_cmd` does NOT match it: it falls through to
+tokenise+exec, crunching as `RUN_TOKEN` followed by the quoted filename kept
+verbatim as ASCII (oracle-confirmed below). To handle that token at run time, a
+`RUN_TOKEN` case was added to the executor's statement dispatch in
+`basic/interp.asm` (next to `LOAD_TOKEN`→`ex_load`): `RUN_TOKEN`→`ex_run`→
+`do_run`. This is purely additive and does not disturb the direct-mode bare-RUN
+path (that path never produces a `RUN_TOKEN` reaching the executor).
+
+**`do_run` (basic/cload.asm).** On entry HL points past `RUN_TOKEN`.
+`skip_spaces`, then dispatch on the next char:
+- `"` (a quoted filename) → `RUN"A:name"`: `inc hl` past the quote, `call
+  parse_disk_fcb` (build `DISK_FCB`; on a malformed drive/name it routes to
+  `load_error` itself), `call parse_close_run` (consume the closing quote — and
+  tolerate a stray `,R` harmlessly; `CF`→`load_error`), `call disk_prog_load`
+  (the SAME reusable load `LOAD"name"` uses), then `jp run_prog`. Net effect:
+  load the tokenised program, then run it. This mirrors `do_load`'s disk path
+  exactly, minus the `RUNFLAG` test — RUN always runs.
+- anything else (a bare tokenised `RUN`, or `RUN<lineno>` which the tokeniser
+  stored as `RUN_TOKEN` + a line-ref token) → `jp run_prog`: run the stored
+  program from the start, matching the existing bare-RUN semantics (a line
+  number is ignored, exactly as the `dl_cmd` path ignores it). A simple
+  defensive branch; in practice bare RUN is consumed by `dl_cmd` and rarely
+  reaches here.
+
+No new keyword token (`RUN_TOKEN` already exists) and the disk filename is
+verbatim ASCII in the crunch stream, so the tokeniser is untouched and crunch
+stays byte-identical (Philips VG-8020).
+
+| Item | Value | Source | Status |
+| --- | --- | --- | --- |
+| `RUN` statement token (reused, no new token) | $8A | oracle-confirmed via `basic_probe_crunch.py` | sourced |
+| `RUN"A:PROG.BAS"` crunch = `8A 22 41 3A 50 52 4F 47 2E 42 41 53 22 00` (`RUN_TOKEN` + the quoted filename verbatim, no line-number conversion) | — | oracle-confirmed byte-identical vs Philips VG-8020 (`basic_probe_crunch.py`) | sourced |
+| load logic (FCB parse, `$FF` marker, line-link stream) | — | reused unchanged from disk LOAD (§disk LOAD) — no duplication | sourced |
+
+**Functional validation (openMSX, `disk_probe_run_disk.py` in msx-preservation).**
+On `C-BIOS_MSX1_BASIC_DISK` with `-diska disk/test720.dsk` (carrying the real
+tokenised `PROG.BAS`: `$FF` marker + the line-link image of `10 POKE &HD002,123`):
+`RUN"A:PROG.BAS"` rebuilds the relinked program at `$8001` byte-identical to the
+expected image (it LOADED) AND runs it — the POKEd landmark `($D002)`=$7B (it
+RAN). Both assertions pass. Crunch stays byte-identical (the new
+`RUN"A:PROG.BAS"` crunch case PASSes alongside all existing cases); the four
+regression probes (controlflow/loops/data/statements), `disk_probe_init.py`,
+`disk_probe_bload_fcb.py` (landmark refreshed for the shifted `do_disk_bload`
+address), `disk_probe_bload_disk.py`, `disk_probe_load_disk.py`, and the
+`disk_probe_dskio.py` differential (vs the CF-3300 reference) all still pass.

@@ -367,7 +367,38 @@ once the BDOS API is stable.
       `disk_probe_init.py`, `disk_probe_bload_fcb.py`, `disk_probe_bload_disk.py`
       and the `disk_probe_dskio.py` differential (vs CF-3300) all still pass. See
       `basic/PROVENANCE.md` §disk LOAD.)
-- [ ] **`RUN"filename"`** — thin wrapper: `LOAD` then `RUN`
+- [x] **`RUN"filename"`** — thin wrapper: `LOAD` then `RUN`
+      (`basic/interp.asm` + `basic/cload.asm`: a `RUN_TOKEN` case was added to the
+      executor's statement dispatch (next to `LOAD_TOKEN`→`ex_load`) →
+      `ex_run`→`do_run`. `RUN"file"` has a `"` right after RUN (not a delimiter),
+      so `program.asm`'s direct-mode `dl_cmd` does NOT consume it — it tokenises
+      to `RUN_TOKEN` + the quoted filename verbatim and reaches the executor with
+      no handler, which this case now provides; the bare-RUN / RUN<lineno>
+      direct-mode path is untouched. `do_run`: `skip_spaces`; if the next char is
+      `"` → `RUN"A:name"` (disk load+run): `inc hl` past the quote, `parse_disk_fcb`
+      + `parse_close_run` (consume closing quote, tolerate a stray `,R`),
+      `disk_prog_load` (the SAME reusable routine `LOAD"name"` uses — load logic is
+      NOT duplicated), then `jp run_prog`; otherwise (bare RUN / RUN<lineno>)
+      `jp run_prog` to run the stored program from the start, ignoring any line
+      number (matching the existing bare-RUN semantics). No new keyword token
+      (`RUN_TOKEN`=$8A already exists); the disk filename is verbatim ASCII in the
+      crunch stream, so the tokeniser is untouched and crunch stays byte-identical.
+      **Oracle-confirmed:** `RUN"A:PROG.BAS"` crunches as `8A 22 41 3A 50 52 4F 47
+      2E 42 41 53 22 00` (`RUN_TOKEN` + the quoted filename kept verbatim, no
+      line-number conversion, no new token), byte-identical vs the Philips VG-8020
+      (`basic_probe_crunch.py`, ALL PASS). **Validated end-to-end** (openMSX,
+      `disk-spec/tools/disk_probe_run_disk.py`, new) on `C-BIOS_MSX1_BASIC_DISK`
+      with `-diska disk/test720.dsk`: `RUN"A:PROG.BAS"` rebuilds the relinked store
+      at `$8001` byte-identical (it LOADED) AND runs it (`($D002)`=$7B — it RAN);
+      both assertions pass. Crunch byte-identical; the four regression probes,
+      `disk_probe_init.py`, `disk_probe_bload_fcb.py` (its `do_disk_bload` landmark
+      address refreshed for the code shift this item caused), `disk_probe_bload_disk.py`,
+      `disk_probe_load_disk.py` and the `disk_probe_dskio.py` differential (vs the
+      CF-3300 reference) all still pass. See `basic/PROVENANCE.md` §disk RUN.
+      **Divergences:** none beyond reusing the inherited not-token-aware streamed
+      body store (a pre-existing `do_tape_prog`/`disk_prog_load` limitation, see
+      §disk LOAD); the test fixture avoids embedded `$00` so the shared loop is
+      faithfully exercised.)
 - [ ] **Provenance entries** — document BDOS call numbers, FCB layout, and
       disk-BSAVE header format in `PROVENANCE.md`; oracle probes to confirm
       byte-identical behaviour vs reference
