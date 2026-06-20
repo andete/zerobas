@@ -1,9 +1,11 @@
 # zerobas roadmap
 
 What is still missing, split into the two delivery phases plus a deferred
-transport track. See [`README.md`](README.md) for the current status and
+transport track. See [`README.md`](README.md) for the current status,
 [`PROVENANCE.md`](PROVENANCE.md) for the traceability rules every item below
-must honour (allowed sources only; no disassembly).
+must honour (allowed sources only; no disassembly), and
+[`docs/dev-workflow.md`](docs/dev-workflow.md) for how to implement and validate
+one item — do **one item per session** to keep context lean.
 
 ## Status today
 
@@ -15,8 +17,8 @@ Working: byte-identical tokeniser (keywords, integer / `&H` constants,
 `BLOAD"CAS:",R`.
 
 Two reserved-but-unimplemented tokens to note: **`PRINT`**
-([src/interp.asm](src/interp.asm), kwtable) and **`ON`**
-([src/sysvars.inc](src/sysvars.inc)) both crunch but have no executor — they
+([basic/interp.asm](basic/interp.asm), kwtable) and **`ON`**
+([basic/sysvars.inc](basic/sysvars.inc)) both crunch but have no executor — they
 die with `syntax error` at run time.
 
 ## Phase 1 — enough BASIC to boot loader stubs
@@ -31,17 +33,17 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
 
 ### Statements
 - [x] `CLEAR [strings][,himem]` — nearly every stub sets memory top before `BLOAD`
-      (src/clear.asm: full syntax parses; string-space accepted+ignored, himem
+      (basic/clear.asm: full syntax parses; string-space accepted+ignored, himem
       recorded to HIMEM `$FC4A`. Oracle `basic_probe_clear.py` still owed.)
 - [x] `DEF USR[n]=addr` + `USR[n](x)` function — the non-`,R` jump into loaded code
-      (src/usr.asm: vectors in USRTAB `$F39A`; crunch byte-identical. USR calling
+      (basic/usr.asm: vectors in USRTAB `$F39A`; crunch byte-identical. USR calling
       convention is own-design integer-only — DAC/VALTYP convention oracle follow-up owed.)
 - [ ] `CLOAD ["filename"]` — load a BASIC program from cassette; needed when a stub
       chain-loads a BASIC payload rather than a binary (complement to `BLOAD"CAS:"`)
 - [ ] `LOAD "CAS:filename"` — MSX-BASIC unified tape-load form; shares cassette I/O
       path with `CLOAD` but uses the `OPEN`-style filename syntax
 - [x] `PRINT` (+ `;` `,` separators, string literals, `TAB`) — wire up the existing token
-      (src/print.asm: numeric + string-literal items, `;`/`,` zones, `?` abbrev;
+      (basic/print.asm: numeric + string-literal items, `;`/`,` zones, `?` abbrev;
       crunch byte-identical, output verified in openMSX. `TAB(`/`SPC(` + string
       vars/`CHR$` still to do — need the Phase-2 string engine.)
 - [ ] `ON expr GOTO/GOSUB` — token exists; needs a handler + a branch-target list in `branch_lineno`
@@ -49,10 +51,10 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
 
 ### Expressions / variables
 - [x] Multi-character variable names — single-letter only is a hard wall
-      (src/vars.asm: 2 significant chars, key store; crunch byte-identical incl.
+      (basic/vars.asm: 2 significant chars, key store; crunch byte-identical incl.
       digit-in-name; 2-char round-trip verified in openMSX)
 - [x] `/`, `\`, `MOD`, and `AND`/`OR`/`NOT`/`XOR` — address / poke math
-      (src/expr.asm: full precedence ladder; crunch byte-identical, all ops verified
+      (basic/expr.asm: full precedence ladder; crunch byte-identical, all ops verified
       in openMSX. `/` is integer + division is unsigned — documented divergences from
       MSX signed/float arithmetic; div-by-zero → 0. `^` still deferred to Phase 2.)
 - [ ] `&O` / `&B` literals — tokens reserved, not yet emitted
@@ -94,8 +96,8 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
 ## Deferred track — disk transport
 
 Not Phase 1 or 2: the device half is a disk-interface ROM (`PHYDIO` / the
-`H.*` hooks), a whole separate project on the [cbios-tape](https://github.com/andete/cbios-tape)
+`H.*` hooks), a whole separate project on the [zerobas-tape](https://github.com/andete/zerobas-tape)
 model — kept a separate tree, combined only at runtime. The interpreter side is
 small once that ROM exists: disk-filename parsing in `BLOAD`/`LOAD`, `RUN"file"`,
 the BSAVE-header read, and the `,R` handoff — all mirroring
-[src/bload.asm](src/bload.asm).
+[basic/bload.asm](basic/bload.asm).
