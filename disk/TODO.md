@@ -1,7 +1,7 @@
-# Disk ROM support plan (MSX1)
+# disk/ — TODO
 
-Two workstreams — a new `zerobas-disk` sibling repo (hardware layer) and zerobas
-interpreter extensions (language layer) — mirroring the zerobas-tape model.
+Two workstreams: the disk-interface ROM (`disk/`) and zerobas interpreter
+extensions (`basic/`), mirroring the `tape/` + interpreter model.
 
 ## Reference machine: National CF-3300 (MSX1, JP, 1985)
 
@@ -79,28 +79,21 @@ no sibling-repo auto-detection needed. The Makefile gains `tape.ips` and
 
 ---
 
-## zerobas-disk (new separate repo)
+## disk/ — disk-interface ROM
 
-Goal: a clean-room MSX1 disk ROM that fills the role zerobas-tape fills for
+Goal: a clean-room MSX1 disk ROM that fills the role `tape/` fills for
 cassette. Provides the physical FDC driver, FAT12 read layer, and BDOS hooks
 so zerobas's `BLOAD"A:FILE"` can reach a real FAT12 disk image.
 
-### Provenance sources to establish first
-
-- MSX2 Technical Handbook: disk ROM interface (standard entry-point offsets),
-  hook addresses (`H.DSKIO` `$FF4B`, `H.PHYD` `$FF3E`), BDOS call numbers,
-  FCB layout, slot architecture
-- WD2793 FDC datasheet (public; the most common MSX1 built-in disk controller)
-- Philips/NMS FDC port mapping — open hardware schematics (NOT from ROM
-  disassembly)
-- Microsoft FAT12 specification (public)
-- No disassembly of any existing disk ROM (Sony, Philips, Panasonic)
+Provenance sources (all public): MSX2 Technical Handbook, WD2793 datasheet,
+Philips/NMS open schematics, Microsoft FAT12 spec. No disk-ROM disassembly.
+See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
 
 ### TODO
 
 - [x] **Provenance doc** — list every constant/address with source before
       writing any code; same discipline as zerobas's `PROVENANCE.md`
-      (`disk/PROVENANCE.md`)
+      ([`PROVENANCE.md`](PROVENANCE.md))
 - [x] **ROM skeleton** — 16 KB ROM; MSX "AB" header; INIT vector;
       standard disk ROM entry-point stubs at fixed offsets (`+$10` DSKIO,
       `+$13` DSKCHG, `+$16` GETDPB, `+$19` CHOICE, `+$1C` DSKFMT,
@@ -140,10 +133,10 @@ so zerobas's `BLOAD"A:FILE"` can reach a real FAT12 disk image.
 
 ---
 
-## zerobas interpreter extensions (this repo)
+## zerobas interpreter extensions (`basic/`)
 
-Small delta on top of the existing `src/bload.asm` once zerobas-disk's BDOS API
-is stable.
+Small delta on top of the existing [`../basic/bload.asm`](../basic/bload.asm)
+once the BDOS API is stable.
 
 ### TODO
 
@@ -165,13 +158,11 @@ is stable.
 
 ---
 
-## openMSX integration (this repo, `tools/`)
+## openMSX integration (`tools/`)
 
 - [ ] **Extend `install-openmsx-machine.py`** — add `--disk-rom` option;
-      auto-detect zerobas-disk ROM next to this repo (sibling `zerobas-disk/`
-      dir); generate `*_BASIC_DISK` machine variants that add the internal
-      slot 3-1 block and FDC extension alongside the existing zerobas + tape
-      patches
+      generate `*_BASIC_DISK` machine variants that add the internal slot 3-1
+      block and FDC extension alongside the existing zerobas + tape patches
 - [ ] **Test disk image** — a minimal 720 KB FAT12 `.dsk` with a few BSAVE
       binaries for integration testing
 
