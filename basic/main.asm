@@ -36,6 +36,10 @@
 ; the tokeniser, and the executor.
                 include "basic/interp.asm"
 
+; Extension-ROM boot-scan helper (defines `init_ext_roms`): scans the remaining
+; slots for "AB" ROMs (e.g. zerobas-disk) and CALSLTs their INIT before the REPL.
+                include "basic/initext.asm"
+
 ; Startup header (defines `show_title`).
                 include "basic/title.asm"
 

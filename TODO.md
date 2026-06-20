@@ -176,17 +176,23 @@ which is why it leads the list below.
 
 ### Priority — next `basic/` task (gating blocker for the whole disk path)
 
-- [ ] **Init disk ROMs from zerobas-BASIC's INIT** — found during openMSX
+- [x] **Init disk ROMs from zerobas-BASIC's INIT** — found during openMSX
       validation. C-BIOS scans slot 0 (zerobas-BASIC) before slot 3-1, and
       zerobas-BASIC's INIT enters the REPL without ever returning, so the disk
-      ROM's INIT in slot 3-1 never runs in the combined machine — its hooks and
-      SYSTEM/BDOS vector are never installed (in isolation the disk INIT runs
-      and installs correctly). Before taking over the REPL, zerobas-BASIC's INIT
-      must walk the slots (1/2/3 + subslots), find each `"AB"` extension-ROM
-      header, and `CALSLT` its INIT (which returns). This is an interpreter
-      change, so it lands on `main`; it blocks every interpreter-side disk item
-      below. Until it lands, the disk path can only be exercised on a
-      disk-ROM-only machine. See [`disk/TODO.md`](disk/TODO.md).
+      ROM's INIT in slot 3-1 never ran in the combined machine.
+      (basic/initext.asm: `init_ext_roms`, called from `init` before `repl`,
+      replicates the rest of the BIOS boot scan — for every primary slot *after*
+      our own page-1 primary and every expanded subslot it finds the `"AB"`
+      header at $4000 and `CALSLT`s the INIT word at $4002. Uses RDSLT $000C /
+      CALSLT $001C / EXPTBL $FCC1 / port $A8 — all allowed-source-sourced;
+      scratch in the free $E0D5 RAM gap, run under `di`. Crunch byte-identical;
+      4 regression probes still pass. Functional `disk_probe_init.py` PASS on
+      `C-BIOS_MSX1_BASIC_DISK`: after boot SYSTEM $F37D=$4168, H.PHYD $FF3E=JP
+      $4165, H.DSKIO $FF4B=JP $4048 — the disk INIT now runs (control with the
+      pre-scan ROM reads C-BIOS defaults $C9). Divergence: scans only primaries
+      after our own (BIOS scan order), so a sibling subslot under zerobas's own
+      primary is not reached — quarantined own-design in basic/PROVENANCE.md, not
+      the case for the slot-3-1 disk reference.)
 
 The remaining interpreter-side items (disk-filename parsing in `BLOAD`/`LOAD`,
 `RUN"file"`, BSAVE-header read, `,R` handoff) are small once that blocker is

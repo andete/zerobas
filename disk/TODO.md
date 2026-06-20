@@ -230,10 +230,13 @@ See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
       and zerobas-BASIC's INIT enters its REPL and never returns, so the scan
       never reaches the disk ROM. In isolation (a disk-ROM-only C-BIOS machine,
       no BASIC patch) the disk INIT runs correctly and installs SYSTEM=$4168
-      (`bdos_entry`), `H.PHYD`→`phyd_handler`, `H.DSKIO`→`dskio`. **Fix belongs
-      in the interpreter workstream** (new item below): zerobas-BASIC's INIT must
-      initialise disk ROMs (scan slots / call their INIT) before taking over the
-      REPL. Two related integration notes for the BLOAD work: (a) reaching disk
+      (`bdos_entry`), `H.PHYD`→`phyd_handler`, `H.DSKIO`→`dskio`. **RESOLVED** in
+      the interpreter workstream (`../basic/initext.asm`, item below): zerobas-
+      BASIC's INIT now scans the remaining slots and `CALSLT`s the disk ROM's INIT
+      before the REPL, so on `C-BIOS_MSX1_BASIC_DISK` the disk INIT installs the
+      same SYSTEM=$4168 / `H.PHYD`→$4165 / `H.DSKIO`→$4048 it does in isolation
+      (`disk-spec/tools/disk_probe_init.py` PASS; differential control reads the
+      C-BIOS defaults). Two related integration notes for the BLOAD work: (a) reaching disk
       entry points needs an inter-slot call (CALSLT works); (b) the BDOS DTA at
       $0080 assumes page-0 RAM (MSX-DOS), which does not hold under Disk BASIC —
       the BLOAD path should set/choose its own transfer buffer rather than rely
@@ -252,15 +255,20 @@ once the BDOS API is stable.
 
 ### TODO
 
-- [ ] **Init disk ROMs from zerobas-BASIC's INIT** *(blocker, found during
-      openMSX validation)* — C-BIOS scans slot 0 (zerobas-BASIC) before slot
-      3-1, and zerobas-BASIC's INIT takes over the REPL without returning, so
-      the disk ROM's INIT in slot 3-1 never runs in the combined machine. Before
-      entering the REPL, zerobas-BASIC's INIT must walk the slots (1/2/3 +
-      subslots), find each `"AB"` disk/extension ROM header, and `CALSLT` its
-      INIT (which returns) so the disk hooks + SYSTEM/BDOS vector get installed.
-      Until this lands, the disk path can only be exercised via a disk-ROM-only
-      machine. The disk ROM itself is correct in isolation (validated).
+- [x] **Init disk ROMs from zerobas-BASIC's INIT** *(was the blocker, found
+      during openMSX validation)* — C-BIOS scans slot 0 (zerobas-BASIC) before
+      slot 3-1, and zerobas-BASIC's INIT takes over the REPL without returning,
+      so the disk ROM's INIT in slot 3-1 never ran in the combined machine.
+      **Done** in `../basic/initext.asm` (`init_ext_roms`, called from `init`
+      before the REPL): it walks every primary slot after zerobas's own page-1
+      primary and every expanded subslot, finds each `"AB"` header at $4000, and
+      `CALSLT`s its INIT word at $4002 — the rest of the BIOS boot scan C-BIOS
+      skipped. RDSLT/CALSLT/EXPTBL/$A8 sourced; see `../basic/PROVENANCE.md`
+      §extension-ROM INIT scan. Validated end-to-end: on `C-BIOS_MSX1_BASIC_DISK`
+      the disk INIT now installs SYSTEM $F37D=$4168, H.PHYD=JP $4165, H.DSKIO=JP
+      $4048 (functional probe `disk-spec/tools/disk_probe_init.py`; differential
+      control with the pre-scan ROM reads C-BIOS defaults). The next items below
+      (disk BLOAD) are now unblocked.
 - [ ] **Disk filename parse in BLOAD** — extend `do_bload`'s device-string
       parser to recognise `"A:name"` / `"B:name"` (and bare `"name"` defaulting
       to drive A); extract drive letter and 8.3 filename into scratch RAM; keep

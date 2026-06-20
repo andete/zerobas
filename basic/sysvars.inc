@@ -30,6 +30,16 @@ BREAKX          equ     $00B7   ; check Ctrl-STOP via keyboard matrix; CF set = 
 WRTVRM          equ     $004D   ; write A to VRAM address HL (VPOKE)
 RDVRM           equ     $004A   ; read VRAM address HL -> A (VPEEK)
 
+; --- Slot access BIOS entry points + work area (extension-ROM INIT scan) ----
+; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook. The
+; slot-id byte format is the MSX2 TH slot architecture convention: bit 7 = slot
+; expanded, bits 3-2 = secondary slot, bits 1-0 = primary slot. RDSLT destroys
+; AF/BC/DE and preserves HL/IX/IY; CALSLT performs the inter-slot call.
+RDSLT           equ     $000C   ; A = byte at (slot=A, addr=HL); reads any slot
+CALSLT          equ     $001C   ; inter-slot call (slot=IYh, addr=IX)
+EXPTBL          equ     $FCC1   ; expanded-slot flags, 1 byte/primary, bit7 = expanded
+PSLTREG         equ     $A8     ; I/O port: primary slot select (page-1 field = bits 3-2)
+
 ; --- Screen work-area system variables (C-BIOS; allowed) -------------------
 ; Source: C-BIOS system variables (BSD 2-clause), cross-checked against the MSX2
 ; Technical Handbook work-area appendix / MSX Assembly Page. CHGCLR reads the
@@ -271,6 +281,14 @@ RESUMEFLAG      equ     $E040   ; 1 = resume at RESUMEPTR (set by RETURN / NEXT)
 CONTLINE        equ     $E0D0   ; saved CURLINE for CONT (2)
 CONTPTR         equ     $E0D2   ; saved resume token pointer for CONT (2)
 CONTVALID       equ     $E0D4   ; 1 = a CONT resume point is valid (1)
+; Extension-ROM INIT scan scratch (initext.asm). Used ONCE at INIT, entirely
+; under `di`, and dead afterwards; free page-3 RAM in the $E0D5..$E0FF gap
+; (between CONT state and LINEBUF). RDSLT clobbers AF/BC/DE, so the slot id and
+; INIT address are held here across reads rather than in registers.
+SCAN_PRIM       equ     $E0D5   ; primary slot currently being scanned (1)
+SCAN_SLOT       equ     $E0D6   ; candidate slot id for RDSLT/CALSLT (1)
+SCAN_INIT       equ     $E0D7   ; candidate ROM's INIT entry address (2)
+SCAN_IY         equ     $E0D9   ; CALSLT slot word: high byte = slot (IYh) (2)
 ; Control stacks (page $E0, below LINEBUF at $E100). Both grow upward; the
 ; pointer addresses the next free slot, and the stack is empty when it equals
 ; its base. GOSUB frame = [curline:2][resume:2] (4 bytes). FOR frame =

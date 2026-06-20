@@ -19,6 +19,9 @@ init:
                 call    clear_vars          ; deterministic variable table
                 call    clear_usrtab        ; zero the DEF USR vectors
                 call    new_prog            ; empty stored program (Step B)
+                call    init_ext_roms       ; run the boot-scan INITs C-BIOS skips
+                                            ; (e.g. zerobas-disk in slot 3-1) since
+                                            ; our own INIT never returns to the scan
                 call    show_title          ; startup header lines
                 jp      repl                ; read/eval loop (never returns)
 

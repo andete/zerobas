@@ -786,3 +786,45 @@ message wording are the **quarantined** items: all are original own-design choic
 (zerobas's run loop and message style are its own), not values lifted from any
 reference ROM or disassembly. The CONT token byte and the BREAKX entry are both
 oracle-confirmed / allowed-source-sourced.
+
+## extension-ROM INIT scan (basic/initext.asm, basic/sysvars.inc)
+
+On the combined machine (zerobas-BASIC in slot 0 page 1, zerobas-disk in slot
+3-1), C-BIOS's cold-boot cartridge scan reaches zerobas-BASIC before slot 3-1;
+zerobas's INIT enters the REPL and never returns, so C-BIOS never scans the
+remaining slots and the disk ROM's INIT (which installs its DSKIO/PHYD hooks and
+the SYSTEM/BDOS vector) never runs. `init_ext_roms`, called from `init` just
+before `repl`, performs the rest of that boot scan itself: for every primary slot
+*after* its own and every expanded subslot, it looks for the standard `"AB"`
+header at $4000 and `CALSLT`s the INIT entry (the word at $4002) — exactly what
+the BIOS boot scan does. A standard extension/disk INIT installs its hooks and
+returns.
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `RDSLT` (read a byte from any slot; A=slot, HL=addr → A) | $000C | MSX Assembly Page BIOS call list / MSX2 Technical Handbook | sourced |
+| `RDSLT` clobbers AF/BC/DE, preserves HL/IX/IY | — | MSX Assembly Page BIOS call list | sourced |
+| `CALSLT` (inter-slot call; IYh=slot, IX=addr) | $001C | MSX Assembly Page BIOS call list / MSX2 Technical Handbook | sourced |
+| `EXPTBL` (expanded-slot flags, 1 byte/primary, bit 7 = expanded) | $FCC1 | MSX2 TH work area / C-BIOS system variables | sourced |
+| Primary-slot-select I/O port (page-1 field = bits 3-2) | $A8 | MSX2 TH slot architecture | sourced |
+| Slot-id byte format: bit7 = expanded, bits3-2 = secondary, bits1-0 = primary | — | MSX2 TH slot architecture | sourced |
+| `"AB"` header + INIT entry word at $4002, scanned at $4000–$4003 | — | MSX2 TH cartridge ROM format (same header zerobas itself carries) | sourced |
+| Scan policy: only primaries *after* our own page-1 primary (and their expanded subslots) | — | **own design** — matches the BIOS scan order so slots C-BIOS already initialised, and zerobas's own non-returning INIT, are never re-entered | quarantined |
+| INIT scan scratch: `SCAN_PRIM` $E0D5, `SCAN_SLOT` $E0D6, `SCAN_INIT` $E0D7, `SCAN_IY` $E0D9 | — | own choice (free page-$E0 RAM in the $E0D5–$E0FF gap; used once at INIT, entirely under `di`, dead afterwards) | sourced |
+| Scan runs under `di` (uninterrupted slot switching), `ei` on completion | — | own code; standard practice for RDSLT/CALSLT slot switching | sourced |
+
+The only **quarantined** item is the scan *policy* (primaries after our own): an
+original own-design choice. It is the cleanest correct behaviour for the standard
+deployment (zerobas the slot-0 primary, scanned before the disk ROM in slot 3-1)
+and avoids re-entering zerobas's own non-returning INIT. A consequence/limitation:
+an extension ROM sharing zerobas's own (expanded) primary in a different subslot
+is not reached — not the case for the slot-3-1 disk reference. Every BIOS entry,
+sysvar, and the header/slot-id formats are allowed-source-sourced.
+
+**Functional validation (openMSX, `disk_probe_init.py` in msx-preservation).** On
+the combined `C-BIOS_MSX1_BASIC_DISK` machine, after boot the three locations the
+disk ROM's INIT writes now carry its values: `SYSTEM` ($F37D) = `$4168`
+(bdos_entry), `H.PHYD` ($FF3E) = `JP $4165` (phyd_handler), `H.DSKIO` ($FF4B) =
+`JP $4048` (dskio). Differential control with the pre-scan ROM: all three read the
+C-BIOS defaults ($C9 / $C9C9 — INIT did not run). Crunch byte-identical and the
+four regression probes still pass (the scan runs harmlessly before the REPL).
