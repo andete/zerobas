@@ -142,9 +142,30 @@ See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
       shadow. Not yet reachable — the BDOS/FCB layer (next item) calls these;
       end-to-end validation waits on the openMSX machine config + oracle probe 2.
       pasmo flags the four FAT12 entry points as "never used" until then.)
-- [ ] **BDOS hook** — intercept the BDOS jump vector; implement FCB-based
+- [x] **BDOS hook** — intercept the BDOS jump vector; implement FCB-based
       `Open` ($0F), `Sequential Read` ($14), `Close` ($10); error returns per
       MSX-DOS spec
+      (`disk/disk.asm`: `bdos_entry` is now a real dispatcher on the call
+      number in C with the FCB pointer in DE (CP/M convention). `Open` calls
+      `fat_mount` then `fat_find` on the FCB's 11-byte 8.3 name (+1..+11),
+      then `fat_open`; returns A=$00 / A=$FF. `Sequential Read` delivers
+      128-byte records out of the 512-byte `SECTOR_BUF`, tracking the record
+      index in `BDOS_RECIDX` ($E4BF) and refilling via `fat_read_file_sector`
+      when the four records are exhausted; copies each record to the DTA
+      ($0080); returns A=$00 / A=$01 at EOF. `Close` returns A=$00; any other
+      call returns A=$FF. The four FAT12 entry points are now reached, clearing
+      pasmo's "never used" warnings on them. Code ends at $43B8, clear of the
+      $7FB8 FDC shadow; ROM builds clean to 16384 bytes.
+      **Divergences / simplifications:** only one file open at a time — file
+      position lives in the FAT iterator + `BDOS_RECIDX`, not in the FCB extent
+      (+12) / current-record (+32) fields; Sequential Read EOF granularity is
+      the cluster chain, so the last record may include padding past
+      `FAT_FILESIZE` (CP/M record semantics — exact byte bounding deferred).
+      The exact register save/restore contract the BLOAD caller must honour is
+      quarantined pending oracle probe 3 (BDOS FCB round-trip). End-to-end
+      functional validation is deferred: it needs the openMSX machine config +
+      a test `.dsk` + oracle probe 3 — so this lands **implemented, not yet
+      oracle-confirmed**.)
 - [ ] **Oracle probes** (in msx-preservation repo) — black-box observation of
       BDOS return values and FCB state on a reference machine with a known
       `.dsk` image

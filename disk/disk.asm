@@ -23,9 +23,12 @@
 ; implemented (WD2793, National memory-mapped register map, polled sector read;
 ; writes deferred). The FAT12 read layer is implemented (BPB parse, cluster-
 ; chain walk, root-directory 8.3 search, sequential file-sector read) as
-; internal helpers; the BDOS/FCB layer that wires them to BLOAD is the next
-; item. GETDPB is a stub pending the DSKIO oracle probe that will confirm the
-; exact MSX DPB field encoding.
+; internal helpers. The BDOS/FCB layer is implemented (bdos_entry dispatches
+; Open $0F / Sequential Read $14 / Close $10 on top of the FAT12 helpers); it is
+; reached through the SYSTEM vector and is the bridge zerobas's BLOAD path will
+; call. GETDPB is a stub pending the DSKIO oracle probe that will confirm the
+; exact MSX DPB field encoding. End-to-end disk I/O is implemented but not yet
+; oracle-confirmed (needs the openMSX machine config + a test .dsk + probe 3).
 ; ===========================================================================
 
 ; --- System addresses (disk/PROVENANCE.md §INIT / §BDOS) -------------------
@@ -68,6 +71,23 @@ FAT_B1          equ     $E4B8   ; second FAT byte of a 12-bit entry
 FAT_NAMEPTR     equ     $E4B9   ; -> 11-byte search name (word)
 FAT_DIRSEC      equ     $E4BB   ; current root-dir sector being scanned (word)
 FAT_DIRREM      equ     $E4BD   ; root-dir sectors remaining to scan (word)
+
+; --- BDOS / FCB layer (disk/PROVENANCE.md §BDOS interface) ------------------
+; CP/M-compatible FCB file access reached through the SYSTEM-sysvar vector
+; INIT installed. Call number in C, FCB pointer in DE; result in A (MSX2 TH,
+; MSX-DOS BDOS call conventions). Names in the FCB are an 11-byte 8.3 field at
+; +1 (8 name + 3 ext, space-padded, upper-case) — exactly the layout fat_find
+; consumes. The DTA is the fixed default at $0080 in page 0.
+BDOS_F_OPEN     equ     $0F     ; FCB Open           (MSX2 TH, MSX-DOS BDOS table)
+BDOS_F_CLOSE    equ     $10     ; FCB Close          (MSX2 TH, MSX-DOS BDOS table)
+BDOS_F_SEQRD    equ     $14     ; FCB Sequential Read(MSX2 TH, MSX-DOS BDOS table)
+DTA             equ     $0080   ; default Disk Transfer Area (MSX2 TH, BDOS conv.)
+RECSIZE         equ     128     ; sequential-read record size (MSX2 TH, FCB seq I/O)
+RECPERSEC       equ     4       ; 512 / 128 = records per 512-byte sector (own deriv.)
+; BDOS sequential-read position (own choice; free page-3 RAM after FAT scratch).
+; Records consumed from SECTOR_BUF so far; RECPERSEC means "buffer exhausted,
+; refill on next read". File position otherwise lives in the FAT iterator.
+BDOS_RECIDX     equ     $E4BF   ; next 128-byte record within SECTOR_BUF (0..4)
 
 ; --- BPB field offsets within the boot sector (Microsoft FAT spec §3.1) -----
 BPB_BYTSPERSEC  equ     11      ; bytes per sector (word LE)
@@ -436,11 +456,98 @@ mtoff:
 phyd_handler:
                 jp      dskio
 
-; bdos_entry — BDOS entry point (written into SYSTEM sysvar by INIT).
-; FAT12 / FCB layer not yet implemented. BDOS Open ($0F) returns A=$FF (error)
-; per MSX2 TH BDOS conventions; used here as a general "not supported" stub.
+; bdos_entry — BDOS dispatcher (written into the SYSTEM sysvar by INIT).
+; CP/M-compatible calling convention (MSX2 TH, MSX-DOS BDOS conventions):
+;   in:  C = call number, DE = FCB pointer (for FCB calls)
+;   out: A = result
+; Implements the read-only FCB subset zerobas's BLOAD path needs: Open ($0F),
+; Sequential Read ($14), Close ($10). Any other call returns A=$FF.
+;
+; Position model (own design / simplification): only one file is open at a time.
+; The open file's chain position lives in the FAT iterator (fat_open / fat_read_
+; file_sector); BDOS_RECIDX tracks which 128-byte record of the current 512-byte
+; SECTOR_BUF the next read delivers. The FCB extent (+12) and current-record
+; (+32) fields are not used. See disk/PROVENANCE.md §BDOS interface.
 bdos_entry:
+                ld      a, c
+                cp      BDOS_F_OPEN
+                jr      z, bdos_open
+                cp      BDOS_F_SEQRD
+                jr      z, bdos_seqread
+                cp      BDOS_F_CLOSE
+                jr      z, bdos_close
+                ld      a, $FF          ; unsupported call
+                ret
+
+; bdos_open ($0F) — open the file named in the FCB.
+; Mounts the volume (BPB), searches the root directory for the FCB's 11-byte 8.3
+; name (+1..+11), and primes the sequential iterator.
+;   in:  DE = FCB pointer
+;   out: A = $00 opened / $FF not found or I/O error (MSX2 TH, BDOS conventions)
+bdos_open:
+                push    de              ; save FCB pointer across fat_mount
+                call    fat_mount
+                jr      c, bdos_open_failpop
+                pop     hl              ; HL = FCB
+                inc     hl              ; HL = FCB+1 = 11-byte 8.3 name field
+                call    fat_find
+                jr      c, bdos_open_err
+                call    fat_open
+                ld      a, RECPERSEC    ; buffer empty -> first read refills
+                ld      (BDOS_RECIDX), a
+                xor     a               ; A = $00 success
+                ret
+bdos_open_failpop:
+                pop     hl              ; discard saved FCB pointer
+bdos_open_err:
                 ld      a, $FF
+                ret
+
+; bdos_seqread ($14) — read the next 128-byte record into the DTA ($0080).
+; Refills SECTOR_BUF from the cluster chain when the four records of the current
+; sector are exhausted; EOF is reported when the chain ends.
+;   out: A = $00 record delivered / $01 end-of-file (MSX2 TH, BDOS conventions)
+; Simplification (own design): EOF granularity is the cluster chain, so the last
+; record may include padding past FAT_FILESIZE (CP/M record semantics). Exact
+; byte-length bounding via FAT_FILESIZE is deferred to oracle probe 3.
+bdos_seqread:
+                ld      a, (BDOS_RECIDX)
+                cp      RECPERSEC
+                jr      c, bsr_have     ; records still left in SECTOR_BUF
+                call    fat_read_file_sector
+                jr      c, bsr_eof      ; chain ended -> EOF
+                xor     a
+                ld      (BDOS_RECIDX), a    ; back to record 0
+bsr_have:
+                ld      a, (BDOS_RECIDX)
+                ld      h, 0
+                ld      l, a
+                add     hl, hl          ; *2
+                add     hl, hl          ; *4
+                add     hl, hl          ; *8
+                add     hl, hl          ; *16
+                add     hl, hl          ; *32
+                add     hl, hl          ; *64
+                add     hl, hl          ; HL = RECIDX * 128
+                ld      de, SECTOR_BUF
+                add     hl, de          ; HL = source record in SECTOR_BUF
+                ld      de, DTA
+                ld      bc, RECSIZE
+                ldir                    ; copy 128 bytes to the DTA
+                ld      a, (BDOS_RECIDX)
+                inc     a
+                ld      (BDOS_RECIDX), a
+                xor     a               ; A = $00 success
+                ret
+bsr_eof:
+                ld      a, $01          ; end-of-file
+                ret
+
+; bdos_close ($10) — close the file. Read-only layer keeps no dirty state, so
+; there is nothing to flush; report success.
+;   out: A = $00 (MSX2 TH, BDOS conventions)
+bdos_close:
+                xor     a
                 ret
 
 ; --- FAT12 layer (disk/PROVENANCE.md §FAT12 layer) -------------------------

@@ -334,6 +334,13 @@ variable; zerobas calls through that vector using CP/M-compatible FCB calls.
 | FCB Sequential Read call number | $14 | MSX2 TH, MSX-DOS BDOS call table | sourced |
 | BDOS return value on success | A = $00 | MSX2 TH, BDOS call conventions | sourced |
 | BDOS return value on error | A = $FF (Open) / $01 (SeqRead end-of-file) | MSX2 TH, BDOS call conventions | sourced |
+| Dispatcher: switch on call number in C, A=$FF for unsupported calls | — | own code; call-number-in-C convention sourced above | sourced |
+| Open: FCB+1..+11 name → `fat_find`; map found/not-found to A=$00/$FF | — | own code composing the FAT12 layer; FCB name offset + return values sourced above | sourced |
+| Sequential Read: deliver SECTOR_BUF in 128-byte records to the DTA, refill via `fat_read_file_sector` at record 4 | — | own code; 128-byte record + DTA $0080 sourced above | sourced |
+| Records per sector = 512 / 128 = 4 | $04 | own derivation (sector size ÷ record size) | sourced |
+| Single open file: position in FAT iterator + BDOS_RECIDX, FCB extent (+12) / current-record (+32) fields unused | — | own design simplification (read-only loader subset) | quarantined |
+| SeqRead EOF granularity = cluster-chain end (last record may pad past FAT_FILESIZE) | — | own design; CP/M record semantics. Exact byte bounding deferred to oracle probe 3 | quarantined |
+| Register save/restore contract for the BLOAD→BDOS call | — | not yet textually sourced; pending oracle probe 3 (BDOS FCB round-trip) | quarantined |
 
 ### FCB layout
 
@@ -358,11 +365,24 @@ variable; zerobas calls through that vector using CP/M-compatible FCB calls.
 > of scope. The oracle probes will confirm which subset the CF-3300 reference
 > exposes.
 
-> **Calling convention quarantine (potential).** The exact register state the
-> zerobas BLOAD caller must set up before invoking the BDOS vector (DMA address,
-> register save/restore contract) will be oracle-confirmed before code is written.
-> Rows that turn out to have no independent textual source will be re-filed as
-> quarantined with a round-trip justification.
+> **Calling convention quarantine (now actioned).** The dispatcher
+> (`bdos_entry`) is implemented and reads the call number from C and the FCB
+> pointer from DE (sourced). The remaining unsourced piece — the exact register
+> save/restore contract the zerobas BLOAD caller must honour around the vector —
+> is filed `quarantined` in the table above, pending oracle probe 3 (BDOS FCB
+> round-trip). The DTA is the documented fixed default ($0080), so no DMA-address
+> set-up call is needed for this read-only subset.
+
+> **Implementation note.** Realised in `disk/disk.asm` as `bdos_entry` plus
+> `bdos_open` / `bdos_seqread` / `bdos_close`, on top of the FAT12 helpers
+> (`fat_mount` / `fat_find` / `fat_open` / `fat_read_file_sector`). Open mounts
+> the BPB and searches the root directory for the FCB's 11-byte 8.3 name; the
+> sequential reader slices the 512-byte sector buffer into four 128-byte records
+> into the DTA, refilling from the cluster chain on exhaustion; Close is a no-op
+> success (read-only). The two `quarantined` rows above (single-open-file
+> position model, cluster-chain EOF granularity) are documented simplifications,
+> not copied behaviour. End-to-end validation waits on the openMSX machine
+> config + a test `.dsk` + oracle probe 3.
 
 ---
 
@@ -394,6 +414,7 @@ RAM outside known regions.
 | — found file first cluster | $E4AC–$E4AD (word) | own choice | sourced |
 | — found file size (bytes) | $E4AE–$E4B1 (4 bytes) | own choice | sourced |
 | FAT12 transient work vars | $E4B2–$E4BE (13 bytes) | own choice (parity, byte-index, FAT sector, two FAT bytes, name pointer, dir-scan cursor + remaining) | sourced |
+| BDOS sequential-read record index | $E4BF (1 byte) | own choice (free page-3 RAM after FAT scratch; next 128-byte record within SECTOR_BUF, 0..4) | sourced |
 
 > **FAT12 geometry is derived, not stored as constants.** `fat_mount` reads the
 > boot sector and computes the first-FAT / first-root / root-sector-count /
