@@ -63,6 +63,9 @@
 ; Screen-setup verbs SCREEN/COLOR/CLS/WIDTH/KEY (defines `ex_screen`, …).
                 include "basic/screen.asm"
 
+; The LIST statement + the detokeniser (defines `ex_list`, `detok`).
+                include "basic/list.asm"
+
 ; The BLOAD statement handler and the ,R handoff (defines `do_bload`).
                 include "basic/bload.asm"
 

@@ -15,8 +15,8 @@ Working: byte-identical tokeniser (keywords, integer / `&H` constants,
 `GOSUB`/`RETURN`, `FOR`/`NEXT`, `IF`/`THEN`/`ELSE`, `ON … GOTO`/`GOSUB`,
 `END`/`STOP`), `DATA`/`READ`/`RESTORE`, comparisons, `POKE`/`PEEK`, `PRINT`,
 `CLEAR`, `DEF USR`/`USR`, the screen-setup verbs (`SCREEN`, `COLOR`, `CLS`,
-`WIDTH`, `KEY OFF`/`ON`), multi-character 16-bit integer variables, and cassette
-`BLOAD"CAS:",R`.
+`WIDTH`, `KEY OFF`/`ON`), `LIST` (de-tokenised whole-program listing),
+multi-character 16-bit integer variables, and cassette `BLOAD"CAS:",R`.
 
 ## Phase 1 — enough BASIC to boot loader stubs
 
@@ -64,7 +64,14 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
 - [ ] String literals / variables *enough for `PRINT`* (full string engine is Phase 2)
 
 ### Usability
-- [ ] `LIST` — no way to view a stored program today
+- [x] `LIST` — display the stored program, de-tokenised
+      (basic/list.asm: `ex_list` walks the line-link chain; `detok` is the reverse
+      of the tokeniser — keyword (`detok_kw`/`detok_kw2`), operator, int/`&H`/`&O`,
+      line-ref, string/REM/DATA verbatim, `:`ELSE / `'` folds. No new token; reuses
+      `div10`/CHPUT. 8/8 functional probes pass `basic_probe_list.py` (VRAM screen
+      decode); crunch + all regression probes still pass. Divergence: only the
+      no-arg whole-program form — `LIST n` / `LIST n-m` range args are Phase 2,
+      a trailing argument is parsed-past + ignored.)
 - [ ] `CONT`, Ctrl-STOP / break handling
 
 ## Phase 2 — complete MSX1 BASIC

@@ -311,3 +311,61 @@ No quarantined items.
 | `LINEBUF` ($E100, 96), `TOKBUF` ($E160), `VARTAB` ($E1C0, 52 bytes) | — | own choice (free page-3 RAM in page $E1, clear of the $C000/$E000 demo regions) | sourced |
 
 No quarantined items.
+
+## Phase 1: LIST statement (basic/list.asm, basic/interp.asm)
+
+`LIST` displays the stored numbered-line program (the one NEW / RUN manage) as
+source text. For each stored line it prints the line number, a space, the
+**de-tokenised** body, then CR/LF. The handler lives in `basic/list.asm`
+(`ex_list`), is dispatched on `LIST_TOKEN` (`$93`, already in `kwtable`) in
+`exec_stmt`, and walks the line-link chain from `TXTBASE` exactly like RUN.
+
+The detokeniser (`detok`) is the **inverse of the tokeniser** — it is **own
+code**, written as the mirror image of `basic/interp.asm`'s `tokenise:` /
+`kwtable` and constrained to the same token set that `tok_skip` steps. It renders
+every token the tokeniser can emit:
+
+- keyword tokens → their text by a reverse scan of `kwtable` (`detok_kw`,
+  single-byte tokens; `detok_kw2`, the 2-byte forms PEEK `$FF $97` and ELSE
+  `$3A $A1`) — the literal reverse of `match_kw`, reading the same table;
+- integer / `&H` / `&O` constants (`$11+n` digit, `$0F`,b, `$1C`,w, `$0C` &H,w,
+  `$0B` &O,w) → their decimal / `&H` / `&O` source text;
+- operator tokens (`= $EF`, `+ $F1`, `- $F2`, `* $F3`, `/ $F4`, `\ $FC`,
+  `> $EE`, `< $F0`) → their source character (`detok_op`, reverse of `tk_op_*`);
+- line-number references `$0E,<lineno LE>` (and the post-RUN `$0D,<addr LE>`) →
+  the decimal number;
+- string literals `"…"`, REM / `'` comment tails, and DATA bodies → copied
+  verbatim (the tokeniser stored them verbatim);
+- the folded forms `:`+`$8F`+`$E6` → `'` and `:`+`$A1` → ` ELSE`.
+
+No new constant or token byte is introduced: every value `detok` decodes is
+already defined and cited in `basic/sysvars.inc` (Step A/B token table, MSX2 TH
+Table 2.20 / Figure 2.12, oracle-confirmed). The number formatter reuses
+`div10` (basic/print.asm); CHPUT (`$00A2`) is the only BIOS call.
+
+LIST *semantics* (line number, one space, de-crunched body, newline) are from the
+public MSX-BASIC *language* reference. No disassembly was read: the detokeniser is
+derived purely as the reverse of this project's own oracle-sourced tokeniser.
+
+**Divergence (Phase 2):** only the no-argument whole-program `LIST` is
+implemented; `LIST <n>` and `LIST <n>-<m>` line-range arguments are deferred — a
+trailing argument is currently parsed-past and ignored.
+
+Validated: `make` builds a clean 16384-byte `basic.rom` with no warnings; the
+crunch probe stays byte-identical and the controlflow / loops / data / statements
+regression probes still pass (LIST adds no tokeniser change). Functional
+round-trip verified on `C-BIOS_MSX1` in openMSX by `basic_probe_list.py`
+(8/8 PASS): the new probe stores numbered lines, types `LIST`, dumps the SCREEN 0
+name table from VRAM (`--mem VRAM:0x0000:960`), and checks each line round-trips
+(PRINT + string + `:` + `&H`, FOR/TO/STEP, IF/THEN line-ref + ELSE + multi-char
+vars + operator, POKE + REM tail, `;`/`,` separators, DATA body, `'` comment, and
+an out-of-order multi-line insert that lists in number order).
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `LIST` statement token (already in `kwtable`) | `$93` | MSX2 TH Table 2.20 / MSX Assembly Page token table (oracle-corroborated) | sourced |
+| `LIST` semantics (number, space, de-crunched body, CR/LF) | — | public MSX-BASIC language reference | sourced |
+| `detok` detokeniser (reverse of `tokenise:` / `kwtable`; `detok_kw`/`detok_kw2`/`detok_op` + constant/lineno/string/REM/DATA renderers) | — | **own code**, the reverse of this project's oracle-sourced tokeniser; not derived from any disassembly | sourced |
+| `LIST <n>` / `LIST <n>-<m>` line-range arguments deferred (trailing arg parsed-past + ignored) | — | own design (Phase 2 scope; documented in basic/list.asm) | sourced |
+
+No quarantined items.

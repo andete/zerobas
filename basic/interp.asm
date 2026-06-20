@@ -568,6 +568,8 @@ exec_stmt:
                 jp      z,ex_width
                 cp      KEY_TOKEN
                 jp      z,ex_key
+                cp      LIST_TOKEN
+                jp      z,ex_list
                 cp      REM_TOKEN
                 jr      z,ex_rem
                 cp      DATA_TOKEN          ; DATA: skip this statement at run time
