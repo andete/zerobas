@@ -1,0 +1,16 @@
+# Test inputs / oracle media (not source material).
+*.wav
+*.cas
+
+# Any local stock or patched C-BIOS ROM (the patch target / result; never source).
+*.rom
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# The built patches (cbios-tape-msx1.ips / .bps) ARE committed -- they are the
+# deliverable and are tiny -- so they are deliberately NOT ignored here.
