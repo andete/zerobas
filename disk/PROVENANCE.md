@@ -361,9 +361,10 @@ variable; zerobas calls through that vector using CP/M-compatible FCB calls.
 | Set DTA ($1A): store DE into `BDOS_DTA`; subsequent SeqReads copy to it | — | own code; $1A call number + DE=DTA convention sourced (MSX2 TH / MSX-DOS) | sourced |
 | `BDOS_DTA` default | $0080 | MSX2 TH, BDOS conventions (MSX-DOS default); INIT seeds it | sourced |
 | Records per sector = 512 / 128 = 4 | $04 | own derivation (sector size ÷ record size) | sourced |
-| Single open file: position in FAT iterator + BDOS_RECIDX, FCB extent (+12) / current-record (+32) fields unused | — | own design simplification (read-only loader subset) | quarantined |
-| SeqRead EOF granularity = cluster-chain end (last record may pad past FAT_FILESIZE) | — | own design; CP/M record semantics. Exact byte bounding deferred to oracle probe 3 | quarantined |
-| Register save/restore contract for the BLOAD→BDOS call | — | not yet textually sourced; pending oracle probe 3 (BDOS FCB round-trip) | quarantined |
+| Open → 17× SeqRead → Close delivers byte-identical records + return codes vs real MSX-DOS 1.03 | — | **NARROW differential oracle PASS** (`disk_probe_bdos.py`, msx-preservation): same `ORACLE.BIN` read on MSX-DOS and on our `bdos_entry` via CALSLT — Open/records/EOF/Close all byte-identical | oracle-confirmed |
+| Single open file: position in FAT iterator + BDOS_RECIDX, FCB extent (+12) / current-record (+32) fields unused | — | own design simplification (read-only loader subset); NOT differenced by the narrow oracle — the FULL FCB-field differential is a tracked follow-up | quarantined |
+| SeqRead EOF granularity = cluster-chain end (last record may pad past FAT_FILESIZE) | — | own design; CP/M record semantics. The narrow oracle uses an exact-cluster-multiple file so EOF lands clean and this is not exercised; exact sub-record byte-bounding is the FULL-differential follow-up | quarantined |
+| Register save/restore contract for the BLOAD→BDOS call | — | the Open/SeqRead/Close round-trip is now exercised by `disk_probe_bdos.py` (CALSLT in, A out); exact non-A register preservation across CALSLT still not textually sourced | quarantined |
 
 ### FCB layout
 
@@ -494,18 +495,24 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
    addresses that look "free" at rest can still be trashed mid-call, which a
    static sysvar-map check would miss. (We pick our *own* scratch addresses, so
    this is collision-avoidance, not a layout to copy.)
-   **Reframed — the reference has no FCB BDOS in Disk BASIC, so this is not a
-   differential comparison.** Probe-3 investigation (observing CF-3300 RAM only)
-   found the reference does not expose a CP/M FCB BDOS in Disk BASIC: $F37D points
-   into BIOS ROM, $0005 is not a BDOS entry (page 0 is ROM), and file I/O goes
-   through the disk-ROM entry table + BASIC expansion/CALLF hooks, not an FCB
-   BDOS. The FCB BDOS ($0005 / $0080 DTA / FCB) is an **MSX-DOS** construct,
-   available only once MSX-DOS is loaded (page 0 = RAM). So our `bdos_entry`
-   Open/SeqRead/Close is an *internal zerobas convenience API*, not a
-   reference-matching interface — it was validated **functionally** (Open/Close
-   return A=$00; the FAT12 read path underneath is differential-confirmed via
-   probe 2). Its differential equivalent is **probe 4 (BLOAD end-to-end)**, where
-   the meaningful comparison is the loaded file content + exec handoff. Two design
+   **Reframed twice.** First: the CF-3300 *reference disk ROM* has no FCB BDOS —
+   probe-3 investigation (observing CF-3300 RAM only) found it runs Disk BASIC,
+   which exposes no CP/M FCB BDOS ($F37D points into BIOS ROM, $0005 is not a BDOS
+   entry, page 0 is ROM; file I/O goes through the disk-ROM entry table + BASIC
+   expansion/CALLF hooks). The FCB BDOS ($0005 / $0080 DTA / FCB) is an **MSX-DOS**
+   construct, available only once MSX-DOS is loaded (page 0 = RAM). Second, and the
+   current state: the right reference for the FCB layer is therefore **real
+   MSX-DOS 1**, not the CF-3300 disk ROM — and that differential now **exists and
+   passes** (`disk_probe_bdos.py`, msx-preservation). It reads the same `ORACLE.BIN`
+   through Open → 17× SeqRead → Close on real MSX-DOS 1.03 (booted on
+   `National_CF-3300` from a DOS system disk, the `.COM` auto-run via AUTOEXEC.BAT)
+   and on our `bdos_entry` (via CALSLT), and the Open result, all 16 records, the
+   EOF code, and the Close result are **byte-identical** — a passed NARROW
+   differential (scope caveat: cluster-multiple file, no FCB-field/sub-record-EOF
+   diff; the full differential is a tracked follow-up). The FAT12 read path
+   underneath is independently differential-confirmed via probe 2. Probe 4
+   (BLOAD end-to-end) remains the *interpreter-glue* check, where the meaningful
+   comparison is the loaded file content + exec handoff. Two design
    findings folded in elsewhere: (a) the disk ROM INIT does not run in the
    combined `*_BASIC_DISK` machine (boot-scan ordering); (b) the $0080 DTA assumes
    page-0 RAM, invalid under Disk BASIC — the BLOAD path must supply its own

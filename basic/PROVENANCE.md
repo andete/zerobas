@@ -861,31 +861,48 @@ section for the row):**
 
 ### Oracle-confirmation status (read this before trusting "confirmed")
 
-This surface has **three distinct validation tiers**; the docs above deliberately
+This surface has **four distinct validation strands**; the docs above deliberately
 do not over-claim "byte-identical vs reference" where no reference exists.
 
-1. **Differentially oracle-confirmed byte-identical vs the real National CF-3300.**
-   Only the **DSKIO sector-read path** underneath all of this
+1. **DSKIO sector-read — differential, byte-identical vs the real National
+   CF-3300.** The **DSKIO sector-read path** underneath all of this
    (`disk_probe_dskio.py` in msx-preservation) is a *passed differential oracle*:
    the same `disk/test720.dsk` read on the CF-3300 reference and on our
    `*_BASIC_DISK` machine returns byte-identical data + carry/A. This is the read
    layer every BLOAD/LOAD/RUN ultimately rides on.
 
-2. **Functionally validated on openMSX — NO reference to differ against.** The
-   **FCB BDOS layer** (`bdos_entry` Open/SeqRead/Close/Set-DTA) and the
-   **BLOAD/LOAD/RUN interpreter paths** are validated *functionally* against our
-   own FAT12 test image (`disk_probe_bload_fcb.py` / `disk_probe_bload_disk.py` /
-   `disk_probe_load_disk.py` / `disk_probe_run_disk.py`), **not** differentially.
-   There is no reference to compare against: the CF-3300 runs Disk BASIC, which
-   exposes **no CP/M FCB BDOS** — `$F37D` points into BIOS ROM, `$0005` is not a
-   BDOS entry, page 0 is ROM (see disk/PROVENANCE.md §INIT and §BDOS interface,
-   and disk/TODO.md probe 3). The FCB BDOS is an MSX-DOS construct. So
-   `bdos_entry` is an *internal zerobas API*: its read path is differential-
-   confirmed (tier 1), but the FCB convention layer itself is functional-only.
-   **Do not read "validated end-to-end" in the sections below as "byte-identical
-   vs reference."**
+2. **FCB BDOS layer — NARROW differential, byte-identical vs real MSX-DOS 1.**
+   `bdos_entry`'s FCB calls (Open `$0F` / Sequential Read `$14` / Close `$10` /
+   Set-DTA `$1A`) *are* now differentially oracle-confirmed against genuine
+   MSX-DOS 1.03 (`disk_probe_bdos.py` in msx-preservation). The same `ORACLE.BIN`
+   (16 × 128-byte records) is read through Open → 17× SeqRead → Close on (a) real
+   MSX-DOS — driven by a tiny `.COM` auto-run via `AUTOEXEC.BAT` from a DOS system
+   disk on `National_CF-3300` — and (b) our `bdos_entry` reached across slots with
+   CALSLT; the Open result, all 16 records, the EOF code, and the Close result come
+   back **byte-identical**. The CF-3300's own ROM runs Disk BASIC (no CP/M FCB
+   BDOS; see §INIT / disk/PROVENANCE.md), so MSX-DOS — not the CF-3300 disk ROM —
+   is the reference for *this* layer; it is used strictly black-box (observe BDOS
+   results + delivered bytes; MSXDOS.SYS / COMMAND.COM are never read or
+   disassembled). **Scope: NARROW.** `ORACLE.BIN` is an exact cluster multiple, so
+   EOF lands on a clean cluster boundary and the documented cluster-granular-EOF
+   simplification is not exercised, and the FCB extent (+12) / current-record (+32)
+   fields are not differenced. The **FULL** differential (those field mutations +
+   sub-record EOF byte-bounding) needs `bdos_entry` tightened first and is a
+   tracked follow-up (disk/TODO.md §interpreter extensions).
 
-3. **Crunch (tokeniser) confirmed byte-identical vs the Philips VG-8020.** No new
+3. **BLOAD/LOAD/RUN interpreter glue — functionally validated on openMSX.** The
+   interpreter glue (token parse → FCB build → BSAVE/tokenised header parse →
+   store/exec/`,R`) is validated *functionally* against our own FAT12 image
+   (`disk_probe_bload_fcb.py` / `disk_probe_bload_disk.py` /
+   `disk_probe_load_disk.py` / `disk_probe_run_disk.py`). There is no MSX-DOS
+   equivalent of "`BLOAD` a BSAVE binary / `LOAD` a tokenised program via zerobas's
+   *statement* path" to differ against — but every one of these rides on two
+   differentially-confirmed layers (the DSKIO read, strand 1, and the FCB BDOS
+   calls, strand 2) plus the differential crunch (strand 4). **Do not read
+   "validated end-to-end" in the sections below as "byte-identical vs reference"
+   for the interpreter glue itself.**
+
+4. **Crunch (tokeniser) confirmed byte-identical vs the Philips VG-8020.** No new
    token byte was introduced for any of BLOAD/LOAD/RUN disk forms — disk
    filenames are verbatim ASCII in the crunch stream — and the crunch of e.g.
    `RUN"A:PROG.BAS"` is confirmed byte-identical vs the Philips VG-8020 reference

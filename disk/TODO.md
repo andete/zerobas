@@ -186,14 +186,31 @@ See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
       (sector 0 + sector 14, return codes and data). Strictly black-box: calls
       the standard $4010 DSKIO entry via CALSLT and observes only returned data
       + carry/A; the reference disk ROM is never read/disassembled.
-      **Probe 3 (BDOS FCB round-trip) reframed — not a differential test.** The
-      probe-3 investigation (CF-3300 RAM observation) found the reference exposes
-      no CP/M FCB BDOS in Disk BASIC ($F37D → BIOS ROM, no $0005 BDOS, page 0 is
-      ROM); FCB BDOS is MSX-DOS-only. Our `bdos_entry` is therefore an internal
-      zerobas API, validated functionally, with no reference to differ against —
-      so the real end-to-end oracle is **probe 4 (BLOAD"A:FILE",R)**, comparing
-      loaded bytes + exec handoff (its read path is already differential-confirmed
-      via probe 2). See disk/PROVENANCE.md §INIT and §BDOS interface.)
+      **Probe 3 (BDOS FCB round-trip) — now a PASSED differential vs real
+      MSX-DOS 1.** The CF-3300 disk ROM runs Disk BASIC and exposes no CP/M FCB
+      BDOS ($F37D → BIOS ROM, no $0005 BDOS, page 0 is ROM), so the reference for
+      the FCB layer is **MSX-DOS**, not the CF-3300 disk ROM. That differential
+      now exists and passes: `disk-spec/tools/disk_probe_bdos.py` reads the same
+      `ORACLE.BIN` through Open → 17× SeqRead → Close on real MSX-DOS 1.03 (booted
+      on `National_CF-3300` from a user-supplied DOS system disk; a tiny `.COM` is
+      injected + auto-run via AUTOEXEC.BAT, since hijacking PC at the prompt
+      re-enters the non-reentrant console BDOS) and on our `bdos_entry` via CALSLT
+      — Open result, all 16 records, the EOF code, and Close are **byte-identical**.
+      Strictly black-box (BDOS results + delivered bytes only; MSXDOS.SYS /
+      COMMAND.COM never read or disassembled). **Scope: NARROW** — `ORACLE.BIN` is
+      an exact cluster multiple (clean EOF) and the FCB extent/current-record fields
+      are not differenced; the **FULL** differential is the follow-up below.
+      Probe 4 (BLOAD"A:FILE",R) remains the interpreter-glue oracle (loaded bytes +
+      exec handoff; read path differential-confirmed via probe 2). See
+      disk/PROVENANCE.md §INIT and §BDOS interface.)
+- [ ] **FULL BDOS differential vs MSX-DOS 1** *(follow-up to the narrow probe)* —
+      tighten `bdos_entry` to MSX-DOS FCB semantics (write back the FCB extent
+      (+12) / current-record (+32) fields; bound the last Sequential-Read record by
+      the true file size instead of the cluster-chain end) so the differential can
+      compare FCB-field mutations and a non-cluster-multiple file's partial final
+      record byte-for-byte. Then extend `disk_probe_bdos.py` to diff the FCB bytes
+      + a sub-record-EOF file. This changes shipped `disk/disk.asm`, so re-run the
+      `disk_probe_dskio` differential + the BLOAD/LOAD/RUN probes after.
 - [x] **openMSX machine config** — machine XML that places zerobas-disk in
       internal slot 3-1, declares an FDC extension, attaches a test `.dsk`
       image, and pairs with the existing zerobas + zerobas-tape IPS patches in
