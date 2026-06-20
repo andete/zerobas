@@ -830,6 +830,77 @@ disk ROM's INIT writes now carry its values: `SYSTEM` ($F37D) = `$416E`
 C-BIOS defaults ($C9 / $C9C9 — INIT did not run). Crunch byte-identical and the
 four regression probes still pass (the scan runs harmlessly before the REPL).
 
+## disk BLOAD / LOAD / RUN surface — consolidated index
+
+The four sections below (`§disk-BLOAD scratch FCB`, `§disk BLOAD execute`,
+`§disk LOAD`, `§disk RUN`) together cover the whole disk-aware loader surface
+zerobas-BASIC adds on top of the disk ROM's BDOS FCB layer. They build on the
+`§extension-ROM INIT scan` above (which records `DISKSLOT`/`DISKSLOT_OK` and the
+SYSTEM `$F37D` BDOS vector). This index is a map, not a substitute — the detail
+tables stay in the per-feature sections.
+
+| Surface | Verb | On-disk format / marker | Reaches disk ROM via | Detail section |
+|---------|------|-------------------------|----------------------|----------------|
+| Filename → FCB parse | `BLOAD"A:name"` (shared by all) | n/a (parses `"A:"`/`"B:"`/bare → `DISK_FCB`) | — (parse only) | §disk-BLOAD scratch FCB |
+| Binary image load | `BLOAD"A:name"[,R]` | BSAVE binary, `$FE` header | `CALSLT` $001C → `bdos_entry` (Open $0F / SeqRead $14 / Close $10 / Set-DTA $1A) | §disk BLOAD execute |
+| Tokenised program load | `LOAD"A:name"[,R]` | tokenised BASIC, `$FF` marker | same BDOS path; streams line-link image | §disk LOAD |
+| Load-then-run | `RUN"A:name"` | tokenised BASIC, `$FF` marker | reuses `disk_prog_load` (§disk LOAD), always runs | §disk RUN |
+
+**Constants the disk-extension path introduces (all `sourced`; see the named
+section for the row):**
+
+| Constant | Value | Source class | Section |
+|----------|-------|--------------|---------|
+| BDOS Open / Close / Seq-Read / Set-DTA call numbers | $0F / $10 / $14 / $1A | MSX2 TH / MSX-DOS BDOS call table | §disk BLOAD execute |
+| BDOS convention: C=call#, DE=FCB/ptr, A=result | — | MSX2 TH / MSX-DOS BDOS conventions | §disk BLOAD execute |
+| FCB layout: +0 drive code (0=default/1=A/2=B), +1..+11 = 8.3 name | — | CP/M / MSX-DOS FCB layout (MSX2 TH); matches disk ROM `fat_find` at FCB+1 | §disk-BLOAD scratch FCB |
+| disk BSAVE header `[$FE][start:2 LE][end:2 LE][exec:2 LE]` + raw data, start..end inclusive | $FE marker | MSX-BASIC file formats (MSX Wiki / MSX Resource Center) | §disk BLOAD execute |
+| tokenised-BASIC disk marker | $FF | MSX-BASIC file formats (MSX Wiki / MSX Resource Center) | §disk LOAD |
+| cross-slot BDOS call: `CALSLT` $001C via `DISKSLOT`, entry addr from SYSTEM `$F37D` | $001C / $F37D | MSX Assembly Page / MSX2 TH | §disk BLOAD execute, §extension-ROM INIT scan |
+| `DISK_FCB` / `DISK_DTA` / `DISKSLOT` scratch placement | $E0DB / $E4C2 / $E0E7 | own choice (free page-$E0 / page-3 RAM, collision-checked) | §disk-BLOAD scratch FCB, §disk BLOAD execute, §extension-ROM INIT scan |
+
+### Oracle-confirmation status (read this before trusting "confirmed")
+
+This surface has **three distinct validation tiers**; the docs above deliberately
+do not over-claim "byte-identical vs reference" where no reference exists.
+
+1. **Differentially oracle-confirmed byte-identical vs the real National CF-3300.**
+   Only the **DSKIO sector-read path** underneath all of this
+   (`disk_probe_dskio.py` in msx-preservation) is a *passed differential oracle*:
+   the same `disk/test720.dsk` read on the CF-3300 reference and on our
+   `*_BASIC_DISK` machine returns byte-identical data + carry/A. This is the read
+   layer every BLOAD/LOAD/RUN ultimately rides on.
+
+2. **Functionally validated on openMSX — NO reference to differ against.** The
+   **FCB BDOS layer** (`bdos_entry` Open/SeqRead/Close/Set-DTA) and the
+   **BLOAD/LOAD/RUN interpreter paths** are validated *functionally* against our
+   own FAT12 test image (`disk_probe_bload_fcb.py` / `disk_probe_bload_disk.py` /
+   `disk_probe_load_disk.py` / `disk_probe_run_disk.py`), **not** differentially.
+   There is no reference to compare against: the CF-3300 runs Disk BASIC, which
+   exposes **no CP/M FCB BDOS** — `$F37D` points into BIOS ROM, `$0005` is not a
+   BDOS entry, page 0 is ROM (see disk/PROVENANCE.md §INIT and §BDOS interface,
+   and disk/TODO.md probe 3). The FCB BDOS is an MSX-DOS construct. So
+   `bdos_entry` is an *internal zerobas API*: its read path is differential-
+   confirmed (tier 1), but the FCB convention layer itself is functional-only.
+   **Do not read "validated end-to-end" in the sections below as "byte-identical
+   vs reference."**
+
+3. **Crunch (tokeniser) confirmed byte-identical vs the Philips VG-8020.** No new
+   token byte was introduced for any of BLOAD/LOAD/RUN disk forms — disk
+   filenames are verbatim ASCII in the crunch stream — and the crunch of e.g.
+   `RUN"A:PROG.BAS"` is confirmed byte-identical vs the Philips VG-8020 reference
+   (`basic_probe_crunch.py`, ALL PASS). This is a genuine differential oracle, on
+   the tokeniser only.
+
+**Inherited limitation (not newly introduced): streamed line-link load stops at
+the first `$00`.** `disk_prog_load`'s body streamer mirrors `do_tape_prog` and
+copies a line's token body until the first `$00`, so a tokenised program with an
+embedded `$00` *operand* byte (e.g. the high byte of an `&H` 16-bit literal
+`$0C $7B $00`) would be truncated — on **both** tape and disk LOAD/RUN. This is a
+pre-existing `do_tape_prog` limitation inherited verbatim, documented in full in
+§disk LOAD (Divergences); a token-aware streamed copy is deferred and would
+equally fix `do_tape_prog`.
+
 ## disk-BLOAD scratch FCB — filename parse (basic/bload.asm, basic/sysvars.inc)
 
 PARSE-ONLY extension of `do_bload`'s device-string parser: it now recognises a
@@ -899,7 +970,7 @@ BLOAD therefore issues BDOS **$1A Set-DTA** (`BDOS_SETDTA`) first, pointing the
 DTA at its own writable page-3 buffer `DISK_DTA` ($E4C2, 128 bytes, clear of the
 disk ROM's SECTOR_BUF/FAT scratch $E2A0–$E4C1 and of all basic RAM). disk.asm
 gained the `$1A` dispatch + a settable `BDOS_DTA` variable (default $0080 for
-MSX-DOS compatibility) — see disk/PROVENANCE.md §BDOS Set-DTA.
+MSX-DOS compatibility) — see disk/PROVENANCE.md §BDOS interface (Set-DTA $1A rows).
 
 **C — disk BSAVE header is NOT the cassette format.** The on-disk BSAVE
 binary-file header is **7 bytes** `[$FE][start:2 LE][end:2 LE][exec:2 LE]`

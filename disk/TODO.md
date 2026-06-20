@@ -399,9 +399,35 @@ once the BDOS API is stable.
       body store (a pre-existing `do_tape_prog`/`disk_prog_load` limitation, see
       §disk LOAD); the test fixture avoids embedded `$00` so the shared loop is
       faithfully exercised.)
-- [ ] **Provenance entries** — document BDOS call numbers, FCB layout, and
+- [x] **Provenance entries** — document BDOS call numbers, FCB layout, and
       disk-BSAVE header format in `PROVENANCE.md`; oracle probes to confirm
       byte-identical behaviour vs reference
+      (Audit/consolidate/close item — items 2–4 already documented their
+      constants inline, so this verified, consolidated, and closed. **Audit
+      result:** every constant the TODO names is present and `sourced` — BDOS
+      call numbers $0F/$10/$14/$1A (basic/PROVENANCE.md §disk BLOAD execute +
+      disk/PROVENANCE.md §BDOS interface), FCB layout (+0 drive code, +1..+11
+      8.3 name, matching disk-ROM `fat_find`; §disk-BLOAD scratch FCB + §FCB
+      layout), the `[$FE][start][end][exec]` disk-BSAVE header (§disk BLOAD
+      execute), the `$FF` tokenised-BASIC marker (§disk LOAD), the cross-slot
+      `CALSLT $001C` / `DISKSLOT` / SYSTEM `$F37D` mechanism, the DTA-in-page-3
+      rationale, and the `DISK_FCB`/`DISK_DTA`/`DISKSLOT` scratch placement. No
+      missing or under-sourced constant; nothing newly quarantined. **Added** to
+      basic/PROVENANCE.md a consolidated `§disk BLOAD / LOAD / RUN surface` index
+      (a map + constants table tying the four sections together) and an honest
+      three-tier **oracle-confirmation status** statement: tier 1 = the DSKIO read
+      path is differential-confirmed byte-identical vs the real CF-3300
+      (`disk_probe_dskio.py`); tier 2 = the FCB BDOS layer + BLOAD/LOAD/RUN paths
+      are validated FUNCTIONALLY on openMSX (no FCB-BDOS reference exists — Disk
+      BASIC exposes none), NOT differentially; tier 3 = crunch is byte-identical
+      vs the Philips VG-8020. The inherited first-`$00` line-link truncation limit
+      (shared with `do_tape_prog`) is documented where the LOAD/RUN provenance
+      lives (§disk LOAD Divergences, re-summarised in the new index). Fixed one
+      stale cross-reference (§BDOS Set-DTA → §BDOS interface Set-DTA rows). Docs-
+      only: both ROMs byte-identical to the pre-edit build (`cmp` clean,
+      16384 bytes each); crunch oracle ALL PASS vs Philips VG-8020; disk probe
+      suite green. **The whole "zerobas interpreter extensions" section is now
+      complete.**)
 
 ---
 
