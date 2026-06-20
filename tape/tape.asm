@@ -66,10 +66,16 @@ CASW_0:         equ     $0A             ; PPI BSR command: Port C bit 5 := 0
 MOTOR_ON:       equ     $08             ; PPI BSR command: Port C bit 4 := 0 (motor on)
 MOTOR_OFF:      equ     $09             ; PPI BSR command: Port C bit 4 := 1 (motor off)
 
-; djnz half-period iteration counts, tuned to the emulated cost
-; ~ (26 + 14.4*C) T-states/half so the high and low FSK tones land on the
-; documented frequencies. 2400 baud is the same two tones shifted up one octave:
-; its low tone (2400 Hz) equals 1200 baud's high tone, so CAS_LHALF24 == CAS_HHALF.
+; djnz half-period iteration counts. NOT copied loop counts: each is COMPUTED by
+; inverting the documented FSK frequency through the cas_cycle half-period cost.
+; One half takes ~(26 + 14.4*C) T-states (the 14.4/iter + 26 fixed overhead is
+; measured from openMSX as a black box -- an oracle observation, never a ROM
+; listing), so on the 3.579545 MHz Z80 a target tone f_FSK needs
+;     C = round( ( 3579545 / (2*f_FSK) - 26 ) / 14.4 ).
+; That yields 50/102 for 1200 baud's 2400/1200 Hz and 24/50 for 2400 baud's
+; 4800/2400 Hz (each within 0.1 of an integer; confirmed by round-trip). 2400 baud
+; is the same two tones up one octave -- its low tone (2400 Hz) equals 1200 baud's
+; high tone -- so CAS_LHALF24 == CAS_HHALF. See PROVENANCE.md.
 CAS_HHALF:      equ     50              ; 1200 baud high tone ~2400 Hz half cycle
 CAS_LHALF:      equ     102             ; 1200 baud low  tone ~1200 Hz half cycle
 CAS_HHALF24:    equ     24              ; 2400 baud high tone ~4800 Hz half cycle
