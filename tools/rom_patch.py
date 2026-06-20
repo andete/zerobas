@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Joost Yervante Damad
+# SPDX-License-Identifier: BSD-2-Clause
+
 """Make, apply, and inspect ROM patches in IPS and BPS formats.
 
 Used by the cbios-tape side project to ship the clean-room cassette routines as a

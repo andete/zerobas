@@ -1,3 +1,6 @@
+; Copyright (c) 2026 Joost Yervante Damad
+; SPDX-License-Identifier: BSD-2-Clause
+
 ; title.asm — zerobas startup header.
 ;
 ; The few left-aligned lines printed at the top of the screen before the

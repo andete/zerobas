@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Joost Yervante Damad
+# SPDX-License-Identifier: BSD-2-Clause
+
 """Drop the zerobas page-1 image into a stock C-BIOS main ROM and vet the splice.
 
 On a real MSX, slot-0 page 1 ($4000-$7FFF) holds BASIC, right next to the BIOS in

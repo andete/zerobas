@@ -1,4 +1,7 @@
 #!/bin/sh
+# Copyright (c) 2026 Joost Yervante Damad
+# SPDX-License-Identifier: BSD-2-Clause
+
 # Build the zerobas slot-0 page-1 patches (IPS + BPS) against a stock C-BIOS.
 #
 # zerobas is normally an "AB" cartridge. But on a real MSX, BASIC lives in slot 0

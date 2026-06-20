@@ -1,3 +1,6 @@
+; Copyright (c) 2026 Joost Yervante Damad
+; SPDX-License-Identifier: BSD-2-Clause
+
 ; bload.asm — the BLOAD statement handler.
 ;
 ; This is the *interpreter half* of BLOAD: it does NOT decode the cassette

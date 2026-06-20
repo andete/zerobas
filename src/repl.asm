@@ -1,3 +1,6 @@
+; Copyright (c) 2026 Joost Yervante Damad
+; SPDX-License-Identifier: BSD-2-Clause
+
 ; repl.asm — keyboard line editor + read/eval loop.
 ;
 ; Reads a line from the keyboard via the BIOS (CHGET), echoes it with simple

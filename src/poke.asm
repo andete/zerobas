@@ -1,3 +1,6 @@
+; Copyright (c) 2026 Joost Yervante Damad
+; SPDX-License-Identifier: BSD-2-Clause
+
 ; poke.asm — the POKE statement handler.
 ;
 ;   POKE addr,value

@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Joost Yervante Damad
+# SPDX-License-Identifier: BSD-2-Clause
+
 """Pad (or verify) a raw ROM image to an exact size, filling with $00.
 
 $00 matches empty C-BIOS page 1, keeping the slot-0 page-1 patch minimal (see

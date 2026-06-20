@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Joost Yervante Damad
+# SPDX-License-Identifier: BSD-2-Clause
+
 """Install zerobas-equipped C-BIOS machines into your openMSX user folder.
 
 For each MSX1 C-BIOS machine openMSX ships this writes a "<name>_BASIC" machine

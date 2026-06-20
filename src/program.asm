@@ -1,3 +1,6 @@
+; Copyright (c) 2026 Joost Yervante Damad
+; SPDX-License-Identifier: BSD-2-Clause
+
 ; program.asm — stored numbered-line program: storage, NEW, RUN (Step B).
 ;
 ; The interpreter so far is direct-mode only: a typed line is crunched and run
