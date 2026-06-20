@@ -17,8 +17,10 @@ Working: byte-identical tokeniser (keywords, integer / `&H` / `&O` constants,
 `CLEAR`, `DEF USR`/`USR`, the screen-setup verbs (`SCREEN`, `COLOR`, `CLS`,
 `WIDTH`, `KEY OFF`/`ON`), `LIST` (de-tokenised whole-program listing),
 the memory / I-O access primitives (`VPOKE`/`VPEEK`, `OUT`/`INP`, `VARPTR`;
-`BASE` descoped), multi-character 16-bit integer variables, and cassette
-`BLOAD"CAS:",R`.
+`BASE` descoped), multi-character 16-bit integer variables, cassette
+`BLOAD"CAS:",R`, and cassette program load (`CLOAD` / `LOAD"CAS:"` — interpreter
+half done + oracle-validated; on-device functional load gated on a zerobas-tape
+`$00`-run framing fix).
 
 ## Phase 1 — enough BASIC to boot loader stubs
 
@@ -37,10 +39,19 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
 - [x] `DEF USR[n]=addr` + `USR[n](x)` function — the non-`,R` jump into loaded code
       (basic/usr.asm: vectors in USRTAB `$F39A`; crunch byte-identical. USR calling
       convention is own-design integer-only — DAC/VALTYP convention oracle follow-up owed.)
-- [ ] `CLOAD ["filename"]` — load a BASIC program from cassette; needed when a stub
+- [x] `CLOAD ["filename"]` — load a BASIC program from cassette; needed when a stub
       chain-loads a BASIC payload rather than a binary (complement to `BLOAD"CAS:"`)
-- [ ] `LOAD "CAS:filename"` — MSX-BASIC unified tape-load form; shares cassette I/O
+      (basic/cload.asm: CLOAD=$9B / LOAD=$B5 crunch byte-identical; reads the $D3
+      tokenised-BASIC tape image into the stored-program area at TXTBASE, relinks,
+      makes it the current program. Optional filename parsed+ignored — own-design,
+      no tape file catalogue. Functional load BLOCKED in-harness by a zerobas-tape
+      `$00`-run framing limitation (every program ends in the all-zero $0000 end-link
+      and the device-half TAPIN hangs on it); format+result oracle-validated — the
+      reference VG-8020 loads our synthetic .cas to the exact expected image.)
+- [x] `LOAD "CAS:filename"` — MSX-BASIC unified tape-load form; shares cassette I/O
       path with `CLOAD` but uses the `OPEN`-style filename syntax
+      (same basic/cload.asm path as CLOAD; LOAD=$B5, "CAS:" device parsed, filename
+      ignored. Same zerobas-tape `$00`-run device-half blocker as CLOAD.)
 - [x] `PRINT` (+ `;` `,` separators, string literals, `TAB`) — wire up the existing token
       (basic/print.asm: numeric + string-literal items, `;`/`,` zones, `?` abbrev;
       crunch byte-identical, output verified in openMSX. `TAB(`/`SPC(` + string

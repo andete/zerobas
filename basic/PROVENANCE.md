@@ -507,3 +507,94 @@ The VARPTR own-address-map and the BASE descope are the two **quarantined**
 items: both are deliberate own-design simplifications (loader-stub scope), not
 values lifted from any reference ROM or disassembly. A future oracle probe could
 pin BASE's real per-mode table-base values if a stub ever needs them.
+
+## Phase 1: cassette program load — CLOAD / LOAD"CAS:" (basic/cload.asm, basic/interp.asm, basic/sysvars.inc)
+
+The complement to `BLOAD"CAS:",R`: where BLOAD loads a BSAVE *binary image* into
+raw RAM, `CLOAD` and `LOAD"CAS:"` load a *tokenised BASIC program* off cassette
+into the stored-program area (the line-link area at TXTBASE that NEW / RUN / LIST
+manage) and make it the current program — as if it had been typed. Both verbs
+share one cassette I/O path (`do_tape_prog`); they differ only in argument syntax
+(`CLOAD ["name"]` — implicit cassette; `LOAD "CAS:name"` — OPEN-style device).
+
+**Oracle (token bytes, `basic_probe_crunch.py`, scratch test lines restored to
+pristine after; cross-checks MSX2 TH Table 2.20).** The reference Philips VG-8020
+crunches `cload` -> `… 9B 00`, `cload"name"` -> `… 9B 22 6E 61 6D 65 22`,
+`load"cas:name"` -> `… B5 22 63 61 73 3A 6E 61 6D 65 22`, `load` -> `… B5`. So
+**CLOAD = `$9B`** and **LOAD = `$B5`**, both single-byte statement tokens with the
+quoted filename kept verbatim (exactly like BLOAD's `"CAS:"` argument). These were
+verified byte-identical against zerobas's own crunch (committed `basic_probe_cload.py`,
+all 5 forms PASS) before the crunch probe was restored to pristine.
+
+**Cassette tokenised-BASIC file format.** Like a BSAVE binary, a tokenised BASIC
+file is TWO tape blocks (so two TAPION calls, one per block tone): a header block
+(10× file-id + 6-char name) and a data block. The file-id selects the kind —
+`$D0` binary (BLOAD), **`$D3` tokenised BASIC (here)**, `$EA` ASCII (MSX2 TH,
+cassette file format; `$D3` cross-checked against `tape/cassette-tool/cas_identify.py`
+and a real VG-8020 CSAVE recording). The data block omits the binary's 6-byte
+address header; it is the program-area image: a chain of
+`[link:2 LE][lineno:2 LE][tokens…][00]` lines ending in a `$0000` link word — the
+same line-link layout zerobas stores at TXTBASE (program.asm, already sourced /
+oracle-confirmed). The saved absolute links are recomputed by `relink`
+(program.asm) after the load, so the loaded program's bytes become byte-identical
+to one typed in. The reader stops EXACTLY at the `$0000` end-link (the device half
+blocks on tape silence once a block's data runs out — it does not signal a clean
+end-of-data), so no byte past the program is read.
+
+**Implementation.** `CLOAD`/`LOAD` are added to `kwtable` and the `exec_stmt`
+dispatch (`ex_cload`/`ex_load` → `do_cload`/`do_load`). `do_cload` accepts an
+optional quoted filename (parsed-past, ignored); `do_load` requires a `"CAS:…"`
+device string (reusing bload.asm's `dev_cas` / `load_error`) and ignores any
+trailing filename. Both fall into `do_tape_prog`, which mirrors bload.asm's tape
+contract (TAPION per block; TAPIN trashes all registers so state lives in RAM):
+verify the `$D3` id, skip the 16-byte header, re-TAPION the data block, then read
+the line-link image into TXTBASE — `$0000` link ⇒ stop, otherwise store link +
+lineno + body-to-`$00`, looping — set PRGEND, sync TXTTAB, and `relink`. No new
+BIOS entry, RAM scratch is `CLPTR` ($E02B, own free page-3 RAM).
+
+**Filename-ignore (own design).** zerobas keeps no tape file catalogue, so the
+optional CLOAD filename / the `"CAS:…"` filename is parsed and discarded — TAPION
+simply opens the next file on the tape. This is a documented own-design
+simplification (loader-stub scope: a stub chain-loads the next tape file); it is
+sufficient for the boot-loader use the project targets.
+
+**Functional-load device-half blocker (quarantined — NOT a defect in this code).**
+The interpreter half here is correct and crunch byte-identical, and the synthetic
+`.cas` format is oracle-validated: the **reference VG-8020's own built-in CLOAD
+loads our two-block `$D3` tape to the exact expected line-link image** at TXTBASE
+(`basic_probe_cload.py`, FORMAT check PASS). But an end-to-end load *on zerobas*
+is blocked by the **device half** under test — the zerobas-tape patch's `TAPIN`
+cannot frame a run of consecutive `$00` bytes, and every tokenised BASIC program
+ends in the all-zero `$0000` end-link. Confirmed by a raw verbatim TAPIN read,
+which hangs inside `TAPIN` on the trailing `$00` run, while the reference's own
+tape ROM (exercised by the FORMAT check) frames the same bytes fine. This is a
+zerobas-tape (cassette device-half) limitation tracked in that component, NOT a
+CLOAD/LOAD interpreter-half bug; the on-device functional load is gated on a
+zerobas-tape `$00`-run framing fix. (BLOAD is unaffected — it reads a known byte
+count and never a mid-stream `$0000`; `basic_probe_bload.py` still PASSes.)
+
+Validated: `make` builds a clean 16384-byte `basic.rom`, no warnings (no
+jr-out-of-range). The crunch probe stays byte-identical (full ALL PASS, plus the
+5 new CLOAD/LOAD forms PASS in `basic_probe_cload.py`). The controlflow / loops /
+data / statements regression probes and `basic_probe_bload.py` all stay PASS.
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `CLOAD` statement token | `$9B` | oracle-confirmed byte-identical via `basic_probe_crunch.py`; cross-checks MSX2 TH Table 2.20 | sourced |
+| `LOAD` statement token | `$B5` | oracle-confirmed byte-identical via `basic_probe_crunch.py`; cross-checks MSX2 TH Table 2.20 | sourced |
+| Quoted filename kept verbatim after the token (like BLOAD's `"CAS:"`) | — | oracle (`cload"name"`/`load"cas:name"` crunch) | sourced |
+| Tokenised-BASIC cassette file id | `$D3` (×10) | MSX2 TH cassette file format; cross-checks `tape/cassette-tool/cas_identify.py` + a real VG-8020 CSAVE recording | sourced |
+| Two-block layout (header block + data block ⇒ two TAPION) | — | MSX2 TH cassette file format; reference VG-8020 loads our two-block `.cas` correctly (oracle) | sourced |
+| Data block = program-area line-link image, ends in `$0000` link | — | program.asm line-link layout (already sourced/oracle); reference-load oracle confirms the loaded image byte-for-byte | sourced |
+| Read stops at the `$0000` end-link (never reads past it) | — | own code; required because the device half blocks on tape silence at end-of-data | sourced |
+| Links recomputed by `relink` after load (loaded image = typed image) | — | program.asm `relink` (already sourced) | sourced |
+| `CLOAD`/`LOAD` parse + `do_tape_prog` read algorithm; `CLPTR` ($E02B) scratch | — | **own code** (mirrors bload.asm's tape contract + program.asm's store/relink); not derived from any disassembly | sourced |
+| Optional CLOAD filename / `"CAS:"` filename parsed and **ignored** (no tape file catalogue; TAPION opens the next file) | — | **own design** (loader-stub scope; documented in basic/cload.asm) | quarantined |
+| On-zerobas end-to-end functional load blocked by zerobas-tape `$00`-run TAPIN framing (every program ends in `$0000`) | — | **device-half (zerobas-tape) limitation**, not this code — interpreter half is crunch-identical and the `.cas` format is reference-load oracle-validated; gated on a zerobas-tape fix | quarantined |
+
+The filename-ignore and the on-device functional-load blocker are the two
+**quarantined** items: the first is a deliberate own-design simplification
+(loader-stub scope), the second is a cross-component device-half limitation
+(zerobas-tape `$00`-run framing) — neither is a value lifted from any reference
+ROM or disassembly. The CLOAD/LOAD interpreter half is complete, crunch
+byte-identical, and oracle-validated against the reference's own CLOAD.

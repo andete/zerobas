@@ -44,15 +44,27 @@ TAPION          equ     $00E1   ; read tape header (motor on); CF set = fail
 TAPIN           equ     $00E4   ; read one byte -> A;           CF set = fail
 TAPIOF          equ     $00E7   ; stop the tape motor
 
-; --- Binary (BSAVE) file identifier ---------------------------------------
-; Source: MSX2 Technical Handbook, BSAVE file format ("D0" x10 = binary).
-BINARY_ID       equ     $D0
+; --- Cassette file identifiers --------------------------------------------
+; Source: MSX2 Technical Handbook, cassette file format: the 10-byte file-type
+; block before the filename selects the file kind. Binary (BSAVE) = $D0 x10;
+; tokenised BASIC = $D3 x10; ASCII = $EA x10. zerobas reads $D0 (BLOAD) and $D3
+; (CLOAD / LOAD"CAS:") — the device half (TAPION/TAPIN) is byte-stream agnostic;
+; this id is interpreted by the interpreter half, exactly like BLOAD's $D0 check.
+BINARY_ID       equ     $D0     ; BSAVE binary image
+BASIC_ID        equ     $D3     ; tokenised BASIC program (CLOAD / LOAD"CAS:")
 
 ; --- Tokeniser / executor --------------------------------------------------
 ; Keyword tokens. Each value is an oracle observation (the crunch buffer KBUF
 ; dump), cross-checked against the MSX Assembly Page token table.
 ; Source: spec-tokenise.md (BLOAD) and spec-tokens-statements.md (REM/POKE/PEEK).
 BLOAD_TOKEN     equ     $CF     ; spec-tokenise.md
+; Cassette program-load keywords (MSX2 TH Table 2.20; oracle-confirmed
+; byte-identical via basic_probe_crunch.py against the Philips VG-8020:
+; `cload` -> $9B, `cload"name"` -> $9B "name"; `load"cas:name"` -> $B5
+; "cas:name"). Both are single-byte statement tokens with the quoted filename
+; kept verbatim, exactly like BLOAD's argument.
+CLOAD_TOKEN     equ     $9B     ; CLOAD ["filename"] (cassette tokenised-BASIC load)
+LOAD_TOKEN      equ     $B5     ; LOAD "CAS:filename" (unified tape load)
 REM_TOKEN       equ     $8F     ; spec-tokens-statements.md; swallows rest of line
 POKE_TOKEN      equ     $98     ; spec-tokens-statements.md
 ; PEEK is a *function* token: a $FF prefix followed by a second byte.
@@ -94,6 +106,7 @@ ENDPTR          equ     $E022   ; final load address  (2 bytes)
 EXECPTR         equ     $E024   ; execution address   (2 bytes)
 ERRMARK         equ     $E010   ; error landmark marker byte
 RUNFLAG         equ     $E02F   ; 1 = ,R handoff requested (set while parsing)
+CLPTR           equ     $E02B   ; CLOAD/LOAD: store cursor into the program area (2)
 TKNAME          equ     $E028   ; tokeniser: 1 = previous char was part of a name
                                 ; (so a following digit stays verbatim, not crunched)
 TKRADIX         equ     $E029   ; tokeniser: &H/&O accumulator radix (16 or 8)

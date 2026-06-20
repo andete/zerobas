@@ -504,6 +504,11 @@ bl_done:
 ; spec-tokens-statements.md). PEEK is a two-byte function token ($FF $97).
 kwtable:
                 db      5,"BLOAD",1,BLOAD_TOKEN
+                ; Cassette program-load keywords (oracle-confirmed; MSX2 TH
+                ; Table 2.20). CLOAD precedes BLOAD's family for no special
+                ; reason — match_kw compares the full keyword, so order is free.
+                db      5,"CLOAD",1,CLOAD_TOKEN
+                db      4,"LOAD",1,LOAD_TOKEN
                 db      4,"POKE",1,POKE_TOKEN
                 db      4,"PEEK",2,PEEK_PREFIX,PEEK_TOKEN
                 db      3,"REM",1,REM_TOKEN
@@ -600,6 +605,10 @@ exec_stmt:
                 jp      z,ex_sep
                 cp      BLOAD_TOKEN
                 jp      z,ex_bload
+                cp      CLOAD_TOKEN
+                jp      z,ex_cload
+                cp      LOAD_TOKEN
+                jp      z,ex_load
                 cp      POKE_TOKEN
                 jp      z,ex_poke
                 cp      VPOKE_TOKEN
@@ -679,6 +688,12 @@ exd_lp:                                     ; continue with the next statement.
 ex_bload:
                 inc     hl                  ; HL -> args (past the BLOAD token)
                 jp      do_bload
+ex_cload:
+                inc     hl                  ; HL -> args (past the CLOAD token)
+                jp      do_cload
+ex_load:
+                inc     hl                  ; HL -> args (past the LOAD token)
+                jp      do_load
 ex_poke:
                 inc     hl                  ; HL -> args (past the POKE token)
                 jp      do_poke

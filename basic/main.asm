@@ -72,6 +72,11 @@
 ; The BLOAD statement handler and the ,R handoff (defines `do_bload`).
                 include "basic/bload.asm"
 
+; The CLOAD / LOAD"CAS:" cassette program-load handlers (defines `do_cload`,
+; `do_load`). Reuses bload.asm's `load_error` / `dev_cas` and program.asm's
+; `relink` / `new_prog`, so it follows bload.asm in the include order.
+                include "basic/cload.asm"
+
 ; Stored numbered-line program: storage, NEW, RUN (defines `dispatch_line`).
                 include "basic/program.asm"
 
