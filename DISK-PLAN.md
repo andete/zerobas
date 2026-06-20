@@ -101,10 +101,14 @@ so zerobas's `BLOAD"A:FILE"` can reach a real FAT12 disk image.
 - [x] **Provenance doc** — list every constant/address with source before
       writing any code; same discipline as zerobas's `PROVENANCE.md`
       (`disk/PROVENANCE.md`)
-- [ ] **ROM skeleton** — 16 or 32 KB ROM; MSX "AB" header; INIT vector;
+- [x] **ROM skeleton** — 16 KB ROM; MSX "AB" header; INIT vector;
       standard disk ROM entry-point stubs at fixed offsets (`+$10` DSKIO,
       `+$13` DSKCHG, `+$16` GETDPB, `+$19` CHOICE, `+$1C` DSKFMT,
       `+$1F` MTOFF)
+      (`disk/disk.asm`: header + jump table verified at the exact offsets;
+      stubs fail cleanly with carry set, CHOICE returns HL=0. Built via
+      `make disk` → `disk.rom`, padded to 16384 bytes. Corrected the
+      PROVENANCE header rows: INIT is a word at $4002, not a JP at $4003.)
 - [ ] **INIT** — install `H.DSKIO` / `H.PHYD` hooks in system hook RAM; set
       up the Drive Parameter Block (DPB) for a single 720 KB 3.5" drive
 - [ ] **FDC driver** — WD2793 register I/O at the Philips/NMS-style port
@@ -123,8 +127,10 @@ so zerobas's `BLOAD"A:FILE"` can reach a real FAT12 disk image.
       internal slot 3-1, declares an FDC extension, attaches a test `.dsk`
       image, and pairs with the existing zerobas + zerobas-tape IPS patches in
       slot 0
-- [ ] **Makefile** — build ROM with pasmo; no patch-generation step needed
+- [x] **Makefile** — build ROM with pasmo; no patch-generation step needed
       (standalone ROM, not an IPS)
+      (root Makefile `disk` target: `pasmo --bin disk/disk.asm` + `pad_rom.py`
+      to 16384 bytes; `clean` removes `disk.rom`. Added with the ROM skeleton.)
 
 ---
 

@@ -36,15 +36,26 @@ a real MSX1 built-in disk machine carries.
 | Slot placement | slot 3-1, page 1 | MSX2 TH §3, slot architecture | sourced |
 | ROM address range | $4000–$7FFF (16 KB) | MSX2 TH, memory map | sourced |
 | "AB" identifier | $41 $42 at $4000 | MSX2 TH, cartridge ROM format | sourced |
-| INIT vector (JP) | 3 bytes at $4003 | MSX2 TH, cartridge ROM format (same field as main zerobas ROM) | sourced |
-| Reserved header bytes | $4006–$400F = $00 | MSX2 TH, cartridge ROM format | sourced |
-| Disk entry-point table base | $4010 | MSX2 TH, disk ROM interface | sourced |
+| INIT vector (word) | $4002 (2-byte address; BIOS CALLs through it) | MSX2 TH, cartridge ROM format (same field as main zerobas ROM) | sourced |
+| STATEMENT / DEVICE / TEXT vectors | $4004 / $4006 / $4008 = $0000 (unused) | MSX2 TH, cartridge ROM format | sourced |
+| Reserved header bytes | $400A–$400F = $00 | MSX2 TH, cartridge ROM format | sourced |
+| Disk entry-point table base | $4010 (immediately after the 16-byte header) | MSX2 TH, disk ROM interface | sourced |
 | DSKIO entry | JP at $4010 | MSX2 TH, disk ROM interface (offset +$10 from ROM base) | sourced |
 | DSKCHG entry | JP at $4013 | MSX2 TH, disk ROM interface (offset +$13) | sourced |
 | GETDPB entry | JP at $4016 | MSX2 TH, disk ROM interface (offset +$16) | sourced |
 | CHOICE entry | JP at $4019 | MSX2 TH, disk ROM interface (offset +$19) | sourced |
 | DSKFMT entry | JP at $401C | MSX2 TH, disk ROM interface (offset +$1C) | sourced |
 | MTOFF entry | JP at $401F | MSX2 TH, disk ROM interface (offset +$1F) | sourced |
+| Entry-stub error return | carry set = operation failed | MSX2 TH, disk ROM interface | sourced |
+| CHOICE "no choices" return | HL = $0000 (no format-choice string) | MSX2 TH, disk ROM interface | sourced |
+
+> **Header layout correction.** An earlier draft of this table placed INIT as a
+> 3-byte `JP` at $4003 with reserved bytes at $4006–$400F. That is not the MSX
+> cartridge header: INIT is a 2-byte *address word* at $4002 (the BIOS CALLs
+> through it), followed by the STATEMENT/DEVICE/TEXT word vectors, with the 6
+> reserved bytes at $400A–$400F. Only this standard 16-byte header puts the disk
+> entry-point table at $4010. The implementation (`disk/disk.asm`) and the rows
+> above use the corrected, standard layout — matching the main zerobas ROM.
 
 No quarantined items.
 
