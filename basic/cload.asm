@@ -53,30 +53,39 @@ do_cload:
                 call    skip_quoted
                 jr      do_tape_prog
 
-; --- do_load: LOAD "CAS:filename" --------------------------------------------
-; Entry: HL -> the bytes after the LOAD token. The argument must be a quoted
-; string beginning with the device name "CAS:"; any trailing filename inside the
-; quotes is parsed-past and ignored.
+; --- do_load: LOAD "CAS:filename" | LOAD "A:filename"[,R] --------------------
+; Entry: HL -> the bytes after the LOAD token. The argument is a quoted device
+; string: a "CAS:" prefix selects the (unchanged) cassette path; anything else is
+; a disk filename (optional "A:"/"B:" drive prefix) read from the disk BDOS layer.
+; A "CAS:" filename is parsed-past and ignored (TAPION opens the next tape file);
+; a disk LOAD "name",R loads the tokenised BASIC program and runs it.
+;
+; The "CAS:" prefix is peeked NON-DESTRUCTIVELY (exactly like do_bload): only once
+; the full prefix matches do we commit to the tape path, so a name like "CASETTE"
+; falls through cleanly to the disk path.
 do_load:
                 call    skip_spaces
                 ld      a,(hl)
                 cp      '"'                 ; opening quote required
                 jp      nz,load_error
                 inc     hl
+                ; --- device dispatch: "CAS:" -> tape, else -> disk ----------
+                push    hl                  ; remember the filename start
                 ld      de,dev_cas          ; compare device name to "CAS:"
-do_load_dev:
+dl_dev:
                 ld      a,(de)
                 or      a
-                jr      z,do_load_dev_end   ; matched all of "CAS:"
+                jr      z,dl_is_cas         ; matched all of "CAS:" -> tape
                 ld      c,a                 ; expected (uppercase) char
                 ld      a,(hl)              ; typed char
                 call    upcase              ; case-insensitive (typed may be lower)
                 cp      c
-                jp      nz,load_error       ; unsupported device
+                jr      nz,dl_is_disk       ; prefix mismatch -> disk path
                 inc     hl
                 inc     de
-                jr      do_load_dev
-do_load_dev_end:
+                jr      dl_dev
+dl_is_cas:
+                pop     af                  ; discard saved filename start
                 ; HL is now inside the quotes, past "CAS:": skip the rest of the
                 ; quoted filename to the closing quote (filename ignored).
 do_load_fn:
@@ -87,6 +96,23 @@ do_load_fn:
                 cp      '"'                 ; consume through the closing quote
                 jr      nz,do_load_fn
                 jr      do_tape_prog
+
+; --- do_load disk path: LOAD "A:name"[,R] -----------------------------------
+; HL was advanced partway through the "CAS:" compare and must NOT be trusted —
+; restore the filename start from the stack. Parse the FCB (shared with do_bload)
+; and the closing-quote + ,R, load the tokenised program from disk, then run it
+; iff ,R was given (LOAD"name",R = load and run; standard MSX behaviour).
+dl_is_disk:
+                pop     hl                  ; HL = filename start (after the quote)
+                call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
+                call    parse_close_run     ; closing quote + optional ,R -> RUNFLAG
+                jp      c,load_error
+                call    disk_prog_load      ; load the tokenised program into TXTBASE
+                ; ,R ? -> run the freshly loaded program; else back to the REPL.
+                ld      a,(RUNFLAG)
+                or      a
+                ret     z
+                jp      run_prog            ; RUN the loaded program (program.asm)
 
 ; --- skip_quoted: HL on the opening '"' -> HL past the closing '"' ------------
 ; Used by CLOAD to discard its optional quoted filename. Clobbers A.
@@ -236,3 +262,158 @@ ctp_oom:
                 ld      hl,err_prog_mem
                 jp      print_string
 err_prog_mem:   db      "out of memory",13,10,0
+
+; --- disk_prog_load: load a TOKENISED BASIC program from disk ----------------
+; The disk analogue of do_tape_prog. The FCB at DISK_FCB is fully built (drive
+; code + 8.3 name) by parse_disk_fcb. This opens the file through the disk ROM's
+; BDOS FCB layer, requires the on-disk tokenised-BASIC marker ($FF), streams the
+; in-memory line-link image into the stored-program area at TXTBASE, closes the
+; file, relinks, and returns — leaving a loaded, current program. The caller
+; decides whether to RUN it (LOAD,R) so this is reusable by RUN"filename".
+;
+; On-disk tokenised-BASIC format (MSX-BASIC file formats — MSX Wiki / MSX
+; Resource Center, an allowed public language reference; see PROVENANCE.md §disk
+; LOAD): a leading marker byte $FF (BASIC_DISK_ID), then the in-memory program
+; image — the SAME line-link chain do_tape_prog reads:
+;   [link:2 LE][lineno:2 LE][tokens...][00] per line, ending in a $0000 link word.
+; This is DISTINCT from the BSAVE binary's $FE disk marker.
+;
+; Unlike the tape path (which has no clean end-of-data and must stop EXACTLY at
+; the $0000 end-link), the disk reader has BOTH a real EOF (disk_getbyte CF=EOF)
+; and the $0000 end-link. The $0000 link is the authoritative end (we stop there
+; and close); an EOF encountered mid-line is a truncated/corrupt file -> error.
+;
+; Uses bload.asm's disk plumbing (same ROM): DISKSLOT_OK, bdos_call, disk_getbyte,
+; the Set-DTA($1A)/Open($0F)/Close($10) sequence, DISK_DTA/DTA_OFF/DTA_VALID.
+; Mirrors do_tape_prog's ctp_line/ctp_body/ctp_done line-for-line, but sourcing
+; bytes from disk_getbyte and closing the file at the end.
+disk_prog_load:
+                ; (1) disk ROM slot must have been recorded by the INIT scan.
+                ld      a,(DISKSLOT_OK)
+                or      a
+                jp      z,load_error
+                ; (2) Set-DTA -> our writable page-3 buffer; mark the record empty
+                ; so the first disk_getbyte triggers a SeqRead ($0080 is BIOS ROM
+                ; under Disk BASIC and would silently fail).
+                ld      a,128
+                ld      (DTA_OFF),a         ; OFF==VALID -> buffer exhausted
+                ld      (DTA_VALID),a
+                ld      c,BDOS_SETDTA
+                ld      de,DISK_DTA
+                call    bdos_call
+                ; (3) Open the file (DE = FCB). A=$00 required.
+                ld      c,BDOS_OPEN
+                ld      de,DISK_FCB
+                call    bdos_call
+                or      a
+                jp      nz,load_error       ; not found / I-O error
+                ; (4) first byte must be the tokenised-BASIC disk marker $FF.
+                call    disk_getbyte
+                jp      c,dpl_err           ; EOF before the marker -> close + error
+                cp      BASIC_DISK_ID
+                jp      nz,dpl_err          ; wrong marker (e.g. ASCII / BSAVE) -> error
+                ; (5) start a fresh program: store cursor at the text base.
+                ld      hl,TXTBASE
+                ld      (CLPTR),hl
+                ; --- read the line-link image, stopping at the $0000 end-link ---
+                ; Per line: read the 2-byte link word; $0000 -> end of program.
+                ; Otherwise store the line verbatim (link word, 2-byte line number,
+                ; token body up to and including its $00) and loop. The saved links
+                ; are stored as-is; relink recomputes them below.
+dpl_line:
+                call    disk_getbyte        ; link low
+                jp      c,dpl_err           ; EOF mid-program -> truncated -> error
+                ld      c,a
+                call    disk_getbyte        ; link high
+                jp      c,dpl_err
+                ld      b,a                 ; BC = saved link word
+                ld      a,b
+                or      c
+                jr      z,dpl_done          ; $0000 link -> program complete
+
+                ; bounds: this line's header (>=4 bytes) must fit below TXTMAX
+                ld      hl,(CLPTR)
+                ld      de,TXTMAX-4
+                or      a
+                sbc     hl,de
+                jp      nc,dpl_oom
+
+                ; store the (saved) link word verbatim; relink fixes it later
+                ld      hl,(CLPTR)
+                ld      (hl),c
+                inc     hl
+                ld      (hl),b
+                inc     hl
+                ld      (CLPTR),hl
+
+                ; line number (2 bytes)
+                call    disk_getbyte
+                jp      c,dpl_err
+                ld      hl,(CLPTR)
+                ld      (hl),a
+                inc     hl
+                ld      (CLPTR),hl
+                call    disk_getbyte
+                jp      c,dpl_err
+                ld      hl,(CLPTR)
+                ld      (hl),a
+                inc     hl
+                ld      (CLPTR),hl
+
+                ; token body: read + store until the $00 terminator (inclusive)
+dpl_body:
+                call    disk_getbyte
+                jp      c,dpl_err
+                ld      c,a                 ; guard the byte (disk_getbyte trashes regs)
+                ld      hl,(CLPTR)          ; bounds check
+                ld      de,TXTMAX
+                or      a
+                sbc     hl,de
+                jp      nc,dpl_oom
+                ld      hl,(CLPTR)
+                ld      a,c
+                ld      (hl),a
+                inc     hl
+                ld      (CLPTR),hl
+                or      a                   ; line's $00 terminator?
+                jr      nz,dpl_body
+                jr      dpl_line            ; next line
+
+dpl_done:
+                ; (6) close the file (program fully read).
+                ld      c,BDOS_CLOSE
+                ld      de,DISK_FCB
+                call    bdos_call
+
+                ; --- write the $0000 end-of-program marker and set PRGEND ---
+                ld      hl,(CLPTR)
+                ld      (PRGEND),hl         ; end marker sits at the store cursor
+                ld      (hl),0
+                inc     hl
+                ld      (hl),0
+                ; keep the TXTTAB sysvar consistent with the program base
+                ld      hl,TXTBASE
+                ld      (TXTTAB),hl
+                ; --- relink: recompute every line's absolute link pointer ---
+                call    relink
+                ret
+
+; dpl_err — close the open file, then take the normal error path. Reached on an
+; unexpected EOF mid-program, a wrong marker, or an Open after the file vanished.
+dpl_err:
+                ld      c,BDOS_CLOSE
+                ld      de,DISK_FCB
+                call    bdos_call
+                jp      load_error
+
+; dpl_oom — store overflow: close the file, leave a clean (empty) program, report
+; "out of memory". Mirrors ctp_oom for the disk store-overflow case.
+dpl_oom:
+                ld      c,BDOS_CLOSE
+                ld      de,DISK_FCB
+                call    bdos_call
+                call    new_prog            ; leave a clean (empty) program
+                ld      a,$CC               ; out-of-memory landmark (as store_line)
+                ld      (ERRMARK),a
+                ld      hl,err_prog_mem
+                jp      print_string

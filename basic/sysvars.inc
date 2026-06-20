@@ -339,6 +339,15 @@ BDOS_SETDTA     equ     $1A     ; Set DTA Address        (DE = new DTA)
 ; filename lives in the directory entry, not the file body. Data bytes run
 ; start..end inclusive.
 BSAVE_DISK_ID   equ     $FE     ; on-disk BSAVE binary-file marker
+; On-disk TOKENISED-BASIC file marker. A BASIC program SAVEd to disk in the
+; default (tokenised, non-",A") form is a single leading $FF byte followed by the
+; in-memory program image (the same line-link chain do_tape_prog reads:
+; [link:2 LE][lineno:2 LE][tokens...][00] per line, ending in a $0000 link word).
+; This is DISTINCT from the BSAVE binary's $FE marker above. Source: MSX-BASIC
+; file formats (MSX Wiki / MSX Resource Center — the same allowed public language
+; reference class the $FE BSAVE marker was sourced from). LOAD"filename" verifies
+; this marker (mismatch -> load_error). See basic/PROVENANCE.md §disk LOAD.
+BASIC_DISK_ID   equ     $FF     ; on-disk tokenised-BASIC program marker
 ; Control stacks (page $E0, below LINEBUF at $E100). Both grow upward; the
 ; pointer addresses the next free slot, and the stack is empty when it equals
 ; its base. GOSUB frame = [curline:2][resume:2] (4 bytes). FOR frame =

@@ -141,6 +141,25 @@ load_handoff:
 ; basic/sysvars.inc DISK_FCB and PROVENANCE.md §disk-BLOAD scratch FCB.
 is_disk:
                 pop     hl                  ; HL = filename start (after quote)
+                call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
+                ; --- shared closing-quote + ,R parse -----------------------
+                call    parse_close_run
+                jp      c,load_error
+                ; FCB is fully built (DISK_FCB_DRV + DISK_FCB_NAME) and RUNFLAG
+                ; is set. Hand off to the disk loader.
+                jp      do_disk_bload
+
+; parse_disk_fcb — parse a disk filename into the scratch FCB at DISK_FCB.
+; Shared by BOTH do_bload's disk path (is_disk) and do_load's disk path so the
+; drive-letter + 8.3-name logic lives in one place.
+;   in:  HL -> first char of the quoted name (the byte after the opening '"'),
+;             possibly an "A:"/"B:" drive prefix.
+;   out: DISK_FCB_DRV = drive code (1=A, 2=B; default A when no prefix);
+;        DISK_FCB_NAME = the 11-byte space-padded upper-case 8.3 field;
+;        HL -> the closing '"' (so parse_close_run resumes there).
+; On a malformed drive spec or a name that doesn't fit 8.3, jumps to load_error
+; (does not return). Clobbers A, B, C, DE, HL.
+parse_disk_fcb:
                 ; --- detect an optional drive letter "X:" -------------------
                 ; "A:" / "B:" (case-insensitive). Default drive = A when absent.
                 ; Look at name[0] and name[1]: a letter followed by ':' is a
@@ -177,12 +196,7 @@ build_name:
                 ; --- convert to the 11-byte 8.3 field at DISK_FCB_NAME ------
                 call    build_83_name       ; HL advanced to the closing quote
                 jp      c,load_error        ; name didn't fit 8.3 / malformed
-                ; --- shared closing-quote + ,R parse -----------------------
-                call    parse_close_run
-                jp      c,load_error
-                ; FCB is fully built (DISK_FCB_DRV + DISK_FCB_NAME) and RUNFLAG
-                ; is set. Hand off to the (placeholder) disk loader.
-                jp      do_disk_bload
+                ret
 
 ; do_disk_bload — real disk load via the disk ROM's BDOS FCB layer.
 ;

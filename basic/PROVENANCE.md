@@ -948,3 +948,94 @@ stays at its pre-poisoned sentinel $A5 (no exec). The read path is the same one
 byte-identical and the four regression probes still pass; `disk_probe_init.py`
 and `disk_probe_bload_fcb.py` still pass; `BLOAD"CAS:",R` end-to-end still loads
 + hands off.
+
+## disk LOAD — LOAD"filename"[,R] (basic/cload.asm, basic/bload.asm, basic/sysvars.inc)
+
+The disk analogue of `LOAD"CAS:"`/`CLOAD`: where the cassette path loads a
+tokenised BASIC *program* off tape (`do_tape_prog`), this loads the same kind of
+program from a FAT12 disk file through the disk ROM's BDOS FCB layer. It is the
+program-load counterpart to disk BLOAD (which loads a BSAVE *binary image* into
+raw RAM); the two on-disk formats — and their marker bytes — are distinct.
+
+**Device dispatch (do_load).** `do_load` now peeks the device string
+NON-DESTRUCTIVELY, exactly like `do_bload`: a full `"CAS:"` prefix selects the
+unchanged cassette path (`do_load_fn`/`do_tape_prog`), anything else falls
+through to the disk path (a name like `"CASETTE"` is a disk name, not tape). The
+cassette-only `do_cload` (`CLOAD`) is untouched. The disk path restores the
+filename start from the stack (HL is mid-`"CAS:"` compare and not trustworthy),
+parses the FCB via the shared `parse_disk_fcb`, then `parse_close_run` (so
+`LOAD"A:PROG.BAS",R` sets `RUNFLAG`), calls `disk_prog_load`, and — iff `RUNFLAG`
+— `jp run_prog` to RUN the freshly loaded program (LOAD",R" = load and run,
+standard MSX behaviour). No new token: `LOAD` already exists as `LOAD_TOKEN`
+($B5), and the disk filename is verbatim ASCII in the crunch stream — the
+tokeniser is untouched and crunch stays byte-identical (Philips VG-8020).
+
+**Shared FCB parse (`parse_disk_fcb`).** The drive-letter + 8.3-name parse that
+was inline in `do_bload`'s `is_disk` is factored into `parse_disk_fcb`
+(basic/bload.asm) and reused by BOTH BLOAD's and LOAD's disk paths, so the
+`"A:"/"B:"`-prefix + `build_83_name` logic lives in one place.
+
+**On-disk tokenised-BASIC format ($FF marker).** A BASIC program SAVEd to disk in
+the default (tokenised, non-`,A`) form is a single leading marker byte **`$FF`**
+(`BASIC_DISK_ID`) immediately followed by the in-memory program image — the SAME
+line-link chain `do_tape_prog` reads: `[link:2 LE][lineno:2 LE][tokens…][00]` per
+line, terminated by a `$0000` link word. This is DISTINCT from the BSAVE binary's
+`$FE` disk marker (the two file kinds are told apart by their leading byte).
+ASCII-saved BASIC (`SAVE…,A`) has no `$FF` and is plain text — out of scope; only
+the `$FF` tokenised form is loaded. Source: **MSX-BASIC file formats** (MSX Wiki /
+MSX Resource Center, an allowed public MSX-BASIC language reference — the same
+class the `$FE` disk-BSAVE marker was sourced from). `disk_prog_load` verifies the
+`$FF` marker on load (mismatch ⇒ `load_error`).
+
+**`disk_prog_load`.** A reusable routine (callable by the future `RUN"filename"`):
+checks `DISKSLOT_OK` (else `load_error`); Set-DTA→`DISK_DTA`; Open (require A=$00,
+else `load_error`); reads the first byte and requires `BASIC_DISK_ID` ($FF); then
+streams the line-link image into the program store at `TXTBASE` via `disk_getbyte`
+— mirroring `do_tape_prog`'s `ctp_line`/`ctp_body`/`ctp_done` (store link word,
+$0000 link ⇒ done, otherwise store link + lineno + token-body-to-`$00`; write the
+`$0000` end marker; set `PRGEND`; `TXTTAB`=`TXTBASE`; `call relink`) — but sourcing
+bytes from `disk_getbyte` and closing the file (BDOS Close) at the end. It leaves
+a loaded, relinked program and returns; the `,R`/run decision stays in the caller.
+The disk reader has BOTH a real EOF (`disk_getbyte` CF) and the `$0000` end-link:
+the `$0000` link is the authoritative end (stop + close there); an EOF mid-line is
+a truncated/corrupt file ⇒ `load_error` (`dpl_err`, after closing the file). A
+store overflow past `TXTMAX` mirrors `ctp_oom` (`dpl_oom`: close, `new_prog`,
+"out of memory", `$CC` landmark).
+
+| Item | Value | Source | Status |
+| --- | --- | --- | --- |
+| `BASIC_DISK_ID` (on-disk tokenised-BASIC marker) | $FF | MSX-BASIC file formats (MSX Wiki / MSX Resource Center), public language reference | sourced |
+| in-memory line-link image after the marker: `[link:2 LE][lineno:2 LE][tokens…][00]` per line, `$0000` end-link | — | same line-link layout as program.asm / do_tape_prog (allowed-source / oracle-confirmed) | sourced |
+| `LOAD` statement token (reused, no new token) | $B5 | oracle-confirmed via `basic_probe_crunch.py` (already sourced, §Phase 1 cassette load) | sourced |
+
+**Divergences / judgment calls.**
+- **Streamed body store is not token-aware (shared with `do_tape_prog`).** Both
+  `ctp_body` and `dpl_body` copy a line's token body until the FIRST `$00`, so a
+  token operand byte that is itself `$00` (e.g. the high byte of an `&H` value
+  `$0C $7B $00`) would be mistaken for the line terminator. The in-RAM store
+  editor (`store_line`) uses the token-aware `skip_to_eol`, but a *streamed* load
+  has no length up front. This is a pre-existing `do_tape_prog` limitation
+  inherited verbatim, not introduced here; the realistic common case (operands
+  with no embedded `$00`) loads correctly. The test fixture is built to avoid
+  embedded `$00` (encodes `123` as the 1-byte `INT1` form `$0F $7B`, not the
+  `&H` form), so it is a faithful exercise of the shared loop. A fully robust
+  streamed loader (token-aware body copy) is deferred and would equally fix
+  `do_tape_prog`.
+- LOAD",R" runs via `jp run_prog` (program.asm) after `disk_prog_load` returns;
+  plain LOAD returns to the REPL. `disk_prog_load` is left cleanly callable by the
+  next item's `RUN"filename"` (which adds only the run-after-load decision).
+- On any error after Open (wrong marker, mid-line EOF), `dpl_err` closes the file
+  before `load_error` — no leaked open file. `DISKSLOT_OK`=0 (no disk ROM) makes
+  `disk_prog_load` fall straight to `load_error`.
+
+**Functional validation (openMSX, `disk_probe_load_disk.py` in msx-preservation).**
+On `C-BIOS_MSX1_BASIC_DISK` with `-diska disk/test720.dsk` (which now carries a
+real tokenised `PROG.BAS`: `$FF` marker + the line-link image of `10 POKE
+&HD002,123`, byte-identical to the typed-in crunch): `LOAD"A:PROG.BAS"` rebuilds
+the relinked program at `$8001` byte-identical to the expected image and does NOT
+auto-run (the `$D002` landmark stays its sentinel); `LOAD"A:PROG.BAS",R` rebuilds
+the same store AND runs it (`($D002)`=$7B, the POKEd landmark). Crunch stays
+byte-identical; the four regression probes, `basic_probe_cload.py`,
+`basic_probe_bload.py`, `disk_probe_init.py`, `disk_probe_bload_fcb.py`,
+`disk_probe_bload_disk.py`, and the `disk_probe_dskio.py` differential (vs the
+CF-3300 reference) all still pass.

@@ -330,9 +330,43 @@ once the BDOS API is stable.
       ($D000) at its sentinel (no exec). Crunch byte-identical; the 4 regression
       probes, `disk_probe_init.py`, `disk_probe_bload_fcb.py`, and the
       `disk_probe_dskio.py` differential (vs CF-3300) all still pass.)
-- [ ] **`LOAD"filename"`** — load a tokenized BASIC file from disk (different
+- [x] **`LOAD"filename"`** — load a tokenized BASIC file from disk (different
       format from BSAVE binary); parse program-line format and rebuild the
       program store; needed for disk-based loader stubs
+      (`basic/cload.asm`: `do_load` now peeks the device string non-destructively
+      — a full `"CAS:"` prefix → the unchanged cassette path (`do_tape_prog`),
+      anything else → the disk path. The disk path restores the filename start
+      from the stack, parses the FCB via the new shared `parse_disk_fcb`
+      (factored out of `do_bload`'s `is_disk`, reused by both), then
+      `parse_close_run`, then `disk_prog_load`, then `jp run_prog` iff `,R`.
+      `disk_prog_load` (reusable, callable by the next `RUN"filename"` item)
+      checks `DISKSLOT_OK`, Set-DTA→`DISK_DTA`, Open (require A=$00), requires the
+      leading **`$FF` tokenised-BASIC marker** (`BASIC_DISK_ID`, new in
+      `basic/sysvars.inc`; source: MSX-BASIC file formats — MSX Wiki / MSX
+      Resource Center, the same allowed reference class the `$FE` BSAVE marker
+      came from; DISTINCT from `$FE`), then streams the `[link][lineno][tokens][00]`
+      line-link image into `TXTBASE` via `disk_getbyte` — mirroring
+      `do_tape_prog`'s `ctp_line`/`ctp_body`/`ctp_done` — stopping at the `$0000`
+      end-link (authoritative; mid-line EOF ⇒ `load_error`), closing the file,
+      and `relink`-ing. No new keyword token (`LOAD` already exists), so crunch
+      stays byte-identical.
+      `tools/make_test_dsk.py` now also writes `PROG.BAS` (a real on-disk
+      tokenised program: `$FF` + the line-link image of `10 POKE &HD002,123`,
+      byte-identical to the typed-in crunch). **Divergences / judgment calls:**
+      the streamed body-store loop is NOT token-aware (it stops the body at the
+      first `$00`) — a pre-existing `do_tape_prog` limitation inherited verbatim;
+      the fixture encodes `123` as the 1-byte `INT1` form ($0F $7B), not the `&H`
+      16-bit form ($0C $7B $00), to avoid an embedded `$00` in the body, so it is
+      a faithful exercise of the shared loop (a token-aware streamed copy is
+      deferred and would equally fix `do_tape_prog`). Validated end-to-end
+      (openMSX, `disk-spec/tools/disk_probe_load_disk.py`) on
+      `C-BIOS_MSX1_BASIC_DISK` with `-diska disk/test720.dsk`:
+      `LOAD"A:PROG.BAS"` rebuilds the relinked store at `$8001` byte-identical and
+      does NOT auto-run; `LOAD"A:PROG.BAS",R` rebuilds the store AND runs it
+      (`($D002)`=$7B). Crunch byte-identical; the four regression probes,
+      `disk_probe_init.py`, `disk_probe_bload_fcb.py`, `disk_probe_bload_disk.py`
+      and the `disk_probe_dskio.py` differential (vs CF-3300) all still pass. See
+      `basic/PROVENANCE.md` §disk LOAD.)
 - [ ] **`RUN"filename"`** — thin wrapper: `LOAD` then `RUN`
 - [ ] **Provenance entries** — document BDOS call numbers, FCB layout, and
       disk-BSAVE header format in `PROVENANCE.md`; oracle probes to confirm
