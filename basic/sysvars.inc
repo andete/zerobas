@@ -289,6 +289,19 @@ SCAN_PRIM       equ     $E0D5   ; primary slot currently being scanned (1)
 SCAN_SLOT       equ     $E0D6   ; candidate slot id for RDSLT/CALSLT (1)
 SCAN_INIT       equ     $E0D7   ; candidate ROM's INIT entry address (2)
 SCAN_IY         equ     $E0D9   ; CALSLT slot word: high byte = slot (IYh) (2)
+; Disk BLOAD scratch FCB (bload.asm disk path). A CP/M-style File Control Block
+; built by the BLOAD parser and handed straight to the disk ROM's bdos_entry
+; (C=Open, DE=FCB). Layout: FCB+0 = drive code (CP/M convention: 0 = default
+; drive, 1 = A, 2 = B — MSX2 Technical Handbook / MSX-DOS BDOS FCB layout); the
+; current disk bdos_open ignores FCB+0, so this is forward-compat only. FCB+1..
+; +11 = the 11-byte 8.3 name field (8-char name + 3-char ext, space-padded $20,
+; UPPER-CASE) — exactly what fat_find consumes (disk/disk.asm bdos_open). 12
+; bytes total. Used only transiently during a BLOAD; placed in the free page-3
+; gap after the INIT-scan scratch and clear of the disk ROM's SECTOR_BUF/FAT
+; scratch region ($E2A0-$E4BF). See PROVENANCE.md §disk-BLOAD scratch FCB.
+DISK_FCB        equ     $E0DB   ; scratch FCB ($E0DB..$E0E6, 12 bytes)
+DISK_FCB_DRV    equ     DISK_FCB        ; +0: drive code (0=default,1=A,2=B)
+DISK_FCB_NAME   equ     DISK_FCB + 1    ; +1..+11: 8.3 name field (11 bytes)
 ; Control stacks (page $E0, below LINEBUF at $E100). Both grow upward; the
 ; pointer addresses the next free slot, and the stack is empty when it equals
 ; its base. GOSUB frame = [curline:2][resume:2] (4 bytes). FOR frame =

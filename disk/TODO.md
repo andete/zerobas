@@ -269,12 +269,34 @@ once the BDOS API is stable.
       $4048 (functional probe `disk-spec/tools/disk_probe_init.py`; differential
       control with the pre-scan ROM reads C-BIOS defaults). The next items below
       (disk BLOAD) are now unblocked.
-- [ ] **Disk filename parse in BLOAD** — extend `do_bload`'s device-string
+- [x] **Disk filename parse in BLOAD** — extend `do_bload`'s device-string
       parser to recognise `"A:name"` / `"B:name"` (and bare `"name"` defaulting
       to drive A); extract drive letter and 8.3 filename into scratch RAM; keep
       `"CAS:"` path unchanged. NB (from validation): reach `bdos_entry` via an
       inter-slot call, and do not rely on the $0080 DTA (page 0 is BIOS ROM
       under Disk BASIC) — point the read at a buffer the BLOAD path controls.
+      (`basic/bload.asm`: `do_bload` now peeks the device string non-
+      destructively — full `"CAS:"` prefix → the unchanged tape path; anything
+      else → the disk path (`is_disk`). The disk path reads an optional
+      case-insensitive `"A:"`/`"B:"` drive prefix (bare name defaults to drive
+      A), then `build_83_name` converts the filename to the 11-byte space-padded
+      upper-case 8.3 field. The result lands in a scratch FCB at `DISK_FCB`
+      ($E0DB, 12 bytes; `basic/sysvars.inc`): FCB+0 = drive code (CP/M / MSX-DOS
+      convention 0=default/1=A/2=B — `bdos_open` ignores it today, forward-compat
+      only), FCB+1..+11 = the 8.3 name. The quote-close + `,R` parse is now the
+      shared `parse_close_run` (both tape and disk set RUNFLAG). **Divergences /
+      judgment calls:** PARSE-ONLY — `do_disk_bload` is a labelled placeholder
+      that falls through to `load_error`; the actual disk read (and passing this
+      FCB to `bdos_entry` via CALSLT) is the NEXT item. 8.3 over-length / second-
+      dot / empty-name is **rejected** via `load_error`, not truncated (hiding
+      typos is worse). No new token — disk filenames are verbatim ASCII in the
+      crunch stream, so the tokeniser is untouched and crunch stays byte-
+      identical (Philips VG-8020). Validated: `disk_probe_bload_fcb.py`
+      (msx-preservation) on `C-BIOS_MSX1_BASIC` (parse-only code, no disk
+      hardware; breaks at the `do_disk_bload` landmark) confirms `A:TEST.BIN`→
+      drive 1/`TEST    BIN`, bare `TEST.BIN`→drive 1, `B:HI.TXT`→drive 2/`HI      TXT`;
+      crunch + 4 regression probes pass; `BLOAD"CAS:",R` still loads + hands off.
+      See basic/PROVENANCE.md §disk-BLOAD scratch FCB.)
 - [ ] **Disk BLOAD execute** — open the file via BDOS FCB; read and verify
       the BSAVE header (10× `$D0` + 6-char name + start/end/exec — same format
       as tape); load data bytes into RAM; close file; share `,R` handoff logic

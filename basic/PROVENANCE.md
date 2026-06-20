@@ -828,3 +828,48 @@ disk ROM's INIT writes now carry its values: `SYSTEM` ($F37D) = `$4168`
 `JP $4048` (dskio). Differential control with the pre-scan ROM: all three read the
 C-BIOS defaults ($C9 / $C9C9 — INIT did not run). Crunch byte-identical and the
 four regression probes still pass (the scan runs harmlessly before the REPL).
+
+## disk-BLOAD scratch FCB — filename parse (basic/bload.asm, basic/sysvars.inc)
+
+PARSE-ONLY extension of `do_bload`'s device-string parser: it now recognises a
+disk filename (`"A:name"` / `"B:name"` / bare `"name"`) in addition to the
+existing `"CAS:"`, builds a CP/M-style scratch File Control Block in RAM, then
+routes to the `do_disk_bload` placeholder (which, until the NEXT TODO item lands,
+falls through cleanly to `load_error`). The `"CAS:"` tape path is byte-for-byte
+unchanged. No new keyword/token: BLOAD arguments are kept verbatim ASCII in the
+crunch stream (spec-tokenise.md), so the tokeniser is untouched and crunch stays
+byte-identical (confirmed against the Philips VG-8020).
+
+| Item | Value | Source | Status |
+| --- | --- | --- | --- |
+| Scratch FCB base `DISK_FCB` (12 bytes, $E0DB–$E0E6) | $E0DB | own choice (free page-$E0 RAM after the INIT-scan scratch, clear of the disk ROM's SECTOR_BUF/FAT scratch $E2A0–$E4BF; used only transiently during a BLOAD) | sourced |
+| FCB layout: +0 drive code, +1..+11 = 11-byte 8.3 name field | — | CP/M / MSX-DOS FCB layout (MSX2 Technical Handbook, BDOS conventions); exactly what disk/disk.asm `bdos_open` (`fat_find`) consumes at FCB+1 | sourced |
+| Drive-code convention: 0 = default, 1 = A, 2 = B | — | CP/M / MSX-DOS FCB convention (MSX2 TH / MSX-DOS BDOS). Current disk `bdos_open` ignores FCB+0, so this is forward-compat only | sourced |
+| 8.3 name field: 8-char name + 3-char ext, space-padded $20, UPPER-CASE | — | FAT / MSX-DOS 8.3 directory-entry name format (Microsoft FAT spec); upper-cased via the existing `upcase` helper (ASCII) | sourced |
+| Drive letter: `"A:"`/`"B:"` case-insensitive; bare name defaults to drive A | — | own design (a `<letter>:` prefix selects the drive; default = A) | sourced |
+
+**8.3 conversion policy (own design).** The filename is split on the FIRST `.`;
+up to 8 chars before the dot become the name field (space-padded to 8), up to 3
+after become the ext (space-padded to 3); no dot → all-name, ext = 3 spaces. The
+filename ends at the closing `"`. Rather than silently truncate (which hides
+typos), the parser **rejects** (via `load_error`) anything that does not fit 8.3:
+more than 8 name chars, more than 3 ext chars, a second `.`, or an empty name
+(e.g. `""`, `".EXT"`, `"A:"`). This is a deliberate, documented simplification.
+
+**Placeholder.** `do_disk_bload` deliberately does NOT read the disk yet — it
+falls through to `load_error`. The FCB it leaves at `DISK_FCB` is ready to be
+handed to the disk ROM's `bdos_entry` (C=`BDOS_F_OPEN`, DE=`DISK_FCB`) by the
+next TODO item ("Disk BLOAD execute"). The `,R` (RUNFLAG) parse is shared between
+the tape and disk paths via `parse_close_run`.
+
+**Functional validation (openMSX, `disk_probe_bload_fcb.py` in msx-preservation).**
+On `C-BIOS_MSX1_BASIC` (the parse path is pure interpreter code that never touches
+the disk hardware, so the plain machine is a reliable, valid target — the combined
+`_DISK` machine's longer INIT-scan boot makes keystroke timing flaky), typing each
+line into the zerobas REPL and reading the scratch FCB at the `do_disk_bload`
+landmark (reached once the FCB is fully built): `BLOAD"A:TEST.BIN"` →
+drive 1, name `TEST    BIN`; bare `BLOAD"TEST.BIN"` → drive 1 (default A), same
+name; `BLOAD"B:HI.TXT"` → drive 2, name `HI      TXT`. Strictly an observation of
+zerobas's own scratch RAM; no ROM is read or disassembled. Crunch byte-identical
+and the four regression probes still pass; `BLOAD"CAS:",R` end-to-end still loads
++ hands off (`basic_probe_bload.py`).
