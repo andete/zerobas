@@ -63,30 +63,50 @@ No quarantined items.
 
 ## INIT: system hook installation
 
-The disk ROM's INIT routine (called by BIOS at boot) installs JP instructions
-into the system hook slots. The hook area is 5-byte slots in page-3 RAM; the
-BIOS initialises each to `RST $30` (5 bytes = `$FF $FF $FF $FF $FF` or a formal
-no-op sequence); INIT overwrites with `JP nnnn` ($C3 + 2-byte address) + 2 padding
-bytes.
+The disk ROM's INIT routine (called by BIOS at boot) currently installs `JP`
+instructions into two hook slots and writes the SYSTEM sysvar. **An oracle
+observation has since contradicted this design — see the box below.** The hook
+area is 5-byte slots in page-3 RAM, 5-byte-aligned from $FD9A.
 
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
-| H.DSKIO hook address | $FF4B | MSX2 TH, work area / hook table | sourced |
-| H.PHYD hook address | $FF3E | MSX2 TH, work area / hook table | sourced |
-| Hook slot size | 5 bytes | MSX2 TH (all H.* hooks are 5-byte; called with `CALL` so they may also `RET`) | sourced |
-| `JP nnnn` opcode | $C3 | Z80 instruction set (public) | sourced |
-| Hook-install algorithm: write $C3, target_lo, target_hi, $00, $00 to (HL) | — | own code; JP opcode + 5-byte slot per MSX2 TH | sourced |
-| SYSTEM sysvar write: LD ($F37D),HL with HL = bdos_entry | — | own code; SYSTEM address per MSX2 TH / C-BIOS | sourced |
-| INIT does NOT need to identify its own slot (only installs hooks, no cross-slot calls) | — | own design; RDSLT/CALSLT not needed for this INIT | sourced |
-| BDOS entry stub: A=$FF / RET (error return for all calls until FAT12 lands) | — | own design; A=$FF = documented BDOS error per MSX2 TH BDOS conventions | sourced |
+| H.DSKIO hook address | $FF4B | (claimed MSX2 TH) | **WRONG — oracle-contradicted** |
+| H.PHYD hook address | $FF3E | (claimed MSX2 TH) | **WRONG — oracle-contradicted** |
+| Hook slot size | 5 bytes | MSX2 TH; oracle (hooks are 5-byte-aligned from $FD9A) | sourced |
+| Cross-slot hook mechanism: `RST 30h` (CALLF) + slot byte + dw target | — | **oracle observation** (CF-3300 disk ROM, see box) | sourced |
+| `JP nnnn` opcode for hook | $C3 | Z80 instruction set | **WRONG approach — JP can't cross slots** |
+| SYSTEM sysvar write: LD ($F37D),HL with HL = bdos_entry | — | own code | **quarantined — oracle-contradicted** |
+| INIT does NOT need to identify its own slot | — | own design | **WRONG — cross-slot hooks need the slot byte** |
+| BDOS entry stub: A=$FF / RET | — | own design; A=$FF documented BDOS error | sourced |
 
-> **H.PHYD vs H.DSKIO.** MSX2 TH distinguishes two disk-I/O hooks:
-> `H.PHYD` ($FF3E) intercepts the BIOS PHYDIO entry (physical sector I/O at the
-> BIOS level), and `H.DSKIO` ($FF4B) intercepts the disk-BASIC DSKIO call
-> (logical I/O from file-access code). Both are installed by INIT; the FDC
-> driver lives behind `H.PHYD`.
-
-No quarantined items.
+> **ORACLE FINDING (probe 3 investigation) — the hook/SYSTEM design is wrong and
+> must be redesigned.** Observing the **National CF-3300** reference in openMSX
+> after boot (RAM only — the disk ROM's code was never read), the real disk ROM
+> integrates very differently from what our INIT does:
+> - It installs **`RST 30h` (CALLF) inter-slot calls** — `$F7`, a slot byte, a
+>   2-byte target — at hook-table entries **$FD9F (H.TIMI, timer), $FDEF, $FDF9,
+>   $FFA7, $FFAC**, all with slot byte **$87 = expanded slot 3-1** and targets in
+>   the disk ROM's page-1 range. This is the standard MSX cross-slot hook: a
+>   plain `JP` (what we install) **cannot cross slots**, so our hooks would only
+>   work if slot 3-1 happened to be paged into page 1 at call time.
+> - It does **NOT** touch **$FF3E** or **$FF4B** (both still `$C9` after boot).
+>   $FF4B is not even 5-byte-aligned in the hook table (`$FF4B − $FD9A = 433`,
+>   not ÷5), so our "H.DSKIO = $FF4B" was never a valid hook slot. Our
+>   H.PHYD/H.DSKIO addresses are wrong.
+> - **$F37D** holds **$31C3** (a BIOS-ROM, page-0 address), not a disk-ROM BDOS
+>   entry. The reference does not expose file I/O via an FCB BDOS at a SYSTEM
+>   vector in Disk BASIC (that is an MSX-DOS construct); it uses the disk-ROM
+>   entry-point table ($4010…) plus the BASIC expansion/CALLF hook chain.
+>
+> **What is confirmed correct:** the **$4010 entry-point table** (DSKIO etc.)
+> reached via an inter-slot call — our DSKIO is byte-identical to the reference
+> there (probe 2). **Redesign direction:** because zerobas controls both the
+> BASIC ROM and the disk ROM, the simplest robust integration is for
+> zerobas-BASIC to locate the disk ROM's slot and call its `$4010` entry table
+> (and our FAT12 helpers) via `CALSLT`/`RST 30h`, rather than relying on the
+> mis-addressed `JP` hooks + SYSTEM vector. The exact hook names/addresses, if we
+> do hook, must be taken from the MSX2 TH hook table (allowed) — not guessed.
+> See disk/TODO.md (INIT redesign item).
 
 ---
 
@@ -441,11 +461,23 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
 1. **FDC register map probe** — ~~confirm the CF-3300 WD2793 base address and
    drive-select latch by writing known patterns and reading status~~ **Resolved
    from an allowed source:** the register addresses and the drive/side/motor
-   latch bit map are now taken directly from openMSX `src/fdc/NationalFDC.cc`
-   (allowed for hardware register maps), so the FDC §TBD rows are sourced, not
-   owed. Runtime confirmation comes for free when probe 2 (sector read) passes.
+   latch bit map are taken directly from openMSX `src/fdc/NationalFDC.cc`
+   (allowed for hardware register maps). **Runtime-confirmed:** probe 2 below now
+   reads real sectors through this register map on openMSX, so the map is
+   exercised, not just sourced.
 2. **DSKIO sector read** — read sector 0 (boot sector) and confirm BPB fields
    match the known test image; validates FAT12 and FDC layers together.
+   **DONE — differential oracle PASS.** `disk-spec/tools/disk_probe_dskio.py`
+   (in the `msx-preservation` repo) reads the same `disk/test720.dsk` on the real
+   National CF-3300 reference and on our `*_BASIC_DISK` machine by calling the
+   standard DSKIO entry ($4010, MSX2 TH) via `CALSLT`, and compares the returned
+   bytes + carry/A. Result: zerobas-disk's DSKIO is **byte-identical to the
+   CF-3300 reference** (sector 0 and sector 14; both `A=0, Cy=0`, both equal to
+   the on-disk bytes). Strictly black-box: only returned data + flags observed,
+   the reference disk ROM's code was never read. (A prior functional self-test
+   via the FAT12 helpers — `fat_mount`/`fat_find`/`fat_read_file_sector` — also
+   passed: geometry derived, file found, records correct across a cluster hop,
+   clean EOF.)
 3. **BDOS FCB round-trip** — open a known file via FCB, read its first 128-byte
    record, close it; confirms BDOS calling convention and DTA contents. **Also
    capture the disturbed-RAM footprint:** dump page-3 (and page-0 around the DTA)
@@ -455,9 +487,34 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
    addresses that look "free" at rest can still be trashed mid-call, which a
    static sysvar-map check would miss. (We pick our *own* scratch addresses, so
    this is collision-avoidance, not a layout to copy.)
+   **Reframed — the reference has no FCB BDOS in Disk BASIC, so this is not a
+   differential comparison.** Probe-3 investigation (observing CF-3300 RAM only)
+   found the reference does not expose a CP/M FCB BDOS in Disk BASIC: $F37D points
+   into BIOS ROM, $0005 is not a BDOS entry (page 0 is ROM), and file I/O goes
+   through the disk-ROM entry table + BASIC expansion/CALLF hooks, not an FCB
+   BDOS. The FCB BDOS ($0005 / $0080 DTA / FCB) is an **MSX-DOS** construct,
+   available only once MSX-DOS is loaded (page 0 = RAM). So our `bdos_entry`
+   Open/SeqRead/Close is an *internal zerobas convenience API*, not a
+   reference-matching interface — it was validated **functionally** (Open/Close
+   return A=$00; the FAT12 read path underneath is differential-confirmed via
+   probe 2). Its differential equivalent is **probe 4 (BLOAD end-to-end)**, where
+   the meaningful comparison is the loaded file content + exec handoff. Two design
+   findings folded in elsewhere: (a) the disk ROM INIT does not run in the
+   combined `*_BASIC_DISK` machine (boot-scan ordering); (b) the $0080 DTA assumes
+   page-0 RAM, invalid under Disk BASIC — the BLOAD path must supply its own
+   buffer.
 4. **BLOAD"A:file",R end-to-end** — load a BSAVE binary from disk and confirm
    the BSAVE header parse + load-into-RAM + jump-to-exec path matches the
    cassette path's oracle spec.
+
+> **Functional vs differential.** Probe 2 (DSKIO sector read) is now a *passed
+> differential oracle* against the real CF-3300 (see above). The remaining
+> validations (BDOS FCB round-trip, BLOAD end-to-end) are so far *functional*
+> self-tests on openMSX (our ROM + our `disk/test720.dsk`, built by
+> `tools/make_test_dsk.py` from the Microsoft FAT spec + ECMA-107 — allowed
+> sources, no disk-ROM bytes); their *differential* counterparts vs the CF-3300
+> reference are still owed. All reference use is strictly black-box (observed
+> outputs only); the CF-3300 disk ROM is never read or disassembled.
 
 ---
 
