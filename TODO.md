@@ -97,9 +97,8 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
 
 ## Deferred track — disk transport
 
-Not Phase 1 or 2: the device half is a disk-interface ROM (`PHYDIO` / the
-`H.*` hooks), modelled on the [`tape/`](tape/) component — kept in `disk/`,
-combined only at runtime. The interpreter side is
-small once that ROM exists: disk-filename parsing in `BLOAD`/`LOAD`, `RUN"file"`,
-the BSAVE-header read, and the `,R` handoff — all mirroring
-[basic/bload.asm](basic/bload.asm).
+Not Phase 1 or 2. See [`disk/TODO.md`](disk/TODO.md) for the full plan and
+status. The interpreter-side items (disk-filename parsing in `BLOAD`/`LOAD`,
+`RUN"file"`, BSAVE-header read, `,R` handoff) are small once the
+[`disk/`](disk/) ROM's BDOS API is stable — they mirror
+[`basic/bload.asm`](basic/bload.asm).

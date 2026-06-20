@@ -1,7 +1,7 @@
-# Disk ROM support plan (MSX1)
+# disk/ — TODO
 
-Two workstreams — a new `zerobas-disk` sibling repo (hardware layer) and zerobas
-interpreter extensions (language layer) — mirroring the zerobas-tape model.
+Two workstreams: the disk-interface ROM (`disk/`) and zerobas interpreter
+extensions (`basic/`), mirroring the `tape/` + interpreter model.
 
 ## Reference machine: National CF-3300 (MSX1, JP, 1985)
 
@@ -79,42 +79,93 @@ no sibling-repo auto-detection needed. The Makefile gains `tape.ips` and
 
 ---
 
-## zerobas-disk (new separate repo)
+## disk/ — disk-interface ROM
 
-Goal: a clean-room MSX1 disk ROM that fills the role zerobas-tape fills for
+Goal: a clean-room MSX1 disk ROM that fills the role `tape/` fills for
 cassette. Provides the physical FDC driver, FAT12 read layer, and BDOS hooks
 so zerobas's `BLOAD"A:FILE"` can reach a real FAT12 disk image.
 
-### Provenance sources to establish first
-
-- MSX2 Technical Handbook: disk ROM interface (standard entry-point offsets),
-  hook addresses (`H.DSKIO` `$FF4B`, `H.PHYD` `$FF3E`), BDOS call numbers,
-  FCB layout, slot architecture
-- WD2793 FDC datasheet (public; the most common MSX1 built-in disk controller)
-- Philips/NMS FDC port mapping — open hardware schematics (NOT from ROM
-  disassembly)
-- Microsoft FAT12 specification (public)
-- No disassembly of any existing disk ROM (Sony, Philips, Panasonic)
+Provenance sources (all public): MSX2 Technical Handbook, WD2793 datasheet,
+Philips/NMS open schematics, Microsoft FAT12 spec. No disk-ROM disassembly.
+See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
 
 ### TODO
 
-- [ ] **Provenance doc** — list every constant/address with source before
+- [x] **Provenance doc** — list every constant/address with source before
       writing any code; same discipline as zerobas's `PROVENANCE.md`
-- [ ] **ROM skeleton** — 16 or 32 KB ROM; MSX "AB" header; INIT vector;
+      ([`PROVENANCE.md`](PROVENANCE.md))
+- [x] **ROM skeleton** — 16 KB ROM; MSX "AB" header; INIT vector;
       standard disk ROM entry-point stubs at fixed offsets (`+$10` DSKIO,
       `+$13` DSKCHG, `+$16` GETDPB, `+$19` CHOICE, `+$1C` DSKFMT,
       `+$1F` MTOFF)
-- [ ] **INIT** — install `H.DSKIO` / `H.PHYD` hooks in system hook RAM; set
+      (`disk/disk.asm`: header + jump table verified at the exact offsets;
+      stubs fail cleanly with carry set, CHOICE returns HL=0. Built via
+      `make disk` → `disk.rom`, padded to 16384 bytes. Corrected the
+      PROVENANCE header rows: INIT is a word at $4002, not a JP at $4003.)
+- [~] **INIT** — install `H.DSKIO` / `H.PHYD` hooks in system hook RAM; set
       up the Drive Parameter Block (DPB) for a single 720 KB 3.5" drive
-- [ ] **FDC driver** — WD2793 register I/O at the Philips/NMS-style port
-      addresses; track/sector/head addressing; read-sector command and
+      (Hook installation done: H.PHYD/$FF3E → phyd_handler, H.DSKIO/$FF4B →
+      dskio, SYSTEM/$F37D → bdos_entry, via `install_hook` helper.
+      DPB / GETDPB blocked: the directory-mask, directory-shift, and
+      total-clusters encoding in the MSX2 TH DPB layout are ambiguous without
+      the TH text — oracle probe 2 (DSKIO sector-read) must confirm them.
+      GETDPB remains carry-set stub. bdos_entry stub returns A=$FF.)
+- [x] **FDC driver** — WD2793 register I/O at the National memory-mapped
+      register addresses; track/sector/head addressing; read-sector command and
       result-phase read; error handling (write support deferred)
-- [ ] **FAT12 layer** — boot sector / BPB parse; FAT12 cluster-chain walk;
+      (`disk/disk.asm`: register map sourced from openMSX `NationalFDC.cc`
+      ($7FB8 status/cmd, $7FB9 track, $7FBA sector, $7FBB data, $7FBC
+      drive/side/motor latch); WD2793 status/command bits from the datasheet.
+      `dskio` does the full DSKIO read path: logical→CHS via `div9`, per-sector
+      seek+read, polled 512-byte transfer (status-reg DRQ/BUSY — IRQ/DRQ lines
+      aren't wired to the Z80 per `NationalFDC.cc`), DSKIO error-code mapping,
+      and one restore+retry to recover a stale Track register. `mtoff` drops the
+      motor; `phyd_handler` routes to `dskio`. Writes deferred (return
+      write-protected). The "Philips/NMS-style" phrasing was stale — the CF-3300
+      reference is National connection style. The FDC §TBD rows in
+      [`PROVENANCE.md`](PROVENANCE.md) are now resolved/sourced. End-to-end
+      read is exercised once the openMSX machine config + test `.dsk` land.)
+- [x] **FAT12 layer** — boot sector / BPB parse; FAT12 cluster-chain walk;
       root directory search (8.3 name, case-insensitive); sequential sector
       read for a file's data
-- [ ] **BDOS hook** — intercept the BDOS jump vector; implement FCB-based
+      (`disk/disk.asm`: read-only FAT12 as internal helpers on top of the DSKIO
+      core. `fat_mount` reads the boot sector and derives geometry from the BPB
+      (validates 512 B/sector, then computes first-FAT / first-root / root-sector-
+      count / first-data sectors); `fat_find` scans the root directory 16 entries
+      per sector with a case-insensitive 8.3 compare, skipping deleted / volume /
+      directory entries, and returns first cluster + file size; `fat_next_cluster`
+      follows the 12-bit chain including the sector-straddle case (e.g. cluster
+      682 on a full 720 KB image); `fat_open` + `fat_read_file_sector` iterate the
+      chain a data sector at a time. All geometry comes from the on-disk BPB, so
+      the code is geometry-agnostic. FAT12 scratch added at $E4A0–$E4BE
+      (PROVENANCE §Scratch RAM). Code ends at $4359, clear of the $7FB8 FDC
+      shadow. Not yet reachable — the BDOS/FCB layer (next item) calls these;
+      end-to-end validation waits on the openMSX machine config + oracle probe 2.
+      pasmo flags the four FAT12 entry points as "never used" until then.)
+- [x] **BDOS hook** — intercept the BDOS jump vector; implement FCB-based
       `Open` ($0F), `Sequential Read` ($14), `Close` ($10); error returns per
       MSX-DOS spec
+      (`disk/disk.asm`: `bdos_entry` is now a real dispatcher on the call
+      number in C with the FCB pointer in DE (CP/M convention). `Open` calls
+      `fat_mount` then `fat_find` on the FCB's 11-byte 8.3 name (+1..+11),
+      then `fat_open`; returns A=$00 / A=$FF. `Sequential Read` delivers
+      128-byte records out of the 512-byte `SECTOR_BUF`, tracking the record
+      index in `BDOS_RECIDX` ($E4BF) and refilling via `fat_read_file_sector`
+      when the four records are exhausted; copies each record to the DTA
+      ($0080); returns A=$00 / A=$01 at EOF. `Close` returns A=$00; any other
+      call returns A=$FF. The four FAT12 entry points are now reached, clearing
+      pasmo's "never used" warnings on them. Code ends at $43B8, clear of the
+      $7FB8 FDC shadow; ROM builds clean to 16384 bytes.
+      **Divergences / simplifications:** only one file open at a time — file
+      position lives in the FAT iterator + `BDOS_RECIDX`, not in the FCB extent
+      (+12) / current-record (+32) fields; Sequential Read EOF granularity is
+      the cluster chain, so the last record may include padding past
+      `FAT_FILESIZE` (CP/M record semantics — exact byte bounding deferred).
+      The exact register save/restore contract the BLOAD caller must honour is
+      quarantined pending oracle probe 3 (BDOS FCB round-trip). End-to-end
+      functional validation is deferred: it needs the openMSX machine config +
+      a test `.dsk` + oracle probe 3 — so this lands **implemented, not yet
+      oracle-confirmed**.)
 - [ ] **Oracle probes** (in msx-preservation repo) — black-box observation of
       BDOS return values and FCB state on a reference machine with a known
       `.dsk` image
@@ -122,15 +173,17 @@ so zerobas's `BLOAD"A:FILE"` can reach a real FAT12 disk image.
       internal slot 3-1, declares an FDC extension, attaches a test `.dsk`
       image, and pairs with the existing zerobas + zerobas-tape IPS patches in
       slot 0
-- [ ] **Makefile** — build ROM with pasmo; no patch-generation step needed
+- [x] **Makefile** — build ROM with pasmo; no patch-generation step needed
       (standalone ROM, not an IPS)
+      (root Makefile `disk` target: `pasmo --bin disk/disk.asm` + `pad_rom.py`
+      to 16384 bytes; `clean` removes `disk.rom`. Added with the ROM skeleton.)
 
 ---
 
-## zerobas interpreter extensions (this repo)
+## zerobas interpreter extensions (`basic/`)
 
-Small delta on top of the existing `src/bload.asm` once zerobas-disk's BDOS API
-is stable.
+Small delta on top of the existing [`../basic/bload.asm`](../basic/bload.asm)
+once the BDOS API is stable.
 
 ### TODO
 
@@ -152,13 +205,11 @@ is stable.
 
 ---
 
-## openMSX integration (this repo, `tools/`)
+## openMSX integration (`tools/`)
 
 - [ ] **Extend `install-openmsx-machine.py`** — add `--disk-rom` option;
-      auto-detect zerobas-disk ROM next to this repo (sibling `zerobas-disk/`
-      dir); generate `*_BASIC_DISK` machine variants that add the internal
-      slot 3-1 block and FDC extension alongside the existing zerobas + tape
-      patches
+      generate `*_BASIC_DISK` machine variants that add the internal slot 3-1
+      block and FDC extension alongside the existing zerobas + tape patches
 - [ ] **Test disk image** — a minimal 720 KB FAT12 `.dsk` with a few BSAVE
       binaries for integration testing
 

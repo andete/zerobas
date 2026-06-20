@@ -16,9 +16,11 @@ Every constant, address, data table, and algorithm in this repo **must trace to
 an allowed source.** This is not a guideline — it is the load-bearing property
 that makes the code distributable.
 
-- **[`PROVENANCE.md`](PROVENANCE.md)** — the provenance log: one row per item,
-  each marked `sourced` (traced to an allowed source) or `quarantined` (no
-  allowed source; stubbed or derived, never copied).
+- **[`PROVENANCE.md`](PROVENANCE.md)** — the provenance index, pointing at one
+  log per component ([`basic/`](basic/PROVENANCE.md), [`tape/`](tape/PROVENANCE.md),
+  [`disk/`](disk/PROVENANCE.md)). Each log has one row per item, marked `sourced`
+  (traced to an allowed source) or `quarantined` (no allowed source; stubbed or
+  derived, never copied).
 - **Inline citations** — every non-obvious value or algorithm in the `.asm`
   files names its source in a comment (e.g. `; spec-bload-r.md §3`,
   `; MSX2 Technical Handbook, cassette I/O`).
@@ -224,7 +226,7 @@ ROM provides the device half (`PHYDIO` / the `H.*` hooks).
 ```
 zerobas/
 ├── README.md
-├── PROVENANCE.md      # provenance log (sourced / quarantined)
+├── PROVENANCE.md      # provenance index -> per-component logs below
 ├── Makefile           # pasmo -> basic.rom (16 KB); `make patches` -> .ips/.bps
 ├── build-patches.sh   # splice into a stock C-BIOS page 1 -> zerobas-msx1.ips/.bps
 ├── zerobas-msx1.ips   # slot-0 page-1 patch, IPS (universal; used by installer)
@@ -238,7 +240,8 @@ zerobas/
 │   ├── expr.asm       # 16-bit integer expression evaluator (incl. PEEK)
 │   ├── poke.asm       # the POKE statement handler
 │   ├── bload.asm      # the BLOAD statement handler + ,R handoff
-│   └── sysvars.inc    # BIOS entry points + tokens + RAM scratch (all cited)
+│   ├── sysvars.inc    # BIOS entry points + tokens + RAM scratch (all cited)
+│   └── PROVENANCE.md  # BASIC-component provenance log
 ├── tape/
 │   ├── tape.asm       # cassette BIOS patch (TAPION / TAPIN / TAPIOF)
 │   ├── build-patches.sh        # assemble tape.asm -> zerobas-tape-msx1.ips/.bps
@@ -248,6 +251,8 @@ zerobas/
 │   ├── DESIGN.md      # design notes for the tape patch
 │   ├── docs/          # cassette spec and feasibility notes
 │   └── cassette-tool/ # host-side WAV/CAS analysis tools
+├── disk/
+│   └── PROVENANCE.md  # disk-component provenance log (FDC, FAT; work in progress)
 └── tools/
     ├── pad_rom.py     # pad/verify the ROM to exactly 16 KB
     ├── rom_patch.py   # make/apply/inspect IPS + BPS patches

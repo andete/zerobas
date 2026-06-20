@@ -4,11 +4,20 @@ Every address, constant, and algorithm in zerobas-tape must appear here with an
 independent **allowed** source, or be explicitly **quarantined**. An unexplained
 magic value blocks release.
 
-- **sourced** — traced to an allowed source (see [`README.md`](README.md) for the
-  list) or to this project's own black-box **oracle observation**.
-- **quarantined** — no copied source; derived from the documented format + CPU
-  clock and justified by oracle **round-trip**, or an original algorithm of ours.
-  **Never** lifted from a reference ROM or any BIOS disassembly.
+- **sourced** — the value itself is traceable to an allowed source (see
+  [`README.md`](README.md) for the list) or to this project's own black-box
+  **oracle observation**.
+- **quarantined** — **not** "suspect": it means the value is validated by **oracle
+  round-trip**, not by a citation, and is **never** lifted from a reference ROM or any
+  BIOS disassembly. A timing-loop count cannot be `sourced` even when cleanly derived,
+  because a bare count *could* coincide with the original's — so the firewall leans on
+  the round-trip guarantee instead. Two sub-reasons appear below:
+  - *derivable* — computed from allowed inputs (documented frequency + CPU clock +
+    oracle-measured cost); the derivation is supporting evidence, but the count itself
+    still carries no citation, hence quarantine. (The four FSK half-period counts.)
+  - *our algorithm* — an original routine of ours with no analogue in any reference
+    ROM, so no source exists or is possible. (The auto-baud lock, the threshold, the
+    leader/flush/dead-tape guards, the baud cache.)
 
 For a cassette signal, a quarantined *timing* constant is acceptable as long as the
 resulting **waveform round-trips against the oracle**: the format (frequencies,
@@ -110,13 +119,13 @@ until the recording round-trips through the host decoder and against the oracle.
 
 | Item | Value | Basis | Status |
 |------|-------|-------|--------|
-| CAS_HHALF / CAS_LHALF (1200 baud half-period counts) | 50 / 102 | **derived, not copied:** invert the documented 2400/1200 Hz tones through the half-period cost, `C = round((3579545/(2·f) − 26)/14.4)` ⇒ 49.98→50, 101.77→102. Inputs are all allowed: documented FSK freqs (Tech Handbook), the 3.58 MHz Z80 clock (hardware), and the `26 + 14.4·C` per-half cost measured from openMSX as a **black box** (oracle, not a ROM listing). Confirmed by round-trip | quarantined (derived) |
-| CAS_HHALF24 / CAS_LHALF24 (2400 baud) | 24 / 50 | same derivation one octave up (4800/2400 Hz) ⇒ 24.09→24, 49.98→50; 2400's low tone = 1200's high tone, so CAS_LHALF24 == CAS_HHALF | quarantined (derived) |
-| CAS_LONGLEN / CAS_SHORTLEN (leader cycles) | 4000 / 2000 | **our own choice, order of magnitude from the documented ~2 s leader** (4000 carrier cycles ≈ 1.7 s at 2400 Hz; short = half, for between-blocks re-sync). The exact count is deliberately *not* the original's HEADER value — long enough to lock, confirmed by round-trip | quarantined (our algorithm) |
-| CAS_SKIP / CAS_RUNLEN (auto-baud window) | 32 / 16 | **our own lock algorithm** (no original analogue — the reference reads a fixed baud from a sysvar, it does not measure the leader): skip the motor-restart spin-up transient, then average 16 clean leader halves. Validated by round-trip | quarantined (our algorithm) |
-| CAS_FLATMAX (leading-silence timeout budget) | 1500 | **our own dead-tape guard:** flat-timeout iterations (~3 ms each) tolerated before the first edge; ~1500 covers ~5 s, covering openMSX's ~2 s `LONG_SILENCE` pre-leader gap with margin, and only spent while the signal is absent | quarantined (our algorithm) |
-| CAS_FLUSHLEN (TAPOOF trailing carrier) | 32 | **our own write-tail length:** short high-freq carrier flushed after the last byte so the final stop bits clear the decoder; chosen long enough to register, short enough to not bloat the tail | quarantined (our algorithm) |
-| LOWLIM derivation | 1.75 × avg-short, in quarter-count units | **our own discrimination threshold** (paired with the auto-baud lock above — the reference has no measured threshold): a real long half is ~2×, the leader→data transition half ~1.5×, so 1.75× rejects the artifact with symmetric margin. Validated by round-trip | quarantined (our algorithm) |
+| CAS_HHALF / CAS_LHALF (1200 baud half-period counts) | 50 / 102 | *derivable:* invert the documented 2400/1200 Hz tones through the half-period cost, `C = round((3579545/(2·f) − 26)/14.4)` ⇒ 49.98→50, 101.77→102. Inputs are all allowed: documented FSK freqs (Tech Handbook), the 3.58 MHz Z80 clock (hardware), and the `26 + 14.4·C` per-half cost measured from openMSX as a **black box** (oracle, not a ROM listing). Confirmed by round-trip | quarantined |
+| CAS_HHALF24 / CAS_LHALF24 (2400 baud) | 24 / 50 | *derivable:* same derivation one octave up (4800/2400 Hz) ⇒ 24.09→24, 49.98→50; 2400's low tone = 1200's high tone, so CAS_LHALF24 == CAS_HHALF | quarantined |
+| CAS_LONGLEN / CAS_SHORTLEN (leader cycles) | 4000 / 2000 | *our algorithm:* our own choice, order of magnitude from the documented ~2 s leader (4000 carrier cycles ≈ 1.7 s at 2400 Hz; short = half, for between-blocks re-sync). The exact count is deliberately *not* the original's HEADER value — long enough to lock, confirmed by round-trip | quarantined |
+| CAS_SKIP / CAS_RUNLEN (auto-baud window) | 32 / 16 | *our algorithm:* lock window with no original analogue — the reference reads a fixed baud from a sysvar, it does not measure the leader. Skip the motor-restart spin-up transient, then average 16 clean leader halves. Validated by round-trip | quarantined |
+| CAS_FLATMAX (leading-silence timeout budget) | 1500 | *our algorithm:* dead-tape guard — flat-timeout iterations (~3 ms each) tolerated before the first edge; ~1500 covers ~5 s, covering openMSX's ~2 s `LONG_SILENCE` pre-leader gap with margin, and only spent while the signal is absent | quarantined |
+| CAS_FLUSHLEN (TAPOOF trailing carrier) | 32 | *our algorithm:* write-tail length — short high-freq carrier flushed after the last byte so the final stop bits clear the decoder; chosen long enough to register, short enough to not bloat the tail | quarantined |
+| LOWLIM derivation | 1.75 × avg-short, in quarter-count units | *our algorithm:* discrimination threshold paired with the auto-baud lock above (the reference has no measured threshold) — a real long half is ~2×, the leader→data transition half ~1.5×, so 1.75× rejects the artifact with symmetric margin. Validated by round-trip | quarantined |
 | CASIN_R14 | 14 | PSG register number carrying CAS-in (see hardware table) | sourced |
 
 ## Audit
