@@ -209,14 +209,40 @@ See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
       Probe 4 (BLOAD"A:FILE",R) remains the interpreter-glue oracle (loaded bytes +
       exec handoff; read path differential-confirmed via probe 2). See
       disk/PROVENANCE.md §INIT and §BDOS interface.)
-- [ ] **FULL BDOS differential vs MSX-DOS 1** *(follow-up to the narrow probe)* —
-      tighten `bdos_entry` to MSX-DOS FCB semantics (write back the FCB extent
-      (+12) / current-record (+32) fields; bound the last Sequential-Read record by
-      the true file size instead of the cluster-chain end) so the differential can
-      compare FCB-field mutations and a non-cluster-multiple file's partial final
-      record byte-for-byte. Then extend `disk_probe_bdos.py` to diff the FCB bytes
-      + a sub-record-EOF file. This changes shipped `disk/disk.asm`, so re-run the
-      `disk_probe_dskio` differential + the BLOAD/LOAD/RUN probes after.
+- [x] **FULL BDOS differential vs MSX-DOS 1** *(follow-up to the narrow probe)* —
+      tighten `bdos_entry` to MSX-DOS FCB semantics and extend `disk_probe_bdos.py`
+      to a 2-file differential (cluster-multiple + sub-record-EOF) plus FCB-field
+      capture.
+      (**PART A — sub-record EOF bounding: DONE, byte-identical.** `bdos_seqread`
+      now bounds the record stream by the true file size: Open seeds
+      `BDOS_BYTESLEFT` ($E542, 4-byte LE) from `FAT_FILESIZE`; each Sequential Read
+      delivers n = min(128, BYTESLEFT) real bytes followed by 128−n bytes of $00,
+      code $00, decrementing the counter, and returns EOF ($01) once it hits 0.
+      **MSX-DOS partial-record padding turned out to be $00 zero-fill** — oracle
+      observation captured by `disk_probe_bdos.py` PART A on real MSX-DOS 1.03
+      reading a 1500-byte `ORACLE2.BIN` (last record = 92 real + 36 × $00),
+      confirmed *actively* zeroed by pre-filling the DTA with $FF and seeing the
+      tail still read $00 (so not Ctrl-Z/$1A, not stale). The probe diffs all 12
+      delivered records (incl. the partial) + every A-code byte-for-byte: **PASS,
+      byte-identical** ref==ours. The original 2048-byte cluster-multiple case
+      still PASSes byte-identical too.
+      **PART B — FCB-field mutations: OBSERVED + DOCUMENTED divergence, not chased.**
+      `disk_probe_bdos.py` PART B captures the 37-byte FCB on both machines after
+      Open / 2 SeqReads / Close and reports a per-field compare. **Matched
+      (byte-identical ref==ours):** drive (+0) and the 8.3 name (+1..+11) — the
+      fields a reasonable FCB caller reads. **Documented intentional divergences
+      (reported, never failed):** extent (+12), record-count (+15), alloc-map
+      (+16..31), current-record (+32) — MSX-DOS advances this internal bookkeeping;
+      zerobas leaves it $00 because its ONLY `bdos_entry` callers (BLOAD/LOAD/RUN)
+      read A + the DTA and never an FCB field, so matching it has no functional
+      value (would be a clean-room rabbit hole). The probe's PASS/FAIL hinges on
+      PART A data+codes + the matched fields, not the divergences.
+      disk.rom rebuilt 16384 / 8 baseline warnings; basic.rom byte-identical.
+      Re-ran the whole disk suite (`init`, `dskio` differential vs CF-3300,
+      `bload_disk`, `load_disk`, `run_disk`, `bload_fcb`) + crunch + the four basic
+      regression probes — all green; the EOF tightening did NOT regress BLOAD/LOAD/
+      RUN (they stop at the BSAVE end / $0000 link before EOF). See
+      disk/PROVENANCE.md §BDOS interface.)
 - [x] **openMSX machine config** — machine XML that places zerobas-disk in
       internal slot 3-1, declares an FDC extension, attaches a test `.dsk`
       image, and pairs with the existing zerobas + zerobas-tape IPS patches in

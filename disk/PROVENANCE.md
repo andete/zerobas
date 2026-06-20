@@ -361,10 +361,11 @@ variable; zerobas calls through that vector using CP/M-compatible FCB calls.
 | Set DTA ($1A): store DE into `BDOS_DTA`; subsequent SeqReads copy to it | — | own code; $1A call number + DE=DTA convention sourced (MSX2 TH / MSX-DOS) | sourced |
 | `BDOS_DTA` default | $0080 | MSX2 TH, BDOS conventions (MSX-DOS default); INIT seeds it | sourced |
 | Records per sector = 512 / 128 = 4 | $04 | own derivation (sector size ÷ record size) | sourced |
-| Open → 17× SeqRead → Close delivers byte-identical records + return codes vs real MSX-DOS 1.03 | — | **NARROW differential oracle PASS** (`disk_probe_bdos.py`, msx-preservation): same `ORACLE.BIN` read on MSX-DOS and on our `bdos_entry` via CALSLT — Open/records/EOF/Close all byte-identical | oracle-confirmed |
-| Single open file: position in FAT iterator + BDOS_RECIDX, FCB extent (+12) / current-record (+32) fields unused | — | own design simplification (read-only loader subset); NOT differenced by the narrow oracle — the FULL FCB-field differential is a tracked follow-up | quarantined |
-| SeqRead EOF granularity = cluster-chain end (last record may pad past FAT_FILESIZE) | — | own design; CP/M record semantics. The narrow oracle uses an exact-cluster-multiple file so EOF lands clean and this is not exercised; exact sub-record byte-bounding is the FULL-differential follow-up | quarantined |
-| Register save/restore contract for the BLOAD→BDOS call | — | the Open/SeqRead/Close round-trip is now exercised by `disk_probe_bdos.py` (CALSLT in, A out); exact non-A register preservation across CALSLT still not textually sourced | quarantined |
+| Open → 17× SeqRead → Close delivers byte-identical records + return codes vs real MSX-DOS 1.03 (cluster-multiple file) | — | **NARROW differential oracle PASS** (`disk_probe_bdos.py`, msx-preservation): same `ORACLE.BIN` read on MSX-DOS and on our `bdos_entry` via CALSLT — Open/records/EOF/Close all byte-identical | oracle-confirmed |
+| SeqRead EOF bounded by true file size (`FAT_FILESIZE` → `BDOS_BYTESLEFT`): partial final record = n real bytes + (RECSIZE−n) $00 pad, code $00; EOF ($01) on the next read | — | **FULL differential oracle PASS** (`disk_probe_bdos.py`, PART A): a 1500-byte non-cluster-multiple `ORACLE2.BIN` read on MSX-DOS 1.03 and on our `bdos_entry` is byte-identical across all 12 delivered records (incl. the 92-byte partial) and the EOF code | oracle-confirmed |
+| Partial-record pad value = **$00 (zero-fill)** | — | **ORACLE OBSERVATION** (`disk_probe_bdos.py` PART A): MSX-DOS 1.03 returns the partial record with its tail beyond the file end set to $00 — confirmed actively zero-filled by pre-loading the DTA with $FF and seeing the tail still read $00 (so not Ctrl-Z/$1A, not stale). Record framing from MSX2 TH FCB sequential I/O / CP/M FCB | oracle-confirmed |
+| Single open file: position in FAT iterator + BDOS_RECIDX + BDOS_BYTESLEFT, FCB extent (+12) / current-record (+32) / record-count (+15) / alloc-map (+16..31) fields left at $00 | — | own design simplification (read-only loader subset). **DOCUMENTED INTENTIONAL DIVERGENCE**, not a fidelity gap: `disk_probe_bdos.py` PART B captures these fields on both machines and reports the divergence — MSX-DOS advances them (its internal FCB bookkeeping), zerobas does not. zerobas's only `bdos_entry` callers (BLOAD/LOAD/RUN) read **A + the DTA only, never FCB fields**, so matching this bookkeeping has no functional value. The fields a reasonable FCB caller *does* read — drive (+0) and the 8.3 name (+1..+11) — ARE byte-identical (PART B [MATCH]) | divergence-documented |
+| Register save/restore contract for the BLOAD→BDOS call | — | the Open/SeqRead/Close round-trip is exercised by `disk_probe_bdos.py` (CALSLT in, A out) over two files; exact non-A register preservation across CALSLT still not textually sourced | quarantined |
 
 ### FCB layout
 
@@ -403,13 +404,20 @@ variable; zerobas calls through that vector using CP/M-compatible FCB calls.
 > **Implementation note.** Realised in `disk/disk.asm` as `bdos_entry` plus
 > `bdos_open` / `bdos_seqread` / `bdos_close`, on top of the FAT12 helpers
 > (`fat_mount` / `fat_find` / `fat_open` / `fat_read_file_sector`). Open mounts
-> the BPB and searches the root directory for the FCB's 11-byte 8.3 name; the
-> sequential reader slices the 512-byte sector buffer into four 128-byte records
-> into the DTA, refilling from the cluster chain on exhaustion; Close is a no-op
-> success (read-only). The two `quarantined` rows above (single-open-file
-> position model, cluster-chain EOF granularity) are documented simplifications,
-> not copied behaviour. End-to-end validation waits on the openMSX machine
-> config + a test `.dsk` + oracle probe 3.
+> the BPB, searches the root directory for the FCB's 11-byte 8.3 name, and seeds
+> `BDOS_BYTESLEFT` from `FAT_FILESIZE`; the sequential reader slices the 512-byte
+> sector buffer into 128-byte records into the DTA, refilling from the cluster
+> chain on exhaustion, and **bounds the record stream by the true file size**:
+> when `BDOS_BYTESLEFT` reaches 0 every read returns EOF ($01), and the final
+> partial record is delivered with n = min(128, BYTESLEFT) real bytes followed by
+> 128−n bytes of $00 (oracle-observed MSX-DOS padding), code $00. Close is a
+> no-op success (read-only). The FCB bookkeeping fields (extent/current-record/
+> record-count/alloc-map) are left at $00 — a **documented intentional
+> divergence** (no `bdos_entry` caller reads them), characterised field-by-field
+> by `disk_probe_bdos.py` PART B; the matched fields (drive, 8.3 name) are
+> byte-identical. The whole BDOS read surface is now FULL-differential
+> oracle-confirmed byte-identical vs real MSX-DOS 1.03 across a cluster-multiple
+> file (narrow) and a 1500-byte sub-record-EOF file (PART A).
 
 ---
 
@@ -443,6 +451,7 @@ RAM outside known regions.
 | FAT12 transient work vars | $E4B2–$E4BE (13 bytes) | own choice (parity, byte-index, FAT sector, two FAT bytes, name pointer, dir-scan cursor + remaining) | sourced |
 | BDOS sequential-read record index | $E4BF (1 byte) | own choice (free page-3 RAM after FAT scratch; next 128-byte record within SECTOR_BUF, 0..4) | sourced |
 | BDOS settable DTA pointer (`BDOS_DTA`) | $E4C0–$E4C1 (word) | own choice (free page-3 RAM after the record index); default $0080, set via BDOS $1A | sourced |
+| BDOS bytes-remaining counter (`BDOS_BYTESLEFT`) | $E542–$E545 (4-byte LE) | own choice (free page-3 RAM past basic-core's `DISK_DTA` buffer $E4C2..$E541, clear of every disk + basic region — see basic/sysvars.inc); seeded from `FAT_FILESIZE` by Open, decremented per record to bound the partial final record + EOF | sourced |
 
 > **FAT12 geometry is derived, not stored as constants.** `fat_mount` reads the
 > boot sector and computes the first-FAT / first-root / root-sector-count /
@@ -507,9 +516,16 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
    through Open → 17× SeqRead → Close on real MSX-DOS 1.03 (booted on
    `National_CF-3300` from a DOS system disk, the `.COM` auto-run via AUTOEXEC.BAT)
    and on our `bdos_entry` (via CALSLT), and the Open result, all 16 records, the
-   EOF code, and the Close result are **byte-identical** — a passed NARROW
-   differential (scope caveat: cluster-multiple file, no FCB-field/sub-record-EOF
-   diff; the full differential is a tracked follow-up). The FAT12 read path
+   EOF code, and the Close result are **byte-identical**. **FULL differential now
+   landed too:** `disk_probe_bdos.py` PART A adds a 1500-byte non-cluster-multiple
+   `ORACLE2.BIN` whose last record is partial (92 real bytes), and PART B captures
+   the 37-byte FCB on both machines after Open / 2 SeqReads / Close. Result: the
+   12 delivered records (incl. the partial) + the EOF code are byte-identical, the
+   partial record's pad is **oracle-observed $00 zero-fill** (confirmed by
+   pre-filling the DTA with $FF), and the FCB drive + 8.3-name fields match;
+   MSX-DOS-internal FCB bookkeeping (extent/current-record/record-count/alloc-map)
+   is a reported **documented intentional divergence** (no `bdos_entry` caller
+   reads it). The FAT12 read path
    underneath is independently differential-confirmed via probe 2. Probe 4
    (BLOAD end-to-end) remains the *interpreter-glue* check, where the meaningful
    comparison is the loaded file content + exec handoff. Two design

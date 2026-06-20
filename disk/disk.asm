@@ -100,6 +100,13 @@ BDOS_RECIDX     equ     $E4BF   ; next 128-byte record within SECTOR_BUF (0..4)
 ; compatibility. Own choice for the variable location: free page-3 RAM after the
 ; BDOS record index. See disk/PROVENANCE.md §BDOS interface.
 BDOS_DTA        equ     $E4C0   ; current DTA pointer (word; default DTA_DEFAULT)
+; Bytes of the open file still undelivered, seeded from FAT_FILESIZE by Open and
+; decremented one record (up to RECSIZE) per Sequential Read. Bounds the partial
+; final record and the EOF point by the true file size (own choice for the
+; variable location: free page-3 RAM past basic-core's DISK_DTA buffer
+; $E4C2..$E541, clear of every other disk and basic region). 4-byte LE.
+; See disk/PROVENANCE.md §BDOS interface + §Scratch RAM.
+BDOS_BYTESLEFT  equ     $E542   ; bytes of the open file not yet delivered (4-byte LE)
 
 ; --- BPB field offsets within the boot sector (Microsoft FAT spec §3.1) -----
 BPB_BYTSPERSEC  equ     11      ; bytes per sector (word LE)
@@ -460,16 +467,22 @@ mtoff:
 ; Position model (own design / simplification): only one file is open at a time.
 ; The open file's chain position lives in the FAT iterator (fat_open / fat_read_
 ; file_sector); BDOS_RECIDX tracks which 128-byte record of the current 512-byte
-; SECTOR_BUF the next read delivers. The FCB extent (+12) and current-record
-; (+32) fields are not used. See disk/PROVENANCE.md §BDOS interface.
+; SECTOR_BUF the next read delivers; BDOS_BYTESLEFT (seeded from FAT_FILESIZE by
+; Open) bounds the partial final record and the EOF point by the true file size.
+; The FCB extent (+12) / current-record (+32) / record-count (+15) / alloc-map
+; (+16..31) bookkeeping fields are left untouched — a DOCUMENTED INTENTIONAL
+; DIVERGENCE from MSX-DOS (no bdos_entry caller reads them; differential-
+; characterised by disk_probe_bdos.py PART B). The drive (+0) and 8.3-name
+; (+1..+11) fields a reasonable caller reads stay byte-identical to MSX-DOS.
+; See disk/PROVENANCE.md §BDOS interface.
 bdos_entry:
                 ld      a, c
                 cp      BDOS_F_OPEN
                 jr      z, bdos_open
                 cp      BDOS_F_SEQRD
-                jr      z, bdos_seqread
+                jp      z, bdos_seqread
                 cp      BDOS_F_CLOSE
-                jr      z, bdos_close
+                jp      z, bdos_close
                 cp      BDOS_F_SETDTA
                 jr      z, bdos_setdta
                 ld      a, $FF          ; unsupported call
@@ -500,6 +513,12 @@ bdos_open:
                 call    fat_open
                 ld      a, RECPERSEC    ; buffer empty -> first read refills
                 ld      (BDOS_RECIDX), a
+                ; Seed the bytes-remaining counter from the true file size so
+                ; Sequential Read can bound the partial final record + EOF.
+                ld      hl, FAT_FILESIZE
+                ld      de, BDOS_BYTESLEFT
+                ld      bc, 4
+                ldir                    ; BDOS_BYTESLEFT = FAT_FILESIZE (4-byte LE)
                 xor     a               ; A = $00 success
                 ret
 bdos_open_failpop:
@@ -509,21 +528,54 @@ bdos_open_err:
                 ret
 
 ; bdos_seqread ($14) — read the next 128-byte record into the DTA (BDOS_DTA).
-; Refills SECTOR_BUF from the cluster chain when the four records of the current
-; sector are exhausted; EOF is reported when the chain ends.
+; The record stream is bounded by the true file size in BDOS_BYTESLEFT (seeded
+; from FAT_FILESIZE by Open, decremented per record): once it reaches 0 every
+; further read returns EOF, and the final partial record is delivered with only
+; n = min(RECSIZE, BYTESLEFT) real bytes followed by RECSIZE-n zero bytes, the
+; whole record returned with code $00; EOF ($01) comes on the NEXT read.
 ;   out: A = $00 record delivered / $01 end-of-file (MSX2 TH, BDOS conventions)
-; Simplification (own design): EOF granularity is the cluster chain, so the last
-; record may include padding past FAT_FILESIZE (CP/M record semantics). Exact
-; byte-length bounding via FAT_FILESIZE is deferred to oracle probe 3.
+; Partial-record zero-fill provenance: ORACLE OBSERVATION of real MSX-DOS 1.03 on
+; a 1500-byte file (disk_probe_bdos.py, msx-preservation) — the last record is
+; 92 real bytes + 36 bytes of $00 (confirmed by pre-filling the DTA with $FF: the
+; tail still returns $00, so MSX-DOS actively zero-fills, not Ctrl-Z/stale data),
+; code $00; the following read returns $01. CP/M FCB sequential-I/O record model
+; (MSX2 TH, FCB sequential I/O) supplies the record framing.
 bdos_seqread:
+                ; EOF once every file byte has been delivered (BYTESLEFT == 0).
+                ld      hl, (BDOS_BYTESLEFT)        ; low word
+                ld      de, (BDOS_BYTESLEFT + 2)    ; high word
+                ld      a, h
+                or      l
+                or      d
+                or      e
+                jr      z, bsr_eof                  ; no bytes left -> EOF
                 ld      a, (BDOS_RECIDX)
                 cp      RECPERSEC
                 jr      c, bsr_have     ; records still left in SECTOR_BUF
                 call    fat_read_file_sector
-                jr      c, bsr_eof      ; chain ended -> EOF
+                jr      c, bsr_eof      ; chain ended early -> EOF (shouldn't, BYTESLEFT>0)
                 xor     a
                 ld      (BDOS_RECIDX), a    ; back to record 0
 bsr_have:
+                ; n = real bytes this record = min(RECSIZE, BYTESLEFT).
+                ; BYTESLEFT is nonzero here; if the high word is set or low word
+                ; >= RECSIZE then a full RECSIZE record; otherwise n = low byte.
+                ld      hl, (BDOS_BYTESLEFT + 2)    ; high word
+                ld      a, h
+                or      l
+                jr      nz, bsr_full                ; >= 65536 left -> full record
+                ld      hl, (BDOS_BYTESLEFT)        ; low word
+                ld      a, h
+                or      a
+                jr      nz, bsr_full                ; >= 256 left -> full record
+                ld      a, l                        ; < 256 bytes left
+                cp      RECSIZE
+                jr      c, bsr_partial              ; < 128 -> partial record
+bsr_full:
+                ld      a, RECSIZE                  ; full 128-byte record
+bsr_partial:
+                ; A = n (real bytes, 1..128). Compute source in SECTOR_BUF.
+                push    af                          ; save n
                 ld      a, (BDOS_RECIDX)
                 ld      h, 0
                 ld      l, a
@@ -537,8 +589,40 @@ bsr_have:
                 ld      de, SECTOR_BUF
                 add     hl, de          ; HL = source record in SECTOR_BUF
                 ld      de, (BDOS_DTA)  ; settable DTA (BDOS $1A); default $0080
-                ld      bc, RECSIZE
-                ldir                    ; copy 128 bytes to the DTA
+                pop     af              ; A = n
+                push    af              ; keep n for the decrement
+                ld      c, a
+                ld      b, 0            ; BC = n real bytes
+                ldir                    ; copy n real bytes to the DTA
+                ; zero-fill the remaining RECSIZE - n bytes of the record (DE now
+                ; points just past the real bytes in the DTA).
+                pop     af              ; A = n
+                push    af              ; keep n for the decrement
+                neg
+                add     a, RECSIZE      ; A = RECSIZE - n (pad count, 0..127)
+                jr      z, bsr_nopad
+                ld      b, a            ; B = pad byte count
+bsr_padloop:
+                xor     a
+                ld      (de), a         ; zero-fill (oracle: MSX-DOS pads with $00)
+                inc     de
+                djnz    bsr_padloop
+bsr_nopad:
+                ; BYTESLEFT -= n (n in A on stack); 4-byte LE subtract.
+                pop     af              ; A = n
+                ld      hl, BDOS_BYTESLEFT
+                ld      c, a
+                ld      a, (hl)
+                sub     c
+                ld      (hl), a
+                inc     hl
+                ld      b, 3            ; propagate borrow through the upper 3 bytes
+bsr_borrow:
+                ld      a, (hl)
+                sbc     a, 0
+                ld      (hl), a
+                inc     hl
+                djnz    bsr_borrow
                 ld      a, (BDOS_RECIDX)
                 inc     a
                 ld      (BDOS_RECIDX), a
