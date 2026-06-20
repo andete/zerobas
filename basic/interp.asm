@@ -507,6 +507,17 @@ bl_done:
 ; spec-tokens-statements.md). PEEK is a two-byte function token ($FF $97).
 kwtable:
                 db      5,"BLOAD",1,BLOAD_TOKEN
+                ; SAVE / BSAVE statement tokens (oracle-LOCKED, Philips VG-8020;
+                ; MSX2 TH Table 2.20). BSAVE must precede SAVE in the crunch: the
+                ; tokeniser attempts a keyword match at EVERY position, so at the
+                ; 'B' of "BSAVE" match_kw must find the full "BSAVE" entry (it does
+                ; — it compares the whole keyword and returns the first full match,
+                ; so 'B' is never copied verbatim and "SAVE" is never matched at
+                ; position 1). "BSAVE" and "BLOAD" share only the leading 'B', so
+                ; there is no longest-match hazard between them. Order within the
+                ; table is otherwise free (match_kw is full-keyword, not prefix).
+                db      5,"BSAVE",1,BSAVE_TOKEN
+                db      4,"SAVE",1,SAVE_TOKEN
                 ; Cassette program-load keywords (oracle-confirmed; MSX2 TH
                 ; Table 2.20). CLOAD precedes BLOAD's family for no special
                 ; reason — match_kw compares the full keyword, so order is free.
@@ -619,6 +630,10 @@ exec_stmt:
                 jp      z,ex_load
                 cp      RUN_TOKEN
                 jp      z,ex_run
+                cp      BSAVE_TOKEN
+                jp      z,ex_bsave
+                cp      SAVE_TOKEN
+                jp      z,ex_save
                 cp      POKE_TOKEN
                 jp      z,ex_poke
                 cp      VPOKE_TOKEN
@@ -709,6 +724,12 @@ ex_load:
 ex_run:
                 inc     hl                  ; HL -> args (past the RUN token)
                 jp      do_run
+ex_bsave:
+                inc     hl                  ; HL -> args (past the BSAVE token)
+                jp      do_bsave
+ex_save:
+                inc     hl                  ; HL -> args (past the SAVE token)
+                jp      do_save
 ex_poke:
                 inc     hl                  ; HL -> args (past the POKE token)
                 jp      do_poke

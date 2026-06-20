@@ -1251,17 +1251,20 @@ The matching `do_tape_prog` fix is exercised by the same length-driven path;
 on-device end-to-end tape load remains gated on the separate zerobas-tape
 `$00`-run TAPIN framing limitation (§Phase 1 cassette load, unchanged).
 
-## SAVE / BSAVE statement tokens — oracle-locked (tokeniser bytes only; no handler yet)
+## SAVE / BSAVE statement tokens — oracle-locked (tokens + IMPLEMENTED handlers)
 
-zerobas has **no** `SAVE` or `BSAVE` statement support yet. The disk-WRITE
-workstream will add `BSAVE"A:F",start,end[,exec]` and `SAVE"A:F"[,A]` interpreter
-statements (the write complement of the `§disk BLOAD execute` / `§disk LOAD` read
-paths). Before that lands, this section **oracle-LOCKS the tokeniser bytes** for
-both verbs so the later interpreter agent has a sourced target. It documents the
-crunch bytes ONLY — no handler, no dispatch, no `kwtable` entry is added here, and
-the crunch is **deliberately not yet byte-identical** (zerobas keeps `SAVE`/`BSAVE`
-as verbatim ASCII until the interpreter agent adds the tokens — see "what zerobas
-does today" below).
+> **Implemented** (see *§disk SAVE / BSAVE* below for the handler write side).
+> The two crunch tokens `$D0` (BSAVE) / `$BA` (SAVE) are now `equ`'d in
+> `basic/sysvars.inc`, added to `kwtable`, dispatched in `interp.asm`, and the
+> `do_bsave` / `do_save` handlers live in `basic/save.asm`. The crunch is now
+> **byte-identical** to the VG-8020 (the four `bsave…`/`save…` lines are PERMANENT
+> cases in `basic_probe_crunch.py`'s `CRUNCH_ONLY`, ALL PASS). This section remains
+> as the **token oracle-lock evidence**; the paragraphs below that say "no handler
+> yet" describe the PRE-implementation state and are kept for the provenance trail.
+
+This section **oracle-LOCKS the tokeniser bytes** for both verbs from the
+reference VG-8020's crunch buffer. It documented the crunch bytes; the handler
+write side is documented in *§disk SAVE / BSAVE*.
 
 This is the same clean-room method that locked `BLOAD`/`CLOAD`/`LOAD`/`RUN`
 (§first light, §Phase 1 cassette load, §disk RUN) and POKE/PEEK/VPOKE/VPEEK
@@ -1373,10 +1376,92 @@ ONLY the missing piece: the two crunch tokens.
 | SAVE filename kept verbatim ASCII after the token | — | oracle (`save"cas:name"`/`save"a:prog"` crunch) | sourced |
 | SAVE `,A` ASCII-save flag crunches as comma `$2C` + the letter `A` (`$41`) upcased VERBATIM — NOT a token | — | oracle (`save"a:prog",a` → `… BA … 2C 41 00`); same upcasing as BLOAD's `,R` option letter | sourced |
 | `$D0` BSAVE crunch token vs `$D0` cassette binary-file id (§first light): same byte, DIFFERENT namespaces (keyword token vs tape data byte) — not a collision | — | observed (both already sourced); cross-namespace coincidence noted | sourced |
-| `SAVE_TOKEN`/`BSAVE_TOKEN` equs in basic/sysvars.inc | NOT added yet (would trip pasmo "never used") | deferred to the interpreter agent that adds the handlers | sourced |
+| `SAVE_TOKEN`/`BSAVE_TOKEN` equs in basic/sysvars.inc | **now added + USED** (`$BA`/`$D0`); kwtable + dispatch + handlers live (*§disk SAVE / BSAVE*) | implemented | sourced |
 
 No quarantined items: both token bytes are oracle-OBSERVED and Table-2.20
 cross-checked, exactly like every other load/store token in this log. The only
-own-design choices are deferred to the future handler (file-format writing,
-already pre-sourced in the disk read sections) and are out of scope here — this
-task documents the **tokeniser bytes only**.
+own-design choices are in the handler (file-format writing, already pre-sourced in
+the disk read sections), documented in *§disk SAVE / BSAVE* below.
+
+## disk SAVE / BSAVE — write side (basic/save.asm, basic/interp.asm, basic/sysvars.inc; disk/disk.asm BDOS $15/$16)
+
+The WRITE complement of *§disk BLOAD execute* (BSAVE binary) and *§disk LOAD*
+(tokenised BASIC). `do_bsave` / `do_save` (basic/save.asm) crunch from the
+oracle-locked `$D0` / `$BA` tokens (*§SAVE / BSAVE statement tokens*), parse the
+device string + arguments, and write a real FAT12 file through the disk ROM's BDOS
+FCB write subset (Create $16 / Sequential Write $15 / Close $10), reusing the read
+side's plumbing (`parse_disk_fcb`, `bdos_call`, `DISK_DTA`, `load_error`).
+
+- **`BSAVE"A:F",start,end[,exec]`** writes the on-disk BSAVE binary
+  `[$FE][start:2 LE][end:2 LE][exec:2 LE]` then `RAM[start..end]` inclusive. The
+  `$FE` header layout is already sourced in *§disk BLOAD execute* (the exact format
+  the read side consumes). `start`/`end`/`exec` are evaluated through the ordinary
+  expression evaluator (`eval`, basic/expr.asm), so `&H` addresses decode via the
+  `$0C` HEX_TOKEN like everywhere else. **Default exec = start** when the third arg
+  is omitted (own-design default, matching the read side and MSX BASIC — a BSAVE
+  with no entry point runs from its load address; *oracle-confirmed by the
+  round-trip* in `disk_probe_save.py`: `BSAVE…,&HC000,&HC011` with no `,exec`, then
+  `BLOAD…,R`, jumps to `$C000`).
+- **`SAVE"A:F"`** writes the on-disk tokenised-BASIC file `[$FF]` then the
+  in-memory line-link program image `TXTBASE..PRGEND+1` inclusive (`PRGEND` points
+  at the `$0000` end-of-program marker, so the last image byte is `PRGEND+1` — the
+  high byte of the end-link). The `$FF` marker + line-link format are already
+  sourced in *§disk LOAD*. This is exactly the byte image `disk_prog_load` /
+  `do_tape_prog` read back, so a SAVE→LOAD/RUN round-trips byte-identically (oracle
+  `disk_probe_save.py`).
+
+**Device scope — DISK ONLY (own-design descope).** A `"CAS:"` device (tape write)
+is **out of scope** for both verbs: `reject_cas` peeks the prefix
+non-destructively (exactly like `do_bload`'s CAS: peek, so `"CASE.BIN"` falls
+through cleanly) and takes `load_error` on a `"CAS:"` match. Tape WRITE would need
+the cassette BIOS write contract (TAPOOH/TAPOUT/TAPLOT), which this build does not
+implement. Documented limitation, not a divergence from a reference behaviour we
+reproduce.
+
+**SAVE `,A` ASCII form — out of scope (own-design descope).** `SAVE"name",A`
+(detokenised ASCII save) takes `load_error`: any comma after the SAVE filename is
+rejected (so `,A` and any other flag are unsupported). Reproducing the ASCII
+detokeniser output byte-for-byte is a larger task; the default tokenised save is
+the supported form. Documented limitation.
+
+**Shared disk-write helper (own design, mirrors the read side).**
+`disk_write_begin` (require `DISKSLOT_OK`; Set-DTA $1A → `DISK_DTA`; Create $16) /
+`disk_putbyte` (fill the 128-byte `DISK_DTA` record, Sequential Write $15 when full,
+reset the index) / `disk_write_end` (zero-pad + flush the partial final record,
+Close $10) factor the Create+accumulate+Close cycle used by both handlers — the
+write analogue of how the read side shares `disk_getbyte` / `bdos_call`. `DSV_OFF`
+($E0EC) is the record fill index; `DSV_PTR` ($E0ED) / `DSV_END` ($E0EF) drive the
+source walk; all in the free page-$E0 scratch gap, collision-checked clear of the
+read-side `DTA_OFF`/`DTA_VALID`/`BDOS_RES` and the disk ROM's own scratch.
+
+**Record-rounded file size (BDOS property, not a handler choice).** The disk ROM's
+Sequential Write writes a FIXED 128-byte record from the DTA and Close stamps the
+directory size as `records × 128` (disk/disk.asm `bdos_seqwrite` / `wrbytes_add_
+recsize` — out of scope, byte-identical). So a saved file's length is rounded UP to
+the next 128-byte boundary with trailing zero-fill. This is **benign for both
+formats**: the BSAVE reader is bounded by the `end` address in the `$FE` header and
+the tokenised reader stops at the `$0000` end-link — neither reads into the pad. A
+real MSX-DOS cross-read sees the same record-rounded size (a property of this BDOS
+implementation; documented in disk/PROVENANCE.md).
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| BSAVE/SAVE statement dispatch (`$D0`→`do_bsave`, `$BA`→`do_save`) | — | oracle-locked tokens (*§SAVE / BSAVE statement tokens*) | sourced |
+| on-disk BSAVE binary `[$FE][start][end][exec]` + `RAM[start..end]` | `$FE` | MSX-BASIC file formats (already sourced, §disk BLOAD execute) | sourced |
+| on-disk tokenised-BASIC `[$FF]` + line-link image `TXTBASE..PRGEND+1` | `$FF` | MSX-BASIC file formats (already sourced, §disk LOAD) | sourced |
+| BDOS Create / Sequential Write / Close call numbers | $16 / $15 / $10 | MSX2 TH / MSX-DOS BDOS call table | sourced |
+| default exec address = start when `,exec` omitted | — | own design (matches read side / MSX BASIC); oracle round-trip `disk_probe_save.py` | sourced |
+| `"CAS:"` tape WRITE rejected (`reject_cas` → `load_error`) | — | own-design descope (no cassette write contract in this build) | quarantined |
+| SAVE `,A` ASCII-save form rejected (`load_error`) | — | own-design descope (ASCII detokeniser out of scope) | quarantined |
+| `DSV_OFF`/`DSV_PTR`/`DSV_END` write-stream scratch | $E0EC/$E0ED/$E0EF | own choice (free page-$E0 RAM, collision-checked) | sourced |
+| record-rounded file size (128-byte pad) | — | disk ROM BDOS property (disk/disk.asm, out of scope); benign for both readers | sourced |
+
+Oracle confirmation: `disk_probe_save.py` (msx-preservation) — three round-trips on
+`C-BIOS_MSX1_BASIC_DISK` against a /tmp writable copy of test720.dsk: BSAVE→BLOAD
+(data byte-identical), BSAVE→BLOAD,R (default-exec handoff fires at the JR$
+landmark, `$D000`=`$5A`), SAVE→NEW→RUN (relinked store byte-identical + program
+ran). Crunch byte-identical via `basic_probe_crunch.py` (the four `bsave…`/`save…`
+CRUNCH_ONLY cases). The MSX-DOS cross-read (the disk ROM's write side proven valid
+to genuine MSX-DOS) is already established for the BDOS layer by
+`disk_probe_fwrite.py` (disk/PROVENANCE.md §FAT12 write-back); these handlers only
+drive that proven BDOS write subset.

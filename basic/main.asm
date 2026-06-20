@@ -86,6 +86,11 @@
 ; `relink` / `new_prog`, so it follows bload.asm in the include order.
                 include "basic/cload.asm"
 
+; The BSAVE / SAVE disk-write statement handlers (defines `do_bsave`, `do_save`)
+; + the shared disk-write helper. Reuses bload.asm's `load_error` / `dev_cas` /
+; `parse_disk_fcb` / `bdos_call` and expr.asm's `eval`, so it follows them.
+                include "basic/save.asm"
+
 ; Stored numbered-line program: storage, NEW, RUN (defines `dispatch_line`).
                 include "basic/program.asm"
 

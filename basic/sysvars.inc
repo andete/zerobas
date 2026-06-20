@@ -82,12 +82,14 @@ BLOAD_TOKEN     equ     $CF     ; spec-tokenise.md
 CLOAD_TOKEN     equ     $9B     ; CLOAD ["filename"] (cassette tokenised-BASIC load)
 LOAD_TOKEN      equ     $B5     ; LOAD "CAS:filename" (unified tape load)
 ; SAVE / BSAVE statement tokens are oracle-LOCKED (Philips VG-8020 KBUF via
-; basic_probe_crunch.py; cross-checked MSX2 TH Table 2.20) but NOT yet equ'd:
-; the WRITE workstream has no handler yet, and an unused equ would trip pasmo's
-; "never used" warning (basic.rom must stay 0-warnings). Confirmed values, to be
-; added by the interpreter agent when the handlers land: SAVE = $BA, BSAVE = $D0
-; (both single-byte statement tokens, NOT $FF-prefixed). See PROVENANCE.md
-; "SAVE / BSAVE statement tokens — oracle-locked" for the full KBUF evidence.
+; basic_probe_crunch.py; cross-checked MSX2 TH Table 2.20). Both are single-byte
+; statement tokens, NOT $FF-prefixed. See PROVENANCE.md "SAVE / BSAVE statement
+; tokens — oracle-locked" for the full KBUF evidence. NOTE: BSAVE_TOKEN ($D0)
+; equals the cassette binary-file id BINARY_ID ($D0) by NUMERIC coincidence only
+; — one is a keyword token in the crunch stream, the other a cassette header
+; byte; they are kept as SEPARATELY NAMED constants on purpose (no collision).
+SAVE_TOKEN      equ     $BA     ; SAVE "device:name"[,A]   (statement)
+BSAVE_TOKEN     equ     $D0     ; BSAVE "device:name",start,end[,exec] (statement)
 REM_TOKEN       equ     $8F     ; spec-tokens-statements.md; swallows rest of line
 POKE_TOKEN      equ     $98     ; spec-tokens-statements.md
 ; PEEK is a *function* token: a $FF prefix followed by a second byte.
@@ -327,6 +329,13 @@ DISKSLOT_OK     equ     $E0E8   ; 1 = DISKSLOT holds a valid disk-ROM slot id
 DTA_OFF         equ     $E0E9   ; next unread byte index in DISK_DTA (0..128)
 DTA_VALID       equ     $E0EA   ; bytes available in DISK_DTA this record (0..128)
 BDOS_RES        equ     $E0EB   ; last BDOS result byte (A) returned across CALSLT
+; SAVE / BSAVE disk-write streaming state (page $E0, $E0EC.. gap, dead outside a
+; SAVE/BSAVE). disk_putbyte fills DISK_DTA[0..127]; when the record is full it
+; issues a Sequential Write ($15) and resets the index. DSV_OFF is the next fill
+; index; DSV_PTR / DSV_END drive the do_save program-image source walk.
+DSV_OFF         equ     $E0EC   ; next fill index into DISK_DTA (0..128)
+DSV_PTR         equ     $E0ED   ; SAVE: current source byte pointer (2)
+DSV_END         equ     $E0EF   ; SAVE/BSAVE: last source byte addr, inclusive (2)
 ; BLOAD's own Disk Transfer Area: a writable 128-byte page-3 buffer the BLOAD
 ; path hands to BDOS $1A so each SeqRead record lands here (the $0080 default is
 ; BIOS ROM under Disk BASIC and would silently fail). Placed at $E4C2, just past
@@ -343,6 +352,13 @@ BDOS_OPEN       equ     $0F     ; FCB Open               (DE = FCB; A=$00 ok/$FF
 BDOS_CLOSE      equ     $10     ; FCB Close              (DE = FCB)
 BDOS_SEQRD      equ     $14     ; FCB Sequential Read    (A=$00 record / $01 EOF)
 BDOS_SETDTA     equ     $1A     ; Set DTA Address        (DE = new DTA)
+; BDOS WRITE calls the SAVE / BSAVE path passes to the disk ROM's bdos_entry
+; (same MSX-DOS BDOS table as disk/disk.asm; the two sides must agree). Source:
+; MSX2 Technical Handbook / MSX-DOS BDOS call table. Create truncates-or-makes the
+; file; Sequential Write writes one fixed 128-byte record FROM the DTA; Close
+; flushes the partial sector and stamps the directory size.
+BDOS_SEQWR      equ     $15     ; FCB Sequential Write   (writes 128 bytes FROM DTA)
+BDOS_CREATE     equ     $16     ; FCB Create file        (DE = FCB; A=$00 ok/$FF fail)
 ; Disk BSAVE on-disk binary-file header (MSX-BASIC file formats — MSX Wiki /
 ; MSX Resource Center, an allowed public language reference). 7 bytes, then raw
 ; data: [$FE][start:2 LE][end:2 LE][exec:2 LE]. This is the DISK format and is

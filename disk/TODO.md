@@ -499,6 +499,42 @@ once the BDOS API is stable.
       body store (a pre-existing `do_tape_prog`/`disk_prog_load` limitation, see
       §disk LOAD); the test fixture avoids embedded `$00` so the shared loop is
       faithfully exercised.)
+- [x] **`SAVE"A:F"` / `BSAVE"A:F",start,end[,exec]`** — the disk WRITE statements
+      (the write complement of disk BLOAD / LOAD). `basic/sysvars.inc`: the
+      oracle-LOCKED tokens are now `equ`'d + USED (`SAVE_TOKEN`=$BA,
+      `BSAVE_TOKEN`=$D0, kept distinct from the same-valued cassette `BINARY_ID`
+      $D0) plus the BDOS write call numbers (`BDOS_SEQWR`=$15, `BDOS_CREATE`=$16)
+      and write-stream scratch (`DSV_OFF`=$E0EC/`DSV_PTR`=$E0ED/`DSV_END`=$E0EF,
+      free page-$E0 gap). `basic/interp.asm`: `BSAVE`/`SAVE` added to `kwtable`
+      (BSAVE before SAVE — match_kw is full-keyword so `BSAVE` is found at the 'B',
+      never split into `B`+`SAVE`), and `$D0`→`ex_bsave`→`do_bsave` /
+      `$BA`→`ex_save`→`do_save` dispatch. `basic/save.asm` (new): `do_bsave`
+      parses the filename (`reject_cas` rejects `"CAS:"` tape-write; `parse_disk_fcb`),
+      `eval`s start/end/optional exec (default exec=start), then writes
+      `[$FE][start][end][exec]`+`RAM[start..end]` via the shared disk-write helper;
+      `do_save` writes `[$FF]`+the in-memory line-link image `TXTBASE..PRGEND+1`
+      (`,A` ASCII save out of scope → `load_error`). Shared helper
+      `disk_write_begin`(require DISKSLOT_OK; Set-DTA $1A; Create $16) /
+      `disk_putbyte`(fill the 128-byte DTA record, SeqWrite $15 when full) /
+      `disk_write_end`(zero-pad+flush partial + Close $10) mirrors the read side's
+      `disk_getbyte`/`bdos_call` sharing. **Crunch byte-identical** vs Philips
+      VG-8020 (`basic_probe_crunch.py`, four new permanent `CRUNCH_ONLY` cases:
+      `bsave"x",&hc0c1,&hc031,&hc0c2` → `… D0 22 78 22 2C 0C C1 C0 2C 0C 31 C0 2C 0C
+      C2 C0 00`, `bsave"a:prog.bin",&hc000,&hc031`, `save"a:prog"`, `save"a:prog",a`
+      → `… BA 22 61 3A 70 72 6F 67 22 2C 41 00`; ALL PASS). **Validated end-to-end**
+      (openMSX, `disk-spec/tools/disk_probe_save.py`, new) on `C-BIOS_MSX1_BASIC_DISK`
+      against a /tmp writable copy of test720.dsk: BSAVE→BLOAD (data byte-identical),
+      BSAVE→BLOAD,R (default-exec handoff fires at the JR$ landmark, `($D000)`=$5A),
+      SAVE→NEW→RUN (relinked store at $8001 byte-identical + program ran,
+      `($D002)`=$7B). basic.rom 16384/0 warnings; disk.rom untouched
+      (16384/7 baseline warnings, `cmp` byte-identical). Regressions green: crunch
+      (incl. controlflow/loops/data/statements), disk `init`/`bload_disk`/`load_disk`/
+      `run_disk`/`bload_fcb` (its `do_disk_bload` landmark refreshed $5334→$5355 for
+      this code shift)/`load_embedded_nul`. **Divergences (own-design descopes):**
+      `"CAS:"` tape write unsupported; SAVE `,A` ASCII save unsupported; on-disk file
+      size is record-rounded (128-byte pad) by the disk ROM's BDOS — benign (the
+      BSAVE reader stops at `end`, the tokenised reader at the `$0000` end-link).
+      See `basic/PROVENANCE.md` §disk SAVE / BSAVE.
 - [x] **Provenance entries** — document BDOS call numbers, FCB layout, and
       disk-BSAVE header format in `PROVENANCE.md`; oracle probes to confirm
       byte-identical behaviour vs reference
