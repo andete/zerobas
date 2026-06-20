@@ -44,6 +44,8 @@ tk_nondigit:
                 jr      nc,tk_notkw
                 cp      REM_TOKEN           ; REM swallows the rest of the line
                 jp      z,tk_rem_rest
+                cp      DATA_TOKEN          ; DATA body is stored verbatim (to ':')
+                jp      z,tk_data_rest
                 call    branch_lineno       ; GOTO/GOSUB/THEN/… <n> -> $0E,<n LE>
                 jp      tokenise
 tk_notkw:
@@ -109,6 +111,16 @@ tk_rem_rest:
                 inc     de
                 inc     hl
                 jr      tk_rem_rest
+tk_data_rest:                               ; DATA body verbatim up to ':' or EOL
+                ld      a,(hl)              ; (oracle: items stored as ASCII text;
+                or      a                   ;  ':' ends DATA, the next statement is
+                jp      z,tk_end            ;  crunched normally). Quoted ':' inside
+                cp      COLON               ;  DATA is not special-cased (no strings).
+                jp      z,tokenise
+                ld      (de),a
+                inc     de
+                inc     hl
+                jr      tk_data_rest
 tk_end:
                 xor     a
                 ld      (de),a              ; 0x00 terminator
@@ -470,8 +482,12 @@ exec_stmt:
                 jp      z,ex_poke
                 cp      REM_TOKEN
                 jr      z,ex_rem
-                cp      DATA_TOKEN          ; DATA: skipped at run time (like REM)
-                jr      z,ex_rem
+                cp      DATA_TOKEN          ; DATA: skip this statement at run time
+                jp      z,ex_data
+                cp      READ_TOKEN
+                jp      z,ex_read
+                cp      RESTORE_TOKEN
+                jp      z,ex_restore
                 cp      GOTO_TOKEN
                 jp      z,ex_goto
                 cp      GOSUB_TOKEN
@@ -504,6 +520,16 @@ ex_end:
                 ret
 ex_rem:
                 ret                         ; rest of line is a comment -> done
+ex_data:                                    ; DATA is a no-op at run time: skip its
+                inc     hl                  ; verbatim body up to ':' or EOL, then
+exd_lp:                                     ; continue with the next statement.
+                ld      a,(hl)
+                or      a
+                ret     z                   ; end of line
+                cp      COLON
+                jp      z,exec_stmt         ; ':' -> next statement runs
+                inc     hl
+                jr      exd_lp
 ex_bload:
                 inc     hl                  ; HL -> args (past the BLOAD token)
                 jp      do_bload

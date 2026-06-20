@@ -149,12 +149,16 @@ cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`.
   body), so subroutines and loops nest and span lines. Conditions use real
   comparison operators — `=` `<` `>` and the compound `<=` `>=` `<>` (signed
   16-bit, yielding `-1`/`0`). The `FOR` loop is bottom-tested (the body always
-  runs at least once), matching the VG-8020 oracle. **Still out:** `DATA`/`READ`
-  and `ON … GOTO`/`ELSE <line>` branch lists. See
+  runs at least once), matching the VG-8020 oracle. `DATA`/`READ`/`RESTORE` work
+  too: `DATA` items are stored as verbatim ASCII (byte-identical to the
+  reference — the oracle stores them as text, not number tokens), `READ` parses
+  them at run time into variables across statements and lines, and
+  `RESTORE [<line>]` rewinds the data cursor. **Still out:** `ON … GOTO` and
+  `ELSE <line>` branch lists, and string DATA. See
   [`spec-controlflow.md`](https://github.com/andete/msx-preservation/blob/main/basic-spec/docs/spec-controlflow.md).
-  Validated on openMSX by `basic_probe_controlflow.py` and `basic_probe_loops.py`
-  (stored programs + branches + loops) and `basic_probe_crunch.py` (byte-identical
-  tokenisation).
+  Validated on openMSX by `basic_probe_controlflow.py`, `basic_probe_loops.py`,
+  `basic_probe_data.py` (stored programs + branches + loops + data) and
+  `basic_probe_crunch.py` (byte-identical tokenisation).
 - Variables are single-letter integers (`A`–`Z`); no strings, arrays, or
   multi-character names. Expressions have `+ - *`, the comparisons
   `= < > <= >= <>`, and `PEEK` (no `/`, no string ops).
@@ -186,6 +190,10 @@ python3 basic-spec/tools/basic_probe_controlflow.py \
 
 # Step B: subroutines + loops (GOSUB/RETURN, FOR…NEXT incl. nesting)
 python3 basic-spec/tools/basic_probe_loops.py \
+    --cart /path/to/zerobas/basic.rom
+
+# Step B: DATA / READ / RESTORE (ASCII items parsed across lines)
+python3 basic-spec/tools/basic_probe_data.py \
     --cart /path/to/zerobas/basic.rom
 ```
 

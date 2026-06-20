@@ -142,3 +142,11 @@ GOSUB_STK_END   equ     GOSUB_STK + GOSUB_DEPTH*4   ; $E070
 FOR_STK         equ     $E070   ; FOR-stack base
 FOR_DEPTH       equ     8
 FOR_STK_END     equ     FOR_STK + FOR_DEPTH*9       ; $E0B8 (stays below LINEBUF)
+; DATA / READ / RESTORE state. The reference stores DATA items as verbatim ASCII
+; text (oracle: `data 5,6` -> $84 $20 '5' ',' '6'), so READ parses ASCII from the
+; stored program at run time and a DATA cursor walks the $84-tagged statements.
+DATASTATE       equ     $E0B8   ; 0 = unpositioned (RESTORE), 1 = ready, 2 = exhausted
+DATAPTR         equ     $E0B9   ; next unread DATA item (ASCII) in the program (2)
+DATALINE        equ     $E0BB   ; link-field of the line holding DATAPTR (2)
+RESTORE_LINE    equ     $E0BD   ; link-field a READ seeks DATA from when unpositioned (2)
+READVAR         equ     $E0BF   ; READ: name of the variable being filled (1)
