@@ -75,7 +75,10 @@ bytes.
 | H.PHYD hook address | $FF3E | MSX2 TH, work area / hook table | sourced |
 | Hook slot size | 5 bytes | MSX2 TH (all H.* hooks are 5-byte; called with `CALL` so they may also `RET`) | sourced |
 | `JP nnnn` opcode | $C3 | Z80 instruction set (public) | sourced |
-| INIT calls BIOS to identify slot self | — | MSX2 TH RDSLT/CALSLT protocol; own code | sourced |
+| Hook-install algorithm: write $C3, target_lo, target_hi, $00, $00 to (HL) | — | own code; JP opcode + 5-byte slot per MSX2 TH | sourced |
+| SYSTEM sysvar write: LD ($F37D),HL with HL = bdos_entry | — | own code; SYSTEM address per MSX2 TH / C-BIOS | sourced |
+| INIT does NOT need to identify its own slot (only installs hooks, no cross-slot calls) | — | own design; RDSLT/CALSLT not needed for this INIT | sourced |
+| BDOS entry stub: A=$FF / RET (error return for all calls until FAT12 lands) | — | own design; A=$FF = documented BDOS error per MSX2 TH BDOS conventions | sourced |
 
 > **H.PHYD vs H.DSKIO.** MSX2 TH distinguishes two disk-I/O hooks:
 > `H.PHYD` ($FF3E) intercepts the BIOS PHYDIO entry (physical sector I/O at the
@@ -92,24 +95,32 @@ No quarantined items.
 MSX2 TH defines the DPB layout that `GETDPB` must fill in. The 720 KB geometry
 values follow the FAT12 / ECMA-107 standard for 3.5" DSDD media.
 
+**GETDPB is currently a stub (carry set).** Writing the BPB→DPB computation
+requires knowing the exact MSX DPB field encoding, which has two ambiguous
+fields (directory mask / directory shift) and one likely-wrong value inherited
+from a draft note (total clusters $059E). These are blocked on **oracle probe 2**
+(DSKIO sector-read of the boot sector — listed in §Oracle probes). No GETDPB
+code will be written until those rows are confirmed or re-sourced from MSX2 TH.
+
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
 | DPB size | 18 bytes | MSX2 TH, DPB layout | sourced |
 | DPB +0: media type byte | $F9 | MSX2 TH (DSDD 3.5" media descriptor); ECMA-107 | sourced |
-| DPB +1: sector size (bytes, power-of-2 encoded) | $02 (= 512) | MSX2 TH DPB layout | sourced |
-| DPB +2: directory mask | $0F (= cluster_size − 1, 1 sector/cluster) | MSX2 TH DPB layout | sourced |
-| DPB +3: directory shift | $04 (= log2(sectors_per_cluster) + log2(512/32)) | MSX2 TH DPB layout | sourced |
-| DPB +4–5: FAT size (sectors per FAT copy) | $03 (3 sectors) | MSX2 TH DPB layout; FAT12 for 720 KB = 3 sectors | sourced |
-| DPB +6: fat_max (last usable FAT sector entry) | $02 (2 FAT copies) | MSX2 TH DPB layout | sourced |
-| DPB +7–8: first dir sector | $07 (= 1 reserved + 2 × 3 FAT sectors) | MSX2 TH DPB layout; derivable from BPB | sourced |
-| DPB +9–10: first data sector | $0E (= first_dir + 112×32/512 = 7+7) | MSX2 TH DPB layout; derivable from BPB | sourced |
-| DPB +11–12: total clusters (max cluster − 1) | $059E (= 713, total data clusters − 1) | MSX2 TH DPB layout; 720 KB geometry | sourced |
-| DPB +13–14: fat_loc (first FAT sector) | $0001 | MSX2 TH DPB layout; always sector 1 for FAT12 | sourced |
-| DPB +15–16: dir entries | $0070 (= 112) | MSX2 TH DPB layout; ECMA-107 / MS FAT spec | sourced |
+| DPB +1: sector size (bytes, power-of-2 encoded) | $02 | MSX2 TH DPB layout; interpreted as log2(512/128)=2 (own interpretation — oracle owed) | quarantined |
+| DPB +2: directory mask | $0F | MSX2 TH DPB layout; encoding unclear without TH text — own analysis gives $07 for 2 sec/clus, not $0F | **TBD — oracle needed** |
+| DPB +3: directory shift | $04 | MSX2 TH DPB layout; inconsistent with 2 sec/clus derivation (gives $05); own analysis gives $04 only for 1 sec/clus | **TBD — oracle needed** |
+| DPB +4–5: FAT size (sectors per FAT copy) | $0003 (LE) | MSX2 TH DPB layout; 3 sectors × 512 = 1536 bytes ≥ 713 clusters × 12/8 = 1070 bytes → 3 ✓ | sourced |
+| DPB +6: fat_max (FAT copies) | $02 | MSX2 TH DPB layout | sourced |
+| DPB +7–8: first dir sector | $0007 (LE) | 1 reserved + 2 × 3 FAT sectors = 7; derivable from BPB | sourced |
+| DPB +9–10: first data sector | $000E (LE) | 7 + ceil(112×32/512) = 7+7 = 14; derivable from BPB | sourced |
+| DPB +11–12: total clusters | $02C9 (LE) = 713 | (1440−14)/2 = 713 data clusters; own derivation. Draft note had $059E (=1438) which is wrong — 713≠1438 | **quarantined — oracle needed** |
+| DPB +13–14: fat_loc (first FAT sector) | $0001 (LE) | sector 1 follows the boot sector; derivable from BPB | sourced |
+| DPB +15–16: dir entries | $0070 (LE) = 112 | MSX2 TH DPB layout; ECMA-107 / MS FAT spec | sourced |
 | DPB +17: reserved/unused | $00 | MSX2 TH DPB layout | sourced |
 | Disk geometry: tracks | 80 | ECMA-107, 3.5" DSDD | sourced |
 | Disk geometry: sectors/track | 9 | ECMA-107, 3.5" DSDD | sourced |
 | Disk geometry: sides | 2 | ECMA-107, 3.5" DSDD | sourced |
+| Sectors per cluster | 2 | ECMA-107 / MS FAT spec for 720 KB; consistent with FAT size = 3 sectors (see +4–5 above) | sourced |
 | Total sectors | 1440 (80 × 2 × 9) | derivable from geometry | sourced |
 
 > **DPB value derivation.** Most DPB fields are redundant with the on-disk BPB;

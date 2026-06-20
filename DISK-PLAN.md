@@ -109,8 +109,14 @@ so zerobas's `BLOAD"A:FILE"` can reach a real FAT12 disk image.
       stubs fail cleanly with carry set, CHOICE returns HL=0. Built via
       `make disk` → `disk.rom`, padded to 16384 bytes. Corrected the
       PROVENANCE header rows: INIT is a word at $4002, not a JP at $4003.)
-- [ ] **INIT** — install `H.DSKIO` / `H.PHYD` hooks in system hook RAM; set
+- [~] **INIT** — install `H.DSKIO` / `H.PHYD` hooks in system hook RAM; set
       up the Drive Parameter Block (DPB) for a single 720 KB 3.5" drive
+      (Hook installation done: H.PHYD/$FF3E → phyd_handler, H.DSKIO/$FF4B →
+      dskio, SYSTEM/$F37D → bdos_entry, via `install_hook` helper.
+      DPB / GETDPB blocked: the directory-mask, directory-shift, and
+      total-clusters encoding in the MSX2 TH DPB layout are ambiguous without
+      the TH text — oracle probe 2 (DSKIO sector-read) must confirm them.
+      GETDPB remains carry-set stub. bdos_entry stub returns A=$FF.)
 - [ ] **FDC driver** — WD2793 register I/O at the Philips/NMS-style port
       addresses; track/sector/head addressing; read-sector command and
       result-phase read; error handling (write support deferred)
