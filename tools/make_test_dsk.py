@@ -82,7 +82,15 @@ class Fat12Image:
 
     def _write_boot_sector(self):
         b = self.data
-        b[0:3] = bytes([0xEB, 0xFE, 0x90])   # jump (harmless self-loop)
+        # Bytes 0-2: a jump opcode. The MSX disk ROM (MSX2 TH §3, boot procedure)
+        # checks the FIRST byte of the transferred sector: "when the top of the
+        # transferred sector is neither EBH nor E9H, DISK-BASIC is invoked." So
+        # byte 0 MUST be $EB (or $E9) for the boot code at $C01E to be reached at
+        # all. We keep $EB FE 90 (the same first three bytes this image has always
+        # carried); bytes 1-2 ($FE 90) are the standard JMP-displacement + NOP
+        # filler of the x86-style 3-byte jump field and are not executed by the
+        # Z80 boot path (the disk ROM CALLs $C01E directly, not byte 0).
+        b[0:3] = bytes([0xEB, 0xFE, 0x90])   # $EB => boot code IS reached (MSX2 TH §3)
         b[3:11] = b"ZEROBAS "                 # OEM name
         struct.pack_into("<H", b, 11, SECTOR)
         b[13] = SEC_PER_CLUS
@@ -94,7 +102,59 @@ class Fat12Image:
         struct.pack_into("<H", b, 22, SEC_PER_FAT)
         struct.pack_into("<H", b, 24, SEC_PER_TRACK)
         struct.pack_into("<H", b, 26, HEADS)
+        self._write_boot_code()              # $1E+ : the safe data-disk boot stub
         b[510], b[511] = 0x55, 0xAA          # boot signature
+
+    def _write_boot_code(self):
+        """Write OUR OWN minimal, cold-boot-SAFE boot stub at offset $1E.
+
+        CONTRACT — sourced verbatim from the MSX2 Technical Handbook, Chapter 3
+        (MSX-DOS), "boot procedure" (Konamiman's public English translation; an
+        allowed source — see disk/PROVENANCE.md §Boot sector boot code):
+
+          "Then, the contents of the boot sector (logical sector #0) is
+           transferred to C000H to C0FFH. At this time, when 'DRIVE NOT READY' or
+           'READ ERROR' occurs, or when the top of the transferred sector is
+           neither EBH nor E9H, DISK-BASIC is invoked. The routine at C01EH is
+           called with CY flag reset. Normally, since code 'RET NC' is written to
+           this address, nothing is carried and the execution returns. Any boot
+           program written here in assembly language is invoked automatically."
+
+        Pinned facts from that text:
+          * Load address : sector 0 -> $C000..$C0FF.
+          * Entry offset : $C01E  (== sector offset $1E).
+          * Reached by   : CALL (the ROM "calls" $C01EH), so the stub must RET to
+                           hand control back -- NOT JP.
+          * Entry state  : first call has CY (carry) RESET.
+          * Documented default behaviour for a disk that should NOT seize the boot
+            is exactly the instruction `RET NC` at $C01E: with CY reset on entry
+            "nothing is carried and the execution returns", so the ROM falls
+            through to DISK-BASIC / MSX BASIC. (On the later MSX-DOS call CY is
+            SET, so `RET NC` would NOT return there -- but that second call only
+            happens on a >=64K MSX-DOS-capable machine that found MSXDOS.SYS;
+            this is a plain data disk with no system files, so the documented and
+            observed handoff is the first, CY-reset call returning cleanly.)
+
+        OWN-DESIGN STUB. This is not a lifted reference boot sector: the stub is
+        the single documented "do nothing, return" instruction. For belt-and-
+        braces safety we make the WHOLE boot-code area inert no matter how the
+        ROM transfers control:
+
+          $1E : D0        RET NC   ; the documented data-disk default (CY reset
+                                   ;   on the first call => returns to BASIC).
+          $1F : C9        RET      ; unconditional RET, so even if some ROM reaches
+                                   ;   $C01F or enters with CY set, we still return
+                                   ;   cleanly instead of running into garbage.
+          $20.. : 00      NOP ...  ; rest of the boot-code area left $00; harmless
+                                   ;   (never reached -- entry is $1E and we RET).
+
+        Bytes 3-29 (OEM + BPB) and the FAT/dir geometry are untouched; only
+        $1E..$1FD changes (the $55 $AA signature at $1FE/$1FF is set separately).
+        """
+        b = self.data
+        b[0x1E] = 0xD0                        # RET NC  : documented data-disk default
+        b[0x1F] = 0xC9                        # RET     : belt-and-braces unconditional return
+        # $20..$1FD remain $00 (NOP); never executed because $1E returns.
 
     def _sector(self, n):
         return slice(n * SECTOR, (n + 1) * SECTOR)

@@ -504,16 +504,36 @@ once the BDOS API is stable.
       check both the loaded bytes and the `,R` exec handoff. `TEST.BIN`/`HI.TXT`
       stay raw-record content for the FAT12/BDOS layer tests; `PROG.BIN` is added
       after them so the dir search still has to pick the right entry.)
-- [ ] **Valid MSX boot sector in the test image** *(found during validation)* —
-      the current boot sector is filler (`EB FE 90` + zeros). A real disk machine
-      reads sector 0 and *executes* its boot code (at offset $1E), so inserting
-      the disk at the CF-3300's cold boot **hangs** the reference (PC stuck early).
-      Our own DSKIO/FAT path is unaffected (it reads, never executes the sector),
-      and oracle probes work by booting first then inserting the disk. But for a
-      genuinely bootable/safe image, put valid minimal MSX boot code at offset
-      $1E (the contract — CALL vs JP $C01E, expected return — must come from
-      MSX2 TH, not guessed). Until then, probes must insert the disk *after* the
-      reference reaches BASIC.
+- [x] **Valid MSX boot sector in the test image** *(found during validation)* —
+      the old boot sector was filler (`EB FE 90` + zeros at $1E..). A real disk
+      machine reads sector 0 into $C000..$C0FF and *CALLs* the boot code at $C01E,
+      so the all-$00 area was a NOP slide that ran off the rails — cold-booting the
+      CF-3300 with that image **wedged** the reference (PC frozen at $002E, SP
+      corrupted to $0026).
+      (**Contract sourced from MSX2 TH §3 (MSX-DOS, boot procedure), verbatim**:
+      "the contents of the boot sector (logical sector #0) is transferred to C000H
+      to C0FFH … when the top of the transferred sector is neither EBH nor E9H,
+      DISK-BASIC is invoked. The routine at C01EH is called with CY flag reset.
+      Normally, since code 'RET NC' is written to this address, nothing is carried
+      and the execution returns." So: load $C000–$C0FF; entry $C01E; reached by
+      **CALL** (stub must RET, not JP); first call has **CY reset**; byte 0 must be
+      $EB/$E9 for the boot code to be reached; the documented data-disk default is
+      **`RET NC`**. **Own-design stub** (`tools/make_test_dsk.py` `_write_boot_code`,
+      byte-level comments + the TH citation): `$1E: D0` `RET NC` (the documented
+      default — CY reset ⇒ returns to BASIC) + `$1F: C9` `RET` (belt-and-braces
+      unconditional return); keeps `$EB $FE $90` at 0–2 and `$55 $AA` at $1FE. This
+      is the documented instruction, not a copied boot sector — see
+      [`PROVENANCE.md`](PROVENANCE.md) §Boot sector boot code. **FAT geometry
+      untouched**: bytes 0–29 and the FAT/dir/data are byte-identical; only
+      $1E/$1F differ. **Cold-boot-safe, oracle-verified** (`disk_probe_boot.py`,
+      msx-preservation, on the genuine National CF-3300): AFTER the fix PC reaches
+      BASIC (ROM/RAM, moving, SP ~$C1xx) and a screenshot shows the Disk-BASIC
+      "Enter date" prompt; the synthesised BEFORE/filler image wedges at $002E. The
+      probe asserts both. Whole disk probe suite (`dskio` differential vs CF-3300
+      incl. sector 0, `bdos` vs MSX-DOS, `init`, `bload_disk`, `load_disk`,
+      `run_disk`, `bload_fcb`) + crunch + the 4 regression probes all still PASS;
+      basic.rom + disk.rom byte-identical to before (this item touches only
+      tools/make_test_dsk.py + the .dsk + the new probe + docs).)
 
 ---
 

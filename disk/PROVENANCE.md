@@ -277,6 +277,69 @@ No quarantined items.
 
 ---
 
+## Boot sector boot code (test image)
+
+The test image's boot sector (sector 0, `tools/make_test_dsk.py`
+`_write_boot_code`) must be **cold-boot-safe**: a real MSX1 disk machine reads it
+into RAM and *executes* it, so an inert/garbage boot-code area hangs the machine.
+This is a **clean-room own-design stub built from the documented MSX2 TH contract**
+— NOT a copied reference boot sector.
+
+### Contract (sourced verbatim — MSX2 TH §3, MSX-DOS, boot procedure)
+
+> "Then, the contents of the boot sector (logical sector #0) is transferred to
+> C000H to C0FFH. At this time, when 'DRIVE NOT READY' or 'READ ERROR' occurs, or
+> when the top of the transferred sector is neither EBH nor E9H, DISK-BASIC is
+> invoked. The routine at C01EH is called with CY flag reset. Normally, since code
+> 'RET NC' is written to this address, nothing is carried and the execution
+> returns. Any boot program written here in assembly language is invoked
+> automatically."
+> — MSX2 Technical Handbook, Chapter 3 (Konamiman's public English translation).
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| Boot sector load address | $C000–$C0FF | MSX2 TH §3 (verbatim above) | sourced |
+| Boot-code entry offset | $C01E (sector offset +$1E) | MSX2 TH §3 | sourced |
+| Entry mechanism | **CALL** ("the routine at C01EH is called") — stub must RET, not JP | MSX2 TH §3 | sourced |
+| Entry flag state (first call) | CY (carry) **reset** | MSX2 TH §3 | sourced |
+| First byte must be $EB or $E9 to reach the boot code | $EB (kept) | MSX2 TH §3 ("neither EBH nor E9H → DISK-BASIC") | sourced |
+| Documented safe data-disk default at $C01E | `RET NC` (returns with CY reset → falls through to BASIC) | MSX2 TH §3 (verbatim above) | sourced |
+
+### Own-design stub
+
+The stub at sector offset $1E is the single documented "do nothing, return"
+instruction, plus one belt-and-braces RET:
+
+| Byte | Offset | Meaning | Status |
+|------|--------|---------|--------|
+| $D0 | $1E | `RET NC` — the documented data-disk default; CY is reset on the first call (MSX2 TH §3) so it returns to BASIC | own design (= documented default) |
+| $C9 | $1F | `RET` — unconditional return; covers any path that enters at $C01F or with CY set, so the area can never run into the $00 NOP slide | own design (defensive) |
+| $00 | $20–$1FD | NOP filler; never executed (entry $1E returns) | — |
+
+> **Why this is safe and own-design, not a lift.** The MSX2 TH text states the
+> default at $C01E *is* `RET NC`, and that a data disk with no boot program simply
+> returns there. Our stub writes exactly that one documented instruction (plus a
+> defensive unconditional `RET`). No byte sequence was copied from any real MSX
+> boot sector or disk-ROM disassembly — the behaviour is reconstructed from the
+> CALL/RET-NC contract. Bytes 0–2 keep `$EB $FE $90` (byte 0 = $EB so the boot
+> code is reached at all; bytes 1–2 are the standard x86-style jump-displacement +
+> NOP filler of the 3-byte jump field, not executed by the Z80 boot path). Bytes
+> 3–29 (OEM + BPB) and the FAT/dir geometry are untouched; only $1E..$1FD change.
+
+> **Oracle-confirmed cold-boot-safe (before vs after).** `disk_probe_boot.py`
+> (msx-preservation) cold-boots the genuine **National CF-3300** reference with the
+> image attached as drive A and samples CPU PC after settle. **AFTER (this stub):**
+> PC reaches BASIC (ROM/RAM, e.g. $DEC1/$0D68/$10D9; SP healthy ~$C1xx; PC moving =
+> live interpreter), screenshot shows the Disk-BASIC "Enter date" prompt — no
+> boot-area hang. **BEFORE (the old $1E.. = $00 filler):** the NOP slide runs off
+> the rails and wedges the machine — PC frozen at **$002E**, SP corrupted to
+> **$0026**. The probe asserts both (the fix is safe; the synthesised filler
+> wedges), strictly black-box (attach disk, observe PC; no ROM read).
+
+No quarantined items.
+
+---
+
 ## FAT12 layer
 
 ### Boot sector / BPB
