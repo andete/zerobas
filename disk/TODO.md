@@ -102,14 +102,26 @@ See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
       stubs fail cleanly with carry set, CHOICE returns HL=0. Built via
       `make disk` → `disk.rom`, padded to 16384 bytes. Corrected the
       PROVENANCE header rows: INIT is a word at $4002, not a JP at $4003.)
-- [~] **INIT** — install `H.DSKIO` / `H.PHYD` hooks in system hook RAM; set
-      up the Drive Parameter Block (DPB) for a single 720 KB 3.5" drive
-      (Hook installation done: H.PHYD/$FF3E → phyd_handler, H.DSKIO/$FF4B →
-      dskio, SYSTEM/$F37D → bdos_entry, via `install_hook` helper.
-      DPB / GETDPB blocked: the directory-mask, directory-shift, and
-      total-clusters encoding in the MSX2 TH DPB layout are ambiguous without
-      the TH text — oracle probe 2 (DSKIO sector-read) must confirm them.
-      GETDPB remains carry-set stub. bdos_entry stub returns A=$FF.)
+- [~] **INIT** — install disk hooks in system hook RAM; set up the Drive
+      Parameter Block (DPB) for a single 720 KB 3.5" drive
+      (Current code installs `JP phyd_handler`/`JP dskio` at $FF3E/$FF4B and
+      writes SYSTEM/$F37D → bdos_entry via `install_hook`.
+      DPB / GETDPB blocked on the MSX2 TH DPB field encoding (dir mask/shift,
+      total-clusters); GETDPB remains a carry-set stub.
+      **NEEDS REDESIGN — oracle-contradicted (probe 3 investigation).** Observing
+      the CF-3300 reference (RAM only): the real disk ROM hooks via `RST 30h`
+      (CALLF) inter-slot calls with slot byte $87 at hook entries $FD9F/$FDEF/
+      $FDF9/$FFA7/$FFAC — NOT at $FF3E/$FF4B, and NOT with `JP` (a `JP` can't
+      cross slots). $FF4B isn't even 5-byte-aligned in the hook table, so our
+      H.DSKIO address is invalid. $F37D holds a BIOS-ROM address on the
+      reference, not a BDOS entry. The fix: drop the mis-addressed `JP` hooks +
+      SYSTEM vector; integrate the disk ROM the standard way — its $4010 entry
+      table reached via an inter-slot call. Since zerobas owns both ROMs, the
+      cleanest path is for zerobas-BASIC to locate the disk-ROM slot and CALSLT
+      its $4010 entries directly (ties into the boot-init item below). Real hook
+      names/addresses, if we hook at all, must come from the MSX2 TH hook table.
+      See disk/PROVENANCE.md §INIT. The $4010 entry table itself is correct and
+      differential-confirmed (probe 2).)
 - [x] **FDC driver** — WD2793 register I/O at the National memory-mapped
       register addresses; track/sector/head addressing; read-sector command and
       result-phase read; error handling (write support deferred)
@@ -173,10 +185,15 @@ See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
       DSKIO sector read vs the real National CF-3300 — **PASS, byte-identical**
       (sector 0 + sector 14, return codes and data). Strictly black-box: calls
       the standard $4010 DSKIO entry via CALSLT and observes only returned data
-      + carry/A; the reference disk ROM is never read/disassembled. Still owed:
-      the BDOS FCB round-trip differential (probe 3) and BLOAD end-to-end
-      (probe 4) — these depend on resolving how the reference exposes file I/O
-      under Disk BASIC vs MSX-DOS, and on the boot-scan/DTA findings above.)
+      + carry/A; the reference disk ROM is never read/disassembled.
+      **Probe 3 (BDOS FCB round-trip) reframed — not a differential test.** The
+      probe-3 investigation (CF-3300 RAM observation) found the reference exposes
+      no CP/M FCB BDOS in Disk BASIC ($F37D → BIOS ROM, no $0005 BDOS, page 0 is
+      ROM); FCB BDOS is MSX-DOS-only. Our `bdos_entry` is therefore an internal
+      zerobas API, validated functionally, with no reference to differ against —
+      so the real end-to-end oracle is **probe 4 (BLOAD"A:FILE",R)**, comparing
+      loaded bytes + exec handoff (its read path is already differential-confirmed
+      via probe 2). See disk/PROVENANCE.md §INIT and §BDOS interface.)
 - [x] **openMSX machine config** — machine XML that places zerobas-disk in
       internal slot 3-1, declares an FDC extension, attaches a test `.dsk`
       image, and pairs with the existing zerobas + zerobas-tape IPS patches in
@@ -283,6 +300,16 @@ once the BDOS API is stable.
       pick the right entry). Not literal BSAVE binaries yet — the BDOS/FAT12
       layer reads raw records, so deterministic content is what the integration
       test needs; a real BSAVE payload can be added when disk BLOAD lands.)
+- [ ] **Valid MSX boot sector in the test image** *(found during validation)* —
+      the current boot sector is filler (`EB FE 90` + zeros). A real disk machine
+      reads sector 0 and *executes* its boot code (at offset $1E), so inserting
+      the disk at the CF-3300's cold boot **hangs** the reference (PC stuck early).
+      Our own DSKIO/FAT path is unaffected (it reads, never executes the sector),
+      and oracle probes work by booting first then inserting the disk. But for a
+      genuinely bootable/safe image, put valid minimal MSX boot code at offset
+      $1E (the contract — CALL vs JP $C01E, expected return — must come from
+      MSX2 TH, not guessed). Until then, probes must insert the disk *after* the
+      reference reaches BASIC.
 
 ---
 
