@@ -125,6 +125,34 @@ VARENTSZ        equ     4       ; [name0:1][name1:1][value:2]
 VARSLOTS        equ     32      ; max distinct variables (128 bytes -> $E240)
 VAREND          equ     VARTAB + VARSLOTS*VARENTSZ
 
+; --- Phase 1: minimal string-variable store (own-design; see PROVENANCE.md) --
+; A `$`-suffixed variable (e.g. A$) holds a short string value. This is a
+; deliberately minimal own-design store — NOT the reference ROM's string heap +
+; descriptor layout (that is Phase 2, and reproducing it would need a forbidden
+; source). Each string variable is a fixed-capacity inline record keyed by the
+; same 2-character [name0][name1] key as a numeric variable:
+;     [name0:1][name1:1][len:1][bytes:STRMAX]
+; name0 = 0 marks a free slot; len is the live byte count (0..STRMAX). There is
+; no shared heap and no growth: a value longer than STRMAX is truncated. This is
+; "enough for PRINT" — assign a literal / copy a string var, then PRINT it.
+STRTAB          equ     $E240   ; base of the string-variable store
+STRMAX          equ     32      ; max chars held per string variable (own choice)
+STRENTSZ        equ     3 + STRMAX  ; [name0][name1][len][bytes:STRMAX] = 35
+STRSLOTS        equ     8       ; max distinct string variables (280 bytes)
+STREND          equ     STRTAB + STRSLOTS*STRENTSZ   ; $E358
+
+; Expression value-type signalling (own-design VALTYP notion). After eval_any /
+; a factor, VALTYP says whether the result is a number (0; value in DE as usual)
+; or a string (1; STRPTR points at a [len:1][bytes...] descriptor). Kept minimal:
+; only LET and PRINT consult it; arithmetic stays numeric-only.
+VALTYP          equ     $E0C8   ; 0 = numeric result, 1 = string result (1 byte)
+STRPTR          equ     $E0C9   ; pointer to the [len][bytes] descriptor (2 bytes)
+; Scratch descriptor for a string literal lifted out of the token stream
+; ([len:1][bytes:STRMAX]); LET copies from here into the variable's slot. Placed
+; in page $E3 above the string table (NOT in page $E0, which the C-BIOS keyboard
+; ISR's work area touches — an EI'd interrupt mid-LET would corrupt a $E0 byte).
+STRSCR          equ     $E360   ; [len][bytes:STRMAX] = 33 bytes ($E360..$E380)
+
 ; --- Step B: stored-program text area (numbered lines) ---------------------
 ; Numbered lines are stored in the real MSX line-link format at the real text
 ; base, so a stored program's bytes match a reference ROM's (Step A's crunch

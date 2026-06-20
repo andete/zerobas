@@ -598,3 +598,98 @@ The filename-ignore and the on-device functional-load blocker are the two
 (zerobas-tape `$00`-run framing) — neither is a value lifted from any reference
 ROM or disassembly. The CLOAD/LOAD interpreter half is complete, crunch
 byte-identical, and oracle-validated against the reference's own CLOAD.
+
+## Phase 1: minimal string variables for PRINT (basic/strvar.asm, basic/vars.asm, basic/print.asm, basic/interp.asm, basic/sysvars.inc)
+
+"Enough for PRINT": a `$`-suffixed variable (e.g. `A$`) can hold a short string,
+be assigned a `"literal"` or a copy of another string var (`A$=B$`), and be
+PRINTed (including next to literals, `PRINT "X=";A$`). The full string engine —
+heap + descriptor model, concat (`+`), `LEN`/`MID$`/`LEFT$`/`RIGHT$`/`CHR$`/… ,
+string arrays + `DIM`, and string `DATA` — is **Phase 2 and explicitly NOT built
+here**.
+
+**Oracle (`basic_probe_crunch.py`, scratch test lines restored to pristine
+after).** The reference Philips VG-8020 crunches `$`-variable lines exactly as
+zerobas already does — **the crunch was byte-identical with no code change**,
+because `$` is part of the variable name, not a special token:
+
+- `a$="hi"`        → `… 41 24 EF 22 68 69 22` — `A`(`$41`) `$`(`$24`) `=`(`$EF`)
+  then the literal `"hi"` verbatim. **The `$` is kept as the ASCII byte `$24` in
+  the name; there is NO string-variable token.**
+- `print a$`       → `… 91 20 41 24` — PRINT, space, `A$`.
+- `b$=a$`          → `… 42 24 EF 41 24` — `B$` `=` `A$`.
+- `print "x=";a$`  → `… 91 20 22 78 3D 22 3B 41 24` — PRINT `"x="` `;` `A$`.
+- `let a$="z"`     → `… 88 20 41 24 EF 22 7A 22` — LET `A$` `=` `"z"`.
+
+All six were confirmed byte-identical to zerobas's own `TOKBUF` via the crunch
+probe (then the probe was restored to pristine — never committed). So this task
+added **no tokeniser change**: the gap was purely runtime (store + print).
+
+**String storage & value-type (own-design, quarantined).** zerobas does **not**
+reproduce the reference ROM's string heap / string-descriptor layout (that would
+need a forbidden source and is Phase 2). Instead it uses a minimal own-design
+store:
+
+- A string variable is a fixed-capacity inline record in a separate table
+  `STRTAB` ($E240), keyed by the same 2-character `[name0][name1]` key as a
+  numeric variable: `[name0:1][name1:1][len:1][bytes:STRMAX]`. `name0 = 0` marks
+  a free slot. `STRMAX = 32`, `STRSLOTS = 8`. `A` and `A$` are independent (the
+  `$` suffix selects this store vs the numeric one) — matching MSX-BASIC.
+- A string VALUE is a `[len:1][bytes…]` descriptor; `STRPTR` points at it and
+  `VALTYP = 1` flags "string". Only LET and PRINT consult VALTYP; arithmetic
+  stays numeric-only. `STRSCR` ($E360) is scratch holding a literal lifted out of
+  the token stream before LET copies it into the variable's slot.
+- A value longer than `STRMAX` is **truncated** (no heap growth); an unset string
+  variable reads as the empty string (a shared len-0 `STR_EMPTY` descriptor in
+  ROM); the table-full case silently drops the assignment.
+
+This store and the VALTYP/STRPTR notion are an original minimal design — chosen
+for the "enough for PRINT" loader-stub scope — **not** lifted from any reference
+ROM or disassembly.
+
+**Implementation.** `var_str_type` (basic/vars.asm) reports whether a name
+carries a `$` suffix (without advancing), so LET/PRINT/the factor layer can pick
+the string path. `str_find`/`str_get_key`/`str_set_key` (basic/vars.asm) are the
+string-store parallels of `var_find`/`var_get_key`/`var_set_key`. `str_eval`
+(basic/strvar.asm) evaluates a string operand — a `"literal"` (copied into STRSCR)
+or a `$`-variable (STRPTR → its stored descriptor) — and sets VALTYP/STRPTR.
+`print_strval` emits a descriptor via CHPUT. `ex_let` (basic/interp.asm) branches
+to `ex_let_str` for a `$`-name; `ex_print` (basic/print.asm) detects a `$`-var
+item and prints its value (string literals already printed). `clear_vars` now
+also empties STRTAB. `detok` (basic/list.asm) needs **no change**: the `$` is a
+verbatim name byte and the literal is verbatim, so `10 A$="HI":PRINT A$` lists
+back exactly (verified on screen in openMSX).
+
+**Scope cut — explicitly NOT built (Phase 2 string engine):** concatenation
+(`+` on strings), all string functions (`LEN MID$ LEFT$ RIGHT$ CHR$ ASC STR$ VAL
+HEX$ …`), string arrays / `DIM`, string `DATA`/`READ`, `INPUT` of strings, and
+the reference's real string heap/descriptor layout. The numeric expression
+evaluator is unchanged and still integer-only.
+
+Validated: `make` builds a clean 16384-byte `basic.rom`, no warnings / no
+jr-out-of-range. The crunch probe stays byte-identical (full ALL PASS). The
+controlflow / loops / data / statements / list regression probes all stay
+ALL PASS. Functional `basic_probe_strvar.py` 6/6 PASS on `C-BIOS_MSX1` (VRAM
+screen decode): `A$="HELLO":PRINT A$`→`HELLO`, `PRINT "X=";A$`→`X=HELLO`,
+`B$=A$:PRINT B$`→the copy, the LET-keyword form, two independent string vars
+(`PRINT A$;B$`→`ONETWO`), and reassignment (`SECOND`). A `$`-var lists correctly
+(`10 A$="HI":PRINT A$`).
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `$` is part of the variable name — NO special string-variable token | — | oracle (`basic_probe_crunch.py`: `a$="hi"` → `41 24 EF 22 68 69 22`); crunch byte-identical with no code change | sourced |
+| `A$="literal"` / `A$=B$` / `PRINT A$` / `PRINT "X=";A$` crunch | (verbatim `$`/literal + `=`/`;`/`,`) | oracle (the five lines above, byte-identical) | sourced |
+| String variable / PRINT-of-string *semantics* (assign, copy, print; `A` and `A$` independent; unset = "") | — | public MSX-BASIC language reference | sourced |
+| String store layout `[name0][name1][len][bytes:STRMAX]` in STRTAB; STRMAX=32, STRSLOTS=8 | $E240 / 32 / 8 | **own design / own choice** (free page-$E RAM); NOT the reference's string heap/descriptor layout | quarantined |
+| `VALTYP` / `STRPTR` value-type notion (0=numeric, 1=string + descriptor ptr) | $E0C8 / $E0C9 | **own design** (minimal stand-in; the reference's DAC/VALTYP model is not reproduced) | quarantined |
+| `STRSCR` literal-lift scratch (`[len][bytes:STRMAX]`) | $E360 | own choice (free page-$E RAM) | sourced |
+| Over-STRMAX truncation; unset string = shared len-0 `STR_EMPTY` (ROM); table-full drops the assignment | — | **own design** (no heap growth; loader-stub scope) | quarantined |
+| `var_str_type` / `str_find` / `str_get_key` / `str_set_key` / `str_eval` / `print_strval` / `ex_let_str` parse + store + print algorithm | — | **own code** (parallels the numeric var store + the PRINT/LET arg-parse pattern); not derived from any disassembly | sourced |
+| NOT built: concat `+`, string functions, string arrays/`DIM`, string `DATA` | — | Phase-2 string engine (explicitly descoped) | quarantined |
+
+The string store layout, the VALTYP/STRPTR value-type notion, the truncation /
+empty-/full-string behaviour, and the deliberate Phase-2 descope are the
+**quarantined** items: all are original minimal own-design choices for the
+"enough for PRINT" loader scope — none is a value lifted from any reference ROM
+or disassembly. The oracle confirms `$` is part of the name (no fabricated
+token), and the crunch stays byte-identical.

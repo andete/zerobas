@@ -42,8 +42,13 @@
 ; Keyboard line editor + read/eval loop (defines `repl`, `print_string`).
                 include "basic/repl.asm"
 
-; Integer variable store (defines `var_get`, `var_set`, `clear_vars`).
+; Integer variable store (defines `var_get`, `var_set`, `clear_vars`) + the
+; minimal string-variable store (defines `str_find`, `str_get_key`,
+; `str_set_key`, `var_str_type`).
                 include "basic/vars.asm"
+
+; Minimal string-VALUE layer for PRINT/LET (defines `str_eval`, `print_strval`).
+                include "basic/strvar.asm"
 
 ; 16-bit integer expression evaluator (defines `eval`).
                 include "basic/expr.asm"

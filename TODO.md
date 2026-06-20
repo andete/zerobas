@@ -17,7 +17,9 @@ Working: byte-identical tokeniser (keywords, integer / `&H` / `&O` constants,
 `CLEAR`, `DEF USR`/`USR`, the screen-setup verbs (`SCREEN`, `COLOR`, `CLS`,
 `WIDTH`, `KEY OFF`/`ON`), `LIST` (de-tokenised whole-program listing),
 the memory / I-O access primitives (`VPOKE`/`VPEEK`, `OUT`/`INP`, `VARPTR`;
-`BASE` descoped), multi-character 16-bit integer variables, cassette
+`BASE` descoped), multi-character 16-bit integer variables, minimal string
+variables for `PRINT` (`$`-suffixed names: assign a literal / copy another string
+var, then PRINT — no concat/functions/arrays yet), cassette
 `BLOAD"CAS:",R`, and cassette program load (`CLOAD` / `LOAD"CAS:"` — interpreter
 half done + oracle-validated; on-device functional load gated on a zerobas-tape
 `$00`-run framing fix).
@@ -95,7 +97,15 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
       pokes; BASE is descoped — argument parsed+evaluated but BASE(n) returns 0
       and sets ERRMARK (reproducing the reference's per-mode VDP table-base map
       would need a forbidden source). Both quarantined in basic/PROVENANCE.md.)
-- [ ] String literals / variables *enough for `PRINT`* (full string engine is Phase 2)
+- [x] String literals / variables *enough for `PRINT`* (full string engine is Phase 2)
+      (basic/strvar.asm + basic/vars.asm: a `$`-suffixed name is a string variable
+      with its own minimal inline store [name0][name1][len][bytes:STRMAX=32]; LET
+      assigns a `"literal"` or copies another string var (A$=B$); PRINT emits a
+      string var's value, incl. alongside literals (PRINT "X=";A$). Oracle-confirmed
+      `$` is part of the name — NO special string token; crunch already byte-identical
+      (`a$="hi"` → `41 24 EF 22 68 69 22`). Own-design VALTYP/STRPTR value-type notion.
+      6/6 functional probes pass basic_probe_strvar.py. NOT built (Phase 2): concat `+`,
+      string functions (LEN/MID$/CHR$/…), string arrays/DIM, string DATA — all descoped.)
 
 ### Usability
 - [x] `LIST` — display the stored program, de-tokenised

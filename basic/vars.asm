@@ -79,6 +79,33 @@ vnk_eat:
                 inc     hl
                 ret
 
+; --- var_str_type: does the name at (HL) carry a `$` suffix? -----------------
+; in:  HL = cursor at the first name char (a letter). HL is NOT advanced.
+; out: A = 1 if a `$` suffix follows the identifier (string variable), else 0.
+;      CF = the A==1 condition is also reflected (set iff string). Clobbers A.
+; Walks the identifier (letters/digits) to the first non-identifier char and
+; tests it for `$`. Used by LET / PRINT / the factor layer to choose the string
+; path before delegating the real advance to var_name_key.
+var_str_type:
+                push    hl
+vst_walk:
+                ld      a,(hl)
+                call    is_ident_cont
+                jr      nc,vst_suffix
+                inc     hl
+                jr      vst_walk
+vst_suffix:
+                cp      '$'
+                jr      z,vst_yes
+                pop     hl
+                xor     a                   ; not a string (A=0, CF clear)
+                ret
+vst_yes:
+                pop     hl
+                ld      a,1
+                scf                          ; string (A=1, CF set)
+                ret
+
 ; --- var_find: locate entry for key BC -------------------------------------
 ; out: CF set  -> found,     HL = entry address.
 ;      CF clear -> not found, HL = first free slot (or VAREND if table full).
@@ -177,9 +204,114 @@ var_set:
                 ld      c,0
                 jp      var_set_key
 
-; --- clear_vars: empty the table (called once at INIT) ---------------------
-; Zero name0 of every slot (a 0 name0 = empty), which is enough; clearing the
-; whole region keeps it tidy. Clobbers A, BC, HL.
+; --- string-variable store (own-design; see PROVENANCE.md) -----------------
+; Parallel to the numeric var_find/get/set, but over STRTAB, whose entries are
+; [name0][name1][len][bytes:STRMAX]. The same 2-char key (BC) identifies a string
+; variable; the `$` suffix (handled by the caller) is what selects this store
+; instead of the numeric one, so `A` and `A$` are independent (as in MSX-BASIC).
+
+; --- str_find: locate the string entry for key BC --------------------------
+; out: CF set  -> found,     HL = entry address (name0 field).
+;      CF clear -> not found, HL = first free slot (or STREND if full).
+; Clobbers A, DE, HL (BC preserved).
+str_find:
+                ld      hl,STRTAB
+sf_lp:
+                ld      a,h                 ; end of the string table?
+                cp      high STREND
+                jr      nz,sf_test
+                ld      a,l
+                cp      low STREND
+                jr      z,sf_full
+sf_test:
+                ld      a,(hl)              ; name0
+                or      a
+                jr      z,sf_free           ; empty slot -> not found
+                cp      b
+                jr      nz,sf_next
+                inc     hl
+                ld      a,(hl)              ; name1
+                dec     hl
+                cp      c
+                jr      z,sf_hit
+sf_next:
+                ld      de,STRENTSZ
+                add     hl,de
+                jr      sf_lp
+sf_hit:
+                scf
+                ret
+sf_free:
+                or      a
+                ret
+sf_full:
+                or      a
+                ret
+
+; --- str_get_key: BC = key -> HL = descriptor [len][bytes...] ----------------
+; Returns HL pointing at the entry's len byte (a valid [len][bytes] descriptor).
+; If the variable is unset, returns HL -> STR_EMPTY (a len-0 descriptor), so the
+; caller always has a printable/copyable value. Clobbers A, DE, HL (BC kept).
+str_get_key:
+                call    str_find
+                jr      nc,sgk_empty
+                inc     hl
+                inc     hl                  ; HL -> len field (+2) = descriptor
+                ret
+sgk_empty:
+                ld      hl,STR_EMPTY        ; len-0 descriptor (uninitialised = "")
+                ret
+STR_EMPTY:      db      0                   ; a shared empty-string descriptor
+
+; --- str_set_key: BC = key, DE -> source descriptor [len][bytes...] ----------
+; Copy the source string (len-prefixed at DE) into the key's slot, allocating a
+; new slot if needed. Length is clamped to STRMAX (own-design truncation; no
+; heap growth). If the table is full the assignment is silently dropped.
+; Clobbers A, DE, HL (BC kept). DE may point into STRTAB itself (var-to-var copy
+; A$=B$); the copy is forward and the destination is a different slot, so a plain
+; LDIR is safe (a self-copy A$=A$ writes identical bytes).
+str_set_key:
+                push    de                  ; str_find clobbers DE — guard the source ptr
+                call    str_find
+                pop     de                  ; DE = source descriptor (restored)
+                jr      c,ssk_store         ; existing slot
+                ld      a,h                 ; not found: free slot or full?
+                cp      high STREND
+                jr      nz,ssk_new
+                ld      a,l
+                cp      low STREND
+                ret     z                   ; table full -> drop
+ssk_new:
+                ld      (hl),b              ; write the name into the free slot
+                inc     hl
+                ld      (hl),c
+                dec     hl
+ssk_store:
+                ; HL = entry name0 field; DE = source descriptor. LDIR copies
+                ; (HL)->(DE), so the COPY needs HL=source, DE=dest: we read the
+                ; length here, then swap the roles before the LDIR.
+                inc     hl
+                inc     hl                  ; HL -> dest len field
+                ld      a,(de)              ; source length (DE = source descriptor)
+                cp      STRMAX+1
+                jr      c,ssk_len_ok
+                ld      a,STRMAX            ; clamp to STRMAX
+ssk_len_ok:
+                ld      (hl),a              ; store the (clamped) length at the dest
+                inc     hl                  ; HL -> dest bytes
+                inc     de                  ; DE -> source bytes
+                or      a
+                ret     z                   ; zero-length -> done
+                ld      c,a
+                ld      b,0                 ; BC = byte count
+                ex      de,hl               ; LDIR copies (HL)->(DE): HL=source, DE=dest
+                ldir
+                ret
+
+; --- clear_vars: empty the numeric AND string tables (called at INIT / RUN) --
+; Zero name0 of every slot (a 0 name0 = empty). Clearing the whole numeric
+; region keeps it tidy; for strings, zeroing each entry's name0 marks it free.
+; Clobbers A, BC, HL.
 clear_vars:
                 ld      hl,VARTAB
                 ld      bc,VARSLOTS*VARENTSZ
@@ -190,4 +322,12 @@ cv_loop:
                 ld      a,b
                 or      c
                 jr      nz,cv_loop
+                ; clear the string store: name0 = 0 in every slot
+                ld      hl,STRTAB
+                ld      b,STRSLOTS
+cv_str:
+                ld      (hl),0              ; name0 = free
+                ld      de,STRENTSZ
+                add     hl,de
+                djnz    cv_str
                 ret

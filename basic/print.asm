@@ -39,8 +39,21 @@ exp_loop:
                 jp      z,exp_comma
                 cp      '"'
                 jp      z,exp_str
+                call    is_letter           ; a `$`-suffixed string variable?
+                jr      nc,exp_num
+                call    var_str_type        ; A=1 if `$` suffix
+                or      a
+                jr      nz,exp_strvar       ; string variable -> print its value
+exp_num:
                 call    eval                ; numeric expression -> DE = value
                 call    print_number
+                jp      exp_loop
+exp_strvar:
+                call    str_eval            ; STRPTR -> the var's value, HL advanced
+                jp      nc,exp_num          ; defensive: fall back to numeric
+                push    hl                  ; print_strval clobbers HL (token cursor)
+                call    print_strval        ; emit the descriptor's bytes
+                pop     hl
                 jp      exp_loop
 exp_semi:
                 inc     hl                  ; ';' = no spacing

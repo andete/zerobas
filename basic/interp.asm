@@ -705,8 +705,14 @@ ex_out:
                 jp      do_out
 
 ; --- ex_let: variable assignment  <var> = <expr> --------------------------
-; The name may be multi-character (significant to 2 chars; see vars.asm).
+; The name may be multi-character (significant to 2 chars; see vars.asm). A
+; `$`-suffixed name (A$) is a string variable: the RHS is a string operand (a
+; "literal" or another string variable) — see ex_let_str. Numeric vars keep the
+; integer path.
 ex_let:
+                call    var_str_type        ; A=1 if the name carries a `$` suffix
+                or      a
+                jr      nz,ex_let_str       ; string variable -> string assignment
                 call    var_name_key        ; BC = key, HL past the name
                 push    bc                  ; save key across '=' + eval
                 call    skip_spaces
@@ -721,6 +727,31 @@ ex_let:
                 pop     hl
                 jp      exec_stmt           ; continue the line
 ex_let_err:
+                pop     bc
+                jp      stmt_error
+
+; --- ex_let_str: string-variable assignment  A$ = <string operand> -----------
+; HL is on the name's first letter (var_str_type did not advance it). Parse the
+; name + `$` for the destination key, the '=' token, then evaluate the RHS
+; string operand into STRPTR and copy it into the variable's slot.
+ex_let_str:
+                call    var_name_key        ; BC = dest key, HL past name + `$`
+                push    bc                  ; save key across '=' + str_eval
+                call    skip_spaces
+                ld      a,(hl)
+                cp      EQ_TOKEN            ; '=' -> $EF
+                jr      nz,ex_let_err
+                inc     hl
+                call    skip_spaces
+                call    str_eval            ; STRPTR -> RHS descriptor, HL advanced
+                jr      nc,els_err          ; not a string operand -> syntax error
+                pop     bc                  ; BC = dest key
+                push    hl                  ; guard cursor across str_set_key
+                ld      de,(STRPTR)         ; DE -> source descriptor
+                call    str_set_key         ; A$[key] := descriptor (clamped)
+                pop     hl
+                jp      exec_stmt
+els_err:
                 pop     bc
                 jp      stmt_error
 
