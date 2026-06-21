@@ -158,8 +158,12 @@ contract: [`disk/docs/expansion-protocol.md`](disk/docs/expansion-protocol.md).
       hook/DSKIO/GETDPB contract is validated — HPHYD bytes correct after INIT,
       GETDPB byte-identical to the CF-3300 differential, and an injected-hook
       `CALL $FFA7` end-to-end reaching our DSKIO. **Still owed:** an *organic* real
-      MSX-DOS host booting and driving zerobas-disk through the standard hook/DSKIO
-      path (full real-host harness, deferred — larger than a session).
+      host driving zerobas-disk through the standard hook/DSKIO path — **scoped** in
+      [`disk/docs/provider-oracle-scope.md`](disk/docs/provider-oracle-scope.md):
+      the achievable target is **Tier 1** (real MSX1 main-BIOS `PHYDIO` → `H.PHYD` →
+      our DSKIO, ~1 session, needs a real-BIOS+zerobas-disk machine variant). A real
+      *filesystem* host (DOS/Disk-BASIC, which alone consumes GETDPB organically)
+      requires DOS-boot or Disk-BASIC hosting = **Phase 2**.
 
 **Sequencing.** Tape parity is **done**, so this is the next committed track. The
 private `bdos_entry` is the foundation every disk verb sits on; **build nothing
