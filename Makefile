@@ -39,6 +39,13 @@ $(DISK_TEST_DSK): tools/make_test_dsk.py
 
 test-dsk: $(DISK_TEST_DSK)
 
+# Host-side unit tests: execute the real assembled Z80 against an embedded Z80
+# core — no emulator. Each test assembles to /tmp itself, so this needs no other
+# target. See tests/README.md.
+unit-test:
+	python3 tests/test_getdpb.py
+	python3 tests/test_tokenise.py
+
 clean:
 	rm -f $(ROM) $(DISK_ROM)
 
@@ -48,4 +55,4 @@ clean:
 patches: $(ROM) build-patches.sh tools/rom_patch.py tools/overlay_page1.py
 	sh build-patches.sh $(STOCK)
 
-.PHONY: clean patches disk test-dsk
+.PHONY: clean patches disk test-dsk unit-test
