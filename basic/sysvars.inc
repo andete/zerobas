@@ -59,6 +59,12 @@ SCRMOD          equ     $FCAF   ; current screen mode (0..3)
 TAPION          equ     $00E1   ; read tape header (motor on); CF set = fail
 TAPIN           equ     $00E4   ; read one byte -> A;           CF set = fail
 TAPIOF          equ     $00E7   ; stop the tape motor
+; Cassette WRITE BIOS entry points (MSX Assembly Page / MSX2 Technical
+; Handbook, cassette I/O chapter). All clobber every register (A,BC,DE,HL,IX
+; etc.) — state must live in RAM across every TAPOUT call.
+TAPOON          equ     $00EA   ; write tape header; A=0 short, A!=0 long; CF=fail
+TAPOUT          equ     $00ED   ; write one byte (A); all registers clobbered; CF=fail
+TAPOOF          equ     $00F0   ; flush carrier + motor off
 
 ; --- Cassette file identifiers --------------------------------------------
 ; Source: MSX2 Technical Handbook, cassette file format: the 10-byte file-type
@@ -80,6 +86,11 @@ BLOAD_TOKEN     equ     $CF     ; spec-tokenise.md
 ; "cas:name"). Both are single-byte statement tokens with the quoted filename
 ; kept verbatim, exactly like BLOAD's argument.
 CLOAD_TOKEN     equ     $9B     ; CLOAD ["filename"] (cassette tokenised-BASIC load)
+; CSAVE statement token: oracle-LOCKED (Philips VG-8020 KBUF via
+; basic_probe_crunch.py: `csave"x"` -> $9A "x"; cross-checked MSX2 TH Table
+; 2.20). Single-byte statement token; the quoted filename is kept verbatim
+; ASCII, exactly like CLOAD. Adjacent to CLOAD ($9B) by MSX design.
+CSAVE_TOKEN     equ     $9A     ; CSAVE "filename" (cassette tokenised-BASIC save)
 LOAD_TOKEN      equ     $B5     ; LOAD "CAS:filename" (unified tape load)
 ; SAVE / BSAVE statement tokens are oracle-LOCKED (Philips VG-8020 KBUF via
 ; basic_probe_crunch.py; cross-checked MSX2 TH Table 2.20). Both are single-byte
@@ -336,6 +347,13 @@ BDOS_RES        equ     $E0EB   ; last BDOS result byte (A) returned across CALS
 DSV_OFF         equ     $E0EC   ; next fill index into DISK_DTA (0..128)
 DSV_PTR         equ     $E0ED   ; SAVE: current source byte pointer (2)
 DSV_END         equ     $E0EF   ; SAVE/BSAVE: last source byte addr, inclusive (2)
+; Tape CSAVE / BSAVE write scratch (page $E0, $E0F1.. gap; dead outside a tape
+; CSAVE/BSAVE). All state lives in RAM — TAPOUT clobbers every register, so no
+; register can survive a TAPOUT call.
+TSV_PTR         equ     $E0F1   ; tape save: current source-byte pointer (2)
+TSV_END         equ     $E0F3   ; tape save: last source-byte address, inclusive (2)
+TSV_CNT         equ     $E0F5   ; tape save: loop counter (1)
+TSV_NAME        equ     $E0F6   ; tape save: 6-char filename buffer (space-padded)
 ; BLOAD's own Disk Transfer Area: a writable 128-byte page-3 buffer the BLOAD
 ; path hands to BDOS $1A so each SeqRead record lands here (the $0080 default is
 ; BIOS ROM under Disk BASIC and would silently fail). Placed at $E4C2, just past

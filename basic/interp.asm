@@ -518,6 +518,10 @@ kwtable:
                 ; table is otherwise free (match_kw is full-keyword, not prefix).
                 db      5,"BSAVE",1,BSAVE_TOKEN
                 db      4,"SAVE",1,SAVE_TOKEN
+                ; Cassette save keyword. CSAVE token oracle-LOCKED ($9A) via
+                ; basic_probe_crunch.py against Philips VG-8020 (MSX2 TH Table
+                ; 2.20). Single-byte statement token; filename kept verbatim ASCII.
+                db      5,"CSAVE",1,CSAVE_TOKEN
                 ; Cassette program-load keywords (oracle-confirmed; MSX2 TH
                 ; Table 2.20). CLOAD precedes BLOAD's family for no special
                 ; reason — match_kw compares the full keyword, so order is free.
@@ -634,6 +638,8 @@ exec_stmt:
                 jp      z,ex_bsave
                 cp      SAVE_TOKEN
                 jp      z,ex_save
+                cp      CSAVE_TOKEN
+                jp      z,ex_csave
                 cp      POKE_TOKEN
                 jp      z,ex_poke
                 cp      VPOKE_TOKEN
@@ -730,6 +736,9 @@ ex_bsave:
 ex_save:
                 inc     hl                  ; HL -> args (past the SAVE token)
                 jp      do_save
+ex_csave:
+                inc     hl                  ; HL -> args (past the CSAVE token)
+                jp      do_csave
 ex_poke:
                 inc     hl                  ; HL -> args (past the POKE token)
                 jp      do_poke

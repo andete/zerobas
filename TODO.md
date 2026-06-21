@@ -16,8 +16,10 @@ compatibility.* The committed target is therefore:
 
 1. **Phase 1 — loader-stub BASIC** — ✅ done.
 2. **Disk transport** (read + write) — ✅ done (`disk.rom`; see [`disk/TODO.md`](disk/TODO.md)).
-3. **Tape transport** (read + write) — device signal layer ✅ done; interpreter
-   parity is a remaining committed track (below).
+3. **Tape transport** (read + write) — ✅ done. Device signal layer **and**
+   interpreter parity complete: `BLOAD"CAS:",R`/`CLOAD`/`LOAD"CAS:"` load and
+   `CSAVE`/`SAVE"CAS:"`/`BSAVE"CAS:"` save on-device (tokenised-only SAVE; ASCII is
+   Phase 2).
 4. **Disk interface standardization — "Phase 1.5"** — make `zerobas-BASIC` reach
    disk files through the *standard* `$4010` DSKIO entry instead of zerobas-disk's
    private `bdos_entry`, so **any** standard disk ROM (real or zerobas) works under
@@ -36,7 +38,7 @@ zerobas is three separately-built artifacts, combined only at runtime: `basic/` 
 
 | | Device / transport layer | Interpreter statements (basic.rom) |
 |---|---|---|
-| **Tape** | ✅ read **and** write signal layer (MSX1/2/2+) | ⚠️ `BLOAD"CAS:",R`, `CLOAD`, `LOAD"CAS:"` all load on-device (the apparent "framing" hang was a `basic/cload.asm` link-word register clobber, now fixed); **no tape SAVE** yet |
+| **Tape** | ✅ read **and** write signal layer (MSX1/2/2+) | ✅ `BLOAD"CAS:",R`, `CLOAD`, `LOAD"CAS:"` load on-device; `CSAVE`, `SAVE"CAS:"`, `BSAVE"CAS:"` write on-device — full read+write parity (tokenised-only SAVE, `,A`/ASCII is Phase 2) |
 | **Disk** | ✅ DSKIO + FAT12 + BDOS, read **and** write (differential vs CF-3300 & MSX-DOS 1) | ✅ `BLOAD`/`LOAD`/`RUN`/`SAVE`/`BSAVE` for `"A:"` † |
 
 † `zerobas-BASIC` reaches the disk through zerobas-disk's **private** `bdos_entry`
@@ -67,15 +69,20 @@ storage statements above.
       `tape/` is unchanged. Verified: `basic_probe_cload_ondevice.py` ALL PASS
       (on `C-BIOS_MSX1_EU_TAPE` + `--cart`), disk LOAD/RUN + the 5 basic regression
       probes ALL PASS.
-- [ ] **Tape SAVE statements** — `CSAVE` / `SAVE"CAS:"` (tokenised program) and
-      `BSAVE"CAS:",start,end[,exec]` (binary) to cassette, using the zerobas-tape
-      **write** signal layer (`TAPOON`/`TAPOUT`/`TAPOOF`, already implemented) + the
-      cassette file format (`$D3`/`$D0` header block + 6-char name + data). The
-      existing disk `do_save`/`do_bsave` ([`basic/save.asm`](basic/save.asm))
-      descope `"CAS:"` to `load_error` — extend them to route the tape device to the
-      cassette write path. Oracle: a saved tape image reads back byte-identical on
-      the reference, and round-trips through our own `CLOAD`/`BLOAD` once the framing
-      fix above lands. This is tape *write* (mirrors what disk `SAVE`/`BSAVE` did).
+- [x] **Tape SAVE statements** — DONE. `CSAVE`/`SAVE"CAS:"` (tokenised program) and
+      `BSAVE"CAS:",start,end[,exec]` (binary) write to cassette through the
+      zerobas-tape **write** signal layer (`TAPOON`/`TAPOUT`/`TAPOOF`) + the cassette
+      file format (`$D3`/`$D0` ×10 header block + 6-char name + data block). The disk
+      `do_save`/`do_bsave` ([`basic/save.asm`](basic/save.asm)) now device-dispatch
+      `"CAS:"` (non-destructive `dev_cas` peek, like the load side) to the new tape
+      write path; `CSAVE` got its own oracle-locked token (`$9A`). All loop state
+      lives in RAM (`TSV_*`) across every `TAPOUT` (the cassette BIOS clobbers
+      everything — same discipline as `disk_putword`). Validated three ways:
+      format byte-identical to `build_cas` (cas_decode), the reference VG-8020
+      `CLOAD`s our recorded `.cas`, and self round-trips `CSAVE`→`CLOAD` /
+      `BSAVE"CAS:"`→`BLOAD"CAS:"` (`basic_probe_tape_save.py` ALL PASS). Divergences:
+      tokenised-only `SAVE"CAS:"` (`,A` ASCII → `load_error`, Phase 2); 6-char name
+      truncation; bare `CSAVE` writes a 6-space name. This completes tape parity.
 
 ### Phase 1.5 — disk interface standardization (Depth A)
 
@@ -305,8 +312,10 @@ The cassette signal layer C-BIOS lacks: `TAPION`/`TAPIN`/`TAPIOF` (read) and
 `TAPOON`/`TAPOUT`/`TAPOOF` (write) — FSK leader detect + auto-baud + byte framing
 and the write waveform, at 1200 and 2400 baud, round-trip validated on MSX1 /
 MSX2 / MSX2+. See [`tape/DESIGN.md`](tape/DESIGN.md) and
-[`tape/PROVENANCE.md`](tape/PROVENANCE.md). The **interpreter** side is not yet at
-parity — `BLOAD"CAS:",R`, `CLOAD` and `LOAD"CAS:"` all load on-device (the CLOAD
-on-device fix turned out to be a `basic/cload.asm` link-word register clobber, not
-a tape change); the one remaining committed item, tape `SAVE`, is in the
-**Remaining** section near the top of this file.
+[`tape/PROVENANCE.md`](tape/PROVENANCE.md). The **interpreter** side is now at full
+parity — `BLOAD"CAS:",R`, `CLOAD` and `LOAD"CAS:"` load and `CSAVE`/`SAVE"CAS:"`/
+`BSAVE"CAS:"` save on-device. (The CLOAD on-device fix turned out to be a
+`basic/cload.asm` link-word register clobber, not a tape change; tape SAVE writes
+the `$D3`/`$D0` cassette format through `TAPOON`/`TAPOUT`/`TAPOOF`. Both are
+oracle-validated — see the now-checked items in the **Remaining** section above and
+`basic_probe_tape_save.py` / `basic_probe_cload_ondevice.py`.)

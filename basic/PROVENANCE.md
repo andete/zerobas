@@ -1433,13 +1433,12 @@ side's plumbing (`parse_disk_fcb`, `bdos_call`, `DISK_DTA`, `load_error`).
   `do_tape_prog` read back, so a SAVE→LOAD/RUN round-trips byte-identically (oracle
   `disk_probe_save.py`).
 
-**Device scope — DISK ONLY (own-design descope).** A `"CAS:"` device (tape write)
-is **out of scope** for both verbs: `reject_cas` peeks the prefix
-non-destructively (exactly like `do_bload`'s CAS: peek, so `"CASE.BIN"` falls
-through cleanly) and takes `load_error` on a `"CAS:"` match. Tape WRITE would need
-the cassette BIOS write contract (TAPOOH/TAPOUT/TAPLOT), which this build does not
-implement. Documented limitation, not a divergence from a reference behaviour we
-reproduce.
+**Device dispatch — DISK or CAS:.** Both verbs now **device-dispatch** on the
+prefix: a `"CAS:"` device routes to the cassette write path (*§tape SAVE / CSAVE*
+below), and a bare name / `"A:"`/`"B:"` goes to the disk path above. The prefix is
+peeked **non-destructively** (`dev_cas`, exactly like `do_bload`'s CAS: peek, so
+`"CASE.BIN"` falls through to disk cleanly). This replaces the earlier
+`reject_cas → load_error` descope (tape write is now implemented).
 
 **SAVE `,A` ASCII form — out of scope (own-design descope).** `SAVE"name",A`
 (detokenised ASCII save) takes `load_error`: any comma after the SAVE filename is
@@ -1474,7 +1473,7 @@ implementation; documented in disk/PROVENANCE.md).
 | on-disk tokenised-BASIC `[$FF]` + line-link image `TXTBASE..PRGEND+1` | `$FF` | MSX-BASIC file formats (already sourced, §disk LOAD) | sourced |
 | BDOS Create / Sequential Write / Close call numbers | $16 / $15 / $10 | MSX2 TH / MSX-DOS BDOS call table | sourced |
 | default exec address = start when `,exec` omitted | — | own design (matches read side / MSX BASIC); oracle round-trip `disk_probe_save.py` | sourced |
-| `"CAS:"` tape WRITE rejected (`reject_cas` → `load_error`) | — | own-design descope (no cassette write contract in this build) | quarantined |
+| `"CAS:"` device dispatches to the cassette write path (was `reject_cas`→`load_error`) | — | implemented (*§tape SAVE / CSAVE*); non-destructive `dev_cas` peek | sourced |
 | SAVE `,A` ASCII-save form rejected (`load_error`) | — | own-design descope (ASCII detokeniser out of scope) | quarantined |
 | `DSV_OFF`/`DSV_PTR`/`DSV_END` write-stream scratch | $E0EC/$E0ED/$E0EF | own choice (free page-$E0 RAM, collision-checked) | sourced |
 | record-rounded file size (128-byte pad) | — | disk ROM BDOS property (disk/disk.asm, out of scope); benign for both readers | sourced |
@@ -1488,3 +1487,47 @@ CRUNCH_ONLY cases). The MSX-DOS cross-read (the disk ROM's write side proven val
 to genuine MSX-DOS) is already established for the BDOS layer by
 `disk_probe_fwrite.py` (disk/PROVENANCE.md §FAT12 write-back); these handlers only
 drive that proven BDOS write subset.
+
+## tape SAVE / CSAVE — cassette write side (basic/save.asm, basic/interp.asm, basic/sysvars.inc)
+
+The WRITE complement of *§Phase 1 cassette load* (CLOAD/LOAD"CAS:"). `CSAVE"name"`,
+`SAVE"CAS:name"` (both tokenised) and `BSAVE"CAS:name",start,end[,exec]` (binary)
+write a real cassette file through the zerobas-tape **write** signal layer
+(`TAPOON $00EA` / `TAPOUT $00ED` / `TAPOOF $00F0`, already implemented in
+`tape/tape.asm`, reached via the cassette BIOS vectors). Same two-block cassette
+file layout the read side consumes and that `cas_encode.py` (`build_cas` /
+`build_cas_basic`) documents:
+
+- **Header block** (`TAPOON` long): the file-type id ×10 — `$D3` for tokenised
+  (CSAVE / SAVE"CAS:"), `$D0` for binary (BSAVE) — then the 6-char space-padded
+  filename; `TAPOOF`.
+- **Data block** (`TAPOON` short): for binary, `start`/`end`/`exec` (LE) then
+  `RAM[start..end]`; for tokenised, the line-link program image `TXTBASE..PRGEND+1`
+  (ending in the `$0000` end-link). `TAPOOF`. No `$FE`/`$FF` markers — those are
+  disk-only; on tape the `$D0`/`$D3` header-block id is the type tag.
+
+**Register hygiene (the load-side lesson applied).** The cassette BIOS calls
+clobber every register (`TAPIN` famously returns `C=0`; `TAPOUT` is no safer), so
+the tape-save loops keep ALL state in RAM across each `TAPOUT`: `TSV_PTR` ($E0F1) /
+`TSV_END` ($E0F3) walk the source, `TSV_CNT` ($E0F5) counts, `TSV_NAME` ($E0F6, 6)
+holds the parsed name — the same discipline `disk_putword` uses on the disk side.
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `CSAVE` statement token | `$9A` | OBSERVED from the Philips VG-8020 crunch buffer (`basic_probe_crunch.py`, scratch line, restored to pristine); cross-checks MSX2 TH Table 2.20 (adjacent to `CLOAD $9B`) | sourced |
+| `TAPOON`/`TAPOUT`/`TAPOOF` write entries | `$00EA`/`$00ED`/`$00F0` | MSX2 TH cassette BIOS entry table; our own `tape/tape.asm` contracts | sourced |
+| Header block = file-type id ×10 + 6-char name; data block = payload | `$D3`/`$D0` | MSX2 TH cassette file format; cross-checks `cas_encode.py` + a real VG-8020 recording (oracle) | sourced |
+| tokenised data block = `TXTBASE..PRGEND+1` line-link image (ends in `$0000`) | — | program.asm line-link layout (already sourced); identical to the disk/tape read image | sourced |
+| binary data block = `start`/`end`/`exec` (LE) + `RAM[start..end]` | — | MSX-BASIC binary cassette format (already sourced, §disk BLOAD execute) | sourced |
+| `SAVE"CAS:"` / `CSAVE` write the **tokenised** ($D3) format (no ASCII save) | — | own-design descope (matches zerobas's tokenised disk SAVE; ASCII detokeniser is Phase 2) | quarantined |
+| 6-char filename truncation / space-pad; bare `CSAVE` → 6 spaces | — | MSX cassette format (6-char name); bare-name default is own design | sourced |
+| `TSV_PTR`/`TSV_END`/`TSV_CNT`/`TSV_NAME` tape-write scratch | $E0F1/$E0F3/$E0F5/$E0F6 | own choice (free page-$E0 RAM, collision-checked clear of `DSV_*`/read-side scratch) | sourced |
+
+Oracle confirmation: `basic_probe_tape_save.py` (msx-preservation), three independent
+oracles on `C-BIOS_MSX1_EU_TAPE` (zerobas-tape write layer) with `basic.rom` as a
+cart — (1) **format**: zerobas writes a tape, openMSX records the CAS-out, `cas_decode`
+yields bytes byte-identical to `build_cas`/`build_cas_basic`; (2) **cross-read**: the
+reference Philips VG-8020 `CLOAD`s zerobas's recorded `.cas` to the correct image; (3)
+**self round-trip**: `CSAVE`→`CLOAD` and `BSAVE"CAS:"`→`BLOAD"CAS:"` byte-identical
+(using the just-fixed read path). Crunch stays byte-identical and the five basic
+regression probes ALL PASS.
