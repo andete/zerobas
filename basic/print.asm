@@ -46,7 +46,9 @@ exp_loop:
                 jr      nz,exp_strvar       ; string variable -> print its value
 exp_num:
                 call    eval                ; numeric expression -> DE = value
-                call    print_number
+                push    hl                  ; print_number divides the value in HL,
+                call    print_number        ;  clobbering the token cursor — guard it
+                pop     hl                  ;  (same as exp_strvar does for print_strval)
                 jp      exp_loop
 exp_strvar:
                 call    str_eval            ; STRPTR -> the var's value, HL advanced
