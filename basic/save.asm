@@ -497,6 +497,13 @@ expect_comma_eval:
 ; disk_write_begin — require a recorded disk-ROM slot, then Create (truncate-or-
 ; make) the file named in DISK_FCB_NAME and arm the sequential-write iterator.
 ; On any failure jumps to load_error (does not return).
+;
+; DOCUMENTED DIVERGENCE (no write rollback): fat_io_create stamps the directory
+; entry up front. If a later disk_putbyte/disk_write_end fails mid-stream (disk
+; full / write error), the error path jumps to load_error WITHOUT fat_io_close, so
+; the entry is left with an un-stamped size/first-cluster (a zero-length or partial
+; file). Acceptable for a game loader — a failed SAVE simply needs re-issuing — and
+; no caller depends on atomic write; surfaced here so it is not mistaken for a bug.
 disk_write_begin:
                 ld      a,(DISKSLOT_OK)
                 or      a

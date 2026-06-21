@@ -55,10 +55,10 @@ HPHYD           equ     $FFA7   ; PHYDIO hook (5 RAM bytes, default C9)
 DSKIO_ENTRY     equ     $4010   ; our DSKIO ($4000 + $10)
 
 ; --- Disk scratch RAM (disk/PROVENANCE.md §Scratch RAM) --------------------
-DPB_AREA        equ     $E288   ; DPB work area (DPB_SIZE bytes)
-DPB_SIZE        equ     18      ; DPB is 18 bytes (MSX2 TH, DPB layout)
-
-; FDC driver state (6 bytes in the gap between the DPB and the sector buffer)
+; (GETDPB writes the 18-byte DPB into the CALLER's buffer per MSX2 TH, so the disk
+; ROM reserves no local DPB area.)
+;
+; FDC driver state (6 bytes below the sector buffer)
 FDC_CNT         equ     $E29A   ; remaining sector count
 FDC_LSEC        equ     $E29B   ; current logical sector (word)
 FDC_DEST        equ     $E29D   ; current transfer address (word)
@@ -175,20 +175,20 @@ BPB_FATSZ16     equ     22      ; sectors per FAT copy (word LE)
 ; The registers are memory-mapped into ROM page 1 at the canonical $7FB8 window;
 ; the driver runs here (slot 3-1, $4000-$7FFF) and addresses them directly.
 FDC_STATUS      equ     $7FB8   ; read = status, write = command
-FDC_TRACK       equ     $7FB9   ; track register
+; ($7FB9 = track register — unused: seeks target the track via the Data register.)
 FDC_SECTOR      equ     $7FBA   ; sector register
 FDC_DATA        equ     $7FBB   ; data register
 FDC_CTRL        equ     $7FBC   ; write = drive/side/motor latch; read = IRQ/!DRQ
 
-; Control-latch write bits (NationalFDC.cc writeMem)
+; Control-latch write bits (NationalFDC.cc writeMem). Single-drive machine: only
+; drive A is selected (drive B would be $02 — never used).
 CTRL_DRIVE_A    equ     $01     ; select drive 0 (A)
-CTRL_DRIVE_B    equ     $02     ; select drive 1 (B)
 CTRL_SIDE       equ     $04     ; side select (0 = side 0, 1 = side 1)
 CTRL_MOTOR      equ     $08     ; motor on
 
-; WD2793 status-register bits (WD2793 datasheet)
-ST_BUSY         equ     $01     ; command in progress
-ST_DRQ          equ     $02     ; data request (byte ready, Type II)
+; WD2793 status-register bits (WD2793 datasheet). BUSY (bit 0) and DRQ (bit 1)
+; are polled with literal `bit 0,a` / `bit 1,a` in the transfer loops (a `bit`
+; index cannot take a mask), so only the error-mask bits below need symbols.
 ST_LOST         equ     $04     ; lost data (Type II)
 ST_CRC          equ     $08     ; CRC error
 ST_RNF          equ     $10     ; record not found (Type II)
@@ -200,7 +200,7 @@ CMD_RESTORE     equ     $0C     ; restore to track 0  ($00 + headload + verify)
 CMD_SEEK        equ     $1C     ; seek to (Data reg)  ($10 + headload + verify)
 CMD_READ        equ     $80     ; read sector, single record
 CMD_WRITE       equ     $A0     ; write sector, single record (Type II, $A0 base)
-CMD_FORCEINT    equ     $D0     ; force interrupt (abort)
+; ($D0 = force interrupt / abort — unused: no command is ever aborted mid-flight.)
 
 ; --- ROM skeleton -----------------------------------------------------------
                 org     $4000

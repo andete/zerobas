@@ -394,16 +394,25 @@ DIRENT_FIRSTCLUS equ    26      ; first-cluster word (LE) within a dir entry
 DIRENT_FILESIZE equ     28      ; file-size dword (LE) within a dir entry
 EOC             equ     $0FFF   ; end-of-chain marker we write (Microsoft FAT §3.2)
 ;
-; Scratch RAM (page-3 RAM; NOT part of the ROM image). Laid out to mirror
-; disk/disk.asm's own FAT scratch region so the ported algorithm is unchanged.
-; This region ($E2A0..$E75F) is loader-side free: zerobas-BASIC's own page-3 use
-; tops out at STRSCR ($E380) only inside page $E3... actually STRSCR overlaps —
-; see the dedicated allocation below which is placed ABOVE all basic-core RAM and
-; clear of the own disk ROM's DSKIO work bytes ($E29A..$E29F). A DSKIO call (own
-; or foreign) clobbers registers and its OWN work RAM but not this region: the own
-; zerobas-disk DSKIO uses only $E29A..$E29F (below FSECTOR_BUF); a standard foreign
-; disk ROM keeps its sector work area in the $F2xx-$F3xx sysvar region (MSX2 TH
-; work area), clear of page $E2/$E5/$E7. So these buffers survive across DSKIO.
+; Scratch RAM (page-3 RAM; NOT part of the ROM image). The host buffers below are
+; placed ABOVE all basic-core RAM (which tops out at STRSCR $E360..$E380).
+;
+; CROSS-COMPONENT OVERLAP INVARIANT (the load-bearing one — read before moving any
+; address here). On the combined machine these host buffers ($E5C0..$E9FB) OVERLAP
+; zerobas-disk's own scratch: disk SECTOR_BUF $E2A0..$E49F sits just below, and disk
+; WBUF $E560..$E75F overlaps FSECTOR_BUF directly. This is safe ONLY because the
+; host drives zerobas-disk exclusively through the raw DSKIO ($4010) entry, and
+; DSKIO touches just its FDC work bytes ($E29A..$E29F) + the caller's HL buffer —
+; it never reaches disk's SECTOR_BUF / WBUF (those belong to disk's GETDPB / bdos
+; FAT paths, which the host never calls: it owns FAT12 itself via basic/fat.asm and
+; parses the BPB directly, never invoking $4016 GETDPB). Break that discipline —
+; e.g. make the host call $4016, or route disk DSKIO through SECTOR_BUF — and these
+; buffers corrupt silently. No compile-time guard enforces it (two separate
+; assembly units); the contract lives here and in disk/disk.asm's scratch map.
+; A *foreign* disk ROM's DSKIO scratch is outside our control and could in principle
+; collide with this region; the CF-3300 oracle keeps its work area in the
+; $F2xx-$F3xx sysvar block (MSX2 TH work area), clear of page $E2/$E5/$E7/$E9, so it
+; survives — but that is an observed property of that ROM, not a guarantee.
 ;
 ; Two independent 512-byte sector buffers: FSECTOR_BUF holds the file's in-flight
 ; READ sector OR the data being accumulated for a WRITE; FWBUF is used by the
