@@ -54,9 +54,10 @@ rl_loop:
                 cp      32                  ; ignore other control chars
                 jr      c,rl_loop
                 ld      b,a                 ; hold the char
-                ld      a,l                 ; bounds: LINEBUF..LINEBUF+LINEMAX-1
-                cp      (LINEBUF+LINEMAX) & $FF   ; single page $E0, low byte ok
-                jr      nc,rl_loop          ; buffer full -> drop the char
+                ld      a,l                 ; bounds: keep the last byte free for the
+                cp      (LINEBUF+LINEMAX-1) & $FF  ; Enter terminator, so a full line's 0
+                jr      nc,rl_loop          ;  lands inside LINEBUF (not TOKBUF). LINEBUF
+                                            ;  is one page ($E1xx), so the low byte suffices.
                 ld      (hl),b
                 inc     hl
                 ld      a,b

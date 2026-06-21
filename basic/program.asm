@@ -626,6 +626,14 @@ ex_ret_under:
 ; Assign init to the loop variable, then push a frame
 ; [var:1][limit:2][step:2][CURLINE:2][resume-ptr:2] and fall through to run the
 ; loop body (the statements following FOR). NEXT consults the top frame.
+;
+; DOCUMENTED DIVERGENCE (PROVENANCE.md): the FOR/NEXT loop variable is a SINGLE
+; letter only — the frame stores it in one byte (frame[0]) and NEXT matches on
+; one char. LET/PRINT/READ honour 2-significant-char names (var_name_key), so a
+; `FOR INDEX=…` reads only 'I' and then fails the '=' check (it sees 'N'). The
+; keying is consistent — `FOR I` and `I=` address the same cell, no aliasing —
+; this is purely a parse limit. Game-loader stubs use `FOR I=…`/`FOR X=…`, so
+; single-letter loop vars suffice; multi-char loop vars are Phase-2 scope.
 ex_for:
                 inc     hl                  ; past the FOR token
                 call    skip_spaces

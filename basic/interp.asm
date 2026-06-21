@@ -932,6 +932,8 @@ tok_skip:
                 jr      z,tsk_str
                 cp      REM_TOKEN           ; REM -> rest of line
                 jr      z,tsk_rem
+                cp      DATA_TOKEN          ; DATA -> verbatim body to ':' / EOL
+                jr      z,tsk_data
                 ret                         ; 0-operand token / plain byte
 tsk1:
                 inc     hl
@@ -954,6 +956,14 @@ tsk_rem:
                 ret     z
                 inc     hl
                 jr      tsk_rem
+tsk_data:                                   ; DATA body: verbatim ASCII to ':' or EOL,
+                ld      a,(hl)              ; left un-consumed (the ':' / 00 is stepped by
+                or      a                   ; the caller's outer loop). Skipping the body
+                ret     z                   ; as a unit means a stray control byte in it
+                cp      COLON               ; can never be misread as an operand-bearing
+                ret     z                   ; token — same end position as the old
+                inc     hl                  ; byte-by-byte walk on valid printable DATA.
+                jr      tsk_data
 
 ; --- skip_to_eol: HL at a token body -> HL just past the line's 00 terminator -
 ; Token-aware (steps whole tokens via tok_skip), so an operand byte equal to 00
