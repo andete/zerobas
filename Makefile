@@ -45,6 +45,13 @@ test-dsk: $(DISK_TEST_DSK)
 unit-test:
 	python3 tests/run.py
 
+# Code-coverage report for the unit tests: monkeypatches the Z80 core's step()
+# to log executed opcode addresses (no production change), then buckets them
+# against the symbol table to report per-routine entry coverage. See
+# tests/coverage.py.
+coverage:
+	python3 tests/coverage.py
+
 clean:
 	rm -f $(ROM) $(DISK_ROM)
 
@@ -54,4 +61,4 @@ clean:
 patches: $(ROM) build-patches.sh tools/rom_patch.py tools/overlay_page1.py
 	sh build-patches.sh $(STOCK)
 
-.PHONY: clean patches disk test-dsk unit-test
+.PHONY: clean patches disk test-dsk unit-test coverage

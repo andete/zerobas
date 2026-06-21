@@ -18,6 +18,21 @@ python3 tests/test_tokenise.py
 
 No dependencies beyond Python 3 and `pasmo` (already required to build).
 
+## Coverage
+
+```sh
+make coverage             # or: python3 tests/coverage.py
+```
+
+`tests/coverage.py` monkeypatches the Z80 core's `step()` to log every executed
+opcode address (no change to `z80.py`), runs the tests in-process per ROM group,
+and buckets the executed addresses against the symbol table to report, for each
+labelled routine, whether any test entered it. It's region-*entry* coverage —
+"is this routine tested?" — not a byte/line metric. Constants (UPPERCASE) and
+named data tables are excluded so they don't masquerade as un-executed code.
+Routines behind real disk/FDC/cassette I/O show as uncovered because they're
+Tier-3 (openMSX-probe territory), not host-testable.
+
 ## How it works
 
 - **`z80.py`** — an embeddable Z80 CPU core (instructions + flags only). Any
