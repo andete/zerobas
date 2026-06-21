@@ -577,16 +577,21 @@ sufficient for the boot-loader use the project targets.
 The interpreter half here is correct and crunch byte-identical, and the synthetic
 `.cas` format is oracle-validated: the **reference VG-8020's own built-in CLOAD
 loads our two-block `$D3` tape to the exact expected line-link image** at TXTBASE
-(`basic_probe_cload.py`, FORMAT check PASS). But an end-to-end load *on zerobas*
-is blocked by the **device half** under test — the zerobas-tape patch's `TAPIN`
-cannot frame a run of consecutive `$00` bytes, and every tokenised BASIC program
-ends in the all-zero `$0000` end-link. Confirmed by a raw verbatim TAPIN read,
-which hangs inside `TAPIN` on the trailing `$00` run, while the reference's own
-tape ROM (exercised by the FORMAT check) frames the same bytes fine. This is a
-zerobas-tape (cassette device-half) limitation tracked in that component, NOT a
-CLOAD/LOAD interpreter-half bug; the on-device functional load is gated on a
-zerobas-tape `$00`-run framing fix. (BLOAD is unaffected — it reads a known byte
-count and never a mid-stream `$0000`; `basic_probe_bload.py` still PASSes.)
+(`basic_probe_cload.py`, FORMAT check PASS). An end-to-end load *on zerobas* now
+also works (`basic_probe_cload_ondevice.py`, ALL PASS, on `C-BIOS_MSX1_EU_TAPE`
+with `basic.rom` as a cart so the zerobas-tape reader services cassette). An
+earlier in-harness hang was misattributed to the device half ("`TAPIN` cannot
+frame a `$00` run"); oracle traces later **disproved** that — `TAPIN` frames the
+`$00` run and the `$0000` end-link correctly at all bauds. The real cause was an
+interpreter-half **register clobber** in `ctp_line`: `TAPIN` uses `C` as its
+bit-counter and always returns `C=0`, but the old code stashed the link-low byte
+in `C` across the second `TAPIN`, so the link word read as `$XX00` and the
+body-length math hung the loader. Fixed by preserving link-low across the second
+read (push/pop). The identical latent clobber in the disk `dpl_line`
+(`disk_getbyte` also returns `C=0` on a record refill) was fixed at the same time.
+`tape/` was correct throughout and is unchanged. (BLOAD was always unaffected — it
+reads a known byte count and never a mid-stream `$0000`; `basic_probe_bload.py`
+still PASSes.)
 
 Validated: `make` builds a clean 16384-byte `basic.rom`, no warnings (no
 jr-out-of-range). The crunch probe stays byte-identical (full ALL PASS, plus the
@@ -601,18 +606,20 @@ data / statements regression probes and `basic_probe_bload.py` all stay PASS.
 | Tokenised-BASIC cassette file id | `$D3` (×10) | MSX2 TH cassette file format; cross-checks `tape/cassette-tool/cas_identify.py` + a real VG-8020 CSAVE recording | sourced |
 | Two-block layout (header block + data block ⇒ two TAPION) | — | MSX2 TH cassette file format; reference VG-8020 loads our two-block `.cas` correctly (oracle) | sourced |
 | Data block = program-area line-link image, ends in `$0000` link | — | program.asm line-link layout (already sourced/oracle); reference-load oracle confirms the loaded image byte-for-byte | sourced |
-| Read stops at the `$0000` end-link (never reads past it) | — | own code; required because the device half blocks on tape silence at end-of-data | sourced |
+| Read stops at the `$0000` end-link (never reads past it) | — | own code; the `$0000` link is the program terminator — reading past it would run into trailing carrier/silence and time out in `TAPIN` | sourced |
 | Links recomputed by `relink` after load (loaded image = typed image) | — | program.asm `relink` (already sourced) | sourced |
 | `CLOAD`/`LOAD` parse + `do_tape_prog` read algorithm; `CLPTR` ($E02B) scratch | — | **own code** (mirrors bload.asm's tape contract + program.asm's store/relink); not derived from any disassembly | sourced |
 | Optional CLOAD filename / `"CAS:"` filename parsed and **ignored** (no tape file catalogue; TAPION opens the next file) | — | **own design** (loader-stub scope; documented in basic/cload.asm) | quarantined |
-| On-zerobas end-to-end functional load blocked by zerobas-tape `$00`-run TAPIN framing (every program ends in `$0000`) | — | **device-half (zerobas-tape) limitation**, not this code — interpreter half is crunch-identical and the `.cas` format is reference-load oracle-validated; gated on a zerobas-tape fix | quarantined |
+| On-zerobas end-to-end functional load (incl. the `$0000` end-link) | works | `basic_probe_cload_ondevice.py` ALL PASS (`C-BIOS_MSX1_EU_TAPE` + `basic.rom` cart, zerobas-tape reader). The earlier "blocked by device half" theory was disproved by oracle traces; the cause was the `ctp_line` register clobber, now fixed | sourced |
 
-The filename-ignore and the on-device functional-load blocker are the two
-**quarantined** items: the first is a deliberate own-design simplification
-(loader-stub scope), the second is a cross-component device-half limitation
-(zerobas-tape `$00`-run framing) — neither is a value lifted from any reference
-ROM or disassembly. The CLOAD/LOAD interpreter half is complete, crunch
-byte-identical, and oracle-validated against the reference's own CLOAD.
+The filename-ignore is the one remaining **quarantined** item: a deliberate
+own-design simplification (loader-stub scope), not a value lifted from any
+reference ROM or disassembly. The earlier "on-device load blocked by zerobas-tape
+`$00`-run framing" quarantine has been **resolved and removed**: oracle traces
+disproved the device-half theory, the real cause was the `ctp_line` link-word
+register clobber (fixed; see above), and on-device CLOAD/LOAD now load correctly.
+The CLOAD/LOAD interpreter half is complete, crunch byte-identical, and
+oracle-validated against both the reference's own CLOAD and an on-device load.
 
 ## Phase 1: minimal string variables for PRINT (basic/strvar.asm, basic/vars.asm, basic/print.asm, basic/interp.asm, basic/sysvars.inc)
 
@@ -1263,8 +1270,9 @@ interior `$00` and could never reach that POKE. The existing
 `disk_probe_load_disk.py`, `disk_probe_run_disk.py`, `disk_probe_bload_disk.py`
 and the four controlflow/loops/data/statements regression probes all still pass.
 The matching `do_tape_prog` fix is exercised by the same length-driven path;
-on-device end-to-end tape load remains gated on the separate zerobas-tape
-`$00`-run TAPIN framing limitation (§Phase 1 cassette load, unchanged).
+on-device end-to-end tape load now also works — the earlier apparent block was a
+`ctp_line` link-word register clobber (`TAPIN`/`disk_getbyte` return `C=0`), fixed
+alongside the disk `dpl_line` clobber (§Phase 1 cassette load, updated).
 
 ## SAVE / BSAVE statement tokens — oracle-locked (tokens + IMPLEMENTED handlers)
 

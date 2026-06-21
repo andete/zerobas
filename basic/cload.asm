@@ -225,10 +225,13 @@ ctp_skip_hdr:
 ctp_line:
                 call    TAPIN               ; link low
                 jp      c,load_error
-                ld      c,a
+                push    af                  ; preserve link-low: TAPIN clobbers C
                 call    TAPIN               ; link high
-                jp      c,load_error
-                ld      b,a                 ; BC = saved link word L_n = A_{n+1}
+                jp      c,ctp_link_err      ; must pop before leaving
+                ld      b,a                 ; B = link high
+                pop     af
+                ld      c,a                 ; C = link low (restored)
+                                            ; BC = saved link word L_n = A_{n+1}
                 ld      a,b
                 or      c
                 jr      z,ctp_done          ; $0000 link -> program complete
@@ -298,6 +301,12 @@ ctp_body:
                 pop     de                  ; DE = remaining count
                 dec     de
                 jr      ctp_body
+
+; ctp_link_err — the second TAPIN (link high) failed with CF; AF (link-low) is on
+; the stack from the push before that call.  Pop it to restore balance, then error.
+ctp_link_err:
+                pop     af
+                jp      load_error
 
 ; ctp_err_pop / ctp_oom_pop — body length / remaining count is on the stack; drop
 ; it before taking the shared error / out-of-memory path so the stack stays balanced.
@@ -405,10 +414,13 @@ disk_prog_load:
 dpl_line:
                 call    disk_getbyte        ; link low
                 jp      c,dpl_err           ; EOF mid-program -> truncated -> error
-                ld      c,a
+                push    af                  ; preserve link-low: disk_getbyte may clobber C
                 call    disk_getbyte        ; link high
-                jp      c,dpl_err
-                ld      b,a                 ; BC = saved link word L_n = A_{n+1}
+                jp      c,dpl_link_err      ; must pop before leaving
+                ld      b,a                 ; B = link high
+                pop     af
+                ld      c,a                 ; C = link low (restored)
+                                            ; BC = saved link word L_n = A_{n+1}
                 ld      a,b
                 or      c
                 jr      z,dpl_done          ; $0000 link -> program complete
@@ -478,6 +490,13 @@ dpl_body:
                 pop     de                  ; DE = remaining count
                 dec     de
                 jr      dpl_body
+
+; dpl_link_err — the second disk_getbyte (link high) returned EOF; AF (link-low)
+; is on the stack from the push before that call.  Pop it to restore balance, then
+; fall through to dpl_err (close file + error path).
+dpl_link_err:
+                pop     af
+                jp      dpl_err
 
 ; dpl_err_pop / dpl_oom_pop — drop the stacked body length / remaining count, then
 ; take the file-closing error / out-of-memory path (stack stays balanced).

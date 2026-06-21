@@ -36,7 +36,7 @@ zerobas is three separately-built artifacts, combined only at runtime: `basic/` 
 
 | | Device / transport layer | Interpreter statements (basic.rom) |
 |---|---|---|
-| **Tape** | ✅ read **and** write signal layer (MSX1/2/2+) | ⚠️ `BLOAD"CAS:",R` works; `CLOAD`/`LOAD"CAS:"` oracle-validated but on-device load blocked by a zerobas-tape `$00`-run framing bug; **no tape SAVE** yet |
+| **Tape** | ✅ read **and** write signal layer (MSX1/2/2+) | ⚠️ `BLOAD"CAS:",R`, `CLOAD`, `LOAD"CAS:"` all load on-device (the apparent "framing" hang was a `basic/cload.asm` link-word register clobber, now fixed); **no tape SAVE** yet |
 | **Disk** | ✅ DSKIO + FAT12 + BDOS, read **and** write (differential vs CF-3300 & MSX-DOS 1) | ✅ `BLOAD`/`LOAD`/`RUN`/`SAVE`/`BSAVE` for `"A:"` † |
 
 † `zerobas-BASIC` reaches the disk through zerobas-disk's **private** `bdos_entry`
@@ -56,12 +56,17 @@ storage statements above.
 ## Remaining — committed work to reach the target
 
 ### Tape — read + write parity with disk
-- [ ] **`CLOAD` / `LOAD"CAS:"` on-device load** — the interpreter half is done and
-      oracle-validated (the reference VG-8020 loads our synthetic `.cas` to the exact
-      expected image), but on real hardware the device-half `TAPIN` hangs on the
-      all-zero `$0000` end-link: a zerobas-tape **`$00`-run framing** limitation.
-      Fix it in [`tape/`](tape/) (the cassette signal layer) so cassette
-      program-load completes on-device. This is the last gap in tape *read*.
+- [x] **`CLOAD` / `LOAD"CAS:"` on-device load** — DONE. The hang was **not** a tape
+      framing bug (oracle traces show `TAPIN` frames the `$00` run and `$0000`
+      end-link fine at all bauds); it was a **link-word register clobber** in
+      [`basic/cload.asm`](basic/cload.asm) `ctp_line`: `TAPIN` returns `C=0` (C is
+      its bit-counter), but the old code stashed link-low in `C` across the second
+      `TAPIN`, so the link word read as `$XX00` and the body-length math hung the
+      loader. Fix = push/pop link-low across the second read (+ a stack-balanced
+      error shim); the same latent clobber in the disk `dpl_line` was fixed too.
+      `tape/` is unchanged. Verified: `basic_probe_cload_ondevice.py` ALL PASS
+      (on `C-BIOS_MSX1_EU_TAPE` + `--cart`), disk LOAD/RUN + the 5 basic regression
+      probes ALL PASS.
 - [ ] **Tape SAVE statements** — `CSAVE` / `SAVE"CAS:"` (tokenised program) and
       `BSAVE"CAS:",start,end[,exec]` (binary) to cassette, using the zerobas-tape
       **write** signal layer (`TAPOON`/`TAPOUT`/`TAPOOF`, already implemented) + the
@@ -138,19 +143,20 @@ stub this supports: `CLEAR …,&Hxxxx : SCREEN n : BLOAD"…",R` or
 ### Statements
 - [x] `CLEAR [strings][,himem]` — nearly every stub sets memory top before `BLOAD`
       (basic/clear.asm: full syntax parses; string-space accepted+ignored, himem
-      recorded to HIMEM `$FC4A`. Oracle `basic_probe_clear.py` still owed.)
+      recorded to HIMEM `$FC4A`. Oracle `basic_probe_clear.py` ALL PASS; see Phase-1 close-out above.)
 - [x] `DEF USR[n]=addr` + `USR[n](x)` function — the non-`,R` jump into loaded code
       (basic/usr.asm: vectors in USRTAB `$F39A`; crunch byte-identical. USR calling
-      convention is own-design integer-only — DAC/VALTYP convention oracle follow-up owed.)
+      convention is own-design integer-only — DAC/VALTYP convention now oracle-measured,
+      `basic_probe_usr.py` ALL PASS; see Phase-1 close-out above.)
 - [x] `CLOAD ["filename"]` — load a BASIC program from cassette; needed when a stub
       chain-loads a BASIC payload rather than a binary (complement to `BLOAD"CAS:"`)
       (basic/cload.asm: CLOAD=$9B / LOAD=$B5 crunch byte-identical; reads the $D3
       tokenised-BASIC tape image into the stored-program area at TXTBASE, relinks,
       makes it the current program. Optional filename parsed+ignored — own-design,
-      no tape file catalogue. Functional load BLOCKED in-harness by a zerobas-tape
-      `$00`-run framing limitation (every program ends in the all-zero $0000 end-link
-      and the device-half TAPIN hangs on it); format+result oracle-validated — the
-      reference VG-8020 loads our synthetic .cas to the exact expected image.)
+      no tape file catalogue. On-device functional load WORKS — the earlier
+      in-harness hang was a `ctp_line` link-word register clobber (not a tape
+      framing bug), now fixed; see the tape-parity section above. Validated by
+      `basic_probe_cload_ondevice.py` ALL PASS, plus the reference-load format oracle.)
 - [x] `LOAD "CAS:filename"` — MSX-BASIC unified tape-load form; shares cassette I/O
       path with `CLOAD` but uses the `OPEN`-style filename syntax
       (same basic/cload.asm path as CLOAD; LOAD=$B5, "CAS:" device parsed, filename
@@ -300,6 +306,7 @@ The cassette signal layer C-BIOS lacks: `TAPION`/`TAPIN`/`TAPIOF` (read) and
 and the write waveform, at 1200 and 2400 baud, round-trip validated on MSX1 /
 MSX2 / MSX2+. See [`tape/DESIGN.md`](tape/DESIGN.md) and
 [`tape/PROVENANCE.md`](tape/PROVENANCE.md). The **interpreter** side is not yet at
-parity — `BLOAD"CAS:",R` works; the two remaining committed items (the `CLOAD`
-on-device `$00`-run framing fix and tape `SAVE`) are in the **Remaining** section
-near the top of this file.
+parity — `BLOAD"CAS:",R`, `CLOAD` and `LOAD"CAS:"` all load on-device (the CLOAD
+on-device fix turned out to be a `basic/cload.asm` link-word register clobber, not
+a tape change); the one remaining committed item, tape `SAVE`, is in the
+**Remaining** section near the top of this file.
