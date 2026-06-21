@@ -1,39 +1,80 @@
 # zerobas roadmap
 
-What is still missing, split into the two delivery phases plus a deferred
-transport track. See [`README.md`](README.md) for the current status,
-[`PROVENANCE.md`](PROVENANCE.md) for the traceability rules every item below
-must honour (allowed sources only; no disassembly), and
-[`docs/dev-workflow.md`](docs/dev-workflow.md) for how to implement and validate
-one item — do **one item per session** to keep context lean.
+zerobas is a **clean-room, game-loader-scoped MSX1 BASIC** plus its two storage
+transports (cassette + disk), combined with an open BIOS (C-BIOS) only at runtime.
+See [`README.md`](README.md) for the charter and the legal/provenance firewall,
+[`PROVENANCE.md`](PROVENANCE.md) for the traceability rules every item below must
+honour (allowed sources only; no disassembly), and
+[`docs/dev-workflow.md`](docs/dev-workflow.md) for how to implement + validate one
+item — do **one item per session** to keep context lean.
 
-## Status today
+## Target — committed scope
 
-Working: byte-identical tokeniser (keywords, integer / `&H` / `&O` constants,
-`= + - * / \ < >`, `MOD`/`AND`/`OR`/`XOR`/`NOT`), stored numbered-line programs
-(insert / replace / delete, `NEW`, `RUN`), control flow (`GOTO`,
-`GOSUB`/`RETURN`, `FOR`/`NEXT`, `IF`/`THEN`/`ELSE`, `ON … GOTO`/`GOSUB`,
-`END`/`STOP`, `CONT` + Ctrl-STOP break/resume), `DATA`/`READ`/`RESTORE`,
-comparisons, `POKE`/`PEEK`, `PRINT`,
-`CLEAR`, `DEF USR`/`USR`, the screen-setup verbs (`SCREEN`, `COLOR`, `CLS`,
-`WIDTH`, `KEY OFF`/`ON`), `LIST` (de-tokenised whole-program listing),
-the memory / I-O access primitives (`VPOKE`/`VPEEK`, `OUT`/`INP`, `VARPTR`;
-`BASE` descoped), multi-character 16-bit integer variables, minimal string
-variables for `PRINT` (`$`-suffixed names: assign a literal / copy another string
-var, then PRINT — no concat/functions/arrays yet), cassette
-`BLOAD"CAS:",R`, and cassette program load (`CLOAD` / `LOAD"CAS:"` — interpreter
-half done + oracle-validated; on-device functional load gated on a zerobas-tape
-`$00`-run framing fix).
+The charter (README) is deliberate: *just enough MSX-BASIC to run the `.BAS` /
+binary loader stubs that boot disk and tape games — **not** full-language
+compatibility.* The committed target is therefore:
 
-## Phase 1 — enough BASIC to boot loader stubs
+1. **Phase 1 — loader-stub BASIC** — ✅ done.
+2. **Disk transport** (read + write) — ✅ done (`disk.rom`; see [`disk/TODO.md`](disk/TODO.md)).
+3. **Tape transport** (read + write) — device signal layer ✅ done; **interpreter
+   parity is the one remaining committed track** (below).
 
-The boot transport is already done: cassette `BLOAD"CAS:",R`, or a stored
-program that pokes and jumps. What remains is the *language* a loader stub uses
-around that `BLOAD` (typical shape: `CLEAR …,&Hxxxx : SCREEN n : BLOAD"…",R`
-or `DEFUSR=&Hxxxx : BLOAD"…",R : A=USR(0)`).
+**Full MSX1 BASIC (Phase 2) is an aspirational appendix, NOT in the committed
+target** — listed at the end of this file for reference only.
 
-Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
-`/` + `AND`/`OR` → `ON GOTO` → screen-setup verbs → `LIST`.
+## Status today — three components, two axes
+
+zerobas is three separately-built artifacts, combined only at runtime: `basic/` →
+`basic.rom` (cartridge, slot 0 page 1); `tape/` → the zerobas-tape IPS patch
+(C-BIOS page 0 cassette signal layer); `disk/` → `disk.rom` (slot 3-1).
+
+| | Device / transport layer | Interpreter statements (basic.rom) |
+|---|---|---|
+| **Tape** | ✅ read **and** write signal layer (MSX1/2/2+) | ⚠️ `BLOAD"CAS:",R` works; `CLOAD`/`LOAD"CAS:"` oracle-validated but on-device load blocked by a zerobas-tape `$00`-run framing bug; **no tape SAVE** yet |
+| **Disk** | ✅ DSKIO + FAT12 + BDOS, read **and** write (differential vs CF-3300 & MSX-DOS 1) | ✅ `BLOAD`/`LOAD`/`RUN`/`SAVE`/`BSAVE` for `"A:"` |
+
+Language (Phase 1, done): byte-identical tokeniser (keywords, integer / `&H` /
+`&O` constants, `= + - * / \ < >`, `MOD`/`AND`/`OR`/`XOR`/`NOT`), stored
+numbered-line programs (`NEW`/`RUN`/edit), control flow (`GOTO`, `GOSUB`/`RETURN`,
+`FOR`/`NEXT`, `IF`/`THEN`/`ELSE`, `ON … GOTO`/`GOSUB`, `END`/`STOP`, `CONT` +
+Ctrl-STOP), `DATA`/`READ`/`RESTORE`, `POKE`/`PEEK`, `PRINT`, `CLEAR`,
+`DEF USR`/`USR`, screen-setup verbs (`SCREEN`/`COLOR`/`CLS`/`WIDTH`/`KEY`),
+`LIST`, the memory/I-O primitives (`VPOKE`/`VPEEK`, `OUT`/`INP`, `VARPTR`),
+multi-character 16-bit integer vars, minimal string vars for `PRINT`, and the
+storage statements above.
+
+## Remaining — committed work to reach the target
+
+### Tape — read + write parity with disk
+- [ ] **`CLOAD` / `LOAD"CAS:"` on-device load** — the interpreter half is done and
+      oracle-validated (the reference VG-8020 loads our synthetic `.cas` to the exact
+      expected image), but on real hardware the device-half `TAPIN` hangs on the
+      all-zero `$0000` end-link: a zerobas-tape **`$00`-run framing** limitation.
+      Fix it in [`tape/`](tape/) (the cassette signal layer) so cassette
+      program-load completes on-device. This is the last gap in tape *read*.
+- [ ] **Tape SAVE statements** — `CSAVE` / `SAVE"CAS:"` (tokenised program) and
+      `BSAVE"CAS:",start,end[,exec]` (binary) to cassette, using the zerobas-tape
+      **write** signal layer (`TAPOON`/`TAPOUT`/`TAPOOF`, already implemented) + the
+      cassette file format (`$D3`/`$D0` header block + 6-char name + data). The
+      existing disk `do_save`/`do_bsave` ([`basic/save.asm`](basic/save.asm))
+      descope `"CAS:"` to `load_error` — extend them to route the tape device to the
+      cassette write path. Oracle: a saved tape image reads back byte-identical on
+      the reference, and round-trips through our own `CLOAD`/`BLOAD` once the framing
+      fix above lands. This is tape *write* (mirrors what disk `SAVE`/`BSAVE` did).
+
+### Phase 1 close-out — owed oracles (polish, non-blocking)
+- [ ] `basic_probe_clear.py` — the `CLEAR` oracle is still owed.
+- [ ] `USR` `DAC`/`VALTYP` calling-convention oracle follow-up (`USR` is own-design
+      integer-only; the reference's DAC/VALTYP convention was never differenced).
+
+Everything else for the committed target is done; the detailed done-record follows.
+
+## Done — Phase 1 (loader-stub BASIC)
+
+Complete and oracle-validated; kept below as the provenance / divergence record
+(each item names where it lives and how it was validated). The typical loader
+stub this supports: `CLEAR …,&Hxxxx : SCREEN n : BLOAD"…",R` or
+`DEFUSR=&Hxxxx : BLOAD"…",R : A=USR(0)`.
 
 ### Statements
 - [x] `CLEAR [strings][,himem]` — nearly every stub sets memory top before `BLOAD`
@@ -137,7 +178,14 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
       wording are own-design — zerobas's run loop is its own design, not the
       reference's CONTXT/OLDLIN sysvars — both quarantined in basic/PROVENANCE.md.)
 
-## Phase 2 — complete MSX1 BASIC
+## Aspirational appendix — full MSX1 BASIC (NOT in the committed target)
+
+Beyond the README charter (loader-stub scope) — listed for reference and to mark
+where the natural boundaries are, **not** planned/committed work. If the charter is
+ever raised, this becomes the plan; until then these items are explicitly out of
+scope. (Note: tape/disk file I/O — `SAVE`/`LOAD`/`CSAVE`/`CLOAD`/`BSAVE` — has been
+pulled forward into the committed transport tracks above; the `OPEN`/`CLOSE`/
+`PRINT#`/`INPUT#` random-access file layer stays here.)
 
 - [ ] **Floating point** — the math pack, `!`/`#`/`%` type suffixes,
       `DEFINT`/`DEFSNG`/`DEFDBL`/`DEFSTR`, and the float crunch tokens
@@ -165,39 +213,27 @@ Suggested order: `CLEAR` → `DEF USR`/`USR` → multi-char vars → `PRINT` →
 - [ ] **Editor / program management** — full `LIST`, `DELETE`, `RENUM`, `AUTO`,
       `TRON`/`TROFF`, `SWAP`, `WAIT`, `ERASE`, `FRE`, full `CLEAR` semantics
 
-## Deferred track — disk transport
+## Done — storage transports
 
-Not Phase 1 or 2. See [`disk/TODO.md`](disk/TODO.md) for the full plan and
-status. The disk-interface ROM (`disk/`) is implemented and functionally
-validated on openMSX — FDC driver + FAT12 read path + BDOS dispatcher all pass
-against the test image, and the differential DSKIO oracle matches the National
-CF-3300 byte-for-byte. The disk track is now gated on **one `basic/` item**,
-which is why it leads the list below.
+### Disk (`disk/` → `disk.rom`, slot 3-1) — complete, read **and** write
+The full FDC + FAT12 + BDOS stack, both directions, each layer
+differential-confirmed against real hardware/software (strictly black-box, no
+disassembly): WD2793 physical sector read **and** write vs the **National
+CF-3300**, and the FCB BDOS file read **and** write (Open/SeqRead/Close +
+Create/SeqWrite/Close, on a FAT12 read+write-back layer) vs real **MSX-DOS 1**.
+The interpreter side lives in `basic/`: `BLOAD`/`LOAD`/`RUN`/`SAVE`/`BSAVE` for
+`"A:"`, the `init_ext_roms` slot-scan ([`basic/initext.asm`](basic/initext.asm))
+that boots the disk ROM, and the cross-slot BDOS calls. See
+[`disk/TODO.md`](disk/TODO.md) and [`disk/PROVENANCE.md`](disk/PROVENANCE.md) for
+the per-item record and the documented divergences (FCB bookkeeping fields,
+directory timestamps, the intentional GETDPB stub).
 
-### Priority — next `basic/` task (gating blocker for the whole disk path)
-
-- [x] **Init disk ROMs from zerobas-BASIC's INIT** — found during openMSX
-      validation. C-BIOS scans slot 0 (zerobas-BASIC) before slot 3-1, and
-      zerobas-BASIC's INIT enters the REPL without ever returning, so the disk
-      ROM's INIT in slot 3-1 never ran in the combined machine.
-      (basic/initext.asm: `init_ext_roms`, called from `init` before `repl`,
-      replicates the rest of the BIOS boot scan — for every primary slot *after*
-      our own page-1 primary and every expanded subslot it finds the `"AB"`
-      header at $4000 and `CALSLT`s the INIT word at $4002. Uses RDSLT $000C /
-      CALSLT $001C / EXPTBL $FCC1 / port $A8 — all allowed-source-sourced;
-      scratch in the free $E0D5 RAM gap, run under `di`. Crunch byte-identical;
-      4 regression probes still pass. Functional `disk_probe_init.py` PASS on
-      `C-BIOS_MSX1_BASIC_DISK`: after boot SYSTEM $F37D=$4168, H.PHYD $FF3E=JP
-      $4165, H.DSKIO $FF4B=JP $4048 — the disk INIT now runs (control with the
-      pre-scan ROM reads C-BIOS defaults $C9). Divergence: scans only primaries
-      after our own (BIOS scan order), so a sibling subslot under zerobas's own
-      primary is not reached — quarantined own-design in basic/PROVENANCE.md, not
-      the case for the slot-3-1 disk reference.)
-
-The remaining interpreter-side items (disk-filename parsing in `BLOAD`/`LOAD`,
-`RUN"file"`, BSAVE-header read, `,R` handoff) are small once that blocker is
-cleared and the [`disk/`](disk/) ROM's BDOS API is stable — they mirror
-[`basic/bload.asm`](basic/bload.asm). Two integration notes from validation:
-reach disk entry points via an inter-slot call (`CALSLT`), and don't rely on the
-`$0080` DTA (page 0 is BIOS ROM under Disk BASIC) — the BLOAD path must choose
-its own transfer buffer.
+### Tape (`tape/` → zerobas-tape IPS patch) — device layer complete, read **and** write
+The cassette signal layer C-BIOS lacks: `TAPION`/`TAPIN`/`TAPIOF` (read) and
+`TAPOON`/`TAPOUT`/`TAPOOF` (write) — FSK leader detect + auto-baud + byte framing
+and the write waveform, at 1200 and 2400 baud, round-trip validated on MSX1 /
+MSX2 / MSX2+. See [`tape/DESIGN.md`](tape/DESIGN.md) and
+[`tape/PROVENANCE.md`](tape/PROVENANCE.md). The **interpreter** side is not yet at
+parity — `BLOAD"CAS:",R` works; the two remaining committed items (the `CLOAD`
+on-device `$00`-run framing fix and tape `SAVE`) are in the **Remaining** section
+near the top of this file.
