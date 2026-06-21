@@ -114,9 +114,17 @@ the private interface meanwhile. After it, both transports are consistently on
 standard interfaces (tape already uses the BIOS cassette entries).
 
 ### Phase 1 close-out — owed oracles (polish, non-blocking)
-- [ ] `basic_probe_clear.py` — the `CLEAR` oracle is still owed.
-- [ ] `USR` `DAC`/`VALTYP` calling-convention oracle follow-up (`USR` is own-design
-      integer-only; the reference's DAC/VALTYP convention was never differenced).
+- [x] `basic_probe_clear.py` — CLEAR oracle done: the `<memory-top>` write to
+      HIMEM (`$FC4A`) is byte-identical to the Philips VG-8020 reference, and all
+      four syntax forms (`CLEAR`, `CLEAR n`, `CLEAR ,himem`, `CLEAR n,himem`)
+      parse + continue the line. String-heap sysvars stay unmanaged by design
+      (no heap in Phase 1). ALL PASS.
+- [x] `USR` `DAC`/`VALTYP` calling-convention oracle done (`basic_probe_usr.py`,
+      ALL PASS): the reference passes an integer USR argument in `DAC+2..3` (16-bit
+      LE at offset 2 of the 8-byte DAC `$F7F6`), sets `VALTYP` (`$F663`) `=$02`, and
+      leaves `HL`→DAC base; zerobas passes the argument directly in `HL` and leaves
+      DAC/VALTYP untouched — the own-design integer-only divergence is now measured,
+      not assumed.
 
 Everything else for the committed target is done; the detailed done-record follows.
 

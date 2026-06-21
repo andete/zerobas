@@ -22,9 +22,12 @@
 ; routine; the value the routine leaves in HL becomes the function result. A
 ; never-returning routine (the typical "the game takes over" case) simply never
 ; RETs, which is fine. This is sufficient for loader stubs, where the argument and
-; return value are usually `0`/ignored. The exact reference register/DAC
-; convention is an oracle follow-up (no oracle probe exists yet — do NOT assume
-; the DAC layout from any disassembly).
+; return value are usually `0`/ignored. The reference convention is now
+; oracle-measured (basic_probe_usr.py, black-box differential vs Philips VG-8020):
+; the reference passes an integer arg in DAC+2..3 (16-bit LE at offset 2 of the
+; 8-byte DAC $F7F6), sets VALTYP ($F663)=$02, and enters with HL->DAC base.
+; zerobas instead passes the arg directly in HL and leaves DAC/VALTYP untouched —
+; a deliberate own-design divergence (observed outputs only; no disassembly).
 ;
 ; Clean-room: original code; DEF USR / USR *semantics* from the public MSX-BASIC
 ; language reference; tokens from Table 2.20; USRTAB from C-BIOS sysvars. No

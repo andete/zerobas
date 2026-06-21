@@ -135,14 +135,21 @@ oracle observation — the fidelity sweep). Verified by `basic_probe_crunch.py`
 Behavioural source: the public MSX-BASIC *language* reference (CLEAR sets the
 string-space size and the highest address BASIC may use). The token byte and the
 HIMEM sysvar are documented-source-first (same provenance model as the Step B
-keyword set). No oracle CLEAR probe exists yet — a `basic_probe_clear.py`
-follow-up is owed in `msx-preservation` to confirm the crunch bytes and the
-HIMEM write against the reference; nothing here invents expected oracle bytes.
+keyword set). Oracle: `basic_probe_clear.py` (msx-preservation) differences
+zerobas against the Philips VG-8020 reference and confirms that after
+`CLEAR 200,&HD000` both store `$D000` (LE) in HIMEM (`$FC4A`) — proving `$FC4A`
+is CLEAR's memory-top home on the reference and that zerobas matches it. All
+four syntax forms (`CLEAR`, `CLEAR n`, `CLEAR ,himem`, `CLEAR n,himem`) parse
+without error and the line continues. zerobas does not maintain the
+string-heap sysvars (STKTOP/FRETOP/STREND) — it has no heap in Phase 1 — so
+only the HIMEM observable is asserted; nothing here invents expected oracle
+bytes. ALL PASS.
 
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
 | `CLEAR` keyword token | `$92` | MSX2 Technical Handbook, Table 2.20 (cross-checks MSX Assembly Page token table; spec-controlflow.md §1) | sourced |
 | `HIMEM` sysvar (CLEAR's memory-top ceiling) | `$FC4A` | C-BIOS system variables (BSD 2-clause); cross-checked against MSX2 Technical Handbook work-area appendix / MSX Assembly Page | sourced |
+| `CLEAR …,&HD000` writes `$D000` (LE) to HIMEM `$FC4A`, byte-identical to the Philips VG-8020 | `00 D0` @ `$FC4A` | `basic_probe_clear.py` differential oracle (Philips VG-8020 vs C-BIOS_MSX1 + cart) | oracle-locked |
 | `CLEAR [<strings>][,<himem>]` syntax — both args optional, comma-separated, bare `CLEAR` valid | — | public MSX-BASIC language reference | sourced |
 | `<string-space>` arg accepted + evaluated, then ignored (zerobas has no string heap to size) | — | own design (minimal memory model); documented in basic/clear.asm | sourced |
 | `<memory-top>` arg stored to HIMEM, record-only (no allocator consults it yet under the fixed RAM layout) | — | own design; HIMEM is the documented home of the value (language reference) | sourced |
@@ -167,14 +174,22 @@ VG-8020 reference via `basic_probe_crunch.py` (`defusr=&h9000`, `defusr0=&h9000`
 | `LIST`/`CLS`/`SCREEN`/`COLOR`/`WIDTH`/`KEY` tokens | `$93`/`$9F`/`$C5`/`$BD`/`$A0`/`$CC` | MSX2 TH Table 2.20 (handlers land in later Phase-1 tasks) | sourced |
 | `USRTAB` (10 USR vectors, 2 bytes each) | `$F39A` | C-BIOS system variables (BSD 2-clause) | sourced |
 | `DEFUSR[n]=<addr>` / `USR[n](<arg>)` syntax + USR-number 0..9 as a digit token | — | public MSX-BASIC language reference; crunch byte-identical (oracle) | sourced |
-| USR calling convention: arg in HL, CALL the routine, HL = result; refuse a `0` (un-DEF'd) vector | — | **own design** (integer-only; no DAC/VALTYP float protocol). Oracle follow-up owed for the exact reference register/DAC convention — NOT taken from any disassembly | quarantined |
+| USR calling convention: arg in HL, CALL the routine, HL = result; refuse a `0` (un-DEF'd) vector | — | **own design** (integer-only; no DAC/VALTYP float protocol). Reference convention now oracle-measured (`basic_probe_usr.py`): integer arg in `DAC+2..3` (LE, 8-byte DAC `$F7F6`), `VALTYP $F663 =$02`, `HL`→DAC base — observed black-box, NOT taken from any disassembly | quarantined |
 | DEF USR / USR parse + trampoline algorithm | — | **own code**; not derived from any disassembly | sourced |
 
 The USR *calling convention* is the one **quarantined** item so far: zerobas's
 integer-only convention is a deliberate own-design stand-in for MSX-BASIC's
-DAC/VALTYP argument protocol, which has no allowed byte-level source here. It is
-sufficient for loader stubs (arg/return usually ignored); a future oracle probe
-should pin the real convention.
+DAC/VALTYP argument protocol. The reference protocol is now **measured** (not
+assumed) by `basic_probe_usr.py` — a black-box differential against the Philips
+VG-8020: a tiny hand-authored stub, installed via `debug write_block` and called
+through `DEFUSR0`, snapshots the entry state. With two distinct integer
+arguments (`12345=$3039`, `258=$0102`) the reference consistently delivers the
+value at `DAC+2..3` (LE word at offset 2 of the 8-byte DAC `$F7F6`), sets
+`VALTYP` (`$F663`) `=$02` (integer), and enters with `HL`→DAC base; zerobas
+delivers the value directly in `HL` and leaves DAC/VALTYP untouched. This
+remains own-design (no byte-level reference source was read — only outputs were
+observed) and is sufficient for loader stubs (arg/return usually ignored); the
+full DAC/VALTYP protocol is Phase 2.
 
 ### Variable store (basic/vars.asm) — Phase 1: multi-character names
 
