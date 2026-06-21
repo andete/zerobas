@@ -34,17 +34,33 @@ A BIOS call (`CHPUT`, `RDVRM`, `DSKIO`, …) or an I/O-bound dependency
 (MSX2 TH / MSX Assembly Page / datasheet — no disassembly). The test asserts the
 routine honours its side; the stub supplies the other side.
 
-## The two demonstrator tests
+## Coverage
 
-| Test | Tier | Stubs | Asserts against |
-|------|------|-------|-----------------|
-| `test_tokenise.py` | pure logic (no BIOS, no I/O) | none | the oracle-validated token format (constants pulled from the symbol file) |
-| `test_getdpb.py` | I/O-bound, via dependency mocking | `fat_mount`, `fat_total_clusters` | the 18-byte DPB, byte-for-byte vs the National CF-3300 oracle |
+| Test | Tier | Stubs | Asserts against (oracle) |
+|------|------|-------|--------------------------|
+| `test_tokenise.py` | 1 (pure) | none | the token format (constants from the symbol file) |
+| `test_expr.py` | 1 + 2 | `RDVRM`, `io_in` (VPEEK/INP) | pure math; MSX-BASIC `TRUE=-1`; the documented div-by-zero contract |
+| `test_vars.py` | 1 (pure) | none | the documented 2-char keying / no-alias design; round-trip |
+| `test_strvar.py` | 1 + 2 | `CHPUT` | the `[len][bytes]` descriptor layout; ASCII; the CHPUT contract |
+| `test_print.py` | 2 | `CHPUT` | base-10 conversion + the documented PRINT-integer framing; CR/LF |
+| `test_list.py` | 2 | `CHPUT` | the detok-inverts-tokenise round-trip (self-justifying) |
+| `test_screen.py` | 2 | `CHGMOD`/`CHGCLR`/`CLS`/`ERAFNK`/`DSPFNK` | the BIOS-call contracts + the colour sysvars |
+| `test_vdpio.py` | 2 | `WRTVRM`, `io_out` | WRTVRM(HL,A) / OUT(port,val) against the fed operands |
+| `test_poke.py` | 1 (pure) | none | `mem[addr]=val`; the error-path ERRMARK |
+| `test_usr.py` | 2 | the USR target address | the USRTAB vector store; `ev_usr` calls it with `HL=arg` |
+| `test_program.py` | 1 (pure) | `CHPUT`/`BREAKX` (neutralised) | the documented line-link layout; insert/replace/delete/relink |
+| `test_getdpb.py` | 2/3 (dep-mock) | `fat_mount`, `fat_total_clusters` | the 18-byte DPB, byte-for-byte vs the National CF-3300 oracle |
 
-`test_getdpb.py` shows the key technique: GETDPB reads the disk through the FDC,
-so its two I/O dependencies are trapped and replaced by callbacks that leave
-exactly the scratch a real 720 KB mount would — then GETDPB's own field assembly
-runs for real and is checked against the oracle.
+`test_getdpb.py` shows the dependency-mock technique: GETDPB reads the disk
+through the FDC, so its two I/O dependencies are trapped and replaced by
+callbacks that leave exactly the scratch a real 720 KB mount would — then
+GETDPB's own field assembly runs for real and is checked against the oracle.
+
+Every expected value is justified by an independent oracle (math, the documented
+MSX-BASIC / BIOS contract, a round-trip property, or a symbol-file constant) and
+cited in the test — not copied from the ROM's own output. FAT/FDC sector I/O is
+genuinely Tier-3 (it needs a disk-controller model) and stays in the openMSX
+probes; `test_getdpb.py` already covers the DPB-builder slice of it.
 
 ## Scope and limits
 
