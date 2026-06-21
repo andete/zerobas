@@ -63,9 +63,25 @@ runs for real and is checked against the oracle.
 
 ## Adding a test
 
+Drop a new `tests/test_<thing>.py` in place — `tests/run.py` (what `make
+unit-test` calls) auto-discovers every `test_*.py`, so there's no runner or
+Makefile to edit. Each file assembles its own ROM to `/tmp` and exits 0 on pass.
+
 1. Build to a scratch path and load it: `Machine("/tmp/x.rom", "/tmp/x.sym")`.
    (Tests assemble to `/tmp` so they never touch committed ROMs.)
 2. `m.trap("some_bios_or_dependency", callback)` for anything that does I/O.
 3. `cpu = m.call("routine", hl=…, de=…)`, then assert on `m.mem[...]` / `cpu.*`.
 4. Build expected values from `m.sym[...]` named constants where possible, so the
    test can't drift from `sysvars.inc`.
+
+### Tier-2 helpers (BIOS-stub tests)
+
+The harness has shortcuts for the common console/BIOS patterns:
+
+- `out = m.capture_chput()` — traps `CHPUT` and accumulates every emitted byte;
+  read `out` after the call. For `PRINT`/`LIST`/string output.
+- `log = m.record("CHGMOD")` — traps a BIOS entry and logs a register snapshot
+  per call (`[{'a':…, 'hl':…}, …]`) without modelling an effect. For calls whose
+  contract is "invoked with these args" (`CHGMOD`, `WRTVRM`, `CHGCLR`, …).
+- `log = m.record_out()` — captures every `OUT (port, val)` (for the `OUT`
+  statement). The core also has `cpu.io_in` for `IN`/`INP`.

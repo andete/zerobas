@@ -41,10 +41,9 @@ test-dsk: $(DISK_TEST_DSK)
 
 # Host-side unit tests: execute the real assembled Z80 against an embedded Z80
 # core — no emulator. Each test assembles to /tmp itself, so this needs no other
-# target. See tests/README.md.
+# target. tests/run.py auto-discovers every tests/test_*.py. See tests/README.md.
 unit-test:
-	python3 tests/test_getdpb.py
-	python3 tests/test_tokenise.py
+	python3 tests/run.py
 
 clean:
 	rm -f $(ROM) $(DISK_ROM)

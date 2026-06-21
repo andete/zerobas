@@ -33,6 +33,11 @@ class Z80:
         self.sp = 0xF380
         self.pc = 0
         self.halted = False
+        # Port I/O hooks. A unit test that exercises OUT/IN (e.g. the OUT
+        # statement) wires these to record or supply port traffic; by default a
+        # read returns the bus-idle $FF and a write is dropped. (port,val).
+        self.io_out = lambda port, val: None
+        self.io_in = lambda port: 0xFF
 
     # --- 16-bit register pairs -------------------------------------------
     def _gp(n):  # generate a bc/de/hl property from its two byte fields
@@ -334,6 +339,10 @@ class Z80:
             self.sp = getattr(self, idx) if idx else self.hl; return
         if op in (0xF3, 0xFB):                 # DI / EI (no interrupts modelled)
             return
+        if op == 0xD3:                         # OUT (n),A  — port = n (A on hi bus)
+            self.io_out(self.fetch(), self.a); return
+        if op == 0xDB:                         # IN A,(n)
+            self.a = self.io_in(self.fetch()) & 0xFF; return
         raise NotImplementedError(
             f"opcode {op:#04x} at PC {self.pc - 1:#06x}"
             + ("" if idx is None else f" (index {idx})"))
@@ -409,6 +418,16 @@ class Z80:
             return
         if op in (0x45, 0x4D):                 # RETN / RETI
             self.pc = self.pop(); return
+        if op & 0xC7 == 0x41 and op != 0x71:   # OUT (C),r   (port = BC)
+            self.io_out(self.bc, self.get_r((op >> 3) & 7)); return
+        if op == 0x71:                         # OUT (C),0   (undocumented)
+            self.io_out(self.bc, 0); return
+        if op & 0xC7 == 0x40:                  # IN r,(C)    (port = BC), sets flags
+            v = self.io_in(self.bc) & 0xFF
+            if ((op >> 3) & 7) != 6:           # 0x70 = IN (C): flags only, no store
+                self.set_r((op >> 3) & 7, v)
+            self.f = (self.f & C) | self._szyx(v) | PARITY[v]
+            return
         raise NotImplementedError(f"ED opcode {op:#04x} at PC {self.pc - 2:#06x}")
 
     # --- DD/FD index-prefixed ---------------------------------------------

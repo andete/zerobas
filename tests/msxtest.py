@@ -64,6 +64,31 @@ class Machine:
         a = name_or_addr if isinstance(name_or_addr, int) else self.sym[name_or_addr]
         self.traps[a] = fn
 
+    # --- Tier-2 conveniences: capture what a routine sends to the BIOS ----
+    def capture_chput(self, name="CHPUT"):
+        """Trap CHPUT and accumulate every emitted byte. Returns the list it
+        appends to (read it after the call). The console BIOS contract is
+        'output the char in A at the cursor' (MSX2 TH / MSX Assembly Page), so
+        the byte under test is register A on each entry."""
+        out = []
+        self.trap(name, lambda m: out.append(m.cpu.a))
+        return out
+
+    def record(self, name, regs=("a", "bc", "de", "hl")):
+        """Trap a routine and log a register snapshot on each entry (without
+        modelling any effect — execution just RETs). Returns the log list.
+        Use for BIOS calls whose contract is 'invoked with these args', e.g.
+        CHGMOD (A=mode), WRTVRM (HL=addr, A=val)."""
+        log = []
+        self.trap(name, lambda m: log.append({r: getattr(m.cpu, r) for r in regs}))
+        return log
+
+    def record_out(self):
+        """Capture every OUT (port,val) the routine performs. Returns the log."""
+        log = []
+        self.cpu.io_out = lambda port, val: log.append((port, val))
+        return log
+
     # --- call a routine by name and run to its RET -----------------------
     def call(self, name_or_addr, max_steps=2_000_000, **regs):
         cpu = self.cpu
