@@ -362,36 +362,24 @@ err_prog_mem:   db      "out of memory",13,10,0
 ; This is DISTINCT from the BSAVE binary's $FE disk marker.
 ;
 ; Unlike the tape path (which has no clean end-of-data and must stop EXACTLY at
-; the $0000 end-link), the disk reader has BOTH a real EOF (disk_getbyte CF=EOF)
+; the $0000 end-link), the disk reader has BOTH a real EOF (fat_io_getbyte CF=EOF)
 ; and the $0000 end-link. The $0000 link is the authoritative end (we stop there
 ; and close); an EOF encountered mid-line is a truncated/corrupt file -> error.
 ;
-; Uses bload.asm's disk plumbing (same ROM): DISKSLOT_OK, bdos_call, disk_getbyte,
-; the Set-DTA($1A)/Open($0F)/Close($10) sequence, DISK_DTA/DTA_OFF/DTA_VALID.
-; Mirrors do_tape_prog's ctp_line/ctp_body/ctp_done line-for-line, but sourcing
-; bytes from disk_getbyte and closing the file at the end.
+; Uses fat.asm's loader-side FAT12 engine over the standard $4010 DSKIO entry
+; (disk-ROM-independent): fat_io_open (mount + find + prime) and fat_io_getbyte
+; (the file byte stream). Mirrors do_tape_prog's ctp_line/ctp_body/ctp_done
+; line-for-line, but sourcing bytes from fat_io_getbyte. No Close on the read side.
 disk_prog_load:
                 ; (1) disk ROM slot must have been recorded by the INIT scan.
                 ld      a,(DISKSLOT_OK)
                 or      a
                 jp      z,load_error
-                ; (2) Set-DTA -> our writable page-3 buffer; mark the record empty
-                ; so the first disk_getbyte triggers a SeqRead ($0080 is BIOS ROM
-                ; under Disk BASIC and would silently fail).
-                ld      a,128
-                ld      (DTA_OFF),a         ; OFF==VALID -> buffer exhausted
-                ld      (DTA_VALID),a
-                ld      c,BDOS_SETDTA
-                ld      de,DISK_DTA
-                call    bdos_call
-                ; (3) Open the file (DE = FCB). A=$00 required.
-                ld      c,BDOS_OPEN
-                ld      de,DISK_FCB
-                call    bdos_call
-                or      a
-                jp      nz,load_error       ; not found / I-O error
-                ; (4) first byte must be the tokenised-BASIC disk marker $FF.
-                call    disk_getbyte
+                ; (2) open the file via the FAT12 engine (mount + find + prime).
+                call    fat_io_open
+                jp      c,load_error       ; not found / mount / I-O error
+                ; (3) first byte must be the tokenised-BASIC disk marker $FF.
+                call    fat_io_getbyte
                 jp      c,dpl_err           ; EOF before the marker -> close + error
                 cp      BASIC_DISK_ID
                 jp      nz,dpl_err          ; wrong marker (e.g. ASCII / BSAVE) -> error
@@ -412,10 +400,10 @@ disk_prog_load:
                 ; Otherwise store link word + 2-byte line number verbatim, then copy
                 ; the computed body byte count and loop.
 dpl_line:
-                call    disk_getbyte        ; link low
+                call    fat_io_getbyte        ; link low
                 jp      c,dpl_err           ; EOF mid-program -> truncated -> error
-                push    af                  ; preserve link-low: disk_getbyte may clobber C
-                call    disk_getbyte        ; link high
+                push    af                  ; preserve link-low: fat_io_getbyte may clobber C
+                call    fat_io_getbyte        ; link high
                 jp      c,dpl_link_err      ; must pop before leaving
                 ld      b,a                 ; B = link high
                 pop     af
@@ -440,7 +428,7 @@ dpl_line:
                 dec     de                  ; DE = body length (incl. its $00 term)
 
                 ; bounds: this line's header (>=4 bytes) must fit below TXTMAX
-                push    de                  ; guard body length across disk_getbyte
+                push    de                  ; guard body length across fat_io_getbyte
                 ld      hl,(CLPTR)
                 ld      de,TXTMAX-4
                 or      a
@@ -456,13 +444,13 @@ dpl_line:
                 ld      (CLPTR),hl
 
                 ; line number (2 bytes)
-                call    disk_getbyte
+                call    fat_io_getbyte
                 jp      c,dpl_err_pop
                 ld      hl,(CLPTR)
                 ld      (hl),a
                 inc     hl
                 ld      (CLPTR),hl
-                call    disk_getbyte
+                call    fat_io_getbyte
                 jp      c,dpl_err_pop
                 ld      hl,(CLPTR)
                 ld      (hl),a
@@ -475,13 +463,13 @@ dpl_body:
                 ld      a,d
                 or      e
                 jr      z,dpl_line          ; whole body copied -> next line
-                push    de                  ; guard remaining count across disk_getbyte
+                push    de                  ; guard remaining count across fat_io_getbyte
                 ld      hl,(CLPTR)          ; bounds check
                 ld      de,TXTMAX
                 or      a
                 sbc     hl,de
                 jp      nc,dpl_oom_pop
-                call    disk_getbyte
+                call    fat_io_getbyte
                 jp      c,dpl_err_pop
                 ld      hl,(CLPTR)
                 ld      (hl),a
@@ -491,7 +479,7 @@ dpl_body:
                 dec     de
                 jr      dpl_body
 
-; dpl_link_err — the second disk_getbyte (link high) returned EOF; AF (link-low)
+; dpl_link_err — the second fat_io_getbyte (link high) returned EOF; AF (link-low)
 ; is on the stack from the push before that call.  Pop it to restore balance, then
 ; fall through to dpl_err (close file + error path).
 dpl_link_err:
@@ -508,11 +496,7 @@ dpl_oom_pop:
                 jp      dpl_oom
 
 dpl_done:
-                ; (6) close the file (program fully read).
-                ld      c,BDOS_CLOSE
-                ld      de,DISK_FCB
-                call    bdos_call
-
+                ; (program fully read; no Close — the read side has no dirty state.)
                 ; --- write the $0000 end-of-program marker and set PRGEND ---
                 ld      hl,(CLPTR)
                 ld      (PRGEND),hl         ; end marker sits at the store cursor
@@ -526,20 +510,15 @@ dpl_done:
                 call    relink
                 ret
 
-; dpl_err — close the open file, then take the normal error path. Reached on an
-; unexpected EOF mid-program, a wrong marker, or an Open after the file vanished.
+; dpl_err — take the normal error path. Reached on an unexpected EOF mid-program,
+; a wrong marker, or an Open after the file vanished. (No Close: read side has no
+; dirty state.)
 dpl_err:
-                ld      c,BDOS_CLOSE
-                ld      de,DISK_FCB
-                call    bdos_call
                 jp      load_error
 
-; dpl_oom — store overflow: close the file, leave a clean (empty) program, report
-; "out of memory". Mirrors ctp_oom for the disk store-overflow case.
+; dpl_oom — store overflow: leave a clean (empty) program, report "out of memory".
+; Mirrors ctp_oom for the disk store-overflow case. (No Close: read side is clean.)
 dpl_oom:
-                ld      c,BDOS_CLOSE
-                ld      de,DISK_FCB
-                call    bdos_call
                 call    new_prog            ; leave a clean (empty) program
                 ld      a,$CC               ; out-of-memory landmark (as store_line)
                 ld      (ERRMARK),a

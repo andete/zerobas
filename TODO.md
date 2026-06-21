@@ -120,24 +120,37 @@ sector interface, **not** avoidable duplication. (True delegation — hosting th
 disk ROM's Disk BASIC extension — is the charter-raising Phase-2 item.) Full pinned
 contract: [`disk/docs/expansion-protocol.md`](disk/docs/expansion-protocol.md).
 
-- [ ] **Host side (`zerobas-BASIC`)** — retarget the loader's cross-slot call from
-      `bdos_entry`/`$F37D` to **`CALSLT $4010` (DSKIO)** with the standard register
-      convention (A=drive, B=#sec, C=media, DE=sector, HL=buf, CY=read/write), and
-      run the **already-built, oracle-confirmed FAT12 read+write engine** loader-side
-      against DSKIO. Rewire `do_disk_bload` / `disk_prog_load` / `do_bsave` / `do_save`
-      ([`basic/bload.asm`](basic/bload.asm), [`basic/save.asm`](basic/save.asm),
-      [`basic/cload.asm`](basic/cload.asm)). DSKIO + BPB suffice (no GETDPB needed
-      here). Sources: MSX2 TH / MSX Assembly Page DSKIO contract; no disassembly.
+- [x] **Host side (`zerobas-BASIC`)** — DONE. The FAT12 read+write engine is ported
+      loader-side into [`basic/fat.asm`](basic/fat.asm) (from `disk/disk.asm`, our own
+      clean-room code) and driven through the standard **`CALSLT $4010` (DSKIO)** entry
+      with the MSX2-TH register convention (A=drive, B=#sec, C=media, DE=sector, HL=buf,
+      **CY=read/write**); the slot is the INIT-scan `DISKSLOT` capture, the address the
+      fixed `$4010` offset (NOT `bdos_entry`/`$F37D`). The four verbs are rewired:
+      `do_disk_bload` ([`basic/bload.asm`](basic/bload.asm)) + `disk_prog_load`
+      ([`basic/cload.asm`](basic/cload.asm)) use `fat_io_open`/`fat_io_getbyte`;
+      `do_bsave`/`do_save` ([`basic/save.asm`](basic/save.asm)) use `fat_io_create`/
+      `fat_io_putbyte`/`fat_io_close`. The private `bdos_entry`/FCB path is retired from
+      the loader (dead RAM/BDOS equates removed from sysvars.inc). DSKIO + the on-disk
+      BPB suffice (no GETDPB on the host side). **Oracle (both disk ROMs):**
+      `BLOAD"A:"`/`LOAD"A:"`/`RUN"A:"`/`SAVE"A:"`/`BSAVE"A:"` ALL PASS under
+      zerobas-BASIC with (i) our own `disk.rom` AND (ii) the foreign National
+      **CF-3300** disk ROM in slot 3-1 — proving the host side disk-ROM-independent
+      (CF-3300 failed every verb on the old `bdos_entry` path). See basic/PROVENANCE.md
+      §disk DSKIO host engine. Sources: MSX2 TH / MSX Assembly Page DSKIO contract;
+      no disassembly.
 - [ ] **Provider side (`zerobas-disk`)** — install the standard **`HPHYD ($FFA7)`→
       DSKIO** hook at INIT (the `RST 30h`/`CALLF` + slot-byte idiom, slot id from the
       INIT scan), and make **`GETDPB ($4016)` real** (currently a stub) so a real
       MSX-BASIC/MSX-DOS host can drive zerobas-disk. (`bdos_entry`/FAT/BDOS stay as
       the internal implementation.) **GETDPB's DPB field encoding is the one
       genuinely-new clean-room item** — needed only for this direction.
-- [ ] **Oracle — disk-ROM independence, both directions** — (a) `BLOAD"A:"` /
-      `SAVE"A:"` round-trip under `zerobas-BASIC` with zerobas-disk **and** with a
-      *foreign* standard MSX1 disk ROM in slot 3-1 (build via
-      `install-openmsx-machine.py --disk-rom cf-3300_disk.rom`); (b) zerobas-disk
+- [ ] **Oracle — disk-ROM independence, both directions** — (a) **DONE (host):**
+      `BLOAD"A:"`/`LOAD"A:"`/`RUN"A:"`/`SAVE"A:"`/`BSAVE"A:"` round-trip under
+      `zerobas-BASIC` with zerobas-disk **and** with the foreign National CF-3300
+      disk ROM in slot 3-1 — ALL PASS on both (machines built via
+      `install-openmsx-machine.py --disk-rom <ROM>`; probes `disk_probe_bload_disk.py`
+      / `disk_probe_save.py` / `disk_probe_load_disk.py` / `disk_probe_run_disk.py` /
+      `disk_probe_load_embedded_nul.py`). (b) **TODO (provider):** zerobas-disk
       reachable from a *real* MSX-DOS host via the standard hook/DSKIO path.
 
 **Sequencing.** Tape parity is **done**, so this is the next committed track. The

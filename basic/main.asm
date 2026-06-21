@@ -78,6 +78,12 @@
 ; The LIST statement + the detokeniser (defines `ex_list`, `detok`).
                 include "basic/list.asm"
 
+; Loader-side FAT12 engine over the standard DSKIO ($4010) sector interface
+; (defines `fat_io_open`/`fat_io_getbyte`/`fat_io_create`/`fat_io_putbyte`/
+; `fat_io_close` + the FAT12 substrate). The disk verbs in bload.asm / cload.asm /
+; save.asm call this; it must be assembled before them.
+                include "basic/fat.asm"
+
 ; The BLOAD statement handler and the ,R handoff (defines `do_bload`).
                 include "basic/bload.asm"
 
@@ -88,7 +94,7 @@
 
 ; The BSAVE / SAVE disk-write statement handlers (defines `do_bsave`, `do_save`)
 ; + the shared disk-write helper. Reuses bload.asm's `load_error` / `dev_cas` /
-; `parse_disk_fcb` / `bdos_call` and expr.asm's `eval`, so it follows them.
+; `parse_disk_fcb` and the fat.asm engine and expr.asm's `eval`, so it follows them.
                 include "basic/save.asm"
 
 ; Stored numbered-line program: storage, NEW, RUN (defines `dispatch_line`).

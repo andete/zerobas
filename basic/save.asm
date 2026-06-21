@@ -485,30 +485,24 @@ expect_comma_eval:
                 ret
 
 ; ===========================================================================
-; Shared disk-write helper (the WRITE analogue of the read side's
-; disk_getbyte/bdos_call). disk_write_begin opens a fresh file and arms the
-; 128-byte record accumulator; disk_putbyte appends one byte, issuing a
-; Sequential Write whenever the record fills; disk_write_end flushes a partial
-; record then Closes. State: DSV_OFF = next fill index into DISK_DTA (0..128).
-; Uses bload.asm plumbing: DISKSLOT_OK, bdos_call, DISK_DTA.
+; Shared disk-write helper (the WRITE analogue of the read side's fat_io_open /
+; fat_io_getbyte). Built on the loader-side FAT12 engine over the STANDARD $4010
+; DSKIO entry (basic/fat.asm) — disk-ROM-independent, NOT the private bdos_entry.
+; disk_write_begin creates a fresh file; disk_putbyte appends one byte (the engine
+; buffers it into a 512-byte sector and flushes whole sectors as they fill);
+; disk_write_end flushes the partial final sector and stamps the directory size.
+; The engine tracks exact byte counts, so the on-disk file size is its true length
+; (no 128-byte record zero-padding) — SAVE/BSAVE produce byte-exact images.
 
-; disk_write_begin — require a recorded disk-ROM slot, Set-DTA to DISK_DTA, then
-; Create (truncate-or-make) the file named in DISK_FCB. Resets DSV_OFF to 0.
+; disk_write_begin — require a recorded disk-ROM slot, then Create (truncate-or-
+; make) the file named in DISK_FCB_NAME and arm the sequential-write iterator.
 ; On any failure jumps to load_error (does not return).
 disk_write_begin:
                 ld      a,(DISKSLOT_OK)
                 or      a
                 jp      z,load_error
-                xor     a
-                ld      (DSV_OFF),a         ; record buffer empty
-                ld      c,BDOS_SETDTA
-                ld      de,DISK_DTA
-                call    bdos_call
-                ld      c,BDOS_CREATE
-                ld      de,DISK_FCB
-                call    bdos_call
-                or      a
-                jp      nz,load_error       ; disk full / write protect / I-O
+                call    fat_io_create       ; mount + dir-create + reset write state
+                jp      c,load_error        ; disk full / dir full / write protect / I-O
                 ret
 
 ; disk_putword — write the 16-bit little-endian word stored at RAM address HL out
@@ -528,71 +522,21 @@ disk_putword:
                 call    disk_putbyte
                 ret
 
-; disk_putbyte — append the byte in A to the current 128-byte record at DISK_DTA;
-; when the record fills (128 bytes) issue a Sequential Write ($15) and reset the
-; fill index. Mirrors disk_getbyte's record framing on the write side.
+; disk_putbyte — append the byte in A to the open-for-write file via the FAT12
+; engine (which buffers into a 512-byte sector and flushes whole sectors as they
+; fill). On a write error jumps to load_error.
 ;   in:  A = byte to write.
-;   out: byte buffered (and possibly a record flushed). On a write error jumps to
-;        load_error. Clobbers A/B/C/D/E/H/L (CALSLT clobbers all across SeqWrite;
-;        state is held in RAM). Preserves nothing.
+;   out: byte appended. Clobbers all (CALSLT clobbers everything across a sector
+;        flush's DSKIO; the engine keeps its state in RAM).
 disk_putbyte:
-                ld      c,a                 ; C = byte to store (survives the index math)
-                ld      a,(DSV_OFF)
-                ld      e,a
-                ld      d,0
-                ld      hl,DISK_DTA
-                add     hl,de               ; HL = DISK_DTA + DSV_OFF
-                ld      (hl),c              ; store the byte
-                inc     a                   ; advance the fill index
-                ld      (DSV_OFF),a
-                cp      128
-                ret     nz                  ; record not full yet
-                ; record full -> Sequential Write it, then reset the index.
-                call    disk_flush_record
+                call    fat_io_putbyte
+                jp      c,load_error        ; disk full / write error
                 ret
 
-; disk_flush_record — write the current 128-byte DISK_DTA record via Sequential
-; Write ($15) and reset DSV_OFF to 0. On a write error jumps to load_error.
-disk_flush_record:
-                ld      c,BDOS_SEQWR
-                ld      de,DISK_FCB
-                call    bdos_call
-                or      a
-                jp      nz,save_write_err   ; $01 disk full / $FF error -> close + error
-                xor     a
-                ld      (DSV_OFF),a
-                ret
-
-; disk_write_end — flush a partial final record (zero-padded to 128 bytes so the
-; whole record is well-defined), then Close ($10) to finalise the directory size.
-; Returns to the caller's caller (the REPL) on success.
+; disk_write_end — flush the buffered partial final sector and stamp the directory
+; entry with the true byte count + first cluster (fat_io_close). On a write error
+; jumps to load_error. Returns to the caller's caller (the REPL) on success.
 disk_write_end:
-                ld      a,(DSV_OFF)
-                or      a
-                jr      z,dwe_close         ; nothing buffered -> just close
-                ; zero-pad the partial record up to 128 bytes.
-                ld      e,a
-                ld      d,0
-                ld      hl,DISK_DTA
-                add     hl,de               ; HL = first unused byte
-                ld      a,128
-                sub     e
-                ld      b,a                 ; B = pad byte count (1..127)
-dwe_pad:
-                ld      (hl),0
-                inc     hl
-                djnz    dwe_pad
-                call    disk_flush_record   ; write the (now full) final record
-dwe_close:
-                ld      c,BDOS_CLOSE
-                ld      de,DISK_FCB
-                call    bdos_call
+                call    fat_io_close
+                jp      c,load_error
                 ret                         ; back to the prompt
-
-; save_write_err — a Sequential Write failed mid-stream: close the file (best
-; effort) then take the normal error path.
-save_write_err:
-                ld      c,BDOS_CLOSE
-                ld      de,DISK_FCB
-                call    bdos_call
-                jp      load_error

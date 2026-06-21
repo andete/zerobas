@@ -313,38 +313,32 @@ SCAN_PRIM       equ     $E0D5   ; primary slot currently being scanned (1)
 SCAN_SLOT       equ     $E0D6   ; candidate slot id for RDSLT/CALSLT (1)
 SCAN_INIT       equ     $E0D7   ; candidate ROM's INIT entry address (2)
 SCAN_IY         equ     $E0D9   ; CALSLT slot word: high byte = slot (IYh) (2)
-; Disk BLOAD scratch FCB (bload.asm disk path). A CP/M-style File Control Block
-; built by the BLOAD parser and handed straight to the disk ROM's bdos_entry
-; (C=Open, DE=FCB). Layout: FCB+0 = drive code (CP/M convention: 0 = default
-; drive, 1 = A, 2 = B — MSX2 Technical Handbook / MSX-DOS BDOS FCB layout); the
-; current disk bdos_open ignores FCB+0, so this is forward-compat only. FCB+1..
-; +11 = the 11-byte 8.3 name field (8-char name + 3-char ext, space-padded $20,
-; UPPER-CASE) — exactly what fat_find consumes (disk/disk.asm bdos_open). 12
-; bytes total. Used only transiently during a BLOAD; placed in the free page-3
-; gap after the INIT-scan scratch and clear of the disk ROM's SECTOR_BUF/FAT
-; scratch region ($E2A0-$E4BF). See PROVENANCE.md §disk-BLOAD scratch FCB.
-DISK_FCB        equ     $E0DB   ; scratch FCB ($E0DB..$E0E6, 12 bytes)
-DISK_FCB_DRV    equ     DISK_FCB        ; +0: drive code (0=default,1=A,2=B)
+; Disk filename scratch (the disk loader/saver verbs). Built by parse_disk_fcb;
+; the loader-side FAT12 engine (basic/fat.asm) consumes the 8.3 NAME field directly
+; — fat_find / fat_dir_create take an 11-byte name pointer, no FCB needed. The +0
+; drive code is kept (parse fills it) but the engine ignores it (single drive A);
+; it is forward-compat only. NAME +0..+10 = the 11-byte 8.3 field (8 name + 3 ext,
+; space-padded $20, UPPER-CASE). Placed in the free page-3 gap after the INIT-scan
+; scratch and clear of the FAT engine's buffers (page $E5+). The "FCB" name is
+; retained for continuity with the parser; only the NAME field is load-bearing now.
+; See basic/PROVENANCE.md §disk-BLOAD scratch FCB / §disk DSKIO host engine.
+DISK_FCB        equ     $E0DB   ; scratch name block ($E0DB.., 12 bytes)
+DISK_FCB_DRV    equ     DISK_FCB        ; +0: drive code (0=default,1=A,2=B; ignored)
 DISK_FCB_NAME   equ     DISK_FCB + 1    ; +1..+11: 8.3 name field (11 bytes)
 ; Disk-ROM slot id recorded by the INIT scan (initext.asm) when it inits an
-; external "AB" ROM, so BLOAD can CALSLT the disk ROM's bdos_entry across slots.
-; The combined machine has exactly one external AB ROM (the disk ROM), so this is
-; unambiguous; a multi-ROM setup would need per-ROM tracking (documented limit,
-; see PROVENANCE.md §disk-ROM slot capture). DISKSLOT_OK = 1 once a slot was
-; recorded; bdos_entry's address is read at load time from the SYSTEM sysvar
-; ($F37D), which the disk INIT filled. Free page-3 RAM in the $E0E7.. gap (after
-; the FCB, before LINEBUF at $E100). See basic/PROVENANCE.md §disk-ROM slot capture.
+; external "AB" ROM, so the disk verbs can CALSLT the disk ROM's standard DSKIO
+; ($4010) across slots (basic/fat.asm dskio_calslt). The combined machine has
+; exactly one external AB ROM (the disk ROM), so this is unambiguous; a multi-ROM
+; setup would need per-ROM tracking (documented limit, see PROVENANCE.md §disk-ROM
+; slot capture). DISKSLOT_OK = 1 once a slot was recorded. Free page-3 RAM in the
+; $E0E7.. gap (after the name block, before LINEBUF at $E100). See basic/
+; PROVENANCE.md §disk-ROM slot capture.
 DISKSLOT        equ     $E0E7   ; disk ROM slot id for CALSLT (1)
 DISKSLOT_OK     equ     $E0E8   ; 1 = DISKSLOT holds a valid disk-ROM slot id
-; do_disk_bload streaming state (page $E0, $E0E9.. gap, dead outside a BLOAD).
-DTA_OFF         equ     $E0E9   ; next unread byte index in DISK_DTA (0..128)
-DTA_VALID       equ     $E0EA   ; bytes available in DISK_DTA this record (0..128)
-BDOS_RES        equ     $E0EB   ; last BDOS result byte (A) returned across CALSLT
-; SAVE / BSAVE disk-write streaming state (page $E0, $E0EC.. gap, dead outside a
-; SAVE/BSAVE). disk_putbyte fills DISK_DTA[0..127]; when the record is full it
-; issues a Sequential Write ($15) and resets the index. DSV_OFF is the next fill
-; index; DSV_PTR / DSV_END drive the do_save program-image source walk.
-DSV_OFF         equ     $E0EC   ; next fill index into DISK_DTA (0..128)
+; SAVE / BSAVE program-image source-walk pointers (page $E0; dead outside a
+; SAVE/BSAVE). DSV_PTR / DSV_END drive do_save's program-image source walk and
+; disk_putword's word-emit (the FAT12 engine's own write buffering lives in its
+; FWR_* scratch, basic/fat.asm — NOT here).
 DSV_PTR         equ     $E0ED   ; SAVE: current source byte pointer (2)
 DSV_END         equ     $E0EF   ; SAVE/BSAVE: last source byte addr, inclusive (2)
 ; Tape CSAVE / BSAVE write scratch (page $E0, $E0F1.. gap; dead outside a tape
@@ -354,29 +348,6 @@ TSV_PTR         equ     $E0F1   ; tape save: current source-byte pointer (2)
 TSV_END         equ     $E0F3   ; tape save: last source-byte address, inclusive (2)
 TSV_CNT         equ     $E0F5   ; tape save: loop counter (1)
 TSV_NAME        equ     $E0F6   ; tape save: 6-char filename buffer (space-padded)
-; BLOAD's own Disk Transfer Area: a writable 128-byte page-3 buffer the BLOAD
-; path hands to BDOS $1A so each SeqRead record lands here (the $0080 default is
-; BIOS ROM under Disk BASIC and would silently fail). Placed at $E4C2, just past
-; the disk ROM's own scratch top ($E4C1 = BDOS_DTA word), so it is clear of the
-; disk ROM's SECTOR_BUF/FAT scratch ($E2A0-$E4C1) AND of every basic RAM region
-; (basic's highest page-3 use is STRSCR $E380; TOKBUF/VARTAB live in page $E1).
-; 128 bytes: $E4C2..$E541. See basic/PROVENANCE.md §disk-BLOAD DTA buffer.
-DISK_DTA        equ     $E4C2   ; BLOAD's 128-byte SeqRead transfer buffer
-SYSTEM_VEC      equ     $F37D   ; SYSTEM sysvar: disk ROM's bdos_entry address (word)
-; BDOS FCB call numbers BLOAD passes to the disk ROM's bdos_entry (C = call #,
-; DE = FCB / pointer, A = result). Same MSX-DOS BDOS table as disk/disk.asm; the
-; two sides must agree. Source: MSX2 Technical Handbook / MSX-DOS BDOS call table.
-BDOS_OPEN       equ     $0F     ; FCB Open               (DE = FCB; A=$00 ok/$FF fail)
-BDOS_CLOSE      equ     $10     ; FCB Close              (DE = FCB)
-BDOS_SEQRD      equ     $14     ; FCB Sequential Read    (A=$00 record / $01 EOF)
-BDOS_SETDTA     equ     $1A     ; Set DTA Address        (DE = new DTA)
-; BDOS WRITE calls the SAVE / BSAVE path passes to the disk ROM's bdos_entry
-; (same MSX-DOS BDOS table as disk/disk.asm; the two sides must agree). Source:
-; MSX2 Technical Handbook / MSX-DOS BDOS call table. Create truncates-or-makes the
-; file; Sequential Write writes one fixed 128-byte record FROM the DTA; Close
-; flushes the partial sector and stamps the directory size.
-BDOS_SEQWR      equ     $15     ; FCB Sequential Write   (writes 128 bytes FROM DTA)
-BDOS_CREATE     equ     $16     ; FCB Create file        (DE = FCB; A=$00 ok/$FF fail)
 ; Disk BSAVE on-disk binary-file header (MSX-BASIC file formats — MSX Wiki /
 ; MSX Resource Center, an allowed public language reference). 7 bytes, then raw
 ; data: [$FE][start:2 LE][end:2 LE][exec:2 LE]. This is the DISK format and is
@@ -393,6 +364,90 @@ BSAVE_DISK_ID   equ     $FE     ; on-disk BSAVE binary-file marker
 ; reference class the $FE BSAVE marker was sourced from). LOAD"filename" verifies
 ; this marker (mismatch -> load_error). See basic/PROVENANCE.md §disk LOAD.
 BASIC_DISK_ID   equ     $FF     ; on-disk tokenised-BASIC program marker
+
+; --- Phase 1.5: loader-side FAT12 engine over the STANDARD DSKIO ($4010) ----
+; basic/fat.asm runs the FAT12 read+write engine HOST-side (in zerobas-BASIC),
+; driving the in-slot disk ROM's standard physical-sector entry DSKIO at $4010
+; across slots (CALSLT). This replaces the private bdos_entry ($F37D) path so the
+; loader is disk-ROM-independent: any standard MSX1 disk ROM (our own or a foreign
+; one, e.g. the National CF-3300) services the same loader unchanged. The engine
+; and these scratch addresses are PORTED from disk/disk.asm (our own clean-room
+; FAT12 code); see basic/fat.asm header + basic/PROVENANCE.md §disk DSKIO host engine.
+;
+; DSKIO_ENTRY: the disk-ROM interface table's DSKIO offset. The standard MSX disk
+; ROM header is 16 bytes, so the six fixed JP entries start at base+$10 (DSKIO),
+; +$13 (DSKCHG), +$16 (GETDPB)... — MSX2 Technical Handbook §5, disk-ROM interface;
+; cross-checked by black-box CF-3300 observation (disk/docs/expansion-protocol.md
+; §3). The ROM base is $4000 for a page-1 disk ROM, so DSKIO sits at $4010. The
+; loader needs ONLY DSKIO + the on-disk BPB (no GETDPB on the host side).
+DSKIO_ENTRY     equ     $4010   ; standard DSKIO entry (ROM base $4000 + $10)
+; BPB field offsets within the boot sector (Microsoft FAT spec §3.1).
+BPB_BYTSPERSEC  equ     11      ; bytes per sector (word LE)
+BPB_SECPERCLUS  equ     13      ; sectors per cluster (byte)
+BPB_RSVDSECCNT  equ     14      ; reserved sectors incl. boot (word LE)
+BPB_NUMFATS     equ     16      ; number of FAT copies (byte)
+BPB_ROOTENTCNT  equ     17      ; max root-directory entries (word LE)
+BPB_FATSZ16     equ     22      ; sectors per FAT copy (word LE)
+; FAT directory-entry field offsets + the end-of-chain marker (Microsoft FAT spec
+; §3.2/§3.4).
+DIRENT_FIRSTCLUS equ    26      ; first-cluster word (LE) within a dir entry
+DIRENT_FILESIZE equ     28      ; file-size dword (LE) within a dir entry
+EOC             equ     $0FFF   ; end-of-chain marker we write (Microsoft FAT §3.2)
+;
+; Scratch RAM (page-3 RAM; NOT part of the ROM image). Laid out to mirror
+; disk/disk.asm's own FAT scratch region so the ported algorithm is unchanged.
+; This region ($E2A0..$E75F) is loader-side free: zerobas-BASIC's own page-3 use
+; tops out at STRSCR ($E380) only inside page $E3... actually STRSCR overlaps —
+; see the dedicated allocation below which is placed ABOVE all basic-core RAM and
+; clear of the own disk ROM's DSKIO work bytes ($E29A..$E29F). A DSKIO call (own
+; or foreign) clobbers registers and its OWN work RAM but not this region: the own
+; zerobas-disk DSKIO uses only $E29A..$E29F (below FSECTOR_BUF); a standard foreign
+; disk ROM keeps its sector work area in the $F2xx-$F3xx sysvar region (MSX2 TH
+; work area), clear of page $E2/$E5/$E7. So these buffers survive across DSKIO.
+;
+; Two independent 512-byte sector buffers: FSECTOR_BUF holds the file's in-flight
+; READ sector OR the data being accumulated for a WRITE; FWBUF is used by the
+; FAT/dir metadata helpers (alloc / link / dir create/update) so a cluster scan or
+; dir stamp never disturbs FSECTOR_BUF's in-flight data (same discipline as
+; disk.asm's SECTOR_BUF/WBUF split). Placed at $E5C0/$E7C0 — above basic-core RAM
+; and the old disk-ROM DTA region, in 64 KB page-3 RAM.
+FSECTOR_BUF     equ     $E5C0   ; file data / read sector buffer ($E5C0..$E7BF)
+FWBUF           equ     $E7C0   ; FAT/dir metadata sector buffer ($E7C0..$E9BF)
+; FAT12 geometry, filled by fat_mount from the on-disk BPB (own-choice free RAM in
+; page $E9 above the buffers).
+FAT_SECPERCLUS  equ     $E9C0   ; sectors per cluster (byte)
+FAT_FATSTART    equ     $E9C1   ; first FAT sector (= reserved sectors) (word)
+FAT_FIRSTROOT   equ     $E9C3   ; first root-directory sector (word)
+FAT_ROOTSECS    equ     $E9C5   ; number of root-directory sectors (word)
+FAT_FIRSTDATA   equ     $E9C7   ; first data sector (word)
+FAT_CURCLUS     equ     $E9C9   ; current cluster in the open file's chain (word)
+FAT_CLUSSEC     equ     $E9CB   ; sector index within current cluster (byte)
+FAT_FIRSTCLUS   equ     $E9CC   ; first cluster of the found file (word)
+FAT_FILESIZE    equ     $E9CE   ; file size in bytes (4-byte LE)
+FAT_NUMFATS     equ     $E9D2   ; number of FAT copies (byte; from BPB +16)
+FAT_SECPERFAT   equ     $E9D3   ; sectors per FAT copy (word; from BPB +22)
+; FAT12 working scratch (transient within a single call).
+FAT_PARITY      equ     $E9D5   ; 1 = odd cluster, 0 = even (FAT12 nibble pack)
+FAT_BYTEIDX     equ     $E9D6   ; byte index within a FAT sector (word, 0..511)
+FAT_FATSEC      equ     $E9D8   ; FAT sector currently read (word)
+FAT_B0          equ     $E9DA   ; first FAT byte of a 12-bit entry
+FAT_B1          equ     $E9DB   ; second FAT byte of a 12-bit entry
+FAT_NAMEPTR     equ     $E9DC   ; -> 11-byte search name (word)
+FAT_DIRSEC      equ     $E9DE   ; current root-dir sector being scanned (word)
+FAT_DIRREM      equ     $E9E0   ; root-dir sectors remaining to scan (word)
+FAT_WRTMP       equ     $E9E2   ; transient scratch for the FAT12 write helpers (word)
+FAT_WRTMP2      equ     $E9E4   ; second transient (free-cluster scan cached sector)
+; Read byte-stream state (fat_io_open / fat_io_getbyte).
+FREAD_OFF       equ     $E9E6   ; next byte index within FSECTOR_BUF (0..512) (word)
+FREAD_LEFT      equ     $E9E8   ; bytes of the open file still undelivered (4-byte LE)
+; Write byte-stream state (fat_io_create / fat_io_putbyte / fat_io_close).
+FWR_CLUS        equ     $E9EC   ; chain-tail cluster currently being filled (word)
+FWR_FIRST       equ     $E9EE   ; file's first cluster, 0 until first allocated (word)
+FWR_SECIDX      equ     $E9F0   ; sector index within the current cluster (byte)
+FWR_BUFLEN      equ     $E9F1   ; bytes currently buffered in FSECTOR_BUF (word, 0..512)
+FWR_BYTES       equ     $E9F3   ; total bytes written so far = final file size (4-byte LE)
+FWR_DIRSEC      equ     $E9F7   ; logical sector holding the open file's dir entry (word)
+FWR_DIROFF      equ     $E9F9   ; byte offset of that dir entry within its sector (word)
 ; Control stacks (page $E0, below LINEBUF at $E100). Both grow upward; the
 ; pointer addresses the next free slot, and the stack is empty when it equals
 ; its base. GOSUB frame = [curline:2][resume:2] (4 bytes). FOR frame =

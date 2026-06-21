@@ -854,34 +854,86 @@ control with the pre-scan ROM: `SYSTEM` reads the C-BIOS default ($31C3 — INIT
 not run). Crunch byte-identical and the four regression probes still pass (the scan
 runs harmlessly before the REPL).
 
+## disk DSKIO host engine (Phase 1.5) — standard-sector retarget (basic/fat.asm)
+
+**What changed and why.** The disk loader verbs (`BLOAD`/`LOAD`/`RUN`/`SAVE`/
+`BSAVE` for `"A:"`) formerly reached files through zerobas-disk's **private**
+`bdos_entry` (the FCB BDOS layer, via the SYSTEM vector `$F37D`). Only the matched
+zerobas-BASIC + zerobas-disk pair worked — a real/foreign standard disk ROM does
+not implement that private FCB BDOS, so it could not service the loader. Phase 1.5
+retargets the loader to the **standard `$4010` DSKIO physical-sector interface**
+that *every* MSX1 disk ROM publishes, and moves the FAT12/directory logic
+loader-side (`basic/fat.asm`, ported from our own `disk/disk.asm`). The loader is
+now **disk-ROM-independent**: any standard disk ROM in the slot services it.
+
+A black-box spike on the real National **CF-3300** Disk BASIC established (and the
+[expansion-protocol.md](../disk/docs/expansion-protocol.md) pins) that the
+drive-letter loader path is *pure DSKIO* — the disk ROM resolves `"A:"` internally
+(BPB/FAT/dir) and moves bytes via DSKIO; there is no standard "open file by name"
+entry to delegate to. So owning the FAT12 logic loader-side is the necessary price
+of the universal sector interface, not avoidable duplication.
+
+| Item | Value | Source class | Note |
+|------|-------|--------------|------|
+| `DSKIO_ENTRY` (disk-ROM interface table DSKIO offset) | $4010 | MSX2 TH §5 disk-ROM interface; black-box CF-3300 obs (expansion-protocol.md §3) | sourced — 16-byte header → table at base+$10; base $4000 → $4010 |
+| DSKIO register convention: A=drive, B=#sectors, C=media, DE=first logical sector, HL=buffer, **CY=direction (clear=read/set=write)**; out CY=err, A=code, B=not-done | — | MSX2 TH §5; CF-3300 live trace (expansion-protocol.md §3) | sourced |
+| cross-slot DSKIO via `CALSLT` $001C (slot=`DISKSLOT`, addr=$4010); CALSLT passes caller AF (direction CY) into the target and returns the target AF (error CY) | $001C | MSX Assembly Page / MSX2 TH; C-BIOS `clprim` restores AF around `jp (ix)` (observed, not transcribed) | sourced |
+| FAT12 engine (BPB parse, cluster walk, 8.3 dir search, 12-bit nibble pack/unpack, free-cluster alloc, multi-FAT sync, dir create/update) | — | Microsoft FAT spec / ECMA-107 | **ported verbatim from disk/disk.asm** (our own clean-room code) |
+| media descriptor passed to DSKIO | $F9 | MSX2 TH (720K) / CF-3300 obs; ignored by single-drive DSKIO | sourced |
+| FAT engine scratch + 2× 512-byte sector buffers (`FSECTOR_BUF` $E5C0, `FWBUF` $E7C0, `FAT_*`/`FREAD_*`/`FWR_*` $E9C0..) | — | own choice (free page-3 RAM; survives DSKIO — own ROM uses only $E29A..$E29F, a foreign ROM keeps its sector work in the $F2xx-$F3xx sysvar area) | sourced placement |
+
+**Oracle (host direction, BOTH disk ROMs).** `BLOAD"A:"` / `LOAD"A:"` / `RUN"A:"` /
+`SAVE"A:"` / `BSAVE"A:"` all round-trip under zerobas-BASIC with (i) our own
+`disk.rom` in slot 3-1 **and** (ii) the foreign National **CF-3300** disk ROM in
+slot 3-1 — the machine rebuilt via `install-openmsx-machine.py --disk-rom <ROM>`.
+The msx-preservation probes `disk_probe_bload_disk.py`, `disk_probe_save.py`,
+`disk_probe_load_disk.py`, `disk_probe_run_disk.py`, `disk_probe_load_embedded_nul.py`
+report **ALL PASS on both ROMs**. Before the retarget the foreign CF-3300 FAILED
+every disk verb (the private `bdos_entry` path `CALSLT`ed `$F37D`, which CF-3300
+sets to its own Disk-BASIC vector → garbage); after it, both ROMs drive the same
+loader unchanged. That disk-ROM-independence is the whole point of the host side.
+This is a black-box functional oracle (type a REPL line, observe RAM/PC); no ROM
+is read or disassembled. The underlying DSKIO read is itself a passed differential
+oracle vs the real CF-3300 (`disk_probe_dskio.py`, strand 1 below).
+
+The `bdos_entry`/FCB BDOS path and its constants are **retired from the loader**
+(no disk verb calls `bdos_entry` any more). zerobas-disk keeps `bdos_entry` as its
+own internal implementation, and the differential-vs-MSX-DOS strand (below) still
+describes that ROM-side layer — but the host loader no longer rides it.
+
 ## disk BLOAD / LOAD / RUN surface — consolidated index
 
-The four sections below (`§disk-BLOAD scratch FCB`, `§disk BLOAD execute`,
-`§disk LOAD`, `§disk RUN`) together cover the whole disk-aware loader surface
-zerobas-BASIC adds on top of the disk ROM's BDOS FCB layer. They build on the
-`§extension-ROM INIT scan` above (which records `DISKSLOT`/`DISKSLOT_OK` and the
-SYSTEM `$F37D` BDOS vector). This index is a map, not a substitute — the detail
-tables stay in the per-feature sections.
+The sections below cover the whole disk-aware loader surface. As of Phase 1.5 the
+verbs reach files through the **standard `$4010` DSKIO** entry and the loader-side
+FAT12 engine (`basic/fat.asm`, `§disk DSKIO host engine` above) — NOT the private
+`bdos_entry`. They build on the `§extension-ROM INIT scan` above (which records
+`DISKSLOT`/`DISKSLOT_OK`). This index is a map, not a substitute — the detail
+tables stay in the per-feature sections. NOTE: the per-feature sections below
+(`§disk BLOAD execute`, `§disk LOAD`, `§disk RUN`) were written for the original
+`bdos_entry` FCB path and describe the on-disk FORMAT (markers, header layout,
+streaming/relink) accurately; only their "reaches disk ROM via BDOS FCB calls"
+plumbing is superseded by the DSKIO engine — read them for format, this section
+for the transport.
 
 | Surface | Verb | On-disk format / marker | Reaches disk ROM via | Detail section |
 |---------|------|-------------------------|----------------------|----------------|
-| Filename → FCB parse | `BLOAD"A:name"` (shared by all) | n/a (parses `"A:"`/`"B:"`/bare → `DISK_FCB`) | — (parse only) | §disk-BLOAD scratch FCB |
-| Binary image load | `BLOAD"A:name"[,R]` | BSAVE binary, `$FE` header | `CALSLT` $001C → `bdos_entry` (Open $0F / SeqRead $14 / Close $10 / Set-DTA $1A) | §disk BLOAD execute |
-| Tokenised program load | `LOAD"A:name"[,R]` | tokenised BASIC, `$FF` marker | same BDOS path; streams line-link image | §disk LOAD |
+| Filename → 8.3 parse | `BLOAD"A:name"` (shared by all) | n/a (parses `"A:"`/`"B:"`/bare → `DISK_FCB_NAME`) | — (parse only) | §disk-BLOAD scratch FCB |
+| Binary image load | `BLOAD"A:name"[,R]` | BSAVE binary, `$FE` header | standard DSKIO $4010 + loader FAT12 (`fat_io_open`/`fat_io_getbyte`) | §disk DSKIO host engine, §disk BLOAD execute |
+| Tokenised program load | `LOAD"A:name"[,R]` | tokenised BASIC, `$FF` marker | same DSKIO/FAT12 read path; streams line-link image | §disk DSKIO host engine, §disk LOAD |
 | Load-then-run | `RUN"A:name"` | tokenised BASIC, `$FF` marker | reuses `disk_prog_load` (§disk LOAD), always runs | §disk RUN |
+| Binary / tokenised SAVE | `SAVE"A:name"` / `BSAVE"A:name",s,e[,x]` | `$FF` / `$FE` markers | standard DSKIO $4010 + loader FAT12 (`fat_io_create`/`fat_io_putbyte`/`fat_io_close`) | §disk DSKIO host engine |
 
 **Constants the disk-extension path introduces (all `sourced`; see the named
 section for the row):**
 
 | Constant | Value | Source class | Section |
 |----------|-------|--------------|---------|
-| BDOS Open / Close / Seq-Read / Set-DTA call numbers | $0F / $10 / $14 / $1A | MSX2 TH / MSX-DOS BDOS call table | §disk BLOAD execute |
-| BDOS convention: C=call#, DE=FCB/ptr, A=result | — | MSX2 TH / MSX-DOS BDOS conventions | §disk BLOAD execute |
-| FCB layout: +0 drive code (0=default/1=A/2=B), +1..+11 = 8.3 name | — | CP/M / MSX-DOS FCB layout (MSX2 TH); matches disk ROM `fat_find` at FCB+1 | §disk-BLOAD scratch FCB |
+| standard DSKIO entry offset + register convention (CY=direction) | $4010 | MSX2 TH §5 / CF-3300 obs | §disk DSKIO host engine |
+| cross-slot DSKIO call: `CALSLT` $001C via `DISKSLOT`, addr $4010 | $001C / $4010 | MSX Assembly Page / MSX2 TH | §disk DSKIO host engine, §extension-ROM INIT scan |
+| 8.3 name field +0..+10 (8 name + 3 ext, space-padded, upper-case) | — | Microsoft FAT spec §3.4; consumed by `fat_find`/`fat_dir_create` | §disk-BLOAD scratch FCB |
 | disk BSAVE header `[$FE][start:2 LE][end:2 LE][exec:2 LE]` + raw data, start..end inclusive | $FE marker | MSX-BASIC file formats (MSX Wiki / MSX Resource Center) | §disk BLOAD execute |
 | tokenised-BASIC disk marker | $FF | MSX-BASIC file formats (MSX Wiki / MSX Resource Center) | §disk LOAD |
-| cross-slot BDOS call: `CALSLT` $001C via `DISKSLOT`, entry addr from SYSTEM `$F37D` | $001C / $F37D | MSX Assembly Page / MSX2 TH | §disk BLOAD execute, §extension-ROM INIT scan |
-| `DISK_FCB` / `DISK_DTA` / `DISKSLOT` scratch placement | $E0DB / $E4C2 / $E0E7 | own choice (free page-$E0 / page-3 RAM, collision-checked) | §disk-BLOAD scratch FCB, §disk BLOAD execute, §extension-ROM INIT scan |
+| `DISK_FCB_NAME` / `DISKSLOT` / FAT engine scratch placement | $E0DC / $E0E7 / $E5C0+ | own choice (free page-$E0 / page-3 RAM, collision-checked) | §disk-BLOAD scratch FCB, §disk DSKIO host engine, §extension-ROM INIT scan |
 
 ### Oracle-confirmation status (read this before trusting "confirmed")
 
@@ -914,17 +966,23 @@ do not over-claim "byte-identical vs reference" where no reference exists.
    sub-record EOF byte-bounding) needs `bdos_entry` tightened first and is a
    tracked follow-up (disk/TODO.md §interpreter extensions).
 
-3. **BLOAD/LOAD/RUN interpreter glue — functionally validated on openMSX.** The
-   interpreter glue (token parse → FCB build → BSAVE/tokenised header parse →
-   store/exec/`,R`) is validated *functionally* against our own FAT12 image
-   (`disk_probe_bload_fcb.py` / `disk_probe_bload_disk.py` /
-   `disk_probe_load_disk.py` / `disk_probe_run_disk.py`). There is no MSX-DOS
-   equivalent of "`BLOAD` a BSAVE binary / `LOAD` a tokenised program via zerobas's
-   *statement* path" to differ against — but every one of these rides on two
-   differentially-confirmed layers (the DSKIO read, strand 1, and the FCB BDOS
-   calls, strand 2) plus the differential crunch (strand 4). **Do not read
-   "validated end-to-end" in the sections below as "byte-identical vs reference"
-   for the interpreter glue itself.**
+3. **BLOAD/LOAD/RUN/SAVE/BSAVE interpreter glue — functionally validated on
+   openMSX, BOTH disk ROMs.** As of Phase 1.5 the verbs ride the standard `$4010`
+   DSKIO entry + the loader-side FAT12 engine (`§disk DSKIO host engine`), NOT the
+   `bdos_entry` FCB calls. The whole interpreter glue (token parse → 8.3 name parse
+   → BSAVE/tokenised header parse → FAT12 read/write → store/exec/`,R`/relink) is
+   validated *functionally* against our own FAT12 image, under **both** our own
+   `disk.rom` and the foreign National **CF-3300** disk ROM, by
+   `disk_probe_bload_disk.py` / `disk_probe_save.py` / `disk_probe_load_disk.py` /
+   `disk_probe_run_disk.py` / `disk_probe_load_embedded_nul.py` (ALL PASS on both).
+   Passing identically on a foreign standard ROM is itself the strong evidence:
+   the host side speaks only the documented sector interface, so a ROM it has never
+   seen services it unchanged. The DSKIO read underneath is a passed differential
+   oracle vs the real CF-3300 (strand 1). **Do not read "validated end-to-end" in
+   the sections below as "byte-identical vs a BASIC reference" for the interpreter
+   glue itself — there is no reference MSX-BASIC *statement* path to differ
+   against; the disk-ROM-independence + the differential DSKIO read are the
+   guarantees.**
 
 4. **Crunch (tokeniser) confirmed byte-identical vs the Philips VG-8020.** No new
    token byte was introduced for any of BLOAD/LOAD/RUN disk forms — disk
