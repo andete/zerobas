@@ -154,16 +154,24 @@ contract: [`disk/docs/expansion-protocol.md`](disk/docs/expansion-protocol.md).
       disk ROM in slot 3-1 — ALL PASS on both (machines built via
       `install-openmsx-machine.py --disk-rom <ROM>`; probes `disk_probe_bload_disk.py`
       / `disk_probe_save.py` / `disk_probe_load_disk.py` / `disk_probe_run_disk.py` /
-      `disk_probe_load_embedded_nul.py`). (b) **PARTIAL (provider):** the standard
-      hook/DSKIO/GETDPB contract is validated — HPHYD bytes correct after INIT,
-      GETDPB byte-identical to the CF-3300 differential, and an injected-hook
-      `CALL $FFA7` end-to-end reaching our DSKIO. **Still owed:** an *organic* real
-      host driving zerobas-disk through the standard hook/DSKIO path — **scoped** in
-      [`disk/docs/provider-oracle-scope.md`](disk/docs/provider-oracle-scope.md):
-      the achievable target is **Tier 1** (real MSX1 main-BIOS `PHYDIO` → `H.PHYD` →
-      our DSKIO, ~1 session, needs a real-BIOS+zerobas-disk machine variant). A real
-      *filesystem* host (DOS/Disk-BASIC, which alone consumes GETDPB organically)
-      requires DOS-boot or Disk-BASIC hosting = **Phase 2**.
+      `disk_probe_load_embedded_nul.py`). (b) **Tier 1 DONE (provider):** an
+      **organic real MSX1 BIOS** drives zerobas-disk through the standard hook/DSKIO
+      path. On `National_CF-3300_ZEROBASDISK` (real CF-3300 BIOS in slot 0, zerobas-disk
+      in slot 3-1; built via `install-openmsx-machine.py --real-bios-disk`), the
+      genuine BIOS cold-boot scan calls our INIT → installs `H.PHYD ($FFA7)=F7 87 10
+      40 C9`, and a **real BIOS `PHYDIO` ($0144)** call (entry from the MSX Assembly
+      Page / MSX2 TH BIOS jump table — no disassembly) routes *through* that hook into
+      our DSKIO: sector 0 byte-identical to the on-disk boot sector, `CY=0`, plus a
+      CY=1 write+readback round trip. The no-injected-hook property is proven two
+      ways — the hook bytes are read back after a clean cold boot *before* any stub
+      runs, and a breakpoint on `$FFA7` is *hit* during the BIOS PHYDIO call (the hook
+      is load-bearing, not bypassed). Harness:
+      `disk-spec/tools/disk_probe_provider_phydio.py` (ALL PASS). The earlier
+      injected-hook `CALL $FFA7`, HPHYD-bytes, and CF-3300 GETDPB differential checks
+      still stand under it. **Tier 2** — a real *filesystem* host (DOS/Disk-BASIC,
+      which alone consumes GETDPB organically) — requires DOS-boot or Disk-BASIC
+      hosting = **Phase 2**. See
+      [`disk/docs/provider-oracle-scope.md`](disk/docs/provider-oracle-scope.md).
 
 **Sequencing.** Tape parity is **done**, so this is the next committed track. The
 private `bdos_entry` is the foundation every disk verb sits on; **build nothing

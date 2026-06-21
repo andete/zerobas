@@ -27,6 +27,17 @@ bundled ROMs by absolute path and lists the .ips files as load-time <patches>
 entries, so openMSX still loads the pristine ROM and patches it in memory each boot.
 The disk ROM is referenced by absolute path too.
 
+With `--real-bios-disk`, it ALSO writes a Tier-1 *provider-oracle* machine
+"<MACHINE>_ZEROBASDISK" (default MACHINE: National_CF-3300): the genuine MSX1
+main BIOS is kept untouched (no zerobas/tape patches -- we are NOT booting
+zerobas-BASIC here), but the machine's built-in slot-3-1 disk ROM is swapped to
+zerobas-disk. The real BIOS cold-boot scan finds our "AB" header, calls our INIT
+(installing the H.PHYD hook), and then dispatches its own PHYDIO through that hook
+into our DSKIO -- proving a real BIOS can drive zerobas-disk as a standard
+provider, with no probe-injected hook in the path (see disk-spec/tools/
+disk_probe_provider_phydio.py and disk/docs/provider-oracle-scope.md):
+    python3 tools/install-openmsx-machine.py --real-bios-disk --disk-rom disk.rom
+
     python3 tools/install-openmsx-machine.py            # auto-detect everything
     python3 tools/install-openmsx-machine.py --dry-run   # show what it would write
     python3 tools/install-openmsx-machine.py --disk-rom disk.rom   # + _DISK variants
@@ -135,6 +146,51 @@ def expand_slot3(text: str, disk_rom_abs: str) -> str:
     return text
 
 
+def real_bios_disk_machine(stock_text: str, share_machines: str,
+                           disk_rom_abs: str) -> str:
+    """Build a Tier-1 provider-oracle machine from a *real-BIOS* MSX1 machine
+    that already ships a disk ROM in slot 3-1 (e.g. openMSX's National_CF-3300):
+    keep the genuine main BIOS untouched, but swap the slot-3-1 disk ROM to
+    zerobas-disk. The point is that the *real* BIOS cold-boot scan finds our
+    "AB" header in slot 3-1 and calls our INIT (installing the H.PHYD hook) and
+    then dispatches its own PHYDIO through that hook into our DSKIO -- with no
+    probe-injected hook anywhere in the path.
+
+    This differs from the C-BIOS _BASIC_DISK variant in two ways: (1) the main
+    BIOS is the stock machine's genuine MSX1 BIOS (no zerobas/tape IPS patches --
+    we are NOT booting zerobas-BASIC here, we are letting a real BIOS drive us as
+    a provider); (2) slot 3 is already expanded with a WD2793 in the stock XML,
+    so we only retarget the disk ROM's <rom> block rather than expanding slot 3.
+
+    Mechanics: absolutize every bare ROM <filename> (so the genuine BIOS ROM
+    resolves), then replace the WD2793's disk-ROM <rom>...</rom> block (filename
+    + the stock <sha1>) with a single <filename> pointing at zerobas-disk. The
+    stock disk ROM's sha1 must go: it would no longer match our ROM and openMSX
+    would refuse to load. The BIOS ROM keeps its sha1 (still the genuine ROM)."""
+    def absolutize(m):
+        name = m.group(2)
+        if "/" in name:                      # already a path -- leave it
+            return m.group(0)
+        return f"{m.group(1)}{os.path.join(share_machines, name)}{m.group(3)}"
+    text = re.sub(r"(<filename>)([^<]+)(</filename>)", absolutize, stock_text)
+
+    # Replace the WD2793's disk-ROM block. Match the <rom>..</rom> that sits
+    # inside the WD2793 device (the only <WD2793> in a stock disk MSX1 XML).
+    pat = re.compile(
+        r"(<WD2793\b[^>]*>.*?)<rom>\s*<filename>[^<]*</filename>\s*"
+        r"(?:<sha1>[^<]*</sha1>\s*)?</rom>",
+        re.DOTALL)
+    repl = (r"\1<rom>\n"
+            f"            <filename>{disk_rom_abs}</filename>\n"
+            r"          </rom>")
+    text, n = pat.subn(repl, text)
+    if n != 1:
+        raise RuntimeError(
+            f"expected exactly one WD2793 disk-ROM block, found {n} "
+            f"(is this a real-BIOS MSX1 machine with a built-in disk ROM?)")
+    return text
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -144,6 +200,13 @@ def main():
                     metavar="ROM",
                     help="also write _BASIC_DISK variants with zerobas-disk in "
                          f"slot 3-1 (default ROM: {DISK_ROM})")
+    ap.add_argument("--real-bios-disk", nargs="?", const="National_CF-3300",
+                    default=None, metavar="MACHINE",
+                    help="also write a Tier-1 provider-oracle machine "
+                         "<MACHINE>_ZEROBASDISK that keeps a real MSX1 BIOS but "
+                         "swaps its built-in disk ROM to zerobas-disk "
+                         "(default MACHINE: National_CF-3300). Uses --disk-rom's "
+                         "ROM, or disk.rom if --disk-rom is absent.")
     ap.add_argument("--dry-run", action="store_true", help="print, don't write")
     args = ap.parse_args()
 
@@ -159,6 +222,15 @@ def main():
         disk_rom = os.path.abspath(args.disk_rom)
         if not os.path.isfile(disk_rom):
             sys.exit(f"error: disk ROM not found: {disk_rom} (run `make disk` first)")
+
+    # The Tier-1 provider machine needs a zerobas-disk ROM too; default to
+    # --disk-rom's value, else the built-in disk.rom.
+    real_disk_rom = None
+    if args.real_bios_disk is not None:
+        real_disk_rom = disk_rom or os.path.abspath(DISK_ROM)
+        if not os.path.isfile(real_disk_rom):
+            sys.exit(f"error: disk ROM not found: {real_disk_rom} "
+                     f"(run `make disk` first)")
 
     share = args.share or first_existing(SHARE_CANDIDATES, "openMSX share dir")
     user = args.user or first_existing(USER_CANDIDATES, "openMSX user dir")
@@ -199,6 +271,23 @@ def main():
             else:
                 open(dout, "w").write(dtext)
                 print(f"wrote {base}_BASIC_DISK  (-> machine \"{base}_BASIC_DISK\")")
+    # --- Tier-1 provider-oracle machine: real BIOS + zerobas-disk ------------
+    if real_disk_rom:
+        src = os.path.join(share_machines, f"{args.real_bios_disk}.xml")
+        if not os.path.isfile(src):
+            sys.exit(f"error: real-BIOS machine not found: {src} "
+                     f"(pass --real-bios-disk <MACHINE> for one openMSX ships)")
+        base = args.real_bios_disk                              # National_CF-3300
+        out = os.path.join(user_machines, f"{base}_ZEROBASDISK.xml")
+        out_text = real_bios_disk_machine(open(src).read(), share_machines,
+                                          real_disk_rom)
+        if args.dry_run:
+            print(f"would write {os.path.basename(out)}")
+        else:
+            open(out, "w").write(out_text)
+            print(f"wrote {base}_ZEROBASDISK  (-> machine \"{base}_ZEROBASDISK\", "
+                  f"real {base} BIOS + zerobas-disk in slot 3-1)")
+
     tail = " (attach a FAT12 image: -diska disk/test720.dsk)" if disk_rom else ""
     print(f"\nDone. Launch openMSX and pick one of the *_BASIC machines.{tail}")
 

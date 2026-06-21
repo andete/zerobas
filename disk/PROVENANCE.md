@@ -123,6 +123,8 @@ byte is captured from **register A on INIT entry** (the first thing INIT does:
 | Own slot byte source | register A on INIT entry (`LD (HOOK_SLOT),A` first) = $87 (3-1) | standard INIT slot-in-A convention (MSX Wiki + CF-3300 oracle) + our own `basic/initext.asm` scan (oracle-confirmed A=$87); coupling documented above | sourced |
 | `HOOK_SLOT` scratch byte | $E55D (1 B) | own choice (free page-3 RAM after FAT_SECPERFAT word $E55B-$E55C, before WBUF $E560) | sourced |
 | End-to-end provider read | `CALL $FFA7` (installed hook) → CALLF → our DSKIO reads boot sector byte-identical to disk | own black-box test (C-BIOS_MSX1_EU_BASIC_DISK) | sourced |
+| BIOS PHYDIO entry | $0144 | MSX Assembly Page BIOS map (map.grauw.nl/resources/msxbios.php); MSX2 TH BIOS jump table — NOT disassembly | sourced |
+| Tier-1 organic provider oracle | real CF-3300 BIOS boot scan installs `H.PHYD = F7 87 10 40 C9`; real BIOS PHYDIO ($0144) routes *through* $FFA7 (BP-hit confirmed) into our DSKIO; sector 0 byte-identical, CY=0; CY=1 write+readback round trip; no probe-injected hook | own black-box test (`National_CF-3300_ZEROBASDISK` + `disk_probe_provider_phydio.py`) | sourced |
 | SYSTEM sysvar | $F37D | MSX2 TH, work area; C-BIOS `systemvars.asm` | sourced |
 | SYSTEM sysvar write: `LD ($F37D),HL` with HL = bdos_entry | — | own code; reached cross-slot via CALSLT, differentially confirmed (`disk_probe_bdos.py` vs MSX-DOS 1) | sourced |
 | Default DTA seed: `LD (BDOS_DTA),HL` with HL = $0080 | — | own code; $0080 = MSX-DOS default DTA (MSX2 TH, BDOS conv.) | sourced |

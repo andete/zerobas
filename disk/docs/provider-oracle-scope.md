@@ -5,12 +5,29 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # Provider oracle — scope (Phase 1.5 box (b), the one open item)
 
-Status: **scoped, not built.** Phase 1.5 host + provider code is done and committed
-(`a23d78d`, `15329e2`). The provider *contract* is already validated by strong
+Status: **Tier 1 DONE.** Phase 1.5 host + provider code is committed
+(`a23d78d`, `15329e2`); the Tier-1 provider oracle is now built and passing. A
+**genuine MSX1 BIOS** (National CF-3300) cold-boot scan calls zerobas-disk's INIT,
+which installs `H.PHYD ($FFA7) = F7 87 10 40 C9`, and the **real BIOS PHYDIO**
+($0144) call dispatches *through* that hook into our DSKIO — verified two ways:
+sector 0 read back byte-identical to the on-disk boot sector with `CY=0`, and a
+breakpoint on `$FFA7` is *hit* during PHYDIO (so the hook is load-bearing, not
+bypassed). A CY=1 write+readback round trip on a high data sector also passes. **No
+probe-injected hook anywhere in the path** — the hook is present only because the
+real boot scan ran our INIT (confirmed by reading `$FFA7` after a clean cold boot,
+before any stub injection). Tooling: `install-openmsx-machine.py --real-bios-disk`
+builds `National_CF-3300_ZEROBASDISK` (real CF-3300 BIOS, zerobas-disk in slot 3-1).
+Harness: `disk-spec/tools/disk_probe_provider_phydio.py`. **Tier 2** (a real
+filesystem — DOS/Disk-BASIC — mounting a drive on us, the only organic GETDPB
+consumer) remains deferred to Phase 2.
+
+The remaining historical text below records the original scoping rationale.
+
+The provider *contract* is also validated by strong
 black-box checks (HPHYD bytes correct after INIT; GETDPB byte-identical to a CF-3300
-differential trace; an injected-hook `CALL $FFA7` reaching our DSKIO). What is **not**
-yet proven is that an **organic real host** — a genuine MSX BIOS / DOS, not a probe
-stub — drives zerobas-disk through the standard hook/DSKIO path. This doc scopes that.
+differential trace; an injected-hook `CALL $FFA7` reaching our DSKIO). What Tier 1
+adds on top is the **organic real host** proof: a genuine MSX BIOS, not a probe
+stub, drives zerobas-disk through the standard hook/DSKIO path.
 
 ## 1. The circularity finding (read this first — it bounds the whole scope)
 
