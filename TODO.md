@@ -16,11 +16,17 @@ compatibility.* The committed target is therefore:
 
 1. **Phase 1 — loader-stub BASIC** — ✅ done.
 2. **Disk transport** (read + write) — ✅ done (`disk.rom`; see [`disk/TODO.md`](disk/TODO.md)).
-3. **Tape transport** (read + write) — device signal layer ✅ done; **interpreter
-   parity is the one remaining committed track** (below).
+3. **Tape transport** (read + write) — device signal layer ✅ done; interpreter
+   parity is a remaining committed track (below).
+4. **Disk interface standardization — "Phase 1.5"** — make `zerobas-BASIC` reach
+   disk files through the *standard* `$4010` DSKIO entry instead of zerobas-disk's
+   private `bdos_entry`, so **any** standard disk ROM (real or zerobas) works under
+   `zerobas-BASIC`. Loader-level (Depth A); see the dedicated section below.
 
 **Full MSX1 BASIC (Phase 2) is an aspirational appendix, NOT in the committed
-target** — listed at the end of this file for reference only.
+target** — listed at the end of this file for reference only. (The fully
+MSX-faithful version of item 4 — the BASIC expansion/hook protocol, "Depth B" — is
+filed there.)
 
 ## Status today — three components, two axes
 
@@ -31,7 +37,11 @@ zerobas is three separately-built artifacts, combined only at runtime: `basic/` 
 | | Device / transport layer | Interpreter statements (basic.rom) |
 |---|---|---|
 | **Tape** | ✅ read **and** write signal layer (MSX1/2/2+) | ⚠️ `BLOAD"CAS:",R` works; `CLOAD`/`LOAD"CAS:"` oracle-validated but on-device load blocked by a zerobas-tape `$00`-run framing bug; **no tape SAVE** yet |
-| **Disk** | ✅ DSKIO + FAT12 + BDOS, read **and** write (differential vs CF-3300 & MSX-DOS 1) | ✅ `BLOAD`/`LOAD`/`RUN`/`SAVE`/`BSAVE` for `"A:"` |
+| **Disk** | ✅ DSKIO + FAT12 + BDOS, read **and** write (differential vs CF-3300 & MSX-DOS 1) | ✅ `BLOAD`/`LOAD`/`RUN`/`SAVE`/`BSAVE` for `"A:"` † |
+
+† `zerobas-BASIC` reaches the disk through zerobas-disk's **private** `bdos_entry`
+(published at SYSTEM vector `$F37D`), **not** the standard MSX disk-ROM interface —
+so a *foreign* disk ROM does not work under it. Phase 1.5 (below) closes this.
 
 Language (Phase 1, done): byte-identical tokeniser (keywords, integer / `&H` /
 `&O` constants, `= + - * / \ < >`, `MOD`/`AND`/`OR`/`XOR`/`NOT`), stored
@@ -61,6 +71,47 @@ storage statements above.
       cassette write path. Oracle: a saved tape image reads back byte-identical on
       the reference, and round-trips through our own `CLOAD`/`BLOAD` once the framing
       fix above lands. This is tape *write* (mirrors what disk `SAVE`/`BSAVE` did).
+
+### Phase 1.5 — disk interface standardization (Depth A)
+
+**Why.** On real MSX the BASIC interpreter and the disk ROM are *not* tied
+together — they interoperate through **standardized** interfaces (the slot-scan +
+INIT, the `$4010` DSKIO entry table, the H.\* hooks, BASIC's STATEMENT/DEVICE
+expansion), so disk interfaces are interchangeable (plug a floppy cartridge into
+any MSX; swap disk ROMs between makers). zerobas copies the *placement* faithfully
+(cassette in the BIOS, disk in a slot) but swapped the BASIC↔disk *protocol* for a
+**private** one: `zerobas-BASIC`'s disk verbs call zerobas-disk's `bdos_entry` via
+the SYSTEM vector `$F37D`, and `zerobas-BASIC` implements none of the standard
+expansion. So only the matched pair works — a real/foreign disk ROM does **not**
+drop in. This track closes that gap at the **loader level** (Depth A): drive disk
+I/O through the *documented* `$4010` DSKIO entry every disk ROM exposes.
+
+- [ ] **Drive disk I/O through standard `$4010` DSKIO** — rework `do_disk_bload` /
+      `disk_prog_load` / `do_bsave` / `do_save` ([`basic/bload.asm`](basic/bload.asm),
+      [`basic/save.asm`](basic/save.asm), [`basic/cload.asm`](basic/cload.asm)) to
+      read/write sectors via the standard `$4010` DSKIO entry (CALSLT) instead of
+      zerobas-disk's `bdos_entry`/`$F37D`.
+- [ ] **A `basic/`-side FAT12 layer** over DSKIO (BPB mount / dir search /
+      cluster-walk for read; free-cluster alloc / chain / dir + FAT write-back for
+      write) so the loader verbs are **disk-ROM-agnostic**. `zerobas-BASIC` then
+      carries its own FAT — a deliberate *duplication* of zerobas-disk's FAT, the
+      price of being a standard DSKIO *consumer*. (Delegating to the disk ROM's FAT
+      via the expansion hooks instead — no duplication — is Depth B / Phase 2.)
+- [ ] **Oracle — disk-ROM independence** — `BLOAD"A:"` / `SAVE"A:"` round-trip both
+      with zerobas-disk in slot 3-1 **and** with a *foreign* standard MSX1 disk ROM
+      in slot 3-1, proving the loader path no longer depends on zerobas-disk.
+
+`zerobas-disk` keeps its `bdos_entry` / FAT / BDOS layer untouched — that simply
+becomes the **provider** half of the standard story (a standard disk ROM usable by
+MSX-DOS / real BASIC, already differential-confirmed). Both components then stand
+on their own standard interfaces.
+
+**Sequencing / why decide now.** The private `bdos_entry` is the foundation every
+disk verb sits on; each new disk feature deepens the investment and makes this
+migration costlier. Do this **right after** the (orthogonal, nearly-done) tape
+parity above, while the disk surface is still small — and build nothing further on
+the private interface meanwhile. After it, both transports are consistently on
+standard interfaces (tape already uses the BIOS cassette entries).
 
 ### Phase 1 close-out — owed oracles (polish, non-blocking)
 - [ ] `basic_probe_clear.py` — the `CLEAR` oracle is still owed.
@@ -187,6 +238,13 @@ scope. (Note: tape/disk file I/O — `SAVE`/`LOAD`/`CSAVE`/`CLOAD`/`BSAVE` — h
 pulled forward into the committed transport tracks above; the `OPEN`/`CLOSE`/
 `PRINT#`/`INPUT#` random-access file layer stays here.)
 
+- [ ] **Standard disk-ROM expansion protocol (Depth B)** — the fully MSX-faithful
+      version of Phase 1.5: implement BASIC's STATEMENT/DEVICE expansion + H.\* hook
+      protocol as a *host* in `zerobas-BASIC`, and install the standard hooks in
+      `zerobas-disk` as a *provider*, so disk ROMs **delegate** (no `basic/`-side FAT
+      duplication), full Disk BASIC verbs (`FILES`/`OPEN`/`KILL`…) work, and
+      `zerobas-disk` extends real MSX-BASIC / MSX-DOS too. Supersedes Depth A's
+      `basic/`-side FAT. Core "be a real MSX BASIC" architecture — hence Phase 2.
 - [ ] **Floating point** — the math pack, `!`/`#`/`%` type suffixes,
       `DEFINT`/`DEFSNG`/`DEFDBL`/`DEFSTR`, and the float crunch tokens
       (decimal ≥ 32768 etc.) currently out of scope
