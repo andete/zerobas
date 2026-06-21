@@ -14,14 +14,18 @@
 ; disassembly. See disk/PROVENANCE.md.
 ;
 ; Runtime model: this is an "AB" disk-interface ROM. At boot the BIOS finds the
-; header at $4000 and calls INIT, which publishes the BDOS entry point via the
-; SYSTEM ($F37D) sysvar (and seeds the default DTA), then returns to the BIOS
-; boot scan. zerobas-BASIC reaches the file layer through that SYSTEM-vector
-; BDOS entry across slots with CALSLT — NOT through the Disk-BASIC H.* hooks
-; (zerobas is a standalone BASIC, not Disk BASIC). The disk subsystem reaches the
-; physical driver through the six fixed-offset entry points at $4010..$401F.
+; header at $4000 and calls INIT, which (1) installs the standard HPHYD ($FFA7)
+; -> DSKIO ($4010) inter-slot hook so a real MSX-BASIC / MSX-DOS host can drive
+; us via PHYDIO (the Phase-1.5 PROVIDER surface), and (2) publishes the BDOS
+; entry point via the SYSTEM ($F37D) sysvar (and seeds the default DTA), then
+; returns to the BIOS boot scan. zerobas-BASIC itself reaches the file layer
+; through that SYSTEM-vector BDOS entry across slots with CALSLT (the internal
+; path) — NOT through the H.* / HPHYD chain; HPHYD exists for FOREIGN hosts. The
+; disk subsystem reaches the physical driver through the six fixed-offset entry
+; points at $4010..$401F.
 ;
-; STATUS: INIT publishes the BDOS entry + DTA default. The FDC driver is
+; STATUS: INIT installs the HPHYD->DSKIO hook (provider direction) and publishes
+; the BDOS entry + DTA default (internal direction). The FDC driver is
 ; implemented (WD2793, National memory-mapped register map, polled sector read
 ; AND polled sector write — physical write primitive). The FAT12 read layer is
 ; implemented (BPB parse, cluster-
@@ -29,16 +33,26 @@
 ; internal helpers. The BDOS/FCB layer is implemented (bdos_entry dispatches
 ; Open $0F / Sequential Read $14 / Close $10 on top of the FAT12 helpers); it is
 ; reached through the SYSTEM vector and is the bridge zerobas's BLOAD path
-; calls. GETDPB is an intentional stub: zerobas's self-contained FAT12 path
-; derives geometry from the BPB directly and never calls the $4016 GETDPB entry
-; (see getdpb / disk/PROVENANCE.md §DPB). End-to-end disk I/O is implemented and
-; the read + BDOS paths are differentially oracle-confirmed (disk_probe_dskio /
-; disk_probe_bdos in msx-preservation).
+; calls. GETDPB ($4016) is REAL: it builds a Drive Parameter Block from the
+; on-disk BPB for a foreign host (provider direction), field-for-field confirmed
+; against a black-box CF-3300 GETDPB trace (see getdpb / disk/PROVENANCE.md §DPB).
+; End-to-end disk I/O is implemented and the read + BDOS paths are differentially
+; oracle-confirmed (disk_probe_dskio / disk_probe_bdos in msx-preservation).
 ; ===========================================================================
 
 ; --- System addresses (disk/PROVENANCE.md §INIT / §BDOS) -------------------
 ; Sources: MSX2 Technical Handbook, work area.
 SYSTEM          equ     $F37D   ; SYSTEM sysvar: BDOS entry-point word
+
+; --- Standard hook + entry addresses (disk/PROVENANCE.md §INIT) -------------
+; HPHYD is the standard PHYDIO hook a disk ROM installs so a host's physical disk
+; I/O reaches the in-slot DSKIO. Source: public MSX hook table
+; (fms.komkon.org/MSX/Docs/Hooks.txt) + disk/docs/expansion-protocol.md §2
+; (CF-3300 black-box trace: after boot $FFA7 held an RST 30h / slot $87 / RET).
+HPHYD           equ     $FFA7   ; PHYDIO hook (5 RAM bytes, default C9)
+; DSKIO entry: this ROM base ($4000) + standard disk-ROM offset +$10 (MSX2 TH,
+; disk ROM interface). The HPHYD CALLF targets it cross-slot.
+DSKIO_ENTRY     equ     $4010   ; our DSKIO ($4000 + $10)
 
 ; --- Disk scratch RAM (disk/PROVENANCE.md §Scratch RAM) --------------------
 DPB_AREA        equ     $E288   ; DPB work area (DPB_SIZE bytes)
@@ -69,6 +83,10 @@ FAT_FILESIZE    equ     $E4AE   ; file size in bytes (4-byte LE)
 ; without re-reading the boot sector (which would clobber SECTOR_BUF mid-flush).
 FAT_NUMFATS     equ     $E55A   ; number of FAT copies (byte; from BPB +16)
 FAT_SECPERFAT   equ     $E55B   ; sectors per FAT copy (word; from BPB +22)
+; This ROM's own slot byte, captured from A at INIT entry (disk/PROVENANCE.md
+; §INIT) and used to build the HPHYD CALLF operand. Own-choice free page-3 RAM
+; in the $E55D gap (after FAT_SECPERFAT's word $E55B-$E55C, before WBUF $E560).
+HOOK_SLOT       equ     $E55D   ; our slot byte for the HPHYD inter-slot hook (1)
 ; FAT12 working scratch (transient within a single call)
 FAT_PARITY      equ     $E4B2   ; 1 = odd cluster, 0 = even (FAT12 nibble pack)
 FAT_BYTEIDX     equ     $E4B3   ; byte index within a FAT sector (word, 0..511)
@@ -214,23 +232,65 @@ CMD_FORCEINT    equ     $D0     ; force interrupt (abort)
 
 ; --- INIT -------------------------------------------------------------------
 ; Called by the BIOS boot scan (or by zerobas-BASIC's slot scan, which finishes
-; the scan C-BIOS skips — see basic/initext.asm). INIT publishes the BDOS
-; entry-point address into the SYSTEM sysvar ($F37D) and seeds the default DTA,
-; then returns cleanly so the boot sequence continues.
+; the scan C-BIOS skips — see basic/initext.asm). INIT does two things:
 ;
-; zerobas reaches the file layer through this SYSTEM-vector BDOS entry, called
-; across slots with CALSLT (the entry *address* is read back from $F37D, the
-; slot from the INIT scan's DISKSLOT capture). We deliberately install NO
-; Disk-BASIC H.* hooks: an oracle observation of the National CF-3300 reference
-; (disk/PROVENANCE.md §INIT) showed the real disk ROM hooks via RST 30h (CALLF)
-; inter-slot calls at different addresses — a plain JP at $FF3E/$FF4B cannot
-; cross slots and $FF4B is not even 5-byte-aligned in the hook table, so the old
-; JP hooks were both mis-addressed AND dead (zerobas is a standalone BASIC, not
-; Disk BASIC — it never drives the H.* chain). The SYSTEM-vector→CALSLT path is
-; differentially oracle-confirmed (disk_probe_bdos.py vs real MSX-DOS 1).
+;   1. installs the standard HPHYD ($FFA7) -> DSKIO ($4010) inter-slot hook, so a
+;      real MSX-BASIC / MSX-DOS host that issues PHYDIO reaches our sector engine.
+;      This is the PROVIDER-direction surface (disk/docs/expansion-protocol.md
+;      §4a/§5): the loader path on a standard machine is HPHYD -> DSKIO, and a
+;      foreign host drives us through it. The host direction (zerobas-BASIC) does
+;      NOT use this hook — it reaches the file layer through the SYSTEM vector
+;      below — but installing HPHYD makes zerobas-disk a standard provider.
 ;
-; Source: SYSTEM $F37D — MSX2 TH, work area; C-BIOS systemvars.asm.
+;   2. publishes the BDOS entry-point address into the SYSTEM sysvar ($F37D) and
+;      seeds the default DTA (the INTERNAL path: zerobas-BASIC reaches the file
+;      layer through this SYSTEM-vector BDOS entry, called across slots with
+;      CALSLT — the entry *address* read back from $F37D, the slot from the INIT
+;      scan's DISKSLOT capture). This is differentially oracle-confirmed
+;      (disk_probe_bdos.py vs real MSX-DOS 1) and is kept alongside the new hook.
+;
+; HPHYD hook idiom (observed on the National CF-3300, disk/PROVENANCE.md §INIT;
+; MSX2 TH §2 inter-slot calls): the 5 hook bytes are an inter-slot CALLF —
+;   F7 <slot> <lo> <hi> C9  =  RST 30h ; slot id ; target addr ; RET
+; F7 = RST 30h = CALLF, the BIOS inter-slot-call restart (a plain JP cannot cross
+; slots). We point it at our own DSKIO entry ($4010) with this ROM's slot byte.
+;
+; OWN SLOT BYTE (the hard sub-problem). The MSX cartridge/disk INIT convention
+; passes the ROM's slot id to INIT in a register (MSX Wiki "Develop a program in
+; cartridge ROM": retrieved with `ld a,c`; black-box trace of the CF-3300 BIOS
+; calling its disk INIT: A = C = $87 = slot 3-1). zerobas-BASIC's own slot scan
+; (basic/initext.asm) likewise leaves the slot byte in A at the CALSLT to this
+; INIT: it does `ld a,(SCAN_SLOT)` immediately before loading IY/IX and calling
+; CALSLT, and CALSLT passes AF through to the target — black-box confirmed: at
+; our INIT entry A = $87 (slot 3-1) on every C-BIOS_MSX1_*_BASIC_DISK machine.
+; So we read the slot byte from A as the FIRST thing INIT does, before anything
+; clobbers it. COUPLING: this depends on the caller delivering the slot in A,
+; which both the standard BIOS scan and basic/initext.asm do (the latter is our
+; own code; the dependence is documented here and in disk/PROVENANCE.md §INIT).
+;
+; Sources: SYSTEM $F37D — MSX2 TH, work area; C-BIOS systemvars.asm. HPHYD $FFA7,
+; CALLF/RST 30h idiom — disk/docs/expansion-protocol.md (CF-3300 black-box trace)
+; + MSX2 TH §2. Slot-in-A INIT convention — MSX Wiki + CF-3300/own-scan oracle.
 init:
+                ; --- capture this ROM's slot byte (A on INIT entry; see header) ---
+                ; Do this FIRST, before anything clobbers A.
+                ld      (HOOK_SLOT), a      ; HOOK_SLOT = our slot byte (e.g. $87 = 3-1)
+
+                ; --- install HPHYD ($FFA7) -> DSKIO ($4010) inter-slot CALLF ----
+                ; Write the 5 hook bytes: F7 <slot> 10 40 C9
+                ;   = RST 30h ; slot ; addr-lo ; addr-hi ; RET   (CALLF, MSX2 TH §2)
+                ld      a, $F7              ; +0: RST 30h opcode (CALLF)
+                ld      (HPHYD + 0), a
+                ld      a, (HOOK_SLOT)      ; +1: this ROM's slot byte
+                ld      (HPHYD + 1), a
+                ld      a, low DSKIO_ENTRY  ; +2: target addr low  ($10)
+                ld      (HPHYD + 2), a
+                ld      a, high DSKIO_ENTRY ; +3: target addr high ($40)
+                ld      (HPHYD + 3), a
+                ld      a, $C9              ; +4: RET
+                ld      (HPHYD + 4), a
+
+                ; --- publish the internal BDOS entry + default DTA (unchanged) --
                 ld      hl, bdos_entry
                 ld      (SYSTEM), hl
                 ; default the settable DTA to the MSX-DOS default ($0080) so a
@@ -615,17 +675,153 @@ dskchg:
 
 ; getdpb — build the Drive Parameter Block from the BPB ($4016 disk-ROM entry).
 ;
-; INTENTIONAL STUB (returns carry set). GETDPB exists only for Disk-BASIC /
-; MSX-DOS callers that consume a DPB; zerobas is a standalone BASIC and reaches
-; the file layer through its own self-contained FAT12 path (fat_mount derives
-; every geometry value straight from the on-disk BPB — see fat_mount), so
-; nothing in the BLOAD / LOAD / RUN flow calls the standard $4016 GETDPB entry.
-; Implementing it would add no reachable behaviour, and the MSX DPB field
-; encoding (directory mask/shift, total-cluster encoding) is not cleanly sourced
-; from an allowed reference. So GETDPB stays a deliberate carry-set stub rather
-; than dead, partly-guessed code. See disk/PROVENANCE.md §DPB (decision rationale).
+; Builds a real DPB from the on-disk BPB. This is the PROVIDER-direction surface
+; (disk/docs/expansion-protocol.md §4a): a real MSX-BASIC / MSX-DOS host calls
+; $4016 to obtain the mounted volume's geometry as a DPB, so the provider must
+; answer it (a black-box trace of BLOAD/SAVE on the CF-3300 showed Disk BASIC
+; DOES call GETDPB). zerobas's own loader path never calls $4016 — it derives
+; geometry straight from the BPB (fat_mount) — but a foreign host driving us does.
+;
+; Calling convention (MSX disk-ROM interface; Nextor 2.1 Driver Development Guide
+; §4.5.3, which restates the standard GETDPB contract):
+;   in:  A  = drive (unit) number (0 = A:)  — ignored, single-drive machine
+;        B  = C = media descriptor byte
+;        HL = DPB base address MINUS ONE (the byte at base+0 is the drive number,
+;             which GETDPB does NOT fill; GETDPB fills base+1 = media onward)
+;   out: Cy = 0 ok (DPB filled), Cy = 1 = error (could not read the boot sector)
+;
+; DPB field layout + encodings: MSX2 Technical Handbook §3, Figure 3.11 (DPB
+; structure), and the Nextor 2.1 Driver Development Guide §4.5.3 field formulas.
+; Each field below cites its source + derivation. The whole layout was confirmed
+; FIELD-FOR-FIELD against a black-box GETDPB trace of the National CF-3300
+; reference on this same 720 KB image (carry=0, DPB bytes read out of RAM — the
+; reference ROM's code was never read). See disk/PROVENANCE.md §DPB.
+;
+; fat_mount already parses the BPB into scratch (FAT_FATSTART / FAT_FIRSTROOT /
+; FAT_FIRSTDATA / FAT_SECPERCLUS / FAT_NUMFATS / FAT_SECPERFAT) and leaves the
+; boot sector in SECTOR_BUF, so GETDPB reuses those (our own code) and reads the
+; remaining raw BPB fields (media, sector size, root-entry count) from SECTOR_BUF.
 getdpb:
-                scf
+                ; HL = DPB base - 1 (Nextor §4.5.3). GETDPB fills from base+1 (media)
+                ; onward; base+0 (drive number) is the caller's, not ours. So the
+                ; first byte WE write (media) lands at HL+1. (CONFIRMED by the
+                ; CF-3300 black-box trace: with HL = $C0FF the reference wrote the
+                ; media byte at $C100 = HL+1; see disk/PROVENANCE.md §DPB.)
+                inc     hl                  ; HL -> DPB +1 (media ID), = caller HL + 1
+                push    hl                  ; keep DPB+1 pointer across fat_mount
+                call    fat_mount           ; parse BPB; leaves boot sector in SECTOR_BUF
+                pop     hl
+                ret     c                   ; boot-sector read failed -> Cy = 1
+
+                ; +1 media ID = BPB media descriptor (boot sector +21). TH Fig 3.11
+                ; "media ID"; ECMA-107 / MS FAT spec media byte. (= $F9 on 720 KB.)
+                ld      a, (SECTOR_BUF + 21)
+                ld      (hl), a
+                inc     hl                  ; HL -> DPB +2
+
+                ; +2..3 sector size (LE) = BPB bytes-per-sector. TH Fig 3.11; we
+                ; validated $0200 (512) at mount, so copy the BPB word verbatim.
+                ld      a, (SECTOR_BUF + BPB_BYTSPERSEC)
+                ld      (hl), a
+                inc     hl
+                ld      a, (SECTOR_BUF + BPB_BYTSPERSEC + 1)
+                ld      (hl), a
+                inc     hl                  ; HL -> DPB +4
+
+                ; +4 directory mask = (sector size / 32) - 1  (Nextor §4.5.3:
+                ; "directory mask = (sector size/32) - 1"). 512/32 - 1 = 15 = $0F.
+                ; +5 directory shift = number of one-bits in the directory mask
+                ;    (Nextor §4.5.3) = log2(entries per sector) = 4 for 512-byte
+                ;    sectors. Sector size is validated = 512 at mount, so these are
+                ;    the fixed 512-byte values $0F / $04 (CF-3300 oracle: 0f 04).
+                ld      (hl), $0F           ; +4 directory mask
+                inc     hl
+                ld      (hl), 4             ; +5 directory shift
+                inc     hl                  ; HL -> DPB +6
+
+                ; +6 cluster mask = (sectors per cluster) - 1   (Nextor §4.5.3).
+                ; +7 cluster shift = (one-bits in cluster mask) + 1 (Nextor §4.5.3);
+                ;    for a power-of-two secPerClus this equals log2(secPerClus)+1.
+                ;    720 KB: secPerClus = 2 -> mask = 1, shift = 2 (CF-3300: 01 02).
+                ld      a, (FAT_SECPERCLUS) ; our own BPB-derived value (fat_mount)
+                dec     a
+                ld      (hl), a             ; +6 cluster mask = secPerClus - 1
+                ld      c, a                ; C = cluster mask (count its one-bits)
+                inc     hl                  ; HL -> DPB +7
+                ld      b, 1                ; shift starts at 1 (Nextor: +1)
+                ld      a, c
+                or      a
+                jr      z, gdpb_popdone
+gdpb_pc_loop:
+                srl     c
+                jr      nc, gdpb_pc_next
+                inc     b                   ; one more set bit -> +1 to the shift
+gdpb_pc_next:
+                ld      a, c
+                or      a
+                jr      nz, gdpb_pc_loop
+gdpb_popdone:
+                ld      (hl), b             ; +7 cluster shift
+                inc     hl                  ; HL -> DPB +8
+
+                ; +8..9 top sector of FAT (LE) = first FAT sector = reserved sectors.
+                ; TH Fig 3.11 "top sector of FAT"; our FAT_FATSTART (fat_mount).
+                ld      de, (FAT_FATSTART)
+                ld      (hl), e
+                inc     hl
+                ld      (hl), d
+                inc     hl                  ; HL -> DPB +10
+
+                ; +10 number of FATs. TH Fig 3.11; our FAT_NUMFATS (BPB +16).
+                ld      a, (FAT_NUMFATS)
+                ld      (hl), a
+                inc     hl                  ; HL -> DPB +11
+
+                ; +11 number of directory entries (max 254). TH Fig 3.11; BPB +17
+                ; root-entry count low byte (112 on 720 KB -> $70; high byte is 0).
+                ld      a, (SECTOR_BUF + BPB_ROOTENTCNT)
+                ld      (hl), a
+                inc     hl                  ; HL -> DPB +12
+
+                ; +12..13 top sector of data area (LE) = first data sector.
+                ; TH Fig 3.11 "top sector of data area"; our FAT_FIRSTDATA.
+                ld      de, (FAT_FIRSTDATA)
+                ld      (hl), e
+                inc     hl
+                ld      (hl), d
+                inc     hl                  ; HL -> DPB +14
+
+                ; +14..15 amount of cluster + 1 (LE). TH Fig 3.11 "amount of cluster
+                ; + 1"; = data-cluster count + 1. fat_total_clusters returns
+                ; dataClusters + 2 (its highest-cluster-plus-one chain bound), so
+                ; the DPB field is that value - 1. (CF-3300 oracle: $02CA = 714 =
+                ; dataClusters(713) + 1 on this 720 KB image; fat_total_clusters
+                ; returns 715, minus 1 = 714.) Microsoft FAT spec §3.3 cluster count.
+                push    hl
+                call    fat_total_clusters  ; DE = dataClusters + 2 (reads boot sec into WBUF)
+                dec     de                  ; DE = dataClusters + 1 (the DPB encoding)
+                pop     hl
+                ld      (hl), e
+                inc     hl
+                ld      (hl), d
+                inc     hl                  ; HL -> DPB +16
+
+                ; +16 number of sectors per FAT. TH Fig 3.11; our FAT_SECPERFAT
+                ; (BPB +22). 720 KB = 3. Single byte (FAT fits < 256 sectors).
+                ld      a, (FAT_SECPERFAT)
+                ld      (hl), a
+                inc     hl                  ; HL -> DPB +17
+
+                ; +17..18 top sector of directory area (LE) = first root-dir sector.
+                ; TH Fig 3.11 "top sector of directory area"; our FAT_FIRSTROOT.
+                ld      de, (FAT_FIRSTROOT)
+                ld      (hl), e
+                inc     hl
+                ld      (hl), d
+                ; +19..20 (FAT address in memory) is filled by the OS, not GETDPB
+                ; (TH Fig 3.11) — left untouched, matching the CF-3300 oracle which
+                ; left those two bytes unwritten.
+                or      a                   ; Cy = 0 success
                 ret
 
 ; choice — format-choice string (CHOICE entry point).

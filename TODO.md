@@ -138,20 +138,28 @@ contract: [`disk/docs/expansion-protocol.md`](disk/docs/expansion-protocol.md).
       (CF-3300 failed every verb on the old `bdos_entry` path). See basic/PROVENANCE.md
       §disk DSKIO host engine. Sources: MSX2 TH / MSX Assembly Page DSKIO contract;
       no disassembly.
-- [ ] **Provider side (`zerobas-disk`)** — install the standard **`HPHYD ($FFA7)`→
-      DSKIO** hook at INIT (the `RST 30h`/`CALLF` + slot-byte idiom, slot id from the
-      INIT scan), and make **`GETDPB ($4016)` real** (currently a stub) so a real
-      MSX-BASIC/MSX-DOS host can drive zerobas-disk. (`bdos_entry`/FAT/BDOS stay as
-      the internal implementation.) **GETDPB's DPB field encoding is the one
-      genuinely-new clean-room item** — needed only for this direction.
+- [x] **Provider side (`zerobas-disk`)** — DONE. INIT now installs the standard
+      **`HPHYD ($FFA7)`→DSKIO ($4010)** hook via the `RST 30h`/`CALLF` + slot-byte
+      idiom (slot byte = A on INIT entry; oracle-confirmed `$87` = slot 3-1), and
+      **`GETDPB ($4016)` is real** — it builds the DPB from the on-disk BPB and is
+      **field-for-field byte-identical to a black-box CF-3300 GETDPB trace** on the
+      720 KB image (`f9 00 02 0f 04 01 02 01 00 02 70 0e 00 ca 02 03 07 00`).
+      (`bdos_entry`/FAT/BDOS stay as the internal implementation.) End-to-end
+      provider read confirmed: `CALL $FFA7` (the installed hook) crosses into our
+      DSKIO and reads the boot sector byte-identically. See disk/PROVENANCE.md
+      §INIT + §DPB. The DPB field encoding was the one genuinely-new clean-room item.
 - [ ] **Oracle — disk-ROM independence, both directions** — (a) **DONE (host):**
       `BLOAD"A:"`/`LOAD"A:"`/`RUN"A:"`/`SAVE"A:"`/`BSAVE"A:"` round-trip under
       `zerobas-BASIC` with zerobas-disk **and** with the foreign National CF-3300
       disk ROM in slot 3-1 — ALL PASS on both (machines built via
       `install-openmsx-machine.py --disk-rom <ROM>`; probes `disk_probe_bload_disk.py`
       / `disk_probe_save.py` / `disk_probe_load_disk.py` / `disk_probe_run_disk.py` /
-      `disk_probe_load_embedded_nul.py`). (b) **TODO (provider):** zerobas-disk
-      reachable from a *real* MSX-DOS host via the standard hook/DSKIO path.
+      `disk_probe_load_embedded_nul.py`). (b) **PARTIAL (provider):** the standard
+      hook/DSKIO/GETDPB contract is validated — HPHYD bytes correct after INIT,
+      GETDPB byte-identical to the CF-3300 differential, and an injected-hook
+      `CALL $FFA7` end-to-end reaching our DSKIO. **Still owed:** an *organic* real
+      MSX-DOS host booting and driving zerobas-disk through the standard hook/DSKIO
+      path (full real-host harness, deferred — larger than a session).
 
 **Sequencing.** Tape parity is **done**, so this is the next committed track. The
 private `bdos_entry` is the foundation every disk verb sits on; **build nothing
