@@ -418,6 +418,19 @@ def test_tapion_lock_and_calibrate(m, fails):
     motor_on = (s["PPI_REGS"], s["MOTOR_ON"]) in out
     fails += not motor_on
     print(f"{'PASS' if motor_on else 'FAIL'}  tapion turns motor on (={motor_on})")
+
+    # A slow leader (large half-period) makes the 16-half running sum exceed 255,
+    # so the high-byte carry propagation (INC H in tapion_meas) is exercised.
+    # LOWLIM = (7*sum)>>4 = 7*H still: H=20 -> sum=320 -> 7*320/16 = 140.
+    H2 = 20
+    m3 = machine()
+    m3.cpu.io_in = Samples(leader(H2))
+    cpu = m3.call("tapion")
+    lowlim2 = m3.mem[s["LOWLIM"]]
+    ok = (not carry(cpu)) and lowlim2 == (7 * H2) & 0xFF
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  tapion slow leader (H={H2}, sum>255): "
+          f"CF={int(carry(cpu))}, LOWLIM={lowlim2} (want 0, {(7 * H2) & 0xFF})")
     return fails
 
 
@@ -477,6 +490,28 @@ def test_tapin_self_calibrated(m, fails):
     return fails
 
 
+def test_tapin_no_start(m, fails):
+    """tapin with a carrier but NO start bit (all short halves) exhausts the
+    16-bit start-bit hunt and fails (CF=1).
+
+    Oracle (tape.asm tapin_hunt): the hunt classifies each half; a short half is
+    not a start bit, so it decrements the 16-bit HL budget and retries; when HL
+    reaches 0 with no long (start) half seen, it sets CF and returns. Exercises
+    the dec-hl loop + the scf/ret no-start path.
+    """
+    s = m.sym
+    m.poke(s["LOWLIM"], LOWLIM_RD)           # SHORT(2)*4=8 < 12 -> always "short"
+    # >65535 short halves so the full HL countdown runs without any cas_half
+    # timing out (each short half has an edge within 2 polls).
+    m.cpu.io_in = Samples(_halves_to_samples([SHORT] * 65540))
+    cpu = m.call("tapin", max_steps=4_000_000)
+    ok = carry(cpu)
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  tapin no-start-bit (all short) -> "
+          f"hunt timeout CF={int(carry(cpu))} (want 1)")
+    return fails
+
+
 def test_tapin_decode(m, fails):
     """tapin decodes a synthetic FSK frame back to the original byte."""
     s = m.sym
@@ -510,13 +545,21 @@ def test_cas_half_counts(m, fails):
     print(f"{'PASS' if ok else 'FAIL'}  cas_half high->low: B={cpu.b}, "
           f"D={cpu.d:#04x}, CF={int(carry(cpu))} (want B=3, D=0x00, CF=0)")
 
-    # No edge for >256 polls -> timeout (CF set).
+    # No edge for >256 polls -> timeout (CF set), low branch (cas_half_lo).
     m.cpu.io_in = lambda port: 0x00          # forever low
     cpu = m.call("cas_half", d=0x00)
     ok = carry(cpu)
     fails += not ok
-    print(f"{'PASS' if ok else 'FAIL'}  cas_half flat -> timeout CF={int(carry(cpu))} "
-          f"(want CF=1)")
+    print(f"{'PASS' if ok else 'FAIL'}  cas_half flat-low -> timeout "
+          f"CF={int(carry(cpu))} (want CF=1)")
+
+    # Same, but starting high: exercises the cas_half_hi timeout (SCF/RET).
+    m.cpu.io_in = lambda port: 0x80          # forever high
+    cpu = m.call("cas_half", d=0x80)
+    ok = carry(cpu)
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  cas_half flat-high -> timeout "
+          f"CF={int(carry(cpu))} (want CF=1)")
     return fails
 
 
@@ -543,6 +586,7 @@ def run():
         ("Tier 2: tapion lock + LOWLIM calibration", test_tapion_lock_and_calibrate),
         ("Tier 2: tapion silence tolerance + dead-tape fail", test_tapion_silence_and_dead),
         ("Tier 2: tapin self-calibrated (tapion-derived LOWLIM)", test_tapin_self_calibrated),
+        ("Tier 2: tapin no-start-bit timeout", test_tapin_no_start),
         ("Tier 2: tapin decode (hand-set LOWLIM)", test_tapin_decode),
     ]
     for title, fn in groups:
