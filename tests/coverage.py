@@ -8,12 +8,15 @@ each test group in-process, accumulate the executed addresses, then bucket them
 against the pasmo symbol table to report, per labelled region, whether it was
 ENTERED by any test. That automates the "what's covered?" audit.
 
-Metric: symbol-delimited *region entry* — region [label_i, label_{i+1}) counts
-as covered iff some executed opcode address fell inside it. (A finer byte metric
-would need a full disassembly pass to know which bytes are opcode starts; region
-entry is the pragmatic, honest measure and maps straight onto "is this routine
-tested?". Data tables in the code image — kwtable, the dispatch table — never
-execute, so they legitimately show as not-entered.)
+Metric: label-region ENTRY (≈ basic-block, NOT line/instruction coverage).
+A region [label_i, label_{i+1}) counts as covered iff some executed opcode
+address fell inside it — so this is finer than routine coverage (every loop/
+branch label starts a region) but coarser than line coverage (an untaken branch
+inside an entered region is not distinguished in the report). True instruction
+coverage is reachable from the same data — _PCS is every executed opcode address
+— but needs the denominator: an instruction-length decoder to enumerate all
+opcode starts. Data tables in the code image (kwtable, dispatch) never execute,
+so they're filtered out rather than counted as gaps.
 
 Run: `python3 tests/coverage.py`  (or `make coverage`).
 """
@@ -122,7 +125,7 @@ def measure(label, mods, src, base):
     n_cov = sum(entered)
     pct = 100.0 * n_cov / n_total if n_total else 0.0
 
-    print(f"\n=== {label}: {n_cov}/{n_total} routines entered ({pct:.0f}%) "
+    print(f"\n=== {label}: {n_cov}/{n_total} code blocks entered ({pct:.0f}%) "
           f"[code {lo:#06x}..{hi:#06x}] ===")
     missed = [n for (n, _, _), ent in zip(regs, entered) if not ent]
     if missed:
