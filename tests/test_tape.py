@@ -169,6 +169,27 @@ def test_cas_islong(m, fails):
         fails += not ok
         print(f"{'PASS' if ok else 'FAIL'}  cas_islong: B={b} (B*4={b*4} vs "
               f"LOWLIM={LOWLIM}) -> long={int(got_long)} (want {int(want_long)})")
+
+    # Fast-baud near-margin: this is WHY LOWLIM is kept in quarter-count units.
+    # A fast leader of short halves ~3 counts derives LOWLIM = 7*3 = 21 (see
+    # tapion). The 1.5x leader->data transition artifact then measures ~5 counts.
+    # cas_islong must reject it as SHORT: 5*4 = 20 < 21. An integer threshold of
+    # floor(1.75*3) = 5 would misclassify B=5 as LONG (5 >= 5) — the bug the
+    # B*4 fractional precision exists to prevent. A real 2x long (B=6) is LONG:
+    # 6*4 = 24 >= 21. (tape.asm cas_islong / tapion_haveavg.)
+    m.poke(s["LOWLIM"], 21)
+    for b, want_long, note in [
+        (3, False, "short carrier"),
+        (5, False, "1.5x transition artifact (integer thresh would mis-flag)"),
+        (6, True,  "2x real long"),
+    ]:
+        cpu = m.call("cas_islong", b=b)
+        got_long = carry(cpu)
+        ok = got_long == want_long
+        fails += not ok
+        print(f"{'PASS' if ok else 'FAIL'}  cas_islong near-margin: B={b} "
+              f"(B*4={b*4} vs 21) -> long={int(got_long)} (want {int(want_long)}; "
+              f"{note})")
     return fails
 
 
@@ -337,26 +358,123 @@ def test_tapoof_flush(m, fails):
 SHORT, LONG, LOWLIM_RD = 2, 4, 12   # 8 < 12 <= 16
 
 
-def encode_byte(byte, level0=0x00):
+def _halves_to_samples(halves, level0=0x00):
+    """Render half-period durations to an alternating-level CAS-in sample stream
+    (prefixed with the level byte the reader's first `in a` reads). cas_half
+    returns a half of duration d when it sees (d-1) same-level samples then 1
+    flipped sample; the level alternates every half."""
+    samples = [level0]
+    cur = level0
+    for d in halves:
+        samples += [cur] * (d - 1) + [cur ^ 0x80]
+        cur ^= 0x80
+    samples += [cur] * 8                        # a little tail padding (unused)
+    return samples
+
+
+def encode_byte(byte, short=SHORT, long_=LONG, level0=0x00):
     """Build a CAS-in sample stream that the reader must decode to `byte`.
 
     Documented FSK frame (tape.asm header): start bit '0' = 1 low cycle = 2 long
     halves; data bit '0' = 2 long halves, '1' = 2 high cycles = 4 short halves;
     bits LSB-first. tapin reads the start bit (hunt half + 2nd half) then 8 data
-    bits. cas_half returns a half of duration d when it sees (d-1) same-level
-    samples followed by 1 flipped sample; levels alternate every half.
+    bits.
     """
     bits_lsb = [(byte >> i) & 1 for i in range(8)]
-    halves = [LONG, LONG]                      # start bit (2 long halves)
+    halves = [long_, long_]                     # start bit (2 long halves)
     for b in bits_lsb:
-        halves += [SHORT, SHORT, SHORT, SHORT] if b else [LONG, LONG]
-    samples = [level0]                         # tapin's initial `in a` level read
-    cur = level0
-    for d in halves:
-        samples += [cur] * (d - 1) + [cur ^ 0x80]
-        cur ^= 0x80
-    samples += [cur] * 8                       # a little tail padding (unused)
-    return samples
+        halves += [short] * 4 if b else [long_, long_]
+    return _halves_to_samples(halves, level0)
+
+
+def leader(short, n_halves=80, level0=0x00):
+    """A pure carrier leader: n_halves short (high-freq) halves — the tone
+    TAPION locks onto and measures to derive LOWLIM."""
+    return _halves_to_samples([short] * n_halves, level0)
+
+
+def test_tapion_lock_and_calibrate(m, fails):
+    """tapion locks onto a clean leader and derives LOWLIM = 7 * short-half.
+
+    Oracle (tape.asm tapion_haveavg): it sums CAS_RUNLEN (16) leader halves of
+    count H, so sum = 16*H, and stores LOWLIM = (7*sum) >> 4 = 7*H (1.75x the
+    average short half, in quarter-count units). On success CF = 0.
+    """
+    s = m.sym
+    H = 4
+    m.cpu.io_in = Samples(leader(H))
+    cpu = m.call("tapion")
+    lowlim = m.mem[s["LOWLIM"]]
+    ok = (not carry(cpu)) and lowlim == 7 * H
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  tapion clean leader: CF={int(carry(cpu))} "
+          f"(want 0), LOWLIM={lowlim} (want 7*{H}={7*H})")
+
+    # The motor must be switched on (PPI BSR MOTOR_ON -> PPI_REGS).
+    m2 = machine()
+    out = m2.record_out()
+    m2.cpu.io_in = Samples(leader(H))
+    m2.call("tapion")
+    motor_on = (s["PPI_REGS"], s["MOTOR_ON"]) in out
+    fails += not motor_on
+    print(f"{'PASS' if motor_on else 'FAIL'}  tapion turns motor on (={motor_on})")
+    return fails
+
+
+def test_tapion_silence_and_dead(m, fails):
+    """tapion tolerates leading silence (the openMSX .cas LONG_SILENCE) but a
+    genuinely dead/flat tape exhausts CAS_FLATMAX and fails (CF=1).
+
+    Oracle (tape.asm tapion_wait): WAIT for the first real edge, counting flat
+    cas_half timeouts against the 16-bit CAS_FLATMAX budget; silence before the
+    carrier is skipped, a flat that never breaks fails.
+    """
+    H = 4
+    # ~256 flat samples (one cas_half timeout of silence) then a clean leader.
+    m.cpu.io_in = Samples([0x00] * 256 + leader(H))
+    cpu = m.call("tapion")
+    ok = not carry(cpu)
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  tapion leading-silence then leader: "
+          f"CF={int(carry(cpu))} (want 0 = locked)")
+
+    # Dead tape: the level never flips, so every cas_half times out until the
+    # CAS_FLATMAX budget is exhausted -> failure.
+    m2 = machine()
+    m2.cpu.io_in = lambda port: 0x00
+    cpu = m2.call("tapion", max_steps=5_000_000)
+    ok = carry(cpu)
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  tapion dead/flat tape: "
+          f"CF={int(carry(cpu))} (want 1 = fail)")
+    return fails
+
+
+def test_tapin_self_calibrated(m, fails):
+    """End-to-end read: tapion DERIVES LOWLIM from the leader, then tapin decodes
+    bytes against that derived threshold — no hand-set LOWLIM.
+
+    This is the coupling the higher-speed openMSX waveform stressed: the
+    discrimination threshold tapin uses is the one tapion measured, not a value
+    the test chose. Frame tones use short=H, long=2H, so a data '0' half (2H*4)
+    lands above LOWLIM=7H and a '1' carrier half (H*4) below it.
+    """
+    s = m.sym
+    H = 4
+    m.cpu.io_in = Samples(leader(H))
+    cpu = m.call("tapion")
+    assert not carry(cpu), "leader should lock"
+    derived = m.mem[s["LOWLIM"]]
+    print(f"      (tapion derived LOWLIM={derived} from an H={H} leader)")
+    for byte in (0x00, 0xFF, 0xA5, 0x41):
+        m.cpu.io_in = Samples(encode_byte(byte, short=H, long_=2 * H))
+        cpu = m.call("tapin")
+        ok = cpu.a == byte and not carry(cpu)
+        fails += not ok
+        print(f"{'PASS' if ok else 'FAIL'}  tapin (self-calibrated, LOWLIM="
+              f"{derived}) decodes {byte:#04x} -> A={cpu.a:#04x}, "
+              f"CF={int(carry(cpu))}")
+    return fails
 
 
 def test_tapin_decode(m, fails):
@@ -422,7 +540,10 @@ def run():
         ("Tier 2: tapoon header",     test_tapoon_header),
         ("Tier 2: tapoof flush",      test_tapoof_flush),
         ("Tier 2: cas_half",          test_cas_half_counts),
-        ("Tier 2: tapin decode",      test_tapin_decode),
+        ("Tier 2: tapion lock + LOWLIM calibration", test_tapion_lock_and_calibrate),
+        ("Tier 2: tapion silence tolerance + dead-tape fail", test_tapion_silence_and_dead),
+        ("Tier 2: tapin self-calibrated (tapion-derived LOWLIM)", test_tapin_self_calibrated),
+        ("Tier 2: tapin decode (hand-set LOWLIM)", test_tapin_decode),
     ]
     for title, fn in groups:
         print(f"=== {title} ===")
