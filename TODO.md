@@ -21,14 +21,19 @@ compatibility.* The committed target is therefore:
    `CSAVE`/`SAVE"CAS:"`/`BSAVE"CAS:"` save on-device (tokenised-only SAVE; ASCII is
    Phase 2).
 4. **Disk interface standardization — "Phase 1.5"** — make `zerobas-BASIC` reach
-   disk files through the *standard* `$4010` DSKIO entry instead of zerobas-disk's
-   private `bdos_entry`, so **any** standard disk ROM (real or zerobas) works under
-   `zerobas-BASIC`. Loader-level (Depth A); see the dedicated section below.
+   disk files through the **standard BASIC ↔ disk-ROM expansion/hook protocol**
+   (the `H.*` hooks + STATEMENT/DEVICE expansion every MSX disk ROM installs at
+   INIT) instead of zerobas-disk's private `bdos_entry`, so the loader verbs
+   **delegate** file resolution to whatever disk ROM is in the slot — and **any**
+   standard disk ROM (real or zerobas) works under `zerobas-BASIC`. *Loader-scoped*
+   delegation: only the existing verbs (`BLOAD`/`LOAD`/`RUN`/`SAVE`/`BSAVE`) are
+   wired through the hooks — no basic-side FAT, no new Disk BASIC verbs. See the
+   dedicated section below.
 
 **Full MSX1 BASIC (Phase 2) is an aspirational appendix, NOT in the committed
-target** — listed at the end of this file for reference only. (The fully
-MSX-faithful version of item 4 — the BASIC expansion/hook protocol, "Depth B" — is
-filed there.)
+target** — listed at the end of this file for reference only. (The *full Disk
+BASIC verb surface* — `FILES`/`OPEN`/`PRINT#`/`KILL`/… on top of the same hook
+host — is filed there; the hook *mechanism* itself is committed in item 4.)
 
 ## Status today — three components, two axes
 
@@ -42,8 +47,10 @@ zerobas is three separately-built artifacts, combined only at runtime: `basic/` 
 | **Disk** | ✅ DSKIO + FAT12 + BDOS, read **and** write (differential vs CF-3300 & MSX-DOS 1) | ✅ `BLOAD`/`LOAD`/`RUN`/`SAVE`/`BSAVE` for `"A:"` † |
 
 † `zerobas-BASIC` reaches the disk through zerobas-disk's **private** `bdos_entry`
-(published at SYSTEM vector `$F37D`), **not** the standard MSX disk-ROM interface —
-so a *foreign* disk ROM does not work under it. Phase 1.5 (below) closes this.
+(published at SYSTEM vector `$F37D`), **not** the standard BASIC↔disk-ROM expansion
+protocol — so a *foreign* disk ROM does not work under it, and zerobas-disk is not
+reachable by real BASIC/DOS. Phase 1.5 (below) closes this by moving the loader
+verbs onto the standard hook protocol.
 
 Language (Phase 1, done): byte-identical tokeniser (keywords, integer / `&H` /
 `&O` constants, `= + - * / \ < >`, `MOD`/`AND`/`OR`/`XOR`/`NOT`), stored
@@ -84,46 +91,57 @@ storage statements above.
       tokenised-only `SAVE"CAS:"` (`,A` ASCII → `load_error`, Phase 2); 6-char name
       truncation; bare `CSAVE` writes a 6-space name. This completes tape parity.
 
-### Phase 1.5 — disk interface standardization (Depth A)
+### Phase 1.5 — disk interface standardization (loader-scoped hook delegation)
 
 **Why.** On real MSX the BASIC interpreter and the disk ROM are *not* tied
 together — they interoperate through **standardized** interfaces (the slot-scan +
-INIT, the `$4010` DSKIO entry table, the H.\* hooks, BASIC's STATEMENT/DEVICE
+INIT, the `$4010` DSKIO entry table, the `H.*` hooks, BASIC's STATEMENT/DEVICE
 expansion), so disk interfaces are interchangeable (plug a floppy cartridge into
 any MSX; swap disk ROMs between makers). zerobas copies the *placement* faithfully
 (cassette in the BIOS, disk in a slot) but swapped the BASIC↔disk *protocol* for a
 **private** one: `zerobas-BASIC`'s disk verbs call zerobas-disk's `bdos_entry` via
 the SYSTEM vector `$F37D`, and `zerobas-BASIC` implements none of the standard
 expansion. So only the matched pair works — a real/foreign disk ROM does **not**
-drop in. This track closes that gap at the **loader level** (Depth A): drive disk
-I/O through the *documented* `$4010` DSKIO entry every disk ROM exposes.
+drop in, and zerobas-disk is not reachable by real BASIC/DOS.
 
-- [ ] **Drive disk I/O through standard `$4010` DSKIO** — rework `do_disk_bload` /
-      `disk_prog_load` / `do_bsave` / `do_save` ([`basic/bload.asm`](basic/bload.asm),
-      [`basic/save.asm`](basic/save.asm), [`basic/cload.asm`](basic/cload.asm)) to
-      read/write sectors via the standard `$4010` DSKIO entry (CALSLT) instead of
-      zerobas-disk's `bdos_entry`/`$F37D`.
-- [ ] **A `basic/`-side FAT12 layer** over DSKIO (BPB mount / dir search /
-      cluster-walk for read; free-cluster alloc / chain / dir + FAT write-back for
-      write) so the loader verbs are **disk-ROM-agnostic**. `zerobas-BASIC` then
-      carries its own FAT — a deliberate *duplication* of zerobas-disk's FAT, the
-      price of being a standard DSKIO *consumer*. (Delegating to the disk ROM's FAT
-      via the expansion hooks instead — no duplication — is Depth B / Phase 2.)
-- [ ] **Oracle — disk-ROM independence** — `BLOAD"A:"` / `SAVE"A:"` round-trip both
-      with zerobas-disk in slot 3-1 **and** with a *foreign* standard MSX1 disk ROM
-      in slot 3-1, proving the loader path no longer depends on zerobas-disk.
+**Decision (2026-06-21).** Close the gap by adopting the **standard
+expansion/hook protocol** itself, *not* by driving raw `$4010` DSKIO under a
+basic-side FAT. (The DSKIO-+-own-FAT route — formerly "Depth A" — was **dropped**:
+it duplicates zerobas-disk's FAT and is throwaway work the moment the hooks land,
+and disk load/save already works today via the private `bdos_entry`, so there is
+no interim gap a stopgap FAT was needed to fill.) zerobas-BASIC becomes a **host**
+of the protocol and zerobas-disk a **provider**, so the loader verbs **delegate**
+file resolution to whichever disk ROM is in the slot — the disk ROM's *own* FAT
+does the work, no duplication. **Loader-scoped:** only the existing verbs are wired
+through; the full Disk BASIC verb surface stays Phase 2.
 
-`zerobas-disk` keeps its `bdos_entry` / FAT / BDOS layer untouched — that simply
-becomes the **provider** half of the standard story (a standard disk ROM usable by
-MSX-DOS / real BASIC, already differential-confirmed). Both components then stand
-on their own standard interfaces.
+- [ ] **Host side in `zerobas-BASIC`** — implement the standard BASIC-side disk
+      hook points + DEVICE/STATEMENT expansion entry enough that the loader verbs
+      can open / read / write / close a *named* disk file through the in-slot disk
+      ROM's services, reached the standard way (the `H.*` hook table via `RST 30h`/
+      `CALLF` inter-slot calls), **not** via `$F37D`. Hook addresses / expansion
+      calling convention / device-table format come from the MSX2 Technical
+      Handbook + MSX Assembly Page (allowed); no disassembly.
+- [ ] **Provider side in `zerobas-disk`** — install the standard hooks at its INIT
+      and expose its file services through the protocol, so it answers a *standard*
+      host (zerobas-BASIC **and** real MSX-BASIC / MSX-DOS) — retiring the BASIC
+      side's dependence on the private `bdos_entry`. (`bdos_entry`/FAT/BDOS stay as
+      the implementation behind the standard façade.)
+- [ ] **Rewire the loader verbs** — `do_disk_bload` / `disk_prog_load` / `do_bsave`
+      / `do_save` ([`basic/bload.asm`](basic/bload.asm),
+      [`basic/save.asm`](basic/save.asm), [`basic/cload.asm`](basic/cload.asm)) call
+      through the standard host path instead of `bdos_entry`/`$F37D`.
+- [ ] **Oracle — disk-ROM independence, both directions** — (a) `BLOAD"A:"` /
+      `SAVE"A:"` round-trip under `zerobas-BASIC` with zerobas-disk **and** with a
+      *foreign* standard MSX1 disk ROM in slot 3-1; (b) zerobas-disk's files are
+      reachable from a *real* MSX-BASIC / MSX-DOS host (the provider direction the
+      delegation unlocks).
 
-**Sequencing / why decide now.** The private `bdos_entry` is the foundation every
-disk verb sits on; each new disk feature deepens the investment and makes this
-migration costlier. Do this **right after** the (orthogonal, nearly-done) tape
-parity above, while the disk surface is still small — and build nothing further on
-the private interface meanwhile. After it, both transports are consistently on
-standard interfaces (tape already uses the BIOS cassette entries).
+**Sequencing.** Tape parity is **done**, so this is the next committed track. The
+private `bdos_entry` is the foundation every disk verb sits on; **build nothing
+further on it** meanwhile. After this, both transports sit on standard interfaces
+(tape already uses the BIOS cassette entries), and both directions interoperate —
+the point of the whole basic/tape/disk split.
 
 ### Phase 1 close-out — owed oracles (polish, non-blocking)
 - [x] `basic_probe_clear.py` — CLEAR oracle done: the `<memory-top>` write to
@@ -259,13 +277,13 @@ scope. (Note: tape/disk file I/O — `SAVE`/`LOAD`/`CSAVE`/`CLOAD`/`BSAVE` — h
 pulled forward into the committed transport tracks above; the `OPEN`/`CLOSE`/
 `PRINT#`/`INPUT#` random-access file layer stays here.)
 
-- [ ] **Standard disk-ROM expansion protocol (Depth B)** — the fully MSX-faithful
-      version of Phase 1.5: implement BASIC's STATEMENT/DEVICE expansion + H.\* hook
-      protocol as a *host* in `zerobas-BASIC`, and install the standard hooks in
-      `zerobas-disk` as a *provider*, so disk ROMs **delegate** (no `basic/`-side FAT
-      duplication), full Disk BASIC verbs (`FILES`/`OPEN`/`KILL`…) work, and
-      `zerobas-disk` extends real MSX-BASIC / MSX-DOS too. Supersedes Depth A's
-      `basic/`-side FAT. Core "be a real MSX BASIC" architecture — hence Phase 2.
+- [ ] **Full Disk BASIC verb surface** — on top of the committed Phase-1.5 hook
+      *host* (which already delegates the loader verbs), add the rest of the Disk
+      BASIC statements/functions: `FILES`/`OPEN`/`CLOSE`/`PRINT#`/`INPUT#`/`GET`/
+      `PUT`/`KILL`/`NAME`/`EOF`/`LOF`/`LOC`/`MAXFILES`. The hook *mechanism* is
+      committed in Phase 1.5 (loader-scoped); this is the extra *verb* surface that
+      makes zerobas a real Disk BASIC — hence Phase 2 (it raises the loader-scoped
+      charter). The random-access file layer below folds into this item.
 - [ ] **Floating point** — the math pack, `!`/`#`/`%` type suffixes,
       `DEFINT`/`DEFSNG`/`DEFDBL`/`DEFSTR`, and the float crunch tokens
       (decimal ≥ 32768 etc.) currently out of scope
