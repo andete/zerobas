@@ -26,16 +26,20 @@ make coverage             # or: python3 tests/coverage.py
 
 `tests/coverage.py` monkeypatches the Z80 core's `step()` to log every executed
 opcode address (no change to `z80.py`), runs the tests in-process per ROM group,
-and buckets the executed addresses against the symbol table to report, for each
-labelled code block, whether any test entered it. It's **label-region entry**
-coverage (≈ basic-block): finer than routine coverage (every loop/branch label
-is a region) but **not line coverage** — an untaken branch inside an entered
-region isn't distinguished. (The raw executed-address set is collected, so true
-instruction coverage is reachable; it just needs an instruction-length decoder
-for the denominator.) Constants (UPPERCASE) and named data tables are excluded
-so they don't masquerade as un-executed code.
-Routines behind real disk/FDC/cassette I/O show as uncovered because they're
-Tier-3 (openMSX-probe territory), not host-testable.
+and reports **two** metrics:
+
+1. **Block entry** (≈ basic-block) — for each label-delimited region, whether
+   any test entered it. Finer than routine coverage, coarser than line.
+2. **Instruction / line** — exact executed-instructions / total. Numerator is
+   the logged executed addresses; the denominator comes from a small Z80
+   instruction-length decoder in `coverage.py` (re-synced at every label, so a
+   data byte can't desync it). This also lists **partially-covered** blocks —
+   the untaken branch/error paths that block entry can't see (e.g. `exec_stmt
+   4/79`: the statement-dispatch switch, since tests call handlers directly).
+
+Constants (UPPERCASE) and named data tables are excluded so they don't
+masquerade as un-executed code. Routines behind real disk/FDC/cassette I/O show
+as uncovered because they're Tier-3 (openMSX-probe territory), not host-testable.
 
 ## How it works
 
