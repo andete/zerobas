@@ -49,6 +49,7 @@ routine honours its side; the stub supplies the other side.
 | `test_poke.py` | 1 (pure) | none | `mem[addr]=val`; the error-path ERRMARK |
 | `test_usr.py` | 2 | the USR target address | the USRTAB vector store; `ev_usr` calls it with `HL=arg` |
 | `test_program.py` | 1 (pure) | `CHPUT`/`BREAKX` (neutralised) | the documented line-link layout; insert/replace/delete/relink |
+| `test_tape.py` | 1 + 2 | PSG/PPI ports (`io_in`/`io_out`) | the documented FSK frame + STMOTR/PPI/PSG contracts; `tapin` decodes a synthetic waveform |
 | `test_getdpb.py` | 2/3 (dep-mock) | `fat_mount`, `fat_total_clusters` | the 18-byte DPB, byte-for-byte vs the National CF-3300 oracle |
 
 `test_getdpb.py` shows the dependency-mock technique: GETDPB reads the disk
@@ -84,7 +85,10 @@ unit-test` calls) auto-discovers every `test_*.py`, so there's no runner or
 Makefile to edit. Each file assembles its own ROM to `/tmp` and exits 0 on pass.
 
 1. Build to a scratch path and load it: `Machine("/tmp/x.rom", "/tmp/x.sym")`.
-   (Tests assemble to `/tmp` so they never touch committed ROMs.)
+   (Tests assemble to `/tmp` so they never touch committed ROMs.) A page-0 patch
+   such as `tape/tape.asm` assembles to an image whose first byte is its lowest
+   `org`; load it with the matching base, e.g. `Machine(rom, sym, rom_base=0x00E1)`
+   — the pasmo symbols are absolute, so they line up regardless.
 2. `m.trap("some_bios_or_dependency", callback)` for anything that does I/O.
 3. `cpu = m.call("routine", hl=…, de=…)`, then assert on `m.mem[...]` / `cpu.*`.
 4. Build expected values from `m.sym[...]` named constants where possible, so the
