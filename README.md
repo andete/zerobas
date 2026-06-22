@@ -47,8 +47,16 @@ driving a real MSX in openMSX as a black box.
 Requires [pasmo](https://pasmo.speccy.org/) (the assembler C-BIOS uses):
 
 ```sh
-make            # -> build/basic.rom (16 KB cartridge)
+make            # all portable deliverables: build/basic.rom, build/disk.rom,
+                #   zerobas-msx1.ips/.bps, tape/zerobas-tape-msx1.ips/.bps
+make machines   # install the openMSX machine configs (see below)
+make install    # make + make machines
 ```
+
+The patch deliverables need a stock C-BIOS main ROM to stamp/verify against;
+`build-patches.sh` auto-detects openMSX's bundled copy, or pass `STOCK=<path>`.
+ROMs land in the gitignored `build/`; the `.ips/.bps` patches are tracked at the
+repo root.
 
 ## Two ways to run it: cartridge, or patched in next to the BIOS
 
@@ -64,24 +72,29 @@ combined only at apply-time. C-BIOS's cold-boot cartridge scan reaches its own
 slot-0 page 1, finds zerobas's "AB" header, and calls INIT — so **no
 boot-vector patch is needed**; the cartridge header does double duty.
 
+`make patches` (a subset of `make`) does this: `build-patches.sh` splices
+`build/basic.rom` into page 1, checks that the only stock bytes it overwrites are
+C-BIOS's unimplemented-call `unknown@` stubs (none reachable by a direct
+`CALL`/`JP`), and emits both patch formats.
+
+To run it in openMSX without touching any ROM, `make machines` installs ready
+machine configs into your openMSX user dir — per C-BIOS MSX1 region
+(intl/BR/EU/JP), a `*_BASIC` (zerobas + tape) and a `*_BASIC_DISK` (+ zerobas-disk
+in slot 3-1):
+
 ```sh
-make patches    # -> zerobas-msx1.ips + zerobas-msx1.bps (vs a stock C-BIOS main ROM)
+make machines                      # -> C-BIOS_MSX1[_BR/_EU/_JP]_BASIC[_DISK]
+openmsx -machine C-BIOS_MSX1_BASIC               # boots straight to the zb> prompt
+openmsx -machine C-BIOS_MSX1_BASIC_DISK -diska disk/test720.dsk   # + disk
 ```
 
-`build-patches.sh` splices `build/basic.rom` into page 1, checks that the only stock
-bytes it overwrites are C-BIOS's unimplemented-call `unknown@` stubs (none
-reachable by a direct `CALL`/`JP`), and emits both patch formats. To use it in
-openMSX without touching any ROM, the installer writes `*_BASIC` machines that
-apply the IPS on load:
-
-```sh
-python3 tools/install-openmsx-machine.py   # -> C-BIOS_MSX1[_EU/_BR/_JP]_BASIC
-openmsx -machine C-BIOS_MSX1_BASIC         # boots straight to the zb> prompt
-```
-
-(zerobas is MSX1 BASIC, so only the MSX1 C-BIOS variants are targeted. The BPS
-is CRC-locked to one stock ROM and fails cleanly on a mismatch; the IPS is
-universal and is what the installer uses.)
+These configs embed absolute paths to your openMSX ROMs and this repo, so they're
+an install (regenerated per environment), not a portable file — which is why
+`make machines` is separate from `make`. (zerobas is MSX1 BASIC, so only the MSX1
+C-BIOS variants are targeted. The BPS is CRC-locked to one stock ROM and fails
+cleanly on a mismatch; the IPS is universal and is what the configs use. The
+`National_CF-3300_ZEROBASDISK` provider-oracle is a test machine — `make
+machines-oracle` — not part of the release set.)
 
 ## Current status — byte-identical crunch + REM / POKE / PEEK + `BLOAD"CAS:",R`
 
@@ -227,7 +240,7 @@ ROM provides the device half (`PHYDIO` / the `H.*` hooks).
 zerobas/
 ├── README.md
 ├── PROVENANCE.md      # provenance index -> per-component logs below
-├── Makefile           # pasmo -> build/basic.rom (16 KB); `make patches` -> .ips/.bps
+├── Makefile           # `make` -> all deliverables; `make machines` -> openMSX configs
 ├── build/             # gitignored build artifacts (basic.rom, disk.rom)
 ├── build-patches.sh   # splice into a stock C-BIOS page 1 -> zerobas-msx1.ips/.bps
 ├── zerobas-msx1.ips   # slot-0 page-1 patch, IPS (universal; used by installer)

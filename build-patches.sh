@@ -29,8 +29,10 @@ trap 'rm -rf "$WORK"' EXIT
 # the BPS is CRC-locked to this exact ROM.)
 STOCK="${1:-/Applications/openMSX.app/Contents/Resources/share/machines/cbios_main_msx1.rom}"
 
-echo "building zerobas (basic.rom)..."
-make -C "$HERE" >/dev/null
+echo "building zerobas (build/basic.rom)..."
+# Build only the ROM, not the default `all` goal -- `all` depends on this script
+# (via the patches target), so a bare `make` here would recurse.
+make -C "$HERE" build/basic.rom >/dev/null
 
 if [ ! -f "$STOCK" ]; then
     echo "error: stock C-BIOS main ROM not found: $STOCK" >&2

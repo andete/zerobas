@@ -39,14 +39,25 @@ Each TODO item is largely independent — do one per session, and finish with:
 ## Build
 
 ```sh
-make            # -> build/basic.rom, padded to exactly 16384 bytes
-make disk       # -> build/disk.rom
-make patches    # -> zerobas-msx1.ips / .bps (splice into a C-BIOS page-1 slot)
+make            # all portable deliverables: build/basic.rom + build/disk.rom +
+                #   zerobas-msx1.ips/.bps + tape/zerobas-tape-msx1.ips/.bps
+make disk       # just build/disk.rom
+make patches    # just the zerobas page-1 .ips/.bps
+make machines   # install openMSX configs into ~/.openMSX (separate: see below)
+make install    # make + make machines
 ```
 
 Build artifacts (the ROMs) land in the gitignored `build/` dir, never the repo
 root — so a stale copy can't linger where a probe or installer would pick it up.
-The tracked `zerobas-msx1.ips/.bps` deliverables stay at the root.
+The tracked `zerobas-msx1.ips/.bps` deliverables stay at the root. The patch
+targets need a stock C-BIOS ROM (auto-detected from openMSX, or `STOCK=<path>`).
+
+The openMSX machine configs are a separate `make machines` target, not part of
+`make`: they embed absolute paths to your openMSX ROMs + this repo, so they're an
+install regenerated per environment, not a portable artifact. `make machines`
+writes, per C-BIOS MSX1 region, a `*_BASIC` and a `*_BASIC_DISK`; the
+`*_ZEROBASDISK` provider-oracle is a test machine (`make machines-oracle`), not a
+release config.
 
 Assembler is pasmo. A linter hook auto-adds SPDX / copyright headers to new
 source files — don't hand-write them.
