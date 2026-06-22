@@ -111,6 +111,8 @@ BDOS_F_SEQRD    equ     $14     ; FCB Sequential Read(MSX2 TH, MSX-DOS BDOS tabl
 BDOS_F_SEQWR    equ     $15     ; FCB Sequential Write (MSX2 TH, MSX-DOS BDOS table)
 BDOS_F_CREATE   equ     $16     ; FCB Create file    (MSX2 TH, MSX-DOS BDOS table)
 BDOS_F_SETDTA   equ     $1A     ; Set DTA Address (DE=new DTA) (MSX2 TH, MSX-DOS BDOS table)
+BDOS_F_RDBLK    equ     $27     ; Random Block Read (RDBLK) (MSX-DOS BDOS table; the
+                                ; MSX-DOS-1 boot loads MSXDOS.SYS through this — a3 §8.9)
 DTA_DEFAULT     equ     $0080   ; default Disk Transfer Area (MSX2 TH, BDOS conv.)
 RECSIZE         equ     128     ; sequential-read record size (MSX2 TH, FCB seq I/O)
 RECPERSEC       equ     4       ; 512 / 128 = records per 512-byte sector (own deriv.)
@@ -339,6 +341,16 @@ R30_BC          equ     $E764   ; $0030 handler: saved caller BC (word)
 R30_DE          equ     $E766   ; $0030 handler: saved caller DE (word)
 R30_AF          equ     $E768   ; $0030 handler: saved caller AF incl. carry (word)
 CALSLT_HL       equ     $E76A   ; CALSLT handler: HL stash across the call setup (word)
+; BDOS $27 (Random Block Read) scratch — transient within one RDBLK call. Own-choice
+; free page-3 RAM after the step-6 block. Only the DOS-boot path (on a real-BIOS host)
+; calls $27, so this never collides with the zerobas-BASIC host buffers (which use
+; the standard DSKIO path, not bdos_entry). (disk/PROVENANCE.md §BDOS interface)
+RDBLK_REQ       equ     $E76C   ; records requested (HL on entry) (word)
+RDBLK_RECSIZE   equ     $E76E   ; record size from FCB+14 (word)
+RDBLK_DONE      equ     $E770   ; records delivered so far (word; = HL on return)
+RDBLK_CNT       equ     $E772   ; bytes left in the current record (word)
+RDBLK_BUFPOS    equ     $E774   ; byte offset into SECTOR_BUF (word, 0..512)
+RDBLK_DST       equ     $E776   ; current DTA write pointer (word; from BDOS_DTA)
 boot_disk:
                 xor     a               ; drive A
                 ld      b, 1            ; one sector
@@ -1164,6 +1176,8 @@ bdos_entry:
                 jp      z, bdos_create
                 cp      BDOS_F_SEQWR
                 jp      z, bdos_seqwrite
+                cp      BDOS_F_RDBLK
+                jp      z, bdos_rdblk
                 ld      a, $FF          ; unsupported call
                 ret
 
@@ -1311,6 +1325,141 @@ bsr_borrow:
                 ret
 bsr_eof:
                 ld      a, $01          ; end-of-file
+                ret
+
+; bdos_rdblk ($27) — Random Block Read (RDBLK). The MSX-DOS-1 boot loads
+; MSXDOS.SYS through this (a3 §8.9): after Open + SetDTA it issues $27 with a huge
+; record count to pull the whole file in.
+;   in:  DE = FCB (already Open'd), HL = number of records to read
+;        record size  = FCB +14..15 (word; 0 -> default 128)
+;        start record = FCB +33..35 — SUPPORTED ONLY AS 0 (read from file start);
+;                       the boot always passes 0. A non-zero random seek is a
+;                       documented simplification (no boot path uses it).
+;        DTA          = BDOS_DTA (set by the preceding $1A); records land at
+;                       DTA, DTA+recsize, … within this one call (BDOS_DTA itself
+;                       is left unchanged for later calls).
+;   out: A  = $00 all requested records read / $01 EOF before all (partial)
+;        HL = number of records actually read
+; Re-primes the file iterator to the start each call (idempotent random-record-0
+; semantics) and streams bytes from SECTOR_BUF, refilling via fat_read_file_sector.
+; Bounded by the true file size in BDOS_BYTESLEFT (reseeded from FAT_FILESIZE here).
+; See disk/PROVENANCE.md §BDOS interface.
+bdos_rdblk:
+                ld      (RDBLK_REQ), hl     ; save requested record count
+                ; record size <- FCB+14..15 (DE = FCB)
+                ld      hl, 14
+                add     hl, de
+                ld      a, (hl)
+                ld      (RDBLK_RECSIZE), a
+                inc     hl
+                ld      a, (hl)
+                ld      (RDBLK_RECSIZE + 1), a
+                ld      hl, (RDBLK_RECSIZE) ; 0 -> default 128 (MSX-DOS block I/O)
+                ld      a, h
+                or      l
+                jr      nz, rdb_rs_ok
+                ld      hl, RECSIZE
+                ld      (RDBLK_RECSIZE), hl
+rdb_rs_ok:
+                ; re-prime the read position to the file start (random record 0)
+                call    fat_open            ; iterator -> FAT_FIRSTCLUS, clussec 0
+                ld      hl, FAT_FILESIZE    ; BDOS_BYTESLEFT = true file size
+                ld      de, BDOS_BYTESLEFT
+                ld      bc, 4
+                ldir
+                ld      hl, 512
+                ld      (RDBLK_BUFPOS), hl  ; force a sector refill on the first byte
+                ld      hl, 0
+                ld      (RDBLK_DONE), hl    ; no records delivered yet
+                ld      hl, (BDOS_DTA)
+                ld      (RDBLK_DST), hl     ; local write pointer (BDOS_DTA preserved)
+rdb_recloop:
+                ld      hl, (RDBLK_DONE)
+                ld      de, (RDBLK_REQ)
+                or      a
+                sbc     hl, de
+                jr      z, rdb_ok           ; delivered every requested record
+                ld      hl, (RDBLK_RECSIZE)
+                ld      (RDBLK_CNT), hl     ; bytes still to copy for this record
+rdb_byteloop:
+                ld      hl, (RDBLK_CNT)
+                ld      a, h
+                or      l
+                jr      z, rdb_recdone      ; whole record copied
+                ; EOF when every file byte has been delivered (BYTESLEFT == 0)
+                ld      hl, (BDOS_BYTESLEFT)
+                ld      de, (BDOS_BYTESLEFT + 2)
+                ld      a, h
+                or      l
+                or      d
+                or      e
+                jr      z, rdb_eof
+                call    rdblk_getbyte       ; A = next file byte (advances buffer)
+                jr      c, rdb_eof          ; chain ended early (defensive)
+                ld      hl, (RDBLK_DST)
+                ld      (hl), a
+                inc     hl
+                ld      (RDBLK_DST), hl
+                ld      hl, (RDBLK_CNT)
+                dec     hl
+                ld      (RDBLK_CNT), hl
+                jr      rdb_byteloop
+rdb_recdone:
+                ld      hl, (RDBLK_DONE)
+                inc     hl
+                ld      (RDBLK_DONE), hl
+                jr      rdb_recloop
+rdb_ok:
+                xor     a                   ; A = $00 all requested records read
+                ld      hl, (RDBLK_DONE)
+                ret
+rdb_eof:
+                ld      a, $01              ; A = $01 EOF before all requested
+                ld      hl, (RDBLK_DONE)    ; HL = records actually read
+                ret
+
+; rdblk_getbyte — deliver the next byte of the open file in A, refilling
+; SECTOR_BUF from the cluster chain when exhausted and decrementing BDOS_BYTESLEFT.
+;   out: Cy = 0 ok (A = byte) / Cy = 1 chain ended (caller guards with BYTESLEFT).
+; Uses RDBLK_BUFPOS (0..512). Clobbers A + flags only (works through HL/DE/C via the
+; helper, which the caller does not rely on across the call).
+rdblk_getbyte:
+                ld      hl, (RDBLK_BUFPOS)
+                ld      de, 512
+                or      a
+                sbc     hl, de
+                jr      c, rgb_have         ; BUFPOS < 512 -> a byte is buffered
+                call    fat_read_file_sector ; refill SECTOR_BUF with the next sector
+                ret     c                   ; chain ended -> Cy = 1
+                ld      hl, 0
+                ld      (RDBLK_BUFPOS), hl
+rgb_have:
+                ld      hl, (RDBLK_BUFPOS)
+                inc     hl
+                ld      (RDBLK_BUFPOS), hl  ; advance for next time
+                dec     hl                  ; HL = the byte's index
+                ld      de, SECTOR_BUF
+                add     hl, de
+                ld      c, (hl)             ; C = the file byte
+                ; BDOS_BYTESLEFT -= 1 (4-byte LE)
+                ld      hl, BDOS_BYTESLEFT
+                ld      a, (hl)
+                sub     1
+                ld      (hl), a
+                inc     hl
+                ld      a, (hl)
+                sbc     a, 0
+                ld      (hl), a
+                inc     hl
+                ld      a, (hl)
+                sbc     a, 0
+                ld      (hl), a
+                inc     hl
+                ld      a, (hl)
+                sbc     a, 0
+                ld      (hl), a
+                ld      a, c                ; A = the byte
+                or      a                   ; Cy = 0 success
                 ret
 
 ; bdos_close ($10) — close the file.

@@ -665,3 +665,30 @@ cluster chain to the start record); validate byte-identical to real MSX-DOS by e
 `disk_probe_bdos.py` with a `$27` case (the clean-room way — the oracle already differentials
 `$0F`/`$14`). `$26` (RDBLK's write twin, WRBLK) and the `$09`/`$07` console funcs may surface next;
 re-trap after `$27`.
+
+## 8.10 Slice-3 DONE — `$27` works; MSXDOS.SYS loads byte-perfect + executes (loops on env)
+
+`bdos_rdblk` (`$27`) is implemented in `disk.asm` and **works**. The trap caught the boot's exact
+contract: `DE`=FCB, **`HL`=`$3F00`** (read-as-much-as-possible), **record size = FCB+14 = 1**,
+random record (FCB+33) = 0, **DTA = `$0100`**. Our `$27` re-primes the file to the start, streams
+bytes from `SECTOR_BUF` (refilling via `fat_read_file_sector`), bounds by the true size in
+`BDOS_BYTESLEFT`, and returns `HL` = records read / `A` = `$00`/`$01` EOF.
+
+**Validated byte-identical (the strongest check):** the 2432-byte MSXDOS.SYS landed at `$0100`
+**byte-for-byte equal to the on-disk file** (`c3 00 02 45 00 4c 00 50 00 53 00 02 01 08 01 13 …` —
+MSXDOS.SYS's real entry-vector header; the "interleaved zeros" were the file's own bytes, not a read
+bug). Regression-green: `disk_probe_files` + `disk_probe_bload_disk` + `disk_probe_init` PASS on
+C-BIOS, and `disk_probe_bdos` PASS (`$27` is inert on C-BIOS — only the DOS-boot path calls it).
+`bdos_entry` stays at `$43A4` (new code lands after it). *(TODO: add a `$27` differential case to
+`disk_probe_bdos.py` for a positive regression lock; the byte-identical load is the working proof.)*
+
+**The boot now LOADS and EXECUTES MSXDOS.SYS** — `$0100`(=`JP $0200`) and `$0200` are each reached.
+**New blocker:** MSXDOS.SYS's resident init **loops** (boot repeats `Open $0F → SetDTA $1A →
+RDBLK $27` ~10×, reloading the file). Crucially it makes **no new BDOS calls** at `$0200` — so it is
+**not** a missing BDOS function; MSXDOS.SYS runs, performs a non-BDOS **environment check**, finds it
+unsatisfied, and returns to the boot loader (which retries). This points squarely back at the §8.8
+**work area** (RAMAD0-3 `$F341-4`, the `$F348` disk-work-area/DRVTBL table) that the real disk ROM
+installs and we don't — but now we know it precisely: it is what **MSXDOS.SYS's own init reads**, not
+a kernel we must rebuild. Next: trap which `$F3xx` work-area cells MSXDOS.SYS reads at `$0200`, and
+populate exactly those (clean-room: documented MSX disk work area + the §8.8 differential values),
+re-trap toward `A>`.
