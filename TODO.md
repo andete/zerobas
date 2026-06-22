@@ -388,8 +388,13 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
       round-trips on the fresh disk (disk_probe_format.py). Boot-code region + OEM are
       zerobas' own (documented divergence — won't copy ROM code; CF-3300 writes no
       $55AA either). See PROVENANCE §CALL FORMAT.
-      - [ ] 360 KB + the CHOICE geometry menu (add a GEOM_360K descriptor + the
-            interactive "1 side / 2 sides" prompt; do_format is already geometry-driven).
+      - [x] **360 KB + the geometry menu** — DONE (basic/format.asm). Added a
+            GEOM_360K descriptor (media $FD, 720 sectors, 2 sec/FAT) and a minimal
+            `1=360k 2=720k?` prompt (read via the REPL line editor; drive + confirm
+            prompts trimmed). do_format reads the chosen descriptor through FMT_DESC —
+            geometry-agnostic. Both geometries' BPB + FAT head byte-identical to the
+            matching CF-3300 format (360K = "2 sides", 720K = "2 sides double track"),
+            and a file round-trips on each fresh disk (disk_probe_format.py).
 - `CALL SYSTEM` **[out]** — exit to MSX-DOS = the DOS-boot path (Tier-2 sub-track).
 - `CALL CHDRV` etc. **[out]** — Disk BASIC v2/v3 additions, beyond DOS1-class 1.0.
 

@@ -641,6 +641,7 @@ PU_WP           equ     $EEFB   ; pu_fmt_int scratch write pointer (2)
 ; clobbers every register, so the format loop keeps its position here in RAM. One byte
 ; ($EEFD) in the gap below FLD_DESC. See basic/format.asm.
 FMT_SEC         equ     $EEFD   ; CALL FORMAT: current sector index being written (1)
+FMT_DESC        equ     $EEFE   ; CALL FORMAT: chosen geometry descriptor pointer (2)
 FLD_DESC        equ     $EF00   ; transient fielded-read descriptor [len][bytes:255]
 ; Control stacks (page $E0, below LINEBUF at $E100). Both grow upward; the
 ; pointer addresses the next free slot, and the stack is empty when it equals
