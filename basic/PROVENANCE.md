@@ -2010,3 +2010,53 @@ DSKF) still pass.
 (vs the reference's 15); the resume-state RAM layout (`FCH_CTX`/`FCH_MODES`/
 `FCH_ACTIVE`) is zerobas's own, not the reference's FCB/buffer map; out-of-range or
 too-large channel/`MAXFILES` values reuse the `syntax error`/`load error` wording.
+
+## OPEN … FOR APPEND — extend an existing sequential file (basic/files.asm, basic/fat.asm)
+
+`OPEN "name" FOR APPEND AS #n` opens an existing sequential file and positions the
+write cursor at end-of-file, so the following `PRINT#`/`CLOSE` extends it instead
+of truncating it (which `FOR OUTPUT` does). A missing file is created (append ==
+create).
+
+**Tokenisation (already byte-identical — no new token).** "APPEND" is **not** a
+reserved word in the MSX main ROM, so the tokeniser crunches it as the name
+**`APP`** (verbatim ASCII `$41 $50 $50`) followed by the **`END`** token (`$81`) —
+"app"+"end". Proven on the diskless **Philips VG-8020** (`max…`-style token probe)
+and **byte-identical on zerobas** (which also has no APPEND keyword):
+`open"a.dat" for append as #1` → `B0 22…22 20 82 20 41 50 50 81 20 41 53 20 23 12`
+on both. So OPEN's mode parser simply matches the literal `APP`+`$81` byte sequence
+(alongside `INPUT`=`$85` and `OUTPUT`=`OUT $9C`+`PUT $B3`); nothing new to oracle-
+lock in the crunch stream. `basic_probe_crunch.py` carries the case.
+
+**Engine (`fat_io_append`, basic/fat.asm).** Mounts, `fat_find`s the file (which
+records `FAT_FIRSTCLUS`/`FAT_FILESIZE` and the dir-entry location `FWR_DIRSEC`/
+`FWR_DIROFF` reused at close), then **walks the cluster chain** reusing the read-
+side `fat_open`/`fat_read_file_sector` (no new chain logic) — the last data sector
+is left in `FSECTOR_BUF`. It then primes the write iterator to RESUME at EOF:
+`FWR_CLUS` = the last cluster, `FWR_SECIDX` set so the next flush **rewrites** the
+last partial sector (or starts a fresh one if the last sector was full), `FWR_BUFLEN`
+= bytes already in that sector, `FWR_BYTES` = current size, `FWR_FIRST` = the
+existing first cluster. An empty file resumes from offset 0 reusing its dir entry;
+a missing file tail-calls `fat_io_create`. fat.asm's READ/WRITE primitives are
+otherwise unchanged.
+
+**Ctrl-Z soft-EOF rule (CF-3300-observed).** `disk_probe_append.py --show-ref`: a
+file written + closed as `"first\r\n\x1a"` (the OUTPUT close stamps a trailing
+Ctrl-Z), then re-opened `FOR APPEND` and given `"second"`, becomes
+**`"first\r\nsecond\r\n\x1a"`** on the real CF-3300 — the original `$1A` is **gone**.
+So APPEND positions the cursor **on** a trailing Ctrl-Z and overwrites it (CP/M text
+append), and the new CLOSE re-stamps a single Ctrl-Z. `fat_io_append` reads the
+file's last data byte (`FSECTOR_BUF[rem-1]`, or `[511]` for a full last sector) and,
+when it is `$1A`, backs the resume position up by one so the marker is overwritten.
+
+**Validation** (`disk_probe_append.py`, /tmp copy of `test720.dsk`): the
+create-then-append sequence yields on-disk `AP.TXT` = `b"first\r\nsecond\r\n\x1a"`,
+**byte-identical to the real National CF-3300**. The APPEND crunch case, the 16
+host unit-test files, and every other file probe (read / write / MAXFILES / EOF·LOF
+/ DSKF) still pass.
+
+**Divergences (own design):** APPEND is stored as the OUTPUT mode (2) after open —
+the append-vs-truncate distinction only matters at open time, so every later
+`PRINT#`/`CLOSE` treats the channel identically; the resume math uses the 16-bit
+low word of the size (a >64 KB append is out of scope — loader text files are
+small); a missing file is created rather than erroring.

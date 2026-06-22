@@ -267,7 +267,15 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
             on-disk images **byte-identical to the real CF-3300**
             (`disk_probe_maxfiles.py`). RAM-bounded ceiling (real MSX=15) documented.
             See basic/PROVENANCE.md §MAXFILES.
-      - [ ] `PRINT# USING`, `INPUT$(n,#f)`, `OPEN…FOR APPEND`.
+      - [x] **`OPEN…FOR APPEND`** — DONE (basic/fat.asm `fat_io_append` +
+            basic/files.asm OPEN mode parse). Opens an existing file positioned at
+            EOF; "APPEND" = APP(ascii)+END($81), already byte-identical (no new
+            token). Walks the chain reusing the read primitives, primes the write
+            iterator at EOF, and overwrites a trailing Ctrl-Z (CP/M text append).
+            On-disk result **byte-identical to the real CF-3300**
+            (`disk_probe_append.py`: create "first" + append "second" ->
+            `first\r\nsecond\r\n\x1a`). See basic/PROVENANCE.md §OPEN … FOR APPEND.
+      - [ ] `PRINT# USING`, `INPUT$(n,#f)`.
 - [ ] **File/dir management [in]** — `FILES`✅, `KILL`✅, `NAME…AS…`✅, `LFILES`, `MERGE`
       (the `LOAD`/`SAVE`/`BLOAD`/`BSAVE`/`RUN"f"` already exist from Phase 1).
       - [x] **`NAME "old" AS "new"`** — DONE (basic/files.asm). Rewrites the dir

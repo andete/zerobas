@@ -1256,6 +1256,150 @@ fat_io_create:
                 or      a                   ; Cy = 0 success
                 ret
 
+; fat_io_append — open the file named in DISK_FCB_NAME for sequential WRITE,
+; positioned at end-of-file (text APPEND). New bytes extend the file instead of
+; truncating it. A missing file is created (append == create). If the existing
+; file ends in a Ctrl-Z ($1A) soft-EOF, the write cursor is placed ON that marker
+; so it is overwritten and re-stamped at the next CLOSE — matching the real
+; National CF-3300 (disk_probe_append.py: "first\r\n\x1a" + APPEND "second" ->
+; "first\r\nsecond\r\n\x1a", the original Ctrl-Z gone).
+;   out: Cy = 0 ready (write stream primed at EOF); Cy = 1 = mount / I-O error.
+; Method: find the file (fat_find records FAT_FIRSTCLUS/FILESIZE + FWR_DIRSEC/OFF),
+; walk the cluster chain reading every data sector (the last stays in FSECTOR_BUF),
+; then prime the write iterator to RESUME at the res. Reuses the read-side
+; fat_open/fat_read_file_sector to walk; no new chain logic. Size handled as 16-bit
+; (loader text files; a >64 KB append is out of scope — documented limit).
+fat_io_append:
+                call    fat_mount
+                ret     c
+                ld      hl,DISK_FCB_NAME
+                call    fat_find
+                jp      c,fat_io_create     ; not found -> append == create from scratch
+                ; reuse the existing dir entry (FWR_DIRSEC/OFF set by fat_find) + chain.
+                ld      hl,(FAT_FIRSTCLUS)
+                ld      (FWR_FIRST),hl
+                ld      hl,(FAT_FILESIZE)   ; size (low 16 bits)
+                ld      a,h
+                or      l
+                jp      z,fia_empty         ; empty file -> write from offset 0
+                ; nsec = ceil(size / 512) = (size + 511) >> 9 (high byte >> 1).
+                ld      de,511
+                add     hl,de
+                ld      a,h
+                srl     a
+                ld      (FAT_WRTMP),a       ; loop counter = sectors to walk
+                xor     a
+                ld      (FAT_WRTMP+1),a
+                ; walk the chain; fat_read_file_sector leaves the LAST sector in
+                ; FSECTOR_BUF and FAT_CURCLUS/FAT_CLUSSEC on it (CLUSSEC = sec+1).
+                call    fat_open
+fia_walk:
+                ld      hl,(FAT_WRTMP)
+                ld      a,h
+                or      l
+                jr      z,fia_walked
+                call    fat_read_file_sector
+                ld      hl,(FAT_WRTMP)
+                dec     hl
+                ld      (FAT_WRTMP),hl
+                jr      fia_walk
+fia_walked:
+                ld      hl,(FAT_CURCLUS)
+                ld      (FWR_CLUS),hl       ; resume in the file's last cluster
+                ; rem = size & 0x1FF (bytes in the last sector; 0 = it is full).
+                ld      hl,(FAT_FILESIZE)
+                ld      a,h
+                and     1
+                ld      h,a                 ; HL = rem (0..511)
+                ld      (FAT_WRTMP2),hl
+                ld      a,h
+                or      l
+                jr      z,fia_full          ; rem == 0 -> last sector is full
+                ; partial last sector: rewrite it. SECIDX = CLUSSEC-1; the partial
+                ; sector content is already in FSECTOR_BUF. Check its last byte.
+                ld      a,(FAT_CLUSSEC)
+                dec     a
+                ld      (FWR_SECIDX),a
+                ld      hl,FSECTOR_BUF
+                ld      de,(FAT_WRTMP2)
+                dec     de                  ; offset rem-1 = last data byte
+                add     hl,de
+                ld      a,(hl)
+                cp      $1A
+                jr      z,fia_part_ctrlz
+                ld      hl,(FAT_WRTMP2)     ; no Ctrl-Z: BUFLEN = rem, bytes = size
+                ld      (FWR_BUFLEN),hl
+                jp      fia_bytes_size
+fia_part_ctrlz:
+                ld      hl,(FAT_WRTMP2)     ; Ctrl-Z: overwrite it. BUFLEN = rem-1,
+                dec     hl                  ; bytes = size-1
+                ld      (FWR_BUFLEN),hl
+                jp      fia_bytes_m1
+fia_full:
+                ; last sector full: check its final byte ([511]) for the Ctrl-Z.
+                ld      a,(FSECTOR_BUF+511)
+                cp      $1A
+                jr      z,fia_full_ctrlz
+                ; no Ctrl-Z: resume on a FRESH next sector (SECIDX = CLUSSEC; if that
+                ; equals SECPERCLUS the next flush allocates a new cluster). bytes=size.
+                ld      a,(FAT_CLUSSEC)
+                ld      (FWR_SECIDX),a
+                ld      hl,0
+                ld      (FWR_BUFLEN),hl
+                jp      fia_bytes_size
+fia_full_ctrlz:
+                ; overwrite the Ctrl-Z at offset 511 by rewriting the full last
+                ; sector: SECIDX = CLUSSEC-1, BUFLEN = 511, bytes = size-1.
+                ld      a,(FAT_CLUSSEC)
+                dec     a
+                ld      (FWR_SECIDX),a
+                ld      hl,511
+                ld      (FWR_BUFLEN),hl
+                jp      fia_bytes_m1
+fia_bytes_size:
+                ld      hl,FAT_FILESIZE     ; FWR_BYTES = size (4-byte LE)
+                ld      de,FWR_BYTES
+                ld      bc,4
+                ldir
+                or      a                   ; Cy = 0 success
+                ret
+fia_bytes_m1:
+                ld      hl,FAT_FILESIZE     ; FWR_BYTES = size, then -1
+                ld      de,FWR_BYTES
+                ld      bc,4
+                ldir
+                ld      hl,FWR_BYTES
+                ld      a,(hl)
+                sub     1
+                ld      (hl),a
+                inc     hl
+                ld      a,(hl)
+                sbc     a,0
+                ld      (hl),a
+                inc     hl
+                ld      a,(hl)
+                sbc     a,0
+                ld      (hl),a
+                inc     hl
+                ld      a,(hl)
+                sbc     a,0
+                ld      (hl),a
+                or      a                   ; Cy = 0 success
+                ret
+fia_empty:
+                ; existing but EMPTY file: write from offset 0, reusing the dir entry
+                ; (FWR_DIRSEC/OFF from fat_find; FWR_FIRST = FAT_FIRSTCLUS = 0). Same
+                ; primed state as fat_io_create but without making a new dir slot.
+                xor     a
+                ld      (FWR_SECIDX),a
+                ld      hl,0
+                ld      (FWR_CLUS),hl
+                ld      (FWR_BUFLEN),hl
+                ld      (FWR_BYTES),hl
+                ld      (FWR_BYTES+2),hl
+                or      a                   ; Cy = 0 success
+                ret
+
 ; fat_io_putbyte — append the byte in A to the open-for-write file.
 ;   in:  A = byte to write.
 ;   out: Cy = 0 ok; Cy = 1 = disk full / write error.

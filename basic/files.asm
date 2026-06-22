@@ -224,14 +224,37 @@ do_open:
                 cp      FOR_TOKEN           ; FOR
                 jp      nz,stmt_error
                 inc     hl
-                ; mode keyword: INPUT ($85), or OUTPUT = OUT ($9C) + PUT ($B3)
-                ; (OUTPUT is two reserved words, not one keyword — oracle-observed).
+                ; mode keyword: INPUT ($85); OUTPUT = OUT ($9C) + PUT ($B3); or
+                ; APPEND = "APP" (verbatim ASCII $41 $50 $50) + END ($81) — none of
+                ; these are single keywords: OUTPUT is two reserved words, and
+                ; "APPEND" is not a reserved word at all, so the main-ROM tokeniser
+                ; crunches it as the name "APP" followed by the END token (oracle:
+                ; VG-8020 + zerobas both emit $41 $50 $50 $81 — already byte-identical).
                 call    skip_spaces
                 ld      a,(hl)
                 cp      INPUT_TOKEN
                 jr      z,oo_input
                 cp      OUT_TOKEN
+                jr      z,oo_output
+                ; APPEND? match the literal "APP" + END-token sequence.
+                cp      'A'
                 jp      nz,stmt_error
+                inc     hl
+                ld      a,(hl)
+                cp      'P'
+                jp      nz,stmt_error
+                inc     hl
+                ld      a,(hl)
+                cp      'P'
+                jp      nz,stmt_error
+                inc     hl
+                ld      a,(hl)
+                cp      END_TOKEN           ; the "END" half of app-END
+                jp      nz,stmt_error
+                inc     hl
+                ld      a,3                 ; mode = APPEND (provisional open action)
+                jr      oo_setmode
+oo_output:
                 inc     hl
                 ld      a,(hl)
                 cp      PUT_TOKEN
@@ -280,29 +303,42 @@ oo_num:
                 call    fch_claim           ; FCH_ACTIVE = e (no stale load)
                 pop     de
                 push    hl                  ; guard the text cursor — CALSLT (inside
-                push    de                  ; fat_io_open/create) clobbers HL + regs
-                ld      a,(FCH_MODE)        ; provisional requested mode (1 or 2)
+                push    de                  ; fat_io_*) clobbers HL + regs
+                ld      a,(FCH_MODE)        ; provisional action: 1 INPUT/2 OUTPUT/3 APPEND
                 cp      2
                 jr      z,oo_create
+                cp      3
+                jr      z,oo_append
                 call    fat_io_open         ; INPUT: mount + find + prime read
                 jr      oo_done
 oo_create:
                 call    fat_io_create       ; OUTPUT: make/truncate + prime write
+                jr      oo_done
+oo_append:
+                call    fat_io_append       ; APPEND: open existing + position at EOF
 oo_done:
                 pop     de
                 pop     hl
                 jr      c,oo_fail           ; not found / dir-full / mount / I-O error
                 ; success: record the open mode in the channel table + the mirror.
-                ; The FCH_MODES address math uses HL, so guard the text cursor (HL)
-                ; that exec_stmt needs to continue the line.
+                ; APPEND (3) behaves exactly like OUTPUT (2) for every later op
+                ; (PRINT#/CLOSE), so it is stored as 2 — the action distinction only
+                ; mattered at open. The FCH_MODES address math uses HL, so guard the
+                ; text cursor (HL) that exec_stmt needs to continue the line.
                 ld      a,e
                 ld      (FCH_NUM),a
+                ld      a,(FCH_MODE)
+                cp      3
+                jr      nz,oo_storemode
+                ld      a,2                 ; normalise APPEND -> OUTPUT for the table
+                ld      (FCH_MODE),a
+oo_storemode:
                 push    hl
                 ld      c,e
                 ld      b,0
                 ld      hl,FCH_MODES
                 add     hl,bc
-                ld      a,(FCH_MODE)        ; the requested mode (still provisional)
+                ld      a,(FCH_MODE)        ; 1 (INPUT) or 2 (OUTPUT/APPEND)
                 ld      (hl),a              ; FCH_MODES[ch] = mode (now committed)
                 pop     hl
                 jp      exec_stmt
