@@ -118,7 +118,7 @@ Two pieces of validation are outstanding and should be added before claiming the
 read path is robust:
 
 1. **Real WAV tape captures — done; found a real bug.** `TAPION`/`TAPIN` now read
-   genuine analog captures (`~/Documents/msx/msx/tapes`) byte-for-byte at 2400 baud,
+   genuine analog captures (a local tape directory) byte-for-byte at 2400 baud,
    **both blocks** of a file (header + data), verified against the host decoder on
    `hero`/`br`/`HSPORT1`/`HSPORT2`/`ROADF`. Getting there exposed exactly the class
    of bug synthetic signals cannot: the mid-tape **motor-restart spin-up** (flat

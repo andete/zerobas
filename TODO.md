@@ -447,7 +447,7 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
 - [x] **Feasibility spike — DONE (2026-06-22).** Both prerequisites checked
       empirically (see [`provider-oracle-scope.md`](disk/docs/provider-oracle-scope.md)
       §7). (1) A real DOS1 system disk **exists (permanent)**:
-      `~/Documents/msx/msx/disks/test.dsk` boots the stock CF-3300 to
+      a local `test.dsk` boots the stock CF-3300 to
       `MSX-DOS version 1.03 … A>` (same image as the recorded BDOS oracle). (2) The
       gap is **pinned**: the *same* disk on the Tier-1 machine
       (`National_CF-3300_ZEROBASDISK`) falls through to **`MSX BASIC version 1.0`**,

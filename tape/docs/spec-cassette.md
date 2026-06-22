@@ -186,7 +186,7 @@ pairing). On the audio tape the block boundary is the leader tone — the 8-byte
 `1F A6 …` sync exists only in the `.cas` container, not on tape.
 
 **Real-audio validation (first light).** Tested against genuine analog tape
-captures (`~/Documents/msx/msx/tapes`, 2400-baud game tapes; catalogued by
+captures (a local tape directory, 2400-baud game tapes; catalogued by
 [`cassette-tool/cas_identify.py`](../cassette-tool/README.md)):
 
 - ✅ The BIOS read path reads **both blocks of a real capture exactly** at 2400

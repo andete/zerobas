@@ -53,8 +53,8 @@ it as an input-conditioning requirement is an open question for zerobas-tape.
 
 ## Real captures (validated)
 
-A set of genuine analog tape captures lives outside the repo at
-`~/Documents/msx/msx/tapes` (16-bit mono, mostly 43200 Hz — real capture-hardware
+A set of genuine analog tape captures lives outside the repo in a local tape
+directory (16-bit mono, mostly 43200 Hz — real capture-hardware
 rate). `cas_identify.py` decodes them cleanly; all are **2400-baud** game tapes,
 each an ASCII BASIC loader followed by a binary block:
 
@@ -67,7 +67,7 @@ each an ASCII BASIC loader followed by a binary block:
 
 ### Full-corpus scan (what surfaced)
 
-Running `cas_identify.py` across the whole `~/Documents/msx/msx/tapes` tree
+Running `cas_identify.py` across the whole local tape tree
 (including `wav-manuel/`) turned up useful structure and three real tool limits:
 
 - **Multi-block tapes decode end to end.** `BACKFUT` and `HSPORT3` carry two

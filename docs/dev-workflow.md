@@ -67,7 +67,7 @@ source files — don't hand-write them.
 All emulator tooling is in the sibling repo, not here:
 
 ```
-/Users/joost/projects/msx-preservation/
+../msx-preservation/                     # sibling checkout
   tools/omsx_run.py                      # headless openMSX driver
   basic-spec/tools/basic_probe_*.py      # differential + functional probes
   basic-spec/tools/cas_encode.py         # build_cas() — make a .cas payload
@@ -76,8 +76,8 @@ All emulator tooling is in the sibling repo, not here:
 ### Byte-identical crunch probe (run after ANY tokeniser change)
 
 ```sh
-cd /Users/joost/projects/msx-preservation
-python3 basic-spec/tools/basic_probe_crunch.py --cart /Users/joost/projects/zerobas/build/basic.rom
+cd ../msx-preservation
+python3 basic-spec/tools/basic_probe_crunch.py --cart ../zerobas/build/basic.rom
 # want: "ALL PASS — crunch is byte-identical"
 ```
 

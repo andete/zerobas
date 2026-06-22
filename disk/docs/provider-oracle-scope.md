@@ -158,7 +158,7 @@ Tier 2 was de-risked with a black-box spike before committing to the boot-loader
 Both gating prerequisites were checked empirically.
 
 **Prerequisite (b) — a real MSX-DOS 1 system disk — SATISFIED (permanent disk on hand).**
-`/Users/joost/Documents/msx/msx/disks/test.dsk` (720 KB, OEM "NMS 8245") holds
+A local MSX-DOS 1 system disk (`test.dsk`, 720 KB, OEM "NMS 8245") holds
 `MSXDOS.SYS` + `COMMAND.COM` and boots on the **stock National CF-3300** (its own disk
 ROM) straight to a DOS prompt:
 
