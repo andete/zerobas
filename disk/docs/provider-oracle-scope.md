@@ -692,3 +692,31 @@ installs and we don't — but now we know it precisely: it is what **MSXDOS.SYS'
 a kernel we must rebuild. Next: trap which `$F3xx` work-area cells MSXDOS.SYS reads at `$0200`, and
 populate exactly those (clean-room: documented MSX disk work area + the §8.8 differential values),
 re-trap toward `A>`.
+
+## 8.11 Slice-4 finding — MSXDOS.SYS init `CALL`s disk-ROM entry `$4030` (the next gap + a wall)
+
+The §8.10 "work area" guess was wrong: a read-watchpoint over `$F341-$F3FF` + `$FCC1` after MSXDOS.SYS
+starts logged **zero** reads there (only repeated `$F37D` BDOS-vector fetches). MSXDOS.SYS does **not**
+read RAMAD / `$F348`. Instead, a black-box CPU breakpoint shows MSXDOS.SYS's init **`CALL`s `$4030`**
+in the disk ROM (page 1). Our ROM has no routine at `$4030` — it is 14 bytes into `init` ($4022, the
+HPHYD-hook install: `3E 10 32 A9 FF …`), so the call executes INIT fragments and returns garbage,
+and the boot loops. `$4030` is a disk-ROM entry **past the six standard ones** (`$4010` DSKIO …
+`$401F` MTOFF). So the remaining gap is **one more disk-ROM entry point** the MS DOS kernel requires.
+
+**Clean-room boundary — STOP and decide.** The six standard entries (`$4010-$401F`) are documented
+(MSX2 TH ch.3); a seventh at `$4030` is **not** in our sourced material. Its contract is observable
+only by **disassembling MSXDOS.SYS** (Microsoft, proprietary) — which the no-disassembly rule
+forbids. (During this session's *diagnosis* the boot's MSXDOS.SYS bytes were inspected to locate the
+failure; that is black-box fault-finding, but *implementing* `$4030` from that disassembly would
+cross the line.) Two clean-room-safe ways forward, neither guaranteed:
+1. **Research** whether `$4030` (and the disk-ROM↔MSX-DOS-kernel call interface generally) is
+   documented in an *allowed* source (MSX2 TH ch.3 full disk-ROM entry list, the MSX Datapack, the
+   open Nextor / MSX-DOS-2.20 driver docs — license permitting). If a documented contract exists,
+   implement `$4030` from it. This is the only clean path to `A>`.
+2. If `$4030`'s contract is **not** documented anywhere allowed, the DOS-boot oracle is blocked at
+   the clean-room wall here — exactly the §8.8 risk, now located at one concrete entry point.
+
+**State banked regardless (huge):** $F37D-JP (§8.9) + BDOS `$27` (§8.10) get a real MSX-DOS-1 boot
+to **load MSXDOS.SYS byte-perfect and execute it**, driving our own `bdos_entry`. The gap shrank from
+"rebuild the resident kernel" (§8.8) to a single un-sourced disk-ROM entry (`$4030`). All slice work
+is regression-green on C-BIOS. Whether to pursue (1) is a scoping/provenance decision.
