@@ -442,3 +442,80 @@ do_kill:
                 pop     hl
                 jp      c,load_error        ; not found / I-O error
                 jp      exec_stmt
+
+; --- NAME "old" AS "new" — rename a file -----------------------------------
+; Locate the OLD file, then overwrite its directory entry's 11-byte 8.3 name field
+; with the NEW name (no FAT change — same clusters). Both names use the shared
+; parse_disk_fcb (drive prefix + 8.3); "AS" is verbatim ASCII. The OLD file is
+; found FIRST (recording its location in FWR_DIRSEC/FWR_DIROFF) because building
+; the NEW name reuses DISK_FCB_NAME. Errors (no disk / old not found / I-O) reuse
+; load_error. Divergences: no "new already exists" check (own design); single
+; drive (the drive prefix on either name is accepted + ignored for the stamp).
+; See basic/PROVENANCE.md §NAME.
+ex_name:
+                inc     hl                  ; HL -> bytes after the NAME token
+                jp      do_name
+do_name:
+                call    skip_spaces
+                ld      a,(hl)
+                cp      '"'
+                jp      nz,stmt_error       ; old filename string required
+                inc     hl                  ; HL -> first char of the old name
+                call    parse_disk_fcb      ; old -> DISK_FCB_NAME; HL -> closing '"'
+                inc     hl                  ; past the closing '"'
+                ; "AS" (verbatim ASCII)
+                call    skip_spaces
+                ld      a,(hl)
+                call    upcase
+                cp      'A'
+                jp      nz,stmt_error
+                inc     hl
+                ld      a,(hl)
+                call    upcase
+                cp      'S'
+                jp      nz,stmt_error
+                inc     hl
+                call    skip_spaces
+                ld      a,(hl)
+                cp      '"'
+                jp      nz,stmt_error       ; new filename string required
+                ld      a,(DISKSLOT_OK)
+                or      a
+                jp      z,load_error
+                ; find the OLD file first (records FWR_DIRSEC/FWR_DIROFF); HL still
+                ; points at the new name's opening '"', so guard it across CALSLT.
+                push    hl
+                call    fat_mount
+                jr      c,nm_fail
+                ld      hl,DISK_FCB_NAME
+                call    fat_find            ; old located; sets the entry location
+                jr      c,nm_fail           ; old not found
+                pop     hl                  ; HL -> new name's '"'
+                inc     hl                  ; -> first char of the new name
+                call    parse_disk_fcb      ; new -> DISK_FCB_NAME; HL -> closing '"'
+                inc     hl
+                ; read the dir sector, overwrite the 11-byte name, write it back.
+                push    hl                  ; guard text cursor across CALSLT
+                ld      de,(FWR_DIRSEC)
+                ld      hl,FSECTOR_BUF
+                call    read_sector
+                jr      c,nm_fail2
+                ld      hl,FSECTOR_BUF
+                ld      de,(FWR_DIROFF)
+                add     hl,de               ; HL -> the entry in the buffer
+                ex      de,hl               ; DE -> dest name field
+                ld      hl,DISK_FCB_NAME    ; source = the new 8.3 name
+                ld      bc,11
+                ldir                        ; overwrite the 11-byte 8.3 name
+                ld      de,(FWR_DIRSEC)
+                ld      hl,FSECTOR_BUF
+                call    write_sector
+                jr      c,nm_fail2
+                pop     hl                  ; restore text cursor
+                jp      exec_stmt
+nm_fail:
+                pop     hl                  ; balance the guarded cursor
+                jp      load_error
+nm_fail2:
+                pop     hl                  ; balance the second guarded cursor
+                jp      load_error

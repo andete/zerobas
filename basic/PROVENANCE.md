@@ -1828,3 +1828,35 @@ they do). Full crunch + 16 unit-test files + the FILES/read/write probes still p
 Clean-room: original code; KILL semantics + the `$E5` deleted-marker / chain-free
 rules from the public MSX-BASIC reference + Microsoft FAT spec, validated by the
 byte-identical CF-3300 differential. No disassembly.
+
+## NAME — rename a file (basic/files.asm, basic/interp.asm, basic/sysvars.inc)
+
+`NAME "old" AS "new"` renames a file by overwriting its directory entry's 8.3 name
+field — no FAT change (the clusters and size are untouched). EXTEND over fat.asm,
+reusing `fat_find`'s recorded entry location (`FWR_DIRSEC`/`FWR_DIROFF`).
+
+**Statement (`do_name`).** Parses the OLD name (`parse_disk_fcb` → `DISK_FCB_NAME`),
+the verbatim-ASCII `AS`, and checks the NEW name's opening quote. It finds the OLD
+file FIRST (recording the entry location) because building the NEW name reuses
+`DISK_FCB_NAME`; then parses the NEW name, re-reads the directory sector, `LDIR`s
+the new 11-byte 8.3 field over the entry, and writes the sector back. HL (the text
+cursor) is guarded on the stack across every CALSLT (`fat_mount`/`fat_find`/
+`read_sector`/`write_sector`). Token `NAME = $D3` oracle-LOCKED byte-identical to
+the Philips VG-8020 crunch (`basic_probe_crunch.py`; MSX2 TH Table 2.20). Note the
+token VALUE ($D3) equals `BASIC_ID` (the cassette tokenised-BASIC marker) but lives
+in a different namespace — separately-named constants, like SAVE/BSAVE.
+
+**Validation** (`disk_probe_name.py`, /tmp copy of `test720.dsk` — committed image
+never mounted): `NAME "HI.TXT" AS "BYE.TXT"` leaves HI.TXT gone and BYE.TXT present
+with the **same first cluster (4), size (26), and data** ("Hello from
+zerobas-disk!\r\n"); and the resulting **disk image is byte-identical to the real
+CF-3300** after the same NAME (rename rewrites only the one entry's 8.3 field).
+Full crunch + 16 unit-test files + the FILES/read/write/KILL probes still pass.
+
+**Divergences (own design, quarantined):** no "new name already exists" check (a
+later refinement); the drive prefix on either name is accepted and ignored for the
+stamp (single drive); errors (no disk / old not found / I-O) reuse `load_error`.
+
+Clean-room: original code; NAME semantics + the 8.3 dir-field layout from the public
+MSX-BASIC reference + Microsoft FAT spec, validated by the byte-identical CF-3300
+differential. No disassembly.

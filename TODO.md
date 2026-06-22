@@ -259,8 +259,12 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
             basic/PROVENANCE.md §file channel — sequential write.
       - [ ] `PRINT# USING`, `INPUT$(n,#f)`, `OPEN…FOR APPEND`, and the `MAXFILES`
             multi-channel table.
-- [ ] **File/dir management [in]** — `FILES`✅, `KILL`✅, `LFILES`, `NAME…AS…`, `MERGE`
+- [ ] **File/dir management [in]** — `FILES`✅, `KILL`✅, `NAME…AS…`✅, `LFILES`, `MERGE`
       (the `LOAD`/`SAVE`/`BLOAD`/`BSAVE`/`RUN"f"` already exist from Phase 1).
+      - [x] **`NAME "old" AS "new"`** — DONE (basic/files.asm). Rewrites the dir
+            entry's 8.3 name (no FAT change); token $D3 oracle-locked; post-rename
+            disk image **byte-identical to the real CF-3300** (`disk_probe_name.py`).
+            See PROVENANCE §NAME.
       - [x] **`KILL "name"`** — DONE (basic/files.asm + fat.asm `fat_delete`). Frees
             the FAT chain + marks the dir entry `$E5`; token $D4 oracle-locked; the
             post-KILL disk image is **byte-identical to the real CF-3300**

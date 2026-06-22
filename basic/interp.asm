@@ -532,8 +532,10 @@ kwtable:
                 ; PUT exists only so "OUTPUT" crunches to OUT($9C)+PUT($B3); the
                 ; PUT statement (random access) is sub-phase 2c (no dispatch yet).
                 db      3,"PUT",1,PUT_TOKEN
-                ; File management: KILL (delete a file). Token oracle-locked ($D4).
+                ; File management: KILL (delete) + NAME (rename). Oracle-locked
+                ; tokens ($D4 / $D3). "NAME" shares no prefix with another entry.
                 db      4,"KILL",1,KILL_TOKEN
+                db      4,"NAME",1,NAME_TOKEN
                 ; Cassette save keyword. CSAVE token oracle-LOCKED ($9A) via
                 ; basic_probe_crunch.py against Philips VG-8020 (MSX2 TH Table
                 ; 2.20). Single-byte statement token; filename kept verbatim ASCII.
@@ -668,6 +670,8 @@ exec_stmt:
                 jp      z,ex_close
                 cp      KILL_TOKEN
                 jp      z,ex_kill
+                cp      NAME_TOKEN
+                jp      z,ex_name
                 cp      CSAVE_TOKEN
                 jp      z,ex_csave
                 cp      POKE_TOKEN
