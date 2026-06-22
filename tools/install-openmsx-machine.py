@@ -146,6 +146,50 @@ def expand_slot3(text: str, disk_rom_abs: str) -> str:
     return text
 
 
+def zerobas_disk_extension(disk_rom_abs: str) -> str:
+    """A pluggable openMSX EXTENSION that puts zerobas-disk behind a National-style
+    WD2793 in any free slot. Lets a *real-BIOS* host machine (e.g. a Philips VG-8020
+    loaded with the zerobas-BASIC cartridge) drive it through the standard $4010 DSKIO
+    -- a cross-host validation that the whole stack is BIOS-independent (works on a
+    real MSX BIOS, not just C-BIOS). Same WD2793 wiring as the C-BIOS _BASIC_DISK
+    slot-3-1 block, but slot="any" so openMSX auto-slots it.
+        openmsx -machine Philips_VG_8020 -cart build/basic.rom \\
+                -ext zerobas-disk -diska disk/test720.dsk
+    NOTE: zerobas-disk provides only the sector DRIVER (DSKIO/BDOS), not a Disk BASIC
+    language extension -- so the disk verbs come from the zerobas-BASIC cartridge, not
+    from the host's own BASIC (a bare host BASIC sees no FILES/DSKI$)."""
+    return (
+        '<?xml version="1.0" ?>\n'
+        "<!DOCTYPE msxconfig SYSTEM 'msxconfig2.dtd'>\n"
+        "<msxconfig>\n"
+        "  <info>\n"
+        "    <name>zerobas-disk</name>\n"
+        "    <manufacturer>zerobas</manufacturer>\n"
+        "    <code>zerobas-disk</code>\n"
+        "    <release_year></release_year>\n"
+        "    <description>zerobas-disk standard MSX disk interface (National-style"
+        " WD2793) as a pluggable cartridge, for cross-host BIOS-independence"
+        " validation.</description>\n"
+        "    <type>external disk interface</type>\n"
+        "  </info>\n"
+        "  <devices>\n"
+        '    <primary slot="any">\n'
+        '      <secondary slot="any">\n'
+        '        <WD2793 id="zerobas-disk FDC">\n'
+        "          <connectionstyle>National</connectionstyle>\n"
+        "          <drives>1</drives>\n"
+        "          <rom>\n"
+        f"            <filename>{disk_rom_abs}</filename>\n"
+        "          </rom>\n"
+        '          <mem base="0x4000" size="0x8000"/>\n'
+        "        </WD2793>\n"
+        "      </secondary>\n"
+        "    </primary>\n"
+        "  </devices>\n"
+        "</msxconfig>\n"
+    )
+
+
 def real_bios_disk_machine(stock_text: str, share_machines: str,
                            disk_rom_abs: str) -> str:
     """Build a Tier-1 provider-oracle machine from a *real-BIOS* MSX1 machine
@@ -271,6 +315,16 @@ def main():
             else:
                 open(dout, "w").write(dtext)
                 print(f"wrote {base}_BASIC_DISK  (-> machine \"{base}_BASIC_DISK\")")
+    # --- pluggable zerobas-disk extension (cross-host BIOS-independence) ------
+    if disk_rom:
+        user_ext = os.path.join(user, "share", "extensions")
+        eout = os.path.join(user_ext, "zerobas-disk.xml")
+        if args.dry_run:
+            print("would write extensions/zerobas-disk.xml")
+        else:
+            os.makedirs(user_ext, exist_ok=True)
+            open(eout, "w").write(zerobas_disk_extension(disk_rom))
+            print("wrote zerobas-disk extension  (-> -ext zerobas-disk)")
     # --- Tier-1 provider-oracle machine: real BIOS + zerobas-disk ------------
     if real_disk_rom:
         src = os.path.join(share_machines, f"{args.real_bios_disk}.xml")
