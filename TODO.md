@@ -201,7 +201,12 @@ emulator-free regression (`make unit-test`: `test_tokenise`/`test_field`/
 
 **Explicitly carried / deferred (not part of "complete"):**
 - **Tier-2 provider oracle** (a real MSX-DOS 1 host driving zerobas-disk) — a
-  distinct DOS-boot sub-track, gated on building MSX-DOS-boot support. Open below.
+  distinct DOS-boot sub-track. **DEFERRED (decided 2026-06-22):** the a3 black-box
+  differential sized it as a charter-level subsystem (reconstruct the disk ROM's
+  resident DOS kernel) that abuts the no-disassembly rule; the step-6 env + a1 boot
+  bridge ship as the validated partial, and the provider contract is already proven
+  at the highest clean-room fidelity (Tier-1 PHYDIO PASS, GETDPB byte-identical).
+  See below + provider-oracle-scope.md §8.8.
 - **`DSKI$` / `DSKO$`** — investigated, **deferred to Phase 3** (obscure CF-3300
   semantics + needs the Phase-3 string heap; see the item below).
 - **`MKS$`/`MKD$`/`CVS`/`CVD`** (random-access float conversions) and the float-only
@@ -524,12 +529,12 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             kernel the stock relocates into high RAM**, i.e. the opaque proprietary code the
             clean-room rule forbids. ⇒ DOS-boot = build the disk ROM's full resident DOS
             environment, a multi-slice Phase-2+ effort that abuts the no-disassembly wall.
-            **SCOPING DECISION (not keep-iterating):** (A) stop, record DOS-boot as
-            characterized-but-deferred (step-6 env + a1 bridge = the validated partial); or
-            (B) scope a dedicated "DOS resident environment" sub-track from MSX2 TH ch.3 +
-            MSX-DOS-1 structure docs only. Tier-1 (real-BIOS PHYDIO → our DSKIO) already
-            PASSES + GETDPB is CF-3300-byte-identical, so the provider contract is validated
-            to the highest fidelity reachable without raising the charter.
+            **DECISION (2026-06-22): DEFERRED (option A).** DOS-boot closed as
+            characterized-but-deferred — the step-6 env + a1 bridge stay as the validated
+            partial; no DOS-resident-environment sub-track opened (abuts the no-disassembly
+            wall). Tier-1 (real-BIOS PHYDIO → our DSKIO) PASSES + GETDPB CF-3300-byte-
+            identical, so the provider contract is validated to the highest fidelity reachable
+            without raising the charter. See provider-oracle-scope.md §8.8.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
       and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
       — the organic evidence the Tier-0/1 differential could only approximate.

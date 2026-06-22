@@ -599,3 +599,11 @@ MSX-DOS-1 structure docs (never the kernel), accepting several sessions and the 
 vector contracts are not cleanly documented. No further code shipped pending that decision; nothing
 speculative was committed (RAMAD0-3 deliberately NOT set unconditionally — on the C-BIOS hosts the
 BIOS already sets them, so writing our own value there would risk the whole regression suite).
+
+**DECISION (2026-06-22): option (A) — characterized-but-deferred.** The Tier-2 *DOS-boot* oracle is
+closed as **deferred**: the step-6 page-0 environment + the a1 boot bridge stay in `disk.asm` as the
+validated partial (regression-green in every host's INIT), and the gap beyond them is now pinned and
+sized (this §8.8) for whenever a future charter raise revisits it. The provider direction is
+considered **done at the highest fidelity reachable without raising the charter** — Tier-1 (real BIOS
+PHYDIO → our DSKIO, organic) PASSES and GETDPB is byte-identical to the CF-3300 differential (§2),
+which §2 already deems sufficient pinning for GETDPB. No DOS-resident-environment sub-track is opened.
