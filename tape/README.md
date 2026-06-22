@@ -27,6 +27,9 @@ committed and what the installer uses; rebuild only if you change `tape.asm`.
 
 ## More information
 
+- **[docs/tape-internals.md](docs/tape-internals.md)** — how MSX cassette I/O
+  actually works (hardware lines, FSK, the seven routines, the oracle method),
+  synthesised from the whole effort; start here to *understand* tape
 - **[DESIGN.md](DESIGN.md)** — what the patch does and how it's built
 - **[PROVENANCE.md](PROVENANCE.md)** — every constant traced to an allowed source
 - **[docs/spec-cassette.md](docs/spec-cassette.md)** — full behavioural spec of the
