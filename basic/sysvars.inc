@@ -330,6 +330,11 @@ ELSE_TOKEN      equ     $A1     ; in the stream ELSE is COLON,$A1 (like REM = $3
 FOR_TOKEN       equ     $82
 TO_TOKEN        equ     $D9
 STEP_TOKEN      equ     $DC
+; PRINT USING formatted output. USING is a reserved word ($E4; oracle-locked to the
+; VG-8020 crunch: `print using"###";5` -> 91 20 E4 22 23 23 23 22 3B 16, and
+; `a$=using` -> ... EF E4). The format string is kept verbatim ASCII in its quotes.
+; Handled in basic/printusing.asm (reached from ex_print on the USING token).
+USING_TOKEN     equ     $E4     ; USING (PRINT USING "fmt"; values)
 NEXT_TOKEN      equ     $83
 DATA_TOKEN      equ     $84
 READ_TOKEN      equ     $87
@@ -614,6 +619,19 @@ GP_OLDNSEC      equ     $EED1   ; file's old sector count (ceil(size/512), 2)
 GP_FLAGS        equ     $EED3   ; bit0 = extend (PUT allocates; GET does not) (1)
 GP_MODE         equ     $EED4   ; 0 = GET (read), 1 = PUT (write) (1)
 GP_CHAN         equ     $EED5   ; the channel number being GET/PUT (1)
+; --- PRINT USING formatted-output scratch (Phase 2) ------------------------
+; Transient (dead outside one PRINT USING statement). The format string is copied
+; here so it survives the str_eval calls that evaluate the string VALUES (a literal
+; format lives in the volatile STRSCR otherwise). Free gap $EED6..$EEFF, below
+; FLD_DESC ($EF00). See basic/printusing.asm.
+PU_FMT          equ     $EED6   ; copied format string ($EED6..$EEF5, 32 chars)
+PU_FMTMAX       equ     32      ; format length cap (longer formats truncate)
+PU_FMTLEN       equ     $EEF6   ; live format length (1)
+PU_POS          equ     $EEF7   ; current scan index into PU_FMT (1)
+PU_W            equ     $EEF8   ; current field width (1)
+PU_TYPE         equ     $EEF9   ; field type: 0 num #, 1 str &, 2 str !, 3 str \..\ (1)
+PU_FLAGS        equ     $EEFA   ; bit0 = trailing separator (suppress NL); bit1 = wrapped (1)
+PU_WP           equ     $EEFB   ; pu_fmt_int scratch write pointer (2)
 FLD_DESC        equ     $EF00   ; transient fielded-read descriptor [len][bytes:255]
 ; Control stacks (page $E0, below LINEBUF at $E100). Both grow upward; the
 ; pointer addresses the next free slot, and the stack is empty when it equals

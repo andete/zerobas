@@ -600,6 +600,7 @@ kwtable:
                 ; so order is free; CONT will not shadow ON.
                 db      4,"CONT",1,CONT_TOKEN
                 db      5,"PRINT",1,PRINT_TOKEN
+                db      5,"USING",1,USING_TOKEN
                 db      3,"LET",1,LET_TOKEN
                 ; Phase 1: CLEAR [<strings>][,<himem>] (MSX2 TH Table 2.20).
                 db      5,"CLEAR",1,CLEAR_TOKEN

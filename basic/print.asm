@@ -29,6 +29,8 @@ ex_print:
                 ; PRINT #n, … (file form): redirect the item loop to the channel.
                 call    skip_spaces
                 ld      a,(hl)
+                cp      USING_TOKEN         ; PRINT USING "fmt"; values  (formatted)
+                jp      z,ex_print_using
                 cp      '#'
                 jr      nz,exp_loop         ; no '#': ordinary screen PRINT
                 inc     hl

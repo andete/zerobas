@@ -282,7 +282,17 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
             `INPUT$(6,#1)` on HI.TXT yield "Hello" then " from " **byte-identical to
             the CF-3300** (`disk_probe_inputdollar.py`). STRMAX clamp + keyboard form
             (no `#`) deferred. See basic/PROVENANCE.md §INPUT$.
-      - [ ] `PRINT# USING` (needs `PRINT USING` first).
+      - [x] **`PRINT USING`** — DONE (basic/printusing.asm). Formatted output:
+            numeric `#` fields (right-justified, `%` overflow, negative sign),
+            string fields (`\ \` fixed width, `!` first char, `&` whole), literal
+            passthrough, and format reuse when values outrun the template. USING token
+            $E4 (oracle-locked). 7 cases incl. `PRINT USING "## ";1;2;3` →
+            ` 1  2  3 ` **byte-identical to the real VG-8020** (`basic_probe_printusing.py`).
+            This is the COMPLETE feature for zerobas's integer domain; the float-only
+            specs (`.` decimal, `^^^^`, `+`/`,`/`**`/`$$`) arrive with Phase-3 floats.
+            See PROVENANCE §PRINT USING.
+      - [ ] `PRINT# USING` (the file form — needs the PRINT# channel redirect wired
+            into the USING path; small follow-up now that PRINT USING exists).
 - [ ] **File/dir management [in]** — `FILES`✅, `KILL`✅, `NAME…AS…`✅, `MERGE`✅, `LFILES`
       (the `LOAD`/`SAVE`/`BLOAD`/`BSAVE`/`RUN"f"` already exist from Phase 1).
       - [x] **`MERGE "name"`** — DONE (basic/files.asm `ex_merge`). Reads an ASCII

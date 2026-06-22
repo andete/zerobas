@@ -72,6 +72,10 @@
 ; The PRINT statement (defines `ex_print`, `print_number`, `print_crlf`).
                 include "basic/print.asm"
 
+; PRINT USING formatted output (defines `ex_print_using`; reuses print.asm's div10
+; + pchar + the string layer), so it follows print.asm in the include order.
+                include "basic/printusing.asm"
+
 ; Screen-setup verbs SCREEN/COLOR/CLS/WIDTH/KEY (defines `ex_screen`, …).
                 include "basic/screen.asm"
 

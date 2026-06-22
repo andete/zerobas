@@ -2310,3 +2310,55 @@ close/reopen exercises chain allocation, the shared-sector read-modify-write, an
 directory stamp at once. zerobas and the real **National CF-3300** produce the byte-
 identical pair (functional + differential PASS); `test720.dsk` is never mutated (the
 probe runs on a /tmp copy).
+
+## PRINT USING — formatted output (basic/printusing.asm, basic/print.asm, basic/interp.asm, basic/sysvars.inc)
+
+`PRINT USING <format$>; <value>[; <value>]...` formats values through a template.
+Reached from `ex_print` when the token after PRINT is USING.
+
+**Clean-room sourcing.** The USING token ($E4) is oracle-locked to the VG-8020 crunch
+(`print using"###";5` → `91 20 E4 22 23 23 23 22 3B 16`; `a$=using` → `... EF E4`);
+the format string is kept verbatim ASCII inside its quotes. Field *semantics* are from
+the public MSX-BASIC language reference. The integer formatter reuses print.asm's
+`div10`; the emit path reuses `pchar`. No disassembly.
+
+**Supported fields (the complete set for an integer-only numeric domain).**
+- `#...#` — numeric field, width = the count of `#`. The (integer) value is right-
+  justified; a negative value's `-` takes a position; a value too wide for the field
+  is printed in full preceded by `%` (the MSX overflow marker).
+- `\...\` — fixed-width string field, width = 2 + the chars between the backslashes;
+  left-justified, space-padded, truncated if longer.
+- `!` — the first character of the string value.
+- `&` — the whole string value.
+- any other character is a literal, emitted as-is.
+
+**Format reuse + termination.** The format is walked once per value (`pu_to_field`
+emits the literals before each field). When the format end is reached with values
+still pending, it wraps to the start ONCE per call (so `"## "` over `1;2;3` yields
+` 1  2  3 ` — each cycle re-emits the trailing/leading literals). When the values run
+out, the remaining literals up to the next field are emitted (`pu_emit_tail`) and
+output stops. A trailing `;` suppresses the closing newline, like PRINT.
+
+**The load-bearing subtlety: the token cursor.** The format walker and the tail/has-
+field scanners all use HL to index `PU_FMT`, but HL is also the live token cursor that
+`eval`/`str_eval` consume for the VALUE list. Every call into a PU_FMT-walking helper
+(`pu_has_field`, `pu_to_field`, `pu_emit_tail`) is therefore bracketed with
+`push hl`/`pop hl` to preserve the cursor (the value formatters `pu_do_number`/
+`pu_do_string` advance HL themselves and guard their own internal HL use; `pchar`
+preserves all registers). The format string is copied out of the volatile STRSCR into
+`PU_FMT` first, because evaluating a string VALUE with `str_eval` reuses STRSCR and
+would otherwise clobber a literal format.
+
+**Divergences (documented).** zerobas is integer-only, so the float-only format specs —
+the decimal point `.`, exponential `^^^^`, and the `+`/`-`/`,`/`**`/`$$` embellishments
+— are deferred to Phase-3 floats (not reachable in the current numeric domain). The
+`_` literal-escape and the file form `PRINT# USING` are likewise deferred. The format
+string truncates at PU_FMTMAX (32) chars.
+
+**Oracle.** `basic-spec/tools/basic_probe_printusing.py` RUNs a tagged program (zerobas
+as a cartridge on a real Philips VG-8020 vs the same machine's built-in MSX-BASIC — a
+same-hardware differential) covering all field kinds, sign, overflow, and format reuse:
+e.g. `PRINT USING "###";5` → `  5`, `"##";1234` → `%1234`, `"\ \";"cat"` → `cat`,
+`"!";"cat"` → `c`, `"## ";1;2;3` → ` 1  2  3 `. All seven cases are byte-identical
+between zerobas and the VG-8020 (functional + differential PASS); crunch byte-identical
+(basic_probe_crunch.py); the existing PRINT probe is unaffected.
