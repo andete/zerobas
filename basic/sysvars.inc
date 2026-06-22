@@ -193,6 +193,7 @@ MAXF            equ     $E011   ; current MAXFILES ceiling (0..FCH_CEIL); defaul
 FCH_ACTIVE      equ     $E012   ; channel live in the engine globals, 0 = none (1)
 FCH_MODES       equ     $E013   ; per-channel mode array [0..FCH_CEIL]; [0] unused,
                                 ; [ch] = 0 closed / 1 INPUT / 2 OUTPUT (FCH_CEIL+1 bytes)
+INDLR_N         equ     $E016   ; INPUT$(n,#f): remaining bytes to read (transient, 1)
 RUNFLAG         equ     $E02F   ; 1 = ,R handoff requested (set while parsing)
 CLPTR           equ     $E02B   ; CLOAD/LOAD: store cursor into the program area (2)
 CLINK           equ     $E02D   ; CLOAD/LOAD: saved link word of the current line

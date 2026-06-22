@@ -275,7 +275,14 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
             On-disk result **byte-identical to the real CF-3300**
             (`disk_probe_append.py`: create "first" + append "second" ->
             `first\r\nsecond\r\n\x1a`). See basic/PROVENANCE.md §OPEN … FOR APPEND.
-      - [ ] `PRINT# USING`, `INPUT$(n,#f)`.
+      - [x] **`INPUT$(n,#f)`** — DONE (basic/strvar.asm `str_eval` INPUT$ branch).
+            Reads exactly n raw bytes from channel f as a string (no delimiters;
+            cursor advances by n). zerobas's first string-returning function;
+            "INPUT$" = INPUT($85)+'$' (no new token). `A$=INPUT$(5,#1)` then
+            `INPUT$(6,#1)` on HI.TXT yield "Hello" then " from " **byte-identical to
+            the CF-3300** (`disk_probe_inputdollar.py`). STRMAX clamp + keyboard form
+            (no `#`) deferred. See basic/PROVENANCE.md §INPUT$.
+      - [ ] `PRINT# USING` (needs `PRINT USING` first).
 - [ ] **File/dir management [in]** — `FILES`✅, `KILL`✅, `NAME…AS…`✅, `LFILES`, `MERGE`
       (the `LOAD`/`SAVE`/`BLOAD`/`BSAVE`/`RUN"f"` already exist from Phase 1).
       - [x] **`NAME "old" AS "new"`** — DONE (basic/files.asm). Rewrites the dir

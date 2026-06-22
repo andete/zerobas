@@ -31,6 +31,8 @@ str_eval:
                 ld      a,(hl)
                 cp      '"'
                 jr      z,str_eval_lit
+                cp      INPUT_TOKEN         ; INPUT$(...) ? -> $85 ('INPUT') then '$'
+                jr      z,str_eval_maybe_inputd
                 call    is_letter           ; a `$`-suffixed variable?
                 jr      nc,str_eval_no
                 call    var_str_type        ; A=1 if `$` suffix
@@ -83,6 +85,98 @@ str_eval_ok:
                 ld      a,1
                 ld      (VALTYP),a
                 scf
+                ret
+
+; --- INPUT$(n,#f): read EXACTLY n raw bytes from file channel f as a string ------
+; Reached from str_eval when the operand is the INPUT token ($85). "INPUT$" crunches
+; to INPUT ($85) + '$' ($24) — NOT a dedicated token (oracle: VG-8020 + zerobas both
+; emit $85 $24). Only the FILE form INPUT$(n,#f) is supported; the keyboard form
+; INPUT$(n) (no '#') is Phase 3 -> treated as "not a string operand" (caller errors).
+; Unlike INPUT#/LINE INPUT#, INPUT$ does NO delimiter handling — it takes n bytes
+; verbatim and the file cursor advances by n. The bytes go into the STRSCR
+; descriptor (clamped to STRMAX; a longer n is still consumed so the cursor stays
+; correct — documented). HL is the (HL-based) string-eval cursor; the numeric args
+; use `eval` (which saves/restores IX); fat_io_getbyte's CALSLT clobbers everything,
+; so the read state lives in RAM (INDLR_N target, IN_RDLEN stored count) and the
+; cursor is guarded on the stack. CF-3300-validated (disk_probe_inputdollar.py).
+str_eval_maybe_inputd:
+                inc     hl                  ; tentatively past the INPUT token
+                ld      a,(hl)
+                cp      '$'
+                jr      z,str_inputd
+                dec     hl                  ; not INPUT$ -> restore, not a string operand
+                jr      str_eval_no
+str_inputd:
+                inc     hl                  ; past '$'
+                ld      a,(hl)
+                cp      '('
+                jr      nz,str_eval_no
+                inc     hl
+                call    eval                ; DE = n (byte count); HL advanced past it
+                ld      a,e
+                ld      (INDLR_N),a         ; target count (low byte; n <= 255)
+                ld      a,(hl)
+                cp      ','                 ; INPUT$(n) keyboard form (no ',') = Phase 3
+                jr      nz,str_eval_no
+                inc     hl
+                ld      a,(hl)
+                cp      '#'                 ; file form requires '#f'
+                jr      nz,str_eval_no
+                inc     hl
+                call    eval                ; DE = channel f; HL advanced
+                ld      a,(hl)
+                cp      ')'
+                jr      nz,str_eval_no
+                inc     hl                  ; HL past ')'
+                ld      a,e
+                call    fch_valid
+                jr      nc,str_eval_no      ; bad file number
+                push    hl                  ; guard the eval cursor (fch_select + CALSLT)
+                ld      a,e
+                call    fch_select          ; make channel f live; FCH_MODE = its mode
+                ld      a,(FCH_MODE)
+                cp      1                   ; must be open FOR INPUT
+                jr      nz,str_inputd_err
+                call    str_inputd_read     ; fill STRSCR [len][bytes] with n bytes
+                ld      hl,STRSCR           ; set STRPTR while the cursor is still on
+                ld      (STRPTR),hl         ; the stack (HL here would clobber it)
+                pop     hl                  ; restore the eval cursor (past ')')
+                jr      str_eval_ok
+str_inputd_err:
+                pop     hl
+                jr      str_eval_no
+
+; str_inputd_read — consume INDLR_N bytes from the open channel into STRSCR
+; ([len][bytes]); store up to STRMAX, but keep consuming so the file cursor advances
+; the full count. Stops early at EOF. All loop state is in RAM (CALSLT clobbers regs).
+str_inputd_read:
+                xor     a
+                ld      (IN_RDLEN),a        ; stored count = 0
+sidr_lp:
+                ld      a,(INDLR_N)
+                or      a
+                jr      z,sidr_done         ; consumed all n
+                call    fat_io_getbyte
+                jr      c,sidr_done         ; EOF before n -> stop (partial)
+                ld      c,a                 ; C = the byte read
+                ld      a,(INDLR_N)
+                dec     a
+                ld      (INDLR_N),a         ; one fewer to read
+                ld      a,(IN_RDLEN)
+                cp      STRMAX
+                jr      nc,sidr_lp          ; descriptor full -> consume but don't store
+                ld      e,a
+                ld      d,0
+                ld      hl,STRSCR+1
+                add     hl,de
+                ld      (hl),c              ; store the byte
+                ld      a,(IN_RDLEN)
+                inc     a
+                ld      (IN_RDLEN),a
+                jr      sidr_lp
+sidr_done:
+                ld      a,(IN_RDLEN)
+                ld      (STRSCR),a          ; descriptor length
                 ret
 
 ; --- print_strval: emit the [len][bytes] descriptor at STRPTR via CHPUT -------

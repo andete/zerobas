@@ -2060,3 +2060,46 @@ the append-vs-truncate distinction only matters at open time, so every later
 `PRINT#`/`CLOSE` treats the channel identically; the resume math uses the 16-bit
 low word of the size (a >64 KB append is out of scope — loader text files are
 small); a missing file is created rather than erroring.
+
+## INPUT$(n,#f) — read n raw bytes from a file as a string (basic/strvar.asm)
+
+`INPUT$(n,#f)` reads EXACTLY n bytes from sequential file channel f and returns them
+as a string — unlike `INPUT#`/`LINE INPUT#`, it does NO delimiter handling (commas,
+CR/LF are taken literally), and the file cursor advances by n. This is zerobas's
+first string-returning function.
+
+**Tokenisation (no dedicated token).** "INPUT$" crunches to the `INPUT` token
+(`$85`) + a literal `'$'` (`$24`) — not a function token. The args `( n , # f )`
+stay literal ASCII (the digits crunch to `$11+d`). Oracle-locked byte-identical on
+the VG-8020 and zerobas (`basic_probe_crunch.py`, case `a$=input$(2,#1)` ->
+`41 24 EF 85 24 28 13 2C 23 12 29`). So the string evaluator recognises the operand
+by the `$85`+`'$'` sequence; nothing new in the crunch table.
+
+**Where it hooks in.** `str_eval` (the HL-based string-operand evaluator) gains an
+`INPUT_TOKEN` branch: `$85` followed by `'$'` -> parse `( n , # f )`, else it is not
+a string operand. The numeric args use `eval` (which saves/restores the numeric
+evaluator's IX cursor); the channel is range-checked + selected with the same
+`fch_valid`/`fch_select` as the statement verbs; the bytes come from `fat_io_getbyte`
+on the now-live channel. The result fills the existing `STRSCR` `[len][bytes]`
+descriptor (so `LET`/`PRINT` consume it unchanged via `STRPTR`/`VALTYP`). Only the
+FILE form is supported; the keyboard form `INPUT$(n)` (no `'#'`) is Phase 3 and is
+treated as "not a string operand" (the caller errors).
+
+**Register guard (the bug that bit, then fixed).** The read loop's `fat_io_getbyte`
+CALSLT clobbers everything, so the count state lives in RAM (`INDLR_N` target,
+`IN_RDLEN` stored) and the eval cursor is stacked. The first cut then set
+`STRPTR` with `ld hl,STRSCR` AFTER `pop hl` — clobbering the just-restored cursor, so
+the read succeeded (a$ was correct) yet the assignment ran from garbage ("syntax
+error"). Fix: set `STRPTR` while the cursor is still on the stack, then `pop hl`
+(same HL-guard discipline as OPEN's success path).
+
+**Validation** (`disk_probe_inputdollar.py`, /tmp copy of `test720.dsk` whose HI.TXT
+begins "Hello from zerobas-disk!"): `A$=INPUT$(5,#1)` then `B$=INPUT$(6,#1)` print
+`<Hello>` then `< from >` — the two reads in a row proving the cursor advances byte-
+exactly — **identical to the real National CF-3300**. Crunch suite, 16 unit-test
+files, and every file probe still pass.
+
+**Divergences (own design):** the descriptor is clamped to `STRMAX` (=32) — a larger
+n is still fully consumed (so the cursor stays correct) but only the first 32 bytes
+are stored; reading past EOF stops at EOF (partial result) rather than raising the
+reference's "Input past end of file"; the keyboard form is deferred to Phase 3.
