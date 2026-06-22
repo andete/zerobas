@@ -219,6 +219,17 @@ abbreviation and every PRINT form crunch byte-identical to the VG-8020 reference
 `basic_probe_crunch.py`); `print 12*12` → ` 144 ` and `?"HELLO";3-8` → `HELLO-5`
 were verified on screen (VRAM dump) in openMSX.
 
+**Multi-item PRINT — differential-confirmed on hardware.** `basic_probe_print.py`
+(msx-preservation) types each line into BOTH the reference Philips VG-8020
+built-in BASIC and zerobas (same VG-8020, `--cart`), reads each machine's SCREEN 0
+name table, and compares the PRINT output rows byte-for-byte. ALL PASS,
+ref==zerobas: `print 1;2`→`   1  2`, `print 1;2;3`→`   1  2  3`, `print 10;20`,
+`print 7;"hi"`→`   7 hi`, `print 1;-2`→`   1 -2`, and the single comma tab zone
+`print 1,2`→`   1             2`. This closes the gap that hid the earlier
+"items after the first numeric one are dropped" bug (`print_number` clobbered HL,
+`exp_num` lacked the push/pop guard `exp_strvar` has — fixed in basic/print.asm):
+the old `basic_probe_statements` only exercised single-item PRINT.
+
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
 | `PRINT` token / `?` abbreviation | `$91` | MSX2 TH Table 2.20; `?`→`$91` oracle-confirmed (crunch) | sourced |
@@ -229,8 +240,18 @@ were verified on screen (VRAM dump) in openMSX.
 | `div10`, number→ASCII, PRINT parse loop | — | **own code** (standard binary divide); not from any disassembly | sourced |
 | `NUMBUF` decimal scratch | `$E0C0` | own choice (free page-3 RAM) | sourced |
 
-No quarantined items. (String *variables*/functions for PRINT are deferred to the
-Phase 2 string engine; only string literals + numeric expressions print today.)
+**Quarantined divergence — comma tab-zone line-wrap.** Real MSX-BASIC moves a `,`
+tab to a NEW LINE once the next 14-column zone would run past the screen width
+(`basic_probe_print.py` observed the reference VG-8020 print `1,2,3` as `   1
+2` / `   3` on two rows). zerobas's `print_comma_zone` tracks the 14-column zone
+width but not the width-wrap, so it keeps tabbing on the same line
+(`   1             2             3`). Out of loader-stub scope — a stub never
+PRINTs enough comma items to wrap — so this is **observed and documented, not
+chased** (same discipline as the disk-probe FCB-field divergences). Reported by
+`basic_probe_print.py` without failing the in-scope cases.
+
+(String *variables*/functions for PRINT are deferred to the Phase 2 string
+engine; only string literals + numeric expressions print today.)
 
 ## Phase 1: division + logical/bitwise operators (basic/expr.asm, basic/interp.asm, basic/sysvars.inc)
 

@@ -169,6 +169,9 @@ print_crlf:
 ; --- print_comma_zone: pad with spaces to the next 14-column tab zone -------
 ; MSX PRINT comma zones are 14 characters (public language reference). Reads the
 ; current column from CSRX (1-based). Clobbers A, B.
+; Divergence (documented, out of loader-stub scope): real MSX wraps a comma tab
+; to a NEW LINE once the next zone would pass the screen width; this only pads on
+; the current line. See basic/PROVENANCE.md §PRINT + basic_probe_print.py.
 print_comma_zone:
                 ld      a,(CSRX)
                 dec     a                   ; 0-based column
