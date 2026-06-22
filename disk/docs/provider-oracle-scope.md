@@ -759,6 +759,18 @@ unblock; alternatively a non-403 mirror.
 
 **State banked regardless (huge, regression-green):** `$F37D`-JP (§8.9) + BDOS `$27` (§8.10) make a
 genuine MSX-DOS-1 disk **load and execute MSXDOS.SYS byte-perfect off zerobas-disk**, driving our own
-`bdos_entry`; the gap shrank from §8.8's "rebuild the resident kernel" to one (likely-documented)
-kernel entry, `$4030`. Those two fixes are kept. The provider direction stays validated to the
-highest clean-room fidelity (Tier-1 PHYDIO→DSKIO PASS, GETDPB byte-identical).
+`bdos_entry`; the gap shrank from §8.8's "rebuild the resident kernel" to one kernel entry, `$4030`.
+Those two fixes are kept. The provider direction stays validated to the highest clean-room fidelity
+(Tier-1 PHYDIO→DSKIO PASS, GETDPB byte-identical).
+
+**RESOLVED (2026-06-22 provenance tightening) — `$4030` is the wall, by policy.** The allowed-sources
+review (README firewall, this date) settled the open question the other way: the **MSX Wiki is now
+explicitly NOT an allowed source**, *because* its `$4030`/`GETWRK` knowledge is reverse-engineered
+from the proprietary disk-ROM kernel (it appears in no published spec — the TH and komkon
+`DiskROM1.txt` both omit the `$4022+` region). So there is **no allowed source for `$4030`'s
+contract**, and the GitHub disk-ROM disassembly is forbidden. The DOS-boot oracle is therefore
+**characterized-and-walled at `$4030`**: MSX-DOS 1's design puts the BDOS/DOS kernel inside the
+proprietary disk ROM, and reaching `A>` would require binary-ABI-cloning it (`$4030` is the first of
+N such entries) — which the clean-room charter forbids. Re-defer here, with the large progress banked.
+To ever revisit, the charter would have to change, or an **open clean-room MSX-DOS-1 kernel**
+reimplementation would have to exist as an allowed PROVENANCE input.
