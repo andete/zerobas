@@ -98,11 +98,7 @@ print_strval:
                 ret     z                   ; empty string -> nothing to print
 psv_lp:
                 ld      a,(hl)
-                push    bc
-                push    hl
-                call    CHPUT
-                pop     hl
-                pop     bc
+                call    pchar               ; screen or file (PRDEST); preserves all
                 inc     hl
                 djnz    psv_lp
                 ret

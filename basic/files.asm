@@ -178,19 +178,23 @@ de_ext:
                 ret
 
 ; ===========================================================================
-; Sequential file channel — read path (Phase 2). A SINGLE open channel, layered
-; on the existing fat.asm sequential reader (fat_io_open / fat_io_getbyte), per
-; the EXTEND verdict (file-channel-protocol.md §4/§5). Verbs:
-;   OPEN "name" FOR INPUT AS #n        open the named file for sequential read
+; Sequential file channel (Phase 2). A SINGLE open channel, layered on the
+; existing fat.asm sequential engine (fat_io_open/getbyte + fat_io_create/putbyte/
+; close), per the EXTEND verdict (file-channel-protocol.md §4/§5). Verbs:
+;   OPEN "name" FOR INPUT  AS #n       open the named file for sequential read
+;   OPEN "name" FOR OUTPUT AS #n       create/truncate the file for sequential write
 ;   LINE INPUT #n, A$                  read one line (to CR) into a string var
 ;   INPUT #n, A$                       read one field (to ',' or CR) into A$
-;   CLOSE [#n]                          close the open channel
-; The channel state (FCH_NUM/FCH_MODE) persists across statements in RAM.
+;   PRINT #n, <items>                  write PRINT-formatted items to the file
+;   CLOSE [#n]                          close the open channel (OUTPUT: flush + EOF)
+; The channel state (FCH_NUM/FCH_MODE) persists across statements in RAM. PRINT#
+; reuses the screen PRINT item loop, redirected byte-by-byte to the channel via
+; the PRDEST flag + the `pchar` sink (basic/print.asm).
 ;
 ; Clean-room: original code; verb *semantics* + the FCB-by-name / sequential
-; read model from the public MSX-BASIC language reference and the black-box
+; read+write model from the public MSX-BASIC language reference and the black-box
 ; CF-3300 DSKIO trace (file-channel-protocol.md §2/§3); the byte stream reuses
-; fat.asm. No disassembly. See basic/PROVENANCE.md §file channel read.
+; fat.asm. No disassembly. See basic/PROVENANCE.md §file channel.
 ;
 ; Divergences (own design, quarantined; documented in PROVENANCE.md):
 ;   * ONE channel only — a MAXFILES channel table is a later sub-item; the
@@ -198,7 +202,7 @@ de_ext:
 ;   * INPUT#/LINE INPUT# fill STRING variables only (numeric INPUT# is Phase 3);
 ;     a value longer than STRMAX is truncated (the string layer's own limit).
 ;   * console INPUT (no '#') and graphics LINE are NOT implemented — they error.
-;   * OPEN supports FOR INPUT only here; FOR OUTPUT arrives with the write verbs.
+;   * OPEN handles FOR INPUT and FOR OUTPUT; APPEND is a later item.
 ;   * file/channel errors reuse the loader's `load_error` ("load error") path.
 
 ; --- OPEN "name" FOR INPUT AS #n -------------------------------------------
@@ -218,22 +222,37 @@ do_open:
                 cp      FOR_TOKEN           ; FOR
                 jp      nz,stmt_error
                 inc     hl
+                ; mode keyword: INPUT ($85), or OUTPUT = OUT ($9C) + PUT ($B3)
+                ; (OUTPUT is two reserved words, not one keyword — oracle-observed).
                 call    skip_spaces
                 ld      a,(hl)
-                cp      INPUT_TOKEN         ; only FOR INPUT this slice
+                cp      INPUT_TOKEN
+                jr      z,oo_input
+                cp      OUT_TOKEN
                 jp      nz,stmt_error
                 inc     hl
+                ld      a,(hl)
+                cp      PUT_TOKEN
+                jp      nz,stmt_error
+                inc     hl
+                ld      a,2                 ; mode = OUTPUT
+                jr      oo_setmode
+oo_input:
+                inc     hl
+                ld      a,1                 ; mode = INPUT
+oo_setmode:
+                ld      (FCH_MODE),a        ; provisional; cleared on any failure
                 ; "AS" is kept verbatim ASCII (not tokenised) — match it.
                 call    skip_spaces
                 ld      a,(hl)
                 call    upcase
                 cp      'A'
-                jp      nz,stmt_error
+                jp      nz,oo_fail_syn
                 inc     hl
                 ld      a,(hl)
                 call    upcase
                 cp      'S'
-                jp      nz,stmt_error
+                jp      nz,oo_fail_syn
                 inc     hl
                 call    skip_spaces
                 ld      a,(hl)              ; optional '#'
@@ -244,18 +263,31 @@ oo_num:
                 call    eval                ; DE = channel number, HL past it
                 ld      a,(DISKSLOT_OK)
                 or      a
-                jp      z,load_error
+                jr      z,oo_fail
                 push    hl                  ; guard the text cursor — CALSLT (inside
-                push    de                  ; fat_io_open) clobbers HL and the regs
-                call    fat_io_open         ; mount + find DISK_FCB_NAME + prime read
+                push    de                  ; fat_io_open/create) clobbers HL + regs
+                ld      a,(FCH_MODE)
+                cp      2
+                jr      z,oo_create
+                call    fat_io_open         ; INPUT: mount + find + prime read
+                jr      oo_done
+oo_create:
+                call    fat_io_create       ; OUTPUT: make/truncate + prime write
+oo_done:
                 pop     de
                 pop     hl
-                jp      c,load_error        ; not found / mount / I-O error
+                jr      c,oo_fail           ; not found / dir-full / mount / I-O error
                 ld      a,e
                 ld      (FCH_NUM),a         ; record the open channel
-                ld      a,1
-                ld      (FCH_MODE),a        ; mode = INPUT
                 jp      exec_stmt
+oo_fail:
+                xor     a
+                ld      (FCH_MODE),a        ; not actually open
+                jp      load_error
+oo_fail_syn:
+                xor     a
+                ld      (FCH_MODE),a
+                jp      stmt_error
 
 ; --- LINE INPUT #n, A$  (only the "LINE INPUT" form of LINE is supported) ---
 ex_line:
@@ -359,9 +391,28 @@ ex_close:
 dc_num:
                 call    eval                ; consume + ignore the channel number
 dc_doclose:
-                ; OUTPUT channels would flush here (fat_io_close); INPUT has no
-                ; dirty state. (FOR OUTPUT lands with the write verbs.)
+                ; OUTPUT flushes the buffered tail + stamps the directory entry
+                ; (fat_io_close); INPUT has no dirty state.
+                ld      a,(FCH_MODE)
+                cp      2
+                jr      nz,dc_clear
+                push    hl                  ; guard text cursor across CALSLT
+                ld      a,$1A               ; append the CP/M text-EOF marker (Ctrl-Z)
+                call    fat_io_putbyte      ; — MSX Disk BASIC stamps it on CLOSE of a
+                                            ; sequential OUTPUT file (CF-3300-confirmed)
+                call    fat_io_close        ; flush data sector + dir size/cluster
+                pop     hl                  ; CY (write error) is best-effort-ignored
+dc_clear:
                 xor     a
                 ld      (FCH_NUM),a
                 ld      (FCH_MODE),a         ; mark the channel closed
                 jp      exec_stmt
+
+; init_filechan — cold-start the file-channel state: no channel open, PRINT to
+; screen. Called from `init` before the banner is printed.
+init_filechan:
+                xor     a
+                ld      (FCH_NUM),a
+                ld      (FCH_MODE),a
+                ld      (PRDEST),a
+                ret

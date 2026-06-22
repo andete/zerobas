@@ -1736,3 +1736,60 @@ transient within one read statement. All in the free `$E0FC..$E0FF` gap below
 Clean-room: original code; verb semantics + the FCB-by-name / sequential read model
 from the public MSX-BASIC language reference and the black-box CF-3300 DSKIO trace
 (file-channel-protocol.md §2/§3); the byte stream reuses fat.asm. No disassembly.
+
+## file channel — sequential write (OPEN FOR OUTPUT / PRINT# / CLOSE) (basic/files.asm, basic/print.asm, basic/interp.asm, basic/repl.asm, basic/strvar.asm, basic/sysvars.inc)
+
+The WRITE complement of the read path above, EXTEND over the fat.asm write engine
+(`fat_io_create` / `fat_io_putbyte` / `fat_io_close`, all Phase-1.5 oracle-confirmed).
+
+**Statements.**
+- `OPEN "name" FOR OUTPUT AS #n` — `do_open`'s OUTPUT arm. The mode keyword is the
+  one subtlety: **`OUTPUT` crunches to two reserved words, `OUT` ($9C) + `PUT`
+  ($B3)**, not a single keyword (oracle-observed; the `PUT` token was added to
+  `kwtable` solely so `FOR OUTPUT` tokenises byte-identically — the PUT *statement*
+  is sub-phase 2c and has no dispatch). After matching OUT+PUT, `fat_io_create`
+  makes/truncates the file and primes the write iterator; `FCH_MODE = 2`.
+- `PRINT #n, <items>` — `ex_print` (basic/print.asm) detects a leading `#`, checks
+  the channel is open FOR OUTPUT, consumes the `#n` + separator, sets `PRDEST = 1`,
+  and falls into the **same screen-PRINT item loop**. Every emit site (`exp_str_lp`,
+  `print_strval`, `print_string`, `print_crlf`, `print_comma_zone`) now routes
+  through **`pchar`**, which sends the byte to `CHPUT` (screen) when `PRDEST = 0` or
+  to `fat_io_putbyte` (the channel) when `PRDEST = 1`. So number/string-var/literal
+  formatting and the closing CRLF are reused verbatim — no duplicated PRINT logic.
+- `CLOSE #n` (OUTPUT) — appends the **CP/M text-EOF marker `Ctrl-Z` ($1A)** then
+  `fat_io_close` (flush the buffered sector + stamp size/first-cluster).
+
+**The Ctrl-Z fidelity (found by the oracle).** The CF-3300 differential
+(`disk_probe_filewrite.py`) showed the real CF-3300 writes `hello world\r\n\x1a`
+for `PRINT#1,"hello world"` — MSX Disk BASIC stamps a `Ctrl-Z` on CLOSE of a
+sequential OUTPUT file. zerobas now does the same, so the written file is
+**byte-identical to the CF-3300's** (`hello world\r\n\x1a`), not just round-trip
+readable.
+
+**PRDEST discipline.** `PRDEST` ($E0CB) is 0 (screen) everywhere except inside
+PRINT#'s own item loop. It is zeroed at cold start (`init_filechan`), and
+re-cleared at every statement boundary (`exec_stmt` top), the REPL prompt, and
+`stmt_error` — so a mid-PRINT# error, the next statement, and the prompt always
+reach the screen, never the half-written file. `pchar` preserves every register
+(fat_io_putbyte's DSKIO clobbers the file), making it a drop-in for `call CHPUT`.
+
+**Validation** (`disk_probe_filewrite.py`, /tmp copy of `test720.dsk` — the
+committed image is never mounted): `OPEN"OUT.TXT" FOR OUTPUT AS #1 :
+PRINT#1,"hello world" : CLOSE#1` then the read-back `OPEN…FOR INPUT…:LINE
+INPUT#1,A$:…:PRINT A$` prints `hello world` (self round-trip); the on-disk
+`OUT.TXT` parses (our own FAT12 read of the image) to `b"hello world\r\n\x1a"`
+(ground truth); and the **real CF-3300 writes a byte-identical `OUT.TXT`**
+(differential). Tokens oracle-locked (`basic_probe_crunch.py`: OUTPUT→$9C $B3,
+PRINT#→$91 …). Full crunch + 16 unit-test files + the FILES/read probes still pass.
+
+**HL guard.** `fat_io_create`/`fat_io_putbyte`/`fat_io_close` all reach disk via
+CALSLT (clobbers HL = the text cursor), so HL is stacked across each — the same
+rule that fixed the read-path OPEN bug.
+
+**Divergences (own design, quarantined):** single channel; `OPEN FOR APPEND` not
+yet implemented; `PRINT# USING` is a later item; the comma-zone wrap divergence of
+screen PRINT (PROVENANCE.md §PRINT) applies equally to PRINT#; write errors
+(disk full / not-open) reuse `load_error`.
+
+Clean-room: original code; semantics from the public MSX-BASIC reference + the
+black-box CF-3300 trace; the write engine reuses fat.asm. No disassembly.

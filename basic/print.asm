@@ -26,6 +26,28 @@
 
 ex_print:
                 inc     hl                  ; past the PRINT token
+                ; PRINT #n, … (file form): redirect the item loop to the channel.
+                call    skip_spaces
+                ld      a,(hl)
+                cp      '#'
+                jr      nz,exp_loop         ; no '#': ordinary screen PRINT
+                inc     hl
+                call    eval                ; DE = channel number (single channel)
+                ld      a,(FCH_MODE)
+                cp      2                   ; must be open FOR OUTPUT
+                jp      nz,load_error
+                call    skip_spaces         ; consume the separator after #n (','/';')
+                ld      a,(hl)
+                cp      ','
+                jr      z,exp_hash_sep
+                cp      ';'
+                jr      nz,exp_hash_go      ; PRINT#1  (no items) -> just the CRLF
+exp_hash_sep:
+                inc     hl
+exp_hash_go:
+                ld      a,1
+                ld      (PRDEST),a          ; items now stream to the file channel
+                ; fall through into the shared item loop
 exp_loop:
                 call    skip_spaces
                 ld      a,(hl)
@@ -80,9 +102,7 @@ exp_str_lp:
                 jp      z,exp_loop          ; unterminated -> stop (back to loop -> EOL)
                 cp      '"'
                 jr      z,exp_str_close
-                push    hl                  ; CHPUT makes no register guarantees
-                call    CHPUT
-                pop     hl
+                call    pchar               ; emit to screen or file (PRDEST)
                 inc     hl
                 jr      exp_str_lp
 exp_str_close:
@@ -162,9 +182,35 @@ d10_skip:
 ; --- print_crlf: CR + LF ---------------------------------------------------
 print_crlf:
                 ld      a,13
-                call    CHPUT
+                call    pchar
                 ld      a,10
-                jp      CHPUT
+                jp      pchar
+
+; pchar — emit the byte in A to the current PRINT destination: the screen via
+; CHPUT when PRDEST=0, or the open file channel via fat_io_putbyte when PRDEST=1.
+; Preserves EVERY register (fat_io_putbyte's DSKIO clobbers the file, so we
+; save/restore), making it a drop-in for `call CHPUT` at every PRINT emit site.
+; A disk-full CY from the file path is best-effort-ignored here.
+pchar:
+                push    hl
+                push    de
+                push    bc
+                push    af
+                ld      c,a                 ; C = byte to emit
+                ld      a,(PRDEST)
+                or      a
+                ld      a,c
+                jr      nz,pch_file
+                call    CHPUT
+                jr      pch_done
+pch_file:
+                call    fat_io_putbyte
+pch_done:
+                pop     af
+                pop     bc
+                pop     de
+                pop     hl
+                ret
 
 ; --- print_comma_zone: pad with spaces to the next 14-column tab zone -------
 ; MSX PRINT comma zones are 14 characters (public language reference). Reads the
@@ -187,8 +233,6 @@ pcz_have:
                 ld      b,a
 pcz_pad:
                 ld      a,' '
-                push    bc                  ; CHPUT makes no register guarantees
-                call    CHPUT
-                pop     bc
+                call    pchar               ; screen or file (PRDEST); preserves BC
                 djnz    pcz_pad
                 ret

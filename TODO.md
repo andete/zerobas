@@ -249,10 +249,16 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
             the file's line byte-for-byte and the **real CF-3300 prints it
             identically** (`disk_probe_fileread.py` differential). See
             basic/PROVENANCE.md §file channel — sequential read.
-      - [ ] **write path: `OPEN…FOR OUTPUT` + `PRINT#` + `CLOSE`** — next (reuses
-            OPEN/CLOSE; needs the `OUTPUT`→`OUT $9C`+`PUT $B3` two-token handling
-            and `fat_io_create`/`fat_io_putbyte`/`fat_io_close`).
-      - [ ] `PRINT# USING`, `INPUT$(n,#f)`, and the `MAXFILES` multi-channel table.
+      - [x] **write path: `OPEN…FOR OUTPUT` + `PRINT#` + `CLOSE`** — DONE
+            (basic/files.asm + the PRDEST/`pchar` redirect in basic/print.asm).
+            `PRINT#` reuses the screen-PRINT item loop redirected to the channel;
+            CLOSE appends the `Ctrl-Z` ($1A) text-EOF marker. Tokens oracle-locked
+            (`OUTPUT`→`OUT $9C`+`PUT $B3`, `PRINT#`→$91); write→read-back round-trips
+            and the on-disk `OUT.TXT` is **byte-identical to the real CF-3300**
+            (`b"hello world\r\n\x1a"`, `disk_probe_filewrite.py` differential). See
+            basic/PROVENANCE.md §file channel — sequential write.
+      - [ ] `PRINT# USING`, `INPUT$(n,#f)`, `OPEN…FOR APPEND`, and the `MAXFILES`
+            multi-channel table.
 - [ ] **File/dir management [in]** — `FILES`✅, `LFILES`, `KILL`, `NAME…AS…`, `MERGE`
       (the `LOAD`/`SAVE`/`BLOAD`/`BSAVE`/`RUN"f"` already exist from Phase 1).
       - [x] **`FILES`** — DONE (basic/files.asm). Lists the root directory by

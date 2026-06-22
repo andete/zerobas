@@ -113,6 +113,11 @@ OPEN_TOKEN      equ     $B0     ; OPEN "name" FOR INPUT AS #n           (stateme
 INPUT_TOKEN     equ     $85     ; INPUT #n,var$ (file form) / LINE INPUT (statement)
 LINE_TOKEN      equ     $AF     ; LINE (only "LINE INPUT #n" supported in Phase 2)
 CLOSE_TOKEN     equ     $B4     ; CLOSE [#n]                            (statement)
+; PUT token: needed only because "OUTPUT" crunches to OUT ($9C) + PUT ($B3) — two
+; reserved words, NOT one keyword (oracle-observed). The PUT *statement* (random-
+; access GET/PUT) is sub-phase 2c; for now the token exists so `FOR OUTPUT`
+; tokenises byte-identically and bare PUT errors (no dispatch). $B3, MSX2 TH 2.20.
+PUT_TOKEN       equ     $B3     ; PUT (only consumed as the 2nd half of OUTPUT here)
 REM_TOKEN       equ     $8F     ; spec-tokens-statements.md; swallows rest of line
 POKE_TOKEN      equ     $98     ; spec-tokens-statements.md
 ; PEEK is a *function* token: a $FF prefix followed by a second byte.
@@ -199,6 +204,12 @@ STREND          equ     STRTAB + STRSLOTS*STRENTSZ   ; $E358
 ; only LET and PRINT consult it; arithmetic stays numeric-only.
 VALTYP          equ     $E0C8   ; 0 = numeric result, 1 = string result (1 byte)
 STRPTR          equ     $E0C9   ; pointer to the [len][bytes] descriptor (2 bytes)
+; PRINT output destination (Phase 2 PRINT#). 0 = screen (CHPUT), 1 = the open
+; file channel (fat_io_putbyte). The print primitives emit through `pchar`, which
+; consults this. Zeroed at cold start (init_filechan) and re-cleared at every
+; statement boundary / the REPL prompt / stmt_error, so only PRINT#'s own item
+; loop ever sees 1. Free byte in the $E0CB gap (NUMBUF/VALTYP/STRPTR below it).
+PRDEST          equ     $E0CB   ; PRINT destination: 0=screen, 1=file channel (1)
 ; Scratch descriptor for a string literal lifted out of the token stream
 ; ([len:1][bytes:STRMAX]); LET copies from here into the variable's slot. Placed
 ; in page $E3 above the string table (NOT in page $E0, which the C-BIOS keyboard

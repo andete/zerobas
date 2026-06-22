@@ -15,6 +15,8 @@
 ; points (CHGET, CHPUT). No disassembly.
 
 repl:
+                xor     a                   ; the prompt + any output go to the
+                ld      (PRDEST),a          ; screen (defensive after a PRINT#)
                 ld      hl,prompt_text
                 call    print_string
                 call    read_line           ; LINEBUF <- typed line (ASCII, 0-term)
@@ -26,9 +28,7 @@ print_string:
                 ld      a,(hl)
                 or      a
                 ret     z
-                push    hl                  ; guard HL across the BIOS call
-                call    CHPUT
-                pop     hl
+                call    pchar               ; screen or file (PRDEST); preserves HL
                 inc     hl
                 jr      print_string
 

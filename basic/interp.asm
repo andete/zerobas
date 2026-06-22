@@ -18,6 +18,7 @@ init:
                 ei                          ; keyboard ISR must run for CHGET
                 call    clear_vars          ; deterministic variable table
                 call    clear_usrtab        ; zero the DEF USR vectors
+                call    init_filechan       ; no open channel; PRINT dest = screen
                 call    new_prog            ; empty stored program (Step B)
                 call    init_ext_roms       ; run the boot-scan INITs C-BIOS skips
                                             ; (e.g. zerobas-disk in slot 3-1) since
@@ -528,6 +529,9 @@ kwtable:
                 db      5,"INPUT",1,INPUT_TOKEN
                 db      4,"LINE",1,LINE_TOKEN
                 db      5,"CLOSE",1,CLOSE_TOKEN
+                ; PUT exists only so "OUTPUT" crunches to OUT($9C)+PUT($B3); the
+                ; PUT statement (random access) is sub-phase 2c (no dispatch yet).
+                db      3,"PUT",1,PUT_TOKEN
                 ; Cassette save keyword. CSAVE token oracle-LOCKED ($9A) via
                 ; basic_probe_crunch.py against Philips VG-8020 (MSX2 TH Table
                 ; 2.20). Single-byte statement token; filename kept verbatim ASCII.
@@ -630,6 +634,8 @@ il_no:
 ; Returns to the REPL at end of line (or hands off via BLOAD,R, never to return).
 exec:
 exec_stmt:
+                xor     a                   ; each statement starts on the screen;
+                ld      (PRDEST),a          ; only PRINT#'s own item loop sets dest=file
                 call    skip_spaces         ; leading spaces are skipped (spec §5)
                 ld      a,(hl)
                 or      a
@@ -830,6 +836,8 @@ skip_spaces:
 
 ; --- stmt_error: unknown statement — report and return to the prompt -------
 stmt_error:
+                xor     a                   ; an error mid-PRINT# must reach the
+                ld      (PRDEST),a          ; screen, not the half-written file
                 ld      a,$DD               ; distinct from BLOAD's $EE tape error
                 ld      (ERRMARK),a
                 ld      hl,err_syntax
