@@ -607,3 +607,50 @@ sized (this §8.8) for whenever a future charter raise revisits it. The provider
 considered **done at the highest fidelity reachable without raising the charter** — Tier-1 (real BIOS
 PHYDIO → our DSKIO, organic) PASSES and GETDPB is byte-identical to the CF-3300 differential (§2),
 which §2 already deems sufficient pinning for GETDPB. No DOS-resident-environment sub-track is opened.
+
+> **SUPERSEDED by §8.9 (same day, on user request to continue): §8.8's "charter-level, reconstruct
+> the resident kernel" pessimism was WRONG.** A trap-driven slice found the boot drives *our own*
+> `bdos_entry`; DOS-boot is far more tractable than §8.8 feared. The deferral is lifted; actively
+> iterating.
+
+## 8.9 a3 REOPENED — slice-1 finds (and fixes) the $F37D wedge; boot now drives our BDOS
+
+On the user's "continue", the deferred sub-track was reopened with a **trap-driven incremental**
+approach (don't reconstruct the full env — find the *load-bearing* cells empirically, fix one,
+re-trap). This immediately overturned §8.8's central fear.
+
+**Slice-1 diagnostic (read-watchpoint on the work area).** After step-7 entry the boot reads
+**only `$F37D`/`$F37E`/`$F37F`**, and the reading PC *equals* each address — i.e. it **JUMPs to
+`$F37D` and executes it**. It never reads RAMAD (`$F341-4`) at all, so §8.8's RAMAD lead was a red
+herring. On the stock `$F37D` = `C3 31 F3` (`JP $F331`); our INIT had written the *raw word*
+`9F 43` there (publishing `bdos_entry`), so the CPU executed `9F 43 FF` = `SBC A,A / LD B,E /
+RST 38h` → the `$0038` wedge. **`$F37D` is the disk system's BDOS-call JP vector, not an address
+word.** A follow-up trap caught the caller: the boot does `CALL $F37D` with **C=`$0F` (BDOS Open
+File), DE = an FCB in the boot sector** holding **`MSXDOS  SYS`**. So the boot loads MSXDOS.SYS by
+calling BDOS through `$F37D` — and **our `bdos_entry` is an oracle-validated FCB BDOS that handles
+exactly `$0F`/`$14`/`$10`/`$1A`**.
+
+**Slice-1 fix (tiny).** INIT now publishes `$F37D` as `JP bdos_entry` (`C3 <addr>`) instead of the
+bare word. Safe because zerobas-BASIC's loader no longer reads `$F37D` (Phase 1.5 → DSKIO+own FAT;
+`basic/sysvars.inc`). Regression-green: `disk_probe_files` + `disk_probe_bload_disk` +
+`disk_probe_init` (now checks the `C3`/JP-target form) PASS on C-BIOS, and `disk_probe_bdos` PASS
+(its cross-slot stub reads the entry from the JP target at `$F37E`). `bdos_entry` shifts → `$43A4`.
+
+**Result — the boot now drives our BDOS.** Re-trap: the `$0038` wedge is **gone**; the boot reaches
+`bdos_entry` (19×), `bdos_open` (9×), `fat_mount` (9×), runs real FDC sector reads (`fdc_read_phys`
+24×), and requests **`MSXDOS  SYS`** by name. **This refutes §8.8 decisively:** the boot does *not*
+require us to rebuild the stock's resident kernel — it uses **our own `bdos_entry`** as the resident
+BDOS. The "huge work area + relocated kernel" the stock builds is the stock's *internal* way; the
+boot's actual *requirement* is the BDOS JP vector + working sector I/O.
+
+**New blocker (slice 2) — Open fails on intermittent FDC read errors.** `bdos_seqread` = 0 (Open
+never succeeds → never reads MSXDOS.SYS). Breakdown: of 5 Open failures, 3 are `fat_mount` read
+errors and 2 are `fat_find` read errors; `fat_mount_bad` = 0 (BPB fine), but **`dskio_err` = 7** —
+the FDC reads intermittently fail. Around it: a retry storm (`read_sector` 16632×) and a
+software **`RST 38h` storm** — `$0038` returns cluster at **`$073A` in page-0 RAM** (a tight loop
+running through `$FF`/uninitialised page-0 RAM, *not* hardware interrupts). So with RAM in page 0 and
+the boot executing relocated code, our polled WD2793 transfer (`fdc_read_data`, **no interrupt
+guard**) is being disrupted. Slice-2 candidates, cheapest first: (a) make the FDC polled transfer
+interrupt-safe (`di` around it, IFF-preserving restore — a real latent-correctness fix regardless);
+(b) pin the `$073A` page-0 loop's source (is the boot expecting more page-0 setup, or is it the
+Open-fail error path?). Re-trap after each.

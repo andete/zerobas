@@ -290,9 +290,24 @@ init:
                 ld      a, $C9              ; +4: RET
                 ld      (HPHYD + 4), a
 
-                ; --- publish the internal BDOS entry + default DTA (unchanged) --
+                ; --- publish the BDOS entry as an executable JP vector ---------
+                ; $F37D (SYSTEM) is the disk system's BDOS-call jump vector. The
+                ; MSX-DOS boot CALLs it to Open/Read MSXDOS.SYS — black-box (a3
+                ; §8.9): at step 7 the boot-sector code does `CALL $F37D` with
+                ; C=$0F (BDOS Open File) and DE = an FCB in the boot sector. So
+                ; $F37D must hold `JP <bdos dispatcher>`, NOT a bare address word:
+                ; the boot EXECUTES these bytes (our old raw word `9F 43` ran as
+                ; `SBC A,A / LD B,E / RST 38h` -> the $0038 wedge). Our bdos_entry
+                ; is an oracle-validated FCB BDOS (Open $0F / SeqRead $14 / Close
+                ; $10 / SetDTA $1A), and it is reachable from here even with RAM in
+                ; page 0: our ROM stays in page 1 and bdos_entry's scratch is all
+                ; page-3 RAM, both mapped throughout boot. zerobas-BASIC's own
+                ; loader no longer reads $F37D (Phase 1.5 moved it to DSKIO + own
+                ; FAT; see basic/sysvars.inc), so the JP form is free to install.
+                ld      a, $C3              ; JP opcode
+                ld      (SYSTEM), a
                 ld      hl, bdos_entry
-                ld      (SYSTEM), hl
+                ld      (SYSTEM + 1), hl    ; $F37D = C3 <bdos_entry lo> <hi>
                 ; default the settable DTA to the MSX-DOS default ($0080) so a
                 ; SeqRead before any $1A behaves as MSX-DOS does.
                 ld      hl, DTA_DEFAULT
