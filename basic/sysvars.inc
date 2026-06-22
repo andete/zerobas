@@ -124,6 +124,14 @@ PUT_TOKEN       equ     $B3     ; PUT (only consumed as the 2nd half of OUTPUT h
 EOF_TOKEN       equ     $AB     ; EOF(#n)  -> -1 at end of the input file, else 0
 LOF_TOKEN       equ     $AD     ; LOF(#n)  -> length of the open file in bytes
 DSKF_TOKEN      equ     $A6     ; DSKF(d)  -> free clusters on the drive (=free KB)
+; Random-access conversion functions (Phase 2c). $FF-prefixed function tokens,
+; oracle-locked to the VG-8020 crunch (MKI$=$FF$AE, CVI=$FF$A8; MSX2 TH Table 2.20).
+; MKI$(n) packs a 16-bit int into a 2-byte little-endian string; CVI(s$) is the
+; inverse. The float siblings (MKS$/MKD$/CVS/CVD) need Phase-3 floats and are
+; deferred. MKI$ is evaluated in basic/strvar.asm (string result); CVI in
+; basic/expr.asm ev_f_ff (numeric result, string argument).
+MKI_TOKEN       equ     $AE     ; MKI$(n)  -> 2-byte LE string of integer n
+CVI_TOKEN       equ     $A8     ; CVI(s$)  -> integer from the first 2 bytes of s$
 ; File/directory management (Phase 2). Tokens oracle-locked to the VG-8020 crunch
 ; (KILL=$D4, NAME=$D3; MSX2 TH Table 2.20). The handlers live in basic/files.asm.
 KILL_TOKEN      equ     $D4     ; KILL "name" — delete a file (statement)

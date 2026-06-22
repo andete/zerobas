@@ -537,6 +537,11 @@ kwtable:
                 db      3,"EOF",2,PEEK_PREFIX,EOF_TOKEN
                 db      3,"LOF",2,PEEK_PREFIX,LOF_TOKEN
                 db      4,"DSKF",2,PEEK_PREFIX,DSKF_TOKEN
+                ; Random-access conversions (Phase 2c). $FF-prefixed function tokens
+                ; (MKI$=$FF$AE returns a string — the '$' is PART of the keyword, unlike
+                ; INPUT$; CVI=$FF$A8 returns a number). Oracle-locked to the VG-8020.
+                db      4,"MKI$",2,PEEK_PREFIX,MKI_TOKEN
+                db      3,"CVI",2,PEEK_PREFIX,CVI_TOKEN
                 ; File management: KILL (delete) + NAME (rename). Oracle-locked
                 ; tokens ($D4 / $D3). "NAME" shares no prefix with another entry.
                 db      4,"KILL",1,KILL_TOKEN

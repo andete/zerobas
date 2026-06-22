@@ -321,9 +321,16 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
 - [ ] **Direct sector access [in]** — `DSKI$` (read sector, fn) / `DSKO$` (write
       sector, stmt; `HDSKO $FDEF` hook) — thin wrappers over DSKIO.
 - [ ] **Random-access files [in → sub-phase 2c]** — `FIELD`, `GET`, `PUT`, `LSET`,
-      `RSET` + conversion fns `CVI`/`CVS`/`CVD`, `MKI$`/`MKS$`/`MKD$`. A heavier,
+      `RSET` + conversion fns `CVI`✅/`CVS`/`CVD`, `MKI$`✅/`MKS$`/`MKD$`. A heavier,
       self-contained record-file feature; built + oracle-validated as its **own
       sub-phase (2c)** after the sequential/management surface lands.
+      - [x] **`MKI$(n)` + `CVI(s$)`** — DONE (basic/strvar.asm + basic/expr.asm). The
+            integer conversion pair: MKI$ packs a 16-bit int into a 2-byte LE string
+            ($FF$AE, string result, in str_eval); CVI is the inverse ($FF$A8, numeric
+            result with a string arg, in ev_ff_cvi bridging IX↔HL to str_eval).
+            `A$=MKI$(258)` + `C$=MKI$(CVI(A$))` write M.DAT = `\x02\x01\x02\x01\x1a`
+            **byte-identical to the CF-3300** (`disk_probe_mkicvi.py`). Float siblings
+            (MKS$/MKD$/CVS/CVD) need Phase-3 floats — deferred. See PROVENANCE §MKI$/CVI.
 - [ ] **`CALL FORMAT` [in]** — disk format via the STATEMENT-expansion seam
       (`CHOICE $4019` / `DSKFMT $401C`); pin the seam in **Step 0b** first, then
       implement over zerobas-disk's existing `CHOICE`/`DSKFMT` entries.

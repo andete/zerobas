@@ -2103,3 +2103,49 @@ files, and every file probe still pass.
 n is still fully consumed (so the cursor stays correct) but only the first 32 bytes
 are stored; reading past EOF stops at EOF (partial result) rather than raising the
 reference's "Input past end of file"; the keyboard form is deferred to Phase 3.
+
+## MKI$ / CVI — integer ↔ 2-byte-string conversion (basic/strvar.asm, basic/expr.asm)
+
+The random-access conversion pair: `MKI$(n)` packs a 16-bit integer into a 2-byte
+little-endian string; `CVI(s$)` is the inverse (the integer from s$'s first 2 bytes).
+These are the integer members of the `MK*$`/`CV*` family; the float siblings
+(`MKS$`/`MKD$`/`CVS`/`CVD`) need the Phase-3 float pack and are deferred. They fit
+zerobas's integer + minimal-string model exactly and form the first piece of the
+random-access sub-phase (2c).
+
+**Tokens (oracle-locked, VG-8020).** `$FF`-prefixed function tokens: `MKI$ = $FF $AE`
+(a STRING result — note the `'$'` is PART of the keyword, unlike `INPUT$` where INPUT
+is its own token), `CVI = $FF $A8` (a NUMERIC result). `basic_probe_crunch.py` carries
+`a$=mki$(258)` (→ `… FF AE 28 1C 02 01 29`) and `a=cvi(b$)` (→ `… FF A8 28 42 24 29`),
+both byte-identical on the VG-8020 and zerobas. Added to the kwtable like EOF/LOF.
+
+**Where they live.** `MKI$` returns a string, so it is evaluated in the HL-based
+string evaluator (`str_eval`, basic/strvar.asm) — a `$FF`+`$AE` branch that parses
+`( n )` (the numeric arg via `eval`) and writes the 2-byte `[2][lo][hi]` STRSCR
+descriptor (binary-safe: len-prefixed, so a `$00` byte is fine). `CVI` returns a
+number but takes a STRING argument, so it cannot use the numeric arg-parser
+`ev_ff_arg`; `ev_ff_cvi` (basic/expr.asm) bridges the IX token cursor to `str_eval`
+and back (IX is reloaded from str_eval's advanced HL, so an inner `eval` clobbering
+IX is harmless), then reads 2 little-endian bytes from the descriptor. `CVI(MKI$(n))`
+in one expression works (str_eval's MKI$ branch handles the nested call). The runtime
+HANDLERS being disk-ROM features, the runtime oracle is the CF-3300, not the diskless
+VG-8020.
+
+**Register guard.** Same HL-cursor discipline as OPEN/INPUT$: MKI$ writes the STRSCR
+descriptor with the eval cursor stacked, then restores it. Several `jr`s to
+`str_eval_ok`/`str_eval_no` (strvar.asm) and the `ev_ff_cvi` dispatch (expr.asm) went
+out of range as the handlers grew and were widened to `jp`.
+
+**Validation** (`disk_probe_mkicvi.py`, /tmp copy of `test720.dsk`). One REPL line
+(the CF-3300 garbles a second typed line) writes BOTH `A$=MKI$(258)` and
+`C$=MKI$(CVI(A$))` to M.DAT, pinning the MKI$ byte order AND the CVI round trip on
+disk (no fragile screen scrape): M.DAT = `b"\x02\x01\x02\x01\x1a"` (258 = 0x0102 LE,
+reproduced by the round trip, + the OUTPUT-close Ctrl-Z) — **byte-identical to the
+real National CF-3300**. Crunch suite, 16 unit-test files, strvar/statements probes,
+and every file probe still pass.
+
+**Divergences (own design):** integer-only — the float conversions are Phase 3;
+`CVI` reads exactly 2 descriptor bytes (a shorter string yields a stale high byte
+rather than the reference's "Illegal function call"); MKI$/CVI work in assignments
+(`A$=MKI$…`, `A=CVI…`) but not yet directly inside `PRINT`/`PRINT#` (str_eval is not
+reached on the PRINT numeric/letter fast-path) — use an intermediate variable.

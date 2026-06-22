@@ -423,6 +423,8 @@ ev_f_ff:
                 jr      z,ev_ff_arg
                 cp      DSKF_TOKEN          ; $A6 -> DSKF
                 jr      z,ev_ff_arg
+                cp      CVI_TOKEN           ; $A8 -> CVI (takes a STRING arg)
+                jp      z,ev_ff_cvi
                 jp      ev_f_err            ; unknown $FF function
 ev_ff_arg:
                 ld      c,a                 ; C = selector (survives the parse)
@@ -512,6 +514,37 @@ ev_ff_dskf:                                 ; DSKF(d): free clusters on the driv
                 call    fat_count_free      ; DE = free cluster count
                 pop     iy
                 pop     ix
+                ret
+ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2 bytes
+                ; CVI takes a STRING argument, so it cannot use ev_ff_arg's numeric
+                ; ev_xor. Parse "( <string> )" by bridging the IX token cursor to the
+                ; HL-based str_eval and back, then read 2 little-endian bytes from the
+                ; resulting descriptor. (IX is reloaded from str_eval's advanced HL, so
+                ; an inner eval clobbering IX is harmless.) Entered with IX on the
+                ; CVI selector byte.
+                inc     ix                  ; skip the CVI selector
+                call    ev_sp
+                ld      a,(ix+0)
+                cp      '('
+                jp      nz,ev_f_err
+                inc     ix
+                call    ev_sp
+                push    ix
+                pop     hl
+                call    str_eval            ; STRPTR -> [len][bytes]; HL advanced; CF=ok
+                jp      nc,ev_f_err         ; not a string operand
+                push    hl
+                pop     ix                  ; IX = cursor past the string operand
+                call    ev_sp
+                ld      a,(ix+0)
+                cp      ')'
+                jp      nz,ev_f_err
+                inc     ix
+                ld      hl,(STRPTR)
+                inc     hl                  ; -> the value bytes
+                ld      e,(hl)              ; low byte
+                inc     hl
+                ld      d,(hl)              ; high byte  -> DE = int (LE)
                 ret
 
 ; --- ev_f_varptr: VARPTR(<var>) -> address of the variable's value field -----

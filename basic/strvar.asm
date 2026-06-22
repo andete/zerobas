@@ -32,19 +32,21 @@ str_eval:
                 cp      '"'
                 jr      z,str_eval_lit
                 cp      INPUT_TOKEN         ; INPUT$(...) ? -> $85 ('INPUT') then '$'
-                jr      z,str_eval_maybe_inputd
+                jp      z,str_eval_maybe_inputd
+                cp      PEEK_PREFIX         ; $FF + selector -> a function token; MKI$ ?
+                jp      z,str_eval_maybe_mki
                 call    is_letter           ; a `$`-suffixed variable?
-                jr      nc,str_eval_no
+                jp      nc,str_eval_no
                 call    var_str_type        ; A=1 if `$` suffix
                 or      a
-                jr      z,str_eval_no       ; numeric name -> not a string operand
+                jp      z,str_eval_no       ; numeric name -> not a string operand
                 ; string variable: key it and point STRPTR at its stored value.
                 call    var_name_key        ; BC = key, HL past name + `$`
                 push    hl                  ; guard cursor across the lookup
                 call    str_get_key         ; HL -> [len][bytes] descriptor
                 ld      (STRPTR),hl
                 pop     hl
-                jr      str_eval_ok
+                jp      str_eval_ok
 str_eval_lit:
                 ; copy the literal's bytes into STRSCR as a [len][bytes] descriptor,
                 ; clamped to STRMAX, advancing HL past the closing quote. HL stays
@@ -77,7 +79,7 @@ sel_close:
                 ld      hl,STRSCR
                 ld      (STRPTR),hl
                 pop     hl                  ; HL = cursor past the operand
-                jr      str_eval_ok
+                jp      str_eval_ok
 str_eval_no:
                 or      a                   ; CF clear -> not a string operand
                 ret
@@ -99,38 +101,74 @@ str_eval_ok:
 ; use `eval` (which saves/restores IX); fat_io_getbyte's CALSLT clobbers everything,
 ; so the read state lives in RAM (INDLR_N target, IN_RDLEN stored count) and the
 ; cursor is guarded on the stack. CF-3300-validated (disk_probe_inputdollar.py).
+; --- MKI$(n): pack a 16-bit integer into a 2-byte little-endian string -----------
+; Reached from str_eval on a $FF function token. "MKI$" crunches to $FF $AE (oracle-
+; locked). MKI$(n) returns the 2-byte string [lo][hi] of n; the inverse is CVI
+; (basic/expr.asm). The numeric arg uses `eval` (saves/restores IX); the 2-byte
+; result fills the STRSCR [len][bytes] descriptor (binary-safe: len-prefixed, so a
+; $00 byte is fine). HL is guarded across the STRSCR write (the OPEN/INPUT$ lesson).
+; CF-3300-validated (disk_probe_mkicvi.py). The float siblings MKS$/MKD$ are Phase 3.
+str_eval_maybe_mki:
+                inc     hl                  ; tentatively past $FF
+                ld      a,(hl)
+                cp      MKI_TOKEN           ; $AE -> MKI$
+                jr      z,str_mki
+                dec     hl                  ; other $FF function -> not a string operand
+                jp      str_eval_no
+str_mki:
+                inc     hl                  ; past the MKI$ selector
+                ld      a,(hl)
+                cp      '('
+                jp      nz,str_eval_no
+                inc     hl
+                call    eval                ; DE = n; HL advanced past the argument
+                ld      a,(hl)
+                cp      ')'
+                jp      nz,str_eval_no
+                inc     hl                  ; HL past ')'
+                push    hl                  ; guard the cursor across the STRSCR write
+                ld      a,2
+                ld      (STRSCR),a          ; length = 2
+                ld      a,e
+                ld      (STRSCR+1),a        ; low byte of n
+                ld      a,d
+                ld      (STRSCR+2),a        ; high byte of n
+                ld      hl,STRSCR
+                ld      (STRPTR),hl
+                pop     hl                  ; restore the eval cursor
+                jp      str_eval_ok
 str_eval_maybe_inputd:
                 inc     hl                  ; tentatively past the INPUT token
                 ld      a,(hl)
                 cp      '$'
                 jr      z,str_inputd
                 dec     hl                  ; not INPUT$ -> restore, not a string operand
-                jr      str_eval_no
+                jp      str_eval_no
 str_inputd:
                 inc     hl                  ; past '$'
                 ld      a,(hl)
                 cp      '('
-                jr      nz,str_eval_no
+                jp      nz,str_eval_no
                 inc     hl
                 call    eval                ; DE = n (byte count); HL advanced past it
                 ld      a,e
                 ld      (INDLR_N),a         ; target count (low byte; n <= 255)
                 ld      a,(hl)
                 cp      ','                 ; INPUT$(n) keyboard form (no ',') = Phase 3
-                jr      nz,str_eval_no
+                jp      nz,str_eval_no
                 inc     hl
                 ld      a,(hl)
                 cp      '#'                 ; file form requires '#f'
-                jr      nz,str_eval_no
+                jp      nz,str_eval_no
                 inc     hl
                 call    eval                ; DE = channel f; HL advanced
                 ld      a,(hl)
                 cp      ')'
-                jr      nz,str_eval_no
+                jp      nz,str_eval_no
                 inc     hl                  ; HL past ')'
                 ld      a,e
                 call    fch_valid
-                jr      nc,str_eval_no      ; bad file number
+                jp      nc,str_eval_no      ; bad file number
                 push    hl                  ; guard the eval cursor (fch_select + CALSLT)
                 ld      a,e
                 call    fch_select          ; make channel f live; FCH_MODE = its mode
@@ -141,10 +179,10 @@ str_inputd:
                 ld      hl,STRSCR           ; set STRPTR while the cursor is still on
                 ld      (STRPTR),hl         ; the stack (HL here would clobber it)
                 pop     hl                  ; restore the eval cursor (past ')')
-                jr      str_eval_ok
+                jp      str_eval_ok
 str_inputd_err:
                 pop     hl
-                jr      str_eval_no
+                jp      str_eval_no
 
 ; str_inputd_read — consume INDLR_N bytes from the open channel into STRSCR
 ; ([len][bytes]); store up to STRMAX, but keep consuming so the file cursor advances
