@@ -231,8 +231,16 @@ this repo supplies real `TAPION`/`TAPIN`/`TAPIOF` in page 0, and the installer
 cassette `BLOAD` pipeline completes end-to-end: C-BIOS + tape (device half) +
 zerobas (interpreter half).
 
-The next transport is **disk** (`disk/` — in progress), where a disk-interface
-ROM provides the device half (`PHYDIO` / the `H.*` hooks).
+The second transport is **disk** (`disk/` → `disk.rom`, slot 3-1) — **complete**:
+a standard disk-interface ROM provides the device half (`PHYDIO` / the `H.*`
+hooks + `GETDPB`), `basic.rom` owns the FAT12 filesystem and drives it through the
+standard `$4010` DSKIO interface, and the interpreter exposes a full Disk BASIC
+file-channel verb surface (`OPEN`/`PRINT#`/`INPUT#`, random-access
+`FIELD`/`GET`/`PUT`, `FILES`/`KILL`/`NAME`, `PRINT USING`, `CALL FORMAT`, …), each
+oracle-validated against a real National CF-3300. The verb surface is the
+**Phase 2** charter raise on the disk axis (the core *language* stays loader-stub
+scoped — floats, the full string engine, arrays, graphics and sound are Phase 3+).
+See [`TODO.md`](TODO.md) for the per-verb status.
 
 ## Layout
 
@@ -266,7 +274,7 @@ zerobas/
 │   ├── docs/          # cassette spec and feasibility notes
 │   └── cassette-tool/ # host-side WAV/CAS analysis tools
 ├── disk/
-│   └── PROVENANCE.md  # disk-component provenance log (FDC, FAT; work in progress)
+│   └── PROVENANCE.md  # disk-component provenance log (FDC, FAT12, BDOS — complete)
 └── tools/
     ├── pad_rom.py     # pad/verify the ROM to exactly 16 KB
     ├── rom_patch.py   # make/apply/inspect IPS + BPS patches

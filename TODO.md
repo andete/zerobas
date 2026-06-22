@@ -13,7 +13,7 @@ item — do **one item per session** to keep context lean.
 | Phase | Scope | State |
 |---|---|---|
 | **1 — loader-stub BASIC + transports + standardization** | just enough MSX-BASIC to run `.BAS`/binary loader stubs; tape + disk read/write; standard DSKIO/`HPHYD` interfaces | **✅ closed** |
-| **2 — full disk (Disk BASIC integration)** | delegate file resolution to the in-slot Disk BASIC + the full file-channel verb surface; Tier-2 provider oracle | **next** |
+| **2 — full disk (Disk BASIC integration)** | the full file-channel verb surface (sequential + random-access + dir mgmt + `CALL FORMAT`), all oracle-validated | **✅ verb surface complete** — only the Tier-2 provider oracle (a distinct DOS-boot sub-track) + a few Phase-3-gated verbs remain |
 | **3+ — full MSX1 BASIC** | floating point, full string engine, arrays, graphics, sound, … | aspirational |
 
 ## Phase 1 — committed loader-stub target (✅ closed)
@@ -186,7 +186,28 @@ cassette entries; disk uses DSKIO/`HPHYD`/`GETDPB`), and disk interoperates both
 directions — the point of the whole basic/tape/disk split. The only piece not yet
 exercised is the Tier-2 provider oracle, now part of Phase 2.
 
-## Phase 2 — full disk (Disk BASIC integration) — NEXT
+## Phase 2 — full disk (Disk BASIC integration) — ✅ VERB SURFACE COMPLETE
+
+**Close-out (2026-06-22).** The Disk BASIC verb surface zerobas's current
+capabilities can faithfully support is **done and oracle-validated** — sequential
+file I/O (`OPEN`/`CLOSE`/`PRINT#`/`INPUT#`/`LINE INPUT#`/`INPUT$`, `MAXFILES`,
+`APPEND`), `PRINT USING` (+`PRINT# USING`), file/dir management
+(`FILES`/`KILL`/`NAME`/`MERGE`), position/info (`EOF`/`LOF`/`DSKF`), random-access
+records (`FIELD`/`GET`/`PUT`/`LSET`/`RSET` + `MKI$`/`CVI`), and `CALL FORMAT` (both
+geometries + menu). The whole stack was also proven **host-BIOS-independent** on a
+real Philips VG-8020. The in-RAM halves of these verbs now also carry a fast
+emulator-free regression (`make unit-test`: `test_tokenise`/`test_field`/
+`test_printusing`); the sector-moving halves stay in the openMSX probes.
+
+**Explicitly carried / deferred (not part of "complete"):**
+- **Tier-2 provider oracle** (a real MSX-DOS 1 host driving zerobas-disk) — a
+  distinct DOS-boot sub-track, gated on building MSX-DOS-boot support. Open below.
+- **`DSKI$` / `DSKO$`** — investigated, **deferred to Phase 3** (obscure CF-3300
+  semantics + needs the Phase-3 string heap; see the item below).
+- **`MKS$`/`MKD$`/`CVS`/`CVD`** (random-access float conversions) and the float-only
+  `PRINT USING` specs — gated on **Phase-3 floating point**.
+- **`LOC(#n)`** (unclear sequential semantics) and **`LFILES`** (printer-bound) —
+  deferred; observed + documented in PROVENANCE.
 
 A deliberate **charter raise** from loader-stub toward a faithful disk experience.
 Chosen as the next phase because it *completes the storage story* the
@@ -200,7 +221,7 @@ protocol isn't pinned, so step 0 is a research spike; only after it do we pick t
 architecture and write code. Each step is independently oracle-validatable.
 
 ### Step 0 — file-channel protocol spike (the gate) — ✅ DONE
-- [ ] **Black-box the DEVICE/STATEMENT expansion + file-channel protocol** on the
+- [x] **Black-box the DEVICE/STATEMENT expansion + file-channel protocol** on the
       real **National CF-3300** Disk BASIC (boots to Disk BASIC; ROMs in
       `~/.openMSX/share/systemroms/`). The Phase-1.5 spike deliberately skipped this:
       it proved the *drive-letter loader* path is pure DSKIO and never touches the
@@ -239,8 +260,9 @@ commands the documented expansion seam exists — fork still open, gated on Step
 Full DOS1-class Disk BASIC vocabulary, grouped; **[in]** = recommended Phase-2,
 **[?]** = scope to confirm, **[out]** = deferred. Build smallest end-to-end path
 first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
-- [ ] **Sequential file I/O [in]** — `OPEN`, `CLOSE`, `PRINT#`, `PRINT# USING`,
-      `INPUT#`, `LINE INPUT#`, `INPUT$(n,#f)`. The spike-confirmed core.
+- [x] **Sequential file I/O [in]** — `OPEN`, `CLOSE`, `PRINT#`, `PRINT# USING`,
+      `INPUT#`, `LINE INPUT#`, `INPUT$(n,#f)`. The spike-confirmed core. **DONE** —
+      every sub-item below landed + oracle-validated.
       - [x] **read path: `OPEN…FOR INPUT` + `INPUT#` + `LINE INPUT#` + `CLOSE`** —
             DONE (basic/files.asm). EXTEND over the fat.asm sequential reader
             (`fat_io_open`/`fat_io_getbyte`); single channel; string vars only.
@@ -297,8 +319,9 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
             disk round-trip byte-identical to the CF-3300 (disk_probe_printusing_file.py).
             Oracle finding: the CF-3300 (National ROM) supports only `#`/`!` PRINT USING
             fields, not `\..\`/`&` (which the VG-8020 — and zerobas — do); see PROVENANCE.
-- [ ] **File/dir management [in]** — `FILES`✅, `KILL`✅, `NAME…AS…`✅, `MERGE`✅, `LFILES`
-      (the `LOAD`/`SAVE`/`BLOAD`/`BSAVE`/`RUN"f"` already exist from Phase 1).
+- [x] **File/dir management [in]** — `FILES`✅, `KILL`✅, `NAME…AS…`✅, `MERGE`✅ — **DONE**
+      (the `LOAD`/`SAVE`/`BLOAD`/`BSAVE`/`RUN"f"` already exist from Phase 1). `LFILES`
+      is printer-bound (no device in zerobas) — deferred.
       - [x] **`MERGE "name"`** — DONE (basic/files.asm `ex_merge`). Reads an ASCII
             (SAVE",A") line-numbered program file and feeds each line through the
             same `dispatch_line` (tokenise + `store_line`) path as a typed line, so
@@ -320,11 +343,11 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
             to the VG-8020 crunch (`basic_probe_crunch.py` case `files`); listing
             **byte-identical to the real CF-3300** at WIDTH 29 and correct at native
             width (`disk_probe_files.py` / `diskbasic_probe_files.py`); LIST detok +
-            16 host unit-test files still pass. Divergence: optional `<filespec>`
+            the host unit-test suite still pass. Divergence: optional `<filespec>`
             pattern parsed-past + ignored (full-dir listing only). See
             basic/PROVENANCE.md §FILES.
-- [ ] **File-position / info functions [in]** — `EOF`✅, `LOF`✅, `DSKF`✅, `LOC`(deferred),
-      `VARPTR(#n)`.
+- [x] **File-position / info functions [in]** — `EOF`✅, `LOF`✅, `DSKF`✅ — **DONE**.
+      `LOC`(deferred, unclear semantics), `VARPTR(#n)`(deferred) below.
       - [x] **`EOF(#n)` + `LOF(#n)`** — DONE (basic/expr.asm `ev_f_ff`). $FF-prefixed
             function tokens ($FF$AB / $FF$AD), oracle-locked; `PRINT LOF(1);EOF(1)`
             after OPEN = `26 0` byte-for-byte vs the real CF-3300, and EOF→-1 once
@@ -355,10 +378,11 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
          above; the VG-8020 is diskless so can't exercise it functionally.
       Low-value + low-use; revisit once Phase-3 strings exist. (Was assumed a thin
       DSKIO wrapper; the oracle proved otherwise — 2026-06-22.)
-- [ ] **Random-access files [in → sub-phase 2c]** — `FIELD`, `GET`, `PUT`, `LSET`,
-      `RSET` + conversion fns `CVI`✅/`CVS`/`CVD`, `MKI$`✅/`MKS$`/`MKD$`. A heavier,
-      self-contained record-file feature; built + oracle-validated as its **own
-      sub-phase (2c)** after the sequential/management surface lands.
+- [x] **Random-access files [in → sub-phase 2c]** — `FIELD`✅, `GET`✅, `PUT`✅, `LSET`✅,
+      `RSET`✅ + conversion fns `CVI`✅/`MKI$`✅ — **DONE** (sub-phase 2c complete). A
+      heavier, self-contained record-file feature; built + oracle-validated as its
+      **own sub-phase (2c)**. The float-conversion siblings `CVS`/`CVD`/`MKS$`/`MKD$`
+      await Phase-3 floats — deferred.
       - [x] **`MKI$(n)` + `CVI(s$)`** — DONE (basic/strvar.asm + basic/expr.asm). The
             integer conversion pair: MKI$ packs a 16-bit int into a 2-byte LE string
             ($FF$AE, string result, in str_eval); CVI is the inverse ($FF$A8, numeric
