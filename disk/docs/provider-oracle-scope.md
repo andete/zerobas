@@ -323,3 +323,36 @@ only page RAM in + set vectors). The trace shows `$0005 = 0` at step-7 *entry*, 
 boot code sets `$0005` itself or it reads sectors directly. Resolve by building the minimal
 env + wiring `$0005 → bdos_entry` and observing whether `MSXDOS.SYS` lands at `$0100` — do
 **not** trace into the boot-sector code to find out (it is Microsoft MSX-DOS code).
+
+## 8.2 Prerequisite (1) VALIDATED — RAM-into-page-0 paging works
+
+The hang-prone sub-step is **proven** (2026-06-22, black-box). The Tier-1 machine's slot map
+(from its config): page 0 = slot 0 (BIOS/BASIC ROM); **slot 3 is expanded** with **3-0 =
+64 KB Main RAM** and **3-1 = our disk ROM** (pages 1-2); page 3 (stack + `$FFFF`) = slot 3-0.
+So "RAM in page 0" = map page 0 → **slot 3-0**, an *expanded* slot, so both `$A8` (primary)
+and `$FFFF` (secondary) must move — while leaving page 1 (our running code) and page 3 (the
+stack and the `$FFFF` register itself) untouched. BIOS `ENASLT` can't do it (it lives in
+page 0, which vanishes mid-switch), so we drive the slot ports directly from our page-1 code:
+
+```
+        ; --- map RAM (slot 3-0) into page 0; runs from page 1 ----------------
+        in   a,($A8)      ; primary slot config
+        ld   (saved_a8),a
+        ld   a,($FFFF)    ; slot-3 secondary reg (reads inverted)...
+        cpl               ; ...so complement to get the live value
+        ld   (saved_sec),a
+        in   a,($A8) : or  $03 : out ($A8),a     ; page-0 primary bits -> slot 3
+        ld   a,(saved_sec) : and $FC : ld ($FFFF),a   ; page-0 subslot bits -> 0 (RAM)
+        ; ... page 0 is now RAM ...
+        ; restore: ld a,(saved_sec)/ld ($FFFF),a ; ld a,(saved_a8)/out ($A8),a
+```
+
+Key correctness points, all confirmed by an injected page-3 stub run on the live machine
+(markers read back): writing `$A5` to `$0000` after the switch reads back **`$A5`** (RAM is
+live in page 0); after restore `$0000` reads **`$F3`** (the BIOS `DI` opcode — ROM is back).
+The captured `$A8 = $F0` and slot-3 secondary `= $00` (during BASIC) match the map exactly.
+The routine **reads the current config and only rewrites the page-0 bits**, so it adapts to
+the boot context too (during INIT our ROM is in page 1, i.e. slot-3 secondary has bits 2-3 =
+1 — preserved by the `and $FC`). Must run with **interrupts disabled** (`di`): while page 0
+is RAM the `$0038` vector is not yet the BIOS handler. This is the proven foundation for
+a2 step (2); the remaining work is laying the page-0 environment on top + the two-phase call.

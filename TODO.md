@@ -472,6 +472,10 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             BDOS) IS the resident BDOS — don't rebuild it. **Open Q (resolve by
             experiment, not by tracing the MS boot code):** does the boot code load
             MSXDOS.SYS via `$0005` BDOS or via direct PHYDIO sector reads?
+            **(1) is VALIDATED** (§8.2): the RAM-into-page-0 slot dance works on the live
+            Tier-1 machine (`$A8` page-0→slot 3 + `$FFFF` page-0 subslot→0, run from
+            page 1, `di`; wrote/read `$A5` at `$0000`, ROM `$F3` restored after). The
+            scary part is de-risked; (2)+(3) remain.
       - [ ] **a3 — step 7 + validate.** `CALL $C01E` CY-set; oracle: Tier-1 reaches
             `MSX-DOS version 1.03 … A>` screen-identical to the stock CF-3300.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
