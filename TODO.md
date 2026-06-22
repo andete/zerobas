@@ -375,9 +375,21 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
             Divergences: record 1..255, bare GET/PUT default to record 1, no LEN=.
             See PROVENANCE §GET/PUT. **→ sub-phase 2c (random-access) COMPLETE** (the
             float-conversion siblings MKS$/MKD$/CVS/CVD still await Phase-3 floats).
-- [ ] **`CALL FORMAT` [in]** — disk format via the STATEMENT-expansion seam
-      (`CHOICE $4019` / `DSKFMT $401C`); pin the seam in **Step 0b** first, then
-      implement over zerobas-disk's existing `CHOICE`/`DSKFMT` entries.
+- [x] **`CALL FORMAT`** — DONE (basic/format.asm). Writes a fresh empty 720 KB
+      FAT12 filesystem on drive A, no prompts (zerobas-disk has one geometry, so its
+      CHOICE offers nothing to ask). zerobas-BASIC lays the boot sector (BPB) + 2 FAT
+      copies + empty root dir down ITSELF via the standard $4010 write_sector — not via
+      zerobas-disk's DSKFMT stub (the Phase-1.5 "BASIC owns the filesystem" model).
+      Geometry is parameterized (a GEOM_720K descriptor table) so 360 KB (CF-3300
+      media $FD/720-sec/2-sec-per-FAT) is a clean later add + the CHOICE prompt. CALL
+      token $CA; the device name after CALL/`_` is kept verbatim (a new tokeniser
+      exception — oracle: `call format` keeps "FORMAT", not FOR+MAT). Structural BPB +
+      FAT byte-identical to a CF-3300 "2 sides, double track" format, and a file
+      round-trips on the fresh disk (disk_probe_format.py). Boot-code region + OEM are
+      zerobas' own (documented divergence — won't copy ROM code; CF-3300 writes no
+      $55AA either). See PROVENANCE §CALL FORMAT.
+      - [ ] 360 KB + the CHOICE geometry menu (add a GEOM_360K descriptor + the
+            interactive "1 side / 2 sides" prompt; do_format is already geometry-driven).
 - `CALL SYSTEM` **[out]** — exit to MSX-DOS = the DOS-boot path (Tier-2 sub-track).
 - `CALL CHDRV` etc. **[out]** — Disk BASIC v2/v3 additions, beyond DOS1-class 1.0.
 

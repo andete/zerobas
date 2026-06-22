@@ -335,6 +335,11 @@ STEP_TOKEN      equ     $DC
 ; `a$=using` -> ... EF E4). The format string is kept verbatim ASCII in its quotes.
 ; Handled in basic/printusing.asm (reached from ex_print on the USING token).
 USING_TOKEN     equ     $E4     ; USING (PRINT USING "fmt"; values)
+; CALL — extended-statement dispatch (CALL <name> or the '_' abbreviation). CALL is a
+; reserved word ($CA; oracle-locked: `call format` -> CA 20 46 4F 52 4D 41 54, the
+; name kept verbatim ASCII; `_format` -> 5F 46 ... i.e. '_' is a literal, not a token).
+; zerobas handles only CALL FORMAT (basic/format.asm); other names error.
+CALL_TOKEN      equ     $CA     ; CALL <name>  (extended statement)
 NEXT_TOKEN      equ     $83
 DATA_TOKEN      equ     $84
 READ_TOKEN      equ     $87
@@ -632,6 +637,10 @@ PU_W            equ     $EEF8   ; current field width (1)
 PU_TYPE         equ     $EEF9   ; field type: 0 num #, 1 str &, 2 str !, 3 str \..\ (1)
 PU_FLAGS        equ     $EEFA   ; bit0 = trailing separator (suppress NL); bit1 = wrapped (1)
 PU_WP           equ     $EEFB   ; pu_fmt_int scratch write pointer (2)
+; CALL FORMAT loop counter — the current sector being written. write_sector's CALSLT
+; clobbers every register, so the format loop keeps its position here in RAM. One byte
+; ($EEFD) in the gap below FLD_DESC. See basic/format.asm.
+FMT_SEC         equ     $EEFD   ; CALL FORMAT: current sector index being written (1)
 FLD_DESC        equ     $EF00   ; transient fielded-read descriptor [len][bytes:255]
 ; Control stacks (page $E0, below LINEBUF at $E100). Both grow upward; the
 ; pointer addresses the next free slot, and the stack is empty when it equals

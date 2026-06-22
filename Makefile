@@ -29,7 +29,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/vars.asm basic/strvar.asm basic/expr.asm basic/poke.asm basic/vdpio.asm \
          basic/clear.asm basic/usr.asm basic/print.asm basic/screen.asm basic/list.asm \
          basic/fat.asm basic/bload.asm basic/cload.asm basic/save.asm basic/files.asm \
-         basic/field.asm basic/printusing.asm basic/program.asm basic/sysvars.inc
+         basic/field.asm basic/format.asm basic/printusing.asm basic/program.asm basic/sysvars.inc
 ROM   := $(BUILD)/basic.rom
 
 # zerobas-disk: a standalone 16 KB disk-interface ROM (not an IPS patch). Lives

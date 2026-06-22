@@ -80,6 +80,9 @@ tk_nondigit:
                 jp      z,tk_rem_rest
                 cp      DATA_TOKEN          ; DATA body is stored verbatim (to ':')
                 jp      z,tk_data_rest
+                cp      CALL_TOKEN          ; CALL <name>: the device name is verbatim
+                jp      z,tk_call_name      ; (oracle: `call format` keeps "FORMAT", not
+                                            ;  FOR+MAT — the extended name is not crunched)
                 call    branch_lineno       ; GOTO/GOSUB/THEN/… <n> -> $0E,<n LE>
                 jp      tk_loop
 tk_notkw:
@@ -102,6 +105,8 @@ tk_notkw:
                 jp      z,tk_op_idiv
                 cp      '?'                 ; '?' abbreviates PRINT
                 jp      z,tk_print_q
+                cp      '_'                 ; '_' abbreviates CALL: the name is verbatim
+                jp      z,tk_underscore
                 call    is_letter           ; a letter starts / continues a name
                 jr      c,tk_copy_up
 tk_copy:
@@ -163,6 +168,29 @@ tk_data_rest:                               ; DATA body verbatim up to ':' or EO
                 inc     de
                 inc     hl
                 jr      tk_data_rest
+tk_underscore:                              ; '_' (CALL abbreviation): copy it, then the
+                ld      a,(hl)              ; device name verbatim (no keyword crunch).
+                ld      (de),a
+                inc     de
+                inc     hl
+                ; fall through into tk_call_name
+tk_call_name:                               ; copy any spaces, then the device name —
+                ld      a,(hl)              ; identifier chars upcased + verbatim, NOT
+                cp      ' '                 ; keyword-crunched — then resume tokenising.
+                jr      nz,tcn_name
+                ld      (de),a              ; keep the space (oracle: `call format` ->
+                inc     de                  ;  CA 20 46 4F 52 4D 41 54)
+                inc     hl
+                jr      tk_call_name
+tcn_name:
+                ld      a,(hl)
+                call    is_ident_cont       ; letter / digit continues the name
+                jp      nc,tk_loop          ; name ended -> normal tokenising for the rest
+                call    upcase
+                ld      (de),a
+                inc     de
+                inc     hl
+                jr      tcn_name
 tk_end:
                 xor     a
                 ld      (de),a              ; 0x00 terminator
@@ -601,6 +629,7 @@ kwtable:
                 db      4,"CONT",1,CONT_TOKEN
                 db      5,"PRINT",1,PRINT_TOKEN
                 db      5,"USING",1,USING_TOKEN
+                db      4,"CALL",1,CALL_TOKEN
                 db      3,"LET",1,LET_TOKEN
                 ; Phase 1: CLEAR [<strings>][,<himem>] (MSX2 TH Table 2.20).
                 db      5,"CLEAR",1,CLEAR_TOKEN
@@ -714,6 +743,10 @@ exec_stmt:
                 jp      z,ex_get
                 cp      PUT_TOKEN           ; PUT [#]f[,rec]  (write a record)
                 jp      z,ex_put
+                cp      CALL_TOKEN          ; CALL <name>  (only CALL FORMAT)
+                jp      z,ex_call
+                cp      '_'                 ; _<name>  (CALL abbreviation)
+                jp      z,ex_call_us
                 cp      CSAVE_TOKEN
                 jp      z,ex_csave
                 cp      POKE_TOKEN

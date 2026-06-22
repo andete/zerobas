@@ -2390,3 +2390,51 @@ formatted lines to U.DAT and CLOSEs; the FAT12 image is read back and must equal
 Ctrl-Z soft-EOF). Because PRINT# writes to disk and only the CF-3300 is a disk oracle,
 the differential uses the `#`/`!` subset both ROMs share; zerobas and the real National
 CF-3300 produce the byte-identical file. test720.dsk is never mutated (/tmp copy).
+
+## CALL FORMAT — initialise a blank FAT12 filesystem (basic/format.asm, basic/interp.asm, basic/sysvars.inc)
+
+`CALL FORMAT` (or the `_FORMAT` abbreviation) writes a fresh empty 720 KB FAT12
+filesystem onto drive A. A real MSX CALL FORMAT is interactive (a "Drive name? (A,B)"
+prompt, then the disk ROM's CHOICE geometry menu — on the National CF-3300: `1 side` /
+`2 sides` / `±double track`, 360 KB..720 KB, then a confirm keystroke). zerobas-disk
+exposes a SINGLE geometry (720 KB) and its CHOICE entry returns "no choices", so the
+zerobas form has nothing to ask: it formats drive A as 720 KB with no prompts — the
+deliberately minimal, non-interactive form.
+
+**How (BASIC owns the filesystem).** zerobas-BASIC already drives the standard $4010
+DSKIO read+write and owns FAT12, so `do_format` lays the structures down itself via
+`write_sector` (basic/fat.asm) — no dependence on zerobas-disk's DSKFMT (a stub). It
+clears the FAT + root-directory region, stamps each FAT copy's head (`[media][$FF][$FF]`),
+and writes the boot sector (BPB) last. This is the Phase-1.5 "BASIC owns the
+filesystem" model applied to formatting.
+
+**Geometry is parameterised.** All geometry lives in a descriptor table (`GEOM_720K`:
+firstFAT, numFATs, secPerFAT, lastSys, media, + a 32-byte boot template); `do_format`
+reads its fields with no hardcoded constants. Adding the CF-3300's 360 KB variant
+(media $FD, 720 sectors, 2 sec/FAT) later is a sibling descriptor + wiring the CHOICE
+prompt back in — `do_format` itself does not change. (zerobas already READS any
+geometry by parsing the on-disk BPB at mount, so 360 KB disks already load; only
+*formatting* one is the deferred part.)
+
+**Tokeniser exception (oracle-driven).** The extended-statement NAME after `CALL`
+(or the `_` abbreviation) is kept VERBATIM, not keyword-crunched: the VG-8020 crunches
+`call format` to `CA 20 "FORMAT"` and `_format` to `5F "FORMAT"` — NOT `FOR`($82)+`MAT`.
+Outside CALL the reference still crunches greedily inside names (`format=5` → `82 "MAT"
+="5`, `total=5` → `D9 "TAL"…`), and zerobas matches both: `tokenise` gained a
+CALL/`_`-scoped verbatim-name path (the same class of exception as REM/DATA bodies).
+All four cases are byte-identical (basic_probe_crunch.py).
+
+**Clean-room sourcing.** CALL token $CA is oracle-locked. The BPB geometry (512 B/sec,
+2 sec/clus, 1 reserved, 2 FATs, 112 root, 1440 sectors, media $F9, 3 sec/FAT) is the
+standard 720 KB FAT12 layout (Microsoft FAT spec / MSX2 TH), confirmed field-for-field
+against a black-box CF-3300 "2 sides, double track" format. The boot-CODE region and
+OEM name ("ZEROBAS") are zerobas' OWN — the one documented divergence from a byte-
+identical CF-3300 format (whose boot code is copyrighted ROM content; note the CF-3300
+also writes no $55AA signature). No disassembly.
+
+**Oracle.** `disk-spec/tools/disk_probe_format.py` formats a junk-filled (`0xE5`) image
+and checks two things: STRUCTURAL — the BPB geometry (offsets 11..27) and FAT head are
+byte-identical to the captured CF-3300 720K format; FUNCTIONAL — a file written right
+after CALL FORMAT round-trips (`T.DAT` = `hi\r\n\x1a`), proving the BPB, FAT and dir are
+all valid. The boot-code/OEM divergence is intentional and not compared. test720.dsk is
+never touched (the probe uses a throwaway image).

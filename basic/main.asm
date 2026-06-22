@@ -111,6 +111,10 @@
 ; so it follows files.asm + strvar.asm in the include order.
                 include "basic/field.asm"
 
+; CALL FORMAT (defines `ex_call`/`ex_call_us`; writes a fresh FAT12 via fat.asm's
+; write_sector), so it follows fat.asm + files.asm in the include order.
+                include "basic/format.asm"
+
 ; Stored numbered-line program: storage, NEW, RUN (defines `dispatch_line`).
                 include "basic/program.asm"
 
