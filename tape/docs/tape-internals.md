@@ -273,8 +273,8 @@ decodes exactly, and feeding that recording back as tape media, the clean-room r
 path recovers the identical bytes — at **both 1200 and 2400 baud**, over six byte
 patterns (`00`, `FF`, walking-ones, alternating), and including a faithful two-block
 `BSAVE` file with a short header and mid-tape re-lock. It has been validated against
-**genuine analog game-tape captures** (`hero`, `br`, `HSPORT1/2`, `ROADF`) read
-byte-for-byte at 2400 baud. The known soft spot is noise: the 1-bit comparator input
+**genuine analog game-tape captures** (Hero, Beam Rider, Hyper Sports, Road Fighter)
+read byte-for-byte at 2400 baud. The known soft spot is noise: the 1-bit comparator input
 chatters at zero-crossings (sensitive at ~0.05 full scale).
 
 The regression net that guards all of this lives upstream as three tiers

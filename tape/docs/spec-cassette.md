@@ -192,7 +192,7 @@ captures (a local tape directory, 2400-baud game tapes; catalogued by
 - ✅ The BIOS read path reads **both blocks of a real capture exactly** at 2400
   baud from real analog audio — header (`EA`×10 + `"hero  "`) *and* the data block
   (`"10 COLOR15…"`), with `TAPION` re-locking mid-tape. Verified byte-for-byte
-  against the host decoder on `hero`, `br`, `HSPORT1`/`2` and `ROADF`.
+  against the host decoder on Hero, Beam Rider, Hyper Sports and Road Fighter.
 - ✅ **Resolved — mid-tape re-lock.** The second block originally returned garbage
   (the synthetic two-block file round-tripped fine, so it was a real-audio-only
   bug): the motor restart between blocks produces a spin-up transient — a flat

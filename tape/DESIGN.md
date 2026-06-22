@@ -128,7 +128,7 @@ mid-tape `TAPION` re-lock. The write baud is **read from the live work area**, n
 private flag: `TAPOON` inspects the active signal-length word (`$F406`, which the
 system's `SCREEN ,,,baud` sets) and honours whatever baud was chosen, defaulting to
 1200 for a blank/unrecognised table (see `PROVENANCE.md`). Validated byte-for-byte
-against genuine analog 2400-baud captures (`hero`/`br`/`HSPORT1`/`HSPORT2`/`ROADF`).
+against genuine analog 2400-baud captures (Hero, Beam Rider, Hyper Sports, Road Fighter).
 Remaining: an independent host `.cas` codec cross-check and a wider
 degradation-tolerance envelope.
 

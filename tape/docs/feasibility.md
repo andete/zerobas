@@ -120,7 +120,7 @@ read path is robust:
 1. **Real WAV tape captures — done; found a real bug.** `TAPION`/`TAPIN` now read
    genuine analog captures (a local tape directory) byte-for-byte at 2400 baud,
    **both blocks** of a file (header + data), verified against the host decoder on
-   `hero`/`br`/`HSPORT1`/`HSPORT2`/`ROADF`. Getting there exposed exactly the class
+   Hero, Beam Rider, Hyper Sports, Road Fighter. Getting there exposed exactly the class
    of bug synthetic signals cannot: the mid-tape **motor-restart spin-up** (flat
    patch + stray very-long half + chatter) broke `TAPION`'s re-lock on the second
    block. Fixed by skipping the transient and waiting out flat patches while

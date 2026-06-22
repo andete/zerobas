@@ -58,24 +58,25 @@ directory (16-bit mono, mostly 43200 Hz — real capture-hardware
 rate). `cas_identify.py` decodes them cleanly; all are **2400-baud** game tapes,
 each an ASCII BASIC loader followed by a binary block:
 
-| WAV | ASCII loader | binary | load / exec |
-|-----|--------------|--------|-------------|
-| `hero.wav` | `hero` | `hero` | `0x8000` / `0xC351` |
-| `br.wav` | `bride` | `beamr` (Beam Rider) | `0x8000` / `0xC101` |
-| `HSPORT1.WAV` | `load1` | `hyper1` (Hyper Sports) | `0x8800` / `0xC800` |
-| `ROADF.WAV` | `load1` | `roadf` (Road Fighter) | `0x8800` / `0xC802` |
+| Game (`.wav`) | ASCII loader | binary | load / exec |
+|---------------|--------------|--------|-------------|
+| Hero | `hero` | `hero` | `0x8000` / `0xC351` |
+| Beam Rider | `bride` | `beamr` | `0x8000` / `0xC101` |
+| Hyper Sports | `load1` | `hyper1` | `0x8800` / `0xC800` |
+| Road Fighter | `load1` | `roadf` | `0x8800` / `0xC802` |
 
 ### Full-corpus scan (what surfaced)
 
 Running `cas_identify.py` across the whole local tape tree
-(including `wav-manuel/`) turned up useful structure and three real tool limits:
+(including manually-captured analog recordings) turned up useful structure and
+three real tool limits:
 
-- **Multi-block tapes decode end to end.** `BACKFUT` and `HSPORT3` carry two
-  binary blocks; `HEOHE` carries seven named blocks (`head0`…`head6`, including a
-  doubled `head2` header). The continuous host decoder walks them all.
+- **Multi-block tapes decode end to end.** Some captures carry two binary blocks;
+  one carries seven named blocks (`head0`…`head6`, including a doubled `head2`
+  header). The continuous host decoder walks them all.
 - **Baud/threshold auto-detection is not robust to outliers.** Several captures
-  (`Elevator Action`, `VAMPIRE`, `Zanac`, `soko-side-*`, `GP`, `buck1`,
-  `Way Of The Tiger`) report nonsense FSK frequencies (382 Hz … 13.5 kHz) and find
+  (Elevator Action, Zanac, Way of the Tiger, and others) report nonsense FSK
+  frequencies (382 Hz … 13.5 kHz) and find
   no markers. Cause: `cas_decode.auto_threshold` splits on `(min+max)/2`, so one
   silence-gap or dropout outlier collapses the short/long split for the whole
   file. A per-region or percentile threshold would fix it — these are exactly the
@@ -83,7 +84,7 @@ Running `cas_identify.py` across the whole local tape tree
 - **Binary load/exec extraction is fragile.** `cas_identify` reads
   start/end/exec from the 6 bytes right after the filename, but on tape the data
   block follows the header across an inter-block leader; when that leader decodes
-  to filler bytes (`BIT2MULTITIMBRAL` shows `0xFFFF`-ish addresses) the field
+  to filler bytes (one capture shows `0xFFFF`-ish addresses) the field
   lands in the gap. The *names* are still correct; only the addresses need the
   decoder to locate the data block, not assume adjacency.
 
@@ -91,13 +92,13 @@ These are catalogued as known limits, not yet fixed — surfacing them was the
 point of the scan.
 
 **What real audio proved for the zerobas-tape read path:**
-- The host decoder reads every capture perfectly (full HERO tape = ASCII BASIC
+- The host decoder reads every capture perfectly (full Hero tape = ASCII BASIC
   loader + binary machine code, exact bytes).
 - The BIOS reader (`TAPION`+`TAPIN`) reads **both blocks** of a real capture
   exactly at **2400 baud from genuine analog audio** — header (`EA`×10 + `"hero  "`)
   *and* the data block (`"10 COLOR15…"`), with `TAPION` re-locking mid-tape. Verified
-  byte-for-byte against the host decoder on `hero`, `br` (`bride`), `HSPORT1`/`2`
-  (`load1`) and `ROADF`.
+  byte-for-byte against the host decoder on Hero, Beam Rider, Hyper Sports and
+  Road Fighter.
 - **Resolved (was open): mid-tape re-lock.** The second block originally returned
   garbage because the motor restart between blocks injects a spin-up transient (a
   flat patch + a stray ~100-count half + zero-crossing chatter) that a fixed
