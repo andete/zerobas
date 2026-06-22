@@ -1793,3 +1793,38 @@ screen PRINT (PROVENANCE.md §PRINT) applies equally to PRINT#; write errors
 
 Clean-room: original code; semantics from the public MSX-BASIC reference + the
 black-box CF-3300 trace; the write engine reuses fat.asm. No disassembly.
+
+## KILL — delete a file (basic/files.asm, basic/fat.asm, basic/interp.asm, basic/sysvars.inc)
+
+The first file-management verb after FILES. `KILL "name"` deletes a file by freeing
+its FAT cluster chain and marking its directory entry deleted — EXTEND over fat.asm.
+
+**Engine (`fat_delete`, basic/fat.asm).** Mounts, then `fat_find` locates the 8.3
+name — `fat_find` now also records the entry's location (`FWR_DIRSEC` / `FWR_DIROFF`,
+write-side scratch the read path ignores). It then walks the cluster chain from
+`FAT_FIRSTCLUS`: for each data cluster (2 ≤ c < $FF8) it reads the *next* link
+(`fat_next_cluster`) and frees the current entry to 0 in **every FAT copy**
+(`fat_write_fat_entry`); at the end-of-chain it re-reads the directory sector,
+writes `$E5` over the entry's first byte (the Microsoft FAT deleted-entry marker),
+and writes the sector back.
+
+**Statement (`do_kill`, basic/files.asm).** Parses the quoted filename with the
+shared `parse_disk_fcb` (same `A:`/`B:` prefix + 8.3 handling as the loader verbs),
+guards HL across the CALSLT-heavy `fat_delete`, and continues. Token `KILL = $D4`
+oracle-LOCKED byte-identical to the Philips VG-8020 crunch (`basic_probe_crunch.py`;
+MSX2 TH Table 2.20); added to `kwtable` + dispatch, detok table-driven.
+
+**Validation** (`disk_probe_kill.py`, /tmp copy of `test720.dsk` — committed image
+never mounted): `KILL "HI.TXT"` leaves the entry no longer found, its directory
+byte = `$E5`, and its FAT cluster (4) freed to 0; and the resulting **disk image is
+byte-identical to the real CF-3300 Disk BASIC** after the same KILL (KILL touches
+only the dir entry's first byte + the FAT chain, so the images must match exactly —
+they do). Full crunch + 16 unit-test files + the FILES/read/write probes still pass.
+
+**Divergences (own design, quarantined):** single file only — no wildcard
+`KILL "*.BAK"` (a later item); a missing file / I-O error reuses the loader's
+`load_error` ("load error") path, not a Disk-BASIC "File not found" message.
+
+Clean-room: original code; KILL semantics + the `$E5` deleted-marker / chain-free
+rules from the public MSX-BASIC reference + Microsoft FAT spec, validated by the
+byte-identical CF-3300 differential. No disassembly.

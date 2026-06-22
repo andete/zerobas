@@ -416,3 +416,29 @@ init_filechan:
                 ld      (FCH_MODE),a
                 ld      (PRDEST),a
                 ret
+
+; --- KILL "name" — delete a file -------------------------------------------
+; Frees the file's FAT cluster chain and marks its directory entry deleted, via
+; the fat.asm `fat_delete` engine routine. Accepts the same "A:"/"B:" drive prefix
+; + 8.3 name as the loader verbs (parse_disk_fcb). Errors (no disk / not found /
+; I-O) reuse the loader's load_error path. Divergence: no wildcard `KILL "*.BAK"`
+; (single file only) — a later item. See basic/PROVENANCE.md §KILL.
+ex_kill:
+                inc     hl                  ; HL -> bytes after the KILL token
+                jp      do_kill
+do_kill:
+                call    skip_spaces
+                ld      a,(hl)
+                cp      '"'
+                jp      nz,stmt_error       ; filename string required
+                inc     hl                  ; HL -> first filename char
+                call    parse_disk_fcb      ; build DISK_FCB_NAME; HL -> closing '"'
+                inc     hl                  ; past the closing '"'
+                ld      a,(DISKSLOT_OK)
+                or      a
+                jp      z,load_error
+                push    hl                  ; guard text cursor across CALSLT
+                call    fat_delete          ; free chain + mark dir entry deleted
+                pop     hl
+                jp      c,load_error        ; not found / I-O error
+                jp      exec_stmt

@@ -118,6 +118,9 @@ CLOSE_TOKEN     equ     $B4     ; CLOSE [#n]                            (stateme
 ; access GET/PUT) is sub-phase 2c; for now the token exists so `FOR OUTPUT`
 ; tokenises byte-identically and bare PUT errors (no dispatch). $B3, MSX2 TH 2.20.
 PUT_TOKEN       equ     $B3     ; PUT (only consumed as the 2nd half of OUTPUT here)
+; File/directory management (Phase 2). Tokens oracle-locked to the VG-8020 crunch
+; (KILL=$D4; MSX2 TH Table 2.20). The handler lives in basic/files.asm.
+KILL_TOKEN      equ     $D4     ; KILL "name" — delete a file (statement)
 REM_TOKEN       equ     $8F     ; spec-tokens-statements.md; swallows rest of line
 POKE_TOKEN      equ     $98     ; spec-tokens-statements.md
 ; PEEK is a *function* token: a $FF prefix followed by a second byte.
