@@ -241,8 +241,17 @@ Full DOS1-class Disk BASIC vocabulary, grouped; **[in]** = recommended Phase-2,
 first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
 - [ ] **Sequential file I/O [in]** — `OPEN`, `CLOSE`, `PRINT#`, `PRINT# USING`,
       `INPUT#`, `LINE INPUT#`, `INPUT$(n,#f)`. The spike-confirmed core.
-- [ ] **File/dir management [in]** — `FILES`, `LFILES`, `KILL`, `NAME…AS…`, `MERGE`
+- [ ] **File/dir management [in]** — `FILES`✅, `LFILES`, `KILL`, `NAME…AS…`, `MERGE`
       (the `LOAD`/`SAVE`/`BLOAD`/`BSAVE`/`RUN"f"` already exist from Phase 1).
+      - [x] **`FILES`** — DONE (basic/files.asm). Lists the root directory by
+            EXTEND over the fat.asm engine (`fat_mount` + directory walk + 8.3 field
+            render); width-driven wrap via `CSRX`/`LINLEN`. Token `$B7` oracle-locked
+            to the VG-8020 crunch (`basic_probe_crunch.py` case `files`); listing
+            **byte-identical to the real CF-3300** at WIDTH 29 and correct at native
+            width (`disk_probe_files.py` / `diskbasic_probe_files.py`); LIST detok +
+            16 host unit-test files still pass. Divergence: optional `<filespec>`
+            pattern parsed-past + ignored (full-dir listing only). See
+            basic/PROVENANCE.md §FILES.
 - [ ] **File-position / info functions [in]** — `EOF`, `LOF`, `LOC`, `DSKF` (free
       clusters), `VARPTR(#n)`.
 - [ ] **Config [in]** — `MAXFILES` (sizes the channel table).

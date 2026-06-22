@@ -97,6 +97,11 @@
 ; `parse_disk_fcb` and the fat.asm engine and expr.asm's `eval`, so it follows them.
                 include "basic/save.asm"
 
+; Disk BASIC file-channel verbs (Phase 2): FILES (defines `do_files`). Reuses the
+; fat.asm engine (`fat_mount` / `read_sector`) + bload.asm's `load_error`, so it
+; follows them in the include order.
+                include "basic/files.asm"
+
 ; Stored numbered-line program: storage, NEW, RUN (defines `dispatch_line`).
                 include "basic/program.asm"
 

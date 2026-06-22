@@ -101,6 +101,10 @@ LOAD_TOKEN      equ     $B5     ; LOAD "CAS:filename" (unified tape load)
 ; byte; they are kept as SEPARATELY NAMED constants on purpose (no collision).
 SAVE_TOKEN      equ     $BA     ; SAVE "device:name"[,A]   (statement)
 BSAVE_TOKEN     equ     $D0     ; BSAVE "device:name",start,end[,exec] (statement)
+; Disk BASIC file-channel verbs (Phase 2). FILES token oracle-locked to the real
+; National CF-3300 Disk BASIC crunch (MSX2 TH Table 2.20; confirmed byte-identical
+; by basic_probe_crunch_disk.py). The handler lives in basic/files.asm.
+FILES_TOKEN     equ     $B7     ; FILES ["filespec"] — list the directory (statement)
 REM_TOKEN       equ     $8F     ; spec-tokens-statements.md; swallows rest of line
 POKE_TOKEN      equ     $98     ; spec-tokens-statements.md
 ; PEEK is a *function* token: a $FF prefix followed by a second byte.
@@ -348,6 +352,11 @@ TSV_PTR         equ     $E0F1   ; tape save: current source-byte pointer (2)
 TSV_END         equ     $E0F3   ; tape save: last source-byte address, inclusive (2)
 TSV_CNT         equ     $E0F5   ; tape save: loop counter (1)
 TSV_NAME        equ     $E0F6   ; tape save: 6-char filename buffer (space-padded)
+; Disk BASIC FILES scratch (page $E0; dead outside a FILES listing). One byte in
+; the $E0FC.. gap below LINEBUF ($E100). The dir-walk position lives in the
+; fat.asm FAT_DIRSEC/FAT_DIRREM scratch; only the per-sector entry index needs a
+; home that survives the CHPUT register clobber.
+FILES_ENTIDX    equ     $E0FC   ; FILES: dir entry index 0..15 within a sector (1)
 ; Disk BSAVE on-disk binary-file header (MSX-BASIC file formats — MSX Wiki /
 ; MSX Resource Center, an allowed public language reference). 7 bytes, then raw
 ; data: [$FE][start:2 LE][end:2 LE][exec:2 LE]. This is the DISK format and is

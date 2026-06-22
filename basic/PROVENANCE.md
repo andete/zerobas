@@ -1610,3 +1610,64 @@ reference Philips VG-8020 `CLOAD`s zerobas's recorded `.cas` to the correct imag
 **self round-trip**: `CSAVE`→`CLOAD` and `BSAVE"CAS:"`→`BLOAD"CAS:"` byte-identical
 (using the just-fixed read path). Crunch stays byte-identical and the five basic
 regression probes ALL PASS.
+
+## FILES — Disk BASIC directory listing (basic/files.asm, basic/interp.asm, basic/sysvars.inc)
+
+Phase 2's first Disk BASIC file-channel verb, built by **EXTEND** over the existing
+loader-side FAT12 engine (`§disk DSKIO host engine`): the file verbs move bytes
+through the SAME standard `DSKIO ($4010)` + FAT12 substrate as the loader, so they
+are layered on `basic/fat.asm`, not delegated to the in-slot Disk BASIC
+(file-channel-protocol.md §0/§4/§5, the Step-0 spike result).
+
+**Statement.** `FILES` lists the root directory. `do_files` (basic/files.asm)
+mounts the volume (`fat_mount`), walks the root-directory sectors with
+`read_sector` + the on-disk 32-byte directory-entry layout (Microsoft FAT spec,
+same layout `fat_find` already matches): a `$00` first byte ends the scan, `$E5`
+marks a deleted entry, attribute bit `$10` (sub-directory) / `$08` (volume label)
+are skipped. Each surviving entry is rendered as the **8.3 name field** — 8 name
+bytes (raw on-disk, already upper-case + space-padded) + `'.'` + 3 extension bytes
+= a fixed 12-char field — printed via `CHPUT ($00A2)`.
+
+**Token.** `FILES = $B7`, oracle-LOCKED byte-identical to the reference **Philips
+VG-8020** (`basic_probe_crunch.py`, case `files` → `… 3A B7 00`) — the
+disk-extension keyword is in the MAIN ROM's reserved-word table even on the
+diskless reference — cross-checked against MSX2 TH Table 2.20. Added to `kwtable`
+(tokenise) and rendered by the existing table-driven `detok_kw` (LIST round-trip
+confirmed: `10 FILES` lists back as `10 FILES`).
+
+**Wrap.** Entries are single-space separated and wrapped to as many 12-char fields
+as fit the active text width, driven by the live cursor column (`CSRX $F3DD`)
+against the active width (`LINLEN $F3B0`) — the faithful MSX algorithm. Validated
+two ways against the real **National CF-3300** Disk BASIC v1.0
+(`disk_probe_files.py`, /tmp copy of `test720.dsk` = TEST.BIN, HI.TXT, PROG.BIN,
+PROG.BAS, PROG2.BAS): (1) at zerobas's native width the five 8.3 fields appear in
+directory order in the exact field format; (2) at `WIDTH 29` (the CF-3300 width)
+the listing is **byte-identical** to the CF-3300 reference's three logical lines
+(`diskbasic_probe_files.py`):
+
+```
+TEST    .BIN HI      .TXT
+PROG    .BIN PROG    .BAS
+PROG2   .BAS
+```
+
+**Scratch.** Only `FILES_ENTIDX` ($E0FC, 1 byte, dead outside a FILES listing) is
+needed beyond the fat.asm scratch — the dir-walk position lives in
+`FAT_DIRSEC`/`FAT_DIRREM`, and the per-entry pointer is re-derived from
+`FILES_ENTIDX` after each `CHPUT` (which clobbers every register). Placed in the
+free `$E0FC..` gap below `LINEBUF ($E100)`, collision-checked.
+
+**Divergences (own design, quarantined):**
+- An optional `<filespec>` pattern argument is **parsed-past and IGNORED** — `FILES`
+  always lists the whole directory. The argument-skip is not string-aware (a `:`
+  inside a quoted pattern would terminate early); both are acceptable because the
+  pattern is unimplemented. Pattern matching is a later Phase-2 item.
+- On a missing disk slot / mount / I-O error `FILES` reuses the loader's
+  `load_error` path ("load error"), not a Disk-BASIC-specific "Disk offline"
+  message — own-design error wording, consistent with the other disk verbs.
+- The disk-name header / "Ok" framing around the listing is the REPL's, not emitted
+  by `do_files`.
+
+Clean-room: original code; FILES *semantics* + the 8.3 field layout from the public
+MSX-BASIC language reference and black-box CF-3300 observation; the directory walk
+reuses fat.asm primitives. No disassembly. See file-channel-protocol.md.

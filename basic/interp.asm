@@ -518,6 +518,9 @@ kwtable:
                 ; table is otherwise free (match_kw is full-keyword, not prefix).
                 db      5,"BSAVE",1,BSAVE_TOKEN
                 db      4,"SAVE",1,SAVE_TOKEN
+                ; Disk BASIC: FILES (list the directory). Token oracle-locked
+                ; ($B7; MSX2 TH Table 2.20). Shares no prefix with another entry.
+                db      5,"FILES",1,FILES_TOKEN
                 ; Cassette save keyword. CSAVE token oracle-LOCKED ($9A) via
                 ; basic_probe_crunch.py against Philips VG-8020 (MSX2 TH Table
                 ; 2.20). Single-byte statement token; filename kept verbatim ASCII.
@@ -638,6 +641,8 @@ exec_stmt:
                 jp      z,ex_bsave
                 cp      SAVE_TOKEN
                 jp      z,ex_save
+                cp      FILES_TOKEN
+                jp      z,ex_files
                 cp      CSAVE_TOKEN
                 jp      z,ex_csave
                 cp      POKE_TOKEN
