@@ -397,3 +397,44 @@ the validated paging + the two-phase `$C01E` — and observing whether `MSXDOS.S
 (a clean-room signal — never read the boot-sector code). **Net:** step 6 shrank on one axis
 (no BDOS/TPA) and sharpened on another (a RAM-resident `RST 30h`/driver path); the next build
 turn implements design (1).
+
+## 8.5 First full build attempt (2026-06-22) — DOS path RUNS, two concrete gaps found
+
+Design (1) was built end-to-end in `disk.asm` (read sector 0 → step-5 CY-reset `$C01E` →
+switch RAM into page 0 → lay `$0030` CALLF shim + `$0038` int stub → step-7 CY-set `$C01E`),
+**validated, and reverted.** It is the biggest jump yet and pinned exactly what remains.
+
+**Major progress — the DOS boot path now executes.** Flow trace on the Tier-1 machine with
+the real DOS disk: step 5 `$C01E` CY=0 (A8=`$FC`); step 7 `$C01E` CY=1 with **A8=`$FF`** (RAM
+switched into page 0, env laid) — both calls reached, in order, with the right carry. The
+screen changed from **"MSX BASIC version 1.0"** (the old fall-through) to **"MSX system
+version 1.0 — Copyright 1983 by Microsoft"**, and the CPU is *running code in page-0 RAM*
+(PC samples `$2677/$0EAD/$1983`). So the boot code ran the DOS path far enough to print and
+execute — not the BASIC fall-through.
+
+**Gap A — the boot reads the disk by a vector that is NOT H.PHYD.** Breakpoint counters over
+the whole boot: **DSKIO (`$4010`) = 0, H.PHYD (`$FFA7`) = 0.** The boot code never used our
+hook, then hung in a 1-instruction loop at **`$1418`** with **A8=`$03`** (it had reshuffled
+the slots). So "design 1" (keep H.PHYD alive with a `$0030` CALLF shim) is **insufficient**:
+the MSX-DOS 1 boot code locates the sector driver some other way — most likely a **disk
+work-area routine pointer** the full step-6 installs (the stock's resident kernel: page-0
+vectors `$000C→$DDF3`, `$0038→$DDAE` seen in §8.1 point into it). Next: identify *which*
+address the boot reaches for (black-box: trace the boot's first post-step-7 disk access
+target — never read its code) and provide a resident driver entry there that routes to our
+`$4010`. The `$0030` CALLF shim itself worked structurally and is reusable.
+
+**Gap B — the paging hardcodes the RAM slot (host-specific bug).** The build used
+`in a,($A8) : or $03` / `and $FC`, i.e. it hardcodes "RAM = slot 3-0" — true on the CF-3300
+but **not portable**. Regression check: Tier-1 + a *data* disk still fell through to BASIC
+fine (slot 3 IS RAM there), but **`C-BIOS_MSX1_EU_BASIC_DISK` + a data disk hung at C-BIOS
+init** — boot_disk runs in every host's INIT, and on a host whose RAM is not slot 3-0 the
+hardcoded switch maps the wrong slot into page 0 and wedges startup. **Fix:** derive the RAM
+slot dynamically — copy page 3's primary-slot bits (`$A8` bits 6-7) into the page-0 bits, and
+page 3's subslot (`$FFFF` bits 6-7) into the page-0 subslot — i.e. "put whatever slot is in
+page 3 (always RAM) into page 0." (§8.2 *described* this; the build wrongly hardcoded it.)
+This also makes the boot bridge safe to run in every INIT — a hard prerequisite before any
+of this can be committed.
+
+**Status:** the DOS boot path is proven to run on our stack; closing it needs (A) the
+resident sector-driver vector the boot actually calls, and (B) the dynamic RAM-slot paging.
+Both are now concrete. disk.asm reverted clean; disk.rom unchanged.

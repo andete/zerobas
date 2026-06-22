@@ -483,6 +483,16 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             RAM-resident inter-slot path. **Advantage:** page 1 stays our ROM, so DSKIO
             is directly `CALL $4010`-able — next build = a tiny `$0030` CALLF shim in RAM
             page 0 + the two-phase `$C01E`, then observe whether `A>` appears.
+            **First full build done + reverted** (§8.5): the DOS boot path now RUNS
+            (both `$C01E` calls reached, RAM in page 0, code executes in page-0 RAM,
+            screen "MSX system version 1.0" not the BASIC fall-through). Two concrete
+            gaps remain: **(A)** the boot reads the disk by a vector that is NOT
+            H.PHYD/`$4010` (both BP counts = 0; hangs at `$1418`) — the `$0030` CALLF
+            shim is not enough; provide the **resident sector-driver entry** the boot
+            actually calls (find the address black-box). **(B)** the paging hardcoded
+            "RAM = slot 3-0" (`or $03`/`and $FC`) — broke the C-BIOS host; must **derive
+            the RAM slot from page 3's slot bits** (§8.2 said so; the build didn't).
+            B is a prerequisite to committing anything (the bridge runs in every INIT).
       - [ ] **a3 — step 7 + validate.** `CALL $C01E` CY-set; oracle: Tier-1 reaches
             `MSX-DOS version 1.03 … A>` screen-identical to the stock CF-3300.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
