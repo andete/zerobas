@@ -540,3 +540,62 @@ through H.PHYD → `$0030` CALLF → `$4010`) is **empirically false on this mac
 the `$0030` handler + vector set stay laid (cheap, documented-shape, harmless, and possibly used by
 a later DOS phase) but are no longer the load-bearing path. The step-6 env + paging are kept as the
 validated foundation; a3 grows the work-area driver table on top, then re-traps.
+
+## 8.8 a3 differential SIZES the gap — it is the disk ROM's full resident DOS kernel
+
+A clean-room black-box **differential** (read RAM state on both machines — never ROM/kernel code)
+settles what "the disk work area" actually entails, and it is far larger than a driver pointer.
+
+**Method.** Boot the stock `National_CF-3300` (real disk ROM) and our `National_CF-3300_ZEROBASDISK`
+(zerobas-disk), each on a /tmp copy of the same disk; dump page-3 RAM and diff. Two runs: (a) a
+DATA disk (both reach Disk BASIC — a confound-free baseline), (b) the DOS disk (the stock reaches
+`A>`). Both machines run the **same real CF-3300 main BIOS**, so every diff isolates what the
+**disk ROM** sets up that zerobas-disk does not.
+
+**Baseline result (data disk → BASIC, the decisive one).**
+| work-area cell | stock CF-3300 | Tier-1 (zerobas-disk) | who sets it |
+|---|---|---|---|
+| `EXPTBL $FCC1-4` | `00 00 00 80` | `00 00 00 80` | **base BIOS** (identical) |
+| `RAMAD0-3 $F341-4` (RAM slot per page) | `83 00 83 83` | **`FF FF FF FF`** | **disk ROM** (absent in ours) |
+| `$F348..$F357` (disk work area / DRVTBL) | `87 93 DF 00 00 95 EF 95 ED 95 EB …` | **all `FF`** | **disk ROM** (absent in ours) |
+| `SYSTEM $F37D` | `C3 31 F3` (`JP $F331`) | `9F 43` (`$439F`) | both, but different *form* |
+
+So the **base BIOS sets only `EXPTBL`**; **RAMAD0-3 and the whole `$F348` disk work area are the
+disk ROM's job**, and zerobas-disk installs neither. (`SYSTEM $F37D` is also telling: the stock
+writes a `JP` there — `$F37D` is a *jump-table slot* in the disk environment — whereas our INIT
+writes a bare BDOS address. zerobas's internal loader reads it as an address; real DOS expects the
+jump table. The two uses coexist today only because nothing foreign reads our `$F37D`.)
+
+**What the `$F348` table points at — the killer detail.** Its entries are `$95xx` (page 2) and
+`$DFxx` (page 3) — **high-RAM addresses, not the disk ROM's page-1 window**. The DOS-disk run
+corroborates: by its (early, post-DOS-load) capture the stock has DPBs in RAM
+(`F9 00 02 0F 04 01 02 01 00 02 70 0E 00 CA 02 03 07 00`, the very bytes our GETDPB returns), the
+MSX-DOS device table (`… PRN  LST  NUL  AUX  CON`), and a hook table across `$FE80-$FF00`/`$FFAC`
+full of `F7 87 <addr>` CALLFs into both the disk ROM (`$60xx-$73xx`) and the high-RAM kernel. ⇒
+the stock disk ROM **relocates a resident DOS kernel into high RAM at boot** and builds RAMAD +
+the `$F348` work area + the `$FE/$FF` hook table + per-drive DPBs + the device table to point into
+it. That resident kernel — reached via those `$95xx/$DFxx/$60xx` vectors — is exactly the
+proprietary code the clean-room rule forbids reading, and providing *our own* equivalents would
+require knowing each vector's precise runtime contract (i.e. reverse-engineering that kernel).
+
+**Conclusion — the DOS-boot gap is a charter-level subsystem, and it abuts the clean-room wall.**
+This is the §1 circularity finding made concrete: "boot real MSX-DOS off zerobas-disk" = **build
+the disk ROM's full resident DOS kernel + its RAM environment** (relocated kernel, RAMAD0-3,
+`$F348` DRVTBL/jump table, the `$FE/$FF` DOS hook set, per-drive DPBs, the device table), not a
+boot bridge or a page-0 vector set. Much of it is defined only by the stock kernel's own code
+(opaque), so a faithful clean-room reproduction needs the documented contracts for each piece
+(MSX2 TH ch.3 + MSX-DOS 1 structure docs as allowed sources) and is a multi-slice Phase-2+ effort
+on its own — materially bigger than the entire Disk-BASIC verb surface that closed Phase 2.
+
+**Recommendation.** Treat the Tier-2 *DOS-boot* oracle as a **scoping decision** rather than a
+keep-iterating item. The provider contract is already validated to the highest fidelity reachable
+without raising the charter: Tier-1 (a real BIOS PHYDIO organically drives our DSKIO) PASSES, and
+GETDPB is byte-identical to the CF-3300 differential (§2). What DOS-boot would add — a real DOS
+*filesystem* organically consuming GETDPB — is strong but incremental evidence bought at a
+charter-level, partly-clean-room-blocked price. Options: **(A) stop here**, recording DOS-boot as
+characterized-but-deferred (the step-6 env + a1 bridge stay as the validated partial); **(B)** scope
+a dedicated multi-slice "DOS resident environment" sub-track built strictly from MSX2 TH ch.3 +
+MSX-DOS-1 structure docs (never the kernel), accepting several sessions and the risk that some
+vector contracts are not cleanly documented. No further code shipped pending that decision; nothing
+speculative was committed (RAMAD0-3 deliberately NOT set unconditionally — on the C-BIOS hosts the
+BIOS already sets them, so writing our own value there would risk the whole regression suite).

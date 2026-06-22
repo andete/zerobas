@@ -515,12 +515,21 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             MSX-DOS boot uses **none** of H.PHYD / DSKIO / our page-0 vectors / our ROM
             header; it expects the standard **disk WORK AREA** (`DRVTBL` + driver slot/entry)
             and, absent it, falls back to a slot scan that wedges on the expanded slot 3.
-      - [ ] **a3 — disk work area + step-7 validate (REFRAMED, §8.7).** Populate the
-            documented MSX disk work area in INIT (master disk-ROM slot, drive count,
-            `DRVTBL`/per-drive driver slot+`$4010`, MSX2 TH ch.3 — kernel layout stays
-            opaque) so the DOS boot locates the driver without the destructive scan; then
-            iterate to `MSX-DOS version 1.03 … A>` screen-identical to the stock CF-3300.
-            The step-6 env/paging stay as the validated foundation underneath.
+      - [ ] **a3 — SIZED by black-box differential = charter-level subsystem (§8.8).** A
+            clean-room RAM differential (stock CF-3300 vs Tier-1, data disk → BASIC) shows
+            the base BIOS sets only `EXPTBL`; the **disk ROM** installs `RAMAD0-3`
+            (`83 00 83 83` stock vs **`FF` ours**), the `$F348` disk work-area/DRVTBL JP
+            table (into high-RAM `$95xx/$DFxx`), the `$FE/$FF` DOS hook set, per-drive DPBs,
+            and the device table — all absent in ours. Those targets are a **resident DOS
+            kernel the stock relocates into high RAM**, i.e. the opaque proprietary code the
+            clean-room rule forbids. ⇒ DOS-boot = build the disk ROM's full resident DOS
+            environment, a multi-slice Phase-2+ effort that abuts the no-disassembly wall.
+            **SCOPING DECISION (not keep-iterating):** (A) stop, record DOS-boot as
+            characterized-but-deferred (step-6 env + a1 bridge = the validated partial); or
+            (B) scope a dedicated "DOS resident environment" sub-track from MSX2 TH ch.3 +
+            MSX-DOS-1 structure docs only. Tier-1 (real-BIOS PHYDIO → our DSKIO) already
+            PASSES + GETDPB is CF-3300-byte-identical, so the provider contract is validated
+            to the highest fidelity reachable without raising the charter.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
       and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
       — the organic evidence the Tier-0/1 differential could only approximate.
