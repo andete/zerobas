@@ -8,36 +8,39 @@ honour (allowed sources only; no disassembly), and
 [`docs/dev-workflow.md`](docs/dev-workflow.md) for how to implement + validate one
 item — do **one item per session** to keep context lean.
 
-## Target — committed scope
+## Phases at a glance
+
+| Phase | Scope | State |
+|---|---|---|
+| **1 — loader-stub BASIC + transports + standardization** | just enough MSX-BASIC to run `.BAS`/binary loader stubs; tape + disk read/write; standard DSKIO/`HPHYD` interfaces | **✅ closed** |
+| **2 — full disk (Disk BASIC integration)** | delegate file resolution to the in-slot Disk BASIC + the full file-channel verb surface; Tier-2 provider oracle | **next** |
+| **3+ — full MSX1 BASIC** | floating point, full string engine, arrays, graphics, sound, … | aspirational |
+
+## Phase 1 — committed loader-stub target (✅ closed)
 
 The charter (README) is deliberate: *just enough MSX-BASIC to run the `.BAS` /
 binary loader stubs that boot disk and tape games — **not** full-language
-compatibility.* The committed target is therefore:
+compatibility.* That loader-stub target is **complete**:
 
-1. **Phase 1 — loader-stub BASIC** — ✅ done.
-2. **Disk transport** (read + write) — ✅ done (`disk.rom`; see [`disk/TODO.md`](disk/TODO.md)).
-3. **Tape transport** (read + write) — ✅ done. Device signal layer **and**
-   interpreter parity complete: `BLOAD"CAS:",R`/`CLOAD`/`LOAD"CAS:"` load and
-   `CSAVE`/`SAVE"CAS:"`/`BSAVE"CAS:"` save on-device (tokenised-only SAVE; ASCII is
-   Phase 2).
-4. **Disk interface standardization — "Phase 1.5"** — make `zerobas-BASIC` reach
+1. **Loader-stub BASIC** — ✅ done.
+2. **Tape transport** (read + write) — ✅ done. `BLOAD"CAS:",R`/`CLOAD`/`LOAD"CAS:"`
+   load and `CSAVE`/`SAVE"CAS:"`/`BSAVE"CAS:"` save on-device (tokenised-only SAVE;
+   `,A`/ASCII save is a Phase-3 language item).
+3. **Disk transport** (read + write) — ✅ done (`disk.rom`; see [`disk/TODO.md`](disk/TODO.md)).
+4. **Disk interface standardization ("Phase 1.5")** — ✅ done. `zerobas-BASIC` reaches
    disk files through the **standard `$4010` DSKIO sector interface** (owning the
-   FAT12/dir logic loader-side) instead of zerobas-disk's private `bdos_entry`, so
-   **any** standard disk ROM (real or zerobas) works under `zerobas-BASIC`; and make
-   `zerobas-disk` install the standard **`HPHYD`→DSKIO** hook + a real `GETDPB` so a
-   real MSX-BASIC/MSX-DOS host can drive it. Loader-scoped. *(A research spike on the
-   real National CF-3300 confirmed the drive-letter loader path is pure PHYDIO/DSKIO
-   — it does **not** use the BASIC DEVICE/expansion mechanism — so the basic-side FAT
-   is the necessary price of the universal sector interface, not avoidable
-   duplication. See [`disk/docs/expansion-protocol.md`](disk/docs/expansion-protocol.md).)*
-   See the dedicated section below.
+   FAT12/dir logic loader-side); `zerobas-disk` installs the standard **`HPHYD`→DSKIO**
+   hook + a real `GETDPB`, so any standard disk ROM works under zerobas-BASIC **and** a
+   real BIOS can drive zerobas-disk. Host + provider + the host-side and Tier-1 provider
+   oracles all pass. *(Spike note: the drive-letter loader path is pure PHYDIO/DSKIO —
+   the BASIC DEVICE/expansion mechanism is never called — so the basic-side FAT is the
+   necessary price of the universal sector interface, not avoidable duplication. See
+   [`disk/docs/expansion-protocol.md`](disk/docs/expansion-protocol.md).)*
 
-**Full MSX1 BASIC (Phase 2) is an aspirational appendix, NOT in the committed
-target** — listed at the end of this file for reference only. (The fully
-MSX-faithful version — host the disk ROM's *Disk BASIC extension* so there's no
-basic-side FAT at all, plus the full Disk BASIC verb surface `FILES`/`OPEN`/
-`PRINT#`/`KILL`/… — is filed there; the spike found that file-channel protocol
-poorly documented and charter-raising.)
+The one open checkbox under Phase 1.5 — the **Tier-2** provider oracle (a real
+DOS/Disk-BASIC *filesystem* host, the only organic `GETDPB` consumer) — is the seam
+into the next phase and is carried into **Phase 2** below. Phase 1 is otherwise
+closed; the per-item done-record follows further down.
 
 ## Status today — three components, two axes
 
@@ -47,7 +50,7 @@ zerobas is three separately-built artifacts, combined only at runtime: `basic/` 
 
 | | Device / transport layer | Interpreter statements (basic.rom) |
 |---|---|---|
-| **Tape** | ✅ read **and** write signal layer (MSX1/2/2+) | ✅ `BLOAD"CAS:",R`, `CLOAD`, `LOAD"CAS:"` load on-device; `CSAVE`, `SAVE"CAS:"`, `BSAVE"CAS:"` write on-device — full read+write parity (tokenised-only SAVE, `,A`/ASCII is Phase 2) |
+| **Tape** | ✅ read **and** write signal layer (MSX1/2/2+) | ✅ `BLOAD"CAS:",R`, `CLOAD`, `LOAD"CAS:"` load on-device; `CSAVE`, `SAVE"CAS:"`, `BSAVE"CAS:"` write on-device — full read+write parity (tokenised-only SAVE, `,A`/ASCII is Phase 3) |
 | **Disk** | ✅ DSKIO + FAT12 + BDOS, read **and** write (differential vs CF-3300 & MSX-DOS 1) | ✅ `BLOAD`/`LOAD`/`RUN`/`SAVE`/`BSAVE` for `"A:"` † |
 
 † `zerobas-BASIC` reaches the disk through zerobas-disk's **private** `bdos_entry`
@@ -66,7 +69,10 @@ Ctrl-STOP), `DATA`/`READ`/`RESTORE`, `POKE`/`PEEK`, `PRINT`, `CLEAR`,
 multi-character 16-bit integer vars, minimal string vars for `PRINT`, and the
 storage statements above.
 
-## Remaining — committed work to reach the target
+## Phase 1 record — committed work (all ✅ done)
+
+The per-item done-record for the committed loader-stub target. Kept for the
+provenance / divergence trail; nothing here is outstanding.
 
 ### Tape — read + write parity with disk
 - [x] **`CLOAD` / `LOAD"CAS:"` on-device load** — DONE. The hang was **not** a tape
@@ -92,7 +98,7 @@ storage statements above.
       format byte-identical to `build_cas` (cas_decode), the reference VG-8020
       `CLOAD`s our recorded `.cas`, and self round-trips `CSAVE`→`CLOAD` /
       `BSAVE"CAS:"`→`BLOAD"CAS:"` (`basic_probe_tape_save.py` ALL PASS). Divergences:
-      tokenised-only `SAVE"CAS:"` (`,A` ASCII → `load_error`, Phase 2); 6-char name
+      tokenised-only `SAVE"CAS:"` (`,A` ASCII → `load_error`, Phase 3); 6-char name
       truncation; bare `CSAVE` writes a 6-space name. This completes tape parity.
 
 ### Phase 1.5 — disk interface standardization (standard DSKIO + own FAT)
@@ -148,7 +154,9 @@ contract: [`disk/docs/expansion-protocol.md`](disk/docs/expansion-protocol.md).
       provider read confirmed: `CALL $FFA7` (the installed hook) crosses into our
       DSKIO and reads the boot sector byte-identically. See disk/PROVENANCE.md
       §INIT + §DPB. The DPB field encoding was the one genuinely-new clean-room item.
-- [ ] **Oracle — disk-ROM independence, both directions** — (a) **DONE (host):**
+- [x] **Oracle — disk-ROM independence, both directions** — committed scope DONE
+      (host + Tier-1 provider). The Tier-2 sub-item below is carried to **Phase 2**.
+      (a) **DONE (host):**
       `BLOAD"A:"`/`LOAD"A:"`/`RUN"A:"`/`SAVE"A:"`/`BSAVE"A:"` round-trip under
       `zerobas-BASIC` with zerobas-disk **and** with the foreign National CF-3300
       disk ROM in slot 3-1 — ALL PASS on both (machines built via
@@ -173,12 +181,43 @@ contract: [`disk/docs/expansion-protocol.md`](disk/docs/expansion-protocol.md).
       hosting = **Phase 2**. See
       [`disk/docs/provider-oracle-scope.md`](disk/docs/provider-oracle-scope.md).
 
-**Sequencing.** Tape parity is **done**, so this is the next committed track. The
-private `bdos_entry` is the foundation every disk verb sits on; **build nothing
-further on it** meanwhile. The host side (a) can land without GETDPB; the provider
-side (b) needs it. After this, both transports sit on standard interfaces (tape
-already uses the BIOS cassette entries), and disk interoperates both directions —
-the point of the whole basic/tape/disk split.
+**Outcome.** Both transports now sit on standard interfaces (tape uses the BIOS
+cassette entries; disk uses DSKIO/`HPHYD`/`GETDPB`), and disk interoperates both
+directions — the point of the whole basic/tape/disk split. The only piece not yet
+exercised is the Tier-2 provider oracle, now part of Phase 2.
+
+## Phase 2 — full disk (Disk BASIC integration) — NEXT
+
+A deliberate **charter raise** from loader-stub toward a faithful disk experience.
+Chosen as the next phase because it *completes the storage story* the
+basic/tape/disk split is built around — a self-contained, oracle-validatable slice
+— rather than boiling the ocean on the full language (that stays Phase 3+). The
+disk *ROM* (`disk/`) is already complete (FDC + FAT12 + BDOS, read+write,
+oracle-confirmed); this phase is the **interpreter-side Disk BASIC integration**.
+
+- [ ] **Host the disk ROM's Disk BASIC extension** — the STATEMENT/DEVICE expansion
+      + file-channel protocol, so file resolution **delegates** to the in-slot disk
+      ROM. The Phase-1.5 spike found this file-channel protocol **poorly documented**
+      (the MSX2 TH gives the request codes but not the register-level open/read/write
+      contract) — it needs its **own black-box observation pass + new probes** before
+      any code. See [`disk/docs/expansion-protocol.md`](disk/docs/expansion-protocol.md).
+- [ ] **Full Disk BASIC verb surface** — `FILES`/`OPEN`/`CLOSE`/`PRINT#`/`INPUT#`/
+      `GET`/`PUT`/`KILL`/`NAME`/`EOF`/`LOF`/`LOC`/`MAXFILES` (the random-access file
+      layer folds in here).
+- [ ] **Tier-2 provider oracle** *(carried from Phase 1.5)* — a real *filesystem*
+      host (DOS/Disk-BASIC), the only organic `GETDPB` consumer, drives zerobas-disk
+      end-to-end. See [`disk/docs/provider-oracle-scope.md`](disk/docs/provider-oracle-scope.md).
+
+**Architectural fork to settle in the planning pass:** **delegate** to the in-slot
+Disk BASIC (retire the basic-side [`basic/fat.asm`](basic/fat.asm), the
+loader-owned FAT) **vs extend** our own FAT with the verb surface layered on top.
+Delegation is the MSX-faithful end state but depends on the under-documented
+file-channel protocol; extension reuses proven code but keeps the duplicate FAT.
+Decide before writing code.
+
+**Charter note.** This raises the README's loader-stub charter toward "real MSX
+BASIC" on the disk axis. That is the intended scope of Phase 2 — a conscious step
+up, kept narrow to the disk/file story so it stays validatable.
 
 ### Phase 1 close-out — owed oracles (polish, non-blocking)
 - [x] `basic_probe_clear.py` — CLEAR oracle done: the `<memory-top>` write to
@@ -226,14 +265,14 @@ stub this supports: `CLEAR …,&Hxxxx : SCREEN n : BLOAD"…",R` or
 - [x] `PRINT` (+ `;` `,` separators, string literals, `TAB`) — wire up the existing token
       (basic/print.asm: numeric + string-literal items, `;`/`,` zones, `?` abbrev;
       crunch byte-identical, output verified in openMSX. `TAB(`/`SPC(` + string
-      vars/`CHR$` still to do — need the Phase-2 string engine.)
+      vars/`CHR$` still to do — need the Phase-3 string engine.)
 - [x] `ON expr GOTO/GOSUB` — `branch_lineno` extended with comma-list loop; `ex_on`/`eon_seek_nth` handler added; all 7 functional probes (A=1..N, N=0 fallthrough, N>count fallthrough) pass
 - [x] `SCREEN`, `COLOR`, `CLS`, `KEY OFF`, `WIDTH` — pre-handoff screen setup (thin BIOS/VDP wrappers)
       (basic/screen.asm: thin wrappers over CHGMOD/CHGCLR/CLS/ERAFNK/DSPFNK; new `OFF`
       token $EB added; crunch byte-identical incl. all 7 verbs; 9/9 functional probes
       pass `basic_probe_screen.py`. Divergences: SCREEN's extra args evaluated+ignored;
       COLOR doesn't repaint drawn text; KEY only does OFF/ON, `KEY n,"str"`/`KEY LIST`
-      error — all Phase-2 scope.)
+      error — all Phase-3 scope.)
 
 ### Expressions / variables
 - [x] Multi-character variable names — single-letter only is a hard wall
@@ -242,7 +281,7 @@ stub this supports: `CLEAR …,&Hxxxx : SCREEN n : BLOAD"…",R` or
 - [x] `/`, `\`, `MOD`, and `AND`/`OR`/`NOT`/`XOR` — address / poke math
       (basic/expr.asm: full precedence ladder; crunch byte-identical, all ops verified
       in openMSX. `/` is integer + division is unsigned — documented divergences from
-      MSX signed/float arithmetic; div-by-zero → 0. `^` still deferred to Phase 2.)
+      MSX signed/float arithmetic; div-by-zero → 0. `^` still deferred to Phase 3.)
 - [x] `&O` / `&B` literals — `&O` octal now emitted + evaluated; `&B` descoped
       (basic/interp.asm: `tk_hex` generalised to dispatch `&H`/`&O` on a radix
       (16/8) + token ($0C/$0B) pair; `&O` crunches byte-identical to the VG-8020
@@ -266,14 +305,14 @@ stub this supports: `CLEAR …,&Hxxxx : SCREEN n : BLOAD"…",R` or
       pokes; BASE is descoped — argument parsed+evaluated but BASE(n) returns 0
       and sets ERRMARK (reproducing the reference's per-mode VDP table-base map
       would need a forbidden source). Both quarantined in basic/PROVENANCE.md.)
-- [x] String literals / variables *enough for `PRINT`* (full string engine is Phase 2)
+- [x] String literals / variables *enough for `PRINT`* (full string engine is Phase 3)
       (basic/strvar.asm + basic/vars.asm: a `$`-suffixed name is a string variable
       with its own minimal inline store [name0][name1][len][bytes:STRMAX=32]; LET
       assigns a `"literal"` or copies another string var (A$=B$); PRINT emits a
       string var's value, incl. alongside literals (PRINT "X=";A$). Oracle-confirmed
       `$` is part of the name — NO special string token; crunch already byte-identical
       (`a$="hi"` → `41 24 EF 22 68 69 22`). Own-design VALTYP/STRPTR value-type notion.
-      6/6 functional probes pass basic_probe_strvar.py. NOT built (Phase 2): concat `+`,
+      6/6 functional probes pass basic_probe_strvar.py. NOT built (Phase 3): concat `+`,
       string functions (LEN/MID$/CHR$/…), string arrays/DIM, string DATA — all descoped.)
 
 ### Usability
@@ -283,7 +322,7 @@ stub this supports: `CLEAR …,&Hxxxx : SCREEN n : BLOAD"…",R` or
       line-ref, string/REM/DATA verbatim, `:`ELSE / `'` folds. No new token; reuses
       `div10`/CHPUT. 8/8 functional probes pass `basic_probe_list.py` (VRAM screen
       decode); crunch + all regression probes still pass. Divergence: only the
-      no-arg whole-program form — `LIST n` / `LIST n-m` range args are Phase 2,
+      no-arg whole-program form — `LIST n` / `LIST n-m` range args are Phase 3,
       a trailing argument is parsed-past + ignored.)
 - [x] `CONT`, Ctrl-STOP / break handling
       (basic/program.asm: the RUN loop polls BIOS `BREAKX` ($00B7) between
@@ -305,26 +344,13 @@ stub this supports: `CLEAR …,&Hxxxx : SCREEN n : BLOAD"…",R` or
       wording are own-design — zerobas's run loop is its own design, not the
       reference's CONTXT/OLDLIN sysvars — both quarantined in basic/PROVENANCE.md.)
 
-## Aspirational appendix — full MSX1 BASIC (NOT in the committed target)
+## Phase 3+ — full MSX1 BASIC (aspirational)
 
-Beyond the README charter (loader-stub scope) — listed for reference and to mark
-where the natural boundaries are, **not** planned/committed work. If the charter is
-ever raised, this becomes the plan; until then these items are explicitly out of
-scope. (Note: tape/disk file I/O — `SAVE`/`LOAD`/`CSAVE`/`CLOAD`/`BSAVE` — has been
-pulled forward into the committed transport tracks above; the `OPEN`/`CLOSE`/
-`PRINT#`/`INPUT#` random-access file layer stays here.)
+Beyond Phase 2's disk axis — the rest of "real MSX BASIC." Listed for reference
+and to mark the natural boundaries, **not** scheduled work; the disk/file story
+(`OPEN`/`CLOSE`/`PRINT#`/… and Disk BASIC delegation) has been pulled forward into
+**Phase 2** above. These remain explicitly out of scope until then.
 
-- [ ] **Full Disk BASIC (host the disk ROM's Disk BASIC extension + the verb
-      surface)** — the fully MSX-faithful disk story, beyond Phase 1.5's DSKIO+FAT.
-      Host the disk ROM's *Disk BASIC extension* (the STATEMENT/DEVICE expansion +
-      file-channel protocol) so file resolution **delegates** to the in-slot disk
-      ROM — no basic-side FAT at all — and add the full verb surface `FILES`/`OPEN`/
-      `CLOSE`/`PRINT#`/`INPUT#`/`GET`/`PUT`/`KILL`/`NAME`/`EOF`/`LOF`/`LOC`/
-      `MAXFILES`. The Phase-1.5 spike found this file-channel protocol poorly
-      documented (the TH gives the request codes but not the register-level open/
-      read/write contract — it needs its own black-box observation pass) and it
-      raises the loader-scoped charter toward "real MSX BASIC" — hence Phase 2. The
-      random-access file layer below folds into this item.
 - [ ] **Floating point** — the math pack, `!`/`#`/`%` type suffixes,
       `DEFINT`/`DEFSNG`/`DEFDBL`/`DEFSTR`, and the float crunch tokens
       (decimal ≥ 32768 etc.) currently out of scope
@@ -347,7 +373,7 @@ pulled forward into the committed transport tracks above; the `OPEN`/`CLOSE`/
       loop; Enter reads the *current cursor line from VRAM* (not a dedicated
       input buffer), so the user can cursor-up to any visible output, edit it
       in place, and re-enter it. Needs cursor-key handling and VDP line-readback.
-      Our `repl.asm` is a deliberate simplification; full replacement is Phase 2.
+      Our `repl.asm` is a deliberate simplification; full replacement is Phase 3.
 - [ ] **Editor / program management** — full `LIST`, `DELETE`, `RENUM`, `AUTO`,
       `TRON`/`TROFF`, `SWAP`, `WAIT`, `ERASE`, `FRE`, full `CLEAR` semantics
 
