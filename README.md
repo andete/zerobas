@@ -47,12 +47,12 @@ driving a real MSX in openMSX as a black box.
 Requires [pasmo](https://pasmo.speccy.org/) (the assembler C-BIOS uses):
 
 ```sh
-make            # -> basic.rom (16 KB cartridge)
+make            # -> build/basic.rom (16 KB cartridge)
 ```
 
 ## Two ways to run it: cartridge, or patched in next to the BIOS
 
-`basic.rom` is an "AB" cartridge: drop it into any MSX slot and the BIOS finds
+`build/basic.rom` is an "AB" cartridge: drop it into any MSX slot and the BIOS finds
 the header at `$4000` and calls INIT. That works, but it isn't where BASIC lives
 on a real machine — there it sits in **slot 0 page 1 (`$4000-$7FFF`), right next
 to the BIOS in page 0**, as one ROM. C-BIOS has no BASIC, so it leaves that page
@@ -68,7 +68,7 @@ boot-vector patch is needed**; the cartridge header does double duty.
 make patches    # -> zerobas-msx1.ips + zerobas-msx1.bps (vs a stock C-BIOS main ROM)
 ```
 
-`build-patches.sh` splices `basic.rom` into page 1, checks that the only stock
+`build-patches.sh` splices `build/basic.rom` into page 1, checks that the only stock
 bytes it overwrites are C-BIOS's unimplemented-call `unknown@` stubs (none
 reachable by a direct `CALL`/`JP`), and emits both patch formats. To use it in
 openMSX without touching any ROM, the installer writes `*_BASIC` machines that
@@ -178,27 +178,27 @@ Run the oracle probes (in the `msx-preservation` repo) against this ROM:
 ```sh
 # BLOAD pipeline (tokenise → execute → cassette load → ,R handoff)
 python3 basic-spec/tools/basic_probe_bload.py \
-    --machine Philips_VG_8020 --cart /path/to/zerobas/basic.rom
+    --machine Philips_VG_8020 --cart /path/to/zerobas/build/basic.rom
 
 # REM / POKE / PEEK / expression evaluator (results read back from RAM)
 python3 basic-spec/tools/basic_probe_statements.py \
-    --cart /path/to/zerobas/basic.rom
+    --cart /path/to/zerobas/build/basic.rom
 
 # Step A: byte-identical crunch — zerobas TOKBUF vs reference KBUF, per line
 python3 basic-spec/tools/basic_probe_crunch.py \
-    --machine Philips_VG_8020 --cart /path/to/zerobas/basic.rom
+    --machine Philips_VG_8020 --cart /path/to/zerobas/build/basic.rom
 
 # Step B: stored programs + control flow (GOTO / IF…THEN…ELSE / comparisons)
 python3 basic-spec/tools/basic_probe_controlflow.py \
-    --cart /path/to/zerobas/basic.rom
+    --cart /path/to/zerobas/build/basic.rom
 
 # Step B: subroutines + loops (GOSUB/RETURN, FOR…NEXT incl. nesting)
 python3 basic-spec/tools/basic_probe_loops.py \
-    --cart /path/to/zerobas/basic.rom
+    --cart /path/to/zerobas/build/basic.rom
 
 # Step B: DATA / READ / RESTORE (ASCII items parsed across lines)
 python3 basic-spec/tools/basic_probe_data.py \
-    --cart /path/to/zerobas/basic.rom
+    --cart /path/to/zerobas/build/basic.rom
 ```
 
 The cartridge boots to its prompt, the probe types a line + Enter, and the
@@ -227,7 +227,8 @@ ROM provides the device half (`PHYDIO` / the `H.*` hooks).
 zerobas/
 ├── README.md
 ├── PROVENANCE.md      # provenance index -> per-component logs below
-├── Makefile           # pasmo -> basic.rom (16 KB); `make patches` -> .ips/.bps
+├── Makefile           # pasmo -> build/basic.rom (16 KB); `make patches` -> .ips/.bps
+├── build/             # gitignored build artifacts (basic.rom, disk.rom)
 ├── build-patches.sh   # splice into a stock C-BIOS page 1 -> zerobas-msx1.ips/.bps
 ├── zerobas-msx1.ips   # slot-0 page-1 patch, IPS (universal; used by installer)
 ├── zerobas-msx1.bps   # slot-0 page-1 patch, BPS (CRC-locked, checksummed)

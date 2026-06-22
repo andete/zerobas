@@ -36,11 +36,11 @@ zerobas-disk. The real BIOS cold-boot scan finds our "AB" header, calls our INIT
 into our DSKIO -- proving a real BIOS can drive zerobas-disk as a standard
 provider, with no probe-injected hook in the path (see disk-spec/tools/
 disk_probe_provider_phydio.py and disk/docs/provider-oracle-scope.md):
-    python3 tools/install-openmsx-machine.py --real-bios-disk --disk-rom disk.rom
+    python3 tools/install-openmsx-machine.py --real-bios-disk --disk-rom build/disk.rom
 
     python3 tools/install-openmsx-machine.py            # auto-detect everything
     python3 tools/install-openmsx-machine.py --dry-run   # show what it would write
-    python3 tools/install-openmsx-machine.py --disk-rom disk.rom   # + _DISK variants
+    python3 tools/install-openmsx-machine.py --disk-rom build/disk.rom  # + _DISK variants
     python3 tools/install-openmsx-machine.py --share /path/to/openmsx/share \
                                              --user  /path/to/.openMSX
 
@@ -56,7 +56,7 @@ import argparse, glob, os, re, sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IPS = os.path.join(REPO, "zerobas-msx1.ips")
 TAPE_IPS = os.path.join(REPO, "tape", "zerobas-tape-msx1.ips")
-DISK_ROM = os.path.join(REPO, "disk.rom")
+DISK_ROM = os.path.join(REPO, "build", "disk.rom")
 
 # Where openMSX keeps its bundled machines + ROMs, by platform default.
 SHARE_CANDIDATES = [
@@ -206,7 +206,7 @@ def main():
                          "<MACHINE>_ZEROBASDISK that keeps a real MSX1 BIOS but "
                          "swaps its built-in disk ROM to zerobas-disk "
                          "(default MACHINE: National_CF-3300). Uses --disk-rom's "
-                         "ROM, or disk.rom if --disk-rom is absent.")
+                         "ROM, or build/disk.rom if --disk-rom is absent.")
     ap.add_argument("--dry-run", action="store_true", help="print, don't write")
     args = ap.parse_args()
 
@@ -224,7 +224,7 @@ def main():
             sys.exit(f"error: disk ROM not found: {disk_rom} (run `make disk` first)")
 
     # The Tier-1 provider machine needs a zerobas-disk ROM too; default to
-    # --disk-rom's value, else the built-in disk.rom.
+    # --disk-rom's value, else the built-in build/disk.rom.
     real_disk_rom = None
     if args.real_bios_disk is not None:
         real_disk_rom = disk_rom or os.path.abspath(DISK_ROM)

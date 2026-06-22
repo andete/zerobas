@@ -1,4 +1,6 @@
-# Built ROM artifact — regenerate with `make`.
+# Build artifacts — ROMs now land under build/, regenerate with `make`.
+/build/
+# Belt-and-braces: ignore any stray ROM left at an old location (e.g. repo root).
 *.rom
 
 # Cassette images and other test inputs (not source material).

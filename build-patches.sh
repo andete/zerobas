@@ -39,7 +39,7 @@ if [ ! -f "$STOCK" ]; then
 fi
 
 echo "splicing zerobas into C-BIOS page 1..."
-python3 "$OVERLAY" "$STOCK" "$HERE/basic.rom" "$WORK/combined.rom"
+python3 "$OVERLAY" "$STOCK" "$HERE/build/basic.rom" "$WORK/combined.rom"
 
 echo "making patches..."
 python3 "$PATCH" make "$STOCK" "$WORK/combined.rom" "$HERE/zerobas-msx1.ips"

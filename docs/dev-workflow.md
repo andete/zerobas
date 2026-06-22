@@ -27,7 +27,7 @@ Each TODO item is largely independent — do one per session, and finish with:
    to reproduce, ship a documented simplification instead and mark it
    `quarantined` in `PROVENANCE.md` (e.g. the USR integer-only convention,
    unsigned `/`, div-by-zero → 0).
-4. **Build clean:** `make` must emit a 16384-byte `basic.rom` with no warnings.
+4. **Build clean:** `make` must emit a 16384-byte `build/basic.rom` with no warnings.
 5. **Prove crunch is still byte-identical** (see below) — any tokeniser change
    can regress this.
 6. **Run the regression probes** (control flow / loops / data / statements) —
@@ -39,9 +39,14 @@ Each TODO item is largely independent — do one per session, and finish with:
 ## Build
 
 ```sh
-make            # -> basic.rom, padded to exactly 16384 bytes
+make            # -> build/basic.rom, padded to exactly 16384 bytes
+make disk       # -> build/disk.rom
 make patches    # -> zerobas-msx1.ips / .bps (splice into a C-BIOS page-1 slot)
 ```
+
+Build artifacts (the ROMs) land in the gitignored `build/` dir, never the repo
+root — so a stale copy can't linger where a probe or installer would pick it up.
+The tracked `zerobas-msx1.ips/.bps` deliverables stay at the root.
 
 Assembler is pasmo. A linter hook auto-adds SPDX / copyright headers to new
 source files — don't hand-write them.
@@ -61,7 +66,7 @@ All emulator tooling is in the sibling repo, not here:
 
 ```sh
 cd /Users/joost/projects/msx-preservation
-python3 basic-spec/tools/basic_probe_crunch.py --cart /Users/joost/projects/zerobas/basic.rom
+python3 basic-spec/tools/basic_probe_crunch.py --cart /Users/joost/projects/zerobas/build/basic.rom
 # want: "ALL PASS — crunch is byte-identical"
 ```
 
@@ -73,14 +78,14 @@ line to `LINES` (executable; `bload` trails) or `CRUNCH_ONLY` (non-executing
 body; `bload` leads) — **then restore the probe to pristine before finishing**;
 those test-line edits are scratch, never committed.
 
-Other regression probes (same invocation shape, `--cart …/basic.rom`):
+Other regression probes (same invocation shape, `--cart …/build/basic.rom`):
 `basic_probe_controlflow.py`, `basic_probe_loops.py`, `basic_probe_data.py`,
 `basic_probe_statements.py`.
 
 ### omsx_run.py — the headless driver
 
 ```sh
-python3 tools/omsx_run.py --machine C-BIOS_MSX1 --cart basic.rom \
+python3 tools/omsx_run.py --machine C-BIOS_MSX1 --cart build/basic.rom \
     --type 'PRINT 12*12\r' --type-delay 8 \
     --bp 0x7FF0 --reg PC --mem memory:0xE000:4 --out cap.txt
 ```

@@ -38,7 +38,7 @@ install-openmsx-machine.py) and a built zerobas basic.rom.
 
   make test
   python3 tools/run_tape_regression.py
-  python3 tools/run_tape_regression.py --zerobas ~/projects/zerobas/basic.rom
+  python3 tools/run_tape_regression.py --zerobas ~/projects/zerobas/build/basic.rom
   python3 tools/run_tape_regression.py --msx-preservation /path/to/msx-preservation
 """
 from __future__ import annotations
@@ -156,7 +156,7 @@ def main() -> int:
                     help="path to the msx-preservation repo "
                          "(default: sibling ../msx-preservation, or $MSX_PRESERVATION)")
     ap.add_argument("--zerobas",
-                    default=os.path.expanduser("~/projects/zerobas/basic.rom"),
+                    default=os.path.expanduser("~/projects/zerobas/build/basic.rom"),
                     help="path to a built zerobas basic.rom (for the open-stack tests)")
     ap.add_argument("--skip-openstack", action="store_true",
                     help="skip the open-stack WAV tests (e.g. if zerobas isn't built)")
