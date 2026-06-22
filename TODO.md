@@ -222,13 +222,13 @@ architecture and write code. Each step is independently oracle-validatable.
       expansion never fires). Result: **GO, and EXTEND** (layer the verbs on the
       existing `basic/fat.asm` engine; keep `fat.asm`, don't retire it).
 
-### Step 0b — `CALL`-dispatched commands spike (NOT yet observed)
-- [ ] **Observe the `CALL`/STATEMENT-expansion seam** (`$4004`). The file verbs are
-      tokens, but `CALL FORMAT`/`_FORMAT` and `CALL SYSTEM`/`_SYSTEM` *do* dispatch
-      through the STATEMENT expansion — the spike skipped them. Trace `CALL FORMAT`
-      on CF-3300 (does `$4004` fire? `PROCNM` contract? lands in `CHOICE $4019` /
-      `DSKFMT $401C`?) to pin that seam and make a separate EXTEND-vs-DELEGATE call
-      for `CALL` commands. See file-channel-protocol.md §1a.
+### Step 0b — `CALL`-dispatched commands spike — ✅ DONE
+- [x] **DONE** — `diskbasic_probe_format.py` on real CF-3300: `CALL FORMAT` writes
+      `PROCNM ($FD89) = "FORMAT"` (confirming STATEMENT-expansion dispatch, unlike the
+      zero-PROCNM file verbs) and drives `CHOICE ($4019)` (the `Drive name?` + format-
+      type menu) → `DSKFMT ($401C)`. EXTEND-vs-DELEGATE for `CALL` commands documented
+      (lean EXTEND: a `CALL`/`_` parser + own `CHOICE`/`DSKFMT`); the generic STATEMENT
+      dispatcher is an optional follow-on. See file-channel-protocol.md §1a.
 
 ### Step 1 — architectural fork: RESOLVED (file verbs = EXTEND)
 For the **file I/O verbs** the spike resolves it: **EXTEND** over the existing
@@ -248,11 +248,13 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
 - [ ] **Config [in]** — `MAXFILES` (sizes the channel table).
 - [ ] **Direct sector access [in]** — `DSKI$` (read sector, fn) / `DSKO$` (write
       sector, stmt; `HDSKO $FDEF` hook) — thin wrappers over DSKIO.
-- [ ] **Random-access files [?]** — `FIELD`, `GET`, `PUT`, `LSET`, `RSET` +
-      conversion fns `CVI`/`CVS`/`CVD`, `MKI$`/`MKS$`/`MKD$`. A heavier, self-contained
-      record-file sub-feature; candidate for its own sub-phase. Confirm scope.
-- [ ] **`CALL FORMAT` [?]** — disk format via the Step-0b seam (`CHOICE`/`DSKFMT`).
-      Confirm scope.
+- [ ] **Random-access files [in → sub-phase 2c]** — `FIELD`, `GET`, `PUT`, `LSET`,
+      `RSET` + conversion fns `CVI`/`CVS`/`CVD`, `MKI$`/`MKS$`/`MKD$`. A heavier,
+      self-contained record-file feature; built + oracle-validated as its **own
+      sub-phase (2c)** after the sequential/management surface lands.
+- [ ] **`CALL FORMAT` [in]** — disk format via the STATEMENT-expansion seam
+      (`CHOICE $4019` / `DSKFMT $401C`); pin the seam in **Step 0b** first, then
+      implement over zerobas-disk's existing `CHOICE`/`DSKFMT` entries.
 - `CALL SYSTEM` **[out]** — exit to MSX-DOS = the DOS-boot path (Tier-2 sub-track).
 - `CALL CHDRV` etc. **[out]** — Disk BASIC v2/v3 additions, beyond DOS1-class 1.0.
 

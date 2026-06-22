@@ -63,26 +63,42 @@ runs its own statement dispatch (`ex_print`, `ex_bload`, … in `basic/interp.as
 it would add `ex_open`/`ex_printhash`/`ex_inputhash`/`ex_close`/`ex_files` that call
 its own FAT engine. No cross-slot expansion hosting is required.
 
-### 1a. CALL-dispatched commands (`CALL FORMAT` / `CALL SYSTEM`) — NOT yet observed
+### 1a. CALL-dispatched commands (`CALL FORMAT` / `CALL SYSTEM`) — Step-0b: OBSERVED
 
 A correction to an earlier over-broad claim: the STATEMENT-expansion seam (`$4004`,
 TH §5.7) is **not** dead — it is exactly how the `CALL <name>` / `_<name>` extended
-commands are dispatched. In Disk BASIC the two are:
+commands are dispatched. The two Disk BASIC ones:
 
-* **`CALL FORMAT` / `_FORMAT`** — format a disk. Routes (per TH) through the
-  STATEMENT handler to the disk ROM's `CHOICE ($4019)` + `DSKFMT ($401C)` entries
-  (and the `HFORM ($FFAC)` hook). zerobas-disk already has stub `CHOICE`/`DSKFMT`
-  entries, so this connects to existing code.
-* **`CALL SYSTEM` / `_SYSTEM`** — exit BASIC to MSX-DOS. **Out of scope** — it is
-  the DOS-boot path already deferred (needs `MSXDOS.SYS`; see
+* **`CALL FORMAT` / `_FORMAT`** — format a disk.
+* **`CALL SYSTEM` / `_SYSTEM`** — exit BASIC to MSX-DOS. **Out of scope** — the
+  DOS-boot path already deferred (needs `MSXDOS.SYS`;
   [`provider-oracle-scope.md`](provider-oracle-scope.md) §6).
 
-This spike did **not** trace `CALL FORMAT`. Whether it is in the Phase-2 surface,
-and whether the STATEMENT-expansion dispatch is observed/replicated, is an open
-**Step-0b** item. The EXTEND finding for the file I/O verbs (below) is unaffected —
-they are tokens, not `CALL` statements — but for `CALL`-style commands the documented
-expansion seam is the one place a clean delegation path genuinely exists, so the
-EXTEND-vs-DELEGATE call should be made separately for them.
+**Observed (Step-0b, `diskbasic_probe_format.py`, real CF-3300):** typing
+`CALL FORMAT` writes **`PROCNM ($FD89) = "FORMAT"`** (`46 4F 52 4D 41 54`) — the
+decisive proof that the CALL name is placed in PROCNM and dispatched through the
+STATEMENT expansion (TH §5.7), in direct contrast to the file verbs, which leave
+PROCNM zero. The organic flow then shows the disk ROM's **`CHOICE ($4019)`** output
+(the `Drive name?(A,B)` prompt + the `1-1 side / 2-2 sides / 3 / 4` format-type
+menu) and halts at `Strike a key when ready` before **`DSKFMT ($401C)`** runs. So
+the seam is: `CALL <name>` → name in PROCNM → STATEMENT handler → `CHOICE` + `DSKFMT`
+(+ the `HFORM $FFAC` hook).
+
+**Implication for zerobas (EXTEND-vs-DELEGATE, CALL commands):** two clean options,
+to pick at Step-2 implementation:
+* **EXTEND** (consistent with the file verbs) — zerobas-BASIC adds a `CALL`/`_`
+  statement parser that special-cases `FORMAT` and calls `DSKFMT ($4010+$0C)` /
+  `CHOICE` of the in-slot disk ROM; implement zerobas-disk's currently-stub
+  `CHOICE`/`DSKFMT` for its own drive. Simplest; self-contained.
+* **DELEGATE** (the documented generic seam) — zerobas-BASIC implements a *generic*
+  `CALL <name>` dispatcher that loads PROCNM and invokes the in-slot disk ROM's
+  STATEMENT handler ($4004). More faithful and supports a foreign ROM's other CALL
+  commands too, but requires zerobas-disk to grow a real STATEMENT handler (today
+  `$4004 = 0`). Provider-side work.
+Lean EXTEND for consistency + self-containment; the generic dispatcher is a nice
+follow-on if foreign-ROM CALL-command support is ever wanted. Not a blocker either
+way. The exact `DSKFMT` sector-write pattern is an implementation-time observation
+(let the format complete past the keypress on a /tmp disk).
 
 ---
 
