@@ -151,3 +151,80 @@ DOS2, its references are largely **open**, unlike proprietary DOS1:
 Before treating any of these *sources* as an allowed PROVENANCE input, confirm the license
 is compatible with a BSD-2 reimplementation; black-box *runtime* use is always fine. None
 of this is in scope now — DOS1 is the ceiling.
+
+## 7. DOS-boot feasibility spike (2026-06-22) — GO, gap pinned
+
+Tier 2 was de-risked with a black-box spike before committing to the boot-loader build.
+Both gating prerequisites were checked empirically.
+
+**Prerequisite (b) — a real MSX-DOS 1 system disk — SATISFIED (permanent disk on hand).**
+`/Users/joost/Documents/msx/msx/disks/test.dsk` (720 KB, OEM "NMS 8245") holds
+`MSXDOS.SYS` + `COMMAND.COM` and boots on the **stock National CF-3300** (its own disk
+ROM) straight to a DOS prompt:
+
+```
+MSX-DOS version 1.03   Copyright 1984 by Microsoft
+COMMAND version 1.08
+A>
+```
+
+So the disk is genuinely bootable MSX-DOS 1.03 / COMMAND 1.08 — the authoritative Tier-2
+reference, and it's the same image already recorded as the BDOS oracle (`test.dsk`; see
+the `msxdos-oracle-disk` note). The spike used a `/tmp/dostest.dsk` copy; the build session
+should drive the durable `test.dsk` (on a `/tmp` working copy, never mutating the original
+— see the test-disk-mutation gotcha).
+
+**The gap — CONFIRMED, and precisely located.** Booting that *same* disk on the Tier-1
+machine `National_CF-3300_ZEROBASDISK` (real CF-3300 BIOS, zerobas-disk in slot 3-1)
+**falls through to BASIC**, not DOS:
+
+```
+MSX BASIC version 1.0   Copyright 1983 by Microsoft   28815 Bytes free   Ok
+```
+
+…even though `H.PHYD ($FFA7)` reads back `F7 87 10 40 C9` after the cold boot — i.e.
+zerobas-disk's INIT *did* run and *did* install the hook. The real BIOS then has **no boot
+procedure in our ROM to invoke**, so it proceeds to BASIC. This is the entire Tier-2
+deliverable in one sentence: **zerobas-disk installs the hook but never reads the boot
+sector or chainloads the DOS.** (Harness used: `disk/docs/` probe pattern — boot the
+machine on a `/tmp` copy, `debug read_block VRAM 0x1800 768` for the SCREEN1 name table,
+`debug read_block memory 0xFFA7 5` for the hook bytes.)
+
+### What "DOS-boot support" actually requires (scope, to pin in the build session)
+The standard MSX disk-ROM boot is **not** "implement MSXDOS.SYS's loader" — that loader is
+the **boot-sector code on the DOS disk itself**. zerobas-disk's job is the small bridge
+that hands control to it. Per the MSX disk-boot sequence (MSX2 TH ch.3 / MSX Assembly Page
+— allowed sources; the exact entry-condition contract is the first thing to pin, ideally
+cross-checked by a black-box trace of *where* the stock CF-3300 disk ROM reads sector 0 and
+jumps):
+
+1. **Read the boot sector** (logical sector 0 of drive A) into **`$C000`** via our own
+   DSKIO.
+2. **Hand off to the boot code** — set up the documented entry conditions and **`JP $C01E`**
+   (the boot sector's executable entry); if the disk is non-bootable / has no `MSXDOS.SYS`,
+   the boot code returns and BASIC starts (so the fall-through must stay graceful — exactly
+   today's behaviour for a blank disk).
+3. **Satisfy what the boot code + MSXDOS.SYS call** — they drive the drive through the
+   standard BIOS surface we already provide: DSKIO (`$4010`, via the hook), GETDPB
+   (`$4016`), DRIVES, etc. **This is where GETDPB finally gets its first *organic*
+   consumer** — the whole reason Tier 2 is the strongest provider evidence.
+
+### Proposed slices (each independently observable)
+- **2-Tier2-a — boot bridge.** Add the read-sector-0 + `JP $C01E` boot path to
+  zerobas-disk's INIT (or the standard boot hook). Oracle: the Tier-1 machine now reaches
+  `MSX-DOS version 1.03 … A>` on `dostest.dsk`, byte-for-byte screen-identical to the stock
+  CF-3300 reference above. Graceful fall-through to BASIC on a blank disk preserved.
+- **2-Tier2-b — organic GETDPB + FS surface.** With DOS up, exercise a real DOS command
+  that mounts/uses the drive (`DIR`, a file copy) and confirm it routes through our GETDPB
+  + DSKIO + dir/FAT — the organic consumer the differential could only approximate. Trap
+  `$4016` to prove GETDPB is hit by real DOS code, not a probe stub.
+- **2-Tier2-c — regression.** Fold the boot-bridge logic into the host unit-test layer
+  where it's emulator-testable (sector-0 read + the handoff setup), and pin the A> screen
+  in a sibling `disk_probe_provider_dosboot.py`.
+
+**Risk to resolve first in the build session:** the precise boot entry-condition contract
+(register/work-area state `$C01E` expects, and whether the boot is driven from INIT
+directly or via a standard boot hook like `H.STKE`/the boot procedure vector). The TH
+documents the sequence; a black-box BP trace on the stock CF-3300 (where does it read
+sector 0, what's in registers at the `$C01E` jump) is the clean-room way to confirm it —
+never reading the CF-3300 ROM bytes. Everything else (DSKIO/GETDPB/DRIVES) already ships.

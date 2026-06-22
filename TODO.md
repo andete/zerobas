@@ -437,16 +437,33 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
 - `CALL CHDRV` etc. **[out]** — Disk BASIC v2/v3 additions, beyond DOS1-class 1.0.
 
 ### Carried oracle — Tier-2 provider (DOS1; a distinct DOS-boot sub-track)
-- [ ] **Tier-2 provider oracle** *(from Phase 1.5)* — a real **MSX-DOS 1** filesystem
-      host (black-box; **DOS1 is the confirmed ceiling**), the only organic `GETDPB`
-      consumer, drives zerobas-disk end-to-end. This is a **distinct sub-track** from
-      the Disk BASIC verb surface above: per the circularity finding, a real DOS only
-      exists once a disk ROM loads `MSXDOS.SYS`, which zerobas-disk does not yet do — so
-      Tier-2 is gated on building **MSX-DOS-boot support**, plus a re-supplied DOS1
-      system disk (the 1.5 one is gone). Until then GETDPB stays pinned by the Tier-0/1
-      differential. **DOS2** (Nextor / Sunrise 2.20 / the open MSX-DOS2 kernel — largely
-      open-source, unlike proprietary DOS1) is a future axis, not this phase. See
-      [`disk/docs/provider-oracle-scope.md`](disk/docs/provider-oracle-scope.md) §6.
+The only Phase-2 thread still genuinely open: a real **MSX-DOS 1** filesystem host
+(black-box; **DOS1 is the confirmed ceiling**), the only organic `GETDPB` consumer,
+driving zerobas-disk end-to-end. Per the circularity finding a real DOS only exists
+once a disk ROM loads `MSXDOS.SYS`, so this is gated on building **MSX-DOS-boot
+support** in zerobas-disk — a distinct sub-track from the verb surface above. **DOS2**
+(Nextor / Sunrise 2.20 / the open MSX-DOS2 kernel) is a future axis, not this phase.
+
+- [x] **Feasibility spike — DONE (2026-06-22).** Both prerequisites checked
+      empirically (see [`provider-oracle-scope.md`](disk/docs/provider-oracle-scope.md)
+      §7). (1) A real DOS1 system disk **exists (permanent)**:
+      `~/Documents/msx/msx/disks/test.dsk` boots the stock CF-3300 to
+      `MSX-DOS version 1.03 … A>` (same image as the recorded BDOS oracle). (2) The
+      gap is **pinned**: the *same* disk on the Tier-1 machine
+      (`National_CF-3300_ZEROBASDISK`) falls through to **`MSX BASIC version 1.0`**,
+      even though `H.PHYD` is installed — zerobas-disk's INIT installs the hook but
+      **never reads the boot sector / chainloads the DOS**. Result: **GO**.
+- [ ] **2-Tier2-a — boot bridge.** Add read-sector-0→`$C000` + `JP $C01E` (the
+      boot-sector code does the `MSXDOS.SYS` load; we only hand off). Oracle: Tier-1
+      machine reaches `A>` on `dostest.dsk`, screen-identical to the stock CF-3300;
+      blank-disk fall-through to BASIC preserved. **First sub-task: pin the boot
+      entry-condition contract** (TH ch.3 + a black-box BP trace of the stock CF-3300's
+      sector-0 read / `$C01E` jump — never reading its ROM bytes).
+- [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
+      and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
+      — the organic evidence the Tier-0/1 differential could only approximate.
+- [ ] **2-Tier2-c — regression.** Host-unit-test the sector-0 read + handoff setup;
+      pin the `A>` screen in `disk_probe_provider_dosboot.py`.
 
 **Charter note.** This raises the README's loader-stub charter toward "real MSX
 BASIC" on the disk axis. That is the intended scope of Phase 2 — a conscious step
