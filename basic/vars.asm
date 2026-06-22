@@ -330,4 +330,4 @@ cv_str:
                 ld      de,STRENTSZ
                 add     hl,de
                 djnz    cv_str
-                ret
+                jp      fld_init            ; also reset the random-access field table

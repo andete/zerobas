@@ -102,6 +102,11 @@
 ; follows them in the include order.
                 include "basic/files.asm"
 
+; Random-access record verbs (Phase 2c): FIELD / LSET / RSET. Builds on the
+; file-channel manager (fch_select/fch_valid) in files.asm and the string layer,
+; so it follows files.asm + strvar.asm in the include order.
+                include "basic/field.asm"
+
 ; Stored numbered-line program: storage, NEW, RUN (defines `dispatch_line`).
                 include "basic/program.asm"
 

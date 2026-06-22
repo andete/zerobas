@@ -114,11 +114,25 @@ OPEN_TOKEN      equ     $B0     ; OPEN "name" FOR INPUT AS #n           (stateme
 INPUT_TOKEN     equ     $85     ; INPUT #n,var$ (file form) / LINE INPUT (statement)
 LINE_TOKEN      equ     $AF     ; LINE (only "LINE INPUT #n" supported in Phase 2)
 CLOSE_TOKEN     equ     $B4     ; CLOSE [#n]                            (statement)
-; PUT token: needed only because "OUTPUT" crunches to OUT ($9C) + PUT ($B3) — two
-; reserved words, NOT one keyword (oracle-observed). The PUT *statement* (random-
-; access GET/PUT) is sub-phase 2c; for now the token exists so `FOR OUTPUT`
-; tokenises byte-identically and bare PUT errors (no dispatch). $B3, MSX2 TH 2.20.
-PUT_TOKEN       equ     $B3     ; PUT (only consumed as the 2nd half of OUTPUT here)
+; PUT token: the 2nd half of "OUTPUT" (OUT $9C + PUT $B3 — two reserved words, not
+; one keyword, oracle-observed) AND the random-access PUT statement (sub-phase 2c).
+; $B3, MSX2 TH 2.20. The PUT *statement* dispatch (write a record) is slice 2 of 2c;
+; slice 1 (FIELD/LSET/RSET) does not dispatch it yet.
+PUT_TOKEN       equ     $B3     ; PUT — OUTPUT's 2nd half + random-access PUT statement
+; Random-access record verbs (Phase 2c). Tokens oracle-LOCKED to the VG-8020 crunch
+; (FIELD=$B1, GET=$B2, LSET=$B8, RSET=$B9; PUT=$B3 above; MSX2 TH Table 2.20),
+; discovered by freezing at TAPION mid-BLOAD and reading KBUF — no disassembly.
+;   field#1,2 as a$ -> B1 23 12 2C 13 20 41 53 20 41 24   (FIELD #1, 2 "AS" A$)
+;   lset a$="x"     -> B8 20 41 24 EF 22 78 22            (LSET A$ = "x")
+;   rset b$="y"     -> B9 ...                              (RSET B$ = "y")
+;   get#1 / put#1   -> B2 23 12 / B3 23 12                (slice 2)
+; FIELD partitions a channel's record buffer into named slices; LSET/RSET write a
+; string left/right-justified into a slice; GET/PUT (slice 2) read/write a record on
+; disk. Handlers live in basic/field.asm. The "AS" keyword is kept verbatim ASCII.
+FIELD_TOKEN     equ     $B1     ; FIELD #f, w AS v$[,...] — define record fields (stmt)
+GET_TOKEN       equ     $B2     ; GET [#f][,rec] — read a record into the buffer (slice 2)
+LSET_TOKEN      equ     $B8     ; LSET v$ = s$ — left-justify s$ into fielded v$ (stmt)
+RSET_TOKEN      equ     $B9     ; RSET v$ = s$ — right-justify s$ into fielded v$ (stmt)
 ; File-info FUNCTIONS (Phase 2). $FF-prefixed function tokens (selector byte after
 ; PEEK_PREFIX), oracle-locked to the VG-8020 crunch (EOF=$FF$AB, LOF=$FF$AD;
 ; MSX2 TH Table 2.20). Evaluated in basic/expr.asm ev_f_ff.
@@ -204,6 +218,14 @@ FCH_MODES       equ     $E013   ; per-channel mode array [0..FCH_CEIL]; [0] unus
                                 ; [ch] = 0 closed / 1 INPUT / 2 OUTPUT (FCH_CEIL+1 bytes)
 INDLR_N         equ     $E016   ; INPUT$(n,#f): remaining bytes to read (transient, 1)
 MRG_PTR         equ     $E017   ; MERGE: write cursor into LINEBUF for the current line (2)
+; Random-access (FIELD/LSET/RSET) transient parse/store scratch (Phase 2c slice 1).
+; All dead outside a single FIELD or LSET/RSET statement. Free $E019.. gap below
+; CURPTR ($E020). See basic/field.asm + PROVENANCE.md §random-access records.
+FLD_CUROFF      equ     $E019   ; FIELD: running byte offset into the record buffer (2)
+FLD_CHAN        equ     $E01B   ; FIELD/LSET/RSET: the channel being fielded (1)
+LRSET_JUST      equ     $E01C   ; LSET/RSET: 0 = left-justify, 1 = right-justify (1)
+LRSET_W         equ     $E01D   ; LSET/RSET: destination field width (1)
+LRSET_OFF       equ     $E01E   ; LSET/RSET: destination field offset in the buffer (2)
 RUNFLAG         equ     $E02F   ; 1 = ,R handoff requested (set while parsing)
 CLPTR           equ     $E02B   ; CLOAD/LOAD: store cursor into the program area (2)
 CLINK           equ     $E02D   ; CLOAD/LOAD: saved link word of the current line
@@ -562,6 +584,21 @@ FCH_STATE0      equ     FAT_CURCLUS         ; $E9C9 — base of the per-channel 
 FCH_STATESZ     equ     FWR_DIROFF+2-FCH_STATE0     ; $E9C9..$E9FA inclusive = 50 bytes
 FCH_CTXSZ       equ     FCH_STATESZ + 512   ; one context block = state + data buffer
 FCH_CTX         equ     $EA00   ; FCH_CEIL context blocks, each [state][512-byte buf]
+; --- Phase 2c slice 1: random-access FIELD table + fielded-read scratch -----
+; zerobas stores string vars INLINE in STRTAB ([name0][name1][len][bytes:32]); a
+; MS-BASIC-style descriptor pointing into a record buffer does not exist. So a
+; FIELDed variable is recorded HERE instead: a side table maps a var key to a slice
+; (channel, byte offset, width) of that channel's record buffer (= FSECTOR_BUF while
+; the channel is active, swapped by the write-back cache). str_eval consults it on
+; READ (building a transient [len][bytes] descriptor in FLD_DESC from the slice);
+; LSET/RSET write into the slice. Placed in clean high RAM above FCH_CTX (which ends
+; at $EE63: $EA00 + FCH_CEIL*FCH_CTXSZ = $EA00 + 2*562 = $EE64) and below the C-BIOS
+; sysvars (~$F380). See basic/field.asm + PROVENANCE.md §random-access records.
+FLD_ENTSZ       equ     6       ; field entry = [chan:1][k0:1][k1:1][off:2][wid:1]
+FLD_SLOTS       equ     16      ; max simultaneously-defined fields (own choice)
+FLD_TAB         equ     $EE64   ; field table base ($EE64..$EEC3, 96 bytes)
+FLD_TABEND      equ     FLD_TAB + FLD_SLOTS*FLD_ENTSZ   ; $EEC4
+FLD_DESC        equ     $EF00   ; transient fielded-read descriptor [len][bytes:255]
 ; Control stacks (page $E0, below LINEBUF at $E100). Both grow upward; the
 ; pointer addresses the next free slot, and the stack is empty when it equals
 ; its base. GOSUB frame = [curline:2][resume:2] (4 bytes). FOR frame =

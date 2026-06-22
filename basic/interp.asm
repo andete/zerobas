@@ -532,9 +532,15 @@ kwtable:
                 db      5,"INPUT",1,INPUT_TOKEN
                 db      4,"LINE",1,LINE_TOKEN
                 db      5,"CLOSE",1,CLOSE_TOKEN
-                ; PUT exists only so "OUTPUT" crunches to OUT($9C)+PUT($B3); the
-                ; PUT statement (random access) is sub-phase 2c (no dispatch yet).
+                ; PUT crunches OUTPUT's 2nd half (OUT+PUT) and is the random-access
+                ; PUT statement (slice 2 of 2c — no dispatch yet). Random-access
+                ; record verbs (Phase 2c slice 1): FIELD/LSET/RSET. Tokens oracle-
+                ; locked to the VG-8020 ($B1/$B8/$B9). match_kw is full-keyword, so
+                ; order is free.
                 db      3,"PUT",1,PUT_TOKEN
+                db      5,"FIELD",1,FIELD_TOKEN
+                db      4,"LSET",1,LSET_TOKEN
+                db      4,"RSET",1,RSET_TOKEN
                 ; File-info functions: $FF-prefixed (EOF=$FF$AB, LOF=$FF$AD,
                 ; DSKF=$FF$A6).
                 db      3,"EOF",2,PEEK_PREFIX,EOF_TOKEN
@@ -696,6 +702,12 @@ exec_stmt:
                 jp      z,ex_name
                 cp      MAX_TOKEN           ; MAX FILES = n  (MAXFILES config)
                 jp      z,ex_maxfiles
+                cp      FIELD_TOKEN         ; FIELD #f, w AS v$[,...]  (random access)
+                jp      z,ex_field
+                cp      LSET_TOKEN          ; LSET v$ = s$
+                jp      z,ex_lset
+                cp      RSET_TOKEN          ; RSET v$ = s$
+                jp      z,ex_rset
                 cp      CSAVE_TOKEN
                 jp      z,ex_csave
                 cp      POKE_TOKEN

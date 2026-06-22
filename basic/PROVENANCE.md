@@ -2190,3 +2190,63 @@ MERGE while a file channel is open is undefined (shares the global read state, l
 the other loader verbs). A harness note (not a zerobas property): the real CF-3300
 is slow enough after disk I/O that the test types one statement per line with wide
 spacing, or it drops the next line's opening characters.
+
+## FIELD / LSET / RSET — random-access record fields, slice 1 (basic/field.asm, basic/files.asm, basic/strvar.asm, basic/vars.asm, basic/interp.asm, basic/sysvars.inc)
+
+**Sub-phase 2c, slice 1 of 2** (slice 2 = GET/PUT disk record I/O). A random-access
+file partitions a fixed *record buffer* into named string *fields*; FIELD declares
+the partitioning, LSET/RSET store a value into a field (left/right-justified, space-
+padded), and reading a fielded variable yields its current slice of the buffer.
+
+**Clean-room sourcing.** Verb *semantics* — FIELD partitions the buffer; LSET left-
+justifies + right-pads with spaces, RSET right-justifies + left-pads; a value longer
+than the field truncates from the right; a random file opens with `OPEN "name" AS #n`
+(no `FOR` clause) — are from the public MSX-BASIC language reference (MSX Wiki / MSX
+Resource Center). Token *values* were discovered by the VG-8020 crunch oracle (freeze
+at TAPION mid-BLOAD, read KBUF), **not** from any disassembly:
+`field#1,2 as a$` → `B1 23 12 2C 13 20 41 53 20 41 24` (FIELD=$B1, "AS" verbatim,
+`#1`→`23 12`, the width `2`→`13` single-digit token); `lset a$="x"` → `B8 …`
+(LSET=$B8); `rset b$="y"` → `B9 …` (RSET=$B9). All three confirmed byte-identical on
+the zerobas side by `basic_probe_crunch.py`. GET=$B2 / PUT=$B3 were captured too but
+belong to slice 2.
+
+**Why a side table (own design, forced by zerobas's inline string store).** In MS-
+BASIC a string variable holds a 3-byte *descriptor* `[len][ptr]`, and FIELD simply
+points that descriptor into the record buffer. zerobas has no such descriptor: string
+variables are stored INLINE in STRTAB (`[name0][name1][len][bytes:32]`). So a fielded
+variable is recorded in a separate **field table** (`FLD_TAB`, `basic/sysvars.inc`):
+each entry is `[chan][key0][key1][offset:2][width]`, mapping a 2-char var key to a
+slice of a channel's record buffer. The record buffer is the channel's `FSECTOR_BUF`
+(the 512-byte buffer the MAXFILES write-back cache already swaps per channel), so a
+field's bytes live in the channel context and travel with it. Two hooks make a fielded
+variable behave like one:
+- **read** — `str_eval`'s variable path calls `fld_lookup` *before* `str_get_key`. If
+  the key is fielded it `fch_select`s the field's channel, copies the slice from
+  `FSECTOR_BUF` into `FLD_DESC` as a transient `[len][bytes]` descriptor, points STRPTR
+  there, and returns CF set (so PRINT / CVI / comparison see the live bytes). A non-
+  fielded key returns CF clear and the original STRTAB path runs unchanged — verified
+  no-regression by the INPUT$ and MERGE probes.
+- **write** — LSET/RSET (`basic/field.asm`) look the key up in the field table, select
+  the channel, space-fill the field, then copy `min(srclen,width)` bytes left- or
+  right-aligned.
+
+**Slice-1 scope / documented divergences.**
+- `OPEN "name" AS #n` (RANDOM, mode 4 in FCH_MODES) sets up a spaces-filled in-RAM
+  record buffer (`fld_fill_record`) but does **not** yet open/create the file on disk
+  — the on-disk record I/O is GET/PUT (slice 2). A slice-1 RANDOM open is observable
+  only through FIELD/LSET/RSET + reading fielded vars, never on disk.
+- LSET/RSET require a FIELDed target; on a non-fielded variable they error (real MSX-
+  BASIC left-justifies into the variable's current value — a Phase-3 nicety).
+- A fielded READ takes precedence over a plain STRTAB value; assigning a fielded name
+  with a plain `LET` does not "disconnect" the field (real MSX-BASIC does).
+- Field widths are 1..255; FIELD overflow past the record length is not checked. Up to
+  FLD_SLOTS (=16) fields total; extra fields are dropped. The field table is cleared at
+  cold start (init_filechan), on NEW/CLEAR/RUN (clear_vars), and when a channel closes
+  (fch_do_close_ch), and replaced on re-FIELD of the same channel.
+
+**Oracle.** `disk-spec/tools/disk_probe_field.py`: `OPEN"R.DAT" AS #1 : FIELD #1,5 AS
+A$,10 AS B$ : LSET A$="HI" : RSET B$="END" : PRINT"<";A$;"|";B$;">"` prints exactly
+`<HI   |       END>` (5-wide left "HI", '|', 10-wide right "END") — the interior
+spaces prove the justification + padding. zerobas and the real **National CF-3300**
+print the byte-identical line (functional + differential PASS). The fat.asm engine is
+untouched; the channel manager is reused unmodified (RANDOM is just a new FCH mode).

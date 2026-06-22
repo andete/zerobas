@@ -338,6 +338,21 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
             `A$=MKI$(258)` + `C$=MKI$(CVI(A$))` write M.DAT = `\x02\x01\x02\x01\x1a`
             **byte-identical to the CF-3300** (`disk_probe_mkicvi.py`). Float siblings
             (MKS$/MKD$/CVS/CVD) need Phase-3 floats — deferred. See PROVENANCE §MKI$/CVI.
+      - [x] **`FIELD` + `LSET` + `RSET` (slice 1 of 2)** — DONE (basic/field.asm +
+            str_eval/clear_vars/OPEN hooks). RANDOM open (`OPEN"name" AS #n`, no FOR)
+            sets up an in-RAM record buffer; FIELD partitions it into named slices (a
+            side table, since zerobas stores strings inline — no MS-BASIC descriptor to
+            repoint); LSET/RSET store left/right-justified + space-padded; reading a
+            fielded var yields its slice (str_eval hook). Tokens oracle-locked (FIELD
+            $B1 / LSET $B8 / RSET $B9). `OPEN"R.DAT" AS #1 : FIELD#1,5 AS A$,10 AS B$ :
+            LSET A$="HI" : RSET B$="END" : PRINT` → `<HI   |       END>` **byte-
+            identical to the CF-3300** (`disk_probe_field.py`). See PROVENANCE
+            §FIELD/LSET/RSET.
+      - [ ] **`GET` + `PUT` (slice 2 of 2)** — disk record I/O: read/write record N
+            (byte offset N*reclen) of the random file into/from the record buffer.
+            Tokens already captured (GET $B2 / PUT $B3). Needs random sector
+            positioning over the FAT chain + `OPEN…AS` actually opening/creating the
+            on-disk file. Next session.
 - [ ] **`CALL FORMAT` [in]** — disk format via the STATEMENT-expansion seam
       (`CHOICE $4019` / `DSKFMT $401C`); pin the seam in **Step 0b** first, then
       implement over zerobas-disk's existing `CHOICE`/`DSKFMT` entries.

@@ -43,8 +43,11 @@ str_eval:
                 ; string variable: key it and point STRPTR at its stored value.
                 call    var_name_key        ; BC = key, HL past name + `$`
                 push    hl                  ; guard cursor across the lookup
+                call    fld_lookup          ; FIELDed var? -> STRPTR=FLD_DESC slice, CF set
+                jr      c,sev_have          ; fielded -> STRPTR already set
                 call    str_get_key         ; HL -> [len][bytes] descriptor
                 ld      (STRPTR),hl
+sev_have:
                 pop     hl
                 jp      str_eval_ok
 str_eval_lit:

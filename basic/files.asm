@@ -222,7 +222,7 @@ do_open:
                 call    skip_spaces
                 ld      a,(hl)
                 cp      FOR_TOKEN           ; FOR
-                jp      nz,stmt_error
+                jp      nz,oo_random        ; no FOR clause -> RANDOM mode (OPEN..AS #n)
                 inc     hl
                 ; mode keyword: INPUT ($85); OUTPUT = OUT ($9C) + PUT ($B3); or
                 ; APPEND = "APP" (verbatim ASCII $41 $50 $50) + END ($81) — none of
@@ -265,6 +265,9 @@ oo_output:
 oo_input:
                 inc     hl
                 ld      a,1                 ; mode = INPUT
+                jr      oo_setmode
+oo_random:
+                ld      a,4                 ; mode = RANDOM (no FOR clause)
 oo_setmode:
                 ld      (FCH_MODE),a        ; provisional; cleared on any failure
                 ; "AS" is kept verbatim ASCII (not tokenised) — match it.
@@ -304,11 +307,13 @@ oo_num:
                 pop     de
                 push    hl                  ; guard the text cursor — CALSLT (inside
                 push    de                  ; fat_io_*) clobbers HL + regs
-                ld      a,(FCH_MODE)        ; provisional action: 1 INPUT/2 OUTPUT/3 APPEND
+                ld      a,(FCH_MODE)        ; action: 1 INPUT/2 OUTPUT/3 APPEND/4 RANDOM
                 cp      2
                 jr      z,oo_create
                 cp      3
                 jr      z,oo_append
+                cp      4
+                jr      z,oo_random_setup
                 call    fat_io_open         ; INPUT: mount + find + prime read
                 jr      oo_done
 oo_create:
@@ -316,6 +321,13 @@ oo_create:
                 jr      oo_done
 oo_append:
                 call    fat_io_append       ; APPEND: open existing + position at EOF
+                jr      oo_done
+oo_random_setup:
+                ; RANDOM (slice 1): give the channel a spaces-filled in-RAM record
+                ; buffer. The on-disk file open/create + GET/PUT record I/O are slice
+                ; 2; here the channel exists only for FIELD/LSET/RSET. CF clear = OK.
+                call    fld_fill_record
+                or      a
 oo_done:
                 pop     de
                 pop     hl
@@ -515,6 +527,7 @@ ifc_zero:
                 djnz    ifc_zero
                 ld      a,1
                 ld      (MAXF),a            ; default ceiling = 1 (#1 always usable)
+                call    fld_init            ; empty the random-access field table
                 ret
 
 ; ===========================================================================
@@ -648,6 +661,8 @@ fch_do_close_ch:
                 call    fat_io_close        ; flush partial sector + dir size/cluster
 fdcc_clear:
                 ld      a,(FCH_ACTIVE)      ; = the channel (fch_select made it active)
+                call    fld_clear_chan      ; drop any FIELD definitions on this channel
+                ld      a,(FCH_ACTIVE)      ; (fld_clear_chan clobbered A; reload)
                 ld      e,a
                 ld      d,0
                 ld      hl,FCH_MODES
