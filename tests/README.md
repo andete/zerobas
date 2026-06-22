@@ -74,17 +74,28 @@ routine honours its side; the stub supplies the other side.
 | `test_program.py` | 1 (pure) | `CHPUT`/`BREAKX` (neutralised) | the documented line-link layout; insert/replace/delete/relink |
 | `test_tape.py` | 1 + 2 | PSG/PPI ports (`io_in`/`io_out`) | the documented FSK frame + STMOTR/PPI/PSG contracts; `tapin` decodes a synthetic waveform |
 | `test_getdpb.py` | 2/3 (dep-mock) | `fat_mount`, `fat_total_clusters` | the 18-byte DPB, byte-for-byte vs the National CF-3300 oracle |
+| `test_printusing.py` | 1 + 2 | `eval`, `str_eval`, `CHPUT` | the documented PRINT USING `#`/`!`/`&`/`\..\` field semantics; base-10 digits |
+| `test_field.py` | 1 (pure) | none | the FIELD consecutive-offset layout; the documented LSET/RSET justify/space-fill/truncate |
 
 `test_getdpb.py` shows the dependency-mock technique: GETDPB reads the disk
 through the FDC, so its two I/O dependencies are trapped and replaced by
 callbacks that leave exactly the scratch a real 720 KB mount would — then
 GETDPB's own field assembly runs for real and is checked against the oracle.
+`test_printusing.py` reuses it for the format engine: `eval`/`str_eval` are
+trapped to inject one value, so the leaf field-formatters (`pu_fmt_int`,
+`pu_do_number`, `pu_do_string`) run for real against CHPUT capture.
 
 Every expected value is justified by an independent oracle (math, the documented
 MSX-BASIC / BIOS contract, a round-trip property, or a symbol-file constant) and
 cited in the test — not copied from the ROM's own output. FAT/FDC sector I/O is
 genuinely Tier-3 (it needs a disk-controller model) and stays in the openMSX
-probes; `test_getdpb.py` already covers the DPB-builder slice of it.
+probes; `test_getdpb.py` already covers the DPB-builder slice of it. So for the
+Phase-2 disk verbs the split is: the **in-RAM** logic is unit-tested here — the
+crunch (`test_tokenise.py`, incl. the CALL device-name verbatim rule), the FIELD
+table + LSET/RSET (`test_field.py`), the PRINT USING engine (`test_printusing.py`)
+— while the **sector-moving** halves (GET/PUT's `fat_rand_*`, CALL FORMAT's
+filesystem writes) stay openMSX-only (`disk_probe_getput.py`,
+`disk_probe_format.py`).
 
 ## Scope and limits
 

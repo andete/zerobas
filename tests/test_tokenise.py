@@ -60,6 +60,33 @@ def run():
         ("A=1",         [ord("A"), s["EQ_TOKEN"], DIGIT + 1, 0]),
         # GOTO <n>: branch_lineno emits the line-number ref $0E,<lo>,<hi>
         ("GOTO 10",     [s["GOTO_TOKEN"], SP, s["LINENO_TOKEN"], 10, 0, 0]),
+
+        # --- Phase-2 disk-BASIC verbs: each crunches to its single keyword token.
+        #     Oracle: the token constants from sysvars.inc (the crunch itself is
+        #     oracle-validated against the VG-8020 by basic_probe_crunch.py).
+        ("FIELD",       [s["FIELD_TOKEN"], 0]),
+        ("LSET",        [s["LSET_TOKEN"], 0]),
+        ("RSET",        [s["RSET_TOKEN"], 0]),
+        ("GET",         [s["GET_TOKEN"], 0]),
+        ("PUT",         [s["PUT_TOKEN"], 0]),
+        # PRINT USING: USING is its own keyword token after the PRINT token.
+        ("PRINT USING", [s["PRINT_TOKEN"], SP, s["USING_TOKEN"], 0]),
+
+        # --- the CALL device-name verbatim rule (the subtle regression) -------
+        # After CALL (and its '_' alias), the device name is kept VERBATIM and
+        # upper-cased — NOT keyword-crunched. So "FORMAT" stays the six letters,
+        # even though "FOR" is itself a keyword. Oracle: matches the VG-8020,
+        # which keeps the CALL name literal (basic_probe_crunch.py CALL FORMAT).
+        ("CALL FORMAT", [s["CALL_TOKEN"], SP] + list(b"FORMAT") + [0]),
+        ("call format", [s["CALL_TOKEN"], SP] + list(b"FORMAT") + [0]),
+        # the '_' abbreviation is kept as the literal '_' ($5F) in the stored
+        # program (MSX keeps '_' distinct from the CALL token — '_FOO' lists back
+        # as '_FOO', not 'CALL FOO'); the name after it is verbatim all the same.
+        ("_FORMAT",     [ord("_")] + list(b"FORMAT") + [0]),
+
+        # --- and the COMPLEMENT: outside CALL, "FORMAT" DOES crunch FOR + MAT,
+        #     proving the verbatim path is scoped to CALL, not global.
+        ("FORMAT=5",    [s["FOR_TOKEN"]] + list(b"MAT") + [s["EQ_TOKEN"], DIGIT + 5, 0]),
     ]
 
     fails = 0
