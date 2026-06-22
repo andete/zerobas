@@ -469,9 +469,17 @@ ev_ff_inp:                                  ; INP: read one Z80 port (DE = port)
                 ld      e,a
                 ld      d,0                 ; INP yields 0..255
                 ret
-ev_ff_eof:                                  ; EOF(#n): -1 at end of the input file
-                ; The channel arg (DE) is ignored (single channel). EOF when every
-                ; file byte has been delivered (FREAD_LEFT, 4-byte LE, == 0).
+ev_ff_eof:                                  ; EOF(n): -1 at end of the input file n
+                ; Select channel n (DE = arg) so FREAD_LEFT belongs to it, then test
+                ; whether every file byte has been delivered (4-byte LE == 0). fch_select
+                ; uses LDIR only (no CALSLT), so IX — the evaluator's token cursor —
+                ; survives; it does clobber HL/BC/A (the factor caller tolerates that,
+                ; like PEEK). A bad channel number is a function error.
+                ld      a,e
+                call    fch_valid
+                jp      nc,ev_f_err
+                ld      a,e
+                call    fch_select
                 ld      hl,FREAD_LEFT
                 ld      a,(hl)
                 inc     hl
@@ -484,9 +492,14 @@ ev_ff_eof:                                  ; EOF(#n): -1 at end of the input fi
                 ret     nz                  ; bytes remain -> not EOF -> 0
                 dec     de                  ; all delivered -> EOF -> -1 ($FFFF)
                 ret
-ev_ff_lof:                                  ; LOF(#n): length of the open file
-                ; The channel arg (DE) is ignored. FAT_FILESIZE (set by fat_find at
-                ; OPEN) is the file's byte count; return its low 16 bits.
+ev_ff_lof:                                  ; LOF(n): length of open input file n
+                ; Select channel n so FAT_FILESIZE (set by fat_find at OPEN, part of
+                ; the per-channel state span) belongs to it; return its low 16 bits.
+                ld      a,e
+                call    fch_valid
+                jp      nc,ev_f_err
+                ld      a,e
+                call    fch_select
                 ld      de,(FAT_FILESIZE)
                 ret
 ev_ff_dskf:                                 ; DSKF(d): free clusters on the drive

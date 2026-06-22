@@ -257,8 +257,17 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
             and the on-disk `OUT.TXT` is **byte-identical to the real CF-3300**
             (`b"hello world\r\n\x1a"`, `disk_probe_filewrite.py` differential). See
             basic/PROVENANCE.md §file channel — sequential write.
-      - [ ] `PRINT# USING`, `INPUT$(n,#f)`, `OPEN…FOR APPEND`, and the `MAXFILES`
-            multi-channel table.
+      - [x] **`MAXFILES` + the multi-channel table** — DONE (basic/files.asm channel
+            manager + basic/sysvars.inc FCH_CTX). Retires the single-channel limit:
+            up to `FCH_CEIL`(=2) channels open at once, via a **write-back context
+            cache** over the UNCHANGED fat.asm (each channel owns a saved
+            [state][512-buf] block; the globals hold the active channel; switching
+            saves+loads). `MAXFILES` = MAX($CD)+FILES($B7) oracle-locked; default 1;
+            bare CLOSE closes all. Two OUTPUT files written **interleaved** produce
+            on-disk images **byte-identical to the real CF-3300**
+            (`disk_probe_maxfiles.py`). RAM-bounded ceiling (real MSX=15) documented.
+            See basic/PROVENANCE.md §MAXFILES.
+      - [ ] `PRINT# USING`, `INPUT$(n,#f)`, `OPEN…FOR APPEND`.
 - [ ] **File/dir management [in]** — `FILES`✅, `KILL`✅, `NAME…AS…`✅, `LFILES`, `MERGE`
       (the `LOAD`/`SAVE`/`BLOAD`/`BSAVE`/`RUN"f"` already exist from Phase 1).
       - [x] **`NAME "old" AS "new"`** — DONE (basic/files.asm). Rewrites the dir
@@ -292,7 +301,8 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
             before and after a read; sequential-file semantics unclear, so not
             cargo-culted. **`LFILES`** — printer-bound (LPT), no device in zerobas.
             Both observed + documented in PROVENANCE §LOC / LFILES.
-- [ ] **Config [in]** — `MAXFILES` (sizes the channel table).
+- [x] **Config [in]** — `MAXFILES` (sizes the channel table) — DONE; see the
+      sequential-I/O sub-item above + basic/PROVENANCE.md §MAXFILES.
 - [ ] **Direct sector access [in]** — `DSKI$` (read sector, fn) / `DSKO$` (write
       sector, stmt; `HDSKO $FDEF` hook) — thin wrappers over DSKIO.
 - [ ] **Random-access files [in → sub-phase 2c]** — `FIELD`, `GET`, `PUT`, `LSET`,

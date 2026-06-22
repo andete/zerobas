@@ -197,8 +197,10 @@ de_ext:
 ; fat.asm. No disassembly. See basic/PROVENANCE.md §file channel.
 ;
 ; Divergences (own design, quarantined; documented in PROVENANCE.md):
-;   * ONE channel only — a MAXFILES channel table is a later sub-item; the
-;     file number is recorded but not range-checked against a table.
+;   * up to FCH_CEIL (=2) channels open at once — a real multi-channel table
+;     (MAXFILES) over fat.asm's single global state, via the write-back context
+;     cache in the channel-manager section below. The ceiling is RAM-bounded
+;     (real MSX MAXFILES reaches 15); channel numbers are range-checked to MAXF.
 ;   * INPUT#/LINE INPUT# fill STRING variables only (numeric INPUT# is Phase 3);
 ;     a value longer than STRMAX is truncated (the string layer's own limit).
 ;   * console INPUT (no '#') and graphics LINE are NOT implemented — they error.
@@ -261,12 +263,25 @@ oo_setmode:
                 inc     hl
 oo_num:
                 call    eval                ; DE = channel number, HL past it
+                ; validate the channel against the MAXFILES ceiling (1..MAXF).
+                ld      a,d
+                or      a
+                jr      nz,oo_fail_syn      ; > 255 -> bad file number
+                ld      a,e
+                call    fch_valid
+                jr      nc,oo_fail_syn      ; 0 or > MAXF -> bad file number
                 ld      a,(DISKSLOT_OK)
                 or      a
-                jr      z,oo_fail
+                jr      z,oo_nodisk         ; no disk -> fail BEFORE claiming a slot
+                ; claim the channel's slot (saving any OTHER active channel) so the
+                ; engine globals belong to this channel before fat_io_* fills them.
+                push    de
+                ld      a,e
+                call    fch_claim           ; FCH_ACTIVE = e (no stale load)
+                pop     de
                 push    hl                  ; guard the text cursor — CALSLT (inside
                 push    de                  ; fat_io_open/create) clobbers HL + regs
-                ld      a,(FCH_MODE)
+                ld      a,(FCH_MODE)        ; provisional requested mode (1 or 2)
                 cp      2
                 jr      z,oo_create
                 call    fat_io_open         ; INPUT: mount + find + prime read
@@ -277,12 +292,35 @@ oo_done:
                 pop     de
                 pop     hl
                 jr      c,oo_fail           ; not found / dir-full / mount / I-O error
+                ; success: record the open mode in the channel table + the mirror.
+                ; The FCH_MODES address math uses HL, so guard the text cursor (HL)
+                ; that exec_stmt needs to continue the line.
                 ld      a,e
-                ld      (FCH_NUM),a         ; record the open channel
+                ld      (FCH_NUM),a
+                push    hl
+                ld      c,e
+                ld      b,0
+                ld      hl,FCH_MODES
+                add     hl,bc
+                ld      a,(FCH_MODE)        ; the requested mode (still provisional)
+                ld      (hl),a              ; FCH_MODES[ch] = mode (now committed)
+                pop     hl
                 jp      exec_stmt
 oo_fail:
+                ; post-claim failure (DE = channel): release the slot we claimed and
+                ; mark the channel closed in the table (its globals are stale garbage).
+                ld      c,e
+                ld      b,0
+                ld      hl,FCH_MODES
+                add     hl,bc
                 xor     a
-                ld      (FCH_MODE),a        ; not actually open
+                ld      (hl),a              ; FCH_MODES[ch] = 0
+                ld      (FCH_MODE),a
+                ld      (FCH_ACTIVE),a      ; no channel live (don't save the garbage)
+                jp      load_error
+oo_nodisk:
+                xor     a
+                ld      (FCH_MODE),a        ; no slot was claimed; leave FCH_ACTIVE alone
                 jp      load_error
 oo_fail_syn:
                 xor     a
@@ -311,7 +349,14 @@ input_common:
                 cp      '#'                 ; only the file form (#n) is supported
                 jp      nz,stmt_error       ; console INPUT = Phase 3
                 inc     hl
-                call    eval                ; DE = channel number (single channel)
+                call    eval                ; DE = channel number
+                ld      a,e
+                call    fch_valid
+                jp      nc,load_error       ; 0 or > MAXF -> bad file number
+                push    hl                  ; guard text cursor (fch_select uses LDIR)
+                ld      a,e
+                call    fch_select          ; make channel e live; FCH_MODE = its mode
+                pop     hl
                 ld      a,(FCH_MODE)
                 cp      1                   ; a channel must be open for INPUT
                 jp      nz,load_error
@@ -377,45 +422,229 @@ ris_done:
                 ret
 
 ; --- CLOSE [#n] -------------------------------------------------------------
+; CLOSE [#n] — close one channel, or (bare CLOSE) every open channel. An OUTPUT
+; channel is flushed + Ctrl-Z-stamped via fch_do_close_ch (which selects it first,
+; so the right channel's buffer/dir state is the one flushed).
 ex_close:
                 inc     hl                  ; HL -> bytes after the CLOSE token
                 call    skip_spaces
                 ld      a,(hl)
                 or      a
-                jr      z,dc_doclose        ; bare CLOSE (end of line)
+                jr      z,dc_all            ; bare CLOSE (end of line) -> close all
                 cp      COLON
-                jr      z,dc_doclose        ; bare CLOSE before ':'
+                jr      z,dc_all            ; bare CLOSE before ':' -> close all
                 cp      '#'
                 jr      nz,dc_num
                 inc     hl
 dc_num:
-                call    eval                ; consume + ignore the channel number
-dc_doclose:
-                ; OUTPUT flushes the buffered tail + stamps the directory entry
-                ; (fat_io_close); INPUT has no dirty state.
-                ld      a,(FCH_MODE)
-                cp      2
-                jr      nz,dc_clear
+                call    eval                ; DE = channel number; HL = text cursor
+                push    hl                  ; guard the cursor (HL is reused + CALSLT)
+                ld      a,e
+                call    fch_valid
+                jr      nc,dc_done          ; out of range -> lenient no-op
+                ld      c,e                 ; FCH_MODES[ch] == 0 ? -> already closed
+                ld      b,0
+                ld      hl,FCH_MODES
+                add     hl,bc
+                ld      a,(hl)
+                or      a
+                jr      z,dc_done           ; not open -> no-op
+                ld      a,e
+                call    fch_do_close_ch     ; flush (if OUTPUT) + mark closed
+dc_done:
+                pop     hl                  ; restore the text cursor
+                jp      exec_stmt
+dc_all:
                 push    hl                  ; guard text cursor across CALSLT
-                ld      a,$1A               ; append the CP/M text-EOF marker (Ctrl-Z)
-                call    fat_io_putbyte      ; — MSX Disk BASIC stamps it on CLOSE of a
-                                            ; sequential OUTPUT file (CF-3300-confirmed)
-                call    fat_io_close        ; flush data sector + dir size/cluster
-                pop     hl                  ; CY (write error) is best-effort-ignored
-dc_clear:
-                xor     a
-                ld      (FCH_NUM),a
-                ld      (FCH_MODE),a         ; mark the channel closed
+                call    fch_close_all
+                pop     hl
                 jp      exec_stmt
 
 ; init_filechan — cold-start the file-channel state: no channel open, PRINT to
-; screen. Called from `init` before the banner is printed.
+; screen, the multi-channel table empty, and MAXFILES = 1 (the observed default:
+; OPEN #1 works with no MAXFILES on the real CF-3300). Called from `init` before
+; the banner is printed.
 init_filechan:
                 xor     a
                 ld      (FCH_NUM),a
                 ld      (FCH_MODE),a
                 ld      (PRDEST),a
+                ld      (FCH_ACTIVE),a      ; no channel live in the engine globals
+                ; clear the per-channel mode array [0..FCH_CEIL].
+                ld      hl,FCH_MODES
+                ld      b,FCH_CEIL+1
+ifc_zero:
+                ld      (hl),a
+                inc     hl
+                djnz    ifc_zero
+                ld      a,1
+                ld      (MAXF),a            ; default ceiling = 1 (#1 always usable)
                 ret
+
+; ===========================================================================
+; Channel manager (Phase 2 MAXFILES) — the multi-channel substrate that retires
+; the single-channel limit, WITHOUT touching the oracle-validated fat.asm engine.
+;
+; fat.asm keeps ONE global set of streaming state (FSECTOR_BUF + FCH_STATE0..).
+; Each open channel owns a context block (FCH_CTX[ch] = [state:FCH_STATESZ][512])
+; holding a saved copy; the globals always hold the "active" channel's LIVE state.
+; This is a write-back cache: FCH_ACTIVE names the live channel; switching to a
+; different channel SAVES the globals to the old channel's ctx and LOADS the new
+; one's. Re-using the same channel back-to-back (the common case) copies nothing.
+; FCH_MODE/FCH_NUM mirror the active channel so the existing read/write/PRINT#
+; code (which reads those + the globals) works unchanged.
+;
+; Register discipline: these routines move state with LDIR, so they clobber
+; A/BC/DE/HL but NOT IX/IY (no CALSLT). Statement callers guard their HL text
+; cursor; the EOF/LOF function callers rely on IX (the token cursor) surviving.
+; ===========================================================================
+
+; fch_ctx_addr — HL = base of channel A's context block (A = 1..FCH_CEIL).
+;   HL = FCH_CTX + (A-1)*FCH_CTXSZ. Clobbers A, B, DE.
+fch_ctx_addr:
+                dec     a                   ; 0-based block index
+                ld      hl,FCH_CTX
+                or      a
+                ret     z                   ; index 0 -> FCH_CTX
+                ld      b,a
+                ld      de,FCH_CTXSZ
+fca_lp:
+                add     hl,de
+                djnz    fca_lp
+                ret
+
+; fch_save_active — save the engine globals to the active channel's context block.
+; No-op when no channel is active. Clobbers A/BC/DE/HL.
+fch_save_active:
+                ld      a,(FCH_ACTIVE)
+                or      a
+                ret     z                   ; nothing live -> nothing to save
+                call    fch_ctx_addr        ; HL = ctx[active]
+                ex      de,hl               ; DE = ctx dest
+                ld      hl,FCH_STATE0       ; copy the 50-byte engine-state span
+                ld      bc,FCH_STATESZ
+                ldir                        ; DE -> ctx + FCH_STATESZ
+                ld      hl,FSECTOR_BUF      ; then the 512-byte data buffer
+                ld      bc,512
+                ldir
+                ret
+
+; fch_load_ctx — load channel A's context block into the engine globals and make
+; it the active channel (FCH_ACTIVE = A). Clobbers A/BC/DE/HL.
+fch_load_ctx:
+                push    af                  ; keep the channel number
+                call    fch_ctx_addr        ; HL = ctx[A]
+                ld      de,FCH_STATE0
+                ld      bc,FCH_STATESZ
+                ldir                        ; ctx state -> globals; HL -> ctx + 50
+                ld      de,FSECTOR_BUF
+                ld      bc,512
+                ldir                        ; ctx buffer -> FSECTOR_BUF
+                pop     af
+                ld      (FCH_ACTIVE),a
+                ret
+
+; fch_sync_mirror — FCH_NUM = FCH_ACTIVE, FCH_MODE = FCH_MODES[FCH_ACTIVE].
+fch_sync_mirror:
+                ld      a,(FCH_ACTIVE)
+                ld      (FCH_NUM),a
+                ld      e,a
+                ld      d,0
+                ld      hl,FCH_MODES
+                add     hl,de
+                ld      a,(hl)
+                ld      (FCH_MODE),a
+                ret
+
+; fch_select — make channel A live in the engine globals (loading its context if a
+; different channel is currently active) and refresh the FCH_MODE/FCH_NUM mirror.
+; A = channel (assumed already range-validated). Clobbers A/BC/DE/HL; preserves IX.
+fch_select:
+                ld      b,a
+                ld      a,(FCH_ACTIVE)
+                cp      b
+                jr      z,fsel_sync         ; already live -> just refresh the mirror
+                push    bc
+                call    fch_save_active     ; flush the previously-active channel
+                pop     bc
+                ld      a,b
+                call    fch_load_ctx        ; ctx[A] -> globals, FCH_ACTIVE = A
+fsel_sync:
+                jp      fch_sync_mirror
+
+; fch_claim — make channel A the active slot WITHOUT loading its (about-to-be-
+; overwritten) context, used by OPEN before fat_io_open/create fills the globals.
+; Any OTHER currently-active channel is saved first. A = channel. Clobbers regs.
+fch_claim:
+                ld      b,a
+                ld      a,(FCH_ACTIVE)
+                cp      b
+                ret     z                   ; A already owns the globals
+                push    bc
+                call    fch_save_active     ; preserve the other channel's state
+                pop     bc
+                ld      a,b
+                ld      (FCH_ACTIVE),a      ; A claims the globals (no load)
+                ret
+
+; fch_valid — CF set iff 1 <= A <= MAXF (a legal, in-ceiling channel number).
+; A = channel. Clobbers A, B.
+fch_valid:
+                or      a
+                ret     z                   ; 0 -> CF clear (invalid)
+                ld      b,a
+                ld      a,(MAXF)
+                cp      b                   ; MAXF - ch: CY set iff ch > MAXF
+                ccf                         ; invert -> CY set iff ch <= MAXF
+                ret
+
+; fch_do_close_ch — close channel A: if open FOR OUTPUT, append the Ctrl-Z text-EOF
+; marker, flush, and stamp the directory; then mark the channel closed and release
+; the engine globals. A = channel (1..FCH_CEIL, assumed open). CALSLT inside
+; fat_io_* clobbers everything incl. IX/IY — the caller must guard its HL cursor.
+fch_do_close_ch:
+                call    fch_select          ; load the channel; FCH_MODE = its mode
+                ld      a,(FCH_MODE)
+                cp      2
+                jr      nz,fdcc_clear       ; INPUT (or none): no dirty state to flush
+                ld      a,$1A               ; OUTPUT: CP/M text-EOF (Ctrl-Z), as on the
+                call    fat_io_putbyte      ; real CF-3300 CLOSE of a sequential file
+                call    fat_io_close        ; flush partial sector + dir size/cluster
+fdcc_clear:
+                ld      a,(FCH_ACTIVE)      ; = the channel (fch_select made it active)
+                ld      e,a
+                ld      d,0
+                ld      hl,FCH_MODES
+                add     hl,de
+                xor     a
+                ld      (hl),a              ; FCH_MODES[ch] = 0 (closed)
+                ld      (FCH_MODE),a        ; mirror
+                ld      (FCH_ACTIVE),a      ; globals no longer hold a valid channel
+                ret
+
+; fch_close_all — close every open channel (flushing OUTPUT ones). Used by bare
+; CLOSE and by MAXFILES (which reinitialises the channel table). Guard HL caller-
+; side (CALSLT). Clobbers everything.
+fch_close_all:
+                ld      b,1                 ; channel index 1..FCH_CEIL
+fcla_lp:
+                ld      a,b
+                cp      FCH_CEIL+1
+                ret     nc
+                push    bc
+                ld      e,b
+                ld      d,0
+                ld      hl,FCH_MODES
+                add     hl,de
+                ld      a,(hl)
+                or      a
+                jr      z,fcla_next         ; not open -> skip
+                ld      a,b
+                call    fch_do_close_ch
+fcla_next:
+                pop     bc
+                inc     b
+                jr      fcla_lp
 
 ; --- KILL "name" — delete a file -------------------------------------------
 ; Frees the file's FAT cluster chain and marks its directory entry deleted, via
@@ -519,3 +748,39 @@ nm_fail:
 nm_fail2:
                 pop     hl                  ; balance the second guarded cursor
                 jp      load_error
+
+; --- MAXFILES = n — size the multi-channel table ---------------------------
+; MAXFILES sets how many file channels may be open simultaneously (the value also
+; bounds every OPEN/INPUT#/PRINT#/CLOSE channel number, via fch_valid). Tokenised
+; as MAX ($CD) + FILES ($B7) — two reserved words, oracle-locked like OUTPUT. Like
+; the reference, changing MAXFILES reinitialises the file system: every open channel
+; is closed first (OUTPUT ones flushed + Ctrl-Z-stamped). zerobas accepts 0..FCH_CEIL
+; (the RAM-bounded ceiling, =2); a larger value is a syntax error — real MSX allows
+; up to 15, a documented divergence (we have RAM for only FCH_CEIL 512-byte channel
+; buffers). Entry: HL on the MAX token. See basic/PROVENANCE.md §MAXFILES.
+ex_maxfiles:
+                inc     hl                  ; past MAX ($CD)
+                ld      a,(hl)
+                cp      FILES_TOKEN         ; "MAXFILES" = MAX + FILES; require FILES
+                jp      nz,stmt_error       ; bare MAX is not a statement
+                inc     hl                  ; past FILES ($B7)
+                call    skip_spaces
+                ld      a,(hl)
+                cp      EQ_TOKEN            ; '=' ($EF)
+                jp      nz,stmt_error
+                inc     hl
+                call    eval                ; DE = requested ceiling
+                ld      a,d
+                or      a
+                jp      nz,stmt_error       ; > 255 -> out of range
+                ld      a,e
+                cp      FCH_CEIL+1
+                jp      nc,stmt_error       ; > FCH_CEIL -> beyond our RAM ceiling
+                push    de                  ; guard the requested value
+                push    hl                  ; guard the text cursor across CALSLT
+                call    fch_close_all       ; MAXFILES reinitialises: close everything
+                pop     hl
+                pop     de
+                ld      a,e
+                ld      (MAXF),a            ; commit the new ceiling (0..FCH_CEIL)
+                jp      exec_stmt

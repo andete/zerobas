@@ -127,6 +127,12 @@ DSKF_TOKEN      equ     $A6     ; DSKF(d)  -> free clusters on the drive (=free 
 ; File/directory management (Phase 2). Tokens oracle-locked to the VG-8020 crunch
 ; (KILL=$D4, NAME=$D3; MSX2 TH Table 2.20). The handlers live in basic/files.asm.
 KILL_TOKEN      equ     $D4     ; KILL "name" — delete a file (statement)
+; MAXFILES config (Phase 2). Oracle-LOCKED: the VG-8020 crunches "MAXFILES" to TWO
+; reserved words — MAX ($CD) + FILES ($B7) — exactly like OUTPUT = OUT+PUT (proven
+; byte-identical by basic_probe_crunch.py: `max` -> $CD, `files` -> $B7,
+; `maxfiles=2` -> $CD $B7 $EF $13). So zerobas adds a "MAX" reserved word and forms
+; MAXFILES = MAX+FILES; the statement is dispatched on $CD (then requires $B7).
+MAX_TOKEN       equ     $CD     ; MAX — 1st half of MAXFILES (statement: MAX FILES = n)
 ; NAME crunch token. Same VALUE as BASIC_ID ($D3) but a DIFFERENT namespace — this
 ; is a keyword token in the crunch stream; BASIC_ID is a cassette file-format byte.
 ; Kept as separately-named constants on purpose (no collision), like SAVE/BSAVE.
@@ -171,6 +177,22 @@ CURPTR          equ     $E020   ; current load pointer (2 bytes)
 ENDPTR          equ     $E022   ; final load address  (2 bytes)
 EXECPTR         equ     $E024   ; execution address   (2 bytes)
 ERRMARK         equ     $E010   ; error landmark marker byte
+; --- Phase 2: MAXFILES multi-channel control (free $E011.. gap below CURPTR) ---
+; The Phase-2 file verbs gained a real multi-channel table (retiring the single-
+; channel limit). FCH_CEIL channels can be open at once. Because fat.asm keeps ONE
+; global set of streaming state (FSECTOR_BUF + the FREAD_*/FWR_*/FAT_CUR* scratch),
+; only one channel's state is "live" in those globals at a time; each channel also
+; owns a context block (FCH_CTX) holding a saved copy. A write-back cache discipline
+; swaps state in/out: FCH_ACTIVE names the channel whose state is currently live,
+; FCH_MODE/FCH_NUM mirror it, and a switch saves the old globals to its ctx and
+; loads the new one's. fat.asm is untouched (its oracle validation holds). The
+; ceiling is RAM-bounded (each ctx = 50-byte state save + a 512-byte data buffer);
+; real MSX MAXFILES is RAM-bounded too, just to a larger value — documented
+; divergence. See basic/files.asm §channel manager + PROVENANCE.md §MAXFILES.
+MAXF            equ     $E011   ; current MAXFILES ceiling (0..FCH_CEIL); default 1 (1)
+FCH_ACTIVE      equ     $E012   ; channel live in the engine globals, 0 = none (1)
+FCH_MODES       equ     $E013   ; per-channel mode array [0..FCH_CEIL]; [0] unused,
+                                ; [ch] = 0 closed / 1 INPUT / 2 OUTPUT (FCH_CEIL+1 bytes)
 RUNFLAG         equ     $E02F   ; 1 = ,R handoff requested (set while parsing)
 CLPTR           equ     $E02B   ; CLOAD/LOAD: store cursor into the program area (2)
 CLINK           equ     $E02D   ; CLOAD/LOAD: saved link word of the current line
@@ -509,6 +531,26 @@ FWR_BUFLEN      equ     $E9F1   ; bytes currently buffered in FSECTOR_BUF (word,
 FWR_BYTES       equ     $E9F3   ; total bytes written so far = final file size (4-byte LE)
 FWR_DIRSEC      equ     $E9F7   ; logical sector holding the open file's dir entry (word)
 FWR_DIROFF      equ     $E9F9   ; byte offset of that dir entry within its sector (word)
+; --- Phase 2: MAXFILES per-channel context blocks --------------------------
+; A channel's live streaming state spans TWO global regions: the 512-byte data
+; buffer FSECTOR_BUF, and a contiguous engine-state span FCH_STATE0..(+FCH_STATESZ).
+; That span ($E9C9..$E9FA) covers every per-channel value — the read iterator
+; (FAT_CURCLUS/FAT_CLUSSEC), file meta (FAT_FIRSTCLUS/FAT_FILESIZE for LOF), the
+; read stream (FREAD_OFF/FREAD_LEFT) and the whole write state (FWR_*). It also
+; spans a few shared/transient bytes (FAT_NUMFATS/FAT_SECPERFAT geometry, the
+; FAT_B0/FAT_BYTEIDX/... scratch) — harmless to save/restore (identical across
+; channels on one drive, or dead between statements). The mount geometry proper
+; (FAT_SECPERCLUS..FAT_FIRSTDATA at $E9C0..$E9C8) sits BELOW the span and stays
+; SHARED — correct for a single drive (every fat_mount re-derives it identically).
+; Each context block = [state:FCH_STATESZ][buffer:512]; FCH_CEIL of them live in
+; clean high RAM ($EA00..), clear of all basic-core + zerobas-disk scratch (disk
+; tops out at WBUF $E75F; C-BIOS sysvars start ~$F380). FCH_CEIL=2 fits cleanly
+; (2*562 = $0464 -> $EA00..$EE63). Growing it = bump FCH_CEIL once RAM is found.
+FCH_CEIL        equ     2       ; max simultaneously-open channels (RAM-bounded)
+FCH_STATE0      equ     FAT_CURCLUS         ; $E9C9 — base of the per-channel state span
+FCH_STATESZ     equ     FWR_DIROFF+2-FCH_STATE0     ; $E9C9..$E9FA inclusive = 50 bytes
+FCH_CTXSZ       equ     FCH_STATESZ + 512   ; one context block = state + data buffer
+FCH_CTX         equ     $EA00   ; FCH_CEIL context blocks, each [state][512-byte buf]
 ; Control stacks (page $E0, below LINEBUF at $E100). Both grow upward; the
 ; pointer addresses the next free slot, and the stack is empty when it equals
 ; its base. GOSUB frame = [curline:2][resume:2] (4 bytes). FOR frame =

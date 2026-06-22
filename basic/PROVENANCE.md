@@ -1940,3 +1940,73 @@ with the observations recorded so the decision is grounded, not guessed:
 
 Both tokens are documented here so a future pass starts from the observation, not
 from scratch.
+
+## MAXFILES — multi-channel file table (basic/files.asm, basic/interp.asm, basic/print.asm, basic/expr.asm, basic/sysvars.inc)
+
+`MAXFILES = n` sets how many sequential file channels may be open at once (and
+bounds every `OPEN`/`INPUT#`/`PRINT#`/`CLOSE`/`EOF`/`LOF` channel number). This
+**retires the single-channel limit** every Phase-2 file verb previously shared.
+
+**Token (oracle-locked).** "MAXFILES" crunches to **TWO** reserved words —
+`MAX` (`$CD`) + `FILES` (`$B7`) — exactly like `OUTPUT` = `OUT`+`PUT`. Proven
+byte-identical on the diskless **Philips VG-8020** (`basic_probe_crunch.py`):
+`max` → `$CD`, `files` → `$B7`, `maxfiles=2` → `$CD $B7 $EF $13`. So zerobas adds
+a single `MAX` reserved word; the tokeniser then forms "MAXFILES" = MAX + FILES,
+and the statement is dispatched on `$CD` (then requires `$B7`). MSX2 TH Table 2.20.
+No disassembly — only the observed crunch bytes.
+
+**Architecture — a write-back context cache over the unchanged `fat.asm`.** The
+engine keeps ONE global set of streaming state (the 512-byte `FSECTOR_BUF` data
+buffer + the `FREAD_*`/`FWR_*`/`FAT_CUR*` cursor span). Rather than refactor that
+oracle-validated engine to be channel-indexed (deep, risky), each open channel
+owns a **context block** `FCH_CTX[ch]` = `[state:FCH_STATESZ][buffer:512]` holding
+a saved copy; the globals always hold the **active** channel's live state. The
+channel manager (basic/files.asm) is the cache:
+* `FCH_ACTIVE` names the channel whose state is live; `FCH_MODE`/`FCH_NUM` mirror
+  it, so the existing read/write/PRINT# code (which reads those + the globals)
+  works **unchanged**.
+* `fch_select(ch)` makes `ch` live: if a different channel is active it **saves**
+  the globals to that channel's ctx and **loads** `ch`'s — a write-back swap. Re-
+  using the same channel back-to-back (the common case) copies nothing.
+* `fch_claim(ch)` (used by OPEN) makes `ch` active without loading its about-to-be-
+  overwritten ctx, saving any other active channel first.
+The per-channel state span `FCH_STATE0..+FCH_STATESZ` (`$E9C9..$E9FA`, 50 bytes)
+covers every value that must persist between statements for an open channel — the
+read iterator, file meta (`FAT_FILESIZE` for LOF), the read stream, and the whole
+write state. The mount geometry proper (`$E9C0..$E9C8`) stays **shared** below the
+span — correct for a single drive (every `fat_mount` re-derives it identically).
+`fat.asm` is byte-for-byte untouched; all its differential validation still holds.
+
+**RAM-bounded ceiling (documented divergence).** Each context block is 562 bytes
+(50 + 512); they live in clean high RAM (`FCH_CTX = $EA00`, clear of all basic-core
+and zerobas-disk scratch — disk tops out at WBUF `$E75F`, C-BIOS sysvars start
+`~$F380`). `FCH_CEIL = 2` fits cleanly (`2*562 = $0464` → `$EA00..$EE63`). Real MSX
+MAXFILES reaches 15; zerobas accepts `0..FCH_CEIL` and makes a larger value a
+syntax error — we have RAM for only `FCH_CEIL` 512-byte channel buffers. Growing
+the ceiling is a one-constant change once more RAM is found. The DEFAULT is
+`MAXFILES = 1` (observed: `OPEN #1` works with no MAXFILES on the CF-3300). Like
+the reference, `MAXFILES` reinitialises the file system — every open channel is
+closed first (OUTPUT ones flushed + Ctrl-Z-stamped, via `fch_close_all`). Bare
+`CLOSE` now closes **all** open channels (faithful), not just one.
+
+**Register discipline.** The manager moves state with `LDIR` (no CALSLT), so it
+clobbers `A/BC/DE/HL` but NOT `IX/IY`. Statement callers guard their `HL` text
+cursor across `fch_select`; the `EOF`/`LOF` function callers rely on the evaluator's
+`IX` token cursor surviving (it does — no CALSLT). The first cut of OPEN's success
+path computed the `FCH_MODES[ch]` address into `HL`, clobbering the text cursor
+before `jp exec_stmt` — so OPEN opened the file yet then executed from garbage
+(a spurious "syntax error"); the fix guards `HL` across the table write.
+
+**Validation.** `disk_probe_maxfiles.py` (/tmp copy of `test720.dsk`): two OUTPUT
+files are opened **at once** and written **interleaved** (`PRINT #1` / `PRINT #2`
+alternating, so each channel's buffered data must survive repeated context swaps),
+then a bare `CLOSE` flushes both. On-disk `A.TXT` = `b"aaa\r\nccc\r\n\x1a"` and
+`B.TXT` = `b"bbb\r\nddd\r\n\x1a"` — **byte-identical to the real National CF-3300**
+given the identical program. The crunch suite (incl. `maxfiles=2`), the 16 host
+unit-test files, and every single-channel file probe (read / write / EOF·LOF /
+DSKF) still pass.
+
+**Divergences (own design, quarantined):** the RAM-bounded `FCH_CEIL = 2` ceiling
+(vs the reference's 15); the resume-state RAM layout (`FCH_CTX`/`FCH_MODES`/
+`FCH_ACTIVE`) is zerobas's own, not the reference's FCB/buffer map; out-of-range or
+too-large channel/`MAXFILES` values reuse the `syntax error`/`load error` wording.

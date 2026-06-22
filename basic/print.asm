@@ -32,7 +32,14 @@ ex_print:
                 cp      '#'
                 jr      nz,exp_loop         ; no '#': ordinary screen PRINT
                 inc     hl
-                call    eval                ; DE = channel number (single channel)
+                call    eval                ; DE = channel number
+                ld      a,e
+                call    fch_valid
+                jp      nc,load_error       ; 0 or > MAXF -> bad file number
+                push    hl                  ; guard text cursor (fch_select uses LDIR)
+                ld      a,e
+                call    fch_select          ; make channel e live; FCH_MODE = its mode
+                pop     hl
                 ld      a,(FCH_MODE)
                 cp      2                   ; must be open FOR OUTPUT
                 jp      nz,load_error

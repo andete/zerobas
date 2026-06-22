@@ -541,6 +541,13 @@ kwtable:
                 ; tokens ($D4 / $D3). "NAME" shares no prefix with another entry.
                 db      4,"KILL",1,KILL_TOKEN
                 db      4,"NAME",1,NAME_TOKEN
+                ; MAXFILES = MAX($CD) + FILES($B7) — two reserved words (oracle-
+                ; locked, like OUTPUT = OUT+PUT). FILES is already in this table, so
+                ; only "MAX" is added; the tokeniser then crunches "MAXFILES" to
+                ; $CD $B7 by matching MAX then FILES. match_kw is full-keyword, so
+                ; MAX never shadows a variable that merely starts with it unless the
+                ; whole word "MAX" appears — faithful (the reference reserves MAX too).
+                db      3,"MAX",1,MAX_TOKEN
                 ; Cassette save keyword. CSAVE token oracle-LOCKED ($9A) via
                 ; basic_probe_crunch.py against Philips VG-8020 (MSX2 TH Table
                 ; 2.20). Single-byte statement token; filename kept verbatim ASCII.
@@ -677,6 +684,8 @@ exec_stmt:
                 jp      z,ex_kill
                 cp      NAME_TOKEN
                 jp      z,ex_name
+                cp      MAX_TOKEN           ; MAX FILES = n  (MAXFILES config)
+                jp      z,ex_maxfiles
                 cp      CSAVE_TOKEN
                 jp      z,ex_csave
                 cp      POKE_TOKEN
