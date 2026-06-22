@@ -538,6 +538,7 @@ kwtable:
                 ; locked to the VG-8020 ($B1/$B8/$B9). match_kw is full-keyword, so
                 ; order is free.
                 db      3,"PUT",1,PUT_TOKEN
+                db      3,"GET",1,GET_TOKEN
                 db      5,"FIELD",1,FIELD_TOKEN
                 db      4,"LSET",1,LSET_TOKEN
                 db      4,"RSET",1,RSET_TOKEN
@@ -708,6 +709,10 @@ exec_stmt:
                 jp      z,ex_lset
                 cp      RSET_TOKEN          ; RSET v$ = s$
                 jp      z,ex_rset
+                cp      GET_TOKEN           ; GET [#]f[,rec]  (read a record)
+                jp      z,ex_get
+                cp      PUT_TOKEN           ; PUT [#]f[,rec]  (write a record)
+                jp      z,ex_put
                 cp      CSAVE_TOKEN
                 jp      z,ex_csave
                 cp      POKE_TOKEN

@@ -115,9 +115,8 @@ INPUT_TOKEN     equ     $85     ; INPUT #n,var$ (file form) / LINE INPUT (statem
 LINE_TOKEN      equ     $AF     ; LINE (only "LINE INPUT #n" supported in Phase 2)
 CLOSE_TOKEN     equ     $B4     ; CLOSE [#n]                            (statement)
 ; PUT token: the 2nd half of "OUTPUT" (OUT $9C + PUT $B3 — two reserved words, not
-; one keyword, oracle-observed) AND the random-access PUT statement (sub-phase 2c).
-; $B3, MSX2 TH 2.20. The PUT *statement* dispatch (write a record) is slice 2 of 2c;
-; slice 1 (FIELD/LSET/RSET) does not dispatch it yet.
+; one keyword, oracle-observed) AND the random-access PUT statement (write a record).
+; $B3, MSX2 TH 2.20.
 PUT_TOKEN       equ     $B3     ; PUT — OUTPUT's 2nd half + random-access PUT statement
 ; Random-access record verbs (Phase 2c). Tokens oracle-LOCKED to the VG-8020 crunch
 ; (FIELD=$B1, GET=$B2, LSET=$B8, RSET=$B9; PUT=$B3 above; MSX2 TH Table 2.20),
@@ -125,10 +124,11 @@ PUT_TOKEN       equ     $B3     ; PUT — OUTPUT's 2nd half + random-access PUT 
 ;   field#1,2 as a$ -> B1 23 12 2C 13 20 41 53 20 41 24   (FIELD #1, 2 "AS" A$)
 ;   lset a$="x"     -> B8 20 41 24 EF 22 78 22            (LSET A$ = "x")
 ;   rset b$="y"     -> B9 ...                              (RSET B$ = "y")
-;   get#1 / put#1   -> B2 23 12 / B3 23 12                (slice 2)
+;   get#1 / put#1,1 -> B2 23 12 / B3 23 12 2C 12          (GET/PUT a record)
 ; FIELD partitions a channel's record buffer into named slices; LSET/RSET write a
-; string left/right-justified into a slice; GET/PUT (slice 2) read/write a record on
-; disk. Handlers live in basic/field.asm. The "AS" keyword is kept verbatim ASCII.
+; string left/right-justified into a slice; GET/PUT read/write record N (byte offset
+; (N-1)*256) of the file into/from that buffer. Handlers live in basic/field.asm. The
+; "AS" keyword is kept verbatim ASCII.
 FIELD_TOKEN     equ     $B1     ; FIELD #f, w AS v$[,...] — define record fields (stmt)
 GET_TOKEN       equ     $B2     ; GET [#f][,rec] — read a record into the buffer (slice 2)
 LSET_TOKEN      equ     $B8     ; LSET v$ = s$ — left-justify s$ into fielded v$ (stmt)
@@ -598,6 +598,22 @@ FLD_ENTSZ       equ     6       ; field entry = [chan:1][k0:1][k1:1][off:2][wid:
 FLD_SLOTS       equ     16      ; max simultaneously-defined fields (own choice)
 FLD_TAB         equ     $EE64   ; field table base ($EE64..$EEC3, 96 bytes)
 FLD_TABEND      equ     FLD_TAB + FLD_SLOTS*FLD_ENTSZ   ; $EEC4
+; --- Phase 2c slice 2: GET/PUT random-record I/O scratch -------------------
+; Transient (dead outside a single GET/PUT statement; one statement runs at a time,
+; so not per-channel). The disk-position walk survives read_sector/CALSLT clobbers
+; by keeping its loop state here in RAM. Free gap above FLD_TAB, below FLD_DESC
+; ($EEC4..$EEFF = 60 bytes). See basic/field.asm §GET/PUT.
+GP_RECNO        equ     $EEC4   ; record number (1-based, 2)
+GP_SEC          equ     $EEC6   ; file logical-sector index of the record (2)
+GP_WITHIN       equ     $EEC8   ; byte offset of the record within its sector (0/256, 2)
+GP_CLUS         equ     $EECA   ; current cluster during the chain walk (2)
+GP_CLIDX        equ     $EECC   ; cluster steps still to walk (2)
+GP_SECINCL      equ     $EECE   ; sector index within the final cluster (1)
+GP_PHYS         equ     $EECF   ; resolved absolute physical sector (2)
+GP_OLDNSEC      equ     $EED1   ; file's old sector count (ceil(size/512), 2)
+GP_FLAGS        equ     $EED3   ; bit0 = extend (PUT allocates; GET does not) (1)
+GP_MODE         equ     $EED4   ; 0 = GET (read), 1 = PUT (write) (1)
+GP_CHAN         equ     $EED5   ; the channel number being GET/PUT (1)
 FLD_DESC        equ     $EF00   ; transient fielded-read descriptor [len][bytes:255]
 ; Control stacks (page $E0, below LINEBUF at $E100). Both grow upward; the
 ; pointer addresses the next free slot, and the stack is empty when it equals

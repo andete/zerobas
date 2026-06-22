@@ -2230,11 +2230,10 @@ variable behave like one:
   the channel, space-fill the field, then copy `min(srclen,width)` bytes left- or
   right-aligned.
 
-**Slice-1 scope / documented divergences.**
-- `OPEN "name" AS #n` (RANDOM, mode 4 in FCH_MODES) sets up a spaces-filled in-RAM
-  record buffer (`fld_fill_record`) but does **not** yet open/create the file on disk
-  — the on-disk record I/O is GET/PUT (slice 2). A slice-1 RANDOM open is observable
-  only through FIELD/LSET/RSET + reading fielded vars, never on disk.
+**Scope / documented divergences.**
+- `OPEN "name" AS #n` (RANDOM, mode 4 in FCH_MODES) opens-or-creates the file on disk
+  and seeds the channel's record state; the buffer is space-filled. (Slice 1 stubbed
+  this as an in-RAM buffer only; slice 2 — §GET/PUT below — made it real.)
 - LSET/RSET require a FIELDed target; on a non-fielded variable they error (real MSX-
   BASIC left-justifies into the variable's current value — a Phase-3 nicety).
 - A fielded READ takes precedence over a plain STRTAB value; assigning a fielded name
@@ -2250,3 +2249,64 @@ A$,10 AS B$ : LSET A$="HI" : RSET B$="END" : PRINT"<";A$;"|";B$;">"` prints exac
 spaces prove the justification + padding. zerobas and the real **National CF-3300**
 print the byte-identical line (functional + differential PASS). The fat.asm engine is
 untouched; the channel manager is reused unmodified (RANDOM is just a new FCH mode).
+
+## GET / PUT — random-access record I/O, slice 2 (basic/field.asm, basic/files.asm, basic/sysvars.inc)
+
+**Sub-phase 2c, slice 2 of 2** (slice 1 = FIELD/LSET/RSET). `PUT #f,N` writes the
+record buffer to record N of the file; `GET #f,N` reads record N back into it. Built
+by COMPOSING the fat.asm engine — fat.asm is **not modified**, so its oracle validation
+holds.
+
+**Record geometry (oracle-anchored).** The record length is **256 bytes** — confirmed
+clean-room, not assumed: a CF-3300 `OPEN..AS #1 : FIELD..: LSET..: PUT #1,1 : CLOSE`
+then reopen + `PRINT LOF(1)` prints `256`. Record N (1-based) occupies file bytes
+`[(N-1)*256, (N-1)*256+256)`, i.e. file logical sector `(N-1)/2` at within-sector
+offset `((N-1)&1)*256` — two records per 512-byte sector. Record numbers are 1..255
+(file < 64 KB, the same 16-bit ceiling the loader text path documents).
+
+**Buffer choreography (the load-bearing design point).** The live record stays in
+`FSECTOR_BUF` throughout; `FWBUF` is reused *sequentially* for three roles that never
+overlap in time: (1) FAT metadata while the cluster chain is walked/extended, (2) the
+512-byte data sector for the read-modify-write, (3) the directory-entry stamp. Because
+fat.asm's `fat_next_cluster` reads the FAT into `FSECTOR_BUF` (it would destroy the
+record), the random walk uses a private `frnd_next` that reads the FAT into `FWBUF`
+via the engine's own `fat_read_fat_sector`. Allocation (`fat_alloc_cluster`,
+`fat_write_fat_entry`) and the dir stamp (`fat_dir_update`) already use `FWBUF` only.
+CALSLT/DSKIO touch only the caller's HL buffer (the cross-component overlap invariant),
+so `FSECTOR_BUF` is never clobbered by a disk op aimed at `FWBUF`.
+
+**PUT.** `frnd_calc` splits the record number into file sector + within-offset.
+`frnd_locate` walks the chain to that file sector, **extending** it when the record
+lies beyond the current end (`fat_alloc_cluster` for a fresh cluster, marked EOC;
+`fat_write_fat_entry` to link the previous cluster to it; the first cluster of a
+previously-empty file is recorded in `FWR_FIRST`). If the target sector already exists
+(`S < ceil(oldsize/512)`) it is read into `FWBUF` first so the *other* record sharing
+that sector is preserved; otherwise `FWBUF` is space-filled. The 256-byte record is
+overlaid at the within-offset, the sector is written, the file size grows to
+`max(old, N*256)`, and `fat_dir_update` stamps the first cluster + size into the
+directory entry — so the data survives CLOSE and is found on reopen.
+
+**GET.** `frnd_locate` (read mode, no extend) resolves the physical sector, which is
+read into `FWBUF`; the 256-byte record is copied into `FSECTOR_BUF[0..256)`, where the
+FIELDed variables read it. A record beyond EOF returns spaces (lenient).
+
+**RANDOM open made real.** `fat_rand_open` (replacing slice 1's in-RAM stub) mounts,
+finds-or-creates the file (`fat_dir_create`), and seeds the per-channel state
+(`FWR_FIRST` = first cluster, `FWR_BYTES` = current size, `FWR_DIRSEC`/`FWR_DIROFF` =
+the directory entry) — all within the MAXFILES write-back-cache span, so they travel
+with the channel. GET/PUT never re-mount (that would read the boot sector into
+`FSECTOR_BUF`); the geometry from the open's mount persists in the shared `FAT_*` vars.
+
+**Divergences.** Bare `GET`/`PUT` (no record number) default to record 1 — the
+auto-incrementing "current record" is not tracked. Sparse/out-of-order PUT leaves
+skipped records' bytes undefined; in-order writes are well-defined. `LEN=` (a custom
+record length) is not parsed — the length is fixed at 256.
+
+**Oracle.** `disk-spec/tools/disk_probe_getput.py`: write `record 1 = "alpha"+"  bet"`
+and `record 2 = "gamma"+"delta"` (records 1 and 2 share one sector, so PUT #1,2 must
+read-modify-write to keep record 1), `CLOSE`, **reopen**, re-`FIELD`, and `GET` both
+back — yielding `<alpha|  bet>` and `<gamma|delta>`. Reading the right bytes after a
+close/reopen exercises chain allocation, the shared-sector read-modify-write, and the
+directory stamp at once. zerobas and the real **National CF-3300** produce the byte-
+identical pair (functional + differential PASS); `test720.dsk` is never mutated (the
+probe runs on a /tmp copy).

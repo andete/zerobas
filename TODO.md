@@ -348,11 +348,19 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
             LSET A$="HI" : RSET B$="END" : PRINT` → `<HI   |       END>` **byte-
             identical to the CF-3300** (`disk_probe_field.py`). See PROVENANCE
             §FIELD/LSET/RSET.
-      - [ ] **`GET` + `PUT` (slice 2 of 2)** — disk record I/O: read/write record N
-            (byte offset N*reclen) of the random file into/from the record buffer.
-            Tokens already captured (GET $B2 / PUT $B3). Needs random sector
-            positioning over the FAT chain + `OPEN…AS` actually opening/creating the
-            on-disk file. Next session.
+      - [x] **`GET` + `PUT` (slice 2 of 2)** — DONE (basic/field.asm). Random record
+            I/O: `PUT #f,N` writes the record buffer to record N (256-byte records,
+            oracle-confirmed via LOF), `GET #f,N` reads it back. Composes the fat.asm
+            engine unchanged — the chain walk uses a private `frnd_next` over FWBUF so
+            the live record in FSECTOR_BUF survives; PUT read-modify-writes the shared
+            512-byte sector (2 records/sector) and extends the cluster chain; the dir
+            entry is stamped so data survives CLOSE/reopen. RANDOM open made real
+            (`fat_rand_open` opens-or-creates + seeds channel state). Tokens GET $B2 /
+            PUT $B3. Write 2 records → CLOSE → reopen → GET back = `<alpha|  bet>` +
+            `<gamma|delta>` **byte-identical to the CF-3300** (`disk_probe_getput.py`).
+            Divergences: record 1..255, bare GET/PUT default to record 1, no LEN=.
+            See PROVENANCE §GET/PUT. **→ sub-phase 2c (random-access) COMPLETE** (the
+            float-conversion siblings MKS$/MKD$/CVS/CVD still await Phase-3 floats).
 - [ ] **`CALL FORMAT` [in]** — disk format via the STATEMENT-expansion seam
       (`CHOICE $4019` / `DSKFMT $401C`); pin the seam in **Step 0b** first, then
       implement over zerobas-disk's existing `CHOICE`/`DSKFMT` entries.

@@ -323,11 +323,10 @@ oo_append:
                 call    fat_io_append       ; APPEND: open existing + position at EOF
                 jr      oo_done
 oo_random_setup:
-                ; RANDOM (slice 1): give the channel a spaces-filled in-RAM record
-                ; buffer. The on-disk file open/create + GET/PUT record I/O are slice
-                ; 2; here the channel exists only for FIELD/LSET/RSET. CF clear = OK.
-                call    fld_fill_record
-                or      a
+                ; RANDOM: open-or-create the on-disk file and seed the channel's
+                ; record state (FWR_FIRST/FWR_BYTES/FWR_DIRSEC-OFF), then space-fill
+                ; the record buffer. GET/PUT (basic/field.asm) drive the record I/O.
+                call    fat_rand_open
 oo_done:
                 pop     de
                 pop     hl

@@ -28,16 +28,29 @@
 ; to the VG-8020 crunch (FIELD $B1, LSET $B8, RSET $B9). No disassembly. See
 ; basic/PROVENANCE.md §random-access records.
 ;
-; Slice-1 scope / documented divergences (PROVENANCE.md):
-;   * RANDOM open (OPEN "name" AS #n, no FOR) sets up a spaces-filled in-RAM record
-;     buffer but does NOT yet open/create the file on disk — GET/PUT (the disk
-;     record I/O) are slice 2. So a slice-1 RANDOM open is observable only through
-;     FIELD/LSET/RSET + reading fielded vars, not on disk.
+; GET/PUT (slice 2) add the on-disk record I/O. The record length is 256 bytes
+; (oracle: a CF-3300 PUT of one record makes a 256-byte file). Record N (1-based)
+; occupies file bytes [(N-1)*256, (N-1)*256+256), i.e. file logical sector (N-1)/2 at
+; within-sector offset ((N-1)&1)*256 — two records per 512-byte sector. PUT does a
+; read-modify-write of the sector (preserving the other record) and extends the
+; cluster chain when the record lies beyond the current end; GET reads the sector and
+; copies the record into the buffer. The buffer choreography keeps the live record in
+; FSECTOR_BUF and uses FWBUF for everything else (FAT metadata during allocation, then
+; the data sector, then the dir update) — never both at once, so the record survives a
+; chain walk. The walk reuses fat_read_fat_sector (FWBUF), NOT fat_next_cluster (which
+; reads FAT into FSECTOR_BUF and would clobber the record). fat.asm is untouched.
+;
+; Scope / documented divergences (PROVENANCE.md):
 ;   * LSET/RSET require a FIELDed target; on a non-fielded var they error (real
 ;     MSX-BASIC left-justifies into the var's current value — a Phase-3 nicety).
 ;   * a fielded READ takes precedence over a plain STRTAB value; assigning a fielded
 ;     name with plain LET does not "disconnect" the field (real MSX-BASIC does).
 ;   * field widths are 1..255; FIELD overflow past the record length is not checked.
+;   * record numbers are 1..255 (file < 64 KB — the same 16-bit size ceiling the
+;     loader text path documents); bare GET/PUT (no record number) default to record
+;     1 — the auto-incrementing "current record" is not tracked.
+;   * sparse / out-of-order PUT (writing record M before some earlier record exists)
+;     leaves the skipped records' bytes undefined; in-order writes are well-defined.
 
 ; ===========================================================================
 ; Field-table primitives
@@ -395,3 +408,411 @@ fll_done:
                 ld      (STRPTR),hl
                 scf
                 ret
+
+; ===========================================================================
+; Random-record on-disk I/O (Phase 2c slice 2): GET / PUT + the RANDOM open.
+;
+; Composes the fat.asm engine WITHOUT modifying it. Buffer discipline: the live
+; record stays in FSECTOR_BUF; FWBUF is reused (sequentially) for FAT metadata,
+; the data sector, and the dir update. The chain walk goes through frnd_next (which
+; reads the FAT into FWBUF via fat_read_fat_sector) rather than fat_next_cluster
+; (which reads it into FSECTOR_BUF and would destroy the record). Geometry comes
+; from the mount done at RANDOM open and persists in the shared FAT_* vars, so
+; GET/PUT never re-mount (which would read the boot sector into FSECTOR_BUF).
+; ===========================================================================
+
+; fat_rand_open — open or create the file in DISK_FCB_NAME as a RANDOM channel.
+; Replaces slice 1's in-RAM-only stub. Mounts, finds (or creates) the file, seeds
+; the per-channel state (FWR_FIRST = first cluster, FWR_BYTES = current size,
+; FWR_DIRSEC/OFF = dir entry), and fills the record buffer with spaces.
+;   out: Cy = 0 ok; Cy = 1 mount / dir-full / I/O error.
+fat_rand_open:
+                call    fat_mount
+                ret     c
+                ld      hl,DISK_FCB_NAME
+                call    fat_find
+                jr      c,fro_create
+                ; existing file: fat_find set FAT_FIRSTCLUS/FILESIZE + FWR_DIRSEC/OFF.
+                ld      hl,(FAT_FIRSTCLUS)
+                ld      (FWR_FIRST),hl
+                ld      hl,(FAT_FILESIZE)
+                ld      (FWR_BYTES),hl
+                ld      hl,(FAT_FILESIZE+2)
+                ld      (FWR_BYTES+2),hl
+                jr      fro_fill
+fro_create:
+                ld      hl,DISK_FCB_NAME
+                call    fat_dir_create      ; empty entry; sets FWR_DIRSEC/OFF
+                ret     c
+                ld      hl,0
+                ld      (FWR_FIRST),hl
+                ld      (FWR_BYTES),hl
+                ld      (FWR_BYTES+2),hl
+fro_fill:
+                call    fld_fill_record     ; record buffer = spaces
+                or      a                   ; Cy = 0 success
+                ret
+
+; frnd_next — follow the FAT12 chain one link, reading the FAT into FWBUF (so the
+; record in FSECTOR_BUF is preserved). Mirror of fat.asm's fat_next_cluster but over
+; FWBUF, built on fat_read_fat_sector. in: HL = cluster; out: HL = next cluster
+; (>= $0FF8 = end-of-chain); Cy = 1 on I/O error. Clobbers A,BC,DE,HL.
+frnd_next:
+                call    fat_read_fat_sector ; FWBUF = FAT sector; BYTEIDX/PARITY/FATSEC set
+                ret     c
+                ld      hl,(FAT_BYTEIDX)
+                ld      de,FWBUF
+                add     hl,de
+                ld      a,(hl)
+                ld      (FAT_B0),a          ; low byte
+                ld      hl,(FAT_BYTEIDX)
+                ld      de,511
+                or      a
+                sbc     hl,de
+                jr      z,frnd_straddle     ; entry straddles into the next FAT sector
+                ld      hl,(FAT_BYTEIDX)
+                ld      de,FWBUF+1
+                add     hl,de
+                ld      a,(hl)
+                jr      frnd_combine
+frnd_straddle:
+                ld      hl,(FAT_FATSEC)
+                inc     hl
+                ex      de,hl
+                ld      hl,FWBUF
+                call    read_sector
+                ret     c
+                ld      a,(FWBUF)
+frnd_combine:
+                ld      (FAT_B1),a          ; high byte
+                ld      a,(FAT_PARITY)
+                or      a
+                jr      nz,frnd_odd
+                ld      a,(FAT_B1)
+                and     $0F
+                ld      h,a
+                ld      a,(FAT_B0)
+                ld      l,a
+                or      a                   ; Cy = 0
+                ret
+frnd_odd:
+                ld      a,(FAT_B1)
+                ld      l,a
+                ld      h,0
+                add     hl,hl
+                add     hl,hl
+                add     hl,hl
+                add     hl,hl               ; HL = B1 << 4
+                ld      a,(FAT_B0)
+                rrca
+                rrca
+                rrca
+                rrca
+                and     $0F                 ; A = B0 >> 4
+                ld      e,a
+                ld      d,0
+                add     hl,de
+                or      a                   ; Cy = 0
+                ret
+
+; frnd_locate — resolve the physical sector for file-sector index (GP_SEC), walking
+; (and, if GP_FLAGS bit0 set, extending) the cluster chain. On success GP_PHYS holds
+; the absolute sector and Cy = 0. Cy = 1 means beyond-EOF (read mode) or disk-full /
+; I/O error. Loop state lives in GP_* RAM (read/write CALSLT clobbers all registers).
+frnd_locate:
+                ; clusterIdx = GP_SEC / secPerClus; secInClus = GP_SEC % secPerClus.
+                ld      hl,(GP_SEC)
+                ld      a,(FAT_SECPERCLUS)
+                ld      c,a
+                ld      de,0                ; DE = clusterIdx
+frl_div:
+                ld      a,l
+                cp      c
+                jr      c,frl_divdone       ; HL (<256) < secPerClus -> remainder
+                sub     c
+                ld      l,a                 ; HL -= secPerClus (HL stays < 256)
+                inc     de
+                jr      frl_div
+frl_divdone:
+                ld      a,l
+                ld      (GP_SECINCL),a
+                ld      (GP_CLIDX),de
+                ; cluster = FWR_FIRST (allocate the first cluster if the file is empty)
+                ld      hl,(FWR_FIRST)
+                ld      a,h
+                or      l
+                jr      nz,frl_havefirst
+                ld      a,(GP_FLAGS)
+                and     1
+                jr      z,frl_eof           ; read mode + empty file -> beyond EOF
+                call    fat_alloc_cluster   ; HL = new first cluster (marked EOC)
+                ret     c
+                ld      (FWR_FIRST),hl
+frl_havefirst:
+                ld      (GP_CLUS),hl
+frl_walk:
+                ld      hl,(GP_CLIDX)
+                ld      a,h
+                or      l
+                jr      z,frl_walked
+                ld      hl,(GP_CLUS)
+                call    frnd_next           ; HL = next cluster
+                ret     c
+                ld      de,$0FF8
+                push    hl
+                or      a
+                sbc     hl,de
+                pop     hl
+                jr      c,frl_inchain       ; next < $0FF8 -> a real cluster
+                ; end-of-chain reached.
+                ld      a,(GP_FLAGS)
+                and     1
+                jr      z,frl_eof           ; read mode -> beyond EOF
+                call    fat_alloc_cluster   ; extend: new cluster (EOC)
+                ret     c
+                push    hl                  ; new cluster
+                ld      de,(GP_CLUS)
+                ex      de,hl               ; HL = prev cluster, DE = new (link value)
+                call    fat_write_fat_entry ; prev -> new
+                pop     hl                  ; HL = new cluster
+                ret     c
+frl_inchain:
+                ld      (GP_CLUS),hl
+                ld      hl,(GP_CLIDX)
+                dec     hl
+                ld      (GP_CLIDX),hl
+                jr      frl_walk
+frl_walked:
+                ; P = firstData + (cluster-2)*secPerClus + secInClus
+                ld      hl,(GP_CLUS)
+                ld      de,2
+                or      a
+                sbc     hl,de
+                ex      de,hl               ; DE = cluster - 2
+                ld      hl,0
+                ld      a,(FAT_SECPERCLUS)
+                ld      b,a
+frl_mul:
+                add     hl,de
+                djnz    frl_mul
+                ld      de,(FAT_FIRSTDATA)
+                add     hl,de
+                ld      a,(GP_SECINCL)
+                ld      e,a
+                ld      d,0
+                add     hl,de
+                ld      (GP_PHYS),hl
+                or      a                   ; Cy = 0 success
+                ret
+frl_eof:
+                scf
+                ret
+
+; frnd_fill_fwbuf — fill FWBUF with 512 spaces (a fresh record sector with no prior
+; on-disk content). Clobbers BC,DE,HL.
+frnd_fill_fwbuf:
+                ld      hl,FWBUF
+                ld      de,FWBUF+1
+                ld      bc,511
+                ld      (hl),' '
+                ldir
+                ret
+
+; frnd_calc — split GP_RECNO into GP_SEC (file sector index) + GP_WITHIN (0 or 256).
+; k = recno-1; GP_SEC = k>>1; GP_WITHIN = (k&1)?256:0. recno is 1..255, so k<256.
+; Clobbers A,DE,HL.
+frnd_calc:
+                ld      de,(GP_RECNO)
+                dec     de                  ; DE = k (0..254)
+                ld      a,e
+                and     1
+                ld      hl,0
+                jr      z,frc_even
+                ld      hl,256
+frc_even:
+                ld      (GP_WITHIN),hl
+                srl     d
+                rr      e                   ; DE = k >> 1  (D = 0)
+                ld      (GP_SEC),de
+                ret
+
+; fat_rand_put — write the record buffer (FSECTOR_BUF[0..256)) to record GP_RECNO.
+;   out: Cy = 0 ok; Cy = 1 = disk full / I/O error / record out of range.
+fat_rand_put:
+                ld      a,(GP_RECNO+1)      ; recno high byte must be 0 (recno <= 255)
+                or      a
+                jr      nz,frp_err
+                ld      a,(GP_RECNO)
+                or      a
+                jr      z,frp_err           ; record 0 invalid
+                call    frnd_calc           ; GP_SEC, GP_WITHIN
+                ; old_nsec = ceil(FWR_BYTES_lo16 / 512) = (size + 511) >> 9
+                ld      hl,(FWR_BYTES)
+                ld      de,511
+                add     hl,de
+                ld      a,h
+                srl     a
+                ld      l,a
+                ld      h,0
+                ld      (GP_OLDNSEC),hl
+                ld      a,1
+                ld      (GP_FLAGS),a        ; extend (allocate as needed)
+                call    frnd_locate         ; GP_PHYS = sector; chain extended
+                ret     c
+                ; read the existing sector (S < old_nsec) or start from spaces.
+                ld      hl,(GP_SEC)
+                ld      de,(GP_OLDNSEC)
+                or      a
+                sbc     hl,de
+                jr      c,frp_readold
+                call    frnd_fill_fwbuf
+                jr      frp_overlay
+frp_readold:
+                ld      de,(GP_PHYS)
+                ld      hl,FWBUF
+                call    read_sector
+                ret     c
+frp_overlay:
+                ; FWBUF[within..within+256) = FSECTOR_BUF[0..256)
+                ld      hl,(GP_WITHIN)
+                ld      de,FWBUF
+                add     hl,de
+                ex      de,hl               ; DE = FWBUF + within (dest)
+                ld      hl,FSECTOR_BUF      ; src = the record
+                ld      bc,256
+                ldir
+                ld      de,(GP_PHYS)
+                ld      hl,FWBUF
+                call    write_sector
+                ret     c
+                call    frnd_update_size    ; FWR_BYTES = max(old, recno*256)
+                jp      fat_dir_update      ; tail: stamp first cluster + size into dir
+frp_err:
+                scf
+                ret
+
+; frnd_update_size — FWR_BYTES = max(FWR_BYTES, GP_RECNO*256). recno<=255, so the new
+; size (recno<<8) is <= 65280 and the high 2 bytes are 0. Clobbers A,DE,HL.
+frnd_update_size:
+                ld      a,(GP_RECNO)
+                ld      h,a
+                ld      l,0                 ; HL = recno * 256
+                ld      de,(FWR_BYTES)
+                or      a
+                sbc     hl,de               ; new - current
+                ret     c                   ; new < current -> keep
+                ret     z                   ; equal -> keep
+                ld      a,(GP_RECNO)
+                ld      h,a
+                ld      l,0
+                ld      (FWR_BYTES),hl      ; grow to recno*256
+                ld      hl,0
+                ld      (FWR_BYTES+2),hl
+                ret
+
+; fat_rand_get — read record GP_RECNO into the record buffer (FSECTOR_BUF[0..256)).
+;   out: Cy = 0 ok; Cy = 1 = I/O error / record out of range. A record beyond the
+;        file end is returned as spaces (lenient).
+fat_rand_get:
+                ld      a,(GP_RECNO+1)
+                or      a
+                jr      nz,frg_err
+                ld      a,(GP_RECNO)
+                or      a
+                jr      z,frg_err
+                call    frnd_calc
+                xor     a
+                ld      (GP_FLAGS),a        ; read only (do not extend)
+                call    frnd_locate
+                jr      c,frg_eoffill       ; beyond EOF -> spaces
+                ld      de,(GP_PHYS)
+                ld      hl,FWBUF
+                call    read_sector
+                ret     c
+                ; FSECTOR_BUF[0..256) = FWBUF[within..within+256)
+                ld      hl,(GP_WITHIN)
+                ld      de,FWBUF
+                add     hl,de               ; HL = FWBUF + within (src)
+                ld      de,FSECTOR_BUF
+                ld      bc,256
+                ldir
+                or      a                   ; Cy = 0
+                ret
+frg_eoffill:
+                ld      hl,FSECTOR_BUF
+                ld      de,FSECTOR_BUF+1
+                ld      bc,255
+                ld      (hl),' '
+                ldir
+                or      a                   ; Cy = 0 (lenient empty record)
+                ret
+frg_err:
+                scf
+                ret
+
+; ===========================================================================
+; GET [#]f [, recno]   /   PUT [#]f [, recno]
+; ===========================================================================
+; Select the channel (must be open RANDOM), then read/write the record. The text
+; cursor (HL) is guarded across fch_select + the disk op (CALSLT clobbers all).
+ex_put:
+                ld      a,1                 ; mode = PUT (write)
+                jr      gp_common
+ex_get:
+                xor     a                   ; mode = GET (read)
+gp_common:
+                ld      (GP_MODE),a
+                inc     hl                  ; past the GET/PUT token
+                call    skip_spaces
+                ld      a,(hl)
+                cp      '#'
+                jr      nz,gp_nochan
+                inc     hl
+gp_nochan:
+                call    eval                ; DE = channel
+                ld      a,d
+                or      a
+                jp      nz,stmt_error
+                ld      a,e
+                call    fch_valid
+                jp      nc,stmt_error
+                ld      a,e
+                ld      (GP_CHAN),a
+                ; optional ", recno" (else default record 1)
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jr      nz,gp_defrec
+                inc     hl
+                call    eval                ; DE = record number
+                jr      gp_haverec
+gp_defrec:
+                ld      de,1
+gp_haverec:
+                ld      (GP_RECNO),de
+                push    hl                  ; guard cursor across select + disk op
+                ; the channel must be open RANDOM (FCH_MODES[ch] == 4).
+                ld      a,(GP_CHAN)
+                ld      e,a
+                ld      d,0
+                ld      hl,FCH_MODES
+                add     hl,de
+                ld      a,(hl)
+                cp      4
+                jr      nz,gp_err
+                ld      a,(GP_CHAN)
+                call    fch_select          ; FSECTOR_BUF + FWR_* = this channel's state
+                ld      a,(GP_MODE)
+                or      a
+                jr      z,gp_doget
+                call    fat_rand_put
+                jr      gp_fin
+gp_doget:
+                call    fat_rand_get
+gp_fin:
+                pop     hl
+                jp      c,load_error        ; disk error
+                jp      exec_stmt
+gp_err:
+                pop     hl
+                jp      stmt_error
