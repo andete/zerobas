@@ -176,3 +176,192 @@ de_ext:
                 inc     hl
                 djnz    de_ext
                 ret
+
+; ===========================================================================
+; Sequential file channel — read path (Phase 2). A SINGLE open channel, layered
+; on the existing fat.asm sequential reader (fat_io_open / fat_io_getbyte), per
+; the EXTEND verdict (file-channel-protocol.md §4/§5). Verbs:
+;   OPEN "name" FOR INPUT AS #n        open the named file for sequential read
+;   LINE INPUT #n, A$                  read one line (to CR) into a string var
+;   INPUT #n, A$                       read one field (to ',' or CR) into A$
+;   CLOSE [#n]                          close the open channel
+; The channel state (FCH_NUM/FCH_MODE) persists across statements in RAM.
+;
+; Clean-room: original code; verb *semantics* + the FCB-by-name / sequential
+; read model from the public MSX-BASIC language reference and the black-box
+; CF-3300 DSKIO trace (file-channel-protocol.md §2/§3); the byte stream reuses
+; fat.asm. No disassembly. See basic/PROVENANCE.md §file channel read.
+;
+; Divergences (own design, quarantined; documented in PROVENANCE.md):
+;   * ONE channel only — a MAXFILES channel table is a later sub-item; the
+;     file number is recorded but not range-checked against a table.
+;   * INPUT#/LINE INPUT# fill STRING variables only (numeric INPUT# is Phase 3);
+;     a value longer than STRMAX is truncated (the string layer's own limit).
+;   * console INPUT (no '#') and graphics LINE are NOT implemented — they error.
+;   * OPEN supports FOR INPUT only here; FOR OUTPUT arrives with the write verbs.
+;   * file/channel errors reuse the loader's `load_error` ("load error") path.
+
+; --- OPEN "name" FOR INPUT AS #n -------------------------------------------
+ex_open:
+                inc     hl                  ; HL -> bytes after the OPEN token
+                jp      do_open
+do_open:
+                call    skip_spaces
+                ld      a,(hl)
+                cp      '"'
+                jp      nz,stmt_error       ; filename string required
+                inc     hl                  ; HL -> first filename char
+                call    parse_disk_fcb      ; build DISK_FCB_NAME; HL -> closing '"'
+                inc     hl                  ; past the closing '"'
+                call    skip_spaces
+                ld      a,(hl)
+                cp      FOR_TOKEN           ; FOR
+                jp      nz,stmt_error
+                inc     hl
+                call    skip_spaces
+                ld      a,(hl)
+                cp      INPUT_TOKEN         ; only FOR INPUT this slice
+                jp      nz,stmt_error
+                inc     hl
+                ; "AS" is kept verbatim ASCII (not tokenised) — match it.
+                call    skip_spaces
+                ld      a,(hl)
+                call    upcase
+                cp      'A'
+                jp      nz,stmt_error
+                inc     hl
+                ld      a,(hl)
+                call    upcase
+                cp      'S'
+                jp      nz,stmt_error
+                inc     hl
+                call    skip_spaces
+                ld      a,(hl)              ; optional '#'
+                cp      '#'
+                jr      nz,oo_num
+                inc     hl
+oo_num:
+                call    eval                ; DE = channel number, HL past it
+                ld      a,(DISKSLOT_OK)
+                or      a
+                jp      z,load_error
+                push    hl                  ; guard the text cursor — CALSLT (inside
+                push    de                  ; fat_io_open) clobbers HL and the regs
+                call    fat_io_open         ; mount + find DISK_FCB_NAME + prime read
+                pop     de
+                pop     hl
+                jp      c,load_error        ; not found / mount / I-O error
+                ld      a,e
+                ld      (FCH_NUM),a         ; record the open channel
+                ld      a,1
+                ld      (FCH_MODE),a        ; mode = INPUT
+                jp      exec_stmt
+
+; --- LINE INPUT #n, A$  (only the "LINE INPUT" form of LINE is supported) ---
+ex_line:
+                inc     hl                  ; HL -> bytes after the LINE token
+                call    skip_spaces
+                ld      a,(hl)
+                cp      INPUT_TOKEN         ; LINE must be followed by INPUT
+                jp      nz,stmt_error       ; graphics LINE = Phase 3
+                inc     hl                  ; HL -> after INPUT
+                ld      a,1                 ; read mode = LINE (stop at CR only)
+                jr      input_common
+
+; --- INPUT #n, A$  (file form only) ----------------------------------------
+ex_input:
+                inc     hl                  ; HL -> bytes after the INPUT token
+                xor     a                   ; read mode = field (stop at ',' or CR)
+input_common:
+                ld      (FCH_RDMODE),a
+                call    skip_spaces
+                ld      a,(hl)
+                cp      '#'                 ; only the file form (#n) is supported
+                jp      nz,stmt_error       ; console INPUT = Phase 3
+                inc     hl
+                call    eval                ; DE = channel number (single channel)
+                ld      a,(FCH_MODE)
+                cp      1                   ; a channel must be open for INPUT
+                jp      nz,load_error
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jp      nz,stmt_error
+                inc     hl
+                call    skip_spaces
+                call    is_letter           ; a string variable name must follow
+                jp      nc,stmt_error
+                call    var_str_type        ; A = 1 if the name has a '$' suffix
+                or      a
+                jp      z,stmt_error        ; numeric INPUT# = Phase 3
+                call    var_name_key        ; BC = key, HL past the name + '$'
+                push    hl                  ; guard the BASIC text cursor
+                push    bc                  ; guard the variable key across the read
+                call    read_into_strscr    ; fill STRSCR [len][bytes] from the file
+                pop     bc
+                ld      de,STRSCR
+                call    str_set_key         ; store the line into the string variable
+                pop     hl
+                jp      exec_stmt
+
+; read_into_strscr — read bytes from the open channel into the STRSCR descriptor
+; ([len][bytes]) until the mode's delimiter or EOF. FCH_RDMODE: 0 = field (stop at
+; ',' or CR), 1 = line (stop at CR). LF bytes are ignored; CR ends the read. A byte
+; past STRMAX is dropped (input keeps consuming to the delimiter). All loop state
+; is in RAM — fat_io_getbyte's DSKIO clobbers every register.
+read_into_strscr:
+                xor     a
+                ld      (IN_RDLEN),a
+ris_lp:
+                call    fat_io_getbyte
+                jr      c,ris_done          ; EOF -> stop
+                cp      $0A                 ; ignore LF entirely
+                jr      z,ris_lp
+                cp      $0D                 ; CR ends the line / field
+                jr      z,ris_done
+                ld      c,a                 ; C = candidate data byte
+                ld      a,(FCH_RDMODE)
+                or      a
+                jr      nz,ris_keep         ; line mode keeps everything (but CR/LF)
+                ld      a,c
+                cp      ','                 ; field mode stops at a comma
+                jr      z,ris_done
+ris_keep:
+                ld      a,(IN_RDLEN)
+                cp      STRMAX
+                jr      nc,ris_lp           ; full -> drop, keep consuming to delim
+                ld      e,a
+                ld      d,0
+                ld      hl,STRSCR+1
+                add     hl,de               ; HL -> STRSCR+1+len
+                ld      (hl),c              ; store the byte
+                ld      a,(IN_RDLEN)
+                inc     a
+                ld      (IN_RDLEN),a
+                jr      ris_lp
+ris_done:
+                ld      a,(IN_RDLEN)
+                ld      (STRSCR),a          ; descriptor length
+                ret
+
+; --- CLOSE [#n] -------------------------------------------------------------
+ex_close:
+                inc     hl                  ; HL -> bytes after the CLOSE token
+                call    skip_spaces
+                ld      a,(hl)
+                or      a
+                jr      z,dc_doclose        ; bare CLOSE (end of line)
+                cp      COLON
+                jr      z,dc_doclose        ; bare CLOSE before ':'
+                cp      '#'
+                jr      nz,dc_num
+                inc     hl
+dc_num:
+                call    eval                ; consume + ignore the channel number
+dc_doclose:
+                ; OUTPUT channels would flush here (fat_io_close); INPUT has no
+                ; dirty state. (FOR OUTPUT lands with the write verbs.)
+                xor     a
+                ld      (FCH_NUM),a
+                ld      (FCH_MODE),a         ; mark the channel closed
+                jp      exec_stmt

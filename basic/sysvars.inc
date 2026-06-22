@@ -105,6 +105,14 @@ BSAVE_TOKEN     equ     $D0     ; BSAVE "device:name",start,end[,exec] (statemen
 ; National CF-3300 Disk BASIC crunch (MSX2 TH Table 2.20; confirmed byte-identical
 ; by basic_probe_crunch_disk.py). The handler lives in basic/files.asm.
 FILES_TOKEN     equ     $B7     ; FILES ["filespec"] — list the directory (statement)
+; Sequential file-channel verbs (Phase 2 read path). Tokens oracle-LOCKED
+; byte-identical to the Philips VG-8020 crunch (basic_probe_crunch.py: OPEN -> B0,
+; INPUT -> 85, LINE -> AF, CLOSE -> B4; cross-checked MSX2 TH Table 2.20). "AS" and
+; "#" are NOT tokenised (kept verbatim ASCII). Handlers live in basic/files.asm.
+OPEN_TOKEN      equ     $B0     ; OPEN "name" FOR INPUT AS #n           (statement)
+INPUT_TOKEN     equ     $85     ; INPUT #n,var$ (file form) / LINE INPUT (statement)
+LINE_TOKEN      equ     $AF     ; LINE (only "LINE INPUT #n" supported in Phase 2)
+CLOSE_TOKEN     equ     $B4     ; CLOSE [#n]                            (statement)
 REM_TOKEN       equ     $8F     ; spec-tokens-statements.md; swallows rest of line
 POKE_TOKEN      equ     $98     ; spec-tokens-statements.md
 ; PEEK is a *function* token: a $FF prefix followed by a second byte.
@@ -357,6 +365,17 @@ TSV_NAME        equ     $E0F6   ; tape save: 6-char filename buffer (space-padde
 ; fat.asm FAT_DIRSEC/FAT_DIRREM scratch; only the per-sector entry index needs a
 ; home that survives the CHPUT register clobber.
 FILES_ENTIDX    equ     $E0FC   ; FILES: dir entry index 0..15 within a sector (1)
+; Sequential file-channel state (Phase 2). A SINGLE open channel for now (the
+; loader/file engine has one global FREAD_*/FWR_* state); a MAXFILES channel table
+; is a later sub-item. FCH_NUM/FCH_MODE persist across statements (OPEN … : LINE
+; INPUT … : CLOSE); FCH_RDMODE + IN_RDLEN are transient within one read statement.
+FCH_NUM         equ     $E0FD   ; open channel's file number, 0 = none open (1)
+FCH_MODE        equ     $E0FE   ; open mode: 0=none, 1=INPUT, 2=OUTPUT (1)
+FCH_RDMODE      equ     $E0FF   ; current read: 0=INPUT# (stop at ','/CR), 1=LINE (1)
+; The read-length counter overlays FILES_ENTIDX ($E0FC): FILES and a file read are
+; distinct statements that never run at the same instant, and the per-sector entry
+; index is dead outside do_files, so the byte is reused (collision-checked).
+IN_RDLEN        equ     $E0FC   ; INPUT#/LINE INPUT#: bytes stored so far (1)
 ; Disk BSAVE on-disk binary-file header (MSX-BASIC file formats — MSX Wiki /
 ; MSX Resource Center, an allowed public language reference). 7 bytes, then raw
 ; data: [$FE][start:2 LE][end:2 LE][exec:2 LE]. This is the DISK format and is

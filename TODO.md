@@ -241,6 +241,18 @@ Full DOS1-class Disk BASIC vocabulary, grouped; **[in]** = recommended Phase-2,
 first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
 - [ ] **Sequential file I/O [in]** — `OPEN`, `CLOSE`, `PRINT#`, `PRINT# USING`,
       `INPUT#`, `LINE INPUT#`, `INPUT$(n,#f)`. The spike-confirmed core.
+      - [x] **read path: `OPEN…FOR INPUT` + `INPUT#` + `LINE INPUT#` + `CLOSE`** —
+            DONE (basic/files.asm). EXTEND over the fat.asm sequential reader
+            (`fat_io_open`/`fat_io_getbyte`); single channel; string vars only.
+            Tokens OPEN=$B0/INPUT=$85/LINE=$AF/CLOSE=$B4 oracle-locked to the
+            VG-8020 crunch; `OPEN"HI.TXT"…:LINE INPUT#1,A$:CLOSE#1:PRINT A$` prints
+            the file's line byte-for-byte and the **real CF-3300 prints it
+            identically** (`disk_probe_fileread.py` differential). See
+            basic/PROVENANCE.md §file channel — sequential read.
+      - [ ] **write path: `OPEN…FOR OUTPUT` + `PRINT#` + `CLOSE`** — next (reuses
+            OPEN/CLOSE; needs the `OUTPUT`→`OUT $9C`+`PUT $B3` two-token handling
+            and `fat_io_create`/`fat_io_putbyte`/`fat_io_close`).
+      - [ ] `PRINT# USING`, `INPUT$(n,#f)`, and the `MAXFILES` multi-channel table.
 - [ ] **File/dir management [in]** — `FILES`✅, `LFILES`, `KILL`, `NAME…AS…`, `MERGE`
       (the `LOAD`/`SAVE`/`BLOAD`/`BSAVE`/`RUN"f"` already exist from Phase 1).
       - [x] **`FILES`** — DONE (basic/files.asm). Lists the root directory by

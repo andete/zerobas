@@ -1671,3 +1671,68 @@ free `$E0FC..` gap below `LINEBUF ($E100)`, collision-checked.
 Clean-room: original code; FILES *semantics* + the 8.3 field layout from the public
 MSX-BASIC language reference and black-box CF-3300 observation; the directory walk
 reuses fat.asm primitives. No disassembly. See file-channel-protocol.md.
+
+## file channel — sequential read (OPEN/INPUT#/LINE INPUT#/CLOSE) (basic/files.asm, basic/interp.asm, basic/sysvars.inc)
+
+Phase 2's sequential file-channel **read** path, EXTEND over the existing fat.asm
+sequential reader (`fat_io_open` / `fat_io_getbyte`) per the Step-0 verdict
+(file-channel-protocol.md §4/§5: the file verbs share the standard DSKIO+FAT12
+substrate, so they layer on the loader's engine).
+
+**Statements (basic/files.asm).**
+- `OPEN "name" FOR INPUT AS #n` — `do_open` parses the quoted filename with the
+  shared `parse_disk_fcb` (drive prefix + 8.3 into `DISK_FCB_NAME`), the `FOR`
+  ($82) + `INPUT` ($85) tokens, the verbatim-ASCII `AS`, an optional `#`, and the
+  channel number via `eval`; then `fat_io_open` mounts + finds the file + primes
+  the byte stream. Records the single channel in `FCH_NUM`/`FCH_MODE`.
+- `LINE INPUT #n, A$` — `ex_line` requires `INPUT` after `LINE` (graphics LINE is
+  Phase 3) and reads to CR. `INPUT #n, A$` — `ex_input`, the file form, reads to
+  `,`/CR. Both share `read_into_strscr`, which streams `fat_io_getbyte` into the
+  STRSCR `[len][bytes]` descriptor (ignoring LF, stopping on CR / mode delimiter,
+  truncating past STRMAX) and stores it into the string variable via the existing
+  `var_name_key` + `str_set_key`.
+- `CLOSE [#n]` — `ex_close` clears the channel state (INPUT has no dirty state to
+  flush; the OUTPUT flush via `fat_io_close` lands with the write verbs).
+
+**Tokens** oracle-LOCKED byte-identical to the Philips VG-8020 crunch
+(`basic_probe_crunch.py`): OPEN=$B0, INPUT=$85, LINE=$AF, CLOSE=$B4 (cross-checked
+MSX2 TH Table 2.20). `AS` and `#` are kept verbatim ASCII; the channel digit
+crunches to the `$11+n` single-digit token (zerobas already emits this — `1`→$12).
+Added to `kwtable`; rendered by the table-driven `detok_kw`.
+
+**Validation** (`disk_probe_fileread.py`, /tmp copy of `test720.dsk` holding
+`HI.TXT = "Hello from zerobas-disk!\r\n"`): `OPEN…FOR INPUT…:LINE INPUT#1,A$:CLOSE
+#1:PRINT A$` and the `INPUT#1,A$` variant both print `Hello from zerobas-disk!`
+(CR/LF stripped) — matching the ground-truth disk bytes — and the **real National
+CF-3300 Disk BASIC prints the identical line** (differential). The full crunch
+oracle + 16 host unit-test files still pass; FILES is unaffected.
+
+**The HL-clobber rule (a fixed bug, recorded).** `fat_io_open` reaches disk via
+`CALSLT`, which clobbers HL (the BASIC text cursor) along with every register. The
+first `do_open` lost HL across the open and `jp exec_stmt` ran on a garbage cursor
+→ a spurious "syntax error" *after* the channel had actually opened. Fix: guard HL
+(and DE) on the stack across `fat_io_open`. Same discipline as the read loop, whose
+counter (`IN_RDLEN`) and mode live in RAM because `fat_io_getbyte`'s DSKIO clobbers
+the register file.
+
+**Scratch.** `FCH_NUM`/`FCH_MODE` ($E0FD/$E0FE) persist across statements;
+`FCH_RDMODE` ($E0FF) + `IN_RDLEN` (overlays the dead `FILES_ENTIDX` $E0FC) are
+transient within one read statement. All in the free `$E0FC..$E0FF` gap below
+`LINEBUF`, collision-checked.
+
+**Divergences (own design, quarantined):**
+- **ONE channel only** — the engine has a single global `FREAD_*` state; the file
+  number is recorded but not checked against a `MAXFILES` table. Multi-channel is a
+  later sub-item.
+- INPUT#/LINE INPUT# fill **string variables only** (numeric INPUT# = Phase 3); a
+  value longer than STRMAX (32) is truncated (the string layer's own limit).
+- INPUT# is minimal: it stops at `,`/CR and ignores LF, but does **not** do leading-
+  whitespace skipping or quoted-field parsing (Phase 3 refinements).
+- console `INPUT` (no `#`), graphics `LINE`, and `OPEN … FOR OUTPUT` are not
+  implemented here — they error (`stmt_error`); OUTPUT arrives with the write verbs.
+- file/channel errors (no disk, not found, no open channel) reuse the loader's
+  `load_error` ("load error") path, not a Disk-BASIC-specific message.
+
+Clean-room: original code; verb semantics + the FCB-by-name / sequential read model
+from the public MSX-BASIC language reference and the black-box CF-3300 DSKIO trace
+(file-channel-protocol.md §2/§3); the byte stream reuses fat.asm. No disassembly.
