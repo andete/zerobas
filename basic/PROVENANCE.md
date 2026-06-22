@@ -966,8 +966,8 @@ section for the row):**
 | standard DSKIO entry offset + register convention (CY=direction) | $4010 | MSX2 TH §5 / CF-3300 obs | §disk DSKIO host engine |
 | cross-slot DSKIO call: `CALSLT` $001C via `DISKSLOT`, addr $4010 | $001C / $4010 | MSX Assembly Page / MSX2 TH | §disk DSKIO host engine, §extension-ROM INIT scan |
 | 8.3 name field +0..+10 (8 name + 3 ext, space-padded, upper-case) | — | Microsoft FAT spec §3.4; consumed by `fat_find`/`fat_dir_create` | §disk-BLOAD scratch FCB |
-| disk BSAVE header `[$FE][start:2 LE][end:2 LE][exec:2 LE]` + raw data, start..end inclusive | $FE marker | MSX-BASIC file formats (MSX Wiki / MSX Resource Center) | §disk BLOAD execute |
-| tokenised-BASIC disk marker | $FF | MSX-BASIC file formats (MSX Wiki / MSX Resource Center) | §disk LOAD |
+| disk BSAVE header `[$FE][start:2 LE][end:2 LE][exec:2 LE]` + raw data, start..end inclusive | $FE marker | MSX-BASIC file formats (public language reference) | §disk BLOAD execute |
+| tokenised-BASIC disk marker | $FF | MSX-BASIC file formats (public language reference) | §disk LOAD |
 | `DISK_FCB_NAME` / `DISKSLOT` / FAT engine scratch placement | $E0DC / $E0E7 / $E5C0+ | own choice (free page-$E0 / page-3 RAM, collision-checked) | §disk-BLOAD scratch FCB, §disk DSKIO host engine, §extension-ROM INIT scan |
 
 ### Oracle-confirmation status (read this before trusting "confirmed")
@@ -1114,8 +1114,7 @@ header (10×$D0 + 6-char name + the three addresses), which the TODO text wrongl
 called "same format as tape" — corrected in disk/TODO.md. BLOAD verifies the
 `$FE` marker (else `load_error`), parses start/end/exec into the existing
 `CURPTR`/`ENDPTR`/`EXECPTR`, and loads bytes start..end inclusive like the tape
-`load_loop`. Source for the header layout: **MSX-BASIC file formats** (MSX Wiki /
-MSX Resource Center) — an allowed public MSX-BASIC language reference.
+`load_loop`. Source for the header layout: **MSX-BASIC file formats** — an allowed public MSX-BASIC language reference.
 
 | Item | Value | Source | Status |
 | --- | --- | --- | --- |
@@ -1124,7 +1123,7 @@ MSX Resource Center) — an allowed public MSX-BASIC language reference.
 | BDOS call `Sequential Read` | $14 | MSX2 TH / MSX-DOS BDOS call table | sourced |
 | BDOS call `Set DTA Address` (DE = new DTA) | $1A | MSX2 TH / MSX-DOS BDOS call table | sourced |
 | BDOS calling convention: C = call #, DE = FCB/pointer, A = result | — | MSX2 TH / MSX-DOS BDOS conventions | sourced |
-| disk BSAVE header: `[$FE][start:2 LE][end:2 LE][exec:2 LE]` + raw data, start..end inclusive | — | MSX-BASIC file formats (MSX Wiki / MSX Resource Center), public language reference | sourced |
+| disk BSAVE header: `[$FE][start:2 LE][end:2 LE][exec:2 LE]` + raw data, start..end inclusive | — | MSX-BASIC file formats, public language reference | sourced |
 | `BSAVE_DISK_ID` marker | $FE | as above | sourced |
 | `SYSTEM_VEC` (disk ROM's `bdos_entry` address, set by disk INIT) | $F37D | MSX2 TH work area / C-BIOS system variables | sourced |
 | `CALSLT` (IYh = slot, IX = addr) for the inter-slot BDOS call | $001C | MSX Assembly Page BIOS call list / MSX2 TH | sourced |
@@ -1187,8 +1186,7 @@ line-link chain `do_tape_prog` reads: `[link:2 LE][lineno:2 LE][tokens…][00]` 
 line, terminated by a `$0000` link word. This is DISTINCT from the BSAVE binary's
 `$FE` disk marker (the two file kinds are told apart by their leading byte).
 ASCII-saved BASIC (`SAVE…,A`) has no `$FF` and is plain text — out of scope; only
-the `$FF` tokenised form is loaded. Source: **MSX-BASIC file formats** (MSX Wiki /
-MSX Resource Center, an allowed public MSX-BASIC language reference — the same
+the `$FF` tokenised form is loaded. Source: **MSX-BASIC file formats** (an allowed public MSX-BASIC language reference — the same
 class the `$FE` disk-BSAVE marker was sourced from). `disk_prog_load` verifies the
 `$FF` marker on load (mismatch ⇒ `load_error`).
 
@@ -1209,7 +1207,7 @@ store overflow past `TXTMAX` mirrors `ctp_oom` (`dpl_oom`: close, `new_prog`,
 
 | Item | Value | Source | Status |
 | --- | --- | --- | --- |
-| `BASIC_DISK_ID` (on-disk tokenised-BASIC marker) | $FF | MSX-BASIC file formats (MSX Wiki / MSX Resource Center), public language reference | sourced |
+| `BASIC_DISK_ID` (on-disk tokenised-BASIC marker) | $FF | MSX-BASIC file formats, public language reference | sourced |
 | in-memory line-link image after the marker: `[link:2 LE][lineno:2 LE][tokens…][00]` per line, `$0000` end-link | — | same line-link layout as program.asm / do_tape_prog (allowed-source / oracle-confirmed) | sourced |
 | `LOAD` statement token (reused, no new token) | $B5 | oracle-confirmed via `basic_probe_crunch.py` (already sourced, §Phase 1 cassette load) | sourced |
 
@@ -2215,8 +2213,7 @@ padded), and reading a fielded variable yields its current slice of the buffer.
 **Clean-room sourcing.** Verb *semantics* — FIELD partitions the buffer; LSET left-
 justifies + right-pads with spaces, RSET right-justifies + left-pads; a value longer
 than the field truncates from the right; a random file opens with `OPEN "name" AS #n`
-(no `FOR` clause) — are from the public MSX-BASIC language reference (MSX Wiki / MSX
-Resource Center). Token *values* were discovered by the VG-8020 crunch oracle (freeze
+(no `FOR` clause) — are from the public MSX-BASIC language reference. Token *values* were discovered by the VG-8020 crunch oracle (freeze
 at TAPION mid-BLOAD, read KBUF), **not** from any disassembly:
 `field#1,2 as a$` → `B1 23 12 2C 13 20 41 53 20 41 24` (FIELD=$B1, "AS" verbatim,
 `#1`→`23 12`, the width `2`→`13` single-digit token); `lset a$="x"` → `B8 …`

@@ -10,18 +10,39 @@ An unexplained magic value blocks release.
   and justified by oracle round-trip (or an original algorithm of ours). **Never**
   lifted from a reference ROM or any disk-ROM/MSX-BASIC disassembly.
 
-Allowed sources:
-- **MSX2 TH** — MSX2 Technical Handbook (Konamiman's English translation, public)
-- **WD2793 DS** — WD2793 FDC datasheet (Western Digital, public)
-- **CF-3300 schematic** — open hardware schematics for the National CF-3300
-  (National Panasonic MSX1 built-in disk machine; source TBD — see FDC section)
-- **openMSX source** — openMSX emulator C++ source (GPL); usable for hardware
-  register addresses and port maps
-- **Microsoft FAT spec** — Microsoft FAT Filesystem Specification (public)
-- **ECMA-107** — ECMA-107 standard for 3.5" disk geometry (public)
-- **MSX Assembly Page** — MSX Assembly Page BIOS/sysvar reference (public web)
-- **C-BIOS** — C-BIOS source (BSD 2-clause); system variable addresses
-- **own design** — algorithm or constant chosen by this project
+Allowed sources (the canonical master list + the governing test live in
+[`../README.md`](../README.md); each entry below names *what may be taken from it,
+and only that*):
+- **MSX2 TH** — MSX2 Technical Handbook (Konamiman's English translation, public);
+  documented disk-ROM / BDOS *interfaces* (entry addresses, calling conventions,
+  work-area layouts) — never reproduced ROM code.
+- **WD2793 DS** — WD2793 FDC datasheet (Western Digital, public); full register /
+  command / timing spec.
+- **CF-3300 schematic** — open hardware schematic for the National CF-3300; FDC
+  wiring / register-window *hardware facts* only. (Exact document still to be
+  pinned — see FDC section; until pinned, every register address is cross-checked
+  against openMSX + the WD2793 datasheet + oracle.)
+- **openMSX source** — openMSX emulator C++ source (GPL); hardware register
+  addresses / port maps **only** — facts, never code (GPL stays out of this BSD-2
+  tree).
+- **Microsoft FAT spec** — Microsoft FAT Filesystem Specification (public);
+  FAT12 structures.
+- **ECMA-107** — ECMA-107 standard; 3.5" disk geometry.
+- **MSX Assembly Page** — MSX Assembly Page BIOS/sysvar reference (public web); the
+  *standard* interface it consolidates (corroborate internals against the TH).
+- **komkon docs** — `fms.komkon.org/MSX/Docs/` hook / sysvar *address tables*
+  (facts) — not RE-derived routine-behaviour text.
+- **Nextor Driver Development Guide** — the documented DPB / driver *interface
+  contract* only — never Nextor code.
+- **C-BIOS** — C-BIOS source (BSD 2-clause); system-variable *addresses* / facts
+  (don't copy code/expression without BSD-2 attribution).
+- **oracle** — this project's own black-box observation of a real MSX (inputs in,
+  outputs out; never reading the reference ROM or any proprietary binary).
+- **own design** — algorithm or constant chosen by this project.
+
+NOT allowed (see README): the MSX Wiki / MSX Resource Center and other community
+reverse-engineering compilations, and the bytes of any proprietary binary
+(reference ROM, MSXDOS.SYS, COMMAND.COM) read as anything but an oracle.
 
 ---
 
@@ -96,9 +117,10 @@ byte is captured from **register A on INIT entry** (the first thing INIT does:
 `LD (HOOK_SLOT),A`), then used as the CALLF operand. Dual-sourced:
 
 * The standard MSX cartridge/disk INIT convention passes the ROM's slot id to
-  INIT in a register — the MSX Wiki ("Develop a program in cartridge ROM")
-  documents the idiom `ld a,c`, and a **black-box trace of the CF-3300 BIOS**
-  calling its disk INIT observed **A = C = $87** (= slot 3-1) on entry.
+  INIT in a register (MSX2 TH cartridge-ROM INIT convention). This is established
+  here purely by **black-box oracle**: a trace of the CF-3300 BIOS calling its
+  disk INIT observed **A = C = $87** (= slot 3-1) on entry — no community-wiki
+  source is relied on.
 * zerobas-BASIC's own slot scan (`basic/initext.asm`) likewise leaves the slot
   byte in **A** at the CALSLT to this INIT: it does `ld a,(SCAN_SLOT)` right
   before loading IY/IX and calling CALSLT, and CALSLT passes AF through to the
@@ -120,7 +142,7 @@ byte is captured from **register A on INIT entry** (the first thing INIT does:
 | HPHYD hook address | $FFA7 | public MSX hook table (fms.komkon.org/MSX/Docs/Hooks.txt); CF-3300 black-box (`disk/docs/expansion-protocol.md` §2) | sourced |
 | Hook idiom | `F7 <slot> 10 40 C9` = RST 30h ; slot ; $4010 ; RET | MSX2 TH §2 inter-slot CALLF; CF-3300 black-box trace (expansion-protocol.md §2) | sourced |
 | Hook target | $4010 = our DSKIO ($4000 + standard +$10 offset) | MSX2 TH, disk ROM interface | sourced |
-| Own slot byte source | register A on INIT entry (`LD (HOOK_SLOT),A` first) = $87 (3-1) | standard INIT slot-in-A convention (MSX Wiki + CF-3300 oracle) + our own `basic/initext.asm` scan (oracle-confirmed A=$87); coupling documented above | sourced |
+| Own slot byte source | register A on INIT entry (`LD (HOOK_SLOT),A` first) = $87 (3-1) | MSX2 TH cartridge-ROM INIT convention; established by black-box oracle (CF-3300 INIT trace A=$87) + our own `basic/initext.asm` scan (oracle-confirmed A=$87); coupling documented above | sourced |
 | `HOOK_SLOT` scratch byte | $E55D (1 B) | own choice (free page-3 RAM after FAT_SECPERFAT word $E55B-$E55C, before WBUF $E560) | sourced |
 | End-to-end provider read | `CALL $FFA7` (installed hook) → CALLF → our DSKIO reads boot sector byte-identical to disk | own black-box test (C-BIOS_MSX1_EU_BASIC_DISK) | sourced |
 | BIOS PHYDIO entry | $0144 | MSX Assembly Page BIOS map (map.grauw.nl/resources/msxbios.php); MSX2 TH BIOS jump table — NOT disassembly | sourced |

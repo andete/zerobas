@@ -36,7 +36,7 @@
 ;   * BPB / FAT / directory layout — Microsoft FAT filesystem specification; ECMA-107
 ;     geometry. Assumes 512-byte sectors (validated at mount).
 ;   * On-disk BSAVE ($FE) / tokenised-BASIC ($FF) markers — MSX-BASIC file formats
-;     (MSX Wiki / MSX Resource Center), already in sysvars.inc.
+;     (public MSX-BASIC file-format reference), already in sysvars.inc.
 ; No reference BIOS / disk-ROM / MSX-BASIC / MSX-DOS disassembly was read.
 ; See basic/PROVENANCE.md §disk DSKIO host engine.
 

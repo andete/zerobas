@@ -465,8 +465,8 @@ FCH_RDMODE      equ     $E0FF   ; current read: 0=INPUT# (stop at ','/CR), 1=LIN
 ; distinct statements that never run at the same instant, and the per-sector entry
 ; index is dead outside do_files, so the byte is reused (collision-checked).
 IN_RDLEN        equ     $E0FC   ; INPUT#/LINE INPUT#: bytes stored so far (1)
-; Disk BSAVE on-disk binary-file header (MSX-BASIC file formats — MSX Wiki /
-; MSX Resource Center, an allowed public language reference). 7 bytes, then raw
+; Disk BSAVE on-disk binary-file header (MSX-BASIC file formats, an allowed
+; public language reference). 7 bytes, then raw
 ; data: [$FE][start:2 LE][end:2 LE][exec:2 LE]. This is the DISK format and is
 ; DIFFERENT from the cassette header (10x $D0 + 6-char name + addresses); the
 ; filename lives in the directory entry, not the file body. Data bytes run
@@ -477,8 +477,8 @@ BSAVE_DISK_ID   equ     $FE     ; on-disk BSAVE binary-file marker
 ; in-memory program image (the same line-link chain do_tape_prog reads:
 ; [link:2 LE][lineno:2 LE][tokens...][00] per line, ending in a $0000 link word).
 ; This is DISTINCT from the BSAVE binary's $FE marker above. Source: MSX-BASIC
-; file formats (MSX Wiki / MSX Resource Center — the same allowed public language
-; reference class the $FE BSAVE marker was sourced from). LOAD"filename" verifies
+; file formats (the same allowed public-language-reference class the $FE BSAVE
+; marker was sourced from). LOAD"filename" verifies
 ; this marker (mismatch -> load_error). See basic/PROVENANCE.md §disk LOAD.
 BASIC_DISK_ID   equ     $FF     ; on-disk tokenised-BASIC program marker
 

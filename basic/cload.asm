@@ -354,8 +354,8 @@ err_prog_mem:   db      "out of memory",13,10,0
 ; file, relinks, and returns — leaving a loaded, current program. The caller
 ; decides whether to RUN it (LOAD,R) so this is reusable by RUN"filename".
 ;
-; On-disk tokenised-BASIC format (MSX-BASIC file formats — MSX Wiki / MSX
-; Resource Center, an allowed public language reference; see PROVENANCE.md §disk
+; On-disk tokenised-BASIC format (MSX-BASIC file formats, an allowed public
+; language reference; see PROVENANCE.md §disk
 ; LOAD): a leading marker byte $FF (BASIC_DISK_ID), then the in-memory program
 ; image — the SAME line-link chain do_tape_prog reads:
 ;   [link:2 LE][lineno:2 LE][tokens...][00] per line, ending in a $0000 link word.

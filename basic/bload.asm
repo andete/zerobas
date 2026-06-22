@@ -216,7 +216,7 @@ build_name:
 ; Sources: DSKIO register convention + $4010 offset — MSX2 TH §5 / black-box
 ; CF-3300 observation (disk/docs/expansion-protocol.md); FAT12 — Microsoft FAT
 ; spec (ported from disk/disk.asm); disk BSAVE header — MSX-BASIC file formats
-; (MSX Wiki / MSX Resource Center). See basic/PROVENANCE.md §disk DSKIO host engine.
+; (public MSX-BASIC file-format reference). See basic/PROVENANCE.md §disk DSKIO host engine.
 do_disk_bload:
                 ; (1) disk ROM slot must have been recorded by the INIT scan.
                 ld      a,(DISKSLOT_OK)

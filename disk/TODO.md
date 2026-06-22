@@ -405,8 +405,8 @@ once the BDOS API is stable.
       as tape") described the CASSETTE header. A BSAVE binary file *on disk* uses
       a shorter 7-byte header `[$FE][start:2 LE][end:2 LE][exec:2 LE]` immediately
       followed by the raw data — no 10×$D0 block and no filename in the body (the
-      name is the directory entry). Source: MSX-BASIC file formats (MSX Wiki / MSX
-      Resource Center, an allowed public MSX-BASIC language reference). Data bytes
+      name is the directory entry). Source: MSX-BASIC file formats (an allowed public MSX-BASIC language
+      reference). Data bytes
       run start..end inclusive. See basic/PROVENANCE.md §disk BLOAD execute and
       disk/PROVENANCE.md §BDOS interface.
       (`basic/bload.asm`: `do_disk_bload` is now real. It checks `DISKSLOT_OK`
@@ -442,8 +442,8 @@ once the BDOS API is stable.
       `disk_prog_load` (reusable, callable by the next `RUN"filename"` item)
       checks `DISKSLOT_OK`, Set-DTA→`DISK_DTA`, Open (require A=$00), requires the
       leading **`$FF` tokenised-BASIC marker** (`BASIC_DISK_ID`, new in
-      `basic/sysvars.inc`; source: MSX-BASIC file formats — MSX Wiki / MSX
-      Resource Center, the same allowed reference class the `$FE` BSAVE marker
+      `basic/sysvars.inc`; source: MSX-BASIC file formats, the same allowed reference class the `$FE`
+      BSAVE marker
       came from; DISTINCT from `$FE`), then streams the `[link][lineno][tokens][00]`
       line-link image into `TXTBASE` via `disk_getbyte` — mirroring
       `do_tape_prog`'s `ctp_line`/`ctp_body`/`ctp_done` — stopping at the `$0000`

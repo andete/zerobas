@@ -258,9 +258,9 @@ CMD_WRITE       equ     $A0     ; write sector, single record (Type II, $A0 base
 ; slots). We point it at our own DSKIO entry ($4010) with this ROM's slot byte.
 ;
 ; OWN SLOT BYTE (the hard sub-problem). The MSX cartridge/disk INIT convention
-; passes the ROM's slot id to INIT in a register (MSX Wiki "Develop a program in
-; cartridge ROM": retrieved with `ld a,c`; black-box trace of the CF-3300 BIOS
-; calling its disk INIT: A = C = $87 = slot 3-1). zerobas-BASIC's own slot scan
+; passes the ROM's slot id to INIT in a register (MSX2 TH cartridge-ROM INIT
+; convention); established here by black-box oracle — a trace of the CF-3300 BIOS
+; calling its disk INIT observed A = C = $87 = slot 3-1. zerobas-BASIC's own slot scan
 ; (basic/initext.asm) likewise leaves the slot byte in A at the CALSLT to this
 ; INIT: it does `ld a,(SCAN_SLOT)` immediately before loading IY/IX and calling
 ; CALSLT, and CALSLT passes AF through to the target — black-box confirmed: at
@@ -272,7 +272,7 @@ CMD_WRITE       equ     $A0     ; write sector, single record (Type II, $A0 base
 ;
 ; Sources: SYSTEM $F37D — MSX2 TH, work area; C-BIOS systemvars.asm. HPHYD $FFA7,
 ; CALLF/RST 30h idiom — disk/docs/expansion-protocol.md (CF-3300 black-box trace)
-; + MSX2 TH §2. Slot-in-A INIT convention — MSX Wiki + CF-3300/own-scan oracle.
+; + MSX2 TH §2. Slot-in-A INIT convention — MSX2 TH + CF-3300/own-scan oracle.
 init:
                 ; --- capture this ROM's slot byte (A on INIT entry; see header) ---
                 ; Do this FIRST, before anything clobbers A.

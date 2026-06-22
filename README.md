@@ -28,15 +28,37 @@ that makes the code distributable.
   prove it correct: the per-feature checklist, the openMSX validation harness,
   and the tokeniser quirks a new session must know.
 
-**Allowed sources:** the MSX2 Technical Handbook, the MSX Assembly Page
-(`map.grauw.nl`), public MSX-BASIC *language* reference, hardware datasheets
-(TMS9918 / AY-3-8910 / i8255), C-BIOS sources (BSD 2-clause), and this project's
-own black-box **oracle observations**.
+**The one test that governs every source.** Documentation may be used only where
+it specifies a **published / standard interface the original was built to conform
+to** — never where it reveals a reference implementation's *internals*. Internal
+behaviour that appears in no published spec is reverse-engineered knowledge of
+protected code, and stays forbidden even after it has been copied into a wiki, a
+forum post, or an annotated "documentation" file. Each item below lists *what may
+be taken from it*; nothing beyond that scope is sourced.
+
+| Allowed source | What may be taken from it — and only this |
+|----------------|-------------------------------------------|
+| **MSX2 Technical Handbook** (Konamiman's public English translation) | documented BIOS / BDOS / hardware *interfaces*: entry addresses, calling conventions, work-area layouts. Never any reproduced ROM code. |
+| **MSX Assembly Page** (`map.grauw.nl`) | the *standard* BIOS-call / system-variable interface it consolidates; corroborate against the TH for anything that looks implementation-internal. |
+| **Public MSX-BASIC language & file-format reference** | language syntax / semantics and on-disk / on-tape file-format layouts (the user-visible contract). Never interpreter internals. |
+| **Hardware datasheets** (TMS9918, AY-3-8910, i8255, WD2793) | full register / timing / command specs. Gold standard, no restriction. |
+| **Open standards** (Microsoft FAT spec, ECMA-107) | FAT12 and 3.5" disk-geometry structures. |
+| **National CF-3300 schematic** (open hardware) | FDC wiring / memory-mapped register window — hardware facts only (pin the exact document; see disk/PROVENANCE.md). |
+| **C-BIOS** (BSD 2-clause) | system-variable *addresses* and standard-interface *facts* only (it is itself a clean-room BIOS). Do not copy its code/expression without honouring BSD-2. |
+| **openMSX** (GPL) | hardware *register addresses / port maps* only — facts, never code (GPL must not enter this BSD-2 tree). |
+| **komkon MSX docs** (`fms.komkon.org`) | published hook / system-variable *address tables* (facts) only — not RE-derived routine-behaviour descriptions. |
+| **Nextor Driver Development Guide** | the documented DPB / disk-driver *interface contract* only — never Nextor source code. |
+| **This project's own black-box oracle** | observed input→output behaviour of a real MSX. The gold standard — *provided it stays black-box*: observe outputs, never read or disassemble a reference ROM or any proprietary binary (BIOS, MSX-BASIC ROM, disk-ROM, MSXDOS.SYS, COMMAND.COM). |
 
 **Forbidden, without exception:** any MSX-BASIC / GW-BASIC / BASIC-80 source or
-disassembly, and any reference BIOS/BASIC ROM disassembly. These must never be
-read by a contributor or fed into any tool or model. A reference ROM is only
-ever an *oracle*: identical inputs in, observed outputs out.
+disassembly; any reference BIOS / BASIC-ROM / disk-ROM disassembly; and the bytes
+of any proprietary system binary (reference ROM, MSXDOS.SYS, COMMAND.COM) read as
+anything other than an *oracle* — identical inputs in, observed outputs out. The
+**MSX Wiki, MSX Resource Center, and other community reverse-engineering
+compilations are NOT allowed sources**: where they merely restate a published
+interface, cite that published source instead; where they reveal proprietary
+internals, they are out. These rules must never be broken by a contributor or by
+any tool or model.
 
 The behavioural specifications zerobas is built from live in the companion
 analysis repo (`msx-preservation`, under `basic-spec/docs/`), produced by
