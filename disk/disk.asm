@@ -311,6 +311,9 @@ init:
 ; No disk / read error / no signature all return cleanly to BASIC.
 BOOT_LOAD       equ     $C000   ; standard boot-sector load address (MSX2 TH ch.3)
 BOOT_ENTRY      equ     $C01E   ; custom-boot-program entry (BOOT_LOAD + $1E)
+; page-0 RAM-swap scratch (transient, used only during INIT's boot bridge).
+BOOT_SV_A8      equ     $E760   ; saved $A8 primary-slot config
+BOOT_SV_SEC     equ     $E761   ; saved slot secondary ($FFFF) live value
 boot_disk:
                 xor     a               ; drive A
                 ld      b, 1            ; one sector
@@ -329,6 +332,47 @@ boot_sig_ok:
                 or      a               ; Cy = 0 -> step-5 "custom boot" call
                 call    BOOT_ENTRY      ; data-disk default RET NC returns here
                 ret                     ; (a2: step 6 + CY-set $C01E go here)
+
+; page0_ram_in — map page 3's slot/subslot (always RAM: the stack lives there)
+; into page 0, so the boot code/MSXDOS see RAM where the BIOS ROM was. Derives
+; the RAM slot from page 3 (gap B: host-adaptive, never hardcoded slot 3-0).
+; Caller MUST DI (while page 0 is RAM the $0038 int vector is not the BIOS). Saves
+; the originals for page0_ram_out. Clobbers A, C. (provider-oracle-scope.md §8.2)
+page0_ram_in:
+                in      a, ($A8)            ; primary slot config
+                ld      (BOOT_SV_A8), a
+                ld      a, ($FFFF)          ; slot secondary reg (reads inverted)
+                cpl                         ; -> live value
+                ld      (BOOT_SV_SEC), a
+                ; page-0 primary := page-3 primary  ($A8 bits 7-6 -> bits 1-0)
+                ld      a, (BOOT_SV_A8)
+                and     %11000000
+                rlca
+                rlca
+                ld      c, a
+                ld      a, (BOOT_SV_A8)
+                and     %11111100
+                or      c
+                out     ($A8), a
+                ; page-0 subslot := page-3 subslot  ($FFFF bits 7-6 -> bits 1-0)
+                ld      a, (BOOT_SV_SEC)
+                and     %11000000
+                rlca
+                rlca
+                ld      c, a
+                ld      a, (BOOT_SV_SEC)
+                and     %11111100
+                or      c
+                ld      ($FFFF), a
+                ret
+
+; page0_ram_out — restore the original page-0 mapping (BIOS ROM back in page 0).
+page0_ram_out:
+                ld      a, (BOOT_SV_SEC)
+                ld      ($FFFF), a
+                ld      a, (BOOT_SV_A8)
+                out     ($A8), a
+                ret
 
 ; --- Disk entry-point handlers ---------------------------------------------
 

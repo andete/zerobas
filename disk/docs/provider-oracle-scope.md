@@ -369,6 +369,15 @@ slot 3-0; that was the §8.5 gap B bug, corrected in the listing above.) Must ru
 handler. This is the proven foundation for a2 step (2); the remaining work is laying the
 page-0 environment on top + the two-phase call.
 
+**Derived (gap-B) version now validated in-tree (2026-06-22).** `page0_ram_in` /
+`page0_ram_out` in `disk.asm` (the host-adaptive form above) were self-tested on
+**`C-BIOS_MSX1_BASIC_DISK`** — the host whose RAM is *not* slot 3-0, where the hardcoded
+`or $03` / `and $FC` version hung. After `page0_ram_in`, `$0000` accepts a written `$A5`
+(RAM is live in page 0); after `page0_ram_out`, `$0000` reads back `$F3` (the C-BIOS `DI`
+opcode — BIOS ROM restored), with the machine still running (PC `$11A0`, not wedged). So gap
+B is **validated**, not merely design-resolved. The routines are committed (uncalled for now);
+step 6 wires them in next.
+
 ## 8.3 Open question RESOLVED — boot loads MSXDOS.SYS by *sector reads*, not BDOS
 
 Black-box experiment on the stock CF-3300 (2026-06-22): BP at `$C01E` armed after the 2nd

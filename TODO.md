@@ -496,13 +496,14 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             `$0038` stub) lacked a vector the boot calls. Fix: lay the fuller vector set
             (shape per TH ch.3, our own RAM targets), disk path via `$0030`→direct `CALL
             $4010` (our ROM stays in page 1). Residual: trap which vector fires at `$1418`
-            in the next bridge build. **(B) RESOLVED (design, §8.2):**
+            in the next bridge build. **(B) RESOLVED + VALIDATED:**
             the paging hardcoded "RAM = slot 3-0" (`or $03`/`and $FC`) — broke the C-BIOS
             host; corrected to **derive the RAM slot from page 3's bits** (`$A8`/`$FFFF`
-            bits 7-6 → page-0 bits) — provably == slot 3-0 on Tier-1, host-adaptive
-            elsewhere. The boot bridge can only ship whole (runs in every INIT), so the
-            corrected paging is wired in + re-validated alongside gap A in the next a2
-            build. **Gap A is now the sole remaining blocker.**
+            bits 7-6 → page-0 bits). `page0_ram_in`/`page0_ram_out` are now in `disk.asm`,
+            **self-tested on `C-BIOS_MSX1_BASIC_DISK`** (the previously-hanging host):
+            `$0000` accepts `$A5` after RAM-in, reads `$F3` after restore, machine running
+            (§8.2). Routines committed but uncalled; **step 6 wires them in next.**
+            **Gap A is now the sole remaining blocker.**
       - [ ] **a3 — step 7 + validate.** `CALL $C01E` CY-set; oracle: Tier-1 reaches
             `MSX-DOS version 1.03 … A>` screen-identical to the stock CF-3300.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
