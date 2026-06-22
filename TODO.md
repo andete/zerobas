@@ -339,8 +339,22 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
             Both observed + documented in PROVENANCE §LOC / LFILES.
 - [x] **Config [in]** — `MAXFILES` (sizes the channel table) — DONE; see the
       sequential-I/O sub-item above + basic/PROVENANCE.md §MAXFILES.
-- [ ] **Direct sector access [in]** — `DSKI$` (read sector, fn) / `DSKO$` (write
-      sector, stmt; `HDSKO $FDEF` hook) — thin wrappers over DSKIO.
+- [ ] **Direct sector access — INVESTIGATED, DEFERRED to Phase 3** — `DSKI$` (fn,
+      $EA) / `DSKO$` (stmt, $D1). Tokens oracle-confirmed real (VG-8020 crunch), but
+      NOT a clean "sector ↔ string" pair, and blocked on three counts:
+      1. **Obscure semantics.** Black-box CF-3300: `A$=DSKI$(0,0)` succeeds but
+         `LEN(A$)=0` — it does NOT return the sector as the string value (data goes to
+         a system buffer, accessed elsewhere); and `DSKO$ 0,0,A$` is a *Syntax error*
+         (the 3-arg form is wrong). The real buffer/arg model needs more CF-3300
+         reverse-engineering of an arcane, rarely-used verb.
+      2. **String model.** A sector is 512 B; an MSX string's length byte maxes at 255;
+         zerobas's inline strings cap at STRMAX=32. Representing sector data as a string
+         value needs the Phase-3 string engine (heap + real descriptors), not the
+         minimal inline store.
+      3. **No clean oracle.** The only disk oracle (CF-3300) shows the quirky behavior
+         above; the VG-8020 is diskless so can't exercise it functionally.
+      Low-value + low-use; revisit once Phase-3 strings exist. (Was assumed a thin
+      DSKIO wrapper; the oracle proved otherwise — 2026-06-22.)
 - [ ] **Random-access files [in → sub-phase 2c]** — `FIELD`, `GET`, `PUT`, `LSET`,
       `RSET` + conversion fns `CVI`✅/`CVS`/`CVD`, `MKI$`✅/`MKS$`/`MKD$`. A heavier,
       self-contained record-file feature; built + oracle-validated as its **own
