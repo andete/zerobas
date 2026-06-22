@@ -335,15 +335,22 @@ stack and the `$FFFF` register itself) untouched. BIOS `ENASLT` can't do it (it 
 page 0, which vanishes mid-switch), so we drive the slot ports directly from our page-1 code:
 
 ```
-        ; --- map RAM (slot 3-0) into page 0; runs from page 1 ----------------
+        ; --- map whatever slot is in page 3 (always RAM) into page 0 ---------
+        ; Runs from page 1. DERIVES the RAM slot from page 3 — never hardcode
+        ; slot 3-0 (that was the §8.5 gap B host-portability bug).
+        di
         in   a,($A8)      ; primary slot config
         ld   (saved_a8),a
-        ld   a,($FFFF)    ; slot-3 secondary reg (reads inverted)...
+        ld   a,($FFFF)    ; slot secondary reg (reads inverted)...
         cpl               ; ...so complement to get the live value
         ld   (saved_sec),a
-        in   a,($A8) : or  $03 : out ($A8),a     ; page-0 primary bits -> slot 3
-        ld   a,(saved_sec) : and $FC : ld ($FFFF),a   ; page-0 subslot bits -> 0 (RAM)
-        ; ... page 0 is now RAM ...
+        ; page-0 primary := page-3 primary   ($A8 bits 7-6 -> bits 1-0)
+        ld   a,(saved_a8) : and %11000000 : rlca : rlca : ld c,a
+        ld   a,(saved_a8) : and %11111100 : or  c : out ($A8),a
+        ; page-0 subslot := page-3 subslot   ($FFFF bits 7-6 -> bits 1-0)
+        ld   a,(saved_sec) : and %11000000 : rlca : rlca : ld c,a
+        ld   a,(saved_sec) : and %11111100 : or  c : ld ($FFFF),a
+        ; ... page 0 is now RAM (page-3's slot+subslot) ...
         ; restore: ld a,(saved_sec)/ld ($FFFF),a ; ld a,(saved_a8)/out ($A8),a
 ```
 
@@ -351,11 +358,16 @@ Key correctness points, all confirmed by an injected page-3 stub run on the live
 (markers read back): writing `$A5` to `$0000` after the switch reads back **`$A5`** (RAM is
 live in page 0); after restore `$0000` reads **`$F3`** (the BIOS `DI` opcode — ROM is back).
 The captured `$A8 = $F0` and slot-3 secondary `= $00` (during BASIC) match the map exactly.
-The routine **reads the current config and only rewrites the page-0 bits**, so it adapts to
-the boot context too (during INIT our ROM is in page 1, i.e. slot-3 secondary has bits 2-3 =
-1 — preserved by the `and $FC`). Must run with **interrupts disabled** (`di`): while page 0
-is RAM the `$0038` vector is not yet the BIOS handler. This is the proven foundation for
-a2 step (2); the remaining work is laying the page-0 environment on top + the two-phase call.
+The routine **reads the current config and copies page 3's slot/subslot into the page-0
+field** — and page 3 is *always* RAM (the stack lives there), so this is host-portable: it
+preserves pages 1-3 (during INIT our ROM is in page 1) and never assumes a fixed RAM slot.
+On the Tier-1 map this evaluates identically to the original `or $03` / `and $FC` sketch
+(page 3 = slot 3-0 there, so the derivation yields slot 3-0) — so it inherits this section's
+validation — while adapting on a host whose RAM is elsewhere. (The first sketch *hardcoded*
+slot 3-0; that was the §8.5 gap B bug, corrected in the listing above.) Must run with
+**interrupts disabled** (`di`): while page 0 is RAM the `$0038` vector is not yet the BIOS
+handler. This is the proven foundation for a2 step (2); the remaining work is laying the
+page-0 environment on top + the two-phase call.
 
 ## 8.3 Open question RESOLVED — boot loads MSXDOS.SYS by *sector reads*, not BDOS
 
@@ -423,18 +435,23 @@ address the boot reaches for (black-box: trace the boot's first post-step-7 disk
 target — never read its code) and provide a resident driver entry there that routes to our
 `$4010`. The `$0030` CALLF shim itself worked structurally and is reusable.
 
-**Gap B — the paging hardcodes the RAM slot (host-specific bug).** The build used
-`in a,($A8) : or $03` / `and $FC`, i.e. it hardcodes "RAM = slot 3-0" — true on the CF-3300
-but **not portable**. Regression check: Tier-1 + a *data* disk still fell through to BASIC
-fine (slot 3 IS RAM there), but **`C-BIOS_MSX1_EU_BASIC_DISK` + a data disk hung at C-BIOS
-init** — boot_disk runs in every host's INIT, and on a host whose RAM is not slot 3-0 the
-hardcoded switch maps the wrong slot into page 0 and wedges startup. **Fix:** derive the RAM
-slot dynamically — copy page 3's primary-slot bits (`$A8` bits 6-7) into the page-0 bits, and
-page 3's subslot (`$FFFF` bits 6-7) into the page-0 subslot — i.e. "put whatever slot is in
-page 3 (always RAM) into page 0." (§8.2 *described* this; the build wrongly hardcoded it.)
-This also makes the boot bridge safe to run in every INIT — a hard prerequisite before any
-of this can be committed.
+**Gap B — the paging hardcodes the RAM slot (host-specific bug). RESOLVED (design).** The
+build used `in a,($A8) : or $03` / `and $FC`, i.e. it hardcodes "RAM = slot 3-0" — true on the
+CF-3300 but **not portable**. Regression check: Tier-1 + a *data* disk still fell through to
+BASIC fine (slot 3 IS RAM there), but **`C-BIOS_MSX1_EU_BASIC_DISK` + a data disk hung at
+C-BIOS init** — boot_disk runs in every host's INIT, and on a host whose RAM is not slot 3-0
+the hardcoded switch maps the wrong slot into page 0 and wedges startup. **Fix (now pinned in
+§8.2):** derive the RAM slot dynamically — copy page 3's primary-slot bits (`$A8` bits 7-6)
+into the page-0 bits, and page 3's subslot (`$FFFF` bits 7-6) into the page-0 subslot — i.e.
+"put whatever slot is in page 3 (always RAM) into page 0." The corrected §8.2 listing carries
+this derivation; it is provably equivalent to the validated `or $03` / `and $FC` on Tier-1
+(page 3 = slot 3-0 ⇒ derivation yields slot 3-0) and adapts elsewhere, so it removes the
+host-specific assumption. End-to-end emulator re-validation lands with the next a2 build, when
+the corrected paging is wired into the boot bridge **together with** the gap-A driver vector
+— the bridge can only ship as a whole (it runs in every INIT, so a paging fix alone, with the
+boot still hanging at gap A, is not independently committable as code).
 
-**Status:** the DOS boot path is proven to run on our stack; closing it needs (A) the
-resident sector-driver vector the boot actually calls, and (B) the dynamic RAM-slot paging.
-Both are now concrete. disk.asm reverted clean; disk.rom unchanged.
+**Status:** the DOS boot path is proven to run on our stack. Gap **B (RAM-slot derivation) is
+resolved at the design level** (§8.2). The one remaining unknown is **gap A — the resident
+sector-driver vector the boot actually calls**; closing it (plus wiring in the corrected
+paging) is the next a2 build. disk.asm reverted clean; disk.rom unchanged.
