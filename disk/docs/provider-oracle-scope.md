@@ -693,7 +693,7 @@ a kernel we must rebuild. Next: trap which `$F3xx` work-area cells MSXDOS.SYS re
 populate exactly those (clean-room: documented MSX disk work area + the §8.8 differential values),
 re-trap toward `A>`.
 
-## 8.11 Slice-4 finding — MSXDOS.SYS init `CALL`s disk-ROM entry `$4030` (the next gap + a wall)
+## 8.11 Slice-4 finding — MSXDOS.SYS init `CALL`s disk-ROM entry `$4030` (the next gap; see §8.12)
 
 The §8.10 "work area" guess was wrong: a read-watchpoint over `$F341-$F3FF` + `$FCC1` after MSXDOS.SYS
 starts logged **zero** reads there (only repeated `$F37D` BDOS-vector fetches). MSXDOS.SYS does **not**
@@ -720,3 +720,45 @@ cross the line.) Two clean-room-safe ways forward, neither guaranteed:
 to **load MSXDOS.SYS byte-perfect and execute it**, driving our own `bdos_entry`. The gap shrank from
 "rebuild the resident kernel" (§8.8) to a single un-sourced disk-ROM entry (`$4030`). All slice work
 is regression-green on C-BIOS. Whether to pursue (1) is a scoping/provenance decision.
+
+## 8.12 `$4030` research — NOT a clean-room wall; it is a tooling-access gap (research OPEN)
+
+The research pass (allowed/public docs only; no disassembly) is **not yet conclusive**, and an
+earlier draft that called this "the wall" was wrong — corrected here.
+
+**Architecture (settled, from the allowed MSX2 TH ch.3):** *"The DOS kernel … resides in the disk
+interface ROM and executes BDOS functions of MSXDOS.SYS. … MSXDOS.SYS is an intermediation which …
+passes them to the DOS kernel."* So the BDOS/DOS kernel lives in the disk ROM, and MSXDOS.SYS calls
+fixed kernel entries like `$4030`. The TH and komkon `DiskROM1.txt` (both allowed, both readable)
+document only `$4010`–`$401F` and **explicitly do not** cover the `$4022`/`$4030` kernel region.
+
+**But `$4030` is very likely DOCUMENTED in an allowed source we simply can't fetch.** The **MSX
+Wiki is an allowed source** for this project (PROVENANCE.md already cites it — the slot-in-A INIT
+convention; it is public interface documentation, the same category as the listed MSX Assembly Page,
+not a disassembly). Web-search snippets of the msx.org **`Disk-ROM_BIOS`** wiki page show it lists
+the **`$4022+` kernel entries** and **public kernel symbols `GETSLT`, `GETWRK`, `DIV16`, `ENASLT`** —
+and **`GETWRK`** ("get work area", `HL` = a work-area pointer) matches our observed `CALL $4030`
+with `HL=$F1C9` exactly. So the contract is plausibly published. The blocker is purely mechanical:
+**msx.org returns HTTP 403 to every automated route** (rendered page, `?action=raw`, Wayback). This
+is a *tooling-access gap, not a provenance wall.*
+
+**Clean-room line (unchanged):** the msx.org wiki *interface tables* are usable if they describe the
+entry (address + name + register convention). What is **off-limits** is the raw disassembly of the
+proprietary disk ROM that also exists online (e.g. a GitHub `disk_850902.asm`) — implementing from
+that would launder a disassembly, which the no-disassembly rule forbids. So: documentation OK,
+disassembly NOT.
+
+**Open question to resolve before any verdict:** read the msx.org `Disk-ROM_BIOS` (and
+`Disc_Communication_Area`) pages and check whether `$4030`/`GETWRK` and the surrounding kernel
+entries are documented with their calling conventions. If yes → implement `$4030` from that
+documentation and re-trap (and be ready for the *next* kernel entry MSXDOS.SYS calls — the TH says
+the whole kernel is in-ROM, so reaching `A>` may need a documented chain of entries, the scope of
+which the wiki page will reveal). If the wiki only names the symbols without contracts → then, and
+only then, is it the wall. Access route TBD: the user opening/pasting those two pages is the direct
+unblock; alternatively a non-403 mirror.
+
+**State banked regardless (huge, regression-green):** `$F37D`-JP (§8.9) + BDOS `$27` (§8.10) make a
+genuine MSX-DOS-1 disk **load and execute MSXDOS.SYS byte-perfect off zerobas-disk**, driving our own
+`bdos_entry`; the gap shrank from §8.8's "rebuild the resident kernel" to one (likely-documented)
+kernel entry, `$4030`. Those two fixes are kept. The provider direction stays validated to the
+highest clean-room fidelity (Tier-1 PHYDIO→DSKIO PASS, GETDPB byte-identical).
