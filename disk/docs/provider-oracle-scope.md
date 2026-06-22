@@ -452,6 +452,38 @@ the corrected paging is wired into the boot bridge **together with** the gap-A d
 boot still hanging at gap A, is not independently committable as code).
 
 **Status:** the DOS boot path is proven to run on our stack. Gap **B (RAM-slot derivation) is
-resolved at the design level** (§8.2). The one remaining unknown is **gap A — the resident
-sector-driver vector the boot actually calls**; closing it (plus wiring in the corrected
-paging) is the next a2 build. disk.asm reverted clean; disk.rom unchanged.
+resolved at the design level** (§8.2). Gap **A is now characterised** (§8.6): the boot's sector
+driver is the **standard DSKIO (`$4010`)** — our build just hung *before* reaching it for want
+of a fuller page-0 vector set. disk.asm reverted clean; disk.rom unchanged.
+
+## 8.6 Gap A characterised — the working boot uses standard DSKIO (`$4010`)
+
+Black-box reference trace on the genuine **National CF-3300** booting a real MSX-DOS 1 system
+disk (a `/tmp` copy — never the permanent image), 2026-06-22, via
+`disk-spec/tools/disk_probe_dosboot_trace.py` (msx-preservation). Strictly oracle observation:
+CPU breakpoints on the **documented** disk-ROM jump-table entries + a page-0 RAM dump; no kernel
+code read or disassembled.
+
+**Counters over boot+settle:** DSKIO `$4010` = **5**, DSKCHG `$4013` = 1, GETDPB `$4016` = 1,
+PHYDIO `$0144` = 2. ⇒ the working MSX-DOS-1 boot **reaches the standard disk-ROM driver** — the
+sector path *is* `$4010` DSKIO, not a bespoke vector.
+
+**Page-0 environment shape at settle:** a *full* resident `JP`-vector table — live `JP` cells at
+`$000C`, `$001C` (CALSLT), `$0024`, `$0030` (the RST 30h / CALLF handler) and `$0038` (int → the
+resident kernel), corroborating §8.1. The targets (`$DDxx`/`$DExx`) are the kernel's own and stay
+**opaque** — we record only which cells are live vectors (the env *shape*), never the bytes
+behind them.
+
+**This corrects the §8.5 gap-A inference.** §8.5 read "our build's `$4010` = 0, H.PHYD = 0" as
+"the boot avoids `$4010`." The reference shows the opposite: the boot **does** use `$4010` — our
+build simply **hung at `$1418` before the DSKIO call**, because it first dereferenced a page-0
+vector our *minimal* env (`$0030` shim + `$0038` stub only) did not install. The driver was never
+the problem; the **incomplete page-0 vector set** is.
+
+**Sharpened gap-A direction.** Lay the fuller page-0 vector set the boot expects (shape per TH
+ch.3; targets are our *own* RAM handlers, not the kernel's), routing the disk path through the
+`$0030` CALLF handler to our DSKIO. Because our disk ROM stays in page 1 throughout, that handler
+reaches `$4010` with a **direct `CALL` — no inter-slot mechanism needed**. The residual unknown
+shrinks to *which* page-0 vector the boot hits at `$1418`; with the destination now known to be
+the standard driver, the next a2 build re-runs the bridge with a trap on the unlaid vectors to
+pin it.

@@ -486,10 +486,14 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             **First full build done + reverted** (§8.5): the DOS boot path now RUNS
             (both `$C01E` calls reached, RAM in page 0, code executes in page-0 RAM,
             screen "MSX system version 1.0" not the BASIC fall-through). Two concrete
-            gaps remain: **(A)** the boot reads the disk by a vector that is NOT
-            H.PHYD/`$4010` (both BP counts = 0; hangs at `$1418`) — the `$0030` CALLF
-            shim is not enough; provide the **resident sector-driver entry** the boot
-            actually calls (find the address black-box). **(B) RESOLVED (design, §8.2):**
+            gaps remain: **(A) CHARACTERISED (§8.6):** a black-box trace of the *working*
+            CF-3300 boot shows it **does** reach standard DSKIO (`$4010`, 5×) via a *full*
+            page-0 `JP`-vector table (`$000C`/`$001C`/`$0024`/`$0030`/`$0038`). Our build
+            hung at `$1418` *before* the DSKIO call because our minimal env (`$0030` shim +
+            `$0038` stub) lacked a vector the boot calls. Fix: lay the fuller vector set
+            (shape per TH ch.3, our own RAM targets), disk path via `$0030`→direct `CALL
+            $4010` (our ROM stays in page 1). Residual: trap which vector fires at `$1418`
+            in the next bridge build. **(B) RESOLVED (design, §8.2):**
             the paging hardcoded "RAM = slot 3-0" (`or $03`/`and $FC`) — broke the C-BIOS
             host; corrected to **derive the RAM slot from page 3's bits** (`$A8`/`$FFFF`
             bits 7-6 → page-0 bits) — provably == slot 3-0 on Tier-1, host-adaptive
