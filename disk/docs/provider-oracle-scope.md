@@ -498,3 +498,45 @@ reaches `$4010` with a **direct `CALL` — no inter-slot mechanism needed**. The
 shrinks to *which* page-0 vector the boot hits at `$1418`; with the destination now known to be
 the standard driver, the next a2 build re-runs the bridge with a trap on the unlaid vectors to
 pin it.
+
+## 8.7 Step-6 BUILT + regression-green; a3 trap REFUTES the inter-slot premise
+
+**Step 6 is implemented and committed** (`disk.asm`): the `$0030` RST 30h / CALLF handler (it
+saves the caller's registers to page-3 scratch, reads the inline CALLF operand off the stack, and
+arranges the stack so a plain `ret` lands in the target — `$4010` DSKIO — with **A/B/C/DE/HL and
+the carry flag all preserved**, the target's own RET falling on the byte after the operand); the
+`lay_page0_env` JP-vector table (`$000C` RDSLT / `$0014` WRSLT / `$001C` CALSLT / `$0024` ENASLT /
+`$0030` CALLF / `$0038` int → our own page-1 handlers); and the step-6/7 wiring in `boot_disk`
+(`di` → `page0_ram_in` → `lay_page0_env` → `scf` → step-7 `$C01E` → on a data-disk return,
+`page0_ram_out` → `ei` → BASIC). **Regression-green:** `disk_probe_files` + `disk_probe_bload_disk`
+PASS on `C-BIOS_MSX1_BASIC_DISK` (sig `$EB`, `$1E` stub `D0 C9` — so step 6's paging *does* run on
+that host), and `disk_probe_init` PASS (`SYSTEM $F37D = $439F`, the new `bdos_entry`).
+
+**The a3 trap on `National_CF-3300_ZEROBASDISK` (real DOS disk, /tmp copy) REFUTES the whole
+inter-slot-vector premise of §8.4/§8.6.** Black-box (`set_bp` counters, PC sampling, `$A8`/`$FFFF`
+watchpoints):
+- **Env verified correct at step-7 entry**: page-0 cells hold exactly our JPs (`$000C→rdslt_h`,
+  `$001C→calslt_h`, `$0024→enaslt_h`, `$0030→callf_body`, `$0038→int_h`), RAM in page 0
+  (`$FFFF`=`fb`→page-0 subslot 0 = slot 3-0 RAM), boot sector at `$C000`. So the build does exactly
+  what step 6 specified. Both `$C01E` calls reached (count 2).
+- **But the boot uses NONE of it.** Over the whole boot: `callf_body`=0, `rdslt_h`/`calslt_h`/
+  `enaslt_h`=0, **DSKIO `$4010`=0, H.PHYD `$FFA7`=0, our ROM header `$4000`=0** (the boot never
+  even looks at our disk ROM). Instead it relocates code into **page-0 RAM (`$02xx`)** and **page-3
+  RAM (`$F380`)** and **scans slots by writing `$A8`/`$FFFF` directly** (`$FFFF` cycles subslots
+  `00/10/20/30` then `00/40/80/C0` — a full primary+secondary sweep). The sweep maps **page 3**
+  (stack + work area) to a slot that reads `$FF`, loses the stack, and the CPU wedges in a 1-insn
+  loop at **`$0038`** (`$FF` = `RST 38h`). (`int_h` fired once first — DOS had `EI`'d.)
+- ⇒ **MSX-DOS 1's boot/MSXDOS.SYS does NOT reach the driver through H.PHYD or the page-0 inter-slot
+  primitives.** It expects the **standard disk WORK AREA** — `DRVTBL` + the per-drive driver
+  slot/entry the real disk ROM's INIT/boot installs (MSX2 TH ch.3) — and, finding it absent, falls
+  back to a destructive slot scan that the **expanded slot 3** (3-0 RAM / 3-1 our ROM) wedges.
+
+**Reframed a3 (next build).** The remaining gap is **not** a richer page-0 inter-slot env — it is
+the **disk work area**. zerobas-disk's INIT must populate the documented MSX disk work area so the
+DOS boot locates the driver *without scanning*: the master disk-ROM slot, the drive count, and
+`DRVTBL`/the per-drive driver entry (slot + `$4010`), per MSX2 TH ch.3 (allowed source; the
+CF-3300 kernel's own layout stays opaque). The §8.4 "design 1" assumption (boot drives the disk
+through H.PHYD → `$0030` CALLF → `$4010`) is **empirically false on this machine** and is retired;
+the `$0030` handler + vector set stay laid (cheap, documented-shape, harmless, and possibly used by
+a later DOS phase) but are no longer the load-bearing path. The step-6 env + paging are kept as the
+validated foundation; a3 grows the work-area driver table on top, then re-traps.

@@ -314,6 +314,16 @@ BOOT_ENTRY      equ     $C01E   ; custom-boot-program entry (BOOT_LOAD + $1E)
 ; page-0 RAM-swap scratch (transient, used only during INIT's boot bridge).
 BOOT_SV_A8      equ     $E760   ; saved $A8 primary-slot config
 BOOT_SV_SEC     equ     $E761   ; saved slot secondary ($FFFF) live value
+; step-6 page-0 environment scratch (transient; used only by the $0030 CALLF
+; handler and the CALSLT handler during the boot bridge). The $0030 handler must
+; deliver A,B,C,DE,HL UNTOUCHED to the DSKIO callee, so it saves them here while
+; it reads the inline CALLF operand off the stack. Own-choice free page-3 RAM
+; after BOOT_SV_SEC. (provider-oracle-scope.md §8.4)
+R30_HL          equ     $E762   ; $0030 handler: saved caller HL (word)
+R30_BC          equ     $E764   ; $0030 handler: saved caller BC (word)
+R30_DE          equ     $E766   ; $0030 handler: saved caller DE (word)
+R30_AF          equ     $E768   ; $0030 handler: saved caller AF incl. carry (word)
+CALSLT_HL       equ     $E76A   ; CALSLT handler: HL stash across the call setup (word)
 boot_disk:
                 xor     a               ; drive A
                 ld      b, 1            ; one sector
@@ -330,8 +340,28 @@ boot_disk:
                 ret     nz              ; not a boot disk -> BASIC
 boot_sig_ok:
                 or      a               ; Cy = 0 -> step-5 "custom boot" call
-                call    BOOT_ENTRY      ; data-disk default RET NC returns here
-                ret                     ; (a2: step 6 + CY-set $C01E go here)
+                call    BOOT_ENTRY      ; step 5 (data-disk default RET NC returns here)
+                ; --- step 6: stand up the page-0 MSX-DOS environment ----------
+                ; Switch RAM into page 0 (the page-0 BIOS ROM, incl. the inter-slot
+                ; primitives, vanishes) and lay the JP-vector set the boot code +
+                ; MSXDOS.SYS dereference there (RDSLT/CALSLT/ENASLT/CALLF + the int
+                ; vector) as our OWN page-1 handlers. Interrupts stay OFF the whole
+                ; time: while page 0 is RAM the $0038 cell is not yet the BIOS
+                ; handler. (provider-oracle-scope.md §8.4/§8.6)
+                di
+                call    page0_ram_in    ; RAM into page 0 (host-adaptive, gap B)
+                call    lay_page0_env   ; write the inter-slot vector set into page 0
+                ; --- step 7: CY-set $C01E -- "load the system" -----------------
+                ; A real DOS disk's boot code now loads MSXDOS.SYS at $0100 and JPs
+                ; in (no return). A non-system / data disk's $1E stub (D0 C9) takes
+                ; the C9 RET on CY set and returns here, so we MUST tear the env
+                ; back down before BASIC: this runs in every host's INIT, incl. the
+                ; C-BIOS_*_BASIC_DISK regression on test720.dsk (sig $EB, stub D0 C9).
+                scf                     ; Cy = 1 -> "load the system" entry
+                call    BOOT_ENTRY      ; DOS disk JPs into MSXDOS.SYS (no return)
+                call    page0_ram_out   ; data disk returned: BIOS ROM back in page 0
+                ei
+                ret                     ; -> BIOS boot scan -> BASIC
 
 ; page0_ram_in — map page 3's slot/subslot (always RAM: the stack lives there)
 ; into page 0, so the boot code/MSXDOS see RAM where the BIOS ROM was. Derives
@@ -372,6 +402,174 @@ page0_ram_out:
                 ld      ($FFFF), a
                 ld      a, (BOOT_SV_A8)
                 out     ($A8), a
+                ret
+
+; --- step 6: the page-0 MSX-DOS environment (provider-oracle-scope.md §8.4/§8.6)
+; With RAM switched into page 0 the page-0 BIOS ROM is gone, so the standard
+; inter-slot primitives the boot code + MSXDOS.SYS reach through ($000C RDSLT,
+; $0014 WRSLT, $001C CALSLT, $0024 ENASLT, $0030 CALLF) and the maskable-interrupt
+; vector ($0038) no longer exist. lay_page0_env writes a JP-vector table into
+; those page-0 cells pointing at OUR OWN handlers, which live here in page 1 (slot
+; 3-1, never remapped during boot, so they survive every page-0 change).
+;
+; CLEAN-ROOM: the vector SHAPE is the documented MSX inter-slot layout (MSX2 TH
+; ch.2; the §8.6 black-box trace confirmed live cells $000C/$001C/$0024/$0030/
+; $0038 in the working boot's page 0). The reference kernel's $DDxx targets are
+; opaque and never read/replicated — our targets are our own RAM-resident code.
+;
+; KEY ADVANTAGE (§8.4): our disk ROM stays in page 1 throughout boot, so the disk
+; path needs no real inter-slot switch — the $0030 CALLF handler routes H.PHYD's
+; CALLF straight to our DSKIO with a direct call. RDSLT/WRSLT/CALSLT operate on
+; the currently-mapped memory (sufficient while the boot's targets — our page-1
+; ROM and page-3 work area — stay mapped); ENASLT does a real primary-slot switch.
+; If the Tier-1 trap (a3) shows the boot reaches a genuinely-unmapped slot through
+; one of these, that handler is deepened then — never by reading the boot code.
+lay_page0_env:
+                ld      hl, p0_env_tab
+lpe_loop:
+                ld      e, (hl)
+                inc     hl
+                ld      d, (hl)
+                inc     hl              ; DE = page-0 cell address
+                ld      a, d
+                or      e
+                ret     z               ; cell 0 -> table end
+                ld      a, $C3          ; JP opcode
+                ld      (de), a
+                inc     de
+                ld      a, (hl)         ; target low
+                ld      (de), a
+                inc     hl
+                inc     de
+                ld      a, (hl)         ; target high
+                ld      (de), a
+                inc     hl
+                jr      lpe_loop
+; (cell, handler) pairs; terminated by a 0 cell. No two JP triples overlap.
+p0_env_tab:
+                dw      $000C, rdslt_h  ; RST 8  RDSLT  (read byte from a slot)
+                dw      $0014, wrslt_h  ; RST 10 WRSLT  (write byte to a slot)
+                dw      $001C, calslt_h ; RST 18 CALSLT (inter-slot call)
+                dw      $0024, enaslt_h ; ENASLT (enable slot in a page)
+                dw      $0030, callf_body ; RST 30 CALLF (inter-slot call by inline operand)
+                dw      $0038, int_h    ; maskable-interrupt vector
+                dw      0               ; end of table
+
+; callf_body — the $0030 RST 30h / CALLF handler (the load-bearing one).
+; CALLF is `F7 <slot> <lo> <hi>`: RST 30h pushes the return address (which points
+; at the inline operand) and lands here. H.PHYD ($FFA7 = F7 87 10 40 C9) is exactly
+; this — every PHYDIO from the boot/DOS reaches our DSKIO through it. The callee
+; (DSKIO, $4010) takes A,B,C,DE,HL and CY=read/write, so this handler must deliver
+; ALL of them UNTOUCHED. It saves the caller's registers to page-3 scratch, reads
+; the operand off the stack to find the target address + the post-operand return,
+; then arranges the stack so a plain `ret` jumps to the target with every register
+; (and the carry flag) restored, and the target's own RET lands on the byte after
+; the operand (H.PHYD's trailing C9). Our disk ROM is in page 1, so the target is
+; directly reachable — no real inter-slot switch needed. (§8.4)
+; Only `ld`/`inc hl`/`pop`/`push`/`ret` are used between entry and the call, none
+; of which touch the flags, so the caller's CY (the DSKIO read/write bit) survives.
+callf_body:
+                ld      (R30_HL), hl    ; stash caller HL
+                ld      (R30_BC), bc    ; stash caller BC
+                ld      (R30_DE), de    ; stash caller DE
+                push    af              ; copy AF out without disturbing the return ptr
+                pop     hl              ; HL = AF image (push/pop is SP-neutral)
+                ld      (R30_AF), hl    ; stash caller AF (incl. carry)
+                pop     hl              ; HL = return addr -> inline operand [slot][lo][hi]
+                inc     hl              ; -> lo
+                ld      e, (hl)
+                inc     hl              ; -> hi
+                ld      d, (hl)         ; DE = target address (e.g. $4010)
+                inc     hl              ; HL = operand+3 = byte after CALLF (H.PHYD's C9)
+                push    hl              ; ultimate return: target's RET lands here
+                push    de              ; target address on top
+                ld      hl, (R30_AF)    ; restore caller AF (carry = DSKIO read/write)
+                push    hl
+                pop     af
+                ld      bc, (R30_BC)    ; restore caller BC
+                ld      de, (R30_DE)    ; restore caller DE
+                ld      hl, (R30_HL)    ; restore caller HL (DSKIO transfer address)
+                ret                     ; -> target; its RET -> operand+3 -> caller
+
+; rdslt_h ($000C RDSLT) — read the byte at HL. The standard RDSLT takes the slot
+; id in A; during boot every address the code reads through RDSLT is in an already-
+; mapped page (our page-1 ROM or the page-3 work area), so we read the live memory
+; directly. (Deepened in a3 only if a trap shows a genuinely-unmapped target.)
+rdslt_h:
+                ld      a, (hl)
+                ret
+
+; wrslt_h ($0014 WRSLT) — write E to the byte at HL (mapped-memory case, as RDSLT).
+wrslt_h:
+                ld      (hl), e
+                ret
+
+; calslt_h ($001C CALSLT) — inter-slot call to IX (slot id in IYh). The boot's
+; CALSLT targets during the DOS load are in already-mapped pages (our page-1 disk
+; ROM / page-3 work area), so this calls IX directly while passing A,BC,DE,HL
+; through untouched. Stashes HL only to build the return address, then reloads it
+; before the jump so the callee sees the caller's HL. (Deepened in a3 if needed.)
+calslt_h:
+                ld      (CALSLT_HL), hl ; stash HL to free a pair for the return push
+                ld      hl, calslt_back
+                push    hl              ; return address for the simulated call
+                ld      hl, (CALSLT_HL) ; restore caller HL (pass-through intact)
+                jp      (ix)            ; "call" IX; its RET lands on calslt_back
+calslt_back:
+                ret
+
+; enaslt_h ($0024 ENASLT) — enable slot (A = slot id Fx00SSPP) in the page of HL.
+; Real primary-slot switch: derive the page from HL bits 15-14 and write the
+; matching 2-bit field of $A8 to the slot's primary number. The secondary ($FFFF)
+; is left as-is — sufficient for our config, where the only expanded target the
+; boot enables (slot 3-1 in page 1) already carries the right secondary (page 1 is
+; our ROM throughout). Runs from page 1, so it survives switching any other page.
+; Clobbers A,F (ENASLT convention). (Documented simplification; widen in a3 if a
+; trap shows an expanded ENASLT to a not-yet-selected secondary.)
+enaslt_h:
+                push    bc
+                push    de
+                ld      b, a            ; B = slot id
+                ld      a, h
+                rlca
+                rlca
+                and     3
+                ld      c, a            ; C = page number (0..3) = shift count
+                ld      a, b
+                and     3               ; A = primary slot number (low 2 bits)
+                ld      e, a            ; E = primary value (to be shifted)
+                ld      d, 3            ; D = field mask (to be shifted)
+                inc     c               ; +1 so the dec-first loop runs `page` times
+ena_shift:
+                dec     c
+                jr      z, ena_apply
+                sla     e
+                sla     e               ; primary value <<= 2 per page
+                sla     d
+                sla     d               ; mask <<= 2 per page
+                jr      ena_shift
+ena_apply:
+                in      a, ($A8)
+                ld      b, a            ; B = old $A8
+                ld      a, d
+                cpl                     ; ~mask
+                and     b               ; clear this page's 2-bit field
+                or      e               ; OR in the new primary slot
+                out     ($A8), a
+                pop     de
+                pop     bc
+                ret
+
+; int_h ($0038) — maskable-interrupt vector while RAM is in page 0. Our boot runs
+; DI throughout, so this only fires if MSXDOS.SYS re-enables interrupts before
+; installing its own handler. Acknowledge the VDP frame interrupt (reading the
+; TMS9918 status port $99 clears it) and return; without the ack the interrupt
+; would re-fire immediately. (Documented-shape safe stub; TMS9918 datasheet.)
+int_h:
+                push    af
+                in      a, ($99)        ; read VDP S#0 -> clears the frame-int flag
+                pop     af
+                ei
                 ret
 
 ; --- Disk entry-point handlers ---------------------------------------------

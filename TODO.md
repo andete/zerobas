@@ -503,9 +503,24 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             **self-tested on `C-BIOS_MSX1_BASIC_DISK`** (the previously-hanging host):
             `$0000` accepts `$A5` after RAM-in, reads `$F3` after restore, machine running
             (§8.2). Routines committed but uncalled; **step 6 wires them in next.**
-            **Gap A is now the sole remaining blocker.**
-      - [ ] **a3 — step 7 + validate.** `CALL $C01E` CY-set; oracle: Tier-1 reaches
-            `MSX-DOS version 1.03 … A>` screen-identical to the stock CF-3300.
+            **STEP 6 BUILT + regression-green (§8.7).** The `$0030` CALLF handler (register-
+            preserving → direct `CALL $4010`), the `lay_page0_env` JP-vector set
+            (`$000C`/`$0014`/`$001C`/`$0024`/`$0030`/`$0038` → our own page-1 handlers),
+            and the step-6/7 wiring (`di`→`page0_ram_in`→`lay_page0_env`→`scf`→step-7
+            `$C01E`→ data-disk return → `page0_ram_out`→`ei`→BASIC) are in `disk.asm`.
+            `disk_probe_files` + `disk_probe_bload_disk` PASS on `C-BIOS_MSX1_BASIC_DISK`
+            (step 6 paging runs there: sig `$EB`, `$1E` stub `D0 C9`); `disk_probe_init`
+            PASS (`bdos_entry` now `$439F`). a3 trap verified the env is laid correctly at
+            step-7 entry — **but REFUTED the §8.4 inter-slot premise** (§8.7): the real
+            MSX-DOS boot uses **none** of H.PHYD / DSKIO / our page-0 vectors / our ROM
+            header; it expects the standard **disk WORK AREA** (`DRVTBL` + driver slot/entry)
+            and, absent it, falls back to a slot scan that wedges on the expanded slot 3.
+      - [ ] **a3 — disk work area + step-7 validate (REFRAMED, §8.7).** Populate the
+            documented MSX disk work area in INIT (master disk-ROM slot, drive count,
+            `DRVTBL`/per-drive driver slot+`$4010`, MSX2 TH ch.3 — kernel layout stays
+            opaque) so the DOS boot locates the driver without the destructive scan; then
+            iterate to `MSX-DOS version 1.03 … A>` screen-identical to the stock CF-3300.
+            The step-6 env/paging stay as the validated foundation underneath.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
       and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
       — the organic evidence the Tier-0/1 differential could only approximate.
