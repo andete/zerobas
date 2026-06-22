@@ -453,12 +453,20 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
       (`National_CF-3300_ZEROBASDISK`) falls through to **`MSX BASIC version 1.0`**,
       even though `H.PHYD` is installed — zerobas-disk's INIT installs the hook but
       **never reads the boot sector / chainloads the DOS**. Result: **GO**.
-- [ ] **2-Tier2-a — boot bridge.** Add read-sector-0→`$C000` + `JP $C01E` (the
-      boot-sector code does the `MSXDOS.SYS` load; we only hand off). Oracle: Tier-1
-      machine reaches `A>` on `dostest.dsk`, screen-identical to the stock CF-3300;
-      blank-disk fall-through to BASIC preserved. **First sub-task: pin the boot
-      entry-condition contract** (TH ch.3 + a black-box BP trace of the stock CF-3300's
-      sector-0 read / `$C01E` jump — never reading its ROM bytes).
+- [ ] **2-Tier2-a — DOS boot (steps 4–7).** Deeper than first scoped: a build attempt
+      proved the boot is a **four-step environment hand-off** (MSX2 TH ch.3), not a
+      one-call bridge — see [`provider-oracle-scope.md`](disk/docs/provider-oracle-scope.md) §8.
+      - [ ] **a1 — steps 4–5 (boot bridge).** read sector 0 → `$C000`; `CALL $C01E`
+            CY-reset; data-disk `RET NC` fall-through preserved. *Proven working*
+            (reached `$C01E`, CY reset) then reverted pending a2. **Regression-gate it
+            on the `C-BIOS_*_BASIC_DISK` machines** (the bridge runs in INIT on every
+            host) before relying on it.
+      - [ ] **a2 — step 6 (the real work): page-0 MSX-DOS environment.** Switch RAM
+            into page 0 + set up the `$00xx` BDOS/jump vectors (`$0005` etc.) the boot
+            code + `MSXDOS.SYS` use. New subsystem; pin from TH ch.3 + a black-box trace
+            of the stock CF-3300's page-0 state just before its **CY-set** `$C01E` call.
+      - [ ] **a3 — step 7 + validate.** `CALL $C01E` CY-set; oracle: Tier-1 reaches
+            `MSX-DOS version 1.03 … A>` screen-identical to the stock CF-3300.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
       and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
       — the organic evidence the Tier-0/1 differential could only approximate.

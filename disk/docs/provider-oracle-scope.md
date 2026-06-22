@@ -228,3 +228,51 @@ directly or via a standard boot hook like `H.STKE`/the boot procedure vector). T
 documents the sequence; a black-box BP trace on the stock CF-3300 (where does it read
 sector 0, what's in registers at the `$C01E` jump) is the clean-room way to confirm it —
 never reading the CF-3300 ROM bytes. Everything else (DSKIO/GETDPB/DRIVES) already ships.
+
+## 8. Boot-sequence depth finding (2026-06-22) — the boot is steps 4–7, not a one-call bridge
+
+A first build attempt (a boot bridge in INIT: read sector 0 → `CALL $C01E` with CY reset)
+was written, validated, and then **reverted** — it proved the *mechanism* but also proved
+it is **insufficient**, which is the useful result. What we learned (and the corrected
+scope for 2-Tier2-a):
+
+**Empirical (Tier-1 machine, BP trace).** The bridge ran correctly: sector 0 landed at
+`$C000` (`EB FE 90 "NMS…"`), the `$EB` signature matched, and `$C01E` was reached with
+**carry reset** (`AF=0044`). The boot code nonetheless **returned** (machine fell through
+to `MSX BASIC 1.0`), even after the entry registers were made to match the stock CF-3300
+`$C01E` snapshot (`DE=$F368 HL=$F323 IX=$6050 IY=$0314`). So the gap is **not** the
+register values.
+
+**Authoritative (MSX2 TH ch.3, numbered boot steps — allowed source).** The disk boot is a
+**four-step environment hand-off**, and `$C01E` is called **twice**:
+- **Step 4** — read sector 0 → `$C000`; on error or first byte ∉ {`$EB`,`$E9`} → DISK-BASIC.
+- **Step 5** — `CALL $C01E` with **CY reset**: the "custom boot program" entry; the data-disk
+  default is `RET NC`, so a non-system disk returns here → BASIC.
+- **Step 6** — **prepare the MSX-DOS environment**: switch RAM into page 0 and set up the
+  page-0 BDOS / jump vectors (`$0005` etc.) that the boot code and `MSXDOS.SYS` use.
+- **Step 7** — `CALL $C01E` with **CY set**: the boot code now loads `MSXDOS.SYS` at `$0100`
+  and jumps in; **Step 8** loads `COMMAND.COM`. `H.STKE ($FEDA)` governs the DOS-vs-BASIC
+  decision.
+
+So the first attempt implemented steps 4–5 only. **The real work in 2-Tier2-a is step 6**
+— a genuine subsystem (RAM-into-page-0 paging + the page-0 DOS environment + the second
+`$C01E` call with CY set), not a thin bridge. DSKIO/GETDPB/DRIVES still suffice for the
+*sector* surface, but the *page-0 DOS environment* is new code zerobas-disk does not have.
+
+**Revised 2-Tier2-a plan:**
+1. Reinstate the proven steps 4–5 (read sector 0, `CALL $C01E` CY-reset; the data-disk
+   `RET NC` fall-through is preserved). Keep it minimal — drop the speculative register
+   replication (the trace showed it doesn't matter).
+2. Implement **step 6**: pin, from TH ch.3 + a black-box trace of the stock CF-3300's
+   page-0 state just before its CY-set `$C01E` call, exactly what must be in page 0 (RAM
+   switched in; which `$00xx` vectors hold what — `$0005` BDOS, the disk work-area hooks).
+   This is the new subsystem; budget it as its own sub-slice (**2-Tier2-a2**).
+3. **Step 7**: `CALL $C01E` with CY set; validate the Tier-1 machine reaches
+   `MSX-DOS version 1.03 … A>` screen-identical to the stock reference.
+4. **Regression gate (do this when reinstating step 4–5):** the boot bridge runs in INIT on
+   *every* host, including the `C-BIOS_MSX1_*_BASIC_DISK` machines the whole probe suite
+   boots with `test720.dsk`. Confirm those still bring up zerobas-BASIC (the data-disk
+   `RET NC` path must stay transparent) before relying on it.
+
+Net: Tier-2 is bigger than first scoped — the boot bridge is the easy 20%; the page-0
+MSX-DOS environment (step 6) is the 80%. Still GO, but it's a multi-slice subsystem.
