@@ -291,8 +291,12 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
             This is the COMPLETE feature for zerobas's integer domain; the float-only
             specs (`.` decimal, `^^^^`, `+`/`,`/`**`/`$$`) arrive with Phase-3 floats.
             See PROVENANCE §PRINT USING.
-      - [ ] `PRINT# USING` (the file form — needs the PRINT# channel redirect wired
-            into the USING path; small follow-up now that PRINT USING exists).
+      - [x] **`PRINT# USING`** — DONE (basic/print.asm). The file form: after
+            `PRINT #n[,]` the USING token routes into the same ex_print_using formatter
+            with PRDEST=1, so the formatted bytes stream to the channel via pchar. On-
+            disk round-trip byte-identical to the CF-3300 (disk_probe_printusing_file.py).
+            Oracle finding: the CF-3300 (National ROM) supports only `#`/`!` PRINT USING
+            fields, not `\..\`/`&` (which the VG-8020 — and zerobas — do); see PROVENANCE.
 - [ ] **File/dir management [in]** — `FILES`✅, `KILL`✅, `NAME…AS…`✅, `MERGE`✅, `LFILES`
       (the `LOAD`/`SAVE`/`BLOAD`/`BSAVE`/`RUN"f"` already exist from Phase 1).
       - [x] **`MERGE "name"`** — DONE (basic/files.asm `ex_merge`). Reads an ASCII

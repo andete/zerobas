@@ -2362,3 +2362,31 @@ e.g. `PRINT USING "###";5` → `  5`, `"##";1234` → `%1234`, `"\ \";"cat"` →
 `"!";"cat"` → `c`, `"## ";1;2;3` → ` 1  2  3 `. All seven cases are byte-identical
 between zerobas and the VG-8020 (functional + differential PASS); crunch byte-identical
 (basic_probe_crunch.py); the existing PRINT probe is unaffected.
+
+## PRINT# USING — formatted output to a file channel (basic/print.asm)
+
+The file form of PRINT USING. Reached when the token after `PRINT #n[,]` is USING:
+`ex_print`'s channel path sets PRDEST=1 (output streams to the channel via `pchar`)
+and, before the ordinary item loop, checks for the USING token and jumps into the
+same `ex_print_using` formatter. The whole feature is therefore that one check — the
+formatter already emits through `pchar`/`print_crlf`, which honour PRDEST, so the
+formatted bytes and the line's CR/LF go to the file. PRDEST is reset to screen by
+`exec_stmt` at the next statement boundary, as for an ordinary PRINT#. Oracle: the
+comma after `#n` is optional (`print#1,using…` → `91 23 12 2C E4 …`; `print#1using…`
+→ `91 23 12 E4 …`).
+
+**Regional ROM divergence (an oracle finding, documented).** The two reference ROMs
+disagree on PRINT USING *string* fields: the **Philips VG-8020** supports the full set
+(`#`, `\..\`, `!`, `&`), but the **National CF-3300** (Japanese ROM) supports only `#`
+and `!` — it emits a `\..\` or `&` template literally and then raises "Illegal function
+call" (a value with no field). zerobas implements the full VG-8020 set (basic/
+printusing.asm), matching the VG-8020 byte-for-byte (basic_probe_printusing.py, a
+same-hardware screen differential). This is a genuine difference between real MSX ROMs,
+not a zerobas choice.
+
+**Oracle.** `disk-spec/tools/disk_probe_printusing_file.py`: PRINT# USING writes three
+formatted lines to U.DAT and CLOSEs; the FAT12 image is read back and must equal
+`b"  5\r\n[c]\r\n 1  2  3 \r\n\x1a"` (numeric `#`, first-char `!`, format reuse, then the
+Ctrl-Z soft-EOF). Because PRINT# writes to disk and only the CF-3300 is a disk oracle,
+the differential uses the `#`/`!` subset both ROMs share; zerobas and the real National
+CF-3300 produce the byte-identical file. test720.dsk is never mutated (/tmp copy).

@@ -56,6 +56,14 @@ exp_hash_sep:
 exp_hash_go:
                 ld      a,1
                 ld      (PRDEST),a          ; items now stream to the file channel
+                ; PRINT #n[,] USING "fmt"; … — the file form. PRDEST is already 1, so
+                ; the USING formatter (which emits through pchar / print_crlf) writes
+                ; to the channel. The comma after #n was consumed above; USING may also
+                ; follow #n directly (no comma) — both crunch to … 23 <ch> [2C] E4 ….
+                call    skip_spaces
+                ld      a,(hl)
+                cp      USING_TOKEN
+                jp      z,ex_print_using
                 ; fall through into the shared item loop
 exp_loop:
                 call    skip_spaces
