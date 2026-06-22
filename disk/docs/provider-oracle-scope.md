@@ -643,14 +643,25 @@ require us to rebuild the stock's resident kernel — it uses **our own `bdos_en
 BDOS. The "huge work area + relocated kernel" the stock builds is the stock's *internal* way; the
 boot's actual *requirement* is the BDOS JP vector + working sector I/O.
 
-**New blocker (slice 2) — Open fails on intermittent FDC read errors.** `bdos_seqread` = 0 (Open
-never succeeds → never reads MSXDOS.SYS). Breakdown: of 5 Open failures, 3 are `fat_mount` read
-errors and 2 are `fat_find` read errors; `fat_mount_bad` = 0 (BPB fine), but **`dskio_err` = 7** —
-the FDC reads intermittently fail. Around it: a retry storm (`read_sector` 16632×) and a
-software **`RST 38h` storm** — `$0038` returns cluster at **`$073A` in page-0 RAM** (a tight loop
-running through `$FF`/uninitialised page-0 RAM, *not* hardware interrupts). So with RAM in page 0 and
-the boot executing relocated code, our polled WD2793 transfer (`fdc_read_data`, **no interrupt
-guard**) is being disrupted. Slice-2 candidates, cheapest first: (a) make the FDC polled transfer
-interrupt-safe (`di` around it, IFF-preserving restore — a real latent-correctness fix regardless);
-(b) pin the `$073A` page-0 loop's source (is the boot expecting more page-0 setup, or is it the
-Open-fail error path?). Re-trap after each.
+**New blocker (slice 2, PINNED to slice 3) — the boot loads MSXDOS.SYS via BDOS `$27`, which we
+don't implement.** Logging the BDOS function code (C) at every `bdos_entry` call gave the decisive
+pattern: the boot repeats **`Open $0F → SetDTA $1A → RandBlkRead $27`** (tally over a run: `$0F`×9,
+`$1A`×4, `$27`×4, then `$09`/`$07`). `fat_find` *does* find `MSXDOS.SYS` (`ff_found`×4, `ff_notfound`=0)
+and Open succeeds — but the boot then issues **BDOS `$27` (Random Block Read / RDBLK)** to pull the
+file in, and our `bdos_entry` dispatch (`$0F/$10/$14/$15/$16/$1A`) returns `$FF` for `$27`. So every
+read fails, the boot retries the `$0F/$1A/$27` loop, and the earlier red herrings — `dskio_err`=7,
+`read_sector`=16632, the `$073A` `RST 38h` storm — are all just that retry spin (the FDC reads were
+fine; none of the `$0038` hits land in our `$42xx` transfer loop). The trailing `$09` (print string)
+/ `$07` (direct console in) are the boot printing after it gives up. ⇒ the gap is **one BDOS
+function**, not a kernel: this is the documented FCB-BDOS *position model* meeting its first caller
+that needs random/block access (BLOAD/LOAD/RUN, the only prior callers, used `$0F`+`$14` only).
+
+**Slice 3 (next) — implement BDOS `$27` (RDBLK) in `bdos_entry`.** Contract (MSX-DOS 1 / CP/M block
+I/O, to pin precisely + validate differentially): `DE` = FCB, `HL` = record count; start record =
+the FCB random-record field (`+33…`), record size = FCB `+14` (default 128); read `HL` records from
+that position into the DTA (`BDOS_DTA`), updating the random-record field + returning `A` = status
+(0 ok / 1 EOF) and `HL` = records read. Build it over the existing FAT iterator + a seek (walk the
+cluster chain to the start record); validate byte-identical to real MSX-DOS by extending
+`disk_probe_bdos.py` with a `$27` case (the clean-room way — the oracle already differentials
+`$0F`/`$14`). `$26` (RDBLK's write twin, WRBLK) and the `$09`/`$07` console funcs may surface next;
+re-trap after `$27`.

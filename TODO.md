@@ -529,12 +529,18 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             kernel the stock relocates into high RAM**, i.e. the opaque proprietary code the
             clean-room rule forbids. ⇒ DOS-boot = build the disk ROM's full resident DOS
             environment, a multi-slice Phase-2+ effort that abuts the no-disassembly wall.
-            **DECISION (2026-06-22): DEFERRED (option A).** DOS-boot closed as
-            characterized-but-deferred — the step-6 env + a1 bridge stay as the validated
-            partial; no DOS-resident-environment sub-track opened (abuts the no-disassembly
-            wall). Tier-1 (real-BIOS PHYDIO → our DSKIO) PASSES + GETDPB CF-3300-byte-
-            identical, so the provider contract is validated to the highest fidelity reachable
-            without raising the charter. See provider-oracle-scope.md §8.8.
+            **REOPENED + progressing (2026-06-22, §8.9) — §8.8 pessimism refuted.** The boot
+            drives our OWN `bdos_entry`, not a rebuilt kernel. **Slice-1 DONE + committed**
+            (`f1035a0`): `$F37D` is the disk system's BDOS-call JP vector (the boot `CALL`s it
+            with C=$0F Open, DE=FCB "MSXDOS  SYS"); INIT had written a raw word there → the
+            `$0038` wedge. INIT now publishes `$F37D` = `JP bdos_entry` (safe — Phase-1.5
+            loader no longer reads it). Wedge gone; boot reaches bdos_entry/Open/fat_mount,
+            finds MSXDOS.SYS. Regression-green (files+bload_disk+init on C-BIOS; bdos oracle
+            PASS via `$F37E`). **Slice-3 (next):** the boot loads MSXDOS.SYS via BDOS **`$27`
+            (Random Block Read)**, which `bdos_entry` doesn't implement (returns `$FF`) →
+            implement it (DE=FCB, HL=rec count, start=FCB random-record `+33`, recsize `+14`,
+            read into DTA), validate via a `$27` case in `disk_probe_bdos.py`, re-trap. The
+            whole remaining gap to `A>` is that one BDOS function.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
       and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
       — the organic evidence the Tier-0/1 differential could only approximate.
