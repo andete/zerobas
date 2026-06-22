@@ -118,6 +118,11 @@ CLOSE_TOKEN     equ     $B4     ; CLOSE [#n]                            (stateme
 ; access GET/PUT) is sub-phase 2c; for now the token exists so `FOR OUTPUT`
 ; tokenises byte-identically and bare PUT errors (no dispatch). $B3, MSX2 TH 2.20.
 PUT_TOKEN       equ     $B3     ; PUT (only consumed as the 2nd half of OUTPUT here)
+; File-info FUNCTIONS (Phase 2). $FF-prefixed function tokens (selector byte after
+; PEEK_PREFIX), oracle-locked to the VG-8020 crunch (EOF=$FF$AB, LOF=$FF$AD;
+; MSX2 TH Table 2.20). Evaluated in basic/expr.asm ev_f_ff.
+EOF_TOKEN       equ     $AB     ; EOF(#n)  -> -1 at end of the input file, else 0
+LOF_TOKEN       equ     $AD     ; LOF(#n)  -> length of the open file in bytes
 ; File/directory management (Phase 2). Tokens oracle-locked to the VG-8020 crunch
 ; (KILL=$D4, NAME=$D3; MSX2 TH Table 2.20). The handlers live in basic/files.asm.
 KILL_TOKEN      equ     $D4     ; KILL "name" — delete a file (statement)

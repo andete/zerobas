@@ -1860,3 +1860,33 @@ stamp (single drive); errors (no disk / old not found / I-O) reuse `load_error`.
 Clean-room: original code; NAME semantics + the 8.3 dir-field layout from the public
 MSX-BASIC reference + Microsoft FAT spec, validated by the byte-identical CF-3300
 differential. No disassembly.
+
+## EOF / LOF — file-info functions (basic/expr.asm, basic/interp.asm, basic/sysvars.inc)
+
+The first file-channel **functions** (the verbs so far were statements). Evaluated
+as `$FF`-prefixed function factors in `ev_f_ff`, alongside PEEK/VPEEK/INP.
+
+- **`EOF(#n)`** — returns -1 ($FFFF) once every byte of the open input file has
+  been delivered (`FREAD_LEFT`, the read engine's 4-byte undelivered-count, == 0),
+  else 0. The channel argument is parsed but ignored (single channel).
+- **`LOF(#n)`** — returns the open file's length in bytes: `FAT_FILESIZE` (set by
+  `fat_find` at OPEN), low 16 bits. Argument parsed + ignored.
+
+**Tokens** `EOF = $FF $AB`, `LOF = $FF $AD` — oracle-LOCKED byte-identical to the
+Philips VG-8020 crunch (`basic_probe_crunch.py`: `a=eof(1)`→`… FF AB 28 12 29`;
+MSX2 TH Table 2.20). Added to `kwtable` as 2-byte `PEEK_PREFIX`-prefixed entries
+(the same shape as VPEEK/INP); detok is the table-driven `detok_kw2`.
+
+**Validation** (`disk_probe_eof.py`, /tmp copy of `test720.dsk`; HI.TXT is 26
+bytes): `OPEN…INPUT…:PRINT LOF(1);EOF(1):CLOSE#1` prints `26  0` — and the real
+CF-3300 prints the same two values (read-model-independent differential). After
+exhausting the file (two LINE INPUT#), `PRINT EOF(1)` prints `-1`. Full crunch +
+16 unit-test files + the FILES/read/write/KILL/NAME probes still pass.
+
+**Divergences (own design, quarantined):** single channel — the argument selects
+no distinct channel; `LOC` (sequential record position) and `DSKF` (free clusters)
+are deferred (LOC's record semantics + DSKF's free-space scan are separate items);
+LOF returns the low 16 bits (files ≥ 64 KB are out of the loader's scope).
+
+Clean-room: original code; EOF/LOF semantics from the public MSX-BASIC reference,
+validated by the CF-3300 differential. No disassembly.

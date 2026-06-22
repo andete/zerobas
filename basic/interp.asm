@@ -532,6 +532,9 @@ kwtable:
                 ; PUT exists only so "OUTPUT" crunches to OUT($9C)+PUT($B3); the
                 ; PUT statement (random access) is sub-phase 2c (no dispatch yet).
                 db      3,"PUT",1,PUT_TOKEN
+                ; File-info functions: $FF-prefixed (EOF=$FF$AB, LOF=$FF$AD).
+                db      3,"EOF",2,PEEK_PREFIX,EOF_TOKEN
+                db      3,"LOF",2,PEEK_PREFIX,LOF_TOKEN
                 ; File management: KILL (delete) + NAME (rename). Oracle-locked
                 ; tokens ($D4 / $D3). "NAME" shares no prefix with another entry.
                 db      4,"KILL",1,KILL_TOKEN

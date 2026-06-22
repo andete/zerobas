@@ -278,8 +278,13 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
             16 host unit-test files still pass. Divergence: optional `<filespec>`
             pattern parsed-past + ignored (full-dir listing only). See
             basic/PROVENANCE.md §FILES.
-- [ ] **File-position / info functions [in]** — `EOF`, `LOF`, `LOC`, `DSKF` (free
+- [ ] **File-position / info functions [in]** — `EOF`✅, `LOF`✅, `LOC`, `DSKF` (free
       clusters), `VARPTR(#n)`.
+      - [x] **`EOF(#n)` + `LOF(#n)`** — DONE (basic/expr.asm `ev_f_ff`). $FF-prefixed
+            function tokens ($FF$AB / $FF$AD), oracle-locked; `PRINT LOF(1);EOF(1)`
+            after OPEN = `26 0` byte-for-byte vs the real CF-3300, and EOF→-1 once
+            the file is exhausted (`disk_probe_eof.py`). LOC/DSKF deferred. See
+            PROVENANCE §EOF / LOF.
 - [ ] **Config [in]** — `MAXFILES` (sizes the channel table).
 - [ ] **Direct sector access [in]** — `DSKI$` (read sector, fn) / `DSKO$` (write
       sector, stmt; `HDSKO $FDEF` hook) — thin wrappers over DSKIO.

@@ -417,6 +417,10 @@ ev_f_ff:
                 jr      z,ev_ff_arg
                 cp      INP_TOKEN           ; $90 -> INP
                 jr      z,ev_ff_arg
+                cp      EOF_TOKEN           ; $AB -> EOF
+                jr      z,ev_ff_arg
+                cp      LOF_TOKEN           ; $AD -> LOF
+                jr      z,ev_ff_arg
                 jp      ev_f_err            ; unknown $FF function
 ev_ff_arg:
                 ld      c,a                 ; C = selector (survives the parse)
@@ -439,6 +443,10 @@ ev_ff_arg:
                 jr      z,ev_ff_vpeek
                 cp      INP_TOKEN
                 jr      z,ev_ff_inp
+                cp      EOF_TOKEN
+                jr      z,ev_ff_eof
+                cp      LOF_TOKEN
+                jr      z,ev_ff_lof
                 ; PEEK: read one byte of RAM at the address in DE.
                 ex      de,hl               ; HL = address
                 ld      e,(hl)              ; read one byte
@@ -456,6 +464,26 @@ ev_ff_inp:                                  ; INP: read one Z80 port (DE = port)
                 in      a,(c)               ; A = port input
                 ld      e,a
                 ld      d,0                 ; INP yields 0..255
+                ret
+ev_ff_eof:                                  ; EOF(#n): -1 at end of the input file
+                ; The channel arg (DE) is ignored (single channel). EOF when every
+                ; file byte has been delivered (FREAD_LEFT, 4-byte LE, == 0).
+                ld      hl,FREAD_LEFT
+                ld      a,(hl)
+                inc     hl
+                or      (hl)
+                inc     hl
+                or      (hl)
+                inc     hl
+                or      (hl)
+                ld      de,0
+                ret     nz                  ; bytes remain -> not EOF -> 0
+                dec     de                  ; all delivered -> EOF -> -1 ($FFFF)
+                ret
+ev_ff_lof:                                  ; LOF(#n): length of the open file
+                ; The channel arg (DE) is ignored. FAT_FILESIZE (set by fat_find at
+                ; OPEN) is the file's byte count; return its low 16 bits.
+                ld      de,(FAT_FILESIZE)
                 ret
 
 ; --- ev_f_varptr: VARPTR(<var>) -> address of the variable's value field -----
