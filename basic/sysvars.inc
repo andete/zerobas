@@ -105,6 +105,7 @@ BSAVE_TOKEN     equ     $D0     ; BSAVE "device:name",start,end[,exec] (statemen
 ; National CF-3300 Disk BASIC crunch (MSX2 TH Table 2.20; confirmed byte-identical
 ; by basic_probe_crunch_disk.py). The handler lives in basic/files.asm.
 FILES_TOKEN     equ     $B7     ; FILES ["filespec"] — list the directory (statement)
+MERGE_TOKEN     equ     $B6     ; MERGE "name" — merge an ASCII program from disk (stmt)
 ; Sequential file-channel verbs (Phase 2 read path). Tokens oracle-LOCKED
 ; byte-identical to the Philips VG-8020 crunch (basic_probe_crunch.py: OPEN -> B0,
 ; INPUT -> 85, LINE -> AF, CLOSE -> B4; cross-checked MSX2 TH Table 2.20). "AS" and
@@ -202,6 +203,7 @@ FCH_ACTIVE      equ     $E012   ; channel live in the engine globals, 0 = none (
 FCH_MODES       equ     $E013   ; per-channel mode array [0..FCH_CEIL]; [0] unused,
                                 ; [ch] = 0 closed / 1 INPUT / 2 OUTPUT (FCH_CEIL+1 bytes)
 INDLR_N         equ     $E016   ; INPUT$(n,#f): remaining bytes to read (transient, 1)
+MRG_PTR         equ     $E017   ; MERGE: write cursor into LINEBUF for the current line (2)
 RUNFLAG         equ     $E02F   ; 1 = ,R handoff requested (set while parsing)
 CLPTR           equ     $E02B   ; CLOAD/LOAD: store cursor into the program area (2)
 CLINK           equ     $E02D   ; CLOAD/LOAD: saved link word of the current line

@@ -2149,3 +2149,44 @@ and every file probe still pass.
 rather than the reference's "Illegal function call"); MKI$/CVI work in assignments
 (`A$=MKI$…`, `A=CVI…`) but not yet directly inside `PRINT`/`PRINT#` (str_eval is not
 reached on the PRINT numeric/letter fast-path) — use an intermediate variable.
+
+## MERGE — merge an ASCII program from disk (basic/files.asm)
+
+`MERGE "name"` reads a SAVE",A"-style ASCII (line-numbered text) program file and
+stores each line into the CURRENT program (insert-or-replace by line number) — the
+existing lines are KEPT, unlike `LOAD`/`RUN` which replace the whole program.
+
+**Token (oracle-locked).** `MERGE = $B6`, a single-byte statement token in the MAIN
+ROM table (the diskless VG-8020 tokenises it, like `FILES`); the filename is kept
+verbatim ASCII. `basic_probe_crunch.py` carries `merge"prog.bas"` (byte-identical on
+the VG-8020 and zerobas).
+
+**Implementation — maximal reuse of the typed-line path.** `ex_merge` parses the
+filename (`parse_disk_fcb`), opens the file (`fat_io_open`), and reads the byte
+stream (`fat_io_getbyte`) accumulating each line into `LINEBUF` (lines end at CR
+`$0D`; LF `$0A` is ignored; a Ctrl-Z `$1A` or EOF ends the file). Each completed line
+is handed to **`dispatch_line`** — the exact same tokeniser + `store_line` path a
+typed REPL line takes — so a numbered line is inserted/replaced and the existing
+program is preserved. A non-blank, non-numbered line is a "Direct statement in file"
+error (which also guards against a tokenised file being misread as garbage ASCII).
+`dispatch_line`/`store_line` touch `LINEBUF`/`TOKBUF`/`SL_*` + the program text area
+but NOT the fat_io read state (`FREAD_*`/`FSECTOR_BUF`), so the file stream survives
+across each stored line. The byte stream uses the global fat_io state directly (like
+`LOAD`/`BLOAD`), so MERGE while a user file channel is open is undefined.
+
+**Validation** (`disk_probe_merge.py`, /tmp copy of `test720.dsk`). The probe builds
+the ASCII merge source with the sequential write path itself — `PRINT#1,"10 a=1"` /
+`PRINT#1,"30 a=a*10+3"` — types `20 a=a*10+2` and `40 print"<";a;">"` into the
+current program, `MERGE`s the file, and `RUN`s. The merged 10/20/30/40 program
+computes `a = ((1*10+2)*10+3) = 123` — a value that only comes out right if BOTH file
+lines merged into the correct positions around the typed lines — **identical to the
+real National CF-3300**. Crunch suite, 16 unit-test files, the LIST/control-flow
+probes, and every file probe still pass.
+
+**Divergences (own design):** ASCII (SAVE",A") source only — there is no tokenised-
+MERGE (the reference also errors on a tokenised file; ours errors via the non-
+numbered-line guard); the error wording reuses zerobas's `syntax error`/`load error`;
+MERGE while a file channel is open is undefined (shares the global read state, like
+the other loader verbs). A harness note (not a zerobas property): the real CF-3300
+is slow enough after disk I/O that the test types one statement per line with wide
+spacing, or it drops the next line's opening characters.

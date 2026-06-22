@@ -522,6 +522,9 @@ kwtable:
                 ; Disk BASIC: FILES (list the directory). Token oracle-locked
                 ; ($B7; MSX2 TH Table 2.20). Shares no prefix with another entry.
                 db      5,"FILES",1,FILES_TOKEN
+                ; MERGE (merge an ASCII program from disk). Token oracle-locked
+                ; ($B6; MSX2 TH Table 2.20) — in the main ROM table like FILES.
+                db      5,"MERGE",1,MERGE_TOKEN
                 ; Sequential file-channel verbs (Phase 2). Tokens oracle-locked
                 ; (OPEN $B0, INPUT $85, LINE $AF, CLOSE $B4; MSX2 TH Table 2.20).
                 ; match_kw compares the full keyword, so table order is free.
@@ -677,6 +680,8 @@ exec_stmt:
                 jp      z,ex_save
                 cp      FILES_TOKEN
                 jp      z,ex_files
+                cp      MERGE_TOKEN
+                jp      z,ex_merge
                 cp      OPEN_TOKEN
                 jp      z,ex_open
                 cp      INPUT_TOKEN

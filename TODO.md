@@ -283,8 +283,15 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
             the CF-3300** (`disk_probe_inputdollar.py`). STRMAX clamp + keyboard form
             (no `#`) deferred. See basic/PROVENANCE.md §INPUT$.
       - [ ] `PRINT# USING` (needs `PRINT USING` first).
-- [ ] **File/dir management [in]** — `FILES`✅, `KILL`✅, `NAME…AS…`✅, `LFILES`, `MERGE`
+- [ ] **File/dir management [in]** — `FILES`✅, `KILL`✅, `NAME…AS…`✅, `MERGE`✅, `LFILES`
       (the `LOAD`/`SAVE`/`BLOAD`/`BSAVE`/`RUN"f"` already exist from Phase 1).
+      - [x] **`MERGE "name"`** — DONE (basic/files.asm `ex_merge`). Reads an ASCII
+            (SAVE",A") line-numbered program file and feeds each line through the
+            same `dispatch_line` (tokenise + `store_line`) path as a typed line, so
+            lines insert/replace into the CURRENT program (kept, unlike LOAD). Token
+            $B6 oracle-locked. Build-source-via-PRINT# + MERGE + RUN computes 123
+            **identical to the CF-3300** (`disk_probe_merge.py`). ASCII-only (no
+            tokenised MERGE). See basic/PROVENANCE.md §MERGE.
       - [x] **`NAME "old" AS "new"`** — DONE (basic/files.asm). Rewrites the dir
             entry's 8.3 name (no FAT change); token $D3 oracle-locked; post-rename
             disk image **byte-identical to the real CF-3300** (`disk_probe_name.py`).

@@ -820,3 +820,97 @@ ex_maxfiles:
                 ld      a,e
                 ld      (MAXF),a            ; commit the new ceiling (0..FCH_CEIL)
                 jp      exec_stmt
+
+; --- MERGE "name" — merge an ASCII program from disk ------------------------
+; Reads a SAVE",A"-style ASCII (line-numbered text) program file and stores each
+; line into the CURRENT program (insert-or-replace by line number) — the existing
+; program is KEPT, unlike LOAD. Each file line is accumulated into LINEBUF and fed
+; to dispatch_line, exactly as if it had been typed: the same tokeniser + store_line
+; path. Lines end at CR ($0D); LF ($0A) is ignored; a Ctrl-Z ($1A) or EOF ends the
+; file. A non-blank, non-numbered line is a "Direct statement in file" error (also
+; what guards against a tokenised file being read as garbage ASCII). The byte stream
+; uses the global fat_io read state directly (like LOAD/BLOAD), so MERGE while a
+; user file channel is open is undefined (documented). Token $B6 oracle-locked.
+; Sources: MSX-BASIC language reference (MERGE merges ASCII line-numbered programs);
+; the ASCII save format = line text + CR/LF, Ctrl-Z terminator. See PROVENANCE §MERGE.
+ex_merge:
+                inc     hl                  ; HL -> bytes after the MERGE token
+                call    skip_spaces
+                ld      a,(hl)
+                cp      '"'
+                jp      nz,stmt_error       ; filename string required
+                inc     hl                  ; HL -> first filename char
+                call    parse_disk_fcb      ; build DISK_FCB_NAME; HL -> closing '"'
+                inc     hl                  ; past the closing '"'
+                ld      a,(DISKSLOT_OK)
+                or      a
+                jp      z,load_error
+                push    hl                  ; guard the text cursor across the merge
+                call    fat_io_open         ; mount + find + prime the sequential read
+                jp      c,mrg_ioerr         ; not found / mount / I-O error
+mrg_newline:
+                ld      hl,LINEBUF          ; start a fresh line
+                ld      (MRG_PTR),hl
+mrg_charloop:
+                call    fat_io_getbyte
+                jr      c,mrg_eofline       ; EOF -> flush any partial line, then finish
+                cp      $1A
+                jr      z,mrg_eofline       ; Ctrl-Z soft-EOF -> finish
+                cp      $0A
+                jr      z,mrg_charloop      ; ignore LF
+                cp      $0D
+                jr      z,mrg_endline       ; CR -> end of this line
+                ld      c,a                 ; C = the data char (survives the bounds math)
+                ld      hl,(MRG_PTR)
+                ld      a,l                 ; bounds: keep the last LINEBUF byte for the 0
+                cp      (LINEBUF+LINEMAX-1) & $FF  ; (LINEBUF is one page -> low byte suffices)
+                jr      nc,mrg_charloop     ; line full -> drop extra chars
+                ld      (hl),c
+                inc     hl
+                ld      (MRG_PTR),hl
+                jr      mrg_charloop
+mrg_endline:
+                call    mrg_storeline       ; tokenise + store this line
+                jr      c,mrg_baderr        ; non-numbered line -> error
+                jr      mrg_newline
+mrg_eofline:
+                ld      hl,(MRG_PTR)        ; flush a final line with no trailing CR
+                ld      a,l
+                cp      LINEBUF & $FF
+                jr      z,mrg_done          ; nothing accumulated -> done
+                call    mrg_storeline
+                jr      c,mrg_baderr
+mrg_done:
+                pop     hl                  ; restore the text cursor
+                jp      exec_stmt
+mrg_ioerr:
+                pop     hl
+                jp      load_error
+mrg_baderr:
+                pop     hl
+                jp      stmt_error          ; "Direct statement in file" analogue
+
+; mrg_storeline — 0-terminate LINEBUF at MRG_PTR and, if it is a numbered (or blank)
+; line, hand it to dispatch_line (same tokenise + store_line path as a typed line).
+;   out: CF set = a non-blank, non-numbered line (error); CF clear = stored/skipped.
+; dispatch_line uses LINEBUF/TOKBUF/SL_* + the program text area — NOT the fat_io
+; read state (FREAD_*/FSECTOR_BUF) — so the file stream survives across it.
+mrg_storeline:
+                ld      hl,(MRG_PTR)
+                ld      (hl),0              ; terminate the accumulated line
+                ld      hl,LINEBUF
+                call    skip_spaces
+                ld      a,(hl)
+                or      a
+                jr      z,msl_ok            ; blank line -> skip
+                cp      '0'
+                jr      c,msl_err
+                cp      '9'+1
+                jr      nc,msl_err          ; not a digit -> not a numbered line
+                call    dispatch_line       ; numbered -> crunch + store (insert/replace)
+msl_ok:
+                or      a                   ; CF clear = ok
+                ret
+msl_err:
+                scf                         ; CF set = direct/garbage line
+                ret
