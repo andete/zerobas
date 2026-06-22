@@ -454,7 +454,9 @@ boot still hanging at gap A, is not independently committable as code).
 **Status:** the DOS boot path is proven to run on our stack. Gap **B (RAM-slot derivation) is
 resolved at the design level** (§8.2). Gap **A is now characterised** (§8.6): the boot's sector
 driver is the **standard DSKIO (`$4010`)** — our build just hung *before* reaching it for want
-of a fuller page-0 vector set. disk.asm reverted clean; disk.rom unchanged.
+of a fuller page-0 vector set. **a1 (steps 4-5) is now reinstated + committed in `disk.asm`**
+(`boot_disk`, regression-gated — see TODO 2-Tier2-a1); a2 step 6 (the page-0 environment) is
+the next build, on top of it.
 
 ## 8.6 Gap A characterised — the working boot uses standard DSKIO (`$4010`)
 

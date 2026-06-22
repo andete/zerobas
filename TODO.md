@@ -456,11 +456,14 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
 - [ ] **2-Tier2-a — DOS boot (steps 4–7).** Deeper than first scoped: a build attempt
       proved the boot is a **four-step environment hand-off** (MSX2 TH ch.3), not a
       one-call bridge — see [`provider-oracle-scope.md`](disk/docs/provider-oracle-scope.md) §8.
-      - [ ] **a1 — steps 4–5 (boot bridge).** read sector 0 → `$C000`; `CALL $C01E`
-            CY-reset; data-disk `RET NC` fall-through preserved. *Proven working*
-            (reached `$C01E`, CY reset) then reverted pending a2. **Regression-gate it
-            on the `C-BIOS_*_BASIC_DISK` machines** (the bridge runs in INIT on every
-            host) before relying on it.
+      - [x] **a1 — steps 4–5 (boot bridge). DONE + regression-gated.** `boot_disk` in
+            INIT reads sector 0 → `$C000`, checks the `$EB`/`$E9` signature, and `CALL
+            $C01E` CY-reset; the data-disk `RET NC` fall-through is preserved. **Now
+            committed to `disk.asm`** (not reverted): regression-gated on
+            `C-BIOS_MSX1_BASIC_DISK` + `test720.dsk` — `disk_probe_files` and
+            `disk_probe_bload_disk` both PASS (BASIC+disk boots, byte-identical FILES,
+            BLOAD `,R`/plain), and oracle-confirmed on `National_CF-3300_ZEROBASDISK` +
+            a DOS disk (`$C01E` reached, `AF=$EBAC` ⇒ A=`$EB`, carry reset).
       - [ ] **a2 — step 6 (the real work): page-0 MSX-DOS environment.** Designed:
             see [`provider-oracle-scope.md`](disk/docs/provider-oracle-scope.md) §8.1
             (documented page-0 layout pinned + the step-5→7 RAM-in-page-0 delta

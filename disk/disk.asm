@@ -297,7 +297,38 @@ init:
                 ; SeqRead before any $1A behaves as MSX-DOS does.
                 ld      hl, DTA_DEFAULT
                 ld      (BDOS_DTA), hl
-                ret
+                ; fall into the DOS-boot bridge (TH ch.3); it returns to the BIOS
+                ; boot scan, falling through to BASIC for a non-system disk.
+                ; --- intentional fall-through to boot_disk -------------------
+
+; --- DOS-boot bridge (slice 2-Tier2-a1; MSX2 TH ch.3 steps 4-5) ------------
+; Read logical sector 0 into the standard boot load address $C000; if it carries
+; a boot signature ($EB/$E9 at byte 0) run the "custom boot program" at $C01E
+; with CY reset (step 5). A data disk's byte $1E is the documented RET NC stub,
+; so this returns and INIT falls through to BASIC unchanged — the regression-safe
+; property (the bridge runs in every host's INIT). Steps 6-7 (the page-0 MSX-DOS
+; environment + the CY-set $C01E) are slice a2; see provider-oracle-scope.md §8.
+; No disk / read error / no signature all return cleanly to BASIC.
+BOOT_LOAD       equ     $C000   ; standard boot-sector load address (MSX2 TH ch.3)
+BOOT_ENTRY      equ     $C01E   ; custom-boot-program entry (BOOT_LOAD + $1E)
+boot_disk:
+                xor     a               ; drive A
+                ld      b, 1            ; one sector
+                ld      c, a            ; media byte (ignored, single-drive)
+                ld      de, 0           ; logical sector 0 (the boot sector)
+                ld      hl, BOOT_LOAD   ; -> $C000 (page-3 RAM)
+                or      a               ; Cy = 0 -> read
+                call    dskio
+                ret     c               ; no disk / read error -> BASIC
+                ld      a, (BOOT_LOAD)  ; first byte = boot signature?
+                cp      $EB
+                jr      z, boot_sig_ok
+                cp      $E9
+                ret     nz              ; not a boot disk -> BASIC
+boot_sig_ok:
+                or      a               ; Cy = 0 -> step-5 "custom boot" call
+                call    BOOT_ENTRY      ; data-disk default RET NC returns here
+                ret                     ; (a2: step 6 + CY-set $C01E go here)
 
 ; --- Disk entry-point handlers ---------------------------------------------
 
