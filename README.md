@@ -42,6 +42,36 @@ The behavioural specifications zerobas is built from live in the companion
 analysis repo (`msx-preservation`, under `basic-spec/docs/`), produced by
 driving a real MSX in openMSX as a black box.
 
+## Authorship & AI assistance
+
+This project is **human-authored and human-directed** by Joost Yervante Damad.
+The architecture, the clean-room methodology, the oracle-not-answer-key approach,
+and every design and staging decision are his; AI coding assistants (Anthropic's
+Claude) were used as a **tool** under that direction — drafting, refactoring, and
+exploring under review — much like a compiler or an editor's autocomplete, not as
+an independent author.
+
+A few consequences worth stating plainly:
+
+- **Ownership.** The work is owned by its human author and licensed under the
+  [BSD 2-clause](LICENSE) terms in this repo. AI assistance confers no third-party
+  rights: under Anthropic's terms the output belongs to the user, and Anthropic
+  claims no copyright in it.
+- **The `Co-Authored-By: Claude` trailer** on some commits is an attribution and
+  transparency convention — a record that an AI assisted — **not** a legal
+  co-authorship or rights claim.
+- **The provenance firewall applies to the AI too.** The
+  [clean-room rules](tape/docs/clean-room-policy.md) bind every contributor *and
+  every tool or model*: no MSX-BASIC / GW-BASIC / BASIC-80 source, and no
+  reference BIOS/BASIC ROM disassembly, is ever read by a human or fed into a
+  model. AI context is restricted to the same allowed sources, behavioural specs,
+  and black-box oracle observations as a human contributor.
+
+The real protection here is not copyright — much clean-room BIOS code, constrained
+to a fixed hardware contract, is thinly protectable regardless of who or what
+typed it — but the **provenance discipline** above: the demonstrable absence of
+copied expression.
+
 ## Build
 
 Requires [pasmo](https://pasmo.speccy.org/) (the assembler C-BIOS uses):
