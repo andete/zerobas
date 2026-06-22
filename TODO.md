@@ -195,25 +195,54 @@ basic/tape/disk split is built around — a self-contained, oracle-validatable s
 disk *ROM* (`disk/`) is already complete (FDC + FAT12 + BDOS, read+write,
 oracle-confirmed); this phase is the **interpreter-side Disk BASIC integration**.
 
-- [ ] **Host the disk ROM's Disk BASIC extension** — the STATEMENT/DEVICE expansion
-      + file-channel protocol, so file resolution **delegates** to the in-slot disk
-      ROM. The Phase-1.5 spike found this file-channel protocol **poorly documented**
-      (the MSX2 TH gives the request codes but not the register-level open/read/write
-      contract) — it needs its **own black-box observation pass + new probes** before
-      any code. See [`disk/docs/expansion-protocol.md`](disk/docs/expansion-protocol.md).
+**Approach — spike first, then decide, then build.** Unlike Phase-1 items the
+protocol isn't pinned, so step 0 is a research spike; only after it do we pick the
+architecture and write code. Each step is independently oracle-validatable.
+
+### Step 0 — file-channel protocol spike (the gate; do this first) — IN PROGRESS
+- [ ] **Black-box the DEVICE/STATEMENT expansion + file-channel protocol** on the
+      real **National CF-3300** Disk BASIC (boots to Disk BASIC; ROMs in
+      `~/.openMSX/share/systemroms/`). The Phase-1.5 spike deliberately skipped this:
+      it proved the *drive-letter loader* path is pure DSKIO and never touches the
+      DEVICE expansion (`PROCNM $FD89` / `DEVICE $FD99` stay zero) — see
+      [`disk/docs/expansion-protocol.md`](disk/docs/expansion-protocol.md) §0/§5 — but
+      the *file verbs* (`OPEN`/`PRINT#`/`INPUT#`/`FILES`/…) are exactly where that
+      expansion fires. Observe (clean-room: BP on documented addresses + live register
+      read-out; **never read/disassemble the reference ROM**):
+        1. **Dispatch** — typing `FILES` / `OPEN"A:F"…`, how control reaches the disk
+           ROM's STATEMENT (`$4004`) / DEVICE (`$4006`) handler; the request-code /
+           work-area (`PROCNM`, `DEVICE`, file-number) contract.
+        2. **File-channel I/O** — `OPEN`→`PRINT#`/`INPUT#`→`CLOSE`: the register-level
+           open-by-name, sequential read/write, and close calls; the FCB / channel
+           buffer structures; how bytes flow.
+      Deliverable: a pinned **`disk/docs/file-channel-protocol.md`** (same shape as the
+      1.5 `expansion-protocol.md`) + observation probes, and a **GO/NO-GO plus a
+      delegate-vs-extend recommendation** the findings imply.
+
+### Step 1 — settle the architectural fork (gated on the spike)
+**Delegate** to the in-slot Disk BASIC (retire the basic-side
+[`basic/fat.asm`](basic/fat.asm), the loader-owned FAT) **vs extend** our own FAT
+with the verb surface layered on top. Delegation is the MSX-faithful end state but
+depends on whatever the spike finds; extension reuses proven, oracle-confirmed code
+but keeps the duplicate FAT. Decide from the spike's findings, before writing code.
+
+### Step 2 — implement the verb surface (after the fork is chosen)
 - [ ] **Full Disk BASIC verb surface** — `FILES`/`OPEN`/`CLOSE`/`PRINT#`/`INPUT#`/
       `GET`/`PUT`/`KILL`/`NAME`/`EOF`/`LOF`/`LOC`/`MAXFILES` (the random-access file
-      layer folds in here).
-- [ ] **Tier-2 provider oracle** *(carried from Phase 1.5)* — a real *filesystem*
-      host (DOS/Disk-BASIC), the only organic `GETDPB` consumer, drives zerobas-disk
-      end-to-end. See [`disk/docs/provider-oracle-scope.md`](disk/docs/provider-oracle-scope.md).
+      layer folds in here). Build smallest end-to-end path first (likely `FILES`, then
+      `OPEN`+`INPUT#`) and grow, each verb oracle-validated against CF-3300 Disk BASIC.
 
-**Architectural fork to settle in the planning pass:** **delegate** to the in-slot
-Disk BASIC (retire the basic-side [`basic/fat.asm`](basic/fat.asm), the
-loader-owned FAT) **vs extend** our own FAT with the verb surface layered on top.
-Delegation is the MSX-faithful end state but depends on the under-documented
-file-channel protocol; extension reuses proven code but keeps the duplicate FAT.
-Decide before writing code.
+### Carried oracle — Tier-2 provider (DOS1; a distinct DOS-boot sub-track)
+- [ ] **Tier-2 provider oracle** *(from Phase 1.5)* — a real **MSX-DOS 1** filesystem
+      host (black-box; **DOS1 is the confirmed ceiling**), the only organic `GETDPB`
+      consumer, drives zerobas-disk end-to-end. This is a **distinct sub-track** from
+      the Disk BASIC verb surface above: per the circularity finding, a real DOS only
+      exists once a disk ROM loads `MSXDOS.SYS`, which zerobas-disk does not yet do — so
+      Tier-2 is gated on building **MSX-DOS-boot support**, plus a re-supplied DOS1
+      system disk (the 1.5 one is gone). Until then GETDPB stays pinned by the Tier-0/1
+      differential. **DOS2** (Nextor / Sunrise 2.20 / the open MSX-DOS2 kernel — largely
+      open-source, unlike proprietary DOS1) is a future axis, not this phase. See
+      [`disk/docs/provider-oracle-scope.md`](disk/docs/provider-oracle-scope.md) §6.
 
 **Charter note.** This raises the README's loader-stub charter toward "real MSX
 BASIC" on the disk axis. That is the intended scope of Phase 2 — a conscious step

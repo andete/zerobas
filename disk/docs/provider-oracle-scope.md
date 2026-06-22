@@ -119,3 +119,35 @@ Tier 1 is worth doing — it converts the provider direction from "contract vali
 differential + stub" to "real BIOS code organically drives us", closing box (b) at the
 highest fidelity available without raising the charter. Defer Tier 2 to Phase 2, where the
 DOS-boot / Disk-BASIC-hosting work it depends on already lives.
+
+## 6. DOS-version scope + the DOS-boot prerequisite (Phase 2 refinement)
+
+**DOS1 is the ceiling (confirmed).** zerobas-disk is MSX1 / FAT12 / single-directory —
+DOS1-class. The Tier-2 oracle's authoritative reference is therefore **real MSX-DOS 1**,
+black-boxed (proprietary → the clean-room way). **MSX-DOS 2** (subdirectories, FAT16,
+MSX2-era) is **out of current scope** — a future axis, not Phase 2.
+
+**Tier 2 needs DOS-boot, not just a disk.** Per §1, a real DOS only exists *after* a disk
+ROM loads `MSXDOS.SYS`; zerobas-disk does not implement that boot path. So the organic
+Tier-2 oracle ("real DOS1 mounts a drive on us and consumes our GETDPB") is gated on
+building **MSX-DOS-boot support** in zerobas-disk — a **distinct sub-track** from the Disk
+BASIC verb-surface integration that is Phase 2's core (the file-channel spike). It also
+needs a real **MSX-DOS 1 system disk** re-supplied (the 1.5 FCB work used one that is no
+longer present in the environment). Until both exist, GETDPB stays pinned by the Tier-0/1
+differential (byte-identical to CF-3300), which §2 already deems sufficient.
+
+**The DOS-version asymmetry (for a future DOS2 axis).** If the charter is ever raised to
+DOS2, its references are largely **open**, unlike proprietary DOS1:
+
+* **Open MSX-DOS 2 kernel** — the MSX-DOS 2.20 sources were released (Konamiman hosts
+  them): an open reference for the DOS2 BDOS/DPB contract.
+* **Nextor** — Konamiman's open MSX-DOS-2-compatible kernel (FAT16, MSX1-capable).
+  Architecturally a disk-ROM *replacement* (brings its own sector driver), so it does
+  **not** sit on top of zerobas-disk as a GETDPB consumer — useful instead as an open
+  protocol reference and as a foreign standard disk ROM for host-direction tests.
+* **Sunrise** — produced MSX-DOS 2.20 cartridges + IDE interfaces; part of the same open
+  2.20 lineage.
+
+Before treating any of these *sources* as an allowed PROVENANCE input, confirm the license
+is compatible with a BSD-2 reimplementation; black-box *runtime* use is always fine. None
+of this is in scope now — DOS1 is the ceiling.
