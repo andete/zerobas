@@ -798,6 +798,135 @@ ftc_done:
                 pop     hl
                 ret
 
+; fat_count_free — count free clusters (FAT entries == 0) over the data range
+; [2, total). Mounts first. Used by DSKF.
+;   out: DE = free cluster count (0 on mount error).
+; Reads each FAT sector ONCE (caching it in FSECTOR_BUF, keyed by FWR_FIRST) and
+; decodes the 12-bit entry for each cluster inline, counting the zeros. A naive
+; one-read-per-cluster scan is correct but ~700 cross-slot DSKIO reads — far too
+; slow on a real FDC; caching collapses it to a handful. Loop state lives in RAM
+; (the register file is clobbered by read_sector's CALSLT): FAT_WRTMP = total,
+; FAT_WRTMP2 = running count, FWR_CLUS = current cluster, FWR_FIRST = cached FAT
+; sector (all write-side scratch, dead during this read-only query); FAT_B0/FAT_B1
+; hold the entry's two bytes. Sources: Microsoft FAT spec (a 0 entry is free; the
+; 12-bit even/odd nibble packing).
+fat_count_free:
+                call    fat_mount
+                jp      c, fcf_zero
+                call    fat_total_clusters  ; DE = total clusters (2 + data)
+                ld      (FAT_WRTMP), de
+                ld      hl, 0
+                ld      (FAT_WRTMP2), hl    ; free count = 0
+                ld      hl, $FFFF
+                ld      (FWR_FIRST), hl     ; cached FAT sector = none
+                ld      hl, 2
+                ld      (FWR_CLUS), hl
+fcf_loop:
+                ld      hl, (FWR_CLUS)
+                ld      de, (FAT_WRTMP)
+                or      a
+                sbc     hl, de              ; cluster - total
+                jp      nc, fcf_done        ; cluster >= total -> done
+                ; offset = cluster + cluster>>1 (= cluster * 3/2)
+                ld      hl, (FWR_CLUS)
+                ld      d, h
+                ld      e, l
+                srl     d
+                rr      e                   ; DE = cluster>>1
+                add     hl, de              ; HL = byte offset within the FAT
+                ; FAT sector = FAT_FATSTART + (offset>>9)
+                ld      a, h
+                srl     a                   ; A = offset>>9
+                ld      e, a
+                ld      d, 0
+                ld      hl, (FAT_FATSTART)
+                add     hl, de              ; HL = absolute FAT sector
+                ld      de, (FWR_FIRST)
+                or      a
+                push    hl
+                sbc     hl, de
+                pop     hl
+                jr      z, fcf_have         ; already cached
+                ld      (FWR_FIRST), hl
+                ex      de, hl
+                ld      hl, FSECTOR_BUF
+                call    read_sector         ; cache this FAT sector
+fcf_have:
+                ; byteidx = offset & 511
+                ld      hl, (FWR_CLUS)
+                ld      d, h
+                ld      e, l
+                srl     d
+                rr      e
+                add     hl, de              ; HL = offset
+                ld      a, h
+                and     1
+                ld      h, a                ; HL = byteidx (0..511)
+                ; byte0 = FSECTOR_BUF[byteidx]
+                push    hl
+                ld      de, FSECTOR_BUF
+                add     hl, de
+                ld      a, (hl)
+                ld      (FAT_B0), a
+                pop     hl                  ; HL = byteidx
+                ; byte1 = byteidx==511 ? next FAT sector[0] : FSECTOR_BUF[byteidx+1]
+                ld      a, h
+                cp      1
+                jr      nz, fcf_b1_same
+                ld      a, l
+                cp      $FF
+                jr      nz, fcf_b1_same     ; byteidx != 511 -> same sector
+                ; straddle: byte1 lives in the next FAT sector (read into FWBUF).
+                ld      hl, (FWR_FIRST)
+                inc     hl
+                ex      de, hl
+                ld      hl, FWBUF
+                call    read_sector
+                ld      a, (FWBUF)
+                jr      fcf_haveb1
+fcf_b1_same:
+                inc     hl                  ; byteidx+1
+                ld      de, FSECTOR_BUF
+                add     hl, de
+                ld      a, (hl)
+fcf_haveb1:
+                ld      (FAT_B1), a
+                ; the 12-bit entry is zero iff the relevant nibbles are all zero.
+                ld      a, (FWR_CLUS)
+                and     1
+                jr      nz, fcf_odd
+                ; even: zero iff byte0==0 and (byte1 & $0F)==0
+                ld      a, (FAT_B0)
+                or      a
+                jr      nz, fcf_used
+                ld      a, (FAT_B1)
+                and     $0F
+                jr      nz, fcf_used
+                jr      fcf_free
+fcf_odd:
+                ; odd: zero iff (byte0 & $F0)==0 and byte1==0
+                ld      a, (FAT_B0)
+                and     $F0
+                jr      nz, fcf_used
+                ld      a, (FAT_B1)
+                or      a
+                jr      nz, fcf_used
+fcf_free:
+                ld      hl, (FAT_WRTMP2)
+                inc     hl
+                ld      (FAT_WRTMP2), hl    ; free++
+fcf_used:
+                ld      hl, (FWR_CLUS)
+                inc     hl
+                ld      (FWR_CLUS), hl
+                jp      fcf_loop
+fcf_done:
+                ld      de, (FAT_WRTMP2)
+                ret
+fcf_zero:
+                ld      de, 0
+                ret
+
 ; fat_flush_data_sector — write FSECTOR_BUF (the current 512-byte data buffer) to
 ; the file's current data sector, allocating/extending the cluster chain first.
 ;   out: Cy = 0 ok, Cy = 1 = disk full / write error

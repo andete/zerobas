@@ -123,6 +123,7 @@ PUT_TOKEN       equ     $B3     ; PUT (only consumed as the 2nd half of OUTPUT h
 ; MSX2 TH Table 2.20). Evaluated in basic/expr.asm ev_f_ff.
 EOF_TOKEN       equ     $AB     ; EOF(#n)  -> -1 at end of the input file, else 0
 LOF_TOKEN       equ     $AD     ; LOF(#n)  -> length of the open file in bytes
+DSKF_TOKEN      equ     $A6     ; DSKF(d)  -> free clusters on the drive (=free KB)
 ; File/directory management (Phase 2). Tokens oracle-locked to the VG-8020 crunch
 ; (KILL=$D4, NAME=$D3; MSX2 TH Table 2.20). The handlers live in basic/files.asm.
 KILL_TOKEN      equ     $D4     ; KILL "name" — delete a file (statement)

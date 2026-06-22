@@ -421,6 +421,8 @@ ev_f_ff:
                 jr      z,ev_ff_arg
                 cp      LOF_TOKEN           ; $AD -> LOF
                 jr      z,ev_ff_arg
+                cp      DSKF_TOKEN          ; $A6 -> DSKF
+                jr      z,ev_ff_arg
                 jp      ev_f_err            ; unknown $FF function
 ev_ff_arg:
                 ld      c,a                 ; C = selector (survives the parse)
@@ -447,6 +449,8 @@ ev_ff_arg:
                 jr      z,ev_ff_eof
                 cp      LOF_TOKEN
                 jr      z,ev_ff_lof
+                cp      DSKF_TOKEN
+                jr      z,ev_ff_dskf
                 ; PEEK: read one byte of RAM at the address in DE.
                 ex      de,hl               ; HL = address
                 ld      e,(hl)              ; read one byte
@@ -484,6 +488,17 @@ ev_ff_lof:                                  ; LOF(#n): length of the open file
                 ; The channel arg (DE) is ignored. FAT_FILESIZE (set by fat_find at
                 ; OPEN) is the file's byte count; return its low 16 bits.
                 ld      de,(FAT_FILESIZE)
+                ret
+ev_ff_dskf:                                 ; DSKF(d): free clusters on the drive
+                ; The drive arg (DE) is ignored (single drive). Returns the count
+                ; of free FAT entries — = free KB on a 1 KB/cluster 720 KB volume.
+                ; CALSLT (inside fat_count_free) clobbers IX/IY, and IX is the
+                ; evaluator's live token cursor — guard it on the stack.
+                push    ix
+                push    iy
+                call    fat_count_free      ; DE = free cluster count
+                pop     iy
+                pop     ix
                 ret
 
 ; --- ev_f_varptr: VARPTR(<var>) -> address of the variable's value field -----

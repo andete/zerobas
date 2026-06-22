@@ -278,13 +278,20 @@ first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
             16 host unit-test files still pass. Divergence: optional `<filespec>`
             pattern parsed-past + ignored (full-dir listing only). See
             basic/PROVENANCE.md §FILES.
-- [ ] **File-position / info functions [in]** — `EOF`✅, `LOF`✅, `LOC`, `DSKF` (free
-      clusters), `VARPTR(#n)`.
+- [ ] **File-position / info functions [in]** — `EOF`✅, `LOF`✅, `DSKF`✅, `LOC`(deferred),
+      `VARPTR(#n)`.
       - [x] **`EOF(#n)` + `LOF(#n)`** — DONE (basic/expr.asm `ev_f_ff`). $FF-prefixed
             function tokens ($FF$AB / $FF$AD), oracle-locked; `PRINT LOF(1);EOF(1)`
             after OPEN = `26 0` byte-for-byte vs the real CF-3300, and EOF→-1 once
-            the file is exhausted (`disk_probe_eof.py`). LOC/DSKF deferred. See
-            PROVENANCE §EOF / LOF.
+            the file is exhausted (`disk_probe_eof.py`). See PROVENANCE §EOF / LOF.
+      - [x] **`DSKF(d)`** — DONE (basic/expr.asm + fat.asm `fat_count_free`). Free-
+            cluster count via a sector-cached FAT scan; $FF$A6 oracle-locked;
+            `PRINT DSKF(0)`=707 matches a direct FAT12 count AND the real CF-3300
+            (`disk_probe_dskf.py`). See PROVENANCE §DSKF.
+      - [ ] **`LOC(#n)`** — deferred: CF-3300 `LOC(1)` returns 26 (file size) both
+            before and after a read; sequential-file semantics unclear, so not
+            cargo-culted. **`LFILES`** — printer-bound (LPT), no device in zerobas.
+            Both observed + documented in PROVENANCE §LOC / LFILES.
 - [ ] **Config [in]** — `MAXFILES` (sizes the channel table).
 - [ ] **Direct sector access [in]** — `DSKI$` (read sector, fn) / `DSKO$` (write
       sector, stmt; `HDSKO $FDEF` hook) — thin wrappers over DSKIO.

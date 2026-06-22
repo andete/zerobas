@@ -1890,3 +1890,53 @@ LOF returns the low 16 bits (files ≥ 64 KB are out of the loader's scope).
 
 Clean-room: original code; EOF/LOF semantics from the public MSX-BASIC reference,
 validated by the CF-3300 differential. No disassembly.
+
+## DSKF — free disk space (basic/expr.asm, basic/fat.asm, basic/interp.asm, basic/sysvars.inc)
+
+`DSKF(d)` returns the number of free clusters on the drive (= free KB on the
+1 KB/cluster 720 KB volume). A `$FF`-prefixed function (`DSKF = $FF $A6`,
+oracle-locked to the VG-8020 crunch; MSX2 TH Table 2.20), evaluated in `ev_f_ff`.
+
+**Engine (`fat_count_free`, basic/fat.asm).** Mounts, takes `fat_total_clusters`,
+then walks every data cluster `[2, total)` and counts the FAT entries equal to 0.
+A naïve one-`fat_next_cluster`-per-cluster scan is ~700 cross-slot DSKIO reads —
+far too slow on a real FDC (observed: it did not finish in ~30 emulated seconds).
+So `fat_count_free` **caches the current FAT sector** (in `FSECTOR_BUF`, keyed by
+`FWR_FIRST`) and decodes the 12-bit even/odd-packed entry inline, re-reading only
+when the cluster crosses a sector boundary (plus a one-byte straddle read at the
+512-byte boundary) — collapsing it to a handful of reads. Loop state lives in RAM
+(read_sector's CALSLT clobbers the register file): `FAT_WRTMP`/`FAT_WRTMP2`/
+`FWR_CLUS`/`FWR_FIRST` (write-side scratch, dead during this read-only query) +
+`FAT_B0`/`FAT_B1`. Sources: Microsoft FAT spec (a 0 entry is free; the nibble
+packing).
+
+**IX guard.** `ev_ff_dskf` pushes IX/IY across `fat_count_free`: CALSLT clobbers
+IX, and IX is the evaluator's live token cursor. (The first cut omitted this and
+the evaluator ran off into garbage after DSKF returned — a runaway that filled the
+screen with `0`s; the fix is the same register-guard discipline as the statement
+verbs, applied to the evaluator's cursor register.)
+
+**Validation** (`disk_probe_dskf.py`, /tmp copy of `test720.dsk`): `PRINT DSKF(0)`
+prints **707**, matching both a direct FAT12 free-cluster count of the image and
+the real **CF-3300** (707). Full crunch + 16 unit-test files + the EOF/file probes
+still pass.
+
+**Divergence (own design):** single drive — the argument is parsed and ignored.
+
+## LOC / LFILES — observed and DEFERRED (not implemented)
+
+Two "small" verbs were **observed on the real CF-3300 and deliberately left out**,
+with the observations recorded so the decision is grounded, not guessed:
+
+* **`LOC(#n)` ($FF$AC).** On the CF-3300, `LOC(1)` returned **26 both immediately
+  after OPEN and after a LINE INPUT#** of the 26-byte HI.TXT — i.e. it tracks
+  neither bytes-read nor a record index in any way that matched the documented
+  "records since OPEN". Its sequential-file semantics are quirky and unclear;
+  reproducing the literal value without understanding it would be cargo-culting,
+  which the clean-room rule forbids. Deferred until the semantics are pinned.
+* **`LFILES` ($BB).** The line-printer counterpart of FILES — it directs the
+  directory listing to the printer device (LPT), which zerobas has no driver for.
+  Out of the loader/disk scope; deferred (would need a printer-output layer).
+
+Both tokens are documented here so a future pass starts from the observation, not
+from scratch.
