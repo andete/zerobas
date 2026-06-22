@@ -356,3 +356,44 @@ the boot context too (during INIT our ROM is in page 1, i.e. slot-3 secondary ha
 1 — preserved by the `and $FC`). Must run with **interrupts disabled** (`di`): while page 0
 is RAM the `$0038` vector is not yet the BIOS handler. This is the proven foundation for
 a2 step (2); the remaining work is laying the page-0 environment on top + the two-phase call.
+
+## 8.3 Open question RESOLVED — boot loads MSXDOS.SYS by *sector reads*, not BDOS
+
+Black-box experiment on the stock CF-3300 (2026-06-22): BP at `$C01E` armed after the 2nd
+(CY-set) hit, then BP at `$0005` logging the caller of each BDOS call. The first six `$0005`
+calls all came from **high page-3 RAM** (`$C23B`, `$C24E`, `$CBFF`, `$CC04`, `$CE5C`…) with
+function codes `01/24/0D/53/75` — that is **MSXDOS.SYS already relocated and running**, not
+the boot sector (`$C000..$C0FF`), and not an Open+Read file-load sequence. ⇒ **MSXDOS.SYS is
+already loaded before the first BDOS call**, so the boot sector loads it by **direct sector
+reads (PHYDIO-class), not `$0005` BDOS.** Consequence: **no resident BDOS / TPA / `$0006-7`
+layout is needed for the load** — that whole axis of complexity is off the table.
+
+## 8.4 The actual core of step 6 — a RAM-resident inter-slot path (the real 80%)
+
+Resolving 8.3 exposes the true hard part. With **RAM switched into page 0**, every page-0
+BIOS routine is gone — including the inter-slot primitives `RST 30h`/CALLF (`$0030`) and
+`CALSLT` (`$001C`). But our provider hook **`H.PHYD ($FFA7) = F7 87 10 40 C9` is exactly a
+`RST 30h` (CALLF) to slot 3-1 `$4010`** — so with RAM in page 0, `H.PHYD` **breaks** (the
+`RST 30h` lands in RAM garbage at `$0030`). That is why the stock disk ROM builds a resident
+kernel in high RAM and points the page-0 vectors at it (`$0038→$DDAE`, `$000C→$DDF3`,
+observed in §8.1): step 6 is really *"stand up a minimal RAM-resident BIOS-call environment
+so the disk driver stays reachable after RAM replaces the page-0 ROM."*
+
+**Our advantage (a real simplification):** during the boot **page 1 stays our disk ROM**
+(slot 3-1, never remapped), so our **DSKIO is directly `CALL $4010`-able with no inter-slot
+mechanism at all**. So step 6 does NOT need a full CALLF/CALSLT reimplementation — it needs
+just enough RAM page-0 environment that the boot sector's sector-read path reaches `$4010`.
+Two candidate designs to try (experiment, cheapest first):
+1. **Tiny `$0030` CALLF shim in RAM page 0.** Put a handler at `$0030` that emulates CALLF
+   for the one case we need — read the inline slot+addr after the `RST`, and (since the
+   target slot 3-1 is already in page 1) just `CALL`/`JP` the inline address — so the
+   existing `H.PHYD` chain keeps working unmodified. Smallest change; keeps the standard hook.
+2. **Resident driver vector.** Lay the documented page-0 vectors the boot/`MSXDOS.SYS` expect
+   (`$0038` int → a safe RAM handler, the disk-driver entry where the boot code looks) such
+   that sector I/O routes to our `$4010` directly.
+Resolve which the boot sector actually uses by building (1) — minimal RAM `$0030` shim +
+the validated paging + the two-phase `$C01E` — and observing whether `MSXDOS.SYS` lands and
+`A>` appears; if the boot reaches for a vector we didn't set, the trace will show the address
+(a clean-room signal — never read the boot-sector code). **Net:** step 6 shrank on one axis
+(no BDOS/TPA) and sharpened on another (a RAM-resident `RST 30h`/driver path); the next build
+turn implements design (1).

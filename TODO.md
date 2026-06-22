@@ -474,8 +474,15 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             MSXDOS.SYS via `$0005` BDOS or via direct PHYDIO sector reads?
             **(1) is VALIDATED** (§8.2): the RAM-into-page-0 slot dance works on the live
             Tier-1 machine (`$A8` page-0→slot 3 + `$FFFF` page-0 subslot→0, run from
-            page 1, `di`; wrote/read `$A5` at `$0000`, ROM `$F3` restored after). The
-            scary part is de-risked; (2)+(3) remain.
+            page 1, `di`; wrote/read `$A5` at `$0000`, ROM `$F3` restored after).
+            **Open Q RESOLVED** (§8.3): the boot loads MSXDOS.SYS by **direct sector
+            reads, NOT `$0005` BDOS** (the first BDOS calls come from already-relocated
+            high-RAM DOS, not the boot sector) → no resident-BDOS/TPA needed.
+            **Real core of step 6 found** (§8.4): with RAM in page 0, `H.PHYD`'s
+            `RST 30h`/CALLF breaks (page-0 BIOS gone), so step 6 must stand up a minimal
+            RAM-resident inter-slot path. **Advantage:** page 1 stays our ROM, so DSKIO
+            is directly `CALL $4010`-able — next build = a tiny `$0030` CALLF shim in RAM
+            page 0 + the two-phase `$C01E`, then observe whether `A>` appears.
       - [ ] **a3 — step 7 + validate.** `CALL $C01E` CY-set; oracle: Tier-1 reaches
             `MSX-DOS version 1.03 … A>` screen-identical to the stock CF-3300.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
