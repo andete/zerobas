@@ -461,10 +461,17 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             (reached `$C01E`, CY reset) then reverted pending a2. **Regression-gate it
             on the `C-BIOS_*_BASIC_DISK` machines** (the bridge runs in INIT on every
             host) before relying on it.
-      - [ ] **a2 — step 6 (the real work): page-0 MSX-DOS environment.** Switch RAM
-            into page 0 + set up the `$00xx` BDOS/jump vectors (`$0005` etc.) the boot
-            code + `MSXDOS.SYS` use. New subsystem; pin from TH ch.3 + a black-box trace
-            of the stock CF-3300's page-0 state just before its **CY-set** `$C01E` call.
+      - [ ] **a2 — step 6 (the real work): page-0 MSX-DOS environment.** Designed:
+            see [`provider-oracle-scope.md`](disk/docs/provider-oracle-scope.md) §8.1
+            (documented page-0 layout pinned + the step-5→7 RAM-in-page-0 delta
+            traced). Order: (1) page RAM into page 0 (slot paging — the hang-prone
+            part, validate in isolation); (2) lay the page-0 env per the CP/M-style
+            layout (`$0000` warm-boot, `$0005`→a trampoline to our existing
+            **`bdos_entry`**, `$0006-7` TPA top, `$0038` int, `$0080` DMA); (3) the
+            two-phase `$C01E`. **Reuse:** `bdos_entry` (oracle-validated MSX-DOS-1 FCB
+            BDOS) IS the resident BDOS — don't rebuild it. **Open Q (resolve by
+            experiment, not by tracing the MS boot code):** does the boot code load
+            MSXDOS.SYS via `$0005` BDOS or via direct PHYDIO sector reads?
       - [ ] **a3 — step 7 + validate.** `CALL $C01E` CY-set; oracle: Tier-1 reaches
             `MSX-DOS version 1.03 … A>` screen-identical to the stock CF-3300.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)

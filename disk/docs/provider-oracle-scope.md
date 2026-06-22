@@ -276,3 +276,50 @@ So the first attempt implemented steps 4–5 only. **The real work in 2-Tier2-a 
 
 Net: Tier-2 is bigger than first scoped — the boot bridge is the easy 20%; the page-0
 MSX-DOS environment (step 6) is the 80%. Still GO, but it's a multi-slice subsystem.
+
+## 8.1 Step 6 design (slice 2-Tier2-a2) — the page-0 MSX-DOS environment
+
+Pinned 2026-06-22 from MSX2 TH ch.3 (the documented page-0 layout — allowed source) and a
+black-box trace of the stock CF-3300 at *both* `$C01E` calls. **Clean-room boundary:** the
+environment is built from the DOCUMENTED CP/M-style layout + our own `bdos_entry`; we do
+NOT read or replicate the CF-3300's resident kernel code (the `$DDxx` bytes its page-0
+vectors point at are reference disk-ROM code — off-limits). The trace is used only to
+confirm the *shape* (which page-0 cells change, RAM-vs-ROM), never to copy code.
+
+**What the trace showed (the step-5 → step-7 delta):**
+- **Step 5 entry** (CY reset): `$0000 = F3 C3 D7 02…` — **ROM BIOS is in page 0**.
+- **Step 7 entry** (CY set): `$0000 = 00 00 …` — **RAM is in page 0** (zeroed), with the
+  interrupt vector `$0038 = C3 AE DD` (`JP $DDAE`) and `$000C = JP $DDF3` pointing at a
+  resident kernel in high RAM. `$0005` (BDOS) is **still 0** at step-7 entry.
+- ⇒ The one structural fact we take: **step 6 switches RAM into page 0 and installs the
+  interrupt + resident-entry vectors before the CY-set call.** (We build the *contents*
+  from docs, not from `$DDxx`.)
+
+**The documented target page-0 environment (TH ch.3 / standard MSX-DOS = CP/M-style):**
+- `$0000` warm-boot entry; `$0005` BDOS entry (CALL with the function in C);
+  `$0006-0007` = top of TPA; `$0038` maskable-interrupt vector;
+  `$005C`/`$006C` default FCBs; `$0080` default DMA (128-byte disk transfer area).
+
+**The big reuse insight:** zerobas-disk already ships `bdos_entry` — a CP/M-compatible FCB
+BDOS (Open/Read/SetDTA/…), oracle-validated byte-identical to MSX-DOS 1 (`disk_probe_bdos.py`).
+That is exactly the resident BDOS the boot needs. So step 6 should wire **`$0005` → a page-0
+trampoline that inter-slot-CALLs our `bdos_entry`** (slot from the INIT scan, address from
+the published `SYSTEM $F37D` vector), rather than build a new BDOS.
+
+**Implementation prerequisites (a2), in order:**
+1. **RAM into page 0.** Page 0 is currently the main-BIOS ROM; the boot needs RAM there.
+   Pin the slot/subslot paging that puts RAM in page 0 for the Tier-1 config (TH §2 slot
+   model; `ENASLT`/`PUT_P0`/the slot registers). This is the fiddly, hang-prone part —
+   validate it in isolation (switch RAM in, read `$0000` back as RAM, switch BIOS back).
+2. **Lay the page-0 environment** per the documented layout: `$0000` warm-boot stub,
+   `$0005` → `bdos_entry` trampoline, `$0006-7` = TPA top, `$0038` int vector, `$0080` DMA.
+3. **Two-phase `$C01E`:** step 5 `CALL $C01E` CY-reset (already proven), then build the
+   env, then step 7 `CALL $C01E` CY-set.
+
+**Open question to resolve first (by experiment, clean-room):** exactly how the boot-sector
+code loads `MSXDOS.SYS` once entered with CY set — via `$0005` BDOS Open/Read (so wiring
+`$0005 → bdos_entry` suffices), or via direct `PHYDIO`/`DSKIO` sector reads (so the env need
+only page RAM in + set vectors). The trace shows `$0005 = 0` at step-7 *entry*, so either the
+boot code sets `$0005` itself or it reads sectors directly. Resolve by building the minimal
+env + wiring `$0005 → bdos_entry` and observing whether `MSXDOS.SYS` lands at `$0100` — do
+**not** trace into the boot-sector code to find out (it is Microsoft MSX-DOS code).
