@@ -199,7 +199,7 @@ oracle-confirmed); this phase is the **interpreter-side Disk BASIC integration**
 protocol isn't pinned, so step 0 is a research spike; only after it do we pick the
 architecture and write code. Each step is independently oracle-validatable.
 
-### Step 0 — file-channel protocol spike (the gate; do this first) — IN PROGRESS
+### Step 0 — file-channel protocol spike (the gate) — ✅ DONE
 - [ ] **Black-box the DEVICE/STATEMENT expansion + file-channel protocol** on the
       real **National CF-3300** Disk BASIC (boots to Disk BASIC; ROMs in
       `~/.openMSX/share/systemroms/`). The Phase-1.5 spike deliberately skipped this:
@@ -215,22 +215,46 @@ architecture and write code. Each step is independently oracle-validatable.
         2. **File-channel I/O** — `OPEN`→`PRINT#`/`INPUT#`→`CLOSE`: the register-level
            open-by-name, sequential read/write, and close calls; the FCB / channel
            buffer structures; how bytes flow.
-      Deliverable: a pinned **`disk/docs/file-channel-protocol.md`** (same shape as the
-      1.5 `expansion-protocol.md`) + observation probes, and a **GO/NO-GO plus a
-      delegate-vs-extend recommendation** the findings imply.
+- [x] **DONE** — [`disk/docs/file-channel-protocol.md`](disk/docs/file-channel-protocol.md)
+      + probe `diskbasic_probe_filechannel.py`. Headline: the **file I/O verbs move
+      bytes through the SAME standard DSKIO+FAT12+FCB substrate as the loader path**
+      (not a separate channel protocol); they are built-in tokens (STATEMENT/DEVICE
+      expansion never fires). Result: **GO, and EXTEND** (layer the verbs on the
+      existing `basic/fat.asm` engine; keep `fat.asm`, don't retire it).
 
-### Step 1 — settle the architectural fork (gated on the spike)
-**Delegate** to the in-slot Disk BASIC (retire the basic-side
-[`basic/fat.asm`](basic/fat.asm), the loader-owned FAT) **vs extend** our own FAT
-with the verb surface layered on top. Delegation is the MSX-faithful end state but
-depends on whatever the spike finds; extension reuses proven, oracle-confirmed code
-but keeps the duplicate FAT. Decide from the spike's findings, before writing code.
+### Step 0b — `CALL`-dispatched commands spike (NOT yet observed)
+- [ ] **Observe the `CALL`/STATEMENT-expansion seam** (`$4004`). The file verbs are
+      tokens, but `CALL FORMAT`/`_FORMAT` and `CALL SYSTEM`/`_SYSTEM` *do* dispatch
+      through the STATEMENT expansion — the spike skipped them. Trace `CALL FORMAT`
+      on CF-3300 (does `$4004` fire? `PROCNM` contract? lands in `CHOICE $4019` /
+      `DSKFMT $401C`?) to pin that seam and make a separate EXTEND-vs-DELEGATE call
+      for `CALL` commands. See file-channel-protocol.md §1a.
 
-### Step 2 — implement the verb surface (after the fork is chosen)
-- [ ] **Full Disk BASIC verb surface** — `FILES`/`OPEN`/`CLOSE`/`PRINT#`/`INPUT#`/
-      `GET`/`PUT`/`KILL`/`NAME`/`EOF`/`LOF`/`LOC`/`MAXFILES` (the random-access file
-      layer folds in here). Build smallest end-to-end path first (likely `FILES`, then
-      `OPEN`+`INPUT#`) and grow, each verb oracle-validated against CF-3300 Disk BASIC.
+### Step 1 — architectural fork: RESOLVED (file verbs = EXTEND)
+For the **file I/O verbs** the spike resolves it: **EXTEND** over the existing
+`basic/fat.asm` engine; `fat.asm` is kept, not retired. (For `CALL`-dispatched
+commands the documented expansion seam exists — fork still open, gated on Step 0b.)
+
+### Step 2 — implement the verb surface (each oracle-validated vs CF-3300)
+Full DOS1-class Disk BASIC vocabulary, grouped; **[in]** = recommended Phase-2,
+**[?]** = scope to confirm, **[out]** = deferred. Build smallest end-to-end path
+first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
+- [ ] **Sequential file I/O [in]** — `OPEN`, `CLOSE`, `PRINT#`, `PRINT# USING`,
+      `INPUT#`, `LINE INPUT#`, `INPUT$(n,#f)`. The spike-confirmed core.
+- [ ] **File/dir management [in]** — `FILES`, `LFILES`, `KILL`, `NAME…AS…`, `MERGE`
+      (the `LOAD`/`SAVE`/`BLOAD`/`BSAVE`/`RUN"f"` already exist from Phase 1).
+- [ ] **File-position / info functions [in]** — `EOF`, `LOF`, `LOC`, `DSKF` (free
+      clusters), `VARPTR(#n)`.
+- [ ] **Config [in]** — `MAXFILES` (sizes the channel table).
+- [ ] **Direct sector access [in]** — `DSKI$` (read sector, fn) / `DSKO$` (write
+      sector, stmt; `HDSKO $FDEF` hook) — thin wrappers over DSKIO.
+- [ ] **Random-access files [?]** — `FIELD`, `GET`, `PUT`, `LSET`, `RSET` +
+      conversion fns `CVI`/`CVS`/`CVD`, `MKI$`/`MKS$`/`MKD$`. A heavier, self-contained
+      record-file sub-feature; candidate for its own sub-phase. Confirm scope.
+- [ ] **`CALL FORMAT` [?]** — disk format via the Step-0b seam (`CHOICE`/`DSKFMT`).
+      Confirm scope.
+- `CALL SYSTEM` **[out]** — exit to MSX-DOS = the DOS-boot path (Tier-2 sub-track).
+- `CALL CHDRV` etc. **[out]** — Disk BASIC v2/v3 additions, beyond DOS1-class 1.0.
 
 ### Carried oracle — Tier-2 provider (DOS1; a distinct DOS-boot sub-track)
 - [ ] **Tier-2 provider oracle** *(from Phase 1.5)* — a real **MSX-DOS 1** filesystem

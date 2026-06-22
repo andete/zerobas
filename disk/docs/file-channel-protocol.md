@@ -31,11 +31,13 @@ exactly like `BLOAD"A:"`/`SAVE"A:"` (expansion-protocol.md §3).
 
 Consequences:
 
-* The verbs do **not** use the BASIC STATEMENT (`$4004`) or DEVICE (`$4006`)
-  expansion. `PROCNM ($FD89, 16B)` and `DEVICE ($FD99)` stay **all-zero** across
-  the whole sequence (observed; same areas the 1.5 spike found zero for the
-  loader). The DEVICE header word is `$0000`. They are built-in interpreter
-  tokens whose handlers call DSKIO directly cross-slot.
+* The **file I/O verbs** do **not** use the BASIC STATEMENT (`$4004`) or DEVICE
+  (`$4006`) expansion. `PROCNM ($FD89, 16B)` and `DEVICE ($FD99)` stay **all-zero**
+  across the whole sequence (observed; same areas the 1.5 spike found zero for the
+  loader). The DEVICE header word is `$0000`. They are built-in interpreter tokens
+  whose handlers call DSKIO directly cross-slot. **Scope caveat:** this is about the
+  file I/O verbs only — the `CALL`-dispatched commands (`CALL FORMAT`, `CALL SYSTEM`)
+  *do* use the STATEMENT expansion seam and were **not** observed here; see §1a.
 * The substrate is **exactly what zerobas already owns**: `basic/fat.asm`
   (`fat_mount`/`fat_find`/`fat_read_file_sector` + the `fat_alloc_cluster`/
   `fat_write_fat_entry`/`fat_dir_*` write-back layer), all oracle-confirmed in
@@ -60,6 +62,27 @@ handlers and calls its DSKIO. **This does not constrain zerobas:** zerobas alrea
 runs its own statement dispatch (`ex_print`, `ex_bload`, … in `basic/interp.asm`);
 it would add `ex_open`/`ex_printhash`/`ex_inputhash`/`ex_close`/`ex_files` that call
 its own FAT engine. No cross-slot expansion hosting is required.
+
+### 1a. CALL-dispatched commands (`CALL FORMAT` / `CALL SYSTEM`) — NOT yet observed
+
+A correction to an earlier over-broad claim: the STATEMENT-expansion seam (`$4004`,
+TH §5.7) is **not** dead — it is exactly how the `CALL <name>` / `_<name>` extended
+commands are dispatched. In Disk BASIC the two are:
+
+* **`CALL FORMAT` / `_FORMAT`** — format a disk. Routes (per TH) through the
+  STATEMENT handler to the disk ROM's `CHOICE ($4019)` + `DSKFMT ($401C)` entries
+  (and the `HFORM ($FFAC)` hook). zerobas-disk already has stub `CHOICE`/`DSKFMT`
+  entries, so this connects to existing code.
+* **`CALL SYSTEM` / `_SYSTEM`** — exit BASIC to MSX-DOS. **Out of scope** — it is
+  the DOS-boot path already deferred (needs `MSXDOS.SYS`; see
+  [`provider-oracle-scope.md`](provider-oracle-scope.md) §6).
+
+This spike did **not** trace `CALL FORMAT`. Whether it is in the Phase-2 surface,
+and whether the STATEMENT-expansion dispatch is observed/replicated, is an open
+**Step-0b** item. The EXTEND finding for the file I/O verbs (below) is unaffected —
+they are tokens, not `CALL` statements — but for `CALL`-style commands the documented
+expansion seam is the one place a clean delegation path genuinely exists, so the
+EXTEND-vs-DELEGATE call should be made separately for them.
 
 ---
 
@@ -151,15 +174,19 @@ No DSKIO/FAT changes; the engine is reused as-is.
   zerobas statement handlers over the existing `basic/fat.asm` engine + a channel
   table. Reuses proven, oracle-confirmed code; self-contained; no dependency on a
   foreign ROM's internals.
-* **DELEGATE** (rejected): hosting the in-slot disk ROM's Disk BASIC extension
-  would mean driving an opaque, ROM-private cross-slot dispatch — and §0/§1 show
-  the verbs do **not** even use the documented STATEMENT/DEVICE expansion, so there
-  is no clean standard seam to delegate *through*. It buys nothing the EXTEND path
-  lacks and adds a hard dependency on undocumented internals.
+* **DELEGATE** (rejected *for the file I/O verbs*): hosting the in-slot disk ROM's
+  Disk BASIC extension would mean driving an opaque, ROM-private cross-slot dispatch.
+  For the file I/O verbs specifically (§0/§1) there is nothing to delegate *through* —
+  they are built-in tokens that don't use the documented STATEMENT/DEVICE expansion —
+  so delegation buys nothing the EXTEND path lacks and adds a hard dependency on
+  undocumented internals. (Note: this verdict is scoped to the file I/O verbs. The
+  `CALL`-dispatched commands *do* use the documented expansion seam, §1a, so their
+  EXTEND-vs-DELEGATE call is separate and still open.)
 
-This **revises** the Phase-2 plan's open fork (TODO.md "Step 1"): the spike
-resolves it in favour of EXTEND. The basic-side `fat.asm` is **kept** (not retired)
-and the verb surface is layered on top.
+This **revises** the Phase-2 plan's open fork (TODO.md "Step 1") *for the file I/O
+verbs*: the spike resolves it in favour of EXTEND. The basic-side `fat.asm` is
+**kept** (not retired) and the verb surface is layered on top. The `CALL FORMAT`
+seam (§1a) remains an open Step-0b question.
 
 Caveat for Step 2 (not blockers): the exact per-channel FCB offsets, `MAXFILES`
 default/sizing, and `PRINT#`/`INPUT#` formatting edge cases are implementation
