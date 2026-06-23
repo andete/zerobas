@@ -70,7 +70,7 @@ be taken from it*; nothing beyond that scope is sourced.
 | **MSX2 Technical Handbook** (Konamiman's public English translation) | documented BIOS / BDOS / hardware *interfaces*: entry addresses, calling conventions, work-area layouts. Never any reproduced ROM code. |
 | **MSX Assembly Page** (`map.grauw.nl`) | the *standard* BIOS-call / system-variable interface it consolidates; corroborate against the TH for anything that looks implementation-internal. |
 | **Public MSX-BASIC language & file-format reference** | language syntax / semantics and on-disk / on-tape file-format layouts (the user-visible contract). Never interpreter internals. |
-| **Hardware datasheets** (TMS9918, AY-3-8910, i8255, WD2793) | full register / timing / command specs. Gold standard, no restriction. |
+| **Hardware datasheets** (TMS9918, AY-3-8910, i8255, MB8877A — the CF-3300 FDC — and the WD179x/WD2793-compatible reference) | full register / timing / command specs. Gold standard, no restriction. |
 | **Open standards** (Microsoft FAT spec, ECMA-107) | FAT12 and 3.5" disk-geometry structures. |
 | **National CF-3300 schematic** (open hardware) | FDC wiring / memory-mapped register window — hardware facts only (pin the exact document; see disk/PROVENANCE.md). |
 | **C-BIOS** (BSD 2-clause) | system-variable *addresses* and standard-interface *facts* only (it is itself a clean-room BIOS). Do not copy its code/expression without honouring BSD-2. |

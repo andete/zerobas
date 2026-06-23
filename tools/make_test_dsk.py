@@ -25,10 +25,9 @@ hop (after record 8), and cluster-chain EOF (after record 16). HI.TXT is a small
 second entry so the directory search has to pick the right one.
 
 PROG.BIN is a REAL BSAVE binary for the disk BLOAD execute path. The on-disk
-BSAVE binary-file format (MSX-BASIC file formats — MSX Wiki / MSX Resource
-Center, an allowed public language reference) is a 7-byte header followed by the
-raw machine code, with NO 10x$D0 block and NO filename in the body (the name is
-the directory entry):
+BSAVE binary-file format (public MSX-BASIC file-format reference) is a 7-byte
+header followed by the raw machine code, with NO 10x$D0 block and NO filename in
+the body (the name is the directory entry):
 
     byte 0      : $FE                 binary-file id
     bytes 1-2   : start address (LE)  where the data loads
@@ -251,8 +250,8 @@ def make_bsave_file(start: int, end: int, exec_: int, body: bytes) -> bytes:
 # leading marker byte $FF (BASIC_DISK_ID) followed by the in-memory program image
 # — the same line-link chain do_tape_prog / disk_prog_load read:
 #     [link:2 LE][lineno:2 LE][tokens...][00]  per line, ending in a $0000 link.
-# Source: MSX-BASIC file formats (MSX Wiki / MSX Resource Center, an allowed
-# public language reference — the same class the $FE BSAVE marker came from).
+# Source: public MSX-BASIC file-format reference (the same class the $FE BSAVE
+# marker came from).
 # See basic/PROVENANCE.md §disk LOAD and basic/sysvars.inc BASIC_DISK_ID.
 #
 # This is a TEST FIXTURE, so its tokenised line body is built from this project's

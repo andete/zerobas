@@ -8,10 +8,16 @@
 ; MSX1. See README.md and disk/PROVENANCE.md.
 ;
 ; CLEAN-ROOM DISCIPLINE: every constant, address, and algorithm here traces to
-; an allowed source (MSX2 Technical Handbook, WD2793 datasheet, Microsoft FAT
+; an allowed source (MSX2 Technical Handbook, the FDC datasheet, Microsoft FAT
 ; spec, ECMA-107, openMSX/C-BIOS sources, or this project's own black-box
 ; oracle observations). Nothing is derived from any disk-ROM or MSX-BASIC
 ; disassembly. See disk/PROVENANCE.md.
+;
+; FDC NOTE: the CF-3300's actual FDC is the Fujitsu MB8877A; it is WD179x-family
+; compatible, so the WD2793 datasheet is a faithful compatible-family reference
+; for the identical command/status register interface (oracle-validated
+; byte-identical to the real CF-3300). openMSX models this FDC as a WD2793.
+; "WD2793" below refers to that compatible interface, not a different chip.
 ;
 ; Runtime model: this is an "AB" disk-interface ROM. At boot the BIOS finds the
 ; header at $4000 and calls INIT, which (1) installs the standard HPHYD ($FFA7)

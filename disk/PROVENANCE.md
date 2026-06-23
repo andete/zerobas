@@ -16,8 +16,14 @@ and only that*):
 - **MSX2 TH** — MSX2 Technical Handbook (Konamiman's English translation, public);
   documented disk-ROM / BDOS *interfaces* (entry addresses, calling conventions,
   work-area layouts) — never reproduced ROM code.
-- **WD2793 DS** — WD2793 FDC datasheet (Western Digital, public); full register /
-  command / timing spec.
+- **MB8877A DS** — Fujitsu MB8877A FDC datasheet (public); the CF-3300's **actual**
+  FDC and the **primary** for the FDC register / command / timing interface.
+- **WD2793 DS** — WD2793 FDC datasheet (Western Digital, public); the WD179x-family
+  **compatible-family** reference the driver was first written against. The MB8877A
+  is WD179x-compatible, so its command/status register interface is **identical** —
+  every "WD2793 DS" citation below applies verbatim to the MB8877A (and is
+  oracle-validated byte-identical to the real CF-3300). openMSX also models the
+  CF-3300 FDC under its `<WD2793>` device name.
 - **CF-3300 schematic** — open hardware schematic for the National CF-3300; FDC
   wiring / register-window *hardware facts* only. (Exact document still to be
   pinned — see FDC section; until pinned, every register address is cross-checked
@@ -258,9 +264,15 @@ No quarantined items.
 
 ---
 
-## FDC driver — WD2793 + CF-3300 register map
+## FDC driver — MB8877A / WD2793 + CF-3300 register map
 
-### WD2793 register layout (from datasheet)
+> The CF-3300's actual FDC is the Fujitsu **MB8877A**; it is WD179x-family
+> compatible, so the WD2793 datasheet ("WD2793 DS") below is a faithful
+> compatible-family reference for the identical command/status interface
+> (oracle-validated byte-identical to the real CF-3300). openMSX models this FDC
+> as a `<WD2793>` device.
+
+### WD2793 / MB8877A register layout (from datasheet)
 
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
