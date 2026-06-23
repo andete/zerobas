@@ -26,13 +26,34 @@
 
 name: ci
 
+# Manual-trigger only while the repo is PRIVATE: Actions minutes are metered on
+# private repos (and the Windows runner bills at 2x), so CI runs only when you
+# deliberately dispatch it to verify a target -- never automatically on push/PR.
+#
+# Run it from the Actions tab ("Run workflow"), picking the target, or:
+#     gh workflow run ci.yml -f target=windows
+# (the workflow must be on the default branch for the trigger to appear; you can
+# then choose any branch as the ref).
+#
+# WHEN THE REPO GOES PUBLIC, standard-runner minutes become free -- uncomment the
+# push/pull_request block below to get automatic CI on every change.
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Which target(s) to build + test"
+        type: choice
+        default: both
+        options: [both, linux, windows]
+  # push:
+  #   branches: [main]
+  # pull_request:
 
 jobs:
   linux:
+    # On manual dispatch, honour the target selection; on any auto-trigger
+    # (push/PR, once enabled), always run.
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.target == 'both' || inputs.target == 'linux' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,6 +83,7 @@ jobs:
         run: make unit-test
 
   windows:
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.target == 'both' || inputs.target == 'windows' }}
     runs-on: windows-latest
     defaults:
       run:

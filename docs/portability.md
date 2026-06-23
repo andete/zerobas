@@ -58,6 +58,15 @@ The original blockers were hardcoded macOS paths and a `/bin/sh` dependency.
 
 ## CI
 
+**While the repo is private, CI is manual-trigger only** (`workflow_dispatch`) — it
+never runs automatically on push/PR, because private-repo Actions minutes are metered
+and the Windows runner bills at 2×. You dispatch it when you actually want to verify a
+target (Actions tab → *Run workflow*, or `gh workflow run ci.yml -f target=windows`),
+picking `both`, `linux`, or `windows`. **When the repo goes public**, standard-runner
+minutes become free — uncomment the `push` / `pull_request` block in the workflow to
+get automatic CI on every change (the job `if:` conditions already fall through to
+"always run" on those events).
+
 [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml) has two jobs, each of
 which builds the ROMs, smoke-imports the host tooling, and runs `make unit-test`:
 
