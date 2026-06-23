@@ -709,6 +709,39 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
 - [ ] **Editor / program management** — full `LIST`, `DELETE`, `RENUM`, `AUTO`,
       `TRON`/`TROFF`, `SWAP`, `WAIT`, `ERASE`, `FRE`, full `CLEAR` semantics
 
+## Beyond — post-MSX1 axes (out of charter, far future)
+
+Two distinct axes past MSX1, captured so the boundaries aren't lost. **Neither is
+scheduled**; both require a charter raise. They differ in *provenance*, which is the
+whole point of listing them apart.
+
+**A. Later generations — a *clone* axis (has oracles).** MSX2, MSX2+, Turbo-R.
+Official ASCII BASIC shipped for these and real machines exist, so this is **today's
+method with more surface**: clone-and-validate against an oracle. New ground would be
+the V9938/V9958 `SCREEN 4–12` modes + blitter, MSX-DOS 2, R800 timing, and the extra
+BASIC verbs each generation added. Methodologically identical to current work — just
+bigger.
+
+**B. Extension-cartridge hardware — a *greenfield* axis (no oracle).** Additive,
+**own-design** BASIC support for cartridge hardware that **never had official BASIC**.
+This is the project's only own-authorship corner: no reference implementation to
+clone, no oracle to match — correctness is defined by our own spec + the hardware
+documentation, and the rule is *additive-compatible* (new verbs / `SCREEN` numbers
+above the built-in range; standard programs untouched). Provenance varies **per chip**:
+
+- **Yamaha V9990 (E-VDP III)** — GFX9000 / Power Graph / Video9000 video cartridge.
+  **Clean**: an official Yamaha datasheet exists (A; see `docs/allowed-sources.md`,
+  gen `ext`). Not V99x8-register-compatible — its own P1/P2/Bx modes + I/O ports.
+- **Konami SCC / SCC+** (K051649 / K052539) — wave-table sound in Konami carts
+  (Snatcher, Metal Gear 2, Nemesis…). **Caveat**: *no published manufacturer
+  datasheet* — the register interface is known only through community
+  reverse-engineering. So support would need our **own black-box characterisation**
+  of the chip (the oracle discipline applied to silicon), with community register
+  maps as **C-tier corroboration only**, never an authoritative spec.
+
+(Third-party BASIC extensions exist for both — proprietary, **not** a source; design
+our own from the hardware docs / our own characterisation.)
+
 ## Done — storage transports
 
 ### Disk (`disk/` → `disk.rom`, slot 3-1) — complete, read **and** write
