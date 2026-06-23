@@ -1595,3 +1595,30 @@ leaves in `BC` (almost certainly the byte/record count, `$0980`) — and make ou
 This is a concrete instance of the "captured contract may be incomplete" risk: our `bdos_rdblk` returns
 `HL`=records but not the `BC` the kernel reads.** Then re-trap: the `$024A` branch should take the stock
 path and the `$027C` derail should vanish.
+
+**§8.33 BATCHED BDOS-contract audit + the `$027C` derail CLEARED via a one-byte work-area flag
+`$F340` (commit pending).** Per the "characterise the whole return surface at once" plan, new probe
+`disk_probe_dosboot_bdos_contract.py` traps every `$F37D` (BDOS) call on stock vs Tier-1 and records
+function + entry + EXIT registers (exit captured via a one-shot bp at the return address read off the
+stack). The boot makes the same three calls on both — Open / SetDTA / RdBlk — and the exit diff showed
+**RdBlk returns the record count in BOTH `HL` and `BC`** (stock `$0980`); ours set `HL` but left
+`BC=$0000`. Fixed `bdos_rdblk` to also return `BC=HL`. (Open/SetDTA exit diffs are stock-kernel-internal
+pointers `$56xx`/`$EC75` we neither can nor should reproduce.)
+
+**But BC was NOT the `$027C` unblock.** With `BC=$0980` confirmed at MSXDOS.SYS entry the boot STILL
+derailed. PC-tracing from `$0200` (identical code both machines) localised the wrong branch to `$024A`:
+`$0246 LD A,($F340) / $0249 AND A / $024A CALL Z,$0317`. **The cell is `$F340`** (one byte below RAMAD0):
+stock `$00` (→ `CALL Z` taken → normal init), ours `$FF` (uninitialised → not taken → derail into the
+`$027C` loop). The disk ROM clears `$F340`; we never did. Fixed: `set_ramad` now `xor a / ld ($F340),a`
+after its gate. bdos_entry `$4480`→`$4484` (init probe bumped). Regression-green (init/files/dskio + unit
+18/18).
+
+**RESULT — the `$027C` derail is GONE** (`hits@027C` 1.9M → **0**) and the boot advances all the way to
+**actual FDC-level disk access**: it now stalls in OUR FDC driver at `$43EC` — a Restore-and-wait-BUSY
+loop (`LD A,$0C / LD ($7FB8),A / … / $43EC LD A,($7FB8) / BIT 0,A / JR NZ`) polling FDC_STATUS (`$7FB8`)
+bit 0 (BUSY), which never clears (75126 hits). Big jump forward: from "Insert DOS disk" (§8.30) → full
+MSXDOS.SYS init → real disk I/O. **NEXT: determine how `$43EC` is reached** (is it our FDC routine invoked
+legitimately by the kernel's first directory read — note DSKIO `$4010` count is still 0, so not via the
+standard entry — or a fresh derail into our ROM?) and why the FDC Restore never completes in the DOS
+(RAM-in-page-0) context. Probe family: `disk_probe_dosboot_bdos_contract.py` (§8.33) + the inline
+`$0200`/`$024A`/`$43EC` traces.

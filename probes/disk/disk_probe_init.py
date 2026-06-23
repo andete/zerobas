@@ -67,7 +67,7 @@ OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bi
 
 # Values the zerobas-disk INIT installs (from disk/disk.asm's pasmo symbols).
 SYSTEM_ADDR = 0xF37D
-EXP_BDOS = 0x4480            # SYSTEM -> bdos_entry (moved $421E -> $429F when the
+EXP_BDOS = 0x4484            # SYSTEM -> bdos_entry (moved $421E -> $429F when the
                             # Phase-1.5 provider HPHYD-hook install grew INIT, then
                             # $429F -> $42F6 with the Tier-2 a1/a2 boot bridge +
                             # page0 paging, then $42F6 -> $439F with the a2 step-6

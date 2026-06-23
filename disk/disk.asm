@@ -54,6 +54,7 @@ SYSTEM          equ     $F37D   ; SYSTEM sysvar: BDOS entry-point word
 ; page 0). MSX2 TH work area; the disk-ROM-INIT responsibility is confirmed by a
 ; black-box differential (provider-oracle-scope.md §8.8/§8.16). EXPTBL flags which
 ; primary slots are expanded. (EXPTBL also in basic/sysvars.inc — same address.)
+DOS_F340        equ     $F340   ; disk work-area flag the kernel reads at init (§8.33); $00 = ok
 RAMAD0          equ     $F341   ; RAM-slot id per page ($F341-$F344), MSX2 TH work area
 EXPTBL          equ     $FCC1   ; expanded-slot flags, 1 byte/primary, bit 7 = expanded
 
@@ -545,6 +546,15 @@ set_ramad:
                 ld      a, (RAMAD0)
                 inc     a                   ; $FF -> $00 (Z): RAMAD uninitialised?
                 ret     nz                  ; host already set RAMAD -> leave it alone
+                ; --- clear the disk work-area flag $F340 (§8.33) -------------------
+                ; MSXDOS.SYS init reads $F340 right after $4030 ($0246:
+                ; LD A,($F340) / AND A / CALL Z,$0317): $00 = take the normal init
+                ; path. The disk ROM clears it; ours left it uninitialised ($FF) ->
+                ; AND A non-zero -> the CALL Z is skipped -> MSXDOS.SYS derails into a
+                ; loop ($027C). Clear it here (after the gate, so the $FF gate check
+                ; above is unaffected). Own work-area init; black-box (§8.33).
+                xor     a
+                ld      (DOS_F340), a
                 ; --- derive the page-3 RAM slot id (F000SSPP) ---
                 in      a, ($A8)
                 rlca
@@ -1713,10 +1723,14 @@ rdb_recdone:
 rdb_ok:
                 xor     a                   ; A = $00 all requested records read
                 ld      hl, (RDBLK_DONE)
-                ret
+                ld      b, h                ; BC = HL = records read (§8.33): the genuine
+                ld      c, l                ; BDOS $27 returns the count in BOTH HL and BC,
+                ret                         ; and MSXDOS.SYS init reads BC (§8.32 $024A branch)
 rdb_eof:
                 ld      a, $01              ; A = $01 EOF before all requested
                 ld      hl, (RDBLK_DONE)    ; HL = records actually read
+                ld      b, h                ; BC = HL = records read (§8.33; see rdb_ok)
+                ld      c, l
                 ret
 
 ; rdblk_getbyte — deliver the next byte of the open file in A, refilling
