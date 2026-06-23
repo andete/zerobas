@@ -49,6 +49,13 @@
 ; --- System addresses (disk/PROVENANCE.md §INIT / §BDOS) -------------------
 ; Sources: MSX2 Technical Handbook, work area.
 SYSTEM          equ     $F37D   ; SYSTEM sysvar: BDOS entry-point word
+; RAMAD0-3: the RAM slot address for each of the four pages (the standard MSX
+; work-area cells the disk ROM's INIT populates so MSX-DOS can re-page RAM into
+; page 0). MSX2 TH work area; the disk-ROM-INIT responsibility is confirmed by a
+; black-box differential (provider-oracle-scope.md §8.8/§8.16). EXPTBL flags which
+; primary slots are expanded. (EXPTBL also in basic/sysvars.inc — same address.)
+RAMAD0          equ     $F341   ; RAM-slot id per page ($F341-$F344), MSX2 TH work area
+EXPTBL          equ     $FCC1   ; expanded-slot flags, 1 byte/primary, bit 7 = expanded
 
 ; --- Standard hook + entry addresses (disk/PROVENANCE.md §INIT) -------------
 ; HPHYD is the standard PHYDIO hook a disk ROM installs so a host's physical disk
@@ -332,6 +339,14 @@ init:
                 ; SeqRead before any $1A behaves as MSX-DOS does.
                 ld      hl, DTA_DEFAULT
                 ld      (BDOS_DTA), hl
+                ; --- populate RAMAD0-3 so MSX-DOS can re-page RAM into page 0 ---
+                ; The disk ROM's INIT owns the per-page RAM-slot table (§8.8/§8.16):
+                ; MSXDOS.SYS's resident init reads RAMAD0-3 ($F341-4) to map RAM into
+                ; page 0 (where the BIOS ROM was), and without it pages an empty slot
+                ; ($FF) and wedges at $0038. set_ramad fills RAMAD only when the host
+                ; left it uninitialised ($FF), so the C-BIOS hosts (which set their own
+                ; RAMAD) are untouched. (provider-oracle-scope.md §8.16)
+                call    set_ramad
                 ; fall into the DOS-boot bridge (TH ch.3); it returns to the BIOS
                 ; boot scan, falling through to BASIC for a non-system disk.
                 ; --- intentional fall-through to boot_disk -------------------
@@ -457,6 +472,58 @@ page0_ram_out:
                 ld      ($FFFF), a
                 ld      a, (BOOT_SV_A8)
                 out     ($A8), a
+                ret
+
+; set_ramad — populate RAMAD0-3 ($F341-4) with the host's RAM-slot id, so MSX-DOS
+; can re-page RAM into page 0. The real CF-3300 main BIOS sets only EXPTBL and
+; leaves RAMAD to the disk ROM (black-box differential, §8.8/§8.16); MSXDOS.SYS's
+; resident init then reads RAMAD0-3 (84 reads observed on the stock, §8.16) to map
+; RAM where the page-0 BIOS ROM was. Without it MSX-DOS pages an empty slot ($FF)
+; and the CPU wedges at $0038 ($FF = RST 38h self-loop).
+;
+; HOST-ADAPTIVE + REGRESSION-SAFE. RAMAD is filled ONLY when the host left it
+; uninitialised ($FF) -- the real-CF-3300 case where the disk-ROM job was skipped.
+; The C-BIOS hosts set their own RAMAD (observed $C9..), so the $FF gate leaves them
+; exactly as they were (and C-BIOS never boots DOS, so nothing reads RAMAD there).
+;
+; The value is the RAM slot id in standard F000SSPP form, derived from PAGE 3 (always
+; RAM: the stack lives there) the same host-adaptive way page0_ram_in derives its
+; swap slot -- primary from $A8 bits 15-14, and, if that primary is expanded (EXPTBL
+; bit 7), the subslot from $FFFF. All four pages share this slot on the single-RAM-
+; slot machines we target (CF-3300: slot 3-0 = $83, matching the stock's RAMAD0).
+; Sources: MSX2 TH work area (RAMAD0-3, EXPTBL) + MSX2 TH ch.2 slot handling. No
+; disk-ROM/MSX-DOS code is read; the disk-ROM-INIT responsibility + the read are
+; black-box oracle observations (§8.8/§8.16).
+set_ramad:
+                ld      a, (RAMAD0)
+                inc     a                   ; $FF -> $00 (Z): RAMAD uninitialised?
+                ret     nz                  ; host already set RAMAD -> leave it alone
+                ; --- derive the page-3 RAM slot id (F000SSPP) ---
+                in      a, ($A8)
+                rlca
+                rlca
+                and     3                   ; A = page-3 primary slot (PP)
+                ld      c, a                ; C = PP
+                ld      b, 0
+                ld      hl, EXPTBL
+                add     hl, bc              ; -> EXPTBL[PP]
+                bit     7, (hl)             ; primary expanded?
+                ld      a, c                ; not expanded: slot id = PP (flags preserved)
+                jr      z, sr_store
+                ld      a, ($FFFF)          ; expanded: fold in the page-3 subslot
+                cpl                         ; $FFFF reads inverted -> live value
+                rlca
+                rlca
+                and     3                   ; page-3 subslot (SS)
+                rlca
+                rlca                        ; SS << 2 (into bits 3-2)
+                or      c                   ; | PP
+                or      $80                 ; | expanded flag (bit 7)
+sr_store:
+                ld      (RAMAD0 + 0), a     ; page 0
+                ld      (RAMAD0 + 1), a     ; page 1
+                ld      (RAMAD0 + 2), a     ; page 2
+                ld      (RAMAD0 + 3), a     ; page 3
                 ret
 
 ; --- step 6: the page-0 MSX-DOS environment (provider-oracle-scope.md §8.4/§8.6)

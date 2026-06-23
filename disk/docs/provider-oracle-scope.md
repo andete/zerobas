@@ -929,3 +929,64 @@ page boundary, reserve `$100`); (2) lay our resident int + inter-slot vectors in
 (3) re-trap — resolve the `$0038` derail by making MSXDOS.SYS's interrupt/inter-slot path land in OUR
 handlers, and iterate. The remaining surface is a bounded resident-environment stand-up (standard
 vectors we already have), not an open-ended kernel reconstruction.
+
+## 8.16 §8.15 REFUTED — the lever is RAMAD0-3, not the work-area layout; page-0 RAM now maps
+
+§8.15's plan (lay our resident vectors at an offset *inside* the `$4030` work area) was a hypothesis,
+and characterising it first — before building — **refuted it** and found the true lever. New tool:
+`probes/disk/disk_probe_dosboot_lowstore.py` (stock oracle + `--tier1` derail differential; black-box:
+breakpoint `$4030`, RAM read/write watchpoints, register/RAM reads — no ROM/MSXDOS code read).
+
+**Two oracle findings kill the §8.15 theory.** On the genuine CF-3300, after `$4030` returns its base
+(`$DD0E`): (a) MSXDOS.SYS makes **zero writes to `$0000-$003F`** — it does not install work-area-relative
+low-storage vectors post-`$4030`; (b) the `$0038` interrupt vector holds `JP $0C3C`, a **fixed page-0
+handler, NOT inside the work area**. So the interrupt path is the standard MSX chain (`$0038` → BIOS
+KEYINT → hooks → resident `$DDxx`), and the `$DDB0` execution §8.15 saw is reached via that hook chain,
+not directly from `$0038`. The work-area *layout* is not the `$0038` lever.
+
+**The differential names the real lever.** Page-0 low storage `$0000-$003F`, stock vs the derailing
+Tier-1 boot:
+
+| | stock (boots to A>) | Tier-1 pre-fix (derails) |
+|---|---|---|
+| `$0000-$003F` | full JP vector set, `$0038→$0C3C` | **all `$FF`** |
+| settle PC / `[PC]` | running MSX-DOS | **`$0038`, `[PC]=$FF`** (= `RST 38h`) |
+| stack@SP | — | `39 00 39 00 …` (`$0039` pushed forever) |
+
+Page 0 read **all `$FF`** = an unmapped slot; the CPU executed `$FF` (`RST 38h`) at `$0038`, pushing
+`$0039` and looping. **`RAMAD0-3` (`$F341-4`) is the cause:** MSXDOS.SYS reads it **84×** after `$4030`
+to re-page RAM into page 0 (where the page-0 BIOS ROM was). The base BIOS sets only `EXPTBL`; **RAMAD is
+the disk ROM's INIT job** (§8.8), and ours never set it → MSXDOS paged an empty slot → `$FF` → wedge.
+(§8.9's "MSXDOS never reads RAMAD" was correctly scoped to the *boot-sector loader* phase; MSXDOS.SYS's
+own post-`$4030` init **does** read it — a different phase.)
+
+**Fix — `set_ramad` in INIT (`disk.asm`).** Derive the page-3 RAM-slot id (`F000SSPP`, host-adaptive,
+the same way `page0_ram_in` does: `$A8` primary, `EXPTBL` expand flag, `$FFFF` subslot) and write it to
+`RAMAD0-3`, **gated on `$FF`** so a host that already set RAMAD is untouched. Regression-safe: on the
+C-BIOS hosts RAMAD = `$C9..` (≠`$FF`) → gate skips → C-BIOS exactly unchanged (and C-BIOS never boots
+DOS, so nothing reads RAMAD there). On the real-CF-3300 Tier-1 host RAMAD = `$FF` → we fill it. Verified:
+Tier-1 RAMAD at `$4030`-return is now `83 83 83 83`, **byte-identical to the stock**. `bdos_entry` shifts
+`$43B6→$43EA` (init probe updated). Regression-green: `disk_probe_init`/`files`/`bload_disk`/`dskio` PASS.
+
+**Result — page-0 RAM now maps; MSXDOS.SYS installs its BDOS.** Re-trap (Tier-1): the `$FF`/`$0038`
+wedge is **gone**. Page 0 is RAM with MSXDOS's own low storage — `$0000 → JP $E703` (warm boot) and
+**`$0005 → JP $E106` (BDOS entry, in MSXDOS's relocated high-RAM kernel)**. MSXDOS.SYS got materially
+further: it paged RAM, relocated itself, and stood up its BDOS vector. A clear, measured advance.
+
+**New gap — an interrupt storm (the next target).** The boot now derails differently: once MSXDOS `EI`s,
+interrupts fire and reach `$0038 → JP $4191` (our `int_h`, still installed by the boot-bridge
+`lay_page0_env`; page 1 is still our disk ROM — *not* evicted, confirmed by reading live `$4191` =
+`f5 db 99 f1 fb c9` = our `int_h`). But `int_h` is a **minimal stub** (`push af / in a,($99) / pop af /
+ei / ret`); it does not service the interrupt the way the running system needs. Trace: `int_h` fires
+**25 438×** in 13 s (~1957 Hz, ~32× the 60 Hz frame rate) and the interrupted-PC sequence crawls forward
+**one byte per interrupt** (`8004,8005,…,802D`) — MSXDOS is single-stepped by a storm of un-cleared
+interrupts and never makes real progress. So our boot-bridge `int_h` (adequate under the `di` bridge) is
+**not** an adequate ISR for live MSX-DOS, which expects the full BIOS KEYINT path (frame service +
+timer + keyboard + `H.TIMI`/`H.KEYI` hooks).
+
+**Next step (next session):** stand up a proper resident interrupt path for the post-hand-off world —
+either restore/point `$0038` at the BIOS KEYINT (the stock's `$0C3C`-equivalent) or provide a resident
+ISR that fully services the frame interrupt and chains the standard hooks, then re-trap. This is the
+"resident environment" work §8.15 anticipated, now correctly aimed at the **interrupt service path**
+(not a work-area offset). Bounded and standard-MSX-documented (MSX2 TH interrupt handling), not kernel
+reconstruction. RAMAD (this §8.16) is banked as a real, regression-safe advance regardless.

@@ -560,9 +560,21 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             **Oracle built + first contract captured (2026-06-23, `probes/disk/disk_probe_dosboot_4030.py`):**
             deterministic — `$4030` returns a pointer in `HL` (`$F1C9`→`$DD0E`), preserves
             AF/BC/DE/IX/IY, writes nothing in `$F1xx`; on entry `IX` points at drive A's DPB
-            (byte-identical to our CF-3300 GETDPB), confirming the disk-driver context. **Next:**
-            (1) map the `HL`/`A` input→output rule via a CALSLT-driven oracle; (2) reimplement
-            `$4030` in `disk.asm`; (3) re-trap toward `A>`. See §8.13.
+            (byte-identical to our CF-3300 GETDPB), confirming the disk-driver context.
+            **`$4030` IMPLEMENTED + work-area characterised (§8.13-8.15).** Boot drives our
+            BDOS, loads MSXDOS.SYS byte-perfect, consumes the `$4030` pointer; derailed at `$0038`.
+            **RAMAD0-3 lever found + fixed (2026-06-23, §8.16; `disk_probe_dosboot_lowstore.py`).**
+            §8.15's "work-area-layout" theory was REFUTED by oracle (MSXDOS makes 0 post-`$4030`
+            low-storage writes; `$0038→$0C3C`, not the work area). The real lever: the Tier-1 vs
+            stock differential showed page 0 = all `$FF` (unmapped slot) → `$0038` `RST 38h` wedge,
+            because MSXDOS reads **RAMAD0-3 (`$F341-4`, 84×)** to re-page page-0 RAM and the disk
+            ROM's INIT (ours) never set it. `set_ramad` (host-adaptive, `$FF`-gated, C-BIOS-safe)
+            now sets it `83 83 83 83` = byte-identical to stock; **page-0 RAM maps and MSXDOS
+            installs its BDOS (`$0005→$E106`)** — a real advance. `bdos_entry`→`$43EA`; regression
+            green (init/files/bload/dskio). **Next:** the new gap is an **interrupt storm** — our
+            boot-bridge `int_h` stub (`$0038`) fires ~1957 Hz / single-steps MSXDOS; stand up a
+            proper resident ISR (full BIOS KEYINT frame service + `H.TIMI`/`H.KEYI` hooks), re-trap
+            toward `A>`. See §8.16.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
       and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
       — the organic evidence the Tier-0/1 differential could only approximate.
