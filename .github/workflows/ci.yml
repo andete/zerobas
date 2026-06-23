@@ -130,7 +130,9 @@ jobs:
       - name: Install pasmo on PATH
         run: |
           set -eux
-          cp "$GITHUB_WORKSPACE/pasmo-bin/pasmo.exe" /usr/local/bin/pasmo.exe
+          # /usr/bin always exists in the MSYS env and is on PATH; /usr/local/bin
+          # does not exist by default (the earlier cp there failed).
+          cp "$GITHUB_WORKSPACE/pasmo-bin/pasmo.exe" /usr/bin/pasmo.exe
           command -v pasmo
           pasmo --version
 
