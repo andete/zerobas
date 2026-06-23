@@ -14,11 +14,13 @@ untouched.**
 | Emulator-free unit tests (`make unit-test`) | ✅ | ✅ | ✅¹ |
 | Install openMSX machines (`make machines`) | ✅ | ✅ | ✅¹ |
 | openMSX oracle probes (`probes/`) | ✅ | ✅ | ✅¹ |
-| Automated CI | ✅ | ✅ | deferred² |
+| Automated CI | ✅ | local² | deferred³ |
 
 ¹ Windows needs a Unix-style `make` + `pasmo` on `PATH` (MSYS2 / Git Bash / WSL).
   No code blocks Windows — there is no shell-script or hardcoded-path dependency.
-² The GitHub Windows runners have no turnkey `pasmo` + `make`; see *CI* below.
+² macOS is built locally by the author; it is not in the CI matrix (the hosted macOS
+  runners bill at 10× on a private repo). See *CI* below.
+³ The GitHub Windows runners have no turnkey `pasmo` + `make`; see *CI* below.
 
 ## What the build actually needs
 
@@ -57,16 +59,20 @@ The original blockers were hardcoded macOS paths and a `/bin/sh` dependency.
 
 ## CI
 
-[`../.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on **ubuntu-latest**
-and **macos-latest**: install pasmo (apt on Linux, source build on macOS), build the
-ROMs, smoke-import the host tooling, and run `make unit-test`. It deliberately does
-**not** build the `.ips/.bps` patches (they need a stock C-BIOS ROM, not a pure build
-input) or run the probes (they need your own reference ROMs).
+[`../.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on **ubuntu-latest**:
+install pasmo (apt — it is in Ubuntu *universe*), build the ROMs, smoke-import the
+host tooling, and run `make unit-test`. It deliberately does **not** build the
+`.ips/.bps` patches (they need a stock C-BIOS ROM, not a pure build input) or run the
+probes (they need your own reference ROMs).
+
+**macOS CI is intentionally omitted**: the author builds macOS locally, and the
+hosted macOS runners bill at 10× on a private repo. The macOS toolchain is verified
+to work (pasmo 0.5.5 builds from source on macOS); a macOS job can be added later by
+building pasmo from source in a `runner.os == 'macOS'` step.
 
 **Windows CI is deferred**, not blocked by zerobas: the hosted Windows runners offer
 no turnkey `pasmo` + `make`. The *code* is Windows-ready; a Windows job would need to
-provision the toolchain (MSYS2 + a pasmo build) first. That is the natural next step
-if a Windows regression signal is wanted.
+provision the toolchain (MSYS2 + a pasmo build) first.
 
 ## Known non-blockers
 
