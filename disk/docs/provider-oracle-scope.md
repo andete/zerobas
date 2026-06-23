@@ -853,3 +853,43 @@ The §8.12 "characterized-and-walled / charter change required" framing is withd
 tractable by the project's standard oracle discipline, no charter change needed. Writing our own
 MSX-DOS 1 is **not** the plan and never was — existing disks drive our clean-room reimplementation of
 the disk ROM's observed entry contract, exactly as they already drive our DSKIO/GETDPB/PHYDIO.
+
+## 8.14 `$4030` IMPLEMENTED — the retry spin breaks; MSXDOS.SYS consumes our work area
+
+`$4030` is now a real disk-ROM entry (`disk.asm`): the six standard entries end at `$401F`, the
+`$4022-$402F` kernel slots are `$00` fill (the MSX-DOS-1 boot calls none of them, §8.11), and at
+exactly `$4030` we inline the oracle-observed contract — `ld hl,GETWRK_AREA / ret` (returns a fixed
+work-area pointer, preserves AF/BC/DE/IX/IY). `GETWRK_AREA` is our own reserved page-3 RAM (`$E780`,
+past the RDBLK scratch); we choose the location freely since §8.13 proved `$4030` ignores its inputs.
+`bdos_entry` shifted `$43A4→$43B6`; regression-green on `C-BIOS_MSX1_BASIC_DISK` (init/files/bload).
+
+**Re-trap on the Tier-1 machine (real CF-3300 BIOS + zerobas-disk; `disk_probe_dosboot_retrap.py`),
+deterministic across runs:**
+
+| metric | pre-fix (§8.10/8.11) | now |
+|---|---|---|
+| `$4030` calls | landed in INIT garbage | **2** (a real entry) |
+| `bdos_open` | ~9 (spin) | **2** |
+| `bdos_rdblk` | repeated (reloaded MSXDOS.SYS) | **1** |
+| work-area reads at `$E780` | — | **512**, first from MSXDOS.SYS PC `$0368` |
+| settle PC | `$0038` loop (missing `$4030`) | `$0038` (new cause) |
+
+**Two clear wins:** (1) the **retry spin collapsed** — MSXDOS.SYS loaded itself **once** (`rdblk=1`,
+`open` 9→2) instead of looping, so `$4030` broke the wedge it was stuck on; (2) MSXDOS.SYS **actually
+consumes** the pointer `$4030` returned — 512 reads of `$E780`, from its own relocated code at `$0368`.
+So the entry is real, called, and used.
+
+**New gap — the work-area LAYOUT.** The boot still ends at `$0038` and no `A>`/banner appears, because
+our `$E780` work area is **uninitialised RAM** (the dump is leftover `0039 0039 …`), not the structure
+MSXDOS.SYS expects. On the stock CF-3300 the disk ROM's INIT populates `$DD0E+` before the boot reads
+it; we return a valid pointer but to empty RAM, so MSXDOS.SYS reads garbage, acts on it, and derails to
+`$0038`.
+
+**Next target (next session):** characterise the work-area layout MSXDOS.SYS expects at the returned
+pointer. On the stock CF-3300, with a read-watch over `$DD0E+` after `$4030` returns, log *which
+offsets* MSXDOS.SYS reads (and from which PC) and *what values* are there — then satisfy those fields
+with our own values. CLEAN-ROOM: observe which fields are read and how they are *used* (counts /
+pointers / flags = data we supply our own values for); if MSXDOS.SYS *executes* (CALLs/JPs into) a
+work-area cell, that target is the proprietary kernel — we provide our own clean handler for the
+observed behaviour, never lifting the bytes. Also pin the `$0038` derail (a bad jump computed from the
+garbage fields, vs. an interrupt-vector issue) to confirm the layout is the lever.
