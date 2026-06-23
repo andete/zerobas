@@ -774,3 +774,62 @@ proprietary disk ROM, and reaching `A>` would require binary-ABI-cloning it (`$4
 N such entries) — which the clean-room charter forbids. Re-defer here, with the large progress banked.
 To ever revisit, the charter would have to change, or an **open clean-room MSX-DOS-1 kernel**
 reimplementation would have to exist as an allowed PROVENANCE input.
+
+## 8.13 `$4030` RE-OPENED — the §8.12 "wall" conflated *no published doc* with *no allowed method*
+
+**The §8.12 verdict was wrong, and is retracted.** It reasoned: the only clean route to `$4030`'s
+contract is a *documented* one; the MSX Wiki is the only candidate and it is RE-derived (off-limits);
+therefore walled. That argument silently dropped the method this entire project runs on — **black-box
+oracle observation**. The charter's own rule (`DESIGN.md`, `PROVENANCE.md`) is explicit: *"a reference
+ROM is only ever an oracle: identical inputs in, observed bytes/edges out."* That is precisely how the
+**CF-3300 GETDPB** ($4016, equally undocumented in any published spec) was characterised
+**field-for-field byte-identical** and reimplemented as our own clean-room code (§INIT + §DPB). `$4030`
+is the *same situation*: an undocumented disk-ROM entry, observable as a black box on the genuine ROM,
+reimplementable from the observed input→output contract. Cloning *behaviour* from observation is the
+sanctioned clean-room outcome here; cloning *code* from a disassembly (or an RE compilation like the
+wiki, hence its exclusion) is what is forbidden. The two are not the same, and §8.12 elided them.
+
+**Method (probe `probes/disk/disk_probe_dosboot_4030.py`).** Boot the genuine **stock**
+`National_CF-3300` (its own BASIC + disk ROMs) from a real MSX-DOS 1 disk and trap the *working*
+boot's own `CALL $4030`. On entry: snapshot every register, the return address off the stack, and a
+window of the disk work-area RAM. Arm a one-shot breakpoint at the return address; on return,
+snapshot the output registers + the same RAM windows; diff. **We read only RAM (`$F1xx`) and CPU
+registers — never the `$4000–$7FFF` ROM code, never MSXDOS.SYS bytes.** Pure inputs-in / outputs-out.
+
+**First contract captured — deterministic across runs (2026-06-23):**
+
+| | AF | BC | DE | HL | IX | IY | SP |
+|---|---|---|---|---|---|---|---|
+| **entry** | `0142` | `0980` | `0000` | `F1C9` | `F195` | `C0AB` | `8FFE` |
+| **exit**  | `0142` | `0980` | `0000` | **`DD0E`** | `F195` | `C0AB` | `9000` (RET) |
+
+So `$4030`, as called here: **returns a pointer in `HL` (`$F1C9` → `$DD0E`), preserves AF/BC/DE/IX/IY,
+and writes nothing in `$F100–$F3FF`.** Caller is page-0 RAM at `$0241` (relocated MSXDOS.SYS).
+`$DD0E` is high RAM (currently `$FF` fill — the per-driver work area the disk ROM's INIT reserves
+below RAMTOP). Consistent with a "resolve/return the work-area pointer" operation.
+
+**Corroboration the trap is genuinely inside the disk driver:** on entry `IX=$F195` points at
+`00 | f9 00 02 0f 04 01 02 01 00 02 70 0e 00 ca 02 03 07 00` — i.e. drive byte `$00` (drive A)
+followed by a DPB **byte-identical to our validated CF-3300 GETDPB output** (§DPB). So at the `$4030`
+call, `IX` = the current drive's DPB and we are squarely in the disk-driver context, not some
+coincidental `$4030` hit.
+
+**Open question for reimplementation — the `HL` mapping rule.** One in-situ data point
+(`$F1C9 → $DD0E`) does not determine the function. Crucially, when we reimplement `$4030` in
+zerobas-disk we **choose our own work-area location**, so we need the *rule* (does it ignore `HL` and
+return a fixed per-drive base? offset-translate `F1xx`→`DDxx`? select on `A`?), and then we need to
+know *what MSXDOS.SYS reads from the returned pointer next* (the work-area layout it expects).
+
+**Next steps (this re-opened track):**
+1. **Input-domain mapping (Phase B).** Inject a CALSLT stub that drives `$4030` on the stock CF-3300
+   with varied `HL`/`A` and tabulate outputs — same driven-oracle method used to map GETDPB across BPBs.
+2. **Reimplement `$4030`** in `disk.asm` from the observed rule (our own work-area RAM, register
+   convention matched), regression-gated on C-BIOS as ever.
+3. **Re-trap the boot** and watch what MSXDOS.SYS reads from the returned pointer — expect the *next*
+   undocumented entry or a work-area field to characterise, and iterate toward `A>`. §8.10 evidence
+   (init makes essentially one non-BDOS call) suggests the live surface is small.
+
+The §8.12 "characterized-and-walled / charter change required" framing is withdrawn: `$4030` is
+tractable by the project's standard oracle discipline, no charter change needed. Writing our own
+MSX-DOS 1 is **not** the plan and never was — existing disks drive our clean-room reimplementation of
+the disk ROM's observed entry contract, exactly as they already drive our DSKIO/GETDPB/PHYDIO.

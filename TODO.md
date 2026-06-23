@@ -208,12 +208,14 @@ emulator-free regression (`make unit-test`: `test_tokenise`/`test_field`/
 
 **Explicitly carried / deferred (not part of "complete"):**
 - **Tier-2 provider oracle** (a real MSX-DOS 1 host driving zerobas-disk) — a
-  distinct DOS-boot sub-track. **DEFERRED (decided 2026-06-22):** the a3 black-box
-  differential sized it as a charter-level subsystem (reconstruct the disk ROM's
-  resident DOS kernel) that abuts the no-disassembly rule; the step-6 env + a1 boot
-  bridge ship as the validated partial, and the provider contract is already proven
-  at the highest clean-room fidelity (Tier-1 PHYDIO PASS, GETDPB byte-identical).
-  See below + provider-oracle-scope.md §8.8.
+  distinct DOS-boot sub-track. **ACTIVE again (2026-06-23):** an earlier "walled by
+  policy" call (§8.12) was retracted — it forgot that undocumented disk-ROM entries are
+  characterisable by **black-box oracle** (the same discipline that nailed GETDPB), not
+  only by published docs. The boot already loads+executes MSXDOS.SYS byte-perfect off
+  our `bdos_entry`; the gap is one disk-ROM entry (`$4030`), now under active black-box
+  characterisation (oracle built, first contract captured). **Not** writing our own
+  MSX-DOS 1 — existing disks drive our clean-room reimplementation of the observed entry
+  contract. See below + provider-oracle-scope.md §8.13.
 - **`DSKI$` / `DSKO$`** — investigated, **deferred to Phase 3** (obscure CF-3300
   semantics + needs the Phase-3 string heap; see the item below).
 - **`MKS$`/`MKD$`/`CVS`/`CVD`** (random-access float conversions) and the float-only
@@ -548,6 +550,19 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             implement it (DE=FCB, HL=rec count, start=FCB random-record `+33`, recsize `+14`,
             read into DTA), validate via a `$27` case in `disk_probe_bdos.py`, re-trap. The
             whole remaining gap to `A>` is that one BDOS function.
+            **Slices 3–4 DONE; gap relocated to disk-ROM entry `$4030` (§8.10/§8.11), then
+            mis-declared "walled by policy" (§8.12) — that verdict is RETRACTED (§8.13).** The
+            §8.12 wall conflated *no published doc* with *no allowed method*: it forgot the
+            project's core discipline, **black-box oracle observation** (how undocumented GETDPB
+            was nailed byte-identical). `$4030` is the same kind of undocumented disk-ROM entry,
+            characterisable as a black box on the genuine CF-3300 and reimplementable from the
+            observed contract — no charter change, and **not** writing our own MSX-DOS 1.
+            **Oracle built + first contract captured (2026-06-23, `probes/disk/disk_probe_dosboot_4030.py`):**
+            deterministic — `$4030` returns a pointer in `HL` (`$F1C9`→`$DD0E`), preserves
+            AF/BC/DE/IX/IY, writes nothing in `$F1xx`; on entry `IX` points at drive A's DPB
+            (byte-identical to our CF-3300 GETDPB), confirming the disk-driver context. **Next:**
+            (1) map the `HL`/`A` input→output rule via a CALSLT-driven oracle; (2) reimplement
+            `$4030` in `disk.asm`; (3) re-trap toward `A>`. See §8.13.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
       and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
       — the organic evidence the Tier-0/1 differential could only approximate.
