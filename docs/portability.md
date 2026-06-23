@@ -74,9 +74,10 @@ which builds the ROMs, smoke-imports the host tooling, and runs `make unit-test`
 - **`windows`** (windows-latest) — runs inside **MSYS2**, so the existing Unix-style
   Makefile (`mkdir -p`, `cp`, `rm`, `python3`) works unchanged. pasmo has no Windows
   package, so the job builds it from source (`./configure && make`) in the same
-  environment. The repo-wide [`../.gitattributes`](../.gitattributes) forces LF line
-  endings so the runner's `autocrlf=true` cannot corrupt the Makefile or the tracked
-  binary patches.
+  environment — but that build is **cached** (keyed on the pasmo version) and the slow
+  MSYS2 full-system update is **skipped**, so a typical run only pays for it once. The
+  repo-wide [`../.gitattributes`](../.gitattributes) forces LF line endings so the
+  runner's `autocrlf=true` cannot corrupt the Makefile or the tracked binary patches.
 
 Neither job builds the `.ips/.bps` patches (they need a stock C-BIOS ROM, not a pure
 build input) or runs the probes (they need your own reference ROMs).

@@ -94,7 +94,7 @@ jobs:
       - uses: msys2/setup-msys2@v2
         with:
           msystem: MSYS       # most Linux-like env; all tools share one runtime
-          update: true
+          update: false       # skip the slow full pacman -Syuu; pinned snapshot is fine
           install: >-
             make
             gcc
@@ -102,7 +102,19 @@ jobs:
             curl
             tar
 
-      - name: Build pasmo from source (no Windows package exists)
+      # pasmo has no Windows package, so we build it from source -- but that is
+      # deterministic for a fixed version, so cache the built binary and skip the
+      # compile on a hit. Bump PASMO_VER (or the key) if the MSYS2 toolchain changes
+      # in a way that breaks an old binary.
+      - name: Cache built pasmo
+        id: pasmo-cache
+        uses: actions/cache@v4
+        with:
+          path: pasmo-bin
+          key: pasmo-msys2-0.5.5-v1
+
+      - name: Build pasmo from source (cache miss only)
+        if: steps.pasmo-cache.outputs.cache-hit != 'true'
         run: |
           set -eux
           curl -fsSL https://pasmo.speccy.org/bin/pasmo-0.5.5.tar.gz -o pasmo.tar.gz
@@ -110,7 +122,15 @@ jobs:
           cd pasmo-0.5.5
           ./configure
           make
-          make install
+          mkdir -p "$GITHUB_WORKSPACE/pasmo-bin"
+          # autotools emits pasmo.exe on Windows; fall back to a bare name just in case
+          cp pasmo.exe "$GITHUB_WORKSPACE/pasmo-bin/pasmo.exe" 2>/dev/null \
+            || cp pasmo "$GITHUB_WORKSPACE/pasmo-bin/pasmo.exe"
+
+      - name: Install pasmo on PATH
+        run: |
+          set -eux
+          cp "$GITHUB_WORKSPACE/pasmo-bin/pasmo.exe" /usr/local/bin/pasmo.exe
           command -v pasmo
           pasmo --version
 
