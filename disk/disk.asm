@@ -238,6 +238,18 @@ CMD_WRITE       equ     $A0     ; write sector, single record (Type II, $A0 base
                 jp      dskfmt          ; +$1C  format disk          ($401C)
                 jp      mtoff           ; +$1F  motors off           ($401F)
 
+; --- extended disk-ROM kernel entry: $4030 ($4000 + $30) -------------------
+; MSXDOS.SYS's resident init CALLs $4030 expecting the disk ROM's "get work area"
+; routine. The six standard entries above end at $401F; the $4022-$402F slots are
+; further disk-ROM/DOS-kernel entries the MSX-DOS-1 boot does NOT call (a3 §8.11),
+; so they are left as $00 fill. $4030 IGNORES its inputs and returns a fixed
+; work-area pointer in HL, preserving every other register (black-box oracle, a3
+; §8.13: disk_probe_dosboot_4030.py --sweep). Inlined at exactly $4030 (not a JP)
+; so it lands on the address the boot CALLs; `ld hl,nn`+`ret` preserves AF too.
+                ds      $4030 - $, $00  ; pad the unused $4022-$402F kernel-entry slots
+                ld      hl, GETWRK_AREA ; $4030: return our work-area base
+                ret                     ; ($4033) HL = work area, all else preserved
+
 ; --- INIT -------------------------------------------------------------------
 ; Called by the BIOS boot scan (or by zerobas-BASIC's slot scan, which finishes
 ; the scan C-BIOS skips — see basic/initext.asm). INIT does two things:
@@ -357,6 +369,16 @@ RDBLK_DONE      equ     $E770   ; records delivered so far (word; = HL on return
 RDBLK_CNT       equ     $E772   ; bytes left in the current record (word)
 RDBLK_BUFPOS    equ     $E774   ; byte offset into SECTOR_BUF (word, 0..512)
 RDBLK_DST       equ     $E776   ; current DTA write pointer (word; from BDOS_DTA)
+
+; --- MSX-DOS-1 "get work area" return ($4030; a3 §8.13) ---------------------
+; MSXDOS.SYS's resident init CALLs disk-ROM entry $4030 and uses the returned HL
+; as a work-area base pointer. Black-box oracle (disk_probe_dosboot_4030.py
+; --sweep on the genuine CF-3300): $4030 IGNORES its inputs and returns a FIXED
+; pointer, preserving AF/BC/DE/IX/IY. We return a pointer to our own reserved
+; page-3 RAM (the stock returns its own $DD0E); the size + layout MSXDOS.SYS then
+; expects at that pointer is the next oracle target. Own choice for the location:
+; free page-3 RAM past the RDBLK scratch ($E777), clear of every disk/basic region.
+GETWRK_AREA     equ     $E780   ; MSX-DOS work-area base returned by $4030 (128 B reserved)
 boot_disk:
                 xor     a               ; drive A
                 ld      b, 1            ; one sector
