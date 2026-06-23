@@ -76,9 +76,18 @@ WORK_BASE = 0xF100  # disk work-area RAM window base (page 3 = always RAM)
 WORK_LEN = 0x300    # 768 bytes -- covers the $F1xx/$F2xx/$F3xx disk work area
 
 
-def run(dsk: str, settle: float, timeout: float) -> dict:
+def run(dsk: str, settle: float, timeout: float,
+        inject_hl: int | None = None, inject_a: int | None = None) -> dict:
+    """Trap the boot's $4030 call. If inject_hl/inject_a are given, overwrite
+    those registers at entry (controlled inputs into the genuine work-area
+    context) before letting $4030 run -- a black-box input/output sweep."""
     out = tempfile.mktemp(suffix=".cap")
     tcl_path = tempfile.mktemp(suffix=".tcl")
+    inject = ""
+    if inject_hl is not None:
+        inject += f"  reg HL 0x{inject_hl:04X}\n"
+    if inject_a is not None:
+        inject += f"  reg A 0x{inject_a:02X}\n"
     tcl = f"""set throttle off
 set renderer none
 set ::n 0
@@ -112,6 +121,8 @@ proc on_entry {{}} {{
   puts $f "work_entry=[__hex 0x{WORK_BASE:04X} {WORK_LEN}]"
   puts $f "hl_window_entry=[__hex [reg HL] 32]"
   puts $f "ix_window_entry=[__hex [reg IX] 32]"
+{inject}  puts $f "injected=[regs]"
+  puts $f "hl_window_injected=[__hex [reg HL] 32]"
   close $f
   set ::retbp [debug set_bp $ret {{}} {{ on_ret }}]
 }}
@@ -186,23 +197,56 @@ def _ram_diff(entry_hex: str, exit_hex: str, base: int) -> list:
     return runs
 
 
+# Input-domain sweep vectors: (A, HL) injected at $4030 entry. Mixes the in-situ
+# control ($F1C9), other high-RAM pointers, low/zero pointers, and A variation --
+# enough to tell "ignores HL, fixed per-drive base" from "derefs/translates HL"
+# and whether A (drive?) selects the result.
+SWEEP = [
+    (None, 0xF1C9),   # control: the real in-situ input -> expect $DD0E
+    (None, 0xC800),   # different high-RAM pointer
+    (None, 0xE000),   # another high-RAM pointer
+    (None, 0x0000),   # null / low pointer
+    (0x00, 0xF1C9),   # vary A (drive 0?) with control HL
+    (0x01, 0xF1C9),   # the in-situ A
+    (0x02, 0xF1C9),   # vary A (drive 2?)
+]
+
+
+def _one(dos_disk: str, settle: float, timeout: float,
+         inject_hl=None, inject_a=None) -> dict:
+    """Copy the DOS disk to /tmp (never mount the original) and run one trap."""
+    tmp = tempfile.mktemp(suffix=".dsk")
+    shutil.copyfile(dos_disk, tmp)
+    try:
+        return run(tmp, settle, timeout, inject_hl=inject_hl, inject_a=inject_a)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dos-disk", required=True, help="real MSX-DOS 1 system disk image")
     ap.add_argument("--settle", type=float, default=12.0, help="emulated seconds before give-up")
     ap.add_argument("--timeout", type=float, default=60.0)
+    ap.add_argument("--inject-hl", type=lambda s: int(s, 0), default=None,
+                    help="overwrite HL at $4030 entry (controlled input)")
+    ap.add_argument("--inject-a", type=lambda s: int(s, 0), default=None,
+                    help="overwrite A at $4030 entry (controlled input)")
+    ap.add_argument("--sweep", action="store_true",
+                    help="map the input domain: trap $4030 once per vector, injecting "
+                         "varied A/HL, and tabulate output HL")
     args = ap.parse_args()
 
     if not os.path.exists(args.dos_disk):
         sys.exit(f"DOS disk not found: {args.dos_disk}")
-    tmp = tempfile.mktemp(suffix=".dsk")
-    shutil.copyfile(args.dos_disk, tmp)
-    try:
-        d = run(tmp, args.settle, args.timeout)
-    finally:
-        if os.path.exists(tmp):
-            os.unlink(tmp)
+
+    if args.sweep:
+        return _do_sweep(args)
+
+    d = _one(args.dos_disk, args.settle, args.timeout,
+             inject_hl=args.inject_hl, inject_a=args.inject_a)
 
     print(f"machine : {MACHINE}")
     print(f"entry   : $4030 (GETWRK candidate), qualified HL>=$F000\n")
@@ -220,6 +264,11 @@ def main() -> int:
     print(f"  return address (caller, off stack): ${d.get('ret_addr')}")
     print(f"  [HL=${entry.get('hl', 0):04X}] -> {d.get('hl_window_entry')}")
     print(f"  [IX=${entry.get('ix', 0):04X}] -> {d.get('ix_window_entry')}")
+
+    if args.inject_hl is not None or args.inject_a is not None:
+        inj = _parse_regs(d.get("injected", ""))
+        print(f"  >> INJECTED inputs: {d.get('injected')}")
+        print(f"     [HL=${inj.get('hl', 0):04X}] -> {d.get('hl_window_injected')}")
 
     if "exit" not in d:
         print("\nPARTIAL: entry captured, but $4030 did not return within settle "
@@ -245,6 +294,58 @@ def main() -> int:
 
     print("\nOK: $4030 input/output contract captured (black-box; RAM+regs only). "
           "Next: reimplement this contract in zerobas-disk and re-trap the boot.")
+    return 0
+
+
+def _do_sweep(args) -> int:
+    print(f"machine : {MACHINE}")
+    print("entry   : $4030 -- input-domain sweep (inject A/HL at entry, read output)\n")
+    print("   injected A   injected HL  ->  output HL   reg-deltas (besides HL/SP)")
+    print("   " + "-" * 64)
+    rows = []
+    for a_in, hl_in in SWEEP:
+        d = _one(args.dos_disk, args.settle, args.timeout,
+                 inject_hl=hl_in, inject_a=a_in)
+        if d.get("no_qualifying_hit") or "injected" not in d or "exit" not in d:
+            print(f"   {('--' if a_in is None else f'{a_in:02X}'):>9}   "
+                  f"{hl_in:04X}        ->  (no capture: $4030 not reached/returned)")
+            continue
+        inj = _parse_regs(d["injected"])
+        ex = _parse_regs(d["exit"])
+        # any non-HL/SP register the routine changed between injected entry and exit
+        extra = [f"{k.upper()}:{inj[k]:04X}->{ex[k]:04X}"
+                 for k in ("af", "bc", "de", "ix", "iy")
+                 if k in inj and k in ex and inj[k] != ex[k]]
+        a_shown = "--" if a_in is None else f"{a_in:02X}"
+        print(f"   {a_shown:>9}   {inj.get('hl', 0):04X}        ->  "
+              f"{ex.get('hl', 0):04X}        {' '.join(extra) if extra else '(none)'}")
+        rows.append((a_in, inj.get("hl", 0), ex.get("hl", 0)))
+
+    # --- interpret the mapping -------------------------------------------------
+    print()
+    outs = {out for _, _, out in rows}
+    by_a = {}
+    for a_in, _, out in rows:
+        by_a.setdefault(a_in, set()).add(out)
+    print("--- reading the $4030 input->output rule ---")
+    if not rows:
+        print("  no data -- $4030 never trapped; check the disk boots to MSX-DOS.")
+        return 1
+    if len(outs) == 1:
+        only = next(iter(outs))
+        print(f"  output HL is CONSTANT ${only:04X} regardless of injected HL/A ->")
+        print("  $4030 IGNORES its HL input and returns a FIXED work-area pointer.")
+        print("  REIMPLEMENT: return HL = (our own work-area base); preserve AF/BC/DE/IX/IY.")
+    else:
+        # constant per A but varying across A => A selects; else HL-dependent
+        per_a_constant = all(len(v) == 1 for v in by_a.values())
+        if per_a_constant and len(by_a) > 1:
+            print("  output HL is constant per A but differs across A ->")
+            print("  $4030 SELECTS the work area by A (drive?). Map A->base from the rows above.")
+        else:
+            print("  output HL VARIES with injected HL -> $4030 derefs/translates HL.")
+            print("  Inspect the [HL]-> windows per row to derive the translation rule.")
+    print("\n(black-box; RAM+regs only -- no ROM code read. Next: reimplement + re-trap.)")
     return 0
 
 

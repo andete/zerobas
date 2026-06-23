@@ -814,11 +814,31 @@ followed by a DPB **byte-identical to our validated CF-3300 GETDPB output** (§D
 call, `IX` = the current drive's DPB and we are squarely in the disk-driver context, not some
 coincidental `$4030` hit.
 
-**Open question for reimplementation — the `HL` mapping rule.** One in-situ data point
-(`$F1C9 → $DD0E`) does not determine the function. Crucially, when we reimplement `$4030` in
-zerobas-disk we **choose our own work-area location**, so we need the *rule* (does it ignore `HL` and
-return a fixed per-drive base? offset-translate `F1xx`→`DDxx`? select on `A`?), and then we need to
-know *what MSXDOS.SYS reads from the returned pointer next* (the work-area layout it expects).
+**Input-domain MAPPED (2026-06-23, `disk_probe_dosboot_4030.py --sweep`).** Same trap, but we now
+**inject** controlled inputs at the `$4030` breakpoint (overwrite `HL`/`A` before the routine runs --
+controlled-inputs-in, observed-outputs-out, still pure black box) and read the output. Seven vectors:
+
+| injected A | injected HL | → output HL | other reg deltas |
+|---|---|---|---|
+| (real) | `F1C9` | `DD0E` | none |
+| (real) | `C800` | `DD0E` | none |
+| (real) | `E000` | `DD0E` | none |
+| (real) | `0000` | `DD0E` | none |
+| `00` | `F1C9` | `DD0E` | none |
+| `01` | `F1C9` | `DD0E` | none |
+| `02` | `F1C9` | `DD0E` | none |
+
+**Rule: `$4030` IGNORES `HL` and `A` and returns a CONSTANT pointer (`$DD0E`), preserving
+AF/BC/DE/IX/IY.** The simplest possible "get work area" semantics — a fixed work-area base, no inputs.
+So our reimplementation is `ld hl,<our own work-area base> / ret` (which preserves AF too).
+
+What remains is **not** the `$4030` contract (settled) but the *next* question: **what MSXDOS.SYS reads
+from the returned pointer**, i.e. the work-area layout it expects at `$DD0E+`. We answer that
+empirically by implementing `$4030` (returning a pointer to our own RAM) and re-trapping — the boot
+will show exactly which offsets it touches. CLEAN-ROOM NOTE for that step: the stock's `$DDxx` region
+holds data **and relocated proprietary kernel code** (§8.8: work-area JP targets into `$95xx/$DFxx`),
+so we observe *which fields MSXDOS.SYS reads and how it uses them* (a contract we satisfy with our own
+values / our own clean handlers), never lifting the bytes behind any vector it calls.
 
 **Next steps (this re-opened track):**
 1. **Input-domain mapping (Phase B).** Inject a CALSLT stub that drives `$4030` on the stock CF-3300
