@@ -10,7 +10,7 @@ learned the hard way and is **not** otherwise recoverable from the code.
 **Two deliverables, not one.** Implementing the feature is half the job; the
 clean-provenance **documentation** the work yields — a behavioural spec, a
 characterisation note, a corrected finding about how the original actually behaves —
-is a **co-equal deliverable**, not a byproduct (see the README's *Two deliverables*).
+is a **co-equal deliverable**, not a byproduct (see [`MISSION.md`](../MISSION.md)).
 When a probe teaches you something the published sources don't capture, write it down
 where it belongs (the component spec / characterisation doc), not just into the code:
 where good documentation didn't exist, producing it is part of the point.

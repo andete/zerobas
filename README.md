@@ -10,7 +10,7 @@ cassette patch), and [`disk/`](disk/) (a disk-interface ROM).
 It has **two co-equal goals**: producing the clean-room *implementations*, and —
 because the same discipline makes the resulting facts publishable — producing
 **clean-provenance documentation** of how these systems actually work, especially
-where good documentation does not yet exist (see *Two deliverables*, below).
+where good documentation does not yet exist (see [`MISSION.md`](MISSION.md)).
 
 **Scope today is MSX1.** The BASIC half is deliberately **game-loader-scoped** — *just
 enough* MSX-BASIC to run the small `.BAS` / binary loader stubs that boot many disk and
@@ -24,28 +24,20 @@ BIOS (such as C-BIOS) only *at runtime*, never merged into its source tree. This
 is a legal firewall: a provenance challenge to zerobas can never contaminate the
 mature, uncontested BIOS it runs alongside.
 
-## Two deliverables: clean implementations *and* clean documentation
+## Two co-equal goals
 
-zerobas has **two co-equal goals**, not one. Reimplementing MSX systems clean-room
-is the first; the second is that doing so **produces clean-provenance documentation
-of how those systems actually work** — and where good documentation does not yet
-exist, producing it is a **first-class goal, not a byproduct**.
+zerobas has **two deliverables, not one**: the clean-room **implementations**, and the
+clean-provenance **documentation** of how these systems work that the same discipline
+yields — and where good documentation does not yet exist, producing it is a
+**first-class goal, not a byproduct**. The same firewall that keeps the code
+distributable is what makes the documentation publishable, so the artefacts the work
+throws off (the [`PROVENANCE.md`](PROVENANCE.md) logs, the oracle probes, the
+behavioural specs and characterisation notes, the rated source catalogue) are
+themselves safe for the community to build on.
 
-The two share one discipline. The same firewall that keeps the *code* distributable
-is exactly what makes the *documentation* publishable: datasheet- and oracle-derived
-facts have clean provenance, so the artifacts the work throws off — the
-[`PROVENANCE.md`](PROVENANCE.md) logs, the differential oracle probes, the
-characterisation notes ([`disk/docs/provider-oracle-scope.md`](disk/docs/provider-oracle-scope.md)),
-the rated source catalogue ([`docs/allowed-sources.md`](docs/allowed-sources.md)),
-the host unit-test harness — are themselves safe for the community to build on. The
-documentation value scales **inversely with what already exists**: where an official
-datasheet exists we add *worked, validated integration*; where only reverse-engineered
-compilations exist we can produce a *cleaner-provenance* reference; where **nothing**
-exists (e.g. the Konami SCC/SCC+, which has no manufacturer datasheet) a careful
-black-box characterisation **produces the primary reference outright** — zerobas as a
-source, not a sink. Even the **walls** are deliverables: a precisely characterised
-clean-room boundary (where, and *why*, an interface cannot be cloned from any allowed
-source) is preservation knowledge in its own right.
+**The full charter — why the two are one discipline, how to aim the documentation
+(value scales inversely with what already exists), "source not sink", and why even the
+walls are deliverables — is [`MISSION.md`](MISSION.md).**
 
 ## Traceability is the whole point
 
