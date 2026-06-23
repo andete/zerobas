@@ -67,7 +67,7 @@ jobs:
 
       - name: Show toolchain
         run: |
-          pasmo --version || true
+          pasmo 2>&1 | head -1 || true   # pasmo has no --version flag; bare run prints its banner
           python3 --version
 
       - name: Build the ROMs
@@ -134,7 +134,9 @@ jobs:
           # does not exist by default (the earlier cp there failed).
           cp "$GITHUB_WORKSPACE/pasmo-bin/pasmo.exe" /usr/bin/pasmo.exe
           command -v pasmo
-          pasmo --version
+          # pasmo has no --version flag; running it bare prints its banner (and exits
+          # nonzero), which both shows the version and proves the binary executes.
+          pasmo 2>&1 | head -1 || true
 
       - name: Show toolchain
         run: |
