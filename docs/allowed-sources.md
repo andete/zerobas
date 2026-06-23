@@ -48,7 +48,7 @@ are catalogued for *future* work and are not in scope until the charter says so.
 | Source | Q | Gen | Scope / caveat |
 |--------|:-:|-----|----------------|
 | **Z80 CPU User Manual** (Zilog) | A | 1·2·2+·R | full instruction / timing spec |
-| **R800** — via the official **MSX Turbo-R Technical Handbook** (ASCII) | B | R | the handbook is the official source (Japanese). Third-party "R800 undocumented-instruction / timing" compilations are RE → ✗ |
+| **R800 User's Manual** (ASCII Corp, Systems Division, 1991) | A | R | the **official** ASCII R800 CPU manual: instruction set (Z80 superset + `MULUB`/`MULUW`), registers, internal extension registers, interrupt modes, DMA, timings. Digitised from authentic manual scans (grauw `resources/cpu/r800_users_manual.php`); the online transcription may be **incomplete** — prefer the scans. Third-party "undocumented-R800 / timing" compilations are RE → ✗. (The MSX Turbo-R Technical Handbook, B, remains a secondary official source.) |
 
 ## VDP / graphics
 
@@ -56,7 +56,7 @@ are catalogued for *future* work and are not in scope until the charter says so.
 |--------|:-:|-----|----------------|
 | **TMS9918A data manual** (Texas Instruments) | A | 1 | SCREEN 0–3, sprite engine, VRAM/registers |
 | **Yamaha V9938 "MSX-VIDEO" Technical Data Book** (Aug 1985) | A | 2 | SCREEN 4–8 + the command (blitter) engine |
-| **Yamaha V9958 Technical Data Book** | A | 2+·R | SCREEN 10–12, YJK |
+| **Yamaha V9958 MSX-VIDEO Technical Data Book / Application Manual** | A | 2+·R | SCREEN 10–12, YJK. Pinned: official Yamaha doc, scanned original + OCR on grauw (`resources/video/yamaha_v9958.pdf`, `…_ocr.pdf`) |
 
 ## Sound
 
@@ -70,7 +70,8 @@ are catalogued for *future* work and are not in scope until the charter says so.
 
 | Source | Q | Gen | Scope / caveat |
 |--------|:-:|-----|----------------|
-| **WD2793 FDC datasheet** (Western Digital) | A | disk | the FDC zerobas-disk models |
+| **MB8877A datasheet** (Fujitsu) | A | disk | the CF-3300's **actual** FDC (a WD179x-family-compatible chip) — the precise primary for the FDC interface. *(Audit: reconcile the "WD2793" naming in disk.asm / disk-PROVENANCE; the command/status register interface is identical, so behaviour is unaffected — oracle-validated byte-identical to the CF-3300.)* |
+| **WD2793 FDC datasheet** (Western Digital) | A | disk | the WD179x-family reference (compatible command/status interface) the driver was written against |
 | **Microsoft FAT specification** | A | disk | FAT12 structures |
 | **ECMA-107** | A | disk | vendor-neutral twin of the FAT spec |
 | **MSX-DOS 2.20 specs** (ASCII: Program / Function / Command / System) | B | 2·2+·R | the DOS2 *function* interface — **not** the DOS1 in-ROM kernel (does **not** unblock the `$4030` DOS-boot wall, see disk/docs/provider-oracle-scope.md §8.12) |
@@ -80,7 +81,9 @@ are catalogued for *future* work and are not in scope until the charter says so.
 
 | Source | Q | Gen | Scope / caveat |
 |--------|:-:|-----|----------------|
+| **MSX Technical Data Book** (ASCII / Microsoft) | B | 1 | the official **MSX1** hardware + software specification — the gen-1 counterpart of the MSX2 TH (this is the "MSX1 handbook"). grauw `resources/system/msxtech.pdf` |
 | **MSX2 Technical Handbook** (ASCII; Konamiman's public English translation) | B | 1·2 | the practical anchor reference. **B, not A**: it documents the *standard interface* (with known gaps — it omits the disk-ROM `$4022+` kernel region), not silicon |
+| **MSX-BASIC reference** — the MSX Technical Data Book software section + a manufacturer **MSX-BASIC Programming Reference Manual** (e.g. Sony, on Internet Archive) | B | 1 | the user-visible language contract (keywords, functions, errors, file formats). Pins the previously-vague "public MSX-BASIC language reference" |
 | **MSX Datapack** (ASCII) | B | 1 | comprehensive official reference; Japanese-only (translation caveat) |
 | **MSX2 Datapack** (ASCII) | B | 2 | as above, Japanese |
 | **MSX Turbo-R Technical Handbook** (ASCII) | B | R | official; Japanese |
@@ -94,7 +97,7 @@ are catalogued for *future* work and are not in scope until the charter says so.
 | Source | Q | Gen | Scope / caveat |
 |--------|:-:|-----|----------------|
 | **This project's own black-box oracle** | A | 1 (current ref machines) | observed input→output behaviour. Gold standard — *provided it stays black-box*: never read/disassemble a reference ROM or a proprietary binary (BIOS, BASIC ROM, disk-ROM, MSXDOS.SYS, COMMAND.COM) |
-| **National CF-3300 schematic** (open hardware) | B | 1 | FDC wiring / register-window facts; **pin the exact document** (currently "TBD" in disk/PROVENANCE.md) |
+| **National CF-3300 schematic** (open hardware) | B | 1 | FDC wiring / register-window facts; **still to pin** — lead: MSX service-manual repositories (hansotten file-hunter "Manuals and Guides", elektrotanya). The FDC is the Fujitsu **MB8877A** |
 | **openMSX source** (GPL) | C | all | hardware *register / port facts* only — never code (GPL must not enter this BSD-2 tree) |
 | **own design** | — | — | original authorship by this project; not an external source |
 
