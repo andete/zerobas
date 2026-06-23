@@ -635,6 +635,19 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             probe skewed by our ROM's page-2 `$FF` ($8000-$BFFF) vs the stock disk ROM's mapped
             content. (Trampolines built but not yet exercised; their `$401x` mapping unverified until
             the collision clears.) See §8.23.
+            **KERNEL LEVER FOUND + FIXED (§8.24, probe `disk_probe_dosboot_ramtop.py`).** Black-box
+            differential of the `$0006-7` BDOS-base write: stock `LD ($0006),HL`@`$D7C0` HL=`$D606`
+            DE=`$DC80`; Tier-1 same routine @`$E2C0` HL=`$E106` DE=`$E780`. **Invariant DE−HL=`$067A`
+            on both** ⇒ `$067A` = kernel size, **DE = kernel TOP = the `$4030` work-area pointer
+            (DRVTBL+3)** — so DRVTBL+3 is the lever, NOT DRVTBL+1/HIMEM. (Real gap is `$0B00`, not the
+            `$1000` §8.20 mis-arithmetic'd.) **Fix = one equate: `GETWRK_AREA $E780→$DD0E`** (stock
+            value); kernel now relocates to **`$D606`, byte-identical to stock**, below our `$E29A`
+            scratch. Equate-only, `bdos_entry` stays `$4453`, C-BIOS regression green. **Validated:**
+            `final_bdos=c306d6`, `$FFFF`-runaway GONE, boot reads disk heavily through our driver
+            (64× `$4030`, 24 open, 37 RDBLK), gets through the MSX banner. **NEXT GAP: a re-init /
+            warm-boot spin** — BDOS vector re-published 6× (stock: once); DOS loads but loops before
+            `A>`. Characterise what fails between publications (COMMAND.COM load/exec or a disk op
+            erroring → warm-boot); trampolines now finally reachable. See §8.24.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
       and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
       — the organic evidence the Tier-0/1 differential could only approximate.

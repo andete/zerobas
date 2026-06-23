@@ -1258,3 +1258,40 @@ stock disk ROM maps content; a sizing routine could miscount by `$1000`. (The DR
 trampolines are built but not yet exercised — the boot derails before dispatching a
 disk op through them — so their `$401x` mapping stays unverified until the collision is
 cleared.) Clean-room unchanged: register/flag + reader/writer PCs only.
+
+## 8.24 KERNEL-PLACEMENT LEVER FOUND + FIXED — it is DRVTBL+3 (the `$4030` work-area pointer)
+
+The §8.23 "find MSXDOS-1's real top-of-RAM source" step is **resolved**, and the §8.19 collision is
+**cleared**. New black-box probe `probes/disk/disk_probe_dosboot_ramtop.py` watches the writer of the
+CP/M BDOS vector (`$0005-$0007`; `$0006-7` word = BDOS base = kernel base) on stock vs Tier-1:
+
+- **Stock**: `LD ($0006),HL` at PC `$D7C0`, **HL=`$D606`**, **DE=`$DC80`**.
+- **Tier-1 (pre-fix)**: same routine relocated to PC `$E2C0` (= `$D7C0`+`$0B00`), **HL=`$E106`**,
+  **DE=`$E780`** — the kernel `$0B00` higher, straight onto our scratch.
+
+**The invariant pins the mechanism.** On BOTH machines **DE − HL = `$067A`** exactly — i.e. `$067A` is
+the kernel size and **DE is the kernel TOP after the relocating `LDIR`**. The kernel top equals the
+disk **work-area pointer we publish in DRVTBL+3** (Tier-1 DE `$E780` = our `GETWRK_AREA` = DRVTBL+3
+`$80e7`; stock tracks its own `$DD0E` work area). So MSXDOS.SYS places its resident kernel with its TOP
+at the `$4030` work-area pointer and its base `$067A` below — **DRVTBL+3 is the lever, not DRVTBL+1
+(§8.23) or HIMEM (§8.20)**. (Correction to §8.20: the kernels differ by `$0B00`, not `$1000` — an
+arithmetic slip; `$E106-$D606 = $0B00`.)
+
+**Fix (one equate).** `GETWRK_AREA $E780 → $DD0E` (the stock work-area address). Our `$4030` now returns
+`$DD0E`, so MSXDOS relocates its kernel to **`$D606` — byte-identical to the stock** — below our lowest
+scratch (`$E29A`); the 128-byte work area DOS fills (`$DD0E-$DD8E`) is clear of both kernel and scratch.
+Equate-only: no code moved, `bdos_entry` stays `$4453`, C-BIOS regression green (init/dskio PASS, 18
+unit files PASS).
+
+**Validated on Tier-1 (the win to bank).** Post-fix `ramtop` shows the writer back at PC `$D7C0` with
+**HL=`$D606`** and `final_bdos = c3 06 d6` (`JP $D606`) — the kernel lands exactly where the stock's
+does. The `$FFFF`-runaway derail of §8.23 is **GONE**: settle PC is real BIOS/code (`$2E98`/`$12EC`),
+the boot reads the disk heavily through our driver (64× `$4030`, 24 opens, 37 RDBLK), and gets through
+the MSX boot banner (SCREEN-1 "MSX system / version 1.0").
+
+**NEXT GAP — a re-init / warm-boot spin.** The boot now *loads DOS* but does not reach `A>`: the BDOS
+vector is re-published **6×** at `$D7C0` (the stock publishes it once) — MSXDOS.SYS keeps re-running its
+resident init, a warm-boot loop after the kernel is placed but before COMMAND hands over the prompt.
+Characterise what fails between publications (likely COMMAND.COM load/exec or a disk op returning an
+error that triggers the warm-boot), with the DRVTBL trampolines now finally reachable to exercise.
+Clean-room unchanged: register/flag + reader/writer PCs only; no ROM/MSXDOS code read.

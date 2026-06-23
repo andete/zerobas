@@ -390,10 +390,18 @@ RDBLK_DST       equ     $E776   ; current DTA write pointer (word; from BDOS_DTA
 ; as a work-area base pointer. Black-box oracle (disk_probe_dosboot_4030.py
 ; --sweep on the genuine CF-3300): $4030 IGNORES its inputs and returns a FIXED
 ; pointer, preserving AF/BC/DE/IX/IY. We return a pointer to our own reserved
-; page-3 RAM (the stock returns its own $DD0E); the size + layout MSXDOS.SYS then
-; expects at that pointer is the next oracle target. Own choice for the location:
-; free page-3 RAM past the RDBLK scratch ($E777), clear of every disk/basic region.
-GETWRK_AREA     equ     $E780   ; MSX-DOS work-area base returned by $4030 (128 B reserved)
+; page-3 RAM; the size + layout MSXDOS.SYS then expects at that pointer is the next
+; oracle target.
+;
+; KERNEL-PLACEMENT LEVER (a3 §8.24). Black-box differential of the BDOS-vector write
+; (disk_probe_dosboot_ramtop.py): MSXDOS.SYS places its resident kernel so its TOP
+; sits at THIS work-area pointer and its base $067A (the kernel size) below it
+; -- stock work area $DD0E -> kernel $D606; our old $E780 -> kernel $E106, straight
+; onto our $E29A+ scratch (the §8.19 collision). NOT DRVTBL+1/HIMEM (§8.20/§8.23).
+; So we return the STOCK's $DD0E: the kernel lands at $D6xx, below our scratch, and
+; the 128-byte work area DOS fills ($DD0E-$DD8E) is clear of both kernel and scratch.
+GETWRK_AREA     equ     $DD0E   ; MSX-DOS work-area base returned by $4030 (128 B reserved);
+                                ; = the stock value so MSXDOS's kernel lands below our scratch
 ; --- $F348 DRVTBL: the disk-driver table MSXDOS.SYS dispatches through (§8.22) ---
 ; The disk ROM (not MSXDOS) builds this table; MSXDOS reads it to find the disk
 ; interface's slot, its reserved top-of-RAM, and the driver-routine pointers. The
@@ -404,12 +412,12 @@ GETWRK_AREA     equ     $E780   ; MSX-DOS work-area base returned by $4030 (128 
 ; $4010-region BIOS entries, never the stock's $EF95 kernel bytes. DRV_TRAMP holds
 ; them in reserved page-3 RAM past the $4030 work area (free, gated DOS path only).
 DRV_TRAMP       equ     $E800   ; 4 CALLF trampolines, 5 bytes each ($E800-$E813)
-; Reserved top-of-RAM advertised in DRVTBL+1. MSXDOS.SYS places its resident kernel
-; just below this (stock: top $DF93 -> kernel $D606). HIMEM ($FC4A) is NOT the lever
-; (§8.20); the value MSXDOS reads is this DRVTBL field. We use the stock's $DF93 --
-; safely below our lowest page-3 scratch ($E29A), so MSXDOS's kernel lands clear of
-; our SECTOR_BUF/FAT/work-area region (the §8.19 collision is exactly this gap).
-DOS_RESV_TOP    equ     $DF93   ; top-of-reserved-RAM for MSXDOS kernel placement
+; Reserved top-of-RAM advertised in DRVTBL+1 (the stock's HIMEM value). NOTE: this is
+; NOT the kernel-placement lever -- §8.20 ruled out HIMEM, §8.23 ruled out DRVTBL+1,
+; and §8.24 proved the lever is DRVTBL+3 (the $4030 work-area pointer, GETWRK_AREA
+; above). We still advertise the stock $DF93 here for fidelity (MSXDOS reads it), but
+; placement is governed by GETWRK_AREA, not this field.
+DOS_RESV_TOP    equ     $DF93   ; top-of-reserved-RAM advertised in DRVTBL+1 (not the lever)
 boot_disk:
                 xor     a               ; drive A
                 ld      b, 1            ; one sector
