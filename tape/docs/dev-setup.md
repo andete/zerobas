@@ -1,12 +1,12 @@
 # Dev setup: validating the cassette patch under openMSX
 
 The cassette implementation and its patch build live **here** in this repo
-(`tape.asm`, `make` → the `.ips`/`.bps`). The **validation harness** — the
-openMSX probes and the real-machine oracle captures — lives in the companion
-[`msx-preservation` analysis repo](https://github.com/andete/msx-preservation)
-(`tools/omsx_run.py`, `tools/omsx/bios_probe_tap*.py`); the oracle WAV captures are
-local-only. The legal reasoning is in [`feasibility.md`](feasibility.md) and
-[`clean-room-policy.md`](clean-room-policy.md).
+(`tape.asm`, `make` → the `.ips`/`.bps`). The **validation harness** — the openMSX
+probes — also lives here, in [`probes/`](../../probes)
+(`probes/lib/omsx_run.py`, `probes/tape/bios_probe_tap*.py`); only the proprietary
+oracle WAV captures stay local-only (never committed; see
+[`PUBLISHING.md`](../../PUBLISHING.md)). The legal reasoning is in
+[`feasibility.md`](feasibility.md) and [`clean-room-policy.md`](clean-room-policy.md).
 
 ## Where the build lives
 
@@ -28,9 +28,9 @@ For validating *just the tape layer* in isolation, `_TAPE` is cleaner; for end-t
 `BLOAD"CAS:",R` testing, use `_BASIC`.
 
 ```sh
-# sentinel smoke test (run from the msx-preservation repo, which has the harness):
-python3 tools/omsx/probe_cart.py --out /tmp/sentinel.rom
-python3 tools/omsx_run.py --machine C-BIOS_MSX1_EU_TAPE --cart /tmp/sentinel.rom \
+# sentinel smoke test (run from the repo root):
+python3 probes/lib/probe_cart.py --out /tmp/sentinel.rom
+python3 probes/lib/omsx_run.py --machine C-BIOS_MSX1_EU_TAPE --cart /tmp/sentinel.rom \
     --bp 0x7FF0 --reg PC --mem memory:0xE000:4 --out /tmp/cap.txt
 # -> mem.memory:0xE000:4=4a4f4e47  ("JONG")
 ```
@@ -39,19 +39,18 @@ python3 tools/omsx_run.py --machine C-BIOS_MSX1_EU_TAPE --cart /tmp/sentinel.rom
 
 1. **Edit** the routines in `tape.asm` (this repo).
 2. **Build:** `make` (regenerates the IPS the machine loads).
-3. **Test** with `--machine C-BIOS_MSX1_EU_TAPE`, using the probe harness in the
-   `msx-preservation` repo:
+3. **Test** with `--machine C-BIOS_MSX1_EU_TAPE`, using the probe harness in [`probes/`](../../probes):
    - *write path:* a `bios_probe_tap*.py` write cart + `omsx_run.py --record` →
-     `tools/omsx/cas_decode.py`, comparing the decoded bytes to the **VG-8020
+     `probes/lib/cas_decode.py`, comparing the decoded bytes to the **VG-8020
      oracle** capture (must round-trip identically — see
      [`spec-cassette.md`](spec-cassette.md)).
    - *read path:* mount a known-good or recorded `.wav`/`.cas` and decode via
      `TAPION`+`TAPIN`. The full file round-trip is
-     `tools/omsx/bios_probe_tapfile.py` (`--write`/`--read`/`--analyze`).
+     `probes/tape/bios_probe_tapfile.py` (`--write`/`--read`/`--analyze`).
 
-The probes (`tools/omsx/bios_probe_tap*.py`) and the shared openMSX harness
-(`tools/omsx_run.py`, `tools/omsx/{probe_cart,z80probe,cas_decode}.py`) live in the
-`msx-preservation` repo; the oracle WAV captures are local-only.
+The probes (`probes/tape/bios_probe_tap*.py`) and the shared openMSX harness
+(`probes/lib/{omsx_run,probe_cart,z80probe,cas_decode}.py`) live here in this repo;
+only the proprietary oracle WAV captures stay local-only.
 
 ## Clean-room reminder
 

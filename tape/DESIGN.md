@@ -134,11 +134,11 @@ degradation-tolerance envelope.
 
 ## Validation
 
-The openMSX probe harness and oracle captures live in the companion
-[`msx-preservation`](https://github.com/andete/msx-preservation) analysis repo
-(`tools/omsx/bios_probe_tap*.py`). They boot a stock C-BIOS ROM with this patch
-applied on load and exercise the routines — a write cart records CAS-out to a `.wav`,
-a read cart reads it back, and the bytes must match. See
+The openMSX probe harness lives here in this repo, under
+[`probes/`](../probes) (`probes/tape/bios_probe_tap*.py`); only the proprietary
+oracle WAV captures stay local-only. The probes boot a stock C-BIOS ROM with this
+patch applied on load and exercise the routines — a write cart records CAS-out to a
+`.wav`, a read cart reads it back, and the bytes must match. See
 [`docs/dev-setup.md`](docs/dev-setup.md).
 
 ## Note on C-BIOS

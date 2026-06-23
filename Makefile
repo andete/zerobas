@@ -114,10 +114,21 @@ unit-test:
 coverage:
 	python3 tests/coverage.py
 
+# Heavy openMSX oracle probes (the reproduction half of the mission; see
+# probes/README.md). Unlike unit-test these BOOT openMSX and need the installed
+# machines (`make machines-oracle`) plus YOUR own reference ROMs (VG-8020,
+# CF-3300) — those are never shipped. `probe` smoke-runs one probe per component.
+probe: $(ROM) $(DISK_ROM) $(DISK_TEST_DSK)
+	cp $(DISK_TEST_DSK) /tmp/zerobas-probe.dsk
+	python3 probes/disk/disk_probe_dskio.py --dsk /tmp/zerobas-probe.dsk
+	python3 probes/basic/basic_probe_print.py --cart $(ROM)
+	python3 probes/tape/bios_probe_tapwrite.py --out /tmp/zerobas-tapwrite.rom
+	@echo "probe smoke OK (disk + basic + tape)"
+
 # clean removes the gitignored build artifacts only. The tracked patch
 # deliverables are left in place (use `make patches` to regenerate them).
 clean:
 	rm -rf $(BUILD)
 
 .PHONY: all disk patches tape-patches machines machines-oracle install \
-        test-dsk unit-test coverage clean
+        test-dsk unit-test coverage probe clean

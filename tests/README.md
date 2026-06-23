@@ -4,8 +4,8 @@ Fast, emulator-free unit tests for zerobas ROM routines. They execute the **real
 assembled Z80 machine code** against a flat 64 KB memory using a small embedded
 Z80 core — no openMSX, no machine ROM, no VDP/PSG/slots/timing. Each test runs in
 tens of milliseconds (including a full `pasmo` assemble) and is deterministic, so
-this is the fast regression layer beneath the differential openMSX probes in the
-sibling `msx-preservation` repo.
+this is the fast regression layer beneath the differential openMSX probes in
+[`probes/`](../probes).
 
 ## Run
 

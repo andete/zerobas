@@ -73,22 +73,25 @@ release config.
 Assembler is pasmo. A linter hook auto-adds SPDX / copyright headers to new
 source files — don't hand-write them.
 
-## The validation harness (lives in the msx-preservation repo)
+## The validation harness (probes/)
 
-All emulator tooling is in the sibling repo, not here:
+The emulator-driven oracle harness lives **in this repo**, under `probes/`
+(see [probes/README.md](../probes/README.md)). It is the heavy oracle layer that
+complements the fast emulator-free `make unit-test`:
 
 ```
-../msx-preservation/                     # sibling checkout
-  tools/omsx_run.py                      # headless openMSX driver
-  basic-spec/tools/basic_probe_*.py      # differential + functional probes
-  basic-spec/tools/cas_encode.py         # build_cas() — make a .cas payload
+probes/
+  lib/omsx_run.py                        # headless openMSX driver
+  lib/cas_encode.py                      # build_cas() — make a .cas payload
+  basic/basic_probe_*.py                 # differential + functional probes
+  disk/disk_probe_*.py                   # zerobas-disk vs CF-3300 / MSX-DOS 1
+  tape/bios_probe_*.py                   # cbios-tape cassette path
 ```
 
 ### Byte-identical crunch probe (run after ANY tokeniser change)
 
 ```sh
-cd ../msx-preservation
-python3 basic-spec/tools/basic_probe_crunch.py --cart ../zerobas/build/basic.rom
+python3 probes/basic/basic_probe_crunch.py --cart build/basic.rom
 # want: "ALL PASS — crunch is byte-identical"
 ```
 
@@ -107,7 +110,7 @@ Other regression probes (same invocation shape, `--cart …/build/basic.rom`):
 ### omsx_run.py — the headless driver
 
 ```sh
-python3 tools/omsx_run.py --machine C-BIOS_MSX1 --cart build/basic.rom \
+python3 probes/lib/omsx_run.py --machine C-BIOS_MSX1 --cart build/basic.rom \
     --type 'PRINT 12*12\r' --type-delay 8 \
     --bp 0x7FF0 --reg PC --mem memory:0xE000:4 --out cap.txt
 ```

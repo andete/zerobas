@@ -300,32 +300,32 @@ cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`.
 
 ### Validation
 
-Run the oracle probes (in the `msx-preservation` repo) against this ROM:
+Run the oracle probes ([`probes/`](probes)) against this ROM:
 
 ```sh
 # BLOAD pipeline (tokenise → execute → cassette load → ,R handoff)
-python3 basic-spec/tools/basic_probe_bload.py \
-    --machine Philips_VG_8020 --cart /path/to/zerobas/build/basic.rom
+python3 probes/basic/basic_probe_bload.py \
+    --machine Philips_VG_8020 --cart build/basic.rom
 
 # REM / POKE / PEEK / expression evaluator (results read back from RAM)
-python3 basic-spec/tools/basic_probe_statements.py \
-    --cart /path/to/zerobas/build/basic.rom
+python3 probes/basic/basic_probe_statements.py \
+    --cart build/basic.rom
 
 # Step A: byte-identical crunch — zerobas TOKBUF vs reference KBUF, per line
-python3 basic-spec/tools/basic_probe_crunch.py \
-    --machine Philips_VG_8020 --cart /path/to/zerobas/build/basic.rom
+python3 probes/basic/basic_probe_crunch.py \
+    --machine Philips_VG_8020 --cart build/basic.rom
 
 # Step B: stored programs + control flow (GOTO / IF…THEN…ELSE / comparisons)
-python3 basic-spec/tools/basic_probe_controlflow.py \
-    --cart /path/to/zerobas/build/basic.rom
+python3 probes/basic/basic_probe_controlflow.py \
+    --cart build/basic.rom
 
 # Step B: subroutines + loops (GOSUB/RETURN, FOR…NEXT incl. nesting)
-python3 basic-spec/tools/basic_probe_loops.py \
-    --cart /path/to/zerobas/build/basic.rom
+python3 probes/basic/basic_probe_loops.py \
+    --cart build/basic.rom
 
 # Step B: DATA / READ / RESTORE (ASCII items parsed across lines)
-python3 basic-spec/tools/basic_probe_data.py \
-    --cart /path/to/zerobas/build/basic.rom
+python3 probes/basic/basic_probe_data.py \
+    --cart build/basic.rom
 ```
 
 The cartridge boots to its prompt, the probe types a line + Enter, and the

@@ -19,9 +19,9 @@ tape.
 Both are stdlib-only (no numpy/scipy), matching the rest of the repo's tooling.
 
 > **Read-back harness.** Steps that *read a WAV back through the BIOS* —
-> `omsx_run.py` and the `bios_probe_tap*.py` probes referenced below — live in the
-> companion **msx-preservation** analysis repo (`tools/` and `tools/omsx/`), which
-> drives openMSX headlessly. These host-side audio tools (and the vendored
+> `omsx_run.py` and the `bios_probe_tap*.py` probes referenced below — live here in
+> this repo, under [`probes/`](../../probes) (`probes/lib/` and `probes/tape/`),
+> which drives openMSX headlessly. These host-side audio tools (and the vendored
 > `cas_decode.py`) are self-contained here; the read-back step just points
 > `--decode` at that harness.
 
