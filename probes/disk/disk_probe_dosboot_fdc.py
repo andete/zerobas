@@ -77,15 +77,15 @@ TIER1_MACHINE = "National_CF-3300_ZEROBASDISK"
 MILESTONES = [
     (0x4010, "DSKIO_ENTRY"),
     (0x4257, "dskio"),
-    (0x430C, "fdc_read_phys"),
-    (0x439E, "fdc_write_phys"),
-    (0x443E, "fdc_restore"),
-    (0x4443, "fdc_wait_ready"),
-    # NB: $4446 (fdc_wr_loop) is the tight BUSY-poll itself — never breakpoint it,
+    (0x4312, "fdc_read_phys"),
+    (0x43A4, "fdc_write_phys"),
+    (0x4444, "fdc_restore"),
+    (0x4449, "fdc_wait_ready"),
+    # NB: $444C (fdc_wr_loop) is the tight BUSY-poll itself — never breakpoint it,
     # a persistent bp on a hot loop starves emutime. PC_at_stall confirms it.
-    (0x44F9, "bdos_entry"),
-    (0x4488, "getdpb"),
-    (0x4486, "dskchg"),
+    (0x44FF, "bdos_entry"),
+    (0x448E, "getdpb"),
+    (0x448C, "dskchg"),
 ]
 # Per-address cap on how many hits we log (keeps the tight $43EC loop cheap).
 LOG_CAP = 4

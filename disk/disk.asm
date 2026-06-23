@@ -1004,7 +1004,9 @@ dskio_next:
                 ld      (FDC_DEST), hl  ; redirect FDC to bounce buffer
                 call    fdc_read_phys
                 jr      c, dskio_err
+                call    fdc_di_save     ; a3 §8.36: mask across the page-1 blit too
                 call    P1_BLIT         ; copy SECTOR_BUF -> P1_DEST with page1=RAM
+                call    fdc_io_done     ; restore caller IFF after the blit
                 ld      hl, (P1_DEST)
                 ld      de, 512
                 add     hl, de

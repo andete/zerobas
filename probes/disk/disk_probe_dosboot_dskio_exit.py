@@ -19,7 +19,7 @@ page-0 RAM) to confirm:
   - No repeat calls for the same DE sector (no retry loop)
   - Progress to later sectors → boot advances toward A>
 
-Also traps $4030 (our work-area entry) and $44F9 (bdos_entry) as boot-depth markers.
+Also traps $4030 (our work-area entry) and $44FF (bdos_entry) as boot-depth markers.
 
 DISK SAFETY: uses a /tmp copy of the DOS disk only.
 
@@ -62,8 +62,10 @@ proc rw {{a}} {{
     return [expr {{$v & 0xFFFF}}]
 }}
 
-# --- DSKIO entry ---
-debug set_bp 0x4010 {{}} {{
+# --- DSKIO entry: trap both $4010 (CALLF path) and $4257 (direct dskio label)
+# The real BIOS calls dskio at its label address ($4257) via CALLF, bypassing the
+# standard $4010 disk-ROM header offset. MSXDOS.SYS calls $4010. Trap both.
+proc on_dskio_entry {{}} {{
     incr ::dskio_n
     if {{$::dskio_n > {MAX_DSKIO}}} {{ return }}
     set hl [reg HL]
@@ -85,11 +87,12 @@ debug set_bp 0x4010 {{}} {{
         $::dskio_n $hl $b $de $caller $p1 $::same_de_streak]
     set ::in_dskio 1
 }}
+debug set_bp 0x4010 {{}} {{ on_dskio_entry }}
+debug set_bp 0x4257 {{}} {{ on_dskio_entry }}
 
-# --- DSKIO exit: trap caller return address ($0320) ---
-# This fires whenever the kernel returns from the callf-DSKIO trampoline.
+# --- DSKIO exit: trap caller return address ($0320 CALLF path, $4752 fat_mount path)
 # The flag ::in_dskio gates it so we only log it when DSKIO was just called.
-debug set_bp 0x0320 {{}} {{
+proc on_dskio_exit {{}} {{
     if {{!$::in_dskio}} {{ return }}
     set ::in_dskio 0
     set af [reg AF]
@@ -101,12 +104,14 @@ debug set_bp 0x0320 {{}} {{
     lappend ::log [format \\
         "  exit Cy=%d A=%02X B=%d HL_ret=%04X" $cy $a $b $hl_ret]
 }}
+debug set_bp 0x0320 {{}} {{ on_dskio_exit }}
+debug set_bp 0x4752 {{}} {{ on_dskio_exit }}
 
 # --- boot-depth markers ---
 debug set_bp 0x4030 {{}} {{
     lappend ::log "  [MARKER] $4030 work-area entry hit (sp=[reg SP])"
 }}
-debug set_bp 0x44F9 {{}} {{
+debug set_bp 0x44FF {{}} {{
     lappend ::log "  [MARKER] bdos_entry hit (sp=[reg SP])"
 }}
 
