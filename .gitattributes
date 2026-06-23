@@ -1,0 +1,19 @@
+# zerobas is a Unix-toolchain project (GNU make + pasmo + python3, driven through a
+# /bin/sh-style shell even on Windows via MSYS2). Force LF in every working tree so
+# the Makefile recipes and the assembled sources are never broken by CRLF — the
+# GitHub Windows runners check out with core.autocrlf=true otherwise, which appends
+# a stray \r to every make recipe line.
+* text=auto eol=lf
+
+# Binary artifacts: never apply end-of-line conversion or text diffing (it would
+# corrupt them). The .ips/.bps patch deliverables are tracked; the rest may appear
+# as build outputs, test images, or oracle captures.
+*.ips binary
+*.bps binary
+*.rom binary
+*.dsk binary
+*.bin binary
+*.wav binary
+*.cas binary
+*.png binary
+*.gif binary

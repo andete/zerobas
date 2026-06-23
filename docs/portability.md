@@ -14,13 +14,12 @@ untouched.**
 | Emulator-free unit tests (`make unit-test`) | ✅ | ✅ | ✅¹ |
 | Install openMSX machines (`make machines`) | ✅ | ✅ | ✅¹ |
 | openMSX oracle probes (`probes/`) | ✅ | ✅ | ✅¹ |
-| Automated CI | ✅ | local² | deferred³ |
+| Automated CI | ✅ | local² | ✅ |
 
 ¹ Windows needs a Unix-style `make` + `pasmo` on `PATH` (MSYS2 / Git Bash / WSL).
   No code blocks Windows — there is no shell-script or hardcoded-path dependency.
-² macOS is built locally by the author; it is not in the CI matrix (the hosted macOS
-  runners bill at 10× on a private repo). See *CI* below.
-³ The GitHub Windows runners have no turnkey `pasmo` + `make`; see *CI* below.
+² macOS is built locally by the author; it is not a CI job (the hosted macOS runners
+  bill at 10× on a private repo). See *CI* below.
 
 ## What the build actually needs
 
@@ -59,20 +58,29 @@ The original blockers were hardcoded macOS paths and a `/bin/sh` dependency.
 
 ## CI
 
-[`../.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on **ubuntu-latest**:
-install pasmo (apt — it is in Ubuntu *universe*), build the ROMs, smoke-import the
-host tooling, and run `make unit-test`. It deliberately does **not** build the
-`.ips/.bps` patches (they need a stock C-BIOS ROM, not a pure build input) or run the
-probes (they need your own reference ROMs).
+[`../.github/workflows/ci.yml`](../.github/workflows/ci.yml) has two jobs, each of
+which builds the ROMs, smoke-imports the host tooling, and runs `make unit-test`:
+
+- **`linux`** (ubuntu-latest) — installs pasmo from apt (it is in Ubuntu *universe*).
+- **`windows`** (windows-latest) — runs inside **MSYS2**, so the existing Unix-style
+  Makefile (`mkdir -p`, `cp`, `rm`, `python3`) works unchanged. pasmo has no Windows
+  package, so the job builds it from source (`./configure && make`) in the same
+  environment. The repo-wide [`../.gitattributes`](../.gitattributes) forces LF line
+  endings so the runner's `autocrlf=true` cannot corrupt the Makefile or the tracked
+  binary patches.
+
+Neither job builds the `.ips/.bps` patches (they need a stock C-BIOS ROM, not a pure
+build input) or runs the probes (they need your own reference ROMs).
 
 **macOS CI is intentionally omitted**: the author builds macOS locally, and the
 hosted macOS runners bill at 10× on a private repo. The macOS toolchain is verified
 to work (pasmo 0.5.5 builds from source on macOS); a macOS job can be added later by
 building pasmo from source in a `runner.os == 'macOS'` step.
 
-**Windows CI is deferred**, not blocked by zerobas: the hosted Windows runners offer
-no turnkey `pasmo` + `make`. The *code* is Windows-ready; a Windows job would need to
-provision the toolchain (MSYS2 + a pasmo build) first.
+> **First-run note.** The Windows job exercises a toolchain (MSYS2 + a from-source
+> pasmo) that cannot be validated without a Windows runner, so its first runs on
+> GitHub may need a round or two of adjustment — that is exactly the proof-of-build
+> signal it exists to provide.
 
 ## Known non-blockers
 

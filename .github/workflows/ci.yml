@@ -5,22 +5,24 @@
 # passes its tests with only pasmo + python3 -- no openMSX and no proprietary
 # reference ROMs.
 #
-# What runs here (and why):
-#   * the ROMs (build/basic.rom, build/disk.rom) -- pasmo assembles them; no other
-#     inputs needed.
-#   * make unit-test -- the emulator-free Z80 unit tests (tests/), the ideal portable
-#     regression layer: an embedded Z80 core, no openMSX, no reference ROMs.
+# What runs (per OS):
+#   * the ROMs (build/basic.rom, build/disk.rom) -- pasmo assembles them.
+#   * make unit-test -- the emulator-free Z80 unit tests (tests/): an embedded Z80
+#     core, no openMSX, no reference ROMs. The portable regression layer.
 #   * a smoke import of the host tooling, so the build scripts are checked to load.
 #
-# What does NOT run here: the .ips/.bps patch build (needs a stock C-BIOS main ROM
-# to stamp against -- see tools/build_patches.py) and the openMSX oracle probes (need
-# your own reference ROMs). Those are validated locally; the patch build is proven
-# byte-reproducible there.
+# What does NOT run: the .ips/.bps patch build (needs a stock C-BIOS main ROM to
+# stamp against -- see tools/build_patches.py) and the openMSX oracle probes (need
+# your own reference ROMs). Those are validated locally.
 #
-# Scope: Linux only. macOS builds are covered locally by the author, and the macOS
-# runners bill at 10x on a private repo. The code is also Windows-ready (no shell
-# dependency; see docs/portability.md) -- both can be added as extra jobs later (the
-# macOS job needs to build pasmo from source; Windows needs MSYS2 + a pasmo build).
+# Scope: Linux + Windows. macOS is built locally by the author (and the hosted macOS
+# runners bill at 10x on a private repo), so it is not a CI job; its toolchain is
+# nonetheless verified (pasmo 0.5.5 builds from source on macOS).
+#
+# Windows runs inside MSYS2 so the existing Unix-style Makefile (mkdir -p, cp, rm,
+# python3) works unchanged; pasmo has no Windows package, so it is built from source
+# in the same environment. The repo-wide .gitattributes forces LF endings so the
+# Windows runner's autocrlf does not break the Makefile.
 
 name: ci
 
@@ -30,7 +32,7 @@ on:
   pull_request:
 
 jobs:
-  build-and-test:
+  linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,7 +52,55 @@ jobs:
       - name: Build the ROMs
         run: make build/basic.rom disk
 
-      - name: Smoke-import host tooling (loads on this OS's Python)
+      - name: Smoke-import host tooling
+        run: |
+          python3 tools/build_patches.py --help > /dev/null
+          python3 tools/install-openmsx-machine.py --help > /dev/null
+          python3 -c "import sys; sys.path.insert(0, 'tools'); import openmsx_paths; print('openmsx_paths OK')"
+
+      - name: Run the emulator-free unit tests
+        run: make unit-test
+
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}     # Unix shell so the Makefile recipes work unchanged
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MSYS       # most Linux-like env; all tools share one runtime
+          update: true
+          install: >-
+            make
+            gcc
+            python
+            curl
+            tar
+
+      - name: Build pasmo from source (no Windows package exists)
+        run: |
+          set -eux
+          curl -fsSL https://pasmo.speccy.org/bin/pasmo-0.5.5.tar.gz -o pasmo.tar.gz
+          tar xf pasmo.tar.gz
+          cd pasmo-0.5.5
+          ./configure
+          make
+          make install
+          command -v pasmo
+          pasmo --version
+
+      - name: Show toolchain
+        run: |
+          python3 --version
+          make --version | head -1
+
+      - name: Build the ROMs
+        run: make build/basic.rom disk
+
+      - name: Smoke-import host tooling
         run: |
           python3 tools/build_patches.py --help > /dev/null
           python3 tools/install-openmsx-machine.py --help > /dev/null
