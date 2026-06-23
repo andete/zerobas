@@ -53,8 +53,10 @@ that keeps it clean:
 ## Generation legend
 
 `1` MSX1 · `2` MSX2 · `2+` MSX2+ · `R` Turbo-R · `all` every gen · `disk`
-disk-equipped machines. zerobas is **MSX1-scoped today**; the `2`/`2+`/`R` rows
-are catalogued for *future* work and are not in scope until the charter says so.
+disk-equipped machines · `ext` extension-cartridge hardware (not a built-in part
+of any generation — present only when the cartridge is). zerobas is **MSX1-scoped
+today**; the `2`/`2+`/`R`/`ext` rows are catalogued for *future* work and are not in
+scope until the charter says so.
 
 ---
 
@@ -72,6 +74,7 @@ launder around, the chip *is* the reference.
 | **TMS9918A data manual** (Texas Instruments) | A | Clean | 1 | SCREEN 0–3, sprite engine, VRAM / registers |
 | **Yamaha V9938 "MSX-VIDEO" Technical Data Book** (Aug 1985) | A | Clean | 2 | SCREEN 4–8 + the command (blitter) engine |
 | **Yamaha V9958 MSX-VIDEO Technical Data Book / Application Manual** | A | Clean | 2+·R | SCREEN 10–12, YJK. Official Yamaha doc, scanned original + OCR on grauw (`resources/video/yamaha_v9958.pdf`) |
+| **Yamaha V9990 (E-VDP III) Application Manual / datasheet** | A | Clean | ext | the VDP on the **GFX9000 / Power Graph / Video9000** expansion cartridges — *not* a built-in MSX VDP and **not** register-compatible with the V99x8 family (its own P1/P2/Bx modes + command engine). Manufacturer Yamaha doc, on grauw (`resources/video/`). Driven via the cartridge's own I/O ports, software-detected; commonly an MSX2+/Turbo-R-era demoscene target |
 | **AY-3-8910 PSG datasheet** (General Instrument) | A | Clean | 1·2·2+·R | base `SOUND` / `PLAY` |
 | **Yamaha YM2413 (OPLL) Application Manual** | A | Clean | 2+·R, + FM-PAC on any | MSX-MUSIC |
 | **Yamaha Y8950 (MSX-AUDIO) datasheet** | A | Clean | cart / some 2 | MSX-AUDIO (FM + ADPCM). **Not niche** — a staple of the MSX demoscene / homebrew audio; a first-class sound source |
