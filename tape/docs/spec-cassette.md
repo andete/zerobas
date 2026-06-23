@@ -13,11 +13,11 @@ this spec is itself a first-class deliverable: a clean-provenance behavioural
 reference for the seven entry points, usable independently of zerobas's code.
 
 > **Maturity.** Phase 0 records the documented contracts and the break-and-dump
-> findings already in [`docs/cbios-probe-results.md`](https://github.com/andete/msx-preservation/blob/main/docs/cbios-probe-results.md).
+> findings already in the cassette break-and-dump probe results (kept in the private workbench).
 > The **write-path** signal rows are now **captured** (Phase 1): a probe cart
-> (`tools/omsx/bios_probe_tapwrite.py`) drove `TAPOON`+`TAPOUT` on the VG-8020,
+> (`probes/tape/bios_probe_tapwrite.py`) drove `TAPOON`+`TAPOUT` on the VG-8020,
 > openMSX recorded CAS-out via `omsx_run.py --record`, and
-> `tools/omsx/cas_decode.py` round-tripped the exact byte pattern. The **read-path**
+> `probes/lib/cas_decode.py` round-tripped the exact byte pattern. The **read-path**
 > rows (leader detect, phase lock) remain *to capture* (Phase 2).
 
 ## Shared model
@@ -50,7 +50,7 @@ reference for the seven entry points, usable independently of zerobas's code.
   a short re-sync between header and data blocks. **Oracle-confirmed:** the long
   header is a continuous high-frequency tone (99.8% of half-periods in the capture).
 - **Block layout** (header + data, `0xD0`×10 binary file-type marker) is characterised
-  in the BASIC project's [`spec-bload-r.md`](https://github.com/andete/msx-preservation/blob/main/basic-spec/docs/spec-bload-r.md);
+  in the BASIC project's [`spec-bload-r.md`](../../basic/docs/spec-bload-r.md);
   this project owns the layer that turns those bytes into edges and back.
 
 ### Relevant work-area sysvars (addresses from MAP/TH; to wire up)
@@ -252,7 +252,7 @@ release.
 ## Determinism
 
 openMSX captures are deterministic per
-[`docs/openmsx-harness.md`](https://github.com/andete/msx-preservation/blob/main/docs/openmsx-harness.md); with mounted tape
+[`docs/openmsx-harness.md`](../../docs/openmsx-harness.md); with mounted tape
 media the read/write paths run under throttle-off and are expected to reproduce
 byte-identically run to run — to be confirmed when Phase 1 capture exists.
 

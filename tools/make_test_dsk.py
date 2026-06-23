@@ -207,7 +207,7 @@ class Fat12Image:
 
 
 # --- PROG.BIN: a real BSAVE binary for the disk BLOAD execute path ----------
-# Payload contract (mirrored by disk-spec/tools/disk_probe_bload_disk.py):
+# Payload contract (mirrored by probes/disk/disk_probe_bload_disk.py):
 #   start = exec = PROG_LOAD; the blob writes MARKER (one byte) to MARKER_ADDR,
 #   then a deterministic data tail follows the code, then JR $ at PROG_LOAD+
 #   LANDMARK_OFF is the break landmark for the ,R handoff. end = last data byte.

@@ -181,7 +181,7 @@ contract: [`disk/docs/expansion-protocol.md`](disk/docs/expansion-protocol.md).
       ways — the hook bytes are read back after a clean cold boot *before* any stub
       runs, and a breakpoint on `$FFA7` is *hit* during the BIOS PHYDIO call (the hook
       is load-bearing, not bypassed). Harness:
-      `disk-spec/tools/disk_probe_provider_phydio.py` (ALL PASS). The earlier
+      `probes/disk/disk_probe_provider_phydio.py` (ALL PASS). The earlier
       injected-hook `CALL $FFA7`, HPHYD-bytes, and CF-3300 GETDPB differential checks
       still stand under it. **Tier 2** — a real *filesystem* host (DOS/Disk-BASIC,
       which alone consumes GETDPB organically) — requires DOS-boot or Disk-BASIC

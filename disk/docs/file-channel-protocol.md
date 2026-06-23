@@ -15,8 +15,7 @@ Every finding is cited to an allowed source: the **MSX2 Technical Handbook** (TH
 the public **MSX hook table**, or this spike's **black-box openMSX observation** of
 the genuine **National CF-3300** Disk BASIC (BP on the documented `DSKIO ($4010)`
 entry + live register/RAM read-out; the reference ROM's code bytes were never read
-or disassembled). Harness: `disk-spec/tools/diskbasic_probe_filechannel.py`
-(msx-preservation).
+or disassembled). Harness: `probes/disk/diskbasic_probe_filechannel.py`.
 
 ---
 
@@ -224,7 +223,7 @@ to zerobas sources for this spike.
 
 ## 7. Harness
 
-`disk-spec/tools/diskbasic_probe_filechannel.py` (msx-preservation): boots the real
+`probes/disk/diskbasic_probe_filechannel.py`: boots the real
 `National_CF-3300` Disk BASIC on a **/tmp copy** of `test720.dsk` (never the
 committed image — Disk BASIC writes would mutate it; see
 [[test-disk-mutation-gotcha]]), types the `OPEN`/`PRINT#`/`CLOSE`/`OPEN`/`INPUT#`/

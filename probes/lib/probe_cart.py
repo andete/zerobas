@@ -18,8 +18,8 @@ machine's BIOS took to boot and call INIT.
 Phase 2 (parked) will grow the payload into a battery of BIOS calls that records
 results into a RAM buffer; the header/DONE scaffolding here is reused as-is.
 
-    python3 tools/omsx/probe_cart.py --out sentinel.rom            # default marker
-    python3 tools/omsx/probe_cart.py --marker JONG --at 0xE000 --out sentinel.rom
+    python3 probes/lib/probe_cart.py --out sentinel.rom            # default marker
+    python3 probes/lib/probe_cart.py --marker JONG --at 0xE000 --out sentinel.rom
 """
 from __future__ import annotations
 

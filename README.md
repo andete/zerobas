@@ -96,9 +96,10 @@ quality (A/B/C) and mapped to the MSX generation(s) it serves, including the
 VDP / sound / CPU datasheets for MSX2 / MSX2+ / Turbo-R — lives in
 [`docs/allowed-sources.md`](docs/allowed-sources.md).
 
-The behavioural specifications zerobas is built from live in the companion
-analysis repo (`msx-preservation`, under `basic-spec/docs/`), produced by
-driving a real MSX in openMSX as a black box.
+The behavioural specifications zerobas is built from live beside the code in the
+component `docs/` directories (e.g. [`basic/docs/`](basic/docs)), produced by
+driving a real MSX in openMSX as a black box. The broader characterisation corpus
+and workbench stay in a private analysis area (see [`PUBLISHING.md`](PUBLISHING.md)).
 
 ## Authorship & AI assistance
 
@@ -286,7 +287,7 @@ cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`.
   them at run time into variables across statements and lines, and
   `RESTORE [<line>]` rewinds the data cursor. **Still out:** `ON … GOTO` and
   `ELSE <line>` branch lists, and string DATA. See
-  [`spec-controlflow.md`](https://github.com/andete/msx-preservation/blob/main/basic-spec/docs/spec-controlflow.md).
+  [`spec-controlflow.md`](basic/docs/spec-controlflow.md).
   Validated on openMSX by `basic_probe_controlflow.py`, `basic_probe_loops.py`,
   `basic_probe_data.py` (stored programs + branches + loops + data) and
   `basic_probe_crunch.py` (byte-identical tokenisation).

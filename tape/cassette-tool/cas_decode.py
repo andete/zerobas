@@ -24,8 +24,8 @@ The decoder is baud-agnostic: it auto-thresholds the two half-period clusters
 from the signal itself, so a 2400-baud recording (2400/4800 Hz) decodes the same
 way.
 
-  python3 tools/omsx/cas_decode.py recording.wav
-  python3 tools/omsx/cas_decode.py recording.wav --expect 55,AA,4A,4F,4E,47
+  python3 probes/lib/cas_decode.py recording.wav
+  python3 probes/lib/cas_decode.py recording.wav --expect 55,AA,4A,4F,4E,47
 """
 from __future__ import annotations
 

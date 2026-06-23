@@ -4,8 +4,7 @@
 clean-room for C-BIOS.* This is the synthesis document: it pulls the scattered
 findings of the zerobas-tape effort — the per-call contracts in
 [`spec-cassette.md`](spec-cassette.md), the sourcing in [`PROVENANCE.md`](../PROVENANCE.md),
-and the upstream oracle work in
-[andete/msx-preservation](https://github.com/andete/msx-preservation) — into one
+and the upstream oracle work (captured by the probes in [`probes/`](../../probes)) — into one
 narrative of how the hardware, the signal, and the seven BIOS routines fit
 together.
 
@@ -131,7 +130,7 @@ a block structure:
   the *caller* — BASIC, or a probe playing BASIC's role — not by the seven entry
   points; the byte-level routines just carry whatever bytes they are handed. The
   block format itself is characterised in the BASIC project's
-  [`spec-bload-r.md`](https://github.com/andete/msx-preservation/blob/main/basic-spec/docs/spec-bload-r.md).
+  [`spec-bload-r.md`](../../basic/docs/spec-bload-r.md).
 
 > **A container vs. tape gotcha.** The 8-byte sync sequence `1F A6 DE BA CC 13 7D 74`
 > that appears in MSX `.cas` *files* is a property of the **container format**, not
@@ -202,7 +201,7 @@ without the user specifying it. The same property is what let the read path late
 extend to openMSX's **3744-baud `.cas`** synthesis — a rate neither standard nor
 selectable — purely by widening the discrimination range, with no new "mode". (That
 saga is documented upstream:
-[`finding-openmsx-cas-3744-baud.md`](https://github.com/andete/msx-preservation/blob/main/basic-spec/docs/finding-openmsx-cas-3744-baud.md).)
+the 3744-baud read-margin investigation (private workbench).)
 
 ### The threshold needs fractional precision
 
@@ -256,7 +255,7 @@ project's answer is a **black-box oracle**:
   as a black box** — known bytes in, observed edges/bytes out. A behavioural
   difference is a *bug report*, resolved from an allowed source, never by reading the
   original's code. This is the "oracle, not answer key" rule, extended to tape from
-  [`openmsx-harness.md`](https://github.com/andete/msx-preservation/blob/main/docs/openmsx-harness.md).
+  [`openmsx-harness.md`](../../docs/openmsx-harness.md).
 - **The governing acceptance test is a round-trip.** Because the *signal format* is
   the interface — not any loop count — bytes written by `TAPOON`/`TAPOUT` and
   recorded by openMSX as tape media must decode back to the identical bytes, via
@@ -279,7 +278,7 @@ chatters at zero-crossings (sensitive at ~0.05 full scale).
 
 The regression net that guards all of this lives upstream as three tiers
 (deterministic / `.cas` corpus / analog `.wav`):
-[`tape-regression.md`](https://github.com/andete/msx-preservation/blob/main/docs/tape-regression.md).
+[`tape-regression.md`](tape-regression.md).
 
 ---
 
@@ -292,6 +291,6 @@ The regression net that guards all of this lives upstream as three tiers
 | Why this is legally and technically feasible, and how it was staged | [`feasibility.md`](feasibility.md) |
 | The clean-room firewall rules in full | [`clean-room-policy.md`](clean-room-policy.md) |
 | The host-side `.cas`/`.wav` tooling | [`cassette-tool/README.md`](../cassette-tool/README.md) |
-| The deterministic openMSX harness | [openmsx-harness.md](https://github.com/andete/msx-preservation/blob/main/docs/openmsx-harness.md) |
-| The 3744-baud read-margin saga | [finding-openmsx-cas-3744-baud.md](https://github.com/andete/msx-preservation/blob/main/basic-spec/docs/finding-openmsx-cas-3744-baud.md) |
-| The regression suite (three tiers) | [tape-regression.md](https://github.com/andete/msx-preservation/blob/main/docs/tape-regression.md) |
+| The deterministic openMSX harness | [openmsx-harness.md](../../docs/openmsx-harness.md) |
+| The 3744-baud read-margin saga | the 3744-baud read-margin investigation (private workbench) |
+| The regression suite (three tiers) | [tape-regression.md](tape-regression.md) |

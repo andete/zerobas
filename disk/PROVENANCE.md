@@ -416,7 +416,7 @@ write-protected disk is reported up front with **no** retry.
 | WP/write-fault reported up front, no restore-retry | — | own design; a protected medium will not be cured by a recalibrate, so retrying is pointless (and could mask the WP) | sourced |
 | Write status → DSKIO error mapping (WP/fault→0, NOTRDY→2, RNF→8, CRC→4, LOST→12) | — | own mapping; WD2793 DS Type-II status bits ↔ MSX2 TH DSKIO error codes (identical to the read mapping plus the WP/fault→0 row) | sourced |
 | `B` = sectors-not-written on error, like the read path's `dskio_err` | — | MSX2 TH, disk ROM interface (DSKIO output: B = sectors not transferred) | sourced |
-| WRITE round-trip + persistence + CF-3300 cross-machine read all byte-identical | — | **differential oracle PASS** (`disk_probe_write.py`, msx-preservation): our `dskio_write` writes a distinctive 512-byte pattern to a /tmp scratch image, our read path reads it back identical, a fresh reboot reads it identical (persisted to the image file), and the **genuine National CF-3300's own disk ROM** DSKIO-reads the sector **byte-identical** to what we wrote | oracle-confirmed |
+| WRITE round-trip + persistence + CF-3300 cross-machine read all byte-identical | — | **differential oracle PASS** (`disk_probe_write.py`): our `dskio_write` writes a distinctive 512-byte pattern to a /tmp scratch image, our read path reads it back identical, a fresh reboot reads it identical (persisted to the image file), and the **genuine National CF-3300's own disk ROM** DSKIO-reads the sector **byte-identical** to what we wrote | oracle-confirmed |
 
 > **Single-drive simplification.** The CF-3300 declares `<drives>1</drives>`; the
 > driver always selects drive A (latch bit 0) and ignores the DSKIO drive number
@@ -487,7 +487,7 @@ instruction, plus one belt-and-braces RET:
 > 3–29 (OEM + BPB) and the FAT/dir geometry are untouched; only $1E..$1FD change.
 
 > **Oracle-confirmed cold-boot-safe (before vs after).** `disk_probe_boot.py`
-> (msx-preservation) cold-boots the genuine **National CF-3300** reference with the
+> cold-boots the genuine **National CF-3300** reference with the
 > image attached as drive A and samples CPU PC after settle. **AFTER (this stub):**
 > PC reaches BASIC (ROM/RAM, e.g. $DEC1/$0D68/$10D9; SP healthy ~$C1xx; PC moving =
 > live interpreter), screenshot shows the Disk-BASIC "Enter date" prompt — no
@@ -584,7 +584,7 @@ variable; zerobas calls through that vector using CP/M-compatible FCB calls.
 | Set DTA ($1A): store DE into `BDOS_DTA`; subsequent SeqReads copy to it | — | own code; $1A call number + DE=DTA convention sourced (MSX2 TH / MSX-DOS) | sourced |
 | `BDOS_DTA` default | $0080 | MSX2 TH, BDOS conventions (MSX-DOS default); INIT seeds it | sourced |
 | Records per sector = 512 / 128 = 4 | $04 | own derivation (sector size ÷ record size) | sourced |
-| Open → 17× SeqRead → Close delivers byte-identical records + return codes vs real MSX-DOS 1.03 (cluster-multiple file) | — | **NARROW differential oracle PASS** (`disk_probe_bdos.py`, msx-preservation): same `ORACLE.BIN` read on MSX-DOS and on our `bdos_entry` via CALSLT — Open/records/EOF/Close all byte-identical | oracle-confirmed |
+| Open → 17× SeqRead → Close delivers byte-identical records + return codes vs real MSX-DOS 1.03 (cluster-multiple file) | — | **NARROW differential oracle PASS** (`disk_probe_bdos.py`): same `ORACLE.BIN` read on MSX-DOS and on our `bdos_entry` via CALSLT — Open/records/EOF/Close all byte-identical | oracle-confirmed |
 | SeqRead EOF bounded by true file size (`FAT_FILESIZE` → `BDOS_BYTESLEFT`): partial final record = n real bytes + (RECSIZE−n) $00 pad, code $00; EOF ($01) on the next read | — | **FULL differential oracle PASS** (`disk_probe_bdos.py`, PART A): a 1500-byte non-cluster-multiple `ORACLE2.BIN` read on MSX-DOS 1.03 and on our `bdos_entry` is byte-identical across all 12 delivered records (incl. the 92-byte partial) and the EOF code | oracle-confirmed |
 | Partial-record pad value = **$00 (zero-fill)** | — | **ORACLE OBSERVATION** (`disk_probe_bdos.py` PART A): MSX-DOS 1.03 returns the partial record with its tail beyond the file end set to $00 — confirmed actively zero-filled by pre-loading the DTA with $FF and seeing the tail still read $00 (so not Ctrl-Z/$1A, not stale). Record framing from MSX2 TH FCB sequential I/O / CP/M FCB | oracle-confirmed |
 | Single open file: position in FAT iterator + BDOS_RECIDX + BDOS_BYTESLEFT, FCB extent (+12) / current-record (+32) / record-count (+15) / alloc-map (+16..31) fields left at $00 | — | own design simplification (read-only loader subset). **DOCUMENTED INTENTIONAL DIVERGENCE**, not a fidelity gap: `disk_probe_bdos.py` PART B captures these fields on both machines and reports the divergence — MSX-DOS advances them (its internal FCB bookkeeping), zerobas does not. zerobas's only `bdos_entry` callers (BLOAD/LOAD/RUN) read **A + the DTA only, never FCB fields**, so matching this bookkeeping has no functional value. The fields a reasonable FCB caller *does* read — drive (+0) and the 8.3 name (+1..+11) — ARE byte-identical (PART B [MATCH]) | divergence-documented |
@@ -650,8 +650,8 @@ make it durable at Close. The single-open-file model of the read side is
 preserved (one file open for read OR write at a time); the write position lives
 in dedicated scratch (§Scratch RAM), not in the FCB bookkeeping fields (the same
 documented divergence as the read side). The whole write surface is
-**differential oracle-confirmed vs real MSX-DOS 1** by `disk_probe_fwrite.py`
-(msx-preservation): functional read-back, cross-machine MSX-DOS read, and a
+**differential oracle-confirmed vs real MSX-DOS 1** by `disk_probe_fwrite.py`:
+functional read-back, cross-machine MSX-DOS read, and a
 structural image diff.
 
 | Item | Value | Source (allowed) | Status |
@@ -796,7 +796,7 @@ RAM outside known regions.
 ## Oracle probes owed
 
 Before any code section is declared complete, the following black-box probes
-must be run against the CF-3300 in openMSX and added to `msx-preservation`:
+must be run against the CF-3300 in openMSX and added to the probe suite (`probes/disk/`):
 
 1. **FDC register map probe** — ~~confirm the CF-3300 WD2793 base address and
    drive-select latch by writing known patterns and reading status~~ **Resolved
@@ -807,8 +807,8 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
    exercised, not just sourced.
 2. **DSKIO sector read** — read sector 0 (boot sector) and confirm BPB fields
    match the known test image; validates FAT12 and FDC layers together.
-   **DONE — differential oracle PASS.** `disk-spec/tools/disk_probe_dskio.py`
-   (in the `msx-preservation` repo) reads the same `disk/test720.dsk` on the real
+   **DONE — differential oracle PASS.** `probes/disk/disk_probe_dskio.py`
+   (in `probes/disk/`) reads the same `disk/test720.dsk` on the real
    National CF-3300 reference and on our `*_BASIC_DISK` machine by calling the
    standard DSKIO entry ($4010, MSX2 TH) via `CALSLT`, and compares the returned
    bytes + carry/A. Result: zerobas-disk's DSKIO is **byte-identical to the
@@ -835,7 +835,7 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
    construct, available only once MSX-DOS is loaded (page 0 = RAM). Second, and the
    current state: the right reference for the FCB layer is therefore **real
    MSX-DOS 1**, not the CF-3300 disk ROM — and that differential now **exists and
-   passes** (`disk_probe_bdos.py`, msx-preservation). It reads the same `ORACLE.BIN`
+   passes** (`disk_probe_bdos.py`). It reads the same `ORACLE.BIN`
    through Open → 17× SeqRead → Close on real MSX-DOS 1.03 (booted on
    `National_CF-3300` from a DOS system disk, the `.COM` auto-run via AUTOEXEC.BAT)
    and on our `bdos_entry` (via CALSLT), and the Open result, all 16 records, the
@@ -861,7 +861,7 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
    cassette path's oracle spec.
 5. **DSKIO sector WRITE** — prove `dskio_write` produces a real, correctly
    formatted sector, bidirectionally and black-box. **DONE — differential oracle
-   PASS.** `disk-spec/tools/disk_probe_write.py` (msx-preservation) makes a /tmp
+   PASS.** `probes/disk/disk_probe_write.py` makes a /tmp
    scratch COPY of the test image (never the committed one — openMSX `-diska`
    writes back), then: (a) **round-trip** on `C-BIOS_MSX1_BASIC_DISK` — a stub
    DSKIO-WRITEs a distinctive 512-byte pattern to a high data sector and our
@@ -874,8 +874,8 @@ must be run against the CF-3300 in openMSX and added to `msx-preservation`:
    data + carry/A observed; the reference disk ROM is never read or disassembled.
 6. **BDOS FCB WRITE round-trip** — prove the Create / Sequential Write /
    write-flushing Close subset produces a real, MSX-DOS-compatible FAT12 file.
-   **DONE — differential oracle PASS.** `disk-spec/tools/disk_probe_fwrite.py`
-   (msx-preservation) operates only on /tmp copies of the seed disk (never a
+   **DONE — differential oracle PASS.** `probes/disk/disk_probe_fwrite.py`
+   operates only on /tmp copies of the seed disk (never a
    committed image): (a) **functional** — on `C-BIOS_MSX1_BASIC_DISK` a stub
    Set-DTA + Create + 11× Sequential Write (a 1408-byte payload: a 128-byte-record
    multiple but not a sector or cluster multiple, so it exercises a partial final

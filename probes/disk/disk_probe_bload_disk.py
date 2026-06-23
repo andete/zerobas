@@ -59,8 +59,8 @@ import sys
 import time
 
 OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
-# The test image lives in the sibling zerobas repo (the disk ROM's home), not in
-# msx-preservation. Allow an override; default to ../zerobas/disk/test720.dsk.
+# The test image lives in this repo at disk/test720.dsk (the disk ROM's home).
+# Allow an override via $ZEROBAS; default to the repo root.
 ZEROBAS = os.environ.get(
     "ZEROBAS", os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 DSK = os.environ.get("DISK_DSK", os.path.join(ZEROBAS, "disk", "test720.dsk"))

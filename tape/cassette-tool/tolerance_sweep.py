@@ -15,10 +15,10 @@ Example -- map the zerobas-tape read path's speed-error lock range:
 
   python3 cassette-tool/tolerance_sweep.py clean.wav \\
     --param speed --values=-30,-20,-10,0,10,20,30 \\
-    --decode 'python3 tools/omsx_run.py --machine C-BIOS_tape \\
+    --decode 'python3 probes/lib/omsx_run.py --machine C-BIOS_tape \\
        --cart /tmp/fileR.rom --cassette {wav} --bp 0x7FF0 \\
        --mem memory:0xE000:28 --out /tmp/c.txt >/dev/null 2>&1 && \\
-       python3 tools/omsx/bios_probe_tapfile.py --analyze /tmp/c.txt | grep -q "^MATCH"'
+       python3 probes/tape/bios_probe_tapfile.py --analyze /tmp/c.txt | grep -q "^MATCH"'
 
 `--base` passes extra fixed degrade_wav.py args applied on every run (e.g. a
 background "--noise 0.03"). Parameters that take HZ:PCT (wow) accept those values

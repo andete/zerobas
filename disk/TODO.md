@@ -149,7 +149,7 @@ See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
       write each byte to `FDC_DATA`), then result-phase status. Write-protect /
       write-fault (status bit 6 $40) → DSKIO code 0 (no retry); NOTRDY→2,
       RNF→8, CRC→4, LOST→12, `B` = sectors-not-written, exactly like the read
-      path. **Differential oracle PASS** (`disk_probe_write.py`, msx-preservation):
+      path. **Differential oracle PASS** (`disk_probe_write.py`):
       our write to a /tmp scratch image round-trips through our read path, persists
       across a reboot, and is read **byte-identical by the genuine National CF-3300**
       disk ROM. This is the physical sector-write primitive only; FAT12/BDOS write
@@ -196,10 +196,10 @@ See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
       functional validation is deferred: it needs the openMSX machine config +
       a test `.dsk` + oracle probe 3 — so this lands **implemented, not yet
       oracle-confirmed**.)
-- [~] **Oracle probes** (in msx-preservation repo) — black-box observation of
+- [~] **Oracle probes** (in `probes/`) — black-box observation of
       BDOS return values and FCB state on a reference machine with a known
       `.dsk` image
-      (`disk-spec/tools/disk_probe_dskio.py` in msx-preservation: differential
+      (`probes/disk/disk_probe_dskio.py`: differential
       DSKIO sector read vs the real National CF-3300 — **PASS, byte-identical**
       (sector 0 + sector 14, return codes and data). Strictly black-box: calls
       the standard $4010 DSKIO entry via CALSLT and observes only returned data
@@ -208,7 +208,7 @@ See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
       MSX-DOS 1.** The CF-3300 disk ROM runs Disk BASIC and exposes no CP/M FCB
       BDOS ($F37D → BIOS ROM, no $0005 BDOS, page 0 is ROM), so the reference for
       the FCB layer is **MSX-DOS**, not the CF-3300 disk ROM. That differential
-      now exists and passes: `disk-spec/tools/disk_probe_bdos.py` reads the same
+      now exists and passes: `probes/disk/disk_probe_bdos.py` reads the same
       `ORACLE.BIN` through Open → 17× SeqRead → Close on real MSX-DOS 1.03 (booted
       on `National_CF-3300` from a user-supplied DOS system disk; a tiny `.COM` is
       injected + auto-run via AUTOEXEC.BAT, since hijacking PC at the prompt
@@ -277,8 +277,8 @@ See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
       in-flight data sector. New write-position scratch at $E546.. + numFATs/secPerFAT
       cache + `WBUF` $E560 (disk/PROVENANCE.md §Scratch RAM). disk.rom 16384 / 7
       baseline warnings (no new "never used"); basic.rom **byte-identical**.
-      **DIFFERENTIAL ORACLE PASS** (`disk-spec/tools/disk_probe_fwrite.py`,
-      msx-preservation, on /tmp scratch copies only — never a committed image):
+      **DIFFERENTIAL ORACLE PASS** (`probes/disk/disk_probe_fwrite.py`,
+      on /tmp scratch copies only — never a committed image):
       (1) **functional** — Create + 11× Sequential Write (1408 B = 11 records, a
       sub-sector, sub-cluster size exercising a partial final sector + cluster hop +
       multi-FAT sync) + Close, read back through our own bdos_open/seqread
@@ -335,7 +335,7 @@ See [`PROVENANCE.md`](PROVENANCE.md) for the per-constant trace.
       BASIC's INIT now scans the remaining slots and `CALSLT`s the disk ROM's INIT
       before the REPL, so on `C-BIOS_MSX1_BASIC_DISK` the disk INIT installs the
       same SYSTEM=$4168 / `H.PHYD`→$4165 / `H.DSKIO`→$4048 it does in isolation
-      (`disk-spec/tools/disk_probe_init.py` PASS; differential control reads the
+      (`probes/disk/disk_probe_init.py` PASS; differential control reads the
       C-BIOS defaults). Two related integration notes for the BLOAD work: (a) reaching disk
       entry points needs an inter-slot call (CALSLT works); (b) the BDOS DTA at
       $0080 assumes page-0 RAM (MSX-DOS), which does not hold under Disk BASIC —
@@ -366,7 +366,7 @@ once the BDOS API is stable.
       skipped. RDSLT/CALSLT/EXPTBL/$A8 sourced; see `../basic/PROVENANCE.md`
       §extension-ROM INIT scan. Validated end-to-end: on `C-BIOS_MSX1_BASIC_DISK`
       the disk INIT now installs SYSTEM $F37D=$4168, H.PHYD=JP $4165, H.DSKIO=JP
-      $4048 (functional probe `disk-spec/tools/disk_probe_init.py`; differential
+      $4048 (functional probe `probes/disk/disk_probe_init.py`; differential
       control with the pre-scan ROM reads C-BIOS defaults). The next items below
       (disk BLOAD) are now unblocked.
 - [x] **Disk filename parse in BLOAD** — extend `do_bload`'s device-string
@@ -392,7 +392,7 @@ once the BDOS API is stable.
       typos is worse). No new token — disk filenames are verbatim ASCII in the
       crunch stream, so the tokeniser is untouched and crunch stays byte-
       identical (Philips VG-8020). Validated: `disk_probe_bload_fcb.py`
-      (msx-preservation) on `C-BIOS_MSX1_BASIC` (parse-only code, no disk
+      on `C-BIOS_MSX1_BASIC` (parse-only code, no disk
       hardware; breaks at the `do_disk_bload` landmark) confirms `A:TEST.BIN`→
       drive 1/`TEST    BIN`, bare `TEST.BIN`→drive 1, `B:HI.TXT`→drive 2/`HI      TXT`;
       crunch + 4 regression probes pass; `BLOAD"CAS:",R` still loads + hands off.
@@ -423,7 +423,7 @@ once the BDOS API is stable.
       any post-Open error the file is closed before `load_error`.
       `disk/disk.asm` gained BDOS $1A Set-DTA + a settable `BDOS_DTA` var (default
       $0080 for MSX-DOS compat). **Validated end-to-end** (openMSX,
-      `disk-spec/tools/disk_probe_bload_disk.py`) on `C-BIOS_MSX1_BASIC_DISK` with
+      `probes/disk/disk_probe_bload_disk.py`) on `C-BIOS_MSX1_BASIC_DISK` with
       `-diska disk/test720.dsk`: `BLOAD"A:PROG.BIN",R` lands the bytes at
       $C000..$C031, PC reaches the $C010 `JR$` landmark (handoff fired) and
       ($D000)=$5A (exec ran); plain `BLOAD"A:PROG.BIN"` loads the bytes but leaves
@@ -459,7 +459,7 @@ once the BDOS API is stable.
       16-bit form ($0C $7B $00), to avoid an embedded `$00` in the body, so it is
       a faithful exercise of the shared loop (a token-aware streamed copy is
       deferred and would equally fix `do_tape_prog`). Validated end-to-end
-      (openMSX, `disk-spec/tools/disk_probe_load_disk.py`) on
+      (openMSX, `probes/disk/disk_probe_load_disk.py`) on
       `C-BIOS_MSX1_BASIC_DISK` with `-diska disk/test720.dsk`:
       `LOAD"A:PROG.BAS"` rebuilds the relinked store at `$8001` byte-identical and
       does NOT auto-run; `LOAD"A:PROG.BAS",R` rebuilds the store AND runs it
@@ -487,7 +487,7 @@ once the BDOS API is stable.
       2E 42 41 53 22 00` (`RUN_TOKEN` + the quoted filename kept verbatim, no
       line-number conversion, no new token), byte-identical vs the Philips VG-8020
       (`basic_probe_crunch.py`, ALL PASS). **Validated end-to-end** (openMSX,
-      `disk-spec/tools/disk_probe_run_disk.py`, new) on `C-BIOS_MSX1_BASIC_DISK`
+      `probes/disk/disk_probe_run_disk.py`, new) on `C-BIOS_MSX1_BASIC_DISK`
       with `-diska disk/test720.dsk`: `RUN"A:PROG.BAS"` rebuilds the relinked store
       at `$8001` byte-identical (it LOADED) AND runs it (`($D002)`=$7B — it RAN);
       both assertions pass. Crunch byte-identical; the four regression probes,
@@ -522,7 +522,7 @@ once the BDOS API is stable.
       `bsave"x",&hc0c1,&hc031,&hc0c2` → `… D0 22 78 22 2C 0C C1 C0 2C 0C 31 C0 2C 0C
       C2 C0 00`, `bsave"a:prog.bin",&hc000,&hc031`, `save"a:prog"`, `save"a:prog",a`
       → `… BA 22 61 3A 70 72 6F 67 22 2C 41 00`; ALL PASS). **Validated end-to-end**
-      (openMSX, `disk-spec/tools/disk_probe_save.py`, new) on `C-BIOS_MSX1_BASIC_DISK`
+      (openMSX, `probes/disk/disk_probe_save.py`, new) on `C-BIOS_MSX1_BASIC_DISK`
       against a /tmp writable copy of test720.dsk: BSAVE→BLOAD (data byte-identical),
       BSAVE→BLOAD,R (default-exec handoff fires at the JR$ landmark, `($D000)`=$5A),
       SAVE→NEW→RUN (relinked store at $8001 byte-identical + program ran,
@@ -613,7 +613,7 @@ once the BDOS API is stable.
       [`PROVENANCE.md`](PROVENANCE.md) §Boot sector boot code. **FAT geometry
       untouched**: bytes 0–29 and the FAT/dir/data are byte-identical; only
       $1E/$1F differ. **Cold-boot-safe, oracle-verified** (`disk_probe_boot.py`,
-      msx-preservation, on the genuine National CF-3300): AFTER the fix PC reaches
+      on the genuine National CF-3300): AFTER the fix PC reaches
       BASIC (ROM/RAM, moving, SP ~$C1xx) and a screenshot shows the Disk-BASIC
       "Enter date" prompt; the synthesised BEFORE/filler image wedges at $002E. The
       probe asserts both. Whole disk probe suite (`dskio` differential vs CF-3300

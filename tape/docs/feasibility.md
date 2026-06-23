@@ -32,13 +32,13 @@ not the implementation.**
   an actual tape signal (see *How we validate*), not just break-and-dump.
 
 This repo (`zerobas-tape`) holds the **feasibility note, the behavioural spec, and the
-implementation**. The validation harness — openMSX probes, `omsx_run.py`, oracle
-captures — lives in the companion
-[`msx-preservation`](https://github.com/andete/msx-preservation) analysis repo.
+implementation**. The validation harness — openMSX probes, `omsx_run.py` — lives
+here in [`probes/`](../../probes); only the proprietary oracle captures stay
+local-only (private workbench).
 
 ## What the probes already established
 
-From [`docs/cbios-probe-results.md`](https://github.com/andete/msx-preservation/blob/main/docs/cbios-probe-results.md)
+From the cassette-motor probe results (private workbench)
 (§ *Cassette motor*), each call run on C-BIOS and on a Sony VG-8020 oracle:
 
 | Entry | Addr | What we know today | Gap to fill |
@@ -70,7 +70,7 @@ The cassette format is documented and small:
 - **Block structure.** A recording is a long **leader tone** (~2s of the high
   frequency for phase lock), then framed bytes. The header/data block split and the
   `0xD0`×10 binary file-type marker are already characterised in the BASIC project's
-  [`spec-bload-r.md`](https://github.com/andete/msx-preservation/blob/main/basic-spec/docs/spec-bload-r.md); this project owns the
+  [`spec-bload-r.md`](../../basic/docs/spec-bload-r.md); this project owns the
   layer *below* that — turning those bytes into edges and back.
 
 ## Three things that decide it
@@ -96,7 +96,7 @@ Memory diffs aren't enough; we need the signal. Three oracle tiers, cheapest fir
    to a new tape via `cassetteplayer new` (wired into `omsx_run.py --record`) and runs
    the *emulated* write path with throttle off. **Phase 1 confirmed this works:** a
    probe cart drove `TAPOON`+`TAPOUT` on the VG-8020, the recording decoded back to
-   the exact input bytes via `tools/omsx/cas_decode.py`. This is why C-BIOS's earlier
+   the exact input bytes via `probes/lib/cas_decode.py`. This is why C-BIOS's earlier
    headless probes *blocked* — no media was mounted, not because the path is
    untestable. The read direction (mount a known-good `.cas`, decode via `TAPIN`) is
    Phase 2.
@@ -146,9 +146,9 @@ Each phase ships something useful and stands alone.
   [`clean-room-policy.md`](clean-room-policy.md), and the behavioural spec
   [`spec-cassette.md`](spec-cassette.md). Pure docs; no code. **Done.**
 - **Phase 1 — Oracle first light: capture the write path.** **Done.** The write FSK
-  was captured end to end from the VG-8020 oracle: `tools/omsx/bios_probe_tapwrite.py`
+  was captured end to end from the VG-8020 oracle: `probes/tape/bios_probe_tapwrite.py`
   drives `TAPOON`+`TAPOUT[55 AA 4A 4F 4E 47]`+`TAPOOF`; `omsx_run.py --record` saves
-  CAS-out; `tools/omsx/cas_decode.py` round-trips it to the exact bytes (1200 baud,
+  CAS-out; `probes/lib/cas_decode.py` round-trips it to the exact bytes (1200 baud,
   1213/2393 Hz). C-BIOS writes nothing (carry=error) — the negative control. This
   establishes the *oracle* the implementer's write code must match. (The clean-room
   implementation `.asm` itself was the next step and now lives in this component,
@@ -159,7 +159,7 @@ Each phase ships something useful and stands alone.
   the recording our write path produced, fed back as cassette media, is read back
   by `TAPION`+`TAPIN` to the exact 6-byte pattern (carry=0), with a realistic ~2 s
   leader. Hardware correction landed here too — CAS-in is **PSG R14 bit 7**, not
-  PPI-B (located empirically by `tools/omsx/bios_probe_casin.py`). Harness:
+  PPI-B (located empirically by `probes/tape/bios_probe_casin.py`). Harness:
   `bios_probe_tapread.py`, `bios_probe_tapraw.py` (raw half-period diagnostic).
 - **Phase 3 — Both baud rates + full block round-trip.** **Baud part done:** `TAPOON`
   reads the write baud from the live work area (the active signal-length word the

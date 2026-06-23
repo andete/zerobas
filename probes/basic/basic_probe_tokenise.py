@@ -17,7 +17,7 @@ already been crunched into KBUF and is being interpreted, so KBUF still holds
 the tokenised form. A cassette is inserted only so BLOAD gets far enough to
 reach TAPION; its contents are never read (the breakpoint fires first).
 
-Output feeds docs/spec-tokenise.md. No disassembly is consulted.
+Output feeds basic/docs/spec-tokenise.md. No disassembly is consulted.
 """
 from __future__ import annotations
 

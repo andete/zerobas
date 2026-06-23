@@ -9,8 +9,8 @@ explicitly **quarantined**. An unexplained magic value blocks release.
   **never copied** from a reference ROM or any MSX-BASIC / GW-BASIC disassembly.
 
 The behavioural source `spec-bload-r.md` is this project's own black-box oracle
-observation, captured in the `msx-preservation` repo
-(`basic-spec/docs/spec-bload-r.md`).
+observation, captured in
+[`basic/docs/spec-bload-r.md`](docs/spec-bload-r.md).
 
 ## first light: `BLOAD"CAS:",R` (basic/main.asm, basic/bload.asm, basic/sysvars.inc)
 
@@ -78,7 +78,7 @@ No quarantined items.
 
 ## REM / POKE / PEEK statement slice
 
-Behavioural source: `basic-spec/docs/spec-tokens-statements.md` (this project's
+Behavioural source: `basic/docs/spec-tokens-statements.md` (this project's
 own black-box oracle observation) and the public MSX-BASIC *language* reference.
 
 ### Keyword tokens (basic/sysvars.inc, basic/interp.asm `kwtable`)
@@ -113,7 +113,7 @@ own black-box oracle observation) and the public MSX-BASIC *language* reference.
 
 Earlier slices kept numbers/operators verbatim; that is **reversed** here so a
 crunched line is byte-for-byte identical to a real ROM's. Behavioural source:
-`basic-spec/docs/spec-tokens-statements.md §3/§4` (this project's own black-box
+`basic/docs/spec-tokens-statements.md §3/§4` (this project's own black-box
 oracle observation — the fidelity sweep). Verified by `basic_probe_crunch.py`
 (zerobas `TOKBUF` == reference `KBUF`, per line).
 
@@ -135,7 +135,7 @@ oracle observation — the fidelity sweep). Verified by `basic_probe_crunch.py`
 Behavioural source: the public MSX-BASIC *language* reference (CLEAR sets the
 string-space size and the highest address BASIC may use). The token byte and the
 HIMEM sysvar are documented-source-first (same provenance model as the Step B
-keyword set). Oracle: `basic_probe_clear.py` (msx-preservation) differences
+keyword set). Oracle: `basic_probe_clear.py` differences
 zerobas against the Philips VG-8020 reference and confirms that after
 `CLEAR 200,&HD000` both store `$D000` (LE) in HIMEM (`$FC4A`) — proving `$FC4A`
 is CLEAR's memory-top home on the reference and that zerobas matches it. All
@@ -220,7 +220,7 @@ abbreviation and every PRINT form crunch byte-identical to the VG-8020 reference
 were verified on screen (VRAM dump) in openMSX.
 
 **Multi-item PRINT — differential-confirmed on hardware.** `basic_probe_print.py`
-(msx-preservation) types each line into BOTH the reference Philips VG-8020
+types each line into BOTH the reference Philips VG-8020
 built-in BASIC and zerobas (same VG-8020, `--cart`), reads each machine's SCREEN 0
 name table, and compares the PRINT output rows byte-for-byte. ALL PASS,
 ref==zerobas: `print 1;2`→`   1  2`, `print 1;2;3`→`   1  2  3`, `print 10;20`,
@@ -759,9 +759,8 @@ and is not fabricated; after the read the crunch probe was restored to pristine
 statements/lines with `BREAKX` (`$00B7`), which scans keyboard matrix row 6 with
 no side effects and returns CF set when Ctrl-STOP is held, CF clear otherwise.
 This is the documented MSX Assembly Page / MSX2 Technical Handbook contract, and
-it is oracle-confirmed working **identically on C-BIOS_MSX1** (msx-preservation
-`tools/omsx/bios_probe_breakx.py`; `docs/cbios-probe-results.md`: "$00B7 BREAKX —
-pass … carry clear on both. IDENTICAL"). So the Ctrl-STOP functional check runs on
+it is oracle-confirmed working **identically on C-BIOS_MSX1** (private-workbench
+BREAKX probe: "$00B7 BREAKX — pass … carry clear on both. IDENTICAL"). So the Ctrl-STOP functional check runs on
 the default C-BIOS_MSX1 machine — no Philips fallback was needed (the Philips-only
 rule applies only to tape `bload"cas:",r` landmark probes).
 
@@ -801,7 +800,7 @@ BREAKX poll in the run loop does not change normal completion and never
 false-breaks (BREAKX reads CF clear / not-pressed during normal runs on
 C-BIOS_MSX1; oracle-confirmed by `bios_probe_breakx.py` / `cbios-probe-results.md`
 and re-confirmed by every program here running to completion). Functional
-`basic_probe_cont.py` (msx-preservation) on `C-BIOS_MSX1`, 7/7 ALL PASS, via
+`basic_probe_cont.py` on `C-BIOS_MSX1`, 7/7 ALL PASS, via
 fixed-emulated-time RAM capture (`debug read_block` of POKE sentinels at $D000/
 $D001 and `ERRMARK` $E010 — robust where a bload-LANDMARK freeze was not): STOP
 halts before the post-STOP statement (T=01); STOP→CONT resumes (T=02), incl.
@@ -865,7 +864,7 @@ an extension ROM sharing zerobas's own (expanded) primary in a different subslot
 is not reached — not the case for the slot-3-1 disk reference. Every BIOS entry,
 sysvar, and the header/slot-id formats are allowed-source-sourced.
 
-**Functional validation (openMSX, `disk_probe_init.py` in msx-preservation).** On
+**Functional validation (openMSX, `disk_probe_init.py`).** On
 the combined `C-BIOS_MSX1_BASIC_DISK` machine, after boot the location the disk
 ROM's INIT publishes now carries its value: `SYSTEM` ($F37D) = `bdos_entry`. (The
 disk INIT formerly also installed `JP` hooks at `H.PHYD` $FF3E / `H.DSKIO` $FF4B;
@@ -893,7 +892,7 @@ a standard slot disk ROM driven through `$4010`, so any real MSX BIOS can host t
 stack. Proven directly: the `zerobas-disk` openMSX extension (generated by
 `tools/install-openmsx-machine.py --disk-rom`) plugs zerobas-disk into a **real Philips
 VG-8020** (a genuine MSX1 BIOS, not C-BIOS, not the Japanese CF-3300), loaded with the
-zerobas-BASIC cartridge. `disk-spec/tools/disk_probe_crossbios.py` runs the identical
+zerobas-BASIC cartridge. `probes/disk/disk_probe_crossbios.py` runs the identical
 program — `FILES` + an `OPEN`/`PRINT#`/`CLOSE` → reopen → `LINE INPUT#` round-trip — on
 both the C-BIOS host and the VG-8020 host and gets byte-identical results (same
 directory listing, same `<phil>` round-trip). Note zerobas-disk supplies only the
@@ -921,7 +920,7 @@ of the universal sector interface, not avoidable duplication.
 `SAVE"A:"` / `BSAVE"A:"` all round-trip under zerobas-BASIC with (i) our own
 `disk.rom` in slot 3-1 **and** (ii) the foreign National **CF-3300** disk ROM in
 slot 3-1 — the machine rebuilt via `install-openmsx-machine.py --disk-rom <ROM>`.
-The msx-preservation probes `disk_probe_bload_disk.py`, `disk_probe_save.py`,
+The probes `disk_probe_bload_disk.py`, `disk_probe_save.py`,
 `disk_probe_load_disk.py`, `disk_probe_run_disk.py`, `disk_probe_load_embedded_nul.py`
 report **ALL PASS on both ROMs**. Before the retarget the foreign CF-3300 FAILED
 every disk verb (the private `bdos_entry` path `CALSLT`ed `$F37D`, which CF-3300
@@ -977,7 +976,7 @@ do not over-claim "byte-identical vs reference" where no reference exists.
 
 1. **DSKIO sector-read — differential, byte-identical vs the real National
    CF-3300.** The **DSKIO sector-read path** underneath all of this
-   (`disk_probe_dskio.py` in msx-preservation) is a *passed differential oracle*:
+   (`disk_probe_dskio.py`) is a *passed differential oracle*:
    the same `disk/test720.dsk` read on the CF-3300 reference and on our
    `*_BASIC_DISK` machine returns byte-identical data + carry/A. This is the read
    layer every BLOAD/LOAD/RUN ultimately rides on.
@@ -985,7 +984,7 @@ do not over-claim "byte-identical vs reference" where no reference exists.
 2. **FCB BDOS layer — NARROW differential, byte-identical vs real MSX-DOS 1.**
    `bdos_entry`'s FCB calls (Open `$0F` / Sequential Read `$14` / Close `$10` /
    Set-DTA `$1A`) *are* now differentially oracle-confirmed against genuine
-   MSX-DOS 1.03 (`disk_probe_bdos.py` in msx-preservation). The same `ORACLE.BIN`
+   MSX-DOS 1.03 (`disk_probe_bdos.py`). The same `ORACLE.BIN`
    (16 × 128-byte records) is read through Open → 17× SeqRead → Close on (a) real
    MSX-DOS — driven by a tiny `.COM` auto-run via `AUTOEXEC.BAT` from a DOS system
    disk on `National_CF-3300` — and (b) our `bdos_entry` reached across slots with
@@ -1068,7 +1067,7 @@ next section). It hands the FCB at `DISK_FCB` to the disk ROM's `bdos_entry`
 between the tape and disk paths via `parse_close_run`, and the exec handoff via
 `load_handoff`.
 
-**Functional validation (openMSX, `disk_probe_bload_fcb.py` in msx-preservation).**
+**Functional validation (openMSX, `disk_probe_bload_fcb.py`).**
 On `C-BIOS_MSX1_BASIC` (the parse path is pure interpreter code that never touches
 the disk hardware, so the plain machine is a reliable, valid target — the combined
 `_DISK` machine's longer INIT-scan boot makes keystroke timing flaky), typing each
@@ -1140,7 +1139,7 @@ called "same format as tape" — corrected in disk/TODO.md. BLOAD verifies the
   fall straight to `load_error`, so the parser-only `disk_probe_bload_fcb.py` on
   the plain (diskless) machine still reaches its FCB-read landmark and bails.
 
-**Functional validation (openMSX, `disk_probe_bload_disk.py` in msx-preservation).**
+**Functional validation (openMSX, `disk_probe_bload_disk.py`).**
 On `C-BIOS_MSX1_BASIC_DISK` with `-diska disk/test720.dsk` (which now carries a
 real BSAVE `PROG.BIN`: header `$FE` start=$C000 end=$C031 exec=$C000; the payload
 writes $5A→$D000, self-loops at `JR $` $C010, then a 0..31 data tail):
@@ -1232,7 +1231,7 @@ store overflow past `TXTMAX` mirrors `ctp_oom` (`dpl_oom`: close, `new_prog`,
   before `load_error` — no leaked open file. `DISKSLOT_OK`=0 (no disk ROM) makes
   `disk_prog_load` fall straight to `load_error`.
 
-**Functional validation (openMSX, `disk_probe_load_disk.py` in msx-preservation).**
+**Functional validation (openMSX, `disk_probe_load_disk.py`).**
 On `C-BIOS_MSX1_BASIC_DISK` with `-diska disk/test720.dsk` (which now carries a
 real tokenised `PROG.BAS`: `$FF` marker + the line-link image of `10 POKE
 &HD002,123`, byte-identical to the typed-in crunch): `LOAD"A:PROG.BAS"` rebuilds
@@ -1291,7 +1290,7 @@ stays byte-identical (Philips VG-8020).
 | `RUN"A:PROG.BAS"` crunch = `8A 22 41 3A 50 52 4F 47 2E 42 41 53 22 00` (`RUN_TOKEN` + the quoted filename verbatim, no line-number conversion) | — | oracle-confirmed byte-identical vs Philips VG-8020 (`basic_probe_crunch.py`) | sourced |
 | load logic (FCB parse, `$FF` marker, line-link stream) | — | reused unchanged from disk LOAD (§disk LOAD) — no duplication | sourced |
 
-**Functional validation (openMSX, `disk_probe_run_disk.py` in msx-preservation).**
+**Functional validation (openMSX, `disk_probe_run_disk.py`).**
 On `C-BIOS_MSX1_BASIC_DISK` with `-diska disk/test720.dsk` (carrying the real
 tokenised `PROG.BAS`: `$FF` marker + the line-link image of `10 POKE &HD002,123`):
 `RUN"A:PROG.BAS"` rebuilds the relinked program at `$8001` byte-identical to the
@@ -1352,7 +1351,7 @@ source + error handling), matching the existing structure.
 
 **Functional validation (openMSX).** Build is clean (`basic.rom` 16384 bytes, 0
 warnings); the tokeniser is untouched so the crunch stays byte-identical. New
-regression `disk_probe_load_embedded_nul.py` (in msx-preservation) loads
+regression `disk_probe_load_embedded_nul.py` loads
 `PROG2.BAS` (`10 POKE &HD100,&H7B`, body `98 20 0C 00 D1 2C 0C 7B 00 00` with two
 interior `$00`s) and asserts the store at `$8001` is byte-identical to the
 relinked image for both `LOAD"A:PROG2.BAS"` (no auto-run) and `LOAD…,R` (RUN
@@ -1569,7 +1568,7 @@ implementation; documented in disk/PROVENANCE.md).
 | `DSV_OFF`/`DSV_PTR`/`DSV_END` write-stream scratch | $E0EC/$E0ED/$E0EF | own choice (free page-$E0 RAM, collision-checked) | sourced |
 | record-rounded file size (128-byte pad) | — | disk ROM BDOS property (disk/disk.asm, out of scope); benign for both readers | sourced |
 
-Oracle confirmation: `disk_probe_save.py` (msx-preservation) — three round-trips on
+Oracle confirmation: `disk_probe_save.py` — three round-trips on
 `C-BIOS_MSX1_BASIC_DISK` against a /tmp writable copy of test720.dsk: BSAVE→BLOAD
 (data byte-identical), BSAVE→BLOAD,R (default-exec handoff fires at the JR$
 landmark, `$D000`=`$5A`), SAVE→NEW→RUN (relinked store byte-identical + program
@@ -1614,7 +1613,7 @@ holds the parsed name — the same discipline `disk_putword` uses on the disk si
 | 6-char filename truncation / space-pad; bare `CSAVE` → 6 spaces | — | MSX cassette format (6-char name); bare-name default is own design | sourced |
 | `TSV_PTR`/`TSV_END`/`TSV_CNT`/`TSV_NAME` tape-write scratch | $E0F1/$E0F3/$E0F5/$E0F6 | own choice (free page-$E0 RAM, collision-checked clear of `DSV_*`/read-side scratch) | sourced |
 
-Oracle confirmation: `basic_probe_tape_save.py` (msx-preservation), three independent
+Oracle confirmation: `basic_probe_tape_save.py`, three independent
 oracles on `C-BIOS_MSX1_EU_TAPE` (zerobas-tape write layer) with `basic.rom` as a
 cart — (1) **format**: zerobas writes a tape, openMSX records the CAS-out, `cas_decode`
 yields bytes byte-identical to `build_cas`/`build_cas_basic`; (2) **cross-read**: the
@@ -2254,7 +2253,7 @@ variable behave like one:
   cold start (init_filechan), on NEW/CLEAR/RUN (clear_vars), and when a channel closes
   (fch_do_close_ch), and replaced on re-FIELD of the same channel.
 
-**Oracle.** `disk-spec/tools/disk_probe_field.py`: `OPEN"R.DAT" AS #1 : FIELD #1,5 AS
+**Oracle.** `probes/disk/disk_probe_field.py`: `OPEN"R.DAT" AS #1 : FIELD #1,5 AS
 A$,10 AS B$ : LSET A$="HI" : RSET B$="END" : PRINT"<";A$;"|";B$;">"` prints exactly
 `<HI   |       END>` (5-wide left "HI", '|', 10-wide right "END") — the interior
 spaces prove the justification + padding. zerobas and the real **National CF-3300**
@@ -2313,7 +2312,7 @@ auto-incrementing "current record" is not tracked. Sparse/out-of-order PUT leave
 skipped records' bytes undefined; in-order writes are well-defined. `LEN=` (a custom
 record length) is not parsed — the length is fixed at 256.
 
-**Oracle.** `disk-spec/tools/disk_probe_getput.py`: write `record 1 = "alpha"+"  bet"`
+**Oracle.** `probes/disk/disk_probe_getput.py`: write `record 1 = "alpha"+"  bet"`
 and `record 2 = "gamma"+"delta"` (records 1 and 2 share one sector, so PUT #1,2 must
 read-modify-write to keep record 1), `CLOSE`, **reopen**, re-`FIELD`, and `GET` both
 back — yielding `<alpha|  bet>` and `<gamma|delta>`. Reading the right bytes after a
@@ -2366,7 +2365,7 @@ the decimal point `.`, exponential `^^^^`, and the `+`/`-`/`,`/`**`/`$$` embelli
 `_` literal-escape and the file form `PRINT# USING` are likewise deferred. The format
 string truncates at PU_FMTMAX (32) chars.
 
-**Oracle.** `basic-spec/tools/basic_probe_printusing.py` RUNs a tagged program (zerobas
+**Oracle.** `probes/basic/basic_probe_printusing.py` RUNs a tagged program (zerobas
 as a cartridge on a real Philips VG-8020 vs the same machine's built-in MSX-BASIC — a
 same-hardware differential) covering all field kinds, sign, overflow, and format reuse:
 e.g. `PRINT USING "###";5` → `  5`, `"##";1234` → `%1234`, `"\ \";"cat"` → `cat`,
@@ -2395,7 +2394,7 @@ printusing.asm), matching the VG-8020 byte-for-byte (basic_probe_printusing.py, 
 same-hardware screen differential). This is a genuine difference between real MSX ROMs,
 not a zerobas choice.
 
-**Oracle.** `disk-spec/tools/disk_probe_printusing_file.py`: PRINT# USING writes three
+**Oracle.** `probes/disk/disk_probe_printusing_file.py`: PRINT# USING writes three
 formatted lines to U.DAT and CLOSEs; the FAT12 image is read back and must equal
 `b"  5\r\n[c]\r\n 1  2  3 \r\n\x1a"` (numeric `#`, first-char `!`, format reuse, then the
 Ctrl-Z soft-EOF). Because PRINT# writes to disk and only the CF-3300 is a disk oracle,
@@ -2449,7 +2448,7 @@ CF-3300 also writes no $55AA signature). Note the CF-3300's confusing menu numbe
 its "2 - 2 sides" is the 360 KB (media $FD) format and "4 - 2 sides, double track" is
 720 KB (media $F9). No disassembly.
 
-**Oracle.** `disk-spec/tools/disk_probe_format.py` formats a junk-filled (`0xE5`) image
+**Oracle.** `probes/disk/disk_probe_format.py` formats a junk-filled (`0xE5`) image
 in BOTH geometries (menu `2`→720 KB, `1`→360 KB) and checks two things per geometry:
 STRUCTURAL — the BPB geometry (offsets 11..27) and FAT head are byte-identical to the
 captured CF-3300 format for that geometry; FUNCTIONAL — a file written right after CALL

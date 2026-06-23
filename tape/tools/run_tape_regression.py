@@ -6,9 +6,9 @@
 
 Self-contained -- uses only clean-room content (no copyrighted ROMs, no game
 tapes). Every input is generated from code, so the suite is reproducible
-anywhere the openMSX machines and zerobas are installed.
-The optional real-tape corpus tier (Tier 2/3) lives in the companion
-msx-preservation repo at tools/omsx/bios_probe_realtape.py.
+anywhere the openMSX machines and zerobas are installed. It drives the probes in
+this repo's `probes/` tree; the optional real-tape corpus tier (Tier 2/3) is
+`probes/tape/bios_probe_realtape.py` (needs your own .cas/.wav corpus).
 
 What it asserts:
 
@@ -33,13 +33,12 @@ What it asserts:
      a recorded WAV.
 
 Prerequisites (local setup, not committed): the C-BIOS_MSX1_EU_BASIC and
-C-BIOS_MSX1_EU_TAPE openMSX machines (install with zerobas/zerobas-tape's
-install-openmsx-machine.py) and a built zerobas basic.rom.
+C-BIOS_MSX1_EU_TAPE openMSX machines (install with tools/install-openmsx-machine.py)
+and a built zerobas basic.rom (`make all`).
 
   make test
-  python3 tools/run_tape_regression.py
-  python3 tools/run_tape_regression.py --zerobas ~/projects/zerobas/build/basic.rom
-  python3 tools/run_tape_regression.py --msx-preservation /path/to/msx-preservation
+  python3 tape/tools/run_tape_regression.py
+  python3 tape/tools/run_tape_regression.py --zerobas build/basic.rom
 """
 from __future__ import annotations
 
@@ -49,29 +48,9 @@ import subprocess
 import sys
 import tempfile
 
-_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-_MSX_PRES_CANDIDATES = [
-    os.path.join(_REPO, os.pardir, "msx-preservation"),
-]
-
-
-def _find_msx_preservation(override=None):
-    if override:
-        p = os.path.abspath(override)
-    else:
-        p = os.environ.get("MSX_PRESERVATION", "")
-        if not p:
-            p = next(
-                (os.path.normpath(c) for c in _MSX_PRES_CANDIDATES
-                 if os.path.isdir(c)), "")
-    if not p or not os.path.isdir(p):
-        sys.exit(
-            "error: msx-preservation repo not found -- pass --msx-preservation PATH, "
-            "set $MSX_PRESERVATION, or check it out next to this repo "
-            f"(looked in: {', '.join(os.path.normpath(c) for c in _MSX_PRES_CANDIDATES)})"
-        )
-    return p
+# zerobas repo root: tape/tools/run_tape_regression.py -> up three.
+_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_PROBES = os.path.join(_ROOT, "probes")
 
 
 BASIC_MACHINE = "C-BIOS_MSX1_EU_BASIC"
@@ -152,22 +131,17 @@ def t_openstack(openstack, baud: int, zerobas: str) -> tuple[str, bool, str]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--msx-preservation",
-                    help="path to the msx-preservation repo "
-                         "(default: sibling ../msx-preservation, or $MSX_PRESERVATION)")
     ap.add_argument("--zerobas",
-                    default=os.path.expanduser("~/projects/zerobas/build/basic.rom"),
+                    default=os.path.join(_ROOT, "build", "basic.rom"),
                     help="path to a built zerobas basic.rom (for the open-stack tests)")
     ap.add_argument("--skip-openstack", action="store_true",
                     help="skip the open-stack WAV tests (e.g. if zerobas isn't built)")
     args = ap.parse_args()
 
-    msx_pres  = _find_msx_preservation(args.msx_preservation)
-    omsx_run  = os.path.join(msx_pres, "tools", "omsx_run.py")
-    tapfile   = os.path.join(msx_pres, "tools", "omsx", "bios_probe_tapfile.py")
-    bload     = os.path.join(msx_pres, "basic-spec", "tools", "basic_probe_bload.py")
-    openstack = os.path.join(msx_pres, "basic-spec", "tools",
-                              "basic_probe_bload_openstack.py")
+    omsx_run  = os.path.join(_PROBES, "lib", "omsx_run.py")
+    tapfile   = os.path.join(_PROBES, "tape", "bios_probe_tapfile.py")
+    bload     = os.path.join(_PROBES, "basic", "basic_probe_bload.py")
+    openstack = os.path.join(_PROBES, "basic", "basic_probe_bload_openstack.py")
 
     tests = [
         lambda: t_cas_bload(bload),

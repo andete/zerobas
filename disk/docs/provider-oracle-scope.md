@@ -17,7 +17,7 @@ probe-injected hook anywhere in the path** — the hook is present only because 
 real boot scan ran our INIT (confirmed by reading `$FFA7` after a clean cold boot,
 before any stub injection). Tooling: `install-openmsx-machine.py --real-bios-disk`
 builds `National_CF-3300_ZEROBASDISK` (real CF-3300 BIOS, zerobas-disk in slot 3-1).
-Harness: `disk-spec/tools/disk_probe_provider_phydio.py`. **Tier 2** (a real
+Harness: `probes/disk/disk_probe_provider_phydio.py`. **Tier 2** (a real
 filesystem — DOS/Disk-BASIC — mounting a drive on us, the only organic GETDPB
 consumer) remains deferred to Phase 2.
 
@@ -83,7 +83,7 @@ with no probe-injected hook anywhere in the path.
      BIOS). More wiring, no upside over (a).
    Prefer (a). Reuse the existing `expand_slot3` / `--disk-rom` machinery; the only change
    is sourcing the main BIOS from a real ROM instead of C-BIOS.
-2. **Harness.** A probe (sibling `disk-spec/tools/disk_probe_provider_phydio.py`) that:
+2. **Harness.** A probe (sibling `probes/disk/disk_probe_provider_phydio.py`) that:
    boots the Tier-1 machine on a **/tmp copy** of `test720.dsk` (never the committed
    image — see [[test-disk-mutation-gotcha]]); confirms `H.PHYD ($FFA7..AB)` holds our
    `F7 <slot> 10 40 C9` after boot (proves the *real* scan called our INIT); then issues a
@@ -471,7 +471,7 @@ the next build, on top of it.
 
 Black-box reference trace on the genuine **National CF-3300** booting a real MSX-DOS 1 system
 disk (a `/tmp` copy — never the permanent image), 2026-06-22, via
-`disk-spec/tools/disk_probe_dosboot_trace.py` (msx-preservation). Strictly oracle observation:
+`probes/disk/disk_probe_dosboot_trace.py`. Strictly oracle observation:
 CPU breakpoints on the **documented** disk-ROM jump-table entries + a page-0 RAM dump; no kernel
 code read or disassembled.
 

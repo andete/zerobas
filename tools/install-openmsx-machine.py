@@ -34,7 +34,7 @@ zerobas-BASIC here), but the machine's built-in slot-3-1 disk ROM is swapped to
 zerobas-disk. The real BIOS cold-boot scan finds our "AB" header, calls our INIT
 (installing the H.PHYD hook), and then dispatches its own PHYDIO through that hook
 into our DSKIO -- proving a real BIOS can drive zerobas-disk as a standard
-provider, with no probe-injected hook in the path (see disk-spec/tools/
+provider, with no probe-injected hook in the path (see probes/disk/
 disk_probe_provider_phydio.py and disk/docs/provider-oracle-scope.md):
     python3 tools/install-openmsx-machine.py --real-bios-disk --disk-rom build/disk.rom
 

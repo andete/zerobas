@@ -24,7 +24,7 @@ tokenised form of all of it -- including whatever keyword we are studying.
     holds the crunched REM/`'` tail.
 
 A cassette is inserted only so BLOAD reaches TAPION; its contents are never
-read. Output feeds docs/spec-tokens-statements.md. No disassembly.
+read. Output feeds basic/docs/spec-tokens-statements.md. No disassembly.
 """
 from __future__ import annotations
 

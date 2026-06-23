@@ -7,8 +7,8 @@ Microsoft-BASIC lineage and the format is short and fully documented), but the
 discipline is identical: reference BIOS ROMs and their public disassemblies exist
 and could leak into the implementation through a human reader *or* an LLM context.
 This document is the firewall. It extends the "oracle, not answer key" rule in
-[`docs/openmsx-harness.md`](https://github.com/andete/msx-preservation/blob/main/docs/openmsx-harness.md) to the cassette
-effort and mirrors [`basic-spec/docs/clean-room-policy.md`](https://github.com/andete/msx-preservation/blob/main/basic-spec/docs/clean-room-policy.md).
+[`docs/openmsx-harness.md`](../../docs/openmsx-harness.md) to the cassette
+effort and mirrors the clean-room firewall ([`CONTRIBUTING.md`](../../CONTRIBUTING.md)).
 
 ## Allowed sources
 
