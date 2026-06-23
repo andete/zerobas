@@ -1162,3 +1162,61 @@ pointers aimed at **our own** entries (our `$4010-$401F` driver / thin forwarder
 `$95xx` kernel bytes. Do the high-RAM reservation alongside so the table's reserved-top is honoured.
 Clean-room unchanged. This is the bounded resident-environment table §8.8 first sized — data + pointers
 to code we already have, not a kernel to reconstruct.
+
+## 8.22 The `$F348` DRVTBL fully characterised: the disk ROM builds it; the driver pointers are always-mapped high-RAM trampolines
+
+Black-box probe `probes/disk/disk_probe_dosboot_drvtbl.py` (dump + read-watch + write-watch + deep
+in/out trap, all on the stock CF-3300 with a /tmp DOS disk) pins the table down — and corrects a
+misreading carried in §8.21.
+
+**Layout (corrected).** The stock dump is `87 93 df 0e dd 95 ef 95 ed 95 eb 00 00 95 f1 aa`. `$95` is
+the **low** byte of each pointer, not the high byte — §8.21's `$95EF/$95ED/$95EB/$95F1` reading slid a
+byte off. Word-aligned from a 5-byte head (slot id + two words) the fields are:
+
+| offset | value | meaning |
+|---|---|---|
+| `$F348 +0` | `$87` | disk-interface slot id (slot 3-1, expanded form) |
+| `$F349 +1` | `$DF93` | top-of-reserved-RAM (= HIMEM) |
+| `$F34B +3` | `$DD0E` | the `$4030` disk work-area pointer |
+| `$F34D +5` | `$EF95` | driver-routine pointer (primary — see read profile) |
+| `$F34F +7` | `$ED95` | driver-routine pointer |
+| `$F351 +9` | `$EB95` | driver-routine pointer |
+| `$F353 +11` | `$0000` | (unused entry) |
+| `$F355 +13` | `$F195` | driver-routine pointer |
+| `$F357 +15` | `$AA` | sentinel / next-entry head |
+
+The four driver pointers `$EB95/$ED95/$EF95/$F195` are evenly spaced `$0200` apart and **all lie above
+HIMEM `$DF93`, in page 3 (`$C000+`)** — i.e. inside the reserved high-RAM region, in always-mapped RAM.
+
+**Who consumes it.** A single routine at **PC `$0368`** reads the table; the hottest fields over a 12 s
+settle are `+5/+6` (`$EF95`, 146 reads) and `+0` (slot id, 69) — `$EF95` is the primary dispatch
+pointer. Deep-trapping `$EF95` as code: it is entered with `A=$00` (drive A), `B`=count, a buffer in
+`HL` advanced by the transfer on return (`$0100→$0700`) — a sector-I/O shape — and its **caller is
+`$75A5`, inside the disk ROM (page 1)**, not MSXDOS. So MSXDOS reads the pointers but the disk ROM is
+what dispatches through them.
+
+**Who builds it (the decisive write-watch).** Every meaningful write to `$F348-$F357` comes from
+**page 1 (`$453D`-`$5EAE`) — the disk ROM builds the whole DRVTBL**; MSXDOS never writes it. (The only
+non-page-1 writes are the boot loader's `00`/`FF` clear pass from `$036A`/`$036D` in low RAM.) The
+build order is visible: `$58AB`→slot id `$87`; `$594D`→`+1=$DF93`; `$5EAE`→`+3` written repeatedly as
+the work-area pointer is allocated downward (`$DDF3→$DDAE→$DD0E`); `$58FE/$5906/$590D`→the three
+`$EF95/$ED95/$EB95` pointers; `$587E/$453D`→`+13=$F195`, `+15=$AA`.
+
+**Why the pointers are in high RAM — and why ours derails.** Under MSX-DOS page 1 (`$4000-7FFF`) is the
+TPA (RAM), so the disk ROM at `$4xxx` is not directly callable; the disk ROM reserves high RAM (lowers
+HIMEM to `$DF93`) and builds **always-mapped trampolines** in page 3 that dispatch (CALSLT slot `$87`)
+into its `$4010` BIOS. The DRVTBL points at those trampolines. Ours does **none** of it — no
+reservation (§8.21: our HIMEM = the diskless `$F380`), no trampolines, no table — so the pointers
+MSXDOS/our-ROM read from `$F348` are garbage, the source of the `$8004` derail.
+
+**Build spec (now fully shaped).** Mirror the disk ROM in our INIT, under the `$FF` real-CF-3300 gate:
+1. **Reserve high RAM** — lower HIMEM and claim a page-3 block for the trampolines + the `$4030` work area.
+2. **Build CALSLT trampolines** in that block, one per driver routine, each inter-slot-calling our own
+   slot at the matching `$4010-$401F` BIOS entry (DSKIO/DSKCHG/GETDPB/…), preserving registers.
+3. **Write the `$F348` DRVTBL**: slot id (our slot 3-1), `+1`=reserved-top, `+3`=`$4030` work-area
+   pointer, `+5/+7/+9/+13`=our trampoline addresses, `+15`=sentinel.
+
+Clean-room intact throughout: we observed register/flag in/out and writer/reader PCs only; the `$EB95-
+$F195` trampoline bytes, the `$DFxx`/`$95xx`-region kernel, and MSXDOS.SYS were never read or
+disassembled. Pointers in our build aim only at our own code. Next: map each trampoline to its `$401x`
+BIOS entry (trap the CALSLT target per pointer), then build.

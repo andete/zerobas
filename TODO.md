@@ -610,6 +610,18 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             `$4030` ptr, driver pointers aimed at OUR `$4010-$401F` entries (never the stock `$95xx`
             kernel); reserve the high RAM alongside; re-trap. This is §8.8's table, now a confirmed
             live dependency — data + pointers to code we have, not a kernel to write. See §8.21.
+            **DRVTBL FULLY CHARACTERISED (§8.22, probe `disk_probe_dosboot_drvtbl.py`).** Corrected
+            layout: `$95` is the *low* byte — driver pointers are `$EF95/$ED95/$EB95/$F195`, evenly
+            `$0200`-spaced and **all above HIMEM `$DF93` in page 3 (always-mapped RAM)**. Decisive
+            write-watch: **the disk ROM builds the whole table** (every meaningful write from page 1
+            `$453D-$5EAE`; MSXDOS never writes it; reader is one routine at `$0368`, hot field `+5`
+            `$EF95`). The pointers are **always-mapped high-RAM trampolines** that CALSLT (slot `$87`)
+            into the `$4010` BIOS — needed because under DOS page 1 is the TPA, so `$4xxx` isn't
+            directly callable; this IS the `$1000` reservation's purpose. **Build spec:** in INIT,
+            under the `$FF` gate — (1) reserve high RAM (lower HIMEM, claim a page-3 block); (2) build
+            CALSLT trampolines there, one per driver routine, into our `$4010-$401F`; (3) write `$F348`
+            = slot id | reserved-top | `$4030` ptr | trampoline addrs | sentinel. Next micro-step:
+            map each trampoline → its `$401x` entry (trap the CALSLT target per pointer), then build.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
       and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
       — the organic evidence the Tier-0/1 differential could only approximate.
