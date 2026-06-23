@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: BSD-2-Clause
+# SPDX-License-Identifier: 0BSD
 
 # zerobas-tape -- build the IPS/BPS cassette-BIOS patches.
 #

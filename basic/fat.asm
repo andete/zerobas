@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: BSD-2-Clause
+; SPDX-License-Identifier: 0BSD
 
 ; fat.asm — loader-side FAT12 read+write engine driving the STANDARD $4010 DSKIO
 ; sector interface of whatever disk ROM occupies the slot.

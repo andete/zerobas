@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: BSD-2-Clause
+; SPDX-License-Identifier: 0BSD
 
 ; format.asm — CALL FORMAT (initialise a blank FAT12 filesystem on the disk).
 ;

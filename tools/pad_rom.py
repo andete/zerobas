@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: BSD-2-Clause
+# SPDX-License-Identifier: 0BSD
 
 """Pad (or verify) a raw ROM image to an exact size, filling with $00.
 

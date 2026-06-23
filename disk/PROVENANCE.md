@@ -23,7 +23,7 @@ and only that*):
   pinned — see FDC section; until pinned, every register address is cross-checked
   against openMSX + the WD2793 datasheet + oracle.)
 - **openMSX source** — openMSX emulator C++ source (GPL); hardware register
-  addresses / port maps **only** — facts, never code (GPL stays out of this BSD-2
+  addresses / port maps **only** — facts, never code (GPL stays out of this 0BSD
   tree).
 - **Microsoft FAT spec** — Microsoft FAT Filesystem Specification (public);
   FAT12 structures.

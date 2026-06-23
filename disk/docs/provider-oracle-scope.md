@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: BSD-2-Clause
+SPDX-License-Identifier: 0BSD
 -->
 
 # Provider oracle — scope (Phase 1.5 box (b), the one open item)
@@ -149,7 +149,7 @@ DOS2, its references are largely **open**, unlike proprietary DOS1:
   2.20 lineage.
 
 Before treating any of these *sources* as an allowed PROVENANCE input, confirm the license
-is compatible with a BSD-2 reimplementation; black-box *runtime* use is always fine. None
+is compatible with a permissively-licensed (0BSD) reimplementation; black-box *runtime* use is always fine. None
 of this is in scope now — DOS1 is the ceiling.
 
 ## 7. DOS-boot feasibility spike (2026-06-22) — GO, gap pinned

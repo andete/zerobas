@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: BSD-2-Clause
+# SPDX-License-Identifier: 0BSD
 """Unit test: BASIC-ROM `ex_def` (DEF USR) and `ev_usr` (USR() call), no emulator.
 
 ex_def — statement handler for `DEF USR[n] = <addr>`.  Entered with HL on the

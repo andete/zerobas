@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: BSD-2-Clause
+# SPDX-License-Identifier: 0BSD
 """Unit test: BASIC-ROM `do_poke` (POKE statement), no emulator.
 
 POKE is a Tier-1 routine — pure RAM write, no BIOS, no I/O — so nothing is

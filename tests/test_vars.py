@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: BSD-2-Clause
+# SPDX-License-Identifier: 0BSD
 """Unit test: vars.asm — integer variable store + string-type detection.
 
 Tier-1 (pure RAM, no BIOS, no I/O): var_set_key / var_get_key work entirely

@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: BSD-2-Clause
+# SPDX-License-Identifier: 0BSD
 """A small, embeddable Z80 CPU core for host-side unit testing.
 
 This is NOT a machine emulator: there is no VDP/PSG/slots/interrupts/timing —

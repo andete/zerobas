@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: BSD-2-Clause
+# SPDX-License-Identifier: 0BSD
 """Unit test: BASIC-ROM `do_vpoke` (VPOKE) and `do_out` (OUT), no emulator.
 
 do_vpoke — Tier-2: calls WRTVRM BIOS to write to VRAM.  We trap WRTVRM and

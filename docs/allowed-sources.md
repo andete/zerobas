@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: BSD-2-Clause
+SPDX-License-Identifier: 0BSD
 -->
 
 # Allowed-sources catalogue (rated)
@@ -112,7 +112,7 @@ interface the original conforms to, never the protected implementation behind it
 | **This project's own black-box oracle** | A | **Clean *iff* black-box** | 1 (current ref machines) | observed input→output behaviour. Gold standard — *the discipline is the methodology*: inputs in, outputs out, never read/disassemble a reference ROM or proprietary binary (BIOS, BASIC ROM, disk-ROM, MSXDOS.SYS, COMMAND.COM). The instant you disassemble, it flips to ✗ |
 | **National CF-3300 schematic** (open hardware) | B | Clean | 1 | FDC wiring / register-window facts — hardware = facts, not code; **still to pin** — lead: MSX service-manual repos (hansotten file-hunter "Manuals and Guides", elektrotanya). The FDC is the Fujitsu **MB8877A** |
 | **C-BIOS source** (BSD-2) | B | Conditional | 1·2 | a **peer clean-room reimplementation**, not an authority. Use for *facts* (published sysvar addresses / memory map) only. The binding condition is **clean-room independence** (we don't lift its code/expression even though BSD-2 would permit it, so our reimplementation stays our own), not the licence |
-| **openMSX source** (GPL) | C | Conditional | all | hardware *register / port facts* only. **GPL is the binding condition**: code/expression must never enter this BSD-2 tree — only non-copyrightable facts, and even those are corroboration (openMSX's model is itself partly RE'd) cross-checked against the datasheet |
+| **openMSX source** (GPL) | C | Conditional | all | hardware *register / port facts* only. **GPL is the binding condition**: code/expression must never enter this 0BSD tree — only non-copyrightable facts, and even those are corroboration (openMSX's model is itself partly RE'd) cross-checked against the datasheet |
 | **MSX Assembly Page** (`map.grauw.nl`) — split three ways | — | — | all | **(1) hosted manufacturer PDFs** (V9958, YM2413, Y8950, R800 manual) → **A / Clean**, the PDF's own provenance; **(2) grauw's own compiled interface notes** → **C / Scoped**, standard interfaces only, corroborate against the TH; **(3) hosted disassemblies / RE'd system listings** → **✗** |
 | **komkon MSX docs** (`fms.komkon.org`) | C | Scoped | 1·2 | published hook / sysvar *address tables* (facts) only — not RE-derived routine-behaviour text |
 | **own design** | — | — | — | original authorship by this project; not an external source |

@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: BSD-2-Clause
+; SPDX-License-Identifier: 0BSD
 
 ; strvar.asm — minimal string-VALUE layer (own-design; see PROVENANCE.md).
 ;

@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: BSD-2-Clause
+# SPDX-License-Identifier: 0BSD
 """Discover and run every tests/test_*.py, aggregate, exit nonzero on any fail.
 
 Each test file is self-contained (assembles its own ROM to /tmp, asserts, exits

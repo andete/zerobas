@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: BSD-2-Clause
+# SPDX-License-Identifier: 0BSD
 """Unit test: stored-program line-link editor in basic/program.asm, no emulator.
 
 Tests the core line-link editor routines: new_prog, store_line, relink, and

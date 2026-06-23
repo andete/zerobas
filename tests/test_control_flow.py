@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: BSD-2-Clause
+# SPDX-License-Identifier: 0BSD
 """Unit test: the BASIC control-flow executor in basic/program.asm, no emulator.
 
 These are the stored-program statements — FOR/NEXT, GOSUB/RETURN, GOTO, IF/THEN,

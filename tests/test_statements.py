@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: BSD-2-Clause
+# SPDX-License-Identifier: 0BSD
 """Unit test: assorted statement front-ends run through the executor, no emulator.
 
 Covers the statement handlers reached via the dispatcher that the other tests

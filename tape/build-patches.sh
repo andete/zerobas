@@ -1,6 +1,6 @@
 #!/bin/sh
 # Copyright (c) 2026 Joost Yervante Damad
-# SPDX-License-Identifier: BSD-2-Clause
+# SPDX-License-Identifier: 0BSD
 
 # Build the zerobas-tape ROM patches (IPS + BPS) from tape.asm alone.
 #

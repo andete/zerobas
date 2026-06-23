@@ -1,5 +1,5 @@
 ; Copyright (c) 2026 Joost Yervante Damad
-; SPDX-License-Identifier: BSD-2-Clause
+; SPDX-License-Identifier: 0BSD
 
 ; files.asm — Disk BASIC file-channel verbs (Phase 2), built by EXTEND over the
 ; existing basic/fat.asm engine (file-channel-protocol.md §4/§5: the file verbs

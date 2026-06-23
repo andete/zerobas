@@ -1,6 +1,6 @@
 <!--
 Copyright (c) 2026 Joost Yervante Damad
-SPDX-License-Identifier: BSD-2-Clause
+SPDX-License-Identifier: 0BSD
 -->
 
 # zerobas Disk BASIC file-channel protocol — pinned spec (Phase 2, Step-0 spike)
