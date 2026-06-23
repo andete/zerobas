@@ -48,6 +48,7 @@ be taken from it*; nothing beyond that scope is sourced.
 | **openMSX** (GPL) | hardware *register addresses / port maps* only — facts, never code (GPL must not enter this BSD-2 tree). |
 | **komkon MSX docs** (`fms.komkon.org`) | published hook / system-variable *address tables* (facts) only — not RE-derived routine-behaviour descriptions. |
 | **Nextor Driver Development Guide** | the documented DPB / disk-driver *interface contract* only — never Nextor source code. |
+| **Open-sourced third-party MSX software** (demos, homebrew — *low-tier, corroboration only*) | a non-authoritative *worked example* of how a **documented public hardware interface** is exercised, to corroborate a datasheet/oracle — never as primary documentation. Only the author's original work (nothing it lifted from a proprietary ROM); techniques, never copied code; never for BIOS/BASIC/DOS behaviour. See [`docs/allowed-sources.md`](docs/allowed-sources.md). |
 | **This project's own black-box oracle** | observed input→output behaviour of a real MSX. The gold standard — *provided it stays black-box*: observe outputs, never read or disassemble a reference ROM or any proprietary binary (BIOS, MSX-BASIC ROM, disk-ROM, MSXDOS.SYS, COMMAND.COM). |
 
 **Forbidden, without exception:** any MSX-BASIC / GW-BASIC / BASIC-80 source or
@@ -59,6 +60,11 @@ compilations are NOT allowed sources**: where they merely restate a published
 interface, cite that published source instead; where they reveal proprietary
 internals, they are out. These rules must never be broken by a contributor or by
 any tool or model.
+
+The **full rated, per-document catalogue** — every concrete document graded by
+quality (A/B/C) and mapped to the MSX generation(s) it serves, including the
+VDP / sound / CPU datasheets for MSX2 / MSX2+ / Turbo-R — lives in
+[`docs/allowed-sources.md`](docs/allowed-sources.md).
 
 The behavioural specifications zerobas is built from live in the companion
 analysis repo (`msx-preservation`, under `basic-spec/docs/`), produced by
