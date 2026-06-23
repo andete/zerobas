@@ -635,8 +635,24 @@ bdt_tramp:
                 ld      (DRVTBL + 13), hl           ; +13 DSKFMT trampoline
                 ld      a, $AA
                 ld      (DRVTBL + 15), a            ; +15 sentinel (stock = $AA)
+                ; fall through to install the resident work-area routines (§8.28)
+; build_resident — install the disk system's resident RAM ROUTINES the kernel CALLs
+; from fixed work-area addresses (a3 §8.28). After $50A9 the kernel CALLs $F1C9, a
+; $-terminated STRING-PRINT helper the genuine disk ROM relocates into the work area
+; (stock body: CALL $F36B / LD A,(DE) / CALL $F368 / INC DE / CP '$' / RET Z /
+; CALL $53A8 output / loop). Absent it ($FF) the CALL slides through RST 38h. We
+; install OUR OWN clean-room body (never the stock bytes) into page-3 RAM (always
+; mapped, no slot juggling). FIRST CUT: consume the string to its '$' terminator and
+; return -- the kernel's control flow continues; banner output is added by a later
+; re-trap if the kernel proves to need it. Runs under the same $FF gate as set_ramad.
+build_resident:
+                ld      hl, res_print_tmpl
+                ld      de, RES_PRINT
+                ld      bc, res_print_end - res_print_tmpl
+                ldir
                 ret
 DRVTBL          equ     $F348   ; MSX-DOS-1 disk-driver table (§8.22)
+RES_PRINT       equ     $F1C9   ; resident $-string print routine the kernel CALLs (§8.28)
 DRV_NTRAMP      equ     4       ; number of CALLF trampolines
 ; drv_targets — low byte of each $40xx driver entry the trampolines call. Order
 ; matches the stock DRVTBL's non-zero pointer slots (+5/+7/+9/+13): the hot pointer
@@ -650,6 +666,21 @@ drv_targets:
 ; wa_stub — the no-op body for the $F368 segment-switch hooks (RET; see above).
 wa_stub:
                 ret
+
+; res_print_tmpl — clean-room body for the resident $-string print routine, relocated
+; to RES_PRINT ($F1C9) by build_resident (§8.28). The kernel CALLs $F1C9 with DE -> a
+; '$'-terminated string. Our first cut CONSUMES the string (advance DE past it) and
+; returns; it does not yet emit the characters (the stock routes each char through a
+; disk-ROM console primitive). Straight-line + relative-jump only, so a plain LDIR
+; relocates it verbatim. Re-trap will show whether the kernel needs real output.
+;   in:  DE -> '$'-terminated string ; out: DE past the '$', A=$24, others as Z80 CP
+res_print_tmpl:
+                ld      a, (de)         ; A = next string byte
+                inc     de
+                cp      '$'             ; $24 = MS-DOS string terminator
+                ret     z               ; done -> return to the kernel
+                jr      res_print_tmpl  ; (relocatable: PC-relative loop)
+res_print_end:
 
 ; --- step 6: the page-0 MSX-DOS environment (provider-oracle-scope.md §8.4/§8.6)
 ; With RAM switched into page 0 the page-0 BIOS ROM is gone, so the standard

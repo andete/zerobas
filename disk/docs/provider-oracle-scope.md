@@ -1436,3 +1436,32 @@ kernel reading them. Each piece is our own clean-room code/data pointing at our 
 
 Clean-room: a memory snapshot differential (`$FF` vs built) defines the build target; no disk-ROM/kernel
 code is disassembled — we replicate observed *data layout* with our own code, as `DRVTBL`/`$F368` already are.
+
+**§8.28a FIRST RESIDENT ROUTINE BUILT — `$F1C9`; boot reaches the "Insert DOS disk" path (commit pending).**
+The work area holds not just data but resident **CODE** the kernel CALLs at fixed addresses. The first one
+the kernel reaches after `$50A9` is **`$F1C9`**, a `$`-terminated **string-print** helper (stock body:
+`CALL $F36B` / `LD A,(DE)` / `CALL $F368` / `INC DE` / `CP '$'` / `RET Z` / `CALL $53A8` output / loop).
+Absent it (`$FF`) the main thread died at `$0038` (the `$F1C9` cell run as `RST 38h`). `build_resident` in
+`disk.asm` (same `$FF` gate, fall-through from `build_drvtbl`) installs OUR clean-room body into `$F1C9`
+(page-3 RAM, direct `LDIR` — no slot juggling): a first cut that **consumes the string to its `$` and
+returns** (no char output yet; the stock routes each char through a disk-ROM console primitive). bdos_entry
+`$4453`→`$4465` (init probe bumped); regression-green (init/files/bload/dskio + unit 18/18).
+
+**RESULT — real advance:** the kernel now executes `$F1C9` and runs ON into its **COMMAND.COM phase**
+(`disk_probe_dosboot_resident.py`). Differential at the first post-publish `$F1C9` call (DE → the string it
+prints):
+
+| | `$F1C9` string | post-publish DSKIO / DSKCHG | outcome |
+|---|---|---|---|
+| stock | `\r\nCOMMAND version 1.08\r\n` | 6 / 2 | loads COMMAND.COM → `A>` |
+| Tier-1 | `\r\nInsert DOS disk in def…` | 1 (garbage) / 0 | **rejects the disk** |
+
+So Tier-1 took the **"Insert DOS disk" ERROR path** — and it rejects the disk **without issuing any real
+DSKIO/DSKCHG/GETDPB** (the lone post-publish `$4010` hit is a derailed garbage jump, `A=B3 B=F3 DE=F340`).
+The kernel dispatches its COMMAND.COM read through resident work-area routines (`$F100-$F17C`, `$F327`, the
+DPB at `$F195`) that are still `$FF`, derails, and concludes "not a DOS disk". `$F1C9` is one routine; the
+disk-dispatch routines are the next.
+
+**NEXT — keep building the resident routines/data, re-trapping each:** the DPB at `$F195` (we have `getdpb`),
+then the `$F100-$F17C` driver-dispatch region and the `$F327` routines the kernel calls to read COMMAND.COM,
+until DSKCHG/DSKIO fire for real and `A>` appears. Same clean-room rule: our own bodies, never the stock's.
