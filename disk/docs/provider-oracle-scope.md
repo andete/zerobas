@@ -893,3 +893,39 @@ pointers / flags = data we supply our own values for); if MSXDOS.SYS *executes* 
 work-area cell, that target is the proprietary kernel — we provide our own clean handler for the
 observed behaviour, never lifting the bytes. Also pin the `$0038` derail (a bad jump computed from the
 garbage fields, vs. an interrupt-vector issue) to confirm the layout is the lever.
+
+## 8.15 The `$4030` work area is the disk ROM's RESIDENT RAM ENVIRONMENT (data + std vectors)
+
+Characterising what MSXDOS.SYS does with the `$4030` pointer on the stock CF-3300 (black-box: trap the
+consuming PC + execution-sample the region; no ROM/MSXDOS.SYS disassembly):
+
+- `$4030` returns `$DD0E`, which is **offset 14 into the 256-byte page `$DD00–$DDFF`**. MSXDOS.SYS's
+  init reads the **whole page** (sequential byte reads via a general routine at PC `$0368`; `$0368` is
+  a generic accessor — 16k hits across `$C000–$FFFF`, so it is *not* work-area-specific).
+- **The page is MIXED, not pure data.** Execution-sampling every 8 bytes across `$DD00–$DDFF`: the
+  lower region is read as **data** (no execution at `$DD0E/$DD20/$DD50`), but the **upper region is
+  executed as code** — first execution at `$DDB0` (310 hits in a 13 s boot). This corroborates §8.4's
+  independent finding that the stock's resident vectors target this page (`$0038 → $DDAE` interrupt,
+  `$000C → $DDF3` inter-slot). So `$DDAE+` is **resident handler code** the disk ROM relocates into
+  RAM at boot, and the system runs it (e.g. on every interrupt via `$0038`).
+
+**So `$4030`'s "work area" is the disk ROM's resident RAM environment**: low = DOS/disk work
+variables (data), high (`~$DDAE+`) = the resident **interrupt + inter-slot handler vectors/code**.
+This is the structure §8.4/§8.8 first glimpsed from the `$F348` side, now reached from the `$4030`
+side. Our Tier-1 boot derails at `$0038` precisely because our returned area (`$E780`) carries neither
+the work-variable data nor a resident interrupt/inter-slot environment for MSXDOS.SYS to land in.
+
+**CLEAN-ROOM — still tractable, and on the right side of the line.** The *executed* parts are
+**standard MSX functions** — interrupt service and `RDSLT/CALSLT/ENASLT` inter-slot calls — whose
+behaviour is documented (MSX2 TH) and which we **already implement as our own clean code** in
+`lay_page0_env` (`int_h`, `rdslt/wrslt/calslt/enaslt`, the `$0030` CALLF shim). So reaching `A>` means
+**standing up our own resident environment** that satisfies MSXDOS.SYS's expectations — *not* lifting
+the proprietary kernel's bytes. We never copy the stock's `$DDxx` code; we observe *which vectors the
+boot uses and how*, and point them at our own handlers.
+
+**Next steps:** (1) page-align + size the returned area to a 256-byte page (move `GETWRK_AREA` to a
+page boundary, reserve `$100`); (2) lay our resident int + inter-slot vectors into its upper region
+(reuse `lay_page0_env`'s handlers, retargeted to this page) and seed the low work-variable fields;
+(3) re-trap — resolve the `$0038` derail by making MSXDOS.SYS's interrupt/inter-slot path land in OUR
+handlers, and iterate. The remaining surface is a bounded resident-environment stand-up (standard
+vectors we already have), not an open-ended kernel reconstruction.
