@@ -973,20 +973,55 @@ wedge is **gone**. Page 0 is RAM with MSXDOS's own low storage — `$0000 → JP
 **`$0005 → JP $E106` (BDOS entry, in MSXDOS's relocated high-RAM kernel)**. MSXDOS.SYS got materially
 further: it paged RAM, relocated itself, and stood up its BDOS vector. A clear, measured advance.
 
-**New gap — an interrupt storm (the next target).** The boot now derails differently: once MSXDOS `EI`s,
-interrupts fire and reach `$0038 → JP $4191` (our `int_h`, still installed by the boot-bridge
-`lay_page0_env`; page 1 is still our disk ROM — *not* evicted, confirmed by reading live `$4191` =
-`f5 db 99 f1 fb c9` = our `int_h`). But `int_h` is a **minimal stub** (`push af / in a,($99) / pop af /
-ei / ret`); it does not service the interrupt the way the running system needs. Trace: `int_h` fires
-**25 438×** in 13 s (~1957 Hz, ~32× the 60 Hz frame rate) and the interrupted-PC sequence crawls forward
-**one byte per interrupt** (`8004,8005,…,802D`) — MSXDOS is single-stepped by a storm of un-cleared
-interrupts and never makes real progress. So our boot-bridge `int_h` (adequate under the `di` bridge) is
-**not** an adequate ISR for live MSX-DOS, which expects the full BIOS KEYINT path (frame service +
-timer + keyboard + `H.TIMI`/`H.KEYI` hooks).
+**New gap — `$0038` fires constantly, but the cause was characterised before fixing (see §8.17).** The
+first read was "interrupt storm": once MSXDOS `EI`s, `$0038 → JP $4191` (our `int_h`, still installed by
+the boot-bridge `lay_page0_env`; page 1 is still our disk ROM, not evicted — live `$4191` =
+`f5 db 99 f1 fb c9` = our `int_h`) fires **25 438×** in 13 s. **That framing was WRONG** — §8.17 shows
+it is a *symptom* of a garbage slide, not an inadequate ISR. RAMAD (this §8.16) stands as a real,
+regression-safe advance regardless; the true next gap is §8.17.
 
-**Next step (next session):** stand up a proper resident interrupt path for the post-hand-off world —
-either restore/point `$0038` at the BIOS KEYINT (the stock's `$0C3C`-equivalent) or provide a resident
-ISR that fully services the frame interrupt and chains the standard hooks, then re-trap. This is the
-"resident environment" work §8.15 anticipated, now correctly aimed at the **interrupt service path**
-(not a work-area offset). Bounded and standard-MSX-documented (MSX2 TH interrupt handling), not kernel
-reconstruction. RAMAD (this §8.16) is banked as a real, regression-safe advance regardless.
+## 8.17 The "storm" is a garbage slide — MSXDOS.SYS `CALL`s the `$F368` disk-work-area jump table
+
+Characterising the `$0038` firing before building an ISR (the discipline that paid off twice already)
+**refuted the §8.16 "interrupt storm" reading.** Measurements (black-box, `--tier1`):
+
+- **Not a hardware interrupt that won't clear.** At `int_h` the VDP `S#0` goes `$9F` (frame flag set)
+  on the *first* hit then `$1F` (**flag clear**) on every subsequent hit — `int_h`'s `in a,($99)` *does*
+  clear the VDP. The FDC is idle: `$7FBC` bit 7 (INTRQ) = 0, `$7FB8` = `$80` (not-ready). **Neither
+  hardware source is asserting**, yet `$0038` keeps being reached every ~20 µs.
+- **It is a `RST 38h` slide through `$FF` RAM.** Classifying each `$0038` entry by the byte *before* its
+  return address: the firings are `RST 38h` opcodes (`$FF` = `RST 38h`) executed out of uninitialised
+  RAM — the first slide returns to **`$F369`**, i.e. the CPU is executing `$FF` bytes at `$F368+`.
+  (Real 60 Hz VDP interrupts are interleaved — returns into `$448B` = our `bdos_rdblk`, and into `int_h`
+  itself — but the derail is the slide.)
+- **The bad jump: MSXDOS.SYS does `CALL $F368`.** At the first entry to `$F368` the stack top is `$E2B6`
+  (return into MSXDOS's relocated page-2 kernel). `$F368` is `$FF` on ours → the call slides.
+
+**`$F368` is a fixed disk-work-area JUMP TABLE the disk ROM builds; ours is empty.** Dumping the stock
+`$F340-$F38F` after `$4030` shows, past RAMAD (`$F341`=`83 83 83 83`) and DRVTBL (`$F348`=`87 93 df 0e
+dd 95 …`, §8.8), an **8-slot `JP` table** MSXDOS.SYS calls:
+
+| slot | stock | target region |
+|---|---|---|
+| `$F368` | `JP $DF57` | resident kernel (high RAM page 3) |
+| `$F36B` | `JP $DF59` | " |
+| `$F36E` | `JP $DF70` | " |
+| `$F371` | `JP $F327` | in-work-area resident routine |
+| `$F374` | `JP $F32C` | " |
+| `$F377` | `JP $0000` | unused slot |
+| `$F37A` | `JP $0000` | unused slot |
+| `$F37D` | `JP $F331` | **SYSTEM / BDOS** (ours already = `JP bdos_entry`) |
+
+So after RAMAD, MSXDOS.SYS's init reaches the disk system through this `$F368` table (not via the page-0
+inter-slot vectors, and not the `$4030` work-area offset of §8.15). We populate only `$F341-4` (RAMAD)
+and `$F37D` (SYSTEM); `$F368-$F37C` is `$FF`, so the first `CALL $F368` derails. This is the §8.8
+resident environment, now **precisely located** as a small fixed jump table — far smaller than "rebuild
+the kernel," and the `$F37D` slot is already ours.
+
+**Next step (next session) — characterise + provide the `$F368` table entries.** For each used slot
+(`$F368/$F36B/$F36E` first — the ones MSXDOS.SYS calls), black-box the routine's contract on the stock
+(inputs in / observed effects + outputs) the GETDPB/`$4030` way, then point our `$F368` table at OUR
+clean re-implementations (likely thin forwarders to our existing `$4010`-`$401F` driver, since the
+table is the disk *driver* API the kernel calls). The `$DFxx` targets are the stock's resident kernel —
+never copied; we observe behaviour and supply our own. CLEAN-ROOM unchanged. Also confirm whether
+`$F368` is a *documented* MSX disk-work-area entry (source-upgrade check) vs purely oracle-derived.

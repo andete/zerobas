@@ -571,10 +571,15 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             ROM's INIT (ours) never set it. `set_ramad` (host-adaptive, `$FF`-gated, C-BIOS-safe)
             now sets it `83 83 83 83` = byte-identical to stock; **page-0 RAM maps and MSXDOS
             installs its BDOS (`$0005→$E106`)** — a real advance. `bdos_entry`→`$43EA`; regression
-            green (init/files/bload/dskio). **Next:** the new gap is an **interrupt storm** — our
-            boot-bridge `int_h` stub (`$0038`) fires ~1957 Hz / single-steps MSXDOS; stand up a
-            proper resident ISR (full BIOS KEYINT frame service + `H.TIMI`/`H.KEYI` hooks), re-trap
-            toward `A>`. See §8.16.
+            green (init/files/bload/dskio). **Next gap PINNED (§8.17):** after RAMAD, MSXDOS.SYS's
+            init does **`CALL $F368`** — a fixed disk-work-area **jump table** (`$F368-$F37C`, stock:
+            `$F368→JP $DF57`, `$F36B→$DF59`, `$F36E→$DF70`, `$F371→$F327`, `$F374→$F32C`,
+            `$F37D→SYSTEM`) the disk ROM builds; ours has only RAMAD + `$F37D`, so `$F368` is `$FF`
+            and the call slides through `$FF` (`RST 38h`). (The apparent "interrupt storm" was a
+            SYMPTOM of that slide — `int_h` clears the VDP fine, the FDC is idle; §8.16's ISR guess
+            was refuted.) **Resume:** black-box each used `$F368`-table entry's contract on the stock,
+            point our own table at clean re-impls (likely thin forwarders to our `$4010-$401F`
+            driver), re-trap toward `A>`. See §8.17.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
       and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
       — the organic evidence the Tier-0/1 differential could only approximate.
