@@ -595,10 +595,13 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             **overlapping our disk-ROM scratch** (`SECTOR_BUF $E2A0`, `WBUF $E560`, `GETWRK_AREA
             $E780`). The stock avoids it by reserving high RAM (`HIMEM $FC4A=$DF93`, work area
             `$DD0E`); ours never reserves, so MSXDOS relocates up into our scratch → collision.
-            **Resume:** characterise which pointer MSXDOS-1 reads to position its kernel (lead:
-            `HIMEM $FC4A`; and/or a memory-top cell), have INIT reserve our high-RAM region below the
-            scratch base (and/or relocate scratch), re-trap. Standard MSX reservation, no kernel
-            code to write. See §8.19.
+            **Lever narrowed (§8.20): NOT HIMEM.** Stock BDOS base (`$0005`) = `$D606`, ours =
+            `$E106` — differ by exactly `$1000` (4KB). Setting `HIMEM=$DF93` did NOT move the kernel
+            (and regressed the boot) → reverted. MSXDOS-1 reads some other top-of-RAM source `$1000`
+            higher on our host. **Resume:** differential-dump `$F300-$FFFF` + `$0006-7` stock-vs-Tier1
+            for the pointer that's `$D6xx` on stock / `$E1xx` on ours; or relocate our entire disk-ROM
+            scratch into a block MSXDOS protects (only the 128B `$4030` area at `$E780` is communicated;
+            `SECTOR_BUF`/`FAT_*`/`WBUF` are not — which is why only they collide). See §8.20.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
       and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
       — the organic evidence the Tier-0/1 differential could only approximate.

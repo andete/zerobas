@@ -1092,3 +1092,29 @@ Characterise exactly which pointer MSXDOS-1 reads to position its kernel (lead: 
 relocate the disk-ROM scratch so our reserved block matches the stock's `$DD0E`-style placement), then
 re-trap. Clean-room: high-RAM reservation is standard documented MSX (MSX2 TH work area / HIMEM); no
 kernel bytes are read. The `$F368` table + RAMAD advances stand regardless.
+
+## 8.20 Memory-top lever narrowed — it is NOT HIMEM; the kernels differ by exactly `$1000`
+
+Testing the §8.19 HIMEM hypothesis (and reverting it) sharpened the target:
+
+- **The resident kernels differ by exactly 4 KB.** Stock BDOS base (`$0005` JP target) = **`$D606`**;
+  our Tier-1 boot = **`$E106`** — `$E106 - $D606 = $1000`. MSXDOS.SYS positions its whole resident
+  kernel 4 KB higher on ours, straight onto our scratch (`$E2A0-$E780`); the stock places it 4 KB lower
+  and clear.
+- **HIMEM is NOT the lever.** Setting `HIMEM ($FC4A) = $DF93` (the stock value; ours is `$F380`) under
+  the gate did **not** move the kernel — BDOS stayed `$E106` — and actually regressed the boot (it then
+  wedged at `$0038` with `SP=$30FF`, never reaching DSKIO). MSXDOS reads HIMEM 0× while positioning its
+  kernel. Reverted; no net code change.
+
+So MSXDOS-1 computes its kernel base from some *other* top-of-RAM source that is `$1000` higher on our
+host than on the stock — i.e. the stock disk ROM reserves 4 KB of high RAM that ours does not, by a
+mechanism other than HIMEM. (Note the stock `$F348` DRVTBL embeds both `$DF93` (HIMEM) and `$DD0E` (the
+`$4030` work area) as words — candidates the kernel-placement code may consult.)
+
+**Refined next step.** Find the cell/mechanism that fixes the 4 KB: differential-dump the page-3 work
+area (`$F300-$FFFF`, plus `$0006-7` TPA-top via a kernel-PC trap) stock-vs-Tier-1 and locate the
+pointer that is `$D6xx`/`$DDxx` on the stock and `$E1xx`/`$E7xx` on ours; or determine MSXDOS-1's
+top-of-RAM probe and have INIT bound it below our scratch. Equivalently, relocate our entire disk-ROM
+high-RAM scratch into a block MSXDOS protects (the `$4030`-communicated work area is only 128 B at
+`$E780`; our `SECTOR_BUF`/`FAT_*`/`WBUF` are NOT communicated, which is why only they collide). The
+`$F368` + RAMAD advances stand regardless.

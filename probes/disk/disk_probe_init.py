@@ -75,7 +75,8 @@ EXP_BDOS = 0x43FB            # SYSTEM -> bdos_entry (moved $421E -> $429F when t
                             # $F37D publish to an executable JP (a3 §8.9), then
                             # $43A4 -> $43B6 when the $4030 entry was inlined (a3 §8.13),
                             # then $43B6 -> $43EA when set_ramad was added to INIT (a3 §8.16),
-                            # then $43EA -> $43FB when the $F368 work-area table was added (a3 §8.18))
+                            # then $43EA -> $43FB ($F368 table, a3 §8.18); a $DF93 HIMEM
+                            # reserve was tried in §8.19 then reverted — HIMEM is not the lever)
 # INIT now writes $F37D as an executable JP vector (C3 <bdos_entry>), not a bare
 # address word — the MSX-DOS boot CALLs $F37D and executes those bytes (a3 §8.9).
 
