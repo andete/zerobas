@@ -88,7 +88,8 @@ anything other than an *oracle* — identical inputs in, observed outputs out. T
 compilations are NOT allowed sources**: where they merely restate a published
 interface, cite that published source instead; where they reveal proprietary
 internals, they are out. These rules must never be broken by a contributor or by
-any tool or model.
+any tool or model — see [`CONTRIBUTING.md`](CONTRIBUTING.md), which turns this
+firewall into a contribution gate with a clean-room sign-off.
 
 The **full rated, per-document catalogue** — every concrete document graded by
 quality (A/B/C) and mapped to the MSX generation(s) it serves, including the
