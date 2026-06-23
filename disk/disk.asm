@@ -632,7 +632,11 @@ bdt_tramp:
                 ld      hl, 0
                 ld      (DRVTBL + 11), hl           ; +11 unused (stock = $0000)
                 ld      hl, DRV_TRAMP + 15
-                ld      (DRVTBL + 13), hl           ; +13 DSKFMT trampoline
+                ld      (DRVTBL + 13), hl           ; +13 DSKFMT trampoline (NOTE: stock +13 =
+                                                    ; $F195 = the drive-A DPB pointer, not a
+                                                    ; trampoline — §8.22's "driver pointers"
+                                                    ; reading of +5/+7/+9/+13 needs revisiting;
+                                                    ; but +13 is NOT the IX source, §8.30)
                 ld      a, $AA
                 ld      (DRVTBL + 15), a            ; +15 sentinel (stock = $AA)
                 ; fall through to install the resident work-area routines (§8.28)
@@ -665,9 +669,27 @@ build_resident:
                 ld      de, RES_STUBS + 1
                 ld      bc, RES_STUBS_END - RES_STUBS - 1
                 ldir
+                ; --- drive-A DPB at $F195 (§8.30) -----------------------------------
+                ; The kernel expects a valid drive-A DPB at $F195: $4030's input is
+                ; IX=$F195 and the $50A9 contract hands IX back pointing into the work
+                ; area; MSXDOS.SYS dereferences that DPB to read the directory +
+                ; COMMAND.COM. The disk ROM builds it at boot ($F195 = drive-A id, then
+                ; the 18-byte DPB our GETDPB produces byte-identical to the CF-3300,
+                ; §8.13). Ours was $FF -> the kernel reads garbage geometry and warm-
+                ; boots (§8.29). Lay the drive-A id ($00) at $F195+0 and CALL our own
+                ; GETDPB (HL=base; it fills base+1=media onward) to build the DPB from
+                ; the inserted disk's BPB -- the same disk boot_disk reads next, and
+                ; DSKIO is already callable here. On a boot-sector read error GETDPB
+                ; returns Cy=1 having written nothing past the id, so a not-ready disk
+                ; cannot leave garbage. Our own code/data; never the stock $F1xx bytes.
+                xor     a
+                ld      (DRVA_DPB), a           ; $F195 +0 = drive-A id ($00)
+                ld      hl, DRVA_DPB            ; GETDPB: HL = DPB base (fills base+1 on)
+                call    getdpb
                 ret
 RES_STUBS       equ     $F24E   ; no-op segment-hook stub table base (§8.29)
 RES_STUBS_END   equ     $F2FE   ; one past the last stub ($F2FD)
+DRVA_DPB        equ     $F195   ; drive-A DPB base (id byte + 18-byte DPB, §8.30)
 DRVTBL          equ     $F348   ; MSX-DOS-1 disk-driver table (§8.22)
 RES_PRINT       equ     $F1C9   ; resident $-string print routine the kernel CALLs (§8.28)
 DRV_NTRAMP      equ     4       ; number of CALLF trampolines

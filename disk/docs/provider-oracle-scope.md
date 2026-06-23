@@ -1513,3 +1513,32 @@ our own clean-room data/bodies, re-trapping each, until the kernel's COMMAND.COM
 through `$4010` and the Tier-1 DSKIO/DSKCHG sequence matches the stock's (6/2) → `A>`. Micro-step: build
 the `$F195` drive-A DPB (we have `getdpb $4016`) and re-trap; the `$50A9` contract already hands the
 kernel `IX=$F195`, so a valid DPB there is the immediate unblock.
+
+**§8.30 DRIVE-A DPB AT `$F195` BUILT (byte-identical) + the real blocker isolated: the kernel computes a
+GARBAGE DPB pointer (`IX=$4034`, not `$F195`) before `$50A9` (commit pending).** `build_resident` now lays
+the drive-A id (`$00`) at `$F195+0` and CALLs our own `getdpb` (`HL=$F195`) to build the 18-byte DPB from
+the inserted disk's BPB — the same disk `boot_disk` reads next, DSKIO already callable in INIT.
+**Validated byte-identical to the stock:** Tier-1 `$F195` at publish = `00 f9 00 02 0f 04 01 02 01 00 02 70
+0e 00 ca 02 03 07 00`, matching the §8.13 stock dump exactly. bdos_entry `$4472`→`$447C` (init probe
+bumped); regression-green (init/files/bload/dskio + unit 18/18).
+
+**BUT it did NOT unblock the boot** — still "Insert DOS disk", still `DSKIO=0`. Re-trapping the control
+flow pinned why: the error fires **immediately after `$50A9`** (sequence trace: `$50A9` → error `$F1C9`,
+no BDOS/DSKIO between), and on entry to `$50A9`/`$4030` the **`IX` register differs**: stock `IX=$F195`
+(the drive-A DPB, §8.13/§8.26) vs **Tier-1 `IX=$4034`** (a bogus address just past our inline `$4030`
+routine). The first-`$F1C9` caller confirms the branch: stock prints "COMMAND version 1.08" from `$8AD8`
+(page-2 kernel / COMMAND.COM running), Tier-1 prints "Insert DOS disk" from `$03D8` (page-0 MSXDOS.SYS
+*error* path). So MSXDOS.SYS computes the drive-A DPB pointer **wrong** — it loads `IX=$4034` instead of
+`$F195` — dereferences garbage, and bails to the error before any disk read. The DPB content at `$F195` is
+correct; the kernel just never points at it.
+
+**Source of `IX=$4034` is NOT the DRVTBL+13 field.** A condition-trap shows `IX` is already `$4034` on
+entry to `$50A9` (and `$4030`), set by the kernel just before its `CALL $50A9`. Setting `DRVTBL+13`
+(`$F348+13`) to `$F195` (it had pointed at our DSKFMT trampoline) had **zero effect** on `IX` — reverted.
+NOTE for the next increment: the stock `DRVTBL+13` IS `$F195` (the drive-A DPB pointer), and `+5/+7/+9` are
+`$EF95/$ED95/$EB95` (DPB-class pointers), **not** the driver trampolines §8.22/§8.23 put there — that
+interpretation needs revisiting — but since `+13` is not the `IX` source, the DRVTBL is not the immediate
+lever. **RESUME: find the work-area field MSXDOS.SYS reads to compute the drive-A DPB pointer** (it yields
+`$4034` on Tier-1 vs `$F195` on stock; read before `$4030`, so set by our INIT/boot bridge or the `$4030`
+work area `$DD00` page, §8.15) — that field, built to hand the kernel `$F195`, is the next unblock. Probe:
+`disk_probe_dosboot_dispatch.py` + the inline `$50A9`/`IX` traps.
