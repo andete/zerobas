@@ -1570,3 +1570,28 @@ the MSXDOS.SYS file size) and `IY=$C0AB` (= boot sector `$C000`+`$AB`) vs ours `
 (flags differ too: AF `0142` vs `0144`). But the kernel runs *well past* entry before stalling, so these
 entry registers are likely not the immediate blocker; characterise the `$027C` loop (what it polls/reads —
 FDC port? a work-area flag?) next. Probe: the inline `$0200` register differential + a `$027C` read/IO trace.
+
+**§8.32 The `$027C` stall is a DERAIL, root-caused to a missing `BC` handoff (the loader's byte count).**
+After the §8.31 IX fix the kernel stalls in a tight infinite loop at PC `$027C` (1,012,280 hits in 13 s,
+no IO, no DSKIO) — a memory read-modify-write walk over `$D606`–`$DC80` (`HL`+`BC`=`$DC80` invariant).
+**Decisive: the stock executes `$027C` ZERO times** (it boots to `$0D79` in COMMAND.COM) — so `$027C` is
+not normal code stuck on a flag, it is a **derail unique to us**: MSXDOS.SYS takes a wrong branch after
+entry and falls into code the stock never runs.
+
+PC-tracing from `$0200` on both (identical code) pinpoints the branch: the traces match for 11 steps then
+**diverge at `$024A`** — stock branches to `$0317` (normal), Tier-1 falls through to `$024D` (→ derail).
+Register/flag capture at `$024A`: the branch is on the **sign flag** (stock `F=$14` S=0 → taken; Tier-1
+`F=$BC` S=1 → not taken), and the registers there differ because the **entry state differs**. At
+MSXDOS.SYS entry (`$0200`) the remaining divergent register is **`BC`: stock `$0980` (= 2432 = the
+MSXDOS.SYS file size) vs ours `$0000`** (`IX` now matches after §8.31; `IY` is reloaded to `$0314` before
+use, so its entry value is irrelevant; the entry AF flag diff is recomputed). So MSXDOS.SYS init consumes
+a **byte/record count in `BC`** that the boot's load is supposed to leave, and our load leaves `$0000` →
+the `$024A` sign branch goes the wrong way → derail.
+
+`BC` at entry is set by the loader, not a static handoff register (the boot sector calls our BDOS to load
+MSXDOS.SYS, and BDOS calls clobber `BC`), so `ld bc,...` in `boot_disk` would not survive. **RESUME:
+black-box the genuine BDOS `$27` (RDBLK) / boot-load return-register contract on the stock — what it
+leaves in `BC` (almost certainly the byte/record count, `$0980`) — and make our `bdos_rdblk` reproduce it.
+This is a concrete instance of the "captured contract may be incomplete" risk: our `bdos_rdblk` returns
+`HL`=records but not the `BC` the kernel reads.** Then re-trap: the `$024A` branch should take the stock
+path and the `$027C` derail should vanish.
