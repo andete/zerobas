@@ -1622,3 +1622,38 @@ legitimately by the kernel's first directory read — note DSKIO `$4010` count i
 standard entry — or a fresh derail into our ROM?) and why the FDC Restore never completes in the DOS
 (RAM-in-page-0) context. Probe family: `disk_probe_dosboot_bdos_contract.py` (§8.33) + the inline
 `$0200`/`$024A`/`$43EC` traces.
+
+**§8.34 ROOT-CAUSED + FIXED: the `$43EC` stall is LEGIT (hypothesis A, not a derail) — a LOST-DATA
+restore livelock from running the WD2793 transfer with interrupts enabled in the DOS context (commit
+pending, probe `disk_probe_dosboot_fdc.py`).** The new probe traps the DSKIO/FDC milestone entries
+(`$4010` DSKIO, `dskio $4231`, `fdc_read_phys $42C0`, `fdc_write_phys $434B`, `fdc_restore $43E4`) and
+logs ordered first-hits with caller + regs.
+
+Two §8.33 findings get resolved:
+* **Why `DSKIO $4010 = 0`:** it is NOT a derail. Our own BDOS file layer CALLs the `dskio` BODY at
+  `$4231` directly (20× in the window; every caller `ret` is inside our ROM — `$46D7`/`$4A95`/`$4073`),
+  never the public `$4010` vector. The vector is for foreign hosts; the internal host path skips it.
+* **Why `$43EC` never clears:** the caller of `fdc_restore` is `ret=$42FD` = `fdc_read_phys`'s own retry
+  tail (hypothesis A confirmed). The first three reads (boot context, `IX=$4034`, `SP=$F0xx`) SUCCEED;
+  the failing reads come after the MSXDOS.SYS Open/SetDTA/RdBlk + a post-init Open (`SP=$8Fxx`, the
+  high-RAM COMMAND context). At the retry the FDC status reads **`$04` = LOST DATA** — the polled DRQ
+  transfer underran. Root: `fdc_read_data`/`fdc_write_data` poll DRQ with NO interrupt mask, and a probe
+  count shows the 50 Hz VDP IM1 vector (`$0038`) firing ~140k× during the disk phase. The MSX-DOS boot
+  ran with interrupts masked (so the early reads were fine); once COMMAND.COM runs `EI` the IRQ preempts
+  the tight loop → a dropped FDC byte → LOST DATA → endless `fdc_read_phys` retry / `fdc_restore` poll
+  (the 75126 `$43EC` hits §8.33 saw).
+
+**Fix:** an IFF-preserving DI guard bracketing `fdc_read_phys`/`fdc_write_phys` (`fdc_di_save` records
+the caller's IFF2 via `ld a,i` then `di`; every exit routes through `fdc_io_done`, which `ei`s only if
+the caller had interrupts enabled, leaving A/Cy/HL untouched). The boot context (already masked) is
+unaffected; the DOS context regains a clean transfer. `bdos_entry` `$4484`→`$44AD` (init probe bumped).
+Regression-green: unit 18/18, init/dskio (byte-identical)/fileread/filewrite/bload all PASS.
+
+**RESULT — the FDC livelock is GONE** (`fdc_restore` hits 4→**0**) and the boot advances again: MSXDOS.SYS
+now drives the **public `$4010` DSKIO vector** itself (caller `ret=$0320`, in the page-0 kernel), reading
+real directory/file sectors through the standard entry. **NEXT (§8.35): a slow retry loop — the kernel
+asks DSKIO to read logical sector `$020D` into `HL=$5290`, a transfer buffer INSIDE page 1 (= our disk
+ROM). Our `fdc_read_data` does `ld (hl),a`, which writes to ROM (discarded) → garbage data → the kernel
+re-reads (7× in 25 s, the same `DE=$020D`). A disk ROM in page 1 must service a page-1 transfer address by
+paging RAM under itself (or bounce-buffering); characterise the stock CF-3300's page-1 transfer handling
+next.** Probe: `disk_probe_dosboot_fdc.py` (§8.34) + the inline `$0038`-count and `$4010`-loop traces.

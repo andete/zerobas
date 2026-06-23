@@ -72,7 +72,8 @@ DSKIO_ENTRY     equ     $4010   ; our DSKIO ($4000 + $10)
 ; (GETDPB writes the 18-byte DPB into the CALLER's buffer per MSX2 TH, so the disk
 ; ROM reserves no local DPB area.)
 ;
-; FDC driver state (6 bytes below the sector buffer)
+; FDC driver state (7 bytes below the sector buffer)
+FDC_IFF         equ     $E299   ; saved caller IFF2 across a sector op (1 = was EI)
 FDC_CNT         equ     $E29A   ; remaining sector count
 FDC_LSEC        equ     $E29B   ; current logical sector (word)
 FDC_DEST        equ     $E29D   ; current transfer address (word)
@@ -1010,6 +1011,7 @@ dskio_wnext:
 ; Selects drive A + side + motor, then seeks and reads, retrying once via a
 ; restore if the first attempt fails (recovers a stale Track register).
 fdc_read_phys:
+                call    fdc_di_save     ; mask interrupts across the transfer
                 ld      a, CTRL_DRIVE_A + CTRL_MOTOR
                 bit     0, e
                 jr      z, fdc_rp_nos
@@ -1033,7 +1035,7 @@ fdc_rp_attempt:
                 ld      a, CMD_READ
                 ld      (FDC_STATUS), a
                 call    fdc_read_data
-                ret     nc              ; success: Cy = 0, HL = buffer + 512
+                jp      nc, fdc_io_done ; success: Cy = 0, HL = buffer + 512
                 ; failure: A = error code, Cy = 1
                 push    af
                 ld      a, (FDC_TRY)
@@ -1045,7 +1047,7 @@ fdc_rp_attempt:
                 jr      fdc_rp_attempt
 fdc_rp_fail:
                 pop     af              ; restore error code + carry
-                ret
+                jp      fdc_io_done
 
 ; fdc_read_data — transfer 512 bytes of a read-sector command into (HL).
 ;   in:  HL = buffer; a READ command has just been written
@@ -1116,6 +1118,7 @@ fdc_rd_ok:
 ; register after a reset), exactly like the read path. A genuine write-protected
 ; disk is reported up front (no retry) by fdc_write_data's status check.
 fdc_write_phys:
+                call    fdc_di_save     ; mask interrupts across the transfer
                 ld      a, CTRL_DRIVE_A + CTRL_MOTOR
                 bit     0, e
                 jr      z, fdc_wp_nos
@@ -1139,7 +1142,7 @@ fdc_wp_attempt:
                 ld      a, CMD_WRITE
                 ld      (FDC_STATUS), a
                 call    fdc_write_data
-                ret     nc              ; success: Cy = 0, HL = buffer + 512
+                jp      nc, fdc_io_done ; success: Cy = 0, HL = buffer + 512
                 ; failure: A = error code, Cy = 1
                 cp      0               ; error code 0 = write protected -> no retry
                 jr      z, fdc_wp_fail
@@ -1154,7 +1157,7 @@ fdc_wp_attempt:
 fdc_wp_fail2:
                 pop     af              ; restore error code + carry
 fdc_wp_fail:
-                ret
+                jp      fdc_io_done
 
 ; fdc_write_data — transfer 512 bytes from (HL) to a write-sector command.
 ;   in:  HL = buffer; a WRITE command has just been written
@@ -1252,6 +1255,36 @@ fdc_settle:
 fdc_st_loop:
                 djnz    fdc_st_loop
                 pop     bc
+                ret
+
+; fdc_di_save / fdc_io_done — bracket a sector op with a DI..(EI) guard.
+; The WD2793 data transfer is a tight DRQ poll: a foreign interrupt (the 50 Hz
+; VDP IRQ, live once MSX-DOS / COMMAND.COM run with EI) preempting the loop drops
+; an FDC byte -> LOST DATA, an endless restore-retry livelock (a3 §8.34). MSX-DOS
+; boot ran with interrupts masked, so this only bit in the DOS context. fdc_di_save
+; records the caller's IFF2 then masks; fdc_io_done restores it on every exit,
+; leaving the result (A = error code, Cy, HL) untouched. (`ld a,i` puts IFF2 in
+; P/V; the entry clobbers A, but fdc_read_phys/fdc_write_phys take no A input.)
+fdc_di_save:
+                ld      a, i            ; P/V = IFF2 (interrupts enabled?)
+                di
+                jp      pe, fdc_di_on   ; PE -> IFF2 was set
+                xor     a               ; were masked: remember 0
+                ld      (FDC_IFF), a
+                ret
+fdc_di_on:
+                ld      a, 1            ; were enabled: remember 1
+                ld      (FDC_IFF), a
+                ret
+
+fdc_io_done:
+                push    af              ; preserve result (A error code + Cy)
+                ld      a, (FDC_IFF)
+                or      a
+                jr      z, fdc_iod_x    ; caller had interrupts masked: leave masked
+                ei                      ; restore the caller's enabled interrupts
+fdc_iod_x:
+                pop     af
                 ret
 
 ; div9 — divide HL by 9 (logical sector -> track*2+head, sector-1).
