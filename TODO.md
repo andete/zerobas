@@ -577,9 +577,19 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             `$F37D→SYSTEM`) the disk ROM builds; ours has only RAMAD + `$F37D`, so `$F368` is `$FF`
             and the call slides through `$FF` (`RST 38h`). (The apparent "interrupt storm" was a
             SYMPTOM of that slide — `int_h` clears the VDP fine, the FDC is idle; §8.16's ISR guess
-            was refuted.) **Resume:** black-box each used `$F368`-table entry's contract on the stock,
-            point our own table at clean re-impls (likely thin forwarders to our `$4010-$401F`
-            driver), re-trap toward `A>`. See §8.17.
+            was refuted.) See §8.17.
+            **`$F368` TABLE BUILT (§8.18, `disk_probe_dosboot_f368.py`).** Profile: only `$F368`
+            (32×) + `$F36B` (31×) are called (IX=drive-A DPB); both are **no-ops on this 64K
+            machine** (register/flag-transparent, zero mem/FDC/I/O effects — the disk system's
+            RAM-segment-switch hooks, no-op without a mapper). `build_wa_table` lays `JP wa_stub`
+            (a `RET`) into `$F368-$F37A` (gated like `set_ramad`; `$F37D`=SYSTEM left intact).
+            `bdos_entry`→`$43FB`; regression-green. **Result — biggest advance yet:** the slide is
+            gone, MSXDOS.SYS runs its init and is caught **executing inside our disk driver**
+            (`PC=$431x/$436x`, `SP=$C004`) reading the directory — stack holds `"VOL_ID"`. **New gap
+            (next):** a downstream **stack-corruption derail** — MSXDOS reaches `$4010` once with
+            garbage args (`Cy=1`, `B=232`, `DE=$E880`) because `SP` points into ASCII data, not a
+            stack. Trace where `SP` first goes bad post-`$F368` (re-verify the no-op holds for all
+            calls / a work-area SP field / an int interaction), fix, re-trap. See §8.18.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
       and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
       — the organic evidence the Tier-0/1 differential could only approximate.

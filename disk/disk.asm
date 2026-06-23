@@ -524,6 +524,36 @@ sr_store:
                 ld      (RAMAD0 + 1), a     ; page 1
                 ld      (RAMAD0 + 2), a     ; page 2
                 ld      (RAMAD0 + 3), a     ; page 3
+                ; fall through to build the $F368 disk-work-area jump table -------
+                ; (only reached under the same $FF gate -- the real-CF-3300 DOS host)
+
+; build_wa_table — lay the disk system's resident jump table at $F368-$F37C.
+; MSXDOS.SYS's resident init CALLs fixed work-area entries $F368/$F36B (the disk
+; system's RAM-segment-switch hooks); on a 64K MSX with no memory mapper these are
+; no-ops (one segment), confirmed black-box on the stock CF-3300: the calls are
+; register/flag-transparent with NO memory, FDC, or I/O-port effects (§8.18,
+; disk_probe_dosboot_f368.py). Absent the table our $F368 reads $FF and the CALL
+; slides through $FF as RST 38h (the §8.17 derail). We point the seven slots
+; $F368..$F37A at our own RET stub (wa_stub); $F37D (SYSTEM) is already our
+; JP bdos_entry from INIT and is left intact (the loop stops at $F37C). The stub
+; lives in our page-1 ROM, reachable exactly as int_h/$0038 already is (page 1 stays
+; our disk ROM through boot). Clean-room: our own RET; the stock's $DFxx targets are
+; never read. Source: MSX2 TH disk work area + MSX-DOS segment-switch hook model.
+WA_JMPTAB       equ     $F368   ; disk-work-area resident jump table ($F368-$F37C, 7 slots)
+build_wa_table:
+                ld      hl, WA_JMPTAB
+                ld      b, 7                ; 7 JP slots $F368..$F37A (3 bytes each)
+bwt_loop:
+                ld      (hl), $C3           ; JP opcode
+                inc     hl
+                ld      (hl), low wa_stub
+                inc     hl
+                ld      (hl), high wa_stub
+                inc     hl
+                djnz    bwt_loop
+                ret
+; wa_stub — the no-op body for the $F368 segment-switch hooks (RET; see above).
+wa_stub:
                 ret
 
 ; --- step 6: the page-0 MSX-DOS environment (provider-oracle-scope.md §8.4/§8.6)

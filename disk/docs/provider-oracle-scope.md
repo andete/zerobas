@@ -1025,3 +1025,41 @@ clean re-implementations (likely thin forwarders to our existing `$4010`-`$401F`
 table is the disk *driver* API the kernel calls). The `$DFxx` targets are the stock's resident kernel —
 never copied; we observe behaviour and supply our own. CLEAN-ROOM unchanged. Also confirm whether
 `$F368` is a *documented* MSX disk-work-area entry (source-upgrade check) vs purely oracle-derived.
+
+## 8.18 `$F368` table built — MSXDOS.SYS now drives our disk driver + reads the filesystem
+
+Characterising the used `$F368` slots on the stock (`disk_probe_dosboot_f368.py`, black-box) before
+building them:
+
+- **Only `$F368` (32×) and `$F36B` (31×) are called** of the eight (plus `$F37D`=SYSTEM, already ours);
+  `$F36E/$F371/$F374/$F377/$F37A` are **never called**. Inputs carry `IX` = the drive-A DPB (`$F195`,
+  the same DPB our GETDPB/`$4030` oracle saw).
+- **Both are no-ops on this 64K machine.** The deep in/out trap shows `$F368`/`$F36B` return
+  **register- and flag-transparent**, and an effects trap (watch *all* RAM writes + the FDC ports
+  `$7FB8-$7FBF` + *all* I/O ports `$00-$FF` across a call) records **zero** writes, **zero** FDC access,
+  **zero** I/O. They are the disk system's resident **RAM-segment-switch hooks**: on a machine with a
+  memory mapper they'd page a segment, but the CF-3300 is plain 64K (one segment), so they just `RET`.
+
+**Built (`disk.asm`, under the same `$FF`/real-CF-3300 gate as `set_ramad`).** `build_wa_table` lays
+`JP wa_stub` into the seven slots `$F368-$F37A` (`wa_stub` = a single `RET` in our page-1 ROM, reached
+exactly as `int_h`/`$0038` already is); the loop stops at `$F37C`, leaving `$F37D` = our SYSTEM
+`JP bdos_entry` intact. Clean-room: our own `RET`; the stock's `$DFxx` targets are never read.
+`bdos_entry` `$43EA→$43FB` (init probe bumped). Regression-green: `init`/`files`/`bload_disk`/`dskio` PASS.
+
+**Result — a large advance.** Re-trap (Tier-1): the `$F368` slide is **gone**. MSXDOS.SYS proceeds
+through its init, and the boot is now found **executing inside our own disk driver** (`PC` in our FDC
+code `$431x/$436x`, a real `SP=$C004`) with the stack holding genuine filesystem bytes — `56 4F 4C 5F
+49 44` = **"VOL_ID"** (a directory/volume entry) plus DPB fields. So MSXDOS.SYS is running its resident
+code and reading the disk's directory through our driver — the furthest the DOS boot has reached.
+
+**New gap — a downstream stack-corruption derail.** It does not yet reach `A>`. The boot ends reaching
+our DSKIO (`$4010`) **once**, but with nonsensical parameters (`Cy=1` write, `B=$E8`=232 sectors,
+`DE=$E880`=sector 59520 — far past the 1440-sector disk, `A=$7F`), then loops in our ROM without
+issuing any FDC command. The cause is upstream: at that `$4010` entry the return address is `$3432` and
+the stack bytes are **ASCII** (`32 34 35`="245", "VOL_ID"…) — **`SP` is pointing into a data/text buffer,
+not a call stack**. So MSXDOS.SYS's stack was corrupted earlier and a garbage `RET`/`CALL` landed in
+`$4010`. **Next step:** trace where `SP` first goes bad after the `$F368` calls — candidates: (a) the
+`$F368`/`$F36B` no-op assumption is subtly incomplete for some call context (re-verify across *all*
+calls, incl. whether either ever needs to switch page 1 disk-ROM↔RAM); (b) MSXDOS loads `SP` from a
+work-area field we have not populated; (c) an interrupt/`int_h` interaction. Characterise, fix, re-trap.
+The `$F368` table (this §8.18) is banked as a real, regression-safe advance regardless.

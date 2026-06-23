@@ -67,14 +67,15 @@ OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bi
 
 # Values the zerobas-disk INIT installs (from disk/disk.asm's pasmo symbols).
 SYSTEM_ADDR = 0xF37D
-EXP_BDOS = 0x43EA            # SYSTEM -> bdos_entry (moved $421E -> $429F when the
+EXP_BDOS = 0x43FB            # SYSTEM -> bdos_entry (moved $421E -> $429F when the
                             # Phase-1.5 provider HPHYD-hook install grew INIT, then
                             # $429F -> $42F6 with the Tier-2 a1/a2 boot bridge +
                             # page0 paging, then $42F6 -> $439F with the a2 step-6
                             # page-0 env, then $439F -> $43A4 when INIT changed the
                             # $F37D publish to an executable JP (a3 §8.9), then
                             # $43A4 -> $43B6 when the $4030 entry was inlined (a3 §8.13),
-                            # then $43B6 -> $43EA when set_ramad was added to INIT (a3 §8.16))
+                            # then $43B6 -> $43EA when set_ramad was added to INIT (a3 §8.16),
+                            # then $43EA -> $43FB when the $F368 work-area table was added (a3 §8.18))
 # INIT now writes $F37D as an executable JP vector (C3 <bdos_entry>), not a bare
 # address word — the MSX-DOS boot CALLs $F37D and executes those bytes (a3 §8.9).
 
