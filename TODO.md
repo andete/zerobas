@@ -738,6 +738,15 @@ above the built-in range; standard programs untouched). Provenance varies **per 
   reverse-engineering. So support would need our **own black-box characterisation**
   of the chip (the oracle discipline applied to silicon), with community register
   maps as **C-tier corroboration only**, never an authoritative spec.
+  **Two deliverables, and the document is the more lasting one:** because no
+  datasheet exists, a careful black-box characterisation *produces* primary
+  documentation rather than reproducing protected work — for once zerobas is
+  *upstream*, a source not a sink. The result (register + waveform reference, with
+  method and reproducible raw captures — the probe corpus *is* the document) would
+  be an **A-grade, clean-provenance** artifact by our own scale, promoting the SCC
+  from "C-tier community-RE only" to "A, our own characterisation," and a standalone
+  gift to MSX preservation (emulator authors, homebrew musicians, the next
+  reimplementation) **independent of whether the BASIC extension ever ships**.
 
 (Third-party BASIC extensions exist for both — proprietary, **not** a source; design
 our own from the hardware docs / our own characterisation.)
