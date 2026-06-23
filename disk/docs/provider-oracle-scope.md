@@ -1480,28 +1480,36 @@ trampolines. The structure decoded (publish-time dump + the trace):
   directory entries** (the COMMAND.COM directory search). **`$F252` loop** (entries [27–32]): a 6-byte
   copy. `$F365 = IN A,($A8); RET`; `$F368-$F37F` = the §8.18 jump table (already ours).
 
-**KEY CORRECTION to §8.28's "RET stub table":** the publish-time dump shows `$F250-$F2AF` is *entirely
-`$C9` (RET)* **at publish**, but the stock kernel **dynamically populates** those slots with real `JP`s
-**before** the load — they are not a permanent no-op table; on a 64K machine the *segment-bank* hooks
-among them are RET, but the *directory/FAT-dispatch* slots get real handlers (in the relocated kernel
-high RAM). So a static fill is not the whole answer.
+**`$F24E-$F2FD` IS a RET no-op stub table, built by the DISK ROM (write-trace, corrects this §'s first
+draft).** A write-watchpoint on `$F24E-$F2FD` over the stock boot shows two writers: (1) the MSXDOS.SYS
+boot loader at PC `$036A`/`$036D` does an early `00`/`FF` RAM clear (leaves `$FF`); (2) **PC `$57D6` — in
+the DISK ROM (page 1, `$4000-$7FFF`) — then fills the whole region with `$C9` (RET)**. No real `JP`s are
+ever written there. So they genuinely are the disk system's **segment-bank hooks**: RET no-ops on a 64K
+machine, CALLed by the kernel's own directory/FAT code (which lives in page-0 MSXDOS.SYS + the relocated
+high-RAM kernel) around each step. (The §8.29-trace "loops" at `$F25E`/`$F252` are the *caller* looping
+around a RET no-op, not those slots looping.) ⇒ filling `$F24E-$F2FD` with `$C9` is the **disk ROM's own
+responsibility**, and our build below reproduces the *same content* via the *same responsibility* — it is
+faithful to the oracle, not a shortcut.
 
-**BUILT: `build_resident` now also fills `$F24E-$F2FD` with `$C9` (RET)** (the no-op default the table
-holds at publish; our own constant, never stock bytes). bdos_entry `$4465`→`$4472` (init probe bumped);
-regression-green (init/files/bload/dskio + unit 18/18). **Re-trap (Tier-1) — net improvement + a sharper
+**BUILT: `build_resident` now fills `$F24E-$F2FD` with `$C9` (RET)** (matching the disk ROM's `$57D6`
+fill; our own constant, never stock bytes). bdos_entry `$4465`→`$4472` (init probe bumped); regression-
+green (init/files/bload/dskio + unit 18/18). **Re-trap (Tier-1) — net improvement + a sharper
 diagnosis:** the §8.28a **garbage DSKIO is GONE** (`$4010` hits 1→**0**) and the kernel no longer derails
 through `RST 38h`; instead it makes **structured BDOS calls via `$F37D` (= our `JP bdos_entry`)** in the
 `Open $0F → SetDTA $1A → RDBLK $27` pattern. **But the FCB it opens is `MSXDOS  SYS`, not COMMAND.COM**
 (drive 0, dumped at the first `$F37D`/`C=$0F`): the kernel is **WARM-BOOTING** — re-reading the system
-file — because the COMMAND.COM load (the stock's dynamically-built `$F2xx` raw-DSKIO dispatch) is absent
-on Tier-1, so it fails to find/load COMMAND.COM and loops back. After the first reload it switches to
-`SP=$9000` (MSXDOS.SYS's own stack, §8.11) and spins on `Open` (`BC=010F`, SP unwinding `$9000+`).
+file — because it failed to load COMMAND.COM the real (raw-DSKIO) way and looped back. After the first
+reload it switches to `SP=$9000` (MSXDOS.SYS's own stack, §8.11) and spins on `Open` (`BC=010F`, SP
+unwinding `$9000+`).
 
-⇒ **The remaining gap is the COMMAND.COM-load dispatch the stock builds dynamically in `$F24E-$F2FD`**
-(directory scan + raw-DSKIO sector reads via `$F38C`). Our advantage: we already load MSXDOS.SYS through
-`bdos_entry` (Open/SetDTA/RDBLK). **Design for the next increment:** rather than reconstruct the
-proprietary directory/FAT walk, point the live dispatch slots the kernel CALLs at **our own** file path
-(Open "COMMAND COM" / RDBLK through `bdos_entry` + DSKIO), so COMMAND.COM loads through our code the same
-way MSXDOS.SYS does — our own bodies/data, never the stock's `$DDxx/$DFxx/$95xx` handlers. Micro-step
-first: trap which `$F2xx` slot the stock kernel CALLs to *begin* the COMMAND.COM directory lookup and its
-entry contract, so our routing matches what the kernel expects.
+⇒ **The remaining gap is the rest of the disk-ROM-built work-area DATA the stock installs and ours
+doesn't** (§8.28: Tier-1 76% `$FF` vs stock 3%) — beyond RAMAD/`$F348`/`$F368`/`$F1C9`/`$F24E-$F2FD`,
+still missing are the **drive-A DPB `$F195`** + **drive-B DPB `$F1AA`** (the `$50A9` return targets), the
+**`$F1F0-$F1FF` device table + `$F1F4=JP $5604` forwarder**, and the **`$F327` routines**. With these
+absent the kernel's own (page-0/high-RAM) directory + COMMAND.COM-read code reads garbage and warm-boots
+instead of reaching the raw-DSKIO load. **Faithful next step (NO BDOS side-door — the oracle requires the
+kernel reach OUR `$4010` organically, as on the stock):** keep building those disk-ROM work-area cells as
+our own clean-room data/bodies, re-trapping each, until the kernel's COMMAND.COM load issues real DSKIO
+through `$4010` and the Tier-1 DSKIO/DSKCHG sequence matches the stock's (6/2) → `A>`. Micro-step: build
+the `$F195` drive-A DPB (we have `getdpb $4016`) and re-trap; the `$50A9` contract already hands the
+kernel `IX=$F195`, so a valid DPB there is the immediate unblock.
