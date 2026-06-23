@@ -1,7 +1,14 @@
 # zerobas roadmap
 
-zerobas is a **clean-room, game-loader-scoped MSX1 BASIC** plus its two storage
-transports (cassette + disk), combined with an open BIOS (C-BIOS) only at runtime.
+zerobas is a **clean-room reimplementation of MSX1 system software** — three
+components (BASIC interpreter + cassette + disk) combined with an open BIOS (C-BIOS)
+only at runtime — with **two co-equal goals**: the clean-room implementations
+themselves, and the clean-provenance **documentation** of how these systems work
+that the same discipline yields (see the README's *Two deliverables*). Scope today
+is MSX1; the BASIC half is **game-loader-scoped** (just enough to run the `.BAS` /
+binary loader stubs that boot disk and tape games), while tape and disk are
+device-complete (read **and** write).
+
 See [`README.md`](README.md) for the charter and the legal/provenance firewall,
 [`PROVENANCE.md`](PROVENANCE.md) for the traceability rules every item below must
 honour (allowed sources only; no disassembly), and

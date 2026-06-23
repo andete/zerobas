@@ -7,6 +7,14 @@ allowed* rules) and [`TODO.md`](../TODO.md) (the *what is left* list).
 It exists so a fresh session can ramp fast: the per-feature knowledge below was
 learned the hard way and is **not** otherwise recoverable from the code.
 
+**Two deliverables, not one.** Implementing the feature is half the job; the
+clean-provenance **documentation** the work yields — a behavioural spec, a
+characterisation note, a corrected finding about how the original actually behaves —
+is a **co-equal deliverable**, not a byproduct (see the README's *Two deliverables*).
+When a probe teaches you something the published sources don't capture, write it down
+where it belongs (the component spec / characterisation doc), not just into the code:
+where good documentation didn't exist, producing it is part of the point.
+
 ## Per-feature checklist
 
 Each TODO item is largely independent — do one per session, and finish with:
@@ -34,7 +42,10 @@ Each TODO item is largely independent — do one per session, and finish with:
    confirm no existing behaviour broke.
 7. **Functional-test the new feature** in openMSX (see harness recipes).
 8. **Update `TODO.md`** (check the item, note divergences) and append a
-   `PROVENANCE.md` row. Do **not** commit unless asked.
+   `PROVENANCE.md` row. **If the work established something new about how the
+   original behaves** (a quirk, an oracle-confirmed contract, a corrected finding),
+   capture it in the relevant spec / characterisation doc too — that documentation
+   is a deliverable. Do **not** commit unless asked.
 
 ## Build
 

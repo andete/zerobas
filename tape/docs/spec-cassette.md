@@ -8,7 +8,9 @@ project's own black-box oracle observations**. No disassembly consulted. See
 This is the implementer-facing artefact. It pins the **contracts** (register I/O,
 side effects, error semantics) for each entry point and records what the oracle has
 confirmed so far versus what still needs Phase 1+ signal capture. The implementation
-lives in the cassette project's own repo, not here.
+lives alongside this spec in the same component ([`../tape.asm`](../tape.asm)) — and
+this spec is itself a first-class deliverable: a clean-provenance behavioural
+reference for the seven entry points, usable independently of zerobas's code.
 
 > **Maturity.** Phase 0 records the documented contracts and the break-and-dump
 > findings already in [`docs/cbios-probe-results.md`](https://github.com/andete/msx-preservation/blob/main/docs/cbios-probe-results.md).

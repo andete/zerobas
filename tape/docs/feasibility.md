@@ -7,7 +7,7 @@ titles and for `.cas`-backed preservation. This note records whether a clean-roo
 reimplementation of *just those routines* is feasible, at what scope, and how it
 would be staged.
 
-This is the index document for the cassette side project; see [`../README.md`](../README.md) for the repo layout.
+This is the index document for the cassette component (`tape/`); see [`../README.md`](../README.md) for the layout.
 
 ## Verdict
 
@@ -151,8 +151,8 @@ Each phase ships something useful and stands alone.
   CAS-out; `tools/omsx/cas_decode.py` round-trips it to the exact bytes (1200 baud,
   1213/2393 Hz). C-BIOS writes nothing (carry=error) — the negative control. This
   establishes the *oracle* the implementer's write code must match. (The clean-room
-  implementation `.asm` itself is the next step and lives in the cassette project's
-  own repo, not here.)
+  implementation `.asm` itself was the next step and now lives in this component,
+  [`../tape.asm`](../tape.asm).)
 - **Phase 2 — Read path: read one byte.** **Done.** `TAPION` (leader detect +
   auto-baud threshold via `LOWLIM`) and `TAPIN` (start-bit hunt + half-period
   classification, LSB-first) are implemented in `tape.asm` and **close the loop**:
