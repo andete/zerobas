@@ -3,9 +3,13 @@
 # Belt-and-braces: ignore any stray ROM left at an old location (e.g. repo root).
 *.rom
 
-# Cassette images and other test inputs (not source material).
+# Cassette images, disk images, and other test inputs (not source material).
+# Disk images are oracle inputs / generated: real disks are proprietary and must
+# never be committed (see PUBLISHING.md); the test image is regenerated with
+# `make test-dsk` from tools/make_test_dsk.py.
 *.cas
 *.wav
+*.dsk
 
 # Python
 __pycache__/

@@ -81,6 +81,9 @@ cleanly documented negative result is still a contribution.
 - **The firewall is load-bearing, not aspirational.** Every constant, address, table,
   and algorithm must trace to an allowed source or be explicitly quarantined; an
   unexplained magic value blocks release. This is what makes *both* deliverables real.
+  Contributions are held to it by [`CONTRIBUTING.md`](CONTRIBUTING.md); the public/private
+  boundary that keeps proprietary oracle material out of this repo is
+  [`PUBLISHING.md`](PUBLISHING.md).
 - **Charter raises are explicit.** Post-MSX1 axes — MSX2 / 2+ / Turbo-R (a *clone* axis
   with oracles) and extension-cartridge hardware such as the V9990 and Konami SCC/SCC+
   (a *greenfield, own-design* axis with no oracle) — are catalogued in
