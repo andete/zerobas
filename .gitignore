@@ -20,3 +20,8 @@ __pycache__/
 
 # Editor / IDE
 .vscode/
+
+# Claude Code agent state + git worktrees. The worktree checkouts under here are
+# full duplicate trees (and carry pre-migration references); they must never land
+# in history. See PUBLISHING.md.
+.claude/
