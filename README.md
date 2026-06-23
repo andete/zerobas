@@ -1,14 +1,28 @@
 # zerobas
 
-A **clean-room, game-loader-scoped MSX1 BASIC**, built as a standalone 16 KB
-cartridge ROM. Its goal is *just enough* MSX-BASIC to run the small `.BAS` /
-binary loader stubs that boot many disk and tape games — not full-language
-compatibility.
+**zerobas** is a **clean-room reimplementation of MSX1 system software** — the BASIC
+interpreter, the cassette layer, and the disk interface — derived only from published
+interfaces and this project's own black-box observation of real machines, never from
+disassembly of the original ROMs. Three components mirror the hardware they replace:
+[`basic/`](basic/) (a standalone 16 KB cartridge ROM), [`tape/`](tape/) (a C-BIOS
+cassette patch), and [`disk/`](disk/) (a disk-interface ROM).
+
+It has **two co-equal goals**: producing the clean-room *implementations*, and —
+because the same discipline makes the resulting facts publishable — producing
+**clean-provenance documentation** of how these systems actually work, especially
+where good documentation does not yet exist (see *Two deliverables*, below).
+
+**Scope today is MSX1.** The BASIC half is deliberately **game-loader-scoped** — *just
+enough* MSX-BASIC to run the small `.BAS` / binary loader stubs that boot many disk and
+tape games, not full-language compatibility — while the cassette and disk halves are
+device-complete (read **and** write). Post-MSX1 axes (MSX2 / 2+ / Turbo-R, and
+extension hardware such as the V9990 and Konami SCC/SCC+) are catalogued in
+[`TODO.md`](TODO.md) but remain out of charter until a charter raise.
 
 zerobas is a deliberately **separate project**. It is combined with an open MSX
 BIOS (such as C-BIOS) only *at runtime*, never merged into its source tree. This
-is a legal firewall: a provenance challenge to the BASIC code can never
-contaminate the mature, uncontested BIOS it runs alongside.
+is a legal firewall: a provenance challenge to zerobas can never contaminate the
+mature, uncontested BIOS it runs alongside.
 
 ## Two deliverables: clean implementations *and* clean documentation
 
