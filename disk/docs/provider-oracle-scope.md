@@ -1118,3 +1118,47 @@ top-of-RAM probe and have INIT bound it below our scratch. Equivalently, relocat
 high-RAM scratch into a block MSXDOS protects (the `$4030`-communicated work area is only 128 B at
 `$E780`; our `SECTOR_BUF`/`FAT_*`/`WBUF` are NOT communicated, which is why only they collide). The
 `$F368` + RAMAD advances stand regardless.
+
+## 8.21 The reservation is a DISK function (VG-8020 control) + MSXDOS dispatches through the `$F348` DRVTBL
+
+Prompted by the question "is `$1000` a function of the system having a disk?", a no-disk control nails
+both the reservation gap and the next concrete lever.
+
+**HIMEM across machines — our disk ROM does ZERO high-RAM reservation.**
+
+| machine | HIMEM `$FC4A` | reservation vs no-disk |
+|---|---|---|
+| Philips VG-8020 (no disk) | `$F380` | — (baseline) |
+| National CF-3300, Disk BASIC | `$F1BF` | disk ROM reserved `$1C1` |
+| National CF-3300, MSX-DOS | `$DF93` | DOS reserved much more |
+| **our Tier-1 (real BIOS + zerobas-disk)** | **`$F380`** | **none — identical to the no-disk VG-8020** |
+
+So memory-wise our disk system looks like a **diskless** machine: the real disk ROM lowers HIMEM (and
+reserves more under DOS), and ours does not — confirming the `$1000` is the disk system's resident
+footprint that MSXDOS.SYS places its kernel *below*, and that we under-reserve it. (HIMEM is still not
+the cell MSXDOS-1 reads for kernel placement — §8.20 — but the reservation discipline is clearly a
+standard disk-ROM job we skip.)
+
+**The concrete lever: MSXDOS.SYS reads the `$F348` DRVTBL 208× — and ours is unbuilt.** Trapping reads
+of `$F348-$F357` on the stock after `$4030`: **208 reads**. The stock DRVTBL is
+`87 93 df 0e dd 95 ef 95 ed 95 eb 00 00 95 f1 aa` = a structured table:
+
+| field | value | meaning (hypothesis) |
+|---|---|---|
+| `$F348` | `87` | the disk-interface slot id (= our slot 3-1) |
+| `$F349` | `$DF93` | top-of-reserved-RAM (= HIMEM) |
+| `$F34B` | `$DD0E` | the `$4030` disk work-area pointer |
+| `$F34D/4F/51/55` | `$95EF/$95ED/$95EB/$95F1` | resident disk-driver routine pointers (page-2 kernel) |
+
+We build RAMAD (`$F341`), the `$F368` table, and SYSTEM (`$F37D`) but **NOT** the `$F348` DRVTBL — so
+MSXDOS.SYS dispatches disk operations through **garbage pointers**, which is the most likely source of
+the bad jumps (e.g. the `$8004` page-2 slide of §8.19: a garbage `$95xx`→`$80xx` driver pointer). This
+is the §8.8 finding, now confirmed as a live MSXDOS dependency and tied to the derail.
+
+**Next step (next session) — build the `$F348` DRVTBL.** Characterise each field black-box (what
+MSXDOS passes to / expects from the `$95xx` driver pointers — the GETDPB/`$4030`/`$F368` way), then
+build our own DRVTBL: slot id `$87`, a reserved-top + `$4030` work-area pointer, and the driver-routine
+pointers aimed at **our own** entries (our `$4010-$401F` driver / thin forwarders), never the stock's
+`$95xx` kernel bytes. Do the high-RAM reservation alongside so the table's reserved-top is honoured.
+Clean-room unchanged. This is the bounded resident-environment table §8.8 first sized — data + pointers
+to code we already have, not a kernel to reconstruct.

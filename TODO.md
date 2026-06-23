@@ -598,10 +598,18 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             **Lever narrowed (§8.20): NOT HIMEM.** Stock BDOS base (`$0005`) = `$D606`, ours =
             `$E106` — differ by exactly `$1000` (4KB). Setting `HIMEM=$DF93` did NOT move the kernel
             (and regressed the boot) → reverted. MSXDOS-1 reads some other top-of-RAM source `$1000`
-            higher on our host. **Resume:** differential-dump `$F300-$FFFF` + `$0006-7` stock-vs-Tier1
-            for the pointer that's `$D6xx` on stock / `$E1xx` on ours; or relocate our entire disk-ROM
-            scratch into a block MSXDOS protects (only the 128B `$4030` area at `$E780` is communicated;
-            `SECTOR_BUF`/`FAT_*`/`WBUF` are not — which is why only they collide). See §8.20.
+            higher on our host. See §8.20.
+            **CONCRETE LEVER FOUND (§8.21).** A no-disk VG-8020 control confirms our disk ROM does
+            **zero** high-RAM reservation (HIMEM `$F380` = the no-disk baseline; stock reserves to
+            `$F1BF`/`$DF93`) — the `$1000` is the disk resident footprint we under-reserve. And the
+            decisive find: **MSXDOS.SYS reads the `$F348` DRVTBL 208×** after `$4030`, but **ours is
+            unbuilt/garbage**, so MSXDOS dispatches disk ops through garbage pointers → the bad jumps
+            (the `$8004` slide = a garbage `$95xx`→`$80xx` driver pointer). Stock DRVTBL =
+            `87 93df 0edd 95ef..95f1` = slot id | HIMEM top | `$4030` work area | driver-routine
+            pointers. **Resume:** build the `$F368`-style `$F348` DRVTBL — slot `$87`, reserved-top +
+            `$4030` ptr, driver pointers aimed at OUR `$4010-$401F` entries (never the stock `$95xx`
+            kernel); reserve the high RAM alongside; re-trap. This is §8.8's table, now a confirmed
+            live dependency — data + pointers to code we have, not a kernel to write. See §8.21.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
       and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
       — the organic evidence the Tier-0/1 differential could only approximate.
