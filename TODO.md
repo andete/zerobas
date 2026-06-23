@@ -648,6 +648,17 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             warm-boot spin** — BDOS vector re-published 6× (stock: once); DOS loads but loops before
             `A>`. Characterise what fails between publications (COMMAND.COM load/exec or a disk op
             erroring → warm-boot); trampolines now finally reachable. See §8.24.
+            **SPIN ROOT-CAUSED (§8.25, probe `disk_probe_dosboot_reinit.py`).** After a clean
+            publication the kernel does `CALL $50A9` (page 1) on BOTH machines (identical regs,
+            identical `ppi $A8=$FF` — page-1 slot-3 RAM, NOT corruption). Stock `$50A9` = real
+            MSXDOS.SYS loader (boots, publishes once); Tier-1 `$50A9` = **all zeros** → NOP-slide
+            crash → warm-boot loop (publishes 6×). No real DSKIO ever fires (crash precedes the first
+            sector read). **Root: MSXDOS.SYS's page-1 portion (`$4000+`) was never written to RAM
+            during our DOS-boot bridge** — page 1 held our disk ROM during the load, so the upper
+            sectors went to ROM / were discarded; the kernel's `$50A9` continuation is empty. The
+            page-1 analog of the §8.16 page-0 RAMAD fix. **NEXT: the boot bridge must map page-1 RAM
+            (not our ROM) while storing the loaded MSXDOS.SYS**, so `$50A9` holds its loader when the
+            kernel calls it. See §8.25.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
       and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
       — the organic evidence the Tier-0/1 differential could only approximate.

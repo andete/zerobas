@@ -1295,3 +1295,40 @@ resident init, a warm-boot loop after the kernel is placed but before COMMAND ha
 Characterise what fails between publications (likely COMMAND.COM load/exec or a disk op returning an
 error that triggers the warm-boot), with the DRVTBL trampolines now finally reachable to exercise.
 Clean-room unchanged: register/flag + reader/writer PCs only; no ROM/MSXDOS code read.
+
+## 8.25 The warm-boot spin = kernel `CALL $50A9` into an EMPTY page 1 (MSXDOS.SYS's upper part never loaded)
+
+With the kernel correctly placed (§8.24), the boot now loads MSX-DOS but re-publishes the BDOS vector
+~6× (a warm-boot loop) instead of reaching `A>`. New probe `probes/disk/disk_probe_dosboot_reinit.py`
+traces the path right after a clean publication and pins the cause — and it is **content, not mapping**.
+
+**Stock vs Tier-1 are byte-identical at the publish site.** Right after `LD ($0005),A` the kernel does,
+on BOTH machines, `CALL $50A9` (`opcode cd a9 50` at `$D7CB`) with identical regs (`HL=$D606 DE=$DC80
+SP=$DC00`) and identical `ppi $A8 = $FF` (page 1 = slot-3 RAM). So the slot mapping is fine and `$FF`
+is NOT corruption — the stock runs the same way.
+
+**The only difference is what lives at `$50A9` (page 1):**
+
+| machine | `$50A9` bytes | publications | result |
+|---|---|---|---|
+| stock | `cd2d4721 55f33a47 f35e2356 23e5f5d5` (real MSXDOS.SYS loader) | **1** | boots to `A>` |
+| Tier-1 | `00000000 00000000 00000000 00000000` (empty) | **6** | NOP-slide crash → warm-boot loop |
+
+On Tier-1 the `CALL $50A9` lands in zeros and slides linearly (`$50A9, $50AA, $50AB, …` for 1000+
+instructions — confirmed by an instruction trace), crashes, MSX-DOS warm-boots, re-runs its resident
+init (re-publishing the vector), and loops. (Earlier `$4010/$4013/$401C` "calls" with garbage regs were
+this runaway sweeping our jump table, not real disk ops — and indeed `count=0` real DSKIO calls ever
+fire: the crash precedes the first sector read.)
+
+**Root cause — MSXDOS.SYS's page-1 portion (`$4000+`) was never written to RAM during our DOS-boot
+bridge.** Page 1 (`$4000-$7FFF`) held our disk ROM (slot 3-1) while the bridge loaded MSXDOS.SYS, so the
+sectors that belong above `$4000` went to ROM / were discarded; when the kernel later runs with page 1 =
+the slot-3 RAM sub-slot, that RAM is empty (`$00`) at `$50A9`. This is the page-1 analog of the §8.16
+page-0 RAMAD fix: there the problem was page-0 *mapping*; here it is page-1 *load target*.
+
+**NEXT — load MSXDOS.SYS's page-1 portion into RAM.** The DOS-boot bridge (Tier-2 a1 steps 4-5) must map
+the page-1 RAM sub-slot (not our disk ROM) while storing the loaded MSXDOS.SYS image, so `$50A9` holds
+its real loader when the kernel calls it. Characterise the bridge's current page-1 mapping during the
+RDBLK store, then switch the store target to RAM (the standard disk-ROM transfer-through-RAM discipline).
+Clean-room unchanged: we read the `$50A9` call-target bytes only to show present (stock) vs absent
+(Tier-1) — a memory-content observation, no code disassembled.
