@@ -76,16 +76,16 @@ TIER1_MACHINE = "National_CF-3300_ZEROBASDISK"
 # (`pasmo --bin disk/disk.asm out.rom syms.txt`).
 MILESTONES = [
     (0x4010, "DSKIO_ENTRY"),
-    (0x4231, "dskio"),
-    (0x42C0, "fdc_read_phys"),
-    (0x4352, "fdc_write_phys"),
-    (0x43F2, "fdc_restore"),
-    (0x43F7, "fdc_wait_ready"),
-    # NB: $43FA (fdc_wr_loop) is the tight BUSY-poll itself — never breakpoint it,
+    (0x4257, "dskio"),
+    (0x430C, "fdc_read_phys"),
+    (0x439E, "fdc_write_phys"),
+    (0x443E, "fdc_restore"),
+    (0x4443, "fdc_wait_ready"),
+    # NB: $4446 (fdc_wr_loop) is the tight BUSY-poll itself — never breakpoint it,
     # a persistent bp on a hot loop starves emutime. PC_at_stall confirms it.
-    (0x44AD, "bdos_entry"),
-    (0x443C, "getdpb"),
-    (0x443A, "dskchg"),
+    (0x44F9, "bdos_entry"),
+    (0x4488, "getdpb"),
+    (0x4486, "dskchg"),
 ]
 # Per-address cap on how many hits we log (keeps the tight $43EC loop cheap).
 LOG_CAP = 4
@@ -123,7 +123,7 @@ proc onhit {{pc}} {{
   }}
   # Early exit: once the FDC retry signature has been sampled enough, capture and
   # stop — don't pay onhit cost across a full settle window of the retry cycle.
-  if {{$pc == 0x43F2 && $::cnt($pc) >= {LOG_CAP}}} {{ cap }}
+  if {{$pc == 0x443E && $::cnt($pc) >= {LOG_CAP}}} {{ cap }}
 }}
 foreach {{mpc mnm}} [array get ::nm] {{
   set ::bp($mpc) [debug set_bp $mpc {{}} "onhit $mpc"]

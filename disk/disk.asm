@@ -386,6 +386,9 @@ RDBLK_DONE      equ     $E770   ; records delivered so far (word; = HL on return
 RDBLK_CNT       equ     $E772   ; bytes left in the current record (word)
 RDBLK_BUFPOS    equ     $E774   ; byte offset into SECTOR_BUF (word, 0..512)
 RDBLK_DST       equ     $E776   ; current DTA write pointer (word; from BDOS_DTA)
+; page-1 transfer bounce scratch (a3 §8.35; free page-3 RAM after RDBLK_DST)
+P1_DEST         equ     $E778   ; saved page-1 destination word (dskio bounce path)
+P1_BLIT         equ     $E77A   ; runtime address of the installed blit routine
 
 ; --- MSX-DOS-1 "get work area" return ($4030; a3 §8.13) ---------------------
 ; MSXDOS.SYS's resident init CALLs disk-ROM entry $4030 and uses the returned HL
@@ -708,6 +711,14 @@ build_resident:
                 ld      (DRVA_DPB), a           ; $F195 +0 = drive-A id ($00)
                 ld      hl, DRVA_DPB            ; GETDPB: HL = DPB base (fills base+1 on)
                 call    getdpb
+                ; --- p1_blit: page-3-resident routine for page-1 bounce (§8.35) --------
+                ; Installed into P1_BLIT ($E77A) so dskio can CALL it from page-1 ROM
+                ; while page 1 is temporarily remapped to RAM. Own-choice free page-3
+                ; RAM after RDBLK_DST ($E776-$E777); clear of every other region.
+                ld      hl, p1_blit_tmpl
+                ld      de, P1_BLIT
+                ld      bc, p1_blit_end - p1_blit_tmpl
+                ldir
                 ret
 RES_STUBS       equ     $F24E   ; no-op segment-hook stub table base (§8.29)
 RES_STUBS_END   equ     $F2FE   ; one past the last stub ($F2FD)
@@ -742,6 +753,41 @@ res_print_tmpl:
                 ret     z               ; done -> return to the kernel
                 jr      res_print_tmpl  ; (relocatable: PC-relative loop)
 res_print_end:
+
+; p1_blit_tmpl — clean-room blit routine (§8.35), LDIR'd to P1_BLIT ($E77A) by
+; build_resident.  Called from dskio (page-1 ROM) via `call P1_BLIT` when the
+; DSKIO transfer destination is in page 1 ($4000-$7FFF): the FDC read was
+; redirected to SECTOR_BUF; this copies SECTOR_BUF to the original page-1 target
+; by briefly switching page-1 sub-slot from disk ROM (3-1) to RAM (3-0).
+;
+; Runs from page-3 RAM (always-mapped), so the page-1 sub-slot flip is safe.
+; The call return address (a page-1 ROM address) is still on the stack while
+; page 1 = RAM; sub-slot 1 is restored BEFORE `ret`, so the RET lands in the ROM.
+;
+; $FFFF secondary register: write = direct sub-slot IDs (bits [3:2] = page-1
+; sub-slot); read = complement of the written value (MSX2 TH §2.4).  We CPL
+; after reading to recover the "write" form, mask bits 3:2 to 00 (sub-slot 0 =
+; RAM), then write; on return CPL to restore original sub-slot 1.
+;
+; Source: MSX2 TH §2.4 (expanded-slot secondary register semantics); sub-slot
+; layout confirmed by black-box differential (set_ramad / page0_ram_in, same
+; host).  Clean-room: never reads the stock $EF95 or any proprietary driver.
+;   in:  P1_DEST = page-1 target address (word in page-3 scratch)
+;   out: 512 bytes from SECTOR_BUF copied to (P1_DEST); page-1 sub-slot restored
+p1_blit_tmpl:
+                ld      a, ($FFFF)          ; A = inverted sub-slot state (MSX2 TH)
+                cpl                         ; A = actual sub-slot write value
+                push    af                  ; save original state for restore
+                and     $F3                 ; bits 3:2 -> 00: page 1 = sub-slot 0 (RAM)
+                ld      ($FFFF), a          ; page 1 now maps to RAM
+                ld      hl, SECTOR_BUF      ; source: FDC data was read here
+                ld      de, (P1_DEST)       ; dest: original page-1 target (now RAM)
+                ld      bc, 512
+                ldir
+                pop     af                  ; A = original sub-slot write value
+                ld      ($FFFF), a          ; page 1 back to disk ROM (sub-slot 1)
+                ret
+p1_blit_end:
 
 ; --- step 6: the page-0 MSX-DOS environment (provider-oracle-scope.md §8.4/§8.6)
 ; With RAM switched into page 0 the page-0 BIOS ROM is gone, so the standard
@@ -946,9 +992,29 @@ dskio_next:
                 srl     b
                 ld      d, b            ; D = track (0..79)
                 ld      hl, (FDC_DEST)
+                ; page-1 bounce: if destination in $4000-$7FFF (page 1 = our disk
+                ; ROM under DOS) read into SECTOR_BUF then blit to the real target
+                ; with page 1 remapped to RAM (a3 §8.35 / p1_blit_tmpl below).
+                ld      a, h
+                and     $C0
+                cp      $40             ; $4000-$7FFF: bit7=0, bit6=1
+                jr      nz, dskio_rd    ; not page 1 -> direct path
+                ld      (P1_DEST), hl   ; save real page-1 destination
+                ld      hl, SECTOR_BUF
+                ld      (FDC_DEST), hl  ; redirect FDC to bounce buffer
                 call    fdc_read_phys
                 jr      c, dskio_err
-                ld      (FDC_DEST), hl  ; HL advanced by 512 on success
+                call    P1_BLIT         ; copy SECTOR_BUF -> P1_DEST with page1=RAM
+                ld      hl, (P1_DEST)
+                ld      de, 512
+                add     hl, de
+                ld      (FDC_DEST), hl  ; advance real destination by 512
+                jr      dskio_adv
+dskio_rd:
+                call    fdc_read_phys
+                jr      c, dskio_err
+                ld      (FDC_DEST), hl  ; HL = buf+512, advance for next sector
+dskio_adv:
                 ld      hl, (FDC_LSEC)
                 inc     hl
                 ld      (FDC_LSEC), hl
@@ -958,7 +1024,8 @@ dskio_next:
                 jr      dskio_next
 dskio_ok:
                 call    mtoff           ; spin the motor down
-                or      a               ; Cy = 0 (success)
+                ld      b, 0            ; B = 0: all sectors done (DSKIO success contract)
+                or      a               ; Cy = 0
                 ret
 dskio_err:
                 push    af              ; save error code + carry
