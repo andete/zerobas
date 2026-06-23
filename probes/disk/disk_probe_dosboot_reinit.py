@@ -15,11 +15,16 @@ FINDING (run default = Tier-1, --stock = genuine CF-3300 oracle):
   NOP-slides ($50A9, $50AA, $50AB, ... linearly) into a crash, MSX-DOS warm-boots,
   re-runs its init, and loops (the vector is re-published ~6x).
 
-  ppi $A8 = $FF on BOTH (page 1 = slot-3 RAM -- identical, NOT corruption). So the
-  slot mapping is fine; the defect is CONTENT: MSXDOS.SYS's page-1 portion ($4000+)
-  was never written to that RAM during our DOS-boot-bridge load (page 1 held our disk
-  ROM during the load, so the upper sectors went to ROM / were discarded). The $50A9
-  continuation is therefore absent when the kernel calls it.
+  ppi $A8 = $FF on BOTH. NOTE: the page-1 INTERPRETATION below was WRONG -- see §8.26
+  (disk_probe_dosboot_50a9.py), which re-root-caused this: at the CALL the page-1
+  sub-slot is the DISK ROM (3-1), not RAM, and $50A9 is a fixed DISK-ROM ENTRY at ROM
+  offset $10A9 that the kernel calls. The stock ROM implements it; ours leaves $10A9
+  as $00 padding -> the call slides into zeros -> crash. MSXDOS.SYS is 2432 B (page-0
+  only), so it is NOT unloaded file data. This probe still correctly MEASURES the spin
+  and the zeros-vs-code at $50A9; only the cause attribution moved to §8.26.
+
+  [SUPERSEDED framing, kept for the record:] "the defect is CONTENT: MSXDOS.SYS's
+  page-1 portion was never written to RAM during the DOS-boot load."
 
 WHAT IT MEASURES (black-box):
   * publications of the BDOS vector ($0006 writes) over the settle = the spin count;

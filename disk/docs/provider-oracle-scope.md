@@ -1326,9 +1326,48 @@ sectors that belong above `$4000` went to ROM / were discarded; when the kernel 
 the slot-3 RAM sub-slot, that RAM is empty (`$00`) at `$50A9`. This is the page-1 analog of the §8.16
 page-0 RAMAD fix: there the problem was page-0 *mapping*; here it is page-1 *load target*.
 
-**NEXT — load MSXDOS.SYS's page-1 portion into RAM.** The DOS-boot bridge (Tier-2 a1 steps 4-5) must map
-the page-1 RAM sub-slot (not our disk ROM) while storing the loaded MSXDOS.SYS image, so `$50A9` holds
-its real loader when the kernel calls it. Characterise the bridge's current page-1 mapping during the
-RDBLK store, then switch the store target to RAM (the standard disk-ROM transfer-through-RAM discipline).
-Clean-room unchanged: we read the `$50A9` call-target bytes only to show present (stock) vs absent
-(Tier-1) — a memory-content observation, no code disassembled.
+**NEXT — load MSXDOS.SYS's page-1 portion into RAM.** [SUPERSEDED by §8.26 — this NEXT was based on the
+falsified page-1-load framing. The actual fix is to implement the `$50A9` disk-ROM entry.]
+
+## 8.26 The warm-boot spin RE-ROOT-CAUSED: `$50A9` is an unimplemented DISK-ROM entry, not unloaded data
+
+§8.25's "MSXDOS.SYS's page-1 portion was never loaded to RAM" is **falsified**. New probe
+`probes/disk/disk_probe_dosboot_50a9.py` pins the true cause, and a first-cut fix along the §8.25 line
+(a page-1-aware RAM store in `bdos_rdblk`) was tried and **reverted**: its store helper was *never called*
+(0 entries) because the load never crosses `$4000`. Three facts overturn §8.25:
+
+1. **MSXDOS.SYS is 2432 B (`$0980`)** on the test disk (root-dir read). The boot's `Open`/`SetDTA($0100)`/
+   `RDBLK` loads it entirely into **page 0** (`$0100-$0A7F`); it never reaches page 1. So `$50A9` is **not**
+   unloaded file data — there is no page-1 portion to lose.
+
+2. **At the kernel `CALL $50A9` the page-1 sub-slot is the DISK ROM (3-1), not RAM.** Black-box at the
+   publish site: `ppi $A8 = $FF`, `$FFFF` live `= $04` → page-1 bits `= 01` → sub-slot 1 = our disk ROM
+   (slot 3-1), on **both** stock and Tier-1. So `$50A9` reads the **disk ROM at offset `$10A9`** — a fixed
+   disk-ROM **entry point** the MSX-DOS kernel calls, the same class as `$4010`/`$4030`.
+
+3. **The genuine CF-3300 disk ROM implements `$10A9`; ours leaves it `$00`.** Stock `$50A9` =
+   `cd 2d 47 21 55 f3 …` (`CALL $472D` + work-area setup); our `build/disk.rom` offset `$10A9` is `$00`
+   padding (our code is far smaller). So the kernel calls into zeros, NOP-slides, crashes → warm-boot spin.
+   (The 6→1 publication change §8.25's first-cut produced was an *artefact*: its stub LDIR wrote `$E778-$E7A6`,
+   which MSXDOS uses, corrupting its state — not a real boot.)
+
+**BLACK-BOX CONTRACT of the stock `$50A9`** (the next reimplementation target; `disk_probe_dosboot_50a9.py
+--stock`):
+
+| | AF | BC | DE | HL | IX | IY |
+|---|---|---|---|---|---|---|
+| in  | C340 | 0000 | DC80 | **D606** (kernel base) | F195 | C0AB (FCB) |
+| out | 0042 (Z) | 0000 | **F1AA** | **F359** | **F1AA** | C0AB |
+
+Only non-stack memory write: `$F242 = $00` (via the `CALL $472D` sub-routine). BC and IY preserved. The
+returned `HL=$F359` (`DRVTBL+$11`, past the `$F348` table §8.22) and `DE=IX=$F1AA` point into the disk
+work area the disk ROM built. Returns to `$D7CE`, where the kernel consumes them.
+
+**NEXT — reimplement the `$50A9` disk-ROM entry** (offset `$10A9`), like `$4030` (§8.13/§8.24): emit a
+routine at `$50A9` honouring the contract above (write `$00` to `$F242`; return `A=0`/`Z`, `HL=$F359`,
+`DE=IX=$F1AA`, preserve `BC`/`IY`), then **re-trap**: run with it in place and trace what the kernel does
+with the returned pointers at `$D7CE+` to refine the `$F1AA`/`$F359` work-area layout it expects. Our disk
+ROM stays in page 1 throughout boot (§8.4), so a `$50A9` entry is reachable exactly as `$4010`/`$4030` are.
+
+Clean-room: we read the `$50A9` call-target bytes (present vs absent) and record the entry/exit register
+**contract** + the single side-effect — black-box observations; no disk-ROM code is disassembled or copied.
