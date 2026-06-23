@@ -1465,3 +1465,43 @@ disk-dispatch routines are the next.
 **NEXT — keep building the resident routines/data, re-trapping each:** the DPB at `$F195` (we have `getdpb`),
 then the `$F100-$F17C` driver-dispatch region and the `$F327` routines the kernel calls to read COMMAND.COM,
 until DSKCHG/DSKIO fire for real and `A>` appears. Same clean-room rule: our own bodies, never the stock's.
+
+**§8.29 COMMAND.COM-LOAD DISPATCH TRACED + the `$F24E-$F2FD` no-op stub table filled (commit pending,
+probe `disk_probe_dosboot_dispatch.py`).** §8.28a left the divergence imprecise. New black-box: on the
+*working stock* boot, trace every PC crossing from outside into the work-area code window
+(`$F100-$F3FF`) between the BDOS publish and the first real DSKIO. **37 entries; ~22 distinct entry
+points**, almost all in `$F252-$F2A3` spaced 3 bytes apart (a `JP`-slot table) plus the `$F36x/$F38x`
+trampolines. The structure decoded (publish-time dump + the trace):
+
+- **`$F38C` = the BIOS-call trampoline** (`… ; OUT ($A8),A ; JP (IX)`): the kernel sets `IX=$4013`
+  (DSKCHG, entry [5]) and finally **`IX=$4010` (DSKIO, entry [36], `HL=$0100`)** — i.e. the stock loads
+  COMMAND.COM by **raw sector reads** dispatched through the work area to our `$401x` driver class.
+- **`$F25E` loop** (entries [10–15]): `HL=$EB95,$EBB5,$EBD5…` stepping by `$20` = scanning **32-byte
+  directory entries** (the COMMAND.COM directory search). **`$F252` loop** (entries [27–32]): a 6-byte
+  copy. `$F365 = IN A,($A8); RET`; `$F368-$F37F` = the §8.18 jump table (already ours).
+
+**KEY CORRECTION to §8.28's "RET stub table":** the publish-time dump shows `$F250-$F2AF` is *entirely
+`$C9` (RET)* **at publish**, but the stock kernel **dynamically populates** those slots with real `JP`s
+**before** the load — they are not a permanent no-op table; on a 64K machine the *segment-bank* hooks
+among them are RET, but the *directory/FAT-dispatch* slots get real handlers (in the relocated kernel
+high RAM). So a static fill is not the whole answer.
+
+**BUILT: `build_resident` now also fills `$F24E-$F2FD` with `$C9` (RET)** (the no-op default the table
+holds at publish; our own constant, never stock bytes). bdos_entry `$4465`→`$4472` (init probe bumped);
+regression-green (init/files/bload/dskio + unit 18/18). **Re-trap (Tier-1) — net improvement + a sharper
+diagnosis:** the §8.28a **garbage DSKIO is GONE** (`$4010` hits 1→**0**) and the kernel no longer derails
+through `RST 38h`; instead it makes **structured BDOS calls via `$F37D` (= our `JP bdos_entry`)** in the
+`Open $0F → SetDTA $1A → RDBLK $27` pattern. **But the FCB it opens is `MSXDOS  SYS`, not COMMAND.COM**
+(drive 0, dumped at the first `$F37D`/`C=$0F`): the kernel is **WARM-BOOTING** — re-reading the system
+file — because the COMMAND.COM load (the stock's dynamically-built `$F2xx` raw-DSKIO dispatch) is absent
+on Tier-1, so it fails to find/load COMMAND.COM and loops back. After the first reload it switches to
+`SP=$9000` (MSXDOS.SYS's own stack, §8.11) and spins on `Open` (`BC=010F`, SP unwinding `$9000+`).
+
+⇒ **The remaining gap is the COMMAND.COM-load dispatch the stock builds dynamically in `$F24E-$F2FD`**
+(directory scan + raw-DSKIO sector reads via `$F38C`). Our advantage: we already load MSXDOS.SYS through
+`bdos_entry` (Open/SetDTA/RDBLK). **Design for the next increment:** rather than reconstruct the
+proprietary directory/FAT walk, point the live dispatch slots the kernel CALLs at **our own** file path
+(Open "COMMAND COM" / RDBLK through `bdos_entry` + DSKIO), so COMMAND.COM loads through our code the same
+way MSXDOS.SYS does — our own bodies/data, never the stock's `$DDxx/$DFxx/$95xx` handlers. Micro-step
+first: trap which `$F2xx` slot the stock kernel CALLs to *begin* the COMMAND.COM directory lookup and its
+entry contract, so our routing matches what the kernel expects.

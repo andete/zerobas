@@ -650,7 +650,24 @@ build_resident:
                 ld      de, RES_PRINT
                 ld      bc, res_print_end - res_print_tmpl
                 ldir
+                ; --- the $F24E-$F2FD no-op segment-hook stub table (§8.29) ----------
+                ; The COMMAND.COM-load dispatch trace (disk_probe_dosboot_dispatch.py,
+                ; stock) shows the kernel CALL ~18 fixed entries in $F252-$F2A3 between
+                ; $50A9-return and the first real DSKIO. On a plain 64K machine that
+                ; whole table is $C9 (RET): they are the disk system's RAM-segment bank
+                ; in/out hooks (same no-op class as the $F368/$F36B hooks, §8.18) and do
+                ; nothing without a memory mapper. Absent it ($FF) every CALL slides
+                ; through RST 38h and the kernel derails (the §8.28a "Insert DOS disk").
+                ; We fill it with RET so the no-op hooks return cleanly. Our own bytes
+                ; (a constant), never the stock work-area code.
+                ld      hl, RES_STUBS
+                ld      (hl), $C9               ; RET
+                ld      de, RES_STUBS + 1
+                ld      bc, RES_STUBS_END - RES_STUBS - 1
+                ldir
                 ret
+RES_STUBS       equ     $F24E   ; no-op segment-hook stub table base (§8.29)
+RES_STUBS_END   equ     $F2FE   ; one past the last stub ($F2FD)
 DRVTBL          equ     $F348   ; MSX-DOS-1 disk-driver table (§8.22)
 RES_PRINT       equ     $F1C9   ; resident $-string print routine the kernel CALLs (§8.28)
 DRV_NTRAMP      equ     4       ; number of CALLF trampolines
