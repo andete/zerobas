@@ -1542,3 +1542,31 @@ lever. **RESUME: find the work-area field MSXDOS.SYS reads to compute the drive-
 `$4034` on Tier-1 vs `$F195` on stock; read before `$4030`, so set by our INIT/boot bridge or the `$4030`
 work area `$DD00` page, §8.15) — that field, built to hand the kernel `$F195`, is the next unblock. Probe:
 `disk_probe_dosboot_dispatch.py` + the inline `$50A9`/`IX` traps.
+
+**§8.31 ROOT-CAUSED + FIXED: the boot handed MSXDOS.SYS a garbage `IX` — it must enter with `IX` =
+drive-A DPB pointer (commit pending).** §8.30 left `IX=$4034` unexplained. Determinism check first
+(4 identical Tier-1 runs): the first `$50A9` is **deterministic** (`IX=$4034` every run) — the
+"nondeterminism" of earlier sections was a misread (first-vs-later `$4030` calls; our `$50A9` stub
+*sets* `IX=$F1AA` on return, so later calls see that). The genuine variability is only the post-error
+warm-boot thrash — a *symptom*, not a cause. So `IX=$4034` is a clean, reproducible target.
+
+Bracketing `IX` through the boot (`boot_disk` $4065 → both `$C01E` → MSXDOS.SYS entry `$0200`):
+`IX=$4034` is **already set at `boot_disk` entry** and survives **unchanged** to `$0200`. The boot
+sector preserves `IX`; our boot path simply never sets it. Register differential at `$0200`, stock vs
+Tier-1: stock enters MSXDOS.SYS with `IX=$F195` (drive-A DPB), ours had `IX=$4034` (junk from INIT) —
+MSXDOS.SYS keeps `IX` (its `$4030`/`$50A9` preserve it, §8.13/§8.26) and dereferences it as the DPB to
+read the directory/COMMAND.COM, so a wrong `IX` → garbage DPB → "Insert DOS disk" (§8.30).
+
+**FIX (one line in `boot_disk`): `ld ix, DRVA_DPB` before the step-7 CY-set `$C01E` handoff** (`$F195`
+is built by `build_resident` earlier in the same INIT; the boot sector preserves `IX` to entry, measured).
+bdos_entry `$447C`→`$4480` (init probe bumped). Regression-green (init/files/bload/dskio + unit 18/18).
+**RESULT — error gone, spin gone:** Tier-1 now enters MSXDOS.SYS with `IX=$F195`, the "Insert DOS disk"
+`$F1C9` no longer fires (F1C9=0), no warm-boot loop (BDOS=1) — the kernel runs its **own** init instead
+of bailing.
+
+**§8.31 NEXT GAP: MSXDOS.SYS init now stalls around PC `$027C`** with no DSKIO/DSKCHG yet (post-publish
+DSKIO=0). The register differential shows two more entry registers differ — stock `BC=$0980` (= 2432 =
+the MSXDOS.SYS file size) and `IY=$C0AB` (= boot sector `$C000`+`$AB`) vs ours `BC=$0000`/`IY=$0314`
+(flags differ too: AF `0142` vs `0144`). But the kernel runs *well past* entry before stalling, so these
+entry registers are likely not the immediate blocker; characterise the `$027C` loop (what it polls/reads —
+FDC port? a work-area flag?) next. Probe: the inline `$0200` register differential + a `$027C` read/IO trace.

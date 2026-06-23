@@ -457,6 +457,17 @@ boot_sig_ok:
                 di
                 call    page0_ram_in    ; RAM into page 0 (host-adaptive, gap B)
                 call    lay_page0_env   ; write the inter-slot vector set into page 0
+                ; --- hand the drive-A DPB pointer to MSXDOS.SYS in IX (§8.31) ---
+                ; The disk-ROM boot procedure must enter MSXDOS.SYS with IX = the
+                ; drive-A DPB pointer; MSXDOS.SYS keeps it (it CALLs $4030/$50A9 which
+                ; PRESERVE IX, §8.13/§8.26) and dereferences it to read the directory +
+                ; COMMAND.COM. Black-box: stock MSXDOS.SYS entry ($0200) has IX=$F195;
+                ; ours had IX=$4034 (junk carried from INIT) -> the kernel computed a
+                ; garbage DPB pointer and bailed to "Insert DOS disk" (§8.30). The boot
+                ; sector PRESERVES IX from $C01E to the MSXDOS.SYS jump (measured), so
+                ; setting it here propagates to entry. $F195 is built by build_resident
+                ; (above, this same INIT) before boot_disk runs.
+                ld      ix, DRVA_DPB    ; IX = $F195 = drive-A DPB the kernel expects
                 ; --- step 7: CY-set $C01E -- "load the system" -----------------
                 ; A real DOS disk's boot code now loads MSXDOS.SYS at $0100 and JPs
                 ; in (no return). A non-system / data disk's $1E stub (D0 C9) takes
