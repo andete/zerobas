@@ -32,10 +32,14 @@ SHA256 `847a28f9f0767fa879066756deba78d65ffbb58d2e481a9e1a8ff4caa6ed466c`
 
 Extracted system files (read-only FAT12 walk; no disk mutation):
 
-| file | size | MD5 | SHA1 | SHA256 |
-|------|------|-----|------|--------|
-| `MSXDOS.SYS`  | 2432 | `dadede17aaeb6852d83a33030027edb1` | `61cd9b4a8c06d750be90b85ed09d4b21871490c4` | `f65e3ac22f0c8eb842e1863fa885aeb8cef4e0ace02efff92e2bb311db2de469` |
-| `COMMAND.COM` | 6528 | `4c108a4c9490383b67231028cd95f46f` | `d78498d59c30d82d4fb5d2fcb1e6d66e0221df74` | `d2bf0a2bbc025554c331bb149bbd47c07ed814b5520924b0118c584062bcd8d7` |
+| file | version | size | SHA1 |
+|------|---------|------|------|
+| `MSXDOS.SYS`  | 1.03         | 2432 | `61cd9b4a8c06d750be90b85ed09d4b21871490c4` |
+| `COMMAND.COM` | 1.08 *(old)* | 6528 | `d78498d59c30d82d4fb5d2fcb1e6d66e0221df74` |
+| `COMMAND.COM` | **1.11 *(preferred)*** | 6656 | `af5f2ef3eac4062638f5d8069515e6bcee788e7d` |
+
+(MSXDOS.SYS MD5 `dadede17…` SHA256 `f65e3ac2…`; COMMAND 1.08 MD5 `4c108a4c…`
+SHA256 `d2bf0a2b…`.)
 
 ### Genuineness assessment
 
@@ -62,13 +66,49 @@ BASICs, SPLIT*.COM …) and has VFAT-style junk entries (`attr=0x0F`, size
 onto a random disk; that's exactly why the *files* (not the disk) had to be
 identified independently. The files themselves test clean (above).
 
-### Open follow-up (optional, for BIOS-grade certainty)
+### Cross-source validation (done)
 
-To match the BIOS's "validated against a trusted DB" standard, cross-check the
-two SHA1s above against an **independently sourced** MSX-DOS 1.03 / COMMAND 1.08
-copy (e.g. an official disk image or a community checksum table). Until then the
-genuineness rests on the embedded MS strings + clean boot, which is strong but
-self-referential.
+Scanning the whole local disk collection (130 `.dsk`, read-only FAT12 walk) gives
+strong independent corroboration — the system files are byte-identical across many
+*separately-collected* disks, so they are not a one-off artifact of `test.dsk`:
+
+- **MSXDOS.SYS 1.03 (`61cd9b4a…`)** — identical on **6 disks**: `test`, `compass`,
+  `daivas5`, `elite`, `Livingst`, `roxyplay`.
+- **COMMAND 1.11 (`af5f2ef3…`)** — identical on **4 disks**: `daivas5`, `Livingst`,
+  `roxyplay`, `tribal`.
+- COMMAND 1.08 (`d78498d5…`) — `test`, `compass`.
+- msxhub's `MSXDOS1` package independently lists the canonical DOS-1 release as
+  **1.03** (no per-file hashes published there, so no exact external SHA1 anchor;
+  the multi-disk agreement is the stronger evidence). Optional future step: download
+  msxhub's binaries and confirm byte-identity for a fully external anchor.
+- Avoid `tribal`'s MSXDOS.SYS (`c33f02da…`, claims "version 1.8") and `bombaman`
+  (DOS **2.2**) — different/patched kernels.
+
+## Preferred oracle: `msxdos103-cmd111.dsk` (1.03 + COMMAND 1.11)
+
+You requested COMMAND **1.11** over 1.08 (1.11 is the more common, later DOS-1
+shell). All local 1.11 disks are *game* disks that auto-run, so we built a clean
+one: a copy of the proven-bootable `test.dsk` with COMMAND.COM swapped to 1.11.
+1.08 (6528 B) and 1.11 (6656 B) both occupy 7 clusters, so the FAT chain is
+unchanged — only the file bytes + the directory size field were rewritten.
+
+- Disk: `~/Documents/msx/msx/disks/msxdos103-cmd111.dsk`
+  SHA256 `666cbc6dd1d8311ddd829deaa764d9cf7d2ae1e95090dca4b58f7f63723531d3`
+- Contents verified: MSXDOS.SYS 1.03 (`61cd9b4a…`) + COMMAND.COM 1.11 (`af5f2ef3…`).
+- **Boots clean to `A>` on the stock CF-3300** — prints "COMMAND version 1.11"
+  (vs `test.dsk`'s "COMMAND version 1.08").
+
+**Note for the §8 Tier-2 boot work:** the *kernel* (MSXDOS.SYS 1.03) is byte-
+identical between the two disks, so every kernel-phase contract (`$4030`/`$50A9`/
+the work area / the `IX=$4034` bug, §8.24–8.30) is **unaffected** by the COMMAND
+switch — COMMAND.COM only matters once the boot reaches the final shell-load
+stage. Use `msxdos103-cmd111.dsk` as `--dos-disk` going forward; `test.dsk` (still
+the historical reference for §8.x captures) stays valid for the kernel phase.
+
+### Note on the legacy disk
+
+`test.dsk` itself is still fine for kernel-phase work, but it carries COMMAND 1.08
+and the community-disk junk above; prefer `msxdos103-cmd111.dsk` for new captures.
 
 ## How to re-verify
 
