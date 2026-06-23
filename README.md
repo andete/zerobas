@@ -10,6 +10,29 @@ BIOS (such as C-BIOS) only *at runtime*, never merged into its source tree. This
 is a legal firewall: a provenance challenge to the BASIC code can never
 contaminate the mature, uncontested BIOS it runs alongside.
 
+## Two deliverables: clean implementations *and* clean documentation
+
+zerobas has **two co-equal goals**, not one. Reimplementing MSX systems clean-room
+is the first; the second is that doing so **produces clean-provenance documentation
+of how those systems actually work** — and where good documentation does not yet
+exist, producing it is a **first-class goal, not a byproduct**.
+
+The two share one discipline. The same firewall that keeps the *code* distributable
+is exactly what makes the *documentation* publishable: datasheet- and oracle-derived
+facts have clean provenance, so the artifacts the work throws off — the
+[`PROVENANCE.md`](PROVENANCE.md) logs, the differential oracle probes, the
+characterisation notes ([`disk/docs/provider-oracle-scope.md`](disk/docs/provider-oracle-scope.md)),
+the rated source catalogue ([`docs/allowed-sources.md`](docs/allowed-sources.md)),
+the host unit-test harness — are themselves safe for the community to build on. The
+documentation value scales **inversely with what already exists**: where an official
+datasheet exists we add *worked, validated integration*; where only reverse-engineered
+compilations exist we can produce a *cleaner-provenance* reference; where **nothing**
+exists (e.g. the Konami SCC/SCC+, which has no manufacturer datasheet) a careful
+black-box characterisation **produces the primary reference outright** — zerobas as a
+source, not a sink. Even the **walls** are deliverables: a precisely characterised
+clean-room boundary (where, and *why*, an interface cannot be cloned from any allowed
+source) is preservation knowledge in its own right.
+
 ## Traceability is the whole point
 
 Every constant, address, data table, and algorithm in this repo **must trace to
