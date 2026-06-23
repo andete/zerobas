@@ -394,6 +394,22 @@ RDBLK_DST       equ     $E776   ; current DTA write pointer (word; from BDOS_DTA
 ; expects at that pointer is the next oracle target. Own choice for the location:
 ; free page-3 RAM past the RDBLK scratch ($E777), clear of every disk/basic region.
 GETWRK_AREA     equ     $E780   ; MSX-DOS work-area base returned by $4030 (128 B reserved)
+; --- $F348 DRVTBL: the disk-driver table MSXDOS.SYS dispatches through (§8.22) ---
+; The disk ROM (not MSXDOS) builds this table; MSXDOS reads it to find the disk
+; interface's slot, its reserved top-of-RAM, and the driver-routine pointers. The
+; four driver pointers are always-mapped page-3 trampolines (the boot/DOS calls them
+; while the disk ROM is NOT in any page, so a direct $40xx call won't reach it). We
+; synthesise each as the proven H.PHYD form -- a self-contained CALLF stub
+; `F7 <slot> <lo> <hi> C9` (RST 30h inter-slot call; MSX2 TH §2) -- into our own
+; $4010-region BIOS entries, never the stock's $EF95 kernel bytes. DRV_TRAMP holds
+; them in reserved page-3 RAM past the $4030 work area (free, gated DOS path only).
+DRV_TRAMP       equ     $E800   ; 4 CALLF trampolines, 5 bytes each ($E800-$E813)
+; Reserved top-of-RAM advertised in DRVTBL+1. MSXDOS.SYS places its resident kernel
+; just below this (stock: top $DF93 -> kernel $D606). HIMEM ($FC4A) is NOT the lever
+; (§8.20); the value MSXDOS reads is this DRVTBL field. We use the stock's $DF93 --
+; safely below our lowest page-3 scratch ($E29A), so MSXDOS's kernel lands clear of
+; our SECTOR_BUF/FAT/work-area region (the §8.19 collision is exactly this gap).
+DOS_RESV_TOP    equ     $DF93   ; top-of-reserved-RAM for MSXDOS kernel placement
 boot_disk:
                 xor     a               ; drive A
                 ld      b, 1            ; one sector
@@ -551,7 +567,66 @@ bwt_loop:
                 ld      (hl), high wa_stub
                 inc     hl
                 djnz    bwt_loop
+                ; fall through to build the $F348 DRVTBL (same $FF gate)
+; build_drvtbl — synthesise the four CALLF trampolines in page-3 RAM, then lay the
+; $F348 DRVTBL pointing at them + our slot + reserved-top + the $4030 work area.
+; Mirrors the disk ROM's own build (§8.22 write-watch: stock builds it from page 1);
+; clean-room — every pointer aims at our own code, the stock $EF95/$DFxx bytes are
+; never read. Runs only under set_ramad's $FF gate (the real-CF-3300 DOS host).
+build_drvtbl:
+                ; --- four CALLF trampolines: F7 <slot> <target-lo> 40 C9 ---------
+                ld      hl, drv_targets ; ROM: low byte of each $40xx driver entry
+                ld      de, DRV_TRAMP   ; RAM: where the stubs are laid
+                ld      b, DRV_NTRAMP
+bdt_tramp:
+                ld      a, $F7          ; RST 30h (CALLF) opcode
+                ld      (de), a
+                inc     de
+                ld      a, (HOOK_SLOT)  ; this ROM's slot byte
+                ld      (de), a
+                inc     de
+                ld      a, (hl)         ; target low byte (e.g. $10 = DSKIO)
+                ld      (de), a
+                inc     de
+                ld      a, high DSKIO_ENTRY ; $40: all driver entries are in page 1
+                ld      (de), a
+                inc     de
+                ld      a, $C9          ; RET
+                ld      (de), a
+                inc     de
+                inc     hl
+                djnz    bdt_tramp
+                ; --- the DRVTBL itself at $F348 ---------------------------------
+                ld      a, (HOOK_SLOT)
+                ld      (DRVTBL + 0), a             ; +0  slot id
+                ld      hl, DOS_RESV_TOP
+                ld      (DRVTBL + 1), hl            ; +1  reserved top-of-RAM
+                ld      hl, GETWRK_AREA
+                ld      (DRVTBL + 3), hl            ; +3  $4030 work-area pointer
+                ld      hl, DRV_TRAMP + 0
+                ld      (DRVTBL + 5), hl            ; +5  DSKIO  trampoline
+                ld      hl, DRV_TRAMP + 5
+                ld      (DRVTBL + 7), hl            ; +7  DSKCHG trampoline
+                ld      hl, DRV_TRAMP + 10
+                ld      (DRVTBL + 9), hl            ; +9  GETDPB trampoline
+                ld      hl, 0
+                ld      (DRVTBL + 11), hl           ; +11 unused (stock = $0000)
+                ld      hl, DRV_TRAMP + 15
+                ld      (DRVTBL + 13), hl           ; +13 DSKFMT trampoline
+                ld      a, $AA
+                ld      (DRVTBL + 15), a            ; +15 sentinel (stock = $AA)
                 ret
+DRVTBL          equ     $F348   ; MSX-DOS-1 disk-driver table (§8.22)
+DRV_NTRAMP      equ     4       ; number of CALLF trampolines
+; drv_targets — low byte of each $40xx driver entry the trampolines call. Order
+; matches the stock DRVTBL's non-zero pointer slots (+5/+7/+9/+13): the hot pointer
+; is sector I/O (DSKIO), then DSKCHG/GETDPB, then DSKFMT. (Standard disk-ROM jump
+; table, MSX2 TH; refined by re-trap if a driver pointer's contract differs.)
+drv_targets:
+                db      $10     ; DSKIO  ($4010)
+                db      $13     ; DSKCHG ($4013)
+                db      $16     ; GETDPB ($4016)
+                db      $1C     ; DSKFMT ($401C)
 ; wa_stub — the no-op body for the $F368 segment-switch hooks (RET; see above).
 wa_stub:
                 ret

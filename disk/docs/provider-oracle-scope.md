@@ -1220,3 +1220,41 @@ Clean-room intact throughout: we observed register/flag in/out and writer/reader
 $F195` trampoline bytes, the `$DFxx`/`$95xx`-region kernel, and MSXDOS.SYS were never read or
 disassembled. Pointers in our build aim only at our own code. Next: map each trampoline to its `$401x`
 BIOS entry (trap the CALSLT target per pointer), then build.
+
+## 8.23 `build_drvtbl` shipped (faithful + consumed) — but the reserved-top is NOT the kernel-placement lever
+
+Built the §8.22 spec in `disk.asm`: `build_drvtbl` (reached by fall-through from
+`set_ramad`→`build_wa_table`, under the same `$FF` real-CF-3300 gate) lays four
+`F7 <slot> <lo> 40 C9` CALLF trampolines in reserved page-3 RAM (`$E800`, the proven
+H.PHYD form, into `$4010/$4013/$4016/$401C`) and writes the `$F348` DRVTBL: slot id |
+reserved-top `$DF93` | `$4030` work-area ptr `$E780` | the four trampoline pointers |
+`$0000` | `$AA` sentinel. `bdos_entry` `$43FB`→`$4453`; init probe bumped; regression-
+green (init/files/bload_disk/dskio PASS on C-BIOS — the gate skips it there).
+
+**Validated CONSUMED (the win to bank).** On Tier-1, MSXDOS reads our `$F348` **37×,
+first from PC `$0368`** — the identical consumer routine as the stock's 208× (§8.22).
+So `build_drvtbl` is wired into the live boot path: real MSXDOS finds and reads our
+DRVTBL. (37 < 208 because ours derails before the boot completes.)
+
+**NEGATIVE RESULT — reserved-top in DRVTBL+1 does NOT move the kernel.** BDOS base
+(`$0005` JP target) stays **`$E106`** (not the stock's `$D606`); the `$1000` gap of
+§8.20 is unchanged and the §8.19 collision persists. So MSXDOS-1 derives its kernel
+base from some source *other* than DRVTBL+1 (and other than HIMEM, §8.20). The `$DF93`
+we advertise is read but not used for placement.
+
+**The derail today (re-measured).** The old `$0038` RST38 wedge is GONE (set_ramad +
+`$F368` fixed it): MSXDOS.SYS now re-enables interrupts and the CPU is sampled in our
+`int_h` (`$41FD`) — but the interrupted *main thread* has run away: histogram of the
+return PC at `int_h` entry over 12 s = **`$FFFF` 98.7%** (351098/355598), with brief
+excursions through our FDC code (`$42Dx`), page 2 (`$8425`), and the work area
+(`$F33x`). A garbage-RET PC run-away — the §8.19 stack corruption from the `$E106`
+kernel overlapping our `$E2A0-$E780` scratch, exactly as diagnosed, still the blocker.
+
+**NEXT — find MSXDOS-1's real top-of-RAM source.** Trap the *stock's* kernel-base
+computation (where it derives `$D606`) and identify the cell/probe it reads; then set
+that on ours so the kernel lands clear of our scratch. Strong candidate: a RAM-size
+probe skewed by our ROM's page-2 — our 16 KB ROM reads `$FF` at `$8000-$BFFF` where the
+stock disk ROM maps content; a sizing routine could miscount by `$1000`. (The DRVTBL
+trampolines are built but not yet exercised — the boot derails before dispatching a
+disk op through them — so their `$401x` mapping stays unverified until the collision is
+cleared.) Clean-room unchanged: register/flag + reader/writer PCs only.

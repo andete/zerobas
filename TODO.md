@@ -622,6 +622,19 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             CALSLT trampolines there, one per driver routine, into our `$4010-$401F`; (3) write `$F348`
             = slot id | reserved-top | `$4030` ptr | trampoline addrs | sentinel. Next micro-step:
             map each trampoline → its `$401x` entry (trap the CALSLT target per pointer), then build.
+            **BUILT + COMMITTED (§8.23): `build_drvtbl` in INIT (4 CALLF trampolines @`$E800` +
+            the `$F348` DRVTBL), `$FF`-gated, regression-green; bdos_entry `$43FB`→`$4453`.
+            VALIDATED CONSUMED** — Tier-1 MSXDOS reads our `$F348` 37× from PC `$0368` (the stock's
+            reader). **But NEGATIVE: reserved-top in DRVTBL+1 does NOT move the kernel** — BDOS stays
+            `$E106` (stock `$D606`); the §8.19/§8.20 `$1000` collision persists. Derail re-measured:
+            the `$0038` wedge is GONE (set_ramad/`$F368`); MSXDOS now re-enables ints (idle in our
+            `int_h`) but the main thread runs away to `$FFFF` (98.7% of int samples) — garbage-RET
+            from the `$E106` kernel overlapping our `$E2A0-$E780` scratch. **NEXT LEVER: find MSXDOS-1's
+            real top-of-RAM source** — trap the stock's kernel-base computation (where it derives
+            `$D606`) for the cell/probe it reads, then set it on ours. Strong candidate: a RAM-size
+            probe skewed by our ROM's page-2 `$FF` ($8000-$BFFF) vs the stock disk ROM's mapped
+            content. (Trampolines built but not yet exercised; their `$401x` mapping unverified until
+            the collision clears.) See §8.23.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
       and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
       — the organic evidence the Tier-0/1 differential could only approximate.
