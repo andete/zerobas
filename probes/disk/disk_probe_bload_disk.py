@@ -55,10 +55,11 @@ import argparse
 import os
 import signal
 import subprocess
+import shutil
 import sys
 import time
 
-OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
+OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 # The test image lives in this repo at disk/test720.dsk (the disk ROM's home).
 # Allow an override via $ZEROBAS; default to the repo root.
 ZEROBAS = os.environ.get(

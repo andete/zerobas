@@ -159,19 +159,31 @@ firewall above).
 
 ## Build
 
-Requires [pasmo](https://pasmo.speccy.org/) (the assembler C-BIOS uses):
+The build is cross-platform — it needs only [pasmo](https://pasmo.speccy.org/) (the
+assembler C-BIOS uses), `python3`, and `make`. No part of the **deliverable** build
+depends on openMSX. (Building it on Linux / Windows is detailed in
+[`docs/portability.md`](docs/portability.md).)
+
+Prerequisites:
+
+| OS | Install |
+|----|---------|
+| **Linux** (Debian/Ubuntu) | `sudo apt-get install pasmo python3 make` |
+| **macOS** | `python3` + `make` from the Xcode CLI tools; install pasmo from [source](https://pasmo.speccy.org/) |
+| **Windows** | `python3` from python.org, plus `pasmo` + `make` (via [MSYS2](https://www.msys2.org/), Git Bash, or WSL — the build needs a Unix-style `make`) |
 
 ```sh
 make            # all portable deliverables: build/basic.rom, build/disk.rom,
                 #   zerobas-msx1.ips/.bps, tape/zerobas-tape-msx1.ips/.bps
+make unit-test  # emulator-free Z80 unit tests (no openMSX, no reference ROMs)
 make machines   # install the openMSX machine configs (see below)
 make install    # make + make machines
 ```
 
 The patch deliverables need a stock C-BIOS main ROM to stamp/verify against;
-`build-patches.sh` auto-detects openMSX's bundled copy, or pass `STOCK=<path>`.
-ROMs land in the gitignored `build/`; the `.ips/.bps` patches are tracked at the
-repo root.
+`tools/build_patches.py` auto-detects openMSX's bundled copy (Linux / macOS /
+Windows install locations), or pass `STOCK=<path>`. ROMs land in the gitignored
+`build/`; the `.ips/.bps` patches are tracked at the repo root.
 
 ## Two ways to run it: cartridge, or patched in next to the BIOS
 
@@ -187,7 +199,7 @@ combined only at apply-time. C-BIOS's cold-boot cartridge scan reaches its own
 slot-0 page 1, finds zerobas's "AB" header, and calls INIT — so **no
 boot-vector patch is needed**; the cartridge header does double duty.
 
-`make patches` (a subset of `make`) does this: `build-patches.sh` splices
+`make patches` (a subset of `make`) does this: `tools/build_patches.py` splices
 `build/basic.rom` into page 1, checks that the only stock bytes it overwrites are
 C-BIOS's unimplemented-call `unknown@` stubs (none reachable by a direct
 `CALL`/`JP`), and emits both patch formats.
@@ -365,7 +377,6 @@ zerobas/
 ├── PROVENANCE.md      # provenance index -> per-component logs below
 ├── Makefile           # `make` -> all deliverables; `make machines` -> openMSX configs
 ├── build/             # gitignored build artifacts (basic.rom, disk.rom)
-├── build-patches.sh   # splice into a stock C-BIOS page 1 -> zerobas-msx1.ips/.bps
 ├── zerobas-msx1.ips   # slot-0 page-1 patch, IPS (universal; used by installer)
 ├── zerobas-msx1.bps   # slot-0 page-1 patch, BPS (CRC-locked, checksummed)
 ├── basic/
@@ -381,7 +392,6 @@ zerobas/
 │   └── PROVENANCE.md  # BASIC-component provenance log
 ├── tape/
 │   ├── tape.asm       # cassette BIOS patch (TAPION / TAPIN / TAPIOF)
-│   ├── build-patches.sh        # assemble tape.asm -> zerobas-tape-msx1.ips/.bps
 │   ├── zerobas-tape-msx1.ips     # page-0 tape patch, IPS (used by installer)
 │   ├── zerobas-tape-msx1.bps     # page-0 tape patch, BPS (CRC-locked)
 │   ├── PROVENANCE.md  # tape-component provenance log
@@ -394,5 +404,7 @@ zerobas/
     ├── pad_rom.py     # pad/verify the ROM to exactly 16 KB
     ├── rom_patch.py   # make/apply/inspect IPS + BPS patches
     ├── overlay_page1.py        # splice zerobas into C-BIOS page 1 + vet the splice
+    ├── build_patches.py        # build the IPS/BPS patches (portable; page-1 + --tape)
+    ├── openmsx_paths.py        # cross-platform openMSX / C-BIOS path discovery
     └── install-openmsx-machine.py  # write *_BASIC machines that patch on load
 ```

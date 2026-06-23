@@ -12,8 +12,8 @@ BPS := zerobas-tape-msx1.bps
 SRC := tape.asm
 STOCK ?=
 
-patches: $(SRC) ../tools/rom_patch.py build-patches.sh
-	sh build-patches.sh $(STOCK)
+patches: $(SRC) ../tools/rom_patch.py ../tools/build_patches.py ../tools/openmsx_paths.py
+	python3 ../tools/build_patches.py --tape $(STOCK)
 
 test: patches
 	python3 tools/run_tape_regression.py \

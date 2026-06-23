@@ -37,6 +37,7 @@ import argparse
 import os
 import signal
 import subprocess
+import shutil
 import sys
 import tempfile
 import time
@@ -46,7 +47,7 @@ from cas_encode import build_cas, build_cas_basic  # noqa: E402
 from cas_decode import decode_file                  # noqa: E402
 from omsx_run import _tcl_dquote                    # noqa: E402
 
-OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
+OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 if not (os.path.sep in OMSX and os.path.isfile(OMSX)):
     OMSX = "openmsx"
 

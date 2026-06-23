@@ -59,10 +59,11 @@ import argparse
 import os
 import signal
 import subprocess
+import shutil
 import sys
 import time
 
-OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
+OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 
 # Values the zerobas-disk INIT installs (from disk/disk.asm's pasmo symbols).
 SYSTEM_ADDR = 0xF37D

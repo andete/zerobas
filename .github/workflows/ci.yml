@@ -1,0 +1,74 @@
+# Copyright (c) 2026 Joost Yervante Damad
+# SPDX-License-Identifier: 0BSD
+#
+# Cross-platform build + test gate. Proves the portable half of zerobas builds and
+# passes its tests on Linux and macOS with only pasmo + python3 — no openMSX and no
+# proprietary reference ROMs.
+#
+# What runs here (and why):
+#   * the ROMs (build/basic.rom, build/disk.rom) — pasmo assembles them; no other
+#     inputs needed.
+#   * make unit-test — the emulator-free Z80 unit tests (tests/), the ideal portable
+#     regression layer: an embedded Z80 core, no openMSX, no reference ROMs.
+#   * a smoke import of the host tooling, so the build scripts are checked to load on
+#     each OS's Python.
+#
+# What does NOT run here: the .ips/.bps patch build (needs a stock C-BIOS main ROM
+# to stamp against — see tools/build_patches.py) and the openMSX oracle probes (need
+# your own reference ROMs). Those are validated locally; the patch build is proven
+# byte-reproducible there. Windows is code-ready (no shell dependency; see
+# docs/portability.md) but is not in this matrix yet — the GitHub Windows runners
+# have no turnkey pasmo + make.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install pasmo (Linux — apt)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y pasmo
+
+      - name: Install pasmo (macOS — build from source)
+        if: runner.os == 'macOS'
+        run: |
+          set -eux
+          curl -fsSL https://pasmo.speccy.org/bin/pasmo-0.5.5.tar.gz -o pasmo.tar.gz
+          tar xf pasmo.tar.gz
+          cd pasmo-0.5.5
+          ./configure
+          make
+          sudo make install
+
+      - name: Show toolchain
+        run: |
+          pasmo --version || true
+          python3 --version
+
+      - name: Build the ROMs
+        run: make build/basic.rom disk
+
+      - name: Smoke-import host tooling (loads on this OS's Python)
+        run: |
+          python3 tools/build_patches.py --help > /dev/null
+          python3 tools/install-openmsx-machine.py --help > /dev/null
+          python3 -c "import sys; sys.path.insert(0, 'tools'); import openmsx_paths; print('openmsx_paths OK')"
+
+      - name: Run the emulator-free unit tests
+        run: make unit-test

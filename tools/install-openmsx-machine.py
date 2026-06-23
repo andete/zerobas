@@ -53,29 +53,12 @@ from __future__ import annotations
 
 import argparse, glob, os, re, sys
 
+import openmsx_paths  # shared cross-platform share/user dir discovery
+
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IPS = os.path.join(REPO, "zerobas-msx1.ips")
 TAPE_IPS = os.path.join(REPO, "tape", "zerobas-tape-msx1.ips")
 DISK_ROM = os.path.join(REPO, "build", "disk.rom")
-
-# Where openMSX keeps its bundled machines + ROMs, by platform default.
-SHARE_CANDIDATES = [
-    "/Applications/openMSX.app/Contents/Resources/share",          # macOS
-    "/opt/homebrew/share/openmsx", "/usr/local/share/openmsx",     # Homebrew
-    "/usr/share/openmsx", "/usr/local/share/openMSX",              # Linux
-]
-USER_CANDIDATES = [
-    os.path.expanduser("~/.openMSX"),
-    os.path.expanduser("~/Documents/openMSX"),                     # some installs
-]
-
-
-def first_existing(paths, what):
-    for p in paths:
-        if os.path.isdir(p):
-            return p
-    sys.exit(f"error: could not auto-detect {what}; pass it explicitly "
-             f"(looked in: {', '.join(paths)})")
 
 
 def patch_config(text: str, share_machines: str, ips_list) -> str:
@@ -255,7 +238,8 @@ def main():
     args = ap.parse_args()
 
     if not os.path.isfile(IPS):
-        sys.exit(f"error: patch not found: {IPS} (run `sh build-patches.sh` first)")
+        sys.exit(f"error: patch not found: {IPS} "
+                 f"(run `python3 tools/build_patches.py` first)")
     if not os.path.isfile(TAPE_IPS):
         sys.exit(f"error: tape patch not found: {TAPE_IPS} (run `make -C tape` first)")
     # Tape patch first (page 0), then zerobas (page 1) -- order is immaterial.
@@ -276,8 +260,8 @@ def main():
             sys.exit(f"error: disk ROM not found: {real_disk_rom} "
                      f"(run `make disk` first)")
 
-    share = args.share or first_existing(SHARE_CANDIDATES, "openMSX share dir")
-    user = args.user or first_existing(USER_CANDIDATES, "openMSX user dir")
+    share = openmsx_paths.find_share(args.share)
+    user = openmsx_paths.find_user(args.user)
     share_machines = os.path.join(share, "machines")
     user_machines = os.path.join(user, "share", "machines")
 

@@ -56,10 +56,11 @@ import argparse
 import os
 import signal
 import subprocess
+import shutil
 import sys
 import time
 
-OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
+OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 
 # Stub reads sector 0 -> $C200 and sector 14 -> $C400, storing for each call:
 #   $C100 = returned A (sector 0), $C101 = carry (0=ok),

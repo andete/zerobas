@@ -71,7 +71,7 @@ import sys
 import tempfile
 import time
 
-OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
+OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 
 # Assembled with pasmo (org $C000); see disk_probe_provider_phydio.asm note in the
 # zerobas commit. The stub calls BIOS PHYDIO ($0144) to: read sector 0 -> $C200;

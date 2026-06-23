@@ -79,7 +79,7 @@ import subprocess
 import sys
 import time
 
-OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
+OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 
 # ORACLE.BIN: 16 records of 128 bytes; record r is 128 copies of (r+1). Exactly
 # two clusters on a standard FAT12 disk (1024 B/cluster) -> a cluster-chain hop

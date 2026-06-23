@@ -11,7 +11,7 @@
 #   - zerobas-msx1.ips/.bps                         (slot-0 page-1 BASIC patch)
 #   - tape/zerobas-tape-msx1.ips/.bps              (page-0 cassette patch)
 # The .ips/.bps patches need a stock C-BIOS main ROM to stamp/verify against;
-# build-patches.sh auto-detects openMSX's bundled copy or takes STOCK=<path>.
+# tools/build_patches.py auto-detects openMSX's bundled copy or takes STOCK=<path>.
 #
 # `make machines` is separate because openMSX machine configs are not portable
 # files — they embed absolute paths to your openMSX ROMs and this repo — so they
@@ -58,18 +58,20 @@ $(DISK_ROM): $(DISK_SRC) | $(BUILD)
 disk: $(DISK_ROM)
 
 # --- Slot-0 page-1 BASIC patch (build/basic.rom spliced into a stock C-BIOS) ---
-# build-patches.sh emits BOTH .ips and .bps in one run; express that with a
+# build_patches.py emits BOTH .ips and .bps in one run; express that with a
 # single-recipe target plus a no-op follower (GNU make 3.81 has no grouped
-# targets). Pass STOCK=<rom> or let the script auto-detect openMSX's copy.
-zerobas-msx1.ips: $(ROM) build-patches.sh tools/rom_patch.py tools/overlay_page1.py
-	sh build-patches.sh $(STOCK)
+# targets). Pass STOCK=<rom> or let the tool auto-detect openMSX's copy.
+zerobas-msx1.ips: $(ROM) tools/build_patches.py tools/openmsx_paths.py \
+                  tools/rom_patch.py tools/overlay_page1.py
+	python3 tools/build_patches.py $(STOCK)
 zerobas-msx1.bps: zerobas-msx1.ips
-	@: # produced by the build-patches.sh run above
+	@: # produced by the build_patches.py run above
 
 patches: $(PATCHES)
 
 # --- Page-0 cassette patch (assembled from tape/tape.asm; its own sub-make) ----
-tape/zerobas-tape-msx1.ips: tape/tape.asm tape/build-patches.sh tools/rom_patch.py
+tape/zerobas-tape-msx1.ips: tape/tape.asm tools/build_patches.py tools/openmsx_paths.py \
+                            tools/rom_patch.py
 	$(MAKE) -C tape patches STOCK=$(STOCK)
 tape/zerobas-tape-msx1.bps: tape/zerobas-tape-msx1.ips
 	@: # produced by the tape sub-make above

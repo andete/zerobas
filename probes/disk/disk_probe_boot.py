@@ -64,11 +64,12 @@ import argparse
 import os
 import signal
 import subprocess
+import shutil
 import sys
 import tempfile
 import time
 
-OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
+OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 # The test image lives in the sibling zerobas repo (the disk ROM's home).
 ZEROBAS = os.environ.get(
     "ZEROBAS", os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))

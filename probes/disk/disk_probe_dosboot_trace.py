@@ -58,7 +58,7 @@ import sys
 import tempfile
 import time
 
-OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
+OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 MACHINE = "National_CF-3300"
 
 # Standard MSX disk-ROM jump-table entries (offsets from the disk ROM base

@@ -60,7 +60,7 @@ import sys
 import tempfile
 import time
 
-OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
+OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 
 # Target data sector (logical). High in the data area of the 720K test image,
 # clear of FAT (sectors 1..6), root dir (7..13) and the test files (start at 14).

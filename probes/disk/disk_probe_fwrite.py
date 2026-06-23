@@ -76,7 +76,7 @@ import sys
 import tempfile
 import time
 
-OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
+OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 PASMO = os.environ.get("PASMO", "pasmo")
 
 # ---------------------------------------------------------------------------

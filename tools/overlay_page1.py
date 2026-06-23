@@ -16,7 +16,7 @@ reaches them, so before writing the combined ROM we scan the whole stock ROM for
 direct CALL/JP into any overwritten byte. None expected (these are dead stubs that
 a real BASIC ROM would itself have occupied); if one is ever found the splice is
 unsafe and we stop. Indirect dispatch can't be caught statically -- the end-to-end
-boot test (see build-patches.sh / the harness) is the backstop.
+boot test (see build_patches.py / the harness) is the backstop.
 
     python3 tools/overlay_page1.py stock_cbios.rom basic.rom combined.rom
 """
