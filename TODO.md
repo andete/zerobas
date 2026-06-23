@@ -588,8 +588,17 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             (`PC=$431x/$436x`, `SP=$C004`) reading the directory — stack holds `"VOL_ID"`. **New gap
             (next):** a downstream **stack-corruption derail** — MSXDOS reaches `$4010` once with
             garbage args (`Cy=1`, `B=232`, `DE=$E880`) because `SP` points into ASCII data, not a
-            stack. Trace where `SP` first goes bad post-`$F368` (re-verify the no-op holds for all
-            calls / a work-area SP field / an int interaction), fix, re-trap. See §8.18.
+            stack. See §8.18.
+            **ROOT CAUSE FOUND (§8.19) = HIGH-RAM COLLISION.** The derail is a `RST 38h` slide at
+            `$8004` reached via a corrupted stack: `SP=$E6FE` points into MSXDOS.SYS's relocated
+            kernel jump table at `$E700+`. MSXDOS's kernel sits at `$E1xx-$E7xx` (BDOS `$E106`),
+            **overlapping our disk-ROM scratch** (`SECTOR_BUF $E2A0`, `WBUF $E560`, `GETWRK_AREA
+            $E780`). The stock avoids it by reserving high RAM (`HIMEM $FC4A=$DF93`, work area
+            `$DD0E`); ours never reserves, so MSXDOS relocates up into our scratch → collision.
+            **Resume:** characterise which pointer MSXDOS-1 reads to position its kernel (lead:
+            `HIMEM $FC4A`; and/or a memory-top cell), have INIT reserve our high-RAM region below the
+            scratch base (and/or relocate scratch), re-trap. Standard MSX reservation, no kernel
+            code to write. See §8.19.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
       and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
       — the organic evidence the Tier-0/1 differential could only approximate.

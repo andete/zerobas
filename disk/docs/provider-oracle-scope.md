@@ -1058,8 +1058,37 @@ our DSKIO (`$4010`) **once**, but with nonsensical parameters (`Cy=1` write, `B=
 issuing any FDC command. The cause is upstream: at that `$4010` entry the return address is `$3432` and
 the stack bytes are **ASCII** (`32 34 35`="245", "VOL_ID"…) — **`SP` is pointing into a data/text buffer,
 not a call stack**. So MSXDOS.SYS's stack was corrupted earlier and a garbage `RET`/`CALL` landed in
-`$4010`. **Next step:** trace where `SP` first goes bad after the `$F368` calls — candidates: (a) the
-`$F368`/`$F36B` no-op assumption is subtly incomplete for some call context (re-verify across *all*
-calls, incl. whether either ever needs to switch page 1 disk-ROM↔RAM); (b) MSXDOS loads `SP` from a
-work-area field we have not populated; (c) an interrupt/`int_h` interaction. Characterise, fix, re-trap.
-The `$F368` table (this §8.18) is banked as a real, regression-safe advance regardless.
+`$4010`. (Root cause found in §8.19.)
+
+## 8.19 The post-`$F368` derail is a HIGH-RAM COLLISION — MSXDOS's kernel overlaps our scratch
+
+Tracing where `SP` goes bad (black-box, `--tier1`) located the root cause, and it is NOT the `$F368`
+no-op (that holds):
+
+- **It is a `RST 38h` slide through `$FF` at `$8004+`** (page 2), the same `$8004` crawl §8.16 first
+  saw. On the **stock**, `$8004` is `$FF` too and is **never jumped to** — so the slide is unique to our
+  derail, not a routine the stock provides.
+- **The slide is reached via a corrupted stack.** At the first jump to `$8004`: `SP=$E6FE`, and the
+  bytes there are **`JP` vectors** (`c3 b0 e2`=`JP $E2B0`, `c3 0f e7`=`JP $E70F`, `c3 2c e7`=`JP $E72C`)
+  — i.e. `SP` is pointing into **MSXDOS.SYS's relocated kernel jump table at `$E700+`**, not a clean
+  stack. The stack grew into the kernel's vector table → a garbage `RET` → the `$8004` jump.
+- **MSXDOS.SYS's resident kernel sits at `$E1xx–$E7xx` on our boot** (BDOS `$E106`, vectors `$E70F`/
+  `$E72C`, stack `$E6FE`). That range **directly overlaps our disk-ROM high-RAM scratch**: `SECTOR_BUF`
+  `$E2A0`, `FAT_*`, `WBUF` `$E560-$E75F`, `RDBLK_*` `$E76C`, `GETWRK_AREA` `$E780`. The kernel and our
+  work area are fighting over the same RAM.
+
+**Why the stock is fine — it reserves high RAM; we don't.** On the stock, `HIMEM` (`$FC4A`) = `$DF93`
+and the `$4030` work area = `$DD0E`: the disk ROM's INIT lowers the top-of-RAM so the disk work area +
+the resident environment occupy protected high RAM and MSXDOS.SYS positions its kernel/stack **clear of
+it**. Our INIT never reserves our high-RAM region for the DOS environment, so MSXDOS.SYS relocates its
+kernel up into `$E1xx-$E7xx` — straight over our scratch — and the collision corrupts the stack.
+
+This is the §8.8 "resident environment" concern resurfacing as a concrete **memory-layout** problem, not
+a code-reconstruction one: there is no missing kernel code to write, only a region to reserve.
+
+**Next step (next session) — reserve our high-RAM region so MSXDOS.SYS's kernel lands clear of it.**
+Characterise exactly which pointer MSXDOS-1 reads to position its kernel (lead: `HIMEM $FC4A`, stock
+`$DF93`; and/or a memory-top work-area cell), then have our INIT set it below our scratch base (and/or
+relocate the disk-ROM scratch so our reserved block matches the stock's `$DD0E`-style placement), then
+re-trap. Clean-room: high-RAM reservation is standard documented MSX (MSX2 TH work area / HIMEM); no
+kernel bytes are read. The `$F368` table + RAMAD advances stand regardless.
