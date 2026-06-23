@@ -1371,3 +1371,68 @@ ROM stays in page 1 throughout boot (§8.4), so a `$50A9` entry is reachable exa
 
 Clean-room: we read the `$50A9` call-target bytes (present vs absent) and record the entry/exit register
 **contract** + the single side-effect — black-box observations; no disk-ROM code is disassembled or copied.
+
+## 8.27 `$50A9` IMPLEMENTED (commit pending) — the spin is gone; it exposes the next gap (§8.28)
+
+Built the §8.26 contract in `disk.asm`: positioned at `$50A9` (ROM offset `$10A9`) with a `ds` fill like
+`$4030`, six bytes —
+
+```
+sub a            ; A=$00, F=$42 (Z|N) -- the exact exit AF
+ld (W50A9_WRKB),a; $F242 := $00  (the only persistent write the stock makes)
+ld de,$F1AA      ; DE return
+ld ix,$F1AA      ; IX return (= DE)
+ld hl,$F359      ; HL return
+ret              ; BC, IY untouched
+```
+
+`sub a` yields exactly `A=$00`/`F=$42` (0−0 sets Z+N, clears S/H/PV/C); the loads do not touch the flags,
+so the exit AF is exact. The return pointers are the stock's observed constants (our work area is built to
+the stock layout, so `$F1AA`/`$F359` resolve to the same cells). bdos_entry stays `$4453` (the routine is
+appended past all code; equates emit nothing). Nothing but the DOS kernel calls `$50A9`, so it is inert on
+the C-BIOS hosts — regression-green (init/files/bload_disk/dskio PASS, DSKIO byte-identical, unit-tests 18/18).
+
+**RESULT (real advance): the warm-boot spin is GONE and the kernel CONSUMES the return.** Re-trap
+(`disk_probe_dosboot_reinit.py` → 1 publication = stock parity; `disk_probe_dosboot_50a9.py` → `$50A9`
+holds our code). After `$50A9` returns to `$D7CE` the kernel runs on with our `IX=$F1AA` etc., then reaches
+`$0038` — but `$0038 = $C3 FA 41 = JP $41FA = our int_h`, a **normal 60 Hz vector, not a wedge**. The boot
+no longer crashes at `$50A9`; the **main thread** dies later (only the interrupt stays alive, PC idling at
+`$0038`), with **zero** real `DSKIO`/`BDOS` calls — vs the stock at `A>` (`PC=$0D6D` in COMMAND.COM, 12
+`DSKIO`). The gap moved forward to §8.28.
+
+## 8.28 NEXT GAP — the disk RESIDENT WORK AREA `$F100-$F3FF` is unbuilt on Tier-1
+
+`disk_probe_dosboot_workarea.py` (stock vs Tier-1 dump at the publish): the genuine disk-ROM INIT fully
+populates `$F100-$F3FF` (only **3% `$FF`**); ours is **76% `$FF`** — we build only fragments (`RAMAD`
+`$F341-4` §8.16, part of `DRVTBL` `$F348` §8.23, the `$F368` jump table §8.18). Every cell the kernel reads
+via the `$50A9` return is `$FF` garbage on ours, so it computes a bad address and the main thread derails.
+Differential (stock | Tier-1) at the publish:
+
+| region | stock | Tier-1 | meaning |
+|---|---|---|---|
+| `$F100-$F17C` | `87 26 40 cd 24 00 …` | `$FF` | driver dispatch / inter-slot stubs |
+| `$F195-$F1A9` | `00 f9 00 02 0f 04 01 02 01 00 02 70 0e 00 ca 02 03 07 00` | `$FF` | **drive-A DPB** (= our GETDPB bytes) |
+| `$F1AA-$F1BE` | `01 f9 00 02 0f 04 01 02 …` | `$FF` | **drive-B DPB** (the `$50A9` `DE/IX` return) |
+| `$F24E-$F2FD` | `00 c9 c9 c9 …` | `$FF` | a `RET`-filled stub/handler table |
+| `$F327-$F33F` | `3e 1a c9 … f7 87 …` | `$FF` | small routines + a CALLF stub |
+| `$F34D-$F356` | `95ef 95ed 95eb … 95f1` (`$EF95/$ED95/$EB95/$F195`) | `00e8 05e8 0ae8 … 0fe8` (our trampolines) | DRVTBL driver ptrs (ours = §8.23 stubs) |
+| `$F358-$F367` | `f1 00 00 …` | `$FF` | the `$F359` `HL` return target (stock = mostly `$00`) |
+| `$F368-$F37C` | `57df 59df 70df 27f3 2cf3 0000 0000` | (ours: `$F368` table §8.18) | the §8.18 jump table |
+| `$0038` vector | `JP $DDAE` (stock kernel) | `JP $41FA` (our int_h) | both valid — NOT the derail |
+
+`$F242` on the stock = `00 95 f1 …` (i.e. `$F242=$00` + `$F243`→`$F195`, the DPB pointer); `$F1AA` = the
+drive-B DPB (`$F195+$15`). So the work area is a set of **per-drive DPBs + a driver dispatch/stub region +
+pointer tables**, all in always-mapped page-3 RAM — the §8.8 "resident environment", now precisely located
+and sized (~`$F100-$F3FF`, the parts the kernel reads identified above).
+
+**NEXT — build the resident work area in INIT** (same `$FF`-gated, host-adaptive discipline as `set_ramad`/
+`build_drvtbl`), incrementally and re-trapping after each piece: start with the **drive-A DPB at `$F195`**
+(we already produce it via `getdpb` `$4016`) and the `$F1AA` second DPB the `$50A9` return points at; then
+the `$F34D` driver pointers (already our `$F348` trampolines — verify the kernel accepts the trampoline form
+vs the stock's `$EF95` high-RAM); then the `$F100`/`$F24E`/`$F327` stub tables as the re-trap shows the
+kernel reading them. Each piece is our own clean-room code/data pointing at our routines — never the stock's
+`$95xx`/`$DFxx`/`$DDxx` bytes. Stock = `National_CF-3300`; Tier-1 = `National_CF-3300_ZEROBASDISK`; DOS disk
+= `~/Documents/msx/msx/disks/test.dsk`.
+
+Clean-room: a memory snapshot differential (`$FF` vs built) defines the build target; no disk-ROM/kernel
+code is disassembled — we replicate observed *data layout* with our own code, as `DRVTBL`/`$F368` already are.

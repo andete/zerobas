@@ -402,6 +402,18 @@ RDBLK_DST       equ     $E776   ; current DTA write pointer (word; from BDOS_DTA
 ; the 128-byte work area DOS fills ($DD0E-$DD8E) is clear of both kernel and scratch.
 GETWRK_AREA     equ     $DD0E   ; MSX-DOS work-area base returned by $4030 (128 B reserved);
                                 ; = the stock value so MSXDOS's kernel lands below our scratch
+; --- MSX-DOS-1 kernel continuation entry $50A9 (a3 §8.26/§8.27) -------------
+; After publishing its BDOS vector the relocated kernel does `CALL $50A9` (page 1 =
+; our disk ROM, so it lands here). Black-box oracle (disk_probe_dosboot_50a9.py
+; --stock): the routine IGNORES its register inputs, makes exactly ONE persistent
+; memory write ($50A9_WRKB := $00, via its internal CALL $472D), and returns a fixed
+; register contract -- A=0 / Z+N (AF=$0042), DE=IX=$F1AA, HL=$F359, BC + IY preserved.
+; The returned HL/DE/IX point into the disk work area the kernel/disk-ROM already
+; built; this entry only hands them back (it does not populate them). We reproduce the
+; observed contract with our own code; the stock's $472D body is never disassembled.
+W50A9_WRKB      equ     $F242   ; the one work-area cell $50A9 clears (semantic: black-box)
+W50A9_RET_DE    equ     $F1AA   ; DE (= IX) on return: disk work-area pointer
+W50A9_RET_HL    equ     $F359   ; HL on return: disk work-area pointer (DRVTBL+$11 region)
 ; --- $F348 DRVTBL: the disk-driver table MSXDOS.SYS dispatches through (§8.22) ---
 ; The disk ROM (not MSXDOS) builds this table; MSXDOS reads it to find the disk
 ; interface's slot, its reserved top-of-RAM, and the driver-routine pointers. The
@@ -2793,6 +2805,24 @@ fat_dir_update:
                 ret     c
                 or      a                   ; Cy = 0 success
                 ret
+
+; --- MSX-DOS-1 kernel continuation entry: $50A9 ($4000 + $10A9; a3 §8.26/§8.27) -
+; The relocated kernel CALLs $50A9 right after publishing its BDOS vector; on the
+; genuine CF-3300 this disk-ROM routine (`CALL $472D` + work-area setup) reaches A>.
+; Our code ends far below $50A9, so the entry is positioned with a `ds` fill (like
+; $4030). We reproduce the BLACK-BOX contract (disk_probe_dosboot_50a9.py):
+;   side effect : W50A9_WRKB ($F242) := $00   (the only non-stack write observed)
+;   returns     : A=$00, F=$42 (Z+N) ; DE=IX=$F1AA ; HL=$F359 ; BC, IY preserved
+; `sub a` yields exactly A=$00 / F=$42 ($42 = Z|N: 0-0 sets Z+N, clears S/H/PV/C); the
+; following loads do not disturb the flags, so the exit AF is exact. Inputs ignored
+; (the kernel passes AF=C340 BC=0000 DE=DC80 HL=D606 IX=F195 IY=C0AB; none consumed).
+                ds      $50A9 - $, $00  ; pad up to the kernel's $50A9 call target
+                sub     a               ; A=$00, F=$42 (Z+N) -- the exact exit AF
+                ld      (W50A9_WRKB), a ; $F242 := $00  (the only persistent write)
+                ld      de, W50A9_RET_DE ; DE = $F1AA
+                ld      ix, W50A9_RET_DE ; IX = $F1AA (= DE)
+                ld      hl, W50A9_RET_HL ; HL = $F359
+                ret                     ; AF=$0042, BC/IY untouched
 
 ; --- pad to a full 16 KB page ($4000-$7FFF) --------------------------------
                 ds      $8000 - $, $00
