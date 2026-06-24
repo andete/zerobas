@@ -17,15 +17,16 @@ Pipeline (all open / clean-room):
 We assert the blob loaded (0xC000 bytes), no error (ERRMARK clear), the marker
 ("JONG"), and PC at the landmark (handoff ran).
 
-Prerequisite: the `C-BIOS_tape` openMSX machine (stock C-BIOS v0.29 + the
-cbios-tape IPS applied on load). Build the patch in the cbios-tape repo first.
+Prerequisite: the `C-BIOS_MSX1_EU_TAPE` openMSX machine (stock C-BIOS v0.29 + the
+zerobas-tape IPS applied on load, cart slots free). Install it with
+`make machines` / `tools/install-openmsx-machine.py`.
 
 Why a WAV and not a .cas: openMSX synthesizes .cas audio at 3744 baud, outside
 the cbios-tape read path's tuned 1200/2400 range, so a .cas does not lock yet
 (see docs/finding-openmsx-cas-3744-baud.md). A 1200-baud recording is squarely
 in range, so this exercises the real open-stack read path today. When the read
 path gains 3744-baud support, a .cas BLOAD (basic_probe_bload.py --machine
-C-BIOS_tape) should pass too.
+C-BIOS_MSX1_EU_TAPE) should pass too.
 
 Clean-room: this drives only public BIOS entry points and treats the cbios-tape
 patch as a black box; nothing in cbios-tape is read or modified here.
@@ -50,7 +51,7 @@ import z80probe as Z  # noqa: E402
 from basic_probe_bload import build_blob, LOAD_ADDR, LANDMARK  # noqa: E402
 
 OMSX_RUN = os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib", "omsx_run.py")
-MACHINE = "C-BIOS_tape"
+MACHINE = "C-BIOS_MSX1_EU_TAPE"
 
 # cassette write-path BIOS entry points (driven via z80probe).
 TAPOON, TAPOUT, TAPOOF = 0x00EA, 0x00ED, 0x00F0

@@ -14,7 +14,7 @@ alignment can be calibrated.  Pure black-box observation.
   0xE000..00FF : 256 successive half-period iteration counts (after spin-up)
 
   python3 probes/tape/bios_probe_tapraw.py --out tapraw.rom
-  python3 probes/lib/omsx_run.py --machine C-BIOS_tape --cart tapraw.rom \
+  python3 probes/lib/omsx_run.py --machine C-BIOS_MSX1_EU_TAPE --cart tapraw.rom \
       --cassette ours.wav --bp 0x7FF0 --mem memory:0xE000:256 --out cap.txt
   python3 probes/tape/bios_probe_tapraw.py --analyze cap.txt
 """

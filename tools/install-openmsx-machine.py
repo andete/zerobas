@@ -14,6 +14,14 @@ in C-BIOS's failing cassette stubs, zerobas's `BLOAD"CAS:",R` actually completes
 The two patches touch disjoint regions (page 0 vs page 1), so they compose cleanly;
 both are always applied.
 
+It also writes a "<name>_TAPE" machine for each stock machine: the same stock C-BIOS
+with ONLY the zerobas-tape cassette patch applied (no zerobas-BASIC patch), leaving the
+external cartridge slots free. C-BIOS boots to its no-cart screen; insert zerobas as a
+cartridge (`-cart build/basic.rom`) to drive the open cassette stack against a stock
+BIOS. This is the machine the tape regression's open-stack and round-trip tiers run on
+(probes/basic/basic_probe_bload_openstack.py, tape/tools/run_tape_regression.py). Stock
+C-BIOS already ships a <CassettePort/>, so the _TAPE machine needs nothing but the patch.
+
 With `--disk-rom`, it ALSO writes a "<name>_BASIC_DISK" variant for each machine:
 the same two patches, plus slot 3 expanded so that slot 3-1 holds the standalone
 zerobas-disk ROM behind a National-style memory-mapped WD2793 FDC (the CF-3300
@@ -291,6 +299,15 @@ def main():
         else:
             open(out, "w").write(out_text)
             print(f"wrote {base}_BASIC   (-> machine \"{base}_BASIC\")")
+        # _TAPE: stock C-BIOS + ONLY the tape patch (no zerobas patch), cart slots
+        # free -- the open-stack / round-trip tape regression runs on this.
+        tout = os.path.join(user_machines, f"{base}_TAPE.xml")
+        ttext = patch_config(stock_text, share_machines, [TAPE_IPS])
+        if args.dry_run:
+            print(f"would write {os.path.basename(tout)}")
+        else:
+            open(tout, "w").write(ttext)
+            print(f"wrote {base}_TAPE   (-> machine \"{base}_TAPE\")")
         if disk_rom:
             dout = os.path.join(user_machines, f"{base}_BASIC_DISK.xml")
             dtext = expand_slot3(out_text, disk_rom)

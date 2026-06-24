@@ -22,7 +22,7 @@ a static bit shows none. The host side counts transitions and reports the winner
 This is black-box observation only -- no reference disassembly involved.
 
   python3 probes/tape/bios_probe_casin.py --out casin.rom
-  python3 probes/lib/omsx_run.py --machine C-BIOS_tape --cart casin.rom \
+  python3 probes/lib/omsx_run.py --machine C-BIOS_MSX1_EU_TAPE --cart casin.rom \
       --cassette ours.wav --bp 0x7FF0 --mem memory:0xE000:512 --out cap.txt
   python3 probes/tape/bios_probe_casin.py --analyze cap.txt
 """

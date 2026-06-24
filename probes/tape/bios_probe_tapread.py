@@ -19,7 +19,7 @@ no reference disassembly.  On the unmodified C-BIOS stub TAPION returns carry=1
 and no bytes are read (the negative control).
 
   python3 probes/tape/bios_probe_tapread.py --out tapread.rom
-  python3 probes/lib/omsx_run.py --machine C-BIOS_tape --cart tapread.rom \
+  python3 probes/lib/omsx_run.py --machine C-BIOS_MSX1_EU_TAPE --cart tapread.rom \
       --cassette ours.wav --bp 0x7FF0 --mem memory:0xE000:8 --out cap.txt
   python3 probes/tape/bios_probe_tapread.py --analyze cap.txt
 """

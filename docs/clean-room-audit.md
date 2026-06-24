@@ -313,10 +313,16 @@ shake out the unexercised process. Phase A re-confirmed the paper-trail structur
      install-locally (repointed at the committed `tape/zerobas-tape-msx1.ips`); re-run
      then 6/6. The committed patch was always fine — this is an install-local artifact,
      not a repo defect.
-  2. *Tooling gap* (follow-up) — `tools/install-openmsx-machine.py` does **not**
-     generate `C-BIOS_tape`, yet the open-stack probes default to it. A fresh install
-     therefore cannot run the open-stack tier. Needs the machine added to the installer
-     (or the probes pointed at a generated `*_TAPE` machine).
+  2. *Tooling gap* — **RESOLVED.** `tools/install-openmsx-machine.py` now emits a
+     `<name>_TAPE` machine (stock C-BIOS + tape patch only, cart slots free) for each
+     region as part of `make machines`, and the open-stack probes default to the
+     regional `C-BIOS_MSX1_EU_TAPE` instead of the bespoke, never-generated `C-BIOS_tape`
+     (now retired). This also severs a latent dependency: the pre-existing `*_TAPE`
+     machines used by the round-trip tiers were stale, externally-generated artifacts
+     whose IPS pointed at the separate `cbios-tape` repo (byte-identical to the committed
+     `tape/zerobas-tape-msx1.ips`, so they passed by luck); they are now regenerated from
+     the committed patch. The full tape regression is 6/6 from a clean `make machines`
+     with no manual XML editing.
   3. *Self-verify limit* — a few PROVENANCE rows cite **private-workbench** probes
      (`cas_baud_oracle`, `winwid_idle`) that live in the private msx-preservation repo,
      not `probes/tape/`. Consistent with the public/private boundary, but the public
