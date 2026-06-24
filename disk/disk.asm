@@ -250,12 +250,15 @@ CMD_WRITE       equ     $A0     ; write sector, single record (Type II, $A0 base
 ; --- extended disk-ROM kernel entry: $4030 ($4000 + $30) -------------------
 ; MSXDOS.SYS's resident init CALLs $4030 expecting the disk ROM's "get work area"
 ; routine. The six standard entries above end at $401F; the $4022-$402F slots are
-; further disk-ROM/DOS-kernel entries the MSX-DOS-1 boot does NOT call (a3 §8.11),
-; so they are left as $00 fill. $4030 IGNORES its inputs and returns a fixed
+; further disk-ROM/DOS-kernel entries. The MSX-DOS-1 *boot* does not call them
+; (a3 §8.11), but the later COMMAND.COM-load phase calls $402D (×944 on stock,
+; disk_probe_dosboot_veneer.py), so $402D now carries a Tier-2 kernel veneer; the
+; rest of $4022-$402C stay $00 fill. $4030 IGNORES its inputs and returns a fixed
 ; work-area pointer in HL, preserving every other register (black-box oracle, a3
 ; §8.13: disk_probe_dosboot_4030.py --sweep). Inlined at exactly $4030 (not a JP)
 ; so it lands on the address the boot CALLs; `ld hl,nn`+`ret` preserves AF too.
-                ds      $4030 - $, $00  ; pad the unused $4022-$402F kernel-entry slots
+                ds      $402D - $, $00  ; pad $4022-$402C (unused kernel-entry slots)
+                jp      k_402D          ; $402D: COMMAND.COM-load kernel entry (Tier-2)
                 ld      hl, GETWRK_AREA ; $4030: return our work-area base
                 ret                     ; ($4033) HL = work area, all else preserved
 
@@ -3043,6 +3046,37 @@ fat_dir_update:
                 ds      $5454 - $, $00  ; pad up to the kernel's $5454 CONOUT target
 conout:
                 ret                     ; first cut: preserve all regs, emit nothing
+
+; ===== Tier-2: COMMAND.COM-load kernel entries — veneer scaffold (milestone 3a) =====
+; The relocated MSX-DOS-1 kernel + COMMAND.COM call back into ~21 disk-ROM entry
+; points at fixed page-1 addresses (the de-facto-standard shared-kernel ABI;
+; spec-diskrom-kernel.md §5). zerobas exposes each as a 3-byte `jp k_XXXX` veneer
+; at its canonical address, with the contract body in this free-tail region.
+; This 3a pass places the FIVE free-region entries (no relocation needed); $402D
+; (in the $4022-$402F pad) is the sixth non-colliding entry, wired above. Bodies
+; are register-preserving stubs for now — our ROM does not yet reach the
+; COMMAND.COM-load phase — so this scaffold changes no current behaviour; the 14
+; entries that collide with active code arrive in the 3b relocation pass, and
+; milestone 4 fills each contract. CLEAN-ROOM: exposing ABI entry points + own
+; contract code, never shared-kernel bytes — same legitimacy class as the $4010
+; BIOS jump table. Veneer safety confirmed by disk_probe_dosboot_veneer.py.
+                ds      $5FE5 - $, $00  ; pad to the first free-region kernel entry
+                jp      k_5FE5          ; $5FE5
+                ds      $607B - $, $00
+                jp      k_607B          ; $607B  (BDOS callback; spec §5.2)
+                ds      $75A5 - $, $00
+                jp      k_75A5          ; $75A5
+                ds      $77B8 - $, $00
+                jp      k_77B8          ; $77B8
+                ds      $782B - $, $00
+                jp      k_782B          ; $782B
+; --- contract bodies (stubs; filled in milestone 4) ---
+k_402D:         ret
+k_5FE5:         ret
+k_607B:         ret
+k_75A5:         ret
+k_77B8:         ret
+k_782B:         ret
 
 ; --- pad to a full 16 KB page ($4000-$7FFF) --------------------------------
                 ds      $8000 - $, $00
