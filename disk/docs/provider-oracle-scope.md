@@ -1941,3 +1941,40 @@ work-area structures. **Caveat:** coverage = this one canonical boot; input-depe
 take here aren't in scope (acceptable — the goal is hosting *this* disk to `A>`), and the interactive
 command-loop after `$D824` is a separate small scan. This sizes M5.2 (mirror these 8 regions) and bounds
 M5.6…N (≤~19 cluster regions). Probe: disk_probe_dosboot_scope.py.
+
+**§8.49 SCOPE SCAN 2 — the call-edge graph resolves the kernel's *structure*.** `disk_probe_dosboot_edges.py`
+(black-box, span-gated: per-instruction monitor recording every transition onto a canonical entry or across a
+region boundary, as from→to + count + first-seen order; addresses only). 56 edges, 50 callees. **The dominant
+finding: every page-1 cluster entry is reached through a high-RAM `$F2xx` trampoline.** The flow is uniform —
+`…→ $49x6 (diskROM) → $F27C (hiRAM) → $4919 (diskROM) → …`: `$4919←$F27C←$4916`, `$4558←$F26A←$4555`,
+`$41FD←$F252←$41FA`, `$4935←$F27F`, `$4B59←$F28E`, `$498C←$F282`, `$49B4←$F285`, `$4A39←$F288`, `$4E4B←$F2A0`,
+`$4EDE←$F2A3`, `$46C8←$F270`, `$4BE5←$F291`, `$4C25←$F294`. So **`$F252-$F2A3` is a ~13-entry inter-slot
+trampoline table, one stub per cluster routine** (= the §8.48 `$F250-$F2AF` region). DSKIO `$4010←$F398`, the
+disk-read entry `$5FE5←$F367←$5FE2`, and `$782B←$F398` go the same way. **Page-0 vectors resolve:**
+`$001C→$DE54` (×17), `$0024→$DE9B` (×4), `$0038→$DDAE` (×16, the interrupt), and the slot-helper `RET` at
+`$0054→$DF0C/$DE97`. **COMMAND.COM's own service interface (M5.1 answer):** its code calls high-RAM kernel
+entries directly — `$0C4A→$FD9A→$0C4D`, `$0C53→$FD9F`, `$025D→$FDA3→$0C56`, `$022B→$F38C`, `$0D11→$F392`,
+`$F397→$0247` — i.e. **`$FD9A/$FD9F/$FDA3` + `$F38C/$F392/$F397`**, never page-1 directly and never `$0005`.
+The 26 distinct high-RAM entry addresses are enumerated (the M5.2 blueprint): `DDAE DE54 DE97 DE9B DF0C EF95
+EF9B F252 F26A F270 F27C F27F F282 F285 F288 F28E F291 F294 F2A0 F2A3 F365 F38C F392 FD9A FD9F FDA3`. Probe:
+disk_probe_dosboot_edges.py.
+
+**§8.50 SCOPE SCAN 3 — per-entry register contracts captured in one pass.** `disk_probe_dosboot_contracts.py`
+(black-box, span-gated: arm an entry-bp per address at span start; on first hit record entry regs, read the
+return off the stack, arm a one-shot SP-matched return-bp for the exit regs; never disassembles). All 47
+entries (21 canonical + 26 hiRAM) captured. **Key contracts + validations:** (1) **the `$F2xx` table is
+register-transparent** — each trampoline's entry regs equal the entry regs of the cluster routine it forwards
+to (`$F252`=`$41FD`=`AF=0202 BC=020D DE=E595 HL=003E`; `$F27C`=`$4919`=`AF=0044 BC=D500 DE=0001 HL=0100`; …),
+confirming a pass-through inter-slot dispatch, not per-stub logic. (2) **It uses the standard `CALSLT`
+convention** — targets enter with `IX=<own address>` (`$4010` IX=`4010`, `$782B` IX=`782B`) and `IY=0314`
+(IYh=slot 3, the expanded disk slot) — so the trampolines are the public `IX=target / IYh=slot` inter-slot
+call, reproducible from MSX2 TH, not copied. (3) **The COMMAND.COM load is one DSKIO call:** `$4010` IN
+`BC=0DF9 HL=0100` ⇒ **B=`$0D`=13 sectors → `$0100`** = 6656 B = COMMAND.COM 1.11's exact size — the core of
+`k_47B2`. (4) **COMMAND.COM's service gateway `$FD9A/$FD9F/$FDA3`** chains to worker `$782B`, all yielding
+`BC=0483 DE=FB22 HL=FB29` (a parsed-FCB/transfer result). (5) **Cross-validation:** `$47B2` IN `AF=0044
+BC=FFFA DE=DC5B HL=D500 IX=F195 IY=EC55` matches spec §5.1 byte-for-byte; `$47B2` and `$607B` show no leaf
+return (the dispatcher-return path, §8.42). **NET:** the (a) kernel decomposes into one mechanical CALSLT
+trampoline table + a small set of real routines (page-0-vector handlers `$DDAE`/`$DE54`/`$DE9B`, the
+`$EF9x` hot copy/wait loop, the COMMAND.COM service gateway `$FD9x`/`$F39x`, and the disk-read dispatch
+`$F365→$4010`). Full register contracts now in hand for M5.2 + the bulk of M5.6…N. Probe:
+disk_probe_dosboot_contracts.py.

@@ -101,8 +101,30 @@ all span instructions; reimplement its *contract*, not its iteration count)**,
 **Caveat:** coverage = this one canonical boot; paths COMMAND.COM doesn't take here
 are out of scope (acceptable — the goal is hosting *this* disk to `A>`). The
 interactive command loop after `$D824` is a separate small scan, run before
-M5.final. Next scan candidate: a call-edge pass (caller→callee for the executed
-regions) to order M5.6…N.
+M5.final.
+
+### Kernel decomposition (scans 2+3, §8.49/§8.50)
+
+The call-edge + contract scans resolved the (a) high-RAM kernel into five parts —
+the M5.2/M5.4 blueprint, with register contracts already captured:
+
+1. **`$F252-$F2A3` — inter-slot trampoline table (~13 stubs).** One stub per page-1
+   cluster entry; register-transparent (stub entry-regs == target entry-regs), using
+   the standard **`CALSLT` convention** (`IX=target`, `IYh=slot 3`). Build once as a
+   parameterised mechanism from the public inter-slot spec — *not* 13 routines.
+2. **Page-0 vector handlers** — `$0038→$DDAE` (interrupt), `$001C→$DE54`,
+   `$0024→$DE9B`, and the `$0054` slot-helper return into `$DF0C/$DE97`.
+3. **`$EF95/$EF9B` hot copy/wait loop** (the `$EF90-$F05F` region, ~94 % of span
+   instructions) — reimplement the contract, not the iteration count.
+4. **COMMAND.COM service gateway** — `$FD9A/$FD9F/$FDA3` (+ `$F38C/$F392/$F397`),
+   the entries COMMAND.COM's own code calls (never `$0005`, never page-1 directly);
+   chains to worker `$782B`.
+5. **Disk-read dispatch** — `$F365→$4010` DSKIO; the COMMAND.COM load itself is a
+   **single DSKIO call, B=13 sectors → `$0100`** (= 6656 B, COMMAND.COM's size) =
+   the core of `k_47B2`.
+
+Next scan candidate (optional): the interactive-loop coverage after `$D824`, before
+M5.final.
 
 ## Milestones (each: characterise on stock → implement → re-probe progress)
 
