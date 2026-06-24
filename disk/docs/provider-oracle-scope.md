@@ -1842,3 +1842,15 @@ differentials are all byte-identical to the CF-3300 oracle** (exercising the rel
 bdos_seqread / bdos_create / frs_mul / write_sector / fac_loop / fac_e_odd / ffds_nopad / fdc_entloop /
 fdc_useslot). Commits 5b225cf (3a) → 37a91c3 (3b). Next: milestone 4 — fill each veneer's contract
 (the `$5454` playbook ×~12), re-probing COMMAND.COM progress after each. Probe: disk_probe_dosboot_veneer.py.
+
+**§8.44 MILESTONE 4 OPENS — COMMAND.COM entry environment characterised ($0100).** First contract
+capture for filling the veneer bodies. New probe disk_probe_dosboot_cmdentry.py breaks at the first
+execution of `$0100` on stock and records the state the `$47B2` loader hands to COMMAND.COM:
+registers **AF=0142 BC=0980 DE=0000 HL=0980 IX=F195 IY=C0AB SP=F51F**; `$0100` = `C3 00 02` (`jp $0200`,
+the standard `.COM` entry — COMMAND.COM is loaded there); page-0 mostly `$00` with `$000C`=`jp $DDF3`,
+and notably **`$0005` is NOT yet a `JP BDOS`** (MSX-DOS 1 wires the BDOS call path differently from CP/M
+— to be characterised). IMPLICATION: `k_47B2` is the COMMAND.COM loader — read the COMMAND.COM file
+(our CF-3300-identical file layer can do this), lay out this page-0 + register environment, `jp $0100`;
+then COMMAND.COM runs and drives the BDOS service entries (`$607B` et al.) which milestone 4 must fill
+next. This is the deep phase (contract-reimplementing the MSX-DOS-1 service surface COMMAND.COM uses).
+Probe: disk_probe_dosboot_cmdentry.py.
