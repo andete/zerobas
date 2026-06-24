@@ -272,7 +272,58 @@ startup*, not a discrete subroutine.
 Observed entry state (stock): `AF=$0044 BC=$FFFA DE=$DC5B HL=$D500 IX=$F195
 IY=$EC55`. It returns to `$D824` with `AF=$0142 HL=$1A00 IY=$DC5B`, stack balanced.
 
-### 5.2 The call surface — a cluster of shared-kernel entries
+### 5.2 The COMMAND.COM entry environment — the loader's page-0 OUTPUT contract
+
+`$47B2` reads `COMMAND.COM` to `$0100` and transfers control there with a
+specific page-0 environment laid down. Characterising that environment is the
+loader's **output contract**; it was captured black-box at the first execution of
+`$0100` (`disk_probe_dosboot_page0.py`: breakpoint at `$0100`, read all 256 bytes
+of page 0, decode pointers only — `COMMAND.COM` is never disassembled). The capture
+is **reproducible** (register set byte-identical across two independent runs).
+
+Registers handed to `COMMAND.COM`:
+
+| AF | BC | DE | HL | IX | IY | SP |
+|----|----|----|----|----|----|----|
+| `0142` | `0980` | `0000` | `0980` | `F195` | `C0AB` | `F51F` |
+
+`BC = HL = $0980 = 2432` is exactly the `MSXDOS.SYS` resident size — the loader
+passes the kernel size, not a don't-care.
+
+Page-0 layout at `$0100` entry — three parts:
+
+1. **No CP/M low vectors.** `$0000-$000B` are all `$00`: there is **no warm-boot
+   `JP` at `$0000` and no `JP BDOS` at `$0005`**. MSX-DOS 1 does not lay the
+   CP/M-style `$0005` entry at `COMMAND.COM`'s *own* entry; `COMMAND.COM` installs
+   those itself before it exec's a transient program. The default FCB (`$005C`) and
+   DMA / command-tail (`$0080`) are likewise `$00` (no command line parsed yet).
+2. **A 6-entry JP vector table into the relocated high-RAM kernel:**
+
+   | addr | target | addr | target |
+   |------|--------|------|--------|
+   | `$000C` | `JP $DDF3` | `$0024` | `JP $DE9B` |
+   | `$0014` | `JP $DE14` | `$0030` | `JP $DE42` |
+   | `$001C` | `JP $DE54` | `$0038` | `JP $DDAE` (RST 38h) |
+
+   Every target lands in the kernel's relocated `$DDxx/$DExx` band — these are the
+   page-0 hooks `COMMAND.COM` calls through.
+3. **A RAM-resident inter-slot helper at `$003B-$0054`** — functionally the
+   standard MSX slot-select sequence (primary-slot `OUT ($A8)` + expanded-subslot
+   read/write via `$FFFF`, then `RET`; pattern per MSX2 TH ch.2 / `map.grauw.nl`).
+   It lives in page-0 RAM because, once RAM is paged into page 0, the page-0 BIOS
+   inter-slot routines are gone (§4 / the boot-bridge paging note). A
+   reimplementation writes its own from the public spec — it does not copy these
+   bytes.
+
+**Consequence for reimplementation.** This contract shows `k_47B2` is *not* a
+self-contained "read `COMMAND.COM` → lay page 0 → `jp $0100`": the environment it
+must hand over is six live `JP`s into the relocated kernel plus the slot helper, and
+`COMMAND.COM` immediately calls *through* `$0030` / `$0038` / the BDOS path into the
+`$DDxx/$DExx` kernel band. Filling the loader body is therefore gated on first
+standing up those high-RAM kernel entry points — the §5.5 deferral, seen from the
+environment side. Probe: `disk_probe_dosboot_page0.py`.
+
+### 5.3 The call surface — a cluster of shared-kernel entries
 
 Within that span the loader/shell reaches **21 distinct disk-ROM entry points
 spread across `$41xx–$77xx`**:
@@ -290,7 +341,7 @@ correctly), and `$607B` (reached from `ra=$0100` — `COMMAND.COM`'s own callbac
 into the disk ROM). Per-entry contracts are **not** characterised here (the build
 is paused); what is settled is the *shape*: a bounded, mostly-shared-kernel cluster.
 
-### 5.3 The `$4462`/`$544E` poll loop is a downstream symptom
+### 5.4 The `$4462`/`$544E` poll loop is a downstream symptom
 
 With `$47B2` not implemented, the observable failure is a tight poll loop hammering
 `$4462` (×~24,151) and `$544E` (×~24,148) from kernel PCs `$D7FA`/`$D806`. This is
@@ -301,7 +352,7 @@ progresses (`$4462` is called only ×2, `$544E` never); ours (unrelated bytes th
 bails to `$D824`, and the kernel falls into the `$4462`/`$544E` spin. Fixing the
 loop means implementing `$47B2`, not the loop entries.
 
-### 5.4 Why reimplementation is deferred
+### 5.5 Why reimplementation is deferred
 
 Reaching `A>` *through the proprietary `COMMAND.COM`* requires our ROM to provide
 ~12 entangled shared-kernel runtime entries (the surface above), because

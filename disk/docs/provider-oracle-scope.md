@@ -1854,3 +1854,31 @@ and notably **`$0005` is NOT yet a `JP BDOS`** (MSX-DOS 1 wires the BDOS call pa
 then COMMAND.COM runs and drives the BDOS service entries (`$607B` et al.) which milestone 4 must fill
 next. This is the deep phase (contract-reimplementing the MSX-DOS-1 service surface COMMAND.COM uses).
 Probe: disk_probe_dosboot_cmdentry.py.
+
+**§8.45 MILESTONE 4 — `k_47B2` OUTPUT contract COMPLETED: the full page-0 env handed to COMMAND.COM, and
+why it is not "load + jp $0100".** §8.44 sampled four page-0 windows and left `$0005` and the rest "to be
+characterised"; this captures **all 256 bytes** of page 0 the moment `$0100` first executes on the stock
+oracle (`disk_probe_dosboot_page0.py`, black-box: breakpoint at `$0100`, read RAM, decode pointers only —
+COMMAND.COM/kernel never disassembled; preferred 1.03+COMMAND-1.11 disk, SHA256 `666cbc6d…`). **Reproducible:**
+the register set is **byte-identical** to §8.44's independent run (`AF=0142 BC=0980 DE=0000 HL=0980 IX=F195
+IY=C0AB SP=F51F`), and notably **`BC=HL=$0980=2432` = the MSXDOS.SYS file size** (oracle-artifacts.md) — the
+loader hands COMMAND.COM the kernel's resident size, not a don't-care. **The page-0 OUTPUT contract is three
+parts.** *(1) NO CP/M low vectors:* `$0000-$000B` (incl. warm-boot `$0000` and BDOS `$0005`) are all `$00`
+(`vec0005 NOT-JP`); MSX-DOS 1 does **not** lay a `$0005=JP BDOS` at COMMAND.COM entry — COMMAND.COM installs
+the CP/M page-0 entries itself when it later exec's a transient, so they are absent at *its own* entry. The
+default FCB (`$005C`) and DMA/command-tail (`$0080`) are likewise `$00` (no command line parsed yet). *(2) A
+6-entry JP vector table into the relocated high-RAM kernel:* `$000C→$DDF3`, `$0014→$DE14`, `$001C→$DE54`,
+`$0024→$DE9B`, `$0030→$DE42`, `$0038→$DDAE` (the RST-38h interrupt vector). These are the page-0 hooks
+COMMAND.COM calls through; every target is in the kernel's relocated `$DDxx/$DExx` band. *(3) A RAM-resident
+inter-slot helper at `$003B-$0054`* — functionally the standard MSX slot-select sequence (primary-slot
+`OUT ($A8)` + expanded-subslot read/write via `$FFFF`, then `RET`; pattern per MSX2 TH ch.2 / map.grauw.nl,
+**not** transcribed here — a reimplementation writes its own from the public spec, never copies these bytes).
+It lives in page-0 RAM precisely because, once RAM is paged into page 0, the page-0 BIOS inter-slot routines
+are gone (the §8.4 finding, now seen from the env side). **STRUCTURAL IMPLICATION (the milestone-4 reality
+check):** the contract proves `k_47B2` is **not** self-contained "read COMMAND.COM → lay page 0 → `jp $0100`".
+The env it must hand over is *six live JPs into the relocated kernel* (`$DDxx/$DExx`) plus the slot helper; the
+moment COMMAND.COM runs it calls **through** `$0030`/`$0038`/the BDOS path into that kernel band — the exact
+~63% proprietary surface §8.41 quantified. So filling `k_47B2`'s body is gated on first standing up those
+high-RAM kernel entry points (our own relocation + contracts), not just the loader. This is the env-side
+confirmation of §8.41/§5.5 (recorded as the settled OUTPUT contract in spec §5.2): characterised cleanly; the
+reimplementation it points to remains the paused, user-gated kernel project. Probe: disk_probe_dosboot_page0.py.
