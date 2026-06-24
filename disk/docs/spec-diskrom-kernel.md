@@ -20,11 +20,14 @@ notebook [`provider-oracle-scope.md`](provider-oracle-scope.md) `§8.x`. This is
 the implementer-facing distillation — the settled contracts only — and a
 first-class deliverable usable independently of zerobas's code.
 
-> **Scope / status.** Documents the contracts that are **settled** (oracle-
-> confirmed, reimplemented in [`../disk.asm`](../disk.asm), regression-green). The
-> live frontier — the work-area cells and entries not yet settled — stays in the
-> notebook until it settles (see [§ Frontier](#frontier-not-yet-settled)). The
-> implementation is gated, on the real-hardware boot path only, behind an
+> **Scope / status.** §1–4 document the contracts that are **settled** (oracle-
+> confirmed, reimplemented in [`../disk.asm`](../disk.asm), regression-green); the
+> still-unsettled cells stay in the notebook until they settle (see
+> [§ Frontier](#frontier-not-yet-settled)). [§5](#5-the-commandcom-load-phase--kerneldisk-rom-call-surface-characterised-reimplementation-deferred)
+> is different in kind: it documents the **`COMMAND.COM`-load call surface** as
+> *characterised but not reimplemented* (a clean-provenance map, build paused by
+> decision), clearly demarcated so it is not mistaken for a settled contract. The
+> settled implementation is gated, on the real-hardware boot path only, behind an
 > `$FF`-uninitialised / real-CF-3300 guard; on the C-BIOS hosts (which never boot
 > DOS) the gate skips and behaviour is unchanged.
 
@@ -238,6 +241,82 @@ behaviours are what the DOS boot path requires and were oracle-confirmed here:
 
 ---
 
+## 5. The COMMAND.COM load phase — kernel→disk-ROM call surface (characterised; reimplementation deferred)
+
+> **Genre note.** Unlike §1–4 (settled *and* reimplemented), this section
+> documents a phase that is **characterised but not reimplemented** — it is the
+> clean-provenance *map* of the loader's call surface, recorded because it is
+> undocumented MSX internals worth capturing, and explicitly **not** a settled
+> contract. Status as of 2026-06-24: zerobas reaches this phase and the
+> reimplementation is **paused by decision** (rationale at the end).
+
+Once `MSXDOS.SYS`'s own init completes (the §1–3 entries + work area all
+satisfied), the relocated kernel runs the **`COMMAND.COM` loader** from high RAM
+(around `$D7xx`). That loader, and `COMMAND.COM` itself, drive a further cluster of
+in-ROM kernel entries — the phase that ends at the `A>` prompt.
+
+### 5.1 The pivot entry `$47B2` — "load + start `COMMAND.COM`"
+
+The loader at `$D821` does `CALL $47B2`. This is **not a small routine**: a
+boundary probe (`disk_probe_dosboot_47b2.py`, breakpoints on the `$D821` call and
+the `$D824` return) measures the whole `$D821→$47B2→$D824` span at **371,384
+instructions**, and one of its sub-entries is `$607B` **called with `ra=$0100`** —
+i.e. **`COMMAND.COM` executes at `$0100` *inside* this span** and calls back into
+the disk ROM. So `$47B2` is effectively *the entire `COMMAND.COM` load + shell
+startup*, not a discrete subroutine.
+
+| | entry byte (stock, all 7 vendors) | role |
+|---|---|---|
+| `$47B2` | `$AF` (`XOR A` …) | enters the load/relocate routine; advances the boot |
+
+Observed entry state (stock): `AF=$0044 BC=$FFFA DE=$DC5B HL=$D500 IX=$F195
+IY=$EC55`. It returns to `$D824` with `AF=$0142 HL=$1A00 IY=$DC5B`, stack balanced.
+
+### 5.2 The call surface — a cluster of shared-kernel entries
+
+Within that span the loader/shell reaches **21 distinct disk-ROM entry points
+spread across `$41xx–$77xx`**:
+
+```
+$41FD $4558 $46C8 $47B2 $4919 $4935 $498C $49B4 $4A39 $4B59 $4BE5
+$4C25 $4E4B $4EDE $4010 $5FE5 $607B $75A5 $77B8 $782B $402D
+```
+
+Provenance check (file identity only, `disk_probe_diskrom_crossvendor.py`-class):
+**12 of the 21 are shared-kernel** (byte-identical across the seven vendors) —
+de-facto-standard, the same legitimacy class as §1. The externally-reached ones
+of note: `$4010` (the standard DSKIO, the *one* our ROM already provides
+correctly), and `$607B` (reached from `ra=$0100` — `COMMAND.COM`'s own callback
+into the disk ROM). Per-entry contracts are **not** characterised here (the build
+is paused); what is settled is the *shape*: a bounded, mostly-shared-kernel cluster.
+
+### 5.3 The `$4462`/`$544E` poll loop is a downstream symptom
+
+With `$47B2` not implemented, the observable failure is a tight poll loop hammering
+`$4462` (×~24,151) and `$544E` (×~24,148) from kernel PCs `$D7FA`/`$D806`. This is
+**not** the root cause: diffing the `$D7FA` loop stock-vs-Tier-1
+(`disk_probe_dosboot_pctrace.py --arm $D7FA`) is PC-identical through `CALL $47B2`,
+then diverges *inside* it — stock (`$47B2`=`XOR A`) runs the load routine and
+progresses (`$4462` is called only ×2, `$544E` never); ours (unrelated bytes there)
+bails to `$D824`, and the kernel falls into the `$4462`/`$544E` spin. Fixing the
+loop means implementing `$47B2`, not the loop entries.
+
+### 5.4 Why reimplementation is deferred
+
+Reaching `A>` *through the proprietary `COMMAND.COM`* requires our ROM to provide
+~12 entangled shared-kernel runtime entries (the surface above), because
+`COMMAND.COM` runs inside the loader and calls back into the kernel — i.e.
+contract-reimplementing essentially the whole **63 % shared MSX-DOS-1 disk kernel**
+at its exact internal addresses, with the additional cost that 16 of the 21 entries
+sit `<$50B7` *inside zerobas's active code* and would force relocation. That is a
+major project, and it edges toward re-creating MSX-DOS-1 itself — which this work
+deliberately does not do. The settled disk-ROM ABI (§1–4: the kernel-init entries,
+the resident work area, the DSKIO contracts) and the Disk-BASIC deliverable stand
+on their own. The phase is **characterised and recorded here**; building it is a
+future scope decision, not a settle gate. Probe: `disk_probe_dosboot_47b2.py`.
+
+---
+
 ## Frontier (not yet settled)
 
 Tracked in [`provider-oracle-scope.md`](provider-oracle-scope.md); promoted here
@@ -248,26 +327,16 @@ only once each settles (per the settle-gated cadence in
   (§1.3 status; §8.39), but the first-cut body emits nothing. Promoting the full
   output behaviour waits on the console path settling; the contract itself (§1.3)
   is already settled and documented.
-- **Hosting the proprietary COMMAND.COM to `A>` — quantified scope (§8.41): the
-  whole 63% shared kernel, not a bounded entry.** The `$4462`/`$544E` ×~24k spin is
-  a *downstream symptom* of `$47B2` (the real first divergence: stock `$47B2`=`XOR
-  A` runs the load routine; ours bails). But a boundary probe
-  (`disk_probe_dosboot_47b2.py`) shows the `$D821→$47B2→$D824` span runs **371,384
-  instructions** and **executes COMMAND.COM itself at `$0100`** (sub-entry `$607B`,
-  `ra=$0100`) — it is *the entire COMMAND.COM load + shell init*, calling **21
-  disk-ROM sub-entries across `$41xx–$77xx`** (12 shared-kernel, 16 colliding with
-  our active code `<$50B7`, only `$4010` DSKIO correct). So reaching `A>` this way ⇒
-  contract-reimplementing essentially the whole shared MSX-DOS-1 disk kernel at its
-  exact internal addresses — a major project, distinct from this spec's settled
-  BIOS-ABI work (`$4010–$401F`, GETDPB) and Disk-BASIC. Not walled (each target is a
-  black-box contract, the `$5454` playbook ×~12 + code relocation), but the cost is
-  now measured. Whether to undertake it is a scope decision, not a settle gate.
-  Probes: `disk_probe_dosboot_47b2.py`, `disk_probe_dosboot_entries.py`,
-  `disk_probe_dosboot_pctrace.py` (`--arm $D7FA`).
-- **The remaining `$F100–$F3FF` cells** the kernel reads to reach a real
-  `COMMAND.COM` load and `A>` (`$F100–$F17C` driver-dispatch region, the `$F327`
-  routines, the `$F1F0–$F1FF` device table). Each is being characterised and built
-  incrementally, re-trapping after each piece.
+- **Hosting the proprietary COMMAND.COM to `A>` — characterised, build PAUSED
+  (2026-06-24).** Now documented as [§5](#5-the-commandcom-load-phase--kerneldisk-rom-call-surface-characterised-reimplementation-deferred):
+  the quantified scope is the whole ~63 % shared kernel (~12 entangled entries
+  `COMMAND.COM` calls back into), not a bounded entry. Not walled — each target is a
+  black-box contract (the `$5454` playbook ×~12 + code relocation) — but the cost is
+  measured and the reimplementation is **paused by decision**; the settled §1–4 ABI
+  and Disk-BASIC deliverable stand. Whether to undertake it is a future scope
+  decision. The `$F100–$F3FF` cells beyond §2 (`$F100–$F17C` driver dispatch, the
+  `$F327` routines, the `$F1F0–$F1FF` device table) are part of that same deferred
+  surface.
 
 ## Reproducing
 
