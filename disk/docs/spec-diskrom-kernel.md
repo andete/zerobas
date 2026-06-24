@@ -248,14 +248,21 @@ only once each settles (per the settle-gated cadence in
   (§1.3 status; §8.39), but the first-cut body emits nothing. Promoting the full
   output behaviour waits on the console path settling; the contract itself (§1.3)
   is already settled and documented.
-- **`$4462` and `$544E` — the COMMAND.COM-load entries.** With the warm-boot loop
-  broken, the relocated kernel hammers two more disk-ROM entries (`$4462` ×~24k,
-  `$544E` ×~24k, from kernel PCs `$D7FA`/`$D806`, `IX=$F1AA`). Both are
-  byte-identical across all seven vendors and lie in the shared-kernel region
-  (`disk_probe_diskrom_crossvendor.py`) — the same de-facto-standard class as
-  `$5454`. Their contracts are being characterised (black-box) before
-  reimplementation; whether the ~24k call counts are legitimate load work or a
-  tight loop is the first question. Probe: `disk_probe_dosboot_entries.py`.
+- **`$47B2` — the COMMAND.COM-loader entry (the real first divergence).** The
+  `$4462`/`$544E` ×~24k spin is a *downstream symptom*: diffing the kernel poll
+  loop stock-vs-Tier-1 from caller `$D7FA` is PC-identical through `CALL $47B2`,
+  then splits *inside* `$47B2` — stock (`$47B2`=`XOR A`) runs a read/copy routine
+  that relocates `COMMAND.COM` to `$0100` and advances; ours (unrelated bytes
+  there) bails early and the kernel falls into the `$4462`/`$544E` poll-spin. On
+  stock, `$4462` is called only ×2 and `$544E` never. `$47B2`, `$4251`, `$4462`,
+  `$544E` are **all** byte-identical across the seven vendors
+  (`disk_probe_diskrom_crossvendor.py`) — the MSX-DOS-1 COMMAND.COM loader calls a
+  *cluster* of shared-kernel entries, entangled via work-area vars
+  (`$E4A5`/`$E4BD`). `$47B2`'s contract is being characterised first (the `$5454`
+  playbook). **Layout note:** these entries sit `<$50B7`, *inside* our active code
+  (unlike `$5454`'s free `$00`-pad), so implementing them may force relocating the
+  code at those fixed offsets. Probes: `disk_probe_dosboot_entries.py`,
+  `disk_probe_dosboot_pctrace.py` (`--arm $D7FA`).
 - **The remaining `$F100–$F3FF` cells** the kernel reads to reach a real
   `COMMAND.COM` load and `A>` (`$F100–$F17C` driver-dispatch region, the `$F327`
   routines, the `$F1F0–$F1FF` device table). Each is being characterised and built

@@ -1740,3 +1740,29 @@ class as `$5454`; our ROM has unrelated code / `$00`-pad there. Characterise whe
 legitimate COMMAND.COM-load work or a new tight loop, then black-box each contract and reimplement (the
 `$5454` playbook). (These are the addresses the §8.37 sub-agent guessed at — real entries, surfacing only
 now that the warm-boot loop is broken; its *implementations* stay rejected.)
+
+**§8.40 THE `$4462`/`$544E` SPIN IS A *SYMPTOM* — the real first divergence is `$47B2`; the COMMAND.COM
+loader calls a whole *cluster* of shared-kernel entries.** Characterising the §8.39 gap, in order:
+*(a) `$4462`/`$544E` are genuine kernel entries, not internal disk traffic.* `disk_probe_dosboot_entries.py`
+records each entry's caller `ra=`; both are called from the **relocated kernel** (`$4462`←`$D7FA`,
+`$544E`←`$D806`, ≥`$C000`), confirming the §8.38 shared-kernel claim. (A first `pctrace --arm $4462` was a
+**red herring** — it caught an *internal* fall-through, our own `fdc_di_save` tail at offset `$0462`
+returning into our ROM at `$4315`, unrelated to the `$D7FA` kernel caller. Checking `ra=` before touching
+the spec is what caught it — discipline working.) *(b) The spin is OUR divergence.* Stock-oracle histogram:
+`$4462` ×**2**, `$544E` **never called**, and the boot reaches **38 distinct entries** (it *progresses*);
+Tier-1: `$4462` ×24151 / `$544E` ×24148 (spin). *(c) The divergence is upstream of both — inside `$47B2`.*
+Arming `pctrace` at the **caller** `$D7FA` and diffing stock-vs-Tier-1: **PC-identical** through
+`$D7FA→$D821→CALL $47B2`, then they split *inside* `$47B2` — stock `$47B2`=`AF` (`XOR A`) runs a long
+read/copy routine (`$485x`/`$4427`/`$48xx`, a `$4921` block-loop with `HL=$0100`) that **relocates
+COMMAND.COM to `$0100`** and advances; Tier-1 `$47B2`=`E4…` (unrelated mid-routine bytes) bails early
+(`AF=$0045`), `RET`s to `$D824`, the kernel churns the `$F1C9` work area and **falls into the `$4462`/`$544E`
+poll-spin**. So `$4462`/`$544E` are *downstream symptoms*; `$47B2` is the blocker. *(d) `$47B2` is shared
+kernel too.* Cross-vendor file check (`disk_probe_diskrom_crossvendor.py`-style, identity only): `$47B2`,
+`$4251`, `$4462`, `$544E` are **all byte-identical across the 7 vendors** (`$47B2` real byte = `$AF` on every
+vendor; ours = `$E4`). ⇒ **the MSX-DOS-1 COMMAND.COM loader calls a *cluster* of shared-kernel internal
+entries** (`$47B2` first, then `$4251`/`$4462`/`$544E`…), entangled via work-area vars (`$E4A5`/`$E4BD`),
+not the lone `$4462` §8.39 guessed. **Layout wrinkle:** unlike `$5454` (free `$00`-pad), `$47B2`/`$4462`/
+`$544E` sit `<$50B7` *inside our active code*, so implementing their real contracts may force relocating the
+code that currently occupies those fixed offsets. **NEXT:** characterise `$47B2`'s contract (stock trace:
+inputs → memory it reads → outputs/flags returned to `$D824`) — the `$5454` playbook, applied to the first
+cluster entry. Probes: `disk_probe_dosboot_entries.py`, `disk_probe_dosboot_pctrace.py` (`--arm $D7FA`).
