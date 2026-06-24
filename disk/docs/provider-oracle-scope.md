@@ -1882,3 +1882,25 @@ moment COMMAND.COM runs it calls **through** `$0030`/`$0038`/the BDOS path into 
 high-RAM kernel entry points (our own relocation + contracts), not just the loader. This is the env-side
 confirmation of §8.41/§5.5 (recorded as the settled OUTPUT contract in spec §5.2): characterised cleanly; the
 reimplementation it points to remains the paused, user-gated kernel project. Probe: disk_probe_dosboot_page0.py.
+
+**§8.46 KERNEL PHASE GREEN-LIT (2026-06-24, user: "we want the full work … the guidance stands, but we
+continue") — and a project-reframing finding: the page-0 vector table is kernel-INTERNAL plumbing, not
+COMMAND.COM's service interface.** Before writing the plan, one grounding probe (`disk_probe_dosboot_vectors.py`,
+black-box: bp at each of the 6 page-0 vectors during the stock boot to `A>`, record each hit's caller via the
+return address on top of stack, grouped by region). **Result:** of `$000C/$0014/$001C/$0024/$0030`, **every
+caller is a disk-ROM PC (`$5xxx/$7xxx`) or a high-RAM-kernel PC (`$Dxxx-$Fxxx`) — none from the COMMAND.COM
+region (`$0100-$1FFF`)**. (`$000C`←`$5E5F/$5E6E` ×518; `$0014`←`$5E67/$5E79` ×518; `$001C`←`$40B4` ×264,
+`$607B` ×15, `$DDD5` ×60; `$0024`←`$DF6B` ×161; `$0030`←`$FDA0` ×938, the standard inter-slot CALLF.) The
+sixth, `$0038`, is dominated by *interrupt* entries — its "callers" are a scatter of single/low-count PCs from
+every region (the IM-1 maskable interrupt snapshotting wherever the CPU was each 60 Hz tick), so it is noise
+for this question, not evidence of a COMMAND.COM BDOS-via-`$0038` path. **IMPLICATION (reframes §8.41's
+"reproduce the 63% kernel"):** the page-0 vectors + their `$DDxx/$DExx` targets are the stock's *internal*
+inter-slot bridge between the page-1 disk ROM and the relocated high-RAM kernel — an artifact of the stock's
+"relocate the resident kernel into high RAM" architecture. They are **not** the interface the proprietary
+COMMAND.COM depends on. So a faithful host need not byte-reproduce the `$DDxx` kernel; it must satisfy what
+COMMAND.COM *actually* calls — its BDOS path (which COMMAND.COM installs at `$0005` itself; §8.45 showed
+`$0005=$00` at entry) plus the fixed page-1 cluster entries it reaches (e.g. `$607B` from `ra=$0100`, §8.41).
+This opens an architecture fork (faithful high-RAM-relocation model vs. a minimal host that keeps DOS logic in
+the page-1 ROM and reuses our oracle-validated `bdos_entry`), captured with the milestone breakdown in the new
+plan [`tier2-kernel-plan.md`](tier2-kernel-plan.md). Status: plan written, awaiting sign-off on the fork before
+any asm (spec-before-implementation). Probe: disk_probe_dosboot_vectors.py.

@@ -244,11 +244,13 @@ behaviours are what the DOS boot path requires and were oracle-confirmed here:
 ## 5. The COMMAND.COM load phase — kernel→disk-ROM call surface (characterised; reimplementation deferred)
 
 > **Genre note.** Unlike §1–4 (settled *and* reimplemented), this section
-> documents a phase that is **characterised but not reimplemented** — it is the
-> clean-provenance *map* of the loader's call surface, recorded because it is
-> undocumented MSX internals worth capturing, and explicitly **not** a settled
-> contract. Status as of 2026-06-24: zerobas reaches this phase and the
-> reimplementation is **paused by decision** (rationale at the end).
+> documents a phase that is **characterised** and now **under active
+> reimplementation** — it is the clean-provenance *map* of the loader's call
+> surface. Status as of 2026-06-24: zerobas reaches this phase, and hosting
+> COMMAND.COM to `A>` is **GREEN-LIT** ("the full work"); the milestone roadmap is
+> [`tier2-kernel-plan.md`](tier2-kernel-plan.md). The contracts here promote to
+> settled (§1–4 style) as each milestone lands. The §5.2 entry environment is
+> already a settled OUTPUT contract.
 
 Once `MSXDOS.SYS`'s own init completes (the §1–3 entries + work area all
 satisfied), the relocated kernel runs the **`COMMAND.COM` loader** from high RAM
@@ -352,19 +354,23 @@ progresses (`$4462` is called only ×2, `$544E` never); ours (unrelated bytes th
 bails to `$D824`, and the kernel falls into the `$4462`/`$544E` spin. Fixing the
 loop means implementing `$47B2`, not the loop entries.
 
-### 5.5 Why reimplementation is deferred
+### 5.5 Scope of the reimplementation (green-lit; see the plan)
 
-Reaching `A>` *through the proprietary `COMMAND.COM`* requires our ROM to provide
-~12 entangled shared-kernel runtime entries (the surface above), because
-`COMMAND.COM` runs inside the loader and calls back into the kernel — i.e.
-contract-reimplementing essentially the whole **63 % shared MSX-DOS-1 disk kernel**
-at its exact internal addresses, with the additional cost that 16 of the 21 entries
-sit `<$50B7` *inside zerobas's active code* and would force relocation. That is a
-major project, and it edges toward re-creating MSX-DOS-1 itself — which this work
-deliberately does not do. The settled disk-ROM ABI (§1–4: the kernel-init entries,
-the resident work area, the DSKIO contracts) and the Disk-BASIC deliverable stand
-on their own. The phase is **characterised and recorded here**; building it is a
-future scope decision, not a settle gate. Probe: `disk_probe_dosboot_47b2.py`.
+Reaching `A>` *through the proprietary `COMMAND.COM`* was first scoped as providing
+~12 entangled runtime entries because `COMMAND.COM` runs inside the loader and calls
+back into the kernel (16 of the 21 entries sit `<$50B7` inside zerobas's active code
+— handled by the M3 net-zero veneers). §8.45/§8.46 **narrowed** that scope: the
+page-0 vector table + `$DDxx` high-RAM kernel are the stock's *internal* inter-slot
+plumbing, **not** COMMAND.COM's interface (§8.46 — only disk-ROM/kernel PCs call
+them). So a faithful host satisfies what COMMAND.COM *actually* calls (its `$0005`
+BDOS path + the fixed page-1 cluster), not the kernel's internal `$DDxx` layout.
+
+This is **GREEN-LIT** (2026-06-24, "the full work"). The milestone roadmap, the
+clean-room firewall for this phase, and the architecture fork (faithful
+high-RAM-relocation model vs. minimal page-1 host reusing `bdos_entry`) are in
+[`tier2-kernel-plan.md`](tier2-kernel-plan.md). The settled §1–4 ABI and the
+Disk-BASIC deliverable stand on their own and must stay regression-green throughout.
+Probe: `disk_probe_dosboot_47b2.py`.
 
 ---
 
@@ -378,16 +384,15 @@ only once each settles (per the settle-gated cadence in
   (§1.3 status; §8.39), but the first-cut body emits nothing. Promoting the full
   output behaviour waits on the console path settling; the contract itself (§1.3)
   is already settled and documented.
-- **Hosting the proprietary COMMAND.COM to `A>` — characterised, build PAUSED
-  (2026-06-24).** Now documented as [§5](#5-the-commandcom-load-phase--kerneldisk-rom-call-surface-characterised-reimplementation-deferred):
-  the quantified scope is the whole ~63 % shared kernel (~12 entangled entries
-  `COMMAND.COM` calls back into), not a bounded entry. Not walled — each target is a
-  black-box contract (the `$5454` playbook ×~12 + code relocation) — but the cost is
-  measured and the reimplementation is **paused by decision**; the settled §1–4 ABI
-  and Disk-BASIC deliverable stand. Whether to undertake it is a future scope
-  decision. The `$F100–$F3FF` cells beyond §2 (`$F100–$F17C` driver dispatch, the
-  `$F327` routines, the `$F1F0–$F1FF` device table) are part of that same deferred
-  surface.
+- **Hosting the proprietary COMMAND.COM to `A>` — GREEN-LIT, under active build
+  (2026-06-24).** Documented as [§5](#5-the-commandcom-load-phase--kerneldisk-rom-call-surface-characterised-reimplementation-deferred);
+  roadmap in [`tier2-kernel-plan.md`](tier2-kernel-plan.md). The scope was narrowed
+  by §8.45/§8.46 (satisfy COMMAND.COM's actual interface, not the kernel's internal
+  `$DDxx` layout). Each cluster target is a black-box contract (the `$5454` playbook
+  ×~N); the M3 net-zero veneer scaffold is in place and the settled §1–4 ABI +
+  Disk-BASIC deliverable stay regression-green throughout. The `$F100–$F3FF` cells
+  beyond §2 (`$F100–$F17C` driver dispatch, the `$F327` routines, the `$F1F0–$F1FF`
+  device table) are part of that same surface, promoted as their milestones land.
 
 ## Reproducing
 
