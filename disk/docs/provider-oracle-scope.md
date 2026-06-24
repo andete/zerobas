@@ -2093,3 +2093,36 @@ our 21-entry cluster) the loop reaches. **NEXT (the decisive step):** a stock-vs
 `$D87F` (the §8.40 `pctrace` method) to pin the exact value/contract the kernel polls for and which disk-ROM
 call must return it — then veneer/implement that entry. No asm until the differential names the target. Probe:
 disk_probe_dosboot_loop.py.
+
+**§8.57 M5.5 DECISIVE — the blocker is the `$F365` page-3 jump table: ours is a uniform `JP wa_stub` (a `RET`),
+stock has 7 *distinct* disk-ROM-installed resident routines. Corrects §8.18 ("no-ops on 64K").** Ran the §8.40
+`pctrace` differential armed at `$D87F` on stock (`National_CF-3300`) vs ours (`…_ZEROBASDISK`), 200 instrs
+each, both booting the *same* MSXDOS.SYS. **Steps 0-35 are byte-identical** (a 32-byte `LDIR` staging copy
+`$D62F→$DA40`, `BC 0x20→0`, then setup). **They split at the CALL through the `$F368` vector (step 35→36):**
+stock `$F368 → $DF57`; ours `$F368 → $419A`. Same kernel code at `$F368` on both ⇒ the **vector *contents*
+differ**, confirmed by a RAM dump of `$F365-$F373`:
+
+| slot | STOCK | OURS |
+|------|-------|------|
+| `$F365` | `DB A8 C9` (`in a,($A8); ret`) | `FF FF FF` (uninitialised) |
+| `$F368` | `C3 57 DF` = `JP $DF57` | `C3 9A 41` = `JP $419A` |
+| `$F36B` | `C3 59 DF` = `JP $DF59` | `C3 9A 41` = `JP $419A` |
+| `$F36E` | `C3 70 DF` = `JP $DF70` | `C3 9A 41` = `JP $419A` |
+
+`$419A` is our `wa_stub` (a bare `RET`, disk.asm:742) — so §8.56's "long disk-ROM routine" was an artefact: the
+kernel just hits our `RET`, makes no progress, and retries (~14 k×). Stock points each slot at a **distinct**
+routine; the staged 32 bytes are meant to be *processed* by `$DF57`-et-al, which our `RET` skips.
+
+**Ownership settled by a write-watch on `$F365-$F373` (stock, watchpoint method, §8.22):** the table is written
+entirely by the **disk ROM** — `PC=57BE` `LDIR`s the block in; `PC=58F0/5C5D/5C60/5C63` write the `JP`-opcode
+bytes at `$F368/$F36B/$F36E/$F371` (stride 3); `PC=5A3B/5A4C/5A51` + `7Exx` write the address bytes; an early
+`PC=036A/036D` page-0 stub lays an initial copy. **No hiRAM (`$Dxxx`) writer appears** — MSXDOS.SYS does **not**
+own this table. Therefore `$DF57/$DF59/$DF70` are **disk-ROM-installed resident routines** relocated to top-of-
+RAM (above MSXDOS.SYS's ~`$DC7F` landing), i.e. part of the disk ROM **we reimplement** — characterise their
+contracts black-box, write our own bytes; MSXDOS.SYS is never read. **This corrects §8.18**, which (from the
+plain-64K segment-hook model) concluded these 7 slots are register/flag-transparent no-ops and filled them all
+with `JP wa_stub`; the differential proves they are real routines with side effects the kernel depends on.
+**NEXT (M5.6, asm):** per-vector contract probe — arm on each of the ~7 slots (`$F368`, `$F36B`, …) on stock,
+capture in/out registers + memory deltas — then install our own resident routines in reserved top-of-RAM and
+repoint the table at them (replacing the uniform `wa_stub` fill in `build_wa_table`, disk.asm:607). Probes:
+disk_probe_dosboot_pctrace.py (`--arm 0xD87F`), the `$F365-F373` write-watch.
