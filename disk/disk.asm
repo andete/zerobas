@@ -43,7 +43,7 @@
 ; on-disk BPB for a foreign host (provider direction), field-for-field confirmed
 ; against a black-box CF-3300 GETDPB trace (see getdpb / disk/PROVENANCE.md §DPB).
 ; End-to-end disk I/O is implemented and the read + BDOS paths are differentially
-; oracle-confirmed (disk_probe_dskio / disk_probe_bdos in msx-preservation).
+; oracle-confirmed (probes/disk/disk_probe_dskio.py / disk_probe_bdos.py).
 ; ===========================================================================
 
 ; --- System addresses (disk/PROVENANCE.md §INIT / §BDOS) -------------------
@@ -1643,7 +1643,7 @@ bdos_open_err:
 ; whole record returned with code $00; EOF ($01) comes on the NEXT read.
 ;   out: A = $00 record delivered / $01 end-of-file (MSX2 TH, BDOS conventions)
 ; Partial-record zero-fill provenance: ORACLE OBSERVATION of real MSX-DOS 1.03 on
-; a 1500-byte file (disk_probe_bdos.py, msx-preservation) — the last record is
+; a 1500-byte file (probes/disk/disk_probe_bdos.py) — the last record is
 ; 92 real bytes + 36 bytes of $00 (confirmed by pre-filling the DTA with $FF: the
 ; tail still returns $00, so MSX-DOS actively zero-fills, not Ctrl-Z/stale data),
 ; code $00; the following read returns $01. CP/M FCB sequential-I/O record model

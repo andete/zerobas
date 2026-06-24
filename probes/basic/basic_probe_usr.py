@@ -57,10 +57,8 @@ Snapshot layout at $D100 (16 bytes):
   $D108-$D10F  DAC    ($F7F6, 8 bytes) at the moment USR is called
 
 Address sources (all allowed):
-  VALTYP = $F663 — MSX2 Technical Handbook work-area appendix (sysvars);
-                   cross-corroborated against the private-workbench symbol table.
-  DAC    = $F7F6 — MSX2 Technical Handbook work-area appendix (sysvars);
-                   cross-corroborated against the private-workbench symbol table.
+  VALTYP = $F663 — MSX2 Technical Handbook work-area appendix (sysvars).
+  DAC    = $F7F6 — MSX2 Technical Handbook work-area appendix (sysvars).
   USRTAB = $F39A — C-BIOS system variables (BSD 2-clause); the 10 USR
                    vectors used by DEF USR 0..9 (zerobas/basic/sysvars.inc).
 
@@ -112,7 +110,7 @@ SNAP_ADDR    = 0xD100   # where the stub writes its snapshot
 SNAP_LEN     = 16       # bytes: HL(2) DE(2) BC(2) A(1) VALTYP(1) DAC(8)
 
 # Sysvar addresses cited from MSX2 Technical Handbook work-area appendix
-# (an allowed source); cross-corroborated against the private-workbench symbol table.
+# (an allowed source).
 VALTYP_ADDR  = 0xF663   # VALTYP: floating-point accumulator type byte (1 byte)
 DAC_ADDR     = 0xF7F6   # DAC: floating-point accumulator data (8 bytes)
 

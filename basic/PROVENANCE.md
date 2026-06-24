@@ -758,9 +758,10 @@ and is not fabricated; after the read the crunch probe was restored to pristine
 **Ctrl-STOP polling — BIOS BREAKX `$00B7`.** The run loop polls Ctrl-STOP between
 statements/lines with `BREAKX` (`$00B7`), which scans keyboard matrix row 6 with
 no side effects and returns CF set when Ctrl-STOP is held, CF clear otherwise.
-This is the documented MSX Assembly Page / MSX2 Technical Handbook contract, and
-it is oracle-confirmed working **identically on C-BIOS_MSX1** (private-workbench
-BREAKX probe: "$00B7 BREAKX — pass … carry clear on both. IDENTICAL"). So the Ctrl-STOP functional check runs on
+This is the documented MSX Assembly Page / MSX2 Technical Handbook contract — the
+published interface is the provenance — and was separately observed behaving
+**identically on C-BIOS_MSX1** ($00B7 BREAKX: carry clear when Ctrl-STOP is not
+held, on both the reference and C-BIOS). So the Ctrl-STOP functional check runs on
 the default C-BIOS_MSX1 machine — no Philips fallback was needed (the Philips-only
 rule applies only to tape `bload"cas:",r` landmark probes).
 

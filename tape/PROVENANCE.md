@@ -71,7 +71,7 @@ openMSX as a black box.
 | CS120 (1200-baud reference signal lengths) | `$F3FC` | C-BIOS `systemvars.asm`; corroborated by boot-state oracle dump | sourced |
 | CS240 (2400-baud reference signal lengths) | `$F401` | C-BIOS `systemvars.asm`; corroborated by boot-state oracle dump | sourced |
 | Active LOW signal length (the live baud) | `$F406` | C-BIOS `systemvars.asm`; oracle confirmed `SCREEN ,,,baud` copies CS120/CS240 here | sourced |
-| CASBAUD (our resolved-baud cache for one write) | parked on `WINWID` `$FCA5` | our own derived cache (not a selector): TAPOON resolves the baud from the active table each session and stores it; `$FCA5` is a read-side sysvar **oracle-confirmed idle during a write** — the private-workbench `winwid_idle` probe sets openMSX `write_mem`+`read_mem` watchpoints on `$FCA5` across a full TAPOON+TAPOUT+TAPOOF session and measures **0 hits** on the VG-8020 oracle at both 1200 and 2400 baud (`--self-test` confirms the watchpoints catch a deliberate access, so the clean reading is not a blind instrument) | quarantined |
+| CASBAUD (our resolved-baud cache for one write) | parked on `WINWID` `$FCA5` | our own derived cache (not a selector): TAPOON resolves the baud from the active table each session and stores it; `$FCA5` is a read-side sysvar **oracle-confirmed idle during a write** — the `winwid_idle` probe (`probes/tape/bios_probe_winwid_idle.py`) sets openMSX `write_mem`+`read_mem` watchpoints on `$FCA5` across a full TAPOON+TAPOUT+TAPOOF session and measures **0 hits** on the VG-8020 oracle at both 1200 and 2400 baud (`--self-test` confirms the watchpoints catch a deliberate access, so the clean reading is not a blind instrument) | quarantined |
 
 > **Baud selection — now read from the live work area (steps A and B done).**
 >
@@ -102,7 +102,8 @@ openMSX as a black box.
 > desynced 2400 framing). No user-set flag: the system's `SCREEN` choice is
 > honoured. Validated end-to-end — full two-block file round-trips at both bauds,
 > tones measured at 2387/1169 Hz (1200) vs 4638/2210 Hz (2400), and a blank work
-> area correctly defaults to 1200. Probe: `cas_baud_oracle` (private workbench).
+> area correctly defaults to 1200. Probe: `cas_baud_oracle`
+> (`probes/tape/cas_baud_oracle.py`).
 
 ## v0.29 ROM layout facts
 

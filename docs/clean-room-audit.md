@@ -323,9 +323,16 @@ shake out the unexercised process. Phase A re-confirmed the paper-trail structur
      `tape/zerobas-tape-msx1.ips`, so they passed by luck); they are now regenerated from
      the committed patch. The full tape regression is 6/6 from a clean `make machines`
      with no manual XML editing.
-  3. *Self-verify limit* — a few PROVENANCE rows cite **private-workbench** probes
-     (`cas_baud_oracle`, `winwid_idle`) that live in the private msx-preservation repo,
-     not `probes/tape/`. Consistent with the public/private boundary, but the public
-     repo cannot independently re-run those specific rows.
+  3. *Self-verify limit (RESOLVED same day)* — two PROVENANCE rows cited
+     **private-workbench** probes (`cas_baud_oracle`, `winwid_idle`) that lived only in
+     the private msx-preservation repo, so the public chain dead-ended in private. Both
+     were confirmed clean black-box probes simply missed in the 2026-06-23 harness
+     migration; they are now re-homed at `probes/tape/cas_baud_oracle.py` +
+     `probes/tape/bios_probe_winwid_idle.py` (re-rooted on `probes/lib/`, 0BSD), with the
+     citations updated. The same sweep fixed two stale disk comments (the cited
+     `disk_probe_dskio`/`disk_probe_bdos` were already public) and softened a basic
+     BREAKX corroboration to its public MSX2-TH primary. (Empirical re-run of the two
+     tape probes still needs the VG-8020 oracle machine installed — not present this
+     session — but the provenance link is no longer private.)
 - **Verdict:** tape full-verify CLEAN; all publicly-runnable correctness checks green.
   Process itself now exercised once (loose end #2 closed for tape).
