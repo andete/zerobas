@@ -78,9 +78,35 @@ shows COMMAND.COM or a fixed cluster entry depends on a specific value. Because 
 reproduces internal shape, the temptation to disassemble is highest here — the §8.37
 breach is the cautionary tale; the firewall above is non-negotiable.
 
+## Measured scope (the scan, §8.48 — do this before the entry-by-entry grind)
+
+A single coverage pass over the `$D821→$47B2→$D824` span
+(`disk_probe_dosboot_scope.py`) sizes the whole job up front. The *executed* code on
+the path to `A>` is far smaller than the "63 % / ~10 KB shared kernel" ROM figure —
+that was the kernel's size, not what runs:
+
+| region | executed | what |
+|--------|----------|------|
+| TPA / COMMAND.COM | 640 B (4 regions) | proprietary — we **load + run**, never reimplement |
+| disk-ROM (page 1) | **~2 KB** (~19 regions) | the cluster we fill behind the veneers (M5.6…N) |
+| high-RAM kernel | **~864 B (8 regions)** | the entire relocation surface (a) must mirror (M5.2/M5.4) |
+
+The 8 high-RAM regions: `$DDA0-$DDEF` (RST-38 / `$DDAE`), `$DE50-$DF1F`
+(`$DE54`/`$DE9B` vector targets), **`$EF90-$F05F` (one hot wait/copy loop — ~94 % of
+all span instructions; reimplement its *contract*, not its iteration count)**,
+`$F0F0-$F17F` (= `$F100-$F17C` driver dispatch, §2), `$F250-$F2AF`, `$F360-$F39F`
+(= `$F368`/`$F37D` BDOS-vector area, §8.9/§8.18), `$FD90-$FDAF` (= `$FDA0`, §8.46),
+`$FFC0-$FFDF` (near `$FFFF`). Several are already characterised work-area structures.
+
+**Caveat:** coverage = this one canonical boot; paths COMMAND.COM doesn't take here
+are out of scope (acceptable — the goal is hosting *this* disk to `A>`). The
+interactive command loop after `$D824` is a separate small scan, run before
+M5.final. Next scan candidate: a call-edge pass (caller→callee for the executed
+regions) to order M5.6…N.
+
 ## Milestones (each: characterise on stock → implement → re-probe progress)
 
-Sequenced for the **(a) faithful relocation** build.
+Sequenced for the **(a) faithful relocation** build; sized by the scan above.
 
 - **M5.1 — COMMAND.COM service-interface map.** Black-box on stock: trace the
   outbound CALL targets COMMAND.COM (`$0100-$1FFF`) invokes, how/when it installs

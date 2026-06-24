@@ -1918,3 +1918,26 @@ black-box dependency forces a value). Revised roadmap in the plan: M5.1 (COMMAND
 vectors, validated standalone — the §8.2/§8.4 hang-prone step) → M5.5 (`k_47B2` loader body) → M5.6…N (fill
 the page-1 cluster contracts) → M5.final (`A>`). **NEXT SESSION: M5.1** — black-box trace of COMMAND.COM's
 outbound CALL targets + how it installs `$0005`. No asm yet.
+
+**§8.48 SCOPE SCAN — the executed footprint is ~2 KB disk-ROM + ~864 B high-RAM, NOT the 10 KB / 63 % kernel.**
+Before grinding the cluster entry-by-entry, a single coverage pass sizes the whole job
+(`disk_probe_dosboot_scope.py`, black-box: a per-instruction PC histogram into 16-byte bins, installed at the
+`$D821` span entry and removed at the `$D824` return so it costs nothing outside the window; records addresses
++ hit counts only, never disassembles). **Cross-validation:** captured **371,251 hits** vs §8.41's
+independently-measured **371,384 span instructions** — essentially identical, so the scan covered the full
+window. **The actually-executed code on the path to `A>`:** (1) **TPA/COMMAND.COM = 640 B** (4 regions
+`$0200-$02DF`, `$0C30-$0D6F`, `$1100-$111F`, `$1200-$123F`) — proprietary, we *load + run* it, never
+reimplement; (2) **disk-ROM (page 1) = 2,032 B** across ~19 small regions — the cluster we fill behind the
+veneers (hottest `$7690-$77BF` ×3,293, incl. the known `$77B8` entry; `$4840-$49BF` ×1,210; `$5FA0-$609F`
+×1,345 incl. `$607B`); (3) **high-RAM kernel = 864 B across just 8 regions** — *this is the entire relocation
+surface (a) must mirror:* `$DDA0-$DDEF` (the `$DDAE` RST-38 vector target), `$DE50-$DF1F` (the `$DE54/$DE9B`
+vector targets), **`$EF90-$F05F` (the hot loop — 349,779 hits, ~94 % of the span, a single tight wait/copy
+loop — reimplement its *contract*, not its iteration count)**, `$F0F0-$F17F` (= the `$F100-$F17C` driver
+dispatch, spec §2), `$F250-$F2AF`, `$F360-$F39F` (= the `$F368`/`$F37D` BDOS-vector area, §8.9/§8.18),
+`$FD90-$FDAF` (= the `$FDA0` `$0030` caller, §8.46), `$FFC0-$FFDF` (near the `$FFFF` subslot register).
+**IMPLICATION:** the §8.41 "63 % kernel" was the shared kernel's *ROM size*; only ~2 KB of it is *exercised*
+on this boot, and the high-RAM band to mirror is a tractable ~864 B / 8 routines — several already mapped as
+work-area structures. **Caveat:** coverage = this one canonical boot; input-dependent paths COMMAND.COM doesn't
+take here aren't in scope (acceptable — the goal is hosting *this* disk to `A>`), and the interactive
+command-loop after `$D824` is a separate small scan. This sizes M5.2 (mirror these 8 regions) and bounds
+M5.6…N (≤~19 cluster regions). Probe: disk_probe_dosboot_scope.py.
