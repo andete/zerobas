@@ -286,3 +286,40 @@ own `tape/docs/clean-room-policy.md` and a `PROVENANCE.md §Audit`.
 
 **Whole-repo baseline: all three components (disk, basic, tape) paper-trail CLEAN
 as of 2026-06-24** — the provenance precondition for public release is met.
+
+### 2026-06-24 — tape, FULL VERIFY TRAIL — ✅ CLEAN + correctness re-validated (at `2e59542`)
+
+**First-ever exercise of the full-verify trail** (the heavier check had been
+documented but never run — the loose end). Run on tape as the smallest surface to
+shake out the unexercised process. Phase A re-confirmed the paper-trail structure
+(tape already CLEAN at `d160f8c`); Phase B re-ran the oracle round-trip empirically.
+
+- **Phase B — Tier-1 deterministic regression** (`tape/tools/run_tape_regression.py`,
+  openMSX-driven, self-authored content): **6/6 PASS.** Critically, *round-trip
+  write→read @1200 and @2400 are byte-identical* — this is the oracle guarantee the
+  **quarantined FSK timing constants** (`CAS_HHALF`/`LHALF`(`24`), the auto-baud lock,
+  `LOWLIM`, leader/flush guards) lean on in lieu of a citation, so the whole
+  quarantine class is empirically re-validated. `.cas` BLOAD/readback @3744 and the
+  full open-stack (zerobas + C-BIOS + zerobas-tape, `,R` handoff) also pass.
+- **Tier 2/3 not runnable here** (real `.cas`/`.wav` corpus; `MSX_TAPE_CORPUS` unset
+  — proprietary tapes correctly never ship in the public repo). The `sourced` rows
+  ground in published docs (MSX Assembly Page, MSX2 TH, datasheets, C-BIOS
+  `systemvars.asm`) and need no probe re-run.
+- **Findings (no clean-room break, no correctness regression):**
+  1. *Harness rot* — the `C-BIOS_tape` openMSX machine config embedded a path into a
+     since-deleted agent worktree (`.claude/worktrees/agent-…/tape/zerobas-tape-msx1.ips`),
+     so the machine didn't boot and the 2 open-stack tests failed. Root cause: the
+     config was generated *inside* a temporary agent worktree pre-migration. Fixed
+     install-locally (repointed at the committed `tape/zerobas-tape-msx1.ips`); re-run
+     then 6/6. The committed patch was always fine — this is an install-local artifact,
+     not a repo defect.
+  2. *Tooling gap* (follow-up) — `tools/install-openmsx-machine.py` does **not**
+     generate `C-BIOS_tape`, yet the open-stack probes default to it. A fresh install
+     therefore cannot run the open-stack tier. Needs the machine added to the installer
+     (or the probes pointed at a generated `*_TAPE` machine).
+  3. *Self-verify limit* — a few PROVENANCE rows cite **private-workbench** probes
+     (`cas_baud_oracle`, `winwid_idle`) that live in the private msx-preservation repo,
+     not `probes/tape/`. Consistent with the public/private boundary, but the public
+     repo cannot independently re-run those specific rows.
+- **Verdict:** tape full-verify CLEAN; all publicly-runnable correctness checks green.
+  Process itself now exercised once (loose end #2 closed for tape).
