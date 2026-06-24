@@ -2018,3 +2018,26 @@ already has* (DSKIO `$4010`, the FAT/dir code in `$41xx-$49xx`, `bdos_entry`), s
 than 5,600 B — much of M5.6…N is wiring existing routines to the observed veneer contracts, not writing afresh.
 The scans-2/3 mechanism (CALSLT trampoline table, `$FD9x` gateway, single-DSKIO load) is unchanged. Sizing
 question closed; M5.2/M5.6…N can now be planned against fixed regions. Probe: disk_probe_dosboot_phasecov.py.
+
+**§8.53 CORRECTION — §8.52's high-RAM "to build" over-counts: much of it is *loaded MSXDOS.SYS*, not our
+code.** Reading our own boot code raised the flag: **MSXDOS.SYS is the DOS kernel and it relocates *itself*
+into high RAM** (§8.24: lands ~`$D606`), so high-RAM regions that are just the loaded kernel are
+proprietary-we-load (like COMMAND.COM), NOT code we write. Probe `disk_probe_dosboot_hiram_origin.py`
+(black-box: FAT12-extract the real MSXDOS.SYS bytes from the disk, dump `$C000-$FFFF` at `A>` idle, find the
+relocation base by best byte-match). **Result — partial but decisive on the premise:** MSXDOS.SYS relocates to
+**~`$D300-$DC7F`**; the executed regions `$D600` (75 % byte-match) and `$D820-D8BF` (93 %) **are loaded
+MSXDOS.SYS, not ours**. The method can't give a clean full split because MSXDOS.SYS relocates **with address
+fixups** (patched bytes don't match the file) and **installs computed jump stubs above its code** (the
+`$DDAE`/`$DE54` page-0-vector handlers at `$DDxx/$DExx` match neither the file nor our ROM — MSXDOS.SYS builds
+them at runtime). So byte-matching under-counts "loaded". **What this establishes:** §8.52's 1,920 B high-RAM
+"to build" is an **over-count** — at minimum the `$D6xx/$D8xx` code (~176 B) is loaded MSXDOS.SYS, and the
+`$DDxx/$DExx` handlers (~368 B) are MSXDOS.SYS-installed, so **≥~540 B of the 1,920 is not ours**; the `$C2xx-
+$D0xx` regions (~688 B) are likely MSXDOS.SYS buffers/data too (pending confirmation). Our *real* high-RAM job
+is the **disk-ROM-built work area** (`$F100-$F3FF`: the `$F2xx` CALSLT table, `$F368` table, DPBs — already
+partly built in the §8.18-8.30 a3 work) plus whatever `$EF9x`/`$FD9x` turn out to be. **Strategic
+consequence:** the "faithful relocation" of the *kernel* is performed by MSXDOS.SYS itself when we load it — we
+do **not** rewrite the `$DExx` kernel; the fork-(a) work is really our disk-ROM↔kernel *plumbing* + work area,
+not re-creating the kernel. The exact loaded/built split is an **M5.2 task** (characterise MSXDOS.SYS's
+relocation + work-area layout — a write-attribution probe is confounded too, since our loader physically writes
+the kernel's bytes), so the net high-RAM "to build" is recorded as **< 1,920 B, exact figure pending M5.2**.
+Probe: disk_probe_dosboot_hiram_origin.py.

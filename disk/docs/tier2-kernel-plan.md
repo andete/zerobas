@@ -102,7 +102,20 @@ loop) `$F0F0-F17F` `$F1C0-F1FF` `$F250-F2BF` `$F360-F39F` `$FD90-FDCF` `$FFC0-FF
 **Offset:** the 3,680 B disk-ROM cluster largely *overlaps routines zerobas already
 has* (DSKIO `$4010`, the FAT/dir code, `bdos_entry`), so genuinely *new* code is less
 than 5,600 B — much of M5.6…N is wiring existing routines to the observed veneer
-contracts, not writing afresh. Sizing question is **closed**.
+contracts, not writing afresh.
+
+> **Correction (§8.53).** The **1,920 B high-RAM is an over-count of "our" work** —
+> MSXDOS.SYS (the DOS kernel) relocates *itself* into high RAM (~`$D300-$DC7F`), so
+> the `$D6xx/$D8xx` code (~176 B) is *loaded* MSXDOS.SYS and the `$DDxx/$DExx`
+> handlers (~368 B) are MSXDOS.SYS-*installed* — **not code we write** (like
+> COMMAND.COM). The `$C2xx-$D0xx` regions (~688 B) are probably MSXDOS.SYS
+> buffers/data too. Our real high-RAM job is the **disk-ROM-built work area**
+> (`$F100-$F3FF`: the `$F2xx` CALSLT table, `$F368` table, DPBs — partly built in the
+> §8.18-8.30 a3 work) plus `$EF9x`/`$FD9x` (TBD). So fork-(a) "faithful relocation"
+> of the *kernel* is done by loading MSXDOS.SYS — we don't rewrite the `$DExx`
+> kernel; our work is the plumbing + work area. **Net high-RAM to build: < 1,920 B
+> (likely ~600-1,200 B); exact split is an M5.2 task.** Total "to build" is therefore
+> **< 5,600 B.**
 
 The 8 high-RAM regions: `$DDA0-$DDEF` (RST-38 / `$DDAE`), `$DE50-$DF1F`
 (`$DE54`/`$DE9B` vector targets), **`$EF90-$F05F` (one hot wait/copy loop — ~94 % of
