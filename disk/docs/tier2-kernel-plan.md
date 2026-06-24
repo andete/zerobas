@@ -190,12 +190,15 @@ Front-loadable now = **R+M (400 B)**; after a contract-confirm = **r (1,744 B)**
 
 Bar chars: `█` done · `▒` veneer · `░` todo.
 
-> *(baseline, scans complete, pre-M5.4)*
+> *(scans complete + §8.53 sizing correction, pre-M5.4)*
 > ```
-> TOTAL     █▒▒▒▒▒▒▒▒▒░░░░░░░░░░  ✅  176 · 🟨2,544 · ⬜2,880  / 5,600 B  (3.1% done)
+> TOTAL     █▒▒▒▒▒▒▒▒▒▒░░░░░░░░░  ✅  176 · 🟨2,544 · ⬜2,336  / 5,056 B  (3.5% done)
 > disk-ROM  █▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░  ✅  176 · 🟨2,544 · ⬜  960  / 3,680 B
-> hi-RAM    ░░░░░░░░░░░░░░░░░░░░  ✅    0 · 🟨    0 · ⬜1,920  / 1,920 B
+> hi-RAM    ░░░░░░░░░░░░░░░░░░░░  ✅    0 · 🟨    0 · ⬜1,376  / 1,376 B
 > ```
+> §8.53: 544 B of high-RAM is **loaded MSXDOS.SYS, not ours** (excluded above); a
+> further ~688 B (`$C2xx-$D0xx`) is likely loaded too → total may drop toward
+> **~4,368 B** once M5.2 confirms. Covered unchanged (176 B); only the denominator moved.
 
 | disk-ROM range | B | st | cls | hi-RAM range | B | st | cls |
 |---|---|---|---|---|---|---|---|
