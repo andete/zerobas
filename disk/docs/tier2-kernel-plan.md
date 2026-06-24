@@ -85,21 +85,24 @@ A single coverage pass over the `$D821→$47B2→$D824` span
 the path to `A>` is far smaller than the "63 % / ~10 KB shared kernel" ROM figure —
 that was the kernel's size, not what runs:
 
-| region | executed (load span only) | what |
-|--------|----------|------|
-| TPA / COMMAND.COM | 640 B (4 regions) | proprietary — we **load + run**, never reimplement |
-| disk-ROM (page 1) | ~2 KB (~19 regions) | the cluster we fill behind the veneers (M5.6…N) |
-| high-RAM kernel | ~864 B (8 regions) | part of the relocation surface (a) must mirror (M5.2/M5.4) |
+Definitive footprint of the whole `$D821 → A> idle` phase (§8.52, scan 5 — merges
+the load span + tail, stops auto-detected at idle):
 
-> **Correction (§8.51, scan 4).** The table above is the `$D821→$D824` **load span
-> only**. The tail scan showed `$D824` is a *false boundary* — COMMAND.COM straddles
-> it and the kernel keeps running afterward to reach `A>`. The full path executes
-> **more** kernel + disk-ROM code: ~14 extra disk-ROM ranges and ~10 extra high-RAM
-> ranges (incl. the relocated kernel's COMMAND-exec continuation `$D820-D8BF`,
-> `$C200-C27F`, `$CE50-D00F`). Mostly *expansion* of the same subsystems (so the
-> mechanism from scans 2/3 holds), but the high-RAM kernel is closer to ~15-20
-> regions, not 8. **A definitive full-boot coverage scan (reset → `A>` idle) is owed
-> before sizing M5.2/M5.6…N — run it before any asm.**
+| region | size | ranges | what |
+|--------|------|--------|------|
+| TPA / COMMAND.COM | 1,488 B | 11 | proprietary — we **load + run**, never reimplement |
+| **disk-ROM (page 1)** | **3,680 B** | 23 | the cluster bodies we fill behind the veneers (M5.6…N) |
+| **high-RAM kernel** | **1,920 B** | 15 | the relocation surface (a) mirrors (M5.2/M5.4) |
+| **code we must build** | **5,600 B** | | between §8.41's ~10.4 KB worst case and §8.48's ~2.9 KB optimism — now measured |
+
+The 15 high-RAM regions (M5.2 blueprint): `$C200-C27F` `$CB90-CBDF` `$CE50-D00F`
+`$D070-D08F` `$D600-D60F` `$D820-D8BF` `$DDA0-DDEF` `$DE50-DF6F` `$EF90-F05F` (hot
+loop) `$F0F0-F17F` `$F1C0-F1FF` `$F250-F2BF` `$F360-F39F` `$FD90-FDCF` `$FFC0-FFDF`.
+
+**Offset:** the 3,680 B disk-ROM cluster largely *overlaps routines zerobas already
+has* (DSKIO `$4010`, the FAT/dir code, `bdos_entry`), so genuinely *new* code is less
+than 5,600 B — much of M5.6…N is wiring existing routines to the observed veneer
+contracts, not writing afresh. Sizing question is **closed**.
 
 The 8 high-RAM regions: `$DDA0-$DDEF` (RST-38 / `$DDAE`), `$DE50-$DF1F`
 (`$DE54`/`$DE9B` vector targets), **`$EF90-$F05F` (one hot wait/copy loop — ~94 % of
@@ -133,8 +136,10 @@ the M5.2/M5.4 blueprint, with register contracts already captured:
    **single DSKIO call, B=13 sectors → `$0100`** (= 6656 B, COMMAND.COM's size) =
    the core of `k_47B2`.
 
-Next scan candidate (optional): the interactive-loop coverage after `$D824`, before
-M5.final.
+Scanning phase complete (scans 1-5, §8.48-8.52): footprint, call graph, per-entry
+contracts, and the definitive `$D821 → A> idle` sizing are all captured. The next
+step is implementation — **M5.4** (stand up the trampoline table + page-0 vectors,
+validated standalone), the first asm.
 
 ## Milestones (each: characterise on stock → implement → re-probe progress)
 

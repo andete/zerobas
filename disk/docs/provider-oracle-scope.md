@@ -1998,3 +1998,23 @@ trampoline table, `$FD9x` gateway, single-DSKIO load) is unchanged; there is jus
 to fill. **NEXT (recommended before any asm):** a definitive full-boot coverage scan (reset → `A>` idle, no
 span gating) for the authoritative total executed footprint, superseding the load-span + tail split, then
 re-size M5.2/M5.6…N. Probe: disk_probe_dosboot_tail.py.
+
+**§8.52 SCOPE SCAN 5 (DEFINITIVE) — the COMMAND.COM-phase footprint is ~5.6 KB; sizing question CLOSED.**
+`disk_probe_dosboot_phasecov.py` merges the load span + tail into one authoritative map: coverage gated ON at
+`$D821` (the COMMAND.COM-load start) and run through to `A>` idle (auto-detected when the `$0B90-$0D8F` idle
+loop passes 150 k hits). Gated at `$D821`, *not* reset, on purpose — a from-reset scan would re-include the
+already-built §1-4 init phase, whose disk-ROM code shares regions with this phase, so it could not separate
+done-work from remaining-work. Black-box (PC histogram, addresses + counts only). **Stopped at idle after
+914,835 phase instructions; 49 merged ranges.** **The authoritative sizing:** TPA/COMMAND.COM **1,488 B**
+(11 ranges — proprietary, load+run, NOT our code); **disk-ROM cluster 3,680 B** (23 ranges — the veneer
+bodies, M5.6…N); **high-RAM kernel 1,920 B** (15 ranges — the relocation surface (a) mirrors, M5.2/M5.4).
+**⇒ code we must build = 5,600 B.** This sits between the prior bounds: well below §8.41's "~10.4 KB / 63 %
+kernel" worst case and above §8.48's load-span "~2.9 KB" optimism — now *measured*, not estimated. The 15
+high-RAM regions (the M5.2 blueprint): `$C200-C27F` `$CB90-CBDF` `$CE50-D00F` `$D070-D08F` `$D600-D60F`
+`$D820-D8BF` `$DDA0-DDEF` `$DE50-DF6F` `$EF90-F05F` (the hot loop, 349,779 hits) `$F0F0-F17F` `$F1C0-F1FF`
+`$F250-F2BF` `$F360-F39F` `$FD90-FDCF` `$FFC0-FFDF`. The 23 disk-ROM ranges are dominated by `$7580-77BF`
+(576 B, 276,017 hits). **Important offset:** the 3,680 B disk-ROM cluster largely *overlaps routines zerobas
+already has* (DSKIO `$4010`, the FAT/dir code in `$41xx-$49xx`, `bdos_entry`), so genuinely *new* code is less
+than 5,600 B — much of M5.6…N is wiring existing routines to the observed veneer contracts, not writing afresh.
+The scans-2/3 mechanism (CALSLT trampoline table, `$FD9x` gateway, single-DSKIO load) is unchanged. Sizing
+question closed; M5.2/M5.6…N can now be planned against fixed regions. Probe: disk_probe_dosboot_phasecov.py.
