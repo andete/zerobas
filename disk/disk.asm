@@ -857,27 +857,10 @@ p0_env_tab:
 ; Only `ld`/`inc hl`/`pop`/`push`/`ret` are used between entry and the call, none
 ; of which touch the flags, so the caller's CY (the DSKIO read/write bit) survives.
 callf_body:
-                ld      (R30_HL), hl    ; stash caller HL
-                ld      (R30_BC), bc    ; stash caller BC
-                ld      (R30_DE), de    ; stash caller DE
-                push    af              ; copy AF out without disturbing the return ptr
-                pop     hl              ; HL = AF image (push/pop is SP-neutral)
-                ld      (R30_AF), hl    ; stash caller AF (incl. carry)
-                pop     hl              ; HL = return addr -> inline operand [slot][lo][hi]
-                inc     hl              ; -> lo
-                ld      e, (hl)
-                inc     hl              ; -> hi
-                ld      d, (hl)         ; DE = target address (e.g. $4010)
-                inc     hl              ; HL = operand+3 = byte after CALLF (H.PHYD's C9)
-                push    hl              ; ultimate return: target's RET lands here
-                push    de              ; target address on top
-                ld      hl, (R30_AF)    ; restore caller AF (carry = DSKIO read/write)
-                push    hl
-                pop     af
-                ld      bc, (R30_BC)    ; restore caller BC
-                ld      de, (R30_DE)    ; restore caller DE
-                ld      hl, (R30_HL)    ; restore caller HL (DSKIO transfer address)
-                ret                     ; -> target; its RET -> operand+3 -> caller
+                jp      callf_body_body     ; Tier-2 3b: divert; veneer fills the gap
+                ds      $41FD - $, $00      ; anchor the canonical address
+                jp      k_41FD              ; $41FD: COMMAND.COM-load kernel veneer
+                ds      $4217 - $, $00      ; pad to rdslt_h (net-zero: stays $4217)
 
 ; rdslt_h ($000C RDSLT) — read the byte at HL. The standard RDSLT takes the slot
 ; id in A; during boot every address the code reads through RDSLT is in an already-
@@ -1652,21 +1635,10 @@ bdos_open_err:
 ; code $00; the following read returns $01. CP/M FCB sequential-I/O record model
 ; (MSX2 TH, FCB sequential I/O) supplies the record framing.
 bdos_seqread:
-                ; EOF once every file byte has been delivered (BYTESLEFT == 0).
-                ld      hl, (BDOS_BYTESLEFT)        ; low word
-                ld      de, (BDOS_BYTESLEFT + 2)    ; high word
-                ld      a, h
-                or      l
-                or      d
-                or      e
-                jr      z, bsr_eof                  ; no bytes left -> EOF
-                ld      a, (BDOS_RECIDX)
-                cp      RECPERSEC
-                jr      c, bsr_have     ; records still left in SECTOR_BUF
-                call    fat_read_file_sector
-                jr      c, bsr_eof      ; chain ended early -> EOF (shouldn't, BYTESLEFT>0)
-                xor     a
-                ld      (BDOS_RECIDX), a    ; back to record 0
+                jp      bdos_seqread_body   ; Tier-2 3b: divert; veneer fills the gap
+                ds      $4558 - $, $00      ; anchor the canonical address
+                jp      k_4558              ; $4558: COMMAND.COM-load kernel veneer
+                ds      $4570 - $, $00      ; pad to bsr_have (net-zero: stays $4570)
 bsr_have:
                 ; n = real bytes this record = min(RECSIZE, BYTESLEFT).
                 ; BYTESLEFT is nonzero here; if the high word is set or low word
@@ -1929,26 +1901,10 @@ bdos_close_err:
 ; cluster is allocated yet: the first cluster is allocated lazily on the first
 ; Sequential Write, so a zero-byte file occupies no clusters (matching MSX-DOS).
 bdos_create:
-                push    de              ; FCB across fat_mount
-                call    fat_mount
-                jr      c, bdos_create_failpop
-                pop     hl              ; HL = FCB
-                inc     hl              ; HL = FCB+1 = 8.3 name
-                call    fat_dir_create  ; find/make a dir slot, write the entry
-                jr      c, bdos_create_err
-                ; prime the write iterator: no cluster yet, empty buffer, 0 bytes.
-                xor     a
-                ld      (BDOS_WRSECIDX), a
-                ld      hl, 0
-                ld      (BDOS_WRCLUS), hl
-                ld      (BDOS_WRFIRST), hl
-                ld      (BDOS_WRBUFLEN), hl
-                ld      (BDOS_WRBYTES), hl
-                ld      (BDOS_WRBYTES + 2), hl
-                ld      a, 1
-                ld      (BDOS_WRMODE), a    ; file is open for write
-                xor     a                   ; A = $00 success
-                ret
+                jp      bdos_create_body    ; Tier-2 3b: divert; veneer fills the gap
+                ds      $46C8 - $, $00      ; anchor the canonical address
+                jp      k_46C8              ; $46C8: COMMAND.COM-load kernel veneer
+                ds      $46E6 - $, $00      ; pad to bdos_create_failpop (net-zero)
 bdos_create_failpop:
                 pop     hl
 bdos_create_err:
@@ -3046,6 +3002,83 @@ fat_dir_update:
 conout:
                 ret                     ; first cut: preserve all regs, emit nothing
 
+; ===== Tier-2 3b: relocated Disk-BASIC routine bodies ($5456-$5FE4 gap) =====
+; Each colliding routine's body lives here; its low-region slot holds `entry:
+; jp entry_body` + the ds-anchored veneer(s) + padding, sized to exactly fill the
+; original span (net-zero — nothing downstream shifts). Each body ends with a `jp`
+; back to the label that followed it, so fall-through is preserved. Callers reach
+; the routine through its unchanged low-region entry label.
+fat_find_body:                          ; [fat_find, ff_secloop)
+                ld      (FAT_NAMEPTR), hl
+                ld      hl, (FAT_FIRSTROOT)
+                ld      (FAT_DIRSEC), hl
+                ld      hl, (FAT_ROOTSECS)
+                ld      (FAT_DIRREM), hl
+                jp      ff_secloop
+
+callf_body_body:                        ; [callf_body, rdslt_h) — ends in ret
+                ld      (R30_HL), hl    ; stash caller HL
+                ld      (R30_BC), bc    ; stash caller BC
+                ld      (R30_DE), de    ; stash caller DE
+                push    af              ; copy AF out without disturbing the return ptr
+                pop     hl              ; HL = AF image (push/pop is SP-neutral)
+                ld      (R30_AF), hl    ; stash caller AF (incl. carry)
+                pop     hl              ; HL = return addr -> inline operand [slot][lo][hi]
+                inc     hl              ; -> lo
+                ld      e, (hl)
+                inc     hl              ; -> hi
+                ld      d, (hl)         ; DE = target address (e.g. $4010)
+                inc     hl              ; HL = operand+3 = byte after CALLF (H.PHYD's C9)
+                push    hl              ; ultimate return: target's RET lands here
+                push    de              ; target address on top
+                ld      hl, (R30_AF)    ; restore caller AF (carry = DSKIO read/write)
+                push    hl
+                pop     af
+                ld      bc, (R30_BC)    ; restore caller BC
+                ld      de, (R30_DE)    ; restore caller DE
+                ld      hl, (R30_HL)    ; restore caller HL (DSKIO transfer address)
+                ret                     ; -> target; its RET -> operand+3 -> caller
+
+bdos_seqread_body:                      ; [bdos_seqread, bsr_have) -> falls into bsr_have
+                ; EOF once every file byte has been delivered (BYTESLEFT == 0).
+                ld      hl, (BDOS_BYTESLEFT)        ; low word
+                ld      de, (BDOS_BYTESLEFT + 2)    ; high word
+                ld      a, h
+                or      l
+                or      d
+                or      e
+                jp      z, bsr_eof                  ; no bytes left -> EOF (jr->jp: relocated)
+                ld      a, (BDOS_RECIDX)
+                cp      RECPERSEC
+                jp      c, bsr_have     ; records still left in SECTOR_BUF (jr->jp)
+                call    fat_read_file_sector
+                jp      c, bsr_eof      ; chain ended early -> EOF (jr->jp)
+                xor     a
+                ld      (BDOS_RECIDX), a    ; back to record 0
+                jp      bsr_have
+
+bdos_create_body:                       ; [bdos_create, bdos_create_failpop) — ends in ret
+                push    de              ; FCB across fat_mount
+                call    fat_mount
+                jp      c, bdos_create_failpop      ; jr->jp: relocated
+                pop     hl              ; HL = FCB
+                inc     hl              ; HL = FCB+1 = 8.3 name
+                call    fat_dir_create  ; find/make a dir slot, write the entry
+                jp      c, bdos_create_err          ; jr->jp: relocated
+                ; prime the write iterator: no cluster yet, empty buffer, 0 bytes.
+                xor     a
+                ld      (BDOS_WRSECIDX), a
+                ld      hl, 0
+                ld      (BDOS_WRCLUS), hl
+                ld      (BDOS_WRFIRST), hl
+                ld      (BDOS_WRBUFLEN), hl
+                ld      (BDOS_WRBYTES), hl
+                ld      (BDOS_WRBYTES + 2), hl
+                ld      a, 1
+                ld      (BDOS_WRMODE), a    ; file is open for write
+                xor     a                   ; A = $00 success
+                ret
+
 ; ===== Tier-2: COMMAND.COM-load kernel entries — veneer scaffold (milestone 3a) =====
 ; The relocated MSX-DOS-1 kernel + COMMAND.COM call back into ~21 disk-ROM entry
 ; points at fixed page-1 addresses (the de-facto-standard shared-kernel ABI;
@@ -3071,26 +3104,15 @@ conout:
                 jp      k_782B          ; $782B
 ; --- contract bodies (stubs; filled in milestone 4; added as each veneer lands) ---
 k_402D:         ret
+k_41FD:         ret
+k_4558:         ret
+k_46C8:         ret
 k_47B2:         ret
 k_5FE5:         ret
 k_607B:         ret
 k_75A5:         ret
 k_77B8:         ret
 k_782B:         ret
-
-; ===== Tier-2 3b: relocated Disk-BASIC routine bodies =====================
-; Each colliding routine's body lives here; its low-region slot holds `entry:
-; jp entry_body` + the ds-anchored veneer(s) + padding, sized to exactly fill the
-; original span (net-zero — nothing downstream shifts). Each body ends with a `jp`
-; back to the label that followed it, so fall-through is preserved. Callers reach
-; the routine through its unchanged low-region entry label.
-fat_find_body:
-                ld      (FAT_NAMEPTR), hl
-                ld      hl, (FAT_FIRSTROOT)
-                ld      (FAT_DIRSEC), hl
-                ld      hl, (FAT_ROOTSECS)
-                ld      (FAT_DIRREM), hl
-                jp      ff_secloop
 
 ; --- pad to a full 16 KB page ($4000-$7FFF) --------------------------------
                 ds      $8000 - $, $00
