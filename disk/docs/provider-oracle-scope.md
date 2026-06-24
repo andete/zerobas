@@ -1766,3 +1766,28 @@ not the lone `$4462` §8.39 guessed. **Layout wrinkle:** unlike `$5454` (free `$
 code that currently occupies those fixed offsets. **NEXT:** characterise `$47B2`'s contract (stock trace:
 inputs → memory it reads → outputs/flags returned to `$D824`) — the `$5454` playbook, applied to the first
 cluster entry. Probes: `disk_probe_dosboot_entries.py`, `disk_probe_dosboot_pctrace.py` (`--arm $D7FA`).
+
+**§8.41 SCOPING `$47B2` PRECISELY — it is not a routine, it is the whole COMMAND.COM load + shell startup;
+reaching `A>` ⇒ reimplementing the 63% shared kernel COMMAND.COM calls back into.** Before committing to a
+build, a boundary probe (`disk_probe_dosboot_47b2.py`: bp at the `$D821` call + the `$D824` return, instrs
+between, rising-edge sub-entries, copy-pointer ranges — black-box, no disassembly). **Result on stock:**
+`$47B2` runs **371,384 instructions** before returning to `$D824`, and one of its sub-entries is **`$607B`
+called with `ra=$0100`** — i.e. **COMMAND.COM itself executes at `$0100` *inside* the `$47B2` window** and
+calls back into the disk ROM. So the `$D821→$47B2→$D824` span is *the entire COMMAND.COM load + shell
+init*, not a discrete subroutine. It touches **21 distinct disk-ROM sub-entries spread across `$41xx–$77xx`**
+(`$4558 $4935 $4B59 $498C $49B4 $4A39 $4E4B $41FD $4EDE $46C8 $4010 $5FE5 $782B $77B8 $402D $75A5 $607B
+$4BE5 $4C25 $4919`). Static cross-vendor + our-ROM check (no emulator): **12/21 are shared-kernel**
+(byte-identical across the 7 vendors — legitimate de-facto-standard targets), **16/21 collide with our active
+code** (`<$50B7`, every one a wrong byte: e.g. `$47B2` ours `$E4` vs real `$AF`; `$4E4B` ours `$00` vs
+`$57`), and **only `$4010` (DSKIO) matches** (`$C3`, the one BIOS entry we correctly provide). The shared
+kernel is **10,438 B = 63% of the 16 K ROM**. **Conclusion (the precise scope):** hosting the *proprietary*
+COMMAND.COM to `A>` does **not** reduce to "implement `$47B2`" — COMMAND.COM and the loader call into ~12
+entangled shared-kernel runtime entries our clean-room ROM never reimplemented (we built the BIOS ABI
+`$4010–$401F` + GETDPB + Disk-BASIC, not the kernel's *internal* layout). Reaching `A>` this way ⇒
+contract-reimplementing essentially the whole 63% shared MSX-DOS-1 disk kernel at its exact internal
+addresses — a major multi-session project that edges toward re-creating MSX-DOS-1 itself, against the
+subtrack's "we do not write our own MSX-DOS 1" premise. **Not walled** (the method is the `$5454` playbook
+×~12 + code relocation; every target is a characterisable black-box contract), but the cost is now
+*quantified* rather than assumed. Decision (build the kernel-reimplementation project vs. record this as the
+honest Tier-2 frontier and let the validated disk-BIOS/Disk-BASIC deliverable stand) is deferred to the user.
+Probe: `disk_probe_dosboot_47b2.py`.

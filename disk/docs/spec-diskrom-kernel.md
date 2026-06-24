@@ -248,20 +248,21 @@ only once each settles (per the settle-gated cadence in
   (§1.3 status; §8.39), but the first-cut body emits nothing. Promoting the full
   output behaviour waits on the console path settling; the contract itself (§1.3)
   is already settled and documented.
-- **`$47B2` — the COMMAND.COM-loader entry (the real first divergence).** The
-  `$4462`/`$544E` ×~24k spin is a *downstream symptom*: diffing the kernel poll
-  loop stock-vs-Tier-1 from caller `$D7FA` is PC-identical through `CALL $47B2`,
-  then splits *inside* `$47B2` — stock (`$47B2`=`XOR A`) runs a read/copy routine
-  that relocates `COMMAND.COM` to `$0100` and advances; ours (unrelated bytes
-  there) bails early and the kernel falls into the `$4462`/`$544E` poll-spin. On
-  stock, `$4462` is called only ×2 and `$544E` never. `$47B2`, `$4251`, `$4462`,
-  `$544E` are **all** byte-identical across the seven vendors
-  (`disk_probe_diskrom_crossvendor.py`) — the MSX-DOS-1 COMMAND.COM loader calls a
-  *cluster* of shared-kernel entries, entangled via work-area vars
-  (`$E4A5`/`$E4BD`). `$47B2`'s contract is being characterised first (the `$5454`
-  playbook). **Layout note:** these entries sit `<$50B7`, *inside* our active code
-  (unlike `$5454`'s free `$00`-pad), so implementing them may force relocating the
-  code at those fixed offsets. Probes: `disk_probe_dosboot_entries.py`,
+- **Hosting the proprietary COMMAND.COM to `A>` — quantified scope (§8.41): the
+  whole 63% shared kernel, not a bounded entry.** The `$4462`/`$544E` ×~24k spin is
+  a *downstream symptom* of `$47B2` (the real first divergence: stock `$47B2`=`XOR
+  A` runs the load routine; ours bails). But a boundary probe
+  (`disk_probe_dosboot_47b2.py`) shows the `$D821→$47B2→$D824` span runs **371,384
+  instructions** and **executes COMMAND.COM itself at `$0100`** (sub-entry `$607B`,
+  `ra=$0100`) — it is *the entire COMMAND.COM load + shell init*, calling **21
+  disk-ROM sub-entries across `$41xx–$77xx`** (12 shared-kernel, 16 colliding with
+  our active code `<$50B7`, only `$4010` DSKIO correct). So reaching `A>` this way ⇒
+  contract-reimplementing essentially the whole shared MSX-DOS-1 disk kernel at its
+  exact internal addresses — a major project, distinct from this spec's settled
+  BIOS-ABI work (`$4010–$401F`, GETDPB) and Disk-BASIC. Not walled (each target is a
+  black-box contract, the `$5454` playbook ×~12 + code relocation), but the cost is
+  now measured. Whether to undertake it is a scope decision, not a settle gate.
+  Probes: `disk_probe_dosboot_47b2.py`, `disk_probe_dosboot_entries.py`,
   `disk_probe_dosboot_pctrace.py` (`--arm $D7FA`).
 - **The remaining `$F100–$F3FF` cells** the kernel reads to reach a real
   `COMMAND.COM` load and `A>` (`$F100–$F17C` driver-dispatch region, the `$F327`
