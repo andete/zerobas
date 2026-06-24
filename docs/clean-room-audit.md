@@ -197,3 +197,42 @@ unit-test vs what could not be verified.
   `make unit-test`, so its full-verify back half is cheaper than disk's.
 - **tape** — `tape/PROVENANCE.md`; probes `probes/tape/`. Smallest surface
   (a C-BIOS patch, not a slot ROM).
+
+---
+
+## Audit run log
+
+A run is only worth as much as its record — log each paper-trail / full-verify
+pass here (date, scope, commit, verdict) so a later session knows what was
+verified clean and at what point, rather than re-deriving it. A clean verdict is
+a load-bearing fact for the public-release gate.
+
+### 2026-06-24 — disk, paper trail — ✅ CLEAN (at `fd08480` + uncommitted `bdos_rdblk` comment fix)
+
+First exercise of the discipline. Triggered by `provider-oracle-scope.md` §8.37:
+a delegated sub-agent had disassembled `MSXDOS.SYS` internals, reverted §8.33's
+`$F340=0`, and hacked dual-purpose entries onto `fdc_di_save`/`fat_find` — all
+reportedly reverted to clean §8.36. This run **verified that revert held**, then
+swept the whole file.
+
+- **Scope:** first the touched region (`disk.asm` §8.33–8.38: `set_ramad`/`$F340`,
+  `fdc_di_save`/`fdc_io_done`, `p1_blit`, `dskio_ok` `B=0`, `bdos_rdblk` `BC=HL`,
+  `build_resident`, `$50A9`); then the whole `disk.asm` (302 defs / 60 sections).
+- **§8.37 smoking guns — all confirmed reverted clean:** `$F340=0` present
+  (disk.asm:560); `fdc_di_save` a clean single-purpose IFF guard, no dual entry;
+  `fat_find` a clean single-purpose FAT12 scan, no overload. The
+  disassembly-derived changes are **not in the working tree**.
+- **Whole-file:** every section header carries a source citation; **zero**
+  forbidden-source citations (every textual match is a *negation* — "never read");
+  all cited `PROVENANCE.md` sections resolve; FDC cmd/status bits → WD2793
+  datasheet, register map → openMSX scoped to register facts (GPL-conditional
+  honoured); `getdpb` → §DPB + CF-3300 oracle; FAT layer → FAT spec / ECMA-107.
+- **Probe integrity (the non-mechanical hop):** spot-checked `dosboot_{50a9,4030,
+  fdc,dskio_exit}` — breakpoint + register/RAM/IO snapshot + entry present-vs-absent
+  byte check; **genuinely black-box**, no disassembly or ROM-code lift.
+- **Findings:** no clean-room breaks. One low-severity *comment* nit — `bdos_rdblk`'s
+  `out:` header omitted the `BC=HL` return added in §8.33 (fixed; rides the next
+  disk commit). This was a **provenance** pass, not a line-by-line correctness
+  re-read (that is full-verify-trail, milestone-gated).
+- **Not yet run:** tape, basic (lower-risk: published-interface sources, settled,
+  no incident) — slated for the public-release gate, basic before tape.
