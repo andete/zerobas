@@ -154,10 +154,14 @@ Legend: **✅ done** (implemented + validated → counts as covered) · **🟨 v
 (M3 scaffold placed, body is a `ret` stub — contract not yet filled) · **⬜ todo**
 (no scaffold yet).
 
-> **COVERED ✅ 176 B / 5,600 B (3.1%)** · scaffolded 🟨 2,544 B (45.4%) · todo ⬜ 2,880 B (51.4%)
+Bar chars: `█` done · `▒` veneer · `░` todo.
+
 > *(baseline, scans complete, pre-M5.4)*
-> - disk-ROM cluster: ✅ 176 · 🟨 2,544 · ⬜ 960  / 3,680 B
-> - high-RAM kernel:  ✅ 0 · 🟨 0 · ⬜ 1,920  / 1,920 B
+> ```
+> TOTAL     █▒▒▒▒▒▒▒▒▒░░░░░░░░░░  ✅  176 · 🟨2,544 · ⬜2,880  / 5,600 B  (3.1% done)
+> disk-ROM  █▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░  ✅  176 · 🟨2,544 · ⬜  960  / 3,680 B
+> hi-RAM    ░░░░░░░░░░░░░░░░░░░░  ✅    0 · 🟨    0 · ⬜1,920  / 1,920 B
+> ```
 
 | disk-ROM range | B | status | hi-RAM range | B | status |
 |---|---|---|---|---|---|
