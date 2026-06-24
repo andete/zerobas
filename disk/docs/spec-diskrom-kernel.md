@@ -34,7 +34,7 @@ The entries `MSXDOS.SYS` hard-codes are **not** one vendor's private internals.
 A PROVENANCE byte-comparison (file **identity only**, never disassembly) of seven
 vendors' disk ROMs — National CF-3300, Spectravideo SVI-738, Daewoo DPF-550,
 Philips VG-8235 + NMS-8245, Sony HB-F500P, Panasonic FS-4600 — found
-(`disk_probe_crossbios.py`; see [`oracle-artifacts.md`](oracle-artifacts.md) →
+(`disk_probe_diskrom_crossvendor.py`; see [`oracle-artifacts.md`](oracle-artifacts.md) →
 "Cross-vendor disk-ROM set"):
 
 - the ROMs differ **17–36 %** overall — independent implementations, not copies;
@@ -102,8 +102,16 @@ Probe: `disk_probe_dosboot_50a9.py`.
 - **Baked-in, not relocated.** `CD 54 54` (`CALL $5454`) is present in the
   pristine just-loaded `MSXDOS.SYS` image and unchanged at call time — a hard
   immediate, confirming `$5454` is a fixed entry address, not a relocated vector.
+- **zerobas status (§8.39).** The entry is placed at `$5454` (a `ds`-fill in the
+  ROM's free tail, like `$4030`/`$50A9`). The current body is a **first cut: a
+  register-preserving `RET` that emits nothing** — sufficient to clear the derail,
+  which alone collapses the boot's BDOS calls 21→3 (stock parity) and breaks the
+  warm-boot loop. Emitting the character (the full contract above, via our CALLF
+  console path) is the remaining refinement; until then the banner/prompt produce
+  no visible output, so `A>` is confirmed behaviourally, not on screen.
 
-Probes: `disk_probe_dosboot_pctrace.py`, `disk_probe_dosboot_entries.py`.
+Probes: `disk_probe_dosboot_pctrace.py`, `disk_probe_dosboot_entries.py`,
+`disk_probe_dosboot_bdos_contract.py`.
 
 ---
 
@@ -236,10 +244,18 @@ Tracked in [`provider-oracle-scope.md`](provider-oracle-scope.md); promoted here
 only once each settles (per the settle-gated cadence in
 [`../../docs/documentation-deliverable.md`](../../docs/documentation-deliverable.md)):
 
-- **`$5454` CONOUT implementation** — the *contract* (§1.3) is settled and
-  cross-vendor-validated; the zerobas body is the active next step (it sits
-  mid-code in the 16 K ROM, needing `ds`-placement that relocates surrounding
-  code). § 1.3 documents the contract; implementation status is the open item.
+- **`$5454` CONOUT real output** — the entry is *placed and unblocks the boot*
+  (§1.3 status; §8.39), but the first-cut body emits nothing. Promoting the full
+  output behaviour waits on the console path settling; the contract itself (§1.3)
+  is already settled and documented.
+- **`$4462` and `$544E` — the COMMAND.COM-load entries.** With the warm-boot loop
+  broken, the relocated kernel hammers two more disk-ROM entries (`$4462` ×~24k,
+  `$544E` ×~24k, from kernel PCs `$D7FA`/`$D806`, `IX=$F1AA`). Both are
+  byte-identical across all seven vendors and lie in the shared-kernel region
+  (`disk_probe_diskrom_crossvendor.py`) — the same de-facto-standard class as
+  `$5454`. Their contracts are being characterised (black-box) before
+  reimplementation; whether the ~24k call counts are legitimate load work or a
+  tight loop is the first question. Probe: `disk_probe_dosboot_entries.py`.
 - **The remaining `$F100–$F3FF` cells** the kernel reads to reach a real
   `COMMAND.COM` load and `A>` (`$F100–$F17C` driver-dispatch region, the `$F327`
   routines, the `$F1F0–$F1FF` device table). Each is being characterised and built

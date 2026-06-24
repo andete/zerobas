@@ -54,7 +54,9 @@ observed **contracts** in its own clean-room code (as it already does for `$4030
 `$50A9`) — it **never copies the shared block's bytes**, exactly the discipline behind
 the byte-identical-*output* GETDPB. The shared region's verbatim bytes are an oracle to
 observe, not source to lift. (Full detail in `provider-oracle-scope.md` §8.38;
-reproduce with the SHA1s above + a byte-identity scan.)
+reproduce with `probes/disk/disk_probe_diskrom_crossvendor.py`, which checks each
+ROM against the SHA1s above and verifies every hard-coded entry lies in the shared
+kernel.)
 
 ## The DOS system files — identified here (no upstream hash DB covers them)
 
