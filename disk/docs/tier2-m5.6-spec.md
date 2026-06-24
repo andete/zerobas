@@ -5,7 +5,9 @@ SPDX-License-Identifier: 0BSD
 
 # Tier-2 milestone M5.6 — implement the `$F368`/`$F36B` segment-switch hooks
 
-**Status: DRAFT — awaiting sign-off. No asm lands until this spec is approved.**
+**Status: APPROVED + LANDED (§8.59). Both default decisions (DI-only, read-modify-
+write) confirmed by the user. Outcome: the `$D87F` retry loop collapsed; boot
+advanced to a new slow-crawl blocker `$D7B0-$DC00` (M5.7). See §8.59 for results.**
 Genre: implementation spec (spec-before-code discipline). Evidence: notebook
 §8.57 (the blocker is the `$F365` jump table) + §8.58 (per-vector contract).
 

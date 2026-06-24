@@ -190,15 +190,16 @@ Front-loadable now = **R+M (400 B)**; after a contract-confirm = **r (1,744 B)**
 
 Bar chars: `█` done · `▒` veneer · `░` todo.
 
-> *(M5.4 first cut landed — `k_47B2` loader ✅, §8.55)*
+> *(M5.6 landed — `$F368`/`$F36B` segment-switch hooks ✅, §8.59)*
 > ```
-> TOTAL     █▒▒▒▒▒▒▒▒▒▒░░░░░░░░░  ✅  224 · 🟨2,496 · ⬜2,336  / 5,056 B  (4.4% done)
+> TOTAL     █▒▒▒▒▒▒▒▒▒▒░░░░░░░░░  ✅  256 · 🟨2,496 · ⬜2,304  / 5,056 B  (5.1% done)
 > disk-ROM  █▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░  ✅  224 · 🟨2,496 · ⬜  960  / 3,680 B
-> hi-RAM    ░░░░░░░░░░░░░░░░░░░░  ✅    0 · 🟨    0 · ⬜1,376  / 1,376 B
+> hi-RAM    █░░░░░░░░░░░░░░░░░░░  ✅   32 · 🟨    0 · ⬜1,344  / 1,376 B
 > ```
 > §8.53: 544 B of high-RAM is **loaded MSXDOS.SYS, not ours** (excluded above); a
 > further ~688 B (`$C2xx-$D0xx`) is likely loaded too → total may drop toward
-> **~4,368 B** once M5.2 confirms. (Covered was 176 B at §8.53; M5.4 took it to 224 B.)
+> **~4,368 B** once M5.2 confirms. (Covered was 176 B at §8.53; M5.4 → 224 B; M5.6
+> → 256 B: the two active work-area segment-switch hooks `$F368`/`$F36B`, §8.59.)
 
 | disk-ROM range | B | st | cls | hi-RAM range | B | st | cls |
 |---|---|---|---|---|---|---|---|
@@ -214,7 +215,7 @@ Bar chars: `█` done · `▒` veneer · `░` todo.
 | `4840-49BF` | 384 | 🟨 | r `k_4919/4935/498C/49B4` | `F0F0-F17F` | 144 | ⬜ | r driver dispatch |
 | `4A30-4A7F` | 80 | 🟨 | r `k_4A39` | `F1C0-F1FF` | 64 | ⬜ | r work area |
 | `4B20-4C4F` | 304 | 🟨 | r `k_4B59/4BE5/4C25` | `F250-F2BF` | 112 | ⬜ | M CALSLT table |
-| `4E40-4EFF` | 192 | 🟨 | C `k_4E4B/4EDE` | `F360-F39F` | 64 | ⬜ | r BDOS vec (`$F37D`) |
+| `4E40-4EFF` | 192 | 🟨 | C `k_4E4B/4EDE` | `F360-F39F` | 64 | 🟨 | r `$F368`/`$F36B` seg-switch ✅ (M5.6, §8.59); `$F37D` todo |
 | `50E0-510F` | 48 | ⬜ | C | `FD90-FDCF` | 64 | ⬜ | C COMMAND gateway |
 | `53A0-544F` | 176 | ⬜ | C | `FFC0-FFDF` | 32 | ⬜ | M subslot |
 | `54C0-559F` | 224 | ⬜ | C | | | | |

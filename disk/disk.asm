@@ -392,6 +392,11 @@ RDBLK_DST       equ     $E776   ; current DTA write pointer (word; from BDOS_DTA
 ; page-1 transfer bounce scratch (a3 §8.35; free page-3 RAM after RDBLK_DST)
 P1_DEST         equ     $E778   ; saved page-1 destination word (dskio bounce path)
 P1_BLIT         equ     $E77A   ; runtime address of the installed blit routine
+; work-area segment-switch hooks ($F368/$F36B bodies), §8.58 / tier2-m5.6-spec.md.
+; Installed into page-3 RAM immediately after P1_BLIT (one LDIR copies both, so
+; WA_SEG must equal P1_BLIT + the blit length); entry offsets fixed by the template.
+WA_SEG          equ     P1_BLIT + (p1_blit_end - p1_blit_tmpl)  ; base of the two hook bodies
+SLTTBL3         equ     $FCC8   ; SLTTBL[3]: RAM mirror of slot-3 secondary-slot register
 
 ; --- MSX-DOS-1 "get work area" return ($4030; a3 §8.13) ---------------------
 ; MSXDOS.SYS's resident init CALLs disk-ROM entry $4030 and uses the returned HL
@@ -615,6 +620,22 @@ bwt_loop:
                 ld      (hl), high wa_stub
                 inc     hl
                 djnz    bwt_loop
+                ; Overwrite slots 0/1 with the real segment-switch bodies (§8.58):
+                ; $F368 = map disk ROM into page 1, $F36B = map RAM into page 1. The
+                ; remaining slots ($F36E/$F371/$F374) stay wa_stub -- never CALLed in
+                ; the COMMAND.COM-load->A> trace (ncalls 0); $F377/$F37A unused.
+                ld      hl, WA_JMPTAB + 0   ; $F368 -> wa_seg_rom
+                ld      (hl), $C3
+                inc     hl
+                ld      (hl), low WA_SEG_ROM
+                inc     hl
+                ld      (hl), high WA_SEG_ROM
+                ld      hl, WA_JMPTAB + 3   ; $F36B -> wa_seg_ram
+                ld      (hl), $C3
+                inc     hl
+                ld      (hl), low WA_SEG_RAM
+                inc     hl
+                ld      (hl), high WA_SEG_RAM
                 ; fall through to build the $F348 DRVTBL (same $FF gate)
 ; build_drvtbl — synthesise the four CALLF trampolines in page-3 RAM, then lay the
 ; $F348 DRVTBL pointing at them + our slot + reserved-top + the $4030 work area.
@@ -718,9 +739,13 @@ build_resident:
                 ; Installed into P1_BLIT ($E77A) so dskio can CALL it from page-1 ROM
                 ; while page 1 is temporarily remapped to RAM. Own-choice free page-3
                 ; RAM after RDBLK_DST ($E776-$E777); clear of every other region.
+                ; One LDIR copies BOTH templates: in ROM wa_seg_*_tmpl immediately
+                ; follows p1_blit_tmpl (free tail), and in RAM WA_SEG = P1_BLIT +
+                ; (p1_blit_end - p1_blit_tmpl), so the blocks stay contiguous (§8.58 /
+                ; M5.6). Zero extra init bytes in this cramped pre-$41FD region.
                 ld      hl, p1_blit_tmpl
                 ld      de, P1_BLIT
-                ld      bc, p1_blit_end - p1_blit_tmpl
+                ld      bc, wa_seg_end_tmpl - p1_blit_tmpl
                 ldir
                 ret
 RES_STUBS       equ     $F24E   ; no-op segment-hook stub table base (§8.29)
@@ -756,41 +781,8 @@ res_print_tmpl:
                 ret     z               ; done -> return to the kernel
                 jr      res_print_tmpl  ; (relocatable: PC-relative loop)
 res_print_end:
-
-; p1_blit_tmpl — clean-room blit routine (§8.35), LDIR'd to P1_BLIT ($E77A) by
-; build_resident.  Called from dskio (page-1 ROM) via `call P1_BLIT` when the
-; DSKIO transfer destination is in page 1 ($4000-$7FFF): the FDC read was
-; redirected to SECTOR_BUF; this copies SECTOR_BUF to the original page-1 target
-; by briefly switching page-1 sub-slot from disk ROM (3-1) to RAM (3-0).
-;
-; Runs from page-3 RAM (always-mapped), so the page-1 sub-slot flip is safe.
-; The call return address (a page-1 ROM address) is still on the stack while
-; page 1 = RAM; sub-slot 1 is restored BEFORE `ret`, so the RET lands in the ROM.
-;
-; $FFFF secondary register: write = direct sub-slot IDs (bits [3:2] = page-1
-; sub-slot); read = complement of the written value (MSX2 TH §2.4).  We CPL
-; after reading to recover the "write" form, mask bits 3:2 to 00 (sub-slot 0 =
-; RAM), then write; on return CPL to restore original sub-slot 1.
-;
-; Source: MSX2 TH §2.4 (expanded-slot secondary register semantics); sub-slot
-; layout confirmed by black-box differential (set_ramad / page0_ram_in, same
-; host).  Clean-room: never reads the stock $EF95 or any proprietary driver.
-;   in:  P1_DEST = page-1 target address (word in page-3 scratch)
-;   out: 512 bytes from SECTOR_BUF copied to (P1_DEST); page-1 sub-slot restored
-p1_blit_tmpl:
-                ld      a, ($FFFF)          ; A = inverted sub-slot state (MSX2 TH)
-                cpl                         ; A = actual sub-slot write value
-                push    af                  ; save original state for restore
-                and     $F3                 ; bits 3:2 -> 00: page 1 = sub-slot 0 (RAM)
-                ld      ($FFFF), a          ; page 1 now maps to RAM
-                ld      hl, SECTOR_BUF      ; source: FDC data was read here
-                ld      de, (P1_DEST)       ; dest: original page-1 target (now RAM)
-                ld      bc, 512
-                ldir
-                pop     af                  ; A = original sub-slot write value
-                ld      ($FFFF), a          ; page 1 back to disk ROM (sub-slot 1)
-                ret
-p1_blit_end:
+; (p1_blit_tmpl + wa_seg_*_tmpl live in the free tail near the end of the ROM, so
+;  this cramped pre-$41FD region stays within budget; build_resident LDIRs both.)
 
 ; --- step 6: the page-0 MSX-DOS environment (provider-oracle-scope.md §8.4/§8.6)
 ; With RAM switched into page 0 the page-0 BIOS ROM is gone, so the standard
@@ -3181,6 +3173,91 @@ k_607B:         ret
 k_75A5:         ret
 k_77B8:         ret
 k_782B:         ret
+
+; p1_blit_tmpl — clean-room blit routine (§8.35), LDIR'd to P1_BLIT ($E77A) by
+; build_resident.  Called from dskio (page-1 ROM) via `call P1_BLIT` when the
+; DSKIO transfer destination is in page 1 ($4000-$7FFF): the FDC read was
+; redirected to SECTOR_BUF; this copies SECTOR_BUF to the original page-1 target
+; by briefly switching page-1 sub-slot from disk ROM (3-1) to RAM (3-0).
+;
+; Runs from page-3 RAM (always-mapped), so the page-1 sub-slot flip is safe.
+; The call return address (a page-1 ROM address) is still on the stack while
+; page 1 = RAM; sub-slot 1 is restored BEFORE `ret`, so the RET lands in the ROM.
+;
+; $FFFF secondary register: write = direct sub-slot IDs (bits [3:2] = page-1
+; sub-slot); read = complement of the written value (MSX2 TH §2.4).  We CPL
+; after reading to recover the "write" form, mask bits 3:2 to 00 (sub-slot 0 =
+; RAM), then write; on return CPL to restore original sub-slot 1.
+;
+; Source: MSX2 TH §2.4 (expanded-slot secondary register semantics); sub-slot
+; layout confirmed by black-box differential (set_ramad / page0_ram_in, same
+; host).  Clean-room: never reads the stock $EF95 or any proprietary driver.
+; Lives in the free tail (LDIR-relocated; moved here from the cramped pre-$41FD
+; region so the wa_seg M5.6 additions fit, §8.58). wa_seg_*_tmpl follows it
+; immediately so build_resident copies BOTH with one LDIR (RAM-contiguous).
+;   in:  P1_DEST = page-1 target address (word in page-3 scratch)
+;   out: 512 bytes from SECTOR_BUF copied to (P1_DEST); page-1 sub-slot restored
+p1_blit_tmpl:
+                ld      a, ($FFFF)          ; A = inverted sub-slot state (MSX2 TH)
+                cpl                         ; A = actual sub-slot write value
+                push    af                  ; save original state for restore
+                and     $F3                 ; bits 3:2 -> 00: page 1 = sub-slot 0 (RAM)
+                ld      ($FFFF), a          ; page 1 now maps to RAM
+                ld      hl, SECTOR_BUF      ; source: FDC data was read here
+                ld      de, (P1_DEST)       ; dest: original page-1 target (now RAM)
+                ld      bc, 512
+                ldir
+                pop     af                  ; A = original sub-slot write value
+                ld      ($FFFF), a          ; page 1 back to disk ROM (sub-slot 1)
+                ret
+p1_blit_end:
+
+; wa_seg_*_tmpl — clean-room bodies for the $F368/$F36B work-area segment-switch
+; hooks (§8.58), LDIR'd to WA_SEG by build_resident and wired into the $F368 table
+; by build_wa_table. The relocated kernel CALLs $F368 to map the disk ROM into
+; page 1 (so it can run a page-1 disk-ROM routine) and $F36B to map RAM into page 1
+; (so it can read its data living UNDER the page-1 ROM). On this expanded slot 3,
+; subslot 1 = disk ROM, subslot 0 = RAM (machine config); the page-1 subslot is
+; bits [3:2] of the slot-3 secondary register, $04 = subslot 1, $00 = subslot 0.
+;
+; Contract (measured stock, §8.58): register-TRANSPARENT (entry regs == exit regs);
+; only persistent effect = SLTTBL[3] ($FCC8) and the live secondary register
+; ($FFFF) set to $04 (rom) / $00 (ram). We read-modify-WRITE only the page-1 bits
+; (mask $F3) so the other pages' subslots are preserved, source the current value
+; from the SLTTBL mirror (write-form; $FFFF reads back complemented, so the mirror
+; is the safe source), update the mirror then the live register, under DI. No EI:
+; faithful -- the kernel calls these with interrupts already off (§8.58 trace).
+; Bodies run from page-3 RAM (always mapped), so the page-1 flip never unmaps them.
+; Lives in the free tail (LDIR-relocated; ROM position must not disturb canonical
+; addresses -- the inline-before-$41FD placement overflowed that gap, §M5.6).
+;
+; Clean-room: our own standard expanded-slot switch (MSX2 TH §2.4 secondary-slot +
+; SLTTBL); the stock $DF57/$DF59 bytes are never read. Straight-line + one PC-
+; relative jr, so a plain LDIR relocates it verbatim.
+;   in:  -            ; out: page-1 subslot of slot 3 set; all registers preserved
+wa_seg_rom_tmpl:                            ; $F368 body: map disk ROM into page 1
+                push    af
+                push    bc                  ; B is our scratch -> preserve (transparent)
+                ld      a, $04              ; page-1 bits = subslot 1 (disk ROM)
+                jr      wa_seg_set_tmpl     ; (relocatable: PC-relative)
+wa_seg_ram_tmpl:                            ; $F36B body: map RAM into page 1
+                push    af
+                push    bc
+                ld      a, $00              ; page-1 bits = subslot 0 (RAM)
+wa_seg_set_tmpl:
+                di
+                ld      b, a                ; B = desired page-1 subslot bits
+                ld      a, (SLTTBL3)        ; current slot-3 subslot (write-form mirror)
+                and     $F3                 ; clear page-1 bits, keep pages 0/2/3
+                or      b                   ; merge new page-1 bits
+                ld      (SLTTBL3), a         ; update RAM mirror first
+                ld      ($FFFF), a          ; ...then the live secondary-slot register
+                pop     bc
+                pop     af
+                ret
+wa_seg_end_tmpl:
+WA_SEG_ROM      equ     WA_SEG + (wa_seg_rom_tmpl - wa_seg_rom_tmpl)   ; = WA_SEG
+WA_SEG_RAM      equ     WA_SEG + (wa_seg_ram_tmpl - wa_seg_rom_tmpl)
 
 ; --- pad to a full 16 KB page ($4000-$7FFF) --------------------------------
                 ds      $8000 - $, $00

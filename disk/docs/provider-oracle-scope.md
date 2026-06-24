@@ -2154,3 +2154,26 @@ review first):** install two clean-room high-RAM resident routines — `wa_seg_r
 and `wa_seg_ram` (`$00`), each writing `$FFFF` + `$FCC8` under DI and preserving all registers — and point
 `$F368`/`$F36B` at them (replacing the uniform `wa_stub` fill in `build_wa_table`, disk.asm:607). Probe:
 disk_probe_dosboot_wacontract.py.
+
+**§8.59 M5.6 LANDED — `wa_seg_rom`/`wa_seg_ram` implement the `$F368`/`$F36B` subslot hooks; the `$D87F` retry
+loop COLLAPSES and the boot crawls forward into new kernel territory (`$D7B0-$DC00`), COMMAND.COM `$0100`
+reached with the stock entry env.** Two clean-room page-3-resident routines (free-tail templates, LDIR'd to
+`WA_SEG` = `P1_BLIT`+27 so one LDIR copies both p1_blit + wa_seg): set slot-3 subslot to `$04` (rom-in) / `$00`
+(ram-in) by read-modify-write of only the page-1 bits (`and $F3 / or`) of `SLTTBL[3]` (`$FCC8`) then `$FFFF`,
+under DI, all registers preserved (`push af`/`push bc`). Wired into slots 0/1 of `build_wa_table`; the other
+five slots stay `wa_stub` (never called). **Build pitfall + fix:** first cut placed the template inline before
+the `$41FD` canonical veneer and `build_wa_table`/`build_resident` grew the cramped pre-`$41FD` init region →
+`ds $41FD - $` went negative (pasmo "64KB limit passed"). Fixed by moving BOTH templates to the free tail and
+collapsing the two install LDIRs into one (net-zero init bytes) — the §8.43 net-zero discipline. **First-cut
+reg bug self-caught:** `ld b,a` clobbered B (`$F368` exit `BC=0400`≠entry); added `push bc`/`pop bc` → now
+register-transparent (re-probe: entry==exit both slots). **Results (`National_CF-3300_ZEROBASDISK`):**
+(1) `$F368`/`$F36B` call count `81/80 → 1/1` (the retry loop is gone). (2) Steady-state PC trace: was a tight
+`$D87F-$D8A7` spin (top PC ×130) → now **601 DISTINCT PCs, no repeats**, range `$D7B0-$DC00`, 100% kernel
+(linear, not spinning). (3) COMMAND.COM `$0100` reached with `AF=0144 BC=0980 DE=0000 HL=0980` (matches stock
+`AF=0142 BC=0980`, §8.45). (4) MSX BIOS/BASIC sign-on banner now renders. **Regression GREEN:** unit 18/18,
+DSKIO == CF-3300, FILES == CF-3300, BLOAD `,R`/plain correct (change is additive in the free tail + DOS-gated
+init only). **NEW BLOCKER (M5.7):** the kernel no longer spins but **crawls forward very slowly** — `end_pc`
+`$D9D2 → $DA22 → $DA71` across settle 18/24/30 s (~80 B per 6 s), so it is NOT yet at `A>` (stock `end_pc`
+`$0B9F` = COMMAND.COM's command loop). Characterise the slow `$D7B0-$DC00` forward-crawl next (likely a long
+poll/wait or a no-op-CONOUT-driven slog — recall `$5454`/`$F1C9` are still console no-op stubs §8.39/§8.28a).
+Probes: disk_probe_dosboot_wacontract.py, disk_probe_dosboot_loop.py, disk_probe_dosboot_progress.py.
