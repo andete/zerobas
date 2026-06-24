@@ -2075,3 +2075,21 @@ registers (`AF=0142 HL=1A00 IY=DC5B`, §8.50); add only if the next blocker trac
 (3.5 % → 4.4 %); `$47B0-47DF` ✅. **NEXT (M5.5):** characterise the new `$544E`/`$D88A` spin — likely COMMAND.COM
 (or the kernel post-`$D824`) calling a service that isn't set up (the `$FD9x` gateway / `$0005` / the return-reg
 state). Probes: disk_probe_dosboot_path.py, disk_probe_dosboot_progress.py.
+
+**§8.56 M5.5 DIAGNOSTIC — the new spin is a KERNEL retry loop at `$D87F-$D8A7`, calling a long disk-ROM routine
+that returns an unaccepted result (the §8.40 pattern, moved downstream).** Captured the steady-state instruction
+trace on our machine (`disk_probe_dosboot_loop.py`, black-box: log a window of consecutive PCs once settled;
+addresses only). 3,001-instr window: **78 % disk-ROM (`$419A-$5454`), 22 % high-RAM kernel (`$C316-$F36B`),
+~0 % COMMAND.COM.** The tight loop is in the **kernel**: top PCs `$D87F ×130` + `$D8A7 ×130`. The disk-ROM is
+reached *occasionally per iteration* (not a tight poll): `$419A ×11`, and a linear run `$544B-$5453 ×6` (our
+`$00` = NOP padding) into CONOUT `$5454`; the 78 % disk-ROM time is because each excursion runs a long span.
+**Interpretation:** `$D87x` is a kernel poll/retry loop whose exit condition is unmet — each pass calls into our
+disk-ROM (entry around `$419A`, running through to the `$5454` CONOUT no-op) and gets back a result the kernel
+rejects, so it retries (~14 k×). This is the §8.40 spin pattern again, now *downstream* of the fixed `$47B2`
+loader — progress. **CONOUT is NOT the driver** (occasional, ×6), so do not jump to implementing it; though
+both the CONOUT `$5454` and `res_print $F1C9` console primitives remain no-op first cuts (§8.39/§8.28a) and will
+be needed eventually for visible output. `$419A` and `$544E` are **un-veneered** shared-kernel addresses (not in
+our 21-entry cluster) the loop reaches. **NEXT (the decisive step):** a stock-vs-ours differential armed at
+`$D87F` (the §8.40 `pctrace` method) to pin the exact value/contract the kernel polls for and which disk-ROM
+call must return it — then veneer/implement that entry. No asm until the differential names the target. Probe:
+disk_probe_dosboot_loop.py.
