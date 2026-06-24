@@ -85,11 +85,21 @@ A single coverage pass over the `$D821→$47B2→$D824` span
 the path to `A>` is far smaller than the "63 % / ~10 KB shared kernel" ROM figure —
 that was the kernel's size, not what runs:
 
-| region | executed | what |
+| region | executed (load span only) | what |
 |--------|----------|------|
 | TPA / COMMAND.COM | 640 B (4 regions) | proprietary — we **load + run**, never reimplement |
-| disk-ROM (page 1) | **~2 KB** (~19 regions) | the cluster we fill behind the veneers (M5.6…N) |
-| high-RAM kernel | **~864 B (8 regions)** | the entire relocation surface (a) must mirror (M5.2/M5.4) |
+| disk-ROM (page 1) | ~2 KB (~19 regions) | the cluster we fill behind the veneers (M5.6…N) |
+| high-RAM kernel | ~864 B (8 regions) | part of the relocation surface (a) must mirror (M5.2/M5.4) |
+
+> **Correction (§8.51, scan 4).** The table above is the `$D821→$D824` **load span
+> only**. The tail scan showed `$D824` is a *false boundary* — COMMAND.COM straddles
+> it and the kernel keeps running afterward to reach `A>`. The full path executes
+> **more** kernel + disk-ROM code: ~14 extra disk-ROM ranges and ~10 extra high-RAM
+> ranges (incl. the relocated kernel's COMMAND-exec continuation `$D820-D8BF`,
+> `$C200-C27F`, `$CE50-D00F`). Mostly *expansion* of the same subsystems (so the
+> mechanism from scans 2/3 holds), but the high-RAM kernel is closer to ~15-20
+> regions, not 8. **A definitive full-boot coverage scan (reset → `A>` idle) is owed
+> before sizing M5.2/M5.6…N — run it before any asm.**
 
 The 8 high-RAM regions: `$DDA0-$DDEF` (RST-38 / `$DDAE`), `$DE50-$DF1F`
 (`$DE54`/`$DE9B` vector targets), **`$EF90-$F05F` (one hot wait/copy loop — ~94 % of

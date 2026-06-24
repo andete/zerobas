@@ -1978,3 +1978,23 @@ trampoline table + a small set of real routines (page-0-vector handlers `$DDAE`/
 `$EF9x` hot copy/wait loop, the COMMAND.COM service gateway `$FD9x`/`$F39x`, and the disk-read dispatch
 `$F365→$4010`). Full register contracts now in hand for M5.2 + the bulk of M5.6…N. Probe:
 disk_probe_dosboot_contracts.py.
+
+**§8.51 SCOPE SCAN 4 — `$D824` is a FALSE boundary; the path to `A>` is larger than the load span (corrects
+§8.48's sizing).** `disk_probe_dosboot_tail.py` (black-box: histogram PC from the `$D824` span return for a
+3 M-instruction budget = past `A>` idle, each range auto-classified KNOWN/§8.48 vs NEW). **Finding:** COMMAND.COM
+does **not** finish inside the `$47B2` load span — it straddles `$D824` and continues afterward, so the load
+span captured only the *first* part. The budget's bulk is COMMAND.COM's own idle/command loop (`$0B90-$0D8F`
+×2,294,037 = 76 %, `$10C0-$111F` ×176,492) — **proprietary, load+run, NOT our scope**. But the tail also runs
+**genuinely new kernel + disk-ROM code** that *is* our scope: ~14 new disk-ROM ranges (incl. `$75E0-77BF`
+×272,679 — expands the `$7690-77BF` hot region, `$53A0-544F`, `$5600-569F`, `$4240-436F`, `$4010-40BF`) and
+~10 new high-RAM ranges (incl. `$C200-C27F` ×25,088, `$CE50-D00F`, `$D820-D8BF` — the relocated kernel's
+COMMAND-exec continuation past `$D824` — `$DE50-DF6F` ×35,458 expanding `$DE50-DF1F`, `$F1C0-F1FF` work area,
+`$FD90-FDCF`). Much is *expansion* of already-identified subsystems (`$77xx`, `$5/6xxx`, `$DExx`, `$FD9x` — so
+the *count of subsystems* is roughly stable), plus some genuinely new relocated-kernel code (`$C2xx`,
+`$CExx-D00F`, `$D8xx`). **CORRECTION:** §8.48's "~864 B / 8 regions" was scoped to the load span only and
+**undersized** the high-RAM kernel; the true figure is larger (more like ~15-20 high-RAM regions once the
+post-`$D824` continuation is included). The good news from scans 2/3 stands — the *mechanism* (CALSLT
+trampoline table, `$FD9x` gateway, single-DSKIO load) is unchanged; there is just *more of the same subsystems*
+to fill. **NEXT (recommended before any asm):** a definitive full-boot coverage scan (reset → `A>` idle, no
+span gating) for the authoritative total executed footprint, superseding the load-span + tail split, then
+re-size M5.2/M5.6…N. Probe: disk_probe_dosboot_tail.py.
