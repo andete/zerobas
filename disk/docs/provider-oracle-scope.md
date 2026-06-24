@@ -2177,3 +2177,35 @@ init only). **NEW BLOCKER (M5.7):** the kernel no longer spins but **crawls forw
 `$0B9F` = COMMAND.COM's command loop). Characterise the slow `$D7B0-$DC00` forward-crawl next (likely a long
 poll/wait or a no-op-CONOUT-driven slog — recall `$5454`/`$F1C9` are still console no-op stubs §8.39/§8.28a).
 Probes: disk_probe_dosboot_wacontract.py, disk_probe_dosboot_loop.py, disk_probe_dosboot_progress.py.
+
+**§8.60 M5.7 CHARACTERISE — the new blocker is a genuine infinite WRONG-PATH loop (top `$DA23`, period 1105,
+over `$D7B0-$DC00`), and the leading root cause is that our `wa_seg` `$F368` hook is an INCOMPLETE
+reimplementation of stock's `$DF57` (§8.58 contract was measured on a benign first-call instance).** Steps:
+(1) Large window (`disk_probe_dosboot_loop.py` n=30000): 100% hiRAM, 1105 distinct PCs, each ~28× — a
+~1105-instruction loop, **no CONOUT/disk-ROM calls** (so the §8.59 "CONOUT slog" guess is wrong). (2) It does
+**not** escape — `disk_probe_dosboot_progress.py` `end_pc` stays in-band at settle 40/55/70 s (`$D985`/`$D822`/
+`$DB12`); throttle-off makes `settle` *emulated* seconds (~43 M instr between samples), so the earlier
+"advancing end_pc" (§8.59) was just random sampling, not progress. (3) `disk_probe_dosboot_hang.py` (new:
+settle, log N consecutive PC+regs, find the cycle): loop top `$DA23`; across iterations only `BC` moves and it
+**oscillates in `$C2xx`** (`B` stuck at `$C2`), `DE=C2DE`/`HL=06DE` constant — `BC`/`DE` are POINTERS walking the
+`$C2xx` page, re-scanned forever; a `BC==0` exit can never fire. (4) **`$DA23` is not on stock's path at all**
+(pctrace `--arm 0xDA23 --stock` captured 0 hits) ⇒ it is a wrong-path loop entered after an upstream
+divergence, not a contended exit condition. (5) **State is corrupt:** in the loop `SP=$4250` — the stack points
+*into the page-1 ROM* (`ena_apply $4245 < $4250 < int_h $4251`), so pushes are dropped and pops read ROM bytes.
+The `$C2xx` write-watch (`disk_probe_dosboot_watchwa.py --lo C200 --hi C2DF`) shows ours gains an EXTRA writer
+`PC=$4251` (= `int_h`, ×224) and loses stock's `PC=$0525` (×19) — but `$4251`=`int_h` and `$7D62` (the shared
+writer) lands in our ROM **pad** on ours, so these are **artifacts of the already-deranged run**, not the root.
+
+**Leading root cause (medium-high confidence; verify before any asm):** the `$D7B0` differential
+(`pctrace --arm 0xD7B0`) is byte-identical for 3 steps (`$D7B0 $D7B3 $F368`) then splits AT THE HOOK: ours
+`$F368→$E795` (`wa_seg`, switches the subslot and RETURNS); stock `$F368→$DF57` which switches the subslot
+**then `CALL $0024` (ENASLT) with `HL=4040` and reads/processes data from `$4040` (the page-1 disk ROM it just
+mapped in) into the `$DC00` work area** (`DE` walks `DC02→DC00→DC0C`). So `$DF57` is **polymorphic** — on the
+§8.58 first-call instance (entry `DE=0A80 HL=EF15`) it did only the subslot switch (what `wa_seg` reproduces),
+but on the `$D7B0`-phase call (entry `DE=DC80 HL=F340`) it does the fuller ENASLT+copy that `wa_seg` skips →
+downstream data is wrong → ours wrong-paths into the `$DA23` loop with a corrupt stack. **NEXT (M5.8,
+characterise-then-spec, NO asm yet):** fully characterise stock `$DF57`'s ENASLT+copy branch (entry condition
+that selects it; what it reads from `$4040`; what it writes to `$DC00`/elsewhere; return regs) and confirm it is
+the first/only divergence (arm the differential earlier than `$D7B0` to be sure nothing precedes it); THEN
+extend `wa_seg` (or add a sibling body) to cover that branch. Probes: disk_probe_dosboot_hang.py (new),
+disk_probe_dosboot_pctrace.py (`--arm 0xD7B0`/`0xDA23`), disk_probe_dosboot_watchwa.py, _loop.py, _progress.py.
