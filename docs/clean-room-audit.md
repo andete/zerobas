@@ -236,3 +236,43 @@ swept the whole file.
   re-read (that is full-verify-trail, milestone-gated).
 - **Not yet run:** tape, basic (lower-risk: published-interface sources, settled,
   no incident) — slated for the public-release gate, basic before tape.
+
+### 2026-06-24 — basic, paper trail — ✅ CLEAN (at `d160f8c`)
+
+Whole-component, no incident — establishing the public-release baseline. Surface:
+24 `.asm` files + `sysvars.inc`, ~11.5 k lines, 901 labels.
+
+- **Forbidden-source citations:** **zero**. Every `disassembly`/`gw-basic` mention
+  is an attestation — **each of the 24 files carries a "No disassembly" header**,
+  and `main.asm`/`sysvars.inc` state nothing is derived from an MSX-BASIC/GW-BASIC
+  or reference-ROM disassembly.
+- **Citation:** per-feature `basic/PROVENANCE.md` sections (each names its source
+  files + verdict); local jump labels inherit their section's citation.
+- **Highest-risk spot-read — the token tables (the most liftable-from-disassembly
+  artifact):** **provably oracle-sourced, not lifted.** Crunch byte-identity to the
+  VG-8020 is *verified* by `basic_probe_crunch.py`; every token byte traces to the
+  black-box fidelity sweep (`spec-tokens-statements.md §3/§4`); the tokeniser/
+  evaluator algorithm is own code "not derived from any disassembly." Byte-identity
+  achieved by *observing* the ROM's output, never by reading its table — the
+  gold-standard method. `kwtable` entries cite "oracle-LOCKED, VG-8020; MSX2 TH".
+- **Findings:** no clean-room breaks. Provenance pass (file-attestation + section-
+  citation + forbidden-scan + token-table spot-read), not a line-by-line re-read of
+  11.5 k lines.
+
+### 2026-06-24 — tape, paper trail — ✅ CLEAN (at `d160f8c`)
+
+Whole-component, no incident. Smallest surface (a C-BIOS cassette patch); has its
+own `tape/docs/clean-room-policy.md` and a `PROVENANCE.md §Audit`.
+
+- **Forbidden-source citations:** **zero** (no mention at all).
+- **Highest-risk spot-read — the waveform timing constants:** **all derived or
+  own-design, round-trip-validated, "not copied from any ROM."** Half-period counts
+  derive from documented FSK frequencies (Tech Handbook) + the 3.58 MHz Z80 clock
+  (hardware) + a black-box-measured per-half cost (oracle); the leader/auto-baud/
+  threshold values are own algorithm with no original analogue; all marked
+  `quarantined`. The one `sourced` constant (`CASIN_R14=14`) is a PSG register
+  number (hardware fact).
+- **Findings:** no clean-room breaks.
+
+**Whole-repo baseline: all three components (disk, basic, tape) paper-trail CLEAN
+as of 2026-06-24** — the provenance precondition for public release is met.
