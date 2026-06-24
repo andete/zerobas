@@ -1753,6 +1753,8 @@ bsr_eof:
 ;                       is left unchanged for later calls).
 ;   out: A  = $00 all requested records read / $01 EOF before all (partial)
 ;        HL = number of records actually read
+;        BC = HL (the genuine BDOS $27 returns the count in both; MSXDOS.SYS
+;             init reads BC at its $024A sign branch — §8.32/§8.33)
 ; Re-primes the file iterator to the start each call (idempotent random-record-0
 ; semantics) and streams bytes from SECTOR_BUF, refilling via fat_read_file_sector.
 ; Bounded by the true file size in BDOS_BYTESLEFT (reseeded from FAT_FILESIZE here).
