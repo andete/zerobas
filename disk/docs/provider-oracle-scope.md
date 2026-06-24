@@ -1904,3 +1904,17 @@ This opens an architecture fork (faithful high-RAM-relocation model vs. a minima
 the page-1 ROM and reuses our oracle-validated `bdos_entry`), captured with the milestone breakdown in the new
 plan [`tier2-kernel-plan.md`](tier2-kernel-plan.md). Status: plan written, awaiting sign-off on the fork before
 any asm (spec-before-implementation). Probe: disk_probe_dosboot_vectors.py.
+
+**§8.47 FORK DECIDED — (a) faithful relocation (user, 2026-06-24).** Asked the architecture fork (a faithful
+high-RAM-relocation model vs. a minimal page-1 host reusing `bdos_entry`); the user chose **maximum fidelity
+(a)** — mirror the stock's "relocate the resident kernel into high RAM + page-0 inter-slot vector table"
+*structure*. CLEAN-ROOM (restated because (a) is the highest-temptation path): "faithful" is structure +
+black-box-observed contracts, **never bytes** — we build our OWN resident kernel and relocate it, lay our own
+page-0 vector targets + an inter-slot helper from the public slot-select spec (MSX2 TH / map.grauw.nl), and
+keep `MSXDOS.SYS`/`COMMAND.COM` as pure oracles (never disassembled/byte-copied); the §8.37 breach is the
+cautionary tale. So the `$DDxx` band IS back in scope as *our* code at *our* addresses (pinned only where a
+black-box dependency forces a value). Revised roadmap in the plan: M5.1 (COMMAND.COM service map) → M5.2
+(high-RAM kernel + page-0 vector structure map) → M5.3 (BDOS path + gaps) → M5.4 (stand up the relocated band +
+vectors, validated standalone — the §8.2/§8.4 hang-prone step) → M5.5 (`k_47B2` loader body) → M5.6…N (fill
+the page-1 cluster contracts) → M5.final (`A>`). **NEXT SESSION: M5.1** — black-box trace of COMMAND.COM's
+outbound CALL targets + how it installs `$0005`. No asm yet.

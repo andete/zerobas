@@ -365,9 +365,10 @@ plumbing, **not** COMMAND.COM's interface (§8.46 — only disk-ROM/kernel PCs c
 them). So a faithful host satisfies what COMMAND.COM *actually* calls (its `$0005`
 BDOS path + the fixed page-1 cluster), not the kernel's internal `$DDxx` layout.
 
-This is **GREEN-LIT** (2026-06-24, "the full work"). The milestone roadmap, the
-clean-room firewall for this phase, and the architecture fork (faithful
-high-RAM-relocation model vs. minimal page-1 host reusing `bdos_entry`) are in
+This is **GREEN-LIT** (2026-06-24, "the full work"), built under the **faithful
+relocation model** (user-chosen: mirror the stock's relocate-kernel-to-high-RAM +
+page-0 vector structure, with our own code and contracts — never copied bytes). The
+milestone roadmap and the clean-room firewall for this phase are in
 [`tier2-kernel-plan.md`](tier2-kernel-plan.md). The settled §1–4 ABI and the
 Disk-BASIC deliverable stand on their own and must stay regression-green throughout.
 Probe: `disk_probe_dosboot_47b2.py`.
