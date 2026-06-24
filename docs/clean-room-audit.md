@@ -106,6 +106,16 @@ through. So enforcing the inline-citation convention
 it is what makes the audit affordable. A missing citation is itself the first
 finding.
 
+The cheap, scriptable part of this is mechanized as `make audit-citations`
+([`tools/audit_citations.py`](../tools/audit_citations.py)): a gating
+forbidden-source scan (every `disassembl` / byte-copy / reverse-engineer / Red
+Book mention must sit in a negation/attestation context — `byte-identical`, the
+legitimate oracle-match outcome, is *not* flagged) plus a per-file clean-room
+attestation check, and an advisory disk section-citation presence report. Run it
+on demand / in CI so the citation scaffolding cannot silently lapse between the
+manual passes. It is the mechanical floor, **not** a substitute for either check
+below — it cannot make the one non-mechanical judgement (next section).
+
 ### The one hop in paper trail that is *not* mechanical
 
 Paper trail trusts the finding and probe docs. A finding can cite a real probe

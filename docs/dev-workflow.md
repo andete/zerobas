@@ -58,7 +58,30 @@ see [`clean-room-audit.md`](clean-room-audit.md): the **paper trail** check walk
 the asm→finding→probe chain for provenance (cheap, read-only — the routine gate),
 and the **full verify trail** adds re-running the probes for correctness (heavy,
 milestone-gated). Probe execution does **not** catch a provenance breach — that
-is what paper trail is for.
+is what paper trail is for. Run the mechanical pre-check first — `make
+audit-citations` (forbidden-source scan + per-file attestation, gating; disk
+section-citation presence, advisory) — so the cheap, scriptable half can never
+silently lapse between manual passes. A clean `make audit-citations` is the floor,
+not the audit: it cannot make the "is each probe genuinely black-box?" judgement,
+which is still a human paper-trail pass.
+
+### Delegating asm to a sub-agent — embed the firewall in the brief
+
+The one provenance breach we have had (`provider-oracle-scope.md` §8.37) came
+from a sub-agent that disassembled `MSXDOS.SYS` because its brief did **not**
+carry the clean-room rule. The audit *caught* it after the fact; the cheaper fix
+is to not let it happen. So when you spawn an agent to write or modify assembly,
+its brief **must** state, up front:
+
+- the clean-room rule (item 2 above) and the **forbidden** list — a reference ROM
+  / `MSXDOS.SYS` / `COMMAND.COM` is **only ever an oracle**: inputs in, observed
+  outputs out, never disassembled or byte-copied;
+- the requirement to cite every new constant/address/algorithm inline at its
+  definition (item 2), so the result is paper-trail-auditable;
+- that producing forbidden-sourced asm fails the task even if it is *correct* and
+  the probes pass — correctness never launders provenance.
+
+Then audit what it lands (`make audit-citations` on the diff, then a paper trail).
 
 ## Build
 

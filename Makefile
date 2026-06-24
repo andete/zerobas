@@ -127,10 +127,19 @@ probe: $(ROM) $(DISK_ROM) $(DISK_TEST_DSK)
 	python3 probes/tape/bios_probe_tapwrite.py --out /tmp/zerobas-tapwrite.rom
 	@echo "probe smoke OK (disk + basic + tape)"
 
+# The mechanical half of the clean-room paper-trail audit: forbidden-source scan
+# + per-file attestation (gating) and disk section-citation presence (advisory).
+# Cheap, read-only, no emulator -- run it on demand / in CI so the citation
+# scaffolding cannot silently lapse between the manual paper-trail passes. It does
+# NOT replace the human paper trail (the "is each probe black-box?" judgement);
+# see docs/clean-room-audit.md. `make audit-citations TARGET="disk"` scopes it.
+audit-citations:
+	python3 tools/audit_citations.py $(TARGET)
+
 # clean removes the gitignored build artifacts only. The tracked patch
 # deliverables are left in place (use `make patches` to regenerate them).
 clean:
 	rm -rf $(BUILD)
 
 .PHONY: all disk patches tape-patches machines machines-oracle install \
-        test-dsk unit-test coverage probe clean
+        test-dsk unit-test coverage probe audit-citations clean
