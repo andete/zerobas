@@ -141,6 +141,44 @@ contracts, and the definitive `$D821 → A> idle` sizing are all captured. The n
 step is implementation — **M5.4** (stand up the trampoline table + page-0 vectors,
 validated standalone), the first asm.
 
+## Progress ledger (update at every step)
+
+Denominator = the §8.52 measured footprint of code **we must build** for the
+COMMAND.COM-load→`A>` phase: **5,600 B** (disk-ROM cluster 3,680 B + high-RAM kernel
+1,920 B; COMMAND.COM's own 1,488 B is proprietary load+run, not counted). A region
+is **done** only when its contract is implemented *and* validated by the progress
+probe. "Reuse" = an existing zerobas routine the body will wire to (faster than
+greenfield, but not *done* until wired + validated).
+
+> **COVERED: 176 B / 5,600 B (3.1%) — TODO: 5,424 B.**  *(baseline, scans complete, pre-M5.4)*
+> - disk-ROM cluster: **176 / 3,680 B**  · high-RAM kernel: **0 / 1,920 B**
+
+| disk-ROM range | B | status | hi-RAM range | B | status |
+|---|---|---|---|---|---|
+| `4010-40BF` | 176 | ✅ DSKIO (existing) | `C200-C27F` | 128 | ⬜ |
+| `4170-418F` | 32 | ⬜ | `CB90-CBDF` | 80 | ⬜ |
+| `41F0-436F` | 384 | ⬜ reuse fat/dir | `CE50-D00F` | 448 | ⬜ |
+| `4400-446F` | 112 | ⬜ | `D070-D08F` | 32 | ⬜ |
+| `44D0-456F` | 160 | ⬜ | `D600-D60F` | 16 | ⬜ |
+| `4600-461F` | 32 | ⬜ | `D820-D8BF` | 160 | ⬜ kernel COMMAND-exec |
+| `46A0-46EF` | 80 | ⬜ | `DDA0-DDEF` | 80 | ⬜ RST-38/`$DDAE` |
+| `4740-474F` | 16 | ⬜ | `DE50-DF6F` | 288 | ⬜ vector handlers |
+| `47B0-47DF` | 48 | ⬜ `k_47B2` | `EF90-F05F` | 208 | ⬜ hot loop |
+| `4840-49BF` | 384 | ⬜ reuse fat | `F0F0-F17F` | 144 | ⬜ driver dispatch |
+| `4A30-4A7F` | 80 | ⬜ | `F1C0-F1FF` | 64 | ⬜ work area |
+| `4B20-4C4F` | 304 | ⬜ | `F250-F2BF` | 112 | ⬜ CALSLT table |
+| `4E40-4EFF` | 192 | ⬜ | `F360-F39F` | 64 | ⬜ BDOS vec |
+| `50E0-510F` | 48 | ⬜ | `FD90-FDCF` | 64 | ⬜ COMMAND gateway |
+| `53A0-544F` | 176 | ⬜ | `FFC0-FFDF` | 32 | ⬜ subslot |
+| `54C0-559F` | 224 | ⬜ | | | |
+| `5600-569F` | 160 | ⬜ | | | |
+| `5FA0-609F` | 256 | ⬜ reuse bdos | | | |
+| `6370-637F` | 16 | ⬜ | | | |
+| `7490-74DF` | 80 | ⬜ | | | |
+| `7580-77BF` | 576 | ⬜ (hot) | | | |
+| `7820-786F` | 80 | ⬜ | | | |
+| `7940-797F` | 64 | ⬜ | | | |
+
 ## Milestones (each: characterise on stock → implement → re-probe progress)
 
 Sequenced for the **(a) faithful relocation** build; sized by the scan above.
