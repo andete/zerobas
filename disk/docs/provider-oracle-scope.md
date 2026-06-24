@@ -2126,3 +2126,31 @@ with `JP wa_stub`; the differential proves they are real routines with side effe
 capture in/out registers + memory deltas — then install our own resident routines in reserved top-of-RAM and
 repoint the table at them (replacing the uniform `wa_stub` fill in `build_wa_table`, disk.asm:607). Probes:
 disk_probe_dosboot_pctrace.py (`--arm 0xD87F`), the `$F365-F373` write-watch.
+
+**§8.58 M5.6 CONTRACT — the `$F368`/`$F36B` slots are paired slot-3 page-1 subslot-switch hooks (map disk-ROM
+in / map RAM in); register-transparent; only persistent effect = `$FFFF` + `SLTTBL[3]` (`$FCC8`).** Per-vector
+contract probe `disk_probe_dosboot_wacontract.py` (arm first CALL through a slot; capture entry/exit regs, the
+stack return addr, and every write to `$C000-$FFFF` during the body). Full `$F368-$F37C` table on stock:
+`$F368→$DF57`, `$F36B→$DF59`, `$F36E→$DF70`, `$F371→$F327`, `$F374→$F32C`, `$F377/$F37A→$0000` (null).
+**Only `$F368` (×81) and `$F36B` (×80) are ever called during boot**; `$F36E/$F371/$F374` = `ncalls 0` (out of
+scope for now). Both active slots are **fully register-transparent** — entry regs == exit regs (`$F368` AF=0140
+BC=0000 DE=0A80 HL=EF15 IX=F195 IY=C0AB; `$F36B` AF=0168 BC=0180 DE=0900 HL=ED95 …; only SP +2 = the RET). Of
+38 writes, ~36 are transient **stack** traffic below SP (`$F4F5-$F506`). The **persistent** effects are two:
+a write to `$FFFF` (slot-3 secondary/subslot register, from the page-0 inter-slot helper `PC=$004E`) and a
+write to **`$FCC8` = `SLTTBL[3]`** (the RAM mirror of slot-3's subslot register):
+
+| slot | `$FFFF` (read back, inverted) | `$FCC8`=SLTTBL[3] (written) | page-1 result |
+|------|------|------|------|
+| `$F368` | `FB` (=`~04`) | `04` | page 1 → subslot 1 = **disk ROM** |
+| `$F36B` | `FF` (=`~00`) | `00` | page 1 → subslot 0 = **RAM** |
+
+**Grounded in our machine config** (`National_CF-3300_ZEROBASDISK.xml`): slot 3 is **expanded** — subslot 0 =
+64 K RAM, subslot 1 = our disk ROM (`$4000-$BFFF`). `$04`= page-1 bits (`<<2`) = subslot 1; `$00` = subslot 0.
+**The bug, exactly:** the kernel calls `$F36B` to read data living *under* the page-1 ROM; our `wa_stub` `RET`
+leaves the disk ROM mapped, so the kernel reads ROM bytes instead of its RAM → wrong value → ~14 k× retry. The
+hook bodies live in always-mapped page-3 high RAM (`$DF57`), so they can flip page 1 without unmapping
+themselves — the same discipline as our `p1_blit` (§8.35). **NEXT (M5.6 asm, spec `tier2-m5.6-spec.md` for
+review first):** install two clean-room high-RAM resident routines — `wa_seg_rom` (set slot-3 subslot `$04`)
+and `wa_seg_ram` (`$00`), each writing `$FFFF` + `$FCC8` under DI and preserving all registers — and point
+`$F368`/`$F36B` at them (replacing the uniform `wa_stub` fill in `build_wa_table`, disk.asm:607). Probe:
+disk_probe_dosboot_wacontract.py.
