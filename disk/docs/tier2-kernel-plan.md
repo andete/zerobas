@@ -190,15 +190,15 @@ Front-loadable now = **R+M (400 B)**; after a contract-confirm = **r (1,744 B)**
 
 Bar chars: `█` done · `▒` veneer · `░` todo.
 
-> *(scans complete + §8.53 sizing correction, pre-M5.4)*
+> *(M5.4 first cut landed — `k_47B2` loader ✅, §8.55)*
 > ```
-> TOTAL     █▒▒▒▒▒▒▒▒▒▒░░░░░░░░░  ✅  176 · 🟨2,544 · ⬜2,336  / 5,056 B  (3.5% done)
-> disk-ROM  █▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░  ✅  176 · 🟨2,544 · ⬜  960  / 3,680 B
+> TOTAL     █▒▒▒▒▒▒▒▒▒▒░░░░░░░░░  ✅  224 · 🟨2,496 · ⬜2,336  / 5,056 B  (4.4% done)
+> disk-ROM  █▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░  ✅  224 · 🟨2,496 · ⬜  960  / 3,680 B
 > hi-RAM    ░░░░░░░░░░░░░░░░░░░░  ✅    0 · 🟨    0 · ⬜1,376  / 1,376 B
 > ```
 > §8.53: 544 B of high-RAM is **loaded MSXDOS.SYS, not ours** (excluded above); a
 > further ~688 B (`$C2xx-$D0xx`) is likely loaded too → total may drop toward
-> **~4,368 B** once M5.2 confirms. Covered unchanged (176 B); only the denominator moved.
+> **~4,368 B** once M5.2 confirms. (Covered was 176 B at §8.53; M5.4 took it to 224 B.)
 
 | disk-ROM range | B | st | cls | hi-RAM range | B | st | cls |
 |---|---|---|---|---|---|---|---|
@@ -210,7 +210,7 @@ Bar chars: `█` done · `▒` veneer · `░` todo.
 | `4600-461F` | 32 | ⬜ | C | `D820-D8BF` | 160 | ⬜ | C COMMAND-exec |
 | `46A0-46EF` | 80 | 🟨 | r `k_46C8` | `DDA0-DDEF` | 80 | ⬜ | C RST-38/`$DDAE` |
 | `4740-474F` | 16 | ⬜ | C | `DE50-DF6F` | 288 | ⬜ | C vector handlers |
-| `47B0-47DF` | 48 | 🟨 | C `k_47B2` loader† | `EF90-F05F` | 208 | ⬜ | C hot loop |
+| `47B0-47DF` | 48 | ✅ | `k_47B2` loader (M5.4, §8.55) | `EF90-F05F` | 208 | ⬜ | C hot loop |
 | `4840-49BF` | 384 | 🟨 | r `k_4919/4935/498C/49B4` | `F0F0-F17F` | 144 | ⬜ | r driver dispatch |
 | `4A30-4A7F` | 80 | 🟨 | r `k_4A39` | `F1C0-F1FF` | 64 | ⬜ | r work area |
 | `4B20-4C4F` | 304 | 🟨 | r `k_4B59/4BE5/4C25` | `F250-F2BF` | 112 | ⬜ | M CALSLT table |

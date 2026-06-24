@@ -3135,7 +3135,37 @@ k_402D:         ret
 k_41FD:         ret
 k_4558:         ret
 k_46C8:         ret
-k_47B2:         ret
+; k_47B2 — COMMAND.COM loader (Tier-2 M5.4 first cut, fork P; spec tier2-m5.4-spec.md).
+; The relocated MSXDOS.SYS loader (~$D821) CALLs $47B2 to load COMMAND.COM (§8.40/
+; §8.54); the stock reads it via the disk ROM's own file routines, so we do the same
+; through our oracle-validated FCB BDOS: Open "COMMAND.COM", point the DTA at $0100
+; (the .COM load address, §5.2/§8.50), and Sequential-Read every 128-byte record
+; contiguously into the TPA. We then RET to $D824 — MSXDOS.SYS's existing post-$D824
+; transfer runs the now-loaded shell (the ×1 jump to $0100 seen in the §8.54 baseline).
+; First cut (diagnostic): does NOT yet reproduce $47B2's return-register state
+; (AF=0142/HL=1A00/IY=DC5B, §8.50) — add if the probe shows MSXDOS.SYS needs it.
+; CLEAN-ROOM: our own loader over our own file layer; COMMAND.COM is data we copy,
+; never disassembled.
+k_47B2:         ld      de, k47b2_fcb       ; FCB naming COMMAND.COM
+                ld      c, BDOS_F_OPEN      ; $0F Open
+                call    bdos_entry
+                inc     a                   ; A=$FF not-found -> 0
+                ret     z                   ; open failed: bail (stays in §8.40 spin)
+                ld      hl, $0100           ; .COM load address (§5.2/§8.50)
+                ld      (BDOS_DTA), hl
+k47b2_rdloop:   ld      de, k47b2_fcb
+                ld      c, BDOS_F_SEQRD     ; $14 Sequential Read -> (BDOS_DTA)
+                call    bdos_entry
+                or      a
+                ret     nz                  ; A=$01 EOF -> COMMAND.COM loaded; RET to $D824
+                ld      hl, (BDOS_DTA)      ; advance DTA one record
+                ld      de, RECSIZE         ; 128
+                add     hl, de
+                ld      (BDOS_DTA), hl
+                jr      k47b2_rdloop
+k47b2_fcb:      db      0                   ; drive = default
+                db      "COMMAND COM"       ; 11-byte 8.3 name (FCB+1..+11; dir form)
+                ds      24, 0               ; FCB bookkeeping (unread by bdos_entry)
 k_4919:         ret
 k_4935:         ret
 k_498C:         ret

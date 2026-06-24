@@ -2059,3 +2059,19 @@ holds** — `$47B2`'s empty stub is the blocker; implementing the loader (approv
 step. **Sharpened success metric:** not "reached `$0100`" (already happens transiently) but **the `$4462/$544E`
 spin → ~0 AND COMMAND.COM execution *sustained*** (high PC count in `$0200+`). Probes:
 disk_probe_dosboot_progress.py, disk_probe_dosboot_path.py.
+
+**§8.55 M5.4 FIRST CUT LANDED — `k_47B2` COMMAND.COM loader works; the `$4462` spin is GONE; boot advances to a
+new blocker.** First asm of the kernel phase (fork (P)). `k_47B2` now: Open `"COMMAND COM"` via our
+oracle-validated `bdos_entry`, point the DTA at `$0100`, Sequential-Read every 128-byte record contiguously
+into the TPA, `ret` to `$D824` (keeping MSXDOS.SYS's existing post-`$D824` transfer — no control-flow reshape).
+**Results (deterministic across 2 runs, `National_CF-3300_ZEROBASDISK`):** (1) **COMMAND.COM is genuinely
+loaded** — `$0100` = `C3 00 02` (`jp $0200`) + its real bytes (verified by RAM dump). (2) **The §8.40 `$4462`
+spin collapsed: ×24,168 → ×14.** (3) Boot advanced: `end_pc` `$F1CE` → `$D88B` (deeper into the relocated
+kernel). (4) **New blocker:** a different spin — `$544E` ×14,451 from `ra=$D88A` (was `$D806`), CONOUT `$5454`
+×14,507 — and COMMAND.COM still runs only ×1 at `$0200` (not yet sustained). **Regression GREEN:** unit-test
+18/18, FILES byte-identical to CF-3300, BLOAD `,R`/plain correct (the change is additive in the free tail — no
+address shift). **Divergence (intentional, first cut):** `k_47B2` does not reproduce stock `$47B2`'s return
+registers (`AF=0142 HL=1A00 IY=DC5B`, §8.50); add only if the next blocker traces to it. **Ledger:** 176 → 224 B
+(3.5 % → 4.4 %); `$47B0-47DF` ✅. **NEXT (M5.5):** characterise the new `$544E`/`$D88A` spin — likely COMMAND.COM
+(or the kernel post-`$D824`) calling a service that isn't set up (the `$FD9x` gateway / `$0005` / the return-reg
+state). Probes: disk_probe_dosboot_path.py, disk_probe_dosboot_progress.py.

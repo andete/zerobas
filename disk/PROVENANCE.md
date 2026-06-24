@@ -904,6 +904,25 @@ must be run against the CF-3300 in openMSX and added to the probe suite (`probes
 
 ---
 
+## Tier-2 kernel veneers (COMMAND.COM-load phase)
+
+The relocated MSX-DOS-1 kernel and COMMAND.COM call a cluster of disk-ROM entry
+points at fixed page-1 addresses — a de-facto-standard shared-kernel ABI (the same
+legitimacy class as the `$4010` BIOS jump table). zerobas exposes each canonical
+address as a 3-byte `jp k_XXXX` veneer with the contract body in the free tail.
+Provenance class: **we expose published/observed ABI entry points and write our own
+contract code; we never copy shared-kernel bytes.** `MSXDOS.SYS` / `COMMAND.COM` are
+strictly black-box oracles (observed register/memory contracts in, data we copy out;
+never disassembled). Full trail: notebook `docs/provider-oracle-scope.md` §8.40-8.55;
+spec `docs/spec-diskrom-kernel.md` §5; sizing/ledger `docs/tier2-kernel-plan.md`.
+
+| Veneer | Address | Contract | Source | Status |
+|---|---|---|---|---|
+| Canonical ABI entry points exposed (21) | `$402D $41FD $4558 $46C8 $47B2 $4919 $4935 $498C $49B4 $4A39 $4B59 $4BE5 $4C25 $4E4B $4EDE $5FE5 $607B $75A5 $77B8 $782B` (+ `$4010` DSKIO) | byte-identical across the 7 vendors (shared-kernel ABI); all CALL targets (clean return) | cross-vendor identity check + `disk_probe_dosboot_veneer.py` (§8.42) | sourced |
+| `k_47B2` — COMMAND.COM loader | `$47B2` | Open `COMMAND.COM` via our FCB BDOS, DTA→`$0100`, seq-read the file into the TPA, `ret` | own loader over our oracle-validated `bdos_entry`; load contract (B=13 sectors→`$0100`) = §8.50; `$0100` env = §5.2; COMMAND.COM is data we copy | own black-box test — `disk_probe_dosboot_path.py`/`_progress.py` (§8.55): COMMAND.COM loaded (`$0100`=`C3 00 02`+bytes), `$4462` spin ×24168→×14, regression green |
+
+---
+
 ## Audit
 
 Before release, every constant and address in `disk/disk.asm` must map to a
