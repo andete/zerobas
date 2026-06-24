@@ -297,7 +297,16 @@ documented but never run — the loose end). Run on tape as the smallest surface
 shake out the unexercised process. Phase A re-confirmed the paper-trail structure
 (tape already CLEAN at `d160f8c`); Phase B re-ran the oracle round-trip empirically.
 
-- **Phase B — Tier-1 deterministic regression** (`tape/tools/run_tape_regression.py`,
+- **Phase B host half — `make unit-test` (`tests/test_tape.py`): ALL PASS**
+  *(amended 2026-06-24 — this layer was run as part of the suite but under-credited in
+  the original entry; the brief says to prefer the host harness for host-locked hops).*
+  The emulator-free Z80 test of `tape/tape.asm` independently locks in the **same
+  quarantined FSK timing constants** at the host level (`test_cas_half_counts`,
+  `test_tapout_cycle_count` over `CAS_HHALF/LHALF/HHALF24/LHALF24`) plus the TAPOUT
+  tone sequence, TAPOON header, TAPOOF flush, TAPION lock/calibrate, TAPIN decode, and
+  the motor/PPI/PSG contracts. So the timing constants have **two** independent
+  correctness layers: this host test *and* the openMSX round-trip below.
+- **Phase B emulator half — Tier-1 deterministic regression** (`tape/tools/run_tape_regression.py`,
   openMSX-driven, self-authored content): **6/6 PASS.** Critically, *round-trip
   write→read @1200 and @2400 are byte-identical* — this is the oracle guarantee the
   **quarantined FSK timing constants** (`CAS_HHALF`/`LHALF`(`24`), the auto-baud lock,
