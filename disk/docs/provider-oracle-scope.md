@@ -1791,3 +1791,30 @@ subtrack's "we do not write our own MSX-DOS 1" premise. **Not walled** (the meth
 *quantified* rather than assumed. Decision (build the kernel-reimplementation project vs. record this as the
 honest Tier-2 frontier and let the validated disk-BIOS/Disk-BASIC deliverable stand) is deferred to the user.
 Probe: `disk_probe_dosboot_47b2.py`.
+
+**§8.42 TIER-2 RESUMED (2026-06-24, user signal "continue the subtrack") — unified-ROM path chosen;
+the trampoline-veneer hypothesis is CONFIRMED.** The build was un-paused; the user chose the
+historically-faithful **unified single ROM** (one 16 K ROM serving both Disk-BASIC *and* the MSX-DOS-1
+kernel), over a separate DOS-only ROM. Grounding it against our actual ROM (pasmo symbol table): our code
+occupies **`$4000–$5455`**, with **`$5456–$7FBB` free** (~10.6 K); of the 21 canonical entries, **16
+collide** with our active code and **5** (`$5FE5 $607B $75A5 $77B8 $782B`) already sit in the free region.
+The collision is **mid-routine** (each canonical address lands `+0…+672` B *inside* one of our routines —
+e.g. `$47B2` is `+8` into `fat_find`, `$4E4B`/`$4EDE` are `+525`/`+672` into `fat_dir_update`), so there is
+no tidy block-move: the faithful-but-tractable plan is a **trampoline veneer** — a 3-byte `JP impl` carved in
+at each canonical address, with the contract implemented in the free region (the same legitimacy class as the
+`$4010` BIOS jump-table entry we already expose). That is only valid if every canonical entry is a **CALL
+target** (caller expects a `RET`), never a JP/fall-through. **Veneer probe** (`disk_probe_dosboot_veneer.py`,
+black-box: bp at each canonical address, then a per-call one-shot condition `PC==[esp] && SP==esp+2` to
+confirm a clean return to the caller — collision-free even when sibling entries share a caller, which a
+caller-keyed scheme got wrong). **Result on stock:** **all 16 colliding entries confirm as CALLed
+subroutines that return to their callers** (`$41FD $4558 $46C8 $47B2 $4919 $4935 $498C $49B4 $4A39 $4B59
+$4BE5 $4C25 $4E4B $4EDE $4010 $402D`), incl. the high-frequency `$77B8` (×304,685) and our own `$4010`.
+**Only `$607B` is unconfirmed** — but it is a *free-space* entry (no trampoline needed) and is the **BDOS
+callback** (`COMMAND.COM`'s `CALL 5` routed via the BDOS dispatcher at `ra=$EB95`), so its return goes back
+*through the dispatcher*, not as a leaf `RET`; that is a milestone-4 implementation detail, not a veneer
+blocker. **Conclusion: the trampoline veneer is safe** for all 16 colliding entries → milestone 1 (verify
+veneer) PASS. Two probe bugs found and fixed en route (recorded so they don't recur): (a) reading `[SP+1]`
+without masking to 16 bits returns a non-integer at `SP=$FFFF`; (b) passing a hex string like `4E65` through
+Tcl `expr`'s ternary numerically coerces it to scientific notation (`4e+65`) — use `if`/`else`, never `expr`,
+for string fields. Next: milestone 2 (the veneer layout table — each canonical address → contract → free-space
+impl address), shown before any `disk.asm` edit. Probe: `disk_probe_dosboot_veneer.py`.
