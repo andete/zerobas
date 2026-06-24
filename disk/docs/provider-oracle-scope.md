@@ -5,6 +5,13 @@ SPDX-License-Identifier: 0BSD
 
 # Provider oracle — scope (Phase 1.5 box (b), the one open item)
 
+> **This file is the investigation *notebook*** — the dated `§8.x` trail, including
+> refuted hypotheses. The **settled contracts it establishes are distilled** into
+> the product-spec deliverable [`spec-diskrom-kernel.md`](spec-diskrom-kernel.md)
+> (`$4030` / `$50A9` / `$5454` entries + the `$F100–$F3FF` resident work area). Per
+> the settle-gated cadence ([`../../docs/documentation-deliverable.md`](../../docs/documentation-deliverable.md)),
+> promote each contract from here into that spec as it settles.
+
 Status: **Tier 1 DONE.** Phase 1.5 host + provider code is committed
 (`a23d78d`, `15329e2`); the Tier-1 provider oracle is now built and passing. A
 **genuine MSX1 BIOS** (National CF-3300) cold-boot scan calls zerobas-disk's INIT,

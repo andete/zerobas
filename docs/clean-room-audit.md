@@ -1,0 +1,199 @@
+<!--
+Copyright (c) 2026 Joost Yervante Damad
+SPDX-License-Identifier: 0BSD
+-->
+
+# Clean-room audit — two checks
+
+How to *prove*, after the fact, that a component's assembly is clean-room
+compliant — not just assert it. This is the audit companion to
+[`allowed-sources.md`](allowed-sources.md) (the *what is allowed* catalogue) and
+[`dev-workflow.md`](dev-workflow.md) (the *how to build it cleanly* procedure).
+
+It exists because a sub-agent once derived assembly from a path our charter
+forbids, and "it boots / the probes pass" did **not** surface it. These two
+checks are how we catch that class of failure deliberately, on demand. **Neither
+runs automatically** — they are invoked, scoped to one target (`disk`, `basic`,
+`tape`, or a future one), and the heavier one is gated to milestones.
+
+## The chain every clean line stands on
+
+Clean-room compliance is a property of a **provenance chain**, not of any single
+artifact:
+
+```
+asm line ──cites──> finding (spec/PROVENANCE §) ──cites──> probe (code) ──observes──> oracle (black-box)
+```
+
+A line is clean iff this chain **exists**, is **unbroken**, and **every hop is
+from an allowed source** — black-box oracle observation, a published datasheet /
+standard, or our own design; never a disassembly, never a byte-copy of a
+reference ROM / `MSXDOS.SYS` / `COMMAND.COM`. (Some hops legitimately ground out
+in a datasheet or standard rather than a probe — e.g. ECMA-107 FAT12 offsets,
+the Z80 ISA. Those terminate the chain just as validly; the audit confirms the
+cited document is itself `Clean`/`Scoped` per [`allowed-sources.md`](allowed-sources.md),
+not that a probe exists.)
+
+In this repo the hops are concrete:
+
+- **finding** — a numbered `§` entry in a component spec
+  (`disk/docs/provider-oracle-scope.md`, the `§8.x` series) or a `§` section in a
+  component `PROVENANCE.md`.
+- **probe** — a `probes/<target>/*.py` black-box program that drives the oracle
+  machine and records observed input→output behaviour.
+- **oracle** — a real reference machine / disk under openMSX, observed only
+  through its legal interface (inputs in, outputs out).
+
+## The two checks — what each actually catches
+
+The critical point, and the reason there are two: **they are orthogonal in
+coverage even though the second contains the first's steps.**
+
+|                       | clean-room violation | correctness drift / stale finding / probe rot |
+|-----------------------|:--------------------:|:---------------------------------------------:|
+| **Paper trail**       | ✅                   | ❌                                            |
+| **Full verify trail** | ✅ (via its read pass)| ✅                                            |
+
+A provenance violation is **invisible to probe execution**: if forbidden-sourced
+bytes happen to be *correct*, every probe passes. So the failure that motivated
+this doc is a **paper-trail-class** problem. Running probes does not add
+provenance assurance — it adds *correctness* assurance. Choose the check by the
+question you are asking, not by "how thorough do I want to be":
+
+- **"Did someone violate clean-room?"** → **paper trail.** Right tool, cheap.
+  Full-verify only catches it via the read pass it shares with paper trail.
+- **"Is the asm correct *and* clean, ship-ready?"** → **full verify trail.**
+  Here paper trail is subsumed — you get it for free inside the read pass.
+
+### Cost — they differ a lot, asymmetrically
+
+Both checks **read** every asm region + every cited finding + every cited probe's
+source. That front half is roughly equal: bounded, parallelisable, no emulator.
+
+All the divergence is full-verify's back half:
+
+- spin up openMSX and **run** each cited probe (slow; honour the pty-leak +
+  one-reused-sonnet-agent discipline — see the harness notes);
+- **fix** probes that bit-rotted and **author** new probes where a behaviour has
+  no coverage — this last item is the unbounded cost;
+- diff fresh oracle output against the recorded finding.
+
+Estimate on the disk track (heavy probe runs, churning `§8.x` surface):
+**full verify ≈ 3–10× paper trail**, and far more fragile (emulator, agent
+reuse, wall-clock). Where a behaviour is already locked into the host unit-test
+harness (`make unit-test`), prefer that over a full emulator run for that hop.
+
+The nesting only goes one way: **you never run both separately** — if you are
+doing full verify, paper trail is the read pass inside it.
+
+## When to run which
+
+- **Paper trail — routine, mandatory gate on any sub-agent asm.** Run it on the
+  *diff*, not the whole target, after any agent lands assembly. Cheap enough to
+  be habitual. A whole-target paper trail is the one-time "clean the backlog"
+  pass.
+- **Full verify trail — a tier-closure ritual.** Run it deliberately a handful of
+  times — before declaring a tier/phase closed — not as a routine gate.
+
+### The precondition that keeps paper trail cheap
+
+Paper trail is near-mechanical **only if the citation chain is written down**:
+each asm region cites its `§finding`, each finding names its probe. Where the
+citation is missing, the audit degrades into *re-deriving* provenance from
+scratch — expensive, judgement-heavy, and exactly the gap a violation slips
+through. So enforcing the inline-citation convention
+([`dev-workflow.md`](dev-workflow.md) per-feature checklist) is not bookkeeping;
+it is what makes the audit affordable. A missing citation is itself the first
+finding.
+
+### The one hop in paper trail that is *not* mechanical
+
+Paper trail trusts the finding and probe docs. A finding can cite a real probe
+yet have been *written* by interpreting forbidden material; a probe can exist yet
+smuggle oracle internals instead of observing them black-box. So for each cited
+probe the auditor must make one judgement call — **"is this genuinely black-box?"**
+— not merely "does it exist." That is the integrity floor of the whole check.
+
+---
+
+## Brief template — Paper trail (provenance audit)
+
+Copy into an Agent prompt. Scope to one `<target>` (or one diff). Read-only; no
+emulator.
+
+```
+You are running a PAPER-TRAIL clean-room audit of zerobas <target> (e.g. disk).
+Read-only. Do NOT run openMSX or any probe. Goal: prove every asm region stands
+on an unbroken, allowed-source provenance chain — or list the breaks.
+
+Read first, in order:
+  - README.md (the firewall / governing test)
+  - docs/allowed-sources.md (the rated source catalogue + the ✗ list)
+  - docs/clean-room-audit.md (this method; the chain model)
+  - <target>/PROVENANCE.md and <target>/docs/*.md (the findings)
+
+Then walk <target>/<target>.asm region by region. For EACH region:
+  1. Find its provenance citation (inline comment: §finding / PROVENANCE § /
+     probe name / datasheet §). MISSING citation -> record as a BREAK (orphan asm).
+  2. Resolve the citation. Confirm the finding documents a CONTRACT (observed
+     input->output behaviour / a published interface), never a byte transcription
+     or a disassembly restatement.
+  3. Resolve finding -> its probe (or its datasheet/standard). If a probe:
+     read the probe source and judge "is this genuinely BLACK-BOX?" — it drives
+     the oracle through a legal interface and records outputs; it does NOT embed
+     disassembled internals. If a document: confirm it is Clean/Scoped in
+     allowed-sources.md, not a ✗ source.
+  4. Verdict per region: CLEAN / BREAK (with the specific reason).
+
+Do NOT run probes, do NOT judge correctness — only provenance.
+
+Deliver: a per-region verdict table, then a BREAKS list ranked by severity
+(forbidden-source citation > orphan asm > finding-not-a-contract >
+probe-not-black-box > citation present but unresolvable). For each break: the
+asm line range, what is wrong, and the minimal fix (add citation / write the
+missing finding / re-derive cleanly / quarantine).
+```
+
+## Brief template — Full verify trail (provenance + correctness audit)
+
+Copy into an Agent prompt. Scope to one `<target>`. Heavy: emulator + probe
+runs. Milestone-gated. Honour the pty-leak / agent-reuse discipline — reuse ONE
+sonnet agent across probe runs; do not spawn a fresh shell per probe.
+
+```
+You are running a FULL-VERIFY-TRAIL clean-room audit of zerobas <target>.
+This is PAPER TRAIL + empirical re-check. Heavy (runs openMSX). Reuse ONE agent
+across all probe runs.
+
+Phase A — PAPER TRAIL: do the entire paper-trail brief above first. Produce its
+per-region verdict table and BREAKS list. Do not skip; the read pass is shared.
+
+Phase B — EMPIRICAL RE-CHECK, for each cited probe:
+  5. Re-run the probe against the oracle machine (see docs/openmsx-harness.md;
+     mind the test-disk mutation gotcha — work on /tmp copies, git-restore after).
+     Prefer `make unit-test` for any hop already locked into the host harness
+     instead of a full emulator run.
+  6. Diff fresh oracle output vs the result recorded in the finding. Mismatch ->
+     STALE FINDING (record old vs new).
+  7. Where an asm behaviour is covered by NO probe, write the probe. If it cannot
+     be written black-box, that asm is provenance-SUSPECT -> escalate to a BREAK.
+  8. Confirm the asm's behaviour matches the (re-validated) finding.
+
+Deliver: the paper-trail table/breaks, PLUS a correctness table (probe -> pass /
+stale / newly-written), the list of any probes you added, and any asm that could
+not be black-box-verified. State plainly what was re-run vs what leaned on
+unit-test vs what could not be verified.
+```
+
+---
+
+## Per-target notes
+
+- **disk** — the active, churning track (Tier-2 DOS-boot, the `§8.x` series in
+  `disk/docs/provider-oracle-scope.md`). Highest-risk surface; point the first
+  whole-target paper trail here. Findings: `provider-oracle-scope.md` +
+  `disk/PROVENANCE.md`. Probes: `probes/disk/`.
+- **basic** — `basic/PROVENANCE.md`; probes `probes/basic/`. Much is locked into
+  `make unit-test`, so its full-verify back half is cheaper than disk's.
+- **tape** — `tape/PROVENANCE.md`; probes `probes/tape/`. Smallest surface
+  (a C-BIOS patch, not a slot ROM).

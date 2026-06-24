@@ -30,6 +30,13 @@ conditions). The firewall's strength is exactly this separation: **high
 information-quality can never promote an inadmissible source** — "but the Red Book
 is *accurate*" is a non-argument.
 
+Verifying that the shipped asm actually *honoured* this catalogue is a separate,
+on-demand audit — see [`clean-room-audit.md`](clean-room-audit.md) (the paper-trail
+and full-verify-trail checks). Note especially: a provenance breach is invisible
+to probe execution (forbidden-sourced bytes that happen to be correct pass every
+probe), so the cheap read-only paper-trail check — not running the probes — is the
+one that catches an inadmissible-source violation.
+
 **Quality (Q)** — how authoritative / close to silicon:
 
 - **A** — primary spec, no provenance risk: manufacturer silicon datasheets /

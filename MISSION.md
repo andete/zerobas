@@ -51,6 +51,11 @@ A useful lens for where the documentation effort is most worth spending:
   datasheet) → a careful black-box characterisation **produces the primary reference
   outright**. Highest value, precisely because the shelf is empty.
 
+Keeping this deliverable from quietly decaying into raw working notes is its own
+discipline — what counts as the *product spec* (vs the provenance *notebook*), and a
+cheap coverage check that the spec actually exists — in
+[`docs/documentation-deliverable.md`](docs/documentation-deliverable.md).
+
 ## Source, not sink
 
 Everywhere else, zerobas is *downstream* of documentation: it consumes a datasheet or

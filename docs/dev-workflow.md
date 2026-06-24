@@ -44,8 +44,21 @@ Each TODO item is largely independent — do one per session, and finish with:
 8. **Update `TODO.md`** (check the item, note divergences) and append a
    `PROVENANCE.md` row. **If the work established something new about how the
    original behaves** (a quirk, an oracle-confirmed contract, a corrected finding),
-   capture it in the relevant spec / characterisation doc too — that documentation
-   is a deliverable. Do **not** commit unless asked.
+   it owes **two distinct writes, not one** (see
+   [`documentation-deliverable.md`](documentation-deliverable.md)): the **notebook**
+   entry (the dated finding / characterisation note — provenance trail) *and*, once
+   the contract is settled, its distillation into the component's **product spec**
+   (`<component>/docs/spec-*.md`). The notebook is scaffolding; the spec is the
+   deliverable. Writing only the notebook is how the doc deliverable drifts. Do
+   **not** commit unless asked.
+
+**Auditing it afterwards.** Item 2's inline citation is what makes compliance
+*provable* later. To verify a target (especially after a sub-agent lands asm),
+see [`clean-room-audit.md`](clean-room-audit.md): the **paper trail** check walks
+the asm→finding→probe chain for provenance (cheap, read-only — the routine gate),
+and the **full verify trail** adds re-running the probes for correctness (heavy,
+milestone-gated). Probe execution does **not** catch a provenance breach — that
+is what paper trail is for.
 
 ## Build
 
