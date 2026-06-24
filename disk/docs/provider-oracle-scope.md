@@ -1818,3 +1818,27 @@ without masking to 16 bits returns a non-integer at `SP=$FFFF`; (b) passing a he
 Tcl `expr`'s ternary numerically coerces it to scientific notation (`4e+65`) — use `if`/`else`, never `expr`,
 for string fields. Next: milestone 2 (the veneer layout table — each canonical address → contract → free-space
 impl address), shown before any `disk.asm` edit. Probe: `disk_probe_dosboot_veneer.py`.
+
+**§8.43 TIER-2 MILESTONE 3 DONE (2026-06-24) — unified-ROM veneer scaffold in place, all 21
+kernel entries wired, Disk-BASIC behaviour preserved byte-for-byte.** Built the unified single ROM
+(one 16 K image serving both Disk-BASIC and the MSX-DOS-1 kernel ABI). zerobas now exposes a 3-byte
+`jp k_XXXX` veneer at every one of the 21 canonical COMMAND.COM-load addresses; the contract bodies
+are register-preserving stubs (`ret`) pending milestone 4. **3a** placed the 6 non-colliding entries
+(`$402D` in the `$4022-$402F` pad + the 5 free-region `$5FE5 $607B $75A5 $77B8 $782B`) — purely
+additive, low region byte-identical bar the 3 `$402D` bytes. **3b** placed the 14 that collide with
+active code via a **net-zero relocation primitive**: the enclosing routine's displaced body moves to a
+tail relocated-bodies section (after `conout`, in the `$5456-$5FE4` gap) ending in `jp <next-label>`,
+and its low-region slot is filled exactly to the next label by `entry: jp body` + ds-anchored veneer(s)
++ ds pad — so **nothing downstream shifts** (the earlier inline attempt grew routines and shoved them
+past their own canonical addresses; reset and reworked). Per-site notes worth keeping: `$4935` (frs_eof,
+2 bytes) + `write_sector` had to move together (the `$4935` veneer overruns `write_sector`'s `$4937`
+entry); `frs_eof` stayed inline (it is a `jr` target from `frs_incluster`, must stay in range); any
+`jr` inside a relocated body that targets the low region became `jp`; and `$4E4B`/`$4EDE` turned out to
+be in the `$00` pad before `$50A9` (fat_dir_update's code ends far below — the collision-map "+525/+672
+inside fat_dir_update" counted the unlabeled `$50A9`/`$5454` entries), so they were a trivial pad-split
+like `$402D`. **Validation:** build clean; all 20 `jp` veneers present; `$50A9`/`$5454` kernel entries
+intact; unit-test 18/18; DSKIO byte-identical to CF-3300; and the file **read + write + directory-listing
+differentials are all byte-identical to the CF-3300 oracle** (exercising the relocated fat_find /
+bdos_seqread / bdos_create / frs_mul / write_sector / fac_loop / fac_e_odd / ffds_nopad / fdc_entloop /
+fdc_useslot). Commits 5b225cf (3a) → 37a91c3 (3b). Next: milestone 4 — fill each veneer's contract
+(the `$5454` playbook ×~12), re-probing COMMAND.COM progress after each. Probe: disk_probe_dosboot_veneer.py.
