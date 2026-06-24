@@ -137,9 +137,22 @@ the M5.2/M5.4 blueprint, with register contracts already captured:
    the core of `k_47B2`.
 
 Scanning phase complete (scans 1-5, §8.48-8.52): footprint, call graph, per-entry
-contracts, and the definitive `$D821 → A> idle` sizing are all captured. The next
-step is implementation — **M5.4** (stand up the trampoline table + page-0 vectors,
-validated standalone), the first asm.
+register contracts, and the definitive `$D821 → A> idle` sizing are all captured.
+
+**What "scans complete" does and does not mean.** The scans delivered the *map* —
+where every routine is, who calls it, and its register calling convention — plus a
+*bounded sizing* (~5.6 KB, ~38 regions, ~40 % reuse/mechanical). They did **not**
+pre-characterise behavior: for the **C** regions the register I/O is only a skeleton;
+the real data contract (memory read/written, the algorithm-as-contract) still has to
+be characterised **per region** by deeper black-box probing — and that is the
+*characterise* half of each milestone, inherently per-routine, not front-loadable.
+R+M are fully specified by the scans; r needs one confirming probe each. So the
+expensive work (behavioral characterisation + implementation of the C set) is still
+ahead — region by region, one per session — exactly the "major multi-session
+project" §8.41 anticipated.
+
+The next step is **M5.4** (stand up the trampoline table + page-0 vectors, validated
+standalone), the first asm — an R+M region, so fully spec'd already.
 
 ## Progress ledger (update at every step)
 
