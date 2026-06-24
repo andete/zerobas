@@ -2097,11 +2097,10 @@ fat_mount_bad:
 ;   out: Cy = 0 found  -> FAT_FIRSTCLUS, FAT_FILESIZE set; Cy = 1 not found / error
 ; Compare is case-insensitive; FAT directories store upper-case 8.3 names.
 fat_find:
-                ld      (FAT_NAMEPTR), hl
-                ld      hl, (FAT_FIRSTROOT)
-                ld      (FAT_DIRSEC), hl
-                ld      hl, (FAT_ROOTSECS)
-                ld      (FAT_DIRREM), hl
+                jp      fat_find_body       ; Tier-2 3b: divert; veneer fills the gap
+                ds      $47B2 - $, $00      ; anchor the canonical address
+                jp      k_47B2              ; $47B2: COMMAND.COM-load kernel veneer
+                ds      $47B9 - $, $00      ; pad remainder (net-zero: ff_secloop stays $47B9)
 ff_secloop:
                 ld      hl, (FAT_DIRREM)
                 ld      a, h
@@ -3070,13 +3069,28 @@ conout:
                 jp      k_77B8          ; $77B8
                 ds      $782B - $, $00
                 jp      k_782B          ; $782B
-; --- contract bodies (stubs; filled in milestone 4) ---
+; --- contract bodies (stubs; filled in milestone 4; added as each veneer lands) ---
 k_402D:         ret
+k_47B2:         ret
 k_5FE5:         ret
 k_607B:         ret
 k_75A5:         ret
 k_77B8:         ret
 k_782B:         ret
+
+; ===== Tier-2 3b: relocated Disk-BASIC routine bodies =====================
+; Each colliding routine's body lives here; its low-region slot holds `entry:
+; jp entry_body` + the ds-anchored veneer(s) + padding, sized to exactly fill the
+; original span (net-zero — nothing downstream shifts). Each body ends with a `jp`
+; back to the label that followed it, so fall-through is preserved. Callers reach
+; the routine through its unchanged low-region entry label.
+fat_find_body:
+                ld      (FAT_NAMEPTR), hl
+                ld      hl, (FAT_FIRSTROOT)
+                ld      (FAT_DIRSEC), hl
+                ld      hl, (FAT_ROOTSECS)
+                ld      (FAT_DIRREM), hl
+                jp      ff_secloop
 
 ; --- pad to a full 16 KB page ($4000-$7FFF) --------------------------------
                 ds      $8000 - $, $00
