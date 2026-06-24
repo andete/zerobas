@@ -258,6 +258,37 @@ Sequenced for the **(a) faithful relocation** build; sized by the scan above.
 - **Oracle:** `msxdos103-cmd111.dsk` (SHA256 `666cbc6d…`), always on a `/tmp` copy
   (openMSX can write back); `git status` + original-hash check after each run.
 
+## Effort projection (rough — high variance, read the caveat)
+
+A horizon for a fresh session, in **one-hour work-days** (the unit the user is pacing
+at). Derived from the observed git pace, **not** a commitment.
+
+*Spent so far:* the sub-track ran 2026-06-22→24 over 3 *dense* calendar days (~60
+commits) = roughly **~20–30 one-hour days** of compressed effort — almost all of it
+the hard part (understanding + sizing + finding the mechanism), now largely done.
+
+*Remaining:*
+
+| phase | est. 1-hr days |
+|---|---|
+| M5.4 foundation (R+M: trampoline table + page-0 vectors, validate paging) | 2–4 |
+| M5.5 `k_47B2` loader body | 1–3 |
+| **r** set (~10 regions: confirm-probe + wire + validate) | 6–12 |
+| **C** set (~18 regions: deep characterise + implement + validate) | 12–22 |
+| M5.final — integration to `A>` + validation | 4–8 |
+| **total** | **~25–50** |
+
+Single-number guess: **~35 one-hour days (≈ 6–10 weeks at 1/day)**.
+
+**Caveat — variance is high and skewed long.** The scans bounded the *size* but not
+the *difficulty per region*, and this work's history is a chain of "each fix revealed
+the next blocker" (§8.16 refuted, §8.25 falsified, the §8.31–8.40 re-root-causing).
+The last-mile integration to `A>` is the wildcard: it could click in a few sessions
+or a stubborn paging/timing issue could eat a week. Mitigants vs. the exploratory
+phase: a bounded backlog, clean stubs (divergences stay obvious), ~40 % reuse/
+mechanical. Re-estimate as the ledger fills — actual days-per-region will quickly
+calibrate this.
+
 ## Open questions (resolved as milestones land)
 
 - The exact BDOS-call mechanism COMMAND.COM uses (M5.1/M5.3) — `$0005` JP it
