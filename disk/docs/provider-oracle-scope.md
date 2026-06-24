@@ -1657,3 +1657,60 @@ ROM). Our `fdc_read_data` does `ld (hl),a`, which writes to ROM (discarded) → 
 re-reads (7× in 25 s, the same `DE=$020D`). A disk ROM in page 1 must service a page-1 transfer address by
 paging RAM under itself (or bounce-buffering); characterise the stock CF-3300's page-1 transfer handling
 next.** Probe: `disk_probe_dosboot_fdc.py` (§8.34) + the inline `$0038`-count and `$4010`-loop traces.
+
+**§8.35 PAGE-1 BOUNCE (`p1_blit`) + the `B=0` DSKIO-success contract (commit `b9ebd71`).** When a DSKIO
+destination falls in page 1 (`$4000-$7FFF` = our disk ROM under DOS), `dskio` now reads the sector into
+`SECTOR_BUF` (page-3 RAM) then calls a page-3-resident blit (`p1_blit`, installed at `$E77A`) that briefly
+remaps page-1's sub-slot from disk ROM (3-1) to RAM (3-0), `LDIR`s the sector to the real target, and
+restores the slot. Also: `dskio_ok` now returns `B=0` (the documented "all sectors transferred" contract).
+The `LDIR` writes the sector correctly (verified at the restore point). **BUT** the kernel still retried the
+same `DE=$020D` 3×: a watchpoint showed the `p1_blit` `LDIR` runs with interrupts ENABLED, so a 50 Hz VDP
+IRQ mid-blit lets `int_h`'s `push af` (landing at `$528F`, the kernel-stack region) clobber the just-blitted
+bytes → the kernel reads corrupt data → retries. Probe: `disk_probe_dosboot_dskio_exit.py`.
+
+**§8.36 DI-GUARD THE PAGE-1 BLIT — retry gone, boot loads COMMAND.COM sectors (commit `9f64a27`).** Bracket
+`call P1_BLIT` with the existing IFF-preserving guard (`fdc_di_save`/`fdc_io_done`), the same approach
+already used around `fdc_read_phys` (§8.34): save+clear IFF before the blit, restore after, leaving A/Cy/HL
+untouched and the masked boot path unaffected. **RESULT:** the `DE=$020D` retry streak collapses 3→**0**;
+DSKIO advances through sectors (`$0094-$0098`, **174+** calls) loading COMMAND.COM. `bdos_entry` `$44F9`→
+`$44FF` (init probe `EXP_BDOS` bumped). Regression-green: unit 18/18, C-BIOS init/files/bload_disk/dskio
+(byte-identical). **NEXT:** boot loads MSXDOS.SYS + COMMAND.COM data but stalls before `A>` with no DSKCHG —
+the COMMAND.COM load/dispatch phase.
+
+**§8.37 THE DISK-ROM-ENTRY PLAYBOOK IS *NOT* EXHAUSTED — warm-boot loop located (commit `5bb828a`,
+tooling).** (A delegated sub-agent thrashed here — it disassembled MSXDOS.SYS internals, reverted §8.33's
+`$F340=0`, and hacked fragile dual-purpose entries onto `fdc_di_save`/`fat_find`; all reverted to clean
+§8.36.) A disciplined black-box measurement instead — `disk_probe_dosboot_entries.py`, a histogram of every
+rising edge into the disk-ROM page whose stack-top return address is in high RAM (`≥$C000`, a genuine kernel
+caller) — showed the kernel calls only `$44FF` (our BDOS, 36×, `C=$0F` Open) and `$4251` (our DSKIO body,
+11×) *from high-RAM callers*. The `disk_probe_dosboot_bdos_contract.py` differential: **stock = exactly 3
+BDOS calls** (Open→SetDTA→RdBlk to load MSXDOS.SYS = `$0980` bytes, then it stops using `$F37D` and reaches
+`A>`); **Tier-1 = the same 3, then loops Open/SetDTA/RdBlk forever**. The FCB on every looping Open reads
+**`MSXDOS  SYS`** (never COMMAND.COM) ⇒ a **warm-boot loop**: MSXDOS.SYS init derails after loading and
+re-runs the boot sector instead of progressing. (The `≥$C000` filter hid a page-0 caller — see §8.38.)
+
+**§8.38 THE DERAIL = a MISSING SHARED-KERNEL ENTRY `$5454` (CONOUT), cross-vendor-validated (commit
+`026a7a1`, tooling).** Execution differential — `disk_probe_dosboot_pctrace.py` arms at the MSXDOS.SYS entry
+`$0200` and logs PC+regs each instruction; stock vs Tier-1 are byte-identical for 20 instructions then
+**diverge at `$5454`**: MSXDOS.SYS does `CALL $5454` (`A=$0D`, `DE=$020D`) from `$031D`; the stock runs its
+disk-ROM routine there, ours runs unrelated code → derail → warm-boot. Black-box trace of the stock `$5454`:
+`$5454→$408F→$40B1→$001C` (CALSLT) → resident kernel → `$F38C/$F398` → **`$00A2` CHPUT=`$0D`** = it is the
+disk-ROM **CONOUT** (output `A` via CHPUT, preserve `BC/DE/HL/IX/IY`); `A=$0D` is the leading CR of the
+sign-on banner. In-machine relocation test (dump `$0310-$032F` at the `$0200` entry vs at the `$5454` call):
+**byte-identical, `CD 54 54` already present in the pristine just-loaded file** ⇒ `$5454` is a **hard
+immediate baked into MSXDOS.SYS**, not relocated.
+
+*Is matching `$5454` CF-3300 cloning, or a real standard?* PROVENANCE byte-comparison (identity only, never
+disassembly) of **7 vendors' disk ROMs** (National cf-3300, Spectravideo svi-738, Daewoo dpf-550, Philips
+vg8235 + nms8245, Sony hb-f500p, Panasonic fs-4600): the ROMs differ **17-36% overall** (independent
+implementations, not copies) **yet are byte-identical at `$5454`**, and **~63% of each ROM is a byte-identical
+shared block** (biggest `$4768-$576F`, 4104 B). `$4030`, `$50A9`, and `$5454` **all** fall in the shared
+region. ⇒ the disk ROM = a **shared ASCII/Microsoft MSX-DOS-1 kernel (~2/3, identical industry-wide)** + a
+**vendor-specific third** (FDC driver + disk-BASIC). The entries MSXDOS.SYS hard-codes are genuine
+**cross-vendor de-facto-standard entries** (same legitimacy class as DSKIO/GETDPB); reimplementing their
+*contracts* with our own code is clean ABI work, and the surface is **bounded** to shared-kernel entries the
+kernel calls. Clean-room line unchanged: we match entry **address + contract**, never the bytes (see
+`oracle-artifacts.md` → "Cross-vendor disk-ROM set"). **NEXT:** implement CONOUT at `$5454` (first cut:
+preserve regs + `RET`, no output, then re-trap) — practical wrinkle: `$5454` (offset `$1454`) is *mid-code*
+in our 16K ROM (unlike `$4030`/`$50A9`, which sat in gaps), so it needs `ds`-placement that relocates the
+code currently there. Probes: `disk_probe_dosboot_pctrace.py`, `disk_probe_dosboot_entries.py`.

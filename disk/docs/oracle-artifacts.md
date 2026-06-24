@@ -19,6 +19,43 @@ these against its ROM database on load, so they are authentic by construction:
 
 (Source: `share/machines/National_CF-3300.xml` in the openMSX install.)
 
+## Cross-vendor disk-ROM set (shared-kernel evidence)
+
+The CF-3300 is not the only disk ROM we hold. The local openMSX system-ROM stash
+(`~/Documents/msx/share/systemroms/*_disk.rom.gz`) gives a **multi-vendor oracle
+set** — useful because a contract that reproduces *byte-identically across several
+independent vendors* is a de-facto MSX standard worth reimplementing, whereas a
+vendor-only quirk is suspect (cross-source validation, not a single source of truth).
+
+| Vendor / model | Disk ROM SHA1 (uncompressed 16 KB) |
+|----------------|------------------------------------|
+| National CF-3300        | `f1525de4e0b60a6687156c2a96f8a8b2044b6c56` |
+| Spectravideo SVI-738    | `17b2810545e55d3fa5821d74d8b5ab5475165fba` |
+| Daewoo DPF-550          | `c1d83c559e1e6a6da961eafa55aab105681c634c` |
+| Philips VG-8235         | `1bf0696816b242081e1041a16e5ff73710792865` |
+| Sony HB-F500P           | `1566532146fcfc28c707753777c66585dc12418a` |
+| Philips NMS-8245        | `c3f3ca454d66a0bc791f1d4b60e6857b44eb8755` |
+| Panasonic FS-4600       | `073feb8bb645d935e099afaf61e6f04f52adee42` |
+
+**Finding (provenance byte-comparison, identity only — never disassembly).** These
+ROMs differ **17–36 % of their bytes** overall (genuinely independent implementations,
+not copies), **yet ~63 % of each is byte-identical across all of them** — large shared
+blocks, the biggest `$4768–$576F` (4104 B), plus `$402F–$44EA`, `$65DF–$6DD0`,
+`$6DD2–$7404`. This is the MSX disk-ROM architecture: a **shared ASCII/Microsoft
+MSX-DOS-1 kernel (~2/3, identical industry-wide)** plus a **vendor-specific third**
+(FDC hardware driver + Disk-BASIC, where per-chip differences belong).
+
+**Why it matters for provenance.** The fixed disk-ROM addresses this MSX-DOS-1
+`MSXDOS.SYS` hard-codes — `$4030` (GETWRK), `$50A9`, `$5454` (CONOUT) — are all
+byte-identical across the 7 vendors, i.e. they live in the shared kernel. So they are
+genuine **cross-vendor de-facto-standard entries**, the same legitimacy class as the
+documented `$4010–$401F` interface (DSKIO/GETDPB/…). zerobas-disk reimplements their
+observed **contracts** in its own clean-room code (as it already does for `$4030` and
+`$50A9`) — it **never copies the shared block's bytes**, exactly the discipline behind
+the byte-identical-*output* GETDPB. The shared region's verbatim bytes are an oracle to
+observe, not source to lift. (Full detail in `provider-oracle-scope.md` §8.38;
+reproduce with the SHA1s above + a byte-identity scan.)
+
 ## The DOS system files — identified here (no upstream hash DB covers them)
 
 The MSX-DOS kernel + shell come from the test disk, **not** from openMSX, so they
