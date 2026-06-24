@@ -2041,3 +2041,21 @@ not re-creating the kernel. The exact loaded/built split is an **M5.2 task** (ch
 relocation + work-area layout — a write-attribution probe is confounded too, since our loader physically writes
 the kernel's bytes), so the net high-RAM "to build" is recorded as **< 1,920 B, exact figure pending M5.2**.
 Probe: disk_probe_dosboot_hiram_origin.py.
+
+**§8.54 M5.4 BASELINE (on OUR machine) — `$47B2` stub IS the blocker; the §8.40 spin reproduced; a
+progress-probe false alarm resolved.** Before writing the loader, captured the current state on
+`National_CF-3300_ZEROBASDISK` (our zerobas-disk ROM + real CF-3300 BIOS + the oracle DOS disk), `k_47B2`
+still a `ret` stub. Two probes: `disk_probe_dosboot_progress.py` (how-far metric) + `disk_probe_dosboot_path.py`
+(discriminating breakpoints). **Findings:** (1) **`$47B2` IS on MSXDOS.SYS's COMMAND.COM-load path** — the
+relocated loader at `$D821` does `CALL $47B2` (×1, return addr `$D824`), entry `AF=0044 DE=DC5B HL=D500`
+(≈ stock §8.50; `BC=0000` ours vs `FFFA` stock — a handed-in-state divergence to watch). Our stub returns
+empty. (2) **The result is the §8.40 spin, now reproduced on our machine:** `$4462` ×24,168, `$544E` ×24,155,
+CONOUT `$5454` ×24,208, `end_pc $F1CE`. (3) **`$0100`/`$0200` are reached only ×1** (transient, `AF=0144
+BC=0980 ra=0000`, not sustained) — this transient is what `disk_probe_dosboot_progress.py` reported as
+"reached_0100=YES", a **false alarm**: COMMAND.COM does NOT sustain; the kernel jumps to `$0100` once after the
+stub returns, finds no working shell, and falls into the spin. (CONOUT being hammered 24 k× also shows the spin
+includes console-output attempts — consistent with our no-op `$5454`, §8.39.) **CONCLUSION: the M5.4 premise
+holds** — `$47B2`'s empty stub is the blocker; implementing the loader (approved fork (P)) is the right next
+step. **Sharpened success metric:** not "reached `$0100`" (already happens transiently) but **the `$4462/$544E`
+spin → ~0 AND COMMAND.COM execution *sustained*** (high PC count in `$0200+`). Probes:
+disk_probe_dosboot_progress.py, disk_probe_dosboot_path.py.

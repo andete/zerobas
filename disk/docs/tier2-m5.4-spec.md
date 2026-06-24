@@ -4,8 +4,12 @@ Copyright (c) 2026 Joost Yervante Damad
 -->
 # M5.4 implementation spec — first COMMAND.COM progress (for review)
 
-Status: **DRAFT for sign-off** (spec-before-code; no asm until approved). Parent:
-[`tier2-kernel-plan.md`](tier2-kernel-plan.md). Sources: scans §8.48-8.53.
+Status: **APPROVED 2026-06-24** — fork = **(P) pragmatic diagnostic first cut**;
+loader-first reorder accepted (M5.4 = first-cut `k_47B2`). Rationale: gaps in
+*contracts* fill cleanly later via the veneer/stub design; only the loader's
+control-flow *shape* (the return-to-`$D824` handoff) might need rework, which the
+diagnostic framing surfaces early. Parent: [`tier2-kernel-plan.md`](tier2-kernel-plan.md).
+Sources: scans §8.48-8.53.
 
 ## A dependency-chain finding that reshapes M5.4
 

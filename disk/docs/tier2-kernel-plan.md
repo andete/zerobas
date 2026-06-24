@@ -247,16 +247,17 @@ Sequenced for the **(a) faithful relocation** build; sized by the scan above.
 - **M5.3 — BDOS path + gap list.** How COMMAND.COM calls each BDOS function; map onto
   `bdos_entry` (the resident BDOS, now relocated per (a)); list + implement gaps (cf.
   Random-Block-Read, §8.9), validated via `disk_probe_bdos.py` cases.
-- **M5.4 — stand up the relocated kernel band + page-0 vector table.** Build our own
-  resident kernel into the high-RAM band, lay the page-0 vector table (our targets) +
-  the inter-slot helper (from public spec), and wire the disk-ROM↔kernel calls
-  through them. Validate in isolation (paging + vector round-trips) before COMMAND.COM
-  is involved — the hang-prone part, per the §8.2/§8.4 lessons.
-- **M5.5 — `k_47B2` loader body.** Read COMMAND.COM via our CF-3300-identical file
-  layer to `$0100`; lay the full page-0 env (§5.2) atop the M5.4 vectors; set the
-  register contract; `jp $0100`. Validate: COMMAND.COM's own code runs at `$0200`
-  (first proprietary COMMAND.COM code on zerobas) — a new incremental **progress
-  probe**.
+- **M5.4 — first-cut `k_47B2` loader (REORDERED loader-first; spec
+  [`tier2-m5.4-spec.md`](tier2-m5.4-spec.md), approved fork (P)).** The trampoline
+  table can't validate while `k_47B2` is a stub (the `$F2xx` stubs are only exercised
+  by `$47B2`'s logic), so the loader goes first. Pragmatic: reuse our validated file
+  layer (`bdos_entry`/`fat_mount`) to load COMMAND.COM to `$0100`, lay the §5.2
+  page-0 env, set the register contract, transfer in. Validate: COMMAND.COM executes
+  at `$0200` (first proprietary COMMAND.COM code on zerobas) via a new **progress
+  probe**. Sub-entries + the `$F2xx` trampoline table fill incrementally after, as
+  the probe shows COMMAND.COM needs them.
+  *(M5.1/M5.2/M5.3 characterisation was largely front-loaded by scans 1-5 §8.48-8.53;
+  remaining per-region characterisation happens inside M5.6…N.)*
 - **M5.6 … M5.N — fill the page-1 cluster contracts** in the order COMMAND.COM/the
   kernel hit them (the `$5454` playbook ×~N): characterise each on stock, implement
   behind its existing veneer, re-run the progress probe, repeat. One per session.
