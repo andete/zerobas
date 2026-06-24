@@ -291,7 +291,7 @@ STRSCR          equ     $E360   ; [len][bytes:STRMAX] = 33 bytes ($E360..$E380)
 ; link pointers). Each line: [link:2 LE][lineno:2 LE][tokens...][00]; the
 ; program ends with a link word of $0000.
 ; Source: TXTTAB sysvar $F676 and its post-boot value $8001 are oracle-confirmed
-; (msx-preservation/basic-spec spec-bload-r.md §4 — "sourced"); the line-link
+; (basic/docs/spec-bload-r.md §4 — "sourced"); the line-link
 ; layout is MSX2 Technical Handbook / MSX Assembly Page (allowed), same
 ; provenance as the BIOS and token constants used elsewhere here.
 TXTTAB          equ     $F676   ; sysvar: pointer to the BASIC text base

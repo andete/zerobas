@@ -152,14 +152,17 @@ Then walk <target>/<target>.asm region by region. For EACH region:
      read the probe source and judge "is this genuinely BLACK-BOX?" — it drives
      the oracle through a legal interface and records outputs; it does NOT embed
      disassembled internals. If a document: confirm it is Clean/Scoped in
-     allowed-sources.md, not a ✗ source.
+     allowed-sources.md, not a ✗ source. Confirm the cited probe/doc is PUBLIC
+     (in-repo or a published source) — a citation that resolves only to the
+     private `msx-preservation` workbench is a BREAK (the public chain dead-ends).
   4. Verdict per region: CLEAN / BREAK (with the specific reason).
 
 Do NOT run probes, do NOT judge correctness — only provenance.
 
 Deliver: a per-region verdict table, then a BREAKS list ranked by severity
 (forbidden-source citation > orphan asm > finding-not-a-contract >
-probe-not-black-box > citation present but unresolvable). For each break: the
+probe-not-black-box > private-only citation > citation present but unresolvable).
+For each break: the
 asm line range, what is wrong, and the minimal fix (add citation / write the
 missing finding / re-derive cleanly / quarantine).
 ```
@@ -331,8 +334,13 @@ shake out the unexercised process. Phase A re-confirmed the paper-trail structur
      `probes/tape/bios_probe_winwid_idle.py` (re-rooted on `probes/lib/`, 0BSD), with the
      citations updated. The same sweep fixed two stale disk comments (the cited
      `disk_probe_dskio`/`disk_probe_bdos` were already public) and softened a basic
-     BREAKX corroboration to its public MSX2-TH primary. (Empirical re-run of the two
-     tape probes still needs the VG-8020 oracle machine installed — not present this
-     session — but the provenance link is no longer private.)
+     BREAKX corroboration to its public MSX2-TH primary. Both re-homed probes were
+     then **re-run on the live `Philips_VG_8020` oracle and re-validated byte/hit-
+     identical** to the recorded findings (`cas_baud_oracle`: active LOW = 53 5c for
+     SCREEN ,,,1 / 25 2d for ,,,2; `winwid_idle`: self-test PASS, real run 0 write /
+     0 read hits = IDLE) — so these two rows are now fully empirically closed, not
+     merely re-cited. (Note: the VG-8020 needs no install — openMSX ships the machine
+     and indexes the ROM in its filepool, per docs/openmsx-harness.md; an earlier
+     "couldn't run it" claim was wrong, from checking only the user machines dir.)
 - **Verdict:** tape full-verify CLEAN; all publicly-runnable correctness checks green.
   Process itself now exercised once (loose end #2 closed for tape).

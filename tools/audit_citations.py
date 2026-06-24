@@ -25,6 +25,13 @@ GATING checks (a finding => exit 1):
      clean-room basis in its header block (a "no disassembly" / "clean-room"
      statement, or a pointer to its PROVENANCE.md basis).
 
+  4. PRIVATE-REFERENCE SCAN — a public finding must resolve to a PUBLIC artifact.
+     A citation that dead-ends in the private workbench (`msx-preservation`,
+     "private workbench") breaks the chain for any public auditor. Scanned across
+     every provenance-bearing file: the asm, the component PROVENANCE.md, and the
+     probe sources — NOT the docs/ narrative (a pointer to a private investigation
+     note is acceptable there) or the boundary-policy files (PUBLISHING.md etc.).
+
 ADVISORY check (reported, does NOT affect exit code):
 
   3. SECTION-CITATION PRESENCE — disk.asm uses inline `; --- name (§cite) ---`
@@ -55,6 +62,27 @@ TARGETS = {
 }
 # Components whose section headers carry inline citations (advisory check 3).
 INLINE_CITE_TARGETS = {"disk"}
+
+# --- check 4: private-reference scan (the public/provenance line) ---------------
+# A public finding must resolve to a PUBLIC artifact. A citation that dead-ends in
+# the private workbench (`msx-preservation`) breaks the chain for any public
+# auditor. We scan the provenance-BEARING files only — the asm, the component
+# PROVENANCE.md, and the probe sources — never the docs/ narrative (where a
+# pointer to a private *investigation note* is acceptable) or the boundary-policy
+# files (PUBLISHING.md / probes/README.md, whose job is to describe the split).
+PRIVATE_REF = re.compile(r"private[- ]?workbench|msx-preservation|\(private\)", re.I)
+
+
+def provenance_files(target: str) -> list[str]:
+    """asm + component PROVENANCE.md + probe sources — every place a provenance
+    claim is asserted, so every place a private-only citation is a break."""
+    files = list(TARGETS[target])
+    prov = ROOT / target / "PROVENANCE.md"
+    if prov.exists():
+        files.append(str(prov.relative_to(ROOT)))
+    files += sorted(str(p.relative_to(ROOT))
+                    for p in (ROOT / "probes" / target).glob("*.py"))
+    return files
 
 # --- check 1: forbidden-source vocabulary --------------------------------------
 # Verbs/nouns of a forbidden *derivation method*. "byte-identical" is excluded on
@@ -155,6 +183,23 @@ def audit_file(rel: str, check_sections: bool):
     return gating, advisory
 
 
+def audit_private(rel: str):
+    """check 4: a private-only citation in a provenance-bearing file (gating)."""
+    findings = []
+    try:
+        lines = (ROOT / rel).read_text(errors="replace").splitlines()
+    except OSError as e:
+        return [("ERROR", 0, f"cannot read: {e}")]
+    for i, line in enumerate(lines):
+        if PRIVATE_REF.search(line):
+            findings.append(
+                ("PRIVATE-REF", i + 1,
+                 f"provenance cites a private artifact (must resolve public): "
+                 f"{line.strip()!r}")
+            )
+    return findings
+
+
 def main(argv):
     targets = argv[1:] or ["disk", "basic", "tape"]
     unknown = [t for t in targets if t not in TARGETS]
@@ -176,6 +221,11 @@ def main(argv):
             for sev, ln, msg in advisory:
                 print(f"  [{sev}] {rel}:{ln}: {msg}")
                 t_adv += 1
+        # check 4: private-reference scan across all provenance-bearing files
+        for rel in provenance_files(target):
+            for sev, ln, msg in audit_private(rel):
+                print(f"  [{sev}] {rel}:{ln}: {msg}")
+                t_gate += 1
         if t_gate == 0:
             print("  clean — attestations present, no unattested forbidden source"
                   + ("" if t_adv == 0 else f"  ({t_adv} advisory review candidate(s))"))

@@ -117,6 +117,27 @@ difference, not noise.
 No copyrighted ROMs are committed — they live only on this machine and are
 git-ignored, the same policy as `reference/`.
 
+### Which machine each probe needs
+
+The oracle machine a probe drives is its `MACHINE` / `--machine` default. Four
+families are in use across the current probe set (verify the live list with
+`grep -rn 'MACHINE *=\|--machine' probes/`):
+
+| Machine | Who provides it | Used by |
+|---|---|---|
+| `Philips_VG_8020` | **openMSX-shipped**, ROM in the filepool — *no install* | most `probes/basic/*` differential probes (crunch, tokens, print, controlflow, loops, data, statements, screen, vdpio, usr, bload, cload) **and** `probes/tape/cas_baud_oracle.py` + `bios_probe_winwid_idle.py` |
+| `C-BIOS_MSX1` | ships with openMSX | a few basic functional probes (cont, list, strvar) |
+| `C-BIOS_MSX1[_EU]_TAPE` / `_BASIC` | `make machines` (this repo; C-BIOS + zerobas/tape IPS) | `probes/tape/*` (realtape, the open-stack/tapfile paths) + `basic_probe_*_ondevice`/openstack |
+| `C-BIOS_MSX1[_EU]_BASIC_DISK` | `make machines` | `probes/disk/*` zerobas-side (our DSKIO/BDOS/Disk-BASIC) |
+| `National_CF-3300` | **user-supplied** proprietary CF-3300 BIOS | `probes/disk/*` reference side (`--ref-machine`) + the `disk_probe_dosboot_*` stock-oracle baseline |
+| `National_CF-3300_ZEROBASDISK` | `make machines-oracle` (real CF-3300 BIOS + zerobas-disk in slot 3-1) | the Tier-1 `disk_probe_dosboot_*` provider-oracle runs |
+
+So `make machines` + `make machines-oracle` plus your own `Philips_VG_8020` and
+`National_CF-3300` ROMs (already-installed openMSX reference ROMs) cover the whole
+set. The VG-8020 needs nothing installed; the CF-3300 BIOS is the one proprietary
+oracle you must supply. openMSX version in use: **21.0**. (`probes/README.md`
+names the reference machines; this table is the per-probe mapping.)
+
 ## Clean-room posture for the parked Phase 2
 
 When this harness is used to compare against the VG-8020, the real ROM is an
