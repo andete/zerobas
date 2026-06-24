@@ -344,3 +344,36 @@ shake out the unexercised process. Phase A re-confirmed the paper-trail structur
      "couldn't run it" claim was wrong, from checking only the user machines dir.)
 - **Verdict:** tape full-verify CLEAN; all publicly-runnable correctness checks green.
   Process itself now exercised once (loose end #2 closed for tape).
+
+### 2026-06-24 — basic, FULL VERIFY TRAIL — ✅ CLEAN + correctness re-validated (at `ecff47e`)
+
+Second exercise of the full-verify trail (chosen because disk is still in active
+development). Phase A re-confirmed the paper-trail structure (basic already CLEAN at
+`d160f8c`); Phase B re-ran the host harness + the oracle differential probes.
+
+- **Phase B host half — `make unit-test`: 18/18 PASS.** The in-RAM behaviours
+  (tokenise, expr, vars, program, print, printusing, screen, vdpio, usr, strvar,
+  control-flow, field, getdpb, …) are locked into the emulator-free Z80 harness, so
+  per the brief they were re-checked there rather than via openMSX.
+- **Phase B keystone — `basic_probe_crunch.py` vs the live `Philips_VG_8020`:
+  ALL PASS, crunch byte-identical.** This is the highest-risk hop (the token tables,
+  cited across nearly every PROVENANCE section); byte-identity to the real VG-8020 is
+  the gold-standard re-validation, achieved by *observing* the ROM, never reading it.
+- **Phase B differential/functional probes (VG-8020 unless noted): ALL PASS** —
+  controlflow, loops, data, statements, print, usr, vdpio, screen, clear, printusing
+  (functional + differential identical), bload (`,R` handoff), cload; and cont, list,
+  strvar on C-BIOS_MSX1. `basic_probe_tokens.py` is a pure oracle-*observation* tool
+  (no assertion; feeds the token spec) — the hop it documents is covered by crunch.
+- **Deferred by overlap, not skipped:** the cassette-device basic probes
+  (`cload_ondevice`, `bload_openstack`, `basic_probe_tape_save`) exercise the C-BIOS +
+  zerobas-tape stack already re-validated in the tape full-verify above; the disk
+  host-engine findings (Phase 1.5 `fat.asm`, the BLOAD/LOAD/RUN/SAVE disk surface)
+  are backed by `probes/disk/*` and belong to the disk full-verify (disk is still in
+  active development — gated to its tier closure).
+- **Findings:** none. No clean-room break, no correctness regression, no stale/private
+  citation (the `make audit-citations` PRIVATE-REF sweep that found `basic/sysvars.inc`
+  → `spec-bload-r.md` earlier is now fixed and green for basic). Repo unmutated by the
+  run (probes write to `/tmp`).
+- **Verdict:** basic full-verify CLEAN; every publicly-runnable correctness check green.
+  Loose end #2 now exercised on **two** of three components (tape + basic); only disk
+  remains, deferred until its active work settles.
