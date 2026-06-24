@@ -1721,3 +1721,22 @@ kernel calls. Clean-room line unchanged: we match entry **address + contract**, 
 preserve regs + `RET`, no output, then re-trap) — practical wrinkle: `$5454` (offset `$1454`) is *mid-code*
 in our 16K ROM (unlike `$4030`/`$50A9`, which sat in gaps), so it needs `ds`-placement that relocates the
 code currently there. Probes: `disk_probe_dosboot_pctrace.py`, `disk_probe_dosboot_entries.py`.
+
+**§8.39 CONOUT AT `$5454` IMPLEMENTED — the warm-boot loop BREAKS (stock BDOS parity); boot advances to the
+COMMAND.COM-load phase.** The "$5454 is mid-code" worry (§8.38) was wrong: the ROM's real code ends at
+`$50B7`; `$50B8–$7FFF` is one 12 KB `$00`-padding run, so `$5454` sits in free space and is placed exactly
+like `$4030`/`$50A9` — a `ds $5454-$,$00` fill + the routine, **shifting nothing** (`bdos_entry` stays
+`$44FF`). First cut: a register-preserving `RET` (no output yet), to test whether the banner-print derail
+is the blocker. **RESULT (`disk_probe_dosboot_pctrace.py`):** `$5454` now returns cleanly to `$0320` (was a
+derail), and the boot runs the banner loop, calling `$5454` per character (`A=$0D`,`$0A`,`$4D`…) and walking
+the string. **`disk_probe_dosboot_bdos_contract.py`: Tier-1 BDOS calls 21 (looping) → 3 — exact stock
+parity** (Open→SetDTA→RdBlk, then it stops using `$F37D` and proceeds). The warm-boot loop is gone.
+Regression-green: unit 18/18, C-BIOS init/files/bload_disk/dskio (byte-identical). `bdos_entry` unchanged
+`$44FF` (no probe bump). **NEXT GAP (`disk_probe_dosboot_entries.py`, 14 distinct entries now):** the
+relocated kernel (`$D7FA`/`$D806`, `IX=$F1AA`) hammers two more disk-ROM entries during the COMMAND.COM
+load — **`$4462` (×24151)** and **`$544E` (×24148)**, plus `$47B2` (×1). Both are in the cross-vendor
+shared-kernel region (`$4462` ∈ `$402F–$44EA`; `$544E` ∈ `$4768–$576F`), i.e. the same de-facto-standard
+class as `$5454`; our ROM has unrelated code / `$00`-pad there. Characterise whether the ×24k counts are
+legitimate COMMAND.COM-load work or a new tight loop, then black-box each contract and reimplement (the
+`$5454` playbook). (These are the addresses the §8.37 sub-agent guessed at — real entries, surfacing only
+now that the warm-boot loop is broken; its *implementations* stay rejected.)

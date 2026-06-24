@@ -3023,5 +3023,26 @@ fat_dir_update:
                 ld      hl, W50A9_RET_HL ; HL = $F359
                 ret                     ; AF=$0042, BC/IY untouched
 
+; --- MSX-DOS-1 kernel CONOUT entry: $5454 ($4000 + $1454; a3 §8.38) ---------
+; The relocated kernel CALLs $5454 to emit its sign-on banner one character at a
+; time (the boot's first divergence point, disk_probe_dosboot_pctrace.py). It is
+; the disk ROM's CONOUT: output the char in A via the BIOS CHPUT path, preserving
+; BC/DE/HL/IX/IY. Black-box call-chain on the stock: $5454 -> $408F -> $001C
+; (CALSLT) -> resident kernel -> $F398 -> $00A2 (CHPUT); first call A=$0D (the
+; banner's leading CR). $5454 is a HARD IMMEDIATE in MSXDOS.SYS (`CD 54 54`
+; present in the pristine just-loaded image, unchanged at call time -- not a
+; relocated vector). CLEAN-ROOM: $5454 is a cross-vendor de-facto-standard entry,
+; byte-identical across seven vendors' disk ROMs in the shared ASCII-kernel block
+; ($4768-$576F) -- the same ABI class as $4010 DSKIO / $4016 GETDPB, never a byte
+; copy (oracle-artifacts.md "Cross-vendor disk-ROM set"; spec-diskrom-kernel.md
+; §1.3). Our code ends far below $5454, so the entry is positioned with a `ds`
+; fill (like $4030/$50A9), consuming otherwise-$00 page padding -- nothing shifts.
+; FIRST CUT: a register-preserving no-op (banner not yet emitted), to test whether
+; the banner-print derail is the boot blocker; real CHPUT output is added by a
+; later re-trap if the kernel proves to need visible output (cf. res_print §8.28a).
+                ds      $5454 - $, $00  ; pad up to the kernel's $5454 CONOUT target
+conout:
+                ret                     ; first cut: preserve all regs, emit nothing
+
 ; --- pad to a full 16 KB page ($4000-$7FFF) --------------------------------
                 ds      $8000 - $, $00
