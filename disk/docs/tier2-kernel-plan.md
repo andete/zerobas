@@ -154,6 +154,14 @@ Legend: **✅ done** (implemented + validated → counts as covered) · **🟨 v
 (M3 scaffold placed, body is a `ret` stub — contract not yet filled) · **⬜ todo**
 (no scaffold yet).
 
+Prefill class (where grounded front-loading is safe — *guessing is not used*):
+**R** reuse-ready (wire to an existing validated routine now) · **M** mechanical
+(build once from public spec) · **r** reuse-likely (our FAT/BDOS family — confirm the
+captured contract before wiring) · **C** characterise (orchestration / hot path /
+relocated-kernel code; needs the full characterise→implement→validate loop).
+Front-loadable now = **R+M (400 B)**; after a contract-confirm = **r (1,744 B)**;
+**C (3,280 B)** must follow the boot in order.
+
 Bar chars: `█` done · `▒` veneer · `░` todo.
 
 > *(baseline, scans complete, pre-M5.4)*
@@ -163,31 +171,35 @@ Bar chars: `█` done · `▒` veneer · `░` todo.
 > hi-RAM    ░░░░░░░░░░░░░░░░░░░░  ✅    0 · 🟨    0 · ⬜1,920  / 1,920 B
 > ```
 
-| disk-ROM range | B | status | hi-RAM range | B | status |
-|---|---|---|---|---|---|
-| `4010-40BF` | 176 | ✅ DSKIO (existing) | `C200-C27F` | 128 | ⬜ |
-| `4170-418F` | 32 | ⬜ | `CB90-CBDF` | 80 | ⬜ |
-| `41F0-436F` | 384 | 🟨 `k_41FD` (reuse fat/dir) | `CE50-D00F` | 448 | ⬜ |
-| `4400-446F` | 112 | ⬜ | `D070-D08F` | 32 | ⬜ |
-| `44D0-456F` | 160 | 🟨 `k_4558` | `D600-D60F` | 16 | ⬜ |
-| `4600-461F` | 32 | ⬜ | `D820-D8BF` | 160 | ⬜ kernel COMMAND-exec |
-| `46A0-46EF` | 80 | 🟨 `k_46C8` | `DDA0-DDEF` | 80 | ⬜ RST-38/`$DDAE` |
-| `4740-474F` | 16 | ⬜ | `DE50-DF6F` | 288 | ⬜ vector handlers |
-| `47B0-47DF` | 48 | 🟨 `k_47B2` | `EF90-F05F` | 208 | ⬜ hot loop |
-| `4840-49BF` | 384 | 🟨 `k_4919/4935/498C/49B4` | `F0F0-F17F` | 144 | ⬜ driver dispatch |
-| `4A30-4A7F` | 80 | 🟨 `k_4A39` | `F1C0-F1FF` | 64 | ⬜ work area |
-| `4B20-4C4F` | 304 | 🟨 `k_4B59/4BE5/4C25` | `F250-F2BF` | 112 | ⬜ CALSLT table |
-| `4E40-4EFF` | 192 | 🟨 `k_4E4B/4EDE` | `F360-F39F` | 64 | ⬜ BDOS vec |
-| `50E0-510F` | 48 | ⬜ | `FD90-FDCF` | 64 | ⬜ COMMAND gateway |
-| `53A0-544F` | 176 | ⬜ | `FFC0-FFDF` | 32 | ⬜ subslot |
-| `54C0-559F` | 224 | ⬜ | | | |
-| `5600-569F` | 160 | ⬜ | | | |
-| `5FA0-609F` | 256 | 🟨 `k_5FE5/607B` (reuse bdos) | | | |
-| `6370-637F` | 16 | ⬜ | | | |
-| `7490-74DF` | 80 | ⬜ | | | |
-| `7580-77BF` | 576 | 🟨 `k_75A5/77B8` (hot) | | | |
-| `7820-786F` | 80 | 🟨 `k_782B` | | | |
-| `7940-797F` | 64 | ⬜ | | | |
+| disk-ROM range | B | st | cls | hi-RAM range | B | st | cls |
+|---|---|---|---|---|---|---|---|
+| `4010-40BF` | 176 | ✅ | R DSKIO (done) | `C200-C27F` | 128 | ⬜ | C kernel COMMAND-exec |
+| `4170-418F` | 32 | ⬜ | C | `CB90-CBDF` | 80 | ⬜ | C |
+| `41F0-436F` | 384 | 🟨 | r `k_41FD` fat/dir | `CE50-D00F` | 448 | ⬜ | C |
+| `4400-446F` | 112 | ⬜ | C | `D070-D08F` | 32 | ⬜ | C |
+| `44D0-456F` | 160 | 🟨 | r `k_4558` | `D600-D60F` | 16 | ⬜ | C |
+| `4600-461F` | 32 | ⬜ | C | `D820-D8BF` | 160 | ⬜ | C COMMAND-exec |
+| `46A0-46EF` | 80 | 🟨 | r `k_46C8` | `DDA0-DDEF` | 80 | ⬜ | C RST-38/`$DDAE` |
+| `4740-474F` | 16 | ⬜ | C | `DE50-DF6F` | 288 | ⬜ | C vector handlers |
+| `47B0-47DF` | 48 | 🟨 | C `k_47B2` loader† | `EF90-F05F` | 208 | ⬜ | C hot loop |
+| `4840-49BF` | 384 | 🟨 | r `k_4919/4935/498C/49B4` | `F0F0-F17F` | 144 | ⬜ | r driver dispatch |
+| `4A30-4A7F` | 80 | 🟨 | r `k_4A39` | `F1C0-F1FF` | 64 | ⬜ | r work area |
+| `4B20-4C4F` | 304 | 🟨 | r `k_4B59/4BE5/4C25` | `F250-F2BF` | 112 | ⬜ | M CALSLT table |
+| `4E40-4EFF` | 192 | 🟨 | C `k_4E4B/4EDE` | `F360-F39F` | 64 | ⬜ | r BDOS vec (`$F37D`) |
+| `50E0-510F` | 48 | ⬜ | C | `FD90-FDCF` | 64 | ⬜ | C COMMAND gateway |
+| `53A0-544F` | 176 | ⬜ | C | `FFC0-FFDF` | 32 | ⬜ | M subslot |
+| `54C0-559F` | 224 | ⬜ | C | | | | |
+| `5600-569F` | 160 | ⬜ | C | | | | |
+| `5FA0-609F` | 256 | 🟨 | R `k_5FE5/607B` → DSKIO/bdos_entry | | | | |
+| `6370-637F` | 16 | ⬜ | C | | | | |
+| `7490-74DF` | 80 | ⬜ | C | | | | |
+| `7580-77BF` | 576 | 🟨 | C `k_75A5/77B8` hot | | | | |
+| `7820-786F` | 80 | 🟨 | r `k_782B` | | | | |
+| `7940-797F` | 64 | ⬜ | C | | | | |
+
+† `k_47B2` is the COMMAND.COM loader — class C only in that it's bespoke
+orchestration, but it is **grounded, not guessed**: read 13 sectors → `$0100` via
+our DSKIO, lay the §5.2 page-0 env, set the register contract, transfer in.
 
 ## Milestones (each: characterise on stock → implement → re-probe progress)
 
