@@ -2291,30 +2291,21 @@ frs_incluster:
                 ld      a, (FAT_SECPERCLUS)
                 ld      b, a
 frs_mul:
-                add     hl, de
-                djnz    frs_mul             ; HL = (cluster-2) * secPerClus
-                ld      de, (FAT_FIRSTDATA)
-                add     hl, de
-                ld      a, (FAT_CLUSSEC)
-                ld      e, a
-                ld      d, 0
-                add     hl, de              ; HL = absolute logical sector
-                ex      de, hl
-                ld      hl, SECTOR_BUF
-                call    read_sector
-                ret     c
-                ld      a, (FAT_CLUSSEC)
-                inc     a
-                ld      (FAT_CLUSSEC), a
-                or      a                   ; Cy = 0 success
-                ret
-frs_eof:
+                jp      frs_mul_body        ; Tier-2 3b: divert; veneers fill the gap
+                ds      $4919 - $, $00      ; anchor canonical address
+                jp      k_4919              ; $4919: COMMAND.COM-load kernel veneer
+                ds      $4935 - $, $00      ; anchor canonical address
+                jp      k_4935              ; $4935: COMMAND.COM-load kernel veneer
+frs_eof:                                    ; kept inline (jr target from frs_incluster)
                 scf
                 ret
+                ds      $4941 - $, $00      ; net-zero: absorbs the relocated write_sector
 
 ; ===========================================================================
 ; FAT12 WRITE-BACK substrate (disk/PROVENANCE.md §FAT12 write-back)
 ; ===========================================================================
+; (write_sector was relocated to the Tier-2 relocated-bodies section: its $4937
+; entry collided with the $4935 veneer; it is reached unchanged via its label.)
 ; The write twins of the read helpers. All structures (free-cluster scan, 12-bit
 ; entry pack, multi-FAT sync, directory-entry create/update) are realised from
 ; the Microsoft FAT specification; the physical sector write goes through the
@@ -2323,18 +2314,6 @@ frs_eof:
 ; Write lives in SECTOR_BUF (fat_flush_data_sector writes it out); the FAT/dir
 ; METADATA helpers (alloc/link/dir create/update) use the independent WBUF, so a
 ; cluster scan or dir stamp never disturbs the in-flight data sector.
-
-; write_sector — write one logical sector from a buffer via the DSKIO core.
-;   in:  DE = logical sector number, HL = buffer (512 bytes)
-;   out: Cy = 0 ok, Cy = 1 error (A = DSKIO error code)
-; The write twin of read_sector: same DSKIO call but with the direction carry set
-; (Cy = 1 = write). The caller has already staged the data in the buffer.
-write_sector:
-                ld      b, 1            ; one sector
-                ld      c, $F9          ; media byte (ignored, single drive)
-                ld      a, 0            ; drive 0 (ignored)
-                scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
-                jp      dskio           ; tail-call: dskio returns to our caller
 
 ; fat_read_fat_sector — read FAT-copy-0 sector that holds cluster N's entry.
 ;   in:  HL = cluster number
@@ -2388,46 +2367,12 @@ fat_alloc_cluster:
                 ld      (FAT_WRTMP2), hl    ; cached-sector = none
                 ld      hl, 2               ; first data cluster
 fac_loop:
-                ld      de, (FAT_WRTMP)
-                push    hl
-                or      a
-                sbc     hl, de
-                pop     hl
-                jr      nc, fac_full        ; cluster >= total -> disk full
-                ; which FAT sector + byte index holds cluster HL's entry?
-                push    hl
-                ld      a, l
-                and     1
-                ld      (FAT_PARITY), a
-                ld      e, l
-                ld      d, h
-                srl     d
-                rr      e                   ; DE = cluster >> 1
-                add     hl, de              ; HL = fatofs = cluster * 3/2
-                ld      a, l
-                ld      (FAT_BYTEIDX), a
-                ld      a, h
-                and     1
-                ld      (FAT_BYTEIDX + 1), a    ; byteidx = fatofs & $1FF
-                ld      a, h
-                srl     a                   ; FAT sector offset = fatofs >> 9
-                ld      e, a
-                ld      d, 0
-                ld      hl, (FAT_FATSTART)
-                add     hl, de              ; HL = absolute FAT sector
-                ; is this sector already in WBUF? (cached-sector compare)
-                ld      de, (FAT_WRTMP2)
-                push    hl
-                or      a
-                sbc     hl, de
-                pop     hl
-                jr      z, fac_have_sec     ; already loaded -> no re-read
-                ld      (FAT_WRTMP2), hl    ; remember the new cached sector
-                ld      (FAT_FATSEC), hl
-                ex      de, hl
-                ld      hl, WBUF
-                call    read_sector
-                jr      c, fac_rderr
+                jp      fac_loop_body       ; Tier-2 3b: divert; veneers fill the gap
+                ds      $498C - $, $00      ; anchor canonical address
+                jp      k_498C              ; $498C: COMMAND.COM-load kernel veneer
+                ds      $49B4 - $, $00      ; anchor canonical address
+                jp      k_49B4              ; $49B4: COMMAND.COM-load kernel veneer
+                ds      $49C3 - $, $00      ; pad to fac_have_sec (net-zero)
 fac_have_sec:
                 ; read the 12-bit entry from WBUF (handles straddle into next sec).
                 pop     hl                  ; HL = cluster
@@ -2498,24 +2443,10 @@ fac_comb:
                 ld      e, a
                 ret
 fac_e_odd:
-                ld      a, (FAT_B1)
-                ld      l, a
-                ld      h, 0
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                ld      a, (FAT_B0)
-                rrca
-                rrca
-                rrca
-                rrca
-                and     $0F
-                ld      e, a
-                ld      d, 0
-                add     hl, de
-                ex      de, hl
-                ret
+                jp      fac_e_odd_body      ; Tier-2 3b: divert; veneer fills the gap
+                ds      $4A39 - $, $00      ; anchor canonical address
+                jp      k_4A39              ; $4A39: COMMAND.COM-load kernel veneer
+                ds      $4A40 - $, $00      ; pad to fat_write_fat_entry (net-zero)
 
 ; fat_write_fat_entry — set a cluster's 12-bit value in EVERY FAT copy on disk.
 ;   in:  HL = cluster, DE = 12-bit value to store
@@ -2759,17 +2690,10 @@ ffds_padloop:
                 dec     bc
                 jr      ffds_padloop
 ffds_nopad:
-                ; ensure we have a data cluster to write into. Allocate when there
-                ; is NO cluster yet (WRCLUS == 0, the very first flush) OR the
-                ; current cluster is full (WRSECIDX >= secPerClus).
-                ld      hl, (BDOS_WRCLUS)
-                ld      a, h
-                or      l
-                jr      z, ffds_alloc       ; no cluster yet -> allocate the first
-                ld      a, (BDOS_WRSECIDX)
-                ld      hl, FAT_SECPERCLUS
-                cp      (hl)
-                jr      c, ffds_haveclus    ; room in the current cluster
+                jp      ffds_nopad_body     ; Tier-2 3b: divert; veneer fills the gap
+                ds      $4B59 - $, $00      ; anchor canonical address
+                jp      k_4B59              ; $4B59: COMMAND.COM-load kernel veneer
+                ds      $4B62 - $, $00      ; pad to ffds_alloc (net-zero)
 ffds_alloc:
                 ; allocate a new cluster (first one, or chain extension).
                 call    fat_alloc_cluster
@@ -2853,59 +2777,15 @@ fdc_secloop:
                 ld      hl, WBUF
                 ld      b, 16               ; 16 entries per 512-byte sector
 fdc_entloop:
-                push    bc
-                push    hl
-                ld      a, (hl)
-                or      a
-                jr      z, fdc_useslot      ; $00 end-marker -> free slot here
-                cp      $E5
-                jr      z, fdc_useslot      ; $E5 deleted -> reusable slot
-                ; same-name existing entry? (truncate-in-place)
-                ld      de, (FAT_NAMEPTR)
-                call    name_cmp
-                jr      z, fdc_useslot
-                pop     hl
-                ld      de, 32
-                add     hl, de
-                pop     bc
-                djnz    fdc_entloop
-                ld      hl, (FAT_DIRSEC)
-                inc     hl
-                ld      (FAT_DIRSEC), hl
-                ld      hl, (FAT_DIRREM)
-                dec     hl
-                ld      (FAT_DIRREM), hl
-                jr      fdc_secloop
+                jp      fdc_entloop_body    ; Tier-2 3b: divert; veneer fills the gap
+                ds      $4BE5 - $, $00      ; anchor canonical address
+                jp      k_4BE5              ; $4BE5: COMMAND.COM-load kernel veneer
+                ds      $4C05 - $, $00      ; pad to fdc_useslot (net-zero)
 fdc_useslot:
-                pop     hl                  ; HL = dir entry slot in WBUF
-                pop     bc
-                ; record the slot's sector + byte offset for fat_dir_update.
-                ld      de, (FAT_DIRSEC)
-                ld      (BDOS_DIRSEC), de
-                push    hl
-                ld      de, WBUF
-                or      a
-                sbc     hl, de              ; HL = offset within the sector
-                ld      (BDOS_DIROFF), hl
-                pop     hl
-                ; write the 11-byte name (case already 8.3 upper from the caller).
-                push    hl
-                ex      de, hl              ; DE = dest slot
-                ld      hl, (FAT_NAMEPTR)
-                ld      bc, 11
-                ldir                        ; name -> entry +0..10
-                ; DE now points at +11 (attribute). ORACLE OBSERVATION: real
-                ; MSX-DOS 1's Create writes a NORMAL file with attribute $00 (it
-                ; does NOT set the archive bit), so we match it byte-for-byte
-                ; (disk_probe_fwrite.py PART 3 structural compare). $00 = no
-                ; attributes = an ordinary readable/writable file (Microsoft FAT
-                ; spec §3.4 attribute byte).
-                xor     a
-                ld      (de), a             ; +11 = $00 (normal file; matches MSX-DOS)
-                inc     de
-                ; zero +12..+31 (S1/S2, rec-count, alloc-map, date/time, first
-                ; cluster, size). Date/time = 0 is the documented divergence.
-                ld      b, 20               ; +12..+31 is 20 bytes
+                jp      fdc_useslot_body    ; Tier-2 3b: divert; veneer fills the gap
+                ds      $4C25 - $, $00      ; anchor canonical address
+                jp      k_4C25              ; $4C25: COMMAND.COM-load kernel veneer
+                ds      $4C29 - $, $00      ; pad to fdc_zero (net-zero)
 fdc_zero:
                 xor     a
                 ld      (de), a
@@ -2973,7 +2853,11 @@ fat_dir_update:
 ; `sub a` yields exactly A=$00 / F=$42 ($42 = Z|N: 0-0 sets Z+N, clears S/H/PV/C); the
 ; following loads do not disturb the flags, so the exit AF is exact. Inputs ignored
 ; (the kernel passes AF=C340 BC=0000 DE=DC80 HL=D606 IX=F195 IY=C0AB; none consumed).
-                ds      $50A9 - $, $00  ; pad up to the kernel's $50A9 call target
+                ds      $4E4B - $, $00  ; pad to the $4E4B kernel veneer (was $50A9 fill)
+                jp      k_4E4B          ; $4E4B: COMMAND.COM-load kernel veneer
+                ds      $4EDE - $, $00  ; pad to the $4EDE kernel veneer
+                jp      k_4EDE          ; $4EDE: COMMAND.COM-load kernel veneer
+                ds      $50A9 - $, $00  ; pad remainder up to the kernel's $50A9 target
                 sub     a               ; A=$00, F=$42 (Z+N) -- the exact exit AF
                 ld      (W50A9_WRKB), a ; $F242 := $00  (the only persistent write)
                 ld      de, W50A9_RET_DE ; DE = $F1AA
@@ -3079,6 +2963,150 @@ bdos_create_body:                       ; [bdos_create, bdos_create_failpop) —
                 xor     a                   ; A = $00 success
                 ret
 
+frs_mul_body:                           ; [frs_mul, frs_eof) loop; entered via frs_mul stub
+                add     hl, de
+                djnz    frs_mul_body        ; HL = (cluster-2) * secPerClus
+                ld      de, (FAT_FIRSTDATA)
+                add     hl, de
+                ld      a, (FAT_CLUSSEC)
+                ld      e, a
+                ld      d, 0
+                add     hl, de              ; HL = absolute logical sector
+                ex      de, hl
+                ld      hl, SECTOR_BUF
+                call    read_sector
+                ret     c
+                ld      a, (FAT_CLUSSEC)
+                inc     a
+                ld      (FAT_CLUSSEC), a
+                or      a                   ; Cy = 0 success
+                ret
+
+write_sector:                           ; relocated (entry collided with $4935 veneer)
+                ld      b, 1            ; one sector
+                ld      c, $F9          ; media byte (ignored, single drive)
+                ld      a, 0            ; drive 0 (ignored)
+                scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
+                jp      dskio           ; tail-call: dskio returns to our caller
+
+fac_loop_body:                          ; [fac_loop, fac_have_sec) -> falls into fac_have_sec
+                ld      de, (FAT_WRTMP)
+                push    hl
+                or      a
+                sbc     hl, de
+                pop     hl
+                jp      nc, fac_full        ; jr->jp: relocated
+                push    hl
+                ld      a, l
+                and     1
+                ld      (FAT_PARITY), a
+                ld      e, l
+                ld      d, h
+                srl     d
+                rr      e                   ; DE = cluster >> 1
+                add     hl, de              ; HL = fatofs = cluster * 3/2
+                ld      a, l
+                ld      (FAT_BYTEIDX), a
+                ld      a, h
+                and     1
+                ld      (FAT_BYTEIDX + 1), a    ; byteidx = fatofs & $1FF
+                ld      a, h
+                srl     a                   ; FAT sector offset = fatofs >> 9
+                ld      e, a
+                ld      d, 0
+                ld      hl, (FAT_FATSTART)
+                add     hl, de              ; HL = absolute FAT sector
+                ld      de, (FAT_WRTMP2)
+                push    hl
+                or      a
+                sbc     hl, de
+                pop     hl
+                jp      z, fac_have_sec     ; jr->jp: already loaded -> no re-read
+                ld      (FAT_WRTMP2), hl    ; remember the new cached sector
+                ld      (FAT_FATSEC), hl
+                ex      de, hl
+                ld      hl, WBUF
+                call    read_sector
+                jp      c, fac_rderr        ; jr->jp: relocated
+                jp      fac_have_sec        ; fall-through preserved
+
+fac_e_odd_body:                         ; [fac_e_odd, fat_write_fat_entry) — ends in ret
+                ld      a, (FAT_B1)
+                ld      l, a
+                ld      h, 0
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                ld      a, (FAT_B0)
+                rrca
+                rrca
+                rrca
+                rrca
+                and     $0F
+                ld      e, a
+                ld      d, 0
+                add     hl, de
+                ex      de, hl
+                ret
+
+ffds_nopad_body:                        ; [ffds_nopad, ffds_alloc) -> falls into ffds_alloc
+                ld      hl, (BDOS_WRCLUS)
+                ld      a, h
+                or      l
+                jp      z, ffds_alloc       ; jr->jp: no cluster yet -> allocate the first
+                ld      a, (BDOS_WRSECIDX)
+                ld      hl, FAT_SECPERCLUS
+                cp      (hl)
+                jp      c, ffds_haveclus    ; jr->jp: room in the current cluster
+                jp      ffds_alloc          ; fall-through preserved
+
+fdc_entloop_body:                       ; [fdc_entloop, fdc_useslot); loop; ends jr fdc_secloop
+                push    bc
+                push    hl
+                ld      a, (hl)
+                or      a
+                jp      z, fdc_useslot      ; jr->jp: $00 end-marker -> free slot here
+                cp      $E5
+                jp      z, fdc_useslot      ; jr->jp: $E5 deleted -> reusable slot
+                ld      de, (FAT_NAMEPTR)
+                call    name_cmp
+                jp      z, fdc_useslot      ; jr->jp: same-name existing entry
+                pop     hl
+                ld      de, 32
+                add     hl, de
+                pop     bc
+                djnz    fdc_entloop_body
+                ld      hl, (FAT_DIRSEC)
+                inc     hl
+                ld      (FAT_DIRSEC), hl
+                ld      hl, (FAT_DIRREM)
+                dec     hl
+                ld      (FAT_DIRREM), hl
+                jp      fdc_secloop         ; jr->jp: relocated
+
+fdc_useslot_body:                       ; [fdc_useslot, fdc_zero) -> falls into fdc_zero
+                pop     hl                  ; HL = dir entry slot in WBUF
+                pop     bc
+                ld      de, (FAT_DIRSEC)
+                ld      (BDOS_DIRSEC), de
+                push    hl
+                ld      de, WBUF
+                or      a
+                sbc     hl, de              ; HL = offset within the sector
+                ld      (BDOS_DIROFF), hl
+                pop     hl
+                push    hl
+                ex      de, hl              ; DE = dest slot
+                ld      hl, (FAT_NAMEPTR)
+                ld      bc, 11
+                ldir                        ; name -> entry +0..10
+                xor     a
+                ld      (de), a             ; +11 = $00 (normal file; matches MSX-DOS)
+                inc     de
+                ld      b, 20               ; +12..+31 is 20 bytes
+                jp      fdc_zero            ; fall-through preserved
+
 ; ===== Tier-2: COMMAND.COM-load kernel entries — veneer scaffold (milestone 3a) =====
 ; The relocated MSX-DOS-1 kernel + COMMAND.COM call back into ~21 disk-ROM entry
 ; points at fixed page-1 addresses (the de-facto-standard shared-kernel ABI;
@@ -3108,6 +3136,16 @@ k_41FD:         ret
 k_4558:         ret
 k_46C8:         ret
 k_47B2:         ret
+k_4919:         ret
+k_4935:         ret
+k_498C:         ret
+k_49B4:         ret
+k_4A39:         ret
+k_4B59:         ret
+k_4BE5:         ret
+k_4C25:         ret
+k_4E4B:         ret
+k_4EDE:         ret
 k_5FE5:         ret
 k_607B:         ret
 k_75A5:         ret
