@@ -2313,3 +2313,21 @@ diffing because the divergence is at the BDOS-service-semantics level, not a sin
 investigation, shifting root, M6 invalidated — re-synced with the user on whether to keep drilling (with a
 cleaner method: characterise what BDOS function the `$DA23` kernel loop polls and which disk-ROM service must
 satisfy it), bank the milestone (COMMAND.COM loads byte-perfect + executes), or reprioritise.**
+
+**§8.66 M6 TIME-BOXED ATTEMPT (BDOS/interrupt angle) — found the PROXIMATE failure (interrupt-storm stack
+corruption, SP walks into the page-1 ROM) but it too is a LATE symptom; the true first cause stayed elusive, so
+per agreement we BANK and stop.** One focused cleaner pass: (1) COMMAND.COM does NOT use `$0005` (0 calls) — it
+reaches the kernel via the `$FD9x` gateway (§8.49 confirmed). (2) In the `$DA23` loop `SP=$4250` — the stack is
+in the page-1 ROM (pushes lost, pops read ROM); an SP-trap shows `SP` reaches the `$43xx` ROM window via an
+interrupt-storm centred on `int_h`/`$0038` (the stack fills with one repeated return address). (3) BUT the FIRST
+interrupt is handled correctly: `$0038 → $0C3C` (a proper RAM handler that reads VDP status and calls the
+standard `H.KEYI $FD9A`/`H.TIMI $FD9F` hooks — both `RET`/empty on ours), it returns cleanly (`SP F096→F07C→
+F098`), and COMMAND.COM then runs normally for 4000+ instructions. So the storm/stack-corruption develops LATE,
+after a long stretch of correct execution — a downstream symptom, like the §8.65 work-area staleness. **The root
+keeps receding under every method (PC-diff, memory-diff, BDOS-level, interrupt/SP-level): each layer is correct
+for a while then a deep, late corruption appears.** STATUS: **BANKED.** Milestone achieved: a clean-room disk
+ROM loads real MSX-DOS 1 + COMMAND.COM byte-perfect, sets up the page-0 DOS environment, services interrupts
+correctly through COMMAND.COM's startup/self-relocation, and begins executing it. The final mile to `A>` is an
+unresolved late stack/interrupt corruption. **Most promising untried angle for a future restart:** a stack-write
+watch to find where `SP` FIRST descends abnormally (the first push that is never popped), properly aligned to
+ours' first pass — that names the unbalanced routine directly, instead of chasing the corruption's aftermath.

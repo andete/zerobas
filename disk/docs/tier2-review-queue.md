@@ -23,6 +23,17 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M6 / §8.66] TIME-BOXED ATTEMPT DONE → MILESTONE BANKED.** You chose "one
+time-boxed cleaner attempt." It found the proximate failure (interrupt-storm stack
+corruption — `SP` walks into the page-1 ROM) but that too is a late symptom: the
+first interrupt is handled cleanly and COMMAND.COM runs 4000+ instructions normally
+before the corruption appears. The true root receded under every method. Per the
+agreement, I banked and stopped. **Banked milestone:** the clean-room disk ROM loads
+real MSX-DOS 1 + COMMAND.COM byte-perfect and begins executing it (interrupts handled
+correctly through COMMAND.COM startup). Best untried angle for a future restart: a
+stack-write watch to find the first unbalanced push. No code regressions — Tier-1
+Disk-BASIC stays fully green. · nothing to action; this is the wrap-up.
+
 **[M6 / §8.65] COURSE CORRECTION — the M6 pre-build spec is INVALIDATED, and the
 M5.8/M5.9 "stale work area = root" thesis was a mis-aligned-comparison artifact.**
 Read-watch probes show ours reads none of the stale work-area cells before it loops,
