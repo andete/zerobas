@@ -2258,3 +2258,21 @@ disassembly. **NEXT (M6, scoped sub-track — SYNCED with user):** fully charact
 (the `DE`/`HL`/`BC`/`IX` dispatch: which arg selects block-copy vs `$F2B8`-build vs `$F1A8`-build; the exact
 bytes each writes; the `ra==HL` callback convention) and implement `k_607B`. Probes: the `$607B` entry-call
 dump, disk_probe_dosboot_memsnap.py, disk_probe_dosboot_wacontract.py.
+
+**§8.63 M6 CHARACTERISE (partial) — `$607B` is a central, multi-mode buffered-transfer / work-area-management
+service, more than a single primitive; approach is a genuine fork (taken to the user).** Dumped its 15 init
+calls' regs + the `IX` control block (always `$F1BF`, a 10-byte header `78 3C 00 00 00 00 00 00 00 01` that
+sits immediately before `RES_PRINT $F1C9` — so `$607B` and the resident `$`-string printer share a context
+area). Modes seen: **(A)** the majority (`AF=0042 BC=003C DE=0044/0054 HL=xx95`, `ra==HL`) — a 60-byte
+(`BC=$3C`) transfer with a callback return into the source buffer; call #1 copies a **boot sector / BPB** to
+`$C000+` (the bytes are a real BPB: "NMS 8245" OEM, "VOL_ID" label, `02 70 00 A0 05 F9 03 00 09 00 02`…).
+**(B)** `AF=002A/0022 BC=01F9 DE=F2BA/F2BC HL=F195` (#3/#9/#11) — moves into the `$F2B8` filename+DPB region,
+sourced from the drive-A DPB `$F195`. **(C)** `AF=0100 BC=0000 DE=F1A8 HL=7429 IX=4016` (#5) — builds `$F1A8`
+with `IX`=`$4016` (GETDPB). So `$607B` is the disk ROM's buffered sector/work-area transfer engine, keyed on a
+control block + register args, and it underlies several work-area structures (and is ALSO COMMAND.COM's BDOS
+gateway, §8.49). Fully reverse-engineering its dispatch from black-box traces is a substantial effort with some
+clean-room sensitivity (the deeper the instruction-level trace, the closer to disassembly — must stay on the
+input→output contract). **DECISION SURFACED TO USER (fork):** (A) full faithful `$607B` reimplementation;
+(B) incremental — implement only the work-area-build modes needed to clear the hang, route the rest to our
+existing primitives (DSKIO / `bdos_entry` / a block-move) and stub-return the gateway; (C) reconsider priority
+(this is deeper than a veneer). Recommendation: (B). No asm until the approach is chosen + an M6 spec signed off.
