@@ -98,15 +98,16 @@ class OmsxRun:
         self.openmsx = openmsx
 
     def run_job(self, body: str, settle: float, predicate: str = "0",
-                timeout: float = 200.0, safety: float = 30.0) -> list[dict]:
+                timeout: float = 200.0, safety: float = 30.0, arm: str = "") -> list[dict]:
         """Run one job. `body` is Tcl executed inside an `after time {settle}` callback
         (machine at emulated time `settle`, reverse timeline 0..settle ready). `body`
         is responsible for finishing with `exit` or installing a condition that exits.
-        `predicate` is a Tcl expr available as `[P]`. Returns parsed ctx records."""
+        `arm` is Tcl run immediately (before boot proceeds) — for watchpoints that must
+        be live from t=0. `predicate` is a Tcl expr available as `[P]`. Returns records."""
         out = tempfile.mktemp(suffix=".rec")
         tcl_path = tempfile.mktemp(suffix=".tcl")
         preamble = _PREAMBLE.format(symfile=self.symfile, out=out, predicate=predicate)
-        script = preamble + f"""
+        script = preamble + arm + f"""
 after time {settle:.4f} {{
   if {{[catch {{ {body} }} err]}} {{ emit "ERROR $err"; exit }}
 }}
@@ -212,6 +213,39 @@ after time {settle + safety:.4f} {{ emit "TIMEOUT-SAFETY"; exit }}
         }
         """
         return self.run_job(body, settle=settle, timeout=120.0)
+
+    def write_watch(self, addr: int, n: int = 8, max_time: float = 9.0) -> list[dict]:
+        """Report the first `n` writes to `addr` (armed from t=0): the writer PC,
+        regs, and the resulting bytes at $0038 (ctx carries m0038). Answers 'who
+        installs this RAM vector, when, and to what'."""
+        arm = f"""
+set ::wn 0
+debug watchpoint create -type write_mem -address {{0x{addr:04X}}} -command {{
+  incr ::wn
+  emit [ctx [format "W%02d" $::wn]]
+  if {{$::wn >= {n}}} {{ exit }}
+}}
+"""
+        body = 'emit "REACHED-MAXTIME"; exit'
+        return self.run_job(body, settle=max_time, timeout=max_time + 40, arm=arm)
+
+    def read_block(self, addr: int, length: int, settle: float) -> list[int]:
+        """Read `length` bytes at `addr` once the machine has run to `settle`."""
+        body = f"""
+        set s "BLOCK_{addr:04X}_"
+        for {{set i 0}} {{$i < {length}}} {{incr i}} {{
+          set s "$s[format %02X [debug read memory [expr {{({addr} + $i) & 0xFFFF}}]]]"
+        }}
+        emit $s
+        exit
+        """
+        recs = self.run_job(body, settle=settle, timeout=settle + 40)
+        for r in recs:
+            tag = r.get("tag", "")
+            if tag.startswith(f"BLOCK_{addr:04X}_"):
+                hexpart = tag.split("_", 2)[2]
+                return [int(hexpart[i:i + 2], 16) for i in range(0, len(hexpart), 2)]
+        return []
 
     def time_sweep(self, predicate: str, lo: float, hi: float, step: float,
                    settle: float | None = None) -> list[dict]:
