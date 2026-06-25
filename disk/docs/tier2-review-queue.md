@@ -23,6 +23,40 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[ROOT CAUSE FOUND / 2026-06-25] The primary derail is a SLOT-PAGING bug in the
+COMMAND.COM handoff — NOT a control-flow slide. Located + confirmed end-to-end with
+the new reverse/probe toolbox.** Method: `reverse` binary-search in emulated time for
+the corruption instant (SP enters the ROM page is a clean predicate), then a forward
+per-instruction trace from a `reverse goto` point. Findings, all from one boot:
+- The "storm" is `rst 38h` recursion: RAM `$0038 = C3 51 42 = jp $4251`, but at the
+  failure `$4251` reads **$FF** (`rst 38h`) — the **disk ROM is paged OUT of page 1**.
+  So `$0038 → jp $4251 → $FF=rst38 → $0038 → …` loops forever, each `rst` pushing
+  `$4252` (stack is all `4252`), marching SP down. Fully explains the SP march.
+- **The unmap is deliberate, in our own RAM-resident handoff code.** Trace at the
+  boundary (t≈8.186s): kernel `$D827 call $F36B → jp $E79B` (RAM trampoline). $E79B
+  does `ld a,#00; di; ld a,(FCC8); and $F3; or b; ld (FCC8),a; ld ($FFFF),a`. SLTTBL[3]
+  (`$FCC8`) was `$04` → page-1 subslot **1 = the disk ROM**; `and $F3` clears page-1's
+  bits, `or b` (B=0) forces page-1 subslot to **0**; the `ld ($FFFF),a` write unmaps the
+  disk ROM → page 1 = slot3-sub0 = **empty ($FF)**. Then `$D82A ei; jp $0100`.
+- **COMMAND.COM then actually RUNS** (trace: $0100→$0500→ self-relocating `ldir`,
+  bc=$1400). It dies at the **first interrupt**: confirmed via `z80.acceptIRQ` —
+  ACCEPT#1 interrupts COMMAND.COM at $050D with `m4251=FF`, `$0038=jp $4251` → storm.
+- **So:** the handoff unmaps the disk ROM from page 1 while the live interrupt vector
+  `$0038 → $4251` still points there. Works only while the disk ROM is mapped; the
+  moment COMMAND.COM is given control (page 1 = empty) the first IRQ storms. This is
+  why "COMMAND.COM is not sustained" (M5.5).
+- **This is the proximate trigger; relationship to the M5.7 "stale work-area" thread
+  is unclear** (may be separate/earlier, or the wrong B/subslot value originates
+  upstream). The slot bug is the confirmed storm cause regardless.
+- **The fix is a DESIGN decision (clean-room, our own code) — HARD-STOP for sign-off,
+  not yet implemented.** Candidate directions: (a) re-point the interrupt vector
+  (RAM `$0038` / H.KEYI) to a handler that survives the disk-ROM unmap before the
+  handoff; (b) keep page 1 mapped to a valid subslot so `$4251` stays a real `jp`;
+  (c) follow whatever the real MSX-DOS / stock CF-3300 handoff does at this exact
+  point (compare with stock = the obvious next experiment, same reverse method).
+  · confidence: very high on the diagnosis (located + confirmed); the fix is open. ·
+  undo: n/a (analysis only).
+
 **[tooling / 2026-06-25] Built the dead-zone NOP tripwire — then a fast experiment
 FALSIFIED its premise; pivoted to a full openMSX-probing-toolbox sweep instead.**
 Added `probes/disk/disk_probe_dosboot_tripwire.py` (kept, per user) on the idea that
