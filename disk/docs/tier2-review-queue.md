@@ -23,6 +23,17 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M8b / §8.68] PORTABILITY FIX (user-flagged, in-loop) — CONOUT now reads EXPTBL[0] instead of hardcoding
+slot 0.** First cut switched page 0 with `and $FC` (= "main ROM is primary slot 0, unexpanded") — a CF-3300-
+specific bake-in, not faithful. Rewrote `conout_body` to read `EXPTBL[0]` ($FCC1) at runtime for the main-ROM
+slot id, set page-0 primary from it, and (if expanded) program the page-0 subslot via the standard $FFFF/SLTTBL
+protocol (`conout_set_sub`). User chose "Full ENASLT." Re-validated on CF-3300: unit 18/18, pctrace 207 distinct
+PCs (≈ M8's 199 — identical banner-escape, behaviour unchanged where primary=0). **CAVEAT TO REVIEW: the
+expanded-main-ROM sub-path (`conout_set_sub`) is NOT exercisable on the CF-3300 (EXPTBL[0]=$00, unexpanded), so
+it is spec-derived (MSX2 TH §2.4) and unvalidated by probe.** Pages 1 (our code) & 2 (stack) are provably
+untouched by it (only page-0/page-3 $A8 fields move). · confidence: high on the primary path; the expanded path
+is correct-by-construction but unproven · undo: one-block revert of conout_body.
+
 **[M8 / §8.68] REAL CONOUT IMPLEMENTED — banner loop escaped (56→199 PCs), a new later blocker exposed.**
 Implemented `conout_body`: emit `A` via main-ROM CHPUT (`$00A2`) through a genuine inter-slot call (slot 0
 unexpanded per measured `EXPTBL`, so a plain `$A8` page-0 switch). `$5454` → `jp conout_body`, NET-ZERO (the +2

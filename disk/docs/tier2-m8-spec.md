@@ -23,12 +23,18 @@ supply them.
 
 ## 2. Slot facts (measured live at `$0100`, `disk_probe_dosboot_slotcfg.py`)
 
-`EXPTBL = 00 00 00 80` → the **main BIOS ROM (CHPUT `$00A2`) is in slot 0, primary,
-UNEXPANDED**; only slot 3 is expanded. So reaching CHPUT needs only a **page-0
-primary-slot switch via `$A8`** (no `$FFFF` secondary handling). During the banner
-phase `SP≈$8FFx` (page 2), so the stack survives a page-0 switch; page 1 (our disk
-ROM, slot 3-1) is selected by `$A8` bits[3:2] + `$FFFF` and is untouched by clearing
-only bits[1:0] — so `conout_body` stays mapped and executes throughout.
+`EXPTBL = 00 00 00 80` → on the CF-3300 the **main BIOS ROM (CHPUT `$00A2`) is in slot
+0, primary, UNEXPANDED**; only slot 3 is expanded. During the banner phase `SP≈$8FFx`
+(page 2), so the stack survives a page-0 switch; page 1 (our disk ROM, slot 3-1) is
+selected by `$A8` bits[3:2] + `$FFFF` and is untouched by clearing only bits[1:0] — so
+`conout_body` stays mapped and executes throughout.
+
+**PORTABILITY (M8b, user-flagged):** the slot id is NOT hardcoded — `conout_body`
+reads `EXPTBL[0]` at runtime (the standard work-area cell, present on all MSX) and
+switches page 0 to *that* slot, handling the expanded case via the `$FFFF`/`SLTTBL`
+secondary protocol (`conout_set_sub`). On the CF-3300 only the unexpanded primary path
+runs (validated); the expanded sub-path is spec-derived (MSX2 TH §2.4) and unproven
+here (see review queue).
 
 ## 3. Implementation
 

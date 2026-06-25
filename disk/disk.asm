@@ -401,7 +401,8 @@ WA_SEG          equ     P1_BLIT + (p1_blit_end - p1_blit_tmpl)  ; base of the tw
 ; COMMAND.COM banner phase (SP is in page 2 there), written+read within one DI'd call.
 CONOUT_CHAR     equ     WA_SEG + (wa_seg_end_tmpl - wa_seg_rom_tmpl)  ; saved char
 CONOUT_A8       equ     CONOUT_CHAR + 1                              ; saved $A8 config
-SLTTBL3         equ     $FCC8   ; SLTTBL[3]: RAM mirror of slot-3 secondary-slot register
+SLTTBL          equ     $FCC5   ; SLTTBL base: per-primary mirror of the secondary-slot regs
+SLTTBL3         equ     $FCC8   ; SLTTBL[3]: RAM mirror of slot-3 secondary-slot register (=SLTTBL+3)
 
 ; --- MSX-DOS-1 "get work area" return ($4030; a3 §8.13) ---------------------
 ; MSXDOS.SYS's resident init CALLs disk-ROM entry $4030 and uses the returned HL
@@ -3271,40 +3272,101 @@ wa_seg_end_tmpl:
 WA_SEG_ROM      equ     WA_SEG + (wa_seg_rom_tmpl - wa_seg_rom_tmpl)   ; = WA_SEG
 WA_SEG_RAM      equ     WA_SEG + (wa_seg_ram_tmpl - wa_seg_rom_tmpl)
 
-; --- conout_body — the real $5454 CONOUT (M8/§8.67) ------------------------
-; Emit the char in A to the console via the main-ROM CHPUT ($00A2). Reached from
-; the $5454 veneer (`jp conout_body`). During DOS, page 0 is RAM (the main BIOS ROM
-; is hidden); CHPUT lives in slot 0 (primary, UNEXPANDED — measured EXPTBL[0]=$00,
-; disk_probe_dosboot_slotcfg.py), so we page it into page 0 with a plain $A8 primary
-; switch (no $FFFF needed), call CHPUT, then restore. Pages 1-3 are untouched: page 1
-; (our disk ROM, $A8 bits[3:2]) keeps running this code; page 2 holds the stack
-; (SP~$8FFx during the banner phase) so the call/ret is safe; page 3 holds the work
-; area CHPUT updates (cursor $F3DC/$F3DD) + our scratch. DI spans only the switch
-; window; we EI on exit (COMMAND.COM runs with interrupts enabled, §8.66).
-; CLEAN-ROOM: CHPUT/$00A2, EXPTBL/$FCC1, the $A8 primary-slot register and the
-; page-field encoding are all documented MSX BIOS ABI (MSX2 TH ch.2); no oracle bytes.
+; --- conout_body — the real $5454 CONOUT (M8/§8.67; M9 portable slot enable) ----
+; Emit the char in A to the console via the main-ROM CHPUT ($00A2). Reached from the
+; $5454 veneer (`jp conout_body`). During DOS, page 0 is RAM (the main BIOS ROM is
+; hidden), so we page the main ROM into page 0, call CHPUT, then restore.
+;
+; PORTABLE (no machine-specific slot hardcode): the main-ROM slot is read at runtime
+; from EXPTBL[0] ($FCC1) — the standard MSX work-area cell holding the main-ROM slot
+; id in the documented format (bit7=expanded, [3:2]=subslot, [1:0]=primary). We set
+; page-0's $A8 primary field to that primary, and — if the main-ROM slot is expanded
+; — also program its page-0 SECONDARY subslot (conout_set_sub). Only the page-0 (and,
+; transiently, page-3) $A8 fields are touched: page 1 (our disk ROM, bits[3:2]) keeps
+; running this code and page 2 (the stack, SP~$8FFx) survives, so the call/ret is safe.
+; Restore is a single `out ($A8)` of the saved config — we never alter the RAM slot's
+; own secondary, so its page-0 subslot is intact. DI spans the switch window; EI on
+; exit (COMMAND.COM runs with interrupts enabled, §8.66).
+; CLEAN-ROOM: CHPUT/$00A2, EXPTBL/$FCC1, SLTTBL/$FCC5, the $A8 primary register and
+; the $FFFF secondary protocol are all documented MSX BIOS ABI (MSX2 TH ch.2/§2.4);
+; no oracle bytes. NOTE: on the CF-3300 EXPTBL[0]=$00 (slot 0, unexpanded), so the
+; primary path is exercised+validated; the expanded sub-path (conout_set_sub) is
+; spec-derived and NOT reachable on this machine (logged, tier2-review-queue.md).
 ;   in:  A = char to output ; out: A = char, BC/DE/HL/IX/IY preserved
 conout_body:
-                ld      (CONOUT_CHAR), a    ; stash the char (A is needed for $A8 work)
+                ld      (CONOUT_CHAR), a    ; stash the char (A is needed for slot work)
                 push    af                  ; preserve caller AF
                 push    bc
                 push    de
                 push    hl
                 di                          ; no interrupt while the BIOS is half-mapped
                 in      a, ($A8)
-                ld      (CONOUT_A8), a      ; save the primary-slot config
-                and     $FC                 ; page-0 primary -> slot 0 (main ROM)
-                out     ($A8), a            ; main BIOS ROM now visible in page 0
+                ld      (CONOUT_A8), a      ; save the full primary-slot config (restore key)
+                ld      a, (EXPTBL)         ; main-ROM slot id (bit7=exp [3:2]=sub [1:0]=prim)
+                ld      c, a                ; C = slot id
+                and     $03                 ; A = main-ROM primary
+                ld      b, a                ; B = primary
+                ld      a, (CONOUT_A8)
+                and     $FC                 ; clear page-0 primary field
+                or      b                   ; set page-0 primary = main-ROM primary
+                out     ($A8), a            ; main-ROM primary now in page 0 (pages 1/2/3 kept)
+                bit     7, c                ; main-ROM slot expanded?
+                call    nz, conout_set_sub  ; yes -> also select its page-0 subslot
                 ld      a, (CONOUT_CHAR)
                 call    $00A2               ; CHPUT — emit A; preserves all registers
                 ld      a, (CONOUT_A8)
-                out     ($A8), a            ; restore page 0 = RAM
+                out     ($A8), a            ; restore page 0 (RAM slot's secondary untouched)
                 ei
                 pop     hl
                 pop     de
                 pop     bc
                 pop     af                  ; restore caller AF
                 ld      a, (CONOUT_CHAR)    ; return A = the emitted char
+                ret
+
+; conout_set_sub — select the page-0 SUBSLOT of the (expanded) main-ROM primary.
+; The secondary-slot register lives at $FFFF (page 3) and reflects whichever primary
+; is selected in page 3, so we momentarily map the main-ROM primary into page 3 to
+; reach its expander, write the new page-0 subslot field, then restore page 3. Pages
+; 0/1/2 are never disturbed (our code in page 1 and the stack in page 2 survive; page
+; 3 is not accessed in the window). SLTTBL[$FCC5+P] mirrors each expanded primary's
+; secondary register (standard work area). Spec-derived (MSX2 TH §2.4) — NOT exercised
+; on the CF-3300 (main ROM unexpanded there).
+;   in: B = main-ROM primary, C = main-ROM slot id (expanded); CONOUT_A8 = saved $A8
+conout_set_sub:
+                ld      a, c
+                rrca
+                rrca
+                and     $03                 ; A = main-ROM subslot S
+                ld      e, a                ; E = S
+                ld      hl, SLTTBL
+                ld      a, b
+                add     a, l                ; SLTTBL aligned, P<4 -> no page crossing
+                ld      l, a                ; HL = &SLTTBL[P]
+                ld      a, (hl)
+                and     $FC                 ; clear page-0 subslot field
+                or      e                   ; merge new page-0 subslot S
+                ld      (hl), a             ; update the SLTTBL[P] mirror
+                ld      e, a                ; E = new secondary value to write to $FFFF
+                ld      a, b                ; primary P -> page-3 field
+                rlca
+                rlca
+                rlca
+                rlca
+                rlca
+                rlca                        ; P << 6
+                ld      d, a                ; D = P in page-3 field
+                ld      a, (CONOUT_A8)
+                and     $3C                 ; keep pages 1/2 ; clear page-0 + page-3 fields
+                or      b                   ; page-0 primary = P
+                or      d                   ; page-3 primary = P (reach P's $FFFF expander)
+                out     ($A8), a
+                ld      a, e
+                ld      ($FFFF), a          ; P's secondary: page-0 subslot = S
+                ld      a, (CONOUT_A8)
+                and     $FC                 ; restore page-3 (& 1/2) primaries; clear page 0
+                or      b                   ; page-0 primary = P (main-ROM, now subslot S)
+                out     ($A8), a
                 ret
 
 ; --- pad to a full 16 KB page ($4000-$7FFF) --------------------------------
