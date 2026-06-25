@@ -2293,3 +2293,23 @@ experiment validates the hypothesis: pre-build `$F2B8`+`$F1A8` and re-probe — 
 moves, the pre-build approach works and we refine the derivation; if MSXDOS.SYS needs `$607B`'s inline
 behaviour/return value, the trace tells us what to add. Exact byte-set to build = captured from the oracle at
 spec-finalisation (a before-first-`$607B` vs after-init work-area diff). No asm until the M6 spec is signed off.
+
+**§8.65 M6 — the pre-build spec is INVALIDATED; the hang is NOT the stale work area. COMMAND.COM loads
+byte-perfect and self-relocates normally; the divergence is deeper (COMMAND.COM↔kernel BDOS), and the
+"stale work area" was largely a mis-aligned-comparison symptom.** Two read-watch probes after the first
+(aligned) `$D7CE`: ours reads **none** of the `$F1A8`/`$F2B8`/`$DC80` stale cells before it loops ⇒ they are
+not the derail's input. The first reads it DOES make are the `$F36B` hook (→ our `wa_seg_ram`, fine) then
+execution flows hook → `$D82A` → COMMAND.COM `$0100` → `$0500`, where COMMAND.COM runs an `LDIR` copying
+**5120 B `$0600→$C200`** (`BC=$1400`) and then runs the relocated code at `$C200` ("RBRB…" is valid relocated
+COMMAND.COM, not garbage). **The loaded COMMAND.COM image `$0100-$07FF` is BYTE-IDENTICAL ours vs stock (0
+diffs), and BOTH machines do this `$0500` relocation** — so our `k_47B2` loader is correct and this path is
+COMMAND.COM's normal startup, not the bug. The `$DA23` hang is therefore a KERNEL loop servicing a later
+COMMAND.COM BDOS call, not a work-area-init failure. **Consequences:** (1) the M6 "pre-build the work area"
+tactic would NOT have fixed the hang — characterise-before-code saved the wasted asm again; (2) the M5.8/M5.9
+"stale work area is the root" thesis was a mis-aligned-checkpoint artifact (ours loops, so the `$D7CE` memsnap
+compared ours' wrong-path-iteration state to stock's right-path state — the 390 "stale" cells are a CONSEQUENCE
+of ours already running the wrong path, not its cause); (3) the true root keeps "rejoining" under PC/memory
+diffing because the divergence is at the BDOS-service-semantics level, not a single cell. **STATUS: deep
+investigation, shifting root, M6 invalidated — re-synced with the user on whether to keep drilling (with a
+cleaner method: characterise what BDOS function the `$DA23` kernel loop polls and which disk-ROM service must
+satisfy it), bank the milestone (COMMAND.COM loads byte-perfect + executes), or reprioritise.**

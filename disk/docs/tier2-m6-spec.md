@@ -5,9 +5,12 @@ SPDX-License-Identifier: 0BSD
 
 # Tier-2 milestone M6 — build the DOS work area (incremental `$607B` slice)
 
-**Status: DRAFT — awaiting sign-off. No asm until approved. Approach (B, incremental)
-chosen by the user; this spec also surfaces a scope escalation found while
-characterising (read §5 before approving).** Evidence: notebook §8.59-8.64.
+**Status: INVALIDATED (§8.65) — do NOT implement. The pre-build tactic does not fix
+the hang: read-watch probes show ours reads none of the stale work-area cells before
+it loops, and the loaded COMMAND.COM image is byte-identical to stock. The hang is a
+kernel BDOS-service loop, not a work-area-init failure; the M5.8/M5.9 "stale work
+area = root" thesis was a mis-aligned-checkpoint artifact (ours loops). Kept for the
+record. Re-synced with the user on next direction.** Evidence: notebook §8.59-8.65.
 
 ## 1. Problem
 

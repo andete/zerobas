@@ -23,8 +23,22 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M6 / §8.65] COURSE CORRECTION — the M6 pre-build spec is INVALIDATED, and the
+M5.8/M5.9 "stale work area = root" thesis was a mis-aligned-comparison artifact.**
+Read-watch probes show ours reads none of the stale work-area cells before it loops,
+and the loaded COMMAND.COM image is byte-identical to stock — both machines do the
+same `$0500` self-relocation, so our loader is correct and the work area isn't what
+the derail reads. The hang is a kernel BDOS-service loop, reached while COMMAND.COM
+runs. **No code was written on the invalidated path** (characterise-before-code held
+the line — twice this session: wa_seg-incomplete §8.60 and pre-build §8.65). **Net
+positive banked: the clean-room disk ROM loads real MSX-DOS + COMMAND.COM byte-perfect
+and starts executing it.** Re-synced with the user on direction (keep drilling with a
+cleaner BDOS-level method / bank the milestone / reprioritise). · confidence: high on
+the invalidation; the final-hang root is still open.
+
 **[M5.9 / §8.62] ROOT PINNED — the upstream divergence is the stubbed canonical
-entry `$607B`.** Binary-searched the first work-area memory divergence (it's already
+entry `$607B`.** _(SUPERSEDED by §8.65 — see above; this was a mis-aligned-checkpoint
+reading. `$607B` is real and stubbed, but it is not proven to be the hang's cause.)_ Binary-searched the first work-area memory divergence (it's already
 stale at `$0100`/`$D824`, i.e. during MSXDOS.SYS-init) and named the responsible
 canonical ABI entry: **`$607B`**, a multi-purpose disk-ROM service the kernel calls
 15× during init to do inter-slot block copies AND build the `$F2B8` (filename+DPB)
