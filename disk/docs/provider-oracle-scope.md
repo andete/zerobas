@@ -2276,3 +2276,20 @@ input→output contract). **DECISION SURFACED TO USER (fork):** (A) full faithfu
 (B) incremental — implement only the work-area-build modes needed to clear the hang, route the rest to our
 existing primitives (DSKIO / `bdos_entry` / a block-move) and stub-return the gateway; (C) reconsider priority
 (this is deeper than a veneer). Recommendation: (B). No asm until the approach is chosen + an M6 spec signed off.
+
+**§8.64 M6 — approach chosen (incremental, user); call-#3 trace shows the build is interwoven, so the spec
+tactic is PRE-BUILD the derived structures during our init rather than re-implement `$607B`'s algorithm.**
+Traced `$607B` call #3 (`DE=F2BA`, the `$F2B8` builder) on stock: `$607B` jumps straight into the disk ROM
+(`$6375`) and threads through ~20 subroutines (`$44ED $4536 $4563 $4569 $453D $44F2 $44F5 $44F8 $4501 $45FA
+$4600 $4609 $46D7 $604D $6081`…), reading the drive-A DPB at `$F195` and writing LINKED work-area structures —
+`HL` walks `$F2BA`, `$F355`, `$F395`, `$E595`; `DE` walks `$F195`/`$F101`. So `$607B`'s work-area build is
+woven through the disk ROM's whole DPB/drive-table model; re-implementing the algorithm is large. BUT every
+structure it produces is DERIVED from the drive-A DPB (`$F195`), which our `getdpb` already builds byte-
+identical to the CF-3300 (§8.13). **Incremental spec tactic (M6, `tier2-m6-spec.md`):** build the work-area
+structures ours leaves stale (`$F2B8` filename+DPB, `$F1A8`, the `$F355`/`$F395` links) during OUR disk-ROM
+init — the same place we already lay `DRVTBL`/`$F195`-DPB/`RES_STUBS` — to match the stock memory state captured
+black-box, and keep `k_607B` minimal (a bare `ret` already returns to `HL` via the `ra==HL` convention). First
+experiment validates the hypothesis: pre-build `$F2B8`+`$F1A8` and re-probe — if the `$DA23` hang clears or
+moves, the pre-build approach works and we refine the derivation; if MSXDOS.SYS needs `$607B`'s inline
+behaviour/return value, the trace tells us what to add. Exact byte-set to build = captured from the oracle at
+spec-finalisation (a before-first-`$607B` vs after-init work-area diff). No asm until the M6 spec is signed off.
