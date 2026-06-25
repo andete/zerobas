@@ -186,6 +186,33 @@ after time {settle + safety:.4f} {{ emit "TIMEOUT-SAFETY"; exit }}
         """
         return self.run_job(body, settle=s, timeout=200.0)
 
+    def irq_chain(self, settle: float = 12.0) -> list[dict]:
+        """Catch the first maskable-interrupt acceptance after `settle` and dump the
+        $0038 jp-chain + page-1 mapping signature. Comparable across machines (the
+        int vector and page-1 window are at fixed addresses), so it answers 'how is
+        the interrupt routed, and is the disk ROM still mapped?' on ours vs stock."""
+        body = r"""
+        debug probe set_bp z80.acceptIRQ {} {
+          emit [ctx ACCEPT]
+          set a 0x38
+          for {set h 0} {$h < 8} {incr h} {
+            set op [debug read memory $a]
+            if {$op == 0xC3} {
+              set t [expr {[debug read memory [expr {$a+1}]] | ([debug read memory [expr {$a+2}]] << 8)}]
+              emit [format "CHAIN-%04X jp=%04X" $a $t]
+              set a $t
+            } else {
+              emit [format "CHAIN-%04X op=%02X dis={%s}" $a $op [lindex [debug disasm $a] 0]]
+              break
+            }
+          }
+          emit [format "PAGE1 sig4000=%02X%02X b4251=%02X" \
+            [debug read memory 0x4000] [debug read memory 0x4001] [debug read memory 0x4251]]
+          exit
+        }
+        """
+        return self.run_job(body, settle=settle, timeout=120.0)
+
     def time_sweep(self, predicate: str, lo: float, hi: float, step: float,
                    settle: float | None = None) -> list[dict]:
         """Sample state at regular emulated times in [lo, hi] (coarse bracketing)."""

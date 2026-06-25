@@ -23,6 +23,28 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[FIX DIRECTION / 2026-06-26] Stock comparison (via the new harness) names the fix:
+move our interrupt handler to ALWAYS-MAPPED high RAM, like stock's `$DDAE`.** Used the
+new `omsx_session.py` `irq_chain` primitive on both machines (one call each) to dump the
+`$0038` jp-chain + page-1 mapping at the COMMAND.COM phase:
+- **Stock:** `$0038 → jp $DDAE`, and `$DDAE` is in **high RAM (page 3, always mapped)**
+  (`push ix` = the real handler). The int entry is NOT in the swappable page-1 ROM.
+- **Ours:** `$0038 → jp $4251 → jp $792B` — BOTH in **page-1 disk ROM** (`$792B` =
+  int_h_body, the A-2b `ld ($e7e2),sp`). When `wa_seg_ram` swaps page 1 to RAM for
+  COMMAND.COM, the whole vector path (`$4251` trampoline AND `$792B` body) is unmapped →
+  the first IRQ storms on `$FF`. (This is also exactly why A-2b never ran — it lives in
+  the wrong memory.)
+- **The fix (Interface-B rework, fork (a)):** install `$0038 → jp <our high-RAM handler>`
+  (our own address in the `$D7xx-$DFxx` kernel band, clean-room — mirror stock's structure,
+  not its bytes), and relocate the int handler body there so it survives the page-1 swap.
+  It can page the disk ROM back in via CALSLT if it needs disk-ROM routines, but the ENTRY
+  must be always-mapped. This connects to §8.69 Interface-B / A-2..A-5 and supersedes the
+  A-2b placement.
+- **HARNESS NOTE:** the negative case validated too — `disk_derail_locate.py --preset
+  sp-rompage --stock` = STUCK ("no failure in window"), i.e. stock never corrupts SP.
+  · confidence: high (direct ours-vs-stock measurement) · this is a DESIGN sign-off point
+  (the deferred Interface-B rework), not yet implemented · undo: n/a (analysis + new probe).
+
 **[ROOT CAUSE FOUND / 2026-06-25] The primary derail is a SLOT-PAGING bug in the
 COMMAND.COM handoff — NOT a control-flow slide. Located + confirmed end-to-end with
 the new reverse/probe toolbox.** Method: `reverse` binary-search in emulated time for
