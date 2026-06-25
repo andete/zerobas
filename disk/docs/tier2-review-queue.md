@@ -23,6 +23,24 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[A-3 DONE / 2026-06-26, commit 71b1096] Relocated int_h to always-mapped high RAM
+($DDAE) — THE COMMAND.COM STORM IS FIXED.** Implemented tier2-a3-spec.md approach B:
+`int_h_hiram_tmpl` (the A-2/A-2b handler made relocatable — straight-line, only a
+PC-relative `jr` + the fixed `call $0038`, `pg0_mainrom_in/out` inlined with `ret z`→
+`jr z`, like `res_print_tmpl`) is LDIR'd into `$DDAE` by `lay_page0_env`, and the
+`p0_env_tab` `$0038` entry now targets `INT_H_HIRAM` instead of the page-1 `int_h`.
+**Validated with the harness + regression:** handler installed (`$DDAE = ED 73 E2 E7…`),
+`$0038` chain → `jp $DDAE`, `int-vec hits=0`, SP stable `$DBFA-DC00`; `disk_derail_locate
+--preset sp-rompage` = STUCK (no SP corruption — storm gone); Tier-1 green (unit 18/18,
+DSKIO/FILES == CF-3300, BLOAD ok); net-zero (16384 B). · **New downstream blocker
+revealed** (the storm was masking it): a bounded kernel loop, triage `loop-top $E7B1,
+period 23`, healthy stack, in the `$D7xx`/wa_seg band — likely the M5.7/§8.60 "$DA23
+wrong-path loop" / work-area thread, now visible with a CLEAN signal (no storm). This is
+the next milestone; drive it with the harness (`bisect_locate` on a loop-specific
+predicate, ours-vs-stock at the first divergence in the `$D7xx` kernel). · the old
+page-1 `int_h`/`int_h_body` are dead-but-kept (net-zero); remove in a follow-up. · undo:
+revert 71b1096.
+
 **[FIX DIRECTION / 2026-06-26] Stock comparison (via the new harness) names the fix:
 move our interrupt handler to ALWAYS-MAPPED high RAM, like stock's `$DDAE`.** Used the
 new `omsx_session.py` `irq_chain` primitive on both machines (one call each) to dump the
