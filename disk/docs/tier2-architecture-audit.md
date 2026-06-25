@@ -54,8 +54,27 @@ they are C-BIOS code at the **same documented entry points / work-area cells**.
   assumption. The `EXPTBL[0]`-driven CONOUT (M8b) is the correct template for *every*
   Interface-B interaction.
 
-> **Everything that is currently wrong is on Interface B**, and it "works" on CF-3300
-> only by luck of that BIOS's tolerance. That is why the boot still fails even there.
+> **Everything that is currently wrong is on Interface B.** Note these bugs fail on the
+> CF-3300 too (the boot doesn't reach `A>` there either) — they are not "CF-3300
+> tolerances," they are simply non-standard shortcuts that limp along on paths that
+> don't exercise them and break where they're needed (CONOUT, KEYINT).
+
+### Interface B is the STANDARD — so drift across BIOSes is minimal-to-none
+Interface B *is* the MSX1 BIOS standard. The CF-3300 main ROM, C-BIOS, and every
+compliant vendor ROM all adhere to it, so **correctly-standard BIOS-agnostic disk-ROM
+code behaves identically across all of them.** Three consequences:
+1. The CF-3300 oracle's Interface-B behaviour (e.g. its `$DDAE`→KEYINT chaining, O-2)
+   **is the standard behaviour** — derive the *standard contract* from it and trust it
+   ports. (Same "contracts, not bytes" rule: derive the contract, never the CF-3300
+   *specifics* — the `$DDAE` address, a byte sequence, a proprietary quirk.)
+2. Interface-B fixes validated on the CF-3300 standard environment **port to C-BIOS by
+   construction**. So C-BIOS is a *confirmation cross-check*, not a development
+   prerequisite — which lowers the urgency (not the value) of A-4.
+3. The over-fitting risk therefore narrows to matching CF-3300 *specifics* rather than
+   the standard contract — the same discipline, now applied to Interface B.
+Residual caveat: C-BIOS is a *faithful but not 100%-complete* reimplementation, so the
+confirmation run still earns its keep by distinguishing genuine C-BIOS gaps from our
+bugs.
 
 ## 2. The disk-ROM ↔ MSXDOS.SYS boundary (what we can settle now)
 
@@ -113,9 +132,10 @@ mechanism in place that the bridge (or an early interrupt) depends on. (Open ite
 3. **A-3 (inter-slot handlers).** Replace the mapped-memory shortcuts with real
    inter-slot routines, **or** remove `lay_page0_env` if O-1 says MSXDOS.SYS owns the
    env. Keep diffs reversible.
-4. **A-4 (C-BIOS bring-up).** Stand up a `C-BIOS_MSX1 + build/disk.rom` machine config;
-   make "boot real MSX-DOS to `A>` on C-BIOS" the success gate. CF-3300 stays the
-   Interface-A oracle. Distinguish genuine C-BIOS gaps from our-ROM bugs.
+4. **A-4 (C-BIOS confirmation).** Stand up a `C-BIOS_MSX1 + build/disk.rom` machine
+   config and confirm "boots real MSX-DOS to `A>` on C-BIOS." Per §1, standard-
+   conformant Interface-B code ports by construction, so this is a *cross-check* (catch
+   genuine C-BIOS gaps vs. our bugs), not a gate that blocks development on CF-3300.
 5. **A-5 (resume).** Continue filling the Interface-A kernel-veneer contracts (M9+)
    under the corrected, BIOS-agnostic, C-BIOS-validated regime.
 
