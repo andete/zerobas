@@ -2391,3 +2391,21 @@ likely real M9 cause), and the `lay_page0_env` inter-slot handlers are mapped-me
 had to bypass `calslt_h`). The `EXPTBL[0]`-driven CONOUT (M8b) is the correct Interface-B template. Open items
 O-1 (page-0 DOS-env ownership → fate of `lay_page0_env`), O-2 (KEYINT chaining contract), O-3 (enumerate the
 Interface-B surface); migration A-1..A-5 in the audit doc. Tier-1 green; M1–M8 not invalidated.
+
+**§8.70 A-1 ANALYSIS DONE (10am span) — O-1/O-2/O-3 resolved from spec + oracle; A-2 spec written, HELD for
+sign-off.** **O-1 (who installs the page-0 DOS env):** write-watch (`watchwa --lo 0x000C --hi 0x003A --stock`)
+shows the **DISK ROM** writes the whole vector band — `$5A31` bulk-fills `$000C-$003A`, `$5A89/$5A8C/$5A8E` write
+the `JP` opcodes at `$000C/$0014/$001C/$0024/$0030`, `$5AB9/$5ABC` write `$0038` (minor hi-RAM `$F387` patches
+`$000C-$0010`). ⇒ **`lay_page0_env` is correct to exist** (installing the vectors + `$0038` is the disk ROM's
+job); the bug is the handler BODIES are mapped-memory shortcuts where stock's are real inter-slot routines (in
+its relocated `$DExx` kernel). **O-2 (KEYINT chaining contract):** `pctrace --arm 0xDDAE --stock` shows stock's
+`$0038` handler saves regs, switches to a private stack, then **inter-slot CALSLTs to the main-ROM KEYINT**
+(target `$0038` → main-ROM body `$0C3C`), which calls the standard **H.KEYI (`$FD9A`)** + **H.TIMI (`$FD9F`)**
+hooks (VDP ack, keyboard, JIFFY, timer). Our `int_h` does only `in a,($99)` and none of that → COMMAND.COM's
+timer/keyboard loop starves → the runaway. **O-3 (Interface-B surface):** main-BIOS entries the disk-ROM kernel
+must reach BIOS-agnostically = CHPUT `$00A2` (DONE M8b), KEYINT `$0038` (A-2), the inter-slot primitives
+RDSLT/WRSLT/CALSLT/ENASLT `$000C/$0014/$001C/$0024` (A-3, gated on which the loaded DOS actually exercises),
+CALLF `$0030` (the DSKIO path, already real). **A-2 spec = `disk/docs/tier2-a2-spec.md`:** rework `int_h` to
+inter-slot-call the main-ROM KEYINT via `EXPTBL[0]` (the CONOUT pattern), removing the partial ack; expected to
+clear the residual M9 runaway, BIOS-agnostic (KEYINT/`$0038` + `$FD9A`/`$FD9F` are MSX1 standard → ports to
+C-BIOS). NO asm landed (held for sign-off per the deferral). Tier-1 green.

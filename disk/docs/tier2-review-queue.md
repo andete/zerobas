@@ -23,16 +23,21 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
-**[A-1 / PAUSED — resume 10am] Architecture rework analysis started; held for sign-off per the deferral.**
-User: "pause and resume at 10am, follow the normal flow." Doing A-1 (resolve O-1/O-2/O-3 from spec+oracle) +
-the A-2 spec only; NOT landing rework asm without sign-off. **In-flight O-1 finding (preserve):** write-watch of
-`$0038` (`disk_probe_dosboot_watchwa.py --lo 0x0038 --hi 0x003A`) shows on STOCK the interrupt vector is written
-by **disk-ROM** PCs `$5A31/$5AB9/$5ABC` (all `$4000-$7FFF`), NOT MSXDOS.SYS/hi-RAM; ours writes it from
-`$41C4-$41CB` (lay_page0_env). ⇒ **O-1 leans: the disk ROM DOES own the page-0 interrupt-vector install** — so
-`lay_page0_env` is structurally correct for `$0038`; the bug is `int_h`'s ack-only BODY, not that we install it.
-**RESUME POINT (10am):** O-2 = characterise what stock's installed `$0038` handler (`$5A31`-written, → `$DDAE`)
-actually does — the KEYINT chaining contract — then write the A-2 spec (make `int_h` chain to the main-BIOS
-KEYINT BIOS-agnostically). Also finish O-1 for the inter-slot vectors ($000C/$001C/$0024/$0030) + O-3.
+**[A-1 / DONE — A-2 spec ready, AWAITING SIGN-OFF] Architecture-rework analysis complete (10am span).**
+Resolved O-1/O-2/O-3 from spec + CF-3300 oracle (§8.70); wrote `disk/docs/tier2-a2-spec.md`; **landed NO rework
+asm** (held per the deferral). Results:
+- **O-1:** the DISK ROM installs the whole page-0 vector band + `$0038` (write-watch: `$5A31`/`$5A89`/`$5A8C`/
+  `$5A8E`/`$5AB9`/`$5ABC`, all disk-ROM) → `lay_page0_env` is correct to exist; the bug is the handler BODIES are
+  mapped-memory shortcuts, not the install.
+- **O-2:** stock's `$0038` handler inter-slot-CALSLTs to the main-ROM KEYINT (`$0038`→`$0C3C`), which runs H.KEYI
+  (`$FD9A`) + H.TIMI (`$FD9F`) = the full service. Our `int_h` does only a partial VDP ack → starves COMMAND.COM's
+  timer/keyboard loop → the runaway.
+- **O-3:** Interface-B surface = CHPUT (done M8b), KEYINT (A-2), RDSLT/WRSLT/CALSLT/ENASLT (A-3), CALLF (real).
+- **A-2 (proposed):** rework `int_h` to inter-slot-call the main-ROM KEYINT via `EXPTBL[0]` (CONOUT pattern),
+  drop the partial ack. Expected to clear the residual runaway. BIOS-agnostic (MSX1 standard → ports to C-BIOS).
+**DECISION NEEDED (sign-off):** greenlight implementing A-2 per the spec? It's a focused change (rework `int_h`
++ factor a shared `EXPTBL[0]` page-0-switch helper with CONOUT); A-3 (the other inter-slot handlers) stays
+separate. · confidence: high that A-2 is the right + likely runaway-clearing fix · undo: trivial (int_h is small).
 
 **[ARCH / §8.69] TARGET REFRAME + ARCHITECTURE AUDIT (user-directed, in-loop) — CF-3300 = oracle, C-BIOS =
 prime target.** User clarified: we validate inside the CF-3300 *proprietary main BIOS*, but that is the oracle's
