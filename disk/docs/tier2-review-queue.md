@@ -23,6 +23,17 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M8 / §8.68] REAL CONOUT IMPLEMENTED — banner loop escaped (56→199 PCs), a new later blocker exposed.**
+Implemented `conout_body`: emit `A` via main-ROM CHPUT (`$00A2`) through a genuine inter-slot call (slot 0
+unexpanded per measured `EXPTBL`, so a plain `$A8` page-0 switch). `$5454` → `jp conout_body`, NET-ZERO (the +2
+is absorbed by the `ds $5FE5 - $` pad; `$5FE5` still `jp k_5FE5`). Regression GREEN (unit 18/18). Ours now
+escapes the banner loop and runs COMMAND.COM's code broadly with a stable `SP≈$8FE0` (the §8.60-8.66
+stack-runaway was banner-spin aftermath, now gone in this phase). BUT it still eventually reaches the old
+`$D7B0-DC00`/`SP=$4250` end-state — a NEW downstream blocker past the banner. · DECISION: committing M8 as a
+validated incremental advance (strictly further than before) and proceeding to M9 = characterise the new
+divergence under span mode. · spec `disk/docs/tier2-m8-spec.md`. · confidence: high that CONOUT is correct &
+necessary; the new blocker is open. · undo: `$5454` back to `ret` + drop `conout_body` (one-block revert).
+
 **[M7 / §8.67] ROOT CRACKED, MILESTONE UN-BANKED — the blocker is our own no-op CONOUT veneer at `$5454`.**
 You said "continue; we're still making genuine progress," so I resumed on the §8.66 stack-write-watch angle and
 it paid off decisively. New probe `disk_probe_dosboot_stackwatch.py` ruled out the interrupt-storm/bad-`LD SP`

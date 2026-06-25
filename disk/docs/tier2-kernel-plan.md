@@ -190,12 +190,13 @@ Front-loadable now = **R+M (400 B)**; after a contract-confirm = **r (1,744 B)**
 
 Bar chars: `█` done · `▒` veneer · `░` todo.
 
-> *(M5.6 landed — `$F368`/`$F36B` segment-switch hooks ✅, §8.59)*
+> *(M8 landed — real `$5454` CONOUT ✅, §8.68; root of the COMMAND.COM-load hang was its no-op first cut, §8.67)*
 > ```
-> TOTAL     █▒▒▒▒▒▒▒▒▒▒░░░░░░░░░  ✅  256 · 🟨2,496 · ⬜2,304  / 5,056 B  (5.1% done)
-> disk-ROM  █▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░  ✅  224 · 🟨2,496 · ⬜  960  / 3,680 B
+> TOTAL     █▒▒▒▒▒▒▒▒▒▒░░░░░░░░░  ✅  296 · 🟨2,456 · ⬜2,304  / 5,056 B  (5.9% done)
+> disk-ROM  █▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░  ✅  264 · 🟨2,456 · ⬜  960  / 3,680 B
 > hi-RAM    █░░░░░░░░░░░░░░░░░░░  ✅   32 · 🟨    0 · ⬜1,344  / 1,376 B
 > ```
+> *(M8: +40 B disk-ROM ✅ — `conout_body` inter-slot CHPUT call + the `$5454` divert, moved from 🟨.)*
 > §8.53: 544 B of high-RAM is **loaded MSXDOS.SYS, not ours** (excluded above); a
 > further ~688 B (`$C2xx-$D0xx`) is likely loaded too → total may drop toward
 > **~4,368 B** once M5.2 confirms. (Covered was 176 B at §8.53; M5.4 → 224 B; M5.6

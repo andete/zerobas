@@ -396,6 +396,11 @@ P1_BLIT         equ     $E77A   ; runtime address of the installed blit routine
 ; Installed into page-3 RAM immediately after P1_BLIT (one LDIR copies both, so
 ; WA_SEG must equal P1_BLIT + the blit length); entry offsets fixed by the template.
 WA_SEG          equ     P1_BLIT + (p1_blit_end - p1_blit_tmpl)  ; base of the two hook bodies
+; CONOUT scratch (M8/§8.67): 2 transient bytes for the $5454 CONOUT inter-slot CHPUT
+; call. Placed in page-3 RAM right after the WA_SEG hook bodies — dead during the
+; COMMAND.COM banner phase (SP is in page 2 there), written+read within one DI'd call.
+CONOUT_CHAR     equ     WA_SEG + (wa_seg_end_tmpl - wa_seg_rom_tmpl)  ; saved char
+CONOUT_A8       equ     CONOUT_CHAR + 1                              ; saved $A8 config
 SLTTBL3         equ     $FCC8   ; SLTTBL[3]: RAM mirror of slot-3 secondary-slot register
 
 ; --- MSX-DOS-1 "get work area" return ($4030; a3 §8.13) ---------------------
@@ -2875,12 +2880,15 @@ fat_dir_update:
 ; copy (oracle-artifacts.md "Cross-vendor disk-ROM set"; spec-diskrom-kernel.md
 ; §1.3). Our code ends far below $5454, so the entry is positioned with a `ds`
 ; fill (like $4030/$50A9), consuming otherwise-$00 page padding -- nothing shifts.
-; FIRST CUT: a register-preserving no-op (banner not yet emitted), to test whether
-; the banner-print derail is the boot blocker; real CHPUT output is added by a
-; later re-trap if the kernel proves to need visible output (cf. res_print §8.28a).
+; M8/§8.67: the first-cut no-op was PROVEN to be the COMPLETE COMMAND.COM-load
+; blocker (aligned pctrace from $0100 diverges at exactly $5454; ours spins in the
+; banner loop forever, 56 distinct PCs, while stock proceeds, 482). So CONOUT now
+; does the real thing: emit A via the main-ROM CHPUT ($00A2) through a genuine
+; inter-slot call. The body lives in the free tail (conout_body); $5454 just diverts
+; to it (the 2 extra bytes shift the $5456 bodies gap, absorbed by `ds $5FE5 - $`).
                 ds      $5454 - $, $00  ; pad up to the kernel's $5454 CONOUT target
 conout:
-                ret                     ; first cut: preserve all regs, emit nothing
+                jp      conout_body     ; -> free-tail inter-slot CHPUT call (M8)
 
 ; ===== Tier-2 3b: relocated Disk-BASIC routine bodies ($5456-$5FE4 gap) =====
 ; Each colliding routine's body lives here; its low-region slot holds `entry:
@@ -3262,6 +3270,42 @@ wa_seg_set_tmpl:
 wa_seg_end_tmpl:
 WA_SEG_ROM      equ     WA_SEG + (wa_seg_rom_tmpl - wa_seg_rom_tmpl)   ; = WA_SEG
 WA_SEG_RAM      equ     WA_SEG + (wa_seg_ram_tmpl - wa_seg_rom_tmpl)
+
+; --- conout_body — the real $5454 CONOUT (M8/§8.67) ------------------------
+; Emit the char in A to the console via the main-ROM CHPUT ($00A2). Reached from
+; the $5454 veneer (`jp conout_body`). During DOS, page 0 is RAM (the main BIOS ROM
+; is hidden); CHPUT lives in slot 0 (primary, UNEXPANDED — measured EXPTBL[0]=$00,
+; disk_probe_dosboot_slotcfg.py), so we page it into page 0 with a plain $A8 primary
+; switch (no $FFFF needed), call CHPUT, then restore. Pages 1-3 are untouched: page 1
+; (our disk ROM, $A8 bits[3:2]) keeps running this code; page 2 holds the stack
+; (SP~$8FFx during the banner phase) so the call/ret is safe; page 3 holds the work
+; area CHPUT updates (cursor $F3DC/$F3DD) + our scratch. DI spans only the switch
+; window; we EI on exit (COMMAND.COM runs with interrupts enabled, §8.66).
+; CLEAN-ROOM: CHPUT/$00A2, EXPTBL/$FCC1, the $A8 primary-slot register and the
+; page-field encoding are all documented MSX BIOS ABI (MSX2 TH ch.2); no oracle bytes.
+;   in:  A = char to output ; out: A = char, BC/DE/HL/IX/IY preserved
+conout_body:
+                ld      (CONOUT_CHAR), a    ; stash the char (A is needed for $A8 work)
+                push    af                  ; preserve caller AF
+                push    bc
+                push    de
+                push    hl
+                di                          ; no interrupt while the BIOS is half-mapped
+                in      a, ($A8)
+                ld      (CONOUT_A8), a      ; save the primary-slot config
+                and     $FC                 ; page-0 primary -> slot 0 (main ROM)
+                out     ($A8), a            ; main BIOS ROM now visible in page 0
+                ld      a, (CONOUT_CHAR)
+                call    $00A2               ; CHPUT — emit A; preserves all registers
+                ld      a, (CONOUT_A8)
+                out     ($A8), a            ; restore page 0 = RAM
+                ei
+                pop     hl
+                pop     de
+                pop     bc
+                pop     af                  ; restore caller AF
+                ld      a, (CONOUT_CHAR)    ; return A = the emitted char
+                ret
 
 ; --- pad to a full 16 KB page ($4000-$7FFF) --------------------------------
                 ds      $8000 - $, $00

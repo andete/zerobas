@@ -2358,3 +2358,21 @@ CONOUT at `$5454`** — emit `A` via the BIOS CHPUT (`$00A2`) through a genuine 
 slot, preserving `BC/DE/HL/IX/IY`. Clean-room: the CONOUT contract (emit char, preserve regs) and CHPUT/CALSLT/
 EXPTBL are documented MSX BIOS ABI; no oracle disassembly. This is the deepest Tier-2 code yet (our existing
 `calslt_h` is a simplified `jp (ix)` that does NOT switch slots, so CONOUT must do a real slot switch itself).
+
+**§8.68 M8 DONE — real CONOUT implemented; the banner loop is ESCAPED (56→199 PCs); a NEW, later blocker
+exposed.** Implemented `conout_body` (free tail; `$5454` now `jp conout_body`, net-zero — the +2 shift is
+absorbed by the existing `ds $5FE5 - $` pad, verified `$5FE5` still = `jp k_5FE5`). It emits `A` via the main-ROM
+CHPUT (`$00A2`) through a genuine inter-slot call: slot config measured live (`disk_probe_dosboot_slotcfg.py`,
+`EXPTBL=00 00 00 80` ⇒ main ROM = slot 0 primary UNEXPANDED), so it just saves `$A8`, `DI`, switches page-0
+primary `3→0`, `call $00A2`, restores `$A8`, `EI`; pages 1-3 (our ROM / the page-2 stack / the page-3 work area
++ scratch) stay mapped. Clean-room: CHPUT/`$00A2`, `EXPTBL`, `$A8` page-field encoding are documented BIOS ABI.
+**RESULTS:** `pctrace --arm 0x0100` distinct PCs **56→199**; ours escapes the `$0317-$0322 ↔ $5454` banner loop
+and runs COMMAND.COM's own code broadly (`$089D/$08C6/$0A2E/$0BA2…`, the same regions stock runs) with a STABLE
+`SP≈$8FE0` (the §8.60-8.66 stack-runaway is GONE in this phase — confirming it was banner-spin aftermath).
+Regression GREEN (unit 18/18). **BUT** by `settle=24` it still ends in the familiar `$D7B0-DC00` loop (top now
+`$DBDA`, `SP=$4250`) — so there is a downstream blocker past the banner: COMMAND.COM gets much further, then
+something else makes the stack run away again (same end-symptom, later cause). **NEXT (M9): find the new
+divergence** — aligned pctrace past the banner, filtering CONOUT-internal PCs (ours `$78xx`/`$00A2`, stock
+`$54xx/$40xx/$001C/$DExx`) since those legitimately differ per-CONOUT-call. Open question to watch: whether the
+new blocker is another stub (like CONOUT) or an artifact of CONOUT's return-flag infidelity (ours returns the
+caller's `AF=0DA3`; stock returns `0D3B` — CHPUT preserves AF so the change is CALSLT-wrapper noise, but verify).
