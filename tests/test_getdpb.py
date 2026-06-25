@@ -47,8 +47,9 @@ FIELDS = 0xC100
 
 def build():
     src = os.path.join(ROOT, "disk", "disk.asm")
-    subprocess.run(["pasmo", "--bin", src, ROM, SYM], check=True,
-                   capture_output=True)
+    # disk.asm is split into parts it includes; -I disk resolves them.
+    subprocess.run(["pasmo", "-I", os.path.join(ROOT, "disk"), "--bin", src, ROM, SYM],
+                   check=True, capture_output=True)
 
 
 def mock_fat_mount(m):

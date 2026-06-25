@@ -2409,3 +2409,16 @@ CALLF `$0030` (the DSKIO path, already real). **A-2 spec = `disk/docs/tier2-a2-s
 inter-slot-call the main-ROM KEYINT via `EXPTBL[0]` (the CONOUT pattern), removing the partial ack; expected to
 clear the residual M9 runaway, BIOS-agnostic (KEYINT/`$0038` + `$FD9A`/`$FD9F` are MSX1 standard → ports to
 C-BIOS). NO asm landed (held for sign-off per the deferral). Tier-1 green.
+
+**§8.71 A-2 LANDED + SOURCE SPLIT (user-approved).** A-2 implemented (int_h → main-ROM KEYINT via the shared
+`pg0_mainrom_in/out` EXPTBL[0] helper, factored from CONOUT): pctrace `--arm 0x0100` distinct PCs **199→283**,
+the interrupt path is serviced and COMMAND.COM runs broader — a real advance — but settle-24 still ends in the
+`$D7B0-DC00`/`SP=$4250` runaway (the `$4251`/`$0052` storm is aftermath; a downstream blocker remains, next:
+find its ONSET). Then split the 3,393-line disk.asm into 7 logical parts (pasmo `include`, `-I disk`):
+`equates.inc` · `init.asm` (header/INIT/boot/work-area builders) · `pageenv.asm` (page-0 DOS env + inter-slot
+handlers + int_h trampoline = Interface B) · `driver.asm` (DSKIO+FDC) · `fat.asm` (FAT12+BDOS) · `kernel.asm`
+(Tier-2 veneers + relocated bodies = Interface A) · `runtime.asm` (free-tail templates + pg0_mainrom + conout/
+int_h bodies = Interface B). disk.asm is now a thin orchestrator. Cuts are positional at section boundaries so the
+`ds`-anchored layout is preserved; **SAFETY GATE: rebuilt ROM sha256 byte-identical to the pre-split A-2 build**
+(5f1ae4f6…). Makefile += `-I disk` + DISK_PARTS; test_getdpb + audit_citations updated (each part header carries
+the clean-room attestation; audit gating CLEAN). Tier-1 18/18 green.

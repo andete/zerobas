@@ -35,6 +35,10 @@ ROM   := $(BUILD)/basic.rom
 # zerobas-disk: a standalone 16 KB disk-interface ROM (not an IPS patch). Lives
 # in internal slot 3-1; built with the same pasmo + pad_rom flow as basic.rom.
 DISK_SRC := disk/disk.asm
+# disk.asm is an orchestrator that `include`s these parts (assembled with -I disk);
+# listed as prerequisites so a change to any part triggers a rebuild.
+DISK_PARTS := disk/equates.inc disk/init.asm disk/pageenv.asm disk/driver.asm \
+              disk/fat.asm disk/kernel.asm disk/runtime.asm
 DISK_ROM := $(BUILD)/disk.rom
 
 # Tracked patch deliverables (regenerable; live at their committed paths).
@@ -51,8 +55,8 @@ $(ROM): $(SRC) $(DEPS) | $(BUILD)
 	$(PASMO) --bin $(SRC) $(ROM)
 	python3 tools/pad_rom.py $(ROM) 16384
 
-$(DISK_ROM): $(DISK_SRC) | $(BUILD)
-	$(PASMO) --bin $(DISK_SRC) $(DISK_ROM)
+$(DISK_ROM): $(DISK_SRC) $(DISK_PARTS) | $(BUILD)
+	$(PASMO) -I disk --bin $(DISK_SRC) $(DISK_ROM)
 	python3 tools/pad_rom.py $(DISK_ROM) 16384
 
 disk: $(DISK_ROM)

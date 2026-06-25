@@ -1,0 +1,180 @@
+; Copyright (c) 2026 Joost Yervante Damad
+; SPDX-License-Identifier: 0BSD
+; Part of zerobas-disk, included by disk.asm (build with `pasmo -I disk`).
+; shared equates: work-area / scratch / constant addresses
+; CLEAN-ROOM: every constant, address and algorithm here traces to a public source
+; or a black-box oracle probe; nothing is derived from disassembly. See disk/PROVENANCE.md.
+
+; --- System addresses (disk/PROVENANCE.md §INIT / §BDOS) -------------------
+; Sources: MSX2 Technical Handbook, work area.
+SYSTEM          equ     $F37D   ; SYSTEM sysvar: BDOS entry-point word
+; RAMAD0-3: the RAM slot address for each of the four pages (the standard MSX
+; work-area cells the disk ROM's INIT populates so MSX-DOS can re-page RAM into
+; page 0). MSX2 TH work area; the disk-ROM-INIT responsibility is confirmed by a
+; black-box differential (provider-oracle-scope.md §8.8/§8.16). EXPTBL flags which
+; primary slots are expanded. (EXPTBL also in basic/sysvars.inc — same address.)
+DOS_F340        equ     $F340   ; disk work-area flag the kernel reads at init (§8.33); $00 = ok
+RAMAD0          equ     $F341   ; RAM-slot id per page ($F341-$F344), MSX2 TH work area
+EXPTBL          equ     $FCC1   ; expanded-slot flags, 1 byte/primary, bit 7 = expanded
+
+; --- Standard hook + entry addresses (disk/PROVENANCE.md §INIT) -------------
+; HPHYD is the standard PHYDIO hook a disk ROM installs so a host's physical disk
+; I/O reaches the in-slot DSKIO. Source: public MSX hook table
+; (fms.komkon.org/MSX/Docs/Hooks.txt) + disk/docs/expansion-protocol.md §2
+; (CF-3300 black-box trace: after boot $FFA7 held an RST 30h / slot $87 / RET).
+HPHYD           equ     $FFA7   ; PHYDIO hook (5 RAM bytes, default C9)
+; DSKIO entry: this ROM base ($4000) + standard disk-ROM offset +$10 (MSX2 TH,
+; disk ROM interface). The HPHYD CALLF targets it cross-slot.
+DSKIO_ENTRY     equ     $4010   ; our DSKIO ($4000 + $10)
+
+; --- Disk scratch RAM (disk/PROVENANCE.md §Scratch RAM) --------------------
+; (GETDPB writes the 18-byte DPB into the CALLER's buffer per MSX2 TH, so the disk
+; ROM reserves no local DPB area.)
+;
+; FDC driver state (7 bytes below the sector buffer)
+FDC_IFF         equ     $E299   ; saved caller IFF2 across a sector op (1 = was EI)
+FDC_CNT         equ     $E29A   ; remaining sector count
+FDC_LSEC        equ     $E29B   ; current logical sector (word)
+FDC_DEST        equ     $E29D   ; current transfer address (word)
+FDC_TRY         equ     $E29F   ; read attempt counter
+
+; Sector buffer (512 bytes) — DSKIO reads land here for FAT12 parsing.
+SECTOR_BUF      equ     $E2A0   ; 512-byte sector buffer ($E2A0-$E49F)
+
+; --- FAT12 geometry + iterator state (disk/PROVENANCE.md §Scratch RAM) ------
+; Filled by fat_mount from the on-disk BPB; the file iterator walks the cluster
+; chain using them. All own-choice free page-3 RAM after the sector buffer.
+FAT_SECPERCLUS  equ     $E4A0   ; sectors per cluster (byte)
+FAT_FATSTART    equ     $E4A1   ; first FAT sector (= reserved sectors) (word)
+FAT_FIRSTROOT   equ     $E4A3   ; first root-directory sector (word)
+FAT_ROOTSECS    equ     $E4A5   ; number of root-directory sectors (word)
+FAT_FIRSTDATA   equ     $E4A7   ; first data sector (word)
+FAT_CURCLUS     equ     $E4A9   ; current cluster in the open file's chain (word)
+FAT_CLUSSEC     equ     $E4AB   ; sector index within current cluster (byte)
+FAT_FIRSTCLUS   equ     $E4AC   ; first cluster of the found file (word)
+FAT_FILESIZE    equ     $E4AE   ; file size in bytes (4-byte LE)
+; numFATs / secPerFAT cached at mount so the write path can sync every FAT copy
+; without re-reading the boot sector (which would clobber SECTOR_BUF mid-flush).
+FAT_NUMFATS     equ     $E55A   ; number of FAT copies (byte; from BPB +16)
+FAT_SECPERFAT   equ     $E55B   ; sectors per FAT copy (word; from BPB +22)
+; This ROM's own slot byte, captured from A at INIT entry (disk/PROVENANCE.md
+; §INIT) and used to build the HPHYD CALLF operand. Own-choice free page-3 RAM
+; in the $E55D gap (after FAT_SECPERFAT's word $E55B-$E55C, before WBUF $E560).
+HOOK_SLOT       equ     $E55D   ; our slot byte for the HPHYD inter-slot hook (1)
+; FAT12 working scratch (transient within a single call)
+FAT_PARITY      equ     $E4B2   ; 1 = odd cluster, 0 = even (FAT12 nibble pack)
+FAT_BYTEIDX     equ     $E4B3   ; byte index within a FAT sector (word, 0..511)
+FAT_FATSEC      equ     $E4B5   ; FAT sector currently read (word)
+FAT_B0          equ     $E4B7   ; first FAT byte of a 12-bit entry
+FAT_B1          equ     $E4B8   ; second FAT byte of a 12-bit entry
+FAT_NAMEPTR     equ     $E4B9   ; -> 11-byte search name (word)
+FAT_DIRSEC      equ     $E4BB   ; current root-dir sector being scanned (word)
+FAT_DIRREM      equ     $E4BD   ; root-dir sectors remaining to scan (word)
+
+; --- BDOS / FCB layer (disk/PROVENANCE.md §BDOS interface) ------------------
+; CP/M-compatible FCB file access reached through the SYSTEM-sysvar vector
+; INIT installed. Call number in C, FCB pointer in DE; result in A (MSX2 TH,
+; MSX-DOS BDOS call conventions). Names in the FCB are an 11-byte 8.3 field at
+; +1 (8 name + 3 ext, space-padded, upper-case) — exactly the layout fat_find
+; consumes. The DTA defaults to $0080 (page 0) but is settable via BDOS $1A —
+; BLOAD points it at a writable page-3 buffer (page 0 is BIOS ROM under Disk
+; BASIC, so the $0080 default would silently fail there).
+BDOS_F_OPEN     equ     $0F     ; FCB Open           (MSX2 TH, MSX-DOS BDOS table)
+BDOS_F_CLOSE    equ     $10     ; FCB Close          (MSX2 TH, MSX-DOS BDOS table)
+BDOS_F_SEQRD    equ     $14     ; FCB Sequential Read(MSX2 TH, MSX-DOS BDOS table)
+BDOS_F_SEQWR    equ     $15     ; FCB Sequential Write (MSX2 TH, MSX-DOS BDOS table)
+BDOS_F_CREATE   equ     $16     ; FCB Create file    (MSX2 TH, MSX-DOS BDOS table)
+BDOS_F_SETDTA   equ     $1A     ; Set DTA Address (DE=new DTA) (MSX2 TH, MSX-DOS BDOS table)
+BDOS_F_RDBLK    equ     $27     ; Random Block Read (RDBLK) (MSX-DOS BDOS table; the
+                                ; MSX-DOS-1 boot loads MSXDOS.SYS through this — a3 §8.9)
+DTA_DEFAULT     equ     $0080   ; default Disk Transfer Area (MSX2 TH, BDOS conv.)
+RECSIZE         equ     128     ; sequential-read record size (MSX2 TH, FCB seq I/O)
+RECPERSEC       equ     4       ; 512 / 128 = records per 512-byte sector (own deriv.)
+; BDOS sequential-read position (own choice; free page-3 RAM after FAT scratch).
+; Records consumed from SECTOR_BUF so far; RECPERSEC means "buffer exhausted,
+; refill on next read". File position otherwise lives in the FAT iterator.
+BDOS_RECIDX     equ     $E4BF   ; next 128-byte record within SECTOR_BUF (0..4)
+; Settable DTA pointer (BDOS call $1A). Under MSX-DOS the default DTA is page-0
+; RAM at $0080; under the combined Disk-BASIC machine page 0 is BIOS ROM, so a
+; SeqRead to $0080 silently fails. BDOS $1A lets the caller (BLOAD) point the
+; record transfer at a writable buffer it controls. Default preserves MSX-DOS
+; compatibility. Own choice for the variable location: free page-3 RAM after the
+; BDOS record index. See disk/PROVENANCE.md §BDOS interface.
+BDOS_DTA        equ     $E4C0   ; current DTA pointer (word; default DTA_DEFAULT)
+; Bytes of the open file still undelivered, seeded from FAT_FILESIZE by Open and
+; decremented one record (up to RECSIZE) per Sequential Read. Bounds the partial
+; final record and the EOF point by the true file size (own choice for the
+; variable location: free page-3 RAM past basic-core's DISK_DTA buffer
+; $E4C2..$E541, clear of every other disk and basic region). 4-byte LE.
+; See disk/PROVENANCE.md §BDOS interface + §Scratch RAM.
+BDOS_BYTESLEFT  equ     $E542   ; bytes of the open file not yet delivered (4-byte LE)
+
+; --- BDOS / FAT12 WRITE-back scratch (disk/PROVENANCE.md §Scratch RAM) -------
+; The write side mirrors the read side's "single open file" model: at most one
+; file is open for write at a time, and its position lives in these vars (the
+; FCB bookkeeping fields are left untouched, as on the read side). All own-choice
+; free page-3 RAM after BDOS_BYTESLEFT ($E542..$E545), clear of SECTOR_BUF /
+; FAT_* / every basic-core region. See disk/PROVENANCE.md §Scratch RAM.
+BDOS_WRMODE     equ     $E546   ; 1 = a file is open for sequential write (byte)
+BDOS_WRCLUS     equ     $E547   ; chain-tail cluster currently being filled (word)
+BDOS_WRFIRST    equ     $E549   ; file's first cluster, 0 until first allocated (word)
+BDOS_WRSECIDX   equ     $E54B   ; sector index within the current cluster (byte)
+BDOS_WRBUFLEN   equ     $E54C   ; bytes currently buffered in SECTOR_BUF (word, 0..512)
+BDOS_WRBYTES    equ     $E54E   ; total bytes written so far = final file size (4-byte LE)
+BDOS_DIRSEC     equ     $E552   ; logical sector holding the open file's dir entry (word)
+BDOS_DIROFF     equ     $E554   ; byte offset of that dir entry within its sector (word)
+FAT_WRTMP       equ     $E556   ; transient scratch for the FAT12 write helpers (word)
+FAT_WRTMP2      equ     $E558   ; second transient (free-cluster scan cached sector)
+; A SECOND 512-byte sector buffer used by the WRITE-BACK FAT/dir helpers. The
+; data being accumulated for a Sequential Write lives in SECTOR_BUF; allocating a
+; cluster (FAT scan) or stamping the directory entry must read/write OTHER sectors
+; without disturbing that in-flight data, so the write-back metadata path uses
+; this independent buffer. Own-choice free page-3 RAM after the write scratch.
+WBUF            equ     $E560   ; write-back FAT/dir sector buffer ($E560..$E75F)
+
+; FCB / directory-entry field offsets (Microsoft FAT spec §3.4; MSX2 TH FCB).
+DIRENT_FIRSTCLUS equ    26      ; first-cluster word (LE) within a dir entry
+DIRENT_FILESIZE equ     28      ; file-size dword (LE) within a dir entry
+EOC             equ     $0FFF   ; end-of-chain marker we write (Microsoft FAT spec §3.2)
+
+; --- BPB field offsets within the boot sector (Microsoft FAT spec §3.1) -----
+BPB_BYTSPERSEC  equ     11      ; bytes per sector (word LE)
+BPB_SECPERCLUS  equ     13      ; sectors per cluster (byte)
+BPB_RSVDSECCNT  equ     14      ; reserved sectors incl. boot (word LE)
+BPB_NUMFATS     equ     16      ; number of FAT copies (byte)
+BPB_ROOTENTCNT  equ     17      ; max root-directory entries (word LE)
+BPB_FATSZ16     equ     22      ; sectors per FAT copy (word LE)
+
+; --- FDC: National-style memory-mapped WD2793 (disk/PROVENANCE.md §FDC) -----
+; Register addresses + drive-latch bit map: openMSX src/fdc/NationalFDC.cc (GPL,
+; allowed for hardware register maps). Status/command bits: WD2793 datasheet.
+; The registers are memory-mapped into ROM page 1 at the canonical $7FB8 window;
+; the driver runs here (slot 3-1, $4000-$7FFF) and addresses them directly.
+FDC_STATUS      equ     $7FB8   ; read = status, write = command
+; ($7FB9 = track register — unused: seeks target the track via the Data register.)
+FDC_SECTOR      equ     $7FBA   ; sector register
+FDC_DATA        equ     $7FBB   ; data register
+FDC_CTRL        equ     $7FBC   ; write = drive/side/motor latch; read = IRQ/!DRQ
+
+; Control-latch write bits (NationalFDC.cc writeMem). Single-drive machine: only
+; drive A is selected (drive B would be $02 — never used).
+CTRL_DRIVE_A    equ     $01     ; select drive 0 (A)
+CTRL_SIDE       equ     $04     ; side select (0 = side 0, 1 = side 1)
+CTRL_MOTOR      equ     $08     ; motor on
+
+; WD2793 status-register bits (WD2793 datasheet). BUSY (bit 0) and DRQ (bit 1)
+; are polled with literal `bit 0,a` / `bit 1,a` in the transfer loops (a `bit`
+; index cannot take a mask), so only the error-mask bits below need symbols.
+ST_LOST         equ     $04     ; lost data (Type II)
+ST_CRC          equ     $08     ; CRC error
+ST_RNF          equ     $10     ; record not found (Type II)
+ST_WP           equ     $40     ; write protect / write fault
+ST_NOTRDY       equ     $80     ; drive not ready
+
+; WD2793 commands. Type I flags: head-load $08 + verify $04, step-rate 0 = 6 ms.
+CMD_RESTORE     equ     $0C     ; restore to track 0  ($00 + headload + verify)
+CMD_SEEK        equ     $1C     ; seek to (Data reg)  ($10 + headload + verify)
+CMD_READ        equ     $80     ; read sector, single record
+CMD_WRITE       equ     $A0     ; write sector, single record (Type II, $A0 base)
+; ($D0 = force interrupt / abort — unused: no command is ever aborted mid-flight.)
+

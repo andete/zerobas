@@ -54,7 +54,12 @@ ROOT = Path(__file__).resolve().parent.parent
 
 # Component -> the source files that carry clean-room-bearing assembly.
 TARGETS = {
-    "disk": ["disk/disk.asm"],
+    # disk.asm is split into included parts (*.asm/*.inc); the clean-room citations
+    # live in the parts now, so scan all of them.
+    "disk": sorted(
+        str(p.relative_to(ROOT))
+        for p in list((ROOT / "disk").glob("*.asm")) + list((ROOT / "disk").glob("*.inc"))
+    ),
     "basic": sorted(
         str(p.relative_to(ROOT)) for p in (ROOT / "basic").glob("*.asm")
     ) + ["basic/sysvars.inc"],
