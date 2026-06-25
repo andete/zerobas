@@ -155,12 +155,21 @@ reverse savereplay [name] / loadreplay [-goto …] name
 Validated: from t=3 (PC 435E), `goback 1` → t=2 (PC 7D0D); `goto 1.0` → t=1
 (PC 7D63).
 
-**Derail-locator workflow** (the reason this matters): catch the failure moment
-(a `z80.acceptIRQ` storm condition, or a state watchpoint) and note `machine_info
-time` = T. Then `reverse goto` a moment before T, and single-step forward
-(`debug step`, in break mode) logging PC/IFF/regs until the failure reappears.
-The transition is the **faulty control transfer** — recoverable without a full
-per-instruction trace of the whole boot.
+**Derail-locator workflow** (the reason this matters): pick a **predicate** that is
+false during healthy execution and true at the failure (e.g. `[reg SP]` in the ROM
+page, or `[debug read memory 0x4251] != 0xC3` for "disk ROM left page 1"). Run to a
+settle time T with `reverse` collecting, then **binary-search emulated time** for the
+first instant the predicate flips (`reverse goto mid`, evaluate, narrow). Each probe
+is O(1) — no trace. The `LAST-GOOD` instruction at the flip is the cause; a forward
+trace across it shows the consequence. Choosing the predicate is the judgment; the
+bisect is mechanical. (A symptom predicate finds the symptom — SP-in-ROM-page lands
+on the storm; the paging predicate lands on the root. Same tool, different question.)
+
+> **Stepping gotcha:** `debug step` does **NOT** advance inside an `after time`
+> callback (nor over `-control stdio`) — the reactor isn't ticking. To trace forward
+> from a `reverse goto` point, install a per-instruction `debug condition` and
+> **return** from the callback (let the reactor free-run); the condition logs and
+> `exit`s after N. Single-stepping only works in interactive break mode.
 
 ---
 
@@ -192,6 +201,42 @@ debug symbols load build/disk.omsx.sym generic   ;# validated: 352 symbols
 
 ---
 
+## 7. Automation harness — `omsx_session.py` + `disk_derail_locate.py`
+
+The mechanical loop (write Tcl → launch → poll → parse → decide → repeat) is the
+token sink, and it is fully encodable. Two Python modules fold it away:
+
+- **`probes/disk/omsx_session.py` — `OmsxRun` job-runner.** Composes a Tcl job from
+  validated primitives, runs it in ONE openMSX boot, returns parsed records.
+  Primitives: `bisect_locate(predicate, lo, settle, trace_n)` (the full boot →
+  time-bisect → LAST-GOOD/FIRST-BAD → forward-trace composite), `forward_from`,
+  `time_sweep`. Every record is one `ctx` line (regs + IFF + t + `m4251` + disasm).
+  > **Architecture note:** `-control stdio` (interactive REPL) was tried and rejected
+  > — that openMSX does **not** free-run its emulation between commands (`debug cont`,
+  > `set pause false`, even `debug step` leave the CPU frozen at reset). The
+  > `-script` + `after time` mechanism free-runs reliably, so each high-level op is
+  > one generated script / one boot. Faithful data collection only — no conclusions.
+
+- **`probes/disk/disk_derail_locate.py` — thin locator CLI.** Runs `bisect_locate`,
+  recognises only KNOWN mechanical patterns (slot/subslot write, 2-PC storm
+  oscillation), and ends in one verdict: `RESOLVED` / `DECISION-NEEDED` / `STUCK`.
+  It escalates the semantic "is this correct?" call and *suggests* the next
+  mechanical predicate but does not auto-recurse. Presets: `sp-rompage`, `paging-p1`,
+  `sp-lost`.
+
+**Trust rule (validated):** the harness is only trustworthy because it reproduces a
+hand-verified result. `disk_derail_locate.py --preset paging-p1` independently
+re-derives the 2026-06-25 root cause (`$E7AA: ld ($ffff),a` unmaps page 1 →
+COMMAND.COM storm). Re-run that after touching the harness; if it stops naming
+`$E7AA`, the harness — not the ROM — changed.
+
+```sh
+python3 probes/disk/disk_derail_locate.py --preset paging-p1   # → DECISION-NEEDED @ $E7AA
+python3 probes/disk/disk_derail_locate.py --preset sp-rompage  # → storm, redirects to root
+```
+
+---
+
 ## Quick chooser
 
 | Question | Reach for |
@@ -199,7 +244,8 @@ debug symbols load build/disk.omsx.sym generic   ;# validated: 352 symbols
 | "Did execution ever reach opcode/region X?" | `read_mem` watchpoint, range + opcode `-condition` (§1) |
 | "When/where is an interrupt accepted?" | `z80.acceptIRQ` probe (§2) |
 | "Were interrupts enabled at this point?" | `{CPU regs}` byte 27 (§3) |
-| "What jumped control to here?" | `reverse goto` before it, step forward (§4) |
+| "What jumped control to here?" | `reverse goto` before it, forward-trace via condition (§4) |
+| "Where does failure-state X first arise?" | `disk_derail_locate.py` / `bisect_locate` (§7) |
 | "Read ROM/RAM that isn't paged in" | `{slotted memory}` (§3) |
 | "Make a PC trace legible" | convert + `debug symbols load … generic` (§5) |
 
