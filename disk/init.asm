@@ -187,6 +187,15 @@ WA_SEG          equ     P1_BLIT + (p1_blit_end - p1_blit_tmpl)  ; base of the tw
 ; written+read within one DI'd call. PG_SV_A8 is shared by both page-0 main-ROM calls.
 CONOUT_CHAR     equ     WA_SEG + (wa_seg_end_tmpl - wa_seg_rom_tmpl)  ; CONOUT: saved char
 PG_SV_A8        equ     CONOUT_CHAR + 1                              ; shared: saved $A8 config
+; A-2b (tier2-a2b-spec.md): a private interrupt stack so int_h_body is NON-DESTRUCTIVE
+; when an interrupt fires with a corrupt caller SP (a primary derail) — it never marches
+; that stack through memory. int_h saves the caller SP, runs on its own 48-byte stack,
+; then restores. INT_SP_SAVE sits ABOVE the stack top so a (pathological) overflow can't
+; clobber the saved SP, keeping the return clean. Region: PG_SV_A8+1 .. INT_SP_SAVE+1
+; resolves to $E7B2..$E7E3, clear of DRV_TRAMP ($E800). Own-choice free page-3 RAM; the
+; ld (nn),sp / ld sp,(nn) save-restore is own-design, no oracle bytes (clean-room).
+INT_STK_TOP     equ     PG_SV_A8 + 1 + 48                           ; SP top; 48-byte stack grows down
+INT_SP_SAVE     equ     INT_STK_TOP                                 ; caller SP saved above the stack top (word)
 SLTTBL          equ     $FCC5   ; SLTTBL base: per-primary mirror of the secondary-slot regs
 SLTTBL3         equ     $FCC8   ; SLTTBL[3]: RAM mirror of slot-3 secondary-slot register (=SLTTBL+3)
 

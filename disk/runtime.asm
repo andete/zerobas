@@ -109,6 +109,9 @@ conout_body:
 ; live once DOS is up), so mapping the main ROM into page 0 leaves the stack intact -
 ; no private-stack switch needed (harden later if a probe shows SP in page 0).
 int_h_body:
+                ld      (INT_SP_SAVE), sp   ; A-2b: save caller SP (no stack touch) ...
+                ld      sp, INT_STK_TOP     ; ... and run on our private interrupt stack,
+                                            ; so a corrupt caller SP is never marched (§8.75)
                 push    af
                 push    bc
                 push    de
@@ -122,6 +125,7 @@ int_h_body:
                 pop     de
                 pop     bc
                 pop     af
+                ld      sp, (INT_SP_SAVE)   ; A-2b: restore caller SP, then the single EI
                 ei
                 ret
 

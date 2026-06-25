@@ -23,6 +23,28 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[A-2b / §8.76] Implemented the storm-proof int_h (private interrupt stack) — CORRECT
+and green, but it does NOT change the boot outcome; the storm bypasses it. Kept as
+defensive hardening (user call), then pivoting to the primary derail.** int_h_body now
+saves the caller SP, runs on a private 48-byte page-3 stack ($E7B2-$E7E1, save at
+$E7E2), and restores — proven by a first-interrupt pctrace (SP $8FEE→$E7E2, KEYINT
+$0C3C runs on $E7xx, clean return). Net-zero ($4251=jp $792B unchanged), unit 18/18,
+DSKIO/basic/tape regression green. · **The negative result:** the steady-state is
+unchanged (triage still SLIDE, SP=$4250) and the storm ring is PURE $4251⇄$0038 with
+int_h_body ($792B) NEVER appearing — the interrupt is accepted AT the $4251 trampoline
+before the body runs, so A-2b's hardening is never reached during the storm. The SP
+march is the hardware accept-push on an already-corrupt SP, not int_h_body. · **So the
+"storm masks the bug" hypothesis was WRONG:** the storm is a pure downstream consequence
+of the primary derail (IFF=1 while PC is already runaway → interrupts accepted at the
+trampoline). No handler-level change can prevent that; fix the primary derail and there
+is no runaway to storm. · **Disposition (user: "keep, commit, pivot"):** A-2b kept as a
+standalone correctness fix (a handler that marches a corrupt caller stack is a real
+latent bug; net-zero, green) but explicitly NOT the blocker. Next = hunt the primary
+derail (first divergence from stock), reconnecting with the pre-compaction kernel/
+COMMAND.COM-sustain track. · confidence: HIGH (storm ring + first-int trace are
+unambiguous). · undo: revert init.asm INT_STK_TOP/INT_SP_SAVE equates + the 3 added
+lines in runtime.asm int_h_body (net-zero, trivial).
+
 **[M5.x / §8.72-8.74] RE-BASELINED the hang: the post-compaction "$4251/$0052
 storm / SP=$0000 onset" was a RED HERRING; the real hang is an int_h→KEYINT
 VDP-ACK FAILURE (interrupt storm).** After /compact I resumed the "find the SP=0
