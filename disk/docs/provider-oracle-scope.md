@@ -2331,3 +2331,30 @@ correctly through COMMAND.COM's startup/self-relocation, and begins executing it
 unresolved late stack/interrupt corruption. **Most promising untried angle for a future restart:** a stack-write
 watch to find where `SP` FIRST descends abnormally (the first push that is never popped), properly aligned to
 ours' first pass — that names the unbalanced routine directly, instead of chasing the corruption's aftermath.
+
+**§8.67 M7 ROOT CRACKED (UN-BANKED) — the COMMAND.COM-load blocker is our own deliberate no-op CONOUT veneer
+at `$5454`; everything in §8.60-8.66 was its downstream aftermath.** The §8.66 stack-write-watch angle worked,
+and even better than hoped. New probe `disk_probe_dosboot_stackwatch.py` (black-box: arm a write_mem watchpoint
+below the legit `$F0xx` stack, filtered to `addr==SP` so only genuine pushes fire) caught the descent live and
+proved it is NOT an interrupt storm (push-site PC is never `$0038`) and NOT a bad `LD SP` — both machines set
+`SP≈$9000` at `$023B` *by design* (so the "stack too low" reading of §8.66 was a red herring). With a clean
+aligned checkpoint in hand, `disk_probe_dosboot_page0.py` showed the register state at the FIRST `$0100`
+(COMMAND.COM entry) is near-identical on both (`SP=$F51F`, `IX=$F195`, `BC/DE/HL` equal; only `AF`/`IY` differ),
+so `disk_probe_dosboot_pctrace.py --arm 0x0100` gives a properly-aligned instruction diff. **Result: the two
+traces are byte-identical in PC AND every register for 20 steps, then diverge at exactly one instruction.** At
+`$5454` (regs identical on both: `AF=0DA3 BC=0980 DE=020D HL=DD0E SP=8FF6`) stock runs a real subroutine
+(`$5454→$5455→$5457→$408F→$001C` CALSLT `→$DE54…` a genuine inter-slot call that switches slots via `$FFFF`/
+`SLTTBL3=$FCC8` and lands on `$00A2` CHPUT, returning to the caller `$0320` ~670 instrs later with `AF=0D3B`),
+whereas **ours' `$5454` is a bare `ret`** (returns to `$0320` immediately, `AF=0DA3` unchanged). `$5454` is our
+`conout` veneer, deliberately stubbed as a "FIRST CUT: register-preserving no-op (banner not yet emitted)…real
+CHPUT output is added by a later re-trap if the kernel proves to need visible output" (disk.asm §8.38). It now
+PROVABLY does: COMMAND.COM's banner-emit loop branches on CONOUT's returned flags (stock `F=$3B` vs ours `$A3`),
+so with a no-op CONOUT ours spins forever in the `$0317-$0322 ↔ $5454` loop — **56 distinct PCs total, never
+escapes**, while stock visits **482** distinct PCs and proceeds toward the prompt. **This single first-cut stub
+is the COMPLETE blocker; the `$DA23` loop / `$607B` / `int_h` stack-storm of §8.60-8.66 were all aftermath of
+spinning in this loop.** Alignment is rock-solid (20 identical steps, single clean divergence) — far stronger
+than the §8.62 `$607B` reading, which was a mis-aligned-checkpoint artifact. **NEXT (M8): implement a real
+CONOUT at `$5454`** — emit `A` via the BIOS CHPUT (`$00A2`) through a genuine inter-slot call to the main-ROM
+slot, preserving `BC/DE/HL/IX/IY`. Clean-room: the CONOUT contract (emit char, preserve regs) and CHPUT/CALSLT/
+EXPTBL are documented MSX BIOS ABI; no oracle disassembly. This is the deepest Tier-2 code yet (our existing
+`calslt_h` is a simplified `jp (ix)` that does NOT switch slots, so CONOUT must do a real slot switch itself).

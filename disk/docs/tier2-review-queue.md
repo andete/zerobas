@@ -23,7 +23,23 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
-**[M6 / §8.66] TIME-BOXED ATTEMPT DONE → MILESTONE BANKED.** You chose "one
+**[M7 / §8.67] ROOT CRACKED, MILESTONE UN-BANKED — the blocker is our own no-op CONOUT veneer at `$5454`.**
+You said "continue; we're still making genuine progress," so I resumed on the §8.66 stack-write-watch angle and
+it paid off decisively. New probe `disk_probe_dosboot_stackwatch.py` ruled out the interrupt-storm/bad-`LD SP`
+theories (both machines set `SP≈$9000` by design — §8.66's "stack too low" was a red herring). A properly
+aligned PC-trace from `$0100` (regs near-identical there) is byte-identical for 20 steps then diverges at ONE
+instruction: stock's `$5454` runs the real disk-ROM CONOUT (inter-slot call to BIOS CHPUT `$00A2`), ours' is a
+bare `ret` — our deliberately-stubbed `conout` "first cut" (disk.asm §8.38). COMMAND.COM's banner loop branches
+on CONOUT's return flags, so ours spins forever (56 distinct PCs, never escapes) while stock proceeds (482).
+**The entire §8.60-8.66 chase (`$DA23`/`$607B`/`int_h` storm) was downstream aftermath of this one stub.**
+Alignment is rock-solid — far stronger than the superseded `$607B` reading. · DECISION: proceeding to implement
+a real CONOUT (M8) under span mode — emit `A` via CHPUT through a genuine inter-slot call, preserving regs;
+clean-room-legit (documented BIOS ABI, no oracle disassembly). It's the deepest Tier-2 code yet (our `calslt_h`
+is a simplified `jp (ix)`, so CONOUT must do its own slot switch). · confidence: very high on the root;
+implementation effort unknown · undo: n/a (analysis + new probe).
+
+**[M6 / §8.66] TIME-BOXED ATTEMPT DONE → MILESTONE BANKED.** _(SUPERSEDED by §8.67 — the "unresolved late stack/
+interrupt corruption" is now fully explained as aftermath of the `$5454` CONOUT no-op; milestone un-banked.)_ You chose "one
 time-boxed cleaner attempt." It found the proximate failure (interrupt-storm stack
 corruption — `SP` walks into the page-1 ROM) but that too is a late symptom: the
 first interrupt is handled cleanly and COMMAND.COM runs 4000+ instructions normally
