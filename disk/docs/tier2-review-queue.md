@@ -23,6 +23,17 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M5.9 / §8.62] ROOT PINNED — the upstream divergence is the stubbed canonical
+entry `$607B`.** Binary-searched the first work-area memory divergence (it's already
+stale at `$0100`/`$D824`, i.e. during MSXDOS.SYS-init) and named the responsible
+canonical ABI entry: **`$607B`**, a multi-purpose disk-ROM service the kernel calls
+15× during init to do inter-slot block copies AND build the `$F2B8` (filename+DPB)
+and `$F1A8` work-area structures. **Our `k_607B` is a bare `ret`** — so the work area
+is never built → the `$DA23` hang. **Scoped sub-track (M6): characterise + implement
+`k_607B`.** Clean-room-feasible (the data it builds is derived from the disk/DPB,
+like our GETDPB — no oracle disassembly). · confidence: high · this supersedes the
+"build more of the work area" framing below with a concrete single entry point.
+
 **[M5.8 / §8.61] SCOPE FLAG — the COMMAND.COM-load blocker is an upstream
 work-area-init gap, not a single hook/veneer.** I disproved two of my own
 hypotheses (the `$F368` hook and `$50A9` both rejoin register-identical with stock)

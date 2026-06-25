@@ -2237,3 +2237,24 @@ first divergence upstream — snapshot the work area (`memsnap`) at progressivel
 `$47B2`→`$D824` return, the COMMAND.COM `$0100` entry, the first `$D8xx`) until ours and stock first differ in
 memory; that names the init step ours skips. The fix is likely "build more of the DOS work area" (a sub-track),
 not a single veneer — flagged for review. Probes: disk_probe_dosboot_memsnap.py, _hookdelta.py, _watchwa.py.
+
+**§8.62 M5.9 — the upstream divergence is the canonical entry `$607B`: a heavily-used multi-purpose disk-ROM
+service that builds the work area, and OUR `k_607B` is a bare `ret` stub.** Binary-searched the first memory
+divergence: at both the COMMAND.COM `$0100` entry and the `$D824` loader return, `$DC80`/`$F1A8`/`$F2B8` are
+ALREADY stale (stock populated, ours `$FF`) ⇒ the gap is in MSXDOS.SYS-init, before COMMAND.COM loads. The
+stock producers (`$4354/$5667/$588A`) map to unrelated routines in our ROM, so we never reimplemented them.
+A "last canonical entry before the first `$F2B8` write" probe named **`$607B`** (`HL=EB95`); a per-call dump of
+its 15 init-phase calls (stock) shows a multi-purpose routine: it switches the slot-3 subslot (`$FFFF`/`$FCC8`),
+does 60-byte (`BC=003C`) inter-slot block copies with a callback convention (`ra == HL`, the source buffer), and
+**builds the work-area structures** — calls #3/#9/#11 write the `$F2B8` filename+DPB region (`DE=F2BA/F2BC`,
+`HL=F195`=drive-A DPB), call #5 builds `$F1A8` (`DE=F1A8`, `IX=4016`=GETDPB). Our `k_607B` returns immediately,
+so none of this happens; `$DC80` (MSXDOS.SYS's own buffer, 117 k× page-0 writes) is a downstream symptom —
+MSXDOS.SYS can't fill it without the `$607B`-built structures. **This is the root of the work-area-init gap.**
+Note `$607B` was scaffolded (§8.49/§8.50) as "COMMAND.COM's BDOS gateway → route to `bdos_entry`", but the
+init-phase role here is a lower-level inter-slot block-move + work-area builder, not a BDOS call — the original
+routing intent is incomplete. Clean-room: the structures it builds are DERIVED data (filename + DPB from the
+disk/loaded file, like our GETDPB), so reimplementable from the black-box input→output contract; no oracle
+disassembly. **NEXT (M6, scoped sub-track — SYNCED with user):** fully characterise `$607B`'s contract
+(the `DE`/`HL`/`BC`/`IX` dispatch: which arg selects block-copy vs `$F2B8`-build vs `$F1A8`-build; the exact
+bytes each writes; the `ra==HL` callback convention) and implement `k_607B`. Probes: the `$607B` entry-call
+dump, disk_probe_dosboot_memsnap.py, disk_probe_dosboot_wacontract.py.
