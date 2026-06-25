@@ -23,6 +23,22 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[ARCH / §8.69] TARGET REFRAME + ARCHITECTURE AUDIT (user-directed, in-loop) — CF-3300 = oracle, C-BIOS =
+prime target.** User clarified: we validate inside the CF-3300 *proprietary main BIOS*, but that is the oracle's
+environment; the prime target for our disk ROM is **C-BIOS**, and the goal is any standards-compliant MSX. M9
+debugging had begun over-fitting our ROM to the CF-3300 BIOS's instruction-level behaviour (wrong success
+criterion). Per user: **reason from spec + oracle (no C-BIOS experiments yet), document the corrected
+architecture, and DEFER the rework** to a separate signed-off effort. Wrote `disk/docs/tier2-architecture-audit.md`.
+Core finding — **two interfaces**: (A) disk-ROM↔MSXDOS.SYS/COMMAND.COM is BIOS-INDEPENDENT and layout-fixed by
+the loaded DOS (so all M1–M8 kernel-veneer/work-area work is correct, not BIOS-specific); (B) disk-ROM↔main-BIOS
+must be BIOS-AGNOSTIC (EXPTBL/CHPUT/KEYINT/slot work area). **All current bugs are on Interface B** and only
+"work" on CF-3300 by that BIOS's tolerance: `int_h` is ack-only (doesn't chain to KEYINT — likely the M9
+runaway's real cause), and the lay_page0_env inter-slot handlers are "mapped-memory" shortcuts (CONOUT already
+had to bypass `calslt_h`). CONOUT/EXPTBL[0] (M8b) is the correct Interface-B template. Migration plan A-1..A-5 +
+open items O-1 (who owns the page-0 DOS env → fate of lay_page0_env) / O-2 (KEYINT chaining contract) / O-3
+(enumerate Interface-B surface) in the audit doc. NO code changed; Tier-1 green; M1–M8 NOT invalidated.
+· DECISION: documented + deferred per user. Awaiting greenlight to start the rework (A-1).
+
 **[M8b / §8.68] PORTABILITY FIX (user-flagged, in-loop) — CONOUT now reads EXPTBL[0] instead of hardcoding
 slot 0.** First cut switched page 0 with `and $FC` (= "main ROM is primary slot 0, unexpanded") — a CF-3300-
 specific bake-in, not faithful. Rewrote `conout_body` to read `EXPTBL[0]` ($FCC1) at runtime for the main-ROM

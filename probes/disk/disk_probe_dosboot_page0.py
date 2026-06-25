@@ -34,7 +34,7 @@ OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
 STOCK_MACHINE = "National_CF-3300"
 
 
-def run(machine: str, dsk: str, settle: float, timeout: float) -> list[str]:
+def run(machine: str, dsk: str, settle: float, timeout: float, at: int = 0x0100) -> list[str]:
     out = tempfile.mktemp(suffix=".cap")
     tcl_path = tempfile.mktemp(suffix=".tcl")
     tcl = f"""set throttle off
@@ -48,7 +48,7 @@ proc hexrow {{addr}} {{
   return $s
 }}
 
-debug set_bp 0x0100 {{}} {{
+debug set_bp 0x{at:04X} {{}} {{
   if {{[info exists ::done]}} return
   set ::done 1
   set f [open {{{out}}} w]
@@ -102,13 +102,14 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dos-disk", required=True)
     ap.add_argument("--machine", default=STOCK_MACHINE)
+    ap.add_argument("--at", type=lambda x:int(x,0), default=0x0100)
     ap.add_argument("--settle", type=float, default=25.0)
     ap.add_argument("--timeout", type=float, default=200.0)
     args = ap.parse_args()
     if not os.path.exists(args.dos_disk):
         sys.exit(f"DOS disk not found: {args.dos_disk}")
     print(f"=== Full page-0 env at $0100 COMMAND.COM entry ({args.machine}) ===")
-    for ln in run(args.machine, args.dos_disk, args.settle, args.timeout):
+    for ln in run(args.machine, args.dos_disk, args.settle, args.timeout, args.at):
         print(ln)
     return 0
 

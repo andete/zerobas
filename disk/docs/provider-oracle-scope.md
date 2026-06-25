@@ -2376,3 +2376,18 @@ divergence** — aligned pctrace past the banner, filtering CONOUT-internal PCs 
 `$54xx/$40xx/$001C/$DExx`) since those legitimately differ per-CONOUT-call. Open question to watch: whether the
 new blocker is another stub (like CONOUT) or an artifact of CONOUT's return-flag infidelity (ours returns the
 caller's `AF=0DA3`; stock returns `0D3B` — CHPUT preserves AF so the change is CALSLT-wrapper noise, but verify).
+
+**§8.69 ARCHITECTURE REFRAME (user-directed) — CF-3300 = ORACLE, C-BIOS = prime TARGET; M9 debugging paused.**
+The user clarified the target: we run our ROM inside the CF-3300 *proprietary main BIOS* only as the oracle's
+environment; the disk ROM's prime target is **C-BIOS**, and the goal is any standards-compliant MSX. The M9
+hunt (make ours' interrupt path match stock's `$0C3C`) had drifted into over-fitting the CF-3300 BIOS — the
+wrong success criterion. Full audit written to **`disk/docs/tier2-architecture-audit.md`** (method: reason from
+spec + captured oracle traces; rework DEFERRED to a signed-off effort; no code changed). Key result: there are
+**two interfaces** — (A) disk-ROM↔MSXDOS.SYS/COMMAND.COM, BIOS-INDEPENDENT and layout-fixed by the loaded DOS
+(so M1–M8's kernel/work-area work is correct and not BIOS-specific — fork (a) holds); (B) disk-ROM↔main-BIOS,
+which MUST be BIOS-AGNOSTIC (EXPTBL/CHPUT/KEYINT/slot work area). Every current bug is on Interface B and only
+passes on CF-3300 by that BIOS's tolerance: `int_h` is ack-only and never chains to the main-BIOS KEYINT (the
+likely real M9 cause), and the `lay_page0_env` inter-slot handlers are mapped-memory shortcuts (CONOUT already
+had to bypass `calslt_h`). The `EXPTBL[0]`-driven CONOUT (M8b) is the correct Interface-B template. Open items
+O-1 (page-0 DOS-env ownership → fate of `lay_page0_env`), O-2 (KEYINT chaining contract), O-3 (enumerate the
+Interface-B surface); migration A-1..A-5 in the audit doc. Tier-1 green; M1–M8 not invalidated.
