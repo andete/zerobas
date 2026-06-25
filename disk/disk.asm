@@ -396,11 +396,11 @@ P1_BLIT         equ     $E77A   ; runtime address of the installed blit routine
 ; Installed into page-3 RAM immediately after P1_BLIT (one LDIR copies both, so
 ; WA_SEG must equal P1_BLIT + the blit length); entry offsets fixed by the template.
 WA_SEG          equ     P1_BLIT + (p1_blit_end - p1_blit_tmpl)  ; base of the two hook bodies
-; CONOUT scratch (M8/§8.67): 2 transient bytes for the $5454 CONOUT inter-slot CHPUT
-; call. Placed in page-3 RAM right after the WA_SEG hook bodies — dead during the
-; COMMAND.COM banner phase (SP is in page 2 there), written+read within one DI'd call.
-CONOUT_CHAR     equ     WA_SEG + (wa_seg_end_tmpl - wa_seg_rom_tmpl)  ; saved char
-CONOUT_A8       equ     CONOUT_CHAR + 1                              ; saved $A8 config
+; Inter-slot helper scratch (M8/§8.67 CONOUT + A-2/§8.70 int_h): transient page-3 RAM
+; right after the WA_SEG hook bodies — dead during the DOS phase (SP is in page 2/3),
+; written+read within one DI'd call. PG_SV_A8 is shared by both page-0 main-ROM calls.
+CONOUT_CHAR     equ     WA_SEG + (wa_seg_end_tmpl - wa_seg_rom_tmpl)  ; CONOUT: saved char
+PG_SV_A8        equ     CONOUT_CHAR + 1                              ; shared: saved $A8 config
 SLTTBL          equ     $FCC5   ; SLTTBL base: per-primary mirror of the secondary-slot regs
 SLTTBL3         equ     $FCC8   ; SLTTBL[3]: RAM mirror of slot-3 secondary-slot register (=SLTTBL+3)
 
@@ -933,17 +933,14 @@ ena_apply:
                 pop     bc
                 ret
 
-; int_h ($0038) — maskable-interrupt vector while RAM is in page 0. Our boot runs
-; DI throughout, so this only fires if MSXDOS.SYS re-enables interrupts before
-; installing its own handler. Acknowledge the VDP frame interrupt (reading the
-; TMS9918 status port $99 clears it) and return; without the ack the interrupt
-; would re-fire immediately. (Documented-shape safe stub; TMS9918 datasheet.)
+; int_h ($0038) — DOS maskable-interrupt vector while RAM is in page 0 (installed by
+; lay_page0_env; per O-1/§8.70 installing $0038 is the disk ROM's job). The body lives
+; in the free tail (int_h_body) and chains to the main-BIOS KEYINT (A-2/§8.70): a bare
+; VDP ack is NOT enough — the kernel needs H.KEYI/H.TIMI/keyboard/JIFFY, which only the
+; main-ROM KEYINT runs. This slot stays 6 bytes (jp + ds 3) so dskio does not shift.
 int_h:
-                push    af
-                in      a, ($99)        ; read VDP S#0 -> clears the frame-int flag
-                pop     af
-                ei
-                ret
+                jp      int_h_body      ; -> free-tail main-ROM KEYINT chain (A-2)
+                ds      3, $00          ; net-zero: keep dskio at its canonical offset
 
 ; --- Disk entry-point handlers ---------------------------------------------
 
@@ -3272,68 +3269,33 @@ wa_seg_end_tmpl:
 WA_SEG_ROM      equ     WA_SEG + (wa_seg_rom_tmpl - wa_seg_rom_tmpl)   ; = WA_SEG
 WA_SEG_RAM      equ     WA_SEG + (wa_seg_ram_tmpl - wa_seg_rom_tmpl)
 
-; --- conout_body — the real $5454 CONOUT (M8/§8.67; M9 portable slot enable) ----
-; Emit the char in A to the console via the main-ROM CHPUT ($00A2). Reached from the
-; $5454 veneer (`jp conout_body`). During DOS, page 0 is RAM (the main BIOS ROM is
-; hidden), so we page the main ROM into page 0, call CHPUT, then restore.
-;
-; PORTABLE (no machine-specific slot hardcode): the main-ROM slot is read at runtime
-; from EXPTBL[0] ($FCC1) — the standard MSX work-area cell holding the main-ROM slot
-; id in the documented format (bit7=expanded, [3:2]=subslot, [1:0]=primary). We set
-; page-0's $A8 primary field to that primary, and — if the main-ROM slot is expanded
-; — also program its page-0 SECONDARY subslot (conout_set_sub). Only the page-0 (and,
-; transiently, page-3) $A8 fields are touched: page 1 (our disk ROM, bits[3:2]) keeps
-; running this code and page 2 (the stack, SP~$8FFx) survives, so the call/ret is safe.
-; Restore is a single `out ($A8)` of the saved config — we never alter the RAM slot's
-; own secondary, so its page-0 subslot is intact. DI spans the switch window; EI on
-; exit (COMMAND.COM runs with interrupts enabled, §8.66).
-; CLEAN-ROOM: CHPUT/$00A2, EXPTBL/$FCC1, SLTTBL/$FCC5, the $A8 primary register and
-; the $FFFF secondary protocol are all documented MSX BIOS ABI (MSX2 TH ch.2/§2.4);
-; no oracle bytes. NOTE: on the CF-3300 EXPTBL[0]=$00 (slot 0, unexpanded), so the
-; primary path is exercised+validated; the expanded sub-path (conout_set_sub) is
-; spec-derived and NOT reachable on this machine (logged, tier2-review-queue.md).
-;   in:  A = char to output ; out: A = char, BC/DE/HL/IX/IY preserved
-conout_body:
-                ld      (CONOUT_CHAR), a    ; stash the char (A is needed for slot work)
-                push    af                  ; preserve caller AF
-                push    bc
-                push    de
-                push    hl
-                di                          ; no interrupt while the BIOS is half-mapped
+; --- shared page-0 main-ROM inter-slot helpers (CONOUT M8 + int_h A-2) ----------
+; pg0_mainrom_in - save the current $A8 to PG_SV_A8 and page the main BIOS ROM into
+; page 0. PORTABLE (no machine-specific hardcode): the main-ROM slot is read at runtime
+; from EXPTBL[0] ($FCC1) - the standard cell holding the slot id (bit7=expanded,
+; [3:2]=subslot, [1:0]=primary). Sets page-0's $A8 primary to that primary and, if the
+; slot is expanded, programs its page-0 SECONDARY subslot too. Only the page-0 (and,
+; transiently, page-3) $A8 fields move: page 1 (our disk ROM) keeps running this code
+; and page 2 (the stack) survives, so call/ret is safe. Caller MUST be DI and MUST pair
+; with pg0_mainrom_out. Clobbers A,B,C,D,E,H,L (callers save what they need).
+; CLEAN-ROOM: EXPTBL/$FCC1, SLTTBL/$FCC5, the $A8 primary register and the $FFFF
+; secondary protocol are documented MSX BIOS ABI (MSX2 TH ch.2/2.4); no oracle bytes.
+; NOTE: on the CF-3300 EXPTBL[0]=$00 (unexpanded), so the primary path is exercised+
+; validated; the expanded sub-path is spec-derived and NOT reachable here (review queue).
+pg0_mainrom_in:
                 in      a, ($A8)
-                ld      (CONOUT_A8), a      ; save the full primary-slot config (restore key)
-                ld      a, (EXPTBL)         ; main-ROM slot id (bit7=exp [3:2]=sub [1:0]=prim)
+                ld      (PG_SV_A8), a       ; save full primary-slot config (restore key)
+                ld      a, (EXPTBL)         ; main-ROM slot id
                 ld      c, a                ; C = slot id
                 and     $03                 ; A = main-ROM primary
                 ld      b, a                ; B = primary
-                ld      a, (CONOUT_A8)
+                ld      a, (PG_SV_A8)
                 and     $FC                 ; clear page-0 primary field
                 or      b                   ; set page-0 primary = main-ROM primary
                 out     ($A8), a            ; main-ROM primary now in page 0 (pages 1/2/3 kept)
                 bit     7, c                ; main-ROM slot expanded?
-                call    nz, conout_set_sub  ; yes -> also select its page-0 subslot
-                ld      a, (CONOUT_CHAR)
-                call    $00A2               ; CHPUT — emit A; preserves all registers
-                ld      a, (CONOUT_A8)
-                out     ($A8), a            ; restore page 0 (RAM slot's secondary untouched)
-                ei
-                pop     hl
-                pop     de
-                pop     bc
-                pop     af                  ; restore caller AF
-                ld      a, (CONOUT_CHAR)    ; return A = the emitted char
-                ret
-
-; conout_set_sub — select the page-0 SUBSLOT of the (expanded) main-ROM primary.
-; The secondary-slot register lives at $FFFF (page 3) and reflects whichever primary
-; is selected in page 3, so we momentarily map the main-ROM primary into page 3 to
-; reach its expander, write the new page-0 subslot field, then restore page 3. Pages
-; 0/1/2 are never disturbed (our code in page 1 and the stack in page 2 survive; page
-; 3 is not accessed in the window). SLTTBL[$FCC5+P] mirrors each expanded primary's
-; secondary register (standard work area). Spec-derived (MSX2 TH §2.4) — NOT exercised
-; on the CF-3300 (main ROM unexpanded there).
-;   in: B = main-ROM primary, C = main-ROM slot id (expanded); CONOUT_A8 = saved $A8
-conout_set_sub:
+                ret     z                   ; unexpanded -> primary switch is enough (CF-3300)
+                ; --- expanded: select the page-0 subslot via the $FFFF/SLTTBL protocol ---
                 ld      a, c
                 rrca
                 rrca
@@ -3356,17 +3318,75 @@ conout_set_sub:
                 rlca
                 rlca                        ; P << 6
                 ld      d, a                ; D = P in page-3 field
-                ld      a, (CONOUT_A8)
+                ld      a, (PG_SV_A8)
                 and     $3C                 ; keep pages 1/2 ; clear page-0 + page-3 fields
                 or      b                   ; page-0 primary = P
                 or      d                   ; page-3 primary = P (reach P's $FFFF expander)
                 out     ($A8), a
                 ld      a, e
                 ld      ($FFFF), a          ; P's secondary: page-0 subslot = S
-                ld      a, (CONOUT_A8)
+                ld      a, (PG_SV_A8)
                 and     $FC                 ; restore page-3 (& 1/2) primaries; clear page 0
                 or      b                   ; page-0 primary = P (main-ROM, now subslot S)
                 out     ($A8), a
+                ret
+
+; pg0_mainrom_out - restore page 0 from PG_SV_A8 (the RAM slot's own secondary is never
+; touched, so its page-0 subslot is intact). Clobbers A.
+pg0_mainrom_out:
+                ld      a, (PG_SV_A8)
+                out     ($A8), a
+                ret
+
+; --- conout_body - the real $5454 CONOUT (M8/8.67) ------------------------------
+; Emit the char in A via the main-ROM CHPUT ($00A2). Reached from the $5454 veneer
+; (jp conout_body). Pages the main ROM into page 0 (pg0_mainrom_in), calls CHPUT,
+; restores (pg0_mainrom_out). DI spans the window; EI on exit.
+;   in:  A = char ; out: A = char, BC/DE/HL/IX/IY preserved
+conout_body:
+                ld      (CONOUT_CHAR), a    ; stash the char (A is needed for slot work)
+                push    af                  ; preserve caller AF
+                push    bc
+                push    de
+                push    hl
+                di                          ; no interrupt while the BIOS is half-mapped
+                call    pg0_mainrom_in
+                ld      a, (CONOUT_CHAR)
+                call    $00A2               ; CHPUT - emit A; preserves all registers
+                call    pg0_mainrom_out     ; restore page 0
+                ei
+                pop     hl
+                pop     de
+                pop     bc
+                pop     af                  ; restore caller AF
+                ld      a, (CONOUT_CHAR)    ; return A = the emitted char
+                ret
+
+; --- int_h_body - the real $0038 DOS interrupt handler (A-2/8.70) ----------------
+; A bare VDP ack is not enough: the kernel/COMMAND.COM need H.KEYI/H.TIMI/keyboard/
+; JIFFY, which only the main-BIOS KEYINT runs. Stock's $0038 handler ($DDAE) inter-slot
+; CALSLTs to the main-ROM KEYINT ($0038 entry -> body $0C3C, calling H.KEYI $FD9A +
+; H.TIMI $FD9F) - the MSX1 standard, BIOS-agnostic. We do the same via pg0_mainrom_in:
+; page the main ROM in, call $0038 (KEYINT does its own VDP ack), restore, return.
+; KEYINT ends with its own EI; the di after the call closes that window before we
+; un-map the main ROM. The interrupt arrives with SP in page 2/3 (interrupts are only
+; live once DOS is up), so mapping the main ROM into page 0 leaves the stack intact -
+; no private-stack switch needed (harden later if a probe shows SP in page 0).
+int_h_body:
+                push    af
+                push    bc
+                push    de
+                push    hl
+                di
+                call    pg0_mainrom_in      ; main BIOS ROM -> page 0 (portable, EXPTBL[0])
+                call    $0038               ; main-ROM KEYINT: ack + H.KEYI + H.TIMI + kb + JIFFY
+                di                          ; close KEYINT's internal EI before un-mapping
+                call    pg0_mainrom_out     ; restore page 0 = RAM
+                pop     hl
+                pop     de
+                pop     bc
+                pop     af
+                ei
                 ret
 
 ; --- pad to a full 16 KB page ($4000-$7FFF) --------------------------------

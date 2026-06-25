@@ -23,6 +23,18 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[A-2 / LANDED — partial: advances the boot, downstream blocker remains] int_h now chains to the main-BIOS
+KEYINT.** Greenlit + implemented per tier2-a2-spec.md. `int_h` ($4251) is now a net-zero trampoline
+(`jp int_h_body` + `ds 3`; dskio unmoved); `int_h_body` (free tail) pages the main ROM into page 0 via the new
+shared `pg0_mainrom_in/out` helper (factored out of CONOUT — `conout_set_sub` merged in, `CONOUT_A8`→shared
+`PG_SV_A8`), `call $0038` (main-ROM KEYINT: VDP ack + H.KEYI/H.TIMI/keyboard/JIFFY), `di`, restore, ret.
+Portable (EXPTBL[0]). **RESULT:** regression GREEN (unit 18/18); pctrace `--arm 0x0100` distinct PCs **199→283**,
+interrupt path ($0038/$FDA4) now serviced, COMMAND.COM runs broader ($07xx/$0Bxx/$19xx) with stable SP in the
+window — a real advance. **BUT** settle-24 still ends in the `$D7B0-DC00`/`SP=$4250` runaway; stackwatch shows
+the same `$4251`/`$0052` storm = AFTERMATH, so a downstream blocker remains (the runaway's true onset is upstream
+of the storm). · NEXT: find the new first-divergence / runaway ONSET (the `$4251` storm is the symptom, not the
+cause) — but FIRST the disk.asm source split (user-approved). · undo: int_h/CONOUT revert is one tail block.
+
 **[A-1 / DONE — A-2 spec ready, AWAITING SIGN-OFF] Architecture-rework analysis complete (10am span).**
 Resolved O-1/O-2/O-3 from spec + CF-3300 oracle (§8.70); wrote `disk/docs/tier2-a2-spec.md`; **landed NO rework
 asm** (held per the deferral). Results:
