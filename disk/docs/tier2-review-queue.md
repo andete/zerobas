@@ -50,6 +50,25 @@ touching asm. · confidence: HIGH on the re-baseline + storm mechanism; MEDIUM o
 the precise ack-failure cause (one more probe needed). · undo: n/a (analysis +
 6 new read-only probes, no production change).
 
+**[M5.x / §8.75 — CORRECTION to the entry above] The int_h handler is NOT the
+primary bug; the $4251 storm is a SECONDARY symptom masking a later control-flow
+derail.** A pctrace armed on the first $4251 (the first interrupt) shows the
+handler path works END-TO-END: $4251→$792B int_h_body→pg0_mainrom_in (paging
+ok)→call $0038→$0C3C the real main-ROM KEYINT (H.KEYI $FD9A + H.TIMI $FD9F +
+keyboard scan)→clean return through int_h_body cleanup→RET back to the interrupted
+boot code at $0320 with SP recovering to $8FF8. ~700 steps stay healthy (multiple
+interrupts + boot code, stack fine). So A-2 was a genuine improvement and the
+handler acks correctly. · The collapse happens LATER: a primary derail (fingerprint
+AF=C28C BC=C51C↓ DE=C5E4 HL=09E4 IX=F1AA IY=0314, SP frozen $4250) sends PC into a
+runaway sweep; interrupts firing into int_h DURING the runaway are the "storm" we
+kept catching. The triage oracle's SLIDE-with-SP-at-int_h-1 verdict is exactly this
+aftermath. · **Why it matters for you:** the boot fix is NOT the interrupt handler —
+it's the primary derail (reconnects with the pre-compaction M5.x kernel/COMMAND.COM-
+sustain track). The storm-proof handler (Lever 2) is still worth doing but as
+DIAGNOSTIC HARDENING (a non-destructive int_h makes a derail show as a clean SLIDE
+pointing at the root, instead of a stack-marching storm that corrupts state and
+hides it). · confidence: HIGH (the first-interrupt trace is unambiguous). · undo: n/a.
+
 **[A-2 / LANDED — partial: advances the boot, downstream blocker remains] int_h now chains to the main-BIOS
 KEYINT.** Greenlit + implemented per tier2-a2-spec.md. `int_h` ($4251) is now a net-zero trampoline
 (`jp int_h_body` + `ds 3`; dskio unmoved); `int_h_body` (free tail) pages the main ROM into page 0 via the new
