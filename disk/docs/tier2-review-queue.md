@@ -23,6 +23,17 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[A-1 / PAUSED — resume 10am] Architecture rework analysis started; held for sign-off per the deferral.**
+User: "pause and resume at 10am, follow the normal flow." Doing A-1 (resolve O-1/O-2/O-3 from spec+oracle) +
+the A-2 spec only; NOT landing rework asm without sign-off. **In-flight O-1 finding (preserve):** write-watch of
+`$0038` (`disk_probe_dosboot_watchwa.py --lo 0x0038 --hi 0x003A`) shows on STOCK the interrupt vector is written
+by **disk-ROM** PCs `$5A31/$5AB9/$5ABC` (all `$4000-$7FFF`), NOT MSXDOS.SYS/hi-RAM; ours writes it from
+`$41C4-$41CB` (lay_page0_env). ⇒ **O-1 leans: the disk ROM DOES own the page-0 interrupt-vector install** — so
+`lay_page0_env` is structurally correct for `$0038`; the bug is `int_h`'s ack-only BODY, not that we install it.
+**RESUME POINT (10am):** O-2 = characterise what stock's installed `$0038` handler (`$5A31`-written, → `$DDAE`)
+actually does — the KEYINT chaining contract — then write the A-2 spec (make `int_h` chain to the main-BIOS
+KEYINT BIOS-agnostically). Also finish O-1 for the inter-slot vectors ($000C/$001C/$0024/$0030) + O-3.
+
 **[ARCH / §8.69] TARGET REFRAME + ARCHITECTURE AUDIT (user-directed, in-loop) — CF-3300 = oracle, C-BIOS =
 prime target.** User clarified: we validate inside the CF-3300 *proprietary main BIOS*, but that is the oracle's
 environment; the prime target for our disk ROM is **C-BIOS**, and the goal is any standards-compliant MSX. M9
