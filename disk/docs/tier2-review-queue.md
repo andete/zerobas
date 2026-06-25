@@ -23,6 +23,36 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[tooling / 2026-06-25] Built the dead-zone NOP tripwire — then a fast experiment
+FALSIFIED its premise; pivoted to a full openMSX-probing-toolbox sweep instead.**
+Added `probes/disk/disk_probe_dosboot_tripwire.py` (kept, per user) on the idea that
+the derail is a NOP-slide into `$00` absorption pads, catchable by one watchpoint
+(range + opcode==0). Mechanism validated and excellent. **But the decisive negative:
+NO `$00` opcode executes anywhere in `$0000-$FFFF` across the entire 30-emulated-second
+boot+derail** (ROM page, all RAM, page-0 storm ring — all zero; cross-checked by
+trapping a known `$31` which fired instantly). So the triage oracle's **SLIDE** verdict
+(`PC==prev+1`) means *consecutive single-byte instructions*, NOT a NOP-pad slide — the
+absorption pads are never entered. The "dead zone = `$00` pad" frame (strategy ①) is
+dead for this bug; the derail is control running forward through **real, valid-opcode
+code at the wrong place**. · **Why this is progress, not a detour:** it cost one cheap
+experiment (not a reframe spiral) and forced a systematic sweep of openMSX's debug
+surface, which surfaced three capabilities we were not using — now validated and
+documented in `disk/docs/openmsx-probing-toolbox.md`: (1) **`z80.acceptIRQ` hardware
+probe** = direct interrupt-acceptance catcher, no per-instruction cost; (2) **`reverse`
+rewind/replay** = `reverse goto <T>` before a caught failure then single-step forward
+to recover the **faulty transfer** (this is the engine the derail hunt was missing);
+(3) **`{CPU regs}` byte 27** = real IFF1/IFF2 + "can-accept-IRQ" bit (corrects the old
+"reg IFF1 doesn't exist" dead-end). Also added `tools/sym_to_openmsx.py` (pasmo `.sym`
+→ openMSX `generic` so traces show symbol names; 352 syms load). · **Recommended next
+frame (strategy ③, the memory's "method that works"):** the disk-ROM PCs aren't
+comparable to stock (relocated/own-design), but main BIOS (`$0000-$3FFF`) and the
+DOS RAM image (MSXDOS.SYS/COMMAND.COM, fixed addresses) ARE byte-identical on both —
+so find the first executed-PC divergence ours-vs-stock *restricted to those comparable
+regions*, built on the validated `acceptIRQ`+`reverse` engine. This reconnects with the
+M5.7 work-area-init diagnosis ($D7CE / $DC80-$DCB2 / $F1A8+ stale). · confidence: high
+on the negative result + the toolbox; the next frame is a proposal, not yet greenlit. ·
+undo: n/a (new probe + doc + tool, no ROM change).
+
 **[A-2b / §8.76] Implemented the storm-proof int_h (private interrupt stack) — CORRECT
 and green, but it does NOT change the boot outcome; the storm bypasses it. Kept as
 defensive hardening (user call), then pivoting to the primary derail.** int_h_body now
