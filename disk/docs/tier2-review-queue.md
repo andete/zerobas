@@ -23,6 +23,33 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M5.x / §8.72-8.74] RE-BASELINED the hang: the post-compaction "$4251/$0052
+storm / SP=$0000 onset" was a RED HERRING; the real hang is an int_h→KEYINT
+VDP-ACK FAILURE (interrupt storm).** After /compact I resumed the "find the SP=0
+runaway onset" task from the summary and chased it to a tight page-0 loop at
+$02E0-$0339 running with SP=$0000. **Judgment call:** I discarded that lead after
+proving (PSP+prologue dump + a 30000-instr aligned pctrace, ours vs stock, both
+from $02E0) it is **byte-and-register IDENTICAL on the stock CF-3300** — it is the
+normal MSX-DOS RAM/slot-sizing scan, which legitimately abuses SP as scratch
+(`ld sp,hl`) with interrupts off. Not a bug. · Then re-found the TRUE steady state
+with `disk_probe_dosboot_hang.py --settle 24`: **ours** = a runaway sweeping
+linearly through high RAM/ROM (`disk_probe_dosboot_derail.py`), **stock** = the A>
+idle keyboard loop at $0D87 (SP=$DBE0, regs static). The derail ring pinned the
+core: `$0038 (=C3 51 42 = jp $4251) ⇄ $4251 (int_h = C3 2B 79 = jp $792B =
+int_h_body)`, **SP descending -2 per cycle**, int_h_body ($792B) NEVER executing →
+the VDP interrupt is never acked → storm → SP marches from $8FEE down through our
+ROM → derail/NOP-slide. · **Why it matters for you:** this moves the active front
+OFF the kernel work-area / $D7xx grind (M5.6-5.9) and BACK onto Interface-B: A-2
+(int_h chaining to KEYINT) is *present but not acking*. The fix locus is
+`int_h_body` in disk/runtime.asm (the `call $0038` / EI-DI ordering, or KEYINT not
+clearing the source under our paging). pg0_mainrom_in itself looks sound (CONOUT
+uses it and works). · **My plan (PAUSING for sign-off — this is asm on the
+interrupt path):** next milestone = observe whether int_h_body's `call $0038`
+actually reaches main-ROM KEYINT ($0C3C) and acks S#0, then spec the fix before
+touching asm. · confidence: HIGH on the re-baseline + storm mechanism; MEDIUM on
+the precise ack-failure cause (one more probe needed). · undo: n/a (analysis +
+6 new read-only probes, no production change).
+
 **[A-2 / LANDED — partial: advances the boot, downstream blocker remains] int_h now chains to the main-BIOS
 KEYINT.** Greenlit + implemented per tier2-a2-spec.md. `int_h` ($4251) is now a net-zero trampoline
 (`jp int_h_body` + `ds 3`; dskio unmoved); `int_h_body` (free tail) pages the main ROM into page 0 via the new
