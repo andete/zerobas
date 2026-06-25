@@ -703,7 +703,7 @@ build_resident:
                 ld      de, RES_PRINT
                 ld      bc, res_print_end - res_print_tmpl
                 ldir
-                ; --- the $F24E-$F2FD no-op segment-hook stub table (§8.29) ----------
+                ; --- the $F24E-$F2B7 no-op segment-hook stub table (§8.29/§8.61) ----
                 ; The COMMAND.COM-load dispatch trace (disk_probe_dosboot_dispatch.py,
                 ; stock) shows the kernel CALL ~18 fixed entries in $F252-$F2A3 between
                 ; $50A9-return and the first real DSKIO. On a plain 64K machine that
@@ -713,6 +713,10 @@ build_resident:
                 ; through RST 38h and the kernel derails (the §8.28a "Insert DOS disk").
                 ; We fill it with RET so the no-op hooks return cleanly. Our own bytes
                 ; (a constant), never the stock work-area code.
+                ; §8.61 CORRECTION: the $C9 region ends at $F2B7 -- on the real CF-3300
+                ; $F2B8+ is a kernel DATA structure (the "MSXDOS  SYS" name + a DPB/param
+                ; block the disk ROM builds via $4354/$5667). Our old fill ran to $F2FD
+                ; and CLOBBERED it. The fill now stops at RES_STUBS_END ($F2B8).
                 ld      hl, RES_STUBS
                 ld      (hl), $C9               ; RET
                 ld      de, RES_STUBS + 1
@@ -749,7 +753,7 @@ build_resident:
                 ldir
                 ret
 RES_STUBS       equ     $F24E   ; no-op segment-hook stub table base (§8.29)
-RES_STUBS_END   equ     $F2FE   ; one past the last stub ($F2FD)
+RES_STUBS_END   equ     $F2B8   ; one past the last stub ($F2B7); $F2B8+ = kernel data (§8.61)
 DRVA_DPB        equ     $F195   ; drive-A DPB base (id byte + 18-byte DPB, §8.30)
 DRVTBL          equ     $F348   ; MSX-DOS-1 disk-driver table (§8.22)
 RES_PRINT       equ     $F1C9   ; resident $-string print routine the kernel CALLs (§8.28)
