@@ -196,6 +196,14 @@ PG_SV_A8        equ     CONOUT_CHAR + 1                              ; shared: s
 ; ld (nn),sp / ld sp,(nn) save-restore is own-design, no oracle bytes (clean-room).
 INT_STK_TOP     equ     PG_SV_A8 + 1 + 48                           ; SP top; 48-byte stack grows down
 INT_SP_SAVE     equ     INT_STK_TOP                                 ; caller SP saved above the stack top (word)
+; A-3 (tier2-a3-spec.md): the maskable-interrupt handler must live in ALWAYS-MAPPED
+; memory. $0038 fires AFTER COMMAND.COM reclaims page 1 as RAM (wa_seg_ram), so a
+; page-1 handler ($4251/int_h_body) is unmapped exactly when it is needed and the boot
+; storms ($0038->$FF rst-loop). We install int_h_hiram_tmpl into page-3 high RAM here
+; and point $0038 at it. $DDAE = stock's own handler address (oracle data point: WHERE,
+; not how) — above MSXDOS.SYS's ~$DC7F landing + COMMAND.COM's stack, verified $FF and
+; untouched on ours across the whole boot (harness read_block/write_watch, 2026-06-26).
+INT_H_HIRAM     equ     $DDAE
 SLTTBL          equ     $FCC5   ; SLTTBL base: per-primary mirror of the secondary-slot regs
 SLTTBL3         equ     $FCC8   ; SLTTBL[3]: RAM mirror of slot-3 secondary-slot register (=SLTTBL+3)
 

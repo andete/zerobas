@@ -10,8 +10,12 @@
 ; inter-slot primitives the boot code + MSXDOS.SYS reach through ($000C RDSLT,
 ; $0014 WRSLT, $001C CALSLT, $0024 ENASLT, $0030 CALLF) and the maskable-interrupt
 ; vector ($0038) no longer exist. lay_page0_env writes a JP-vector table into
-; those page-0 cells pointing at OUR OWN handlers, which live here in page 1 (slot
-; 3-1, never remapped during boot, so they survive every page-0 change).
+; those page-0 cells pointing at OUR OWN handlers. The SYNCHRONOUS handlers (RDSLT/
+; WRSLT/CALSLT/ENASLT/CALLF) live here in page 1 and are only ever reached while page 1
+; is the disk ROM, so they survive every page-0 change. The MASKABLE-INTERRUPT handler
+; is the EXCEPTION (A-3): $0038 fires asynchronously, including AFTER COMMAND.COM
+; reclaims page 1 as the TPA (wa_seg_ram) — so it must NOT live in page 1. It is
+; installed into always-mapped high RAM (INT_H_HIRAM) and $0038 points there.
 ;
 ; CLEAN-ROOM: the vector SHAPE is the documented MSX inter-slot layout (MSX2 TH
 ; ch.2; the §8.6 black-box trace confirmed live cells $000C/$001C/$0024/$0030/
@@ -26,6 +30,15 @@
 ; If the Tier-1 trap (a3) shows the boot reaches a genuinely-unmapped slot through
 ; one of these, that handler is deepened then — never by reading the boot code.
 lay_page0_env:
+                ; A-3: install the maskable-interrupt handler into ALWAYS-MAPPED high RAM
+                ; ($DDAE) BEFORE pointing $0038 at it, so the first interrupt after the
+                ; COMMAND.COM handoff (page 1 -> RAM) has a live handler instead of $FF
+                ; (tier2-a3-spec.md). Interrupts are OFF here; page 1 (LDIR source) is
+                ; mapped; page 3 (dest) is RAM. Clobbers A/BC/DE/HL like the loop below.
+                ld      hl, int_h_hiram_tmpl
+                ld      de, INT_H_HIRAM
+                ld      bc, int_h_hiram_end - int_h_hiram_tmpl
+                ldir
                 ld      hl, p0_env_tab
 lpe_loop:
                 ld      e, (hl)
@@ -53,7 +66,8 @@ p0_env_tab:
                 dw      $001C, calslt_h ; RST 18 CALSLT (inter-slot call)
                 dw      $0024, enaslt_h ; ENASLT (enable slot in a page)
                 dw      $0030, callf_body ; RST 30 CALLF (inter-slot call by inline operand)
-                dw      $0038, int_h    ; maskable-interrupt vector
+                dw      $0038, INT_H_HIRAM ; maskable-int vector -> A-3 high-RAM handler
+                                           ; (NOT page-1 int_h: page 1 is reclaimed by the TPA)
                 dw      0               ; end of table
 
 ; callf_body — the $0030 RST 30h / CALLF handler (the load-bearing one).

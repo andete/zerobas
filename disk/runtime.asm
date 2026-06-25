@@ -98,16 +98,15 @@ conout_body:
                 ld      a, (CONOUT_CHAR)    ; return A = the emitted char
                 ret
 
-; --- int_h_body - the real $0038 DOS interrupt handler (A-2/8.70) ----------------
+; --- int_h_body - the OLD page-1 $0038 handler (A-2/A-2b) — SUPERSEDED by A-3 -------
+; DEAD as of A-3: $0038 no longer points here (it points at INT_H_HIRAM). Kept in place
+; (net-zero, no address shift) pending removal; the live handler is int_h_hiram_tmpl
+; below, relocated into always-mapped high RAM because page 1 is reclaimed for the TPA.
 ; A bare VDP ack is not enough: the kernel/COMMAND.COM need H.KEYI/H.TIMI/keyboard/
 ; JIFFY, which only the main-BIOS KEYINT runs. Stock's $0038 handler ($DDAE) inter-slot
 ; CALSLTs to the main-ROM KEYINT ($0038 entry -> body $0C3C, calling H.KEYI $FD9A +
 ; H.TIMI $FD9F) - the MSX1 standard, BIOS-agnostic. We do the same via pg0_mainrom_in:
 ; page the main ROM in, call $0038 (KEYINT does its own VDP ack), restore, return.
-; KEYINT ends with its own EI; the di after the call closes that window before we
-; un-map the main ROM. The interrupt arrives with SP in page 2/3 (interrupts are only
-; live once DOS is up), so mapping the main ROM into page 0 leaves the stack intact -
-; no private-stack switch needed (harden later if a probe shows SP in page 0).
 int_h_body:
                 ld      (INT_SP_SAVE), sp   ; A-2b: save caller SP (no stack touch) ...
                 ld      sp, INT_STK_TOP     ; ... and run on our private interrupt stack,
@@ -128,6 +127,87 @@ int_h_body:
                 ld      sp, (INT_SP_SAVE)   ; A-2b: restore caller SP, then the single EI
                 ei
                 ret
+
+; --- int_h_hiram_tmpl - the LIVE $0038 handler, A-3 (tier2-a3-spec.md) -----------
+; Relocated by a plain LDIR into INT_H_HIRAM ($DDAE) page-3 high RAM during init, so it
+; survives COMMAND.COM reclaiming page 1 (wa_seg_ram). Same A-2/A-2b logic, but RELOCATABLE:
+; straight-line, ONLY a PC-relative jr + the FIXED call $0038 (no template-relative call/jp,
+; same rule as res_print_tmpl). pg0_mainrom_in/out are INLINED (their `ret z` early-out
+; becomes `jr z`); all data refs ($A8/$FFFF, EXPTBL/SLTTBL, the INT_* page-3 cells, $0038)
+; are absolute fixed addresses that survive relocation. Pages the main ROM into PAGE 0 only
+; (page 1 = the TPA is never touched), runs on the A-2b private stack, calls the main-BIOS
+; KEYINT, restores, EI, RET. BIOS-agnostic (EXPTBL[0]); the expanded-slot path is spec-
+; derived (CF-3300 is unexpanded). CLEAN-ROOM: our own code/address; $DDAE is an oracle
+; WHERE, never stock's bytes.
+int_h_hiram_tmpl:
+                ld      (INT_SP_SAVE), sp   ; A-2b private interrupt stack (page 3)
+                ld      sp, INT_STK_TOP
+                push    af
+                push    bc
+                push    de
+                push    hl
+                di
+                ; --- inlined pg0_mainrom_in (main BIOS ROM -> page 0; EXPTBL[0]) ---
+                in      a, ($A8)
+                ld      (PG_SV_A8), a       ; save full primary-slot config (restore key)
+                ld      a, (EXPTBL)         ; main-ROM slot id
+                ld      c, a
+                and     $03                 ; A = main-ROM primary
+                ld      b, a
+                ld      a, (PG_SV_A8)
+                and     $FC                 ; clear page-0 primary field
+                or      b
+                out     ($A8), a            ; main-ROM primary now in page 0 (pages 1/2/3 kept)
+                bit     7, c                ; main-ROM slot expanded?
+                jr      z, ihh_keyint       ; unexpanded (CF-3300) -> primary switch is enough
+                ; --- expanded: select page-0 subslot via the $FFFF/SLTTBL protocol ---
+                ld      a, c
+                rrca
+                rrca
+                and     $03                 ; A = main-ROM subslot S
+                ld      e, a
+                ld      hl, SLTTBL
+                ld      a, b
+                add     a, l                ; SLTTBL aligned, P<4 -> no page crossing
+                ld      l, a                ; HL = &SLTTBL[P]
+                ld      a, (hl)
+                and     $FC                 ; clear page-0 subslot field
+                or      e
+                ld      (hl), a             ; update the SLTTBL[P] mirror
+                ld      e, a                ; E = new secondary value for $FFFF
+                ld      a, b
+                rlca
+                rlca
+                rlca
+                rlca
+                rlca
+                rlca                        ; P << 6
+                ld      d, a
+                ld      a, (PG_SV_A8)
+                and     $3C                 ; keep pages 1/2 ; clear page-0 + page-3 fields
+                or      b                   ; page-0 primary = P
+                or      d                   ; page-3 primary = P (reach P's $FFFF expander)
+                out     ($A8), a
+                ld      a, e
+                ld      ($FFFF), a          ; P's secondary: page-0 subslot = S
+                ld      a, (PG_SV_A8)
+                and     $FC                 ; restore page-3 (& 1/2) primaries; clear page 0
+                or      b                   ; page-0 primary = P (main-ROM, now subslot S)
+                out     ($A8), a
+ihh_keyint:
+                call    $0038               ; main-ROM KEYINT: ack + H.KEYI + H.TIMI + kb + JIFFY
+                di                          ; close KEYINT's internal EI before un-mapping
+                ; --- inlined pg0_mainrom_out (restore page 0 from PG_SV_A8) ---
+                ld      a, (PG_SV_A8)
+                out     ($A8), a
+                pop     hl
+                pop     de
+                pop     bc
+                pop     af
+                ld      sp, (INT_SP_SAVE)   ; restore caller SP, then the single EI
+                ei
+                ret
+int_h_hiram_end:
 
 ; --- pad to a full 16 KB page ($4000-$7FFF) --------------------------------
                 ds      $8000 - $, $00
