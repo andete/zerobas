@@ -2209,3 +2209,31 @@ that selects it; what it reads from `$4040`; what it writes to `$DC00`/elsewhere
 the first/only divergence (arm the differential earlier than `$D7B0` to be sure nothing precedes it); THEN
 extend `wa_seg` (or add a sibling body) to cover that branch. Probes: disk_probe_dosboot_hang.py (new),
 disk_probe_dosboot_pctrace.py (`--arm 0xD7B0`/`0xDA23`), disk_probe_dosboot_watchwa.py, _loop.py, _progress.py.
+
+**§8.61 M5.8 — root REVISED twice: it is NOT the hooks (§8.60) and NOT `$50A9`; the real divergence is STALE
+WORK-AREA MEMORY built UPSTREAM of `$D7CE`. Fixed one real sub-bug (the `$F2B8` clobber); the hang persists
+(`$DC80`/`$F1A8` still stale) ⇒ the blocker is an upstream work-area-init gap, a scope shift from "fill a hook".**
+Method: realign the `$D7B0` differential at the post-hook rejoin and diff forward. **(1)** The `$F368` hook is
+NOT the divergence — `disk_probe_dosboot_hookdelta.py` shows stock `$DF57` (a ~170-instr ENASLT+slot-scan
+routine) and our `wa_seg` BOTH return to `$D7B6` register-identical with **no** net change in the work-area
+windows; they rejoin. So §8.60's "wa_seg incomplete" hypothesis was wrong (characterising before coding saved a
+wasted implementation). **(2)** `$50A9` is NOT the divergence either — both enter with identical regs
+(`AF=C340 DE=DC80 HL=D606`) and, despite different page-1 bodies (stock CALLs `$472D`+`$45C4`×2; ours is a
+shorter contract), both return to `$D7CE` register-identical (`AF=0042 DE=F1AA HL=F359 SP=DC00`). They keep
+rejoining. **(3)** So the divergence is in MEMORY, not registers. `disk_probe_dosboot_memsnap.py` (new) dumps
+the work area at the first `$D7CE` (guard `DE==F1AA`) on both and diffs: **`$C2xx` is IDENTICAL** (the `$DA23`
+loop's target is fine here — it corrupts later), but ours leaves **`$DC80-$DCB2` and `$F1A8+` as all-`$FF`**
+(stock populated) and has **`$F2B8-$F2FD` = `$C9`** where stock holds `07 "MSXDOS  SYS"` + a DPB/param block.
+**(4)** The `$F2B8` case is OUR bug: the §8.29 `RES_STUBS` `$C9`-fill (`$F24E-$F2FD`) is too wide — stock's RET
+region ends at `$F2B7`, `$F2B8+` is kernel data built by disk-ROM `$4354`/`$5667`. **FIXED** (commit `6ba6393`):
+`RES_STUBS_END` `$F2FE→$F2B8`; regression green; but the hang **persists** (`end_pc` still in `$D7B0-$DC00`),
+so `$F2B8` was not the sole cause. **(5)** Producers of the still-stale regions (`disk_probe_dosboot_watchwa.py`):
+`$DC80-$DCB2` is written **117 k×** by MSXDOS.SYS's OWN page-0 code (`$016F/$01B6/$01C1`…) — loaded kernel,
+identical on both, so ours must diverge BEFORE that code runs; `$F1A8` by disk-ROM `$588A/$5935/$5954` +
+page-0; `$F2B8` by disk-ROM `$4354/$5667`. **Conclusion:** the three stale regions are all built UPSTREAM of
+`$D7CE`; ours skips a work-area-initialisation phase, and the true first divergence is earlier than the whole
+`$D7B0-$DC00` band I have been probing. **NEXT (M5.9, characterise — SCOPE SYNC FLAGGED):** binary-search the
+first divergence upstream — snapshot the work area (`memsnap`) at progressively earlier landmarks (e.g. the
+`$47B2`→`$D824` return, the COMMAND.COM `$0100` entry, the first `$D8xx`) until ours and stock first differ in
+memory; that names the init step ours skips. The fix is likely "build more of the DOS work area" (a sub-track),
+not a single veneer — flagged for review. Probes: disk_probe_dosboot_memsnap.py, _hookdelta.py, _watchwa.py.
