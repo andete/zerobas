@@ -81,6 +81,13 @@ change). New probes: entry0100seq, conoutstream, bdosseq, fopenresult, fopenromc
   bounded/finite vs A's open-ended per-address reproduction, reuses our existing disk BDOS (our
   bdos_open already returns the $FF this blocker needs). Next: A-vs-B decision, then (if B)
   tier2-bdos-spec.md before any asm. Risks for B catalogued in the doc §4.
+  **>> USER CHOSE FORK B (2026-06-26). Viability gate PASSED** (disk_probe_dosboot_bdoscallers.py:
+  every $0005 caller is COMMAND.COM, ZERO in the kernel $D606-$DDFF → redirecting $0005 is safe).
+  **Spec drafted: disk/docs/tier2-bdos-spec.md (DRAFT, awaiting sign-off before asm).** Mechanism:
+  k_47B2 overwrites $0005→our page-0 RAM trampoline → bdos_entry; extend bdos_entry with the
+  startup console fns ($02/$06/$09/$0A/$0E/$19/$2A) on top of the disk fns we have. 5 open sign-off
+  items in spec §5 (milestone scope, SDATE stub, BUFIN fidelity, trampoline location, clean-room
+  confirm). No asm yet (spec-before-implementation).
 
 **[$47B2 RETURN CONTRACT DONE / 2026-06-26, commit 9573a4c — COMMAND.COM now runs its real
 startup (no longer spins at $050D). New blocker: a kernel loop $D858-$D87F after startup.]**
