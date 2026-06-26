@@ -23,6 +23,31 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[NEXT BLOCKER CHARACTERISED / 2026-06-26 — post-A-5: kernel derails in the COMMAND.COM-load
+phase; the garbage banner is DOWNSTREAM. Next = ours-vs-stock first-divergence hunt (no
+implementation yet).]** After A-5 the boot reaches the COMMAND.COM-load kernel phase but never
+shows `A>`. Harness findings:
+- **Stock** prints the real banner via CONOUT `$5454`: `\r\n MSX-DOS version 1.03 \r\n
+  Copyright 1984 by Microsoft \r\n`, called from `$0320` with `HL=$DD0E` (work area), `DE`=
+  the banner chars.
+- **Ours** feeds `$5454` a repeating `$00 $00 $80 …` garbage stream, called from **`$D88A`**
+  (relocated kernel), with junk `DE`/`HL`. The kernel routine `$D87F` LDIRs 130 bytes from
+  `$D34E` (garbage) → `$DA40`, maps the disk ROM into page 1 via `$F368`/WA_SEG (now WORKING),
+  `ret`s to **`$50E0` — a bogus address inside our ROM's `$00` padding** (real code at `$50A9`
+  ends `$50B7`; `$50B8-$520x` is `ds` fill), then NOP-slides. So the kernel is operating on
+  corrupt state: garbage buffer, garbage return address, garbage output.
+- **These are DOWNSTREAM symptoms** (cf. [[tier2-storms-are-downstream]]); chasing the `$50E0`
+  NOP-slide or "missing veneer" would be fixing a symptom. The PRIMARY derail is upstream in
+  the shared relocated kernel ($D606-$DD0E, same addresses on ours+stock since both use
+  GETWRK=$DD0E) — likely a wrong value our disk ROM returns from one of the `$40xx`/`$50xx`
+  kernel-callback contracts during COMMAND.COM load, sending the kernel down a wrong branch
+  before it ever reaches the `$0320` banner path.
+- **NEXT MILESTONE:** ours-vs-stock FIRST-DIVERGENCE hunt in the shared kernel — compare the
+  kernel PC/branch sequences (not time-aligned; ours is slower) from COMMAND.COM entry to the
+  first point ours branches away from stock, then identify the disk-ROM callback whose
+  contract we get wrong there. Connects to the M5.5 "$544E spin from $D88A" thread (now with a
+  clean post-A-5 signal). · undo: n/a (analysis only).
+
 **[A-5 DONE / 2026-06-26 — WA_SEG corruption FIXED, boot now reaches COMMAND.COM]
 The post-storm "kernel loop" was a CORRUPTED WA_SEG trampoline; root cause = our OWN
 interrupt handler's A-2b private stack overflowing into it. Fix: run the $0038 handler on
