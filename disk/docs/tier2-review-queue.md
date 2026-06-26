@@ -23,6 +23,21 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[PHASE-1 IMPLEMENTED + VALIDATED for DOS, but REVERTED (Tier-1 BASIC regression) / 2026-06-26 —
+needs option-B reorg, next milestone.]** Built `wa_clear` (zero $F1C9-$F37F, $C9-fill $F24F-$F2B7,
+`in a,($A8);ret`@$F365), option A (first in init). Fixed two hazards during build: (1) zeroing RAMAD
+$F341-4 defeated set_ramad's $FF gate → skipped the whole build_wa_table/drvtbl/resident fall-through
+chain (excluded RAMAD); (2) off-by-one in the split memset. **DOS validation PASSED**: $F338=00,
+$F368=C3 95 E7 (A-3 hooks built), RAMAD=83, diff 462→319, sp-rompage STUCK, unit 18/18, 16384 B.
+**BUT option A regresses BASIC FILES** (wa_clear runs for ALL boots, wipes a $F1C9-$F37F cell disk-
+BASIC needs). REVERTED → Tier-1 green, tree clean. **Option B (DOS-only) required but non-trivial:**
+ours' DOS work-area builds (RES_PRINT $F1C9 / DRVTBL $F348 / WA_JMPTAB $F368 / SYSTEM $F37D / the
+set_ramad fall-through) run in init for ALL boots; a wa_clear in the DOS path (boot_sig_ok) runs AFTER
+them and would wipe them with no rebuild. So B needs reorganising that chain into the DOS-boot path
+after wa_clear, while keeping what BASIC depends on (DRVTBL? RES_PRINT?) on the BASIC path — a design
+task needing its own spec (map BASIC's work-area dependencies first). Detail: tier2-phase1-spec.md §7.
+· undo: n/a (asm reverted; only docs committed).
+
 **[DEFINING FINDING / 2026-06-26, commit TBD — the real blocker is the UNBUILT DOS WORK AREA, not
 FOPEN or any single intercept. STRATEGIC CHECKPOINT.]** Followed COMMAND.COM's post-FOPEN branch
 to ground: it does `ld a,($F338)` at $C26B; stock ($F338)=00, ours=$FF. Write-watch: stock writes

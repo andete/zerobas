@@ -100,3 +100,30 @@ Net-zero: it lives in the free tail; `disk.rom` stays 16384 B; no canonical addr
    `$57BE`-era pass and trivial.
 3. Confirm clean-room basis: extents/values from the construction-map oracle observation; the
    `$F365` routine is `in a,($A8);ret` (a documented slot-register read), reimplemented, not copied.
+
+## 7. Implementation attempt (2026-06-26) — option A built + validated for DOS, REVERTED (BASIC regression)
+
+Built `wa_clear` (zero `$F1C9-$F37F`, `$C9`-fill `$F24F-$F2B7`, `$F365` routine) called first in `init`
+(option A). Two integration hazards surfaced and were fixed during the build:
+- **RAMAD gate (the spec §2 hazard, manifested).** Zeroing `$F341-$F344` defeats `set_ramad`'s
+  `==$FF` host-detection, which **falls through to `build_wa_table` → `build_drvtbl` → resident
+  routines**. So zeroing RAMAD skipped the entire DOS work-area build chain (`$F368` hooks stayed 0).
+  Fixed by excluding `$F341-$F344` from the clear (two LDIRs around it).
+- **Off-by-one** in the split memset (`bc` = bytes, not bytes-1) re-zeroed `$F341`; fixed.
+
+**DOS-side validation PASSED** with the fixes: wadiff `$F338=00` ✓, `$F368=C3 95 E7` (A-3/A-5 hooks
+built) ✓, `$F341-4=83` (RAMAD) ✓; diff 462→319 bytes (remainder = phases 2-3 + intentional
+divergences); `disk_derail_locate sp-rompage` STUCK ✓; `make unit-test` 18/18 ✓; net-zero 16384 B.
+
+**BUT option A REGRESSES Tier-1 BASIC `FILES`** (garbage listing; pre-change ROM byte-identical to
+CF-3300, post-change empty). Root: `wa_clear` runs for ALL boots and wipes a `$F1C9-$F37F` cell our
+disk-BASIC needs, not rebuilt on the BASIC path. **Reverted** to keep Tier-1 green.
+
+**Option B (DOS-only) is required, and is NOT a one-line move.** Our DOS work-area build chain
+(RES_PRINT `$F1C9`, RES_STUBS `$F24E`, DRVTBL `$F348`, WA_JMPTAB `$F368`, SYSTEM `$F37D`, the
+`set_ramad→build_wa_table→build_drvtbl→resident-routines` fall-through) runs in `init` for ALL boots.
+A `wa_clear` placed in the DOS path (`boot_sig_ok`) runs AFTER those builds and would wipe them with
+no rebuild. So option B needs **reorganising that chain to run in the DOS-boot path, after
+`wa_clear`** — while keeping whatever BASIC needs (DRVTBL? RES_PRINT?) built on the BASIC path. That
+is a design task (next milestone): map which work-area builds BASIC actually depends on, then split
+the construction into a DOS-only `wa_clear`+rebuild vs the BASIC-needed minimum. Needs its own spec.
