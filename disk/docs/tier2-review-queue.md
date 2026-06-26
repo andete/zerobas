@@ -88,6 +88,23 @@ change). New probes: entry0100seq, conoutstream, bdosseq, fopenresult, fopenromc
   startup console fns ($02/$06/$09/$0A/$0E/$19/$2A) on top of the disk fns we have. 5 open sign-off
   items in spec §5 (milestone scope, SDATE stub, BUFIN fidelity, trampoline location, clean-room
   confirm). No asm yet (spec-before-implementation).
+  **>> PRE-IMPLEMENTATION VALIDATION OVERTURNED THE FORK-B PREMISE (2026-06-26, commit TBD) —
+  HARD-STOP, fork re-opened.** Before writing any asm I cheaply tested the core fork-B assumption
+  ("intercept FOPEN → our bdos_open returns $FF → COMMAND.COM unblocks") with register-override
+  experiments (disk_probe_dosboot_fopenoverride.py): forced the kernel FOPEN return at $C24E to
+  stock's EXACT state — A=$FF (expt2), then AF=$FF45 + HL=$00FF (all other regs already identical
+  to stock: BC=0 DE=D64F IX=F195 IY=DC5B SP=D600). **Result: COMMAND.COM STILL mis-branches**
+  (next call SELDSK ret=$C30A, not stock's STROUT ret=$CBA6) and still spins. ∴ **COMMAND.COM's
+  post-FOPEN branch is NOT register-conveyed — it reads WORK-AREA MEMORY that stock's full 144-
+  entry FOPEN populates and our bailed-at-$4462 FOPEN never writes.** A lightweight register-
+  contract intercept is therefore INSUFFICIENT; the premise "our bdos_open already returns the $FF
+  this blocker needs" was wrong (the value isn't the branch input). Implications: (i) the kernel's
+  file machinery must ACTUALLY RUN to build the work area (favours fork A: reproduce the $4462
+  chain), or (ii) a fork-B BDOS must additionally populate the exact work-area cells COMMAND.COM
+  reads (converges toward A's effort). Recommend ONE more cheap characterisation — identify the
+  specific work-area address COMMAND.COM reads between $C24E and its branch (read-watch /
+  state-diff) — to decide A-vs-B on evidence before committing. No production asm written
+  (validate-before-build held). New probe: fopenoverride. · undo: n/a.
 
 **[$47B2 RETURN CONTRACT DONE / 2026-06-26, commit 9573a4c — COMMAND.COM now runs its real
 startup (no longer spins at $050D). New blocker: a kernel loop $D858-$D87F after startup.]**
