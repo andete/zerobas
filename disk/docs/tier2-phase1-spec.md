@@ -119,6 +119,27 @@ divergences); `disk_derail_locate sp-rompage` STUCK ✓; `make unit-test` 18/18 
 CF-3300, post-change empty). Root: `wa_clear` runs for ALL boots and wipes a `$F1C9-$F37F` cell our
 disk-BASIC needs, not rebuilt on the BASIC path. **Reverted** to keep Tier-1 green.
 
+### 7a. The BASIC-coexistence problem, characterised precisely (2026-06-26)
+
+FILES runs on **`C-BIOS_MSX1_EU_BASIC_DISK`** (our prime target), not the CF-3300 oracle. Snapshot
+of `$F1C9-$F37F` at our disk-ROM init entry (`$4034`, BEFORE our ROM touches anything) vs the BASIC
+prompt (`disk_probe` /tmp/wa_layer):
+
+- **What C-BIOS/BASIC initialises (before our disk ROM):** the disk-work-area hook region is
+  **`C9`-filled** — `$F327=$F338=$F348=$F368=C9` (RET stubs, so any undefined disk hook is a safe
+  no-op return), plus a live data block at `$F2D2+`. `$F1C9` and `$F24E` are left `$FF`.
+- **What our disk ROM adds on top:** it surgically overlays ONLY the cells it owns — DRVTBL `$F348`,
+  hooks `$F368-$F37C`, SYSTEM `$F37D`, RAMAD `$F341-4`, RES_PRINT `$F1C9`, RES_STUBS `$F24E-$F2B7`
+  (the last two into the `$FF` gaps). The OTHER `C9` stubs stay, and disk-BASIC relies on them being
+  callable RETs. This **coexists** — which is exactly why FILES passes without `wa_clear`.
+- **Why `wa_clear` breaks it:** the blanket zero of `$F1C9-$F37F` turns those `C9` (RET) stubs into
+  `00` (NOP → fall-through into garbage); calling any from the BASIC/FILES path crashes.
+
+**The decisive point:** `$F338` is `C9` on C-BIOS (BASIC's stub) but must be `00` for DOS — the SAME
+cell is dual-purpose (C-BIOS's BASIC hook-stub region *is* the DOS work area). So the work-area
+construction is **necessarily DOS-only**; it cannot run unconditionally. (Earlier I called the
+coexistence problem "precisely characterised" before this — that was premature; this section is it.)
+
 **Option B (DOS-only) is required, and is NOT a one-line move.** Our DOS work-area build chain
 (RES_PRINT `$F1C9`, RES_STUBS `$F24E`, DRVTBL `$F348`, WA_JMPTAB `$F368`, SYSTEM `$F37D`, the
 `set_ramad→build_wa_table→build_drvtbl→resident-routines` fall-through) runs in `init` for ALL boots.
