@@ -23,6 +23,39 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[A-5 DONE / 2026-06-26 — WA_SEG corruption FIXED, boot now reaches COMMAND.COM]
+The post-storm "kernel loop" was a CORRUPTED WA_SEG trampoline; root cause = our OWN
+interrupt handler's A-2b private stack overflowing into it. Fix: run the $0038 handler on
+the caller's stack (retire A-2b). Implemented + validated; see tier2-a5-spec.md.** After A-3
+the real resting state was an infinite loop `$DC03 → call $F368 → jp WA_SEG($E795) → … →
+$0000: jp $DC03`: the kernel's `$F368` segment-switch landed on a trampoline whose tail
+(`$E7A8+`) was garbage (`ld (#00C0),a … call m,$0000` instead of `ld (SLTTBL3),a; ld
+($FFFF),a; … ret`), so the page-1 swap never happened and COMMAND.COM never got control
+(stock was already at `$0B9F` by the same time).
+- **The corruptor is OUR int handler, not a disk-boot stack (corrected — see HONESTY note).**
+  `INT_H_HIRAM` switched to the A-2b 48-byte private stack (`INT_STK_TOP`) before
+  `call $0038`; the main-ROM KEYINT (`$0C82` loop + `dec ($F3F6)` JIFFY + the `pop ix/iy/af/
+  bc/de/hl` epilogue at `$0D02`) needs ~60 B and overflowed DOWNWARD into `WA_SEG`, laid out
+  just below the stack (`INT_STK_TOP = PG_SV_A8+1+48`). The corruption always landed at
+  `WA_SEG+19`, regardless of where the band was placed.
+- **HONESTY note (process):** I first misread the `$0C85 push` (KEYINT's pushes) as "the MSX
+  disk-boot stack roaming `$E7xx`" and got sign-off for A-4 (relocate the band into `$DDxx`).
+  A-4 was IMPLEMENTED, then the corruption *reproduced identically at the new address* — the
+  stack and WA_SEG had relocated together — which exposed the real cause. A-4 was reverted
+  (uncommitted) and `tier2-a4-spec.md` withdrawn. Lesson: I should have confirmed *what*
+  `$0C85` is (trace it = KEYINT) before naming the corruptor; pattern-matching `push`+low-PC
+  to "boot stack" skipped the black-box check. (cf. [[dont-prematurely-wall]], harness-MO.)
+- **Fix (A-5, signed off):** delete the three stack-switch instructions from
+  `int_h_hiram_tmpl`; run KEYINT on the caller's stack like stock/standard MSX. A-2b only
+  guarded against a corrupt caller SP (the storm) which A-3 already fixed; every caller stack
+  here is healthy + roomy. Removes the unbounded-depth guesswork a fixed private stack imposes.
+- **Validated:** WA_SEG byte-identical at t=6 & t=14; boot breaks out of the loop and runs
+  COMMAND.COM (`$0BA4`/`$0D0A`/`$120C`) + the working `$F36B→$E79B` switch + CONOUT; A-3
+  intact (`sp-rompage` STUCK); Tier-1 green (unit 18/18, DSKIO/BLOAD/FILES == CF-3300);
+  net-zero 16384 B. · **NEW downstream blocker (next milestone):** screen still blank at
+  t=90, PC churning in the `$54xx` CONOUT band — likely a CONOUT/screen-output issue, looser
+  than the loop. · undo: re-insert the 3 stack-switch instructions.
+
 **[A-3 DONE / 2026-06-26, commit 71b1096] Relocated int_h to always-mapped high RAM
 ($DDAE) — THE COMMAND.COM STORM IS FIXED.** Implemented tier2-a3-spec.md approach B:
 `int_h_hiram_tmpl` (the A-2/A-2b handler made relocatable — straight-line, only a

@@ -128,20 +128,26 @@ int_h_body:
                 ei
                 ret
 
-; --- int_h_hiram_tmpl - the LIVE $0038 handler, A-3 (tier2-a3-spec.md) -----------
+; --- int_h_hiram_tmpl - the LIVE $0038 handler, A-3 + A-5 (tier2-a5-spec.md) ------
 ; Relocated by a plain LDIR into INT_H_HIRAM ($DDAE) page-3 high RAM during init, so it
-; survives COMMAND.COM reclaiming page 1 (wa_seg_ram). Same A-2/A-2b logic, but RELOCATABLE:
-; straight-line, ONLY a PC-relative jr + the FIXED call $0038 (no template-relative call/jp,
-; same rule as res_print_tmpl). pg0_mainrom_in/out are INLINED (their `ret z` early-out
-; becomes `jr z`); all data refs ($A8/$FFFF, EXPTBL/SLTTBL, the INT_* page-3 cells, $0038)
-; are absolute fixed addresses that survive relocation. Pages the main ROM into PAGE 0 only
-; (page 1 = the TPA is never touched), runs on the A-2b private stack, calls the main-BIOS
-; KEYINT, restores, EI, RET. BIOS-agnostic (EXPTBL[0]); the expanded-slot path is spec-
-; derived (CF-3300 is unexpanded). CLEAN-ROOM: our own code/address; $DDAE is an oracle
-; WHERE, never stock's bytes.
+; survives COMMAND.COM reclaiming page 1 (wa_seg_ram). RELOCATABLE: straight-line, ONLY a
+; PC-relative jr + the FIXED call $0038 (no template-relative call/jp, same rule as
+; res_print_tmpl). pg0_mainrom_in/out are INLINED (their `ret z` early-out becomes `jr z`);
+; all data refs ($A8/$FFFF, EXPTBL/SLTTBL, PG_SV_A8, $0038) are absolute fixed addresses that
+; survive relocation. Pages the main ROM into PAGE 0 only (page 1 = the TPA is never touched),
+; calls the main-BIOS KEYINT, restores, EI, RET. BIOS-agnostic (EXPTBL[0]); the expanded-slot
+; path is spec-derived (CF-3300 is unexpanded). CLEAN-ROOM: our own code/address; $DDAE is an
+; oracle WHERE, never stock's bytes.
+;
+; A-5 (tier2-a5-spec.md): runs on the CALLER's (interrupted code's) stack — the standard MSX
+; interrupt convention — NOT a private stack. The A-2b private stack was a guard against an
+; interrupt firing with a corrupt caller SP (the primary derail); A-3 fixed that derail, so
+; the caller SP is always valid here. The 48-byte private stack was in fact TOO SMALL for the
+; main-ROM KEYINT (~60 B, unbounded via H.TIMI/H.KEYI hooks): KEYINT overflowed it DOWNWARD
+; into the WA_SEG trampoline laid out just below it ($E795+), corrupting the $F368/$F36B
+; segment switch and hanging the COMMAND.COM handoff (harness, 2026-06-26). Caller stacks
+; here (kernel $DBFA, COMMAND.COM $F513…) have ample room, so this is both correct and safe.
 int_h_hiram_tmpl:
-                ld      (INT_SP_SAVE), sp   ; A-2b private interrupt stack (page 3)
-                ld      sp, INT_STK_TOP
                 push    af
                 push    bc
                 push    de
@@ -204,7 +210,6 @@ ihh_keyint:
                 pop     de
                 pop     bc
                 pop     af
-                ld      sp, (INT_SP_SAVE)   ; restore caller SP, then the single EI
                 ei
                 ret
 int_h_hiram_end:
