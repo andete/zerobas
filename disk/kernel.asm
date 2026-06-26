@@ -311,23 +311,43 @@ k_46C8:         ret
 ; (AF=0142/HL=1A00/IY=DC5B, §8.50) — add if the probe shows MSXDOS.SYS needs it.
 ; CLEAN-ROOM: our own loader over our own file layer; COMMAND.COM is data we copy,
 ; never disassembled.
-k_47B2:         ld      de, k47b2_fcb       ; FCB naming COMMAND.COM
+k_47B2:         push    de                  ; save entry DE (= kernel work ptr $DC5B) for the IY return
+                ld      de, k47b2_fcb       ; FCB naming COMMAND.COM
                 ld      c, BDOS_F_OPEN      ; $0F Open
                 call    bdos_entry
                 inc     a                   ; A=$FF not-found -> 0
-                ret     z                   ; open failed: bail (stays in §8.40 spin)
+                jr      z, k47b2_fail       ; open failed: bail (stays in §8.40 spin)
                 ld      hl, $0100           ; .COM load address (§5.2/§8.50)
                 ld      (BDOS_DTA), hl
 k47b2_rdloop:   ld      de, k47b2_fcb
                 ld      c, BDOS_F_SEQRD     ; $14 Sequential Read -> (BDOS_DTA)
                 call    bdos_entry
                 or      a
-                ret     nz                  ; A=$01 EOF -> COMMAND.COM loaded; RET to $D824
+                jr      nz, k47b2_done      ; A=$01 EOF -> COMMAND.COM loaded
                 ld      hl, (BDOS_DTA)      ; advance DTA one record
                 ld      de, RECSIZE         ; 128
                 add     hl, de
                 ld      (BDOS_DTA), hl
                 jr      k47b2_rdloop
+; k47b2_done — COMMAND.COM is loaded; reproduce stock $47B2's RETURN contract (§8.50,
+; spec §5.1) so MSXDOS.SYS's post-$D824 transfer enters COMMAND.COM at $0100 with the
+; environment it expects. Measured at the $0100 entry (same-program ours-vs-stock,
+; 2026-06-26): stock HL=BC=$1A00 IX=$F195 IY=$DC5B; ours had HL=0 BC=$0014 IX=$F1AA
+; IY=$0314 -> COMMAND.COM jp $0500 and SPUN at $050D (no DOS env). The path $D824->$0100
+; (or a; call $F36B; ei; jp $0100) does NOT touch these registers, so they pass straight
+; through from here. Contract: HL=BC = the loaded file size (FAT_FILESIZE); IX = the
+; drive-A DPB ($F195, == the entry IX, which our BDOS clobbered); IY = the kernel work
+; pointer the kernel handed us in DE (== $DC5B). A stays $01 (EOF) so $D824's `or a` keeps
+; the load-success path. CLEAN-ROOM: our own loader returning the black-box-observed
+; register contract; no stock bytes.
+k47b2_done:     ld      ix, DRVA_DPB        ; IX = $F195 drive-A DPB (entry IX, restored)
+                ld      bc, (FAT_FILESIZE)  ; BC = COMMAND.COM size ($1A00)
+                ld      hl, (FAT_FILESIZE)  ; HL = COMMAND.COM size ($1A00)
+                pop     iy                  ; IY = saved entry DE (kernel work ptr $DC5B)
+                ret                         ; RET to $D824 -> COMMAND.COM with its env
+k47b2_fail:     pop     de                  ; balance the saved entry DE
+                xor     a                   ; A=0 = load failed (caller stays in §8.40 spin)
+                ret
 k47b2_fcb:      db      0                   ; drive = default
                 db      "COMMAND COM"       ; 11-byte 8.3 name (FCB+1..+11; dir form)
                 ds      24, 0               ; FCB bookkeeping (unread by bdos_entry)
