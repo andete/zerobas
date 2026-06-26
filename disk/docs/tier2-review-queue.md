@@ -23,10 +23,37 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
-**[NEXT BLOCKER CHARACTERISED / 2026-06-26 — post-A-5: kernel derails in the COMMAND.COM-load
-phase; the garbage banner is DOWNSTREAM. Next = ours-vs-stock first-divergence hunt (no
-implementation yet).]** After A-5 the boot reaches the COMMAND.COM-load kernel phase but never
-shows `A>`. Harness findings:
+**[CHARACTERISATION (corrected) / 2026-06-26 — post-A-5. COMMAND.COM LOADS CORRECTLY; the
+blocker is the DOS-env / boot-sequence handoff, NOT a wrong-sector load. RETRACTS the earlier
+"+2 clusters" claim below.]**
+- **RETRACTION:** I earlier wrote "ours reads COMMAND.COM 2 clusters too late (138 vs 134)".
+  That was WRONG — an artifact of snapshotting the MIDDLE of the read. Ground truth from the
+  disk: root dir [6] COMMAND.COM = cluster 62 → sectors **134-146** (chain 62-68, contiguous),
+  and sector 134's bytes are **`C3 00 05`**. A full from-boot DSKIO capture shows ours reads
+  exactly 134,135,…,146 — **CORRECT**. (Lesson, again: don't conclude from a mid-stream
+  snapshot; capture from the anchor. [[harness-first-investigation-mo]].)
+- **What actually differs:** ours' first `$0100` execution is **COMMAND.COM** (`C3 00 05` =
+  sector 134) → `jp $0500` → spins at `$050D`. Stock's first `$0100` is **MSXDOS.SYS** (root
+  dir [7] = cluster 69 → sector 148 = `C3 00 02`) → `jp $0200`, which runs the DOS init and
+  prints the `MSX-DOS version 1.03 / Copyright 1984 by Microsoft` banner (CONOUT from `$0320`).
+  So my "first-divergence at `$0100`" compared DIFFERENT PROGRAMS (ours=COMMAND.COM,
+  stock=MSXDOS.SYS) — not a real divergence.
+- **Open hypotheses (to verify next, fresh):** (a) ours enters COMMAND.COM at `$0100` with the
+  wrong environment/entry-registers/SP (ours SP=$DC00, no proper DOS env) so it spins; and/or
+  (b) ours' boot SKIPS or mishandles the MSXDOS.SYS-at-`$0100` init step that stock runs (banner
+  + DOS setup) before launching COMMAND.COM; and/or (c) a possible off-by-1 in ours' MSXDOS.SYS
+  read (ours read sectors 149-152, stock 148-151) — UNCONFIRMED, could be another mid-stream
+  snapshot artifact, verify from the anchor before trusting it.
+- **NEXT (fresh session, deliberate):** anchor a clean comparison on the SAME program. Either
+  (i) compare ours-vs-stock at COMMAND.COM's `$0100` with matched entry state, or (ii) check
+  whether ours runs MSXDOS.SYS at `$0100` at all. Understand how our Tier-2 veneer boot
+  (k_47B2 et al.) sequences the MSXDOS.SYS-init vs COMMAND.COM-launch relative to stock.
+  Connects to M5.4/§8.54 ($47B2 return-register state was explicitly deferred: "does NOT yet
+  reproduce $47B2's return AF=0142/HL=1A00/IY=DC5B" — that deferred entry-state may be the env
+  bug). · undo: n/a (analysis only).
+
+**[RETRACTED — see correction above. The "+2 clusters" framing was wrong.]** After A-5 the boot
+reaches the COMMAND.COM-load kernel phase but never shows `A>`. Harness findings:
 - **Stock** prints the real banner via CONOUT `$5454`: `\r\n MSX-DOS version 1.03 \r\n
   Copyright 1984 by Microsoft \r\n`, called from `$0320` with `HL=$DD0E` (work area), `DE`=
   the banner chars.
