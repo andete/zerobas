@@ -140,6 +140,25 @@ cell is dual-purpose (C-BIOS's BASIC hook-stub region *is* the DOS work area). S
 construction is **necessarily DOS-only**; it cannot run unconditionally. (Earlier I called the
 coexistence problem "precisely characterised" before this — that was premature; this section is it.)
 
+### 7b. BIOS-agnostic / replacement-disk-ROM constraint (user, 2026-06-26)
+
+zerobas-disk must remain usable as a **replacement disk ROM in existing MSX1 machines** (the real
+CF-3300, C-BIOS, any standards-compliant MSX1) — so the construction must be **DOS-only AND
+BIOS-AGNOSTIC**: it must NOT assume any host's `$F1C9-$F37F` layout. Evidence that the layout is
+genuinely host-dependent: at our init entry `$4034`, C-BIOS RET-fills `$F327-$F37F` with `$C9`,
+while the **CF-3300 BIOS has ZERO `C9` stubs** there (mostly `$FF`). The DOS-only design is what
+makes this safe (it clears+rebuilds regardless of the host's start state, and never runs for BASIC
+on any host). **Acceptance must therefore validate the construction on BOTH C-BIOS and CF-3300
+hosts**, not just one.
+
+Architecture note (so the construction isn't mis-scoped): the disk-BASIC verbs (FILES/SAVE/LOAD)
+live in **zerobas-BASIC** (`basic/files.asm` …), NOT zerobas-disk. zerobas-disk = the standard
+low-level interface (DSKIO/GETDPB/HPHYD) + DOS boot; it adds no BASIC verbs to a foreign host's
+MSX-BASIC. A "full drop-in" (providing BASIC verbs to a foreign MSX-BASIC via the standard disk-ROM
+extension hooks) is a deferred, separate workstream. Also a TEST GAP: `disk_probe_files.py` is
+zerobas-BASIC/C-BIOS-specific (it garbages even on a stock CF-3300), so the foreign-BASIC
+replacement scenario is currently unvalidated.
+
 **Option B (DOS-only) is required, and is NOT a one-line move.** Our DOS work-area build chain
 (RES_PRINT `$F1C9`, RES_STUBS `$F24E`, DRVTBL `$F348`, WA_JMPTAB `$F368`, SYSTEM `$F37D`, the
 `set_ramad→build_wa_table→build_drvtbl→resident-routines` fall-through) runs in `init` for ALL boots.
