@@ -23,6 +23,28 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[DEFINING FINDING / 2026-06-26, commit TBD — the real blocker is the UNBUILT DOS WORK AREA, not
+FOPEN or any single intercept. STRATEGIC CHECKPOINT.]** Followed COMMAND.COM's post-FOPEN branch
+to ground: it does `ld a,($F338)` at $C26B; stock ($F338)=00, ours=$FF. Write-watch: stock writes
+$F338=00 from PC=$57BE at t=3.80 (BOOT time, not during FOPEN); ours never writes it ($57BE is
+`00` padding in ours). So the FOPEN $21 was a RED HERRING — the branch input is a boot-time-init
+cell. Forcing $F338=00 alone did NOT fix it (and sent COMMAND.COM down a path that WROTE the disk
+— mutated the /tmp copy, restored from canonical, repo clean) because one cell set amid an
+uninitialised area is inconsistent. **Decisive probe (disk_probe_dosboot_wadiff.py): the whole DOS
+work area $F100-$F3FF at COMMAND.COM entry — 462 of 768 bytes differ, ours almost entirely $FF.**
+Stock holds there: executable RAM-resident routines ($F100-$F17C, $F327-$F33F), the DPB+drive
+table ($F1A8+), the device-name table ($F21C "PRN LST NUL AUX CON"), the "COMMAND COM" FCB
+structure ($F2B8), and the DOS pointer block ($F34D-$F37F). **Ours' disk ROM does NOT construct
+the DOS work area during boot; stock's does.** That work area IS the disk-ROM-resident portion of
+the shared MSX-DOS-1 kernel ([[msx-diskrom-shared-kernel]]). ∴ reaching A> is neither "fix FOPEN"
+(fork A's first step) nor "intercept $0005" (fork B) — BOTH were scoped against a far smaller
+problem. The true scope is "reproduce the disk-ROM's DOS-work-area construction" — a large,
+multi-milestone sub-system (resident code + structures + pointers). Detail: tier2-workarea-map.md.
+**This is a strategic checkpoint: the user should reassess the "reach A>" ambition with this in
+hand** (treat the mapping as a documentation deliverable + pause, vs commit to the large build, vs
+characterise the construction step-by-step). New probes: fopenoverride, wadiff (+ /tmp helpers).
+No production asm written. · undo: n/a.
+
 **[$D858 BLOCKER ROOT-CAUSED + STRATEGIC SCOPE REFRAME / 2026-06-26 — HARD-STOP for a sync.
 The $D858 loop is COMMAND.COM's prompt loop spinning because the kernel's FOPEN of AUTOEXEC.BAT
 returns the WRONG code; the true scope is "reproduce the shared disk-ROM BDOS kernel", not one
