@@ -44,6 +44,17 @@ multi-milestone sub-system (resident code + structures + pointers). Detail: tier
 hand** (treat the mapping as a documentation deliverable + pause, vs commit to the large build, vs
 characterise the construction step-by-step). New probes: fopenoverride, wadiff (+ /tmp helpers).
 No production asm written. · undo: n/a.
+  **>> USER CHOSE "characterise the construction first". DONE 2026-06-26 (commit TBD) →
+  tier2-workarea-map.md §5a.** Write-watch of all $F100-$F3FF stores across stock's boot
+  (disk_probe_dosboot_wabuild.py, last-writer-per-byte): **96 distinct disk-ROM routines build the
+  area in 4 phases** — (1) t≈3.8 clear/default pass ($57BE/$57D6: zeros + $C9-fill hook stubs),
+  (2) t≈6.9 DPB+drive table + RESIDENT CODE ($F1C9-$F236, $F327) + segment-switch hook vectors
+  ($F368-$F37F) + drive-DPB pointers ($F34D-$F352), (3) t≈10 resident routines $F100-$F17C + the
+  COMMAND COM FCB ($F2B8), (4) t≈11.3 final cells. Sized plan: phase-1 clear is easy; phase-2
+  structural data is moderate & overlaps existing code (we have real GETDPB); **the hard core is
+  ~250 bytes of executable RAM-resident routines (inter-slot/paging helpers) needing black-box
+  contract reproduction.** Build order 1→2→3, wadiff as region acceptance test. Now AWAITING the
+  build-vs-pause decision with a concrete sized plan in hand. New probe: wabuild. No asm.
 
 **[$D858 BLOCKER ROOT-CAUSED + STRATEGIC SCOPE REFRAME / 2026-06-26 — HARD-STOP for a sync.
 The $D858 loop is COMMAND.COM's prompt loop spinning because the kernel's FOPEN of AUTOEXEC.BAT

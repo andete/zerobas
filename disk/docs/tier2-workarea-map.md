@@ -75,6 +75,38 @@ contract characterisation.
 3. **Characterise the construction first.** Map exactly which boot code builds each region on stock
    (write-watch the whole `$F100-$F3FF` across boot), to size option 2 precisely before committing.
 
+## 5a. Construction map (how stock builds it — sized build plan)
+
+Write-watch of all writes to `$F100-$F3FF` across stock's boot (`disk_probe_dosboot_wabuild`,
+last-writer-per-byte): **96 distinct disk-ROM writer routines, in 4 time-phases**, build the area.
+
+| phase | t (s) | bytes finalised | what is built | example writer PCs |
+|-------|-------|-----------------|---------------|--------------------|
+| 1 | ~3.8 | 335 | clear/default pass: zeros + `$C9`-fill of the hook-stub table `$F24F-$F2B7` | `$57BE`, `$57D6`, `$57E0` |
+| 2 | ~6.9 | 201 | DPB+drive table `$F195-$F1BC`; **resident code** `$F1C9-$F236` + `$F327-$F335`; segment-switch hook vectors `$F368-$F37F` (`C3 lo hi` jump table); drive-DPB pointers `$F34D-$F352` (`95 EF / 95 ED / 95 EB`) | `$588A`, `$58B8`, `$5935`, `$5960`, `$58F0`, `$5C7F` |
+| 3 | ~9.9-10.5 | 221 | **resident routines** `$F100-$F17C`; the `COMMAND COM` FCB+DPB `$F2B8`; FCB/struct cells `$F2DC-$F2FD` | `$7958`, `$78A7`, `$7973/5`, `$4354`, `$5667`, `$4418` |
+| 4 | ~11.3 | 11 | final cells at COMMAND.COM entry | `$74C5`, `$74CD`, `$4A6E` |
+
+`$F380-$F3FF` is mostly the **standard disk-ROM hook/hardware area** (written early by `$7C9C` at
+t≈1.2, plus BIOS console cells `$F3DC` CSRY etc.) — largely the documented MSX disk work area, less
+DOS-specific.
+
+**Effort breakdown for reproducing this (the sized plan):**
+1. **Phase-1 clear/default** — easy: a memset-zeros + `$C9`-fill pass over the work area at boot.
+2. **Structural data** — moderate, much already exists: DPB+drive table (we have real GETDPB,
+   CF-3300-byte-identical), device-name table (`PRN LST NUL AUX CON`, static), the hook/segment-
+   switch vector table `$F368-$F37F` and drive-DPB pointers (structural; some map to our wa_seg),
+   the `COMMAND COM` resident FCB (static + DPB).
+3. **Resident CODE blocks** — the hard core (~250 bytes): the executable routines at `$F100-$F17C`,
+   `$F1C9-$F236`, `$F327-$F33F` that DOS calls directly (inter-slot/paging helpers around
+   `$F368/$F36B`). Each needs black-box contract characterisation, then a clean-room reimplementation
+   placed/copied into the work area at boot. This is the bulk of the build and the bulk of the risk.
+
+**Net assessment:** a bounded but substantial multi-milestone sub-system — effectively the disk-ROM-
+resident MSX-DOS-1 kernel. Phases 1–2 structural work is tractable and overlaps existing code;
+phase-3 resident-code reproduction is the major effort. A reasonable build order is 1 → 2 → 3, with
+the wadiff probe as the region-by-region acceptance test.
+
 ## 6. Provenance
 
 Black-box oracle observation only (snapshot/diff/watch memory; override registers to isolate
