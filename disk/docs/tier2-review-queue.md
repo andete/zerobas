@@ -73,6 +73,14 @@ sized from the load path only):**
       across FOPEN/dir/read) to size A precisely before committing.
 · No code written (characterise-before-code held). Tier-1 untouched (probes only, no asm/build
 change). New probes: entry0100seq, conoutstream, bdosseq, fopenresult, fopenromcalls. · undo: n/a.
+  **>> USER CHOSE (C) map-scope-first. DONE 2026-06-26 → disk/docs/tier2-bdos-scope.md.** FOPEN
+  (not-found) path = 23 distinct canonical disk-ROM addresses, only 2 covered (DSKIO $4010 /
+  DSKCHG $4013), 21 to build (9 collide w/ our FDC-DSKIO code, 7 bare-ret stubs, 5 ds-pad); full
+  DOS adds more. $0005=JP $D606 (kernel BDOS dispatch, identical ours/stock). **RECOMMENDATION:
+  fork B** (re-point $0005→our bdos_entry at the documented BDOS ABI boundary): cleaner clean-room,
+  bounded/finite vs A's open-ended per-address reproduction, reuses our existing disk BDOS (our
+  bdos_open already returns the $FF this blocker needs). Next: A-vs-B decision, then (if B)
+  tier2-bdos-spec.md before any asm. Risks for B catalogued in the doc §4.
 
 **[$47B2 RETURN CONTRACT DONE / 2026-06-26, commit 9573a4c — COMMAND.COM now runs its real
 startup (no longer spins at $050D). New blocker: a kernel loop $D858-$D87F after startup.]**
