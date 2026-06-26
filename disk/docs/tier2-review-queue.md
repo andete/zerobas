@@ -23,6 +23,57 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[$D858 BLOCKER ROOT-CAUSED + STRATEGIC SCOPE REFRAME / 2026-06-26 — HARD-STOP for a sync.
+The $D858 loop is COMMAND.COM's prompt loop spinning because the kernel's FOPEN of AUTOEXEC.BAT
+returns the WRONG code; the true scope is "reproduce the shared disk-ROM BDOS kernel", not one
+veneer.]** Five anchored differential probes (all new, committed), each ours-vs-stock from the
+boot anchor:
+- **entry0100seq** — ours runs MSXDOS.SYS at $0100 (b0102=02) THEN COMMAND.COM (b0102=05), SAME
+  structure as stock. The standing "ours skips MSXDOS.SYS init" hypothesis is **REFUTED**.
+  COMMAND.COM entry (HIT2) is byte-identical to stock (BC=HL=1A00 IX=F195 IY=DC5B SP=DC00). Only
+  MSXDOS.SYS-entry (HIT1) differs: IY (ours 0314 vs stock C0AB) + AF flags (0144 vs 0142).
+- **conoutstream ($5454)** — ours prints the **full banner byte-identically** (53 chars
+  "..MSX-DOS version 1.03..Copyright 1984 by Microsoft..", same ret=$0320/HL=DD0E/DE seq). The
+  "blank screen / garbage CONOUT" reading was INCOMPLETE: banner is perfect; garbage ($00/$80,
+  ret=$D88A) only starts AFTER COMMAND.COM launches.
+- **bdosseq** — first BDOS divergence is call **n=3**: n=1 STROUT + n=2 FOPEN are byte-identical
+  on both, then stock→STROUT(ret CBA6) vs ours→SELDSK(ret C30A). Ours then loops
+  CONOUT/CURDRV/CONOUT/CONOUT/BUFIN forever (the $D858 loop = COMMAND.COM's prompt loop; BUFIN
+  never blocks so it re-prompts endlessly).
+- **fopenresult** — the FOPEN (fn $0F) is on **AUTOEXEC.BAT** (FCB at $D62F, identical entry).
+  Result: **stock A=$FF (not-found), ours A=$21**. COMMAND.COM tests A==$FF ("no AUTOEXEC → go to
+  prompt"); ours' $21 sends it down the wrong branch → spin. (Note: our disk-ROM bdos_open DOES
+  return $FF correctly — but COMMAND.COM uses the KERNEL's BDOS via $0005, not our bdos_entry.)
+- **fopenromcalls** — brackets that one FOPEN, logs every page-1 ($4000-$7FFF) disk-ROM entry the
+  kernel invokes. **Divergence at the FIRST entry, $4462** (both enter with identical
+  A=21/BC=0/DE=DA40/HL=C284): stock runs a **144-entry directory search** ($4462→$4411→$5604→
+  $425D→$44DE→$4558→DSKCHG $4013→$607B→$434B dir-scan→DSKIO $4010→…) ending A=$FF; **ours bails
+  after 1 entry** (A=$21 passes through). Our ROM at $4462 = `ld ($E299),a; ret` (unrelated FDC
+  code), NOT a BDOS veneer.
+
+**STRATEGIC FINDING (the reframe).** The MSX-DOS-1 **file-ops BDOS** (FOPEN, directory search,
+file read) is implemented **inside the disk ROM** — the shared kernel (~2/3 of every MSX disk
+ROM, [[msx-diskrom-shared-kernel]]). MSXDOS.SYS is the thin loader on top; for file ops its
+relocated stub pages the disk ROM into page 1 and CALLs canonical addresses ($4462, $4411, $5604,
+$425D, $44DE, $607B, $434B, $760E, $764D, …). Our 14 veneers cover only the **COMMAND.COM-LOAD**
+subset; genuine DOS operation calls the **rest of the shared BDOS kernel**, which in our ROM is
+unrelated FDC/DSKIO code, ds-padding, or bare-`ret` stubs (e.g. k_607B). So reaching `A>` is NOT
+a one-veneer fix — it requires reproducing the shared disk-ROM BDOS contracts (dir/file/FAT) at
+their canonical page-1 addresses. The 144-entry FOPEN chain is the first concrete map of it.
+
+**HARD-STOP — FORK for the user (a scope surprise that changes the signed-off "fork-a" plan,
+sized from the load path only):**
+  (A) Continue faithful per-canonical-address reproduction — reproduce the shared BDOS kernel
+      contracts ($4462 + its chain) at their fixed addresses (large but mechanical/harness-driven;
+      most faithful to the layout-fixed Interface A).
+  (B) Intercept higher — route whole BDOS functions (FOPEN…) to our existing bdos_entry/bdos_open
+      (which already returns $FF correctly), instead of reproducing each fine-grained address.
+      Smaller, but changes the interface model and must not break the kernel's internal BDOS use.
+  (C) Characterise more first (e.g. map the full set of canonical BDOS addresses the kernel calls
+      across FOPEN/dir/read) to size A precisely before committing.
+· No code written (characterise-before-code held). Tier-1 untouched (probes only, no asm/build
+change). New probes: entry0100seq, conoutstream, bdosseq, fopenresult, fopenromcalls. · undo: n/a.
+
 **[$47B2 RETURN CONTRACT DONE / 2026-06-26, commit 9573a4c — COMMAND.COM now runs its real
 startup (no longer spins at $050D). New blocker: a kernel loop $D858-$D87F after startup.]**
 Implemented the M5.4-deferred fix. Clean same-program comparison (COMMAND.COM `$0100` entry,
