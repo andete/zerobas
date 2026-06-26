@@ -23,6 +23,23 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[$47B2 RETURN CONTRACT DONE / 2026-06-26, commit 9573a4c — COMMAND.COM now runs its real
+startup (no longer spins at $050D). New blocker: a kernel loop $D858-$D87F after startup.]**
+Implemented the M5.4-deferred fix. Clean same-program comparison (COMMAND.COM `$0100` entry,
+ours vs stock) isolated it to 4 registers: stock `BC=HL=$1A00 IX=$F195 IY=$DC5B`, ours
+`HL=0 BC=$0014 IX=$F1AA IY=$0314` → COMMAND.COM `jp $0500` then spun at `$050D` (a 5120-byte
+LDIR with garbage params). The `$D824→$0100` transfer doesn't touch these regs, so they pass
+through from `$47B2`'s return. `k_47B2` now sets, on EOF/success: `HL=BC=FAT_FILESIZE`,
+`IX=DRVA_DPB ($F195)`, `IY = entry DE` (saved on the stack; the kernel work ptr `$DC5B`).
+**Validated:** `$0100` entry now byte-identical to stock; COMMAND.COM reads `$0007` (TPA top
+`$D6`), computes its high-mem target `$C200`, and LDIRs its transient up — genuine MSX-DOS
+COMMAND.COM startup. A-3 intact (sp-rompage STUCK); Tier-1 green (unit 18/18,
+DSKIO/BLOAD/FILES == CF-3300); net-zero 16384 B. · **NEW BLOCKER (next milestone):** after
+startup the boot sits in a kernel loop `$D858-$D87F` ($D87F = the 130-byte LDIR `$D34E→$DA40`
++ a CONOUT call at `$D887`); screen still blank, CONOUT still fed `$00/$80`. Likely a BDOS
+function COMMAND.COM calls during startup that our kernel/BDOS path mishandles. Drive it with
+the same ours-vs-stock differential, anchored on a shared event. · undo: revert 9573a4c.
+
 **[CHARACTERISATION (corrected) / 2026-06-26 — post-A-5. COMMAND.COM LOADS CORRECTLY; the
 blocker is the DOS-env / boot-sequence handoff, NOT a wrong-sector load. RETRACTS the earlier
 "+2 clusters" claim below.]**
