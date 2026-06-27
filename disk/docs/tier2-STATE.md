@@ -95,8 +95,18 @@ addresses. **HARD-STOP — user strategy decision (see Next action).**
 - **"Init the date work-area cells to fix the date"** — would NOT fix it alone: ours' CODE at
   `$553C` (`bdos_create_body`) garbles any `$F33B` data. Code first, then data.
 
-## Next action — HARD-STOP: user strategy decision on the canonical-address collision
-The date blocker is now fully root-caused (see Live thesis). It is the **first concrete instance
+## Next action — option B chosen; SPEC DRAFTED, awaiting sign-off (do NOT code yet)
+**USER CHOSE (B) date-path slice first (2026-06-27.)** Spec written:
+[tier2-gdate-spec.md](tier2-gdate-spec.md) — a clean-room ~13-byte `_GDATE` handler that returns
+the clock-less MSX1 default date (HL=`07C0`/D=01/E=01/A=00), placed at canonical `$553C`,
+relocating the displaced `bdos_create_body` net-zero. Dispatch contract fully mapped (§3): the
+MSXDOS.SYS table at `$D8BE` (loaded from disk, immutable) routes `$2A`→`$553C`, so ours is FORCED
+to host `_GDATE` at `$553C` — the redirect-the-table escape is out. **AWAITING SIGN-OFF on the
+spec (4 open items, §6) before any asm** per [[spec-before-implementation]]. After it lands and
+ours reaches BUFIN, the next slice = past-BUFIN to `A>` (`_SDATE` $2B + CR input, spec §7).
+
+### Superseded framing (kept for context) — the broader collision
+The date blocker is the **first concrete instance
 of the central Tier-2 problem**: ours' 16KB disk ROM cannot host both the Tier-1 Disk-BASIC/BDOS
 bodies **and** the Tier-2 DOS-BDOS routines at their **fixed canonical page-1 addresses**, because
 the disk-loaded MSXDOS.SYS dispatcher calls those canonical addresses directly. For the date,
