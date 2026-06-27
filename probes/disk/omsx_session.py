@@ -97,13 +97,11 @@ class OmsxRun:
         self.symfile = symfile
         self.openmsx = openmsx
 
-    def run_job(self, body: str, settle: float, predicate: str = "0",
-                timeout: float = 200.0, safety: float = 30.0, arm: str = "") -> list[dict]:
-        """Run one job. `body` is Tcl executed inside an `after time {settle}` callback
-        (machine at emulated time `settle`, reverse timeline 0..settle ready). `body`
-        is responsible for finishing with `exit` or installing a condition that exits.
-        `arm` is Tcl run immediately (before boot proceeds) — for watchpoints that must
-        be live from t=0. `predicate` is a Tcl expr available as `[P]`. Returns records."""
+    def run_job_raw(self, body: str, settle: float, predicate: str = "0",
+                    timeout: float = 200.0, safety: float = 30.0, arm: str = "") -> list[str]:
+        """As `run_job`, but returns the RAW `emit` lines (unparsed). Use this when the
+        job emits its own record format (e.g. the differential harness's `CALL`/`BLOCK`
+        lines) that `parse_ctx` would mis-parse. `run_job` is this + `parse_ctx`."""
         out = tempfile.mktemp(suffix=".rec")
         tcl_path = tempfile.mktemp(suffix=".tcl")
         preamble = _PREAMBLE.format(symfile=self.symfile, out=out, predicate=predicate)
@@ -127,12 +125,22 @@ after time {settle + safety:.4f} {{ emit "TIMEOUT-SAFETY"; exit }}
                 os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
             except Exception:
                 pass
-        recs = []
+        lines: list[str] = []
         if os.path.exists(out):
-            recs = [parse_ctx(l) for l in open(out).read().splitlines() if l.strip()]
+            lines = [l for l in open(out).read().splitlines() if l.strip()]
             os.unlink(out)
         os.unlink(tcl_path)
-        return recs
+        return lines
+
+    def run_job(self, body: str, settle: float, predicate: str = "0",
+                timeout: float = 200.0, safety: float = 30.0, arm: str = "") -> list[dict]:
+        """Run one job. `body` is Tcl executed inside an `after time {settle}` callback
+        (machine at emulated time `settle`, reverse timeline 0..settle ready). `body`
+        is responsible for finishing with `exit` or installing a condition that exits.
+        `arm` is Tcl run immediately (before boot proceeds) — for watchpoints that must
+        be live from t=0. `predicate` is a Tcl expr available as `[P]`. Returns records."""
+        return [parse_ctx(l) for l in self.run_job_raw(
+            body, settle, predicate=predicate, timeout=timeout, safety=safety, arm=arm)]
 
     # -- composed primitives ----------------------------------------------
     def bisect_locate(self, predicate: str, lo: float, settle: float,

@@ -10,7 +10,7 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-06-27 (session resume). Update the date + sections whenever state changes._
+_Last updated: 2026-06-27 (decision: pivot to BDOS-loop). Update the date + sections whenever state changes._
 
 ---
 
@@ -19,13 +19,22 @@ Boot MSX-DOS to the `A>` prompt under zerobas-disk (Tier-2) **without regressing
 Tier-1** (disk-BASIC / BLOAD / FILES) and while staying a **BIOS-agnostic replacement
 disk ROM** (works on CF-3300, C-BIOS, any standards MSX1).
 
-## Live thesis (⚠ UNRECONCILED — this is open question #1)
+## Live thesis (DECIDED 2026-06-27: pivot to the BDOS-loop — option b)
 The immediate hang is a **kernel BDOS-service loop**, not a work-area-init failure
 (§8.65 / [tier2-m6-spec.md](tier2-m6-spec.md), Jun 25). First BDOS divergence is call
 **n=3**: stock→STROUT (ret `$CBA6`), ours→SELDSK (ret `$C30A`); ours then loops
 CONOUT/CURDRV/CONOUT/CONOUT/BUFIN forever (the `$D858`/`$DA23` "prompt" loop).
-**BUT** the literal last activity (Jun 26, *after* §8.65) is **phase-1 work-area
-clear/default** — a work-area tactic. These two are in tension (see open Q1).
+**Next milestone = root-cause the n=3 STROUT-vs-SELDSK divergence.** Re-measured
+2026-06-27 via `disk_probe_diff callseq` (n=1/2 byte-identical, confirming the anchor):
+- stock n=3 = **STROUT** DE=`$D2B3` **HL=`$0081`** ret=`$CBFF` → n=4 SDATE → n=5/6 CONOUT
+  (prints from the command tail at `$0081`; the normal "no AUTOEXEC → prompt" path).
+- ours  n=3 = **SELDSK** DE=`$D6FF` HL=`$0021` ret=`$C30A` → CONOUT/CURDRV loop.
+COMMAND.COM is the SAME program on both at this point, so the branch input that sends ours
+to SELDSK vs stock to STROUT is set between the n=2 FOPEN return (`$C24E`, identical) and
+n=3. **Next step (falsify-first):** `capture --at <COMMAND.COM PC between $C24E and the
+n=3 dispatch> --mem <suspect work cell>` to find the exact cell/branch ours reads
+differently — anchored, NOT a mid-stream snapshot. Phase-1 (work-area construction) is
+**PARKED** — not the fix for the hang; revisit only if this resurfaces a real work-area dep.
 
 ## Settled facts — DO NOT re-litigate or re-probe
 - COMMAND.COM **loads correctly**: ours reads sectors 134–146 (cluster 62–68),
@@ -69,11 +78,35 @@ n=3 STROUT-vs-SELDSK BDOS divergence above.
   path after a DOS-only `wa_clear`, keeping the BASIC-needed minimum on the BASIC path.
   Needs its own design spec (map BASIC's work-area deps first). NOT a one-liner.
 
-## Open questions for the user (blocking "what does *continue* mean")
-1. **Reconcile phase-1 vs §8.65.** If work-area construction is NOT the fix for the hang
-   (§8.65), is phase-1 still worth the option-B design effort (as faithful-reproduction
-   foundation), OR should effort pivot to the BDOS-loop (the n=3 STROUT-vs-SELDSK
-   divergence)? **This decides the next milestone.** My read: needs your call.
+## Open questions for the user
+_(none open — Q1 resolved 2026-06-27: pivot to the BDOS-loop, option b.)_
+
+## Method guardrails (DURABLE — keep these when you overwrite this file)
+Endorsed 2026-06-27 after a retrospective found ~half the Tier-2 reframes came from
+premature/misaligned conclusions, not hard bugs. See [[harness-first-investigation-mo]].
+1. **Anchor + alignment.** Every differential capture is anchored on a SHARED logical
+   event; before trusting a stock-vs-ours diff, PROVE both sides are at the same logical
+   point (same Nth call/occurrence — not same PC or wall-clock, esp. when one side loops).
+   `disk_probe_diff` enforces this (flags MISALIGNED rather than printing a false diff).
+2. **Falsify first.** Step 1 of every milestone = the cheapest experiment that would
+   DISPROVE the hypothesis (register-override, force-the-value, "do we even read this?"),
+   BEFORE any characterise/spec/build. `capture --expect same|diff` makes it a one-liner.
+3. **Gate characterisation behind #2.** Don't map the full scope of a path until the cheap
+   experiment confirms the path is real (avoids mapping paths-not-taken, e.g. the 23-addr
+   BDOS scope / 96-routine work-area maps built on later-parked theses).
+4. **Right tool per question.** Settled facts → host unit-tests (`make unit-test`, no
+   emulator). Emulator only for genuinely emulator-dependent questions; reuse savestates /
+   reverse-timeline at the anchor instead of cold double-boots.
+5. **Terse logging.** Full prose queue entry (why/alt/confidence/undo) only for hard-stop
+   forks; routine judgment calls get a one-liner.
+
+## Tooling — use the ONE harness, don't write a 58th probe
+**`probes/disk/disk_probe_diff.py`** (built on `omsx_session.py`) is the parameterized
+differential probe: `callseq` (call-sequence divergence, e.g. the BDOS seq) and `capture`
+(alignment-guarded regs+mem diff at the Nth occurrence of an address). It copies the DOS
+disk to tmp (mutation-safe) and bakes in the alignment guard. Validated 2026-06-27: it
+reproduces the n=3 BDOS divergence exactly. **Extend this, don't fork a new script.**
+The 57 legacy `disk_probe_dosboot_*.py` stay for provenance; new work goes through the harness.
 
 ## Invariants for any change
 - Tier-1 green: `make unit-test` 18/18; DSKIO/BLOAD/FILES == CF-3300.
