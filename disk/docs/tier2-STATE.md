@@ -82,6 +82,23 @@ n=3 STROUT-vs-SELDSK BDOS divergence above.
   path after a DOS-only `wa_clear`, keeping the BASIC-needed minimum on the BASIC path.
   Needs its own design spec (map BASIC's work-area deps first). NOT a one-liner.
 
+## ⚠ FALSIFICATION 2026-06-27 — the date is NOT a work-area-clear issue
+Falsify-first poke (the `$F338` playbook at scale): injected stock's values into ALL uninit cells
+across the **full `$F100-$F3FF`** DOS work area on ours at COMMAND.COM `$0100`, then captured the
+date regs at `$CDA7`. **Result: BC=0003 DE=0000 UNCHANGED** (stock BC=0101 DE=1354). So **the date
+VALUE is not sourced from the DOS work area** — building/clearing work-area cells will NOT fix the
+date. This DISPROVES the "incremental date subset of the work area" plan for the date itself.
+(The work-area construction is still real and needed — see below — just not the date's cause.)
+
+**Redirect for the date:** n=4 SDATE *input* was byte-identical on both (COMMAND.COM HAD the right
+date), yet the display reads garbage → the date is lost in **ours' relocated-kernel date
+storage/readback** (SDATE stores, the display reads back wrong) OR a clock/handoff path. Next:
+trace COMMAND.COM upstream of `$CDA7` to the ACTUAL date source it reads (a specific address or a
+kernel/clock call), then check ours-vs-stock there. Do NOT build work-area cells for the date.
+NB the `$2A` "SDATE" params (HL=`$C924` DE=`$D2C4`) are POINTERS, not a packed date — re-examine
+what that call actually does before assuming it's set-date.
+
+## Earlier framing (date-as-work-area) — SUPERSEDED by the falsification above
 ## Next action — blocker #2: ours' MALFORMED DATE-PROMPT (loops, doesn't reach `A>`)
 Blocker #1 (`$F338`=0) is **BUILT + VALIDATED + COMMITTED** (2026-06-27, 164b857): `dos_handoff`
 in the free tail. It advanced ours materially — `callseq` now matches stock **through n=1–4**
