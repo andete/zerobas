@@ -82,14 +82,14 @@ n=3 STROUT-vs-SELDSK BDOS divergence above.
   path after a DOS-only `wa_clear`, keeping the BASIC-needed minimum on the BASIC path.
   Needs its own design spec (map BASIC's work-area deps first). NOT a one-liner.
 
-## Open questions for the user
-1. **Un-park phase-1?** The BDOS-loop root-caused to the unbuilt `$F338`=0 default, which is
-   exactly phase-1's output — so phase-1 is now on the critical path, not a parked tangent.
-   But it must be built **DOS-only + BIOS-agnostic** (the [tier2-phase1-spec.md](tier2-phase1-spec.md)
-   §7b option-B reorg: `$F338` is dual-purpose — `$C9` BASIC stub vs `00` DOS). Recommend:
-   approve the option-B design spec for a minimal DOS-only `$F338`=0 (likely the broader
-   clear/default), build it, then resume the trace from `$D885` to verify the `$F368`/`$E795`
-   hook and find the next blocker. My read: this is the path to `A>`, taken one cell at a time.
+## Next action — AWAITING SIGN-OFF
+User chose (2026-06-27) the **minimal DOS-only `$F338`=0** fix. Spec written:
+[tier2-f338-default-spec.md](tier2-f338-default-spec.md) — save/restore `$F338` around the
+step-7 handoff in `boot_sig_ok` so `00` persists only for a real DOS boot (data/BASIC disks,
+which also pass `boot_sig_ok`, get the host stub restored). ~13 bytes, net-zero, BIOS-agnostic.
+**No asm until the 3 sign-off items (spec §6) are confirmed.** Then: build → validate (re-trace
+must move ours' fork from step 7 to ≈step 60; Tier-1 + C-BIOS BASIC-disk green) → resume trace
+from `$D885` for blocker #2 (the `$F368`→`$E795` relocated hook).
 
 ## Method guardrails (DURABLE — keep these when you overwrite this file)
 Endorsed 2026-06-27 after a retrospective found ~half the Tier-2 reframes came from
