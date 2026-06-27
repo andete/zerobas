@@ -126,14 +126,21 @@ headless-BUFIN re-prompt ([[tier2-storms-are-downstream]] noted "BUFIN never blo
   `$D349` repeatedly (W07-W09) = the loop**. So **ours' date value is ZERO at format time** where
   stock's is the valid default. (W01 @ `$036A` had BC=`0101` on BOTH early — the date was fine
   early, ours reads zero at format time.)
-- **OPEN FORK for next step — two hypotheses:** (a) ours' **relocated SDATE ($2A) didn't STORE**
-  the date (a kernel-routine bug — n=4 SDATE params were identical but ours' execution may drop
-  it); (b) the format reads an **uninitialised work-area date cell** ours never defaulted (the
-  `$F338` playbook → default it in `dos_handoff`). **Distinguish cheaply:** read-watch what
-  COMMAND.COM/kernel reads just before `$CE4A` to get DE (find the date source address), then check
-  ours-vs-stock at that address. If it's a stored-date cell that's 0 in ours → (a) broken store; if
-  it's an uninit default region → (b). The fix differs: (a) fix the relocated date BDOS; (b) a
-  small DOS-only default like `$F338`.
+- **ROOT-CAUSED 2026-06-27 → hypothesis (b), at scale.** Decoded COMMAND.COM's date formatter
+  ($CDA0-$CE4F: `$CE24` converts regs B,C,D,E via the ÷10 routine `$CE41`; `$CDA7 ld a,($F30E)`
+  selects date ordering). `capture --at 0xCDA7 --mem 0xF300:0x20`: **`$F300-$F31F` is 29/32 bytes
+  `$FF` in ours vs `$00` in stock** (`$F30E`=`$FF` ours / `$00` stock; `$F30D`=`$01` stock). The
+  date regs are already wrong on entry (ours DE=`$0000`/BC=`$0003` vs stock `$1354`/`$0101`). So
+  **ours leaves a whole DOS work-area swath uninitialised ($FF)** that stock's disk-ROM boot zeroes
+  — the `$F338` pattern AT SCALE. Note `$F300-$F31F` ⊂ the `$F1C9-$F37F` range the **original
+  phase-1 clear/default** targeted → **blocker #2 VINDICATES phase-1's clear thesis**: `$F338` was
+  one cell of a broader need.
+- **DECISION NEEDED (next milestone, needs its own spec):** extend the DOS-only default in
+  `dos_handoff` from one cell to a **range clear** of the DOS work area (at least `$F300-$F31F`;
+  likely most of phase-1's `$F1C9-$F37F`), DOS-only + BIOS-agnostic + BASIC-protected. The hard
+  part is the same as phase-1 option-A: BASIC also traverses `boot_sig_ok`/`dos_handoff` (data
+  disk), and the `$F327-$F37F` sub-range holds C-BIOS's `$C9` BASIC hook stubs — so the clear must
+  be save/restored (like `$F338`) OR scoped to the sub-range BASIC doesn't use. Scope this before asm.
 
 ## Method guardrails (DURABLE — keep these when you overwrite this file)
 Endorsed 2026-06-27 after a retrospective found ~half the Tier-2 reframes came from
