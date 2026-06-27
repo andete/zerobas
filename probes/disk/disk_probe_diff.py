@@ -240,6 +240,91 @@ def mode_capture(args) -> int:
     return 0
 
 
+# ---- mode: trace ---------------------------------------------------------------
+def _trace_arm(arm_addr: int, arm_cond: str, at_addr: int, nth: int, steps: int,
+               pokes: list[tuple[int, int]] | None = None) -> str:
+    poke_tcl = "".join(
+        f"\n  debug write memory {a:#06x} {v:#04x}" for a, v in (pokes or []))
+    return f"""
+set ::armed 0
+set ::cn 0
+set ::tn 0
+set ::tracing 0
+debug set_bp {arm_addr:#06x} {{}} {{
+  if {{ {arm_cond} }} {{ set ::armed 1 }}
+}}
+debug set_bp {at_addr:#06x} {{}} {{
+  if {{!$::armed || $::tracing}} return
+  incr ::cn
+  if {{$::cn < {nth}}} return
+  set ::tracing 1{poke_tcl}
+  debug condition create -command {{
+    incr ::tn
+    emit [ctx [format "T%03d" $::tn]]
+    if {{$::tn >= {steps}}} {{ exit }}
+  }}
+}}
+"""
+
+
+def _trace_seq(recs) -> list[dict]:
+    return [r for r in recs if str(r.get("tag", "")).startswith("T")]
+
+
+def mode_trace(args) -> int:
+    arm_cond = args.arm_cond or f"[debug read memory {args.arm_check_addr:#06x}] == {args.arm_check_val:#04x}"
+    body = 'emit [format "DONE armed=%d tracing=%d tn=%d" $::armed $::tracing $::tn]; exit'
+    pokes = []
+    for p in (args.poke or []):
+        a, _, v = p.partition(":")
+        pokes.append((int(a, 0), int(v, 0)))
+    arm_plain = _trace_arm(args.at, arm_cond, args.anchor, args.nth, args.steps)
+    arm_poked = _trace_arm(args.at, arm_cond, args.anchor, args.nth, args.steps, pokes)
+
+    def trace_for(machine):
+        # pokes are injected into OURS only (the unit under test); stock stays the oracle.
+        arm = arm_poked if (pokes and machine == OURS_MACHINE) else arm_plain
+        recs = _runner(machine, args.diska, args.symfile).run_job(
+            body, settle=args.settle, timeout=args.timeout, arm=arm)
+        return _trace_seq(recs)
+
+    print(f"=== trace: {args.steps} instrs from occurrence #{args.nth} of {args.anchor:#06x} "
+          f"(arm@{args.at:#06x}: {arm_cond}) ===")
+    ours, stock = trace_for(OURS_MACHINE), trace_for(STOCK_MACHINE)
+    print(f"  ours: {len(ours)} instrs   stock: {len(stock)} instrs")
+
+    # ALIGNMENT GUARD: both traces must start at the same PC (the anchor instruction).
+    if not ours or not stock:
+        print("\n*** MISALIGNED — a side never reached the anchor (looped / wrong --nth). [win #1]")
+        return 2
+    if ours[0].get("PC") != stock[0].get("PC"):
+        print(f"\n*** MISALIGNED — traces start at different PC "
+              f"(stock {stock[0]['PC']:04X}, ours {ours[0]['PC']:04X}); not the same logical point. [win #1]")
+        return 2
+
+    n = min(len(ours), len(stock))
+    fork = next((i for i in range(n) if ours[i].get("PC") != stock[i].get("PC")), None)
+    if fork is None:
+        print(f"\n  ALIGNED, NO PC DIVERGENCE in {n} instrs "
+              f"(the fork is later, or data-only — widen --steps or diff regs).")
+        return 0
+
+    lo = max(0, fork - 6)
+    print(f"\n  first PC divergence at trace step {fork+1} (shared prefix = {fork} instrs):\n")
+    print("  step  STOCK PC  dis                          | OURS PC  dis")
+    for i in range(lo, min(fork + 2, n)):
+        s, o = stock[i], ours[i]
+        mark = ">>" if s.get("PC") != o.get("PC") else "  "
+        print(f"{mark}{i+1:>4}  {s['PC']:04X}     {str(s.get('dis',''))[:26]:<26} | "
+              f"{o['PC']:04X}    {str(o.get('dis',''))[:26]}")
+    sb = stock[fork - 1] if fork else stock[0]
+    print(f"\n  branch instruction (last common step {fork}): {sb['PC']:04X}  {sb.get('dis','')}")
+    print(f"  flags/regs there — stock AF={sb.get('AF',0):04X}  ours AF={ours[fork-1].get('AF',0):04X}")
+    print("  -> inspect what that instruction (and the few before it) READ; that memory is\n"
+          "     the divergent cell. Next: capture --at <reader PC> --mem <cell>. [win #2]")
+    return 0
+
+
 # ---- cli -----------------------------------------------------------------------
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
@@ -270,6 +355,19 @@ def main() -> int:
     p.add_argument("--mem", default=None, help="memory range BASE:LEN (e.g. 0xF100:0x300)")
     p.add_argument("--expect", choices=("same", "diff"), help="assert reg-diff outcome (PASS/FAIL)")
 
+    t = sub.add_parser("trace", help="forward instruction trace from an anchor; report first PC fork")
+    common(t)
+    t.add_argument("--at", type=lambda x: int(x, 0), default=0x0100, help="arm address")
+    t.add_argument("--arm-check-addr", type=lambda x: int(x, 0), default=0x0102)
+    t.add_argument("--arm-check-val", type=lambda x: int(x, 0), default=0x05)
+    t.add_argument("--arm-cond", default=None, help="raw Tcl arm predicate (overrides --arm-check-*)")
+    t.add_argument("--anchor", type=lambda x: int(x, 0), required=True,
+                   help="start tracing at the Nth occurrence of this addr after arm")
+    t.add_argument("--nth", type=int, default=1)
+    t.add_argument("--steps", type=int, default=120, help="instructions to trace")
+    t.add_argument("--poke", action="append", metavar="ADDR:VAL",
+                   help="inject mem write into OURS at the anchor (falsify-first); repeatable")
+
     args = ap.parse_args()
 
     tmp_disk = None
@@ -281,7 +379,7 @@ def main() -> int:
             shutil.copy2(args.diska, tmp_disk)
             args.diska = tmp_disk
     try:
-        return {"callseq": mode_callseq, "capture": mode_capture}[args.mode](args)
+        return {"callseq": mode_callseq, "capture": mode_capture, "trace": mode_trace}[args.mode](args)
     finally:
         if tmp_disk and os.path.exists(tmp_disk):
             os.unlink(tmp_disk)

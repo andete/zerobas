@@ -23,6 +23,21 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[BDOS-LOOP ROOT-CAUSED → CONVERGES ON PHASE-1 / 2026-06-27 — HARD-STOP for the un-park decision.]**
+Built the 3-mode differential harness (`disk_probe_diff.py`: callseq/capture/trace + `--poke`
+falsification injection; trace reproduced the known n=3 result, then pinpointed the fork). The n=3
+STROUT-vs-SELDSK divergence is COMMAND.COM's `ld a,($F338); and a; jr nz` @ `$C26B`: stock `$F338`=00
+→ STROUT/prompt; ours `$F338`≠0 → SELDSK/loop. **Falsification** (poke `$F338`=0 into ours) advances
+ours **54 instrs** onto stock's path to `$D885 call $F368` → `$F338`=0 is necessary & effective
+(overturns the old "forcing $F338=0 didn't help"). Next divergence at `$F368` is ours' INTENTIONAL
+relocated hook (`jp $E795` vs `$DF57`, flags identical) — behavioral check, not a bug yet. **This
+converges decision-b (BDOS-loop) back onto phase-1: building `$F338`=0 (DOS-only + BIOS-agnostic, the
+tier2-phase1-spec §7b option-B reorg) is the next step to `A>`.** Recommend un-parking phase-1 for a
+minimal DOS-only `$F338`=0 build, then resume the trace from `$D885`. · why: the trace is decisive and
+cheap; the parking was based on §8.65 which this supersedes. · confidence: high on $F338; medium on
+"how much beyond $F338" (≥1 more blocker at $F368). · undo: n/a (probes+docs only, no asm). Detail:
+tier2-STATE.md live-thesis + open-Q1.
+
 **[PHASE-1 IMPLEMENTED + VALIDATED for DOS, but REVERTED (Tier-1 BASIC regression) / 2026-06-26 —
 needs option-B reorg, next milestone.]** Built `wa_clear` (zero $F1C9-$F37F, $C9-fill $F24F-$F2B7,
 `in a,($A8);ret`@$F365), option A (first in init). Fixed two hazards during build: (1) zeroing RAMAD

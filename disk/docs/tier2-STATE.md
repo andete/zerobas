@@ -24,17 +24,18 @@ The immediate hang is a **kernel BDOS-service loop**, not a work-area-init failu
 (§8.65 / [tier2-m6-spec.md](tier2-m6-spec.md), Jun 25). First BDOS divergence is call
 **n=3**: stock→STROUT (ret `$CBA6`), ours→SELDSK (ret `$C30A`); ours then loops
 CONOUT/CURDRV/CONOUT/CONOUT/BUFIN forever (the `$D858`/`$DA23` "prompt" loop).
-**Next milestone = root-cause the n=3 STROUT-vs-SELDSK divergence.** Re-measured
-2026-06-27 via `disk_probe_diff callseq` (n=1/2 byte-identical, confirming the anchor):
-- stock n=3 = **STROUT** DE=`$D2B3` **HL=`$0081`** ret=`$CBFF` → n=4 SDATE → n=5/6 CONOUT
-  (prints from the command tail at `$0081`; the normal "no AUTOEXEC → prompt" path).
-- ours  n=3 = **SELDSK** DE=`$D6FF` HL=`$0021` ret=`$C30A` → CONOUT/CURDRV loop.
-COMMAND.COM is the SAME program on both at this point, so the branch input that sends ours
-to SELDSK vs stock to STROUT is set between the n=2 FOPEN return (`$C24E`, identical) and
-n=3. **Next step (falsify-first):** `capture --at <COMMAND.COM PC between $C24E and the
-n=3 dispatch> --mem <suspect work cell>` to find the exact cell/branch ours reads
-differently — anchored, NOT a mid-stream snapshot. Phase-1 (work-area construction) is
-**PARKED** — not the fix for the hang; revisit only if this resurfaces a real work-area dep.
+**ROOT-CAUSED 2026-06-27** (`disk_probe_diff trace`, anchored on the FOPEN return `$C24E`):
+the n=3 fork is COMMAND.COM's `ld a,($F338); and a; jr nz` at `$C26B-$C26F`.
+- stock `$F338`=**00** → Z set → STROUT (`$CBEF`, prints cmd tail `$0081`) → the prompt path.
+- ours  `$F338`≠0 → `jr` taken → `$C300 ld sp,$D52B` → SELDSK / loop.
+**Falsification (poke `$F338`=0 into ours):** advances ours **54 instrs** along stock's exact
+path, to `$D885 call $F368`. So `$F338`=0 is **NECESSARY and effective** (overturns the old
+"forcing `$F338`=0 didn't help" — that set it inconsistently; set cleanly at the read it works).
+**New next blocker:** at `$F368`, stock `jp $DF57` vs ours `jp $E795` — but that is ours'
+**INTENTIONAL relocated-kernel hook** (flags identical, AF=0044). Needs a BEHAVIORAL equivalence
+check of our `$E795` hook, NOT a PC-diff (PC-diffing trips on by-design relocation).
+**Convergence:** the "BDOS-loop" IS the unbuilt `$F338` default → phase-1 (DOS work-area
+clear/default) is **VINDICATED as necessary**, not dead. See open question below.
 
 ## Settled facts — DO NOT re-litigate or re-probe
 - COMMAND.COM **loads correctly**: ours reads sectors 134–146 (cluster 62–68),
@@ -50,6 +51,9 @@ differently — anchored, NOT a mid-stream snapshot. Phase-1 (work-area construc
 - **Work-area PRE-BUILD does not fix the hang** (M6/§8.65): ours reads none of the stale
   cells before looping; loaded COMMAND.COM byte-identical. Forcing `$F338`=00 alone also
   did not fix it.
+- The **n=3 BDOS fork is data-driven by `$F338`** (COMMAND.COM `ld a,($F338);and a;jr nz`
+  @ `$C26B`): 00=STROUT/prompt (stock), ≠0=SELDSK/loop (ours). Poking `$F338`=0 into ours
+  advances it 54 instrs onto stock's path — `$F338`=0 is a necessary fix.
 - The MSX-DOS-1 **file-ops BDOS (FOPEN / dir-search / file-read) lives INSIDE the disk ROM**
   (shared kernel). Our 14 veneers cover only the COMMAND.COM-LOAD subset; real DOS file ops
   call the rest of the shared BDOS, which in our ROM is FDC/DSKIO code, ds-pad, or bare `ret`.
@@ -79,7 +83,13 @@ n=3 STROUT-vs-SELDSK BDOS divergence above.
   Needs its own design spec (map BASIC's work-area deps first). NOT a one-liner.
 
 ## Open questions for the user
-_(none open — Q1 resolved 2026-06-27: pivot to the BDOS-loop, option b.)_
+1. **Un-park phase-1?** The BDOS-loop root-caused to the unbuilt `$F338`=0 default, which is
+   exactly phase-1's output — so phase-1 is now on the critical path, not a parked tangent.
+   But it must be built **DOS-only + BIOS-agnostic** (the [tier2-phase1-spec.md](tier2-phase1-spec.md)
+   §7b option-B reorg: `$F338` is dual-purpose — `$C9` BASIC stub vs `00` DOS). Recommend:
+   approve the option-B design spec for a minimal DOS-only `$F338`=0 (likely the broader
+   clear/default), build it, then resume the trace from `$D885` to verify the `$F368`/`$E795`
+   hook and find the next blocker. My read: this is the path to `A>`, taken one cell at a time.
 
 ## Method guardrails (DURABLE — keep these when you overwrite this file)
 Endorsed 2026-06-27 after a retrospective found ~half the Tier-2 reframes came from
