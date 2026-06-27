@@ -112,10 +112,18 @@ headless-BUFIN re-prompt ([[tier2-storms-are-downstream]] noted "BUFIN never blo
   wa_seg error. Suspects, in order: (1) the date DATA the kernel reads from under page-1 RAM is
   uninitialised/wrong in ours (a work-area cell, $F338-style); (2) a relocated date-format routine
   bug; (3) the wa_seg EFFECT differs subtly on a non-CF-3300 host (BIOS-agnostic concern).
-- **Next (deliberate, likely its own scoped milestone):** capture the date-string BUFFER ours vs
-  stock (~`$D340-$D360`, COMMAND.COM's transient = same address on both, comparable) to see the
-  exact garbage; then trace the date VALUE's source (the cells the `$F368`-gated routine reads).
-  This is the relocated-kernel behavioral-verification core — scope it, don't reflex-probe.
+- **LOCALISED 2026-06-27** (`capture --at 0xCE5C --nth 5 --mem`): the date-digit string buffer
+  differs — stock `$D349+` = `31 39 38 34 2D 30 31 2D 30 31` = **"1984-01-01"** (the MSX-DOS
+  default), ours = `20 33 2D 30 30 2D 30 30` = **"  3-00-00"** garbage. So ours builds a **garbage
+  date VALUE** (year≈3, month 00, day 00) where stock has the 1984-01-01 default. (Not a pointer
+  bug — the string data itself is wrong.) **This is the `$F338` pattern again:** an uninitialised
+  DOS work-area region (the system date cells) that stock's disk-ROM boot defaults and ours leaves
+  garbage. NB the n=4 SDATE params were identical, so the SET is fine — the DISPLAY reads a
+  separate (uninit) date source.
+- **Next:** locate the date-value cells the format routine reads (trace the writes to `$D349+`
+  between the n=5 and n=9 CONOUTs, find the source they copy from), confirm stock's default vs
+  ours' garbage there, then default them DOS-only in `dos_handoff` (the `$F338` playbook). Likely
+  a small, falsifiable fix (`--poke` the cells, re-run callseq, expect ours' date == "1984-01-01").
 
 ## Method guardrails (DURABLE — keep these when you overwrite this file)
 Endorsed 2026-06-27 after a retrospective found ~half the Tier-2 reframes came from
