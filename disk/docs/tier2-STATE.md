@@ -120,10 +120,20 @@ headless-BUFIN re-prompt ([[tier2-storms-are-downstream]] noted "BUFIN never blo
   DOS work-area region (the system date cells) that stock's disk-ROM boot defaults and ours leaves
   garbage. NB the n=4 SDATE params were identical, so the SET is fine — the DISPLAY reads a
   separate (uninit) date source.
-- **Next:** locate the date-value cells the format routine reads (trace the writes to `$D349+`
-  between the n=5 and n=9 CONOUTs, find the source they copy from), confirm stock's default vs
-  ours' garbage there, then default them DOS-only in `dos_handoff` (the `$F338` playbook). Likely
-  a small, falsifiable fix (`--poke` the cells, re-run callseq, expect ours' date == "1984-01-01").
+- **PINPOINTED 2026-06-27** (`omsx_session.write_watch($D349)`): the diverging write is **W06 at
+  PC=`$CE4A`** (COMMAND.COM canonical, `ld (hl),a` in the date-format loop). Inputs there: stock
+  DE=`$0101` (month 1 day 1) → stores `'9'`; ours DE=`$0000` → stores `'3'`, then **re-writes
+  `$D349` repeatedly (W07-W09) = the loop**. So **ours' date value is ZERO at format time** where
+  stock's is the valid default. (W01 @ `$036A` had BC=`0101` on BOTH early — the date was fine
+  early, ours reads zero at format time.)
+- **OPEN FORK for next step — two hypotheses:** (a) ours' **relocated SDATE ($2A) didn't STORE**
+  the date (a kernel-routine bug — n=4 SDATE params were identical but ours' execution may drop
+  it); (b) the format reads an **uninitialised work-area date cell** ours never defaulted (the
+  `$F338` playbook → default it in `dos_handoff`). **Distinguish cheaply:** read-watch what
+  COMMAND.COM/kernel reads just before `$CE4A` to get DE (find the date source address), then check
+  ours-vs-stock at that address. If it's a stored-date cell that's 0 in ours → (a) broken store; if
+  it's an uninit default region → (b). The fix differs: (a) fix the relocated date BDOS; (b) a
+  small DOS-only default like `$F338`.
 
 ## Method guardrails (DURABLE — keep these when you overwrite this file)
 Endorsed 2026-06-27 after a retrospective found ~half the Tier-2 reframes came from
