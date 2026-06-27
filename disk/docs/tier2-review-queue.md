@@ -23,6 +23,28 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[date / HARD-STOP] Date blocker ROOT-CAUSED as a canonical-address collision; paused for a
+strategy decision.** Resumed the Tier-2 hunt; the prior most-recent thesis was "the date is a
+`_GDATE`/clock inter-slot bug — examine ours' page-0 clock path." I disproved that and root-caused
+it instead. · **what I did:** (1) extended the ONE harness with `callseq --poke/--poke-reg`
+(falsify-first register/memory override, ours-only); (2) FALSIFY-FIRST — poked ours' date regs to
+stock's at `$CDA7`: ours converged byte-for-byte with stock through the date print to **BUFIN
+(n=18)**, proving the date VALUE is the SOLE gate; (3) localised the garbage to the GDATE return
+`$CC04` (ours HL=`0000` vs stock `07C0`); (4) traced the handler: the disk-loaded MSXDOS.SYS
+dispatcher calls canonical `$553C` for `_GDATE`, where **stock has the DOS date kernel and ours has
+`bdos_create_body`** (relocated Disk-BASIC/BDOS body) → garbage. · **why it matters:** this is the
+first concrete instance of the central Tier-2 problem (16KB ROM can't host Tier-1 bodies + Tier-2
+DOS-BDOS at the same canonical addresses); it CONVERGES the date thread with the workarea-map /
+bdos-scope threads and REFRAMES the date from "cheap constant fix" to "DOS-BDOS canonical
+reproduction." · **why I stopped (hard-stop, did NOT proceed to code):** the fix is a
+layout/relocation DESIGN decision hinging on user taste (which Tier-1 bodies relocate where), needs
+a spec first per [[spec-before-implementation]], and is multi-session. Options A/B/C in
+[tier2-STATE.md](tier2-STATE.md) "Next action". · **alternative considered:** keep grinding to
+enumerate the full date-cell/route set — rejected (would map paths-not-taken before the design
+call; guardrail #3). · confidence: high (falsify-first proven + canonical-address byte divergence
+shown directly). · undo: harness extension is additive (no behaviour change to existing modes);
+no ROM/source change made. · regression: unit 18/18, ROM 16384 B, no canonical-address shift.
+
 **[BLOCKER #2 IDENTIFIED + RESYNC TOOL / 2026-06-27 — ours reaches the DOS date prompt but loops.]**
 Added `trace --resync` (re-convergence walk) to disk_probe_diff: after a PC fork it finds the next
 common PC, classifying benign relocation detours (rejoin) vs real divergence (no rejoin within

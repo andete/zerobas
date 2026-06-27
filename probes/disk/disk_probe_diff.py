@@ -68,13 +68,39 @@ def _runner(machine: str, diska: str | None, symfile: str) -> OmsxRun:
 
 
 # ---- mode: callseq -------------------------------------------------------------
-def _callseq_arm(arm_addr: int, arm_cond: str, log_addr: int, maxhits: int) -> str:
+def _poke_bp(poke_at: int, poke_nth: int,
+             pokes: list[tuple[int, int]] | None,
+             poke_regs: list[tuple[str, int]] | None) -> str:
+    """A one-shot poke breakpoint: at the poke_nth hit of poke_at (after armed),
+    inject memory writes and/or register overrides into OURS, then disarm itself.
+    The falsify-first primitive — 'if this value were right, does ours converge?'"""
+    if not pokes and not poke_regs:
+        return ""
+    mem_tcl = "".join(f"\n    debug write memory {a:#06x} {v:#04x}" for a, v in (pokes or []))
+    reg_tcl = "".join(f"\n    reg {r} {v:#06x}" for r, v in (poke_regs or []))
+    return f"""
+set ::pn 0
+set ::poked 0
+debug set_bp {poke_at:#06x} {{}} {{
+  if {{!$::armed || $::poked}} return
+  incr ::pn
+  if {{$::pn < {poke_nth}}} return
+  set ::poked 1{mem_tcl}{reg_tcl}
+  emit [format "POKE applied at {poke_at:#06x} #%d t=%.6f" $::pn [machine_info time]]
+}}
+"""
+
+
+def _callseq_arm(arm_addr: int, arm_cond: str, log_addr: int, maxhits: int,
+                 poke: str = "") -> str:
     return f"""
 set ::armed 0
 set ::n 0
+set ::poked 0
 debug set_bp {arm_addr:#06x} {{}} {{
   if {{ {arm_cond} }} {{ set ::armed 1 }}
 }}
+{poke}
 debug set_bp {log_addr:#06x} {{}} {{
   if {{!$::armed}} return
   incr ::n
@@ -107,17 +133,33 @@ def _fmt_call(r: dict) -> str:
 
 def mode_callseq(args) -> int:
     arm_cond = args.arm_cond or f"[debug read memory {args.arm_check_addr:#06x}] == {args.arm_check_val:#04x}"
-    body = 'emit [format "DONE armed=%d n=%d" $::armed $::n]; exit'
-    arm = _callseq_arm(args.at, arm_cond, args.log, args.maxhits)
+    body = 'emit [format "DONE armed=%d n=%d poked=%d" $::armed $::n [expr {$::poked + 0}]]; exit'
+    pokes = []
+    for p in (args.poke or []):
+        a, _, v = p.partition(":")
+        pokes.append((int(a, 0), int(v, 0)))
+    poke_regs = []
+    for p in (args.poke_reg or []):
+        r, _, v = p.partition(":")
+        poke_regs.append((r.upper(), int(v, 0)))
+    # falsify-first pokes go into OURS only; stock stays the oracle.
+    poke_tcl = _poke_bp(args.poke_at, args.poke_nth, pokes, poke_regs)
+    arm_ours = _callseq_arm(args.at, arm_cond, args.log, args.maxhits, poke_tcl)
+    arm_stock = _callseq_arm(args.at, arm_cond, args.log, args.maxhits)
 
     def seq_for(machine):
+        arm = arm_ours if machine == OURS_MACHINE else arm_stock
         raw = _runner(machine, args.diska, args.symfile).run_job_raw(
             body, settle=args.settle, timeout=args.timeout, arm=arm)
         return [c for c in (_parse_call(l) for l in raw) if c], raw
 
-    print(f"=== callseq: calls to {args.log:#06x} after arm@{args.at:#06x} ({arm_cond}) ===")
-    ours, _ = seq_for(OURS_MACHINE)
+    tag = f" [POKE @{args.poke_at:#06x}: {pokes+poke_regs}]" if (pokes or poke_regs) else ""
+    print(f"=== callseq: calls to {args.log:#06x} after arm@{args.at:#06x} ({arm_cond}){tag} ===")
+    ours, ours_raw = seq_for(OURS_MACHINE)
     stock, _ = seq_for(STOCK_MACHINE)
+    if pokes or poke_regs:
+        applied = any("POKE applied" in l for l in ours_raw)
+        print(f"  poke {'APPLIED' if applied else '** NOT APPLIED (anchor never hit while armed) **'} on ours")
     print(f"  ours:  {len(ours)} calls    stock: {len(stock)} calls\n")
 
     # ALIGNMENT GUARD: walk the shared prefix; the divergence is meaningful only because
@@ -420,6 +462,13 @@ def main() -> int:
     c.add_argument("--arm-cond", default=None, help="raw Tcl arm predicate (overrides --arm-check-*)")
     c.add_argument("--log", type=lambda x: int(x, 0), default=0x0005, help="address to log calls to")
     c.add_argument("--maxhits", type=int, default=40)
+    c.add_argument("--poke", action="append", metavar="ADDR:VAL",
+                   help="inject mem write into OURS at --poke-at (falsify-first); repeatable")
+    c.add_argument("--poke-reg", action="append", metavar="REG:VAL",
+                   help="override a register in OURS at --poke-at (e.g. BC:0x0101); repeatable")
+    c.add_argument("--poke-at", type=lambda x: int(x, 0), default=0x0100,
+                   help="address at which to apply pokes (default $0100)")
+    c.add_argument("--poke-nth", type=int, default=1, help="apply at this hit of --poke-at (after armed)")
 
     p = sub.add_parser("capture", help="diff regs+mem at the Nth occurrence of an address")
     common(p)
