@@ -90,13 +90,17 @@ VALUE is not sourced from the DOS work area** — building/clearing work-area ce
 date. This DISPROVES the "incremental date subset of the work area" plan for the date itself.
 (The work-area construction is still real and needed — see below — just not the date's cause.)
 
-**Redirect for the date:** n=4 SDATE *input* was byte-identical on both (COMMAND.COM HAD the right
-date), yet the display reads garbage → the date is lost in **ours' relocated-kernel date
-storage/readback** (SDATE stores, the display reads back wrong) OR a clock/handoff path. Next:
-trace COMMAND.COM upstream of `$CDA7` to the ACTUAL date source it reads (a specific address or a
-kernel/clock call), then check ours-vs-stock there. Do NOT build work-area cells for the date.
-NB the `$2A` "SDATE" params (HL=`$C924` DE=`$D2C4`) are POINTERS, not a packed date — re-examine
-what that call actually does before assuming it's set-date.
+**CORRECTED: n=4 is `_GDATE` (GET date, `$2A`), NOT SDATE** — the harness BDOS table was shifted
+by one (`$2A`=GDATE/`$2B`=SDATE/`$2C`=GTIME/…; fixed in disk_probe_diff.py). So COMMAND.COM **calls
+`_GDATE` to GET the date for display**, the "identical params" were ignored input regs, and it's the
+**GDATE _result_ that differs** (stock returns 1984-01-01, ours garbage). Combined with the
+work-area falsification: **ours' `_GDATE` BDOS returns a garbage date.** `_GDATE` reads the clock
+(SUBROM/inter-slot) and defaults to 1984-01-01 when there's no valid clock (MSX1); stock gets the
+default, ours gets garbage → likely **ours' clock-read / inter-slot path in the boot env**
+(`lay_page0_env` / page-0 handlers) doesn't service `_GDATE`'s clock access, OR ours' relocated
+`_GDATE` routine is broken. **Next:** examine ours' `_GDATE`/clock path (our own code — the page-0
+env + the relocated kernel's date routine) vs the contract; this is the date's real root, not the
+work area. Falsify-first: poke the GDATE return regs to stock's and confirm the date renders.
 
 ## Earlier framing (date-as-work-area) — SUPERSEDED by the falsification above
 ## Next action — blocker #2: ours' MALFORMED DATE-PROMPT (loops, doesn't reach `A>`)
