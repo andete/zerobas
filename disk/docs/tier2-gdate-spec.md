@@ -100,6 +100,23 @@ canonical address moves except the intentional `$553C` content swap.
 4. **Both-host validation.** `$553C` is OUR disk-ROM address (Interface A, BIOS-independent), so
    no host `$F1xx` layout concern — but still run acceptance on **both** C-BIOS_MSX1 and CF-3300.
 
+## 9. IMPLEMENTED 2026-06-27 (validated, green)
+- **gdate_handler at `$553C`** (kernel.asm): the ~13-byte constant-return handler of §5a, placed
+  with `ds $553C - $`. The colliding body was **`fac_loop_body`** (the FAT-cluster-allocate loop),
+  NOT `bdos_create_body` as §5b guessed — `$553C` fell inside `fac_loop_body` ($550B). It is
+  label-referenced (fat.asm `jp fac_loop_body`) and relocated net-zero (+63 B, tail-`ds`-absorbed).
+- **Second cell needed — date-FORMAT config `$F30D`/`$F30E`** (runtime.asm `dos_handoff`): with the
+  value fixed, ours still printed a 2-char-longer date and missed BUFIN. Root: COMMAND.COM reads
+  `$F30E` at `$CDA7` for the date format; ours left `$F30D`/`$F30E` = `$FF` (uninit). Defaulted them
+  to stock's `$F30D=01 / $F30E=00` in `dos_handoff` (DOS-only, same save/restore as `$F338`). This
+  is the "date cells" §5b anticipated — the `_GDATE` value handler alone was NOT sufficient.
+- **Open items resolved:** #1 `ld ($F306),a` kept (harmless, matches stock); #2 only HL/DE/A+flags
+  consumed (confirmed — `$CDA7` regs now byte-match stock); #3 relocate-whole `fac_loop_body`; #4
+  both-host — the date path is BIOS-independent (Interface A: `$553C` is our ROM, dispatch is
+  MSXDOS.SYS); Tier-1 unharmed on BOTH hosts (FILES==CF-3300 on C-BIOS; DSKIO/APPEND==CF-3300).
+- **Acceptance:** `$CC04` diff NONE; `callseq` converges to **BUFIN n=18**; test_gdate.py PASS
+  (suite 19/19); net-zero 16384 B, no canonical shift; DSKIO/FILES/APPEND == CF-3300.
+
 ## 7. Out of scope (the NEXT slice, after sign-off of this one)
 - Reaching `A>` *past* BUFIN: needs a key (CR) fed to the date prompt, then COMMAND.COM likely
   calls `_SDATE` ($2B) to set the accepted date — `$2B` has its own dispatch-table entry → its

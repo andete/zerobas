@@ -41,7 +41,7 @@ between us and `A>`. Functions not yet on this path are 🔲 by default, not ✅
 | `$0E` | SELDSK | seen (early derail) | 🔲 | — | appeared in the pre-`$F338`-fix loop; not characterized on the clean path |
 | `$0F` | FOPEN | yes (n=2) | ⚠ partial | COMMAND.COM-load FOPEN ✅; full dir-search / not-found path ⚠ (`$4462` chain) | [tier2-bdos-scope.md](tier2-bdos-scope.md): 23-addr path, 2 covered |
 | `$19` | CURDRV | seen (early derail) | 🔲 | — | not characterized on the clean path |
-| `$2A` | GDATE | yes (n=4) | ⚠ → fixing | handler canonical `$553C` (ours: `bdos_create_body`) | THE current blocker; [tier2-gdate-spec.md](tier2-gdate-spec.md) — clock-less default 1984-01-01 |
+| `$2A` | GDATE | yes (n=4) | ✅ | handler `gdate_handler` @ `$553C` + `$F30D/$F30E` format defaults | DONE 2026-06-27 — returns 1984-01-01 default; `$CC04` diff NONE; backed by callseq + test_gdate.py |
 | `$2B` | SDATE | likely (past BUFIN) | 🔲 | own table entry → own canonical handler | next slice: accepting the date prompt probably calls this; possibly a no-op `ret` suffices |
 | `$2C` | GTIME | unknown | 🔲 | — | clock-group; may be called like GDATE |
 | `$2D` | STIME | unknown | 🔲 | — | clock-group |
@@ -54,9 +54,10 @@ LOGIN · `$1A` SETDTA · `$1B` ALLOC · `$21` RDRND · `$22` WRRND · `$23` FSIZ
 user programs will exercise these; out of scope until `A>` is reached, then re-survey).
 
 ## Reading the score
-- **Reached `A>` requires:** every function COMMAND.COM calls on the boot path = ✅. Today the
-  one ⚠ blocker on the critical path is `$2A` GDATE (this slice); `$0F` FOPEN is ⚠-partial but
-  its COMMAND.COM-load subset works, and the not-found path is a separate downstream concern.
+- **Reached `A>` requires:** every function COMMAND.COM calls on the boot path = ✅. `$2A` GDATE is
+  now ✅ (ours reaches **BUFIN n=18**, the date-input wait, matching stock). The next critical-path
+  item is **past BUFIN** — `$0A` BUFIN behavior + likely `$2B` SDATE (accepting the date) → `A>`.
+  `$0F` FOPEN is ⚠-partial but its COMMAND.COM-load subset works (not-found path is downstream).
 - **Pattern (the Tier-2 lesson):** a ⚠ is almost always a **canonical-address collision** — the
   kernel calls a fixed handler address that ours repurposed for Tier-1 Disk-BASIC/BDOS code. Each
   fix = clean-room handler at that address + net-zero relocation of the displaced Tier-1 body.

@@ -10,7 +10,7 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-06-27 (date blocker ROOT-CAUSED: canonical-address collision — HARD-STOP for strategy). Update the date + sections whenever state changes._
+_Last updated: 2026-06-27 (GDATE slice LANDED — ours reaches BUFIN; next = past-BUFIN to A>). Update the date + sections whenever state changes._
 
 ---
 
@@ -19,7 +19,11 @@ Boot MSX-DOS to the `A>` prompt under zerobas-disk (Tier-2) **without regressing
 Tier-1** (disk-BASIC / BLOAD / FILES) and while staying a **BIOS-agnostic replacement
 disk ROM** (works on CF-3300, C-BIOS, any standards MSX1).
 
-## Live thesis (ROOT-CAUSED 2026-06-27: the date blocker is a CANONICAL-ADDRESS COLLISION)
+## Live thesis (RESOLVED 2026-06-27: GDATE collision FIXED — ours reaches BUFIN; see Next action)
+_The root-cause analysis below is retained for context; the fix landed (gdate_handler @ `$553C` +
+`$F30D/$F30E` defaults). The active blocker is now PAST BUFIN — see "Next action"._
+
+### Root-cause record (the date blocker WAS a CANONICAL-ADDRESS COLLISION)
 The date-prompt hang is **not** a clock/inter-slot bug and **not** a work-area-DATA bug.
 It is a **page-1 ROM canonical-address collision**: the disk-loaded MSXDOS.SYS BDOS
 dispatcher (identical on both machines) services `_GDATE` ($2A) by paging in the disk ROM
@@ -95,17 +99,23 @@ addresses. **HARD-STOP — user strategy decision (see Next action).**
 - **"Init the date work-area cells to fix the date"** — would NOT fix it alone: ours' CODE at
   `$553C` (`bdos_create_body`) garbles any `$F33B` data. Code first, then data.
 
-## Next action — option B chosen; SPEC DRAFTED, awaiting sign-off (do NOT code yet)
-**USER CHOSE (B) date-path slice first (2026-06-27.)** Spec written:
-[tier2-gdate-spec.md](tier2-gdate-spec.md) — a clean-room ~13-byte `_GDATE` handler that returns
-the clock-less MSX1 default date (HL=`07C0`/D=01/E=01/A=00), placed at canonical `$553C`,
-relocating the displaced `bdos_create_body` net-zero. Dispatch contract fully mapped (§3): the
-MSXDOS.SYS table at `$D8BE` (loaded from disk, immutable) routes `$2A`→`$553C`, so ours is FORCED
-to host `_GDATE` at `$553C` — the redirect-the-table escape is out. **AWAITING SIGN-OFF on the
-spec (4 open items, §6) before any asm** per [[spec-before-implementation]]. After it lands and
-ours reaches BUFIN, the next slice = past-BUFIN to `A>` (`_SDATE` $2B + CR input, spec §7).
-**Progress scoreboard:** [tier2-bdos-coverage.md](tier2-bdos-coverage.md) — per-function BDOS
-coverage on the boot path (seeded from `callseq`; update after each slice).
+## Next action — GDATE slice DONE; next slice = PAST BUFIN to `A>`
+**GDATE slice LANDED + VALIDATED 2026-06-27** ([tier2-gdate-spec.md](tier2-gdate-spec.md) §9):
+`gdate_handler` at canonical `$553C` (kernel.asm, `fac_loop_body` relocated net-zero) returns the
+clock-less default 1984-01-01, AND `dos_handoff` now defaults the date-FORMAT cells `$F30D=01 /
+$F30E=00` (runtime.asm — the value handler alone was NOT enough; COMMAND.COM reads `$F30E` at
+`$CDA7` to format). **Result: ours converges with stock through BUFIN (n=18), the date-input
+wait** — `$CC04` diff NONE, callseq n=1–18 identical, no poke. Validated: test_gdate.py (suite
+19/19), net-zero 16384 B / no canonical shift, DSKIO/FILES/APPEND == CF-3300. `$2A` GDATE = ✅ on
+the [tier2-bdos-coverage.md](tier2-bdos-coverage.md) scoreboard.
+
+**NEXT SLICE — past BUFIN to `A>`:** ours now parks at BUFIN (n=18) like stock; the post-BUFIN
+divergence (callseq n=19) is the next blocker. Reaching `A>` needs a CR fed to the date prompt
++ likely `_SDATE` ($2B, accepting the date) — its own dispatch-table entry → own canonical handler
+(probable collision; possibly a no-op `ret`). Characterise `$2B`'s handler address (the `$D8BE +
+3*$2B` table entry) and whether COMMAND.COM calls it after BUFIN. Same method: callseq to find the
+fork, capture the handler return contract, falsify-first, then a spec. Headless BUFIN never blocks
+([[tier2-storms-are-downstream]]) so feeding the key needs care (probe-inject or a key event).
 
 ### Superseded framing (kept for context) — the broader collision
 The date blocker is the **first concrete instance

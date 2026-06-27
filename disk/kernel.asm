@@ -154,7 +154,28 @@ write_sector:                           ; relocated (entry collided with $4935 v
                 scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
                 jp      dskio           ; tail-call: dskio returns to our caller
 
-fac_loop_body:                          ; [fac_loop, fac_have_sec) -> falls into fac_have_sec
+; --- MSX-DOS-1 kernel _GDATE entry: $553C ($4000 + $153C; M9 date slice) ----
+; The kernel BDOS dispatcher ($D831; table $D8BE + 3*C) routes _GDATE ($2A) here
+; after paging in the disk ROM via the $F368 hook. CF-3300 and C-BIOS are
+; clock-less MSX1, so _GDATE returns the documented MSX-DOS-1 default date
+; 1984-01-01 (a Sunday) -- a constant, NOT a reproduction of stock's stored
+; day-count -> Y/M/D math. Return contract (observed black-box at the GDATE
+; return $CC04): HL=year, D=month, E=day, A=day-of-week(0=Sun), BC=0, F=$44.
+; `xor a` yields A=$00 and F=$44 (Z|P/V) exactly; the preceding loads do not
+; disturb the flags. CLEAN-ROOM: documented default + black-box return contract;
+; no stock bytes. $553C fell inside fac_loop_body; that body is relocated just
+; below (label-referenced via fat.asm `jp fac_loop_body`; net-zero -- the tail
+; `ds $5FE5 - $` absorbs the shift). See docs/tier2-gdate-spec.md.
+                ds      $553C - $, $00      ; pad to the canonical _GDATE entry
+gdate_handler:
+                ld      hl, $07C0           ; year = 1984
+                ld      de, $0101           ; D = month 01, E = day 01
+                ld      bc, $0000
+                xor     a                   ; A = 0 (Sunday); F = $44 (Z,P/V), as stock
+                ld      ($F306), a          ; clear dispatcher re-entrancy flag (stock parity)
+                ret
+
+fac_loop_body:                          ; [fac_loop, fac_have_sec) -> falls into fac_have_sec; relocated past $553C
                 ld      de, (FAT_WRTMP)
                 push    hl
                 or      a

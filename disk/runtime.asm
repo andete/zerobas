@@ -225,14 +225,26 @@ int_h_hiram_end:
 ; no-return DOS path the push is simply abandoned (MSXDOS.SYS resets SP). Called from
 ; boot_sig_ok with IX=$F195 and the page-0 env laid; replaces the inline `scf; call
 ; BOOT_ENTRY` there -- net-zero in that $41FD-pad-packed region. (tier2-f338-default-spec.md)
+; Also defaults the date-format config cells $F30D/$F30E (M9 date slice): COMMAND.COM
+; reads $F30E at $CDA7 (`ld a,($F30E)`) to format the boot date; ours leaves them $FF
+; (uninit) so the date prints malformed and the prompt loops. Stock's disk ROM defaults
+; them to $F30D=01 / $F30E=00 at boot (observed black-box; clean-room, no stock bytes).
+; Same DOS-only save/restore discipline as $F338, so a returning data disk leaves the
+; host's cells untouched (BIOS-agnostic). (tier2-gdate-spec.md)
 dos_handoff:
                 ld      a, ($F338)          ; save host $F338 (BASIC hook stub on C-BIOS)
                 push    af
+                ld      hl, ($F30D)         ; save host $F30D/$F30E (date-format config)
+                push    hl
                 xor     a
                 ld      ($F338), a          ; DOS default: $F338 = 0
+                ld      hl, $0001
+                ld      ($F30D), hl         ; DOS default: $F30D=01, $F30E=00 (date format)
                 scf                         ; Cy = 1 -> step-7 "load the system" entry
                 call    BOOT_ENTRY          ; DOS disk JPs into MSXDOS.SYS (no return)
-                pop     af                  ; data disk returned: recover host value
+                pop     hl                  ; data disk returned: recover host values
+                ld      ($F30D), hl
+                pop     af                  ; recover host $F338
                 ld      ($F338), a          ; restore the dual-purpose stub for BASIC
                 ret
 

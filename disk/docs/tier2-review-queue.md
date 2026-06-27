@@ -23,8 +23,26 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
-**[date / HARD-STOP] Date blocker ROOT-CAUSED as a canonical-address collision; paused for a
-strategy decision.** Resumed the Tier-2 hunt; the prior most-recent thesis was "the date is a
+**[GDATE slice / DONE+VALIDATED] Implemented the date-path slice (option B); ours now reaches the
+date-input BUFIN.** User chose B and signed off ("excellent, continue"); implemented under the
+autonomous span. · **what:** (1) `gdate_handler` at canonical `$553C` (kernel.asm) — a ~13-byte
+constant-return `_GDATE` ($2A) giving the clock-less default 1984-01-01; the colliding body was
+**`fac_loop_body`** (NOT `bdos_create_body` — the spec's §5b guess; `$553C` fell inside
+`fac_loop_body`), relocated net-zero (+63 B, tail-`ds`-absorbed, label-referenced). (2) A SECOND
+cell surfaced after the value fix: COMMAND.COM reads `$F30E` at `$CDA7` for the date FORMAT and
+ours left `$F30D/$F30E`=`$FF`; defaulted them to stock's `01/00` in `dos_handoff` (runtime.asm,
+DOS-only with the same save/restore as `$F338`). · **result:** `$CC04` reg diff NONE; callseq
+n=1–18 byte-identical to stock incl. **BUFIN (n=18)**, no poke. · **validated:** test_gdate.py
+(new host unit test, suite 19/19); net-zero 16384 B + no canonical-address shift; DSKIO/FILES/
+APPEND == CF-3300 (FILES on C-BIOS, the relocated FAT-write path via APPEND). · **judgment calls:**
+kept `ld ($F306),a` (matches stock, harmless); chose relocate-whole over split for `fac_loop_body`;
+defaulted the format cells in `dos_handoff` rather than a new work-area pass (minimal, proven by
+the earlier poke). · confidence: high (oracle-validated both layers). · undo: revert kernel.asm
+`$553C` block + runtime.asm `dos_handoff` `$F30D` lines + delete test_gdate.py. · **next:** past
+BUFIN to `A>` (callseq forks at n=19; `_SDATE` $2B + CR input).
+
+**[date / HARD-STOP → RESOLVED by the slice above] Date blocker ROOT-CAUSED as a canonical-address
+collision; paused for a strategy decision.** Resumed the Tier-2 hunt; the prior most-recent thesis was "the date is a
 `_GDATE`/clock inter-slot bug — examine ours' page-0 clock path." I disproved that and root-caused
 it instead. · **what I did:** (1) extended the ONE harness with `callseq --poke/--poke-reg`
 (falsify-first register/memory override, ours-only); (2) FALSIFY-FIRST — poked ours' date regs to
