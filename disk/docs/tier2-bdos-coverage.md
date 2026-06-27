@@ -17,7 +17,10 @@ Repro: `python3 probes/disk/disk_probe_diff.py callseq --maxhits 40 --diska
 ~/Documents/msx/msx/disks/test.dsk` (oracle disk = **test.dsk**).
 
 **Status legend:**
-- ✅ **converges** — ours matches stock at this call (same params, return, branch).
+- ✅ **converges** — ours matches stock at this call (same params, return, branch). A mature ✅
+  has **two backings**: the emulator differential (proven once vs the oracle) AND a host unit test
+  (`tests/test_<fn>.py`, locks the contract in every build) — see [[host-unit-test-harness]]. Add
+  the unit test as each implemented slice lands; assert oracle-pinned values, not invented ones.
 - ⚠ **diverges** — ours runs unrelated code / a stub at the canonical handler (collision); returns
   garbage. The active Tier-2 work.
 - 🔲 **not yet exercised / untested** — not seen on the boot path so far, or reached but behavior
