@@ -135,12 +135,23 @@ headless-BUFIN re-prompt ([[tier2-storms-are-downstream]] noted "BUFIN never blo
   — the `$F338` pattern AT SCALE. Note `$F300-$F31F` ⊂ the `$F1C9-$F37F` range the **original
   phase-1 clear/default** targeted → **blocker #2 VINDICATES phase-1's clear thesis**: `$F338` was
   one cell of a broader need.
-- **DECISION NEEDED (next milestone, needs its own spec):** extend the DOS-only default in
-  `dos_handoff` from one cell to a **range clear** of the DOS work area (at least `$F300-$F31F`;
-  likely most of phase-1's `$F1C9-$F37F`), DOS-only + BIOS-agnostic + BASIC-protected. The hard
-  part is the same as phase-1 option-A: BASIC also traverses `boot_sig_ok`/`dos_handoff` (data
-  disk), and the `$F327-$F37F` sub-range holds C-BIOS's `$C9` BASIC hook stubs — so the clear must
-  be save/restored (like `$F338`) OR scoped to the sub-range BASIC doesn't use. Scope this before asm.
+- **EXTENT CHARACTERISED 2026-06-27** (region-diff `$F1C9-$F37F`, classified — user chose
+  "characterize first"). 439 B: **137 match, 32 ours-built (preserve: hooks/RAMAD/SYSTEM/DRVTBL/
+  RES_*), 270 uninit ($FF ours / defined stock)**. The 270 split:
+  - **128 = stock `$00`** → memset.
+  - **142 = stock real CONTENT** → not defaults but CONSTRUCTED code+data: executable RAM-resident
+    routines (`$F1D0-$F216` CD/C3/EDB0; `$F327`=`3E 1A C9`; `$F365`=`DB A8 C9`=`in a,($A8);ret`),
+    data tables (`"PRN LST NUL AUX CON"` device names, `1F 1D 1F 1E…` days-per-month, `"AUTOEXEC
+    BAT"` FCB @ `$F2B8`), pointers/flags (`$F30D=01`, `$F37E=31`, `$F195` ptr).
+- **STRATEGIC: blocker #2's true extent = the FULL DOS work-area construction** (resident code +
+  structures stock's disk-ROM builds), NOT a clear/default — exactly the deferred big sub-track in
+  [tier2-workarea-map.md](tier2-workarea-map.md) ("~250 B resident code"), now concretely motivated
+  (it's what's between us and `A>`; the date is just its first reader). `$F338` + the date were the
+  visible tips. **HARD-STOP — user decision needed:** (A) commit to building the work-area
+  construction (270 cells: 128 memset + 142 clean-room code/data, DOS-only, BASIC-protected — the
+  deepest Tier-2 work, multi-session); (B) narrow to the minimal subset the DATE path reads (needs a
+  read-watch to enumerate; smaller but likely whack-a-mole); (C) reconsider. Recommend (A) but it's
+  a big commit; this connects to the parked phase-1 + workarea-map — revisit those as the spec base.
 
 ## Method guardrails (DURABLE — keep these when you overwrite this file)
 Endorsed 2026-06-27 after a retrospective found ~half the Tier-2 reframes came from
