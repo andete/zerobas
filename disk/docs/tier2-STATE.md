@@ -99,9 +99,23 @@ STROUT+BUFIN at the input wait), ours prints garbage (`" 3-00-00…"`, 10+ chars
 (callseq call-count is nondeterministic 18 vs 60 across boots; ours does NOT cleanly reach `A>`).
 Likely ours' **GDATE/clock read or date-string formatting** in the relocated kernel, and/or the
 headless-BUFIN re-prompt ([[tier2-storms-are-downstream]] noted "BUFIN never blocks → re-prompts").
-Start by finding where the date VALUE/length comes from (the n=4 SDATE input + the date work-area
-cells), comparing ours vs stock at the BDOS level. The emulator timing-nondeterminism here is a
-trap — anchor on the date-string source, don't chase call counts.
+
+**Characterised 2026-06-27 (deliberate, anchored):**
+- The n=4 **SDATE call is byte-identical** on both (B=C9 DE=D2C4 HL=C924) → the date being *set*
+  is the same; the bug is in the **readback/format**, after SDATE.
+- `trace --anchor 0xCC04 --resync` (SDATE return): the date readback **forks first at `$F368`**
+  (the segment-switch hook into ours' relocated `$E795` kernel) and does NOT re-converge → the
+  date path runs **inside the relocated kernel**, so PC-diff is exhausted (use BDOS-level/effect).
+- Reviewed ours' `wa_seg_rom`/`wa_seg_ram` bodies ([kernel.asm:431](../kernel.asm:431)): RMW only
+  the page-1 subslot bits (mask `$F3`) of slot-3 `$FFFF`+SLTTBL, register-transparent. **Looks
+  contract-correct for the CF-3300 expanded-slot layout** — so blocker #2 is probably NOT a naïve
+  wa_seg error. Suspects, in order: (1) the date DATA the kernel reads from under page-1 RAM is
+  uninitialised/wrong in ours (a work-area cell, $F338-style); (2) a relocated date-format routine
+  bug; (3) the wa_seg EFFECT differs subtly on a non-CF-3300 host (BIOS-agnostic concern).
+- **Next (deliberate, likely its own scoped milestone):** capture the date-string BUFFER ours vs
+  stock (~`$D340-$D360`, COMMAND.COM's transient = same address on both, comparable) to see the
+  exact garbage; then trace the date VALUE's source (the cells the `$F368`-gated routine reads).
+  This is the relocated-kernel behavioral-verification core — scope it, don't reflex-probe.
 
 ## Method guardrails (DURABLE — keep these when you overwrite this file)
 Endorsed 2026-06-27 after a retrospective found ~half the Tier-2 reframes came from
