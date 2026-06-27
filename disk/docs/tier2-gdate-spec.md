@@ -113,10 +113,14 @@ test locks the contract in on every build ([[host-unit-test-harness]] "locks in 
    **BUFIN (n=18)** identically (the un-poked run becomes the poked run's result).
    `python3 probes/disk/disk_probe_diff.py callseq --maxhits 20 --diska
    ~/Documents/msx/msx/disks/test.dsk`. And `capture --at 0xCC04 --nth 1` → reg diff = NONE.
-2. **Host unit test** (new — `tests/test_gdate.py`, emulator-free, the test_getdpb template):
-   `call("gdate_handler")` then assert the oracle-pinned `$CC04` contract — HL=`$07C0`, D=`$01`,
-   E=`$01`, BC=`$0000`, A=`$00`, F=`$44` (§4). This is the first entry of the per-function BDOS
-   unit-test layer ([tier2-bdos-coverage.md](tier2-bdos-coverage.md)); add one per implemented slice.
+2. **Host unit test** (new — `tests/test_gdate.py`, emulator-free, the `test_getdpb` template):
+   `call("gdate_handler")` then assert HL=`$07C0`, D=`$01`, E=`$01`, BC=`$0000`, A=`$00`, F=`$44`
+   (§4). Follow the house **"Oracle basis"** docstring convention (cf. test_tape/test_getdpb):
+   the PRIMARY basis is the **documented** MSX-DOS-1 clock-less default date 1984-01-01 (public
+   spec — like test_tape's documented-FSK basis, not a copied listing), CORROBORATED by the
+   black-box `$CC04` capture (like test_getdpb's CF-3300 oracle). Clean-room: no stock disassembly.
+   First entry of the per-function BDOS unit-test layer ([tier2-bdos-coverage.md](tier2-bdos-coverage.md));
+   add one per implemented slice.
 3. **Relocation guard:** the relocated `bdos_create_body` still behaves identically — Tier-1 file
    create/write == CF-3300 (probe), and (if feasible) a `call("bdos_create_body", …)` host test.
 4. **Tier-1 invariants:** `make unit-test` 18/18 (→ 19/19 with test_gdate); `disk.rom` 16384 B;
