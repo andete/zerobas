@@ -271,6 +271,48 @@ def _trace_seq(recs) -> list[dict]:
     return [r for r in recs if str(r.get("tag", "")).startswith("T")]
 
 
+def _find_resync(ours, stock, i, j, window=80):
+    """From a fork at (ours[i], stock[j]), find the nearest re-convergence: the
+    (i+a, j+b) with smallest a+b where the PCs match again. Returns (ni, nj, pc) or
+    None. Lets PC-diffing skip a by-design relocation detour (ours' $E7xx hook vs
+    stock's $Dxxx hook) and resume at the common return point."""
+    for d in range(1, 2 * window + 1):
+        for a in range(0, min(d, window) + 1):
+            b = d - a
+            if b < 0 or b > window:
+                continue
+            if i + a >= len(ours) or j + b >= len(stock):
+                continue
+            if ours[i + a].get("PC") == stock[j + b].get("PC"):
+                return (i + a, j + b, ours[i + a].get("PC"))
+    return None
+
+
+def _resync_walk(ours, stock):
+    """Walk both PC streams, recording each fork and where it re-converges. Returns a
+    list of dicts: {'fork_o','fork_s','pc_o','pc_s', 'resync_pc','resync_o','resync_s'}
+    (resync_* None if it never re-converges within the window = a real divergence)."""
+    i = j = 0
+    events = []
+    while i < len(ours) and j < len(stock):
+        if ours[i].get("PC") == stock[j].get("PC"):
+            i += 1
+            j += 1
+            continue
+        ev = {"fork_o": i, "fork_s": j,
+              "pc_o": ours[i].get("PC"), "pc_s": stock[j].get("PC")}
+        rs = _find_resync(ours, stock, i, j)
+        if rs is None:
+            ev["resync_pc"] = None
+            events.append(ev)
+            break
+        ni, nj, pc = rs
+        ev.update(resync_pc=pc, resync_o=ni, resync_s=nj)
+        events.append(ev)
+        i, j = ni, nj
+    return events
+
+
 def mode_trace(args) -> int:
     arm_cond = args.arm_cond or f"[debug read memory {args.arm_check_addr:#06x}] == {args.arm_check_val:#04x}"
     body = 'emit [format "DONE armed=%d tracing=%d tn=%d" $::armed $::tracing $::tn]; exit'
@@ -301,6 +343,37 @@ def mode_trace(args) -> int:
         print(f"\n*** MISALIGNED — traces start at different PC "
               f"(stock {stock[0]['PC']:04X}, ours {ours[0]['PC']:04X}); not the same logical point. [win #1]")
         return 2
+
+    if args.resync:
+        # Re-convergence walk: report every fork and whether it rejoins (relocation
+        # detour) or is a real divergence — skips by-design $E7xx-vs-$Dxxx hooks.
+        events = _resync_walk(ours, stock)
+        if not events:
+            print(f"\n  ALIGNED, NO PC DIVERGENCE in {min(len(ours),len(stock))} instrs.")
+            return 0
+        print(f"\n  re-convergence walk ({len(events)} fork(s)):\n")
+        real = None
+        for k, ev in enumerate(events, 1):
+            so, ss = stock[ev["fork_s"]], ours[ev["fork_o"]]
+            caller = stock[ev["fork_s"] - 1] if ev["fork_s"] else so
+            print(f"  fork {k}: at {caller['PC']:04X} {str(caller.get('dis',''))[:24]:<24} "
+                  f"-> stock {ev['pc_s']:04X} / ours {ev['pc_o']:04X}")
+            if ev["resync_pc"] is None:
+                print(f"          NO re-convergence within window -> REAL DIVERGENCE (blocker).")
+                real = ev
+                break
+            print(f"          re-converges at {ev['resync_pc']:04X} "
+                  f"(detour: stock {ev['resync_s']-ev['fork_s']} instrs, "
+                  f"ours {ev['resync_o']-ev['fork_o']} instrs) -> benign relocation")
+        if real is None:
+            print(f"\n  all forks re-converged: ours and stock are behaviorally equivalent\n"
+                  f"  across {min(len(ours),len(stock))} traced instrs (only by-design\n"
+                  f"  relocation differs). The next real blocker is beyond --steps={args.steps}.")
+        else:
+            cps = stock[real["fork_s"] - 1] if real["fork_s"] else stock[real["fork_s"]]
+            print(f"\n  -> REAL blocker: caller {cps['PC']:04X} {cps.get('dis','')}; "
+                  f"stock->{real['pc_s']:04X} ours->{real['pc_o']:04X}. Inspect what it reads.")
+        return 0
 
     n = min(len(ours), len(stock))
     fork = next((i for i in range(n) if ours[i].get("PC") != stock[i].get("PC")), None)
@@ -367,6 +440,8 @@ def main() -> int:
     t.add_argument("--steps", type=int, default=120, help="instructions to trace")
     t.add_argument("--poke", action="append", metavar="ADDR:VAL",
                    help="inject mem write into OURS at the anchor (falsify-first); repeatable")
+    t.add_argument("--resync", action="store_true",
+                   help="re-convergence walk: skip benign relocation detours, find the next REAL fork")
 
     args = ap.parse_args()
 

@@ -23,6 +23,19 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[BLOCKER #2 IDENTIFIED + RESYNC TOOL / 2026-06-27 — ours reaches the DOS date prompt but loops.]**
+Added `trace --resync` (re-convergence walk) to disk_probe_diff: after a PC fork it finds the next
+common PC, classifying benign relocation detours (rejoin) vs real divergence (no rejoin within
+window). It correctly classified the `$F368`→`$E795` hook as PERMANENT — the kernel-relocation
+boundary, where instruction PC-diff is exhausted → switched to BDOS-level `callseq`. callseq (post
+$F338 fix): ours matches stock through n=1–4 (STROUT/FOPEN/STROUT/SDATE), then at the date prompt
+ours prints a malformed date (stock `"84-01-01"` 8ch → BUFIN; ours garbage `" 3-00-00…"` 10+ch,
+loops; call-count nondeterministic 18/60). So blocker #2 = ours' GDATE/clock-read or date-string
+formatting in the relocated kernel (+ maybe headless-BUFIN re-prompt). · judgment: STOPPED probing
+here rather than grind the timing-nondeterminism — flagged for a deliberate fresh characterisation
+([[tier2-deep-think-before-resuming]]). · confidence: high that ours advanced to the date prompt;
+medium on the exact date-bug root. · undo: n/a (harness + docs only). Detail: tier2-STATE.md.
+
 **[BLOCKER #1 ($F338=0) BUILT + VALIDATED / 2026-06-27 — first Tier-2 asm that advances DOS boot.]**
 User signed off the minimal DOS-only $F338=0 fix. Built `dos_handoff` (free-tail subroutine,
 runtime.asm): defaults $F338=0 for DOS, stack-save/restores the host's dual-purpose stub for a

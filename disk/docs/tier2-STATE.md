@@ -82,18 +82,26 @@ n=3 STROUT-vs-SELDSK BDOS divergence above.
   path after a DOS-only `wa_clear`, keeping the BASIC-needed minimum on the BASIC path.
   Needs its own design spec (map BASIC's work-area deps first). NOT a one-liner.
 
-## Next action — blocker #2 (the `$F368`→`$E795` relocated hook)
-Blocker #1 (`$F338`=0) is **BUILT + VALIDATED** (2026-06-27): `dos_handoff` in the free tail
-([runtime.asm](../runtime.asm)), called from `boot_sig_ok` — defaults `$F338`=0 for DOS,
-stack-save/restores the host stub for a returning data disk. Re-trace moved ours' fork step 7 →
-61; Tier-1 green (unit 18/18, FILES==CF-3300 on C-BIOS, BLOAD ok); net-zero. Spec:
-[tier2-f338-default-spec.md](tier2-f338-default-spec.md) (§7 = the pasmo-overflow lesson).
-**Next:** resume `disk_probe_diff trace --anchor 0xC24E --steps ~80` and look at the new fork —
-`$D885 call $F368` → `$F368` is ours' relocated wa_seg hook (`jp $E795` vs stock `jp $DF57`).
-This is a **behavioral-equivalence** question (does our `$E795` hook do the same job as stock's
-`$DF57`?), NOT a PC-diff bug. Needs a way to diff *effects* across the relocation (the harness's
-PC-diff trips on by-design relocation — candidate harness extension). Falsify-first: first
-confirm the hook even diverges in effect (it may rejoin downstream).
+## Next action — blocker #2: ours' MALFORMED DATE-PROMPT (loops, doesn't reach `A>`)
+Blocker #1 (`$F338`=0) is **BUILT + VALIDATED + COMMITTED** (2026-06-27, 164b857): `dos_handoff`
+in the free tail. It advanced ours materially — `callseq` now matches stock **through n=1–4**
+(STROUT, FOPEN, STROUT, SDATE) and ours begins the MSX-DOS date prompt.
+
+**Boundary lesson (harness):** at `$F368` ours jumps into its deliberately-**relocated high-RAM
+kernel** (`$E795` vs stock `$DF57`); the new `trace --resync` walk correctly classified this as a
+PERMANENT PC-divergence (no rejoin) — i.e. **instruction-level PC-diff is exhausted past the
+kernel-relocation boundary; compare at the BDOS-call level (`callseq`) instead** (calls are at the
+canonical `$0005`).
+
+**Blocker #2 (characterise next, DELIBERATELY — not by reflex probing):** at the date prompt ours
+prints a **malformed date** — stock prints `"84-01-01"` (the MSX-DOS 1984 default, 8 chars, then
+STROUT+BUFIN at the input wait), ours prints garbage (`" 3-00-00…"`, 10+ chars) and **loops**
+(callseq call-count is nondeterministic 18 vs 60 across boots; ours does NOT cleanly reach `A>`).
+Likely ours' **GDATE/clock read or date-string formatting** in the relocated kernel, and/or the
+headless-BUFIN re-prompt ([[tier2-storms-are-downstream]] noted "BUFIN never blocks → re-prompts").
+Start by finding where the date VALUE/length comes from (the n=4 SDATE input + the date work-area
+cells), comparing ours vs stock at the BDOS level. The emulator timing-nondeterminism here is a
+trap — anchor on the date-string source, don't chase call counts.
 
 ## Method guardrails (DURABLE — keep these when you overwrite this file)
 Endorsed 2026-06-27 after a retrospective found ~half the Tier-2 reframes came from
