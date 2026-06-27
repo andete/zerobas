@@ -104,6 +104,8 @@ MSXDOS.SYS table at `$D8BE` (loaded from disk, immutable) routes `$2A`→`$553C`
 to host `_GDATE` at `$553C` — the redirect-the-table escape is out. **AWAITING SIGN-OFF on the
 spec (4 open items, §6) before any asm** per [[spec-before-implementation]]. After it lands and
 ours reaches BUFIN, the next slice = past-BUFIN to `A>` (`_SDATE` $2B + CR input, spec §7).
+**Progress scoreboard:** [tier2-bdos-coverage.md](tier2-bdos-coverage.md) — per-function BDOS
+coverage on the boot path (seeded from `callseq`; update after each slice).
 
 ### Superseded framing (kept for context) — the broader collision
 The date blocker is the **first concrete instance
