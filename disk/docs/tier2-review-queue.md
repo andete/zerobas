@@ -23,6 +23,23 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[BLOCKER #1 ($F338=0) BUILT + VALIDATED / 2026-06-27 — first Tier-2 asm that advances DOS boot.]**
+User signed off the minimal DOS-only $F338=0 fix. Built `dos_handoff` (free-tail subroutine,
+runtime.asm): defaults $F338=0 for DOS, stack-save/restores the host's dual-purpose stub for a
+returning data disk; boot_sig_ok calls it in place of the inline `scf; call BOOT_ENTRY` (net −1
+byte in the $41FD-packed region; net-zero ROM). **Two build bugs caught + fixed before commit:**
+(1) the §3-draft INLINE placement overflowed the $41FD canonical anchor under pasmo (`64KB limit`)
+→ corrupt ROM → getdpb UT read zeros; moved to the free tail. (2) scratch $E762 collided with
+R30_HL ($0030 handler) → used the stack instead. **Validated:** re-trace moved ours' fork step
+7→61 (≡ the poke), taking stock's STROUT path; unit 18/18; FILES byte-identical to CF-3300 on
+C-BIOS BASIC-disk (the save/restore protects BASIC — phase-1 option-A's regression avoided);
+BLOAD ,R+plain ok; net-zero 16384. · judgment calls: (a) stack vs scratch byte (chose stack —
+no free scratch + avoids collision); (b) free-tail subroutine vs inline (forced by the anchor);
+(c) did NOT run a C-BIOS-DOS-advance trace — the fix is host-independent by construction (constant
+write + host-value save/restore) and the DOS interface is BIOS-agnostic, so CF-3300-BIOS DOS-advance
++ C-BIOS BASIC-coexistence covers it. · confidence: high · undo: revert the init.asm/runtime.asm
+hunk. Detail: tier2-f338-default-spec.md §7, tier2-STATE.md.
+
 **[BDOS-LOOP ROOT-CAUSED → CONVERGES ON PHASE-1 / 2026-06-27 — HARD-STOP for the un-park decision.]**
 Built the 3-mode differential harness (`disk_probe_diff.py`: callseq/capture/trace + `--poke`
 falsification injection; trace reproduced the known n=3 result, then pinpointed the fork). The n=3

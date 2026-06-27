@@ -214,5 +214,27 @@ ihh_keyint:
                 ret
 int_h_hiram_end:
 
+; --- dos_handoff — DOS-only $F338 default + the step-7 "load the system" call ---
+; COMMAND.COM's startup branches on $F338 (`ld a,($F338); and a; jr nz` @ $C26B):
+; 0 = "no AUTOEXEC -> prompt", nonzero -> the wrong path (SELDSK/loop). Stock's disk
+; ROM clears $F338 at boot; ours never did. We default it to 0 just before handing to
+; the boot sector's step-7 entry. $F338 is dual-purpose (a $C9 RET BASIC hook stub on
+; C-BIOS vs $00 for DOS), so we SAVE the host value and RESTORE it if the call returns --
+; which only a non-system / data disk does (a real DOS disk JPs into MSXDOS.SYS and never
+; returns, so the 0 persists to COMMAND.COM's read). The save uses the stack: on the
+; no-return DOS path the push is simply abandoned (MSXDOS.SYS resets SP). Called from
+; boot_sig_ok with IX=$F195 and the page-0 env laid; replaces the inline `scf; call
+; BOOT_ENTRY` there -- net-zero in that $41FD-pad-packed region. (tier2-f338-default-spec.md)
+dos_handoff:
+                ld      a, ($F338)          ; save host $F338 (BASIC hook stub on C-BIOS)
+                push    af
+                xor     a
+                ld      ($F338), a          ; DOS default: $F338 = 0
+                scf                         ; Cy = 1 -> step-7 "load the system" entry
+                call    BOOT_ENTRY          ; DOS disk JPs into MSXDOS.SYS (no return)
+                pop     af                  ; data disk returned: recover host value
+                ld      ($F338), a          ; restore the dual-purpose stub for BASIC
+                ret
+
 ; --- pad to a full 16 KB page ($4000-$7FFF) --------------------------------
                 ds      $8000 - $, $00

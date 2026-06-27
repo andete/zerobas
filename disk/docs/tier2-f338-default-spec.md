@@ -5,7 +5,10 @@ SPDX-License-Identifier: 0BSD
 
 # Tier-2 spec — minimal DOS-only `$F338`=0 default (BDOS-loop blocker #1)
 
-**Status:** DRAFT for sign-off, 2026-06-27. No asm until signed off (spec-before-implementation).
+**Status:** IMPLEMENTED + VALIDATED, 2026-06-27 (signed off; built as `dos_handoff`).
+Re-trace moved ours' fork step 7 → 61 (≡ the poke), taking stock's STROUT/prompt path;
+Tier-1 green (unit 18/18, FILES == CF-3300 on C-BIOS BASIC-disk, BLOAD ,R+plain); net-zero
+16384. Next blocker #2 = the `$F368`→`$E795` relocated hook. See §7 for the build note.
 **Scope (deliberately narrow, per user 2026-06-27):** default the single cell `$F338` to `00`
 on the DOS-boot path only — NOT the full phase-1 clear/default pass. Prove one cell advances a
 real boot, then re-trace for blocker #2. Supersedes the parked phase-1 option-A (reverted).
@@ -104,3 +107,21 @@ copied; the constant and the branch semantics come from the black-box trace, not
 3. **Expected residual** — after this, blocker #2 is the `$F368`→`$E795` relocated hook (a
    behavioral check, separate milestone). This spec does NOT claim `A>`; it claims "advances past
    the n=3 fork," verifiable by re-trace. Confirm that's the intended milestone boundary.
+
+## 7. Build note (as implemented — diverges from §3's draft inline placement)
+
+The §3 draft put the save/zero/restore INLINE in `boot_sig_ok`. That **failed under pasmo**:
+`boot_sig_ok` (`$407E`) sits in the boot region that is pad-packed to the `$41FD` canonical
+anchor ([pageenv.asm](../pageenv.asm) `ds $41FD - $`), so +16 inline bytes overflowed it
+(`64KB limit passed`) → corrupt ROM → getdpb read zeros. The scratch `$E762` also **collided
+with `R30_HL`** (the `$0030` handler's saved HL), live during the boot bridge.
+
+As built (both bugs avoided):
+- A subroutine **`dos_handoff`** in the free tail ([runtime.asm](../runtime.asm), before the
+  `ds $8000 - $` pad): `ld a,($F338); push af; xor a; ld ($F338),a; scf; call BOOT_ENTRY;
+  pop af; ld ($F338),a; ret`.
+- `boot_sig_ok` replaces its inline `scf; call BOOT_ENTRY` with `call dos_handoff` — **net −1
+  byte** in the packed region (no overflow); the body lives in tail pad (net-zero ROM = 16384).
+- **Stack, not a scratch byte**, holds the saved `$F338` → no `$E762`/`R30_HL` collision. On the
+  no-return DOS path the `push af` is harmlessly abandoned (MSXDOS.SYS resets SP); on the
+  data-disk path `BOOT_ENTRY` returns stack-balanced, so `pop af` recovers the host value.

@@ -296,8 +296,12 @@ boot_sig_ok:
                 ; the C9 RET on CY set and returns here, so we MUST tear the env
                 ; back down before BASIC: this runs in every host's INIT, incl. the
                 ; C-BIOS_*_BASIC_DISK regression on test720.dsk (sig $EB, stub D0 C9).
-                scf                     ; Cy = 1 -> "load the system" entry
-                call    BOOT_ENTRY      ; DOS disk JPs into MSXDOS.SYS (no return)
+                ; dos_handoff (free-tail) defaults $F338=0 for DOS -- COMMAND.COM's
+                ; "no AUTOEXEC -> prompt" branch (`ld a,($F338);and a;jr nz` @ $C26B) --
+                ; restoring the host's dual-purpose stub for a returning data disk, then
+                ; does the scf + step-7 call. Subroutine, not inline: this region is
+                ; pad-packed to the $41FD anchor. (tier2-f338-default-spec.md)
+                call    dos_handoff     ; DOS disk JPs into MSXDOS.SYS (no return)
                 call    page0_ram_out   ; data disk returned: BIOS ROM back in page 0
                 ei
                 ret                     ; -> BIOS boot scan -> BASIC

@@ -52,8 +52,8 @@ clear/default) is **VINDICATED as necessary**, not dead. See open question below
   cells before looping; loaded COMMAND.COM byte-identical. Forcing `$F338`=00 alone also
   did not fix it.
 - The **n=3 BDOS fork is data-driven by `$F338`** (COMMAND.COM `ld a,($F338);and a;jr nz`
-  @ `$C26B`): 00=STROUT/prompt (stock), ≠0=SELDSK/loop (ours). Poking `$F338`=0 into ours
-  advances it 54 instrs onto stock's path — `$F338`=0 is a necessary fix.
+  @ `$C26B`): 00=STROUT/prompt (stock), ≠0=SELDSK/loop (ours). **FIXED** 2026-06-27 (`dos_handoff`
+  defaults `$F338`=0 DOS-only); ours now follows stock to `$D885` (blocker #2 = `$F368` hook).
 - The MSX-DOS-1 **file-ops BDOS (FOPEN / dir-search / file-read) lives INSIDE the disk ROM**
   (shared kernel). Our 14 veneers cover only the COMMAND.COM-LOAD subset; real DOS file ops
   call the rest of the shared BDOS, which in our ROM is FDC/DSKIO code, ds-pad, or bare `ret`.
@@ -82,14 +82,18 @@ n=3 STROUT-vs-SELDSK BDOS divergence above.
   path after a DOS-only `wa_clear`, keeping the BASIC-needed minimum on the BASIC path.
   Needs its own design spec (map BASIC's work-area deps first). NOT a one-liner.
 
-## Next action — AWAITING SIGN-OFF
-User chose (2026-06-27) the **minimal DOS-only `$F338`=0** fix. Spec written:
-[tier2-f338-default-spec.md](tier2-f338-default-spec.md) — save/restore `$F338` around the
-step-7 handoff in `boot_sig_ok` so `00` persists only for a real DOS boot (data/BASIC disks,
-which also pass `boot_sig_ok`, get the host stub restored). ~13 bytes, net-zero, BIOS-agnostic.
-**No asm until the 3 sign-off items (spec §6) are confirmed.** Then: build → validate (re-trace
-must move ours' fork from step 7 to ≈step 60; Tier-1 + C-BIOS BASIC-disk green) → resume trace
-from `$D885` for blocker #2 (the `$F368`→`$E795` relocated hook).
+## Next action — blocker #2 (the `$F368`→`$E795` relocated hook)
+Blocker #1 (`$F338`=0) is **BUILT + VALIDATED** (2026-06-27): `dos_handoff` in the free tail
+([runtime.asm](../runtime.asm)), called from `boot_sig_ok` — defaults `$F338`=0 for DOS,
+stack-save/restores the host stub for a returning data disk. Re-trace moved ours' fork step 7 →
+61; Tier-1 green (unit 18/18, FILES==CF-3300 on C-BIOS, BLOAD ok); net-zero. Spec:
+[tier2-f338-default-spec.md](tier2-f338-default-spec.md) (§7 = the pasmo-overflow lesson).
+**Next:** resume `disk_probe_diff trace --anchor 0xC24E --steps ~80` and look at the new fork —
+`$D885 call $F368` → `$F368` is ours' relocated wa_seg hook (`jp $E795` vs stock `jp $DF57`).
+This is a **behavioral-equivalence** question (does our `$E795` hook do the same job as stock's
+`$DF57`?), NOT a PC-diff bug. Needs a way to diff *effects* across the relocation (the harness's
+PC-diff trips on by-design relocation — candidate harness extension). Falsify-first: first
+confirm the hook even diverges in effect (it may rejoin downstream).
 
 ## Method guardrails (DURABLE — keep these when you overwrite this file)
 Endorsed 2026-06-27 after a retrospective found ~half the Tier-2 reframes came from
