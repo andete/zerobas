@@ -49,6 +49,15 @@ settle≥14 (`A>@`+`$D8` scrolling) — likely the known BUFIN-never-blocks arti
 downstream]]). A clean *visible* `A>` likely needs a keystroke injected past the date BUFIN so ours
 stops racing headlessly. See [tier2-STATE.md](tier2-STATE.md) "Next action".
 
+---
+
+## Archived (reviewed & re-levelled)
+
+_Archived 2026-06-30 sync: all entries below were reviewed/superseded. The M10 fix
+(char reg = E) is the live head; it overturned the two `$80`-render entries' thesis
+(the divergence is upstream of CHPUT, in our veneer's char register), though their
+characterisation/tooling work stands. M5–M9 are resolved milestones._
+
 **[CONOUT $80 render — DEEPENED post-review (2026-06-30, after the sync below)] Drilled the render
 blocker; BC root-cause DISPROVEN, sharper picture.** · **what:** built `iowrite` (VDP port $98/$99
 watch) + `screen`-tool follow-ups. Found: ours writes constant tile `$80` per glyph to the name
@@ -725,8 +734,3 @@ DSKIO/FILES==CF-3300, BLOAD ok.
 investigation under it** (multiple probes + one committed fix without bouncing). This
 queue + §8.60/§8.61 are the batch to review. · undo: n/a.
 
----
-
-## Archived (reviewed & re-levelled)
-
-_(empty)_
