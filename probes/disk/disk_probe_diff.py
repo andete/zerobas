@@ -341,7 +341,7 @@ def _find_resync(ours, stock, i, j, window=80):
     return None
 
 
-def _resync_walk(ours, stock):
+def _resync_walk(ours, stock, window=80):
     """Walk both PC streams, recording each fork and where it re-converges. Returns a
     list of dicts: {'fork_o','fork_s','pc_o','pc_s', 'resync_pc','resync_o','resync_s'}
     (resync_* None if it never re-converges within the window = a real divergence)."""
@@ -354,7 +354,7 @@ def _resync_walk(ours, stock):
             continue
         ev = {"fork_o": i, "fork_s": j,
               "pc_o": ours[i].get("PC"), "pc_s": stock[j].get("PC")}
-        rs = _find_resync(ours, stock, i, j)
+        rs = _find_resync(ours, stock, i, j, window=window)
         if rs is None:
             ev["resync_pc"] = None
             events.append(ev)
@@ -400,7 +400,7 @@ def mode_trace(args) -> int:
     if args.resync:
         # Re-convergence walk: report every fork and whether it rejoins (relocation
         # detour) or is a real divergence — skips by-design $E7xx-vs-$Dxxx hooks.
-        events = _resync_walk(ours, stock)
+        events = _resync_walk(ours, stock, window=args.window)
         if not events:
             print(f"\n  ALIGNED, NO PC DIVERGENCE in {min(len(ours),len(stock))} instrs.")
             return 0
@@ -448,6 +448,80 @@ def mode_trace(args) -> int:
     print(f"  flags/regs there — stock AF={sb.get('AF',0):04X}  ours AF={ours[fork-1].get('AF',0):04X}")
     print("  -> inspect what that instruction (and the few before it) READ; that memory is\n"
           "     the divergent cell. Next: capture --at <reader PC> --mem <cell>. [win #2]")
+    return 0
+
+
+# ---- mode: iowrite -------------------------------------------------------------
+def _iowrite_arm(arm_addr: int, arm_cond: str, anchor: int, port: int, maxhits: int) -> str:
+    # Arm at arm_addr; start logging at the first `anchor` hit (after armed); then log the
+    # value written to I/O `port` for each `out`. The value is in A (out (n),a / out (c),a both
+    # source A). Logs PC + A + the VDP addr latch bytes so a VRAM-data divergence is visible.
+    return f"""
+set ::armed 0
+set ::watching 0
+set ::wn 0
+debug set_bp {arm_addr:#06x} {{}} {{
+  if {{ {arm_cond} }} {{ set ::armed 1 }}
+}}
+debug set_bp {anchor:#06x} {{}} {{
+  if {{$::armed && !$::watching}} {{ set ::watching 1 }}
+}}
+debug set_watchpoint write_io {port:#04x} {{}} {{
+  if {{!$::watching}} return
+  incr ::wn
+  emit [format "IOW n=%d PC=%04X A=%02X t=%.6f" $::wn [reg PC] [expr {{[reg AF] >> 8}}] [machine_info time]]
+  if {{$::wn >= {maxhits}}} {{ exit }}
+}}
+debug set_watchpoint write_io 0x99 {{}} {{
+  if {{!$::watching}} return
+  emit [format "IOA PC=%04X A=%02X" [reg PC] [expr {{[reg AF] >> 8}}]]
+}}
+"""
+
+
+def mode_iowrite(args) -> int:
+    arm_cond = args.arm_cond or f"[debug read memory {args.arm_check_addr:#06x}] == {args.arm_check_val:#04x}"
+    body = 'emit [format "DONE armed=%d watching=%d wn=%d" $::armed $::watching $::wn]; exit'
+    arm = _iowrite_arm(args.at, arm_cond, args.anchor, args.port, args.maxhits)
+
+    def seq_for(machine):
+        raw = _runner(machine, args.diska, args.symfile).run_job_raw(
+            body, settle=args.settle, timeout=args.timeout, arm=arm)
+        data, addr_evt = [], []
+        for l in raw:
+            if l.startswith("IOW "):
+                d = {}
+                for tk in l.split()[1:]:
+                    k, _, v = tk.partition("=")
+                    d[k] = float(v) if k == "t" else int(v, 16 if k in ("PC", "A") else 10)
+                data.append(d)
+            elif l.startswith("IOA "):
+                d = {tk.split("=")[0]: int(tk.split("=")[1], 16) for tk in l.split()[1:]}
+                addr_evt.append(d)
+        return data, addr_evt
+
+    machines = {"both": [STOCK_MACHINE, OURS_MACHINE], "ours": [OURS_MACHINE],
+                "stock": [STOCK_MACHINE]}[args.machine]
+    print(f"=== iowrite: writes to port {args.port:#04x} (+addr latch $99) after anchor "
+          f"{args.anchor:#06x} (arm@{args.at:#06x}) ===")
+    for m in machines:
+        data, addr_evt = seq_for(m)
+        who = "OURS " if m == OURS_MACHINE else "STOCK"
+        chars = "".join(chr(r["A"]) if 32 <= r["A"] < 127 else "." for r in data)
+        print(f"  {who}: {len(data)} data writes | as text: |{chars}|")
+        print(f"        data : {' '.join('%02X' % r['A'] for r in data)}")
+        # reconstruct address-latch pairs (low then high|0x40) -> VRAM base address
+        pairs = []
+        i = 0
+        while i + 1 < len(addr_evt):
+            lo, hi = addr_evt[i]["A"], addr_evt[i + 1]["A"]
+            pairs.append(((hi & 0x3F) << 8) | lo)
+            i += 2
+        print(f"        addr$99 ({len(addr_evt)} writes) bases: "
+              f"{' '.join('%04X' % a for a in pairs[:24])}")
+        # distinct PCs that issued data writes (the writer instruction)
+        wpcs = sorted({r["PC"] for r in data})
+        print(f"        data-writer PCs: {' '.join('%04X' % p for p in wpcs[:12])}")
     return 0
 
 
@@ -566,11 +640,25 @@ def main() -> int:
                    help="inject mem write into OURS at the anchor (falsify-first); repeatable")
     t.add_argument("--resync", action="store_true",
                    help="re-convergence walk: skip benign relocation detours, find the next REAL fork")
+    t.add_argument("--window", type=int, default=80,
+                   help="resync re-convergence search window (instrs); raise to bridge long inter-slot detours")
 
     s = sub.add_parser("screen", help="render the VDP text screen (VRAM name table) as text")
     common(s)
     s.add_argument("--machine", choices=("both", "ours", "stock"), default="both",
                    help="which machine(s) to dump (default both)")
+
+    w = sub.add_parser("iowrite", help="log the byte stream written to an I/O port (e.g. VDP data $98)")
+    common(w)
+    w.add_argument("--at", type=lambda x: int(x, 0), default=0x0100, help="arm address")
+    w.add_argument("--arm-check-addr", type=lambda x: int(x, 0), default=0x0102)
+    w.add_argument("--arm-check-val", type=lambda x: int(x, 0), default=0x05)
+    w.add_argument("--arm-cond", default=None, help="raw Tcl arm predicate")
+    w.add_argument("--anchor", type=lambda x: int(x, 0), default=0x5454,
+                   help="start logging at the first hit of this addr after arm (default $5454 CONOUT)")
+    w.add_argument("--port", type=lambda x: int(x, 0), default=0x98, help="I/O port to watch (default $98 VDP data)")
+    w.add_argument("--maxhits", type=int, default=80)
+    w.add_argument("--machine", choices=("both", "ours", "stock"), default="both")
 
     args = ap.parse_args()
 
@@ -583,8 +671,8 @@ def main() -> int:
             shutil.copy2(args.diska, tmp_disk)
             args.diska = tmp_disk
     try:
-        return {"callseq": mode_callseq, "capture": mode_capture,
-                "trace": mode_trace, "screen": mode_screen}[args.mode](args)
+        return {"callseq": mode_callseq, "capture": mode_capture, "trace": mode_trace,
+                "screen": mode_screen, "iowrite": mode_iowrite}[args.mode](args)
     finally:
         if tmp_disk and os.path.exists(tmp_disk):
             os.unlink(tmp_disk)

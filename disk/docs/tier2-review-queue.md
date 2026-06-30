@@ -23,7 +23,25 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
-**[Past-BUFIN probe / REFRAME — date path DONE, new RENDER blocker found] Investigated "past BUFIN
+**[CONOUT $80 render — DEEPENED post-review (2026-06-30, after the sync below)] Drilled the render
+blocker; BC root-cause DISPROVEN, sharper picture.** · **what:** built `iowrite` (VDP port $98/$99
+watch) + `screen`-tool follow-ups. Found: ours writes constant tile `$80` per glyph to the name
+table (after a 768-cell space-clear), via WRTVRM `$0BEE` — same routine stock uses. The char is
+correct at BDOS and at CHPUT entry; it becomes `$80` by the write. **EARLY MSXDOS.SYS console output
+RENDERS CORRECTLY** (`$0BEE` nth=1 byte-identical, A='M'); only the **COMMAND.COM-phase** inter-slot
+path corrupts. Char-aligned resync shows ours/stock **PC-equivalent** → a PURE DATA divergence (same
+instructions, different byte). · **disproven (tested + reverted):** making `conout_body` register-
+faithful (restore BC/DE/HL before `call $00A2`; verified CHPUT then gets BC=$0980 like stock) did
+NOT fix rendering. So BC/DE/HL aren't it; remaining entry diffs are IX/IY/flags. · **judgment
+calls:** (a) ran a falsify-first diagnostic ROM build (revertable, Tier-1 green) to test the BC
+hypothesis — falsify-first per guardrail #2, reverted to baseline, did NOT commit any ROM change.
+(b) STOPPED the deep dive at a clean handoff rather than brute-forcing IX/IY guesses; next session
+traces the divergent read with a spec. · confidence: high on the characterisation; the exact $80
+source is the open question. · undo: docs + probe tooling only; ROM at committed baseline (16384 B,
+Tier-1 19/19). See [tier2-STATE.md](tier2-STATE.md) "Next action" steps 1–2.
+
+**[Past-BUFIN probe / REFRAME — REVIEWED ✓ 2026-06-30 sync (findings confirmed legit) — date path
+DONE, new RENDER blocker found] Investigated "past BUFIN
 to A>"; found ours reaches the A> command loop at the BDOS level, but the screen renders garbage.**
 · **what I did:** no-poke `callseq --maxhits 40` (the GDATE fix is in the ROM, so the `$CDA7` poke
 is retired). · **findings:** (1) ours == stock byte-identical n=1–18 (date path fully solved, no

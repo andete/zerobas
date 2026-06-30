@@ -10,10 +10,11 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-06-30 (BIG reframe: date path fully solved — ours reaches the A> command
-loop with NO poke. New blocker found by direct screen observation: CONOUT renders every char as
-tile $80; the screen is garbage. "Banner byte-identical" was call-verified only, never VRAM-
-verified.). Update the date + sections whenever state changes._
+_Last updated: 2026-06-30 (BIG reframe: date path fully solved — ours reaches the A> command loop
+with NO poke. New blocker characterised: ours' COMMAND.COM-phase console output writes constant tile
+$80 per glyph; EARLY MSXDOS.SYS console output works. Pure data divergence (same PC path); BC/DE/HL
+register-faithfulness tested + DISPROVEN as the fix. Next suspect: IX/IY or page-0-map read.).
+Update the date + sections whenever state changes._
 
 ---
 
@@ -49,18 +50,29 @@ achieved — the last blocker is a **CONOUT/CHPUT rendering bug** in ours' inter
   every letter → `$80`). The `MSX` byte-sequence is found in stock VRAM, **never in ours' VRAM**.
   Mode = SCREEN 1 (scrmod=01, 32-col, namebase $1800) on BOTH; same renderer; so this is real, not
   a tool/renderer artifact.
-- **Root cause = inter-slot CHPUT register-context divergence** (capture + trace):
-  - CHPUT *receives the correct char*: aligned `capture --at 0x00A2 --nth 5` for `'X'` shows A=$58
-    on BOTH (alignment-guard PASS, same char confirmed by A matching).
-  - But the *register context* differs at CHPUT entry: **stock BC=$0980, ours BC=$0000** (C=$80 vs
-    $00); IX/IY also differ (stock IX=$00A2 IY=$0000 — the CALSLT signature; ours IX=$F195 IY=$0314).
-  - CHPUT's internal dispatch then **forks at $08F1 `jr c`** (`ld a,c; cp $20; jr c`): stock's C is
-    the printable char → carry clear → glyph path ($08F3); ours' C is wrong → carry set → control
-    path ($0914). I.e. CHPUT reads the char from **C**, and ours' C is not the char.
-  - Mechanism: ours' `conout_body` (runtime.asm) reaches CHPUT via a hand-rolled `pg0_mainrom_in`
-    page-in + **direct `call $00A2`**, bypassing stock's documented chain
-    **`$5454→$408F→$001C CALSLT→resident kernel→$F398→$00A2`** (see kernel.asm:34). CALSLT / the
-    `$F398` hook establish the register context (notably BC) CHPUT needs; ours doesn't → mis-render.
+- **Root cause = ours writes a CONSTANT tile `$80` to VRAM for every COMMAND.COM-phase glyph**
+  (characterised 2026-06-30 with the new `iowrite` mode = VDP port `$98`/`$99` watch):
+  - **Direct VRAM-write evidence (`iowrite --anchor 0x0100`):** STOCK writes the real bytes
+    (`COMMAND version 1.08Current date is Sun 84-01-01Enter new date:`) via WRTVRM PC `$0BEE`,
+    fresh address per char. OURS writes **768× `$20` (a full screen-CLEAR via FILVRM PC `$081A`,
+    addr base `$1800`) then `$80,$80,$80…` for every banner glyph** (also via WRTVRM `$0BEE`). So
+    the clear explains the blank rows in the `screen` dump; the glyph cells get constant `$80`.
+  - **The char is CORRECT until the write.** BDOS CONOUT calls match stock (callseq n=1–18). At
+    **WRTVRM `$0BEE` nth=1** (the EARLY MSXDOS.SYS banner, t=1.55, BEFORE COMMAND.COM) ours==stock
+    **byte-identical** (A=`$4D`='M'): **early-phase console output RENDERS CORRECTLY**. The `$80`
+    corruption is SPECIFIC to the COMMAND.COM-phase path (the disk-ROM `$5454`→`conout_body`
+    inter-slot CHPUT), not CHPUT/WRTVRM themselves (same code, works early).
+  - **It is a PURE DATA divergence, not control flow.** A char-aligned wide-window resync trace
+    (`trace --anchor 0x0005 --nth 5 --resync --window 300`) finds ours and stock **PC-equivalent**
+    through the CONOUT path (only benign off-by-one in ours' relocated `$53xx` console dispatch,
+    which re-converges). So the same instructions write a different byte → the divergent byte comes
+    from a REGISTER/MEMORY value that differs, read by an identical `ld`.
+  - **DISPROVEN fix (tested + reverted):** making `conout_body` register-faithful (restore BC/DE/HL
+    before `call $00A2`, so CHPUT gets BC=`$0980` like stock — verified at `$00A2`) did **NOT** fix
+    rendering — screen still `$80`. So BC/DE/HL are NOT the consumed value. Remaining ours-vs-stock
+    diffs at CHPUT entry: **IX** (stock `$00A2`=CALSLT sig, ours `$F195`), **IY** (stock `$0000`,
+    ours `$0314`), and flags. The next suspect is an IX/IY-relative work-area read inside the
+    COMMAND-phase CHPUT, or the inter-slot page-0 map perturbing a memory the char-write reads.
 
 ## Settled facts — DO NOT re-litigate or re-probe
 - COMMAND.COM loads correctly; `$47B2` return contract done; `$0005`=`JP $D606` identical;
@@ -82,28 +94,29 @@ achieved — the last blocker is a **CONOUT/CHPUT rendering bug** in ours' inter
   work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug", "init date
   cells alone". All still dead.
 
-## Next action — NEW SLICE: make CONOUT render real glyphs (spec-first)
-The ONLY thing between ours and a **visible** `A>` is the CHPUT rendering bug. Plan:
-1. **Char-aligned re-confirm (falsify-first, cheap).** The `$08F1` carry-fork trace was anchored on
-   `$00A2` occurrence-count, which is NOT char-aligned (CHPUT hit-counts differ ours vs stock). Re-
-   anchor on a char-aligned event (e.g. the BDOS CONOUT `$0005 C=02` call, which callseq PROVED is
-   aligned) and trace into CHPUT, to confirm the BC/C divergence at the SAME logical char. (The
-   `screen` 0x80 fact and the aligned `capture` BC diff are already robust; this just pins the path.)
-2. **Characterise stock's path.** Trace stock `$5454→$408F→CALSLT→$F398→$00A2` and capture what sets
-   BC (and whether IX/IY/CALSLT state matter) before CHPUT. Identify the minimal register context
-   CHPUT's glyph path needs.
-3. **Spec the conout_body fix** (per [[spec-before-implementation]]): either route ours' CONOUT
-   through CALSLT ($001C) / the `$F398` hook like stock, or replicate the needed register setup
-   before `call $00A2`. Net-zero, BIOS-agnostic (EXPTBL-driven, no CF-3300 hardcode), no canonical
-   shift. Get sign-off BEFORE editing the ROM.
-4. **Falsify-first for the fix:** confirm that supplying stock's BC (or routing via CALSLT) makes
-   ours' VRAM render real ASCII (re-run `screen --machine ours` → expect `MSX-DOS version 1.03`).
-5. Once CONOUT renders, re-run `screen --machine ours` at settle — ours should DISPLAY `A>` (the
-   control flow already reaches it). That would be the visible-`A>` milestone.
+## Next action — NEW SLICE: find what the COMMAND-phase CHPUT reads to write `$80` (spec-first)
+The ONLY thing between ours and a **visible** `A>` is the `$80`-render bug. BC/DE/HL faithfulness is
+disproven; it's a data value read via an identical instruction path. Plan:
+1. **Find the divergent read (falsify-first).** Char-align a COMMAND-phase glyph (e.g. trace from a
+   `$0005 C=02` CONOUT in the COMMAND banner, NOT the early `$0BEE nth=1` which already matches) and
+   walk to the WRTVRM `$0BEE` write; the byte register there is `$80` on ours, the char on stock,
+   via the SAME PCs. Step back to the `ld`/`pop` that set it and inspect WHAT it read (work-area
+   cell? `(IX/IY+n)`? a page-0 address that is RAM on stock but main-ROM on ours during the
+   inter-slot window?). The `capture --at <reader PC> --mem <cell>` pattern pins the cell.
+2. **Test the IX/IY suspicion cheaply.** A throwaway `conout_body` tweak that also sets IX=`$00A2` /
+   IY=`$0000` (stock's CHPUT-entry values) before `call $00A2`, rebuild (`make disk && make
+   machines-oracle`), `screen --machine ours`. If it renders → an index-register-relative read was
+   it; narrow to the single register. If not → it's a memory/map effect (suspect the page-0 main-ROM
+   paging: a cell CHPUT reads that is RAM in the early/stock path but main-ROM `$80` in ours' window).
+3. **Spec the fix** (per [[spec-before-implementation]]) once the divergent value is known; net-zero,
+   BIOS-agnostic, no canonical shift; sign-off BEFORE the ROM edit.
+4. **Validate:** `screen --machine ours` renders `MSX-DOS version 1.03` / `COMMAND version 1.08` /
+   `A>`; then the visible-`A>` milestone (control flow already reaches it).
 
-Likely the same `int_h_body`/`conout_body` family of "faithful inter-slot main-ROM call" work — the
-fix may also want to confirm int_h isn't masking a related context issue. Note the silver lining:
-the rendering fix is plausibly the LAST blocker to a visible `A>`.
+KEY DISCRIMINATOR for the hunt: **early MSXDOS.SYS console output works, COMMAND.COM's does not** —
+so the difference is the inter-slot `conout_body` path / DOS memory map at COMMAND time, not CHPUT
+itself. Likely the `int_h_body`/`conout_body` "faithful inter-slot main-ROM call" family. Silver
+lining: the rendering fix is plausibly the LAST blocker to a visible `A>`.
 
 **One-command repros for the next session (test.dsk):**
 - BDOS path to A> loop: `python3 probes/disk/disk_probe_diff.py callseq --maxhits 40 --diska
@@ -132,9 +145,12 @@ premature/misaligned conclusions, not hard bugs. See [[harness-first-investigati
 **`probes/disk/disk_probe_diff.py`** (built on `omsx_session.py`) — the parameterized differential
 probe. Modes: `callseq` (call-sequence divergence + `--poke/--poke-reg` falsify-first override; NOW
 also prints the longer side's TAIL when one side blocks/diverges), `capture` (alignment-guarded
-regs+mem diff at the Nth occurrence), `trace` (per-instruction PC fork + `--resync`), and **NEW
-`screen`** (renders the VDP text screen from the VRAM name table — the direct-observation tool that
-caught the `$80` render bug; `--machine ours|stock|both`, dumps rows + HEX + a banner-locate scan).
+regs+mem diff at the Nth occurrence), `trace` (per-instruction PC fork + `--resync`, NOW with
+`--window` to bridge long inter-slot detours), **`screen`** (renders the VDP text screen from the
+VRAM name table — the direct-observation tool that caught the `$80` render bug; `--machine
+ours|stock|both`, rows + HEX + banner-locate scan), and **`iowrite`** (logs the byte stream written
+to a VDP/I-O port `$98` data + `$99` addr — the DATA-level tool that proved ours writes `$80`/clears
+while stock writes text; shows the writer PCs and addresses). **Extend this, don't fork a script.**
 It copies the DOS disk to tmp (mutation-safe) and bakes in the alignment guard. **Extend this, don't
 fork a new script.** The 57 legacy `disk_probe_dosboot_*.py` stay for provenance.
 
