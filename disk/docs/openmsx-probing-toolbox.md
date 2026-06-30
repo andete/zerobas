@@ -248,6 +248,29 @@ python3 probes/disk/disk_derail_locate.py --preset sp-rompage  # → storm, redi
 | "Where does failure-state X first arise?" | `disk_derail_locate.py` / `bisect_locate` (§7) |
 | "Read ROM/RAM that isn't paged in" | `{slotted memory}` (§3) |
 | "Make a PC trace legible" | convert + `debug symbols load … generic` (§5) |
+| "Drive console input (answer a prompt, reach `A>`)" | `disk_probe_diff.py --keys/--keys-at` (§8) |
+
+---
+
+## §8 — emulated-keyboard injection + the clean-room disasm guard (2026-06-30, M12c→d)
+
+**Key injection.** `OmsxRun.run_job(_raw)` take `keys`/`keys_at`; `disk_probe_diff.py`
+exposes `--keys TEXT --keys-at SECS` on every mode. At emulated time `keys_at` it issues
+openMSX `type "TEXT"` into the emulated keyboard (use `\r` for Enter). This is the
+black-box way past a `CHGET`/BUFIN block: e.g. `screen --machine stock
+--keys '12-25-99\r' --keys-at 13` answers the date prompt and renders the resulting
+`A>`. Keys play under throttle-off, so set `keys_at` a little before `--settle`.
+
+**Clean-room disasm guard (`DISOK`).** `ctx` emits a decoded mnemonic (`dis={…}`) ONLY
+when `DISOK && PC>=0x4000`; `OmsxRun` sets `DISOK=0` for the STOCK (reference) machine.
+This is a *firewall*, not a convenience: decoding a reference ROM's code bytes is
+disassembly (✗ — [[no-reference-rom-disasm]]). It suppresses the whole stock machine,
+main-BIOS ROM (`$0000–$3FFF`) on either machine, and a proprietary binary loaded low
+(COMMAND.COM `$0100`); it still decodes our own artifact (`$4000–$7FFF` disk ROM,
+`$C000+` kernel). The `trace` fork printers show OUR side's `dis` (clean) with stock
+blank; the black-box signal (PC fork, re-convergence, call-targets-via-flow) is
+untouched. Added after a stock-machine `trace` surfaced the stock console-routine
+internals — see the clean-room-audit run-log caveat + review-queue M12c.
 
 Origin: 2026-06-25 toolbox sweep, after the dead-zone NOP tripwire's premise was
 falsified (no `$00` opcode executes anywhere in $0000–$FFFF during the boot) —
