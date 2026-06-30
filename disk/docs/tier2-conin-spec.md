@@ -37,6 +37,13 @@ the only remaining gate is the user's go-ahead to write the veneer.
 
 ## 1. Problem — one missing veneer, mis-read as two bugs
 
+> **Read with §3 "Resolved answers" (v3).** This section is the original M12 framing — it
+> correctly explains the *symptom* (the unimplemented `$544E` CONIN primitive falls through
+> into the `$5454` CONOUT veneer → garbage spin). The M12d black-box pin then showed the
+> kernel delegates the whole line read to a routine entered at the CALL target **`$50E0`**,
+> so the FIX replaces the line routine at `$50E0` (not the inner `$544E` primitive). The
+> `$544E`-vs-`$50E0` detail is reconciled in §3; §1/§2 stand as the symptom analysis.
+
 The relocated MSX-DOS-1 kernel has TWO console primitives at adjacent fixed entries in
 the shared ASCII-kernel block:
 
