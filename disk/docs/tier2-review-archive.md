@@ -16,6 +16,41 @@ _Archived 2026-06-30 sync: all entries below were reviewed/superseded. The M10 f
 (the divergence is upstream of CHPUT, in our veneer's char register), though their
 characterisation/tooling work stands. M5–M9 are resolved milestones._
 
+_Ratified 2026-06-30 (M11 review): user ratified BOTH the M10 fix (as correct-but-PARTIAL — it fixes
+only the func-2 CONOUT route) and the M11 two-bug reframe. Next-bug order: **Bug A (func-9 output
+route) first, then Bug B (BUFIN block)**. The live working head is now the M11.1 two-bug model in
+[tier2-STATE.md](tier2-STATE.md)._
+
+**[M11 / §8.81 (incl. M11.1) — REFRAME: COMMAND.COM runs IDENTICALLY; two relocated-kernel console-I/O
+bugs (2026-06-30, RATIFIED). No ROM change — characterisation only.]** · **what (ground truth, test.dsk,
+`screen --machine both --settle 16`):** STOCK = `MSX-DOS version 1.03` / `Copyright 1984 by Microsoft` /
+`COMMAND version 1.08` / `Current date is Sun 84-01-01` / `Enter new date: .` then blocks at BUFIN.
+OURS = every row `Ø>@` (`$D8 3E 40`), an infinite loop scrolling the sign-on off; no COMMAND banner /
+date prompt / `A>`. · **decisive proof (callseq --at 0x0100 --log 0x0005):** the BDOS call seq is
+BYTE-IDENTICAL ours==stock for ALL 18 calls (STROUT $C284 / FOPEN / STROUT $D2B3 / GDATE / 12×CONOUT /
+STROUT $D2D3 / BUFIN). **COMMAND.COM runs perfectly; both bugs are in OUR relocated kernel console I/O:**
+(A) func-9 STROUT (banner/`Current date is`/`Enter new date:`) emits ZERO chars to CHPUT while func-2
+CONOUT (date value) renders — different CHPUT routes (func-2 ret=$7934 = M10 veneer; stock func-9
+ret=$F392, cf. $F398→$00A2); M10 fixed only func-2. (B) at n=18 BUFIN stock BLOCKS, ours RETURNS →
+infinite date-prompt re-loop. · **refuted:** my own first-cut "page-0 swap clobbers func-9's string
+read" (DE identical, func-9 emits 0 → it's the OUTPUT route, not the read); and the older "BUFIN-not-
+blocking is benign headless artifact" (both run the same BUFIN; stock blocks, ours doesn't = bug B). ·
+**judgment calls:** stopped at the reframe instead of grinding a fix; touched no ROM; corrected STATE. ·
+confidence: HIGH (char-identical anchor + screen). · undo: docs-only; revert commits 26c8ddb/41ee4a1.
+
+**[M10 / §8.80 — CONOUT $80 render: char register is E, not A (2026-06-30, RATIFIED as correct-but-
+PARTIAL).]** · **what:** `conout_body` ($7922) took the output char from **A**; the `$5454` CONOUT
+contract passes it in **E**. The kernel's per-char output (caller $D88A) sets E=char, A=$00, so ours
+emitted $00/garbage for COMMAND-phase output; the early sign-on (caller $0320) passes the char in BOTH
+A and E, hiding the bug. Fix = `ld a,e` at conout_body entry (1 byte, free-tail pad; ROM still 16384 B,
+no canonical shift). · **proven:** $7922-entry callseq shows E spelling the banner/date verbatim;
+`screen --machine ours --settle 12` renders real ASCII. · **PARTIAL (per M11):** fixes ONLY the func-2
+CONOUT route; func-9 STROUT (Bug A) still renders nothing. The M10 *fix* stands; its "render solved /
+residuals cosmetic" *framing* was over-rosy and is superseded by M11. · **judgment calls:** extended the
+ONE harness (added `trace --regdump REG` + an `A=` field to the callseq logger, not a 58th probe);
+implemented+committed the ROM fix autonomously (net-zero, reversible, Tier-1 19/19 green). · confidence:
+HIGH. · undo: revert the `ld a,e` line.
+
 **[CONOUT $80 render — DEEPENED post-review (2026-06-30, after the sync below)] Drilled the render
 blocker; BC root-cause DISPROVEN, sharper picture.** · **what:** built `iowrite` (VDP port $98/$99
 watch) + `screen`-tool follow-ups. Found: ours writes constant tile `$80` per glyph to the name

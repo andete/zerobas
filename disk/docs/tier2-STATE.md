@@ -42,6 +42,8 @@ or the BDOS interface — it is squarely in OUR relocated resident kernel's cons
   routes differ: func-2 → CHPUT via our M10 `$5454` veneer (ret=$7934); stock's func-9 → CHPUT via a
   DIFFERENT resident-kernel route (ret=$F392; cf. `$F398→$00A2` in kernel.asm §8.38) that ours never set
   up. So M10 fixed only the func-2 route; func-9's output route is unrelocated/broken on ours.
+**RATIFIED 2026-06-30 (M11 review):** user ratified M10 (correct-but-partial) + the M11 two-bug model;
+both archived. Confirmed next-bug order = **Bug A first, then Bug B.** Paused awaiting go-ahead to probe.
 LEADING HYPOTHESIS (verify falsify-first): the resident kernel's func-9 char-output vector (~$F392/$F398)
 is not initialised on ours, so STROUT chars are dropped. Bug B (BUFIN) is likely the same class — a
 console-INPUT primitive (CHGET/keyboard-status) route not set up — TO BE PINNED.
