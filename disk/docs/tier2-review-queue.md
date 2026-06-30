@@ -23,6 +23,33 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M11 / §8.81 — REFRAME: the M10 "render solved, residuals cosmetic" picture was OVER-ROSY. Ours runs
+COMMAND.COM but its func-9 STROUT output is garbage + loops infinitely; never reaches the COMMAND
+banner / date prompt / `A>` (2026-06-30). NO ROM CHANGE this turn — characterisation + reframe only.]**
+· **what (ground truth, all test.dsk):** Direct `screen --machine both --settle 16`: STOCK renders
+`MSX-DOS version 1.03` / `Copyright 1984 by Microsoft` / `COMMAND version 1.08` / `Current date is Sun
+84-01-01` / `Enter new date: .` then blocks at BUFIN. OURS = EVERY row `Ø>@` (`$D8 3E 40`), an INFINITE
+garbage loop that scrolls the sign-on OFF; no COMMAND banner, no date prompt, no `A>`. · **how proven
+(anchored, decisive):** CHPUT ($00A2) char-stream diff — n=1..53 char-IDENTICAL (the sign-on, proving
+alignment), then n=54 FORKS: stock `C=09 STROUT` walking `$C285` spelling `\r\nCOMMAND v…` (ret=$F392);
+ours `C=00/02` spelling `Sun 84-01-…` (ret=$7934, our veneer). So stock STROUTs the COMMAND banner;
+ours never does a clean func-9 STROUT — only the func-2 date VALUE leaks through, then garbage loops.
+Ours DOES reach COMMAND.COM ($0100 arm fires) → handoff works; COMMAND.COM's EXECUTION output is the
+break. · **this CORRECTS M10's residual framing:** the "stray @ / missing Current date is / headless
+idle spam" were NOT cosmetics or a benign no-keyboard artifact — they are one INFINITE func-9 garbage
+loop, THE blocker. "A clean `A>` needs a keystroke past BUFIN" is refuted: ours loops on garbage long
+before any BUFIN. · **leading hypothesis (next to test, falsify-first):** our `$5454`/`conout_body`
+CONOUT pages the main ROM into PAGE 0 for each char; COMMAND.COM's func-9 string walk reads its string
+from page-0/TPA (DE pointer), so the per-char page swap may clobber the walk (reads ROM/garbage, never
+hits `$` → infinite loop). OR func-9's DE/string setup is wrong from the start (relocation/work-area).
+Step-1 probe pins read-vs-emit before any spec. · **judgment calls:** (a) STOPPED probing at a clean
+reframe rather than grinding a fix — per deep-think + guardrails (over-rosy M10 came from trusting a
+transient settle-12 frame, not steady state). (b) Did NOT touch ROM — the fix needs a spec + the
+mechanism pinned ([[spec-before-implementation]]). (c) Overwrote STATE with the corrected picture;
+extended NO new probe (used existing callseq/screen modes). · confidence: HIGH on the observed fork +
+infinite loop (screen + char-identical anchor); MEDIUM on the func-9-page-swap mechanism (untested). ·
+undo: docs-only; revert this commit to restore the prior STATE. See [tier2-STATE.md](tier2-STATE.md).
+
 **[M10 / §8.80 — CONOUT $80 render SOLVED + FIXED + COMMITTED (2026-06-30)] The render blocker was a
 register-contract bug in our `$5454` veneer, NOT a CHPUT-internal corruption. Real ASCII now renders.**
 · **what:** `conout_body` ($7922) took the output char from **A**; the `$5454` CONOUT contract passes
