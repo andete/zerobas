@@ -106,8 +106,8 @@ debug set_bp {log_addr:#06x} {{}} {{
   incr ::n
   set sp [reg SP]
   set ret [expr {{[debug read memory $sp] | ([debug read memory [expr {{($sp+1)&0xFFFF}}]] << 8)}}]
-  emit [format "CALL n=%d C=%02X B=%02X DE=%04X HL=%04X ret=%04X t=%.6f" \\
-    $::n [expr {{[reg BC]&0xFF}}] [expr {{([reg BC]>>8)&0xFF}}] [reg DE] [reg HL] $ret [machine_info time]]
+  emit [format "CALL n=%d C=%02X B=%02X A=%02X DE=%04X HL=%04X ret=%04X t=%.6f" \\
+    $::n [expr {{[reg BC]&0xFF}}] [expr {{([reg BC]>>8)&0xFF}}] [expr {{([reg AF]>>8)&0xFF}}] [reg DE] [reg HL] $ret [machine_info time]]
   if {{$::n >= {maxhits}}} {{ exit }}
 }}
 """
@@ -121,13 +121,13 @@ def _parse_call(line: str) -> dict | None:
         if "=" not in tk:
             continue
         k, v = tk.split("=", 1)
-        rec[k] = float(v) if k == "t" else int(v, 16 if k in ("C", "B", "DE", "HL", "ret") else 10)
+        rec[k] = float(v) if k == "t" else int(v, 16 if k in ("C", "B", "A", "DE", "HL", "ret") else 10)
     rec["fn"] = BDOS.get(rec.get("C", -1), "??")
     return rec
 
 
 def _fmt_call(r: dict) -> str:
-    return (f"n={r['n']:<2} C={r['C']:02X} {r['fn']:<6} "
+    return (f"n={r['n']:<2} C={r['C']:02X} {r['fn']:<6} A={r.get('A',0):02X} "
             f"B={r['B']:02X} DE={r['DE']:04X} HL={r['HL']:04X} ret={r['ret']:04X} t={r['t']:.4f}")
 
 
@@ -397,6 +397,42 @@ def mode_trace(args) -> int:
               f"(stock {stock[0]['PC']:04X}, ours {ours[0]['PC']:04X}); not the same logical point. [win #1]")
         return 2
 
+    if args.regdump:
+        def _rv(rec, reg):
+            af = rec.get("AF", 0)
+            if reg == "A":
+                return af >> 8
+            if reg == "F":
+                return af & 0xFF
+            return rec.get(reg, 0)
+        reg = args.regdump.upper()
+        n = min(len(ours), len(stock))
+        # walk only while PCs stay aligned (same code path); stop at the first PC fork.
+        fork = next((i for i in range(n) if ours[i].get("PC") != stock[i].get("PC")), n)
+        firstdiv = next((i for i in range(fork)
+                         if _rv(ours[i], reg) != _rv(stock[i], reg)), None)
+        wid = 2 if reg in ("A", "F") else 4
+        print(f"\n  regdump {reg}: {fork} PC-aligned steps "
+              f"(PC fork at step {fork+1 if fork < n else 'none'}).")
+        print(f"  step  PC    {'dis':<26} stock{reg:<3} ours{reg}")
+        for i in range(fork):
+            o, s = ours[i], stock[i]
+            sv, ov = _rv(s, reg), _rv(o, reg)
+            mark = ">>" if sv != ov else "  "
+            print(f"{mark}{i+1:>4}  {o['PC']:04X}  {str(o.get('dis',''))[:26]:<26} "
+                  f"{sv:0{wid}X}    {ov:0{wid}X}")
+        if firstdiv is None:
+            print(f"\n  {reg} IDENTICAL across all {fork} aligned steps "
+                  f"(divergence is in another register or beyond the PC fork).")
+        else:
+            i = firstdiv
+            sb = stock[i - 1] if i else stock[0]
+            print(f"\n  -> first {reg} divergence at step {i+1} (PC {ours[i]['PC']:04X}). "
+                  f"The instruction BEFORE it ({sb['PC']:04X} {sb.get('dis','')}) set/read it.\n"
+                  f"     stock {reg}={_rv(stock[i],reg):0{wid}X}  ours {reg}={_rv(ours[i],reg):0{wid}X}. "
+                  f"Inspect what that instruction READ. [data divergence]")
+        return 0
+
     if args.resync:
         # Re-convergence walk: report every fork and whether it rejoins (relocation
         # detour) or is a real divergence — skips by-design $E7xx-vs-$Dxxx hooks.
@@ -640,6 +676,11 @@ def main() -> int:
                    help="inject mem write into OURS at the anchor (falsify-first); repeatable")
     t.add_argument("--resync", action="store_true",
                    help="re-convergence walk: skip benign relocation detours, find the next REAL fork")
+    t.add_argument("--regdump", default=None, metavar="REG",
+                   help="aligned-PC register-divergence walk: with PCs identical (same code), "
+                        "report the first step where REG (e.g. A, AF, BC) differs ours-vs-stock, "
+                        "plus a full ours-side dump of REG per step. Finds DATA divergence the "
+                        "fork logic is blind to.")
     t.add_argument("--window", type=int, default=80,
                    help="resync re-convergence search window (instrs); raise to bridge long inter-slot detours")
 

@@ -10,10 +10,13 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-06-30 (BIG reframe: date path fully solved — ours reaches the A> command loop
-with NO poke. New blocker characterised: ours' COMMAND.COM-phase console output writes constant tile
-$80 per glyph; EARLY MSXDOS.SYS console output works. Pure data divergence (same PC path); BC/DE/HL
-register-faithfulness tested + DISPROVEN as the fix. Next suspect: IX/IY or page-0-map read.).
+_Last updated: 2026-06-30 (RENDER BLOCKER SOLVED + FIXED + COMMITTED. The `$80` garbage was a
+register-contract bug in our `$5454` CONOUT veneer: `conout_body` read the char from A, but the
+`$5454` contract passes it in **E** (the relocated kernel sets E=char, A=$00). Early MSXDOS.SYS
+sign-on passes char in BOTH A+E, which hid the bug. Fix = `ld a,e` (net-zero). Ours now renders real
+ASCII: `MSX-DOS version 1.03` / `Copyright 1984 by Microsoft` / `Sun 84-01-01` + boot logo. Tier-1
+19/19. Remaining = date-prompt residuals (`@`, missing `Current date is`/`Enter new date:`) + the
+headless idle-loop spam; a clean *visible* A> likely needs a keystroke past the date BUFIN.).
 Update the date + sections whenever state changes._
 
 ---
@@ -24,55 +27,33 @@ Tier-1** (disk-BASIC / BLOAD / FILES) and while staying a **BIOS-agnostic replac
 disk ROM** (works on CF-3300, C-BIOS, any standards MSX1). "Reached `A>`" means a
 **visible** `A>` on screen + accepts a command — not just the right BDOS call sequence.
 
-## Live thesis (2026-06-30: date path DONE at BDOS level; the remaining blocker is RENDERING)
-With the GDATE slice in the ROM, **ours' BDOS call sequence is byte-identical to stock for
-n=1–18 with NO poke**, ending at BUFIN (the date-input wait), and **past BUFIN ours reaches the
-`A>` command-interpreter idle loop** (SDATE→SELDSK→CURDRV→print `A>`→BUFIN, repeating). So at the
-control-flow level ours reaches `A>`. **But the actual screen is garbage**: ours' console output
-renders **every printable character as constant tile `$80`** in VRAM (banner, prompts, and `A>`
-all invisible). The real ASCII text is **nowhere** in ours' VRAM. So a *visible* `A>` is NOT yet
-achieved — the last blocker is a **CONOUT/CHPUT rendering bug** in ours' inter-slot output path.
+## Live thesis (2026-06-30: RENDER BLOCKER SOLVED — real ASCII renders; residuals are date-prompt + headless)
+The `$80`-garbage render was **a register-contract bug in our `$5454` CONOUT veneer**, now FIXED and
+committed. `conout_body` ($7922) read the output char from **A**, but the `$5454` CONOUT contract
+passes the char in **E**. The relocated MSX-DOS kernel's per-char console output (caller `$D88A`)
+sets E=char and leaves **A=$00**, so ours emitted `$00`/garbage for every COMMAND.COM-phase glyph.
+The EARLY MSXDOS.SYS sign-on (caller `$0320`) passes the char in **both A and E**, so the old A-read
+worked there and HID the bug — exactly the "early works, COMMAND fails" discriminator. Fix = `ld a,e`
+at conout_body entry (net-zero: 16384 B, free-tail pad, no canonical shift). **Ours now renders real
+ASCII**: `MSX-DOS version 1.03` / `Copyright 1984 by Microsoft` / `Sun 84-01-01` + the boot logo.
 
 ### What this session PROVED (2026-06-30, all on test.dsk)
-- **No-poke convergence through BUFIN** (`callseq --maxhits 40`): ours == stock for n=1–18
-  (STROUT/FOPEN/STROUT/GDATE/CONOUT×banner/STROUT/BUFIN). The date prompt is fully solved; the
-  prior `--poke-at 0xCDA7` repro is no longer needed.
-- **Ours reaches the `A>` command loop** (callseq OURS-only tail, new `--tail` print): n=19,20
-  CONOUT (CR LF echo of Enter); **n=21 `$2B` SDATE DE=0101 HL=07C0** (correct 1984-01-01 default)
-  → SDATE RETURNS, ours proceeds → **SDATE is NOT the next blocker** (the prior hypothesis is
-  REFUTED); n=22 SELDSK, n=23–27 CR LF + CURDRV + `A` + `>`, n=28 BUFIN, then a clean idle loop
-  (LF→CURDRV→`A`→`>`→BUFIN). Stock blocks at its BUFIN (n=18) for a real key; ours' headless BUFIN
-  returns empty immediately, so ours runs ahead into the prompt loop. That asymmetry is a headless
-  artifact, NOT a bug ([[tier2-storms-are-downstream]]: headless BUFIN never blocks).
-- **NEW: the screen is garbage** (new `screen` mode reads the VRAM name table at R2-derived base).
-  Stock renders perfectly (`  MSX-DOS version 1.03` / `Current date is Sun 84-01-01` / `Enter new
-  date:`). **Ours' name table is all tile `$80`** (`HEX01 = 2020 80 80 … 80`; spaces `$20` survive,
-  every letter → `$80`). The `MSX` byte-sequence is found in stock VRAM, **never in ours' VRAM**.
-  Mode = SCREEN 1 (scrmod=01, 32-col, namebase $1800) on BOTH; same renderer; so this is real, not
-  a tool/renderer artifact.
-- **Root cause = ours writes a CONSTANT tile `$80` to VRAM for every COMMAND.COM-phase glyph**
-  (characterised 2026-06-30 with the new `iowrite` mode = VDP port `$98`/`$99` watch):
-  - **Direct VRAM-write evidence (`iowrite --anchor 0x0100`):** STOCK writes the real bytes
-    (`COMMAND version 1.08Current date is Sun 84-01-01Enter new date:`) via WRTVRM PC `$0BEE`,
-    fresh address per char. OURS writes **768× `$20` (a full screen-CLEAR via FILVRM PC `$081A`,
-    addr base `$1800`) then `$80,$80,$80…` for every banner glyph** (also via WRTVRM `$0BEE`). So
-    the clear explains the blank rows in the `screen` dump; the glyph cells get constant `$80`.
-  - **The char is CORRECT until the write.** BDOS CONOUT calls match stock (callseq n=1–18). At
-    **WRTVRM `$0BEE` nth=1** (the EARLY MSXDOS.SYS banner, t=1.55, BEFORE COMMAND.COM) ours==stock
-    **byte-identical** (A=`$4D`='M'): **early-phase console output RENDERS CORRECTLY**. The `$80`
-    corruption is SPECIFIC to the COMMAND.COM-phase path (the disk-ROM `$5454`→`conout_body`
-    inter-slot CHPUT), not CHPUT/WRTVRM themselves (same code, works early).
-  - **It is a PURE DATA divergence, not control flow.** A char-aligned wide-window resync trace
-    (`trace --anchor 0x0005 --nth 5 --resync --window 300`) finds ours and stock **PC-equivalent**
-    through the CONOUT path (only benign off-by-one in ours' relocated `$53xx` console dispatch,
-    which re-converges). So the same instructions write a different byte → the divergent byte comes
-    from a REGISTER/MEMORY value that differs, read by an identical `ld`.
-  - **DISPROVEN fix (tested + reverted):** making `conout_body` register-faithful (restore BC/DE/HL
-    before `call $00A2`, so CHPUT gets BC=`$0980` like stock — verified at `$00A2`) did **NOT** fix
-    rendering — screen still `$80`. So BC/DE/HL are NOT the consumed value. Remaining ours-vs-stock
-    diffs at CHPUT entry: **IX** (stock `$00A2`=CALSLT sig, ours `$F195`), **IY** (stock `$0000`,
-    ours `$0314`), and flags. The next suspect is an IX/IY-relative work-area read inside the
-    COMMAND-phase CHPUT, or the inter-slot page-0 map perturbing a memory the char-write reads.
+- **The prior thesis was WRONG** ("char correct at CHPUT entry, corrupted to `$80` by an identical-PC
+  data divergence inside CHPUT"). That rested on `capture --at 0x00A2 --nth 5` showing A=correct —
+  but nth=5 is the EARLY MSXDOS.SYS banner (which always worked), NOT a COMMAND-phase glyph. The
+  alignment gap flagged by guardrail #1. The real divergence is UPSTREAM of CHPUT.
+- **The char reaches our veneer in E, not A** (proven single-machine, clean — the decisive evidence):
+  `callseq --log 0x7922` (conout_body entry, A now logged) on ours shows EVERY kernel call (ret=`$D88A`)
+  with **A=$00** and register **E spelling the text**: n=1–12 E = `53 75 6E 20 38 34 2D 30 31 2D 30 31`
+  = "Sun 84-01-01"; later E = `41 3E` = "A>". The EARLY sign-on (`--at 0x5454 --arm-cond 1`, ret=`$0320`)
+  has A=char AND E=char (`0D 0A 4D 53 58…` = "\r\nMSX-DOS version 1.03"). So **E is the register common
+  to BOTH callers** — `conout_body` reading A printed A=$00 (kernel) instead of E=char.
+- **The fix renders** (`screen --machine ours --settle 12`): ROW15 `MSX-DOS version 1.03`, ROW16
+  `Copyright 1984 by Microsoft`, ROW17 `Sun 84-01-01@`, plus the boot logo (`MSX system version 1.0` /
+  `Copyright 1983 by Microsoft`). No `$80` tiles anywhere. Tier-1 `make unit-test` 19/19 green.
+- **Tooling note:** the divergence was found by EXTENDING the one harness — `trace --regdump A` (the
+  aligned-PC register-divergence walk, since PCs stay aligned through the shared CHPUT code so the
+  fork logic is blind to a data divergence) + an `A=` field on the callseq logger. Not a 58th probe.
 
 ## Settled facts — DO NOT re-litigate or re-probe
 - COMMAND.COM loads correctly; `$47B2` return contract done; `$0005`=`JP $D606` identical;
@@ -80,13 +61,19 @@ achieved — the last blocker is a **CONOUT/CHPUT rendering bug** in ours' inter
   clock-less 1984-01-01 default; `$F30D=01/$F30E=00` format defaults set. (All prior settled facts
   about COMMAND.COM load / FOPEN-subset / date VALUE-is-the-gate still hold.)
 - **Date path is DONE at the BDOS level** (n=1–18 byte-identical, no poke; SDATE returns).
-- **CONOUT "banner byte-identical" was CALL-sequence-verified ONLY, never VRAM-verified.** The
-  screen tool reveals ours' CONOUT writes tile `$80` for every glyph. CONOUT is therefore **⚠
-  (renders garbage)**, not ✅, on the coverage board — DOWNGRADED 2026-06-30.
+- **CONOUT NOW RENDERS** ✅ (M10 fix): `conout_body` takes the char from **E** (the `$5454` contract),
+  not A. Real ASCII renders (banner/date/logo). Re-UPGRADED from the ⚠ downgrade.
+- **The `$5454` CONOUT char register is E, not A.** Both callers (early sign-on `$0320`, kernel
+  `$D88A`) put the char in E; only the early one redundantly also sets A. DO NOT revert to reading A.
 - **SDATE ($2B) is NOT a blocker** — it is called past BUFIN, returns, ours proceeds. (Refutes the
   prior next-action hypothesis that SDATE would be the next collision.)
 
 ## Dead ends / refuted — do NOT re-walk
+- **"The `$80` render is a CHPUT-internal data divergence (IX/IY/page-0 map) at identical PC"** —
+  REFUTED 2026-06-30. It was an UPSTREAM register-contract bug: our veneer read the char from A; the
+  contract is E. Do NOT chase IX/IY/page-0 reads inside CHPUT for the render bug; do NOT re-run the
+  `trace --resync` "PC-equivalent data divergence" analysis — the data differs because A≠E at the veneer.
+- **"`conout_body` should read the char from A"** — WRONG (that WAS the bug). The contract is E.
 - "SDATE ($2B) is the next blocker past BUFIN" — REFUTED 2026-06-30 (SDATE returns; ours proceeds).
 - "Ours not-blocking at BUFIN is a bug" — NO, it's the headless no-keyboard artifact; stock blocks
   only because the emulator has no key to give. Both run the same kernel BUFIN.
@@ -94,36 +81,33 @@ achieved — the last blocker is a **CONOUT/CHPUT rendering bug** in ours' inter
   work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug", "init date
   cells alone". All still dead.
 
-## Next action — NEW SLICE: find what the COMMAND-phase CHPUT reads to write `$80` (spec-first)
-The ONLY thing between ours and a **visible** `A>` is the `$80`-render bug. BC/DE/HL faithfulness is
-disproven; it's a data value read via an identical instruction path. Plan:
-1. **Find the divergent read (falsify-first).** Char-align a COMMAND-phase glyph (e.g. trace from a
-   `$0005 C=02` CONOUT in the COMMAND banner, NOT the early `$0BEE nth=1` which already matches) and
-   walk to the WRTVRM `$0BEE` write; the byte register there is `$80` on ours, the char on stock,
-   via the SAME PCs. Step back to the `ld`/`pop` that set it and inspect WHAT it read (work-area
-   cell? `(IX/IY+n)`? a page-0 address that is RAM on stock but main-ROM on ours during the
-   inter-slot window?). The `capture --at <reader PC> --mem <cell>` pattern pins the cell.
-2. **Test the IX/IY suspicion cheaply.** A throwaway `conout_body` tweak that also sets IX=`$00A2` /
-   IY=`$0000` (stock's CHPUT-entry values) before `call $00A2`, rebuild (`make disk && make
-   machines-oracle`), `screen --machine ours`. If it renders → an index-register-relative read was
-   it; narrow to the single register. If not → it's a memory/map effect (suspect the page-0 main-ROM
-   paging: a cell CHPUT reads that is RAM in the early/stock path but main-ROM `$80` in ours' window).
-3. **Spec the fix** (per [[spec-before-implementation]]) once the divergent value is known; net-zero,
-   BIOS-agnostic, no canonical shift; sign-off BEFORE the ROM edit.
-4. **Validate:** `screen --machine ours` renders `MSX-DOS version 1.03` / `COMMAND version 1.08` /
-   `A>`; then the visible-`A>` milestone (control flow already reaches it).
+## Next action — NEW SLICE: date-prompt residuals + a clean *visible* A> (the render bug is fixed)
+The `$80` blocker is gone; real ASCII renders. What's left between here and a clean *visible* `A>`:
+1. **Characterise the date-prompt residuals (falsify-first, now that text renders).** At `settle 12`
+   ours shows `Sun 84-01-01@` but stock shows `Current date is Sun 84-01-01` then `Enter new date:`.
+   So ours is (a) missing the `Current date is ` prefix, (b) printing a stray `@` ($40), (c) not
+   showing `Enter new date:`. The `@`/`$D8` come from kernel calls with A=$80/$0C, BC=$0000, DE=a
+   POINTER (E = pointer low byte, NOT a char) — i.e. NOT every `$5454` call is a printable-char call.
+   Open question: does the kernel gate those (a flag/Cy our veneer ignores), or are they the headless
+   BUFIN-garbage path? Probe: `callseq --log 0x7922` (E + A + BC + the caller) across the date window,
+   and compare the char STREAM to stock's CONOUT (`--log 0x0005 C=02` decode) for the same logical span.
+2. **Get a clean visible `A>` (likely needs input past BUFIN).** Ours races through the date BUFIN
+   headlessly (returns empty), so it never shows `Enter new date:` and floods the screen with idle
+   spam. Inject a keystroke (CR) at the date BUFIN so ours blocks/advances like stock, then COMMAND.COM
+   + `A>` should render cleanly. See [[openmsx-probing-toolbox]] for input injection; consider a
+   `screen` capture timed right after COMMAND's banner.
+3. **Spec any ROM change** (per [[spec-before-implementation]]) before editing; net-zero, BIOS-agnostic.
 
-KEY DISCRIMINATOR for the hunt: **early MSXDOS.SYS console output works, COMMAND.COM's does not** —
-so the difference is the inter-slot `conout_body` path / DOS memory map at COMMAND time, not CHPUT
-itself. Likely the `int_h_body`/`conout_body` "faithful inter-slot main-ROM call" family. Silver
-lining: the rendering fix is plausibly the LAST blocker to a visible `A>`.
+KEY: the render fix likely UNBLOCKS the visible-`A>` milestone; the remaining work is the date-prompt
+correctness (the `@`/prefix/`Enter new date:`) and demonstrating `A>` with real input. The idle-loop
+spam at `settle≥14` is the known headless BUFIN artifact ([[tier2-storms-are-downstream]]), not a bug.
 
 **One-command repros for the next session (test.dsk):**
-- BDOS path to A> loop: `python3 probes/disk/disk_probe_diff.py callseq --maxhits 40 --diska
-  ~/Documents/msx/msx/disks/test.dsk` → identical n=1–18, OURS-only tail shows SDATE/SELDSK/`A>`/BUFIN.
-- The garbage screen: `python3 probes/disk/disk_probe_diff.py screen --machine ours --diska
-  ~/Documents/msx/msx/disks/test.dsk` → all-`$80` name table (stock renders the banner).
-- CHPUT gets the right char: `… capture --at 0x00A2 --nth 5 --diska …` → A=$58 both, BC differs.
+- Banner renders: `python3 probes/disk/disk_probe_diff.py screen --machine ours --settle 12 --diska
+  ~/Documents/msx/msx/disks/test.dsk` → `MSX-DOS version 1.03` / `Sun 84-01-01@` + boot logo (real ASCII).
+- The char-in-E proof: `python3 probes/disk/disk_probe_diff.py callseq --at 0x0100 --log 0x7922
+  --maxhits 40 --diska …` → ours' conout_body calls (ret=$D88A) have A=00, E spells "Sun 84-01-01"/"A>".
+- Early sign-on (A+E both): `… callseq --at 0x5454 --arm-cond "1" --log 0x7922 --maxhits 24 …`.
 
 ## Method guardrails (DURABLE — keep these when you overwrite this file)
 Endorsed 2026-06-27 after a retrospective found ~half the Tier-2 reframes came from
@@ -150,7 +134,10 @@ regs+mem diff at the Nth occurrence), `trace` (per-instruction PC fork + `--resy
 VRAM name table — the direct-observation tool that caught the `$80` render bug; `--machine
 ours|stock|both`, rows + HEX + banner-locate scan), and **`iowrite`** (logs the byte stream written
 to a VDP/I-O port `$98` data + `$99` addr — the DATA-level tool that proved ours writes `$80`/clears
-while stock writes text; shows the writer PCs and addresses). **Extend this, don't fork a script.**
+while stock writes text; shows the writer PCs and addresses). NEW (M10): **`trace --regdump REG`** =
+aligned-PC register-divergence walk (when both sides run the SAME code so PCs never fork, it finds the
+first step where REG diverges — the data divergence the fork logic is blind to); and the **callseq
+logger now records `A=`** (so `--log 0x7922`/`0x00A2` shows the char register). **Extend this, don't fork a script.**
 It copies the DOS disk to tmp (mutation-safe) and bakes in the alignment guard. **Extend this, don't
 fork a new script.** The 57 legacy `disk_probe_dosboot_*.py` stay for provenance.
 

@@ -74,12 +74,22 @@ pg0_mainrom_out:
                 out     ($A8), a
                 ret
 
-; --- conout_body - the real $5454 CONOUT (M8/8.67) ------------------------------
-; Emit the char in A via the main-ROM CHPUT ($00A2). Reached from the $5454 veneer
+; --- conout_body - the real $5454 CONOUT (M8/8.67; char-reg fix M10/§8.80) ------
+; Emit the char (in E) via the main-ROM CHPUT ($00A2). Reached from the $5454 veneer
 ; (jp conout_body). Pages the main ROM into page 0 (pg0_mainrom_in), calls CHPUT,
 ; restores (pg0_mainrom_out). DI spans the window; EI on exit.
-;   in:  A = char ; out: A = char, BC/DE/HL/IX/IY preserved
+;   in:  E = char ; out: A = char, BC/DE/HL/IX/IY preserved
+; CHAR REGISTER = E (not A). The $5454 CONOUT contract passes the char in E: the
+; relocated MSX-DOS kernel's per-char console output (caller $D88A) loads E=char and
+; leaves A=0, so reading A emitted $00/garbage for ALL COMMAND.COM-phase + A>-prompt
+; output (banner/date/prompt rendered as constant tiles). The early MSXDOS.SYS sign-on
+; (caller $0320) happens to pass the char in BOTH A and E, so the old A-read worked
+; there and HID the bug -- the exact "early works, COMMAND fails" discriminator. E is
+; the register common to BOTH callers. Black-box proven: $7922-entry callseq shows E
+; spelling "MSX-DOS version 1.03" (early) and "Sun 84-01-01"/"A>" (kernel), A=0.
+; CLEAN-ROOM: E=char is the MSX-DOS BDOS CONOUT (func 2) ABI convention; no oracle bytes.
 conout_body:
+                ld      a, e                ; char arrives in E ($5454 CONOUT contract)
                 ld      (CONOUT_CHAR), a    ; stash the char (A is needed for slot work)
                 push    af                  ; preserve caller AF
                 push    bc
