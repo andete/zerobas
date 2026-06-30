@@ -113,7 +113,22 @@ is black-box across all five modes; (c) the `6482036` remediation scrubbed every
 `provider-oracle-scope.md:1781` names individual *real*-ROM byte values (ours-vs-real) — pre-existing, not
 M12, worth a separate provenance look before public release.
 1. **Paper-trail audit — DONE ✅ (this was the blocker; now cleared).**
-2. **NEXT → CONIN Option A** (audit passed; still HELD awaiting user go-ahead per [[spec-before-implementation]]). See
+1b. **ABI-pin span (M12c) — STARTED, then HARD-STOPPED on a tool clean-room hazard.** User chose
+   "pin ABIs black-box, then pause." Pinned CLEAN (observed directly): CHGET `$009F` **stock 1/ours 0**
+   re-confirmed (stock caller returns to `$F392`); CHSNS `$009C` is an OUTPUT-path break-poll (12× during
+   the banner), so input-phase CHSNS is unobservable without a keystroke; control-flow shows ours
+   NOP-slides the `$50E0` region (our ROM `$00`) where stock CALLs `$544E` at `$5107`. **HARD-STOP:** the
+   `trace` mode decoded STOCK disk-ROM mnemonics (surfacing the quarantined `$F237/8/9`/`$F2AC`/CR-check
+   internals) → reference-ROM disassembly; quarantined-on-sight, nothing recorded/used. **Two tooling gaps
+   block finishing:** (a) `trace` needs a clean-room guard (PC+call-target only, no mnemonic decode of
+   reference ROM); (b) **no key injection** in the harness — the input-phase ABIs (return register on a
+   completed line, input CHSNS/echo, interrupt safety, drive-past-BUFIN-to-`A>`) all need a keystroke.
+   Entry ABI should be pinned via `callseq --log <entry>` (call-target+regs), NOT trace-disasm. Logged:
+   [tier2-review-queue.md](tier2-review-queue.md) M12c. **AWAITING user:** (i) build the trace guard +
+   key injection then resume pinning + drive past BUFIN; or (ii) go straight to Option A on published
+   contracts + our artifact and validate empirically. Note: **Option A needs NO stock internals** — it
+   builds from published CHGET `$009F`/CHPUT `$00A2`/BDOS func-`$0A` + our own `$00` region.
+2. **NEXT → CONIN Option A** (audit passed; HELD awaiting user go-ahead per [[spec-before-implementation]]; see M12c tooling fork above). See
    [tier2-conin-spec.md](tier2-conin-spec.md) v2. Ground ONLY on clean sources: published CHGET `$009F`
    (char in A) + CHPUT `$00A2` + BDOS func-`$0A` buffer layout; pin the `~$50E0` entry address + register
    contract BLACK-BOX (call-target trace + published func-`$0A` DE=buffer), never by reading the body.

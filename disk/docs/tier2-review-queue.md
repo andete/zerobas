@@ -23,6 +23,41 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M12c / CONIN ABI-pin (no asm) — audit PASSED; then a TOOL clean-room HAZARD forced a HARD-STOP.]**
+· **context:** the user-gated M12-span paper-trail audit RAN and **PASSED ✅ CLEAN** (run log at
+`e2a5d5d`); user then chose "pin ABIs black-box, then pause" (characterization only, no asm). · **clean
+results pinned (black-box, observed myself):** (1) re-confirmed the baseline — CHGET `$009F` **stock 1 /
+ours 0** (`callseq --log 0x009F`); at the stock CHGET call the caller returns to `$F392` (high-RAM
+kernel). (2) CHSNS `$009C` fires 12× during the **banner** (each carries `C=09` STROUT + `B`=banner char)
+= CP/M-style break-poll on the OUTPUT path; stock blocks at the first input CHGET, so the **input-phase**
+CHSNS/echo question is NOT observable without a keystroke. (3) control-flow only: ours executes the
+`$50E0`-region as a **NOP-slide** (OUR ROM is `$00` there — our artifact); where stock CALLs `$544E` at
+`$5107` ours just continues (no call); the genuinely non-converging blocker sits further down at a
+`$0D11 ret` → ours `$DDFD`. · **HARD-STOP reason (clean-room):** the `disk_probe_diff.py` **`trace` mode
+prints the decoded Z80 mnemonic at every fork PC**. Run on the STOCK machine those PCs are reference disk-
+ROM code, so it **surfaced stock's console-routine internals** — the SAME `$F237/8/9` / `IX=$F459` /
+`CALL $F2AC` / CR-check material M12b quarantined. That is reference-ROM disassembly (✗). I did NOT record
+or use any of it (quarantined-on-sight); only the call-target/PC/our-own-`$00` facts above are kept (and
+`$5107→$544E` was already a pre-M12b-clean call-target). · **this REVISES the audit:** the 2026-06-30
+paper-trail rated `trace` "black-box — disassembly-of-flow only, no code-byte surfacing." That is
+**imprecise**: it DOES surface decoded stock code whenever a fork lands on stock ROM. The probe needs a
+guard (print PC + call-target only; suppress mnemonic decode for reference-ROM code regions). · **judgment
+calls:** (1) hard-stopped the probing the moment the trace surfaced stock code, per the clean-room
+hard-stop rule + [[no-reference-rom-disasm]]; (2) did not propagate the decoded internals into any
+doc/asm; (3) realized Option A does NOT need stock internals at all — it builds from published CHGET
+`$009F` / CHPUT `$00A2` / BDOS func-`$0A` + our own artifact, and the entry-ABI (buffer ptr in DE? buf[0]
+=max?) can be pinned CLEAN via `callseq --log <entry>` (call-target+regs, the allowed kind) instead of
+trace-disasm. · **what still needs tooling before pinning completes:** (a) a clean-room **guard on the
+trace mnemonic decode**; (b) **key injection** (openMSX `type`/`keymatrixdown`) — the harness has none, and
+the input-phase questions (return register on a completed line, input CHSNS/echo, interrupt safety under a
+real CHGET block, and the GOAL's drive-past-BUFIN-to-`A>`) all require a keystroke. · **confidence:** HIGH
+that the trace surfaced disassembly (verified the mnemonics are stock's 3-byte ops vs ours' 1-byte `$00`
+slide); HIGH that Option A is buildable from clean sources without those internals. · **undo:** docs only;
+ROM at committed baseline (16384 B, Tier-1 19/19); no disk mutation (probe uses tmp copy). · **awaiting
+user:** direction on tooling — (i) add the trace clean-room guard + key injection, then resume pinning the
+entry ABI via `callseq` and drive past BUFIN; or (ii) proceed to Option A on published contracts + our
+artifact and validate empirically after.
+
 **[M12 / CONIN — UNIFY: the M11 "two-bug" model collapses into ONE missing veneer. ROOT CAUSE PINNED;
 spec drafted; NO asm yet.]** · **what I decided:** ran a falsify-first differential span and concluded
 the sole DOS-boot blocker is that the relocated kernel's **`$544E` CONIN entry has no veneer** — it is

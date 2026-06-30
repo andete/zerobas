@@ -264,6 +264,20 @@ apply; the audit targets the span's **4 docs + the one probe** instead.
   release. When CONIN Option A is built it must cite ONLY the clean sources above and pin the
   `~$50E0` entry + return register **black-box**, never by reading the body.
 
+> **CAVEAT appended same day (during the post-audit ABI-pin span) — the `trace` "black-box"
+> rating above is IMPRECISE.** While pinning the CONIN entry I ran `disk_probe_diff.py trace`
+> on the BUFIN fork and it **printed decoded Z80 mnemonics at fork PCs that lie in the STOCK
+> disk ROM** (`$50E1 ld a,(#f237)`, `$5104 call #f2ac`, …) — i.e. it surfaced reference-ROM
+> code, the same console-routine internals M12b quarantined. So `trace` is black-box for
+> PC-fork/re-convergence and call-TARGET observation, but its **mnemonic-decode of code at a
+> stock-ROM PC is disassembly (✗)**. No asm or doc took any of it (quarantined-on-sight; only
+> PC/call-target/our-own-`$00` facts kept). **Required guard:** the probe must print PC +
+> call-target only and suppress mnemonic decode for reference-ROM code regions. Tracked in
+> [tier2-review-queue.md](../disk/docs/tier2-review-queue.md) M12c; the entry ABI will instead
+> be pinned via `callseq --log <entry>` (call-target+regs — the allowed kind). The working-tree
+> verdict above stands (the contaminated trace output was never recorded); this caveat narrows
+> the *tool* rating, not the audit result.
+
 ### 2026-06-30 — disk, INCIDENT (self-caught) — method breach during M12 CONIN ABI-pin — CONTAINED, docs quarantined (at `971fc78` → remediated this commit)
 
 Second incident of the class the §8.37 entry warns about. During the Tier-2 M12
