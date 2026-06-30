@@ -40,20 +40,35 @@ STOCK_MACHINE = "National_CF-3300"
 
 # A reusable Tcl preamble: throttle off, reverse on, symbol load, and an `emit`/`ctx`
 # pair so every job reports state in one parseable line format.
+#
+# CLEAN-ROOM GUARD (`DISOK`): `ctx` only decodes a mnemonic (`dis={...}`) when DISOK is
+# set AND PC >= 0x4000. Decoding a REFERENCE ROM's code bytes is disassembly (a ✗ source
+# — see docs/allowed-sources.md / [[no-reference-rom-disasm]]). A 2026-06-30 ABI-pin span
+# tripped exactly this: a trace on the STOCK machine surfaced the stock disk-ROM console
+# routine's decoded internals. The guard suppresses, with no per-PC slot analysis needed:
+#   * the whole STOCK (reference) machine — DISOK=0 there (see OmsxRun.__init__);
+#   * main-BIOS ROM ($0000-$3FFF) on EITHER machine (PC < 0x4000);
+#   * a proprietary binary loaded low, e.g. COMMAND.COM at $0100 (PC < 0x4000).
+# It still decodes OUR OWN artifact — our disk ROM ($4000-$7FFF) and high-RAM kernel
+# ($C000+). The black-box signal (PC, flow transitions, regs, call-targets-via-flow,
+# symbol labels) is fully preserved; only the byte-decode of reference code is withheld.
 _PREAMBLE = r"""
 set throttle off
 set renderer none
+set ::DISOK {disok}
 catch {{ debug symbols load {symfile} generic }}
 reverse start
 proc emit {{line}} {{ set f [open {{{out}}} a]; puts $f $line; close $f }}
 proc ctx {{tag}} {{
   set pc [reg PC]
   set iff [debug read {{CPU regs}} 27]
+  set d "-"
+  if {{$::DISOK && $pc >= 0x4000}} {{ set d [lindex [debug disasm $pc] 0] }}
   return [format "%s PC=%04X SP=%04X AF=%04X BC=%04X DE=%04X HL=%04X IX=%04X IY=%04X IFF1=%d t=%.6f m4251=%02X m0038=%02X%02X%02X dis={{%s}}" \
     $tag $pc [reg SP] [reg AF] [reg BC] [reg DE] [reg HL] [reg IX] [reg IY] \
     [expr {{$iff & 1}}] [machine_info time] [debug read memory 0x4251] \
     [debug read memory 0x38] [debug read memory 0x39] [debug read memory 0x3A] \
-    [lindex [debug disasm $pc] 0]]
+    $d]
 }}
 proc P {{}} {{ return [expr {{{predicate}}}] }}
 """
@@ -91,21 +106,37 @@ def parse_ctx(line: str) -> dict:
 
 class OmsxRun:
     def __init__(self, machine: str = OURS_MACHINE, diska: str | None = None,
-                 symfile: str = "build/disk.omsx.sym", openmsx: str = DEFAULT_OPENMSX):
+                 symfile: str = "build/disk.omsx.sym", openmsx: str = DEFAULT_OPENMSX,
+                 allow_disasm: bool | None = None):
         self.machine = machine
         self.diska = diska
         self.symfile = symfile
         self.openmsx = openmsx
+        # Clean-room: NEVER decode the reference (stock) machine's code. Default off for
+        # the stock machine, on for ours; an explicit bool overrides. (The PC>=0x4000 gate
+        # in the preamble still applies on top, so even ours never decodes main-BIOS/$0100.)
+        self.allow_disasm = (machine != STOCK_MACHINE) if allow_disasm is None else allow_disasm
 
     def run_job_raw(self, body: str, settle: float, predicate: str = "0",
-                    timeout: float = 200.0, safety: float = 30.0, arm: str = "") -> list[str]:
+                    timeout: float = 200.0, safety: float = 30.0, arm: str = "",
+                    keys: str = "", keys_at: float = 0.0) -> list[str]:
         """As `run_job`, but returns the RAW `emit` lines (unparsed). Use this when the
         job emits its own record format (e.g. the differential harness's `CALL`/`BLOCK`
-        lines) that `parse_ctx` would mis-parse. `run_job` is this + `parse_ctx`."""
+        lines) that `parse_ctx` would mis-parse. `run_job` is this + `parse_ctx`.
+
+        `keys`, if given, is typed into the emulated keyboard (openMSX `type`) at emulated
+        time `keys_at` — the black-box way to drive console input (e.g. answer a BUFIN
+        prompt, then drive past it to `A>`). Use `\\r` for Enter. Keys play under
+        throttle-off, so a small `keys_at` < `settle` lets them land before the body runs."""
         out = tempfile.mktemp(suffix=".rec")
         tcl_path = tempfile.mktemp(suffix=".tcl")
-        preamble = _PREAMBLE.format(symfile=self.symfile, out=out, predicate=predicate)
-        script = preamble + arm + f"""
+        disok = 1 if self.allow_disasm else 0
+        preamble = _PREAMBLE.format(symfile=self.symfile, out=out, predicate=predicate,
+                                    disok=disok)
+        inject = ""
+        if keys:
+            inject = f'after time {keys_at:.4f} {{ type "{keys}" }}\n'
+        script = preamble + arm + inject + f"""
 after time {settle:.4f} {{
   if {{[catch {{ {body} }} err]}} {{ emit "ERROR $err"; exit }}
 }}
@@ -133,14 +164,17 @@ after time {settle + safety:.4f} {{ emit "TIMEOUT-SAFETY"; exit }}
         return lines
 
     def run_job(self, body: str, settle: float, predicate: str = "0",
-                timeout: float = 200.0, safety: float = 30.0, arm: str = "") -> list[dict]:
+                timeout: float = 200.0, safety: float = 30.0, arm: str = "",
+                keys: str = "", keys_at: float = 0.0) -> list[dict]:
         """Run one job. `body` is Tcl executed inside an `after time {settle}` callback
         (machine at emulated time `settle`, reverse timeline 0..settle ready). `body`
         is responsible for finishing with `exit` or installing a condition that exits.
         `arm` is Tcl run immediately (before boot proceeds) — for watchpoints that must
-        be live from t=0. `predicate` is a Tcl expr available as `[P]`. Returns records."""
+        be live from t=0. `predicate` is a Tcl expr available as `[P]`. `keys`/`keys_at`
+        inject keystrokes (see run_job_raw). Returns records."""
         return [parse_ctx(l) for l in self.run_job_raw(
-            body, settle, predicate=predicate, timeout=timeout, safety=safety, arm=arm)]
+            body, settle, predicate=predicate, timeout=timeout, safety=safety, arm=arm,
+            keys=keys, keys_at=keys_at)]
 
     # -- composed primitives ----------------------------------------------
     def bisect_locate(self, predicate: str, lo: float, settle: float,
@@ -211,7 +245,9 @@ after time {settle + safety:.4f} {{ emit "TIMEOUT-SAFETY"; exit }}
               emit [format "CHAIN-%04X jp=%04X" $a $t]
               set a $t
             } else {
-              emit [format "CHAIN-%04X op=%02X dis={%s}" $a $op [lindex [debug disasm $a] 0]]
+              set d "-"
+              if {$::DISOK && $a >= 0x4000} { set d [lindex [debug disasm $a] 0] }
+              emit [format "CHAIN-%04X op=%02X dis={%s}" $a $op $d]
               break
             }
           }

@@ -150,7 +150,8 @@ def mode_callseq(args) -> int:
     def seq_for(machine):
         arm = arm_ours if machine == OURS_MACHINE else arm_stock
         raw = _runner(machine, args.diska, args.symfile).run_job_raw(
-            body, settle=args.settle, timeout=args.timeout, arm=arm)
+            body, settle=args.settle, timeout=args.timeout, arm=arm,
+            keys=args.keys, keys_at=args.keys_at)
         return [c for c in (_parse_call(l) for l in raw) if c], raw
 
     tag = f" [POKE @{args.poke_at:#06x}: {pokes+poke_regs}]" if (pokes or poke_regs) else ""
@@ -247,7 +248,8 @@ def mode_capture(args) -> int:
 
     def cap_for(machine):
         return _runner(machine, args.diska, args.symfile).run_job(
-            body, settle=args.settle, timeout=args.timeout, arm=arm)
+            body, settle=args.settle, timeout=args.timeout, arm=arm,
+            keys=args.keys, keys_at=args.keys_at)
 
     print(f"=== capture: regs{'+mem' if mem else ''} at occurrence #{args.nth} of {args.at:#06x} ===")
     o_recs, s_recs = cap_for(OURS_MACHINE), cap_for(STOCK_MACHINE)
@@ -380,7 +382,8 @@ def mode_trace(args) -> int:
         # pokes are injected into OURS only (the unit under test); stock stays the oracle.
         arm = arm_poked if (pokes and machine == OURS_MACHINE) else arm_plain
         recs = _runner(machine, args.diska, args.symfile).run_job(
-            body, settle=args.settle, timeout=args.timeout, arm=arm)
+            body, settle=args.settle, timeout=args.timeout, arm=arm,
+            keys=args.keys, keys_at=args.keys_at)
         return _trace_seq(recs)
 
     print(f"=== trace: {args.steps} instrs from occurrence #{args.nth} of {args.anchor:#06x} "
@@ -444,7 +447,9 @@ def mode_trace(args) -> int:
         real = None
         for k, ev in enumerate(events, 1):
             so, ss = stock[ev["fork_s"]], ours[ev["fork_o"]]
-            caller = stock[ev["fork_s"] - 1] if ev["fork_s"] else so
+            # Pre-fork PCs are aligned; show OUR side's dis (clean-room: ours is our own
+            # artifact and obeys the PC>=0x4000 gate; stock dis is suppressed = "-").
+            caller = ours[ev["fork_o"] - 1] if ev["fork_o"] else ss
             print(f"  fork {k}: at {caller['PC']:04X} {str(caller.get('dis',''))[:24]:<24} "
                   f"-> stock {ev['pc_s']:04X} / ours {ev['pc_o']:04X}")
             if ev["resync_pc"] is None:
@@ -459,7 +464,7 @@ def mode_trace(args) -> int:
                   f"  across {min(len(ours),len(stock))} traced instrs (only by-design\n"
                   f"  relocation differs). The next real blocker is beyond --steps={args.steps}.")
         else:
-            cps = stock[real["fork_s"] - 1] if real["fork_s"] else stock[real["fork_s"]]
+            cps = ours[real["fork_o"] - 1] if real["fork_o"] else ours[real["fork_o"]]
             print(f"\n  -> REAL blocker: caller {cps['PC']:04X} {cps.get('dis','')}; "
                   f"stock->{real['pc_s']:04X} ours->{real['pc_o']:04X}. Inspect what it reads.")
         return 0
@@ -479,7 +484,7 @@ def mode_trace(args) -> int:
         mark = ">>" if s.get("PC") != o.get("PC") else "  "
         print(f"{mark}{i+1:>4}  {s['PC']:04X}     {str(s.get('dis',''))[:26]:<26} | "
               f"{o['PC']:04X}    {str(o.get('dis',''))[:26]}")
-    sb = stock[fork - 1] if fork else stock[0]
+    sb = ours[fork - 1] if fork else ours[0]  # aligned pre-fork PC; ours' dis (clean-room)
     print(f"\n  branch instruction (last common step {fork}): {sb['PC']:04X}  {sb.get('dis','')}")
     print(f"  flags/regs there — stock AF={sb.get('AF',0):04X}  ours AF={ours[fork-1].get('AF',0):04X}")
     print("  -> inspect what that instruction (and the few before it) READ; that memory is\n"
@@ -522,7 +527,8 @@ def mode_iowrite(args) -> int:
 
     def seq_for(machine):
         raw = _runner(machine, args.diska, args.symfile).run_job_raw(
-            body, settle=args.settle, timeout=args.timeout, arm=arm)
+            body, settle=args.settle, timeout=args.timeout, arm=arm,
+            keys=args.keys, keys_at=args.keys_at)
         data, addr_evt = [], []
         for l in raw:
             if l.startswith("IOW "):
@@ -609,7 +615,8 @@ def mode_screen(args) -> int:
         machines = [STOCK_MACHINE]
     for m in machines:
         raw = _runner(m, args.diska, args.symfile).run_job_raw(
-            _screen_body(), settle=args.settle, timeout=args.timeout)
+            _screen_body(), settle=args.settle, timeout=args.timeout,
+            keys=args.keys, keys_at=args.keys_at)
         who = "OURS " if m == OURS_MACHINE else "STOCK"
         mode = next((l for l in raw if l.startswith("MODE")), "MODE ?")
         print(f"=== screen: {who} ({m})  [{mode}]  settle={args.settle}s ===")
@@ -637,6 +644,12 @@ def main() -> int:
         p.add_argument("--symfile", default="build/disk.omsx.sym")
         p.add_argument("--settle", type=float, default=35.0)
         p.add_argument("--timeout", type=float, default=220.0)
+        p.add_argument("--keys", default="",
+                       help=r"keystrokes to inject via the emulated keyboard (openMSX `type`; "
+                            r"use \r for Enter) — the black-box way to drive console input")
+        p.add_argument("--keys-at", type=float, default=0.0, dest="keys_at",
+                       help="emulated time (s) at which to inject --keys (default 0; "
+                            "set < --settle so keys land before the snapshot)")
 
     c = sub.add_parser("callseq", help="diff a call sequence; report first divergence")
     common(c)
