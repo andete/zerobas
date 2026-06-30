@@ -35,14 +35,14 @@ between us and `A>`. Functions not yet on this path are 🔲 by default, not ✅
 
 | C | fn | on boot path? | ours | evidence / handler | notes |
 |------|--------|---------------|------|--------------------|-------|
-| `$02` | CONOUT | yes (n=5–16) | ✅ | real CONOUT at `$5454` (M8) | faithfully prints the bytes given; date garbage was upstream, not CONOUT |
-| `$09` | STROUT | yes (n=1,3,17) | ✅ | banner + prompt print byte-identical | settled fact |
-| `$0A` | BUFIN | yes (n=18) | 🔲 | stock parks here (date input wait) | ours reaches it only AFTER the `_GDATE` fix; headless BUFIN behavior untested ([[tier2-storms-are-downstream]]) |
-| `$0E` | SELDSK | seen (early derail) | 🔲 | — | appeared in the pre-`$F338`-fix loop; not characterized on the clean path |
+| `$02` | CONOUT | yes (n=5–16) | ⚠ render | reaches CHPUT with the right char (A=$58 verified) but VRAM gets tile `$80` | **DOWNGRADED 2026-06-30**: the call sequence matches stock byte-for-byte, but the `screen` tool shows ours' name table is all `$80` — the SIDE EFFECT was never VRAM-verified. Root cause = inter-slot CHPUT register-context (ours BC=$0000 vs stock $0980; `$08F1 jr c` fork). THE active blocker. |
+| `$09` | STROUT | yes (n=1,3,17) | ⚠ render | calls match byte-identically, but renders via the same broken CHPUT path | same `$80` render bug as CONOUT (STROUT loops over CHPUT) — call-verified, not VRAM-verified |
+| `$0A` | BUFIN | yes (n=18, 28, …) | ✅* | stock parks for a key; ours' headless BUFIN returns empty → ours runs into the A> loop | *headless: ours reaches BUFIN at the date prompt (n=18) AND at the A> command prompt (n=28+), looping cleanly. Real keyboard input untested ([[tier2-storms-are-downstream]]); the call/return is correct |
+| `$0E` | SELDSK | yes (n=22) | ✅* | called in the A> command loop past BUFIN; ours proceeds | *now on the clean post-BUFIN path (earlier it only appeared in the pre-`$F338`-fix derail) |
 | `$0F` | FOPEN | yes (n=2) | ⚠ partial | COMMAND.COM-load FOPEN ✅; full dir-search / not-found path ⚠ (`$4462` chain) | [tier2-bdos-scope.md](tier2-bdos-scope.md): 23-addr path, 2 covered |
-| `$19` | CURDRV | seen (early derail) | 🔲 | — | not characterized on the clean path |
+| `$19` | CURDRV | yes (n=25,30,…) | ✅* | called each A> prompt redraw; ours proceeds | *the A> idle loop calls it to print the drive letter |
 | `$2A` | GDATE | yes (n=4) | ✅ | handler `gdate_handler` @ `$553C` + `$F30D/$F30E` format defaults | DONE 2026-06-27 — returns 1984-01-01 default; `$CC04` diff NONE; backed by callseq + test_gdate.py |
-| `$2B` | SDATE | likely (past BUFIN) | 🔲 | own table entry → own canonical handler | next slice: accepting the date prompt probably calls this; possibly a no-op `ret` suffices |
+| `$2B` | SDATE | yes (n=21) | ✅* | called past BUFIN with DE=0101 HL=07C0; RETURNS, ours proceeds to SELDSK | *NOT a blocker (refuted the prior hypothesis): ours accepts the default date and continues into the A> loop. No host unit test yet; behavior past entry is "returns cleanly" |
 | `$2C` | GTIME | unknown | 🔲 | — | clock-group; may be called like GDATE |
 | `$2D` | STIME | unknown | 🔲 | — | clock-group |
 
@@ -54,10 +54,16 @@ LOGIN · `$1A` SETDTA · `$1B` ALLOC · `$21` RDRND · `$22` WRRND · `$23` FSIZ
 user programs will exercise these; out of scope until `A>` is reached, then re-survey).
 
 ## Reading the score
-- **Reached `A>` requires:** every function COMMAND.COM calls on the boot path = ✅. `$2A` GDATE is
-  now ✅ (ours reaches **BUFIN n=18**, the date-input wait, matching stock). The next critical-path
-  item is **past BUFIN** — `$0A` BUFIN behavior + likely `$2B` SDATE (accepting the date) → `A>`.
-  `$0F` FOPEN is ⚠-partial but its COMMAND.COM-load subset works (not-found path is downstream).
-- **Pattern (the Tier-2 lesson):** a ⚠ is almost always a **canonical-address collision** — the
-  kernel calls a fixed handler address that ours repurposed for Tier-1 Disk-BASIC/BDOS code. Each
-  fix = clean-room handler at that address + net-zero relocation of the displaced Tier-1 body.
+- **Control flow reaches `A>` (2026-06-30):** every BDOS function COMMAND.COM calls on the boot path
+  through the A> idle loop now sequences correctly — GDATE/SDATE/SELDSK/CURDRV/BUFIN all return and
+  ours proceeds. `$0F` FOPEN is ⚠-partial but its COMMAND.COM-load subset works (not-found path is
+  downstream of A>). **But `A>` is NOT yet VISIBLE** — see the render blocker below.
+- **THE active blocker is rendering, not control flow:** `$02` CONOUT / `$09` STROUT are ⚠-render —
+  the calls match stock byte-for-byte but ours' CHPUT writes tile `$80` for every glyph, so the
+  whole screen (banner, prompts, `A>`) is garbage. This was hidden because coverage was scored from
+  the *call sequence*; the new `screen` mode scores the *side effect* (VRAM). Lesson: **a ✅ needs
+  the OUTPUT verified, not just the call.**
+- **Pattern (the Tier-2 lesson):** most ⚠ are a **canonical-address collision** — the kernel calls a
+  fixed handler ours repurposed for Tier-1 code; fix = clean-room handler + net-zero relocation. The
+  CONOUT ⚠ is a different species: a **faithful-inter-slot-call** bug (ours' hand-rolled page-in +
+  direct `call $00A2` doesn't reproduce stock's CALSLT/`$F398` register context CHPUT needs).

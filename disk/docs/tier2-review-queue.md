@@ -23,6 +23,29 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[Past-BUFIN probe / REFRAME — date path DONE, new RENDER blocker found] Investigated "past BUFIN
+to A>"; found ours reaches the A> command loop at the BDOS level, but the screen renders garbage.**
+· **what I did:** no-poke `callseq --maxhits 40` (the GDATE fix is in the ROM, so the `$CDA7` poke
+is retired). · **findings:** (1) ours == stock byte-identical n=1–18 (date path fully solved, no
+poke). (2) Past BUFIN, ours reaches the A> idle loop: **SDATE ($2B) is called (n=21) and RETURNS**
+— it is NOT the next blocker (refutes the prior next-action hypothesis) — then SELDSK/CURDRV/print
+`A>`/BUFIN, looping. (3) **NEW BLOCKER:** the new `screen` mode (VRAM name-table render) shows ours'
+console output writes tile **`$80` for every glyph** — banner/prompts/`A>` all invisible; stock
+renders correctly. (4) Root-caused to an **inter-slot CHPUT register-context divergence**: CHPUT
+gets the right char (aligned capture `$00A2` 'X' → A=$58 both) but ours BC=$0000 vs stock $0980;
+CHPUT forks at `$08F1 jr c` into the control path. Ours' `conout_body` does a hand-rolled page-in +
+direct `call $00A2`, bypassing stock's `$5454→$408F→CALSLT→$F398→$00A2` chain that sets the context.
+· **judgment calls:** (a) extended `disk_probe_diff.py` with a `screen` mode + a callseq TAIL print
+(per "don't write a 58th probe"; ~70 lines, no behavior change to existing modes). (b) DOWNGRADED
+`$02` CONOUT ✅→⚠ on the coverage board — the "banner byte-identical" settled fact was call-verified
+only, never VRAM-verified; the screen tool exposed the gap. (c) STOPPED before any ROM edit — the
+CONOUT fix is a new slice needing characterise→spec→sign-off per [[spec-before-implementation]].
+· **caveat logged:** the `$08F1` carry-fork trace was `$00A2`-occurrence-aligned but NOT char-
+aligned; re-confirm on a char-aligned anchor (BDOS `$0005 C=02`) before building the fix. The
+`screen` $80 fact and the aligned-capture BC diff are already robust. · confidence: high on the
+findings, medium on the exact fix shape (need step 2 of the next-action). · undo: docs + probe
+tooling only; no ROM change. See [tier2-STATE.md](tier2-STATE.md) "Next action".
+
 **[GDATE slice / DONE+VALIDATED] Implemented the date-path slice (option B); ours now reaches the
 date-input BUFIN.** User chose B and signed off ("excellent, continue"); implemented under the
 autonomous span. · **what:** (1) `gdate_handler` at canonical `$553C` (kernel.asm) — a ~13-byte

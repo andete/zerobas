@@ -10,183 +10,136 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-06-27 (GDATE slice LANDED — ours reaches BUFIN; next = past-BUFIN to A>). Update the date + sections whenever state changes._
+_Last updated: 2026-06-30 (BIG reframe: date path fully solved — ours reaches the A> command
+loop with NO poke. New blocker found by direct screen observation: CONOUT renders every char as
+tile $80; the screen is garbage. "Banner byte-identical" was call-verified only, never VRAM-
+verified.). Update the date + sections whenever state changes._
 
 ---
 
 ## Goal
 Boot MSX-DOS to the `A>` prompt under zerobas-disk (Tier-2) **without regressing
 Tier-1** (disk-BASIC / BLOAD / FILES) and while staying a **BIOS-agnostic replacement
-disk ROM** (works on CF-3300, C-BIOS, any standards MSX1).
+disk ROM** (works on CF-3300, C-BIOS, any standards MSX1). "Reached `A>`" means a
+**visible** `A>` on screen + accepts a command — not just the right BDOS call sequence.
 
-## Live thesis (RESOLVED 2026-06-27: GDATE collision FIXED — ours reaches BUFIN; see Next action)
-_The root-cause analysis below is retained for context; the fix landed (gdate_handler @ `$553C` +
-`$F30D/$F30E` defaults). The active blocker is now PAST BUFIN — see "Next action"._
+## Live thesis (2026-06-30: date path DONE at BDOS level; the remaining blocker is RENDERING)
+With the GDATE slice in the ROM, **ours' BDOS call sequence is byte-identical to stock for
+n=1–18 with NO poke**, ending at BUFIN (the date-input wait), and **past BUFIN ours reaches the
+`A>` command-interpreter idle loop** (SDATE→SELDSK→CURDRV→print `A>`→BUFIN, repeating). So at the
+control-flow level ours reaches `A>`. **But the actual screen is garbage**: ours' console output
+renders **every printable character as constant tile `$80`** in VRAM (banner, prompts, and `A>`
+all invisible). The real ASCII text is **nowhere** in ours' VRAM. So a *visible* `A>` is NOT yet
+achieved — the last blocker is a **CONOUT/CHPUT rendering bug** in ours' inter-slot output path.
 
-### Root-cause record (the date blocker WAS a CANONICAL-ADDRESS COLLISION)
-The date-prompt hang is **not** a clock/inter-slot bug and **not** a work-area-DATA bug.
-It is a **page-1 ROM canonical-address collision**: the disk-loaded MSXDOS.SYS BDOS
-dispatcher (identical on both machines) services `_GDATE` ($2A) by paging in the disk ROM
-(via the `$F368` hook) and calling the canonical date-math routine at **`$553C`** (which
-chains `$54C0`→`$4179` `ld a,($F338); ld hl,($F33B)` and the 16-bit divide at `$492F-$494A`).
-Stock's CF-3300 ROM has the **MSX-DOS date kernel** there; **ours' zerobas-disk ROM has
-`bdos_create_body` (a relocated BDOS/Disk-BASIC body, the `$5456-$5FE4` "3b" region) at the
-SAME address `$553C`** → `_GDATE` executes unrelated code → returns garbage (HL=`0000` vs
-stock `07C0`=1984).
-
-**FALSIFY-FIRST PROOF (`callseq --poke`, 2026-06-27):** poking ours' date regs (BC=`0101`
-DE=`1354` HL=`0054`) + the `$F30E` ordering byte to stock's at `$CDA7` makes ours converge
-**byte-for-byte with stock from n=9 through n=18** — the entire date print, then STROUT (n=17)
-and **BUFIN (n=18) = the date-input wait**, exactly where stock parks. So **the date VALUE is
-the SOLE gate** past the date prompt; the value is garbage purely because ours' canonical date
-CODE is overwritten. (Trust check: un-poked baseline reproduces the n=5 CONOUT divergence with
-the date digits forking at n=9 — stock prints "1984-01-01", ours "  3-00-00".)
-
-**The reframe reconciles every prior thread:**
-- The work-area-DATA falsification (poking `$F100-$F3FF` didn't fix the date) — **vindicated**:
-  the CODE at `$553C` is wrong, so the `$F33B` date data stock reads is garbled regardless.
-- "_GDATE returns garbage" — **localised**: garbage originates AT the GDATE return `$CC04`
-  (ours HL=`0000` DE=`0003` vs stock HL=`07C0` DE=`0101`), i.e. inside the broken handler.
-- The DOS-BDOS / work-area-construction scope ([tier2-workarea-map.md](tier2-workarea-map.md))
-  is **vindicated as the real path to `A>`** — but via canonical **CODE** collision, not data.
-
-**Strategic consequence:** the date is NOT a cheap standalone fix. It needs the DOS date-math
-routines present at canonical page-1 addresses (`$553C`, `$54C0`, `$4179`, `$492F`) that ours
-currently uses for Tier-1 Disk-BASIC/BDOS bodies. This IS the core Tier-2 problem — a 16KB ROM
-that cannot host both Tier-1 bodies and Tier-2 DOS-BDOS routines at their fixed canonical
-addresses. **HARD-STOP — user strategy decision (see Next action).**
+### What this session PROVED (2026-06-30, all on test.dsk)
+- **No-poke convergence through BUFIN** (`callseq --maxhits 40`): ours == stock for n=1–18
+  (STROUT/FOPEN/STROUT/GDATE/CONOUT×banner/STROUT/BUFIN). The date prompt is fully solved; the
+  prior `--poke-at 0xCDA7` repro is no longer needed.
+- **Ours reaches the `A>` command loop** (callseq OURS-only tail, new `--tail` print): n=19,20
+  CONOUT (CR LF echo of Enter); **n=21 `$2B` SDATE DE=0101 HL=07C0** (correct 1984-01-01 default)
+  → SDATE RETURNS, ours proceeds → **SDATE is NOT the next blocker** (the prior hypothesis is
+  REFUTED); n=22 SELDSK, n=23–27 CR LF + CURDRV + `A` + `>`, n=28 BUFIN, then a clean idle loop
+  (LF→CURDRV→`A`→`>`→BUFIN). Stock blocks at its BUFIN (n=18) for a real key; ours' headless BUFIN
+  returns empty immediately, so ours runs ahead into the prompt loop. That asymmetry is a headless
+  artifact, NOT a bug ([[tier2-storms-are-downstream]]: headless BUFIN never blocks).
+- **NEW: the screen is garbage** (new `screen` mode reads the VRAM name table at R2-derived base).
+  Stock renders perfectly (`  MSX-DOS version 1.03` / `Current date is Sun 84-01-01` / `Enter new
+  date:`). **Ours' name table is all tile `$80`** (`HEX01 = 2020 80 80 … 80`; spaces `$20` survive,
+  every letter → `$80`). The `MSX` byte-sequence is found in stock VRAM, **never in ours' VRAM**.
+  Mode = SCREEN 1 (scrmod=01, 32-col, namebase $1800) on BOTH; same renderer; so this is real, not
+  a tool/renderer artifact.
+- **Root cause = inter-slot CHPUT register-context divergence** (capture + trace):
+  - CHPUT *receives the correct char*: aligned `capture --at 0x00A2 --nth 5` for `'X'` shows A=$58
+    on BOTH (alignment-guard PASS, same char confirmed by A matching).
+  - But the *register context* differs at CHPUT entry: **stock BC=$0980, ours BC=$0000** (C=$80 vs
+    $00); IX/IY also differ (stock IX=$00A2 IY=$0000 — the CALSLT signature; ours IX=$F195 IY=$0314).
+  - CHPUT's internal dispatch then **forks at $08F1 `jr c`** (`ld a,c; cp $20; jr c`): stock's C is
+    the printable char → carry clear → glyph path ($08F3); ours' C is wrong → carry set → control
+    path ($0914). I.e. CHPUT reads the char from **C**, and ours' C is not the char.
+  - Mechanism: ours' `conout_body` (runtime.asm) reaches CHPUT via a hand-rolled `pg0_mainrom_in`
+    page-in + **direct `call $00A2`**, bypassing stock's documented chain
+    **`$5454→$408F→$001C CALSLT→resident kernel→$F398→$00A2`** (see kernel.asm:34). CALSLT / the
+    `$F398` hook establish the register context (notably BC) CHPUT needs; ours doesn't → mis-render.
 
 ## Settled facts — DO NOT re-litigate or re-probe
-- COMMAND.COM **loads correctly**: ours reads sectors 134–146 (cluster 62–68),
-  byte-identical to stock at `$0100` entry. ("+2 clusters wrong read" was RETRACTED.)
-- `$47B2` return contract done (commit 9573a4c): COMMAND.COM runs its **real startup**,
-  no longer spins at `$050D`. Sets HL=BC=FAT_FILESIZE, IX=`$F195`, IY=entry DE.
-- The **banner prints byte-identically** (53-char "MSX-DOS version 1.03 …", conout `$5454`).
-  Garbage CONOUT only starts AFTER COMMAND.COM launches.
-- `$0005` = `JP $D606` (kernel BDOS dispatch), identical ours/stock. **All `$0005`
-  callers are COMMAND.COM; ZERO in the kernel `$D606-$DDFF`** (fork-B viability gate PASS).
-- A **register-only FOPEN intercept is INSUFFICIENT** (fopenoverride): forcing A=`$FF` /
-  AF=`$FF45` still mis-branches → the branch input is work-area **memory**, not registers.
-- **Work-area PRE-BUILD does not fix the hang** (M6/§8.65): ours reads none of the stale
-  cells before looping; loaded COMMAND.COM byte-identical. Forcing `$F338`=00 alone also
-  did not fix it.
-- The **n=3 BDOS fork is data-driven by `$F338`** (COMMAND.COM `ld a,($F338);and a;jr nz`
-  @ `$C26B`): 00=STROUT/prompt (stock), ≠0=SELDSK/loop (ours). **FIXED** 2026-06-27 (`dos_handoff`
-  defaults `$F338`=0 DOS-only); ours now follows stock to `$D885` (blocker #2 = `$F368` hook).
-- The MSX-DOS-1 **file-ops BDOS (FOPEN / dir-search / file-read) lives INSIDE the disk ROM**
-  (shared kernel). Our 14 veneers cover only the COMMAND.COM-LOAD subset; real DOS file ops
-  call the rest of the shared BDOS, which in our ROM is FDC/DSKIO code, ds-pad, or bare `ret`.
-- **Date VALUE is the SOLE gate past the date prompt** (`callseq --poke` 2026-06-27): supply
-  stock's date regs at `$CDA7` and ours converges byte-identically to stock to **BUFIN (n=18)**.
-- **`_GDATE` ($2A) garbage originates AT the BDOS return `$CC04`** (ours HL=`0000`/DE=`0003`
-  vs stock HL=`07C0`/DE=`0101`) — the handler itself, not COMMAND.COM post-processing.
-- **The `_GDATE` handler = canonical page-1 ROM `$553C`** (chain `$54C0`→`$4179`→`$492F`);
-  ours has **`bdos_create_body`** there (collision) so it runs unrelated code. Stock reads the
-  date from `$F338`/`$F33B` cells; the n=4 GDATE call input is byte-identical, only the result
-  differs. **The date work used `test.dsk`** (NOT msxdos103-cmd111.dsk — its COMMAND.COM never
-  hits `$CDA7`).
+- COMMAND.COM loads correctly; `$47B2` return contract done; `$0005`=`JP $D606` identical;
+  `$F338`=0 DOS-handoff fix lands ours on the stock path; GDATE handler @ `$553C` returns the
+  clock-less 1984-01-01 default; `$F30D=01/$F30E=00` format defaults set. (All prior settled facts
+  about COMMAND.COM load / FOPEN-subset / date VALUE-is-the-gate still hold.)
+- **Date path is DONE at the BDOS level** (n=1–18 byte-identical, no poke; SDATE returns).
+- **CONOUT "banner byte-identical" was CALL-sequence-verified ONLY, never VRAM-verified.** The
+  screen tool reveals ours' CONOUT writes tile `$80` for every glyph. CONOUT is therefore **⚠
+  (renders garbage)**, not ✅, on the coverage board — DOWNGRADED 2026-06-30.
+- **SDATE ($2B) is NOT a blocker** — it is called past BUFIN, returns, ours proceeds. (Refutes the
+  prior next-action hypothesis that SDATE would be the next collision.)
 
-## Dead ends — do NOT re-walk
-- "Fix FOPEN return code" (fork-A first step) — value isn't the branch input.
-- "Intercept `$0005`, register-only contract" (fork-B lightweight) — work-area mem, not regs.
-- M6 full work-area pre-build — does not fix the hang.
-- "Ours skips MSXDOS.SYS init" — refuted (entry0100seq).
-- "+2 clusters / wrong-sector load" — retracted (mid-stream snapshot artifact).
-- **"The date is a `_GDATE`/clock inter-slot-path bug"** (the prior most-recent framing) —
-  REFUTED. No clock is involved: stock reads `$F33B`/`$F338` work-area cells + ROM date math,
-  not the RTC (CF-3300 is clock-less; the 1984 default IS the cell value). The bug is the
-  canonical-address CODE collision at `$553C`.
-- **"Init the date work-area cells to fix the date"** — would NOT fix it alone: ours' CODE at
-  `$553C` (`bdos_create_body`) garbles any `$F33B` data. Code first, then data.
+## Dead ends / refuted — do NOT re-walk
+- "SDATE ($2B) is the next blocker past BUFIN" — REFUTED 2026-06-30 (SDATE returns; ours proceeds).
+- "Ours not-blocking at BUFIN is a bug" — NO, it's the headless no-keyboard artifact; stock blocks
+  only because the emulator has no key to give. Both run the same kernel BUFIN.
+- (Retained) the older date-path dead ends: FOPEN-return-value, register-only $0005 intercept, M6
+  work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug", "init date
+  cells alone". All still dead.
 
-## Next action — GDATE slice DONE; next slice = PAST BUFIN to `A>`
-**GDATE slice LANDED + VALIDATED 2026-06-27** ([tier2-gdate-spec.md](tier2-gdate-spec.md) §9):
-`gdate_handler` at canonical `$553C` (kernel.asm, `fac_loop_body` relocated net-zero) returns the
-clock-less default 1984-01-01, AND `dos_handoff` now defaults the date-FORMAT cells `$F30D=01 /
-$F30E=00` (runtime.asm — the value handler alone was NOT enough; COMMAND.COM reads `$F30E` at
-`$CDA7` to format). **Result: ours converges with stock through BUFIN (n=18), the date-input
-wait** — `$CC04` diff NONE, callseq n=1–18 identical, no poke. Validated: test_gdate.py (suite
-19/19), net-zero 16384 B / no canonical shift, DSKIO/FILES/APPEND == CF-3300. `$2A` GDATE = ✅ on
-the [tier2-bdos-coverage.md](tier2-bdos-coverage.md) scoreboard.
+## Next action — NEW SLICE: make CONOUT render real glyphs (spec-first)
+The ONLY thing between ours and a **visible** `A>` is the CHPUT rendering bug. Plan:
+1. **Char-aligned re-confirm (falsify-first, cheap).** The `$08F1` carry-fork trace was anchored on
+   `$00A2` occurrence-count, which is NOT char-aligned (CHPUT hit-counts differ ours vs stock). Re-
+   anchor on a char-aligned event (e.g. the BDOS CONOUT `$0005 C=02` call, which callseq PROVED is
+   aligned) and trace into CHPUT, to confirm the BC/C divergence at the SAME logical char. (The
+   `screen` 0x80 fact and the aligned `capture` BC diff are already robust; this just pins the path.)
+2. **Characterise stock's path.** Trace stock `$5454→$408F→CALSLT→$F398→$00A2` and capture what sets
+   BC (and whether IX/IY/CALSLT state matter) before CHPUT. Identify the minimal register context
+   CHPUT's glyph path needs.
+3. **Spec the conout_body fix** (per [[spec-before-implementation]]): either route ours' CONOUT
+   through CALSLT ($001C) / the `$F398` hook like stock, or replicate the needed register setup
+   before `call $00A2`. Net-zero, BIOS-agnostic (EXPTBL-driven, no CF-3300 hardcode), no canonical
+   shift. Get sign-off BEFORE editing the ROM.
+4. **Falsify-first for the fix:** confirm that supplying stock's BC (or routing via CALSLT) makes
+   ours' VRAM render real ASCII (re-run `screen --machine ours` → expect `MSX-DOS version 1.03`).
+5. Once CONOUT renders, re-run `screen --machine ours` at settle — ours should DISPLAY `A>` (the
+   control flow already reaches it). That would be the visible-`A>` milestone.
 
-**NEXT SLICE — past BUFIN to `A>`:** ours now parks at BUFIN (n=18) like stock; the post-BUFIN
-divergence (callseq n=19) is the next blocker. Reaching `A>` needs a CR fed to the date prompt
-+ likely `_SDATE` ($2B, accepting the date) — its own dispatch-table entry → own canonical handler
-(probable collision; possibly a no-op `ret`). Characterise `$2B`'s handler address (the `$D8BE +
-3*$2B` table entry) and whether COMMAND.COM calls it after BUFIN. Same method: callseq to find the
-fork, capture the handler return contract, falsify-first, then a spec. Headless BUFIN never blocks
-([[tier2-storms-are-downstream]]) so feeding the key needs care (probe-inject or a key event).
+Likely the same `int_h_body`/`conout_body` family of "faithful inter-slot main-ROM call" work — the
+fix may also want to confirm int_h isn't masking a related context issue. Note the silver lining:
+the rendering fix is plausibly the LAST blocker to a visible `A>`.
 
-### Superseded framing (kept for context) — the broader collision
-The date blocker is the **first concrete instance
-of the central Tier-2 problem**: ours' 16KB disk ROM cannot host both the Tier-1 Disk-BASIC/BDOS
-bodies **and** the Tier-2 DOS-BDOS routines at their **fixed canonical page-1 addresses**, because
-the disk-loaded MSXDOS.SYS dispatcher calls those canonical addresses directly. For the date,
-`$553C`/`$54C0`/`$4179`/`$492F` collide with `bdos_create_body`/relocated Disk-BASIC bodies.
-
-**Why this is a fork, not a grind:** every prior "just one more cell / one more veneer" framing was
-too small. The verified scope to make a single DOS BDOS function (`_GDATE`) work is *clean-room
-DOS date routines living at canonical addresses ours currently uses for Tier-1*. That is a
-**layout/relocation design decision**, the same one [tier2-workarea-map.md](tier2-workarea-map.md)
-and [tier2-bdos-scope.md](tier2-bdos-scope.md) reach from the data/file-ops side. The threads have
-converged: **reaching `A>` = reproducing the disk-ROM-resident DOS BDOS at canonical addresses,
-without displacing Tier-1.**
-
-**Options for the user (recommend B→A as a staged path):**
-- **(A) Full DOS-BDOS canonical reproduction.** Build the resident DOS BDOS (date math + the
-  work-area construction in [tier2-workarea-map.md](tier2-workarea-map.md)) at canonical page-1
-  addresses, relocating Tier-1 bodies that collide. Deepest Tier-2 work, multi-session, needs a
-  layout/relocation spec FIRST (which Tier-1 bodies move, where; net-zero; BIOS-agnostic).
-- **(B) Date-path slice first (proof of method).** Provide ONLY the canonical date chain
-  (`$553C` date handler + `$54C0`/`$4179`/`$492F` + the `$F33B`/`$F338` date cells) clean-room,
-  relocating just the colliding Tier-1 body(s). Smaller, gets PAST the date prompt to the next
-  real blocker, and de-risks the relocation approach before committing to (A). Falsify-first has
-  already PROVEN a correct date converges ours to BUFIN — so (B) is known to advance.
-- **(C) Bank as documentation + pause the `A>` build.** The collision is now cleanly mapped
-  (dual-mission deliverable); pause implementation.
-
-**Spec-before-code (per [[spec-before-implementation]]):** whichever of A/B, write the
-layout/relocation spec (which canonical addresses host DOS code, which Tier-1 bodies relocate
-where, net-zero proof, both-host acceptance) and get sign-off before any ROM edit.
-
-**Falsify-first repro of the whole chain (one command, for the next session):**
-`python3 probes/disk/disk_probe_diff.py callseq --maxhits 20 --poke-at 0xCDA7 --poke-nth 1 \
-  --poke-reg BC:0x0101 --poke-reg DE:0x1354 --poke-reg HL:0x0054 --poke 0xF30E:0x00 \
-  --diska ~/Documents/msx/msx/disks/test.dsk` → ours converges to stock through BUFIN (n=18).
+**One-command repros for the next session (test.dsk):**
+- BDOS path to A> loop: `python3 probes/disk/disk_probe_diff.py callseq --maxhits 40 --diska
+  ~/Documents/msx/msx/disks/test.dsk` → identical n=1–18, OURS-only tail shows SDATE/SELDSK/`A>`/BUFIN.
+- The garbage screen: `python3 probes/disk/disk_probe_diff.py screen --machine ours --diska
+  ~/Documents/msx/msx/disks/test.dsk` → all-`$80` name table (stock renders the banner).
+- CHPUT gets the right char: `… capture --at 0x00A2 --nth 5 --diska …` → A=$58 both, BC differs.
 
 ## Method guardrails (DURABLE — keep these when you overwrite this file)
 Endorsed 2026-06-27 after a retrospective found ~half the Tier-2 reframes came from
 premature/misaligned conclusions, not hard bugs. See [[harness-first-investigation-mo]].
 1. **Anchor + alignment.** Every differential capture is anchored on a SHARED logical
-   event; before trusting a stock-vs-ours diff, PROVE both sides are at the same logical
-   point (same Nth call/occurrence — not same PC or wall-clock, esp. when one side loops).
-   `disk_probe_diff` enforces this (flags MISALIGNED rather than printing a false diff).
-2. **Falsify first.** Step 1 of every milestone = the cheapest experiment that would
-   DISPROVE the hypothesis (register-override, force-the-value, "do we even read this?"),
-   BEFORE any characterise/spec/build. `capture --expect same|diff` makes it a one-liner.
-3. **Gate characterisation behind #2.** Don't map the full scope of a path until the cheap
-   experiment confirms the path is real (avoids mapping paths-not-taken, e.g. the 23-addr
-   BDOS scope / 96-routine work-area maps built on later-parked theses).
-4. **Right tool per question.** Settled facts → host unit-tests (`make unit-test`, no
-   emulator). Emulator only for genuinely emulator-dependent questions; reuse savestates /
-   reverse-timeline at the anchor instead of cold double-boots.
-5. **Terse logging.** Full prose queue entry (why/alt/confidence/undo) only for hard-stop
-   forks; routine judgment calls get a one-liner.
+   event; PROVE both sides are at the same logical point before trusting a diff. (This session:
+   the `$00A2` trace was occurrence-aligned but NOT char-aligned — exactly the trap. The aligned
+   `capture` was trustworthy only because A matched, confirming the same char.)
+2. **Falsify first.** Step 1 of every milestone = the cheapest disproving experiment.
+3. **Gate characterisation behind #2.** Don't map a full path until the cheap experiment confirms
+   it's real.
+4. **Right tool per question.** Settled facts → host unit-tests (`make unit-test`, no emulator);
+   emulator only for genuinely emulator-dependent questions. **Observe outputs directly** — the
+   `screen` mode (VRAM render) caught a garbage-output bug that 40 calls of byte-identical BDOS
+   trace completely hid. Verify the SIDE EFFECT, not just the call.
+5. **Terse logging.** Full prose queue entry only for hard-stop forks; routine calls get a one-liner.
 
 ## Tooling — use the ONE harness, don't write a 58th probe
-**`probes/disk/disk_probe_diff.py`** (built on `omsx_session.py`) is the parameterized
-differential probe: `callseq` (call-sequence divergence, e.g. the BDOS seq), `capture`
-(alignment-guarded regs+mem diff at the Nth occurrence of an address), and `trace`
-(per-instruction PC fork + `--resync`). It copies the DOS disk to tmp (mutation-safe) and
-bakes in the alignment guard. Validated 2026-06-27: it reproduces the n=3/date divergences
-exactly. **NEW 2026-06-27: `callseq --poke/--poke-reg --poke-at --poke-nth`** — the
-falsify-first register/memory override (ours-only, stock stays oracle): inject a value at an
-anchor and see if ours' BDOS sequence CONVERGES to stock's. This is what proved the date value
-is the sole gate. **Extend this, don't fork a new script.**
-The 57 legacy `disk_probe_dosboot_*.py` stay for provenance; new work goes through the harness.
+**`probes/disk/disk_probe_diff.py`** (built on `omsx_session.py`) — the parameterized differential
+probe. Modes: `callseq` (call-sequence divergence + `--poke/--poke-reg` falsify-first override; NOW
+also prints the longer side's TAIL when one side blocks/diverges), `capture` (alignment-guarded
+regs+mem diff at the Nth occurrence), `trace` (per-instruction PC fork + `--resync`), and **NEW
+`screen`** (renders the VDP text screen from the VRAM name table — the direct-observation tool that
+caught the `$80` render bug; `--machine ours|stock|both`, dumps rows + HEX + a banner-locate scan).
+It copies the DOS disk to tmp (mutation-safe) and bakes in the alignment guard. **Extend this, don't
+fork a new script.** The 57 legacy `disk_probe_dosboot_*.py` stay for provenance.
 
 ## Invariants for any change
-- Tier-1 green: `make unit-test` 18/18; DSKIO/BLOAD/FILES == CF-3300.
+- Tier-1 green: `make unit-test` 19/19; DSKIO/BLOAD/FILES == CF-3300.
 - Net-zero: `disk.rom` == 16384 B; no canonical-address shifts.
 - Probe machine = Philips_VG_8020 for bload-landmark; FILES runs on C-BIOS_MSX1_EU_BASIC_DISK.
 - Clean-room: derive from DPB / public contracts / our own stubs; never copy stock bytes.

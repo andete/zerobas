@@ -177,6 +177,17 @@ def mode_callseq(args) -> int:
             first_div = i + 1
     if first_div is None and len(ours) != len(stock):
         first_div = n + 1
+    # TAIL: when one side ran longer (the other blocked at a console-input wait, or
+    # one derailed), the shared-prefix loop above can't show what the longer side did
+    # past the split. Dump that tail so a spinning-ours vs blocked-stock split is
+    # visible (e.g. is ours just re-polling BUFIN, or derailing into other calls?).
+    longer, who = (ours, "OURS") if len(ours) > len(stock) else (stock, "STOCK")
+    if len(ours) != len(stock):
+        print(f"--- {who}-only tail (other side stopped at n={n}; "
+              f"blocked at a wait or fewer calls) ---")
+        for i in range(n, len(longer)):
+            print(f"   [{i+1:>2}] {who:<5} {_fmt_call(longer[i])}")
+        print()
     print()
     if first_div is None:
         print(f"ALIGNED, NO DIVERGENCE in {n} shared calls.")
@@ -440,6 +451,70 @@ def mode_trace(args) -> int:
     return 0
 
 
+# ---- mode: screen --------------------------------------------------------------
+def _screen_body() -> str:
+    # Read SCRMOD ($FCAF) + LINLEN ($F3B0), then the VDP name table. SCREEN 0 (text 40)
+    # name table = VRAM $0000, 40x24; SCREEN 1 = $1800, 32x24. Renders printable ASCII,
+    # '.' for control/non-printable. Direct observation of the console — what's on screen.
+    return r"""
+set scrmod [debug read memory 0xFCAF]
+set linlen [debug read memory 0xF3B0]
+set r2 [debug read "VDP regs" 2]
+set base [expr {($r2 & 0x7F) << 10}]
+emit [format "MODE scrmod=%02X linlen=%02X r2=%02X namebase=%04X" $scrmod $linlen $r2 $base]
+set cols [expr {$scrmod == 1 ? 32 : 40}]
+for {set row 0} {$row < 24} {incr row} {
+  set s ""
+  for {set c 0} {$c < $cols} {incr c} {
+    set b [debug read "VRAM" [expr {$base + $row*$cols + $c}]]
+    if {$b >= 32 && $b < 127} { set s "$s[format %c $b]" } else { set s "$s." }
+  }
+  emit [format "ROW%02d |%s|" $row $s]
+}
+# Raw hex of the first 3 name-table rows (reveals char-code transforms vs ASCII).
+for {set row 0} {$row < 3} {incr row} {
+  set h ""
+  for {set c 0} {$c < $cols} {incr c} {
+    set h "$h[format %02X [debug read {VRAM} [expr {$base + $row*$cols + $c}]]]"
+  }
+  emit [format "HEX%02d %s" $row $h]
+}
+# Locate the banner anywhere in VRAM 0..0x3FFF: scan for "MSX" (4D 53 58).
+for {set a 0} {$a < 0x4000} {incr a} {
+  if {[debug read "VRAM" $a] == 0x4D &&
+      [debug read "VRAM" [expr {$a+1}]] == 0x53 &&
+      [debug read "VRAM" [expr {$a+2}]] == 0x58} {
+    emit [format "FOUND-MSX at VRAM %04X" $a]
+  }
+}
+exit
+"""
+
+
+def mode_screen(args) -> int:
+    machines = [STOCK_MACHINE, OURS_MACHINE]
+    if args.machine == "ours":
+        machines = [OURS_MACHINE]
+    elif args.machine == "stock":
+        machines = [STOCK_MACHINE]
+    for m in machines:
+        raw = _runner(m, args.diska, args.symfile).run_job_raw(
+            _screen_body(), settle=args.settle, timeout=args.timeout)
+        who = "OURS " if m == OURS_MACHINE else "STOCK"
+        mode = next((l for l in raw if l.startswith("MODE")), "MODE ?")
+        print(f"=== screen: {who} ({m})  [{mode}]  settle={args.settle}s ===")
+        rows = [l for l in raw if l.startswith("ROW")]
+        if not rows:
+            print("  (no screen rows captured — boot may not have settled)")
+        for l in rows:
+            print("  " + l)
+        extra = [l for l in raw if l.startswith(("HEX", "FOUND"))]
+        for l in extra:
+            print("  " + l)
+        print()
+    return 0
+
+
 # ---- cli -----------------------------------------------------------------------
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
@@ -492,6 +567,11 @@ def main() -> int:
     t.add_argument("--resync", action="store_true",
                    help="re-convergence walk: skip benign relocation detours, find the next REAL fork")
 
+    s = sub.add_parser("screen", help="render the VDP text screen (VRAM name table) as text")
+    common(s)
+    s.add_argument("--machine", choices=("both", "ours", "stock"), default="both",
+                   help="which machine(s) to dump (default both)")
+
     args = ap.parse_args()
 
     tmp_disk = None
@@ -503,7 +583,8 @@ def main() -> int:
             shutil.copy2(args.diska, tmp_disk)
             args.diska = tmp_disk
     try:
-        return {"callseq": mode_callseq, "capture": mode_capture, "trace": mode_trace}[args.mode](args)
+        return {"callseq": mode_callseq, "capture": mode_capture,
+                "trace": mode_trace, "screen": mode_screen}[args.mode](args)
     finally:
         if tmp_disk and os.path.exists(tmp_disk):
             os.unlink(tmp_disk)
