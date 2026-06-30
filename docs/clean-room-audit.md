@@ -220,6 +220,50 @@ pass here (date, scope, commit, verdict) so a later session knows what was
 verified clean and at what point, rather than re-deriving it. A clean verdict is
 a load-bearing fact for the public-release gate.
 
+### 2026-06-30 — disk, paper trail (M12 span) — ✅ CLEAN — the post-incident assurance pass (at `e2a5d5d`)
+
+The user-gated follow-up to the same-day M12 INCIDENT below: before greenlighting any
+CONIN asm, prove that nothing ELSE in the M12 span leaned on the disassembly shortcut and
+that the `6482036` remediation was complete. The M12 span (`99dfe7f..e2a5d5d`) wrote **no
+asm** — the breach was caught pre-implementation — so the normal asm-region walk does not
+apply; the audit targets the span's **4 docs + the one probe** instead.
+
+- **Scope:** [`tier2-conin-spec.md`](../disk/docs/tier2-conin-spec.md),
+  [`tier2-STATE.md`](../disk/docs/tier2-STATE.md),
+  [`tier2-review-queue.md`](../disk/docs/tier2-review-queue.md), this file, and
+  [`probes/disk/disk_probe_diff.py`](../probes/disk/disk_probe_diff.py). Mechanical floor
+  (`make audit-citations` / `audit_citations.py disk`) re-confirmed CLEAN on gating checks
+  first; this entry is the non-mechanical judgement pass.
+- **(a) No surviving finding rests on reference-ROM bytes — YES.** Every load-bearing claim
+  grounds independently: CONIN char-in-**A** → published CHGET `$009F` contract; CONOUT
+  char-in-**E** → M10 black-box `$7922` callseq; BUFIN layout → published BDOS func-`$0A`;
+  "console subsystem unimplemented on ours" → our **own** `build/disk.rom` is `$00` across
+  `$50B7–$5453` + black-box PC trace entering `~$50E0`; "CHGET 1×stock/0×ours" → call-count
+  observation. Named addresses (`$544E/$5454/$009F/$00A2/$50E0/$5107`) are public ABI entries
+  or observed PCs/call-targets — all legal. The `D8 19 3E 40 0A` cycle is observed
+  CONOUT-call/VRAM output, not stock code.
+- **(b) Probe genuinely black-box — YES.** All five modes (`callseq`/`capture`/`trace`/
+  `screen`/`iowrite`) observe legal interfaces only (BDOS call seq + regs + stacked return;
+  a RAM/sysvar range; per-instruction PC fork; VDP VRAM rendered as text; I/O-port writes).
+  No mode dumps a ROM code region and decodes the bytes as its finding. `capture --mem` is
+  the surface that was *misused* in the incident, but the script never points it at ROM code
+  — the guard is operator discipline ([[no-reference-rom-disasm]]), not a script defect.
+- **(c) M12b remediation complete — YES.** `git show 6482036` confirms every decoded-body
+  restatement was deleted from `tier2-conin-spec.md` (the `CALL $541D / JR Z,$544E / RET`
+  poll body, the `CPIR`-over-`$5374` caller, `LD A,E / CP $FF`, the `$50xx` helper-cell map,
+  the `$50FF`/`$F2AC`/`$F237-9`/`IX=$F459` line-loop internals). `git grep` over the whole
+  tracked tree for those tokens now returns only legitimate hits (our-own-`$00`-range
+  framing, or this audit log recording the breach). Independently spot-checked.
+- **Verdict: CLEAN — zero clean-room breaks in the working tree. Safe to proceed to CONIN
+  Option A.** Two non-blocking notes: (1) the decoded material persists in git **history**
+  (`971fc78`'s message + its committed-then-reverted state) — already flagged for the
+  public-release history squash; (2) one out-of-scope, pre-existing item surfaced by the
+  tree-wide grep — [`provider-oracle-scope.md:1781`](../disk/docs/provider-oracle-scope.md)
+  names individual *real*-ROM byte values (`$47B2` real `$AF`, …) in an ours-vs-real
+  comparison; not part of the M12 span, but worth a separate provenance look before public
+  release. When CONIN Option A is built it must cite ONLY the clean sources above and pin the
+  `~$50E0` entry + return register **black-box**, never by reading the body.
+
 ### 2026-06-30 — disk, INCIDENT (self-caught) — method breach during M12 CONIN ABI-pin — CONTAINED, docs quarantined (at `971fc78` → remediated this commit)
 
 Second incident of the class the §8.37 entry warns about. During the Tier-2 M12

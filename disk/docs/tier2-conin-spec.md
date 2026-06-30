@@ -133,7 +133,8 @@ conin_body:
 Open ABI questions to PIN before coding (cheap probes, falsify-first):
 - **What register(s) does the kernel's `$544E` expect the char back in?** CHGET returns
   A; confirm the kernel reads A (not E/C) by capturing the kernel's use of the return at
-  the `$544E` call site (`$5107` per the M12 trace). Mirror whatever CONOUT's caller
+  the `$544E` call site (`$5107` per the M12 trace — observe the call-target/return-register
+  black-box; do NOT read the body). Mirror whatever CONOUT's caller
   contract turned out to be (the M10 E-vs-A lesson — do NOT assume).
 - **Does `$544E` need CHSNS/echo, or is bare CHGET enough?** Stock's single `$009F`
   call (no `$009C` CHSNS in the log) suggests bare blocking CHGET is the primitive;

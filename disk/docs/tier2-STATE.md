@@ -27,7 +27,9 @@ CORRECTION:** the first ABI-pin draft read+decoded stock CF-3300 ROM *code* byte
 quarantined & re-grounded on clean sources (conclusions unchanged); logged in
 [clean-room-audit.md](../../docs/clean-room-audit.md). NEXT = sign-off on
 [tier2-conin-spec.md](tier2-conin-spec.md) v2 Option A (clean-room buffered-line veneer from the documented
-func-`$0A` contract). **HELD by user: "provenance first" — done; awaiting go-ahead to implement.**)_
+func-`$0A` contract). **UPDATE 2026-06-30: the gated provenance audit RAN and PASSED ✅ (CLEAN, zero
+working-tree breaks — run log at `e2a5d5d`). CONIN Option A is now unblocked; still HELD awaiting the
+user's go-ahead to implement.**)_
 
 ---
 
@@ -100,20 +102,18 @@ CHGET → pg0_mainrom_out`.** Spec drafted: [tier2-conin-spec.md](tier2-conin-sp
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — FIRST a paper-trail audit of the M12 span (user-deferred here), THEN CONIN Option A
-**GATE (user decision 2026-06-30): run the wider provenance audit BEFORE any CONIN code.** A method
-breach was self-caught in M12 (ABI-pin read+decoded stock ROM CODE bytes = disassembly; see
-[clean-room-audit.md](../../docs/clean-room-audit.md) incident + [[no-reference-rom-disasm]]). Remediated
-in the docs (commit `6482036`), but the user wants assurance nothing else in the M12 span leaned on the
-same shortcut before building on it.
-1. **Paper-trail audit (next session, FIRST).** Use the brief in
-   [clean-room-audit.md](../../docs/clean-room-audit.md) "Brief template — Paper trail." Scope: the M12
-   span — the `tier2-*` docs touched this span + the `disk_probe_diff.py` modes used (capture/callseq/
-   trace/screen). Confirm: (a) no surviving finding rests on reading reference-ROM bytes; (b) the probe
-   is genuinely black-box on RAM/registers/call-targets, not ROM-code reads; (c) the M12b remediation
-   actually scrubbed the disassembly-derived restatements. Deliver verdict + any BREAKS. Note: the breach
-   text persists in git HISTORY (commit `971fc78`); flag for the public-release gate (history squash).
-2. **THEN, if clean → CONIN Option A** (only after the audit passes). See
+## Next action — paper-trail audit PASSED ✅; CONIN Option A is now unblocked (HELD for user go-ahead)
+**GATE CLEARED (2026-06-30):** the user-gated provenance audit of the M12 span ran and returned
+**✅ CLEAN — zero working-tree breaks** (logged in [clean-room-audit.md](../../docs/clean-room-audit.md)
+run log, at `e2a5d5d`). Confirmed: (a) no surviving finding rests on reference-ROM bytes — each grounds
+on CHGET `$009F` / BDOS func-`$0A` / M10 black-box CONOUT / our-own-`$00`-range; (b) `disk_probe_diff.py`
+is black-box across all five modes; (c) the `6482036` remediation scrubbed every decoded-body restatement
+(verified by `git show` + tree-wide `git grep`). The breach text persists only in git HISTORY (`971fc78`)
+→ flagged for the public-release history squash. **Out-of-scope note for a future sweep:**
+`provider-oracle-scope.md:1781` names individual *real*-ROM byte values (ours-vs-real) — pre-existing, not
+M12, worth a separate provenance look before public release.
+1. **Paper-trail audit — DONE ✅ (this was the blocker; now cleared).**
+2. **NEXT → CONIN Option A** (audit passed; still HELD awaiting user go-ahead per [[spec-before-implementation]]). See
    [tier2-conin-spec.md](tier2-conin-spec.md) v2. Ground ONLY on clean sources: published CHGET `$009F`
    (char in A) + CHPUT `$00A2` + BDOS func-`$0A` buffer layout; pin the `~$50E0` entry address + register
    contract BLACK-BOX (call-target trace + published func-`$0A` DE=buffer), never by reading the body.
