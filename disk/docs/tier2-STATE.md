@@ -100,18 +100,30 @@ CHGET → pg0_mainrom_out`.** Spec drafted: [tier2-conin-spec.md](tier2-conin-sp
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — sign-off the CONIN spec, then add the `$544E` veneer (parallel to `$5454` CONOUT)
-Root cause is pinned (M12); the fix is well-scoped. See [tier2-conin-spec.md](tier2-conin-spec.md).
-1. **Get sign-off on the spec** (per [[spec-before-implementation]]) — net-zero, BIOS-agnostic, the
-   exact parallel of the M8/M10 CONOUT veneer. PIN two open ABI questions first (cheap probes): which
-   register the kernel's `$544E` reads the char back in (capture at the `$5107` call site), and whether
-   bare CHGET suffices (no CHSNS — stock's log shows a single `$009F`, no `$009C`).
-2. **Implement:** `$544E: jp conin_body` (consume the 6-byte `$00` pad before `$5454`; no shift) +
-   `conin_body` in the free tail = `pg0_mainrom_in → call $009F → stash A → pg0_mainrom_out → ret A`.
+## Next action — FIRST a paper-trail audit of the M12 span (user-deferred here), THEN CONIN Option A
+**GATE (user decision 2026-06-30): run the wider provenance audit BEFORE any CONIN code.** A method
+breach was self-caught in M12 (ABI-pin read+decoded stock ROM CODE bytes = disassembly; see
+[clean-room-audit.md](../../docs/clean-room-audit.md) incident + [[no-reference-rom-disasm]]). Remediated
+in the docs (commit `6482036`), but the user wants assurance nothing else in the M12 span leaned on the
+same shortcut before building on it.
+1. **Paper-trail audit (next session, FIRST).** Use the brief in
+   [clean-room-audit.md](../../docs/clean-room-audit.md) "Brief template — Paper trail." Scope: the M12
+   span — the `tier2-*` docs touched this span + the `disk_probe_diff.py` modes used (capture/callseq/
+   trace/screen). Confirm: (a) no surviving finding rests on reading reference-ROM bytes; (b) the probe
+   is genuinely black-box on RAM/registers/call-targets, not ROM-code reads; (c) the M12b remediation
+   actually scrubbed the disassembly-derived restatements. Deliver verdict + any BREAKS. Note: the breach
+   text persists in git HISTORY (commit `971fc78`); flag for the public-release gate (history squash).
+2. **THEN, if clean → CONIN Option A** (only after the audit passes). See
+   [tier2-conin-spec.md](tier2-conin-spec.md) v2. Ground ONLY on clean sources: published CHGET `$009F`
+   (char in A) + CHPUT `$00A2` + BDOS func-`$0A` buffer layout; pin the `~$50E0` entry address + register
+   contract BLACK-BOX (call-target trace + published func-`$0A` DE=buffer), never by reading the body.
+   Shape: `jp conin_line_body` at the entry → free-tail body running the documented buffered-line loop
+   (CHGET per char / CR-done / BS-edit / CHPUT-echo / fill `DE` buf, set `buf[1]=count`) via the existing
+   `pg0_mainrom_in/out` inter-slot bridge.
 3. **Validate:** `callseq --log 0x009F` → ours now 1 call (was 0); `screen --machine ours --settle 16`
    → matches stock (`Enter new date:`, no garbage); `make unit-test` 19/19; `disk.rom` == 16384 B.
-4. **Then inject a keystroke** past BUFIN to drive a visible `A>` that accepts a command (GOAL's final
-   step). The keyboard interrupt service (A-3/A-5) is already live, so injected keys should land.
+4. **Then inject a keystroke** past BUFIN to drive a visible `A>` (GOAL's final step). A-3/A-5 keyboard
+   interrupt service is already live, so injected keys should land.
 
 **One-command repros for the next session (test.dsk):**
 - THE proof: `python3 probes/disk/disk_probe_diff.py callseq --at 0x0100 --log 0x009F --maxhits 12
@@ -119,7 +131,9 @@ Root cause is pinned (M12); the fix is well-scoped. See [tier2-conin-spec.md](ti
   should reach 1.
 - The blocker visually: `… screen --machine both --settle 16 …` → STOCK = COMMAND+date prompt; OURS =
   `D8 3E 40` spin. Where CONIN should be: `… trace --at 0x0100 --anchor 0x0005 --nth 18 --resync
-  --window 3000 --steps 9000 …` → fork 10 = stock `CALL $544E`, ours skips it.
+  --window 3000 --steps 9000 …` → stock branches into the disk-ROM console routine (~`$50E0`/`$544E`
+  call-targets); ours NOP-slides past (our ROM is `$00` there). (Observe call-targets/PCs only — NOT the
+  stock body bytes; see [[no-reference-rom-disasm]].)
 - Source of the fault: `grep -i '544E\|conin\|CHGET\|009F' disk/*.asm` → nothing; `kernel.asm:50`
   `ds $5454 - $, $00` leaves `$544E` as NOP padding into `conout` at `$5454`.
 

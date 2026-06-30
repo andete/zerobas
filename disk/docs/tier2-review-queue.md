@@ -64,8 +64,9 @@ clean-room-audit run log (2026-06-30). · **judgment calls:** (1) STOPPED before
 self-reported the breach and re-grounded the docs rather than letting the disassembly-derived restatements
 stand. (3) spec v2 keeps Option A (clean-room buffered-line veneer from the documented func-`$0A` contract,
 entry pinned black-box) / Option B (faithful rebuild, contracts pinned black-box). · **confidence:** HIGH
-on scope + the breach assessment. · **undo:** docs only; ROM at committed baseline. · **awaiting:**
-go-ahead to implement (Option A) AND, if wanted, whether to run a wider paper-trail audit of the M12 span.
+on scope + the breach assessment. · **undo:** docs only; ROM at committed baseline. · **DECISION (user
+2026-06-30):** run a **wider paper-trail audit of the M12 span FIRST**, deferred to next session; CONIN
+Option A implementation is GATED behind that audit passing. Next-action board updated accordingly.
 
 ---
 
