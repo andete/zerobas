@@ -46,6 +46,23 @@ byte-identical func-9 entry + benign CHPUT re-convergence. · **confidence:** HI
 return-register ABI (to pin before coding). · **undo:** docs only; ROM at committed baseline (16384 B,
 Tier-1 19/19). · **awaiting:** sign-off on the spec before I add the `$544E` veneer.
 
+**[M12b / CONIN ABI-pin — SCOPE SURPRISE, HARD-STOP. ABIs pinned; fix is bigger than v1 spec; NO asm.]**
+· **what I found (pinning the two ABI questions, on user go-ahead):** from the CF-3300 oracle bytes +
+caller decode — **CONIN `$544E` returns the char in A** (stock `CALL $541D / JR Z,$544E / RET`; caller
+`$5107` does `CPIR` comparing A), **CONOUT `$5454` reads E** (confirms M10). · **the surprise:** the
+single-`$544E`-veneer plan is INSUFFICIENT — the disk-ROM's **whole console-I/O subsystem `$50B7–$5453`**
+(the buffered-line routine ~`$50E0` + helpers `$541D`/`$544E`/`$5448`/echo/work-cells) is `$00` on ours;
+the resident kernel delegates the entire BDOS func-`$0A` line read to it, and ours NOP-slides the whole
+block into the `$5454` CONOUT veneer. So the fix is a **clean-room reimplementation of the console-input
+contract**, a milestone — NOT the one-liner the user signed off on. · **judgment call:** STOPPED before
+any asm and surfaced it (this is BOTH a "bigger-than-authorized change" and a "clean-room legitimacy"
+hard-stop per the working-mode rules + [[confirm-before-large-execution]] + [[spec-before-implementation]]).
+Revised the spec to v2 with two options (A = clean-room buffered-line veneer at the `~$50E0` entry from
+the documented func-`$0A` buffer protocol — recommended; B = faithful subsystem rebuild). · **confidence:**
+HIGH on ABIs + scope (oracle bytes + caller decode + ours-all-`$00` capture). · **undo:** docs only.
+· **awaiting:** go-ahead on Option A (or B), then pin the exact `~$50E0` entry address + its register
+contract and implement.
+
 ---
 
 ## Archived

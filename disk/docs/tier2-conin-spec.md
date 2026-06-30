@@ -3,11 +3,28 @@ Copyright (c) 2026 Joost Yervante Damad
 SPDX-License-Identifier: 0BSD
 -->
 
-# Tier-2 milestone — the missing `$544E` CONIN veneer (the unified DOS-boot blocker)
+# Tier-2 milestone — the missing shared-kernel console-input subsystem (DOS-boot blocker)
 
-**Status: SPEC — awaiting sign-off. No asm until greenlit** (per
+**Status: SPEC v2 — awaiting sign-off. No asm until greenlit** (per
 [[spec-before-implementation]]). Derived from a falsify-first differential probe span
-(2026-06-30, M12) that collapsed the old M11 "two-bug" model into ONE root cause.
+(2026-06-30, M12). v1 thought this was a single `$544E` veneer; **pinning the ABIs
+(below) revealed the fix is LARGER** — the disk-ROM's whole console-I/O subsystem
+(`$50B7–$5453`) is unimplemented (`$00`) on ours, so this is a clean-room milestone,
+not a one-liner. **Flagged as a scope surprise + clean-room-legitimacy fork → user
+sign-off required before any asm.**
+
+## 0. ABIs PINNED (M12, from the CF-3300 oracle bytes + caller decode — contract-level)
+- **CONIN `$544E` returns the char in `A`.** Stock body: `CALL $541D / JR Z,$544E / RET`
+  (poll a non-blocking get-char `$541D` until NZ — the loop IS the block). Caller `$5107`
+  consumes the result with `CPIR` over a table at `$5374` → compares **A**. So conin
+  returns A; the block is a poll loop, not a single blocking CHGET.
+- **CONOUT `$5454` reads the char from `E`** (stock entry: `LD A,E / CP $FF / JP NZ,$408F`)
+  — independently CONFIRMS the M10 E-contract.
+- **SCOPE: the kernel delegates the WHOLE buffered-line read (BDOS func `$0A`) to a
+  disk-ROM console routine entered ~`$50E0`.** That routine + its helpers
+  (`$50B7`,`$50C4`,`$50C8`,`$50D5`,`$50E0`,`$541D`,`$544E`,`$5448`,…) are ALL `$00` on
+  ours; ours NOP-slides the whole block down into the `$5454` CONOUT veneer (→ the garbage
+  spin). Our active code ends at `$50B7` (the `$50A9` routine's `ret`).
 
 ## 1. Problem — one missing veneer, mis-read as two bugs
 
@@ -56,7 +73,29 @@ This single fault produced BOTH symptoms the M11 board mis-split:
 - `grep -i '544E\|conin\|CHGET\|009F'` over `disk/*.asm` → **nothing.** We never
   implemented console input.
 
-## 3. Design — a CONIN veneer, exact parallel of CONOUT (M8/M10)
+## 3. Design — TWO options (decide at sign-off)
+
+**The v1 "single `$544E` veneer" is INSUFFICIENT.** The kernel does not call `$544E`
+directly per char from its own line editor — it calls a disk-ROM console *routine*
+(~`$50E0`) that itself runs the line loop (CR-check at `$50FF`, `CALL $F2AC`, work cells
+`$F237/8/9`, `IX=$F459`) and calls `$544E` per char. On ours that routine is `$00`, so
+patching only `$544E` leaves the NOP-slide upstream of it.
+
+**Option A (recommended) — clean-room buffered-line veneer at the routine ENTRY.** Like
+`conout_body`: place `jp conin_line_body` at the kernel's console-input entry (pin the
+exact address — execution enters ~`$50E0`; confirm it's the CALL target, not mid-slide),
+and a free-tail body that reimplements the **documented BDOS func-`$0A` buffer contract**
+clean-room: `DE→buf`, `buf[0]=max`, loop { inter-slot CHGET `$009F`; CR→done; BS→edit;
+else echo via CHPUT `$00A2` + store }, set `buf[1]=count`. ~50–80 B. Pure contract, no
+stock bytes. Smallest correct surface; bypasses the whole `$50xx` subsystem.
+
+**Option B — faithful subsystem reimplementation.** Rebuild the `$50B7–$5453` helper
+cluster (`$541D` non-blocking get-char, `$544E` poll-wrapper, `$5448` echo, the `$50xx`
+line loop, the `$F2xx`/`$FDxx` work cells) from contract. Larger, closer to "faithful
+relocation" (fork a), but needs each helper's contract pinned first. Defer unless Option
+A proves the kernel relies on subsystem side effects we can't fake.
+
+### Reference shape (Option A inner CHGET bridge, parallel of CONOUT M8/M10)
 
 Add `$544E: jp conin_body`, consuming the existing 6-byte `$00` pad (3 bytes `jp` +
 3 bytes pad, then `$5454` CONOUT as today — **net-zero, no address shift**). The body
