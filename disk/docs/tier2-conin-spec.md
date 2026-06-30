@@ -5,13 +5,14 @@ SPDX-License-Identifier: 0BSD
 
 # Tier-2 milestone — the missing shared-kernel console-input subsystem (DOS-boot blocker)
 
-**Status: SPEC v2 — awaiting sign-off. No asm until greenlit** (per
-[[spec-before-implementation]]). Derived from a falsify-first differential probe span
-(2026-06-30, M12). v1 thought this was a single `$544E` veneer; **pinning the ABIs
-(below) revealed the fix is LARGER** — the disk-ROM's whole console-I/O subsystem
-(`$50B7–$5453`) is unimplemented (`$00`) on ours, so this is a clean-room milestone,
-not a one-liner. **Flagged as a scope surprise + clean-room-legitimacy fork → user
-sign-off required before any asm.**
+**Status: SPEC v3 — ABIs fully pinned (M12d), provenance audit PASSED, awaiting sign-off
+to implement. No asm until greenlit** (per [[spec-before-implementation]]). Derived from a
+falsify-first differential probe span (2026-06-30, M12) and completed by the M12d black-box
+ABI-pin (§3 "Resolved answers"). v1 thought this was a single `$544E` veneer; pinning revealed
+the fix is a clean-room reimplementation of the **console line-routine at `$50E0`** (our
+`$50B7–$5453` is `$00`). **All blockers cleared:** the M12-span provenance audit is CLEAN
+(clean-room-audit run log, `e2a5d5d`); the ABIs are pinned black-box with the guarded harness;
+the only remaining gate is the user's go-ahead to write the veneer.
 
 ## 0. ABIs (M12) — grounded on ALLOWED sources only
 > **Provenance note (M12b correction):** an earlier draft pinned these by reading +
@@ -90,8 +91,9 @@ leaves the NOP-slide upstream of it. (We treat the routine as a black box with a
 func-`$0A` contract — we do NOT read its internals.)
 
 **Option A (recommended) — clean-room buffered-line veneer at the routine ENTRY.** Like
-`conout_body`: place `jp conin_line_body` at the kernel's console-input entry (pin the
-exact address — execution enters ~`$50E0`; confirm it's the CALL target, not mid-slide),
+`conout_body`: place `jp conin_line_body` at the kernel's console-input entry —
+**CONFIRMED CALL target `$50E0`** (PIN A: entered `ret=$D88A` from kernel `~$D887`, regs
+byte-identical ours==stock — a real CALL boundary, not a mid-slide) —
 and a free-tail body that reimplements the **documented BDOS func-`$0A` buffer contract**
 clean-room: `DE→buf`, `buf[0]=max`, loop { inter-slot CHGET `$009F`; CR→done; BS→edit;
 else echo via CHPUT `$00A2` + store }, set `buf[1]=count`. ~50–80 B. Pure contract, no
@@ -130,20 +132,35 @@ conin_body:
         ret
 ```
 
-Open ABI questions to PIN before coding (cheap probes, falsify-first):
-- **What register(s) does the kernel's `$544E` expect the char back in?** CHGET returns
-  A; confirm the kernel reads A (not E/C) by capturing the kernel's use of the return at
-  the `$544E` call site (`$5107` per the M12 trace — observe the call-target/return-register
-  black-box; do NOT read the body). Mirror whatever CONOUT's caller
-  contract turned out to be (the M10 E-vs-A lesson — do NOT assume).
-- **Does `$544E` need CHSNS/echo, or is bare CHGET enough?** Stock's single `$009F`
-  call (no `$009C` CHSNS in the log) suggests bare blocking CHGET is the primitive;
-  the kernel's BUFIN does its own line editing/echo on top. Confirm no CHSNS is needed.
-- **Interrupts during CHGET:** CHGET blocks with EI so the keyboard-scan interrupt
-  (A-3/A-5 KEYINT, already live) fills the buffer. Verify `pg0_mainrom_in` left the
-  main ROM mapped for the *duration* of CHGET (it does — CHGET runs to completion
-  inside the mapped window), and that re-entrancy with our `$0038` handler is safe
-  (the handler pages the main ROM into page 0 itself, idempotently).
+Open ABI questions — **ALL RESOLVED black-box (M12d, 2026-06-30)** via the guarded
+`disk_probe_diff.py callseq` (registers + call-counts + RAM-pointer walks only; the
+`trace`/`ctx` clean-room guard ensured NO stock ROM code was decoded; the keystroke was
+injected with the new `--keys`). Two probes settled the whole interface:
+- **PIN A — `callseq --log 0x50E0`:** at the console-routine entry, regs are **byte-identical
+  ours==stock** at the first call: `DE=$DA40 HL=$C924 ret=$D88A` (kernel caller `~$D887`).
+  So the **entry is the CALL target `$50E0`** and **`DE` = the func-`$0A` buffer base**. (Ours
+  re-enters `$50E0` 4× = the spin; stock once = does the read and proceeds.)
+- **PIN B — `callseq --log 0x009F --keys '12-99\r'`:** CHGET now fires **7×** (was 1, blocking).
+  Per call `HL` walks `$DA42,$DA43,$DA44,…` (the fill pointer), `D` = running char count
+  (`00,01,02,…`), `E=$0A` = max len. So the buffer at `$DA40` is `[+0]=max(=$0A) / [+1]=count
+  / [+2…]=chars` — **the published BDOS func-`$0A` layout**, and `DE=$DA40` at entry is its base.
+
+Resolved answers:
+- **Entry & register convention:** CALL target **`$50E0`** (in our `$00` dead region — net-zero
+  veneer site); on entry **`DE`→buffer**, `[DE]`=max length. (Supersedes the earlier `$544E`/`$5107`
+  framing: `$544E` is the stock *inner* per-char primitive; we replace the *line routine* at `$50E0`
+  and call the **published** CHGET directly, so stock's inner register convention is irrelevant.)
+- **Return register:** NONE — the line routine returns its result in the **buffer** (`buf[1]`=count),
+  per func-`$0A`; no char-in-register contract to match. (The inner CHGET returns the char in **A** by
+  the published `$009F` contract.)
+- **CHSNS/echo:** **bare CHGET per char** — 7 CHGET calls across the line, **no `$009C` CHSNS in the
+  input loop** (the 12 earlier `$009C` hits were output-phase break-polls during the banner, `C=09`).
+  Echo is done by the routine via CHPUT `$00A2` (the typed chars appear on screen — `screen` confirms
+  `Enter new date: 12-25-99`).
+- **Interrupts during CHGET:** **PROVEN to work** — keys are received per char (the injected line
+  echoed and CHGET fired 7×; `\r` drove stock to a visible `A>`). On ours the A-3/A-5 KEYINT is already
+  live, so once the veneer reaches CHGET the same mechanism applies; `pg0_mainrom_in` keeps the main
+  ROM mapped for CHGET's duration and the `$0038` handler re-maps page 0 idempotently.
 
 ## 4. Expected result & how we'll know
 
