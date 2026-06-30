@@ -10,16 +10,17 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-06-30 (M11 REFRAME — the M10 "render solved, residuals are cosmetic" picture was
-OVER-ROSY. Direct `screen` observation at settle 16 shows OURS in an INFINITE garbage loop (`Ø>@` =
-`$D8 3E 40`, scrolling) — the sign-on renders then SCROLLS OFF; there is NO `COMMAND version 1.08`, NO
-date prompt, NO `A>`. STOCK reaches `COMMAND version 1.08` / `Current date is Sun 84-01-01` /
-`Enter new date:` and blocks at BUFIN. The CHPUT char-stream forks right after the identical sign-on
-(n=53): stock emits **func-9 STROUT** strings (the banners/prompts), ours emits only the func-2 date
-value then garbage. Ours DOES reach COMMAND.COM ($0100) so the handoff works — **COMMAND.COM runs but
-its string-output (func-9 STROUT) path produces garbage and loops infinitely**. The "headless idle
-spam" was NOT a benign artifact; it is THE blocker. NEXT = pin the func-9 STROUT divergence,
-falsify-first, then spec a fix.)_
+_Last updated: 2026-06-30 (M12 UNIFY — the M11 "two-bug" model (Bug A func-9 output + Bug B BUFIN)
+COLLAPSES into ONE root cause: **the kernel's `$544E` CONIN entry has no veneer on ours — it is `$00`
+padding that falls through into `$5454` (`jp conout_body`, CONOUT).** So a console-INPUT request is
+serviced by the console-OUTPUT veneer: it emits one garbage char (E = stale pointer-low) and RETURNS
+immediately, never calling CHGET, never blocking. COMMAND.COM's prompt loop then spins forever, and the
+`D8 19 3E 40 0A` garbage IS conout_body mis-invoked by that spin. DECISIVE PROOF: **CHGET (`$009F`) is
+called 1× on stock (it blocks there), 0× on ours.** "func-9 emits zero chars / `$F398` vector unset"
+is REFUTED (regs+sysvars byte-identical at func-9 entry; func-9 output works). A-2/int_h is NOT the
+blocker (A-3/A-5 already chains KEYINT; the `$0038` trace fork re-converges = benign). NEXT = sign-off
+on [tier2-conin-spec.md](tier2-conin-spec.md) then add the `$544E` CONIN veneer (parallel to the M8/M10
+`$5454` CONOUT veneer: `pg0_mainrom_in → call $009F → pg0_mainrom_out`).)_
 
 ---
 
@@ -29,48 +30,39 @@ Tier-1** (disk-BASIC / BLOAD / FILES) and while staying a **BIOS-agnostic replac
 disk ROM** (works on CF-3300, C-BIOS, any standards MSX1). "Reached `A>`" means a
 **visible** `A>` on screen + accepts a command — not just the right BDOS call sequence.
 
-## Live thesis (2026-06-30 M11.1: COMMAND.COM runs IDENTICALLY; TWO bugs in our relocated kernel console I/O)
-**COMMAND.COM runs perfectly on ours — the BDOS call sequence is BYTE-IDENTICAL to stock for all 18
-calls** (STROUT banner @ $C284, FOPEN, STROUT `Current date is` @ $D2B3, GDATE, CONOUT `Sun 84-01-01`,
-STROUT `Enter new date:` @ $D2D3, BUFIN). Same C/A/B/DE/HL/ret on both. So the bug is NOT in COMMAND.COM
-or the BDOS interface — it is squarely in OUR relocated resident kernel's console I/O. TWO distinct bugs:
-- **Bug B (the spin):** at call n=18 BUFIN (func $0A, read console line), **stock BLOCKS waiting for a
-  key (18 calls, done); ours RETURNS immediately**, so COMMAND.COM re-runs the date-prompt loop forever
-  (n=19+ = the `Ø>@` garbage scroll). Ours' BUFIN does not wait for input.
-- **Bug A (missing strings):** func-9 STROUT (n=1,3,17 — banner / `Current date is` / `Enter new date:`)
-  emits **ZERO** chars to CHPUT on ours, while func-2 CONOUT (n=5–16, the date VALUE) DOES render. The
-  routes differ: func-2 → CHPUT via our M10 `$5454` veneer (ret=$7934); stock's func-9 → CHPUT via a
-  DIFFERENT resident-kernel route (ret=$F392; cf. `$F398→$00A2` in kernel.asm §8.38) that ours never set
-  up. So M10 fixed only the func-2 route; func-9's output route is unrelocated/broken on ours.
-**RATIFIED 2026-06-30 (M11 review):** user ratified M10 (correct-but-partial) + the M11 two-bug model;
-both archived. Confirmed next-bug order = **Bug A first, then Bug B.** Paused awaiting go-ahead to probe.
-LEADING HYPOTHESIS (verify falsify-first): the resident kernel's func-9 char-output vector (~$F392/$F398)
-is not initialised on ours, so STROUT chars are dropped. Bug B (BUFIN) is likely the same class — a
-console-INPUT primitive (CHGET/keyboard-status) route not set up — TO BE PINNED.
+## Live thesis (2026-06-30 M12: ONE root cause — the `$544E` CONIN veneer is missing, falls into CONOUT)
+**The relocated kernel has two adjacent console entries: `$5454` CONOUT (output) and `$544E` CONIN
+(input), 6 bytes apart in the shared ASCII-kernel block.** We veneered `$5454` (`jp conout_body` →
+inter-slot CHPUT `$00A2`; M8/M10) but **NEVER implemented `$544E`** — it is `$00` (NOP) padding from
+`ds $5454 - $, $00`. So COMMAND.COM's BUFIN (`CALL $544E` to read a console line) executes 6 NOPs and
+**falls through into `$5454` = CONOUT**: it emits one garbage char (`ld a,e`, E = stale buffer-pointer
+low byte) and RETURNS immediately — never CHGET, never blocks. COMMAND.COM's prompt loop then spins
+forever; the `D8 19 3E 40 0A` screen garbage IS `conout_body` mis-invoked by that spin. ONE fault, both
+old "bugs": the spin (old Bug B) AND the garbage output (old Bug A) are the same CONIN→CONOUT
+fall-through. **Fix = add a `$544E` CONIN veneer (parallel to CONOUT): `pg0_mainrom_in → call $009F
+CHGET → pg0_mainrom_out`.** Spec drafted: [tier2-conin-spec.md](tier2-conin-spec.md), awaiting sign-off.
 
-### What this session PROVED (2026-06-30 M11, all on test.dsk, direct ground-truth)
-- **STOCK reference (screen, settle 16):** rows = `MSX-DOS version 1.03` / `Copyright 1984 by
-  Microsoft` / (blank) / `COMMAND version 1.08` / (blank) / `Current date is Sun 84-01-01` /
-  `Enter new date: .` (cursor) — then blocks at the date BUFIN. 125 CHPUT calls.
-- **OURS (screen, settle 16):** EVERY row is `Ø>@` (`$D8 3E 40`) repeating diagonally/scrolling. The
-  sign-on (which DOES render ~settle 12) has scrolled OFF. No COMMAND banner, no date prompt, no `A>`.
-  240+ CHPUT calls — an unbounded garbage loop. This is THE blocker, not a cosmetic.
-- **CHPUT ($00A2) char-stream fork (callseq, the decisive diff):** n=1..53 char-IDENTICAL on both =
-  the sign-on (`\r\nMSX-DOS version 1.03\r\nCopyright 1984 by Microsoft\r\n`). At **n=54 the rendered
-  output forks**: STOCK `C=09 STROUT` walking a string at `$C285`, A spelling `\r\nCOMMAND v…`
-  (ret=$F392); OURS `C=00/02`, A spelling `Sun 84-01-…` (ret=$7934, our veneer). So stock STROUTs the
-  COMMAND banner; ours never does a clean STROUT.
-- **Ours reaches COMMAND.COM** — the `--at 0x0100 --arm-check 0x0102==0x05` arm fires on ours (then the
-  date/garbage stream follows). So MSXDOS.SYS→COMMAND.COM handoff is NOT the break; COMMAND.COM's
-  EXECUTION output is.
-- **`$5454` is reached by TWO callers with different ABIs:** the sign-on (ret=$0320, C=$80, A=E=char,
-  MSXDOS.SYS loader) and the post-sign-on resident kernel/COMMAND path (ret=$D88A, C=BDOS-fn-number).
-  Our veneer treats every entry as "emit E" — correct only for clean C=$02 char calls.
-- **BDOS ($0005) call seq is IDENTICAL ours==stock for n=1–18** (callseq --at 0x0100 --log 0x0005):
-  STROUT($C284)/FOPEN/STROUT($D2B3)/GDATE/12×CONOUT/STROUT($D2D3)/BUFIN — all C/A/B/DE/HL/ret match.
-  First divergence is n=18 BUFIN: stock blocks, ours continues. COMMAND.COM is NOT the problem.
-- **func-2 CONOUT renders, func-9 STROUT does NOT** (CHPUT route ret=$7934 vs $F392). Two output routes
-  to CHPUT in the resident kernel; M10 fixed only the func-2 one.
+### What this session PROVED (2026-06-30 M12, all on test.dsk, direct ground-truth — `disk_probe_diff.py`)
+- **CHGET (`$009F`) called 1× on stock, 0× on ours** (`callseq --log 0x009F`). THE decisive proof:
+  ours' BUFIN never reaches console input → returns instead of blocking. (Old "Bug B," now root-caused.)
+- **`$544E` has no veneer:** `grep -i '544E\|conin\|CHGET\|009F' disk/*.asm` → nothing; `kernel.asm:50`
+  `ds $5454 - $, $00` makes `$544E–$5453` NOP padding before `conout` at `$5454`.
+- **func-9 entry is byte-identical ours==stock** (`capture --at 0xC238 --mem 0xF390:0x10`): all regs +
+  the `$F390:0x10` sysvar block (incl. `$F398`) match. → REFUTES "func-9 `$F398` CONOUT vector unset."
+- **func-9 chars DO reach CHPUT on ours** (wide-window `trace --resync`): the print loop runs
+  `$F36B→read→$F368→…→$00A2`; the ret=$7934-vs-$F392 difference RE-CONVERGES = benign relocation, not a
+  broken route. (Old "Bug A — func-9 emits zero chars" is REFUTED.)
+- **The garbage = E = DE-low from a SPIN, not a string walk** (`callseq --log 0x00A2`): ours cycles
+  `D8 19 3E 40 0A` = low bytes of DE `D3D8/D319/D33E/DA40/D30A` re-read in a loop; conout_body has a
+  SINGLE caller (ret=$D88A) with char-in-E ABI — func-2 (date "Sun 84-01-01") renders correctly via it
+  (entry log n=1–12), THEN ours derails into the spin.
+- **A-2/int_h is NOT the blocker:** the `$0038` trace fork (stock `$0C3C` / ours `$DDAE`) RE-CONVERGES =
+  benign; A-3/A-5 (`int_h_hiram_tmpl`, runtime.asm:160) already inter-slot-chains the main-BIOS KEYINT,
+  so the keyboard scan runs. (Means injected keys WILL be received once CONIN reaches CHGET.)
+- **STOCK screen (settle 16):** full boot blocked at `Enter new date: .`. **OURS:** `D8 3E 40` scrolling
+  diagonally forever (the spin). Arbiter = `screen --machine both`.
+- **BDOS ($0005) seq IDENTICAL n=1–18** then n=18 BUFIN diverges (stock blocks, ours spins) — consistent
+  with the CONIN fall-through (COMMAND.COM/BDOS interface is innocent; only the kernel CONIN veneer).
 
 ## Settled facts — DO NOT re-litigate or re-probe
 - COMMAND.COM **loads AND reaches $0100** (handoff works); `$47B2` return contract done; `$0005`=`JP
@@ -85,45 +77,44 @@ console-INPUT primitive (CHGET/keyboard-status) route not set up — TO BE PINNE
   claim WITH the CHPUT "COMMAND v" — COMMAND.COM prints BOTH, banner first.)
 
 ## Dead ends / refuted — do NOT re-walk
-- **"The post-sign-on `Ø>@` spam is a benign headless idle-loop artifact / just date-prompt cosmetics"**
-  — REFUTED 2026-06-30 M11. It is an INFINITE garbage loop that scrolls away the sign-on and prevents
-  ANY progress to COMMAND.COM's banner / date prompt / `A>`. It is THE current blocker.
-- **"A clean visible `A>` just needs a keystroke injected past the date BUFIN"** — REFUTED (premature):
-  ours never even renders `COMMAND version 1.08` or the date prompt; it loops on garbage long before
-  any BUFIN. Input injection is irrelevant until the func-9 STROUT output is fixed.
-- **"func-9 STROUT garbage is a page-0-swap clobbering the string read"** — REFUTED 2026-06-30 M11.1.
-  The BDOS DE pointers are IDENTICAL ours==stock; func-9 emits 0 chars (not garbage from a bad read).
-  The bug is the OUTPUT route (func-9's resident-kernel CONOUT vector), not the string read.
-- **"conout_body should read the char from A"** — WRONG (that WAS the M10 bug). Contract is E.
+- **"There are TWO independent console-I/O bugs (func-9 output + BUFIN block)"** — REFUTED 2026-06-30
+  M12. ONE root cause (the missing `$544E` CONIN veneer falling into `$5454` CONOUT) explains both.
+- **"func-9 STROUT emits ZERO chars / its `$F398` CONOUT vector is unset on ours"** — REFUTED M12.
+  func-9 entry regs + `$F390` sysvars are byte-identical; func-9 chars DO reach CHPUT (the ret=$7934-vs-
+  $F392 difference re-converges = benign). func-9 OUTPUT works; the apparent "missing banner" is the
+  spin scrolling it off-screen.
+- **"The `Ø>@` spam is a benign idle artifact / date-prompt cosmetics"** — REFUTED M11 (still true):
+  it is the infinite prompt SPIN; root-caused in M12 to the CONIN fall-through.
+- **"conout_body should read the char from A"** — WRONG (that WAS the M10 bug). CONOUT contract is E.
+  (CONIN's return-register contract is OPEN — pin it before coding; don't assume, per the M10 lesson.)
+- **"func-9 STROUT garbage is a page-0-swap clobbering the string read"** — REFUTED M11.1 (DE ptrs
+  identical). The garbage is conout_body emitting E (stale ptr-low) when mis-invoked by CONIN.
 - (Retained) older date-path dead ends: SDATE-is-next-blocker, FOPEN-return-value, register-only $0005
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — pin Bug A (func-9 output route) & Bug B (BUFIN block), falsify-first, THEN spec
-COMMAND.COM is innocent (BDOS seq identical). Two relocated-kernel console-I/O bugs to fix:
-1. **Bug A — verify the func-9 char-output route is unset on ours (falsify-first).** Trace func-9's
-   per-char emit on ours vs stock from the n=1 STROUT (banner, caller ret=$C23B, call site ~$C238):
-   where do func-9's chars go on ours? Compare the resident-kernel CONOUT vector (~$F392/$F398, the
-   route stock's func-9 uses) ours vs stock — is it initialised on ours? `capture --at 0xC238 --nth 1
-   --mem 0xF390:0x10` (and trace func-9 internals). Expected: stock's $F39x route reaches CHPUT; ours'
-   is wrong/empty so STROUT chars are dropped.
-2. **Bug B — characterise why ours' BUFIN (func $0A) returns instead of blocking.** Trace BUFIN
-   (n=18, caller ret=$CD6C) internals ours vs stock: stock loops on CHGET/keyboard; ours falls
-   straight through. Likely the same class as Bug A — a console-INPUT primitive route not relocated.
-   (Note: even fixed, the GOAL's visible `A>` will require INJECTING a keystroke past the date BUFIN —
-   stock blocks there too. Key injection is step 3 of the eventual demo, AFTER A+B.)
-3. **Spec the fix(es)** (per [[spec-before-implementation]]) before editing ROM — net-zero,
-   BIOS-agnostic. Likely: initialise/relocate the resident-kernel console I/O vectors during our init
-   the way stock's MSXDOS.SYS does. Decide shape only after 1–2 pin the exact vector(s).
+## Next action — sign-off the CONIN spec, then add the `$544E` veneer (parallel to `$5454` CONOUT)
+Root cause is pinned (M12); the fix is well-scoped. See [tier2-conin-spec.md](tier2-conin-spec.md).
+1. **Get sign-off on the spec** (per [[spec-before-implementation]]) — net-zero, BIOS-agnostic, the
+   exact parallel of the M8/M10 CONOUT veneer. PIN two open ABI questions first (cheap probes): which
+   register the kernel's `$544E` reads the char back in (capture at the `$5107` call site), and whether
+   bare CHGET suffices (no CHSNS — stock's log shows a single `$009F`, no `$009C`).
+2. **Implement:** `$544E: jp conin_body` (consume the 6-byte `$00` pad before `$5454`; no shift) +
+   `conin_body` in the free tail = `pg0_mainrom_in → call $009F → stash A → pg0_mainrom_out → ret A`.
+3. **Validate:** `callseq --log 0x009F` → ours now 1 call (was 0); `screen --machine ours --settle 16`
+   → matches stock (`Enter new date:`, no garbage); `make unit-test` 19/19; `disk.rom` == 16384 B.
+4. **Then inject a keystroke** past BUFIN to drive a visible `A>` that accepts a command (GOAL's final
+   step). The keyboard interrupt service (A-3/A-5) is already live, so injected keys should land.
 
 **One-command repros for the next session (test.dsk):**
-- The two bugs, at the interface: `python3 probes/disk/disk_probe_diff.py callseq --at 0x0100 --log
-  0x0005 --maxhits 50 --diska ~/Documents/msx/msx/disks/test.dsk` → n=1–18 IDENTICAL (COMMAND.COM ok);
-  n=18 BUFIN: stock blocks, ours spins (n=19+ garbage). func-9 STROUT @ n=1/3/17.
-- The blocker, visually: `… screen --machine both --settle 16 …` → STOCK = COMMAND+date prompt; OURS =
-  `Ø>@` loop. (Ours' sign-on still renders early: `screen --machine ours --settle 12`.)
-- Output-route fork: `… callseq --at 0x00A2 --arm-cond "1" --log 0x00A2 --maxhits 240 …` → func-2
-  chars reach CHPUT via ret=$7934 (ours, M10 veneer); stock's func-9 via ret=$F392.
+- THE proof: `python3 probes/disk/disk_probe_diff.py callseq --at 0x0100 --log 0x009F --maxhits 12
+  --diska ~/Documents/msx/msx/disks/test.dsk` → STOCK 1 CHGET call (blocks), OURS 0. After the fix, ours
+  should reach 1.
+- The blocker visually: `… screen --machine both --settle 16 …` → STOCK = COMMAND+date prompt; OURS =
+  `D8 3E 40` spin. Where CONIN should be: `… trace --at 0x0100 --anchor 0x0005 --nth 18 --resync
+  --window 3000 --steps 9000 …` → fork 10 = stock `CALL $544E`, ours skips it.
+- Source of the fault: `grep -i '544E\|conin\|CHGET\|009F' disk/*.asm` → nothing; `kernel.asm:50`
+  `ds $5454 - $, $00` leaves `$544E` as NOP padding into `conout` at `$5454`.
 
 ## Method guardrails (DURABLE — keep these when you overwrite this file)
 Endorsed 2026-06-27 after a retrospective found ~half the Tier-2 reframes came from
