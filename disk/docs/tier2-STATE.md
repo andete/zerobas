@@ -139,7 +139,8 @@ aligned-PC register-divergence walk (when both sides run the SAME code so PCs ne
 first step where REG diverges — the data divergence the fork logic is blind to); and the **callseq
 logger now records `A=`** (so `--log 0x7922`/`0x00A2` shows the char register). **Extend this, don't fork a script.**
 It copies the DOS disk to tmp (mutation-safe) and bakes in the alignment guard. **Extend this, don't
-fork a new script.** The 57 legacy `disk_probe_dosboot_*.py` stay for provenance.
+fork a new script.** The 57 legacy `disk_probe_dosboot_*.py` were pruned 2026-06-30
+(superseded by this harness); they live in git history if ever needed for provenance.
 
 ## Invariants for any change
 - Tier-1 green: `make unit-test` 19/19; DSKIO/BLOAD/FILES == CF-3300.
