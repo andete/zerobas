@@ -19,12 +19,15 @@ immediately, never calling CHGET, never blocking. COMMAND.COM's prompt loop then
 called 1× on stock (it blocks there), 0× on ours.** "func-9 emits zero chars / `$F398` vector unset"
 is REFUTED (regs+sysvars byte-identical at func-9 entry; func-9 output works). A-2/int_h is NOT the
 blocker (A-3/A-5 already chains KEYINT; the `$0038` trace fork re-converges = benign). **SCOPE UPDATE
-(M12, post-ABI-pin):** the fix is NOT a 1-line `$544E` veneer — the disk-ROM's WHOLE console-I/O
-subsystem (`$50B7–$5453`: the buffered-line routine ~`$50E0` + helpers `$541D`/`$544E`/`$5448`/…) is
-`$00` on ours; the kernel delegates the whole BDOS func-`$0A` line read to it. ABIs PINNED: CONIN
-`$544E`→A, CONOUT `$5454`→E (confirms M10). NEXT = sign-off on [tier2-conin-spec.md](tier2-conin-spec.md)
-v2 — Option A: a clean-room buffered-line veneer at the `~$50E0` entry (documented func-`$0A` contract).
-**HARD-STOP: clean-room-legitimacy + bigger-than-authorized fork — awaiting user go-ahead.**)_
+(M12):** the fix is NOT a 1-line `$544E` veneer — the kernel delegates the WHOLE BDOS func-`$0A` line
+read to a disk-ROM console routine (entered ~`$50E0`, black-box PC trace), and **our `build/disk.rom` is
+`$00` across `$50B7–$5453`** (our artifact) → ours NOP-slides into the `$5454` CONOUT veneer. ABIs
+(clean sources): CONOUT→E (M10, black-box); CONIN→A (published CHGET `$009F` contract). **M12b PROVENANCE
+CORRECTION:** the first ABI-pin draft read+decoded stock CF-3300 ROM *code* bytes = disassembly-class (✗);
+quarantined & re-grounded on clean sources (conclusions unchanged); logged in
+[clean-room-audit.md](../../docs/clean-room-audit.md). NEXT = sign-off on
+[tier2-conin-spec.md](tier2-conin-spec.md) v2 Option A (clean-room buffered-line veneer from the documented
+func-`$0A` contract). **HELD by user: "provenance first" — done; awaiting go-ahead to implement.**)_
 
 ---
 

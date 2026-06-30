@@ -46,22 +46,26 @@ byte-identical func-9 entry + benign CHPUT re-convergence. · **confidence:** HI
 return-register ABI (to pin before coding). · **undo:** docs only; ROM at committed baseline (16384 B,
 Tier-1 19/19). · **awaiting:** sign-off on the spec before I add the `$544E` veneer.
 
-**[M12b / CONIN ABI-pin — SCOPE SURPRISE, HARD-STOP. ABIs pinned; fix is bigger than v1 spec; NO asm.]**
-· **what I found (pinning the two ABI questions, on user go-ahead):** from the CF-3300 oracle bytes +
-caller decode — **CONIN `$544E` returns the char in A** (stock `CALL $541D / JR Z,$544E / RET`; caller
-`$5107` does `CPIR` comparing A), **CONOUT `$5454` reads E** (confirms M10). · **the surprise:** the
-single-`$544E`-veneer plan is INSUFFICIENT — the disk-ROM's **whole console-I/O subsystem `$50B7–$5453`**
-(the buffered-line routine ~`$50E0` + helpers `$541D`/`$544E`/`$5448`/echo/work-cells) is `$00` on ours;
-the resident kernel delegates the entire BDOS func-`$0A` line read to it, and ours NOP-slides the whole
-block into the `$5454` CONOUT veneer. So the fix is a **clean-room reimplementation of the console-input
-contract**, a milestone — NOT the one-liner the user signed off on. · **judgment call:** STOPPED before
-any asm and surfaced it (this is BOTH a "bigger-than-authorized change" and a "clean-room legitimacy"
-hard-stop per the working-mode rules + [[confirm-before-large-execution]] + [[spec-before-implementation]]).
-Revised the spec to v2 with two options (A = clean-room buffered-line veneer at the `~$50E0` entry from
-the documented func-`$0A` buffer protocol — recommended; B = faithful subsystem rebuild). · **confidence:**
-HIGH on ABIs + scope (oracle bytes + caller decode + ours-all-`$00` capture). · **undo:** docs only.
-· **awaiting:** go-ahead on Option A (or B), then pin the exact `~$50E0` entry address + its register
-contract and implement.
+**[M12b / CONIN ABI-pin — SCOPE SURPRISE + PROVENANCE BREACH (self-caught), HARD-STOP. NO asm.]**
+· **what I found:** the single-`$544E`-veneer plan is INSUFFICIENT — the kernel delegates the whole BDOS
+func-`$0A` line read to a disk-ROM console routine (entered ~`$50E0`, black-box PC trace), and **our
+`build/disk.rom` is `$00` across `$50B7–$5453`** (our artifact), so ours NOP-slides into the `$5454`
+CONOUT veneer. The fix is a clean-room reimplementation of the console-input contract — a milestone, not
+the one-liner. · **PROVENANCE BREACH (the important one):** I pinned the ABIs by **reading + decoding
+stock CF-3300 disk-ROM CODE bytes** (`capture --mem` on `$50xx`/`$544E`/`$5454`/`$5100`) — that is
+disassembly-class, a ✗ source ([`allowed-sources.md`](../../docs/allowed-sources.md) line 119/142). User
+had pre-emptively chosen "Hold — provenance first"; the review confirmed the breach. **Containment:** NO
+asm was written (held before implementation), so nothing shipped is tainted; the breach lived only in the
+M12/M12b *docs*, now quarantined. **Conclusions survive on clean sources** (none depended on the
+disassembly): CONOUT→E (M10 black-box), CONIN→A (published CHGET `$009F` contract), func-`$0A` buffer
+layout (published BDOS), subsystem-unimplemented (our own ROM `$00` + black-box trace). Logged in the
+clean-room-audit run log (2026-06-30). · **judgment calls:** (1) STOPPED before asm (bigger-than-authorized
++ clean-room hard-stops per [[confirm-before-large-execution]] + [[spec-before-implementation]]). (2)
+self-reported the breach and re-grounded the docs rather than letting the disassembly-derived restatements
+stand. (3) spec v2 keeps Option A (clean-room buffered-line veneer from the documented func-`$0A` contract,
+entry pinned black-box) / Option B (faithful rebuild, contracts pinned black-box). · **confidence:** HIGH
+on scope + the breach assessment. · **undo:** docs only; ROM at committed baseline. · **awaiting:**
+go-ahead to implement (Option A) AND, if wanted, whether to run a wider paper-trail audit of the M12 span.
 
 ---
 

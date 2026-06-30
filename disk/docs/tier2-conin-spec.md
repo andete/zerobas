@@ -13,18 +13,26 @@ SPDX-License-Identifier: 0BSD
 not a one-liner. **Flagged as a scope surprise + clean-room-legitimacy fork → user
 sign-off required before any asm.**
 
-## 0. ABIs PINNED (M12, from the CF-3300 oracle bytes + caller decode — contract-level)
-- **CONIN `$544E` returns the char in `A`.** Stock body: `CALL $541D / JR Z,$544E / RET`
-  (poll a non-blocking get-char `$541D` until NZ — the loop IS the block). Caller `$5107`
-  consumes the result with `CPIR` over a table at `$5374` → compares **A**. So conin
-  returns A; the block is a poll loop, not a single blocking CHGET.
-- **CONOUT `$5454` reads the char from `E`** (stock entry: `LD A,E / CP $FF / JP NZ,$408F`)
-  — independently CONFIRMS the M10 E-contract.
-- **SCOPE: the kernel delegates the WHOLE buffered-line read (BDOS func `$0A`) to a
-  disk-ROM console routine entered ~`$50E0`.** That routine + its helpers
-  (`$50B7`,`$50C4`,`$50C8`,`$50D5`,`$50E0`,`$541D`,`$544E`,`$5448`,…) are ALL `$00` on
-  ours; ours NOP-slides the whole block down into the `$5454` CONOUT veneer (→ the garbage
-  spin). Our active code ends at `$50B7` (the `$50A9` routine's `ret`).
+## 0. ABIs (M12) — grounded on ALLOWED sources only
+> **Provenance note (M12b correction):** an earlier draft pinned these by reading +
+> decoding stock CF-3300 disk-ROM *code* bytes — that is disassembly-class (✗ per
+> [`allowed-sources.md`](../../docs/allowed-sources.md) line 119/142) and has been
+> quarantined (clean-room-audit run log, 2026-06-30). The facts below DO NOT depend on
+> it; each is independently established from a clean source:
+- **CONIN console input returns the char in `A`** — the **published CHGET (`$009F`) BIOS
+  contract** (MSX Technical Data Book: CHGET waits for and returns a char in A). The disk
+  ROM's console-input entry (observed as the call target during BUFIN — black-box) bridges
+  to CHGET, so it returns A. *To confirm black-box before coding: inject a key and observe
+  the char arrive in A at the BUFIN boundary.*
+- **CONOUT reads the char from `E`** — already clean from **M10** (black-box `$7922`-entry
+  callseq: E spells the banner/date; the ROM was never read). The `$5454` CONOUT veneer
+  already implements this.
+- **SCOPE (black-box + our own artifact):** during BUFIN the resident kernel CALLs into a
+  disk-ROM console routine in page 1 (execution enters ~`$50E0`, observed via PC trace).
+  **Our `build/disk.rom` is `$00` across `$50B7–$5453`** (our own artifact; active code
+  ends at the `$50A9` routine's `ret`), so execution NOP-slides the whole region into the
+  `$5454` CONOUT veneer → the garbage spin. The internal structure of stock's routine is
+  NOT used (and must not be read); we reimplement the documented contract.
 
 ## 1. Problem — one missing veneer, mis-read as two bugs
 
@@ -75,11 +83,11 @@ This single fault produced BOTH symptoms the M11 board mis-split:
 
 ## 3. Design — TWO options (decide at sign-off)
 
-**The v1 "single `$544E` veneer" is INSUFFICIENT.** The kernel does not call `$544E`
-directly per char from its own line editor — it calls a disk-ROM console *routine*
-(~`$50E0`) that itself runs the line loop (CR-check at `$50FF`, `CALL $F2AC`, work cells
-`$F237/8/9`, `IX=$F459`) and calls `$544E` per char. On ours that routine is `$00`, so
-patching only `$544E` leaves the NOP-slide upstream of it.
+**The v1 "single `$544E` veneer" is INSUFFICIENT.** Black-box (PC trace): during BUFIN the
+kernel enters a disk-ROM console *routine* in page 1 (~`$50E0`) that performs the whole
+buffered-line read; on ours that routine is `$00`, so patching only the lowest-level entry
+leaves the NOP-slide upstream of it. (We treat the routine as a black box with a documented
+func-`$0A` contract — we do NOT read its internals.)
 
 **Option A (recommended) — clean-room buffered-line veneer at the routine ENTRY.** Like
 `conout_body`: place `jp conin_line_body` at the kernel's console-input entry (pin the
@@ -89,11 +97,12 @@ clean-room: `DE→buf`, `buf[0]=max`, loop { inter-slot CHGET `$009F`; CR→done
 else echo via CHPUT `$00A2` + store }, set `buf[1]=count`. ~50–80 B. Pure contract, no
 stock bytes. Smallest correct surface; bypasses the whole `$50xx` subsystem.
 
-**Option B — faithful subsystem reimplementation.** Rebuild the `$50B7–$5453` helper
-cluster (`$541D` non-blocking get-char, `$544E` poll-wrapper, `$5448` echo, the `$50xx`
-line loop, the `$F2xx`/`$FDxx` work cells) from contract. Larger, closer to "faithful
-relocation" (fork a), but needs each helper's contract pinned first. Defer unless Option
-A proves the kernel relies on subsystem side effects we can't fake.
+**Option B — faithful subsystem reimplementation.** Rebuild the `$50B7–$5453` console
+subsystem from its (black-box-characterised) contracts: the buffered-line routine plus its
+get-char / echo / state helpers. Larger, closer to "faithful relocation" (fork a), but each
+helper's contract must be pinned **black-box** first (entry call-targets + observed
+input→output + side-effect cells), never by reading the stock bodies. Defer unless Option A
+proves the kernel relies on subsystem side effects we can't reproduce from contract.
 
 ### Reference shape (Option A inner CHGET bridge, parallel of CONOUT M8/M10)
 

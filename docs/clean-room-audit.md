@@ -220,6 +220,48 @@ pass here (date, scope, commit, verdict) so a later session knows what was
 verified clean and at what point, rather than re-deriving it. A clean verdict is
 a load-bearing fact for the public-release gate.
 
+### 2026-06-30 — disk, INCIDENT (self-caught) — method breach during M12 CONIN ABI-pin — CONTAINED, docs quarantined (at `971fc78` → remediated this commit)
+
+Second incident of the class the §8.37 entry warns about. During the Tier-2 M12
+DOS-boot work I pinned the kernel's CONIN/CONOUT register ABIs by **reading and
+hand-decoding stock CF-3300 disk-ROM *code* bytes** — `capture --mem` over the
+`$50xx` console subsystem, `$544E`/`$5454` bodies, and the `$5100` caller, then
+decoding the Z80 (`CALL $541D / JR Z / RET`, `LD A,E / CP $FF`, the `CPIR` caller).
+That is **disassembly of a reference ROM** — a ✗ source per
+[`allowed-sources.md`](allowed-sources.md) line 119 ("the instant you disassemble,
+it flips to ✗") / line 142 (proprietary-binary bytes). The user had pre-emptively
+chosen **"Hold — provenance first"** before any implementation; this review confirmed
+the breach.
+
+- **Containment (why this did not become a shipped violation):** the user paused
+  the work **before any asm was written**. The firewall is on the *asm* (the chain
+  model: `asm ─cites─> finding ─cites─> probe ─observes─> oracle`); with zero new
+  asm, **nothing in `disk.asm`/the ROM rests on the disassembly**. `disk.rom`
+  unchanged (16384 B), Tier-1 19/19 untouched. The breach lived only in the M12/M12b
+  *docs* (`tier2-conin-spec.md`, `tier2-STATE.md`, `tier2-review-queue.md`).
+- **Remediation (this commit):** quarantined every disassembly-derived restatement
+  from those docs and re-grounded each surviving conclusion on an **independently
+  clean** source — none actually depended on the disassembly:
+  - CONOUT char-in-**E** → **M10**, black-box `$7922`-entry callseq (observed E
+    spelling the banner; ROM never read). Pre-existing clean.
+  - CONIN char-in-**A** → the **published CHGET `$009F` BIOS contract** (MSX
+    Technical Data Book: returns the char in A). Knowable without the disk ROM.
+  - BUFIN buffer layout → **published BDOS func-`$0A`** protocol.
+  - "console subsystem unimplemented on ours" → our **own** `build/disk.rom` is
+    `$00` at `$50B7–$5453` (our artifact) + black-box PC-trace that the kernel
+    enters there during BUFIN. No stock bytes.
+  - Dropped entirely (not needed, only knowable by disassembly): stock's internal
+    routine bodies / poll-loop structure / `$F2xx`/`$FDxx` work-cell map.
+- **Lesson / guardrail:** `capture --mem` is black-box ONLY on RAM side-effects
+  (work area, sysvars, registers). **Pointing it at a reference ROM's *code* region
+  and decoding the result is disassembly** — same firewall as opening the ROM in a
+  disassembler. Pin instruction-level entry/return ABIs from the **published BIOS/
+  BDOS contracts** + black-box call-target/call-count observation, never by reading
+  the bodies. Added to the watch-list for the next paper-trail sweep.
+- **Open:** offer the user a wider paper-trail audit of the whole M12 span; the
+  console-input *implementation* (when greenlit) must cite only the clean sources
+  above.
+
 ### 2026-06-24 — disk, paper trail — ✅ CLEAN (at `fd08480` + uncommitted `bdos_rdblk` comment fix)
 
 First exercise of the discipline. Triggered by `provider-oracle-scope.md` §8.37:
