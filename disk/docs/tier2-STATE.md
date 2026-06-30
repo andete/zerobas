@@ -29,17 +29,22 @@ Tier-1** (disk-BASIC / BLOAD / FILES) and while staying a **BIOS-agnostic replac
 disk ROM** (works on CF-3300, C-BIOS, any standards MSX1). "Reached `A>`" means a
 **visible** `A>` on screen + accepts a command — not just the right BDOS call sequence.
 
-## Live thesis (2026-06-30 M11: ours runs COMMAND.COM but its func-9 STROUT output is garbage + loops)
-After the byte-identical MSXDOS.SYS sign-on, **ours and stock execute divergent output**. Stock hands
-off to COMMAND.COM, which STROUTs (BDOS func 9) `COMMAND version 1.08`, then `Current date is
-Sun 84-01-01`, then `Enter new date:`, then blocks at the date BUFIN. Ours ALSO reaches COMMAND.COM
-($0100 with COMMAND.COM loaded — handoff confirmed) but its console output is broken: only the func-2
-date VALUE chars come through, every func-9 STROUT string comes out as garbage, and ours falls into an
-**infinite loop** emitting `Ø>@` (`$D8 3E 40`) + CR/LF that scrolls the whole screen forever. Ours
-never shows `COMMAND version 1.08`, the date prompt, or `A>`. **The render bug class is now: COMMAND.COM's
-func-9 STROUT path (string output) is broken on ours; func-2 (single-char CONOUT) works.** Likely root:
-something in our `$5454`/`conout_body` routing (page-0 main-ROM swap during CONOUT) corrupts func-9's
-string walk so it never terminates on `$`, or DE/the read page is wrong — TO BE PINNED (falsify-first).
+## Live thesis (2026-06-30 M11.1: COMMAND.COM runs IDENTICALLY; TWO bugs in our relocated kernel console I/O)
+**COMMAND.COM runs perfectly on ours — the BDOS call sequence is BYTE-IDENTICAL to stock for all 18
+calls** (STROUT banner @ $C284, FOPEN, STROUT `Current date is` @ $D2B3, GDATE, CONOUT `Sun 84-01-01`,
+STROUT `Enter new date:` @ $D2D3, BUFIN). Same C/A/B/DE/HL/ret on both. So the bug is NOT in COMMAND.COM
+or the BDOS interface — it is squarely in OUR relocated resident kernel's console I/O. TWO distinct bugs:
+- **Bug B (the spin):** at call n=18 BUFIN (func $0A, read console line), **stock BLOCKS waiting for a
+  key (18 calls, done); ours RETURNS immediately**, so COMMAND.COM re-runs the date-prompt loop forever
+  (n=19+ = the `Ø>@` garbage scroll). Ours' BUFIN does not wait for input.
+- **Bug A (missing strings):** func-9 STROUT (n=1,3,17 — banner / `Current date is` / `Enter new date:`)
+  emits **ZERO** chars to CHPUT on ours, while func-2 CONOUT (n=5–16, the date VALUE) DOES render. The
+  routes differ: func-2 → CHPUT via our M10 `$5454` veneer (ret=$7934); stock's func-9 → CHPUT via a
+  DIFFERENT resident-kernel route (ret=$F392; cf. `$F398→$00A2` in kernel.asm §8.38) that ours never set
+  up. So M10 fixed only the func-2 route; func-9's output route is unrelocated/broken on ours.
+LEADING HYPOTHESIS (verify falsify-first): the resident kernel's func-9 char-output vector (~$F392/$F398)
+is not initialised on ours, so STROUT chars are dropped. Bug B (BUFIN) is likely the same class — a
+console-INPUT primitive (CHGET/keyboard-status) route not set up — TO BE PINNED.
 
 ### What this session PROVED (2026-06-30 M11, all on test.dsk, direct ground-truth)
 - **STOCK reference (screen, settle 16):** rows = `MSX-DOS version 1.03` / `Copyright 1984 by
@@ -59,6 +64,11 @@ string walk so it never terminates on `$`, or DE/the read page is wrong — TO B
 - **`$5454` is reached by TWO callers with different ABIs:** the sign-on (ret=$0320, C=$80, A=E=char,
   MSXDOS.SYS loader) and the post-sign-on resident kernel/COMMAND path (ret=$D88A, C=BDOS-fn-number).
   Our veneer treats every entry as "emit E" — correct only for clean C=$02 char calls.
+- **BDOS ($0005) call seq is IDENTICAL ours==stock for n=1–18** (callseq --at 0x0100 --log 0x0005):
+  STROUT($C284)/FOPEN/STROUT($D2B3)/GDATE/12×CONOUT/STROUT($D2D3)/BUFIN — all C/A/B/DE/HL/ret match.
+  First divergence is n=18 BUFIN: stock blocks, ours continues. COMMAND.COM is NOT the problem.
+- **func-2 CONOUT renders, func-9 STROUT does NOT** (CHPUT route ret=$7934 vs $F392). Two output routes
+  to CHPUT in the resident kernel; M10 fixed only the func-2 one.
 
 ## Settled facts — DO NOT re-litigate or re-probe
 - COMMAND.COM **loads AND reaches $0100** (handoff works); `$47B2` return contract done; `$0005`=`JP
@@ -79,34 +89,39 @@ string walk so it never terminates on `$`, or DE/the read page is wrong — TO B
 - **"A clean visible `A>` just needs a keystroke injected past the date BUFIN"** — REFUTED (premature):
   ours never even renders `COMMAND version 1.08` or the date prompt; it loops on garbage long before
   any BUFIN. Input injection is irrelevant until the func-9 STROUT output is fixed.
+- **"func-9 STROUT garbage is a page-0-swap clobbering the string read"** — REFUTED 2026-06-30 M11.1.
+  The BDOS DE pointers are IDENTICAL ours==stock; func-9 emits 0 chars (not garbage from a bad read).
+  The bug is the OUTPUT route (func-9's resident-kernel CONOUT vector), not the string read.
 - **"conout_body should read the char from A"** — WRONG (that WAS the M10 bug). Contract is E.
 - (Retained) older date-path dead ends: SDATE-is-next-blocker, FOPEN-return-value, register-only $0005
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — pin the func-9 STROUT divergence (falsify-first), THEN spec a fix
-The blocker is COMMAND.COM's BDOS func-9 (STROUT, string output) producing garbage + looping on ours,
-while func-2 (single-char CONOUT) works. Steps:
-1. **Falsify-first: is func-9 itself broken, or is it func-2's page-0 swap corrupting func-9's string
-   walk?** Cheapest disproving experiment — capture a SINGLE func-9 STROUT on ours vs stock for the
-   SAME string (e.g. `COMMAND version 1.08` at `$C285`): anchor on COMMAND.COM $0100, watch the func-9
-   handler entry, dump DE (string ptr) + the bytes it reads + the per-char CONOUT it emits. If ours
-   reads the right string bytes but emits garbage → the CONOUT/$5454 page swap is clobbering the read
-   (DE points into page 0/TPA, which our veneer pages OUT to map the main ROM). If ours reads garbage
-   from the start → DE/string-setup is wrong (relocation/work-area).
-2. **Characterise the infinite loop** — what makes it never terminate? (func-9 never hits `$`? a CONOUT
-   re-entrancy? the page swap leaving page 0 = main ROM so the string walk reads ROM not the string?)
-   Watch where the `Ø>@` bytes are READ from.
-3. **Spec the fix** (per [[spec-before-implementation]]) before editing ROM — net-zero, BIOS-agnostic.
-   Candidate shapes: make `conout_body` preserve the TPA/page-0 mapping the kernel string-walk relies
-   on, or route func-9 differently. Decide only after step 1 pins read-vs-emit.
+## Next action — pin Bug A (func-9 output route) & Bug B (BUFIN block), falsify-first, THEN spec
+COMMAND.COM is innocent (BDOS seq identical). Two relocated-kernel console-I/O bugs to fix:
+1. **Bug A — verify the func-9 char-output route is unset on ours (falsify-first).** Trace func-9's
+   per-char emit on ours vs stock from the n=1 STROUT (banner, caller ret=$C23B, call site ~$C238):
+   where do func-9's chars go on ours? Compare the resident-kernel CONOUT vector (~$F392/$F398, the
+   route stock's func-9 uses) ours vs stock — is it initialised on ours? `capture --at 0xC238 --nth 1
+   --mem 0xF390:0x10` (and trace func-9 internals). Expected: stock's $F39x route reaches CHPUT; ours'
+   is wrong/empty so STROUT chars are dropped.
+2. **Bug B — characterise why ours' BUFIN (func $0A) returns instead of blocking.** Trace BUFIN
+   (n=18, caller ret=$CD6C) internals ours vs stock: stock loops on CHGET/keyboard; ours falls
+   straight through. Likely the same class as Bug A — a console-INPUT primitive route not relocated.
+   (Note: even fixed, the GOAL's visible `A>` will require INJECTING a keystroke past the date BUFIN —
+   stock blocks there too. Key injection is step 3 of the eventual demo, AFTER A+B.)
+3. **Spec the fix(es)** (per [[spec-before-implementation]]) before editing ROM — net-zero,
+   BIOS-agnostic. Likely: initialise/relocate the resident-kernel console I/O vectors during our init
+   the way stock's MSXDOS.SYS does. Decide shape only after 1–2 pin the exact vector(s).
 
 **One-command repros for the next session (test.dsk):**
-- The blocker, visually: `python3 probes/disk/disk_probe_diff.py screen --machine both --settle 16
-  --diska ~/Documents/msx/msx/disks/test.dsk` → STOCK shows COMMAND+date prompt; OURS = `Ø>@` loop.
-- The fork: `… callseq --at 0x00A2 --arm-cond "1" --log 0x00A2 --maxhits 240 --diska …` → n=1–53
-  identical sign-on; n=54 stock=`C=09 STROUT "COMMAND v…"`, ours=`C=00/02 "Sun 84-01-…"`.
-- Sign-on still renders on ours: `screen --machine ours --settle 12` (banner visible before scroll-off).
+- The two bugs, at the interface: `python3 probes/disk/disk_probe_diff.py callseq --at 0x0100 --log
+  0x0005 --maxhits 50 --diska ~/Documents/msx/msx/disks/test.dsk` → n=1–18 IDENTICAL (COMMAND.COM ok);
+  n=18 BUFIN: stock blocks, ours spins (n=19+ garbage). func-9 STROUT @ n=1/3/17.
+- The blocker, visually: `… screen --machine both --settle 16 …` → STOCK = COMMAND+date prompt; OURS =
+  `Ø>@` loop. (Ours' sign-on still renders early: `screen --machine ours --settle 12`.)
+- Output-route fork: `… callseq --at 0x00A2 --arm-cond "1" --log 0x00A2 --maxhits 240 …` → func-2
+  chars reach CHPUT via ret=$7934 (ours, M10 veneer); stock's func-9 via ret=$F392.
 
 ## Method guardrails (DURABLE — keep these when you overwrite this file)
 Endorsed 2026-06-27 after a retrospective found ~half the Tier-2 reframes came from

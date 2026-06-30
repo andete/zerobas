@@ -36,13 +36,19 @@ ours `C=00/02` spelling `Sun 84-01-…` (ret=$7934, our veneer). So stock STROUT
 ours never does a clean func-9 STROUT — only the func-2 date VALUE leaks through, then garbage loops.
 Ours DOES reach COMMAND.COM ($0100 arm fires) → handoff works; COMMAND.COM's EXECUTION output is the
 break. · **this CORRECTS M10's residual framing:** the "stray @ / missing Current date is / headless
-idle spam" were NOT cosmetics or a benign no-keyboard artifact — they are one INFINITE func-9 garbage
-loop, THE blocker. "A clean `A>` needs a keystroke past BUFIN" is refuted: ours loops on garbage long
-before any BUFIN. · **leading hypothesis (next to test, falsify-first):** our `$5454`/`conout_body`
-CONOUT pages the main ROM into PAGE 0 for each char; COMMAND.COM's func-9 string walk reads its string
-from page-0/TPA (DE pointer), so the per-char page swap may clobber the walk (reads ROM/garbage, never
-hits `$` → infinite loop). OR func-9's DE/string setup is wrong from the start (relocation/work-area).
-Step-1 probe pins read-vs-emit before any spec. · **judgment calls:** (a) STOPPED probing at a clean
+idle spam" were NOT cosmetics or a benign no-keyboard artifact — they are the symptom of two real bugs
+(below), THE blocker. · **SHARPENED M11.1 (callseq --at 0x0100 --log 0x0005):** the BDOS call seq is
+BYTE-IDENTICAL ours==stock for ALL 18 calls (STROUT $C284 / FOPEN / STROUT $D2B3 / GDATE / 12×CONOUT /
+STROUT $D2D3 / BUFIN). **COMMAND.COM runs perfectly; the bugs are in OUR relocated kernel console I/O:**
+(A) func-9 STROUT (banner/`Current date is`/`Enter new date:`) emits ZERO chars to CHPUT while func-2
+CONOUT (the date value) renders — different CHPUT routes (func-2 ret=$7934 = our M10 veneer; stock
+func-9 ret=$F392, cf. $F398→$00A2); M10 fixed only the func-2 route. (B) at n=18 BUFIN stock BLOCKS,
+ours RETURNS → infinite date-prompt re-loop. · **this REFUTES my own first-cut hypothesis** ("page-0
+swap clobbers func-9's string read"): the DE pointers are identical and func-9 emits 0 (not garbage
+from a bad read) — it's the OUTPUT route, not the read. Also re-refutes "BUFIN-not-blocking is benign
+headless artifact" — both run the same BUFIN; stock blocks, ours doesn't = bug B. · **next (falsify-
+first):** verify the func-9 char-output route (~$F392/$F398 resident-kernel CONOUT vector) is unset on
+ours; characterise why BUFIN returns; THEN spec. · **judgment calls:** (a) STOPPED probing at a clean
 reframe rather than grinding a fix — per deep-think + guardrails (over-rosy M10 came from trusting a
 transient settle-12 frame, not steady state). (b) Did NOT touch ROM — the fix needs a spec + the
 mechanism pinned ([[spec-before-implementation]]). (c) Overwrote STATE with the corrected picture;
