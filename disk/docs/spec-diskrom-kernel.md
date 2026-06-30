@@ -97,24 +97,35 @@ Probe: `disk_probe_dosboot_50a9.py`.
 
 ### 1.3 `$5454` — CONOUT (console character output)
 
-- **Contract.** Output the character in **`A`** via the BIOS CHPUT path,
-  preserving `BC/DE/HL/IX/IY`. The kernel calls it to emit the MSX-DOS sign-on
-  banner (first call `A=$0D`, the leading CR). Black-box call-chain on the stock:
-  `$5454 → $408F → $40B1 → $001C` (CALSLT) → resident kernel → `$F38C/$F398` →
-  `$00A2` (CHPUT).
+- **Contract.** Output the character in **`E`** via the BIOS CHPUT path,
+  preserving `BC/DE/HL/IX/IY` (the MSX-DOS BDOS CONOUT, func 2, char-in-E ABI).
+  Black-box call-chain on the stock: `$5454 → $408F → $40B1 → $001C` (CALSLT) →
+  resident kernel → `$F38C/$F398` → `$00A2` (CHPUT).
+- **Char register = E, not A (M10/§8.80, corrected 2026-06-30).** Two callers were
+  observed at the veneer entry (`callseq --log 0x7922`): the early MSXDOS.SYS sign-on
+  (caller `$0320`) passes the char in **both `A` and `E`** (first char `$0D`, the
+  leading CR), while the relocated kernel's per-char console output (caller `$D88A`,
+  the COMMAND.COM banner / date / `A>` prompt) passes it in **`E` with `A=$00`**. So
+  `E` is the register common to both — register `E` spells `MSX-DOS version 1.03`
+  (early) and `Sun 84-01-01` / `A>` (kernel). A veneer reading `A` therefore emits
+  `$00`/garbage for ALL kernel-phase output while *appearing* to work for the early
+  sign-on — the original "char in A" reading was an early-phase coincidence.
+  ⚠ Not every `$5454` call is a printable-char call (the kernel also invokes it with
+  `E` holding a pointer low-byte); the gate is an open residual (see the review queue).
 - **Baked-in, not relocated.** `CD 54 54` (`CALL $5454`) is present in the
   pristine just-loaded `MSXDOS.SYS` image and unchanged at call time — a hard
   immediate, confirming `$5454` is a fixed entry address, not a relocated vector.
-- **zerobas status (§8.39).** The entry is placed at `$5454` (a `ds`-fill in the
-  ROM's free tail, like `$4030`/`$50A9`). The current body is a **first cut: a
-  register-preserving `RET` that emits nothing** — sufficient to clear the derail,
-  which alone collapses the boot's BDOS calls 21→3 (stock parity) and breaks the
-  warm-boot loop. Emitting the character (the full contract above, via our CALLF
-  console path) is the remaining refinement; until then the banner/prompt produce
-  no visible output, so `A>` is confirmed behaviourally, not on screen.
+- **zerobas status (§8.80, IMPLEMENTED + RENDERING).** The entry is placed at `$5454`
+  (a `ds`-fill in the ROM's free tail, like `$4030`/`$50A9`) as `jp conout_body`. The
+  body (`conout_body`, free tail) pages the main BIOS ROM into page 0 via the portable
+  `pg0_mainrom_in` (EXPTBL[0]), `call $00A2` (CHPUT) with the char from **`E`**, restores
+  page 0, EI, returns. Real ASCII now renders: `screen --machine ours --settle 12` shows
+  `MSX-DOS version 1.03` / `Copyright 1984 by Microsoft` / `Sun 84-01-01` + the boot logo.
+  (Evolution: §8.39 first-cut RET → §8.67/§8.68 emit-via-CHPUT, char-in-A → §8.80 char-in-E
+  fix, the milestone that made output visible.)
 
-Probes: `disk_probe_dosboot_pctrace.py`, `disk_probe_dosboot_entries.py`,
-`disk_probe_dosboot_bdos_contract.py`.
+Probes: `disk_probe_diff.py` (the differential harness — `screen` / `iowrite` / `callseq
+--log 0x7922`); legacy `disk_probe_dosboot_pctrace.py`, `disk_probe_dosboot_entries.py`.
 
 ---
 
