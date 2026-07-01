@@ -5,8 +5,14 @@ SPDX-License-Identifier: 0BSD
 
 # Tier-2 M15 spec — DRAFT — restore BDOS func-9 (STROUT) console output
 
-**Status:** DRAFT, no asm. Awaiting sign-off (spec-before-implementation).
-Resume board: [tier2-STATE.md](tier2-STATE.md). History: [tier2-review-queue.md](tier2-review-queue.md) M14.
+**Status:** DRAFT — ROOT CAUSE FOUND (§9, 2026-07-02), fix specced, **HARD-STOP awaiting
+sign-off (spec-before-implementation)**. Resume board: [tier2-STATE.md](tier2-STATE.md).
+History: [tier2-review-queue.md](tier2-review-queue.md) M14.
+
+> **READ §9 FIRST.** §§3–7 below are the *superseded* wa_seg / `$F365` / page-1 investigation
+> — all of it a red herring. §9 is the actual root cause (our own `res_print_tmpl` is a
+> no-emit stub) and the fix. The §§3–7 material is retained only so the next session does not
+> re-walk it; do not act on §§3–7's conclusions.
 
 ## 1. Goal
 Make COMMAND.COM's banner/date-prompt lines render, so we can drive to a visible `A>`.
@@ -224,3 +230,90 @@ no register-level fault) but NOT closed — the exact wrong-byte/wrong-check has
 next black-box step (still no asm) would be a broader `readwatch` sweep beyond `$4000:0x20` for the
 byte the loop actually compares against `$` around `$D88E`+few instrs; failing that, this is the
 falsify-first-build gate the spec already called for (§7.1: sign-off before ANY asm).
+
+## 9. ROOT CAUSE (2026-07-02, no asm, all clean-room-safe) — `res_print_tmpl` is a no-emit stub
+
+**The entire §§3–7 wa_seg / `$F365` / page-1-paging investigation was chasing a red herring.**
+The func-9 output routine ours calls is **`RES_PRINT` at `$F1C9`, which is OUR OWN clean-room
+routine** (`res_print_tmpl`, [init.asm](../init.asm):609), and its own source comment already
+states the bug: *"Our first cut CONSUMES the string (advance DE past it) and returns; it does not
+yet emit the characters."*
+
+### 9.1 The decisive evidence (new `callwatch` mode + func-9-gated `readwatch` of the string)
+Added a `callwatch` mode to `disk_probe_diff.py` (enumerates which of OUR page-1 disk-ROM routines
+the func-9 loop invokes — our own code, entry-PC counts only, clean-room-safe; decodes nothing on
+stock). Then:
+1. **`callwatch --machine ours` (func-9-gated): ZERO page-1 entries.** During func-9, ours executes
+   NONE of our `$4000-$7FFF` disk-ROM code. (Ungated it correctly shows `$4462`/`$553C`/`$5454`-area
+   — so the mechanism works; func-9 simply doesn't use page 1.) ⇒ func-9's output path is entirely
+   page-3 / relocated-kernel; the `$F368`/`$F36B` page-1 paging (§7.1) is CONCURRENT kernel activity,
+   NOT on the output path. This refutes §7.1's "bounded to wa_seg" AND the whole page-1-routine idea.
+2. **`readwatch --range 0xC284:0x40` (func-9-gated), the STROUT string itself** (DE=`$C284` on BOTH,
+   captured `capture --at 0x0005 --nth 1`, reg-diffs NONE): **ours reads ALL 27 bytes of
+   `\r\nCOMMAND version 1.08\r\n\r\n$`** (`C284..C29E`, terminator `$`=`24`). So the loop-exit-after-
+   one-char framing (§7.2) was ALSO wrong — ours traverses the entire string. The reader PC is
+   **`$F1C9` on ours** (= `RES_PRINT`, our routine) vs `$F1CC` on stock (stock's equivalent, +3;
+   not decoded). ⇒ ours reads every char and emits none.
+3. **`RES_PRINT` = `res_print_tmpl` is straight-line** (`ld a,(de) / inc de / cp '$' / ret z / jr`) —
+   no CHPUT/CONOUT call anywhere. That is exactly the observed M14 fact: func-9 chars never reach
+   CHPUT (`$00A2`=0, `$F392`=0). §7.2's "the caller is NOT `RES_PRINT`" was wrong — it reasoned from
+   the return address `$D88E`, but the actual string-reader/consumer IS `RES_PRINT` at `$F1C9`.
+
+**⇒ ROOT CAUSE: our `res_print_tmpl` consumes the `$`-string without emitting it.** func-2 CONOUT
+works because it routes through `conout_body` (`$5454`→CHPUT); func-9 STROUT was stubbed to swallow
+its string. Same class as the M10 CONOUT gap and the M13 CONIN gap: a console path ours had not yet
+wired to `conout_body`.
+
+### 9.2 The fix (approach A, now unambiguous) — emit each char via `conout_body`
+Make `res_print_tmpl` call our existing, proven CONOUT (`conout_body`, [runtime.asm](../runtime.asm):91,
+the `$5454` body func-2 already uses) for every char before the `$` terminator — exactly as
+`conin_line_body` already echoes via `conout_body` ([runtime.asm](../runtime.asm):165). Shape:
+
+```
+res_print_tmpl:
+                ld      a, (de)         ; A = next string byte
+                inc     de
+                cp      '$'             ; $24 = MS-DOS terminator
+                ret     z               ; done -> return (DE past '$', A=$24)  [contract preserved]
+                push    de              ; conout_body preserves DE, but be explicit/safe
+                ld      e, a            ; conout_body takes the char in E (its ABI, M10)
+                call    conout_body     ; emit via $5454 CONOUT path -> CHPUT (the working path)
+                pop     de
+                jr      res_print_tmpl  ; (still PC-relative; `call conout_body` is a fixed abs addr)
+```
+
+- **Return contract preserved:** still returns with DE past `$` and A=`$24` on the `ret z`. (The
+  emit path restores A via `conout_body`'s `ld a,(CONOUT_CHAR)`, but the terminator path never emits,
+  so A=`$24` on return is unchanged. Confirm the kernel needs nothing else back — M14 showed 18/18
+  BDOS-level alignment, so the func-9 *return* already matched; we are only adding a side effect.)
+- **Clean-room:** derives from published func-9 (print `$`-terminated string at DE) + our own
+  `conout_body` + our own `res_print_tmpl`. No stock bytes. `conout_body`'s char-in-E is the M10-
+  proven CONOUT ABI.
+- **Relocation:** `res_print_tmpl` is LDIR'd verbatim to `$F1C9`. `call conout_body` is a 3-byte
+  ABSOLUTE call to a fixed free-tail address — relocates verbatim (the target address is invariant),
+  and `jr` stays PC-relative. So it still relocates with a plain LDIR. ✓
+
+### 9.3 The one build risk — pre-`$41FD` budget (see §7.3 lesson)
+`res_print_tmpl` grows from 6 B to ~13 B and lives in the CRAMPED pre-`$41FD` template region that
+§7.3 proved has ZERO slack (an 11-B inline overflowed the `ds $41FD - $` anchor SILENTLY under
+`--sym`). **Two options for sign-off:**
+- **(i)** Grow the template in place IF the ~7 added bytes fit before `$41FD` (must verify the anchor
+  slack first: build with `--sym`/3-positional-arg mode and check the OBJECT-FILE SIZE, not exit code
+  — 2-arg mode hides this overflow, §7.3).
+- **(ii, safer, recommended)** Relocate `res_print_tmpl` to the FREE TAIL where `p1_blit_tmpl` /
+  `wa_seg_*_tmpl` already live (init.asm:616 notes they're there precisely to keep this region in
+  budget), and have `build_resident`'s existing LDIR copy it from the new location. No budget limit in
+  the tail. Net-zero overall (the template moves, doesn't duplicate).
+
+### 9.4 Acceptance (unchanged from §6)
+- `screen --machine ours --settle 16` renders `COMMAND version 1.08` / `Current date is Sun 84-01-01`
+  / `Enter new date: ` as distinct lines.
+- `callseq --log 0x00A2` ours emits ~72 chars (was 12); `--log 0x009C` fires per-char (was 0).
+- Tier-1 green `make unit-test` 19/19; `disk.rom` == 16384 B; M13 CONIN regression intact.
+
+### 9.5 Why the `$F365` stub (§7.3) and wa_seg completion are now known-irrelevant to M15
+The `$F368`/`$F36B`/`$F365` paging is concurrent kernel work, not on RES_PRINT's straight-line output
+path (§9.1.1: zero page-1 execution during func-9; RES_PRINT makes no calls into it). The `$F365`
+stub committed in §7.3 is harmless/correct and can stay, but it does NOTHING for M15 — do not re-tie
+M15 to it. This also retroactively explains §7.3's negative result: completing wa_seg/`$F365` changed
+nothing because they were never the blocker.

@@ -648,6 +648,88 @@ def mode_readwatch(args) -> int:
     return 0
 
 
+# ---- mode: callwatch -----------------------------------------------------------
+# "Which of OUR OWN page-1 disk-ROM routines does the func-9 output loop invoke?"
+# The $F368/$F36B pair maps our disk ROM into page 1 so the kernel can CALL a
+# resident routine that physically lives at $4000-$7FFF (M5.6 §2 / workarea-map §2).
+# On stock that routine is stock's; on ours it is OUR code — so watching WHICH of our
+# page-1 addresses executes (and how often), gated to during-func-9, is fully
+# clean-room-safe (our own code, execution/entry-PC counts — the allowed black-box
+# kind). It decodes NOTHING on the stock side and no relocated-kernel bytes.
+#
+# Mechanism: a single read_mem RANGE watchpoint over $4000:0x4000 fires on the opcode
+# FETCH (toolbox note: read_mem watchpoints fire on fetch). We record the FIRST fetch
+# of each contiguous run (an entry point) — i.e. a fetch whose PC is not sequential
+# after the previous page-1 fetch — as a called/entered routine, with its hit count.
+def _callwatch_arm(arm_addr: int, arm_cond: str, lo: int, hi: int,
+                   gate_func9: bool, maxhits: int) -> str:
+    gate = "if {!$::in9} return\n  " if gate_func9 else ""
+    return f"""
+set ::armed 0
+set ::in9 0
+set ::callno 0
+set ::rn 0
+set ::prevpc -99
+debug set_bp {arm_addr:#06x} {{}} {{
+  if {{ {arm_cond} }} {{ set ::armed 1 }}
+}}
+debug set_bp 0x0005 {{}} {{
+  if {{!$::armed}} return
+  incr ::callno
+  if {{ ([reg BC]&0xFF) == 9 }} {{ set ::in9 1 }} else {{ set ::in9 0 }}
+}}
+debug set_watchpoint read_mem {{{lo:#06x} {hi:#06x}}} {{}} {{
+  if {{!$::armed}} return
+  {gate}set pc [reg PC]
+  set entry [expr {{$pc != ($::prevpc + 1) && $pc != $::prevpc}}]
+  set ::prevpc $pc
+  if {{!$entry}} return
+  incr ::rn
+  emit [format "ENTRY PC=%04X in9=%d call=%d t=%.6f" $pc $::in9 $::callno [machine_info time]]
+  if {{$::rn >= {maxhits}}} {{ exit }}
+}}
+"""
+
+
+def mode_callwatch(args) -> int:
+    lo, _, hi = args.range.partition(":")
+    lo = int(lo, 0)
+    hi = int(hi, 0) if hi else 0x7FFF
+    arm_cond = args.arm_cond or f"[debug read memory {args.arm_check_addr:#06x}] == {args.arm_check_val:#04x}"
+    body = 'emit [format "DONE armed=%d rn=%d" $::armed $::rn]; exit'
+    arm = _callwatch_arm(args.at, arm_cond, lo, hi, args.gate_func9, args.maxhits)
+
+    def entries_for(machine):
+        raw = _runner(machine, args.diska, args.symfile).run_job_raw(
+            body, settle=args.settle, timeout=args.timeout, arm=arm,
+            keys=args.keys, keys_at=args.keys_at)
+        out = []
+        for l in raw:
+            if not l.startswith("ENTRY "):
+                continue
+            d = {}
+            for tk in l.split()[1:]:
+                k, _, v = tk.partition("=")
+                d[k] = float(v) if k == "t" else int(v, 16 if k == "PC" else 10)
+            out.append(d)
+        return out
+
+    machines = {"both": [STOCK_MACHINE, OURS_MACHINE], "ours": [OURS_MACHINE],
+                "stock": [STOCK_MACHINE]}[args.machine]
+    gate = " (gated: during func-9 only)" if args.gate_func9 else ""
+    print(f"=== callwatch: page-1 entry-PCs in {lo:#06x}..{hi:#06x} after arm@{args.at:#06x}{gate} ===")
+    for m in machines:
+        ent = entries_for(m)
+        who = "OURS " if m == OURS_MACHINE else "STOCK"
+        by_pc: dict[int, int] = {}
+        for e in ent:
+            by_pc[e["PC"]] = by_pc.get(e["PC"], 0) + 1
+        print(f"  {who}: {len(ent)} entries across {len(by_pc)} distinct PC(s)")
+        for pc in sorted(by_pc):
+            print(f"    {pc:04X}: entered {by_pc[pc]}x")
+    return 0
+
+
 # ---- mode: screen --------------------------------------------------------------
 def _screen_body() -> str:
     # Read SCRMOD ($FCAF) + LINLEN ($F3B0), then the VDP name table. SCREEN 0 (text 40)
@@ -809,6 +891,21 @@ def main() -> int:
     r.add_argument("--maxhits", type=int, default=400)
     r.add_argument("--machine", choices=("both", "ours", "stock"), default="both")
 
+    c = sub.add_parser("callwatch",
+                       help="enumerate OUR page-1 routines the func-9 loop invokes (clean-room: our code)")
+    common(c)
+    c.add_argument("--at", type=lambda x: int(x, 0), default=0x0100, help="arm address")
+    c.add_argument("--arm-check-addr", type=lambda x: int(x, 0), default=0x0102)
+    c.add_argument("--arm-check-val", type=lambda x: int(x, 0), default=0x05)
+    c.add_argument("--arm-cond", default=None, help="raw Tcl arm predicate")
+    c.add_argument("--range", default="0x4000:0x7FFF",
+                   help="page-1 code range LO:HI (default our whole disk-ROM page 1)")
+    c.add_argument("--gate-func9", action="store_true", default=True)
+    c.add_argument("--no-gate", dest="gate_func9", action="store_false")
+    c.add_argument("--maxhits", type=int, default=400)
+    c.add_argument("--machine", choices=("both", "ours", "stock"), default="ours",
+                   help="default OURS: enumerating stock's page-1 routine set is not needed and near the disasm line")
+
     args = ap.parse_args()
 
     tmp_disk = None
@@ -822,7 +919,8 @@ def main() -> int:
     try:
         return {"callseq": mode_callseq, "capture": mode_capture, "trace": mode_trace,
                 "screen": mode_screen, "iowrite": mode_iowrite,
-                "readwatch": mode_readwatch}[args.mode](args)
+                "readwatch": mode_readwatch,
+                "callwatch": mode_callwatch}[args.mode](args)
     finally:
         if tmp_disk and os.path.exists(tmp_disk):
             os.unlink(tmp_disk)

@@ -23,6 +23,40 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M15 / ROOT CAUSE FOUND — `res_print_tmpl` is a no-emit stub; the whole wa_seg/$F365/page-1 thread
+was a red herring. No asm; HARD-STOP for sign-off before the (now trivial) fix.]**
+· **The reframe (deep-think first, per handover):** rather than mechanically widen the §7.2 `readwatch`
+sweep (clean-room risk: might drift into stock code), I re-read [tier2-workarea-map.md] + M5.6 spec and
+noticed `$F368`/`$F36B` are a page-1-flip PAIR (map disk ROM into page 1, run a resident routine there,
+map RAM back). Hypothesis: the func-9 output worker is a page-1 disk-ROM routine ours stubbed. · **New
+probe mode `callwatch`** (committed): enumerates which of OUR page-1 routines ($4000-$7FFF) the func-9
+loop invokes — our own code, entry-PC counts only, clean-room-safe, decodes nothing on stock, defaults
+`--machine ours`. · **Result 1 — hypothesis FALSIFIED but decisively:** `callwatch --machine ours`
+gated to func-9 = **ZERO page-1 entries** (ungated shows normal $4462/$553C/$5454 activity, so the
+mechanism works). ⇒ func-9's output path is entirely page-3/relocated-kernel; the `$F368`/`$F36B`
+paging (§7.1) is CONCURRENT kernel work, NOT on the output path. The whole §§3–7 wa_seg/$F365 thread
+is a red herring — this retroactively explains §7.3's negative build. · **Result 2 — root cause:**
+`capture --at 0x0005 --nth 1` → DE=$C284 (STROUT string ptr), byte-identical both, reg-diffs NONE.
+`readwatch --range 0xC284:0x40` gated func-9 → **ours reads ALL 27 bytes** of `\r\nCOMMAND version
+1.08\r\n\r\n$` via reader PC **$F1C9 = RES_PRINT = our own `res_print_tmpl`** (stock reads via $F1CC,
+its +3 equivalent, NOT decoded). Ours traverses the whole string and emits nothing — matching M14
+(CHPUT gets 0 func-9 chars). · **Confirmed from OUR OWN SOURCE (no stock decode):** `res_print_tmpl`
+([init.asm] :609) is straight-line `ld a,(de)/inc de/cp '$'/ret z/jr` with NO CHPUT/CONOUT call — and
+its own comment says *"Our first cut CONSUMES the string … it does not yet emit the characters."* So
+§7.2's "caller is NOT RES_PRINT" was wrong (reasoned from return addr $D88E; the actual consumer is
+$F1C9). · **Fix (approach A, spec §9.2):** add `push de / ld e,a / call conout_body / pop de` before
+the `jr` — emit each char via our proven CONOUT ($5454→CHPUT, char-in-E per M10), exactly as
+`conin_line_body` echoes (runtime.asm:165). Preserves the DE-past-$/A=$24 return contract. Clean-room
+(published func-9 + our own CONOUT). · **judgment call:** hard-stopped at the asm boundary
+([[spec-before-implementation]]) — wrote spec §9 + updated STATE + committed the `callwatch` mode, did
+NOT write the fix asm. · **the one build risk:** the pre-$41FD template budget (§7.3 silent-overflow
+trap). Spec §9.3 gives two options; recommends (ii) moving `res_print_tmpl` to the free tail (net-zero)
+so budget is a non-issue. **This is a design-ish fork (option i vs ii) → user steer wanted.**
+· **confidence:** VERY HIGH on the root cause (our own source comment + string-read + zero-page-1 +
+M14 CHPUT=0 all agree; and it's the same class as the M10 CONOUT / M13 CONIN gaps we already fixed the
+same way). · **undo:** docs + one probe mode only; ROM at committed baseline (16384 B, 19/19). · **awaiting:**
+(i) sign-off to implement §9.2; (ii) steer on build option (i grow-in-place vs ii move-to-tail).
+
 **[M14 / banner blocker CHARACTERISED — it is a func-9 STROUT OUTPUT gap, and this CORRECTS the M12
 "func-9 is fine" refutation. No asm; HARD-STOP for sign-off before any fix.]**
 · **falsify-first (screen = arbiter):** `screen --machine ours --settle 16/35` are identical steady frames
