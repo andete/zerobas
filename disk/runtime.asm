@@ -318,6 +318,7 @@ int_h_hiram_end:
 ; Same DOS-only save/restore discipline as $F338, so a returning data disk leaves the
 ; host's cells untouched (BIOS-agnostic). (tier2-gdate-spec.md)
 dos_handoff:
+                call    dos_clear_screen    ; OI-3: blank BASIC banner + home cursor (below)
                 ld      a, ($F338)          ; save host $F338 (BASIC hook stub on C-BIOS)
                 push    af
                 ld      hl, ($F30D)         ; save host $F30D/$F30E (date-format config)
@@ -332,6 +333,40 @@ dos_handoff:
                 ld      ($F30D), hl
                 pop     af                  ; recover host $F338
                 ld      ($F338), a          ; restore the dual-purpose stub for BASIC
+                ret
+
+; --- dos_clear_screen - OI-3: blank the SCREEN-1 name table + home the cursor -----
+; Stock's DOS boot handoff clears the leftover BASIC power-on banner before the DOS
+; sign-on via a DIRECT name-table fill of spaces (characterised black-box: 0 CHPUT
+; form-feeds, no mode switch -- tier2-oi3-spec.md §2), and homes the cursor (stock's
+; CSRY/CSRX = $01/$01 at COMMAND.COM $0100). Ours never cleared, so it inherited BASIC's
+; screen (banner ROW10-13) and printed the sign-on from CSRY=$0F -> A> at ROW23. This
+; reproduces BOTH halves so ours' A> lands at ROW09 matching stock.
+;   (i) FILVRM ($0056): A=byte, BC=length, HL=VRAM addr -> fill VRAM[$1800..$1AFF] with
+;       $20 (768 = 32*24 SCREEN-1 name-table cells; namebase=$1800 confirmed by the
+;       `screen` probe on BOTH machines). Called via the main-ROM inter-slot path
+;       (pg0_mainrom_in/out) exactly as conout_body calls CHPUT: page 0 is RAM here
+;       (init.asm did page0_ram_in), so we page the main BIOS ROM back in from EXPTBL[0].
+;   (ii) cursor-home: CSRY ($F3DC) := 1, CSRX ($F3DD) := 1 (documented work-area sysvars).
+; STAY-DI (OI-3 §5.3): the caller (init.asm) holds DI across the whole page-0-RAM handoff
+; until MSXDOS.SYS is entered (init.asm:286); we restore page 0 but do NOT `ei` here, to
+; avoid an interrupt firing mid-handoff while $0038 is not yet the BIOS handler.
+; MUST preserve IX = $F195 (DRVA_DPB, required into MSXDOS.SYS, §8.31/M18) -- FILVRM does
+; not contractually preserve IX -> push/pop guards it.
+; CLEAN-ROOM: FILVRM $0056 + the $1800/768 SCREEN-1 name-table geometry + CSRY/CSRX
+; $F3DC/$F3DD are all documented MSX BIOS ABI / work-area sysvars (cited, not decoded).
+dos_clear_screen:
+                push    ix                  ; IX=$F195 (DRVA_DPB) must survive into MSXDOS.SYS
+                call    pg0_mainrom_in      ; main BIOS ROM -> page 0 (portable, EXPTBL[0])
+                ld      a, $20              ; A = space
+                ld      bc, $0300           ; BC = 768 = 32*24 name-table cells
+                ld      hl, $1800           ; HL = SCREEN-1 name-table base
+                call    $0056               ; FILVRM: VRAM[$1800..$1AFF] := $20
+                call    pg0_mainrom_out     ; restore page 0 = RAM (STAY-DI: no ei)
+                pop     ix
+                ld      a, $01
+                ld      ($F3DC), a          ; CSRY := 1 (home row, 1-based)
+                ld      ($F3DD), a          ; CSRX := 1 (home col, 1-based)
                 ret
 
 ; --- pad to a full 16 KB page ($4000-$7FFF) --------------------------------
