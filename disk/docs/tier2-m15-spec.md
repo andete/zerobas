@@ -87,9 +87,30 @@ we already handle func-2. Confirm the vector is DOS-only so Tier-1 BASIC is unto
 - Net-zero: `disk.rom` == 16384 B; no canonical-address shifts. M13 CONIN regression intact
   (`--log 0x009F` 1 call idle).
 
-## 7. Open items (recommended defaults in bold)
-- OI-1: P-vector vs P-resident → **pin via §3 step 1 before choosing (A)/(B)**.
+## 7. §3 PIN RESULT (2026-07-01, no asm) — leans P-resident; SCOPE SHIFT flagged
+`capture --at 0x0005 --nth 1 --mem 0xF340:0x40` (aligned first func-9 dispatch; **register diffs
+NONE** ⇒ trustworthy). Ours' DOS work-area page-3 is **substantially unbuilt/divergent**:
+- FF where stock has data: `$F345`, `$F347`, `$F358-$F367` (incl. stock `$F365`=`DB A8 C9`).
+- pointer block `$F34D-$F356` diverges (stock → `$EF95`/`$F195`; ours → `$E8xx`).
+- `$F368` JP-table half-stubbed on ours: stock → `$DF57/$DF59/$DF70/$F327/$F32C/$F331`; ours →
+  `$E795/$E79B` (M5.6's two) then `$41AF`×5 stubs. (Established-clean pointer read, per M5.5.)
+**⇒ NOT P-vector (a single settable cell). It is P-resident:** ours builds only part of the
+resident DOS work area; func-9's output routine (`$F38x`, uncaptured for clean-room) is very
+likely in this unbuilt block. This connects M15 to the **DOS work-area construction sub-track**
+(§8.52/§8.65), so approach **(B)** — not (A) — is the likely shape, and the fix is heavier than a
+one-line vector poke.
+**CAVEAT (do NOT skip — §8.65 was a mis-conclusion of exactly this kind):** "unbuilt" is proven,
+"unbuilt CAUSES func-9's skip" is NOT yet — I have not shown func-9 causally reads/calls a specific
+stubbed/FF cell on its failing path. The clean confirming step (no asm) is a **read/call-through
+watch on the func-9 path** (does it hit `$41AF`/read an FF cell before returning?), which needs a
+small `disk_probe_diff.py` write/read-watch extension. **Gate the fix behind that confirmation.**
+
+## 8. Open items (recommended defaults in bold)
+- OI-1: P-vector vs P-resident → **RESOLVED: leans P-resident (§7); confirm causality first**.
 - OI-2: is the func-9 output path DOS-only or shared with BASIC? → **must be DOS-only /
   BIOS-agnostic; validate FILES on C-BIOS + CF-3300 unchanged**.
 - OI-3: does fixing func-9 also fix the un-cleared BASIC banner (secondary symptom)? →
   **treat as separate; defer, re-`screen` after M15 lands**.
+- OI-4 (NEW): scope — is func-9's output path a TARGETED build (just its resident routine/hook) or
+  does it drag in the broader work-area construction? → **needs the §7 causal confirmation to bound;
+  hard-stop for user scope steer before committing to the sub-track**.

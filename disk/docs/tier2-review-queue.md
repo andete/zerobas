@@ -47,7 +47,15 @@ char-output loop — the `$F392` resident routine (CHSNS-poll + CHPUT) is never 
 having emitted nothing. func-2 works via a different wired path (`$5454`). Same SHAPE as the `$4462` FOPEN
 gap: a shared-kernel routine that's live on stock, unreached/stubbed on ours. Deliberately did NOT `trace`
 into `$F392`/`$F2AC`/`$F237` (M12c reference-disasm hazard). Fix target + approach in
-[tier2-m15-spec.md](tier2-m15-spec.md) (DRAFT, no asm). · **judgment call:**
+[tier2-m15-spec.md](tier2-m15-spec.md) (DRAFT, no asm). · **§3 PIN (user chose "do it now", no asm):**
+`capture --at 0x0005 --nth 1 --mem 0xF340:0x40` (aligned, reg-diffs NONE) → ours' DOS work-area page-3
+substantially UNBUILT (FF at `$F345/$F347/$F358-$F367`; `$F368` JP-table half-stubbed →`$41AF`×5;
+pointers `$F34D-$F356` diverge). ⇒ **NOT P-vector; leans P-resident** → the fix is approach (B)
+work-area construction, HEAVIER than the recommended (A). **SCOPE SURPRISE flagged** (spec §7/OI-4).
+Stayed clean-room: pointer-only region, did NOT capture the `$F38x` console-code bytes. **CAVEAT
+([[tier2-investigation-guardrails]] / §8.65):** "unbuilt" proven, CAUSALITY not — func-9 not yet shown
+to read a specific stubbed cell; gate the fix behind a read/call-through confirmation (needs a small
+probe extension, no asm). · **judgment call:**
 hard-stopped here rather than implementing — this re-opens a refuted item AND the fix (route func-9 output
 to a working CONOUT / build the resident CONOUT dependency) is a new slice wanting a spec + sign-off
 ([[spec-before-implementation]]). · **confidence:** HIGH that func-9 STROUT output is the blocker

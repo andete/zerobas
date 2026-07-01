@@ -86,12 +86,16 @@ The fix re-opens a refuted item and touches console-output wiring → sign-off b
 1. **Localisation is DONE:** ours' func-9 handler dispatches but never enters the char-output loop
    (`$F392`=0, CHSNS `$009C`=0 vs stock 90/72). func-2 works via `$5454`; func-9's output routine is
    unreached/stubbed on ours (same shape as the `$4462` FOPEN gap).
-2. **Remaining pin (spec §3, still no asm, clean-room-safe):** WHICH cell selects func-9's output —
-   a work-area VECTOR (P-vector) or a missing RESIDENT routine (P-resident). Pin via a narrow,
-   pointer-only `capture --mem` diff at the aligned func-9 dispatch (data cells only; NEVER read the
-   `$F380-$F3A0` resident-code bytes = M12c hazard).
-3. **Fix (spec §4, recommended (A)):** wire func-9's output to our own `conout_body` (`$5454`) — the
-   same working routine func-2 uses. DOS-only + BIOS-agnostic; net-zero; no stock bytes.
+2. **§3 pin DONE (no asm) → leans P-resident, SCOPE SHIFT:** `capture --mem 0xF340:0x40` (aligned,
+   reg-diffs NONE) shows ours' DOS work-area page-3 is substantially UNBUILT (FF at `$F345/$F347/
+   $F358-$F367`; `$F368` JP-table half-stubbed →`$41AF`×5; pointers `$F34D-$F356` diverge). So it is
+   NOT a single vector (P-vector) — func-9's output routine is in the unbuilt resident block →
+   approach **(B)** work-area construction, heavier than (A). **CAVEAT (§8.65 trap):** unbuilt is
+   proven, CAUSALITY is not — func-9 not yet shown to read a specific stubbed cell.
+3. **HARD-STOP for scope steer (spec §7/OI-4):** before any asm, (a) confirm causality via a
+   read/call-through watch on func-9's path (needs a small `disk_probe_diff.py` extension, no asm),
+   and (b) get a scope decision — targeted func-9-output build vs committing to the work-area
+   construction sub-track. Do NOT unilaterally start the sub-track.
 4. **Arbiter:** `screen --machine ours` renders the 3 COMMAND.COM lines. Extend `disk_probe_diff.py`.
 5. Secondary (defer): the un-cleared BASIC power-on banner. Separate cosmetic symptom.
 6. Then drive to visible `A>` (inject a command + Enter once the prompt renders).
