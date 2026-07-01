@@ -520,3 +520,38 @@ install_f365:
                 ldir
                 ret
 
+; res_print_tmpl — clean-room body for the resident $-string print routine, relocated
+; to RES_PRINT ($F1C9) by install_res_print (M15 §9.2/§9.3(ii)). The kernel CALLs
+; $F1C9 with DE -> a '$'-terminated string. Emits each char via conout_body (the
+; proven $5454 CONOUT path func-2/conin_line_body already use) before advancing --
+; the M15 root cause was that our first cut consumed the string without emitting it.
+; conout_body preserves BC/DE/HL/IX/IY internally, but only across ITS OWN entry
+; state; since E is overwritten with the char before the call, DE (the string
+; pointer) is saved/restored around the call here. Straight-line + one PC-relative
+; jr, so a plain LDIR relocates it verbatim.
+; CLEAN-ROOM: derives from the published func-9 STROUT contract ('$'-terminated
+; string at DE) + our own conout_body; no stock bytes (never reads $F392/$F2AC/
+; $F237/$D88A-region routine bytes, docs/tier2-m15-spec.md §5/§9).
+;   in:  DE -> '$'-terminated string ; out: DE past the '$', A=$24, others as Z80 CP
+res_print_tmpl:
+                ld      a, (de)         ; A = next string byte
+                inc     de
+                cp      '$'             ; $24 = MS-DOS string terminator
+                ret     z               ; done -> return to the kernel
+                push    de              ; save the string pointer (E about to change)
+                ld      e, a            ; conout_body's ABI: char in E (M10)
+                call    conout_body     ; emit via $5454 CONOUT path -> CHPUT
+                pop     de              ; restore the string pointer
+                jr      res_print_tmpl  ; (relocatable: PC-relative loop)
+res_print_end:
+
+; install_res_print — copies res_print_tmpl to RES_PRINT ($F1C9). Lives in the free
+; tail (no budget limit) and is reached by a single 3-byte `call` from build_resident's
+; cramped pre-$41FD path (init.asm), same rationale as install_f365 (§7.1/§7.2/§9.3).
+install_res_print:
+                ld      hl, res_print_tmpl
+                ld      de, RES_PRINT
+                ld      bc, res_print_end - res_print_tmpl
+                ldir
+                ret
+

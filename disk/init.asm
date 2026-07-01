@@ -515,14 +515,15 @@ bdt_tramp:
 ; (stock body: CALL $F36B / LD A,(DE) / CALL $F368 / INC DE / CP '$' / RET Z /
 ; CALL $53A8 output / loop). Absent it ($FF) the CALL slides through RST 38h. We
 ; install OUR OWN clean-room body (never the stock bytes) into page-3 RAM (always
-; mapped, no slot juggling). FIRST CUT: consume the string to its '$' terminator and
-; return -- the kernel's control flow continues; banner output is added by a later
-; re-trap if the kernel proves to need it. Runs under the same $FF gate as set_ramad.
+; mapped, no slot juggling). It emits each char via conout_body (M15 §9.2) --
+; the same proven CONOUT path func-2/conin_line_body already use. Runs under the
+; same $FF gate as set_ramad.
 build_resident:
-                ld      hl, res_print_tmpl
-                ld      de, RES_PRINT
-                ld      bc, res_print_end - res_print_tmpl
-                ldir
+                call    install_res_print   ; M15 §9.3(ii): body lives in the free
+                                             ; tail (res_print_tmpl, kernel.asm) --
+                                             ; this cramped pre-$41FD region has zero
+                                             ; slack (§7.3), so a `call` (3 B) stands
+                                             ; in for the inline LDIR setup (~10 B).
                 ; --- the $F24E-$F2B7 no-op segment-hook stub table (§8.29/§8.61) ----
                 ; The COMMAND.COM-load dispatch trace (disk_probe_dosboot_dispatch.py,
                 ; stock) shows the kernel CALL ~18 fixed entries in $F252-$F2A3 between
@@ -599,20 +600,6 @@ drv_targets:
 wa_stub:
                 ret
 
-; res_print_tmpl — clean-room body for the resident $-string print routine, relocated
-; to RES_PRINT ($F1C9) by build_resident (§8.28). The kernel CALLs $F1C9 with DE -> a
-; '$'-terminated string. Our first cut CONSUMES the string (advance DE past it) and
-; returns; it does not yet emit the characters (the stock routes each char through a
-; disk-ROM console primitive). Straight-line + relative-jump only, so a plain LDIR
-; relocates it verbatim. Re-trap will show whether the kernel needs real output.
-;   in:  DE -> '$'-terminated string ; out: DE past the '$', A=$24, others as Z80 CP
-res_print_tmpl:
-                ld      a, (de)         ; A = next string byte
-                inc     de
-                cp      '$'             ; $24 = MS-DOS string terminator
-                ret     z               ; done -> return to the kernel
-                jr      res_print_tmpl  ; (relocatable: PC-relative loop)
-res_print_end:
-; (p1_blit_tmpl + wa_seg_*_tmpl live in the free tail near the end of the ROM, so
-;  this cramped pre-$41FD region stays within budget; build_resident LDIRs both.)
+; res_print_tmpl now lives in the free tail (kernel.asm, next to p1_blit_tmpl /
+; wa_seg_*_tmpl / f365_iord_tmpl) and is installed via install_res_print (M15 §9.3(ii)).
 

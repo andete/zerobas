@@ -5,9 +5,10 @@ SPDX-License-Identifier: 0BSD
 
 # Tier-2 M15 spec — DRAFT — restore BDOS func-9 (STROUT) console output
 
-**Status:** DRAFT — ROOT CAUSE FOUND (§9, 2026-07-02), fix specced, **HARD-STOP awaiting
-sign-off (spec-before-implementation)**. Resume board: [tier2-STATE.md](tier2-STATE.md).
-History: [tier2-review-queue.md](tier2-review-queue.md) M14.
+**Status:** IMPLEMENTED + VALIDATED (2026-07-02), §9.3 option (ii) — signed off by the user.
+`screen --machine ours` renders all three COMMAND.COM lines; `--log 0x00A2` 72/72;
+Tier-1 19/19; net-zero; M13 CONIN regression intact. See §10. Resume board:
+[tier2-STATE.md](tier2-STATE.md). History: [tier2-review-queue.md](tier2-review-queue.md) M14/M15.
 
 > **READ §9 FIRST.** §§3–7 below are the *superseded* wa_seg / `$F365` / page-1 investigation
 > — all of it a red herring. §9 is the actual root cause (our own `res_print_tmpl` is a
@@ -317,3 +318,37 @@ path (§9.1.1: zero page-1 execution during func-9; RES_PRINT makes no calls int
 stub committed in §7.3 is harmless/correct and can stay, but it does NOTHING for M15 — do not re-tie
 M15 to it. This also retroactively explains §7.3's negative result: completing wa_seg/`$F365` changed
 nothing because they were never the blocker.
+
+## 10. IMPLEMENTED (2026-07-02) — §9.3 option (ii), signed off
+
+User signed off on option (ii): relocate `res_print_tmpl` to the free tail rather than growing it
+in place before `$41FD`.
+
+**Change:** `res_print_tmpl` moved from init.asm (the cramped pre-`$41FD` template region) to
+kernel.asm's free tail, immediately after `install_f365` (same section as `p1_blit_tmpl` /
+`wa_seg_*_tmpl` / `f365_iord_tmpl`). Its body now emits each char via `conout_body` before
+advancing, per §9.2's exact shape (`push de` / `ld e,a` / `call conout_body` / `pop de` — DE must
+be saved explicitly because `conout_body` only preserves ITS OWN entry state, and E is overwritten
+with the char before the call). A new `install_res_print` routine (mirrors `install_f365`) LDIRs
+it to `RES_PRINT` ($F1C9); `build_resident` in init.asm now does `call install_res_print` (3 B)
+in place of the old inline 4-instruction/~10 B LDIR setup, so the cramped region's budget only
+shrinks, avoiding the §7.3 silent-overflow trap.
+
+**Build verification (the §7.3 lesson: check object-file SIZE under 3-pass mode, not just exit
+code):** `pasmo -I disk --bin disk/disk.asm out.rom out.sym` → object file 16384 B (non-empty,
+correctly padded), `res_print_tmpl`/`install_res_print`/`RES_PRINT`/`conout_body` all resolve in
+the symbol table. No silent-overflow symptom.
+
+**Validation (all §9.4 criteria met):**
+- `screen --machine ours --settle 16` renders `COMMAND version 1.08` / `Current date is
+  Sun 84-01-01` / `Enter new date: ` as distinct lines, matching stock's layout.
+- `callseq --log 0x00A2`: ours **72/72** calls (was 12/72 pre-fix).
+- `callseq --log 0x009C` (CHSNS per-char break-poll): ours now fires the full per-char stream,
+  matching stock.
+- `callseq --log 0x009F` (M13 CONIN regression): **1/1** idle calls — unaffected.
+- `make unit-test`: **19/19** green (Tier-1 intact).
+- `disk.rom`: exactly **16384 B** (net-zero; no canonical-address shifts).
+
+**M15 is CLOSED.** Next Tier-2 step: drive to a visible `A>` (inject a command + Enter once the
+prompt renders) and revisit the deferred secondary symptom (OI-3: the un-cleared BASIC power-on
+banner).

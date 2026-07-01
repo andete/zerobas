@@ -10,25 +10,26 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-07-02 (ROOT CAUSE FOUND — HARD-STOP for asm sign-off) — M13 (CONIN) DONE.
-M14/M15 = COMMAND.COM banner/prompt lines don't render because BDOS func-9 (STROUT) emits nothing.
-**ROOT CAUSE PINNED THIS SESSION (no asm, clean-room-safe): our own `res_print_tmpl` (= `RES_PRINT`
-at `$F1C9`, [init.asm](../init.asm):609) is a STUB that reads/consumes the `$`-string but never emits
-the chars — its own source comment says so.** The entire §§3–7 wa_seg / `$F365` / page-1-paging thread
-(prior 2 sessions) was a RED HERRING: a new `callwatch` probe mode shows func-9 executes ZERO of our
-page-1 code, and a func-9-gated `readwatch` of the string (DE=`$C284`, identical on both) shows ours
-reads ALL 27 bytes of "COMMAND version 1.08" via `$F1C9`=RES_PRINT — it traverses the whole string and
-emits none. That matches M14 exactly (CHPUT gets 0 func-9 chars). §7.2's "caller is NOT RES_PRINT" and
-§7.1's "bounded to wa_seg" are both refuted. **The fix is trivial + unambiguous: make `res_print_tmpl`
-call our proven `conout_body` (`$5454`→CHPUT) per char — same as `conin_line_body` already echoes
-(runtime.asm:165), approach (A).** Spec written: [tier2-m15-spec.md](tier2-m15-spec.md) §9 (read §9,
-skip §§3–7). Committed this session: the `callwatch` probe mode + all doc updates. **HARD-STOP: the
-fix is ROM asm → NEXT SESSION signs off then implements.** Two build options (§9.3): (i) grow the
-template in place if pre-`$41FD` budget allows (verify with `--sym` object-file SIZE per §7.3), or
-(ii, recommended) move `res_print_tmpl` to the free tail (like p1_blit/wa_seg templates) so budget is
-a non-issue. **NEW SESSION STARTS HERE →** Next action: get sign-off on §9.2 fix (option i vs ii),
-implement, validate against §9.4 (`screen` shows the 3 lines; `--log 0x00A2` ours≈72; Tier-1 19/19;
-disk.rom 16384 B), then drive to visible `A>`. History: [tier2-review-queue.md](tier2-review-queue.md) M15._
+_Last updated: 2026-07-02 (M15 IMPLEMENTED + VALIDATED — CLOSED) — M13 (CONIN) DONE, **M15 (STROUT
+output) DONE.** Root cause (prior session, no asm): our own `res_print_tmpl` (`RES_PRINT` @ `$F1C9`,
+was init.asm:609) consumed the func-9 `$`-string without ever emitting it — the whole prior §§3–7
+wa_seg/`$F365`/page-1-paging thread was a red herring (confirmed via the new `callwatch` mode: func-9
+executes ZERO page-1 disk-ROM code). **Fix signed off + implemented this session, §9.3 option (ii):**
+`res_print_tmpl` moved to the free tail (kernel.asm, alongside `p1_blit_tmpl`/`wa_seg_*_tmpl`/
+`f365_iord_tmpl`); its body now emits each char via `conout_body` ($5454→CHPUT) before advancing —
+same fix shape as M10 (CONOUT) and M13 (CONIN). `build_resident` now does `call install_res_print`
+(3 B) instead of the old inline LDIR, shrinking the cramped pre-`$41FD` region (no §7.3-class overflow
+risk; verified via `--bin ... out.sym` object-file size = 16384 B, non-empty). **Validated — all §9.4
+criteria met:** `screen --machine ours` renders `COMMAND version 1.08` / `Current date is
+Sun 84-01-01` / `Enter new date: ` as distinct lines; `--log 0x00A2` CHPUT 72/72 (was 12); `--log
+0x009C` CHSNS full per-char stream; `--log 0x009F` M13 regression 1/1 intact; `make unit-test` 19/19;
+`disk.rom` == 16384 B exactly. Detail: [tier2-m15-spec.md](tier2-m15-spec.md) §9–§10. **NEW SESSION
+STARTS HERE →** Next action: drive to a visible `A>` — inject a command + Enter once the date-prompt
+sequence completes (BUFIN/CHGET already proven at M13; the date-entry reply and the subsequent
+command-prompt render are the next thing to exercise with `screen`+`--keys`). Secondary/deferred:
+OI-3, the un-cleared BASIC power-on banner (cosmetic, unrelated to M15). History:
+[tier2-review-queue.md](tier2-review-queue.md) (M14/M15 archived in
+[tier2-review-archive.md](tier2-review-archive.md))._
 
 ## Goal
 Boot MSX-DOS to the `A>` prompt under zerobas-disk (Tier-2) **without regressing
@@ -36,19 +37,21 @@ Tier-1** (disk-BASIC / BLOAD / FILES) and while staying a **BIOS-agnostic replac
 disk ROM** (works on CF-3300, C-BIOS, any standards MSX1). "Reached `A>`" means a
 **visible** `A>` on screen + accepts a command — not just the right BDOS call sequence.
 
-## Live thesis (M15 — ROOT CAUSE PINNED 2026-07-02; HARD-STOP for asm sign-off)
-**Our own `res_print_tmpl` (`RES_PRINT` @ `$F1C9`, [init.asm](../init.asm):609) is a no-emit stub:
-it reads/consumes the func-9 `$`-string but never calls CHPUT/CONOUT — so func-9 STROUT emits zero
-chars.** Proven clean-room-safe this session: (1) `callwatch --machine ours` (new mode) → func-9
-executes ZERO page-1 disk-ROM code (⇒ the `$F368`/`$F36B` page-1 paging of §§3–7 is CONCURRENT kernel
-work, NOT func-9's output path — the whole wa_seg/`$F365` thread was a red herring); (2) `readwatch
---range 0xC284:0x40` gated to func-9 → ours reads ALL 27 bytes of the banner string via reader PC
-`$F1C9`=RES_PRINT (stock reads via `$F1CC`, its equivalent). Ours traverses the whole string, emits
-nothing. **FIX (approach A, §9.2): `res_print_tmpl` calls `conout_body` (`$5454`→CHPUT, char in E per
-M10) per char before the `$` — exactly as `conin_line_body` echoes (runtime.asm:165). Preserves the
-DE-past-`$`/A=`$24` return contract. Clean-room (published func-9 + our own CONOUT).** Only build
-risk = the cramped pre-`$41FD` template budget (§7.3); §9.3 recommends moving the template to the free
-tail. **HARD-STOP: ROM asm needs sign-off.** Detail [tier2-m15-spec.md](tier2-m15-spec.md) §9. The
+## Live thesis (M15 — DONE, CLOSED 2026-07-02)
+**Our own `res_print_tmpl` (`RES_PRINT` @ `$F1C9`) was a no-emit stub: it read/consumed the func-9
+`$`-string but never called CHPUT/CONOUT — so func-9 STROUT emitted zero chars.** Root cause pinned
+clean-room-safe: (1) `callwatch --machine ours` (new mode) showed func-9 executes ZERO page-1
+disk-ROM code (⇒ the `$F368`/`$F36B` page-1 paging of §§3–7 is CONCURRENT kernel work, NOT func-9's
+output path — the whole wa_seg/`$F365` thread was a red herring); (2) `readwatch --range 0xC284:0x40`
+gated to func-9 → ours read ALL 27 bytes of the banner string via reader PC `$F1C9`=RES_PRINT, then
+emitted nothing. **FIX IMPLEMENTED (approach A, §9.2, §9.3 option (ii) signed off): `res_print_tmpl`
+moved to the free tail (kernel.asm) and now calls `conout_body` (`$5454`→CHPUT, char in E per M10)
+per char before the `$` — exactly as `conin_line_body` echoes (runtime.asm:165). Preserves the
+DE-past-`$`/A=`$24` return contract. Clean-room (published func-9 + our own CONOUT).** `build_resident`
+now calls `install_res_print` (3 B) instead of the old inline LDIR, so the cramped pre-`$41FD` region's
+budget only shrank — no §7.3-class overflow risk (verified: `--bin ... out.sym` object file 16384 B).
+**Validated: `screen` renders all 3 COMMAND.COM lines; CHPUT 72/72; CHSNS full stream; M13 regression
+intact; Tier-1 19/19; disk.rom 16384 B.** Detail [tier2-m15-spec.md](tier2-m15-spec.md) §9–§10. The
 §§below (old M14 CHARACTERISED thesis) is retained for the alignment/dispatch facts but its
 "localised to `$F392`/wa_seg" conclusion is SUPERSEDED by §9.
 
@@ -119,21 +122,19 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M15: emit func-9 STROUT chars (ROOT CAUSE PINNED — AWAITING ASM SIGN-OFF)
-**Root cause (Live thesis / [tier2-m15-spec.md](tier2-m15-spec.md) §9): our `res_print_tmpl` reads the
-`$`-string but never emits it.** Fix is unambiguous; only the asm sign-off gate remains.
-1. **Sign off on the §9.2 fix** — add `push de / ld e,a / call conout_body / pop de` before the `jr` in
-   `res_print_tmpl` (emit each char via our proven CONOUT). Pick build option §9.3: **(ii) move the
-   template to the free tail** (recommended — sidesteps the pre-`$41FD` budget trap of §7.3) vs (i)
-   grow in place (only if the `--sym` object-file SIZE confirms slack — NOT exit code).
-2. **Implement + validate (§9.4):** `make unit-test` 19/19; `disk.rom` == 16384 B (net-zero — moving a
-   template is net-zero); `screen --machine ours --settle 16` shows `COMMAND version 1.08` /
-   `Current date is Sun 84-01-01` / `Enter new date: `; `callseq --log 0x00A2` ours ≈72 (was 12);
-   `--log 0x009C` fires per-char (was 0); M13 CONIN regression `--log 0x009F` still 1 idle call.
-3. **After M15 lands:** drive to visible `A>` (inject a command + Enter via `--keys`/`--keys-at`).
-4. Secondary (defer): the un-cleared BASIC power-on banner. Separate cosmetic symptom.
+## Next action — M16: drive to a visible `A>` prompt
+M15 is closed (see Live thesis / [tier2-m15-spec.md](tier2-m15-spec.md) §9–§10). The sign-on, banner,
+date-prompt, and BUFIN-block-on-CHGET (M13) all now work and render correctly.
+1. **Inject the date-prompt reply + Enter** (`--keys`/`--keys-at` on `disk_probe_diff.py`) and confirm
+   `screen` shows the kernel accept it and move on to whatever comes after `Enter new date:` on stock
+   (likely straight to the `A>` command prompt — confirm against stock's own screen sequence first,
+   falsify-first, before assuming the shape).
+2. **Arbiter:** `screen --machine ours` showing a visible `A>` + accepting a typed command is the
+   M16 acceptance bar (per the Goal section below) — not just the right BDOS call sequence.
+3. Secondary (defer unless it blocks M16): the un-cleared BASIC power-on banner. Separate cosmetic
+   symptom, unrelated to M15's fix.
 
-**One-command repros (test.dsk) — the decisive M15 root-cause probes:**
+**One-command repros (test.dsk) — the M15 root-cause + fix-validation probes (all still pass):**
 - **String IS fully read but not emitted (root cause):** `python3 probes/disk/disk_probe_diff.py
   readwatch --machine both --range 0xC284:0x40 --maxhits 200 --diska ~/Documents/msx/msx/disks/test.dsk`
   → ours reads all 27 bytes `\r\nCOMMAND version 1.08\r\n\r\n$` via reader PC `$F1C9`=RES_PRINT.
