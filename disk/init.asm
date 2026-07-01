@@ -517,6 +517,14 @@ bdt_tramp:
                 ; a stock byte.
                 ld      a, $02
                 ld      (DRVCNT), a                 ; DRVCNT = DRVTBL-1 = $F347
+                ; --- CURDRV_CELL ($F247): current-drive index (M18 §2.2) -----------
+                ; The kernel's CURDRV-time entry $50C4 reads this cell into A (M18
+                ; readwatch causal pin) and the boot prompt prints 'A'+drive. The
+                ; MSX-DOS-1 boot state logs in drive A: = $00 (stock's $F247 = $00).
+                ; Was $FF (unbuilt) on ours -> $50C4 returned garbage -> 'C>' not 'A>'.
+                ; Clean-room: published boot state, not a stock byte.
+                xor     a
+                ld      (CURDRV_CELL), a            ; CURDRV_CELL = $F247 = current drive
                 ; fall through to install the resident work-area routines (§8.28)
 ; build_resident — install the disk system's resident RAM ROUTINES the kernel CALLs
 ; from fixed work-area addresses (a3 §8.28). After $50A9 the kernel CALLs $F1C9, a
@@ -594,6 +602,7 @@ RES_STUBS_END   equ     $F2B8   ; one past the last stub ($F2B7); $F2B8+ = kerne
 DRVA_DPB        equ     $F195   ; drive-A DPB base (id byte + 18-byte DPB, §8.30)
 DRVTBL          equ     $F348   ; MSX-DOS-1 disk-driver table (§8.22)
 DRVCNT          equ     $F347   ; DRVTBL-1: logical-drive count ($02); read by $50D5 (M17)
+CURDRV_CELL     equ     $F247   ; current-drive index ($00=A:); read by $50C4 (M18)
 RES_PRINT       equ     $F1C9   ; resident $-string print routine the kernel CALLs (§8.28)
 F365_STUB       equ     $F365   ; fixed disk-work-area slot-read stub (IN A,($A8);RET; M15 §7.1)
 DRV_NTRAMP      equ     4       ; number of CALLF trampolines

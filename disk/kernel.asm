@@ -51,6 +51,19 @@
 ; returned to the trampoline -> the M17 SELDSK stall (no A> prompt). Body =
 ; seldsk_drv_body (free tail); clean-room -- the stock routine's internals were never
 ; read (only its entry/exit registers + a DATA-cell read-watch of $F347).
+; --- MSX-DOS-1 kernel CURDRV-time entry: $50C4 (M18; tier2-m18-spec.md) ---------
+; While processing BDOS CURDRV (func $19) the relocated kernel CALLs this page-1
+; disk-ROM entry (register-identical ours==stock at entry: AF=0044 BC=C419 DE=D3FF
+; HL=D502 SP=DBFE IY=DC5B, ret=D88A -- a real CALL boundary, M18 §2.1). Black-box
+; contract (readwatch causal pin): read the CURRENT-drive index from $F247 into A,
+; preserve BC/DE/HL/IX/IY. Our $50B8-$50D4 block is our own $00 padding, so before
+; this veneer the CALL NOP-slid and never read the drive -> the kernel's later
+; 'A'+drive letter math used a bogus index ($C400 + 2 = 'C>') instead of A>. Body =
+; curdrv_body (free tail); clean-room -- the stock routine's internals were never
+; read (only its entry/exit registers + a DATA-cell read-watch of $F247).
+                ds      $50C4 - $, $00  ; pad up to the pinned $50C4 kernel entry
+curdrv:
+                jp      curdrv_body     ; -> free-tail: A = ($F247) current drive (M18)
                 ds      $50D5 - $, $00  ; pad up to the pinned $50D5 kernel entry
 seldsk_drv:
                 jp      seldsk_drv_body ; -> free-tail: A = ($F347) drive count (M17)
@@ -579,5 +592,17 @@ install_res_print:
 ;   in: -    ; out: A = ($F347) = drive count ; BC/DE/HL/IX/IY preserved
 seldsk_drv_body:
                 ld      a, (DRVCNT)     ; DRVCNT = $F347 = logical-drive count ($02)
+                ret
+
+; curdrv_body — the $50C4 kernel CURDRV-time entry (M18; tier2-m18-spec.md).
+; The relocated kernel CALLs $50C4 while processing BDOS CURDRV ($19) to read the
+; CURRENT-drive index. Black-box contract (M18 §2.1, readwatch causal pin): read
+; $F247 into A, preserve BC/DE/HL/IX/IY. Reached directly from the fixed $50C4 veneer
+; (jp curdrv_body) -- lives here in the free tail like seldsk_drv_body.
+; CLEAN-ROOM: derives from the observed DATA-cell read contract (return [$F247]) +
+; our own code; no stock/kernel bytes decoded (only entry/exit regs + the $F247 read).
+;   in: -    ; out: A = ($F247) = current drive ; BC/DE/HL/IX/IY preserved
+curdrv_body:
+                ld      a, (CURDRV_CELL) ; CURDRV_CELL = $F247 = current-drive index ($00)
                 ret
 
