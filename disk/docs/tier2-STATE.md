@@ -10,26 +10,23 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-07-02 (M15 IMPLEMENTED + VALIDATED — CLOSED) — M13 (CONIN) DONE, **M15 (STROUT
-output) DONE.** Root cause (prior session, no asm): our own `res_print_tmpl` (`RES_PRINT` @ `$F1C9`,
-was init.asm:609) consumed the func-9 `$`-string without ever emitting it — the whole prior §§3–7
-wa_seg/`$F365`/page-1-paging thread was a red herring (confirmed via the new `callwatch` mode: func-9
-executes ZERO page-1 disk-ROM code). **Fix signed off + implemented this session, §9.3 option (ii):**
-`res_print_tmpl` moved to the free tail (kernel.asm, alongside `p1_blit_tmpl`/`wa_seg_*_tmpl`/
-`f365_iord_tmpl`); its body now emits each char via `conout_body` ($5454→CHPUT) before advancing —
-same fix shape as M10 (CONOUT) and M13 (CONIN). `build_resident` now does `call install_res_print`
-(3 B) instead of the old inline LDIR, shrinking the cramped pre-`$41FD` region (no §7.3-class overflow
-risk; verified via `--bin ... out.sym` object-file size = 16384 B, non-empty). **Validated — all §9.4
-criteria met:** `screen --machine ours` renders `COMMAND version 1.08` / `Current date is
-Sun 84-01-01` / `Enter new date: ` as distinct lines; `--log 0x00A2` CHPUT 72/72 (was 12); `--log
-0x009C` CHSNS full per-char stream; `--log 0x009F` M13 regression 1/1 intact; `make unit-test` 19/19;
-`disk.rom` == 16384 B exactly. Detail: [tier2-m15-spec.md](tier2-m15-spec.md) §9–§10. **NEW SESSION
-STARTS HERE →** Next action: drive to a visible `A>` — inject a command + Enter once the date-prompt
-sequence completes (BUFIN/CHGET already proven at M13; the date-entry reply and the subsequent
-command-prompt render are the next thing to exercise with `screen`+`--keys`). Secondary/deferred:
-OI-3, the un-cleared BASIC power-on banner (cosmetic, unrelated to M15). History:
-[tier2-review-queue.md](tier2-review-queue.md) (M14/M15 archived in
-[tier2-review-archive.md](tier2-review-archive.md))._
+_Last updated: 2026-07-03 (M16 CLOSED, M17 OPEN — NOT YET CHARACTERISED) — M13/M15 DONE (see prior
+paragraph history in git); **M16 (CONIN buffer terminator) DONE.** Root cause: our
+`conin_line_body`'s `cinl_done` only wrote the count byte, leaving stale RAM at `buf[2]`; stock's real
+BUFIN also writes a `$0D` there regardless of count. That stale byte made COMMAND.COM's date-reply
+parser (which scans from `buf[2]`, not just the count) treat a blank Enter as a typed date, calling
+SDATE instead of proceeding like stock. **Fix signed off + implemented:** write `$0D` to
+`buf[2+count]` in `cinl_done` (runtime.asm, free tail, no budget risk). **Validated:** the BUFIN
+buffer is now byte-identical to stock's; BDOS call n=21 now matches stock exactly (`SELDSK`, was
+`SDATE`); Tier-1 19/19; `disk.rom` 16384 B. Detail: [tier2-conin-spec.md](tier2-conin-spec.md) §6/§6.1.
+**NEW SESSION STARTS HERE → M17 is OPEN, not characterised:** ours now calls SELDSK matching stock,
+but then stalls — 21 BDOS calls total vs stock's 27+, never reaching `CURDRV`/printing `A>` (`screen`
+confirms no crash/spin, just a quiet stop). The fork happens DURING SELDSK's execution inside the
+loaded MSXDOS.SYS kernel (shared code, do not decode). Needs falsify-first localisation from scratch
+(same shape as M14/M15/M16 gaps, but not yet pinned to a mechanism) — see the M17 section below for
+the concrete next steps and repro command. Secondary/deferred: OI-3, the un-cleared BASIC power-on
+banner (cosmetic, unrelated). History: [tier2-review-queue.md](tier2-review-queue.md) (M14/M15
+archived in [tier2-review-archive.md](tier2-review-archive.md); M16 pending archive)._
 
 ## Goal
 Boot MSX-DOS to the `A>` prompt under zerobas-disk (Tier-2) **without regressing
@@ -122,17 +119,29 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M16: drive to a visible `A>` prompt
-M15 is closed (see Live thesis / [tier2-m15-spec.md](tier2-m15-spec.md) §9–§10). The sign-on, banner,
-date-prompt, and BUFIN-block-on-CHGET (M13) all now work and render correctly.
-1. **Inject the date-prompt reply + Enter** (`--keys`/`--keys-at` on `disk_probe_diff.py`) and confirm
-   `screen` shows the kernel accept it and move on to whatever comes after `Enter new date:` on stock
-   (likely straight to the `A>` command prompt — confirm against stock's own screen sequence first,
-   falsify-first, before assuming the shape).
-2. **Arbiter:** `screen --machine ours` showing a visible `A>` + accepting a typed command is the
-   M16 acceptance bar (per the Goal section below) — not just the right BDOS call sequence.
-3. Secondary (defer unless it blocks M16): the un-cleared BASIC power-on banner. Separate cosmetic
-   symptom, unrelated to M15's fix.
+## Next action — M17: SELDSK-time stall blocks the visible `A>` (NOT YET CHARACTERISED)
+M15 (STROUT) and M16 (CONIN buffer terminator) are both closed — see
+[tier2-m15-spec.md](tier2-m15-spec.md) §9–§10 and [tier2-conin-spec.md](tier2-conin-spec.md) §6/§6.1.
+Injecting Enter at the date prompt now drives ours' BDOS call sequence to match stock exactly through
+n=21 (`C=0E SELDSK`, byte-identical args/regs) — the SDATE/SELDSK fork that blocked M16 is fixed.
+**New fork, one step later:** ours stops at 21 BDOS calls; stock continues to n=27 (`CONOUT`×2 for
+CR/LF, `CURDRV`, print `A>`, `BUFIN` for the command line). `screen --machine ours` confirms: cursor
+advances past the date line but `A>` never renders — a quiet stall, not a crash/spin. Since the n=21
+dispatch itself is register/arg-identical, the fork happens DURING SELDSK's execution inside the
+loaded MSXDOS.SYS kernel (shared code on both machines — do not decode it; same clean-room boundary as
+always). Likely another resident/work-area-hook gap of the M14/M15/M16 shape (a kernel call into a
+disk-ROM/work-area cell that's stubbed/incomplete on ours), but this is NOT YET localised.
+1. **Characterise first (falsify-first):** does SELDSK call into any of our page-1 disk-ROM code at
+   all? (`callwatch` currently only gates on func-9 — needs a small generalisation to gate on the
+   BDOS function-in-flight generically, e.g. an `--in-func N` option mirroring `--gate-func9`'s `C==9`
+   pattern, OR just widen scope with `--no-gate` bounded by `--keys-at` timing and read the whole-run
+   entries around SELDSK's t≈20.1s window.)
+2. Repro (keyed run, decisive so far): `python3 probes/disk/disk_probe_diff.py callseq --at 0x0100
+   --log 0x0005 --maxhits 40 --keys '\r' --keys-at 20 --diska ~/Documents/msx/msx/disks/test.dsk` →
+   stock 27 calls / ours 21, diverges after n=21 (SELDSK matches, then ours goes silent).
+3. Arbiter: `screen --machine ours --keys '\r' --keys-at 20 --settle 25` — no `A>` yet; this is the
+   target render once M17 lands.
+4. Secondary (still deferred): the un-cleared BASIC power-on banner. Unrelated cosmetic symptom.
 
 **One-command repros (test.dsk) — the M15 root-cause + fix-validation probes (all still pass):**
 - **String IS fully read but not emitted (root cause):** `python3 probes/disk/disk_probe_diff.py
