@@ -23,6 +23,39 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M18 CHARACTERISED + falsify-first fix landed (Opus span, 2026-07-03) — the `C>` vs `A>` drive-letter
+bug was the missing `$50C4` CURDRV kernel entry; drive letter now CORRECT + full 27-call BDOS parity.]**
+· **Root cause (clean-room-safe, no kernel decode):** during BDOS CURDRV (func `$19`) the loaded kernel
+CALLs page-1 `$50C4`; on ours that address was `$00` NOP-padding (SAME un-wired-`$50xx`-entry class as
+M13 `$50E0` / M15 `res_print_tmpl` / M17 `$50D5`) → NOP-slid and never read the current drive, so the
+kernel's `'A'+drive` letter math used a bogus index and printed `C>` (index 2). Pinned via: register-
+identical `callseq --log 0x50C4` CALL boundary (`AF=0044 BC=C419 DE=D3FF HL=D502`, ret `$D88A`), a
+`callwatch --in-func 0x19` showing stock runs `$50C4`+`$50C7` while ours only enters `$50C4`, and a
+CAUSAL `readwatch --in-func 0x19` showing `$50C4` reads exactly ONE cell — `$F247` (=current drive),
+`$00` on stock / `$FF` (unbuilt) on ours. Full detail: [tier2-m18-spec.md](tier2-m18-spec.md).
+· **Fix (two parts, falsify-first build validated):** (a) `$50C4: jp curdrv_body` veneer (kernel.asm
+free tail = `ld a,(CURDRV_CELL); ret`, net-zero — uses existing `$50B8-$50D4` pad); (b) `build_drvtbl`
+now writes `CURDRV_CELL`=`$F247`:=`$00` (MSX-DOS boot logs in drive A:) (init.asm). Object 16384 B under
+3-pass `--sym`; Tier-1 19/19; M13/M15/M17 regressions intact. **Result:** `callseq --log 0x0005 --keys
+'\r'` → **FULL 27-call BDOS parity with stock, ZERO divergence** (was: first divergence at n=25); n=25
+now CONOUT `A=$41`='A'. `screen --machine ours` renders a **correct visible `A>.`**. Commits: spec
+`(prev)`, impl `2d1ba5c`.
+· **judgment call — SELF-APPROVED by precedent (called out explicitly per the M18-span instruction):**
+implemented the falsify-first build without a separate sign-off gate because it is the IDENTICAL class +
+shape as the M13/M15/M16/M17 fixes (a `$50xx` veneer + one work-area cell, all clean-room, net-zero,
+validated by probe) that the user pre-approved that pattern for — AND is literally the same fix one BDOS
+call later than M17's `$50D5`/`$F347`. The M17 agent made the same self-approval choice (still awaiting
+your review); I continued the pattern deliberately. If this class should now become a hard-stop, say so
+and I'll gate the next one. · **NEW residual (OI-3, NOT fixed, DIFFERENT-SHAPED):** ours retains the
+leftover BASIC power-on banner because the DOS boot handoff never clears VRAM. Characterised
+(clean-room): NOT a screen-mode switch (both `scrmod=01 r2=06`), NOT a CHPUT `$0C` (stock emits 0
+form-feeds) — stock does a DIRECT name-table fill in its DOS init. This is a different shape than the
+`$50xx`-veneer class, so per the span instruction I characterised it and LEFT IT DEFERRED rather than
+force it into this span. Candidate fix + repro logged in [tier2-STATE.md](tier2-STATE.md) "Next action".
+· **confidence:** HIGH that M18 is correct + complete (full 27-call parity + causal pin + on-screen
+correct `A>` are decisive). · **undo:** net-zero veneer + one byte-write; clean, low-risk. · **awaiting:**
+batched review of the self-approval above + a decision on whether to pursue OI-3 next.
+
 **[M17 CHARACTERISED + falsify-first fix landed (Opus span, 2026-07-03) — SELDSK-time stall was the
 missing `$50D5` kernel entry; a NEW smaller drive-letter bug (M18) surfaced one step later.]**
 · **Root cause (clean-room-safe, no kernel decode):** the loaded kernel CALLs page-1 `$50D5`
