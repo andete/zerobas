@@ -10,44 +10,43 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-07-03 (M18 CHARACTERISED + falsify-first fix LANDED; only OI-3 screen-clear left —
-Opus span) — M13/M15/M16/M17 DONE (git history). **M18 (drive letter `C>` vs `A>`) root-caused +
-fixed.** Root cause: during BDOS CURDRV (func `$19`) the loaded kernel CALLs page-1 `$50C4`; on ours
-that address was `$00` NOP-padding (same un-wired-`$50xx`-entry class as M13's `$50E0` / M15's
-`res_print_tmpl` / M17's `$50D5`) → NOP-slid and never read the current drive, so the kernel's
-`'A'+drive` letter math used a bogus index and printed `C>` (index 2). Pinned clean-room-safe (no
-kernel decode): register-identical `callseq --log 0x50C4` CALL-boundary pin (`AF=0044 BC=C419 DE=D3FF
-HL=D502 SP=DBFE`, ret `$D88A`) + CAUSAL `readwatch --in-func 0x19` showing `$50C4` reads exactly one
-cell, `$F247` (=current drive), which was `$FF` (unbuilt) on ours / `$00` on stock. **Fix (falsify-
-first build, validated):** (a) `$50C4: jp curdrv_body` veneer (`ld a,(CURDRV_CELL); ret`, net-zero pad
-in `$50B8–$50D4`); (b) `build_drvtbl` writes `$F247`:=`$00` (MSX-DOS boot logs in drive A:). **Result:
-FULL 27-call BDOS parity with stock, ZERO divergence** (was: first divergence at n=25). `screen`
-renders a **correct visible `A>.`** — the drive letter is now right. Tier-1 19/19; `disk.rom` 16384 B;
-M13/M15/M17 regressions intact. Detail: [tier2-m18-spec.md](tier2-m18-spec.md). Commit `2d1ba5c`.
-**NEW SESSION STARTS HERE → only OI-3 (cosmetic screen-clear) remains before a pixel-perfect `A>`:**
-BDOS-call parity is COMPLETE and `A>` is on-screen and correct, BUT ours still shows the leftover BASIC
-power-on banner (`MSX system / version 1.0`) at the top, so the DOS sign-on + `A>` are scrolled down
-(ours ROW23 vs stock ROW09) instead of on a cleared screen. This is **OI-3, a DIFFERENT-SHAPED fix from
-M13–M18** (not an un-wired `$50xx` entry / work-area cell): stock's DOS boot handoff clears VRAM via a
-DIRECT name-table fill — NOT a CHPUT `$0C` (confirmed: 0 form-feeds in stock's `$00A2` stream) and NOT
-a screen-mode switch (both are `scrmod=01 r2=06 namebase=$1800`). Ours' boot handoff never clears the
-name table. See the OI-3 section below for the repro + candidate fix. History:
+_Last updated: 2026-07-03 (**OI-3 LANDED — Tier-2 DOS-boot-to-`A>` goal MET** — Opus span, explicit
+user sign-off). M13/M15/M16/M17/M18 DONE (git history). **OI-3 (leftover BASIC banner not cleared
+before the DOS sign-on) FIXED.** Root cause: ours' DOS boot handoff had no screen-clear step, so it
+inherited BASIC's power-on banner + cursor (CSRY=`$0F`), printing the sign-on from ROW15 → `A>` at
+ROW23 (stock: cleared screen, `A>` at ROW09). Characterised clean-room (no kernel decode): stock does
+a DIRECT name-table fill (0 CHPUT form-feeds, no mode switch, both `scrmod=01 namebase=$1800`) + a
+cursor-home (stock CSRY/CSRX = `$01/$01`). **Fix (user-signed-off spec, validated):** new
+`dos_clear_screen` in runtime.asm free tail, called as the FIRST action in `dos_handoff` — FILVRM
+(`$0056`) via the `pg0_mainrom_in`/`out` inter-slot path (same pattern as `conout_body`'s CHPUT) fills
+the SCREEN-1 name table (`$1800`, 768) with spaces, then homes the cursor (`$F3DC`:=1, `$F3DD`:=1).
+STAY-DI (spec §5.3 — caller holds DI, no `ei` here); IX (=`$F195`) guarded by push/pop; data-disk
+pre-clear side effect accepted (spec §6.6). **Result: ours' screen now BYTE-FOR-BYTE matches stock**
+(sign-on ROW01, `A>.` ROW09, `FOUND-MSX at VRAM 1822`; CSRY/CSRX `01 01`; BDOS 27/27 aligned zero
+divergence; IX=`$F195` at `$0200`; steady-state stable no storm; unit-test 19/19; `disk.rom` 16384 B,
+3-pass object verified). Detail: [tier2-oi3-spec.md](tier2-oi3-spec.md). Commit `dc2ac8d`.
+**THE TIER-2 DOS-BOOT-TO-`A>` GOAL IS NOW MET:** full BDOS-call parity with stock (27/27), a correct
+VISIBLE `A>` prompt on a cleared screen matching stock pixel-for-pixel, and Tier-1 intact. Nothing
+cosmetic or functional remains open on the DOS-boot track. History:
 [tier2-review-queue.md](tier2-review-queue.md) (M14/M15 archived in
-[tier2-review-archive.md](tier2-review-archive.md); M16/M17/M18 pending archive)._
+[tier2-review-archive.md](tier2-review-archive.md); M16/M17/M18/OI-3 pending archive)._
 
-## Goal
+## Goal — MET (2026-07-03, OI-3)
 Boot MSX-DOS to the `A>` prompt under zerobas-disk (Tier-2) **without regressing
 Tier-1** (disk-BASIC / BLOAD / FILES) and while staying a **BIOS-agnostic replacement
 disk ROM** (works on CF-3300, C-BIOS, any standards MSX1). "Reached `A>`" means a
 **visible** `A>` on screen + accepts a command — not just the right BDOS call sequence.
+**STATUS: MET.** Full BDOS-call parity with stock (27/27, zero divergence), a correct
+visible `A>` prompt on a CLEARED screen that byte-for-byte matches stock's name table
+(sign-on ROW01, `A>` ROW09, `FOUND-MSX at VRAM 1822`), Tier-1 intact (19/19, `disk.rom`
+16384 B). The DOS-boot-to-`A>` track is complete; no cosmetic or functional gap remains.
 
-## Live thesis (M18 — DONE 2026-07-03; only OI-3 left)
-**M18 drive-letter bug = the missing `$50C4` kernel entry (current-drive read), now fixed** — see the
-top summary + [tier2-m18-spec.md](tier2-m18-spec.md). Full 27-call BDOS parity with stock (ZERO
-divergence) and a correct visible `A>`. **Only OI-3 (cosmetic) remains:** the DOS boot handoff does not
-clear the BASIC banner from VRAM (stock does a direct name-table fill, not a CHPUT `$0C`). This is a
-different-shaped fix than the M13–M18 `$50xx`-veneer + work-area-cell class. The M15 thesis below is
-retained as that fix-shape template.
+## Live thesis — none (goal met); track complete
+The DOS-boot-to-`A>` goal is MET (see Goal). The full milestone chain landed:
+M13 (CONIN) → M15 (func-9 STROUT emit) → M16 → M17 (`$50D5` SELDSK) → M18 (`$50C4` CURDRV,
+full 27/27 BDOS parity + correct `A>` text) → **OI-3 (screen-clear, pixel-perfect `A>`)**.
+The M15 / veneer-class theses below are retained as fix-shape templates for any future
+sub-track (e.g. the BDOS-exerciser `.COM` idea), but nothing on THIS track is open.
 
 ### (superseded — M17 DONE 2026-07-03) SELDSK-time stall = missing `$50D5` entry
 Root-caused + fixed: `$50D5: jp seldsk_drv_body` (`ld a,(DRVCNT); ret`) + `build_drvtbl` writes
@@ -115,6 +114,11 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
 - **M18 (2026-07-03): `$50C4` CURDRV-time entry wired** (`jp curdrv_body` = `ld a,(CURDRV_CELL);ret`)
   + `$F247`:=`$00` built. **FULL 27-call BDOS parity with stock, ZERO divergence; correct visible `A>`.**
   The drive-letter bug is CLOSED. DO NOT re-probe the `$50C4`/`$F247` path without a new concrete result.
+- **OI-3 (2026-07-03): DOS boot handoff now clears the SCREEN-1 name table + homes the cursor**
+  (`dos_clear_screen` = FILVRM `$0056` fill of `$1800`/768 + CSRY/CSRX `$F3DC`/`$F3DD`:=1, first action
+  in `dos_handoff`). Ours' screen is now BYTE-FOR-BYTE identical to stock (sign-on ROW01, `A>` ROW09).
+  DO NOT re-add a screen-init/CLS or switch to INITXT/INIT32 (both rejected — they mode-switch/re-init;
+  stock does only a direct name-table fill). STAY-DI is intentional (caller owns IFF). DO NOT re-litigate.
 - **STOCK's real boot = sign-on → `COMMAND version 1.08` → `Current date is Sun 84-01-01` →
   `Enter new date:` → blocks at BUFIN, now matched by ours at the CHGET level (M13).**
 
@@ -144,35 +148,28 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — OI-3: clear the leftover BASIC banner before the DOS sign-on
-M13/M15/M16/M17/M18 are all landed. BDOS-call parity is now **COMPLETE** (27/27, zero divergence) and
-`A>` is on-screen with the correct drive letter. The **only** gap to a pixel-perfect stock-matching
-screen is cosmetic: ours retains the BASIC power-on banner (`MSX system / version 1.0`, ROW10-13) so
-the DOS sign-on is scrolled down (ours `A>` at ROW23 vs stock ROW09) instead of a cleared screen.
+## Next action — NONE on the DOS-boot-to-`A>` track (goal MET 2026-07-03)
+M13/M15/M16/M17/M18/**OI-3** are ALL landed. BDOS-call parity is COMPLETE (27/27, zero divergence),
+`A>` is on-screen with the correct drive letter, AND the screen is now cleared so ours matches stock
+BYTE-FOR-BYTE (sign-on ROW01, `A>.` ROW09, `FOUND-MSX at VRAM 1822`). **The Tier-2 DOS-boot goal is
+MET.** No cosmetic or functional gap remains on this track.
 
-**OI-3 characterisation (this span, falsify-first, clean-room):**
-- Both machines are SCREEN 1 at DOS time (`scrmod=01 r2=06 namebase=$1800`) — **NOT a mode-switch
-  difference**; the name table simply isn't cleared on ours.
-- Stock does **NOT** clear via a CHPUT form-feed: `callseq --arm-cond 1 --log 0x00A2 --maxhits 120`
-  shows **0** `A=0C` chars in stock's CHPUT stream. So the clear is a **direct VRAM name-table fill**
-  (spaces) done by the DOS boot handoff / MSXDOS.SYS init, before the sign-on STROUT.
-- Ours' disk-ROM boot path (`init.asm`/`runtime.asm dos_handoff`) has **no screen-init / VRAM-clear**
-  step (grep: none). So ours inherits BASIC's screen.
+**OI-3 (screen-clear) — LANDED, all 7 acceptance criteria pass (commit `dc2ac8d`,
+[tier2-oi3-spec.md](tier2-oi3-spec.md)):**
+- `dos_clear_screen` (runtime.asm free tail), first action in `dos_handoff`: FILVRM (`$0056`) via
+  `pg0_mainrom_in`/`out` fills SCREEN-1 name table (`$1800`, 768) with `$20`, then homes cursor
+  (`$F3DC`:=1, `$F3DD`:=1). STAY-DI (no `ei`); IX (=`$F195`) push/pop-guarded; data-disk pre-clear
+  accepted per spec §6.6. User-signed-off (not self-approved-by-precedent).
+- Validation: screen ours==stock; CSRY/CSRX `01 01` (was `0F 01`); BDOS 27/27 aligned zero divergence;
+  IX=`$F195` at `$0200`; steady-state stable no storm; unit-test 19/19; `disk.rom` 16384 B (3-pass obj).
 
-**Next (candidate fix, DOS-path-only, BIOS-agnostic):** in the DOS boot handoff (near `dos_handoff`,
-runtime.asm, or the boot-sig-OK path that enters DOS), clear the SCREEN-1 name table to spaces before
-handing off — either by calling the main-BIOS `INITXT`/screen-init (via the `pg0_mainrom_in` inter-slot
-path we already use for CHPUT) OR a direct VDP name-table fill of `$20` over `$1800:0x300`. Prefer the
-BIOS call if a clean-room-safe standard entry exists (INITXT `$006C` / DISSCR-then-fill); a raw VRAM
-fill is the fallback. **Falsify-first:** confirm the chosen clear lands ours' `A>` at ROW09 matching
-stock via `screen --machine both`. This is DIFFERENT-SHAPED from M13–M18 (no `$50xx` veneer / work-area
-cell) — treat as its own small milestone; do NOT force it to look like the veneer class.
+**Possible next sub-tracks (NOT the DOS-boot goal — new milestones if desired):** the BDOS-exerciser
+`.COM` differential-unit-test idea ([[bdos-exerciser-com-test]]); source-upgrade job; the greenfield
+extension-HW BASIC axis. None are blockers.
 
-**Decisive repro (keyed run):** `python3 probes/disk/disk_probe_diff.py callseq --at 0x0100 --log
-0x0005 --maxhits 40 --keys '\r' --keys-at 20 --diska ~/Documents/msx/msx/disks/test.dsk` → now **27/27
-calls, ALIGNED, NO DIVERGENCE**. Arbiter: `screen --machine both --keys '\r' --keys-at 20 --settle 25`
-→ stock `A>.` at ROW09 (clean screen); ours `A>.` at ROW23 (correct text, but below the retained
-BASIC banner at ROW10-13).
+**Decisive repros (still current, all pass):** `callseq --at 0x0100 --log 0x0005 --maxhits 40 --keys
+'\r' --keys-at 20 --diska ~/Documents/msx/msx/disks/test.dsk` → 27/27 ALIGNED. `screen --machine both
+--keys '\r' --keys-at 20 --settle 25` → ours == stock (both `A>.` at ROW09, cleared screen).
 
 **Harness note (M17/M18):** `callwatch`/`readwatch` take `--in-func N` (default 9) to gate on any BDOS
 function in flight (used `--in-func 0x19` for CURDRV, `0x0E` for SELDSK); `capture` takes `--machine
