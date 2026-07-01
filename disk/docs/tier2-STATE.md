@@ -36,9 +36,14 @@ evidence (all via `disk_probe_diff.py`, test.dsk, anchored at COMMAND.COM `$0100
 through the kernel `$F392` path; ours vectors func-2 to disk-ROM `$5454` and loses func-9.
 **This CORRECTS the M12 refutation** (see Dead ends): M12's "func-9 chars DO reach CHPUT" cited the
 `ret=$7934` chars — but those are the func-2 DATE (`C=02`), not func-9 STROUT (`C=09`); a mislabel.
-**Mechanism NOT yet localised** — do NOT `trace` into the kernel console routine (`$F392`/`$F2AC`/
-`$F237` = the M12c reference-disasm hazard). Secondary symptom (separate): the BASIC banner isn't
-cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-queue.md) M14.
+**LOCALISED (black-box, no kernel decode):** `--log 0xF392` → ours **0** / stock **90**; `--log 0x009C`
+(CHSNS per-char break-poll on the output loop) → ours **0** / stock **72**. So ours' func-9 handler
+dispatches but **never enters the char-output loop** — the `$F392` resident routine (CHSNS-poll + CHPUT)
+is never reached. func-2 works via `$5454` (a different, wired path); func-9's output routine is
+unreached/stubbed on ours (same shape as the old `$4462` FOPEN gap). Do NOT `trace` into `$F392`/
+`$F2AC`/`$F237` (M12c reference-disasm hazard). Secondary symptom (separate): the BASIC banner isn't
+cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-queue.md) M14 +
+[tier2-m15-spec.md](tier2-m15-spec.md).
 
 ## Settled facts — DO NOT re-litigate or re-probe
 - COMMAND.COM **loads AND reaches $0100** (handoff works); `$47B2` return contract done; `$0005`=`JP
@@ -75,23 +80,21 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M15: localise the func-9 STROUT output path, clean-room-safely (AWAITING SIGN-OFF)
-**M14 is CHARACTERISED (see Live thesis); the fix is a new slice wanting sign-off** — it re-opens a
-refuted item and touches console-output wiring. Do NOT start asm before the batched sync confirms it.
-1. **The question to answer (clean-room-safe):** WHERE does func-9's per-char output die on ours?
-   func-2 CONOUT reaches CHPUT via our `$5454` veneer; func-9 does not reach `$5454` OR CHPUT. So
-   func-9's kernel output call targets something else on ours. Localise WITHOUT tracing/decoding the
-   loaded-kernel console routine (`$F392`/`$F2AC`/`$F237` = M12c reference-disasm hazard). Prefer:
-   black-box call-count/target logging (`callseq --log <candidate>`), or a `capture --mem` diff of
-   candidate console HOOK cells at the aligned func-9 dispatch (memory bytes, not code decode).
-2. **Likely fix shape (to spec, not yet built):** route func-9's output to a working CONOUT — reuse
-   our own `conout_body` (`$5454`), the SAME routine func-2 already uses successfully. No stock bytes
-   needed. The exact hook to set comes from step 1.
-3. **Right tool:** `screen` stays the arbiter for "does the banner now render." Extend
-   `disk_probe_diff.py`; don't fork a script.
-4. Secondary (defer until func-9 lands): the un-cleared BASIC power-on banner (ours boots BASIC then
-   DOS on top; stock's screen is clean). Separate symptom, cosmetic vs the func-9 blocker.
-5. Then drive to the visible `A>` (inject a command + Enter once the prompt renders).
+## Next action — M15: restore func-9 STROUT output (SPEC DRAFTED — AWAITING SIGN-OFF, no asm)
+**M14 CHARACTERISED + LOCALISED (see Live thesis); spec = [tier2-m15-spec.md](tier2-m15-spec.md).**
+The fix re-opens a refuted item and touches console-output wiring → sign-off before ANY asm.
+1. **Localisation is DONE:** ours' func-9 handler dispatches but never enters the char-output loop
+   (`$F392`=0, CHSNS `$009C`=0 vs stock 90/72). func-2 works via `$5454`; func-9's output routine is
+   unreached/stubbed on ours (same shape as the `$4462` FOPEN gap).
+2. **Remaining pin (spec §3, still no asm, clean-room-safe):** WHICH cell selects func-9's output —
+   a work-area VECTOR (P-vector) or a missing RESIDENT routine (P-resident). Pin via a narrow,
+   pointer-only `capture --mem` diff at the aligned func-9 dispatch (data cells only; NEVER read the
+   `$F380-$F3A0` resident-code bytes = M12c hazard).
+3. **Fix (spec §4, recommended (A)):** wire func-9's output to our own `conout_body` (`$5454`) — the
+   same working routine func-2 uses. DOS-only + BIOS-agnostic; net-zero; no stock bytes.
+4. **Arbiter:** `screen --machine ours` renders the 3 COMMAND.COM lines. Extend `disk_probe_diff.py`.
+5. Secondary (defer): the un-cleared BASIC power-on banner. Separate cosmetic symptom.
+6. Then drive to visible `A>` (inject a command + Enter once the prompt renders).
 
 **One-command repros (test.dsk):**
 - M14 evidence — dispatch identical, CHPUT diverges: `python3 probes/disk/disk_probe_diff.py callseq

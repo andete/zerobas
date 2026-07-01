@@ -40,8 +40,14 @@ citing "func-9 chars DO reach CHPUT, ret=$7934-vs-$F392 benign." Those `ret=$793
 DATE (`C=02`), not func-9 STROUT (`C=09`) — a mislabel; the screen arbiter confirms func-9 literals never
 render. The func-9-output-gap hypothesis is BACK, now with 18/18 dispatch alignment behind it.
 · **routing note:** stock funnels ALL console output through the kernel `$F392` path; ours vectors func-2
-to disk-ROM `$5454` and loses func-9. Mechanism NOT yet localised — deliberately did NOT `trace` into the
-kernel console routine (`$F392`/`$F2AC`/`$F237` = the M12c reference-disasm hazard). · **judgment call:**
+to disk-ROM `$5454` and loses func-9. · **LOCALISED (black-box, no kernel decode, user chose this at the
+M14 sync):** `--log 0xF392` ours **0** / stock **90**; `--log 0x009C` (CHSNS per-char break-poll on the
+output loop, B=char) ours **0** / stock **72**. ⇒ ours' func-9 handler dispatches but NEVER enters the
+char-output loop — the `$F392` resident routine (CHSNS-poll + CHPUT) is never reached; func-9 returns
+having emitted nothing. func-2 works via a different wired path (`$5454`). Same SHAPE as the `$4462` FOPEN
+gap: a shared-kernel routine that's live on stock, unreached/stubbed on ours. Deliberately did NOT `trace`
+into `$F392`/`$F2AC`/`$F237` (M12c reference-disasm hazard). Fix target + approach in
+[tier2-m15-spec.md](tier2-m15-spec.md) (DRAFT, no asm). · **judgment call:**
 hard-stopped here rather than implementing — this re-opens a refuted item AND the fix (route func-9 output
 to a working CONOUT / build the resident CONOUT dependency) is a new slice wanting a spec + sign-off
 ([[spec-before-implementation]]). · **confidence:** HIGH that func-9 STROUT output is the blocker
