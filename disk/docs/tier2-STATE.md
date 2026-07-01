@@ -10,7 +10,11 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-07-03 (**OI-3 LANDED — Tier-2 DOS-boot-to-`A>` goal MET** — Opus span, explicit
+_Last updated: 2026-07-01 (**BDOS untested-func VERIFY SWEEP** — verification-only, no asm changes:
+7 boot-path funcs re-confirmed byte-identical incl. `$2B` SDATE; console tier $01/$06/$07/$08/$0B/$0C
+= UNTESTABLE-HERE (shared-kernel-dispatched, ride the proven CHGET/`$5454`-CHPUT primitives, but the
+boot+`A>` flow never issues them — need a driver `.COM`). Nothing falsified; next = FCB read cluster.
+See "Next action". Prior: 2026-07-03 (**OI-3 LANDED — Tier-2 DOS-boot-to-`A>` goal MET** — Opus span, explicit
 user sign-off). M13/M15/M16/M17/M18 DONE (git history). **OI-3 (leftover BASIC banner not cleared
 before the DOS sign-on) FIXED.** Root cause: ours' DOS boot handoff had no screen-clear step, so it
 inherited BASIC's power-on banner + cursor (CSRY=`$0F`), printing the sign-on from ROW15 → `A>` at
@@ -148,11 +152,38 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — NONE on the DOS-boot-to-`A>` track (goal MET 2026-07-03)
-M13/M15/M16/M17/M18/**OI-3** are ALL landed. BDOS-call parity is COMPLETE (27/27, zero divergence),
-`A>` is on-screen with the correct drive letter, AND the screen is now cleared so ours matches stock
-BYTE-FOR-BYTE (sign-on ROW01, `A>.` ROW09, `FOUND-MSX at VRAM 1822`). **The Tier-2 DOS-boot goal is
-MET.** No cosmetic or functional gap remains on this track.
+## Next action — BDOS untested-func verify sweep DONE (2026-07-01); next = the FCB read cluster
+The DOS-boot-to-`A>` track is MET (M13/M15/M16/M17/M18/OI-3 landed; 27/27 BDOS parity, cleared-screen
+`A>` byte-for-byte). A **verification-only sweep** (no asm changes) then checked the "trivial-verify"
+tier of untested MSX-DOS-1 BDOS funcs. **RESULT: nothing falsified; nothing to commit for asm.**
+
+**Sweep verdicts (evidence = `disk_probe_diff.py`, test.dsk):**
+- **7 boot-path funcs re-confirmed in the same run (all byte-identical, zero divergence):**
+  `$02` CONOUT, `$09` STROUT, `$0A` BUFIN, `$0E` SELDSK, `$19` CURDRV, `$2A` GDATE via the 27/27
+  `callseq ... --keys '\r'` repro; **`$2B` SDATE CONFIRMED** by typing a real date
+  (`--keys '85-3-27\r'` → n=21 `C=2B A=00 B=2D DE=031B HL=07C1 ret=CC85` ours==stock, and `screen`
+  shows both reach `A>` at ROW09 with `85-3-27` echoed). The transient n≥22 D-high-byte/timing reg
+  diff on the typed-date run is a keyboard-buffer scratch artifact, NOT a functional divergence
+  (screen arbiter identical).
+- **`$01` CONIN, `$06` DIRIO, `$07` DIRIN, `$08` INNOE, `$0B` CONST, `$0C` CPMVER → UNTESTABLE-HERE**
+  (not falsified — cannot be reached by the current harness/disk image). Root reason (architectural,
+  clean-room): these funcs are dispatched entirely by the **shared RAM MSX-DOS-1 kernel** and bottom
+  out at the SAME two disk-ROM resident primitives already proven byte-identical — CHGET/CHSNS (input)
+  and `$5454` CONOUT→CHPUT (output); `$0C` returns a constant ($22) wholly inside the kernel with NO
+  disk-ROM routine. COMMAND.COM's boot + date-prompt + `A>` command reader use only `$02/$09/$0A/
+  $0F/$2A/$2B/$0E/$19` — a full callseq to `--maxhits 60` past the `A>` prompt shows the flow blocks at
+  BUFIN `$0A` (n=27/28, the command reader) and NEVER issues $01/$06/$07/$08/$0B/$0C. Reaching them
+  needs a driver `.COM` that calls them (the [[bdos-exerciser-com-test]] idea) or a second interactive
+  keystroke at `A>` (the harness injects only ONE `--keys` burst — a real limitation, not built around
+  per the "don't build new infra" guardrail). **Expectation stands: they should ride the proven
+  primitives, but that is UNVERIFIED by direct probe here.**
+
+**Recommended next (per the ranked order): the FCB read cluster.** The console tier is verified-or-
+untestable; the next batch is the file-read FCB funcs (`$0F` FOPEN already boot-exercised; `$10`
+FCLOSE, `$14` RDSEQ, `$1A` SETDTA, and the search/random-read funcs). These have a real disk-ROM
+surface (`bdos_entry` in driver.asm implements a read subset for Tier-1 BLOAD) and a differential
+oracle path — the natural next verification/implementation target. The BDOS-exerciser `.COM` idea is
+the tool that would also unblock the UNTESTABLE-HERE console tier above.
 
 **OI-3 (screen-clear) — LANDED, all 7 acceptance criteria pass (commit `dc2ac8d`,
 [tier2-oi3-spec.md](tier2-oi3-spec.md)):**
@@ -163,13 +194,13 @@ MET.** No cosmetic or functional gap remains on this track.
 - Validation: screen ours==stock; CSRY/CSRX `01 01` (was `0F 01`); BDOS 27/27 aligned zero divergence;
   IX=`$F195` at `$0200`; steady-state stable no storm; unit-test 19/19; `disk.rom` 16384 B (3-pass obj).
 
-**Possible next sub-tracks (NOT the DOS-boot goal — new milestones if desired):** the BDOS-exerciser
-`.COM` differential-unit-test idea ([[bdos-exerciser-com-test]]); source-upgrade job; the greenfield
-extension-HW BASIC axis. None are blockers.
-
 **Decisive repros (still current, all pass):** `callseq --at 0x0100 --log 0x0005 --maxhits 40 --keys
-'\r' --keys-at 20 --diska ~/Documents/msx/msx/disks/test.dsk` → 27/27 ALIGNED. `screen --machine both
---keys '\r' --keys-at 20 --settle 25` → ours == stock (both `A>.` at ROW09, cleared screen).
+'\r' --keys-at 22 --settle 35 --diska ~/Documents/msx/msx/disks/test.dsk` → 27/27 ALIGNED. `screen
+--machine both --keys '\r' --keys-at 22 --settle 35` → ours == stock (both `A>.` at ROW09, cleared
+screen). **GOTCHA (verify sweep 2026-07-01):** pass `--keys` as the LITERAL 2-char string `'\r'`
+(single-quoted), NOT a shell CR byte (`$'\r'`) — openMSX `type` needs the `\r` escape to map to Enter;
+a raw CR does NOT complete BUFIN and the callseq stalls at n=18. Type a real date to fire `$2B` SDATE:
+`--keys '85-3-27\r' --keys-at 22`.
 
 **Harness note (M17/M18):** `callwatch`/`readwatch` take `--in-func N` (default 9) to gate on any BDOS
 function in flight (used `--in-func 0x19` for CURDRV, `0x0E` for SELDSK); `capture` takes `--machine
