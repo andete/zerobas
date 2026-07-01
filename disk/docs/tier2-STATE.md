@@ -10,24 +10,10 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-07-01 (M13 — CONIN Option A IMPLEMENTED, user go-ahead. The M12 root
-cause — CONIN falling through into CONOUT, the infinite `D8 19 3E 40 0A` garbage spin — is FIXED.
-A `jp conin_line_body` veneer now sits at the pinned CALL target `$50E0` ([kernel.asm](../kernel.asm)),
-consuming our own `$00` dead region (net-zero, `disk.rom` still 16384 B); `conin_line_body`
-([runtime.asm](../runtime.asm)) is a clean-room reimplementation of the published BDOS func-`$0A`
-buffered-line read: per-char inter-slot CHGET (`$009F`) via the existing `pg0_mainrom_in/out` bridge,
-CR ends the line, BS edits back one char, else echo via the reused `conout_body` + store; result lives
-in the buffer (`[DE+1]`=count), matching the pinned no-return-register contract. `make unit-test` 19/19.
-**VALIDATED:** `callseq --log 0x009F` now matches stock call-for-call (1 call idle; 10 calls with a
-9-char+CR keystroke injection, was stock-1/ours-0 before); `screen --machine both --settle 16` shows
-ours holds a STABLE frame (blocked at CHGET) instead of scrolling forever. **NEW OPEN ITEM (M14, not
-started):** even with an injected keystroke driving CHGET through the date prompt, ours never renders
-`COMMAND version 1.08` / `Current date is ...` / `Enter new date: ` as separate lines — and this is
-reproducible in the NO-KEYS baseline too (i.e. BEFORE any CONIN call fires), so it predates and is
-independent of the M13 fix; the old infinite spin previously masked it since ours never held a stable
-frame to inspect. M14 starts fresh on this new symptom (COMMAND.COM banner/prompt rendering — a CONOUT/
-newline/scroll question, not CONIN). Full M12 root-cause narrative retained below for context/citation.
-Logged: [tier2-review-queue.md](tier2-review-queue.md) M13.)_
+_Last updated: 2026-07-01 — M13 (CONIN) DONE + validated; M14 OPEN. The M12 garbage-spin is
+FIXED and CONIN works at the CHGET level; the next blocker is a NEW symptom (COMMAND.COM banner/
+prompt lines don't render), not a CONIN regression. Detail below (Live thesis + Settled facts);
+history in [tier2-review-queue.md](tier2-review-queue.md) M13._
 
 ## Goal
 Boot MSX-DOS to the `A>` prompt under zerobas-disk (Tier-2) **without regressing
