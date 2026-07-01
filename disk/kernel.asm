@@ -40,6 +40,20 @@
 ; the M12 root cause. Body = conin_line_body (free tail): reimplements the func-$0A
 ; buffered-line read from the published CHGET ($009F) / CHPUT ($00A2) / func-$0A buffer
 ; ABI, clean-room -- the stock routine's internals were never read (spec §3 Option A).
+;
+; --- MSX-DOS-1 kernel SELDSK-time entry: $50D5 (M17; tier2-m17-spec.md) --------
+; While processing BDOS SELDSK (func $0E) the relocated kernel CALLs this page-1
+; disk-ROM entry (register-identical ours==stock at entry: AF=0044 BC=D50E DE=D3FF
+; HL=D349 IX=F459 IY=DC5B, ret=D88A -- a real CALL boundary, M17 §2.1). Black-box
+; contract: read the logical-drive count from $F347 into A, preserve BC/DE/HL/IX/IY
+; (return F irrelevant so far, §4). Our $50B8-$5453 block is our own $00 padding, so
+; before this veneer the CALL NOP-slid into the $5454 CONOUT veneer and never
+; returned to the trampoline -> the M17 SELDSK stall (no A> prompt). Body =
+; seldsk_drv_body (free tail); clean-room -- the stock routine's internals were never
+; read (only its entry/exit registers + a DATA-cell read-watch of $F347).
+                ds      $50D5 - $, $00  ; pad up to the pinned $50D5 kernel entry
+seldsk_drv:
+                jp      seldsk_drv_body ; -> free-tail: A = ($F347) drive count (M17)
                 ds      $50E0 - $, $00  ; pad up to the pinned CONIN line-routine entry
 conin:
                 jp      conin_line_body ; -> free-tail buffered-line CHGET loop (M13)
@@ -553,5 +567,17 @@ install_res_print:
                 ld      de, RES_PRINT
                 ld      bc, res_print_end - res_print_tmpl
                 ldir
+                ret
+
+; seldsk_drv_body — the $50D5 kernel SELDSK-time entry (M17; tier2-m17-spec.md).
+; The relocated kernel CALLs $50D5 while processing BDOS SELDSK ($0E) to read the
+; logical-drive count. Black-box contract (M17 §2.1, readwatch causal pin): read
+; $F347 into A, preserve BC/DE/HL/IX/IY. Reached directly from the fixed $50D5 veneer
+; (jp seldsk_drv_body) -- lives here in the free tail like conin_line_body/conout_body.
+; CLEAN-ROOM: derives from the observed DATA-cell read contract (return [$F347]) +
+; our own code; no stock/kernel bytes decoded (only entry/exit regs + the $F347 read).
+;   in: -    ; out: A = ($F347) = drive count ; BC/DE/HL/IX/IY preserved
+seldsk_drv_body:
+                ld      a, (DRVCNT)     ; DRVCNT = $F347 = logical-drive count ($02)
                 ret
 

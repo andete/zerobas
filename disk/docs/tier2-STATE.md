@@ -10,29 +10,40 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-07-03 (M16 CLOSED, M17 OPEN — NOT YET CHARACTERISED) — M13/M15 DONE (see prior
-paragraph history in git); **M16 (CONIN buffer terminator) DONE.** Root cause: our
-`conin_line_body`'s `cinl_done` only wrote the count byte, leaving stale RAM at `buf[2]`; stock's real
-BUFIN also writes a `$0D` there regardless of count. That stale byte made COMMAND.COM's date-reply
-parser (which scans from `buf[2]`, not just the count) treat a blank Enter as a typed date, calling
-SDATE instead of proceeding like stock. **Fix signed off + implemented:** write `$0D` to
-`buf[2+count]` in `cinl_done` (runtime.asm, free tail, no budget risk). **Validated:** the BUFIN
-buffer is now byte-identical to stock's; BDOS call n=21 now matches stock exactly (`SELDSK`, was
-`SDATE`); Tier-1 19/19; `disk.rom` 16384 B. Detail: [tier2-conin-spec.md](tier2-conin-spec.md) §6/§6.1.
-**NEW SESSION STARTS HERE → M17 is OPEN, not characterised:** ours now calls SELDSK matching stock,
-but then stalls — 21 BDOS calls total vs stock's 27+, never reaching `CURDRV`/printing `A>` (`screen`
-confirms no crash/spin, just a quiet stop). The fork happens DURING SELDSK's execution inside the
-loaded MSXDOS.SYS kernel (shared code, do not decode). Needs falsify-first localisation from scratch
-(same shape as M14/M15/M16 gaps, but not yet pinned to a mechanism) — see the M17 section below for
-the concrete next steps and repro command. Secondary/deferred: OI-3, the un-cleared BASIC power-on
-banner (cosmetic, unrelated). History: [tier2-review-queue.md](tier2-review-queue.md) (M14/M15
-archived in [tier2-review-archive.md](tier2-review-archive.md); M16 pending archive)._
+_Last updated: 2026-07-03 (M17 CHARACTERISED + falsify-first fix LANDED; M18 OPEN — Opus span) —
+M13/M15/M16 DONE (git history). **M17 (SELDSK-time stall) root-caused + fixed.** Root cause: the loaded
+kernel CALLs page-1 `$50D5` during BDOS SELDSK; on ours that address was `$00` NOP-padding (same
+un-wired-`$50xx`-entry class as M13's `$50E0` / M15's `res_print_tmpl`) → NOP-slid into the `$5454`
+CONOUT veneer and never returned, so the kernel's post-SELDSK CURDRV/print-`A>`/BUFIN sequence never
+ran. Pinned clean-room-safe (no kernel decode): register-identical `callseq --log 0x50D5` CALL-boundary
+pin + one-sided return-contract `capture` (A=$02, all other regs preserved) + CAUSAL `readwatch
+--in-func 0x0E` showing `$50D5` reads exactly one cell, `$F347` (=drive count), which was `$FF`
+(unbuilt) on ours / `$02` on stock. **Fix (falsify-first build, validated):** (a) `$50D5: jp
+seldsk_drv_body` veneer (`ld a,(DRVCNT); ret`, net-zero pad); (b) `build_drvtbl` writes `$F347`:=`$02`
+(MSX-DOS single-drive = 2 logical drives). **Result:** ours' BDOS calls now continue past SELDSK to
+n=27 BUFIN, **matching stock's 27-call count exactly** (was 21). Tier-1 19/19; `disk.rom` 16384 B;
+M13/M15 regressions intact. Detail: [tier2-m17-spec.md](tier2-m17-spec.md).
+**NEW SESSION STARTS HERE → M18 is OPEN (drive letter + on-screen prompt):** with M17 landed, at BDOS
+call n=25 ours prints char `$43`='C' where stock prints `$41`='A' — i.e. `C>` vs `A>` (current-drive
+= 2 on ours vs 0 on stock). This is a SEPARATE cell from `$F347` (which now matches stock); the letter
+is computed from the loaded kernel's `$D5xx`/`$C4xx` RAM (CURDRV reads dispatcher cells `$F304/5/6`,
+not a `$F3xx` curdrv byte in the swept windows). ALSO the prompt does not yet render on OURS' *screen*
+(still shows the leftover BASIC banner — the deferred OI-3). So a visible correct `A>` is very close
+(full 27-call parity) but not yet there. See the M18 section below for the repro + next steps. History:
+[tier2-review-queue.md](tier2-review-queue.md) (M14/M15 archived in
+[tier2-review-archive.md](tier2-review-archive.md); M16/M17 pending archive)._
 
 ## Goal
 Boot MSX-DOS to the `A>` prompt under zerobas-disk (Tier-2) **without regressing
 Tier-1** (disk-BASIC / BLOAD / FILES) and while staying a **BIOS-agnostic replacement
 disk ROM** (works on CF-3300, C-BIOS, any standards MSX1). "Reached `A>`" means a
 **visible** `A>` on screen + accepts a command — not just the right BDOS call sequence.
+
+## Live thesis (M17 — DONE 2026-07-03; M18 OPEN)
+**M17 SELDSK-time stall = the missing `$50D5` kernel entry (drive-count read), now fixed** — see the
+top summary + [tier2-m17-spec.md](tier2-m17-spec.md). Full 27-call BDOS parity with stock through
+BUFIN. **M18 (open):** the `A>` prompt prints as `C>` (current-drive 2 vs 0) and isn't yet on-screen
+(uncleared BASIC banner, OI-3). The M15 thesis below is retained as the fix-shape template.
 
 ## Live thesis (M15 — DONE, CLOSED 2026-07-02)
 **Our own `res_print_tmpl` (`RES_PRINT` @ `$F1C9`) was a no-emit stub: it read/consumed the func-9
@@ -119,29 +130,36 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M17: SELDSK-time stall blocks the visible `A>` (NOT YET CHARACTERISED)
-M15 (STROUT) and M16 (CONIN buffer terminator) are both closed — see
-[tier2-m15-spec.md](tier2-m15-spec.md) §9–§10 and [tier2-conin-spec.md](tier2-conin-spec.md) §6/§6.1.
-Injecting Enter at the date prompt now drives ours' BDOS call sequence to match stock exactly through
-n=21 (`C=0E SELDSK`, byte-identical args/regs) — the SDATE/SELDSK fork that blocked M16 is fixed.
-**New fork, one step later:** ours stops at 21 BDOS calls; stock continues to n=27 (`CONOUT`×2 for
-CR/LF, `CURDRV`, print `A>`, `BUFIN` for the command line). `screen --machine ours` confirms: cursor
-advances past the date line but `A>` never renders — a quiet stall, not a crash/spin. Since the n=21
-dispatch itself is register/arg-identical, the fork happens DURING SELDSK's execution inside the
-loaded MSXDOS.SYS kernel (shared code on both machines — do not decode it; same clean-room boundary as
-always). Likely another resident/work-area-hook gap of the M14/M15/M16 shape (a kernel call into a
-disk-ROM/work-area cell that's stubbed/incomplete on ours), but this is NOT YET localised.
-1. **Characterise first (falsify-first):** does SELDSK call into any of our page-1 disk-ROM code at
-   all? (`callwatch` currently only gates on func-9 — needs a small generalisation to gate on the
-   BDOS function-in-flight generically, e.g. an `--in-func N` option mirroring `--gate-func9`'s `C==9`
-   pattern, OR just widen scope with `--no-gate` bounded by `--keys-at` timing and read the whole-run
-   entries around SELDSK's t≈20.1s window.)
-2. Repro (keyed run, decisive so far): `python3 probes/disk/disk_probe_diff.py callseq --at 0x0100
-   --log 0x0005 --maxhits 40 --keys '\r' --keys-at 20 --diska ~/Documents/msx/msx/disks/test.dsk` →
-   stock 27 calls / ours 21, diverges after n=21 (SELDSK matches, then ours goes silent).
-3. Arbiter: `screen --machine ours --keys '\r' --keys-at 20 --settle 25` — no `A>` yet; this is the
-   target render once M17 lands.
-4. Secondary (still deferred): the un-cleared BASIC power-on banner. Unrelated cosmetic symptom.
+## Next action — M18: `A>` prints as `C>` (curdrv 2 vs 0) + prompt not yet on-screen
+M13/M15/M16/M17 are all landed. Injecting Enter at the date prompt now drives ours' BDOS call
+sequence to **full 27-call parity with stock through BUFIN** (SELDSK no longer stalls — M17). **Two
+residual gaps to a visible correct `A>`:**
+1. **Drive letter wrong (the real M18 bug).** At BDOS call n=25 ours does `CONOUT A=$43`='C' where
+   stock does `A=$41`='A' — current-drive is **2** on ours vs **0** on stock. This is a DIFFERENT cell
+   from `$F347` (which now matches stock at $02). The letter is computed from the loaded kernel's
+   `$D5xx`/`$C4xx` RAM (n=25 had `B=C4 HL=C402` ours / `HL=C400` stock). CURDRV (n=24) reads only the
+   dispatcher cells `$F304/5/6` in the swept windows — the actual current-drive byte was NOT found in
+   `$F250/F300/F320`. **Next (falsify-first):** find where the current-drive value lives and why it's 2
+   on ours. Candidates: (a) SELDSK's fuller processing sets a current-drive cell using a value that is
+   still unbuilt/wrong on ours (the broad `$F34D-$F35F` pointer-block/`$F358+` gap is still present —
+   `capture --at 0x0005 --nth 24 --mem 0xF340:0x20` shows 17/32 bytes differ); (b) `$50D5` should
+   return something drive-specific, not the bare count (its return `F=$3B` is unexplained — M17 §4).
+   Sweep `readwatch --in-func 0x19` (CURDRV) and `--in-func 0x0E` (SELDSK) over wider `$F3xx`/`$D5xx`
+   DATA windows for the byte that becomes the drive letter (DATA-region only; never decode kernel code).
+2. **Prompt not on OURS' screen (OI-3, deferred).** `screen --machine ours` still shows the leftover
+   BASIC power-on banner (`MSX system / version 1.0`), not the DOS prompt lines — the chars go through
+   CONOUT (call-level parity) but the BASIC banner was never cleared before the DOS sign-on and the
+   scroll/cursor state differs. Re-assess after M18: a visible `A>` needs BOTH the right letter AND the
+   screen cleared.
+
+**Decisive repro (keyed run):** `python3 probes/disk/disk_probe_diff.py callseq --at 0x0100 --log
+0x0005 --maxhits 40 --keys '\r' --keys-at 20 --diska ~/Documents/msx/msx/disks/test.dsk` → now 27/27
+calls, FIRST DIVERGENCE at n=25 (the 'C' vs 'A'). Arbiter: `screen --machine both --keys '\r'
+--keys-at 20 --settle 25` → stock ROW09 `A>`, ours banner + no prompt.
+
+**Harness note (M17):** `callwatch`/`readwatch` now take `--in-func N` (default 9) to gate on any BDOS
+function in flight (used `--in-func 0x0E` for SELDSK); `capture` now takes `--machine ours|stock` for
+one-sided black-box contract dumps (used for the `$50D5` return contract). Use these for M18.
 
 **One-command repros (test.dsk) — the M15 root-cause + fix-validation probes (all still pass):**
 - **String IS fully read but not emitted (root cause):** `python3 probes/disk/disk_probe_diff.py

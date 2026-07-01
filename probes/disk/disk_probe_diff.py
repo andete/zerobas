@@ -252,6 +252,32 @@ def mode_capture(args) -> int:
             keys=args.keys, keys_at=args.keys_at)
 
     print(f"=== capture: regs{'+mem' if mem else ''} at occurrence #{args.nth} of {args.at:#06x} ===")
+
+    # One-sided mode: dump a single machine's regs/mem at the anchor (no diff, no
+    # alignment guard). For black-box contract pinning where the OTHER side diverges
+    # before the anchor (e.g. a stock-only return-contract read). Clean-room-safe: it
+    # reads registers + DATA memory (never decodes code), same allowed class as `both`.
+    if getattr(args, "machine", "both") in ("ours", "stock"):
+        m = OURS_MACHINE if args.machine == "ours" else STOCK_MACHINE
+        recs = cap_for(m)
+        regs = _regs_from(recs)
+        who = "OURS" if args.machine == "ours" else "STOCK"
+        if regs is None:
+            print(f"\n*** {who} never reached occurrence #{args.nth} of {args.at:#06x} "
+                  f"(looped / wrong --nth). ***")
+            return 2
+        print(f"  {who} reached anchor  t={regs['t']:.4f}\n")
+        print(f"  reg   {who}")
+        for k in ("PC", "SP", "AF", "BC", "DE", "HL", "IX", "IY"):
+            print(f"  {k:<5} {regs.get(k, 0):04X}")
+        if mem:
+            base = mem[0]
+            b = _block_from(recs, base)
+            if b:
+                print(f"\n  memory {base:#06x}+{mem[1]}: "
+                      f"{' '.join('%02X' % x for x in b)}")
+        return 0
+
     o_recs, s_recs = cap_for(OURS_MACHINE), cap_for(STOCK_MACHINE)
     o_regs, s_regs = _regs_from(o_recs), _regs_from(s_recs)
 
@@ -574,7 +600,7 @@ def mode_iowrite(args) -> int:
 # "during func-9" (C==9 at $0005 until the next $0005). Records reader PC + address +
 # value only (the allowed black-box kind: PC/pointer/data, no instruction decode).
 def _readwatch_arm(arm_addr: int, arm_cond: str, addrs: list[int],
-                   gate_func9: bool, maxhits: int) -> str:
+                   gate_func9: bool, maxhits: int, in_func: int = 9) -> str:
     addr_list = " ".join(f"{a:#06x}" for a in addrs)
     gate = "if {!$::in9} return\n" if gate_func9 else ""
     return f"""
@@ -588,7 +614,7 @@ debug set_bp {arm_addr:#06x} {{}} {{
 debug set_bp 0x0005 {{}} {{
   if {{!$::armed}} return
   incr ::callno
-  if {{ ([reg BC]&0xFF) == 9 }} {{ set ::in9 1 }} else {{ set ::in9 0 }}
+  if {{ ([reg BC]&0xFF) == {in_func} }} {{ set ::in9 1 }} else {{ set ::in9 0 }}
 }}
 foreach a {{ {addr_list} }} {{
   debug set_watchpoint read_mem $a {{}} [format {{
@@ -610,7 +636,8 @@ def mode_readwatch(args) -> int:
     addrs = [base + i for i in range(length)]
     arm_cond = args.arm_cond or f"[debug read memory {args.arm_check_addr:#06x}] == {args.arm_check_val:#04x}"
     body = 'emit [format "DONE armed=%d rn=%d" $::armed $::rn]; exit'
-    arm = _readwatch_arm(args.at, arm_cond, addrs, args.gate_func9, args.maxhits)
+    arm = _readwatch_arm(args.at, arm_cond, addrs, args.gate_func9, args.maxhits,
+                         in_func=args.in_func)
 
     def reads_for(machine):
         raw = _runner(machine, args.diska, args.symfile).run_job_raw(
@@ -629,7 +656,7 @@ def mode_readwatch(args) -> int:
 
     machines = {"both": [STOCK_MACHINE, OURS_MACHINE], "ours": [OURS_MACHINE],
                 "stock": [STOCK_MACHINE]}[args.machine]
-    gate = " (gated: during func-9 only)" if args.gate_func9 else ""
+    gate = f" (gated: during func-{args.in_func:#x} only)" if args.gate_func9 else ""
     print(f"=== readwatch: reads of {base:#06x}:{length:#x} after arm@{args.at:#06x}{gate} ===")
     for m in machines:
         reads = reads_for(m)
@@ -662,7 +689,7 @@ def mode_readwatch(args) -> int:
 # of each contiguous run (an entry point) — i.e. a fetch whose PC is not sequential
 # after the previous page-1 fetch — as a called/entered routine, with its hit count.
 def _callwatch_arm(arm_addr: int, arm_cond: str, lo: int, hi: int,
-                   gate_func9: bool, maxhits: int) -> str:
+                   gate_func9: bool, maxhits: int, in_func: int = 9) -> str:
     gate = "if {!$::in9} return\n  " if gate_func9 else ""
     return f"""
 set ::armed 0
@@ -676,7 +703,7 @@ debug set_bp {arm_addr:#06x} {{}} {{
 debug set_bp 0x0005 {{}} {{
   if {{!$::armed}} return
   incr ::callno
-  if {{ ([reg BC]&0xFF) == 9 }} {{ set ::in9 1 }} else {{ set ::in9 0 }}
+  if {{ ([reg BC]&0xFF) == {in_func} }} {{ set ::in9 1 }} else {{ set ::in9 0 }}
 }}
 debug set_watchpoint read_mem {{{lo:#06x} {hi:#06x}}} {{}} {{
   if {{!$::armed}} return
@@ -697,7 +724,8 @@ def mode_callwatch(args) -> int:
     hi = int(hi, 0) if hi else 0x7FFF
     arm_cond = args.arm_cond or f"[debug read memory {args.arm_check_addr:#06x}] == {args.arm_check_val:#04x}"
     body = 'emit [format "DONE armed=%d rn=%d" $::armed $::rn]; exit'
-    arm = _callwatch_arm(args.at, arm_cond, lo, hi, args.gate_func9, args.maxhits)
+    arm = _callwatch_arm(args.at, arm_cond, lo, hi, args.gate_func9, args.maxhits,
+                         in_func=args.in_func)
 
     def entries_for(machine):
         raw = _runner(machine, args.diska, args.symfile).run_job_raw(
@@ -716,7 +744,7 @@ def mode_callwatch(args) -> int:
 
     machines = {"both": [STOCK_MACHINE, OURS_MACHINE], "ours": [OURS_MACHINE],
                 "stock": [STOCK_MACHINE]}[args.machine]
-    gate = " (gated: during func-9 only)" if args.gate_func9 else ""
+    gate = f" (gated: during func-{args.in_func:#x} only)" if args.gate_func9 else ""
     print(f"=== callwatch: page-1 entry-PCs in {lo:#06x}..{hi:#06x} after arm@{args.at:#06x}{gate} ===")
     for m in machines:
         ent = entries_for(m)
@@ -836,6 +864,9 @@ def main() -> int:
     p.add_argument("--at", type=lambda x: int(x, 0), required=True, help="anchor address")
     p.add_argument("--nth", type=int, default=1, help="stop at this occurrence")
     p.add_argument("--mem", default=None, help="memory range BASE:LEN (e.g. 0xF100:0x300)")
+    p.add_argument("--machine", choices=("both", "ours", "stock"), default="both",
+                   help="both (default, diff+alignment guard) or one side (one-sided black-box "
+                        "regs/mem dump — for contract pinning when the other side diverges first)")
     p.add_argument("--expect", choices=("same", "diff"), help="assert reg-diff outcome (PASS/FAIL)")
 
     t = sub.add_parser("trace", help="forward instruction trace from an anchor; report first PC fork")
@@ -884,8 +915,11 @@ def main() -> int:
     r.add_argument("--arm-check-val", type=lambda x: int(x, 0), default=0x05)
     r.add_argument("--arm-cond", default=None, help="raw Tcl arm predicate")
     r.add_argument("--range", required=True, help="DATA range BASE:LEN (<=64 B; NEVER a code region)")
+    r.add_argument("--in-func", type=lambda x: int(x, 0), default=9, dest="in_func",
+                   help="BDOS function code (C) to gate on while in flight (default 9=STROUT; "
+                        "e.g. 0x0E=SELDSK for M17)")
     r.add_argument("--gate-func9", action="store_true", default=True,
-                   help="only record reads while a func-9 (C=09) BDOS call is in flight (default on)")
+                   help="only record reads while the --in-func BDOS call is in flight (default on)")
     r.add_argument("--no-gate", dest="gate_func9", action="store_false",
                    help="record all reads regardless of func-9 gating")
     r.add_argument("--maxhits", type=int, default=400)
@@ -900,6 +934,9 @@ def main() -> int:
     c.add_argument("--arm-cond", default=None, help="raw Tcl arm predicate")
     c.add_argument("--range", default="0x4000:0x7FFF",
                    help="page-1 code range LO:HI (default our whole disk-ROM page 1)")
+    c.add_argument("--in-func", type=lambda x: int(x, 0), default=9, dest="in_func",
+                   help="BDOS function code (C) to gate on while in flight (default 9=STROUT; "
+                        "e.g. 0x0E=SELDSK for M17)")
     c.add_argument("--gate-func9", action="store_true", default=True)
     c.add_argument("--no-gate", dest="gate_func9", action="store_false")
     c.add_argument("--maxhits", type=int, default=400)

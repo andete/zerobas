@@ -508,6 +508,15 @@ bdt_tramp:
                                                     ; but +13 is NOT the IX source, §8.30)
                 ld      a, $AA
                 ld      (DRVTBL + 15), a            ; +15 sentinel (stock = $AA)
+                ; --- DRVTBL-1 ($F347): logical-drive count (M17 §2.2) --------------
+                ; The kernel's SELDSK-time entry $50D5 reads this cell into A (M17
+                ; readwatch causal pin). MSX-DOS-1's single-physical-drive model
+                ; exposes TWO logical drives A:/B: ([[dual-drive-decision]]), so the
+                ; clean-room count is $02 (stock's $F347 = $02). Was $FF (unbuilt) on
+                ; ours -> $50D5 returned garbage. Clean-room: published convention, not
+                ; a stock byte.
+                ld      a, $02
+                ld      (DRVCNT), a                 ; DRVCNT = DRVTBL-1 = $F347
                 ; fall through to install the resident work-area routines (§8.28)
 ; build_resident — install the disk system's resident RAM ROUTINES the kernel CALLs
 ; from fixed work-area addresses (a3 §8.28). After $50A9 the kernel CALLs $F1C9, a
@@ -584,6 +593,7 @@ RES_STUBS       equ     $F24E   ; no-op segment-hook stub table base (§8.29)
 RES_STUBS_END   equ     $F2B8   ; one past the last stub ($F2B7); $F2B8+ = kernel data (§8.61)
 DRVA_DPB        equ     $F195   ; drive-A DPB base (id byte + 18-byte DPB, §8.30)
 DRVTBL          equ     $F348   ; MSX-DOS-1 disk-driver table (§8.22)
+DRVCNT          equ     $F347   ; DRVTBL-1: logical-drive count ($02); read by $50D5 (M17)
 RES_PRINT       equ     $F1C9   ; resident $-string print routine the kernel CALLs (§8.28)
 F365_STUB       equ     $F365   ; fixed disk-work-area slot-read stub (IN A,($A8);RET; M15 §7.1)
 DRV_NTRAMP      equ     4       ; number of CALLF trampolines
