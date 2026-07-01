@@ -10,30 +10,24 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-06-30 (M12 UNIFY — the M11 "two-bug" model (Bug A func-9 output + Bug B BUFIN)
-COLLAPSES into ONE root cause: **the kernel's `$544E` CONIN entry has no veneer on ours — it is `$00`
-padding that falls through into `$5454` (`jp conout_body`, CONOUT).** So a console-INPUT request is
-serviced by the console-OUTPUT veneer: it emits one garbage char (E = stale pointer-low) and RETURNS
-immediately, never calling CHGET, never blocking. COMMAND.COM's prompt loop then spins forever, and the
-`D8 19 3E 40 0A` garbage IS conout_body mis-invoked by that spin. DECISIVE PROOF: **CHGET (`$009F`) is
-called 1× on stock (it blocks there), 0× on ours.** "func-9 emits zero chars / `$F398` vector unset"
-is REFUTED (regs+sysvars byte-identical at func-9 entry; func-9 output works). A-2/int_h is NOT the
-blocker (A-3/A-5 already chains KEYINT; the `$0038` trace fork re-converges = benign). **SCOPE UPDATE
-(M12):** the fix is NOT a 1-line `$544E` veneer — the kernel delegates the WHOLE BDOS func-`$0A` line
-read to a disk-ROM console routine (entered ~`$50E0`, black-box PC trace), and **our `build/disk.rom` is
-`$00` across `$50B7–$5453`** (our artifact) → ours NOP-slides into the `$5454` CONOUT veneer. ABIs
-(clean sources): CONOUT→E (M10, black-box); CONIN→A (published CHGET `$009F` contract). **M12b PROVENANCE
-CORRECTION:** the first ABI-pin draft read+decoded stock CF-3300 ROM *code* bytes = disassembly-class (✗);
-quarantined & re-grounded on clean sources (conclusions unchanged); logged in
-[clean-room-audit.md](../../docs/clean-room-audit.md). NEXT = sign-off on
-[tier2-conin-spec.md](tier2-conin-spec.md) v2 Option A (clean-room buffered-line veneer from the documented
-func-`$0A` contract). **UPDATE 2026-06-30: (1) the gated provenance audit RAN and PASSED ✅ (CLEAN, zero
-working-tree breaks — run log at `e2a5d5d`). (2) M12c→M12d: hardened the harness (trace clean-room disasm
-guard + key injection, commit `49a5a29`) and PINNED the CONIN ABIs black-box — entry CALL target `$50E0`,
-`DE`=func-`$0A` buffer base, bare-CHGET-per-char; spec now v3, ABI-complete. CONIN Option A is unblocked
-and fully specified; ONLY the user's go-ahead to write the veneer is pending.**)_
-
----
+_Last updated: 2026-07-01 (M13 — CONIN Option A IMPLEMENTED, user go-ahead. The M12 root
+cause — CONIN falling through into CONOUT, the infinite `D8 19 3E 40 0A` garbage spin — is FIXED.
+A `jp conin_line_body` veneer now sits at the pinned CALL target `$50E0` ([kernel.asm](../kernel.asm)),
+consuming our own `$00` dead region (net-zero, `disk.rom` still 16384 B); `conin_line_body`
+([runtime.asm](../runtime.asm)) is a clean-room reimplementation of the published BDOS func-`$0A`
+buffered-line read: per-char inter-slot CHGET (`$009F`) via the existing `pg0_mainrom_in/out` bridge,
+CR ends the line, BS edits back one char, else echo via the reused `conout_body` + store; result lives
+in the buffer (`[DE+1]`=count), matching the pinned no-return-register contract. `make unit-test` 19/19.
+**VALIDATED:** `callseq --log 0x009F` now matches stock call-for-call (1 call idle; 10 calls with a
+9-char+CR keystroke injection, was stock-1/ours-0 before); `screen --machine both --settle 16` shows
+ours holds a STABLE frame (blocked at CHGET) instead of scrolling forever. **NEW OPEN ITEM (M14, not
+started):** even with an injected keystroke driving CHGET through the date prompt, ours never renders
+`COMMAND version 1.08` / `Current date is ...` / `Enter new date: ` as separate lines — and this is
+reproducible in the NO-KEYS baseline too (i.e. BEFORE any CONIN call fires), so it predates and is
+independent of the M13 fix; the old infinite spin previously masked it since ours never held a stable
+frame to inspect. M14 starts fresh on this new symptom (COMMAND.COM banner/prompt rendering — a CONOUT/
+newline/scroll question, not CONIN). Full M12 root-cause narrative retained below for context/citation.
+Logged: [tier2-review-queue.md](tier2-review-queue.md) M13.)_
 
 ## Goal
 Boot MSX-DOS to the `A>` prompt under zerobas-disk (Tier-2) **without regressing
@@ -41,117 +35,75 @@ Tier-1** (disk-BASIC / BLOAD / FILES) and while staying a **BIOS-agnostic replac
 disk ROM** (works on CF-3300, C-BIOS, any standards MSX1). "Reached `A>`" means a
 **visible** `A>` on screen + accepts a command — not just the right BDOS call sequence.
 
-## Live thesis (2026-06-30 M12: ONE root cause — the `$544E` CONIN veneer is missing, falls into CONOUT)
-**The relocated kernel has two adjacent console entries: `$5454` CONOUT (output) and `$544E` CONIN
-(input), 6 bytes apart in the shared ASCII-kernel block.** We veneered `$5454` (`jp conout_body` →
-inter-slot CHPUT `$00A2`; M8/M10) but **NEVER implemented `$544E`** — it is `$00` (NOP) padding from
-`ds $5454 - $, $00`. So COMMAND.COM's BUFIN (`CALL $544E` to read a console line) executes 6 NOPs and
-**falls through into `$5454` = CONOUT**: it emits one garbage char (`ld a,e`, E = stale buffer-pointer
-low byte) and RETURNS immediately — never CHGET, never blocks. COMMAND.COM's prompt loop then spins
-forever; the `D8 19 3E 40 0A` screen garbage IS `conout_body` mis-invoked by that spin. ONE fault, both
-old "bugs": the spin (old Bug B) AND the garbage output (old Bug A) are the same CONIN→CONOUT
-fall-through. **Fix = add a `$544E` CONIN veneer (parallel to CONOUT): `pg0_mainrom_in → call $009F
-CHGET → pg0_mainrom_out`.** Spec drafted: [tier2-conin-spec.md](tier2-conin-spec.md), awaiting sign-off.
-
-### What this session PROVED (2026-06-30 M12, all on test.dsk, direct ground-truth — `disk_probe_diff.py`)
-- **CHGET (`$009F`) called 1× on stock, 0× on ours** (`callseq --log 0x009F`). THE decisive proof:
-  ours' BUFIN never reaches console input → returns instead of blocking. (Old "Bug B," now root-caused.)
-- **`$544E` has no veneer:** `grep -i '544E\|conin\|CHGET\|009F' disk/*.asm` → nothing; `kernel.asm:50`
-  `ds $5454 - $, $00` makes `$544E–$5453` NOP padding before `conout` at `$5454`.
-- **func-9 entry is byte-identical ours==stock** (`capture --at 0xC238 --mem 0xF390:0x10`): all regs +
-  the `$F390:0x10` sysvar block (incl. `$F398`) match. → REFUTES "func-9 `$F398` CONOUT vector unset."
-- **func-9 chars DO reach CHPUT on ours** (wide-window `trace --resync`): the print loop runs
-  `$F36B→read→$F368→…→$00A2`; the ret=$7934-vs-$F392 difference RE-CONVERGES = benign relocation, not a
-  broken route. (Old "Bug A — func-9 emits zero chars" is REFUTED.)
-- **The garbage = E = DE-low from a SPIN, not a string walk** (`callseq --log 0x00A2`): ours cycles
-  `D8 19 3E 40 0A` = low bytes of DE `D3D8/D319/D33E/DA40/D30A` re-read in a loop; conout_body has a
-  SINGLE caller (ret=$D88A) with char-in-E ABI — func-2 (date "Sun 84-01-01") renders correctly via it
-  (entry log n=1–12), THEN ours derails into the spin.
-- **A-2/int_h is NOT the blocker:** the `$0038` trace fork (stock `$0C3C` / ours `$DDAE`) RE-CONVERGES =
-  benign; A-3/A-5 (`int_h_hiram_tmpl`, runtime.asm:160) already inter-slot-chains the main-BIOS KEYINT,
-  so the keyboard scan runs. (Means injected keys WILL be received once CONIN reaches CHGET.)
-- **STOCK screen (settle 16):** full boot blocked at `Enter new date: .`. **OURS:** `D8 3E 40` scrolling
-  diagonally forever (the spin). Arbiter = `screen --machine both`.
-- **BDOS ($0005) seq IDENTICAL n=1–18** then n=18 BUFIN diverges (stock blocks, ours spins) — consistent
-  with the CONIN fall-through (COMMAND.COM/BDOS interface is innocent; only the kernel CONIN veneer).
+## Live thesis (M14, OPEN — not yet investigated)
+**Symptom:** ours never shows `COMMAND version 1.08` / `Current date is Sun 84-01-01` /
+`Enter new date: ` as distinct lines the way stock does — `screen --machine ours --settle 16`
+(no keys) instead shows the BASIC power-on banner (`MSX system version 1.0` / `Copyright 1983`)
+still on screen, then a compressed `Sun 84-01-01` with no visible prompt label, several rows
+lower than stock's layout. This is BEFORE any console-input call (CONIN untouched at this
+point), so it is a CONOUT/newline/scroll-region question, not a CONIN regression from M13.
+**Not yet characterised** — no probes run on this specific symptom yet; start falsify-first
+(§ Method guardrails) rather than assuming a cause. Candidate angles (unconfirmed): a missing
+screen-clear before MSXDOS.SYS sign-on, a CR/LF handling gap in `conout_body`'s caller chain,
+or COMMAND.COM printing to a stale cursor position left by the BASIC boot banner.
 
 ## Settled facts — DO NOT re-litigate or re-probe
 - COMMAND.COM **loads AND reaches $0100** (handoff works); `$47B2` return contract done; `$0005`=`JP
   $D606` identical; `$F338`=0 DOS-handoff fix; GDATE @ `$553C` returns 1984-01-01 default; date path is
   byte-identical at BDOS level (n=1–18, no poke). (All prior COMMAND.COM-load / FOPEN-subset / date
   facts hold.)
-- **M10 (still true, but PARTIAL):** `conout_body` ($7922) takes the char from **E** (the `$5454`
-  contract), not A. The sign-on renders real ASCII because of this. DO NOT revert to reading A.
+- **M10 (still true):** `conout_body` ($5454 veneer) takes the char from **E** (the `$5454` contract),
+  not A. The sign-on renders real ASCII because of this. DO NOT revert to reading A.
+- **M13 (new, 2026-07-01): CONIN is implemented and working at the BDOS/CHGET level.** The `$50E0`
+  veneer (`conin_line_body`) reaches CHGET once per char, matches stock's call count exactly (idle:
+  1 call; with keys: N-chars+1), and the old infinite garbage spin is GONE — ours now holds a STABLE
+  screen frame while blocked at CHGET, same as stock. Keystrokes echo correctly (reuses `conout_body`).
+  DO NOT re-implement or second-guess this veneer without a concrete new probe result — the CHGET-count
+  and no-spin evidence is decisive.
 - **The sign-on (n=1–53) renders byte-correct on ours** (both reach CHPUT with identical chars).
 - **STOCK's real boot = sign-on → `COMMAND version 1.08` → `Current date is Sun 84-01-01` →
-  `Enter new date:` → blocks at BUFIN.** (Confirmed by screen; reconciles the old STATE date-prompt
-  claim WITH the CHPUT "COMMAND v" — COMMAND.COM prints BOTH, banner first.)
+  `Enter new date:` → blocks at BUFIN, now matched by ours at the CHGET level (M13).**
 
 ## Dead ends / refuted — do NOT re-walk
-- **"There are TWO independent console-I/O bugs (func-9 output + BUFIN block)"** — REFUTED 2026-06-30
-  M12. ONE root cause (the missing `$544E` CONIN veneer falling into `$5454` CONOUT) explains both.
+- **"There are TWO independent console-I/O bugs (func-9 output + BUFIN block)"** — REFUTED M12.
+  ONE root cause (the missing CONIN line routine at `$50E0`, falling into `$5454` CONOUT) explained
+  both; M13 fixed it.
 - **"func-9 STROUT emits ZERO chars / its `$F398` CONOUT vector is unset on ours"** — REFUTED M12.
-  func-9 entry regs + `$F390` sysvars are byte-identical; func-9 chars DO reach CHPUT (the ret=$7934-vs-
-  $F392 difference re-converges = benign). func-9 OUTPUT works; the apparent "missing banner" is the
-  spin scrolling it off-screen.
-- **"The `Ø>@` spam is a benign idle artifact / date-prompt cosmetics"** — REFUTED M11 (still true):
-  it is the infinite prompt SPIN; root-caused in M12 to the CONIN fall-through.
+- **"The `Ø>@`/`D8 19 3E 40 0A` spam is a benign idle artifact / date-prompt cosmetics"** — REFUTED M11;
+  root-caused M12 (CONIN→CONOUT fall-through); FIXED M13 (spin no longer occurs).
 - **"conout_body should read the char from A"** — WRONG (that WAS the M10 bug). CONOUT contract is E.
-  (CONIN's return-register contract is OPEN — pin it before coding; don't assume, per the M10 lesson.)
-- **"func-9 STROUT garbage is a page-0-swap clobbering the string read"** — REFUTED M11.1 (DE ptrs
-  identical). The garbage is conout_body emitting E (stale ptr-low) when mis-invoked by CONIN.
+- **"func-9 STROUT garbage is a page-0-swap clobbering the string read"** — REFUTED M11.1.
+- **"A-2/int_h (keyboard interrupt service) is the CONIN blocker"** — REFUTED M12/M13: A-3/A-5 already
+  chains KEYINT correctly; M13's keystroke-injection probes prove keys ARE received during CHGET.
 - (Retained) older date-path dead ends: SDATE-is-next-blocker, FOPEN-return-value, register-only $0005
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — paper-trail audit PASSED ✅; CONIN Option A is now unblocked (HELD for user go-ahead)
-**GATE CLEARED (2026-06-30):** the user-gated provenance audit of the M12 span ran and returned
-**✅ CLEAN — zero working-tree breaks** (logged in [clean-room-audit.md](../../docs/clean-room-audit.md)
-run log, at `e2a5d5d`). Confirmed: (a) no surviving finding rests on reference-ROM bytes — each grounds
-on CHGET `$009F` / BDOS func-`$0A` / M10 black-box CONOUT / our-own-`$00`-range; (b) `disk_probe_diff.py`
-is black-box across all five modes; (c) the `6482036` remediation scrubbed every decoded-body restatement
-(verified by `git show` + tree-wide `git grep`). The breach text persists only in git HISTORY (`971fc78`)
-→ flagged for the public-release history squash. **Out-of-scope note for a future sweep:**
-`provider-oracle-scope.md:1781` names individual *real*-ROM byte values (ours-vs-real) — pre-existing, not
-M12, worth a separate provenance look before public release.
-1. **Paper-trail audit — DONE ✅ (this was the blocker; now cleared).**
-1b. **Harness hardening + ABI pinning (M12c→M12d) — DONE ✅.** M12c hit a tool clean-room hazard (the
-   `trace` mode decoded STOCK disk-ROM mnemonics = reference disassembly; quarantined on sight). User chose
-   "harden trace + add key injection." Built & validated (commit `49a5a29`; no ROM change, tests 19/19):
-   (a) **clean-room disasm guard** — `ctx` decodes only when `DISOK && PC>=0x4000`; `OmsxRun` auto-off for
-   the STOCK machine (suppresses reference ROM + main-BIOS + COMMAND.COM; keeps our artifact). (b) **key
-   injection** — `--keys/--keys-at` (openMSX `type`) on every mode; on stock, `12-25-99` echoes at the
-   prompt and `\r` reaches a visible `A>`. Then **M12d pinned the ABIs** (guarded `callseq`, regs+counts+RAM
-   only): entry = CALL target **`$50E0`**, **`DE`=func-`$0A` buffer base** (PIN A, byte-identical
-   ours==stock); **bare CHGET per char** (PIN B, 7× with keys; `HL` walks `$DA42+`, buffer = published
-   func-`$0A` layout); **no return register** (result is the buffer). All spec open questions resolved →
-   [tier2-conin-spec.md](tier2-conin-spec.md) **v3** ("Resolved answers"). Logged: [tier2-review-queue.md](tier2-review-queue.md) M12d.
-2. **NEXT → implement CONIN Option A** — spec is ABI-complete + provenance-clean; only the user's go-ahead
-   is pending (standing CONIN hold + [[spec-before-implementation]]). Place `jp conin_line_body` at `$50E0`
-   (our `$00` dead region, net-zero); free-tail body: on entry `DE`→buffer / `[DE]`=max, loop {inter-slot
-   CHGET `$009F`→A; CR→set `buf[1]`=count, ret; BS→edit; else CHPUT `$00A2` echo + store}. See
-   [tier2-conin-spec.md](tier2-conin-spec.md) v2. Ground ONLY on clean sources: published CHGET `$009F`
-   (char in A) + CHPUT `$00A2` + BDOS func-`$0A` buffer layout; pin the `~$50E0` entry address + register
-   contract BLACK-BOX (call-target trace + published func-`$0A` DE=buffer), never by reading the body.
-   Shape: `jp conin_line_body` at the entry → free-tail body running the documented buffered-line loop
-   (CHGET per char / CR-done / BS-edit / CHPUT-echo / fill `DE` buf, set `buf[1]=count`) via the existing
-   `pg0_mainrom_in/out` inter-slot bridge.
-3. **Validate:** `callseq --log 0x009F` → ours now 1 call (was 0); `screen --machine ours --settle 16`
-   → matches stock (`Enter new date:`, no garbage); `make unit-test` 19/19; `disk.rom` == 16384 B.
-4. **Then inject a keystroke** past BUFIN to drive a visible `A>` (GOAL's final step). A-3/A-5 keyboard
-   interrupt service is already live, so injected keys should land.
+## Next action — M14: characterise the missing COMMAND.COM banner/prompt lines
+**M13 (CONIN) is DONE and validated — do not re-open without new evidence.** The next blocker to
+`A>` is a NEW symptom, not yet probed:
+1. **Falsify first (§ Method guardrails).** Cheapest disproving experiment: `screen --machine ours
+   --settle N` at increasing settle values from N=2 upward, to see WHEN the banner text appears/
+   disappears — is it ever rendered correctly and then overwritten/scrolled, or never rendered at all?
+2. **Anchor + align:** use `callseq`/`capture` anchored on the CONOUT calls (`$5454`/`conout_body`)
+   around the `COMMAND version` / `Current date is` / `Enter new date:` strings specifically — confirm
+   ours reaches those CHPUT calls with the SAME chars as stock (like the M10/M12 sign-on check), rather
+   than assuming the veneer is broken.
+3. **Right tool:** `screen` is the arbiter (per the guardrails — it caught what byte-identical BDOS
+   trace hid before). Don't build a new probe script; extend `disk_probe_diff.py` if a new mode is
+   needed.
+4. Once characterised, THEN drive to the visible `A>` goal (inject a full command + Enter once the
+   prompt itself renders correctly).
 
 **One-command repros for the next session (test.dsk):**
-- THE proof: `python3 probes/disk/disk_probe_diff.py callseq --at 0x0100 --log 0x009F --maxhits 12
-  --diska ~/Documents/msx/msx/disks/test.dsk` → STOCK 1 CHGET call (blocks), OURS 0. After the fix, ours
-  should reach 1.
-- The blocker visually: `… screen --machine both --settle 16 …` → STOCK = COMMAND+date prompt; OURS =
-  `D8 3E 40` spin. Where CONIN should be: `… trace --at 0x0100 --anchor 0x0005 --nth 18 --resync
-  --window 3000 --steps 9000 …` → stock branches into the disk-ROM console routine (~`$50E0`/`$544E`
-  call-targets); ours NOP-slides past (our ROM is `$00` there). (Observe call-targets/PCs only — NOT the
-  stock body bytes; see [[no-reference-rom-disasm]].)
-- Source of the fault: `grep -i '544E\|conin\|CHGET\|009F' disk/*.asm` → nothing; `kernel.asm:50`
-  `ds $5454 - $, $00` leaves `$544E` as NOP padding into `conout` at `$5454`.
+- M13 regression check (should still pass): `python3 probes/disk/disk_probe_diff.py callseq --at 0x0100
+  --log 0x009F --maxhits 12 --diska ~/Documents/msx/msx/disks/test.dsk` → both sides 1 call.
+- M14 starting point: `python3 probes/disk/disk_probe_diff.py screen --machine both --settle 16
+  --diska ~/Documents/msx/msx/disks/test.dsk` → compare stock's clean `Enter new date: .` against
+  ours' compressed/offset banner (no keys needed to see the symptom).
+- With keystrokes: `python3 probes/disk/disk_probe_diff.py screen --machine ours --settle 25 --keys
+  $'12-25-99\r' --keys-at 8 --diska ~/Documents/msx/msx/disks/test.dsk` → date echoes inline but no
+  `A>` yet.
 
 ## Method guardrails (DURABLE — keep these when you overwrite this file)
 Endorsed 2026-06-27 after a retrospective found ~half the Tier-2 reframes came from
@@ -171,13 +123,14 @@ premature/misaligned conclusions, not hard bugs. See [[harness-first-investigati
 ## Tooling — use the ONE harness, don't write a 58th probe
 **`probes/disk/disk_probe_diff.py`** (on `omsx_session.py`) — the parameterized differential probe.
 Modes: `callseq` (call-seq divergence + `--poke/--poke-reg`; prints the longer side's TAIL when one
-blocks; logs `A`/`DE`/`B`/`ret`), `capture` (alignment-guarded regs+mem diff at the Nth occurrence),
-`trace` (per-instruction PC fork + `--resync` + `--window`; `--regdump REG` = aligned-PC register
-divergence walk), **`screen`** (renders the VDP text screen from VRAM — the arbiter that caught both
-the M10 `$80` bug and the M11 garbage loop; `--machine ours|stock|both`), and **`iowrite`** (VDP port
-byte-stream). **Extend this, don't fork a script.** It copies the DOS disk to tmp (mutation-safe) and
-bakes in the alignment guard. The 57 legacy `disk_probe_dosboot_*.py` were pruned 2026-06-30 (in git
-history if needed for provenance).
+blocks; logs `A`/`DE`/`B`/`ret`; `--keys/--keys-at` inject emulated keystrokes), `capture` (alignment-
+guarded regs+mem diff at the Nth occurrence), `trace` (per-instruction PC fork + `--resync` + `--window`;
+`--regdump REG` = aligned-PC register divergence walk; clean-room disasm guard: decodes only our own
+code, PC>=0x4000, and auto-suppresses on the STOCK machine), **`screen`** (renders the VDP text screen
+from VRAM — the arbiter that caught the M10 `$80` bug, the M11 garbage loop, and the M13 no-spin
+confirmation; `--machine ours|stock|both`), and **`iowrite`** (VDP port byte-stream). **Extend this,
+don't fork a script.** It copies the DOS disk to tmp (mutation-safe) and bakes in the alignment guard.
+The 57 legacy `disk_probe_dosboot_*.py` were pruned 2026-06-30 (in git history if needed for provenance).
 
 ## Invariants for any change
 - Tier-1 green: `make unit-test` 19/19; DSKIO/BLOAD/FILES == CF-3300.

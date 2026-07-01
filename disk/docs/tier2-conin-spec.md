@@ -5,14 +5,16 @@ SPDX-License-Identifier: 0BSD
 
 # Tier-2 milestone — the missing shared-kernel console-input subsystem (DOS-boot blocker)
 
-**Status: SPEC v3 — ABIs fully pinned (M12d), provenance audit PASSED, awaiting sign-off
-to implement. No asm until greenlit** (per [[spec-before-implementation]]). Derived from a
-falsify-first differential probe span (2026-06-30, M12) and completed by the M12d black-box
-ABI-pin (§3 "Resolved answers"). v1 thought this was a single `$544E` veneer; pinning revealed
-the fix is a clean-room reimplementation of the **console line-routine at `$50E0`** (our
-`$50B7–$5453` is `$00`). **All blockers cleared:** the M12-span provenance audit is CLEAN
-(clean-room-audit run log, `e2a5d5d`); the ABIs are pinned black-box with the guarded harness;
-the only remaining gate is the user's go-ahead to write the veneer.
+**Status: IMPLEMENTED (M13, 2026-07-01, user go-ahead).** Option A landed: `kernel.asm` places
+`jp conin_line_body` at the pinned CALL target `$50E0`; `runtime.asm`'s `conin_line_body`
+reimplements the func-`$0A` buffered-line read (CHGET per char, CR/BS handling, echo via the
+reused `conout_body`). Validated: `make unit-test` 19/19; `disk.rom` == 16384 B; `callseq --log
+0x009F` matches stock call-for-call (idle and with injected keystrokes); the M12 infinite garbage
+spin is GONE, ours holds a stable screen frame blocked at CHGET like stock. See
+[tier2-STATE.md](tier2-STATE.md) M13 and [tier2-review-queue.md](tier2-review-queue.md) M13 for
+the full result and the newly-found M14 follow-on (COMMAND.COM banner/prompt rendering, unrelated
+to CONIN). The design content below (§0-§3) is kept as the historical spec the implementation
+followed.
 
 ## 0. ABIs (M12) — grounded on ALLOWED sources only
 > **Provenance note (M12b correction):** an earlier draft pinned these by reading +

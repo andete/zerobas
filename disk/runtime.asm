@@ -108,6 +108,72 @@ conout_body:
                 ld      a, (CONOUT_CHAR)    ; return A = the emitted char
                 ret
 
+; --- conin_line_body - the $50E0 CONIN line routine (M13; tier2-conin-spec.md v3) ---
+; Reimplements the documented BDOS func-$0A buffered-line read, clean-room, from the
+; published CHGET ($009F) contract + the CONOUT veneer (echo) + the func-$0A buffer
+; layout ([DE+0]=max/[DE+1]=count/[DE+2..]=chars). Reached from the $50E0 veneer
+; (jp conin_line_body). NO return register (per the M12d pin) -- the result lives in
+; the buffer. One CHGET per char (PIN B: 7 calls for a 6-char + CR line): CR ends the
+; line, BS backs up one char (buffer edit only), else echo via conout_body and store.
+; CLEAN-ROOM: CHGET/CHPUT/func-$0A buffer are the published/cross-vendor BDOS ABI; the
+; stock $50E0 routine's internals were never read (only its entry regs, black-box).
+;   in:  DE = buffer base ; out: buffer filled (func-$0A layout); BC/DE/HL preserved
+conin_line_body:
+                push    bc
+                push    hl
+                ld      (CONIN_BUF), de     ; stash buffer base (pg0_mainrom_* clobbers D/E)
+                ld      a, (de)
+                ld      (CONIN_MAX), a      ; max length = buf[0]
+                xor     a
+                ld      (CONIN_COUNT), a    ; running fill count starts at 0
+cinl_getchar:
+                di                          ; no interrupt while the BIOS is half-mapped
+                call    pg0_mainrom_in
+                call    $009F               ; CHGET - wait for + return a char in A
+                ld      b, a                ; B = the char (pg0_mainrom_out clobbers A)
+                call    pg0_mainrom_out     ; restore page 0
+                ei
+                ld      a, b                ; A = the char read
+                cp      $0D                 ; CR -> line done
+                jr      z, cinl_done
+                cp      $08                 ; BS -> edit back one char
+                jr      nz, cinl_store
+                ld      hl, CONIN_COUNT
+                ld      a, (hl)
+                or      a
+                jr      z, cinl_getchar     ; nothing to erase -> ignore
+                dec     (hl)
+                jr      cinl_getchar        ; (buffer edit only; no un-echo)
+cinl_store:
+                ld      c, a                ; C = the char to store/echo
+                ld      a, (CONIN_COUNT)
+                ld      b, a                ; B = current fill count
+                ld      a, (CONIN_MAX)
+                cp      b
+                jr      z, cinl_getchar     ; buffer full -> drop the char (no room)
+                ld      de, (CONIN_BUF)
+                inc     de
+                inc     de                  ; DE -> buf[2 + count]
+                ld      a, b
+                ld      l, a
+                ld      h, 0
+                add     hl, de
+                ld      (hl), c             ; store the char
+                inc     b
+                ld      a, b
+                ld      (CONIN_COUNT), a    ; count++
+                ld      e, c                ; echo via conout_body (E = char, its ABI)
+                call    conout_body
+                jr      cinl_getchar
+cinl_done:
+                ld      de, (CONIN_BUF)
+                inc     de                  ; DE -> buf[1] = count
+                ld      a, (CONIN_COUNT)
+                ld      (de), a
+                pop     hl
+                pop     bc
+                ret
+
 ; --- int_h_body - the OLD page-1 $0038 handler (A-2/A-2b) — SUPERSEDED by A-3 -------
 ; DEAD as of A-3: $0038 no longer points here (it points at INT_H_HIRAM). Kept in place
 ; (net-zero, no address shift) pending removal; the live handler is int_h_hiram_tmpl

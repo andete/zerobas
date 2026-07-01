@@ -27,6 +27,23 @@
                 ld      hl, W50A9_RET_HL ; HL = $F359
                 ret                     ; AF=$0042, BC/IY untouched
 
+; --- MSX-DOS-1 kernel CONIN line-read entry: $50E0 (M12d pin; tier2-conin-spec.md v3) --
+; BUFIN (BDOS func $0A) has the relocated kernel CALL a disk-ROM console-line routine;
+; the M12d black-box pin (guarded callseq, no stock bytes decoded) fixed the entry as the
+; CALL target $50E0 (regs byte-identical ours==stock at first entry: DE=$DA40 HL=$C924
+; ret=$D88A) and the register convention as DE -> buffer, [DE]=max length (the published
+; BDOS func-$0A layout: [+0]=max/[+1]=count/[+2..]=chars; confirmed by a second pin
+; walking HL/D/E across 7 CHGET calls with an injected keystroke). No return register --
+; the result lives in the buffer (func-$0A contract). Our `$50B7-$5453` region is our own
+; $00 padding (active code ends at the $50A9 routine above), so before this veneer BUFIN
+; NOP-slid straight into the $5454 CONOUT veneer below (one garbage char, no block) --
+; the M12 root cause. Body = conin_line_body (free tail): reimplements the func-$0A
+; buffered-line read from the published CHGET ($009F) / CHPUT ($00A2) / func-$0A buffer
+; ABI, clean-room -- the stock routine's internals were never read (spec §3 Option A).
+                ds      $50E0 - $, $00  ; pad up to the pinned CONIN line-routine entry
+conin:
+                jp      conin_line_body ; -> free-tail buffered-line CHGET loop (M13)
+
 ; --- MSX-DOS-1 kernel CONOUT entry: $5454 ($4000 + $1454; a3 §8.38) ---------
 ; The relocated kernel CALLs $5454 to emit its sign-on banner one character at a
 ; time (the boot's first divergence point, disk_probe_dosboot_pctrace.py). It is

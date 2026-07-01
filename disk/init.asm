@@ -196,6 +196,13 @@ PG_SV_A8        equ     CONOUT_CHAR + 1                              ; shared: s
 ; ld (nn),sp / ld sp,(nn) save-restore is own-design, no oracle bytes (clean-room).
 INT_STK_TOP     equ     PG_SV_A8 + 1 + 48                           ; SP top; 48-byte stack grows down
 INT_SP_SAVE     equ     INT_STK_TOP                                 ; caller SP saved above the stack top (word)
+; M13 (tier2-conin-spec.md v3): conin_line_body scratch, right after INT_SP_SAVE (word) --
+; dead during the DOS phase like the other inter-slot scratch above; clear of DRV_TRAMP
+; ($E800). CONIN_BUF stashes the caller's DE (buffer base) across pg0_mainrom_in/out,
+; which clobber D/E; CONIN_MAX/CONIN_COUNT track the func-$0A buffer fill state.
+CONIN_BUF       equ     INT_SP_SAVE + 2                             ; CONIN: buffer base (word)
+CONIN_MAX       equ     CONIN_BUF + 2                                ; CONIN: max length ([DE+0])
+CONIN_COUNT     equ     CONIN_MAX + 1                                ; CONIN: running fill count
 ; A-3 (tier2-a3-spec.md): the maskable-interrupt handler must live in ALWAYS-MAPPED
 ; memory. $0038 fires AFTER COMMAND.COM reclaims page 1 as RAM (wa_seg_ram), so a
 ; page-1 handler ($4251/int_h_body) is unmapped exactly when it is needed and the boot

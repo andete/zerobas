@@ -129,6 +129,38 @@ on scope + the breach assessment. · **undo:** docs only; ROM at committed basel
 2026-06-30):** run a **wider paper-trail audit of the M12 span FIRST**, deferred to next session; CONIN
 Option A implementation is GATED behind that audit passing. Next-action board updated accordingly.
 
+**[M13 — CONIN Option A implemented (user go-ahead 2026-07-01). Tier-1 green, garbage spin GONE.]**
+· **what I did:** implemented `tier2-conin-spec.md` v3 Option A: a `jp conin_line_body` veneer at the
+pinned CALL target `$50E0` ([kernel.asm](kernel.asm)), consuming our own `$00` dead region (net-zero,
+`disk.rom` still 16384 B); the body (`conin_line_body`, [runtime.asm](../runtime.asm)) reimplements the
+published BDOS func-`$0A` buffered-line read clean-room: per-char inter-slot CHGET (`$009F`) via the
+existing `pg0_mainrom_in/out` bridge, CR ends the line, BS edits back one char, else echo via
+`conout_body` (reused, not duplicated) + store; result lives in the buffer (`[DE+1]`=count) per the
+pinned no-return-register contract. Added 4 bytes of page-3 scratch (`CONIN_BUF/MAX/COUNT`) in
+[init.asm](../init.asm) after `INT_SP_SAVE`, clear of `DRV_TRAMP`. · **validated:** `make unit-test`
+19/19; `disk.rom` == 16384 B; `callseq --log 0x009F` (no keys) → **1 call both sides** (was stock-1/ours-0
+before this fix); `screen --machine both --settle 16` → **ours' infinite `D8 3E 40` spin is GONE** (static
+screen, blocked at CHGET, matching the expected "block" behavior); with `--keys '12-25-99\r'` → **10 CHGET
+calls both sides** (9 chars + CR, exact match), keystrokes echo correctly on ours via the CONOUT reuse.
+· **new finding (NOT part of this milestone, logged for next sync):** even with keys injected, ours does
+NOT reach a visible `A>` — after the typed date+CR, the screen just holds (no further output). Screen
+inspection shows ours never rendered the `COMMAND version 1.08` / `Current date is Sun 84-01-01` /
+`Enter new date: ` labels as separate lines at all — even in the NO-KEYS baseline (settle 16, before any
+CHGET fires) ours shows a compressed `Sun 84-01-01` with the extra BASIC power-on banner (`MSX system
+version 1.0` / `Copyright 1983`) still on screen above it, rows offset from stock. Since this renders
+BEFORE any console-input call, it can't be caused by `conin_line_body`'s echo/edit logic — it's a
+pre-existing CONOUT/newline/scroll gap that the old infinite spin was masking (nothing to compare against
+before, since ours never held a stable frame). Likely the next milestone (M14): investigate why
+COMMAND.COM's banner/prompt lines aren't rendering as stock does, falsify-first, `screen` as arbiter. ·
+**judgment calls:** (1) reused `conout_body` for CONIN's echo (DE/E already the CONOUT ABI; less code,
+same legitimacy) rather than a second CHPUT bridge. (2) buffer-full behavior = silently drop the char (no
+bell/wrap) — undocumented in the func-`$0A` spec, own-design, matches the "smallest correct surface" v3
+called for. (3) no flag-state contract established for the return (PIN said no return REGISTER; flags
+unspecified) — if M14 finds COMMAND.COM cares about a flag on return from `$50E0`, revisit. ·
+**confidence:** HIGH the CONIN fix itself is correct (CHGET counts + no-spin are decisive); the `A>` gap
+is a SEPARATE, not-yet-characterised issue. · **undo:** `git revert` the CONIN commit; ROM stays
+16384 B either way.
+
 ---
 
 ## Archived
