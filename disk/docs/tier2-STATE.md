@@ -10,11 +10,28 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-07-01 (**BDOS untested-func VERIFY SWEEP** — verification-only, no asm changes:
-7 boot-path funcs re-confirmed byte-identical incl. `$2B` SDATE; console tier $01/$06/$07/$08/$0B/$0C
-= UNTESTABLE-HERE (shared-kernel-dispatched, ride the proven CHGET/`$5454`-CHPUT primitives, but the
-boot+`A>` flow never issues them — need a driver `.COM`). Nothing falsified; next = FCB read cluster.
-See "Next action". Prior: 2026-07-03 (**OI-3 LANDED — Tier-2 DOS-boot-to-`A>` goal MET** — Opus span, explicit
+_Last updated: 2026-07-01 (**M19 LANDED — MSX-DOS `DIR` now lists files (was: hung forever)** — Opus
+span, user-signed-off spec [tier2-m19-spec.md](tier2-m19-spec.md); commits `45fd9be` docs, `5225a29`
+impl, docs-update follows). Root cause: kernel dir-search entries `$4FB8` (SFIRST `$11`)/`$5006` (SNEXT
+`$12`) were `$00` NOP-pad → CALL slid into the `$50A9` stub → phantom "entry found" → endless
+SETDTA/SNEXT loop, blank screen. **FIX (net-zero veneers + free-tail bodies):** `$4FB8`→`sfirst_body`,
+`$5006`→`snext_body` walk our own root dir (reuse `fat_mount`/`fat_find` structure), match the search
+FCB's 8.3 name with the `?` wildcard (`name_cmp_wild`; NO attr filter — surface labels/subdirs too, DIR
+filters), copy the found entry to the runtime DTA as the MSX-DOS "found FCB" (drive + name + attr@+13 +
+time/date/clus/size@+23..32, byte-matched to stock in every field DIR reads), persist the scan cursor in
+new cell `BDOS_SRCHIDX` ($E55E); `$5006` resumes from it, returns A=$00 found/$FF exhausted. Also wired
+`$5058`→`setdta_cache_body` (the SETDTA-time entry stock uses to cache the DTA ptr at $F23D — un-wired on
+ours meant the found entry went to a garbage DTA). **RESULT: `screen` renders the file list + `41 files`
++ fresh `A>` BYTE-IDENTICAL to stock; no hang.** Build items pinned black-box first (no stock code
+decoded): DTA source = $F23D (via $5058), exit A=$00/$FF, DIR issues all-`?` FCB. Tier-1 19/19; disk.rom
+16384 B (3-pass obj); 27/27 boot BDOS parity + OI-3 `A>`-screen intact; no storm. **ONE OPEN ITEM (NOT a
+regression, NOT dir-search): the footer `nn bytes free` reads `0` (stock: `375808`).** That is a separate
+free-cluster FAT-scan routine (stock does +3 `$4010` DSKIO reads ours doesn't; reached via a kernel
+dispatch path ours doesn't complete — ours diverges to the `$75A5` stub / a spurious LSTOUT at BDOS n=63)
+that the M19 dir-search design (spec §4-§6) never characterised. **NEEDS ITS OWN SPEC + SIGN-OFF** before
+implementing (do NOT improvise). See "Next action". Prior: 2026-07-01 (**BDOS untested-func VERIFY SWEEP**
+— verification-only: 7 boot-path funcs re-confirmed incl. `$2B` SDATE; console tier UNTESTABLE-HERE).
+Prior: 2026-07-03 (**OI-3 LANDED — Tier-2 DOS-boot-to-`A>` goal MET** — Opus span, explicit
 user sign-off). M13/M15/M16/M17/M18 DONE (git history). **OI-3 (leftover BASIC banner not cleared
 before the DOS sign-on) FIXED.** Root cause: ours' DOS boot handoff had no screen-clear step, so it
 inherited BASIC's power-on banner + cursor (CSRY=`$0F`), printing the sign-on from ROW15 → `A>` at
@@ -125,6 +142,14 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   stock does only a direct name-table fill). STAY-DI is intentional (caller owns IFF). DO NOT re-litigate.
 - **STOCK's real boot = sign-on → `COMMAND version 1.08` → `Current date is Sun 84-01-01` →
   `Enter new date:` → blocks at BUFIN, now matched by ours at the CHGET level (M13).**
+- **M19 (2026-07-01): BDOS SFIRST `$11`/SNEXT `$12` dir-search wired** — `$4FB8`→`sfirst_body`,
+  `$5006`→`snext_body`, `$5058`→`setdta_cache_body` (DTA cache at $F23D); cursor cell `BDOS_SRCHIDX`
+  ($E55E). `DIR` lists all files byte-identical to stock (`41 files`, `A>`), no hang. Pinned facts DO NOT
+  re-probe: entry DE→search-FCB (name pattern +1, `?`=$3F wildcard); DIR issues all-`?` FCB; runtime DTA
+  = `($F23D)` (populated by the `$5058` SETDTA-cache); found entry written to the DTA as the MSX-DOS
+  "found FCB" (drive+name+attr@+13+time/date/clus/size@+23..32); NO attr filter (return labels/subdirs,
+  COMMAND.COM filters); exit A=$00 found/$FF exhausted. **The `bytes free` footer is a SEPARATE unfinished
+  routine (see Next action), not part of this.** DO NOT re-litigate the dir-search mechanism.
 
 ## Dead ends / refuted — do NOT re-walk
 - **"M15 func-9 is blocked by `wa_seg` / the `$F365` slot-read stub / a page-1 disk-ROM output routine"**
@@ -152,10 +177,32 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — BDOS untested-func verify sweep DONE (2026-07-01); next = the FCB read cluster
-The DOS-boot-to-`A>` track is MET (M13/M15/M16/M17/M18/OI-3 landed; 27/27 BDOS parity, cleared-screen
-`A>` byte-for-byte). A **verification-only sweep** (no asm changes) then checked the "trivial-verify"
-tier of untested MSX-DOS-1 BDOS funcs. **RESULT: nothing falsified; nothing to commit for asm.**
+## Next action — M19 dir-search LANDED (2026-07-01); next = DIR "bytes free" footer, then exerciser `.COM`
+`DIR` now WORKS on ours (M19): lists every file + `41 files` + fresh `A>`, byte-identical to stock, no
+hang. Two follow-ups, in order:
+
+**(1) HIGHEST — the `nn bytes free` footer (finish DIR to 100% parity).** Ours prints `0 bytes free`,
+stock `375808`. This is a SEPARATE free-cluster FAT-scan routine, NOT the dir-search M19 fixed — pinned
+this span: stock issues **10 `$4010` DSKIO calls during DIR, ours 0** (the ~3 extra are the free-cluster
+FAT scan); ours' COMMAND.COM diverges at BDOS n=63 (stock SETDTA to fetch the next file; ours a spurious
+`C=05 LSTOUT`, `ret=$C66D`) and later mis-routes to the `$75A5` `ret`-stub (stock never hits `$75A5`
+during DIR). So a value ours supplies as `0` (the free-cluster count) cascades COMMAND.COM onto a wrong
+branch. The free count = free FAT `$000` clusters × cluster-bytes (367 × 1024 = 375808 here). We already
+own the FAT-scan primitives (`fat_alloc_cluster` finds the FIRST free cluster; `fat_total_clusters`) —
+counting ALL free clusters is a small variant. **BLOCKER = pin the ENTRY POINT + contract** (which page-1
+kernel entry COMMAND.COM/kernel CALLs for the free count, and where the result goes) — it was NOT
+identified this span; `$75A5` is a divergence symptom, not the entry. NEW-ROUTINE class → **write a spec
++ get sign-off before implementing** (per [[spec-before-implementation]]; do NOT improvise). Fix-shape
+templates: M19 (this span) for the veneer+body+DTA pinning, M17/M18 for the read-a-cell veneer.
+
+**(2) then the rest of the FCB cluster + console tier — blocked on the BDOS-exerciser `.COM`**
+([[bdos-exerciser-com-test]]): `$10 FCLOSE / $14 RDSEQ / $23 FSIZE / $26 / $27` runtime +
+`$01/$06/$07/$08/$0B/$0C` console — none isolable by a COMMAND.COM builtin; the exerciser is the
+prerequisite tool. Spec it separately (small tooling task).
+
+### (archived) BDOS untested-func verify sweep — DONE 2026-07-01 (no asm changes)
+A **verification-only sweep** checked the "trivial-verify" tier of untested MSX-DOS-1 BDOS funcs.
+**RESULT: nothing falsified; nothing to commit for asm.**
 
 **Sweep verdicts (evidence = `disk_probe_diff.py`, test.dsk):**
 - **7 boot-path funcs re-confirmed in the same run (all byte-identical, zero divergence):**

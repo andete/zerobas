@@ -23,6 +23,47 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M19 / runtime dir-search (BDOS SFIRST $11 / SNEXT $12) · USER-SIGNED-OFF SPEC, not self-approved]**
+Landed the fix for MSX-DOS `DIR` (was: hung forever on a blank screen — the un-wired `$4FB8`/`$5006`
+dir-search entries NOP-slid into the `$50A9` stub, phantom "found" forever). Wired `$4FB8`→`sfirst_body`,
+`$5006`→`snext_body`, `$5058`→`setdta_cache_body` (net-zero veneers in the descending ds-anchor chain,
+free-tail bodies); new work cell `BDOS_SRCHIDX` ($E55E); reuse `fat_mount`/`fat_find` root-dir walk +
+`name_cmp_wild` (the `?` wildcard). **RESULT: DIR lists every file + `41 files` + fresh `A>`,
+byte-identical to stock, no hang.** Commits `45fd9be` (specs), `5225a29` (impl), docs-update follows.
+· **Sign-off:** the user explicitly signed off the M19 spec ([tier2-m19-spec.md](tier2-m19-spec.md)) —
+this was NOT self-approved-by-veneer-precedent (it is a substantial new routine, OI-3-class effort).
+· **Judgment calls made this span (all pinned black-box, no stock CODE decoded — the falsify-first path
+the spec §2.4/§4.1 deferred to build):**
+  (i) **Runtime DTA source = `($F23D)`.** The spec flagged this open. Pinned: `$F23D` is a disk-work-area
+  DTA cache stock's SETDTA-time entry `$5058` writes and stock's SFIRST reads (PCs `$4FCC`/`$4FEF`); on
+  ours it was never written (found entry went to a garbage DTA → "File not found"). Wired the ALSO-un-wired
+  `$5058` entry (found via `callwatch --in-func 0x1A` → ours slid into the `$50AD` stub; entry `DE=$D403`
+  = DTA) to `setdta_cache_body` = `ld ($F23D),de`. This is a 4th same-class entry beyond the specced
+  `$4FB8`/`$5006` — a scope addition I took because it is the mechanically-required companion (SFIRST is
+  useless without the DTA). Confidence HIGH (DIR renders byte-perfect). Undo: revert `5225a29`.
+  (ii) **Found-entry DTA layout = the MSX-DOS "found FCB"** (drive@0, name@1..11, attr@13, time/date/
+  clus/size@23..32), NOT a verbatim 32-byte dir-entry copy. Pinned by a `readwatch` of the DIR formatter's
+  DTA reads (attr@+13, size@+29..32) + a byte-diff vs stock's DTA. My first cut (raw copy, attr@+12)
+  mis-set COMMAND.COM's label filter → alternating-garbage rows + wrong count; the +13 layout fixed both.
+  (iii) **NO attribute filter** in the scan (return volume-label/subdir entries too) — pinned: stock's
+  SFIRST returned the `SandStone` volume label (attr $28) as match #1; COMMAND.COM does the `nn files`
+  filtering. (iv) **Exit A=$00 found/$FF exhausted** (published contract) — confirmed by the listing
+  terminating + rendering. (v) **DIR issues an all-`?` FCB** — verified (`$005C` = `80 3F×11`).
+· **HARD-STOP I hit, reporting rather than improvising — the `nn bytes free` footer.** Ours prints
+`0 bytes free`, stock `375808`. This is NOT the dir-search and NOT a regression: it is a SEPARATE
+free-cluster FAT-scan routine the M19 design (spec §4-§6) never characterised. Evidence: stock issues
+10 `$4010` DSKIO during DIR (ours 0 — the ~3 extra are the free scan); ours' COMMAND.COM diverges at
+BDOS n=63 (stock SETDTA-to-next-file; ours a spurious `C=05 LSTOUT`) and mis-routes to the `$75A5`
+`ret`-stub (stock never hits `$75A5` during DIR) — a value ours supplies as `0` (free-cluster count)
+cascades the wrong branch. The spec's acceptance §7.1 lists `375808 bytes free`, so the spec conflated
+"DIR lists files" with "DIR's free-space line" — the latter needs its own routine (entry point NOT yet
+pinned; `$75A5` is a divergence symptom, not the entry). Per the guardrails I did NOT improvise a whole
+new free-scan + dispatch-RE mechanism; **flagged for its own spec + sign-off** (Next action item 1). We
+own the primitives (`fat_alloc_cluster`/`fat_total_clusters`) so it should be a small routine once the
+entry/contract is pinned. · **Confidence:** dir-search HIGH (5/6 acceptance criteria fully green; the
+6th — screen — matches stock in every line except the free-space footer). · **Undo:** revert `5225a29`
+(+ its docs) restores the pre-M19 hang; `BDOS_SRCHIDX`/`$F23D` writes are DOS-phase-only, no Tier-1 reach.
+
 **[OI-3 / screen-clear · USER-SIGNED-OFF, not self-approved]** Landed `dos_clear_screen` (runtime.asm
 free tail, first action in `dos_handoff`): FILVRM `$0056` fills the SCREEN-1 name table (`$1800`, 768)
 with spaces via the `pg0_mainrom_in`/`out` inter-slot path (same as `conout_body`'s CHPUT), then homes

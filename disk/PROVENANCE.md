@@ -774,6 +774,7 @@ RAM outside known regions.
 | — open file's dir-entry byte offset (`BDOS_DIROFF`) | $E554–$E555 (word) | own choice | sourced |
 | — write-helper transients (`FAT_WRTMP`, `FAT_WRTMP2`) | $E556–$E559 (2 words) | own choice (saved value / free-cluster-scan cached sector) | sourced |
 | numFATs / secPerFAT cached at mount (`FAT_NUMFATS`, `FAT_SECPERFAT`) | $E55A–$E55C (3 bytes) | own choice (so multi-FAT sync needs no boot-sector re-read mid-flush) | sourced |
+| Runtime dir-search cursor (`BDOS_SRCHIDX`, M19) | $E55E–$E55F (word) | own choice (the 2-byte free gap after `HOOK_SLOT` $E55D, before `WBUF` $E560; grep-clean). Absolute 0-based root-dir entry index of the next entry to examine — SFIRST seeds it, each SNEXT resumes from it; the persistent state for BDOS SFIRST ($11)/SNEXT ($12), which the kernel entries carry no per-call FCB/DTA register for. Recomputes the sector/offset (`>>4` / `&15`) each call so it never persists `FAT_DIRSEC`/`FAT_DIRREM` (loader-path aliasing). DOS-phase only | sourced |
 | Write-back FAT/dir metadata buffer (`WBUF`, 512 bytes) | $E560–$E75F | own choice (free page-3 RAM after the write scratch); keeps FAT/dir reads off `SECTOR_BUF` so in-flight write data is undisturbed | sourced |
 
 > **FAT12 geometry is derived, not stored as constants.** `fat_mount` reads the
