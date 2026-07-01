@@ -170,6 +170,16 @@ cinl_done:
                 inc     de                  ; DE -> buf[1] = count
                 ld      a, (CONIN_COUNT)
                 ld      (de), a
+                inc     de                  ; DE -> buf[2] (first char slot)
+                ld      l, a
+                ld      h, 0
+                add     hl, de              ; HL -> buf[2 + count]
+                ld      (hl), $0D           ; M16: terminate with CR immediately after the
+                                             ; last stored char (buf[2] when count=0) --
+                                             ; observed on stock's own buffer content;
+                                             ; COMMAND.COM's date-reply parser scans from
+                                             ; buf[2] for this rather than trusting count
+                                             ; alone (tier2-conin-spec.md §6)
                 pop     hl
                 pop     bc
                 ret

@@ -189,3 +189,66 @@ screen byte-matching stock (no more garbage spin). Verify:
 - Clean-room: `$544E`/`$009F` are the cross-vendor CONIN/CHGET ABI; our own code,
   no stock bytes (same basis as the `$5454`/`$00A2` CONOUT veneer).
 - BIOS-agnostic: CHGET via `pg0_mainrom_in`'s `EXPTBL[0]` switch (CF-3300, C-BIOS, any).
+
+## 6. M16 addendum (2026-07-03) — missing buffer terminator diverts COMMAND.COM after the date prompt
+
+**Symptom:** with M13+M15 both landed, injecting Enter at the date prompt drives **stock** to a
+visible `A>` (confirmed: `screen --keys '\r' --keys-at 20` → stock ROW09 = `A>.`) but **ours stalls**
+— `screen` with the identical injection shows no `A>`; `callseq --at 0x0100 --log 0x0005` (keyed run)
+shows ours == stock byte-identical for BDOS calls n=1–20 (through BUFIN's return and the CR/LF echo),
+then **forks at n=21**: stock calls `C=0E SELDSK` (drive-select, on the way to printing `A>`); ours
+instead calls `C=2B SDATE` (Set Date) — i.e. ours' COMMAND.COM believes the user typed a new date,
+stock's does not, from the SAME single-Enter keystroke.
+
+**Root cause (black-box, our own buffer only — clean-room-safe):** `capture --at 0x0005 --nth 19
+--mem 0xD347:0x10` (aligned, DE=buffer base identical both sides) shows **exactly 1 of 16 bytes
+differs**: `D349` (= `buf[2]`, the first char slot) is `$0D` on stock, `$31` ('1', stale RAM) on
+ours. `buf[0]` (max) and `buf[1]` (count=0) are IDENTICAL — BUFIN correctly recorded "0 chars typed"
+on both. **Our `conin_line_body`'s `cinl_done` (runtime.asm) only writes `buf[1]`=count; it never
+writes anything into `buf[2+count]`.** Stock's real BUFIN evidently ALSO writes a `$0D` immediately
+after the last stored char (regardless of count) — a courtesy terminator beyond the strict published
+func-`$0A` contract (max/count/chars, no required terminator) that COMMAND.COM's date-reply parser
+relies on: it appears to scan from `buf[2]` for a `$0D`/non-digit rather than trusting `count` alone,
+so ours' stale `$31` reads as "user typed a date starting with digit 1."
+
+**Fix (small, same shape as M10/M13/M15 — reuses the existing routine, no new primitive):** in
+`cinl_done`, after storing `buf[1]`=count, also write `$0D` to `buf[2+count]` (one indexed store,
+3-4 instructions: `ld l,a / ld h,0 / add hl,de / ld (hl),$0D` where `a`=count, `de`=buf[2] base —
+mirrors the existing indexed-store idiom already used in `cinl_store`). Clean-room: derives from the
+observed (data-only, not stock-code-read) buffer content + the general "these buffers are
+conventionally 0Dh-terminated for scanning convenience" shape already implicit in func-`$0A`'s
+sibling conventions; no stock bytes read or transcribed (only our own RAM's post-call content).
+
+**Build risk:** `conin_line_body` lives in the free tail (runtime.asm) — no `$41FD`-class budget
+constraint; a few extra bytes are free.
+
+**Acceptance:** `capture --at 0x0005 --nth 19 --mem 0xD347:0x10 --keys '\r' --keys-at 20` → 0 bytes
+differ (was 1). `callseq --at 0x0100 --log 0x0005 --keys '\r' --keys-at 20` → ours matches stock's
+n=21 call (`C=0E SELDSK`, not `C=2B SDATE`). `screen --machine ours --keys '\r' --keys-at 20
+--settle 25` → visible `A>`. Tier-1 19/19; `disk.rom` == 16384 B. This is the M16 milestone's
+acceptance bar per [tier2-STATE.md](tier2-STATE.md)'s Goal section.
+
+**HARD-STOP:** this modifies the M13-signed-off `conin_line_body` (STATE.md explicitly says "DO NOT
+re-implement or second-guess this veneer without a concrete new probe result" — this IS that result,
+but the change still touches console-I/O ROM asm and needs sign-off before coding, same gate as
+M14/M15.
+
+### 6.1 IMPLEMENTED + PARTIALLY VALIDATED (2026-07-03) — signed off
+
+Added the `$0D` terminator write to `cinl_done` (runtime.asm) exactly as specced. Rebuilt, verified
+object-file non-empty (16384 B) and all symbols resolve, `make unit-test` 19/19 green.
+
+**Confirmed fixed:** `capture --at 0x0005 --nth 19 --mem 0xD347:0x10` → **0 of 16 bytes differ** (was
+1). `callseq --at 0x0100 --log 0x0005` n=21 → **ours now matches stock exactly**: `C=0E SELDSK A=0D
+B=00 DE=D3FF HL=D349 ret=C30A` on both. The SDATE-vs-SELDSK fork is gone — COMMAND.COM's control flow
+is now correctly reading "no date entered" on ours.
+
+**NOT fully closed — new fork one step later (M17, not part of this fix):** ours now calls SELDSK
+(n=21) but the calls stop there (21 total vs stock's 27+); stock continues to `CONOUT` (CR/LF),
+`CURDRV`, print `A>`, and `BUFIN` (command prompt); ours never reaches `A>` (`screen` confirms:
+cursor advances past the date line but no `A>` renders). Register/args at the SELDSK dispatch itself
+are byte-identical, so the fork happens DURING SELDSK's execution (inside the loaded MSXDOS.SYS
+kernel — not our page-1 disk-ROM code per a `callwatch --no-gate` sanity pass), likely another
+work-area/resident-hook gap of the same class as M14/M15/this fix. Logged as the M16→M17 handoff in
+[tier2-review-queue.md](tier2-review-queue.md); needs its own falsify-first characterisation before
+any further asm.
