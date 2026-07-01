@@ -21,17 +21,24 @@ Tier-1** (disk-BASIC / BLOAD / FILES) and while staying a **BIOS-agnostic replac
 disk ROM** (works on CF-3300, C-BIOS, any standards MSX1). "Reached `A>`" means a
 **visible** `A>` on screen + accepts a command — not just the right BDOS call sequence.
 
-## Live thesis (M14, OPEN — not yet investigated)
-**Symptom:** ours never shows `COMMAND version 1.08` / `Current date is Sun 84-01-01` /
-`Enter new date: ` as distinct lines the way stock does — `screen --machine ours --settle 16`
-(no keys) instead shows the BASIC power-on banner (`MSX system version 1.0` / `Copyright 1983`)
-still on screen, then a compressed `Sun 84-01-01` with no visible prompt label, several rows
-lower than stock's layout. This is BEFORE any console-input call (CONIN untouched at this
-point), so it is a CONOUT/newline/scroll-region question, not a CONIN regression from M13.
-**Not yet characterised** — no probes run on this specific symptom yet; start falsify-first
-(§ Method guardrails) rather than assuming a cause. Candidate angles (unconfirmed): a missing
-screen-clear before MSXDOS.SYS sign-on, a CR/LF handling gap in `conout_body`'s caller chain,
-or COMMAND.COM printing to a stale cursor position left by the BASIC boot banner.
+## Live thesis (M14 — CHARACTERISED 2026-07-01; HARD-STOP for sign-off before fix)
+**The blocker is a BDOS func-9 (STROUT) OUTPUT gap, not a scroll/clear cosmetic.** Decisive
+evidence (all via `disk_probe_diff.py`, test.dsk, anchored at COMMAND.COM `$0100`):
+- `callseq --log 0x0005` → ours == stock **BYTE-IDENTICAL for all 18 BDOS calls** (STROUT×3,
+  FOPEN, GDATE, CONOUT×12, BUFIN; same C/A/B/DE/HL/ret). COMMAND.COM's control flow is CORRECT —
+  it issues every STROUT. This is the guardrail's gold-standard alignment.
+- `callseq --log 0x00A2` (CHPUT, the shared bottleneck) → stock emits all 72 banner/prompt chars;
+  **ours emits ONLY the 12 date chars** (`Sun 84-01-01`), which are the `C=02` CONOUT calls
+  (n=5-16), reaching CHPUT via `ret=7934` = our `$5454` conout_body. Every `C=09` STROUT char is
+  ABSENT from CHPUT on ours. `--log 0x5454` → ours 12 (date) / stock 0.
+- `screen` (arbiter) → ours shows only `Sun 84-01-01` + the un-cleared BASIC power-on banner.
+**⇒ func-2 CONOUT works on ours; func-9 STROUT emits ZERO chars.** Stock funnels all console output
+through the kernel `$F392` path; ours vectors func-2 to disk-ROM `$5454` and loses func-9.
+**This CORRECTS the M12 refutation** (see Dead ends): M12's "func-9 chars DO reach CHPUT" cited the
+`ret=$7934` chars — but those are the func-2 DATE (`C=02`), not func-9 STROUT (`C=09`); a mislabel.
+**Mechanism NOT yet localised** — do NOT `trace` into the kernel console routine (`$F392`/`$F2AC`/
+`$F237` = the M12c reference-disasm hazard). Secondary symptom (separate): the BASIC banner isn't
+cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-queue.md) M14.
 
 ## Settled facts — DO NOT re-litigate or re-probe
 - COMMAND.COM **loads AND reaches $0100** (handoff works); `$47B2` return contract done; `$0005`=`JP
@@ -54,7 +61,10 @@ or COMMAND.COM printing to a stale cursor position left by the BASIC boot banner
 - **"There are TWO independent console-I/O bugs (func-9 output + BUFIN block)"** — REFUTED M12.
   ONE root cause (the missing CONIN line routine at `$50E0`, falling into `$5454` CONOUT) explained
   both; M13 fixed it.
-- **"func-9 STROUT emits ZERO chars / its `$F398` CONOUT vector is unset on ours"** — REFUTED M12.
+- ~~**"func-9 STROUT emits ZERO chars / its `$F398` CONOUT vector is unset on ours"** — REFUTED M12.~~
+  **RE-OPENED M14 (2026-07-01):** the M12 refutation mislabelled the func-2 DATE chars (`C=02`,
+  `ret=$7934`) as "func-9 chars reaching CHPUT." With 18/18 dispatch alignment + the screen arbiter,
+  func-9 STROUT genuinely emits ZERO chars on ours. This IS the M14 blocker (see Live thesis).
 - **"The `Ø>@`/`D8 19 3E 40 0A` spam is a benign idle artifact / date-prompt cosmetics"** — REFUTED M11;
   root-caused M12 (CONIN→CONOUT fall-through); FIXED M13 (spin no longer occurs).
 - **"conout_body should read the char from A"** — WRONG (that WAS the M10 bug). CONOUT contract is E.
@@ -65,31 +75,31 @@ or COMMAND.COM printing to a stale cursor position left by the BASIC boot banner
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M14: characterise the missing COMMAND.COM banner/prompt lines
-**M13 (CONIN) is DONE and validated — do not re-open without new evidence.** The next blocker to
-`A>` is a NEW symptom, not yet probed:
-1. **Falsify first (§ Method guardrails).** Cheapest disproving experiment: `screen --machine ours
-   --settle N` at increasing settle values from N=2 upward, to see WHEN the banner text appears/
-   disappears — is it ever rendered correctly and then overwritten/scrolled, or never rendered at all?
-2. **Anchor + align:** use `callseq`/`capture` anchored on the CONOUT calls (`$5454`/`conout_body`)
-   around the `COMMAND version` / `Current date is` / `Enter new date:` strings specifically — confirm
-   ours reaches those CHPUT calls with the SAME chars as stock (like the M10/M12 sign-on check), rather
-   than assuming the veneer is broken.
-3. **Right tool:** `screen` is the arbiter (per the guardrails — it caught what byte-identical BDOS
-   trace hid before). Don't build a new probe script; extend `disk_probe_diff.py` if a new mode is
-   needed.
-4. Once characterised, THEN drive to the visible `A>` goal (inject a full command + Enter once the
-   prompt itself renders correctly).
+## Next action — M15: localise the func-9 STROUT output path, clean-room-safely (AWAITING SIGN-OFF)
+**M14 is CHARACTERISED (see Live thesis); the fix is a new slice wanting sign-off** — it re-opens a
+refuted item and touches console-output wiring. Do NOT start asm before the batched sync confirms it.
+1. **The question to answer (clean-room-safe):** WHERE does func-9's per-char output die on ours?
+   func-2 CONOUT reaches CHPUT via our `$5454` veneer; func-9 does not reach `$5454` OR CHPUT. So
+   func-9's kernel output call targets something else on ours. Localise WITHOUT tracing/decoding the
+   loaded-kernel console routine (`$F392`/`$F2AC`/`$F237` = M12c reference-disasm hazard). Prefer:
+   black-box call-count/target logging (`callseq --log <candidate>`), or a `capture --mem` diff of
+   candidate console HOOK cells at the aligned func-9 dispatch (memory bytes, not code decode).
+2. **Likely fix shape (to spec, not yet built):** route func-9's output to a working CONOUT — reuse
+   our own `conout_body` (`$5454`), the SAME routine func-2 already uses successfully. No stock bytes
+   needed. The exact hook to set comes from step 1.
+3. **Right tool:** `screen` stays the arbiter for "does the banner now render." Extend
+   `disk_probe_diff.py`; don't fork a script.
+4. Secondary (defer until func-9 lands): the un-cleared BASIC power-on banner (ours boots BASIC then
+   DOS on top; stock's screen is clean). Separate symptom, cosmetic vs the func-9 blocker.
+5. Then drive to the visible `A>` (inject a command + Enter once the prompt renders).
 
-**One-command repros for the next session (test.dsk):**
-- M13 regression check (should still pass): `python3 probes/disk/disk_probe_diff.py callseq --at 0x0100
-  --log 0x009F --maxhits 12 --diska ~/Documents/msx/msx/disks/test.dsk` → both sides 1 call.
-- M14 starting point: `python3 probes/disk/disk_probe_diff.py screen --machine both --settle 16
-  --diska ~/Documents/msx/msx/disks/test.dsk` → compare stock's clean `Enter new date: .` against
-  ours' compressed/offset banner (no keys needed to see the symptom).
-- With keystrokes: `python3 probes/disk/disk_probe_diff.py screen --machine ours --settle 25 --keys
-  $'12-25-99\r' --keys-at 8 --diska ~/Documents/msx/msx/disks/test.dsk` → date echoes inline but no
-  `A>` yet.
+**One-command repros (test.dsk):**
+- M14 evidence — dispatch identical, CHPUT diverges: `python3 probes/disk/disk_probe_diff.py callseq
+  --at 0x0100 --log 0x0005 --maxhits 60 --diska ~/Documents/msx/msx/disks/test.dsk` (18/18 identical);
+  swap `--log 0x00A2` (stock 72 / ours 12) to see the func-9 chars vanish downstream of dispatch.
+- Screen arbiter: `python3 probes/disk/disk_probe_diff.py screen --machine both --settle 16
+  --diska ~/Documents/msx/msx/disks/test.dsk` → ours shows only `Sun 84-01-01`, no STROUT literals.
+- M13 regression (should still pass): `... callseq --at 0x0100 --log 0x009F --maxhits 12 ...` → 1 call.
 
 ## Method guardrails (DURABLE — keep these when you overwrite this file)
 Endorsed 2026-06-27 after a retrospective found ~half the Tier-2 reframes came from

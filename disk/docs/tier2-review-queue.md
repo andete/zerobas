@@ -23,6 +23,34 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M14 / banner blocker CHARACTERISED — it is a func-9 STROUT OUTPUT gap, and this CORRECTS the M12
+"func-9 is fine" refutation. No asm; HARD-STOP for sign-off before any fix.]**
+· **falsify-first (screen = arbiter):** `screen --machine ours --settle 16/35` are identical steady frames
+(not slow) — ours renders only `Sun 84-01-01` (+ the un-cleared BASIC power-on banner), missing
+`COMMAND version 1.08` / `Current date is ` / `Enter new date:`. · **decisive alignment:** `callseq --at
+0x0100 --log 0x0005` → **ours == stock BYTE-IDENTICAL for all 18 BDOS calls** (STROUT×3, FOPEN, GDATE,
+CONOUT×12, BUFIN — same C/A/B/DE/HL/ret). So COMMAND.COM's control flow is CORRECT; it *issues* every
+STROUT. · **the gap is downstream in output servicing:** `callseq --log 0x00A2` (CHPUT, the shared
+bottleneck) → stock emits all 72 chars (banner+prompt); **ours emits ONLY the 12 date chars**, which at
+`$0005` are `C=02` CONOUT (n=5-16), reaching CHPUT via `ret=7934` = our `$5454` conout_body veneer.
+Every `C=09` STROUT char is ABSENT from CHPUT on ours. `--log 0x5454` → ours 12 (date) / stock 0.
+· **⇒ func-2 CONOUT works on ours (date renders via $5454); func-9 STROUT emits ZERO chars to CHPUT.**
+· **CORRECTS M12 (archived-M11 re-level (a)):** M12 refuted "func-9 emits zero / `$F398` vector unset"
+citing "func-9 chars DO reach CHPUT, ret=$7934-vs-$F392 benign." Those `ret=$7934` chars are the func-2
+DATE (`C=02`), not func-9 STROUT (`C=09`) — a mislabel; the screen arbiter confirms func-9 literals never
+render. The func-9-output-gap hypothesis is BACK, now with 18/18 dispatch alignment behind it.
+· **routing note:** stock funnels ALL console output through the kernel `$F392` path; ours vectors func-2
+to disk-ROM `$5454` and loses func-9. Mechanism NOT yet localised — deliberately did NOT `trace` into the
+kernel console routine (`$F392`/`$F2AC`/`$F237` = the M12c reference-disasm hazard). · **judgment call:**
+hard-stopped here rather than implementing — this re-opens a refuted item AND the fix (route func-9 output
+to a working CONOUT / build the resident CONOUT dependency) is a new slice wanting a spec + sign-off
+([[spec-before-implementation]]). · **confidence:** HIGH that func-9 STROUT output is the blocker
+(screen arbiter + C=09-vs-C=02 char labelling at both $0005 and $00A2 + 18/18 alignment). MEDIUM on the
+exact mechanism/fix (needs clean-room-safe localisation of func-9's output target). · **undo:** docs only;
+ROM at committed baseline (16384 B, Tier-1 19/19); probe used tmp disk copy. · **awaiting:** (i) confirm
+the M12 correction; (ii) steer on localising func-9's output path clean-room-safely (no kernel disasm);
+(iii) sign-off on the fix approach once localised.
+
 **[M12d / harness investment + CONIN ABIs PINNED black-box (no asm). Option A is now fully specified.]**
 · **context:** user chose "harden trace + add key injection" at the M12c fork. · **tooling built &
 validated (commit `49a5a29`, no disk-ROM change, tests 19/19):** (1) **clean-room disasm guard** in
