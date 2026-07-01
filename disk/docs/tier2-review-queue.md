@@ -55,7 +55,18 @@ work-area construction, HEAVIER than the recommended (A). **SCOPE SURPRISE flagg
 Stayed clean-room: pointer-only region, did NOT capture the `$F38x` console-code bytes. **CAVEAT
 ([[tier2-investigation-guardrails]] / §8.65):** "unbuilt" proven, CAUSALITY not — func-9 not yet shown
 to read a specific stubbed cell; gate the fix behind a read/call-through confirmation (needs a small
-probe extension, no asm). · **judgment call:**
+probe extension, no asm). · **CAUSAL CONFIRMATION DONE (user chose "confirm first, no asm"): built a
+new `readwatch` mode** (per-byte `read_mem` watchpoints over a DATA range, gated to during-func-9,
+records reader-PC+addr+value only — no code decode; committed with the probe). Gated reads of
+`$F340:0x40`: STOCK func-9 output loop PAGES via the segment hooks — `$F368`→`JP $DF57` ×46,
+`$F36B`→`JP $DF59` ×45, slot bytes `$F342`/`$F348` (PC `$DF5A`/`$DF60`), `$F365` `in a,($A8)` ×12;
+OURS `$F368`→`JP $E795`/`$F36B`→`JP $E79B` (M5.6 `wa_seg`) only ×3 then ABORTS, `$F365` FF/unbuilt.
+**⇒ passes §8.65 (func-9 demonstrably routes through the hooks on both); blocker = M5.6 `wa_seg` is an
+INCOMPLETE `$DF57` (§8.57 thread, now tied to func-9 output). Scope BOUNDED: complete `wa_seg`+`$F365`,
+NOT the broad work-area sub-track — feared bigger, measured smaller.** §8.61 once judged this hook
+"rejoins register-identical," but that was the earlier blocker; func-9's 45× paging is a new
+manifestation (not a blind re-walk). **HARD-STOP: the fix is ROM asm → sign-off before coding.**
+· **judgment call:**
 hard-stopped here rather than implementing — this re-opens a refuted item AND the fix (route func-9 output
 to a working CONOUT / build the resident CONOUT dependency) is a new slice wanting a spec + sign-off
 ([[spec-before-implementation]]). · **confidence:** HIGH that func-9 STROUT output is the blocker

@@ -86,16 +86,17 @@ The fix re-opens a refuted item and touches console-output wiring → sign-off b
 1. **Localisation is DONE:** ours' func-9 handler dispatches but never enters the char-output loop
    (`$F392`=0, CHSNS `$009C`=0 vs stock 90/72). func-2 works via `$5454`; func-9's output routine is
    unreached/stubbed on ours (same shape as the `$4462` FOPEN gap).
-2. **§3 pin DONE (no asm) → leans P-resident, SCOPE SHIFT:** `capture --mem 0xF340:0x40` (aligned,
-   reg-diffs NONE) shows ours' DOS work-area page-3 is substantially UNBUILT (FF at `$F345/$F347/
-   $F358-$F367`; `$F368` JP-table half-stubbed →`$41AF`×5; pointers `$F34D-$F356` diverge). So it is
-   NOT a single vector (P-vector) — func-9's output routine is in the unbuilt resident block →
-   approach **(B)** work-area construction, heavier than (A). **CAVEAT (§8.65 trap):** unbuilt is
-   proven, CAUSALITY is not — func-9 not yet shown to read a specific stubbed cell.
-3. **HARD-STOP for scope steer (spec §7/OI-4):** before any asm, (a) confirm causality via a
-   read/call-through watch on func-9's path (needs a small `disk_probe_diff.py` extension, no asm),
-   and (b) get a scope decision — targeted func-9-output build vs committing to the work-area
-   construction sub-track. Do NOT unilaterally start the sub-track.
+2. **§3 pin + CAUSAL CONFIRMATION DONE (no asm) → BOUNDED to wa_seg:** the new `readwatch` mode
+   (gated to during-func-9, DATA-only) shows func-9's output loop PAGES via the segment-switch hooks:
+   stock `$F368`→`JP $DF57` ×46, `$F36B`→`JP $DF59` ×45, + `$F365` `in a,($A8)` ×12; OURS
+   `$F368`→`JP $E795`/`$F36B`→`JP $E79B` (our M5.6 `wa_seg`) only ×3 then ABORTS, `$F365` unbuilt.
+   Passes the §8.65 guard (func-9 demonstrably ROUTES through these hooks on both). **⇒ the blocker is
+   our M5.6 `wa_seg` being an INCOMPLETE `$DF57` (§8.57 thread, now tied to func-9 output) — a BOUNDED
+   fix (complete `wa_seg` + `$F365`), NOT the broad work-area sub-track.** §8.61 once judged this hook
+   "rejoins" — but that was the earlier blocker; func-9's 45× paging pattern is a NEW manifestation.
+3. **HARD-STOP for asm sign-off (spec §4/OI-5):** the fix (complete `wa_seg`/`$F365`) is ROM asm →
+   needs sign-off. The exact abort-at-3 reason pins by tracing OUR OWN `wa_seg` (`$E795`, clean) or a
+   falsify-first "complete wa_seg → CHPUT fires" build. Do NOT start asm before sign-off.
 4. **Arbiter:** `screen --machine ours` renders the 3 COMMAND.COM lines. Extend `disk_probe_diff.py`.
 5. Secondary (defer): the un-cleared BASIC power-on banner. Separate cosmetic symptom.
 6. Then drive to visible `A>` (inject a command + Enter once the prompt renders).

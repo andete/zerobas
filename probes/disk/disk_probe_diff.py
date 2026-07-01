@@ -567,6 +567,87 @@ def mode_iowrite(args) -> int:
     return 0
 
 
+# ---- mode: readwatch -----------------------------------------------------------
+# Causality probe (§8.65 guard): does the code READ a specific work-area cell on its
+# failing path? Sets a read_mem watchpoint per byte of a DATA range (never a code
+# region — reading stock's resident-routine bytes = reference disasm ✗), gated to
+# "during func-9" (C==9 at $0005 until the next $0005). Records reader PC + address +
+# value only (the allowed black-box kind: PC/pointer/data, no instruction decode).
+def _readwatch_arm(arm_addr: int, arm_cond: str, addrs: list[int],
+                   gate_func9: bool, maxhits: int) -> str:
+    addr_list = " ".join(f"{a:#06x}" for a in addrs)
+    gate = "if {!$::in9} return\n" if gate_func9 else ""
+    return f"""
+set ::armed 0
+set ::in9 0
+set ::callno 0
+set ::rn 0
+debug set_bp {arm_addr:#06x} {{}} {{
+  if {{ {arm_cond} }} {{ set ::armed 1 }}
+}}
+debug set_bp 0x0005 {{}} {{
+  if {{!$::armed}} return
+  incr ::callno
+  if {{ ([reg BC]&0xFF) == 9 }} {{ set ::in9 1 }} else {{ set ::in9 0 }}
+}}
+foreach a {{ {addr_list} }} {{
+  debug set_watchpoint read_mem $a {{}} [format {{
+    if {{!$::armed}} return
+    {gate}    incr ::rn
+    emit [format "RD A=%%04X PC=%%04X V=%%02X in9=%%d call=%%d t=%%.6f" \\
+      %d [reg PC] [debug read memory %d] $::in9 $::callno [machine_info time]]
+    if {{$::rn >= {maxhits}}} {{ exit }}
+  }} $a $a]
+}}
+"""
+
+
+def mode_readwatch(args) -> int:
+    base, _, length = args.range.partition(":")
+    base, length = int(base, 0), int(length, 0)
+    if length > 64:
+        sys.exit("readwatch: range capped at 64 bytes (per-byte watchpoints); narrow it")
+    addrs = [base + i for i in range(length)]
+    arm_cond = args.arm_cond or f"[debug read memory {args.arm_check_addr:#06x}] == {args.arm_check_val:#04x}"
+    body = 'emit [format "DONE armed=%d rn=%d" $::armed $::rn]; exit'
+    arm = _readwatch_arm(args.at, arm_cond, addrs, args.gate_func9, args.maxhits)
+
+    def reads_for(machine):
+        raw = _runner(machine, args.diska, args.symfile).run_job_raw(
+            body, settle=args.settle, timeout=args.timeout, arm=arm,
+            keys=args.keys, keys_at=args.keys_at)
+        out = []
+        for l in raw:
+            if not l.startswith("RD "):
+                continue
+            d = {}
+            for tk in l.split()[1:]:
+                k, _, v = tk.partition("=")
+                d[k] = float(v) if k == "t" else int(v, 16 if k in ("A", "PC", "V") else 10)
+            out.append(d)
+        return out
+
+    machines = {"both": [STOCK_MACHINE, OURS_MACHINE], "ours": [OURS_MACHINE],
+                "stock": [STOCK_MACHINE]}[args.machine]
+    gate = " (gated: during func-9 only)" if args.gate_func9 else ""
+    print(f"=== readwatch: reads of {base:#06x}:{length:#x} after arm@{args.at:#06x}{gate} ===")
+    for m in machines:
+        reads = reads_for(m)
+        who = "OURS " if m == OURS_MACHINE else "STOCK"
+        # per-cell: which addresses were read, by which reader PCs, sample value
+        by_addr: dict[int, dict] = {}
+        for r in reads:
+            e = by_addr.setdefault(r["A"], {"count": 0, "pcs": set(), "V": r["V"]})
+            e["count"] += 1
+            e["pcs"].add(r["PC"])
+        print(f"  {who}: {len(reads)} gated reads across {len(by_addr)} cell(s)")
+        for a in sorted(by_addr):
+            e = by_addr[a]
+            pcs = " ".join("%04X" % p for p in sorted(e["pcs"])[:8])
+            print(f"    {a:04X}: reads={e['count']:<4} V={e['V']:02X}  readerPCs={pcs}")
+    return 0
+
+
 # ---- mode: screen --------------------------------------------------------------
 def _screen_body() -> str:
     # Read SCRMOD ($FCAF) + LINLEN ($F3B0), then the VDP name table. SCREEN 0 (text 40)
@@ -714,6 +795,20 @@ def main() -> int:
     w.add_argument("--maxhits", type=int, default=80)
     w.add_argument("--machine", choices=("both", "ours", "stock"), default="both")
 
+    r = sub.add_parser("readwatch", help="watch DATA-cell reads gated to during-func-9 (causality probe)")
+    common(r)
+    r.add_argument("--at", type=lambda x: int(x, 0), default=0x0100, help="arm address")
+    r.add_argument("--arm-check-addr", type=lambda x: int(x, 0), default=0x0102)
+    r.add_argument("--arm-check-val", type=lambda x: int(x, 0), default=0x05)
+    r.add_argument("--arm-cond", default=None, help="raw Tcl arm predicate")
+    r.add_argument("--range", required=True, help="DATA range BASE:LEN (<=64 B; NEVER a code region)")
+    r.add_argument("--gate-func9", action="store_true", default=True,
+                   help="only record reads while a func-9 (C=09) BDOS call is in flight (default on)")
+    r.add_argument("--no-gate", dest="gate_func9", action="store_false",
+                   help="record all reads regardless of func-9 gating")
+    r.add_argument("--maxhits", type=int, default=400)
+    r.add_argument("--machine", choices=("both", "ours", "stock"), default="both")
+
     args = ap.parse_args()
 
     tmp_disk = None
@@ -726,7 +821,8 @@ def main() -> int:
             args.diska = tmp_disk
     try:
         return {"callseq": mode_callseq, "capture": mode_capture, "trace": mode_trace,
-                "screen": mode_screen, "iowrite": mode_iowrite}[args.mode](args)
+                "screen": mode_screen, "iowrite": mode_iowrite,
+                "readwatch": mode_readwatch}[args.mode](args)
     finally:
         if tmp_disk and os.path.exists(tmp_disk):
             os.unlink(tmp_disk)

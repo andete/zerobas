@@ -105,12 +105,36 @@ stubbed/FF cell on its failing path. The clean confirming step (no asm) is a **r
 watch on the func-9 path** (does it hit `$41AF`/read an FF cell before returning?), which needs a
 small `disk_probe_diff.py` write/read-watch extension. **Gate the fix behind that confirmation.**
 
+## 7.1 CAUSAL CONFIRMATION (2026-07-01, no asm) — BOUNDED to wa_seg, not the broad work area
+New `readwatch` mode (`disk_probe_diff.py`, gated to during-func-9, DATA-region only, no code
+decode): reads of `$F340:0x40` while a `C=09` BDOS call is in flight.
+- **STOCK func-9 output loop pages via the segment-switch hooks:** `$F368`→`JP $DF57` executed
+  **46×**, `$F36B`→`JP $DF59` **45×**; those read slot bytes `$F342`(=83, PC `$DF5A`) /
+  `$F348`(=87, PC `$DF60`); the `$F365` `in a,($A8)` slot-read stub executed **12×**.
+- **OURS:** `$F368`→`JP $E795` / `$F36B`→`JP $E79B` (our M5.6 `wa_seg_rom`/`wa_seg_ram`) executed
+  only **3× each, then the loop aborts** — `$F365` is FF/unbuilt (never executed), CHPUT never
+  reached.
+**⇒ CAUSAL (passes the §8.65 guard): func-9's output loop demonstrably routes through the
+`$F368`/`$F36B` segment hooks on BOTH machines; ours' `wa_seg` can't sustain the paging pattern
+(≈1 switch per STROUT then gives up).** This is the **§8.57 "M5.6 `wa_seg` is an INCOMPLETE `$DF57`"**
+thread, now tied to func-9 output. **Scope is BOUNDED: complete `wa_seg` (+ the `$F365` slot-read
+stub), NOT the broad work-area construction.**
+**HONESTY on the §8.61 tension:** M5.8/§8.61 judged the `$F368` hook "returns register-identical /
+rejoins" and moved on — but that was in the earlier-blocker context; func-9 output exercises the hook
+in a 45×-iteration paging pattern ours can't sustain (3×). So this is a NEW manifestation, not a blind
+re-walk. Still-open (needs asm to test, hence sign-off): the EXACT reason ours aborts at 3 (wa_seg
+wrong result vs a downstream check) — pin by tracing OUR OWN `wa_seg` (`$E795`, decodable=ours) once
+signed off, or by a falsify-first "complete wa_seg → does CHPUT fire" build.
+
 ## 8. Open items (recommended defaults in bold)
-- OI-1: P-vector vs P-resident → **RESOLVED: leans P-resident (§7); confirm causality first**.
-- OI-2: is the func-9 output path DOS-only or shared with BASIC? → **must be DOS-only /
-  BIOS-agnostic; validate FILES on C-BIOS + CF-3300 unchanged**.
+- OI-1: P-vector vs P-resident → **RESOLVED (§7/§7.1): P-resident, and causally BOUNDED to the
+  `wa_seg` segment-switch hooks (`$F368`/`$F36B`) + `$F365` stub — the fix shape is (B) but small**.
+- OI-2: is the func-9 output path DOS-only or shared with BASIC? → **`wa_seg` is DOS-path; must stay
+  BIOS-agnostic + net-zero; validate FILES on C-BIOS + CF-3300 unchanged**.
 - OI-3: does fixing func-9 also fix the un-cleared BASIC banner (secondary symptom)? →
   **treat as separate; defer, re-`screen` after M15 lands**.
-- OI-4 (NEW): scope — is func-9's output path a TARGETED build (just its resident routine/hook) or
-  does it drag in the broader work-area construction? → **needs the §7 causal confirmation to bound;
-  hard-stop for user scope steer before committing to the sub-track**.
+- OI-4: scope — **RESOLVED (§7.1): BOUNDED to completing `wa_seg` (+`$F365`), NOT the broad
+  work-area construction sub-track**. Feared bigger; measured smaller.
+- OI-5 (NEW, needs asm→sign-off): the exact reason ours' `wa_seg` aborts func-9 at 3 iterations →
+  **pin by tracing OUR OWN `wa_seg` (`$E795`, clean) or a falsify-first "complete wa_seg" build,
+  once M15 asm is signed off**.
