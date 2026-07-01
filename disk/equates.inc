@@ -61,6 +61,26 @@ FAT_SECPERFAT   equ     $E55B   ; sectors per FAT copy (word; from BPB +22)
 ; §INIT) and used to build the HPHYD CALLF operand. Own-choice free page-3 RAM
 ; in the $E55D gap (after FAT_SECPERFAT's word $E55B-$E55C, before WBUF $E560).
 HOOK_SLOT       equ     $E55D   ; our slot byte for the HPHYD inter-slot hook (1)
+; BDOS_SRCHIDX (M19) — persistent root-directory search cursor for the runtime
+; SFIRST ($11) / SNEXT ($12) dir-search entries ($4FB8/$5006). Absolute 0-based
+; index of the NEXT root-dir entry to examine: SFIRST sets it to (first-match+1),
+; each SNEXT resumes there and updates it to (its-match+1). SNEXT reconstructs the
+; sector cursor from this index alone (>>4 = sector, &15 = entry-in-sector) so it
+; never persists FAT_DIRSEC/FAT_DIRREM across calls (those alias the loader
+; fat_find/fat_dir_create path). Own-choice free page-3 RAM in the 2-byte gap
+; after HOOK_SLOT ($E55D), before WBUF ($E560): $E55E..$E55F is unused (grep-clean
+; 2026-07-01). Word (rootEnts <= 254; a word keeps the >>4 sector math clean).
+; DOS-phase-only (dead during BASIC/loader); SFIRST always seeds it before any
+; SNEXT reads it, so no init-time build is needed. See disk/PROVENANCE.md §BDOS.
+BDOS_SRCHIDX    equ     $E55E   ; runtime dir-search cursor (word; M19)
+; The runtime DTA base (where SFIRST/SNEXT write the found 32-byte dir image) is
+; the disk work-area's current-DTA cache at the fixed address $F23D. Stock's
+; SETDTA-time routine ($5058) writes the new DTA pointer here and stock's SFIRST
+; reads it back (PCs $4FCC/$4FEF); on ours it was never written until the $5058
+; veneer (setdta_cache_body) was wired to cache DE here (M19). SFIRST/SNEXT read
+; it fresh each call. Black-box pinned (entry DE=DTA, write-target $F23D); no stock
+; code decoded. See disk/kernel.asm setdta_cache_body / docs/tier2-m19-spec.md.
+DOS_DTAPTR      equ     $F23D   ; disk work-area current-DTA cache (word, LE; M19)
 ; FAT12 working scratch (transient within a single call)
 FAT_PARITY      equ     $E4B2   ; 1 = odd cluster, 0 = even (FAT12 nibble pack)
 FAT_BYTEIDX     equ     $E4B3   ; byte index within a FAT sector (word, 0..511)

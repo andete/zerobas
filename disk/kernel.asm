@@ -19,6 +19,43 @@
                 jp      k_4E4B          ; $4E4B: COMMAND.COM-load kernel veneer
                 ds      $4EDE - $, $00  ; pad to the $4EDE kernel veneer
                 jp      k_4EDE          ; $4EDE: COMMAND.COM-load kernel veneer
+; --- MSX-DOS-1 kernel SFIRST/SNEXT dir-search entries: $4FB8/$5006 (M19) -------
+; While processing BDOS SFIRST ($11) / SNEXT ($12) the relocated kernel CALLs these
+; two page-1 disk-ROM entries to walk the root directory for entries matching the
+; search FCB's 8.3 pattern. Both are our own $00 pad (inside the $4EE1..$50A9 fill,
+; below the $50A9/$50C4/$50D5/$50E0 veneers), so before this the CALL NOP-slid into
+; the $50A9 stub tail and returned a bogus "entry found" -> DIR hung (M19 §3). Each
+; is inserted as an additional descending ds-anchor in this chain ($4FB8, $5006 slot
+; in address order between $4EDE and $50A9), consuming existing pad -> net-zero.
+; Black-box entry contract (M19 §2, callseq/capture, no stock CODE decoded): entry
+; DE -> the kernel's search-FCB copy (drive byte + 11-byte 8.3 pattern, ?=$3F
+; wildcard); the runtime DTA base lives in the fixed work-area cell $F23D (the
+; kernel's current-DTA pointer, set via its own SETDTA before the search). Bodies
+; (sfirst_body/snext_body/dirscan_match) live in the free tail; clean-room -- our
+; own fat_mount/fat_find root-dir walk + published SFIRST/SNEXT contract. See
+; docs/tier2-m19-spec.md.
+                ds      $4FB8 - $, $00  ; pad up to the pinned $4FB8 SFIRST entry
+sfirst:
+                jp      sfirst_body     ; -> free-tail: find FIRST matching dir entry (M19)
+                ds      $5006 - $, $00  ; pad up to the pinned $5006 SNEXT entry
+snext:
+                jp      snext_body      ; -> free-tail: find NEXT matching dir entry (M19)
+; --- MSX-DOS-1 kernel SETDTA-time entry: $5058 (M19) --------------------------
+; While processing BDOS SETDTA ($1A) the relocated kernel CALLs this page-1
+; disk-ROM entry to cache the new DTA pointer into the disk work area. Black-box
+; contract (M19, callseq/capture/callwatch causal pin, no stock CODE decoded):
+; entry DE = the new DTA pointer (=$D403 for DIR; register-identical ours==stock,
+; 51 calls each), and stock's routine stores it at the fixed work-area cell $F23D
+; (proven: on stock $F23D=$D403 and SFIRST reads it via PCs $4FCC/$4FEF; on ours,
+; before this veneer, $F23D was never written -> SFIRST/SNEXT wrote the found entry
+; to a stale/garbage DTA -> DIR reported "File not found"). Wiring $5058 to cache
+; DE at $F23D makes SFIRST/SNEXT (which read DOS_DTAPTR=$F23D) target the real
+; runtime DTA. Same un-wired-$50xx-entry class as M13/M17/M18. Body =
+; setdta_cache_body (free tail). CLEAN-ROOM: our own DE->$F23D store + the observed
+; entry-register / write-target contract; no stock routine internals decoded.
+                ds      $5058 - $, $00  ; pad up to the pinned $5058 SETDTA-cache entry
+setdta_cache:
+                jp      setdta_cache_body ; -> free-tail: ($F23D) := DE (runtime DTA; M19)
                 ds      $50A9 - $, $00  ; pad remainder up to the kernel's $50A9 target
                 sub     a               ; A=$00, F=$42 (Z+N) -- the exact exit AF
                 ld      (W50A9_WRKB), a ; $F242 := $00  (the only persistent write)
@@ -605,4 +642,249 @@ seldsk_drv_body:
 curdrv_body:
                 ld      a, (CURDRV_CELL) ; CURDRV_CELL = $F247 = current-drive index ($00)
                 ret
+
+; ===== M19: runtime directory search (BDOS SFIRST $11 / SNEXT $12) =============
+; sfirst_body / snext_body / dirscan_match / name_cmp_wild — the bodies behind the
+; $4FB8 (SFIRST) / $5006 (SNEXT) page-1 kernel entries. They walk our own root
+; directory (reusing fat_mount + the fat_find ff_secloop/ff_entloop structure),
+; match each 8.3 name against the kernel's search-FCB pattern (with the ? wildcard),
+; copy the found entry's drive-byte + 32-byte directory image to the runtime DTA,
+; and persist the scan position in BDOS_SRCHIDX so SNEXT resumes where the prior
+; call stopped. Return A=$00 found / A=$FF exhausted (published SFIRST/SNEXT
+; contract; the flags are irrelevant to the caller — M19 §2.4).
+;
+; PINNED black-box contract (M19 §2/§4, callseq/capture — NO stock CODE decoded):
+;   - entry DE -> the kernel's search-FCB copy: drive byte at +0, 11-byte 8.3 name
+;     pattern at +1..+11 (?=$3F matches any single char; DIR issues all-? -> lists
+;     every entry). Observed DE=$DA40, [$DA40]=80 3F 3F ... (M19 §2.3/§4.5).
+;   - the runtime DTA base is the kernel's current-DTA pointer, the fixed work-area
+;     word at DOS_DTAPTR ($F23D) (=$D403 here, set via the kernel's own SETDTA just
+;     before the search); read fresh each call (M19 §4.1). It receives one drive
+;     byte (current drive + 1) then the 32-byte raw dir entry (observed: DTA=
+;     01 <32-byte entry>, M19 §4.4).
+;   - NO attribute filter: SFIRST/SNEXT surface EVERY non-$E5, non-$00 entry incl.
+;     volume-label ($08) and subdir ($10) entries (stock returned the SandStone
+;     volume label as match #1; COMMAND.COM's formatter does the label filtering /
+;     "nn files" count, not us — M19 §4.4/§7, verified against test.dsk).
+; CLEAN-ROOM: our own dir walk over our own fat_* layer + the published FCB /
+; directory-entry / SFIRST-SNEXT contract; the stock routine's internals (108/101
+; page-1 PCs) were never decoded — only entry/exit registers, call counts, and
+; one-sided DATA reads of OUR OWN memory. See docs/tier2-m19-spec.md.
+
+; setdta_cache_body — the $5058 kernel SETDTA-time entry (M19). Caches the new DTA
+; pointer (DE) into the disk work-area cell DOS_DTAPTR ($F23D), so the SFIRST/SNEXT
+; bodies can read the runtime DTA from a fixed cell (as stock's SFIRST does, PCs
+; $4FCC/$4FEF). Register-transparent (like curdrv_body/wa_seg): preserves A/BC/DE/
+; HL/IX/IY. Reached from the fixed $5058 veneer (jp setdta_cache_body).
+; CLEAN-ROOM: our own DE->$F23D store + the observed entry DE=DTA / write-$F23D
+; contract; no stock routine internals decoded. See docs/tier2-m19-spec.md.
+;   in:  DE = new DTA pointer ; out: ($F23D) := DE ; all registers preserved
+setdta_cache_body:
+                ld      (DOS_DTAPTR), de    ; $F23D := DE (runtime DTA pointer)
+                ret
+
+; sfirst_body — BDOS SFIRST ($11): find the FIRST matching root-dir entry.
+;   in:  DE -> search FCB (name pattern at DE+1) ; out: A=$00 found / $FF none
+sfirst_body:
+                inc     de                  ; DE -> the 11-byte 8.3 pattern (FCB+1)
+                ld      (FAT_NAMEPTR), de   ; dirscan_match compares against this
+                call    fat_mount           ; (re)parse BPB -> FAT_FIRSTROOT/FAT_ROOTSECS
+                jp      c, ds_none          ; disk error -> no entry
+                ld      hl, 0
+                ld      (BDOS_SRCHIDX), hl  ; scan cursor := entry 0
+                jr      dirscan_match
+
+; snext_body — BDOS SNEXT ($12): resume from BDOS_SRCHIDX, find the NEXT match.
+;   in:  DE -> search FCB (name pattern at DE+1) ; out: A=$00 found / $FF exhausted
+snext_body:
+                inc     de                  ; DE -> the 11-byte 8.3 pattern (FCB+1)
+                ld      (FAT_NAMEPTR), de
+                call    fat_mount           ; geometry back into scratch (idempotent)
+                jp      c, ds_none
+                ; fall through: BDOS_SRCHIDX already points at the next entry.
+
+; dirscan_match — walk the root dir from BDOS_SRCHIDX; on the first entry matching
+; the pattern (name_cmp_wild) copy its drive-byte + 32-byte image to the DTA, set
+; BDOS_SRCHIDX := match-index + 1, return A=$00. On $00 end-mark or all sectors
+; scanned, return A=$FF. Reconstructs the sector cursor from BDOS_SRCHIDX alone
+; (idx>>4 = sectors to skip; idx&15 = entry-in-sector) so it never persists
+; FAT_DIRSEC/FAT_DIRREM across calls (M19 §4.3/§4.4).
+dirscan_match:
+                ; sectorsToSkip = BDOS_SRCHIDX >> 4  (16 entries per 512-B sector)
+                ld      hl, (BDOS_SRCHIDX)
+                ld      b, 4
+dsm_shr:
+                srl     h
+                rr      l
+                djnz    dsm_shr             ; HL = idx >> 4 = sector offset
+                ; FAT_DIRSEC := FAT_FIRSTROOT + sectorOffset
+                ld      de, (FAT_FIRSTROOT)
+                add     hl, de
+                ld      (FAT_DIRSEC), hl
+                ; FAT_DIRREM := FAT_ROOTSECS - sectorOffset
+                ld      hl, (BDOS_SRCHIDX)
+                ld      b, 4
+dsm_shr2:
+                srl     h
+                rr      l
+                djnz    dsm_shr2            ; HL = idx >> 4 again (sector offset)
+                ex      de, hl              ; DE = sector offset
+                ld      hl, (FAT_ROOTSECS)
+                or      a
+                sbc     hl, de
+                jp      z, ds_none          ; already past the last root sector
+                jp      c, ds_none          ; (defensive) offset beyond root
+                ld      (FAT_DIRREM), hl
+dsm_secloop:
+                ld      hl, (FAT_DIRREM)
+                ld      a, h
+                or      l
+                jp      z, ds_none          ; scanned every remaining root sector
+                ld      de, (FAT_DIRSEC)
+                ld      hl, SECTOR_BUF
+                call    read_sector
+                jp      c, ds_none          ; FDC error -> exhausted (no entry)
+                ; start entry-in-sector = BDOS_SRCHIDX & 15
+                ld      a, (BDOS_SRCHIDX)
+                and     $0F
+                ld      c, a                ; C = entry index within this sector
+                ; HL = SECTOR_BUF + entry*32
+                ld      hl, SECTOR_BUF
+                ld      b, a
+                or      a
+                jr      z, dsm_athl
+dsm_addent:
+                ld      de, 32
+                add     hl, de
+                djnz    dsm_addent
+dsm_athl:
+                ld      a, 16
+                sub     c
+                ld      b, a                ; B = entries left in THIS sector (16-C)
+dsm_entloop:
+                ld      a, (hl)
+                or      a
+                jp      z, ds_none          ; $00 = end of directory -> exhausted
+                cp      $E5
+                jr      z, dsm_skip         ; deleted entry -> skip (no filter else)
+                ld      de, (FAT_NAMEPTR)
+                push    hl
+                push    bc
+                call    name_cmp_wild       ; Z if the 8.3 name matches the pattern
+                pop     bc
+                pop     hl
+                jr      z, dsm_found
+dsm_skip:
+                ld      de, 32
+                add     hl, de              ; next 32-byte directory entry
+                call    dsm_bump            ; BDOS_SRCHIDX += 1 (advance past this one)
+                djnz    dsm_entloop
+                ; sector done: advance FAT_DIRSEC, dec FAT_DIRREM, next sector.
+                ld      hl, (FAT_DIRSEC)
+                inc     hl
+                ld      (FAT_DIRSEC), hl
+                ld      hl, (FAT_DIRREM)
+                dec     hl
+                ld      (FAT_DIRREM), hl
+                jr      dsm_secloop
+dsm_found:
+                ; HL = matched 32-byte directory entry. Build the runtime DTA as the
+                ; MSX-DOS SFIRST/SNEXT "found FCB" (drive + unopened FCB), matching
+                ; stock byte-for-byte in every field COMMAND.COM's DIR reads (name,
+                ; attribute, time, date, first cluster, size). The field layout was
+                ; pinned black-box against stock's DTA + a readwatch of the DIR
+                ; formatter's DTA reads (M19 §4.4):
+                ;   DTA[0]      = drive (current drive + 1)
+                ;   DTA[1..11]  = entry[0..10]  (11-byte 8.3 name)
+                ;   DTA[12]     = 0  (FCB extent/EX)
+                ;   DTA[13]     = entry[11]     (attribute)
+                ;   DTA[14..22] = 0  (incl. the computed record-count field DIR
+                ;                 never reads; left 0 -- black-box confirmed unread)
+                ;   DTA[23..32] = entry[22..31] (time, date, first cluster, size)
+                ; The attribute at DTA[13] is what lets DIR filter volume-label /
+                ; subdir entries and count "nn files" correctly -- writing a verbatim
+                ; raw entry (attr at DTA[12]) mis-set that filter (the alternating-
+                ; garbage / wrong-count bug). CLEAN-ROOM: our own field copy from our
+                ; own dir walk into the published FCB-result layout; no stock code.
+                push    hl                  ; save entry ptr
+                ld      de, (DOS_DTAPTR)    ; DE = runtime DTA base
+                push    de                  ; save DTA base
+                ; zero DTA[0..32] (33 bytes) so all gap/unset fields are $00.
+                ld      h, d
+                ld      l, e                ; HL = DTA base
+                ld      (hl), 0
+                push    hl
+                pop     de                  ; DE = DTA base
+                inc     de                  ; DE = DTA+1
+                ld      bc, 32
+                ldir                        ; propagate the $00 across DTA[1..32]
+                pop     de                  ; DE = DTA base
+                pop     hl                  ; HL = matched dir entry
+                ; DTA[0] = drive (current drive + 1)
+                ld      a, (CURDRV_CELL)
+                inc     a
+                ld      (de), a
+                inc     de                  ; DE = DTA+1
+                ; DTA[1..11] = entry[0..10] (name)
+                push    hl                  ; keep entry base
+                ld      bc, 11
+                ldir                        ; -> DTA[1..11]; HL=entry+11, DE=DTA+12
+                ; DTA[12] stays 0; DTA[13] = entry[11] (attr)
+                inc     de                  ; DE = DTA+13
+                ld      a, (hl)             ; entry[11] = attribute
+                ld      (de), a
+                ; DTA[14..22] stay 0; DTA[23..32] = entry[22..31]
+                pop     hl                  ; HL = entry base
+                ld      bc, 22
+                add     hl, bc              ; HL = entry+22 (time/date/clus/size)
+                ld      de, (DOS_DTAPTR)
+                ld      a, e
+                add     a, 23
+                ld      e, a
+                jr      nc, dsm_nohc
+                inc     d
+dsm_nohc:
+                ld      bc, 10
+                ldir                        ; -> DTA[23..32]
+                call    dsm_bump            ; BDOS_SRCHIDX := match-index + 1
+                xor     a                   ; A = $00 = found
+                ret
+ds_none:
+                ld      a, $FF              ; A = $FF = no (more) matching entry
+                ret
+
+; dsm_bump — BDOS_SRCHIDX += 1 (advance the persistent scan cursor). Preserves all
+; registers (HL is the live entry pointer at both call sites).
+dsm_bump:
+                push    hl
+                ld      hl, (BDOS_SRCHIDX)
+                inc     hl
+                ld      (BDOS_SRCHIDX), hl
+                pop     hl
+                ret
+
+; name_cmp_wild — compare an 11-byte dir name against the search pattern, with the
+; FCB ? wildcard: a pattern byte of $3F matches any single character. Otherwise
+; identical to name_cmp (case-insensitive via toupper). (Published CP/M-2.2 /
+; MSX-DOS FCB match rule; M19 §4.5 — verified DIR issues an all-? pattern.)
+;   in:  HL = directory-entry name, DE = search pattern ; out: Z set if match;
+;        trashes A, B, DE, HL (HL/DE advanced 11 bytes; C preserved)
+name_cmp_wild:
+                ld      b, 11
+ncw_loop:
+                ld      a, (de)
+                cp      $3F                 ; '?' pattern byte matches anything
+                jr      z, ncw_next
+                ld      a, (de)
+                call    toupper
+                ld      c, a
+                ld      a, (hl)
+                call    toupper
+                cp      c
+                ret     nz                  ; mismatch -> Z clear
+ncw_next:
+                inc     hl                  ; 16-bit inc: leaves flags intact
+                inc     de
+                djnz    ncw_loop
+                ret                         ; Z set (all 11 positions matched)
 
