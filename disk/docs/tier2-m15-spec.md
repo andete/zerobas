@@ -133,8 +133,49 @@ signed off, or by a falsify-first "complete wa_seg → does CHPUT fire" build.
   BIOS-agnostic + net-zero; validate FILES on C-BIOS + CF-3300 unchanged**.
 - OI-3: does fixing func-9 also fix the un-cleared BASIC banner (secondary symptom)? →
   **treat as separate; defer, re-`screen` after M15 lands**.
-- OI-4: scope — **RESOLVED (§7.1): BOUNDED to completing `wa_seg` (+`$F365`), NOT the broad
+- OI-4: scope → **RESOLVED (§7.1): BOUNDED to completing `wa_seg` (+`$F365`), NOT the broad
   work-area construction sub-track**. Feared bigger; measured smaller.
-- OI-5 (NEW, needs asm→sign-off): the exact reason ours' `wa_seg` aborts func-9 at 3 iterations →
-  **pin by tracing OUR OWN `wa_seg` (`$E795`, clean) or a falsify-first "complete wa_seg" build,
-  once M15 asm is signed off**.
+- OI-5: the exact reason ours' `wa_seg` aborts func-9 → **PARTIALLY PINNED (§7.2, no asm, all
+  black-box/no-decode). Still needs a falsify-first build (sign-off gate unchanged) to nail the
+  exact read.**
+
+## 7.2 OI-5 partial pin (2026-07-02, no asm) — corrects the "3 iterations" framing; caller identified
+**Harness prerequisite:** this session's trace also fixed a clean-room gap in the harness itself
+(`probes/disk/omsx_session.py`'s `DISOK` gate was a blanket `PC >= 0x4000` on the ours-host, which
+decoded the loaded MSXDOS.SYS kernel's own resident code whenever a trace on ours returned into it —
+a breach of the same class as the 2026-06-30 one. Fixed with an `OWN_RAM_RANGES` allowlist +
+`own_code` Tcl proc; that decoded kernel trace was discarded, never used for any conclusion below).
+
+New black-box facts (call-site + register capture, zero instruction decode):
+- **The `wa_seg` (`$F368`/`$F36B`) calls during func-9 are NOT routed through `RES_PRINT` ($F1C9).**
+  A caller probe (breakpoints at `$F368`/`$F36B`, gated to `C==9`, logging the return address off the
+  stack) shows the caller is a FIXED kernel site: `$F368`→ret `$D888`, `$F36B`→ret `$D88E`, every time.
+  `$D8xx` is outside `RES_PRINT`'s 7-byte range — func-9 has its own dedicated loop in the loaded
+  kernel; `RES_PRINT` (built by `build_resident`, §8.28) is a DIFFERENT call path (the $50A9-time
+  message), not func-9's. **This corrects the working assumption in §2/§4 that `RES_PRINT`'s stub
+  body is on the STROUT path — it is not; leave `RES_PRINT` alone, it is unrelated to this bug.**
+- **Corrects the "3 iterations in one STROUT call" framing (§7.1).** The 3 hits are one
+  `$F368`+`$F36B` pair each, at BDOS call-index 1, 3, and 17 (i.e. the 3 SEPARATE `C=9` STROUT calls
+  COMMAND.COM issues) — **every single STROUT call manages exactly ONE segment-switch round-trip,
+  never more**, not "one call does 3 then aborts." Matches CHPUT never firing (M14): the loop exits
+  before ever reaching output, every time, on the very first iteration.
+- **No register divergence at the shared entry point.** `capture --at 0xD88E --nth 1` (first-ever hit
+  on either machine): AF/BC/DE/HL/IX/IY/SP **byte-identical** ours vs stock. `wa_seg` itself
+  introduces no register-level effect beyond contract (confirms §8.58's transparency claim still
+  holds); the divergence is a MEMORY read in the next few instructions, not a register.
+- **Page-1 low window is not it.** `readwatch --range 0x4000:0x20` (gated func-9) → **zero reads**,
+  both machines. Whatever `$F368`'s "run a page-1 disk-ROM routine" step touches, it is not the first
+  32 bytes of page 1; narrowing the exact cell needs a wider/relocated `readwatch` sweep or the
+  falsify-first build below — do not assume the low window and move on blind.
+- **A direct forward PC-trace from `$D88E` is confounded by interrupt timing**, not useful as-is:
+  stock takes a hardware interrupt (`$0038`→`$DDAE`) at the very next step, ours doesn't; `--resync`
+  found no reconvergence in a 200-instr window. This is very likely benign 60 Hz timing jitter (ours
+  and stock reach this logical point at wildly different wall-clock instants: t=7.88s vs t=11.45s), not
+  a real fork — but it makes naive PC-stream diffing at this exact instant unreliable. Do not read this
+  as "the interrupt is the bug" without more evidence; it just breaks the diff mechanism locally.
+
+**Net:** OI-5 is narrowed (dedicated kernel loop, not `RES_PRINT`; one round-trip per call, not three;
+no register-level fault) but NOT closed — the exact wrong-byte/wrong-check has not been pinned. The
+next black-box step (still no asm) would be a broader `readwatch` sweep beyond `$4000:0x20` for the
+byte the loop actually compares against `$` around `$D88E`+few instrs; failing that, this is the
+falsify-first-build gate the spec already called for (§7.1: sign-off before ANY asm).

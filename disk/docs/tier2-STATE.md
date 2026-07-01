@@ -10,15 +10,20 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-07-01 (SESSION HANDOVER) — M13 (CONIN) DONE. M14 (COMMAND.COM banner/prompt
-lines don't render) is CHARACTERISED + LOCALISED + CAUSALLY CONFIRMED + SCOPE-BOUNDED this session:
-the blocker is BDOS func-9 (STROUT) output, whose loop pages via the `$F368`/`$F36B` segment hooks;
-ours' M5.6 `wa_seg` is an incomplete `$DF57` (§8.57 thread) → a BOUNDED fix (complete `wa_seg` +
-`$F365`), not the broad work-area sub-track. Queue REVIEWED & the CONIN arc (M12–M12d, M13) ARCHIVED;
-only M14 remains Open. **NEW SESSION STARTS HERE →** Next action: (1) pin OI-5 (why ours' `wa_seg`
-aborts func-9 at 3 iterations — trace OUR OWN `$E795`, clean/no-asm), then (2) draft the
-`wa_seg`-completion spec, then (3) asm sign-off. Detail: Live thesis + [tier2-m15-spec.md](tier2-m15-spec.md)
-§7.1/OI-5; history [tier2-review-queue.md](tier2-review-queue.md) M14._
+_Last updated: 2026-07-02 (SESSION HANDOVER) — M13 (CONIN) DONE. M14 (COMMAND.COM banner/prompt
+lines don't render) is CHARACTERISED + LOCALISED + CAUSALLY CONFIRMED + SCOPE-BOUNDED: the blocker is
+BDOS func-9 (STROUT) output, whose loop pages via the `$F368`/`$F36B` segment hooks; ours' M5.6
+`wa_seg` is an incomplete `$DF57` (§8.57 thread) → a BOUNDED fix (complete `wa_seg` + `$F365`), not the
+broad work-area sub-track. **This session: OI-5 PARTIALLY PINNED (no asm) — the func-9 loop is a
+dedicated kernel call site (ret `$D888`/`$D88E`), NOT `RES_PRINT`; it's ONE segment round-trip per
+STROUT call (not "3 in one call"); registers are identical ours-vs-stock at the shared entry; the
+exact wrong-read is still open.** Also: a real clean-room gap was found + fixed in the harness itself
+(`probes/disk/omsx_session.py`'s disasm gate decoded loaded-kernel bytes on the ours-host; replaced
+with an `OWN_RAM_RANGES` allowlist; bad trace discarded, unused). **NEW SESSION STARTS HERE →** Next
+action: either (a) a wider `readwatch` sweep to pin the exact byte the func-9 loop misreads (still
+no-asm), or (b) if that stalls, the falsify-first "complete wa_seg" build — HARD-STOP for sign-off
+before any asm (spec §7.1/§7.2 unchanged). Detail: Live thesis + [tier2-m15-spec.md](tier2-m15-spec.md)
+§7.2/OI-5; history [tier2-review-queue.md](tier2-review-queue.md) M14._
 
 ## Goal
 Boot MSX-DOS to the `A>` prompt under zerobas-disk (Tier-2) **without regressing
