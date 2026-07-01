@@ -127,14 +127,59 @@ wrong result vs a downstream check) — pin by tracing OUR OWN `wa_seg` (`$E795`
 signed off, or by a falsify-first "complete wa_seg → does CHPUT fire" build.
 
 ## 8. Open items (recommended defaults in bold)
-- OI-1: P-vector vs P-resident → **RESOLVED (§7/§7.1): P-resident, and causally BOUNDED to the
-  `wa_seg` segment-switch hooks (`$F368`/`$F36B`) + `$F365` stub — the fix shape is (B) but small**.
+- OI-1: P-vector vs P-resident → **P-resident (§7 stands), but the "+`$F365` stub is the
+  bounded fix" half is FALSIFIED — see §7.3. The fix shape is (B) but LARGER than `$F365`.**
 - OI-2: is the func-9 output path DOS-only or shared with BASIC? → **`wa_seg` is DOS-path; must stay
   BIOS-agnostic + net-zero; validate FILES on C-BIOS + CF-3300 unchanged**.
 - OI-3: does fixing func-9 also fix the un-cleared BASIC banner (secondary symptom)? →
   **treat as separate; defer, re-`screen` after M15 lands**.
-- OI-4: scope → **RESOLVED (§7.1): BOUNDED to completing `wa_seg` (+`$F365`), NOT the broad
-  work-area construction sub-track**. Feared bigger; measured smaller.
+- OI-4: scope → **REOPENED (§7.3): completing `wa_seg`+`$F365` alone does NOT unblock func-9
+  (falsify-first build, real asm, negative result) — the bound claimed in §7.1 was premature.
+  Scope is larger than "wa_seg + one 3-byte stub"; likely still short of the full broad
+  work-area sub-track, but not yet re-sized.**
+
+## 7.3 Falsify-first build (2026-07-02) — NEGATIVE: `$F365` completion does not unblock func-9
+Implemented exactly the §7.1/OI-5 bounded fix and rebuilt: `install_f365` (kernel.asm) LDIRs a
+clean-room `IN A,($A8); RET` stub (i8255 PPI primary-slot-select register, MSX2 TH ch.2 /
+docs/allowed-sources.md class A — never read from the stock ROM) to the fixed address `$F365`,
+called via a 3-byte `call install_f365` from `build_resident` (init.asm). Net-zero (`disk.rom` =
+16384 B), Tier-1 green (`make unit-test` 19/19 incl. `test_getdpb`/`test_gdate`).
+
+**Harness gotcha hit while building this (not a clean-room issue, a pasmo one):** the cramped
+pre-`$41FD` region `build_resident` lives in (§M5.6) has ZERO slack — inlining a second
+ld/ld/ld/ldir there (11 B) silently overflows the `ds $41FD - $` canonical anchor in
+pageenv.asm. Symptom: pasmo's 3-pass/symbol-table (`--sym`) mode emits a valid symbol file but
+an EMPTY (0-byte) object file, no error printed; plain 2-arg mode "succeeds" at the right file
+size but the content past the overflow point is not to be trusted either. Fixed by moving the
+copy to a real `install_f365` routine in the free tail (no budget limit) and calling it with a
+single 3-byte `call` instead of inlining the 11-byte sequence. **Lesson: after ANY change that
+adds bytes to a `build_*` routine before `$41FD`, rebuild with `--sym` (3 positional args) and
+check the object file size, not just exit code — 2-arg mode does not surface this class of
+overflow.**
+
+**Result — the stub is live but never reached:** rebuilt, re-ran the OI-5 caller probe
+(`$F368`/`$F36B`/`$F365`/`$0038`, gated to `C==9`). **Identical to before the fix**: `$F368`/
+`$F36B` still fire exactly 3 times total (one round-trip per STROUT call, at BDOS call-index
+1/3/17 — unchanged), and `$F365` is **never hit** (0 occurrences, same as pre-fix). `screen
+--settle 30` renders identically to before (only the pre-existing sign-on + date line; no
+COMMAND.COM banner/prompt lines). `callseq --log 0x00A2`: ours still 12 calls (all pre-COMMAND.COM
+date/sign-on chars) vs stock 72 — CHPUT count unchanged.
+**⇒ Completing `wa_seg` + `$F365` does NOT unblock func-9 output.** The early-exit-after-one-
+round-trip happens BEFORE the kernel ever reaches a call to `$F365` (stock only calls it 16× across
+LATER iterations); whatever decides to stop after iteration 1 is upstream of `$F365` entirely. §7.1's
+"BOUNDED to wa_seg + $F365" claim is falsified — this is genuinely useful negative information
+(the cheap experiment the guardrails call for), not wasted work, but it means OI-5's real
+mechanism is still open and likely larger than a single 3-byte stub. The `$F365` stub itself is
+harmless/correct (published contract, net-zero, Tier-1 green) and was left in the tree since it's
+still part of the eventual real fix, but it does NOT close M15 on its own.
+**Next (unresolved):** find what, immediately after the `$F368`/`$5454`-adjacent window (caller
+`$D888`/`$D88E`/`$D88A`; see §7.2), makes the kernel exit after exactly one char/iteration on ours
+but continue ~15-45× on stock. `$D88A` is the SAME call site `conout_body`'s own doc (runtime.asm)
+already names for CONOUT's per-char output — meaning CONOUT and STROUT likely share this exact loop,
+so the fault is probably NOT in the shared loop body itself (CONOUT works) but in whether/how STROUT's
+caller reaches or re-enters it per char. This needs either a decode-free structural hypothesis test
+(a further falsify-first build) or reopening the broader work-area-construction framing
+(tier2-workarea-map.md) that OI-4 had prematurely set aside.
 - OI-5: the exact reason ours' `wa_seg` aborts func-9 → **PARTIALLY PINNED (§7.2, no asm, all
   black-box/no-decode). Still needs a falsify-first build (sign-off gate unchanged) to nail the
   exact read.**

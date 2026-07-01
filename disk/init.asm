@@ -571,12 +571,20 @@ build_resident:
                 ld      de, P1_BLIT
                 ld      bc, wa_seg_end_tmpl - p1_blit_tmpl
                 ldir
+                ; F365_STUB install (M15 §7.1/§7.2): a `call` (3 B), not an inline
+                ; ld/ld/ld/ldir (11 B) — this pre-$41FD region is at capacity (an
+                ; inline second copy here overflows the `ds $41FD - $` canonical
+                ; anchor in pageenv.asm, verified: 3-pass/symbol-table assembly
+                ; silently emits an empty object file with no error). The actual
+                ; copy runs from the free tail, which has no such budget limit.
+                call    install_f365
                 ret
 RES_STUBS       equ     $F24E   ; no-op segment-hook stub table base (§8.29)
 RES_STUBS_END   equ     $F2B8   ; one past the last stub ($F2B7); $F2B8+ = kernel data (§8.61)
 DRVA_DPB        equ     $F195   ; drive-A DPB base (id byte + 18-byte DPB, §8.30)
 DRVTBL          equ     $F348   ; MSX-DOS-1 disk-driver table (§8.22)
 RES_PRINT       equ     $F1C9   ; resident $-string print routine the kernel CALLs (§8.28)
+F365_STUB       equ     $F365   ; fixed disk-work-area slot-read stub (IN A,($A8);RET; M15 §7.1)
 DRV_NTRAMP      equ     4       ; number of CALLF trampolines
 ; drv_targets — low byte of each $40xx driver entry the trampolines call. Order
 ; matches the stock DRVTBL's non-zero pointer slots (+5/+7/+9/+13): the hot pointer

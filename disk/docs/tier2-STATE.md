@@ -11,19 +11,25 @@ History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); deta
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
 _Last updated: 2026-07-02 (SESSION HANDOVER) — M13 (CONIN) DONE. M14 (COMMAND.COM banner/prompt
-lines don't render) is CHARACTERISED + LOCALISED + CAUSALLY CONFIRMED + SCOPE-BOUNDED: the blocker is
-BDOS func-9 (STROUT) output, whose loop pages via the `$F368`/`$F36B` segment hooks; ours' M5.6
-`wa_seg` is an incomplete `$DF57` (§8.57 thread) → a BOUNDED fix (complete `wa_seg` + `$F365`), not the
-broad work-area sub-track. **This session: OI-5 PARTIALLY PINNED (no asm) — the func-9 loop is a
-dedicated kernel call site (ret `$D888`/`$D88E`), NOT `RES_PRINT`; it's ONE segment round-trip per
-STROUT call (not "3 in one call"); registers are identical ours-vs-stock at the shared entry; the
-exact wrong-read is still open.** Also: a real clean-room gap was found + fixed in the harness itself
-(`probes/disk/omsx_session.py`'s disasm gate decoded loaded-kernel bytes on the ours-host; replaced
-with an `OWN_RAM_RANGES` allowlist; bad trace discarded, unused). **NEW SESSION STARTS HERE →** Next
-action: either (a) a wider `readwatch` sweep to pin the exact byte the func-9 loop misreads (still
-no-asm), or (b) if that stalls, the falsify-first "complete wa_seg" build — HARD-STOP for sign-off
-before any asm (spec §7.1/§7.2 unchanged). Detail: Live thesis + [tier2-m15-spec.md](tier2-m15-spec.md)
-§7.2/OI-5; history [tier2-review-queue.md](tier2-review-queue.md) M14._
+lines don't render) is CHARACTERISED + LOCALISED: the blocker is BDOS func-9 (STROUT) output. **This
+session (with sign-off): ran the falsify-first build the spec called for — completed `wa_seg` +
+installed the `$F365` slot-read stub (clean-room, i8255 PPI port `$A8`, net-zero, Tier-1 green) —
+and it's a NEGATIVE result: func-9 STILL exits after exactly one `$F368`/`$F36B` round-trip, `$F365`
+is STILL never reached, `screen`/CHPUT output is UNCHANGED.** This falsifies §7.1's "bounded to
+wa_seg+$F365" claim (OI-1/OI-4 reopened) — real, useful information, but M15 is NOT closed and the
+scope is larger than previously thought. Also fixed this session: a real clean-room gap in the
+harness itself (`probes/disk/omsx_session.py`'s disasm gate decoded loaded-kernel bytes on the
+ours-host; replaced with an `OWN_RAM_RANGES` allowlist) — and a pasmo gotcha (a cramped pre-`$41FD`
+region silently emits an empty ROM under `--sym`/3-pass mode if overflowed with no error; fixed by
+moving the `$F365` copy to the free tail, called via a 3-byte `call`). **NEW SESSION STARTS HERE →**
+Next action: OI-5's real mechanism is still open — the kernel exits after one char/iteration on ours
+but continues ~15-45× on stock, and the fault is upstream of `$F365` (never reached). `$D88A` (the
+call site inside this window) is the SAME address `conout_body`'s own doc names for CONOUT's per-char
+output, suggesting CONOUT/STROUT share this loop and the fault is in how/whether STROUT re-enters it,
+not the loop body itself. Needs either another falsify-first build or reopening the broader
+work-area-construction framing (tier2-workarea-map.md) OI-4 had set aside. Detail:
+[tier2-m15-spec.md](tier2-m15-spec.md) §7.2/§7.3/OI-5; history
+[tier2-review-queue.md](tier2-review-queue.md) M14._
 
 ## Goal
 Boot MSX-DOS to the `A>` prompt under zerobas-disk (Tier-2) **without regressing

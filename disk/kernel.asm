@@ -490,3 +490,33 @@ wa_seg_end_tmpl:
 WA_SEG_ROM      equ     WA_SEG + (wa_seg_rom_tmpl - wa_seg_rom_tmpl)   ; = WA_SEG
 WA_SEG_RAM      equ     WA_SEG + (wa_seg_ram_tmpl - wa_seg_rom_tmpl)
 
+; f365_iord_tmpl — clean-room body for the fixed disk-work-area slot-read stub at
+; $F365 (M15 OI-1/§7 pin: unbuilt/FF on ours; §7.1 causally BOUNDS the func-9 STROUT
+; output blocker to completing `wa_seg` + this stub). Reads the PPI primary-slot-
+; select register (port $A8) and returns; the disk-ROM work area's own per-char
+; output loop CALLs this fixed address (observed black-box: reader PC = $F365 itself,
+; i.e. an executed 2-instruction stub, never disassembled — see docs/tier2-m15-spec.md
+; §7.2). Installed at the FIXED address $F365 (not WA_SEG-relative: the kernel calls
+; it by that absolute address, like WA_JMPTAB), by install_f365 below.
+; CLEAN-ROOM: IN A,(n) reading port $A8 is the documented i8255 PPI primary-slot-
+; select register (MSX2 TH ch.2 / i8255 PPI datasheet, docs/allowed-sources.md class
+; A) — our own encoding of a public 2-instruction sequence, not read from the ROM.
+;   in: - ; out: A = primary-slot register; other registers preserved
+f365_iord_tmpl:
+                in      a, ($A8)
+                ret
+f365_iord_end:
+
+; install_f365 — copies f365_iord_tmpl to the fixed address $F365. Lives in the
+; free tail (no budget limit) and is reached by a single 3-byte `call` from
+; build_resident's cramped pre-$41FD path (see init.asm) instead of inlining the
+; ld/ld/ld/ldir sequence there, which overflows that region's canonical-address
+; budget (M15 §7.1/§7.2: verified — an inline second copy there makes 3-pass/
+; symbol-table assembly silently emit an empty object file, no error printed).
+install_f365:
+                ld      hl, f365_iord_tmpl
+                ld      de, F365_STUB
+                ld      bc, f365_iord_end - f365_iord_tmpl
+                ldir
+                ret
+
