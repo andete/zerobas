@@ -10,7 +10,34 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-07-02 (**M20 LANDED — DIR's `nn bytes free` footer now matches stock,
+_Last updated: 2026-07-02 (**M21a+M21b LANDED — Tier-2 can now load and run an arbitrary named
+`.COM`, not just COMMAND.COM itself.** Built while wiring the BDOS-exerciser `BDOSX.COM` tool
+([[bdos-exerciser-com-test]]): typing any other program name silently no-op'd. Root cause was
+TWO independent broken page-1 entries (full detail [tier2-m21-spec.md](tier2-m21-spec.md)):
+**RC-1** — the kernel's FOPEN dir-fill entry `$4462` landed mid our own `fdc_di_save` body (a
+byte-count collision, not a canonical clash); fixed by relocating `fdc_di_save..getdpb` (153 B)
+to fat.asm's free tail and wiring a real `fopen_fill_body` veneer at `$4462` (fills FCB
++14(high)..+31 from the SFIRST/SNEXT-found dir entry — record count, size, date/time, devid,
+cluster chain; miss-path exits `A=$FF` matching stock exactly). **RC-2** — the kernel's RDBLK
+entry `$47B2`'s body (`k_47B2`) was a COMMAND.COM-only diagnostic loader (its own private FCB,
+its own mini-BDOS open-by-name); rewritten into a generic body that trusts the FAT_FIRSTCLUS/
+FAT_FILESIZE already seeded by the preceding FOPEN and streams to EOF via the existing
+`bdos_seqread`, reproducing the pinned exit contract exactly (`AF=$0142 HL=BC=`bytes
+transferred). A real bug was found and fixed along the way: our internal `BDOS_DTA` cell is
+SEPARATE from the kernel's real DTA pointer (`DOS_DTAPTR`, $F23D, M19) — the kernel's SETDTA only
+ever writes `DOS_DTAPTR`, so `BDOS_DTA` went stale after boot's own COMMAND.COM load and had to
+be reseeded from `DOS_DTAPTR` at `k_47B2`'s entry. **First attempt was reverted** (a third,
+uncharacterised `$4462` calling instance broke the core boot regression) and a falsify-first
+`writewatch` isolation pass on stock resolved it before the successful second attempt — see
+[tier2-m21-spec.md](tier2-m21-spec.md) §0/§0.1 for the full hard-stop story; this is a good
+example of the project's harness-first discipline paying off. **Verified end-to-end:** `make
+unit-test` 19/19; boot `callseq` 27/27 aligned; `capture --at 0xC51D` (the runtime RDBLK's exit)
+ZERO register diffs vs stock; a full typed `BDOSX\r` run aligns all 47 shared BDOS calls
+(n=37-47 = the exerciser's own FSIZE/FOPEN/RDSEQ×2/SETRND/RDBLK/WRBLK/FCLOSE), its 384-byte data
+buffer and FCB/register-snapshot buffer both 0-byte-diff vs stock; DIR byte-identical; `make
+probe` green; `disk.rom` == 16384 B throughout. The BDOS-exerciser tool itself
+([tier2-bdos-exerciser-spec.md](tier2-bdos-exerciser-spec.md)) is now UNBLOCKED and was used as
+part of this milestone's own verification. Prior: 2026-07-02 (**M20 LANDED — DIR's `nn bytes free` footer now matches stock,
 closing DIR to 100% byte-parity.** Two revisions were built and falsified first (Revision 1:
 register-only, correct A/BC/DE/HL but the footer stayed wrong; Revision 2: + resident FAT buffer +
 `IY`/`DPB+19`, from a one-time Opus+Fable dual-dispatch trial, wired correctly but STILL wrong,
@@ -185,6 +212,16 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   tried and falsified that path — see [tier2-review-queue.md](tier2-review-queue.md) for the full
   falsification history) — **any future HL-returning page-1 entry must remember to clear `$F306`
   before `ret`**, this is now a GENERAL rule for this ROM, not GETALLOC-specific.
+- **M21a+M21b (2026-07-02): typed-`.COM` load fully works.** `$4462` (kernel FOPEN dir-fill) now a
+  real veneer (`fopen_fill_body`, disk/fat.asm) after relocating the colliding `fdc_di_save..getdpb`
+  span to fat.asm's free tail; `$47B2` (kernel RDBLK) rewritten from a COMMAND.COM-only diagnostic
+  loader into a generic body (`k_47B2`, disk/kernel.asm) that trusts the preceding FOPEN's
+  FAT_FIRSTCLUS/FAT_FILESIZE and streams to EOF via `bdos_seqread`. **DO NOT re-litigate the fill
+  contract** (uniform across calling instances, §0.1 of [tier2-m21-spec.md](tier2-m21-spec.md)) or
+  the exit-register contracts (§5.5, both pinned and now verified byte-identical). **Remember:** our
+  internal `BDOS_DTA` cell and the kernel's `DOS_DTAPTR` ($F23D) are SEPARATE — any future page-1
+  body that streams via `bdos_seqread` for a caller OTHER than our own internal loader must reseed
+  `BDOS_DTA` from `DOS_DTAPTR` at entry, or it will silently target a stale address.
 
 ## Dead ends / refuted — do NOT re-walk
 - **"M15 func-9 is blocked by `wa_seg` / the `$F365` slot-read stub / a page-1 disk-ROM output routine"**
@@ -212,17 +249,23 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M20 CLOSED; the FCB cluster + console tier is next (2026-07-02)
-`DIR` is now 100% byte-parity with stock (M19 + M20 LANDED): file list, `41 files`, `375808 bytes
-free`, fresh `A>`, all byte-identical. Nothing remains open on the `DIR` command.
+## Next action — M21a+M21b CLOSED; the console tier is next (2026-07-02)
+`DIR` is 100% byte-parity with stock (M19+M20) and Tier-2 can now load and run an arbitrary named
+`.COM` (M21a+M21b) — the BDOS-exerciser `BDOSX.COM` tool ([[bdos-exerciser-com-test]]) is UNBLOCKED
+and confirmed running end-to-end (all 47 shared BDOS calls aligned, 0-byte-diff data/FCB buffers).
+This closes the FCB read/write cluster's `$0F/$10/$14/$1A/$23/$24/$26/$27` funcs (all now
+BDOSX-exercised and matching stock).
 
-**HIGHEST — the rest of the FCB cluster + console tier — blocked on the BDOS-exerciser `.COM`**
-([[bdos-exerciser-com-test]]): `$10 FCLOSE / $14 RDSEQ / $23 FSIZE / $26 / $27` runtime +
-`$01/$06/$07/$08/$0B/$0C` console — none isolable by a COMMAND.COM builtin; the exerciser is the
-prerequisite tool. Spec it separately (small tooling task). `$75A5` and the 82 spurious per-file
-`C=05 LSTOUT` calls (BDOS n=63 fork, first noticed during M19/M20) remain confirmed OUT OF SCOPE for
-`DIR` (don't block `$1B`/`$505D`/`$4FB8`/`$5006`) but are still an open, uncharacterised divergence —
-pick up if/when a milestone touches that area.
+**HIGHEST — the CONSOLE tier, now reachable via BDOSX.COM.** `$01 CONIN / $06 DIRIO / $07 DIRIN /
+$08 INNOE / $0B CONST / $0C CPMVER` were UNTESTABLE-HERE (2026-07-01 sweep) because no COMMAND.COM
+builtin calls them and the harness could only inject one keystroke burst — BDOSX.COM can now call
+them directly (extend bdosx.asm with a Phase-2 console-call block, per
+[tier2-bdos-exerciser-spec.md](tier2-bdos-exerciser-spec.md)'s own "Phase 2" placeholder if one
+exists, else a small spec addendum). Expectation (unverified by direct probe): these ride the
+already-proven CHGET/CHSNS/`$5454` CONOUT primitives, since the shared kernel dispatches them.
+`$75A5` and the 82 spurious per-file `C=05 LSTOUT` calls (BDOS n=63 fork, first noticed during
+M19/M20) remain confirmed OUT OF SCOPE for `DIR` (don't block `$1B`/`$505D`/`$4FB8`/`$5006`) but are
+still an open, uncharacterised divergence — pick up if/when a milestone touches that area.
 
 **GENERAL RULE learned from M20, applies to ANY future page-1 entry that returns a real `HL`:** the
 RAM kernel's common BDOS-exit path (`$D8AA-$D8BD`) silently overwrites a handler's `HL` with
