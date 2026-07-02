@@ -199,7 +199,8 @@ def mode_callseq(args) -> int:
 
 
 # ---- mode: capture -------------------------------------------------------------
-def _capture_arm(at_addr: int, nth: int, mem: tuple[int, int] | None) -> str:
+def _capture_arm(at_addr: int, nth: int, mem: tuple[int, int] | None,
+                  arm_addr: int | None = None, arm_cond: str | None = None) -> str:
     block = ""
     if mem:
         base, length = mem
@@ -209,6 +210,32 @@ def _capture_arm(at_addr: int, nth: int, mem: tuple[int, int] | None) -> str:
     set s "$s[format %02X [debug read memory [expr {{({base} + $i) & 0xFFFF}}]]]"
   }}
   emit $s
+"""
+    # Arm gate (OPT-IN, off by default -- preserves every existing `capture --at X
+    # --nth N` repro unchanged). Some anchors (e.g. a mid-program self-loop) can
+    # collide with an unrelated busy-poll loop that happens to share the same
+    # address before the target program is even loaded (found running BDOSX.COM's
+    # `done` loop: COMMAND.COM's own BUFIN idle wait hit an arbitrary offset
+    # hundreds of times before the real program ever ran). Gating the counter on
+    # "the resident program at $0100 is the one we expect" (checked via a fixed
+    # byte, same convention `trace`/`callseq`/`callwatch` already use) fixes this
+    # without touching --at's existing un-gated semantics for every other caller.
+    if arm_cond:
+        arm = arm_addr if arm_addr is not None else 0x0100
+        return f"""
+set ::armed 0
+debug set_bp {arm:#06x} {{}} {{
+  if {{ {arm_cond} }} {{ set ::armed 1 }}
+}}
+set ::cn 0
+debug set_bp {at_addr:#06x} {{}} {{
+  if {{!$::armed}} return
+  incr ::cn
+  if {{$::cn < {nth}}} return
+  emit [ctx ANCHOR]
+{block}
+  exit
+}}
 """
     return f"""
 set ::cn 0
@@ -244,7 +271,10 @@ def mode_capture(args) -> int:
         b, _, l = args.mem.partition(":")
         mem = (int(b, 0), int(l, 0))
     body = 'emit "NO-ANCHOR"; exit'
-    arm = _capture_arm(args.at, args.nth, mem)
+    arm_cond = args.arm_cond
+    if arm_cond is None and args.arm_check_val is not None:
+        arm_cond = f"[debug read memory {args.arm_check_addr:#06x}] == {args.arm_check_val:#04x}"
+    arm = _capture_arm(args.at, args.nth, mem, args.arm_addr, arm_cond)
 
     def cap_for(machine):
         return _runner(machine, args.diska, args.symfile).run_job(
@@ -675,6 +705,106 @@ def mode_readwatch(args) -> int:
     return 0
 
 
+# ---- mode: writewatch ----------------------------------------------------------
+# Causality probe, write-side mirror of readwatch (M21 §5 item 1): classify WHO
+# writes a DATA cell — kernel RAM region (>= $C000, the relocated MSX-DOS-1 kernel)
+# vs page-1 disk-ROM region ($4000-$7FFF, either stock's or ours) — by the writer's
+# PC, not by decoding any instruction. Same allowed black-box class as readwatch:
+# PC/address/value only. Use to pin exactly which FCB fields (e.g. $D403+n) the
+# KERNEL fills itself vs which are left for the page-1 FOPEN-fill entry ($4462).
+def _writewatch_arm(arm_addr: int, arm_cond: str, addrs: list[int],
+                    gate_func9: bool, maxhits: int, in_func: int = 9) -> str:
+    addr_list = " ".join(f"{a:#06x}" for a in addrs)
+    gate = "if {!$::in9} return\n" if gate_func9 else ""
+    return f"""
+set ::armed 0
+set ::in9 0
+set ::callno 0
+set ::wn 0
+debug set_bp {arm_addr:#06x} {{}} {{
+  if {{ {arm_cond} }} {{ set ::armed 1 }}
+}}
+debug set_bp 0x0005 {{}} {{
+  if {{!$::armed}} return
+  incr ::callno
+  if {{ ([reg BC]&0xFF) == {in_func} }} {{ set ::in9 1 }} else {{ set ::in9 0 }}
+}}
+foreach a {{ {addr_list} }} {{
+  debug set_watchpoint write_mem $a {{}} [format {{
+    if {{!$::armed}} return
+    {gate}    incr ::wn
+    emit [format "WR A=%%04X PC=%%04X V=%%02X in9=%%d call=%%d BC=%%04X DE=%%04X HL=%%04X t=%%.6f" \\
+      %d [reg PC] [debug read memory %d] $::in9 $::callno [reg BC] [reg DE] [reg HL] [machine_info time]]
+    if {{$::wn >= {maxhits}}} {{ exit }}
+  }} $a $a]
+}}
+"""
+
+
+def _writer_region(pc: int) -> str:
+    if 0x4000 <= pc <= 0x7FFF:
+        return "PAGE1"
+    if pc >= 0xC000:
+        return "KERNEL"
+    if pc <= 0x3FFF:
+        return "MAINROM/BIOS"
+    return "OTHER"
+
+
+def mode_writewatch(args) -> int:
+    base, _, length = args.range.partition(":")
+    base, length = int(base, 0), int(length, 0)
+    if length > 64:
+        sys.exit("writewatch: range capped at 64 bytes (per-byte watchpoints); narrow it")
+    addrs = [base + i for i in range(length)]
+    arm_cond = args.arm_cond or f"[debug read memory {args.arm_check_addr:#06x}] == {args.arm_check_val:#04x}"
+    body = 'emit [format "DONE armed=%d wn=%d" $::armed $::wn]; exit'
+    arm = _writewatch_arm(args.at, arm_cond, addrs, args.gate_func9, args.maxhits,
+                          in_func=args.in_func)
+
+    def writes_for(machine):
+        raw = _runner(machine, args.diska, args.symfile).run_job_raw(
+            body, settle=args.settle, timeout=args.timeout, arm=arm,
+            keys=args.keys, keys_at=args.keys_at)
+        out = []
+        for l in raw:
+            if not l.startswith("WR "):
+                continue
+            d = {}
+            for tk in l.split()[1:]:
+                k, _, v = tk.partition("=")
+                d[k] = float(v) if k == "t" else int(v, 16 if k in ("A", "PC", "V", "BC", "DE", "HL") else 10)
+            out.append(d)
+        return out
+
+    machines = {"both": [STOCK_MACHINE, OURS_MACHINE], "ours": [OURS_MACHINE],
+                "stock": [STOCK_MACHINE]}[args.machine]
+    gate = f" (gated: during func-{args.in_func:#x} only)" if args.gate_func9 else ""
+    print(f"=== writewatch: writes to {base:#06x}:{length:#x} after arm@{args.at:#06x}{gate} ===")
+    for m in machines:
+        writes = writes_for(m)
+        who = "OURS " if m == OURS_MACHINE else "STOCK"
+        print(f"  {who}: {len(writes)} gated writes (in call order)")
+        for w in writes:
+            region = _writer_region(w["PC"])
+            print(f"    t={w['t']:.4f}  {w['A']:04X}:={w['V']:02X}  "
+                  f"writerPC={w['PC']:04X} ({region})  BC={w.get('BC',0):04X} "
+                  f"DE={w.get('DE',0):04X} HL={w.get('HL',0):04X}  call#{w['call']}")
+        # per-cell summary: which region(s) wrote it, final value
+        by_addr: dict[int, dict] = {}
+        for w in writes:
+            e = by_addr.setdefault(w["A"], {"count": 0, "regions": set(), "last": None})
+            e["count"] += 1
+            e["regions"].add(_writer_region(w["PC"]))
+            e["last"] = w["V"]
+        print(f"  --- per-cell summary ({len(by_addr)} cell(s) written) ---")
+        for a in sorted(by_addr):
+            e = by_addr[a]
+            print(f"    {a:04X}: writes={e['count']:<3} final={e['last']:02X}  "
+                  f"by={'+'.join(sorted(e['regions']))}")
+    return 0
+
+
 # ---- mode: callwatch -----------------------------------------------------------
 # "Which of OUR OWN page-1 disk-ROM routines does the func-9 output loop invoke?"
 # The $F368/$F36B pair maps our disk ROM into page 1 so the kernel can CALL a
@@ -868,6 +998,16 @@ def main() -> int:
                    help="both (default, diff+alignment guard) or one side (one-sided black-box "
                         "regs/mem dump — for contract pinning when the other side diverges first)")
     p.add_argument("--expect", choices=("same", "diff"), help="assert reg-diff outcome (PASS/FAIL)")
+    p.add_argument("--arm-addr", type=lambda x: int(x, 0), default=0x0100,
+                   help="address to test the arm condition at (default $0100, program load)")
+    p.add_argument("--arm-check-addr", type=lambda x: int(x, 0), default=0x0102,
+                   help="byte address to fingerprint the resident program (default $0102)")
+    p.add_argument("--arm-check-val", type=lambda x: int(x, 0), default=None,
+                   help="arm the --at counter only once [--arm-check-addr]==this; OPT-IN "
+                        "(unset = no arm, the original unconditional --at/--nth behaviour). "
+                        "Use when --at can collide with an unrelated busy loop before the "
+                        "program you care about is even loaded (e.g. a self-loop address)")
+    p.add_argument("--arm-cond", default=None, help="raw Tcl arm predicate (overrides --arm-check-*)")
 
     t = sub.add_parser("trace", help="forward instruction trace from an anchor; report first PC fork")
     common(t)
@@ -925,6 +1065,26 @@ def main() -> int:
     r.add_argument("--maxhits", type=int, default=400)
     r.add_argument("--machine", choices=("both", "ours", "stock"), default="both")
 
+    ww = sub.add_parser("writewatch",
+                        help="watch DATA-cell WRITES gated to during-func-N; classify writer PC "
+                             "region (PAGE1 disk-ROM vs KERNEL RAM vs MAINROM/BIOS) — write-side "
+                             "mirror of readwatch, for kernel-vs-page-1 division-of-labor questions")
+    common(ww)
+    ww.add_argument("--at", type=lambda x: int(x, 0), default=0x0100, help="arm address")
+    ww.add_argument("--arm-check-addr", type=lambda x: int(x, 0), default=0x0102)
+    ww.add_argument("--arm-check-val", type=lambda x: int(x, 0), default=0x05)
+    ww.add_argument("--arm-cond", default=None, help="raw Tcl arm predicate")
+    ww.add_argument("--range", required=True, help="DATA range BASE:LEN (<=64 B; NEVER a code region)")
+    ww.add_argument("--in-func", type=lambda x: int(x, 0), default=9, dest="in_func",
+                    help="BDOS function code (C) to gate on while in flight (default 9=STROUT; "
+                         "e.g. 0x0F=FOPEN for M21)")
+    ww.add_argument("--gate-func9", action="store_true", default=True,
+                    help="only record writes while the --in-func BDOS call is in flight (default on)")
+    ww.add_argument("--no-gate", dest="gate_func9", action="store_false",
+                    help="record all writes regardless of func gating")
+    ww.add_argument("--maxhits", type=int, default=400)
+    ww.add_argument("--machine", choices=("both", "ours", "stock"), default="both")
+
     c = sub.add_parser("callwatch",
                        help="enumerate OUR page-1 routines the func-9 loop invokes (clean-room: our code)")
     common(c)
@@ -956,7 +1116,7 @@ def main() -> int:
     try:
         return {"callseq": mode_callseq, "capture": mode_capture, "trace": mode_trace,
                 "screen": mode_screen, "iowrite": mode_iowrite,
-                "readwatch": mode_readwatch,
+                "readwatch": mode_readwatch, "writewatch": mode_writewatch,
                 "callwatch": mode_callwatch}[args.mode](args)
     finally:
         if tmp_disk and os.path.exists(tmp_disk):
