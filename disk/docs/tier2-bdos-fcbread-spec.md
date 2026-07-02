@@ -5,11 +5,23 @@ SPDX-License-Identifier: 0BSD
 
 # Tier-2 BDOS FCB-read cluster — CHARACTERISATION + SCOPING (spec pass, no asm)
 
-**Status: CHARACTERISED (2026-07-01, Opus span). CHARACTERISE + SCOPE ONLY — no asm
-touched, no fix implemented. STOP for sign-off** (per [[spec-before-implementation]]:
-this is a new batch of functions, not a pre-approved veneer-class fix). Resume board:
-[tier2-STATE.md](tier2-STATE.md). Fix-shape templates: [tier2-m17-spec.md](tier2-m17-spec.md)
-(veneer + cell), [tier2-oi3-spec.md](tier2-oi3-spec.md) (new-routine class).
+**UPDATE 2026-07-02: both recommendations below have since been carried out and are DONE.**
+The dir-search bug this doc identifies (§3) was promoted to its own milestone exactly as
+recommended and landed as **M19** (`$4FB8`/`$5006` SFIRST/SNEXT now real routines — `DIR` lists
+files). The "blocked on the BDOS-exerciser `.COM`" functions this doc flags (`$10/$14/$23/$26/
+$27`, §4/§5) are now unblocked: `BDOSX.COM` was built and, along with the M21a+M21b fix, ran
+these exact functions end-to-end with 0-byte-diff results — see
+[tier2-bdos-exerciser-spec.md](tier2-bdos-exerciser-spec.md) and
+[tier2-bdos-coverage.md](tier2-bdos-coverage.md) for current per-function status. This doc's
+analysis below is kept as the historical reasoning trail that led to that split; treat its
+"Status/recommendation" section (§8) as **completed**, not as an open action item. Current
+ground truth is always [tier2-STATE.md](tier2-STATE.md).
+
+**Status (as originally written): CHARACTERISED (2026-07-01, Opus span). CHARACTERISE + SCOPE
+ONLY — no asm touched, no fix implemented. STOP for sign-off** (per
+[[spec-before-implementation]]: this is a new batch of functions, not a pre-approved
+veneer-class fix). Fix-shape templates: [tier2-m17-spec.md](tier2-m17-spec.md) (veneer + cell),
+[tier2-oi3-spec.md](tier2-oi3-spec.md) (new-routine class).
 
 ## 0. TL;DR / headline scoping call
 The cluster is **reachable now** — no new trigger infrastructure is needed. A single
