@@ -23,7 +23,47 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
-**[M20 / bytes-free footer · CHARACTERISATION+DESIGN, AWAITING SIGN-OFF, no asm written]** Pinned
+**[M20 / bytes-free footer · HARD-STOP after user go-ahead — the §2.4 exit-contract hypothesis is
+FALSIFIED, scope surprise, reporting rather than improvising]** User signed off on the spec below and I
+built it (veneer + `getalloc_body` computing A/BC/DE/HL exactly per spec §4.2). Host unit-harness
+(`tests/msxtest.py` Z80, no emulator) confirms the SCAN ALGORITHM is byte-correct: fed the REAL test.dsk
+FAT bytes it returns `HL=$016F`(367) — exactly right. In openMSX, register-captured immediately before
+`getalloc_body`'s own `ret` (`capture --at 0x7A8E`, the exact `ret` opcode address) ALSO shows the correct
+`A=02 BC=0200 DE=02C9 HL=016F`. **But by the BDOS exit point `$C6C5` it has become `HL=$0202`(514), and a
+falsify-first sentinel swap (forced `HL=$BEEF` right before `ret`) changed NOTHING at `$C6C5` — still
+`0202`.** ⇒ the kernel/COMMAND.COM code between our `ret` and `$C6C5` does NOT use our returned HL at
+all; something else independently supplies the free-cluster count. Screen-arbiter confirms the real
+effect: footer prints `526336 bytes free` (514×2×512) instead of `375808` — WORSE-looking than the
+pre-fix `0`, though actually just as broken.
+· **Root cause of the false spec (public-doc reconciliation):** map.grauw.nl's MSX-DOS `_ALLOC`
+($1B) spec (fetched this span) documents THREE more exit fields I hadn't accounted for: `IX` = pointer
+to DPB (already fine — we never touch IX, and it's the pre-existing `$F195`), and **`IY` = pointer to the
+first FAT sector**, with an explicit MSX-DOS-1-specific note: *"unlike MSX-DOS 1, only the first sector
+of the FAT may be accessed from the address in IY [in DOS 2]"* — implying DOS-1's IY exposes MORE than
+one sector, i.e. the FULL resident FAT (matches the M20 spec §2.3 finding that stock's `$1B` window reads
+its resident `$E595` FAT buffer 81 times via PCs `$4209`/`$420B` — that IS the downstream free-space
+PRINT logic scanning the buffer FROM IY, not our handler's own internal count). **Our `getalloc_body`
+never sets IY at all** (leaves it at whatever stale value COMMAND.COM last had, `$DC5B` in this run);
+downstream code scans garbage from there and gets a garbage-but-plausible 514. The HL="free clusters"
+register IS documented, but empirically this COMMAND.COM build ignores it in favour of its own IY-buffer
+scan for the DIR footer specifically (confirmed by the sentinel test, not a guess).
+· **Scope surprise (why this is a hard-stop, not an improvisation):** the signed-off design was "compute
+the count, return it in 4 registers" — no buffer/pointer semantics. The ACTUAL fix additionally needs a
+CONTIGUOUS resident-FAT buffer sized to the volume's real FAT (`secPerFAT` sectors — 3 on test.dsk =
+1536 B, but volume-dependent, so potentially larger on other media) that `getalloc_body` populates AND
+that stays valid for the caller's scan, plus `IY` wired to point at it. That's a new small buffer-
+management concern (size, RAM budget, lifetime) beyond "one self-contained register-only call" —
+exactly the kind of scope change [[spec-before-implementation]] says needs a fresh look, not a
+solo expansion mid-span.
+· **Action taken:** reverted the uncommitted asm (`git checkout -- disk/kernel.asm`) back to the
+spec-only commit `959725b`; rebuilt + re-ran `make unit-test` (19/19 green) to confirm a clean baseline.
+Nothing broken is left in the tree. Reporting to the user for a revised design decision before continuing.
+· **Confidence:** HIGH that IY/buffer is the missing piece (direct falsification test, not inference);
+NOT yet pinned exactly how large the buffer must be or whether IY must point at a NEW buffer we own vs.
+some existing one repurposable for this.
+
+**[M20 / bytes-free footer · CHARACTERISATION+DESIGN, ORIGINAL SPEC — see hard-stop entry above for what
+changed after user go-ahead]** Pinned
 black-box (no stock code decoded): `DIR`'s free-space footer is the documented BDOS `$1B` GETALLOC,
 dispatched by the kernel to page-1 entry `$505D`; on ours that's `$00` NOP-pad sliding into the existing
 `$50A9` stub (identical shape to M13/M17/M18/M19's un-wired `$50xx` entries). Exit contract pinned at

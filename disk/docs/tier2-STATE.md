@@ -10,14 +10,27 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-07-02 (**M20 CHARACTERISED + DESIGNED, awaiting sign-off — `DIR` "bytes free" footer**
-— Opus span, black-box-only: footer = BDOS `$1B` GETALLOC → page-1 entry `$505D` (un-wired `$00` pad,
-same class as M13/M17/M18/M19), exit contract `A/BC/DE/HL`=sectors-per-cluster/bytes-per-sector/
-total-clusters/free-clusters pinned at `ret=$C6C5` (stock `02/0200/02C9/016F` → `367×2×512=375808`; ours
-gets `$50A9`-stub garbage → `0`). Design: new `getalloc_body` free-tail routine reusing
-`fat_total_clusters` + a sibling of `fat_alloc_cluster`'s `$000`-scan (must NOT depend on stock's
-resident `$E595` FAT buffer, which ours never populates). Net-zero verified (pad room at `$505D` + 1126
-free-tail bytes). **NO ASM WRITTEN — spec-only, per [[spec-before-implementation]].** Full detail:
+_Last updated: 2026-07-02 (**M20 HARD-STOP after implementation — the signed-off register-only exit
+contract is FALSIFIED; needs a revised design.** User signed off on [tier2-m20-spec.md](tier2-m20-spec.md)
+(footer = BDOS `$1B` GETALLOC → un-wired page-1 entry `$505D`, same class as M13/M17/M18/M19); built
+`getalloc_body` exactly per spec §4.2 (own FAT scan, A/BC/DE/HL). Host unit-harness (`tests/msxtest.py`)
+confirms the scan is byte-correct against the REAL test.dsk FAT (`HL=$016F`=367). In openMSX, register
+state IS correct right at `getalloc_body`'s own `ret` (`capture --at 0x7A8E`: `A=02 BC=0200 DE=02C9
+HL=016F`) — but by the BDOS return `$C6C5` it's become `HL=$0202`(514), and a sentinel swap
+(force `HL=$BEEF` before `ret`) changed NOTHING at `$C6C5` (still `0202`): **the kernel/COMMAND.COM does
+NOT use our returned HL for the footer at all.** Screen confirms: footer prints `526336 bytes free`
+(514×2×512), not `375808` — still wrong, just a different wrong. Root cause (public-doc reconciliation,
+this span): map.grauw.nl's MSX-DOS `_ALLOC ($1B)` spec documents `IY` = **pointer to the first FAT
+sector**, with an MSX-DOS-1-specific note that DOS-1's IY exposes MORE than one sector (the FULL resident
+FAT) — matching the M20 spec §2.3 finding that stock's `$1B` window reads its resident `$E595` buffer 81
+times (that's downstream PRINT code scanning FROM IY, not the handler's own count). Our `getalloc_body`
+never touches IY (stays stale, `$DC5B`), so the downstream scan reads garbage. **Fix needs a NEW
+contiguous resident-FAT buffer (sized to the volume's real `secPerFAT`, 1536 B on test.dsk but
+volume-dependent) that `getalloc_body` populates, with IY wired to point at it** — a real scope change
+from "compute + return 4 registers," not a solo mid-span expansion. **Action taken: reverted the
+uncommitted asm (`git checkout -- disk/kernel.asm`) back to the spec-only commit `959725b`; rebuilt +
+`make unit-test` 19/19 green — clean baseline, nothing broken left in the tree.** Reporting to the user
+for a revised design decision (buffer size/placement/IY-lifetime) before continuing. Full detail:
 [tier2-m20-spec.md](tier2-m20-spec.md); STATE "Next action" item 1. Prior: 2026-07-01 (**M19 LANDED —
 MSX-DOS `DIR` now lists files (was: hung forever)** — Opus
 span, user-signed-off spec [tier2-m19-spec.md](tier2-m19-spec.md); commits `45fd9be` docs, `5225a29`
@@ -186,29 +199,37 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M20 "bytes free" footer CHARACTERISED + DESIGNED (2026-07-02); AWAITING USER SIGN-OFF
+## Next action — M20 "bytes free" footer: HARD-STOP, needs a REVISED design (2026-07-02)
 `DIR` now WORKS on ours (M19): lists every file + `41 files` + fresh `A>`, byte-identical to stock, no
 hang. Two follow-ups, in order:
 
-**(1) HIGHEST — the `nn bytes free` footer (finish DIR to 100% parity). SPEC READY, NOT YET IMPLEMENTED.**
-Ours prints `0 bytes free`, stock `375808`. Opus span 2026-07-02 pinned the entry point + full contract
-black-box (no stock code decoded — see [tier2-m20-spec.md](tier2-m20-spec.md) §9 for the clean-room
-ledger): the footer is the documented **BDOS `$1B` GETALLOC**; COMMAND.COM's `$1B` call is register-
-identical ours==stock, and the kernel dispatches it to page-1 disk-ROM entry **`$505D`**, which on ours
-is `$00` NOP-pad (same un-wired-`$50xx`-entry shape as M13/M17/M18/M19) that slides into the existing
-`$50A9` stub tail → garbage exit regs → `0`. Exit contract pinned at `ret=$C6C5`: stock returns
-`A=$02`(sectors/cluster) `BC=$0200`(bytes/sector) `DE=$02C9`=713(total data clusters)
-`HL=$016F`=367(free clusters); COMMAND.COM computes `367×2×512=375808`. Stock's `$505D` scans its
-resident FAT buffer `$E595` (loaded once at SFIRST time); **ours must NOT depend on `$E595`** (ours
-never populates it) — design reuses our own `fat_total_clusters` + a `fat_alloc_cluster`-derived
-`$000`-count scan (a sibling loop, not an in-place edit — must leave the write-path `fat_alloc_cluster`
-byte-unchanged) to read the FAT itself. Net-zero confirmed: `$505D` sits in existing `$00` pad between
-the M19 `$5058` veneer and the `$50A9` stub (room for a 3-byte `jp`); free-tail has 1126 pad bytes for
-the body. `$75A5` and the 82 spurious per-file `C=05 LSTOUT` calls (BDOS n=63 fork) are a SEPARATE,
-cosmetically-absorbed COMMAND.COM branch difference — confirmed NOT blocking `$1B`/`$505D`, out of scope
-for M20 (spec §8.4). **NEW-ROUTINE class → spec written, [[spec-before-implementation]] sign-off
-required before any asm lands** (per prior span's own flag; do NOT improvise past this point without an
-explicit go-ahead). Full detail + acceptance criteria + risks: [tier2-m20-spec.md](tier2-m20-spec.md).
+**(1) HIGHEST — the `nn bytes free` footer (finish DIR to 100% parity). REVISED DESIGN NEEDED —
+the register-only exit contract in [tier2-m20-spec.md](tier2-m20-spec.md) is FALSIFIED; do not
+re-implement it as written.** Entry point is still solid: the footer is BDOS `$1B` GETALLOC, dispatched
+to page-1 entry **`$505D`** (un-wired `$00` pad, same shape as M13/M17/M18/M19). The spec's A/BC/DE/HL
+register design was BUILT and VALIDATED correct up to the routine's own `ret` (host-unit-test + an
+openMSX `capture --at 0x7A8E` right at the `ret` opcode both confirm `A=02 BC=0200 DE=02C9 HL=016F`,
+byte-perfect) — **but the kernel/COMMAND.COM between our `ret` and the `$C6C5` BDOS exit does NOT use our
+HL at all** (falsified with a sentinel-value swap: forcing `HL=$BEEF` before `ret` left `$C6C5`'s HL
+UNCHANGED at `$0202`). Root cause: the published MSX-DOS `_ALLOC` contract also specifies **`IY` = pointer
+to the first FAT sector** (MSX-DOS-1 note: more than one sector is accessible from IY, i.e. the FULL
+resident FAT) — downstream code reads the free-cluster count by SCANNING FROM IY, not by trusting our
+returned HL register. Our `getalloc_body` never touched IY (M19's `$E595`-independence lesson correctly
+avoided depending on stock's resident buffer, but the fix still needs SOME buffer + IY pointing at it).
+Screen-confirmed real-world effect of the as-signed-off build: footer prints `526336 bytes free`
+(514×2×512, from scanning garbage at the stale IY) instead of `375808` — a different wrong, not a fix.
+Full write-up of the falsification + evidence: [tier2-review-queue.md](tier2-review-queue.md) M20 hard-stop
+entry (dated 2026-07-02, above the original characterisation entry). **The uncommitted asm was reverted
+(`git checkout -- disk/kernel.asm` back to commit `959725b`); `make unit-test` 19/19 confirmed a clean
+baseline — nothing broken is in the tree.** Needed before resuming: a REVISED spec/design covering (a) a
+new contiguous resident-FAT buffer sized to the volume's actual `secPerFAT` (1536 B on test.dsk, but
+volume-dependent — needs a RAM-budget check, unlike the register-only design's "no new cell" claim), (b)
+`getalloc_body` populating it from our own FAT read (still must NOT depend on stock's `$E595`), (c) IY
+wired to point at it, kept valid for as long as the downstream scan needs it. `$75A5` and the 82 spurious
+per-file `C=05 LSTOUT` calls (BDOS n=63 fork) remain confirmed OUT OF SCOPE (unrelated, don't block
+`$1B`/`$505D`). **NEW-ROUTINE class, scope changed from what was signed off → needs a FRESH
+[[spec-before-implementation]] sign-off before any asm lands** — do not improvise the buffer design
+solo mid-span.
 
 **(2) then the rest of the FCB cluster + console tier — blocked on the BDOS-exerciser `.COM`**
 ([[bdos-exerciser-com-test]]): `$10 FCLOSE / $14 RDSEQ / $23 FSIZE / $26 / $27` runtime +
