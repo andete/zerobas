@@ -56,6 +56,42 @@ snext:
                 ds      $5058 - $, $00  ; pad up to the pinned $5058 SETDTA-cache entry
 setdta_cache:
                 jp      setdta_cache_body ; -> free-tail: ($F23D) := DE (runtime DTA; M19)
+; --- MSX-DOS-1 kernel GETALLOC entry: $505D (M20 REVISION 3; tier2-m20-spec.md) -----
+; While processing BDOS GETALLOC ($1B) the relocated kernel CALLs this page-1 disk-ROM
+; entry to compute the DIR "nn bytes free" footer. Black-box contract (M20 §2, no stock
+; CODE decoded): entry regs byte-identical ours==stock (C=$1B BC=$5D1B DE=$D100
+; HL=$C924 IX=$F195); the un-wired $00 pad here made the CALL NOP-slide into the $50A9
+; stub tail (garbage exit -> "0 bytes free"). Exit contract (map.grauw.nl _ALLOC):
+; A=sectors/cluster, BC=bytes/sector, DE=total data clusters, HL=free clusters.
+; REVISION 3 (this span): Revisions 1 (register-only) and 2 (+ resident FAT buffer +
+; IY + a per-drive DPB+19 field) were both BUILT and FALSIFIED -- the A/BC/DE/HL scan
+; math was correct in both (host-unit-tested + confirmed at getalloc_body's own ret),
+; but the DIR footer was wrong regardless, IDENTICALLY so both with and without the
+; IY/DPB+19 wiring. Root cause (this span, a narrow read of 20 RAM-KERNEL bytes at the
+; shared post-handler exit path $D8AA-$D8BD -- NOT stock ROM/COMMAND.COM code -- to
+; answer one question, "what does the branch at $D8AE test"; same technique already
+; used to pin $F23D/$F247/$F347/$F306 in prior milestones): the kernel's common BDOS-
+; exit path gates HL passthrough on a flag cell, $F306 (set to $01 by the dispatcher on
+; every BDOS call, per tier2-gdate-spec.md's earlier pin) -- a handler that leaves
+; $F306 set has its HL SILENTLY OVERWRITTEN with H:=B,L:=A (the CP/M single-byte-result
+; B:A->HL mirror) instead of passed through. Stock's $505D handler clears it; ours never
+; did, so our correct HL was replaced by a mirror of our own A/BC (explaining the exact
+; wrong constant observed, `$0202`=514, in both falsified revisions). Causally proven by
+; a poke test (forcing $F306:=0 flips the branch and the handler's real HL survives).
+; `gdate_handler` below already clears $F306 (previously assumed "harmless stock
+; parity" -- it is in fact load-bearing, and the only reason GDATE's HL reaches its
+; caller). Revision 3 = Revision 1's register-only body (own FAT scan via read_sector/
+; WBUF, reusing fat.asm's fac_entry_from_wbuf unpack -- no new RAM cell, no IY, no
+; DPB+19, both proven unnecessary) + one added store: clear $F306 before `ret`, loading
+; the final A value AFTER the clear (order matters: A must hold sectors/cluster at
+; `ret`; the clear only needs A=0 transiently as the store source).
+; CLEAN-ROOM: our own FAT scan (fat_mount + read_sector + fat.asm's fac_entry_from_wbuf,
+; all pre-existing oracle-validated primitives) + the published GETALLOC A/BC/DE/HL
+; contract (map.grauw.nl) + the black-box-pinned $F306 dispatcher-flag semantics
+; (register/memory VALUES + one narrow RAM-kernel byte read, no stock ROM decoded).
+                ds      $505D - $, $00  ; pad up to the pinned $505D GETALLOC entry
+getalloc:
+                jp      getalloc_body   ; -> free-tail: FAT free-cluster scan (M20 rev3)
                 ds      $50A9 - $, $00  ; pad remainder up to the kernel's $50A9 target
                 sub     a               ; A=$00, F=$42 (Z+N) -- the exact exit AF
                 ld      (W50A9_WRKB), a ; $F242 := $00  (the only persistent write)
@@ -681,6 +717,124 @@ curdrv_body:
 ;   in:  DE = new DTA pointer ; out: ($F23D) := DE ; all registers preserved
 setdta_cache_body:
                 ld      (DOS_DTAPTR), de    ; $F23D := DE (runtime DTA pointer)
+                ret
+
+; getalloc_body — the $505D kernel GETALLOC-time entry (M20 REVISION 3;
+; tier2-m20-spec.md). BDOS $1B GETALLOC: return the volume's allocation geometry.
+;
+; Walks clusters 2..(rawTotal-1) sector-by-sector into WBUF (the SAME fatofs/byteidx/
+; parity math and the SAME shared fac_entry_from_wbuf unpack that fat_alloc_cluster
+; uses -- fat.asm; not modified, not called in place, so the Tier-1 write path stays
+; byte-unchanged), counting $000 (free) entries instead of stopping at the first one.
+; The cluster/free-counter/loop-bound live on the CPU stack across each
+; fac_entry_from_wbuf call (it clobbers AF/BC/DE/HL and preserves nothing -- same
+; push/pop-around-the-call idiom as fat.asm's own fac_have_sec).
+;
+; The FIX (Revision 3, see the $505D veneer comment above for the full root-cause
+; writeup): clear the dispatcher's HL-passthrough flag ($F306) before `ret`, loading
+; the final A value AFTER the clear. Without this the kernel's common BDOS-exit path
+; silently overwrites our correct HL with a mirror of our own A/BC.
+;
+; Any FDC read error takes the fail-safe exit (A=0 BC=$0200 DE=0 HL=0) -- matches
+; fat_total_clusters' own "report no free space" error posture.
+;
+; CLEAN-ROOM: our own FAT scan (fat_mount + read_sector, reusing fat.asm's existing
+; fac_entry_from_wbuf unpack) + the published GETALLOC A/BC/DE/HL contract (map.grauw.nl
+; MSX-DOS BDOS functions) + the black-box-pinned $F306 dispatcher-flag semantics (no
+; stock CODE decoded).
+;   out (success): A=(FAT_SECPERCLUS) BC=$0200 DE=total data clusters
+;                  HL=free-cluster count ; ($F306):=$00
+;   out (fail-safe): A=0 BC=$0200 DE=0 HL=0
+getalloc_body:
+                call    fat_mount               ; geometry -> FAT_* scratch (SECTOR_BUF)
+                jp      c, ga_fail
+                call    fat_total_clusters       ; DE = dataClusters + 2 (rawTotal)
+                push    de                       ; stack[0] = rawTotal (stays for the scan)
+                ld      hl, $FFFF
+                ld      (FAT_WRTMP2), hl         ; no FAT sector cached yet (fat_alloc_
+                                                 ; cluster's own init, same convention)
+                ld      de, 0                    ; DE = free-cluster counter
+                ld      hl, 2                    ; HL = cluster under test
+ga_scanloop:
+                pop     bc                       ; BC = rawTotal (peek: pop then re-push)
+                push    bc
+                push    hl                       ; save cluster across the compare
+                or      a
+                sbc     hl, bc                   ; HL = cluster - rawTotal
+                pop     hl                       ; restore cluster
+                jp      z, ga_scandone           ; cluster == rawTotal -> scan complete
+                ; fatofs = cluster + (cluster>>1)  (== floor(cluster*3/2), the same
+                ; math fac_loop_body uses -- Microsoft FAT spec §3.2 12-bit packing)
+                push    de                       ; save free counter across the call below
+                push    hl                       ; save cluster (need it after the call)
+                ld      a, l
+                and     1
+                ld      (FAT_PARITY), a
+                ld      e, l
+                ld      d, h
+                srl     d
+                rr      e                        ; DE = cluster >> 1
+                add     hl, de                   ; HL = fatofs
+                ld      a, l
+                ld      (FAT_BYTEIDX), a
+                ld      a, h
+                and     1
+                ld      (FAT_BYTEIDX + 1), a     ; byteidx = fatofs & $1FF
+                ld      a, h
+                srl     a                        ; FAT sector offset = fatofs >> 9
+                ld      e, a
+                ld      d, 0
+                ld      hl, (FAT_FATSTART)
+                add     hl, de                   ; HL = absolute FAT sector for this cluster
+                ld      de, (FAT_WRTMP2)
+                push    hl
+                or      a
+                sbc     hl, de
+                pop     hl
+                jp      z, ga_havesec            ; already the cached sector -> no re-read
+                ld      (FAT_WRTMP2), hl
+                ld      (FAT_FATSEC), hl
+                ex      de, hl
+                ld      hl, WBUF
+                call    read_sector
+                jp      c, ga_rderr
+ga_havesec:
+                call    fac_entry_from_wbuf      ; DE = 12-bit entry value (clobbers
+                                                 ; AF/BC/DE/HL -- fat.asm's own contract)
+                ld      a, d
+                or      e
+                pop     hl                       ; restore cluster
+                pop     de                       ; restore free counter
+                jr      nz, ga_notfree
+                inc     de                       ; entry == $000 -> free, bump counter
+ga_notfree:
+                inc     hl                       ; next cluster
+                jp      ga_scanloop
+ga_rderr:
+                pop     hl                       ; discard saved cluster
+                pop     de                       ; discard saved free counter
+                pop     hl                       ; discard rawTotal
+                jp      ga_fail
+ga_scandone:
+                ex      de, hl                   ; HL := free-cluster count (final)
+                pop     de                       ; DE := rawTotal
+                dec     de
+                dec     de                       ; DE := total data clusters (final)
+                xor     a
+                ld      ($F306), a               ; clear dispatcher HL-passthrough flag
+                                                 ; (M20 REVISION 3 fix -- see $505D veneer)
+                ld      bc, $0200                ; BC := bytes/sector (final)
+                ld      a, (FAT_SECPERCLUS)      ; A := sectors/cluster (final)
+                or      a                        ; Cy = 0 (success)
+                ret
+ga_fail:
+                xor     a
+                ld      ($F306), a               ; clear here too (consistent with the
+                                                 ; success path; harmless -- A=0 already
+                                                 ; forces free_bytes=0 either way)
+                ld      bc, $0200                ; BC := 512 (belt-and-braces)
+                ld      de, 0
+                ld      hl, 0
                 ret
 
 ; sfirst_body — BDOS SFIRST ($11): find the FIRST matching root-dir entry.
