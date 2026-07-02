@@ -5,13 +5,28 @@ SPDX-License-Identifier: 0BSD
 
 # Tier-2 M20 spec — DIR free-space footer (BDOS `$1B` GETALLOC entry `$505D`)
 
-**Status: CHARACTERISED + DESIGNED (2026-07-02, Opus span). SPEC ONLY — no asm
-touched, no fix implemented. AWAITING USER SIGN-OFF.** Per [[spec-before-implementation]]
-this is a **new-routine-class** milestone (like [tier2-m19-spec.md](tier2-m19-spec.md)):
-a substantial free-cluster FAT-scan routine, not a 3-byte read-a-cell veneer, so it gets
-its own design + explicit sign-off before any code lands. Resume board:
-[tier2-STATE.md](tier2-STATE.md) "Next action" item 1. Builds on M19's dir-search
-(landed) — this is the SEPARATE free-scan the M19 design never characterised.
+**Status: LANDED (2026-07-02, REVISION 3).** §§1-10 below are the ORIGINAL
+characterisation span (Opus). Its A/BC/DE/HL scan design (§4.1/§4.2/§4.4, §6) was correct
+all along and is exactly what shipped; its "no new work cell is needed" claim (§4.3) also
+held in the end. Two revisions were BUILT and FALSIFIED before the real fix was found:
+**Revision 1** (this file's original §4.2 register-only design) computed A/BC/DE/HL
+correctly but the footer still printed `0` — sentinel test (`HL=$BEEF` before `ret`)
+proved the BDOS exit `$C6C5` never reflected our `HL`. **Revision 2** (resident-FAT-buffer
++ `IY`/`DPB+19`, synthesized from a one-time Opus+Fable dual-dispatch trial) was built and
+verified WIRED CORRECTLY but the footer was STILL wrong, identically so — excluding `IY`
+and `DPB+19` as the mechanism too. **Revision 3 (LANDED)**, from a follow-up Fable-solo
+investigation: the real cause was the RAM kernel's common BDOS-exit path (`$D8AA-$D8BD`),
+which gates `HL` passthrough on a dispatcher flag cell `$F306` — a handler that leaves it
+set has its `HL` silently overwritten with `H:=B,L:=A` (a CP/M single-byte-result mirror)
+instead of passed through; causally proven with a poke test. The fix is Revision 1's
+original register-only body PLUS one store: clear `$F306` before `ret`. No buffer, no `IY`,
+no `DPB+19` needed — Revision 2's entire premise was a red herring (stock's `IY`/DPB+19
+reads during `$1B` are the STOCK HANDLER's own internal scratch, never consumed
+downstream). Full root-cause writeup + acceptance results: see
+[tier2-review-queue.md](tier2-review-queue.md) M20 entries (LANDED, then the two hard-stops
+below it, newest first). Resume board: [tier2-STATE.md](tier2-STATE.md). Builds on M19's
+dir-search (landed) — this is the SEPARATE free-scan
+the M19 design never characterised.
 
 ## 1. Goal
 Make MSX-DOS `DIR`'s footer render the SAME free-space line as stock. Concretely: on
@@ -308,7 +323,7 @@ oracle note — cross-checks the pinned `DE=$02C9`.)
 - No stock ROM / loaded MSXDOS.SYS / COMMAND.COM CODE bytes were read to reach any
   conclusion in this spec.
 
-## 10. Status / next (for sign-off)
+## 10. Status / next (for sign-off) — historical (§4.2's design shipped, see §11)
 **Spec complete (characterise + design). AWAITING USER SIGN-OFF** (per
 [[spec-before-implementation]] — new-routine class, not veneer-class). On go-ahead, the
 build order is: (1) confirm the exact exit-register set + that `$D100` stays unwritten
@@ -318,3 +333,68 @@ free tail, reusing `fat_total_clusters` + a `fat_alloc_cluster`-derived `$000`-c
 byte-parity with stock. The still-open non-M20 tracks (the LSTOUT fork §8.4; the rest of
 the FCB cluster + console tier blocked on the BDOS-exerciser `.COM`,
 [[bdos-exerciser-com-test]]) are specced separately — do NOT fold in.
+
+## 11. REVISION 3 — LANDED (2026-07-02): the `$F306` dispatcher-flag fix
+
+### 11.1 Root cause
+The RAM-resident MSX-DOS-1 kernel's common BDOS-exit path — shared by every BDOS
+function, at `$D8AA-$D8BD`, byte-identical ours==stock — reads a flag cell **`$F306`**
+(set to `$01` by the dispatcher at BDOS-call entry, per [tier2-gdate-spec.md](tier2-gdate-spec.md)'s
+earlier pin) and branches:
+```
+D8AA  ld   a,($F306)
+D8AD  or   a
+D8AE  jr   z,passthrough      ; cleared -> caller's HL/DE/BC survive untouched
+D8B0  pop  af                 ; set -> mirror branch:
+D8B1  ld   l,a                ;   L := handler's own A
+D8B2  ld   h,b                ;   H := handler's own B
+                               ; -> ret to $C6C5 with THIS mirrored HL, not the handler's
+```
+A handler that returns a meaningful `HL` must clear `$F306` before its `ret`, or the exit
+path silently replaces it with `H:=B, L:=A` (a CP/M-style single-byte-result convention).
+Stock's `$505D` handler clears it (confirmed: `$F306=$01` at `$505D` entry on both
+machines, `$00` by `$D8AA` on stock only — the clear happens INSIDE the handler). Our
+Revision 1/2 bodies never did, so our correct `HL=$016F` was replaced every time by a
+mirror of our own `A`/`BC` (`H:=B=$02, L:=A=$02` = `$0202` = 514 — the exact wrong
+constant observed in BOTH falsified revisions, footer `514×2×512=526336`). This also
+explains why Revision 2's `IY`/`DPB+19` wiring changed nothing: those reads (stock's 81
+`$E595` accesses, the `DPB+19` accesses) are STOCK'S HANDLER's OWN internal FAT scan
+(page-1 PCs throughout, confirmed via `callwatch --machine stock --in-func 0x1b`) —
+nothing downstream of the handler's `ret` ever consults them. Causally proven (not just
+inferred): poking `$F306:=0` at the exit-path anchor flips the branch and the handler's
+real `HL` survives to `$C6C5` unmodified. Corroboration already in-tree: `gdate_handler`
+([kernel.asm](kernel.asm)) already clears `$F306` — previously commented "stock parity,
+harmless"; it is in fact load-bearing, and the only reason GDATE's `HL=year` reaches its
+caller. Full investigation (all probe commands + trace dumps): tier2-review-queue.md M20
+entries.
+
+### 11.2 The fix
+Revision 1's register-only `getalloc_body` (§4.1/§4.2 above — own FAT scan via
+`read_sector`/`WBUF`, reusing fat.asm's `fac_entry_from_wbuf` unpack, generalised from
+"stop at first free" to "count all free", exactly as §4.1 originally proposed) is
+UNCHANGED. The only addition: before `ret`, `xor a` / `ld ($F306),a` (clearing the flag),
+THEN load the final `A := sectors/cluster` (order matters — the clear only needs `A=0`
+transiently as the store source; the real return value must be loaded after). No new RAM
+cell, no `IY`, no `DPB+19` — §4.3's original "no new work cell" claim held after all.
+
+### 11.3 Acceptance — ALL PASS (2026-07-02)
+1. **Screen arbiter:** `screen --machine both --keys '\rDIR\r' --keys-at 22 --settle 90`
+   → OURS ROW22 = **`375808 bytes free`**, byte-identical to stock; ROW21 `41 files`,
+   ROW23 `A>.` also identical (M19 intact).
+2. **`$1B` exit contract:** `capture --at 0xC6C5 --nth 1` → ours `A=$02 BC=$0200
+   DE=$02C9 HL=$016F` — byte-identical to stock in every register EXCEPT `IY`
+   (`$DC5B` vs stock's `$E595`), confirmed benign/unconsumed per §11.1.
+3. **Entry wired:** `callwatch --machine ours --range 0x4000:0x7FFF --in-func 0x1b` →
+   ours enters `$505D` then runs `getalloc_body` through to its own `ret` (not the
+   `$50AD-$50B7` stub tail).
+4. **No regression:** `callseq --at 0x0100 --log 0x0005 --maxhits 40 --keys '\r'
+   --keys-at 22 --settle 35` → 27/27 BDOS calls ALIGNED, zero divergence.
+5. **Tier-1 green + size:** `make unit-test` 19/19; `make probe` → DSKIO byte-identical
+   to the CF-3300 reference, BASIC print probes pass, tape probe OK; `disk.rom` ==
+   16384 B (3-pass object); `fat_alloc_cluster`/`fac_entry_from_wbuf`/WBUF helpers
+   byte-unchanged (reused, not edited).
+
+`DIR` now matches stock 100% byte-for-byte: file list, `41 files`, `375808 bytes free`,
+fresh `A>`. The M20 milestone is CLOSED. Remaining M20-adjacent items confirmed OUT OF
+SCOPE (unchanged): the `$75A5`/per-file `LSTOUT` fork (§8.4); the rest of the FCB cluster
++ console tier, blocked on the BDOS-exerciser `.COM` ([[bdos-exerciser-com-test]]).

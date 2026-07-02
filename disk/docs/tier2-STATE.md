@@ -10,28 +10,28 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-07-02 (**M20 HARD-STOP after implementation — the signed-off register-only exit
-contract is FALSIFIED; needs a revised design.** User signed off on [tier2-m20-spec.md](tier2-m20-spec.md)
-(footer = BDOS `$1B` GETALLOC → un-wired page-1 entry `$505D`, same class as M13/M17/M18/M19); built
-`getalloc_body` exactly per spec §4.2 (own FAT scan, A/BC/DE/HL). Host unit-harness (`tests/msxtest.py`)
-confirms the scan is byte-correct against the REAL test.dsk FAT (`HL=$016F`=367). In openMSX, register
-state IS correct right at `getalloc_body`'s own `ret` (`capture --at 0x7A8E`: `A=02 BC=0200 DE=02C9
-HL=016F`) — but by the BDOS return `$C6C5` it's become `HL=$0202`(514), and a sentinel swap
-(force `HL=$BEEF` before `ret`) changed NOTHING at `$C6C5` (still `0202`): **the kernel/COMMAND.COM does
-NOT use our returned HL for the footer at all.** Screen confirms: footer prints `526336 bytes free`
-(514×2×512), not `375808` — still wrong, just a different wrong. Root cause (public-doc reconciliation,
-this span): map.grauw.nl's MSX-DOS `_ALLOC ($1B)` spec documents `IY` = **pointer to the first FAT
-sector**, with an MSX-DOS-1-specific note that DOS-1's IY exposes MORE than one sector (the FULL resident
-FAT) — matching the M20 spec §2.3 finding that stock's `$1B` window reads its resident `$E595` buffer 81
-times (that's downstream PRINT code scanning FROM IY, not the handler's own count). Our `getalloc_body`
-never touches IY (stays stale, `$DC5B`), so the downstream scan reads garbage. **Fix needs a NEW
-contiguous resident-FAT buffer (sized to the volume's real `secPerFAT`, 1536 B on test.dsk but
-volume-dependent) that `getalloc_body` populates, with IY wired to point at it** — a real scope change
-from "compute + return 4 registers," not a solo mid-span expansion. **Action taken: reverted the
-uncommitted asm (`git checkout -- disk/kernel.asm`) back to the spec-only commit `959725b`; rebuilt +
-`make unit-test` 19/19 green — clean baseline, nothing broken left in the tree.** Reporting to the user
-for a revised design decision (buffer size/placement/IY-lifetime) before continuing. Full detail:
-[tier2-m20-spec.md](tier2-m20-spec.md); STATE "Next action" item 1. Prior: 2026-07-01 (**M19 LANDED —
+_Last updated: 2026-07-02 (**M20 LANDED — DIR's `nn bytes free` footer now matches stock,
+closing DIR to 100% byte-parity.** Two revisions were built and falsified first (Revision 1:
+register-only, correct A/BC/DE/HL but the footer stayed wrong; Revision 2: + resident FAT buffer +
+`IY`/`DPB+19`, from a one-time Opus+Fable dual-dispatch trial, wired correctly but STILL wrong,
+identically so). **Revision 3 (LANDED), from a Fable-SOLO follow-up investigation** (no Opus — the
+user's deliberate test of Fable alone after the dual-dispatch trial): root-caused and CAUSALLY PROVED
+(poke test, not inference) that the RAM kernel's common BDOS-exit path (`$D8AA-$D8BD`) gates `HL`
+passthrough on dispatcher flag `$F306` — a handler that leaves it set has `HL` silently overwritten
+with `H:=B,L:=A` (CP/M single-byte-result mirror) instead of passed through. Stock's `$505D` clears
+it; ours never did, explaining the identical wrong `$0202`(514)-mirror value seen in BOTH falsified
+revisions regardless of what they did internally. **Fix: Revision 1's original register-only body
+(unchanged, it was correct all along) plus one store — clear `$F306` before `ret`.** No buffer, no
+`IY`, no `DPB+19` — Revision 2's whole premise (downstream reads a pointer we control) was a red
+herring; those reads are stock's OWN handler's internal scratch. Verified: `capture --at 0xC6C5` →
+`A=$02 BC=$0200 DE=$02C9 HL=$016F` byte-identical to stock; screen arbiter → `375808 bytes free`
+byte-identical to stock; 27/27 boot BDOS parity zero divergence; `make unit-test` 19/19; `make probe`
+(DSKIO/BASIC/tape) all pass; `disk.rom` 16384 B. Full detail: [tier2-m20-spec.md](tier2-m20-spec.md)
+§11; [tier2-review-queue.md](tier2-review-queue.md) M20 LANDED entry (top of file, plus the two
+preceding hard-stop entries for the full falsification history). **Model-split note:** Fable-solo, no
+cross-check, found in one dispatch what a prior Opus+Fable DUAL dispatch missed — strong evidence for
+the open question in [[opus-vs-sonnet-model-split]] about whether investigation depth matters more
+than which model/how many. Prior: 2026-07-01 (**M19 LANDED —
 MSX-DOS `DIR` now lists files (was: hung forever)** — Opus
 span, user-signed-off spec [tier2-m19-spec.md](tier2-m19-spec.md); commits `45fd9be` docs, `5225a29`
 impl, docs-update follows). Root cause: kernel dir-search entries `$4FB8` (SFIRST `$11`)/`$5006` (SNEXT
@@ -170,8 +170,21 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   re-probe: entry DE→search-FCB (name pattern +1, `?`=$3F wildcard); DIR issues all-`?` FCB; runtime DTA
   = `($F23D)` (populated by the `$5058` SETDTA-cache); found entry written to the DTA as the MSX-DOS
   "found FCB" (drive+name+attr@+13+time/date/clus/size@+23..32); NO attr filter (return labels/subdirs,
-  COMMAND.COM filters); exit A=$00 found/$FF exhausted. **The `bytes free` footer is a SEPARATE unfinished
-  routine (see Next action), not part of this.** DO NOT re-litigate the dir-search mechanism.
+  COMMAND.COM filters); exit A=$00 found/$FF exhausted. **The `bytes free` footer was a SEPARATE
+  routine, now LANDED as M20 (see below).** DO NOT re-litigate the dir-search mechanism.
+- **M20 (2026-07-02): `$505D` GETALLOC-time entry wired** (`jp getalloc_body` — own FAT scan via
+  `read_sector`/`WBUF`, reusing fat.asm's `fac_entry_from_wbuf` unpack; counts free clusters instead
+  of stopping at the first). Returns `A=sectors/cluster BC=$0200 DE=total-data-clusters
+  HL=free-cluster-count`, AND clears dispatcher flag `$F306` before `ret` — **this clear is the
+  load-bearing fix**: the RAM kernel's common BDOS-exit path (`$D8AA-$D8BD`) silently overwrites a
+  handler's `HL` with `H:=B,L:=A` unless the handler clears `$F306` first (causally proven via a poke
+  test). `gdate_handler` was ALREADY doing this (previously assumed "harmless stock parity" — it is
+  not). `DIR`'s footer now renders `375808 bytes free` byte-identical to stock; `DIR` is 100%
+  byte-parity with stock (file list + `41 files` + footer + fresh `A>`). DO NOT re-litigate: `IY`/a
+  resident FAT buffer/a per-drive `DPB+19` field are NOT needed for this footer (two prior revisions
+  tried and falsified that path — see [tier2-review-queue.md](tier2-review-queue.md) for the full
+  falsification history) — **any future HL-returning page-1 entry must remember to clear `$F306`
+  before `ret`**, this is now a GENERAL rule for this ROM, not GETALLOC-specific.
 
 ## Dead ends / refuted — do NOT re-walk
 - **"M15 func-9 is blocked by `wa_seg` / the `$F365` slot-read stub / a page-1 disk-ROM output routine"**
@@ -199,42 +212,24 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M20 "bytes free" footer: HARD-STOP, needs a REVISED design (2026-07-02)
-`DIR` now WORKS on ours (M19): lists every file + `41 files` + fresh `A>`, byte-identical to stock, no
-hang. Two follow-ups, in order:
+## Next action — M20 CLOSED; the FCB cluster + console tier is next (2026-07-02)
+`DIR` is now 100% byte-parity with stock (M19 + M20 LANDED): file list, `41 files`, `375808 bytes
+free`, fresh `A>`, all byte-identical. Nothing remains open on the `DIR` command.
 
-**(1) HIGHEST — the `nn bytes free` footer (finish DIR to 100% parity). REVISED DESIGN NEEDED —
-the register-only exit contract in [tier2-m20-spec.md](tier2-m20-spec.md) is FALSIFIED; do not
-re-implement it as written.** Entry point is still solid: the footer is BDOS `$1B` GETALLOC, dispatched
-to page-1 entry **`$505D`** (un-wired `$00` pad, same shape as M13/M17/M18/M19). The spec's A/BC/DE/HL
-register design was BUILT and VALIDATED correct up to the routine's own `ret` (host-unit-test + an
-openMSX `capture --at 0x7A8E` right at the `ret` opcode both confirm `A=02 BC=0200 DE=02C9 HL=016F`,
-byte-perfect) — **but the kernel/COMMAND.COM between our `ret` and the `$C6C5` BDOS exit does NOT use our
-HL at all** (falsified with a sentinel-value swap: forcing `HL=$BEEF` before `ret` left `$C6C5`'s HL
-UNCHANGED at `$0202`). Root cause: the published MSX-DOS `_ALLOC` contract also specifies **`IY` = pointer
-to the first FAT sector** (MSX-DOS-1 note: more than one sector is accessible from IY, i.e. the FULL
-resident FAT) — downstream code reads the free-cluster count by SCANNING FROM IY, not by trusting our
-returned HL register. Our `getalloc_body` never touched IY (M19's `$E595`-independence lesson correctly
-avoided depending on stock's resident buffer, but the fix still needs SOME buffer + IY pointing at it).
-Screen-confirmed real-world effect of the as-signed-off build: footer prints `526336 bytes free`
-(514×2×512, from scanning garbage at the stale IY) instead of `375808` — a different wrong, not a fix.
-Full write-up of the falsification + evidence: [tier2-review-queue.md](tier2-review-queue.md) M20 hard-stop
-entry (dated 2026-07-02, above the original characterisation entry). **The uncommitted asm was reverted
-(`git checkout -- disk/kernel.asm` back to commit `959725b`); `make unit-test` 19/19 confirmed a clean
-baseline — nothing broken is in the tree.** Needed before resuming: a REVISED spec/design covering (a) a
-new contiguous resident-FAT buffer sized to the volume's actual `secPerFAT` (1536 B on test.dsk, but
-volume-dependent — needs a RAM-budget check, unlike the register-only design's "no new cell" claim), (b)
-`getalloc_body` populating it from our own FAT read (still must NOT depend on stock's `$E595`), (c) IY
-wired to point at it, kept valid for as long as the downstream scan needs it. `$75A5` and the 82 spurious
-per-file `C=05 LSTOUT` calls (BDOS n=63 fork) remain confirmed OUT OF SCOPE (unrelated, don't block
-`$1B`/`$505D`). **NEW-ROUTINE class, scope changed from what was signed off → needs a FRESH
-[[spec-before-implementation]] sign-off before any asm lands** — do not improvise the buffer design
-solo mid-span.
-
-**(2) then the rest of the FCB cluster + console tier — blocked on the BDOS-exerciser `.COM`**
+**HIGHEST — the rest of the FCB cluster + console tier — blocked on the BDOS-exerciser `.COM`**
 ([[bdos-exerciser-com-test]]): `$10 FCLOSE / $14 RDSEQ / $23 FSIZE / $26 / $27` runtime +
 `$01/$06/$07/$08/$0B/$0C` console — none isolable by a COMMAND.COM builtin; the exerciser is the
-prerequisite tool. Spec it separately (small tooling task).
+prerequisite tool. Spec it separately (small tooling task). `$75A5` and the 82 spurious per-file
+`C=05 LSTOUT` calls (BDOS n=63 fork, first noticed during M19/M20) remain confirmed OUT OF SCOPE for
+`DIR` (don't block `$1B`/`$505D`/`$4FB8`/`$5006`) but are still an open, uncharacterised divergence —
+pick up if/when a milestone touches that area.
+
+**GENERAL RULE learned from M20, applies to ANY future page-1 entry that returns a real `HL`:** the
+RAM kernel's common BDOS-exit path (`$D8AA-$D8BD`) silently overwrites a handler's `HL` with
+`H:=B,L:=A` unless the handler clears dispatcher flag `$F306` before `ret`. `gdate_handler` already
+does this; `getalloc_body` now does too. Any NEW handler that needs its `HL` to survive to the
+caller must clear `$F306` before `ret` — check this FIRST if a future milestone shows a
+correctly-computed `HL` not reaching its caller (same symptom class M20 hit twice).
 
 ### (archived) BDOS untested-func verify sweep — DONE 2026-07-01 (no asm changes)
 A **verification-only sweep** checked the "trivial-verify" tier of untested MSX-DOS-1 BDOS funcs.

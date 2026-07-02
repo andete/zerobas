@@ -23,6 +23,78 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M20 / bytes-free footer · LANDED — REVISION 3, the `$F306` dispatcher-flag fix]** Following
+the second hard-stop below, dispatched a Fable-SOLO investigation (no Opus this time — the user's
+explicit follow-up to the earlier dual-dispatch trial, to test whether Fable alone is reliable at
+this phase) to find the ACTUAL mechanism, since all three prior hypotheses (trust our `HL` / scan
+via `IY` / scan via `DPB+19`) were excluded. **Result: root cause pinned and CAUSALLY PROVEN (not
+inferred) in one span.** The RAM kernel's common BDOS-exit path (`$D8AA-$D8BD`, identical ours==
+stock) gates `HL` passthrough on dispatcher flag `$F306` (set to `$01` on every BDOS-call entry,
+per [tier2-gdate-spec.md](tier2-gdate-spec.md)'s earlier pin): if a handler leaves it set, the exit
+path overwrites `HL` with `H:=B,L:=A` (CP/M single-byte-result mirror) instead of passing it
+through. Stock's `$505D` clears it; ours never did in either falsified revision — explaining the
+EXACT wrong constant (`$0202`=514, a mirror of our own correct `A`/`BC`) observed identically both
+times. Proven with a poke test (`$F306:=0` at the exit-path anchor flips the branch; the handler's
+real `HL` then survives to `$C6C5`). Corroborated in-tree: `gdate_handler` already clears `$F306`
+(previously commented "harmless stock parity" — it is in fact load-bearing).
+· **Fix:** Revision 1's original register-only `getalloc_body` (unchanged — it was correct all
+along) plus one store: `xor a / ld ($F306),a` before `ret`, loading the final `A := sectors/cluster`
+AFTER the clear. No buffer, no `IY`, no `DPB+19` — Revision 2's whole premise was a red herring
+(those reads are stock's handler's own INTERNAL scratch, confirmed page-1-only via
+`callwatch --machine stock --in-func 0x1b`; nothing downstream of the `ret` ever reads them).
+· **Verified, all pass:** `capture --at 0xC6C5` → `A=$02 BC=$0200 DE=$02C9 HL=$016F` byte-identical
+to stock (only `IY` differs, confirmed benign); screen arbiter → `375808 bytes free` byte-identical
+to stock; `callwatch --in-func 0x1b` → `getalloc_body` runs to its own `ret` (not the stub tail);
+27/27 boot BDOS parity, zero divergence; `make unit-test` 19/19; `make probe` → DSKIO byte-identical
+to CF-3300, BASIC/tape probes pass; `disk.rom` == 16384 B. `DIR` now matches stock 100%
+byte-for-byte. Full detail: [tier2-m20-spec.md](tier2-m20-spec.md) §11.
+· **Model-split verdict (this trial's data point):** Fable-solo, with NO Opus cross-check, found in
+one dispatch what a prior Opus+Fable DUAL dispatch missed entirely (both agents in that trial
+proposed the wrong mechanism). This is the strongest evidence yet for [[opus-vs-sonnet-model-split]]'s
+open question — worth weighing heavily when deciding whether Fable becomes the default for
+investigation-phase zerobas work.
+· **Confidence:** HIGH — causally proven by a poke test, not inferred from correlation; independently
+corroborated by pre-existing code (`gdate_handler`) that nobody had connected to this bug before.
+
+**[M20 / bytes-free footer · SECOND HARD-STOP — REVISION 2 (IY + DPB+19 resident-FAT-buffer design)
+IS ALSO FALSIFIED; the true mechanism is still unknown]** User signed off (2026-07-02) on a REVISED
+design synthesized from a one-time dual-dispatch trial (Opus + Fable, run in parallel on the same
+characterisation task per [[opus-vs-sonnet-model-split]]'s trial). Fable's pass was clearly more
+thorough — fresh black-box probes pinned a per-drive DPB+19 FAT-pointer field (stock: `DRVA_DPB+19/+20`
+= `$E595`) that Opus's pass never surfaced, and its RAM-placement recommendation (`FATBUF equ $E820`)
+held up against a direct read of `disk/init.asm`, whereas Opus's own recommended address (`$E760`)
+turned out to collide with live scratch cells (`BOOT_SV_A8`/RST-30 saves/`RDBLK_*`/`P1_BLIT`/`DRV_TRAMP`)
+that Opus's own memory-map pass had missed — verified directly against source before adopting either.
+Built Fable's design exactly: `getalloc_body` now reads all `secPerFAT` FAT sectors into a new resident
+`FATBUF` ($E820, 1536 B) via our own `read_sector` (never stock's `$E595`), counts free entries by
+scanning the contiguous buffer directly (no straddle case), and sets **both** `IY := FATBUF` and
+`(DRVA_DPB+19) := FATBUF` before returning the already-validated A/BC/DE/HL. Build was clean (`disk.rom`
+16384 B, `make unit-test` 19/19).
+· **Falsified anyway.** `capture --at 0xC6C5` confirmed `IY=$E820` (wired correctly) and `FATBUF` held
+real FAT bytes (not stock's zero-filled equivalent) — the wiring itself worked. But the footer still
+printed **`526336 bytes free`** (514×2×512), byte-for-byte the SAME wrong value as the ORIGINAL falsified
+build that never touched IY or DPB+19 at all. Fable's own R1 risk flagged this exact possibility and
+recommended re-running the HL-sentinel falsify test as build step 1 — I ran it (should have run it
+*before* the full screen check, not after): forced `HL=$BEEF` right before `getalloc_body`'s `ret`;
+`$C6C5` still showed `HL=$0202`, IDENTICAL to the original (pre-IY-wiring) falsified build's sentinel
+result. **⇒ the downstream free-count value is not derived from our returned HL, not from IY, and not
+from DPB+19 either — every hypothesis both agents proposed is now excluded.** Something else entirely
+(an unidentified DPB field, a different BDOS call, or logic that doesn't consult `$1B`'s outputs at all
+for this figure) produces the `514` constant, unaffected by anything `getalloc_body` does.
+· **Action taken:** reverted the uncommitted asm (`git checkout -- disk/kernel.asm disk/equates.inc`);
+rebuilt + `make unit-test` 19/19 confirmed a clean baseline. `disk/docs/tier2-m20-spec.md`'s header now
+points at a superseded §11 (Revision 2) — a Revision 3 needs fresh investigation, not another design
+tweak on the same premise.
+· **Model-split note (this trial's second data point):** neither Opus's nor Fable's investigation — despite
+Fable's materially deeper probing that correctly found real bugs in Opus's proposal — correctly diagnosed
+the ACTUAL mechanism. Both were confidently wrong about what the kernel reads. Worth weighing when the
+user decides on the Fable-solo trial: depth of investigation reduced errors in the DESIGN's internal
+consistency (buffer placement, contiguity) but did not catch that the entire premise (IY/DPB+19 are what
+downstream reads) was itself wrong — that only surfaced via build + falsify-first, not via more reading.
+· **Confidence:** HIGH that the premise is wrong (direct, repeated falsification); ZERO on what the real
+mechanism is — this needs a fresh characterisation span (anchor+align from scratch on what actually
+determines the `$C6C5`-time HL, not an incremental fix to the current design).
+
 **[M20 / bytes-free footer · HARD-STOP after user go-ahead — the §2.4 exit-contract hypothesis is
 FALSIFIED, scope surprise, reporting rather than improvising]** User signed off on the spec below and I
 built it (veneer + `getalloc_body` computing A/BC/DE/HL exactly per spec §4.2). Host unit-harness
