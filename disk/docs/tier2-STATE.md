@@ -10,7 +10,16 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-07-01 (**M19 LANDED — MSX-DOS `DIR` now lists files (was: hung forever)** — Opus
+_Last updated: 2026-07-02 (**M20 CHARACTERISED + DESIGNED, awaiting sign-off — `DIR` "bytes free" footer**
+— Opus span, black-box-only: footer = BDOS `$1B` GETALLOC → page-1 entry `$505D` (un-wired `$00` pad,
+same class as M13/M17/M18/M19), exit contract `A/BC/DE/HL`=sectors-per-cluster/bytes-per-sector/
+total-clusters/free-clusters pinned at `ret=$C6C5` (stock `02/0200/02C9/016F` → `367×2×512=375808`; ours
+gets `$50A9`-stub garbage → `0`). Design: new `getalloc_body` free-tail routine reusing
+`fat_total_clusters` + a sibling of `fat_alloc_cluster`'s `$000`-scan (must NOT depend on stock's
+resident `$E595` FAT buffer, which ours never populates). Net-zero verified (pad room at `$505D` + 1126
+free-tail bytes). **NO ASM WRITTEN — spec-only, per [[spec-before-implementation]].** Full detail:
+[tier2-m20-spec.md](tier2-m20-spec.md); STATE "Next action" item 1. Prior: 2026-07-01 (**M19 LANDED —
+MSX-DOS `DIR` now lists files (was: hung forever)** — Opus
 span, user-signed-off spec [tier2-m19-spec.md](tier2-m19-spec.md); commits `45fd9be` docs, `5225a29`
 impl, docs-update follows). Root cause: kernel dir-search entries `$4FB8` (SFIRST `$11`)/`$5006` (SNEXT
 `$12`) were `$00` NOP-pad → CALL slid into the `$50A9` stub → phantom "entry found" → endless
@@ -177,23 +186,29 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M19 dir-search LANDED (2026-07-01); next = DIR "bytes free" footer, then exerciser `.COM`
+## Next action — M20 "bytes free" footer CHARACTERISED + DESIGNED (2026-07-02); AWAITING USER SIGN-OFF
 `DIR` now WORKS on ours (M19): lists every file + `41 files` + fresh `A>`, byte-identical to stock, no
 hang. Two follow-ups, in order:
 
-**(1) HIGHEST — the `nn bytes free` footer (finish DIR to 100% parity).** Ours prints `0 bytes free`,
-stock `375808`. This is a SEPARATE free-cluster FAT-scan routine, NOT the dir-search M19 fixed — pinned
-this span: stock issues **10 `$4010` DSKIO calls during DIR, ours 0** (the ~3 extra are the free-cluster
-FAT scan); ours' COMMAND.COM diverges at BDOS n=63 (stock SETDTA to fetch the next file; ours a spurious
-`C=05 LSTOUT`, `ret=$C66D`) and later mis-routes to the `$75A5` `ret`-stub (stock never hits `$75A5`
-during DIR). So a value ours supplies as `0` (the free-cluster count) cascades COMMAND.COM onto a wrong
-branch. The free count = free FAT `$000` clusters × cluster-bytes (367 × 1024 = 375808 here). We already
-own the FAT-scan primitives (`fat_alloc_cluster` finds the FIRST free cluster; `fat_total_clusters`) —
-counting ALL free clusters is a small variant. **BLOCKER = pin the ENTRY POINT + contract** (which page-1
-kernel entry COMMAND.COM/kernel CALLs for the free count, and where the result goes) — it was NOT
-identified this span; `$75A5` is a divergence symptom, not the entry. NEW-ROUTINE class → **write a spec
-+ get sign-off before implementing** (per [[spec-before-implementation]]; do NOT improvise). Fix-shape
-templates: M19 (this span) for the veneer+body+DTA pinning, M17/M18 for the read-a-cell veneer.
+**(1) HIGHEST — the `nn bytes free` footer (finish DIR to 100% parity). SPEC READY, NOT YET IMPLEMENTED.**
+Ours prints `0 bytes free`, stock `375808`. Opus span 2026-07-02 pinned the entry point + full contract
+black-box (no stock code decoded — see [tier2-m20-spec.md](tier2-m20-spec.md) §9 for the clean-room
+ledger): the footer is the documented **BDOS `$1B` GETALLOC**; COMMAND.COM's `$1B` call is register-
+identical ours==stock, and the kernel dispatches it to page-1 disk-ROM entry **`$505D`**, which on ours
+is `$00` NOP-pad (same un-wired-`$50xx`-entry shape as M13/M17/M18/M19) that slides into the existing
+`$50A9` stub tail → garbage exit regs → `0`. Exit contract pinned at `ret=$C6C5`: stock returns
+`A=$02`(sectors/cluster) `BC=$0200`(bytes/sector) `DE=$02C9`=713(total data clusters)
+`HL=$016F`=367(free clusters); COMMAND.COM computes `367×2×512=375808`. Stock's `$505D` scans its
+resident FAT buffer `$E595` (loaded once at SFIRST time); **ours must NOT depend on `$E595`** (ours
+never populates it) — design reuses our own `fat_total_clusters` + a `fat_alloc_cluster`-derived
+`$000`-count scan (a sibling loop, not an in-place edit — must leave the write-path `fat_alloc_cluster`
+byte-unchanged) to read the FAT itself. Net-zero confirmed: `$505D` sits in existing `$00` pad between
+the M19 `$5058` veneer and the `$50A9` stub (room for a 3-byte `jp`); free-tail has 1126 pad bytes for
+the body. `$75A5` and the 82 spurious per-file `C=05 LSTOUT` calls (BDOS n=63 fork) are a SEPARATE,
+cosmetically-absorbed COMMAND.COM branch difference — confirmed NOT blocking `$1B`/`$505D`, out of scope
+for M20 (spec §8.4). **NEW-ROUTINE class → spec written, [[spec-before-implementation]] sign-off
+required before any asm lands** (per prior span's own flag; do NOT improvise past this point without an
+explicit go-ahead). Full detail + acceptance criteria + risks: [tier2-m20-spec.md](tier2-m20-spec.md).
 
 **(2) then the rest of the FCB cluster + console tier — blocked on the BDOS-exerciser `.COM`**
 ([[bdos-exerciser-com-test]]): `$10 FCLOSE / $14 RDSEQ / $23 FSIZE / $26 / $27` runtime +

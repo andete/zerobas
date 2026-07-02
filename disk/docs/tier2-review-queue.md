@@ -23,6 +23,26 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M20 / bytes-free footer · CHARACTERISATION+DESIGN, AWAITING SIGN-OFF, no asm written]** Pinned
+black-box (no stock code decoded): `DIR`'s free-space footer is the documented BDOS `$1B` GETALLOC,
+dispatched by the kernel to page-1 entry `$505D`; on ours that's `$00` NOP-pad sliding into the existing
+`$50A9` stub (identical shape to M13/M17/M18/M19's un-wired `$50xx` entries). Exit contract pinned at
+`ret=$C6C5`: `A`=sectors/cluster, `BC`=bytes/sector, `DE`=total data clusters, `HL`=free clusters
+(stock `02/0200/02C9/016F` → COMMAND.COM computes `367×2×512=375808`; ours gets stub garbage → `0`).
+· **Design:** new `getalloc_body` (free tail) wired via a 3-byte `jp` veneer at `$505D` (existing `$00`
+pad, net-zero), reusing `fat_total_clusters` + a SIBLING of `fat_alloc_cluster`'s `$000`-entry scan
+(count-all instead of stop-at-first) — must leave the write-path `fat_alloc_cluster` byte-unchanged.
+Must read the FAT itself rather than depend on stock's resident `$E595` buffer (ours never populates it).
+· **Confidence:** HIGH on the entry point + contract (byte-identical `$1B` entry regs ours==stock;
+independent FAT-buffer decode cross-checks 367 free clusters = 375808). Exact exit-register load order
+is flagged as the first falsify-first build step (spec §8.1), not yet built.
+· **Out of scope, deliberately not folded in:** the 82 spurious per-file `C=05 LSTOUT` calls / `$75A5`
+divergence (BDOS n=63 fork) — confirmed a separate, cosmetically-absorbed COMMAND.COM branch difference
+that does NOT block `$1B`/`$505D`. Left for later characterisation.
+· **Sign-off needed:** per [[spec-before-implementation]], new-routine class (like M19) — implementation
+gated on explicit user go-ahead on [tier2-m20-spec.md](tier2-m20-spec.md). Nothing committed by the
+characterisation span except the spec doc itself.
+
 **[M19 / runtime dir-search (BDOS SFIRST $11 / SNEXT $12) · USER-SIGNED-OFF SPEC, not self-approved]**
 Landed the fix for MSX-DOS `DIR` (was: hung forever on a blank screen — the un-wired `$4FB8`/`$5006`
 dir-search entries NOP-slid into the `$50A9` stub, phantom "found" forever). Wired `$4FB8`→`sfirst_body`,
