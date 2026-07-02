@@ -438,57 +438,69 @@ k_402D:         ret
 k_41FD:         ret
 k_4558:         ret
 k_46C8:         ret
-; k_47B2 — COMMAND.COM loader (Tier-2 M5.4 first cut, fork P; spec tier2-m5.4-spec.md).
-; The relocated MSXDOS.SYS loader (~$D821) CALLs $47B2 to load COMMAND.COM (§8.40/
-; §8.54); the stock reads it via the disk ROM's own file routines, so we do the same
-; through our oracle-validated FCB BDOS: Open "COMMAND.COM", point the DTA at $0100
-; (the .COM load address, §5.2/§8.50), and Sequential-Read every 128-byte record
-; contiguously into the TPA. We then RET to $D824 — MSXDOS.SYS's existing post-$D824
-; transfer runs the now-loaded shell (the ×1 jump to $0100 seen in the §8.54 baseline).
-; First cut (diagnostic): does NOT yet reproduce $47B2's return-register state
-; (AF=0142/HL=1A00/IY=DC5B, §8.50) — add if the probe shows MSXDOS.SYS needs it.
-; CLEAN-ROOM: our own loader over our own file layer; COMMAND.COM is data we copy,
-; never disassembled.
-k_47B2:         push    de                  ; save entry DE (= kernel work ptr $DC5B) for the IY return
-                ld      de, k47b2_fcb       ; FCB naming COMMAND.COM
-                ld      c, BDOS_F_OPEN      ; $0F Open
-                call    bdos_entry
-                inc     a                   ; A=$FF not-found -> 0
-                jr      z, k47b2_fail       ; open failed: bail (stays in §8.40 spin)
-                ld      hl, $0100           ; .COM load address (§5.2/§8.50)
+; k_47B2 — M21b: generic BDOS RDBLK-via-page1 handler (tier2-m21-spec.md §5.4/
+; §5.5; was: a COMMAND.COM-only diagnostic loader, Tier-2 M5.4 first cut).
+; The kernel's $27 RDBLK handler ($D887, ret=$C51D) CALLs $47B2 for BOTH the
+; boot-time COMMAND.COM self-load (DE=$DC5B) and the runtime typed-command TPA
+; load (DE=$DA40) — both hand a fully-formed FCB of the SAME shape (§5.4), and
+; by the time this runs the kernel's own preceding FOPEN (page-1 $4462, M21a)
+; has already located the file and left FAT_FIRSTCLUS/FAT_FILESIZE seeded for
+; it, so no re-search is needed here: just re-prime the iterator and stream.
+; Requested count (entry HL) is treated as an upper bound in principle, but
+; every observed caller requests far more than any file this ROM handles and
+; relies on EOF to stop the transfer — reading straight to EOF is a documented
+; simplification, the same shape as bdos_rdblk's own random-record-0-only
+; assumption (disk/driver.asm).
+;   in:  DE = FCB pointer (kernel work buffer); HL = requested record count
+;   out: A = $01 EOF (MSX2 TH; matches stock's observed constant, §0.1/§5.5)
+;        HL = BC = total bytes transferred (= the file's full size, since the
+;        transfer always runs to EOF); IY = the entry DE (kernel work pointer,
+;        §5.4/§8.50); IX = the drive-A DPB (§8.50's original boot contract,
+;        extended unconditionally per §5.4 — both callers get the same body).
+;        $F306 cleared (Tier-2 dispatcher-flag rule, M20).
+; CLEAN-ROOM: our own file layer streaming into the caller's own DTA; COMMAND.COM
+; is data we copy, never disassembled.
+k_47B2:         push    de                  ; save entry DE (kernel work ptr) for the IY return
+                ; Seed OUR internal BDOS_DTA from the kernel's own live DTA pointer
+                ; (DOS_DTAPTR, $F23D -- M19) rather than trusting BDOS_DTA itself:
+                ; the kernel's real SETDTA writes DOS_DTAPTR only, never our own
+                ; mini-BDOS's cell, so BDOS_DTA is stale leftover from whatever
+                ; this ROM's own internal loader last used it for (found the hard
+                ; way: it read back $1A80, the END of the boot-time COMMAND.COM
+                ; load, at the runtime BDOSX.COM call).
+                ld      hl, (DOS_DTAPTR)
                 ld      (BDOS_DTA), hl
-k47b2_rdloop:   ld      de, k47b2_fcb
-                ld      c, BDOS_F_SEQRD     ; $14 Sequential Read -> (BDOS_DTA)
-                call    bdos_entry
+                call    fat_open            ; re-prime the iterator (FAT_FIRSTCLUS already found)
+                ld      hl, FAT_FILESIZE
+                ld      de, BDOS_BYTESLEFT
+                ld      bc, 4
+                ldir                        ; BDOS_BYTESLEFT = true file size (fresh read)
+                ld      a, RECPERSEC
+                ld      (BDOS_RECIDX), a    ; buffer empty -> first read refills
+k47b2_rdloop:   call    bdos_seqread        ; A=$00 record delivered / $01 EOF
                 or      a
-                jr      nz, k47b2_done      ; A=$01 EOF -> COMMAND.COM loaded
+                jr      nz, k47b2_done      ; EOF -> the file is fully transferred
                 ld      hl, (BDOS_DTA)      ; advance DTA one record
                 ld      de, RECSIZE         ; 128
                 add     hl, de
                 ld      (BDOS_DTA), hl
                 jr      k47b2_rdloop
-; k47b2_done — COMMAND.COM is loaded; reproduce stock $47B2's RETURN contract (§8.50,
-; spec §5.1) so MSXDOS.SYS's post-$D824 transfer enters COMMAND.COM at $0100 with the
-; environment it expects. Measured at the $0100 entry (same-program ours-vs-stock,
-; 2026-06-26): stock HL=BC=$1A00 IX=$F195 IY=$DC5B; ours had HL=0 BC=$0014 IX=$F1AA
-; IY=$0314 -> COMMAND.COM jp $0500 and SPUN at $050D (no DOS env). The path $D824->$0100
-; (or a; call $F36B; ei; jp $0100) does NOT touch these registers, so they pass straight
-; through from here. Contract: HL=BC = the loaded file size (FAT_FILESIZE); IX = the
-; drive-A DPB ($F195, == the entry IX, which our BDOS clobbered); IY = the kernel work
-; pointer the kernel handed us in DE (== $DC5B). A stays $01 (EOF) so $D824's `or a` keeps
-; the load-success path. CLEAN-ROOM: our own loader returning the black-box-observed
-; register contract; no stock bytes.
-k47b2_done:     ld      ix, DRVA_DPB        ; IX = $F195 drive-A DPB (entry IX, restored)
-                ld      bc, (FAT_FILESIZE)  ; BC = COMMAND.COM size ($1A00)
-                ld      hl, (FAT_FILESIZE)  ; HL = COMMAND.COM size ($1A00)
-                pop     iy                  ; IY = saved entry DE (kernel work ptr $DC5B)
-                ret                         ; RET to $D824 -> COMMAND.COM with its env
-k47b2_fail:     pop     de                  ; balance the saved entry DE
-                xor     a                   ; A=0 = load failed (caller stays in §8.40 spin)
+; k47b2_done — the file is fully transferred; reproduce the pinned return contract
+; (§5.5, exact register match at $C51D: AF=$0142 HL=$0480 for the runtime caller;
+; §8.50, HL=BC=FAT_FILESIZE IX=DRVA_DPB IY=entry-DE for the boot caller).
+k47b2_done:     xor     a
+                ld      ($F306), a          ; M20 dispatcher-flag rule
+                or      a                   ; clear carry (A=0 already; overwritten by dec next)
+                ld      b, 1
+                dec     b                   ; B=0; F = Z=1,N=1,C=0 (§5.5's AF=$0142 flag half)
+                ld      ix, DRVA_DPB        ; IX = $F195 drive-A DPB (§8.50)
+                ld      hl, (FAT_FILESIZE)  ; HL = total bytes transferred (LD: flags unaffected)
+                push    hl
+                pop     bc                  ; BC = HL (§5.5: "the genuine BDOS $27 returns the
+                                             ; count in both")
+                pop     iy                  ; IY = saved entry DE (kernel work pointer)
+                ld      a, 1                ; A = $01 EOF (LD: flags unaffected) -> AF = $0142
                 ret
-k47b2_fcb:      db      0                   ; drive = default
-                db      "COMMAND COM"       ; 11-byte 8.3 name (FCB+1..+11; dir form)
-                ds      24, 0               ; FCB bookkeeping (unread by bdos_entry)
 k_4919:         ret
 k_4935:         ret
 k_498C:         ret

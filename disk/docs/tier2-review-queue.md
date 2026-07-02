@@ -23,6 +23,25 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M21a + M21b / LANDED (2026-07-02) — Tier-2 can now run a typed `.COM` other than
+COMMAND.COM; the whole M21 track is closed.]** Implemented against the §0.1-pinned contract.
+M21a (`$4462` FOPEN-fill): relocated `fdc_di_save..getdpb` (153 B, driver.asm -> fat.asm's
+free tail) to vacate the collision point, wired the new `fopen_fill_body` — plain-boot 27/27
+aligned, miss-path `AF=$FF45` exact, FOPEN's FCB byte-identical to stock (only the
+already-accepted cosmetic `dirloc` differs). M21b (`$47B2`/`k_47B2`, RC-2): rewrote the
+boot-only diagnostic loader into a generic body — trusts FAT_FIRSTCLUS/FAT_FILESIZE already
+seeded by the preceding FOPEN, re-primes via `fat_open`, streams to EOF via the existing
+`bdos_seqread`. Hit and fixed one real bug beyond the characterisation: our internal
+`BDOS_DTA` cell is separate from the kernel's real DTA pointer (`DOS_DTAPTR`, $F23D) — the
+kernel's SETDTA only ever writes `DOS_DTAPTR`, so `BDOS_DTA` was stale (boot's leftover
+`$1A80`) until `k_47B2` was fixed to reseed it at entry; found via a register capture at
+`$47B2`'s own entry, not stock disassembly. Verified regression-first: `make unit-test`
+19/19, boot 27/27 aligned, `capture --at 0xC51D` zero register diffs vs stock, full BDOSX
+typed-run `callseq` 47/47 aligned, its 384-byte data buffer + FCB/snapshot buffer 0-byte-diff
+vs stock, DIR byte-identical, `make probe` green, `disk.rom` == 16384 B. Confidence: high (every
+acceptance criterion in [tier2-m21-spec.md](tier2-m21-spec.md) §6 met exactly). Undo: `git
+revert` the two commits (M21a docs+code, M21b code) if a later regression surfaces.
+
 **[M21a / §0.1 — DC5B isolation DONE (2026-07-02, stock-only characterisation, no ROM
 changes): both hard-stop hypotheses FALSIFIED; prime suspect is now the MISS-path exit.]**
 Ran the writewatch isolation the hard-stop demanded ([tier2-m21-spec.md](tier2-m21-spec.md)

@@ -5,22 +5,41 @@ SPDX-License-Identifier: 0BSD
 
 # Tier-2 M21 spec — running a typed `.COM` other than COMMAND.COM itself
 
-**Status: M21a LANDED (2026-07-02); M21b next.** After the first implementation attempt was
-reverted (see §0/§0.1 for the full hard-stop-and-recharacterise story), the `DC5B`-instance
-isolation pass (§0.1) found both hard-stop hypotheses FALSE and pinned the correct fix shape: one
-generic body, unconditional `+14:=0`, found-fill including the `+20..23` date/time field (word-
-swapped vs. the FAT dirent's own order — confirmed against our own test disk, see the M21a commit),
-miss-exit `A=$FF`. Re-implemented against that pinned contract: relocation (§5.3) + the new
-`fopen_fill_body` in disk/fat.asm, veneer at `$4462` in disk/driver.asm. Verified, in order (per
-§0.1's explicit lesson — regression FIRST): `make unit-test` 19/19; plain-boot `callseq` 27/27
-ALIGNED; `capture --at 0xD88A --nth 2` miss-path exit `AF=$FF45` byte-identical to stock;
-`capture --at 0xC4A1 --nth 1 --mem 0xD403:0x25` FOPEN's FCB byte-identical to stock (only the
-already-accepted cosmetic `dirloc` field differs); `screen --keys '\rDIR\r'` byte-identical;
-`make probe` all green; `disk.rom` == 16384 B. Remaining divergence in the BDOSX end-to-end
-`callseq` (n=36 `HL=$0001` instead of `$0480`) is exactly RC-2 (§3), **not a new regression** —
-`$47B2`/`k_47B2` still hardcodes the COMMAND.COM boot reload; M21b (below) closes that gap.
+**Status: M21a + M21b BOTH LANDED (2026-07-02) — Tier-2 can now load and run an arbitrary named
+`.COM`, not just COMMAND.COM.** After the first implementation attempt was reverted (see §0/§0.1
+for the full hard-stop-and-recharacterise story), the `DC5B`-instance isolation pass (§0.1) found
+both hard-stop hypotheses FALSE and pinned the correct M21a fix shape (one generic FOPEN-fill
+body, unconditional `+14:=0`, found-fill including the `+20..23` date/time field, miss-exit
+`A=$FF`). M21a landed clean: relocation (§5.3) + `fopen_fill_body` in disk/fat.asm, veneer at
+`$4462` in disk/driver.asm — plain-boot 27/27 aligned, miss-path `AF=$FF45` exact, FOPEN's FCB
+byte-identical to stock (only the already-accepted cosmetic `dirloc` differs).
+
+M21b (`$47B2`/`k_47B2`, RC-2) followed immediately: rewrote the boot-only diagnostic loader into
+a generic body that trusts the FAT_FIRSTCLUS/FAT_FILESIZE already seeded by the preceding FOPEN,
+re-primes the iterator (`fat_open`) and streams to EOF via the existing, already-proven
+`bdos_seqread`, reproducing the pinned exit contract (§5.5: `AF=$0142`, `HL=BC=`bytes
+transferred, `IY=`entry DE, `IX=DRVA_DPB`) via an explicit flag-construction trick (`or a / ld
+b,1 / dec b` for the `Z=1,N=1,C=0` half of `$42`, then `ld a,1` last). Hit one real bug beyond the
+characterisation's scope during implementation: our own internal `BDOS_DTA` cell (used by
+`bdos_seqread`) is a **separate** cell from the kernel's real DTA pointer (`DOS_DTAPTR`, $F23D,
+M19) — the kernel's SETDTA only ever writes `DOS_DTAPTR`, so `BDOS_DTA` was stale (leftover from
+the boot-time COMMAND.COM read, landing all runtime transfers at the wrong address `$1A80`
+instead of `$0100`) until `k_47B2` was fixed to reseed it from `DOS_DTAPTR` at entry. Found via a
+register-value capture at `$47B2`'s entry (`--mem 0xE4C0:0x2` vs `--mem 0xF23D:0x2`), not stock
+disassembly.
+
+Verified, regression-first, on the full stack: `make unit-test` 19/19; plain-boot `callseq`
+27/27 ALIGNED; `capture --at 0xC51D --nth 1`: **every register byte-identical to stock**
+(`AF=0142 HL=0480 BC=0000 IX=F195 IY=DA40`, zero diffs); `callseq --at 0x0100 --log 0x0005` for
+a typed `BDOSX\r`: **all 47 shared calls ALIGNED** (n=37-47 = BDOSX.COM's own FSIZE/FOPEN/RDSEQ
+×2/SETRND/RDBLK/WRBLK/FCLOSE sequence, exactly [tier2-bdos-exerciser-spec.md](tier2-bdos-exerciser-spec.md)'s
+Phase-1 acceptance target); `capture --at 0x01bc --mem 0x0400:0x180` (the exerciser's 384-byte
+read-back data buffer) and `--mem 0x0300:0x180` (its FCB + 8-call register-snapshot buffer):
+**0 of 384 bytes differ, on both**, registers at the final self-loop also byte-identical. `screen
+--keys DIR` byte-identical; `make probe` all green; `disk.rom` == 16384 B throughout.
 Resume board: [tier2-STATE.md](tier2-STATE.md). Discovered while building
-[tier2-bdos-exerciser-spec.md](tier2-bdos-exerciser-spec.md)'s `BDOSX.COM` tool.
+[tier2-bdos-exerciser-spec.md](tier2-bdos-exerciser-spec.md)'s `BDOSX.COM` tool, which is now
+UNBLOCKED and fully exercised as part of this milestone's own verification.
 
 ## 0. What's still needed before another implementation attempt (2026-07-02)
 `$4462` is called with at least THREE distinct `DE` values, not one: `DA40` (the typed-command
