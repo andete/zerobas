@@ -5,19 +5,20 @@ SPDX-License-Identifier: 0BSD
 
 # Tier-2 M21 spec — running a typed `.COM` other than COMMAND.COM itself
 
-**Status: IMPLEMENTATION ATTEMPTED AND REVERTED — HARD-STOP (2026-07-02).** §5's
-characterisation (below) was believed implementation-ready and signed off; M21a was built for
-real (relocation + a `fopen_fill_body` reading/writing via the caller's DE). It passed its OWN
-written acceptance check (§6, the BDOSX exerciser's FCB byte-diff) but then FAILED the mandatory
-M18 plain-boot regression check (`27/27 aligned` → broke at n=3) — a THIRD, previously
-uncharacterised calling instance into `$4462` (`DE=$DC5B`, a "COMMAND COM" boot self-check, and
-separately `DE=$DA40` for an "AUTOEXEC.BAT" probe) was never exercised by the investigation,
-which only ever drove `$4462` via the synthetic BDOSX exerciser's own call path. Fully reverted
-(`git checkout`); tree confirmed back to known-good (Tier-1 19/19, boot 27/27 aligned). Full
-writeup: [tier2-review-queue.md](tier2-review-queue.md) (top entry, 2026-07-02). §3/§5 below
-remain valid characterisation of the TWO originally-targeted mechanisms and the harness
-extensions (`writewatch`) — they are NOT wrong, just incomplete: a third calling instance into
-the same `$4462` entry needs its own characterisation pass before another implementation attempt.
+**Status: M21a LANDED (2026-07-02); M21b next.** After the first implementation attempt was
+reverted (see §0/§0.1 for the full hard-stop-and-recharacterise story), the `DC5B`-instance
+isolation pass (§0.1) found both hard-stop hypotheses FALSE and pinned the correct fix shape: one
+generic body, unconditional `+14:=0`, found-fill including the `+20..23` date/time field (word-
+swapped vs. the FAT dirent's own order — confirmed against our own test disk, see the M21a commit),
+miss-exit `A=$FF`. Re-implemented against that pinned contract: relocation (§5.3) + the new
+`fopen_fill_body` in disk/fat.asm, veneer at `$4462` in disk/driver.asm. Verified, in order (per
+§0.1's explicit lesson — regression FIRST): `make unit-test` 19/19; plain-boot `callseq` 27/27
+ALIGNED; `capture --at 0xD88A --nth 2` miss-path exit `AF=$FF45` byte-identical to stock;
+`capture --at 0xC4A1 --nth 1 --mem 0xD403:0x25` FOPEN's FCB byte-identical to stock (only the
+already-accepted cosmetic `dirloc` field differs); `screen --keys '\rDIR\r'` byte-identical;
+`make probe` all green; `disk.rom` == 16384 B. Remaining divergence in the BDOSX end-to-end
+`callseq` (n=36 `HL=$0001` instead of `$0480`) is exactly RC-2 (§3), **not a new regression** —
+`$47B2`/`k_47B2` still hardcodes the COMMAND.COM boot reload; M21b (below) closes that gap.
 Resume board: [tier2-STATE.md](tier2-STATE.md). Discovered while building
 [tier2-bdos-exerciser-spec.md](tier2-bdos-exerciser-spec.md)'s `BDOSX.COM` tool.
 

@@ -959,3 +959,322 @@ fat_dir_update:
                 or      a                   ; Cy = 0 success
                 ret
 
+; --- Relocated from disk/driver.asm (M21a, tier2-m21-spec.md §5.3) ---------
+; $4462 — a byte inside fdc_di_save's body — collided with the kernel's FOPEN
+; dir-fill entry point (RC-1). This block is UNCHANGED from its original
+; driver.asm form; every caller (dskio's transfer sites, fdc_di_save's own
+; internal chain, the canonical $4013/$4016 dskchg/getdpb entries in
+; init.asm) resolves by symbol, so relocation needs no repoint anywhere else.
+
+; fdc_di_save / fdc_io_done — bracket a sector op with a DI..(EI) guard.
+; The WD2793 data transfer is a tight DRQ poll: a foreign interrupt (the 50 Hz
+; VDP IRQ, live once MSX-DOS / COMMAND.COM run with EI) preempting the loop drops
+; an FDC byte -> LOST DATA, an endless restore-retry livelock (a3 §8.34). MSX-DOS
+; boot ran with interrupts masked, so this only bit in the DOS context. fdc_di_save
+; records the caller's IFF2 then masks; fdc_io_done restores it on every exit,
+; leaving the result (A = error code, Cy, HL) untouched. (`ld a,i` puts IFF2 in
+; P/V; the entry clobbers A, but fdc_read_phys/fdc_write_phys take no A input.)
+fdc_di_save:
+                ld      a, i            ; P/V = IFF2 (interrupts enabled?)
+                di
+                jp      pe, fdc_di_on   ; PE -> IFF2 was set
+                xor     a               ; were masked: remember 0
+                ld      (FDC_IFF), a
+                ret
+fdc_di_on:
+                ld      a, 1            ; were enabled: remember 1
+                ld      (FDC_IFF), a
+                ret
+
+fdc_io_done:
+                push    af              ; preserve result (A error code + Cy)
+                ld      a, (FDC_IFF)
+                or      a
+                jr      z, fdc_iod_x    ; caller had interrupts masked: leave masked
+                ei                      ; restore the caller's enabled interrupts
+fdc_iod_x:
+                pop     af
+                ret
+
+; div9 — divide HL by 9 (logical sector -> track*2+head, sector-1).
+;   in:  HL = logical sector (0..1439)
+;   out: B = quotient (HL / 9), L = remainder (0..8), H = 0; A trashed
+div9:
+                ld      b, 0
+fdc_div_loop:
+                ld      a, h
+                or      a
+                jr      nz, fdc_div_sub ; HL >= 256 -> definitely >= 9
+                ld      a, l
+                cp      9
+                jr      c, fdc_div_done ; HL < 9 -> remainder in L
+fdc_div_sub:
+                ld      a, l
+                sub     9
+                ld      l, a
+                jr      nc, fdc_div_nob
+                dec     h
+fdc_div_nob:
+                inc     b
+                jr      fdc_div_loop
+fdc_div_done:
+                ret
+
+; dskchg — disk-change status inquiry.
+; Fail with carry set until FDC driver lands.
+dskchg:
+                scf
+                ret
+
+; getdpb — build the Drive Parameter Block from the BPB ($4016 disk-ROM entry).
+;
+; Builds a real DPB from the on-disk BPB. This is the PROVIDER-direction surface
+; (disk/docs/expansion-protocol.md §4a): a real MSX-BASIC / MSX-DOS host calls
+; $4016 to obtain the mounted volume's geometry as a DPB, so the provider must
+; answer it (a black-box trace of BLOAD/SAVE on the CF-3300 showed Disk BASIC
+; DOES call GETDPB). zerobas's own loader path never calls $4016 — it derives
+; geometry straight from the BPB (fat_mount) — but a foreign host driving us does.
+;
+; Calling convention (MSX disk-ROM interface; Nextor 2.1 Driver Development Guide
+; §4.5.3, which restates the standard GETDPB contract):
+;   in:  A  = drive (unit) number (0 = A:)  — ignored, single-drive machine
+;        B  = C = media descriptor byte
+;        HL = DPB base address MINUS ONE (the byte at base+0 is the drive number,
+;             which GETDPB does NOT fill; GETDPB fills base+1 = media onward)
+;   out: Cy = 0 ok (DPB filled), Cy = 1 = error (could not read the boot sector)
+;
+; DPB field layout + encodings: MSX2 Technical Handbook §3, Figure 3.11 (DPB
+; structure), and the Nextor 2.1 Driver Development Guide §4.5.3 field formulas.
+; Each field below cites its source + derivation. The whole layout was confirmed
+; FIELD-FOR-FIELD against a black-box GETDPB trace of the National CF-3300
+; reference on this same 720 KB image (carry=0, DPB bytes read out of RAM — the
+; reference ROM's code was never read). See disk/PROVENANCE.md §DPB.
+;
+; fat_mount already parses the BPB into scratch (FAT_FATSTART / FAT_FIRSTROOT /
+; FAT_FIRSTDATA / FAT_SECPERCLUS / FAT_NUMFATS / FAT_SECPERFAT) and leaves the
+; boot sector in SECTOR_BUF, so GETDPB reuses those (our own code) and reads the
+; remaining raw BPB fields (media, sector size, root-entry count) from SECTOR_BUF.
+getdpb:
+                ; HL = DPB base - 1 (Nextor §4.5.3). GETDPB fills from base+1 (media)
+                ; onward; base+0 (drive number) is the caller's, not ours. So the
+                ; first byte WE write (media) lands at HL+1. (CONFIRMED by the
+                ; CF-3300 black-box trace: with HL = $C0FF the reference wrote the
+                ; media byte at $C100 = HL+1; see disk/PROVENANCE.md §DPB.)
+                inc     hl                  ; HL -> DPB +1 (media ID), = caller HL + 1
+                push    hl                  ; keep DPB+1 pointer across fat_mount
+                call    fat_mount           ; parse BPB; leaves boot sector in SECTOR_BUF
+                pop     hl
+                ret     c                   ; boot-sector read failed -> Cy = 1
+
+                ; +1 media ID = BPB media descriptor (boot sector +21). TH Fig 3.11
+                ; "media ID"; ECMA-107 / MS FAT spec media byte. (= $F9 on 720 KB.)
+                ld      a, (SECTOR_BUF + 21)
+                ld      (hl), a
+                inc     hl                  ; HL -> DPB +2
+
+                ; +2..3 sector size (LE) = BPB bytes-per-sector. TH Fig 3.11; we
+                ; validated $0200 (512) at mount, so copy the BPB word verbatim.
+                ld      a, (SECTOR_BUF + BPB_BYTSPERSEC)
+                ld      (hl), a
+                inc     hl
+                ld      a, (SECTOR_BUF + BPB_BYTSPERSEC + 1)
+                ld      (hl), a
+                inc     hl                  ; HL -> DPB +4
+
+                ; +4 directory mask = (sector size / 32) - 1  (Nextor §4.5.3:
+                ; "directory mask = (sector size/32) - 1"). 512/32 - 1 = 15 = $0F.
+                ; +5 directory shift = number of one-bits in the directory mask
+                ;    (Nextor §4.5.3) = log2(entries per sector) = 4 for 512-byte
+                ;    sectors. Sector size is validated = 512 at mount, so these are
+                ;    the fixed 512-byte values $0F / $04 (CF-3300 oracle: 0f 04).
+                ld      (hl), $0F           ; +4 directory mask
+                inc     hl
+                ld      (hl), 4             ; +5 directory shift
+                inc     hl                  ; HL -> DPB +6
+
+                ; +6 cluster mask = (sectors per cluster) - 1   (Nextor §4.5.3).
+                ; +7 cluster shift = (one-bits in cluster mask) + 1 (Nextor §4.5.3);
+                ;    for a power-of-two secPerClus this equals log2(secPerClus)+1.
+                ;    720 KB: secPerClus = 2 -> mask = 1, shift = 2 (CF-3300: 01 02).
+                ld      a, (FAT_SECPERCLUS) ; our own BPB-derived value (fat_mount)
+                dec     a
+                ld      (hl), a             ; +6 cluster mask = secPerClus - 1
+                ld      c, a                ; C = cluster mask (count its one-bits)
+                inc     hl                  ; HL -> DPB +7
+                ld      b, 1                ; shift starts at 1 (Nextor: +1)
+                ld      a, c
+                or      a
+                jr      z, gdpb_popdone
+gdpb_pc_loop:
+                srl     c
+                jr      nc, gdpb_pc_next
+                inc     b                   ; one more set bit -> +1 to the shift
+gdpb_pc_next:
+                ld      a, c
+                or      a
+                jr      nz, gdpb_pc_loop
+gdpb_popdone:
+                ld      (hl), b             ; +7 cluster shift
+                inc     hl                  ; HL -> DPB +8
+
+                ; +8..9 top sector of FAT (LE) = first FAT sector = reserved sectors.
+                ; TH Fig 3.11 "top sector of FAT"; our FAT_FATSTART (fat_mount).
+                ld      de, (FAT_FATSTART)
+                ld      (hl), e
+                inc     hl
+                ld      (hl), d
+                inc     hl                  ; HL -> DPB +10
+
+                ; +10 number of FATs. TH Fig 3.11; our FAT_NUMFATS (BPB +16).
+                ld      a, (FAT_NUMFATS)
+                ld      (hl), a
+                inc     hl                  ; HL -> DPB +11
+
+                ; +11 number of directory entries (max 254). TH Fig 3.11; BPB +17
+                ; root-entry count low byte (112 on 720 KB -> $70; high byte is 0).
+                ld      a, (SECTOR_BUF + BPB_ROOTENTCNT)
+                ld      (hl), a
+                inc     hl                  ; HL -> DPB +12
+
+                ; +12..13 top sector of data area (LE) = first data sector.
+                ; TH Fig 3.11 "top sector of data area"; our FAT_FIRSTDATA.
+                ld      de, (FAT_FIRSTDATA)
+                ld      (hl), e
+                inc     hl
+                ld      (hl), d
+                inc     hl                  ; HL -> DPB +14
+
+                ; +14..15 amount of cluster + 1 (LE). TH Fig 3.11 "amount of cluster
+                ; + 1"; = data-cluster count + 1. fat_total_clusters returns
+                ; dataClusters + 2 (its highest-cluster-plus-one chain bound), so
+                ; the DPB field is that value - 1. (CF-3300 oracle: $02CA = 714 =
+                ; dataClusters(713) + 1 on this 720 KB image; fat_total_clusters
+                ; returns 715, minus 1 = 714.) Microsoft FAT spec §3.3 cluster count.
+                push    hl
+                call    fat_total_clusters  ; DE = dataClusters + 2 (reads boot sec into WBUF)
+                dec     de                  ; DE = dataClusters + 1 (the DPB encoding)
+                pop     hl
+                ld      (hl), e
+                inc     hl
+                ld      (hl), d
+                inc     hl                  ; HL -> DPB +16
+
+                ; +16 number of sectors per FAT. TH Fig 3.11; our FAT_SECPERFAT
+                ; (BPB +22). 720 KB = 3. Single byte (FAT fits < 256 sectors).
+                ld      a, (FAT_SECPERFAT)
+                ld      (hl), a
+                inc     hl                  ; HL -> DPB +17
+
+                ; +17..18 top sector of directory area (LE) = first root-dir sector.
+                ; TH Fig 3.11 "top sector of directory area"; our FAT_FIRSTROOT.
+                ld      de, (FAT_FIRSTROOT)
+                ld      (hl), e
+                inc     hl
+                ld      (hl), d
+                ; +19..20 (FAT address in memory) is filled by the OS, not GETDPB
+                ; (TH Fig 3.11) — left untouched, matching the CF-3300 oracle which
+                ; left those two bytes unwritten.
+                or      a                   ; Cy = 0 success
+                ret
+
+; fopen_fill_body — M21a: the real page-1 FOPEN dir-fill (tier2-m21-spec.md
+; §5.2/§0.1). Reached as a page-1 TAIL-CALL from the kernel's FOPEN handler via
+; the $4462 veneer (disk/driver.asm) — the return address already on the stack
+; is the kernel's own BDOS-exit trampoline (§0.1 Fact 4), so this body's exit
+; A/F ARE the BDOS FOPEN result, not an internal call's return value. The
+; kernel has already filled FCB +0..+13 (search name/ext/extent/S1) via its own
+; SFIRST/SNEXT-sourced LDIR before calling here (§5.2's division-of-labor
+; finding) — this body owns ONLY +14(high)..+31.
+;   in:  DE = FCB pointer (kernel work buffer, e.g. $DA40 runtime / $DC5B boot)
+;   out: found:     A = $00, HL = $0000 (§6/§0.1 pinned contract at $C4A1)
+;        not found: A = $FF                (§0.1 Fact 5, matches stock's $D88A)
+;        $F306 cleared either way (Tier-2 dispatcher-flag rule, M20)
+fopen_fill_body:
+                push    de
+                pop     ix                  ; IX = FCB pointer throughout
+                xor     a
+                ld      (ix+14), a          ; +14 unconditional pre-search clear (§0.1 facts 2/3)
+                push    ix
+                pop     de
+                call    fat_mount
+                jp      c, ffb_miss
+                push    ix
+                pop     de
+                inc     de                  ; DE -> FCB+1 (11-byte 8.3 name)
+                ex      de, hl              ; HL -> name (fat_find's contract)
+                call    fat_find            ; Cy=0 found; HL preserved = &matched dirent
+                jp      c, ffb_miss
+                ; date/time (§0.1 addendum, confirmed against the FAT12 dir-entry
+                ; layout on our own test disk): FCB+20/21 := dirent+24/25 (date),
+                ; FCB+22/23 := dirent+22/23 (time) — a word-swap vs. the dirent's
+                ; own time-then-date order, not a straight 4-byte copy.
+                ld      de, 22
+                add     hl, de              ; HL -> dirent+22 (time word)
+                ld      a, (hl)
+                ld      (ix+22), a
+                inc     hl
+                ld      a, (hl)
+                ld      (ix+23), a
+                inc     hl                  ; HL -> dirent+24 (date word)
+                ld      a, (hl)
+                ld      (ix+20), a
+                inc     hl
+                ld      a, (hl)
+                ld      (ix+21), a
+                ; +15 record count = ceil(size/128), capped at 128 ($80)
+                ld      hl, (FAT_FILESIZE)
+                ld      a, l
+                and     $7F
+                ld      b, a
+                ld      a, 7
+ffb_shift:
+                srl     h
+                rr      l
+                dec     a
+                jr      nz, ffb_shift
+                ld      a, b
+                or      a
+                jr      z, ffb_noround
+                inc     l
+ffb_noround:
+                ld      a, l
+                cp      $81
+                jr      c, ffb_rcok
+                ld      a, $80
+ffb_rcok:
+                ld      (ix+15), a
+                ; +16..19 size mirror (4-byte LE)
+                push    ix
+                pop     hl
+                ld      bc, 16
+                add     hl, bc
+                ex      de, hl
+                ld      hl, FAT_FILESIZE
+                ld      bc, 4
+                ldir
+                ; +24 devid: oracle-observed constant (§3 RC-1). +25 dirloc is
+                ; left at the kernel's pre-zero — a per-file directory-slot index
+                ; we don't compute; confirmed cosmetic-only (the prior M21a run
+                ; loaded and executed BDOSX.COM correctly with this field
+                ; mismatched — see tier2-review-queue.md).
+                ld      (ix+24), $40
+                ; +26/27 top cluster, +28/29 last cluster (fresh open: both = first)
+                ld      hl, (FAT_FIRSTCLUS)
+                ld      (ix+26), l
+                ld      (ix+27), h
+                ld      (ix+28), l
+                ld      (ix+29), h
+                ; +30/31 relloc = 0
+                ld      (ix+30), 0
+                ld      (ix+31), 0
+                xor     a
+                ld      ($F306), a          ; M20 dispatcher-flag rule
+                ld      hl, 0
+                ret
+ffb_miss:
+                xor     a
+                ld      ($F306), a          ; M20 dispatcher-flag rule
+                scf
+                ld      a, $FF
+                ret
+
