@@ -23,6 +23,132 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M21a / §0.1 — DC5B isolation DONE (2026-07-02, stock-only characterisation, no ROM
+changes): both hard-stop hypotheses FALSIFIED; prime suspect is now the MISS-path exit.]**
+Ran the writewatch isolation the hard-stop demanded ([tier2-m21-spec.md](tier2-m21-spec.md)
+§0.1). Stock DOES fill `$DC5B+14..+31` during boot, from the SAME PAGE1 PCs (`$42AA`,
+`$4488-$44C8`) with the SAME field semantics as the `DA40` case ⇒ (a) fill-contract-differs
+is FALSE; the range is exactly the FCB and stock writes it ⇒ (b) collision is FALSE. New
+pinned facts: the `DC5B` call is PRE-`$0100` (MSXDOS.SYS's own COMMAND.COM load); the kernel
+(`$D812`) overwrites `+14/+15` to S2=1/RC=0 right after the fill; on a MISS the machinery
+writes only `+14:=$00` (`$42AA`, pre-search) and exits `A=$FF`; `$4462` is a TAIL-CALL
+(stack-top return addr = `$D88A`), so the body's exit A IS the FOPEN result. The §5.2 fill
+list also missed `+20..23` (date/time). Prime suspect for the regression: the generic body's
+miss-path exit at boot n=2 (AUTOEXEC.BAT probe) reading as "found" → COMMAND.COM skips the
+date prompt → the exact n=3 derail observed (not provable retroactively — the body was
+reverted uncommitted). Ready to re-attempt M21a per §0.1's fix shape; run the 27/27 plain-boot
+regression FIRST next time. · confidence: high on (a)/(b) falsification (direct observation);
+medium on the miss-path attribution (consistent with all facts, body gone). · undo: n/a
+(docs only).
+
+**[M21a / HARD-STOP — implementation attempted, a THIRD $4462 calling convention broke the
+core boot-to-`A>` chain; reverted]** With the spec's §5 characterisation believed
+implementation-ready, built M21a for real: relocated `fdc_di_save..getdpb` (153 B) to the
+`$4C77` free tail (net-zero, `disk.rom` stayed 16384 B, Tier-1 `make unit-test`/`make probe` all
+green) and wrote `fopen_fill_body` behind a new `$4462` veneer.
+· **First falsify-first check (per spec §6) passed cleanly:** `capture --at 0xC4A1 --mem
+0xD403:0x25` on the BDOSX exerciser's typed-command call showed the FCB byte-identical to stock
+except one field (`+25 dirloc`, the already-flagged known limitation) — RC, size, devid, both
+cluster fields, relloc all matched exactly.
+· **Then the MANDATORY regression re-check (M18's `callseq --at 0x0100 --log 0x0005 --keys '\r'
+--keys-at 22`, no typed command at all — previously rock-solid 27/27 aligned) FAILED**: ours
+diverged at n=3, skipping straight to the `A>` redraw loop instead of the date-prompt sequence.
+Falsified two hypotheses in turn: (1) *stack imbalance* — ruled out, the code never left an
+unbalanced push. (2) *hardcoded `$DA40` buffer instead of the caller's own DE* — CONFIRMED a
+real bug (a plain-boot call reaches `$4462` with `DE=$DC5B`, name "COMMAND COM", which my first
+cut never read, searching zero-bytes instead and wrongly returning not-found for a file that
+demonstrably exists) — but fixing it (read/write via the caller's own DE uniformly) did NOT fix
+the regression. Deeper diagnosis found a THIRD, previously uncharacterised calling instance:
+`$4462` is reached with `DE=$DC5B` ("COMMAND COM", a boot-time self-check) and separately with
+`DE=$DA40` for an "AUTOEXEC.BAT" existence probe — NEITHER of which the M21 investigation (which
+only ever exercised `$4462` via the synthetic BDOSX exerciser's SETDTA/SFIRST/SNEXT/FOPEN path)
+had characterised. Even with the DE-fix, the "COMMAND COM" self-check now correctly finds the
+file (`FAT_FIRSTCLUS=$003E`, `FAT_FILESIZE=$1980`=6528, matching COMMAND.COM's real size) and
+writes stock's own observed field pattern into `$DC5B+14..+31` — yet the boot sequence still
+derails downstream, meaning either (a) stock's real fill contract for THIS calling instance
+differs from the one instance already validated (the typed-command case), or (b) writing into
+`$DC5B+14..+31` collides with something else at that address for this specific caller. Neither
+is pinned; both remain open.
+· **Why I stopped instead of continuing to iterate solo:** this is the CORE, previously
+fully-working M13-M20 boot-to-`A>` achievement regressing — the highest-stakes invariant in the
+whole Tier-2 track. Per the hard-stop rule ("a regression I can't get green"), guessing a third
+time without a decisive falsify-first isolation of THIS specific caller's real contract risks
+shipping something subtly broken. The spec's characterisation, despite passing its OWN written
+acceptance criteria, missed a real calling instance because it was only ever validated against
+one synthetic exerciser run, not a full plain-boot regression sweep — a process gap worth
+noting for any future "believed implementation-ready" spec: run the FULL regression suite
+(including the ones with nothing to do with the new feature) BEFORE, not after, declaring done.
+· **Undo:** fully reverted (`git checkout -- disk/kernel.asm disk/driver.asm disk/fat.asm
+disk/equates.inc`); confirmed back to known-good (`make unit-test` 19/19, `make probe` all pass,
+`callseq --at 0x0100 --log 0x0005 --keys '\r' --keys-at 22`: 27/27 ALIGNED, NO DIVERGENCE).
+`disk.rom`/kernel.asm/driver.asm/fat.asm/equates.inc are byte-identical to before this span
+started. Nothing landed; tier2-m21-spec.md updated with this finding, awaiting the user's
+direction on how to characterise the remaining $4462 calling instances.
+
+**[M21 / §5 — all four open characterisation items resolved, doc updated in place]** Follow-up
+span (user-authorized characterise-further-only, no asm) resolved every §5 open item in
+[tier2-m21-spec.md](tier2-m21-spec.md): (1) kernel↔`$4462` division of labor pinned via a new
+`writewatch` harness mode (mirrors `readwatch`, write-side, PC-region-classified + BC/DE/HL) —
+kernel LDIRs the search-FCB header (+0..+13) from `$D880`, PAGE1 fill code (spanning `$42AA`
+then `$4488-$44C8`, which on OUR rom is `dskio_rd` + `getdpb`'s body) owns +14(high)..+31; (2) a
+concrete relocation plan for the colliding 153-byte span (`fdc_di_save..getdpb`,
+`$445B-$44F3`) into the `$4C77` free-tail region (468 B available, all symbol-based callers,
+no hardcoded-address linkage risk, net-zero ROM size preserved); (3) `$47B2`'s two call
+contexts (`DE=$DA40` runtime / `DE=$DC5B` boot) are the same FCB-shaped structure at two
+different instances, byte-identical caller-supplied contract ours==stock going INTO `$47B2`,
+and — new fact — temporally disjoint call chains (`$C51D` never fires on a plain boot), so
+M21b needs no context branch; (4) exact exit contract pinned at `$C51D` (not `$D88A`, which
+turned out to be a shared multi-purpose exit trampoline unusable for disambiguation) —
+`AF=$0142 HL=$0480`(bytes transferred) on success, clear `$F306`. **Confidence: high on all
+four; ONE explicitly flagged residual open item for the implementation pass** (not a
+characterisation gap): whether the boot contract (`k47b2_done`, pinned separately at
+COMMAND.COM's `$0100` entry) and the runtime contract (`$C51D`) are simultaneously satisfiable
+by a SINGLE generic body — both are independently solid, never mutually cross-checked. Spec
+believed implementation-ready pending human sign-off. · **Undo:** doc-only + one small harness
+addition (`disk_probe_diff.py writewatch`, additive, no existing mode touched); no asm changed.
+
+**[BDOSX tooling / HARD-STOP — ours cannot RUN an arbitrary named `.COM`, even though DIR finds
+it]** Building the signed-off [tier2-bdos-exerciser-spec.md](tier2-bdos-exerciser-spec.md) tool
+(`BDOSX.COM`), typing `BDOSX` at the `A>` prompt on **ours** never loads it: `capture --at 0x0100
+--nth N` shows COMMAND.COM's own signature byte (`$0102`=`$05`) both immediately before AND
+immediately after the typed command (`t=8.22` then `t=24.58`) — BDOSX.COM's own signature
+(`$0102`=`$01`) never appears at `$0100` at all. `screen` corroborates: ours shows a **silent
+return to a fresh `A>` prompt** (`ROW09 A>BDOSX` / `ROW11 A>.`), stock shows the program **still
+running** (parked in its self-loop, no new prompt) at the same settle time. **Ruled out by a cheap
+falsify-first check:** `DIR` lists `BDOSX BIN`/`BDOSX COM` byte-identically on both machines (dir-
+search — M19's mechanism — sees the injected files fine on ours). So this is NOT a `fat12_add`/
+dir-search problem; it's specifically **"COMMAND.COM loads and runs a typed, non-self program
+name"** — a code path every prior M13-M20 milestone never exercised (they only ever proved
+COMMAND.COM loading *itself*, via the `k_47B2` loader). **This is a real, previously-unknown Tier-2
+gap, not a tooling bug** — confidence: high (the DIR-vs-load split is decisive, not inferred).
+· **Why I stopped instead of fixing it inline:** this is a scope surprise outside the signed-off
+exerciser spec (which assumed "type a command name" was already a proven-safe mechanism, per
+precedent in `disk_probe_diff.py`'s own docstring). It's also a fork the user should weigh in on:
+(a) root-cause and fix the "run a named program" path as a new milestone before the exerciser can
+work at all, (b) redesign `BDOSX.COM`'s launch mechanism to reuse an ALREADY-proven load path (e.g.
+temporarily standing in for `COMMAND.COM` itself on a throwaway disk, since that exact path is
+proven byte-identical), or (c) park the exerciser and prioritize differently.
+· **Undo:** nothing landed in `disk.rom` or `kernel.asm` — this is 100% probe/tooling code
+(`probes/disk/bdosx.asm`, `probes/disk/build_bdosx_disk.py`) plus one small, backward-compatible
+harness extension (`disk_probe_diff.py capture --arm-check-val`, opt-in, default off, every
+existing `capture` repro unaffected — verified by re-running the M20 `capture --at 0xC6C5` repro
+unchanged). No revert needed; safe to leave in tree pending the user's decision.
+· **UPDATE 2026-07-02 — ROOT CAUSE PINNED (Fable-solo dispatch, user chose "root-cause as a new
+milestone").** TWO independent broken page-1 entries on the "load a typed .COM" path, either alone
+fatal: **RC-1** kernel FOPEN's dir-fill entry `$4462` lands mid our own `fdc_di_save` code (`ld
+($E299),a; ret`) — the FCB is never transformed to opened form (also clobbers our IFF-save cell on
+every runtime FOPEN, a latent bug in its own right). **RC-2** kernel RDBLK's generic record-read
+entry `$47B2` — previously assumed COMMAND.COM-boot-only — is proven the GENERIC read entry (called
+identically for any program); our `k_47B2` body hardcodes re-loading "COMMAND COM" via our own
+mini-BDOS regardless of the caller's real FCB, so it silently re-loads the resident image instead
+of the typed program. A causal poke (stock's exact post-FOPEN FCB image into ours) proves RC-2 is
+independently fatal even with a perfect FCB. Full evidence + proposed fix shape (two ordered
+milestones, M21a prerequisite for M21b) promoted to
+[tier2-m21-spec.md](tier2-m21-spec.md). **WARNING flagged to the user:** unlike every prior
+M13-M20 fix, M21a is NOT a free-`$00`-pad veneer — `$4462` sits inside LIVE `fdc_di_save` code, so
+it needs 3b-relocation-class treatment (net-zero, no canonical shifts, more surface area than a
+3-byte `jp`). Awaiting sign-off before implementation.
+
 **[M20 / bytes-free footer · LANDED — REVISION 3, the `$F306` dispatcher-flag fix]** Following
 the second hard-stop below, dispatched a Fable-SOLO investigation (no Opus this time — the user's
 explicit follow-up to the earlier dual-dispatch trial, to test whether Fable alone is reliable at
