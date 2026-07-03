@@ -7,8 +7,11 @@ SPDX-License-Identifier: 0BSD
 `$21 RDRND` / `$22 WRRND` / `$2F RDABS` / `$30 WRABS`)
 
 **Status: FREN (`$17`), RDABS (`$2F`), WRABS (`$30`), and FDEL (`$13`)
-LANDED 2026-07-03 (§6, §7, §8, §9). RDRND/WRRND still CHARACTERISED ONLY,
-not implemented — same stop-for-sign-off posture as before for those two.**
+LANDED 2026-07-03 (§6, §7, §8, §9). RDRND/WRRND RE-CHARACTERISED 2026-07-03
+(§2.3) — two separate dead-pad dispatches confirmed, `trace --regdump`
+mutation pass done, tentative fix shape drafted — but NOT implemented,
+still awaiting sign-off on the fix shape (specifically: `wrrnd_body` needs
+new RMW logic, not a thin veneer over an existing engine).**
 Per [[spec-before-implementation]] this is a
 **new-routine-class** milestone (like [tier2-m19-spec.md](tier2-m19-spec.md)),
 not a self-approvable veneer-class fix: six BDOS functions, none wired at
@@ -147,39 +150,93 @@ delete, so whether `fdel_body` needs wildcard support or can reuse the
 existing single-match `fat_find` precedent (as FREN did) is a genuine scope
 call for sign-off, not something the probe evidence settles either way.
 
-### 2.3 `$21` RDRND / `$22` WRRND — IDENTICAL shared landing, partial walk
-into REAL M25 routines (HIGH risk — flagged for careful sequencing)
-`callwatch --in-func 0x21` and `--in-func 0x22` produce **byte-identical**
-PC lists: `$5495,$549C,$549F,$54A1,$54A4,$54DD(×2),$54E0,$54E4,$54E8,$54EB,
-$54F0` then `$7832,$7836,$7839,$783C,$783F,$7842,$7845(×4),$7849,$784C`.
-Symbol brackets:
-- `$5495-$54F0` falls between `bdos_seqread_body` (`$548E`) and
-  `bdos_create_body` (`$54B1`) — i.e. mid `bdos_seqread_body`'s own code —
-  and touches `frs_mul_body` (`$54DD`, entered twice; presumably a
-  record→sector multiply helper used by the M25 read path).
-- `$7832-$784C` is `k_47B2`'s body and its `k47b2_rdloop` (the M21b RDBLK
-  veneer, disk/kernel.asm:527+) — a DIFFERENT, unrelated canonical entry's
-  real body.
+### 2.3 `$21` RDRND / `$22` WRRND — TWO separate dead-pad dispatches, whole-
+file DTA-stream mutation (HIGH risk — re-characterised 2026-07-03, Fable
+dispatch, `trace --resync` + `trace --regdump` — 5th M26 function where the
+original `callwatch`-only read needed correction)
 
-Two things stand out and BOTH need resolving before implementation:
-1. **RDRND and WRRND land at the exact same PC trace** — strong evidence
-   they, too, share ONE currently-unmapped page-1 dispatch address (the
-   `$477D`-shared-WRSEQ/RDSEQ pattern from M25 repeating for the random-access
-   pair), rather than being two independently broken entries that coincidentally
-   agree.
-2. **The landing partially executes REAL, non-garbage routines** — unlike
-   FREN's clean NOP-slide into an unrelated decoder, this walks through
-   actual read/write machinery (`bdos_seqread_body`, `frs_mul_body`) AND a
-   completely different veneer's body (`k_47B2`/`k47b2_rdloop`). This is
-   NOT simply "does nothing" — it may perform a real (but wrongly-addressed,
-   since nothing computed the random-field-to-record conversion first)
-   sequential read/advance, silently mutating `BDOS_RECIDX`/`FAT_CURCLUS`/
-   the DTA content in a way a later, correctly-implemented RDRND/WRRND could
-   inherit as corrupted starting state. **Do not implement a fix for RDRND/
-   WRRND without a `trace --regdump` pass confirming exactly what shared
-   state this un-wired landing mutates** — this is the same class of
-   silent-corruption risk M24/M25 spent real effort distinguishing from a
-   true fix (the two reverted M25 attempts).
+**Original claim (superseded):** one shared dispatch address (mirroring
+M25's WRSEQ/RDSEQ `$477D` pattern), because `callwatch --in-func 0x21` and
+`--in-func 0x22` produced byte-identical PC lists.
+
+**Re-derived fresh against the post-FDEL ROM** (per the now-5-for-5 lesson:
+every M26 characterisation must be re-run after each landing, since earlier
+fixes move code underneath later, untouched functions):
+`trace --anchor 0x0005 --nth 22 --steps 3000 --resync --window 600` (n=22 =
+BDOSX3's record-18 RDRND call; n=24 = record-19 WRRND; record→n offset is
+NOT linear across this milestone — 15→18, 22→29, 23→30, 18→22, 19→24 —
+re-derived per function, never assumed) finds **TWO distinct real dispatch
+addresses**: `$21` RDRND → **`$4788`**, `$22` WRRND → **`$4793`**. The
+"byte-identical" callwatch read was a dedup artifact: both entries are pure
+`$00` pad sitting in the existing `fat_find` corridor (disk/fat.asm:124-128
+— `fat_find_body` at `$4782`, `ds $47B2 - $, $00` = 45 pad bytes, then
+`jp k_47B2`), so both un-wired calls nop-slide through the SAME downstream
+routine set (`bdos_seqread_body`/`frs_mul_body` via `k_47B2`/
+`k47b2_rdloop`) and land on `callwatch`'s coarse per-address view as one
+indistinguishable PC list — only `--resync` anchored separately at n=22 and
+n=24 can tell the two dispatches apart. **Fix shape confirmed as RDABS-style
+(dead-pad wire, no relocation needed)** — same pad corridor pattern as
+FDEL's `$436C`, but this time BOTH functions' entries sit in it side by
+side; the existing `jp k_47B2` at `$47B2` is unaffected either way.
+
+**The mutation, pinned via `trace --regdump HL` plus black-box forensics**
+(no inherited-register divergence at entry — HL identical across the full
+~79-step kernel prologue both machines, so the corruption is entirely the
+un-wired dispatch itself, not stale state carried in): the slide runs
+`k_47B2`'s real body, which on EVERY RDRND/WRRND call streams the **entire
+open file** (BDOSX.BIN, 384 B = 3 records) into the caller's DTA — not a
+one-record advance as originally guessed. Confirmed mutated: `BDOS_DTA`
+(reseeded from `DOS_DTAPTR`), `FAT_CURCLUS`/`FAT_CLUSSEC` (reset via
+`fat_open`), `BDOS_BYTESLEFT`/`BDOS_RECIDX` (consumed to EOF), `SECTOR_BUF`.
+At BDOSX3's `done` snapshot, 381/896 bytes of `wrpat`/`rdbuf`/`rdbuf2` are
+wrong (`capture --at 0x0333 --mem 0x4d5:0x380`) — record 19's slide
+overwrites `wrpat` with BDOSX.BIN's own record 0 (destroying the write
+pattern the exerciser meant to write) and record 20's slide overwrites
+`rdbuf2` again. No on-disk writes happen (read-only slide, unlike FDEL's
+landing) — this is DTA/work-area corruption, not disk corruption. Stock's
+own genuine behaviour, recovered from the same snapshot: `rdbuf2` =
+`01,04,07,…` (the `wrpat` pattern) — i.e. stock's WRRND really did write
+record 1 to the read-opened file and RDRND read it back, confirming WRRND
+performs a real disk write MSX-DOS-1 permits even on a read-mode FCB.
+
+**Register contracts** (`capture --at 0x4788/0x4793 --nth 1/2 --mem
+0xDA40:0x25`, records 18/19/20): entry is the FDEL dispatcher class, not
+RDABS's — `A=$25` (stable, not required as fix input), `B=$00` (no
+addr-low fingerprint), `C=$00` (NOT the function number), `DE=$DA40`
+(kernel 37-byte FCB copy), `SP=$DBFE`, ret=`$D88A`. Unlike FDEL's
+zero-filled copy, **this copy carries the live random field**: copy+33..35
+= r0/r1/r2, copy+32 = CR (verified: +33=`$02` at record 18, `$01` at record
+19). Exit (stock, all three records identical shape): `A=$00, H=$00, L=$00`.
+The one clear random-op-specific FCB side effect: **CR (user FCB+32) :=
+r0's low byte** post-call (`$DA60`=`$02` after record 18, `$01` after
+record 19; final user FCB `$03D0` stock=`$01`). FCB+20/21/24/25 also differ
+post-call in a way not fully resolved black-box (may be stock actively
+updating them per-call, or a pre-existing mirror-field gap) — flag for the
+acceptance diff during implementation, not a blocker for the fix shape.
+
+**Conversion-helper check, confirmed by grep (not assumed):**
+`grep -rn "rdrnd\|wrrnd\|random" disk/*.asm` → only `bdos_rdblk`'s
+documented "random record 0 only" simplification (disk/driver.asm — always
+`fat_open`s to file start). No FCB+33 reader, no record→cluster/sector seek
+exists anywhere in the source. The random-field → `BDOS_RECIDX` →
+`FAT_CURCLUS`/`FAT_CLUSSEC` positioning conversion is genuinely new code,
+confirming §3 item 5's original assumption.
+
+**Tentative fix shape (NOT signed off — see below):** two 3-byte pad-wires
+at `$4788`/`$4793` (net-zero, `k_47B2` unaffected); a new shared positioning
+helper (r0 → target sector `r0>>2` / intra-sector record `r0&3`, then
+`fat_open` + walk `FAT_CLUSSEC`/`fat_advance` to it, seed `BDOS_DTA`/
+`BDOS_BYTESLEFT`/`BDOS_RECIDX`/`SECTOR_BUF` per `bdos_seqread`'s own refill
+contract); `rdrnd_body` = position + reuse `bdos_seqread` for one record +
+CR update; `wrrnd_body` = position + **new** read-modify-write logic
+(`fat_read_file_sector`, overlay 128 DTA bytes at `(r0&3)*128` into
+`SECTOR_BUF`, `write_sector`) + CR update — **`wrrnd_body` cannot ride
+`wrseq_body`'s `BDOS_WRMODE` dispatch** (the file is read-opened, WRMODE=0)
+**nor call `bdos_seqwrite` directly** (that engine is append-oriented with
+a 512-byte-flush model, wrong tool for a mid-file 128-byte overlay) — so
+this is a small genuinely-new body, not a thin dispatch veneer over an
+existing engine, a real (if narrow) departure from §4's non-goal framing
+that needs sign-off before coding.
 
 ### 2.4 `$2F` RDABS — pure $00 pad, dispatch address trace-confirmed (LOW
 risk, CONFIRMED lower-effort than FREN — no relocation needed)
@@ -267,18 +324,26 @@ external jumps into the block's middle.
    §4's original assumption — must also walk and free the file's FAT12
    chain in both on-disk FAT copies (confirmed 2-cluster test file, chain
    entries zeroed by stock; §4 updated below).
-5. **RDRND / WRRND** (`$21`/`$22`) — LAST, and only after a `trace --regdump`
-   pass per §2.3 confirms what the current mis-landing mutates. Likely fix
-   shape (tentative, NOT signed off): a shared `rdrnd_wrrnd_body` mirroring
-   the `wrseq_body` dispatch-on-`BDOS_WRMODE` pattern from M25, PLUS new
-   code to convert the FCB's random field (r0/r1/r2, +33..35) into the
-   record index `bdos_seqread`/`bdos_seqwrite` expect (`BDOS_RECIDX`) and
-   the corresponding cluster/sector position (`FAT_CURCLUS`/`FAT_CLUSSEC`) —
-   this conversion does not exist anywhere in the current source (confirmed
-   by the same `grep` in §2 sweep) and is the real new-code centre of this
-   milestone, comparable in scope to M25's `fopen_fill_body` read-iterator
-   seed but for arbitrary mid-file positioning rather than open-time reset
-   to record 0.
+5. **RDRND / WRRND** (`$21`/`$22`) — LAST. RE-CHARACTERISED 2026-07-03
+   (Fable dispatch, `trace --resync` + `trace --regdump`, post-FDEL ROM):
+   the original "one shared dispatch" claim was a `callwatch` dedup
+   artifact — there are **two** separate dead-pad dispatches, `$4788`
+   (RDRND) and `$4793` (WRRND), both RDABS-shape (no relocation needed) —
+   see §2.3. The mandated `trace --regdump` pass confirms the un-wired
+   landing streams the ENTIRE open file into the caller's DTA on every
+   call (not a one-record advance), trampling `wrpat`/`rdbuf`/`rdbuf2` at
+   BDOSX3's `done` snapshot; no on-disk writes happen (work-area
+   corruption only, unlike FDEL). Fix needs a genuinely new shared
+   positioning helper (FCB random field r0/r1/r2 at +33..35 →
+   `BDOS_RECIDX` → `FAT_CURCLUS`/`FAT_CLUSSEC`, confirmed absent anywhere
+   in source by `grep`) — comparable in scope to M25's `fopen_fill_body`
+   seed but for arbitrary mid-file positioning. `rdrnd_body` can then
+   reuse `bdos_seqread` for the actual record transfer; `wrrnd_body`
+   CANNOT reuse `wrseq_body`/`bdos_seqwrite` (wrong dispatch mode / wrong
+   engine shape for a mid-file 128-byte overlay) and needs its own small
+   read-modify-write body instead — a real, if narrow, departure from §4's
+   "reuse the existing bodies" framing. Tentative fix shape, NOT signed
+   off — see §2.3's closing paragraph.
 
 ## 4. Explicit non-goals for this spec
 

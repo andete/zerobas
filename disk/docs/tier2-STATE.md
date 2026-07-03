@@ -293,7 +293,34 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M24+M25+M26-FREN+M26-RDABS+M26-WRABS+M26-FDEL LANDED; RDRND/WRRND still need spec sign-off (2026-07-03)
+## Next action — M24+M25+M26-FREN+M26-RDABS+M26-WRABS+M26-FDEL LANDED; RDRND/WRRND RE-CHARACTERISED, fix shape awaiting sign-off (2026-07-03)
+
+> **RDRND (`$21`) / WRRND (`$22`) RE-CHARACTERISED, NOT IMPLEMENTED.**
+> Dispatched to Fable per the now-5-for-5 rule (every M26 function's
+> original `callwatch`-only read has needed correction after a LATER
+> function's landing moved code underneath it). The original "one shared
+> dispatch address" claim (from the `callwatch` byte-identical PC lists)
+> was a dedup artifact: `trace --resync`, anchored separately at BDOSX3's
+> RDRND call (n=22) and WRRND call (n=24), found **two** distinct dead-pad
+> dispatches, `$4788` (RDRND) and `$4793` (WRRND), both sitting in the
+> existing `fat_find` corridor pad (RDABS-shape, no relocation needed). The
+> mandated `trace --regdump HL` pass (never skipped — this pair's landing
+> partially executes REAL M25-era routines, not dead code) confirms the
+> un-wired slide streams the ENTIRE open file into the caller's DTA on
+> every call (not a one-record advance as first guessed), trampling
+> `wrpat`/`rdbuf`/`rdbuf2` at BDOSX3's `done` snapshot — work-area
+> corruption only, no on-disk writes (unlike FDEL's landing). A genuinely
+> new shared positioning helper is needed (FCB random field → `BDOS_RECIDX`
+> → `FAT_CURCLUS`/`FAT_CLUSSEC`; confirmed absent from source by `grep`);
+> `rdrnd_body` can reuse `bdos_seqread` for the transfer, but `wrrnd_body`
+> can't reuse `wrseq_body`/`bdos_seqwrite` (wrong dispatch mode / wrong
+> engine shape) and needs its own small read-modify-write body — a real
+> departure from §4's "reuse the existing bodies" framing that needs
+> sign-off before coding. Full writeup:
+> [tier2-m26-spec.md](tier2-m26-spec.md) §2.3/§3 item 5.
+>
+> **STILL a HARD-STOP awaiting sign-off on the fix shape** — characterised
+> only, nothing implemented or wired.
 
 > **FDEL (`$13`) LANDED.** Dispatched to Fable per the now-4-for-4 rule
 > (never trust a `callwatch`-only M26 read); `trace --resync` confirmed the

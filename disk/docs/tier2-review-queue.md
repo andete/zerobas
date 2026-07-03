@@ -23,6 +23,38 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M26 Follow-up 8 / §2.3 — RDRND/WRRND re-characterised, HARD-STOP for
+fix-shape sign-off (2026-07-03).]** User said "continue, investigate
+indeed" after FDEL landed, explicitly authorising investigation (not
+implementation) of the last pair. Dispatched Fable to characterise
+RDRND/WRRND fresh against the post-FDEL ROM, per the now-5-for-5 rule
+(every M26 function's original `callwatch`-only read has needed correction
+after a LATER function's own landing moved code underneath it — even a
+function nobody touched can go stale). Found: the original spec's "one
+shared dispatch address" claim (§2.3, drafted before FREN/RDABS/WRABS/FDEL
+landed) was a `callwatch` dedup artifact, not a real shared entry point —
+`trace --resync` anchored separately at BDOSX3's RDRND call (n=22) and
+WRRND call (n=24) found TWO distinct dead-pad dispatches, `$4788`/`$4793`,
+both RDABS-shape (no relocation needed). The mandated `trace --regdump`
+pass (spec explicitly required this before any implementation, given the
+landing partially executes REAL M25 routines rather than dead code) found
+the un-wired slide streams the ENTIRE open file into the caller's DTA on
+every call — worse than the original "maybe one extra record" guess, though
+still work-area-only corruption (no on-disk writes, unlike FDEL). Confirmed
+by `grep` that the FCB-random-field→record-index positioning conversion
+genuinely doesn't exist in source anywhere. New finding not anticipated by
+the spec: `wrrnd_body` can't reuse `wrseq_body`/`bdos_seqwrite` (wrong
+dispatch mode / wrong engine shape for a mid-file 128-byte overlay) and
+needs its own small read-modify-write body — a real, if narrow, departure
+from §4's "reuse the existing bodies, no new engine logic" framing.
+**Treating this as a genuine HARD-STOP, not a "continue"-driven default**:
+unlike FREN/RDABS/WRABS/FDEL's fix shapes (all a thin veneer over an
+existing primitive), this pair needs a new positioning helper PLUS a new
+RMW body — real new engine logic, the exact class of scope surprise this
+project's sign-off discipline exists for. No code written or wired; docs
+updated only ([tier2-m26-spec.md](tier2-m26-spec.md) §2.3/§3 item 5,
+[tier2-STATE.md](tier2-STATE.md) Next-action). Undo: N/A, no code changed.
+
 **[M26 Follow-up 7 / §9 — FDEL implemented + landed, after user sign-off on
 both scope questions (2026-07-03).]** User approved both Follow-up 6
 questions: single exact-match only (no wildcard), and the FAT chain-free
