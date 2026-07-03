@@ -7,8 +7,14 @@ SPDX-License-Identifier: 0BSD
 `$21 RDRND` / `$22 WRRND` / `$2F RDABS` / `$30 WRABS`)
 
 **Status: FREN (`$17`), RDABS (`$2F`), and WRABS (`$30`) LANDED 2026-07-03
-(§6, §7, §8). FDEL/RDRND/WRRND still CHARACTERISED ONLY, not implemented —
-same stop-for-sign-off posture as before for those three.** Per [[spec-before-implementation]] this is a
+(§6, §7, §8). FDEL (`$13`) re-characterised 2026-07-03 (§2.2) — dead-pad
+dispatch confirmed at `$436C`, but landing FREN moved the pad's contents
+underneath it, so FDEL currently NOP-slides into `fren_body` and actively
+corrupts the target directory entry + leaks its FAT chain (not a harmless
+no-op as previously believed). NOT yet implemented — the FAT chain-freeing
+scope (§4, falsified non-goal) and the wildcard-support scope question
+(§2.2) are open for sign-off before coding. RDRND/WRRND still CHARACTERISED
+ONLY.** Per [[spec-before-implementation]] this is a
 **new-routine-class** milestone (like [tier2-m19-spec.md](tier2-m19-spec.md)),
 not a self-approvable veneer-class fix: six BDOS functions, none wired at
 the start, one pair (RDRND/WRRND) showing a risk shape not seen in any prior
@@ -62,31 +68,89 @@ decode from our unrelated FDC code, and falls back into the kernel having
 touched nothing real. **Explains BDOSX3 record 14's `A=$FC`** (a stray
 status byte from the FDC decoder, not a real FREN result).
 
-### 2.2 `$13` FDEL — walks a REAL routine fully, purpose unconfirmed (MEDIUM
-risk — needs a `trace` pass before assuming NOP-slide)
-`callwatch --in-func 0x13` → **12** page-1 hits, `$435E`-`$438A`, each
-entered exactly once, in address order. `$435E` is `fdc_rd_wait`'s real,
-intended entry point (disk/driver.asm:174-219) — not a mid-body landing.
-The PC sequence walks the ENTIRE wait/read/status-decode chain
-(`fdc_rd_wait → fdc_rd_byte → ... → fdc_rd_drain → fdc_rd_status → fdc_rd_n1`)
-exactly once, consistent with one real, successfully-completing low-level
-sector read — this could be (a) a genuine sector read our kernel's own
-SFIRST/SNEXT-style directory scan performs while searching for the FDEL
-target name (SFIRST/SNEXT, M19, already legitimately calls `read_sector`),
-in which case FDEL rides an existing wired primitive for its search half and
-only its final "mark deleted" step is un-wired and un-observed by this probe
-(a single directory-scan pass may find zero matches if FDEL's search FCB
-isn't threaded through correctly, silently no-op'ing); or (b) a coincidental
-full walk through the SAME code region if the un-wired `$13` dispatch target
-happens to numerically land exactly on `fdc_rd_wait`'s entry byte and the
-polling loop's own exit conditions happen to terminate it after one pass
-regardless of real FDC state. **Not enough to tell apart from `callwatch`
-alone** — the two hypotheses have different fix shapes (a real primitive
-riding correctly vs. another coincidental slide) and only differ in whether
-directory state changed. First implementation step for this function must
-be a `capture --mem <root-dir-sector-buffer>` diff (does the target dir
-entry's first byte become `$E5`, the CP/M delete marker, or not) before
-writing any code — do not assume either hypothesis.
+### 2.2 `$13` FDEL — dead-pad dispatch, but the pad is now a live corruption
+hazard post-FREN (CONFIRMED 2026-07-03, Fable dispatch, `trace --resync` +
+on-disk `$E5` forensics — 4th M26 function where the original `callwatch`-only
+read needed correction)
+
+**Original claim (superseded):** 12 page-1 hits walking the full
+`fdc_rd_wait → ... → fdc_rd_n1` chain, ambiguous between a genuine
+SFIRST/SNEXT-style directory scan and a coincidental slide.
+
+**Re-derived via `trace --anchor 0x0005 --nth 18 --steps 3000 --resync
+--window 600`** (n=18 = BDOSX3's FDEL call, confirmed by counting `$0005`
+hits — FREN=17, RDABS=29, WRABS=30, consistent with §6/§7/§8): the kernel's
+real, fixed `$13` dispatch address is **`$436C`**. Hit exactly once per
+BDOSX3 run on both machines, zero times during a plain boot+DIR — safe,
+FDEL-specific. The kernel does no disk I/O before this dispatch (~92
+instructions of pure RAM-kernel prologue from `$0005`).
+
+**Historical note, now moot:** at the time §2.2 was first written (before
+the FREN fix landed), `$436C` was byte 18 of `fdc_read_data`'s OLD body —
+so the original "12-hit chain walk" read was genuinely **hypothesis (b), a
+coincidental mid-routine landing**, not a real directory scan. Landing this
+milestone's FREN slice (§6, relocating `fdc_read_data` to a free tail)
+changed what lives at `$436C` **out from under FDEL**: it's now 20 bytes of
+`$00` dead pad followed by `k_4392: jp fren_body` — so ours currently
+NOP-slides through the pad straight into **`fren_body` with FDEL's own FCB**.
+Since the FCB is zero-filled by `fillfcb_named` before the FDEL call, this
+means ours **renames the target directory entry's name field to 11× `$00`**
+and writes that back to disk. A first name-byte of `$00` is a directory-scan
+TERMINATOR (unlike `$E5`), so this doesn't just fail to delete — it makes
+every directory entry AFTER the mangled one invisible to future scans, and
+leaks the file's FAT chain (still fully allocated, never freed). **This is
+worse than a no-op; it is active, silent corruption**, and the shape moved
+one milestone later without any code change to FDEL itself — a direct
+illustration of why every M26 function needs its OWN fresh `trace --resync`
+regardless of what an earlier characterisation pass concluded.
+
+**Fix shape confirmed as RDABS-style (dead-pad wire, no relocation):** the
+pad at `$436C` sits entirely inside the post-FREN `$435D-$4391` corridor
+(disk/driver.asm), so this splits the same way RDABS split `bdos_create`'s
+pad: `ds $436C - $, $00` / `k_436C: jp fdel_body` / `ds $4392 - $, $00` —
+net-zero, `k_4392`/`fren_body` unaffected.
+
+**Register contract (black-box `capture`, pristine disk, both machines
+identical at entry):** `A=$21 B=$00 C=$00 DE=$DA40 HL=$03A5(user passthrough,
+ignore) SP=$DBFE ret=$D88A`. Differs from RDABS/WRABS's convention in two
+ways worth flagging for implementation: **no `B=<addr-low-byte>` fingerprint**
+(`B=$00`, not `B=$6C`), and **`C` is NOT the function number** (`C=$00`).
+The real per-call input is `DE=$DA40`, a kernel-side 37-byte scratch copy of
+the FCB: drive byte + `"BDOSXR  TMP"` (11 bytes) + zero-fill (does NOT carry
+the caller's own random-field/reserved bytes — don't read stale
+`+32..+34` from this copy). `A=$21` was stable across both machine and disk
+state in this session's testing; not required as a fix input. Exit contract
+(record 15's own snapshot, stock): `A=$00 B=$00 C=$00 D=$03 E=$D0 H=$00
+L=$00` — `DE=$03D0` is a kernel-internal artifact (user-FCB+32) our mirror
+already reproduces; the one field `fdel_body` must actively produce is
+`HL=$0000` on success (mind the M20 `$F306` rule, same as every prior M26
+veneer).
+
+**`$E5`-marker disambiguation, done as specified (on-disk forensics,
+pristine images only — see "surprise" note below):** stock's post-run root
+directory shows the target entry's first byte become `$E5` with the rest of
+the entry (name tail, attributes, starting cluster, size) preserved, AND
+**both FAT12 copies' entries for the file's cluster chain zeroed** (this
+file is 2 clusters, chain 339→340 — see below). Ours shows the entry's
+first 26 bytes all `$00` (the accidental rename) with the FAT chain **still
+fully allocated** — confirms the corruption read above directly, not just
+inferred from the trace.
+
+**§4 non-goal assumption FALSIFIED:** the spec's "no FAT chain-freeing logic
+needed, assumed single-cluster" note does NOT hold — BDOSX3's `BDOSXR  TMP`
+scratch file is deliberately 1152 bytes = 2 clusters (1024 B/cluster,
+chain 339→340, by design per the M24 multi-cluster test construction), and
+stock zeroes BOTH FAT12 entries in BOTH on-disk FAT copies plus flushes the
+directory sector. `fdel_body` therefore needs real (if small) FAT
+chain-walking/freeing logic — writing `$E5` to the directory entry alone is
+NOT sufficient to match stock, contrary to §4's original assumption.
+
+**Open scope question surfaced, not yet resolved:** entry `C=$00` (not the
+function number) plus the published MSX-DOS FDEL contract supporting `?`
+wildcards for multi-match delete — BDOSX3 only exercises a single exact-name
+delete, so whether `fdel_body` needs wildcard support or can reuse the
+existing single-match `fat_find` precedent (as FREN did) is a genuine scope
+call for sign-off, not something the probe evidence settles either way.
 
 ### 2.3 `$21` RDRND / `$22` WRRND — IDENTICAL shared landing, partial walk
 into REAL M25 routines (HIGH risk — flagged for careful sequencing)
@@ -196,10 +260,18 @@ external jumps into the block's middle.
    `bdos_seqwrite`'s live tail (the `jr c, bsw_full` displacement), needing
    a FREN-class relocation rather than RDABS's pad-wire — see §2.5/§8.
    Mirror-write of RDABS's veneer shape (dskio, Cy=1, DTA source).
-4. **FDEL** (`$13`) — needs the `capture --mem <dir-sector>` disambiguation
-   in §2.2 FIRST; likely rides M19's SFIRST/SNEXT-family search machinery
-   (reuse, don't reimplement), with only the delete-marker write (`$E5` at
-   the entry's first byte) as new work.
+4. **FDEL** (`$13`) — CONFIRMED (2026-07-03, Fable dispatch, `trace
+   --resync` + on-disk `$E5` forensics): dispatch address `$436C` is dead
+   pad in the post-FREN corridor (RDABS-shape, no relocation needed) — but
+   landing FREN moved what's UNDER the pad, so ours currently NOP-slides
+   into `fren_body` with FDEL's own FCB, actively corrupting the target
+   directory entry (renames it to an all-`$00` name, a scan terminator) and
+   leaking its FAT chain. Fix reuses M19's `fat_find` to locate the entry
+   (single-match, same precedent as FREN — wildcard support is an open scope
+   question, see §2.2), writes `$E5` to its first byte, and — contrary to
+   §4's original assumption — must also walk and free the file's FAT12
+   chain in both on-disk FAT copies (confirmed 2-cluster test file, chain
+   entries zeroed by stock; §4 updated below).
 5. **RDRND / WRRND** (`$21`/`$22`) — LAST, and only after a `trace --regdump`
    pass per §2.3 confirms what the current mis-landing mutates. Likely fix
    shape (tentative, NOT signed off): a shared `rdrnd_wrrnd_body` mirroring
@@ -215,13 +287,13 @@ external jumps into the block's middle.
 
 ## 4. Explicit non-goals for this spec
 
-- No FAT allocation/extension logic beyond what FDEL's delete-marker write
-  needs (freeing the chain is a CP/M-1-compatible detail to confirm against
-  the published FCB contract, not new allocation code — MSX-DOS FDEL does
-  not need to walk/free the cluster chain itself for a single-cluster test
-  file, per `disk/PROVENANCE.md` §FCB layout; if BDOSX3's scratch file spans
-  more than one cluster this assumption needs re-checking before FDEL is
-  implemented).
+- ~~No FAT allocation/extension logic beyond what FDEL's delete-marker write
+  needs...~~ **FALSIFIED 2026-07-03 (§2.2):** BDOSX3's scratch file is
+  2 clusters, and stock zeroes both FAT12 chain entries in both on-disk FAT
+  copies on delete. `fdel_body` DOES need chain-walking/freeing logic — a
+  small, bounded walk (this test file is short), not general
+  allocation/extension code; still no new FAT-growth logic of the kind
+  OPEN/WRSEQ needed.
 - No change to `bdos_seqread_body`/`bdos_seqwrite_body`/`k_47B2` themselves
   — RDRND/WRRND's fix should REUSE them (matching the M25 precedent of a
   thin dispatch veneer over the existing engine), not duplicate their logic.

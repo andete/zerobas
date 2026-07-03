@@ -23,6 +23,29 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M26 Follow-up 6 / §2.2 — FDEL re-characterised, HARD-STOP for scope
+sign-off (2026-07-03).]** Dispatched Fable to characterise FDEL (`$13`) next
+per §3's order, applying the now-4-for-4 rule (never trust a `callwatch`-only
+read for M26). Found: real dispatch `$436C` is dead pad (RDABS-shape,
+confirmed via `trace --resync`), simple to wire — BUT landing FREN earlier
+this session relocated `fdc_read_data` and put fresh `$00` pad + `k_4392: jp
+fren_body` where `$436C` used to sit mid-routine; the un-wired FDEL call now
+NOP-slides through that pad straight into `fren_body` with FDEL's own
+(zero-filled) FCB, which **actively corrupts** the target directory entry
+(renames it to an all-`$00` name — a scan terminator, not merely visible
+garbage) and leaks its FAT chain. On-disk `$E5`-forensics (pristine images)
+confirmed this directly, and also falsified §4's "no FAT chain-freeing
+needed" non-goal: the BDOSX3 scratch file is 2 clusters, and stock's FDEL
+zeroes both FAT12 entries in both on-disk copies. Two things need sign-off
+before implementation, not just a "continue": (1) whether `fdel_body` should
+support `?` wildcard multi-delete (published MSX-DOS contract) or reuse
+FREN's single-match `fat_find` precedent (BDOSX3 only exercises the latter);
+(2) confirming the small bounded FAT-chain-freeing addition is in scope
+despite §4's original assumption it wouldn't be needed. **Not implementing
+FDEL yet** — reported findings to the user, doc updates only (§2.2/§3/§4/
+status header in tier2-m26-spec.md). Undo: doc-only change, trivially
+revertable; no source touched.
+
 **[M26 / HARD-STOP — scope surprise, stopping for spec+sign-off (2026-07-03).]**
 After M25 landed, characterised BDOSX3 record 14's FREN divergence per the
 established falsify-first method: `grep` confirms no `fren_body`-shaped routine

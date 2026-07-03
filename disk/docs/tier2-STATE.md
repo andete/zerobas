@@ -293,8 +293,29 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M24+M25+M26-FREN+M26-RDABS+M26-WRABS LANDED; M26-remainder (FDEL/RDRND/WRRND) still needs spec sign-off (2026-07-03)
+## Next action — M24+M25+M26-FREN+M26-RDABS+M26-WRABS LANDED; FDEL re-characterised with a corruption finding, HARD-STOP for scope sign-off; RDRND/WRRND still need spec sign-off (2026-07-03)
 
+> **FDEL (`$13`) RE-CHARACTERISED, NOT IMPLEMENTED.** Dispatched to Fable
+> per the now-4-for-4 rule (never trust a `callwatch`-only M26 read).
+> `trace --resync` confirms the real dispatch address is `$436C`, dead pad
+> in the post-FREN corridor — RDABS-shape, no relocation needed. BUT: this
+> session's own FREN landing (§6) relocated `fdc_read_data` and put fresh
+> pad + `k_4392: jp fren_body` exactly where `$436C` used to sit mid-routine
+> — so the un-wired FDEL call now NOP-slides through the pad into
+> `fren_body` with FDEL's own (zeroed) FCB, which **actively corrupts** the
+> target directory entry (renames it to an all-`$00` name — a directory-scan
+> TERMINATOR, worse than visible garbage) and leaks its FAT chain. On-disk
+> `$E5` forensics on a pristine test image confirmed this directly and also
+> **falsified §4's "no FAT chain-freeing needed" non-goal**: BDOSX3's
+> scratch file is 2 clusters and stock zeroes both FAT12 entries in both
+> on-disk copies on delete. **Two scope questions need sign-off before
+> implementing, not just a "continue":** (1) wildcard (`?`) multi-delete
+> support vs. reusing FREN's single-match `fat_find` precedent; (2) whether
+> the small bounded FAT-chain-free addition is acceptable scope. Full
+> writeup: [tier2-m26-spec.md](tier2-m26-spec.md) §2.2 (updated in place,
+> no new landed-section yet — FDEL has no §9). Judgment-call log:
+> [tier2-review-queue.md](tier2-review-queue.md) M26 Follow-up 6.
+>
 > **WRABS (`$30`) LANDED.** Characterised by a Fable subagent dispatch
 > (`trace --resync`): confirmed `$4720` is a MID-INSTRUCTION byte — the
 > displacement of `jr c, bsw_full` inside `bdos_seqwrite`'s live tail — not
