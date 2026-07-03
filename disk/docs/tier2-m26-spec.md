@@ -122,13 +122,29 @@ Two things stand out and BOTH need resolving before implementation:
    silent-corruption risk M24/M25 spent real effort distinguishing from a
    true fix (the two reverted M25 attempts).
 
-### 2.4 `$2F` RDABS — NOP-slide into an existing net-zero stub (LOW risk)
-`callwatch --in-func 0x2f` → two hits: `$46BA` (61 bytes into `bdos_create`'s
-body, `$467D`) then `$7831`, which is exactly `k_46C8` — an existing,
-already-in-tree net-zero stub (`k_46C8: ret`, disk/kernel.asm:504) reserved
-for a canonical address with no current use. The slide walks a few bytes of
-`bdos_create`'s unrelated body, then falls into `k_46C8`'s bare `ret`,
-ending the call having done nothing. Simple shape, same fix pattern as FREN.
+### 2.4 `$2F` RDABS — pure $00 pad, dispatch address trace-confirmed (LOW
+risk, CONFIRMED lower-effort than FREN — no relocation needed)
+`callwatch --in-func 0x2f` → two hits: `$46BA` then `$7831` (= `k_46C8`).
+**Re-derived FREN-style** (per §6's lesson that callwatch-only reads can be
+wrong about *what* the landing address is): `trace --anchor 0x0005 --nth 29
+--steps 3000 --resync --window 600` (n=29 = BDOSX3's RDABS call) confirms
+`$46BA` is the kernel's own real, fixed `$2F` dispatch address — stock
+executes a genuine multi-instruction body from that exact byte (incl. a
+`call $4555` and a `call $F270` detour, both re-converging) until the real,
+non-reconverging fork at `$46C8` (stock continues past it; ours `ret`s via
+`k_46C8`). Unlike FREN, **this is corrected the OTHER direction**: the
+original "61 bytes into `bdos_create`'s body" claim was wrong — byte-verified
+`$4680`-`$46C7` is pure `$00` pad (no source reference or jump lands there);
+`bdos_create` itself is a 3-byte `jp bdos_create_body` diversion followed
+immediately by that pad. So `$46BA` needs **no relocation at all** — a 3-byte
+`jp` fits cleanly in 72 bytes of dead pad, net-zero, no shared-primitive risk
+like `fdc_read_data`. `capture --at 0x0333` (BDOSX3 `done`) also surfaces a
+finding §2.4 originally missed: RDABS is a **silent false-success**, not a
+visible garbage status — record 22's `A=$00` already matches stock's genuine
+success byte-for-byte, while `absbuf` stays stale (no real sector 0 transfer
+happens); a status-only check would pass this as correct. Confirmed LOWER
+risk than FREN (no relocation), same fix pattern otherwise: a `read_sector`-
+based veneer wired directly at `$46BA`.
 
 ### 2.5 `$30` WRABS — NOP-slide into the TAIL of a real routine, false
 success status (LOW-MEDIUM risk — check the exit contract carefully)
@@ -156,11 +172,12 @@ during implementation).
    `call`/`jp` site, same technique used for M19/M21/M22b). Reuses M19's
    `fat_find`/name-match machinery to locate the old name, mirrors 8.3 name
    fields, does not need FAT/allocation changes (rename, not resize).
-2. **RDABS** (`$2F`) — simplest of the remaining, isolated NOP-slide into an
-   inert stub, no partial real-code execution to reason about. Straightforward
-   `read_sector`-based veneer (LBA sector from DE, count from H, drive from
-   L, target the FCB's DTA) — very close in shape to the low-level primitive
-   Tier-1 DSKIO already implements.
+2. **RDABS** (`$2F`) — CONFIRMED (2026-07-03, Fable dispatch, `trace --resync`):
+   dispatch address `$46BA` is pure `$00` pad, no relocation needed (simpler
+   than FREN, which needed one) — see §2.4. Straightforward `read_sector`-
+   based veneer (LBA sector from DE, count from H, drive from L, target the
+   FCB's DTA) — very close in shape to the low-level primitive Tier-1 DSKIO
+   already implements.
 3. **WRABS** (`$30`) — same shape as RDABS (mirror write), plus verify the
    `bsw_ok` fall-through side effect noted in §2.5 is harmless before or
    after wiring the real veneer.

@@ -293,7 +293,18 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M24+M25+M26-FREN LANDED; M26-remainder (FDEL/RDRND/WRRND/RDABS/WRABS) still needs spec sign-off (2026-07-03)
+## Next action — M24+M25+M26-FREN LANDED, M26-RDABS CHARACTERISED (dispatch confirmed, not yet implemented); M26-remainder still needs spec sign-off (2026-07-03)
+
+> **RDABS (`$2F`) re-characterised (Fable dispatch, `trace --resync`,
+> methodology per [[harness-first-investigation-mo]] /
+> [[opus-vs-sonnet-model-split]]).** Confirmed real dispatch address `$46BA`
+> is pure `$00` pad (the earlier "61 bytes into `bdos_create`'s body" claim
+> was wrong — no relocation needed, LOWER risk than FREN). Also found RDABS
+> is a silent false-success (status matches stock exactly; `absbuf` stays
+> stale) — a status-only check would have missed this. Full detail:
+> [tier2-m26-spec.md](tier2-m26-spec.md) §2.4. **Still NOT implemented** —
+> awaiting the §5 sign-off (esp. Q2, per-function sign-off granularity)
+> before wiring the veneer.
 
 > **FREN (`$17`) LANDED.** `$4392` (found via `trace --resync`, the real
 > confirmed kernel dispatch address, not just a coincidentally-touched one)

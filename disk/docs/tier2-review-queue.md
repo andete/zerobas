@@ -73,6 +73,23 @@ considered (do all six in one pass) rejected as exactly the scope-creep
 this spec's own §4 non-goals warn against. Undo: `git revert`, isolated to
 3 files (driver.asm/kernel.asm/fat.asm), no other function touched.
 
+**Follow-up 3 (same day) — process correction: root-cause investigation
+was being done directly instead of dispatched, per [[opus-vs-sonnet-model-split]].**
+User caught it ("did we stop using a sub-agent for the complex
+investigations?") after the FREN `trace --resync` hunt was done directly
+rather than dispatched to Fable, the established working default for
+investigation/root-cause phases. Corrected going forward; re-dispatched the
+next investigation (RDABS characterisation) to a Fable subagent. Result:
+confirmed `$46BA` (not the originally-claimed "61 bytes into `bdos_create`")
+as the real dispatch address via `trace --resync`, found it's pure `$00`
+pad (no relocation needed, lower risk than FREN), and surfaced a
+false-success finding §2.4 originally missed (status matches stock exactly;
+`absbuf` stays stale — a status-only check would pass this as correct).
+Spec/state docs updated: [tier2-m26-spec.md](tier2-m26-spec.md) §2.4/§3,
+[tier2-STATE.md](tier2-STATE.md). No asm touched — characterisation only,
+still awaiting §5 sign-off before implementation. Confidence: high this is
+the right correction; undo: none needed (docs-only).
+
 **[M23 / LANDED (2026-07-03) — `BDOSX0.COM` TERM0 micro-test, per
 tier2-bdos-remaining-spec.md §5.2, riding the same session as M22.]** New probe files
 `probes/disk/bdosx0.asm` + `build_bdosx0_disk.py` (2-instruction program: `ld c,0 /
