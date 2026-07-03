@@ -715,6 +715,11 @@ bodies write it explicitly.
 (pre-fix, the un-wired whole-file DTA-stream corruption from §2.3) to
 127/896 — isolated per-buffer (`--mem 0x4d5:0x80` `wrpat`, `--mem 0x5d5:0x80`
 `rdbuf2`, `--mem 0x655:0x200` `absbuf`): all **0 of N bytes differ**. The
+§2.3 FCB+20/21/24/25 "not fully resolved black-box" flag also checked out
+clean: `--mem 0x465:0x18` (the `regs` snapshot array's 8-byte entries for
+records 18/19/20) is **0 of 24 bytes differ** — whatever those fields do,
+BDOSX3's own acceptance bar doesn't observe a gap, so this is resolved as
+a non-issue for this milestone, not a deferred residual. The
 remaining 127 bytes are entirely `rdbuf` (`--mem 0x555:0x80`, 127/128) —
 record 12's RDSEQ round-trip content, unrelated to RDRND/WRRND and
 confirmed pre-existing via the git-stash/rebuild-baseline technique (the
