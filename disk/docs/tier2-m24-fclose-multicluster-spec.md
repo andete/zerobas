@@ -15,27 +15,180 @@ sequence now completes on ours (previously died at call n=48/record 10).**
 all re-verified zero-diff/byte-identical; `make unit-test` 19/19; `make
 probe` all green.
 
-**New residual found post-fix (NOT yet root-caused, logged for a follow-up
-slice):** starting at call n=51 (record 13, the FCLOSE after the
-reopen+RDSEQ readback — a READ-mode close that should hit `bdos_close`'s
-cheap `BDOS_WRMODE==0` fast path), ours diverges from stock in register
-content (not call sequence — the full 65-call sequence still aligns
-1:1): ours returns `A=$FF` where stock returns `A=$00`. `BDOS_WRMODE` is
-reset to 0 unconditionally inside `bdos_close_write` regardless of the
-record-10 close's own success/failure, so by n=51 it should read 0 and hit
-the READ-close fast path — the A=$FF result implies either `BDOS_WRMODE` is
-somehow nonzero here, or the write-close path's flush/`fat_dir_update` is
-executing when it shouldn't. Similarly, record 21's FCLOSE (n=62) and
-record 23's WRABS (n=65) and a few `SETDTA` calls (n=56/58/60) show smaller
-register (HL/B) mismatches — an FCB content diff (`capture --mem
-0x3b0:0x125`) confirms real content divergence, not just snapshot-buffer
-noise, from offset `$0436` onward (inside the `regs` snapshot array — expected,
-mirrors the known register diffs) and at `$03B1-$03D0` (inside the FCB
-proper — NOT yet explained). Screen is byte-identical end-to-end (no crash,
-clean final frame) so this is a correctness gap, not a stability one.
-Recommend a fresh characterisation pass (same black-box method as this
-doc) scoped to "why does a read-mode FCLOSE report A=$FF post-M24-slice-B" —
-not yet dispatched, awaiting direction.
+**UPDATE 2026-07-03 (follow-up investigation, corrects the residual note
+above): the real bug is NOT record 13's FCLOSE — it's a universal RDSEQ
+($14) regression introduced by slice B's `$477D → wrseq_body` wiring, and
+the "Phase-1 BDOSX zero-diff" regression check that supposedly cleared this
+commit was a FALSE PASS (anchor collision, see below). Status: CONFIRMED
+ROOT CAUSE, fix NOT YET IMPLEMENTED — awaiting sign-off.**
+
+**Misattribution correction.** The `callseq --log 0x0005` entry-register dump
+used to diagnose the original residual logs registers *at BDOS-call entry*,
+not at return. `A` is not an input to any of these calls, so it is leftover
+from whichever call last touched it. Re-deriving from `regs` snapshot-buffer
+memory (`build_bdosx3_disk.py`'s own `regs = fcb-relative` addressing, each
+record 8 bytes: `regs + N*8`, byte +1 = A, byte +7 = L) shows the *actual*
+per-call recorded results:
+
+- record 12 RDSEQ (`regs+12*8+1` = `$0436`): **ours = `$FF`, stock = `$00`.**
+- record 13 FCLOSE (`regs+13*8+1` = `$043E`): ours = stock = `$00` — **no
+  divergence at all.** The earlier "FCLOSE A=$FF" claim was `callseq`'s
+  logged entry-A for the FCLOSE call, which is really RDSEQ's leftover
+  result (nothing between the two calls touches `A` — confirmed by reading
+  `probes/disk/bdosx3.asm`'s `snap` routine, which doesn't clobber `A`, and
+  the source between the RDSEQ and FCLOSE calls, which has no `ld a,...`).
+- record 14 FREN (`regs+14*8+1` = `$0446`): ours = `$FC`, stock = `$00` —
+  a second, likely-downstream divergence (not yet explained; may cascade
+  from record 12's failure corrupting FCB state consumed by FREN's own
+  directory search).
+
+**Confirmed root cause: `$477D` is called by the real kernel during EVERY
+RDSEQ ($14), not only WRSEQ ($15).** `callwatch --in-func 0x14 --machine
+ours` on BDOSX3's record-12 RDSEQ shows PC visiting exactly
+`$477D → wrseq_body ($7B11) → bdos_seqwrite ($46EE) → bsw_err ($472C)` —
+the same write-path chain M24 slice B wired for WRSEQ. Since `BDOS_WRMODE`
+is legitimately `0` during any read, `bdos_seqwrite`'s `ld a,(BDOS_WRMODE);
+or a; jr z, bsw_err` guard fires and returns `A=$FF` — and this becomes the
+RDSEQ call's own final, visible result. Register snapshots taken at `$477D`'s
+entry (`BC=0000, DE=IY=$DA40, HL=5800, AF=2220`) are IDENTICAL in shape
+between a genuine WRSEQ call (occurrence #1, record 1) and this RDSEQ call
+(occurrence #10, record 12) — no register at entry distinguishes direction,
+so `$477D`'s real contract is broader than "the WRSEQ worker": it looks like
+a shared "prepare/verify current record" step the kernel calls for BOTH
+sequential read and write, with direction determined some other way (not
+yet identified — possibly the kernel expects the page-1 body itself to
+consult FCB state, not a register).
+
+**This is NOT scoped to BDOSX3's edge case — it is universal.** Re-running
+the SAME `callwatch --in-func 0x14` + `capture --mem` check against
+Phase-1's `BDOSX.COM` (`probes/disk/build_bdosx_disk.py`, a plain
+FOPEN→RDSEQ×2 read of a pristine pre-seeded file, no write/reopen involved
+at all) shows the identical chain firing **twice** (once per RDSEQ call),
+and both calls' own recorded `A` results are `$FF` (ours) vs `$00` (stock)
+— `regs+2*8+1` = `$0351` and `regs+3*8+1` = `$0359`, both diverge. Worse:
+the ACTUAL DATA delivered to the DTA is also wrong — `capture --mem
+0x400:0x20` shows ours reading all `$00` from `$040E` onward where stock
+shows the real deterministic file-content pattern. This means
+`bdos_seqread_body`'s own record-copy `LDIR` likely never executes at all
+for these calls (matches the killed follow-up agent's own last observation
+before it stalled: "zero writes during func $14 — the data landed in rdbuf
+at some other time") — the kernel appears to abort the whole RDSEQ call as
+soon as `$477D` returns non-zero, never reaching the real transfer step.
+
+**Why the M24 slice A+B regression suite didn't catch this: an anchor
+collision, the exact pitfall `disk_probe_diff.py`'s own docs warn about.**
+The previously-run "Phase-1 BDOSX zero-diff" check used
+`build_bdosx_disk.py`'s auto-printed `capture --at <done> --keys ...`
+hint verbatim, with no `--arm-check-*`. `BDOSX.COM`'s `done` self-loop
+address (`$01BC` in this build) happens to collide with something hit
+*twice within the first 1.2s of boot*, long before keys are even typed
+(`--keys-at 20`) — so occurrence #1 (and #2) fire on unrelated pre-boot
+state that trivially matches on both machines, and the check reported
+"zero-diff" without ever actually comparing post-execution state. Arming on
+`--arm-check-addr 0x0102 --arm-check-val 0x01` (the loaded COM's own
+fingerprint byte) fixes the alignment (both sides then hit the real `done`
+loop around t≈25-27s) and immediately exposes the divergence above. BDOSX2
+doesn't exercise RDSEQ at all (grepped, no `$14` in `bdosx2.asm`), so it
+could never have caught this regardless.
+
+**Proposed fix shape (NOT implemented — needs sign-off given the widened
+blast radius):** `$477D`'s body must stop assuming "this call always means
+write". Concretely: read `BDOS_WRMODE` as `wrseq_body`/`bdos_seqwrite`
+already do, but when it reads `0` (a read-mode context), return success
+(`A=$00`, no-op) instead of falling into `bsw_err`, so the kernel proceeds
+to whatever it does next for the real record transfer (presumably the
+already-wired `$4558 → bdos_seqread_body` veneer, unchanged since before
+M24). When `BDOS_WRMODE` is `1`, keep today's behaviour (full
+`bdos_seqwrite` call) unchanged — WRSEQ correctness (records 1-9, verified
+zero-diff) must not regress. This is a small, targeted change (a new
+`wrseq_body` that branches on `BDOS_WRMODE` before deciding whether to
+forward into `bdos_seqwrite` or just return `A=0`), but it needs a falsify-
+first pass — specifically confirming (a) that the real record data is
+correctly delivered to the DTA once `$477D` stops short-circuiting the
+kernel's read path, and (b) that WRSEQ's own `$477D` hits (which also see
+`BDOS_WRMODE=1` correctly) are unaffected — before committing. **Recommend
+a fresh, narrowly-scoped investigation/implementation pass focused on: (1)
+confirm the no-op-on-read-mode fix restores correct RDSEQ data+status on
+both BDOSX and BDOSX3, (2) re-run the FULL regression suite this time WITH
+correct arm-check anchoring on every self-looping `done`-style probe
+(BDOSX, BDOSX2, BDOSX0) to close the false-pass gap, (3) re-check record
+14's FREN `A=$FC` divergence once RDSEQ is fixed, since it may simply
+disappear as a downstream effect.**
+
+**UPDATE 2 2026-07-03 (implementation attempted, REVERTED — this is bigger
+than M24's scope, needs a dedicated follow-up milestone, not a slice fix).**
+Tried the proposed no-op-on-read fix above; it did NOT restore correct
+RDSEQ data, and a second attempt also failed. Both attempts were reverted
+(`git checkout -- disk/kernel.asm`) — the tree is back to the exact
+`a435292` committed state (crash-fix only, no RDSEQ change). `disk/kernel.asm`
+was NOT re-committed with either attempt below; this section is a record of
+what was tried and ruled out, for whoever picks this up next.
+
+- **Attempt 1 (no-op success on `BDOS_WRMODE==0`, as proposed above):**
+  confirmed via `callwatch --in-func 0x14` that this DOES stop `bdos_seqwrite`/
+  `bsw_err` from running, and the RDSEQ call's own status register is now
+  correctly `A=$00` (verified: `regs` buffer diff dropped to 0 bytes for the
+  status fields). **But the actual DTA content is still all `$00`** where
+  stock delivers the real file bytes — no better than before. Checked
+  whether the kernel then calls the existing `$4558 → bdos_seqread_body`
+  veneer to do the real transfer, as the fix shape assumed: it does NOT —
+  `callwatch --in-func 0x14 --range 0x4550:0x4570` shows **zero hits** in
+  that range during any RDSEQ call. `$4558` is the COMMAND.COM-load-specific
+  entry (per its own header comment in `disk/driver.asm`), not a general
+  per-record RDSEQ path arbitrary `.COM` programs take. So the fix's premise
+  — "make $477D a clean no-op and let the kernel/veneer do the real read
+  elsewhere" — is falsified: there is no "elsewhere" being called.
+
+- **Attempt 2 (make `$477D`'s read branch actually call `bdos_seqread`,
+  reseeding `BDOS_DTA` from `DOS_DTAPTR` first, symmetric with the write
+  branch):** since `$477D` really does appear to be the ONLY page-1 entry
+  the kernel touches per RDSEQ record, tried making it genuinely perform the
+  read. Result: `bdos_seqread` now executes (confirmed via `callwatch`,
+  distinct new PCs entered), but it immediately returns **EOF (`A=$01`)**
+  instead of delivering data — `BDOS_BYTESLEFT` reads `0` at this point.
+  Root cause: `BDOS_BYTESLEFT`/`BDOS_RECIDX` (the state `bdos_seqread`
+  depends on) are seeded ONLY by `bdos_open` (`disk/driver.asm:458-483`,
+  our OWN internal FOPEN, used when there is no real DOS kernel) and by
+  `bdos_rdblk` (`disk/driver.asm:618-646`, the boot-loader's own local
+  reseed for `$27` RDBLK). **Neither ever runs for a real kernel-driven
+  `$0F` FOPEN in the DOS-boot scenario** — that path goes through
+  `fopen_fill_body` (`disk/fat.asm:1166+`, wired to veneer `$4462`, M21a),
+  which by its own documented scope ("owns ONLY +14(high)..+31" of the FCB)
+  deliberately does NOT touch `BDOS_BYTESLEFT`/`BDOS_RECIDX` or call
+  `fat_open` to re-prime the iterator. So `bdos_seqread` has no valid state
+  to work from after a real kernel FOPEN — it was apparently designed
+  assuming a caller (`bdos_open`) that never actually runs in this context.
+
+**The real picture this exposes: general-purpose RDSEQ (`$14`) correctness
+for an arbitrary `.COM` program, under a REAL booted MSX-DOS-1 kernel, may
+never have been genuinely verified — going back further than M24.** The
+"Phase-1 BDOSX zero-diff" claim (this milestone and earlier ones) rested on
+an anchor-collision false pass (see UPDATE 1 above); once corrected, RDSEQ's
+actual data delivery in this exact scenario (`FOPEN` via the real kernel →
+`$14` RDSEQ) has NEVER shown correct output in any probe run this session,
+under the original committed code OR either fix attempt. Whether RDSEQ ever
+worked correctly for OTHER call patterns already exercised elsewhere (e.g.
+the boot-time `$27` RDBLK path used to load `MSXDOS.SYS`/`COMMAND.COM`,
+which DOES seed `BDOS_BYTESLEFT` itself and is unaffected by any of this) is
+not in question — only the plain `$0F FOPEN` → `$14 RDSEQ` sequence an
+ordinary user program uses.
+
+**This needs a dedicated investigation milestone, not a same-session slice
+fix.** Two open architectural questions block a real fix: (1) does the real
+kernel expect `$477D`'s read branch to do a full `bdos_seqread`-equivalent
+transfer (in which case `fopen_fill_body` needs to grow to also seed
+`BDOS_BYTESLEFT`/`BDOS_RECIDX`/prime the FAT iterator, extending its scope
+well past M21a's original "owns only +14..+31" boundary), or (2) does the
+kernel do its own internal record delivery via low-level DSKIO and
+`$477D`'s real per-record job is something else entirely unrelated to data
+transfer (e.g. lazy cluster-boundary bookkeeping shared by both directions),
+in which case the actual bug is elsewhere (maybe in DSKIO itself, or in
+alloc-map fields `fopen_fill_body` populates) and `$477D`'s read branch
+should genuinely stay a no-op. Recommend scoping this as its own milestone
+(tentatively M25) with a proper characterisation pass before any more code
+changes — the same falsify-first discipline as the original M24 pass above,
+but starting from "what does the kernel actually need from page-1 for a
+generic user-program RDSEQ" rather than assuming symmetry with WRSEQ.
 
 --
 
