@@ -293,18 +293,33 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M24+M25+M26-FREN LANDED, M26-RDABS CHARACTERISED (dispatch confirmed, not yet implemented); M26-remainder still needs spec sign-off (2026-07-03)
+## Next action — M24+M25+M26-FREN+M26-RDABS LANDED; M26-remainder (FDEL/RDRND/WRRND/WRABS) still needs spec sign-off (2026-07-03)
 
-> **RDABS (`$2F`) re-characterised (Fable dispatch, `trace --resync`,
-> methodology per [[harness-first-investigation-mo]] /
-> [[opus-vs-sonnet-model-split]]).** Confirmed real dispatch address `$46BA`
-> is pure `$00` pad (the earlier "61 bytes into `bdos_create`'s body" claim
-> was wrong — no relocation needed, LOWER risk than FREN). Also found RDABS
-> is a silent false-success (status matches stock exactly; `absbuf` stays
-> stale) — a status-only check would have missed this. Full detail:
-> [tier2-m26-spec.md](tier2-m26-spec.md) §2.4. **Still NOT implemented** —
-> awaiting the §5 sign-off (esp. Q2, per-function sign-off granularity)
-> before wiring the veneer.
+> **RDABS (`$2F`) LANDED.** Characterised by a Fable subagent dispatch
+> (`trace --resync`, methodology per [[harness-first-investigation-mo]] /
+> [[opus-vs-sonnet-model-split]] — corrected mid-session after a process
+> lapse, see [[tier2-review-queue]] M26 Follow-up 3): confirmed real
+> dispatch address `$46BA` is pure `$00` pad (the earlier "61 bytes into
+> `bdos_create`'s body" claim was wrong — no relocation needed, simpler than
+> FREN). Implemented directly in the pad: `k_46BA: jp rdabs_body`
+> (disk/fat.asm), reading via `dskio` (arbitrary sector count, target = the
+> runtime DTA via `DOS_DTAPTR`). Register contract (entry AND exit) pinned
+> by black-box `capture`, not assumed — entry fingerprint `B=$BA` matches
+> the established canonical-address convention; exit `C=$1` (echoes the
+> input sector count, undocumented but needed for BDOSX3's full-register
+> zero-diff bar). Verified: BDOSX3 record 22's `B`/`C`/`H` garbage now
+> zero-diff (confirmed via baseline-diff — exactly those 3 bytes removed,
+> 16 pre-existing gaps elsewhere unchanged); Tier-1 DSKIO/unit-test/probe
+> all green; boot callseq 18/18; DIR screen byte-identical; BDOSX/BDOSX2
+> zero-diff; BDOSX0 43/43 aligned. Full writeup:
+> [tier2-m26-spec.md](tier2-m26-spec.md) §7.
+>
+> **The remaining four (FDEL/RDRND/WRRND/WRABS) are UNTOUCHED — still a
+> HARD-STOP awaiting sign-off**, per §5's 3 open questions. RDRND/WRRND in
+> particular land at an IDENTICAL shared PC trace that partially executes
+> REAL M25-era routines — HIGH risk of silently mutating shared read/write
+> state. **Do NOT implement anything from the remaining four without
+> reading [tier2-m26-spec.md](tier2-m26-spec.md) §5 first.**
 
 > **FREN (`$17`) LANDED.** `$4392` (found via `trace --resync`, the real
 > confirmed kernel dispatch address, not just a coincidentally-touched one)

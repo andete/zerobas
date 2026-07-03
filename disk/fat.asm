@@ -18,6 +18,13 @@
 ; Sequential Write, so a zero-byte file occupies no clusters (matching MSX-DOS).
 bdos_create:
                 jp      bdos_create_body    ; Tier-2 3b: divert; veneer fills the gap
+                ds      $46BA - $, $00      ; pure $00 pad (M26, tier2-m26-spec.md
+                                            ; §2.4: trace --resync confirmed $46BA is
+                                            ; the kernel's real fixed $2F RDABS dispatch
+                                            ; address, landing in dead pad -- NOT 61
+                                            ; bytes into bdos_create's body as first
+                                            ; guessed; no relocation needed)
+k_46BA:         jp      rdabs_body          ; $46BA: BDOS $2F RDABS canonical entry (M26)
                 ds      $46C8 - $, $00      ; anchor the canonical address
                 jp      k_46C8              ; $46C8: COMMAND.COM-load kernel veneer
                 ds      $46E6 - $, $00      ; pad to bdos_create_failpop (net-zero)
@@ -1331,5 +1338,45 @@ fren_ioerr:
                 ld      ($F306), a          ; M20 dispatcher-flag rule
                 scf
                 ld      a, 2                ; generic FDC I/O error (fdc_read_data convention)
+                ret
+
+; rdabs_body — MSX-DOS-1 kernel RDABS ($2F) canonical entry $46BA's real body
+; (M26, tier2-m26-spec.md §2.4). CLEAN-ROOM, from the published contract
+; (map.grauw.nl BDOS function reference, disk/docs/tier2-bdos-remaining-spec.md
+; §2 table): in DE = start logical sector, H = sector count, L = drive
+; (ignored -- single-drive ROM, same convention as read_sector/write_sector
+; above). Target buffer = the runtime DTA (DOS_DTAPTR, $F23D -- M19/M21
+; precedent, NOT our own internal BDOS_DTA cell). Calls dskio directly
+; (disk/driver.asm) rather than read_sector, since RDABS must honour an
+; arbitrary sector count, not just one.
+; Exit contract empirically pinned via `capture` (BDOSX3 record 22, H=1):
+; stock's own A=$00 B=$00 C=$01 D=$00 E=$00 H=$00 L=$00 on success -- C
+; carries the original sector count (not officially documented; matched here
+; since BDOSX3's zero-diff bar covers full register state, same discipline
+; as M22a's VERIFY/CPMVER register-parity work). dskio clobbers B/C
+; internally for its own CHS bookkeeping, so the original count is saved
+; across the call on the stack, not left in a register.
+rdabs_body:
+                ld      b, h                ; B := sector count (dskio's own count param)
+                push    bc                  ; preserve original count across the dskio call
+                ld      hl, (DOS_DTAPTR)    ; target = runtime DTA
+                xor     a                   ; drive ignored (single-drive); Cy=0 = read
+                call    dskio
+                pop     bc                  ; B := original count again (dskio clobbers B/C)
+                jp      c, rdabs_ioerr
+                ld      a, b                ; A := original count
+                ld      c, a                ; C := count (pinned exit value)
+                xor     a
+                ld      b, a                ; B := $00 (pinned exit value)
+                ld      ($F306), a          ; M20 dispatcher-flag rule
+                ld      h, a
+                ld      l, a                ; H=L=$00 (pinned exit value)
+                ret
+rdabs_ioerr:
+                ld      b, a                ; preserve dskio's error code
+                xor     a
+                ld      ($F306), a          ; M20 dispatcher-flag rule
+                ld      a, b                ; restore error code
+                scf
                 ret
 

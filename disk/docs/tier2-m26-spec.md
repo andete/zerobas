@@ -6,9 +6,9 @@ SPDX-License-Identifier: 0BSD
 # Tier-2 M26 spec — the mutation/random/absolute-I/O block (`$13 FDEL` / `$17 FREN` /
 `$21 RDRND` / `$22 WRRND` / `$2F RDABS` / `$30 WRABS`)
 
-**Status: FREN (`$17`) LANDED 2026-07-03 (§6). FDEL/RDRND/WRRND/RDABS/WRABS
-still CHARACTERISED ONLY, not implemented — same stop-for-sign-off posture
-as before for those five.** Per [[spec-before-implementation]] this is a
+**Status: FREN (`$17`) and RDABS (`$2F`) LANDED 2026-07-03 (§6, §7).
+FDEL/RDRND/WRRND/WRABS still CHARACTERISED ONLY, not implemented — same
+stop-for-sign-off posture as before for those four.** Per [[spec-before-implementation]] this is a
 **new-routine-class** milestone (like [tier2-m19-spec.md](tier2-m19-spec.md)),
 not a self-approvable veneer-class fix: six BDOS functions, none wired at
 the start, one pair (RDRND/WRRND) showing a risk shape not seen in any prior
@@ -304,6 +304,69 @@ return `A=$FF`/`Cy=1`.
 insertion point to kernel.asm's genuine free tail). Changed:
 disk/driver.asm (relocation thunk + veneer), disk/kernel.asm
 (`fdc_read_data_body`), disk/fat.asm (`fren_body`).
+
+## 7. RDABS (`$2F`) — LANDED 2026-07-03
+
+Per §5's now-confirmed default order and the §2.4 re-characterisation (Fable
+dispatch, `trace --resync`): `$46BA` is pure `$00` pad, no relocation
+needed — simplest of the six. Fix wired directly in the pad: `disk/fat.asm`'s
+`bdos_create` dispatch corridor (`bdos_create: jp bdos_create_body` / `ds
+$46C8 - $, $00` / `jp k_46C8`) now splits at `$46BA`: `ds $46BA - $, $00` /
+`k_46BA: jp rdabs_body` / `ds $46C8 - $, $00` — net-zero, `k_46C8` stays at
+its exact address.
+
+**Register contract pinned by black-box `capture`, not assumed:** entry
+`capture --at 0x46ba --nth 1 --machine stock` (before writing any code)
+showed `B=$BA` (the canonical-address-low-byte fingerprint, same convention
+as the `$53A7` CONOUT worker's `B=$A7`), `C=$2F` (function number,
+preserved from the caller), `DE=$0000` (start sector), `HL=$0100` (H=1
+sector count, L=0 drive) — exactly BDOSX3's own `H=1 L=0 DE=0` call,
+confirming registers pass through the kernel's dispatch unmolested. Exit
+contract pinned from stock's own record-22 snapshot (`capture --at <done>
+--mem <regs+22*8>:8`): `A=$00 B=$00 C=$01 D=$00 E=$00 H=$00 L=$00` — `C`
+carries the original sector count back out (not part of the published
+map.grauw.nl contract, which only documents `A`, but matched anyway since
+BDOSX3's zero-diff bar covers the full register snapshot, same discipline
+as M22a's VERIFY/CPMVER work).
+
+**`rdabs_body`** (disk/fat.asm, next to `fren_ioerr`): reads via `dskio`
+directly (disk/driver.asm) rather than `read_sector`, since RDABS must
+honour an arbitrary sector count (`H`), not fix it at one; target buffer is
+the runtime DTA (`DOS_DTAPTR`, `$F23D` — M19/M21 precedent). `dskio`
+clobbers `B`/`C` internally for its own CHS bookkeeping, so the original
+count is saved on the stack across the call and restored into `C` (and
+zeroed into `B`) afterward, matching the pinned exit values. Error path
+preserves `dskio`'s real returned error code across the `$F306` clear
+(unlike `fren_ioerr`'s hardcoded-`2` precedent) — untested by BDOSX3 (record
+22 always succeeds) but more correct against the published contract, at no
+extra cost.
+
+**Verification:**
+- BDOSX3 record 22 (`--mem 0x3d5:0x100`, full `regs` array): baseline
+  (FREN-only, pre-RDABS-fix) showed 19 diverging bytes; post-fix shows 16 —
+  confirmed via the git-stash/rebuild-baseline technique that the exact 3
+  removed bytes are record 22's `B`/`C`/`H` fields (the RDABS garbage this
+  fix targets) and the remaining 16 are unchanged, pre-existing, already-
+  logged gaps (FCB-mirror fields etc.) — zero new regressions.
+- **Tier-1 regression:** `make probe` — DSKIO byte-identical to the CF-3300
+  reference, BASIC probe green, tape probe green. `make unit-test`: 19/19.
+- Boot `callseq --log 0x0005` (no keys, boot-to-`A>` only): 18/18 shared
+  calls aligned, zero divergence.
+- `DIR` `screen` (both machines): byte-identical, including the `41 files`
+  / `375808 bytes free` / `A>.` footer and the full VRAM hex dump.
+- BDOSX (`--mem 0x400:0x180`): zero-diff (0 of 384 bytes), register diffs
+  NONE.
+- BDOSX2 (`--mem 0x340:0x70`): zero-diff (0 of 112 bytes), register diffs
+  NONE.
+- BDOSX0: `callseq --log 0x0005` 43/43 shared calls aligned, no divergence.
+
+`disk.rom` stays exactly 16384 B (no wrap warnings). Changed: disk/fat.asm
+only (`k_46BA` veneer + `rdabs_body`/`rdabs_ioerr`).
+
+Investigation credit: characterised by a Fable subagent dispatch (per
+[[opus-vs-sonnet-model-split]], corrected after a process lapse — see
+[[tier2-review-queue]] M26 Follow-up 3); implementation + verification by
+Sonnet 5 direct.
 
 ---
 

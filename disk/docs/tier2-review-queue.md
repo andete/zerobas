@@ -90,6 +90,30 @@ Spec/state docs updated: [tier2-m26-spec.md](tier2-m26-spec.md) §2.4/§3,
 still awaiting §5 sign-off before implementation. Confidence: high this is
 the right correction; undo: none needed (docs-only).
 
+**Follow-up 4 (same day) — implemented RDABS, the confirmed-simplest
+remaining item, per the same "proceed with next lowest-risk default"
+judgment used for FREN.** Pinned the entry/exit register contract via
+black-box `capture` before writing code (entry: `B=$BA` fingerprint,
+`C=$2F`, `DE`/`HL` = the caller's own sector/count/drive, unmolested by the
+dispatch; exit, from stock's own record-22 snapshot: `A=$00 B=$00 C=$01
+D=$00 E=$00 H=$00 L=$00` — `C` echoes the input sector count, not part of
+the published contract but needed for BDOSX3's full-register zero-diff
+bar). Wired `k_46BA: jp rdabs_body` directly in the existing `$00` pad
+(disk/fat.asm) — no relocation needed, confirmed simpler than FREN.
+`rdabs_body` reads via `dskio` directly (not `read_sector`, since RDABS
+must honour an arbitrary sector count) targeting the runtime DTA via
+`DOS_DTAPTR`; saves the original count across the `dskio` call on the stack
+since `dskio` clobbers `B`/`C` internally. Verified via the baseline-diff
+technique (git-stash pre-RDABS-fix ROM, same capture): the fix removes
+exactly 3 bytes from the diff set (record 22's `B`/`C`/`H`), the remaining
+16 pre-existing diffs elsewhere are byte-for-byte unchanged — zero new
+regressions. Full regression suite green: Tier-1 DSKIO/unit-test/probe,
+boot callseq 18/18, DIR screen byte-identical, BDOSX/BDOSX2 zero-diff,
+BDOSX0 43/43 aligned. Full writeup: [tier2-m26-spec.md](tier2-m26-spec.md)
+§7. The remaining four (FDEL/RDRND/WRRND/WRABS) are UNTOUCHED — still
+awaiting §5 sign-off, especially RDRND/WRRND's shared-state risk.
+Confidence: high; undo: `git revert`, isolated to disk/fat.asm only.
+
 **[M23 / LANDED (2026-07-03) — `BDOSX0.COM` TERM0 micro-test, per
 tier2-bdos-remaining-spec.md §5.2, riding the same session as M22.]** New probe files
 `probes/disk/bdosx0.asm` + `build_bdosx0_disk.py` (2-instruction program: `ld c,0 /
