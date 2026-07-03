@@ -1118,3 +1118,116 @@ ncw_next:
                 djnz    ncw_loop
                 ret                         ; Z set (all 11 positions matched)
 
+; --- M24 slice B relocated bodies (tier2-m24-fclose-multicluster-spec.md §6) --
+
+; rdb_recloop_body — verbatim relocation of disk/driver.asm's bdos_rdblk
+; record/byte copy loop (rdb_recloop..rdb_eof, unchanged since M21b). Moved
+; here only because its old span's tail byte collided with the new $461D
+; FMAKE-worker canonical entry; reached solely by driver.asm's own
+; `jp rdb_recloop_body` fall-through (position-free, no external caller).
+rdb_recloop_body:
+                ld      hl, (RDBLK_DONE)
+                ld      de, (RDBLK_REQ)
+                or      a
+                sbc     hl, de
+                jr      z, rdb_ok           ; delivered every requested record
+                ld      hl, (RDBLK_RECSIZE)
+                ld      (RDBLK_CNT), hl     ; bytes still to copy for this record
+rdb_byteloop:
+                ld      hl, (RDBLK_CNT)
+                ld      a, h
+                or      l
+                jr      z, rdb_recdone      ; whole record copied
+                ; EOF when every file byte has been delivered (BYTESLEFT == 0)
+                ld      hl, (BDOS_BYTESLEFT)
+                ld      de, (BDOS_BYTESLEFT + 2)
+                ld      a, h
+                or      l
+                or      d
+                or      e
+                jr      z, rdb_eof
+                call    rdblk_getbyte       ; A = next file byte (advances buffer)
+                jr      c, rdb_eof          ; chain ended early (defensive)
+                ld      hl, (RDBLK_DST)
+                ld      (hl), a
+                inc     hl
+                ld      (RDBLK_DST), hl
+                ld      hl, (RDBLK_CNT)
+                dec     hl
+                ld      (RDBLK_CNT), hl
+                jr      rdb_byteloop
+rdb_recdone:
+                ld      hl, (RDBLK_DONE)
+                inc     hl
+                ld      (RDBLK_DONE), hl
+                jr      rdb_recloop_body
+rdb_ok:
+                xor     a                   ; A = $00 all requested records read
+                ld      hl, (RDBLK_DONE)
+                ld      b, h                ; BC = HL = records read (§8.33): the genuine
+                ld      c, l                ; BDOS $27 returns the count in BOTH HL and BC,
+                ret                         ; and MSXDOS.SYS init reads BC (§8.32 $024A branch)
+rdb_eof:
+                ld      a, $01              ; A = $01 EOF before all requested
+                ld      hl, (RDBLK_DONE)    ; HL = records actually read
+                ld      b, h                ; BC = HL = records read (§8.33; see rdb_ok)
+                ld      c, l
+                ret
+
+; fat_mount_tail — verbatim relocation of disk/fat.asm's fat_mount continuation
+; (from the numFATs*secPerFAT multiply setup through the final `ret`,
+; unchanged). Moved here only because the multiply's `ld hl,0` tail byte
+; collided with the new $477D WRSEQ-worker canonical entry; reached solely by
+; fat_mount's own `jp fat_mount_tail` fall-through (position-free, no
+; external caller). The diversion point had to move one instruction earlier
+; than the collision itself (to `ld b,a`) to leave enough room for the
+; 3-byte veneer to land exactly at $477D (a 3-byte-for-3-byte swap at the
+; collision point alone leaves zero slack).
+fat_mount_tail:
+                ld      b, a                ; B = numFATs (loop count)
+                ld      de, (SECTOR_BUF + BPB_FATSZ16)
+                ld      (FAT_SECPERFAT), de ; cache for per-copy sector stride
+                ld      hl, 0
+fm_fatacc:
+                add     hl, de
+                djnz    fm_fatacc           ; HL = numFATs * secPerFAT
+                ld      de, (FAT_FATSTART)
+                add     hl, de
+                ld      (FAT_FIRSTROOT), hl
+                ; root sectors = (rootEnts*32 + 511) / 512  (512 B per sector)
+                ld      hl, (SECTOR_BUF + BPB_ROOTENTCNT)
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl              ; HL = rootEnts * 32
+                ld      de, 511
+                add     hl, de
+                ld      a, h
+                srl     a                   ; HL >> 9  (== H >> 1, result < 256)
+                ld      l, a
+                ld      h, 0
+                ld      (FAT_ROOTSECS), hl
+                ; first data sector = firstRoot + rootSecs
+                ld      de, (FAT_FIRSTROOT)
+                add     hl, de
+                ld      (FAT_FIRSTDATA), hl
+                or      a                   ; Cy = 0 success
+                ret
+
+; wrseq_body — MSX-DOS-1 kernel WRSEQ-worker entry $477D's body. The RAM
+; kernel CALLs $477D per BDOS $15 WRSEQ record with the SAME DTA-staleness
+; hazard as $47B2/RDBLK (M21b): the kernel's real SETDTA only ever writes
+; DOS_DTAPTR ($F23D), never our own mini-BDOS's BDOS_DTA cell, so BDOS_DTA
+; must be reseeded from DOS_DTAPTR at entry before bdos_seqwrite consumes it
+; (verbatim M21b lesson; see k_47B2 above). DE (=IY=$DA40 kernel FCB pointer)
+; is not consumed -- bdos_seqwrite is single-open-file global state, same as
+; Tier-1. Exit A=$00/$01/$FF passes straight through; $F306 left untouched
+; (M24 spec §5 item 4: no observed load-bearing exit HL for this entry family
+; -- default to the kernel's own H:=B,L:=A mirror unless the acceptance diff
+; proves otherwise).
+wrseq_body:
+                ld      hl, (DOS_DTAPTR)
+                ld      (BDOS_DTA), hl
+                jp      bdos_seqwrite
+

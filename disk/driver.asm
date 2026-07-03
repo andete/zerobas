@@ -499,7 +499,27 @@ bdos_seqread:
                 jp      bdos_seqread_body   ; Tier-2 3b: divert; veneer fills the gap
                 ds      $4558 - $, $00      ; anchor the canonical address
                 jp      k_4558              ; $4558: COMMAND.COM-load kernel veneer
-                ds      $4570 - $, $00      ; pad to bsr_have (net-zero: stays $4570)
+; --- MSX-DOS-1 kernel FCLOSE-finaliser entry: $456F (M24 slice A;
+; tier2-m24-fclose-multicluster-spec.md) --------------------------------------
+; The RAM kernel implements the FCB write tier (FMAKE/WRSEQ/FCLOSE) itself and
+; CALLs three page-1 canonical worker entries for it; pre-M24 all three were
+; un-wired. This one ($456F, the FCLOSE finaliser) fell on a lone $00 pad byte
+; that NOP-slid into bsr_have (the Sequential-Read record copier): with the
+; ambient BDOS_BYTESLEFT left at 0 after a completed .COM load, bsr_have's
+; n := min(RECSIZE, BYTESLEFT) computed 0, and its LDIR ran with BC=0 -- a
+; 65536-byte copy that sprayed the whole RAM map, crashing every write-mode
+; Close of a file needing real flush/FAT/dir work (BDOSX3 record 10 exposed
+; it; earlier FCLOSE calls survived only by luck, hitting this fall-in with a
+; nonzero ambient BYTESLEFT that made the same LDIR a harmless copy).
+; Reproduces stock's finaliser contract with OUR already-proven bdos_close
+; (BDOS_WRMODE-gated: cheap no-op for a read-close, flush + fat_dir_update for
+; a dirty write-close) -- no stock algorithm decoded, only the call-target
+; address pinned black-box (ret=$D88A dispatcher class, DE=IY=$DA40 kernel FCB
+; pointer). bsr_have is NOT itself a canonical address (only $4558/$456F are);
+; shifting it by 2 bytes here is safe (M15 SS7.3 free-fall convention).
+                ds      $456F - $, $00      ; pad up to the pinned $456F FCLOSE-finaliser entry
+k_456F:
+                jp      bdos_close          ; $456F: BDOS $10 FCLOSE canonical entry (M24 slice A)
 bsr_have:
                 ; n = real bytes this record = min(RECSIZE, BYTESLEFT).
                 ; BYTESLEFT is nonzero here; if the high word is set or low word
@@ -624,54 +644,22 @@ rdb_rs_ok:
                 ld      (RDBLK_DONE), hl    ; no records delivered yet
                 ld      hl, (BDOS_DTA)
                 ld      (RDBLK_DST), hl     ; local write pointer (BDOS_DTA preserved)
-rdb_recloop:
-                ld      hl, (RDBLK_DONE)
-                ld      de, (RDBLK_REQ)
-                or      a
-                sbc     hl, de
-                jr      z, rdb_ok           ; delivered every requested record
-                ld      hl, (RDBLK_RECSIZE)
-                ld      (RDBLK_CNT), hl     ; bytes still to copy for this record
-rdb_byteloop:
-                ld      hl, (RDBLK_CNT)
-                ld      a, h
-                or      l
-                jr      z, rdb_recdone      ; whole record copied
-                ; EOF when every file byte has been delivered (BYTESLEFT == 0)
-                ld      hl, (BDOS_BYTESLEFT)
-                ld      de, (BDOS_BYTESLEFT + 2)
-                ld      a, h
-                or      l
-                or      d
-                or      e
-                jr      z, rdb_eof
-                call    rdblk_getbyte       ; A = next file byte (advances buffer)
-                jr      c, rdb_eof          ; chain ended early (defensive)
-                ld      hl, (RDBLK_DST)
-                ld      (hl), a
-                inc     hl
-                ld      (RDBLK_DST), hl
-                ld      hl, (RDBLK_CNT)
-                dec     hl
-                ld      (RDBLK_CNT), hl
-                jr      rdb_byteloop
-rdb_recdone:
-                ld      hl, (RDBLK_DONE)
-                inc     hl
-                ld      (RDBLK_DONE), hl
-                jr      rdb_recloop
-rdb_ok:
-                xor     a                   ; A = $00 all requested records read
-                ld      hl, (RDBLK_DONE)
-                ld      b, h                ; BC = HL = records read (§8.33): the genuine
-                ld      c, l                ; BDOS $27 returns the count in BOTH HL and BC,
-                ret                         ; and MSXDOS.SYS init reads BC (§8.32 $024A branch)
-rdb_eof:
-                ld      a, $01              ; A = $01 EOF before all requested
-                ld      hl, (RDBLK_DONE)    ; HL = records actually read
-                ld      b, h                ; BC = HL = records read (§8.33; see rdb_ok)
-                ld      c, l
-                ret
+                jp      rdb_recloop_body    ; Tier-2 3b: divert; veneer fills the gap (M24 slice B)
+; --- MSX-DOS-1 kernel FMAKE-worker entry: $461D (M24 slice B;
+; tier2-m24-fclose-multicluster-spec.md) --------------------------------------
+; The RAM kernel's BDOS $16 FMAKE handling CALLs this page-1 entry with the
+; same convention our own bdos_create already expects (DE = FCB pointer,
+; FCB+1 = 11-byte 8.3 name; pinned black-box, ret=$D88A dispatcher class,
+; DE=IY=$DA40 kernel FCB pointer) -- so the body is a direct tail-call, no
+; wrapper needed. Pre-M24 this fell on a byte inside rdb_byteloop's
+; predecessor instruction (the M21b RDBLK loop), producing the harmless-but-
+; wrong A=$01 exit (the "n=37" register oddity) instead of ever creating a
+; file. rdb_recloop..rdb_eof (unchanged, M21b) are relocated below to make
+; room -- position-free, reached only by label from bdos_rdblk's own
+; `jp rdb_recloop_body` fall-through above.
+                ds      $461D - $, $00      ; pad up to the pinned $461D FMAKE-worker entry
+k_461D:
+                jp      bdos_create         ; $461D: BDOS $16 FMAKE canonical entry (M24 slice B)
 
 ; rdblk_getbyte — deliver the next byte of the open file in A, refilling
 ; SECTOR_BUF from the cluster chain when exhausted and decrementing BDOS_BYTESLEFT.

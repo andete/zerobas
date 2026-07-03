@@ -130,36 +130,22 @@ fat_mount:
                 ; first root sector = reserved + numFATs * secPerFAT
                 ld      a, (SECTOR_BUF + BPB_NUMFATS)
                 ld      (FAT_NUMFATS), a    ; cache for the write path's FAT sync
-                ld      b, a
-                ld      de, (SECTOR_BUF + BPB_FATSZ16)
-                ld      (FAT_SECPERFAT), de ; cache for per-copy sector stride
-                ld      hl, 0
-fm_fatacc:
-                add     hl, de
-                djnz    fm_fatacc           ; HL = numFATs * secPerFAT
-                ld      de, (FAT_FATSTART)
-                add     hl, de
-                ld      (FAT_FIRSTROOT), hl
-                ; root sectors = (rootEnts*32 + 511) / 512  (512 B per sector)
-                ld      hl, (SECTOR_BUF + BPB_ROOTENTCNT)
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl              ; HL = rootEnts * 32
-                ld      de, 511
-                add     hl, de
-                ld      a, h
-                srl     a                   ; HL >> 9  (== H >> 1, result < 256)
-                ld      l, a
-                ld      h, 0
-                ld      (FAT_ROOTSECS), hl
-                ; first data sector = firstRoot + rootSecs
-                ld      de, (FAT_FIRSTROOT)
-                add     hl, de
-                ld      (FAT_FIRSTDATA), hl
-                or      a                   ; Cy = 0 success
-                ret
+                jp      fat_mount_tail      ; Tier-2 3b: divert; veneer fills the gap (M24 slice B)
+; --- MSX-DOS-1 kernel WRSEQ-worker entry: $477D (M24 slice B;
+; tier2-m24-fclose-multicluster-spec.md) --------------------------------------
+; The RAM kernel's BDOS $15 WRSEQ handling CALLs this page-1 entry once per
+; 128-byte record (pinned black-box, ret=$D88A dispatcher class, DE=IY=$DA40
+; kernel FCB pointer). Pre-M24 this fell on the high byte of fat_mount's own
+; `ld hl,0` (the numFATs*secPerFAT multiply preamble), NOP'd through, then
+; spun the multiply loop 256x on garbage B and clobbered our FAT geometry
+; cells from stale SECTOR_BUF bytes -- silently discarding every WRSEQ
+; record's data while reporting success. fat_mount's own multiply+remainder
+; (fm_fatacc onward, unchanged) is relocated below to make room -- position-
+; free, reached only by label from fat_mount's own `jp fat_mount_tail`
+; fall-through above.
+                ds      $477D - $, $00      ; pad up to the pinned $477D WRSEQ-worker entry
+k_477D:
+                jp      wrseq_body          ; $477D: BDOS $15 WRSEQ canonical entry (M24 slice B)
 fat_mount_bad:
                 scf
                 ret
