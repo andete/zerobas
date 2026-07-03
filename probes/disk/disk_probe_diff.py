@@ -151,7 +151,7 @@ def mode_callseq(args) -> int:
         arm = arm_ours if machine == OURS_MACHINE else arm_stock
         raw = _runner(machine, args.diska, args.symfile).run_job_raw(
             body, settle=args.settle, timeout=args.timeout, arm=arm,
-            keys=args.keys, keys_at=args.keys_at)
+            keys=args.keys, keys_at=args.keys_at, keys2=args.keys2, keys2_at=args.keys2_at)
         return [c for c in (_parse_call(l) for l in raw) if c], raw
 
     tag = f" [POKE @{args.poke_at:#06x}: {pokes+poke_regs}]" if (pokes or poke_regs) else ""
@@ -279,7 +279,7 @@ def mode_capture(args) -> int:
     def cap_for(machine):
         return _runner(machine, args.diska, args.symfile).run_job(
             body, settle=args.settle, timeout=args.timeout, arm=arm,
-            keys=args.keys, keys_at=args.keys_at)
+            keys=args.keys, keys_at=args.keys_at, keys2=args.keys2, keys2_at=args.keys2_at)
 
     print(f"=== capture: regs{'+mem' if mem else ''} at occurrence #{args.nth} of {args.at:#06x} ===")
 
@@ -439,7 +439,7 @@ def mode_trace(args) -> int:
         arm = arm_poked if (pokes and machine == OURS_MACHINE) else arm_plain
         recs = _runner(machine, args.diska, args.symfile).run_job(
             body, settle=args.settle, timeout=args.timeout, arm=arm,
-            keys=args.keys, keys_at=args.keys_at)
+            keys=args.keys, keys_at=args.keys_at, keys2=args.keys2, keys2_at=args.keys2_at)
         return _trace_seq(recs)
 
     print(f"=== trace: {args.steps} instrs from occurrence #{args.nth} of {args.anchor:#06x} "
@@ -584,7 +584,7 @@ def mode_iowrite(args) -> int:
     def seq_for(machine):
         raw = _runner(machine, args.diska, args.symfile).run_job_raw(
             body, settle=args.settle, timeout=args.timeout, arm=arm,
-            keys=args.keys, keys_at=args.keys_at)
+            keys=args.keys, keys_at=args.keys_at, keys2=args.keys2, keys2_at=args.keys2_at)
         data, addr_evt = [], []
         for l in raw:
             if l.startswith("IOW "):
@@ -672,7 +672,7 @@ def mode_readwatch(args) -> int:
     def reads_for(machine):
         raw = _runner(machine, args.diska, args.symfile).run_job_raw(
             body, settle=args.settle, timeout=args.timeout, arm=arm,
-            keys=args.keys, keys_at=args.keys_at)
+            keys=args.keys, keys_at=args.keys_at, keys2=args.keys2, keys2_at=args.keys2_at)
         out = []
         for l in raw:
             if not l.startswith("RD "):
@@ -765,7 +765,7 @@ def mode_writewatch(args) -> int:
     def writes_for(machine):
         raw = _runner(machine, args.diska, args.symfile).run_job_raw(
             body, settle=args.settle, timeout=args.timeout, arm=arm,
-            keys=args.keys, keys_at=args.keys_at)
+            keys=args.keys, keys_at=args.keys_at, keys2=args.keys2, keys2_at=args.keys2_at)
         out = []
         for l in raw:
             if not l.startswith("WR "):
@@ -860,7 +860,7 @@ def mode_callwatch(args) -> int:
     def entries_for(machine):
         raw = _runner(machine, args.diska, args.symfile).run_job_raw(
             body, settle=args.settle, timeout=args.timeout, arm=arm,
-            keys=args.keys, keys_at=args.keys_at)
+            keys=args.keys, keys_at=args.keys_at, keys2=args.keys2, keys2_at=args.keys2_at)
         out = []
         for l in raw:
             if not l.startswith("ENTRY "):
@@ -937,7 +937,7 @@ def mode_screen(args) -> int:
     for m in machines:
         raw = _runner(m, args.diska, args.symfile).run_job_raw(
             _screen_body(), settle=args.settle, timeout=args.timeout,
-            keys=args.keys, keys_at=args.keys_at)
+            keys=args.keys, keys_at=args.keys_at, keys2=args.keys2, keys2_at=args.keys2_at)
         who = "OURS " if m == OURS_MACHINE else "STOCK"
         mode = next((l for l in raw if l.startswith("MODE")), "MODE ?")
         print(f"=== screen: {who} ({m})  [{mode}]  settle={args.settle}s ===")
@@ -971,6 +971,14 @@ def main() -> int:
         p.add_argument("--keys-at", type=float, default=0.0, dest="keys_at",
                        help="emulated time (s) at which to inject --keys (default 0; "
                             "set < --settle so keys land before the snapshot)")
+        p.add_argument("--keys2", default="",
+                       help="optional SECOND keystroke burst, independently timed via "
+                            "--keys2-at (default off, byte-unchanged when omitted) — for "
+                            "staging console input after a program's own disk activity "
+                            "is done, since ours drops type-ahead typed during disk I/O "
+                            "(tier2-bdos-remaining-spec.md §3)")
+        p.add_argument("--keys2-at", type=float, default=0.0, dest="keys2_at",
+                       help="emulated time (s) at which to inject --keys2")
 
     c = sub.add_parser("callseq", help="diff a call sequence; report first divergence")
     common(c)

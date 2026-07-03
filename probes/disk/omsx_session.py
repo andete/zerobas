@@ -152,7 +152,8 @@ class OmsxRun:
 
     def run_job_raw(self, body: str, settle: float, predicate: str = "0",
                     timeout: float = 200.0, safety: float = 30.0, arm: str = "",
-                    keys: str = "", keys_at: float = 0.0) -> list[str]:
+                    keys: str = "", keys_at: float = 0.0,
+                    keys2: str = "", keys2_at: float = 0.0) -> list[str]:
         """As `run_job`, but returns the RAW `emit` lines (unparsed). Use this when the
         job emits its own record format (e.g. the differential harness's `CALL`/`BLOCK`
         lines) that `parse_ctx` would mis-parse. `run_job` is this + `parse_ctx`.
@@ -160,7 +161,15 @@ class OmsxRun:
         `keys`, if given, is typed into the emulated keyboard (openMSX `type`) at emulated
         time `keys_at` — the black-box way to drive console input (e.g. answer a BUFIN
         prompt, then drive past it to `A>`). Use `\\r` for Enter. Keys play under
-        throttle-off, so a small `keys_at` < `settle` lets them land before the body runs."""
+        throttle-off, so a small `keys_at` < `settle` lets them land before the body runs.
+
+        `keys2`/`keys2_at` is an optional SECOND, independently-timed injection (default
+        off, byte-unchanged behavior when omitted) — for the case where the first burst
+        must land during one program phase (e.g. a command name at `A>`) and a second
+        burst must land later, after that phase's own disk activity is done (M22: ours
+        was found to drop type-ahead typed during disk-heavy foreground work, so a
+        console-input probe must stage its keys at an idle window, not alongside the
+        command-name burst — see tier2-bdos-remaining-spec.md §3)."""
         out = tempfile.mktemp(suffix=".rec")
         tcl_path = tempfile.mktemp(suffix=".tcl")
         disok = 1 if self.allow_disasm else 0
@@ -169,6 +178,8 @@ class OmsxRun:
         inject = ""
         if keys:
             inject = f'after time {keys_at:.4f} {{ type "{keys}" }}\n'
+        if keys2:
+            inject += f'after time {keys2_at:.4f} {{ type "{keys2}" }}\n'
         script = preamble + arm + inject + f"""
 after time {settle:.4f} {{
   if {{[catch {{ {body} }} err]}} {{ emit "ERROR $err"; exit }}
@@ -198,16 +209,18 @@ after time {settle + safety:.4f} {{ emit "TIMEOUT-SAFETY"; exit }}
 
     def run_job(self, body: str, settle: float, predicate: str = "0",
                 timeout: float = 200.0, safety: float = 30.0, arm: str = "",
-                keys: str = "", keys_at: float = 0.0) -> list[dict]:
+                keys: str = "", keys_at: float = 0.0,
+                keys2: str = "", keys2_at: float = 0.0) -> list[dict]:
         """Run one job. `body` is Tcl executed inside an `after time {settle}` callback
         (machine at emulated time `settle`, reverse timeline 0..settle ready). `body`
         is responsible for finishing with `exit` or installing a condition that exits.
         `arm` is Tcl run immediately (before boot proceeds) — for watchpoints that must
         be live from t=0. `predicate` is a Tcl expr available as `[P]`. `keys`/`keys_at`
-        inject keystrokes (see run_job_raw). Returns records."""
+        (and optional `keys2`/`keys2_at`) inject keystrokes (see run_job_raw). Returns
+        records."""
         return [parse_ctx(l) for l in self.run_job_raw(
             body, settle, predicate=predicate, timeout=timeout, safety=safety, arm=arm,
-            keys=keys, keys_at=keys_at)]
+            keys=keys, keys_at=keys_at, keys2=keys2, keys2_at=keys2_at)]
 
     # -- composed primitives ----------------------------------------------
     def bisect_locate(self, predicate: str, lo: float, settle: float,
