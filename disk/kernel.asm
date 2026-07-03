@@ -1215,19 +1215,36 @@ fm_fatacc:
                 or      a                   ; Cy = 0 success
                 ret
 
-; wrseq_body — MSX-DOS-1 kernel WRSEQ-worker entry $477D's body. The RAM
-; kernel CALLs $477D per BDOS $15 WRSEQ record with the SAME DTA-staleness
-; hazard as $47B2/RDBLK (M21b): the kernel's real SETDTA only ever writes
-; DOS_DTAPTR ($F23D), never our own mini-BDOS's BDOS_DTA cell, so BDOS_DTA
-; must be reseeded from DOS_DTAPTR at entry before bdos_seqwrite consumes it
-; (verbatim M21b lesson; see k_47B2 above). DE (=IY=$DA40 kernel FCB pointer)
-; is not consumed -- bdos_seqwrite is single-open-file global state, same as
-; Tier-1. Exit A=$00/$01/$FF passes straight through; $F306 left untouched
-; (M24 spec §5 item 4: no observed load-bearing exit HL for this entry family
-; -- default to the kernel's own H:=B,L:=A mirror unless the acceptance diff
-; proves otherwise).
+; wrseq_body — MSX-DOS-1 kernel per-record sequential-I/O worker entry
+; $477D's body. CORRECTED (M25, tier2-m24-fclose-multicluster-spec.md
+; "UPDATE 2"): the RAM kernel CALLs $477D for EVERY sequential record
+; access -- BOTH BDOS $15 WRSEQ *and* BDOS $14 RDSEQ share this ONE page-1
+; entry (confirmed black-box via `callwatch --in-func 0x14`; no register at
+; entry distinguishes direction -- BC/DE/HL/AF identical in shape between a
+; genuine WRSEQ hit and a RDSEQ hit), so direction is read from OUR OWN
+; BDOS_WRMODE cell instead: nonzero forwards to bdos_seqwrite (unchanged);
+; zero forwards to bdos_seqread. The companion fix in fopen_fill_body
+; (disk/fat.asm) seeds the read-iterator state (fat_open, BDOS_RECIDX,
+; BDOS_BYTESLEFT) that bdos_seqread depends on and that a real kernel-driven
+; FOPEN never populated before -- without it bdos_seqread ran but always
+; reported false EOF.
+; DTA staleness (M21b lesson, see k_47B2 above): the kernel's real SETDTA
+; only ever writes DOS_DTAPTR ($F23D), never our own mini-BDOS's BDOS_DTA
+; cell, so BDOS_DTA must be reseeded from DOS_DTAPTR before EITHER
+; bdos_seqread or bdos_seqwrite consumes it -- both directions need the
+; reseed, not just write. DE (=IY=$DA40 kernel FCB pointer) is not consumed
+; by either -- both are single-open-file global state, same as Tier-1. Exit
+; A=$00/$01/$FF passes straight through from whichever real routine ran.
+; $F306 left untouched (M24 spec §5 item 4: no observed load-bearing exit HL
+; for this entry family -- default to the kernel's own H:=B,L:=A mirror
+; unless the acceptance diff proves otherwise).
 wrseq_body:
                 ld      hl, (DOS_DTAPTR)
                 ld      (BDOS_DTA), hl
+                ld      a, (BDOS_WRMODE)
+                or      a
+                jr      nz, wrseq_body_write
+                jp      bdos_seqread
+wrseq_body_write:
                 jp      bdos_seqwrite
 

@@ -1253,6 +1253,25 @@ ffb_rcok:
                 ; +30/31 relloc = 0
                 ld      (ix+30), 0
                 ld      (ix+31), 0
+                ; Prime the READ-side iterator (M25, tier2-m24-fclose-
+                ; multicluster-spec.md "UPDATE 2"): this body previously only
+                ; populated FCB display fields, never the internal read state
+                ; $14 RDSEQ depends on -- FAT_CURCLUS/FAT_CLUSSEC (fat_open),
+                ; BDOS_RECIDX, BDOS_BYTESLEFT. Those were only ever seeded by
+                ; our OWN bdos_open/bdos_rdblk, neither of which runs for a
+                ; real kernel-driven $0F FOPEN -- so a subsequent $477D-routed
+                ; RDSEQ (see wrseq_body below) found BDOS_BYTESLEFT still $0
+                ; and returned a false EOF. Exact mirror of bdos_open's own
+                ; read-state seeding (disk/driver.asm); reuses the
+                ; FAT_FIRSTCLUS/FAT_FILESIZE this body already read above --
+                ; no extra mount/find work.
+                call    fat_open
+                ld      a, RECPERSEC
+                ld      (BDOS_RECIDX), a
+                ld      hl, FAT_FILESIZE
+                ld      de, BDOS_BYTESLEFT
+                ld      bc, 4
+                ldir
                 xor     a
                 ld      ($F306), a          ; M20 dispatcher-flag rule
                 ld      hl, 0

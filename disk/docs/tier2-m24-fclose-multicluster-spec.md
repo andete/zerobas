@@ -5,6 +5,15 @@ SPDX-License-Identifier: 0BSD
 
 # Tier-2 M24 — the FCB **write-tier** kernel entries `$461D`/`$477D`/`$456F` (BDOSX3 FCLOSE crash root cause; the `$456F` NOP-slide → BC=0 LDIR bomb) — CHARACTERISATION + fix-shape spec
 
+**Status: M24 crash fix + M25 RDSEQ fix both LANDED (2026-07-03).** M24
+(slice A+B) fixed the FCLOSE crash; M25 (this doc's "UPDATE 2" section)
+fixed the follow-on discovery that `$477D` is shared between WRSEQ and
+RDSEQ, restoring general-purpose RDSEQ correctness under a real booted
+kernel. See "M25 RESOLVED" below for the fix and full re-verification.
+Two unrelated, pre-existing divergences were found and confirmed NOT caused
+by either fix (FCB field mirror gaps, RDBLK content, and a FREN-onward
+cascade in BDOSX3) — logged as an M26 candidate, not yet investigated.
+
 **Status: SLICE A+B IMPLEMENTED (2026-07-03, signed off "good findings,
 continue").** All three veneers (`$461D → bdos_create`, `$477D → wrseq_body`,
 `$456F → bdos_close`) landed per §6; `ROM` stays 16384 B. Original
@@ -189,6 +198,55 @@ should genuinely stay a no-op. Recommend scoping this as its own milestone
 changes — the same falsify-first discipline as the original M24 pass above,
 but starting from "what does the kernel actually need from page-1 for a
 generic user-program RDSEQ" rather than assuming symmetry with WRSEQ.
+
+**M25 RESOLVED 2026-07-03 — architectural question (1) confirmed correct,
+fix landed.** The missing piece was `fopen_fill_body` (disk/fat.asm, M21a):
+it already has `FAT_FIRSTCLUS` and `FAT_FILESIZE` in hand from its own
+dir-fill work, but never primed the READ-side iterator
+(`FAT_CURCLUS`/`FAT_CLUSSEC` via `fat_open`) or seeded `BDOS_RECIDX`/
+`BDOS_BYTESLEFT` — the exact state `bdos_seqread` depends on, and which
+only `bdos_open`/`bdos_rdblk` ever seeded (neither runs for a real
+kernel-driven `$0F` FOPEN). Fix: `fopen_fill_body` now also calls
+`fat_open` and mirrors `bdos_open`'s own `BDOS_RECIDX`/`BDOS_BYTESLEFT` seed
+(disk/fat.asm), and `wrseq_body` ($477D's body, disk/kernel.asm) now
+dispatches on `BDOS_WRMODE`: nonzero → `bdos_seqwrite` (unchanged), zero →
+`bdos_seqread` (previously a no-op that never restored correct data —
+architectural question (2), "the kernel does its own DSKIO read", is now
+FALSIFIED; `$477D` really is the one shared entry and needed the full
+`bdos_seqread` call, not a no-op).
+
+**Verification (all re-run WITH `--arm-check-addr 0x0102`/`--arm-check-val`
+anchoring this time, closing the UPDATE 1 false-pass gap):**
+- BDOSX3 record 12 RDSEQ + record 13 FCLOSE (the originally reported bug):
+  **zero-diff**, confirmed via `capture --mem 0x435:0x10` (both status and
+  the FCB proper).
+- Phase-1 BDOSX records 2-3 RDSEQ: status registers zero-diff; full 384-byte
+  file content (`--mem 0x400:0x180`) zero-diff.
+- Two divergences found but confirmed PRE-EXISTING (byte-identical between
+  this fix and the `a435292` baseline, rebuilt and diffed directly) —
+  unrelated to this fix, logged here rather than silently dropped: (a)
+  `fopen_fill_body`'s own FCB mirror fields at FCB+16/17/20/21/24/28/29
+  (`0x310-0x321` in the BDOSX probe) diverge from stock — likely a separate,
+  never-before-correctly-anchor-tested gap in the +16..31 field population;
+  (b) BDOSX's own `$27` RDBLK call shows a real content divergence from
+  `0x500` onward (stock delivers `$00`, ours delivers real trailing file
+  bytes) — RDBLK reseeds its own state independently and is unrelated to
+  this fix. Both are pre-existing and out of scope here; worth their own
+  characterisation pass later (tentatively M26).
+- BDOSX3 records 14+ (FREN `A=$FC` and a wider cascade through record 23):
+  ALSO confirmed pre-existing/byte-identical vs. the `a435292` baseline —
+  unrelated to the RDSEQ fix, likely more un-wired canonical entries in the
+  FREN/FDEL/RDRND/WRRND/RDABS/WRABS call family. Same M26 candidate as above.
+- BDOSX2 (doesn't exercise RDSEQ): zero-diff, correctly re-anchored
+  (`--arm-check-addr 0x0102 --arm-check-val 0xcd`).
+- BDOSX0: `callseq --log 0x0005` 43/43 shared calls aligned, no divergence.
+- Boot `callseq` (18 shared calls to the `A>` prompt): aligned, no divergence.
+- DIR screen at 45 s settle: byte-identical (VRAM name-table + hex dump).
+- `make unit-test`: 19/19. `make probe`: all green.
+
+`ROM` stays exactly 16384 B, no 64KB-wrap warnings on rebuild. Changes:
+disk/fat.asm (`fopen_fill_body` read-state seed) and disk/kernel.asm
+(`wrseq_body` dispatch) only — no driver.asm changes needed this round.
 
 --
 
