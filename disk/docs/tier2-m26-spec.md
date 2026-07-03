@@ -6,13 +6,14 @@ SPDX-License-Identifier: 0BSD
 # Tier-2 M26 spec — the mutation/random/absolute-I/O block (`$13 FDEL` / `$17 FREN` /
 `$21 RDRND` / `$22 WRRND` / `$2F RDABS` / `$30 WRABS`)
 
-**Status: CHARACTERISED (2026-07-03). SPEC ONLY — no asm touched, no fix
-implemented. STOP for sign-off.** Per [[spec-before-implementation]] this is a
+**Status: FREN (`$17`) LANDED 2026-07-03 (§6). FDEL/RDRND/WRRND/RDABS/WRABS
+still CHARACTERISED ONLY, not implemented — same stop-for-sign-off posture
+as before for those five.** Per [[spec-before-implementation]] this is a
 **new-routine-class** milestone (like [tier2-m19-spec.md](tier2-m19-spec.md)),
-not a self-approvable veneer-class fix: six BDOS functions, none wired, one
-pair (RDRND/WRRND) showing a risk shape not seen in any prior milestone.
-Resume board: [tier2-STATE.md](tier2-STATE.md). This picks up the M26
-candidate first logged in
+not a self-approvable veneer-class fix: six BDOS functions, none wired at
+the start, one pair (RDRND/WRRND) showing a risk shape not seen in any prior
+milestone. Resume board: [tier2-STATE.md](tier2-STATE.md). This picks up the
+M26 candidate first logged in
 [tier2-m24-fclose-multicluster-spec.md](tier2-m24-fclose-multicluster-spec.md)
 ("M25 RESOLVED" §, pre-existing divergences) and characterised further in
 that doc's "M26 CHARACTERISATION" section (FREN only); this spec extends
@@ -213,6 +214,79 @@ during implementation).
    BDOSX3's `BDOSXR  TMP` scratch file is single-cluster before treating
    "just write `$E5`" as sufficient, or should this spec wait for that check
    before being considered final?
+
+## 6. FREN (`$17`) — LANDED 2026-07-03
+
+Given repeated "continue" and this being the explicitly offered lowest-risk
+default (§3 item 1), proceeded with FREN alone; the other five functions in
+this block are UNTOUCHED and still require the sign-off in §5.
+
+**Refined characterisation before implementing:** `trace --resync` (anchored
+at BDOSX3's call n=17, the FREN call) found the REAL fork — `$4392: ex
+af,af'` diverges (stock jumps to its own real FREN body from this exact
+address; ours falls through) — confirming `$4392` is genuinely the fixed
+inter-slot dispatch address the kernel calls for `$17`, not merely a
+coincidentally-touched address. This upgrades §2.1's risk read slightly:
+`$4392` isn't dead/unrelated space, it's byte 56 of the 74-byte
+`fdc_read_data` routine (disk/driver.asm) — the shared low-level FDC
+sector-read primitive used by EVERY disk read on the whole ROM. Checked
+before touching it: `fdc_read_data` has exactly ONE caller
+(`call fdc_read_data` in `fdc_rp_attempt`, symbolic) and no external code
+jumps into its middle — fully self-contained, so it relocates cleanly with
+no manual call-site fixups (matching the M21a `fdc_di_save` precedent).
+
+**Fix:** relocated the 74-byte `fdc_read_data` body verbatim to
+`fdc_read_data_body` (disk/kernel.asm free tail, appended after
+`wrseq_body` — the file's genuine end, not the tightly-packed
+write_sector/GDATE corridor, which turned out to have no slack for a
+74-byte insert and produced a real "64KB limit passed" build error on the
+first attempt). `disk/driver.asm`'s `fdc_read_data` is now a 3-byte `jp
+fdc_read_data_body` thunk, followed by `ds $4392 - $, $00` / `k_4392: jp
+fren_body` / `ds $43A4 - $, $00` — net-zero, so `fdc_write_phys`
+(the very next real routine) stays at its exact original address.
+
+**`fren_body`** (disk/fat.asm, next to `fopen_fill_body`): reuses
+`fat_mount`/`fat_find`/`write_sector` exactly as designed in §3 item 1 —
+`fat_find` on the FCB's old name (+1..11) returns the matched directory
+entry inside `SECTOR_BUF` with `FAT_DIRSEC` holding its sector number;
+`fren_body` overwrites the entry's 11-byte name field in place with the
+new name (FCB+17..27) via `ldir` and calls `write_sector` to persist it.
+Not-found and I/O-error branches both clear `$F306` per the M20 rule and
+return `A=$FF`/`Cy=1`.
+
+**Verification:**
+- BDOSX3 record 14's own status byte (`regs+14*8+1` = `$0446`) — the
+  originally reported `A=$FC` — now reads `$00` on both stock and ours:
+  **zero-diff**, confirmed by `capture --mem 0x3b0:0x125` before/after
+  comparison (36 diverging bytes pre-fix → 24 post-fix, all 13 removed
+  bytes clustered around `$0446`/`$044E`/`$045E`/`$3B1`/`$3BF-3D0`
+  region). One byte (`$03C8` = FCB+24) newly visible in the post-fix diff
+  set turned out to be the SAME already-logged FCB-mirror-field gap from
+  the M25 doc (FCB+16/17/20/21/24/28/29) — confirmed by offset match, not
+  a new regression; it's only visible now because FREN succeeding changes
+  which real code path the downstream still-un-wired FDEL/FOPEN/RDRND take.
+- Records 15+ (FDEL onward) remain diverging, as expected — those five
+  functions are still un-wired per §2, untouched by this fix.
+- **Tier-1 regression (critical, since `fdc_read_data` is shared by every
+  disk read on the ROM):** `make probe` — DSKIO byte-identical to the
+  CF-3300 reference (sectors 0 and 14), BASIC probe green, tape probe
+  green. `make unit-test`: 19/19.
+- Boot `callseq` (27 shared calls to `A>`): aligned, zero divergence.
+- `DIR` `screen` (both machines): byte-identical, including the `41 files`
+  / `375808 bytes free` / `A>.` footer and the full VRAM hex dump.
+- Phase-1 BDOSX (`--mem 0x400:0x180`, RDSEQ content): 48 diverging bytes
+  both before AND after this fix (byte-count identical) — confirmed via
+  the git-stash/rebuild-baseline technique that this is the SAME
+  already-logged pre-existing RDBLK-content gap from `$500`+ (M25 doc
+  "M26 candidate" item (b)), unaffected by the FREN fix.
+- BDOSX2: memory zero-diff (0 of 112 bytes); a benign `AF` flag-only
+  register difference, consistent with prior BDOSX2 runs.
+- BDOSX0: `callseq --log 0x0005` 43/43 shared calls aligned, no divergence.
+
+`disk.rom` stays exactly 16384 B (no wrap warnings after moving the
+insertion point to kernel.asm's genuine free tail). Changed:
+disk/driver.asm (relocation thunk + veneer), disk/kernel.asm
+(`fdc_read_data_body`), disk/fat.asm (`fren_body`).
 
 ---
 

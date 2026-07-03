@@ -293,24 +293,35 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M24+M25 LANDED; M26 (FDEL/FREN/RDRND/WRRND/RDABS/WRABS) CHARACTERISED, spec+sign-off needed before implementing (2026-07-03)
+## Next action — M24+M25+M26-FREN LANDED; M26-remainder (FDEL/RDRND/WRRND/RDABS/WRABS) still needs spec sign-off (2026-07-03)
 
-> **M26 is a HARD-STOP, not a resume-and-grind point — SPEC WRITTEN, awaiting
-> sign-off.** All six functions now characterised via `callwatch --in-func`
-> (none wired — confirmed by `grep`). Three shapes found: FREN/RDABS/WRABS
-> are clean NOP-slides into unrelated-or-inert code (LOW risk, straightforward
-> veneer fixes); FDEL walks a REAL low-level sector-read routine fully, but
-> it's not yet known whether that's a legitimate SFIRST/SNEXT-style dir scan
-> or a coincidental full-loop slide (MEDIUM risk, needs one more probe before
-> coding); RDRND/WRRND land at an IDENTICAL shared PC trace that partially
-> executes REAL M25-era routines (`bdos_seqread_body`/`frs_mul_body`) plus a
-> DIFFERENT canonical entry's body (`k_47B2`) — HIGH risk of silently
-> mutating shared read/write state, same danger class as M25's two reverted
-> fix attempts. Full spec with proposed implementation order and 3 real open
-> questions (risk-tolerance ordering, per-function sign-off granularity,
-> FDEL's cluster-chain assumption): [tier2-m26-spec.md](tier2-m26-spec.md).
-> **Do NOT implement anything from this block without reading that spec's
-> §5 open questions first** — this is not a self-approvable veneer fix.
+> **FREN (`$17`) LANDED.** `$4392` (found via `trace --resync`, the real
+> confirmed kernel dispatch address, not just a coincidentally-touched one)
+> turned out to collide with `fdc_read_data` — the SHARED low-level FDC
+> sector-read primitive used by every disk read on the ROM, not unrelated
+> dead code as first guessed. Confirmed safe to relocate (one caller,
+> self-contained) before touching it; relocated to `fdc_read_data_body`
+> (disk/kernel.asm free tail) and wired `k_4392: jp fren_body`. `fren_body`
+> (disk/fat.asm) reuses `fat_mount`/`fat_find`/`write_sector` — the SAME
+> primitives `fopen_fill_body` already uses — to find the FCB's old name and
+> overwrite the matched directory entry's name field in place. Verified:
+> BDOSX3 record 14 zero-diff (the originally reported bug); Tier-1
+> DSKIO/unit-test/probe all green (critical given the shared-primitive
+> relocation); boot callseq 27/27; DIR screen byte-identical; BDOSX/BDOSX2/
+> BDOSX0 unaffected (two apparent new diffs both confirmed byte-identical to
+> pre-fix baselines — pre-existing, not regressions). Full writeup:
+> [tier2-m26-spec.md](tier2-m26-spec.md) §6.
+>
+> **The remaining five (FDEL/RDRND/WRRND/RDABS/WRABS) are UNTOUCHED — still
+> a HARD-STOP awaiting sign-off**, per §5's 3 open questions (risk-tolerance
+> ordering, per-function sign-off granularity, FDEL's cluster-chain
+> assumption). RDRND/WRRND in particular land at an IDENTICAL shared PC
+> trace that partially executes REAL M25-era routines
+> (`bdos_seqread_body`/`frs_mul_body`) plus a DIFFERENT canonical entry's
+> body (`k_47B2`) — HIGH risk of silently mutating shared read/write state,
+> same danger class as M25's two reverted fix attempts. **Do NOT implement
+> anything from the remaining five without reading
+> [tier2-m26-spec.md](tier2-m26-spec.md) §5 first.**
 > Characterisation history: [tier2-m24-fclose-multicluster-spec.md](tier2-m24-fclose-multicluster-spec.md)
 > "M26 CHARACTERISATION"; judgment-call log:
 > [tier2-review-queue.md](tier2-review-queue.md) M26 entries.

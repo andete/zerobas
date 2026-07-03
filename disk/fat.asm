@@ -1283,3 +1283,53 @@ ffb_miss:
                 ld      a, $FF
                 ret
 
+; fren_body — MSX-DOS-1 kernel FREN ($17) canonical entry $4392's real body
+; (M26, tier2-m26-spec.md). CLEAN-ROOM: reuses fat_mount/fat_find exactly as
+; fopen_fill_body does above (M21a) -- searches the root directory for the
+; FCB's OLD 8.3 name (+1..11, CP/M rename convention), then overwrites the
+; matched directory entry's name field in place with the NEW 8.3 name
+; (+17..27, the "second half" of the rename FCB) and persists it via
+; write_sector. fat_find leaves the matched entry inside SECTOR_BUF with
+; FAT_DIRSEC holding that entry's own sector number -- exactly the state
+; needed to write it back in place; no separate directory-entry-address
+; bookkeeping is needed beyond what fat_find already provides.
+fren_body:
+                push    de
+                pop     ix                  ; IX = FCB pointer
+                push    ix
+                pop     de
+                call    fat_mount
+                jp      c, fren_miss
+                push    ix
+                pop     de
+                inc     de                  ; DE -> FCB+1 (old 8.3 name)
+                ex      de, hl              ; HL -> name (fat_find's contract)
+                call    fat_find            ; Cy=0 found; HL = &matched dirent (in SECTOR_BUF)
+                jp      c, fren_miss
+                ex      de, hl              ; DE = &matched dirent (write destination)
+                push    ix
+                pop     hl
+                ld      bc, 17
+                add     hl, bc              ; HL = FCB+17 (new 8.3 name, source)
+                ld      bc, 11
+                ldir                        ; overwrite the dirent's name in place
+                ld      de, (FAT_DIRSEC)
+                ld      hl, SECTOR_BUF
+                call    write_sector
+                jp      c, fren_ioerr
+                xor     a
+                ld      ($F306), a          ; M20 dispatcher-flag rule
+                ret
+fren_miss:
+                xor     a
+                ld      ($F306), a          ; M20 dispatcher-flag rule
+                scf
+                ld      a, $FF
+                ret
+fren_ioerr:
+                xor     a
+                ld      ($F306), a          ; M20 dispatcher-flag rule
+                scf
+                ld      a, 2                ; generic FDC I/O error (fdc_read_data convention)
+                ret
+

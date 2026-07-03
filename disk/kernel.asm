@@ -1248,3 +1248,63 @@ wrseq_body:
 wrseq_body_write:
                 jp      bdos_seqwrite
 
+; fdc_read_data_body — relocated fdc_read_data (M26, tier2-m26-spec.md): its
+; old span at driver.asm's $435A collided with the real kernel's canonical
+; $17 FREN dispatch entry, $4392 (56 bytes into the original 74-byte body --
+; the fdc_rd_n1/fdc_rd_n2 status-decode tail). Logic below is byte-for-byte
+; unchanged from the original; driver.asm's fdc_read_data is now a 3-byte
+; `jp` thunk to here, freeing $4392 for the real `jp fren_body` veneer.
+fdc_read_data_body:
+                ld      e, 2            ; two 256-byte halves
+fdc_rd_blk:
+                ld      b, 0            ; djnz 0 -> 256 iterations
+fdc_rd_wait:
+                ld      a, (FDC_STATUS)
+                bit     1, a            ; DRQ?
+                jr      nz, fdc_rd_byte
+                bit     0, a            ; BUSY?
+                jr      nz, fdc_rd_wait
+                jr      fdc_rd_status   ; finished with no DRQ -> short/error
+fdc_rd_byte:
+                ld      a, (FDC_DATA)
+                ld      (hl), a
+                inc     hl
+                djnz    fdc_rd_wait
+                dec     e
+                jr      nz, fdc_rd_blk
+fdc_rd_drain:
+                ld      a, (FDC_STATUS) ; all 512 read; wait for command end
+                bit     0, a
+                jr      nz, fdc_rd_drain
+fdc_rd_status:
+                ld      a, (FDC_STATUS)
+                and     ST_NOTRDY + ST_RNF + ST_CRC + ST_LOST
+                jr      z, fdc_rd_ok
+                ld      b, a            ; keep the error bits
+                and     ST_NOTRDY
+                jr      z, fdc_rd_n1
+                ld      a, 2            ; not ready
+                scf
+                ret
+fdc_rd_n1:
+                ld      a, b
+                and     ST_RNF
+                jr      z, fdc_rd_n2
+                ld      a, 8            ; record not found
+                scf
+                ret
+fdc_rd_n2:
+                ld      a, b
+                and     ST_CRC
+                jr      z, fdc_rd_n3
+                ld      a, 4            ; CRC / data error
+                scf
+                ret
+fdc_rd_n3:
+                ld      a, 12           ; lost data / other
+                scf
+                ret
+fdc_rd_ok:
+                or      a               ; A = 0, Cy = 0
+                ret
+

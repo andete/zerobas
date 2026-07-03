@@ -171,59 +171,23 @@ fdc_rp_fail:
 ;   out: Cy = 0 ok, HL += 512; Cy = 1 error with A = DSKIO error code
 ; Polled transfer: 512 = 2 x 256 (E = block counter, B = byte counter), so the
 ; sector (C) and track (D) registers survive for a possible retry.
+; RELOCATED (M26, tier2-m26-spec.md): this 74-byte body used to live here
+; in full, but 56 bytes in (the fdc_rd_n1/fdc_rd_n2 status-decode tail) it
+; collided with the real kernel's canonical $17 FREN dispatch entry, $4392
+; (confirmed via trace --resync: stock's real disk ROM jumps to its own
+; FREN body from that exact address; ours fell through into this unrelated
+; FDC code instead -- the same address-collision shape as M21's $4462 and
+; M24's $456F). Only ONE caller (`call fdc_read_data` in fdc_rp_attempt
+; above), self-contained, no external refs into its middle -- so it
+; relocates cleanly. Real body now fdc_read_data_body (kernel.asm free
+; tail); this span is net-zero pad with the fren_body veneer planted at
+; the pinned offset so fdc_write_phys below stays at its exact address.
 fdc_read_data:
-                ld      e, 2            ; two 256-byte halves
-fdc_rd_blk:
-                ld      b, 0            ; djnz 0 -> 256 iterations
-fdc_rd_wait:
-                ld      a, (FDC_STATUS)
-                bit     1, a            ; DRQ?
-                jr      nz, fdc_rd_byte
-                bit     0, a            ; BUSY?
-                jr      nz, fdc_rd_wait
-                jr      fdc_rd_status   ; finished with no DRQ -> short/error
-fdc_rd_byte:
-                ld      a, (FDC_DATA)
-                ld      (hl), a
-                inc     hl
-                djnz    fdc_rd_wait
-                dec     e
-                jr      nz, fdc_rd_blk
-fdc_rd_drain:
-                ld      a, (FDC_STATUS) ; all 512 read; wait for command end
-                bit     0, a
-                jr      nz, fdc_rd_drain
-fdc_rd_status:
-                ld      a, (FDC_STATUS)
-                and     ST_NOTRDY + ST_RNF + ST_CRC + ST_LOST
-                jr      z, fdc_rd_ok
-                ld      b, a            ; keep the error bits
-                and     ST_NOTRDY
-                jr      z, fdc_rd_n1
-                ld      a, 2            ; not ready
-                scf
-                ret
-fdc_rd_n1:
-                ld      a, b
-                and     ST_RNF
-                jr      z, fdc_rd_n2
-                ld      a, 8            ; record not found
-                scf
-                ret
-fdc_rd_n2:
-                ld      a, b
-                and     ST_CRC
-                jr      z, fdc_rd_n3
-                ld      a, 4            ; CRC / data error
-                scf
-                ret
-fdc_rd_n3:
-                ld      a, 12           ; lost data / other
-                scf
-                ret
-fdc_rd_ok:
-                or      a               ; A = 0, Cy = 0
-                ret
+                jp      fdc_read_data_body
+                ds      $4392 - $, $00      ; pad remainder up to the pinned canonical entry
+k_4392:
+                jp      fren_body           ; $4392: BDOS $17 FREN canonical entry (M26)
+                ds      $43A4 - $, $00      ; net-zero: fdc_write_phys stays at $43A4
 
 ; fdc_write_phys — write one physical sector from (HL).
 ;   in:  D = track, E = side (0/1), C = sector (1..9), HL = buffer

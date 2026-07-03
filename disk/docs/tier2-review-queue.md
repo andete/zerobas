@@ -47,9 +47,31 @@ to all six functions and wrote the full spec, [tier2-m26-spec.md](tier2-m26-spec
 — FDEL and RDRND/WRRND turned out to partially walk REAL existing routines
 (not clean NOP-slides like FREN/RDABS/WRABS), so the spec explicitly proposes
 an implementation ORDER (low-risk first) and 3 open questions rather than a
-single fix. Still no asm touched. Genuinely waiting on sign-off now — the
-open questions are real forks (risk-tolerance + review granularity), not
-rhetorical.
+single fix. Still no asm touched at that point.
+
+**Follow-up 2 (same day) — proceeded with FREN alone, the explicitly offered
+lowest-risk default, after further "continue".** `trace --resync` confirmed
+`$4392` is the real kernel dispatch address for `$17` (not just coincidentally
+touched) — but it turned out to collide with `fdc_read_data`, the SHARED
+low-level FDC sector-read primitive used by every disk read on the ROM, not
+some unrelated dead code as first assumed in §2.1. Checked it was safe to
+relocate first (exactly one caller, self-contained, no external jumps into
+its middle) before touching it — same due-diligence as the M21a precedent.
+First relocation attempt (into the tight write_sector/GDATE corridor)
+produced a real "64KB limit passed" build error — caught by the standard
+rebuild-and-grep-for-wrap check, not shipped; fixed by moving the insertion
+to kernel.asm's genuine free tail instead. Fix landed:
+[tier2-m26-spec.md](tier2-m26-spec.md) §6. Verified: BDOSX3 record 14
+zero-diff (the originally reported bug), Tier-1 DSKIO/unit-test/probe all
+green (critical given the shared-routine relocation), boot callseq 27/27,
+DIR screen byte-identical, BDOSX/BDOSX2/BDOSX0 all consistent with
+pre-existing baselines (no new regressions). The other five functions
+(FDEL/RDRND/WRRND/RDABS/WRABS) are UNTOUCHED — still genuinely awaiting
+sign-off per §5's 3 open questions, especially RDRND/WRRND's shared-state
+risk. Confidence: high FREN itself is correct and isolated; alternative
+considered (do all six in one pass) rejected as exactly the scope-creep
+this spec's own §4 non-goals warn against. Undo: `git revert`, isolated to
+3 files (driver.asm/kernel.asm/fat.asm), no other function touched.
 
 **[M23 / LANDED (2026-07-03) — `BDOSX0.COM` TERM0 micro-test, per
 tier2-bdos-remaining-spec.md §5.2, riding the same session as M22.]** New probe files
