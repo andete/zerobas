@@ -50,16 +50,20 @@ update. Repro (boot path): `python3 probes/disk/disk_probe_diff.py callseq --max
 | `$27` | RDBLK | ✅ | M21b — RC-2 fix (2026-07-02): `$47B2`'s body (`k_47B2`) rewritten from a COMMAND.COM-only diagnostic loader into a generic body streaming via `bdos_seqread`; also fixed a real bug found along the way — our internal `BDOS_DTA` cell is separate from the kernel's real `DOS_DTAPTR` and must be reseeded at entry | this is the fix that made loading/running an arbitrary named `.COM` work at all |
 | `$2A` | GDATE | ✅ | handler `gdate_handler` @ `$553C` + `$F30D/$F30E` format defaults; backed by `test_gdate.py` | returns 1984-01-01 default |
 | `$2B` | SDATE | ✅ | confirmed with a real typed date (`--keys '85-3-27\r'`); screen arbiter matches | no host unit test yet |
-| `$01` | CONIN | 🔲 untestable-here | — | expected to ride the already-proven CHGET primitive (shared kernel dispatch); unverified by direct probe. Reachable now via a `BDOSX.COM` Phase-2 extension (harness can only inject one keystroke burst, not timed mid-program input — see [tier2-bdos-exerciser-spec.md](tier2-bdos-exerciser-spec.md) §"OUT of scope") |
-| `$06` | DIRIO | 🔲 untestable-here | — | same expectation/blocker as CONIN |
-| `$07` | DIRIN | 🔲 untestable-here | — | same |
-| `$08` | INNOE | 🔲 untestable-here | — | same |
-| `$0B` | CONST | 🔲 untestable-here | — | expected to ride the already-proven CHSNS primitive |
-| `$0C` | CPMVER | 🔲 untestable-here | — | returns a kernel-internal constant with NO disk-ROM code involved at all — lowest risk of the console tier |
-| `$05` | LSTOUT | ⚠ open, uncharacterized | 82 spurious per-file `C=05` calls observed during `DIR` (BDOS n=63 fork, first noticed M19/M20) | confirmed OUT OF SCOPE for `DIR`'s own correctness; never root-caused. Pick up if a future milestone touches this area |
-| `$2C` | GTIME | 🔲 not yet exercised | — | clock-group; may be called like GDATE, unconfirmed |
-| `$2D` | STIME | 🔲 not yet exercised | — | clock-group |
-| `$00` `$0D` `$13` `$15` `$16` `$17` `$18` `$21` `$22` `$2E` `$2F` `$30` | TERM0, DSKRST, FDEL, WRSEQ, FMAKE, FREN, LOGIN, RDRND, WRRND, VERIFY, RDABS, WRABS | 🔲 not yet exercised | — | not seen on the boot path or by `BDOSX`; needs a shell/user-program path or a further `BDOSX` extension |
+| `$01` | CONIN | ✅ | `BDOSX2` record 8, 0-byte-diff; `screen` shows the `x` echo | M22a: canonical entry `$5445` (`conin_body`), CHGET+echo via `conout_body` |
+| `$06` | DIRIO | ✅ | `BDOSX2` records 11+13, 0-byte-diff; `screen` shows the `!` output | M22a: extends `$5454` (`conout_body`/`dirio_in_body` branch, discriminated by `ret=$D88A`+`C=$06`+`E=$FF`) |
+| `$07` | DIRIN | ✅ | `BDOSX2` record 9, 0-byte-diff | M22a: canonical entry `$5462` (`jp innoe_body` — pinned identical to INNOE at this probe's granularity) |
+| `$08` | INNOE | ✅ | `BDOSX2` record 10, 0-byte-diff | M22a: canonical entry `$544E` (`innoe_body`, CHGET no-echo) |
+| `$0B` | CONST | ✅ | `BDOSX2` records 7+12 (poll-until-ready + drained), 0-byte-diff | M22a: canonical entry `$543C` (`const_body`, CHSNS poll normalized to `$FF`/`$00`) |
+| `$0C` | CPMVER | ✅ | `BDOSX2` record 0, 0-byte-diff | M22a: canonical entry `$41EF` (`cpmver_body`: `A=$22 B=$00`) — kernel-internal constant, but still a real page-1 CALL (tier2-m22-cpmver-spec.md, the milestone's namesake discovery) |
+| `$05` | LSTOUT | ⚠ open, uncharacterized | 82 spurious per-file `C=05` calls observed during `DIR` (BDOS n=63 fork, first noticed M19/M20) | confirmed OUT OF SCOPE for `DIR`'s own correctness; never root-caused; deliberately excluded from the exerciser (printer-ready poll hang risk, no evidence gained — tier2-bdos-remaining-spec.md §2 F2). Pick up if a future milestone touches this area |
+| `$2C` | GTIME | ✅ | `BDOSX2` record 3, 0-byte-diff (D/E seconds bytes tolerate ±1s clock skew, documented) | M22a: canonical entry `$55DB` (`gtime_body`: all-zero constant, NOT fed by STIME) |
+| `$2D` | STIME | ✅ | `BDOSX2` record 2, 0-byte-diff | M22a: canonical entry `$55E6` (`stime_body`: `A:=0 B:=H C:=L`, D/E passthrough; range validation not implemented, residual) |
+| `$00` | TERM0 | ✅ | M23 `BDOSX0`: `callseq --log 0x0005` 43/43 aligned incl. the `C=00` call itself (byte-identical `A/B/DE/HL`); `screen` shows both machines back at a live `A>` | never returns — evidence is call-alignment + screen, not a buffer capture (tier2-bdos-remaining-spec.md §5.2); doubles as an M21b generic-COMMAND.COM-reentry regression check |
+| `$0D` | DSKRST | ✅ | `BDOSX2` record 6, 0-byte-diff; DTA→`$0080` side effect confirmed | M22a: canonical entry `$509F` (`dskrst_body`, tail-calls the existing `$50A9` continuation stub) |
+| `$18` | LOGIN | ✅ | `BDOSX2` record 1, 0-byte-diff | M22a: canonical entry `$504E` (`login_body`: `(1<<DRVCNT)-1` bitmap, `C` preserved) |
+| `$2E` | VERIFY | ✅ | `BDOSX2` records 4-5 (on/off), 0-byte-diff | M22a: canonical entry `$55FF` (`verify_body`: `A:=E`); flag-EFFECT on writes deliberately not coupled in (open question, tier2-bdos-remaining-spec.md §5.4) |
+| `$13` `$15` `$16` `$17` `$21` `$22` `$2F` `$30` | FDEL, WRSEQ, FMAKE, FREN, RDRND, WRRND, RDABS, WRABS | 🔲 not yet exercised | — | block C (mutation + random + absolute I/O) — scoped as M24 `BDOSX3.COM` (tier2-bdos-remaining-spec.md §5.3); highest risk, dir-write/FAT-allocate machinery has never run on ours |
 | `$03` `$04` | AUXIN, AUXOUT | — n/a | — | not relevant to a single-drive MSX1 disk target |
 
 ## Reading the score
@@ -68,11 +72,16 @@ update. Repro (boot path): `python3 probes/disk/disk_probe_diff.py callseq --max
 - **The FCB read/write/close cluster is 100% ✅ (M21, 2026-07-02):** `$0F/$10/$14/$1A/$23/$24/
   $26/$27` all proven via the `BDOSX.COM` exerciser — byte-identical registers across 47 shared
   calls, 0-byte-diff on both the 384-byte data buffer and the FCB/register-snapshot buffer.
-- **The console tier (`$01/$06/$07/$08/$0B/$0C`) is the next open item** — architecturally
-  expected to work (rides CHGET/CHSNS, no page-1 disk-ROM code involved) but genuinely unverified;
-  `BDOSX.COM` is the tool that would unblock probing it (Phase 2, not yet written).
+- **The console + misc + termination tier (`$00/$01/$06/$07/$08/$0B/$0C/$0D/$18/$2C/$2D/$2E`)
+  is 100% ✅ (M22a+M22b+M23, 2026-07-03):** all proven via `BDOSX2.COM`/`BDOSX0.COM`, 0-byte-diff
+  on every record. This is where the milestone's real surprise lived — `$0C` CPMVER and
+  `$02` CONOUT's `$53A7` worker both turned out to be genuine un-wired canonical page-1 entries
+  that had never been exercised before (tier2-m22-cpmver-spec.md, tier2-m22b-conout53a7-spec.md).
 - **`$05` LSTOUT** has a known, still-uncharacterized oddity (spurious per-file calls during
   `DIR`) — harmless to `DIR` itself but nobody has explained it yet.
+- **The mutation + random + absolute-I/O block (`$13/$15/$16/$17/$21/$22/$2F/$30`) is the next
+  open item** — scoped as M24 `BDOSX3.COM` (tier2-bdos-remaining-spec.md §5.3); highest risk of
+  any remaining block, since dir-write/FAT-allocate machinery has never executed on ours.
 - **Historical lesson (M13):** a ✅ needs the OUTPUT verified, not just the call sequence — CONOUT/
   STROUT briefly scored ✅-by-call while `screen` showed VRAM was garbage. Don't repeat that
   shortcut for any future row.

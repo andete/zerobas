@@ -254,7 +254,7 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M21a+M21b CLOSED; the console tier is next (2026-07-02)
+## Next action — M22a+M22b+M23 CLOSED; M24 (mutation/random/absolute I/O) is next (2026-07-03)
 
 > **M22b slice 1 LANDED (2026-07-03) alongside M22a.** The kernel dispatches EVERY
 > BDOS `$02` char to page-1 `$53A7` (was un-wired pad; pre-M22a a lucky NOP-slide into
@@ -273,16 +273,29 @@ and confirmed running end-to-end (all 47 shared BDOS calls aligned, 0-byte-diff 
 This closes the FCB read/write cluster's `$0F/$10/$14/$1A/$23/$24/$26/$27` funcs (all now
 BDOSX-exercised and matching stock).
 
-**HIGHEST — the CONSOLE tier, now reachable via BDOSX.COM.** `$01 CONIN / $06 DIRIO / $07 DIRIN /
-$08 INNOE / $0B CONST / $0C CPMVER` were UNTESTABLE-HERE (2026-07-01 sweep) because no COMMAND.COM
-builtin calls them and the harness could only inject one keystroke burst — BDOSX.COM can now call
-them directly (extend bdosx.asm with a Phase-2 console-call block, per
-[tier2-bdos-exerciser-spec.md](tier2-bdos-exerciser-spec.md)'s own "Phase 2" placeholder if one
-exists, else a small spec addendum). Expectation (unverified by direct probe): these ride the
-already-proven CHGET/CHSNS/`$5454` CONOUT primitives, since the shared kernel dispatches them.
+**CONSOLE + MISC + TERMINATION tier CLOSED (M22a+M22b+M23, 2026-07-03).** `$00 TERM0 / $01 CONIN /
+$06 DIRIO / $07 DIRIN / $08 INNOE / $0B CONST / $0C CPMVER / $0D DSKRST / $18 LOGIN / $2C GTIME /
+$2D STIME / $2E VERIFY` all now wired + `BDOSX2.COM`/`BDOSX0.COM` zero-diff verified — see
+[tier2-bdos-coverage.md](tier2-bdos-coverage.md). Two genuine un-wired canonical page-1 entries were
+found and fixed along the way, not just the expected "rides a proven primitive" case: `$0C` CPMVER
+(tier2-m22-cpmver-spec.md, the milestone's namesake) and `$53A7`, the real per-char CONOUT worker
+that `$02` CONOUT calls (tier2-m22b-conout53a7-spec.md) — both had been silently NOP-slide-accidental
+until now.
+
+**NEXT — M24, the mutation + random + absolute-I/O block** (`$13 FDEL / $15 WRSEQ / $16 FMAKE /
+$17 FREN / $21 RDRND / $22 WRRND / $2F RDABS / $30 WRABS`), per
+[tier2-bdos-remaining-spec.md](tier2-bdos-remaining-spec.md) §5.3 (`BDOSX3.COM`, ~24 records).
+**HIGHEST RISK of any remaining block** — Phase 1's WRBLK never crossed a cluster boundary, so
+FAT *allocation* and directory-entry creation/rewrite have NEVER run through the runtime kernel on
+ours; expect an M13→M21-class "big body behind an un-wired entry" and STOP for a milestone spec on
+the first divergent/hanging record (don't improvise a fix inside the exerciser session).
+
 `$75A5` and the 82 spurious per-file `C=05 LSTOUT` calls (BDOS n=63 fork, first noticed during
 M19/M20) remain confirmed OUT OF SCOPE for `DIR` (don't block `$1B`/`$505D`/`$4FB8`/`$5006`) but are
 still an open, uncharacterised divergence — pick up if/when a milestone touches that area.
+Also still open (non-blocking): **OI-4, type-ahead loss during disk-heavy foreground work**
+(tier2-bdos-remaining-spec.md §3) — ours drops keystrokes typed while a disk operation like `DIR` is
+mid-flight; stock queues them. Real fidelity gap, not yet root-caused, not blocking any milestone.
 
 **GENERAL RULE learned from M20, applies to ANY future page-1 entry that returns a real `HL`:** the
 RAM kernel's common BDOS-exit path (`$D8AA-$D8BD`) silently overwrites a handler's `HL` with

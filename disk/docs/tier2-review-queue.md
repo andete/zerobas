@@ -23,6 +23,26 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M23 / LANDED (2026-07-03) — `BDOSX0.COM` TERM0 micro-test, per
+tier2-bdos-remaining-spec.md §5.2, riding the same session as M22.]** New probe files
+`probes/disk/bdosx0.asm` + `build_bdosx0_disk.py` (2-instruction program: `ld c,0 /
+call $0005` + an unreachable trap). No asm touched (test tooling only). Evidence:
+`callseq --log 0x0005` 43/43 aligned incl. the `C=00 TERM0` call itself (byte-identical
+`A=00 B=58 DE=0080 HL=0000`, both machines re-enter COMMAND.COM identically right
+after — SELDSK→CONOUT CR/LF→CURDRV→`A>`→BUFIN); `screen --machine both` shows both
+machines back at a live `A>` prompt, byte-identical frames. Also functions as a free
+M21b generic-COMMAND.COM-reentry regression check (TERM0's warm boot reloads
+COMMAND.COM the same way FOPEN-by-name does). `make unit-test`/`make probe` unaffected,
+`disk.rom` unchanged, committed `.dsk` images untouched.
+· why: trivial, explicitly scoped to "ride the M22 session" in the signed-off spec's
+own recommendation (§8.2) · alternative: none considered, spec was explicit · confidence:
+high · undo: `git rm` the two new probe files, no asm involved.
+Also logged per the spec's §8 follow-up F1: **OI-4, type-ahead loss during disk-heavy
+foreground work** (ours drops keystrokes typed while `DIR`-class disk I/O is mid-flight;
+stock queues them — tier2-bdos-remaining-spec.md §3) is a real, non-blocking fidelity
+gap, not yet root-caused; noted in tier2-STATE.md's Next-action block for future pickup,
+not addressed this session.
+
 **[M22a + M22b slice 1 / LANDED (2026-07-03) — second surprise inside M22: the `$53A7`
 CONOUT-worker canonical entry; sign-off given, fix implemented and re-verified.]**
 Testing `DIR` on the (uncommitted) M22a build surfaced screen corruption; characterised
