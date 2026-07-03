@@ -1470,3 +1470,203 @@ fdel_ioerr:
                 ld      a, 2                ; generic FDC I/O error (fdc_read_data convention)
                 ret
 
+; rrnd_position / rrnd_sector / rdrnd_body / wrrnd_body — MSX-DOS-1 kernel
+; RDRND ($21) / WRRND ($22) canonical entries $4788/$4793's real bodies (M26,
+; tier2-m26-spec.md §2.3). CLEAN-ROOM. Entry is the same kernel FCB-copy
+; convention as fdel_body/rdabs_body/wrabs_body: DE -> a 37-byte scratch copy
+; of the FCB at $DA40; copy+33 = the FCB random-record field r0 (BDOS $18 SETRND
+; / direct FCB poke). SCOPE (signed off at implementation time, same class of
+; narrowing as FREN's/FDEL's single-exact-match precedent): only r0 (0..255,
+; up to a 32640-byte file) positions the record; r1/r2 (copy+34/+35) are NOT
+; read -- BDOSX3 only exercises r0 in {1,2} and no on-disk MSX-DOS-1 floppy
+; file needs more than r0 to stay within this milestone's verified acceptance
+; bar. PLACEMENT: kernel.asm's free tail (not disk/fat.asm's own end), per the
+; FDEL slice's placement lesson (fat.asm's tail starves kernel.asm's own
+; pinned-address corridor of slack for a body this size).
+;
+; rrnd_position seeds the existing sequential-read iterator (FAT_CURCLUS/
+; FAT_CLUSSEC/BDOS_RECIDX/BDOS_BYTESLEFT/BDOS_DTA) to point at record r0,
+; reusing fat_open + repeated fat_read_file_sector calls (each one reads
+; exactly one more sector and advances the cluster chain as needed) rather
+; than a dedicated fast-seek -- correct and simple, and the only sector-
+; addressing arithmetic (firstData + (cluster-2)*secPerClus + clussec)
+; already exists inside fat_read_file_sector/frs_mul_body. rdrnd_body then
+; reuses bdos_seqread verbatim for the actual transfer (§4 non-goal: no
+; change to bdos_seqread_body itself). wrrnd_body CANNOT reuse
+; wrseq_body/bdos_seqwrite the same way -- that engine is append-oriented
+; (BDOS_WRMODE-gated, a 512-byte-flush model for a file opened by FMAKE) and
+; wrong for overlaying 128 bytes mid-file into a file opened for READ by
+; FOPEN -- so it is a small, new read-modify-write body instead: overlay the
+; DTA's 128 bytes into the sector rrnd_position already loaded into
+; SECTOR_BUF, then persist via write_sector. Because fat_read_file_sector
+; does not expose the absolute sector number it just read (only frs_mul_body,
+; entered by `jp`, computes it, mid an unrelated read call already committed
+; to SECTOR_BUF), wrrnd_body's rrnd_sector helper mirrors that same formula
+; independently (does NOT modify frs_mul_body -- §4 non-goal) using the
+; POST-call FAT_CURCLUS/FAT_CLUSSEC state: fat_read_file_sector always
+; finishes with FAT_CURCLUS already advanced to the sector it read (if
+; needed) and FAT_CLUSSEC incremented by exactly one past it -- so
+; `FAT_CLUSSEC - 1` safely recovers the clussec of the sector just read, with
+; no off-by-one or cluster-boundary hazard (confirmed by reading
+; fat_read_file_sector's own body: the increment always follows the read,
+; never precedes it, and is never separately normalised/wrapped).
+;
+; Register contract (capture, tier2-m26-spec.md §2.3): entry A=$25 B=$00
+; C=$00 DE=$DA40 SP=$DBFE ret=$D88A (FDEL-dispatcher class, not RDABS's — no
+; addr-low fingerprint, C is not the function number); exit A=$00 H=$00
+; L=$00 on success. Stock's one clear random-op FCB side effect: CR (user
+; FCB+32, mirrored at copy+32) := r0's low byte post-call -- reproduced here
+; explicitly (copy+32 := copy+33) since it is a per-call random-op effect,
+; not a generic kernel copy-back artifact (contrast fdel_body's DE=$03D0,
+; which the kernel already reproduced with no fdel_body code at all).
+rrnd_position:
+                ld      hl, (DOS_DTAPTR)
+                ld      (BDOS_DTA), hl      ; reseed our own DTA cell (M19 lesson:
+                                            ; the kernel's real SETDTA only ever
+                                            ; touches DOS_DTAPTR, never BDOS_DTA)
+                ld      a, (ix+33)          ; A = r0 (target record, 0..255; see scope note)
+                push    af
+                call    fat_open            ; reset iterator to file start (FAT_FIRSTCLUS)
+                pop     af
+                ld      c, a                ; C = r0 (preserved across fat_open)
+                and     3
+                ld      (rrnd_recsector), a ; stash record-in-sector for after the seek loop
+                ld      a, c
+                srl     a
+                srl     a                   ; A = target sector-in-file (r0 >> 2)
+                inc     a                   ; A = seek-loop count (>= 1)
+                ld      b, a
+                ; BDOS_BYTESLEFT := FAT_FILESIZE - r0*RECSIZE (r0*128 <= 32640, always
+                ; fits 16 bits, so only the filesize low word can matter here)
+                ld      h, 0
+                ld      l, c                ; HL = r0
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl              ; HL = r0 * 128
+                ld      de, (FAT_FILESIZE)
+                ex      de, hl              ; HL = filesize_lo16, DE = r0*128
+                or      a
+                sbc     hl, de              ; HL = filesize_lo16 - r0*128; Cy=1 if r0 is past EOF
+                jr      c, rrnd_pos_beyond
+                ld      (BDOS_BYTESLEFT), hl
+                ld      hl, (FAT_FILESIZE + 2)
+                ld      (BDOS_BYTESLEFT + 2), hl
+                jr      rrnd_pos_seek
+rrnd_pos_beyond:
+                ld      hl, 0
+                ld      (BDOS_BYTESLEFT), hl
+                ld      (BDOS_BYTESLEFT + 2), hl
+rrnd_pos_seek:
+rrnd_pos_loop:
+                push    bc
+                call    fat_read_file_sector
+                pop     bc
+                jr      c, rrnd_pos_err     ; seek ran off the end of the chain
+                djnz    rrnd_pos_loop
+                ld      a, (rrnd_recsector)
+                ld      (BDOS_RECIDX), a
+                or      a                   ; Cy = 0 ok
+                ret
+rrnd_pos_err:
+                scf
+                ret
+rrnd_recsector:
+                db      0
+
+; rrnd_sector — recover the absolute logical sector number rrnd_position's
+; seek loop last landed on (see the placement note above for why this is
+; safe: FAT_CLUSSEC - 1, FAT_CURCLUS as-is).
+;   out: DE = absolute logical sector number; trashes AF, BC, HL
+rrnd_sector:
+                ld      a, (FAT_CLUSSEC)
+                dec     a
+                ld      (rrnd_clussec_tmp), a
+                ld      hl, (FAT_CURCLUS)
+                ld      de, 2
+                or      a
+                sbc     hl, de              ; HL = cluster - 2
+                ex      de, hl              ; DE = cluster - 2
+                ld      hl, 0
+                ld      a, (FAT_SECPERCLUS)
+                ld      b, a
+rrnd_sector_mul:
+                add     hl, de
+                djnz    rrnd_sector_mul     ; HL = (cluster-2) * secPerClus
+                ld      de, (FAT_FIRSTDATA)
+                add     hl, de
+                ld      a, (rrnd_clussec_tmp)
+                ld      e, a
+                ld      d, 0
+                add     hl, de              ; HL = absolute logical sector
+                ex      de, hl              ; DE = absolute logical sector (write_sector's convention)
+                ret
+rrnd_clussec_tmp:
+                db      0
+
+rdrnd_body:
+                push    de
+                pop     ix                  ; IX = kernel FCB-copy pointer
+                call    rrnd_position
+                jp      c, rrnd_eof
+                call    bdos_seqread        ; A=$00 record delivered / $01 EOF
+                or      a
+                jr      nz, rrnd_finish     ; EOF from seqread -- pass A through, HL untested
+                ld      a, (ix+33)          ; CR (copy+32) := r0 (stock's random-op side effect)
+                ld      (ix+32), a
+                xor     a
+                ld      h, a
+                ld      l, a                ; HL = $0000 (pinned exit value, success)
+                jr      rrnd_finish
+rrnd_eof:
+                ld      a, $01              ; positioned past end-of-file
+                jr      rrnd_finish
+
+wrrnd_body:
+                push    de
+                pop     ix                  ; IX = kernel FCB-copy pointer
+                call    rrnd_position
+                jp      c, wrrnd_ioerr      ; positioned past EOF -- FAT growth is out of
+                                            ; scope this milestone (§4 non-goal), same as
+                                            ; every other M26 fix
+                ; SECTOR_BUF now holds the target sector (loaded by rrnd_position's seek
+                ; loop) -- overlay the caller's DTA record into it at BDOS_RECIDX*RECSIZE.
+                ld      a, (BDOS_RECIDX)
+                ld      l, a
+                ld      h, 0
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl              ; HL = BDOS_RECIDX * 128
+                ld      de, SECTOR_BUF
+                add     hl, de              ; HL -> target record within SECTOR_BUF
+                ex      de, hl              ; DE = dest in SECTOR_BUF
+                ld      hl, (BDOS_DTA)      ; HL = source record in the caller's DTA
+                ld      bc, RECSIZE
+                ldir
+                call    rrnd_sector         ; DE = absolute logical sector to persist
+                ld      hl, SECTOR_BUF
+                call    write_sector
+                jp      c, wrrnd_ioerr
+                ld      a, (ix+33)          ; CR (copy+32) := r0 (stock's random-op side effect)
+                ld      (ix+32), a
+                xor     a
+                ld      h, a
+                ld      l, a                ; HL = $0000 (pinned exit value, success)
+                jr      rrnd_finish
+wrrnd_ioerr:
+                ld      a, 2                ; generic FDC I/O error (fdc_read_data convention,
+                                            ; untested by BDOSX3 -- no negative-path record)
+rrnd_finish:                                ; shared tail: M20 dispatcher-flag rule, preserve A
+                push    af
+                xor     a
+                ld      ($F306), a
+                pop     af
+                ret
+

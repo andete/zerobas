@@ -69,7 +69,7 @@ update. Repro (boot path): `python3 probes/disk/disk_probe_diff.py callseq --max
 | `$2F` | RDABS | ✅ | `BDOSX3` record 22, 0-byte-diff | M26 slice 2 (2026-07-03): `$46BA` was pure `$00` pad (no relocation needed); `rdabs_body` (fat.asm) reads via `dskio` directly (arbitrary sector count) into the runtime DTA — tier2-m26-spec.md §7 |
 | `$30` | WRABS | ✅ | `BDOSX3` record 23, 0-byte-diff | M26 slice 3 (2026-07-03): real dispatch `$4720` was a mid-instruction byte inside `bdos_seqwrite`'s live tail (needed a FREN-class relocation, unlike RDABS's pad-wire); `bdos_seqwrite` relocated to `bdos_seqwrite_body` (kernel.asm), freeing `$4720` for `wrabs_body` (mirrors `rdabs_body`, `dskio` write direction) — tier2-m26-spec.md §8 |
 | `$13` | FDEL | ✅ | `BDOSX3` record 15, 0-byte-diff | M26 slice 4 (2026-07-03): real dispatch `$436C` was pure `$00` pad (RDABS-shape, no relocation), but landing FREN moved fresh pad underneath it so the un-wired call was actively corrupting the target dir entry + leaking its FAT chain (not a harmless no-op); `fdel_body` (kernel.asm — NOT fat.asm's own end, which silently broke test_gdate/test_getdpb by starving kernel.asm's pinned-address corridor of slack) reuses `fat_find`, frees the FAT12 chain via `fat_next_cluster`/`fat_write_fat_entry`, then stamps `$E5` — tier2-m26-spec.md §9 |
-| `$21` `$22` | RDRND, WRRND | 🔲 not yet exercised | — | last two functions in the whole BDOS surface — scoped as M24 `BDOSX3.COM` (tier2-bdos-remaining-spec.md §5.3); re-characterised 2026-07-03 (tier2-m26-spec.md §2.3): TWO separate dead-pad dispatches (`$4788`/`$4793`, not one shared entry as first thought), un-wired landing streams the whole open file into the caller's DTA on every call (`trace --regdump`-confirmed), fix needs a genuinely new positioning helper + a new RMW body for WRRND (can't reuse `bdos_seqwrite`) — implementation gated on fix-shape sign-off, HARD-STOP per tier2-review-queue.md Follow-up 8 |
+| `$21` `$22` | RDRND, WRRND | ✅ | `BDOSX3` records 18/20 (RDRND) and 19 (WRRND), 0-byte-diff (`rdbuf2`/`wrpat` isolated) | M26 slice 5/final (2026-07-03): two separate dead-pad dispatches (`$4788`/`$4793`, fat.asm — not one shared entry as first thought); shared `rrnd_position` helper (kernel.asm) seeds the existing sequential-read iterator from the FCB's `r0` random field; `rdrnd_body` reuses `bdos_seqread`, `wrrnd_body` is a new small read-modify-write body (can't reuse `bdos_seqwrite` — wrong engine shape) — tier2-m26-spec.md §10. **Closes M26 — full BDOS surface coverage complete.** |
 | `$03` `$04` | AUXIN, AUXOUT | — n/a | — | not relevant to a single-drive MSX1 disk target |
 
 ## Reading the score
@@ -85,12 +85,12 @@ update. Repro (boot path): `python3 probes/disk/disk_probe_diff.py callseq --max
   that had never been exercised before (tier2-m22-cpmver-spec.md, tier2-m22b-conout53a7-spec.md).
 - **`$05` LSTOUT** has a known, still-uncharacterized oddity (spurious per-file calls during
   `DIR`) — harmless to `DIR` itself but nobody has explained it yet.
-- **The mutation + random + absolute-I/O block is 6/8 ✅ (M24/M25/M26, 2026-07-03):**
-  `$15 WRSEQ`/`$16 FMAKE` (M24/M25, dir-write + FAT-allocate machinery) and `$17 FREN`/`$2F RDABS`/
-  `$30 WRABS`/`$13 FDEL` (M26 slices 1-4) all proven via `BDOSX3.COM`, 0-byte-diff. **`$21 RDRND`/
-  `$22 WRRND` are the only functions left in the whole BDOS surface** — characterised
-  (tier2-m26-spec.md §2.3), implementation gated on §5 sign-off; a distinct HIGH-risk
-  shape (partial execution of real shared routines, not a clean NOP-slide/mid-instruction collision).
+- **The mutation + random + absolute-I/O block is 8/8 ✅ (M24/M25/M26, 2026-07-03) — M26 CLOSED,
+  full BDOS surface coverage complete:** `$15 WRSEQ`/`$16 FMAKE` (M24/M25, dir-write +
+  FAT-allocate machinery), `$17 FREN`/`$2F RDABS`/`$30 WRABS`/`$13 FDEL` (M26 slices 1-4), and
+  `$21 RDRND`/`$22 WRRND` (M26 slice 5, the milestone's HIGH-risk closer — a genuinely new
+  positioning helper + a new read-modify-write body for WRRND, not just a thin veneer) all
+  proven via `BDOSX3.COM`, 0-byte-diff.
 - **Historical lesson (M13):** a ✅ needs the OUTPUT verified, not just the call sequence — CONOUT/
   STROUT briefly scored ✅-by-call while `screen` showed VRAM was garbage. Don't repeat that
   shortcut for any future row.

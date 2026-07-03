@@ -23,6 +23,37 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M26 Follow-up 9 / §10 — RDRND/WRRND implemented + landed, after user
+sign-off on the full fix shape (2026-07-03). M26 CLOSED.]** User approved
+Follow-up 8's question ("proceed" with the genuinely-new-engine-logic
+scope). Implemented: two pad-wires (`$4788`/`$4793`, disk/fat.asm, same
+`fat_find` corridor pad, RDABS-shape); a new shared `rrnd_position` helper
+(disk/kernel.asm) that seeds the existing sequential-read iterator from the
+FCB's `r0` random field (scope: `r0` only, not `r1`/`r2` — matches what was
+characterised and signed off, same narrowing class as FREN's/FDEL's
+single-exact-match precedent); `rdrnd_body` reuses `bdos_seqread` verbatim;
+`wrrnd_body` is a small new read-modify-write body (can't reuse
+`bdos_seqwrite` — wrong engine shape for a mid-file overlay into a
+read-opened file), using a new `rrnd_sector` helper to recover the absolute
+sector `fat_read_file_sector` doesn't expose (mirrors `frs_mul_body`'s own
+arithmetic without touching it, via the safe post-call `FAT_CLUSSEC - 1`
+trick). Applied the FDEL placement lesson PROACTIVELY this time — placed
+`kernel.asm`'s free tail from the start, `make unit-test` stayed 19/19
+throughout, no repeat of the fat.asm-tail regression. Verified: BDOSX3
+`done` snapshot 381/896 (pre-fix) → 127/896 (post-fix), isolated per
+buffer confirms `wrpat`/`rdbuf2`/`absbuf` all 0-diff and the remaining 127
+bytes are entirely the pre-existing, unrelated `rdbuf` gap (record 12's
+RDSEQ round-trip) — confirmed via baseline-diff against the FDEL-only ROM
+(identical 127/128 and 381/896 figures before this fix, so nothing here is
+a regression). Full regression suite green (unit-test, probe, boot callseq
+18/18, BDOSX/BDOSX2 zero-diff, BDOSX0 43/43). Full writeup:
+[tier2-m26-spec.md](tier2-m26-spec.md) §10. Undo: straightforward, all in
+disk/fat.asm (pad-wires only) + disk/kernel.asm (`rrnd_position`/
+`rrnd_sector`/`rdrnd_body`/`wrrnd_body`/`rrnd_finish`/`rrnd_eof`/
+`wrrnd_ioerr`). **This closes M26 — the whole BDOS surface is now covered
+(tier2-bdos-coverage.md: 8/8 ✅ on the mutation/random/absolute-I/O block,
+no open milestone-gated rows left).**
+
 **[M26 Follow-up 8 / §2.3 — RDRND/WRRND re-characterised, HARD-STOP for
 fix-shape sign-off (2026-07-03).]** User said "continue, investigate
 indeed" after FDEL landed, explicitly authorising investigation (not

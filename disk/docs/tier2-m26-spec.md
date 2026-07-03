@@ -6,12 +6,9 @@ SPDX-License-Identifier: 0BSD
 # Tier-2 M26 spec — the mutation/random/absolute-I/O block (`$13 FDEL` / `$17 FREN` /
 `$21 RDRND` / `$22 WRRND` / `$2F RDABS` / `$30 WRABS`)
 
-**Status: FREN (`$17`), RDABS (`$2F`), WRABS (`$30`), and FDEL (`$13`)
-LANDED 2026-07-03 (§6, §7, §8, §9). RDRND/WRRND RE-CHARACTERISED 2026-07-03
-(§2.3) — two separate dead-pad dispatches confirmed, `trace --regdump`
-mutation pass done, tentative fix shape drafted — but NOT implemented,
-still awaiting sign-off on the fix shape (specifically: `wrrnd_body` needs
-new RMW logic, not a thin veneer over an existing engine).**
+**Status: ALL SIX FUNCTIONS LANDED 2026-07-03 — FREN (`$17`), RDABS (`$2F`),
+WRABS (`$30`), FDEL (`$13`) (§6, §7, §8, §9), and RDRND (`$21`)/WRRND
+(`$22`) (§10). M26 is CLOSED; full BDOS surface coverage is complete.**
 Per [[spec-before-implementation]] this is a
 **new-routine-class** milestone (like [tier2-m19-spec.md](tier2-m19-spec.md)),
 not a self-approvable veneer-class fix: six BDOS functions, none wired at
@@ -646,6 +643,98 @@ class of silent corruption immediately.**
 `disk.rom` stays exactly 16384 B (no wrap warnings). Changed: disk/driver.asm
 (`k_436C` veneer), disk/kernel.asm (`fdel_body`/`fdel_miss`/`fdel_ioerr`/
 `fdel_relocate`/`fdel_free_loop`/`fdel_chain_ioerr`).
+
+Investigation credit: characterised by a Fable subagent dispatch (per
+[[opus-vs-sonnet-model-split]]); implementation + verification by Sonnet 5
+direct.
+
+## 10. RDRND (`$21`) / WRRND (`$22`) — LANDED 2026-07-03
+
+Per §2.3's re-characterisation (Fable dispatch, `trace --resync` +
+`trace --regdump`): two separate dead-pad dispatches, `$4788` (RDRND) and
+`$4793` (WRRND), both inside the existing `fat_find` corridor pad
+(disk/fat.asm) — RDABS-shape, no relocation. One scope decision was signed
+off before coding: proceed with the full characterised shape, including the
+genuinely-new positioning helper and WRRND's own read-modify-write body
+(neither is a thin veneer over an existing engine, the one real departure
+from this spec's original "reuse the existing bodies" framing).
+
+**Scope, signed off at implementation time:** only the FCB random field's
+`r0` byte (copy+33) positions the record (0..255, up to a 32640-byte file);
+`r1`/`r2` (copy+34/+35) are not read. BDOSX3 only exercises `r0` ∈ {1,2};
+this is the same class of narrowing as FREN's/FDEL's single-exact-match
+precedent, not a generalised random-access engine.
+
+**`rrnd_position`** (disk/kernel.asm free tail, shared by both bodies):
+reseeds `BDOS_DTA` from `DOS_DTAPTR` (the recurring M19 lesson — the
+kernel's real SETDTA never touches our own mini-BDOS's DTA cell), calls
+`fat_open` to reset the iterator to the file's first cluster, then computes
+the target sector-in-file (`r0 >> 2`) and record-in-sector (`r0 & 3`) and
+walks to it by calling the existing `fat_read_file_sector` exactly
+`(sector-in-file + 1)` times — reusing its own cluster-advance and sector-
+address arithmetic rather than re-deriving a fast seek. `BDOS_BYTESLEFT` is
+set to `FAT_FILESIZE - r0*128` (safe as a 16-bit subtraction since `r0*128`
+never exceeds 32640) so a subsequent `bdos_seqread` correctly delivers a
+partial final record and the right EOF behaviour. `BDOS_RECIDX` is set to
+the stashed record-in-sector value. A target beyond EOF clamps
+`BDOS_BYTESLEFT` to 0 (immediate-EOF shape) and a seek that runs off the
+end of the chain (e.g. a WRRND asked to position past the last allocated
+cluster) returns `Cy=1` — FAT growth on a random-write-past-EOF is
+explicitly out of scope, same non-goal as every other M26 fix.
+
+**`rdrnd_body`**: positions via `rrnd_position`, then calls `bdos_seqread`
+verbatim for the transfer (§4 non-goal: no change to `bdos_seqread_body`
+itself) — a thin veneer, as originally hoped.
+
+**`wrrnd_body`** (the genuinely new part): **cannot** ride `wrseq_body`'s
+`BDOS_WRMODE` dispatch or call `bdos_seqwrite` directly — that engine is
+append-oriented (a file opened by FMAKE, 512-byte-flush model), the wrong
+shape for overlaying 128 bytes mid-file into a file opened for read by
+FOPEN. Instead: overlay the caller's DTA record into `SECTOR_BUF` at
+`BDOS_RECIDX*128` (`rrnd_position`'s seek already loaded the right sector),
+then persist via `write_sector`. Because `fat_read_file_sector` doesn't
+expose the absolute sector number it just read, a small new helper
+(`rrnd_sector`) mirrors the same `firstData + (cluster-2)*secPerClus +
+clussec` arithmetic `frs_mul_body` already uses internally — without
+modifying `frs_mul_body` itself (§4 non-goal) — using the state
+`fat_read_file_sector` always leaves behind after a read: `FAT_CURCLUS`
+already correctly advanced, `FAT_CLUSSEC` incremented by exactly one past
+the sector just read (so `FAT_CLUSSEC - 1` safely recovers it, with no
+off-by-one or cluster-boundary hazard — confirmed by reading
+`fat_read_file_sector`'s own body: the increment always follows the read,
+never precedes it).
+
+Both bodies additionally reproduce the one clear random-op-specific FCB
+side effect the register-contract capture surfaced: `CR` (copy+32) :=
+`r0`'s value post-call — unlike FDEL's `DE=$03D0` exit artifact, this is
+NOT something the kernel's own copy-back reproduces for free, so both
+bodies write it explicitly.
+
+**Verification:** BDOSX3's `done` snapshot (`--mem 0x4d5:0x380`, the
+`wrpat`/`rdbuf`/`rdbuf2`/`absbuf` block) went from 381/896 bytes differing
+(pre-fix, the un-wired whole-file DTA-stream corruption from §2.3) to
+127/896 — isolated per-buffer (`--mem 0x4d5:0x80` `wrpat`, `--mem 0x5d5:0x80`
+`rdbuf2`, `--mem 0x655:0x200` `absbuf`): all **0 of N bytes differ**. The
+remaining 127 bytes are entirely `rdbuf` (`--mem 0x555:0x80`, 127/128) —
+record 12's RDSEQ round-trip content, unrelated to RDRND/WRRND and
+confirmed pre-existing via the git-stash/rebuild-baseline technique (the
+FDEL-only baseline ROM shows the identical 127/128 `rdbuf` diff and the
+identical 381/896 whole-block diff before this fix). Full regression suite:
+`make unit-test` 19/19 (checked immediately after placement, per the FDEL
+placement-lesson standing rule — this slice built clean the first time,
+`kernel.asm`'s free tail from the start), `make probe` all green, boot
+`callseq` 18/18 aligned, BDOSX zero-diff (0 of 384 bytes, two ranges),
+BDOSX2 zero-diff (0 of 112 bytes), BDOSX0 `callseq --log 0x0005` 43/43
+aligned.
+
+`disk.rom` stays exactly 16384 B (no wrap warnings). Changed: disk/fat.asm
+(`k_4788`/`k_4793` pad-wires), disk/kernel.asm (`rrnd_position`/
+`rrnd_sector`/`rdrnd_body`/`wrrnd_body`/`rrnd_finish`/`rrnd_eof`/
+`wrrnd_ioerr`).
+
+**This closes M26 — all six functions (FREN, RDABS, WRABS, FDEL, RDRND,
+WRRND) are now landed. Full BDOS surface coverage is complete
+(tier2-bdos-coverage.md: 8/8 ✅).**
 
 Investigation credit: characterised by a Fable subagent dispatch (per
 [[opus-vs-sonnet-model-split]]); implementation + verification by Sonnet 5

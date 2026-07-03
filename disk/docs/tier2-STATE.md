@@ -10,9 +10,11 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-07-03 (**M25 LANDED — general-purpose RDSEQ `$14` fixed
-under a real booted kernel; M26 (FDEL/FREN/RDRND/WRRND/RDABS/WRABS)
-CHARACTERISED but NOT implemented, stopped for spec+sign-off.** M24 slice
+_Last updated: 2026-07-03 (**M26 CLOSED — all six functions (FREN/RDABS/
+WRABS/FDEL/RDRND/WRRND) landed; full BDOS surface coverage complete
+(tier2-bdos-coverage.md: 8/8 ✅ on the mutation/random/absolute-I/O block).**
+M25 LANDED — general-purpose RDSEQ `$14` fixed under a real booted kernel.
+M24 slice
 A+B (commit `a435292`) had fixed the BDOSX3 FCLOSE crash by wiring
 `$461D`/`$477D`/`$456F`, but a residual register divergence turned out to
 be much bigger: `$477D` is ONE shared page-1 entry the kernel calls for
@@ -293,34 +295,59 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M24+M25+M26-FREN+M26-RDABS+M26-WRABS+M26-FDEL LANDED; RDRND/WRRND RE-CHARACTERISED, fix shape awaiting sign-off (2026-07-03)
+## Next action — M26 CLOSED: all six functions landed, full BDOS surface coverage complete (2026-07-03)
 
-> **RDRND (`$21`) / WRRND (`$22`) RE-CHARACTERISED, NOT IMPLEMENTED.**
-> Dispatched to Fable per the now-5-for-5 rule (every M26 function's
-> original `callwatch`-only read has needed correction after a LATER
-> function's landing moved code underneath it). The original "one shared
-> dispatch address" claim (from the `callwatch` byte-identical PC lists)
-> was a dedup artifact: `trace --resync`, anchored separately at BDOSX3's
-> RDRND call (n=22) and WRRND call (n=24), found **two** distinct dead-pad
-> dispatches, `$4788` (RDRND) and `$4793` (WRRND), both sitting in the
-> existing `fat_find` corridor pad (RDABS-shape, no relocation needed). The
-> mandated `trace --regdump HL` pass (never skipped — this pair's landing
-> partially executes REAL M25-era routines, not dead code) confirms the
-> un-wired slide streams the ENTIRE open file into the caller's DTA on
-> every call (not a one-record advance as first guessed), trampling
-> `wrpat`/`rdbuf`/`rdbuf2` at BDOSX3's `done` snapshot — work-area
-> corruption only, no on-disk writes (unlike FDEL's landing). A genuinely
-> new shared positioning helper is needed (FCB random field → `BDOS_RECIDX`
-> → `FAT_CURCLUS`/`FAT_CLUSSEC`; confirmed absent from source by `grep`);
-> `rdrnd_body` can reuse `bdos_seqread` for the transfer, but `wrrnd_body`
-> can't reuse `wrseq_body`/`bdos_seqwrite` (wrong dispatch mode / wrong
-> engine shape) and needs its own small read-modify-write body — a real
-> departure from §4's "reuse the existing bodies" framing that needs
-> sign-off before coding. Full writeup:
-> [tier2-m26-spec.md](tier2-m26-spec.md) §2.3/§3 item 5.
+> **RDRND (`$21`) / WRRND (`$22`) LANDED — M26's last two functions.** User
+> said "continue, investigate indeed" after FDEL landed (explicit
+> authorisation to investigate), then signed off on the full characterised
+> fix shape (including the genuinely-new positioning helper + WRRND's own
+> RMW body) after the Fable re-characterisation came back. Re-characterised
+> per the now-5-for-5 rule (every M26 function's original `callwatch`-only
+> read needed correction after a LATER function's landing moved code
+> underneath it): the original "one shared dispatch address" claim was a
+> `callwatch` dedup artifact — `trace --resync` found **two** distinct
+> dead-pad dispatches, `$4788` (RDRND) and `$4793` (WRRND), both in the
+> existing `fat_find` corridor pad (RDABS-shape, no relocation). The
+> mandated `trace --regdump` pass confirmed the un-wired slide streamed the
+> ENTIRE open file into the caller's DTA on every call, trampling
+> `wrpat`/`rdbuf`/`rdbuf2` — work-area corruption only, no on-disk writes.
+> **Implementation:** a new shared `rrnd_position` helper (disk/kernel.asm
+> free tail) seeds the existing sequential-read iterator (`FAT_CURCLUS`/
+> `FAT_CLUSSEC`/`BDOS_RECIDX`/`BDOS_BYTESLEFT`/`BDOS_DTA`) from the FCB's
+> `r0` random field (scope: `r0` only, 0..255 — signed off, same class of
+> narrowing as FREN's/FDEL's single-exact-match precedent), reusing
+> `fat_open` + repeated `fat_read_file_sector` calls rather than a
+> dedicated fast-seek. `rdrnd_body` then reuses `bdos_seqread` verbatim
+> (thin veneer, as hoped). `wrrnd_body` could NOT reuse
+> `wrseq_body`/`bdos_seqwrite` (wrong dispatch mode / wrong engine shape
+> for a mid-file 128-byte overlay into a read-opened file) — it's a small
+> new read-modify-write body: overlay the DTA record into `SECTOR_BUF`,
+> recover the absolute sector via a new `rrnd_sector` helper (mirrors
+> `frs_mul_body`'s own address arithmetic without modifying it, using the
+> post-call `FAT_CLUSSEC - 1` trick — safe, confirmed by reading
+> `fat_read_file_sector`'s own body), then `write_sector`. Placed in
+> `kernel.asm`'s free tail from the start (the FDEL placement lesson
+> applied proactively) — `make unit-test` stayed 19/19 the whole time, no
+> repeat of that regression. Verified: BDOSX3's `done` snapshot went from
+> 381/896 bytes differing (pre-fix) to exactly 127/896 — isolated per
+> buffer, `wrpat`/`rdbuf2`/`absbuf` all 0-diff, the remaining 127 bytes are
+> entirely the pre-existing, unrelated `rdbuf` gap (record 12's RDSEQ
+> round-trip), confirmed via baseline-diff against the FDEL-only ROM (same
+> 127/128 gap, same 381/896 total, before this fix). Full regression suite
+> green: unit-test 19/19, probe, boot callseq 18/18, BDOSX/BDOSX2 zero-diff,
+> BDOSX0 43/43 aligned. Full writeup:
+> [tier2-m26-spec.md](tier2-m26-spec.md) §10. Judgment-call log:
+> [tier2-review-queue.md](tier2-review-queue.md) M26 Follow-up 8/9.
 >
-> **STILL a HARD-STOP awaiting sign-off on the fix shape** — characterised
-> only, nothing implemented or wired.
+> **M26 is now CLOSED. Full BDOS surface coverage is complete** —
+> [tier2-bdos-coverage.md](tier2-bdos-coverage.md): 8/8 ✅ on the mutation/
+> random/absolute-I/O block, no remaining 🔲/⚠ rows tied to an open
+> milestone. Next-action-worthy remaining items in the codebase (residuals,
+> not gating anything): `$05` LSTOUT's uncharacterised spurious-call
+> oddity, `$22`/`$2B` mirror-field gaps flagged-not-blocking during M26,
+> CONOUT's TAB-expansion (M22b slice 2, deferred). None of these have an
+> open sign-off pending — pick the next one deliberately, don't default
+> into it off a bare "continue".
 
 > **FDEL (`$13`) LANDED.** Dispatched to Fable per the now-4-for-4 rule
 > (never trust a `callwatch`-only M26 read); `trace --resync` confirmed the

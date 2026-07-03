@@ -123,7 +123,19 @@ fat_mount_bad:
 ; Compare is case-insensitive; FAT directories store upper-case 8.3 names.
 fat_find:
                 jp      fat_find_body       ; Tier-2 3b: divert; veneer fills the gap
-                ds      $47B2 - $, $00      ; anchor the canonical address
+                ds      $4788 - $, $00      ; pad remainder (M26, tier2-m26-spec.md §2.3:
+                                            ; trace --resync confirmed $4788 is the
+                                            ; kernel's real fixed $21 RDRND dispatch
+                                            ; address, dead pad -- the original
+                                            ; "$21/$22 share one dispatch" callwatch
+                                            ; read was a dedup artifact; no relocation
+                                            ; needed, RDABS-shape)
+k_4788:         jp      rdrnd_body          ; $4788: BDOS $21 RDRND canonical entry (M26)
+                ds      $4793 - $, $00      ; pad remainder (M26, tier2-m26-spec.md §2.3:
+                                            ; $4793 is $22 WRRND's own separate dispatch,
+                                            ; same pad corridor, RDABS-shape)
+k_4793:         jp      wrrnd_body          ; $4793: BDOS $22 WRRND canonical entry (M26)
+                ds      $47B2 - $, $00      ; pad remainder (net-zero: k_47B2 unaffected)
                 jp      k_47B2              ; $47B2: COMMAND.COM-load kernel veneer
                 ds      $47B9 - $, $00      ; pad remainder (net-zero: ff_secloop stays $47B9)
 ff_secloop:
