@@ -295,20 +295,25 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
 
 ## Next action — M24+M25 LANDED; M26 (FDEL/FREN/RDRND/WRRND/RDABS/WRABS) CHARACTERISED, spec+sign-off needed before implementing (2026-07-03)
 
-> **M26 is a HARD-STOP, not a resume-and-grind point.** FREN's canonical
-> page-1 entry is confirmed genuinely un-wired (`callwatch --in-func 0x17`
-> lands at `$4392`, mid unrelated `fdc_rd_n1`/`fdc_rd_n2` FDC-status-decode
-> code — a NOP-slide, same shape as M13/M19/M21/M22b). `grep` confirms
-> FDEL/RDRND/WRRND/RDABS/WRABS are equally absent from source. This is a
-> 6-function directory-mutation + FAT-random-addressing block — the exact
-> "big body behind an un-wired entry" class the (superseded) M24 next-action
-> note below flagged in advance. **Do NOT improvise fixes one probe at a
-> time inside BDOSX3** — write a `tier2-m26-*.md` spec (FREN first, since
-> it's now localised) and get it signed off, same discipline as M19/M21/
-> M24/M25. Full characterisation:
-> [tier2-m24-fclose-multicluster-spec.md](tier2-m24-fclose-multicluster-spec.md)
+> **M26 is a HARD-STOP, not a resume-and-grind point — SPEC WRITTEN, awaiting
+> sign-off.** All six functions now characterised via `callwatch --in-func`
+> (none wired — confirmed by `grep`). Three shapes found: FREN/RDABS/WRABS
+> are clean NOP-slides into unrelated-or-inert code (LOW risk, straightforward
+> veneer fixes); FDEL walks a REAL low-level sector-read routine fully, but
+> it's not yet known whether that's a legitimate SFIRST/SNEXT-style dir scan
+> or a coincidental full-loop slide (MEDIUM risk, needs one more probe before
+> coding); RDRND/WRRND land at an IDENTICAL shared PC trace that partially
+> executes REAL M25-era routines (`bdos_seqread_body`/`frs_mul_body`) plus a
+> DIFFERENT canonical entry's body (`k_47B2`) — HIGH risk of silently
+> mutating shared read/write state, same danger class as M25's two reverted
+> fix attempts. Full spec with proposed implementation order and 3 real open
+> questions (risk-tolerance ordering, per-function sign-off granularity,
+> FDEL's cluster-chain assumption): [tier2-m26-spec.md](tier2-m26-spec.md).
+> **Do NOT implement anything from this block without reading that spec's
+> §5 open questions first** — this is not a self-approvable veneer fix.
+> Characterisation history: [tier2-m24-fclose-multicluster-spec.md](tier2-m24-fclose-multicluster-spec.md)
 > "M26 CHARACTERISATION"; judgment-call log:
-> [tier2-review-queue.md](tier2-review-queue.md) M26 entry.
+> [tier2-review-queue.md](tier2-review-queue.md) M26 entries.
 
 ### (superseded — M24+M25 both LANDED 2026-07-03) original M24 next-action note
 

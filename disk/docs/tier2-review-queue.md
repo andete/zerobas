@@ -42,7 +42,14 @@ rejected because the guardrail is explicit and pre-dates this session (not a new
 caution I invented to avoid work). Confidence: high this is the right stop point.
 Undo: none needed, no code touched — characterisation only, logged in
 [tier2-m24-fclose-multicluster-spec.md](tier2-m24-fclose-multicluster-spec.md)
-"M26 CHARACTERISATION".
+"M26 CHARACTERISATION". **Follow-up (same day):** extended the characterisation
+to all six functions and wrote the full spec, [tier2-m26-spec.md](tier2-m26-spec.md)
+— FDEL and RDRND/WRRND turned out to partially walk REAL existing routines
+(not clean NOP-slides like FREN/RDABS/WRABS), so the spec explicitly proposes
+an implementation ORDER (low-risk first) and 3 open questions rather than a
+single fix. Still no asm touched. Genuinely waiting on sign-off now — the
+open questions are real forks (risk-tolerance + review granularity), not
+rhetorical.
 
 **[M23 / LANDED (2026-07-03) — `BDOSX0.COM` TERM0 micro-test, per
 tier2-bdos-remaining-spec.md §5.2, riding the same session as M22.]** New probe files
