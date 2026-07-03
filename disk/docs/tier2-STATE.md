@@ -151,6 +151,11 @@ evidence (all via `disk_probe_diff.py`, test.dsk, anchored at COMMAND.COM `$0100
   **ours emits ONLY the 12 date chars** (`Sun 84-01-01`), which are the `C=02` CONOUT calls
   (n=5-16), reaching CHPUT via `ret=7934` = our `$5454` conout_body. Every `C=09` STROUT char is
   ABSENT from CHPUT on ours. `--log 0x5454` → ours 12 (date) / stock 0.
+  **[2026-07-03 correction, tier2-m22b-conout53a7-spec.md §4]:** the "ours 12 / stock 0" gap is now
+  explained, not just observed — stock's func-2 handler CALLs its own canonical entry (`$53A7`) and
+  RETURNS before ever reaching `$5454`; ours' 12 date chars only ever reached `$5454` via a NOP-slide
+  from that same un-wired `$53A7` CALL. Nothing ever legitimately called `$5454` for func-2 on either
+  machine. `$53A7` is now wired directly (M22b slice 1); the slide no longer occurs.
 - `screen` (arbiter) → ours shows only `Sun 84-01-01` + the un-cleared BASIC power-on banner.
 **⇒ func-2 CONOUT works on ours; func-9 STROUT emits ZERO chars.** Stock funnels all console output
 through the kernel `$F392` path; ours vectors func-2 to disk-ROM `$5454` and loses func-9.
@@ -250,6 +255,18 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
 ## Next action — M21a+M21b CLOSED; the console tier is next (2026-07-02)
+
+> **M22b slice 1 LANDED (2026-07-03) alongside M22a.** The kernel dispatches EVERY
+> BDOS `$02` char to page-1 `$53A7` (was un-wired pad; pre-M22a a lucky NOP-slide into
+> `$5454`/`conout_body` was accidentally correct, M22a's `$543C` veneer then intercepted
+> it → all func-2 output dropped, DIR corrupted). Fix: `k_53A7: jp conout_body`
+> (net-zero, 3 bytes). Re-verified after the fix: DIR `screen` byte-identical, 18/18 +
+> 27/27 boot `callseq`, BDOSX2 14-record zero-diff, BDOSX Phase-1 zero-diff,
+> `$F237` parity, `make unit-test`/`make probe` green, ROM 16384 B. Spec + pinned
+> contracts (char in E, `A:=E`, TAB→8-col stops, column cell `$F237`):
+> [tier2-m22b-conout53a7-spec.md](tier2-m22b-conout53a7-spec.md). **Slice 2 (TAB
+> expansion + `$F237` maintenance in `conout_body`) is DEFERRED** — a real,
+> pre-existing gap, not a regression; not yet implemented.
 `DIR` is 100% byte-parity with stock (M19+M20) and Tier-2 can now load and run an arbitrary named
 `.COM` (M21a+M21b) — the BDOS-exerciser `BDOSX.COM` tool ([[bdos-exerciser-com-test]]) is UNBLOCKED
 and confirmed running end-to-end (all 47 shared BDOS calls aligned, 0-byte-diff data/FCB buffers).

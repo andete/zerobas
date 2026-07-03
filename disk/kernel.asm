@@ -40,6 +40,17 @@ sfirst:
                 ds      $5006 - $, $00  ; pad up to the pinned $5006 SNEXT entry
 snext:
                 jp      snext_body      ; -> free-tail: find NEXT matching dir entry (M19)
+; --- MSX-DOS-1 kernel LOGIN entry: $504E (M22a; tier2-m22-cpmver-spec.md) ------
+; While processing BDOS LOGIN ($18) the relocated kernel CALLs this page-1 disk-
+; ROM entry for the online-drive bitmap. Was un-wired $00 pad, NOP-sliding into
+; the $5058 SETDTA-cache veneer below: garbage exit AND a silent stomp of
+; DOS_DTAPTR from whatever DE happened to hold (benign-by-luck only because DE
+; was $0080 at the observed call site, §4.3). Body = login_body (free tail).
+; CLEAN-ROOM: published LOGIN online-drive-bitmap contract (map.grauw.nl) +
+; our own DRVCNT cell; no stock routine internals decoded.
+                ds      $504E - $, $00  ; pad up to the pinned $504E LOGIN entry (M22a)
+k_504E:
+                jp      login_body      ; $504E: BDOS $18 LOGIN canonical entry (M22a)
 ; --- MSX-DOS-1 kernel SETDTA-time entry: $5058 (M19) --------------------------
 ; While processing BDOS SETDTA ($1A) the relocated kernel CALLs this page-1
 ; disk-ROM entry to cache the new DTA pointer into the disk work area. Black-box
@@ -92,7 +103,21 @@ setdta_cache:
                 ds      $505D - $, $00  ; pad up to the pinned $505D GETALLOC entry
 getalloc:
                 jp      getalloc_body   ; -> free-tail: FAT free-cluster scan (M20 rev3)
+; --- MSX-DOS-1 kernel DSKRST entry: $509F (M22a; tier2-m22-cpmver-spec.md) -----
+; While processing BDOS DSKRST ($0D) the relocated kernel CALLs this page-1
+; disk-ROM entry to flush/reset the disk work area. Was un-wired $00 pad,
+; NOP-sliding into our OWN $50A9 continuation stub below — which happens to
+; reproduce the exact register contract by coincidence (§4.4: "pad-slide
+; luck", the same class of latent bug M21a-RC-1 broke later). Body =
+; dskrst_body (free tail): a wired `jp` to the same stub, replacing luck with
+; an explicit entry. Real flush semantics are unverifiable here (no dirty
+; buffers at these call sites); the register contract is the observable
+; surface (§8.4 residual).
+                ds      $509F - $, $00  ; pad up to the pinned $509F DSKRST entry (M22a)
+k_509F:
+                jp      dskrst_body     ; $509F: BDOS $0D DSKRST canonical entry (M22a)
                 ds      $50A9 - $, $00  ; pad remainder up to the kernel's $50A9 target
+w50a9_stub:
                 sub     a               ; A=$00, F=$42 (Z+N) -- the exact exit AF
                 ld      (W50A9_WRKB), a ; $F242 := $00  (the only persistent write)
                 ld      de, W50A9_RET_DE ; DE = $F1AA
@@ -144,6 +169,44 @@ seldsk_drv:
 conin:
                 jp      conin_line_body ; -> free-tail buffered-line CHGET loop (M13)
 
+; --- MSX-DOS-1 kernel CONOUT-worker entry: $53A7 (M22b; tier2-m22b-conout53a7-spec.md) --
+; The relocated kernel CALLs this page-1 disk-ROM entry for EVERY BDOS CONOUT
+; ($02) character (ret=$D88A, B=$A7 fingerprint, C=$02, char in E — the same
+; dispatcher class as the M22a eleven). It was un-wired $00 pad; pre-M22a the
+; CALL NOP-slid 173 bytes into the $5454 CONOUT veneer below, which happens to
+; implement the exact right observable contract (emit E via CHPUT, A:=E) — the
+; accident every M8-M21 console-parity probe rode. M22a's new $543C CONST
+; veneer (below) now sits earlier in that same slide and intercepts it instead,
+; silently dropping every func-2 char (date/A>/echo/DIR listing). This veneer
+; restores the pre-M22a behavior explicitly instead of by accident; net-zero,
+; 3 bytes carved from the existing pad before $543C. CLEAN-ROOM: $53A7 is a
+; de-facto page-1 kernel-ABI address (class of $4010/$5454), pinned by
+; call-target + register observation only (400/400 region-entry samples);
+; body = conout_body, the proven $5454 implementation (M8/M10).
+                ds      $53A7 - $, $00  ; pad up to the pinned $53A7 CONOUT-worker entry (M22b)
+k_53A7:
+                jp      conout_body     ; $53A7: BDOS $02 CONOUT canonical entry (M22b slice 1)
+
+; --- MSX-DOS-1 kernel console entries: $543C/$5445/$544E (M22a) ---------------
+; While processing BDOS CONST ($0B) / CONIN ($01) / INNOE ($08) the relocated
+; kernel CALLs these page-1 disk-ROM entries. All three were un-wired $00 pad,
+; NOP-sliding into the $5454 CONOUT veneer below — each would have emitted a
+; garbage char via CONOUT (E's leftover value) instead of polling/reading the
+; keyboard, without ever consuming a queued key (tier2-m22-cpmver-spec.md §4.5).
+; Bodies (const_body/conin_body/innoe_body, free tail) use the same CHSNS/CHGET
+; inter-slot primitives conin_line_body/conout_body already use.
+; CLEAN-ROOM: published CONST/CONIN/INNOE contracts (map.grauw.nl) + our own
+; pg0_mainrom_in/out inter-slot path; no stock routine internals decoded.
+                ds      $543C - $, $00  ; pad up to the pinned $543C CONST entry (M22a)
+k_543C:
+                jp      const_body      ; $543C: BDOS $0B CONST canonical entry (M22a)
+                ds      $5445 - $, $00  ; pad up to the pinned $5445 CONIN entry (M22a)
+k_5445:
+                jp      conin_body      ; $5445: BDOS $01 CONIN canonical entry (M22a)
+                ds      $544E - $, $00  ; pad up to the pinned $544E INNOE entry (M22a)
+k_544E:
+                jp      innoe_body      ; $544E: BDOS $08 INNOE canonical entry (M22a)
+
 ; --- MSX-DOS-1 kernel CONOUT entry: $5454 ($4000 + $1454; a3 §8.38) ---------
 ; The relocated kernel CALLs $5454 to emit its sign-on banner one character at a
 ; time (the boot's first divergence point, disk_probe_dosboot_pctrace.py). It is
@@ -168,21 +231,42 @@ conin:
 conout:
                 jp      conout_body     ; -> free-tail inter-slot CHPUT call (M8)
 
+; --- MSX-DOS-1 kernel DIRIN entry: $5462 (M22a; tier2-m22-cpmver-spec.md) ------
+; While processing BDOS DIRIN ($07) the relocated kernel CALLs this page-1
+; disk-ROM entry. Was inside fat_find_body's span (relocated to the free tail
+; below, §4.6) — fat_find_body never had a canonical-address requirement of its
+; own (only reached by label from fat.asm's `fat_find` veneer), so moving it
+; frees this slot outright. Body = dirin_body (free tail).
+                ds      $5462 - $, $00  ; pad up to the pinned $5462 DIRIN entry (M22a)
+k_5462:
+                jp      dirin_body      ; $5462: BDOS $07 DIRIN canonical entry (M22a)
+
 ; ===== Tier-2 3b: relocated Disk-BASIC routine bodies ($5456-$5FE4 gap) =====
 ; Each colliding routine's body lives here; its low-region slot holds `entry:
 ; jp entry_body` + the ds-anchored veneer(s) + padding, sized to exactly fill the
 ; original span (net-zero — nothing downstream shifts). Each body ends with a `jp`
 ; back to the label that followed it, so fall-through is preserved. Callers reach
 ; the routine through its unchanged low-region entry label.
-fat_find_body:                          ; [fat_find, ff_secloop)
-                ld      (FAT_NAMEPTR), hl
-                ld      hl, (FAT_FIRSTROOT)
-                ld      (FAT_DIRSEC), hl
-                ld      hl, (FAT_ROOTSECS)
-                ld      (FAT_DIRREM), hl
-                jp      ff_secloop
+; (fat_find_body relocated to runtime.asm, M22a — its old span here collided
+; with the $5462 DIRIN canonical entry above, tier2-m22-cpmver-spec.md §4.6.)
 
-callf_body_body:                        ; [callf_body, rdslt_h) — ends in ret
+; callf_body_body — the $0030 RST 30h / CALLF handler (the load-bearing one).
+; CALLF is `F7 <slot> <lo> <hi>`: RST 30h pushes the return address (which points
+; at the inline operand) and lands here. H.PHYD ($FFA7 = F7 87 10 40 C9) is exactly
+; this — every PHYDIO from the boot/DOS reaches our DSKIO through it. The callee
+; (DSKIO, $4010) takes A,B,C,DE,HL and CY=read/write, so this handler must deliver
+; ALL of them UNTOUCHED. It saves the caller's registers to page-3 scratch, reads
+; the operand off the stack to find the target address + the post-operand return,
+; then arranges the stack so a plain `ret` jumps to the target with every register
+; (and the carry flag) restored, and the target's own RET lands on the byte after
+; the operand (H.PHYD's trailing C9). Our disk ROM is in page 1, so the target is
+; directly reachable — no real inter-slot switch needed. (§8.4) Reached directly
+; from p0_env_tab's $0030 entry (pageenv.asm, free tail) since M22a removed the
+; 3-byte `callf_body` veneer that used to sit at $41F0 (it collided with the
+; CPMVER canonical entry, tier2-m22-cpmver-spec.md §4.1).
+; Only `ld`/`inc hl`/`pop`/`push`/`ret` are used between entry and the call, none
+; of which touch the flags, so the caller's CY (the DSKIO read/write bit) survives.
+callf_body_body:                        ; ends in ret
                 ld      (R30_HL), hl    ; stash caller HL
                 ld      (R30_BC), bc    ; stash caller BC
                 ld      (R30_DE), de    ; stash caller DE
@@ -364,51 +448,31 @@ ffds_nopad_body:                        ; [ffds_nopad, ffds_alloc) -> falls into
                 jp      c, ffds_haveclus    ; jr->jp: room in the current cluster
                 jp      ffds_alloc          ; fall-through preserved
 
-fdc_entloop_body:                       ; [fdc_entloop, fdc_useslot); loop; ends jr fdc_secloop
-                push    bc
-                push    hl
-                ld      a, (hl)
-                or      a
-                jp      z, fdc_useslot      ; jr->jp: $00 end-marker -> free slot here
-                cp      $E5
-                jp      z, fdc_useslot      ; jr->jp: $E5 deleted -> reusable slot
-                ld      de, (FAT_NAMEPTR)
-                call    name_cmp
-                jp      z, fdc_useslot      ; jr->jp: same-name existing entry
-                pop     hl
-                ld      de, 32
-                add     hl, de
-                pop     bc
-                djnz    fdc_entloop_body
-                ld      hl, (FAT_DIRSEC)
-                inc     hl
-                ld      (FAT_DIRSEC), hl
-                ld      hl, (FAT_DIRREM)
-                dec     hl
-                ld      (FAT_DIRREM), hl
-                jp      fdc_secloop         ; jr->jp: relocated
+; (fdc_entloop_body/fdc_useslot_body relocated to runtime.asm, M22a — their old
+; span here collided with the $55DB/$55E6/$55FF GTIME/STIME/VERIFY canonical
+; entries below, tier2-m22-cpmver-spec.md §4.2.)
 
-fdc_useslot_body:                       ; [fdc_useslot, fdc_zero) -> falls into fdc_zero
-                pop     hl                  ; HL = dir entry slot in WBUF
-                pop     bc
-                ld      de, (FAT_DIRSEC)
-                ld      (BDOS_DIRSEC), de
-                push    hl
-                ld      de, WBUF
-                or      a
-                sbc     hl, de              ; HL = offset within the sector
-                ld      (BDOS_DIROFF), hl
-                pop     hl
-                push    hl
-                ex      de, hl              ; DE = dest slot
-                ld      hl, (FAT_NAMEPTR)
-                ld      bc, 11
-                ldir                        ; name -> entry +0..10
-                xor     a
-                ld      (de), a             ; +11 = $00 (normal file; matches MSX-DOS)
-                inc     de
-                ld      b, 20               ; +12..+31 is 20 bytes
-                jp      fdc_zero            ; fall-through preserved
+; --- MSX-DOS-1 kernel GTIME/STIME/VERIFY entries: $55DB/$55E6/$55FF (M22a) ----
+; While processing BDOS GTIME ($2C) / STIME ($2D) / VERIFY ($2E) the relocated
+; kernel CALLs these page-1 disk-ROM entries. All three fell inside the
+; fdc_entloop_body/fdc_useslot_body span (now relocated above): STIME executed
+; FDC-flavored retry-loop code (wrong exit registers), and GTIME's walk ended in
+; a WARM BOOT — killing whatever program was running (the M22a root cause;
+; tier2-m22-cpmver-spec.md §4.2). Bodies (gtime_body/stime_body/verify_body,
+; free tail) reproduce the pinned oracle contracts (§5.1); none clear $F306 —
+; every exit HL is the kernel's own H:=B,L:=A mirror (§5.2, the M20 rule
+; inverted for this tier).
+; CLEAN-ROOM: published GTIME/STIME/VERIFY contracts (map.grauw.nl, MSX2 TH
+; §BDOS) + the black-box-pinned oracle register buffer; no stock CODE decoded.
+                ds      $55DB - $, $00  ; pad up to the pinned $55DB GTIME entry (M22a)
+k_55DB:
+                jp      gtime_body      ; $55DB: BDOS $2C GTIME canonical entry (M22a)
+                ds      $55E6 - $, $00  ; pad up to the pinned $55E6 STIME entry (M22a)
+k_55E6:
+                jp      stime_body      ; $55E6: BDOS $2D STIME canonical entry (M22a)
+                ds      $55FF - $, $00  ; pad up to the pinned $55FF VERIFY entry (M22a)
+k_55FF:
+                jp      verify_body     ; $55FF: BDOS $2E VERIFY canonical entry (M22a)
 
 ; ===== Tier-2: COMMAND.COM-load kernel entries — veneer scaffold (milestone 3a) =====
 ; The relocated MSX-DOS-1 kernel + COMMAND.COM call back into ~21 disk-ROM entry

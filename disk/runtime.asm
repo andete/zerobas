@@ -88,7 +88,51 @@ pg0_mainrom_out:
 ; the register common to BOTH callers. Black-box proven: $7922-entry callseq shows E
 ; spelling "MSX-DOS version 1.03" (early) and "Sun 84-01-01"/"A>" (kernel), A=0.
 ; CLEAN-ROOM: E=char is the MSX-DOS BDOS CONOUT (func 2) ABI convention; no oracle bytes.
+;
+; M22a: $5454 is ALSO the canonical BDOS $06 DIRIO entry; the kernel routes both
+; funcs here (tier2-m22-cpmver-spec.md §4.7/§6.3). C holds the BDOS function code
+; ONLY on calls routed through the kernel's common BDOS dispatch (ret=$D88A, the
+; same discriminator §3 uses to confirm "called directly by the kernel
+; dispatcher" for every other M22a entry) — DIRECT callers that reach $5454
+; without going through that dispatch (COMMAND.COM's own column-padding print
+; loop, or the early $0320 MSXDOS.SYS sign-on documented above) can leave
+; ANYTHING in C, since it's just whatever register a caller-internal loop
+; happened to be using. Self-caught in verification: checking C alone made a
+; padding loop's counter passing through C=$06 misfire into the DIRIO branch on
+; a plain space character, corrupting DIR's screen output (no spec section —
+; a plain safety gap in the discriminator, not a contract question). So the
+; return address is peeked FIRST (without disturbing the stack) and C is only
+; trusted when ret==$D88A; the published DIRIO input-vs-output convention
+; (E=$FF is input) is checked only after that.
+; The caller's AF is pushed FIRST, before any of this touches flags: the
+; original code's first instruction (`ld a,e`) never affected flags, so every
+; existing caller relies on ITS OWN entry flags surviving the call untouched
+; (the M8 kernel path tests them, e.g. for line-wrap bookkeeping).
 conout_body:
+                push    af                  ; preserve caller AF/flags BEFORE any check
+                push    hl                  ; HL scratch for the return-address peek
+                ld      hl, 4
+                add     hl, sp              ; HL -> caller's return address (2 pushes = +4)
+                ld      a, (hl)
+                cp      $8A
+                jr      nz, conout_not_dispatch
+                inc     hl
+                ld      a, (hl)
+                cp      $D8
+                jr      nz, conout_not_dispatch
+                ; ret == $D88A: C reliably holds the BDOS func code here (§4.7).
+                ld      a, c
+                cp      $06
+                jr      nz, conout_not_dispatch
+                ld      a, e
+                cp      $FF
+                jr      nz, conout_not_dispatch
+                pop     hl                  ; restore caller's HL
+                pop     af                  ; restore caller's AF for dirio_in_body
+                jp      dirio_in_body
+conout_not_dispatch:
+                pop     hl                  ; restore caller's HL
+                pop     af                  ; caller AF/flags (unclobbered by the probe above)
                 ld      a, e                ; char arrives in E ($5454 CONOUT contract)
                 ld      (CONOUT_CHAR), a    ; stash the char (A is needed for slot work)
                 push    af                  ; preserve caller AF
@@ -107,6 +151,181 @@ conout_body:
                 pop     af                  ; restore caller AF
                 ld      a, (CONOUT_CHAR)    ; return A = the emitted char
                 ret
+
+; --- dirio_in_body - the $5454/$06 DIRIO input direction (M22a) ------------------
+; Non-blocking read: CHSNS ($009C) — if a key is queued, CHGET ($009F) it (no
+; echo, per the published DIRIO contract) and return A=char; else A=$00. B/C/D/E
+; must survive untouched (§5.3); only A changes (HL is overwritten by the
+; kernel's own exit mirror regardless, §5.2, so it needs no attention here).
+; CLEAN-ROOM: published DIRIO contract (map.grauw.nl) + CHSNS ($009C, the same
+; documented MSX BIOS class as CHGET/CHPUT already used here); no oracle bytes.
+dirio_in_body:
+                push    bc
+                push    de
+                push    hl
+                di
+                call    pg0_mainrom_in
+                call    $009C               ; CHSNS: A=$00 empty / nonzero ready (BIOS ABI)
+                or      a
+                jr      z, dirioin_empty
+                call    $009F               ; CHGET: A := char (no echo, DIRIO contract)
+                jr      dirioin_done
+dirioin_empty:
+                xor     a                   ; no key queued -> A := 0
+dirioin_done:
+                push    af                  ; stash result across mainrom_out (clobbers A)
+                call    pg0_mainrom_out
+                ei
+                pop     af
+                pop     hl
+                pop     de
+                pop     bc
+                ret
+
+; --- const_body - the $543C CONST canonical entry (M22a) -------------------------
+; Non-blocking poll: CHSNS ($009C) -> A=$FF ready / A=$00 empty (the published
+; CONST contract; CHSNS itself returns nonzero/zero, normalized to $FF/$00 here).
+; B/C/D/E preserved.
+; CLEAN-ROOM: published CONST contract (map.grauw.nl) + CHSNS; no oracle bytes.
+const_body:
+                push    bc
+                push    de
+                push    hl
+                di
+                call    pg0_mainrom_in
+                call    $009C               ; CHSNS: A=$00 empty / nonzero ready (BIOS ABI)
+                or      a
+                jr      z, const_notready
+                ld      a, $FF              ; MSX-DOS CONST contract: ready -> A=$FF
+const_notready:
+                push    af
+                call    pg0_mainrom_out
+                ei
+                pop     af
+                pop     hl
+                pop     de
+                pop     bc
+                ret
+
+; --- conin_body - the $5445 CONIN canonical entry (M22a) --------------------------
+; Blocking read: CHGET ($009F), then echo via conout_body (E=char, its ABI) —
+; the published BDOS $01 CONIN contract (read-with-echo). B/C/D preserved;
+; A/E end up holding the char (conout_body's own A:=E return).
+; CLEAN-ROOM: published CONIN contract (map.grauw.nl) + our own CHGET/conout_body
+; primitives; no oracle bytes.
+conin_body:
+                push    bc
+                push    de
+                push    hl
+                di
+                call    pg0_mainrom_in
+                call    $009F               ; CHGET: blocking; A := char
+                push    af                  ; stash char across mainrom_out (clobbers A)
+                call    pg0_mainrom_out
+                ei
+                pop     af                  ; A := char
+                ld      e, a                ; echo via conout_body (E = char, its ABI)
+                call    conout_body
+                pop     hl
+                pop     de
+                pop     bc
+                ret
+
+; --- innoe_body / dirin_body - the $544E INNOE / $5462 DIRIN canonical entries
+; (M22a) -- blocking read, NO echo (the published BDOS $08/$07 contract, as
+; distinct from $01 CONIN's echo). Pinned identical at this probe's granularity
+; (tier2-m22-cpmver-spec.md §6.3): dirin_body tail-jumps into innoe_body.
+; B/C/D/E preserved; A := char.
+; CLEAN-ROOM: published INNOE/DIRIN contracts (map.grauw.nl) + CHGET; no oracle bytes.
+innoe_body:
+                push    bc
+                push    de
+                push    hl
+                di
+                call    pg0_mainrom_in
+                call    $009F               ; CHGET: blocking; A := char (no echo)
+                push    af
+                call    pg0_mainrom_out
+                ei
+                pop     af
+                pop     hl
+                pop     de
+                pop     bc
+                ret
+dirin_body:
+                jp      innoe_body
+
+; --- cpmver_body - the $41EF CPMVER canonical entry (M22a) -----------------------
+; A := $22 (the published CP/M-2.2-compatibility version constant, map.grauw.nl
+; _CPMVER), B := 0. HL is overwritten by the kernel's own exit mirror regardless
+; ($F306 stays set — §5.2, the M20 rule inverted for this tier).
+cpmver_body:
+                ld      a, $22
+                ld      b, 0
+                ret
+
+; --- login_body - the $504E LOGIN canonical entry (M22a) -------------------------
+; A := the online-drive bitmap (1 << DRVCNT) - 1, the published LOGIN contract
+; (map.grauw.nl), derived from our OWN DRVCNT cell ($F347, =2 here) rather than
+; a hardcoded constant. B := 0. Only B (the loop counter, no longer needed once
+; the shift is done) is clobbered besides A/HL — C/D/E (§5.3) are never touched.
+login_body:
+                ld      a, (DRVCNT)         ; DRVCNT = $F347 = logical-drive count
+                ld      b, a                ; B := DRVCNT (loop counter, temporarily)
+                ld      hl, 1
+                or      a
+                jr      z, login_bits_done  ; DRVCNT=0 -> bitmap 0 (defensive)
+login_shift:
+                add     hl, hl
+                djnz    login_shift
+login_bits_done:
+                dec     hl
+                ld      a, l                ; A := (1<<DRVCNT)-1 (fits one byte for DRVCNT<8)
+                ld      b, 0                ; B := 0 (LOGIN exit contract)
+                ret
+
+; --- stime_body - the $55E6 STIME canonical entry (M22a) -------------------------
+; A := 0 (success); B := H (hours); C := L (minutes) — the published STIME
+; contract's minimal valid-input path (map.grauw.nl); D/E (seconds/hundredths)
+; untouched, matching the pinned oracle (§5.1 r2). Range validation (A:=$FF on
+; out-of-range input) is unimplemented — the exerciser never sends invalid
+; input and stock's invalid-path was never observed (§8.2 residual).
+stime_body:
+                xor     a
+                ld      b, h
+                ld      c, l
+                ret
+
+; --- gtime_body - the $55DB GTIME canonical entry (M22a) -------------------------
+; A := B := C := D := E := 0 — the oracle's pinned constant 00:00:00
+; (clockless-MSX1 default; deliberately NOT fed by STIME's stored value, which
+; would diverge from the observed oracle, §5.1 r3).
+gtime_body:
+                xor     a
+                ld      b, a
+                ld      c, a
+                ld      d, a
+                ld      e, a
+                ret
+
+; --- verify_body - the $55FF VERIFY canonical entry (M22a) -----------------------
+; A := E (the published VERIFY contract: echo the requested on/off flag); B
+; passes through untouched (§5.3). Persisting E for a future verify-after-write
+; path is out of scope here (remaining-spec §5.4).
+verify_body:
+                ld      a, e
+                ret
+
+; --- dskrst_body - the $509F DSKRST canonical entry (M22a) -----------------------
+; Reproduces the pinned $50A9 continuation-stub contract (A=0; (W50A9_WRKB):=0;
+; DE=IX=$F1AA) by a plain tail-jump into the existing stub — replacing the
+; former pad-slide "luck" (§4.4) with an explicit wired entry. HL is overwritten
+; by the kernel's own exit mirror regardless ($F306 stays set), so the stub's
+; own HL:=$F359 is immaterial here. Real flush semantics are unverifiable (no
+; dirty buffers at these call sites) — the register contract is the observable
+; surface (§8.4 residual).
+dskrst_body:
+                jp      w50a9_stub
 
 ; --- conin_line_body - the $50E0 CONIN line routine (M13; tier2-conin-spec.md v3) ---
 ; Reimplements the documented BDOS func-$0A buffered-line read, clean-room, from the
@@ -368,6 +587,90 @@ dos_clear_screen:
                 ld      ($F3DC), a          ; CSRY := 1 (home row, 1-based)
                 ld      ($F3DD), a          ; CSRX := 1 (home col, 1-based)
                 ret
+
+; ===== M22a: relocated bodies (freed their old low-region spans for the new
+; CPMVER/DIRIN/GTIME/STIME/VERIFY canonical entries) + p0_env_tab's new home ===
+
+; fat_find_body — unchanged from its old $5457 slot (kernel.asm), relocated here
+; because that slot collided with the $5462 DIRIN canonical entry
+; (tier2-m22-cpmver-spec.md §4.6). Position-free: reached only by label from
+; fat.asm's `fat_find: jp fat_find_body` veneer.
+fat_find_body:
+                ld      (FAT_NAMEPTR), hl
+                ld      hl, (FAT_FIRSTROOT)
+                ld      (FAT_DIRSEC), hl
+                ld      hl, (FAT_ROOTSECS)
+                ld      (FAT_DIRREM), hl
+                jp      ff_secloop
+
+; fdc_entloop_body / fdc_useslot_body — unchanged from their old $55C5 slot
+; (kernel.asm), relocated here because that slot collided with the
+; $55DB/$55E6/$55FF GTIME/STIME/VERIFY canonical entries
+; (tier2-m22-cpmver-spec.md §4.2). Position-free: reached only by label from
+; fat.asm's `fdc_entloop`/`fdc_useslot` veneers. Kept contiguous, same relative
+; order as before (M21a-RC-1 relocation convention).
+fdc_entloop_body:
+                push    bc
+                push    hl
+                ld      a, (hl)
+                or      a
+                jp      z, fdc_useslot      ; jr->jp: $00 end-marker -> free slot here
+                cp      $E5
+                jp      z, fdc_useslot      ; jr->jp: $E5 deleted -> reusable slot
+                ld      de, (FAT_NAMEPTR)
+                call    name_cmp
+                jp      z, fdc_useslot      ; jr->jp: same-name existing entry
+                pop     hl
+                ld      de, 32
+                add     hl, de
+                pop     bc
+                djnz    fdc_entloop_body
+                ld      hl, (FAT_DIRSEC)
+                inc     hl
+                ld      (FAT_DIRSEC), hl
+                ld      hl, (FAT_DIRREM)
+                dec     hl
+                ld      (FAT_DIRREM), hl
+                jp      fdc_secloop         ; jr->jp: relocated
+
+fdc_useslot_body:
+                pop     hl                  ; HL = dir entry slot in WBUF
+                pop     bc
+                ld      de, (FAT_DIRSEC)
+                ld      (BDOS_DIRSEC), de
+                push    hl
+                ld      de, WBUF
+                or      a
+                sbc     hl, de              ; HL = offset within the sector
+                ld      (BDOS_DIROFF), hl
+                pop     hl
+                push    hl
+                ex      de, hl              ; DE = dest slot
+                ld      hl, (FAT_NAMEPTR)
+                ld      bc, 11
+                ldir                        ; name -> entry +0..10
+                xor     a
+                ld      (de), a             ; +11 = $00 (normal file; matches MSX-DOS)
+                inc     de
+                ld      b, 20               ; +12..+31 is 20 bytes
+                jp      fdc_zero            ; fall-through preserved
+
+; p0_env_tab — unchanged from pageenv.asm, relocated here because its old span
+; (plus the 3-byte callf_body veneer that followed it) collided with the $41EF
+; CPMVER canonical entry (tier2-m22-cpmver-spec.md §4.1). Position-free: only
+; read by lay_page0_env's own `ld hl, p0_env_tab` (pageenv.asm). The $0030
+; entry now points DIRECTLY at callf_body_body (kernel.asm), since the
+; intermediate veneer was deleted.
+; (cell, handler) pairs; terminated by a 0 cell. No two JP triples overlap.
+p0_env_tab:
+                dw      $000C, rdslt_h  ; RST 8  RDSLT  (read byte from a slot)
+                dw      $0014, wrslt_h  ; RST 10 WRSLT  (write byte to a slot)
+                dw      $001C, calslt_h ; RST 18 CALSLT (inter-slot call)
+                dw      $0024, enaslt_h ; ENASLT (enable slot in a page)
+                dw      $0030, callf_body_body ; RST 30 CALLF (M22a: direct, no veneer)
+                dw      $0038, INT_H_HIRAM ; maskable-int vector -> A-3 high-RAM handler
+                                           ; (NOT page-1 int_h: page 1 is reclaimed by the TPA)
+                dw      0               ; end of table
 
 ; --- pad to a full 16 KB page ($4000-$7FFF) --------------------------------
                 ds      $8000 - $, $00

@@ -59,32 +59,19 @@ lpe_loop:
                 ld      (de), a
                 inc     hl
                 jr      lpe_loop
-; (cell, handler) pairs; terminated by a 0 cell. No two JP triples overlap.
-p0_env_tab:
-                dw      $000C, rdslt_h  ; RST 8  RDSLT  (read byte from a slot)
-                dw      $0014, wrslt_h  ; RST 10 WRSLT  (write byte to a slot)
-                dw      $001C, calslt_h ; RST 18 CALSLT (inter-slot call)
-                dw      $0024, enaslt_h ; ENASLT (enable slot in a page)
-                dw      $0030, callf_body ; RST 30 CALLF (inter-slot call by inline operand)
-                dw      $0038, INT_H_HIRAM ; maskable-int vector -> A-3 high-RAM handler
-                                           ; (NOT page-1 int_h: page 1 is reclaimed by the TPA)
-                dw      0               ; end of table
-
-; callf_body — the $0030 RST 30h / CALLF handler (the load-bearing one).
-; CALLF is `F7 <slot> <lo> <hi>`: RST 30h pushes the return address (which points
-; at the inline operand) and lands here. H.PHYD ($FFA7 = F7 87 10 40 C9) is exactly
-; this — every PHYDIO from the boot/DOS reaches our DSKIO through it. The callee
-; (DSKIO, $4010) takes A,B,C,DE,HL and CY=read/write, so this handler must deliver
-; ALL of them UNTOUCHED. It saves the caller's registers to page-3 scratch, reads
-; the operand off the stack to find the target address + the post-operand return,
-; then arranges the stack so a plain `ret` jumps to the target with every register
-; (and the carry flag) restored, and the target's own RET lands on the byte after
-; the operand (H.PHYD's trailing C9). Our disk ROM is in page 1, so the target is
-; directly reachable — no real inter-slot switch needed. (§8.4)
-; Only `ld`/`inc hl`/`pop`/`push`/`ret` are used between entry and the call, none
-; of which touch the flags, so the caller's CY (the DSKIO read/write bit) survives.
-callf_body:
-                jp      callf_body_body     ; Tier-2 3b: divert; veneer fills the gap
+; p0_env_tab (cell, handler pairs; terminated by a 0 cell) now lives in the free
+; tail (runtime.asm) — M22a freed $41D6..$41F2 (the table's own span + the
+; $0030 entry's 3-byte `jp callf_body_body` veneer) to make room for the BDOS
+; $0C CPMVER canonical page-1 entry at $41EF, which the shared kernel calls
+; directly. Previously un-wired: the CALL landed on the table's own zero-
+; terminator byte and NOP-slid into the CALLF veneer, which misparsed 3 kernel
+; CODE bytes as a CALLF operand and warm-booted the machine by GTIME
+; (docs/tier2-m22-cpmver-spec.md §4.1). The table's $0030 entry now points
+; DIRECTLY at callf_body_body (label reference, position-free); moving the
+; table or deleting the veneer changes nothing about lay_page0_env's own loop.
+                ds      $41EF - $, $00      ; pad (frees the old table tail + callf_body jp)
+k_41EF:
+                jp      cpmver_body         ; $41EF: BDOS $0C CPMVER canonical entry (M22a)
                 ds      $41FD - $, $00      ; anchor the canonical address
                 jp      k_41FD              ; $41FD: COMMAND.COM-load kernel veneer
                 ds      $4217 - $, $00      ; pad to rdslt_h (net-zero: stays $4217)

@@ -23,6 +23,34 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M22a + M22b slice 1 / LANDED (2026-07-03) — second surprise inside M22: the `$53A7`
+CONOUT-worker canonical entry; sign-off given, fix implemented and re-verified.]**
+Testing `DIR` on the (uncommitted) M22a build surfaced screen corruption; characterised
+first (no asm touched), then fixed. Root cause: the RAM kernel dispatches EVERY BDOS
+`$02` CONOUT char to page-1 **`$53A7`** (`ret=$D88A`, `B=$A7` fingerprint, char in **E**
+— the same canonical class as the M22a eleven), un-wired `$00` pad on ours since forever.
+Pre-M22a the CALL NOP-slid into `$5454``jp conout_body` and was **accidentally correct**
+(emit E, `A:=E`) — all M8→M21 console parity rode that slide; M22a's new `$543C` CONST
+veneer intercepted it, so ours dropped ALL func-2 output (date, `A>`, echo, DIR listing)
+while the 27/27 callseq stayed green (why M22a's suite missed it — screen arbiter wasn't
+in the loop). Also pinned while at it: stock's routine does TAB→8-col-stop expansion
+(do-while, at-least-one-space) tracked in a **logical-column byte `$F237`** (private to
+page-1 code, kernel never reads/writes it; CR resets, LF no-op; counter is NOT CSRX —
+post-wrap tab proves it), wrap/scroll stay in BIOS CHPUT, and `$5454` is NOT mid-routine
+(stock returns to `$D88A` before `$543C`). Full spec + oracle tables:
+[tier2-m22b-conout53a7-spec.md](tier2-m22b-conout53a7-spec.md). **Implemented:**
+M22a + M22b-slice-1 (3-byte `k_53A7: jp conout_body` veneer, net-zero, restores proven
+parity) landed together (kernel.asm). Slice 2 (tab+`$F237` in `conout_body`) deferred as
+follow-up, needs a new TYPE-tab-file oracle. **Re-verified:** DIR `screen` byte-identical,
+18/18 + 27/27 boot `callseq`, BDOSX2 14-record zero-diff, BDOSX Phase-1 zero-diff, `$F237`
+parity, `make unit-test`/`make probe` green, `disk.rom` 16384 B.
+· why: M22a alone was a shipping regression; the entry is static ROM-layout fact, same
+falsify-first evidence class as M22a §3 · alternative considered: revert M22a's console
+veneers instead (rejected — the ten entries are real and pinned; the collision was with
+the missing 11th, not with M22a's design) · confidence: high (every claim probe-backed,
+repro one-liners in the spec, re-run post-fix) · undo: `git diff disk/kernel.asm` (3-line
+veneer + comment block, easy to revert if needed).
+
 **[M21a + M21b / LANDED (2026-07-02) — Tier-2 can now run a typed `.COM` other than
 COMMAND.COM; the whole M21 track is closed.]** Implemented against the §0.1-pinned contract.
 M21a (`$4462` FOPEN-fill): relocated `fdc_di_save..getdpb` (153 B, driver.asm -> fat.asm's

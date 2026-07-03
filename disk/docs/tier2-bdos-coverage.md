@@ -32,7 +32,7 @@ update. Repro (boot path): `python3 probes/disk/disk_probe_diff.py callseq --max
 
 | `C` | fn | ours | evidence | notes |
 |------|--------|------|--------------------|-------|
-| `$02` | CONOUT | ✅ | 27/27 boot `callseq`, byte-identical | Fixed M13 (was a `screen`-only-visible render bug — calls matched stock while VRAM showed garbage tile `$80`; root cause was CONIN falling through into CONOUT at `$50E0`, not a CONOUT bug itself). Reads the char from **E**, not A — do not revert (M10 lesson). |
+| `$02` | CONOUT | ✅ | 27/27 boot `callseq`, byte-identical; DIR `screen` byte-identical (M22b) | Fixed M13 (was a `screen`-only-visible render bug — calls matched stock while VRAM showed garbage tile `$80`; root cause was CONIN falling through into CONOUT at `$50E0`, not a CONOUT bug itself). Reads the char from **E**, not A — do not revert (M10 lesson). M22b slice 1 (2026-07-03): the kernel actually CALLs a separate canonical entry, `$53A7`, for every func-2 char — pre-M22a this NOP-slid into the `$5454` veneer by accident (tier2-m22b-conout53a7-spec.md); now wired explicitly (`k_53A7: jp conout_body`). Residual: `$53A7`'s TAB-expansion + `$F237` column bookkeeping (spec §5.3/§5.4) is NOT yet implemented (M22b slice 2, deferred). |
 | `$09` | STROUT | ✅ | 27/27 boot `callseq`, byte-identical | Fixed M13 alongside CONOUT (same root cause: CONIN/CONOUT fall-through) |
 | `$0A` | BUFIN | ✅ | 27/27 boot `callseq` | headless: reaches BUFIN cleanly at both the date prompt and the `A>` command prompt. Real keyboard input timing untested ([[tier2-storms-are-downstream]]); call/return contract is correct |
 | `$0E` | SELDSK | ✅ | 27/27 boot `callseq` | called in the `A>` command loop past BUFIN |

@@ -340,6 +340,13 @@ standing rule — its evidence is already localised to one function.
 1. **`$4130/$4179/$54C0/$5412/$53A8/$541D-$542A`** — stock-internal helpers; our bodies
    deliberately do NOT reproduce them (we implement contracts, not call graphs). If a
    future probe shows the kernel calling one DIRECTLY in another flow, pin it then.
+   **SUPERSEDED for `$53A8`'s neighbour, `$53A7`** (this list named the wrong address by
+   one byte): `$53A7` turned out to be a real canonical entry — the kernel CALLs it
+   directly for every BDOS `$02` CONOUT char — un-wired on ours and previously reached
+   only via a pre-M22a NOP-slide accident that this milestone's `$543C` CONST veneer
+   broke (DIR screen corruption). Characterised and fixed in
+   [tier2-m22b-conout53a7-spec.md](tier2-m22b-conout53a7-spec.md) (M22b slice 1).
+   `$53A8`/`$5412`/`$541D-$542A` themselves remain stock-internal, unpinned.
 2. **STIME invalid-input path** (`A=$FF`) unobserved — optional range check, note in
    PROVENANCE if implemented from the published contract only.
 3. **VERIFY nonzero-E normalization** unobserved (only E∈{0,1} probed).
