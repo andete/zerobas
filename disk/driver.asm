@@ -184,7 +184,18 @@ fdc_rp_fail:
 ; the pinned offset so fdc_write_phys below stays at its exact address.
 fdc_read_data:
                 jp      fdc_read_data_body
-                ds      $4392 - $, $00      ; pad remainder up to the pinned canonical entry
+                ds      $436C - $, $00      ; pad remainder up to the pinned canonical entry
+k_436C:
+                jp      fdel_body           ; $436C: BDOS $13 FDEL canonical entry (M26)
+                                            ; (re-characterised 2026-07-03: this address used
+                                            ; to sit mid-body inside fdc_read_data's OLD span;
+                                            ; landing FREN's relocation above turned it into
+                                            ; dead pad -- but before this fix, the un-wired
+                                            ; FDEL call NOP-slid straight through into
+                                            ; fren_body with FDEL's own FCB, corrupting the
+                                            ; target directory entry. See tier2-m26-spec.md
+                                            ; sec 2.2.)
+                ds      $4392 - $, $00      ; pad remainder up to the next canonical entry
 k_4392:
                 jp      fren_body           ; $4392: BDOS $17 FREN canonical entry (M26)
                 ds      $43A4 - $, $00      ; net-zero: fdc_write_phys stays at $43A4

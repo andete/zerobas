@@ -23,6 +23,41 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M26 Follow-up 7 / §9 — FDEL implemented + landed, after user sign-off on
+both scope questions (2026-07-03).]** User approved both Follow-up 6
+questions: single exact-match only (no wildcard), and the FAT chain-free
+addition in scope. Implemented `fdel_body`: reuses `fat_mount`/`fat_find`,
+frees the chain via `fat_next_cluster`/`fat_write_fat_entry` (stack-based
+"cur"/"next" bookkeeping across the write call, since `IX` was already
+committed to holding the FCB-copy pointer and `BC`/`FAT_WRTMP*` are both
+internally clobbered by `fat_write_fat_entry` itself — checked by reading
+its body before choosing the stack instead), then re-runs `fat_find` (the
+chain walk clobbers `SECTOR_BUF`, so re-locating fresh is simpler than
+threading a pointer across it) and stamps `$E5`. **Hit a real regression
+mid-slice, self-caught before committing:** first appended `fdel_body` to
+disk/fat.asm's own end (matching where RDABS/WRABS's small ioerr veneers
+already lived) — built with zero errors/warnings pointing at the problem,
+but `make unit-test` dropped to 5/19, `test_gdate.py`/`test_getdpb.py`
+failing with all-zero DPB output. Root-caused by recalling the FREN
+placement note (disk.asm includes fat.asm immediately before kernel.asm;
+kernel.asm has its own tightly-packed pinned-address corridor, e.g. GDATE
+`$553C`, with apparently just enough slack for RDABS+WRABS's tiny veneers
+but not FDEL's larger body) — moved `fdel_body` to disk/kernel.asm's own
+free tail (same spot as `fdc_read_data_body`/`bdos_seqwrite_body`) and unit
+tests went back to 19/19 with the earlier "64KB limit passed" warning class
+gone entirely from the build log. Undo: straightforward, all in
+disk/driver.asm (veneer only) + disk/kernel.asm (`fdel_body` and its
+labels); disk/fat.asm net change from this slice is zero (the body never
+stayed there). Verified: BDOSX3 record 15 zero-diff (baseline-diff:
+13→12, exactly the target `L`-byte removed); full regression suite green
+(unit-test, probe, boot callseq 18/18, DIR screen, BDOSX baseline-diff
+unchanged at 127 pre-existing bytes, BDOSX2 zero-diff, BDOSX0 43/43).
+Full writeup: [tier2-m26-spec.md](tier2-m26-spec.md) §9. **New standing
+rule for the remainder of this milestone (RDRND/WRRND): re-run
+`make unit-test` immediately after placing ANY new/relocated body, not
+just at the end of the slice — this placement-collision class of bug
+builds clean and only shows up in the host test suite.**
+
 **[M26 Follow-up 6 / §2.2 — FDEL re-characterised, HARD-STOP for scope
 sign-off (2026-07-03).]** Dispatched Fable to characterise FDEL (`$13`) next
 per §3's order, applying the now-4-for-4 rule (never trust a `callwatch`-only

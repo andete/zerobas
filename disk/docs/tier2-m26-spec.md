@@ -6,15 +6,10 @@ SPDX-License-Identifier: 0BSD
 # Tier-2 M26 spec — the mutation/random/absolute-I/O block (`$13 FDEL` / `$17 FREN` /
 `$21 RDRND` / `$22 WRRND` / `$2F RDABS` / `$30 WRABS`)
 
-**Status: FREN (`$17`), RDABS (`$2F`), and WRABS (`$30`) LANDED 2026-07-03
-(§6, §7, §8). FDEL (`$13`) re-characterised 2026-07-03 (§2.2) — dead-pad
-dispatch confirmed at `$436C`, but landing FREN moved the pad's contents
-underneath it, so FDEL currently NOP-slides into `fren_body` and actively
-corrupts the target directory entry + leaks its FAT chain (not a harmless
-no-op as previously believed). NOT yet implemented — the FAT chain-freeing
-scope (§4, falsified non-goal) and the wildcard-support scope question
-(§2.2) are open for sign-off before coding. RDRND/WRRND still CHARACTERISED
-ONLY.** Per [[spec-before-implementation]] this is a
+**Status: FREN (`$17`), RDABS (`$2F`), WRABS (`$30`), and FDEL (`$13`)
+LANDED 2026-07-03 (§6, §7, §8, §9). RDRND/WRRND still CHARACTERISED ONLY,
+not implemented — same stop-for-sign-off posture as before for those two.**
+Per [[spec-before-implementation]] this is a
 **new-routine-class** milestone (like [tier2-m19-spec.md](tier2-m19-spec.md)),
 not a self-approvable veneer-class fix: six BDOS functions, none wired at
 the start, one pair (RDRND/WRRND) showing a risk shape not seen in any prior
@@ -506,6 +501,86 @@ removes the fall-through entirely.
 `disk.rom` stays exactly 16384 B (no wrap warnings). Changed: disk/fat.asm
 (thunk + `k_4720` veneer + `wrabs_body`/`wrabs_ioerr`), disk/kernel.asm
 (`bdos_seqwrite_body`).
+
+Investigation credit: characterised by a Fable subagent dispatch (per
+[[opus-vs-sonnet-model-split]]); implementation + verification by Sonnet 5
+direct.
+
+## 9. FDEL (`$13`) — LANDED 2026-07-03
+
+Per §5's confirmed order and the §2.2 re-characterisation (Fable dispatch,
+`trace --resync` + on-disk `$E5` forensics): `$436C` is dead pad in the
+post-FREN corridor (disk/driver.asm), same RDABS-shape dispatch as `$46BA`
+— split the same way: `ds $436C - $, $00` / `k_436C: jp fdel_body` / `ds
+$4392 - $, $00` (net-zero, `k_4392`/`fren_body` unaffected). Two scope
+questions from §2.2 were signed off before coding: single exact-match only
+(reuse `fat_find`, same as FREN — no `?` wildcard support), and the
+FAT12 chain-free addition confirmed in scope despite §4's original
+(falsified) non-goal assumption.
+
+**`fdel_body`** (disk/kernel.asm free tail, appended after
+`wrbytes_add_recsize` — NOT disk/fat.asm's own end): reuses `fat_mount`/
+`fat_find` to locate the target by name (kernel FCB-copy pointer at DE,
+name field at +1, same convention as `fren_body`), then (a) walks and
+frees the file's FAT12 chain — `fat_next_cluster` to read each link before
+`fat_write_fat_entry` zeroes it (every on-disk FAT copy), stopping at the
+first value `>= $0FF8` (end-of-chain) — and only THEN (b) re-runs `fat_find`
+to get a fresh directory-entry pointer (the chain walk clobbers `SECTOR_BUF`
+via `fat_next_cluster`/`fat_write_fat_entry`, which both use it as scratch,
+so re-locating after the walk is simpler and cheaper than threading a
+pointer across a clobbering call) and stamps its first byte `$E5`,
+persisted via `write_sector`. `IX` holds the FCB-copy pointer across every
+helper call in the body — confirmed by inspection that none of
+`fat_mount`/`fat_find`/`fat_next_cluster`/`fat_write_fat_entry`/
+`read_sector`/`write_sector` touch it.
+
+**Placement lesson (new this slice):** `fdel_body` first landed appended to
+disk/fat.asm's own end, following the RDABS/WRABS-ioerr precedent of small
+veneers living there — this built with no error but silently broke
+`test_gdate.py`/`test_getdpb.py` (14 host-unit-test failures, all-zero DPB
+fields). Root cause: disk.asm includes fat.asm immediately before
+kernel.asm (`disk.asm`'s fixed include order), and kernel.asm has its own
+tightly-packed pinned-address corridor (GDATE `$553C` etc.) with no slack
+to absorb fat.asm growing past where RDABS/WRABS's small ~20-byte veneers
+had left it — the same "64KB limit passed" hazard class the FREN slice hit
+once already (§6), just silent this time instead of a hard build error.
+Moved to disk/kernel.asm's own free tail (verified genuinely free already,
+same location as `fdc_read_data_body`/`bdos_seqwrite_body`) and the
+failures disappeared. **Standing rule going forward: any body added in this
+milestone that's bigger than a trivial few-instruction veneer belongs in
+kernel.asm's free tail, not fat.asm's end — re-run `make unit-test` after
+EVERY body placement, not just after the full implementation, to catch this
+class of silent corruption immediately.**
+
+**Verification:**
+- BDOSX3 record 15 (`--mem 0x44d:0x8`, single-record snapshot): zero-diff
+  (0 of 8 bytes) — confirmed via the git-stash/rebuild-baseline technique
+  that the pre-fix state had exactly one diverging byte here (`L`, stock
+  `$00` / ours `$0A`), now fixed. Record 16 (FOPEN-post-delete, expect
+  `A=$FF`) still diverges in `H`/`L` on both the pre- and post-fix builds
+  with the SAME byte count — confirmed pre-existing (a FOPEN-on-not-found
+  HL-contract gap, unrelated to FDEL's own correctness; `A=$FF` already
+  matched stock before this fix). Full `regs` array (`--mem 0x3d5:0x100`):
+  12 diverging bytes post-fix vs. 13 pre-fix, exactly record 15's `L` byte
+  removed, all other pre-existing gaps unchanged.
+- `make unit-test`: 19/19 (the placement bug above made this 5/19 at one
+  point mid-slice — always re-run this after moving code, not just at the
+  end).
+- `make probe`: DSKIO byte-identical to the CF-3300 reference, BASIC probe
+  green, tape probe green.
+- Boot `callseq --log 0x0005` (no keys, boot-to-`A>` only): 18/18 shared
+  calls aligned, zero divergence.
+- `DIR` `screen` (both machines): byte-identical.
+- BDOSX (`--mem 0x400:0x180`): baseline-diff confirmed the SAME 127
+  diverging bytes before and after (byte-count and positions identical) —
+  the pre-existing `$500+` RDBLK-content gap, unaffected by this fix.
+- BDOSX2 (`--mem 0x340:0x70`, `--arm-check-val 0xcd`, needs `--keys2 'xyz'
+  --keys2-at 32` per the M22 CPMVER precedent): zero-diff (0 of 112 bytes).
+- BDOSX0: `callseq --log 0x0005` 43/43 shared calls aligned, no divergence.
+
+`disk.rom` stays exactly 16384 B (no wrap warnings). Changed: disk/driver.asm
+(`k_436C` veneer), disk/kernel.asm (`fdel_body`/`fdel_miss`/`fdel_ioerr`/
+`fdel_relocate`/`fdel_free_loop`/`fdel_chain_ioerr`).
 
 Investigation credit: characterised by a Fable subagent dispatch (per
 [[opus-vs-sonnet-model-split]]); implementation + verification by Sonnet 5

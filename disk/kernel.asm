@@ -1373,3 +1373,100 @@ wba_loop:
                 djnz    wba_loop
                 ret
 
+; fdel_body — MSX-DOS-1 kernel FDEL ($13) canonical entry $436C's real body
+; (M26, tier2-m26-spec.md sec 2.2). CLEAN-ROOM, single exact-match only
+; (same fat_find precedent as fren_body -- BDOSX3 only exercises an exact
+; name; '?' wildcard multi-delete is out of scope, confirmed at sign-off).
+; PLACEMENT NOTE: this body first landed appended to disk/fat.asm's own end
+; (next to fren_ioerr/rdabs_ioerr/wrabs_ioerr, following those three's own
+; precedent), but that broke test_gdate.py/test_getdpb.py -- fat.asm's tail
+; feeds straight into kernel.asm's own tightly-packed pinned-address
+; corridor (GDATE $553C etc, disk/kernel.asm) with no slack for a body this
+; size (same "64KB limit passed" class of hazard the FREN slice already hit
+; once and worked around by using kernel.asm's OWN free tail instead -- see
+; fdc_read_data_body below). Moved here for the same reason.
+; Entry is a kernel-side FCB copy pointed to by DE (drive byte + 11-byte
+; 8.3 name, zero-filled tail) -- same +1 name-field convention fren_body
+; uses. Two things this body must do that fren_body didn't: (a) free the
+; file's FAT12 chain (every cluster zeroed in EVERY on-disk FAT copy, via
+; fat_next_cluster/fat_write_fat_entry) -- confirmed necessary by black-box
+; on-disk $E5 forensics: stock frees both clusters of BDOSX3's 2-cluster
+; scratch file, so a bare $E5 stamp alone would under-match stock (leak the
+; chain); (b) only THEN stamp the directory entry's first byte $E5 and
+; persist it. Order matters: fat_next_cluster/fat_write_fat_entry both use
+; SECTOR_BUF as scratch, clobbering the dirent fat_find first located -- so
+; the chain-free walk runs BEFORE re-locating the entry (a second fat_find
+; call, cheap and reuses already-verified code rather than tracking a
+; pointer across a clobbering call). IX holds the FCB-copy pointer across
+; every helper call in this body (confirmed by inspection: fat_mount,
+; fat_find, fat_next_cluster, fat_write_fat_entry, read_sector, and
+; write_sector never touch IX -- only fopen_fill_body/fren_body do, in
+; disk/fat.asm), so re-deriving the name pointer for the second fat_find is
+; just IX+1 again.
+fdel_body:
+                push    de
+                pop     ix                  ; IX = kernel FCB-copy pointer (held throughout)
+                push    ix
+                pop     de
+                call    fat_mount
+                jp      c, fdel_miss
+                push    ix
+                pop     de
+                inc     de                  ; DE -> FCB-copy+1 (target 8.3 name)
+                ex      de, hl              ; HL -> name (fat_find's contract)
+                call    fat_find            ; Cy=0 found; FAT_FIRSTCLUS/FAT_FILESIZE set
+                jp      c, fdel_miss
+                ld      hl, (FAT_FIRSTCLUS)
+                ld      a, h
+                or      l
+                jr      z, fdel_relocate    ; zero-length file: no chain to free
+fdel_free_loop:
+                push    hl                  ; stack: [cur cluster]
+                call    fat_next_cluster    ; HL := next link (cur was consumed as input)
+                ex      (sp), hl            ; stack: [next]; HL := cur
+                ld      de, 0               ; free = $000 (Microsoft FAT spec sec 3.2)
+                call    fat_write_fat_entry ; zero cur's entry in every on-disk FAT copy
+                jp      c, fdel_chain_ioerr
+                pop     hl                  ; HL := next
+                ld      de, $0FF8           ; >= $0FF8 = end-of-chain (fat_next_cluster's own convention)
+                or      a
+                sbc     hl, de
+                jr      nc, fdel_relocate   ; next >= $0FF8 -> chain fully freed
+                add     hl, de              ; HL := next again (undo the probe subtraction)
+                jr      fdel_free_loop
+fdel_chain_ioerr:
+                pop     hl                  ; discard the saved "next", keep the stack balanced
+                jp      fdel_ioerr
+fdel_relocate:
+                ; SECTOR_BUF now holds FAT-sector content (clobbered by the chain
+                ; walk above, or untouched if this file was zero-length) -- re-run
+                ; fat_find for a fresh, valid dirent pointer + FAT_DIRSEC.
+                push    ix
+                pop     de
+                inc     de
+                ex      de, hl
+                call    fat_find
+                jp      c, fdel_miss
+                ld      (hl), $E5           ; CP/M delete marker (Microsoft FAT spec sec 3.1)
+                ld      de, (FAT_DIRSEC)
+                ld      hl, SECTOR_BUF
+                call    write_sector
+                jp      c, fdel_ioerr
+                xor     a
+                ld      ($F306), a          ; M20 dispatcher-flag rule
+                ld      h, a
+                ld      l, a                ; HL = $0000 on success (pinned exit value)
+                ret
+fdel_miss:
+                xor     a
+                ld      ($F306), a          ; M20 dispatcher-flag rule
+                scf
+                ld      a, $FF              ; not-found (fren_miss convention; untested by BDOSX3)
+                ret
+fdel_ioerr:
+                xor     a
+                ld      ($F306), a          ; M20 dispatcher-flag rule
+                scf
+                ld      a, 2                ; generic FDC I/O error (fdc_read_data convention)
+                ret
+

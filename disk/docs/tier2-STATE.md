@@ -293,28 +293,45 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M24+M25+M26-FREN+M26-RDABS+M26-WRABS LANDED; FDEL re-characterised with a corruption finding, HARD-STOP for scope sign-off; RDRND/WRRND still need spec sign-off (2026-07-03)
+## Next action — M24+M25+M26-FREN+M26-RDABS+M26-WRABS+M26-FDEL LANDED; RDRND/WRRND still need spec sign-off (2026-07-03)
 
-> **FDEL (`$13`) RE-CHARACTERISED, NOT IMPLEMENTED.** Dispatched to Fable
-> per the now-4-for-4 rule (never trust a `callwatch`-only M26 read).
-> `trace --resync` confirms the real dispatch address is `$436C`, dead pad
-> in the post-FREN corridor — RDABS-shape, no relocation needed. BUT: this
-> session's own FREN landing (§6) relocated `fdc_read_data` and put fresh
-> pad + `k_4392: jp fren_body` exactly where `$436C` used to sit mid-routine
-> — so the un-wired FDEL call now NOP-slides through the pad into
-> `fren_body` with FDEL's own (zeroed) FCB, which **actively corrupts** the
-> target directory entry (renames it to an all-`$00` name — a directory-scan
-> TERMINATOR, worse than visible garbage) and leaks its FAT chain. On-disk
-> `$E5` forensics on a pristine test image confirmed this directly and also
-> **falsified §4's "no FAT chain-freeing needed" non-goal**: BDOSX3's
-> scratch file is 2 clusters and stock zeroes both FAT12 entries in both
-> on-disk copies on delete. **Two scope questions need sign-off before
-> implementing, not just a "continue":** (1) wildcard (`?`) multi-delete
-> support vs. reusing FREN's single-match `fat_find` precedent; (2) whether
-> the small bounded FAT-chain-free addition is acceptable scope. Full
-> writeup: [tier2-m26-spec.md](tier2-m26-spec.md) §2.2 (updated in place,
-> no new landed-section yet — FDEL has no §9). Judgment-call log:
-> [tier2-review-queue.md](tier2-review-queue.md) M26 Follow-up 6.
+> **FDEL (`$13`) LANDED.** Dispatched to Fable per the now-4-for-4 rule
+> (never trust a `callwatch`-only M26 read); `trace --resync` confirmed the
+> real dispatch `$436C` is dead pad in the post-FREN corridor (RDABS-shape).
+> But this session's OWN FREN landing had relocated `fdc_read_data` and put
+> fresh pad exactly where `$436C` used to sit mid-routine, so the un-wired
+> call was NOP-sliding into `fren_body` with FDEL's own FCB — **actively
+> corrupting** the target directory entry (all-`$00` name, a scan
+> terminator) and leaking its FAT chain, confirmed directly via on-disk
+> `$E5` forensics. Two scope questions signed off before coding: single
+> exact-match only (no `?` wildcard, reuse `fat_find` like FREN), and a
+> small FAT12 chain-free addition (§4's "no chain-freeing needed" non-goal
+> was falsified — BDOSX3's scratch file is 2 clusters, stock zeroes both).
+> `fdel_body` reuses `fat_mount`/`fat_find`, walks+frees the chain via
+> `fat_next_cluster`/`fat_write_fat_entry`, then re-locates the entry (a
+> second `fat_find` — the chain walk clobbers `SECTOR_BUF`) and stamps
+> `$E5`. **Placement gotcha hit and fixed mid-slice:** first landed
+> appended to disk/fat.asm's own end (following RDABS/WRABS-ioerr's
+> precedent) — built clean but silently broke `test_gdate.py`/
+> `test_getdpb.py` (fat.asm's tail starves kernel.asm's own tightly-packed
+> pinned-address corridor of slack, the same "64KB limit passed" hazard
+> class FREN hit once as a hard error, silent this time). Moved to
+> disk/kernel.asm's free tail (same spot as `fdc_read_data_body`/
+> `bdos_seqwrite_body`) and unit tests went back to 19/19. Verified: BDOSX3
+> record 15's `L`-byte garbage zero-diff (baseline-diff: 13→12 pre-existing
+> diffs, exactly that one removed); Tier-1 unit-test/probe green; boot
+> callseq 18/18; DIR screen byte-identical; BDOSX baseline-diff-confirmed
+> unchanged (127 pre-existing bytes, same before/after); BDOSX2 zero-diff;
+> BDOSX0 43/43 aligned. Full writeup: [tier2-m26-spec.md](tier2-m26-spec.md)
+> §9. Judgment-call log: [tier2-review-queue.md](tier2-review-queue.md) M26
+> Follow-up 6.
+>
+> **The remaining two (RDRND/WRRND) are UNTOUCHED — still a HARD-STOP
+> awaiting sign-off**, per §5. They land at an IDENTICAL shared PC trace
+> that partially executes REAL M25-era routines — HIGH risk of silently
+> mutating shared read/write state. **Do NOT implement anything from
+> RDRND/WRRND without reading [tier2-m26-spec.md](tier2-m26-spec.md) §5
+> first.**
 >
 > **WRABS (`$30`) LANDED.** Characterised by a Fable subagent dispatch
 > (`trace --resync`): confirmed `$4720` is a MID-INSTRUCTION byte — the
