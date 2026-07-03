@@ -23,6 +23,27 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M26 / HARD-STOP — scope surprise, stopping for spec+sign-off (2026-07-03).]**
+After M25 landed, characterised BDOSX3 record 14's FREN divergence per the
+established falsify-first method: `grep` confirms no `fren_body`-shaped routine
+exists anywhere in source; `callwatch --in-func 0x17` shows the kernel's `$17`
+call lands at exactly one page-1 PC (`$4392`), which falls mid-body inside our
+OWN unrelated `fdc_rd_n1`/`fdc_rd_n2` FDC-status decoder (driver.asm:206-219) —
+same NOP-slide-onto-unrelated-code signature as the M13/M19/M21/M22b un-wired-
+entry family. `grep` shows FDEL/RDRND/WRRND/RDABS/WRABS equally absent, so this
+is a 6-function block, not a one-liner. Decision: do NOT continue implementing
+autonomously — this is exactly the case [tier2-STATE.md](tier2-STATE.md) flagged
+in advance ("HIGHEST RISK... expect a big body behind an un-wired entry... STOP
+for a milestone spec on the first divergent record, don't improvise a fix inside
+the exerciser session"), and per [[spec-before-implementation]] a 6-function
+directory-mutation/FAT-random-addressing block warrants a real spec before code.
+Alternative considered: keep grinding since "continue" was said 3x this session —
+rejected because the guardrail is explicit and pre-dates this session (not a new
+caution I invented to avoid work). Confidence: high this is the right stop point.
+Undo: none needed, no code touched — characterisation only, logged in
+[tier2-m24-fclose-multicluster-spec.md](tier2-m24-fclose-multicluster-spec.md)
+"M26 CHARACTERISATION".
+
 **[M23 / LANDED (2026-07-03) — `BDOSX0.COM` TERM0 micro-test, per
 tier2-bdos-remaining-spec.md §5.2, riding the same session as M22.]** New probe files
 `probes/disk/bdosx0.asm` + `build_bdosx0_disk.py` (2-instruction program: `ld c,0 /

@@ -10,7 +10,46 @@ new session doesn't have to re-read the 580-line audit log + do git archaeology.
 History/provenance lives in [tier2-review-queue.md](tier2-review-queue.md); detail
 specs are the `tier2-*.md` docs. Read this, then the one doc the next-action names.
 
-_Last updated: 2026-07-02 (**M21a+M21b LANDED — Tier-2 can now load and run an arbitrary named
+_Last updated: 2026-07-03 (**M25 LANDED — general-purpose RDSEQ `$14` fixed
+under a real booted kernel; M26 (FDEL/FREN/RDRND/WRRND/RDABS/WRABS)
+CHARACTERISED but NOT implemented, stopped for spec+sign-off.** M24 slice
+A+B (commit `a435292`) had fixed the BDOSX3 FCLOSE crash by wiring
+`$461D`/`$477D`/`$456F`, but a residual register divergence turned out to
+be much bigger: `$477D` is ONE shared page-1 entry the kernel calls for
+EVERY sequential record access, both `$15` WRSEQ *and* `$14` RDSEQ — no
+register at entry distinguishes direction. Root cause (two-part, fixed
+commit `5b33f61`): (1) `wrseq_body` (disk/kernel.asm) now dispatches on our
+own `BDOS_WRMODE` cell instead of assuming WRSEQ-only; (2) `fopen_fill_body`
+(disk/fat.asm, M21a) never seeded the READ-side iterator
+(`fat_open`/`BDOS_RECIDX`/`BDOS_BYTESLEFT`) a real kernel-driven `$0F` FOPEN
+needs — only our own `bdos_open`/`bdos_rdblk` ever did, and neither runs for
+a kernel FOPEN. Also found and fixed en route: the established "Phase-1
+BDOSX zero-diff" regression check had an **anchor-collision false pass**
+(no `--arm-check-addr`/`--arm-check-val`, so a self-looping probe `done`
+address coincidentally matched during boot before the test program even
+ran) — every capture in this investigation was re-anchored with
+`--arm-check-addr 0x0102 --arm-check-val <fingerprint-byte-from-the-.com>`;
+**any future probe command copied from an older doc must add this or risk
+the same false pass.** Full detail + both failed fix attempts (reverted,
+documented, not left in tree):
+[tier2-m24-fclose-multicluster-spec.md](tier2-m24-fclose-multicluster-spec.md)
+"UPDATE 2" + "M25 RESOLVED". Verified: BDOSX3 record 12/13 zero-diff,
+Phase-1 BDOSX full 384-byte content zero-diff, BDOSX2/BDOSX0/boot
+callseq/DIR screen/unit-test/probe all green, `disk.rom` 16384 B. **Three
+divergences found but confirmed PRE-EXISTING** (byte-identical vs. the
+pre-M25 `a435292` baseline, rebuilt and diffed directly): FCB field-mirror
+gaps at FCB+16/17/20/21/24/28/29, a BDOSX RDBLK content divergence from
+`$500`+, and BDOSX3 record 14+ (FREN onward) — logged as **M26**.
+**M26's FREN item is now characterised** (`callwatch --in-func 0x17` shows
+the kernel's `$17` call lands at page-1 `$4392`, mid our own unrelated
+`fdc_rd_n1`/`fdc_rd_n2` FDC-status decoder — same NOP-slide-onto-unrelated-
+code signature as the M13/M19/M21/M22b un-wired-entry family; `grep` shows
+no `fren_body`/`fdel`/`rdrnd`/`wrrnd`/`rdabs`/`wrabs`-shaped routine exists
+anywhere in source, so this is a real 6-function block, not a one-liner).
+**STOPPED here for a milestone spec + sign-off before implementing**, per
+the M24-era "HIGHEST RISK" note below and [[spec-before-implementation]] —
+see "Next action" and [tier2-review-queue.md](tier2-review-queue.md) M26
+entry. Prior: 2026-07-02 (**M21a+M21b LANDED — Tier-2 can now load and run an arbitrary named
 `.COM`, not just COMMAND.COM itself.** Built while wiring the BDOS-exerciser `BDOSX.COM` tool
 ([[bdos-exerciser-com-test]]): typing any other program name silently no-op'd. Root cause was
 TWO independent broken page-1 entries (full detail [tier2-m21-spec.md](tier2-m21-spec.md)):
@@ -254,7 +293,24 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M22a+M22b+M23 CLOSED; M24 (mutation/random/absolute I/O) is next (2026-07-03)
+## Next action — M24+M25 LANDED; M26 (FDEL/FREN/RDRND/WRRND/RDABS/WRABS) CHARACTERISED, spec+sign-off needed before implementing (2026-07-03)
+
+> **M26 is a HARD-STOP, not a resume-and-grind point.** FREN's canonical
+> page-1 entry is confirmed genuinely un-wired (`callwatch --in-func 0x17`
+> lands at `$4392`, mid unrelated `fdc_rd_n1`/`fdc_rd_n2` FDC-status-decode
+> code — a NOP-slide, same shape as M13/M19/M21/M22b). `grep` confirms
+> FDEL/RDRND/WRRND/RDABS/WRABS are equally absent from source. This is a
+> 6-function directory-mutation + FAT-random-addressing block — the exact
+> "big body behind an un-wired entry" class the (superseded) M24 next-action
+> note below flagged in advance. **Do NOT improvise fixes one probe at a
+> time inside BDOSX3** — write a `tier2-m26-*.md` spec (FREN first, since
+> it's now localised) and get it signed off, same discipline as M19/M21/
+> M24/M25. Full characterisation:
+> [tier2-m24-fclose-multicluster-spec.md](tier2-m24-fclose-multicluster-spec.md)
+> "M26 CHARACTERISATION"; judgment-call log:
+> [tier2-review-queue.md](tier2-review-queue.md) M26 entry.
+
+### (superseded — M24+M25 both LANDED 2026-07-03) original M24 next-action note
 
 > **M22b slice 1 LANDED (2026-07-03) alongside M22a.** The kernel dispatches EVERY
 > BDOS `$02` char to page-1 `$53A7` (was un-wired pad; pre-M22a a lucky NOP-slide into

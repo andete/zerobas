@@ -12,7 +12,12 @@ RDSEQ, restoring general-purpose RDSEQ correctness under a real booted
 kernel. See "M25 RESOLVED" below for the fix and full re-verification.
 Two unrelated, pre-existing divergences were found and confirmed NOT caused
 by either fix (FCB field mirror gaps, RDBLK content, and a FREN-onward
-cascade in BDOSX3) — logged as an M26 candidate, not yet investigated.
+cascade in BDOSX3) — logged as an M26 candidate. **M26's first item (FREN
+`$17`) is now CHARACTERISED (2026-07-03, see "M26 CHARACTERISATION" below):
+confirmed genuinely un-wired, same shape as the M13→M21 family. Scope
+covers 6 BDOS funcs (FDEL/FREN/RDRND/WRRND/RDABS/WRABS); STOPPING here for
+a milestone spec + sign-off before implementing, per the state doc's own
+"HIGHEST RISK" guardrail — not proceeding on judgment call alone.**
 
 **Status: SLICE A+B IMPLEMENTED (2026-07-03, signed off "good findings,
 continue").** All three veneers (`$461D → bdos_create`, `$477D → wrseq_body`,
@@ -247,6 +252,42 @@ anchoring this time, closing the UPDATE 1 false-pass gap):**
 `ROM` stays exactly 16384 B, no 64KB-wrap warnings on rebuild. Changes:
 disk/fat.asm (`fopen_fill_body` read-state seed) and disk/kernel.asm
 (`wrseq_body` dispatch) only — no driver.asm changes needed this round.
+
+**M26 CHARACTERISATION 2026-07-03 — FREN `$17` confirmed genuinely un-wired
+(falsify-first, no fix yet).** `grep -rn "fren\|FREN"` across kernel.asm/
+fat.asm/driver.asm returns ZERO hits — no `fren_body`-shaped routine exists
+anywhere in our source, unlike M24's case (where the veneers existed but
+weren't called). `callwatch --in-func 0x17 --machine ours` on a fresh
+BDOSX3 run (correctly `--arm-check-addr 0x0102 --arm-check-val 0x03`
+anchored — the BDOSX3 fingerprint byte from its own compiled `.com`, NOT
+reused from BDOSX/BDOSX2/BDOSX0's different values) shows exactly ONE
+page-1 entry-PC during the whole `$17` call: `$4392`. That address falls
+mid-body inside `fdc_rd_n1`/`fdc_rd_n2` (disk/driver.asm:206-219, the
+low-level FDC read-status error decoder — `EQU`s bracket it at `fdc_rd_n1
+$438C` / `fdc_rd_n2 $4395`), entirely unrelated to file rename or directory
+mutation. This is the same NOP-slide/coincidental-landing signature as
+M13/M19/M21/M22b's un-wired canonical entries: the RAM kernel's real `$17`
+dispatch target in page-1 is unmapped on ours (no `jp fren_body` planted),
+so the CALL lands wherever our unrelated FDC code happens to decode from
+that byte offset, executes a few unrelated instructions, and falls back
+into the kernel — never touching the directory entry. This explains
+BDOSX3 record 14's `A=$FC` (some stray status byte from the FDC decoder
+path, not a real FREN result) and is consistent with FDEL/RDRND/WRRND/
+RDABS/WRABS being equally un-wired (same `grep` returned zero hits for all
+five; not yet individually `callwatch`-confirmed).
+
+**Scope note:** this is a 6-function block (`$13 FDEL`, `$17 FREN`,
+`$21 RDRND`, `$22 WRRND`, `$2F RDABS`, `$30 WRABS`) touching directory-entry
+rewrite/delete (FREN/FDEL) and FAT-relative random-record addressing
+(RDRND/WRRND) for the first time ever on this ROM — exactly the
+"HIGHEST RISK... expect an M13→M21-class big body behind an un-wired
+entry" case [tier2-STATE.md](tier2-STATE.md) flagged in advance for this
+block. Per that guardrail and [[spec-before-implementation]], stopping
+here: characterisation only, no fix attempted. Proposed next step (not yet
+started) — a dedicated `tier2-m26-*.md` spec, one canonical entry at a
+time (FREN first, since it's now localised), each following the same
+falsify-first / `callwatch`-before-`trace` discipline as M19/M21/M24/M25,
+with its own sign-off before implementation.
 
 --
 
