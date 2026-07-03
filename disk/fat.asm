@@ -45,58 +45,18 @@ bdos_create_err:
 ; entry. (CP/M / MSX-DOS sequential write delivers a fixed 128-byte record from
 ; the DTA — MSX2 TH FCB sequential I/O; record framing as the read side.)
 bdos_seqwrite:
-                ld      a, (BDOS_WRMODE)
-                or      a
-                jr      z, bsw_err          ; not open for write
-                ; copy RECSIZE bytes DTA -> SECTOR_BUF + BDOS_WRBUFLEN
-                ld      hl, (BDOS_WRBUFLEN)
-                ld      de, SECTOR_BUF
-                add     hl, de              ; HL = dest in SECTOR_BUF
-                ex      de, hl              ; DE = dest
-                ld      hl, (BDOS_DTA)      ; HL = source record (settable DTA)
-                ld      bc, RECSIZE
-                ldir                        ; copy 128 bytes into the buffer
-                ; advance buffered length and total byte count by RECSIZE.
-                ld      hl, (BDOS_WRBUFLEN)
-                ld      de, RECSIZE
-                add     hl, de
-                ld      (BDOS_WRBUFLEN), hl
-                call    wrbytes_add_recsize ; BDOS_WRBYTES += RECSIZE (4-byte LE)
-                ; if the 512-byte buffer is now full, flush it to the file.
-                ld      hl, (BDOS_WRBUFLEN)
-                ld      de, 512
-                or      a
-                sbc     hl, de
-                jr      c, bsw_ok           ; buffer not full yet
-                call    fat_flush_data_sector
-                jr      c, bsw_full         ; disk full / write error
-                ld      hl, 0
-                ld      (BDOS_WRBUFLEN), hl ; buffer drained
-bsw_ok:
-                xor     a                   ; A = $00 success
-                ret
-bsw_full:
-                ld      a, $01              ; disk full (MSX-DOS seq-write code)
-                ret
-bsw_err:
-                ld      a, $FF
-                ret
-
-; wrbytes_add_recsize — BDOS_WRBYTES += RECSIZE, 4-byte little-endian add.
-wrbytes_add_recsize:
-                ld      hl, BDOS_WRBYTES
-                ld      a, (hl)
-                add     a, RECSIZE
-                ld      (hl), a
-                inc     hl
-                ld      b, 3                ; carry through the upper 3 bytes
-wba_loop:
-                ld      a, (hl)
-                adc     a, 0
-                ld      (hl), a
-                inc     hl
-                djnz    wba_loop
-                ret
+                jp      bdos_seqwrite_body  ; M26 WRABS (tier2-m26-spec.md): relocated --
+                                            ; the old span here collided mid-instruction
+                                            ; with the real $30 WRABS dispatch address,
+                                            ; $4720 (trace --resync confirmed: it's the
+                                            ; displacement byte of the `jr c, bsw_full`
+                                            ; that used to live at this offset). Real
+                                            ; body now bdos_seqwrite_body (disk/kernel.asm
+                                            ; free tail); only symbolic callers
+                                            ; (driver.asm/kernel.asm `jp bdos_seqwrite`)
+                                            ; keep working unchanged.
+                ds      $4720 - $, $00      ; pad up to the pinned canonical entry
+k_4720:         jp      wrabs_body          ; $4720: BDOS $30 WRABS canonical entry (M26)
 
 ; --- FAT12 layer (disk/PROVENANCE.md §FAT12 layer) -------------------------
 ; Read-only FAT12 on top of the DSKIO sector reader. Sources: Microsoft FAT
@@ -1373,6 +1333,40 @@ rdabs_body:
                 ld      l, a                ; H=L=$00 (pinned exit value)
                 ret
 rdabs_ioerr:
+                ld      b, a                ; preserve dskio's error code
+                xor     a
+                ld      ($F306), a          ; M20 dispatcher-flag rule
+                ld      a, b                ; restore error code
+                scf
+                ret
+
+; wrabs_body — MSX-DOS-1 kernel WRABS ($30) canonical entry $4720's real body
+; (M26, tier2-m26-spec.md §2.5/§7). CLEAN-ROOM, mirror of rdabs_body above:
+; in DE = start logical sector, H = sector count, L = drive (ignored --
+; single-drive ROM). Source buffer = the runtime DTA (DOS_DTAPTR, $F23D).
+; Calls dskio directly with Cy=1 (write direction) rather than a fixed-count
+; wrapper, for the same arbitrary-count reason as RDABS. Entry/exit register
+; contract pinned by black-box `capture` (BDOSX3 record 23, H=1): identical
+; shape to RDABS's own pinned contract -- A=$00 B=$00 C=$01 D=$00 E=$00
+; H=$00 L=$00 on success, C carrying the original sector count.
+wrabs_body:
+                ld      b, h                ; B := sector count (dskio's own count param)
+                push    bc                  ; preserve original count across the dskio call
+                ld      hl, (DOS_DTAPTR)    ; source = runtime DTA
+                xor     a                   ; drive 0 (ignored, single-drive)
+                scf                         ; Cy=1 = write direction (MSX2 TH DSKIO)
+                call    dskio
+                pop     bc                  ; B := original count again (dskio clobbers B/C)
+                jp      c, wrabs_ioerr
+                ld      a, b                ; A := original count
+                ld      c, a                ; C := count (pinned exit value)
+                xor     a
+                ld      b, a                ; B := $00 (pinned exit value)
+                ld      ($F306), a          ; M20 dispatcher-flag rule
+                ld      h, a
+                ld      l, a                ; H=L=$00 (pinned exit value)
+                ret
+wrabs_ioerr:
                 ld      b, a                ; preserve dskio's error code
                 xor     a
                 ld      ($F306), a          ; M20 dispatcher-flag rule

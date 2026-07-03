@@ -1308,3 +1308,68 @@ fdc_rd_ok:
                 or      a               ; A = 0, Cy = 0
                 ret
 
+; bdos_seqwrite_body — relocated bdos_seqwrite (M26, tier2-m26-spec.md): its old
+; span at disk/fat.asm's $46EE collided with the real kernel's canonical $30
+; WRABS dispatch address, $4720 -- the displacement byte of the `jr c,
+; bsw_full` that used to live there (trace --resync: ours fell through into
+; live bdos_seqwrite tail code, silently zeroing BDOS_WRBUFLEN via the
+; buffer-drain path before reaching bsw_ok's false-success `ret`). Logic
+; below is byte-for-byte unchanged; disk/fat.asm's bdos_seqwrite is now a
+; 3-byte `jp` thunk to here, freeing $4720 for the real `jp wrabs_body`
+; veneer. Only symbolic callers (`jp bdos_seqwrite` in driver.asm/kernel.asm)
+; reference this routine -- no external code jumps into bsw_ok/bsw_full/
+; bsw_err/wrbytes_add_recsize's middle, so the whole unit relocates cleanly.
+bdos_seqwrite_body:
+                ld      a, (BDOS_WRMODE)
+                or      a
+                jr      z, bsw_err          ; not open for write
+                ; copy RECSIZE bytes DTA -> SECTOR_BUF + BDOS_WRBUFLEN
+                ld      hl, (BDOS_WRBUFLEN)
+                ld      de, SECTOR_BUF
+                add     hl, de              ; HL = dest in SECTOR_BUF
+                ex      de, hl              ; DE = dest
+                ld      hl, (BDOS_DTA)      ; HL = source record (settable DTA)
+                ld      bc, RECSIZE
+                ldir                        ; copy 128 bytes into the buffer
+                ; advance buffered length and total byte count by RECSIZE.
+                ld      hl, (BDOS_WRBUFLEN)
+                ld      de, RECSIZE
+                add     hl, de
+                ld      (BDOS_WRBUFLEN), hl
+                call    wrbytes_add_recsize ; BDOS_WRBYTES += RECSIZE (4-byte LE)
+                ; if the 512-byte buffer is now full, flush it to the file.
+                ld      hl, (BDOS_WRBUFLEN)
+                ld      de, 512
+                or      a
+                sbc     hl, de
+                jr      c, bsw_ok           ; buffer not full yet
+                call    fat_flush_data_sector
+                jr      c, bsw_full         ; disk full / write error
+                ld      hl, 0
+                ld      (BDOS_WRBUFLEN), hl ; buffer drained
+bsw_ok:
+                xor     a                   ; A = $00 success
+                ret
+bsw_full:
+                ld      a, $01              ; disk full (MSX-DOS seq-write code)
+                ret
+bsw_err:
+                ld      a, $FF
+                ret
+
+; wrbytes_add_recsize — BDOS_WRBYTES += RECSIZE, 4-byte little-endian add.
+wrbytes_add_recsize:
+                ld      hl, BDOS_WRBYTES
+                ld      a, (hl)
+                add     a, RECSIZE
+                ld      (hl), a
+                inc     hl
+                ld      b, 3                ; carry through the upper 3 bytes
+wba_loop:
+                ld      a, (hl)
+                adc     a, 0
+                ld      (hl), a
+                inc     hl
+                djnz    wba_loop
+                ret
+

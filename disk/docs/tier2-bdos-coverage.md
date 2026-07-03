@@ -64,10 +64,11 @@ update. Repro (boot path): `python3 probes/disk/disk_probe_diff.py callseq --max
 | `$18` | LOGIN | ✅ | `BDOSX2` record 1, 0-byte-diff | M22a: canonical entry `$504E` (`login_body`: `(1<<DRVCNT)-1` bitmap, `C` preserved) |
 | `$2E` | VERIFY | ✅ | `BDOSX2` records 4-5 (on/off), 0-byte-diff | M22a: canonical entry `$55FF` (`verify_body`: `A:=E`); flag-EFFECT on writes deliberately not coupled in (open question, tier2-bdos-remaining-spec.md §5.4) |
 | `$16` | FMAKE | ✅ | `BDOSX3` record 0, 0-byte-diff | M24/M25: `$461D` FMAKE worker (`bdos_create_body`, fat.asm) creates/truncates the dir entry |
-| `$15` | WRSEQ | ✅ | `BDOSX3` records 1-9 (×9), 0-byte-diff, incl. second-cluster FAT allocation | M24/M25: `$477D` worker (`bdos_seqwrite_body`) — shared with RDSEQ's own `$477D` hits, see tier2-m24-fclose-multicluster-spec.md "M25 RESOLVED" |
+| `$15` | WRSEQ | ✅ | `BDOSX3` records 1-9 (×9), 0-byte-diff, incl. second-cluster FAT allocation | M24/M25: `$477D` worker (`wrseq_body`) dispatches into `bdos_seqwrite` — shared with RDSEQ's own `$477D` hits, see tier2-m24-fclose-multicluster-spec.md "M25 RESOLVED" |
 | `$17` | FREN | ✅ | `BDOSX3` record 14, 0-byte-diff | M26 slice 1 (2026-07-03): real dispatch `$4392` collided with the shared `fdc_read_data` FDC primitive (relocated to `fdc_read_data_body`); `fren_body` (fat.asm) reuses `fat_mount`/`fat_find`/`write_sector` to rename the dir entry in place — tier2-m26-spec.md §6 |
 | `$2F` | RDABS | ✅ | `BDOSX3` record 22, 0-byte-diff | M26 slice 2 (2026-07-03): `$46BA` was pure `$00` pad (no relocation needed); `rdabs_body` (fat.asm) reads via `dskio` directly (arbitrary sector count) into the runtime DTA — tier2-m26-spec.md §7 |
-| `$13` `$21` `$22` `$30` | FDEL, RDRND, WRRND, WRABS | 🔲 not yet exercised | — | remainder of block C (mutation + random + absolute I/O) — scoped as M24 `BDOSX3.COM` (tier2-bdos-remaining-spec.md §5.3); characterised, spec written (tier2-m26-spec.md §2.2/§2.3/§2.5), implementation gated on §5 sign-off. RDRND/WRRND are HIGH risk — the un-wired landing partially executes REAL M25-era routines (`bdos_seqread_body`/`frs_mul_body`), risking silent shared-state corruption, not a clean NOP-slide like the other three |
+| `$30` | WRABS | ✅ | `BDOSX3` record 23, 0-byte-diff | M26 slice 3 (2026-07-03): real dispatch `$4720` was a mid-instruction byte inside `bdos_seqwrite`'s live tail (needed a FREN-class relocation, unlike RDABS's pad-wire); `bdos_seqwrite` relocated to `bdos_seqwrite_body` (kernel.asm), freeing `$4720` for `wrabs_body` (mirrors `rdabs_body`, `dskio` write direction) — tier2-m26-spec.md §8 |
+| `$13` `$21` `$22` | FDEL, RDRND, WRRND | 🔲 not yet exercised | — | remainder of block C (mutation + random I/O) — scoped as M24 `BDOSX3.COM` (tier2-bdos-remaining-spec.md §5.3); characterised, spec written (tier2-m26-spec.md §2.2/§2.3), implementation gated on §5 sign-off. RDRND/WRRND are HIGH risk — the un-wired landing partially executes REAL M25-era routines (`bdos_seqread_body`/`frs_mul_body`), risking silent shared-state corruption, not a clean NOP-slide/mid-instruction collision like the three already landed |
 | `$03` `$04` | AUXIN, AUXOUT | — n/a | — | not relevant to a single-drive MSX1 disk target |
 
 ## Reading the score
@@ -83,12 +84,12 @@ update. Repro (boot path): `python3 probes/disk/disk_probe_diff.py callseq --max
   that had never been exercised before (tier2-m22-cpmver-spec.md, tier2-m22b-conout53a7-spec.md).
 - **`$05` LSTOUT** has a known, still-uncharacterized oddity (spurious per-file calls during
   `DIR`) — harmless to `DIR` itself but nobody has explained it yet.
-- **The mutation + random + absolute-I/O block is 4/8 ✅ (M24/M25/M26, 2026-07-03):**
-  `$15 WRSEQ`/`$16 FMAKE` (M24/M25, dir-write + FAT-allocate machinery) and `$17 FREN`/`$2F RDABS`
-  (M26 slices 1-2) all proven via `BDOSX3.COM`, 0-byte-diff. **`$13 FDEL`/`$21 RDRND`/`$22 WRRND`/
-  `$30 WRABS` are the only functions left in the whole BDOS surface** — characterised
+- **The mutation + random + absolute-I/O block is 5/8 ✅ (M24/M25/M26, 2026-07-03):**
+  `$15 WRSEQ`/`$16 FMAKE` (M24/M25, dir-write + FAT-allocate machinery) and `$17 FREN`/`$2F RDABS`/
+  `$30 WRABS` (M26 slices 1-3) all proven via `BDOSX3.COM`, 0-byte-diff. **`$13 FDEL`/`$21 RDRND`/
+  `$22 WRRND` are the only functions left in the whole BDOS surface** — characterised
   (tier2-m26-spec.md §2), implementation gated on §5 sign-off; RDRND/WRRND carry a distinct HIGH-risk
-  shape (partial execution of real shared routines, not a clean NOP-slide).
+  shape (partial execution of real shared routines, not a clean NOP-slide/mid-instruction collision).
 - **Historical lesson (M13):** a ✅ needs the OUTPUT verified, not just the call sequence — CONOUT/
   STROUT briefly scored ✅-by-call while `screen` showed VRAM was garbage. Don't repeat that
   shortcut for any future row.

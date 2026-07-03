@@ -6,9 +6,9 @@ SPDX-License-Identifier: 0BSD
 # Tier-2 M26 spec — the mutation/random/absolute-I/O block (`$13 FDEL` / `$17 FREN` /
 `$21 RDRND` / `$22 WRRND` / `$2F RDABS` / `$30 WRABS`)
 
-**Status: FREN (`$17`) and RDABS (`$2F`) LANDED 2026-07-03 (§6, §7).
-FDEL/RDRND/WRRND/WRABS still CHARACTERISED ONLY, not implemented — same
-stop-for-sign-off posture as before for those four.** Per [[spec-before-implementation]] this is a
+**Status: FREN (`$17`), RDABS (`$2F`), and WRABS (`$30`) LANDED 2026-07-03
+(§6, §7, §8). FDEL/RDRND/WRRND still CHARACTERISED ONLY, not implemented —
+same stop-for-sign-off posture as before for those three.** Per [[spec-before-implementation]] this is a
 **new-routine-class** milestone (like [tier2-m19-spec.md](tier2-m19-spec.md)),
 not a self-approvable veneer-class fix: six BDOS functions, none wired at
 the start, one pair (RDRND/WRRND) showing a risk shape not seen in any prior
@@ -146,21 +146,34 @@ happens); a status-only check would pass this as correct. Confirmed LOWER
 risk than FREN (no relocation), same fix pattern otherwise: a `read_sector`-
 based veneer wired directly at `$46BA`.
 
-### 2.5 `$30` WRABS — NOP-slide into the TAIL of a real routine, false
-success status (LOW-MEDIUM risk — check the exit contract carefully)
+### 2.5 `$30` WRABS — mid-instruction collision with `bdos_seqwrite`'s live
+tail, false success status (MEDIUM risk — needs a FREN-class relocation,
+not a pad-wire like RDABS)
 `callwatch --in-func 0x30` → three hits, `$4720,$4724,$4727`, landing inside
 `bdos_seqwrite`'s body (`$46EE`) and running straight into `bsw_ok`
 (`$4727`, disk/kernel.asm:1218 area) — `bdos_seqwrite`'s own SUCCESS exit
-path. This means WRABS currently returns a **false success status** (`A=$00`,
-not an error) while writing nothing to the target absolute sector — a
-correctness bug that could pass a status-only check while corrupting no
-disk state (the write to `absbuf`'s target sector 0 never happens on ours),
-but must be understood exactly before wiring a real body, since the fix
-must ensure the real veneer's own exit does NOT fall through into
-`bsw_ok`'s cell-clearing side effects (`bsw_ok` mutates write-side state
-cells meant for WRSEQ/WRRND — falling through it from an unrelated
-dispatch is itself a second small bug worth confirming is harmless or not
-during implementation).
+path. **Re-derived FREN/RDABS-style** (third M26 function in a row where the
+callwatch-only read needed correction): `trace --resync` (anchored at
+BDOSX3's `n=30` WRABS call) confirms `$4720` is the kernel's own real, fixed
+`$30` dispatch address — and it is a **mid-instruction byte**: the
+displacement byte of `jr c, bsw_full` at `$471F` (disk/fat.asm), which our
+code decodes as `ex af,af'`. Ours executes exactly 5 real instructions
+before reaching `bsw_ok`'s bare `ret` (`ex af,af'` → `ld hl,0` → `ld
+(BDOS_WRBUFLEN),hl` → `xor a` → `ret`) — the buffer-drain tail of the
+512-byte-flush path, NOT a clean NOP-slide like RDABS's pad landing. This
+means WRABS currently returns a **false success status** (`A=$00`, matching
+stock's genuine success byte-for-byte) while writing nothing to the target
+sector, AND **unconditionally zeroes `BDOS_WRBUFLEN`** — harmless in
+BDOSX3 (WRABS is the last call in the program) but real corruption for any
+future program interleaving WRSEQ and WRABS. (Correction to the original
+claim: `bsw_ok` itself, `xor a; ret`, mutates nothing — the buffer-zeroing
+happens in the two instructions immediately BEFORE `bsw_ok`, which the
+mid-instruction landing also runs through.) Because the landing point sits
+inside `bdos_seqwrite`'s live body rather than dead pad, fixing this needs
+the same relocate-then-wire shape as FREN (not RDABS's simple pad-wire) —
+confirmed safe: `bdos_seqwrite`/`bsw_*`/`wrbytes_add_recsize` have exactly
+two symbolic callers (driver.asm, kernel.asm's `jp bdos_seqwrite`) and zero
+external jumps into the block's middle.
 
 ## 3. Risk ranking + proposed implementation order
 
@@ -178,9 +191,11 @@ during implementation).
    based veneer (LBA sector from DE, count from H, drive from L, target the
    FCB's DTA) — very close in shape to the low-level primitive Tier-1 DSKIO
    already implements.
-3. **WRABS** (`$30`) — same shape as RDABS (mirror write), plus verify the
-   `bsw_ok` fall-through side effect noted in §2.5 is harmless before or
-   after wiring the real veneer.
+3. **WRABS** (`$30`) — CONFIRMED (2026-07-03, Fable dispatch, `trace
+   --resync`): dispatch address `$4720` is a mid-instruction byte inside
+   `bdos_seqwrite`'s live tail (the `jr c, bsw_full` displacement), needing
+   a FREN-class relocation rather than RDABS's pad-wire — see §2.5/§8.
+   Mirror-write of RDABS's veneer shape (dskio, Cy=1, DTA source).
 4. **FDEL** (`$13`) — needs the `capture --mem <dir-sector>` disambiguation
    in §2.2 FIRST; likely rides M19's SFIRST/SNEXT-family search machinery
    (reuse, don't reimplement), with only the delete-marker write (`$E5` at
@@ -367,6 +382,62 @@ Investigation credit: characterised by a Fable subagent dispatch (per
 [[opus-vs-sonnet-model-split]], corrected after a process lapse — see
 [[tier2-review-queue]] M26 Follow-up 3); implementation + verification by
 Sonnet 5 direct.
+
+## 8. WRABS (`$30`) — LANDED 2026-07-03
+
+Per §5's confirmed order and the §2.5 re-characterisation (Fable dispatch,
+`trace --resync`): `$4720` is a mid-instruction byte — the displacement of
+`jr c, bsw_full` inside `bdos_seqwrite`'s live tail (disk/fat.asm) — not
+dead pad like RDABS. Fixed the same way as FREN: relocated the whole
+`bdos_seqwrite`/`bsw_ok`/`bsw_full`/`bsw_err`/`wrbytes_add_recsize` unit
+verbatim to `bdos_seqwrite_body` (disk/kernel.asm free tail, appended after
+`fdc_read_data_body`); `disk/fat.asm`'s `bdos_seqwrite` is now a 3-byte `jp
+bdos_seqwrite_body` thunk. Checked safe to relocate first: exactly two
+symbolic callers (`jp bdos_seqwrite` in driver.asm and kernel.asm), zero
+external jumps into the block's middle — confirmed by `grep` before
+touching it, same due-diligence as the FREN/`fdc_read_data` precedent. The
+freed span at `$4720` is wired `k_4720: jp wrabs_body`, with `ds`-padding
+recomputed automatically up to the next pinned entry (`k_477D`, WRSEQ/RDSEQ
+shared, unaffected).
+
+**`wrabs_body`** (disk/fat.asm, mirrors `rdabs_body` exactly): `dskio`
+direct call with `Cy=1` (write direction) instead of `Cy=0`, source =
+runtime DTA via `DOS_DTAPTR`. Entry/exit register contract pinned by
+black-box `capture` (BDOSX3 record 23, H=1): identical shape to RDABS's own
+pinned contract — `A=$00 B=$00 C=$01 D=$00 E=$00 H=$00 L=$00` on success,
+`C` echoing the input sector count. This fix also incidentally removes the
+`BDOS_WRBUFLEN`-zeroing side effect §2.5 found (the old mis-landing ran
+through the buffer-drain tail unconditionally on every WRABS call) — no
+separate fix needed, relocating the block away from the dispatch point
+removes the fall-through entirely.
+
+**Verification:**
+- BDOSX3 record 23 (`--mem 0x3d5:0x100`, full `regs` array): baseline
+  (FREN+RDABS, pre-WRABS-fix) showed 16 diverging bytes; post-fix shows 13
+  — confirmed via the git-stash/rebuild-baseline technique that the exact 3
+  removed bytes are record 23's `B`/`C`/`H` fields (the WRABS garbage this
+  fix targets), the remaining 13 unchanged, pre-existing gaps — zero new
+  regressions.
+- **Tier-1 regression (critical, since `bdos_seqwrite` is the shared WRSEQ
+  worker used by every sequential write on the ROM):** `make probe` — DSKIO
+  byte-identical to the CF-3300 reference, BASIC probe green, tape probe
+  green. `make unit-test`: 19/19.
+- Boot `callseq` (no keys, boot-to-`A>` only): 18/18 shared calls aligned,
+  zero divergence.
+- `DIR` `screen` (both machines): byte-identical.
+- BDOSX (`--mem 0x400:0x180`, exercises WRSEQ via the relocated body):
+  zero-diff (0 of 384 bytes), register diffs NONE.
+- BDOSX2 (`--mem 0x340:0x70`): zero-diff (0 of 112 bytes), register diffs
+  NONE.
+- BDOSX0: `callseq --log 0x0005` 43/43 shared calls aligned, no divergence.
+
+`disk.rom` stays exactly 16384 B (no wrap warnings). Changed: disk/fat.asm
+(thunk + `k_4720` veneer + `wrabs_body`/`wrabs_ioerr`), disk/kernel.asm
+(`bdos_seqwrite_body`).
+
+Investigation credit: characterised by a Fable subagent dispatch (per
+[[opus-vs-sonnet-model-split]]); implementation + verification by Sonnet 5
+direct.
 
 ---
 

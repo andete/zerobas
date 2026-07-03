@@ -114,6 +114,31 @@ BDOSX0 43/43 aligned. Full writeup: [tier2-m26-spec.md](tier2-m26-spec.md)
 awaiting §5 sign-off, especially RDRND/WRRND's shared-state risk.
 Confidence: high; undo: `git revert`, isolated to disk/fat.asm only.
 
+**Follow-up 5 (same day) — implemented WRABS, dispatching the investigation
+phase to Fable first per the corrected process (Follow-up 3).** Fable's
+`trace --resync` found something callwatch's shallow read had wrong:
+`$4720` is NOT a clean landing inside `bdos_seqwrite`'s body, it's a
+MID-INSTRUCTION byte (the displacement of `jr c, bsw_full`) — meaning this
+needed a FREN-class relocation, not RDABS's simple pad-wire, despite §2.5's
+original "LOW-MEDIUM, same shape as RDABS" framing. Checked safe to
+relocate first (grep confirmed exactly 2 symbolic callers into
+`bdos_seqwrite`, zero external jumps into `bsw_*`/`wrbytes_add_recsize`'s
+middle) before moving the whole unit to disk/kernel.asm's free tail.
+`wrabs_body` mirrors `rdabs_body` exactly (dskio Cy=1, DTA source); exit
+contract pinned by `capture`, same shape as RDABS. Bonus: the relocation
+also removes a real bug Fable surfaced — the old mis-landing unconditionally
+zeroed `BDOS_WRBUFLEN` on every WRABS call (harmless in BDOSX3 since WRABS
+is the program's last call, but real corruption risk for any program
+interleaving WRSEQ/WRABS). Verified via baseline-diff: fix removes exactly
+record 23's `B`/`C`/`H` (3 bytes), 13 pre-existing diffs unchanged. Full
+regression suite green, including the Tier-1 DSKIO check (critical: the
+shared WRSEQ worker was relocated) and BDOSX (exercises WRSEQ through the
+relocated body) zero-diff. Full writeup:
+[tier2-m26-spec.md](tier2-m26-spec.md) §8. The remaining three
+(FDEL/RDRND/WRRND) are UNTOUCHED — still awaiting §5 sign-off, especially
+RDRND/WRRND's shared-state risk. Confidence: high; undo: `git revert`,
+isolated to disk/fat.asm + disk/kernel.asm.
+
 **[M23 / LANDED (2026-07-03) — `BDOSX0.COM` TERM0 micro-test, per
 tier2-bdos-remaining-spec.md §5.2, riding the same session as M22.]** New probe files
 `probes/disk/bdosx0.asm` + `build_bdosx0_disk.py` (2-instruction program: `ld c,0 /

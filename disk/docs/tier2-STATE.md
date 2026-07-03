@@ -293,7 +293,32 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M24+M25+M26-FREN+M26-RDABS LANDED; M26-remainder (FDEL/RDRND/WRRND/WRABS) still needs spec sign-off (2026-07-03)
+## Next action — M24+M25+M26-FREN+M26-RDABS+M26-WRABS LANDED; M26-remainder (FDEL/RDRND/WRRND) still needs spec sign-off (2026-07-03)
+
+> **WRABS (`$30`) LANDED.** Characterised by a Fable subagent dispatch
+> (`trace --resync`): confirmed `$4720` is a MID-INSTRUCTION byte — the
+> displacement of `jr c, bsw_full` inside `bdos_seqwrite`'s live tail — not
+> dead pad like RDABS. Needed a FREN-class relocation, not a pad-wire:
+> `bdos_seqwrite`/`bsw_*`/`wrbytes_add_recsize` (exactly 2 symbolic callers,
+> confirmed safe) relocated verbatim to `bdos_seqwrite_body` (disk/kernel.asm
+> free tail); `k_4720: jp wrabs_body` wired at the freed address. `wrabs_body`
+> (disk/fat.asm) mirrors `rdabs_body` exactly (dskio, Cy=1 write, DTA
+> source); exit contract pinned by `capture`, identical shape to RDABS
+> (`C` echoes the sector count). Bonus: this also removes the
+> `BDOS_WRBUFLEN`-zeroing side effect the old mis-landing caused on every
+> WRABS call. Verified: BDOSX3 record 23's `B`/`C`/`H` garbage now zero-diff
+> (baseline-diff confirmed exactly those 3 bytes removed, 13 pre-existing
+> gaps unchanged); Tier-1 DSKIO/unit-test/probe all green (critical given
+> the shared-WRSEQ-worker relocation); boot callseq 18/18; DIR screen
+> byte-identical; BDOSX/BDOSX2 zero-diff; BDOSX0 43/43 aligned. Full
+> writeup: [tier2-m26-spec.md](tier2-m26-spec.md) §8.
+>
+> **The remaining three (FDEL/RDRND/WRRND) are UNTOUCHED — still a
+> HARD-STOP awaiting sign-off**, per §5's 3 open questions. RDRND/WRRND in
+> particular land at an IDENTICAL shared PC trace that partially executes
+> REAL M25-era routines — HIGH risk of silently mutating shared read/write
+> state. **Do NOT implement anything from the remaining three without
+> reading [tier2-m26-spec.md](tier2-m26-spec.md) §5 first.**
 
 > **RDABS (`$2F`) LANDED.** Characterised by a Fable subagent dispatch
 > (`trace --resync`, methodology per [[harness-first-investigation-mo]] /
