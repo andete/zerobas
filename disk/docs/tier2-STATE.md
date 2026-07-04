@@ -365,10 +365,26 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
 > session. Full writeup: [tier2-m27-lstout-spec.md](tier2-m27-lstout-spec.md).
 >
 > Remaining residuals in the codebase (not gating anything, none has an open
-> sign-off pending): `$2E` VERIFY's flag-effect-on-writes open design question
-> (tier2-bdos-remaining-spec.md §5.4), CONOUT's TAB-expansion (M22b slice 2,
-> deferred). (`$5465`/`lstout_body` — WIRED 2026-07-04, see below.) Pick the
-> next one deliberately, don't default into it off a bare "continue".
+> sign-off pending): CONOUT's TAB-expansion (M22b slice 2, deferred). (`$5465`/
+> `lstout_body` — WIRED 2026-07-04; `$2E` VERIFY design-Q — RESOLVED 2026-07-04,
+> both below.) Pick the next one deliberately, don't default into it off a bare
+> "continue".
+
+### `$2E` VERIFY design question RESOLVED — no verify-after-write, no-op is faithful (2026-07-04)
+
+> User: "do the $2E VERIFY design question next." The §5.4 open question
+> (should VERIFY couple a verify-after-write effect into the write path?) is
+> RESOLVED by black-box characterisation (`probes/disk/verifyx.asm`: the same
+> WRABS done twice, VERIFY off then on; `callseq --log 0x4010`): stock issues
+> exactly 3 DSKIO calls = 1 read (RDABS) + 2 writes, and the VERIFY-**on** WRABS
+> does ONE write with **no read-back**, identical to VERIFY-off. **MSX-DOS 1's
+> VERIFY has NO verify-after-write effect.** So `verify_body`'s existing no-op
+> setter (`ld a,e; ret`) IS the faithful implementation — coupling a verify-read
+> would make ours diverge (extra reads) and is pointless on the emulator (writes
+> can't fail). **NO ROM change**; decision + evidence recorded in the code
+> comment + tier2-bdos-remaining-spec.md §5.4. Minor separate observation logged
+> (review queue): WRABS leaves DSKIO's residual sector-count in `B` on stock,
+> ours zeroes it — caller-irrelevant, self-heals next call, NOT a verify effect.
 
 ### `$5465`/`lstout_body` WIRED — BDOS $05 LSTOUT now delegates to BIOS $00A5 (2026-07-04)
 

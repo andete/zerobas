@@ -257,6 +257,8 @@ VERIFY(`$2E`)-on during the write sequence was considered and deferred (open
 question, §5.4): it would exercise the verify-after-write read path but couples a
 possible VERIFY divergence into every write record — run the block with the default
 flag first; a VERIFY-on variant is a one-line rerun later if wanted.
+**RESOLVED 2026-07-04 (see §5.4): there is no verify-after-write effect to couple —
+stock MSX-DOS 1's VERIFY flag has zero DSKIO-level effect, so the deferral was moot.**
 
 ### 5.4 Open questions (do not block sign-off)
 - Exact buffer addresses per program — from each `.sym` at implementation (Phase-1
@@ -266,7 +268,17 @@ flag first; a VERIFY-on variant is a one-line rerun later if wanted.
   builder asserts it, bumps the count if geometry differs).
 - `--keys2-at` value (32 s provisional) — tune so both machines are demonstrably
   poll-idle; the CONST-poll smoke catches a wrong value loudly.
-- VERIFY-on write variant (above).
+- ~~VERIFY-on write variant (above).~~ **RESOLVED 2026-07-04.** Characterised
+  black-box (`probes/disk/verifyx.asm`: the same WRABS done twice, VERIFY off then
+  on, `callseq --log 0x4010`): stock issues **3** DSKIO calls total = 1 read (RDABS)
+  + 2 writes (both WRABS), and the VERIFY-**on** WRABS issues exactly ONE write with
+  **no read-back** — identical to the VERIFY-off WRABS. So MSX-DOS 1's VERIFY flag has
+  **no verify-after-write effect** at the DSKIO level. **Decision:** `verify_body`
+  stays a no-op setter (`ld a,e; ret`) — that IS the faithful implementation; coupling
+  a verify-read would make ours diverge from stock (extra reads) and is pointless on
+  the emulator (writes cannot fail). No ROM change. (Minor separate observation logged
+  to the review queue: WRABS leaves DSKIO's residual sector-count in `B` on stock,
+  ours zeroes it — caller-irrelevant, self-heals by the next call, NOT a verify effect.)
 
 ## 6. Acceptance criteria
 1. **Harness:** `--keys2/--keys2-at` lands with default-off semantics; all documented

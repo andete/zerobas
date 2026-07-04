@@ -23,6 +23,21 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[$2E VERIFY design-Q + WRABS-B residual (2026-07-04).]** Resolved the §5.4
+VERIFY-effect design question: decided `verify_body` stays a no-op setter (no
+verify-after-write coupling) · why: black-box proof (`verifyx.asm`, `callseq
+--log 0x4010`) that stock MSX-DOS 1 does NO verify-after-write (VERIFY-on WRABS =
+VERIFY-off WRABS = 1 DSKIO write, no read-back), so no-op IS faithful and coupling
+would diverge · alternative: implement a verify-read in the write path (rejected —
+less faithful, pointless on emulator) · confidence: HIGH (direct measurement of the
+exact effect in question; caveat: tested via WRABS, not a separate WRSEQ file-write,
+but both share the sector-write primitive) · undo: trivial (docs-only, no ROM change).
+Separate minor observation surfaced and NOT chased (scope): after WRABS, stock leaves
+DSKIO's residual sector-count in `B` (=1); ours zeroes it. Caller-irrelevant (B isn't
+a documented WRABS return; the doc'd returns A=error / C=count already match), self-
+heals by the next BDOS call, NOT a verify effect. Left as a possible future fidelity
+nicety, not a bug.
+
 **[M27 — the `$05` LSTOUT / DIR "82 spurious calls" oddity, root-caused +
 fixed (2026-07-04).]** User picked this residual after M26 closed. Asked me
 to clarify why LSTOUT couldn't be safely probed given openMSX likely has a

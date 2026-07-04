@@ -310,8 +310,13 @@ gtime_body:
 
 ; --- verify_body - the $55FF VERIFY canonical entry (M22a) -----------------------
 ; A := E (the published VERIFY contract: echo the requested on/off flag); B
-; passes through untouched (§5.3). Persisting E for a future verify-after-write
-; path is out of scope here (remaining-spec §5.4).
+; passes through untouched (§5.3). NO-OP SETTER BY DESIGN, and this is the
+; FAITHFUL choice — RESOLVED 2026-07-04 (remaining-spec §5.4, was open): stock
+; MSX-DOS 1 has NO verify-after-write effect (black-box: a VERIFY-on WRABS issues
+; exactly the same single $4010 DSKIO write as a VERIFY-off WRABS, zero read-back —
+; probes/disk/verifyx.asm). So neither persisting E nor coupling a verify-read into
+; the write path is needed; doing so would make ours LESS faithful (extra reads
+; stock never does) and is pointless on the emulator target (writes cannot fail).
 verify_body:
                 ld      a, e
                 ret
