@@ -44,10 +44,12 @@ on a 720 KB disk; invisible to the emulator probes (small disk, low clusters onl
 1-byte address-neutral change (`or a`→`dec a`, ROM stays 16384 B), **oracle-confirmed** against 101
 real stock disks via `probes/disk/disk_fat_straddle_oracle.py` (incl. the MSX-DOS 1.03 oracle).
 Detail in the review-archive.
-**Next Tier-A candidates (not started):** Tier-B (promote the BDOSX emulator probes to a standing
-`make`-gated acceptance replay) and Tier-C (adversarial/boundary suite: cluster-boundary EOF,
-disk-full, past-EOF random I/O, dir-full, rename-collision) — the FAT12-core covers the metadata
-LOGIC; the `bdos_*` handlers are still emulator-only. Pick deliberately with the user.
+**Tier-B DONE (2026-07-04):** the BDOSX/2/3/0 one-shot differentials are now a standing gate —
+`make bdos-acceptance` (`probes/disk/disk_bdos_acceptance.py`) replays all four vs stock and asserts
+0-byte-diff. Green baseline: **6/6 gated differentials converged**. Oracle-dependent (not in
+`make unit-test`); see tier2-bdos-coverage.md. **Next candidate (not started):** Tier-C
+(adversarial/boundary suite: cluster-boundary EOF, disk-full, past-EOF random I/O, dir-full,
+rename-collision) — the class of test that just caught the straddle-write bug. Pick deliberately.
 
 ## Durable framing (outlives the active pass)
 The milestone chain M13→M27 all landed (detail in the tier2-*-spec.md docs + the review-archive).

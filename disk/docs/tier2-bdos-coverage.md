@@ -17,6 +17,13 @@ update. Repro (boot path): `python3 probes/disk/disk_probe_diff.py callseq --max
 ~/Documents/msx/msx/disks/test.dsk` (oracle disk = **test.dsk**). Repro (FCB cluster): the
 `BDOSX.COM` exerciser, [tier2-bdos-exerciser-spec.md](tier2-bdos-exerciser-spec.md).
 
+**Standing regression gate (2026-07-04):** the BDOSX/2/3/0 exercisers are no longer one-shot —
+`make bdos-acceptance` (`probes/disk/disk_bdos_acceptance.py`) replays all four and re-asserts each
+converges 0-byte-identical to stock. Green baseline 2026-07-04: **6/6 gated differentials converged**
+(BDOSX ×2, BDOSX2 ×1, BDOSX3 ×2 capture-region diffs + BDOSX0 callseq alignment). Run it after any
+kernel/BDOS change; a red gate means the surface below regressed. Oracle-dependent (needs
+`make machines-oracle` + CF-3300 reference ROMs), so it is NOT in the emulator-free `make unit-test`.
+
 **Status legend:**
 - ✅ **converges** — ours matches stock at this call (same params, return, branch, AND observable
   side effect — screen/VRAM or buffer content, not just the call sequence; see the M13 CONOUT

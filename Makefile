@@ -131,6 +131,15 @@ probe: $(ROM) $(DISK_ROM) $(DISK_TEST_DSK)
 	python3 probes/tape/bios_probe_tapwrite.py --out /tmp/zerobas-tapwrite.rom
 	@echo "probe smoke OK (disk + basic + tape)"
 
+# Standing BDOS acceptance gate: replays the BDOSX/2/3/0 exercisers and asserts
+# each still converges 0-byte-identical to the stock oracle (turns the one-shot
+# M19-M26 differentials into a re-runnable regression gate). HEAVY + oracle-
+# dependent like `probe` (needs `make machines-oracle` + your CF-3300 reference
+# ROMs); NOT part of the emulator-free `unit-test`. `make bdos-acceptance ONLY=BDOSX3`
+# scopes it to one exerciser.
+bdos-acceptance: $(DISK_ROM)
+	python3 probes/disk/disk_bdos_acceptance.py $(if $(ONLY),--only $(ONLY),)
+
 # The mechanical half of the clean-room paper-trail audit: forbidden-source scan
 # + per-file attestation (gating) and disk section-citation presence (advisory).
 # Cheap, read-only, no emulator -- run it on demand / in CI so the citation
@@ -146,4 +155,4 @@ clean:
 	rm -rf $(BUILD)
 
 .PHONY: all disk patches tape-patches machines machines-oracle install \
-        test-dsk unit-test coverage probe audit-citations clean
+        test-dsk unit-test coverage probe bdos-acceptance audit-citations clean

@@ -57,6 +57,14 @@ python3 probes/disk/disk_probe_bdos.py --help
 
 `make probe` runs one probe per component as a smoke check (needs steps 1–4 above).
 
+`make bdos-acceptance` replays the whole BDOS surface: it (re)builds the
+BDOSX/BDOSX2/BDOSX3/BDOSX0 exercisers and asserts each still converges
+0-byte-identical to the stock oracle (`disk/docs/tier2-bdos-coverage.md`). This is
+the **standing regression gate** that turns the one-shot M19–M26 differentials into
+"proven every release". Same oracle prerequisites as `make probe`; scope it with
+`make bdos-acceptance ONLY=BDOSX3`, or run `disk_bdos_acceptance.py --list` to print
+the replay plan without booting openMSX.
+
 > **Disk-image safety.** openMSX can write back to a mounted `.dsk`. Probes that
 > may write copy `disk/test720.dsk` to `/tmp` first; if you invoke one directly in
 > write mode, point `--dsk` at a throwaway copy, never the committed image.

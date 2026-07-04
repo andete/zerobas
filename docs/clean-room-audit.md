@@ -220,6 +220,22 @@ pass here (date, scope, commit, verdict) so a later session knows what was
 verified clean and at what point, rather than re-deriving it. A clean verdict is
 a load-bearing fact for the public-release gate.
 
+### 2026-07-04 — disk, FULL-VERIFY (empirical), BDOS surface — ✅ standing gate, 6/6 converge vs stock
+
+Tier-B of the test-hardening pass: promoted the BDOSX/BDOSX2/BDOSX3/BDOSX0
+exercisers (which proved the full BDOS surface 0-byte-identical to stock ONCE
+during M19-M26) into a **re-runnable acceptance gate**, `make bdos-acceptance`
+(`probes/disk/disk_bdos_acceptance.py`). It rebuilds each throwaway disk and
+replays the same differential the build script emits, gating `capture` runs on the
+probe's own exit code (0 = 0-byte-diff) and `callseq` on its "ALIGNED, NO
+DIVERGENCE" verdict. **Green baseline: 6/6 gated differentials converge** (BDOSX
+mem `0x0300`/`0x0400` ×0x180, BDOSX2 `0x0340`×0x70, BDOSX3 `0x03b0`×0x125 +
+`0x04d5`×0x380, BDOSX0 callseq `0x0005`). Clean-room: stock is a black box; the
+exercisers + runner are our own 0BSD code, diffed against the oracle. Oracle-
+dependent (needs `make machines-oracle` + CF-3300 reference ROMs), so it stays out
+of the emulator-free `make unit-test`. This is the "proven every release" backstop
+the surface-coverage scoreboard needed.
+
 ### 2026-07-04 — disk, FULL-VERIFY (empirical), `fat_write_fat_entry` straddle fix — ✅ oracle-CONFIRMED vs stock
 
 Not a whole-target pass — a **targeted empirical (full-verify-class) check** of one
