@@ -679,6 +679,22 @@ fdc_useslot_body:
 ; entry now points DIRECTLY at callf_body_body (kernel.asm), since the
 ; intermediate veneer was deleted.
 ; (cell, handler) pairs; terminated by a 0 cell. No two JP triples overlap.
+;
+; ===== FDC-window guard (root-caused 2026-07-04) ==============================
+; The National WD2793 FDC registers are MEMORY-MAPPED into ROM page 1 at $7FB8-$7FBF
+; (FDC_STATUS $7FB8 / FDC_SECTOR $7FBA / FDC_DATA $7FBB / FDC_CTRL $7FBC, equates.inc).
+; That is a hardware hole inside the $4000-$7FFF ROM image: when the FDC is ACTIVE an
+; instruction fetched from the window reads register bytes, not opcodes. Executable
+; code that slides into the window therefore derails the DOS boot during the MSXDOS.SYS
+; load (a shift of the free tail by >=32 B was a silent, deterministic boot crash --
+; the failure that blocked M22b slice 2). ALL executable code must end at/below $7FB8;
+; only p0_env_tab below it (DATA, read solely by lay_page0_env while the FDC is idle ->
+; transparent ROM reads) may straddle the window. The `ds $8000 - $` pad hides this
+; because it treats the whole page as free ROM. This guard makes the collision a LOUD
+; build error (pasmo exits 1, no object) instead of a silent boot hang.
+                IF ($ > $7FB8)
+FDC_WINDOW_OVERRUN: equ executable_code_passed_7FB8_relocate_tail_code_below_the_FDC_registers
+                ENDIF
 p0_env_tab:
                 dw      $000C, rdslt_h  ; RST 8  RDSLT  (read byte from a slot)
                 dw      $0014, wrslt_h  ; RST 10 WRSLT  (write byte to a slot)
