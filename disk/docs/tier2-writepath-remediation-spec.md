@@ -70,12 +70,22 @@ records (no FCB record-size set) — noted for a future exerciser cleanup, not g
   Net effect: byte-for-byte identical ROM except the 4 operand words + 2 (now label-less) pad
   bytes ⇒ **net-zero canonical addresses, disk.rom stays 16384 B.**
 
-### F2 — $23 FSIZE return code
+### F2 — $23 FSIZE return code  → **DEFERRED per the guard (not an isolated ROM fix)**
 - Locate the FSIZE handler (dispatched via the relocated-kernel table to our page-1 entry;
   the $23 record in BDOSX/bdosx.asm), confirm the `A=$03`-on-success path, and set `A:=0` on
   success per the published contract. Verify no register the contract pins is disturbed. If the
   `$03` turns out to be a deliberate/necessary value (re-check against the contract before
   editing), STOP and report instead of forcing it.
+  → **INVESTIGATED 2026-07-04, DEFERRED.** $23 FSIZE is NOT routed to a zerobas-disk entry — it is
+  a KERNEL-internal *shared call* (tier2-m21-spec.md:34/502 lists FSIZE among the shared calls the
+  kernel handles), so there is no disk-ROM handler to correct. Its prior "✅ 0-byte-diff"
+  (tier2-bdos-coverage.md:54) was a VACUOUS-gate artifact. The `A=$03` is plausibly a CP/M
+  directory code (0–3, a documented success value), and Fable lumped it with the out-of-contract
+  "garbage-mode" block-op state (BDOSX drives $23 in the same record block that never sets the FCB
+  record-size field), not as a clean standalone bug. Forcing `A:=0` would be guessing at an
+  uncertain contract on milestone-closed code with no clear disk-ROM edit site → STOPPED per the
+  guard. **Re-scope as its own black-box $23-contract characterisation if it matters** (needs the
+  true MSX-DOS-1 F_SIZE return-in-A semantics pinned first).
 
 ### F3 — Gate documented-divergence allowlist
 - Add an allowlist to [disk_bdos_acceptance.py](../../probes/disk/disk_bdos_acceptance.py) that
@@ -90,6 +100,18 @@ records (no FCB record-size set) — noted for a future exerciser cleanup, not g
   `--diska` (copy-per-machine, not copy-once) so a write exerciser never boots the other
   machine's mutated image. Keep `--no-copy` semantics for callers that opt out.
 - Fix the BDOS name-table labels ($26=WRBLK, $27=RDBLK).
+
+## STATUS 2026-07-04 — F1 ✅ / F3 ✅ / F4 ✅ / F2 deferred
+- **F1 DONE (commit c557628).** Byte-pure/net-zero (8 ROM bytes = the 4 operand words $7C83/$7CAD
+  → $E760/$E761); disk.rom=16384; DOS boots. Disk-artifact round-trip PASS: WRRND r0=1 now writes
+  BDOSX.BIN record 1 byte-identical to the CF-3300 (was record 0).
+- **F4 DONE (commit d… harness).** _runner() copies per machine; BDOS name table corrected.
+- **F3 DONE.** Exact-address anti-vacuous allowlist; BDOSX3 GREEN (7 documented bytes cited),
+  gate 4/6, BDOSX honestly RED (out-of-contract exerciser + unimplemented $26 + $23 nit).
+- **F2 DEFERRED** (see above): not an isolated ROM fix.
+- **Remaining tracked follow-ons (NOT this pass):** implement $26 WRBLK; fix bdosx.asm to set the
+  FCB record-size before its block ops (so BDOSX can be validly gated); characterise the true
+  $23 F_SIZE return-in-A; adjudicate the WRSEQ disk-full onset lag (P2). Logged in the review queue.
 
 ## 3. Verification (each fix independently gated)
 - **F1 (the P1):** the RAM-capture gate is BLIND to it, so verify by **disk-artifact round-trip**:

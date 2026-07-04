@@ -47,32 +47,29 @@ Detail in the review-archive.
 **Tier-B DONE (2026-07-04):** the BDOSX/2/3/0 one-shot differentials became a standing gate —
 `make bdos-acceptance`. **⚠️ but the "6/6 green" baseline was VACUOUS** (see below).
 
-## ⚠️ LIVE — FDC-window P0 remediation IN PROGRESS (Phase A done; Phase B = ROM fix, next)
-**Resume here.** Tier-C case 1 (cluster-boundary EOF) LANDED (commit dc6ec07). Tier-C **case 2
-(disk-full) uncovered something much bigger, now under a signed-off remediation
-([tier2-remediation-spec.md](tier2-remediation-spec.md)):**
-- **A vacuous acceptance gate hid a P0.** The BDOSX* captures anchored on the program's `done`
-  self-loop UN-armed; `$0333` collided with COMMAND.COM's idle loop at t=0.31 s (~20 s before the
-  program loads) → both machines compared at boot state → hollow PASS. Second latent bug:
-  `mode_capture` returns rc=0 even with byte diffs, so `rc==0` gating never saw a diff either.
-- **Real P0 in `main`:** FMAKE's dir-slot claim `fdc_useslot_body` ($7F85) sits inside the REAL
-  FDC register window **$7F80–$7FBF** (confirmed A1: openMSX `National_CF-3300.xml` WD2793
-  `connectionstyle=National` + a slotted read showing register bytes mirrored ×8) — NOT the
-  $7FB8–$7FBF our guard/equates assume. So create/write **persistence is broken**: files aren't
-  written, read-backs return zeros. Regression landed ~M27.
-- **Phase A DONE + COMMITTED (2333609):** gate de-vacuumed (builders emit `--arm-check-val`;
-  `disk_bdos_acceptance.py` parses the recorded buffer + rejects boot-time anchors + treats live
-  AF-at-`done` as benign); `bdosx4.asm` IX-preservation fixed; true failure surface established —
-  **BDOSX + BDOSX3 diverge (ours reads zeros), BDOSX2 + BDOSX0 converge** = ONE root cause. The
-  gate is now HONESTLY RED (real P0) not vacuously green.
-- **Phase B (NEXT — ROM fix, delicate, milestone-closed page-1 surgery):** relocate
-  `fdc_entloop_body` ($7F56) + `fdc_useslot_body` ($7F85) out of $7F80–$7FBF into the fat.asm
-  free-tail corridor; re-pin `p0_env_tab` ($7FAC, partly in-window) — **OPEN PUZZLE: p0_env_tab is
-  partly in the true window yet boot survives; understand why BEFORE moving it**; correct
-  equates.inc + the runtime.asm guard ($7FB8→$7F80) + build-time assert. Invariants: ROM=16384 B,
-  net-zero canonical addresses, Tier-1 green. Then Phase C re-verify (honest gate green +
-  create→close→reopen→read round-trip), Phase D adjudicate case-2 disk-full + docs.
-- BDOSX4 (case-2 disk-full exerciser) is BUILT but kept OUT of the gate until Phase D1.
+## ✅ DONE — FDC-window P0 + write-path remediation (2026-07-04); OPEN follow-ons tracked
+Tier-C case 1 (cluster-boundary EOF) LANDED (dc6ec07). Case 2 (disk-full) cascaded into a
+vacuous-gate discovery + a live P0 + a second P1 — all now remediated across two signed-off specs
+([tier2-remediation-spec.md](tier2-remediation-spec.md), [tier2-writepath-remediation-spec.md](tier2-writepath-remediation-spec.md)):
+- **FDC-window P0 FIXED (Phase A/B/C, commits 2333609 → 2047822).** The National WD2793 registers
+  mirror ×8 across the WHOLE **$7F80–$7FBF** (not just $7FB8–$7FBF). `fdc_entloop_body`/
+  `fdc_useslot_body`/`p0_env_tab` had drifted into it (~M27) → create/write didn't persist. Fixed
+  by a PROVEN byte-pure relocation into the kernel free-region corridor ($607E+); window is dead
+  $00 pad; guard corrected to $7F80 with a tamper-tested `FDC_WINDOW_INTRUSION` assert. Create→
+  reopen→read converged 17→0 vs CF-3300.
+- **The vacuous gate is fixed (Phase A + F3).** De-vacuumed (armed anchors + buffer-diff parsing)
+  and given an exact-address, anti-vacuous documented-divergence allowlist. Gate is 4/6, GREEN for
+  the right reasons; BDOSX honestly RED (below).
+- **RDRND/WRRND wrong-record P1 FIXED (F1, c557628).** `rrnd_recsector`/`rrnd_clussec_tmp` were
+  `db` scratch cells IN ROM → runtime stores no-op'd → wrong record. Moved to RAM $E760/$E761
+  (net-zero); disk-artifact round-trip verified (WRRND r0=1 → record 1 == CF-3300). Invisible to
+  the RAM gate — same class as the FDC-window P0.
+- **Harness soundness fixed (F4):** disk_probe_diff.py copies per-machine (write-exerciser
+  soundness); BDOS name table corrected.
+- **OPEN follow-ons (tracked in review-queue):** (1) `$26` WRBLK unimplemented; (2) bdosx.asm
+  drives block ops out-of-contract (no FCB record-size) → BDOSX stays honestly RED until fixed;
+  (3) `$23` FSIZE `A=3` uncharacterised (kernel shared call — F2 deferred); (4) WRSEQ disk-full
+  onset lag (P2, case-2 D1). BDOSX4 disk-full exerciser BUILT, still OUT of the gate.
 
 ## Durable framing (outlives the active pass)
 The milestone chain M13→M27 all landed (detail in the tier2-*-spec.md docs + the review-archive).
@@ -166,13 +163,12 @@ any future zerobas-disk work (e.g. the deferred multi-hardware variant layer,
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
 ## Next action — Phase B of the FDC-window P0 remediation (spec signed off; user paused before ROM edits)
-**The forced next step is Phase B** of [tier2-remediation-spec.md](tier2-remediation-spec.md)
-(see the ⚠️ LIVE section above). User paused at the Phase-A/B boundary deliberately — Phase B is
-delicate milestone-closed page-1 ROM surgery. Start with the read-only p0_env_tab-in-window puzzle,
-then relocate + fix guard/equates + assert. Do a deep-think first per [[tier2-deep-think-before-resuming]].
-Do NOT start ROM edits without re-confirming ([[confirm-before-large-execution]]).
+**The FDC-window + write-path remediation is COMPLETE** (see the ✅ DONE section above). The next
+step is a user-scoped pick from the tracked follow-ons or a parked direction. The follow-ons
+(review-queue): implement `$26` WRBLK; fix bdosx.asm's out-of-contract block ops (unblocks BDOSX
+gating); characterise `$23` F_SIZE; adjudicate the WRSEQ disk-full onset lag (P2). None is forced.
 
-Other candidate directions (parked; behind the P0 remediation):
+Other candidate directions (parked):
 - **Docs-as-deliverable harvest** ([[dual-mission-docs-as-deliverable]]) — now the code is
   settled, consolidate the tier2-*-spec.md notebook into the product-spec genre (seed:
   spec-diskrom-kernel.md).

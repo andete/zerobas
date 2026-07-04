@@ -81,8 +81,20 @@ not the agent's word):
   mislabels $25/$26/$27 ($26=WRBLK, $27=RDBLK). (3) gate needs an allowlist for documented
   divergences + on-disk evidence (RAM capture is blind to wrong-record writes); the exerciser
   fixture ramp has period 256, so buffer bytes cannot prove positional correctness.
-- **STILL PENDING user:** disposition of the new P1 (RDRND/WRRND) + the smaller (a) items + the
-  gate/harness fixes. FDC-window remediation itself (Phase A/B) is DONE; Phase C P0 round-trip met.
+- **RESOLVED 2026-07-04 (user chose "spec + fix P1 now" + follow-ons).** Signed-off spec
+  [tier2-writepath-remediation-spec.md](tier2-writepath-remediation-spec.md):
+  - **F1 DONE (c557628):** RDRND/WRRND P1 fixed (scratch cells ROM→RAM $E760/$E761, net-zero);
+    disk-artifact round-trip PASS (WRRND r0=1 → BDOSX.BIN record 1 == CF-3300).
+  - **F4 DONE:** disk_probe_diff.py copies per-machine (write-exerciser soundness); BDOS name
+    table $26=WRBLK/$27=RDBLK.
+  - **F3 DONE:** exact-address anti-vacuous allowlist; BDOSX3 GREEN (documented date/dirloc +
+    undefined-return regs cited), gate 4/6. Coverage doc's vacuous $23/$26/$27 claims corrected.
+  - **F2 DEFERRED:** $23 FSIZE is a kernel shared call (no disk-ROM handler); A=3 may be a valid
+    CP/M dir code — needs its own contract characterisation, not a forced edit.
+  - **OPEN tracked follow-ons (next syncs):** (1) implement $26 WRBLK (unimplemented feature);
+    (2) fix bdosx.asm to set FCB record-size before block ops so BDOSX is validly gatable;
+    (3) characterise the true $23 F_SIZE return-in-A; (4) adjudicate the WRSEQ disk-full onset
+    lag (P2, least severe). BDOSX stays honestly RED in the gate until (1)+(2).
 
 _**Batch-synced 2026-07-04** (consolidation sweep) — the M19→M27 block (20 entries) was
 reviewed and moved to [tier2-review-archive.md](tier2-review-archive.md). The Tier-2

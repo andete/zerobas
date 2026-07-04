@@ -51,10 +51,10 @@ kernel/BDOS change; a red gate means the surface below regressed. Oracle-depende
 | `$19` | CURDRV | ✅ | 27/27 boot `callseq` | the `A>` idle loop calls it to print the drive letter |
 | `$1A` | SETDTA | ✅ | exercised implicitly by every RDSEQ/RDBLK call in `BDOSX`, 0-byte-diff | no standalone probe of SETDTA in isolation |
 | `$1B` | ALLOC (GETALLOC) | ✅ | M20 — `DIR`'s "`nn bytes free`" footer, byte-identical | root cause was the `$F306` dispatcher-flag/`HL`-passthrough rule (see general rule below) |
-| `$23` | FSIZE | ✅ | M21/`BDOSX` run, 0-byte-diff | |
+| `$23` | FSIZE | ⚠ UNVERIFIED (was vacuous ✅) | de-vacuumed gate (2026-07-04): ours returns `A=$03` vs stock `A=0`; but $23 is a KERNEL-internal shared call (no disk-ROM handler) and `A=3` may be a valid CP/M dir code — needs its own $23-contract characterisation | prior "0-byte-diff" was a vacuous-anchor artifact |
 | `$24` | SETRND | ✅ | M21/`BDOSX` run | |
-| `$26` | WRBLK | ✅ | M21/`BDOSX` run | |
-| `$27` | RDBLK | ✅ | M21b — RC-2 fix (2026-07-02): `$47B2`'s body (`k_47B2`) rewritten from a COMMAND.COM-only diagnostic loader into a generic body streaming via `bdos_seqread`; also fixed a real bug found along the way — our internal `BDOS_DTA` cell is separate from the kernel's real `DOS_DTAPTR` and must be reseeded at entry | this is the fix that made loading/running an arbitrary named `.COM` work at all |
+| `$26` | WRBLK | ❌ NOT IMPLEMENTED (was vacuous ✅) | de-vacuumed gate (2026-07-04): ours does not persist a random block write (post-run image unchanged); the M21 "0-byte-diff" was a vacuous-anchor artifact | feature gap; tracked follow-on |
+| `$27` | RDBLK | ⚠ documented simplification | `k_47B2` streams the whole file from offset 0, ignoring the record-size/count fields (same class as `bdos_rdblk`'s random-record-0 assumption) — NOT a full-contract match; exercised out-of-contract by `bdosx.asm` (no FCB record-size set) | M21b RC-2 made arbitrary-`.COM` load work; full block semantics unverified |
 | `$2A` | GDATE | ✅ | handler `gdate_handler` @ `$553C` + `$F30D/$F30E` format defaults; backed by `test_gdate.py` | returns 1984-01-01 default |
 | `$2B` | SDATE | ✅ | confirmed with a real typed date (`--keys '85-3-27\r'`); screen arbiter matches | no host unit test yet |
 | `$01` | CONIN | ✅ | `BDOSX2` record 8, 0-byte-diff; `screen` shows the `x` echo | M22a: canonical entry `$5445` (`conin_body`), CHGET+echo via `conout_body` |
@@ -76,15 +76,18 @@ kernel/BDOS change; a red gate means the surface below regressed. Oracle-depende
 | `$2F` | RDABS | ✅ | `BDOSX3` record 22, 0-byte-diff | M26 slice 2 (2026-07-03): `$46BA` was pure `$00` pad (no relocation needed); `rdabs_body` (fat.asm) reads via `dskio` directly (arbitrary sector count) into the runtime DTA — tier2-m26-spec.md §7 |
 | `$30` | WRABS | ✅ | `BDOSX3` record 23, 0-byte-diff | M26 slice 3 (2026-07-03): real dispatch `$4720` was a mid-instruction byte inside `bdos_seqwrite`'s live tail (needed a FREN-class relocation, unlike RDABS's pad-wire); `bdos_seqwrite` relocated to `bdos_seqwrite_body` (kernel.asm), freeing `$4720` for `wrabs_body` (mirrors `rdabs_body`, `dskio` write direction) — tier2-m26-spec.md §8 |
 | `$13` | FDEL | ✅ | `BDOSX3` record 15, 0-byte-diff | M26 slice 4 (2026-07-03): real dispatch `$436C` was pure `$00` pad (RDABS-shape, no relocation), but landing FREN moved fresh pad underneath it so the un-wired call was actively corrupting the target dir entry + leaking its FAT chain (not a harmless no-op); `fdel_body` (kernel.asm — NOT fat.asm's own end, which silently broke test_gdate/test_getdpb by starving kernel.asm's pinned-address corridor of slack) reuses `fat_find`, frees the FAT12 chain via `fat_next_cluster`/`fat_write_fat_entry`, then stamps `$E5` — tier2-m26-spec.md §9 |
-| `$21` `$22` | RDRND, WRRND | ✅ | `BDOSX3` records 18/20 (RDRND) and 19 (WRRND), 0-byte-diff (`rdbuf2`/`wrpat` isolated) | M26 slice 5/final (2026-07-03): two separate dead-pad dispatches (`$4788`/`$4793`, fat.asm — not one shared entry as first thought); shared `rrnd_position` helper (kernel.asm) seeds the existing sequential-read iterator from the FCB's `r0` random field; `rdrnd_body` reuses `bdos_seqread`, `wrrnd_body` is a new small read-modify-write body (can't reuse `bdos_seqwrite` — wrong engine shape) — tier2-m26-spec.md §10. **Closes M26 — full BDOS surface coverage complete.** |
+| `$21` `$22` | RDRND, WRRND | ✅ (fixed 2026-07-04, F1) | disk-artifact round-trip: WRRND r0=1 writes BDOSX.BIN record 1 byte-identical to the CF-3300 | M26 slice 5 built the bodies (`rrnd_position`/`rdrnd_body`/`wrrnd_body`), but the RAM-only gate's "0-byte-diff" was BLIND to a wrong-record P1: `rrnd_recsector`/`rrnd_clussec_tmp` were `db` scratch cells IN THE ROM → runtime stores no-op'd → record-in-sector forced to 0 → wrong record. FIXED (commit c557628): cells moved to RAM `$E760/$E761`; verified on-disk vs oracle (tier2-writepath-remediation-spec.md F1) |
 | `$03` `$04` | AUXIN, AUXOUT | — n/a | — | not relevant to a single-drive MSX1 disk target |
 
 ## Reading the score
 - **The boot-to-`A>` path is 100% ✅ (27/27 parity):** `$02/$09/$0A/$0E/$0F/$19/$2A/$2B` all
   converge, control flow AND rendered output both verified.
-- **The FCB read/write/close cluster is 100% ✅ (M21, 2026-07-02):** `$0F/$10/$14/$1A/$23/$24/
-  $26/$27` all proven via the `BDOSX.COM` exerciser — byte-identical registers across 47 shared
-  calls, 0-byte-diff on both the 384-byte data buffer and the FCB/register-snapshot buffer.
+- **The FCB read/write/close cluster (M21, 2026-07-02) — CORRECTED 2026-07-04:** `$0F/$10/$14/$1A/
+  $24` are solid, but the M21 "100% ✅" for this cluster was inflated by the VACUOUS acceptance
+  anchor (fixed 2026-07-04, Phase A). The de-vacuumed gate shows `$26` WRBLK is NOT implemented,
+  `$27` RDBLK is a documented stream-from-0 simplification (exercised out-of-contract by
+  `bdosx.asm`), and `$23` FSIZE returns `A=3` (uncharacterised) — see their rows above. `BDOSX`'s
+  own differential is honestly RED in the gate for these reasons, not hidden.
 - **The console + misc + termination tier (`$00/$01/$06/$07/$08/$0B/$0C/$0D/$18/$2C/$2D/$2E`)
   is 100% ✅ (M22a+M22b+M23, 2026-07-03):** all proven via `BDOSX2.COM`/`BDOSX0.COM`, 0-byte-diff
   on every record. This is where the milestone's real surprise lived — `$0C` CPMVER and
