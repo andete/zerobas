@@ -100,7 +100,27 @@ def _flag_val(argv: list[str], flag: str, default, cast):
     return default
 
 
-def gate(mode: str, rc: int, out: str, argv: list[str]) -> tuple[bool, str]:
+# Documented / contract-undefined divergences, excused by EXACT address per exerciser.
+# A diff at an allowlisted byte is cited-and-excused; a diff at ANY other byte still
+# FAILS, and a diff region too large to fully enumerate (probe caps the per-byte dump)
+# also FAILS — so the allowlist can never hide an un-inspected byte. Each entry carries
+# its provenance. Addresses are tied to the current bdosx*.asm buffer layout; if an
+# exerciser is re-assembled to a different layout, the moved bytes show up as UNEXCUSED
+# (the gate stays honest). Root-caused 2026-07-04 (Fable write-path investigation).
+ALLOWLIST = {
+    "BDOSX3": {
+        0x03C4: "FCB+20 date-lo — we intentionally do NOT stamp file dates (fat.asm; PROVENANCE date/time)",
+        0x03C5: "FCB+21 date-hi — ditto (no date stamp)",
+        0x03C8: "FCB+24 devid — accepted-cosmetic (M22a dirloc class)",
+        0x03C9: "FCB+25 dirloc — accepted-cosmetic (M22a dirloc class)",
+        0x044C: "regs rec14 FREN($17) L — register UNDEFINED on return (contract pins A only)",
+        0x045B: "regs rec16 FOPEN-miss($0F) H — register UNDEFINED on the miss path (A=FF is pinned)",
+        0x045C: "regs rec16 FOPEN-miss($0F) L — ditto (undefined on miss)",
+    },
+}
+
+
+def gate(name: str, mode: str, rc: int, out: str, argv: list[str]) -> tuple[bool, str]:
     """Pass/fail verdict for one probe run, by mode.
 
     The capture gate is DEFENSIVE against two vacuity modes found 2026-07-04:
@@ -130,7 +150,24 @@ def gate(mode: str, rc: int, out: str, argv: list[str]) -> tuple[bool, str]:
         # differs BENIGNLY on both convergent and divergent runs — so a register-only
         # delta is NOTED, never failed. Byte diffs in the buffer are the real verdict.
         if nbytes:
-            return False, f"BYTE DIFF ({nbytes} byte(s); regs: {regs})"
+            # Enumerate the per-byte diffs the probe printed and excuse ONLY the
+            # exact addresses on this exerciser's allowlist. Fail-safe on truncation:
+            # if the probe capped its dump (printed < total), we cannot prove the
+            # unseen bytes are excusable, so the diff stands.
+            printed = [int(a, 16) for a in re.findall(r"^\s*([0-9A-Fa-f]{4}): stock=", out, re.M)]
+            allow = ALLOWLIST.get(name, {})
+            if len(printed) < nbytes:
+                return False, (f"BYTE DIFF ({nbytes} byte(s); only {len(printed)} enumerated by the "
+                               f"probe — too large to allowlist-verify, treated as real; regs: {regs})")
+            unexcused = [a for a in printed if a not in allow]
+            if unexcused:
+                shown = ", ".join(f"{a:04X}" for a in unexcused[:8])
+                extra = f" (+{len(unexcused)-8} more)" if len(unexcused) > 8 else ""
+                excused = nbytes - len(unexcused)
+                return False, (f"BYTE DIFF ({len(unexcused)} UNEXCUSED: {shown}{extra}"
+                               + (f"; {excused} allowlisted" if excused else "") + f"; regs: {regs})")
+            reasons = "; ".join(sorted({allow[a] for a in printed}))
+            return True, f"0-byte-diff (all {nbytes} allowlisted — {reasons})"
         note = f"; live-reg delta [{regs}] (benign epilogue)" if regs != "NONE" else ""
         tstr = f" (anchor t={anchor_t:.1f} ≥ keys-at)" if anchor_t is not None else ""
         return True, f"0-byte-diff{tstr}{note}"
@@ -195,7 +232,7 @@ def main() -> int:
                 continue
             total += 1
             rc, out = run_probe(argv)
-            ok, why = gate(mode, rc, out, argv)
+            ok, why = gate(name, mode, rc, out, argv)
             print(f"  {'PASS' if ok else 'FAIL'}  {label}: {why}")
             if ok:
                 passed += 1
