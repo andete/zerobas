@@ -62,8 +62,8 @@ GROUPS = [
         "test_program", "test_control_flow", "test_repl", "test_statements",
     ], "basic/main.asm", 0x4000),
     ("tape", ["test_tape"], "tape/tape.asm", 0x00E1),
-    ("disk", ["test_getdpb", "test_gdate", "test_fat_next_cluster"],
-     "disk/disk.asm", 0x4000),
+    ("disk", ["test_getdpb", "test_gdate", "test_fat_next_cluster",
+              "test_fat_write_fat_entry"], "disk/disk.asm", 0x4000),
 ]
 
 # Data tables that live in the code image (lowercase, so not caught by the

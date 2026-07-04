@@ -30,12 +30,25 @@ mutation/random/absolute-I/O block) and **all four post-M26 residuals closed** (
 characterised + wired to BIOS `$00A5`; `$2E` VERIFY resolved as a faithful no-op; M22b slice-2
 CONOUT TAB-expansion landed). **Nothing gating remains on this track.**
 
-## Live thesis — none (track complete)
-No open blocker. The milestone chain M13→M27 all landed (detail in the tier2-*-spec.md docs +
-the review-archive). The durable framing that outlives this track — the two-interface rule, the
-**Settled facts** and **Dead ends** below, and the **Method guardrails / Tooling / Invariants**
-at the bottom — is retained for any future zerobas-disk work (e.g. the deferred multi-hardware
-variant layer, [[disk-hardware-target-variants]]).
+## Live thesis — Tier-A test hardening (active 2026-07-04)
+DOS-boot track is COMPLETE; a follow-on **Tier-A host-test hardening** pass is active (user-chosen).
+Fixed `coverage.py` (disk group was crashing) → first real number: **disk host coverage was 1%**
+(74/13849 instr) — the whole FAT12/BDOS engine had ZERO standing host regression, carried only by
+the one-shot emulator probes. Growing a FAT12-core host suite (same FDC-mock pattern as
+`test_getdpb`). Landed: `test_fat_next_cluster` (chain-walk, all 4 nibble cases).
+**⚠ OPEN — held bug:** `test_fat_write_fat_entry` FOUND a real latent defect — `fat_write_fat_entry`
+(fat.asm:579) straddles at the wrong `byteidx` boundary, corrupting FAT entries at sector offset
+255/511 (clusters 170/341/682 on a 720 KB disk). 1-byte address-neutral fix in hand but **HELD**
+pending an emulator differential confirming stock straddles at byteidx 511 (see review-queue Open +
+[[confirm-before-large-execution]]). Test committed XFAIL until then. Remaining FAT12-core targets:
+`fat_find`+`name_cmp`, `fat_alloc_cluster`, `fat_dir_create`, `fat_read_file_sector`.
+
+## Durable framing (outlives the active pass)
+The milestone chain M13→M27 all landed (detail in the tier2-*-spec.md docs + the review-archive).
+The framing that outlives this track — the two-interface rule, the **Settled facts** and **Dead
+ends** below, and the **Method guardrails / Tooling / Invariants** at the bottom — is retained for
+any future zerobas-disk work (e.g. the deferred multi-hardware variant layer,
+[[disk-hardware-target-variants]]).
 
 ## Settled facts — DO NOT re-litigate or re-probe
 - COMMAND.COM **loads AND reaches $0100** (handoff works); `$47B2` return contract done; `$0005`=`JP
