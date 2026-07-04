@@ -36,7 +36,7 @@ marked XFAIL so the suite stays green while documenting the defect. When the fix
 lands + is oracle-confirmed, set STRADDLE_FIXED = True to make them strict.
 """
 
-STRADDLE_FIXED = False       # flip to True once the held fat.asm fix lands
+STRADDLE_FIXED = True        # fix landed 2026-07-04 (oracle-confirmed vs stock)
 
 import os
 import subprocess

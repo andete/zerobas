@@ -23,25 +23,8 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
-**[Tier-A test-hardening / FAT12-straddle-write bug]** A new host unit test
-(`tests/test_fat_write_fat_entry.py`) found a real latent defect in
-`fat_write_fat_entry` (fat.asm:579-581): its straddle test checks the `byteidx`
-HIGH byte `== 0`, but the straddle case `byteidx == 511 = 0x01FF` has high byte 1
-(comment "impossible for 512" is false). So a FAT12 entry whose low byte sits at
-sector offset 511 (and, inversely, offset 255) is packed into the wrong sector,
-disagreeing with the already-validated reader `fat_next_cluster`. · **Reachable**
-on a 720 KB disk at clusters 170 (byteidx 255), 341 & 682 (byteidx 511) — any
-file that allocates them corrupts its FAT chain. Invisible to the BDOSX3 emulator
-probes because their small test disk only ever touches low clusters (byteidx 3,
-4, 6…), never 255/511 — a boundary blind-spot. · **Fix in hand:** 1-byte,
-address-neutral (`or a` → `dec a`; ROM stays 16384 B); makes all 4 pack cases +
-the write→read round-trip pass. Clean-room: boundary from 512-byte geometry +
-FAT12 spec, mirrors our validated reader — no stock disassembly. · **HELD** per
-user (2026-07-04): commit fix only after an emulator differential confirms stock
-MSX-DOS straddles at byteidx 511 (the oracle). · **Undo:** test committed as
-XFAIL (`STRADDLE_FIXED=False`); flip to strict + land the fat.asm fix together
-once oracle-confirmed. · confidence: HIGH on the defect (root-caused + empirically
-reproduced), MED on needing the oracle step (spec makes it near-certain).
+_**Nothing currently open.** The FAT12 straddle-write bug found + fixed during the
+2026-07-04 Tier-A test-hardening pass is RESOLVED and moved to the archive below._
 
 _**Batch-synced 2026-07-04** (consolidation sweep) — the M19→M27 block (20 entries) was
 reviewed and moved to [tier2-review-archive.md](tier2-review-archive.md). The Tier-2

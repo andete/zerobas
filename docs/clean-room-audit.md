@@ -220,6 +220,33 @@ pass here (date, scope, commit, verdict) so a later session knows what was
 verified clean and at what point, rather than re-deriving it. A clean verdict is
 a load-bearing fact for the public-release gate.
 
+### 2026-07-04 — disk, FULL-VERIFY (empirical), `fat_write_fat_entry` straddle fix — ✅ oracle-CONFIRMED vs stock
+
+Not a whole-target pass — a **targeted empirical (full-verify-class) check** of one
+fix, done because the Tier-A host suite found a real defect in `fat_write_fat_entry`
+(FAT12 write-side pack straddled at the wrong sector boundary; corrupts entries at
+clusters 170/341/682 on a 720 KB disk — see the review-archive entry). The fix
+(fat.asm:579, `or a`→`dec a`, 1-byte, ROM 16384 B unchanged) needed a stock-behaviour
+oracle before landing on milestone-closed code.
+
+- **Empirical oracle:** `probes/disk/disk_fat_straddle_oracle.py` — black-box read of
+  **101 real stock-written `.dsk` images** (incl. the MSX-DOS 1.03 oracle `test.dsk`
+  and `msxdos103-cmd111.dsk`), interpreting each FAT + root dir per the PUBLIC Microsoft
+  FAT spec §3.2. Result: **2009** files reconstruct byte-exact under the straddle-at-511
+  rule; **71** cross a byteidx-255/511 boundary cluster and still validate (witness:
+  `bombaman.dsk BOMBAMANLIB`, 353 clusters crossing BOTH 170 and 341). Concrete byte
+  differential at bombaman cluster 341: stock wrote `FATsec1[0]=0x15`; the fix reproduces
+  it, the old code left it stale. **Stock straddles at byteidx 511 — the fix matches, the
+  shipped writer did not.**
+- **Clean-room:** reads stock-written DATA artifacts only (FAT + dir bytes), never ROM
+  code; same class as the GETDPB-vs-CF-3300 oracle. The 12-bit unpack mirrors our own
+  validated `fat_next_cluster`. No disassembly.
+- **Host backing:** `tests/test_fat_write_fat_entry.py` (all 4 pack cases + write→read
+  round-trip, now strict); `make unit-test` 21/21; `make audit-citations` clean.
+- **Method note:** user-approved substitution of a read-only oracle-artifact analysis for
+  a live emulator write-differential — stronger (covers the real system disks directly)
+  and mutation-free.
+
 ### 2026-07-04 — disk, paper trail, WHOLE-TARGET — ⚠→✅ 1 break found + remediated same-pass (at `5712775`, fix rides the consolidation commit)
 
 The deferred **"clean the backlog" whole-target pass** (the 2026-06-24 run predates the

@@ -577,8 +577,16 @@ fwe_byte1:
                 cp      $FF
                 jr      nz, fwe_b1_same     ; byteidx != 511 -> same sector
                 ld      a, b
-                or      a
-                jr      nz, fwe_b1_same     ; (byteidx high != 0; impossible for 512)
+                dec     a
+                jr      nz, fwe_b1_same     ; byteidx is 9-bit (0..511): the straddle
+                                            ; case 511 = $01FF has HIGH byte 1, so
+                                            ; straddle iff (c==$FF AND b==1). (Was
+                                            ; `or a` testing b==0 — that mis-handled
+                                            ; byteidx 511 as same-sector and byteidx
+                                            ; 255 as a straddle, corrupting FAT
+                                            ; entries at clusters 170/341/682 on a
+                                            ; 720 KB disk. Oracle-confirmed vs stock:
+                                            ; 101 real disks straddle at 511.)
                 ; straddle: byte1 is buf[0] of the NEXT FAT sector. First persist
                 ; this sector to all FATs, then load + patch the next sector. The
                 ; saved cluster is still on the stack, so pop it before any early

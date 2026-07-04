@@ -11,6 +11,29 @@ Newest first; this is provenance, not a working list.
 
 ---
 
+**[Tier-A test-hardening / FAT12 straddle-write bug — FOUND + FIXED, oracle-confirmed
+(2026-07-04).]** A new host unit test (`tests/test_fat_write_fat_entry.py`) found a
+real latent defect in `fat_write_fat_entry`: its straddle test (fat.asm:579) checked
+the `byteidx` HIGH byte `== 0`, but the straddle case `byteidx == 511 = 0x01FF` has
+high byte 1 — so a FAT12 entry whose low byte sits at sector offset 511 (and inversely
+255) was packed into the wrong sector, disagreeing with the validated reader
+`fat_next_cluster`. · **Reachable** at clusters 170/341/682 on a 720 KB disk; any file
+allocating them corrupts its chain. **Invisible to the BDOSX3 emulator probes** (small
+test disk, low clusters only, byteidx 3/4/6…) — a boundary blind-spot exactly of the
+kind a critical host suite exists to catch. · **Fix:** 1-byte, address-neutral
+(`or a` → `dec a`; ROM stays 16384 B); test flipped to strict (`STRADDLE_FIXED=True`),
+all 4 pack cases + write→read round-trip pass. · **Oracle (verify-first, user-gated):**
+`probes/disk/disk_fat_straddle_oracle.py` — read-only black-box analysis of 101 real
+stock-written disks (incl. the MSX-DOS 1.03 oracle `test.dsk` + `msxdos103-cmd111.dsk`):
+2009 files reconstruct byte-exact under straddle-at-511, 71 cross a byteidx-255/511
+cluster and still validate (e.g. `bombaman.dsk BOMBAMANLIB`, 353 clusters crossing BOTH
+170 and 341). Concrete byte differential: at bombaman cluster 341 stock wrote FATsec1[0]
+= 0x15; the fix reproduces it, the old code left it stale. · why the read-only oracle
+over the originally-named live emulator write-differential: stronger (covers the real
+system disks directly), cleaner (no mutation, pure black-box), user-approved. ·
+confidence: HIGH (root-caused + host-reproduced + 101-disk oracle). · undo: revert the
+1-byte fat.asm change + set `STRADDLE_FIXED=False`.
+
 _**Batch-synced 2026-07-04** (consolidation sweep): the M19→M27 Open block (20 entries, all
 LANDED/resolved) moved here from the live board. Covers M19 dir-search → M20 bytes-free → M21
 typed-`.COM` → M22/M22b CONOUT → M23 TERM0 → M26 mutation/random/absolute-I/O → M27 LSTOUT/`$F23B`
