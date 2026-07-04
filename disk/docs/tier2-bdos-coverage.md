@@ -51,7 +51,7 @@ kernel/BDOS change; a red gate means the surface below regressed. Oracle-depende
 | `$19` | CURDRV | ✅ | 27/27 boot `callseq` | the `A>` idle loop calls it to print the drive letter |
 | `$1A` | SETDTA | ✅ | exercised implicitly by every RDSEQ/RDBLK call in `BDOSX`, 0-byte-diff | no standalone probe of SETDTA in isolation |
 | `$1B` | ALLOC (GETALLOC) | ✅ | M20 — `DIR`'s "`nn bytes free`" footer, byte-identical | root cause was the `$F306` dispatcher-flag/`HL`-passthrough rule (see general rule below) |
-| `$23` | FSIZE | ⚠ UNVERIFIED (was vacuous ✅) | de-vacuumed gate (2026-07-04): ours returns `A=$03` vs stock `A=0`; but $23 is a KERNEL-internal shared call (no disk-ROM handler) and `A=3` may be a valid CP/M dir code — needs its own $23-contract characterisation | prior "0-byte-diff" was a vacuous-anchor artifact |
+| `$23` | FSIZE | ❌ NOT IMPLEMENTED (characterised 2026-07-04; was vacuous ✅) | ours is a found-BLIND stub: returns constant `A=L=$03` and never writes the random-record field (fcb+33..35) — the function's whole purpose. Verified black-box on the CF-3300 oracle: stock returns `A=L=0` + r0=ceil(size/128) on found and `A=L=$FF` on not-found (map.grauw.nl `_FSIZE` contract); ours returns `$03` in ALL cases (found, not-found, any dir slot, any size). The "A=3 = CP/M dir code" theory is REFUTED (seasip: dir codes are F_OPEN/CLOSE/SFIRST/SNEXT, never F_SIZE; stock returns 0 not 0-3; A did not track slot or record count). Fix is feature-scale (real dir-search + record-count), same class as $26 — tracked follow-on | prior "0-byte-diff" was a vacuous-anchor artifact |
 | `$24` | SETRND | ✅ | M21/`BDOSX` run | |
 | `$26` | WRBLK | ❌ NOT IMPLEMENTED (was vacuous ✅) | de-vacuumed gate (2026-07-04): ours does not persist a random block write (post-run image unchanged); the M21 "0-byte-diff" was a vacuous-anchor artifact | feature gap; tracked follow-on |
 | `$27` | RDBLK | ⚠ documented simplification (now well-formed differential, F5) | `k_47B2` streams the whole file from offset 0, ignoring the random-record/count fields (same class as `bdos_rdblk`'s random-record-0 assumption) — NOT a full-contract match. `bdosx.asm` now sets FCB+14..15=128 before the block ops (F5), so the differential is well-formed: BOTH machines transfer a defined 128-B record and the divergence is exactly one record's positional offset (ours streams from 0, stock positions at the random record). Bonus datum: setting FCB+14=128 makes stock read a real block (was 00), confirming stock uses FCB+14..15 as record size = our `driver.asm:578` interpretation. | M21b RC-2 made arbitrary-`.COM` load work; full positional block semantics unverified — green needs the stream-from-0 un-simplification |
@@ -85,8 +85,9 @@ kernel/BDOS change; a red gate means the surface below regressed. Oracle-depende
 - **The FCB read/write/close cluster (M21, 2026-07-02) — CORRECTED 2026-07-04:** `$0F/$10/$14/$1A/
   $24` are solid, but the M21 "100% ✅" for this cluster was inflated by the VACUOUS acceptance
   anchor (fixed 2026-07-04, Phase A). The de-vacuumed gate shows `$26` WRBLK is NOT implemented,
-  `$27` RDBLK is a documented stream-from-0 simplification, and `$23` FSIZE returns `A=3`
-  (uncharacterised) — see their rows above. `BDOSX`'s own differential is honestly RED in the gate
+  `$27` RDBLK is a documented stream-from-0 simplification, and `$23` FSIZE is a found-BLIND stub
+  (characterised 2026-07-04: constant `A=L=$03`, r0-r2 never set — NOT the "valid dir code" first
+  suspected; a real bug, same feature-scale class as `$26`) — see their rows above. `BDOSX`'s own differential is honestly RED in the gate
   for these reasons, not hidden. As of F5 (2026-07-04) `bdosx.asm` sets FCB+14..15=128 before the
   block ops so the comparison is WELL-FORMED (was out-of-contract: no record-size set); the residual
   RED is now diagnostic — the whole-record `$27` positional offset + the `$26` gap + the `$23` nit —

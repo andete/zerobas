@@ -108,10 +108,17 @@ not the agent's word):
   still cannot go green from this fix alone** — the premise that the record-size fix "unblocks BDOSX
   to green" was optimistic; green needs the `$26` implementation (explicitly excluded by the user)
   AND the `$27` un-simplification. Gate unchanged at 4/6; BDOSX RED is now diagnostic, not garbage.
-- **Follow-on (3) $23 F_SIZE — dispatched (Fable-solo, in flight).** Black-box characterisation of the
-  true MSX-DOS-1 F_SIZE return-in-A (is `A=3` a valid CP/M dir code or a bug?). Investigation only,
-  no source edits; verdict pending.
-- **Still open:** (1) implement `$26` WRBLK (user-excluded feature); (4) WRSEQ disk-full onset lag (P2).
+- **Follow-on (3) $23 F_SIZE — CHARACTERISED, verdict CONFIRMED BUG (Fable-solo + re-verified here).**
+  Ours' `$23` is a found-BLIND stub: constant `A=L=$03`, random-record field (fcb+33..35) never set.
+  Refutes the "valid CP/M dir code" theory — stock returns `A=L=0`+r0=ceil(size/128) on found,
+  `A=L=$FF` on not-found (map.grauw.nl `_FSIZE`); ours returns `$03` for found, not-found (re-ran:
+  absent file → stock `$FF` / ours `$03`), any slot, any size. A is not a dir code (dir codes are
+  F_OPEN/CLOSE/SFIRST/SNEXT per seasip). **Fix is FEATURE-SCALE** (real dir-search + record-count),
+  same class as the user-excluded `$26` — needs its own spec + sign-off, not net-zero. HARD-STOP:
+  surfaced to the user as a scope decision (do NOT implement unilaterally). Docs (coverage row +
+  summary, writepath-spec F2) corrected to the characterised truth.
+- **Still open:** (1) implement `$26` WRBLK (user-excluded feature); (3-fix) implement a real `$23`
+  FSIZE (feature-scale, pending user decision); (4) WRSEQ disk-full onset lag (P2).
 
 _**Batch-synced 2026-07-04** (consolidation sweep) — the M19→M27 block (20 entries) was
 reviewed and moved to [tier2-review-archive.md](tier2-review-archive.md). The Tier-2

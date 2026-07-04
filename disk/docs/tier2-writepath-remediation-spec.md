@@ -76,16 +76,24 @@ records (no FCB record-size set) — noted for a future exerciser cleanup, not g
   success per the published contract. Verify no register the contract pins is disturbed. If the
   `$03` turns out to be a deliberate/necessary value (re-check against the contract before
   editing), STOP and report instead of forcing it.
-  → **INVESTIGATED 2026-07-04, DEFERRED.** $23 FSIZE is NOT routed to a zerobas-disk entry — it is
-  a KERNEL-internal *shared call* (tier2-m21-spec.md:34/502 lists FSIZE among the shared calls the
-  kernel handles), so there is no disk-ROM handler to correct. Its prior "✅ 0-byte-diff"
-  (tier2-bdos-coverage.md:54) was a VACUOUS-gate artifact. The `A=$03` is plausibly a CP/M
-  directory code (0–3, a documented success value), and Fable lumped it with the out-of-contract
-  "garbage-mode" block-op state (BDOSX drives $23 in the same record block that never sets the FCB
-  record-size field), not as a clean standalone bug. Forcing `A:=0` would be guessing at an
-  uncertain contract on milestone-closed code with no clear disk-ROM edit site → STOPPED per the
-  guard. **Re-scope as its own black-box $23-contract characterisation if it matters** (needs the
-  true MSX-DOS-1 F_SIZE return-in-A semantics pinned first).
+  → **INVESTIGATED 2026-07-04 (first-pass DEFERRED, then CHARACTERISED — verdict: CONFIRMED BUG).**
+  First pass deferred on the theory that `A=$03` might be a valid CP/M directory code (0–3) and that
+  $23 was a pure shared-kernel call with no disk-ROM edit site. **Both premises are now REFUTED by a
+  dedicated black-box characterisation (Fable-solo 2026-07-04, independently re-verified here):**
+  - **It IS our bug.** A pure shared-kernel call would make ours == stock; ours DIVERGES, so our
+    reimplemented `$23` path is a found-BLIND stub: it returns constant `A=L=$03` and NEVER writes
+    the random-record field (fcb+33..35) — the function's entire purpose.
+  - **Not a dir code.** Verified on the CF-3300 oracle over real MSX-DOS 1.03: stock returns
+    `A=L=0` + r0=ceil(size/128) on FOUND and `A=L=$FF` on NOT-FOUND (map.grauw.nl `_FSIZE`
+    contract). Ours returns `$03` in ALL cases — found, **not-found** (re-ran here: absent
+    BDOSX.BIN → stock A=`$FF`, ours A=`$03`), any dir slot (slot 44 mod 4 = 0 still gave 3), any
+    size (5-record file still gave 3; the baseline "3 records → A=3" was coincidence). seasip
+    confirms dir codes belong to F_OPEN/CLOSE/SFIRST/SNEXT, never F_SIZE.
+  - **The fix is FEATURE-SCALE, not a return-code tweak.** A correct `$23` needs a real dir-search
+    + record-count (set fcb+33..35 = ceil(size/128); return A=L=0 found / $FF not-found). Same class
+    and roughly the same effort as the user-EXCLUDED `$26` WRBLK, needs its own spec + sign-off, and
+    is unlikely to be net-zero (adds code). **Surfaced to the user as a scope decision, not
+    implemented in this pass.**
 
 ### F3 — Gate documented-divergence allowlist
 - Add an allowlist to [disk_bdos_acceptance.py](../../probes/disk/disk_bdos_acceptance.py) that
