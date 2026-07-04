@@ -102,8 +102,8 @@ the fix stays page-1-wired. Live table dump (self-checks against M26's `$21`/`$2
 |---|---|---|---|---|
 | $21 RDRND | $D921 | `24 88 47` | $4788 | ✓ M26 cross-check |
 | $22 WRRND | $D924 | `24 93 47` | $4793 | ✓ M26 cross-check |
-| **$23 FSIZE** | **$D927** | **`24 1E 50`** | **$501E** | **dead-$00 pad** — wire in place |
-| **$26 WRBLK** | **$D930** | **`25 BE 47`** | **$47BE** | **⚠ LIVE CODE** (mid-`ff_secloop`) — repoint |
+| **$23 FSIZE** | **$D927** | **`24 1E 50`** | **$501E** | **dead-$00 pad** — wire in place (3a-style) |
+| **$26 WRBLK** | **$D930** | **`25 BE 47`** | **$47BE** | **⚠ LIVE CODE** (mid-`ff_secloop`) — **3b-relocate** |
 
 - **$23 → `$501E`: editable dead-$00 pad.** Sits in the `$50xx` kernel-entry corridor between
   `snext` (`jp snext_body` at `$5006`, ends `$5008`) and `k_504E`; `$5009-$504D` is
@@ -113,13 +113,22 @@ the fix stays page-1-wired. Live table dump (self-checks against M26's `$21`/`$2
   `$4788`/`$4793`. The current `A=L=$03` is our stub's own output, not a kernel-supplied constant
   (at entry `HL=$012D`=301, the kernel's pre-jump value, unrelated to the answer — the handler is
   expected to compute the record count itself).
-- **$26 → `$47BE`: LIVE CODE — must repoint, NOT pad-wire.** `$47BE` is `jr z, ff_notfound` **inside**
-  `ff_secloop` (the fat_find scan loop: `$47B9 ld hl,(FAT_DIRREM)` → `$47BE jr z,$4808`,
-  [fat.asm:141](../fat.asm:141)). The unimplemented WRBLK currently nop-slides into fat_find's loop
-  and returns **harmless-by-luck** — it is a latent accidental target, NOT a clean wire point. You
-  **cannot** drop a `jp` at `$47BE` (it would corrupt `ff_secloop`). Fix = **repoint the `$26` table
-  entry** (`$D930-$D932`) to a pad-hosted `jp wrblk_body`, the same way M26 fixed `$4788`/`$4793` as
-  the wired targets — see §3.1/§4 for the where. Entry regs: `A=$26, B=$00, C=$00, DE=$DA40`
+- **$26 → `$47BE`: LIVE CODE — 3b-relocate `ff_secloop`, do NOT "repoint".** `$47BE` is
+  `jr z, ff_notfound` **5 bytes inside** `ff_secloop` (the fat_find scan loop anchored at `$47B9`:
+  `$47B9 ld hl,(FAT_DIRREM)` [3B] → `$47BC ld a,h` → `$47BD or l` → `$47BE jr z,ff_notfound`,
+  [fat.asm:141](../fat.asm:141)). The unimplemented WRBLK currently nop-slides into that loop and
+  returns **harmless-by-luck** — a latent accidental target, never exercised because COMMAND.COM
+  does not call WRBLK during boot. **ARCHITECTURE CORRECTION (Opus verification pass, folded in):**
+  the source agent's "repoint the `$D930` table entry" is WRONG for our design. **The `$D8BE` table
+  is the relocated MSX-DOS-1 kernel's — the FIXED shared-kernel ABI ([kernel.asm:521-532](../kernel.asm:521)),
+  not ours to edit.** We do not own the dispatch table; we expose `jp k_XXXX` **veneers at the
+  kernel's fixed canonical addresses**, and when a canonical address **collides with our active
+  code** the established fix is the **3b relocation pass** — relocate OUR colliding code out to the
+  free tail (same technique as the FDC-window fix and M26's collision entries,
+  [kernel.asm:528-529](../kernel.asm:528)), freeing the canonical address for a `jp wrblk_body`
+  veneer. `$26`→`$47BE` is exactly such a collision. So: **relocate `ff_secloop` (position-free —
+  reached only by label; internal `jr`s are all local) to the `$60EC` corridor, then pad `$47B9-$47BD`
+  and place `jp wrblk_body` at `$47BE`** (see §3.1). Entry regs: `A=$26, B=$00, C=$00, DE=$DA40`
   (kernel FCB copy), `HL=$0001` (= requested record count, passed straight through), `SP=$DBFE`,
   `ret=$D88A`.
 - **FCB pointer carrying r0..r2 (resolves §6 Q4): `DE=$DA40`, the kernel 37-byte FCB COPY** for BOTH
@@ -138,21 +147,26 @@ the fix stays page-1-wired. Live table dump (self-checks against M26's `$21`/`$2
 and every canonical address past it stays fixed (net-zero). The `$23` table entry (`$D927 =
 `24 1E 50``) already routes to `$501E` — no table change.
 
-**$26 WRBLK — repoint the table entry, do NOT touch `$47BE`.** `$47BE` is live `ff_secloop` code
-([LANDED-B]); wiring there would corrupt the dir-scan. Instead:
-1. Host `jp wrblk_body` in a dead-pad slot (candidate: the `$47B5-$47B8` `ds $47B9-$,$00` pad
-   between `jp k_47B2` and `ff_secloop` holds only 4 bytes — exactly one `jp` — or, cleaner, place
-   the wire in the same `$60EC` corridor as the body and let the table point straight at it).
-2. **Change what the `$26` dispatch slot resolves to.** The `$D8BE` table is RAM, installed by our
-   ROM's kernel-relocation/patch step (the same step that makes `$21`/`$22` resolve to our chosen
-   `$4788`/`$4793`). Find where our source sets the fn-`$26` target and change it from `$47BE` to
-   the `jp wrblk_body` address. **Impl-time investigation item (does NOT block sign-off):** confirm
-   whether that target is a `db`/`dw` in a data table in our kernel source or a byte the relocation
-   step computes — the edit lands wherever the `$21`/`$22` targets are defined. Build assert: the
-   post-build `$D930-$D932` table bytes equal the new `jp wrblk_body` address, and `$47BE` is
-   unchanged (`ff_secloop` intact).
+**$26 WRBLK — 3b-relocate `ff_secloop`, expose `$47BE` as a veneer.** `$47BE` is the kernel's FIXED
+canonical WRBLK entry ([LANDED-B]); it collides with live `ff_secloop` code, so we free it the same
+way M26 and the FDC-window fix free colliding canonical addresses — relocate OUR code, NOT the
+kernel's table (which we do not own). Steps ([fat.asm:141-199](../fat.asm:141) is the block):
+1. **Relocate the `ff_secloop`…(end of the fat_find scan block) body** out of the `$47xx` corridor
+   into the `$60EC-$75A4` free tail, exactly like `fdc_entloop_body` ([kernel.asm:554](../kernel.asm:554)):
+   move the label + body verbatim; it is position-free (entered only via the `ff_secloop` label from
+   `fat_find_body` and the `jr ff_secloop` back-edge, and every internal target — `ff_entloop`,
+   `ff_skip`, `ff_endmark`, `ff_notfound`, `ff_found` — is a local label the assembler recomputes).
+   Confirm during impl that no fixed address other than `$47BE` points into the block (grep the
+   `$47B9-$47FF` span for canonical `k_47xx` labels; expected: none between `k_47B2` and the next).
+2. In the vacated corridor, `ds $47BE - $, $00` (pads `$47B9-$47BD`), then `k_47BE: jp wrblk_body`,
+   then `ds <next-canonical> - $, $00` to re-anchor whatever label followed the old block — net-zero.
+3. **Do NOT modify the `$D8BE` RAM table or `$47BE`'s kernel routing** — the kernel already jumps to
+   `$47BE`; we are only changing what OUR ROM places there (loop code → `jp wrblk_body`).
+Build assert: post-build `$47BE` = `jp wrblk_body` (`C3 <body>`); `ff_secloop` relocated verbatim
+(old-vs-new ROM diff = only the moved bytes + the veneer, à la the FDC-window byte-purity proof);
+no canonical address past the block moved.
 
-Both bodies live in the `$60EC-$75A4` corridor (§2 / §4).
+Both bodies (plus the relocated `ff_secloop`) live in the `$60EC-$75A4` corridor (§2 / §4).
 
 ### 3.2 $23 FSIZE body  (`fsize_body`)
 Entry per [LANDED-B]: `DE=$DA40` (kernel 37-byte FCB copy, name pre-filled at copy+1..11, receives
@@ -203,11 +217,15 @@ A = 0-iff-all, **RR += HL_out (actual)**. Must NOT disturb the k_47B2 COMMAND.CO
 - Both bodies inserted into the `$60EC-$75A4` dead-pad corridor via the ds-anchored pattern (insert
   before the `ds $75A5 - $, $00` pin; the pin shrinks, `k_75A5` fixed). No canonical address moves.
 - **$23**: `jp fsize_body` replaces 3 dead-`$00` bytes at `$501E`; the trailing `ds` absorbs it.
-- **$26**: `$47BE` is NOT touched (live `ff_secloop`); the `$26` dispatch target is repointed to a
-  pad-hosted `jp wrblk_body` (§3.1) — a table-value change, not an in-place pad-wire.
-- Post-build asserts: `disk.rom == 16384`; sym diff shows ONLY the new labels + the intended pad
-  shrinkage — no unintended canonical-address move; the `$D930-$D932` table bytes = the new
-  `wrblk_body` wire (and `$47BE` bytes unchanged); FDC window `$7F80-$7FBF` still 0/64 nonzero.
+- **$26**: `ff_secloop` is **relocated verbatim** out of `$47xx` into the `$60EC` corridor (3b
+  pattern); `$47BE` then holds `jp wrblk_body`. A table-value repoint was REJECTED — the `$D8BE`
+  dispatch table is the fixed shared-kernel ABI, not ours (§3.1 / [LANDED-B]).
+- Three bodies land in the `$60EC-$75A4` corridor: `fsize_body`, `wrblk_body`, and the relocated
+  `ff_secloop` (+ the 24-bit positioning helper). ~5305 B available; comfortably fits.
+- Post-build asserts: `disk.rom == 16384`; sym diff shows ONLY the new labels + `ff_secloop`'s move
+  + the intended pad shrinkage — no unintended canonical-address move; `$47BE` = `jp wrblk_body`;
+  old-vs-new ROM diff for the `ff_secloop` move is byte-pure (moved bytes + veneer only); FDC window
+  `$7F80-$7FBF` still 0/64 nonzero.
 
 ## 5. Verification (each independently gated)
 - **$23 FSIZE:** de-vacuumed BDOSX record 0 → ours `A=L=0` + fcb+33..35 = ceil(size/128) matching
