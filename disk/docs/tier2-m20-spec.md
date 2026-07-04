@@ -338,18 +338,26 @@ the FCB cluster + console tier blocked on the BDOS-exerciser `.COM`,
 
 ### 11.1 Root cause
 The RAM-resident MSX-DOS-1 kernel's common BDOS-exit path — shared by every BDOS
-function, at `$D8AA-$D8BD`, byte-identical ours==stock — reads a flag cell **`$F306`**
-(set to `$01` by the dispatcher at BDOS-call entry, per [tier2-gdate-spec.md](tier2-gdate-spec.md)'s
-earlier pin) and branches:
-```
-D8AA  ld   a,($F306)
-D8AD  or   a
-D8AE  jr   z,passthrough      ; cleared -> caller's HL/DE/BC survive untouched
-D8B0  pop  af                 ; set -> mirror branch:
-D8B1  ld   l,a                ;   L := handler's own A
-D8B2  ld   h,b                ;   H := handler's own B
-                               ; -> ret to $C6C5 with THIS mirrored HL, not the handler's
-```
+function (it is the same loaded MSXDOS.SYS image on both machines), reached at exit-PC
+range `$D8AA-$D8BD` — tests a flag cell **`$F306`** (set to `$01` by the dispatcher at
+BDOS-call entry, per [tier2-gdate-spec.md](tier2-gdate-spec.md)'s earlier pin) and, by
+its **observed input→output register effect**, branches: **`$F306` cleared** → the
+caller's `HL`/`DE`/`BC` survive untouched (passthrough); **`$F306` set** → the exit path
+overwrites the return `HL` with **`H := the handler's B`, `L := the handler's A`** (a
+CP/M-style single-byte-result mirror) before returning to `$C6C5`.
+
+> **Clean-room note (2026-07-04 paper-trail audit remediation).** The rule above is
+> stated in behavioural form only — the exit-PC range plus the observed input→output
+> register effect, **causally proven black-box** by the `$F306:=0` poke test (§11.1
+> below, which flips the branch and lets the handler's real `HL` survive) and
+> corroborated by the in-tree `gdate_handler`. An earlier revision of this section
+> reproduced a hand-decoded Z80 instruction listing of `$D8AA-$D8BD` — that is
+> disassembly of the proprietary MSXDOS.SYS RAM image (✗ per
+> [allowed-sources.md](../../docs/allowed-sources.md); the same class as the 2026-06-30
+> M12 incident). It was **quarantined** and re-grounded on the poke-test source it
+> already rested on; no asm ever depended on it. See the clean-room-audit run log
+> (2026-07-04 disk paper trail).
+
 A handler that returns a meaningful `HL` must clear `$F306` before its `ret`, or the exit
 path silently replaces it with `H:=B, L:=A` (a CP/M-style single-byte-result convention).
 Stock's `$505D` handler clears it (confirmed: `$F306=$01` at `$505D` entry on both

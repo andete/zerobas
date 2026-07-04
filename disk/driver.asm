@@ -482,7 +482,7 @@ bdos_seqread:
 ; that NOP-slid into bsr_have (the Sequential-Read record copier): with the
 ; ambient BDOS_BYTESLEFT left at 0 after a completed .COM load, bsr_have's
 ; n := min(RECSIZE, BYTESLEFT) computed 0, and its LDIR ran with BC=0 -- a
-; 65536-byte copy that sprayed the whole RAM map, crashing every write-mode
+; 65536-byte block move that sprayed the whole RAM map, crashing every write-mode
 ; Close of a file needing real flush/FAT/dir work (BDOSX3 record 10 exposed
 ; it; earlier FCLOSE calls survived only by luck, hitting this fall-in with a
 ; nonzero ambient BYTESLEFT that made the same LDIR a harmless copy).

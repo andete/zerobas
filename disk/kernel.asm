@@ -1164,7 +1164,7 @@ ncw_next:
 ; --- M24 slice B relocated bodies (tier2-m24-fclose-multicluster-spec.md §6) --
 
 ; rdb_recloop_body — verbatim relocation of disk/driver.asm's bdos_rdblk
-; record/byte copy loop (rdb_recloop..rdb_eof, unchanged since M21b). Moved
+; record/byte move loop (rdb_recloop..rdb_eof, unchanged since M21b). Moved
 ; here only because its old span's tail byte collided with the new $461D
 ; FMAKE-worker canonical entry; reached solely by driver.asm's own
 ; `jp rdb_recloop_body` fall-through (position-free, no external caller).

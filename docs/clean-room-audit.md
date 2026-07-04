@@ -220,6 +220,65 @@ pass here (date, scope, commit, verdict) so a later session knows what was
 verified clean and at what point, rather than re-deriving it. A clean verdict is
 a load-bearing fact for the public-release gate.
 
+### 2026-07-04 — disk, paper trail, WHOLE-TARGET — ⚠→✅ 1 break found + remediated same-pass (at `5712775`, fix rides the consolidation commit)
+
+The deferred **"clean the backlog" whole-target pass** (the 2026-06-24 run predates the
+entire Tier-2 M13→M27 body AND the monolith→`driver/fat/init/kernel/pageenv/runtime.asm`
+split — so ~5,400 lines of asm were un-audited against a clean baseline). Run as a
+read-only delegated agent over OUR OWN tree only. This is the disk-track consolidation
+audit taken now that the DOS-boot goal is MET and the surface has settled.
+
+- **Scope:** all six `disk/*.asm` + `disk/equates.inc`, region-by-region (~140 regions);
+  the `tier2-*-spec.md` findings; the probe harness (`probes/disk/disk_probe_diff.py` +
+  `omsx_session.py` + a representative Tier-1 `disk_probe_dskio.py`). Mechanical floor
+  (`make audit-citations disk`) driven green FIRST — see the two floor fixes below.
+- **asm surface: CLEAN.** Every asm region carries a resolvable, allowed-source
+  citation — no orphan asm, no forbidden-source citation, no private-only citation. The
+  ~30 Tier-2 kernel veneers each pin their entry/exit ABI **black-box** (call-target/
+  count/register/side-effect + published BDOS contract) with an explicit "no stock code
+  decoded" attestation; the FDC map (openMSX `NationalFDC.cc` scoped + WD2793 datasheet),
+  the FAT12 layer + GETDPB (Microsoft FAT / ECMA-107 + MSX2 TH Fig 3.11), and the shared
+  MSX-DOS-1 kernel contracts all cite Clean/Scoped sources.
+- **Probe black-box integrity (the one non-mechanical hop): confirmed IN CODE.** The
+  M12c mnemonic-suppression caveat is now closed structurally, not by discipline —
+  `omsx_session.py`'s `ctx` decodes a mnemonic only when `own_code $pc` passes (allowlist:
+  our own `$4000-$7FFF` ROM + our own installed RAM ranges), and `allow_disasm` defaults
+  **False** on the STOCK machine. The loaded RAM kernel (`$D8xx`) is deliberately excluded,
+  so the harness would never emit a stock/kernel instruction listing.
+- **THE ONE BREAK — forbidden-source restatement in a finding doc (medium).**
+  [`tier2-m20-spec.md`](../disk/docs/tier2-m20-spec.md) §11.1 reproduced a hand-decoded
+  6-instruction Z80 listing of the **loaded MSXDOS.SYS RAM-kernel** common BDOS-exit path
+  at `$D8AA-$D8BD` — disassembly of a proprietary binary (✗ per
+  [`allowed-sources.md`](allowed-sources.md) line 142; the same class as the 2026-06-30 M12
+  incident and the `trace`-mnemonic caveat below). Because the harness excludes `$D8xx`,
+  the decode was produced OUTSIDE the guarded probe path (a manual hand-decode) — which is
+  exactly why the guard didn't stop it and why the auditor flagged it.
+- **Containment (why it never shipped): the asm does not rest on it.** The landed `$F306`
+  fix (`getalloc_body`/`gdate_handler` clearing the flag before `ret`) is independently
+  grounded on the **black-box `$F306:=0` poke-test causal proof** + the in-tree
+  `gdate_handler` corroboration + observed register outcomes (`H:=B, L:=A`). Every OTHER
+  place the finding appears (the `kernel.asm` comment, STATE, bdos-coverage, review-queue)
+  already states it in the allowed behavioural form (address range + input→output rule).
+- **Remediation (this pass):** quarantined the decoded listing from §11.1 and re-grounded
+  it on the poke-test source it already stood on — replaced the mnemonic block with the
+  behavioural rule + a dated clean-room note recording the quarantine (the M12b pattern).
+  No asm change, no re-derivation. §9's "no … MSXDOS.SYS CODE bytes were read" attestation
+  is TRUE again. Tree-wide re-scan afterward: zero decoded-listing residue remains (the
+  other `$D8xx`/`$Cxxx` mentions are all single call-target annotations — the allowed kind).
+- **Two mechanical-floor fixes rolled in (both correctness, not weakening):** (1) two
+  gating `[FORBIDDEN]` false positives — the scanner caught "copy" in its `LDIR`/block-move
+  sense describing OUR OWN code (`driver.asm` `bsr_have`, `kernel.asm` `rdb_recloop`);
+  reworded to "block move". (2) `audit_citations.py`'s `CITATION` regex recognised the old
+  `spec-*.md` naming but not the current `tier2-*-spec.md` convention, falsely flagging 4
+  headers that DO cite a spec inline; added `-spec\.md`/`tier2-` (advisory check-3 only —
+  cannot mask a forbidden-source breach). 7 genuine advisory headers remain (structural
+  headers whose bodies carry full citations — judged individually, all acceptable).
+- **Verdict: after remediation, disk is WHOLE-TARGET paper-trail CLEAN.** The asm surface
+  was clean throughout; the single break was doc-only and is now quarantined+regrounded.
+  Whole-repo baseline (disk/basic/tape) is paper-trail CLEAN again. Not run: the disk
+  **full-verify** trail (the heavier empirical back-half) — now unblocked by the settled
+  surface, gated to a deliberate future tier-closure ritual.
+
 ### 2026-06-30 — disk, paper trail (M12 span) — ✅ CLEAN — the post-incident assurance pass (at `e2a5d5d`)
 
 The user-gated follow-up to the same-day M12 INCIDENT below: before greenlighting any

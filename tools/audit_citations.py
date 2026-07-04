@@ -115,8 +115,8 @@ HEADER_BLOCK_LINES = 45  # how far down a file's top comment block may reach
 # --- check 3: section-citation presence (advisory, disk-only) -------------------
 SECTION_HDR = re.compile(r"^;\s*-{2,}\s*(.+?)\s*-{2,}\s*$")
 CITATION = re.compile(
-    r"§|PROVENANCE|provider-oracle|spec-|datasheet|data book|ECMA|FAT spec|"
-    r"WD179|WD2793|MB887|Technical Handbook|MSX2 TH|Z80|TMS9918|"
+    r"§|PROVENANCE|provider-oracle|spec-|-spec\.md|tier2-|datasheet|data book|"
+    r"ECMA|FAT spec|WD179|WD2793|MB887|Technical Handbook|MSX2 TH|Z80|TMS9918|"
     r"oracle|own[- ]?design|own[- ]?choice|own code|hardware fact|PSG|VDP|"
     r"Microsoft FAT",
     re.I,
