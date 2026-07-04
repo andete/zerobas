@@ -170,6 +170,10 @@ BPB_FATSZ16     equ     22      ; sectors per FAT copy (word LE)
 ; allowed for hardware register maps). Status/command bits: WD2793 datasheet.
 ; The registers are memory-mapped into ROM page 1 at the canonical $7FB8 window;
 ; the driver runs here (slot 3-1, $4000-$7FFF) and addresses them directly.
+; WINDOW EXTENT (root-caused 2026-07-04): the National decode is PARTIAL -- these 8
+; registers are MIRRORED x8 across the whole $7F80-$7FBF range, so EVERY address in
+; $7F80-$7FBF aliases a register, not just $7FB8-$7FBF. No ROM code/data may live in
+; $7F80-$7FBF (enforced by the FDC-window guard in runtime.asm's tail).
 FDC_STATUS      equ     $7FB8   ; read = status, write = command
 ; ($7FB9 = track register — unused: seeks target the track via the Data register.)
 FDC_SECTOR      equ     $7FBA   ; sector register

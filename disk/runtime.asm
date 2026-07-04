@@ -643,103 +643,37 @@ fat_find_body:
                 ld      (FAT_DIRREM), hl
                 jp      ff_secloop
 
-; fdc_entloop_body / fdc_useslot_body — unchanged from their old $55C5 slot
-; (kernel.asm), relocated here because that slot collided with the
-; $55DB/$55E6/$55FF GTIME/STIME/VERIFY canonical entries
-; (tier2-m22-cpmver-spec.md §4.2). Position-free: reached only by label from
-; fat.asm's `fdc_entloop`/`fdc_useslot` veneers. Kept contiguous, same relative
-; order as before (M21a-RC-1 relocation convention).
-fdc_entloop_body:
-                push    bc
-                push    hl
-                ld      a, (hl)
-                or      a
-                jp      z, fdc_useslot      ; jr->jp: $00 end-marker -> free slot here
-                cp      $E5
-                jp      z, fdc_useslot      ; jr->jp: $E5 deleted -> reusable slot
-                ld      de, (FAT_NAMEPTR)
-                call    name_cmp
-                jp      z, fdc_useslot      ; jr->jp: same-name existing entry
-                pop     hl
-                ld      de, 32
-                add     hl, de
-                pop     bc
-                djnz    fdc_entloop_body
-                ld      hl, (FAT_DIRSEC)
-                inc     hl
-                ld      (FAT_DIRSEC), hl
-                ld      hl, (FAT_DIRREM)
-                dec     hl
-                ld      (FAT_DIRREM), hl
-                jp      fdc_secloop         ; jr->jp: relocated
-
-fdc_useslot_body:
-                pop     hl                  ; HL = dir entry slot in WBUF
-                pop     bc
-                ld      de, (FAT_DIRSEC)
-                ld      (BDOS_DIRSEC), de
-                push    hl
-                ld      de, WBUF
-                or      a
-                sbc     hl, de              ; HL = offset within the sector
-                ld      (BDOS_DIROFF), hl
-                pop     hl
-                push    hl
-                ex      de, hl              ; DE = dest slot
-                ld      hl, (FAT_NAMEPTR)
-                ld      bc, 11
-                ldir                        ; name -> entry +0..10
-                xor     a
-                ld      (de), a             ; +11 = $00 (normal file; matches MSX-DOS)
-                inc     de
-                ld      b, 20               ; +12..+31 is 20 bytes
-                jp      fdc_zero            ; fall-through preserved
-
-; p0_env_tab — unchanged from pageenv.asm, relocated here because its old span
-; (plus the 3-byte callf_body veneer that followed it) collided with the $41EF
-; CPMVER canonical entry (tier2-m22-cpmver-spec.md §4.1). Position-free: only
-; read by lay_page0_env's own `ld hl, p0_env_tab` (pageenv.asm). The $0030
-; entry now points DIRECTLY at callf_body_body (kernel.asm), since the
-; intermediate veneer was deleted.
-; (cell, handler) pairs; terminated by a 0 cell. No two JP triples overlap.
+; ===== fdc_entloop_body / fdc_useslot_body + p0_env_tab: RELOCATED OUT =========
+; (2026-07-04, FDC-window P0 fix.) These three position-free blocks used to sit HERE
+; in the page-1 tail. The National WD2793 FDC registers ($7FB8-$7FBF, equates.inc)
+; are memory-mapped AND mirrored x8 across the WHOLE $7F80-$7FBF window, so bytes
+; placed at $7F80-$7FBF read back as FDC register values, not opcodes/data. That is
+; exactly where fdc_useslot_body (create's dir-slot claim, $7F8E) landed after ~M27,
+; so FMAKE never persisted a directory entry -> create/write silently broke, and
+; p0_env_tab's head entries ($7FB7-$7FBF) read back as register garbage. All three
+; are reached only by label (fdc_entloop/fdc_useslot veneers; lay_page0_env's
+; `ld hl, p0_env_tab`), so they now live in the COMMAND.COM-load free-region corridor
+; (kernel.asm, between the $607B and $75A5 kernel veneers -- 0 canonical entries, no
+; window). fat_find_body stays here: it ends at $7F5F, below the window. Spec:
+; tier2-remediation-spec.md Phase B.
 ;
-; ===== FDC-window guard + p0_env_tab PIN (root-caused 2026-07-04) =============
-; The National WD2793 FDC registers are MEMORY-MAPPED into ROM page 1 at $7FB8-$7FBF
-; (FDC_STATUS $7FB8 / FDC_SECTOR $7FBA / FDC_DATA $7FBB / FDC_CTRL $7FBC, equates.inc):
-; a hardware hole in the $4000-$7FFF image. Two distinct hazards, both fatal to the DOS
-; boot, both guarded here:
-;   (1) EXECUTABLE code fetched from the window reads register bytes, not opcodes -> a
-;       tail shift of >=32 B was a silent boot crash. All executable code must end <=$7FB8.
-;   (2) p0_env_tab (DATA) is read by lay_page0_env THROUGH the ROM page to build the
-;       page-0 RST/CALLF/INT vectors -- and those reads ALSO hit the register window when
-;       an entry lands in it (empirically: an entry at $7FB8 read back as FDC register
-;       garbage, corrupting page-0 $0038 -> crash on the first interrupt). So p0_env_tab
-;       is PINNED at its HEAD address $7FB7: there the hole covers ONLY the RDSLT/WRSLT
-;       entries (offsets 1-8), whose page-0 hooks tolerate garbage during the boot (this
-;       is the exact HEAD layout, which boots), while the load-bearing $0030 CALLF (DSKIO)
-;       and $0038 INT vectors sit ABOVE the hole and read correctly. NEVER move it.
-; The `ds` pins p0_env_tab at $7FB7 regardless of below-hole size; the IF makes an
-; overrun a LOUD build error (a bare negative `ds` only warns -> silent empty object).
-                IF ($ > $7FB7)
-FDC_WINDOW_OVERRUN: equ below_hole_code_grew_past_the_p0_env_tab_HEAD_addr_7FB7
+; ===== FDC-window guard (TRUE window $7F80-$7FBF, root-caused 2026-07-04) =========
+; NOTHING -- executable OR data-read-through-the-page -- may land in $7F80-$7FBF:
+; every address there aliases the WD2793 register file (the canonical 8 registers
+; $7FB8-$7FBF mirrored x8). The window is now entirely dead $00 pad. The IF turns any
+; below-window code that grows INTO the window into a LOUD build error (a bare
+; negative `ds` only warns -> a silent empty object).
+                IF ($ > $7F80)
+FDC_WINDOW_INTRUSION: equ below_window_code_grew_into_the_7F80_FDC_register_window
                 ENDIF
-                ds      $7FB7 - $, $00      ; pin p0_env_tab at its proven-safe HEAD address
-p0_env_tab:
-                dw      $000C, rdslt_h  ; RST 8  RDSLT  (read byte from a slot)
-                dw      $0014, wrslt_h  ; RST 10 WRSLT  (write byte to a slot)
-                dw      $001C, calslt_h ; RST 18 CALSLT (inter-slot call)
-                dw      $0024, enaslt_h ; ENASLT (enable slot in a page)
-                dw      $0030, callf_body_body ; RST 30 CALLF (M22a: direct, no veneer)
-                dw      $0038, INT_H_HIRAM ; maskable-int vector -> A-3 high-RAM handler
-                                           ; (NOT page-1 int_h: page 1 is reclaimed by the TPA)
-                dw      0               ; end of table
+                ds      $7FD1 - $, $00      ; skip OVER the dead $7F80-$7FBF FDC window
+                                            ; and pin the conout block at its $7FD1 home
 
-; ===== M22b slice 2: conout_emit_e, ABOVE the FDC hole =======================
-; conout_body's stub + conout_tab (below the hole) reach this by absolute call. It
-; starts right after p0_env_tab (pinned at $7FB7, 26 B -> ends $7FD0), so it lands at
-; $7FD1 -- above the hole top $7FBF, where its own instruction fetches never read FDC
-; registers. The IF guard fires loudly if it would start in/below the hole (e.g. if
-; p0_env_tab were unpinned/moved). Spec: tier2-m22b-slice2-reloc-spec.md.
+; ===== M22b slice 2: conout_emit_e, ABOVE the FDC window =====================
+; conout_body's stub + conout_tab (below the window) reach this by absolute call. The
+; `ds` above pins it at $7FD1 -- above the window top $7FBF -- so its own instruction
+; fetches never read FDC registers. The IF guard below fires loudly if it would ever
+; start in/below the window. Spec: tier2-m22b-slice2-reloc-spec.md.
                 IF ($ <= $7FBF)
 CONOUT_EMIT_IN_HOLE: equ conout_emit_e_would_start_in_or_below_the_FDC_register_window
                 ENDIF

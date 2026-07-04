@@ -534,6 +534,85 @@ k_55FF:
                 jp      k_5FE5          ; $5FE5
                 ds      $607B - $, $00
                 jp      k_607B          ; $607B  (BDOS callback; spec §5.2)
+
+; ===== FDC-window P0 fix (2026-07-04): position-free bodies relocated OUT of the
+; $7F80-$7FBF FDC register window into this free-region corridor ==================
+; The National WD2793 FDC registers ($7FB8-$7FBF) are memory-mapped AND mirrored x8
+; across the whole $7F80-$7FBF window, so ROM bytes there read back as register
+; values. fdc_useslot_body (create's dir-slot claim) and p0_env_tab's head had drifted
+; into that window (~M27), silently breaking create/write persistence. All three
+; blocks are reached only by label -- their absolute address is irrelevant -- so they
+; live here, in the 5.4 KB of dead $00 pad between the $607B and $75A5 COMMAND.COM-load
+; kernel veneers (0 canonical entries, no FDC window). The trailing `ds $75A5 - $`
+; still pins k_75A5 exactly -> net-zero canonical addresses. Spec:
+; disk/docs/tier2-remediation-spec.md Phase B.
+
+; fdc_entloop_body / fdc_useslot_body — create's directory-slot scan + claim.
+; Position-free: reached only by fat.asm's `fdc_entloop`/`fdc_useslot` veneers.
+; Kept contiguous, same relative order (M21a-RC-1 convention). Neither falls through
+; (each ends in an absolute jp), so the relocation is byte-for-byte behaviour-neutral.
+fdc_entloop_body:
+                push    bc
+                push    hl
+                ld      a, (hl)
+                or      a
+                jp      z, fdc_useslot      ; jr->jp: $00 end-marker -> free slot here
+                cp      $E5
+                jp      z, fdc_useslot      ; jr->jp: $E5 deleted -> reusable slot
+                ld      de, (FAT_NAMEPTR)
+                call    name_cmp
+                jp      z, fdc_useslot      ; jr->jp: same-name existing entry
+                pop     hl
+                ld      de, 32
+                add     hl, de
+                pop     bc
+                djnz    fdc_entloop_body
+                ld      hl, (FAT_DIRSEC)
+                inc     hl
+                ld      (FAT_DIRSEC), hl
+                ld      hl, (FAT_DIRREM)
+                dec     hl
+                ld      (FAT_DIRREM), hl
+                jp      fdc_secloop         ; jr->jp: relocated
+
+fdc_useslot_body:
+                pop     hl                  ; HL = dir entry slot in WBUF
+                pop     bc
+                ld      de, (FAT_DIRSEC)
+                ld      (BDOS_DIRSEC), de
+                push    hl
+                ld      de, WBUF
+                or      a
+                sbc     hl, de              ; HL = offset within the sector
+                ld      (BDOS_DIROFF), hl
+                pop     hl
+                push    hl
+                ex      de, hl              ; DE = dest slot
+                ld      hl, (FAT_NAMEPTR)
+                ld      bc, 11
+                ldir                        ; name -> entry +0..10
+                xor     a
+                ld      (de), a             ; +11 = $00 (normal file; matches MSX-DOS)
+                inc     de
+                ld      b, 20               ; +12..+31 is 20 bytes
+                jp      fdc_zero            ; fall-through preserved
+
+; p0_env_tab — the page-0 RST/CALLF/INT vector template, read by lay_page0_env
+; THROUGH the ROM page (`ld hl, p0_env_tab`; pageenv.asm). Formerly pinned at $7FB7,
+; straddling the FDC window (its head entries read back as register garbage, tolerated
+; only empirically); now fully clear of every window so EVERY entry reads correctly.
+; The $0030 entry points DIRECTLY at callf_body_body (M22a: no intermediate veneer).
+; (cell, handler) pairs; terminated by a 0 cell. No two JP triples overlap.
+p0_env_tab:
+                dw      $000C, rdslt_h  ; RST 8  RDSLT  (read byte from a slot)
+                dw      $0014, wrslt_h  ; RST 10 WRSLT  (write byte to a slot)
+                dw      $001C, calslt_h ; RST 18 CALSLT (inter-slot call)
+                dw      $0024, enaslt_h ; ENASLT (enable slot in a page)
+                dw      $0030, callf_body_body ; RST 30 CALLF (M22a: direct, no veneer)
+                dw      $0038, INT_H_HIRAM ; maskable-int vector -> A-3 high-RAM handler
+                                           ; (NOT page-1 int_h: page 1 is reclaimed by the TPA)
+                dw      0               ; end of table
+
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
                 ds      $77B8 - $, $00
