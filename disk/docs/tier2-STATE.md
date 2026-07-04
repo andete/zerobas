@@ -365,11 +365,36 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
 > session. Full writeup: [tier2-m27-lstout-spec.md](tier2-m27-lstout-spec.md).
 >
 > Remaining residuals in the codebase (not gating anything, none has an open
-> sign-off pending): `$5465`/`lstout_body` (above), the printer-pluggable
-> LSTOUT/AUXIN/AUXOUT characterisation angle (above), `$2E` VERIFY's
+> sign-off pending): `$5465`/`lstout_body` (above), `$2E` VERIFY's
 > flag-effect-on-writes open design question (tier2-bdos-remaining-spec.md
 > §5.4), CONOUT's TAB-expansion (M22b slice 2, deferred). Pick the next one
 > deliberately, don't default into it off a bare "continue".
+
+### LSTOUT FULLY CHARACTERISED — the M27 printer-pluggable angle, settled (2026-07-04)
+
+> User picked "LSTOUT characterisation" as the next residual. The M27-deferred
+> printer-pluggable spike (§4, left inconclusive on PC snapshots) is now
+> SETTLED with real func-5 triggering + I/O-port-level tracing. Full writeup:
+> [tier2-lstout-characterisation.md](tier2-lstout-characterisation.md).
+> **Findings (all black-box, no stock code decoded):** (1) stock LSTOUT is
+> **NOT hang-safe with no printer** — a single `$05` tight-polls status port
+> `$90` forever (reader-PC `$0887`); the M19/M20/M27 caution was correct, and
+> this is authentic CF-3300 behaviour. (2) On-the-wire per char: READ `$90`
+> (status) → WRITE `$91` (data) → WRITE `$90` `$00`/`$FF` (strobe); matches the
+> published MSX printer-port spec; end-to-end verified (raw logger file =
+> `"LP!\r\n"`). (3) **Architecturally decisive:** LSTOUT is BIOS-delegating —
+> the kernel func-5 worker `$5465` (entry `E`=char, = CONOUT contract, returns
+> to `$D88A`) calls **main-BIOS `LPTOUT $00A5` with `A`=char**, once per char
+> (stock 5 hits / ours **0**). So `lstout_body` must call BIOS `$00A5`, NOT
+> poke `$90`/`$91` — the BIOS-agnostic interface the two-interface rule wants;
+> on C-BIOS it inherits C-BIOS's own `$00A5` (safe no-op, no hang). **Fix shape
+> for wiring `$5465` is now fully actionable** (tier2-lstout-characterisation.md
+> §4) — gated only on a sign-off, no longer on any unknown. **Tooling landed
+> (reusable):** `disk_probe_diff.py` gained an `ioport` mode (read_io+write_io
+> tracer) + `--plug-printer`/`--printer-device`/`--printer-log` (note: openMSX
+> `simpl` is a Covox DAC, NOT a printer — use `msx-printer`/`epson-printer`/
+> `logger`). Trigger .COM: `probes/disk/lstoutx.asm`. ROM source UNTOUCHED
+> (probe + doc + throwaway .COM only); unit-test 19/19.
 
 > **M26 CLOSED: all six functions landed, full BDOS surface coverage complete
 > (2026-07-03).** RDRND (`$21`) / WRRND (`$22`) LANDED — M26's last two

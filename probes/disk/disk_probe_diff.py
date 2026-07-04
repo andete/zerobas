@@ -67,6 +67,19 @@ def _runner(machine: str, diska: str | None, symfile: str) -> OmsxRun:
     return OmsxRun(machine=machine, diska=diska, symfile=symfile)
 
 
+def _plug_prefix(args) -> str:
+    """Tcl (prepended to `arm`, so it runs at init before boot) that plugs the
+    openMSX `simpl` printer into the printerport and points the printer log at a
+    file. With NO printer plugged the printerport presents a status the stock
+    list-device poll may block on forever; plugging `simpl` lets that poll
+    complete. Clean-room: this is emulator hardware config, not stock code."""
+    if not getattr(args, "plug_printer", False):
+        return ""
+    dev = getattr(args, "printer_device", "simpl")
+    return (f'set printerlogfilename "{args.printer_log}"\n'
+            f'catch {{ plug printerport {dev} }}\n')
+
+
 # ---- mode: callseq -------------------------------------------------------------
 def _poke_bp(poke_at: int, poke_nth: int,
              pokes: list[tuple[int, int]] | None,
@@ -148,7 +161,7 @@ def mode_callseq(args) -> int:
     arm_stock = _callseq_arm(args.at, arm_cond, args.log, args.maxhits)
 
     def seq_for(machine):
-        arm = arm_ours if machine == OURS_MACHINE else arm_stock
+        arm = _plug_prefix(args) + (arm_ours if machine == OURS_MACHINE else arm_stock)
         raw = _runner(machine, args.diska, args.symfile).run_job_raw(
             body, settle=args.settle, timeout=args.timeout, arm=arm,
             keys=args.keys, keys_at=args.keys_at, keys2=args.keys2, keys2_at=args.keys2_at)
@@ -623,6 +636,96 @@ def mode_iowrite(args) -> int:
     return 0
 
 
+# ---- mode: ioport --------------------------------------------------------------
+# Black-box I/O-port tracer: watch read_io AND write_io on a set of ports, gated to
+# "after the armed program is loaded". Built for list-device (LSTOUT / AUXIN /
+# AUXOUT) characterisation — a status-poll is a tight READ loop on a status port, so
+# counting reads/PCs shows WHICH port a hung call is spinning on; data output is a
+# WRITE stream (value in A). Records PC + port + direction + value(writes) + time
+# only (allowed black-box side-effects; no instruction decode).
+def _ioport_arm(arm_addr: int, arm_cond: str, anchor: int, ports: list[int],
+                maxhits: int) -> str:
+    read_wps = "\n".join(
+        f"""debug set_watchpoint read_io {p:#04x} {{}} {{
+  if {{!$::watching}} return
+  incr ::rn
+  emit [format "IOR port=%02X PC=%04X rn=%d t=%.6f" {p} [reg PC] $::rn [machine_info time]]
+  if {{$::rn >= {maxhits}}} {{ emit "RCAP"; exit }}
+}}""" for p in ports)
+    write_wps = "\n".join(
+        f"""debug set_watchpoint write_io {p:#04x} {{}} {{
+  if {{!$::watching}} return
+  incr ::wn
+  emit [format "IOW port=%02X PC=%04X A=%02X wn=%d t=%.6f" {p} [reg PC] [expr {{[reg AF] >> 8}}] $::wn [machine_info time]]
+}}""" for p in ports)
+    return f"""
+set ::armed 0
+set ::watching 0
+set ::rn 0
+set ::wn 0
+debug set_bp {arm_addr:#06x} {{}} {{
+  if {{ {arm_cond} }} {{ set ::armed 1 }}
+}}
+debug set_bp {anchor:#06x} {{}} {{
+  if {{$::armed && !$::watching}} {{ set ::watching 1 }}
+}}
+{read_wps}
+{write_wps}
+"""
+
+
+def mode_ioport(args) -> int:
+    ports = [int(p, 0) for p in args.ports.split(",")]
+    arm_cond = args.arm_cond or f"[debug read memory {args.arm_check_addr:#06x}] == {args.arm_check_val:#04x}"
+    body = 'emit [format "DONE armed=%d watching=%d rn=%d wn=%d" $::armed $::watching $::rn $::wn]; exit'
+    arm = _plug_prefix(args) + _ioport_arm(args.at, arm_cond, args.anchor, ports, args.maxhits)
+
+    def trace_for(machine):
+        raw = _runner(machine, args.diska, args.symfile).run_job_raw(
+            body, settle=args.settle, timeout=args.timeout, arm=arm,
+            keys=args.keys, keys_at=args.keys_at, keys2=args.keys2, keys2_at=args.keys2_at)
+        reads, writes, done = [], [], None
+        for l in raw:
+            if l.startswith("IOR "):
+                d = {tk.split("=")[0]: tk.split("=")[1] for tk in l.split()[1:]}
+                reads.append(d)
+            elif l.startswith("IOW "):
+                d = {tk.split("=")[0]: tk.split("=")[1] for tk in l.split()[1:]}
+                writes.append(d)
+            elif l.startswith("DONE"):
+                done = l
+        return reads, writes, done, raw
+
+    machines = {"both": [STOCK_MACHINE, OURS_MACHINE], "ours": [OURS_MACHINE],
+                "stock": [STOCK_MACHINE]}[args.machine]
+    print(f"=== ioport: read_io/write_io on ports {[hex(p) for p in ports]} after anchor "
+          f"{args.anchor:#06x} (arm@{args.at:#06x}); plug-printer={bool(args.plug_printer)} ===")
+    for m in machines:
+        reads, writes, done, raw = trace_for(m)
+        who = "OURS " if m == OURS_MACHINE else "STOCK"
+        capped = any(l == "RCAP" for l in raw)
+        # per-port read counts + distinct reader PCs
+        rports: dict[str, int] = {}
+        rpcs: dict[str, set] = {}
+        for r in reads:
+            rports[r["port"]] = rports.get(r["port"], 0) + 1
+            rpcs.setdefault(r["port"], set()).add(r["PC"])
+        print(f"  {who}: {len(reads)} reads{' (CAPPED — tight poll)' if capped else ''}, "
+              f"{len(writes)} writes | {done}")
+        for pt in sorted(rports):
+            print(f"        READ  port {pt}: {rports[pt]}x  reader-PCs={sorted(rpcs[pt])[:8]}")
+        if writes:
+            wstream = " ".join(w["A"] for w in writes)
+            wchars = "".join(chr(int(w["A"], 16)) if 32 <= int(w["A"], 16) < 127 else "." for w in writes)
+            wpcs = sorted({w["PC"] for w in writes})
+            for pt in sorted({w["port"] for w in writes}):
+                cnt = sum(1 for w in writes if w["port"] == pt)
+                print(f"        WRITE port {pt}: {cnt}x  writer-PCs={wpcs[:8]}")
+            print(f"        write values: {wstream}")
+            print(f"        write as text: |{wchars}|")
+    return 0
+
+
 # ---- mode: readwatch -----------------------------------------------------------
 # Causality probe (§8.65 guard): does the code READ a specific work-area cell on its
 # failing path? Sets a read_mem watchpoint per byte of a DATA range (never a code
@@ -979,6 +1082,15 @@ def main() -> int:
                             "(tier2-bdos-remaining-spec.md §3)")
         p.add_argument("--keys2-at", type=float, default=0.0, dest="keys2_at",
                        help="emulated time (s) at which to inject --keys2")
+        p.add_argument("--plug-printer", action="store_true", dest="plug_printer",
+                       help="plug openMSX `simpl` printer into printerport at init (+ log to "
+                            "--printer-log) — for LSTOUT/AUX list-device characterisation; the "
+                            "list device then presents READY so a stock poll can complete")
+        p.add_argument("--printer-log", default="/tmp/zerobas_printer.log", dest="printer_log",
+                       help="printerlogfilename target when --plug-printer is set")
+        p.add_argument("--printer-device", default="simpl", dest="printer_device",
+                       help="openMSX printerport pluggable when --plug-printer is set "
+                            "(e.g. simpl, logger, msx-printer, epson-printer)")
 
     c = sub.add_parser("callseq", help="diff a call sequence; report first divergence")
     common(c)
@@ -1056,6 +1168,19 @@ def main() -> int:
     w.add_argument("--maxhits", type=int, default=80)
     w.add_argument("--machine", choices=("both", "ours", "stock"), default="both")
 
+    ip = sub.add_parser("ioport", help="trace read_io+write_io on ports (list-device / LSTOUT/AUX poll)")
+    common(ip)
+    ip.add_argument("--at", type=lambda x: int(x, 0), default=0x0100, help="arm address")
+    ip.add_argument("--arm-check-addr", type=lambda x: int(x, 0), default=0x0102)
+    ip.add_argument("--arm-check-val", type=lambda x: int(x, 0), default=0x05)
+    ip.add_argument("--arm-cond", default=None, help="raw Tcl arm predicate")
+    ip.add_argument("--anchor", type=lambda x: int(x, 0), default=0x0100,
+                    help="start watching at the first hit of this addr after arm (default $0100 program load)")
+    ip.add_argument("--ports", default="0x90,0x91",
+                    help="comma list of I/O ports to watch (default 0x90,0x91 = MSX printer status/strobe,data)")
+    ip.add_argument("--maxhits", type=int, default=300, help="cap on total reads (a tight poll caps here)")
+    ip.add_argument("--machine", choices=("both", "ours", "stock"), default="both")
+
     r = sub.add_parser("readwatch", help="watch DATA-cell reads gated to during-func-9 (causality probe)")
     common(r)
     r.add_argument("--at", type=lambda x: int(x, 0), default=0x0100, help="arm address")
@@ -1123,7 +1248,7 @@ def main() -> int:
             args.diska = tmp_disk
     try:
         return {"callseq": mode_callseq, "capture": mode_capture, "trace": mode_trace,
-                "screen": mode_screen, "iowrite": mode_iowrite,
+                "screen": mode_screen, "iowrite": mode_iowrite, "ioport": mode_ioport,
                 "readwatch": mode_readwatch, "writewatch": mode_writewatch,
                 "callwatch": mode_callwatch}[args.mode](args)
     finally:
