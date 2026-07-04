@@ -99,6 +99,28 @@ def run():
     check(captured == [28], f"  requested sector {captured} (want [28], new cluster 9)")
     check(m.mem[m.addr("FAT_CLUSSEC")] == 1, "  FAT_CLUSSEC 0 -> 1 after advance")
 
+    # --- case 2b: exact-multiple cluster-boundary EOF -------------------------
+    # A file whose size is an EXACT multiple of the cluster size: its final
+    # cluster is FULL (all secPerClus sectors read Cy=0), then the caller loops
+    # once more, clussec == secPerClus triggers fat_advance, and fat_advance
+    # lands on the end-of-chain marker. The routine must then EOF *and read
+    # nothing* -- never compute a sector for the $FFF cluster (the "one cluster
+    # too many" read an EOF off-by-one would cause). This is the routine-level
+    # twin of the Class-1 artifact-oracle fact (disk_fat_eof_oracle.py).
+    m = new_machine()
+    m.trap("read_sector", read_sector)
+
+    def advance_to_eoc(mm):
+        mm.poke_w(mm.addr("FAT_CURCLUS"), 0x0FFF)   # fat_advance hit end-of-chain
+        mm.poke(mm.addr("FAT_CLUSSEC"), 0)
+
+    m.trap("fat_advance", advance_to_eoc)
+    set_iter(m, 7, SECPERCLUS)                       # last full cluster exhausted
+    captured.clear()
+    cpu = m.call("fat_read_file_sector")
+    check(carry(cpu), "read_file_sector(advance -> end-of-chain) -> Cy=1 (EOF)")
+    check(captured == [], f"  read NOTHING past the last full cluster (got {captured})")
+
     # --- case 3: EOF guards ---------------------------------------------------
     m = new_machine()
     m.trap("read_sector", read_sector)
