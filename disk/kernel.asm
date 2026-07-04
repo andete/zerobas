@@ -1652,7 +1652,8 @@ rrnd_position:
                 pop     af
                 ld      c, a                ; C = r0 (preserved across fat_open)
                 and     3
-                ld      (rrnd_recsector), a ; stash record-in-sector for after the seek loop
+                ld      (RRND_RECSEC), a    ; stash record-in-sector for after the seek loop
+                                            ; (RAM: a ROM cell here silently no-op'd -> wrong record)
                 ld      a, c
                 srl     a
                 srl     a                   ; A = target sector-in-file (r0 >> 2)
@@ -1689,15 +1690,15 @@ rrnd_pos_loop:
                 pop     bc
                 jr      c, rrnd_pos_err     ; seek ran off the end of the chain
                 djnz    rrnd_pos_loop
-                ld      a, (rrnd_recsector)
+                ld      a, (RRND_RECSEC)
                 ld      (BDOS_RECIDX), a
                 or      a                   ; Cy = 0 ok
                 ret
 rrnd_pos_err:
                 scf
                 ret
-rrnd_recsector:
-                db      0
+                ds      1, $00              ; (was rrnd_recsector db 0 — cell moved to RAM
+                                            ; RRND_RECSEC; byte retained for net-zero layout)
 
 ; rrnd_sector — recover the absolute logical sector number rrnd_position's
 ; seek loop last landed on (see the placement note above for why this is
@@ -1706,7 +1707,7 @@ rrnd_recsector:
 rrnd_sector:
                 ld      a, (FAT_CLUSSEC)
                 dec     a
-                ld      (rrnd_clussec_tmp), a
+                ld      (RRND_CLUSSEC), a   ; (RAM: ROM cell here silently no-op'd)
                 ld      hl, (FAT_CURCLUS)
                 ld      de, 2
                 or      a
@@ -1720,14 +1721,14 @@ rrnd_sector_mul:
                 djnz    rrnd_sector_mul     ; HL = (cluster-2) * secPerClus
                 ld      de, (FAT_FIRSTDATA)
                 add     hl, de
-                ld      a, (rrnd_clussec_tmp)
+                ld      a, (RRND_CLUSSEC)
                 ld      e, a
                 ld      d, 0
                 add     hl, de              ; HL = absolute logical sector
                 ex      de, hl              ; DE = absolute logical sector (write_sector's convention)
                 ret
-rrnd_clussec_tmp:
-                db      0
+                ds      1, $00              ; (was rrnd_clussec_tmp db 0 — cell moved to RAM
+                                            ; RRND_CLUSSEC; byte retained for net-zero layout)
 
 rdrnd_body:
                 push    de

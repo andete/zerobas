@@ -152,6 +152,15 @@ FAT_WRTMP2      equ     $E558   ; second transient (free-cluster scan cached sec
 ; this independent buffer. Own-choice free page-3 RAM after the write scratch.
 WBUF            equ     $E560   ; write-back FAT/dir sector buffer ($E560..$E75F)
 
+; Random-record ($21/$22) positioning scratch — transient within a single
+; rrnd_position / rrnd_sector call (NO cross-call lifetime, no init needed).
+; MUST be RAM: these stash a value across a register-clobbering seek/multiply
+; loop, and the earlier ROM-`db` cells silently no-op'd their stores (writes to
+; the read-only $4000-$7FFF ROM image), forcing record-in-sector to 0 -> wrong
+; record. Own-choice free page-3 RAM immediately after WBUF (PROVENANCE §Scratch RAM).
+RRND_RECSEC     equ     $E760   ; r0 & 3 (record-in-sector) across the sector-seek loop
+RRND_CLUSSEC    equ     $E761   ; FAT_CLUSSEC-1 across the cluster->sector multiply loop
+
 ; FCB / directory-entry field offsets (Microsoft FAT spec §3.4; MSX2 TH FCB).
 DIRENT_FIRSTCLUS equ    26      ; first-cluster word (LE) within a dir entry
 DIRENT_FILESIZE equ     28      ; file-size dword (LE) within a dir entry
