@@ -44,12 +44,35 @@ on a 720 KB disk; invisible to the emulator probes (small disk, low clusters onl
 1-byte address-neutral change (`or a`→`dec a`, ROM stays 16384 B), **oracle-confirmed** against 101
 real stock disks via `probes/disk/disk_fat_straddle_oracle.py` (incl. the MSX-DOS 1.03 oracle).
 Detail in the review-archive.
-**Tier-B DONE (2026-07-04):** the BDOSX/2/3/0 one-shot differentials are now a standing gate —
-`make bdos-acceptance` (`probes/disk/disk_bdos_acceptance.py`) replays all four vs stock and asserts
-0-byte-diff. Green baseline: **6/6 gated differentials converged**. Oracle-dependent (not in
-`make unit-test`); see tier2-bdos-coverage.md. **Next candidate (not started):** Tier-C
-(adversarial/boundary suite: cluster-boundary EOF, disk-full, past-EOF random I/O, dir-full,
-rename-collision) — the class of test that just caught the straddle-write bug. Pick deliberately.
+**Tier-B DONE (2026-07-04):** the BDOSX/2/3/0 one-shot differentials became a standing gate —
+`make bdos-acceptance`. **⚠️ but the "6/6 green" baseline was VACUOUS** (see below).
+
+## ⚠️ LIVE — FDC-window P0 remediation IN PROGRESS (Phase A done; Phase B = ROM fix, next)
+**Resume here.** Tier-C case 1 (cluster-boundary EOF) LANDED (commit dc6ec07). Tier-C **case 2
+(disk-full) uncovered something much bigger, now under a signed-off remediation
+([tier2-remediation-spec.md](tier2-remediation-spec.md)):**
+- **A vacuous acceptance gate hid a P0.** The BDOSX* captures anchored on the program's `done`
+  self-loop UN-armed; `$0333` collided with COMMAND.COM's idle loop at t=0.31 s (~20 s before the
+  program loads) → both machines compared at boot state → hollow PASS. Second latent bug:
+  `mode_capture` returns rc=0 even with byte diffs, so `rc==0` gating never saw a diff either.
+- **Real P0 in `main`:** FMAKE's dir-slot claim `fdc_useslot_body` ($7F85) sits inside the REAL
+  FDC register window **$7F80–$7FBF** (confirmed A1: openMSX `National_CF-3300.xml` WD2793
+  `connectionstyle=National` + a slotted read showing register bytes mirrored ×8) — NOT the
+  $7FB8–$7FBF our guard/equates assume. So create/write **persistence is broken**: files aren't
+  written, read-backs return zeros. Regression landed ~M27.
+- **Phase A DONE + COMMITTED (2333609):** gate de-vacuumed (builders emit `--arm-check-val`;
+  `disk_bdos_acceptance.py` parses the recorded buffer + rejects boot-time anchors + treats live
+  AF-at-`done` as benign); `bdosx4.asm` IX-preservation fixed; true failure surface established —
+  **BDOSX + BDOSX3 diverge (ours reads zeros), BDOSX2 + BDOSX0 converge** = ONE root cause. The
+  gate is now HONESTLY RED (real P0) not vacuously green.
+- **Phase B (NEXT — ROM fix, delicate, milestone-closed page-1 surgery):** relocate
+  `fdc_entloop_body` ($7F56) + `fdc_useslot_body` ($7F85) out of $7F80–$7FBF into the fat.asm
+  free-tail corridor; re-pin `p0_env_tab` ($7FAC, partly in-window) — **OPEN PUZZLE: p0_env_tab is
+  partly in the true window yet boot survives; understand why BEFORE moving it**; correct
+  equates.inc + the runtime.asm guard ($7FB8→$7F80) + build-time assert. Invariants: ROM=16384 B,
+  net-zero canonical addresses, Tier-1 green. Then Phase C re-verify (honest gate green +
+  create→close→reopen→read round-trip), Phase D adjudicate case-2 disk-full + docs.
+- BDOSX4 (case-2 disk-full exerciser) is BUILT but kept OUT of the gate until Phase D1.
 
 ## Durable framing (outlives the active pass)
 The milestone chain M13→M27 all landed (detail in the tier2-*-spec.md docs + the review-archive).
@@ -142,12 +165,14 @@ any future zerobas-disk work (e.g. the deferred multi-hardware variant layer,
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — none open; pick a new direction DELIBERATELY
-The Tier-2 DOS-boot track is COMPLETE and the codebase was consolidated 2026-07-04 (audit CLEAN
-after the §11.1 remediation; review-queue synced; memory + this board pruned). **There is no
-forced next step.** Do NOT default into new work off a bare "continue" — [[confirm-before-large-execution]]
-/ [[tier2-deep-think-before-resuming]] apply: choose the next track deliberately with the user.
-Candidate directions parked in the backlog (none started):
+## Next action — Phase B of the FDC-window P0 remediation (spec signed off; user paused before ROM edits)
+**The forced next step is Phase B** of [tier2-remediation-spec.md](tier2-remediation-spec.md)
+(see the ⚠️ LIVE section above). User paused at the Phase-A/B boundary deliberately — Phase B is
+delicate milestone-closed page-1 ROM surgery. Start with the read-only p0_env_tab-in-window puzzle,
+then relocate + fix guard/equates + assert. Do a deep-think first per [[tier2-deep-think-before-resuming]].
+Do NOT start ROM edits without re-confirming ([[confirm-before-large-execution]]).
+
+Other candidate directions (parked; behind the P0 remediation):
 - **Docs-as-deliverable harvest** ([[dual-mission-docs-as-deliverable]]) — now the code is
   settled, consolidate the tier2-*-spec.md notebook into the product-spec genre (seed:
   spec-diskrom-kernel.md).
