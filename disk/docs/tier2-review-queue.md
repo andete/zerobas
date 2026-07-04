@@ -96,6 +96,23 @@ not the agent's word):
     (3) characterise the true $23 F_SIZE return-in-A; (4) adjudicate the WRSEQ disk-full onset
     lag (P2, least severe). BDOSX stays honestly RED in the gate until (1)+(2).
 
+**RESOLUTION 2026-07-04 (follow-ons (2) DONE + (3) dispatched):**
+- **F5 DONE (follow-on (2)) — bdosx.asm out-of-contract fixed.** `bdosx.asm` now sets FCB+14..15=128
+  (word) immediately BEFORE the `$27 RDBLK`/`$26 WRBLK` block ops (NOT after FOPEN — an earlier
+  placement corrupts position state the sequential path relies on and breaks stock's RDSEQ; measured
+  both ways). Result: the block-op differential is now WELL-FORMED — both machines transfer a defined
+  128-B record; the residual is exactly one record's positional offset (`$27` stream-from-0 vs stock's
+  random-record position) + the `$26` gap + the `$23` A=3 nit. **Characterisation bonus:** setting
+  FCB+14=128 made STOCK read a real block (was `00`), confirming stock MSX-DOS-1 uses FCB+14..15 as
+  record size = our `driver.asm:578` interpretation (retires a latent divergence worry). **BDOSX
+  still cannot go green from this fix alone** — the premise that the record-size fix "unblocks BDOSX
+  to green" was optimistic; green needs the `$26` implementation (explicitly excluded by the user)
+  AND the `$27` un-simplification. Gate unchanged at 4/6; BDOSX RED is now diagnostic, not garbage.
+- **Follow-on (3) $23 F_SIZE — dispatched (Fable-solo, in flight).** Black-box characterisation of the
+  true MSX-DOS-1 F_SIZE return-in-A (is `A=3` a valid CP/M dir code or a bug?). Investigation only,
+  no source edits; verdict pending.
+- **Still open:** (1) implement `$26` WRBLK (user-excluded feature); (4) WRSEQ disk-full onset lag (P2).
+
 _**Batch-synced 2026-07-04** (consolidation sweep) — the M19→M27 block (20 entries) was
 reviewed and moved to [tier2-review-archive.md](tier2-review-archive.md). The Tier-2
 DOS-boot-to-`A>` goal is **MET**, full BDOS surface coverage is complete (M26 closed), and

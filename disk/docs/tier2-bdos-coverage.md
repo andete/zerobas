@@ -54,7 +54,7 @@ kernel/BDOS change; a red gate means the surface below regressed. Oracle-depende
 | `$23` | FSIZE | ⚠ UNVERIFIED (was vacuous ✅) | de-vacuumed gate (2026-07-04): ours returns `A=$03` vs stock `A=0`; but $23 is a KERNEL-internal shared call (no disk-ROM handler) and `A=3` may be a valid CP/M dir code — needs its own $23-contract characterisation | prior "0-byte-diff" was a vacuous-anchor artifact |
 | `$24` | SETRND | ✅ | M21/`BDOSX` run | |
 | `$26` | WRBLK | ❌ NOT IMPLEMENTED (was vacuous ✅) | de-vacuumed gate (2026-07-04): ours does not persist a random block write (post-run image unchanged); the M21 "0-byte-diff" was a vacuous-anchor artifact | feature gap; tracked follow-on |
-| `$27` | RDBLK | ⚠ documented simplification | `k_47B2` streams the whole file from offset 0, ignoring the record-size/count fields (same class as `bdos_rdblk`'s random-record-0 assumption) — NOT a full-contract match; exercised out-of-contract by `bdosx.asm` (no FCB record-size set) | M21b RC-2 made arbitrary-`.COM` load work; full block semantics unverified |
+| `$27` | RDBLK | ⚠ documented simplification (now well-formed differential, F5) | `k_47B2` streams the whole file from offset 0, ignoring the random-record/count fields (same class as `bdos_rdblk`'s random-record-0 assumption) — NOT a full-contract match. `bdosx.asm` now sets FCB+14..15=128 before the block ops (F5), so the differential is well-formed: BOTH machines transfer a defined 128-B record and the divergence is exactly one record's positional offset (ours streams from 0, stock positions at the random record). Bonus datum: setting FCB+14=128 makes stock read a real block (was 00), confirming stock uses FCB+14..15 as record size = our `driver.asm:578` interpretation. | M21b RC-2 made arbitrary-`.COM` load work; full positional block semantics unverified — green needs the stream-from-0 un-simplification |
 | `$2A` | GDATE | ✅ | handler `gdate_handler` @ `$553C` + `$F30D/$F30E` format defaults; backed by `test_gdate.py` | returns 1984-01-01 default |
 | `$2B` | SDATE | ✅ | confirmed with a real typed date (`--keys '85-3-27\r'`); screen arbiter matches | no host unit test yet |
 | `$01` | CONIN | ✅ | `BDOSX2` record 8, 0-byte-diff; `screen` shows the `x` echo | M22a: canonical entry `$5445` (`conin_body`), CHGET+echo via `conout_body` |
@@ -85,9 +85,13 @@ kernel/BDOS change; a red gate means the surface below regressed. Oracle-depende
 - **The FCB read/write/close cluster (M21, 2026-07-02) — CORRECTED 2026-07-04:** `$0F/$10/$14/$1A/
   $24` are solid, but the M21 "100% ✅" for this cluster was inflated by the VACUOUS acceptance
   anchor (fixed 2026-07-04, Phase A). The de-vacuumed gate shows `$26` WRBLK is NOT implemented,
-  `$27` RDBLK is a documented stream-from-0 simplification (exercised out-of-contract by
-  `bdosx.asm`), and `$23` FSIZE returns `A=3` (uncharacterised) — see their rows above. `BDOSX`'s
-  own differential is honestly RED in the gate for these reasons, not hidden.
+  `$27` RDBLK is a documented stream-from-0 simplification, and `$23` FSIZE returns `A=3`
+  (uncharacterised) — see their rows above. `BDOSX`'s own differential is honestly RED in the gate
+  for these reasons, not hidden. As of F5 (2026-07-04) `bdosx.asm` sets FCB+14..15=128 before the
+  block ops so the comparison is WELL-FORMED (was out-of-contract: no record-size set); the residual
+  RED is now diagnostic — the whole-record `$27` positional offset + the `$26` gap + the `$23` nit —
+  not garbage. Green requires the `$26` implementation and the `$27` un-simplification (both tracked,
+  neither in this pass); the record-size fix alone cannot converge it.
 - **The console + misc + termination tier (`$00/$01/$06/$07/$08/$0B/$0C/$0D/$18/$2C/$2D/$2E`)
   is 100% ✅ (M22a+M22b+M23, 2026-07-03):** all proven via `BDOSX2.COM`/`BDOSX0.COM`, 0-byte-diff
   on every record. This is where the milestone's real surprise lived — `$0C` CPMVER and

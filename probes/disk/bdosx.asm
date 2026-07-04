@@ -77,6 +77,21 @@ start:
                 ld      (ix+0), $24
                 call    snap
 
+                ; --- set FCB record size = 128 (FCB+14..15, word) for the block ops ---
+                ; The random block ops $27 RDBLK / $26 WRBLK take their per-record
+                ; transfer size from FCB+14..15; the published contract makes the
+                ; application responsible for setting it (an unset 0 is an
+                ; implementation-defaulted value -> out of contract, and ours vs
+                ; stock disagree on the default). Set it to the standard 128-byte
+                ; record so the block-op differential compares a well-defined
+                ; transfer size. Deliberately set here -- AFTER the RDSEQ calls,
+                ; immediately before the first block op -- because FCB+14..15
+                ; overlaps position state the sequential path relies on; setting it
+                ; earlier disturbs RDSEQ (records 2/3). 128 matches the 128-B DTA
+                ; spacing below.
+                ld      hl, 128
+                ld      (fcb+14), hl
+
                 ; --- record 5: $27 RDBLK, 1 record (DTA -> data+256) ---
                 ld      de, data+2*128
                 ld      c, $1A
