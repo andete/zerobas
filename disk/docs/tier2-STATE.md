@@ -295,7 +295,38 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M27 LANDED: the $05 LSTOUT / DIR "82 spurious calls" oddity, root-caused (2026-07-04)
+## Next action — FDC-window build guard LANDED; M22b slice 2 DEFERRED (2026-07-04)
+
+> Picked up M22b slice 2 (CONOUT TAB-expansion + `$F237` column) as the next
+> residual. The conout logic was written + verified correct (register/stack
+> contract audited; oracle disk `make_tabtest_disk.py`; §8.1 pinned black-box:
+> stock post-TAB exit `A=$00`, keeps `E=$09`, `$F237=$08` after the col-1 tab),
+> BUT it would not boot. **Root cause (a pre-existing LATENT fragility, not the
+> feature): the National WD2793 FDC registers are MEMORY-MAPPED into ROM page 1
+> at `$7FB8-$7FBF`** (equates.inc) — a hardware hole inside the `$4000-$7FFF`
+> image. The free tail is packed right up against it (`p0_env_tab` data straddles
+> `$7FB8`, tolerated only because `lay_page0_env` reads it while the FDC is idle
+> → transparent ROM reads). Any tail growth ≥32 B slides *executable* code into
+> the window; fetched during the FDC-active MSXDOS.SYS load it reads register
+> bytes, not opcodes → **silent, deterministic boot crash** (derail localised to
+> BOOT_ENTRY `$C01E` → never reaches `$0200`). The `ds $8000 - $` pad hid it.
+> **LANDED (commit `c0f214d`): a net-zero compile-time guard** before `p0_env_tab`
+> — if executable code passes `$7FB8`, pasmo errors + exits 1 (no object) instead
+> of a boot-crashing ROM. Verified byte-identical to HEAD, fires on injected
+> overrun, unit-test 19/19, probe green, 16384 B. **slice 2 is DEFERRED**: the
+> disk ROM is effectively FULL below the FDC window, so landing it needs the new
+> tab/emit routine placed in the free `$7FC5-$7FFF` space ABOVE the hole with
+> `conout_body`'s below-hole footprint kept byte-stable (relocate its emit body
+> above the hole so its low slot shrinks to a `jp`) — a real design task, its own
+> sign-off. Full writeup: scratchpad `M22b-slice2-FINDINGS.md` (slice-2 asm saved
+> in `runtime-with-slice2.asm`/`.patch`). **Harness traps learned (cost many
+> runs):** `capture`/`trace` default-arm at `$0100` (COMMAND.COM), so any
+> pre-COMMAND.COM address reads "never reached" unless you pass NO `--arm-cond`;
+> and the `screen` probe's fixed settle is a FLAKY boot oracle for marginal
+> builds — use `callseq --log 0x0005` (arms on `$0100`) as the deterministic
+> boot-success signal (HEAD = 27/27). See [[openmsx-probing-toolbox]].
+
+### (prior) M27 LANDED: the $05 LSTOUT / DIR "82 spurious calls" oddity, root-caused (2026-07-04)
 
 > User picked this up as the first post-M26 residual. Fable dispatch
 > root-caused it fresh (never properly characterised since M19/M20): the
