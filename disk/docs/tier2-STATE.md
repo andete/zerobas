@@ -30,20 +30,24 @@ mutation/random/absolute-I/O block) and **all four post-M26 residuals closed** (
 characterised + wired to BIOS `$00A5`; `$2E` VERIFY resolved as a faithful no-op; M22b slice-2
 CONOUT TAB-expansion landed). **Nothing gating remains on this track.**
 
-## Live thesis — Tier-A test hardening (active 2026-07-04)
-DOS-boot track is COMPLETE; a follow-on **Tier-A host-test hardening** pass is active (user-chosen).
-Fixed `coverage.py` (disk group was crashing) → first real number: **disk host coverage was 1%**
-(74/13849 instr) — the whole FAT12/BDOS engine had ZERO standing host regression, carried only by
-the one-shot emulator probes. Growing a FAT12-core host suite (same FDC-mock pattern as
-`test_getdpb`). Landed: `test_fat_next_cluster` (chain-walk, all 4 nibble cases) +
-`test_fat_write_fat_entry`.
-**✅ FOUND + FIXED a real bug (2026-07-04):** the write test caught `fat_write_fat_entry`
-(fat.asm:579) straddling at the wrong `byteidx` boundary — corrupting FAT entries at clusters
-170/341/682 (byteidx 255/511) on a 720 KB disk; invisible to the emulator probes (small disk, low
-clusters only). Fixed with a 1-byte address-neutral change (`or a`→`dec a`, ROM stays 16384 B),
-**oracle-confirmed** against 101 real stock disks via `probes/disk/disk_fat_straddle_oracle.py`
-(incl. the MSX-DOS 1.03 oracle). Detail in the review-archive. Remaining FAT12-core targets:
-`fat_find`+`name_cmp`, `fat_alloc_cluster`, `fat_dir_create`, `fat_read_file_sector`.
+## Live thesis — Tier-A test hardening (FAT12-core suite DONE 2026-07-04)
+DOS-boot track is COMPLETE; a follow-on **Tier-A host-test hardening** pass (user-chosen) landed the
+**FAT12-core host suite**. Fixed `coverage.py` (disk group was crashing) → first real number: disk
+host coverage was **1%** (74/13849 instr) — the whole FAT12/BDOS engine had ZERO standing host
+regression, carried only by the one-shot emulator probes. Added 5 tests (same FDC-mock pattern as
+`test_getdpb`): `test_fat_next_cluster`, `test_fat_write_fat_entry`, `test_fat_find` (+name_cmp),
+`test_fat_alloc_cluster`, `test_fat_dir_create`, `test_fat_read_file_sector`. Disk host coverage now
+**4%** (580 instr, 52 blocks); `make unit-test` 25/25.
+**✅ FOUND + FIXED a real bug:** the write test caught `fat_write_fat_entry` (fat.asm:579) straddling
+at the wrong `byteidx` boundary — corrupting FAT entries at clusters 170/341/682 (byteidx 255/511)
+on a 720 KB disk; invisible to the emulator probes (small disk, low clusters only). Fixed with a
+1-byte address-neutral change (`or a`→`dec a`, ROM stays 16384 B), **oracle-confirmed** against 101
+real stock disks via `probes/disk/disk_fat_straddle_oracle.py` (incl. the MSX-DOS 1.03 oracle).
+Detail in the review-archive.
+**Next Tier-A candidates (not started):** Tier-B (promote the BDOSX emulator probes to a standing
+`make`-gated acceptance replay) and Tier-C (adversarial/boundary suite: cluster-boundary EOF,
+disk-full, past-EOF random I/O, dir-full, rename-collision) — the FAT12-core covers the metadata
+LOGIC; the `bdos_*` handlers are still emulator-only. Pick deliberately with the user.
 
 ## Durable framing (outlives the active pass)
 The milestone chain M13→M27 all landed (detail in the tier2-*-spec.md docs + the review-archive).
