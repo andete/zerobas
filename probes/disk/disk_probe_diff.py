@@ -57,13 +57,25 @@ BDOS = {
     0x0F: "FOPEN", 0x10: "FCLOSE", 0x11: "SFIRST", 0x12: "SNEXT", 0x13: "FDEL",
     0x14: "RDSEQ", 0x15: "WRSEQ", 0x16: "FMAKE", 0x17: "FREN", 0x18: "LOGIN",
     0x19: "CURDRV", 0x1A: "SETDTA", 0x1B: "ALLOC", 0x21: "RDRND", 0x22: "WRRND",
-    0x23: "FSIZE", 0x24: "SETRND", 0x25: "WRBLK", 0x26: "RDBLK", 0x27: "WRRNDV",
+    0x23: "FSIZE", 0x24: "SETRND", 0x26: "WRBLK", 0x27: "RDBLK",  # $25 unused in the DOS-1 surface
     0x28: "WRZER", 0x2A: "GDATE", 0x2B: "SDATE", 0x2C: "GTIME", 0x2D: "STIME",
     0x2E: "VERIFY", 0x2F: "RDABS", 0x30: "WRABS",
 }
 
+# Per-run disk-copy policy. Every _runner() gets its OWN fresh copy of the source
+# disk (unless --no-copy) so a WRITE exerciser never lets one machine boot an image
+# the OTHER machine already mutated — the old copy-ONCE-then-run-both scheme did
+# exactly that (soundness landmine, 2026-07-04). Set from --no-copy in main().
+_COPY_DISK = True
+_TMP_DISKS: list[str] = []
+
 
 def _runner(machine: str, diska: str | None, symfile: str) -> OmsxRun:
+    if diska and _COPY_DISK:
+        fresh = tempfile.mktemp(suffix=".dsk")
+        shutil.copy2(diska, fresh)
+        _TMP_DISKS.append(fresh)
+        diska = fresh
     return OmsxRun(machine=machine, diska=diska, symfile=symfile)
 
 
@@ -1238,22 +1250,22 @@ def main() -> int:
 
     args = ap.parse_args()
 
-    tmp_disk = None
+    global _COPY_DISK
     if getattr(args, "diska", None):
         if not os.path.exists(args.diska):
             sys.exit(f"DOS disk not found: {args.diska}")
-        if not args.no_copy:
-            tmp_disk = tempfile.mktemp(suffix=".dsk")
-            shutil.copy2(args.diska, tmp_disk)
-            args.diska = tmp_disk
+        # _runner() now copies PER machine (see _COPY_DISK) so ours/stock never
+        # share a mutable image; --no-copy keeps the caller's disk (one-sided runs).
+        _COPY_DISK = not args.no_copy
     try:
         return {"callseq": mode_callseq, "capture": mode_capture, "trace": mode_trace,
                 "screen": mode_screen, "iowrite": mode_iowrite, "ioport": mode_ioport,
                 "readwatch": mode_readwatch, "writewatch": mode_writewatch,
                 "callwatch": mode_callwatch}[args.mode](args)
     finally:
-        if tmp_disk and os.path.exists(tmp_disk):
-            os.unlink(tmp_disk)
+        for d in _TMP_DISKS:
+            if os.path.exists(d):
+                os.unlink(d)
 
 
 if __name__ == "__main__":
