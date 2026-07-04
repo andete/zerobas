@@ -295,9 +295,54 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — M26 CLOSED: all six functions landed, full BDOS surface coverage complete (2026-07-03)
+## Next action — M27 LANDED: the $05 LSTOUT / DIR "82 spurious calls" oddity, root-caused (2026-07-04)
 
-> **RDRND (`$21`) / WRRND (`$22`) LANDED — M26's last two functions.** User
+> User picked this up as the first post-M26 residual. Fable dispatch
+> root-caused it fresh (never properly characterised since M19/M20): the
+> spurious calls were never really about LSTOUT's own dispatch — a fixed
+> page-3 work-area cell, `$F23B` (printer-echo state), was never zeroed by
+> our ROM's DOS boot handoff (stock zeroes it once, writer `$57BE`). Left at
+> its BIOS power-on value `$FF`, COMMAND.COM's own DIR line-end code (and
+> its per-prompt-cycle save/restore of the same cell) reads it as "a list
+> device is attached" and echoes each line's CR/LF to it via 2 extra
+> `BDOS C=$05` calls per file — 82 for a 41-file listing. Fixed with a
+> single one-time zero in `dos_handoff` (disk/runtime.asm), same DOS-only
+> save/default/restore shape already used there for `$F338`/`$F30D`.
+> Proven before coding via a live `--poke 0xF23B:0x00` re-alignment test.
+> Verified: `callseq --log 0x0005 --maxhits 260 --keys '\rDIR\r'` 260/260
+> aligned (was fork@n=63); DIR `screen` unchanged (already correct); boot
+> callseq 18/18; unit-test 19/19; probe green; BDOSX/BDOSX2 zero-diff;
+> BDOSX0 43/43. **Bonus finding:** the SAME fix also fixes BDOSX3's
+> `--mem 0x4d5:0x380` block to 0/896 bytes — M26 had logged the 127-byte
+> `rdbuf` gap there as "pre-existing, unrelated to RDRND/WRRND" (true as far
+> as it went, but it turns out to share THIS root cause, since the
+> prompt-cycle `$F23B` handling runs on every `A>` return, not just `DIR`) —
+> [tier2-m26-spec.md](tier2-m26-spec.md) §10 corrected accordingly.
+>
+> **Deliberately NOT fixed:** LSTOUT's own dispatch. It's un-wired —
+> squatted by `callf_body_body` at kernel worker-slot `$5465`, currently
+> harmless (a NOP-slide to an existing ret-stub, no observable effect since
+> nothing legitimately calls func-5 today). Along the way, confirmed
+> openMSX DOES have a printer pluggable (`plug printerport simpl` +
+> `printerlogfilename`) that could plausibly make LSTOUT's real poll
+> contract safe to characterise (the old M19/M20 "no printer, can't probe"
+> framing undersold what the emulator supports) — but a quick spike was
+> inconclusive (identical PC trajectory plugged vs unplugged, on both
+> machines, over 1s of emulated time; needs I/O-port-level tracing to
+> settle, not PC snapshots). User signed off on landing the proven `$F23B`
+> fix now and deferring `$5465`/the printer-pluggable angle to a future
+> session. Full writeup: [tier2-m27-lstout-spec.md](tier2-m27-lstout-spec.md).
+>
+> Remaining residuals in the codebase (not gating anything, none has an open
+> sign-off pending): `$5465`/`lstout_body` (above), the printer-pluggable
+> LSTOUT/AUXIN/AUXOUT characterisation angle (above), `$2E` VERIFY's
+> flag-effect-on-writes open design question (tier2-bdos-remaining-spec.md
+> §5.4), CONOUT's TAB-expansion (M22b slice 2, deferred). Pick the next one
+> deliberately, don't default into it off a bare "continue".
+
+> **M26 CLOSED: all six functions landed, full BDOS surface coverage complete
+> (2026-07-03).** RDRND (`$21`) / WRRND (`$22`) LANDED — M26's last two
+> functions. User
 > said "continue, investigate indeed" after FDEL landed (explicit
 > authorisation to investigate), then signed off on the full characterised
 > fix shape (including the genuinely-new positioning helper + WRRND's own
@@ -342,12 +387,7 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
 > **M26 is now CLOSED. Full BDOS surface coverage is complete** —
 > [tier2-bdos-coverage.md](tier2-bdos-coverage.md): 8/8 ✅ on the mutation/
 > random/absolute-I/O block, no remaining 🔲/⚠ rows tied to an open
-> milestone. Next-action-worthy remaining items in the codebase (residuals,
-> not gating anything): `$05` LSTOUT's uncharacterised spurious-call
-> oddity, `$22`/`$2B` mirror-field gaps flagged-not-blocking during M26,
-> CONOUT's TAB-expansion (M22b slice 2, deferred). None of these have an
-> open sign-off pending — pick the next one deliberately, don't default
-> into it off a bare "continue".
+> milestone.
 
 > **FDEL (`$13`) LANDED.** Dispatched to Fable per the now-4-for-4 rule
 > (never trust a `callwatch`-only M26 read); `trace --resync` confirmed the

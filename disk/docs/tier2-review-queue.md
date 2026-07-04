@@ -23,6 +23,39 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**[M27 — the `$05` LSTOUT / DIR "82 spurious calls" oddity, root-caused +
+fixed (2026-07-04).]** User picked this residual after M26 closed. Asked me
+to clarify why LSTOUT couldn't be safely probed given openMSX likely has a
+printer emulation mechanism — a good catch that led me to confirm
+`plug printerport simpl` + `printerlogfilename` genuinely exist, correcting
+the M19/M20-era "no printer, can't probe" framing (too pessimistic, in the
+spirit of [[dont-prematurely-wall]]). Dispatched Fable to root-cause the
+oddity fresh via `callseq`/`trace --regdump`/`readwatch`/`writewatch` on the
+real `DIR` repro (no exerciser). Found: root cause was NEVER LSTOUT's own
+dispatch — it was `$F23B` (a printer-echo state work-area cell), never
+zeroed by our ROM's DOS boot handoff, fooling COMMAND.COM's own DIR
+line-end + prompt-cycle code into thinking a list device is attached.
+Proved via a live `--poke 0xF23B:0x00` re-alignment test before writing any
+code. Fixed with a one-time zero in `dos_handoff` (disk/runtime.asm), same
+DOS-only save/default/restore shape already used there for `$F338`/`$F30D`.
+Verified: `callseq` 260/260 aligned (was fork@n=63, 82 spurious calls); DIR
+`screen` unchanged; full regression suite green. **Unplanned bonus**: the
+same fix also brought BDOSX3's `--mem 0x4d5:0x380` block to 0/896 bytes —
+M26 had logged the remaining 127 bytes there as "pre-existing, unrelated to
+RDRND/WRRND" (true as far as it went, but it shares this root cause since
+the prompt-cycle handling of `$F23B` runs on every `A>` return, not just
+`DIR`) — corrected `tier2-m26-spec.md` §10 accordingly. **Deliberately NOT
+fixed**: LSTOUT's own dispatch (`$5465`, squatted by `callf_body_body`,
+currently harmless — nothing calls func-5 for real). A quick spike into
+whether the `simpl` printer pluggable makes LSTOUT's real poll contract
+safe to characterise was inconclusive (identical PC trajectory plugged vs
+unplugged on both machines over 1s of emulated time — needs I/O-port-level
+tracing, not PC snapshots, to settle). User signed off on landing the
+proven `$F23B` fix now and deferring `$5465`/the printer-pluggable angle.
+Full writeup: [tier2-m27-lstout-spec.md](tier2-m27-lstout-spec.md). Undo:
+straightforward, all in disk/runtime.asm (`dos_handoff`'s save/default/
+restore sequence, one cell added alongside the existing `$F338` handling).
+
 **[M26 Follow-up 9 / §10 — RDRND/WRRND implemented + landed, after user
 sign-off on the full fix shape (2026-07-03). M26 CLOSED.]** User approved
 Follow-up 8's question ("proceed" with the genuinely-new-engine-logic

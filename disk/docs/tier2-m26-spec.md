@@ -724,7 +724,18 @@ remaining 127 bytes are entirely `rdbuf` (`--mem 0x555:0x80`, 127/128) —
 record 12's RDSEQ round-trip content, unrelated to RDRND/WRRND and
 confirmed pre-existing via the git-stash/rebuild-baseline technique (the
 FDEL-only baseline ROM shows the identical 127/128 `rdbuf` diff and the
-identical 381/896 whole-block diff before this fix). Full regression suite:
+identical 381/896 whole-block diff before this fix).
+
+**Correction (2026-07-04, M27):** this `rdbuf` gap is NOT actually unrelated
+to anything — [tier2-m27-lstout-spec.md](tier2-m27-lstout-spec.md) root-caused
+a separate, older (M19/M20-era) divergence (`$F23B`, an uninitialized
+printer-echo state cell) and found, as a side effect of fixing it, that this
+exact 896-byte BDOSX3 block goes to **0 of 896 bytes differ** — the `rdbuf`
+127 bytes were a symptom of the SAME `$F23B` root cause (active on every
+return to `A>`, not just `DIR`), not a genuinely separate, unexplained gap.
+"Unrelated to RDRND/WRRND" was correct as far as it went; "pre-existing,
+otherwise unexplained" no longer is. Full regression suite (at M26 landing
+time, before the M27 fix):
 `make unit-test` 19/19 (checked immediately after placement, per the FDEL
 placement-lesson standing rule — this slice built clean the first time,
 `kernel.asm`'s free tail from the start), `make probe` all green, boot

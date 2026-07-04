@@ -536,19 +536,36 @@ int_h_hiram_end:
 ; them to $F30D=01 / $F30E=00 at boot (observed black-box; clean-room, no stock bytes).
 ; Same DOS-only save/restore discipline as $F338, so a returning data disk leaves the
 ; host's cells untouched (BIOS-agnostic). (tier2-gdate-spec.md)
+; Also defaults the printer-echo state cell $F23B (M27, the LSTOUT-DIR-oddity
+; follow-up): the main-BIOS RAM scan leaves it $FF at power-on; stock's disk ROM
+; zeroes it once during this same boot phase (black-box-pinned write at $57BE,
+; t=3.8s during a real DOS boot -- disk/docs/tier2-m27-lstout-spec.md). Left at
+; $FF, COMMAND.COM's own DIR line-end code (and its prompt-cycle save/restore)
+; treats it as "a list device is attached" and echoes each line's CR/LF to it
+; via BDOS $05 LSTOUT -- 2 extra calls per file (documented since M19/M20 as
+; "82 spurious per-file LSTOUT calls during DIR", never root-caused until now).
+; A single boot-time poke to $F23B (validated: `callseq --poke 0xF23B:0x00`
+; fully re-aligns the call stream, "ALIGNED, NO DIVERGENCE in 90 shared calls")
+; is sufficient -- COMMAND.COM's own save/restore keeps it at 0 across the
+; whole session once seeded. Same DOS-only save/restore discipline as $F338.
 dos_handoff:
                 call    dos_clear_screen    ; OI-3: blank BASIC banner + home cursor (below)
                 ld      a, ($F338)          ; save host $F338 (BASIC hook stub on C-BIOS)
                 push    af
                 ld      hl, ($F30D)         ; save host $F30D/$F30E (date-format config)
                 push    hl
+                ld      a, ($F23B)          ; save host $F23B (printer-echo state)
+                push    af
                 xor     a
                 ld      ($F338), a          ; DOS default: $F338 = 0
+                ld      ($F23B), a          ; DOS default: $F23B = 0 (no printer echo)
                 ld      hl, $0001
                 ld      ($F30D), hl         ; DOS default: $F30D=01, $F30E=00 (date format)
                 scf                         ; Cy = 1 -> step-7 "load the system" entry
                 call    BOOT_ENTRY          ; DOS disk JPs into MSXDOS.SYS (no return)
-                pop     hl                  ; data disk returned: recover host values
+                pop     af                  ; data disk returned: recover host $F23B
+                ld      ($F23B), a
+                pop     hl                  ; recover host values
                 ld      ($F30D), hl
                 pop     af                  ; recover host $F338
                 ld      ($F338), a          ; restore the dual-purpose stub for BASIC

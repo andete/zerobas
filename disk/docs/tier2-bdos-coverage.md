@@ -56,7 +56,7 @@ update. Repro (boot path): `python3 probes/disk/disk_probe_diff.py callseq --max
 | `$08` | INNOE | ✅ | `BDOSX2` record 10, 0-byte-diff | M22a: canonical entry `$544E` (`innoe_body`, CHGET no-echo) |
 | `$0B` | CONST | ✅ | `BDOSX2` records 7+12 (poll-until-ready + drained), 0-byte-diff | M22a: canonical entry `$543C` (`const_body`, CHSNS poll normalized to `$FF`/`$00`) |
 | `$0C` | CPMVER | ✅ | `BDOSX2` record 0, 0-byte-diff | M22a: canonical entry `$41EF` (`cpmver_body`: `A=$22 B=$00`) — kernel-internal constant, but still a real page-1 CALL (tier2-m22-cpmver-spec.md, the milestone's namesake discovery) |
-| `$05` | LSTOUT | ⚠ open, uncharacterized | 82 spurious per-file `C=05` calls observed during `DIR` (BDOS n=63 fork, first noticed M19/M20) | confirmed OUT OF SCOPE for `DIR`'s own correctness; never root-caused; deliberately excluded from the exerciser (printer-ready poll hang risk, no evidence gained — tier2-bdos-remaining-spec.md §2 F2). Pick up if a future milestone touches this area |
+| `$05` | LSTOUT | ⚠ dispatch not wired (root cause fixed) | DIR-parity root cause fixed: `callseq --log 0x0005` 260/260 aligned (was: fork at n=63, 82 spurious calls); BDOSX3 full-block bonus fix 0/896 (was 127/896) | M27 (2026-07-04): root cause was NOT LSTOUT's own dispatch — it was `$F23B` (printer-echo state), never zeroed at DOS boot, causing COMMAND.COM's own DIR line-end + prompt-cycle code to think a list device is attached. Fixed in `dos_handoff` (runtime.asm), same shape as the existing `$F338`/`$F30D` DOS-only defaults. LSTOUT's OWN dispatch (`$5465`) is still un-wired — squatted by `callf_body_body`, currently harmless (nothing calls it for real) — deferred, see tier2-m27-lstout-spec.md §4 |
 | `$2C` | GTIME | ✅ | `BDOSX2` record 3, 0-byte-diff (D/E seconds bytes tolerate ±1s clock skew, documented) | M22a: canonical entry `$55DB` (`gtime_body`: all-zero constant, NOT fed by STIME) |
 | `$2D` | STIME | ✅ | `BDOSX2` record 2, 0-byte-diff | M22a: canonical entry `$55E6` (`stime_body`: `A:=0 B:=H C:=L`, D/E passthrough; range validation not implemented, residual) |
 | `$00` | TERM0 | ✅ | M23 `BDOSX0`: `callseq --log 0x0005` 43/43 aligned incl. the `C=00` call itself (byte-identical `A/B/DE/HL`); `screen` shows both machines back at a live `A>` | never returns — evidence is call-alignment + screen, not a buffer capture (tier2-bdos-remaining-spec.md §5.2); doubles as an M21b generic-COMMAND.COM-reentry regression check |
@@ -83,8 +83,11 @@ update. Repro (boot path): `python3 probes/disk/disk_probe_diff.py callseq --max
   on every record. This is where the milestone's real surprise lived — `$0C` CPMVER and
   `$02` CONOUT's `$53A7` worker both turned out to be genuine un-wired canonical page-1 entries
   that had never been exercised before (tier2-m22-cpmver-spec.md, tier2-m22b-conout53a7-spec.md).
-- **`$05` LSTOUT** has a known, still-uncharacterized oddity (spurious per-file calls during
-  `DIR`) — harmless to `DIR` itself but nobody has explained it yet.
+- **`$05` LSTOUT's long-standing DIR oddity is root-caused and fixed (M27, 2026-07-04):** the
+  spurious per-file calls were never really about LSTOUT's own dispatch — an uninitialized
+  `$F23B` printer-echo cell fooled COMMAND.COM into thinking a list device was attached.
+  Fixing it also turned out to fix an unrelated-looking BDOSX3 gap from M26. LSTOUT's own
+  dispatch (`$5465`) remains un-wired but currently harmless — see tier2-m27-lstout-spec.md.
 - **The mutation + random + absolute-I/O block is 8/8 ✅ (M24/M25/M26, 2026-07-03) — M26 CLOSED,
   full BDOS surface coverage complete:** `$15 WRSEQ`/`$16 FMAKE` (M24/M25, dir-write +
   FAT-allocate machinery), `$17 FREN`/`$2F RDABS`/`$30 WRABS`/`$13 FDEL` (M26 slices 1-4), and
