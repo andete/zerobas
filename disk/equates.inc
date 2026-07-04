@@ -180,6 +180,15 @@ WRBLK_PREVCLUS  equ     $E7F2   ; cluster before the current step's advance/allo
 WRBLK_KEEPCNT   equ     $E7F4   ; shrink path: clusters-to-keep walk countdown (word)
 WRBLK_NEXTCLUS  equ     $E7F6   ; shrink path: next cluster to free, saved across the
                                 ; fat_write_fat_entry call that frees the CURRENT one (word)
+; M29 (tier2-m29-wrblk-position-cursor-spec.md) incremental position cursor --
+; persists wrblk_position_ext's iterator ACROSS calls within one wrblk_body loop
+; (WRBLK_REC is strictly non-decreasing, kernel.asm:884) so a same-sector or
+; next-sector call can skip the from-head fat_open+re-walk. Cross-call lifetime
+; WITHIN a single wrblk_body invocation only -- wrblk_body clears CURVALID once
+; before wrblk_loop.
+WRBLK_CURVALID  equ     $E7F8   ; byte: 0 = iterator not yet positioned this call
+WRBLK_CURSEC    equ     $E7F9   ; word: sector-in-file the iterator currently sits
+                                ; on (meaningful only when CURVALID=1)
 ; The one-shot RR*RS size multiply (wrblk_mul_rr_rs) runs AFTER fat_find's SECTOR_BUF
 ; scan and BEFORE fat_dir_update's own WBUF read/write -- no fat_alloc_cluster/
 ; fat_write_fat_entry call happens during the multiply itself, so WBUF's tail is safe,

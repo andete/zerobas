@@ -843,6 +843,12 @@ wrblk_rs_ok:
                 or      l
                 jp      z, wrblk_zero_path
                 ld      (WRBLK_CNT), hl
+                ; M29: reset the position cursor once before the per-record loop
+                ; starts -- wrblk_position_ext will (re)validate it on its first
+                ; call this wrblk_body invocation (wrblk_zero_path never calls
+                ; wrblk_position_ext, so this is unreached/irrelevant there).
+                xor     a
+                ld      (WRBLK_CURVALID), a
 ; --- main per-record loop: position (extending through any gap), overlay RS DTA
 ; bytes at the record's (rec&3)*128 slot within its 512-byte sector, persist. ---
 wrblk_loop:
@@ -972,14 +978,21 @@ wrblk_finish:                              ; shared tail: M20 dispatcher-flag ru
                 ret
 
 ; wrblk_position_ext — position (or extend) the file's iterator to record
-; WRBLK_REC (24-bit), re-fat_open-ing from FAT_FIRSTCLUS and walking sector-by-
-; sector every call -- the same accepted O(n), re-walk-from-start shape as
-; rrnd_position (§4 non-goal precedent: correct and simple, no new resume-state
-; iterator). Unlike rrnd_position, EXTENDS the chain contiguously through any gap
-; instead of returning EOF ([LANDED-A]/§6 Q2 full past-EOF extend).
+; WRBLK_REC (24-bit). M29 (tier2-m29-wrblk-position-cursor-spec.md): keeps an
+; incremental cursor (WRBLK_CURVALID/WRBLK_CURSEC) across calls within one
+; wrblk_body invocation instead of re-fat_open-ing and re-walking from the head
+; every time -- WRBLK_REC is strictly non-decreasing per call (kernel.asm:884),
+; so the target sector-in-file is always >= the cursor's last position. First
+; call this wrblk_body invocation (or any call once positioned) still walks
+; forward via wrblk_read_or_extend_sector exactly as the old from-head walk did;
+; only the redundant re-walk of already-visited sectors is elided. Unlike
+; rrnd_position, EXTENDS the chain contiguously through any gap instead of
+; returning EOF ([LANDED-A]/§6 Q2 full past-EOF extend).
 ;   out: Cy = 0 ok (SECTOR_BUF holds the target sector's current on-disk bytes --
 ;        a freshly allocated sector reads back whatever is already on the disk,
-;        "uninitialised", no zero-fill); Cy = 1 = disk full / I/O error
+;        "uninitialised", no zero-fill, EXCEPT the delta==0 same-sector case,
+;        where SECTOR_BUF already holds it from the previous call -- no I/O);
+;        Cy = 1 = disk full / I/O error
 ;        WRBLK_RECSEC := WRBLK_REC & 3 (record-in-sector; the codebase's fixed
 ;        4-records/512-byte-sector convention -- independent of RS, which only
 ;        scales the byte quantity copied per record and the RR/byte-budget
@@ -988,7 +1001,6 @@ wrblk_position_ext:
                 ld      a, (WRBLK_REC)
                 and     3
                 ld      (WRBLK_RECSEC), a
-                call    fat_open            ; iterator -> FAT_FIRSTCLUS, clussec 0
                 ; target sector-in-file = WRBLK_REC >> 2 (24-bit value; D:E:A below)
                 ld      a, (WRBLK_REC + 2)
                 ld      d, a
@@ -1005,7 +1017,43 @@ wpe_shr:
                 ; FAT12 (720K-class floppy) volumes can hold, so BC below is a safe
                 ; 16-bit sector-in-file count.
                 ld      c, a
-                ld      b, e
+                ld      b, e                ; BC = target_sec (16-bit; D/high byte always 0)
+                ld      a, (WRBLK_CURVALID)
+                or      a
+                jr      z, wpe_fresh
+                ; --- cursor valid: incremental path, no fat_open ---------------
+                push    bc                  ; save target_sec
+                pop     hl                  ; HL = target_sec
+                ld      de, (WRBLK_CURSEC)
+                or      a
+                sbc     hl, de              ; HL = target_sec - WRBLK_CURSEC (>=0, monotonic)
+                ld      a, h
+                or      l
+                jr      z, wpe_same         ; delta==0 -> already positioned, no I/O
+                ; delta >= 1: advance HL steps via wrblk_read_or_extend_sector
+                ld      (WRBLK_CURSEC), bc  ; bc still holds target_sec
+                ex      de, hl              ; DE = delta
+wpe_adv:
+                push    de                  ; wrblk_read_or_extend_sector clobbers BC/DE
+                                            ; internally (wroe_mul's djnz counter) -- same
+                                            ; save/restore rrnd_position uses around
+                                            ; fat_read_file_sector for the identical reason
+                call    wrblk_read_or_extend_sector
+                pop     de
+                ret     c
+                dec     de
+                ld      a, d
+                or      e
+                jr      nz, wpe_adv
+                ret                         ; Cy=0 (wrblk_read_or_extend_sector cleared it)
+wpe_same:
+                or      a                   ; Cy=0, no I/O -- SECTOR_BUF already holds
+                ret                         ; the target sector from the previous call
+wpe_fresh:
+                call    fat_open            ; iterator -> FAT_FIRSTCLUS, clussec 0
+                ld      (WRBLK_CURSEC), bc
+                ld      a, 1
+                ld      (WRBLK_CURVALID), a
                 inc     bc                  ; BC = walk-loop count (>=1; sector 0 needs 1 step)
 wpe_walk:
                 push    bc                  ; wrblk_read_or_extend_sector clobbers BC

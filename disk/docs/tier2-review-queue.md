@@ -145,6 +145,29 @@ not the agent's word):
   keeping BDOSX RED in the gate; deferred with its own COMMAND.COM-boot regression check. (B) WRSEQ
   disk-full onset lag (P2). Neither forced.
 
+**RESOLUTION 2026-07-04 — M29 WRBLK position cursor DONE (perf; user directive "the O(n²) should
+be investigated for improvement").** [tier2-m29-wrblk-position-cursor-spec.md](tier2-m29-wrblk-position-cursor-spec.md),
+signed off after TWO scope rounds (C+P → narrowed to **P only**). Investigation found the M28
+"O(n²)" was actually THREE costs; scope resolved after measuring each:
+- **P — positioning re-walk (FIXED):** `wrblk_position_ext` re-`fat_open`'d + re-walked from the head
+  every record. Now keeps an incremental cursor (`WRBLK_CURVALID`/`WRBLK_CURSEC`, 3 B in the free
+  `$E7F8` tail); same-sector records (¾) do ZERO positioning I/O (`wpe_same`), next-sector = one step
+  (`wpe_adv`). `fat.asm`/shared kernel untouched. Measured: K=32 single-call extend **2592 → 131**
+  FAT reads (quadratic → linear, ~4/cluster); redundant intermediate data-reads gone.
+- **C — no FAT-sector cache (DROPPED):** a `SECTOR_BUF`-keyed cache is clobbered by a data read
+  EVERY hop (kernel.asm:1044 then 1100-1101), so ~0 benefit; and P makes the remaining walk a
+  once-per-call amortized cost. A useful C needs a dedicated FAT buffer — low value, deferred.
+- **A — allocator rescan-from-2 (DEFERRED):** `fat_alloc_cluster` restarts the free-scan at cluster 2
+  each call → K-cluster extend still O(K²). Carries a next-free-hint + free-invalidation correctness
+  surface; reopen if a workload needs it. **This is why the `rr24` single-record 33-cluster extend
+  is UNCHANGED by M29** (one position call, allocation-bound) — still needs `--end 150`, verified
+  byte-identical there (no regression). An earlier spec draft wrongly claimed M29 speeds rr24 up;
+  corrected in §6.
+- **Verification:** existing tests pass with NO expected-value edits (artifact byte-identical);
+  new `test_wrblk_cursor.py` asserts O(N) shape (16-rec call ≤28 reads vs old ≥136); Tier-1 green
+  (16384 B, 0 `k_*` moved); round-trip byte-identical incl. a NEW `multi` case (8 records/call,
+  `checkrec=6`) that directly exercises the cursor path against the CF-3300 oracle.
+
 _**Batch-synced 2026-07-04** (consolidation sweep) — the M19→M27 block (20 entries) was
 reviewed and moved to [tier2-review-archive.md](tier2-review-archive.md). The Tier-2
 DOS-boot-to-`A>` goal is **MET**, full BDOS surface coverage is complete (M26 closed), and

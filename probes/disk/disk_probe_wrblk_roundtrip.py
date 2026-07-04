@@ -169,11 +169,16 @@ def build_disk(dos: str, out: str, com: bytes, binsize: int, binfill: int) -> No
 # cases
 # --------------------------------------------------------------------------- #
 CASES = {
-    # name: dict(binsize, binfill, recnum, rs, cnt, fillb, kind)
+    # name: dict(binsize, binfill, recnum, rs, cnt, fillb, kind[, checkrec])
     "within":  dict(binsize=2048, binfill=0x11, recnum=3,   rs=128, cnt=1, fillb=0xA5, kind="eq"),
     "extend":  dict(binsize=512,  binfill=0x22, recnum=12,  rs=128, cnt=1, fillb=0xB6, kind="eq"),
     "rr24":    dict(binsize=512,  binfill=0x33, recnum=256, rs=128, cnt=1, fillb=0xC7, kind="eq"),
     "shrink":  dict(binsize=4096, binfill=0x44, recnum=3,   rs=128, cnt=0, fillb=0x00, kind="shrink"),
+    # M29 cursor path: ONE wrblk call writing 8 sequential records from record 0 --
+    # records 0-3 reuse the first 512B sector (wpe_same, no re-read/re-walk), record
+    # 4 advances one step into a freshly allocated cluster (wpe_adv), 5-7 reuse it.
+    # Must be byte-identical to stock; checkrec=6 validates a second-sector record.
+    "multi":   dict(binsize=512,  binfill=0x55, recnum=0,   rs=128, cnt=8, fillb=0xD8, kind="eq", checkrec=6),
 }
 
 
@@ -227,8 +232,9 @@ def main():
             print("  [stock ran]")
         except TimeoutError as e:
             print(f"  STOCK {e}")
-        o = summarise("OURS ", ours, c["recnum"], c["rs"])
-        s = summarise("STOCK", stock, c["recnum"], c["rs"])
+        checkrec = c.get("checkrec", c["recnum"])
+        o = summarise("OURS ", ours, checkrec, c["rs"])
+        s = summarise("STOCK", stock, checkrec, c["rs"])
         if o and s:
             if c["kind"] == "eq":
                 same = (o["size"] == s["size"] and o["chain"] == s["chain"]

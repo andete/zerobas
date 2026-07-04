@@ -43,14 +43,24 @@ main:
         ld      c, $1A
         call    BDOS
 
-        ; --- fill 128-byte DTA with the sentinel byte ---
+        ; --- fill the whole DTA span with the sentinel byte ---
+        ; A multi-record WRBLK (cnt>1) reads cnt*RS consecutive bytes from DTA, so
+        ; the source for records 1..cnt-1 must be deterministic too (not leftover
+        ; RAM) or an ours-vs-stock byte compare would spuriously differ. A constant
+        ; fill makes every 128-byte record identical, so any record's bytes are a
+        ; valid differential regardless of start record. Covers up to 16 records.
         ld      a, (fillb)
         ld      hl, dta
-        ld      b, 128
+        ld      bc, dta_len
 fill:
         ld      (hl), a
         inc     hl
-        djnz    fill
+        dec     bc
+        ld      d, a
+        ld      a, b
+        or      c
+        ld      a, d
+        jr      nz, fill
 
         ; --- random record RR := recnum (FCB+33..35) ---
         ld      a, (recnum)
@@ -83,5 +93,6 @@ fcb:
         db      "BIN"                   ; 3-char ext
         ds      40 - 12, 0              ; EX..r2 (BDOS fills on FOPEN; RR set above)
 
+dta_len equ     2048                    ; 16 records * 128 B (covers every case)
 dta:
-        ds      128, 0
+        ds      dta_len, 0
