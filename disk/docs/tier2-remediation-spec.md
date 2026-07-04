@@ -91,21 +91,41 @@ past-EOF random I/O, rename-collision) — resume after remediation; any hardwar
   the gate now parses the buffer diff + enforces anti-vacuity + treats live-register deltas as
   informational (the recorded buffer is the evidence, as M24-M26 used).
 
-### Phase B — FIX (ROM changes; only after A1 confirms + A3 scopes)
+### Phase B — FIX (ROM changes; only after A1 confirms + A3 scopes)  → **DONE, commit 2047822**
 - **B1. Relocate `fdc_entloop_body` + `fdc_useslot_body`** (and any code whose span enters the
   true window) to known-safe free space, reached unchanged by label (the M21a relocation
   convention). Re-pin `p0_env_tab` entirely ABOVE or BELOW the true hole so every DATA entry reads
   back correctly.
+  → **DONE.** All THREE (fdc_entloop_body, fdc_useslot_body, p0_env_tab) relocated OUT of the tail
+  into the COMMAND.COM-load free-region corridor (kernel.asm, between the $607B/$75A5 veneers — 0
+  canonical entries). Now at $607E/$60AD/$60D4. `fat_find_body` stays (ends $7F5F, below window);
+  `conout_emit_e` re-pinned at its unchanged $7FD1 by a `ds $7FD1 - $` that skips the dead window.
+  p0_env_tab is now ENTIRELY below the window → every DATA entry reads back correctly (the old
+  $7FB7 straddle + its "tolerated garbage" reasoning is retired).
 - **B2. Correct the window declaration + guard.** Update `equates.inc` and the
   [runtime.asm](../../disk/runtime.asm:706) guard to the TRUE window bounds, and turn the
   build-time assert into one that fails if ANY executable/PINNED-data byte lands in the real
   window (not just past $7FB8).
+  → **DONE.** equates.inc documents the ×8 mirror across $7F80–$7FBF; runtime.asm guard is now
+  `IF ($ > $7F80)` → `FDC_WINDOW_INTRUSION` (tamper-tested: a 40-B intrusion fails the build loudly).
+- **B — verification (all FINAL):** `disk.rom` = 16384 B; window $7F80–$7FBF = 0/64 nonzero
+  (dead pad); PROVEN byte-pure relocation (old-vs-new ROM differs in exactly 5 clusters: 2 veneer
+  `jp` operands + 1 `ld hl,p0_env_tab` operand + the body bytes moving verbatim $7F5F→$607E);
+  net-zero canonical (only the 3 relocated labels changed address); `make unit-test` +
+  `test_fat_dir_create` green.
 
-### Phase C — RE-VERIFY
+### Phase C — RE-VERIFY  → **PARTIAL**
 - **C1.** Honest gate goes GREEN across the mutation block (ours == stock byte-for-byte at armed
   anchors). **C2.** Tier-1 invariants: `make unit-test` green; `disk.rom` == 16384 B; no
   canonical-address shifts; DSKIO/BLOAD/FILES == CF-3300. **C3.** A create→close→reopen→read
   lifecycle round-trips on ours (the direct P0 regression test).
+  → **C2/C3 met** (size, net-zero, unit-test green; BDOSX3 create→reopen→read region converged
+  17→0 bytes = the P0 round-trip). **C1 NOT green (3/6):** de-vacuuming EXPOSED a separate
+  write-path divergence the "writes silently no-op'd" bug had masked — BDOSX random-block I/O
+  ($26/$27) 18+127 B, BDOSX3 write/rename/delete records 7 B (file CONTENT read-back already
+  converged). The pure-relocation proof means the fix did not author these; making writes persist
+  revealed them. **Under root-cause investigation (Fable, 2026-07-04): classify real-ROM-bug vs
+  exerciser/fixture artifact (cf. the retracted bdosx4 IX artifact) before any further fix.**
 
 ### Phase D — ADJUDICATE + RECORD
 - **D1.** Re-adjudicate Tier-C case 2 (WRSEQ disk-full onset lag + the 712-vs-714 cluster-cap gap

@@ -54,6 +54,36 @@ not the agent's word):
   stays OUT of the gate. · confidence: gate-vacuity + live-divergence HIGH (reproduced here);
   FDC-window mechanism MEDIUM (agent-only).
 
+**RESOLUTION 2026-07-04 — FDC-window P0 FIXED (commit 2047822) + write-path residual root-caused:**
+- **FDC-window mechanism CONFIRMED + FIXED.** True window is $7F80–$7FBF (×8 mirror); the three
+  position-free tail blocks (fdc_entloop_body/fdc_useslot_body/p0_env_tab) relocated OUT into the
+  kernel free-region corridor. PROVEN byte-pure (old-vs-new ROM = 5 clusters: 2 veneer jp operands
+  + 1 `ld hl,p0_env_tab` operand + bodies moved verbatim $7F5F→$607E). Window now dead $00 pad;
+  guard corrected to $7F80 with a tamper-tested `FDC_WINDOW_INTRUSION` build assert. BDOSX3
+  create→reopen→read region converged 17→0 B. Net-zero canonical; disk.rom=16384; unit-test green.
+- **De-vacuumed gate residuals ROOT-CAUSED (Fable, 2026-07-04; relocation EXONERATED — all
+  reproduce fresh-vs-fresh).** Breakdown: **(c) documented/accepted divergences the gate has no
+  allowlist for** — date-stamp (we intentionally don't stamp; fat.asm:16) + dirloc/devid cosmetic;
+  **(b) exerciser out-of-contract** — bdosx.asm drives $24/$26/$27 without setting FCB record-size,
+  so it compares implementation-defined garbage; **(a) real ROM items** — $23 FSIZE returns A=$03
+  not A=0 (return-contract nit); $27 RDBLK (k_47B2) is a documented stream-from-0 simplification;
+  $26 WRBLK is UNIMPLEMENTED (feature gap, not a regression).
+- **NEW CONFIRMED P1 (independently verified in source):** RDRND/WRRND ($21/$22) position to the
+  WRONG record. `rrnd_recsector` ($7C83) and `rrnd_clussec_tmp` ($7CAD) are `db` scratch cells
+  INSIDE the ROM (kernel.asm:1699/1729), written at runtime (`ld (…),a`, :1655/:1709) → the stores
+  no-op (ROM is read-only), reads always return 0 → BDOS_RECIDX≡0 and the WRRND absolute sector is
+  wrong. **Same CLASS as the FDC-window P0** (silent store into ROM address space); NOT in the FDC
+  window; latent since M26. Invisible to the RAM-only gate — caught only by disk-artifact inspection
+  (ours wrote wrpat to BDOSX.BIN record 0, stock to record 1). Fix = move the 2 cells to RAM.
+- **Harness landmines to fix (Fable):** (1) disk_probe_diff.py copies `--diska` ONCE and runs OURS
+  then STOCK on that same image (:324/:1246) → unsound for write-exercisers (stock boots an
+  ours-mutated disk); didn't drive today's diffs but is a landmine. (2) the BDOS name table
+  mislabels $25/$26/$27 ($26=WRBLK, $27=RDBLK). (3) gate needs an allowlist for documented
+  divergences + on-disk evidence (RAM capture is blind to wrong-record writes); the exerciser
+  fixture ramp has period 256, so buffer bytes cannot prove positional correctness.
+- **STILL PENDING user:** disposition of the new P1 (RDRND/WRRND) + the smaller (a) items + the
+  gate/harness fixes. FDC-window remediation itself (Phase A/B) is DONE; Phase C P0 round-trip met.
+
 _**Batch-synced 2026-07-04** (consolidation sweep) — the M19→M27 block (20 entries) was
 reviewed and moved to [tier2-review-archive.md](tier2-review-archive.md). The Tier-2
 DOS-boot-to-`A>` goal is **MET**, full BDOS surface coverage is complete (M26 closed), and
