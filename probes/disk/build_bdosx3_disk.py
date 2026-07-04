@@ -69,6 +69,7 @@ def build(dos_src: str, out: str, tmp_dir: str) -> dict[str, int]:
     fat12_add(img, "BDOSX", "BIN", bdosx_bin())
     fat12_add(img, "BDOSX3", "COM", com_bytes)
     open(out, "wb").write(img)
+    addrs["sig"] = com_bytes[2]         # byte at $0102 (resident-program arm signature)
     return addrs
 
 
@@ -89,11 +90,15 @@ def main() -> int:
     # wrpat..absbuf end (128+128+128+512=896 B after wrpat) covers the buffers.
     fcb_len = (addrs["regs"] - addrs["fcb"]) + 32 * 8
     buf_len = (addrs["absbuf"] - addrs["wrpat"]) + 512
+    # --arm-check-val gates the anchor on the resident program (byte at $0102 == sig),
+    # so occurrence #1 of `done` is the REAL program run, not a boot-time address collision
+    # (the vacuous-anchor bug found 2026-07-04 — BDOSX3's $0333 collided with COMMAND.COM's
+    # idle loop at t=0.3s). See tier2-remediation-spec.md.
     print("next: python3 probes/disk/disk_probe_diff.py capture "
-          f"--at {addrs['done']:#06x} --keys '\\rBDOSX3\\r' --keys-at 20 --settle 60 "
+          f"--at {addrs['done']:#06x} --arm-check-val {addrs['sig']:#04x} --keys '\\rBDOSX3\\r' --keys-at 20 --settle 60 "
           f"--machine both --mem {addrs['fcb']:#06x}:{fcb_len:#x} --diska {args.out}")
     print("      python3 probes/disk/disk_probe_diff.py capture "
-          f"--at {addrs['done']:#06x} --keys '\\rBDOSX3\\r' --keys-at 20 --settle 60 "
+          f"--at {addrs['done']:#06x} --arm-check-val {addrs['sig']:#04x} --keys '\\rBDOSX3\\r' --keys-at 20 --settle 60 "
           f"--machine both --mem {addrs['wrpat']:#06x}:{buf_len:#x} --diska {args.out}")
     return 0
 

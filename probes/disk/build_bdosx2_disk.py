@@ -46,13 +46,13 @@ def assemble(tmp_dir: str) -> tuple[bytes, int]:
     return open(com, "rb").read(), done
 
 
-def build(dos_src: str, out: str, tmp_dir: str) -> int:
+def build(dos_src: str, out: str, tmp_dir: str) -> tuple[int, int]:
     com_bytes, done_addr = assemble(tmp_dir)
     shutil.copyfile(dos_src, out)
     img = bytearray(open(out, "rb").read())
     fat12_add(img, "BDOSX2", "COM", com_bytes)
     open(out, "wb").write(img)
-    return done_addr
+    return done_addr, com_bytes[2]      # sig = byte at $0102 (resident-program arm signature)
 
 
 def main() -> int:
@@ -63,12 +63,15 @@ def main() -> int:
     ap.add_argument("--tmp-dir", default="/tmp")
     args = ap.parse_args()
 
-    done_addr = build(args.dos_disk, args.out, args.tmp_dir)
+    done_addr, sig = build(args.dos_disk, args.out, args.tmp_dir)
     print(f"built {args.out}")
     print(f"done = {done_addr:#06x}")
     print()
+    # --arm-check-val gates the anchor on the resident program (byte at $0102 == sig),
+    # so occurrence #1 of `done` is the REAL program run, not a boot-time address collision
+    # (the vacuous-anchor bug found 2026-07-04). See tier2-remediation-spec.md.
     print("next: python3 probes/disk/disk_probe_diff.py capture "
-          f"--at {done_addr:#06x} --keys '\\rBDOSX2\\r' --keys-at 22 "
+          f"--at {done_addr:#06x} --arm-check-val {sig:#04x} --keys '\\rBDOSX2\\r' --keys-at 22 "
           "--keys2 'xyz' --keys2-at 32 --settle 50 --machine both "
           f"--mem 0x0340:0x70 --diska {args.out}")
     return 0

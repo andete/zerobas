@@ -71,10 +71,20 @@ disk-image-safety rule).
      marker, and the routine EOFs *reading nothing* (never a sector for the `$FFF` cluster). The
      routine already re-checks the EOF guard after advancing (`frs_incluster` convergence);
      the test locks that in. `make unit-test` 25/25.
-2. **Disk-full on allocation** *(Class 2 + host)*. On the near-full fixture, force one more
-   cluster allocation (a write that grows a file) and capture the BDOS return + the FAT end
-   state. *Host layer:* `test_fat_alloc_cluster` already checks `Cy=1` on exhaustion; the
-   differential proves our disk-full *return path* matches CF-3300.
+2. **Disk-full on allocation** *(Class 2 + host)* — **APPARATUS BUILT; FOUND A DIVERGENCE,
+   under investigation 2026-07-04.** Exerciser [`bdosx4.asm`](../../probes/disk/bdosx4.asm) +
+   fixture builder [`build_bdosx4_disk.py`](../../probes/disk/build_bdosx4_disk.py) (fills the
+   disk to 100% via a reused `fat12_add` filler, then FMAKE → WRSEQ×12 → FCLOSE). The
+   differential surfaced a reproducible ours-vs-stock fork in WRSEQ ($15) disk-full handling:
+   - **Onset:** stock reports disk-full (`A=01`) at WRSEQ #2; ours at WRSEQ #4 (our 512-byte
+     sector-flush boundary).
+   - **Control flow:** stock makes no further BDOS calls after disk-full (program terminated);
+     ours returns the error and runs to completion.
+   Confirmed black-box, stable to 200 s settle. This is a HARD-STOP fork (milestone-closed
+   WRSEQ M24/M25) — surfaced to the user, who chose *investigate root cause first*. BDOSX4 is
+   deliberately kept OUT of `make bdos-acceptance` (gate stays green 6/6) pending the verdict.
+   Full detail in [tier2-review-queue.md](tier2-review-queue.md). *Host layer:*
+   `test_fat_alloc_cluster` already checks `Cy=1` on exhaustion.
 3. **Dir-full** *(Class 2 + host)*. On the dir-full fixture, create one more file and capture
    the return. *Host layer:* `test_fat_dir_create` already checks the full-scan; the differential
    proves the error surfaced to the caller matches.
