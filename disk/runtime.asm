@@ -130,26 +130,38 @@ conout_body:
                 pop     hl                  ; restore caller's HL
                 pop     af                  ; restore caller's AF for dirio_in_body
                 jp      dirio_in_body
+; M22b slice 2 (TAB expansion + $F237 logical-column bookkeeping). The per-char emit
+; (conout_emit_e) is RELOCATED above the FDC hole $7FB8-$7FBF (it doesn't fit below);
+; conout_tab stays HERE, below the hole (jr-reachable), and calls up. This emit tail is
+; a shrink vs the old 32-byte inline CHPUT, but p0_env_tab is PINNED at its HEAD address
+; $7FB7 (see its tail block) so the shrink does NOT slide its critical $0030/$0038 vector
+; entries into the FDC register window -- lay_page0_env reads p0_env_tab THROUGH that
+; window, so a corrupted vector there = corrupt page-0 $0038 = boot crash (root-caused
+; 2026-07-04). The dispatch preamble above is byte-stable. Contract: char in E, A:=E.
 conout_not_dispatch:
-                pop     hl                  ; restore caller's HL
-                pop     af                  ; caller AF/flags (unclobbered by the probe above)
+                pop     hl                  ; restore caller's HL; caller AF stays on the stack
                 ld      a, e                ; char arrives in E ($5454 CONOUT contract)
-                ld      (CONOUT_CHAR), a    ; stash the char (A is needed for slot work)
-                push    af                  ; preserve caller AF
-                push    bc
-                push    de
-                push    hl
-                di                          ; no interrupt while the BIOS is half-mapped
-                call    pg0_mainrom_in
-                ld      a, (CONOUT_CHAR)
-                call    $00A2               ; CHPUT - emit A; preserves all registers
-                call    pg0_mainrom_out     ; restore page 0
-                ei
-                pop     hl
-                pop     de
-                pop     bc
-                pop     af                  ; restore caller AF
-                ld      a, (CONOUT_CHAR)    ; return A = the emitted char
+                cp      $09                 ; TAB? -> expand to the next 8-column stop
+                jr      z, conout_tab       ; conout_tab is just below (jr-reachable)
+                call    conout_emit_e       ; CHPUT the char + $F237 column bookkeeping (above hole)
+                pop     af                  ; restore caller AF/flags (pushed at entry)
+                ld      a, e                ; return A := E (the emitted char, §5.1)
+                ret
+; conout_tab ($09): emit spaces to the next 8-column stop (>=1). conout_emit_e does the
+; col++ per space and returns A = the new column, so the loop re-tests A & 7. The stop is
+; the LOGICAL column ($F237), not the screen cursor (§5.3 col-34 = 6 spaces). Stock exits
+; A=$00 (§8.1, capture at $D88A: AF=$0054, $F237=$08 after a col-1 tab). do{ emit ' ';
+; col++ }while(col&7).
+conout_tab:
+                push    de                  ; preserve caller DE (loop clobbers E with $20)
+conout_tab_loop:
+                ld      e, $20              ; a space
+                call    conout_emit_e       ; CHPUT ' ' + col++ ; returns A = the new column
+                and     $07                 ; stop at an 8-column boundary
+                jr      nz, conout_tab_loop
+                pop     de                  ; restore caller DE
+                pop     af                  ; restore caller AF/flags (pushed at conout_body entry)
+                ld      a, 0                ; exit A := $00 (stock's post-TAB value, §8.1)
                 ret
 
 ; --- dirio_in_body - the $5454/$06 DIRIO input direction (M22a) ------------------
@@ -564,6 +576,12 @@ dos_handoff:
                 xor     a
                 ld      ($F338), a          ; DOS default: $F338 = 0
                 ld      ($F23B), a          ; DOS default: $F23B = 0 (no printer echo)
+                ld      ($F237), a          ; DOS default: $F237 = 0 (logical console column,
+                                            ;   M22b slice 2 -- seed before any output so TAB
+                                            ;   expansion + $F237 parity start clean; DOS-console
+                                            ;   scratch only, no host save/restore, unlike $F23B.
+                                            ;   Safe: p0_env_tab is pinned, so this +3 B doesn't
+                                            ;   shift it into the FDC hole)
                 ld      hl, $0001
                 ld      ($F30D), hl         ; DOS default: $F30D=01, $F30E=00 (date format)
                 scf                         ; Cy = 1 -> step-7 "load the system" entry
@@ -685,21 +703,27 @@ fdc_useslot_body:
 ; intermediate veneer was deleted.
 ; (cell, handler) pairs; terminated by a 0 cell. No two JP triples overlap.
 ;
-; ===== FDC-window guard (root-caused 2026-07-04) ==============================
+; ===== FDC-window guard + p0_env_tab PIN (root-caused 2026-07-04) =============
 ; The National WD2793 FDC registers are MEMORY-MAPPED into ROM page 1 at $7FB8-$7FBF
-; (FDC_STATUS $7FB8 / FDC_SECTOR $7FBA / FDC_DATA $7FBB / FDC_CTRL $7FBC, equates.inc).
-; That is a hardware hole inside the $4000-$7FFF ROM image: when the FDC is ACTIVE an
-; instruction fetched from the window reads register bytes, not opcodes. Executable
-; code that slides into the window therefore derails the DOS boot during the MSXDOS.SYS
-; load (a shift of the free tail by >=32 B was a silent, deterministic boot crash --
-; the failure that blocked M22b slice 2). ALL executable code must end at/below $7FB8;
-; only p0_env_tab below it (DATA, read solely by lay_page0_env while the FDC is idle ->
-; transparent ROM reads) may straddle the window. The `ds $8000 - $` pad hides this
-; because it treats the whole page as free ROM. This guard makes the collision a LOUD
-; build error (pasmo exits 1, no object) instead of a silent boot hang.
-                IF ($ > $7FB8)
-FDC_WINDOW_OVERRUN: equ executable_code_passed_7FB8_relocate_tail_code_below_the_FDC_registers
+; (FDC_STATUS $7FB8 / FDC_SECTOR $7FBA / FDC_DATA $7FBB / FDC_CTRL $7FBC, equates.inc):
+; a hardware hole in the $4000-$7FFF image. Two distinct hazards, both fatal to the DOS
+; boot, both guarded here:
+;   (1) EXECUTABLE code fetched from the window reads register bytes, not opcodes -> a
+;       tail shift of >=32 B was a silent boot crash. All executable code must end <=$7FB8.
+;   (2) p0_env_tab (DATA) is read by lay_page0_env THROUGH the ROM page to build the
+;       page-0 RST/CALLF/INT vectors -- and those reads ALSO hit the register window when
+;       an entry lands in it (empirically: an entry at $7FB8 read back as FDC register
+;       garbage, corrupting page-0 $0038 -> crash on the first interrupt). So p0_env_tab
+;       is PINNED at its HEAD address $7FB7: there the hole covers ONLY the RDSLT/WRSLT
+;       entries (offsets 1-8), whose page-0 hooks tolerate garbage during the boot (this
+;       is the exact HEAD layout, which boots), while the load-bearing $0030 CALLF (DSKIO)
+;       and $0038 INT vectors sit ABOVE the hole and read correctly. NEVER move it.
+; The `ds` pins p0_env_tab at $7FB7 regardless of below-hole size; the IF makes an
+; overrun a LOUD build error (a bare negative `ds` only warns -> silent empty object).
+                IF ($ > $7FB7)
+FDC_WINDOW_OVERRUN: equ below_hole_code_grew_past_the_p0_env_tab_HEAD_addr_7FB7
                 ENDIF
+                ds      $7FB7 - $, $00      ; pin p0_env_tab at its proven-safe HEAD address
 p0_env_tab:
                 dw      $000C, rdslt_h  ; RST 8  RDSLT  (read byte from a slot)
                 dw      $0014, wrslt_h  ; RST 10 WRSLT  (write byte to a slot)
@@ -709,6 +733,55 @@ p0_env_tab:
                 dw      $0038, INT_H_HIRAM ; maskable-int vector -> A-3 high-RAM handler
                                            ; (NOT page-1 int_h: page 1 is reclaimed by the TPA)
                 dw      0               ; end of table
+
+; ===== M22b slice 2: conout_emit_e, ABOVE the FDC hole =======================
+; conout_body's stub + conout_tab (below the hole) reach this by absolute call. It
+; starts right after p0_env_tab (pinned at $7FB7, 26 B -> ends $7FD0), so it lands at
+; $7FD1 -- above the hole top $7FBF, where its own instruction fetches never read FDC
+; registers. The IF guard fires loudly if it would start in/below the hole (e.g. if
+; p0_env_tab were unpinned/moved). Spec: tier2-m22b-slice2-reloc-spec.md.
+                IF ($ <= $7FBF)
+CONOUT_EMIT_IN_HOLE: equ conout_emit_e_would_start_in_or_below_the_FDC_register_window
+                ENDIF
+; conout_emit_e — CHPUT the char in E via the proven M8/M10 inter-slot window, then
+; maintain the logical column at $F237 (CR -> 0, LF -> unchanged, else col++). The
+; column work runs INSIDE this routine's HL push/pop guard, so conout_body keeps its
+; BC/DE/HL/IX/IY-preserved contract (the kernel console loop holds its string pointer
+; in HL -- clobbering it derails the DOS boot). $F237 is a pinned page-1 kernel-ABI
+; DATA cell shared across every output path (func-2/func-9/BUFIN-echo, §5.5); using the
+; literal address keeps future --mem 0xF100:0x300 capture diffs byte-clean. CLEAN-ROOM:
+; the do-while tab rule + column semantics are re-derived from OUR OWN injected TABTEST
+; files' observable output + the published _CONOUT contract; no stock bytes decoded.
+;   in: E=char ; out: A = the UPDATED $F237 column (NOT the char -- the TAB loop tests
+;   A & 7; conout_body's normal path reloads the char via `ld a,e`); BC/DE/HL/IX/IY preserved.
+conout_emit_e:
+                ld      a, e                ; char arrives in E ($5454 CONOUT contract)
+                ld      (CONOUT_CHAR), a    ; stash the char (A is needed for slot work)
+                push    bc
+                push    de
+                push    hl
+                di                          ; no interrupt while the BIOS is half-mapped
+                call    pg0_mainrom_in
+                ld      a, (CONOUT_CHAR)
+                call    $00A2               ; CHPUT - emit A; preserves all registers
+                call    pg0_mainrom_out     ; restore page 0
+                ei
+                ld      hl, $F237           ; column cell (HL saved above -> caller HL safe)
+                ld      a, (CONOUT_CHAR)
+                cp      $0D                 ; CR -> column := 0
+                jr      z, conout_emit_cr
+                cp      $0A                 ; LF -> column unchanged (BIOS CHPUT owns the row)
+                jr      z, conout_emit_done
+                inc     (hl)                ; printable/other -> column++ (post-increment)
+                jr      conout_emit_done
+conout_emit_cr:
+                ld      (hl), 0             ; CR -> column := 0
+conout_emit_done:
+                ld      a, (hl)             ; A := the updated column (HL still $F237)
+                pop     hl
+                pop     de
+                pop     bc
+                ret
 
 ; --- pad to a full 16 KB page ($4000-$7FFF) --------------------------------
                 ds      $8000 - $, $00

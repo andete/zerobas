@@ -364,11 +364,32 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
 > fix now and deferring `$5465`/the printer-pluggable angle to a future
 > session. Full writeup: [tier2-m27-lstout-spec.md](tier2-m27-lstout-spec.md).
 >
-> Remaining residuals in the codebase (not gating anything, none has an open
-> sign-off pending): CONOUT's TAB-expansion (M22b slice 2, deferred). (`$5465`/
-> `lstout_body` — WIRED 2026-07-04; `$2E` VERIFY design-Q — RESOLVED 2026-07-04,
-> both below.) Pick the next one deliberately, don't default into it off a bare
-> "continue".
+> Remaining residuals in the codebase: NONE gating. (`$5465`/`lstout_body` —
+> WIRED 2026-07-04; `$2E` VERIFY design-Q — RESOLVED 2026-07-04; CONOUT
+> TAB-expansion / M22b slice 2 — LANDED 2026-07-04, all below.) All four
+> post-M26 residuals are now closed. Pick the next direction deliberately,
+> don't default into it off a bare "continue".
+
+### M22b slice 2 LANDED — CONOUT TAB-expansion + $F237 column (2026-07-04)
+
+> User signed off the above-the-FDC-hole relocation spec
+> ([tier2-m22b-slice2-reloc-spec.md](tier2-m22b-slice2-reloc-spec.md)), then
+> "yes" to implement. The spec'd plan (pin the routine at $7FC0) built but
+> CRASHED boot — root-causing it found the FDC hole has a SECOND hazard beyond
+> "executable code in the window": **`lay_page0_env` reads `p0_env_tab` (DATA)
+> THROUGH the ROM page, so an entry landing in `$7FB8-$7FBF` reads back as FDC
+> register garbage** — the shifted `$0038`/INT entry gave a corrupt page-0
+> `$0038` vector (`00 39…` vs stock `C3 AE DD`) → crash on the first interrupt,
+> before any console output. The old FDC-guard "straddle is transparent when FDC
+> idle" comment was FALSE. **Fix: PIN `p0_env_tab` at its exact HEAD address
+> `$7FB7`** (proven-safe straddle: only RDSLT/WRSLT in the hole, `$0030`/`$0038`
+> above it), split slice-2 around the hole — `conout_tab` below (jr-reachable),
+> `conout_emit_e` above at `$7FD1`. Three build guards (`IF $>$7FB7` pin, `IF
+> $<=$7FBF` above-hole, 16384 size). **Verified:** boot+DIR 260/260 aligned;
+> `$0038`=`C3 AE DD`; TAB byte-identical ours==stock (TABTEST cols 1/2/8 +
+> TABTEST2 col-34 post-wrap); `$F237` 0-diff; DIR screen byte-identical; BDOSX2
+> 60/60; unit-test 19/19; probe green; ROM 16384. FDC-hole understanding
+> corrected in the `p0_env_tab` comment + [[disk-hardware-target-variants]].
 
 ### `$2E` VERIFY design question RESOLVED — no verify-after-write, no-op is faithful (2026-07-04)
 
