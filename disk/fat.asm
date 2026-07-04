@@ -137,76 +137,19 @@ k_4788:         jp      rdrnd_body          ; $4788: BDOS $21 RDRND canonical en
 k_4793:         jp      wrrnd_body          ; $4793: BDOS $22 WRRND canonical entry (M26)
                 ds      $47B2 - $, $00      ; pad remainder (net-zero: k_47B2 unaffected)
                 jp      k_47B2              ; $47B2: COMMAND.COM-load kernel veneer
-                ds      $47B9 - $, $00      ; pad remainder (net-zero: ff_secloop stays $47B9)
-ff_secloop:
-                ld      hl, (FAT_DIRREM)
-                ld      a, h
-                or      l
-                jr      z, ff_notfound      ; scanned every root sector
-                ld      de, (FAT_DIRSEC)
-                ld      hl, SECTOR_BUF
-                call    read_sector
-                ret     c                   ; propagate FDC error
-                ld      hl, SECTOR_BUF
-                ld      b, 16               ; 512 / 32 entries per sector
-ff_entloop:
-                push    bc
-                push    hl
-                ld      a, (hl)
-                or      a
-                jr      z, ff_endmark       ; $00 = end of directory
-                cp      $E5
-                jr      z, ff_skip          ; deleted entry
-                push    hl
-                ld      de, 11
-                add     hl, de
-                ld      a, (hl)             ; attribute byte (+11)
-                pop     hl
-                and     $18                 ; volume-label | directory -> skip
-                jr      nz, ff_skip
-                ld      de, (FAT_NAMEPTR)
-                call    name_cmp
-                jr      z, ff_found
-ff_skip:
-                pop     hl
-                ld      de, 32
-                add     hl, de              ; next 32-byte directory entry
-                pop     bc
-                djnz    ff_entloop
-                ld      hl, (FAT_DIRSEC)
-                inc     hl
-                ld      (FAT_DIRSEC), hl
-                ld      hl, (FAT_DIRREM)
-                dec     hl
-                ld      (FAT_DIRREM), hl
-                jr      ff_secloop
-ff_endmark:
-                pop     hl
-                pop     bc
-ff_notfound:
-                scf
-                ret
-ff_found:
-                pop     hl                  ; HL = directory entry
-                pop     bc
-                push    hl
-                ld      de, 26
-                add     hl, de
-                ld      a, (hl)             ; first cluster low (+26)
-                inc     hl
-                ld      h, (hl)             ; first cluster high (+27)
-                ld      l, a
-                ld      (FAT_FIRSTCLUS), hl
-                pop     hl
-                push    hl
-                ld      de, 28
-                add     hl, de
-                ld      de, FAT_FILESIZE
-                ld      bc, 4
-                ldir                        ; file size (+28..31, LE)
-                pop     hl
-                or      a                   ; Cy = 0 found
-                ret
+                ds      $47B9 - $, $00      ; pad remainder (net-zero: anchors the 3b relocation below)
+; --- M28: $26 WRBLK canonical entry $47BE -- 3b relocation (tier2-m28-blockrandom-
+; spec.md §3.1/§4). $47BE used to be 5 bytes INSIDE ff_secloop (the old `jr z,
+; ff_notfound` at old-$47BE, [LANDED-B]) -- a latent accidental target, harmless only
+; because WRBLK was never exercised during boot. ff_secloop..ff_found (old $47B9-
+; $4828, verbatim, position-free -- reached only by fat_find_body's `jp ff_secloop`
+; and its own internal back-edge; every internal ff_* label is local to the block)
+; is relocated OUT to kernel.asm's free tail (same technique as fdc_entloop_body /
+; the FDC-window fix): we do NOT repoint the kernel's $D8BE RAM dispatch table (the
+; fixed shared-kernel ABI, not ours) -- we free the canonical address by moving OUR
+; colliding code, then expose the real `jp wrblk_body` veneer at $47BE.
+                ds      $47BE - $, $00      ; pad the vacated 5 bytes ($47B9-$47BD)
+k_47BE:         jp      wrblk_body          ; $47BE: BDOS $26 WRBLK canonical entry (M28)
 
 ; name_cmp — compare two 11-byte 8.3 name fields, case-insensitive.
 ;   in:  HL = directory entry name, DE = search name
@@ -356,12 +299,17 @@ frs_incluster:
                 ld      de, 2
                 or      a
                 sbc     hl, de
-                jr      c, frs_eof          ; cluster < 2 (free / empty file)
+                jp      c, frs_eof          ; cluster < 2 (free / empty file) -- jr->jp
+                                            ; (M28: the ff_secloop relocation shrank the
+                                            ; file ahead of this point, pushing the fixed
+                                            ; $4919/$4935 ds-anchors' pad wider and this
+                                            ; jr out of +-127 range; behaviour-identical,
+                                            ; same class of fix as the FDC-window pass)
                 ld      hl, (FAT_CURCLUS)
                 ld      de, $0FF8
                 or      a
                 sbc     hl, de
-                jr      nc, frs_eof         ; cluster >= $0FF8 = end-of-chain
+                jp      nc, frs_eof         ; cluster >= $0FF8 = end-of-chain -- jr->jp (ditto)
                 ; sector = firstData + (cluster-2)*secPerClus + clussec
                 ld      hl, (FAT_CURCLUS)
                 ld      de, 2

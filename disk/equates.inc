@@ -161,6 +161,34 @@ WBUF            equ     $E560   ; write-back FAT/dir sector buffer ($E560..$E75F
 RRND_RECSEC     equ     $E760   ; r0 & 3 (record-in-sector) across the sector-seek loop
 RRND_CLUSSEC    equ     $E761   ; FAT_CLUSSEC-1 across the cluster->sector multiply loop
 
+; $26 WRBLK ($47BE, M28 tier2-m28-blockrandom-spec.md) 24-bit positioning scratch --
+; transient within a single wrblk_body call (no cross-call lifetime, no init needed).
+; Own-choice free page-3 RAM in the $E7E8-$E7FF gap (after CONIN_COUNT $E7E7, before
+; DRV_TRAMP $E800) -- clear of every other disk region; CONIN's own buffer state is
+; dead whenever a BDOS FCB call (WRBLK included) is running, same lifetime-disjoint
+; reuse discipline as RRND_RECSEC/RRND_CLUSSEC above (own choice, no oracle bytes).
+WRBLK_REC       equ     $E7E8   ; 24-bit target record number for the current step (3 bytes)
+WRBLK_RECSEC    equ     $E7EB   ; WRBLK_REC & 3 (record-in-sector) across the seek/extend loop
+WRBLK_RS        equ     $E7EC   ; resolved record size (FCB+14..15, 0 -> 128) (word)
+WRBLK_CNT       equ     $E7EE   ; records still to process this call (word, counts down to 0)
+WRBLK_REQ       equ     $E7F0   ; the ORIGINAL requested count (word; HL is pinned-preserved
+                                ; on exit, per [LANDED-A] -- WRBLK returns HL = requested, not actual)
+WRBLK_PREVCLUS  equ     $E7F2   ; cluster before the current step's advance/allocate (word);
+                                ; needed to link a freshly-allocated cluster onto the true
+                                ; last-good cluster (fat_advance may leave FAT_CURCLUS on a
+                                ; stale EOC/free value once the chain is exhausted)
+WRBLK_KEEPCNT   equ     $E7F4   ; shrink path: clusters-to-keep walk countdown (word)
+WRBLK_NEXTCLUS  equ     $E7F6   ; shrink path: next cluster to free, saved across the
+                                ; fat_write_fat_entry call that frees the CURRENT one (word)
+; The one-shot RR*RS size multiply (wrblk_mul_rr_rs) runs AFTER fat_find's SECTOR_BUF
+; scan and BEFORE fat_dir_update's own WBUF read/write -- no fat_alloc_cluster/
+; fat_write_fat_entry call happens during the multiply itself, so WBUF's tail is safe,
+; transient scratch for it (avoids growing the tight $E7E8-$E7FF gap; WBUF is a full
+; 512-byte sector buffer with ample unused tail at any single instant it's not mid-I/O).
+WRBLK_MULACC    equ     WBUF + 500  ; 32-bit product accumulator (LE)
+WRBLK_MULOP     equ     WBUF + 504  ; 32-bit shifted-RS operand (LE), doubled each iteration
+WRBLK_MULN      equ     WBUF + 508  ; 24-bit shifting copy of RR_start (bit tested each iteration)
+
 ; FCB / directory-entry field offsets (Microsoft FAT spec §3.4; MSX2 TH FCB).
 DIRENT_FIRSTCLUS equ    26      ; first-cluster word (LE) within a dir entry
 DIRENT_FILESIZE equ     28      ; file-size dword (LE) within a dir entry

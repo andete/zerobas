@@ -51,9 +51,9 @@ kernel/BDOS change; a red gate means the surface below regressed. Oracle-depende
 | `$19` | CURDRV | ✅ | 27/27 boot `callseq` | the `A>` idle loop calls it to print the drive letter |
 | `$1A` | SETDTA | ✅ | exercised implicitly by every RDSEQ/RDBLK call in `BDOSX`, 0-byte-diff | no standalone probe of SETDTA in isolation |
 | `$1B` | ALLOC (GETALLOC) | ✅ | M20 — `DIR`'s "`nn bytes free`" footer, byte-identical | root cause was the `$F306` dispatcher-flag/`HL`-passthrough rule (see general rule below) |
-| `$23` | FSIZE | ❌ NOT IMPLEMENTED (characterised 2026-07-04; was vacuous ✅) | ours is a found-BLIND stub: returns constant `A=L=$03` and never writes the random-record field (fcb+33..35) — the function's whole purpose. Verified black-box on the CF-3300 oracle: stock returns `A=L=0` + r0=ceil(size/128) on found and `A=L=$FF` on not-found (map.grauw.nl `_FSIZE` contract); ours returns `$03` in ALL cases (found, not-found, any dir slot, any size). The "A=3 = CP/M dir code" theory is REFUTED (seasip: dir codes are F_OPEN/CLOSE/SFIRST/SNEXT, never F_SIZE; stock returns 0 not 0-3; A did not track slot or record count). Fix is feature-scale (real dir-search + record-count), same class as $26 — tracked follow-on | prior "0-byte-diff" was a vacuous-anchor artifact |
+| `$23` | FSIZE | ✅ IMPLEMENTED (M28, 2026-07-04) | real GET FILE SIZE: `fsize_body` (canonical entry `$501E`) does fat_mount + fat_find, sets fcb+33..35 = ceil(size/128) (24-bit LE), returns `A=L=0` found / `A=L=$FF` not-found (map.grauw.nl `_FSIZE`). Replaces the found-blind `A=L=$03` stub. Verified: the de-vacuumed BDOSX `$0300` differential converged at the exact stub-artifact addresses ($0341/$0347/$0371/$0377 went from ours=$03/$50 to matching stock) — 15→11 unexcused diffs, the 4 removed are all FSIZE; host test_wrblk_fsize.py covers the ceil-divide. RAM-visible result, so the acceptance gate (not disk) is the oracle here. | was a found-blind stub |
 | `$24` | SETRND | ✅ | M21/`BDOSX` run | |
-| `$26` | WRBLK | ❌ NOT IMPLEMENTED (was vacuous ✅) | de-vacuumed gate (2026-07-04): ours does not persist a random block write (post-run image unchanged); the M21 "0-byte-diff" was a vacuous-anchor artifact | feature gap; tracked follow-on |
+| `$26` | WRBLK | ✅ IMPLEMENTED (M28, 2026-07-04) | real RANDOM BLOCK WRITE: `wrblk_body` (canonical entry `$47BE`, freed via 3b-relocation of `ff_secloop`). 24-bit RR positioning, `(HL×RS)&0xFFFF` transfer, past-EOF CONTIGUOUS extend, size=max, RR+=HL_requested, CR/EX untouched. **Verified by disk-artifact round-trip vs the CF-3300 oracle** (probes/disk/disk_probe_wrblk_roundtrip.py — the RAM gate is BLIND to disk writes): within-EOF, past-EOF extend, and a 24-bit-RR 33-cluster extend are all **byte-identical** to stock (same size / FAT chain / data). **INTENTIONAL DIVERGENCE (signed off, spec §6 Q3): shrink** (HL=0, RR<EOF) — ours does the SANE thing (sets size + frees the tail chain + EOC-marks → next FCLOSE SUCCEEDS: verified 1-cluster consistent chain), whereas stock corrupts the FAT (verified: stock leaks the 4-cluster chain under size=384 → FCLOSE fails). Not a regression — ours is correct where stock is broken. | O(n²) fat_alloc makes large multi-cluster extends slow (correct, just not fast — §4 non-goal tradeoff); the mod-64K `(HL×RS)` wrap on pathological HL (e.g. 513 records/call) is host-multiply-tested but not separately round-tripped |
 | `$27` | RDBLK | ⚠ documented simplification (now well-formed differential, F5) | `k_47B2` streams the whole file from offset 0, ignoring the random-record/count fields (same class as `bdos_rdblk`'s random-record-0 assumption) — NOT a full-contract match. `bdosx.asm` now sets FCB+14..15=128 before the block ops (F5), so the differential is well-formed: BOTH machines transfer a defined 128-B record and the divergence is exactly one record's positional offset (ours streams from 0, stock positions at the random record). Bonus datum: setting FCB+14=128 makes stock read a real block (was 00), confirming stock uses FCB+14..15 as record size = our `driver.asm:578` interpretation. | M21b RC-2 made arbitrary-`.COM` load work; full positional block semantics unverified — green needs the stream-from-0 un-simplification |
 | `$2A` | GDATE | ✅ | handler `gdate_handler` @ `$553C` + `$F30D/$F30E` format defaults; backed by `test_gdate.py` | returns 1984-01-01 default |
 | `$2B` | SDATE | ✅ | confirmed with a real typed date (`--keys '85-3-27\r'`); screen arbiter matches | no host unit test yet |
@@ -82,17 +82,19 @@ kernel/BDOS change; a red gate means the surface below regressed. Oracle-depende
 ## Reading the score
 - **The boot-to-`A>` path is 100% ✅ (27/27 parity):** `$02/$09/$0A/$0E/$0F/$19/$2A/$2B` all
   converge, control flow AND rendered output both verified.
-- **The FCB read/write/close cluster (M21, 2026-07-02) — CORRECTED 2026-07-04:** `$0F/$10/$14/$1A/
-  $24` are solid, but the M21 "100% ✅" for this cluster was inflated by the VACUOUS acceptance
-  anchor (fixed 2026-07-04, Phase A). The de-vacuumed gate shows `$26` WRBLK is NOT implemented,
-  `$27` RDBLK is a documented stream-from-0 simplification, and `$23` FSIZE is a found-BLIND stub
-  (characterised 2026-07-04: constant `A=L=$03`, r0-r2 never set — NOT the "valid dir code" first
-  suspected; a real bug, same feature-scale class as `$26`) — see their rows above. `BDOSX`'s own differential is honestly RED in the gate
-  for these reasons, not hidden. As of F5 (2026-07-04) `bdosx.asm` sets FCB+14..15=128 before the
-  block ops so the comparison is WELL-FORMED (was out-of-contract: no record-size set); the residual
-  RED is now diagnostic — the whole-record `$27` positional offset + the `$26` gap + the `$23` nit —
-  not garbage. Green requires the `$26` implementation and the `$27` un-simplification (both tracked,
-  neither in this pass); the record-size fix alone cannot converge it.
+- **The FCB read/write/close cluster (M21, 2026-07-02) — CORRECTED 2026-07-04, then COMPLETED (M28):**
+  `$0F/$10/$14/$1A/$24` are solid. The M21 "100% ✅" was inflated by the VACUOUS acceptance anchor
+  (fixed Phase A); the de-vacuumed gate then exposed `$23` FSIZE (found-blind stub) and `$26` WRBLK
+  (unimplemented) as real gaps. **M28 (2026-07-04) implemented BOTH:** `$23` FSIZE is a real GET FILE
+  SIZE (gate-converged), and `$26` WRBLK is a real RANDOM BLOCK WRITE **verified byte-identical to the
+  CF-3300 by disk-artifact round-trip** (within-EOF / past-EOF extend / 24-bit RR), with an
+  intentional signed-off sane-shrink divergence (ours FCLOSE-consistent, stock leaks). See their rows
+  above. `BDOSX`'s own gate differential stays honestly RED because the **`$27` RDBLK stream-from-0
+  simplification was DEFERRED** (signed off, spec §6 Q1): the residual `$0400` 128-byte diff is the
+  `$27` record-position offset (ours streams from 0, stock positions at the random record), and the
+  `$0300` residual (11 diffs, down from 15 pre-M28) are the FCB fields that flow from that `$27`
+  offset. Green requires only the `$27` un-simplification — a tracked fast-follow with its own
+  COMMAND.COM-boot regression check.
 - **The console + misc + termination tier (`$00/$01/$06/$07/$08/$0B/$0C/$0D/$18/$2C/$2D/$2E`)
   is 100% ✅ (M22a+M22b+M23, 2026-07-03):** all proven via `BDOSX2.COM`/`BDOSX0.COM`, 0-byte-diff
   on every record. This is where the milestone's real surprise lived — `$0C` CPMVER and

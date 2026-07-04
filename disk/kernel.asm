@@ -40,6 +40,17 @@ sfirst:
                 ds      $5006 - $, $00  ; pad up to the pinned $5006 SNEXT entry
 snext:
                 jp      snext_body      ; -> free-tail: find NEXT matching dir entry (M19)
+; --- MSX-DOS-1 kernel FSIZE entry: $501E (M28 §3.1/§3.2, [LANDED-B]) ----------
+; While processing BDOS FSIZE ($23) the relocated kernel CALLs this page-1 disk-
+; ROM entry (same dispatcher class as $4788/$4793, M26: DE=$DA40 kernel FCB
+; copy, A=$25/B=$00/C=$00, ret=$D88A). Sits in the dead-$00 pad between snext
+; ($5006, ends $5008) and $504E LOGIN -- a 3-byte `jp fsize_body` wires directly,
+; RDABS/M26-style, no relocation needed. Body = fsize_body (free tail): a real
+; GET FILE SIZE (fat_mount + fat_find, ceil(size/128) -> copy+33..35); the prior
+; stub returned a constant A=L=$03 for every input and never searched at all.
+                ds      $501E - $, $00  ; pad up to the pinned $501E FSIZE entry (M28)
+k_501E:
+                jp      fsize_body      ; $501E: BDOS $23 FSIZE canonical entry (M28)
 ; --- MSX-DOS-1 kernel LOGIN entry: $504E (M22a; tier2-m22-cpmver-spec.md) ------
 ; While processing BDOS LOGIN ($18) the relocated kernel CALLs this page-1 disk-
 ; ROM entry for the online-drive bitmap. Was un-wired $00 pad, NOP-sliding into
@@ -612,6 +623,711 @@ p0_env_tab:
                 dw      $0038, INT_H_HIRAM ; maskable-int vector -> A-3 high-RAM handler
                                            ; (NOT page-1 int_h: page 1 is reclaimed by the TPA)
                 dw      0               ; end of table
+
+; ===== M28 (tier2-m28-blockrandom-spec.md): $23 FSIZE + $26 WRBLK ===============
+; Completes the block/random FCB surface: a real GET FILE SIZE and a real RANDOM
+; BLOCK WRITE. Both land here, in the same free-region corridor as the FDC-window
+; fix bodies (0 canonical entries, no FDC window) -- net-zero, `ds $75A5 - $` below
+; still pins k_75A5 exactly.
+
+; ff_secloop..ff_found — RELOCATED VERBATIM from disk/fat.asm's old $47B9-$4828 span
+; (M28 §3.1/§4, [LANDED-B]). $47BE (5 bytes inside the old ff_secloop, the `jr z,
+; ff_notfound`) is the kernel's FIXED canonical $26 WRBLK dispatch entry -- a
+; collision freed the same way the FDC-window fix and M26 free colliding canonical
+; addresses: relocate OUR code, not the kernel's $D8BE dispatch table (not ours to
+; edit). Position-free: reached only by fat_find_body's `jp ff_secloop` (runtime.asm)
+; and its own internal `jr ff_secloop` back-edge; every ff_* label below is local to
+; this block, so the whole unit moves as one byte-identical piece (no jr/jp
+; conversions needed -- unlike fdc_entloop_body/fdc_useslot_body, which split into
+; two separately-addressed routines, this block keeps its single entry point).
+ff_secloop:
+                ld      hl, (FAT_DIRREM)
+                ld      a, h
+                or      l
+                jr      z, ff_notfound      ; scanned every root sector
+                ld      de, (FAT_DIRSEC)
+                ld      hl, SECTOR_BUF
+                call    read_sector
+                ret     c                   ; propagate FDC error
+                ld      hl, SECTOR_BUF
+                ld      b, 16               ; 512 / 32 entries per sector
+ff_entloop:
+                push    bc
+                push    hl
+                ld      a, (hl)
+                or      a
+                jr      z, ff_endmark       ; $00 = end of directory
+                cp      $E5
+                jr      z, ff_skip          ; deleted entry
+                push    hl
+                ld      de, 11
+                add     hl, de
+                ld      a, (hl)             ; attribute byte (+11)
+                pop     hl
+                and     $18                 ; volume-label | directory -> skip
+                jr      nz, ff_skip
+                ld      de, (FAT_NAMEPTR)
+                call    name_cmp
+                jr      z, ff_found
+ff_skip:
+                pop     hl
+                ld      de, 32
+                add     hl, de              ; next 32-byte directory entry
+                pop     bc
+                djnz    ff_entloop
+                ld      hl, (FAT_DIRSEC)
+                inc     hl
+                ld      (FAT_DIRSEC), hl
+                ld      hl, (FAT_DIRREM)
+                dec     hl
+                ld      (FAT_DIRREM), hl
+                jr      ff_secloop
+ff_endmark:
+                pop     hl
+                pop     bc
+ff_notfound:
+                scf
+                ret
+ff_found:
+                pop     hl                  ; HL = directory entry
+                pop     bc
+                push    hl
+                ld      de, 26
+                add     hl, de
+                ld      a, (hl)             ; first cluster low (+26)
+                inc     hl
+                ld      h, (hl)             ; first cluster high (+27)
+                ld      l, a
+                ld      (FAT_FIRSTCLUS), hl
+                pop     hl
+                push    hl
+                ld      de, 28
+                add     hl, de
+                ld      de, FAT_FILESIZE
+                ld      bc, 4
+                ldir                        ; file size (+28..31, LE)
+                pop     hl
+                or      a                   ; Cy = 0 found
+                ret
+
+; fsize_body — MSX-DOS-1 kernel FSIZE ($23) canonical entry $501E's real body
+; (M28 §3.2). Wired IN PLACE at $501E (dead-$00 pad, no relocation -- [LANDED-B]).
+; Entry: DE=$DA40 (kernel 37-byte FCB copy, name pre-filled at copy+1..11),
+; A=$25/B=$00/C=$00, ret=$D88A -- same dispatcher class as $4788/$4793 (M26).
+; Locates the file (fat_mount + fat_find, reused wholesale from the existing dir
+; search) and sets copy+33..35 = ceil(size/128) as a 24-bit little-endian count;
+; not found -> A=L=$FF (map.grauw.nl _FSIZE contract). The prior stub returned a
+; constant A=L=$03 for every input and never searched or wrote the field at all.
+; CLEAN-ROOM: reuses fat_mount/fat_find (our own, pre-existing) + the published
+; GET FILE SIZE contract; no stock routine internals decoded.
+fsize_body:
+                push    de
+                pop     ix                  ; IX = kernel FCB-copy pointer ($DA40)
+                push    ix
+                pop     de
+                call    fat_mount
+                jp      c, fsize_miss
+                push    ix
+                pop     de
+                inc     de                  ; DE -> copy+1 (11-byte 8.3 name)
+                ex      de, hl              ; HL -> name (fat_find's contract)
+                call    fat_find            ; Cy=0 found -> FAT_FILESIZE set
+                jp      c, fsize_miss
+                ; r0..r2 := ceil(FAT_FILESIZE / 128) = (size + 127) >> 7, 24-bit.
+                ld      hl, (FAT_FILESIZE)
+                ld      de, (FAT_FILESIZE + 2)
+                ld      bc, 127
+                add     hl, bc
+                jr      nc, fsize_noc
+                inc     de
+fsize_noc:
+                ; 32-bit DE:HL >>= 7 (7 iterations of a whole-value logical shift right;
+                ; the discarded top byte, D, is always 0 for any file this ROM's FAT12
+                ; volumes can hold).
+                ld      b, 7
+fsize_shift:
+                srl     d
+                rr      e
+                rr      h
+                rr      l
+                djnz    fsize_shift
+                ; r0..r2 = low 24 bits of DE:HL = L, H, E (LE)
+                ld      (ix+33), l
+                ld      (ix+34), h
+                ld      (ix+35), e
+                xor     a                   ; A = 0 = found
+                ld      l, a                ; L := A (A=L=0, the pinned success contract)
+                jp      rrnd_finish         ; jp: rrnd_finish is far below (out of jr range)
+fsize_miss:
+                ld      a, $FF
+                ld      l, a                ; L := A (A=L=$FF, not-found)
+                jp      rrnd_finish
+
+; ===========================================================================
+; $26 WRBLK — RANDOM BLOCK WRITE (M28 §3.3, [LANDED-A]/[LANDED-B])
+; ===========================================================================
+; wrblk_body — the real $47BE canonical WRBLK entry. Entry: DE=$DA40 (kernel FCB
+; copy), HL = requested record count, A=$26/B=$00/C=$00, ret=$D88A. Contract
+; ([LANDED-A]): RS = copy+14..15 (0 -> 128); start record RR = copy+33..35
+; (24-bit LE); byte budget = (HL*RS) & $FFFF; CR/EX (copy+32/+12) untouched;
+; past-EOF writes grow the file with a CONTIGUOUS FAT chain through the gap (no
+; sparse holes; gap bytes stay whatever was already on disk -- no zero-fill);
+; size := max(old, new_RR*RS); RR += HL_REQUESTED (not actual -- the write-side
+; advance asymmetry vs RDBLK's actual-based advance); return A=0, HL = the
+; ORIGINAL requested count (preserved, carries no result). HL=0 is a size-only
+; call: RR-at-or-past-EOF just bumps the size field (no data, no chain change);
+; RR-before-EOF is the SHRINK path, which stock gets wrong (leaves the FAT
+; inconsistent -> a later FCLOSE fails) -- signed off (§6 Q3) to do the SANE
+; thing instead: free the tail chain + EOF-mark so FCLOSE keeps succeeding. This
+; is an INTENTIONAL, DOCUMENTED divergence from stock's known-broken behaviour,
+; not a regression (see tier2-bdos-coverage.md).
+; Unlike RDRND/WRRND (which only reuse the kernel's OWN preceding FOPEN state,
+; FAT_FIRSTCLUS/FAT_FILESIZE, never touching the directory entry), WRBLK must
+; persist size/first-cluster back to disk -- so it re-locates the entry itself
+; (fat_mount + fat_find on copy+1..11) to recover FAT_DIRSEC/a dirent offset for
+; fat_dir_update, exactly like fsize_body/fopen_fill_body/fren_body already do.
+; This also freshly re-confirms FAT_FIRSTCLUS/FAT_FILESIZE (redundant with the
+; kernel's own FOPEN for the same file, but harmless) before the per-record loop.
+; CLEAN-ROOM: reuses fat_mount/fat_find/fat_alloc_cluster/fat_next_cluster/
+; fat_write_fat_entry/fat_dir_update/write_sector (our own, pre-existing) + the
+; published RANDOM BLOCK WRITE contract (map.grauw.nl) + the [LANDED-A] oracle
+; contract; no stock routine internals decoded.
+wrblk_body:
+                ld      (WRBLK_REQ), hl     ; capture the requested count FIRST -- everything
+                                            ; below clobbers HL (fat_mount/fat_find/the multiply)
+                push    de
+                pop     ix                  ; IX = kernel FCB-copy pointer ($DA40)
+                push    ix
+                pop     de
+                call    fat_mount
+                jp      c, wrblk_ioerr
+                push    ix
+                pop     de
+                inc     de                  ; DE -> copy+1 (11-byte 8.3 name)
+                ex      de, hl              ; HL -> name (fat_find's contract)
+                call    fat_find            ; Cy=0 found -> FAT_FIRSTCLUS/FAT_FILESIZE set
+                jp      c, wrblk_ioerr
+                ; recover the dirent's own location for the eventual fat_dir_update
+                ; (fat_find leaves HL -> the matched entry inside SECTOR_BUF).
+                ld      de, SECTOR_BUF
+                or      a
+                sbc     hl, de
+                ld      (BDOS_DIROFF), hl
+                ld      hl, (FAT_DIRSEC)
+                ld      (BDOS_DIRSEC), hl
+                ; reseed our own DTA cell (M19 lesson: the kernel's real SETDTA only
+                ; ever touches DOS_DTAPTR, never BDOS_DTA).
+                ld      hl, (DOS_DTAPTR)
+                ld      (BDOS_DTA), hl
+                ; resolve RS := copy+14..15, 0 -> 128 (RECSIZE)
+                ld      a, (ix+14)
+                ld      e, a
+                ld      a, (ix+15)
+                ld      d, a
+                ld      a, d
+                or      e
+                jr      nz, wrblk_rs_ok
+                ld      de, RECSIZE
+wrblk_rs_ok:
+                ld      (WRBLK_RS), de
+                ; load RR (24-bit, copy+33..35) into WRBLK_REC
+                ld      a, (ix+33)
+                ld      (WRBLK_REC), a
+                ld      a, (ix+34)
+                ld      (WRBLK_REC + 1), a
+                ld      a, (ix+35)
+                ld      (WRBLK_REC + 2), a
+                ; HL_requested == 0 ? -> size-only / shrink path (no per-record loop)
+                ld      hl, (WRBLK_REQ)
+                ld      a, h
+                or      l
+                jp      z, wrblk_zero_path
+                ld      (WRBLK_CNT), hl
+; --- main per-record loop: position (extending through any gap), overlay RS DTA
+; bytes at the record's (rec&3)*128 slot within its 512-byte sector, persist. ---
+wrblk_loop:
+                ld      hl, (WRBLK_CNT)
+                ld      a, h
+                or      l
+                jp      z, wrblk_loop_done
+                call    wrblk_position_ext  ; Cy=0 ok, SECTOR_BUF <- target sector's bytes
+                jp      c, wrblk_full
+                ld      a, (WRBLK_RECSEC)
+                ld      l, a
+                ld      h, 0
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl              ; HL = WRBLK_RECSEC * 128 (0/128/256/384)
+                ld      de, SECTOR_BUF
+                add     hl, de
+                ex      de, hl              ; DE = dest in SECTOR_BUF
+                ld      hl, (BDOS_DTA)      ; HL = source record in the caller's DTA
+                ld      bc, (WRBLK_RS)
+                ldir
+                call    rrnd_sector         ; DE = absolute logical sector to persist
+                                            ; (reused unchanged: pure function of
+                                            ; FAT_CURCLUS/FAT_CLUSSEC, valid regardless
+                                            ; of how they were last set)
+                ld      hl, SECTOR_BUF
+                call    write_sector
+                jp      c, wrblk_ioerr
+                ; advance DTA by RS
+                ld      hl, (BDOS_DTA)
+                ld      de, (WRBLK_RS)
+                add     hl, de
+                ld      (BDOS_DTA), hl
+                ; WRBLK_REC += 1 (24-bit)
+                ld      hl, (WRBLK_REC)
+                inc     hl
+                ld      (WRBLK_REC), hl
+                ld      a, h
+                or      l
+                jr      nz, wrblk_reci_noc
+                ld      a, (WRBLK_REC + 2)
+                inc     a
+                ld      (WRBLK_REC + 2), a
+wrblk_reci_noc:
+                ld      hl, (WRBLK_CNT)
+                dec     hl
+                ld      (WRBLK_CNT), hl
+                jp      wrblk_loop
+wrblk_loop_done:
+                ; new_RR := RR_start + HL_requested (24-bit + 16-bit)
+                ld      a, (ix+33)
+                ld      l, a
+                ld      a, (ix+34)
+                ld      h, a
+                ld      de, (WRBLK_REQ)
+                add     hl, de
+                ld      (ix+33), l
+                ld      (ix+34), h
+                ld      a, (ix+35)
+                adc     a, 0
+                ld      (ix+35), a
+                ; size := max(old size, new_RR * RS)
+                call    wrblk_mul_rr_rs     ; WRBLK_MULACC := (ix+33..35, = new_RR) * RS
+                call    wrblk_size_max
+                call    wrblk_set_wrfirst
+                call    fat_dir_update
+                jp      c, wrblk_ioerr2
+                xor     a
+                ld      hl, (WRBLK_REQ)
+                jp      wrblk_finish
+wrblk_zero_path:
+                ; HL_requested == 0: compute target := RR (unchanged) * RS, then either
+                ; grow-or-hold (target >= old size) or shrink (target < old size). RR
+                ; itself is NOT advanced (+= 0, a no-op) per [LANDED-A].
+                call    wrblk_mul_rr_rs     ; WRBLK_MULACC := (ix+33..35, = RR unchanged) * RS
+                ; compare WRBLK_MULACC vs FAT_FILESIZE (32-bit unsigned, MSB first)
+                ld      a, (WRBLK_MULACC + 3)
+                ld      hl, FAT_FILESIZE + 3
+                cp      (hl)
+                jr      nz, wzp_decided
+                ld      a, (WRBLK_MULACC + 2)
+                dec     hl
+                cp      (hl)
+                jr      nz, wzp_decided
+                ld      a, (WRBLK_MULACC + 1)
+                dec     hl
+                cp      (hl)
+                jr      nz, wzp_decided
+                ld      a, (WRBLK_MULACC)
+                dec     hl
+                cp      (hl)
+wzp_decided:
+                jr      c, wzp_shrink       ; MULACC < FAT_FILESIZE -> shrink path
+                call    wrblk_size_max      ; MULACC >= old size -> grow-or-hold (no chain change)
+                call    wrblk_set_wrfirst
+                jr      wzp_dirupdate
+wzp_shrink:
+                call    wrblk_shrink        ; frees the tail chain + EOF-marks; sets
+                                            ; BDOS_WRBYTES itself (not via wrblk_size_max)
+                jp      c, wrblk_ioerr2
+                call    wrblk_set_wrfirst
+wzp_dirupdate:
+                call    fat_dir_update
+                jp      c, wrblk_ioerr2
+                xor     a
+                ld      hl, (WRBLK_REQ)     ; = 0
+                jp      wrblk_finish
+wrblk_full:
+                ld      a, 1                ; disk-full path ([C]-only, not black-box-provoked)
+                ld      hl, (WRBLK_REQ)
+                jp      wrblk_finish
+wrblk_ioerr:
+wrblk_ioerr2:
+                ld      a, 2                ; generic FDC I/O error (fdc_read_data convention)
+                ld      hl, (WRBLK_REQ)
+wrblk_finish:                              ; shared tail: M20 dispatcher-flag rule, preserve A/HL
+                push    af
+                push    hl
+                xor     a
+                ld      ($F306), a
+                pop     hl
+                pop     af
+                ret
+
+; wrblk_position_ext — position (or extend) the file's iterator to record
+; WRBLK_REC (24-bit), re-fat_open-ing from FAT_FIRSTCLUS and walking sector-by-
+; sector every call -- the same accepted O(n), re-walk-from-start shape as
+; rrnd_position (§4 non-goal precedent: correct and simple, no new resume-state
+; iterator). Unlike rrnd_position, EXTENDS the chain contiguously through any gap
+; instead of returning EOF ([LANDED-A]/§6 Q2 full past-EOF extend).
+;   out: Cy = 0 ok (SECTOR_BUF holds the target sector's current on-disk bytes --
+;        a freshly allocated sector reads back whatever is already on the disk,
+;        "uninitialised", no zero-fill); Cy = 1 = disk full / I/O error
+;        WRBLK_RECSEC := WRBLK_REC & 3 (record-in-sector; the codebase's fixed
+;        4-records/512-byte-sector convention -- independent of RS, which only
+;        scales the byte quantity copied per record and the RR/byte-budget
+;        bookkeeping, per spec §3.3)
+wrblk_position_ext:
+                ld      a, (WRBLK_REC)
+                and     3
+                ld      (WRBLK_RECSEC), a
+                call    fat_open            ; iterator -> FAT_FIRSTCLUS, clussec 0
+                ; target sector-in-file = WRBLK_REC >> 2 (24-bit value; D:E:A below)
+                ld      a, (WRBLK_REC + 2)
+                ld      d, a
+                ld      a, (WRBLK_REC + 1)
+                ld      e, a
+                ld      a, (WRBLK_REC)
+                ld      b, 2
+wpe_shr:
+                srl     d
+                rr      e
+                rra
+                djnz    wpe_shr
+                ; D:E:A = target sector-in-file; D is always 0 for any file this ROM's
+                ; FAT12 (720K-class floppy) volumes can hold, so BC below is a safe
+                ; 16-bit sector-in-file count.
+                ld      c, a
+                ld      b, e
+                inc     bc                  ; BC = walk-loop count (>=1; sector 0 needs 1 step)
+wpe_walk:
+                push    bc                  ; wrblk_read_or_extend_sector clobbers BC
+                                            ; internally (wroe_mul's djnz counter) -- same
+                                            ; save/restore rrnd_position uses around
+                                            ; fat_read_file_sector for the identical reason
+                call    wrblk_read_or_extend_sector
+                pop     bc
+                ret     c
+                dec     bc
+                ld      a, b
+                or      c
+                jr      nz, wpe_walk
+                ret
+
+; wrblk_read_or_extend_sector — like fat.asm's fat_read_file_sector, but when the
+; chain runs out (cluster<2 empty-file case, or cluster>=$0FF8 end-of-chain) this
+; ALLOCATES a new cluster and links it CONTIGUOUSLY instead of returning EOF. Does
+; NOT modify fat_read_file_sector itself (kept byte-identical -- same non-goal
+; precedent as M26): a parallel routine, reusing fat_advance/fat_next_cluster/
+; fat_alloc_cluster/fat_write_fat_entry. Captures FAT_CURCLUS BEFORE this step's
+; own advance/allocate (WRBLK_PREVCLUS) so a freshly allocated cluster links onto
+; the TRUE last-good cluster, not a stale EOC/free value fat_advance may have just
+; produced; also seeds FAT_FIRSTCLUS when the allocation is the file's very first
+; cluster (empty file), so a LATER call in the same wrblk_body loop (re-fat_opens
+; every record) walks the newly-grown chain correctly.
+;   out: Cy = 0 ok (SECTOR_BUF holds the sector's current on-disk bytes); Cy = 1 =
+;        disk full / I/O error
+wrblk_read_or_extend_sector:
+                ld      hl, (FAT_CURCLUS)
+                ld      (WRBLK_PREVCLUS), hl
+                ld      a, (FAT_CLUSSEC)
+                ld      hl, FAT_SECPERCLUS
+                cp      (hl)
+                jr      c, wroe_incluster
+                call    fat_advance
+wroe_incluster:
+                ld      hl, (FAT_CURCLUS)
+                ld      de, 2
+                or      a
+                sbc     hl, de
+                jr      c, wroe_need_extend ; cluster < 2 (free / empty file)
+                ld      hl, (FAT_CURCLUS)
+                ld      de, $0FF8
+                or      a
+                sbc     hl, de
+                jr      nc, wroe_need_extend ; cluster >= $0FF8 = end-of-chain
+                jr      wroe_have_valid
+wroe_need_extend:
+                call    fat_alloc_cluster   ; HL = new cluster; Cy=1 disk full
+                ret     c
+                ld      de, (WRBLK_PREVCLUS)
+                ld      a, d
+                or      e
+                jr      z, wroe_first
+                push    hl                  ; save new cluster
+                ex      de, hl              ; HL = previous (last-good) cluster
+                pop     de                  ; DE = new cluster (link value)
+                push    de
+                call    fat_write_fat_entry ; previous -> new
+                pop     hl                  ; HL = new cluster
+                ret     c
+                jr      wroe_have_new
+wroe_first:
+                ld      (FAT_FIRSTCLUS), hl ; file's very first cluster (was empty)
+wroe_have_new:
+                ld      (FAT_CURCLUS), hl
+                xor     a
+                ld      (FAT_CLUSSEC), a
+wroe_have_valid:
+                ; sector = firstData + (cluster-2)*secPerClus + clussec (identical
+                ; tail shape to fat_read_file_sector/frs_mul_body -- deliberately NOT
+                ; shared/modified, a new parallel routine per the §4 non-goal precedent)
+                ld      hl, (FAT_CURCLUS)
+                ld      de, 2
+                or      a
+                sbc     hl, de
+                ex      de, hl              ; DE = cluster - 2
+                ld      hl, 0
+                ld      a, (FAT_SECPERCLUS)
+                ld      b, a
+wroe_mul:
+                add     hl, de
+                djnz    wroe_mul            ; HL = (cluster-2) * secPerClus
+                ld      de, (FAT_FIRSTDATA)
+                add     hl, de
+                ld      a, (FAT_CLUSSEC)
+                ld      e, a
+                ld      d, 0
+                add     hl, de              ; HL = absolute logical sector
+                ex      de, hl
+                ld      hl, SECTOR_BUF
+                call    read_sector
+                ret     c
+                ld      a, (FAT_CLUSSEC)
+                inc     a
+                ld      (FAT_CLUSSEC), a
+                or      a                   ; Cy = 0 success
+                ret
+
+; wrblk_mul_rr_rs — WRBLK_MULACC(32-bit LE, WBUF+500) := RR(24-bit, ix+33..35) *
+; RS(16-bit, WRBLK_RS). Classic LSB-first shift-add multiply, 24 iterations: a
+; 32-bit zero-extended copy of RS (WRBLK_MULOP, WBUF+504) is doubled each
+; iteration and added into WRBLK_MULACC whenever the corresponding bit of a
+; shifting 24-bit copy of RR (WRBLK_MULN, WBUF+508) is 1. Deliberately
+; register-free (RAM-only state) so every step is an independently-checkable
+; byte operation -- host-unit-tested (tests/test_wrblk_mul.py). Runs after
+; fat_find's SECTOR_BUF scan and before fat_dir_update's own WBUF read/write, so
+; WBUF's tail is safe transient scratch here (§ equates.inc note).
+;   out: WRBLK_MULACC = the 32-bit product; trashes AF, BC, DE, HL
+wrblk_mul_rr_rs:
+                xor     a
+                ld      (WRBLK_MULACC), a
+                ld      (WRBLK_MULACC + 1), a
+                ld      (WRBLK_MULACC + 2), a
+                ld      (WRBLK_MULACC + 3), a
+                ld      hl, (WRBLK_RS)
+                ld      (WRBLK_MULOP), hl
+                xor     a
+                ld      (WRBLK_MULOP + 2), a
+                ld      (WRBLK_MULOP + 3), a
+                ld      a, (ix+33)
+                ld      (WRBLK_MULN), a
+                ld      a, (ix+34)
+                ld      (WRBLK_MULN + 1), a
+                ld      a, (ix+35)
+                ld      (WRBLK_MULN + 2), a
+                ld      b, 24
+wmr_loop:
+                ld      a, (WRBLK_MULN)
+                and     1
+                jr      z, wmr_noadd
+                ld      a, (WRBLK_MULACC)
+                ld      hl, WRBLK_MULOP
+                add     a, (hl)
+                ld      (WRBLK_MULACC), a
+                ld      a, (WRBLK_MULACC + 1)
+                inc     hl
+                adc     a, (hl)
+                ld      (WRBLK_MULACC + 1), a
+                ld      a, (WRBLK_MULACC + 2)
+                inc     hl
+                adc     a, (hl)
+                ld      (WRBLK_MULACC + 2), a
+                ld      a, (WRBLK_MULACC + 3)
+                inc     hl
+                adc     a, (hl)
+                ld      (WRBLK_MULACC + 3), a
+wmr_noadd:
+                ld      a, (WRBLK_MULN + 2)
+                srl     a
+                ld      (WRBLK_MULN + 2), a
+                ld      a, (WRBLK_MULN + 1)
+                rra
+                ld      (WRBLK_MULN + 1), a
+                ld      a, (WRBLK_MULN)
+                rra
+                ld      (WRBLK_MULN), a
+                ld      a, (WRBLK_MULOP)
+                add     a, a
+                ld      (WRBLK_MULOP), a
+                ld      a, (WRBLK_MULOP + 1)
+                adc     a, a
+                ld      (WRBLK_MULOP + 1), a
+                ld      a, (WRBLK_MULOP + 2)
+                adc     a, a
+                ld      (WRBLK_MULOP + 2), a
+                ld      a, (WRBLK_MULOP + 3)
+                adc     a, a
+                ld      (WRBLK_MULOP + 3), a
+                djnz    wmr_loop
+                ret
+
+; wrblk_size_max — BDOS_WRBYTES(32) := max(FAT_FILESIZE, WRBLK_MULACC). Simple
+; 32-bit unsigned compare (MSB byte first); copies the winner into BDOS_WRBYTES.
+wrblk_size_max:
+                ld      a, (WRBLK_MULACC + 3)
+                ld      hl, FAT_FILESIZE + 3
+                cp      (hl)
+                jr      nz, wsm_decided
+                ld      a, (WRBLK_MULACC + 2)
+                dec     hl
+                cp      (hl)
+                jr      nz, wsm_decided
+                ld      a, (WRBLK_MULACC + 1)
+                dec     hl
+                cp      (hl)
+                jr      nz, wsm_decided
+                ld      a, (WRBLK_MULACC)
+                dec     hl
+                cp      (hl)
+wsm_decided:
+                jr      c, wsm_keepold      ; MULACC < FILESIZE -> old size wins
+                ld      hl, WRBLK_MULACC
+                ld      de, BDOS_WRBYTES
+                ld      bc, 4
+                ldir
+                ret
+wsm_keepold:
+                ld      hl, FAT_FILESIZE
+                ld      de, BDOS_WRBYTES
+                ld      bc, 4
+                ldir
+                ret
+
+; wrblk_set_wrfirst — BDOS_WRFIRST := FAT_FIRSTCLUS (may have just been updated by
+; wrblk_read_or_extend_sector's very-first-cluster case, or zeroed by wrblk_shrink's
+; empty-file case) -- the field fat_dir_update stamps into the dirent's first-
+; cluster word.
+wrblk_set_wrfirst:
+                ld      hl, (FAT_FIRSTCLUS)
+                ld      (BDOS_WRFIRST), hl
+                ret
+
+; wrblk_shrink — HL_requested==0 and the target size (WRBLK_MULACC, already =
+; RR*RS) is BEFORE the file's current end -- shrink to that size ([LANDED-A]/§6
+; Q3 "DO THE SANE THING": stock corrupts the FAT here so a later FCLOSE fails;
+; ours frees the tail chain + EOF-marks the new last cluster so FCLOSE keeps
+; succeeding -- an INTENTIONAL, DOCUMENTED divergence from stock, not a
+; regression). Sets BDOS_WRBYTES itself (the target size) -- does NOT go through
+; wrblk_size_max, which would wrongly keep the OLD (larger) size.
+;   out: Cy = 0 ok, Cy = 1 = I/O error
+wrblk_shrink:
+                ld      hl, WRBLK_MULACC
+                ld      de, BDOS_WRBYTES
+                ld      bc, 4
+                ldir                        ; BDOS_WRBYTES := target size
+                ld      a, (WRBLK_MULACC)
+                ld      hl, WRBLK_MULACC + 1
+                or      (hl)
+                inc     hl
+                or      (hl)
+                inc     hl
+                or      (hl)                ; Z iff target size == 0 (all 4 bytes)
+                jp      z, wshrink_empty
+                ; keep_sectors = ceil(target_size / 512) = (target_size + 511) >> 9
+                ld      hl, (WRBLK_MULACC)
+                ld      de, 511
+                add     hl, de
+                ld      a, (WRBLK_MULACC + 2)
+                adc     a, 0                ; A:HL = target_size + 511 (24-bit-safe)
+                ld      l, h
+                ld      h, a                ; HL = (target_size+511) >> 8
+                srl     h
+                rr      l                   ; HL = (target_size+511) >> 9 = keep_sectors
+                ; keep_clusters = ceil(keep_sectors / SECPERCLUS), repeated subtraction
+                ; (SECPERCLUS is a small BPB constant; keep_sectors is bounded to a
+                ; floppy's few-thousand-sector range -- cheap either way)
+                ld      a, (FAT_SECPERCLUS)
+                ld      c, a
+                ld      b, 0                ; BC = SECPERCLUS
+                push    bc
+                pop     de
+                dec     de
+                add     hl, de              ; HL = keep_sectors + SECPERCLUS - 1
+                ld      de, 0               ; DE = quotient accumulator
+wshrink_divloop:
+                or      a
+                sbc     hl, bc
+                jr      c, wshrink_divdone
+                inc     de
+                jr      wshrink_divloop
+wshrink_divdone:
+                ld      (WRBLK_KEEPCNT), de ; keep_clusters (>= 1, since target size > 0)
+                ld      hl, (FAT_FIRSTCLUS)
+wshrink_walk:
+                ld      de, (WRBLK_KEEPCNT)
+                dec     de
+                ld      a, d
+                or      e
+                jr      z, wshrink_atlast   ; consumed keep_clusters-1 steps -> HL = last-to-keep
+                ld      (WRBLK_KEEPCNT), de
+                call    fat_next_cluster
+                push    hl
+                ld      de, $0FF8
+                or      a
+                sbc     hl, de
+                pop     hl
+                jr      nc, wshrink_atlast  ; chain shorter than expected -- stop defensively
+                jr      wshrink_walk
+wshrink_atlast:
+                ; HL = the cluster to KEEP as the file's new (and only surviving) tail.
+                push    hl
+                call    fat_next_cluster    ; HL := its CURRENT link (the old tail start)
+                ld      (WRBLK_NEXTCLUS), hl
+                pop     hl                  ; HL = the keep-cluster
+                ld      de, EOC
+                call    fat_write_fat_entry ; keep-cluster := EOC in every FAT copy
+                jp      c, wshrink_ioerr
+                ld      hl, (WRBLK_NEXTCLUS)
+                jr      wshrink_freeloop
+wshrink_empty:
+                ld      hl, (FAT_FIRSTCLUS) ; HL = old first cluster (the whole chain to free)
+                push    hl
+                ld      hl, 0
+                ld      (FAT_FIRSTCLUS), hl ; file becomes clusterless
+                pop     hl
+wshrink_freeloop:
+                ld      a, h
+                or      l
+                jr      z, wshrink_freedone ; HL == 0 -> nothing to free
+                push    hl
+                ld      de, $0FF8
+                or      a
+                sbc     hl, de
+                pop     hl
+                jr      nc, wshrink_freedone ; HL >= $0FF8 (EOC) -> nothing more to free
+                push    hl                  ; HL = cluster to free
+                call    fat_next_cluster    ; HL := its current link
+                ld      (WRBLK_NEXTCLUS), hl
+                pop     hl                  ; HL = the cluster to free (restored)
+                ld      de, 0
+                call    fat_write_fat_entry ; mark it free ($000)
+                jp      c, wshrink_ioerr
+                ld      hl, (WRBLK_NEXTCLUS)
+                jr      wshrink_freeloop
+wshrink_freedone:
+                or      a
+                ret
+wshrink_ioerr:
+                scf
+                ret
 
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5

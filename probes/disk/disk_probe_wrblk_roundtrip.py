@@ -1,0 +1,244 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 Joost Yervante Damad
+# SPDX-License-Identifier: 0BSD
+"""Disk-artifact round-trip for BDOS $26 WRBLK (M28 verification).
+
+The BDOS RAM-capture acceptance gate is BLIND to on-disk write effects. This
+probe proves WRBLK's persisted artifact is byte-identical between OURS
+(C-BIOS + zerobas-disk) and the STOCK National CF-3300 oracle, per case:
+
+  fresh /tmp copy of a real MSX-DOS-1 disk (PER MACHINE) + inject WRTEST.BIN
+  (target) + WRBLK.COM (the wrblk_rt.asm exerciser, params patched per case)
+  -> boot openMSX, type WRBLK at A> -> the WRBLK+FCLOSE persist to the /tmp
+  image -> pure-Python FAT12 parse of BOTH mutated images -> diff dirent size /
+  first cluster / full FAT chain / the written record's bytes.
+
+For the SHRINK case ours intentionally DIVERGES from stock (signed off, §6 Q3):
+ours FCLOSE succeeds + frees the tail; stock corrupts the FAT. There we assert
+ours is self-consistent, not ours==stock.
+
+CLEAN-ROOM: the CF-3300 is a black box we RUN and whose OUTPUT DISK we READ; its
+ROM code is never read/disassembled. Test disks are always /tmp copies.
+"""
+from __future__ import annotations
+
+import argparse
+import os
+import shutil
+import signal
+import struct
+import subprocess
+import sys
+import time
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from disk_probe_bdos import fat12_add  # noqa: E402  (reuse, don't duplicate)
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ASM = os.path.join(HERE, "wrblk_rt.asm")
+OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
+DEFAULT_DOS = os.path.expanduser("~/Documents/msx/msx/disks/test.dsk")
+OUR_MACHINE = "C-BIOS_MSX1_BASIC_DISK"
+REF_MACHINE = "National_CF-3300"
+TARGET = ("WRTEST", "BIN")
+
+
+# --------------------------------------------------------------------------- #
+# exerciser build + per-case param patch
+# --------------------------------------------------------------------------- #
+def assemble_com() -> bytes:
+    com = "/tmp/wrblk_rt.com"
+    subprocess.run(["pasmo", "--bin", ASM, com, "/tmp/wrblk_rt.sym"], check=True)
+    return open(com, "rb").read()
+
+
+def patch_params(com: bytes, recnum: int, rs: int, cnt: int, fillb: int) -> bytes:
+    b = bytearray(com)
+    b[2] = recnum & 0xFF
+    b[3] = (recnum >> 8) & 0xFF
+    b[4] = (recnum >> 16) & 0xFF
+    struct.pack_into("<H", b, 5, rs)
+    struct.pack_into("<H", b, 7, cnt)
+    b[9] = fillb & 0xFF
+    return bytes(b)
+
+
+# --------------------------------------------------------------------------- #
+# FAT12 reader (pure Python, over a whole .dsk image)
+# --------------------------------------------------------------------------- #
+class Fat12:
+    def __init__(self, path: str):
+        self.img = bytearray(open(path, "rb").read())
+        b = self.img
+        self.bps = struct.unpack_from("<H", b, 11)[0]
+        self.spc = b[13]
+        self.resv = struct.unpack_from("<H", b, 14)[0]
+        self.nfat = b[16]
+        self.rootent = struct.unpack_from("<H", b, 17)[0]
+        self.spf = struct.unpack_from("<H", b, 22)[0]
+        self.root_off = (self.resv + self.nfat * self.spf) * self.bps
+        self.root_secs = (self.rootent * 32 + self.bps - 1) // self.bps
+        self.first_data_sec = self.resv + self.nfat * self.spf + self.root_secs
+        self.fat_off = self.resv * self.bps
+
+    def dirent(self, name: str, ext: str):
+        want = (name.ljust(8) + ext.ljust(3)).encode("latin1")
+        for i in range(self.rootent):
+            e = self.img[self.root_off + i * 32: self.root_off + i * 32 + 32]
+            if e[:11] == want:
+                return {"idx": i, "cluster": struct.unpack_from("<H", e, 26)[0],
+                        "size": struct.unpack_from("<I", e, 28)[0], "attr": e[11]}
+        return None
+
+    def fat_get(self, cl: int) -> int:
+        off = self.fat_off + cl + (cl >> 1)
+        v = struct.unpack_from("<H", self.img, off)[0]
+        return (v >> 4) if (cl & 1) else (v & 0x0FFF)
+
+    def chain(self, first: int, limit: int = 4096):
+        out, cl = [], first
+        while 2 <= cl < 0x0FF8 and len(out) < limit:
+            out.append(cl)
+            cl = self.fat_get(cl)
+        return out, cl  # cl = terminator value (>=0x0FF8 = EOC, 0 = free/broken)
+
+    def cluster_bytes(self, cl: int) -> bytes:
+        sec = self.first_data_sec + (cl - 2) * self.spc
+        off = sec * self.bps
+        return bytes(self.img[off: off + self.spc * self.bps])
+
+    def record_bytes(self, first: int, rec: int, rs: int = 128) -> bytes | None:
+        """Bytes of the rs-sized record #rec, following the actual FAT chain."""
+        byte_off = rec * rs
+        sec_in_file = byte_off // self.bps
+        within = byte_off % self.bps
+        ch, _ = self.chain(first)
+        secs = []
+        for cl in ch:
+            for s in range(self.spc):
+                secs.append((cl, s))
+        if sec_in_file >= len(secs):
+            return None
+        cl, s = secs[sec_in_file]
+        data = self.cluster_bytes(cl)
+        base = s * self.bps + within
+        return data[base: base + rs]
+
+
+# --------------------------------------------------------------------------- #
+# openMSX run (boot DOS, type WRBLK, exit) — writes persist to -diska
+# --------------------------------------------------------------------------- #
+def run(machine: str, dsk: str, boot_s: int, end_s: int, timeout: float) -> None:
+    # Belt AND braces: WRBLK.COM is BOTH auto-run from AUTOEXEC.BAT (which the
+    # CF-3300 honours) AND typed at the prompt at several increasing times
+    # (which C-BIOS honours). Re-running with identical params is idempotent, so
+    # both firing is harmless; this removes all per-machine boot-path/timing
+    # dependence (observed: C-BIOS runs typed keys not AUTOEXEC; CF-3300 the
+    # reverse).
+    types = "\n".join(f'after time {t} {{ type "WRBLK\\r" }}'
+                      for t in range(boot_s, end_s - 4, 6))
+    tcl = f"""set throttle off
+{types}
+after time {end_s} {{ exit }}
+"""
+    tcl_path = dsk + ".tcl"
+    open(tcl_path, "w").write(tcl)
+    cmd = [OMSX, "-machine", machine, "-diska", dsk,
+           "-command", "set renderer none", "-script", tcl_path]
+    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL, start_new_session=True)
+    deadline = time.time() + timeout
+    while proc.poll() is None and time.time() < deadline:
+        time.sleep(0.2)
+    if proc.poll() is None:
+        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        raise TimeoutError(f"TIMEOUT running {machine}")
+
+
+def build_disk(dos: str, out: str, com: bytes, binsize: int, binfill: int) -> None:
+    shutil.copyfile(dos, out)
+    img = bytearray(open(out, "rb").read())
+    fat12_add(img, TARGET[0], TARGET[1], bytes([binfill]) * binsize)
+    fat12_add(img, "WRBLK", "COM", com)
+    # AUTOEXEC.BAT auto-runs WRBLK on boot (no keyboard-timing dependence).
+    fat12_add(img, "AUTOEXEC", "BAT", b"WRBLK\r\n")
+    open(out, "wb").write(img)
+
+
+# --------------------------------------------------------------------------- #
+# cases
+# --------------------------------------------------------------------------- #
+CASES = {
+    # name: dict(binsize, binfill, recnum, rs, cnt, fillb, kind)
+    "within":  dict(binsize=2048, binfill=0x11, recnum=3,   rs=128, cnt=1, fillb=0xA5, kind="eq"),
+    "extend":  dict(binsize=512,  binfill=0x22, recnum=12,  rs=128, cnt=1, fillb=0xB6, kind="eq"),
+    "rr24":    dict(binsize=512,  binfill=0x33, recnum=256, rs=128, cnt=1, fillb=0xC7, kind="eq"),
+    "shrink":  dict(binsize=4096, binfill=0x44, recnum=3,   rs=128, cnt=0, fillb=0x00, kind="shrink"),
+}
+
+
+def summarise(tag: str, fp: str, recnum: int, rs: int):
+    f = Fat12(fp)
+    d = f.dirent(*TARGET)
+    if d is None:
+        print(f"    {tag}: WRTEST.BIN NOT FOUND")
+        return None
+    ch, term = f.chain(d["cluster"])
+    rec = f.record_bytes(d["cluster"], recnum, rs) if d["cluster"] >= 2 else None
+    print(f"    {tag}: size={d['size']} first_clus={d['cluster']} "
+          f"chain_len={len(ch)} term={term:#05x}")
+    print(f"       chain={ch[:16]}{'...' if len(ch) > 16 else ''}")
+    if rec is not None:
+        print(f"       rec[{recnum}] first16={rec[:16].hex()} (all==fill? "
+              f"{len(set(rec))==1})")
+    else:
+        print(f"       rec[{recnum}] = <beyond chain>")
+    return {"size": d["size"], "cluster": d["cluster"], "chain": ch, "term": term,
+            "rec": rec}
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--dos-disk", default=DEFAULT_DOS)
+    ap.add_argument("--case", choices=list(CASES) + ["all"], default="all")
+    ap.add_argument("--boot", type=int, default=14)
+    ap.add_argument("--end", type=int, default=34)
+    ap.add_argument("--timeout", type=float, default=90)
+    args = ap.parse_args()
+
+    com0 = assemble_com()
+    cases = list(CASES) if args.case == "all" else [args.case]
+    for name in cases:
+        c = CASES[name]
+        print(f"\n===== CASE {name} (recnum={c['recnum']} rs={c['rs']} "
+              f"cnt={c['cnt']} file={c['binsize']}B) =====")
+        com = patch_params(com0, c["recnum"], c["rs"], c["cnt"], c["fillb"])
+        ours = f"/tmp/wrblk_rt_ours_{name}.dsk"
+        stock = f"/tmp/wrblk_rt_stock_{name}.dsk"
+        build_disk(args.dos_disk, ours, com, c["binsize"], c["binfill"])
+        build_disk(args.dos_disk, stock, com, c["binsize"], c["binfill"])
+        try:
+            run(OUR_MACHINE, ours, args.boot, args.end, args.timeout)
+            print("  [ours ran]")
+        except TimeoutError as e:
+            print(f"  OURS {e}")
+        try:
+            run(REF_MACHINE, stock, args.boot, args.end, args.timeout)
+            print("  [stock ran]")
+        except TimeoutError as e:
+            print(f"  STOCK {e}")
+        o = summarise("OURS ", ours, c["recnum"], c["rs"])
+        s = summarise("STOCK", stock, c["recnum"], c["rs"])
+        if o and s:
+            if c["kind"] == "eq":
+                same = (o["size"] == s["size"] and o["chain"] == s["chain"]
+                        and o["rec"] == s["rec"])
+                print(f"  => {'MATCH' if same else 'DIFFER'} (size/chain/rec)")
+            else:
+                print("  => shrink: ours self-consistency below; stock expected broken")
+                print(f"     ours term={o['term']:#05x} (EOC>=0xff8 good); "
+                      f"ours size={o['size']}")
+
+
+if __name__ == "__main__":
+    main()

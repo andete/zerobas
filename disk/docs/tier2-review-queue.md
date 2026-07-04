@@ -120,6 +120,31 @@ not the agent's word):
 - **Still open:** (1) implement `$26` WRBLK (user-excluded feature); (3-fix) implement a real `$23`
   FSIZE (feature-scale, pending user decision); (4) WRSEQ disk-full onset lag (P2).
 
+**RESOLUTION 2026-07-04 — M28 block/random pass DONE (real `$23` FSIZE + `$26` WRBLK; user chose
+"bundle $23 + $26").** Signed-off spec [tier2-m28-blockrandom-spec.md](tier2-m28-blockrandom-spec.md)
+(APPROVED: defer `$27`, full past-EOF extend, sane shrink, Sonnet 5 impl). Implemented + Opus-verified:
+- **`$23` FSIZE** — `fsize_body`@`$501E` (dead-pad wire). Gate-converged (BDOSX `$0300` 15→11 diffs;
+  the 4 removed are all FSIZE stub artifacts). RAM-visible result, so the gate is its oracle.
+- **`$26` WRBLK** — `wrblk_body`@`$47BE`. **The trace agent's "repoint the `$D8BE` table" advice was
+  CORRECTED in the Opus verification pass** to a **3b relocation** of `ff_secloop` (the `$D8BE` table
+  is the fixed shared-kernel ABI, not ours; `$47BE` collided with live `ff_secloop`) — committed
+  5fe8d41 before any code. **Verified byte-identical to the CF-3300 by disk-artifact round-trip**
+  (probes/disk/disk_probe_wrblk_roundtrip.py + wrblk_rt.asm — the RAM gate is BLIND to disk writes):
+  within-EOF, past-EOF extend, and a 24-bit-RR 33-cluster extend all match stock (size/FAT/data).
+- **Sane-shrink divergence (signed off §6 Q3):** ours frees the tail + EOC-marks (FCLOSE succeeds,
+  1-cluster consistent chain); stock leaks the tail (verified: 4 clusters under size=384). Documented
+  in tier2-bdos-coverage.md — INTENTIONAL, correct-where-stock-is-broken, not a regression.
+- **Tier-1 green:** disk.rom=16384; net-zero canonical (baseline sym diff: 0 `k_*` moved); veneers
+  correct; FDC window clean; unit-test 28/28 (3 new: test_wrblk_fsize/extend/body_e2e).
+- **Two honest edge-case notes (NON-blocking):** (a) `fat_alloc_cluster` is O(n²) so large
+  multi-cluster extends are slow but correct (§4 non-goal tradeoff — a 33-cluster extend needed
+  >46 s emulated; NOT a bug — initially mistaken for one until re-run with budget); (b) the mod-64K
+  `(HL×RS)` transfer-byte wrap on pathological HL (e.g. 513 records/call) is host-multiply-tested
+  but not separately round-tripped (ours writes HL records literally; extreme/unrealistic input).
+- **Still open (unchanged):** (A) `$27` RDBLK stream-from-0 un-simplification — now the ONLY thing
+  keeping BDOSX RED in the gate; deferred with its own COMMAND.COM-boot regression check. (B) WRSEQ
+  disk-full onset lag (P2). Neither forced.
+
 _**Batch-synced 2026-07-04** (consolidation sweep) — the M19→M27 block (20 entries) was
 reviewed and moved to [tier2-review-archive.md](tier2-review-archive.md). The Tier-2
 DOS-boot-to-`A>` goal is **MET**, full BDOS surface coverage is complete (M26 closed), and
