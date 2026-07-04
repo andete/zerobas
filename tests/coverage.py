@@ -62,7 +62,7 @@ GROUPS = [
         "test_program", "test_control_flow", "test_repl", "test_statements",
     ], "basic/main.asm", 0x4000),
     ("tape", ["test_tape"], "tape/tape.asm", 0x00E1),
-    ("disk", ["test_getdpb"], "disk/disk.asm", 0x4000),
+    ("disk", ["test_getdpb", "test_gdate"], "disk/disk.asm", 0x4000),
 ]
 
 # Data tables that live in the code image (lowercase, so not caught by the
@@ -176,7 +176,12 @@ def measure(label, mods, src, base):
             print(f"  !! {mname} reported {fails} failing check(s)")
 
     rom_path, sym = "/tmp/cov_group.rom", "/tmp/cov_group.sym"
-    subprocess.run(["pasmo", "--bin", os.path.join(ROOT, src), rom_path, sym],
+    # The source may be split across included parts (disk/*.asm, basic/*.asm)
+    # resolved relative to its own directory, so -I that directory — matching how
+    # each test_*.py assembles its own ROM. Harmless for single-file sources.
+    src_dir = os.path.dirname(os.path.join(ROOT, src))
+    subprocess.run(["pasmo", "-I", src_dir, "--bin", os.path.join(ROOT, src),
+                    rom_path, sym],
                    check=True, capture_output=True)
     rom = open(rom_path, "rb").read()
     lo, hi = code_extent(rom_path, base)
