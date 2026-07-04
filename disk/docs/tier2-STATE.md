@@ -365,10 +365,31 @@ cleared before the DOS sign-on. Detail: [tier2-review-queue.md](tier2-review-que
 > session. Full writeup: [tier2-m27-lstout-spec.md](tier2-m27-lstout-spec.md).
 >
 > Remaining residuals in the codebase (not gating anything, none has an open
-> sign-off pending): `$5465`/`lstout_body` (above), `$2E` VERIFY's
-> flag-effect-on-writes open design question (tier2-bdos-remaining-spec.md
-> §5.4), CONOUT's TAB-expansion (M22b slice 2, deferred). Pick the next one
-> deliberately, don't default into it off a bare "continue".
+> sign-off pending): `$2E` VERIFY's flag-effect-on-writes open design question
+> (tier2-bdos-remaining-spec.md §5.4), CONOUT's TAB-expansion (M22b slice 2,
+> deferred). (`$5465`/`lstout_body` — WIRED 2026-07-04, see below.) Pick the
+> next one deliberately, don't default into it off a bare "continue".
+
+### `$5465`/`lstout_body` WIRED — BDOS $05 LSTOUT now delegates to BIOS $00A5 (2026-07-04)
+
+> Off the characterisation below (user: "action it now"), wired the func-5
+> worker: `k_5465: jp lstout_body` (lands naturally at `$5465` = `k_5462`+3);
+> `lstout_body` (disk/kernel.asm, in the `$5456-$5FE4` gap) does `ld a,e` →
+> call main-BIOS **LPTOUT `$00A5`** via the `pg0_mainrom_in/out` inter-slot
+> path (same shape as `conout_body`'s CHPUT) → ret, preserving BC/DE/HL.
+> **BIOS-delegating, no direct `$90`/`$91` I/O** (two-interface rule). NET-ZERO:
+> body absorbed by the `ds $5FE5-$` pad (`k_5FE5` unmoved `$787E`, `p0_env_tab`
+> unmoved `$7FB7` ≤ FDC guard `$7FB8`); ROM 16384 B. **Verified:** ours now
+> calls `$00A5` 5× (was 0×), `A`=char = stock; on-the-wire byte-identical to
+> stock (`$90` poll PC `$0887`, `$91` data + `$90` `$00`/`$FF` strobe PCs
+> `$086D`/`$0870`/`$0873`); raw log = `"LP!\r\n"`; boot+DIR BDOS parity 260/260
+> aligned; unit-test 19/19; probe smoke green. **⚠ STANDING FOLLOW-UP: C-BIOS
+> needs a real `$00A5` LPTOUT** for list output to actually print on the C-BIOS
+> target (C-BIOS stubs it today → LSTOUT safely no-ops there, no hang). That is
+> a C-BIOS change, NOT a disk-ROM one; once C-BIOS's `$00A5` works, LSTOUT here
+> prints with zero change to zerobas-disk. See
+> [tier2-lstout-characterisation.md](tier2-lstout-characterisation.md) §4 ⚠ +
+> [[cbios-lptout-followup]]. Full writeup: same doc §4.
 
 ### LSTOUT FULLY CHARACTERISED — the M27 printer-pluggable angle, settled (2026-07-04)
 

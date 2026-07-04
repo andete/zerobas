@@ -240,6 +240,49 @@ conout:
                 ds      $5462 - $, $00  ; pad up to the pinned $5462 DIRIN entry (M22a)
 k_5462:
                 jp      dirin_body      ; $5462: BDOS $07 DIRIN canonical entry (M22a)
+k_5465:
+                jp      lstout_body     ; $5465: BDOS $05 LSTOUT canonical entry
+                                        ; (lands naturally at $5465 = k_5462 + 3 bytes;
+                                        ;  was squatted by callf_body_body, M27 §4)
+
+; --- lstout_body - the real $5465 LSTOUT (BDOS $05); characterised 2026-07-04 -----
+; Output the char (in E) to the list device via the main-ROM LPTOUT ($00A5),
+; preserving BC/DE/HL. Entry E=char is the $5465 LSTOUT contract (= the $5454 CONOUT
+; contract; black-box confirmed: kernel func-5 worker entry has E=char, A=$00,
+; ret=$D88A -- disk/docs/tier2-lstout-characterisation.md §3.3). Pages the main BIOS
+; ROM into page 0 (pg0_mainrom_in), calls LPTOUT, restores (pg0_mainrom_out); DI spans
+; the half-mapped window; EI on exit -- the same structure conout_body uses for CHPUT.
+;   in:  E = char ; out: BC/DE/HL preserved (IX/IY untouched)
+; BIOS-DELEGATING by design (two-interface rule, [[cbios-target-cf3300-oracle]]):
+; LSTOUT does NOT poke the printer ports ($90/$91) itself -- it calls the main BIOS's
+; LPTOUT and inherits whatever the host BIOS does. On real CF-3300 hardware this drives
+; the printer (and, faithfully, blocks if none is attached -- matching stock, which
+; tight-polls status port $90). On C-BIOS it inherits C-BIOS's own $00A5, TODAY A STUB
+; -> LSTOUT safely no-ops (no port poll, no hang). *** C-BIOS LPTOUT is a LATER FIX ***
+; (tier2-lstout-characterisation.md §4): once C-BIOS grows a real $00A5, LSTOUT here
+; starts working with no change to this ROM. NB: the DI window means a real-hardware
+; no-printer poll would block with interrupts off (no Ctrl-STOP escape) -- an authentic-
+; hang edge case, not reachable on our targets (C-BIOS no-op / real-hw-with-printer).
+; CLEAN-ROOM: E=char is the BDOS LSTOUT ($05) ABI; $00A5 LPTOUT is the published BIOS
+; entry (same documented class as CHPUT $00A2 already called by conout_body); no oracle
+; bytes decoded. Lives in the $5456-$5FE4 gap section (net-zero: absorbed by the
+; `ds $5FE5 - $` pad below, so nothing downstream shifts / the FDC-window guard holds).
+lstout_body:
+                ld      a, e                ; char arrives in E ($5465 LSTOUT contract)
+                ld      (CONOUT_CHAR), a    ; stash across the slot work (A needed for paging)
+                push    bc
+                push    de
+                push    hl
+                di                          ; no interrupt while the BIOS is half-mapped
+                call    pg0_mainrom_in
+                ld      a, (CONOUT_CHAR)
+                call    $00A5               ; LPTOUT - output A to the list device
+                call    pg0_mainrom_out     ; restore page 0
+                ei
+                pop     hl
+                pop     de
+                pop     bc
+                ret
 
 ; ===== Tier-2 3b: relocated Disk-BASIC routine bodies ($5456-$5FE4 gap) =====
 ; Each colliding routine's body lives here; its low-region slot holds `entry:

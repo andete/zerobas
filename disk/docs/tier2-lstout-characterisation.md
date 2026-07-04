@@ -85,9 +85,30 @@ main-BIOS interface the two-interface rule ([[cbios-target-cf3300-oracle]])
 wants. The disk ROM must NOT poke `$90`/`$91` itself; it must call BIOS
 `$00A5` and inherit whatever the host BIOS does.
 
-## 4. Fix shape for `$5465` / `lstout_body` (if wired later — needs its own sign-off)
+## 4. `$5465` / `lstout_body` — WIRED (2026-07-04, signed off)
 
-Now fully actionable (was blocked only on the contract above):
+Implemented exactly as the fix shape below (`disk/kernel.asm`): `k_5465: jp
+lstout_body` lands naturally at `$5465` (= `k_5462` + 3 bytes), body in the
+`$5456-$5FE4` gap section so the `ds $5FE5 - $` pad absorbs it **net-zero**
+(`k_5FE5` unmoved at `$787E`, `p0_env_tab` unmoved at `$7FB7` ≤ the FDC-window
+guard `$7FB8`; ROM still 16384 B). **Verified:** ours now calls BIOS `$00A5`
+**5× (was 0×)** with `A`=char matching stock; on-the-wire byte-identical to
+stock (READ `$90` / WRITE `$91` / strobe `$90` `$00`/`$FF`, same BIOS PCs
+`$0887`/`$086D`); raw log = `"LP!\r\n"`; boot+DIR BDOS parity 260/260 aligned;
+unit-test 19/19; probe smoke (DSKIO/BASIC/tape) green.
+
+> ### ⚠ FOLLOW-UP — C-BIOS needs a real LPTOUT (`$00A5`)
+> LSTOUT is deliberately BIOS-delegating, so on the **C-BIOS target** it only
+> does something once **C-BIOS's own `$00A5` LPTOUT** is a real implementation.
+> C-BIOS today stubs it → on C-BIOS our LSTOUT **safely no-ops** (correct, no
+> hang), but nothing prints. **To make list output actually work on C-BIOS,
+> C-BIOS must gain a working LPTOUT** (poll printer-status port `$90`, write
+> data `$91`, pulse strobe — the protocol pinned in §3.2). That is a change to
+> C-BIOS, NOT to this disk ROM: once C-BIOS's `$00A5` works, LSTOUT here starts
+> printing with zero change to zerobas-disk. Tracked as a standing cross-
+> component follow-up ([[cbios-lptout-followup]]).
+
+The fix shape (as landed):
 
 - **Entry:** `E` = char (confirmed, = CONOUT contract). `$5465` is CALLed by the
   kernel dispatcher; return to `$D88A`.
@@ -115,10 +136,10 @@ black-box approach available if AUX support is ever prioritised. Both are
 expected to be BIOS-delegating in the same way (`AUXIN`/`AUXOUT` BIOS calls).
 
 ## 6. Status
-**Characterisation COMPLETE.** LSTOUT is fully understood: mechanism, hang-safety,
-entry/exit contract, and BIOS delegation all pinned black-box. `$5465`/
-`lstout_body` remains **un-wired** (still harmless — nothing calls func-5 in
-normal boot after the M27 `$F23B` fix); wiring it is now a ready-to-spec task
-gated only on a sign-off, no longer on any unknown. Tooling landed for reuse
-(`ioport` mode, `--plug-printer`). No regression risk to shipped ROM (probe-only
-+ a new throwaway `.COM`; disk ROM unchanged).
+**Characterisation COMPLETE and `$5465`/`lstout_body` WIRED** (§4). LSTOUT is
+fully understood (mechanism, hang-safety, entry/exit contract, BIOS delegation,
+all black-box) and now implemented, delegating to main-BIOS LPTOUT `$00A5`.
+Verified end-to-end vs stock; net-zero ROM change; all regressions green. Tooling
+landed for reuse (`ioport` mode, `--plug-printer`). **One standing follow-up:**
+C-BIOS needs a real `$00A5` for list output to actually print on the C-BIOS
+target (§4 ⚠; [[cbios-lptout-followup]]) — a C-BIOS change, not a disk-ROM one.
