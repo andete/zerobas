@@ -1377,6 +1377,226 @@ wshrink_ioerr:
                 scf
                 ret
 
+; ===== M31: k_47B2 faithful Random Block Read body (tier2-m31-rdblk-randrecord-
+; spec.md §3.2) — relocated out of $47B2's cramped span (3b-relocation, the
+; M24/M28/M29 idiom); reached only via the k_47B2 veneer's `jp`.
+;
+; Faithful $27: position to the FCB's random-record field (FCB+33..35), then
+; transfer up to HL records of the FCB's record size (FCB+14..15, 0 -> 128),
+; zero-padding a final partial record, and report the true delivered count;
+; RR is advanced by the delivered count on return (unified contract for both
+; boot loaders, at RR=0/RS=1/huge-HL, and any user-level $27 caller, §2/§3.2).
+; Register discipline: entry DE = FCB ptr, HL = requested record count. Both
+; are needed AFTER we start touching HL/DE for FCB-field reads below, so both
+; are parked in dedicated cells immediately (RDBLK_REQ / the FCB ptr survives
+; on the stack, popped back for the RR write-back + IY return at the end).
+k47b2_body:
+                push    de                  ; save entry FCB ptr (RR write-back + IY return)
+                ld      (RDBLK_REQ), hl     ; save entry HL = requested record count (step 3)
+                ; --- step 2: record size <- FCB+14..15, 0 -> 128 default ----------
+                ld      hl, 14
+                add     hl, de
+                ld      a, (hl)
+                ld      (RDBLK_RECSIZE), a
+                inc     hl
+                ld      a, (hl)
+                ld      (RDBLK_RECSIZE + 1), a
+                ld      hl, (RDBLK_RECSIZE)
+                ld      a, h
+                or      l
+                jr      nz, k47b2_rs_ok
+                ld      hl, RECSIZE
+                ld      (RDBLK_RECSIZE), hl
+k47b2_rs_ok:
+                ; --- step 4: RR start <- FCB+33..35 (24-bit) -> RDBLK_RRSTART -----
+                pop     hl                  ; HL = entry FCB ptr (peek without losing it)
+                push    hl
+                ld      de, 33
+                add     hl, de
+                ld      de, RDBLK_RRSTART
+                ld      bc, 3
+                ldir                        ; RDBLK_RRSTART := FCB+33..35
+                ; --- step 5: DTA <- (DOS_DTAPTR) -> RDBLK_DST + BDOS_DTA ----------
+                ; (M19 lesson: the kernel's real SETDTA only ever touches
+                ; DOS_DTAPTR, never our own mini-BDOS's BDOS_DTA cell -- do NOT
+                ; trust BDOS_DTA itself here, see k_47B2's original M21b note.)
+                ld      hl, (DOS_DTAPTR)
+                ld      (BDOS_DTA), hl
+                ld      (RDBLK_DST), hl
+                ; --- step 6: open + size -------------------------------------------
+                call    fat_open            ; re-prime the iterator (FAT_FIRSTCLUS already found)
+                ld      hl, (FAT_FILESIZE)
+                ld      (BDOS_BYTESLEFT), hl
+                ld      hl, (FAT_FILESIZE + 2)
+                ld      (BDOS_BYTESLEFT + 2), hl
+                ld      hl, 512
+                ld      (RDBLK_BUFPOS), hl  ; force a sector refill on the first byte
+                ld      hl, 0
+                ld      (RDBLK_DONE), hl    ; no records delivered yet
+                ; --- step 7: position to record RR ---------------------------------
+                ; Skip RR whole records by discarding RS bytes each via the shared
+                ; k47b2_nextbyte helper (below), bounded by EOF (no multiply, no
+                ; overflow; sector-seek is a deferred optimisation, §3.2 step 7 -- $27
+                ; is not a hot loop and files are small). RR is a 24-bit FCB field, but
+                ; (same narrowing as the M26 RDRND/WRRND precedent, and this
+                ; milestone's realistic-file-size scope) only the low 16 bits of
+                ; RDBLK_RRSTART are used as the skip count.
+                ; RDBLK_RRSTART must survive UNTOUCHED for step 9's write-back, so the
+                ; skip loop counts records SKIPPED SO FAR (0 upward) in RDBLK_DONE
+                ; instead of counting RRSTART down -- RDBLK_DONE is otherwise unused
+                ; until step 8, and is reset to 0 again right after this loop.
+k47b2_pos_recloop:
+                ld      hl, (RDBLK_DONE)
+                ld      de, (RDBLK_RRSTART)
+                or      a
+                sbc     hl, de
+                jr      z, k47b2_pos_done   ; skipped RR records -> positioned at record RR
+                ld      hl, (RDBLK_RECSIZE)
+                ld      (RDBLK_CNT), hl     ; bytes to discard for this record
+k47b2_pos_byteloop:
+                ld      hl, (RDBLK_CNT)
+                ld      a, h
+                or      l
+                jr      nz, k47b2_pos_needbyte
+                ld      hl, (RDBLK_DONE)    ; whole record discarded -> count it, next record
+                inc     hl
+                ld      (RDBLK_DONE), hl
+                jr      k47b2_pos_recloop
+k47b2_pos_needbyte:
+                call    k47b2_nextbyte      ; discard A; Cy=1 -> EOF/chain-end
+                jr      c, k47b2_pos_done
+                ld      hl, (RDBLK_CNT)
+                dec     hl
+                ld      (RDBLK_CNT), hl
+                jr      k47b2_pos_byteloop
+k47b2_pos_done:
+                ld      hl, 0
+                ld      (RDBLK_DONE), hl    ; reset for step 8's real delivered-count use
+                ; --- step 8: transfer loop (zero-pad variant of rdb_recloop_body) --
+                ; "Partial record" (>=1 byte already copied this record) is recovered
+                ; by comparing RDBLK_CNT (bytes still owed) against RDBLK_RECSIZE (the
+                ; full record size): CNT < RECSIZE iff at least one byte already
+                ; landed -- no extra flag cell needed (RDBLK_RRSTART's 3 bytes are the
+                ; spec's whole free-tail budget, §3.1).
+k47b2_xfer_rec:
+                ld      hl, (RDBLK_DONE)
+                ld      de, (RDBLK_REQ)
+                or      a
+                sbc     hl, de
+                jr      z, k47b2_ok         ; delivered every requested record -> A=0
+                ld      hl, (RDBLK_RECSIZE)
+                ld      (RDBLK_CNT), hl     ; bytes still to copy for this record
+k47b2_xfer_byteloop:
+                ld      hl, (RDBLK_CNT)
+                ld      a, h
+                or      l
+                jr      z, k47b2_xfer_recdone       ; whole record copied -> next record
+                call    k47b2_nextbyte      ; A = next byte / Cy=1 EOF-or-chain-end
+                jr      c, k47b2_xfer_eofcheck
+                ld      hl, (RDBLK_DST)
+                ld      (hl), a
+                inc     hl
+                ld      (RDBLK_DST), hl
+                ld      hl, (RDBLK_CNT)
+                dec     hl
+                ld      (RDBLK_CNT), hl
+                jr      k47b2_xfer_byteloop
+k47b2_xfer_eofcheck:
+                ; EOF (or chain-end, treated the same). Partial record (RDBLK_CNT <
+                ; RDBLK_RECSIZE, i.e. a byte already copied this record) -> zero-pad
+                ; the remainder and COUNT it; clean boundary (CNT == RECSIZE, no bytes
+                ; copied) -> EOF without counting this record.
+                ld      hl, (RDBLK_CNT)
+                ld      de, (RDBLK_RECSIZE)
+                or      a
+                sbc     hl, de
+                jr      z, k47b2_eof        ; clean boundary -> EOF, uncounted
+k47b2_xfer_padloop:
+                ld      hl, (RDBLK_CNT)
+                ld      a, h
+                or      l
+                jr      z, k47b2_xfer_padded
+                ld      hl, (RDBLK_DST)
+                ld      (hl), 0
+                inc     hl
+                ld      (RDBLK_DST), hl
+                ld      hl, (RDBLK_CNT)
+                dec     hl
+                ld      (RDBLK_CNT), hl
+                jr      k47b2_xfer_padloop
+k47b2_xfer_padded:
+                ld      hl, (RDBLK_DONE)
+                inc     hl
+                ld      (RDBLK_DONE), hl    ; the zero-padded final record counts
+                jr      k47b2_eof
+k47b2_xfer_recdone:
+                ld      hl, (RDBLK_DONE)
+                inc     hl
+                ld      (RDBLK_DONE), hl
+                jr      k47b2_xfer_rec
+                ; --- step 9 (8a): one exit, both A values fall through here --------
+k47b2_ok:
+                xor     a                   ; A = $00 all requested records delivered
+                jr      k47b2_return
+k47b2_eof:
+                ld      a, 1                ; A = $01 EOF-first
+k47b2_return:
+                ld      e, a                ; E = the 0/1 result, parked here (A itself is
+                                            ; clobbered by the 24-bit add below; DE is
+                                            ; otherwise dead at this exit) -- restored to
+                                            ; A as the very last step before ret.
+                ; RR := entry-RR + HL(delivered), write back to FCB+33..35 (24-bit;
+                ; carry into the high byte via ADC). At/past EOF, HL=0 -> RR unchanged
+                ; (§3.2 step 9). Entry FCB ptr is still on the stack (untouched since
+                ; the routine's initial `push de`) -- pop it into IY now: this both
+                ; satisfies the IY-return contract AND gives indexed (iy+33/+34/+35)
+                ; addressing for the write-back, so the FCB ptr need not be re-derived.
+                pop     iy                  ; IY = entry FCB ptr (§5.4/§8.50 IY contract)
+                ld      hl, (RDBLK_DONE)    ; HL = records actually delivered
+                ld      a, (RDBLK_RRSTART)
+                add     a, l
+                ld      (iy+33), a
+                ld      a, (RDBLK_RRSTART + 1)
+                adc     a, h
+                ld      (iy+34), a
+                ld      a, (RDBLK_RRSTART + 2)
+                adc     a, 0
+                ld      (iy+35), a
+                ; HL = BC = records delivered (the $47B2-boundary count, §1-Q3); HL
+                ; itself is already RDBLK_DONE (untouched above -- only A was used for
+                ; the 24-bit add), so just copy it to BC.
+                ld      b, h
+                ld      c, l
+                ld      ix, DRVA_DPB        ; IX = $F195 drive-A DPB (§8.50)
+                xor     a
+                ld      ($F306), a          ; M20 dispatcher-flag rule
+                ld      a, e                ; A = the 0/1 EOF result (restored)
+                ret
+
+; k47b2_nextbyte — shared byte-fetch-or-EOF helper (used by BOTH the step-7
+; positioning loop and the step-8 transfer loop; folding the BDOS_BYTESLEFT==0
+; test + rdblk_getbyte call into one place keeps k47b2_body's two structurally
+; identical byte loops small).
+;   out: Cy=0, A=the next file byte (BDOS_BYTESLEFT>0; rdblk_getbyte's normal
+;        path -- advances BDOS_BYTESLEFT + the sector buffer)
+;        Cy=1  BDOS_BYTESLEFT==0 (clean EOF) OR rdblk_getbyte's own chain-end
+;        (defensive; caller treats both alike, §3.2 step 7/8)
+k47b2_nextbyte:
+                ld      hl, BDOS_BYTESLEFT
+                ld      a, (hl)
+                inc     hl
+                or      (hl)
+                inc     hl
+                or      (hl)
+                inc     hl
+                or      (hl)
+                jr      nz, k47b2_nextbyte_get      ; BDOS_BYTESLEFT != 0 -> fetch for real
+                scf                                 ; BDOS_BYTESLEFT == 0 -> Cy=1, clean EOF
+                ret
+k47b2_nextbyte_get:
+                jp      rdblk_getbyte       ; tail-call: A=byte/Cy=0, or Cy=1 chain-end;
+                                            ; either way its own `ret` is our `ret` too
+
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
                 ds      $77B8 - $, $00
@@ -1388,69 +1608,37 @@ k_402D:         ret
 k_41FD:         ret
 k_4558:         ret
 k_46C8:         ret
-; k_47B2 — M21b: generic BDOS RDBLK-via-page1 handler (tier2-m21-spec.md §5.4/
-; §5.5; was: a COMMAND.COM-only diagnostic loader, Tier-2 M5.4 first cut).
-; The kernel's $27 RDBLK handler ($D887, ret=$C51D) CALLs $47B2 for BOTH the
-; boot-time COMMAND.COM self-load (DE=$DC5B) and the runtime typed-command TPA
-; load (DE=$DA40) — both hand a fully-formed FCB of the SAME shape (§5.4), and
-; by the time this runs the kernel's own preceding FOPEN (page-1 $4462, M21a)
-; has already located the file and left FAT_FIRSTCLUS/FAT_FILESIZE seeded for
-; it, so no re-search is needed here: just re-prime the iterator and stream.
-; Requested count (entry HL) is treated as an upper bound in principle, but
-; every observed caller requests far more than any file this ROM handles and
-; relies on EOF to stop the transfer — reading straight to EOF is a documented
-; simplification, the same shape as bdos_rdblk's own random-record-0-only
-; assumption (disk/driver.asm).
+; k_47B2 — M31: faithful Random Block Read (tier2-m31-rdblk-randrecord-spec.md
+; §3); was M21b's "stream-from-0" simplification (ignored FCB+33..35, always
+; read to EOF). The kernel's $27 RDBLK handler ($D887, ret=$C51D) CALLs $47B2
+; for BOTH the boot-time COMMAND.COM self-load (DE=$DC5B) and the runtime
+; typed-command TPA load (DE=$DA40) AND every running program's user-level $27
+; (arbitrary RR/RS/HL, e.g. BDOSX) — one unified body serves all three by
+; *contract*, never by caller identity (§2): position to the FCB's
+; random-record field (FCB+33..35), transfer up to HL records of the FCB's
+; record size (FCB+14..15, 0 -> 128 default), zero-pad a final partial record,
+; and report the true delivered count. The boot callers pass RR=0/RS=1/huge-HL
+; (§1-Q2), which is just this same contract instantiated at those values (§3.2
+; "boot instantiation check") — no branching on caller shape.
 ;   in:  DE = FCB pointer (kernel work buffer); HL = requested record count
-;   out: A = $01 EOF (MSX2 TH; matches stock's observed constant, §0.1/§5.5)
-;        HL = BC = total bytes transferred (= the file's full size, since the
-;        transfer always runs to EOF); IY = the entry DE (kernel work pointer,
-;        §5.4/§8.50); IX = the drive-A DPB (§8.50's original boot contract,
-;        extended unconditionally per §5.4 — both callers get the same body).
+;   out: A = $00 all HL requested records delivered / $01 EOF-first (§1-Q3)
+;        HL = BC = records actually delivered
+;        FCB+33..35 (RR) := entry-RR + HL (write-back; unchanged when HL=0,
+;        i.e. positioned at/past EOF already)
+;        IY = the entry DE (kernel work pointer, §5.4/§8.50); IX = the drive-A
+;        DPB (§8.50's original boot contract, extended unconditionally, §2).
 ;        $F306 cleared (Tier-2 dispatcher-flag rule, M20).
+; Reuses the byte-granular rdblk_getbyte/fat_open engine (disk/driver.asm) —
+; the same machinery bdos_rdblk uses — but with k_47B2's OWN record loop, so
+; bdos_rdblk/rdb_recloop_body (the pre-kernel boot MSXDOS.SYS-load path, never
+; reached once a program is running, §1-Q1) stay byte-identical.
 ; CLEAN-ROOM: our own file layer streaming into the caller's own DTA; COMMAND.COM
-; is data we copy, never disassembled.
-k_47B2:         push    de                  ; save entry DE (kernel work ptr) for the IY return
-                ; Seed OUR internal BDOS_DTA from the kernel's own live DTA pointer
-                ; (DOS_DTAPTR, $F23D -- M19) rather than trusting BDOS_DTA itself:
-                ; the kernel's real SETDTA writes DOS_DTAPTR only, never our own
-                ; mini-BDOS's cell, so BDOS_DTA is stale leftover from whatever
-                ; this ROM's own internal loader last used it for (found the hard
-                ; way: it read back $1A80, the END of the boot-time COMMAND.COM
-                ; load, at the runtime BDOSX.COM call).
-                ld      hl, (DOS_DTAPTR)
-                ld      (BDOS_DTA), hl
-                call    fat_open            ; re-prime the iterator (FAT_FIRSTCLUS already found)
-                ld      hl, FAT_FILESIZE
-                ld      de, BDOS_BYTESLEFT
-                ld      bc, 4
-                ldir                        ; BDOS_BYTESLEFT = true file size (fresh read)
-                ld      a, RECPERSEC
-                ld      (BDOS_RECIDX), a    ; buffer empty -> first read refills
-k47b2_rdloop:   call    bdos_seqread        ; A=$00 record delivered / $01 EOF
-                or      a
-                jr      nz, k47b2_done      ; EOF -> the file is fully transferred
-                ld      hl, (BDOS_DTA)      ; advance DTA one record
-                ld      de, RECSIZE         ; 128
-                add     hl, de
-                ld      (BDOS_DTA), hl
-                jr      k47b2_rdloop
-; k47b2_done — the file is fully transferred; reproduce the pinned return contract
-; (§5.5, exact register match at $C51D: AF=$0142 HL=$0480 for the runtime caller;
-; §8.50, HL=BC=FAT_FILESIZE IX=DRVA_DPB IY=entry-DE for the boot caller).
-k47b2_done:     xor     a
-                ld      ($F306), a          ; M20 dispatcher-flag rule
-                or      a                   ; clear carry (A=0 already; overwritten by dec next)
-                ld      b, 1
-                dec     b                   ; B=0; F = Z=1,N=1,C=0 (§5.5's AF=$0142 flag half)
-                ld      ix, DRVA_DPB        ; IX = $F195 drive-A DPB (§8.50)
-                ld      hl, (FAT_FILESIZE)  ; HL = total bytes transferred (LD: flags unaffected)
-                push    hl
-                pop     bc                  ; BC = HL (§5.5: "the genuine BDOS $27 returns the
-                                             ; count in both")
-                pop     iy                  ; IY = saved entry DE (kernel work pointer)
-                ld      a, 1                ; A = $01 EOF (LD: flags unaffected) -> AF = $0142
-                ret
+; is data we copy, never disassembled. Contract from the public map.grauw.nl
+; _RDBLK doc + black-box behavioural characterisation (§1).
+; 3b-relocation (M24/M28/M29 idiom): the faithful body outgrew the $47B2..
+; $4919 span, so this veneer diverts to k47b2_body in the free kernel tail
+; (below k_47B2 in this file); every k_* canonical address stays net-zero.
+k_47B2:         jp      k47b2_body          ; Tier-2 3b: divert; veneer fills the gap
 k_4919:         ret
 k_4935:         ret
 k_498C:         ret

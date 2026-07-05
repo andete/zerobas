@@ -175,6 +175,12 @@ RDBLK_DONE      equ     $E770   ; records delivered so far (word; = HL on return
 RDBLK_CNT       equ     $E772   ; bytes left in the current record (word)
 RDBLK_BUFPOS    equ     $E774   ; byte offset into SECTOR_BUF (word, 0..512)
 RDBLK_DST       equ     $E776   ; current DTA write pointer (word; from BDOS_DTA)
+; M31 (tier2-m31-rdblk-randrecord-spec.md §3.1): k_47B2's own entry-RR cell, for
+; the RR := entry-RR + HL write-back to FCB+33..35 at return. A 24-bit FCB field
+; needs 3 bytes; parked in the last of the $E7E8-$E7FF free tail (the gap
+; currently ends at FAT_ALLOCHINT=$E7FB word -> $E7FD-$E7FF free). Per-call
+; lifetime only (like the other RDBLK_* cells above).
+RDBLK_RRSTART   equ     $E7FD   ; k_47B2 entry RR, FCB+33..35 (24-bit, 3 bytes)
 ; page-1 transfer bounce scratch (a3 §8.35; free page-3 RAM after RDBLK_DST)
 P1_DEST         equ     $E778   ; saved page-1 destination word (dskio bounce path)
 P1_BLIT         equ     $E77A   ; runtime address of the installed blit routine

@@ -23,6 +23,34 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**RESOLUTION 2026-07-05 — M31 `$27` RDBLK un-simplification DONE (user chose "$27 only, as
+M31" after the investigation revealed gate-green is 3-part).** Signed-off spec
+[tier2-m31-rdblk-randrecord-spec.md](tier2-m31-rdblk-randrecord-spec.md). A read-only Fable
+investigation first settled: (Q1) a running program's `$27` enters **`k_47B2`** (kernel.asm),
+NOT `bdos_rdblk` (driver.asm, boot-only) — so the fix touches k_47B2 alone; (Q2) both boot/TPA
+loaders pass RR=0/RS=1 (positioning is a boot no-op, but RS≠128 must be honored); (Q3) the stock
+A/HL/RR-advance/zero-pad contract (matches grauw `_RDBLK`). Sonnet-5 impl, Opus-verified:
+- **`k_47B2` rewritten** to a faithful RDBLK: position to `FCB+33..35`, transfer ≤HL records of
+  `FCB+14..15` size (0→128), zero-pad a final partial record, `RR := RR + HL` write-back, unified
+  return (A=0 all-read / 1 EOF-first; HL=BC=records; IX=DRVA_DPB; IY=entry-DE; `$F306` clear).
+  3b-relocation (veneer `jp k47b2_body` at `$47B2`, body in the `$75A5` free corridor).
+  `bdos_rdblk`/`rdb_recloop_body` (boot MSXDOS.SYS path) **byte-identical** (driver.asm 0-diff).
+- **Live-oracle round-trip PASS** (new `disk_probe_rdblk_roundtrip.py` + `rdblk_rt.asm`):
+  cases mid-file(RR=1)/EOF-zero-pad(300B)/at-EOF all **byte-identical to National_CF-3300** (DTA +
+  return snapshot). Host test `test_rdblk_randrecord.py` (31/31). Boot regression PASS (BDOSX ran
+  → both k_47B2 paths). Tier-1: 16384 B, 28 ds-anchors identical (jp-operand relocation only).
+- **My gate-prediction was WRONG (honest correction):** I predicted the gate stays byte-for-byte
+  RED. It **converged** — BDOSX `0x0300` 11→8 unexcused (RR write-back makes BDOSX partly match
+  stock even at RR=0). Good direction, no regression, still 4/6 (BDOSX RED pending the deferred
+  pieces). **Exerciser lesson:** a bare FOPEN→`$27` reads zeros/EOF on BOTH machines — the FCB
+  must be name-filled AND `$27` needs the BDOSX-style FOPEN→RDSEQ×2→SETRND preamble to establish
+  extent state; capture must exclude FCB+32 (CR) / FCB+25 (dirloc).
+- **Still open (unchanged, none forced):** to GREEN BDOSX still needs (i) `$24` SETRND real
+  `$50C8` — but its stock contract is anomalous (leaves RR=1 *constant*, ≠ the DOS-2 formula), so
+  it needs its OWN black-box characterisation first; (ii) FCB-copy **CR bookkeeping** in the
+  sequential worker (stock advances copy+32 per record; ours doesn't). Plus (iii) WRSEQ disk-full
+  onset lag (P2).
+
 **[Tier-C → BIGGER] HARD-STOP: the case-2 dig uncovered a vacuous acceptance gate + a live
 create-file regression in `main`. Surfaced to user 2026-07-04 (2nd time this thread).**
 The Fable-solo root-cause investigation (dispatched after the user chose "investigate root
