@@ -140,6 +140,15 @@ probe: $(ROM) $(DISK_ROM) $(DISK_TEST_DSK)
 bdos-acceptance: $(DISK_ROM)
 	python3 probes/disk/disk_bdos_acceptance.py $(if $(ONLY),--only $(ONLY),)
 
+# Standing Disk-BASIC acceptance gate: the BASIC-side counterpart of bdos-acceptance.
+# Replays the self-asserting disk_probe_* differentials over the Disk-BASIC verb
+# surface (FILES/OPEN/FIELD/GET/PUT/SAVE/LOAD/...) and asserts each still converges to
+# the oracle. HEAVY + oracle-dependent (needs `make machines-oracle` + the seed image
+# + your CF-3300 reference ROMs); NOT part of the emulator-free `unit-test`. Scope with
+# `make diskbasic-acceptance ONLY=FIELD`. See disk/docs/diskbasic-acceptance-spec.md.
+diskbasic-acceptance: $(DISK_ROM) $(DISK_TEST_DSK)
+	python3 probes/disk/diskbasic_acceptance.py $(if $(ONLY),--only $(ONLY),)
+
 # The mechanical half of the clean-room paper-trail audit: forbidden-source scan
 # + per-file attestation (gating) and disk section-citation presence (advisory).
 # Cheap, read-only, no emulator -- run it on demand / in CI so the citation
@@ -155,4 +164,5 @@ clean:
 	rm -rf $(BUILD)
 
 .PHONY: all disk patches tape-patches machines machines-oracle install \
-        test-dsk unit-test coverage probe bdos-acceptance audit-citations clean
+        test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
+        audit-citations clean

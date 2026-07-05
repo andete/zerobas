@@ -83,6 +83,26 @@ byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
 
 ## Open (awaiting next sync)
 
+**2026-07-05 — Disk-BASIC acceptance gate built; two items for review:**
+- **[JUDGMENT CALL, deviated from sign-off] Smoke probes KEPT, not retired.** Sign-off (decision 2)
+  said retire `diskbasic_probe_filechannel/files/format`. On execution I found they are **cited
+  provenance anchors** (the Phase-2 spikes that first recorded the file-channel contract / FILES
+  format / CALL FORMAT dispatch, cited in [file-channel-protocol.md](file-channel-protocol.md) +
+  [basic/PROVENANCE.md](../../basic/PROVENANCE.md)). Deleting them breaks the provenance trail
+  (dual-mission), so I took the conservative reversible path: **kept them + added a header banner**
+  marking each "provenance-capture, NOT part of the gate." Achieves decision 2's intent (no
+  false-coverage) without the citation loss. **Flag if you'd still prefer deletion.**
+- **[REAL BUG the gate caught — needs its own investigation] Binary BSAVE-to-disk is broken.**
+  `make diskbasic-acceptance` baseline = **22/23**; the red cell is `disk_probe_save.py`:
+  tokenised `SAVE"A:"→RUN"A:"` PASSES, but binary **`BSAVE"A:SV.BIN",&HC000,&HC010 →
+  BLOAD"A:SV.BIN"` round-trips all-zeros** (saved region doesn't come back; `,R` exec-handoff
+  fails as a consequence: PC defaults to start, sentinel unchanged). No ROM changed this session, so
+  it is **pre-existing** — the gate simply never existed to catch it (TODO.md L148/167 overclaimed
+  BSAVE`"A:"` all-pass). The `,R` check has been in the probe since the harness came home (ea46988).
+  Root-cause TBD (do_bsave/do_disk_bload path in [basic/save.asm](../../basic/save.asm) /
+  [basic/bload.asm](../../basic/bload.asm)); **not the gate's fault — gate correctly stays red.**
+  Decision needed: schedule a fix milestone now, or park it. Not forced.
+
 **RESOLUTION 2026-07-05 — M33+M32 DONE (signed-off spec
 [tier2-m33-m32-fcb-position-spec.md](tier2-m33-m32-fcb-position-spec.md); user chose "full
 byte-identity" for CR-bookkeeping + "implement correctly" for `$24`).** Sonnet-5 impl, Opus-verified:

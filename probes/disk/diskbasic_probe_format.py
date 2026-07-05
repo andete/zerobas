@@ -4,6 +4,12 @@
 
 """Phase-2 Step-0b spike — black-box the `CALL FORMAT` dispatch on Disk BASIC.
 
+NOTE — PROVENANCE-CAPTURE SPIKE, NOT part of the acceptance gate. It recorded the
+CALL FORMAT dispatch evidence (cited in disk/docs/file-channel-protocol.md) and
+does not self-assert. The standing regression differential for CALL FORMAT is
+disk_probe_format.py, run by `make diskbasic-acceptance` (see
+disk/docs/diskbasic-verb-coverage.md). Kept for its provenance citations.
+
 Complements diskbasic_probe_filechannel.py. The file verbs are built-in tokens
 that leave PROCNM ($FD89) zero. `CALL FORMAT` / `_FORMAT` is instead a CALL-
 dispatched extended statement, routed through the STATEMENT expansion ($4004),

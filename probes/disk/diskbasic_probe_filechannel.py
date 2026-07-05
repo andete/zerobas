@@ -4,6 +4,12 @@
 
 """Phase-2 Step-0 spike — black-box the MSX Disk BASIC file-channel contract.
 
+NOTE — PROVENANCE-CAPTURE SPIKE, NOT part of the acceptance gate. It recorded
+observed facts (cited in disk/docs/file-channel-protocol.md) and does not
+self-assert. The standing regression differentials for these verbs are
+disk_probe_filewrite/fileread/append.py, run by `make diskbasic-acceptance`
+(see disk/docs/diskbasic-verb-coverage.md). Kept for its provenance citations.
+
 Drives the REAL National CF-3300 Disk BASIC (a genuine MSX1 disk machine) through
 a full sequential file-channel sequence and logs every DSKIO ($4010) call's input
 registers + carry (read/write direction), to learn how `OPEN`/`PRINT#`/`INPUT#`/

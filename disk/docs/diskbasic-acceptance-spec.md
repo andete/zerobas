@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # Disk-BASIC acceptance gate — spec (for sign-off, not yet built)
 
-**Status:** DRAFT, awaiting sign-off. Nothing here is implemented yet.
+**Status:** IMPLEMENTED + baselined 2026-07-05 (`make diskbasic-acceptance`, 22/23 — see
+[diskbasic-verb-coverage.md](diskbasic-verb-coverage.md) §0). Kept as the design record.
 **Companion:** [diskbasic-verb-coverage.md](diskbasic-verb-coverage.md) (the scoreboard
 this gate maintains) and, as the proven precedent, the BDOS gate
 `probes/disk/disk_bdos_acceptance.py` + [tier2-bdos-coverage.md](tier2-bdos-coverage.md).
@@ -138,10 +139,10 @@ so this spec adopts my recommended defaults **provisionally**. Say the word to c
 1. **Gate-first, backfill after.** Ship the gate over the strong existing set above **now**;
    the two thin cells (**F4**: `CLOSE`, `LINE INPUT#`) get dedicated differentials *after*,
    then join the registry. Rationale: fastest path to a live regression net.
-2. **Retire the smoke probes.** `diskbasic_probe_filechannel` / `diskbasic_probe_files` /
-   `diskbasic_probe_format` assert nothing and are superseded by the `disk_probe_*`
-   differentials above — remove them so they can't read as coverage. (Their scenarios are
-   already covered by the gated probes; this loses no real assertion.)
+2. **Retire the smoke probes.** ~~Remove `diskbasic_probe_filechannel/files/format`.~~
+   **REVISED ON EXECUTION → KEPT + annotated.** They proved to be cited provenance anchors;
+   deleting them would break the provenance trail, so each got a "provenance-capture, NOT a
+   gate" header banner instead. See coverage doc **F6** + review-queue 2026-07-05.
 3. **Plain BASIC next.** After Disk-BASIC lands, the same audit + gate for the 21
    `basic_probe_*` (vs Philips VG-8020). Tracked as a follow-on, not part of this spec.
 

@@ -4,6 +4,12 @@
 
 """Phase-2 Step-2 spike — pin the exact `FILES` listing format of real Disk BASIC.
 
+NOTE — PROVENANCE-CAPTURE SPIKE, NOT part of the acceptance gate. It recorded the
+FILES listing format (cited in basic/PROVENANCE.md §FILES and basic/files.asm) and
+does not self-assert. The standing regression differential for FILES is
+disk_probe_files.py, run by `make diskbasic-acceptance` (see
+disk/docs/diskbasic-verb-coverage.md). Kept for its provenance citations.
+
 Before zerobas implements its own `FILES` statement handler it must reproduce the
 on-screen layout the genuine National CF-3300 Disk BASIC produces: column count,
 field width, name/extension spacing, ordering, and the leading/trailing lines.

@@ -29,12 +29,33 @@ red signal.
 **Provenance / how this matrix was seeded.** ⚠️ The cells below are seeded from **static
 analysis only** — reading our own `basic/*.asm` source for the verb surface, plus a
 classifier over each probe (`grep` for oracle/reference references and for
-assert/exit-on-mismatch patterns). They are **provisional**. The BDOS scoreboard's rule
-applies here too: *don't hand-guess — seed from probe output.* The authoritative scoreboard
-is produced by actually running a consolidated gate (proposed in §3); until that gate runs
-green, treat every ✅ below as "believed covered, unconfirmed by a fresh run." No reference
-ROM was read or disassembled to build this (clean-room discipline,
-[no-reference-rom-disasm](../../README.md)).
+assert/exit-on-mismatch patterns). No reference ROM was read or disassembled to build this
+(clean-room discipline, [no-reference-rom-disasm](../../README.md)).
+
+> **Superseded by a real run (2026-07-05).** The gate now exists
+> (`make diskbasic-acceptance`, [diskbasic-acceptance-spec.md](diskbasic-acceptance-spec.md))
+> and has been run, so the cells below are **gate-confirmed**, not static guesses — see
+> §0. The run also *vindicated the caveat*: static analysis marked SAVE/BSAVE ✅, but the
+> real oracle run proves it **red** (binary `BSAVE"A:"→BLOAD"A:"` round-trips all-zeros).
+> *Don't hand-guess — seed from probe output.*
+
+---
+
+## 0. Gate baseline — `make diskbasic-acceptance`
+
+**2026-07-05 baseline: 22/23 verbs converged.** The one red cell is a real, pre-existing
+bug the gate caught on its first run (no ROM changed this session):
+
+- ❌ **SAVE/BSAVE** (`disk_probe_save.py`) — tokenised `SAVE"A:"→RUN"A:"` PASSES, but binary
+  **`BSAVE"A:SV.BIN",&HC000,&HC010 → BLOAD"A:SV.BIN"` returns all-zeros** (the saved region
+  does not come back), so the `,R` execute-on-load handoff also fails (PC defaults to start,
+  sentinel unchanged). Root-cause is a **separate investigation** (a binary-BSAVE disk
+  write/read path bug), tracked in [tier2-review-queue.md](tier2-review-queue.md); it is NOT
+  the gate's fault — the gate is behaving correctly by staying red.
+
+The other 22 verbs (all rows below except SAVE/BSAVE) converged. Re-run after any
+kernel/BASIC/ROM change; a red gate means the surface regressed. Repro:
+`make diskbasic-acceptance` (needs `make machines-oracle` + seed image + CF-3300 refs).
 
 ---
 
@@ -61,8 +82,11 @@ Legend — **Impl**: verb exists in source. **Unit**: emulator-free host test in
 **Probe**: differential/functional openMSX probe in `probes/disk/`. **Oracle style**:
 `live` = differential vs a running CF-3300 / MSX-DOS-1 black box; `artifact` = compared to
 a real stock FAT12 image read read-only per public spec
-([readonly-artifact-oracle](../../README.md)); `smoke` = runs but does **not** assert.
-**Gated**: wired into any standing regression gate (all ❌ today).
+([readonly-artifact-oracle](../../README.md)); `structural` = self-checks the produced
+bytes vs the FAT12 spec (no live black box); `smoke` = runs but does **not** assert.
+**Gated**: in `make diskbasic-acceptance`. As of the 2026-07-05 baseline (§0) **every row
+below is gated and converged (✅) except SAVE/BSAVE (❌ red — real bug)**; the per-row column
+kept ❌ only marks the pre-gate state and is now superseded by §0.
 
 ### Directory / file-management
 
@@ -77,8 +101,8 @@ a real stock FAT12 image read read-only per public spec
 
 | Verb | Impl | Unit | Probe (self-asserting) | Oracle | Gated | Notes |
 |------|:----:|:----:|------------------------|:------:|:-----:|-------|
-| SAVE | ✅ | — | `disk_probe_save` ✅ | artifact | ❌ | round-trips SAVE **and** BSAVE to a real FAT12 disk |
-| BSAVE | ✅ | — | `disk_probe_save` ✅ | artifact | ❌ | folded into save probe |
+| SAVE (tokenised) | ✅ | — | `disk_probe_save` ✅ | artifact | ✅ | `SAVE"A:"→RUN"A:"` subtest PASSES |
+| BSAVE (binary) | ✅ | — | `disk_probe_save` **❌ RED** | artifact | ❌ | **gate-caught bug**: `BSAVE"A:"→BLOAD"A:"` round-trips all-zeros; `,R` handoff fails too (§0) |
 | LOAD | ✅ | — | `disk_probe_load_disk` ✅, `disk_probe_load_embedded_nul` ✅ | artifact | ❌ | embedded-NUL regression covered |
 | RUN "file" | ✅ | — | `disk_probe_run_disk` ✅ | artifact | ❌ | |
 | MERGE | ✅ | — | `disk_probe_merge` ✅ | live | ❌ | |
@@ -118,22 +142,22 @@ a real stock FAT12 image read read-only per public spec
 
 | Verb | Impl | Unit | Probe (self-asserting) | Oracle | Gated | Notes |
 |------|:----:|:----:|------------------------|:------:|:-----:|-------|
-| CALL FORMAT | ✅ | — | `disk_probe_format` ✅ | live | ❌ | older `diskbasic_probe_format` (smoke, superseded) |
+| CALL FORMAT | ✅ | — | `disk_probe_format` ✅ | structural | ✅ | asserts formatted BPB/FAT bytes vs FAT12 spec (720K+360K); older `diskbasic_probe_format` (smoke, kept for provenance) |
 
 ---
 
 ## 3. Findings
 
-**F1 — Coverage *depth* is good; the phase-2 "oracle-validated" claim holds.** Of ~24
+**F1 — Coverage *depth* is mostly good, with one real hole the gate exposed.** Of ~24
 implemented verbs, all but two (CLOSE, LINE INPUT#) have a dedicated self-asserting probe,
-most of them live differentials against the CF-3300. This is genuinely strong. The problem
-is **not** "BASIC is untested."
+and 22 converge. But the gate's first run turned one presumed-✅ into a confirmed **❌**:
+binary **BSAVE-to-disk round-trip is broken** (§0). So "phase-2 oracle-validated" held for
+*tokenised* SAVE but overclaimed for *binary* BSAVE — precisely why a run beats a guess.
 
-**F2 — The gap is structural: no standing gate (the real "same thing that's lacking").**
-Every `Gated` cell is ❌. The ~18 Disk-BASIC differential probes are run by hand and
-asserted nowhere on an ongoing basis. `make probe` runs only 3 smoke probes
-(`disk_probe_dskio`, `basic_probe_print`, `bios_probe_tapwrite`). So a Disk-BASIC verb can
-regress with no red gate — exactly the exposure `make bdos-acceptance` closed for BDOS.
+**F2 — The structural gap is now CLOSED.** `make diskbasic-acceptance` exists and gates the
+self-asserting differentials (baseline §0). Before it, the ~18 probes were run by hand and
+asserted nowhere ongoing (`make probe` runs only 3 smoke probes) — the exact exposure that
+let the BSAVE bug sit unnoticed. This is the "same thing that was lacking," now supplied.
 
 **F3 — No scoreboard existed.** This doc is the seed; it must become probe-run-maintained,
 not hand-maintained (same rule as the BDOS scoreboard).
@@ -145,9 +169,14 @@ other probes; neither has a dedicated assert. These are the two real coverage-de
 record verbs use **live** CF-3300 differentials; the program loaders (SAVE/LOAD/RUN/BLOAD)
 use the **read-only FAT12 artifact** oracle. A consolidated gate must run both kinds.
 
-**F6 — Redundant non-asserting smoke probes.** `diskbasic_probe_filechannel`,
-`diskbasic_probe_files`, `diskbasic_probe_format` predate the `disk_probe_*` differentials
-and assert nothing. Candidates to retire or upgrade so they aren't mistaken for coverage.
+**F6 — Non-asserting smoke probes: KEPT + annotated (revised from "retire").**
+`diskbasic_probe_filechannel/files/format` predate the `disk_probe_*` differentials and
+assert nothing. Sign-off said retire them, but they turned out to be **cited provenance
+anchors** — the spikes that first recorded the file-channel contract, FILES format, and
+CALL FORMAT dispatch, cited in [file-channel-protocol.md](file-channel-protocol.md) and
+[basic/PROVENANCE.md](../../basic/PROVENANCE.md). Deleting them would break the provenance
+trail (dual-mission). So each now carries a header banner marking it *provenance-capture,
+NOT part of the acceptance gate* — kills the false-coverage risk without losing the citation.
 
 **F7 — Out of scope (not gaps).** `LOC`, `DSKI$`, `DSKO$` are unimplemented (no token) —
 Phase-3 direct-sector territory. Excluded from the coverage denominator.
@@ -186,5 +215,10 @@ Mirror `make bdos-acceptance`:
 
 ## 5. Status
 
-- **2026-07-05** — doc created; matrix seeded from static analysis (§ provenance note).
-  No gate exists yet. Awaiting sign-off on §4 open decisions before any implementation.
+- **2026-07-05** — doc created; matrix seeded from static analysis.
+- **2026-07-05** — **gate built + baselined (signed off).** `make diskbasic-acceptance`
+  (`probes/disk/diskbasic_acceptance.py`) implemented; first run = **22/23** (§0). Decisions:
+  (1) gate-first ✅ done; (2) smoke probes **kept + annotated**, not retired (F6, provenance);
+  (3) plain-BASIC audit = follow-on. Open work: the SAVE/BSAVE red cell (binary-BSAVE disk
+  bug → [tier2-review-queue.md](tier2-review-queue.md)) and the F4 backfill (dedicated
+  CLOSE + LINE INPUT# differentials).
