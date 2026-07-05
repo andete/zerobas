@@ -19,6 +19,33 @@ changes a signed-off plan.
 Entry format: **[Mx.y / §8.zz]** what I decided · why · alternative · confidence ·
 undo. Newest first.
 
+**RESOLUTION 2026-07-05 — Tier-C cases 3/4/5 DONE (user: "finish up Tier-C"; both
+forks "fix to byte-identity").** Signed-off spec
+[tier2-m35-m36-tierc-fixes-spec.md](tier2-m35-m36-tierc-fixes-spec.md). Three new
+BDOSX-family exercisers authored (bdosx5/6/7), characterised vs the CF-3300:
+- **Case 3 (dir-full): byte-identical, no fix.** FMAKE on a root-dir-full fixture =
+  stock (A=FF); folded into the gate (1 allowlisted FOPEN-miss L). Committed first.
+- **Case 5 (FREN collision) → M35:** ours renamed onto an existing name (A=00,
+  namespace corruption); stock refuses (A=FF). Fix = `fren_body` `fat_find`s the new
+  name first → `fren_miss` (A=FF, kernel mirrors L=FF). ~12 B in-place.
+- **Case 4 (WRRND past-EOF) → M36:** ours' random write past EOF returned success but
+  didn't grow the file. **SCOPE JUDGMENT CALL (surfaced + approved):** a read-only
+  artifact-oracle check found stock **persists** the extended size to the on-disk
+  DIRENT (256→768), so an FCB-only bump would be VACUOUS — I flagged the scope growth
+  and the user approved the full fix (FCB + dirent). `wrrnd_extend` grows FCB+16..19
+  AND patches dirent+28..31 (fren_body idiom, not fat_dir_update); bdosx6 re-FOPENs to
+  prove persistence.
+- **Verified:** bdosx6/bdosx7 differentials byte-identical (bar documented date/dirloc
+  + FREN/RDRND undefined-register classes); direct ours-run dirent read = 768 = stock
+  (anti-vacuity). Gate **11/11** (BDOSX6+7 folded in). Unit **34/34** (2 new host
+  tests). Tier-1 16384 B, 0 `k_*` moved, FDC window clean, md5 unchanged.
+- **Sonnet self-caught bug (logged):** M36's first draft leaked the size-compare Cy=1
+  as a false I/O error on every within-file WRRND; its new host test caught it before
+  my differential. Fixed via a Cy-clearing `wre_noext` early-out.
+- **Tier-C (the adversarial/boundary suite) is now COMPLETE** — all 5 cases landed
+  byte-identical; the disk-full/dir-full/past-EOF-random/rename-collision corners are
+  standing gate guards.
+
 **RESOLUTION 2026-07-05 — M34 WRSEQ disk-full onset parity DONE (user chose "fix to
 byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
 [tier2-m34-wrseq-diskfull-spec.md](tier2-m34-wrseq-diskfull-spec.md).

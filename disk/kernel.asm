@@ -1853,6 +1853,101 @@ fhfc_found:
                 or      a                   ; Cy = 0 -- a free cluster exists
                 ret
 
+; wrrnd_extend — M36 (tier2-m35-m36-tierc-fixes-spec.md §M36): WRRND ($22)
+; past-EOF file-size extension. Called by wrrnd_body (below, in the kernel.asm
+; tail) right after the record's write_sector succeeds, BEFORE the CR side
+; effect -- growing the file's recorded size when a random-record write lands
+; past the previous end-of-file, exactly like stock. PLACEMENT: this
+; position-free corridor (0 canonical entries, no FDC window, ample slack),
+; not wrrnd_body's own tail (already tight against the $7F80 FDC-window
+; guard) -- same relocation idiom as wrseq_writeback/setrnd_body above.
+;
+; in:  IX = kernel FCB-copy pointer ($DA40); ix+16..19 = current size (LE),
+;      ix+33 = r0 (the record just written, 0..255), ix+1 = 11-byte 8.3 name.
+; out: ix+16..19 updated in place if the write extended the file; the on-disk
+;      directory entry is patched to match (see step 2). Cy=1 = I/O error
+;      finding/writing the directory entry (caller must treat as wrrnd_ioerr);
+;      Cy=0 otherwise (including the "no extension needed" no-op path).
+; Trashes AF/BC/DE/HL; IX preserved (fat_mount/fat_find/write_sector touch no IX).
+;
+; Step 1: newsize = max(oldsize, (r0+1)*RECSIZE). (r0+1) is computed as a
+; 16-bit value BEFORE the x128 shift (r0 <= 255 -> r0+1 <= 256, safe in HL);
+; the product is <= 32768 ($8000), so it always fits 16 bits and its own
+; (would-be) +18/+19 word is 0 -- no separate high-word compute needed. If
+; the CURRENT size's own high word (ix+18/19) is nonzero, oldsize is already
+; >= 65536 > any possible newsize, so old wins outright (skip). Otherwise a
+; plain 16-bit unsigned compare of newsize against oldsize's low word decides
+; it: newsize <= oldsize skips the whole extension (this is what keeps every
+; happy-path within-file WRRND, including BDOSX3 rec18-20, byte-unchanged).
+wrrnd_extend:
+                ld      a, (ix+18)
+                or      (ix+19)
+                ret     nz                  ; oldsize >= 65536 -- old wins, no extension
+                ld      a, (ix+33)          ; A = r0
+                ld      l, a
+                ld      h, 0
+                inc     hl                  ; HL = r0+1 (<= 256, safe before the x128 shift)
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl              ; HL = (r0+1)*RECSIZE = newsize (<= 32768)
+                ld      e, (ix+16)
+                ld      d, (ix+17)          ; DE = oldsize (low word; high word already 0 here)
+                push    hl                  ; keep newsize
+                or      a
+                sbc     hl, de              ; HL = newsize - oldsize
+                pop     hl                  ; HL = newsize again (sbc preserved it via the push)
+                jr      c, wre_noext        ; newsize < oldsize -- no extension
+                jr      z, wre_noext        ; newsize == oldsize -- no extension
+                ; --- extending: HL = newsize; store into ix+16..19 (+18/+19 = 0) ---
+                push    hl                  ; preserve newsize across the dirent-persist work
+                ld      (ix+16), l
+                ld      (ix+17), h
+                ld      (ix+18), 0
+                ld      (ix+19), 0
+                ; --- Step 3: persist to the on-disk directory entry -----------------
+                ; Mirror fren_body's in-place idiom: ensure geometry is mounted, then
+                ; fat_find the file's own name (ix+1) -> HL = &dirent in SECTOR_BUF,
+                ; FAT_DIRSEC = its sector. Patch dirent+DIRENT_FILESIZE (+28..31) only
+                ; -- leave +26/27 (first cluster) and the name untouched (do NOT call
+                ; fat_dir_update: it rewrites first-cluster from BDOS_WRFIRST, which is
+                ; the SEQUENTIAL-write bookkeeping cell, not meaningful for a file
+                ; opened for random access -- WRRND must not touch first-cluster).
+                push    ix
+                pop     de
+                call    fat_mount
+                jp      c, wre_ioerr
+                push    ix
+                pop     de
+                inc     de                  ; DE -> FCB+1 (11-byte 8.3 name)
+                ex      de, hl              ; HL -> name (fat_find's contract)
+                call    fat_find            ; Cy=0 found; HL = &matched dirent (in SECTOR_BUF)
+                jp      c, wre_ioerr
+                ld      de, DIRENT_FILESIZE
+                add     hl, de              ; HL -> dirent+28 (file size field)
+                pop     de                  ; DE = newsize (restore across fat_mount/fat_find)
+                ld      (hl), e
+                inc     hl
+                ld      (hl), d
+                inc     hl
+                ld      (hl), 0
+                inc     hl
+                ld      (hl), 0             ; dirent+28..31 = newsize (32-bit LE; hi word 0)
+                ld      de, (FAT_DIRSEC)
+                ld      hl, SECTOR_BUF
+                call    write_sector
+                ret                         ; Cy propagates: 0 ok, 1 = wre_ioerr's caller test
+wre_ioerr:
+                pop     de                  ; discard the stacked newsize, keep the stack balanced
+                scf
+                ret
+wre_noext:
+                or      a                   ; Cy = 0 -- no extension needed, NOT an error
+                ret                         ; (the preceding sbc's Cy/Z must not leak to the caller)
+
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
                 ds      $77B8 - $, $00
@@ -3032,6 +3127,9 @@ wrrnd_body:
                 call    rrnd_sector         ; DE = absolute logical sector to persist
                 ld      hl, SECTOR_BUF
                 call    write_sector
+                jp      c, wrrnd_ioerr
+                call    wrrnd_extend        ; M36: grow ix+16..19 + the on-disk dirent if this
+                                            ; write landed past the previous end-of-file
                 jp      c, wrrnd_ioerr
                 ld      a, (ix+33)          ; CR (copy+32) := r0 (stock's random-op side effect)
                 ld      (ix+32), a

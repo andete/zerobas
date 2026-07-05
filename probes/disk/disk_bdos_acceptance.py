@@ -62,6 +62,12 @@ EXERCISERS = [
     # BDOSX5 (Tier-C case 3, dir-full). FMAKE on a root-dir-full fixture returns
     # byte-identical to stock; standing guard (one allowlisted FOPEN-miss L byte).
     ("BDOSX5", "build_bdosx5_disk.py"),
+    # BDOSX6 (Tier-C case 4, WRRND past-EOF, M36). Random write past EOF extends the
+    # file size in the FCB AND the on-disk dirent (re-FOPEN confirms), byte-identical.
+    ("BDOSX6", "build_bdosx6_disk.py"),
+    # BDOSX7 (Tier-C case 5, FREN rename-collision, M35). Rename onto an existing name
+    # is refused (A=FF), byte-identical to stock; source + dest left intact.
+    ("BDOSX7", "build_bdosx7_disk.py"),
 ]
 
 CMD_RE = re.compile(r"(python3\s+probes/disk/disk_probe_diff\.py\s+.*)$")
@@ -133,6 +139,22 @@ ALLOWLIST = {
         # failed FMAKE couldn't create — A=FF (not-found) is pinned on both, L is the
         # undefined ancillary register (same class as BDOSX3's FOPEN-miss L above).
         0x01D6: "regs rec2 FOPEN-miss($0F) L — register UNDEFINED on the miss path (A=FF is pinned)",
+    },
+    "BDOSX6": {
+        # Tier-C case 4 (WRRND past-EOF, M36). The size extension (in-memory FCB AND
+        # the on-disk dirent, proven by the re-FOPEN size) is byte-identical to stock;
+        # residuals are all documented/ancillary classes:
+        0x021B: "FCB+20 date-lo — we intentionally do NOT stamp file dates (fat.asm; PROVENANCE date/time)",
+        0x021C: "FCB+21 date-hi — ditto (no date stamp)",
+        0x0220: "FCB+25 dirloc — accepted-cosmetic (M22a dirloc class)",
+        0x023B: "regs rec1 RDRND($21) L — ancillary register (stock mirrors L:=A on EOF; contract pins A=01)",
+    },
+    "BDOSX7": {
+        # Tier-C case 5 (FREN rename-collision, M35). The collision is now refused
+        # byte-identically (record 0 A=FF; source survives; dest intact); residuals:
+        0x01D1: "FCB+25 dirloc — accepted-cosmetic (M22a dirloc class)",
+        0x01E3: "regs rec0 FREN($17) H — register UNDEFINED on return (contract pins A only)",
+        0x01E4: "regs rec0 FREN($17) L — ditto (undefined; A=FF is pinned)",
     },
 }
 

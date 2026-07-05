@@ -1237,7 +1237,8 @@ ffb_miss:
                 ret
 
 ; fren_body — MSX-DOS-1 kernel FREN ($17) canonical entry $4392's real body
-; (M26, tier2-m26-spec.md). CLEAN-ROOM: reuses fat_mount/fat_find exactly as
+; (M26, tier2-m26-spec.md; M35 tier2-m35-m36-tierc-fixes-spec.md §M35 adds the
+; collision pre-check below). CLEAN-ROOM: reuses fat_mount/fat_find exactly as
 ; fopen_fill_body does above (M21a) -- searches the root directory for the
 ; FCB's OLD 8.3 name (+1..11, CP/M rename convention), then overwrites the
 ; matched directory entry's name field in place with the NEW 8.3 name
@@ -1246,6 +1247,16 @@ ffb_miss:
 ; FAT_DIRSEC holding that entry's own sector number -- exactly the state
 ; needed to write it back in place; no separate directory-entry-address
 ; bookkeeping is needed beyond what fat_find already provides.
+;
+; M35 collision pre-check (bdosx7 differential, Tier-C case 5): before the
+; OLD-name find + rename, run a pure existence test on the NEW name
+; (FCB+17..27) -- if it is already present, stock refuses the rename (A=$FF,
+; mirroring fren_miss's exit) rather than silently producing a duplicate
+; directory entry. fat_find takes no IX input and touches no IX-addressed
+; state (confirmed: fat_find_body/ff_secloop/ff_found only use AF/BC/DE/HL),
+; so IX (the FCB pointer, loaded once at entry) survives this extra call
+; unclobbered and is simply re-derived into DE for the real old-name find
+; below, byte-unchanged from the pre-M35 body.
 fren_body:
                 push    de
                 pop     ix                  ; IX = FCB pointer
@@ -1253,6 +1264,14 @@ fren_body:
                 pop     de
                 call    fat_mount
                 jp      c, fren_miss
+                ; --- M35 collision pre-check: new name (FCB+17) must NOT already exist ---
+                push    ix
+                pop     hl
+                ld      bc, 17
+                add     hl, bc              ; HL -> FCB+17 (new 8.3 name, fat_find's contract)
+                call    fat_find            ; Cy=0 -> new name FOUND (collision)
+                jp      nc, fren_miss       ; refuse the rename, stock-matching A=$FF exit
+                ; --- fall through: new name is free; proceed with the OLD-name find + rename ---
                 push    ix
                 pop     de
                 inc     de                  ; DE -> FCB+1 (old 8.3 name)

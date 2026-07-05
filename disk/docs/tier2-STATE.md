@@ -164,14 +164,17 @@ any future zerobas-disk work (e.g. the deferred multi-hardware variant layer,
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — all tracked write-path follow-ons CLOSED (2026-07-05)
-**The FDC-window + write-path remediation is COMPLETE**, and every tracked follow-on that grew out
-of it has now landed byte-identical: `$26` WRBLK + real `$23` FSIZE (M28), bdosx.asm out-of-contract
-(F5), WRBLK position-cursor perf (M29), alloc-hint (M30), `$24` SETRND + RDSEQ FCB write-back
-(M32/M33), and **the WRSEQ disk-full onset lag (M34, 2026-07-05)** — the last P2 in the queue.
-`make bdos-acceptance` is **7/7** with BDOSX4 (disk-full) now folded in as a standing guard. No
-forced next step; the Tier-C case set (3–5: dir-full, past-EOF random I/O, rename-collision) remains
-an optional parked direction (tier2-tierC-spec.md §"Open scope questions"). Await user direction.
+## Next action — Tier-C COMPLETE + all tracked write-path follow-ons CLOSED (2026-07-05)
+**The FDC-window + write-path remediation is COMPLETE**, and every tracked follow-on has now landed
+byte-identical: `$26` WRBLK + real `$23` FSIZE (M28), bdosx.asm out-of-contract (F5), WRBLK
+position-cursor perf (M29), alloc-hint (M30), `$24` SETRND + RDSEQ FCB write-back (M32/M33), the
+WRSEQ disk-full onset lag (M34), and **Tier-C cases 3/4/5 (M35/M36, 2026-07-05)** — dir-full
+(byte-identical, no fix), FREN rename-collision (M35), WRRND past-EOF size + dirent persistence (M36).
+**Tier-C — the adversarial/boundary suite — is now COMPLETE (all 5 cases landed byte-identical).**
+`make bdos-acceptance` is **11/11** (BDOSX/2/3/0 + BDOSX4 disk-full + BDOSX5 dir-full + BDOSX6 WRRND
+past-EOF + BDOSX7 FREN-collision, all standing guards). `make unit-test` 34/34. No forced next step;
+await user direction. (Parked distant-future directions only: multi-hardware variant layer
+[[disk-hardware-target-variants]]; greenfield BASIC-extension axis [[v9990-basic-extension-idea]].)
 
 Other candidate directions (parked):
 - **Docs-as-deliverable harvest** ([[dual-mission-docs-as-deliverable]]) — now the code is

@@ -87,14 +87,20 @@ disk-image-safety rule).
    automatically). BDOSX4 folds INTO `make bdos-acceptance` once byte-identical.
    Full detail in [tier2-review-queue.md](tier2-review-queue.md). *Host layer:*
    `test_fat_alloc_cluster` already checks `Cy=1` on exhaustion.
-3. **Dir-full** *(Class 2 + host)*. On the dir-full fixture, create one more file and capture
-   the return. *Host layer:* `test_fat_dir_create` already checks the full-scan; the differential
-   proves the error surfaced to the caller matches.
-4. **Past-EOF random record I/O** *(Class 2)*. Open an FCB, seek a random record past the file
-   end, read and write; capture the return code (EOF vs unwritten-record) and register/FCB state.
-   No pure single-routine host analogue — this one is oracle-only.
-5. **Rename-collision** *(Class 2)*. Rename a file to a name that already exists; capture the
-   return. Oracle-only.
+3. **Dir-full** *(Class 2 + host)* — **LANDED 2026-07-05, byte-identical.** BDOSX5
+   (`bdosx5.asm`/`build_bdosx5_disk.py`) FMAKEs onto a root-dir-full fixture (free clusters
+   remain → isolates dir-full from disk-full). Both machines return A=FF byte-identically; folded
+   into `make bdos-acceptance` (one allowlisted FOPEN-miss L). *Host layer:* `test_fat_dir_create`.
+4. **Past-EOF random record I/O** *(Class 2)* — **LANDED 2026-07-05 (M36), byte-identical after a
+   fix.** BDOSX6 found ours' WRRND ($22) past-EOF returned success but did NOT grow the file (size
+   256 vs stock 768) — and stock **persists** the extension to the on-disk dirent. Fix
+   (`wrrnd_extend`, [tier2-m35-m36-tierc-fixes-spec.md](tier2-m35-m36-tierc-fixes-spec.md) §M36):
+   grow FCB+16..19 AND patch dirent+28..31; bdosx6 re-FOPENs to verify persistence non-vacuously.
+   Gated; RDRND EOF (A=01) + read data already matched. *Host layer:* `test_wrrnd_extend`.
+5. **Rename-collision** *(Class 2)* — **LANDED 2026-07-05 (M35), byte-identical after a fix.**
+   BDOSX7 found ours' FREN ($17) renamed onto an existing name (A=00, namespace corruption) where
+   stock refuses (A=FF). Fix (§M35): `fren_body` `fat_find`s the new name first → A=FF on
+   collision. Gated. *Host layer:* `test_fren_collision`.
 
 ## Wiring — fold Class-2 cases into the standing gate
 

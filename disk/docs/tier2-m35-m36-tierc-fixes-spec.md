@@ -148,5 +148,33 @@ size unchanged. Wire into `make unit-test`.
 4. WRBLK/RDBLK round-trips unchanged. `make unit-test` green (+ new host tests).
 5. Tier-1: disk.rom 16384 B, 0 `k_*` moved; oracle md5 unchanged.
 
-### Section 6 — Results
-_(filled in after implementation + verification.)_
+### Section 6 — Results — DONE, byte-identical (2026-07-05)
+
+Implemented by Sonnet 5, independently verified by Opus.
+
+**M35 (FREN collision):** ~12-byte in-place pre-check in `fren_body`
+([fat.asm:1264](../fat.asm)) — `fat_find` on FCB+17, `jp nc, fren_miss` on hit.
+bdosx7 differential: **record 0 FREN now A=FF** (refuses the collision, was A=00),
+**record 1 FOPEN RENSRC A=00** (source survives, was A=FF), record 2 intact. Diff
+dropped 8→3 bytes, all allowlisted classes (FCB+25 dirloc + FREN H/L undefined —
+contract pins A, same class as BDOSX3 rec14).
+
+**M36 (WRRND past-EOF):** new `wrrnd_extend` in the free corridor
+([kernel.asm:1882](../kernel.asm)), called after the record `write_sector`
+([kernel.asm:3128](../kernel.asm)). Grows `ix+16..19` = max(oldsize,(r0+1)*128) AND
+patches the on-disk dirent+28..31 (the `fren_body` `fat_find`-in-place idiom; NOT
+`fat_dir_update`, to leave first-cluster untouched). Sonnet caught + fixed a real bug
+mid-implementation (the `wre_noext` early-outs originally leaked the size-compare's
+`Cy=1` as a false I/O error on every within-file WRRND — the new host test caught it).
+bdosx6 differential: **post-WRRND FCB size = 768 both** (`wrsize` cell 0-diff),
+**re-FOPEN'd size = 768 both** (FCB+16..19 0-diff — proves the DIRENT was persisted).
+**Anti-vacuity cross-check:** direct read of the ours-run `SHORT.DAT` dirent = **768**
+(= stock). Diff dropped 7→4 bytes, all allowlisted (FCB+20/21 date, +25 dirloc,
+RDRND L-mirror). RDRND EOF (A=01) + delivered read data already byte-identical.
+
+**Gate:** `make bdos-acceptance` = **11/11 converged** (BDOSX6 both regions + BDOSX7
+folded in with the documented-class allowlists; all happy-path exercisers still
+pass — no regression). **Unit tests 34/34** (+ `test_fren_collision`,
+`test_wrrnd_extend`). **Tier-1:** disk.rom 16384 B; 0 `k_*` canonical moved; FDC
+window `$7F80-$7FBF` clean $00 (fat_find_body shifted to `$7F3E`, 66 B clear of the
+guard, which never fired). Oracle `test.dsk` md5 unchanged.
