@@ -24,6 +24,7 @@ init:
                                             ; (e.g. zerobas-disk in slot 3-1) since
                                             ; our own INIT never returns to the scan
                 call    show_title          ; startup header lines
+                call    autoexec_run        ; auto-run AUTOEXEC.BAS if present (cload.asm)
                 jp      repl                ; read/eval loop (never returns)
 
 ; --- tokenise: ASCII line -> token stream ----------------------------------

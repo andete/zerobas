@@ -524,3 +524,60 @@ dpl_oom:
                 ld      (ERRMARK),a
                 ld      hl,err_prog_mem
                 jp      print_string
+
+; --- autoexec_run: cold-start AUTOEXEC.BAS auto-run (disk/docs/autoexec-bas-spec.md) ---
+; Called once from interp.asm's `init`, between the startup banner (show_title)
+; and the REPL (jp repl). Public spec (MSX2 Technical Handbook, Ch.3 MSX-DOS,
+; boot procedure, an allowed source): "When MSX-DOS is not invoked and DISK-BASIC
+; starts, if a BASIC program named AUTOEXEC.BAS exists, it will be carried out."
+; Absent / empty -> silent, normal startup (black-box characterised on
+; National_CF-3300; see disk/docs/autoexec-bas-spec.md §2).
+;
+; This is the do_run disk pattern (do_run, above) minus the command parser, plus
+; a SILENT presence probe up front: disk_prog_load's own not-found path is the
+; noisy load_error (right for a typed RUN"missing", wrong for a boot-time probe
+; that must stay quiet on the common no-AUTOEXEC.BAS case). So we fat_mount +
+; fat_find ourselves first and ret quietly on "no disk" / "not found" / "empty",
+; only reaching disk_prog_load once a non-empty file is confirmed present.
+autoexec_run:
+                ; (1) no disk ROM recorded by the INIT scan -> silent skip (same
+                ; gate disk_prog_load uses).
+                ld      a,(DISKSLOT_OK)
+                or      a
+                ret     z
+                ; (2) stage the upcased 11-byte 8.3 name at DISK_FCB_NAME.
+                ld      hl,autoexec_name
+                ld      de,DISK_FCB_NAME
+                ld      bc,11
+                ldir
+                ; (3) silent presence probe: mount, then search the root dir.
+                call    fat_mount
+                ret     c                   ; no / bad disk -> silent skip
+                ld      hl,DISK_FCB_NAME
+                call    fat_find
+                ret     c                   ; not found -> silent skip
+                ; (4) empty file (size == 0, all 4 LE bytes) -> silent skip,
+                ; matching stock's silent behaviour on a 0-byte AUTOEXEC.BAS.
+                ld      hl,FAT_FILESIZE
+                ld      a,(hl)
+                inc     hl
+                or      (hl)
+                inc     hl
+                or      (hl)
+                inc     hl
+                or      (hl)                ; Z iff size == 0 (all 4 bytes)
+                ret     z
+                ; (5) found & non-empty -> load the tokenised program, then RUN
+                ; it (clear_vars + control-flow reset), and fall through to the
+                ; caller's `jp repl`. disk_prog_load re-opens via fat_io_open
+                ; (mount+find+prime again) -- cheap, reuses the whole loader; a
+                ; load failure lands in disk_prog_load's load_error (prints +
+                ; leaves an empty store), so the trailing run_prog is then a
+                ; harmless no-op (error-then-Ok, per spec §3 point 5).
+                call    disk_prog_load
+                jp      run_prog
+
+; --- autoexec_name: the upcased 11-byte 8.3 name we probe for on cold start ---
+; "AUTOEXEC" (8) + "BAS" (3) = exactly 11 non-space characters -- no padding
+; needed (see disk/docs/autoexec-bas-spec.md §3 point 2).
+autoexec_name:  db      "AUTOEXECBAS"

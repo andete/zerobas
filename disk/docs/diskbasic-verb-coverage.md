@@ -229,6 +229,12 @@ Mirror `make bdos-acceptance`:
 ## 5. Status
 
 - **2026-07-05** — doc created; matrix seeded from static analysis.
+- **2026-07-05** — **`AUTOEXEC.BAS` auto-run implemented** (stock-parity feature our disk ROM
+  lacked; spec [autoexec-bas-spec.md](autoexec-bas-spec.md)). New `autoexec_run`
+  (basic/cload.asm) hooked at cold start; gate gains an `AUTOEXEC` cell
+  (`disk_probe_autoexec.py`, differential vs CF-3300 + negative + empty-file), verified green
+  individually (full 24-cell sweep pending). This unblocks the `.bas`-on-disk harness (zero
+  keyboard typing) that replaces the fragile `type`-injection probes.
 - **2026-07-05** — **gate built + baselined (signed off).** `make diskbasic-acceptance`
   (`probes/disk/diskbasic_acceptance.py`) implemented. First run = 22/23; the one red cell
   (SAVE/BSAVE) was investigated and proven a **flaky-probe false positive** (openMSX

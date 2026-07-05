@@ -86,6 +86,7 @@ REGISTRY = [
     ("LOAD(NUL)",      "disk_probe_load_embedded_nul.py",[], "artifact"),
     ("RUN\"file\"",    "disk_probe_run_disk.py",        [], "artifact"),
     ("BLOAD",          "disk_probe_bload_disk.py",      [], "artifact"),
+    ("AUTOEXEC",       "disk_probe_autoexec.py",        [], "live"),
 ]
 
 

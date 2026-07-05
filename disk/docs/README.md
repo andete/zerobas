@@ -37,7 +37,9 @@ investigation **notebooks** distil settled contracts into **product specs**.
 - [tier2-architecture-audit.md](tier2-architecture-audit.md) — BIOS-agnostic disk ROM for C-BIOS (CF-3300 = oracle).
 - [tier2-bdos-scope.md](tier2-bdos-scope.md) · [tier2-bdos-spec.md](tier2-bdos-spec.md) · [tier2-bdos-coverage.md](tier2-bdos-coverage.md) — BDOS sizing fork, the $0005-intercept spec, and the coverage scoreboard.
 - [diskbasic-verb-coverage.md](diskbasic-verb-coverage.md) — Disk-BASIC verb coverage scoreboard + acceptance-gate scope (the BASIC-side counterpart of the BDOS coverage/gate work).
-- [diskbasic-acceptance-spec.md](diskbasic-acceptance-spec.md) — spec for the `make diskbasic-acceptance` standing gate (awaiting sign-off).
+- [diskbasic-acceptance-spec.md](diskbasic-acceptance-spec.md) — spec for the `make diskbasic-acceptance` standing gate (implemented, 23/23).
+- [diskbasic-bas-harness-spec.md](diskbasic-bas-harness-spec.md) — pilot spec for the `.bas`-on-disk test harness (robust replacement for `type`-injection probes).
+- [autoexec-bas-spec.md](autoexec-bas-spec.md) — spec for `AUTOEXEC.BAS` auto-run (stock-parity feature + the harness's zero-typing launch lever).
 - [tier2-workarea-map.md](tier2-workarea-map.md) — the $F100–$F3FF DOS work area the disk ROM builds at boot.
 
 ## Milestone specs — clean-room provenance (cited from the `.asm` source; keep)
