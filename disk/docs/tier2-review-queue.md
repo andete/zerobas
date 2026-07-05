@@ -23,6 +23,30 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**RESOLUTION 2026-07-05 — M33+M32 DONE (signed-off spec
+[tier2-m33-m32-fcb-position-spec.md](tier2-m33-m32-fcb-position-spec.md); user chose "full
+byte-identity" for CR-bookkeeping + "implement correctly" for `$24`).** Sonnet-5 impl, Opus-verified:
+- **M33** RDSEQ FCB position write-back — `wrseq_body`'s read branch (NOT the shared `bdos_seqread_body`
+  — that would corrupt RRND/boot; a hazard I caught in my own spec before dispatch) mirrors
+  CR/EX/current-cluster/index into the `$DA40` FCB copy; new `BDOS_SEQREC` ($E814) seeded by FOPEN.
+  **Byte-identical to CF-3300** across a read sweep + extent roll (bar `+25` dirloc).
+- **M32** correct `$24` SETRND at the pinned `$50C8` (`C3` veneer, net-zero): `rr=cr+ex*128+s2*4096`,
+  an intended documented divergence from stock's `RR:=1` stub. Positive test K=3→3/K=129→129. **Exit
+  regs pinned to stock** (A=`$25`, HL=`$0025`) — only the rr value diverges.
+- **Two honest corrections during verify:** (a) my first `setrnd_body` exited A=`$00`/HL=`$0000`; the
+  BDOSX snap showed stock exits A=`$25`/HL=`$0025` (dispatcher passthrough) — fixed to match. (b) My
+  spec §5 predicted "correct `$24` does NOT green the gate"; WRONG — implementing §4's intent (don't
+  gate the `$24`-chained path; test `$27` with an explicit record) I broke the chain in `bdosx.asm`
+  (FCB+33..35:=1 before `$27`) so the DTA converges → `make bdos-acceptance` now **6/6 ALL CONVERGED**
+  (was 4/6, BDOSX RED). Gate got greener AND stricter (no byte hidden; only date+M22a-cosmetic excused,
+  same as BDOSX3). `$24` verified standalone; `$27` still 3/3 via M31's dedicated probe.
+- **JUDGMENT CALL (log):** breaking the `bdosx.asm` `$24`→`$27` chain + adding a BDOSX allowlist entry
+  is a gate-exerciser change realizing signed-off §4 ("the dedicated probe" tests `$27`). It flips the
+  earlier "stays RED" expectation to green. Flagged in my report for veto; alternative = leave BDOSX RED
+  on the intended cascade (noisier CI, hides future regressions behind a known failure).
+- **No regression:** unit 31/31; `bdos_seqread_body`/`driver.asm` byte-unchanged; Tier-1 16384 net-zero;
+  oracle md5 unchanged.
+
 **CHARACTERISED 2026-07-05 — M33 RDSEQ FCB write-back ("CR bookkeeping") DONE; fix is a scope fork
 (surfaced to user).** Doc [tier2-m33-crbookkeeping-char.md](tier2-m33-crbookkeeping-char.md) (user
 chose "characterize it next"). Stock steps the user FCB every read (`+32` CR = K mod 128, `+12` EX =

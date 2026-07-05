@@ -1220,6 +1220,11 @@ ffb_rcok:
                 ld      de, BDOS_BYTESLEFT
                 ld      bc, 4
                 ldir
+                ; M33 (tier2-m33-m32-fcb-position-spec.md §2.1): reset the
+                ; per-open RDSEQ records-delivered counter alongside the other
+                ; read-iterator seeding above (wrseq_writeback increments it).
+                ld      hl, 0
+                ld      (BDOS_SEQREC), hl
                 xor     a
                 ld      ($F306), a          ; M20 dispatcher-flag rule
                 ld      hl, 0

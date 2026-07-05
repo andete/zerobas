@@ -173,6 +173,26 @@ w50a9_stub:
                 ds      $50C4 - $, $00  ; pad up to the pinned $50C4 kernel entry
 curdrv:
                 jp      curdrv_body     ; -> free-tail: A = ($F247) current drive (M18)
+; --- MSX-DOS-1 kernel SETRND entry: $50C8 (M32; tier2-m33-m32-fcb-position-
+; spec.md §3) --------------------------------------------------------------
+; While processing BDOS $24 SETRND the relocated kernel CALLs this page-1
+; disk-ROM entry (same FCB-copy dispatcher class as M26 RDRND/WRRND: entry
+; A=$25, DE=IY=$DA40 kernel FCB copy, BC=HL=$0000, SP=$DBFE, captured
+; black-box on both machines). Carved from the $50C4-$50D5 pad (curdrv above
+; occupies $50C4-$50C6; $50C7..$50D4 was un-wired $00 pad -- 14 bytes, ample
+; for this 3-byte veneer) -- net-zero, no canonical address shifts. Was
+; un-wired $00 pad -> ours' $24 NOP-slid -> no write -> RR stayed 0. Body =
+; setrnd_body (free tail): computes the CORRECT CP/M func-36 rr = cr +
+; ex*128 + s2*4096 from the FCB-copy position fields M33 now maintains -- an
+; INTENTIONAL, DOCUMENTED divergence from stock's known-broken RR:=1 stub
+; (§4, allowlisted; ours' $27 stays independently gate-verified by M31's
+; dedicated round-trip probe, not by the BDOSX $24-chained bytes). CLEAN-
+; ROOM: hook address + register convention from black-box capture (call-
+; target + register/RAM observation, same M26 dispatcher class); rr formula
+; from the published CP/M func-36 contract; no stock ROM code decoded.
+                ds      $50C8 - $, $00  ; pad the single leftover pad byte ($50C7)
+setrnd:
+                jp      setrnd_body     ; $50C8: BDOS $24 SETRND canonical entry (M32)
                 ds      $50D5 - $, $00  ; pad up to the pinned $50D5 kernel entry
 seldsk_drv:
                 jp      seldsk_drv_body ; -> free-tail: A = ($F347) drive count (M17)
@@ -1597,6 +1617,162 @@ k47b2_nextbyte_get:
                 jp      rdblk_getbyte       ; tail-call: A=byte/Cy=0, or Cy=1 chain-end;
                                             ; either way its own `ret` is our `ret` too
 
+; wrseq_writeback — M33 (tier2-m33-m32-fcb-position-spec.md §2.2): mirror the
+; sequential-read iterator's position into the kernel FCB copy at the fixed
+; base $DA40 after a DELIVERED RDSEQ record (wrseq_body's read branch calls
+; this only when A=$00; see wrseq_body above). K = BDOS_SEQREC after this
+; call's increment (records delivered so far, 1-based).
+;   copy+32 (CR)          := K mod 128
+;   copy+12 (EX)          := K div 128         (floppy -> fits a byte, §2.2)
+;   copy+28/29 (word)     := FAT_CURCLUS       (cluster of the just-read record)
+;   copy+30               := (K-1) div recPerClus, recPerClus = FAT_SECPERCLUS*RECPERSEC
+; Does not touch copy+14/15/16/17/24/25/26/27/31 (already correct/out of scope,
+; §2.2/§1). Leaf routine: preserves A (the caller's bdos_seqread exit code)
+; across the whole body; trashes BC/DE/HL/IX (dead in wrseq_body at the call
+; site -- bdos_seqread's own exit values are only A, per the dispatcher's
+; H:=B,L:=A mirror rule already noted above). PLACEMENT: this position-free
+; corridor (same class as fdc_entloop_body/p0_env_tab/ff_secloop above --
+; 0 canonical entries, no FDC window, ample slack), not kernel.asm's own tail
+; (which is already tight against the $7F80 FDC-window guard).
+wrseq_writeback:
+                push    af                  ; preserve bdos_seqread's exit A
+                ; K := BDOS_SEQREC + 1
+                ld      hl, (BDOS_SEQREC)
+                inc     hl
+                ld      (BDOS_SEQREC), hl   ; HL = K
+                push    hl                  ; keep K on the stack (K-1 div needs it again)
+                ; copy+32 := K mod 128 (low 7 bits of K's low byte)
+                ld      a, l
+                and     $7F
+                ld      ($DA40+32), a
+                ; copy+12 := K div 128 = (HL >> 7), low byte (fits a byte, floppy range)
+                pop     hl                  ; HL = K
+                push    hl
+                ld      b, 7
+wsw_shr7:
+                srl     h
+                rr      l
+                djnz    wsw_shr7            ; HL = K >> 7
+                ld      a, l
+                ld      ($DA40+12), a
+                ; copy+28/29 := FAT_CURCLUS (word)
+                ld      hl, (FAT_CURCLUS)
+                ld      ($DA40+28), hl
+                ; copy+30 := (K-1) div recPerClus, recPerClus = FAT_SECPERCLUS*RECPERSEC
+                pop     hl                  ; HL = K
+                dec     hl                  ; HL = K-1
+                ; recPerClus = FAT_SECPERCLUS * RECPERSEC, by repeated addition
+                ; (RECPERSEC is a small compile-time constant, currently 4; this
+                ; stays correct even if it is ever redefined -- own choice, no
+                ; oracle bytes, same idiom as wshrink_divloop's repeated-sub div).
+                ld      a, (FAT_SECPERCLUS)
+                ld      c, a                ; C = FAT_SECPERCLUS (addend)
+                ld      b, RECPERSEC - 1    ; RECPERSEC-1 more additions after the seed
+wsw_recperclus:
+                add     a, c
+                djnz    wsw_recperclus      ; A = FAT_SECPERCLUS * RECPERSEC
+                ld      c, a
+                ld      b, 0                ; BC = recPerClus
+                ld      de, 0               ; DE = quotient accumulator
+wsw_divloop:
+                or      a
+                sbc     hl, bc
+                jr      c, wsw_divdone
+                inc     de
+                jr      wsw_divloop
+wsw_divdone:
+                ld      a, e                ; quotient fits a byte (floppy record range)
+                ld      ($DA40+30), a
+                pop     af                  ; restore bdos_seqread's exit A
+                ret
+
+; setrnd_body — M32 (tier2-m33-m32-fcb-position-spec.md §3.2): the real BDOS
+; $24 SETRND canonical entry ($50C8's body). Entry: DE=IY=$DA40 (kernel FCB
+; copy), A=$25 (unused). Computes the CP/M func-36 random record:
+;   ex = copy+12 (extent low), s2 = copy+14 (extent high / module 128),
+;   cr = copy+32 (current record); rr(24-bit) = cr + ex*128 + s2*4096.
+; Written to copy+33 (r0, bits 0-7), copy+34 (r1, bits 8-15), copy+35 (r2,
+; bits 16-23). On a floppy s2 is always 0 and rr < 2^16 (r2 normally 0), but
+; the math is done in full 24-bit precision per spec (cheap, and correct for
+; any s2). INTENTIONAL, DOCUMENTED divergence from stock (§4): stock writes
+; the constant rr=1 here; ours computes the true position, which M33 now
+; keeps live in copy+12/+32 after every delivered RDSEQ record (before M33
+; those were stuck at 0, which would have made this compute 0 too).
+; Exit: A=$00, H=$00, L=$00 (M26 dispatcher-class default, §3.3), $F306
+; cleared (M24 rule, own inline epilogue -- same pattern as rrnd_finish,
+; kept local since this body lives far from that tail label).
+setrnd_body:
+                push    de
+                pop     ix                  ; IX = kernel FCB-copy pointer ($DA40)
+                ; HL := cr + ex*128 (16-bit; cr<=127, ex<=255 -> max 32767, no
+                ; overflow past bit 15).
+                ld      a, (ix+12)          ; A = ex
+                ld      h, 0
+                ld      l, a
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl              ; HL = ex * 128
+                ld      a, (ix+32)          ; A = cr
+                add     a, l
+                ld      l, a
+                jr      nc, srb_nocarry1
+                inc     h
+srb_nocarry1:                               ; HL = cr + ex*128 (rr bits 0..15, s2 not yet added)
+                ; s2 contribution (24-bit): s2*4096 = ((s2 & $0F) << 12) [bits 0..15]
+                ; + (s2 >> 4) [bits 16..23] -- splits the byte shift-by-12 so no
+                ; intermediate exceeds 16 bits.
+                ld      a, (ix+14)          ; A = s2
+                ld      b, a                ; B = s2 (keep for the >>4 half below)
+                and     $0F
+                ld      c, a                ; C = s2 & $0F (0..15)
+                ld      d, 0
+                ld      e, c                ; DE = s2 & $0F
+                ld      a, e
+                or      d
+                jr      z, srb_no_lo_s2     ; low nibble 0 -> skip the <<12 shift/add
+                ; DE := (s2 & $0F) << 12 (12 doublings; DE <= 15 so DE never
+                ; exceeds 15*4096=61440, safely within 16 bits throughout)
+                ld      a, 12
+srb_shl12:
+                sla     e
+                rl      d
+                dec     a
+                jr      nz, srb_shl12       ; DE = (s2&$0F) * 4096
+                add     hl, de              ; HL += (s2&$0F)*4096 (Cy = carry into bit 16)
+                jr      srb_have_lo
+srb_no_lo_s2:
+                or      a                   ; Cy = 0 (nothing added)
+srb_have_lo:
+                ld      a, 0
+                adc     a, 0                ; A = 0/1 = the bit-16 carry, stashed before
+                                            ; the shifts below trash the flag
+                ld      c, a                ; C = stashed carry
+                ld      a, b                ; A = s2 again
+                srl     a
+                srl     a
+                srl     a
+                srl     a                   ; A = s2 >> 4 (bits 16..23 contribution)
+                add     a, c                ; propagate the stashed bit-16 carry
+                                            ; (s2>>4 <= 15, +1 carry never overflows a byte)
+                ld      (ix+33), l          ; r0
+                ld      (ix+34), h          ; r1
+                ld      (ix+35), a          ; r2
+                ; Epilogue — match stock's $24 EXIT registers exactly (§3.3, now
+                ; pinned by the acceptance capture, NOT part of the intended rr
+                ; divergence): stock passes the entry A=$25 dispatcher value
+                ; straight through and returns HL=$0000. Clear $F306 (M20 rule).
+                xor     a
+                ld      ($F306), a          ; M20 dispatcher-flag rule (A=0 here)
+                ld      h, a                ; H = $00 (stock exit)
+                ld      a, $25              ; exit A = $25 (stock dispatcher passthrough)
+                ld      l, a                ; L = $25 (= A; stock's $24 exit HL = $0025,
+                                            ; pinned by the BDOSX snap: rec4 A@0361 + L@0367)
+                ret
+
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
                 ds      $77B8 - $, $00
@@ -2319,13 +2495,30 @@ fm_fatacc:
 ; $F306 left untouched (M24 spec §5 item 4: no observed load-bearing exit HL
 ; for this entry family -- default to the kernel's own H:=B,L:=A mirror
 ; unless the acceptance diff proves otherwise).
+;
+; M33 (tier2-m33-m32-fcb-position-spec.md §2.2) added the RDSEQ FCB position
+; write-back HERE, in the read branch only -- NOT inside bdos_seqread_body,
+; which is a SHARED routine also reached by RRND $21 (rdrnd_body, kernel.asm
+; ~2697, which does its own M26 copy+32:=copy+33 bookkeeping) and by the boot
+; mini-BDOS (driver.asm bdos_entry, which must stay byte-identical). Putting
+; the write-back inside bdos_seqread_body would corrupt those other callers'
+; FCBs / the boot path, so instead the read branch's tail-jump becomes a call
+; + inline write-back + ret. Only on a DELIVERED record (A=$00 on return; on
+; A=$01 EOF, §2.3, skip it -- stock's position stops at/after EOF). Body =
+; wrseq_writeback (free tail): writes copy+32/+12/+28/29/+30 from the fixed
+; FCB-copy base $DA40 (a constant here -- no register to preserve across the
+; call). A is stashed across the write-back and restored before ret so
+; bdos_seqread's pass-through A/HL exit contract is unchanged.
 wrseq_body:
                 ld      hl, (DOS_DTAPTR)
                 ld      (BDOS_DTA), hl
                 ld      a, (BDOS_WRMODE)
                 or      a
                 jr      nz, wrseq_body_write
-                jp      bdos_seqread
+                call    bdos_seqread
+                or      a
+                call    z, wrseq_writeback  ; only on a delivered record (A=$00)
+                ret
 wrseq_body_write:
                 jp      bdos_seqwrite
 

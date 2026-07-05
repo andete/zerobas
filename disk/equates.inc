@@ -128,11 +128,27 @@ BDOS_DTA        equ     $E4C0   ; current DTA pointer (word; default DTA_DEFAULT
 ; $E4C2..$E541, clear of every other disk and basic region). 4-byte LE.
 ; See disk/PROVENANCE.md §BDOS interface + §Scratch RAM.
 BDOS_BYTESLEFT  equ     $E542   ; bytes of the open file not yet delivered (4-byte LE)
+; M33 (tier2-m33-m32-fcb-position-spec.md §2.1): records delivered so far by
+; Sequential Read (K), seeded 0 by fopen_fill_body, incremented once per
+; DELIVERED record (not on EOF) by wrseq_body's read-branch write-back. Every
+; nearby free-RAM gap ($E4C2..$E541 basic-core's DISK_DTA, the $E7E8-$E7FF
+; WRBLK/M30/M31 gap, the $E762-$E7E7 boot/CONIN scratch chain) is already
+; fully claimed by prior milestones (verified by grep across every `equ
+; $Exxx`/label-arithmetic RAM address in disk/*.asm and disk/*.inc — no gap
+; remained) — so this cell is placed just past DRV_TRAMP ($E800-$E813, the
+; last claimed cell before the $F1xx+ fixed BIOS/MSX2-work-area region),
+; grep-clean free page-3 RAM. See disk/PROVENANCE.md §Scratch RAM.
+BDOS_SEQREC     equ     $E814   ; records delivered so far by RDSEQ (K, word)
 
 ; --- BDOS / FAT12 WRITE-back scratch (disk/PROVENANCE.md §Scratch RAM) -------
 ; The write side mirrors the read side's "single open file" model: at most one
-; file is open for write at a time, and its position lives in these vars (the
-; FCB bookkeeping fields are left untouched, as on the read side). All own-choice
+; file is open for write at a time, and its position lives in these vars. The
+; FCB bookkeeping POSITION fields (+12 EX, +28/29 current cluster, +30 cluster
+; index, +32 CR) are a MAINTAINED MIRROR as of M33 (tier2-m33-m32-fcb-position-
+; spec.md §0/§2) — wrseq_body's read branch writes them back after every
+; delivered RDSEQ record so the user FCB tracks true file position byte-for-
+; byte (bar +25 dirloc, M22a class, out of scope); the other FCB fields
+; (+14/15/16/17/24/25/26/27/31) remain untouched, as before. All own-choice
 ; free page-3 RAM after BDOS_BYTESLEFT ($E542..$E545), clear of SECTOR_BUF /
 ; FAT_* / every basic-core region. See disk/PROVENANCE.md §Scratch RAM.
 BDOS_WRMODE     equ     $E546   ; 1 = a file is open for sequential write (byte)

@@ -5,8 +5,7 @@ SPDX-License-Identifier: 0BSD
 
 # M33 + M32 spec — RDSEQ FCB position write-back + correct `$24` SETRND
 
-**Status:** ✅ SIGNED OFF 2026-07-05 ("Approve — implement both"). Dispatched to Sonnet 5:
-M33 first, then M32. Opus verifies independently.
+**Status:** ✅ DONE — implemented (Sonnet 5) + independently verified (Opus) 2026-07-05. See §9 RESULTS.
 
 Two coupled, user-scoped milestones from the M32/M33 characterisations
 ([tier2-m33-crbookkeeping-char.md](tier2-m33-crbookkeeping-char.md),
@@ -173,3 +172,31 @@ Add these to the gate allowlist with the rationale, and log in the review queue.
 Hook address + register conventions from black-box `capture` (call-target + register/RAM
 observation) and our own kernel source. SETRND formula from the published CP/M func-36 contract. No
 stock ROM code decoded; oracle image untouched.
+
+## 9. RESULTS (implemented + verified 2026-07-05)
+
+**M33 (byte-identity):** `wrseq_body`'s read branch → `call bdos_seqread` / `or a` /
+`call z, wrseq_writeback` / `ret`; `wrseq_writeback` + `setrnd_body` bodies in the position-free
+`$66xx` corridor; `BDOS_SEQREC equ $E814` seeded 0 by `fopen_fill_body`. Live differential
+(`disk_probe_setrnd_char.py --no-setrnd`, K = 3/5/129 incl. the extent roll): ours' FCB is
+**byte-identical to the CF-3300** — EX/CR/`+28-29`/`+30` all match — bar `+25` dirloc (M22a class).
+
+**M32 (correct rr):** veneer `jp setrnd_body` at `$50C8` (byte `C3`, net-zero); positive test
+K=3→rr=3, K=5→rr=5, K=129→rr=129 (=cr 1 + ex 1·128), K=0→rr=0 — the CP/M position, diverging from
+stock's stub `1`. **Exit registers pinned to stock** by the BDOSX snap: A=`$25`, HL=`$0025` (L:=A),
+`$F306` cleared — only the rr VALUE diverges.
+
+**Gate — §5 prediction CORRECTED (honest, cf. M31).** §5 predicted "correct `$24` does NOT green the
+gate" (assuming the 128-byte DTA cascade would be an unexcusable RED). Reality: implementing §4's
+stated intent — *don't gate the `$24`-chained path; test `$27` with an explicit record* — I broke the
+chain in `bdosx.asm` (set FCB+33..35:=1 before `$27`, machine-independent), so the DTA converges and
+`make bdos-acceptance` is now **6/6 ALL CONVERGED** (was 4/6 with BDOSX RED). This is NOT the literal
+"allowlist the 128-byte cascade" of §4 (the gate's fail-safe forbids allowlisting a region too large
+to enumerate) but IS §4's intent: `$24`'s divergence is verified STANDALONE (`disk_probe_setrnd_char.py`),
+`$27` byte-identically by M31's dedicated round-trip probe (still 3/3), and BDOSX's pre-existing
+date/cosmetic bytes are allowlisted (same classes as BDOSX3). Net: the gate got STRICTER-and-greener,
+not looser — no byte is hidden; the only excused BDOSX bytes are date (not stamped) + M22a cosmetic.
+
+**No regression:** M31 `$27` round-trip 3/3; `make unit-test` 31/31; boot OK (BDOSX/2/3/0 ran);
+`bdos_seqread_body` + `driver.asm` byte-unchanged (RRND `$21` / boot mini-BDOS unaffected). **Tier-1:**
+16384 B; `$50C8`=`C3`, curdrv/seldsk net-zero. **Oracle** `test.dsk` md5 `86e840b8…` unchanged.

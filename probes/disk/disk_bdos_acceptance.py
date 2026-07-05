@@ -108,6 +108,13 @@ def _flag_val(argv: list[str], flag: str, default, cast):
 # exerciser is re-assembled to a different layout, the moved bytes show up as UNEXCUSED
 # (the gate stays honest). Root-caused 2026-07-04 (Fable write-path investigation).
 ALLOWLIST = {
+    "BDOSX": {
+        # Same documented classes BDOSX3 already excuses (FCB base $0300 here):
+        0x0314: "FCB+20 date-lo — we intentionally do NOT stamp file dates (fat.asm; PROVENANCE date/time)",
+        0x0315: "FCB+21 date-hi — ditto (no date stamp)",
+        0x0318: "FCB+24 devid — accepted-cosmetic (M22a dirloc class)",
+        0x0319: "FCB+25 dirloc — accepted-cosmetic (M22a dirloc class)",
+    },
     "BDOSX3": {
         0x03C4: "FCB+20 date-lo — we intentionally do NOT stamp file dates (fat.asm; PROVENANCE date/time)",
         0x03C5: "FCB+21 date-hi — ditto (no date stamp)",

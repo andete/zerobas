@@ -92,6 +92,25 @@ start:
                 ld      hl, 128
                 ld      (fcb+14), hl
 
+                ; M32/M33 (tier2-m33-m32-fcb-position-spec.md §4/§5): ours' $24
+                ; SETRND (record 4 above) now computes the CORRECT CP/M random
+                ; record -- an intentional, DOCUMENTED divergence from stock's
+                ; known-broken RR:=1 stub. Left chained, the $27 below would read a
+                ; DIFFERENT record on ours (correct position) vs stock (record 1),
+                ; so the DTA + rr write-back would diverge BY DESIGN. Per spec §4,
+                ; BDOSX does NOT gate that $24-chained path (M31's dedicated
+                ; disk_probe_rdblk_roundtrip.py verifies $27 byte-identically with
+                ; explicit records; $24's own divergence is verified standalone by
+                ; disk_probe_setrnd_char.py). So set the random record EXPLICITLY to
+                ; a fixed record (1 = the pre-M32 stock baseline) -- machine-
+                ; independent -- so $27/$26 are gated against a well-defined position.
+                ; The record-4 SETRND snapshot above still captures $24's exit regs.
+                ld      a, 1
+                ld      (fcb+33), a
+                xor     a
+                ld      (fcb+34), a
+                ld      (fcb+35), a
+
                 ; --- record 5: $27 RDBLK, 1 record (DTA -> data+256) ---
                 ld      de, data+2*128
                 ld      c, $1A
