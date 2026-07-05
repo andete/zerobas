@@ -5,7 +5,14 @@ SPDX-License-Identifier: 0BSD
 
 # `.bas`-on-disk test harness — pilot spec (SAVE/BSAVE)
 
-**Status:** DRAFT, awaiting sign-off. Nothing implemented yet.
+**Status:** PILOT IMPLEMENTED 2026-07-05. The BSAVE→BLOAD data round-trip now runs from a
+tokenised `AUTOEXEC.BAS` at cold boot (zero keyboard typing) — `probes/disk/disk_probe_save_bas.py`
+(+ `probes/disk/bas_tokenise.py`, which tokenises readable BASIC via our OWN ROM crunch), gated as
+the `BSAVE(.bas)` cell. Both captures verified (RAM read-path + offline `.dsk` write-path) and
+differential-matched vs CF-3300. **Launch mechanism = `AUTOEXEC.BAS` auto-run** (option (A), landed
+first at c4c7d68). **Follow-on:** migrate the remaining `disk_probe_save.py` cases (`,R`-exec,
+`SAVE→RUN`) onto this harness, then retire the `type`-injection probe; and generalize the pattern
+to other verbs. Kept as the design record + follow-on tracker.
 **Why:** the `type`-injection probes drive the REPL by emulated keystrokes at fixed
 emutimes; openMSX doubles the first keypress in narrow machine-specific windows, which cost
 a full false-positive bug hunt (SAVE/BSAVE — [diskbasic-verb-coverage.md](diskbasic-verb-coverage.md)

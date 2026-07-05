@@ -229,6 +229,13 @@ Mirror `make bdos-acceptance`:
 ## 5. Status
 
 - **2026-07-05** — doc created; matrix seeded from static analysis.
+- **2026-07-05** — **`.bas`-on-disk harness pilot landed** (BSAVE→BLOAD round-trip). New
+  `BSAVE(.bas)` gate cell (`disk_probe_save_bas.py` + `bas_tokenise.py`): the round-trip runs
+  from a tokenised `AUTOEXEC.BAS` at cold boot with **zero keyboard typing**, so the
+  `type`-injection failure class (which caused the SAVE/BSAVE false positive, §0) is gone for
+  this case. Both captures (RAM read-path + offline `.dsk` write-path) differential-matched vs
+  CF-3300. Registry now 25 cells. Follow-on: migrate `,R`-exec / `SAVE→RUN` then retire the old
+  `type`-injection `disk_probe_save.py`. Spec: [diskbasic-bas-harness-spec.md](diskbasic-bas-harness-spec.md).
 - **2026-07-05** — **`AUTOEXEC.BAS` auto-run implemented** (stock-parity feature our disk ROM
   lacked; spec [autoexec-bas-spec.md](autoexec-bas-spec.md)). New `autoexec_run`
   (basic/cload.asm) hooked at cold start; gate gains an `AUTOEXEC` cell
