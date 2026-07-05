@@ -23,6 +23,19 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**CHARACTERISED 2026-07-05 — M33 RDSEQ FCB write-back ("CR bookkeeping") DONE; fix is a scope fork
+(surfaced to user).** Doc [tier2-m33-crbookkeeping-char.md](tier2-m33-crbookkeeping-char.md) (user
+chose "characterize it next"). Stock steps the user FCB every read (`+32` CR = K mod 128, `+12` EX =
+K div 128, `+28/30` internal FAT current-cluster/index once clusters cross); **ours never advances
+any** — at K=0 ours==stock bar dirloc, so FOPEN is faithful and the ONLY growing divergence is the
+missing write-back. Root cause (our source): the shared `$477D` worker's read side
+`bdos_seqread_body` (kernel.asm:346) tracks position in GLOBAL cells and never writes the FCB copy at
+`DE=$DA40` (pointer already live at entry); it also lacks an absolute record counter. **Coupling:**
+the M32 "correct `$24`" reads EX/CR *from the FCB*, which stay 0 without this fix → a correct `$24`
+is useless unless CR-bookkeeping is fixed OR `$24` reads our internal state instead. **⇒ decide this
+scope BEFORE speccing `$24`.** Fork: (A) documented fields EX/CR only + allowlist `+16..31` internal
+divergence · (B) full byte-identity incl. `+28/30` · (C) defer. NOT fixed pending the answer.
+
 **CHARACTERISED 2026-07-05 — M32 `$24` SETRND black-box characterisation DONE; implementation is a
 HARD-STOP design fork (surfaced to user).** Spec/evidence
 [tier2-m32-setrnd-char.md](tier2-m32-setrnd-char.md); tooling `setrnd_char.asm` +
