@@ -83,6 +83,25 @@ byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
 
 ## Open (awaiting next sync)
 
+**[FUTURE IMPROVEMENT — parked 2026-07-05, not started] BDOS harness: replace the typed
+`.COM` launch with `AUTOEXEC.BAT` auto-run (zero typing).** The `make bdos-acceptance` gate
+(the primary 11/11 standing guard) launches each exerciser by TYPING it: `build_bdosx*_disk.py`
+pass `--keys '\rBDOSX\r' --keys-at 20` to `disk_probe_diff.py` (the leading `\r` answers the
+MSX-DOS date prompt; `BDOSX\r` runs the COM). That is the SAME openMSX key-injection class that
+caused the SAVE/BSAVE false-positive (first-keypress doubling in narrow emutime windows,
+[openmsx-probing-toolbox.md](openmsx-probing-toolbox.md) §8) — a latent flakiness sitting in our
+most important gate. **Improvement (idea from the user):** inject an `AUTOEXEC.BAT` (contents
+`BDOSX`) onto the throwaway DOS disk next to `BDOSX.COM` and drop the typed keys. **No ROM change**
+— `AUTOEXEC.BAT` is `COMMAND.COM`'s job, and `COMMAND.COM` is stock MSX-DOS 1.03 loaded from the
+disk (identical on ours + CF-3300, disk-resident), unlike `AUTOEXEC.BAS` which we had to implement
+in our Disk-BASIC ROM. Standard MSX-DOS also **skips the date prompt** when `AUTOEXEC.BAT` exists,
+so the leading `\r` goes away too → zero typed input. Bonus: exercises a bit more of the DOS path.
+**Verify-first (black-box, like the AUTOEXEC.BAS experiment `scratchpad/autoexec_probe.py`):**
+confirm MSX-DOS 1 (a) auto-runs `AUTOEXEC.BAT` and (b) skips the date prompt, on the CF-3300 AND
+ours. **Scope:** ~8 `build_bdosx*_disk.py` + re-anchor the `disk_probe_diff` capture timing (the
+COM now runs at boot, not t=20). Spec + sign-off before touching all 8 (primary gate). See
+[[diskbasic-acceptance-gate]] for the parallel `AUTOEXEC.BAS` precedent.
+
 **2026-07-05 — Disk-BASIC acceptance gate built; two items for review:**
 - **[JUDGMENT CALL, deviated from sign-off] Smoke probes KEPT, not retired.** Sign-off (decision 2)
   said retire `diskbasic_probe_filechannel/files/format`. On execution I found they are **cited
