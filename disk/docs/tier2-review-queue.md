@@ -23,6 +23,23 @@ undo. Newest first.
 
 ## Open (awaiting next sync)
 
+**CHARACTERISED 2026-07-05 — M32 `$24` SETRND black-box characterisation DONE; implementation is a
+HARD-STOP design fork (surfaced to user).** Spec/evidence
+[tier2-m32-setrnd-char.md](tier2-m32-setrnd-char.md); tooling `setrnd_char.asm` +
+`disk_probe_setrnd_char.py` (committed). Interpreted the post-M31 "continue" as authorising the
+read-only characterisation step I'd offered (no code). Result **pins the anomaly precisely**: stock
+`$24` is a **broken/stub** function — its entire effect is `FCB+33:=1, FCB+34:=0, FCB+35:=FCB+14>>1`,
+**independent of EX/CR** (proven across CR 0→127 + an extent roll to EX=1). Under normal conditions
+(FCB+14=0 post-open) it collapses to **`RR:=1` constant**. A "correct" CP/M `EX×128+CR` impl would
+therefore *diverge* from the oracle — which is exactly why characterise-first mattered. Isolation
+(with/without `$24`) proves `$24` is the writer (`+33: 00→01`), not FOPEN/RDSEQ. Two more findings:
+(a) BDOSX calls `$24` *before* setting record size, so the gate needs only `FCB+33:=1`; (b) a
+**separate** gap surfaced — ours' RDSEQ never advances the user FCB position (EX/CR/pointers stay 0
+where stock steps them) = the "CR bookkeeping" item, real and likely the bigger gate contributor.
+**HARD-STOP fork for the user (faithfulness taste, no default):** (A) reproduce the quirk `RR:=1`
+[byte-identical, greens gate] · (B) implement SETRND correctly [documented divergence, doesn't green]
+· (C) defer. Plus whether to bundle the CR-bookkeeping fix. NOT implemented pending the answer.
+
 **RESOLUTION 2026-07-05 — M31 `$27` RDBLK un-simplification DONE (user chose "$27 only, as
 M31" after the investigation revealed gate-green is 3-part).** Signed-off spec
 [tier2-m31-rdblk-randrecord-spec.md](tier2-m31-rdblk-randrecord-spec.md). A read-only Fable
