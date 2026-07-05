@@ -181,8 +181,16 @@ provably byte-identical to today with ZERO free-site changes.
 - **PRE-EXISTING finding surfaced (not M30):** ours is lowest-free-first (reuses freed low clusters); the
   CF-3300 is NOT (`del_realloc`: ours `[340,336]` vs stock `[340,339]`; a HEAD ROM gives the SAME ours
   chain). Round-trip `del_realloc` case is `kind="divergence"` (documents, asserts ours self-consistent).
-  **New open item (D):** characterise the CF-3300's post-delete allocation order; decide if matching it is
-  worthwhile (spawned follow-up). Not forced.
+  **Open item (D) — CHARACTERISED 2026-07-05** (black-box, no ROM read;
+  [tier2-alloc-order-findings.md](tier2-alloc-order-findings.md) +
+  [disk_probe_alloc_order.py](../../probes/disk/disk_probe_alloc_order.py), 7 differential layouts on
+  stock+ours). Stock is a **tail-relative contiguity allocator**, not free-order/rover: extending a file
+  whose tail cluster is L, it takes **L−1 if free** (walking down: `order4`/`descend4` → 339,338,337,336),
+  else the **first free scanning UP from L** (`gap` tail=349, L−1 used → 350, NOT lowest-free 340). Ours =
+  global lowest-free-from-2 (no tail bias); agrees with stock only when nothing's free just below the tail.
+  Divergence is **cosmetic** (valid FAT12, identical data/free-count). **Recommendation: document & accept**
+  (keep `del_realloc` as `kind="divergence"`); full match would rework the core alloc policy for all writes —
+  large surface, cosmetic gain. Decision deferred to user; not forced.
 - **Verification:** 30/30 unit tests, NO expected-value edits (the 2 test edits are FIXTURE seeding of
   `FAT_ALLOCHINT=2`); new `test_fat_alloc_hint.py` (behaviour-identity vs from-2 incl. holes, invariant,
   reset, O(N), disk-full); Tier-1 16384 B + 0 `k_*` moved; byte-identical to a HEAD ROM on `del_realloc`.

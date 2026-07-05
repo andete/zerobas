@@ -18,13 +18,15 @@ free/used layout, boot openMSX (National_CF-3300), let a tiny WRBLK.COM exercise
 pure-Python FAT12-parse the mutated image and report the RESULTING CLUSTER CHAIN.
 The *sequence* of newly-allocated clusters is the diagnostic.
 
-Models under test (predictions computed per-experiment, see MODELS below):
+Models this probe was built to distinguish (see tier2-alloc-order-findings.md for
+the verdict — stock turned out to be a tail-relative contiguity allocator):
   lowest    : scan from cluster 2, take first free  (== OURS today)
   highest   : take the numerically-highest free cluster in the hole
   walk_last : reuse in the order the delete FREED them (rover = last cluster the
               delete chain-walk released); == "next-free rover set to last release"
   rover_wrap: a persistent next-free rover set to (last released) then scanning
               UPWARD with wrap-around (classic MS-DOS next-fit)
+  tail_rel  : take (tail-1) if free, else first free scanning UP from the tail  <-- STOCK
 
 CLEAN-ROOM: our own exerciser + our own disk layout; the CF-3300 is a black box we
 RUN and whose OUTPUT DISK we READ. No stock ROM code is ever read/disassembled.
@@ -139,24 +141,57 @@ def build_order(dos, out, com, del_clusters_desc=False):
     open(out, "wb").write(img)
 
 
+def build_gap(dos, out, com):
+    """Phase-1 shape test: is the downward preference ADJACENT-ONLY (tail-1) or a
+    downward SCAN (skips used clusters)? Layout (no delete):
+        341-343 WRBLK.COM, 344 AUTOEXEC   (fat12_add, lowest-first)
+        345,346,347 FREE                  (global lowest free = 345)
+        348 FILLER  (used)                (== WRTEST tail-1, blocks adjacency)
+        349 WRTEST  (tail)
+    Extend WRTEST by 1:
+      adjacent-only -> 348 used, bail to upward lowest-free -> 345
+      downward-scan -> 348 used, 347 free -> 347
+    345 (adjacent-only) != 347 (downward-scan): decisive."""
+    shutil.copyfile(dos, out)
+    img = bytearray(open(out, "rb").read())
+    fat12_add(img, "WRBLK", "COM", com)              # 341,342,343
+    fat12_add(img, "AUTOEXEC", "BAT", b"WRBLK\r\n")  # 344
+    add_file_chain(img, "FILLER", "BIN", [348], 100)  # tail-1, used
+    add_file_chain(img, TARGET[0], TARGET[1], [349], 512)  # WRTEST tail
+    open(out, "wb").write(img)
+
+
 EXPERIMENTS = {
     # extend WRTEST by 4 clusters after deleting the ascending-chain hole.
     # DECISIVE sequence test (lowest vs highest vs walk_last vs rover_wrap).
-    "order4":   dict(recnum=32, desc=False,
+    "order4":   dict(recnum=32, desc=False, delflag=1,
                      note="ascending-chain hole {336-339}, +4-cluster extend"),
     # single-cluster extend after deleting a REVERSE-chain hole. Distinguishes
     # numeric-highest (->339) from walk-last-released (->336).
-    "descend1": dict(recnum=8, desc=True,
+    "descend1": dict(recnum=8, desc=True, delflag=1,
                      note="reverse-chain hole (339->...->336), +1-cluster extend"),
     # extend by 4 after the reverse-chain delete: full order under reverse walk.
-    "descend4": dict(recnum=32, desc=True,
+    "descend4": dict(recnum=32, desc=True, delflag=1,
                      note="reverse-chain hole, +4-cluster extend"),
+    # OVER-extend by 8 but the freed hole holds only 4: after 339..336 the
+    # downward path dead-ends at used cluster 335 (nothing free 2..335). Where do
+    # clusters 5..8 come from? -> wrap-to-top-downward (714,713,..) vs up (345,..).
+    "over8":    dict(recnum=64, desc=False, delflag=1,
+                     note="ascending hole (4), +8-cluster extend (hole exhausts at 336)"),
+    # BASELINE: NO delete (DELFILE stays used), extend WRTEST by 4. Nothing free
+    # below 340 at all -> pure direction test with no adjacent-below hole.
+    "nodel":    dict(recnum=32, desc=False, delflag=0,
+                     note="no delete (no free hole below WRTEST), +4-cluster extend"),
+    # PHASE-1 SHAPE: tail-1 (348) used, 347 free, global-lowest-free 345.
+    # adjacent-only -> 345 ; downward-scan -> 347.
+    "gap":      dict(recnum=8, desc=False, delflag=0, builder="gap",
+                     note="tail-1 used, non-adjacent free hole below: adjacent-only(345) vs downward-scan(347)"),
 }
 
 
-def analyse(chain_before_first, chain, hole, note):
-    """chain = WRTEST's full chain after the op; chain[0] is its original cluster
-    (340). newly-allocated = chain[1:]. Report + compare to model predictions."""
+def analyse(chain, hole, note):
+    """chain = WRTEST's full chain after the op; chain[0] is its original tail
+    cluster. newly-allocated = chain[1:], IN ALLOCATION ORDER (the diagnostic)."""
     new = chain[1:]
     print(f"    note: {note}")
     print(f"    hole (freed clusters): {hole}")
@@ -185,13 +220,16 @@ def main():
         e = EXPERIMENTS[name]
         print(f"\n===== EXPERIMENT {name}  ({e['note']}) =====")
         # recnum forces the extend length; cnt=1 single record far past EOF.
-        com = patch_params(com0, e["recnum"], 128, 1, 0x77, delflag=1)
+        com = patch_params(com0, e["recnum"], 128, 1, 0x77, delflag=e["delflag"])
         for tag, machine in sides:
             out = f"/tmp/alloc_order_{name}_{tag.lower()}.dsk"
-            build_order(args.dos_disk, out, com, del_clusters_desc=e["desc"])
+            if e.get("builder") == "gap":
+                build_gap(args.dos_disk, out, com)
+            else:
+                build_order(args.dos_disk, out, com, del_clusters_desc=e["desc"])
             pre = Fat12(out)
             dd = pre.dirent("DELFILE", "BIN")
-            hole, _ = pre.chain(dd["cluster"])
+            hole = pre.chain(dd["cluster"])[0] if dd else []
             wt = pre.dirent(*TARGET)
             print(f"  [{tag}] pre: DELFILE chain={hole}  WRTEST cl={wt['cluster']}")
             try:
@@ -204,7 +242,7 @@ def main():
                 print(f"  [{tag}] WRTEST.BIN VANISHED"); continue
             ch, term = post.chain(d["cluster"])
             print(f"  [{tag}] post: size={d['size']} term={term:#05x}")
-            analyse(wt["cluster"], ch, hole, e["note"])
+            analyse(ch, hole, e["note"])
 
 
 if __name__ == "__main__":
