@@ -82,7 +82,11 @@ BIN_END = 0xC010           # inclusive -> 17 bytes
 # A deterministic, position-varying pattern (NOT all-equal, so a stuck/short
 # write is visible). byte[i] = (0x5A ^ i) & 0xFF.
 PATTERN = bytes(((0x5A ^ i) & 0xFF) for i in range(BIN_END - BIN_START + 1))
-BIN_SENTINEL = 0x00        # overwrite the region with this before BLOAD-back
+BIN_SENTINEL = 0xA5        # overwrite the region with this before BLOAD-back
+# NB: a NONZERO sentinel is deliberate — if BLOAD is a no-op (e.g. its typed line got
+# corrupted), the region keeps the sentinel; a 0x00 sentinel would masquerade as
+# "loaded zeros" and mislead a reader into suspecting the ROM write path. See the
+# leading-space hardening on the typed commands below and openmsx-probing-toolbox.md.
 
 # --- BSAVE ,R exec fixture (round-trip 2) ----------------------------------
 EXE_START = 0xC000
@@ -156,6 +160,15 @@ def fresh_disk() -> str:
     return path
 
 
+# CONVENTION (2026-07-05): every `type {{ … }}` command below is deliberately prefixed
+# with a LEADING SPACE. openMSX `type`-injection can double the first keypress inside a
+# narrow machine-specific emutime window (~t=26-27 on C-BIOS_MSX1_BASIC_DISK with a disk
+# mounted); a doubled leading space is harmless (`skip_spaces` eats it) whereas a doubled
+# command letter (`bbload`) is a syntax error. This cost a full false-positive bug hunt —
+# see disk/docs/openmsx-probing-toolbox.md §8 GOTCHA + tier2-review-queue.md 2026-07-05.
+# (This whole type-injection probe is being superseded by a .bas-on-disk boot-auto-run test.)
+
+
 # --- round-trip 1: BSAVE -> BLOAD (data fidelity) --------------------------
 def rt_bsave_bload(machine: str, dsk: str) -> dict:
     out = "/tmp/save_rt1.txt"
@@ -169,7 +182,7 @@ proc cap {{}} {{
 # t=6: lay down the known pattern in [C000..C010].
 after time 6 {{ {_writeblock(BIN_START, PATTERN)} }}
 # t=8: BSAVE the region to the disk.
-after time 8  {{ type {{bsave"a:sv.bin",&h{BIN_START:04x},&h{BIN_END:04x}}} }}
+after time 8  {{ type {{ bsave"a:sv.bin",&h{BIN_START:04x},&h{BIN_END:04x}}} }}
 after time 11 {{ type "\\r" }}
 # t=24: overwrite the RAM region with a sentinel so the reload is unambiguous.
 # MUST be well after BSAVE finishes streaming RAM[start..end] -- BSAVE reads the
@@ -177,7 +190,7 @@ after time 11 {{ type "\\r" }}
 # save the sentinel instead of the pattern.
 after time 24 {{ {_writeblock(BIN_START, bytes([BIN_SENTINEL]) * len(PATTERN))} }}
 # t=26: BLOAD it back (no ,R) into the same start address.
-after time 26 {{ type {{bload"a:sv.bin"}} }}
+after time 26 {{ type {{ bload"a:sv.bin"}} }}
 after time 29 {{ type "\\r" }}
 after time 44 {{ cap }}
 """
@@ -199,7 +212,7 @@ proc cap {{}} {{
 after time 6 {{ {_writeblock(EXE_START, EXE_BODY)} }}
 after time 6 {{ debug write memory 0x{EXE_MARK_ADDR:04X} 0x{EXE_SENTINEL:02X} }}
 # t=8: BSAVE with NO ,exec arg -> exec defaults to start ($C000).
-after time 8  {{ type {{bsave"a:sv2.bin",&h{EXE_START:04x},&h{EXE_END:04x}}} }}
+after time 8  {{ type {{ bsave"a:sv2.bin",&h{EXE_START:04x},&h{EXE_END:04x}}} }}
 after time 11 {{ type "\\r" }}
 # t=24: wipe the blob from RAM so the reload must restore it (well after BSAVE
 # has finished streaming RAM[start..end] -- see the rt1 note on the wipe race).
@@ -207,7 +220,7 @@ after time 24 {{ {_writeblock(EXE_START, bytes(len(EXE_BODY)))} }}
 # also re-poison the exec marker so a stale value can't masquerade as a fresh exec.
 after time 24 {{ debug write memory 0x{EXE_MARK_ADDR:04X} 0x{EXE_SENTINEL:02X} }}
 # t=26: BLOAD,R -> reload + jump to exec.
-after time 26 {{ type {{bload"a:sv2.bin",r}} }}
+after time 26 {{ type {{ bload"a:sv2.bin",r}} }}
 after time 29 {{ type "\\r" }}
 # break when execution reaches the blob's JR$ landmark = the ,R handoff fired.
 debug set_bp 0x{EXE_LANDMARK:04X} {{}} {{ cap }}
@@ -230,16 +243,16 @@ proc cap {{}} {{
 # t=5: poison the run-marker target.
 after time 5 {{ debug write memory 0x{BAS_MARK_ADDR:04X} 0x{BAS_SENTINEL:02X} }}
 # t=8: type the one-line program into the store.
-after time 8  {{ type {{10 poke &h{BAS_MARK_ADDR:04x},{BAS_MARK_BYTE}}} }}
+after time 8  {{ type {{ 10 poke &h{BAS_MARK_ADDR:04x},{BAS_MARK_BYTE}}} }}
 after time 11 {{ type "\\r" }}
 # t=14: SAVE the tokenised program to disk.
-after time 14 {{ type {{save"a:sv.bas"}} }}
+after time 14 {{ type {{ save"a:sv.bas"}} }}
 after time 17 {{ type "\\r" }}
 # t=22: NEW -> wipe the in-memory store, so RUN must reload it from disk.
-after time 22 {{ type {{new}} }}
+after time 22 {{ type {{ new}} }}
 after time 25 {{ type "\\r" }}
 # t=30: RUN"A:SV.BAS" -> load the tokenised program AND run it.
-after time 30 {{ type {{run"a:sv.bas"}} }}
+after time 30 {{ type {{ run"a:sv.bas"}} }}
 after time 33 {{ type "\\r" }}
 after time 44 {{ cap }}
 """

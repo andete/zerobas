@@ -34,28 +34,41 @@ assert/exit-on-mismatch patterns). No reference ROM was read or disassembled to 
 
 > **Superseded by a real run (2026-07-05).** The gate now exists
 > (`make diskbasic-acceptance`, [diskbasic-acceptance-spec.md](diskbasic-acceptance-spec.md))
-> and has been run, so the cells below are **gate-confirmed**, not static guesses — see
-> §0. The run also *vindicated the caveat*: static analysis marked SAVE/BSAVE ✅, but the
-> real oracle run proves it **red** (binary `BSAVE"A:"→BLOAD"A:"` round-trips all-zeros).
-> *Don't hand-guess — seed from probe output.*
+> and has been run, so the cells below are **gate-confirmed**, not static guesses — see §0.
 
 ---
 
 ## 0. Gate baseline — `make diskbasic-acceptance`
 
-**2026-07-05 baseline: 22/23 verbs converged.** The one red cell is a real, pre-existing
-bug the gate caught on its first run (no ROM changed this session):
+**2026-07-05: 23/23 verbs converged.** The ROM is clean.
 
-- ❌ **SAVE/BSAVE** (`disk_probe_save.py`) — tokenised `SAVE"A:"→RUN"A:"` PASSES, but binary
-  **`BSAVE"A:SV.BIN",&HC000,&HC010 → BLOAD"A:SV.BIN"` returns all-zeros** (the saved region
-  does not come back), so the `,R` execute-on-load handoff also fails (PC defaults to start,
-  sentinel unchanged). Root-cause is a **separate investigation** (a binary-BSAVE disk
-  write/read path bug), tracked in [tier2-review-queue.md](tier2-review-queue.md); it is NOT
-  the gate's fault — the gate is behaving correctly by staying red.
+The gate's *first* run reported 22/23 with SAVE/BSAVE red — but investigation proved that
+red was a **flaky-probe false positive, not a ROM bug**:
 
-The other 22 verbs (all rows below except SAVE/BSAVE) converged. Re-run after any
-kernel/BASIC/ROM change; a red gate means the surface regressed. Repro:
+- The `disk_probe_save.py` `BSAVE→BLOAD` sub-test typed its `bload` command via openMSX
+  keyboard injection at emutime t≈26; on `C-BIOS_MSX1_BASIC_DISK` with a disk mounted,
+  `type`'s **first keypress doubles** in a narrow (~t=26–27) window → `bbload"…"` → syntax
+  error → **BLOAD never ran**, so the region kept the probe's wipe byte. That wipe byte was
+  `0x00` (`BIN_SENTINEL`), so "BLOAD did nothing" masqueraded as "loaded zeros" and looked
+  like a write bug.
+- **Proof the ROM is innocent:** (1) an offline FAT12 dump of the BSAVE'd file showed the
+  exact 17-byte pattern on disk — the write path is byte-perfect; (2) changing the sentinel
+  to `0xA5` made the failing region read `a5a5…` (wipe kept), *not* `00` — BLOAD demonstrably
+  never executed; (3) the same sequence typed at t=36 round-trips byte-identical.
+- **Fix (probe, not ROM):** every typed command is now prefixed with a leading space (a
+  doubled first key becomes a doubled space, eaten by `skip_spaces`), and `BIN_SENTINEL` is
+  nonzero so a no-op BLOAD can never masquerade as zero data again. → SAVE/BSAVE green, 23/23.
+- **Follow-up (in progress):** the type-injection harness is being replaced for the
+  SAVE/BSAVE case by a **`.bas`-on-disk / boot-auto-run** test (no keyboard typing at all) —
+  the robust methodology that removes this whole failure class. See
+  [tier2-review-queue.md](tier2-review-queue.md).
+
+Re-run after any kernel/BASIC/ROM change; a red gate means the surface regressed. Repro:
 `make diskbasic-acceptance` (needs `make machines-oracle` + seed image + CF-3300 refs).
+
+**Lesson:** neither the static ✅ guess nor the gate's raw red was trustworthy alone — the
+*discriminating experiment* (nonzero sentinel + offline disk dump) is what found the truth.
+A red gate means "investigate," not "the ROM is broken."
 
 ---
 
@@ -85,8 +98,8 @@ a real stock FAT12 image read read-only per public spec
 ([readonly-artifact-oracle](../../README.md)); `structural` = self-checks the produced
 bytes vs the FAT12 spec (no live black box); `smoke` = runs but does **not** assert.
 **Gated**: in `make diskbasic-acceptance`. As of the 2026-07-05 baseline (§0) **every row
-below is gated and converged (✅) except SAVE/BSAVE (❌ red — real bug)**; the per-row column
-kept ❌ only marks the pre-gate state and is now superseded by §0.
+below is gated and converged — 23/23**; the per-row `❌` column below only marks the pre-gate
+state and is superseded by §0.
 
 ### Directory / file-management
 
@@ -101,8 +114,8 @@ kept ❌ only marks the pre-gate state and is now superseded by §0.
 
 | Verb | Impl | Unit | Probe (self-asserting) | Oracle | Gated | Notes |
 |------|:----:|:----:|------------------------|:------:|:-----:|-------|
-| SAVE (tokenised) | ✅ | — | `disk_probe_save` ✅ | artifact | ✅ | `SAVE"A:"→RUN"A:"` subtest PASSES |
-| BSAVE (binary) | ✅ | — | `disk_probe_save` **❌ RED** | artifact | ❌ | **gate-caught bug**: `BSAVE"A:"→BLOAD"A:"` round-trips all-zeros; `,R` handoff fails too (§0) |
+| SAVE (tokenised) | ✅ | — | `disk_probe_save` ✅ | artifact | ✅ | `SAVE"A:"→RUN"A:"` round-trips |
+| BSAVE (binary) | ✅ | — | `disk_probe_save` ✅ | artifact | ✅ | `BSAVE"A:"→BLOAD"A:"` (+`,R`) round-trips; ROM byte-perfect (the earlier red was a flaky-probe artifact — §0) |
 | LOAD | ✅ | — | `disk_probe_load_disk` ✅, `disk_probe_load_embedded_nul` ✅ | artifact | ❌ | embedded-NUL regression covered |
 | RUN "file" | ✅ | — | `disk_probe_run_disk` ✅ | artifact | ❌ | |
 | MERGE | ✅ | — | `disk_probe_merge` ✅ | live | ❌ | |
@@ -148,11 +161,11 @@ kept ❌ only marks the pre-gate state and is now superseded by §0.
 
 ## 3. Findings
 
-**F1 — Coverage *depth* is mostly good, with one real hole the gate exposed.** Of ~24
-implemented verbs, all but two (CLOSE, LINE INPUT#) have a dedicated self-asserting probe,
-and 22 converge. But the gate's first run turned one presumed-✅ into a confirmed **❌**:
-binary **BSAVE-to-disk round-trip is broken** (§0). So "phase-2 oracle-validated" held for
-*tokenised* SAVE but overclaimed for *binary* BSAVE — precisely why a run beats a guess.
+**F1 — Coverage *depth* is good; the ROM is clean at 23/23.** Of ~24 implemented verbs, all
+but two (CLOSE, LINE INPUT#) have a dedicated self-asserting probe, and all converge. The
+gate's first run *looked* like it found a BSAVE bug, but the red was a **flaky-probe artifact**
+(openMSX type-injection), not a ROM defect — investigated and proven innocent (§0). Real
+lesson: a red gate is a signal to *investigate*, not proof the ROM regressed.
 
 **F2 — The structural gap is now CLOSED.** `make diskbasic-acceptance` exists and gates the
 self-asserting differentials (baseline §0). Before it, the ~18 probes were run by hand and
@@ -217,8 +230,10 @@ Mirror `make bdos-acceptance`:
 
 - **2026-07-05** — doc created; matrix seeded from static analysis.
 - **2026-07-05** — **gate built + baselined (signed off).** `make diskbasic-acceptance`
-  (`probes/disk/diskbasic_acceptance.py`) implemented; first run = **22/23** (§0). Decisions:
+  (`probes/disk/diskbasic_acceptance.py`) implemented. First run = 22/23; the one red cell
+  (SAVE/BSAVE) was investigated and proven a **flaky-probe false positive** (openMSX
+  type-injection), not a ROM bug — fixed in-probe → **23/23, ROM clean** (§0). Decisions:
   (1) gate-first ✅ done; (2) smoke probes **kept + annotated**, not retired (F6, provenance);
-  (3) plain-BASIC audit = follow-on. Open work: the SAVE/BSAVE red cell (binary-BSAVE disk
-  bug → [tier2-review-queue.md](tier2-review-queue.md)) and the F4 backfill (dedicated
-  CLOSE + LINE INPUT# differentials).
+  (3) plain-BASIC audit = follow-on. Open work: **replace the type-injection SAVE/BSAVE probe
+  with a `.bas`-on-disk / boot-auto-run test** (pilot in progress — the robust methodology);
+  and the F4 backfill (dedicated CLOSE + LINE INPUT# differentials).

@@ -92,16 +92,23 @@ byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
   (dual-mission), so I took the conservative reversible path: **kept them + added a header banner**
   marking each "provenance-capture, NOT part of the gate." Achieves decision 2's intent (no
   false-coverage) without the citation loss. **Flag if you'd still prefer deletion.**
-- **[REAL BUG the gate caught — needs its own investigation] Binary BSAVE-to-disk is broken.**
-  `make diskbasic-acceptance` baseline = **22/23**; the red cell is `disk_probe_save.py`:
-  tokenised `SAVE"A:"→RUN"A:"` PASSES, but binary **`BSAVE"A:SV.BIN",&HC000,&HC010 →
-  BLOAD"A:SV.BIN"` round-trips all-zeros** (saved region doesn't come back; `,R` exec-handoff
-  fails as a consequence: PC defaults to start, sentinel unchanged). No ROM changed this session, so
-  it is **pre-existing** — the gate simply never existed to catch it (TODO.md L148/167 overclaimed
-  BSAVE`"A:"` all-pass). The `,R` check has been in the probe since the harness came home (ea46988).
-  Root-cause TBD (do_bsave/do_disk_bload path in [basic/save.asm](../../basic/save.asm) /
-  [basic/bload.asm](../../basic/bload.asm)); **not the gate's fault — gate correctly stays red.**
-  Decision needed: schedule a fix milestone now, or park it. Not forced.
+- **[RESOLVED 2026-07-05 — NOT a ROM bug; flaky-probe false positive.] "Binary BSAVE-to-disk"
+  red cell.** The gate's first run reported 22/23 with `disk_probe_save.py` red; I initially
+  (wrongly) called it a real pre-existing ROM bug. **Investigation (Fable-solo) proved the ROM
+  innocent — the red was an openMSX test-harness artifact:** the probe typed its `bload` command
+  via keyboard injection at emutime t≈26, where `type`'s first keypress **doubles** on
+  `C-BIOS_MSX1_BASIC_DISK`-with-disk (~t=26–27 window) → `bbload"…"` → syntax error → BLOAD never
+  ran → the region kept the probe's wipe byte, which was `0x00` and so masqueraded as "loaded
+  zeros." Proof: (1) offline FAT12 dump of the BSAVE'd file = exact 17-byte pattern on disk (write
+  path byte-perfect); (2) nonzero-sentinel re-run reads `a5a5…`, not `00` (BLOAD demonstrably never
+  executed); (3) same sequence at t=36 round-trips byte-identical. **Fix = probe-only** (leading
+  space on all typed commands so a doubled first key becomes a doubled space eaten by `skip_spaces`;
+  nonzero `BIN_SENTINEL`). → SAVE/BSAVE green, **gate now 23/23, ROM clean**. TODO.md L148/167 was
+  NOT an overclaim after all. **Follow-up (in progress):** replace this type-injection probe for
+  SAVE/BSAVE with a **`.bas`-on-disk / boot-auto-run** test (zero keyboard typing) — the robust
+  methodology that eliminates this whole failure class; pilot signed off (RAM-sentinel + on-disk
+  artifact capture). Gotcha recorded in
+  [openmsx-probing-toolbox.md](openmsx-probing-toolbox.md).
 
 **RESOLUTION 2026-07-05 — M33+M32 DONE (signed-off spec
 [tier2-m33-m32-fcb-position-spec.md](tier2-m33-m32-fcb-position-spec.md); user chose "full

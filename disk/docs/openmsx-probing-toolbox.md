@@ -261,6 +261,19 @@ black-box way past a `CHGET`/BUFIN block: e.g. `screen --machine stock
 --keys '12-25-99\r' --keys-at 13` answers the date prompt and renders the resulting
 `A>`. Keys play under throttle-off, so set `keys_at` a little before `--settle`.
 
+> **GOTCHA — `type`'s first keypress can DOUBLE in narrow machine-specific emutime windows
+> (2026-07-05).** On `C-BIOS_MSX1_BASIC_DISK` with a disk mounted, a `type` issued at
+> emutime ≈ t=26–27 delivers its first character twice (`bload…` → `bbload…`), an interplay
+> between openMSX `type`-injection and the BIOS keyboard scan on that config's boot event
+> timeline (config- and window-specific: t=24/28/36 are clean; a plain non-disk BASIC machine
+> is clean). It cost a full false-positive bug hunt (`disk_probe_save`'s `BSAVE→BLOAD` red —
+> see [tier2-review-queue.md](tier2-review-queue.md) 2026-07-05). **Mitigations:** (1) **lead
+> every typed REPL command with a space** — a doubled first key becomes a doubled space, which
+> `skip_spaces` eats for both direct commands and numbered lines; (2) use a **nonzero** wipe
+> sentinel so a no-op command can't masquerade as real data; (3) **best of all, don't type at
+> all** — drive tests from a `.bas` on a disk image auto-run by a boot stub (zero keyboard
+> injection removes this whole failure class).
+
 **Clean-room disasm guard (`DISOK`).** `ctx` emits a decoded mnemonic (`dis={…}`) ONLY
 when `DISOK && PC>=0x4000`; `OmsxRun` sets `DISOK=0` for the STOCK (reference) machine.
 This is a *firewall*, not a convenience: decoding a reference ROM's code bytes is
