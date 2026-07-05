@@ -16,10 +16,12 @@ parallel routines.
 
 ## 1. Characterisation (measured, not assumed)
 
-Host harness `charac_alloc2.py` (reuses `tests/test_wrblk_body_e2e.py`; only
-`read_sector`/`write_sector` mocked, everything else real) counted sector I/O as a
+Host harness `probes/disk/wrblk_perf.py --shape` (reuses `tests/test_wrblk_body_e2e.py`;
+only `read_sector`/`write_sector` mocked, everything else real) counted sector I/O as a
 function of workload. Two compounding O(n²) costs plus a constant-factor amplifier
 were found; **this spec fixes only (P)** — the dominant one for the WRBLK workload.
+(The K=1→32 allocation figures below were taken with an earlier variant of the same
+harness; `--shape` reports the positioning column.)
 
 | id | cost | measured | disposition |
 |----|------|----------|-------------|
@@ -31,6 +33,34 @@ Why P dominates and A/C do not, once P lands: after the cursor, each WRBLK call
 performs exactly **one** from-head walk (its first positioning), which is the
 §4-accepted "correct and simple, walk-from-start" non-goal shape shared with
 `rrnd_position`. The per-record re-walks — the actual quadratic — are gone.
+
+### 1.1 Actual before/after (M28 ROM vs M29 ROM, measured)
+
+`probes/disk/wrblk_perf.py --before-after` runs the **identical** workload — ONE
+`wrblk_body` call writing N sequential 128-byte records within an already-allocated
+64-cluster file (within-EOF, so this isolates positioning; no allocation-A noise) —
+on the pre-M29 (M28, commit `6535a59`) ROM and the M29 ROM, on the real-Z80 host
+harness (baseline built from the git ref, so the comparison is reproducible). It counts **CPU
+instructions executed** (`read_sector`/`write_sector` are trapped as zero-cost, so
+this column is pure Z80 work) and **sector I/O** (disk work). On real MSX hardware
+elapsed ≈ steps·t_cpu + io·t_sector with t_sector (floppy, ~ms) ≫ t_cpu (~µs), so
+both columns dropping is the speed story.
+
+| N records | M28 CPU steps | M28 I/O | M29 CPU steps | M29 I/O | CPU speedup | I/O speedup |
+|--:|--:|--:|--:|--:|--:|--:|
+| 16  | 7,863    | 84     | 4,917  | 27  | 1.6× | 3.1× |
+| 32  | 21,783   | 292    | 8,883  | 51  | 2.5× | 5.7× |
+| 64  | 70,839   | 1,092  | 16,815 | 99  | 4.2× | 11×  |
+| 128 | 253,815  | 4,228  | 32,679 | 195 | 7.8× | 22×  |
+| 256 | 959,226  | 16,644 | 64,410 | 387 | **14.9×** | **43×** |
+
+The **shape** is the proof, not the single ratio: M28 CPU steps ~4× per 2× N
+(quadratic); M29 steps ~2× per 2× N (linear). The speedup therefore GROWS with N —
+the O(N²)→O(N) signature. At N=256, 14.9× fewer instructions and 43× fewer sector
+accesses; on 3.58 MHz hardware that write is roughly ~80 s → ~2 s (the t_sector
+constant is approximate, so treat the wall-clock as order-of-magnitude; the ratios
+are exact). This matches the M28 review-queue note that a large extend "needed
+>46 s emulated".
 
 ---
 
