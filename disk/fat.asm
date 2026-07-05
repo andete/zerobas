@@ -394,7 +394,13 @@ fat_alloc_cluster:
                 ; FAT_FATSEC tracks which FAT sector is in WBUF; -1 = none loaded.
                 ld      hl, $FFFF
                 ld      (FAT_WRTMP2), hl    ; cached-sector = none
-                ld      hl, 2               ; first data cluster
+                ; M30 (tier2-m30-alloc-hint-spec.md): scan from the per-operation
+                ; next-free hint instead of always restarting at 2. Byte-size-
+                ; neutral (21 02 00 -> 2A FB E7, both 3 bytes). fat_mount resets
+                ; the hint to 2 at the start of every operation and fac_found
+                ; advances it past each claimed cluster, so this returns the exact
+                ; same cluster sequence as a from-2 scan (invariant + proof: spec §4).
+                ld      hl, (FAT_ALLOCHINT) ; first candidate cluster (was: ld hl, 2)
 fac_loop:
                 jp      fac_loop_body       ; Tier-2 3b: divert; veneers fill the gap
                 ds      $498C - $, $00      ; anchor canonical address
@@ -423,6 +429,13 @@ fac_found:
                 call    fat_write_fat_entry ; HL = cluster, DE = value
                 pop     hl
                 ret     c                   ; write error propagates (Cy set)
+                ; M30: advance the per-operation scan hint past this claimed
+                ; cluster, WITHOUT disturbing HL (must return = the allocated
+                ; cluster). Byte-identical scan-sequence proof: spec §4.
+                push    hl
+                inc     hl
+                ld      (FAT_ALLOCHINT), hl
+                pop     hl
                 or      a                   ; Cy = 0 success, HL = cluster
                 ret
 fac_full:

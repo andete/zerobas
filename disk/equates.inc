@@ -189,6 +189,16 @@ WRBLK_NEXTCLUS  equ     $E7F6   ; shrink path: next cluster to free, saved acros
 WRBLK_CURVALID  equ     $E7F8   ; byte: 0 = iterator not yet positioned this call
 WRBLK_CURSEC    equ     $E7F9   ; word: sector-in-file the iterator currently sits
                                 ; on (meaningful only when CURVALID=1)
+; M30 (tier2-m30-alloc-hint-spec.md) FAT allocator next-free scan cursor -- a FAT
+; cell (fat_alloc_cluster is reached from WRBLK/WRSEQ/create-then-write, not just
+; WRBLK), parked in the $E7E8-$E7FF gap just past the WRBLK cells above only
+; because it is the next free byte pair; per-operation lifetime: reset to 2 by
+; fat_mount (which runs once at the start of every BDOS file operation, always
+; before any fat_alloc_cluster), then advanced past each cluster claimed within
+; that operation so a multi-cluster allocation scans forward instead of
+; restarting from 2 every time (kills the O(n^2) rescan). Own-choice free
+; page-3 RAM; see disk/PROVENANCE.md §Scratch RAM.
+FAT_ALLOCHINT   equ     $E7FB   ; next cluster to try in fat_alloc_cluster's scan (word)
 ; The one-shot RR*RS size multiply (wrblk_mul_rr_rs) runs AFTER fat_find's SECTOR_BUF
 ; scan and BEFORE fat_dir_update's own WBUF read/write -- no fat_alloc_cluster/
 ; fat_write_fat_entry call happens during the multiply itself, so WBUF's tail is safe,

@@ -13,10 +13,16 @@
 ;   $0105..$0106  rs      record size word          -> FCB+14..15
 ;   $0107..$0108  cnt     WRBLK record count (HL)
 ;   $0109         fillb   DTA sentinel fill byte
+;   $010A         delflag M30 del_realloc case: nonzero -> BDOS $13 DELETE
+;                         "DELFILE BIN" (a pre-seeded low-cluster file) BEFORE
+;                         the FOPEN/WRBLK below, so the subsequent allocation
+;                         must reuse the clusters just freed. 0 (the default)
+;                         reproduces every pre-M30 case byte-for-byte (no
+;                         extra BDOS call at all).
 ;
-; CLEAN-ROOM: our own program; calls the published BDOS $0F/$1A/$26/$10/$00
-; contract entries only; the CF-3300 is a black box we run + whose OUTPUT DISK we
-; read (never its ROM code).
+; CLEAN-ROOM: our own program; calls the published BDOS $0F/$13/$1A/$26/$10/
+; $00 contract entries only; the CF-3300 is a black box we run + whose OUTPUT
+; DISK we read (never its ROM code).
 
 BDOS    equ     $0005
 
@@ -27,8 +33,19 @@ recnum: db      0, 0, 0                 ; $0102..$0104
 rs:     dw      128                     ; $0105..$0106
 cnt:    dw      1                       ; $0107..$0108
 fillb:  db      $A5                     ; $0109
+delflag: db     0                       ; $010A (M30 del_realloc; 0 = skip, pre-M30 shape)
 
 main:
+        ; --- M30 del_realloc: optionally DELETE ($13) a pre-seeded low-cluster
+        ; file FIRST, freeing its chain, before the normal FOPEN/WRBLK below
+        ; allocates. Skipped entirely (delflag=0) for every other case. ---
+        ld      a, (delflag)
+        or      a
+        jr      z, main_open
+        ld      de, delfcb
+        ld      c, $13
+        call    BDOS
+main_open:
         ; --- FOPEN ($0F) the target file ---
         ld      de, fcb
         ld      c, $0F
@@ -92,6 +109,14 @@ fcb:
         db      "WRTEST  "              ; 8-char name
         db      "BIN"                   ; 3-char ext
         ds      40 - 12, 0              ; EX..r2 (BDOS fills on FOPEN; RR set above)
+
+; unopened FCB for "DELFILE BIN" (M30 del_realloc case only; harmless unused
+; bytes when delflag=0)
+delfcb:
+        db      0                       ; drive = default
+        db      "DELFILE "              ; 8-char name
+        db      "BIN"                   ; 3-char ext
+        ds      40 - 12, 0
 
 dta_len equ     2048                    ; 16 records * 128 B (covers every case)
 dta:

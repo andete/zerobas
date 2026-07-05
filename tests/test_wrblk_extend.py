@@ -110,6 +110,11 @@ def make_machine(chain=()):
     m.poke(m.addr("FAT_SECPERCLUS"), SECPERCLUS)
     m.poke_w(m.addr("FAT_FIRSTDATA"), FIRSTDATA)
     m.trap("fat_total_clusters", lambda mm: setattr(mm.cpu, "de", TOTAL_CLUSTERS))
+    # M30: fat_alloc_cluster (reached via the extend path) now scans from
+    # FAT_ALLOCHINT (fat_mount resets it to 2 at the start of every real
+    # operation); this test drives wrblk_read_or_extend_sector directly without
+    # going through fat_mount, so seed it here to match.
+    m.poke_w(m.addr("FAT_ALLOCHINT"), 2)
     return m, fat, data
 
 

@@ -124,14 +124,39 @@ def before_after(ref):
               f"{bs / ms:>5.1f}x {bio / mio:>4.1f}x")
 
 
+def alloc_before_after(ref):
+    """M30: ALLOCATION-bound before/after. ONE wrblk_body call extending a file
+    by K new clusters (records written PAST EOF, so each new cluster is claimed
+    by fat_alloc_cluster) on a disk whose free region starts 64 clusters in.
+    Isolates the allocator: pre-M30 each of the K allocations rescans from
+    cluster 2 (O(K^2)); M30 scans from the per-operation hint (O(K)). Positioning
+    (M29) is identical in both, so the delta is purely the allocator."""
+    b_rom, b_sym = build_rom(ref)
+    m_rom, m_sym = build_rom(None)
+    print(f"BEFORE ({ref}) vs AFTER (working tree) — ONE wrblk_body call "
+          f"extending a 64-cluster file by K new clusters (allocation-bound):\n")
+    print(f"{'K':>4}  {'CPU(base)':>11} {'io':>6}   {'CPU(cur)':>10} {'io':>6}   "
+          f"{'CPUx':>6} {'iox':>5}")
+    for k in (1, 2, 4, 8, 16, 32):
+        bs, bio, ba = _run(b_rom, b_sym, 64, k * 4, extend=True)
+        ms, mio, ma = _run(m_rom, m_sym, 64, k * 4, extend=True)
+        assert ba == 0 and ma == 0, f"A base={ba} cur={ma}"
+        print(f"{k:>4}  {bs:>11,} {bio:>6}   {ms:>10,} {mio:>6}   "
+              f"{bs / ms:>5.1f}x {bio / mio:>4.1f}x")
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--shape", action="store_true")
     ap.add_argument("--before-after", action="store_true")
+    ap.add_argument("--alloc", action="store_true",
+                    help="M30 allocation-bound before/after (isolates fat_alloc_cluster)")
     ap.add_argument("--baseline-ref", default=DEFAULT_BASELINE_REF)
     args = ap.parse_args()
     E.build()   # ensure the tests harness's own ROM path exists (imports)
     if args.shape:
         shape()
-    if args.before_after or not (args.shape or args.before_after):
+    if args.alloc:
+        alloc_before_after(args.baseline_ref)
+    if args.before_after or not (args.shape or args.before_after or args.alloc):
         before_after(args.baseline_ref)

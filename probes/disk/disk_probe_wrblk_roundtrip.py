@@ -52,7 +52,8 @@ def assemble_com() -> bytes:
     return open(com, "rb").read()
 
 
-def patch_params(com: bytes, recnum: int, rs: int, cnt: int, fillb: int) -> bytes:
+def patch_params(com: bytes, recnum: int, rs: int, cnt: int, fillb: int,
+                  delflag: int = 0) -> bytes:
     b = bytearray(com)
     b[2] = recnum & 0xFF
     b[3] = (recnum >> 8) & 0xFF
@@ -60,6 +61,7 @@ def patch_params(com: bytes, recnum: int, rs: int, cnt: int, fillb: int) -> byte
     struct.pack_into("<H", b, 5, rs)
     struct.pack_into("<H", b, 7, cnt)
     b[9] = fillb & 0xFF
+    b[10] = delflag & 0xFF   # M30 del_realloc: nonzero -> BDOS $13 DELETE DELFILE.BIN first
     return bytes(b)
 
 
@@ -155,9 +157,18 @@ after time {end_s} {{ exit }}
         raise TimeoutError(f"TIMEOUT running {machine}")
 
 
-def build_disk(dos: str, out: str, com: bytes, binsize: int, binfill: int) -> None:
+def build_disk(dos: str, out: str, com: bytes, binsize: int, binfill: int,
+               del_size: int = 0) -> None:
     shutil.copyfile(dos, out)
     img = bytearray(open(out, "rb").read())
+    if del_size:
+        # M30 del_realloc: DELFILE.BIN goes in FIRST so it claims the low
+        # (first-free) clusters; WRTEST.BIN (added next) is forced past it.
+        # The exerciser then DELETEs DELFILE.BIN before WRBLK, so the
+        # allocation it triggers must reuse the just-freed low clusters --
+        # exactly the "free then allocate, same operation-set" worry §4/§6.2
+        # of tier2-m30-alloc-hint-spec.md is designed to be safe against.
+        fat12_add(img, "DELFILE", "BIN", bytes([0x99]) * del_size)
     fat12_add(img, TARGET[0], TARGET[1], bytes([binfill]) * binsize)
     fat12_add(img, "WRBLK", "COM", com)
     # AUTOEXEC.BAT auto-runs WRBLK on boot (no keyboard-timing dependence).
@@ -179,6 +190,19 @@ CASES = {
     # 4 advances one step into a freshly allocated cluster (wpe_adv), 5-7 reuse it.
     # Must be byte-identical to stock; checkrec=6 validates a second-sector record.
     "multi":   dict(binsize=512,  binfill=0x55, recnum=0,   rs=128, cnt=8, fillb=0xD8, kind="eq", checkrec=6),
+    # M30 (tier2-m30-alloc-hint-spec.md §6.2) del_realloc: ONE run that both
+    # FREES a low-cluster file (BDOS $13 DELETE of DELFILE.BIN) and THEN
+    # ALLOCATES (WRBLK extends WRTEST.BIN past its tiny seed).
+    # FINDING (verified 2026-07-04): ours reuses the just-freed LOW clusters
+    # (lowest-free-first); the CF-3300 does NOT (it skips to a higher cluster).
+    # This divergence is PRE-EXISTING -- a HEAD (pre-M30) ROM produces the SAME
+    # ours chain, and host test_fat_alloc_hint.py case (c) proves M30's allocator
+    # returns the identical sequence to the from-2 (pre-M30) scan. So M30 is
+    # byte-identical to today; the ours!=stock allocation ORDER after a delete is
+    # a separate, pre-existing characterisation item (spawned follow-up), NOT an
+    # M30 regression. Documented, not asserted ours==stock (like the shrink case).
+    "del_realloc": dict(binsize=512, binfill=0x66, recnum=8, rs=128, cnt=1,
+                         fillb=0xE9, kind="divergence", delflag=1, del_size=4096),
 }
 
 
@@ -217,11 +241,13 @@ def main():
         c = CASES[name]
         print(f"\n===== CASE {name} (recnum={c['recnum']} rs={c['rs']} "
               f"cnt={c['cnt']} file={c['binsize']}B) =====")
-        com = patch_params(com0, c["recnum"], c["rs"], c["cnt"], c["fillb"])
+        com = patch_params(com0, c["recnum"], c["rs"], c["cnt"], c["fillb"],
+                           c.get("delflag", 0))
         ours = f"/tmp/wrblk_rt_ours_{name}.dsk"
         stock = f"/tmp/wrblk_rt_stock_{name}.dsk"
-        build_disk(args.dos_disk, ours, com, c["binsize"], c["binfill"])
-        build_disk(args.dos_disk, stock, com, c["binsize"], c["binfill"])
+        del_size = c.get("del_size", 0)
+        build_disk(args.dos_disk, ours, com, c["binsize"], c["binfill"], del_size)
+        build_disk(args.dos_disk, stock, com, c["binsize"], c["binfill"], del_size)
         try:
             run(OUR_MACHINE, ours, args.boot, args.end, args.timeout)
             print("  [ours ran]")
@@ -240,6 +266,22 @@ def main():
                 same = (o["size"] == s["size"] and o["chain"] == s["chain"]
                         and o["rec"] == s["rec"])
                 print(f"  => {'MATCH' if same else 'DIFFER'} (size/chain/rec)")
+            elif c["kind"] == "divergence":
+                # Pre-existing allocator-ORDER divergence (NOT M30): ours is
+                # lowest-free-first (reuses the freed low clusters), the CF-3300
+                # skips higher. size / chain length / EOC / written record all
+                # agree -- only the cluster NUMBERS differ. Assert ours is
+                # self-consistent + that ours reuses a lower (freed) cluster;
+                # document, do NOT require ours == stock.
+                shape_ok = (o["size"] == s["size"] and o["term"] >= 0xFF8
+                            and len(o["chain"]) == len(s["chain"])
+                            and o["rec"] == s["rec"])
+                reuses_low = min(o["chain"]) < min(s["chain"])
+                print(f"  => divergence(alloc-order, PRE-EXISTING not M30): "
+                      f"ours self-consistent={shape_ok}, ours reuses freed-low "
+                      f"cluster={reuses_low}")
+                print(f"     ours chain={o['chain']} vs stock chain={s['chain']} "
+                      f"(same size/len/rec; only cluster numbers differ) -- spec §6.2")
             else:
                 print("  => shrink: ours self-consistency below; stock expected broken")
                 print(f"     ours term={o['term']:#05x} (EOC>=0xff8 good); "

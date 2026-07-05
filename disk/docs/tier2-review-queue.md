@@ -168,6 +168,25 @@ signed off after TWO scope rounds (C+P → narrowed to **P only**). Investigatio
   (16384 B, 0 `k_*` moved); round-trip byte-identical incl. a NEW `multi` case (8 records/call,
   `checkrec=6`) that directly exercises the cursor path against the CF-3300 oracle.
 
+**RESOLUTION 2026-07-04 — M30 fat_alloc_cluster next-free hint DONE (perf; A, user "continue with A").**
+[tier2-m30-alloc-hint-spec.md](tier2-m30-alloc-hint-spec.md). Per-operation hint (`FAT_ALLOCHINT`
+`$E7FB`) reset in `fat_mount`, scan-from-hint + advance-on-success in `fat_alloc_cluster`. The feared
+**free-invalidation correctness surface does not exist**: only 2 free sites (`wrblk_shrink`, `fdel_body`),
+`$16` create orphans, and NO single operation frees-low-then-allocates — so per-operation reset makes it
+provably byte-identical to today with ZERO free-site changes.
+- **Win is CPU-only (honest correction):** the allocation quadratic was in FAT-entry RAM scans, NOT I/O —
+  `fat_alloc_cluster`'s existing `FAT_WRTMP2` intra-call cache already made alloc I/O linear. Measured
+  M29→M30 (`wrblk_perf.py --alloc`): CPU **4.4×** (K=32, free 64 in) → **9.2×** (free 400 in); **I/O 1.0×**.
+  So modest real-hardware benefit (unlike M29's P, which cut actual sector accesses). `rr24` unchanged.
+- **PRE-EXISTING finding surfaced (not M30):** ours is lowest-free-first (reuses freed low clusters); the
+  CF-3300 is NOT (`del_realloc`: ours `[340,336]` vs stock `[340,339]`; a HEAD ROM gives the SAME ours
+  chain). Round-trip `del_realloc` case is `kind="divergence"` (documents, asserts ours self-consistent).
+  **New open item (D):** characterise the CF-3300's post-delete allocation order; decide if matching it is
+  worthwhile (spawned follow-up). Not forced.
+- **Verification:** 30/30 unit tests, NO expected-value edits (the 2 test edits are FIXTURE seeding of
+  `FAT_ALLOCHINT=2`); new `test_fat_alloc_hint.py` (behaviour-identity vs from-2 incl. holes, invariant,
+  reset, O(N), disk-full); Tier-1 16384 B + 0 `k_*` moved; byte-identical to a HEAD ROM on `del_realloc`.
+
 _**Batch-synced 2026-07-04** (consolidation sweep) — the M19→M27 block (20 entries) was
 reviewed and moved to [tier2-review-archive.md](tier2-review-archive.md). The Tier-2
 DOS-boot-to-`A>` goal is **MET**, full BDOS surface coverage is complete (M26 closed), and

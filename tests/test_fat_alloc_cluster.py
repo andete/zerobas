@@ -77,6 +77,10 @@ def make_machine(used_clusters):
     m.poke_w(m.addr("FAT_FATSTART"), FATSTART)
     m.poke(m.addr("FAT_NUMFATS"), NUMFATS)
     m.poke_w(m.addr("FAT_SECPERFAT"), SECPERFAT)
+    # M30: fat_alloc_cluster now scans from FAT_ALLOCHINT (fat_mount resets it to
+    # 2 at the start of every real operation); this test calls fat_alloc_cluster
+    # directly without going through fat_mount, so seed it here to match.
+    m.poke_w(m.addr("FAT_ALLOCHINT"), 2)
     return m, fat
 
 
