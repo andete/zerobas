@@ -128,8 +128,11 @@ def main() -> int:
     # 16 records x 8 B = 0x80; captures FMAKE + 12 WRSEQ (crossing disk-full) + FCLOSE.
     # --arm-check-val gates on the resident program (byte at $0102 == sig) so the anchor is the
     # REAL program run, not a boot-time collision (vacuous-anchor bug, 2026-07-04).
+    # settle 90: post-M34 ours reaches the anchor at t≈30 s (fail-fast disk-full,
+    # no slow buffered flush); 90 s leaves comfortable margin for host-load variance
+    # in CI (pre-M34 ours needed ~71 s, which the old 60 s misaligned).
     print("next: python3 probes/disk/disk_probe_diff.py capture "
-          f"--at {addrs['done']:#06x} --arm-check-val {addrs['sig']:#04x} --keys '\\rBDOSX4\\r' --keys-at 20 --settle 60 "
+          f"--at {addrs['done']:#06x} --arm-check-val {addrs['sig']:#04x} --keys '\\rBDOSX4\\r' --keys-at 20 --settle 90 "
           f"--machine both --mem {addrs['regs']:#06x}:0x80 --diska {args.out}")
     return 0
 

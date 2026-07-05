@@ -19,6 +19,39 @@ changes a signed-off plan.
 Entry format: **[Mx.y / §8.zz]** what I decided · why · alternative · confidence ·
 undo. Newest first.
 
+**RESOLUTION 2026-07-05 — M34 WRSEQ disk-full onset parity DONE (user chose "fix to
+byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
+[tier2-m34-wrseq-diskfull-spec.md](tier2-m34-wrseq-diskfull-spec.md).
+- **Clean re-characterisation** (IX-fixed bdosx4) found TWO coupled divergences, and
+  corrected the old contaminated numbers: **D1 onset lag** stock A=01 at WRSEQ **#1**
+  (not #2), ours at **#4**; **D2 FCLOSE** stock 00 / ours FF. The old "stock
+  terminates the program" reading was the since-fixed IX-walk artifact (control-flow
+  is identical).
+- **Root cause (our source):** `bdos_seqwrite_body` buffers records and only
+  allocates a cluster at the 512-B sector-flush (record #4); stock allocates the
+  fresh file's first cluster eagerly at #1. D2 is DOWNSTREAM of D1 — ours buffered
+  384 B that FCLOSE then fails to flush (driver.asm `bdos_close_write`).
+- **Fix (Sonnet 5, Opus-verified):** one eager free-cluster *availability* pre-check
+  at the top of `bdos_seqwrite_body` (mirrors `ffds_nopad_body`'s alloc condition,
+  fires at WRBUFLEN==0) + new scan-only `fat_have_free_cluster` @ $66F6 (mirrors the
+  proven `fac_loop_body` scan, no claim, hint untouched). The real allocation stays
+  at flush → **happy path provably unchanged** (falls through to byte-identical body).
+- **D2 auto-fixed (prediction CONFIRMED, no FCLOSE change):** with nothing buffered,
+  FCLOSE skips the failing flush → clean 0-cluster dir update → A=00. Same "fix the
+  derail, the downstream symptom resolves" shape.
+- **JUDGMENT CALL (log):** chose the **availability-check** design over true-eager
+  (§4) — observationally byte-identical (registers + final disk artifact), lower
+  risk; the only residual is the FAT's *intermediate* reservation timing, which is
+  unobservable through any BDOS call (single-tasking) and leaves ours cleaner on a
+  crash. User approved this design at sign-off.
+- **Verified:** bdosx4 differential **0-byte-diff both machines** (onset #1, all-01,
+  FCLOSE 00); the live-AF delta decodes to A=$00 on both, only the non-contractual F
+  flag differs (benign, gate-classed). Gate **7/7** (BDOSX4 folded in, no allowlist);
+  WRBLK/RDBLK round-trips only the pre-existing accepted divergences; unit **32/32**;
+  Tier-1 16384 B, 0 `k_*` moved; md5 unchanged.
+- **Tier-C case 2 CLOSED byte-identical.** The disk-full corner is now a standing
+  regression guard in `make bdos-acceptance`.
+
 ---
 
 ## Open (awaiting next sync)

@@ -55,10 +55,10 @@ EXERCISERS = [
     ("BDOSX2", "build_bdosx2_disk.py"),
     ("BDOSX3", "build_bdosx3_disk.py"),
     ("BDOSX0", "build_bdosx0_disk.py"),
-    # BDOSX4 (Tier-C case 2, disk-full) is intentionally NOT wired here yet: it
-    # surfaced a real ours-vs-stock divergence in WRSEQ disk-full handling that
-    # is unresolved (disk/docs/tier2-tierC-spec.md case 2 + tier2-review-queue).
-    # Gating on it now would (correctly) fail the gate; hold until adjudicated.
+    # BDOSX4 (Tier-C case 2, disk-full onset). M34 (tier2-m34-wrseq-diskfull-spec.md)
+    # made ours byte-identical to stock: disk-full at WRSEQ #1, all-01, FCLOSE 00.
+    # Now a standing regression guard — no allowlist needed (0-byte-diff buffer).
+    ("BDOSX4", "build_bdosx4_disk.py"),
 ]
 
 CMD_RE = re.compile(r"(python3\s+probes/disk/disk_probe_diff\.py\s+.*)$")

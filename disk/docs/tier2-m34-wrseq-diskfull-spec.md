@@ -191,5 +191,53 @@ not, a targeted FCLOSE change is added and this section is corrected.
 disk-full assertion with no allowlist needed — the whole point of the fix). Confirm
 at sign-off.
 
-## 6. Results
-(filled in after implementation + verification.)
+## 6. Results — DONE, byte-identical (2026-07-05)
+
+Implemented by Sonnet 5, independently verified by Opus (never self-reports).
+
+**Implementation** (disk/kernel.asm only; no equates/fat.asm/Makefile change):
+- The eager pre-check inserted at the top of `bdos_seqwrite_body` exactly per §3.1
+  (labels `bsw_m34_needclus`/`bsw_m34_buffer`); the existing body is byte-for-byte
+  unchanged below `bsw_m34_buffer`.
+- `fat_have_free_cluster` placed in the free corridor at **$66F6** — a faithful
+  mirror of `fac_loop_body`'s proven scan (same FAT_WRTMP/WRTMP2/BYTEIDX/PARITY/
+  FATSTART math + `fac_entry_from_wbuf`), scanning from cluster 2, returning `Cy`
+  instead of claiming; never calls `fat_write_fat_entry`, never touches
+  `FAT_ALLOCHINT`/`FAT_CURCLUS`/`FAT_CLUSSEC`. One correctness detail beyond the
+  spec: a `pop hl` on the read-error exit to balance the loop's `push hl`.
+
+**The oracle — bdosx4 differential (both machines):** register buffer **0 of 128
+bytes differ**. So ours now matches stock exactly:
+- **D1 fixed:** disk-full (`A=01`) at WRSEQ **#1**, all of #1–12 `01`.
+- **D2 fixed (prediction CONFIRMED):** FCLOSE `A=00` — resolved automatically by the
+  D1 fix, with **no FCLOSE-specific change**, exactly as §2/§5.1 predicted (ours
+  never buffers → `WRBUFLEN=0` → FCLOSE skips the failing flush → clean dir update).
+- Bonus: ours now reaches the anchor faster (t≈30 s vs 71 s pre-fix — fail-fast, no
+  slow buffered flush).
+- Residual: the **live** `AF` at the `done` anchor differs (stock `0093`, ours
+  `0044`) — but that decodes to `A=$00` on **both**; only the Z80 **F** flags byte
+  differs. `F` is not part of any BDOS return contract (only `A` is), the exerciser
+  records A/B/C/D/E/H/L but not F, and the gate classes a live-register-only delta
+  as benign epilogue. Non-divergence.
+
+**Happy-path non-regression:** `make bdos-acceptance` **7/7** converged (BDOSX3
+WRSEQ records 1–9 + second-cluster allocation still 0-byte-diff; DTA region
+0-byte-diff). WRBLK/RDBLK disk-artifact round-trips unchanged (within/extend/multi
+MATCH; del_realloc/rr24/shrink are the pre-existing, documented, accepted
+divergences — M34 provably cannot touch them: its code is reachable only via
+`bdos_seqwrite_body`, the $15 WRSEQ / boot-mini-BDOS write worker; WRABS $30 and
+WRBLK $26 are separate bodies). `make unit-test` **32/32** (new
+`test_fat_have_free_cluster`: free-present→NC, all-full→C, hint-untouched,
+no-write). 
+
+**Gate wiring:** BDOSX4 folded into `make bdos-acceptance` (`EXERCISERS`), no
+allowlist needed (0-byte-diff). `build_bdosx4_disk.py` printed settle bumped 60→90
+(post-fix anchor at t≈30 s; margin for CI host-load). The disk-full corner is now a
+standing regression guard.
+
+**Tier-1:** `disk.rom` exactly **16384 B**; baseline symbol diff = **0 `k_*`
+canonical entries moved** (the ~30 B `bdos_seqwrite_body` growth ripples through the
+relocated bodies after it until the next `ds` anchor re-absorbs — veneer operands
+recomputed by pasmo, all canonical addresses fixed; the $66F6 helper is absorbed by
+the `ds $75A5` anchor with no downstream ripple). Oracle `test.dsk` md5
+`86e840b868810a11f15278ac3d6bb3ff` unchanged; git clean of fixture write-back.

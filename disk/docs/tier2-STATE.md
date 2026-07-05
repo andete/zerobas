@@ -68,8 +68,10 @@ vacuous-gate discovery + a live P0 + a second P1 — all now remediated across t
   soundness); BDOS name table corrected.
 - **OPEN follow-ons (tracked in review-queue):** (1) `$26` WRBLK unimplemented; (2) bdosx.asm
   drives block ops out-of-contract (no FCB record-size) → BDOSX stays honestly RED until fixed;
-  (3) `$23` FSIZE `A=3` uncharacterised (kernel shared call — F2 deferred); (4) WRSEQ disk-full
-  onset lag (P2, case-2 D1). BDOSX4 disk-full exerciser BUILT, still OUT of the gate.
+  (3) `$23` FSIZE `A=3` uncharacterised (kernel shared call — F2 deferred); ~~(4) WRSEQ disk-full
+  onset lag (P2, case-2 D1)~~ **DONE 2026-07-05 (M34, byte-identical; BDOSX4 folded into the gate,
+  now 7/7)**. NOTE: (1)+(2)+(3) were all subsequently closed too — see the M28/M32/M33 resolutions
+  below and the ✅ DONE header. BDOSX4 is now IN `make bdos-acceptance`.
 
 ## Durable framing (outlives the active pass)
 The milestone chain M13→M27 all landed (detail in the tier2-*-spec.md docs + the review-archive).
@@ -162,11 +164,14 @@ any future zerobas-disk work (e.g. the deferred multi-hardware variant layer,
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — Phase B of the FDC-window P0 remediation (spec signed off; user paused before ROM edits)
-**The FDC-window + write-path remediation is COMPLETE** (see the ✅ DONE section above). The next
-step is a user-scoped pick from the tracked follow-ons or a parked direction. The follow-ons
-(review-queue): implement `$26` WRBLK; fix bdosx.asm's out-of-contract block ops (unblocks BDOSX
-gating); characterise `$23` F_SIZE; adjudicate the WRSEQ disk-full onset lag (P2). None is forced.
+## Next action — all tracked write-path follow-ons CLOSED (2026-07-05)
+**The FDC-window + write-path remediation is COMPLETE**, and every tracked follow-on that grew out
+of it has now landed byte-identical: `$26` WRBLK + real `$23` FSIZE (M28), bdosx.asm out-of-contract
+(F5), WRBLK position-cursor perf (M29), alloc-hint (M30), `$24` SETRND + RDSEQ FCB write-back
+(M32/M33), and **the WRSEQ disk-full onset lag (M34, 2026-07-05)** — the last P2 in the queue.
+`make bdos-acceptance` is **7/7** with BDOSX4 (disk-full) now folded in as a standing guard. No
+forced next step; the Tier-C case set (3–5: dir-full, past-EOF random I/O, rename-collision) remains
+an optional parked direction (tier2-tierC-spec.md §"Open scope questions"). Await user direction.
 
 Other candidate directions (parked):
 - **Docs-as-deliverable harvest** ([[dual-mission-docs-as-deliverable]]) — now the code is

@@ -1773,6 +1773,86 @@ srb_have_lo:
                                             ; pinned by the BDOSX snap: rec4 A@0361 + L@0367)
                 ret
 
+; fat_have_free_cluster — M34 (tier2-m34-wrseq-diskfull-spec.md §3.2): scan-only,
+; non-committing sibling of fat_alloc_cluster (fat.asm). Answers "does a $000
+; (free) cluster exist anywhere in FAT copy 0?" WITHOUT claiming one -- no
+; fat_write_fat_entry call, FAT_ALLOCHINT untouched. Reuses fat_total_clusters
+; (scan bound) + fac_entry_from_wbuf (the shared straddle-correct 12-bit
+; unpack) + the same FAT-sector-load bookkeeping fac_loop_body uses (FAT_WRTMP
+; = total, FAT_WRTMP2 = cached FAT sector, FAT_BYTEIDX/FAT_PARITY/FAT_FATSEC).
+; Always scans from cluster 2 (NOT the M30 FAT_ALLOCHINT) so "none free" is
+; answered correctly even when the hint has advanced past a since-deleted
+; cluster. Does not touch FAT_CURCLUS/FAT_CLUSSEC (the read iterator's own
+; cells) -- fac_entry_from_wbuf doesn't either, so this is safe to call from
+; bdos_seqwrite_body mid-sequential-write.
+;   out: Cy = 0 a free cluster exists; Cy = 1 none (disk full)
+; CLEAN-ROOM: our own routine, mirroring fat_alloc_cluster's own scan structure
+; (already our own clean-room code) minus the claim step; Microsoft FAT spec
+; §3.2 ($000 = free).
+fat_have_free_cluster:
+                call    fat_total_clusters  ; DE = total clusters (reads boot sector)
+                ld      (FAT_WRTMP), de
+                ld      hl, $FFFF
+                ld      (FAT_WRTMP2), hl    ; cached-sector = none
+                ld      hl, 2               ; always scan from cluster 2 (not the hint)
+fhfc_loop:
+                ld      de, (FAT_WRTMP)
+                push    hl
+                or      a
+                sbc     hl, de
+                pop     hl
+                jr      nc, fhfc_none       ; scanned past the last cluster -> none free
+                push    hl
+                ld      a, l
+                and     1
+                ld      (FAT_PARITY), a
+                ld      e, l
+                ld      d, h
+                srl     d
+                rr      e                   ; DE = cluster >> 1
+                add     hl, de              ; HL = fatofs = cluster * 3/2
+                ld      a, l
+                ld      (FAT_BYTEIDX), a
+                ld      a, h
+                and     1
+                ld      (FAT_BYTEIDX + 1), a    ; byteidx = fatofs & $1FF
+                ld      a, h
+                srl     a                   ; FAT sector offset = fatofs >> 9
+                ld      e, a
+                ld      d, 0
+                ld      hl, (FAT_FATSTART)
+                add     hl, de              ; HL = absolute FAT sector
+                ld      de, (FAT_WRTMP2)
+                push    hl
+                or      a
+                sbc     hl, de
+                pop     hl
+                jr      z, fhfc_have_sec    ; already loaded -> no re-read
+                ld      (FAT_WRTMP2), hl    ; remember the new cached sector
+                ld      (FAT_FATSEC), hl
+                ex      de, hl
+                ld      hl, WBUF
+                call    read_sector
+                jr      c, fhfc_rderr       ; read error -> treat as no free cluster
+fhfc_have_sec:
+                pop     hl                  ; HL = cluster
+                push    hl
+                call    fac_entry_from_wbuf ; DE = entry value
+                ld      a, d
+                or      e
+                pop     hl
+                jr      z, fhfc_found       ; $000 -> free
+                inc     hl
+                jr      fhfc_loop
+fhfc_rderr:
+                pop     hl                  ; balance the stack (cluster pushed at fhfc_loop)
+fhfc_none:
+                scf                         ; Cy = 1 -- disk full
+                ret
+fhfc_found:
+                or      a                   ; Cy = 0 -- a free cluster exists
+                ret
+
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
                 ds      $77B8 - $, $00
@@ -2597,6 +2677,30 @@ bdos_seqwrite_body:
                 ld      a, (BDOS_WRMODE)
                 or      a
                 jr      z, bsw_err          ; not open for write
+                ; --- M34 (tier2-m34-wrseq-diskfull-spec.md §3.1): eager disk-full
+                ; onset parity with stock. At a sector start that would need a
+                ; NEW cluster, confirm one is available BEFORE buffering/counting
+                ; this record -- mirrors ffds_nopad_body's own needs-a-new-cluster
+                ; test (kernel.asm ffds_nopad_body) so the real allocation (still
+                ; at flush time, unchanged) never fails after we've claimed A=$00.
+                ld      hl, (BDOS_WRBUFLEN)
+                ld      a, h
+                or      l
+                jr      nz, bsw_m34_buffer  ; mid-sector: cluster already validated
+                ld      hl, (BDOS_WRCLUS)
+                ld      a, h
+                or      l
+                jr      z, bsw_m34_needclus ; no cluster yet (fresh file)
+                ld      a, (BDOS_WRSECIDX)
+                ld      hl, FAT_SECPERCLUS
+                cp      (hl)
+                jr      c, bsw_m34_buffer   ; room in current cluster -> no new one
+bsw_m34_needclus:
+                call    fat_have_free_cluster ; Cy=0 a $000 cluster exists; Cy=1 none
+                jr      nc, bsw_m34_buffer
+                ld      a, $01              ; disk full -- BEFORE any buffering
+                ret
+bsw_m34_buffer:
                 ; copy RECSIZE bytes DTA -> SECTOR_BUF + BDOS_WRBUFLEN
                 ld      hl, (BDOS_WRBUFLEN)
                 ld      de, SECTOR_BUF
