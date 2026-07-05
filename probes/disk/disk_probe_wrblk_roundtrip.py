@@ -194,13 +194,18 @@ CASES = {
     # FREES a low-cluster file (BDOS $13 DELETE of DELFILE.BIN) and THEN
     # ALLOCATES (WRBLK extends WRTEST.BIN past its tiny seed).
     # FINDING (verified 2026-07-04): ours reuses the just-freed LOW clusters
-    # (lowest-free-first); the CF-3300 does NOT (it skips to a higher cluster).
-    # This divergence is PRE-EXISTING -- a HEAD (pre-M30) ROM produces the SAME
-    # ours chain, and host test_fat_alloc_hint.py case (c) proves M30's allocator
-    # returns the identical sequence to the from-2 (pre-M30) scan. So M30 is
-    # byte-identical to today; the ours!=stock allocation ORDER after a delete is
-    # a separate, pre-existing characterisation item (spawned follow-up), NOT an
-    # M30 regression. Documented, not asserted ours==stock (like the shrink case).
+    # (lowest-free-first); the CF-3300 does NOT. CHARACTERISED 2026-07-05
+    # (tier2-alloc-order-findings.md, disk_probe_alloc_order.py): stock is a
+    # TAIL-RELATIVE contiguity allocator -- extending a file whose tail cluster is
+    # L it takes L-1 if free (walking DOWN: 339,338,...), else the first free
+    # scanning UP from L; ours has no tail bias (global lowest-free). Here tail=340,
+    # L-1=339 is the just-freed top of the hole, so stock takes 339 and ours 336.
+    # PRE-EXISTING -- a HEAD (pre-M30) ROM produces the SAME ours chain, and host
+    # test_fat_alloc_hint.py case (c) proves M30's allocator returns the identical
+    # sequence to the from-2 (pre-M30) scan. So M30 is byte-identical to today; the
+    # ours!=stock order is a separate, ACCEPTED cosmetic divergence (user, 2026-07-05:
+    # valid FAT12, identical data) -- NOT an M30 regression. Documented, not
+    # asserted ours==stock (like the shrink case).
     "del_realloc": dict(binsize=512, binfill=0x66, recnum=8, rs=128, cnt=1,
                          fillb=0xE9, kind="divergence", delflag=1, del_size=4096),
 }
