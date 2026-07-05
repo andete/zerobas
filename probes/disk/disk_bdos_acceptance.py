@@ -59,6 +59,9 @@ EXERCISERS = [
     # made ours byte-identical to stock: disk-full at WRSEQ #1, all-01, FCLOSE 00.
     # Now a standing regression guard — no allowlist needed (0-byte-diff buffer).
     ("BDOSX4", "build_bdosx4_disk.py"),
+    # BDOSX5 (Tier-C case 3, dir-full). FMAKE on a root-dir-full fixture returns
+    # byte-identical to stock; standing guard (one allowlisted FOPEN-miss L byte).
+    ("BDOSX5", "build_bdosx5_disk.py"),
 ]
 
 CMD_RE = re.compile(r"(python3\s+probes/disk/disk_probe_diff\.py\s+.*)$")
@@ -123,6 +126,13 @@ ALLOWLIST = {
         0x044C: "regs rec14 FREN($17) L — register UNDEFINED on return (contract pins A only)",
         0x045B: "regs rec16 FOPEN-miss($0F) H — register UNDEFINED on the miss path (A=FF is pinned)",
         0x045C: "regs rec16 FOPEN-miss($0F) L — ditto (undefined on miss)",
+    },
+    "BDOSX5": {
+        # Tier-C case 3 (dir-full). The dir-full FMAKE returns (records 0/1) are
+        # byte-identical to stock; the only diff is record 2's FOPEN of the name the
+        # failed FMAKE couldn't create — A=FF (not-found) is pinned on both, L is the
+        # undefined ancillary register (same class as BDOSX3's FOPEN-miss L above).
+        0x01D6: "regs rec2 FOPEN-miss($0F) L — register UNDEFINED on the miss path (A=FF is pinned)",
     },
 }
 
