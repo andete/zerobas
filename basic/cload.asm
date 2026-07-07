@@ -378,11 +378,12 @@ disk_prog_load:
                 ; (2) open the file via the FAT12 engine (mount + find + prime).
                 call    fat_io_open
                 jp      c,load_error       ; not found / mount / I-O error
-                ; (3) first byte must be the tokenised-BASIC disk marker $FF.
+                ; (3) first byte selects the format: $FF = tokenised BASIC; anything
+                ; else = an ASCII (SAVE",A") program (ASCII text never starts $FF).
                 call    fat_io_getbyte
-                jp      c,dpl_err           ; EOF before the marker -> close + error
+                jp      c,dpl_err           ; EOF before any data -> close + error
                 cp      BASIC_DISK_ID
-                jp      nz,dpl_err          ; wrong marker (e.g. ASCII / BSAVE) -> error
+                jp      nz,ascii_load       ; not the $FF marker -> ASCII program load
                 ; (5) start a fresh program: store cursor at the text base.
                 ld      hl,TXTBASE
                 ld      (CLPTR),hl
@@ -524,6 +525,24 @@ dpl_oom:
                 ld      (ERRMARK),a
                 ld      hl,err_prog_mem
                 jp      print_string
+
+; --- ascii_load — LOAD of an ASCII (SAVE",A") program ------------------------
+; Reached from disk_prog_load when the first byte is NOT the $FF tokenised marker.
+; LOAD replaces the current program (unlike MERGE, which keeps it): clear it,
+; re-open the stream from offset 0 (the marker probe consumed byte 0), then
+; tokenise + store each line via the shared MERGE reader (ascii_read_lines,
+; files.asm). Returns to disk_prog_load's caller, which honours ,R (RUNFLAG) /
+; the implicit RUN"name" exactly as the tokenised path's `ret` does. A file that
+; is not line-numbered ASCII (e.g. a BSAVE binary mis-routed here) trips the
+; reader's non-numbered-line guard -> load_error. Clean-room: public ASCII format,
+; no reference ROM read. See basic/docs/spec-ascii-saveload.md §4.
+ascii_load:
+                call    new_prog            ; LOAD replaces the current program
+                call    fat_io_open         ; re-prime: reset the read to offset 0
+                jp      c,load_error        ; file vanished between opens -> error
+                call    ascii_read_lines    ; tokenise + store; CF set = bad line
+                jp      c,load_error        ; non-numbered line / not an ASCII program
+                ret                         ; caller handles ,R / returns to the REPL
 
 ; --- autoexec_run: cold-start AUTOEXEC.BAS auto-run (disk/docs/autoexec-bas-spec.md) ---
 ; Called once from interp.asm's `init`, between the startup banner (show_title)

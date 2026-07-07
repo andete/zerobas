@@ -862,47 +862,61 @@ ex_merge:
                 push    hl                  ; guard the text cursor across the merge
                 call    fat_io_open         ; mount + find + prime the sequential read
                 jp      c,mrg_ioerr         ; not found / mount / I-O error
-mrg_newline:
-                ld      hl,LINEBUF          ; start a fresh line
-                ld      (MRG_PTR),hl
-mrg_charloop:
-                call    fat_io_getbyte
-                jr      c,mrg_eofline       ; EOF -> flush any partial line, then finish
-                cp      $1A
-                jr      z,mrg_eofline       ; Ctrl-Z soft-EOF -> finish
-                cp      $0A
-                jr      z,mrg_charloop      ; ignore LF
-                cp      $0D
-                jr      z,mrg_endline       ; CR -> end of this line
-                ld      c,a                 ; C = the data char (survives the bounds math)
-                ld      hl,(MRG_PTR)
-                ld      a,l                 ; bounds: keep the last LINEBUF byte for the 0
-                cp      (LINEBUF+LINEMAX-1) & $FF  ; (LINEBUF is one page -> low byte suffices)
-                jr      nc,mrg_charloop     ; line full -> drop extra chars
-                ld      (hl),c
-                inc     hl
-                ld      (MRG_PTR),hl
-                jr      mrg_charloop
-mrg_endline:
-                call    mrg_storeline       ; tokenise + store this line
-                jr      c,mrg_baderr        ; non-numbered line -> error
-                jr      mrg_newline
-mrg_eofline:
-                ld      hl,(MRG_PTR)        ; flush a final line with no trailing CR
-                ld      a,l
-                cp      LINEBUF & $FF
-                jr      z,mrg_done          ; nothing accumulated -> done
-                call    mrg_storeline
-                jr      c,mrg_baderr
-mrg_done:
+                call    ascii_read_lines    ; tokenise+store each line; CF set = bad line
                 pop     hl                  ; restore the text cursor
+                jp      c,stmt_error        ; non-numbered line -> "Direct statement in file"
                 jp      exec_stmt
 mrg_ioerr:
                 pop     hl
                 jp      load_error
-mrg_baderr:
-                pop     hl
-                jp      stmt_error          ; "Direct statement in file" analogue
+
+; --- ascii_read_lines — read a line-numbered ASCII (SAVE",A") program from the
+; ALREADY-OPEN fat_io sequential stream, tokenising + storing each line via
+; mrg_storeline -> dispatch_line (the same path as a typed line). SHARED by MERGE
+; (which keeps the current program) and ASCII LOAD (whose caller cleared it via
+; new_prog first). Lines end at CR ($0D); LF ($0A) is ignored; Ctrl-Z ($1A) or EOF
+; ends the file. dispatch_line uses LINEBUF/TOKBUF/SL_* + the program text area, NOT
+; the fat_io read state (FREAD_*/FSECTOR_BUF), so the file stream survives across it.
+; Sources: MSX-BASIC language reference (ASCII program = line text + CR/LF, Ctrl-Z
+; terminator); clean-room, no reference ROM read. See PROVENANCE §MERGE and
+; basic/docs/spec-ascii-saveload.md §4.
+;   out: CF clear = whole file stored OK; CF set = a non-blank, non-numbered line.
+ascii_read_lines:
+arl_newline:
+                ld      hl,LINEBUF          ; start a fresh line
+                ld      (MRG_PTR),hl
+arl_charloop:
+                call    fat_io_getbyte
+                jr      c,arl_eofline       ; EOF -> flush any partial line, then finish
+                cp      $1A
+                jr      z,arl_eofline       ; Ctrl-Z soft-EOF -> finish
+                cp      $0A
+                jr      z,arl_charloop      ; ignore LF
+                cp      $0D
+                jr      z,arl_endline       ; CR -> end of this line
+                ld      c,a                 ; C = the data char (survives the bounds math)
+                ld      hl,(MRG_PTR)
+                ld      a,l                 ; bounds: keep the last LINEBUF byte for the 0
+                cp      (LINEBUF+LINEMAX-1) & $FF  ; (LINEBUF is one page -> low byte suffices)
+                jr      nc,arl_charloop     ; line full -> drop extra chars
+                ld      (hl),c
+                inc     hl
+                ld      (MRG_PTR),hl
+                jr      arl_charloop
+arl_endline:
+                call    mrg_storeline       ; tokenise + store this line
+                ret     c                   ; non-numbered line -> CF set (caller errors)
+                jr      arl_newline
+arl_eofline:
+                ld      hl,(MRG_PTR)        ; flush a final line with no trailing CR
+                ld      a,l
+                cp      LINEBUF & $FF
+                jr      z,arl_ok            ; nothing accumulated -> done
+                call    mrg_storeline
+                ret     c
+arl_ok:
+                or      a                   ; CF clear = success
+                ret
 
 ; mrg_storeline — 0-terminate LINEBUF at MRG_PTR and, if it is a numbered (or blank)
 ; line, hand it to dispatch_line (same tokenise + store_line path as a typed line).
