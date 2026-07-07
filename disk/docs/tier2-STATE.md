@@ -164,7 +164,22 @@ any future zerobas-disk work (e.g. the deferred multi-hardware variant layer,
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — bdos-acceptance harness now typing-free too (2026-07-07)
+## Next action — C-BIOS BDOS self-consistency gate built; ONE open bug: LOGIN $18 (2026-07-07)
+**NEWEST (2026-07-07, commit 1a276cf):** built `make bdos-cbios-selfcheck`
+([tier2-cbios-bdos-selfcheck-spec.md](tier2-cbios-bdos-selfcheck-spec.md)) after the user asked
+"have we not been testing our disk ROM on C-BIOS?" — the answer was NO for the BDOS layer
+(`bdos-acceptance` is a DIFFERENTIAL, CF-3300-oracle-only; that's why the C-BIOS-only `$F340` bug
+survived). The new gate re-captures the BDOSX anchors on the **C-BIOS target** vs CF-3300 and
+asserts byte-identical (self-consistency, no stock C-BIOS oracle). First run **9/10 identical +
+caught a second real BIOS-dependent bug**: **BDOS `$18` LOGIN returns login-vector `0x00FF` (8
+phantom drives) on C-BIOS vs stock-correct `0x0003`** — same class as `$F340`. Carried as tracked
+KNOWN_OPEN/xfail (gate green; user chose "track as follow-on, commit gate now"). **OPEN follow-on
+(spawned task_dee987d2): root-cause + fix LOGIN `$18` black-box like `$F340`**, then drop
+`KNOWN_OPEN["BDOSX2"]` + the spec tracking §. The two-interface rule's "disk-ROM↔main-BIOS is
+BIOS-agnostic" assumption is now falsified twice (`$F340`, LOGIN) — prefer C-BIOS-target checks
+for DOS-layer work, not just the CF-3300 differential.
+
+## Prior action — bdos-acceptance harness now typing-free too (2026-07-07)
 **The FDC-window + write-path remediation is COMPLETE**, and every tracked follow-on has now landed
 byte-identical: `$26` WRBLK + real `$23` FSIZE (M28), bdosx.asm out-of-contract (F5), WRBLK
 position-cursor perf (M29), alloc-hint (M30), `$24` SETRND + RDSEQ FCB write-back (M32/M33), the
