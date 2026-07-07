@@ -96,6 +96,11 @@ def build(dos_src: str, out: str, tmp_dir: str) -> dict:
     img = bytearray(open(out, "rb").read())
 
     fat12_add(img, "BDOSX4", "COM", com_bytes)      # the exerciser first...
+    # AUTOEXEC.BAT auto-runs BDOSX4 with zero typed keys (verify-first: see
+    # tier2-autoexec-bat-harness-spec.md). Added BEFORE the free-cluster count below is
+    # taken, so its own cluster is already accounted for and the disk still ends up
+    # exactly 100%-full after the filler.
+    fat12_add(img, "AUTOEXEC", "BAT", b"BDOSX4\r\n")
     clus_bytes, free, total = fat12_geometry(img)
     if free < 1:
         sys.exit(f"source disk has no free clusters after injecting BDOSX4.COM")
@@ -132,7 +137,7 @@ def main() -> int:
     # no slow buffered flush); 90 s leaves comfortable margin for host-load variance
     # in CI (pre-M34 ours needed ~71 s, which the old 60 s misaligned).
     print("next: python3 probes/disk/disk_probe_diff.py capture "
-          f"--at {addrs['done']:#06x} --arm-check-val {addrs['sig']:#04x} --keys '\\rBDOSX4\\r' --keys-at 20 --settle 90 "
+          f"--at {addrs['done']:#06x} --arm-check-val {addrs['sig']:#04x} --settle 90 "
           f"--machine both --mem {addrs['regs']:#06x}:0x80 --diska {args.out}")
     return 0
 
