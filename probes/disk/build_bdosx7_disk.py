@@ -65,6 +65,9 @@ def build(dos_src: str, out: str, tmp_dir: str) -> dict:
     fat12_add(img, "BDOSX7", "COM", com_bytes)
     fat12_add(img, "RENSRC", "TMP", b"\x2a")     # arbitrary 1-byte content
     fat12_add(img, "RENDST", "TMP", b"\x5c")     # distinct 1-byte content (the collision target)
+    # AUTOEXEC.BAT auto-runs BDOSX7 with zero typed keys (verify-first: see
+    # tier2-autoexec-bat-harness-spec.md). Replaces the typed '\rBDOSX7\r' launch.
+    fat12_add(img, "AUTOEXEC", "BAT", b"BDOSX7\r\n")
 
     open(out, "wb").write(img)
     addrs["sig"] = com_bytes[2]         # byte at $0102 (resident-program arm signature)
@@ -90,7 +93,7 @@ def main() -> int:
     # occurrence #1 of `done` is the REAL program run, not a boot-time address collision
     # (the vacuous-anchor bug found 2026-07-04). See tier2-remediation-spec.md.
     print("next: python3 probes/disk/disk_probe_diff.py capture "
-          f"--at {addrs['done']:#06x} --arm-check-val {addrs['sig']:#04x} --keys '\\rBDOSX7\\r' --keys-at 20 --settle 90 "
+          f"--at {addrs['done']:#06x} --arm-check-val {addrs['sig']:#04x} --settle 90 "
           f"--machine both --mem {addrs['fcb']:#06x}:{mem_len:#x} --diska {args.out}")
     return 0
 
