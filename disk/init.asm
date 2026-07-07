@@ -312,7 +312,7 @@ boot_sig_ok:
                 ; back down before BASIC: this runs in every host's INIT, incl. the
                 ; C-BIOS_*_BASIC_DISK regression on test720.dsk (sig $EB, stub D0 C9).
                 ; dos_handoff (free-tail) defaults $F338=0 for DOS -- COMMAND.COM's
-                ; "no AUTOEXEC -> prompt" branch (`ld a,($F338);and a;jr nz` @ $C26B) --
+                ; "no AUTOEXEC -> prompt" branch (at PC $C26B it reads $F338; 0 = prompt) --
                 ; restoring the host's dual-purpose stub for a returning data disk, then
                 ; does the scf + step-7 call. Subroutine, not inline: this region is
                 ; pad-packed to the $41FD anchor. (tier2-f338-default-spec.md)
@@ -388,8 +388,9 @@ page0_ram_out:
 ; black-box oracle observations (§8.8/§8.16).
 set_ramad:
                 ; --- clear the disk work-area flag $F340 (§8.33) UNCONDITIONALLY ----
-                ; MSXDOS.SYS init reads $F340 right after $4030 ($0246:
-                ; LD A,($F340) / AND A / CALL Z,$0317): $00 = take the normal (cold)
+                ; MSXDOS.SYS init reads $F340 right after $4030 (observed read of $F340 at
+                ; PC $0246, followed by a call to $0317 taken only when the value is
+                ; zero): $00 = take the normal (cold)
                 ; init path; non-zero => COMMAND.COM warm-starts, skipping its banner,
                 ; the date prompt AND AUTOEXEC.BAT (full trace:
                 ; tier2-cbios-dosboot-autoexec-f340.md). This clear MUST run BEFORE the
@@ -552,8 +553,9 @@ bdt_tramp:
 ; build_resident — install the disk system's resident RAM ROUTINES the kernel CALLs
 ; from fixed work-area addresses (a3 §8.28). After $50A9 the kernel CALLs $F1C9, a
 ; $-terminated STRING-PRINT helper the genuine disk ROM relocates into the work area
-; (stock body: CALL $F36B / LD A,(DE) / CALL $F368 / INC DE / CP '$' / RET Z /
-; CALL $53A8 output / loop). Absent it ($FF) the CALL slides through RST 38h. We
+; (behaviour: walks the $-terminated string, emitting each byte through the work-area
+; output path via the $F368/$F36B segment-switch hooks until the '$' terminator).
+; Absent it ($FF) the CALL slides through RST 38h. We
 ; install OUR OWN clean-room body (never the stock bytes) into page-3 RAM (always
 ; mapped, no slot juggling). It emits each char via conout_body (M15 §9.2) --
 ; the same proven CONOUT path func-2/conin_line_body already use. Runs under the

@@ -76,7 +76,7 @@ COMMAND.COM, before `$0100` is ever reached.
 semantics as the `DA40` case.** `writewatch --range 0xDC5B:0x20 --no-gate --at 0x4010
 --arm-cond 1 --machine stock` (armed at the first canonical `$4010` DSKIO hit, well before
 `$0100`) captures the full boot-window write history at t≈10.46:
-1. A MAINROM/BIOS-region copy (`writerPC=$027D`, LDIR-shaped: BC counts down from `$25`,
+1. A MAINROM/BIOS-region copy (`writerPC=$027D`, block-copy-shaped: BC counts down from `$25`,
    HL source `$0A5B..`) lays down a 37-byte fresh-FCB image: drive `$00`, "COMMAND COM",
    `+12..+31` all `$00`.
 2. **`$42AA`** writes `+14:=$00` — the same boundary-byte PC as §5.2's `DA40` case.
@@ -102,7 +102,7 @@ pattern there cannot, by itself, be what broke the boot.
 
 **Fact 3 — on a MISS, the fill machinery writes NOTHING beyond `+14:=$00`.**
 `writewatch --range 0xDA40:0x20 --in-func 0x0F --machine stock` (default arm; catches n=2's
-AUTOEXEC.BAT probe): kernel `$D880` LDIRs the name in from the user FCB (`$D62F`→`$DA40`),
+AUTOEXEC.BAT probe): kernel `$D880` block-copies the name in from the user FCB (`$D62F`→`$DA40`),
 then **`$42AA` writes `+14:=$00` and the `$4488-$44C8` cluster NEVER fires.** The `$42AA`
 boundary-byte zero is an unconditional PRE-search write; the `+15..+31` fill is found-only.
 
@@ -244,22 +244,22 @@ mirror. Added `disk_probe_diff.py writewatch --range BASE:LEN --in-func N` (same
 at 64 B). Each hit reports **writer PC + the region it falls in** (`PAGE1` = `$4000-$7FFF`,
 `KERNEL` = `>=$C000`, `MAINROM/BIOS` = `<=$3FFF`) plus `BC/DE/HL` at the moment of the write —
 the extra registers were needed here (not in `readwatch`) because the writer turned out to be
-a single `LDIR`, and `BC` (remaining count) / `DE` (destination) / `HL` (source) are what
-identify an LDIR's source buffer and progress, itself an allowed black-box (register) read, no
+a single block copy, and `BC` (remaining count) / `DE` (destination) / `HL` (source) are what
+identify the block copy's source buffer and progress, itself an allowed black-box (register) read, no
 instruction decoded. Same clean-room class as every other probe in the file.
 
 ### 5.2 Item 1 — kernel↔`$4462` division of labor: the kernel writes 100% of the FCB body;
-### `$4462` fills a SEPARATE, EARLIER work buffer that the kernel then LDIRs into the FCB
+### `$4462` fills a SEPARATE, EARLIER work buffer that the kernel then block-copies into the FCB
 `writewatch --in-func 0x0F --range 0xD403:0x25` (both machines) shows **every** byte of the
-FCB at `$D403` is written by **KERNEL** code (`$D8A8`, an `LDIR`, plus 3 tail stores at
+FCB at `$D403` is written by **KERNEL** code (a block copy at `$D8A8`, plus 3 tail stores at
 `$C4A4/$C4A7/$C4AB`) — `$4462` (or any PAGE1 PC) never writes `$D403` directly, on EITHER
 machine. This looked at first like "the kernel does all the work," but `writewatch` on the
 LDIR's SOURCE (found via the same hit's `HL`/`DE`/`BC`: `$D8A8` runs `HL=$DA40..$DA5F ->
-DE=$D403..$D422, BC=$20->0`, i.e. **`$D8A8` is `ldir` copying a 32-byte kernel-RAM work buffer
+DE=$D403..$D422, BC=$20->0`, i.e. **`$D8A8` is a block copy of a 32-byte kernel-RAM work buffer
 at `$DA40` into the FCB** — the same buffer `$47B2` is later called with, see §5.3) shows the
 REAL division of labor is one level up, at `$DA40`, not at `$D403`:
 - `writewatch --in-func 0x0F --range 0xDA40:0x20`: on **stock**, `$DA40` is first LDIR-filled by
-  the SAME kernel `$D880` (name+ext+EX+S1+S2, i.e. FCB bytes +0..+13 = the search-FCB the
+  the SAME kernel `$D880` block copy (name+ext+EX+S1+S2, i.e. FCB bytes +0..+13 = the search-FCB the
   caller supplied) — that part IS pure kernel, both machines match here. Then, at
   `t≈22.28` (mid-FOPEN, AFTER the name fill), stock's writer PCs shift to **`$42AA`
   (`dskio_rd` on our numbering) / `$4488/$4492/$4498/$449F/$44A1/$44AE/$44B3/$44B8/$44BB/
@@ -274,7 +274,7 @@ REAL division of labor is one level up, at `$DA40`, not at `$D403`:
   consistent with RC-1: it returns before doing anything).
 
 **⇒ Division of labor (pinned): the KERNEL is responsible for the search-FCB header
-(drive/name/ext/extent/S1/S2, FCB +0..+13, written via `$D880`'s LDIR from the SFIRST/SNEXT
+(drive/name/ext/extent/S1/S2, FCB +0..+13, written via `$D880`'s block copy from the SFIRST/SNEXT
 "found" DTA image — already proven byte-identical by M19). The PAGE1 FOPEN-fill entry
 (reached as the `$4462`-class call, but stock's actual fill code spans multiple addresses —
 `$42AA` then the `$4488-$44C8` cluster, i.e. it runs THROUGH what are, on our ROM, `dskio_rd`
@@ -485,7 +485,7 @@ the answer to item 4):**
   re-touching +0..+13, confirming §5.2's division-of-labor boundary was respected).
 - Regression: `$E299`/`FDC_IFF` no longer written during FOPEN (readwatch/writewatch check);
   boot 27/27 BDOS parity intact; `DIR` 100% parity intact (M19/M20 unaffected, since SFIRST/
-  SNEXT + the `$D880` header-fill LDIR are untouched by this fix).
+  SNEXT + the `$D880` header-fill block copy are untouched by this fix).
 
 ### M21b (`$47B2` generic record-read body)
 - `capture --at 0xC51D --mem ...`: runtime typed-command RDBLK returns `AF=$0142 HL=$0480`

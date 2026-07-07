@@ -17,7 +17,7 @@ harness, and the fix is named by direct ours-vs-stock measurement:
 | | `$0038` vector | int handler lives in | installed by |
 |---|---|---|---|
 | **Ours**  | `C3 51 42` = `jp $4251` | **page-1 disk ROM** (`int_h $4251 → int_h_body $792B`) | our disk ROM `$41C7`/`lay_page0_env`, t≈3.14s |
-| **Stock** | `C3 AE DD` = `jp $DDAE` | **high RAM $DDAE** (`push ix/iy/hl/de/bc/af…`, always mapped) | stock disk ROM `$5ABC`, t≈9.65s |
+| **Stock** | `C3 AE DD` = `jp $DDAE` | **high RAM $DDAE** (stock's always-mapped int handler; full register-save, chains KEYINT) | stock disk ROM `$5ABC`, t≈9.65s |
 
 At the COMMAND.COM handoff, `wa_seg_ram` (M5.6) correctly swaps page 1 from the disk
 ROM (slot3-sub1) to RAM (slot3-sub0) so the TPA owns `$4000-$7FFF`. COMMAND.COM then

@@ -58,8 +58,8 @@ Insert immediately before `scf` (step 7):
 
 ```
                 ; --- DOS-only $F338 default (BDOS-loop blocker #1) -------------
-                ; COMMAND.COM branches on $F338 (ld a,($F338);and a;jr nz @ $C26B):
-                ; 0 = "no AUTOEXEC -> prompt", nonzero -> wrong path. Stock's disk
+                ; COMMAND.COM tests $F338 near $C26B: 0 = "no AUTOEXEC -> prompt",
+                ; nonzero -> wrong path. Stock's disk
                 ; ROM clears it at boot; we set it just before handoff. Saved/restored
                 ; so a returning data disk keeps the host's BASIC stub ($F338 is
                 ; dual-purpose). DOS disk never returns -> the 0 persists. (tier2-f338-default-spec.md)

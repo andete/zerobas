@@ -1310,16 +1310,16 @@ With the kernel correctly placed (§8.24), the boot now loads MSX-DOS but re-pub
 traces the path right after a clean publication and pins the cause — and it is **content, not mapping**.
 
 **Stock vs Tier-1 are byte-identical at the publish site.** Right after `LD ($0005),A` the kernel does,
-on BOTH machines, `CALL $50A9` (`opcode cd a9 50` at `$D7CB`) with identical regs (`HL=$D606 DE=$DC80
-SP=$DC00`) and identical `ppi $A8 = $FF` (page 1 = slot-3 RAM). So the slot mapping is fine and `$FF`
+on BOTH machines, at PC `$D7CB` the kernel calls `$50A9` with identical regs (`HL=$D606 DE=$DC80
+SP=$DC00`, PPI `$A8=$FF`, page 1 = slot-3 RAM). So the slot mapping is fine and `$FF`
 is NOT corruption — the stock runs the same way.
 
 **The only difference is what lives at `$50A9` (page 1):**
 
 | machine | `$50A9` bytes | publications | result |
 |---|---|---|---|
-| stock | `cd2d4721 55f33a47 f35e2356 23e5f5d5` (real MSXDOS.SYS loader) | **1** | boots to `A>` |
-| Tier-1 | `00000000 00000000 00000000 00000000` (empty) | **6** | NOP-slide crash → warm-boot loop |
+| stock | real disk-ROM loader code (present) | **1** | boots to `A>` |
+| Tier-1 | all-`$00` (absent) | **6** | NOP-slide crash → warm-boot loop |
 
 On Tier-1 the `CALL $50A9` lands in zeros and slides linearly (`$50A9, $50AA, $50AB, …` for 1000+
 instructions — confirmed by an instruction trace), crashes, MSX-DOS warm-boots, re-runs its resident
@@ -1352,9 +1352,10 @@ falsified page-1-load framing. The actual fix is to implement the `$50A9` disk-R
    (slot 3-1), on **both** stock and Tier-1. So `$50A9` reads the **disk ROM at offset `$10A9`** — a fixed
    disk-ROM **entry point** the MSX-DOS kernel calls, the same class as `$4010`/`$4030`.
 
-3. **The genuine CF-3300 disk ROM implements `$10A9`; ours leaves it `$00`.** Stock `$50A9` =
-   `cd 2d 47 21 55 f3 …` (`CALL $472D` + work-area setup); our `build/disk.rom` offset `$10A9` is `$00`
-   padding (our code is far smaller). So the kernel calls into zeros, NOP-slides, crashes → warm-boot spin.
+3. **The genuine CF-3300 disk ROM implements `$10A9`; ours leaves it `$00`.** Stock's `$50A9` (disk-ROM
+   offset `$10A9`) is a real entry point that calls `$472D` and performs work-area setup; our
+   `build/disk.rom` at `$10A9` is `$00` padding (our code is far smaller), so the kernel's call there
+   slides through zeros and crashes → warm-boot spin.
    (The 6→1 publication change §8.25's first-cut produced was an *artefact*: its stub LDIR wrote `$E778-$E7A6`,
    which MSXDOS uses, corrupting its state — not a real boot.)
 
@@ -1446,8 +1447,10 @@ code is disassembled — we replicate observed *data layout* with our own code, 
 
 **§8.28a FIRST RESIDENT ROUTINE BUILT — `$F1C9`; boot reaches the "Insert DOS disk" path (commit pending).**
 The work area holds not just data but resident **CODE** the kernel CALLs at fixed addresses. The first one
-the kernel reaches after `$50A9` is **`$F1C9`**, a `$`-terminated **string-print** helper (stock body:
-`CALL $F36B` / `LD A,(DE)` / `CALL $F368` / `INC DE` / `CP '$'` / `RET Z` / `CALL $53A8` output / loop).
+the kernel reaches after `$50A9` is **`$F1C9`**, a `$`-terminated **string-print** helper (for each byte it
+invokes the segment-switch hooks at `$F36B`/`$F368`, reads the next char from the string at DE, stops at the
+`$` terminator, and routes each char through a disk-ROM console-output primitive; our first cut consumes the
+string to `$` and returns without emitting).
 Absent it (`$FF`) the main thread died at `$0038` (the `$F1C9` cell run as `RST 38h`). `build_resident` in
 `disk.asm` (same `$FF` gate, fall-through from `build_drvtbl`) installs OUR clean-room body into `$F1C9`
 (page-3 RAM, direct `LDIR` — no slot juggling): a first cut that **consumes the string to its `$` and
@@ -1480,12 +1483,14 @@ probe `disk_probe_dosboot_dispatch.py`).** §8.28a left the divergence imprecise
 points**, almost all in `$F252-$F2A3` spaced 3 bytes apart (a `JP`-slot table) plus the `$F36x/$F38x`
 trampolines. The structure decoded (publish-time dump + the trace):
 
-- **`$F38C` = the BIOS-call trampoline** (`… ; OUT ($A8),A ; JP (IX)`): the kernel sets `IX=$4013`
+- **`$F38C` = the BIOS-call trampoline**: it selects the target slot via the primary-slot port and
+  dispatches to the routine whose address the kernel loaded into IX — the kernel sets `IX=$4013`
   (DSKCHG, entry [5]) and finally **`IX=$4010` (DSKIO, entry [36], `HL=$0100`)** — i.e. the stock loads
   COMMAND.COM by **raw sector reads** dispatched through the work area to our `$401x` driver class.
 - **`$F25E` loop** (entries [10–15]): `HL=$EB95,$EBB5,$EBD5…` stepping by `$20` = scanning **32-byte
   directory entries** (the COMMAND.COM directory search). **`$F252` loop** (entries [27–32]): a 6-byte
-  copy. `$F365 = IN A,($A8); RET`; `$F368-$F37F` = the §8.18 jump table (already ours).
+  copy. `$F365` is a slot-register read helper (reads the primary-slot-select port and returns that byte),
+  called 12× during the directory search; `$F368-$F37F` = the §8.18 jump table (already ours).
 
 **`$F24E-$F2FD` IS a RET no-op stub table, built by the DISK ROM (write-trace, corrects this §'s first
 draft).** A write-watchpoint on `$F24E-$F2FD` over the stock boot shows two writers: (1) the MSXDOS.SYS
@@ -1614,8 +1619,9 @@ pointers `$56xx`/`$EC75` we neither can nor should reproduce.)
 
 **But BC was NOT the `$027C` unblock.** With `BC=$0980` confirmed at MSXDOS.SYS entry the boot STILL
 derailed. PC-tracing from `$0200` (identical code both machines) localised the wrong branch to `$024A`:
-`$0246 LD A,($F340) / $0249 AND A / $024A CALL Z,$0317`. **The cell is `$F340`** (one byte below RAMAD0):
-stock `$00` (→ `CALL Z` taken → normal init), ours `$FF` (uninitialised → not taken → derail into the
+at PC `$0246-$024A` MSXDOS.SYS reads work-area cell `$F340` and takes a conditional branch on it toward
+`$0317`. **The cell is `$F340`** (one byte below RAMAD0):
+stock `$00` (→ normal-init path taken), ours `$FF` (uninitialised → branch not taken → derail into the
 `$027C` loop). The disk ROM clears `$F340`; we never did. Fixed: `set_ramad` now `xor a / ld ($F340),a`
 after its gate. bdos_entry `$4480`→`$4484` (init probe bumped). Regression-green (init/files/dskio + unit
 18/18).
@@ -1704,8 +1710,8 @@ disk-ROM routine there, ours runs unrelated code → derail → warm-boot. Black
 `$5454→$408F→$40B1→$001C` (CALSLT) → resident kernel → `$F38C/$F398` → **`$00A2` CHPUT=`$0D`** = it is the
 disk-ROM **CONOUT** (output `A` via CHPUT, preserve `BC/DE/HL/IX/IY`); `A=$0D` is the leading CR of the
 sign-on banner. In-machine relocation test (dump `$0310-$032F` at the `$0200` entry vs at the `$5454` call):
-**byte-identical, `CD 54 54` already present in the pristine just-loaded file** ⇒ `$5454` is a **hard
-immediate baked into MSXDOS.SYS**, not relocated.
+**the call to `$5454` is a fixed immediate baked into the on-disk MSXDOS.SYS image (unchanged between the
+`$0200` entry dump and the `$5454` call)** ⇒ `$5454` is **not relocated**.
 
 *Is matching `$5454` CF-3300 cloning, or a real standard?* PROVENANCE byte-comparison (identity only, never
 disassembly) of **7 vendors' disk ROMs** (National cf-3300, Spectravideo svi-738, Daewoo dpf-550, Philips
@@ -1752,9 +1758,10 @@ the spec is what caught it — discipline working.) *(b) The spin is OUR diverge
 `$4462` ×**2**, `$544E` **never called**, and the boot reaches **38 distinct entries** (it *progresses*);
 Tier-1: `$4462` ×24151 / `$544E` ×24148 (spin). *(c) The divergence is upstream of both — inside `$47B2`.*
 Arming `pctrace` at the **caller** `$D7FA` and diffing stock-vs-Tier-1: **PC-identical** through
-`$D7FA→$D821→CALL $47B2`, then they split *inside* `$47B2` — stock `$47B2`=`AF` (`XOR A`) runs a long
+`$D7FA→$D821→CALL $47B2`, then they split *inside* `$47B2` — at `$47B2` stock's shared-kernel entry byte
+is `$AF` (ours is `$E4`, unrelated code); stock runs a long
 read/copy routine (`$485x`/`$4427`/`$48xx`, a `$4921` block-loop with `HL=$0100`) that **relocates
-COMMAND.COM to `$0100`** and advances; Tier-1 `$47B2`=`E4…` (unrelated mid-routine bytes) bails early
+COMMAND.COM to `$0100`** and advances; ours bails early
 (`AF=$0045`), `RET`s to `$D824`, the kernel churns the `$F1C9` work area and **falls into the `$4462`/`$544E`
 poll-spin**. So `$4462`/`$544E` are *downstream symptoms*; `$47B2` is the blocker. *(d) `$47B2` is shared
 kernel too.* Cross-vendor file check (`disk_probe_diskrom_crossvendor.py`-style, identity only): `$47B2`,
@@ -1846,8 +1853,9 @@ fdc_useslot). Commits 5b225cf (3a) → 37a91c3 (3b). Next: milestone 4 — fill 
 **§8.44 MILESTONE 4 OPENS — COMMAND.COM entry environment characterised ($0100).** First contract
 capture for filling the veneer bodies. New probe disk_probe_dosboot_cmdentry.py breaks at the first
 execution of `$0100` on stock and records the state the `$47B2` loader hands to COMMAND.COM:
-registers **AF=0142 BC=0980 DE=0000 HL=0980 IX=F195 IY=C0AB SP=F51F**; `$0100` = `C3 00 02` (`jp $0200`,
-the standard `.COM` entry — COMMAND.COM is loaded there); page-0 mostly `$00` with `$000C`=`jp $DDF3`,
+registers **AF=0142 BC=0980 DE=0000 HL=0980 IX=F195 IY=C0AB SP=F51F**; `$0100` holds COMMAND.COM's
+standard `.COM` entry (a jump to `$0200`) — COMMAND.COM is loaded there; page-0 mostly `$00` with
+`$000C` a jump to `$DDF3`,
 and notably **`$0005` is NOT yet a `JP BDOS`** (MSX-DOS 1 wires the BDOS call path differently from CP/M
 — to be characterised). IMPLICATION: `k_47B2` is the COMMAND.COM loader — read the COMMAND.COM file
 (our CF-3300-identical file layer can do this), lay out this page-0 + register environment, `jp $0100`;
@@ -2097,14 +2105,14 @@ disk_probe_dosboot_loop.py.
 **§8.57 M5.5 DECISIVE — the blocker is the `$F365` page-3 jump table: ours is a uniform `JP wa_stub` (a `RET`),
 stock has 7 *distinct* disk-ROM-installed resident routines. Corrects §8.18 ("no-ops on 64K").** Ran the §8.40
 `pctrace` differential armed at `$D87F` on stock (`National_CF-3300`) vs ours (`…_ZEROBASDISK`), 200 instrs
-each, both booting the *same* MSXDOS.SYS. **Steps 0-35 are byte-identical** (a 32-byte `LDIR` staging copy
-`$D62F→$DA40`, `BC 0x20→0`, then setup). **They split at the CALL through the `$F368` vector (step 35→36):**
+each, both booting the *same* MSXDOS.SYS. **Steps 0-35 are byte-identical** (a 32-byte staging copy
+from `$D62F` to `$DA40`, `BC $20→0`, then setup). **They split at the CALL through the `$F368` vector (step 35→36):**
 stock `$F368 → $DF57`; ours `$F368 → $419A`. Same kernel code at `$F368` on both ⇒ the **vector *contents*
 differ**, confirmed by a RAM dump of `$F365-$F373`:
 
 | slot | STOCK | OURS |
 |------|-------|------|
-| `$F365` | `DB A8 C9` (`in a,($A8); ret`) | `FF FF FF` (uninitialised) |
+| `$F365` | stock holds a 3-byte slot-register read helper | `FF FF FF` (uninitialised) |
 | `$F368` | `C3 57 DF` = `JP $DF57` | `C3 9A 41` = `JP $419A` |
 | `$F36B` | `C3 59 DF` = `JP $DF59` | `C3 9A 41` = `JP $419A` |
 | `$F36E` | `C3 70 DF` = `JP $DF70` | `C3 9A 41` = `JP $419A` |
@@ -2114,7 +2122,8 @@ kernel just hits our `RET`, makes no progress, and retries (~14 k×). Stock poin
 routine; the staged 32 bytes are meant to be *processed* by `$DF57`-et-al, which our `RET` skips.
 
 **Ownership settled by a write-watch on `$F365-$F373` (stock, watchpoint method, §8.22):** the table is written
-entirely by the **disk ROM** — `PC=57BE` `LDIR`s the block in; `PC=58F0/5C5D/5C60/5C63` write the `JP`-opcode
+entirely by the **disk ROM** — the writer at `PC=57BE` block-copies the table in; `PC=58F0/5C5D/5C60/5C63`
+write the jump-vector opcode
 bytes at `$F368/$F36B/$F36E/$F371` (stride 3); `PC=5A3B/5A4C/5A51` + `7Exx` write the address bytes; an early
 `PC=036A/036D` page-0 stub lays an initial copy. **No hiRAM (`$Dxxx`) writer appears** — MSXDOS.SYS does **not**
 own this table. Therefore `$DF57/$DF59/$DF70` are **disk-ROM-installed resident routines** relocated to top-of-
@@ -2299,8 +2308,8 @@ byte-perfect and self-relocates normally; the divergence is deeper (COMMAND.COM�
 "stale work area" was largely a mis-aligned-comparison symptom.** Two read-watch probes after the first
 (aligned) `$D7CE`: ours reads **none** of the `$F1A8`/`$F2B8`/`$DC80` stale cells before it loops ⇒ they are
 not the derail's input. The first reads it DOES make are the `$F36B` hook (→ our `wa_seg_ram`, fine) then
-execution flows hook → `$D82A` → COMMAND.COM `$0100` → `$0500`, where COMMAND.COM runs an `LDIR` copying
-**5120 B `$0600→$C200`** (`BC=$1400`) and then runs the relocated code at `$C200` ("RBRB…" is valid relocated
+execution flows hook → `$D82A` → COMMAND.COM `$0100` → `$0500`, where COMMAND.COM self-relocates by
+block-copying **5120 B from `$0600` to `$C200`** (`BC=$1400`) and then runs the relocated code at `$C200` ("RBRB…" is valid relocated
 COMMAND.COM, not garbage). **The loaded COMMAND.COM image `$0100-$07FF` is BYTE-IDENTICAL ours vs stock (0
 diffs), and BOTH machines do this `$0500` relocation** — so our `k_47B2` loader is correct and this path is
 COMMAND.COM's normal startup, not the bug. The `$DA23` hang is therefore a KERNEL loop servicing a later

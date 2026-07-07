@@ -112,9 +112,9 @@ Probe: `disk_probe_dosboot_50a9.py`.
   sign-on — the original "char in A" reading was an early-phase coincidence.
   ⚠ Not every `$5454` call is a printable-char call (the kernel also invokes it with
   `E` holding a pointer low-byte); the gate is an open residual (see the review queue).
-- **Baked-in, not relocated.** `CD 54 54` (`CALL $5454`) is present in the
-  pristine just-loaded `MSXDOS.SYS` image and unchanged at call time — a hard
-  immediate, confirming `$5454` is a fixed entry address, not a relocated vector.
+- **Baked-in, not relocated.** The call to `$5454` is present in the pristine
+  just-loaded `MSXDOS.SYS` image and unchanged at call time — a hard immediate,
+  confirming `$5454` is a fixed entry address, not a relocated vector.
 - **zerobas status (§8.80, IMPLEMENTED + RENDERING).** The entry is placed at `$5454`
   (a `ds`-fill in the ROM's free tail, like `$4030`/`$50A9`) as `jp conout_body`. The
   body (`conout_body`, free tail) pages the main BIOS ROM into page 0 via the portable
@@ -150,8 +150,8 @@ this, page 0 reads `$FF` (unmapped slot) → `RST 38h` slide. Probe:
 
 ### 2.2 `$F340` — INIT-complete flag
 
-One byte below `RAMAD0`. The kernel reads it (`LD A,($F340) / AND A / CALL Z,…`)
-to branch into normal init; **`$00` = proceed**. The disk ROM clears it; clear it
+One byte below `RAMAD0`. The kernel reads it at PC `$0246` and branches into normal
+init only when it is `$00`; **`$00` = proceed**. The disk ROM clears it; clear it
 in INIT (`xor a / ld ($F340),a`). Left `$FF`, the kernel takes the derail branch.
 Probe: `disk_probe_dosboot_bdos_contract.py`.
 

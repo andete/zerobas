@@ -537,7 +537,7 @@ ihh_keyint:
 int_h_hiram_end:
 
 ; --- dos_handoff — DOS-only $F338 default + the step-7 "load the system" call ---
-; COMMAND.COM's startup branches on $F338 (`ld a,($F338); and a; jr nz` @ $C26B):
+; COMMAND.COM's startup branches on $F338 (observed: a read of $F338 at PC $C26B):
 ; 0 = "no AUTOEXEC -> prompt", nonzero -> the wrong path (SELDSK/loop). Stock's disk
 ; ROM clears $F338 at boot; ours never did. We default it to 0 just before handing to
 ; the boot sector's step-7 entry. $F338 is dual-purpose (a $C9 RET BASIC hook stub on
@@ -548,7 +548,7 @@ int_h_hiram_end:
 ; boot_sig_ok with IX=$F195 and the page-0 env laid; replaces the inline `scf; call
 ; BOOT_ENTRY` there -- net-zero in that $41FD-pad-packed region. (tier2-f338-default-spec.md)
 ; Also defaults the date-format config cells $F30D/$F30E (M9 date slice): COMMAND.COM
-; reads $F30E at $CDA7 (`ld a,($F30E)`) to format the boot date; ours leaves them $FF
+; reads $F30E at PC $CDA7 to format the boot date; ours leaves them $FF
 ; (uninit) so the date prints malformed and the prompt loops. Stock's disk ROM defaults
 ; them to $F30D=01 / $F30E=00 at boot (observed black-box; clean-room, no stock bytes).
 ; Same DOS-only save/restore discipline as $F338, so a returning data disk leaves the

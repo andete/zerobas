@@ -31,8 +31,8 @@ rules. Conflating them is the root of the drift.
 
 ### Interface A — disk-ROM ↔ MSXDOS.SYS / COMMAND.COM  (BIOS-INDEPENDENT, layout-fixed)
 The DOS we load (`MSXDOS.SYS` + `COMMAND.COM`, from the DOS disk) is proprietary and
-**hard-codes specific disk-ROM addresses** — e.g. COMMAND.COM's `CD 54 54` immediate
-call to CONOUT (§8.67), the 21-entry de-facto-standard kernel surface at `$41xx–$77xx`
+**hard-codes specific disk-ROM addresses** — e.g. COMMAND.COM's hard-coded immediate
+call to CONOUT at `$5454` (§8.67), the 21-entry de-facto-standard kernel surface at `$41xx–$77xx`
 (§8.41/8.49), the `$F365` page-3 jump table the disk ROM builds (§8.57). Per our
 established cross-vendor finding ([[msx-diskrom-shared-kernel]]), **~2/3 of every MSX
 disk ROM IS this shared MSX-DOS-1 kernel** — the BDOS/kernel lives in the *disk ROM*,

@@ -29,13 +29,13 @@ All addresses oracle-observed; contents summarised, never disassembled into sour
 
 | region | stock content (observed) | ours |
 |--------|--------------------------|------|
-| `$F100-$F17C` | **executable RAM-resident routines** (Z80 code; e.g. `call $F16F`, inter-slot helpers) | `$FF` |
+| `$F100-$F17C` | **executable RAM-resident routines** (inter-slot / driver-dispatch helpers that call into `$F16F` etc.) | `$FF` |
 | `$F1A8-$F1C8` | **drive-A DPB + drive table** (`95 E5 01 F9 00 02 0F 04 …` = BPB-derived DPB) | `$FF` |
-| `$F1C9-$F1FE` | DOS resident code + struct (`CD 6B F3 … ED B0 …` calls the `$F36B` page switch) | mostly `$FF` |
+| `$F1C9-$F1FE` | DOS resident code + a struct; the routine invokes the `$F36B` page-switch hook and performs a block copy | mostly `$FF` |
 | `$F21C-$F22B` | **device-name table** `PRN LST NUL AUX CON` | `$FF` |
 | `$F2B8-$F2E0` | **resident `COMMAND COM` FCB + DPB** (`06 "COMMAND COM" …`) | `$FF` |
 | `$F2FF-$F322` | DOS flags/counters (mostly `00`, a few set) | `$FF` |
-| `$F327-$F33F` | **executable code** (`3E 1A C9 …`) + flags incl. **`$F338`=00** | `$FF` |
+| `$F327-$F33F` | **small executable routines** plus flags including **`$F338`=00** | `$FF` |
 | `$F345`,`$F347` | small DOS params (`07`, `02`) | `$FF` |
 | `$F34D-$F37F` | **DOS pointer block** — drive-DPB pointers (`95 EF 95 ED 95 EB`), hook/segment-switch vectors (`$F369`=`57 DF`, …) | ours has its OWN pointers ($E795/$E79B wa_seg, $41B0) — i.e. ours built a *different, partial* set |
 | `$F3DC` | CSRY cursor row (4 vs 12) | benign |

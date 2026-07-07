@@ -220,6 +220,70 @@ pass here (date, scope, commit, verdict) so a later session knows what was
 verified clean and at what point, rather than re-deriving it. A clean verdict is
 a load-bearing fact for the public-release gate.
 
+### 2026-07-07 — disk, FULL-VERIFY TRAIL (whole-target, FIRST for disk) — ⚠→✅ correctness green; a systemic decoded-stock-code residue found across shipped comments + legacy docs and fully remediated (this commit)
+
+The deliberate **tier-closure ritual**, deferred since 2026-06-24 ("disk's full-verify
+back-half is gated to its tier closure — deferred until its active work settles"). Disk
+has now settled (Tier-2 DOS-boot + Tier-C adversarial suite complete), so this is the
+first-ever **full-verify** for disk — the last of the three components (tape + basic did
+theirs 2026-06-24). Phase A = paper trail (read); Phase B = empirical re-check.
+
+- **Phase B — EMPIRICAL RE-CHECK: all green, no correctness regression, no stale finding.**
+  Host: `make unit-test` **34/34**. Emulator oracles re-run: `make bdos-acceptance`
+  **11/11** (CF-3300 differential over the whole BDOS/write-path surface incl. M28-M36),
+  `make diskbasic-acceptance` **25/25**, `make bdos-cbios-selfcheck` **10/10** (BIOS-
+  independence; **re-confirms the LOGIN `$18` fix** — exercised by BDOSX2 record 1, not
+  resting on the one-time catch). Targeted oracles: the FAT12 straddle oracle reconstructs
+  **2009 real stock files byte-exact** (identical to the recorded finding — NOT stale), and
+  the Tier-1 DSKIO differential is **byte-identical** to the CF-3300 (driver.asm untouched
+  by the delta). Every one of the 12 asm-touching commits since the last paper trail
+  (`4c14006..b29a3eb`: FAT straddle, FDC-window P0, F1, M28-M36, F340/LOGIN) maps to a green
+  oracle.
+- **Phase A — THE FINDING: a systemic decoded-stock-code residue.** The delegated paper-trail
+  read (delta first, then a whole-target sweep across all 7 `disk/*.asm` + all
+  `disk/docs/*.md`, ~25k lines, via parallel read-only classification agents) found **~50
+  sites** that rendered stock ROM / MSXDOS.SYS / COMMAND.COM **code** as Z80 instruction
+  mnemonics or raw opcode bytes (e.g. `$0246: LD A,($F340) / AND A / CALL Z,$0317`; the
+  `$F1C9` "stock body: CALL $F36B / LD A,(DE) / …"; the `$D831` BDOS-dispatcher listing;
+  `CD 54 54`; `DB A8 C9`). This is the **✗ class** the 2026-06-30 M12 incident and the
+  2026-07-04 M20 §11.1 remediation established. It **predates the 2026-06-30 no-disasm rule**
+  and survived BOTH prior whole-target paper trails (2026-06-24, 2026-07-04) — so those two
+  "CLEAN" verdicts were **incomplete for this class**: the mechanical scanner
+  (`audit_citations.py`) cannot see decoded-mnemonic prose, and the read passes did not sweep
+  the historical residue. This is exactly the failure mode the full-verify exists to catch,
+  and the reason it is a distinct, heavier ritual.
+- **Containment — nothing shipped rested on it.** Every site is a **comment or prose**, never
+  an assembled instruction. `build/disk.rom` was **byte-identical** (16384 B,
+  sha `bc28f60…846b` unchanged) through the entire remediation; the asm diff is
+  **comment-only** (verified: no non-`;` line changed). Every load-bearing conclusion stands
+  independently on black-box grounding (poke-causality, cold/warm callseq divergence,
+  read/write watchpoints, published BDOS/BIOS/FAT contracts, our own ROM).
+- **Remediation (this pass) — reground, don't delete.** Each site was classified against a
+  **data-layout-vs-code-body** rubric — jump-table slots (`$F368→$DF57`), value/register
+  snapshots, single call/branch **targets**, and our-own-code stay ALLOWED; multi-instruction
+  stock routine bodies, operand-specific decodes, and raw stock opcode-byte renderings are
+  FORBIDDEN — then re-expressed in pure behavioural/data-flow form (PC + watchpointed
+  read/write + observed value + branch target), the M20 §11.1 / M12b pattern. Touched: 6
+  asm-comment sites (`init.asm`, `kernel.asm`, `runtime.asm`) + 13 docs
+  (`provider-oracle-scope.md`, `tier2-review-archive.md`, `tier2-workarea-map.md`,
+  `tier2-m15-spec.md`, `tier2-gdate-spec.md`, `tier2-cbios-dosboot-autoexec-f340.md` [+ a
+  dated §5 quarantine note], **`spec-diskrom-kernel.md`** [the product spec — 3 sites],
+  `tier2-a3-spec.md`, `tier2-f338-default-spec.md`, `tier2-m17-spec.md`, `tier2-m21-spec.md`,
+  `tier2-phase1-spec.md`, `tier2-architecture-audit.md`). `tier2-m20-spec.md` §11.1 and
+  `tier2-conin-spec.md` re-confirmed still clean (prior remediations held).
+- **Method note.** Classification was delegated (3 parallel read-only agents) + application
+  delegated (1 agent), but **every edit was reviewed by hand against the full `git diff`** —
+  the forbidden-source scanner does NOT catch decoded-mnemonic prose, so manual review is the
+  only backstop for this class. A final tree-wide residual grep is clean; `make
+  audit-citations` CLEAN (gating), `make unit-test` 34/34.
+- **Verdict: disk FULL-VERIFY CLEAN** — correctness re-validated green, provenance residue
+  found and fully remediated. The whole-repo full-verify is now exercised on **all three**
+  components (tape + basic 2026-06-24, disk now). **Public-release note:** the decoded
+  material persists in git **history** (as with the M12 incident) — folded into the existing
+  pre-release history-squash item. Follow-on hardening candidate: teach `audit_citations.py`
+  a heuristic for "instruction mnemonic adjacent to a non-`$4xxx-$7xxx` address" so this class
+  gets a mechanical floor, not only the manual read.
+
 ### 2026-07-04 — disk, FULL-VERIFY (empirical), BDOS surface — ✅ standing gate, 6/6 converge vs stock
 
 Tier-B of the test-hardening pass: promoted the BDOSX/BDOSX2/BDOSX3/BDOSX0

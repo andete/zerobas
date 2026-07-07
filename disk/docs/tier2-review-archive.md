@@ -875,7 +875,7 @@ poke). (2) Past BUFIN, ours reaches the A> idle loop: **SDATE ($2B) is called (n
 console output writes tile **`$80` for every glyph** — banner/prompts/`A>` all invisible; stock
 renders correctly. (4) Root-caused to an **inter-slot CHPUT register-context divergence**: CHPUT
 gets the right char (aligned capture `$00A2` 'X' → A=$58 both) but ours BC=$0000 vs stock $0980;
-CHPUT forks at `$08F1 jr c` into the control path. Ours' `conout_body` does a hand-rolled page-in +
+CHPUT forks at `$08F1` into the control path. Ours' `conout_body` does a hand-rolled page-in +
 direct `call $00A2`, bypassing stock's `$5454→$408F→CALSLT→$F398→$00A2` chain that sets the context.
 · **judgment calls:** (a) extended `disk_probe_diff.py` with a `screen` mode + a callseq TAIL print
 (per "don't write a 58th probe"; ~70 lines, no behavior change to existing modes). (b) DOWNGRADED
@@ -961,8 +961,8 @@ hunk. Detail: tier2-f338-default-spec.md §7, tier2-STATE.md.
 **[BDOS-LOOP ROOT-CAUSED → CONVERGES ON PHASE-1 / 2026-06-27 — HARD-STOP for the un-park decision.]**
 Built the 3-mode differential harness (`disk_probe_diff.py`: callseq/capture/trace + `--poke`
 falsification injection; trace reproduced the known n=3 result, then pinpointed the fork). The n=3
-STROUT-vs-SELDSK divergence is COMMAND.COM's `ld a,($F338); and a; jr nz` @ `$C26B`: stock `$F338`=00
-→ STROUT/prompt; ours `$F338`≠0 → SELDSK/loop. **Falsification** (poke `$F338`=0 into ours) advances
+STROUT-vs-SELDSK divergence is at PC `$C26B`, where COMMAND.COM reads work-area cell `$F338` and branches
+on it: stock `$F338`=00 → STROUT/prompt path; ours `$F338`≠0 → SELDSK/loop path. **Falsification** (poke `$F338`=0 into ours) advances
 ours **54 instrs** onto stock's path to `$D885 call $F368` → `$F338`=0 is necessary & effective
 (overturns the old "forcing $F338=0 didn't help"). Next divergence at `$F368` is ours' INTENTIONAL
 relocated hook (`jp $E795` vs `$DF57`, flags identical) — behavioral check, not a bug yet. **This
@@ -1108,16 +1108,16 @@ change). New probes: entry0100seq, conoutstream, bdosseq, fopenresult, fopenromc
 startup (no longer spins at $050D). New blocker: a kernel loop $D858-$D87F after startup.]**
 Implemented the M5.4-deferred fix. Clean same-program comparison (COMMAND.COM `$0100` entry,
 ours vs stock) isolated it to 4 registers: stock `BC=HL=$1A00 IX=$F195 IY=$DC5B`, ours
-`HL=0 BC=$0014 IX=$F1AA IY=$0314` → COMMAND.COM `jp $0500` then spun at `$050D` (a 5120-byte
-LDIR with garbage params). The `$D824→$0100` transfer doesn't touch these regs, so they pass
+`HL=0 BC=$0014 IX=$F1AA IY=$0314` → COMMAND.COM jumps to `$0500` then spun at `$050D` on its 5120-byte
+self-relocation block-copy, fed garbage params. The `$D824→$0100` transfer doesn't touch these regs, so they pass
 through from `$47B2`'s return. `k_47B2` now sets, on EOF/success: `HL=BC=FAT_FILESIZE`,
 `IX=DRVA_DPB ($F195)`, `IY = entry DE` (saved on the stack; the kernel work ptr `$DC5B`).
 **Validated:** `$0100` entry now byte-identical to stock; COMMAND.COM reads `$0007` (TPA top
 `$D6`), computes its high-mem target `$C200`, and LDIRs its transient up — genuine MSX-DOS
 COMMAND.COM startup. A-3 intact (sp-rompage STUCK); Tier-1 green (unit 18/18,
 DSKIO/BLOAD/FILES == CF-3300); net-zero 16384 B. · **NEW BLOCKER (next milestone):** after
-startup the boot sits in a kernel loop `$D858-$D87F` ($D87F = the 130-byte LDIR `$D34E→$DA40`
-+ a CONOUT call at `$D887`); screen still blank, CONOUT still fed `$00/$80`. Likely a BDOS
+startup the boot sits in a kernel loop `$D858-$D87F` (which performs a 130-byte block copy from `$D34E`
+to `$DA40` and a CONOUT call at `$D887`); screen still blank, CONOUT still fed `$00/$80`. Likely a BDOS
 function COMMAND.COM calls during startup that our kernel/BDOS path mishandles. Drive it with
 the same ours-vs-stock differential, anchored on a shared event. · undo: revert 9573a4c.
 
@@ -1127,12 +1127,12 @@ blocker is the DOS-env / boot-sequence handoff, NOT a wrong-sector load. RETRACT
 - **RETRACTION:** I earlier wrote "ours reads COMMAND.COM 2 clusters too late (138 vs 134)".
   That was WRONG — an artifact of snapshotting the MIDDLE of the read. Ground truth from the
   disk: root dir [6] COMMAND.COM = cluster 62 → sectors **134-146** (chain 62-68, contiguous),
-  and sector 134's bytes are **`C3 00 05`**. A full from-boot DSKIO capture shows ours reads
+  and sector 134 holds COMMAND.COM's entry (a jump into its own body). A full from-boot DSKIO capture shows ours reads
   exactly 134,135,…,146 — **CORRECT**. (Lesson, again: don't conclude from a mid-stream
   snapshot; capture from the anchor. [[harness-first-investigation-mo]].)
-- **What actually differs:** ours' first `$0100` execution is **COMMAND.COM** (`C3 00 05` =
-  sector 134) → `jp $0500` → spins at `$050D`. Stock's first `$0100` is **MSXDOS.SYS** (root
-  dir [7] = cluster 69 → sector 148 = `C3 00 02`) → `jp $0200`, which runs the DOS init and
+- **What actually differs:** ours' first `$0100` execution is **COMMAND.COM** (loaded from
+  sector 134; its entry jumps into its own body at `$0500`) → spins at `$050D`. Stock's first `$0100` is **MSXDOS.SYS** (root
+  dir [7] = cluster 69 → sector 148; its entry jumps to `$0200`, which runs the DOS init and
   prints the `MSX-DOS version 1.03 / Copyright 1984 by Microsoft` banner (CONOUT from `$0320`).
   So my "first-divergence at `$0100`" compared DIFFERENT PROGRAMS (ours=COMMAND.COM,
   stock=MSXDOS.SYS) — not a real divergence.
@@ -1156,8 +1156,8 @@ reaches the COMMAND.COM-load kernel phase but never shows `A>`. Harness findings
   Copyright 1984 by Microsoft \r\n`, called from `$0320` with `HL=$DD0E` (work area), `DE`=
   the banner chars.
 - **Ours** feeds `$5454` a repeating `$00 $00 $80 …` garbage stream, called from **`$D88A`**
-  (relocated kernel), with junk `DE`/`HL`. The kernel routine `$D87F` LDIRs 130 bytes from
-  `$D34E` (garbage) → `$DA40`, maps the disk ROM into page 1 via `$F368`/WA_SEG (now WORKING),
+  (relocated kernel), with junk `DE`/`HL`. The kernel routine at `$D87F` block-copies 130 (garbage) bytes from
+  `$D34E` to `$DA40`, maps the disk ROM into page 1 via `$F368`/WA_SEG (now WORKING),
   `ret`s to **`$50E0` — a bogus address inside our ROM's `$00` padding** (real code at `$50A9`
   ends `$50B7`; `$50B8-$520x` is `ds` fill), then NOP-slides. So the kernel is operating on
   corrupt state: garbage buffer, garbage return address, garbage output.
@@ -1184,11 +1184,11 @@ $0000: jp $DC03`: the kernel's `$F368` segment-switch landed on a trampoline who
 (stock was already at `$0B9F` by the same time).
 - **The corruptor is OUR int handler, not a disk-boot stack (corrected — see HONESTY note).**
   `INT_H_HIRAM` switched to the A-2b 48-byte private stack (`INT_STK_TOP`) before
-  `call $0038`; the main-ROM KEYINT (`$0C82` loop + `dec ($F3F6)` JIFFY + the `pop ix/iy/af/
-  bc/de/hl` epilogue at `$0D02`) needs ~60 B and overflowed DOWNWARD into `WA_SEG`, laid out
+  `call $0038`; the main-ROM KEYINT routine (entry ~`$0C82`, epilogue at `$0D02`) decrements the JIFFY
+  timer cell `$F3F6` and restores its saved registers; it needs ~60 B and overflowed DOWNWARD into `WA_SEG`, laid out
   just below the stack (`INT_STK_TOP = PG_SV_A8+1+48`). The corruption always landed at
   `WA_SEG+19`, regardless of where the band was placed.
-- **HONESTY note (process):** I first misread the `$0C85 push` (KEYINT's pushes) as "the MSX
+- **HONESTY note (process):** I first misread the register-save at main-BIOS PC `$0C85` (part of KEYINT's prologue) as "the MSX
   disk-boot stack roaming `$E7xx`" and got sign-off for A-4 (relocate the band into `$DDxx`).
   A-4 was IMPLEMENTED, then the corruption *reproduced identically at the new address* — the
   stack and WA_SEG had relocated together — which exposed the real cause. A-4 was reverted
@@ -1228,8 +1228,8 @@ revert 71b1096.
 move our interrupt handler to ALWAYS-MAPPED high RAM, like stock's `$DDAE`.** Used the
 new `omsx_session.py` `irq_chain` primitive on both machines (one call each) to dump the
 `$0038` jp-chain + page-1 mapping at the COMMAND.COM phase:
-- **Stock:** `$0038 → jp $DDAE`, and `$DDAE` is in **high RAM (page 3, always mapped)**
-  (`push ix` = the real handler). The int entry is NOT in the swappable page-1 ROM.
+- **Stock:** `$0038 → jp $DDAE`, and `$DDAE` is a real handler in **always-mapped high RAM (page 3)**.
+  The int entry is NOT in the swappable page-1 ROM.
 - **Ours:** `$0038 → jp $4251 → jp $792B` — BOTH in **page-1 disk ROM** (`$792B` =
   int_h_body, the A-2b `ld ($e7e2),sp`). When `wa_seg_ram` swaps page 1 to RAM for
   COMMAND.COM, the whole vector path (`$4251` trampoline AND `$792B` body) is unmapped →
@@ -1260,9 +1260,9 @@ per-instruction trace from a `reverse goto` point. Findings, all from one boot:
   does `ld a,#00; di; ld a,(FCC8); and $F3; or b; ld (FCC8),a; ld ($FFFF),a`. SLTTBL[3]
   (`$FCC8`) was `$04` → page-1 subslot **1 = the disk ROM**; `and $F3` clears page-1's
   bits, `or b` (B=0) forces page-1 subslot to **0**; the `ld ($FFFF),a` write unmaps the
-  disk ROM → page 1 = slot3-sub0 = **empty ($FF)**. Then `$D82A ei; jp $0100`.
-- **COMMAND.COM then actually RUNS** (trace: $0100→$0500→ self-relocating `ldir`,
-  bc=$1400). It dies at the **first interrupt**: confirmed via `z80.acceptIRQ` —
+  disk ROM → page 1 = slot3-sub0 = **empty ($FF)**. Then at `$D82A` the kernel re-enables interrupts and transfers to `$0100`.
+- **COMMAND.COM then actually RUNS** (trace: $0100→$0500→ its self-relocation block-copy,
+  BC=$1400). It dies at the **first interrupt**: confirmed via `z80.acceptIRQ` —
   ACCEPT#1 interrupts COMMAND.COM at $050D with `m4251=FF`, `$0038=jp $4251` → storm.
 - **So:** the handoff unmaps the disk ROM from page 1 while the live interrupt vector
   `$0038 → $4251` still points there. Works only while the disk ROM is mapped; the
@@ -1568,10 +1568,10 @@ kernel). (2) CHSNS `$009C` fires 12× during the **banner** (each carries `C=09`
 CHSNS/echo question is NOT observable without a keystroke. (3) control-flow only: ours executes the
 `$50E0`-region as a **NOP-slide** (OUR ROM is `$00` there — our artifact); where stock CALLs `$544E` at
 `$5107` ours just continues (no call); the genuinely non-converging blocker sits further down at a
-`$0D11 ret` → ours `$DDFD`. · **HARD-STOP reason (clean-room):** the `disk_probe_diff.py` **`trace` mode
+`$0D11` → ours `$DDFD`. · **HARD-STOP reason (clean-room):** the `disk_probe_diff.py` **`trace` mode
 prints the decoded Z80 mnemonic at every fork PC**. Run on the STOCK machine those PCs are reference disk-
-ROM code, so it **surfaced stock's console-routine internals** — the SAME `$F237/8/9` / `IX=$F459` /
-`CALL $F2AC` / CR-check material M12b quarantined. That is reference-ROM disassembly (✗). I did NOT record
+ROM code, so it **surfaced stock's console-routine internals** — the same console-routine internals
+that M12b quarantined as a provenance breach, referenced here only to note they were quarantined, not their contents. That is reference-ROM disassembly (✗). I did NOT record
 or use any of it (quarantined-on-sight); only the call-target/PC/our-own-`$00` facts above are kept (and
 `$5107→$544E` was already a pre-M12b-clean call-target). · **this REVISES the audit:** the 2026-06-30
 paper-trail rated `trace` "black-box — disassembly-of-flow only, no code-byte surfacing." That is
@@ -1757,7 +1757,7 @@ probe extension, no asm). · **CAUSAL CONFIRMATION DONE (user chose "confirm fir
 new `readwatch` mode** (per-byte `read_mem` watchpoints over a DATA range, gated to during-func-9,
 records reader-PC+addr+value only — no code decode; committed with the probe). Gated reads of
 `$F340:0x40`: STOCK func-9 output loop PAGES via the segment hooks — `$F368`→`JP $DF57` ×46,
-`$F36B`→`JP $DF59` ×45, slot bytes `$F342`/`$F348` (PC `$DF5A`/`$DF60`), `$F365` `in a,($A8)` ×12;
+`$F36B`→`JP $DF59` ×45, slot bytes `$F342`/`$F348` (PC `$DF5A`/`$DF60`), the stock `$F365` slot-register read helper fires ×12;
 OURS `$F368`→`JP $E795`/`$F36B`→`JP $E79B` (M5.6 `wa_seg`) only ×3 then ABORTS, `$F365` FF/unbuilt.
 **⇒ passes §8.65 (func-9 demonstrably routes through the hooks on both); blocker = M5.6 `wa_seg` is an
 INCOMPLETE `$DF57` (§8.57 thread, now tied to func-9 output). Scope BOUNDED: complete `wa_seg`+`$F365`,

@@ -244,9 +244,10 @@ k_544E:
 ; the disk ROM's CONOUT: output the char in A via the BIOS CHPUT path, preserving
 ; BC/DE/HL/IX/IY. Black-box call-chain on the stock: $5454 -> $408F -> $001C
 ; (CALSLT) -> resident kernel -> $F398 -> $00A2 (CHPUT); first call A=$0D (the
-; banner's leading CR). $5454 is a HARD IMMEDIATE in MSXDOS.SYS (`CD 54 54`
-; present in the pristine just-loaded image, unchanged at call time -- not a
-; relocated vector). CLEAN-ROOM: $5454 is a cross-vendor de-facto-standard entry,
+; banner's leading CR). $5454 is reached by a fixed immediate call in MSXDOS.SYS
+; (the call TARGET is $5454 in the pristine just-loaded image, unchanged at call
+; time -- observed via the call landing at $5454, not a relocated vector).
+; CLEAN-ROOM: $5454 is a cross-vendor de-facto-standard entry,
 ; byte-identical across seven vendors' disk ROMs in the shared ASCII-kernel block
 ; ($4768-$576F) -- the same ABI class as $4010 DSKIO / $4016 GETDPB, never a byte
 ; copy (oracle-artifacts.md "Cross-vendor disk-ROM set"; spec-diskrom-kernel.md

@@ -39,20 +39,23 @@ a bare prompt). Note the prompt drive letter is `@` (0x40), one below `A` (0x41)
 - **BDOS `$0005` call sequence diverges from the first call.** CF-3300:
   `$09`(STROUT banner) `$0F` `$09` `$2A`(GET DATE) `$02`×12 `$09` `$0A` = cold.
   C-BIOS: `$0E`(SELDSK) `$02`×2 `$19`(CURDRV) `$02`×2 `$0A` = warm.
-- **The cold/warm branch is a single byte.** COMMAND.COM's resident code runs
-  identically on both machines up to `$C228`, where `LD A,(nnnn)` loads a byte;
-  `$C22C` tests it: `0` → fall through to cold (`$C22F`…`$C238` = `$09` STROUT);
-  non-zero → `JP $C300` warm (`$0E` SELDSK). CF-3300 reads `00`, C-BIOS reads `C9`.
+- **The cold/warm branch is a single byte.** COMMAND.COM's resident code reaches the
+  same PC `$C228` on both machines; there it **reads one memory byte**, and at `$C22C`
+  the observed control flow forks on that byte: `0` → cold path (execution proceeds
+  through `$C22F`…`$C238`, whose first BDOS call is `$09` STROUT); non-zero →
+  **branches to `$C300`** (warm, first BDOS call `$0E` SELDSK). The byte read is `00`
+  on CF-3300, `C9` on C-BIOS.
 - **The tested byte is `$D61A`** (COMMAND.COM's cold/warm flag). **Poke-proven:**
   forcing `($D61A)=0` on C-BIOS at the `$C228` read flips it onto the cold path
   (`Sun 84-01-01` appears).
-- **`$D61A` is seeded from `$F340`.** At `$D50F`, `LD A,(HL)` with `HL=$F340`
-  (`A ← ($F340)`), then `$D511` `LD ($D61A),A`. `($F340)` = `00` on CF-3300, `C9`
-  on C-BIOS at that instant.
-- **`$F340` = the MSXDOS.SYS init seed (§8.33).** MSXDOS.SYS reads
-  `$0246: LD A,($F340) / AND A / CALL Z,$0317`: `$00` = normal (cold) init path.
+- **`$D61A` is seeded from `$F340`.** A write-watchpoint on `$D61A` fires at PC `$D511`,
+  and the byte stored there is the one read one step earlier at PC `$D50F` from `$F340`
+  (read-watchpoint). `($F340)` = `00` on CF-3300, `C9` on C-BIOS at that instant.
+- **`$F340` = the MSXDOS.SYS init seed (§8.33).** MSXDOS.SYS reads `$F340` at PC `$0246`
+  (read-watchpoint) and takes the normal (cold) init path when it is `$00` (observed: the
+  conditional call to `$0317` is taken only for `$00`).
 
-**Final causal test:** on C-BIOS, poking `($F340)=0` just before the `$D50F` load
+**Final causal test:** on C-BIOS, poking `($F340)=0` just before PC `$D50F` reads it
 restores **full cold boot** (plain disk → date logic; `AUTOEXEC.BAT` disk → `@>LSTOUTX`
 **and the printer logger receives `4C 50 21 0D 0A` = "LP!\r\n"** — `AUTOEXEC.BAT`
 runs). So `$F340` being non-zero is the whole cause.
@@ -131,9 +134,20 @@ safe change and doesn't touch the RAMAD regression-safety logic.
 ## 5. Clean-room note
 
 Everything above is inputs→outputs: BDOS/BIOS **call targets** and function codes
-(`callseq`), **register/memory values** at PCs, **I/O-port** writes to the printer,
-and **poke causality** (forcing a byte and observing the branch). No MSXDOS.SYS or
-COMMAND.COM code bytes were read or decoded — the `$C228`/`$D50F`/`$D511`/`$0246`
-addresses are call/branch **targets** observed black-box, not disassembly (contrast
+(`callseq`), **register/memory values** at PCs, memory read/**write-watchpoint** hits,
+**I/O-port** writes to the printer, and **poke causality** (forcing a byte and observing
+the branch). No MSXDOS.SYS or COMMAND.COM code bytes are relied on — the
+`$C228`/`$D50F`/`$D511`/`$0246` facts are PCs plus watchpointed reads/writes and branch
+**targets** (where control flows), not instruction decodes (contrast
 provider-oracle-scope.md §8.33's warning about a sub-agent that disassembled
 MSXDOS.SYS and was reverted). The fix is in our own `disk/init.asm`.
+
+**Clean-room quarantine note (2026-07-07, full-verify sweep).** An earlier draft of §2
+above rendered the routines at these stock PCs as Z80 instruction mnemonics (e.g.
+`LD A,($F340) / AND A / CALL Z,$0317`) — a decode of MSXDOS.SYS/COMMAND.COM code, ✗ per
+[`allowed-sources.md`](../../docs/allowed-sources.md), the same class as the M20 §11.1
+finding. Those mnemonics were quarantined and re-expressed as pure data-flow (PC +
+watchpointed read/write + observed value + branch target). No conclusion here rested on
+the decode: the load-bearing chain is the poke-causality proof (§2 final test) plus the
+cold/warm BDOS callseq divergence. Logged in
+[`docs/clean-room-audit.md`](../../docs/clean-room-audit.md).

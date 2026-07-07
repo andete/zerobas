@@ -97,7 +97,7 @@ we already handle func-2. Confirm the vector is DOS-only so Tier-1 BASIC is unto
 ## 7. §3 PIN RESULT (2026-07-01, no asm) — leans P-resident; SCOPE SHIFT flagged
 `capture --at 0x0005 --nth 1 --mem 0xF340:0x40` (aligned first func-9 dispatch; **register diffs
 NONE** ⇒ trustworthy). Ours' DOS work-area page-3 is **substantially unbuilt/divergent**:
-- FF where stock has data: `$F345`, `$F347`, `$F358-$F367` (incl. stock `$F365`=`DB A8 C9`).
+- FF where stock has data: `$F345`, `$F347`, `$F358-$F367` (incl. stock `$F365` holds a 3-byte slot-register read helper).
 - pointer block `$F34D-$F356` diverges (stock → `$EF95`/`$F195`; ours → `$E8xx`).
 - `$F368` JP-table half-stubbed on ours: stock → `$DF57/$DF59/$DF70/$F327/$F32C/$F331`; ours →
   `$E795/$E79B` (M5.6's two) then `$41AF`×5 stubs. (Established-clean pointer read, per M5.5.)
@@ -117,7 +117,7 @@ New `readwatch` mode (`disk_probe_diff.py`, gated to during-func-9, DATA-region 
 decode): reads of `$F340:0x40` while a `C=09` BDOS call is in flight.
 - **STOCK func-9 output loop pages via the segment-switch hooks:** `$F368`→`JP $DF57` executed
   **46×**, `$F36B`→`JP $DF59` **45×**; those read slot bytes `$F342`(=83, PC `$DF5A`) /
-  `$F348`(=87, PC `$DF60`); the `$F365` `in a,($A8)` slot-read stub executed **12×**.
+  `$F348`(=87, PC `$DF60`); the stock `$F365` slot-register read helper executed **12×**.
 - **OURS:** `$F368`→`JP $E795` / `$F36B`→`JP $E79B` (our M5.6 `wa_seg_rom`/`wa_seg_ram`) executed
   only **3× each, then the loop aborts** — `$F365` is FF/unbuilt (never executed), CHPUT never
   reached.

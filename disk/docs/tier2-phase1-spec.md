@@ -19,7 +19,7 @@ COMMAND.COM branches on.
 |--------|-----------|
 | `$57BE` | zero **`$F1C9-$F37F`** (439 B → `00`) — one contiguous memset |
 | `$57D6` | `$C9`-fill **`$F24F-$F2B7`** (105 B → `C9`) — the BDOS/hook dispatch-stub table (RETs) |
-| `$57E0/$57E3` | write **`$F365-$F367` = `DB A8 C9`** = `in a,($A8); ret` (a 3-byte resident routine) |
+| `$57E0/$57E3` | write **`$F365-$F367`** = our 3-byte slot-register read helper (reads port `$A8`, returns it) |
 
 Net result, in order: zero `$F1C9-$F37F`; then `$C9`-fill `$F24F-$F2B7`; then place the
 `in a,($A8);ret` routine at `$F365`.
@@ -76,7 +76,7 @@ wa_clear:  ld   hl, $F1C9
            ret
 ```
 
-(Exact form TBD; may LDIR the `DB A8 C9` from a 3-byte ROM datum.) It needs no relocation template
+(Exact form TBD; may copy a 3-byte "read port $A8, return" primitive from a ROM datum.) It needs no relocation template
 itself — it runs from page-1 ROM at init time (page 1 = disk ROM during init), writing page-3 RAM.
 Net-zero: it lives in the free tail; `disk.rom` stays 16384 B; no canonical address shifts. Constants
 (`$F1C9`, `$F24F`, lengths) cited to the construction map (oracle observation), not stock bytes.
@@ -84,7 +84,7 @@ Net-zero: it lives in the free tail; `disk.rom` stays 16384 B; no canonical addr
 ## 5. Validation (before commit)
 
 - `disk_probe_dosboot_wadiff.py`: the **phase-1 regions now match stock** — `$F24F-$F2B7`=`C9`,
-  `$F365-$F367`=`DB A8 C9`, and the phase-1 `00` cells (incl. **`$F338`=00**). (Phases 2-3 regions
+  `$F365-$F367` = a 3-byte slot-register read helper, and the phase-1 `00` cells (incl. **`$F338`=00**). (Phases 2-3 regions
   stay divergent — expected; they're later milestones.)
 - A-3/A-5 intact: `$F368-$F37C` still holds ours' wa_seg hooks (clear ran before build_wa_table);
   `disk_derail_locate --preset sp-rompage` STUCK.

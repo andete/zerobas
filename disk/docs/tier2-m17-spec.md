@@ -91,9 +91,9 @@ any stock byte. No kernel/ROM code was decoded (only entry/exit registers, a DAT
 watch, and our own RAM).
 
 ## 4. Open sub-question (does NOT block the falsify-first build)
-The return `F=$3B` implies `$50D5` isn't a bare `ld a,(nn);ret` (LD doesn't touch flags) —
-stock's routine sets carry/half/N via some ALU op (perhaps `cp`-against-the-requested-drive,
-or a `dec`/`or`). Whether the kernel branches on that F is **not yet shown**. The falsify-
+The return `F=$3B` (flags modified) shows `$50D5` does more than a transparent value
+fetch — its routine performs a flag-affecting operation (some ALU step) on the way, not
+a pure load-and-return. Whether the kernel branches on that F is **not yet shown**. The falsify-
 first build (§5) tests the simplest hypothesis (return A only, flags don't matter); if it
 unblocks to `A>`, F is proven irrelevant and we stop there. If it stalls again one step
 later on a flag-dependent branch, re-pin F via a black-box `capture` of the kernel's

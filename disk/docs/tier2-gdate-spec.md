@@ -28,17 +28,12 @@ converges ours byte-for-byte with stock through to BUFIN. Reaching the `A>` prom
 
 ## 3. The dispatch contract (observed, black-box; the design constraint)
 The disk-loaded MSXDOS.SYS kernel BDOS dispatcher (identical ours/stock — it's MSXDOS.SYS code,
-not ours) routes a BDOS call as:
-```
-$0005 = JP $D606 = JP $D831
-$D831:  ld a,c                 ; C = function number ($2A for _GDATE)
-        ...
-$D858:  ld hl,$D8BE            ; dispatch table base, 3-byte entries
-        add hl,bc ×3           ; entry = $D8BE + 3*C  (= $D93C for $2A)
-        ld a,(hl) / ld b,(hl+1) / ld h,(hl+2) / ld l,b   ; A=segment, HL=handler addr
-$D885:  call $F368             ; page the handler's segment (disk ROM) into page 1
-        ... ret lands at the handler ...
-```
+not ours) routes a BDOS call as follows (observed via PC-trace + watchpoints; no code
+bytes decoded): `$0005`→`$D606`→`$D831` reaches the kernel dispatcher, which reads the
+function number from C and indexes a 3-byte-per-entry table based at `$D8BE`
+(entry = `$D8BE + 3×C`; `$D93C` for `$2A`) whose slots hold {segment byte, 2-byte
+handler address}; at `$D885` it calls `$F368` to page the handler's segment (disk ROM)
+into page 1, then returns into the handler.
 For `_GDATE` the entry = **{segment = disk ROM, addr = `$553C`}**. **The table is in MSXDOS.SYS's
 own relocated image (`$D8xx`), loaded from disk → ours cannot change it.** Therefore ours MUST
 host a working `_GDATE` handler at the canonical page-1 disk-ROM address **`$553C`** (ROM offset

@@ -164,8 +164,24 @@ any future zerobas-disk work (e.g. the deferred multi-hardware variant layer,
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — C-BIOS BDOS self-consistency gate built + its first catch FIXED (2026-07-07)
-**NEWEST (2026-07-07):** built `make bdos-cbios-selfcheck`
+## Next action — disk FULL-VERIFY TRAIL complete; provenance residue swept (2026-07-07)
+**NEWEST (2026-07-07):** ran the first-ever **disk full-verify trail** (the deferred
+tier-closure ritual, [[dual-mission-docs-as-deliverable]]). **Phase B correctness all green**
+(unit 34/34, bdos-acceptance 11/11, diskbasic 25/25, bdos-cbios-selfcheck 10/10, FAT straddle
+oracle 2009 files byte-exact, Tier-1 DSKIO byte-identical — no regression, no stale finding).
+**Phase A found + fully remediated a SYSTEMIC decoded-stock-code residue** — ~50 comment/prose
+sites across shipped asm + legacy docs (incl. the product spec `spec-diskrom-kernel.md`) that
+rendered stock/MSXDOS.SYS/COMMAND.COM CODE as Z80 mnemonics/opcode bytes. It PREDATES the
+2026-06-30 no-disasm rule and slipped BOTH prior "CLEAN" whole-target paper trails (2026-06-24,
+2026-07-04) — the mechanical scanner can't see decoded prose, and the read passes never swept
+the historical residue. Reground behaviourally (M20 §11.1 pattern); **`disk.rom` byte-identical
+throughout** (comment-only edits), nothing shipped rested on it. Full write-up:
+[../../docs/clean-room-audit.md](../../docs/clean-room-audit.md) (2026-07-07 entry). Disk is now
+the LAST component to pass full-verify (tape+basic 2026-06-24). **LESSON: a decoded instruction
+mnemonic at a stock PC is disassembly even inside a comment — [[no-reference-rom-disasm]] governs
+docs, not just asm.** No forced next step; the standing gates remain the guard.
+
+**Prior (2026-07-07):** built `make bdos-cbios-selfcheck`
 ([tier2-cbios-bdos-selfcheck-spec.md](tier2-cbios-bdos-selfcheck-spec.md), commit 1a276cf) after
 the user asked "have we not been testing our disk ROM on C-BIOS?" — the answer was NO for the BDOS
 layer (`bdos-acceptance` is a DIFFERENTIAL, CF-3300-oracle-only; that's why the C-BIOS-only `$F340`
@@ -205,9 +221,9 @@ Other candidate directions (parked):
 - **Docs-as-deliverable harvest** ([[dual-mission-docs-as-deliverable]]) — now the code is
   settled, consolidate the tier2-*-spec.md notebook into the product-spec genre (seed:
   spec-diskrom-kernel.md).
-- **C-BIOS LPTOUT follow-up** ([[cbios-lptout-followup]]) — the one STANDING item: LSTOUT is
-  wired to BIOS `$00A5`, but C-BIOS stubs `$00A5`, so list output won't print on the prime
-  target until C-BIOS gains a real LPTOUT. A C-BIOS change, not a disk-ROM one.
+- **C-BIOS LPTOUT follow-up** ([[cbios-lptout-followup]]) — ✅ CLOSED 2026-07-07: LPTOUT
+  (`$00A5`) implemented in the zerobas-tape page-0 patch, so LSTOUT/LPRINT now print on the
+  C-BIOS target (verified "LP!\r\n" via the openMSX printer logger). No longer standing.
 - **Disk full-verify trail** — the heavier empirical audit back-half (docs/clean-room-audit.md),
   now unblocked by the settled surface; a deliberate tier-closure ritual, not a routine gate.
 - **Multi-hardware variant layer** ([[disk-hardware-target-variants]]) — DEFERRED; one shared
