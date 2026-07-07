@@ -35,7 +35,14 @@ import tempfile
 import time
 
 DEFAULT_OPENMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
-OURS_MACHINE = "National_CF-3300_ZEROBASDISK"
+# "ours" = our disk ROM under a host BIOS. Default host is the CF-3300 (the oracle:
+# it carries a genuine stock disk ROM + MSX-DOS to diff against, so it is the machine
+# the whole differential suite is written for). ZEROBAS_OURS_MACHINE overrides the host
+# WITHOUT changing our ROM — used by the C-BIOS self-consistency gate
+# (disk_bdos_cbios_selfcheck.py) to re-capture the SAME anchors on the C-BIOS target and
+# assert the BDOS surface is BIOS-independent. STOCK is never overridable (it is the
+# fixed stock oracle).
+OURS_MACHINE = os.environ.get("ZEROBAS_OURS_MACHINE", "National_CF-3300_ZEROBASDISK")
 STOCK_MACHINE = "National_CF-3300"
 
 # OWN_RAM_RANGES — every RAM block WE install code into (base, end-exclusive), sourced

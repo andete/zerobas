@@ -149,6 +149,19 @@ bdos-acceptance: $(DISK_ROM)
 diskbasic-acceptance: $(DISK_ROM) $(DISK_TEST_DSK)
 	python3 probes/disk/diskbasic_acceptance.py $(if $(ONLY),--only $(ONLY),)
 
+# Standing C-BIOS self-consistency gate: closes the coverage gap that `bdos-acceptance`
+# structurally can't reach. That gate is a DIFFERENTIAL, so it only runs on the CF-3300
+# oracle (the only host with a stock disk ROM + MSX-DOS to diff against); the shipped
+# C-BIOS DOS-boot path went unexercised until the $F340 cold-boot bug surfaced it. This
+# re-captures the SAME BDOSX anchors on BOTH the CF-3300 and the C-BIOS target and asserts
+# the buffers are byte-identical, proving the BDOS surface is BIOS-independent (so what
+# bdos-acceptance proved against stock also holds on C-BIOS). HEAVY + oracle-dependent
+# (boots openMSX on both hosts; needs `make machines-oracle` + the installed C-BIOS+disk
+# machine). Scope with `make bdos-cbios-selfcheck ONLY=BDOSX3`. Spec:
+# disk/docs/tier2-cbios-bdos-selfcheck-spec.md.
+bdos-cbios-selfcheck: $(DISK_ROM)
+	python3 probes/disk/disk_bdos_cbios_selfcheck.py $(if $(ONLY),--only $(ONLY),)
+
 # The mechanical half of the clean-room paper-trail audit: forbidden-source scan
 # + per-file attestation (gating) and disk section-citation presence (advisory).
 # Cheap, read-only, no emulator -- run it on demand / in CI so the citation
@@ -165,4 +178,4 @@ clean:
 
 .PHONY: all disk patches tape-patches machines machines-oracle install \
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
-        audit-citations clean
+        bdos-cbios-selfcheck audit-citations clean
