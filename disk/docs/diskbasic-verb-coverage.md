@@ -45,7 +45,10 @@ assert/exit-on-mismatch patterns). No reference ROM was read or disassembled to 
 
 ## 0. Gate baseline — `make diskbasic-acceptance`
 
-**2026-07-05: 23/23 verbs converged.** The ROM is clean.
+**2026-07-05: 23/23 verbs converged.** The ROM is clean. **(Updated 2026-07-07:
+gate now 27/27 — added BSAVE(.bas), AUTOEXEC, and the ASCII save/load cells
+`LOAD(ASCII)`/`SAVE(ASCII)`; see [spec-diskbasic-verbs.md](spec-diskbasic-verbs.md)
+and [basic/docs/spec-ascii-saveload.md](../../basic/docs/spec-ascii-saveload.md).)**
 
 The gate's *first* run reported 22/23 with SAVE/BSAVE red — but investigation proved that
 red was a **flaky-probe false positive, not a ROM bug**:
