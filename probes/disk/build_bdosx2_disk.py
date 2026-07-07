@@ -51,6 +51,12 @@ def build(dos_src: str, out: str, tmp_dir: str) -> tuple[int, int]:
     shutil.copyfile(dos_src, out)
     img = bytearray(open(out, "rb").read())
     fat12_add(img, "BDOSX2", "COM", com_bytes)
+    # AUTOEXEC.BAT auto-runs BDOSX2 with zero typed keys (verify-first: see
+    # tier2-autoexec-bat-harness-spec.md). Replaces the typed '\rBDOSX2\r' launch;
+    # --keys2/--keys2-at (staged input for CONIN/DIRIN/INNOE) is untouched below --
+    # record 7's const_poll busy-waits for it, so its exact timing isn't critical, only
+    # that it lands after this program's own disk load (see bdosx2.asm header).
+    fat12_add(img, "AUTOEXEC", "BAT", b"BDOSX2\r\n")
     open(out, "wb").write(img)
     return done_addr, com_bytes[2]      # sig = byte at $0102 (resident-program arm signature)
 
@@ -71,7 +77,7 @@ def main() -> int:
     # so occurrence #1 of `done` is the REAL program run, not a boot-time address collision
     # (the vacuous-anchor bug found 2026-07-04). See tier2-remediation-spec.md.
     print("next: python3 probes/disk/disk_probe_diff.py capture "
-          f"--at {done_addr:#06x} --arm-check-val {sig:#04x} --keys '\\rBDOSX2\\r' --keys-at 22 "
+          f"--at {done_addr:#06x} --arm-check-val {sig:#04x} "
           "--keys2 'xyz' --keys2-at 32 --settle 50 --machine both "
           f"--mem 0x0340:0x70 --diska {args.out}")
     return 0
