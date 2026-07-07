@@ -20,16 +20,24 @@ notebook [`provider-oracle-scope.md`](provider-oracle-scope.md) `§8.x`. This is
 the implementer-facing distillation — the settled contracts only — and a
 first-class deliverable usable independently of zerobas's code.
 
-> **Scope / status.** §1–4 document the contracts that are **settled** (oracle-
-> confirmed, reimplemented in [`../disk.asm`](../disk.asm), regression-green); the
-> still-unsettled cells stay in the notebook until they settle (see
-> [§ Frontier](#frontier-not-yet-settled)). [§5](#5-the-commandcom-load-phase--kerneldisk-rom-call-surface-characterised-reimplementation-deferred)
-> is different in kind: it documents the **`COMMAND.COM`-load call surface** as
-> *characterised but not reimplemented* (a clean-provenance map, build paused by
-> decision), clearly demarcated so it is not mistaken for a settled contract. The
-> settled implementation is gated, on the real-hardware boot path only, behind an
+> **Scope / status.** §1–4 document the kernel-entry / work-area / handoff /
+> DSKIO contracts; §5 documents the **`COMMAND.COM` load phase**, which is now
+> **implemented** — MSX-DOS 1 boots to a visible `A>` on zerobas-disk with full
+> BDOS parity (goal MET 2026-07-03). §6 documents the **BDOS-in-ROM function
+> surface** the running shell then drives. All settled contracts are reimplemented
+> in [`../disk.asm`](../disk.asm) (+ `fat.asm`/`kernel.asm`/`runtime.asm`/
+> `driver.asm`) and guarded by standing gates (`make bdos-acceptance`,
+> `diskbasic-acceptance`, `bdos-cbios-selfcheck`, `unit-test`). The DOS-path
+> implementation is gated, on the real-hardware boot path only, behind an
 > `$FF`-uninitialised / real-CF-3300 guard; on the C-BIOS hosts (which never boot
 > DOS) the gate skips and behaviour is unchanged.
+>
+> This document was assembled by a **notebook → product-spec harvest** (the
+> [`../../docs/documentation-deliverable.md`](../../docs/documentation-deliverable.md)
+> settle-gated cadence): §1–5 are the boot-path ABI; §6 the BDOS surface; §7 the
+> work-area construction; §8 the C-BIOS seam rules; §9 the Tier-C boundary
+> behaviours. See [§ Frontier / harvest status](#frontier--harvest-status) for the
+> little that is still notebook-only and the go-forward cadence.
 
 ## Clean-room basis: a cross-vendor de-facto-standard ABI
 
@@ -110,8 +118,11 @@ Probe: `disk_probe_dosboot_50a9.py`.
   (early) and `Sun 84-01-01` / `A>` (kernel). A veneer reading `A` therefore emits
   `$00`/garbage for ALL kernel-phase output while *appearing* to work for the early
   sign-on — the original "char in A" reading was an early-phase coincidence.
-  ⚠ Not every `$5454` call is a printable-char call (the kernel also invokes it with
-  `E` holding a pointer low-byte); the gate is an open residual (see the review queue).
+  `$5454` is the low-level CONOUT primitive; the shell's per-character output routes
+  through the `$53A7` CONOUT worker (TAB-expansion + the `$F237` column cell, M22b)
+  which drives `$5454`. Both now render **byte-identical to stock** across the full
+  sign-on, date prompt, `A>`, and `DIR` — the earlier "open residual" is closed; see
+  [§6 console tier](#61-console--misc-tier).
 - **Baked-in, not relocated.** The call to `$5454` is present in the pristine
   just-loaded `MSXDOS.SYS` image and unchanged at call time — a hard immediate,
   confirming `$5454` is a fixed entry address, not a relocated vector.
@@ -249,19 +260,37 @@ behaviours are what the DOS boot path requires and were oracle-confirmed here:
   IFF-preserving DI guard (`di` on entry; `ei` on exit only if the caller had
   interrupts enabled). The masked boot phase is unaffected
   (`disk_probe_dosboot_fdc.py`).
+- **The FDC register window mirrors ×8 across `$7F80–$7FBF` — keep code out of it.**
+  On the National CF-3300 the WD2793 FDC registers are decoded incompletely, so they
+  appear **mirrored eight times** across the whole `$7F80–$7FBF` range (not only the
+  nominal `$7FB8–$7FBF`). Any ROM *code or data* placed in that range is not a normal
+  ROM read at runtime — a fetch there hits the FDC and a store is swallowed — so a
+  routine that drifts into it silently fails to persist (this class caused a
+  create/write P0: a handler body had drifted into the window ~M27 and file creation
+  didn't stick). The window must be left as dead `$00` pad; put a build-time guard on
+  its base (`FDC_WINDOW_INTRUSION` assert at `$7F80`) so nothing can reoccupy it.
+- **FAT12 FAT-entry writes must split at the correct nibble/byte boundary.** A FAT12
+  entry is 12 bits, so every *other* entry straddles a byte boundary; the write path
+  must mask/merge the two halves at the boundary that matches the entry's parity.
+  An off-by-one in the straddle boundary corrupts entries only at the clusters whose
+  FAT bytes cross a *sector* edge (clusters 170/341/682 → byte index 255/511 on a
+  720 KB disk) — invisible to a small-disk happy-path probe. Verified byte-exact
+  against a corpus of real stock disks (`disk_fat_straddle_oracle.py`; the
+  read-only-artifact oracle, [oracle-artifacts.md](oracle-artifacts.md)).
 
 ---
 
-## 5. The COMMAND.COM load phase — kernel→disk-ROM call surface (characterised; reimplementation deferred)
+## 5. The COMMAND.COM load phase — kernel→disk-ROM call surface (IMPLEMENTED)
 
-> **Genre note.** Unlike §1–4 (settled *and* reimplemented), this section
-> documents a phase that is **characterised** and now **under active
-> reimplementation** — it is the clean-provenance *map* of the loader's call
-> surface. Status as of 2026-06-24: zerobas reaches this phase, and hosting
-> COMMAND.COM to `A>` is **GREEN-LIT** ("the full work"); the milestone roadmap is
-> [`tier2-kernel-plan.md`](tier2-kernel-plan.md). The contracts here promote to
-> settled (§1–4 style) as each milestone lands. The §5.2 entry environment is
-> already a settled OUTPUT contract.
+> **Genre note.** This section documents the phase that carries the boot from
+> `MSXDOS.SYS` init through to the visible `A>` prompt. It is now **settled and
+> reimplemented** (goal MET 2026-07-03): the loader pivot `$47B2` is our own
+> `k_47B2` and the whole surface below boots byte-identical to stock, guarded by
+> `make bdos-acceptance`. The material below is both the clean-provenance *map* of
+> the loader's call surface and the contract our reimplementation satisfies. The
+> milestone detail lives in [`tier2-m21-spec.md`](tier2-m21-spec.md) (`$4462`/
+> `$47B2`) and [`tier2-m31-rdblk-randrecord-spec.md`](tier2-m31-rdblk-randrecord-spec.md)
+> (RDBLK random-record); the BDOS functions the shell then drives are §6.
 
 Once `MSXDOS.SYS`'s own init completes (the §1–3 entries + work area all
 satisfied), the relocated kernel runs the **`COMMAND.COM` loader** from high RAM
@@ -270,20 +299,25 @@ in-ROM kernel entries — the phase that ends at the `A>` prompt.
 
 ### 5.1 The pivot entry `$47B2` — "load + start `COMMAND.COM`"
 
-The loader at `$D821` does `CALL $47B2`. This is **not a small routine**: a
-boundary probe (`disk_probe_dosboot_47b2.py`, breakpoints on the `$D821` call and
-the `$D824` return) measures the whole `$D821→$47B2→$D824` span at **371,384
-instructions**, and one of its sub-entries is `$607B` **called with `ra=$0100`** —
-i.e. **`COMMAND.COM` executes at `$0100` *inside* this span** and calls back into
-the disk ROM. So `$47B2` is effectively *the entire `COMMAND.COM` load + shell
-startup*, not a discrete subroutine.
+The loader at `$D821` does `CALL $47B2`. On stock this call target is *the entire
+`COMMAND.COM` load + shell startup*, not a discrete subroutine: a boundary probe
+(`disk_probe_dosboot_47b2.py`, breakpoints on the `$D821` call and the `$D824`
+return) measures the whole `$D821→$47B2→$D824` span at **371,384 instructions**, and
+one of its sub-entries is `$607B` **called with `ra=$0100`** — i.e. `COMMAND.COM`
+executes at `$0100` *inside* this span and calls back into the disk ROM.
 
-| | entry byte (stock, all 7 vendors) | role |
-|---|---|---|
-| `$47B2` | `$AF` (`XOR A` …) | enters the load/relocate routine; advances the boot |
-
-Observed entry state (stock): `AF=$0044 BC=$FFFA DE=$DC5B HL=$D500 IX=$F195
-IY=$EC55`. It returns to `$D824` with `AF=$0142 HL=$1A00 IY=$DC5B`, stack balanced.
+- **zerobas reimplementation (`k_47B2`, [`../kernel.asm`](../kernel.asm)).** Our
+  `$47B2` is a clean-room **`_RDBLK` (BDOS `$27`) body** written to the published
+  `map.grauw.nl` contract (M21b landed it; M31 un-simplified it to honour the FCB
+  random-record field + true count — see §6). It positions to record RR, transfers
+  up to `HL` records of the FCB record size, zero-pads a final partial record, and
+  reports the true count. The boot loaders that reach it pass RR=0 / record-size 1,
+  so the loader contract (`HL=BC=`bytes transferred, `A=1`) falls out for them while
+  a running program gets a faithful random block read.
+- **Entry/exit contract (oracle-measured).** Entry (stock): `AF=$0044 BC=$FFFA
+  DE=$DC5B HL=$D500 IX=$F195 IY=$EC55`; returns to `$D824` with `AF=$0142 HL=$1A00
+  IY=$DC5B`, stack balanced. Ours reproduces the exit registers byte-identically
+  (`capture --at 0xC51D`: zero diffs).
 
 ### 5.2 The COMMAND.COM entry environment — the loader's page-0 OUTPUT contract
 
@@ -351,60 +385,310 @@ Provenance check (file identity only, `disk_probe_diskrom_crossvendor.py`-class)
 de-facto-standard, the same legitimacy class as §1. The externally-reached ones
 of note: `$4010` (the standard DSKIO, the *one* our ROM already provides
 correctly), and `$607B` (reached from `ra=$0100` — `COMMAND.COM`'s own callback
-into the disk ROM). Per-entry contracts are **not** characterised here (the build
-is paused); what is settled is the *shape*: a bounded, mostly-shared-kernel cluster.
+into the disk ROM). The per-entry contracts the shell actually drives are the BDOS
+functions in §6; what §5.3 settles is the surface *shape*: a bounded,
+mostly-shared-kernel cluster.
 
-### 5.4 The `$4462`/`$544E` poll loop is a downstream symptom
+### 5.4 What the reimplementation satisfies
 
-With `$47B2` not implemented, the observable failure is a tight poll loop hammering
-`$4462` (×~24,151) and `$544E` (×~24,148) from kernel PCs `$D7FA`/`$D806`. This is
-**not** the root cause: diffing the `$D7FA` loop stock-vs-Tier-1
-(`disk_probe_dosboot_pctrace.py --arm $D7FA`) is PC-identical through `CALL $47B2`,
-then diverges *inside* it — stock (`$47B2`=`XOR A`) runs the load routine and
-progresses (`$4462` is called only ×2, `$544E` never); ours (unrelated bytes there)
-bails to `$D824`, and the kernel falls into the `$4462`/`$544E` spin. Fixing the
-loop means implementing `$47B2`, not the loop entries.
-
-### 5.5 Scope of the reimplementation (green-lit; see the plan)
-
-Reaching `A>` *through the proprietary `COMMAND.COM`* was first scoped as providing
-~12 entangled runtime entries because `COMMAND.COM` runs inside the loader and calls
-back into the kernel (16 of the 21 entries sit `<$50B7` inside zerobas's active code
-— handled by the M3 net-zero veneers). §8.45/§8.46 **narrowed** that scope: the
-page-0 vector table + `$DDxx` high-RAM kernel are the stock's *internal* inter-slot
-plumbing, **not** COMMAND.COM's interface (§8.46 — only disk-ROM/kernel PCs call
-them). So a faithful host satisfies what COMMAND.COM *actually* calls (its `$0005`
-BDOS path + the fixed page-1 cluster), not the kernel's internal `$DDxx` layout.
-
-This is **GREEN-LIT** (2026-06-24, "the full work"), built under the **faithful
-relocation model** (user-chosen: mirror the stock's relocate-kernel-to-high-RAM +
-page-0 vector structure, with our own code and contracts — never copied bytes). The
-milestone roadmap and the clean-room firewall for this phase are in
-[`tier2-kernel-plan.md`](tier2-kernel-plan.md). The settled §1–4 ABI and the
-Disk-BASIC deliverable stand on their own and must stay regression-green throughout.
-Probe: `disk_probe_dosboot_47b2.py`.
+Reaching `A>` *through the proprietary `COMMAND.COM`* is **not** a matter of cloning
+the loader's internal plumbing. The page-0 vector table + `$DDxx` high-RAM kernel
+(§5.2) are the stock's *internal* inter-slot plumbing, **not** COMMAND.COM's
+interface (only disk-ROM/kernel PCs call them). A faithful host therefore satisfies
+what COMMAND.COM *actually* calls — its `$0005` BDOS path (the §6 function surface)
+plus the fixed page-1 cluster — not the kernel's internal `$DDxx` layout. zerobas
+builds this under the **faithful relocation model** (mirror the stock's
+relocate-kernel-to-high-RAM + page-0 vector structure, with our own code and
+contracts — never copied bytes). The boot is byte-identical to stock through the
+full BDOS call sequence and the visible `A>`; the settled §1–4 ABI and the
+Disk-BASIC deliverable stay regression-green throughout. Probes:
+`disk_probe_dosboot_47b2.py`, `disk_probe_diff.py`.
 
 ---
 
-## Frontier (not yet settled)
+## 6. The BDOS-in-ROM function surface
 
-Tracked in [`provider-oracle-scope.md`](provider-oracle-scope.md); promoted here
-only once each settles (per the settle-gated cadence in
-[`../../docs/documentation-deliverable.md`](../../docs/documentation-deliverable.md)):
+Once `COMMAND.COM` (or any transient `.COM`) is running, it drives MSX-DOS via the
+CP/M-style `CALL $0005` with the **function number in `C`**. Under MSX-DOS 1 that
+path reaches the relocated high-RAM kernel, which dispatches each call through a
+**per-function table** — `($D8BE + 3·C)` → `{segment, handler}` — into a page-1
+disk-ROM handler at a **fixed canonical entry address**. Those entry addresses are
+the surface this section documents: they are the in-ROM BDOS the MSX2 Technical
+Handbook omits entirely, and — like §1 — they fall inside the cross-vendor
+shared-kernel region (byte-identical across the seven vendors surveyed in
+[oracle-artifacts.md](oracle-artifacts.md)), so they are genuine de-facto-standard
+entries, not one vendor's private internals.
 
-- **`$5454` CONOUT real output** — the entry is *placed and unblocks the boot*
-  (§1.3 status; §8.39), but the first-cut body emits nothing. Promoting the full
-  output behaviour waits on the console path settling; the contract itself (§1.3)
-  is already settled and documented.
-- **Hosting the proprietary COMMAND.COM to `A>` — GREEN-LIT, under active build
-  (2026-06-24).** Documented as [§5](#5-the-commandcom-load-phase--kerneldisk-rom-call-surface-characterised-reimplementation-deferred);
-  roadmap in [`tier2-kernel-plan.md`](tier2-kernel-plan.md). The scope was narrowed
-  by §8.45/§8.46 (satisfy COMMAND.COM's actual interface, not the kernel's internal
-  `$DDxx` layout). Each cluster target is a black-box contract (the `$5454` playbook
-  ×~N); the M3 net-zero veneer scaffold is in place and the settled §1–4 ABI +
-  Disk-BASIC deliverable stay regression-green throughout. The `$F100–$F3FF` cells
-  beyond §2 (`$F100–$F17C` driver dispatch, the `$F327` routines, the `$F1F0–$F1FF`
-  device table) are part of that same surface, promoted as their milestones land.
+**Clean-room basis.** Each contract below is the published function contract
+(`map.grauw.nl` MSX-DOS / CP/M BDOS reference) reconciled with a **black-box
+characterisation** — the canonical entry *address* is found by watching which
+page-1 PC the kernel CALLs for a given `C` (`disk_probe_diff.py callseq --log
+0x0005`), and the register/side-effect behaviour is measured against the CF-3300
+oracle (the `BDOSX*.COM` exercisers). The body at each entry is our own code; stock
+bytes are never read or copied. The whole surface is a standing gate:
+`make bdos-acceptance` (11 differentials) + `make bdos-cbios-selfcheck` (C-BIOS
+self-consistency, 10) + host unit tests where they exist.
+
+Register conventions below: `C` = the BDOS function number; "entry" = the canonical
+page-1 handler address; contracts name the input/output registers that matter.
+Functions with no single canonical page-1 address (served through the console
+primitives or a data cell) are marked `—`.
+
+### 6.1 Console / misc tier
+
+Proven byte-identical via `BDOSX2.COM`/`BDOSX0.COM` (M22a/M22b/M23).
+
+| `C` | fn | entry | contract |
+|---|---|---|---|
+| `$00` | TERM0 | — | terminate program; never returns; control falls back to the `A>` shell |
+| `$01` | CONIN | `$5445` | read one char (CHGET) **and echo** it via `conout_body` |
+| `$02` | CONOUT | `$5454` | output the char in **`E`** via CHPUT (§1.3). The shell's per-char output actually enters the `$53A7` CONOUT worker, which adds TAB-expansion + the `$F237` output-column cell, then drives `$5454` |
+| `$06` | DIRIO | `$5454` (branch) | direct console I/O: `E=$FF` → input (no echo), else output; discriminated by `ret=$D88A`+`C=$06`+`E=$FF` |
+| `$07` | DIRIN | `$5462` | raw console input; identical to INNOE at this granularity |
+| `$08` | INNOE | `$544E` | read one char (CHGET), **no echo** |
+| `$09` | STROUT | — | output a `$`-terminated string, each char through the CONOUT path (§2.6, `$F1C9`) |
+| `$0A` | BUFIN | — | buffered line input (edited line into the caller's buffer) |
+| `$0B` | CONST | `$543C` | console status (CHSNS) normalised to `A=$FF` ready / `A=$00` not |
+| `$0C` | CPMVER | `$41EF` | return the CP/M version constant: `A=$22`, `B=$00` |
+| `$0D` | DSKRST | `$509F` | disk reset; side effect: DTA pointer → `$0080` |
+| `$18` | LOGIN | `$504E` | return the logged-in-drive vector `(1<<DRVCNT)−1`; `C` preserved. **BIOS-seam-sensitive** — see §8 (`DRVCNT`/`$F347` must be seeded above the `$FF` gate) |
+| `$2E` | VERIFY | `$55FF` | store the verify flag: `A:=E` (the write-verify *effect* is deliberately not coupled in — a faithful accepted simplification) |
+
+### 6.2 Drive select, allocation, date/time
+
+Boot-path functions (`$0E/$19/$1B/$2A/$2B`) are proven by the 27/27 boot `callseq`;
+`$2C/$2D` by `BDOSX2`.
+
+| `C` | fn | entry | contract |
+|---|---|---|---|
+| `$0E` | SELDSK | `$50D5` | select disk; returns the drive count (`ld a,(DRVCNT)`) |
+| `$19` | CURDRV | `$50C4` | return the current drive (`ld a,(CURDRV)`) |
+| `$1B` | GETALLOC | `$505D` | free-space scan: `A=`sectors/cluster, `BC=$0200`, `DE=`total data clusters, `HL=`free-cluster count. **Must clear the `$F306` dispatcher flag before `ret`** (§6.5) or the exit path clobbers `HL` |
+| `$2A` | GDATE | `$553C` | get date; returns the `1984-01-01` default; format defaults in `$F30D/$F30E` |
+| `$2B` | SDATE | — | set date (accepts a typed date; screen-verified) |
+| `$2C` | GTIME | `$55DB` | get time; an all-zero constant (not fed by STIME) |
+| `$2D` | STIME | `$55E6` | set time: `A:=0`, `B:=H`, `C:=L`, `DE` passthrough (range validation not implemented) |
+
+### 6.3 File / FCB tier — open, read, write, close, rename, delete
+
+Proven by the `BDOSX*.COM` exercisers (0-byte-diff vs the oracle) and, for the write
+paths, by **disk-artifact round-trip** against the CF-3300 (the RAM-only gate is
+blind to disk writes).
+
+| `C` | fn | entry | contract |
+|---|---|---|---|
+| `$0F` | FOPEN | `$4462` | open by FCB; fill `FCB+14..31` (record count, size, date/time, device id, first cluster) from the found directory entry; miss → `A=$FF` |
+| `$10` | FCLOSE | `$461D`/`$477D`/`$456F` | close; flush a multi-cluster file's final state to the directory + FAT |
+| `$13` | FDEL | `$436C` | delete: free the FAT12 chain (`fat_next_cluster`/`fat_write_fat_entry`) and stamp the dir entry `$E5` |
+| `$14` | RDSEQ | (via `$477D`) | sequential record read; writes the advanced position back to the FCB |
+| `$15` | WRSEQ | `$477D` | sequential record write; allocates a new cluster when the file crosses a cluster boundary |
+| `$16` | FMAKE | `$461D` | create / truncate the directory entry |
+| `$17` | FREN | `$4392` | rename the directory entry in place (`fat_mount`/`fat_find`/`write_sector`) |
+| `$1A` | SETDTA | — | set the DTA pointer (kernel cell `DOS_DTAPTR` = `$F23D`) |
+| `$21` | RDRND | `rrnd_position`→`rdrnd_body` | random-record read; positions via the record-in-sector helper |
+| `$22` | WRRND | `rrnd_position`→`wrrnd_body` | random-record read-modify-write |
+| `$23` | FSIZE | `$501E` | get file size: set `FCB+33..35 = ceil(size/128)` (24-bit LE); `A=L=0` found / `A=L=$FF` not found |
+| `$24` | SETRND | `$50C8` | set the random-record field from the current sequential position |
+| `$26` | WRBLK | `$47BE` | random **block** write: 24-bit RR positioning, transfer `(HL·RS)` bytes, past-EOF contiguous extend, `RR += HL`. On **shrink** (HL=0, RR<EOF) ours does the FCLOSE-consistent thing — sets size, frees the tail chain, EOC-marks — an intentional signed-off divergence from stock (§9) |
+| `$27` | RDBLK | `$47B2` | random **block** read (`k_47B2`): position to record RR, transfer up to `HL` records of the FCB record size, zero-pad a final partial record, report the true count (M31 un-simplification; boot loaders pass RR=0/RS=1 so the loader contract `HL=BC=`bytes, `A=1` falls out) |
+
+### 6.4 Absolute sector I/O
+
+Proven by `BDOSX3` records 22-23.
+
+| `C` | fn | entry | contract |
+|---|---|---|---|
+| `$2F` | RDABS | `$46BA` | read an arbitrary sector count via DSKIO directly into the runtime DTA |
+| `$30` | WRABS | `$4720` | write an arbitrary sector count via DSKIO from the runtime DTA |
+
+### 6.5 Load-bearing general rules for handlers
+
+These are not per-function facts; they govern *every* page-1 handler and were each
+the root cause of a real bug:
+
+1. **Clear `$F306` before `ret` if you return a value in `HL`.** The RAM kernel's
+   common BDOS-exit path (`$D8AA–$D8BD`) overwrites a handler's `HL` with `H:=B,
+   L:=A` **unless** the handler first clears the dispatcher flag `$F306`. Any
+   `HL`-returning handler (GETALLOC, and any future one) must clear it (M20).
+2. **CONOUT takes the char in `E`, never `A`** (§1.3; M10). A veneer reading `A`
+   emits garbage for all kernel-phase output while *appearing* to work for the early
+   sign-on.
+3. **The internal `BDOS_DTA` and the kernel `DOS_DTAPTR` (`$F23D`) are separate
+   cells.** SETDTA writes only `DOS_DTAPTR`; any handler that streams via
+   `bdos_seqread`/`bdos_seqwrite` for a caller other than our own boot loader must
+   reseed `BDOS_DTA` from `DOS_DTAPTR` at entry, or it targets a stale address (M21b).
+4. **DOS-only default cells must be seeded at handoff.** Some kernel/`COMMAND.COM`
+   behaviour reads work-area cells that must hold a specific value at DOS entry —
+   `$F338` (=0), `$F23B` (printer-echo, =0, else DIR mis-parses list-device state),
+   `$F30D/$F30E` (date format). These are laid down in `dos_handoff` (§7).
+
+### 6.6 Not applicable / delegated
+
+- `$03` AUXIN, `$04` AUXOUT — no serial device on this single-drive MSX1 target.
+- `$05` LSTOUT — delegates to the main-BIOS `$00A5` LPTOUT (characterised in
+  [tier2-lstout-characterisation.md](tier2-lstout-characterisation.md)); its own
+  page-1 dispatch (`$5465`) is currently un-wired but harmless (nothing calls it for
+  real). See [tier2-m27-lstout-spec.md](tier2-m27-lstout-spec.md).
+
+---
+
+## 7. Work-area construction — how disk-ROM INIT builds `$F100–$F3FF`
+
+§2 documents the settled *cells* the kernel reads; this section documents how the
+disk ROM's INIT **builds** the whole area at boot. It matters because the region is
+not just data: the relocated `MSXDOS.SYS` kernel and `COMMAND.COM` read `$F100–$F3FF`
+directly and CALL routines *inside* it, so a partially-built area derails the shell
+long before any file operation. On a clone that leaves it `$FF`, ~460 of the 768
+bytes differ from stock and the boot fails (`disk_probe_dosboot_wadiff.py`).
+
+**The build runs in four time-phases** (last-writer-per-byte watch of stock's boot,
+`disk_probe_dosboot_wabuild`; ~96 distinct writer routines):
+
+| phase | builds | regions |
+|---|---|---|
+| 1 — clear / default | zero pass + `$C9`-fill of the hook-stub table | `$F24F–$F2B7` (§2.7) |
+| 2 — structural | drive-A DPB + drive table; the segment-switch jump table; the drive-DPB pointer block | `$F195–$F1BC`, `$F368–$F37F` (§2.3/§2.4/§2.5), `$F34D–$F352` |
+| 3 — resident code + FCB | the resident routines the kernel CALLs; the resident `COMMAND COM` FCB + its DPB; the device-name table `PRN LST NUL AUX CON` | `$F100–$F17C`, `$F1C9–$F236` (§2.6), `$F21C`, `$F2B8` |
+| 4 — final cells | the last cells set exactly at `COMMAND.COM` entry | scattered |
+
+zerobas reimplements the phases that its target actually needs (the CF-3300 is a
+plain-64K machine, so the segment-switch table is `RET`-stubs, §2.4). The structural
+data reuses existing code — the DPB comes from our own GETDPB (§2.5); the device
+table and resident-FCB are static; the resident code blocks are clean-room bodies.
+
+### 7.1 DOS-only default cells — seeded at handoff
+
+Beyond the structural build, several work-area cells must hold a **specific value at
+DOS entry** because the kernel or `COMMAND.COM` reads them directly and branches on
+them. They are laid down in `dos_handoff` (`../runtime.asm`), each the root cause of
+a real derail when left unset:
+
+| cell | value | why |
+|---|---|---|
+| `$F338` | `$00` | `COMMAND.COM` does `ld a,($F338)` at startup and derails on non-zero (the finding that first exposed the whole unbuilt area) |
+| `$F23B` | `$00` | printer-echo state; non-zero makes `COMMAND.COM`'s DIR line-end / prompt cycle believe a list device is attached (the M27 LSTOUT DIR oddity) |
+| `$F30D/$F30E` | date-format defaults | consumed by GDATE (§6.2) |
+| `$F247` (CURDRV), `$F347` (DRVCNT) | `$00`, drive count | read by CURDRV / LOGIN (§6.2/§6.1); **seeded unconditionally above the `$FF` gate — see §8** |
+
+---
+
+## 8. C-BIOS seam rules — the two interfaces and the seed-above-the-gate rule
+
+zerobas-disk's prime target is **C-BIOS**; the CF-3300 is only the behavioural
+oracle. A genuine MSX disk ROM sits between **two interfaces with opposite
+portability rules**, and conflating them is the classic source of over-fitting to the
+oracle's proprietary BIOS:
+
+- **Interface A — disk-ROM ↔ `MSXDOS.SYS`/`COMMAND.COM` (layout-fixed, BIOS-
+  independent).** The DOS image hard-codes specific disk-ROM addresses (the §1/§5/§6
+  entries) and reads the work area at fixed offsets. We always load the same DOS
+  image, so this interface is identical regardless of main BIOS: **match the
+  layout/contract; reimplement contracts, never the proprietary bytes.**
+- **Interface B — disk-ROM ↔ main BIOS (must be BIOS-agnostic).** To do its job the
+  disk ROM calls main-BIOS services — CHPUT (`$00A2`), KEYINT, the inter-slot
+  primitives, the slot work area (EXPTBL `$FCC1` …). Reach them **only** through
+  documented, BIOS-agnostic entries and the slot work area — never a hardcoded slot,
+  a fixed BIOS address, or an "it's already mapped" assumption. The `EXPTBL[0]`-driven
+  page-in used by `conout_body` (§1.3) is the template for every Interface-B call.
+
+### 8.1 The seed-above-the-gate rule (Interface-B, proven twice)
+
+INIT's work-area build is **gated** so a host that already provisioned the area is not
+overwritten — `set_ramad` returns early unless `RAMAD0` (`$F341`) reads `$FF`
+(uninitialised):
+
+```asm
+        ld   a,(RAMAD0)      ; $F341
+        inc  a
+        ret  nz             ; already set -> skip the whole build
+```
+
+On the CF-3300 uninitialised page-3 RAM reads `$FF`, so the gate opens and the build
+runs. **On C-BIOS, page-3 RAM is pre-filled with `$C9`** (`RET`), which is *not*
+`$FF`, so the gate slams shut and the entire build — RAMAD fill, DRVTBL, resident
+code, **and the DRVCNT/CURDRV seeds** — is skipped, leaving those cells at `$C9`.
+
+The consequence: any DOS work-area cell **the kernel reads directly** must be seeded
+**above** the gate (unconditionally), not inside the gated build. Proven twice:
+
+| cell | symptom when gated out on C-BIOS | fix |
+|---|---|---|
+| `$F340` (INIT-complete flag, §2.2) | left `$C9` → kernel takes the derail branch; DOS never boots | clear `$F340` unconditionally before the gate |
+| `$F347` (DRVCNT) | left `$C9` → LOGIN builds `(1<<$C9)−1` → returns `$FF` (8 phantom drives) instead of `$03` | seed DRVCNT/CURDRV unconditionally before the gate |
+
+This **falsifies the naïve reading** of the two-interface rule ("disk-ROM↔main-BIOS
+is fully BIOS-agnostic") for *seed cells specifically*: they are BIOS-sensitive
+because the gate's `$FF` sentinel is a main-BIOS-dependent assumption. The standing
+guard is `make bdos-cbios-selfcheck`, which re-captures the BDOS anchors on the
+C-BIOS target and asserts byte-identity with the CF-3300 (it is what caught the
+LOGIN bug — the CF-3300-only `bdos-acceptance` differential could not).
+
+---
+
+## 9. Boundary / adversarial behaviours (Tier-C)
+
+The happy-path differentials converge on a small disk; the corners — disk-full,
+dir-full, cluster-boundary EOF, past-EOF random writes, rename collisions — are a
+separate class, and each corner's **expected behaviour is whatever the CF-3300 does**
+(observed, not posited from a spec or from our own code). The suite anchors each case
+either to a **read-only artifact oracle** (behaviour visible in the bytes a stock
+write leaves — FAT chain length, dir layout — read from real stock disks per the
+public FAT12 spec) or to a **live differential** (a `BDOSX`-family exerciser driving
+the error path on both machines from an identical crafted fixture, asserting
+0-byte-diff). Settled cases:
+
+| case | corner | settled behaviour |
+|---|---|---|
+| 1 | cluster-boundary EOF | byte-identical to stock |
+| 2 | disk-full write onset (WRSEQ) | byte-identical (the disk-full error surfaces on the same write, M34) |
+| 3 | directory-full (FMAKE) | byte-identical (no fix needed) |
+| 4 | WRRND past EOF (M36) | file **size grows** to `(RR+1)·RS` and the new size **persists to the directory entry** — matched to stock byte-for-byte (an FCB-only bump would have been vacuous; stock persists the size to the dirent, so ours does too) |
+| 5 | FREN onto an existing name (M35) | **rejected** — `A=$FF`, source file survives, no duplicate dir entry (ours previously renamed anyway; now matches stock's refusal) |
+
+### 9.1 One intentional, signed-off divergence — WRBLK shrink
+
+WRBLK (`$26`, §6.3) **shrink** (HL=0, RR<EOF) is the single place ours *deliberately*
+differs from stock: ours does the FCLOSE-consistent thing — set the new size, free
+the tail FAT chain, EOC-mark — so the following FCLOSE succeeds on a 1-cluster
+consistent chain. Stock corrupts the FAT here (it leaks the tail chain, and the
+subsequent FCLOSE fails). This is **not a regression**: ours is correct where stock
+is broken, and it is recorded as an accepted divergence rather than a parity target
+(disk-artifact round-trip verified, `disk_probe_wrblk_roundtrip.py`).
+
+---
+
+## Frontier / harvest status
+
+The two items this section previously tracked as unsettled — `$5454` CONOUT real
+output and hosting `COMMAND.COM` to `A>` — **both landed** (goal MET 2026-07-03) and
+are now documented as settled contracts (§1.3, §5). The MSX-DOS-1 disk-ROM track is
+**concluded**; the disk ROM is full-verify CLEAN.
+
+What remained after the boot goal was met was a **documentation harvest**, not an
+implementation frontier: a body of already-settled behaviour that lived only in the
+`tier2-*.md` milestone notebook. That harvest is now largely discharged — the
+settled contracts have been promoted section by section (per the settle-gated cadence
+in [`../../docs/documentation-deliverable.md`](../../docs/documentation-deliverable.md)):
+
+- **§6** — the BDOS-in-ROM function surface (the ~40 functions the shell drives via
+  `$0005`; M13→M36). *Promoted.*
+- **§7** — work-area *construction* (the `$F100–$F3FF` build phases + the DOS-default
+  cells beyond the §2 subset). *Promoted.*
+- **§8** — the C-BIOS seam rules (two-interface rule + seed-above-the-`$FF`-gate,
+  proven at `$F340` + `$F347`). *Promoted.*
+- **§4 / §9** — the FDC-window ×8 mirror + FAT12 straddle-write remediations (§4) and
+  the Tier-C boundary behaviours (§9). *Promoted.*
+
+Still notebook-only (lower mission value — partially covered by the MSX2 Technical
+Handbook, so a datasheet-exists rather than empty-shelf gap):
+
+- **Disk-BASIC verb surface** — FILES/LOAD/SAVE/BLOAD/BSAVE/OPEN/PRINT#/GET/PUT/LOC/
+  LOF/EOF/FORMAT. Source of record: [file-channel-protocol.md](file-channel-protocol.md)
+  (already product-genre) + [diskbasic-verb-coverage.md](diskbasic-verb-coverage.md)
+  (scoreboard). A candidate future promotion, not a missing empty-shelf deliverable.
+
+Going forward the spec rides the settle-gated cadence: any new settled contract is
+promoted from its `tier2-*.md` notebook the moment it settles.
 
 ## Reproducing
 
