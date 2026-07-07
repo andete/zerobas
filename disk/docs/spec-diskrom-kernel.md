@@ -679,15 +679,14 @@ in [`../../docs/documentation-deliverable.md`](../../docs/documentation-delivera
 - **§4 / §9** — the FDC-window ×8 mirror + FAT12 straddle-write remediations (§4) and
   the Tier-C boundary behaviours (§9). *Promoted.*
 
-Still notebook-only (lower mission value — partially covered by the MSX2 Technical
-Handbook, so a datasheet-exists rather than empty-shelf gap):
+The **Disk-BASIC verb surface** (FILES/LOAD/SAVE/BLOAD/BSAVE/OPEN/PRINT#/GET/PUT/
+EOF/LOF/DSKF/FORMAT) — a distinct layer *above* this kernel ABI — has now also been
+promoted, to its own product spec
+[`spec-diskbasic-verbs.md`](spec-diskbasic-verbs.md) (distilled from the
+[file-channel-protocol.md](file-channel-protocol.md) spike + the
+[diskbasic-verb-coverage.md](diskbasic-verb-coverage.md) scoreboard).
 
-- **Disk-BASIC verb surface** — FILES/LOAD/SAVE/BLOAD/BSAVE/OPEN/PRINT#/GET/PUT/LOC/
-  LOF/EOF/FORMAT. Source of record: [file-channel-protocol.md](file-channel-protocol.md)
-  (already product-genre) + [diskbasic-verb-coverage.md](diskbasic-verb-coverage.md)
-  (scoreboard). A candidate future promotion, not a missing empty-shelf deliverable.
-
-Going forward the spec rides the settle-gated cadence: any new settled contract is
+Going forward both specs ride the settle-gated cadence: any new settled contract is
 promoted from its `tier2-*.md` notebook the moment it settles.
 
 ## Reproducing

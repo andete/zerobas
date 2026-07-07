@@ -5,9 +5,18 @@ SPDX-License-Identifier: 0BSD
 
 # zerobas Disk BASIC file-channel protocol — pinned spec (Phase 2, Step-0 spike)
 
-Status: **research-spike output, not yet implemented.** This pins how MSX **Disk
-BASIC** moves bytes for the file verbs (`OPEN`/`PRINT#`/`INPUT#`/`CLOSE`/`FILES`),
-so Phase 2 can decide *how* zerobas provides them. It is the complement of the
+> **Genre / status note (2026-07-07).** This is the **research-spike / provenance**
+> record — the black-box characterisation that *pinned* the contract and resolved the
+> EXTEND-vs-DELEGATE fork. The verbs it scoped are now **implemented and gated**
+> (`make diskbasic-acceptance` 23/23); the standalone **product spec** distilled from
+> this is [`spec-diskbasic-verbs.md`](spec-diskbasic-verbs.md). The "not yet
+> implemented" framing below is the spike's point-in-time state, kept for provenance —
+> read the product spec for current behaviour.
+
+Status (at spike time): **research-spike output, not yet implemented.** This pins how
+MSX **Disk BASIC** moves bytes for the file verbs
+(`OPEN`/`PRINT#`/`INPUT#`/`CLOSE`/`FILES`), so Phase 2 can decide *how* zerobas
+provides them. It is the complement of the
 Phase-1.5 [`expansion-protocol.md`](expansion-protocol.md), which pinned the
 drive-letter *loader* path and deliberately skipped the file verbs.
 

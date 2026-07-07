@@ -5,6 +5,11 @@ SPDX-License-Identifier: 0BSD
 
 # Disk-BASIC verb coverage scoreboard + acceptance-gate scope
 
+> **Product spec (2026-07-07):** the standalone behavioural reference distilled from
+> this scoreboard is [spec-diskbasic-verbs.md](spec-diskbasic-verbs.md). This doc is
+> the **scoreboard / notebook** (the per-verb proof matrix + gate baseline); the spec
+> is the distilled "how the verbs behave" deliverable.
+
 **What this is:** a living per-verb scoreboard of how much of the zerobas Disk-BASIC
 verb surface is proven against the oracle — the Disk-BASIC counterpart of
 [tier2-bdos-coverage.md](tier2-bdos-coverage.md). It exists to answer one question the

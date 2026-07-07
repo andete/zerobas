@@ -202,6 +202,9 @@ A first read of the discipline against the tree, 2026-06-24:
   Tier-C boundary behaviours** + the FDC-window/FAT12 remediations (§4) — primary
   documentation that existed nowhere before. The 2026-06-24 "seeded" spec had also
   gone **stale** (framed COMMAND.COM-hosting / `$5454`-output as deferred when they
-  landed); the harvest corrected that currency too. Going forward it rides the
-  settle-gated cadence; the one remaining notebook-only item is the lower-value
-  (datasheet-partially-exists) Disk-BASIC verb surface.
+  landed); the harvest corrected that currency too. The **Disk-BASIC verb surface**
+  (a layer above the kernel ABI) was also promoted, to its own product spec
+  [`../disk/docs/spec-diskbasic-verbs.md`](../disk/docs/spec-diskbasic-verbs.md)
+  (distilled from the file-channel spike + the verb scoreboard). Going forward both
+  specs ride the settle-gated cadence; nothing disk-side remains notebook-only that
+  meets the bar for promotion.
