@@ -111,6 +111,11 @@ def build(dos_src: str, out: str, tmp_dir: str) -> dict:
     img = bytearray(open(out, "rb").read())
 
     fat12_add(img, "BDOSX5", "COM", com_bytes)      # the exerciser first...
+    # AUTOEXEC.BAT auto-runs BDOSX5 with zero typed keys (verify-first: see
+    # tier2-autoexec-bat-harness-spec.md). Added BEFORE the root dir is saturated below,
+    # so it occupies one of the slots the fixture fills anyway -- the dir still ends up
+    # exactly saturated (fill_root_dir loops until SystemExit regardless of the count).
+    fat12_add(img, "AUTOEXEC", "BAT", b"BDOSX5\r\n")
     dummies = fill_root_dir(img)                    # ...then saturate the root dir
     clus_bytes, free, total, rootent = fat12_geometry(img)
     if free < 1:
@@ -146,7 +151,7 @@ def main() -> int:
     # occurrence #1 of `done` is the REAL program run, not a boot-time address collision
     # (the vacuous-anchor bug found 2026-07-04). See tier2-remediation-spec.md.
     print("next: python3 probes/disk/disk_probe_diff.py capture "
-          f"--at {addrs['done']:#06x} --arm-check-val {addrs['sig']:#04x} --keys '\\rBDOSX5\\r' --keys-at 20 --settle 90 "
+          f"--at {addrs['done']:#06x} --arm-check-val {addrs['sig']:#04x} --settle 90 "
           f"--machine both --mem {addrs['fcb']:#06x}:{mem_len:#x} --diska {args.out}")
     return 0
 
