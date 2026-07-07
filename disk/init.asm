@@ -402,6 +402,21 @@ set_ramad:
                 ; black-box (§8.33).
                 xor     a
                 ld      (DOS_F340), a
+                ; --- seed the DOS cold-boot cells the kernel reads DIRECTLY, also
+                ; UNCONDITIONALLY (same reason as the $F340 clear above). DRVCNT ($F347,
+                ; logical-drive count -> LOGIN $18 online-drive bitmap via login_body and
+                ; the $50D5 SELDSK entry) and CURDRV ($F247, current-drive index -> $50C4
+                ; and the boot prompt) are DATA cells MSX-DOS reads on ANY host that boots
+                ; DOS -- NOT part of the CF-3300-only RAMAD/DRVTBL plumbing below the gate.
+                ; On the C-BIOS target the $FF gate returns early (RAMAD0=$C9), and while
+                ; these writes lived below it $F347 stayed $C9 -> LOGIN returned the garbage
+                ; bitmap $FF (8 phantom drives) instead of $03 (drives A:/B:), and $F247
+                ; stayed $FF. See tier2-cbios-bdos-login-f347.md. Clean-room: published
+                ; single-drive convention ([[dual-drive-decision]]) + boot state, not stock.
+                ld      a, $02
+                ld      (DRVCNT), a         ; $F347 logical-drive count (LOGIN/SELDSK read it)
+                xor     a
+                ld      (CURDRV_CELL), a    ; $F247 current drive = A: ($00)
                 ; --- RAMAD: fill only when the host left it uninitialised ($FF) ------
                 ld      a, (RAMAD0)
                 inc     a                   ; $FF -> $00 (Z): RAMAD uninitialised?
@@ -527,23 +542,12 @@ bdt_tramp:
                                                     ; but +13 is NOT the IX source, §8.30)
                 ld      a, $AA
                 ld      (DRVTBL + 15), a            ; +15 sentinel (stock = $AA)
-                ; --- DRVTBL-1 ($F347): logical-drive count (M17 §2.2) --------------
-                ; The kernel's SELDSK-time entry $50D5 reads this cell into A (M17
-                ; readwatch causal pin). MSX-DOS-1's single-physical-drive model
-                ; exposes TWO logical drives A:/B: ([[dual-drive-decision]]), so the
-                ; clean-room count is $02 (stock's $F347 = $02). Was $FF (unbuilt) on
-                ; ours -> $50D5 returned garbage. Clean-room: published convention, not
-                ; a stock byte.
-                ld      a, $02
-                ld      (DRVCNT), a                 ; DRVCNT = DRVTBL-1 = $F347
-                ; --- CURDRV_CELL ($F247): current-drive index (M18 §2.2) -----------
-                ; The kernel's CURDRV-time entry $50C4 reads this cell into A (M18
-                ; readwatch causal pin) and the boot prompt prints 'A'+drive. The
-                ; MSX-DOS-1 boot state logs in drive A: = $00 (stock's $F247 = $00).
-                ; Was $FF (unbuilt) on ours -> $50C4 returned garbage -> 'C>' not 'A>'.
-                ; Clean-room: published boot state, not a stock byte.
-                xor     a
-                ld      (CURDRV_CELL), a            ; CURDRV_CELL = $F247 = current drive
+                ; --- DRVCNT ($F347, M17) + CURDRV ($F247, M18) are now seeded
+                ; UNCONDITIONALLY in the set_ramad prologue (above the $FF gate), because
+                ; MSX-DOS reads them on EVERY host that boots DOS -- including C-BIOS, where
+                ; this gated plumbing is skipped and they used to leak garbage ($F347=$C9
+                ; -> LOGIN $18 = $FF). See the prologue + tier2-cbios-bdos-login-f347.md.
+                ; The kernel's $50D5 SELDSK / $50C4 CURDRV read pins (M17/M18) are unchanged.
                 ; fall through to install the resident work-area routines (§8.28)
 ; build_resident — install the disk system's resident RAM ROUTINES the kernel CALLs
 ; from fixed work-area addresses (a3 §8.28). After $50A9 the kernel CALLs $F1C9, a

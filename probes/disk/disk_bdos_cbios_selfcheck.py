@@ -87,17 +87,12 @@ ALLOWLIST: dict[str, dict[int, str]] = {}
 # known-open set is reported XFAIL (loud, but doesn't red the build); a diff that spreads to
 # ANY other byte still FAILS (the bug must not silently grow); and a known-open byte that
 # STOPS diverging is reported XPASS (go fix the tracker -- the bug may be resolved).
-KNOWN_OPEN: dict[str, dict[int, str]] = {
-    "BDOSX2": {
-        # BDOS $18 LOGIN (record 1) returns login vector 0x00FF on C-BIOS vs the
-        # stock-correct 0x0003 (single-drive -> drives A+B) on CF-3300 -- 8 phantom
-        # drives on the shipped target. Same class as $F340 (a value our DOS layer gets
-        # right under the real BIOS, wrong under C-BIOS). Tracked:
-        # disk/docs/tier2-cbios-bdos-selfcheck-spec.md §3. Fix = its own milestone.
-        0x0349: "LOGIN $18 A (=login-vec lo) 03->FF on C-BIOS -- KNOWN-OPEN, see spec §3",
-        0x034F: "LOGIN $18 L (=login-vec lo) 03->FF on C-BIOS -- KNOWN-OPEN, see spec §3",
-    },
-}
+# (empty) The first known-open, BDOSX2 LOGIN $18 = 0x00FF on C-BIOS, was ROOT-CAUSED +
+# FIXED 2026-07-07 (DRVCNT $F347 seed was gated out on C-BIOS; now seeded unconditionally
+# above the RAMAD $FF gate -- tier2-cbios-bdos-login-f347.md). BDOSX2 is now byte-identical
+# across both hosts. Add an entry here ONLY for a NEW confirmed-real BIOS-dependent bug that
+# is being deferred to its own fix milestone (see the semantics note above).
+KNOWN_OPEN: dict[str, dict[int, str]] = {}
 
 MEMLINE_RE = re.compile(r"memory\s+0x[0-9A-Fa-f]+\+\d+:\s+([0-9A-Fa-f ]+)")
 

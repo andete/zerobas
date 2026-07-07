@@ -7,11 +7,10 @@ SPDX-License-Identifier: 0BSD
 
 **Status:** gate BUILT + wired 2026-07-07 (`make bdos-cbios-selfcheck`, exit 0 = green).
 First run caught a real, confirmed BIOS-dependent divergence — **BDOS `$18` LOGIN**
-(§3) — carried as a tracked **XFAIL / known-open** (§3.1): the gate is green-with-caveat
-(9 regions byte-identical + 1 known-open), the finding stays loud, and the fix is a
-separate follow-on milestone (user decision 2026-07-07: "track as follow-on, commit gate
-now"). The gate still HARD-FAILS if the known-open divergence spreads to any new byte, so
-the bug cannot silently grow.
+(§3) — briefly carried as a tracked XFAIL, then **ROOT-CAUSED + FIXED same day**
+(tier2-cbios-bdos-login-f347.md): `KNOWN_OPEN` is now empty and the gate is **10/10
+byte-identical** across both hosts (ALL IDENTICAL). The XFAIL machinery (§3.1) stays in the
+gate for the next finding.
 
 ## 1. Why this gate exists (the coverage gap)
 
@@ -53,7 +52,14 @@ Mechanics (disk_bdos_cbios_selfcheck.py):
 Clean-room: our own ROM under two host BIOSes; only DATA/register capture, no reference
 code decoded — same allowed class as the differential.
 
-## 3. First catch — BDOS `$18` LOGIN returns `0x00FF` on C-BIOS (should be `0x0003`)
+## 3. First catch — BDOS `$18` LOGIN returned `0x00FF` on C-BIOS (✅ FIXED)
+
+> **RESOLVED 2026-07-07** — root cause + fix in tier2-cbios-bdos-login-f347.md: DRVCNT
+> (`$F347`) was seeded below the RAMAD `$FF` gate, which C-BIOS's `$C9` RAM-fill defeats, so
+> `login_body` read garbage ≥8 → bitmap `0xFF`. Fixed by seeding DRVCNT/CURDRV
+> unconditionally above the gate (same shape as the `$F340` fix). BDOSX2 now byte-identical
+> across both hosts; `KNOWN_OPEN` is empty. Kept below as the worked example of what the gate
+> catches.
 
 BDOSX2 record 1 (`$18` LOGIN, get login vector) is the only divergence in the whole suite.
 Full 8-byte record `func A B C D E H L`:
@@ -90,9 +96,9 @@ gate. Instead it is a tracked **KNOWN_OPEN** entry (§3.1).
   committable and green today without hiding the finding, and it will notice both
   regression (spread) and resolution (cleared) of the LOGIN bug automatically.
 
-**Follow-on milestone:** root-cause + fix LOGIN `$18` on C-BIOS (black-box, `$F340` method:
-PC/reg/mem/port + poke-causality, no reference disasm). When fixed, the gate flips BDOSX2
-to XPASS → remove the `KNOWN_OPEN["BDOSX2"]` entry and this §.
+**Follow-on milestone:** ✅ DONE 2026-07-07 — LOGIN `$18` root-caused + fixed
+(tier2-cbios-bdos-login-f347.md); `KNOWN_OPEN["BDOSX2"]` removed, gate 10/10 ALL IDENTICAL.
+The xfail/known-open machinery above is retained for the next finding.
 
 ## 4. Regions covered (9/10 byte-identical on first run)
 
