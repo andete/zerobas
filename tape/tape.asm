@@ -58,6 +58,14 @@ LOWLIM:         equ     $FCA4           ; read discrimination threshold work byt
 CASBAUD:        equ     $FCA5           ; = WINWID (resolved-baud cache; see above)
 FREE_ORG:       equ     $3A72           ; start of unused page-0 ROM fill
 
+; Printer (Centronics) interface ports -- MSX2 Technical Handbook Ch.5a §4.1
+; "Printer interface": port 91H = 8-bit data latch; port 90H bit 0 (WRITE) =
+; STROBE*, active-low ("send data when 0"); port 90H bit 1 (READ) = status,
+; 0 = READY, 1 = BUSY. Used by our LPTOUT below.
+PRN_DATA:       equ     $91             ; data latch (write)
+PRN_STAT:       equ     $90             ; status (read bit1) / strobe (write bit0)
+PRN_BUSY:       equ     %00000010       ; port 90H read bit 1: 1 = BUSY, 0 = READY
+
 ;--------------------------------------------------------------------------------
 ; Tuning constants.
 ;--------------------------------------------------------------------------------
@@ -99,6 +107,17 @@ CAS_RUNLEN:     equ     16
 CAS_FLATMAX:    equ     1500
 
 CASIN_R14:      equ     14              ; PSG register holding CAS-in on bit 7
+
+;================================================================================
+; LPTOUT jump vector ($00A5), repointed into our code. C-BIOS ships $00A5 as a
+; stub (JP into an unimplemented routine), so BDOS $05 LSTOUT / BASIC LPRINT
+; produce nothing on the C-BIOS target. We supply a real LPTOUT below; this is a
+; "select improvement" beyond cassette -- see DESIGN.md "Scope". $00A5 is a
+; standard BIOS jump-table entry (C3 xx xx) in all 12 C-BIOS main ROMs, so
+; overwriting its target byte-safely repoints it (build-time asserted).
+;================================================================================
+                org     $00A5
+                jp      lptout          ; $00A5 LPTOUT
 
 ;================================================================================
 ; All seven cassette jump vectors ($00E1-$00F3), repointed into our code --
@@ -549,6 +568,44 @@ tapoof_lp:
                 xor     a
                 call    stmotr          ; motor off
                 ei
+                ret
+
+;================================================================================
+; $00A5 LPTOUT -- send one character to the Centronics printer port.
+;
+; C-BIOS stubs this vector, so on the C-BIOS target BDOS $05 LSTOUT (and BASIC
+; LPRINT) produce no output. zerobas-disk's lstout_body deliberately DELEGATES to
+; main-BIOS $00A5 (the two-interface rule), so supplying a real LPTOUT here makes
+; list output work with zero change to the disk ROM.
+;
+; Protocol (MSX2 Technical Handbook Ch.5a §4.1 "Printer interface"): wait until
+; port 90H bit 1 (READ) is 0 (READY), latch the byte to port 91H, then pulse the
+; active-low STROBE* on port 90H bit 0 -- assert with a $00 write, release with a
+; $FF write. The whole-byte $00/$FF strobe writes reproduce the on-the-wire
+; sequence observed on real hardware (disk/docs/tier2-lstout-characterisation.md
+; §3.2), so a printer driven by our LPTOUT sees exactly the standard waveform.
+;
+; In:      A = character to print
+; Out:     CY reset (success -- we block until READY, so we do not report failure)
+; Changes: F only. A and every other register are preserved, per the published
+;          LPTOUT contract (map.grauw.nl msxbios: "Affected: F"). We save the char
+;          in B (restored) because reading the status port clobbers A.
+lptout:
+                push    bc
+                ld      b,a             ; save char (A must be preserved on return)
+lptout_wait:
+                in      a,(PRN_STAT)    ; 90H read: bit 1 = status
+                and     PRN_BUSY
+                jr      nz,lptout_wait  ; 1 = BUSY -> spin until READY (0)
+                ld      a,b
+                out     (PRN_DATA),a    ; 91H: latch the data byte
+                xor     a
+                out     (PRN_STAT),a    ; 90H <- $00: STROBE* asserted (bit0 = 0)
+                dec     a               ; A = $FF
+                out     (PRN_STAT),a    ; 90H <- $FF: STROBE* released (bit0 = 1)
+                ld      a,b             ; restore the character to A
+                pop     bc
+                or      a               ; CY = 0 (success)
                 ret
 
 tape_end:       ; marks the end of the routine block (the patch slices to here)

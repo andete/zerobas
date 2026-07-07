@@ -1,10 +1,29 @@
 # zerobas-tape
 
-A **clean-room reimplementation of the MSX cassette (tape) BIOS routines** that
-C-BIOS leaves unimplemented, shipped as a tiny **patch** against a stock C-BIOS
-v0.29 ROM. Scoped to *just* the seven cassette entry points (`$00E1`–`$00F3`) and
-the work-area state they touch — the read and write signal paths C-BIOS ships as
-stubs.
+A **clean-room reimplementation of the page-0 MSX BIOS routines C-BIOS leaves
+unimplemented**, shipped as a tiny **patch** against a stock C-BIOS v0.29 ROM. Its
+core is the **seven cassette entry points** (`$00E1`–`$00F3`) and the work-area
+state they touch — the read and write signal paths C-BIOS ships as stubs — plus a
+small set of **select BIOS completions** beyond cassette (see **Scope** below),
+currently **`LPTOUT` (`$00A5`)**, the printer-output routine.
+
+## Scope — what belongs in this patch
+
+The component began as, and is still named for, the cassette fix; its identity has
+broadened to *"the page-0 BIOS routines C-BIOS stubs that zerobas needs, supplied
+via one IPS overlay."* A routine is admitted here only if **all** hold:
+
+1. it is a **missing/stubbed C-BIOS page-0 BIOS entry point** (a standard `$00xx`
+   jump-table vector), so filling it in must live in the BIOS to serve *any* caller
+   (real BASIC, DOS, zerobas), not just one component;
+2. it is **small** — too small to justify its own component (Makefile / provenance /
+   installer wiring);
+3. it fits the **spare page-0 fill** the patch already owns.
+
+Cassette and `LPTOUT` qualify; `AUXIN`/`AUXOUT` (`$00A3`/`$00A6`) are the obvious
+future candidates. Interpreter/cartridge features do **not** — those stay in
+`basic.rom` / `disk.rom`. (This deliberately supersedes the earlier "tape = cassette
+only" scoping; a separate component for a ~20-byte routine was rejected as overhead.)
 
 zerobas-tape is a **component of the zerobas project** (`tape/`). It is combined
 with C-BIOS only *at runtime* — as a binary patch applied to the user's own ROM —
@@ -56,33 +75,40 @@ make                        # -> zerobas-tape-msx1.ips + .bps
 ```
 
 `pasmo` assembles `tape.asm` to just the bytes the patch adds, then
-`tools/rom_patch.py forge` slices the two changed regions out (vectors at `0xE2`,
-code from `0x3A72` to the `tape_end` label). **No C-BIOS is compiled.** A stock
-C-BIOS v0.29 ROM is the patch *target*, not a build input — it is used only to
-stamp the BPS source/target CRC32 and verify the result (apply → `ff8bcf59…`); the
-build auto-detects openMSX's bundled copy, or pass one: `make STOCK=/path/to.rom`.
+`tools/rom_patch.py forge` slices the three changed regions out (LPTOUT vector at
+`0xA5`, cassette vectors at `0xE2`, code from `0x3A72` to the `tape_end` label).
+**No C-BIOS is compiled.** A stock C-BIOS v0.29 ROM is the patch *target*, not a
+build input — it is used only to stamp the BPS source/target CRC32 and verify the
+result (apply → `c3da57a6…`); the build auto-detects openMSX's bundled copy, or pass
+one: `make STOCK=/path/to.rom`.
 
-## What the patch changes (2 regions)
+## What the patch changes (3 regions)
 
 The routines are assembled into **unused** page-0 ROM, so adding them displaces no
-stock C-BIOS code. The patch touches exactly two places:
+stock C-BIOS code. The patch touches exactly three places:
 
+- `0x00A5–0x00A7` (3 B) — the **`LPTOUT` (`$00A5`)** jump vector, repointed to our
+  printer routine. `$00A5` is a standard BIOS jump-table entry (`C3 xx xx`) in every
+  C-BIOS main ROM, so overwriting its target byte is safe (asserted at build time).
 - `0x00E2–0x00F5` (20 B) — the targets of **all seven** cassette jump vectors
   (TAPION, TAPIN, TAPIOF, TAPOON, TAPOUT, TAPOOF, STMOTR), repointed to the new code.
   STMOTR (`$00F3`) now dispatches to *our own* motor routine, so the patch relies on
   no stock-C-BIOS code at all — only on the spare ROM being free.
-- `0x3A72–0x3BC8` (347 B) — our routines, over former `0x00` fill.
+- `0x3A72–tape_end` — our routine bodies (cassette + `LPTOUT`), over former `0x00`
+  fill.
 
 Everything else is byte-identical to stock, including C-BIOS's original cassette
 stubs (`0x16B2`), which are left untouched. The code lives entirely in the first
 16 KB (`< 0x4000`), because the second 16 KB is paged out for BASIC/cartridges; a
-`ds $4000 - tape_end` guard in the source enforces this.
+`ds $4000 - tape_end` guard in the source enforces this. `tools/build_patches.py`
+verifies the `$00A5`/`$00E1` vectors and the `$3A72..tape_end` fill are as expected
+in **all 12** C-BIOS main ROMs before forging, so the one IPS stays universal.
 
 | | |
 |---|---|
 | Target ROM | C-BIOS **v0.29** `cbios_main_msx1_eu.rom`, sha1 `baf2e9c69252fd9b350b488d89c71887b9d05eec` (openMSX's bundled `C-BIOS_MSX1`) |
-| Result ROM | tape-enabled, sha1 `ff8bcf59e457aad5352ec018feeebe236fc0f12b` |
-| Changed | 367 bytes, 1.1% of the 32 KB ROM, in 2 regions |
+| Result ROM | tape+LPTOUT-enabled, sha1 `c3da57a65af8b16802c3e3a005fc7f1606de05e4` |
+| Changed | in 3 regions (LPTOUT vector + cassette vectors + routine bodies) |
 
 ## Apply it
 
@@ -94,7 +120,7 @@ python3 tools/rom_patch.py apply cbios_main_msx1_eu.rom \
 Standard patchers work too (`flips`, `Lunar IPS`, emulators' patch-on-load). **BPS**
 embeds CRC32 of source and target, so a wrong base ROM fails cleanly — prefer it.
 **IPS** is universally supported but carries no checksum: apply it only to the
-`baf2e9c6…` ROM and verify the result is `ff8bcf59…`. openMSX can apply the IPS at
+`baf2e9c6…` ROM and verify the result is `c3da57a6…`. openMSX can apply the IPS at
 load time via a `<patches><ips>` element on the ROM.
 
 ### Applies to every C-BIOS ROM (own motor routine)
@@ -105,11 +131,16 @@ the stock motor routine's address. Its **only** remaining ROM-specific fact is
 `FREE_ORG = $3A72` — the spare `0x00` fill it lands in.
 
 That fact holds in **all 12** C-BIOS main ROMs openMSX ships — every MSX1, MSX2, and
-MSX2+ variant: each has `$3A72–$3BC8` as `0x00` fill and `$00E1 = $C3` (the cassette
-jump table). So the *same* IPS bytes apply, byte-safely, to all of them, and the
-repointed dispatch (incl. `$00F3 → $3A72`) is live in each. (The **BPS** stays
-EU-specific — its CRC32 is keyed to `baf2e9c6…` — so use the IPS for the others, or
-`tools/install-openmsx-machine.py`, which patches each on load.)
+MSX2+ variant: each has `$3A72..tape_end` as `0x00` fill, `$00E1 = $C3` (the cassette
+jump table), and `$00A5 = $C3` (the LPTOUT vector — its target differs per variant,
+`JP $14D9` on MSX1 / `JP $158D` on MSX2/2+, but it is always a `C3` vector we
+overwrite). So the *same* IPS bytes apply, byte-safely, to all of them, and the
+repointed dispatch (incl. `$00F3 → $3A72` and `$00A5 → lptout`) is live in each.
+`tools/build_patches.py` asserts these invariants across every C-BIOS main ROM it
+finds before forging, so a future C-BIOS layout change can't silently break the
+universal IPS. (The **BPS** stays EU-specific — its CRC32 is keyed to `baf2e9c6…` —
+so use the IPS for the others, or `tools/install-openmsx-machine.py`, which patches
+each on load.)
 
 The cassette signal path itself is CPU-clock-derived (the same 3.58 MHz Z80
 everywhere) and uses only standard work-area sysvars, so it behaves identically across

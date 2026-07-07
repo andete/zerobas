@@ -37,6 +37,23 @@ openMSX as a black box.
 | Register clobber | "Changes: all" | MSX Assembly Page BIOS call list | sourced |
 | TAPOON header selector | A=0 short, A≠0 long header | MSX2 Tech Handbook, cassette I/O | sourced |
 | STMOTR motor input | A=0 off, A≠0 on | MSX Assembly Page BIOS call list | sourced |
+| LPTOUT entry point | `$00A5` | MSX Assembly Page BIOS call list; MSX2 Tech Handbook | sourced |
+| LPTOUT input / output | A = char in; CF set = fail | MSX Assembly Page BIOS call list ("Sends one character to printer"; Input A; Output CF on fail) | sourced |
+| LPTOUT register clobber | "Changes: F" (A + others preserved) | MSX Assembly Page BIOS call list ("Affected: F") | sourced |
+
+## Printer (Centronics) interface — hardware ports
+
+The LPTOUT routine (`tape.asm`, added as a "select improvement" beyond cassette —
+see [`DESIGN.md`](DESIGN.md)) drives the standard MSX printer port. C-BIOS ships
+`$00A5` as a stub, so list output (BDOS `$05` LSTOUT, BASIC `LPRINT`) produces
+nothing on the C-BIOS target until this fills it in.
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| Data latch port | `$91` (write, 8-bit) | MSX2 Tech Handbook Ch.5a §4.1 "Printer interface" | sourced |
+| Status port | `$90` read, **bit 1** = status, 0 = READY / 1 = BUSY | MSX2 Tech Handbook Ch.5a §4.1 (table: "0: Printer READY / 1: Printer BUSY") | sourced |
+| Strobe | `$90` write, **bit 0** = STROBE\*, active-low (assert with 0, release with 1) | MSX2 Tech Handbook Ch.5a §4.1 (table: "STROBE\* (send data when '0')") | sourced |
+| On-the-wire per char | READ `$90` → WRITE `$91` → WRITE `$90` `$00` → WRITE `$90` `$FF` | project black-box oracle [`../disk/docs/tier2-lstout-characterisation.md`](../disk/docs/tier2-lstout-characterisation.md) §3.2 (whole-byte `$00`/`$FF` strobe writes), cross-checked against the MSX2 TH spec above | sourced |
 
 ## Hardware ports and bit assignments
 

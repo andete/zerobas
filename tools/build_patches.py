@@ -48,6 +48,53 @@ def run(cmd, **kw):
     subprocess.run(cmd, check=True, **kw)
 
 
+def _sym_value(sym_path: str, label: str) -> int:
+    """Read one label's address from a pasmo .sym file (`LABEL\tEQU\tXXXXH`)."""
+    for line in open(sym_path):
+        parts = line.replace(":", " ").split()
+        if parts and parts[0] == label:
+            return int(parts[-1].rstrip("Hh"), 16)
+    raise SystemExit(f"label {label!r} not found in {sym_path}")
+
+
+def verify_all_variants(tape_sym: str) -> None:
+    """Assert the page-0 layout the tape patch relies on holds in EVERY C-BIOS main
+    ROM present, so the single universal IPS is byte-safe across all variants (the
+    DESIGN.md universality guarantee). Fails the build on any violation; warns (does
+    not fail) if no ROMs are found — the IPS is still produced, just unverified."""
+    import glob
+    tape_end = _sym_value(tape_sym, "tape_end")
+    roms = []
+    for share in openmsx_paths.SHARE_CANDIDATES:
+        roms += sorted(glob.glob(os.path.join(share, "machines", "cbios_main_msx*.rom")))
+    roms = [r for r in roms if os.path.isfile(r)]
+    if not roms:
+        print("  warning: no C-BIOS main ROMs found -- skipping multi-variant "
+              "layout verification (the IPS is still universal by construction).")
+        return
+    print(f"  verifying page-0 layout across {len(roms)} C-BIOS main ROM(s)...")
+    for r in roms:
+        b = open(r, "rb").read()
+        name = os.path.basename(r)
+        if b[0xA5] != 0xC3:
+            sys.exit(f"  FAIL {name}: $00A5 = {b[0xA5]:02X}, expected C3 (LPTOUT "
+                     f"must be a JP vector we can repoint)")
+        if b[0xE1] != 0xC3:
+            sys.exit(f"  FAIL {name}: $00E1 = {b[0xE1]:02X}, expected C3 (cassette "
+                     f"jump table)")
+        fill = b[FREE_ORG_ADDR:tape_end]
+        if any(x != 0x00 for x in fill):
+            bad = FREE_ORG_ADDR + next(i for i, x in enumerate(fill) if x)
+            sys.exit(f"  FAIL {name}: page-0 fill $3A72..${tape_end:04X} is not all "
+                     f"0x00 (first non-zero at ${bad:04X}) -- our routine bodies "
+                     f"would collide with stock code")
+    print(f"  OK: $00A5/$00E1 are JP vectors and $3A72..${tape_end:04X} is free "
+          f"in all {len(roms)} ROM(s).")
+
+
+FREE_ORG_ADDR = 0x3A72
+
+
 def ensure_basic_rom() -> str:
     """The page-1 patch needs build/basic.rom. When invoked via the Makefile it is
     already built (a prerequisite); assemble it here too so the script also works
@@ -98,9 +145,19 @@ def build_tape(explicit_stock):
         print("assembling tape.asm (our code only)...")
         run([PASMO, "--bin", os.path.join(tape_dir, "tape.asm"), tape_bin, tape_sym])
 
+        # Verify the patch's page-0 assumptions hold in EVERY C-BIOS main ROM, so
+        # the one universal IPS stays byte-safe across all variants (DESIGN.md):
+        #   - $00A5 is a C3 JP vector (we repoint its target -> LPTOUT)
+        #   - $00E1 is a C3 JP vector (the cassette table -- long-standing)
+        #   - $3A72..tape_end is 0x00 fill (our routine bodies land there)
+        verify_all_variants(tape_sym)
+
         def forge(out, with_source):
             cmd = [PY, patch, "forge", out, "--bin", tape_bin, "--sym", tape_sym,
-                   "--base", "0xE1", "--region", "0xE2:0xF6", "--region", "0x3A72:tape_end"]
+                   "--base", "0xA5",
+                   "--region", "0xA5:0xA8",         # $00A5 LPTOUT vector
+                   "--region", "0xE2:0xF6",         # seven cassette vector targets
+                   "--region", "0x3A72:tape_end"]   # routine bodies (cassette + LPTOUT)
             if with_source:
                 cmd += ["--source", stock]
             run(cmd)

@@ -1,11 +1,21 @@
-# tape — zerobas-tape cassette patch
+# tape — zerobas-tape C-BIOS page-0 completion patch
 
-**Makes cassette loading and saving work in openMSX's free C-BIOS.**
+**Makes cassette loading/saving — and printer output — work in openMSX's free C-BIOS.**
 
-[C-BIOS](https://github.com/cbios/cbios) has no tape support — `BLOAD"CAS:"`,
-`CLOAD`, and `CSAVE` all hang or do nothing. This component supplies real
-`TAPION`/`TAPIN`/`TAPIOF` routines in a spare region of page 0, validated
-at both 1200 and 2400 baud on MSX1, MSX2, and MSX2+.
+[C-BIOS](https://github.com/cbios/cbios) leaves several page-0 BIOS routines as
+stubs: `BLOAD"CAS:"`, `CLOAD`, and `CSAVE` all hang or do nothing, and `LPTOUT`
+(`$00A5`) prints nothing so `LPRINT` / BDOS `$05` list output is silent. This
+component supplies real implementations in a spare region of page 0. Its core is
+the cassette signal layer (`TAPION`/`TAPIN`/`TAPIOF` + the write path), validated
+at both 1200 and 2400 baud on MSX1, MSX2, and MSX2+; alongside it are **select
+small BIOS completions** — currently `LPTOUT` (printer output). See
+[`DESIGN.md`](DESIGN.md) "Scope" for the admission rule.
+
+> **Why "tape" if it also does printer output?** The component began as a pure
+> cassette fix and keeps the name for continuity (the committed
+> `zerobas-tape-msx1.ips` and the `*_TAPE` machine wiring). Its real identity is
+> *"the page-0 BIOS routines C-BIOS stubs that zerobas needs, filled in via one IPS
+> overlay."* A separate component per tiny routine was rejected as needless overhead.
 
 The cassette patch and the zerobas BASIC ROM are applied together by the
 repo-level installer:
