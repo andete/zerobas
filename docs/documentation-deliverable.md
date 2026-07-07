@@ -192,12 +192,16 @@ A first read of the discipline against the tree, 2026-06-24:
   spec) *plus* `tape-internals.md`; both genres present. The model to copy.
 - **basic** — **has the deliverable.** Four `spec-*.md` (tokenise, control-flow,
   tokens/statements, `BLOAD"…",R`). Product-shaped.
-- **disk** — **seeded (2026-06-24).** The notebook (`provider-oracle-scope.md`,
-  the `§8.x` series) is now backfilled into a distilled product spec,
-  [`../disk/docs/spec-diskrom-kernel.md`](../disk/docs/spec-diskrom-kernel.md):
-  the settled disk-ROM kernel entries (`$4030`, `$50A9`, `$5454` CONOUT) + the
-  `$F100–$F3FF` resident work area (RAMAD, `$F340`, DRVTBL, the `$F368` table,
-  per-drive DPBs, the `$F1C9`/`$F24E` stubs) + the DOS-path DSKIO refinements —
-  primary documentation that existed nowhere before. Going forward it grows by the
-  settle-gated cadence: each remaining frontier contract is promoted from the
-  notebook as it settles.
+- **disk** — **has the deliverable; harvest discharged (2026-07-07).** Seeded
+  2026-06-24, then — once the MSX-DOS-1 track concluded — the already-settled
+  notebook contracts were promoted in a one-time harvest into
+  [`../disk/docs/spec-diskrom-kernel.md`](../disk/docs/spec-diskrom-kernel.md)
+  (commit 1ed1611). Now §1–5 boot-path ABI + **§6 the full BDOS-in-ROM function
+  surface** (~40 functions → canonical page-1 entries; M13→M36) + **§7 work-area
+  construction** + **§8 the C-BIOS seam rules** (seed-above-the-`$FF`-gate) + **§9
+  Tier-C boundary behaviours** + the FDC-window/FAT12 remediations (§4) — primary
+  documentation that existed nowhere before. The 2026-06-24 "seeded" spec had also
+  gone **stale** (framed COMMAND.COM-hosting / `$5454`-output as deferred when they
+  landed); the harvest corrected that currency too. Going forward it rides the
+  settle-gated cadence; the one remaining notebook-only item is the lower-value
+  (datasheet-partially-exists) Disk-BASIC verb surface.

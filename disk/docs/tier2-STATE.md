@@ -218,9 +218,12 @@ await user direction. (Parked distant-future directions only: multi-hardware var
 [[disk-hardware-target-variants]]; greenfield BASIC-extension axis [[v9990-basic-extension-idea]].)
 
 Other candidate directions (parked):
-- **Docs-as-deliverable harvest** ([[dual-mission-docs-as-deliverable]]) — now the code is
-  settled, consolidate the tier2-*-spec.md notebook into the product-spec genre (seed:
-  spec-diskrom-kernel.md).
+- **Docs-as-deliverable harvest** ([[dual-mission-docs-as-deliverable]]) — ✅ LARGELY DONE
+  2026-07-07 (commit 1ed1611): ran the coverage check, then promoted the settled tier2-*-spec.md
+  contracts into spec-diskrom-kernel.md — new §6 (BDOS-in-ROM function surface, M13→M36), §7
+  (work-area construction), §8 (C-BIOS seam rules), §9 (Tier-C boundaries) + §4 FDC-window/FAT12
+  remediations, and fixed the doc's stale "deferred" currency. Only remaining notebook-only item:
+  the lower-value Disk-BASIC verb surface (file-channel-protocol.md + diskbasic-verb-coverage.md).
 - **C-BIOS LPTOUT follow-up** ([[cbios-lptout-followup]]) — ✅ CLOSED 2026-07-07: LPTOUT
   (`$00A5`) implemented in the zerobas-tape page-0 patch, so LSTOUT/LPRINT now print on the
   C-BIOS target (verified "LP!\r\n" via the openMSX printer logger). No longer standing.
