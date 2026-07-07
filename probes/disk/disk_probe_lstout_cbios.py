@@ -27,11 +27,11 @@ asserts the printer log contains exactly the LSTOUTX signature `LP!\r\n`
 LPTOUT. Black-box: we attach a disk, plug a printer, run a .COM, and read the bytes
 the printer received. No ROM is decoded.
 
-LAUNCHER NOTE. LSTOUTX is launched by TYPING `LSTOUTX\r` at the A> prompt. The
-zero-typing AUTOEXEC.BAT launcher used elsewhere does NOT fire under the C-BIOS DOS
-boot (a COMMAND.COM-under-C-BIOS quirk, tracked separately); typing is the reliable
-path here. A leading `\r` lands a clean prompt first to blunt the openMSX
-first-keypress-doubling window (openmsx-probing-toolbox.md §8).
+LAUNCHER. LSTOUTX is auto-run from an `AUTOEXEC.BAT` on the disk — ZERO typed keys.
+This also makes the probe a regression guard for the C-BIOS DOS cold-boot fix
+(tier2-cbios-dosboot-autoexec-f340.md): before that fix, `AUTOEXEC.BAT` did not fire
+under the C-BIOS DOS boot (COMMAND.COM warm-started), so this probe's log would be
+empty. An empty log now means either LPTOUT ($00A5) or the cold-boot fix regressed.
 
 PREREQUISITES.
   * openMSX with the C-BIOS_MSX1_EU_BASIC_DISK machine installed:
@@ -77,23 +77,20 @@ def assemble_lstoutx(tmp_dir: str) -> bytes:
 def build_disk(dos_src: str, com: bytes, out: str) -> None:
     img = bytearray(open(dos_src, "rb").read())
     fat12_add(img, "LSTOUTX", "COM", com)
+    # AUTOEXEC.BAT auto-runs LSTOUTX at cold boot with zero typed keys (relies on the
+    # C-BIOS DOS cold-boot fix, tier2-cbios-dosboot-autoexec-f340.md).
+    fat12_add(img, "AUTOEXEC", "BAT", b"LSTOUTX\r\n")
     open(out, "wb").write(img)
 
 
 def run(machine: str, disk: str, log: str, settle: float, timeout: float) -> None:
-    # Boot, plug the logger, wait for the A> prompt to settle, then type the
-    # command. `set renderer none` + `throttle off` = fast headless run.
+    # Boot with an AUTOEXEC.BAT that runs LSTOUTX — no typed keys at all.
+    # `set renderer none` + `throttle off` = fast headless run.
     tcl = f"""set throttle off
 set renderer none
 set printerlogfilename {{{log}}}
 catch {{ plug printerport logger }}
-after time {settle} {{
-  type "\\r"
-  after time 1 {{
-    type "LSTOUTX\\r"
-    after time 4 {{ exit }}
-  }}
-}}
+after time {settle} {{ exit }}
 """
     tcl_path = log + ".tcl"
     open(tcl_path, "w").write(tcl)
@@ -118,8 +115,8 @@ def main() -> int:
                     help=f"C-BIOS+disk target machine (default: {DEFAULT_MACHINE})")
     ap.add_argument("--dos-disk", default=DEFAULT_DOS_DISK,
                     help="MSX-DOS 1 disk to inject LSTOUTX.COM into (default: test.dsk)")
-    ap.add_argument("--settle", type=float, default=12.0,
-                    help="emulated seconds to let the C-BIOS DOS boot reach A> before typing")
+    ap.add_argument("--settle", type=float, default=16.0,
+                    help="emulated seconds to let the C-BIOS DOS boot + AUTOEXEC.BAT run")
     ap.add_argument("--timeout", type=float, default=90.0)
     args = ap.parse_args()
 
