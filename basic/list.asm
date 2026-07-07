@@ -40,6 +40,18 @@
 ; via exec_stmt so the line continues normally.
 ex_list:
                 inc     hl                  ; past the LIST token (args ignored)
+                xor     a
+                ld      (PRDEST),a          ; LIST always renders to the SCREEN sink
+                call    list_walk           ; walk + emit the whole program
+                jp      exec_stmt           ; LIST done -> continue the line
+
+; --- list_walk — walk the stored program, emitting each line as "number space
+; detokenised-body CRLF" through pchar. pchar follows the PRDEST sink: the screen
+; for LIST (PRDEST=0), or the open file channel for ASCII SAVE (PRDEST=1, see
+; ascii_save, save.asm) — so the ONE detokeniser feeds both. Returns after the
+; $0000 end-of-program link. Clean-room: our own detokeniser; the ASCII listing
+; format is the public MSX-BASIC language reference.
+list_walk:
                 ld      hl,TXTBASE
 lst_lp:
                 ld      e,(hl)              ; DE = link to next line
@@ -48,7 +60,7 @@ lst_lp:
                 dec     hl
                 ld      a,d
                 or      e
-                jr      z,lst_done          ; $0000 link -> end of program
+                ret     z                   ; $0000 link -> end of program
                 push    de                  ; guard the link across the print
                 inc     hl                  ; skip link (2) -> line number
                 inc     hl
@@ -61,14 +73,12 @@ lst_lp:
                 ld      e,c
                 call    list_num            ; print the line number (no extra spaces)
                 ld      a,' '               ; one space between number and body
-                call    CHPUT
+                call    pchar
                 pop     hl                  ; HL = token body
-                call    detok               ; render the body to the screen
+                call    detok               ; render the body through pchar (PRDEST)
                 call    print_crlf
                 pop     hl                  ; HL = link -> next line's link field
                 jr      lst_lp
-lst_done:
-                jp      exec_stmt           ; LIST done -> continue the line
 
 ; --- list_num: print DE as an unsigned decimal line number ------------------
 ; print_number formats a *signed* value with a leading sign space and a trailing
@@ -121,7 +131,7 @@ dt_notdigit:
                 ; plain byte (variable letter, space, '(' ')' ',' ';' '&' etc.).
                 ; detok_op / detok_kw clobbered A, so reload the byte before output.
                 ld      a,(hl)
-                call    CHPUT
+                call    pchar
 dt_step1:
                 inc     hl
                 jr      dt_lp
@@ -139,7 +149,7 @@ dt_colon:
                 jr      z,dt_apos_try
                 dec     hl                  ; plain ':' -> emit it verbatim
                 ld      a,COLON
-                call    CHPUT
+                call    pchar
                 inc     hl
                 jr      dt_lp
 dt_else:
@@ -155,12 +165,12 @@ dt_apos_try:
                 jr      z,dt_apos
                 dec     hl                  ; not ':REM... ' form: it was ':' then REM
                 ld      a,COLON
-                call    CHPUT
+                call    pchar
                 jr      dt_lp               ; HL on the REM token -> dt_rem handles it
 dt_apos:
                 inc     hl                  ; past $E6
                 ld      a,QUOTE_REM         ; print '
-                call    CHPUT
+                call    pchar
                 jr      dt_rem_tail         ; rest of line is the verbatim comment
 
 ; --- dt_rem: REM keyword then the verbatim rest of the line -----------------
@@ -172,7 +182,7 @@ dt_rem_tail:
                 ld      a,(hl)              ; copy the comment tail verbatim to EOL
                 or      a
                 ret     z
-                call    CHPUT
+                call    pchar
                 inc     hl
                 jr      dt_rem_tail
 
@@ -187,20 +197,20 @@ dt_data_lp:
                 ret     z                   ; end of line
                 cp      COLON
                 jp      z,dt_lp             ; ':' ends DATA -> resume normal detok
-                call    CHPUT
+                call    pchar
                 inc     hl
                 jr      dt_data_lp
 
 ; --- dt_string: copy a string literal verbatim, incl. its quotes -----------
 dt_string:
                 ld      a,(hl)              ; opening quote
-                call    CHPUT
+                call    pchar
                 inc     hl
 dt_str_lp:
                 ld      a,(hl)
                 or      a
                 ret     z                   ; unterminated -> stop at EOL
-                call    CHPUT
+                call    pchar
                 inc     hl
                 cp      '"'                 ; through the closing quote
                 jr      nz,dt_str_lp
@@ -220,7 +230,7 @@ dt_func:
 dt_digit:
                 sub     INT_DIGIT_BASE      ; 0..9
                 add     a,'0'
-                call    CHPUT
+                call    pchar
                 inc     hl
                 jp      dt_lp
 
@@ -253,9 +263,9 @@ dt_hex:
                 inc     hl
                 push    hl                  ; guard the cursor across the print
                 ld      a,'&'
-                call    CHPUT
+                call    pchar
                 ld      a,'H'
-                call    CHPUT
+                call    pchar
                 call    detok_hex16         ; DE -> uppercase hex, no leading zeros
                 pop     hl
                 jp      dt_lp
@@ -271,9 +281,9 @@ dt_oct:
                 inc     hl
                 push    hl
                 ld      a,'&'
-                call    CHPUT
+                call    pchar
                 ld      a,'O'
-                call    CHPUT
+                call    pchar
                 call    detok_oct16
                 pop     hl
                 jp      dt_lp
@@ -469,7 +479,7 @@ dop_gt:         ld      a,'>'
                 jr      dop_emit
 dop_lt:         ld      a,'<'
 dop_emit:
-                call    CHPUT
+                call    pchar
                 scf
                 ret
 
@@ -516,7 +526,7 @@ dk_print:
                 ld      a,(iy+0)
                 push    bc
                 push    iy
-                call    CHPUT
+                call    pchar
                 pop     iy
                 pop     bc
                 inc     iy
@@ -585,7 +595,7 @@ dk2_print:
                 ld      a,(iy+0)
                 push    bc
                 push    iy
-                call    CHPUT
+                call    pchar
                 pop     iy
                 pop     bc
                 inc     iy

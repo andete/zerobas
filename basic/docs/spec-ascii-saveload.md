@@ -5,14 +5,29 @@ SPDX-License-Identifier: 0BSD
 
 # Spec (for sign-off): ASCII program SAVE `,A` + ASCII LOAD
 
-**Status: SIGNED OFF 2026-07-07 — ready to implement.** Scope + design for the two
-verbs zerobas Disk-BASIC currently rejects, closing the gap documented in
+**Status: IMPLEMENTED 2026-07-07 (both milestones landed + gated).** Scope + design
+for the two verbs zerobas Disk-BASIC used to reject, closing the gap documented in
 [`../../disk/docs/spec-diskbasic-verbs.md`](../../disk/docs/spec-diskbasic-verbs.md) §7.
 User-directed 2026-07-07 ("start on ASCII load and save"). **Sign-off (2026-07-07):**
-(1) **disk-only** this pass, cassette ASCII a follow-on; (2) **redirect LIST's sink
-vector** (§5) — the single-detokeniser approach approved; (3) **LOAD first, then
-SAVE**, each its own commit + gate cell; (4) implement on Sonnet per
-[[opus-vs-sonnet-model-split]] with the §6 oracle differential as the acceptance test.
+(1) **disk-only** this pass, cassette ASCII a follow-on; (2) **redirect LIST's sink**
+(§5) — the single-detokeniser approach approved; (3) **LOAD first, then SAVE**, each
+its own commit + gate cell; (4) implement on Sonnet per [[opus-vs-sonnet-model-split]]
+with the §6 oracle differential as the acceptance test.
+
+> **As-built note (2026-07-07).** Milestone 1 (ASCII LOAD, commit 36c8734) landed as
+> designed (§4). Milestone 2 (ASCII SAVE) landed with **one design refinement from §5,
+> discovered during implementation**: instead of adding a *new* `LIST_OUT_VEC` sink
+> vector, LIST's 17 `CHPUT` emits were routed through the **existing `pchar` sink**
+> (basic/print.asm) — the redirectable emitter PRINT# already uses, selected by the
+> `PRDEST` flag (0=screen, 1=open file channel). ASCII SAVE therefore reuses the proven
+> PRINT#-to-file path wholesale: `disk_write_begin` (create) → `PRDEST:=1` →
+> `list_walk` → Ctrl-Z → `PRDEST:=0` → `disk_write_end` (close). This honours the
+> sign-off's intent ("redirect LIST's sink, one detokeniser") with **less** new code
+> and no parallel redirection mechanism. Sonnet was not used: the dispatched agent died
+> on a transient API error, so both milestones were implemented inline against this
+> spec. Verified by the §6 CF-3300 differentials (`disk_probe_load_ascii`,
+> `disk_probe_save_ascii`), the acceptance gate cells `LOAD(ASCII)`/`SAVE(ASCII)`
+> (gate now 27/27), and `make unit-test` 34/34 (incl. `test_list`).
 
 ## 1. The gap (what errors today)
 

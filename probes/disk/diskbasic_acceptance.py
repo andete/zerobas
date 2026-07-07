@@ -82,6 +82,7 @@ REGISTRY = [
     ("CALL FORMAT",    "disk_probe_format.py",          [], "artifact"),
     # --- read-only FAT12-artifact oracle ----------------------------------------
     ("SAVE/BSAVE",     "disk_probe_save.py",            [], "artifact"),
+    ("SAVE(ASCII)",    "disk_probe_save_ascii.py",      [], "live"),
     ("BSAVE(.bas)",    "disk_probe_save_bas.py",        [], "live"),
     ("LOAD",           "disk_probe_load_disk.py",       [], "artifact"),
     ("LOAD(NUL)",      "disk_probe_load_embedded_nul.py",[], "artifact"),

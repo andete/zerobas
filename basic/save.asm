@@ -223,7 +223,7 @@ do_save:
 sav_dev:
                 ld      a,(de)
                 or      a
-                jr      z,sav_is_cas        ; matched all of "CAS:" -> tape
+                jp      z,sav_is_cas        ; matched all of "CAS:" -> tape (jp: ascii_save split the range)
                 ld      c,a
                 ld      a,(hl)
                 call    upcase
@@ -239,14 +239,14 @@ sav_is_disk:
                 cp      '"'                 ; consume the closing quote
                 jp      nz,load_error
                 inc     hl
-                ; --- ,A ASCII-save form is OUT OF SCOPE (documented) --------
+                ; --- optional ,A -> ASCII listing save; else tokenised ------
                 call    skip_spaces
                 ld      a,(hl)
                 cp      ','
-                jp      z,load_error        ; any SAVE"name",<flag> (incl. ,A) -> unsupported
+                jp      z,sav_ascii_flag    ; SAVE"name",<flag> -> check for ,A
                 or      a
-                jp      nz,load_error        ; trailing junk -> error
-                ; --- create the file and set the DTA -----------------------
+                jp      nz,load_error       ; trailing junk after the name
+                ; --- (no flag) tokenised save: create + $FF marker + image --
                 call    disk_write_begin
                 ; --- $FF tokenised-BASIC disk marker -----------------------
                 ld      a,BASIC_DISK_ID     ; $FF
@@ -278,6 +278,41 @@ sav_next:
                 jr      sav_data
 sav_fin:
                 jp      disk_write_end
+
+; --- SAVE"name",A -> ASCII listing save --------------------------------------
+; sav_ascii_flag: HL is at the ',' after the filename. Accept only ",A" (any
+; case); anything else -> error.
+sav_ascii_flag:
+                inc     hl                  ; past the ','
+                call    skip_spaces
+                ld      a,(hl)
+                call    upcase
+                cp      'A'
+                jp      nz,load_error       ; only ,A is supported
+                inc     hl                  ; past the 'A'
+                call    skip_spaces
+                ld      a,(hl)
+                or      a
+                jp      nz,load_error       ; trailing junk after ,A
+                ; fall through to ascii_save
+
+; ascii_save — write the current program as an ASCII (SAVE",A") listing to disk.
+; Reuses the LIST detokeniser walk (list_walk, list.asm) with the PRINT#-to-file
+; sink: create the file, route pchar to it via PRDEST=1, walk = number + space +
+; detok-body + CRLF per line, append the Ctrl-Z ($1A) soft-EOF, restore the screen
+; sink, then flush + Close. A disk-full mid-listing is best-effort (pchar's file
+; path, same as PRINT#). Clean-room: public ASCII listing format + our own
+; detokeniser; no reference-ROM read. See basic/docs/spec-ascii-saveload.md §5.
+ascii_save:
+                call    disk_write_begin    ; create/truncate; reset the write state
+                ld      a,1
+                ld      (PRDEST),a          ; route pchar (LIST's emit) to the file
+                call    list_walk           ; number + space + detok + CRLF, each line
+                ld      a,$1A               ; Ctrl-Z soft-EOF (ASCII program terminator)
+                call    pchar
+                xor     a
+                ld      (PRDEST),a          ; restore the screen sink before Close
+                jp      disk_write_end      ; flush partial sector + stamp dir + Close
 
 ; --- tape SAVE path ---
 sav_is_cas:

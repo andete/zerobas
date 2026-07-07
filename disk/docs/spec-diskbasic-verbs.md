@@ -186,14 +186,18 @@ the public FAT12 spec for both 720 KB and 360 KB (`disk_probe_format`).
 
 ## 7. Scope boundaries (honest at the walls)
 
-- **ASCII program load — implemented; ASCII save — in progress.** `LOAD`/`RUN"file"`
-  now auto-detect format: a non-`$FF` first byte routes to `ascii_load`
+- **ASCII program save + load — implemented.** `LOAD`/`RUN"file"` auto-detect
+  format: a non-`$FF` first byte routes to `ascii_load`
   ([`../../basic/cload.asm`](../../basic/cload.asm)), which clears the program and
   tokenises the line-numbered text via the shared `ascii_read_lines` reader (the same
-  path as `MERGE`, which keeps the program). Verified by `disk_probe_load_ascii`
-  (CF-3300 differential) + the acceptance gate cell `LOAD(ASCII)`. **Still pending:**
-  the `SAVE"…",A` ASCII-*save* form (milestone 2, [`../../basic/docs/spec-ascii-saveload.md`](../../basic/docs/spec-ascii-saveload.md)) —
-  `SAVE`/`BSAVE` today write the tokenised/binary formats only.
+  path as `MERGE`, which keeps the program). `SAVE"…",A` writes the current program as
+  an ASCII listing via `ascii_save` ([`../../basic/save.asm`](../../basic/save.asm)),
+  which reuses the LIST detokeniser walk with the PRINT#-to-file sink (`PRDEST`/
+  `pchar`). Verified by `disk_probe_load_ascii` + `disk_probe_save_ascii` (CF-3300
+  differentials) + the gate cells `LOAD(ASCII)`/`SAVE(ASCII)`. Design +
+  as-built: [`../../basic/docs/spec-ascii-saveload.md`](../../basic/docs/spec-ascii-saveload.md).
+  (A disk-full *mid*-ASCII-save is best-effort, same as `PRINT#` — the common case is
+  byte-correct.)
 - **Not implemented (no token):** `LOC`, `DSKI$`, `DSKO$` — Phase-3 direct-sector
   access. Excluded from the coverage denominator, not silent gaps.
 - **`CALL SYSTEM`** — exits BASIC to MSX-DOS; out of scope for the BASIC stack.
