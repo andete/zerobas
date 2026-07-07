@@ -294,7 +294,7 @@ vectors point at are reference disk-ROM code — off-limits). The trace is used 
 confirm the *shape* (which page-0 cells change, RAM-vs-ROM), never to copy code.
 
 **What the trace showed (the step-5 → step-7 delta):**
-- **Step 5 entry** (CY reset): `$0000 = F3 C3 D7 02…` — **ROM BIOS is in page 0**.
+- **Step 5 entry** (CY reset): `$0000` holds the ROM BIOS reset-vector signature — **ROM BIOS is in page 0**.
 - **Step 7 entry** (CY set): `$0000 = 00 00 …` — **RAM is in page 0** (zeroed), with the
   interrupt vector `$0038 = C3 AE DD` (`JP $DDAE`) and `$000C = JP $DDF3` pointing at a
   resident kernel in high RAM. `$0005` (BDOS) is **still 0** at step-7 entry.
@@ -2073,7 +2073,7 @@ new blocker.** First asm of the kernel phase (fork (P)). `k_47B2` now: Open `"CO
 oracle-validated `bdos_entry`, point the DTA at `$0100`, Sequential-Read every 128-byte record contiguously
 into the TPA, `ret` to `$D824` (keeping MSXDOS.SYS's existing post-`$D824` transfer — no control-flow reshape).
 **Results (deterministic across 2 runs, `National_CF-3300_ZEROBASDISK`):** (1) **COMMAND.COM is genuinely
-loaded** — `$0100` = `C3 00 02` (`jp $0200`) + its real bytes (verified by RAM dump). (2) **The §8.40 `$4462`
+loaded** — `$0100` holds COMMAND.COM's standard `.COM` entry (a jump to `$0200`), verified present by RAM dump. (2) **The §8.40 `$4462`
 spin collapsed: ×24,168 → ×14.** (3) Boot advanced: `end_pc` `$F1CE` → `$D88B` (deeper into the relocated
 kernel). (4) **New blocker:** a different spin — `$544E` ×14,451 from `ra=$D88A` (was `$D806`), CONOUT `$5454`
 ×14,507 — and COMMAND.COM still runs only ×1 at `$0200` (not yet sustained). **Regression GREEN:** unit-test
