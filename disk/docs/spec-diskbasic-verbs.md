@@ -186,6 +186,15 @@ the public FAT12 spec for both 720 KB and 360 KB (`disk_probe_format`).
 
 ## 7. Scope boundaries (honest at the walls)
 
+- **ASCII program save/load — not implemented (tokenised-only).** `SAVE`/`LOAD`/
+  `RUN"file"` handle the **tokenised** format only: `SAVE` writes the `$FF`
+  (`BASIC_DISK_ID`) marker + line-link image, and `disk_prog_load`
+  ([`../../basic/cload.asm`](../../basic/cload.asm)) *requires* that `$FF` first byte —
+  an ASCII-listed file (or a BSAVE binary) is rejected with an error. The `SAVE"…",A`
+  ASCII-save form is likewise out of scope ([`../../basic/save.asm`](../../basic/save.asm),
+  a documented `load_error`). The **one** ASCII-program path that works is `MERGE`,
+  which tokenises a line-numbered text file. Loading a plain-ASCII program is the
+  tracked "general LOAD rework" follow-on ([autoexec-bas-spec.md](autoexec-bas-spec.md) §6).
 - **Not implemented (no token):** `LOC`, `DSKI$`, `DSKO$` — Phase-3 direct-sector
   access. Excluded from the coverage denominator, not silent gaps.
 - **`CALL SYSTEM`** — exits BASIC to MSX-DOS; out of scope for the BASIC stack.
