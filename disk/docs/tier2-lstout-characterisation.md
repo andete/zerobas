@@ -97,16 +97,19 @@ stock (READ `$90` / WRITE `$91` / strobe `$90` `$00`/`$FF`, same BIOS PCs
 `$0887`/`$086D`); raw log = `"LP!\r\n"`; boot+DIR BDOS parity 260/260 aligned;
 unit-test 19/19; probe smoke (DSKIO/BASIC/tape) green.
 
-> ### ⚠ FOLLOW-UP — C-BIOS needs a real LPTOUT (`$00A5`)
+> ### ✅ FOLLOW-UP CLOSED 2026-07-07 — C-BIOS LPTOUT (`$00A5`) now real
 > LSTOUT is deliberately BIOS-delegating, so on the **C-BIOS target** it only
-> does something once **C-BIOS's own `$00A5` LPTOUT** is a real implementation.
-> C-BIOS today stubs it → on C-BIOS our LSTOUT **safely no-ops** (correct, no
-> hang), but nothing prints. **To make list output actually work on C-BIOS,
-> C-BIOS must gain a working LPTOUT** (poll printer-status port `$90`, write
-> data `$91`, pulse strobe — the protocol pinned in §3.2). That is a change to
-> C-BIOS, NOT to this disk ROM: once C-BIOS's `$00A5` works, LSTOUT here starts
-> printing with zero change to zerobas-disk. Tracked as a standing cross-
-> component follow-up ([[cbios-lptout-followup]]).
+> did something once **C-BIOS's own `$00A5` LPTOUT** was a real implementation.
+> C-BIOS stubbed it, so on C-BIOS our LSTOUT **safely no-op'd** (correct, no
+> hang) but nothing printed. **RESOLVED:** the zerobas-tape page-0 patch now
+> supplies a real LPTOUT (`$00A5`) — poll printer-status `$90`, write data `$91`,
+> pulse the active-low strobe `$90` `$00`/`$FF`, the protocol pinned in §3.2 (see
+> [tape/tape.asm](../../tape/tape.asm) `lptout`, [[cbios-lptout-followup]]). Zero
+> change to zerobas-disk — `lstout_body` still just delegates. **Verified
+> end-to-end on the C-BIOS target:** [`disk_probe_lstout_cbios.py`](../../probes/disk/disk_probe_lstout_cbios.py)
+> boots C-BIOS + our disk ROM to MSX-DOS, runs `LSTOUTX.COM` (5× BDOS `$05`),
+> and the openMSX printer `logger` receives exactly `LP!\r\n` — the full chain
+> `BDOS $05 → $5465 → C-BIOS $00A5 → printer` now works on the prime target.
 
 The fix shape (as landed):
 

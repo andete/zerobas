@@ -51,6 +51,9 @@ python3 probes/disk/disk_probe_dskio.py  --dsk disk/test720.dsk      # DSKIO == 
 python3 probes/basic/basic_probe_print.py --cart build/basic.rom      # PRINT == VG-8020
 python3 probes/tape/bios_probe_tapwrite.py --out /tmp/tapwrite.rom    # build a cassette-write cart
 
+# end-to-end BDOS $05 LSTOUT on the C-BIOS target (through the tape LPTOUT $00A5)
+python3 probes/disk/disk_probe_lstout_cbios.py                       # prints "LP!" via a logger
+
 # every probe takes --help
 python3 probes/disk/disk_probe_bdos.py --help
 ```
