@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: 0BSD
 """Unit test: zerobas-tape cassette BIOS routines (tape/tape.asm), no emulator.
 
-tape.asm is a self-contained C-BIOS page-0 patch: the seven cassette jump
-vectors at `org $00E1` and the routine bodies at `org FREE_ORG` ($3A72). pasmo
-emits a flat image whose first byte IS address $00E1, so we load it at
-rom_base=0x00E1 and the (absolute) symbols line up directly.
+tape.asm is a self-contained C-BIOS page-0 patch: the LPTOUT jump vector at
+`org $00A5` (its lowest org), the seven cassette jump vectors at `org $00E1`,
+and the routine bodies at `org FREE_ORG` ($3A72). pasmo emits a flat image whose
+first byte IS the lowest org ($00A5), so we load it at rom_base=0x00A5 and the
+(absolute) symbols line up directly.
 
 The routines are entirely port-I/O (PSG/PPI) plus FSK half-period timing. The
 embedded Z80 core models IN/OUT via cpu.io_in / cpu.io_out, and — crucially —
@@ -53,7 +54,7 @@ from msxtest import Machine, carry, zero  # noqa: E402
 
 ROM = "/tmp/zb_tape.rom"
 SYM = "/tmp/zb_tape.sym"
-ROM_BASE = 0x00E1          # tape.asm's first org -> the flat image starts here
+ROM_BASE = 0x00A5          # tape.asm's lowest org ($00A5 LPTOUT) -> flat image starts here
 
 
 def build():
