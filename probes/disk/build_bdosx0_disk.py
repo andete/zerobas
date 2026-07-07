@@ -42,6 +42,9 @@ def build(dos_src: str, out: str, tmp_dir: str) -> None:
     shutil.copyfile(dos_src, out)
     img = bytearray(open(out, "rb").read())
     fat12_add(img, "BDOSX0", "COM", com_bytes)
+    # AUTOEXEC.BAT auto-runs BDOSX0 with zero typed keys (verify-first: see
+    # tier2-autoexec-bat-harness-spec.md). Replaces the typed '\rBDOSX0\r' launch.
+    fat12_add(img, "AUTOEXEC", "BAT", b"BDOSX0\r\n")
     open(out, "wb").write(img)
 
 
@@ -57,9 +60,9 @@ def main() -> int:
     print(f"built {args.out}")
     print()
     print("next: python3 probes/disk/disk_probe_diff.py callseq --log 0x0005 --maxhits 30 "
-          f"--keys '\\rBDOSX0\\r' --keys-at 20 --settle 30 --diska {args.out}")
+          f"--settle 30 --diska {args.out}")
     print("      python3 probes/disk/disk_probe_diff.py screen --machine both "
-          f"--keys '\\rBDOSX0\\r' --keys-at 20 --settle 30 --diska {args.out}")
+          f"--settle 30 --diska {args.out}")
     return 0
 
 
