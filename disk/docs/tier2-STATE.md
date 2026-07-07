@@ -164,13 +164,18 @@ any future zerobas-disk work (e.g. the deferred multi-hardware variant layer,
   intercept, M6 work-area pre-build, "skips MSXDOS.SYS init", "+2 clusters", "_GDATE is a clock bug",
   "init date cells alone", "the $80 render is a CHPUT-internal IX/IY/page-0 data divergence". All dead.
 
-## Next action — Tier-C COMPLETE + all tracked write-path follow-ons CLOSED (2026-07-05)
+## Next action — bdos-acceptance harness now typing-free too (2026-07-07)
 **The FDC-window + write-path remediation is COMPLETE**, and every tracked follow-on has now landed
 byte-identical: `$26` WRBLK + real `$23` FSIZE (M28), bdosx.asm out-of-contract (F5), WRBLK
 position-cursor perf (M29), alloc-hint (M30), `$24` SETRND + RDSEQ FCB write-back (M32/M33), the
 WRSEQ disk-full onset lag (M34), and **Tier-C cases 3/4/5 (M35/M36, 2026-07-05)** — dir-full
 (byte-identical, no fix), FREN rename-collision (M35), WRRND past-EOF size + dirent persistence (M36).
 **Tier-C — the adversarial/boundary suite — is now COMPLETE (all 5 cases landed byte-identical).**
+**NEW 2026-07-07:** the primary gate's own harness had a latent openMSX key-injection flakiness
+class (typed `\rBDOSX\r` launch) — replaced with `AUTOEXEC.BAT` auto-run across all 8
+`build_bdosx*_disk.py` scripts, zero typed keys, verified byte-identical to the pre-change gate;
+see [tier2-review-queue.md](tier2-review-queue.md) RESOLUTION 2026-07-07 +
+[tier2-autoexec-bat-harness-spec.md](tier2-autoexec-bat-harness-spec.md).
 `make bdos-acceptance` is **11/11** (BDOSX/2/3/0 + BDOSX4 disk-full + BDOSX5 dir-full + BDOSX6 WRRND
 past-EOF + BDOSX7 FREN-collision, all standing guards). `make unit-test` 34/34. No forced next step;
 await user direction. (Parked distant-future directions only: multi-hardware variant layer

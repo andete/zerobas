@@ -83,7 +83,25 @@ byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
 
 ## Open (awaiting next sync)
 
-**[FUTURE IMPROVEMENT — parked 2026-07-05, not started] BDOS harness: replace the typed
+**RESOLUTION 2026-07-07 — BDOS harness AUTOEXEC.BAT auto-run DONE (user: "all 8 now",
+one commit per script, --settle left untouched).** Signed-off spec
+[tier2-autoexec-bat-harness-spec.md](tier2-autoexec-bat-harness-spec.md). Verify-first
+(black-box, both machines): a disk with `AUTOEXEC.BAT`="BDOSX" reaches BDOSX's resident-arm
+anchor with ZERO typed keys on both the CF-3300 oracle and ours (t~18s); a control disk
+without `AUTOEXEC.BAT` never reaches it under an identical zero-keys capture — confirming
+MSX-DOS 1 auto-runs `AUTOEXEC.BAT` and skips the date prompt on both. All 8
+`build_bdosx*_disk.py` scripts now inject `AUTOEXEC.BAT` and drop `--keys`/`--keys-at`
+(7 mechanical; `build_bdosx2_disk.py`'s `--keys2-at 32` timing for its staged CONIN/DIRIN/
+INNOE input was left unchanged and re-verified, since record 7's `const_poll` busy-waits for
+it — only needs to land after the COM's own disk load, which `AUTOEXEC.BAT` only makes
+earlier, never later). Fixture-shape gotchas handled: BDOSX4 (100%-disk-full) and BDOSX5
+(dir-full) inject `AUTOEXEC.BAT` BEFORE their filler/saturation step so the fixture invariant
+(exactly 0 free clusters / exactly 0 free root-dir slots) still holds. Re-verified per script
++ full gate: `make bdos-acceptance` **11/11** (unchanged), `make unit-test` 34/34, working
+tree clean (harness-only, zero assembly touched). The former parked note is preserved below
+for context:
+
+**[FUTURE IMPROVEMENT — parked 2026-07-05, DONE 2026-07-07] BDOS harness: replace the typed
 `.COM` launch with `AUTOEXEC.BAT` auto-run (zero typing).** The `make bdos-acceptance` gate
 (the primary 11/11 standing guard) launches each exerciser by TYPING it: `build_bdosx*_disk.py`
 pass `--keys '\rBDOSX\r' --keys-at 20` to `disk_probe_diff.py` (the leading `\r` answers the
