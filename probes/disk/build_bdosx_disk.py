@@ -55,6 +55,10 @@ def build(dos_src: str, out: str, tmp_dir: str) -> tuple[int, int]:
     img = bytearray(open(out, "rb").read())
     fat12_add(img, "BDOSX", "BIN", bdosx_bin())
     fat12_add(img, "BDOSX", "COM", com_bytes)
+    # AUTOEXEC.BAT auto-runs BDOSX with zero typed keys (verify-first: both machines reach
+    # the anchor with no --keys at all; see tier2-autoexec-bat-harness-spec.md). Replaces the
+    # typed '\rBDOSX\r' launch, dropping the openMSX key-injection flakiness class.
+    fat12_add(img, "AUTOEXEC", "BAT", b"BDOSX\r\n")
     open(out, "wb").write(img)
     return done_addr, com_bytes[2]      # sig = byte at $0102 (resident-program arm signature)
 
@@ -75,10 +79,10 @@ def main() -> int:
     # so occurrence #1 of the `done` self-loop is the REAL program run, not a boot-time
     # address collision (the vacuous-anchor bug found 2026-07-04). See tier2-remediation-spec.md.
     print("next: python3 probes/disk/disk_probe_diff.py capture "
-          f"--at {done_addr:#06x} --arm-check-val {sig:#04x} --keys '\\rBDOSX\\r' --keys-at 20 --settle 40 "
+          f"--at {done_addr:#06x} --arm-check-val {sig:#04x} --settle 40 "
           f"--machine both --mem 0x0300:0x180 --diska {args.out}")
     print("      python3 probes/disk/disk_probe_diff.py capture "
-          f"--at {done_addr:#06x} --arm-check-val {sig:#04x} --keys '\\rBDOSX\\r' --keys-at 20 --settle 40 "
+          f"--at {done_addr:#06x} --arm-check-val {sig:#04x} --settle 40 "
           f"--machine both --mem 0x0400:0x180 --diska {args.out}")
     return 0
 
