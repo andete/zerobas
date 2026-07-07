@@ -5,7 +5,10 @@ SPDX-License-Identifier: 0BSD
 
 # C-BIOS DOS boot: `AUTOEXEC.BAT` (+ banner + date) skipped — root cause `$F340` seed
 
-**Status:** CHARACTERISATION COMPLETE, fix AWAITING SIGN-OFF. No code changed.
+**Status:** ✅ FIXED 2026-07-07 (option A, unconditional `$F340` clear — user chose
+"implement directly"). Verified: C-BIOS DOS now cold-boots + runs `AUTOEXEC.BAT`
+(printer "LP!\r\n", no keys); CF-3300 unchanged; `make bdos-acceptance` 11/11,
+`make unit-test` 34/34, `make diskbasic-acceptance` 25/25, `disk.rom` 16384 B.
 **Method:** 100% black-box — PC/register/memory/I-O-port observation + poke causality
 tests. MSXDOS.SYS / COMMAND.COM are never disassembled (their code bytes were not
 read/decoded; only call-targets, register/memory side-effects, and screen output were

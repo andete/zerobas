@@ -135,8 +135,10 @@ init:
                 ; MSXDOS.SYS's resident init reads RAMAD0-3 ($F341-4) to map RAM into
                 ; page 0 (where the BIOS ROM was), and without it pages an empty slot
                 ; ($FF) and wedges at $0038. set_ramad fills RAMAD only when the host
-                ; left it uninitialised ($FF), so the C-BIOS hosts (which set their own
-                ; RAMAD) are untouched. (provider-oracle-scope.md §8.16)
+                ; left it uninitialised ($FF); it also unconditionally clears the
+                ; $F340 cold/warm seed so MSX-DOS cold-boots (banner/date/AUTOEXEC.BAT)
+                ; on every host incl. C-BIOS (provider-oracle-scope.md §8.16,
+                ; tier2-cbios-dosboot-autoexec-f340.md).
                 call    set_ramad
                 ; fall into the DOS-boot bridge (TH ch.3); it returns to the BIOS
                 ; boot scan, falling through to BASIC for a non-system disk.
@@ -369,8 +371,12 @@ page0_ram_out:
 ;
 ; HOST-ADAPTIVE + REGRESSION-SAFE. RAMAD is filled ONLY when the host left it
 ; uninitialised ($FF) -- the real-CF-3300 case where the disk-ROM job was skipped.
-; The C-BIOS hosts set their own RAMAD (observed $C9..), so the $FF gate leaves them
-; exactly as they were (and C-BIOS never boots DOS, so nothing reads RAMAD there).
+; The C-BIOS hosts leave $C9 in RAMAD0 (their page-0 RAM fill), so the $FF gate does
+; NOT re-derive RAMAD for them -- and it need not: on C-BIOS RAMAD0-3 already read
+; back $83 (valid) by the time MSX-DOS maps RAM, so DOS boots. (NOTE: C-BIOS DOES boot
+; DOS on the *_BASIC_DISK machine -- an earlier assumption here that it never did was
+; wrong, and cost the $F340 clear below, which is now unconditional. See
+; tier2-cbios-dosboot-autoexec-f340.md.)
 ;
 ; The value is the RAM slot id in standard F000SSPP form, derived from PAGE 3 (always
 ; RAM: the stack lives there) the same host-adaptive way page0_ram_in derives its
@@ -381,18 +387,25 @@ page0_ram_out:
 ; disk-ROM/MSX-DOS code is read; the disk-ROM-INIT responsibility + the read are
 ; black-box oracle observations (§8.8/§8.16).
 set_ramad:
+                ; --- clear the disk work-area flag $F340 (§8.33) UNCONDITIONALLY ----
+                ; MSXDOS.SYS init reads $F340 right after $4030 ($0246:
+                ; LD A,($F340) / AND A / CALL Z,$0317): $00 = take the normal (cold)
+                ; init path; non-zero => COMMAND.COM warm-starts, skipping its banner,
+                ; the date prompt AND AUTOEXEC.BAT (full trace:
+                ; tier2-cbios-dosboot-autoexec-f340.md). This clear MUST run BEFORE the
+                ; RAMAD $FF gate below: on the C-BIOS target RAMAD0 is pre-filled with
+                ; $C9 (C-BIOS's page-0 RAM fill), so the gate returns early -- and while
+                ; this clear lived after the gate, $F340 stayed non-zero on C-BIOS and
+                ; DOS warm-booted there (AUTOEXEC.BAT never ran). Clearing the cold/warm
+                ; seed at disk-ROM cold-init is always correct (set_ramad never runs on
+                ; a warm COMMAND.COM re-entry, only at cold init). Own work-area init;
+                ; black-box (§8.33).
+                xor     a
+                ld      (DOS_F340), a
+                ; --- RAMAD: fill only when the host left it uninitialised ($FF) ------
                 ld      a, (RAMAD0)
                 inc     a                   ; $FF -> $00 (Z): RAMAD uninitialised?
                 ret     nz                  ; host already set RAMAD -> leave it alone
-                ; --- clear the disk work-area flag $F340 (§8.33) -------------------
-                ; MSXDOS.SYS init reads $F340 right after $4030 ($0246:
-                ; LD A,($F340) / AND A / CALL Z,$0317): $00 = take the normal init
-                ; path. The disk ROM clears it; ours left it uninitialised ($FF) ->
-                ; AND A non-zero -> the CALL Z is skipped -> MSXDOS.SYS derails into a
-                ; loop ($027C). Clear it here (after the gate, so the $FF gate check
-                ; above is unaffected). Own work-area init; black-box (§8.33).
-                xor     a
-                ld      (DOS_F340), a
                 ; --- derive the page-3 RAM slot id (F000SSPP) ---
                 in      a, ($A8)
                 rlca
