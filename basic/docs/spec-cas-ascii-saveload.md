@@ -5,8 +5,9 @@ SPDX-License-Identifier: 0BSD
 
 # Spec (signed off): cassette ASCII program SAVE `,A` + ASCII CLOAD/LOAD
 
-**Status: SIGNED OFF 2026-07-08 — no code written yet; M0 (format-pin) is the next
-action.** The cassette counterpart to the disk ASCII arc
+**Status: M0 DONE 2026-07-08 (format pinned; D1 resolved → interop-faithful 256-byte
+blocks). No implementation code yet — M1 (ASCII LOAD) is the next action.** The cassette
+counterpart to the disk ASCII arc
 ([`spec-ascii-saveload.md`](spec-ascii-saveload.md), IMPLEMENTED 2026-07-07), which
 explicitly deferred cassette ASCII as "a tracked follow-on" (its §7 decision 1). This is
 the "last open follow-on" named in the disk close-out and in the tape option-surface
@@ -16,21 +17,53 @@ implementation, with the §7 round-trip as the acceptance test.
 
 **Sign-off (2026-07-08):** D1 — **pin the real block format from the MSX2 TH first**
 (a no-code characterization milestone, M0), *then* choose interop-256B vs own-design
-with facts in hand. D2 — **getbyte indirection** (option A). D3 — **core + CLOAD
-autodetect** (`SAVE"CAS:",A` + `LOAD"CAS:"` + `CLOAD` autodetecting `$EA`); `MERGE"CAS:"`
-/ `RUN"CAS:"` deferred. D4 — LOAD then SAVE, each its own commit + gate. D5 — Sonnet
-implementation once M0 fixes the format.
+with facts in hand. **[M0 done → D1 RESOLVED: interop-faithful 256-byte blocks; see §0.1.]**
+D2 — **getbyte indirection** (option A). D3 — **core + CLOAD autodetect** (`SAVE"CAS:",A`
++ `LOAD"CAS:"` + `CLOAD` autodetecting `$EA`); `MERGE"CAS:"` / `RUN"CAS:"` deferred. D4 —
+LOAD then SAVE, each its own commit + gate. D5 — Sonnet implementation once M0 fixes the
+format.
 
 ## 0. Milestone order (as signed off)
 
-- **M0 — pin the format (no code).** Characterize the cassette ASCII block layout
-  (block size, final-block padding, Ctrl-Z EOF, length- vs terminator-driven read) from
-  the MSX2 Technical Handbook cassette chapter + a read-only ASCII `.cas` data artifact
-  if available ([[readonly-artifact-oracle]] — reading ASCII *data* bytes is not a ROM
-  read). Output: resolve D1 (interop-256B vs own-design) with the pinned facts folded
-  back into §2/§5, before any implementation.
-- **M1 — ASCII CLOAD / LOAD"CAS:"** (§4) + gate.
+- **M0 — pin the format (no code). ✅ DONE 2026-07-08** (findings §0.1; D1 resolved).
+- **M1 — ASCII CLOAD / LOAD"CAS:"** (§4) + gate. *(next)*
 - **M2 — SAVE"CAS:name",A** (§5) + gate.
+
+## 0.1 M0 findings — the pinned cassette ASCII format
+
+**Sources (cross-validated, per [[validate-oracle-artifacts]]):**
+1. **MSX2 Technical Handbook**, cassette chapter (Konamiman's public English translation,
+   allowed source B — [`docs/allowed-sources.md`](../../docs/allowed-sources.md) line 109):
+   <https://konamiman.github.io/MSX2-Technical-Handbook/md/Chapter5a.html>. States: ASCII
+   files are marked by **`0EAH`×10** after the long header + a **6-byte** filename
+   (vs `0D3H`×10 BASIC / `0D0H`×10 machine-code); the body is **256-byte blocks**, each
+   preceded by a short header; **Ctrl-Z (`1AH`) is embedded in the data** as EOF.
+2. **Read-only `.cas` data artifacts** (reading ASCII *data* bytes, not ROM code):
+   three real ASCII tapes in `~/Documents/msx/msx/…` — `HOBBIT.CAS`, `timecurb.cas`,
+   `HARDBOIL.CAS`. Each shows `$EA`×10 + 6-char name, then one 256-byte data block of
+   line-numbered text (`"10 SCREEN 0:WIDTH 39…\r\n"`) with an embedded Ctrl-Z EOF.
+
+**Pinned facts:**
+- **Header block:** `$EA`×10 + 6-char space-padded name (add `ASCII_ID = $EA` to
+  `sysvars.inc`). Long leader (new file).
+- **Line format:** identical to our disk ASCII — `<lineno> <space> <detok body> CR LF`
+  per line. `timecurb.cas` confirms **CR+LF** (`0D 0A`), matching what we already write.
+- **Data blocks:** **fixed 256 bytes**, each with a **short** leader. EOF is the first
+  **Ctrl-Z (`$1A`)** in the stream.
+- **Final-block padding is producer-dependent and therefore READ-IRRELEVANT:** `HOBBIT`
+  (256 B, spec-faithful) pads with `$1A`; `HARDBOIL`/`timecurb` (from converters, 264 B)
+  pad with `$00`. → **On write, pad the last block with `$1A` to 256** (spec + HOBBIT).
+  **On read, stop at the first `$1A` and ignore all padding** — this makes the reader
+  robust to every producer's padding and sidesteps the ambiguity entirely.
+
+**D1 RESOLVED → interop-faithful (256-byte blocks).** The format is unambiguous, the
+incremental cost over a single block is small (a mod-256 counter that re-frames
+`TAPOOF`/`TAPOON` on write and re-`TAPION`s on read — reusing the *exact* per-block
+machinery `tape_save_basic`/`do_tape_prog` already have for the 2-block tokenised file),
+and it keeps interop for all program sizes. **Bonus:** the three real tapes above become
+ready-made read-only load oracles for the M1 gate. All local samples are single-block
+(small programs); the multi-block (>256 B) path is spec-pinned and exercised by an M2→M1
+round-trip of a >256-byte program.
 
 ## 1. The gap (what errors today)
 
@@ -58,14 +91,13 @@ Ctrl-Z (`$1A`). The only cassette-specific parts are the **file-type id** and th
   (SAVE/LOAD) = 0xEA") and to be added to `sysvars.inc` as `ASCII_ID` next to the
   existing ids. Source: MSX2 Technical Handbook cassette chapter (same allowed source as
   `BASIC_ID`/`BINARY_ID`).
-- **Block framing — the one genuinely open format question (D1 below).** On a real MSX
-  an ASCII cassette file is written as **multiple fixed 256-byte data blocks** (each its
-  own leader + tape block), unlike the tokenised/binary format which is a *single* data
-  block — and unlike how our own `tape_save_basic` writes the whole program image in one
-  block. The exact block size, the padding of the final partial block, and whether the
-  reader is length-driven or Ctrl-Z-driven must be **pinned from the MSX2 TH cassette
-  chapter (not posited)** before implementation, exactly as the disk spec pinned CR-vs-CRLF
-  by oracle. See D1.
+- **Block framing — PINNED in M0 (§0.1).** An ASCII cassette file is **fixed 256-byte
+  data blocks**, each with its own short leader (vs the tokenised/binary format's single
+  data block, and vs how our own `tape_save_basic` writes the whole image in one block).
+  **Write:** chunk the listing into 256-byte tape blocks; the last block carries the
+  EOF Ctrl-Z (`$1A`) and is padded to 256 with `$1A`. **Read:** stop at the first `$1A`,
+  ignoring padding (robust across producers). Confirmed by the MSX2 TH cassette chapter
+  and three real ASCII `.cas` tapes (§0.1).
 
 No `$FF`/`$FE` disk marker is involved — those are the disk-file wrappers; cassette uses
 the header-block id. Clean-room: public format + our own (de)tokeniser; no reference-ROM
@@ -90,10 +122,12 @@ new `cas_ascii_load`; anything else → `load_error`. Both `CLOAD` and `LOAD"CAS
 `do_tape_prog`, so both transparently accept either format (D3).
 
 **Body (`cas_ascii_load`).** Skip the remaining 15 header bytes (as today), `TAPION`
-onto the data block(s), `call new_prog` (LOAD replaces), then drive `ascii_read_lines`
-with the tape as its byte source (D2). Stop at Ctrl-Z / block exhaustion per D1. `,R`
-handling is unchanged — the `LOAD"CAS:",R`/`RUN` caller already runs on the flag
-(Tier-1 `parse_close_run`).
+onto the first data block, `call new_prog` (LOAD replaces), then drive `ascii_read_lines`
+with the tape as its byte source (D2). The tape getbyte wrapper counts bytes and
+re-`TAPION`s at each **256-byte** boundary (§0.1) so a multi-block program reads across
+leaders; `ascii_read_lines` stops at the first **Ctrl-Z (`$1A`)**, so trailing padding is
+never read. `,R` handling is unchanged — the `LOAD"CAS:",R`/`RUN` caller already runs on
+the flag (Tier-1 `parse_close_run`).
 
 ## 5. Design — SAVE"CAS:name",A (Milestone 2)
 
@@ -104,30 +138,22 @@ anything else still errors. Mirrors `sav_ascii_flag` on the disk side.
 **Frame + sink (`cas_ascii_save`).** Write the `$EA` header block (`TAPOON` long + 10×
 `$EA` + `tape_name_emit` + `TAPOOF`), then walk the program with LIST's detokeniser
 feeding a **tape sink**: set `PRDEST:=1`, `PRDEV:=<tape>` (a new value), `TAPOON`
-short (open first data block), `call list_walk`, append `$1A`, close the block(s)
-(`TAPOOF`), restore `PRDEST:=0`. The new `pchar` sink case (`PRDEV=<tape>`) writes each
-byte via `TAPOUT` and, **if D1 = 256-byte blocks**, counts bytes and re-frames
-(`TAPOOF`/`TAPOON`) every 256. Baud is whatever the active word selects (`SCREEN,,,baud`
-/ default 1200 via the TAPOON `cas_seed`); no new speed parsing.
+short (open first data block), `call list_walk`, append the EOF `$1A`, pad the final
+block to 256 with `$1A`, close (`TAPOOF`), restore `PRDEST:=0`. The new `pchar` sink case
+(`PRDEV=<tape>`) writes each byte via `TAPOUT` and counts bytes, re-framing
+(`TAPOOF` + `TAPOON` short) every **256** (§0.1). Baud is whatever the active word selects
+(`SCREEN,,,baud` / default 1200 via the TAPOON `cas_seed`); no new speed parsing.
 
 ## 6. Decisions (signed off 2026-07-08 — see the header for the résumé)
 
-**D1 — Cassette ASCII block format.** *The decision that gates everything else.*
-**RESOLVED: pin the real format first (M0), then choose A vs B with facts in hand.**
-- **A. Interop-faithful (256-byte blocks):** matches a real MSX, so a stock machine can
-  load our tape and we can load a stock ASCII tape — in keeping with the project's
-  oracle-round-trip dual mission and our already-interop tokenised format. Cost: pin the
-  exact block/padding rules from the MSX2 TH; per-256-byte re-`TAPOON`/`TAPION` framing
-  (the mid-tape re-lock our 2-block reader already handles); extend `cas_encode`/`cas_decode`
-  for multi-block ASCII.
-- **B. Own-design single block (until Ctrl-Z):** one data block, reader stops at `$1A`,
-  mirroring how `tape_save_basic` already writes one block and `do_tape_prog` stops at the
-  program's own terminator. Far cheaper; self-round-trips; **loses guaranteed real-MSX
-  ASCII interop.** Must be documented as an own-design deviation (like "load the next
-  file" in `cload.asm`).
-- *Recommend:* first **pin the real format** from the MSX2 TH (cheap, no code). If it is
-  256-byte blocks and interop is wanted → A; otherwise → B. Lean A to stay interop-true,
-  but B is defensible and much smaller.
+**D1 — Cassette ASCII block format.** **RESOLVED (M0) → A, interop-faithful 256-byte
+blocks.** The MSX2 TH + three real ASCII tapes pinned the format unambiguously (§0.1):
+`$EA`×10 header, 256-byte data blocks with short leaders, Ctrl-Z EOF, CR+LF lines. The
+per-256 re-framing reuses our existing per-block `TAPOON`/`TAPOOF`/`TAPION` machinery,
+the read side is padding-robust (stop at first `$1A`), and it keeps interop for all
+program sizes — the three tapes double as M1 load oracles. Own-design single-block (the
+rejected alternative B) would have been cheaper but lost real-MSX interop for >256-byte
+programs.
 
 **D2 — Reader byte-source abstraction.** **RESOLVED: A (getbyte indirection).**
 `ascii_read_lines` calls `fat_io_getbyte` directly.
@@ -157,7 +183,12 @@ format, driven by the §7 round-trip + codec differential as acceptance.
 
 - **Round-trip self-check (primary):** `SAVE"CAS:F",A` to a `.cas`/WAV → `NEW` →
   `LOAD"CAS:F"` reproduces the program byte-for-byte (mirrors the disk `.bas` round-trip;
-  uses the existing typed-tape harness on `C-BIOS_MSX1_EU_TAPE --cart`).
+  uses the existing typed-tape harness on `C-BIOS_MSX1_EU_TAPE --cart`). Include a
+  **>256-byte** program so the multi-block (re-`TAPION`) path is exercised.
+- **Real-tape load oracle (M1):** load the three stock ASCII tapes pinned in §0.1
+  (`HOBBIT.CAS`, `timecurb.cas`, `HARDBOIL.CAS`) and assert the tokenised image matches
+  what tokenising their known text yields — a genuine third-party artifact oracle
+  ([[readonly-artifact-oracle]]), not just self-round-trip.
 - **Codec differential (pins the format):** extend `cas_encode.build_cas_ascii` /
   `cas_decode` for the `$EA` header + D1 block format; assert the WAV zerobas writes
   decodes to the expected `$EA`-framed ASCII stream, and that a codec-built ASCII `.cas`
