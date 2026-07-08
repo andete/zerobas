@@ -21,6 +21,10 @@
            is a clean Syntax error, asserted by the program still being runnable
            afterwards (no half-saved tape).
 
+  Item 3 — no-name CSAVE,speed (Tier 3).  `CSAVE,2` (no filename, just a speed)
+           must select 2400 baud exactly as CSAVE"P",2 does -- the do_csave comma
+           route into csav_noname + csav_speed. Recorded and decoded like Item 2.
+
 Typed harness on C-BIOS_MSX1_EU_TAPE --cart (the established cassette-probe method;
 tape has no AUTOEXEC path). Clean-room: our own program, our own cas codec; the
 reference ROM is never read.
@@ -150,6 +154,20 @@ def main() -> int:
     ok &= c2
     print(f"  [{'PASS' if c2 else 'FAIL'}] CSAVE\"P\",1 -> {f1} Hz (1200 regime), "
           f"CSAVE\"P\",2 -> {f2} Hz (2400 regime, ~2x)")
+
+    # --- Item 3: the no-name CSAVE,speed form honours the baud too --------------
+    # `CSAVE,2` (no filename, just a speed) must select 2400 exactly as CSAVE"P",2
+    # does -- the do_csave comma route into csav_noname + csav_speed. Record it and
+    # assert it lands in the same 2400-baud regime.
+    print('Item 3 — no-name CSAVE,speed honours the baud:')
+    wav3 = tempfile.mkstemp(suffix=".wav", prefix="casopt_s3_", dir=tmp)[1]
+    csave3 = [(6.0, "10 PRINT1"), (7.5, "\r"), (9.0, 'CSAVE,2'), (10.5, "\r")]
+    run_save(args.cart, csave3, wav3, cap_time=50.0)
+    _, i3 = decode_file(wav3)
+    f3 = i3.get("short_freq_hz")
+    c3 = (f3 is not None and f3 > 3600)
+    ok &= c3
+    print(f"  [{'PASS' if c3 else 'FAIL'}] CSAVE,2 (no name) -> {f3} Hz (2400 regime)")
 
     shutil.rmtree(tmp, ignore_errors=True)
     print("CAS-options:", "PASS" if ok else "FAIL")

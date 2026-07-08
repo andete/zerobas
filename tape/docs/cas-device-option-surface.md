@@ -148,8 +148,17 @@ for the signal, they are **deferred, not closable** — admit them only if a con
 
 **Tier 3 — quality-of-life.**
 
-- `CLOAD?` verify form; `CLOAD "name"` actually matching the named file; `CSAVE",speed"`
-  honoured (vs `SCREEN,,,baud`).
+- ✅ **No-name `CSAVE,speed`** (2026-07-08). `CSAVE,2` (no filename, just a speed) now
+  honours the baud like `CSAVE"n",2` — a comma route in `do_csave` into `csav_noname`,
+  which fills the 6-space name and then runs `csav_speed`. Gate: Item 3 of
+  [basic_probe_cas_options.py](../../probes/basic/basic_probe_cas_options.py)
+  (`CSAVE,2` → 2400-baud regime).
+- ⏳ `CLOAD?` verify form and `CLOAD "name"` actually matching the named file. These are
+  **not** the quick wins they first look like: our tape model deliberately loads the
+  *next* file and accepts-and-discards the name (own-design, no tape catalogue — see
+  [cload.asm](../../basic/cload.asm) header). Real name-matching needs the reader to
+  expose each header's 6-char name + a skip-non-matching-block loop + a multi-file tape
+  fixture; verify needs a compare-mode read path. Closer to Tier-2 effort.
 
 **Out-of-charter / out-of-scope (recorded, not queued):** `GRP:` (graphics engine, Phase
 3); `COM:` + `AUXIN`/`AUXOUT` (no serial hardware/oracle); numeric `INPUT#` (Phase-3

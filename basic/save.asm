@@ -416,10 +416,11 @@ csav_sp_err:
                 ret
 
 ; ===========================================================================
-; do_csave — CSAVE "name"  (tokenised-BASIC save to cassette)
+; do_csave — CSAVE ["name"][,speed]  (tokenised-BASIC save to cassette)
 ; Entry: HL -> the bytes after the CSAVE token.
 ; The device is implicitly cassette (no "CAS:" prefix). The optional quoted
-; name is parsed; a bare CSAVE (no name) uses a 6-space name.
+; name is parsed; a bare CSAVE (no name) uses a 6-space name. The optional
+; ,speed clause is honoured in BOTH forms -- CSAVE"n",2 and the no-name CSAVE,2.
 do_csave:
                 call    skip_spaces
                 ld      a,(hl)
@@ -427,6 +428,8 @@ do_csave:
                 jr      z,csav_noname       ; bare CSAVE (no name)
                 cp      COLON
                 jr      z,csav_noname       ; CSAVE followed by : -> no name
+                cp      ','
+                jr      z,csav_noname       ; CSAVE ,speed -> no name, then speed
                 cp      '"'
                 jp      nz,load_error       ; must be a quoted name
                 inc     hl                  ; past opening '"'
@@ -439,13 +442,20 @@ do_csave:
                 jp      c,load_error
                 jr      tape_save_basic
 csav_noname:
-                ; no name given: fill TSV_NAME with 6 spaces
+                ; no name given: fill TSV_NAME with 6 spaces, then honour an
+                ; optional ,speed (CSAVE,2 with no name). csav_speed handles the
+                ; end/':'/',' cases, so it is called for the bare CSAVE form too.
+                ; Preserve the text cursor across the fill (csav_speed needs it).
+                push    hl                  ; save text cursor (fill clobbers HL)
                 ld      hl,TSV_NAME
                 ld      b,6
 csav_sp:
                 ld      (hl),' '
                 inc     hl
                 djnz    csav_sp
+                pop     hl                  ; restore text cursor (end / ':' / ',')
+                call    csav_speed          ; optional ,1/,2 speed; CF=1 on bad speed/junk
+                jp      c,load_error
                 ; fall into tape_save_basic
 
 ; ===========================================================================
