@@ -356,6 +356,69 @@ sav_is_cas:
                 jr      tape_save_basic
 
 ; ===========================================================================
+; csav_speed — parse the optional ",speed" clause of CSAVE"name"[,speed].
+; speed 1 = 1200 baud, 2 = 2400 baud (published MSX-BASIC syntax). The rate is
+; HONOURED by copying the reference LOW-signal-length word (CS120 $F3FC / CS240
+; $F401) into the active baud slot ($F406) the tape write path's cas_baud reads
+; — the same mechanism SCREEN,,,baud uses on a real machine (which zerobas does
+; not implement, so the slot otherwise holds C-BIOS's 1200 default). No change to
+; the tape signal layer. Absent clause -> baud unchanged.
+;
+; Returns CF (not `jp load_error`) on a bad speed / trailing junk so a rejected
+; speed can NOT fall through into the actual save — see the load_error-is-not-an-
+; abort discipline (a `jp load_error` here would `ret` back and save anyway).
+; In:  HL -> bytes after the closing '"'.   Out: CF=0 ok (HL advanced), CF=1 bad.
+csav_speed:
+                call    skip_spaces
+                ld      a,(hl)
+                or      a
+                ret     z                   ; end of statement -> no speed (CF=0)
+                cp      COLON
+                ret     z                   ; ':' separator -> no speed
+                cp      ','
+                jr      nz,csav_sp_err      ; junk after the name
+                inc     hl                  ; past the comma
+                ; the speed is a numeric constant -- in the tokenised stream a
+                ; literal `1`/`2` is an integer TOKEN ($12/$13), not ASCII, so it is
+                ; evaluated (like OPEN's channel number) rather than char-matched.
+                call    eval                ; DE = speed value, HL past it
+                ld      a,d
+                or      a
+                jr      nz,csav_sp_err      ; > 255 -> invalid speed
+                ld      a,e
+                cp      1
+                jr      z,csav_sp_1200
+                cp      2
+                jr      z,csav_sp_2400
+                jr      csav_sp_err         ; only ,1 / ,2 are valid
+csav_sp_2400:
+                ld      de,CAS_LOW_2400     ; selected active-LOW word
+                jr      csav_sp_apply
+csav_sp_1200:
+                ld      de,CAS_LOW_1200
+csav_sp_apply:
+                ; Seed the reference tables (C-BIOS leaves them 0 and zerobas has no
+                ; SCREEN,,,baud), then set the active word so the write path's
+                ; cas_baud selects the chosen rate. DE = the selected active word.
+                push    hl                  ; save the text cursor (clobbered below)
+                ld      hl,CAS_LOW_1200
+                ld      (CS120_LOW),hl
+                ld      hl,CAS_LOW_2400
+                ld      (CS240_LOW),hl
+                ld      (ACT_LOW),de        ; active LOW = the selected rate
+                pop     hl                  ; restore the text cursor
+                call    skip_spaces         ; HL is past the speed (eval advanced it)
+                ld      a,(hl)
+                or      a
+                ret     z                   ; clean end -> CF=0
+                cp      COLON
+                ret     z
+                ; fall through: trailing junk after ,speed
+csav_sp_err:
+                scf
+                ret
+
+; ===========================================================================
 ; do_csave — CSAVE "name"  (tokenised-BASIC save to cassette)
 ; Entry: HL -> the bytes after the CSAVE token.
 ; The device is implicitly cassette (no "CAS:" prefix). The optional quoted
@@ -375,6 +438,8 @@ do_csave:
                 cp      '"'
                 jp      nz,load_error
                 inc     hl                  ; past closing '"'
+                call    csav_speed          ; optional ,1/,2 speed; CF=1 on bad speed/junk
+                jp      c,load_error
                 jr      tape_save_basic
 csav_noname:
                 ; no name given: fill TSV_NAME with 6 spaces

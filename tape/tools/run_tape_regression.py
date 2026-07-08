@@ -128,6 +128,16 @@ def t_openstack(openstack, baud: int, zerobas: str) -> tuple[str, bool, str]:
     return (f"open-stack WAV BLOAD @{baud}", ok, detail)
 
 
+def t_cas_options(cas_options, zerobas: str) -> tuple[str, bool, str]:
+    """CAS: statement-option closure Tier 1 (Items 1+2): LOAD"CAS:",R load-and-run
+    and CSAVE"n",speed baud selection. See probes/basic/basic_probe_cas_options.py."""
+    rc, out = _run([sys.executable, cas_options, "--cart", zerobas], timeout=400)
+    ok = (rc == 0) and ("CAS-options: PASS" in out)
+    detail = 'LOAD"CAS:",R runs; CSAVE speed selects 1200/2400' if ok else \
+             (out.strip().splitlines()[-1] if out.strip() else "no output")
+    return ("CAS: options (,R + CSAVE speed)", ok, detail)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -142,6 +152,7 @@ def main() -> int:
     tapfile   = os.path.join(_PROBES, "tape", "bios_probe_tapfile.py")
     bload     = os.path.join(_PROBES, "basic", "basic_probe_bload.py")
     openstack = os.path.join(_PROBES, "basic", "basic_probe_bload_openstack.py")
+    cas_options = os.path.join(_PROBES, "basic", "basic_probe_cas_options.py")
 
     tests = [
         lambda: t_cas_bload(bload),
@@ -158,6 +169,7 @@ def main() -> int:
             tests += [
                 lambda: t_openstack(openstack, 1200, args.zerobas),
                 lambda: t_openstack(openstack, 2400, args.zerobas),
+                lambda: t_cas_options(cas_options, args.zerobas),
             ]
 
     print("Tier-1 zerobas-tape full-stack regression\n")

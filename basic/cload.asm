@@ -45,13 +45,13 @@ do_cload:
                 call    skip_spaces
                 ld      a,(hl)
                 or      a
-                jr      z,do_tape_prog      ; bare CLOAD -> load the next tape file
+                jp      z,do_tape_prog      ; bare CLOAD -> load the next tape file
                 cp      COLON               ; CLOAD : ... -> bare form
-                jr      z,do_tape_prog
+                jp      z,do_tape_prog
                 cp      '"'                 ; CLOAD "name" -> skip the quoted name
                 jp      nz,load_error
                 call    skip_quoted
-                jr      do_tape_prog
+                jp      do_tape_prog
 
 ; --- do_load: LOAD "CAS:filename" | LOAD "A:filename"[,R] --------------------
 ; Entry: HL -> the bytes after the LOAD token. The argument is a quoted device
@@ -87,15 +87,29 @@ dl_dev:
 dl_is_cas:
                 pop     af                  ; discard saved filename start
                 ; HL is now inside the quotes, past "CAS:": skip the rest of the
-                ; quoted filename to the closing quote (filename ignored).
+                ; quoted filename UP TO (not past) the closing quote (the filename
+                ; is ignored — TAPION opens the next tape file). Stopping ON the
+                ; quote lets parse_close_run consume it + an optional ,R, exactly
+                ; as the disk branch does, so LOAD"CAS:x",R loads *and runs*
+                ; (previously ,R was silently dropped; BLOAD"CAS:",R already
+                ; honoured it — this closes the asymmetry) and a junk flag is a
+                ; clean Syntax error rather than a silent no-op.
 do_load_fn:
                 ld      a,(hl)
                 or      a
                 jp      z,load_error        ; unterminated string
+                cp      '"'                 ; stop ON the closing quote
+                jr      z,dl_cas_close
                 inc     hl
-                cp      '"'                 ; consume through the closing quote
-                jr      nz,do_load_fn
-                jr      do_tape_prog
+                jr      do_load_fn
+dl_cas_close:
+                call    parse_close_run     ; closing quote + optional ,R -> RUNFLAG
+                jp      c,load_error
+                call    do_tape_prog        ; load the tokenised program off tape
+                ld      a,(RUNFLAG)          ; ,R ? -> run it; else back to the REPL
+                or      a
+                ret     z
+                jp      run_prog
 
 ; --- do_load disk path: LOAD "A:name"[,R] -----------------------------------
 ; HL was advanced partway through the "CAS:" compare and must NOT be trusted —

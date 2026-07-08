@@ -14,6 +14,8 @@ CHGCLR          equ     $0062   ; apply FORCLR/BAKCLR/BDRCLR; A = screen mode (C
 INITXT          equ     $006C   ; init SCREEN 0 (TEXT1) and enable the display
 CHGET           equ     $009F   ; wait for a character from the keyboard -> A
 CHPUT           equ     $00A2   ; output the character in A at the cursor
+LPTOUT          equ     $00A5   ; print the character in A to the printer (Centronics);
+                                ; supplied by zerobas-tape on the C-BIOS target
 CLS             equ     $00C3   ; clear the screen; zero flag must be set on entry
 ERAFNK          equ     $00CC   ; erase the function-key display line (KEY OFF)
 DSPFNK          equ     $00CF   ; display the function-key line (KEY ON)
@@ -65,6 +67,25 @@ TAPIOF          equ     $00E7   ; stop the tape motor
 TAPOON          equ     $00EA   ; write tape header; A=0 short, A!=0 long; CF=fail
 TAPOUT          equ     $00ED   ; write one byte (A); all registers clobbered; CF=fail
 TAPOOF          equ     $00F0   ; flush carrier + motor off
+
+; Cassette-write baud selection work area (MSX2 TH cassette chapter; addresses
+; also in tape/PROVENANCE.md + tape/docs/spec-cassette.md). When a baud is chosen
+; the system copies a reference LOW-signal-length word — CS120 (1200) or CS240
+; (2400) — into the active slot; the tape write path's cas_baud reads the active
+; slot to pick the rate. CSAVE"n",speed honours the speed by doing that same copy.
+CS120_LOW       equ     $F3FC   ; 1200-baud reference low-signal length word
+CS240_LOW       equ     $F401   ; 2400-baud reference low-signal length word
+ACT_LOW         equ     $F406   ; active low-signal length word (the live baud)
+; Reference low-signal-length VALUES. On a real MSX the BIOS seeds CS120/CS240 and
+; SCREEN,,,baud copies one into the active slot; C-BIOS leaves them 0 (its cassette
+; is stubbed) and zerobas doesn't implement SCREEN,,,baud, so CSAVE"n",speed seeds
+; the tables itself before selecting. cas_baud (tape.asm) only compares the active
+; word to these for equality (the real timing is tape.asm's own constants), so the
+; values need only be distinct — but we use the genuine ones the VG-8020 holds,
+; captured black-box from work-area RAM (probes/tape/cas_baud_oracle.py; no ROM read):
+; SCREEN,,,1 -> active LOW = 53 5C, SCREEN,,,2 -> active LOW = 25 2D.
+CAS_LOW_1200    equ     $5C53   ; CS120 active-LOW word (bytes 53 5C)
+CAS_LOW_2400    equ     $2D25   ; CS240 active-LOW word (bytes 25 2D)
 
 ; --- Cassette file identifiers --------------------------------------------
 ; Source: MSX2 Technical Handbook, cassette file format: the 10-byte file-type
@@ -284,6 +305,16 @@ STRPTR          equ     $E0C9   ; pointer to the [len][bytes] descriptor (2 byte
 ; statement boundary / the REPL prompt / stmt_error, so only PRINT#'s own item
 ; loop ever sees 1. Free byte in the $E0CB gap (NUMBUF/VALTYP/STRPTR below it).
 PRDEST          equ     $E0CB   ; PRINT destination: 0=screen, 1=file channel (1)
+; When PRDEST=1, PRDEV selects WHICH sink pchar uses: 0 = disk file (fat_io_putbyte),
+; 1 = LPT printer (LPTOUT), 2 = CRT screen (CHPUT). Set by PRINT#'s channel classify;
+; only read while PRDEST=1, so its staleness between statements is harmless. A "device
+; channel" (LPT:/CRT:) stores FCH_MODES[ch]=LPT_MODE/CRT_MODE and owns no fat.asm
+; context. OO_DEVTYPE is the transient device type stashed across the OPEN parse.
+; Free bytes in the $E0CC gap (below CONTLINE $E0D0).
+PRDEV           equ     $E0CC   ; PRINT# device sink selector (1)
+OO_DEVTYPE      equ     $E0CD   ; OPEN device-channel type being parsed (transient, 1)
+LPT_MODE        equ     5       ; FCH_MODES value: channel open to the LPT: printer device
+CRT_MODE        equ     6       ; FCH_MODES value: channel open to the CRT: screen device
 ; Scratch descriptor for a string literal lifted out of the token stream
 ; ([len:1][bytes:STRMAX]); LET copies from here into the variable's slot. Placed
 ; in page $E3 above the string table (NOT in page $E0, which the C-BIOS keyboard

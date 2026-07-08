@@ -238,6 +238,16 @@ do_open:
                 cp      '"'
                 jp      nz,stmt_error       ; filename string required
                 inc     hl                  ; HL -> first filename char
+                ; --- device-name dispatch: "LPT:"/"CRT:" -> character-device
+                ; channel (no disk file); anything else -> disk filename. Peeked
+                ; case-insensitively; HL is restored on a miss (dev_cmp). CAS:/GRP:/
+                ; COM: OPEN are not in this tier (an unknown xxx: stays a disk name).
+                ld      de,dev_lpt
+                call    dev_cmp
+                jp      z,oo_dev_lpt
+                ld      de,dev_crt
+                call    dev_cmp
+                jp      z,oo_dev_crt
                 call    parse_disk_fcb      ; build DISK_FCB_NAME; HL -> closing '"'
                 inc     hl                  ; past the closing '"'
                 call    skip_spaces
@@ -420,6 +430,117 @@ oo_fail_syn:
                 xor     a
                 ld      (FCH_MODE),a
                 jp      stmt_error
+
+; --- OPEN "LPT:"/"CRT:" device channel --------------------------------------
+; A character-device channel: PRINT#n streams to the printer (LPTOUT) or the
+; screen (CHPUT) via pchar's PRDEV dispatch. It owns NO fat.asm context (no
+; fch_claim / fat_io_open), so it must never be fch_select'd; it is marked in
+; FCH_MODES with the device value LPT_MODE/CRT_MODE and its channel number is
+; classified straight from that array by PRINT#/CLOSE. Only FOR OUTPUT is valid
+; (INPUT from LPT:/CRT: is an error); LEN= is rejected. Sinks are the already-
+; implemented BIOS entry points (LPTOUT $00A5 in zerobas-tape; CHPUT $00A2).
+; Entry: HL -> the char after the "LPT:"/"CRT:" prefix, inside the quotes.
+oo_dev_lpt:
+                ld      a,LPT_MODE
+                jr      oo_dev_open
+oo_dev_crt:
+                ld      a,CRT_MODE
+oo_dev_open:
+                ld      (OO_DEVTYPE),a      ; remember the device type across the parse
+                ; skip any remaining "filename" chars up to the closing quote (ignored)
+oodv_fn:
+                ld      a,(hl)
+                or      a
+                jp      z,oo_fail_syn       ; unterminated string
+                inc     hl
+                cp      '"'
+                jr      nz,oodv_fn          ; consume through the closing quote
+                ; require: FOR OUTPUT AS [#]n , then end-of-statement
+                call    skip_spaces
+                ld      a,(hl)
+                cp      FOR_TOKEN
+                jp      nz,oo_fail_syn      ; device channels require FOR OUTPUT
+                inc     hl
+                call    skip_spaces
+                ld      a,(hl)
+                cp      OUT_TOKEN           ; OUTPUT = OUT + PUT (two reserved words)
+                jp      nz,oo_fail_syn      ; INPUT from LPT:/CRT: is invalid
+                inc     hl
+                ld      a,(hl)
+                cp      PUT_TOKEN
+                jp      nz,oo_fail_syn
+                inc     hl
+                call    skip_spaces         ; "AS" (verbatim ASCII, upper/lower)
+                ld      a,(hl)
+                call    upcase
+                cp      'A'
+                jp      nz,oo_fail_syn
+                inc     hl
+                ld      a,(hl)
+                call    upcase
+                cp      'S'
+                jp      nz,oo_fail_syn
+                inc     hl
+                call    skip_spaces
+                ld      a,(hl)              ; optional '#'
+                cp      '#'
+                jr      nz,oodv_num
+                inc     hl
+oodv_num:
+                call    eval                ; DE = channel number, HL past it
+                ld      a,d
+                or      a
+                jp      nz,oo_fail_syn      ; > 255 -> bad file number
+                ld      a,e
+                call    fch_valid
+                jp      nc,oo_fail_syn      ; 0 or > MAXF -> bad file number
+                call    skip_spaces         ; only a terminator may follow (no LEN=)
+                ld      a,(hl)
+                or      a
+                jr      z,oodv_ok
+                cp      COLON
+                jp      nz,oo_fail_syn
+oodv_ok:
+                ; mark the channel open as a device (FCH_MODES[ch] = LPT/CRT_MODE);
+                ; no fat.asm I/O. Guard the text cursor across the array store.
+                push    hl
+                ld      d,0                 ; DE = channel (e set)
+                ld      hl,FCH_MODES
+                add     hl,de
+                ld      a,(OO_DEVTYPE)
+                ld      (hl),a
+                pop     hl
+                jp      exec_stmt
+
+; dev_cmp — case-insensitive compare of the string at (HL) against the
+; 0-terminated device name at (DE). Match: Z, HL advanced past the prefix.
+; Mismatch: NZ, HL unchanged. Clobbers A, C, DE.
+dev_cmp:
+                push    hl                  ; save the start for the mismatch restore
+dcmp_lp:
+                ld      a,(de)
+                or      a
+                jr      z,dcmp_hit          ; hit the 0 term -> full prefix matched
+                ld      c,a                 ; expected (uppercase) char
+                ld      a,(hl)
+                call    upcase
+                cp      c
+                jr      nz,dcmp_miss
+                inc     hl
+                inc     de
+                jr      dcmp_lp
+dcmp_hit:
+                pop     bc                  ; discard the saved start (keep advanced HL)
+                xor     a                   ; Z set
+                ret
+dcmp_miss:
+                pop     hl                  ; restore HL to the string start
+                ld      a,1
+                or      a                   ; NZ
+                ret
+
+dev_lpt:        db      "LPT:",0
+dev_crt:        db      "CRT:",0
 
 ; oo_parse_reclen — parse an optional "LEN = expr" record-size clause at (HL).
 ; LEN is the $FF $92 function token; '=' is EQ_TOKEN. Absent -> DE = 256 (the
@@ -630,6 +751,7 @@ init_filechan:
                 ld      (FCH_NUM),a
                 ld      (FCH_MODE),a
                 ld      (PRDEST),a
+                ld      (PRDEV),a           ; default PRINT# sink = disk file
                 ld      (FCH_ACTIVE),a      ; no channel live in the engine globals
                 ; clear the per-channel mode array [0..FCH_CEIL].
                 ld      hl,FCH_MODES
@@ -765,6 +887,21 @@ fch_valid:
 ; the engine globals. A = channel (1..FCH_CEIL, assumed open). CALSLT inside
 ; fat_io_* clobbers everything incl. IX/IY — the caller must guard its HL cursor.
 fch_do_close_ch:
+                ; A device channel (LPT:/CRT:, FCH_MODES[ch] >= LPT_MODE) owns no
+                ; fat.asm context: skip fch_select (which would LDIR an uninitialised
+                ; ctx block over the engine globals, corrupting any concurrently-open
+                ; disk channel) and the OUTPUT flush; just clear its mode entry.
+                ld      e,a
+                ld      d,0
+                ld      hl,FCH_MODES
+                add     hl,de
+                ld      a,(hl)
+                cp      LPT_MODE
+                jr      c,fdcc_disk         ; mode < 5 -> disk channel (INPUT/OUTPUT)
+                ld      (hl),0              ; device channel: clear FCH_MODES[ch], done
+                ret
+fdcc_disk:
+                ld      a,e
                 call    fch_select          ; load the channel; FCH_MODE = its mode
                 ld      a,(FCH_MODE)
                 cp      2

@@ -38,6 +38,20 @@ ex_print:
                 ld      a,e
                 call    fch_valid
                 jp      nc,load_error       ; 0 or > MAXF -> bad file number
+                ; classify the channel by its stored mode WITHOUT selecting it: a
+                ; device channel (LPT:/CRT:, FCH_MODES 5/6) owns no fat.asm context,
+                ; so fch_select would LDIR a garbage buffer over the engine globals.
+                push    hl                  ; save the text cursor (add hl,de clobbers HL)
+                ld      d,0                 ; DE = channel (e preserved by fch_valid)
+                ld      hl,FCH_MODES
+                add     hl,de
+                ld      a,(hl)              ; A = FCH_MODES[ch]
+                pop     hl                  ; restore the text cursor
+                cp      LPT_MODE
+                jr      z,exp_dev_lpt
+                cp      CRT_MODE
+                jr      z,exp_dev_crt
+                ; --- disk file channel (unchanged) ---
                 push    hl                  ; guard text cursor (fch_select uses LDIR)
                 ld      a,e
                 call    fch_select          ; make channel e live; FCH_MODE = its mode
@@ -45,6 +59,17 @@ ex_print:
                 ld      a,(FCH_MODE)
                 cp      2                   ; must be open FOR OUTPUT
                 jp      nz,load_error
+                xor     a
+                ld      (PRDEV),a           ; 0 = disk sink
+                jr      exp_sep
+exp_dev_lpt:
+                ld      a,1                 ; 1 = LPT: printer sink
+                jr      exp_dev_set
+exp_dev_crt:
+                ld      a,2                 ; 2 = CRT: screen sink
+exp_dev_set:
+                ld      (PRDEV),a
+exp_sep:
                 call    skip_spaces         ; consume the separator after #n (','/';')
                 ld      a,(hl)
                 cp      ','
@@ -213,7 +238,7 @@ pchar:
                 push    de
                 push    bc
                 push    af
-                ld      c,a                 ; C = byte to emit
+                ld      c,a                 ; C = byte to emit (survives the PRDEV load)
                 ld      a,(PRDEST)
                 or      a
                 ld      a,c
@@ -221,6 +246,22 @@ pchar:
                 call    CHPUT
                 jr      pch_done
 pch_file:
+                ; PRDEST=1: PRDEV selects the sink. 0=disk file, 1=LPT printer,
+                ; 2=CRT screen (a device channel from OPEN"LPT:"/"CRT:"). C=byte.
+                ld      a,(PRDEV)
+                or      a
+                jr      z,pch_disk          ; 0 -> disk file
+                dec     a
+                jr      z,pch_lpt           ; 1 -> LPT: printer
+                ld      a,c                 ; 2 -> CRT: screen
+                call    CHPUT
+                jr      pch_done
+pch_lpt:
+                ld      a,c
+                call    LPTOUT
+                jr      pch_done
+pch_disk:
+                ld      a,c
                 call    fat_io_putbyte
 pch_done:
                 pop     af

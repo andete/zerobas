@@ -105,6 +105,10 @@ REGISTRY = [
     ("FILES(wild)",    "disk_probe_files_wildcard.py",  [], "live"),
     ("KILL(wild)",     "disk_probe_kill_wildcard.py",   [], "live"),
     ("CLOSE(list)",    "disk_probe_closelist.py",       [], "artifact"),
+    # CAS:/device option-closure Tier 1, Item 3: OPEN"LPT:"/"CRT:" device channels
+    # route PRINT# to the printer (LPTOUT)/screen (CHPUT). Keyboard-free AUTOEXEC.BAS
+    # + printer logger; asserts the LP! line physically reaches the printer log.
+    ("OPEN(LPT/CRT)",  "disk_probe_open_device.py",     [], "artifact"),
 ]
 
 
