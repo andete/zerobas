@@ -118,9 +118,11 @@ for the signal, they are **deferred, not closable** — admit them only if a con
   `parse_close_run` + `run_prog`, as `BLOAD"CAS:",R` did); `CSAVE"n",speed` is honoured
   (1200/2400 baud) and a stray/malformed flag is a clean `Syntax error`. Note discovered
   in build: the speed digit is a tokenised *integer* (not ASCII) so it is `eval`-ed; and
-  C-BIOS leaves the cassette baud reference tables zero, so `CSAVE` *seeds* them (the
-  oracle-sourced 1200/2400 words) before selecting — the copy-only path assumed a real
-  BIOS. Gate: [basic_probe_cas_options.py](../../probes/basic/basic_probe_cas_options.py).
+  the cassette baud reference tables read zero (the zerobas-tape patch supplies the
+  signal routines but nothing in the C-BIOS + tape-patch stack seeds CS120/CS240 — no
+  BIOS cold-init seed, no cold-init hook, no `SCREEN,,,baud`), so `CSAVE` *seeds* them
+  (the oracle-sourced 1200/2400 words) before selecting — the copy-only path assumed a
+  seeded table. Gate: [basic_probe_cas_options.py](../../probes/basic/basic_probe_cas_options.py).
 - **`LPT:` and `CRT:` OPEN channels.** ✅ New `do_open` device-prefix dispatch
   (`dev_lpt`/`dev_crt` via `dev_cmp`), device channels marked in `FCH_MODES`
   (`LPT_MODE`/`CRT_MODE`) with no fat.asm context, a `PRDEV` sink selector in `pchar`

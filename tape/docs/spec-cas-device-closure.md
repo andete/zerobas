@@ -13,7 +13,13 @@ proven on the C-BIOS target:
   Gate: [basic_probe_cas_options.py](../../probes/basic/basic_probe_cas_options.py).
 - **Item 2 — `CSAVE"P",speed`** ✅ honoured. `CSAVE"P",1`→1200 baud (~2400 Hz high tone),
   `CSAVE"P",2`→2400 baud (~4800 Hz); malformed → Syntax error. The speed is `eval`-ed
-  (a tokenised `1`/`2` is an integer token, not ASCII). Same gate.
+  (a tokenised `1`/`2` is an integer token, not ASCII). As-built departure from the
+  copy-only design below: nothing in the C-BIOS + zerobas-tape stack seeds the baud
+  reference tables `CS120`/`CS240` (the tape patch supplies the signal routines but has
+  no cold-init hook; zerobas has no `SCREEN,,,baud`), so they read 0 and a copy has
+  nothing to select — `CSAVE` therefore *seeds* them (oracle-sourced words) first. Same
+  gate. (A tidier home would be seeding in the tape patch — a TAPOON seed-if-zero — but
+  that is a `tape.asm` change, deferred.)
 - **Item 3 — `OPEN"LPT:"/"CRT:"`** ✅ device channels. `PRINT#` routes to LPTOUT
   (printer, physically verified via the openMSX printer logger) / CHPUT (screen); no
   fat.asm context; `CLOSE#1,#2` list closes both. No-regression: `diskbasic-acceptance`

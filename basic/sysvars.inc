@@ -76,10 +76,12 @@ TAPOOF          equ     $00F0   ; flush carrier + motor off
 CS120_LOW       equ     $F3FC   ; 1200-baud reference low-signal length word
 CS240_LOW       equ     $F401   ; 2400-baud reference low-signal length word
 ACT_LOW         equ     $F406   ; active low-signal length word (the live baud)
-; Reference low-signal-length VALUES. On a real MSX the BIOS seeds CS120/CS240 and
-; SCREEN,,,baud copies one into the active slot; C-BIOS leaves them 0 (its cassette
-; is stubbed) and zerobas doesn't implement SCREEN,,,baud, so CSAVE"n",speed seeds
-; the tables itself before selecting. cas_baud (tape.asm) only compares the active
+; Reference low-signal-length VALUES. On a real MSX the main BIOS cold-init seeds
+; CS120/CS240 and SCREEN,,,baud copies one into the active slot. Nothing seeds them
+; in the C-BIOS + zerobas-tape stack: C-BIOS's cold-init doesn't, the zerobas-tape
+; patch supplies the cassette *signal routines* (not stubbed!) but has no cold-init
+; hook, and zerobas has no SCREEN,,,baud -- so they stay 0. CSAVE"n",speed therefore
+; seeds the tables itself before selecting. cas_baud (tape.asm) only compares the active
 ; word to these for equality (the real timing is tape.asm's own constants), so the
 ; values need only be distinct — but we use the genuine ones the VG-8020 holds,
 ; captured black-box from work-area RAM (probes/tape/cas_baud_oracle.py; no ROM read):

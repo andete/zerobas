@@ -397,9 +397,10 @@ csav_sp_2400:
 csav_sp_1200:
                 ld      de,CAS_LOW_1200
 csav_sp_apply:
-                ; Seed the reference tables (C-BIOS leaves them 0 and zerobas has no
-                ; SCREEN,,,baud), then set the active word so the write path's
-                ; cas_baud selects the chosen rate. DE = the selected active word.
+                ; Seed the baud reference tables (nothing else does in the C-BIOS +
+                ; zerobas-tape stack: no BIOS cold-init seed, no cold-init hook in the
+                ; tape patch, no SCREEN,,,baud -- so they read 0), then set the active
+                ; word so the write path's cas_baud selects the chosen rate. DE = it.
                 push    hl                  ; save the text cursor (clobbered below)
                 ld      hl,CAS_LOW_1200
                 ld      (CS120_LOW),hl
