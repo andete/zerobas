@@ -68,6 +68,11 @@ EXERCISERS = [
     # BDOSX7 (Tier-C case 5, FREN rename-collision, M35). Rename onto an existing name
     # is refused (A=FF), byte-identical to stock; source + dest left intact.
     ("BDOSX7", "build_bdosx7_disk.py"),
+    # BDOSX8 (Item 5, spec-diskbasic-option-closure.md: WRSEQ $15 FCB position
+    # write-back). FMAKE -> WRSEQ x12 (crosses a cluster boundary) -> FCLOSE; the
+    # post-WRSEQ FCB position/size/first-cluster is now byte-identical to stock
+    # (was stale -- the write branch had no advance, only the read branch did).
+    ("BDOSX8", "build_bdosx8_disk.py"),
 ]
 
 CMD_RE = re.compile(r"(python3\s+probes/disk/disk_probe_diff\.py\s+.*)$")
@@ -155,6 +160,20 @@ ALLOWLIST = {
         0x01D1: "FCB+25 dirloc — accepted-cosmetic (M22a dirloc class)",
         0x01E3: "regs rec0 FREN($17) H — register UNDEFINED on return (contract pins A only)",
         0x01E4: "regs rec0 FREN($17) L — ditto (undefined; A=FF is pinned)",
+    },
+    "BDOSX8": {
+        # Item 5 (WRSEQ FCB position write-back). The post-WRSEQ FCB position (+12
+        # EX / +32 CR), running size (+16..19), first cluster (+26/27), current
+        # cluster (+28/29) and rec-in-cluster (+30) are now byte-identical to stock
+        # in BOTH the live post-FCLOSE FCB (base $01AB) AND the frozen post-WRSEQ
+        # snapshot (fcbsnap $0250). The only residuals are the same documented
+        # date/dirloc classes every BDOSX exerciser carries:
+        0x01BF: "FCB+20 date-lo — we intentionally do NOT stamp file dates (fat.asm; PROVENANCE date/time)",
+        0x01C0: "FCB+21 date-hi — ditto (no date stamp)",
+        0x01C4: "FCB+25 dirloc — accepted-cosmetic (M22a dirloc class)",
+        0x0264: "fcbsnap+20 date-lo — ditto (frozen post-WRSEQ copy of the FCB)",
+        0x0265: "fcbsnap+21 date-hi — ditto",
+        0x0269: "fcbsnap+25 dirloc — ditto (frozen post-WRSEQ copy)",
     },
 }
 

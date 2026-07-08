@@ -399,6 +399,14 @@ bdos_create_body:                       ; [bdos_create, bdos_create_failpop) —
                 ld      (BDOS_WRBUFLEN), hl
                 ld      (BDOS_WRBYTES), hl
                 ld      (BDOS_WRBYTES + 2), hl
+                ; Item 5 (spec-diskbasic-option-closure.md): reset the per-open
+                ; sequential record counter for the WRITE session too, mirroring
+                ; the read-open reset in fopen_fill_body (fat.asm; M33 §2.1). A file
+                ; is opened read XOR write, so BDOS_SEQREC is the single per-open
+                ; counter shared by wrseq_writeback (read) and wrseq_wr_writeback
+                ; (write); write-open must zero it or a prior read session's count
+                ; would poison the first WRSEQ position.
+                ld      (BDOS_SEQREC), hl
                 ld      a, 1
                 ld      (BDOS_WRMODE), a    ; file is open for write
                 xor     a                   ; A = $00 success
@@ -1949,6 +1957,92 @@ wre_noext:
                 or      a                   ; Cy = 0 -- no extension needed, NOT an error
                 ret                         ; (the preceding sbc's Cy/Z must not leak to the caller)
 
+; wrseq_wr_writeback — Item 5 (spec-diskbasic-option-closure.md): the WRITE-side
+; twin of wrseq_writeback. Mirrors the SAME FCB-position field set the read
+; branch advances, into the fixed FCB copy at $DA40, after a WRITTEN sequential
+; record (wrseq_body_write calls this only on A=$00). K = BDOS_SEQREC after this
+; call's increment (records written so far, 1-based).
+;   copy+32 (CR)      := K mod 128
+;   copy+12 (EX)      := K div 128            (floppy -> fits a byte, §2.2)
+;   copy+28/29 (word) := BDOS_WRCLUS          (the WRITE iterator's current cluster;
+;                        NOT FAT_CURCLUS -- that is the READ iterator's cluster)
+;   copy+30           := (K-1) div recPerClus, recPerClus = FAT_SECPERCLUS*RECPERSEC
+; Placement/register discipline differ deliberately from wrseq_writeback: this
+; lives in the $607B-$75A5 free-region corridor (the `ds $75A5 - $` pad below
+; absorbs its size -> net-zero canonical addresses), and it is FULLY
+; register-transparent -- preserves AF/BC/DE/HL so wrseq_body_write returns
+; bdos_seqwrite's exact registers unchanged (keeps the BDOSX3/BDOSX4 WRSEQ
+; register snaps byte-identical; only the FCB position memory moves). The
+; source cluster is the ONLY logic difference from the read twin; the CR/EX/+30
+; arithmetic is identical (deliberate duplication over sharing: the proven read
+; routine stays byte-for-byte untouched, and the corridor has ample slack).
+wrseq_wr_writeback:
+                push    af
+                push    bc
+                push    de
+                push    hl
+                ; K := BDOS_SEQREC + 1
+                ld      hl, (BDOS_SEQREC)
+                inc     hl
+                ld      (BDOS_SEQREC), hl   ; HL = K
+                push    hl                  ; keep K (the (K-1) div needs it again)
+                ; copy+32 := K mod 128 (low 7 bits of K's low byte)
+                ld      a, l
+                and     $7F
+                ld      ($DA40+32), a
+                ; copy+12 := K div 128 = (HL >> 7), low byte (fits a byte, floppy)
+                pop     hl                  ; HL = K
+                push    hl
+                ld      b, 7
+wsww_shr7:
+                srl     h
+                rr      l
+                djnz    wsww_shr7           ; HL = K >> 7
+                ld      a, l
+                ld      ($DA40+12), a
+                ; copy+28/29 := BDOS_WRCLUS (word) -- the write iterator's cluster
+                ld      hl, (BDOS_WRCLUS)
+                ld      ($DA40+28), hl
+                ; copy+30 := (K-1) div recPerClus, recPerClus = FAT_SECPERCLUS*RECPERSEC
+                pop     hl                  ; HL = K
+                dec     hl                  ; HL = K-1
+                ld      a, (FAT_SECPERCLUS)
+                ld      c, a                ; C = FAT_SECPERCLUS (addend)
+                ld      b, RECPERSEC - 1    ; RECPERSEC-1 more additions after the seed
+wsww_recperclus:
+                add     a, c
+                djnz    wsww_recperclus     ; A = FAT_SECPERCLUS * RECPERSEC
+                ld      c, a
+                ld      b, 0                ; BC = recPerClus
+                ld      de, 0               ; DE = quotient accumulator
+wsww_divloop:
+                or      a
+                sbc     hl, bc
+                jr      c, wsww_divdone
+                inc     de
+                jr      wsww_divloop
+wsww_divdone:
+                ld      a, e                ; quotient fits a byte (floppy record range)
+                ld      ($DA40+30), a
+                ; copy+16..19 := BDOS_WRBYTES (running file size, 4-byte LE). Stock
+                ; maintains the in-memory FCB size on every written record (proven
+                ; by the pre-FCLOSE fcbsnap differential, BDOSX8); the read twin
+                ; never needed this (FOPEN loads +16..19 from the dirent), but FMAKE
+                ; zeroes it, so the write session must grow it here.
+                ld      hl, BDOS_WRBYTES
+                ld      de, $DA40+16
+                ld      bc, 4
+                ldir
+                ; copy+26/27 := BDOS_WRFIRST (file's first cluster). Also maintained
+                ; per stock's post-WRSEQ FCB, and also zero after FMAKE.
+                ld      hl, (BDOS_WRFIRST)
+                ld      ($DA40+26), hl
+                pop     hl
+                pop     de
+                pop     bc
+                pop     af
+                ret
+
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
                 ds      $77B8 - $, $00
@@ -2696,7 +2790,24 @@ wrseq_body:
                 call    z, wrseq_writeback  ; only on a delivered record (A=$00)
                 ret
 wrseq_body_write:
-                jp      bdos_seqwrite
+                ; Item 5 (spec-diskbasic-option-closure.md): the write-side twin of
+                ; the M33 read-branch FCB-position write-back. M33 advanced the
+                ; caller-visible FCB position (+32 CR / +12 EX / +28,29 cluster /
+                ; +30 rec-in-cluster) after each DELIVERED read record but wired it
+                ; to the read branch only; stock MSX-DOS-1 advances the FCB on
+                ; sequential WRITES too. Our file bytes were already correct (the
+                ; write-iterator tracks position internally); only the caller-visible
+                ; FCB position went stale, observable via a WRSEQ-then-$24-SETRND
+                ; sequence (SETRND reads +12/+32). Mirror the read branch: advance
+                ; only on a WRITTEN record (A=$00; on A=$01 disk-full / A=$FF
+                ; not-open, do NOT advance -- no record was stored). The twin is
+                ; fully register-transparent (preserves AF/BC/DE/HL), so the write
+                ; branch still returns bdos_seqwrite's exact registers -- BDOSX3/
+                ; BDOSX4 register snaps are unchanged; only the FCB position moves.
+                call    bdos_seqwrite
+                or      a
+                call    z, wrseq_wr_writeback   ; advance FCB position on a written record
+                ret
 
 ; fdc_read_data_body — relocated fdc_read_data (M26, tier2-m26-spec.md): its
 ; old span at driver.asm's $435A collided with the real kernel's canonical
