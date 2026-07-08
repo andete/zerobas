@@ -248,6 +248,9 @@ do_open:
                 ld      de,dev_crt
                 call    dev_cmp
                 jp      z,oo_dev_crt
+                ld      de,dev_cas
+                call    dev_cmp
+                jp      z,oo_dev_cas
                 call    parse_disk_fcb      ; build DISK_FCB_NAME; HL -> closing '"'
                 inc     hl                  ; past the closing '"'
                 call    skip_spaces
@@ -512,6 +515,120 @@ oodv_ok:
                 pop     hl
                 jp      exec_stmt
 
+; --- OPEN "CAS:name" FOR OUTPUT|INPUT AS #n --------------------------------
+; A cassette SEQUENTIAL data channel. Like LPT:/CRT: it owns no fat.asm context
+; (never fch_select'd); unlike them it drives the real tape via the M1/M2 ASCII
+; block machinery: FOR OUTPUT writes the $EA header now and PRINT#n buffers data
+; bytes through the cassette sink (cas_wbyte), CLOSE flushing the final block;
+; FOR INPUT re-locks the tape (TAPION), verifies the $EA id, primes data block 1,
+; and INPUT#/LINE INPUT#n read via cas_in_getbyte (Ctrl-Z = EOF). Both OUTPUT and
+; INPUT are valid (unlike LPT/CRT which are output-only); APPEND/RANDOM and LEN=
+; are not. Clean-room: the cassette ASCII/sequential format is the MSX2 Technical
+; Handbook cassette chapter (same $EA id + 256-byte blocks + Ctrl-Z as SAVE",A");
+; the byte layer is our own M1/M2 code. See spec-cas-ascii-saveload.md §5 + the
+; tape option-surface audit. A cassette channel must not be interleaved with a disk
+; file channel (they share the $E600 block buffer) — documented (single tape file).
+; Entry: HL -> the char after "CAS:" (dev_cmp advanced it), inside the quotes.
+oo_dev_cas:
+                call    tape_parse_name     ; fill TSV_NAME[0..5]; HL -> closing '"'
+                ld      a,(hl)
+                cp      '"'
+                jp      nz,oo_fail_syn
+                inc     hl                  ; past the closing '"'
+                ; require FOR INPUT | FOR OUTPUT
+                call    skip_spaces
+                ld      a,(hl)
+                cp      FOR_TOKEN
+                jp      nz,oo_fail_syn      ; CAS: needs FOR (no RANDOM cassette)
+                inc     hl
+                call    skip_spaces
+                ld      a,(hl)
+                cp      INPUT_TOKEN
+                jr      z,oocas_in
+                cp      OUT_TOKEN           ; OUTPUT = OUT + PUT (two reserved words)
+                jr      z,oocas_out
+                jp      oo_fail_syn         ; APPEND not supported on cassette
+oocas_in:
+                inc     hl
+                ld      a,CAS_IN_MODE
+                jr      oocas_setmode
+oocas_out:
+                inc     hl
+                ld      a,(hl)
+                cp      PUT_TOKEN
+                jp      nz,oo_fail_syn
+                inc     hl
+                ld      a,CAS_OUT_MODE
+oocas_setmode:
+                ld      (OO_DEVTYPE),a      ; remember the CAS mode across the AS/#n parse
+                call    skip_spaces         ; "AS" (verbatim ASCII, upper/lower)
+                ld      a,(hl)
+                call    upcase
+                cp      'A'
+                jp      nz,oo_fail_syn
+                inc     hl
+                ld      a,(hl)
+                call    upcase
+                cp      'S'
+                jp      nz,oo_fail_syn
+                inc     hl
+                call    skip_spaces
+                ld      a,(hl)              ; optional '#'
+                cp      '#'
+                jr      nz,oocas_num
+                inc     hl
+oocas_num:
+                call    eval                ; DE = channel number, HL past it
+                ld      a,d
+                or      a
+                jp      nz,oo_fail_syn      ; > 255 -> bad file number
+                ld      a,e
+                call    fch_valid
+                jp      nc,oo_fail_syn      ; 0 or > MAXF -> bad file number
+                call    skip_spaces         ; only a terminator may follow (no LEN=)
+                ld      a,(hl)
+                or      a
+                jr      z,oocas_argsok
+                cp      COLON
+                jp      nz,oo_fail_syn
+oocas_argsok:
+                ; args fully validated -> now do the tape I/O (so a parse error never
+                ; leaves a half-written tape). Guard the channel + text cursor across it.
+                push    de                  ; DE = channel
+                push    hl                  ; text cursor (TAPOON/TAPIN clobber all)
+                ld      a,(OO_DEVTYPE)
+                cp      CAS_OUT_MODE
+                jr      z,oocas_do_out
+                ; --- FOR INPUT: re-lock the tape, verify $EA, prime data block 1 ---
+                call    TAPION              ; sync the header block leader
+                jr      c,oocas_ioerr
+                call    TAPIN               ; header byte 0 = file-type id
+                jr      c,oocas_ioerr
+                cp      ASCII_ID            ; a cassette data file is an $EA ASCII file
+                jr      nz,oocas_ioerr
+                call    cas_ascii_setup     ; skip rest of header + prime block 1
+                jr      c,oocas_ioerr
+                jr      oocas_mark
+oocas_do_out:
+                ; --- FOR OUTPUT: write the $EA header block; arm the data buffer ---
+                call    cas_write_ea_header ; TAPOON long + $EA*10 + TSV_NAME + TAPOOF
+                jr      c,oocas_ioerr       ; CAS_WCNT reset to 0 on success
+oocas_mark:
+                pop     hl                  ; text cursor
+                pop     de                  ; channel
+                push    hl                  ; guard cursor across the array store
+                ld      d,0
+                ld      hl,FCH_MODES
+                add     hl,de
+                ld      a,(OO_DEVTYPE)
+                ld      (hl),a              ; FCH_MODES[ch] = CAS_OUT/CAS_IN (committed)
+                pop     hl
+                jp      exec_stmt
+oocas_ioerr:
+                pop     hl
+                pop     de
+                jp      load_error
+
 ; dev_cmp — case-insensitive compare of the string at (HL) against the
 ; 0-terminated device name at (DE). Match: Z, HL advanced past the prefix.
 ; Mismatch: NZ, HL unchanged. Clobbers A, C, DE.
@@ -623,6 +740,19 @@ input_common:
                 ld      a,e
                 call    fch_valid
                 jp      nc,load_error       ; 0 or > MAXF -> bad file number
+                ; classify the channel by FCH_MODES[ch] WITHOUT fch_select (a cassette
+                ; channel owns no fat.asm ctx — selecting it would LDIR garbage over
+                ; the globals). CAS_IN reads via cas_in_getbyte; a disk channel keeps
+                ; the fch_select + FCH_MODE==1 path. read_into_strscr sources bytes
+                ; through the ARL_GETBYTE vector, set here per channel type.
+                push    hl                  ; guard text cursor
+                ld      d,0
+                ld      hl,FCH_MODES
+                add     hl,de
+                ld      a,(hl)
+                pop     hl
+                cp      CAS_IN_MODE
+                jr      z,inp_cas
                 push    hl                  ; guard text cursor (fch_select uses LDIR)
                 ld      a,e
                 call    fch_select          ; make channel e live; FCH_MODE = its mode
@@ -630,6 +760,13 @@ input_common:
                 ld      a,(FCH_MODE)
                 cp      1                   ; a channel must be open for INPUT
                 jp      nz,load_error
+                ld      de,fat_io_getbyte   ; disk channel -> read via fat_io_getbyte
+                ld      (ARL_GETBYTE),de
+                jr      inp_readvar
+inp_cas:
+                ld      de,cas_in_getbyte   ; CAS: input channel -> tape block source
+                ld      (ARL_GETBYTE),de
+inp_readvar:
                 call    skip_spaces
                 ld      a,(hl)
                 cp      ','
@@ -660,7 +797,9 @@ read_into_strscr:
                 xor     a
                 ld      (IN_RDLEN),a
 ris_lp:
-                call    fat_io_getbyte
+                call    arl_getbyte         ; byte source vector: fat_io_getbyte (disk)
+                                            ; or cas_in_getbyte (CAS: input), set by
+                                            ; ex_input per channel type
                 jr      c,ris_done          ; EOF -> stop
                 cp      $0A                 ; ignore LF entirely
                 jr      z,ris_lp
@@ -900,7 +1039,26 @@ fch_do_close_ch:
                 ld      a,(hl)
                 cp      LPT_MODE
                 jr      c,fdcc_disk         ; mode < 5 -> disk channel (INPUT/OUTPUT)
-                ld      (hl),0              ; device channel: clear FCH_MODES[ch], done
+                cp      CAS_OUT_MODE
+                jr      z,fdcc_cas_out      ; 7 -> flush the final tape block + motor off
+                cp      CAS_IN_MODE
+                jr      z,fdcc_cas_in       ; 8 -> just stop the motor
+                ld      (hl),0              ; LPT/CRT device channel: clear entry, done
+                ret
+fdcc_cas_out:
+                push    hl                  ; guard FCH_MODES[ch] ptr across the flush
+                call    cas_ascii_finish    ; Ctrl-Z EOF + pad the final block; the pad
+                                            ; loop's 256th byte flushes it (TAPOON+256+
+                                            ; TAPOOF), so the block is closed on return
+                call    TAPIOF              ; motor off
+                pop     hl
+                ld      (hl),0              ; FCH_MODES[ch] = 0 (closed)
+                ret
+fdcc_cas_in:
+                push    hl
+                call    TAPIOF              ; motor off (input channel: nothing to flush)
+                pop     hl
+                ld      (hl),0
                 ret
 fdcc_disk:
                 ld      a,e

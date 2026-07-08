@@ -480,6 +480,8 @@ ev_ff_eof:                                  ; EOF(n): -1 at end of the input fil
                 ld      a,e
                 call    fch_valid
                 jp      nc,ev_f_err
+                call    ev_chan_hasfile     ; device/cassette channels have no length
+                jp      nc,ev_f_err         ; -> function error (never fch_select them)
                 ld      a,e
                 call    fch_select
                 ld      hl,FREAD_LEFT
@@ -500,10 +502,29 @@ ev_ff_lof:                                  ; LOF(n): length of open input file 
                 ld      a,e
                 call    fch_valid
                 jp      nc,ev_f_err
+                call    ev_chan_hasfile     ; device/cassette channels have no length
+                jp      nc,ev_f_err         ; -> function error (never fch_select them)
                 ld      a,e
                 call    fch_select
                 ld      de,(FAT_FILESIZE)
                 ret
+
+; ev_chan_hasfile — CF set if channel E is a disk file channel (FCH_MODES[E] <
+; LPT_MODE), CF clear if it is a length-less device channel (LPT/CRT/CAS, mode >=
+; LPT_MODE). Lets EOF()/LOF() reject device+cassette channels (which own no fat.asm
+; ctx and would corrupt the engine globals if fch_select'd) as a function error.
+; Preserves E + IX (no CALSLT); clobbers A/HL. FCH_MODES[0] is unused/0, so a 0
+; channel (already rejected by fch_valid) would read as a file channel — harmless.
+ev_chan_hasfile:
+                ld      a,e
+                add     a,FCH_MODES & $FF   ; HL = FCH_MODES + E (page-local; array is
+                ld      l,a                 ; well within one page of its base)
+                ld      a,FCH_MODES >> 8
+                adc     a,0
+                ld      h,a
+                ld      a,(hl)              ; A = FCH_MODES[E]
+                cp      LPT_MODE
+                ret                         ; CF set (A<LPT_MODE) = disk file channel
 ev_ff_dskf:                                 ; DSKF(d): free clusters on the drive
                 ; The drive arg (DE) is ignored (single drive). Returns the count
                 ; of free FAT entries — = free KB on a 1 KB/cluster 720 KB volume.

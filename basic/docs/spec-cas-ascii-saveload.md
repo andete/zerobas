@@ -300,8 +300,14 @@ format, driven by the §7 round-trip + codec differential as acceptance.
 
 ## 8. Non-goals
 
-- Numeric `INPUT#`, tape *sequential channels* (`OPEN"CAS:" FOR INPUT|OUTPUT`) — the
-  other, larger Tier-2 item, tracked separately.
+- Numeric `INPUT#` — Phase-3 language (tracked disk-side).
+- ~~tape *sequential channels* (`OPEN"CAS:" FOR INPUT|OUTPUT`)~~ — **now DONE
+  (2026-07-08)**, built ON this spec's $EA/256-byte/Ctrl-Z byte layer: `oo_dev_cas`
+  reuses `cas_write_ea_header`/`cas_ascii_finish`/`cas_wbyte` (OUTPUT) and
+  `cas_ascii_setup`/`cal_getbyte` (INPUT, via a `cas_in_getbyte` Ctrl-Z→EOF wrapper).
+  The MSX2 TH confirms a sequential data file is the same `$EA` ASCII cassette format.
+  See [`../../tape/docs/cas-device-option-surface.md`](../../tape/docs/cas-device-option-surface.md)
+  §2 + Tier-2. `MERGE"CAS:"`/`RUN"CAS:"` also done there.
 - No change to the tokenised cassette SAVE/LOAD paths, the (de)tokeniser, the disk ASCII
   paths, or the tape signal layer (TAPOON/TAPOUT/TAPION/TAPIN).
 - `CSAVE` stays tokenised-only (ASCII save is spelled `SAVE"CAS:",A`, matching MSX).

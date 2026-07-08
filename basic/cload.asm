@@ -517,6 +517,25 @@ cal_srv_ret:
                 or      a                   ; CF clear = byte valid
                 ret
 
+; --- cas_in_getbyte: OPEN"CAS:" FOR INPUT byte source (ARL_GETBYTE target) ----
+; Wraps cal_getbyte with the sequential-file EOF rule: a Ctrl-Z ($1A) in the data
+; is end-of-file (§0.1 / MSX2 TH — the same soft-EOF that ends an ASCII program,
+; but here INPUT#/LINE INPUT# must STOP on it rather than treat it as a data byte,
+; since a data file has no line structure). Returns CF on either a real refill
+; failure (cal_getbyte CF) or the Ctrl-Z. read_into_strscr (via arl_getbyte) then
+; ends the field/line exactly as it does on a disk fat_io_getbyte EOF.
+;   out: A = byte, CF clear; or CF set = end of file.
+cas_in_getbyte:
+                call    cal_getbyte
+                ret     c                   ; source EOF (refill failed)
+                cp      $1A
+                jr      z,cig_eof           ; Ctrl-Z -> end of file
+                or      a                   ; CF clear = valid byte (A = the byte)
+                ret
+cig_eof:
+                scf
+                ret
+
 ; --- cal_refill: TAPION-relock + slurp one 256-byte tape block into CAL_BUF --
 ; TAPION then a tight TAPIN*256 loop that keeps its position in CAL_CNT (RAM) —
 ; NOTHING on the stack across TAPIN (requirement 1 in the cas_ascii_load header),

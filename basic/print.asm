@@ -51,6 +51,11 @@ ex_print:
                 jr      z,exp_dev_lpt
                 cp      CRT_MODE
                 jr      z,exp_dev_crt
+                cp      CAS_OUT_MODE
+                jr      z,exp_dev_cas
+                cp      CAS_IN_MODE
+                jp      z,load_error        ; PRINT# to an INPUT tape channel -> error
+                                            ; (never fch_select it: no fat ctx exists)
                 ; --- disk file channel (unchanged) ---
                 push    hl                  ; guard text cursor (fch_select uses LDIR)
                 ld      a,e
@@ -67,6 +72,9 @@ exp_dev_lpt:
                 jr      exp_dev_set
 exp_dev_crt:
                 ld      a,2                 ; 2 = CRT: screen sink
+                jr      exp_dev_set
+exp_dev_cas:
+                ld      a,3                 ; 3 = cassette sink (cas_wbyte, buffered)
 exp_dev_set:
                 ld      (PRDEV),a
 exp_sep:

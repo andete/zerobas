@@ -71,9 +71,9 @@ Evidence is `file:line` in `basic/`.
 | `CSAVE` | `["name"][,speed]` | ◐ | name ✅ (6-char, space-pad); **`,speed` (1=1200 / 2=2400) not parsed** — jumps straight to `tape_save_basic` ([save.asm](../../basic/save.asm) `do_csave`); baud instead comes from `SCREEN,,,baud` |
 | `LOAD"CAS:name"` | `[,R]` | ◐ | loads a tokenised program ✅; **`,R` parsed-past and ignored** — `dl_is_cas` skips to the closing quote and jumps to `do_tape_prog`, never checks `,R` ([cload.asm:87](../../basic/cload.asm:87)). Asymmetric with `BLOAD"CAS:",R` which *does* honour it |
 | `SAVE"CAS:name"` | `[,A]` | ✅ | tokenised save ✅; **`,A` ASCII save ✅** (`cas_ascii_save`, [save.asm](../../basic/save.asm)) — `$EA` header + 256-byte blocks, buffer-then-flush tape sink (M2, 2026-07-08) |
-| `RUN"CAS:name"` | `[,R]` | ✗ | `RUN"f"` has **no `CAS:` branch** (disk/implicit only); a `CAS:` program can only be `LOAD`ed then `RUN` |
-| `MERGE"CAS:name"` | (ASCII) | ✗ | `ex_merge` ([files.asm:979](../../basic/files.asm:979)) is disk-ASCII only; **no `CAS:` merge** (needs ASCII tape read) |
-| `OPEN"CAS:name" FOR INPUT\|OUTPUT AS #n` | sequential tape channel | ✗ | `do_open` calls `parse_disk_fcb` unconditionally ([files.asm:231](../../basic/files.asm:231)) — **no device-prefix dispatch**; `PRINT#`/`INPUT#`/`LINE INPUT#` to tape absent |
+| `RUN"CAS:name"` | `[,R]` | ✅ | `do_run` now has a `CAS:` branch (dev_cmp, [cload.asm](../../basic/cload.asm) `do_run`) → `do_tape_prog` (tokenised OR $EA ASCII) → `run_prog` (2026-07-08) |
+| `MERGE"CAS:name"` | (ASCII) | ✅ | `ex_merge` `CAS:` branch → `merge_cas` ([files.asm](../../basic/files.asm)): $EA reader (cas_ascii_setup/drive) into the current program, NO new_prog (2026-07-08) |
+| `OPEN"CAS:name" FOR INPUT\|OUTPUT AS #n` | sequential tape channel | ✅ | `do_open` `CAS:` dispatch → `oo_dev_cas` ([files.asm](../../basic/files.asm)): OUTPUT writes the $EA header + `PRINT#` buffers via `cas_wbyte`, CLOSE flushes; INPUT primes block 1 + `INPUT#`/`LINE INPUT#` read via `cas_in_getbyte` (Ctrl-Z EOF). No fat.asm ctx (like LPT/CRT) — not interleavable with a disk file channel (shared $E600 buffer) (2026-07-08) |
 
 **Cross-cutting theme.** The two `◐` "parsed-past and ignored" rows (`LOAD"CAS:",R`,
 `CSAVE",speed"`, `CLOAD "name"`) are the same **silent-drop** class the disk audit's
@@ -169,7 +169,25 @@ for the signal, they are **deferred, not closable** — admit them only if a con
     after 3 bytes). EOF `$1A` + `$1A`-pad the final block. Gate: the three `M2 oracle:`
     cells of [basic_probe_tape_save.py](../../probes/basic/basic_probe_tape_save.py)
     (format, single-block round-trip, injected >256-byte multi-block round-trip).
-  - ⏳ still open: `MERGE"CAS:"`, `RUN"CAS:"` (deferred follow-ons per the spec §6 D3).
+  - ✅ **`RUN"CAS:"` + `MERGE"CAS:"`** (2026-07-08). `do_run` gains a `CAS:` branch →
+    `do_tape_prog` → `run_prog` (loads tokenised OR $EA, then runs); `ex_merge` gains a
+    `CAS:` branch → `merge_cas`, reusing the M1 reader (cas_ascii_setup/drive) WITHOUT
+    `new_prog` so lines merge into the current program. Refactored `cas_ascii_load` into
+    `cas_ascii_setup`+`cas_ascii_drive` to share. Gate:
+    [basic_probe_cas_verbs.py](../../probes/basic/basic_probe_cas_verbs.py).
+  - ✅ **`OPEN"CAS:name" FOR OUTPUT|INPUT AS #n`** (2026-07-08). Cassette SEQUENTIAL data
+    channels (§2 below). `do_open` `CAS:` dispatch → `oo_dev_cas`; new FCH_MODES values
+    `CAS_OUT_MODE`/`CAS_IN_MODE` (device channels like LPT/CRT — no fat.asm ctx). OUTPUT
+    writes the $EA header at OPEN, `PRINT#` routes through the `PRDEV=3` sink
+    (`cas_wbyte`), CLOSE flushes (`cas_ascii_finish` + `TAPIOF`). INPUT primes block 1
+    and `INPUT#`/`LINE INPUT#` read via `cas_in_getbyte` (Ctrl-Z = EOF), routed through
+    the `ARL_GETBYTE` vector `read_into_strscr` now uses. Format = the SAME $EA / 256-byte
+    / Ctrl-Z ASCII file as SAVE",A" (MSX2 TH cassette chapter, cross-checked by WebFetch
+    2026-07-08). A cassette channel must not be interleaved with a disk file channel
+    (shared $E600 buffer); EOF()/LOF() on a cassette channel are unsupported (no file
+    length). Gate: the OPEN cells of
+    [basic_probe_cas_verbs.py](../../probes/basic/basic_probe_cas_verbs.py).
+  - ⏳ still open: `CLOAD?` verify, `CLOAD"name"` matching (Tier-3 below).
 
 **Tier 3 — quality-of-life.**
 

@@ -381,46 +381,60 @@ sav_cas_flag:
 ; public ASCII listing format + our own detokeniser + MSX2 TH cassette block
 ; framing; no reference-ROM read. See basic/docs/spec-cas-ascii-saveload.md §5.
 cas_ascii_save:
-                ; --- header block: TAPOON(long) + 10x$EA + 6-char name + TAPOOF ---
-                ld      a,$FF               ; non-zero -> long leader (new file)
-                call    TAPOON
+                call    cas_write_ea_header ; $EA header block (name in TSV_NAME); CAS_WCNT=0
                 jp      c,load_error
-                ld      a,10
-                ld      (TSV_CNT),a
-cas_as_id:
-                ld      a,ASCII_ID          ; $EA
-                call    TAPOUT
-                jp      c,load_error
-                ld      a,(TSV_CNT)
-                dec     a
-                ld      (TSV_CNT),a
-                jr      nz,cas_as_id
-                call    tape_name_emit
-                jp      c,load_error
-                call    TAPOOF              ; end of header block
-                ; --- data blocks (256-byte framed, opened lazily by cas_wbyte) ----
-                xor     a
-                ld      (CAS_WCNT),a        ; 0 bytes -> first byte opens block 1
                 ld      a,1
                 ld      (PRDEST),a          ; route pchar (LIST's emit) to a sink
                 ld      a,3
                 ld      (PRDEV),a           ; sink 3 = cassette (cas_wbyte)
                 call    list_walk           ; number + space + detok body + CRLF/line
-                ; append the EOF Ctrl-Z, then pad the final block to 256 with $1A
-                ld      a,$1A               ; Ctrl-Z soft-EOF (ASCII program terminator)
-                call    cas_wbyte
-cas_as_pad:
-                ld      a,(CAS_WCNT)
-                or      a
-                jr      z,cas_as_done       ; count wrapped to 0 -> block auto-closed
-                ld      a,$1A
-                call    cas_wbyte
-                jr      cas_as_pad
-cas_as_done:
+                call    cas_ascii_finish    ; Ctrl-Z EOF + pad the final block (flush)
                 xor     a
                 ld      (PRDEST),a          ; restore the screen sink
                 ld      (PRDEV),a           ; restore the default (disk) device
                 ret                         ; back to the REPL
+
+; cas_write_ea_header — write the $EA cassette header block for the file named in
+; TSV_NAME: TAPOON(long leader) + 10x $EA (ASCII id) + 6-char name (tape_name_emit)
+; + TAPOOF, then reset the data-block fill counter CAS_WCNT to 0 (the first data
+; byte opens block 1). Shared by cas_ascii_save (SAVE"CAS:",A) and oo_dev_cas
+; (OPEN"CAS:" FOR OUTPUT). All loops are tight (uniform inter-byte gaps).
+;   out: CF set = a TAPOON/TAPOUT error (caller aborts).
+cas_write_ea_header:
+                ld      a,$FF               ; non-zero -> long leader (new file)
+                call    TAPOON
+                ret     c
+                ld      a,10
+                ld      (TSV_CNT),a
+caw_id:
+                ld      a,ASCII_ID          ; $EA
+                call    TAPOUT
+                ret     c
+                ld      a,(TSV_CNT)
+                dec     a
+                ld      (TSV_CNT),a
+                jr      nz,caw_id
+                call    tape_name_emit
+                ret     c
+                call    TAPOOF              ; end of header block
+                xor     a
+                ld      (CAS_WCNT),a        ; 0 bytes -> first byte opens block 1
+                ret
+
+; cas_ascii_finish — end a cassette ASCII data stream: append the Ctrl-Z ($1A) EOF,
+; then pad the current 256-byte block with $1A until it fills (cas_wbyte flushes it
+; when the 256th byte lands). Shared by cas_ascii_save and the OPEN"CAS:" OUTPUT
+; CLOSE (fch_do_close_ch). Clobbers all (via cas_wbyte).
+cas_ascii_finish:
+                ld      a,$1A               ; Ctrl-Z soft-EOF
+                call    cas_wbyte
+caf_pad:
+                ld      a,(CAS_WCNT)
+                or      a
+                ret     z                   ; count wrapped to 0 -> block flushed
+                ld      a,$1A
+                call    cas_wbyte
+                jr      caf_pad
 
 ; cas_wbyte — BUFFER one program byte into CAS_WBUF for the current 256-byte tape
 ; data block (§0.1). It does NOT TAPOUT per byte: cassette signalling is real-time on

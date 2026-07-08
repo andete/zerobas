@@ -329,6 +329,15 @@ OO_DEVTYPE      equ     $E0CD   ; OPEN device-channel type being parsed (transie
 ARL_GETBYTE     equ     $E0CE   ; ascii_read_lines byte-source vector (2)
 LPT_MODE        equ     5       ; FCH_MODES value: channel open to the LPT: printer device
 CRT_MODE        equ     6       ; FCH_MODES value: channel open to the CRT: screen device
+; Cassette sequential channels (OPEN"CAS:name" FOR OUTPUT|INPUT). Like LPT/CRT
+; these own NO fat.asm context (never fch_select'd) — PRINT#/INPUT#/CLOSE classify
+; them straight from FCH_MODES. Their byte layer is the M1/M2 cassette-ASCII block
+; buffer at $E600 (CAL_BUF/CAS_WBUF), so a cassette channel and a disk file channel
+; must NOT be interleaved (they share that buffer) — documented, and matching the
+; real-MSX single-cassette-file norm. Values chosen > CRT_MODE so the existing
+; ">= LPT_MODE = device channel" tests still hold.
+CAS_OUT_MODE    equ     7       ; FCH_MODES value: OPEN"CAS:" FOR OUTPUT (PRINT# -> tape sink)
+CAS_IN_MODE     equ     8       ; FCH_MODES value: OPEN"CAS:" FOR INPUT (INPUT# <- tape source)
 ; Scratch descriptor for a string literal lifted out of the token stream
 ; ([len:1][bytes:STRMAX]); LET copies from here into the variable's slot. Placed
 ; in page $E3 above the string table (NOT in page $E0, which the C-BIOS keyboard
