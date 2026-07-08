@@ -59,32 +59,41 @@ register/FCB/work-area divergence on any path the exercisers drive — that is h
 WRBLK, the RDRND wrong-record P1, and the LOGIN/`$F347` seed bug were all caught), but it
 is only as wide as the exercisers, and the gap below sits on a path none of them drive.
 
-### 1.1 Genuine gap (undocumented + unexercised)
+### 1.1 Genuine gap — RESOLVED 2026-07-08 (Item 5a landed)
 
 - **`$15` WRSEQ — no CR/EX FCB position write-back.** M33 added `wrseq_writeback` (advance
   FCB `+32` CR / `+12` EX / cluster ptr per sequential record) but wired it to the **read**
-  branch only ([kernel.asm:2694](../kernel.asm)); the **write** branch is a bare
-  `jp bdos_seqwrite` with no advance ([kernel.asm:2699](../kernel.asm)). Stock advances the
-  FCB on sequential *writes* too. Our own write sessions are byte-correct (the internal
-  write-iterator tracks position), so the *file* is right — but the caller-visible FCB
-  position is stale. **Observable path:** a program that does `WRSEQ` records then `$24`
-  SETRND (which reads `+12`/`+32` to compute RR) gets a wrong random position. This is the
+  branch only; the **write** branch was a bare `jp bdos_seqwrite` with no advance. Stock
+  advances the FCB on sequential *writes* too. Our own write sessions were byte-correct (the
+  internal write-iterator tracks position), so the *file* was right — but the caller-visible
+  FCB position went stale. **Observable path:** a program that does `WRSEQ` records then `$24`
+  SETRND (which reads `+12`/`+32` to compute RR) got a wrong random position. This was the
   exact class M33 closed for RDSEQ, left open for WRSEQ — a real asymmetry, not a design
-  choice. The BDOS-side analogue of the BASIC VRAM find: a real thing hiding under a green
-  function-level ✅. Closure specced in
-  [spec-diskbasic-option-closure.md](spec-diskbasic-option-closure.md) Item 5.
+  choice. **Fixed:** the register-transparent write-side twin `wrseq_wr_writeback`
+  ([kernel.asm](../kernel.asm), commit 932f5e8) advances +12/+16..19/+26,27/+28,29/+30/+32
+  from the write-iterator cells after every written record; **byte-identical to the CF-3300
+  oracle** (differential BDOSX8, `make bdos-acceptance` 12/12) with a fast emulator-free twin
+  ([test_wrseq_position.py](../../tests/test_wrseq_position.py), `make unit-test`). Closure
+  spec: [spec-diskbasic-option-closure.md](spec-diskbasic-option-closure.md) Item 5.
 
-### 1.2 Under-tracked limitation (in-code note, but never widened or gated)
+### 1.2 Under-tracked limitation — RESOLVED 2026-07-08 (document-and-gate, Q5.2)
 
 - **`$21`/`$22` RDRND/WRRND — 8-bit random record + fixed 128-byte record.**
-  `rrnd_position` reads only `+33` (r0), ignoring `+34`/`+35` ([kernel.asm:3001](../kernel.asm)),
+  `rrnd_position` reads only `+33` (r0), ignoring `+34`/`+35` ([kernel.asm:3112](../kernel.asm)),
   and the transfer is a hardcoded 128 bytes, ignoring the `+14..15` record-size field.
   A file > 256 records (> 32 KB) or a non-128 record size random-accesses the wrong
   location. In-code acknowledged ("0..255; see scope note") but, unlike `$26`/`$27` which
   were widened to full 24-bit RR + real RS, this tier never was. Record size `+14..15` is
   likewise ignored across `$14`/`$15`/`$21`/`$22` (only `$23`/`$26`/`$27` honor it). Low
-  practical impact (128-byte records are the norm) but a real field-level omission — closure
-  specced as Item 5's sibling (widen or document-and-gate).
+  practical impact (128-byte records are the norm).
+  **Resolution (Item 5 sibling, spec Q5.2):** **document-and-gate**, not widen — 128-byte
+  records addressing up to a 32640-byte file are the MSX-DOS-1 floppy norm, and widening is
+  unverified surface (add it only if a real > 32 KB random-file need appears). Now a
+  signed-off boundary in §1.3 below, PINNED by the negative-bound gate
+  [test_rrnd_8bit_limit.py](../../tests/test_rrnd_8bit_limit.py) (`make unit-test`): it
+  proves r1/r2 and `+14/15` are FULLY ignored (a read with them set nonzero still delivers
+  record r0 at a 128-byte stride), so a future *half*-widening that silently drifts the
+  boundary fails the gate.
 
 ### 1.3 Documented / intentional simplifications (correct as-is)
 
@@ -98,6 +107,7 @@ is only as wide as the exercisers, and the gap below sits on a path none of them
 | GTIME/GDATE | return constants; STIME/SDATE don't round-trip | clockless target |
 | FOPEN/FMAKE/FCLOSE | dirent date not stamped (`+25` dirloc not written) | allowlisted cosmetic |
 | `$05` LSTOUT | printer no-op on C-BIOS (delegates to `$00A5` LPTOUT stub) | two-interface delegation; real when C-BIOS grows LPTOUT |
+| `$21`/`$22` RDRND/WRRND | 8-bit random record (r0 only, `+34/35` ignored) + fixed 128-byte record (`+14/15` ignored) | signed-off boundary (Q5.2) — 128-B records / 32640-B files are the floppy norm; **gated** against silent drift by [test_rrnd_8bit_limit.py](../../tests/test_rrnd_8bit_limit.py) |
 
 ### 1.4 Stale scoreboard/spec rows (code is MORE complete than the doc — corrected this pass)
 

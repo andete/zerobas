@@ -5,10 +5,11 @@ SPDX-License-Identifier: 0BSD
 
 # Spec (for sign-off): Disk-BASIC option-surface closure
 
-> **STATUS: Items 1+2 SIGNED OFF + IMPLEMENTED + GATED (2026-07-08).** Items 3–5
-> remain proposals (item 3 axis-home decided: `LEN=` under disk-BASIC later, device
-> channels → plain-BASIC axis; item 5 decided: document-and-gate the 8-bit/128 RR
-> limit). Q1.4 (BLOAD `,offset`) resolved: **deferred, but the parser now rejects a
+> **STATUS: Items 1+2+5 IMPLEMENTED + GATED (2026-07-08).** Item 5 (both parts:
+> WRSEQ `$15` FCB position write-back + document-and-gate the 8-bit/128 RR limit)
+> landed 2026-07-08 — see the Sign-off section. Items 3+4 remain (item 3 axis-home
+> decided: `LEN=` under disk-BASIC now, device channels → plain-BASIC axis; item 4
+> is FILES/KILL wildcard + CLOSE list). Q1.4 (BLOAD `,offset`) resolved: **deferred, but the parser now rejects a
 > typed offset with a clean `load error`** (never a silent wrong-address load) and is
 > structured so real offset support is a one-branch add. See the Sign-off section.
 > Per
@@ -263,5 +264,15 @@ emulator-free `unit-test` — except the host position twin).
 - [ ] **Item 3** — `LEN=` (disk-BASIC, next) + device channels (→ plain-BASIC axis). Axis
   split decided; not yet coded.
 - [ ] **Item 4** — FILES/KILL wildcard + CLOSE list (Q4.1–Q4.2)
-- [ ] **Item 5** — BDOS `$15` WRSEQ FCB write-back + **document-and-gate** the RDRND/WRRND
-  8-bit/128 limit (Q5.2 decided: gate, don't widen).
+- [x] **Item 5** — **DONE 2026-07-08.** (5a) BDOS `$15` WRSEQ FCB write-back: the
+  register-transparent write-side twin `wrseq_wr_writeback` ([kernel.asm](../kernel.asm),
+  commit 932f5e8) advances +12 EX / +16..19 size / +26,27 first cluster / +28,29 cluster /
+  +30 rec-in-cluster / +32 CR from the write-iterator cells after every written record;
+  wired on `wrseq_body_write` (advance only on A=$00), `BDOS_SEQREC` reset at write-open.
+  Net-zero (`disk.rom` 16384 B). **Byte-identical to CF-3300** (differential BDOSX8;
+  `make bdos-acceptance` 12/12, BDOSX3/BDOSX4 unchanged) + emulator-free twin
+  [test_wrseq_position.py](../../tests/test_wrseq_position.py). (5b) RDRND/WRRND 8-bit/128
+  limit **document-and-gated** (Q5.2): promoted to a signed-off boundary in
+  [diskbasic-option-surface.md §1.3](diskbasic-option-surface.md), PINNED by the
+  negative-bound gate [test_rrnd_8bit_limit.py](../../tests/test_rrnd_8bit_limit.py)
+  (proves r1/r2 + `+14/15` fully ignored — silent-drift guard). `make unit-test` 36/36.
