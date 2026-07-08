@@ -144,7 +144,10 @@ for the signal, they are **deferred, not closable** — admit them only if a con
 - **CAS: ASCII program save/load** — `SAVE"CAS:",A`, ASCII `CLOAD`, `MERGE"CAS:"`,
   `RUN"CAS:"`. The tape analogue of the disk ASCII-save arc (the "last open follow-on" the
   disk close-out already named). Reuses the disk ASCII detokeniser/reader (`ascii_read_lines`,
-  the `pchar`/`PRDEST` sink) over the tape byte layer instead of the disk one.
+  the `pchar`/`PRDEST` sink) over the tape byte layer instead of the disk one. **Spec (for
+  sign-off):** [spec-cas-ascii-saveload.md](../../basic/docs/spec-cas-ascii-saveload.md) —
+  open decisions D1 (block format: interop 256-byte vs own-design single-block) and D2
+  (reader source abstraction) need a call before coding.
 
 **Tier 3 — quality-of-life.**
 
