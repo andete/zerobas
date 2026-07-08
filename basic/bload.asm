@@ -45,15 +45,18 @@ parse_dev:
                 ld      a,(hl)              ; typed char
                 call    upcase              ; case-insensitive (typed may be lower)
                 cp      c
-                jr      nz,is_disk          ; prefix mismatch -> disk path
+                jp      nz,is_disk          ; prefix mismatch -> disk path (out of jr range)
                 inc     hl
                 inc     de
                 jr      parse_dev
 is_tape:
                 pop     af                  ; discard saved filename start
                 ; HL now points just past "CAS:"; tape path continues verbatim.
-                call    parse_close_run     ; closing quote + optional ,R
+                call    parse_close_run     ; closing quote + optional ,R / ,S
                 jp      c,load_error
+                ld      a,(VRAM_FLAG)
+                or      a
+                jp      nz,load_error       ; ,S VRAM-from-tape not supported here
                 ; --- open the tape and skip the file-header block's tone ---
                 call    TAPION              ; sync block 1 (file header)
                 jp      c,load_error
@@ -250,12 +253,25 @@ do_disk_bload:
                 call    fat_io_getbyte
                 jp      c,load_error
                 ld      (EXECPTR+1),a       ; exec high
-                ; (3b) stream data bytes into [start..end] inclusive.
+                ; (3b) stream data bytes into [start..end] inclusive. With ",S"
+                ; (VRAM_FLAG) the start/end/exec header words are VRAM addresses
+                ; and each byte is stored via WRTVRM ($004D) instead of a RAM
+                ; write; the loop shape is otherwise identical.
 disk_load_loop:
                 call    fat_io_getbyte
                 jp      c,load_error        ; ran out before reaching end -> error
                 ld      hl,(CURPTR)
-                ld      (hl),a              ; store the byte
+                ld      b,a                 ; save the byte across the flag test
+                ld      a,(VRAM_FLAG)
+                or      a
+                ld      a,b                 ; A = byte again (ld leaves Z intact)
+                jr      z,dll_ram
+                call    WRTVRM              ; HL=CURPTR (VRAM addr), A=byte
+                jr      dll_adv
+dll_ram:
+                ld      (hl),a              ; HL=CURPTR (RAM addr)
+dll_adv:
+                ld      hl,(CURPTR)         ; reload (WRTVRM makes no reg guarantees)
                 ld      de,(ENDPTR)
                 ld      a,h
                 cp      d
@@ -352,34 +368,65 @@ bn_reject:
                 ret
 
 ; parse_close_run — shared tail parse used by BOTH the tape and disk paths.
-; Consumes the closing '"' and an optional ,R; sets RUNFLAG accordingly.
+; Consumes the closing '"' and an optional single option flag (,R run or ,S
+; VRAM); sets RUNFLAG / VRAM_FLAG accordingly.
 ;   in:  HL -> the closing '"' of the device string
-;   out: CF set if the closing quote is missing (caller -> load_error);
-;        CF clear on success, RUNFLAG = 1 iff ,R (or ,r) was given.
+;   out: CF set on ANY syntax error (missing quote, unrecognized flag, or junk
+;        after the flag — caller -> load_error); CF clear on success, with
+;        RUNFLAG = 1 iff ,R and VRAM_FLAG = 1 iff ,S.
+; "Honest at the walls" (closure-spec item 2): an unrecognized flag or a trailing
+; token (a second flag, or the deferred ,offset — Q1.2/Q1.4) is a clean error,
+; never a silent no-op. Only ONE option flag is allowed, so ,R and ,S cannot
+; combine.
 parse_close_run:
                 ld      a,(hl)
                 cp      '"'                 ; closing quote required
                 jr      nz,pcr_err
                 inc     hl
                 xor     a
-                ld      (RUNFLAG),a         ; default: no handoff
+                ld      (RUNFLAG),a         ; default: no ,R handoff
+                ld      (VRAM_FLAG),a       ; default: RAM load
                 call    skip_spaces
                 ld      a,(hl)
+                or      a
+                jr      z,pcr_ok            ; end of statement -> plain load
+                cp      COLON
+                jr      z,pcr_ok            ; statement separator -> plain load
                 cp      ','
-                jr      nz,pcr_ok           ; no option -> plain load
-                inc     hl
+                jr      nz,pcr_err          ; junk after the quote -> error
+                ; --- one option flag: ,R (run) or ,S (VRAM) ----------------
+                inc     hl                  ; past the comma
                 call    skip_spaces
                 ld      a,(hl)
-                call    upcase              ; accept ,r as well as ,R
-                cp      'R'                 ; only ,R is supported
-                jr      nz,pcr_ok
+                call    upcase              ; accept ,r / ,s as well
+                cp      'R'
+                jr      z,pcr_run
+                cp      'S'
+                jr      z,pcr_vram
+                jr      pcr_err             ; unrecognized flag -> error
+pcr_run:
                 ld      a,1
                 ld      (RUNFLAG),a
-pcr_ok:
-                or      a                   ; CF clear = success
-                ret
+                jr      pcr_flag_end
+pcr_vram:
+                ld      a,1
+                ld      (VRAM_FLAG),a
+pcr_flag_end:
+                ; after the flag ONLY a statement terminator is allowed; a second
+                ; flag or a trailing ,offset is rejected (not silently ignored).
+                inc     hl                  ; past the flag letter
+                call    skip_spaces
+                ld      a,(hl)
+                or      a
+                jr      z,pcr_ok
+                cp      COLON
+                jr      z,pcr_ok
+                ; fall through to pcr_err
 pcr_err:
                 scf
+                ret
+pcr_ok:
+                or      a                   ; CF clear = success
                 ret
 
 ; device name accepted by this build. Source: spec-bload-r.md §5 ("CAS:").

@@ -90,6 +90,12 @@ REGISTRY = [
     ("RUN\"file\"",    "disk_probe_run_disk.py",        [], "artifact"),
     ("BLOAD",          "disk_probe_bload_disk.py",      [], "artifact"),
     ("AUTOEXEC",       "disk_probe_autoexec.py",        [], "live"),
+    # --- option-surface closure (spec-diskbasic-option-closure.md items 1+2) ------
+    # BSAVE",S"/BLOAD",S" VRAM round-trip is a CF-3300 differential (live). The
+    # option-parse hygiene cell is an OURS-ONLY behavioural assert (our load_error
+    # model diverges from stock's Syntax-error halt), judged by exit code (artifact).
+    ("BSAVE/BLOAD(VRAM)","disk_probe_vram_saveload.py",  [], "live"),
+    ("OPTION(hygiene)", "disk_probe_option_hygiene.py",  [], "artifact"),
 ]
 
 

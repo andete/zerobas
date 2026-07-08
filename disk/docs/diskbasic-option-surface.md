@@ -128,8 +128,8 @@ error). "Ref" = the documented option. Evidence is `file:line` in `basic/`.
 | `LOAD` | `"[dev:]name"[,R]` | ◐ | `,R` disk ✅; **`,R` ignored on the `CAS:` branch** ([cload.asm:98](../../basic/cload.asm:98)); ASCII/tokenised autodetect ✅ |
 | `RUN"f"` | `"[dev:]name"[,R]` | ◐ | runs implicitly; no `CAS:`; trailing `,R` is a no-op |
 | `MERGE` | `"[dev:]name"` (ASCII) | ◐ | disk ASCII ✅; **no `CAS:` merge**; tokenised-file merge unsupported |
-| `BLOAD` | `"[dev:]name"[,R][,S][,offset]` | ⚠ | **`,S` VRAM ABSENT — silently ignored** ([bload.asm:374](../../basic/bload.asm:374)); **no `offset`**; `,R` ✅; `CAS:` ✅ |
-| `BSAVE` | `"[dev:]name",start,end[,exec] \| ,start,end,S` | ⚠ | `start,end[,exec]` ✅; **`,S` VRAM ABSENT — literal `S` mis-eaten by `eval` as exec** ([save.asm:88](../../basic/save.asm:88)); `CAS:` ✅ |
+| `BLOAD` | `"[dev:]name"[,R][,S][,offset]` | ✅ | `,S` VRAM ✅ (WRTVRM sink, [bload.asm](../../basic/bload.asm)); `,R` ✅; `CAS:` ✅; unrecognized flag → clean `load error` (2026-07-08); **`offset` deferred but cleanly rejected** (Q1.4) |
+| `BSAVE` | `"[dev:]name",start,end[,exec] \| ,start,end,S` | ✅ | `start,end[,exec]` ✅; `,S` VRAM ✅ (RDVRM source, [save.asm](../../basic/save.asm)); stray 4th token → clean `load error` (2026-07-08); `CAS:` ✅ (`,S` VRAM-to-tape rejected — disk-only this pass) |
 
 ### Sequential / channel I/O
 

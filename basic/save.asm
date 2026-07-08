@@ -44,6 +44,8 @@
 ; Entry: HL -> the bytes after the BSAVE token (verbatim ASCII filename, then the
 ; crunched address args: comma + &H/decimal expression each).
 do_bsave:
+                xor     a
+                ld      (VRAM_FLAG),a       ; default RAM source; ",S" sets it below
                 call    skip_spaces
                 ld      a,(hl)
                 cp      '"'                 ; opening quote required
@@ -55,7 +57,7 @@ do_bsave:
 bsv_dev:
                 ld      a,(de)
                 or      a
-                jr      z,bsv_is_cas        ; matched all of "CAS:" -> tape
+                jp      z,bsv_is_cas        ; matched all of "CAS:" -> tape (out of jr range)
                 ld      c,a
                 ld      a,(hl)
                 call    upcase
@@ -79,13 +81,20 @@ bsv_is_disk:
                 ; --- ,end --------------------------------------------------
                 call    expect_comma_eval   ; DE = end
                 ld      (DSV_END),de        ; DSV_END = last data byte (inclusive)
-                ; --- optional ,exec ----------------------------------------
-                call    skip_spaces
-                ld      a,(hl)
-                cp      ','
-                jr      nz,bsv_open         ; no ,exec -> exec already defaulted to start
-                inc     hl                  ; past the comma
-                call    eval                ; DE = exec
+                ; --- optional 4th slot: ,exec  OR  ,S (VRAM save) ----------
+                ; bsave_opt4 classifies the slot: CF set -> reject a stray
+                ; identifier (jp c,load_error at THIS level so the abort unwinds to
+                ; the dispatcher); else A=0 none, A=1 ",S" (VRAM), A=2 exec (DE).
+                call    bsave_opt4
+                jp      c,load_error        ; stray 4th token -> honest reject
+                or      a
+                jr      z,bsv_open          ; no 4th arg -> exec defaulted to start
+                cp      2
+                jr      z,bsv_set_exec      ; expression -> exec address
+                ld      a,1                 ; A=1: ",S" -> stream data from VRAM
+                ld      (VRAM_FLAG),a       ; header start/end/exec kept verbatim
+                jr      bsv_open
+bsv_set_exec:
                 ld      (EXECPTR),de
 bsv_open:
                 ; --- create the file and set the DTA -----------------------
@@ -103,10 +112,20 @@ bsv_open:
                 call    disk_putword
                 ld      hl,EXECPTR          ; exec (LE)
                 call    disk_putword
-                ; --- data bytes RAM[start..end] inclusive ------------------
+                ; --- data bytes [start..end] inclusive, RAM or VRAM --------
+                ; With ",S" (VRAM_FLAG) the start/end are VRAM addresses and each
+                ; byte is fetched via RDVRM ($004A) instead of a RAM read; the
+                ; loop shape is otherwise identical.
 bsv_data:
                 ld      hl,(CURPTR)
-                ld      a,(hl)              ; the source byte
+                ld      a,(VRAM_FLAG)
+                or      a
+                jr      z,bsv_data_ram
+                call    RDVRM               ; HL=CURPTR (VRAM addr) -> A
+                jr      bsv_data_put
+bsv_data_ram:
+                ld      a,(hl)              ; HL=CURPTR (RAM addr) -> A
+bsv_data_put:
                 call    disk_putbyte
                 ld      hl,(CURPTR)
                 ld      de,(DSV_END)
@@ -141,13 +160,15 @@ bsv_is_cas:
                 ; --- ,end --------------------------------------------------
                 call    expect_comma_eval   ; DE = end
                 ld      (TSV_END),de
-                ; --- optional ,exec ----------------------------------------
-                call    skip_spaces
-                ld      a,(hl)
-                cp      ','
-                jr      nz,bsv_cas_open
-                inc     hl
-                call    eval                ; DE = exec
+                ; --- optional 4th slot: ,exec (,S VRAM-to-tape unsupported) -
+                call    bsave_opt4
+                jp      c,load_error        ; stray 4th token -> honest reject
+                or      a
+                jr      z,bsv_cas_open      ; no 4th arg
+                cp      2
+                jr      z,bsv_cas_exec      ; expression -> exec
+                jp      load_error          ; A=1: ",S" VRAM-to-tape not supported
+bsv_cas_exec:
                 ld      (EXECPTR),de
 bsv_cas_open:
                 ; --- tape header block: TAPOON(long) + 10x$D0 + 6-char name + TAPOOF ---
@@ -506,6 +527,66 @@ tape_putword:
                 ld      a,(hl)              ; high byte
                 call    TAPOUT
                 ret                         ; CF from TAPOUT
+
+; ===========================================================================
+; bsave_opt4 — classify the optional 4th BSAVE slot (,exec or ,S).
+; in:  HL -> after the ,end argument (at the possible ',' or a terminator).
+; out: CF SET  -> reject: a bare identifier that is neither the standalone S nor
+;                 a number (closure-spec item 2 "honest at the walls"). The CALLER
+;                 does `jp c,load_error` at the do_bsave level — bsave_opt4 must NOT
+;                 branch to load_error itself: load_error ends in `ret`, so a `jp
+;                 load_error` from inside this subroutine would RESUME do_bsave right
+;                 after the `call bsave_opt4` (the stack top is do_bsave's
+;                 continuation, not the dispatcher) and wrongly create the file.
+;      CF CLEAR -> A = 0  no 4th argument   (HL at the terminator)
+;                  A = 1  literal ",S" flag (HL past the S; DE untouched)
+;                  A = 2  numeric expression (DE = value; HL past it)
+; Clobbers A, BC, DE, HL. Distinguishing S-the-flag from an S-started variable: the
+; flag is a lone 'S' followed by a statement terminator (NUL or ':'); "SX"/"S+1" reject.
+bsave_opt4:
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jr      z,b4_have
+                xor     a                   ; no 4th argument (A=0, CF clear)
+                ret
+b4_have:
+                inc     hl                  ; past the comma
+                call    skip_spaces
+                ld      a,(hl)
+                call    upcase
+                cp      'S'
+                jr      z,b4_maybe_s
+                ; not S: a bare letter (A..Z) is a rejected identifier; anything
+                ; else (digit, &H, '(', '-', ...) is a numeric exec expression.
+                cp      'A'
+                jr      c,b4_expr           ; below 'A' -> numeric expression
+                cp      'Z'+1
+                jr      nc,b4_expr          ; above 'Z' -> numeric-ish
+                scf                         ; a letter other than S -> reject (CF set)
+                ret
+b4_maybe_s:
+                push    hl                  ; remember the S position
+                inc     hl
+                call    skip_spaces
+                ld      a,(hl)
+                or      a
+                jr      z,b4_is_s           ; S then end-of-statement -> the flag
+                cp      COLON
+                jr      z,b4_is_s           ; S then ':' -> the flag
+                pop     hl                  ; S starts a longer identifier/expr
+                scf                         ; (unsupported as an exec) -> reject (CF set)
+                ret
+b4_is_s:
+                pop     af                  ; drop the saved S position (HL kept)
+                ld      a,1                 ; A = 1: ",S" flag
+                or      a                   ; CF clear (success)
+                ret
+b4_expr:
+                call    eval                ; DE = exec expression value
+                ld      a,2                 ; A = 2: expression
+                or      a                   ; CF clear (success)
+                ret
 
 ; ===========================================================================
 ; expect_comma_eval — skip spaces, require a ',', then eval the following

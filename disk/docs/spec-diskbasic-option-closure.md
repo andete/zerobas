@@ -5,7 +5,13 @@ SPDX-License-Identifier: 0BSD
 
 # Spec (for sign-off): Disk-BASIC option-surface closure
 
-> **STATUS: PROPOSAL — NOT YET CODED.** Per
+> **STATUS: Items 1+2 SIGNED OFF + IMPLEMENTED + GATED (2026-07-08).** Items 3–5
+> remain proposals (item 3 axis-home decided: `LEN=` under disk-BASIC later, device
+> channels → plain-BASIC axis; item 5 decided: document-and-gate the 8-bit/128 RR
+> limit). Q1.4 (BLOAD `,offset`) resolved: **deferred, but the parser now rejects a
+> typed offset with a clean `load error`** (never a silent wrong-address load) and is
+> structured so real offset support is a one-branch add. See the Sign-off section.
+> Per
 > [spec-before-implementation](../../README.md) this captures the design + verification
 > plan for the option gaps chosen from the sweep
 > ([diskbasic-option-surface.md](diskbasic-option-surface.md)) so they can be **signed off
@@ -242,8 +248,20 @@ emulator-free `unit-test` — except the host position twin).
 
 ## Sign-off
 
-- [ ] **Item 1** — VRAM `,S` (Q1.1–Q1.4)
-- [ ] **Item 2** — silent-parse hygiene (Q2.1)
-- [ ] **Item 3** — OPEN device channels + `LEN=` (Q3.0–Q3.2; note the axis-home decision)
+- [x] **Item 1** — VRAM `,S` — **DONE 2026-07-08.** `VRAM_FLAG` ($E0E9); `bsave_opt4`
+  classifier + `bsv_data` RDVRM source ([save.asm](../../basic/save.asm)); `parse_close_run`
+  `S` branch + `disk_load_loop` WRTVRM sink ([bload.asm](../../basic/bload.asm)). Header
+  addrs stored/read verbatim (Q1.1); no `,S`+`,R` combine (Q1.2); pass-through 14-bit wrap
+  (Q1.3); `,offset` deferred but cleanly rejected (Q1.4). Gate cell `BSAVE/BLOAD(VRAM)`
+  (CF-3300 differential, byte-identical both save + load paths).
+- [x] **Item 2** — silent-parse hygiene — **DONE 2026-07-08.** BLOAD via `parse_close_run`
+  CF-return; BSAVE via `bsave_opt4` **CF-return** (Q2.1 strict). ⚠ Found + fixed a real bug:
+  `bsave_opt4` first used `jp load_error` internally, but `load_error` ends in `ret` and
+  resumes the *caller* (do_bsave) — so a rejected `,Q` still created the file. Fixed to the
+  CF-return + top-level `jp c,load_error` pattern. Gate cell `OPTION(hygiene)` (ours-only
+  behavioural: NEG `,X` / `,S,offset` / BSAVE `,Q` all reject; positive load still works).
+- [ ] **Item 3** — `LEN=` (disk-BASIC, next) + device channels (→ plain-BASIC axis). Axis
+  split decided; not yet coded.
 - [ ] **Item 4** — FILES/KILL wildcard + CLOSE list (Q4.1–Q4.2)
-- [ ] **Item 5** — BDOS `$15` WRSEQ FCB write-back + RDRND/WRRND sibling (Q5.1–Q5.2)
+- [ ] **Item 5** — BDOS `$15` WRSEQ FCB write-back + **document-and-gate** the RDRND/WRRND
+  8-bit/128 limit (Q5.2 decided: gate, don't widen).
