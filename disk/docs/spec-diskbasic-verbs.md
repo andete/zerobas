@@ -42,7 +42,7 @@ deliverable).
 |---|---|---|---|
 | `FILES` | `ex_files` ([`../../basic/files.asm`](../../basic/files.asm)) | list the directory | `disk_probe_files` (live) |
 | `KILL` | `ex_kill` | delete a file (free dir entry + FAT chain) | `disk_probe_kill` (live) |
-| `NAME` | `ex_name` | rename a file; **rejects a collision** onto an existing name (shares the M35 refusal, [`spec-diskrom-kernel.md` §9](spec-diskrom-kernel.md)) | `disk_probe_name` (live), `test_fren_collision` (host) |
+| `NAME` | `ex_name` | rename a file by overwriting the dir entry's 8.3 name in place. **No "new exists" collision guard** (own design — [`../../basic/files.asm`](../../basic/files.asm)); the M35 refusal + `test_fren_collision` are the **BDOS `$17` FREN** path ([`spec-diskrom-kernel.md` §9](spec-diskrom-kernel.md)), which the BASIC verb does not route through | `disk_probe_name` (live) |
 | `MAXFILES` | `ex_maxfiles` | size the open-channel table | `disk_probe_maxfiles` (live) |
 
 ### Program loaders
@@ -174,13 +174,15 @@ disk-artifact-round-trip verified against the CF-3300 and host-unit-tested
 ## 6. `CALL FORMAT`
 
 `CALL FORMAT` (`_FORMAT`) is dispatched through the STATEMENT-expansion seam (§2):
-typing it places `"FORMAT"` in `PROCNM ($FD89)`, the `$4004` handler runs, and the
-flow reaches the disk ROM's `CHOICE ($4019)` output — the `Drive name?(A,B)` prompt +
-the `1 / 2 / 3 / 4` format-type menu — then halts at `Strike a key when ready` before
-`DSKFMT ($401C)` writes the fresh BPB + FAT. zerobas implements this in
-[`../../basic/format.asm`](../../basic/format.asm) over its own drive; the produced
-image is verified **structurally** — the formatted BPB/FAT bytes are asserted against
-the public FAT12 spec for both 720 KB and 360 KB (`disk_probe_format`).
+typing it places `"FORMAT"` in `PROCNM ($FD89)` and the `$4004` handler runs. On stock
+hardware this reaches the disk ROM's `CHOICE ($4019)` output (`Drive name?(A,B)` + a
+geometry menu) before `DSKFMT ($401C)` writes the fresh BPB + FAT. **zerobas's own form
+is minimal and drive-A-only:** it skips the drive prompt and offers a two-line
+`1=360K 2=720K` menu read via the REPL line editor, then lays the filesystem down
+itself ([`../../basic/format.asm`](../../basic/format.asm), `GEOM_360K`/`GEOM_720K`
+descriptors). The produced image is verified **structurally** — the formatted BPB/FAT
+bytes are asserted against the public FAT12 spec for both 720 KB and 360 KB
+(`disk_probe_format`).
 
 ---
 

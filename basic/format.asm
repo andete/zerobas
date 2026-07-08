@@ -7,10 +7,11 @@
 ;
 ; A real MSX CALL FORMAT is interactive: it asks "Drive name? (A,B)" and then offers
 ; the disk ROM's CHOICE menu of geometries (on the National CF-3300: 1-side / 2-sides
-; / ±double-track — 360 KB up to 720 KB). zerobas-disk supports a SINGLE geometry
-; (720 KB, media $F9) and its CHOICE entry returns "no choices", so there is nothing
-; to ask: CALL FORMAT formats drive A as 720 KB with no prompts (the deliberately
-; minimal, non-interactive form).
+; / ±double-track — 360 KB up to 720 KB). zerobas-disk targets drive A only, so it
+; skips the drive prompt, but it DOES prompt a minimal geometry menu: "1=360K 2=720K"
+; read via the REPL line editor (do_format, below) — the two supported FAT12 layouts
+; (media $F9/720 KB and media $FD/360 KB). Any drive argument typed after the verb is
+; parsed-past and ignored.
 ;
 ; zerobas-BASIC owns the FAT12 logic and drives the standard $4010 DSKIO read+write
 ; (basic/fat.asm), so it lays the filesystem down ITSELF — a fresh boot sector (BPB)
@@ -18,10 +19,10 @@
 ; zerobas-disk's DSKFMT (a stub). This is the Phase-1.5 "BASIC owns the filesystem"
 ; model applied to formatting.
 ;
-; GEOMETRY IS PARAMETERISED. All geometry lives in a descriptor table (GEOM_720K); the
-; format logic reads its fields, with no hardcoded constants. Adding 360 KB (the
-; CF-3300's media $FD / 720-sector / 2-sec-per-FAT variant) later is a new descriptor
-; + wiring the CHOICE prompt back in — the routine itself does not change.
+; GEOMETRY IS PARAMETERISED. All geometry lives in descriptor tables (GEOM_720K,
+; GEOM_360K); the format logic reads their fields, with no hardcoded constants. The
+; menu selection just picks which descriptor to hand the routine — the routine itself
+; does not change. A further geometry is a new descriptor + a new menu line.
 ;
 ; Clean-room: original code. The CALL token ($CA) is oracle-locked to the VG-8020
 ; crunch. The BPB *geometry* (512 B/sec, 2 sec/clus, 1 reserved, 2 FATs, 112 root
