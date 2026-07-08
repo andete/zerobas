@@ -451,8 +451,8 @@ cal_skip_hdr:
 ; tape I/O — so the tokenise/store work ascii_read_lines does between calls is
 ; harmless. When the previous call drained the block (position wrapped 255->0),
 ; CAL_NEEDFILL is set and this call first TAPION-relocks + slurps the next block
-; (cal_refill) before serving. CAL_BUF is page-aligned ($F100), so the byte
-; address is high=$F1 / low=CAL_CNT.
+; (cal_refill) before serving. CAL_BUF is page-aligned ($E600), so the byte
+; address is high=$E6 / low=CAL_CNT.
 ;   out: A = byte, CF clear; or CF set = no more data (refill failed).
 cal_getbyte:
                 ld      a,(CAL_NEEDFILL)

@@ -247,13 +247,20 @@ pchar:
                 jr      pch_done
 pch_file:
                 ; PRDEST=1: PRDEV selects the sink. 0=disk file, 1=LPT printer,
-                ; 2=CRT screen (a device channel from OPEN"LPT:"/"CRT:"). C=byte.
+                ; 2=CRT screen (a device channel from OPEN"LPT:"/"CRT:"), 3=cassette
+                ; (SAVE"CAS:",A's block-framed tape sink). C=byte.
                 ld      a,(PRDEV)
                 or      a
                 jr      z,pch_disk          ; 0 -> disk file
                 dec     a
                 jr      z,pch_lpt           ; 1 -> LPT: printer
-                ld      a,c                 ; 2 -> CRT: screen
+                dec     a
+                jr      z,pch_crt           ; 2 -> CRT: screen
+                ld      a,c                 ; 3 -> cassette ASCII data block
+                call    cas_wbyte
+                jr      pch_done
+pch_crt:
+                ld      a,c
                 call    CHPUT
                 jr      pch_done
 pch_lpt:

@@ -70,7 +70,7 @@ Evidence is `file:line` in `basic/`.
 | `CLOAD` | `["name"]` / `CLOAD?["name"]` | ◐ | bare + quoted-name load ✅; **name is parsed-past and ignored** (opens the next tape file regardless, [cload.asm:48](../../basic/cload.asm:48)); **`CLOAD?` verify form ✗** |
 | `CSAVE` | `["name"][,speed]` | ◐ | name ✅ (6-char, space-pad); **`,speed` (1=1200 / 2=2400) not parsed** — jumps straight to `tape_save_basic` ([save.asm](../../basic/save.asm) `do_csave`); baud instead comes from `SCREEN,,,baud` |
 | `LOAD"CAS:name"` | `[,R]` | ◐ | loads a tokenised program ✅; **`,R` parsed-past and ignored** — `dl_is_cas` skips to the closing quote and jumps to `do_tape_prog`, never checks `,R` ([cload.asm:87](../../basic/cload.asm:87)). Asymmetric with `BLOAD"CAS:",R` which *does* honour it |
-| `SAVE"CAS:name"` | `[,A]` | ◐ | tokenised save ✅; **`,A` ASCII save → `load error`** ([save.asm:352](../../basic/save.asm:352)) |
+| `SAVE"CAS:name"` | `[,A]` | ✅ | tokenised save ✅; **`,A` ASCII save ✅** (`cas_ascii_save`, [save.asm](../../basic/save.asm)) — `$EA` header + 256-byte blocks, buffer-then-flush tape sink (M2, 2026-07-08) |
 | `RUN"CAS:name"` | `[,R]` | ✗ | `RUN"f"` has **no `CAS:` branch** (disk/implicit only); a `CAS:` program can only be `LOAD`ed then `RUN` |
 | `MERGE"CAS:name"` | (ASCII) | ✗ | `ex_merge` ([files.asm:979](../../basic/files.asm:979)) is disk-ASCII only; **no `CAS:` merge** (needs ASCII tape read) |
 | `OPEN"CAS:name" FOR INPUT\|OUTPUT AS #n` | sequential tape channel | ✗ | `do_open` calls `parse_disk_fcb` unconditionally ([files.asm:231](../../basic/files.asm:231)) — **no device-prefix dispatch**; `PRINT#`/`INPUT#`/`LINE INPUT#` to tape absent |
@@ -157,7 +157,19 @@ for the signal, they are **deferred, not closable** — admit them only if a con
     tokenising never happens between two `TAPIN`s (which would desync the real-time read).
     Gate: [basic_probe_cas_ascii.py](../../probes/basic/basic_probe_cas_ascii.py) — real
     5-line tape oracle (`HARDBOIL.CAS`), a >256-byte 2-block synthetic, and a tokenised
-    no-regression case. ⏳ still open: M2 (`SAVE"CAS:",A`), `MERGE"CAS:"`, `RUN"CAS:"`.
+    no-regression case.
+  - ✅ **M2 — ASCII `SAVE"CAS:name",A`** (2026-07-08). `sav_is_cas` accepts `,A` →
+    `cas_ascii_save`: `$EA` header block, then LIST's detokeniser (`list_walk`) piped
+    through a new **`PRDEV=3` cassette sink** in `pchar` that BUFFERS bytes into
+    `CAS_WBUF` and flushes each full 256-byte block via a tight `TAPOUT` loop
+    (`cas_flush_block`) — the WRITE mirror of M1's block buffer. This was necessary, not
+    cosmetic: a first cut that `TAPOUT`-ed each byte as `list_walk` produced it wrote a
+    byte-perfect WAV that **would not load back** (the detok work between `TAPOUT`s
+    stamped non-uniform inter-byte gaps that desync the real-time read — `TAPIN` failed
+    after 3 bytes). EOF `$1A` + `$1A`-pad the final block. Gate: the three `M2 oracle:`
+    cells of [basic_probe_tape_save.py](../../probes/basic/basic_probe_tape_save.py)
+    (format, single-block round-trip, injected >256-byte multi-block round-trip).
+  - ⏳ still open: `MERGE"CAS:"`, `RUN"CAS:"` (deferred follow-ons per the spec §6 D3).
 
 **Tier 3 — quality-of-life.**
 

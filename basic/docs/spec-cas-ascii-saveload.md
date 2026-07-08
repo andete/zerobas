@@ -5,8 +5,14 @@ SPDX-License-Identifier: 0BSD
 
 # Spec (signed off): cassette ASCII program SAVE `,A` + ASCII CLOAD/LOAD
 
-**Status: M0 DONE 2026-07-08 (format pinned; D1 resolved → interop-faithful 256-byte
-blocks). No implementation code yet — M1 (ASCII LOAD) is the next action.** The cassette
+**Status: COMPLETE 2026-07-08. M0 (format pinned), M1 (ASCII LOAD), M2 (ASCII SAVE)
+all DONE + gated (`probes/basic/basic_probe_cas_ascii.py` for load; the three
+`M2 oracle:` cells of `probes/basic/basic_probe_tape_save.py` for save — format,
+single-block round-trip, >256-byte multi-block round-trip). Both sides taught the
+SAME real-time-tape lesson: signalling is real-time on read AND write, so a whole
+256-byte block must be moved in one tight loop (buffer-then-flush on write; slurp-
+then-serve on read), never interleaved byte-by-byte with tokenise/detokenise work
+— see §4 (read) and §5 (write).** The cassette
 counterpart to the disk ASCII arc
 ([`spec-ascii-saveload.md`](spec-ascii-saveload.md), IMPLEMENTED 2026-07-07), which
 explicitly deferred cassette ASCII as "a tracked follow-on" (its §7 decision 1). This is
@@ -34,7 +40,13 @@ format.
   the buffer design turns on (`CAL_BUF` below the stack's reach — the decisive bug, fixed
   by moving it from `$F100` to `$E600`; refill state in RAM across `TAPIN`; prompt block-1
   `TAPION`). *(next: M2)*
-- **M2 — SAVE"CAS:name",A** (§5) + gate.
+- **M2 — SAVE"CAS:name",A** (§5) + gate. **✅ DONE 2026-07-08.** `sav_is_cas` accepts
+  `,A` → `cas_ascii_save`: `$EA` header block, then LIST's detokeniser (`list_walk`)
+  piped through a new **PRDEV=3 tape sink** (`pchar`, print.asm) that BUFFERS bytes
+  into `CAS_WBUF` and flushes a full 256-byte block via a tight `TAPOUT` loop
+  (`cas_flush_block`), Ctrl-Z EOF + `$1A` pad on the final block. Gate: the three
+  `M2 oracle:` cells of `basic_probe_tape_save.py`. See §5 for the real-time write-gap
+  bug the buffer-then-flush design fixes (the write mirror of M1's §4 read lesson).
 
 ## 0.1 M0 findings — the pinned cassette ASCII format
 
@@ -182,20 +194,50 @@ failure is an artifact quirk of that particular multi-file game tape (264-byte `
 blocks), not a reader bug. The gate uses HARDBOIL (real) + a synthetic multi-block, not
 timecurb.
 
-## 5. Design — SAVE"CAS:name",A (Milestone 2)
+## 5. Design — SAVE"CAS:name",A (Milestone 2) — IMPLEMENTED 2026-07-08
 
-**Parse.** In `sav_is_cas` ([`../save.asm:339`](../save.asm)), the `,A` after the
-`"CAS:"` name currently → `load_error`; make it accept `,A` (any case) → `cas_ascii_save`,
-anything else still errors. Mirrors `sav_ascii_flag` on the disk side.
+**Parse.** In `sav_is_cas` ([`../save.asm:339`](../save.asm)) the `,A` after the
+`"CAS:"` name now → `cas_ascii_save` (any case); anything else still errors. Mirrors
+`sav_ascii_flag` on the disk side.
 
-**Frame + sink (`cas_ascii_save`).** Write the `$EA` header block (`TAPOON` long + 10×
-`$EA` + `tape_name_emit` + `TAPOOF`), then walk the program with LIST's detokeniser
-feeding a **tape sink**: set `PRDEST:=1`, `PRDEV:=<tape>` (a new value), `TAPOON`
-short (open first data block), `call list_walk`, append the EOF `$1A`, pad the final
-block to 256 with `$1A`, close (`TAPOOF`), restore `PRDEST:=0`. The new `pchar` sink case
-(`PRDEV=<tape>`) writes each byte via `TAPOUT` and counts bytes, re-framing
-(`TAPOOF` + `TAPOON` short) every **256** (§0.1). Baud is whatever the active word selects
-(`SCREEN,,,baud` / default 1200 via the TAPOON `cas_seed`); no new speed parsing.
+**Frame + sink (`cas_ascii_save`).** Write the `$EA` header block (`TAPOON` long +
+10× `$EA` + `tape_name_emit` + `TAPOOF`, a tight loop like `tape_save_basic`'s
+`$D3` header), then set `PRDEST:=1`, `PRDEV:=3` (the new cassette sink), `call
+list_walk`, append the EOF `$1A`, pad the final block to 256 with `$1A`, restore
+`PRDEST:=0`/`PRDEV:=0`. Baud is whatever the active word selects (`CSAVE",speed` /
+default 1200 via TAPOON's `cas_seed`); no new speed parsing.
+
+**The tape sink MUST buffer a whole block — not TAPOUT per byte (bug found + fixed
+2026-07-08; the WRITE mirror of the §4 read lesson).** The first cut had the
+`PRDEV=3` `pchar` case `TAPOUT` each byte as `list_walk` produced it, re-framing every
+256. It wrote a **byte-perfect** WAV (the decoder recovered `$EA`×10 + name +
+`10 A=5\r\n20 B=7\r\n` + `$1A` pad exactly) — but the file **would not load back**: the
+reader's `cal_refill` read only `"10 "` (3 bytes) before `TAPIN` returned CF. Cause:
+cassette signalling is **real-time on WRITE too**. Between `TAPOUT`s, `list_walk` runs
+`list_num` (line-number formatting) and `detok` (per-token dispatch), stamping
+**non-uniform inter-byte gaps** into the recorded signal; `TAPIN` loses bit-sync at
+the first oversized gap. The tokenised `tape_save_basic` path never hit this because
+its data-block loop is *tight* (uniform gaps) and short. Fix = the **write mirror of
+M1's block buffer**: `cas_wbyte` (the `PRDEV=3` case) just STORES each byte into
+`CAS_WBUF` (no tape I/O), and when the 256th byte fills the block `cas_flush_block`
+emits the WHOLE block — `TAPOON` short + a **tight `TAPOUT`×256 loop** (uniform gaps,
+position in RAM `CAS_WCNT` across the register-clobbering `TAPOUT`) + `TAPOOF`. The EOF
+`$1A` + `$1A` padding run through the same buffer, so the final block is flushed full.
+Blocks are separated by arbitrary `list_walk` gaps (just longer leader), and the
+reader re-`TAPION`s per block — the interop-faithful 256-byte framing (§0.1) makes
+this exact split correct on both ends. `CAS_WBUF` overlays `CAL_BUF` at `$E600` (a SAVE
+and a LOAD never coexist; both live in the idle `FSECTOR_BUF`, below any stack
+descent — the same placement requirement M1 learned at §4 requirement 1).
+
+**Two hard requirements (write side), mirroring M1's read side:**
+1. **Move a whole block in ONE tight loop.** Non-uniform gaps between `TAPOUT`s desync
+   the reader; the fill (byte-at-a-time from `list_walk`) touches NO tape, and the
+   flush touches tape ONLY in the uniform tight loop. This is why the format is
+   256-byte blocks: each block is written/read as one tight burst, blocks separated
+   by leader gaps that re-lock with `TAPION`.
+2. **The flush loop's position lives in RAM (`CAS_WCNT`), not a register**, because
+   `TAPOUT` clobbers everything across the call — the same "state in RAM across a BIOS
+   tape call" discipline `tape_save_basic` and (on read) `cal_refill` use.
 
 ## 6. Decisions (signed off 2026-07-08 — see the header for the résumé)
 

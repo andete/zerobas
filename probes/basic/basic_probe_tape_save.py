@@ -121,10 +121,14 @@ def expected_relinked_image(program: bytes) -> bytes:
 def run_save(cart: str, type_cmds: list[tuple[float, str]],
              record_wav: str,
              cap_addr: int | None = None, cap_len: int = 0,
-             cap_time: float = 45.0, timeout: float = 120.0) -> bytes | None:
+             cap_time: float = 45.0, timeout: float = 120.0,
+             pre_cmds: list[tuple[float, str]] | None = None) -> bytes | None:
     """Boot zerobas on MACHINE_TAPE, type commands, record tape.
 
-    Returns bytes at cap_addr (length cap_len) if cap_addr is set, else None.
+    pre_cmds are raw Tcl statements scheduled with `after time` BEFORE the typed
+    commands (used to `debug write_block` a program image into RAM, so a >256-byte
+    multi-block ASCII SAVE can be exercised without typing a 300-char line at the
+    emulator's per-key keyboard speed). Returns bytes at cap_addr if set, else None.
     """
     out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="tsave_")
     os.close(out_fd)
@@ -137,6 +141,8 @@ def run_save(cart: str, type_cmds: list[tuple[float, str]],
         "  binary scan [debug read_block $dbg $addr $len] H* h; return $h",
         "}",
     ]
+    for delay, raw in (pre_cmds or []):
+        tcl_lines.append(f"after time {delay} {{ {raw} }}")
     for delay, text in type_cmds:
         tcl_lines.append(f"after time {delay} {{ type {_tcl_dquote(text)} }}")
     tcl_lines += [
@@ -618,6 +624,156 @@ def test_roundtrip_bsave(cart: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# M2: cassette ASCII SAVE  (SAVE"CAS:name",A)
+# ---------------------------------------------------------------------------
+
+def build_program_n(nlines: int) -> bytes:
+    """N-line tokenised program: `10 A=5`, `20 A=5`, ... (body $41 $EF $16)."""
+    prog, addr = bytearray(), TXTBASE
+    for i in range(nlines):
+        body = bytes([0x41, 0xEF, 0x16])          # A=5
+        nxt = addr + 2 + 2 + len(body) + 1
+        prog += nxt.to_bytes(2, "little")
+        prog += (10 * (i + 1)).to_bytes(2, "little")
+        prog += body
+        prog += b"\x00"
+        addr = nxt
+    prog += b"\x00\x00"                            # $0000 end-of-program link
+    return bytes(prog)
+
+
+def test_ascii_save_format(cart: str, program: bytes) -> bool:
+    """SAVE"CAS:AF",A emits a $EA-header ASCII file with a Ctrl-Z EOF.
+
+    The M2-specific facts: the file-type block is 10x $EA (ASCII), not $D3
+    (tokenised), followed by the 6-char name; the data stream ends the listing with
+    a Ctrl-Z ($1A) soft-EOF (§0.1). Body spacing is left to the detokeniser (not
+    asserted here); the round-trip tests below prove exact content reconstruction.
+    """
+    print("\n== M2 oracle: SAVE\"CAS:AF\",A format ($EA header + Ctrl-Z EOF) ==")
+
+    expected_hdr = bytes([0xEA] * 10) + b"AF    "
+
+    wav_fd, wav_path = tempfile.mkstemp(suffix=".wav", prefix="casc_fmt_")
+    os.close(wav_fd)
+    try:
+        cmds = [
+            (6.0,  "10 A=5"),
+            (7.5,  "\r"),
+            (9.0,  "20 B=7"),
+            (10.5, "\r"),
+            (12.0, 'save"CAS:AF",A'),
+            (14.0, "\r"),
+        ]
+        run_save(cart, cmds, wav_path, cap_time=55.0)
+
+        if not os.path.exists(wav_path) or os.path.getsize(wav_path) == 0:
+            return check("ASCII SAVE: WAV written", False, "WAV file missing or empty")
+
+        data, info = decode_file(wav_path, verbose=False)
+        print(f"        WAV decode: {len(data)} bytes")
+
+        hdr_ok = find_subseq(data, list(expected_hdr))
+        eof_ok = 0x1A in data
+        ok = True
+        ok &= check("ASCII SAVE: header (10x$EA + 'AF    ') present in WAV",
+                    hdr_ok,
+                    f"expected hdr: {expected_hdr.hex(' ')}"
+                    + ("" if hdr_ok else f"\n        got : {bytes(data).hex(' ')}"))
+        ok &= check("ASCII SAVE: Ctrl-Z ($1A) EOF present in the data stream", eof_ok)
+        return ok
+    finally:
+        if os.path.exists(wav_path):
+            os.unlink(wav_path)
+
+
+def test_roundtrip_ascii(cart: str, program: bytes) -> bool:
+    """zerobas SAVE"CAS:",A then LOAD"CAS:" returns the identical program image."""
+    print("\n== M2 oracle: self round-trip SAVE\"CAS:RA\",A -> LOAD\"CAS:\" ==")
+
+    want = expected_relinked_image(program)
+
+    wav_fd, wav_path = tempfile.mkstemp(suffix=".wav", prefix="casc_rt_")
+    os.close(wav_fd)
+    try:
+        cmds = [
+            (6.0,  "10 A=5"),
+            (7.5,  "\r"),
+            (9.0,  "20 B=7"),
+            (10.5, "\r"),
+            (12.0, 'save"CAS:RA",A'),
+            (14.0, "\r"),
+        ]
+        run_save(cart, cmds, wav_path, cap_time=55.0)
+        if not os.path.exists(wav_path) or os.path.getsize(wav_path) == 0:
+            return check("ASCII round-trip: WAV written", False, "WAV missing or empty")
+
+        got = run_load_zerobas(cart, wav_path, 'load"CAS:"', TXTBASE, len(want),
+                               cap_time=35.0, timeout=90.0)
+        ok = got is not None and got == want
+        return check("self rt: SAVE\"CAS:\",A -> LOAD\"CAS:\" identical program",
+                     ok,
+                     f"want: {want.hex(' ')}"
+                     f"\ngot : {got.hex(' ') if got else '<no capture>'}")
+    finally:
+        if os.path.exists(wav_path):
+            os.unlink(wav_path)
+
+
+def test_roundtrip_ascii_multiblock(cart: str) -> bool:
+    """>256-byte ASCII SAVE spans multiple 256-byte tape blocks and reloads exactly.
+
+    A big program is injected into RAM at TXTBASE via `debug write_block` (typing a
+    300+ char program at emulator keyboard speed is impractical), then SAVE"CAS:",A
+    frames it into 256-byte blocks (§0.1). The reload proves the framing precisely:
+    the reader re-TAPIONs at each 256-byte boundary, so if the writer had emitted one
+    over-long block (no re-frame) the second-block re-lock would desync and the reload
+    would NOT match — round-trip equality of a >256-byte listing IS the multi-block
+    write proof.
+    """
+    print("\n== M2 oracle: multi-block round-trip (>256 B, injected) ==")
+
+    program = build_program_n(40)                 # 40 lines -> listing well over 256 B
+    want = expected_relinked_image(program)
+    inj_hex = program.hex()
+
+    wav_fd, wav_path = tempfile.mkstemp(suffix=".wav", prefix="casc_mb_")
+    os.close(wav_fd)
+    try:
+        pre = [(5.0,
+                f"debug write_block memory 0x{TXTBASE:04X} "
+                f"[binary decode hex {inj_hex}]")]
+        cmds = [
+            (7.0,  'save"CAS:MB",A'),
+            (9.0,  "\r"),
+        ]
+        run_save(cart, cmds, wav_path, cap_time=65.0, timeout=140.0, pre_cmds=pre)
+        if not os.path.exists(wav_path) or os.path.getsize(wav_path) == 0:
+            return check("multi-block: WAV written", False, "WAV missing or empty")
+
+        data, _ = decode_file(wav_path, verbose=False)
+        print(f"        WAV decode: {len(data)} bytes "
+              f"(single block would be ~{16 + 256}; 2 blocks ~{16 + 512})")
+
+        got = run_load_zerobas(cart, wav_path, 'load"CAS:"', TXTBASE, len(want),
+                               cap_time=45.0, timeout=140.0)
+        ok = True
+        # Coarse multi-block signal: >1 data block's worth of payload was written.
+        ok &= check("multi-block: WAV holds more than one 256-byte block",
+                    len(data) > 16 + 256 + 32,
+                    f"decoded {len(data)} bytes")
+        rt_ok = got is not None and got == want
+        ok &= check("multi-block: reload reproduces the injected program exactly",
+                    rt_ok,
+                    f"want[{len(want)}]: {want[:24].hex(' ')} ..."
+                    f"\ngot : {got.hex(' ') if got else '<no capture>'}")
+        return ok
+    finally:
+        if os.path.exists(wav_path):
+            os.unlink(wav_path)
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -636,6 +792,10 @@ def main() -> int:
     ok &= test_ref_load_csave(args.cart, program)
     ok &= test_roundtrip_csave(args.cart, program)
     ok &= test_roundtrip_bsave(args.cart)
+    # M2: cassette ASCII SAVE (SAVE"CAS:",A)
+    ok &= test_ascii_save_format(args.cart, program)
+    ok &= test_roundtrip_ascii(args.cart, program)
+    ok &= test_roundtrip_ascii_multiblock(args.cart)
 
     print("\nALL PASS" if ok else "\nSOME FAILED")
     return 0 if ok else 1

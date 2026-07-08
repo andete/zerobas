@@ -31,7 +31,10 @@
 ;   BSAVE disk: [$FE][start:2 LE][end:2 LE][exec:2 LE] then raw data.
 ;   SAVE  disk: [$FF] then the line-link program image.
 ;
-; The ,A ASCII-save form is OUT OF SCOPE (load_error), matching the original.
+; The ,A ASCII-save form is supported for BOTH disk (ascii_save) and cassette
+; (cas_ascii_save): a line-numbered detokenised listing terminated by Ctrl-Z ($1A).
+; On tape it is a $EA-header file in fixed 256-byte data blocks (MSX2 TH; §0.1 of
+; basic/docs/spec-cas-ascii-saveload.md).
 ;
 ; CLEAN-ROOM: cassette format sourced from MSX2 Technical Handbook cassette chapter
 ; (same allowed source as BINARY_ID/BASIC_ID constants already in sysvars.inc);
@@ -345,15 +348,127 @@ sav_is_cas:
                 cp      '"'
                 jp      nz,load_error
                 inc     hl                  ; past closing '"'
-                ; ,A is out of scope
+                ; --- optional ,A -> ASCII listing save to tape; else tokenised ---
                 call    skip_spaces
                 ld      a,(hl)
                 cp      ','
-                jp      z,load_error        ; SAVE"CAS:",A -> unsupported
+                jr      z,sav_cas_flag      ; SAVE"CAS:name",<flag> -> check for ,A
                 or      a
-                jp      nz,load_error       ; trailing junk
-                ; fall into shared tape tokenised-BASIC save
-                jr      tape_save_basic
+                jp      nz,load_error       ; trailing junk after the name
+                jp      tape_save_basic     ; no flag -> tokenised (jp: out of jr range)
+sav_cas_flag:
+                inc     hl                  ; past the ','
+                call    skip_spaces
+                ld      a,(hl)
+                call    upcase
+                cp      'A'
+                jp      nz,load_error       ; only ,A is supported
+                inc     hl                  ; past the 'A'
+                call    skip_spaces
+                ld      a,(hl)
+                or      a
+                jp      nz,load_error       ; trailing junk after ,A
+                ; fall into cas_ascii_save
+
+; cas_ascii_save — write the current program as an ASCII (SAVE"CAS:",A) listing to
+; cassette. Header block = TAPOON(long) + 10x$EA + 6-char name (TSV_NAME) + TAPOOF,
+; mirroring tape_save_basic's $D3 header. Body = the LIST detokeniser walk
+; (list_walk) piped through a new tape sink (PRDEST=1, PRDEV=3 -> cas_wbyte), framed
+; into fixed 256-byte data blocks per §0.1: each block a short leader, a Ctrl-Z
+; ($1A) EOF after the listing, and the final block padded to 256 with $1A. Baud is
+; whatever the active LOW word selects (CSAVE",speed / default 1200 via TAPOON's
+; cas_seed); no new speed parsing. Reaches here with TSV_NAME filled. Clean-room:
+; public ASCII listing format + our own detokeniser + MSX2 TH cassette block
+; framing; no reference-ROM read. See basic/docs/spec-cas-ascii-saveload.md §5.
+cas_ascii_save:
+                ; --- header block: TAPOON(long) + 10x$EA + 6-char name + TAPOOF ---
+                ld      a,$FF               ; non-zero -> long leader (new file)
+                call    TAPOON
+                jp      c,load_error
+                ld      a,10
+                ld      (TSV_CNT),a
+cas_as_id:
+                ld      a,ASCII_ID          ; $EA
+                call    TAPOUT
+                jp      c,load_error
+                ld      a,(TSV_CNT)
+                dec     a
+                ld      (TSV_CNT),a
+                jr      nz,cas_as_id
+                call    tape_name_emit
+                jp      c,load_error
+                call    TAPOOF              ; end of header block
+                ; --- data blocks (256-byte framed, opened lazily by cas_wbyte) ----
+                xor     a
+                ld      (CAS_WCNT),a        ; 0 bytes -> first byte opens block 1
+                ld      a,1
+                ld      (PRDEST),a          ; route pchar (LIST's emit) to a sink
+                ld      a,3
+                ld      (PRDEV),a           ; sink 3 = cassette (cas_wbyte)
+                call    list_walk           ; number + space + detok body + CRLF/line
+                ; append the EOF Ctrl-Z, then pad the final block to 256 with $1A
+                ld      a,$1A               ; Ctrl-Z soft-EOF (ASCII program terminator)
+                call    cas_wbyte
+cas_as_pad:
+                ld      a,(CAS_WCNT)
+                or      a
+                jr      z,cas_as_done       ; count wrapped to 0 -> block auto-closed
+                ld      a,$1A
+                call    cas_wbyte
+                jr      cas_as_pad
+cas_as_done:
+                xor     a
+                ld      (PRDEST),a          ; restore the screen sink
+                ld      (PRDEV),a           ; restore the default (disk) device
+                ret                         ; back to the REPL
+
+; cas_wbyte — BUFFER one program byte into CAS_WBUF for the current 256-byte tape
+; data block (§0.1). It does NOT TAPOUT per byte: cassette signalling is real-time on
+; WRITE just as it is on read, so emitting each byte as list_walk produces it would
+; interleave TAPOUT with list_walk's detokenise work (list_num / detok) and stamp
+; NON-UNIFORM inter-byte gaps into the tape — TAPIN then loses sync on reload (a
+; 2-line file read back only "10 " before failing). Instead bytes accumulate in RAM
+; and, when the 256th fills the block, cas_flush_block emits the WHOLE block in one
+; tight TAPOUT loop (uniform gaps, exactly like tape_save_basic's data-block loop —
+; the write mirror of cal_refill's tight TAPIN*256 slurp). Called from pchar's
+; PRDEV=3 sink, which has already saved every register; all state is the RAM cell
+; CAS_WCNT, so cas_wbyte + cas_flush_block may clobber freely.
+;   in: A = byte to buffer.
+cas_wbyte:
+                ld      c,a                 ; C = byte (survives the counter load)
+                ld      a,(CAS_WCNT)
+                ld      l,a
+                ld      h,CAS_WBUF >> 8     ; HL = CAS_WBUF + CAS_WCNT (page-aligned)
+                ld      (hl),c              ; buffer the byte (no tape I/O)
+                inc     a
+                ld      (CAS_WCNT),a        ; pos++ ; 255 -> 0 wraps (8-bit)
+                ret     nz                  ; block not yet full -> keep buffering
+                ; wrapped 255->0: 256 bytes buffered -> flush the whole block to tape
+                ; fall into cas_flush_block
+
+; cas_flush_block — write the full 256-byte CAS_WBUF to tape as one data block:
+; TAPOON(short leader) + a TIGHT TAPOUT*256 loop + TAPOOF. The loop position lives in
+; CAS_WCNT (RAM; TAPOUT clobbers every register) and is 0 on entry (just wrapped), so
+; the loop runs 0..255 and leaves CAS_WCNT = 0 for the next block's fill. The gaps
+; between TAPOUTs are small and UNIFORM (the whole loop body is a handful of fixed
+; instructions), which is what the reader's TAPIN needs — the non-uniform gaps of a
+; per-byte-from-list_walk emit are exactly what broke it. CF best-effort ignored.
+cas_flush_block:
+                xor     a                   ; short leader -> mid-file data block
+                call    TAPOON
+                xor     a
+                ld      (CAS_WCNT),a        ; flush from position 0 (already 0; explicit)
+cas_fb_lp:
+                ld      a,(CAS_WCNT)
+                ld      l,a
+                ld      h,CAS_WBUF >> 8     ; HL = CAS_WBUF + pos
+                ld      a,(hl)
+                call    TAPOUT              ; emit the byte (CF ignored: best-effort)
+                ld      a,(CAS_WCNT)
+                inc     a
+                ld      (CAS_WCNT),a        ; pos++ ; 256 -> wraps to 0
+                jr      nz,cas_fb_lp
+                jp      TAPOOF              ; block complete; CAS_WCNT = 0 for next fill
 
 ; ===========================================================================
 ; csav_speed — parse the optional ",speed" clause of CSAVE"name"[,speed].

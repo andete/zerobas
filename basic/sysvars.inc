@@ -504,6 +504,20 @@ CAL_NEEDFILL    equ     $E0EB   ; cassette ASCII load: 1 = CAL_BUF drained, the
                                 ; next cal_getbyte must TAPION+refill (blocks 2+);
                                 ; block 1 is primed promptly by cas_ascii_load so
                                 ; its TAPION stays in TAPION's di regime (1)
+; Cassette ASCII SAVE (save.asm cas_wbyte) block-fill counter: bytes buffered into
+; CAS_WBUF for the current 256-byte tape data block, 0..255 (§0.1). cas_wbyte does
+; NOT TAPOUT per byte — like the READ side's block buffer, tape signalling is
+; real-time on WRITE too, so interleaving list_walk's detokenise work between TAPOUTs
+; would insert non-uniform inter-byte gaps that desync TAPIN on reload (confirmed:
+; a 2-line file read back only "10 " before losing sync). So bytes accumulate in RAM
+; and a FULL block is flushed (cas_flush_block) in one tight TAPOUT*256 loop — the
+; write mirror of cal_refill's tight TAPIN*256 slurp. When a byte fills the 256th
+; slot the counter wraps to 0 and cas_flush_block emits the block; the same counter
+; then drives the flush loop (it is 0 at flush entry). Dead outside a cassette ASCII
+; SAVE — never live with a BSAVE (VRAM_FLAG) or a cassette ASCII LOAD (CAL_CNT) — so
+; it reuses the same $E0E9..$E0EC free gap (the last byte, $E0EC).
+CAS_WCNT        equ     $E0EC   ; cassette ASCII save: bytes buffered in the
+                                ; current 256-byte tape data block, 0..255 (1)
 ; SAVE / BSAVE program-image source-walk pointers (page $E0; dead outside a
 ; SAVE/BSAVE). DSV_PTR / DSV_END drive do_save's program-image source walk and
 ; disk_putword's word-emit (the FAT12 engine's own write buffering lives in its
@@ -741,6 +755,13 @@ FILES_HASPAT    equ     $F009   ; FILES: 1 = a filespec pattern is in DISK_FCB_N
 ; of the tokenise/dispatch path (page $E0..$E3), LINEBUF ($E100), and program
 ; text ($8001+).
 CAL_BUF         equ     $E600   ; cassette ASCII load: 256-byte tape block buffer (in idle FSECTOR_BUF)
+; Cassette ASCII SAVE (save.asm cas_wbyte / cas_flush_block) uses the SAME 256-byte
+; buffer for the WRITE mirror: list_walk fills it a byte at a time (no tape I/O), and
+; a full block is flushed in one tight TAPOUT*256 loop so the inter-byte gaps stay
+; uniform. Overlays CAL_BUF at $E600 — a SAVE and a LOAD never run at the same time,
+; and both sit in the idle FSECTOR_BUF (no disk I/O during either), below any stack
+; descent. Same rationale as CAL_BUF above.
+CAS_WBUF        equ     $E600   ; cassette ASCII save: 256-byte tape block buffer (overlays CAL_BUF)
 ; Control stacks (page $E0, below LINEBUF at $E100). Both grow upward; the
 ; pointer addresses the next free slot, and the stack is empty when it equals
 ; its base. GOSUB frame = [curline:2][resume:2] (4 bytes). FOR frame =
