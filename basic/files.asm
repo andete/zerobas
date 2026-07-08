@@ -327,6 +327,9 @@ oo_num:
                 ld      (OO_RECLEN_CHAN),a  ; stash channel across the LEN= eval
                 call    oo_parse_reclen     ; DE = reclen (default 256); HL past; Cy=1 bad
                 jp      c,oo_fail_syn       ; non-tiling / out-of-range record size
+                push    hl                  ; GUARD the text cursor -- the store below
+                                            ; uses HL as scratch (a bug once: the lost
+                                            ; cursor abandoned a same-line ':' tail)
                 ld      a,(OO_RECLEN_CHAN)
                 add     a,a                 ; channel * 2 (word index)
                 ld      l,a
@@ -336,6 +339,7 @@ oo_num:
                 ld      (hl),e
                 inc     hl
                 ld      (hl),d              ; FCH_RECLENS[ch] = reclen
+                pop     hl                  ; restore the text cursor
                 ld      a,(OO_RECLEN_CHAN)
                 ld      e,a
                 ld      d,0                 ; restore DE = channel for the rest of do_open
