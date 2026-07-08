@@ -1,0 +1,98 @@
+# Copyright (c) 2026 Joost Yervante Damad
+# SPDX-License-Identifier: 0BSD
+"""Unit test: 8.3 wildcard matching for FILES/KILL (option-closure Item 4), no
+emulator.
+
+Two pure pieces underpin FILES "pattern" and KILL "pattern":
+  * build_83_name (bload.asm) turns a source filename into the 11-byte 8.3 field,
+    now expanding '*' to fill the rest of the name/ext field with '?' (CP/M FCB
+    semantics) -- so "*.BAS" -> "????????BAS", "A*.*" -> "A??????????".
+  * name_cmp (fat.asm) compares an 11-byte pattern (DE) against a directory entry
+    (HL), treating '?' in the pattern as "match any char" (Z=match).
+
+Together they let FILES filter the listing and KILL delete every match. This
+drives both directly (no disk I/O). Oracle: the documented 8.3 '*'/'?' wildcard
+semantics (MSX-BASIC / CP/M FCB), never the ROM's own output.
+"""
+
+import os
+import subprocess
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+sys.path.insert(0, HERE)
+
+from msxtest import Machine, zero  # noqa: E402
+
+ROM = "/tmp/zb_wildcard.rom"
+SYM = "/tmp/zb_wildcard.sym"
+SRC = 0xC400   # scratch source filename buffer
+
+
+def build():
+    src = os.path.join(ROOT, "basic", "main.asm")
+    subprocess.run(["pasmo", "--bin", src, ROM, SYM], check=True, capture_output=True)
+
+
+def run():
+    build()
+    m = Machine(ROM, SYM)
+    s = m.sym
+    fails = 0
+
+    def report(label, got, want):
+        nonlocal fails
+        ok = got == want
+        fails += not ok
+        print(f"{'PASS' if ok else 'FAIL'}  {label:34} -> {got!r}" + ("" if ok else f"   want {want!r}"))
+
+    NAME = s["DISK_FCB_NAME"]
+
+    def expand(src):
+        # source filename followed by the closing '"' that build_83_name stops on
+        buf = src.encode("ascii") + b'"'
+        m.mem[SRC:SRC + len(buf)] = buf
+        cpu = m.call("build_83_name", hl=SRC)
+        from msxtest import carry
+        if carry(cpu):
+            return "<reject>"
+        return bytes(m.mem[NAME:NAME + 11]).decode("latin1")
+
+    # build_83_name '*' expansion (and plain names unchanged)
+    report("expand FILE.BAS", expand("FILE.BAS"), "FILE    BAS")
+    report("expand *.BAS",    expand("*.BAS"),    "????????BAS")
+    report("expand *.*",      expand("*.*"),      "???????????")   # all files
+    report("expand A*.*",     expand("A*.*"),     "A??????????")
+    report("expand * (CP/M literal: name wild, ext spaces)", expand("*"), "????????   ")
+    report("expand FOO.B*",   expand("FOO.B*"),   "FOO     B??")
+    report("expand DATA*.TX", expand("DATA*.TX"), "DATA????TX ")
+    report("expand ??.BAS",   expand("??.BAS"),   "??      BAS")   # literal '?' kept
+
+    # name_cmp wildcard matching: DE = pattern, HL = entry; Z = match
+    PAT = 0xC500
+    ENT = 0xC520
+
+    def match(pattern, entry):
+        m.mem[PAT:PAT + 11] = pattern.encode("latin1")
+        m.mem[ENT:ENT + 11] = entry.encode("latin1")
+        cpu = m.call("name_cmp", de=PAT, hl=ENT)
+        return zero(cpu)
+
+    report("match ????????BAS vs FILE   BAS", match("????????BAS", "FILE    BAS"), True)
+    report("match ????????BAS vs FILE   BIN", match("????????BAS", "FILE    BIN"), False)
+    report("match A?????????? vs APPLE  TXT", match("A??????????", "APPLE   TXT"), True)
+    report("match A?????????? vs BANANA TXT", match("A??????????", "BANANA  TXT"), False)
+    report("match exact FILE   BAS (self)",   match("FILE    BAS", "FILE    BAS"), True)
+    report("match ??????? ?BAS wild-last",    match("???????????", "ZZZZ    ZZZ"), True)
+    report("match FOO     B?? vs FOO    BAK",  match("FOO     B??", "FOO     BAK"), True)
+    report("match FOO     B?? vs FOO    TXT",  match("FOO     B??", "FOO     TXT"), False)
+
+    print()
+    print("ALL PASS — 8.3 '*'/'?' wildcard expansion + matching"
+          if not fails else f"{fails} CASE(S) FAILED")
+    return fails
+
+
+if __name__ == "__main__":
+    sys.exit(1 if run() else 0)

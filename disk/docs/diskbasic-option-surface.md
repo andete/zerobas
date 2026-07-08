@@ -146,7 +146,7 @@ error). "Ref" = the documented option. Evidence is `file:line` in `basic/`.
 | Verb | Documented option surface | Status | Evidence / note |
 |---|---|:--:|---|
 | `OPEN` | `"dev:name" [FOR INPUT\|OUTPUT\|APPEND] AS [#]n [LEN=r]` | ◐ | modes ✅ ([files.asm:225](../../basic/files.asm:225)); **`LEN=r` ✅** (2026-07-08, Item 3) — sector-tiling sizes (power of two 1..256; `oo_parse_reclen`, per-channel `FCH_RECLENS`; non-tiling → `Syntax error`); byte-identical to CF-3300 ([disk_probe_openlen.py](../../probes/disk/disk_probe_openlen.py)); **device channels `CAS:`/`CRT:`/`LPT:`/`GRP:`/`COM:` still ABSENT** (routed to the plain-BASIC axis, Q3.0) |
-| `CLOSE` | `[[#]n[,[#]m]…]` | ◐ | bare (all) ✅, single ✅; **no comma list** ([files.asm:503](../../basic/files.asm:503)) |
+| `CLOSE` | `[[#]n[,[#]m]…]` | ✅ | bare (all) ✅, single ✅, **comma list ✅** (2026-07-08, Item 4; `dc_listloop`, [files.asm](../../basic/files.asm)); [disk_probe_closelist.py](../../probes/disk/disk_probe_closelist.py) |
 | `PRINT#` | `#n[,\|;][USING …;]items` | ✅ | incl. `PRINT#n,USING` ([print.asm:59](../../basic/print.asm:59)); `TAB()`/`SPC()` not in item loop |
 | `INPUT#` | `#n, var[,var…]` | ◐ | one **string** var only; **numeric ✗ (Phase-3)** ([files.asm:418](../../basic/files.asm:418)); no var list |
 | `LINE INPUT#` | `#n, strvar$` | ✅ | single string var (matches doc); shares `input_common` |
@@ -164,8 +164,8 @@ error). "Ref" = the documented option. Evidence is `file:line` in `basic/`.
 
 | Verb | Documented option surface | Status | Evidence / note |
 |---|---|:--:|---|
-| `FILES` | `["filespec"]` | ◐ | **arg parsed-past & ignored; always lists whole root dir** ([files.asm:102](../../basic/files.asm:102)) |
-| `KILL` | `"filespec"` (wildcard) | ◐ | single file only; **no wildcard** |
+| `FILES` | `["filespec"]` | ✅ | **8.3 `*`/`?` wildcard filespec ✅** (2026-07-08, Item 4; per-entry `name_cmp` filter, [files.asm](../../basic/files.asm)); bare FILES lists all; byte-identical to CF-3300 ([disk_probe_files_wildcard.py](../../probes/disk/disk_probe_files_wildcard.py)) |
+| `KILL` | `"filespec"` (wildcard) | ✅ | **8.3 `*`/`?` wildcard ✅** (2026-07-08, Item 4; loop `fat_delete` over matches, File-not-found if none); byte-identical to CF-3300 ([disk_probe_kill_wildcard.py](../../probes/disk/disk_probe_kill_wildcard.py)) |
 | `NAME` | `"old" AS "new"` | ◐ | works; **no "new exists" collision guard** ([files.asm:731](../../basic/files.asm:731)) — see §4 doc-fix |
 | `MAXFILES` | `= n` (1..15) | ◐ | **capped at 2** ([files.asm:827](../../basic/files.asm:827)) |
 | `CALL FORMAT` | `CALL FORMAT` (interactive) | ✅ | arg ignored; interactive menu (see §4 doc-fix) |

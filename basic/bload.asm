@@ -320,6 +320,8 @@ bn_name:
                 jr      z,bn_done           ; NUL (defensive) -> end
                 cp      '.'
                 jr      z,bn_ext            ; start of extension
+                cp      '*'
+                jr      z,bn_star_name      ; '*' -> fill the rest of the name with '?'
                 ; another name char
                 ld      c,a                 ; must consume even if field full
                 ld      a,b
@@ -345,6 +347,8 @@ bn_ext_loop:
                 jr      z,bn_done
                 cp      '.'
                 jr      z,bn_reject         ; a second '.' is malformed 8.3
+                cp      '*'
+                jr      z,bn_star_ext       ; '*' -> fill the rest of the ext with '?'
                 ld      c,a
                 ld      a,b
                 or      a
@@ -365,6 +369,45 @@ bn_done:
                 ret
 bn_reject:
                 scf
+                ret
+
+; bn_star_name / bn_star_ext — expand a '*' wildcard (FILES/KILL 8.3 pattern): fill
+; the REMAINING positions of the current field (name = B left, or ext = B left) with
+; '?', then swallow any source chars up to '.' / '"' / NUL (CP/M FCB '*' semantics:
+; the rest of the field becomes '?', trailing chars before the separator are ignored).
+; DE = field write cursor, B = positions left in the field, HL -> the '*'.
+bn_star_name:
+                call    bn_star_fill        ; DE[0..B) := '?'
+bn_star_nskip:
+                inc     hl                  ; skip source chars until '.', '"' or NUL
+                ld      a,(hl)
+                cp      '.'
+                jr      z,bn_ext            ; extension follows
+                cp      '"'
+                jr      z,bn_done
+                or      a
+                jr      z,bn_done
+                jr      bn_star_nskip
+bn_star_ext:
+                call    bn_star_fill        ; DE[0..B) := '?'
+bn_star_eskip:
+                inc     hl                  ; skip source chars until '"' or NUL
+                ld      a,(hl)
+                cp      '"'
+                jr      z,bn_done
+                or      a
+                jr      z,bn_done
+                jr      bn_star_eskip
+; bn_star_fill — write '?' to (DE) B times (B may be 0 = field already full).
+bn_star_fill:
+                ld      a,b
+                or      a
+                ret     z                   ; field full -> nothing to fill
+                ld      a,'?'
+bsf_loop:
+                ld      (de),a
+                inc     de
+                djnz    bsf_loop
                 ret
 
 ; parse_close_run — shared tail parse used by BOTH the tape and disk paths.

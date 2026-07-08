@@ -36,13 +36,31 @@ ex_files:
                 inc     hl                  ; HL -> bytes after the FILES token
                 jp      do_files
 
-; do_files — list the root directory, then continue the statement loop.
-; Entry: HL -> the bytes after the FILES token (an optional, ignored filespec).
+; do_files — list the root directory (optionally filtered by an 8.3 wildcard
+; filespec), then continue the statement loop.
+; Entry: HL -> the bytes after the FILES token. FILES ["[drive:]pattern"] — the
+; pattern uses 8.3 '*' and '?' wildcards; bare FILES lists everything.
 do_files:
                 ; (1) a disk-ROM slot must have been recorded by the INIT scan.
                 ld      a,(DISKSLOT_OK)
                 or      a
                 jp      z,load_error
+                ; (1b) parse the optional "filespec" into a match pattern (with
+                ; '*'->'?' expansion via build_83_name); FILES_HASPAT flags its
+                ; presence. The text cursor is advanced PAST the filespec here, so
+                ; the saved cursor below already points at the statement's tail.
+                call    skip_spaces
+                xor     a
+                ld      (FILES_HASPAT),a
+                ld      a,(hl)
+                cp      '"'
+                jr      nz,df_nofilespec
+                inc     hl                  ; past the opening quote
+                call    parse_disk_fcb      ; DISK_FCB_NAME = 8.3 wildcard pattern
+                inc     hl                  ; past the closing quote
+                ld      a,1
+                ld      (FILES_HASPAT),a
+df_nofilespec:
                 push    hl                  ; save the BASIC text cursor across listing
                 ; (2) mount the volume (BPB geometry into the fat.asm scratch).
                 call    fat_mount
@@ -77,6 +95,17 @@ df_entloop:
                 pop     hl
                 and     $18                 ; volume-label | sub-directory -> skip
                 jr      nz,df_nextent
+                ; filespec filter: match the entry name (HL) against the pattern
+                ; (DISK_FCB_NAME) with '?'/'*' wildcards; skip non-matches.
+                ld      a,(FILES_HASPAT)
+                or      a
+                jr      z,df_do_emit        ; bare FILES -> list everything
+                push    hl                  ; name_cmp advances HL by 11 -> guard it
+                ld      de,DISK_FCB_NAME
+                call    name_cmp            ; DE=pattern, HL=entry; Z=match
+                pop     hl                  ; restore entry ptr (flags preserved)
+                jr      nz,df_nextent       ; no match -> skip
+df_do_emit:
                 call    df_emit             ; print this entry's 8.3 name field
 df_nextent:
                 ld      a,(FILES_ENTIDX)
@@ -98,16 +127,8 @@ df_end:
                 jr      z,df_endline
                 call    print_crlf
 df_endline:
-                pop     hl                  ; restore the BASIC text cursor
-                ; skip the optional (ignored) filespec to ':' or end of line.
-df_skip:
-                ld      a,(hl)
-                or      a
-                jp      z,exec_stmt         ; EOL -> exec_stmt returns to the REPL
-                cp      COLON
-                jp      z,exec_stmt
-                inc     hl
-                jr      df_skip
+                pop     hl                  ; restore the BASIC text cursor (already
+                jp      exec_stmt           ; past the filespec, consumed at df head)
 df_io_pop:
                 pop     hl                  ; balance the saved text cursor
                 jp      load_error
@@ -557,6 +578,11 @@ ex_close:
                 jr      z,dc_all            ; bare CLOSE (end of line) -> close all
                 cp      COLON
                 jr      z,dc_all            ; bare CLOSE before ':' -> close all
+                ; CLOSE [#]n [, [#]m ...] — a comma-separated channel list. Loop:
+                ; parse one [#]expr, close it, and while the next token is ',' repeat.
+dc_listloop:
+                call    skip_spaces
+                ld      a,(hl)
                 cp      '#'
                 jr      nz,dc_num
                 inc     hl
@@ -577,6 +603,13 @@ dc_num:
                 call    fch_do_close_ch     ; flush (if OUTPUT) + mark closed
 dc_done:
                 pop     hl                  ; restore the text cursor
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jr      nz,dc_finish        ; no more channels in the list
+                inc     hl                  ; consume ',' and parse the next channel
+                jr      dc_listloop
+dc_finish:
                 jp      exec_stmt
 dc_all:
                 push    hl                  ; guard text cursor across CALSLT
@@ -776,9 +809,9 @@ fcla_next:
 ; --- KILL "name" — delete a file -------------------------------------------
 ; Frees the file's FAT cluster chain and marks its directory entry deleted, via
 ; the fat.asm `fat_delete` engine routine. Accepts the same "A:"/"B:" drive prefix
-; + 8.3 name as the loader verbs (parse_disk_fcb). Errors (no disk / not found /
-; I-O) reuse the loader's load_error path. Divergence: no wildcard `KILL "*.BAK"`
-; (single file only) — a later item. See basic/PROVENANCE.md §KILL.
+; + 8.3 name as the loader verbs (parse_disk_fcb), now including 8.3 '*'/'?'
+; wildcards: `KILL "*.BAK"` deletes every match. Errors (no disk / none matched /
+; I-O) reuse the loader's load_error path. See basic/PROVENANCE.md §KILL.
 ex_kill:
                 inc     hl                  ; HL -> bytes after the KILL token
                 jp      do_kill
@@ -788,15 +821,30 @@ do_kill:
                 cp      '"'
                 jp      nz,stmt_error       ; filename string required
                 inc     hl                  ; HL -> first filename char
-                call    parse_disk_fcb      ; build DISK_FCB_NAME; HL -> closing '"'
+                call    parse_disk_fcb      ; build DISK_FCB_NAME (8.3 wildcard pattern)
                 inc     hl                  ; past the closing '"'
                 ld      a,(DISKSLOT_OK)
                 or      a
                 jp      z,load_error
                 push    hl                  ; guard text cursor across CALSLT
-                call    fat_delete          ; free chain + mark dir entry deleted
-                pop     hl
-                jp      c,load_error        ; not found / I-O error
+                ; wildcard delete: fat_delete finds + frees + $E5-marks the FIRST
+                ; matching entry (name_cmp honours '?'), so loop it until no match
+                ; remains. C tracks whether anything was deleted -> File not found
+                ; (load_error) if the pattern matched nothing (Q4.1). A non-wildcard
+                ; name simply matches once, exactly as before.
+                ld      c,0                 ; C = deleted-any flag
+dk_loop:
+                push    bc
+                call    fat_delete          ; free chain + $E5-mark the first match
+                pop     bc
+                jr      c,dk_done           ; no (further) match -> stop
+                ld      c,1                 ; deleted at least one
+                jr      dk_loop
+dk_done:
+                pop     hl                  ; restore text cursor
+                ld      a,c
+                or      a
+                jp      z,load_error        ; nothing matched -> File not found
                 jp      exec_stmt
 
 ; --- NAME "old" AS "new" — rename a file -----------------------------------

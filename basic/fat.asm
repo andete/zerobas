@@ -250,16 +250,20 @@ name_cmp:
                 ld      b, 11
 nc_loop:
                 ld      a, (de)
+                cp      '?'                 ; '?' in the pattern (DE) matches ANY entry
+                jr      z, nc_wild          ; char (FILES/KILL wildcard; MSX FCB '?')
                 call    toupper
                 ld      c, a
                 ld      a, (hl)
                 call    toupper
                 cp      c
                 ret     nz
+nc_wild:
                 inc     hl                  ; 16-bit inc: leaves flags intact
                 inc     de
                 djnz    nc_loop             ; djnz leaves flags intact
-                ret                         ; Z set from the final cp
+                ret                         ; Z set (final cp c on a match, or the
+                                            ; cp '?' when the last char is a wildcard)
 
 ; toupper — fold a..z to A..Z; all other bytes unchanged.
 ;   in: A, out: A

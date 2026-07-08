@@ -5,11 +5,11 @@ SPDX-License-Identifier: 0BSD
 
 # Spec (for sign-off): Disk-BASIC option-surface closure
 
-> **STATUS: Items 1+2+3+5 IMPLEMENTED + GATED (2026-07-08).** Item 3 `LEN=` landed
-> 2026-07-08 (sector-tiling sizes only — a user-decided scope narrowing after the record
-> engine turned out to assume 256-byte tiling records; device channels routed to the
-> plain-BASIC axis). Items 1+2+5 landed earlier the same day. **Only Item 4 remains**
-> (FILES/KILL wildcard + CLOSE list). See the Sign-off section.
+> **STATUS: ALL ITEMS (1–5) IMPLEMENTED + GATED (2026-07-08). Closure spec COMPLETE.**
+> Item 4 (FILES/KILL 8.3 `*`/`?` wildcards + CLOSE channel list) landed 2026-07-08,
+> byte-identical to CF-3300; Item 3 `LEN=` (sector-tiling sizes only, a user-decided scope
+> narrowing) and Items 1+2+5 earlier the same day. Device channels (Item 3's second half)
+> were routed to the plain-BASIC axis, out of this disk-BASIC spec. See the Sign-off section.
 > Q1.4 (BLOAD `,offset`) resolved: **deferred, but the parser now rejects a
 > typed offset with a clean `load error`** (never a silent wrong-address load) and is
 > structured so real offset support is a one-branch add. See the Sign-off section.
@@ -274,7 +274,19 @@ emulator-free `unit-test` — except the host position twin).
   [disk_probe_openlen.py](../../probes/disk/disk_probe_openlen.py) (`OPEN(LEN=)` cell in
   `make diskbasic-acceptance`, LEN=128 4-record round-trip byte-identical). Device channels
   routed to the plain-BASIC axis (Q3.0), out of scope here.
-- [ ] **Item 4** — FILES/KILL wildcard + CLOSE list (Q4.1–Q4.2)
+- [x] **Item 4** — FILES/KILL wildcard + CLOSE list — **DONE 2026-07-08.** Shared
+  matcher: `name_cmp` ([fat.asm](../../basic/fat.asm)) now honours `?`, and `build_83_name`
+  ([bload.asm](../../basic/bload.asm)) expands `*` to fill a field with `?`. FILES filters
+  each dir entry through `name_cmp` (bare FILES lists all); KILL loops `fat_delete` over
+  every match (Q4.1: File-not-found if none matched); CLOSE parses a `,`-separated channel
+  list (`dc_listloop`, [files.asm](../../basic/files.asm)). **FILES + KILL wildcard are
+  byte-identical to CF-3300** (Q4.2 empirically confirmed — CF-3300 wildcards the same:
+  [disk_probe_files_wildcard.py](../../probes/disk/disk_probe_files_wildcard.py),
+  [disk_probe_kill_wildcard.py](../../probes/disk/disk_probe_kill_wildcard.py), full-image
+  diff). CLOSE-list is a keyboard-free functional gate
+  ([disk_probe_closelist.py](../../probes/disk/disk_probe_closelist.py)). Host matcher test
+  [test_wildcard.py](../../tests/test_wildcard.py) (`make unit-test` 38/38); cells
+  `FILES(wild)`/`KILL(wild)`/`CLOSE(list)` in `make diskbasic-acceptance`.
 - [x] **Item 5** — **DONE 2026-07-08.** (5a) BDOS `$15` WRSEQ FCB write-back: the
   register-transparent write-side twin `wrseq_wr_writeback` ([kernel.asm](../kernel.asm),
   commit 932f5e8) advances +12 EX / +16..19 size / +26,27 first cluster / +28,29 cluster /

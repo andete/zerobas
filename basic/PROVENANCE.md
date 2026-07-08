@@ -1833,9 +1833,14 @@ byte-identical to the real CF-3300 Disk BASIC** after the same KILL (KILL touche
 only the dir entry's first byte + the FAT chain, so the images must match exactly —
 they do). Full crunch + 16 unit-test files + the FILES/read/write probes still pass.
 
-**Divergences (own design, quarantined):** single file only — no wildcard
-`KILL "*.BAK"` (a later item); a missing file / I-O error reuses the loader's
-`load_error` ("load error") path, not a Disk-BASIC "File not found" message.
+**Wildcard (2026-07-08, option-closure Item 4):** `KILL "*.BAK"` deletes EVERY
+matching file — `do_kill` loops `fat_delete` (whose `fat_find`/`name_cmp` now honour
+the `?` wildcard; `build_83_name` expands `*`→`?`) until no match remains, and raises
+File-not-found (`load_error`) only if nothing matched. Byte-identical to the real
+CF-3300 after the same wildcard KILL (`disk_probe_kill_wildcard.py`), confirming
+CF-3300 wildcards identically. **Divergence (own design, quarantined):** a missing
+file / I-O error reuses the loader's `load_error` ("load error") path, not a
+Disk-BASIC "File not found" message.
 
 Clean-room: original code; KILL semantics + the `$E5` deleted-marker / chain-free
 rules from the public MSX-BASIC reference + Microsoft FAT spec, validated by the

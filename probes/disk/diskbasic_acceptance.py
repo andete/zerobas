@@ -99,6 +99,12 @@ REGISTRY = [
     # OPEN..AS #n LEN=r random record size (item 3). LEN=128 -> 4 records per
     # 512-byte sector; a 4-record round-trip is byte-identical to CF-3300 (live).
     ("OPEN(LEN=)",     "disk_probe_openlen.py",         [], "live"),
+    # Item 4: FILES/KILL 8.3 '*'/'?' wildcards + CLOSE channel list. FILES/KILL
+    # wildcards are CF-3300 differentials (live); CLOSE-list is a keyboard-free
+    # functional self-check (AUTOEXEC .bas + offline FAT12 + done witness).
+    ("FILES(wild)",    "disk_probe_files_wildcard.py",  [], "live"),
+    ("KILL(wild)",     "disk_probe_kill_wildcard.py",   [], "live"),
+    ("CLOSE(list)",    "disk_probe_closelist.py",       [], "artifact"),
 ]
 
 
