@@ -42,21 +42,75 @@ or disassembled ([no-reference-rom-disasm](../../README.md)).
 
 ---
 
-## 1. BDOS — complete; no option gap
+## 1. BDOS — the contract surface (function-complete; one real field-level gap)
 
-BDOS functions are **fixed-signature** (register-passed `C`=function, params in
-`DE`/`HL`/etc.) — there is no optional-flag dimension to miss. The `$00`–`$30` surface is
-fully serviced ([tier2-bdos-coverage.md](tier2-bdos-coverage.md), 11/11 gated). The only
-open items are three **documented simplifications**, already tracked, *not* missed options:
+BDOS functions have no *syntax* options, but "function present" ≠ "contract complete". The
+real surface per function is **input registers → the ~37-byte in-memory FCB + the DTA
+buffer → output registers, FCB write-backs, and DOS work-area cells (`$F100–$F3FF`)**. A
+field-level pass over all of `$00`–`$30` (2026-07-08, two auditors: console/misc-register
++ work-area, and file/FCB-field) checked each contract element against our handlers and
+against what the `bdos-acceptance` differential actually *exercises*.
 
-| fn | simplification | tracked in |
+**Result:** the `$00`–`$30` surface is function-complete and differential-verified on
+driven paths — but the pass found **one genuine, undocumented, unexercised incompleteness**,
+a cluster of documented/intentional simplifications, and several **stale scoreboard rows**
+(the code is *more* complete than the doc claims). The differential is strong (it catches
+register/FCB/work-area divergence on any path the exercisers drive — that is how FSIZE,
+WRBLK, the RDRND wrong-record P1, and the LOGIN/`$F347` seed bug were all caught), but it
+is only as wide as the exercisers, and the gap below sits on a path none of them drive.
+
+### 1.1 Genuine gap (undocumented + unexercised)
+
+- **`$15` WRSEQ — no CR/EX FCB position write-back.** M33 added `wrseq_writeback` (advance
+  FCB `+32` CR / `+12` EX / cluster ptr per sequential record) but wired it to the **read**
+  branch only ([kernel.asm:2694](../kernel.asm)); the **write** branch is a bare
+  `jp bdos_seqwrite` with no advance ([kernel.asm:2699](../kernel.asm)). Stock advances the
+  FCB on sequential *writes* too. Our own write sessions are byte-correct (the internal
+  write-iterator tracks position), so the *file* is right — but the caller-visible FCB
+  position is stale. **Observable path:** a program that does `WRSEQ` records then `$24`
+  SETRND (which reads `+12`/`+32` to compute RR) gets a wrong random position. This is the
+  exact class M33 closed for RDSEQ, left open for WRSEQ — a real asymmetry, not a design
+  choice. The BDOS-side analogue of the BASIC VRAM find: a real thing hiding under a green
+  function-level ✅. Closure specced in
+  [spec-diskbasic-option-closure.md](spec-diskbasic-option-closure.md) Item 5.
+
+### 1.2 Under-tracked limitation (in-code note, but never widened or gated)
+
+- **`$21`/`$22` RDRND/WRRND — 8-bit random record + fixed 128-byte record.**
+  `rrnd_position` reads only `+33` (r0), ignoring `+34`/`+35` ([kernel.asm:3001](../kernel.asm)),
+  and the transfer is a hardcoded 128 bytes, ignoring the `+14..15` record-size field.
+  A file > 256 records (> 32 KB) or a non-128 record size random-accesses the wrong
+  location. In-code acknowledged ("0..255; see scope note") but, unlike `$26`/`$27` which
+  were widened to full 24-bit RR + real RS, this tier never was. Record size `+14..15` is
+  likewise ignored across `$14`/`$15`/`$21`/`$22` (only `$23`/`$26`/`$27` honor it). Low
+  practical impact (128-byte records are the norm) but a real field-level omission — closure
+  specced as Item 5's sibling (widen or document-and-gate).
+
+### 1.3 Documented / intentional simplifications (correct as-is)
+
+| fn | simplification | why it's fine |
 |---|---|---|
-| `$27` RDBLK | streams from offset 0, ignores random-record positioning | tier2-bdos-coverage §"Reading the score", spec §6 Q1 |
-| `$2D` STIME | no range validation of the passed time | tier2-bdos-remaining-spec §5 |
-| `$2E` VERIFY | flag stored, write-effect not coupled | tier2-bdos-remaining-spec §5.4 |
+| `$24` SETRND | ours computes the *correct* CP/M position; **stock is a broken `RR:=1` stub** | intentional signed-off divergence (m32 char §4) — ours is right where stock is broken |
+| `$26` WRBLK shrink | frees the tail + EOF-marks (FCLOSE-consistent) vs stock's FAT-corrupting bug | signed off; ours correct where stock breaks |
+| `$27` RDBLK (boot path) | `bdos_rdblk` streams from record 0 | boot loaders always pass RR=0 → provable no-op (M31 Q2) |
+| `$2D` STIME | ignores D/E (sec/hundredths) + no range-validate (`A` always 0) | clockless MSX1; documented residual |
+| `$2E` VERIFY | flag stored, write-effect not coupled | **faithful** — black-box shows stock also no-ops |
+| GTIME/GDATE | return constants; STIME/SDATE don't round-trip | clockless target |
+| FOPEN/FMAKE/FCLOSE | dirent date not stamped (`+25` dirloc not written) | allowlisted cosmetic |
+| `$05` LSTOUT | printer no-op on C-BIOS (delegates to `$00A5` LPTOUT stub) | two-interface delegation; real when C-BIOS grows LPTOUT |
 
-**Conclusion:** the "did we miss options" concern does **not** apply to BDOS. The rest of
-this doc is the BASIC verb surface.
+### 1.4 Stale scoreboard/spec rows (code is MORE complete than the doc — corrected this pass)
+
+- `$02` CONOUT — TAB-expansion + `$F237` column bookkeeping **is** implemented
+  (`conout_tab`/`conout_emit_e`, M22b sl2); scoreboard said "deferred". → corrected.
+- `$05` LSTOUT — dispatch `$5465` **is** wired to `lstout_body`; scoreboard + spec §6.6
+  said "un-wired". → corrected.
+- `$27` RDBLK (user path) — `k47b2_body` **reads FCB+33..35 and positions to record RR**
+  (M31 faithful); scoreboard still showed "⚠ stream-from-0". → corrected.
+- `$24` SETRND — scoreboard showed a plain ✅; it is the *intentional correct-divergence*
+  above. → annotated.
+
+The rest of this doc is the BASIC verb surface.
 
 ---
 

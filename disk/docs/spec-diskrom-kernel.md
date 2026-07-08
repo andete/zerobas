@@ -525,10 +525,13 @@ the root cause of a real bug:
 ### 6.6 Not applicable / delegated
 
 - `$03` AUXIN, `$04` AUXOUT — no serial device on this single-drive MSX1 target.
-- `$05` LSTOUT — delegates to the main-BIOS `$00A5` LPTOUT (characterised in
-  [tier2-lstout-characterisation.md](tier2-lstout-characterisation.md)); its own
-  page-1 dispatch (`$5465`) is currently un-wired but harmless (nothing calls it for
-  real). See [tier2-m27-lstout-spec.md](tier2-m27-lstout-spec.md).
+- `$05` LSTOUT — its page-1 dispatch `$5465` **is wired** (`k_5465: jp lstout_body`,
+  kernel.asm) and reads the char from `E`, delegating to the main-BIOS `$00A5` LPTOUT
+  (characterised in [tier2-lstout-characterisation.md](tier2-lstout-characterisation.md)).
+  The delegation is a no-op on the C-BIOS stub target and becomes real when C-BIOS grows
+  LPTOUT — a two-interface delegation, not an unimplemented entry. (Contract-audit
+  2026-07-08 corrected an earlier "un-wired" note here.) See
+  [tier2-m27-lstout-spec.md](tier2-m27-lstout-spec.md).
 
 ---
 
