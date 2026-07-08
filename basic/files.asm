@@ -753,6 +753,8 @@ init_filechan:
                 ld      (PRDEST),a
                 ld      (PRDEV),a           ; default PRINT# sink = disk file
                 ld      (FCH_ACTIVE),a      ; no channel live in the engine globals
+                ld      hl,fat_io_getbyte
+                ld      (ARL_GETBYTE),hl    ; default ascii_read_lines source (D2)
                 ; clear the per-channel mode array [0..FCH_CEIL].
                 ld      hl,FCH_MODES
                 ld      b,FCH_CEIL+1
@@ -1147,12 +1149,19 @@ mrg_ioerr:
 ; terminator); clean-room, no reference ROM read. See PROVENANCE §MERGE and
 ; basic/docs/spec-ascii-saveload.md §4.
 ;   out: CF clear = whole file stored OK; CF set = a non-blank, non-numbered line.
+;
+; Byte source (D2 getbyte indirection): reads go through arl_getbyte, which
+; jumps through the ARL_GETBYTE RAM vector (sysvars.inc) instead of calling
+; fat_io_getbyte directly. Defaulted to fat_io_getbyte at cold start
+; (init_filechan), so MERGE and disk ASCII LOAD (both callers above/below) are
+; byte-for-byte unchanged; cload.asm's cas_ascii_load re-points it at a TAPIN
+; wrapper for a cassette ASCII load. See basic/docs/spec-cas-ascii-saveload.md §6 D2.
 ascii_read_lines:
 arl_newline:
                 ld      hl,LINEBUF          ; start a fresh line
                 ld      (MRG_PTR),hl
 arl_charloop:
-                call    fat_io_getbyte
+                call    arl_getbyte
                 jr      c,arl_eofline       ; EOF -> flush any partial line, then finish
                 cp      $1A
                 jr      z,arl_eofline       ; Ctrl-Z soft-EOF -> finish
@@ -1183,6 +1192,20 @@ arl_eofline:
 arl_ok:
                 or      a                   ; CF clear = success
                 ret
+
+; --- arl_getbyte: ascii_read_lines' byte-source indirection (D2) ------------
+; Jumps through the ARL_GETBYTE RAM vector to the CURRENT byte-source routine
+; (fat_io_getbyte by default; cload.asm's cal_getbyte during a cassette ASCII
+; load). Standard Z80 call-through-pointer idiom: `call arl_getbyte` pushes
+; OUR caller's return address, then `jp (hl)` jumps to the target WITHOUT
+; touching the stack, so the target's own `ret` pops that same address —
+; reaching ascii_read_lines exactly as a direct `call fat_io_getbyte` would.
+; Preserves nothing (neither source routine does); ascii_read_lines already
+; reloads everything it needs from RAM after each call.
+;   out: A = byte, CF clear; or CF set = no more data (source-defined "EOF").
+arl_getbyte:
+                ld      hl,(ARL_GETBYTE)
+                jp      (hl)
 
 ; mrg_storeline — 0-terminate LINEBUF at MRG_PTR and, if it is a numbered (or blank)
 ; line, hand it to dispatch_line (same tokenise + store_line path as a typed line).

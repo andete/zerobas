@@ -92,11 +92,13 @@ CAS_LOW_2400    equ     $2D25   ; CS240 active-LOW word (bytes 25 2D)
 ; --- Cassette file identifiers --------------------------------------------
 ; Source: MSX2 Technical Handbook, cassette file format: the 10-byte file-type
 ; block before the filename selects the file kind. Binary (BSAVE) = $D0 x10;
-; tokenised BASIC = $D3 x10; ASCII = $EA x10. zerobas reads $D0 (BLOAD) and $D3
-; (CLOAD / LOAD"CAS:") — the device half (TAPION/TAPIN) is byte-stream agnostic;
-; this id is interpreted by the interpreter half, exactly like BLOAD's $D0 check.
+; tokenised BASIC = $D3 x10; ASCII = $EA x10. zerobas reads $D0 (BLOAD), $D3
+; (CLOAD / LOAD"CAS:") and $EA (CLOAD / LOAD"CAS:" ASCII, cas_ascii_load,
+; cload.asm) — the device half (TAPION/TAPIN) is byte-stream agnostic; this id
+; is interpreted by the interpreter half, exactly like BLOAD's $D0 check.
 BINARY_ID       equ     $D0     ; BSAVE binary image
 BASIC_ID        equ     $D3     ; tokenised BASIC program (CLOAD / LOAD"CAS:")
+ASCII_ID        equ     $EA     ; ASCII program, SAVE"CAS:",A (CLOAD / LOAD"CAS:")
 
 ; --- Tokeniser / executor --------------------------------------------------
 ; Keyword tokens. Each value is an oracle observation (the crunch buffer KBUF
@@ -315,6 +317,16 @@ PRDEST          equ     $E0CB   ; PRINT destination: 0=screen, 1=file channel (1
 ; Free bytes in the $E0CC gap (below CONTLINE $E0D0).
 PRDEV           equ     $E0CC   ; PRINT# device sink selector (1)
 OO_DEVTYPE      equ     $E0CD   ; OPEN device-channel type being parsed (transient, 1)
+; ascii_read_lines' byte-source vector (files.asm D2 getbyte indirection; the
+; read-side mirror of PRDEST/PRDEV above). Holds the address of the routine
+; arl_getbyte (files.asm) jumps into for the next file byte: A=byte/CF clear,
+; or CF set = no more data — the same contract fat_io_getbyte already has.
+; Defaulted to fat_io_getbyte at cold start (init_filechan) so MERGE and disk
+; ASCII LOAD are byte-for-byte unchanged; cload.asm's cas_ascii_load re-points
+; it at cal_getbyte (a TAPIN wrapper) for the duration of a cassette ASCII
+; load, then restores the default before returning. Fills the last 2 bytes of
+; the $E0CC gap (below CONTLINE $E0D0).
+ARL_GETBYTE     equ     $E0CE   ; ascii_read_lines byte-source vector (2)
 LPT_MODE        equ     5       ; FCH_MODES value: channel open to the LPT: printer device
 CRT_MODE        equ     6       ; FCH_MODES value: channel open to the CRT: screen device
 ; Scratch descriptor for a string literal lifted out of the token stream
@@ -480,6 +492,18 @@ DISKSLOT_OK     equ     $E0E8   ; 1 = DISKSLOT holds a valid disk-ROM slot id
 ; (RDVRM/WRTVRM) instead of RAM; the $FE header start/end/exec are stored/read
 ; verbatim as VRAM addresses. Cleared at the top of every BSAVE/BLOAD parse.
 VRAM_FLAG       equ     $E0E9   ; 1 = ",S" VRAM save/load (1)
+; Cassette ASCII load (cload.asm cal_getbyte) read position within the current
+; 256-byte tape block, 0..255 (§0.1: fixed 256-byte tape data blocks). Also the
+; refill trigger: == 0 at getbyte entry means "buffer drained -> slurp the next
+; block". Dead outside a cassette ASCII LOAD/CLOAD — never live at the same time
+; as a BSAVE/BLOAD ",S" — so it reuses the same free gap (like IN_RDLEN and
+; FILES_ENTIDX below overlay each other).
+CAL_CNT         equ     $E0EA   ; cassette ASCII load: read position in the
+                                ; current 256-byte tape block, 0..255 (1)
+CAL_NEEDFILL    equ     $E0EB   ; cassette ASCII load: 1 = CAL_BUF drained, the
+                                ; next cal_getbyte must TAPION+refill (blocks 2+);
+                                ; block 1 is primed promptly by cas_ascii_load so
+                                ; its TAPION stays in TAPION's di regime (1)
 ; SAVE / BSAVE program-image source-walk pointers (page $E0; dead outside a
 ; SAVE/BSAVE). DSV_PTR / DSV_END drive do_save's program-image source walk and
 ; disk_putword's word-emit (the FAT12 engine's own write buffering lives in its
@@ -700,6 +724,23 @@ FCH_RECLENS     equ     $F000   ; per-channel record length words [0..FCH_CEIL] 
 GP_RECLEN       equ     $F006   ; active channel's record length (word), loaded per calc
 OO_RECLEN_CHAN  equ     $F008   ; OPEN scratch: channel # stashed across the LEN= eval (1)
 FILES_HASPAT    equ     $F009   ; FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1)
+; --- Cassette ASCII load 256-byte block buffer (cload.asm cal_getbyte) -------
+; A DEDICATED 256-byte RAM block buffer the cassette-ASCII byte source serves
+; from, so TAPIN is called only in the tight 256-read refill loop at each block
+; boundary and NEVER interleaved with the per-line tokenise/store work (which
+; would desync the real-time tape read — the M1 first-cut bug; see
+; basic/docs/spec-cas-ascii-saveload.md §4). Symmetric with fat_io_getbyte's
+; 512-byte FSECTOR_BUF on the disk side. PAGE-ALIGNED at $E600 so the read
+; address is simply high=$E6 / low=CAL_CNT (no add). Placed INSIDE the file data
+; sector buffer FSECTOR_BUF ($E5C0..$E7BF) — that buffer is used only by disk
+; I/O, and a cassette CLOAD/LOAD"CAS:" does NONE, so it is dead for the whole
+; load. This is deliberately LOW RAM: the earlier $F100 sat only ~640 bytes below
+; the C-BIOS stack (~$F380), and the tokenise/dispatch pass (call-heavy) drove SP
+; down into it, corrupting a filled block before it was served — a single-block
+; file loaded as an EMPTY program. $E600 is far below any stack descent and clear
+; of the tokenise/dispatch path (page $E0..$E3), LINEBUF ($E100), and program
+; text ($8001+).
+CAL_BUF         equ     $E600   ; cassette ASCII load: 256-byte tape block buffer (in idle FSECTOR_BUF)
 ; Control stacks (page $E0, below LINEBUF at $E100). Both grow upward; the
 ; pointer addresses the next free slot, and the stack is empty when it equals
 ; its base. GOSUB frame = [curline:2][resume:2] (4 bytes). FOR frame =

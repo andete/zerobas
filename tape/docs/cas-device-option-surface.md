@@ -145,9 +145,19 @@ for the signal, they are **deferred, not closable** — admit them only if a con
   `RUN"CAS:"`. The tape analogue of the disk ASCII-save arc (the "last open follow-on" the
   disk close-out already named). Reuses the disk ASCII detokeniser/reader (`ascii_read_lines`,
   the `pchar`/`PRDEST` sink) over the tape byte layer instead of the disk one. **Spec
-  (signed off; M0 done):** [spec-cas-ascii-saveload.md](../../basic/docs/spec-cas-ascii-saveload.md)
+  (signed off):** [spec-cas-ascii-saveload.md](../../basic/docs/spec-cas-ascii-saveload.md)
   — format pinned (D1 → interop-faithful 256-byte blocks, `$EA` header, Ctrl-Z EOF, CR+LF;
-  §0.1); next is M1 (ASCII `LOAD`/`CLOAD`), then M2 (`SAVE"CAS:",A`).
+  §0.1).
+  - ✅ **M1 — ASCII `CLOAD` / `LOAD"CAS:"`** (2026-07-08). The byte-0 header check in
+    `do_tape_prog` is now a 3-way dispatch (`$D3`→tokenised, `$EA`→`cas_ascii_load`,
+    else→`load_error`); `cas_ascii_load` drives the shared `ascii_read_lines` reader
+    through a getbyte RAM vector (`ARL_GETBYTE`, default `fat_io_getbyte`) pointed at a
+    tape byte source that serves from a 256-byte `CAL_BUF` block buffer (`cal_getbyte`/
+    `cal_refill`), refilled by a tight `TAPIN*256` loop at each block boundary — so
+    tokenising never happens between two `TAPIN`s (which would desync the real-time read).
+    Gate: [basic_probe_cas_ascii.py](../../probes/basic/basic_probe_cas_ascii.py) — real
+    5-line tape oracle (`HARDBOIL.CAS`), a >256-byte 2-block synthetic, and a tokenised
+    no-regression case. ⏳ still open: M2 (`SAVE"CAS:",A`), `MERGE"CAS:"`, `RUN"CAS:"`.
 
 **Tier 3 — quality-of-life.**
 

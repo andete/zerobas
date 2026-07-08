@@ -185,13 +185,21 @@ do_tape_prog:
                 call    TAPION              ; sync block 1 (file header)
                 jp      c,load_error
 
-                ; --- file header: 10x BASIC_ID + 6-char filename ------------
-                ; Mirrors bload.asm: byte 0 is the file-type id. We require the
-                ; tokenised-BASIC id ($D3) and discard the remaining 15 bytes.
+                ; --- file header: 10x BASIC_ID/ASCII_ID + 6-char filename ---
+                ; Mirrors bload.asm: byte 0 is the file-type id. $D3 (tokenised
+                ; BASIC) falls through to the existing path below unchanged;
+                ; $EA (ASCII, SAVE"CAS:",A) branches to cas_ascii_load; anything
+                ; else is an unrecognised cassette file -> load_error. Both
+                ; CLOAD and LOAD"CAS:" reach this dispatch, so both accept
+                ; either format transparently (spec-cas-ascii-saveload.md §4).
                 call    TAPIN
                 jp      c,load_error
-                cp      BASIC_ID            ; must be a tokenised BASIC file
-                jp      nz,load_error
+                cp      BASIC_ID            ; tokenised BASIC -> unchanged path
+                jr      z,ctp_hdr_tokenised
+                cp      ASCII_ID            ; ASCII program -> new path
+                jp      z,cas_ascii_load
+                jp      load_error          ; neither id -> unrecognised file
+ctp_hdr_tokenised:
                 ld      b,15                ; remaining header bytes
 ctp_skip_hdr:
                 push    bc                  ; TAPIN trashes all regs
@@ -359,6 +367,145 @@ ctp_oom:
                 ld      hl,err_prog_mem
                 jp      print_string
 err_prog_mem:   db      "out of memory",13,10,0
+
+; --- cas_ascii_load: LOAD of an ASCII (SAVE"CAS:",A) cassette program --------
+; Reached from do_tape_prog's header dispatch when byte 0 is $EA (ASCII)
+; instead of $D3 (tokenised). Mirrors disk ascii_load (files.asm): LOAD
+; replaces the current program (new_prog), then the file is tokenised + stored
+; line-by-line by the shared MERGE reader (ascii_read_lines, files.asm) — the
+; same path disk ASCII LOAD/MERGE use. The only cassette-specific part is the
+; byte SOURCE: ascii_read_lines is re-pointed (D2 getbyte indirection,
+; ARL_GETBYTE) at cal_getbyte (below), a TAPIN wrapper, instead of the default
+; fat_io_getbyte — restored again before returning so a later MERGE/disk LOAD
+; is unaffected.
+;
+; Entry: TAPIN has already read + matched header byte 0 ($EA); the remaining
+; 15 header bytes (9 more $EA + 6-char name) are skipped exactly like the
+; tokenised path.
+;
+; BLOCK-BUFFERED byte source (D2 refinement, see spec §4): TAPIN is a REAL-TIME
+; read — the tape keeps moving whether or not the CPU polls — so tokenising
+; BETWEEN two TAPINs desyncs the next byte. ascii_read_lines does a full
+; dispatch_line/tokenise/store_line per line, far more than enough to desync (a
+; 34-byte file corrupted after line 1 in an unbuffered first cut). So cal_getbyte
+; serves bytes instantly from the 256-byte CAL_BUF, refilled (cal_refill) by a
+; tight TAPIN*256 loop only at a block boundary — exactly how real MSX slurps a
+; block then tokenises during the inter-block leader gap. Symmetric with
+; fat_io_getbyte serving from the 512-byte FSECTOR_BUF on disk.
+;
+; TWO HARD REQUIREMENTS ON cal_refill, both learned the hard way:
+;  (1) STATE LIVES IN RAM, NOT ON THE STACK, ACROSS TAPIN. TAPIN clobbers every
+;      register AND does not preserve a caller value pushed on the stack across
+;      it — a `push hl`/`pop hl` of the buffer pointer around TAPIN reads back the
+;      whole block as $00 (confirmed: the exact same tokenised block ctp_body
+;      reads byte-perfect came back all-zero through a stack-guarded loop). So the
+;      fill keeps its position in CAL_CNT (RAM) and recomputes the address each
+;      byte — the same "state in RAM across a BIOS tape call" discipline
+;      do_tape_prog's ctp_body uses (it guards CLPTR in RAM, not the stack).
+;  (2) THE DATA-BLOCK TAPION MUST BE PROMPT. Deferring it past new_prog + the
+;      ascii-reader entry makes it miss the block leader and fail to relock. So
+;      block 1 is primed HERE, right after the header skip, in the same
+;      back-to-back regime as do_tape_prog. cal_getbyte then TAPIONs only blocks
+;      2+, the safe mid-tape re-lock the 256-byte format is built around.
+;
+; CAL_NEEDFILL=0 means "CAL_BUF holds a live block"; cal_getbyte sets it on each
+; 256-byte wrap so the NEXT call refills. ascii_read_lines stops at the first
+; Ctrl-Z ($1A) — which every producer puts in the LAST real block (§0.1) — so we
+; never refill past the program (a TAPIN fail on a non-existent block is never
+; reached on a well-formed tape). `,R`/RUN is unchanged — the caller (do_load's
+; LOAD"CAS:",R / do_cload) applies RUNFLAG exactly as the tokenised path's `ret`.
+cas_ascii_load:
+                ld      b,15                ; remaining header bytes (same skip as $D3)
+cal_skip_hdr:
+                push    bc                  ; TAPIN trashes all regs
+                call    TAPIN
+                pop     bc
+                jp      c,load_error
+                djnz    cal_skip_hdr
+
+                ; --- prime block 1 PROMPTLY (TAPION + fill, back-to-back) ----
+                call    cal_refill          ; data block 1 leader + slurp 256 bytes
+                jp      c,load_error         ; block 1 unreadable -> load error
+                xor     a
+                ld      (CAL_NEEDFILL),a    ; CAL_BUF now holds a live block
+                                            ; (cal_refill left CAL_CNT = 0)
+
+                call    new_prog            ; LOAD replaces the current program
+
+                ; --- point the shared ASCII reader at the tape byte source ---
+                ld      hl,cal_getbyte
+                ld      (ARL_GETBYTE),hl
+                call    ascii_read_lines    ; tokenise + store; CF set = bad line
+
+                ; --- restore the default byte source, stop the motor --------
+                push    af                  ; preserve the ascii_read_lines result CF
+                ld      hl,fat_io_getbyte
+                ld      (ARL_GETBYTE),hl
+                call    TAPIOF              ; motor off (program fully read), as ctp_done
+                pop     af
+                jp      c,load_error        ; non-numbered line -> abort
+                ret                         ; caller handles ,R / returns to the REPL
+
+; --- cal_getbyte: cassette ASCII-load byte source (D2 indirection target) ----
+; Serves the next byte from CAL_BUF at position CAL_CNT (0..255) instantly — NO
+; tape I/O — so the tokenise/store work ascii_read_lines does between calls is
+; harmless. When the previous call drained the block (position wrapped 255->0),
+; CAL_NEEDFILL is set and this call first TAPION-relocks + slurps the next block
+; (cal_refill) before serving. CAL_BUF is page-aligned ($F100), so the byte
+; address is high=$F1 / low=CAL_CNT.
+;   out: A = byte, CF clear; or CF set = no more data (refill failed).
+cal_getbyte:
+                ld      a,(CAL_NEEDFILL)
+                or      a
+                jr      z,cal_serve         ; buffer still has bytes -> serve
+                call    cal_refill          ; drained -> slurp the next block
+                ret     c                   ; block missing / read fail -> EOF
+                xor     a
+                ld      (CAL_NEEDFILL),a    ; fresh block loaded (CAL_CNT = 0)
+cal_serve:
+                ld      a,(CAL_CNT)
+                ld      l,a
+                ld      h,CAL_BUF >> 8      ; HL = CAL_BUF + CAL_CNT (page-aligned)
+                ld      a,(hl)              ; A = the byte to return
+                ld      b,a                 ; save it across the counter bump
+                ld      a,l
+                inc     a                   ; advance position; 255 -> 0 wraps (8-bit)
+                ld      (CAL_CNT),a
+                jr      nz,cal_srv_ret      ; still within the block -> done
+                ld      a,1
+                ld      (CAL_NEEDFILL),a    ; block exhausted -> next call refills
+cal_srv_ret:
+                ld      a,b
+                or      a                   ; CF clear = byte valid
+                ret
+
+; --- cal_refill: TAPION-relock + slurp one 256-byte tape block into CAL_BUF --
+; TAPION then a tight TAPIN*256 loop that keeps its position in CAL_CNT (RAM) —
+; NOTHING on the stack across TAPIN (requirement 1 in the cas_ascii_load header),
+; and no gap between the lock and the first read (requirement 2). Leaves CAL_CNT
+; = 0 (wrapped after 256) so the caller/cal_getbyte serves from position 0.
+; TAPION failure (no such block) or a TAPIN short-read (corrupt/truncated tape)
+; -> CF set = EOF.
+cal_refill:
+                call    TAPION              ; (re-)lock onto the block's leader
+                ret     c                   ; no block -> EOF
+                xor     a
+                ld      (CAL_CNT),a         ; fill from position 0
+cal_fill_lp:
+                call    TAPIN               ; clobbers all; position is in CAL_CNT (RAM)
+                jr      c,cal_fill_fail     ; short block / read fail -> EOF
+                ld      c,a                 ; C = the byte
+                ld      a,(CAL_CNT)
+                ld      l,a
+                ld      h,CAL_BUF >> 8      ; HL = CAL_BUF + pos (page-aligned)
+                ld      (hl),c
+                inc     a
+                ld      (CAL_CNT),a         ; pos++ (255 -> 0 ends the 256-byte block)
+                jr      nz,cal_fill_lp
+                ret                         ; CF clear; buffer full, CAL_CNT = 0
+cal_fill_fail:
+                scf                         ; truncated block -> EOF
+                ret
 
 ; --- disk_prog_load: load a TOKENISED BASIC program from disk ----------------
 ; The disk analogue of do_tape_prog. The FCB at DISK_FCB is fully built (drive

@@ -26,7 +26,14 @@ format.
 ## 0. Milestone order (as signed off)
 
 - **M0 — pin the format (no code). ✅ DONE 2026-07-08** (findings §0.1; D1 resolved).
-- **M1 — ASCII CLOAD / LOAD"CAS:"** (§4) + gate. *(next)*
+- **M1 — ASCII CLOAD / LOAD"CAS:"** (§4) + gate. **✅ DONE 2026-07-08.** 3-way header
+  dispatch in `do_tape_prog` + `cas_ascii_load`/`cal_getbyte`/`cal_refill` (256-byte
+  `CAL_BUF` block buffer behind the `ARL_GETBYTE` getbyte indirection). Gate:
+  `probes/basic/basic_probe_cas_ascii.py` (real `HARDBOIL.CAS` load oracle + >256-byte
+  2-block synthetic + tokenised no-regression). See §4 for the three hard requirements
+  the buffer design turns on (`CAL_BUF` below the stack's reach — the decisive bug, fixed
+  by moving it from `$F100` to `$E600`; refill state in RAM across `TAPIN`; prompt block-1
+  `TAPION`). *(next: M2)*
 - **M2 — SAVE"CAS:name",A** (§5) + gate.
 
 ## 0.1 M0 findings — the pinned cassette ASCII format
@@ -121,13 +128,59 @@ check. Make it a branch: `$D3` → the existing tokenised path (unchanged); `$EA
 new `cas_ascii_load`; anything else → `load_error`. Both `CLOAD` and `LOAD"CAS:"` reach
 `do_tape_prog`, so both transparently accept either format (D3).
 
-**Body (`cas_ascii_load`).** Skip the remaining 15 header bytes (as today), `TAPION`
-onto the first data block, `call new_prog` (LOAD replaces), then drive `ascii_read_lines`
-with the tape as its byte source (D2). The tape getbyte wrapper counts bytes and
-re-`TAPION`s at each **256-byte** boundary (§0.1) so a multi-block program reads across
-leaders; `ascii_read_lines` stops at the first **Ctrl-Z (`$1A`)**, so trailing padding is
+**Body (`cas_ascii_load`).** Skip the remaining 15 header bytes (as today), `call
+new_prog` (LOAD replaces), then drive `ascii_read_lines` with the tape as its byte source
+(D2). `ascii_read_lines` stops at the first **Ctrl-Z (`$1A`)**, so trailing padding is
 never read. `,R` handling is unchanged — the `LOAD"CAS:",R`/`RUN` caller already runs on
 the flag (Tier-1 `parse_close_run`).
+
+**The tape byte source MUST buffer a whole block — not read per byte (D2 refinement,
+2026-07-08).** `TAPIN` is a *real-time* read: the (emulated) tape keeps moving whether or
+not the CPU is polling, so any CPU-heavy work *between* two `TAPIN` calls desyncs the
+next byte. `ascii_read_lines` does a full `dispatch_line`→`tokenise`→`store_line` between
+byte reads, which is more than enough to desync — a 34-byte synthetic file corrupts after
+line 1 (M1 first-cut, confirmed). This is *why the format is 256-byte blocks*: on real
+hardware each block is slurped in one tight uniform-cost loop, tokenised during the
+**inter-block leader gap**, then the next block is re-locked with `TAPION`. So the tape
+getbyte serves bytes instantly from a **256-byte RAM block buffer**, refilled by a tight
+`TAPIN`×256 loop (+`TAPION` re-lock) at each block boundary. This mirrors the disk path
+exactly — `fat_io_getbyte` already serves from a 512-byte sector buffer, which is why disk
+ASCII load never hit this. Tokenising happens only while draining the RAM buffer (no tape
+I/O), so its cost is harmless.
+
+**Three hard requirements the M1 implementation had to satisfy (each cost real iterations;
+captured so M2's tape sink honours the write-side mirror):**
+1. **`CAL_BUF` must sit BELOW the stack's reach — this was the decisive M1 bug.** The first
+   placement, `$F100` (page-aligned, in the "free `$F00A..$F37F` span below the C-BIOS
+   sysvars `~$F380`"), was NOT safe: the C-BIOS stack lives just under the sysvars and grows
+   down, and the call-heavy `dispatch_line`/`tokenise` pass drove `SP` down into `$F1xx`,
+   overwriting a correctly-filled block *before* `cal_getbyte` served it — a **single-block**
+   file (HOBBIT) loaded as an EMPTY program. Fixed by relocating `CAL_BUF` to **`$E600`**,
+   page-aligned inside the file data sector buffer `FSECTOR_BUF` (`$E5C0..$E7BF`): that
+   buffer is used only by disk I/O and a cassette CLOAD/LOAD does none, so it is dead for the
+   whole load — and `$E600` is far below any stack descent. Verified: HOBBIT + HARDBOIL +
+   a 552 B multi-block synthetic + a clean re-encode of timecurb's text all load correctly
+   after the move; all failed at `$F100`.
+2. **The refill loop's state lives in RAM, NOT on the stack, across `TAPIN`.** `TAPIN`
+   clobbers every register, so `cal_refill` keeps its fill position in a RAM cell
+   (`CAL_CNT`) and recomputes the store address each byte — the "state in RAM across a BIOS
+   tape call" discipline `ctp_body` already uses (it guards `CLPTR` in RAM).
+3. **The block-1 `TAPION` must be prompt** (right after the header skip, before `new_prog`
+   and the reader entry) — deferring it makes it miss the data-block leader and fail to
+   relock. `cas_ascii_load` therefore primes block 1 itself; `cal_getbyte` `TAPION`s only
+   blocks 2+ (the safe mid-tape re-lock the 256-byte format is built around).
+
+**Chosen scratch homes (M1):** `ARL_GETBYTE` (getbyte vector, 2 B) and `CAL_NEEDFILL`
+(refill flag, 1 B) sit in the free `$E0CE`/`$E0EB` page-3 gaps; `CAL_CNT` (block position,
+1 B) reuses the `$E0EA` VRAM-flag gap (dead outside a cassette load); **`CAL_BUF` is a
+dedicated page-aligned 256-byte buffer at `$E600`**, inside the idle `FSECTOR_BUF` span
+(see requirement 1), page-aligned so the byte address is `$E6`/`CAL_CNT` with no add.
+
+**Note on real-tape samples.** HOBBIT.CAS and HARDBOIL.CAS load correctly; `timecurb.cas`
+does NOT — but its *content* loads fine when re-encoded as a spec-conformant `.cas`, so its
+failure is an artifact quirk of that particular multi-file game tape (264-byte `$00`-padded
+blocks), not a reader bug. The gate uses HARDBOIL (real) + a synthetic multi-block, not
+timecurb.
 
 ## 5. Design — SAVE"CAS:name",A (Milestone 2)
 
@@ -155,8 +208,13 @@ program sizes — the three tapes double as M1 load oracles. Own-design single-b
 rejected alternative B) would have been cheaper but lost real-MSX interop for >256-byte
 programs.
 
-**D2 — Reader byte-source abstraction.** **RESOLVED: A (getbyte indirection).**
-`ascii_read_lines` calls `fat_io_getbyte` directly.
+**D2 — Reader byte-source abstraction.** **RESOLVED: A (getbyte indirection) + a
+256-byte block buffer behind the *tape* getbyte (refined 2026-07-08, see §4).** The
+indirection vector stands; the tape getbyte must NOT call `TAPIN` per byte (real-time
+desync — §4), it serves from a 256-byte block buffer refilled by a tight `TAPIN` loop at
+each block boundary. This is the interop-faithful design (matches real MSX + the disk
+sector-buffer), keeps the buffer bounded to 256 B, and reverses nothing in D1/§0.1.
+`ascii_read_lines` calls `fat_io_getbyte` directly today.
 - **A. getbyte indirection:** route its reads through a one-cell RAM vector (the read-side
   mirror of `PRDEV`), default `fat_io_getbyte`, re-pointed to a `TAPIN` wrapper during a
   cassette ASCII load. Symmetric with the sink; no size limit. One small refactor of
