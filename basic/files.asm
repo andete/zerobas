@@ -1121,7 +1121,13 @@ ex_merge:
                 ld      a,(hl)
                 cp      '"'
                 jp      nz,stmt_error       ; filename string required
-                inc     hl                  ; HL -> first filename char
+                inc     hl                  ; HL -> first filename char (inside quotes)
+                ; device dispatch: "CAS:" -> tape ASCII merge; else -> disk. dev_cmp
+                ; advances HL past a matched prefix, restores it on a miss (so the
+                ; disk path still sees HL at the filename start).
+                ld      de,dev_cas
+                call    dev_cmp
+                jp      z,merge_cas         ; matched "CAS:" -> tape merge (HL past prefix)
                 call    parse_disk_fcb      ; build DISK_FCB_NAME; HL -> closing '"'
                 inc     hl                  ; past the closing '"'
                 ld      a,(DISKSLOT_OK)
@@ -1135,6 +1141,47 @@ ex_merge:
                 jp      c,stmt_error        ; non-numbered line -> "Direct statement in file"
                 jp      exec_stmt
 mrg_ioerr:
+                pop     hl
+                jp      load_error
+
+; --- MERGE "CAS:name" — merge an ASCII program from cassette ------------------
+; The tape counterpart of the disk MERGE above: read an $EA ASCII cassette file and
+; store each line into the CURRENT program (insert/replace by number — the existing
+; program is KEPT, NO new_prog). Reuses the M1 cassette-ASCII byte machinery: open
+; the tape (TAPION), require the $EA file-type id, then cas_ascii_setup (skip header
+; + prime block 1) + cas_ascii_drive (ascii_read_lines off cal_getbyte, restore +
+; TAPIOF) — exactly what cas_ascii_load does, minus the new_prog. A tokenised ($D3)
+; or unknown file is rejected (MERGE needs ASCII text). Clean-room: MERGE semantics
+; from the MSX-BASIC language reference; format + byte source are our own M1 code.
+; Entry: HL is inside the quotes, past "CAS:". The name is IGNORED (TAPION opens the
+; next tape file), matching LOAD"CAS:"/CLOAD.
+merge_cas:
+                ; skip the rest of the quoted name up to the closing '"'
+mc_fn:
+                ld      a,(hl)
+                or      a
+                jp      z,stmt_error        ; unterminated string
+                cp      '"'
+                jr      z,mc_close
+                inc     hl
+                jr      mc_fn
+mc_close:
+                inc     hl                  ; past the closing '"'
+                push    hl                  ; guard the text cursor across the merge
+                call    TAPION              ; open tape + sync the header block leader
+                jp      c,mc_ioerr
+                call    TAPIN               ; header byte 0 = file-type id
+                jp      c,mc_ioerr
+                cp      ASCII_ID            ; MERGE requires an ASCII ($EA) file
+                jp      nz,mc_ioerr         ; tokenised / other -> cannot merge
+                call    cas_ascii_setup     ; skip rest of header + prime data block 1
+                jp      c,mc_ioerr
+                ; NB: NO new_prog — MERGE inserts into the current program.
+                call    cas_ascii_drive     ; read + tokenise + store each line; CF=bad line
+                pop     hl                  ; restore the text cursor
+                jp      c,stmt_error        ; non-numbered line -> "Direct statement in file"
+                jp      exec_stmt
+mc_ioerr:
                 pop     hl
                 jp      load_error
 

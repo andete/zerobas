@@ -153,14 +153,38 @@ dl_is_disk:
 do_run:
                 call    skip_spaces
                 ld      a,(hl)
-                cp      '"'                 ; a quoted filename -> disk load+run
+                cp      '"'                 ; a quoted filename -> device load+run
                 jp      nz,run_prog         ; bare RUN / RUN<lineno> -> run stored
                 inc     hl                  ; past the opening quote
+                ; device dispatch: "CAS:" -> tape, else -> disk (mirrors do_load).
+                ; dev_cmp advances HL past a matched prefix and restores it on a miss,
+                ; so the disk path below still sees HL at the filename start.
+                ld      de,dev_cas
+                call    dev_cmp
+                jr      z,dr_is_cas         ; matched "CAS:" -> tape program run
                 call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
                 call    parse_close_run     ; consume closing quote (and any ,R)
                 jp      c,load_error
                 call    disk_prog_load      ; load the tokenised program into TXTBASE
                 jp      run_prog            ; ...and run it (running is implicit)
+dr_is_cas:
+                ; HL is inside the quotes, past "CAS:": skip the rest of the quoted
+                ; filename up to (not past) the closing quote — the name is ignored
+                ; (TAPION opens the next tape file), exactly like do_load's dl_is_cas.
+dr_cas_fn:
+                ld      a,(hl)
+                or      a
+                jp      z,load_error        ; unterminated string
+                cp      '"'
+                jr      z,dr_cas_close
+                inc     hl
+                jr      dr_cas_fn
+dr_cas_close:
+                call    parse_close_run     ; closing quote (+ harmless ,R: run is implicit)
+                jp      c,load_error
+                call    do_tape_prog        ; load the program off tape (tokenised OR
+                                            ; $EA ASCII — do_tape_prog's 3-way dispatch)
+                jp      run_prog            ; ...and run it
 
 ; --- skip_quoted: HL on the opening '"' -> HL past the closing '"' ------------
 ; Used by CLOAD to discard its optional quoted filename. Clobbers A.
@@ -415,36 +439,50 @@ err_prog_mem:   db      "out of memory",13,10,0
 ; reached on a well-formed tape). `,R`/RUN is unchanged — the caller (do_load's
 ; LOAD"CAS:",R / do_cload) applies RUNFLAG exactly as the tokenised path's `ret`.
 cas_ascii_load:
+                call    cas_ascii_setup     ; skip the rest of the header + prime block 1
+                jp      c,load_error        ; header / block-1 unreadable -> load error
+                call    new_prog            ; LOAD replaces the current program
+                call    cas_ascii_drive     ; read+tokenise+store via the tape source
+                jp      c,load_error        ; non-numbered line -> abort
+                ret                         ; caller handles ,R / returns to the REPL
+
+; --- cas_ascii_setup: consume the remaining 15 header bytes and prime data block 1.
+; Split out of cas_ascii_load so MERGE"CAS:" (merge_cas, files.asm) can reuse the
+; exact same header-skip + block-prime WITHOUT new_prog (merge keeps the current
+; program). Entry: do_tape_prog / merge_cas has already TAPINed + matched header
+; byte 0 ($EA). Leaves CAL_BUF holding a live block, CAL_NEEDFILL=0, CAL_CNT=0.
+;   out: CF set = header or block-1 read failed.
+cas_ascii_setup:
                 ld      b,15                ; remaining header bytes (same skip as $D3)
 cal_skip_hdr:
                 push    bc                  ; TAPIN trashes all regs
                 call    TAPIN
                 pop     bc
-                jp      c,load_error
+                ret     c                   ; header read fail -> CF
                 djnz    cal_skip_hdr
-
-                ; --- prime block 1 PROMPTLY (TAPION + fill, back-to-back) ----
+                ; prime block 1 PROMPTLY (TAPION + fill, back-to-back)
                 call    cal_refill          ; data block 1 leader + slurp 256 bytes
-                jp      c,load_error         ; block 1 unreadable -> load error
+                ret     c                   ; block 1 unreadable -> CF
                 xor     a
-                ld      (CAL_NEEDFILL),a    ; CAL_BUF now holds a live block
-                                            ; (cal_refill left CAL_CNT = 0)
+                ld      (CAL_NEEDFILL),a    ; CAL_BUF now holds a live block (CAL_CNT=0)
+                ret
 
-                call    new_prog            ; LOAD replaces the current program
-
-                ; --- point the shared ASCII reader at the tape byte source ---
+; --- cas_ascii_drive: run ascii_read_lines off the tape byte source, then restore
+; the default (disk) source and stop the motor. Shared by cas_ascii_load (LOAD) and
+; merge_cas (MERGE"CAS:"). The getbyte indirection (ARL_GETBYTE) is pointed at
+; cal_getbyte for the read and put back to fat_io_getbyte afterwards so a later
+; MERGE / disk LOAD is unaffected.
+;   out: CF from ascii_read_lines (set = a non-blank, non-numbered line).
+cas_ascii_drive:
                 ld      hl,cal_getbyte
                 ld      (ARL_GETBYTE),hl
                 call    ascii_read_lines    ; tokenise + store; CF set = bad line
-
-                ; --- restore the default byte source, stop the motor --------
                 push    af                  ; preserve the ascii_read_lines result CF
                 ld      hl,fat_io_getbyte
                 ld      (ARL_GETBYTE),hl
-                call    TAPIOF              ; motor off (program fully read), as ctp_done
+                call    TAPIOF              ; motor off (file fully read), as ctp_done
                 pop     af
-                jp      c,load_error        ; non-numbered line -> abort
-                ret                         ; caller handles ,R / returns to the REPL
+                ret
 
 ; --- cal_getbyte: cassette ASCII-load byte source (D2 indirection target) ----
 ; Serves the next byte from CAL_BUF at position CAL_CNT (0..255) instantly — NO
