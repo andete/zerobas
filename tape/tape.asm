@@ -47,6 +47,12 @@ PPI_PORTC:      equ     $AA             ; i8255 PPI Port C (motor bit 4, CASW bi
 CS120_LOW:      equ     $F3FC           ; 1200-baud reference: low-signal length word
 CS240_LOW:      equ     $F401           ; 2400-baud reference: low-signal length word
 ACT_LOW:        equ     $F406           ; active low-signal length word (the live baud)
+; Oracle-sourced reference LOW words (black-box VG-8020, matching sysvars.inc):
+; SCREEN,,,1 leaves CS120 LOW = bytes 53 5C; SCREEN,,,2 sets CS240 LOW = 25 2D.
+; cas_seed writes these when the work area is blank (real BIOS cold-init does the
+; same); csav_speed then only picks which one is the active word.
+CAS_LOW_1200:   equ     $5C53           ; CS120 reference low-signal length word (53 5C)
+CAS_LOW_2400:   equ     $2D25           ; CS240 reference low-signal length word (25 2D)
 LOWLIM:         equ     $FCA4           ; read discrimination threshold work byte (real sysvar)
 ; CASBAUD: our resolved-baud cache for one write session. TAPOON computes the
 ; baud from the active table above and stores it here (0 = 1200, $FF = 2400);
@@ -165,14 +171,37 @@ stmotr_tog:
                 jr      stmotr_on
 
 ;--------------------------------
+; cas_seed: seed-if-zero of the CS120/CS240 reference LOW words. On a real MSX the
+; main-BIOS cold-init fills these tables; the C-BIOS + zerobas-tape stack has no
+; such cold-init (no BIOS seed, no cold-init hook, no SCREEN,,,baud), so a blank
+; work area leaves them reading 0. TAPOON calls this first so the whole write
+; stack has valid reference tables regardless of caller -- BASIC (csav_speed) then
+; only sets the active word. Seed-if-zero, never clobber: the pair is only ever
+; both-blank (cold) or both-set (a genuine cold-init), so CS120_LOW == 0 is a
+; sufficient sentinel and a legitimately-seeded table is left untouched.
+; Changes: AF, HL
+cas_seed:
+                ld      hl,(CS120_LOW)
+                ld      a,h
+                or      l
+                ret     nz              ; already seeded -> leave it
+                ld      hl,CAS_LOW_1200
+                ld      (CS120_LOW),hl
+                ld      hl,CAS_LOW_2400
+                ld      (CS240_LOW),hl
+                ret
+
+;--------------------------------
 ; cas_baud: detect the active write baud from the cassette work area, honouring
 ; whatever the system selected -- no private flag. When a baud is chosen (e.g.
 ; SCREEN ,,,baud), the system copies its reference table CS120 ($F3FC, 1200) or
 ; CS240 ($F401, 2400) into the active LOW slot ($F406). We compare the active
 ; LOW word against CS120 first, then CS240: a CS240 match means 2400, anything
-; else -- including a CS120 match, an unrecognised value, or a blank/
-; uninitialised work area (active == CS120 == 0) -- defaults to the MSX-standard
-; 1200. Pure comparison against the live tables: no copied timing constants.
+; else -- a CS120 match or any unrecognised value -- defaults to the MSX-standard
+; 1200. TAPOON's cas_seed guarantees CS120/CS240 hold their real reference words
+; before we get here, so an unselected baud (active still 0) simply matches
+; neither table and falls to the 1200 default via the catch-all no-match path.
+; Pure comparison against the live tables: no copied timing constants.
 ; Out:     Z set => 1200 baud, Z clear (NZ) => 2400 baud.   Changes: AF, HL
 cas_baud:
                 push    hl
@@ -493,6 +522,7 @@ tapoon:
                 ; cost does not lengthen the motor-on -> leader gap: at 2400 a
                 ; longer gap shifts the spin-up transient and desyncs the
                 ; mid-tape TAPION re-lock (CAS_SKIP) on the next block's read.
+                call    cas_seed        ; ensure CS120/CS240 hold their reference words
                 call    cas_baud        ; resolve the system baud from the work area
                 ld      (CASBAUD),a     ; cache it for this session (0=1200, $FF=2400)
                 ld      a,1

@@ -358,11 +358,12 @@ sav_is_cas:
 ; ===========================================================================
 ; csav_speed — parse the optional ",speed" clause of CSAVE"name"[,speed].
 ; speed 1 = 1200 baud, 2 = 2400 baud (published MSX-BASIC syntax). The rate is
-; HONOURED by copying the reference LOW-signal-length word (CS120 $F3FC / CS240
-; $F401) into the active baud slot ($F406) the tape write path's cas_baud reads
-; — the same mechanism SCREEN,,,baud uses on a real machine (which zerobas does
-; not implement, so the slot otherwise holds C-BIOS's 1200 default). No change to
-; the tape signal layer. Absent clause -> baud unchanged.
+; HONOURED by setting the active baud slot ($F406) to the selected reference
+; LOW-signal-length word (CS120 $5C53 / CS240 $2D25) that the tape write path's
+; cas_baud reads — the same mechanism SCREEN,,,baud uses on a real machine (which
+; zerobas does not implement). The CS120/CS240 reference tables themselves are
+; seeded by TAPOON's cas_seed (a real BIOS cold-init does this), so we only pick
+; the active word. No change to the tape signal layer. Absent clause -> unchanged.
 ;
 ; Returns CF (not `jp load_error`) on a bad speed / trailing junk so a rejected
 ; speed can NOT fall through into the actual save — see the load_error-is-not-an-
@@ -397,17 +398,12 @@ csav_sp_2400:
 csav_sp_1200:
                 ld      de,CAS_LOW_1200
 csav_sp_apply:
-                ; Seed the baud reference tables (nothing else does in the C-BIOS +
-                ; zerobas-tape stack: no BIOS cold-init seed, no cold-init hook in the
-                ; tape patch, no SCREEN,,,baud -- so they read 0), then set the active
-                ; word so the write path's cas_baud selects the chosen rate. DE = it.
-                push    hl                  ; save the text cursor (clobbered below)
-                ld      hl,CAS_LOW_1200
-                ld      (CS120_LOW),hl
-                ld      hl,CAS_LOW_2400
-                ld      (CS240_LOW),hl
+                ; Set the active LOW word so the tape write path's cas_baud selects
+                ; the chosen rate. The CS120/CS240 reference tables are seeded by
+                ; TAPOON's cas_seed (a real BIOS cold-init does the same), so BASIC
+                ; only picks the active word here -- and leaves HL (the text cursor)
+                ; untouched. DE = the selected reference LOW word.
                 ld      (ACT_LOW),de        ; active LOW = the selected rate
-                pop     hl                  ; restore the text cursor
                 call    skip_spaces         ; HL is past the speed (eval advanced it)
                 ld      a,(hl)
                 or      a
