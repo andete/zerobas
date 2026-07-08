@@ -292,10 +292,32 @@ oo_num:
                 ; validate the channel against the MAXFILES ceiling (1..MAXF).
                 ld      a,d
                 or      a
-                jr      nz,oo_fail_syn      ; > 255 -> bad file number
+                jp      nz,oo_fail_syn      ; > 255 -> bad file number
                 ld      a,e
                 call    fch_valid
-                jr      nc,oo_fail_syn      ; 0 or > MAXF -> bad file number
+                jp      nc,oo_fail_syn      ; 0 or > MAXF -> bad file number
+                ; --- optional "LEN=r" record-size clause (Phase 2c; disk-BASIC
+                ; option-closure Item 3). Parsed for every mode; only RANDOM GET/PUT
+                ; reads it. A channel without LEN= defaults to 256. r must be a power
+                ; of two in 1..256 so records tile the 512-byte sector without
+                ; straddling (the sector-tiling scope; non-tiling sizes -> Syntax
+                ; error). Stored per channel in FCH_RECLENS[ch].
+                ld      a,e
+                ld      (OO_RECLEN_CHAN),a  ; stash channel across the LEN= eval
+                call    oo_parse_reclen     ; DE = reclen (default 256); HL past; Cy=1 bad
+                jp      c,oo_fail_syn       ; non-tiling / out-of-range record size
+                ld      a,(OO_RECLEN_CHAN)
+                add     a,a                 ; channel * 2 (word index)
+                ld      l,a
+                ld      h,0
+                ld      bc,FCH_RECLENS
+                add     hl,bc
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d              ; FCH_RECLENS[ch] = reclen
+                ld      a,(OO_RECLEN_CHAN)
+                ld      e,a
+                ld      d,0                 ; restore DE = channel for the rest of do_open
                 ld      a,(DISKSLOT_OK)
                 or      a
                 jr      z,oo_nodisk         ; no disk -> fail BEFORE claiming a slot
@@ -373,6 +395,61 @@ oo_fail_syn:
                 xor     a
                 ld      (FCH_MODE),a
                 jp      stmt_error
+
+; oo_parse_reclen — parse an optional "LEN = expr" record-size clause at (HL).
+; LEN is the $FF $92 function token; '=' is EQ_TOKEN. Absent -> DE = 256 (the
+; historical fixed record length), Cy = 0. Present -> DE = the evaluated record
+; length, validated to a power of two in 1..256 (so records tile the 512-byte
+; sector with no straddle); a non-tiling / out-of-range value returns Cy = 1
+; (caller raises Syntax error). HL advances past whatever was consumed.
+; Clobbers A,BC,DE,HL.
+oo_parse_reclen:
+                call    skip_spaces
+                ld      a,(hl)
+                cp      PEEK_PREFIX         ; $FF function-token prefix?
+                jr      nz,opr_default
+                inc     hl
+                ld      a,(hl)
+                cp      LEN_TOKEN           ; $92 = LEN
+                jr      z,opr_have
+                dec     hl                  ; not LEN -> restore cursor to the $FF
+opr_default:
+                ld      de,256              ; no LEN= -> default record length
+                or      a                   ; Cy = 0
+                ret
+opr_have:
+                inc     hl                  ; past $92
+                call    skip_spaces
+                ld      a,(hl)
+                cp      EQ_TOKEN            ; '='
+                jr      nz,opr_bad
+                inc     hl
+                call    eval                ; DE = record length, HL past it
+                ld      a,d
+                or      a
+                jr      z,opr_lowbyte       ; D=0 -> reclen 1..255
+                ; D != 0: the only legal value is exactly 256 (D=1, E=0).
+                dec     a
+                jr      nz,opr_bad          ; D>=2 -> > 512
+                ld      a,e
+                or      a
+                jr      nz,opr_bad          ; D=1,E!=0 -> > 256
+                ld      de,256              ; reclen = 256 (2 records / sector)
+                or      a                   ; Cy = 0
+                ret
+opr_lowbyte:
+                ld      a,e
+                or      a
+                jr      z,opr_bad           ; reclen 0 invalid
+                ld      b,a
+                dec     a
+                and     b                   ; (E & (E-1)) == 0 iff power of two
+                jr      nz,opr_bad          ; not a power of two -> would straddle
+                or      a                   ; Cy = 0 (A already 0); DE = reclen (D=0)
+                ret
+opr_bad:
+                scf
+                ret
 
 ; --- LINE INPUT #n, A$  (only the "LINE INPUT" form of LINE is supported) ---
 ex_line:

@@ -96,6 +96,9 @@ REGISTRY = [
     # model diverges from stock's Syntax-error halt), judged by exit code (artifact).
     ("BSAVE/BLOAD(VRAM)","disk_probe_vram_saveload.py",  [], "live"),
     ("OPTION(hygiene)", "disk_probe_option_hygiene.py",  [], "artifact"),
+    # OPEN..AS #n LEN=r random record size (item 3). LEN=128 -> 4 records per
+    # 512-byte sector; a 4-record round-trip is byte-identical to CF-3300 (live).
+    ("OPEN(LEN=)",     "disk_probe_openlen.py",         [], "live"),
 ]
 
 

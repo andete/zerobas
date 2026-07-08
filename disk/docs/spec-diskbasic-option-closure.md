@@ -5,11 +5,12 @@ SPDX-License-Identifier: 0BSD
 
 # Spec (for sign-off): Disk-BASIC option-surface closure
 
-> **STATUS: Items 1+2+5 IMPLEMENTED + GATED (2026-07-08).** Item 5 (both parts:
-> WRSEQ `$15` FCB position write-back + document-and-gate the 8-bit/128 RR limit)
-> landed 2026-07-08 — see the Sign-off section. Items 3+4 remain (item 3 axis-home
-> decided: `LEN=` under disk-BASIC now, device channels → plain-BASIC axis; item 4
-> is FILES/KILL wildcard + CLOSE list). Q1.4 (BLOAD `,offset`) resolved: **deferred, but the parser now rejects a
+> **STATUS: Items 1+2+3+5 IMPLEMENTED + GATED (2026-07-08).** Item 3 `LEN=` landed
+> 2026-07-08 (sector-tiling sizes only — a user-decided scope narrowing after the record
+> engine turned out to assume 256-byte tiling records; device channels routed to the
+> plain-BASIC axis). Items 1+2+5 landed earlier the same day. **Only Item 4 remains**
+> (FILES/KILL wildcard + CLOSE list). See the Sign-off section.
+> Q1.4 (BLOAD `,offset`) resolved: **deferred, but the parser now rejects a
 > typed offset with a clean `load error`** (never a silent wrong-address load) and is
 > structured so real offset support is a one-branch add. See the Sign-off section.
 > Per
@@ -261,8 +262,18 @@ emulator-free `unit-test` — except the host position twin).
   resumes the *caller* (do_bsave) — so a rejected `,Q` still created the file. Fixed to the
   CF-return + top-level `jp c,load_error` pattern. Gate cell `OPTION(hygiene)` (ours-only
   behavioural: NEG `,X` / `,S,offset` / BSAVE `,Q` all reject; positive load still works).
-- [ ] **Item 3** — `LEN=` (disk-BASIC, next) + device channels (→ plain-BASIC axis). Axis
-  split decided; not yet coded.
+- [x] **Item 3** — `LEN=` **DONE 2026-07-08.** Scope surprise surfaced + user-decided
+  (the record engine assumed 256-byte sector-tiling records; a naive "replace 256" would
+  silently corrupt on a straddling size): **sector-tiling sizes only** — `LEN=r` for r a
+  power of two in 1..256 (512/r records tile the sector, no straddle); non-tiling / out-of-
+  range → `Syntax error`. `oo_parse_reclen` ([files.asm](../../basic/files.asm)) parses the
+  `$FF $92` LEN token + validates; per-channel `FCH_RECLENS` (default 256); `frnd_calc`
+  generalized to `byteoffset=(N-1)*r → GP_SEC/GP_WITHIN` + `mul_reclen`/`load_reclen`
+  ([field.asm](../../basic/field.asm)). Gates: host [test_open_len.py](../../tests/test_open_len.py)
+  (geometry r=256/128/64/1 + parse/rejection; `make unit-test` 37/37) + CF-3300 differential
+  [disk_probe_openlen.py](../../probes/disk/disk_probe_openlen.py) (`OPEN(LEN=)` cell in
+  `make diskbasic-acceptance`, LEN=128 4-record round-trip byte-identical). Device channels
+  routed to the plain-BASIC axis (Q3.0), out of scope here.
 - [ ] **Item 4** — FILES/KILL wildcard + CLOSE list (Q4.1–Q4.2)
 - [x] **Item 5** — **DONE 2026-07-08.** (5a) BDOS `$15` WRSEQ FCB write-back: the
   register-transparent write-side twin `wrseq_wr_writeback` ([kernel.asm](../kernel.asm),

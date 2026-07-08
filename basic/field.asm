@@ -28,11 +28,16 @@
 ; to the VG-8020 crunch (FIELD $B1, LSET $B8, RSET $B9). No disassembly. See
 ; basic/PROVENANCE.md §random-access records.
 ;
-; GET/PUT (slice 2) add the on-disk record I/O. The record length is 256 bytes
-; (oracle: a CF-3300 PUT of one record makes a 256-byte file). Record N (1-based)
-; occupies file bytes [(N-1)*256, (N-1)*256+256), i.e. file logical sector (N-1)/2 at
-; within-sector offset ((N-1)&1)*256 — two records per 512-byte sector. PUT does a
-; read-modify-write of the sector (preserving the other record) and extends the
+; GET/PUT (slice 2) add the on-disk record I/O. The record length is `reclen`,
+; per channel — 256 by default (oracle: a CF-3300 PUT of one record makes a
+; 256-byte file), or the OPEN..AS #n LEN=r value (disk-BASIC option-closure Item 3;
+; parsed in files.asm, held in FCH_RECLENS[ch], loaded into GP_RECLEN per calc).
+; r is constrained to a power of two in 1..256 so records TILE the 512-byte sector
+; (512/r per sector) and never straddle two sectors. Record N (1-based) occupies
+; file bytes [(N-1)*reclen, N*reclen), i.e. file logical sector ((N-1)*reclen)>>9 at
+; within-sector offset ((N-1)*reclen)&511 (frnd_calc) — 512/reclen records per
+; 512-byte sector (r=256 -> the historical two per sector). PUT does a
+; read-modify-write of the sector (preserving the other records) and extends the
 ; cluster chain when the record lies beyond the current end; GET reads the sector and
 ; copies the record into the buffer. The buffer choreography keeps the live record in
 ; FSECTOR_BUF and uses FWBUF for everything else (FAT metadata during allocation, then
@@ -618,22 +623,62 @@ frnd_fill_fwbuf:
                 ldir
                 ret
 
-; frnd_calc — split GP_RECNO into GP_SEC (file sector index) + GP_WITHIN (0 or 256).
-; k = recno-1; GP_SEC = k>>1; GP_WITHIN = (k&1)?256:0. recno is 1..255, so k<256.
+; load_reclen — GP_RECLEN := FCH_RECLENS[FCH_ACTIVE], the active channel's record
+; length (set at OPEN, default 256). Called at the start of every record calc; the
+; channel is already live (GET/PUT call fch_select first, setting FCH_ACTIVE).
 ; Clobbers A,DE,HL.
-frnd_calc:
-                ld      de,(GP_RECNO)
-                dec     de                  ; DE = k (0..254)
+load_reclen:
+                ld      a,(FCH_ACTIVE)
+                add     a,a                 ; channel * 2 (word index)
+                ld      e,a
+                ld      d,0
+                ld      hl,FCH_RECLENS
+                add     hl,de
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)
+                ld      (GP_RECLEN),de
+                ret
+
+; mul_reclen — HL := HL * GP_RECLEN. The record length is a power of two (enforced
+; at OPEN), so the multiply is a shift: double HL while halving r until r == 1.
+; Clobbers A,DE.
+mul_reclen:
+                ld      de,(GP_RECLEN)
+mr_loop:
+                ld      a,d
+                or      a
+                jr      nz,mr_shift         ; r >= 256 -> still shifting
                 ld      a,e
-                and     1
-                ld      hl,0
-                jr      z,frc_even
-                ld      hl,256
-frc_even:
-                ld      (GP_WITHIN),hl
+                cp      2
+                ret     c                   ; r == 1 -> HL unchanged (done)
+mr_shift:
+                add     hl,hl               ; HL <<= 1
                 srl     d
-                rr      e                   ; DE = k >> 1  (D = 0)
-                ld      (GP_SEC),de
+                rr      e                   ; r >>= 1
+                jr      mr_loop
+
+; frnd_calc — split GP_RECNO into GP_SEC (file sector index) + GP_WITHIN (byte
+; offset within the 512-byte sector). byteoffset = (recno-1) * reclen; GP_SEC =
+; byteoffset >> 9; GP_WITHIN = byteoffset & 511. reclen tiles the sector (power of
+; two 1..256), so a record never straddles two sectors. recno is 1..255 and reclen
+; <= 256, so byteoffset <= 254*256 = 65024 (fits 16 bits). Clobbers A,DE,HL.
+frnd_calc:
+                call    load_reclen         ; GP_RECLEN = this channel's record size
+                ld      hl,(GP_RECNO)
+                dec     hl                  ; HL = k (0..254)
+                call    mul_reclen          ; HL = k * reclen = byte offset in file
+                ; GP_WITHIN = HL & 0x01FF (low 9 bits)
+                ld      a,h
+                and     1
+                ld      d,a
+                ld      e,l
+                ld      (GP_WITHIN),de
+                ; GP_SEC = HL >> 9 = (HL >> 8) >> 1
+                ld      l,h
+                ld      h,0                 ; HL = HL >> 8
+                srl     l                   ; HL = HL >> 9  (H stays 0; byteoffset < 32768)
+                ld      (GP_SEC),hl
                 ret
 
 ; fat_rand_put — write the record buffer (FSECTOR_BUF[0..256)) to record GP_RECNO.
@@ -673,13 +718,13 @@ frp_readold:
                 call    read_sector
                 ret     c
 frp_overlay:
-                ; FWBUF[within..within+256) = FSECTOR_BUF[0..256)
+                ; FWBUF[within..within+reclen) = FSECTOR_BUF[0..reclen)
                 ld      hl,(GP_WITHIN)
                 ld      de,FWBUF
                 add     hl,de
                 ex      de,hl               ; DE = FWBUF + within (dest)
                 ld      hl,FSECTOR_BUF      ; src = the record
-                ld      bc,256
+                ld      bc,(GP_RECLEN)      ; reclen bytes (set by frnd_calc above)
                 ldir
                 ld      de,(GP_PHYS)
                 ld      hl,FWBUF
@@ -691,21 +736,20 @@ frp_err:
                 scf
                 ret
 
-; frnd_update_size — FWR_BYTES = max(FWR_BYTES, GP_RECNO*256). recno<=255, so the new
-; size (recno<<8) is <= 65280 and the high 2 bytes are 0. Clobbers A,DE,HL.
+; frnd_update_size — FWR_BYTES = max(FWR_BYTES, GP_RECNO*reclen). recno<=255 and
+; reclen<=256, so the new size is <= 65280 and the high 2 bytes are 0. GP_RECLEN was
+; loaded by the frnd_calc that precedes every fat_rand_put. Clobbers A,DE,HL.
 frnd_update_size:
-                ld      a,(GP_RECNO)
-                ld      h,a
-                ld      l,0                 ; HL = recno * 256
+                ld      hl,(GP_RECNO)       ; recno (high byte 0 -- callers checked <=255)
+                call    mul_reclen          ; HL = recno * reclen (candidate new size)
+                push    hl                  ; save the candidate
                 ld      de,(FWR_BYTES)
                 or      a
                 sbc     hl,de               ; new - current
+                pop     hl                  ; HL = candidate again (flags from sbc survive)
                 ret     c                   ; new < current -> keep
                 ret     z                   ; equal -> keep
-                ld      a,(GP_RECNO)
-                ld      h,a
-                ld      l,0
-                ld      (FWR_BYTES),hl      ; grow to recno*256
+                ld      (FWR_BYTES),hl      ; grow to recno*reclen
                 ld      hl,0
                 ld      (FWR_BYTES+2),hl
                 ret
@@ -729,12 +773,12 @@ fat_rand_get:
                 ld      hl,FWBUF
                 call    read_sector
                 ret     c
-                ; FSECTOR_BUF[0..256) = FWBUF[within..within+256)
+                ; FSECTOR_BUF[0..reclen) = FWBUF[within..within+reclen)
                 ld      hl,(GP_WITHIN)
                 ld      de,FWBUF
                 add     hl,de               ; HL = FWBUF + within (src)
                 ld      de,FSECTOR_BUF
-                ld      bc,256
+                ld      bc,(GP_RECLEN)      ; reclen bytes (set by frnd_calc above)
                 ldir
                 or      a                   ; Cy = 0
                 ret

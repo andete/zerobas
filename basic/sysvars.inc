@@ -165,6 +165,12 @@ POKE_TOKEN      equ     $98     ; spec-tokens-statements.md
 ; PEEK is a *function* token: a $FF prefix followed by a second byte.
 PEEK_PREFIX     equ     $FF     ; spec-tokens-statements.md (function-token prefix)
 PEEK_TOKEN      equ     $97     ; spec-tokens-statements.md
+; LEN is a $FF-prefixed function token too (used here only as the OPEN..AS #n
+; LEN= record-size clause keyword, not the string LEN() function). Its suffix sits
+; 5 slots before PEEK ($97) in the core MSX-BASIC function table (…STR$ $93, LEN
+; $92, VAL $94…); the LEN= gate (test_open_len / diskbasic-acceptance) types a real
+; LEN= line, so a wrong suffix here fails the parse and the gate catches it.
+LEN_TOKEN       equ     $92     ; LEN function-token suffix (after PEEK_PREFIX)
 ; Memory / I-O access tokens (MSX2 TH Table 2.20; oracle-confirmed byte-for-byte
 ; via basic_probe_crunch.py — see PROVENANCE.md). VPOKE / OUT are one-byte
 ; statement tokens; VPEEK / INP are $FF-prefixed two-byte function tokens (like
@@ -648,6 +654,18 @@ PU_WP           equ     $EEFB   ; pu_fmt_int scratch write pointer (2)
 FMT_SEC         equ     $EEFD   ; CALL FORMAT: current sector index being written (1)
 FMT_DESC        equ     $EEFE   ; CALL FORMAT: chosen geometry descriptor pointer (2)
 FLD_DESC        equ     $EF00   ; transient fielded-read descriptor [len][bytes:255]
+; --- Phase 2c: random-record LEN= (OPEN..AS #n LEN=r) ----------------------
+; The random record length, per channel. GET/PUT geometry (basic/field.asm) uses
+; it in place of the old hard-wired 256: a record of r bytes tiles the 512-byte
+; sector (recPerSec = 512/r) with NO straddle, so r is constrained to a power of
+; two in 1..256 (parsed + validated at OPEN). FCH_RECLENS is a per-channel word
+; array [0..FCH_CEIL] (a channel opened without LEN= defaults to 256); GP_RECLEN
+; is the active channel's value, loaded from FCH_RECLENS[FCH_ACTIVE] at the start
+; of each GET/PUT record calc. Clean high RAM above FLD_DESC ($EF00..$EFFF), well
+; below the C-BIOS sysvars (~$F380). See basic/field.asm §GET/PUT + files.asm OPEN.
+FCH_RECLENS     equ     $F000   ; per-channel record length words [0..FCH_CEIL] (6 B)
+GP_RECLEN       equ     $F006   ; active channel's record length (word), loaded per calc
+OO_RECLEN_CHAN  equ     $F008   ; OPEN scratch: channel # stashed across the LEN= eval (1)
 ; Control stacks (page $E0, below LINEBUF at $E100). Both grow upward; the
 ; pointer addresses the next free slot, and the stack is empty when it equals
 ; its base. GOSUB frame = [curline:2][resume:2] (4 bytes). FOR frame =
