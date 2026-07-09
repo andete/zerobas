@@ -5,7 +5,23 @@ SPDX-License-Identifier: 0BSD
 
 # Implementation spec: relocate disk-BASIC verbs `basic.rom` → `disk.rom`
 
-**Status: SPEC FOR SIGN-OFF (2026-07-09). No code written.**
+**Status: PHASE A DELIVERED — stopped at FILES (user, 2026-07-09).**
+Commit `29210b6` built the STATEMENT-expansion dispatcher (the "one gap") and relocated
+**FILES** to `disk.rom`. basic.rom went from byte-full ($7FFF) to ending at **$7F74**
+(~139 B reclaimed). All gates green: diskbasic-acceptance 34/34 (FILES bare+wildcard converge
+vs CF-3300), bdos-acceptance 12/12, bdos-cbios-selfcheck 11/11, unit-test 38/38; loader path
+intact. **KILL + NAME deferred** — on contact they proved to be *write-path* ports
+(BDOS-gate-adjacent) for only ~125 B combined relief: KILL(wild) needs a wildcard multi-delete
+composed on the disk side (disk `fat_find` is exact-match + BDOS-veneer-entangled; `fdel_body`
+is single-name), NAME needs a second shared name buffer + a dir read-modify-write. User chose
+the best relief-per-risk stop at FILES. D4 (dead-symbol reclaim) is **N/A** — `name_cmp`/
+`fat_delete` remain used by the loader + the in-basic KILL/NAME. The dispatcher (`ex_stmt_ext`
++ the disk `$4004` `statement_ext`) is now a reusable seam for any future relocation. See the
+outcome note in §8. Original sign-off spec follows unchanged for the record.
+
+---
+
+**Original status: SPEC FOR SIGN-OFF (2026-07-09).**
 Input: [spec-diskbasic-relocation.md](spec-diskbasic-relocation.md) (direction decided by
 user). Project rule: spec + sign-off before any code (memory `spec-before-implementation`).
 
@@ -341,3 +357,28 @@ On sign-off, implement one committed step at a time behind the standing gates:
 (1) STATEMENT dispatcher (consumer shim + provider `$4004` handler, no verbs yet — prove the
 round-trip with a stub); (2) FILES; (3) KILL; (4) NAME; (5) dead-symbol reclaim + final gate
 sweep.
+
+## 9. Outcome (2026-07-09)
+
+Implemented as commit `29210b6`, merging spec-steps 1+2 (the FILES gate cell is the natural
+round-trip proof, and basic.rom being byte-full made the shim + FILES removal atomic anyway):
+
+- **disk/init.asm** `$4004` STATEMENT vector → `statement_ext`.
+- **disk/kernel.asm** `statement_ext` (dispatch on `A` = `STMT_*`) + `db_files` (the do_files
+  walk/emit, rebound to `SECTOR_BUF` / local `read_sector` / **`name_cmp_wild`** for `?`
+  patterns / BIOS `CHPUT`; loop counters `DB_HASPAT`/`DB_ENTIDX` in page-3 RAM — a
+  `$4000–$7FFF` disk-ROM store silently no-ops). Placed in the `$681D` corridor; the
+  `ds $75A5 - $` pad absorbs it (canonical addresses net-zero).
+- **basic/interp.asm** `ex_stmt_ext` — RDSLT the `$4004` vector via `DISKSLOT`, `CALSLT` it,
+  text cursor preserved on the stack across the call (CALSLT clobbers HL).
+- **basic/files.asm** `ex_files` reduced to the arg-parse front-end; `do_files` body removed.
+- Shared codes `STMT_FILES/KILL/NAME` mirrored in `basic/sysvars.inc` + `disk/equates.inc`.
+
+**One bug found + fixed in verification:** first pass bound `db_files` to disk `name_cmp`
+(exact-match only) → wildcard `FILES"*.bas"` returned empty. Switched to the disk kernel's
+existing `name_cmp_wild` (`?`-aware) → 34/34.
+
+**Deferred (KILL/NAME) — reopen criteria:** revisit if (a) more basic.rom relief is genuinely
+needed for a new `basic/*.asm` addition, or (b) Phase B (the channel/record verbs) is
+authorized — at which point the write-path `disk/fat.asm` binding gets built + re-verified
+once for all of them. The `ex_stmt_ext`/`statement_ext` seam is ready to carry them.
