@@ -758,6 +758,15 @@ CAS_WANT        equ     $F00A   ; requested 6-char tape name, space-padded (6)
 CAS_WANT_ON     equ     $F010   ; 1 = match CAS_WANT; 0 = load next file (bare form) (1)
 CAS_HDRNAME     equ     $F011   ; 6-char name read from the current tape header (6)
 CAS_HDRID       equ     $F017   ; file-type id byte read from the current header (1)
+; --- Tier-3 CLOAD? verify (Item B): compare a tokenised tape program against the
+; in-memory program WITHOUT mutating it; "Verify error" on any difference. The
+; tokenised reader (ctp_line/ctp_body) runs in compare-mode when CAS_VERIFY=1:
+; via cas_put, each byte it would store is instead compared against the in-memory
+; program at CLPTR (which walks TXTBASE.. in lock-step, so it IS the comparand
+; cursor — no separate pointer needed), setting the sticky CAS_VMIS on a diff.
+; Scope: tokenised ($D3) only (spec §B).
+CAS_VERIFY      equ     $F018   ; 1 = CLOAD? compare-mode (no store) (1)
+CAS_VMIS        equ     $F019   ; sticky: 1 = a verify mismatch was seen (1)
 ; --- Cassette ASCII load 256-byte block buffer (cload.asm cal_getbyte) -------
 ; A DEDICATED 256-byte RAM block buffer the cassette-ASCII byte source serves
 ; from, so TAPIN is called only in the tight 256-read refill loop at each block

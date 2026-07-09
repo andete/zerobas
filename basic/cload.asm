@@ -45,10 +45,26 @@
 ; (skipping earlier non-matching files), instead of blindly loading the next one.
 ; Bare CLOAD (no name) clears CAS_WANT_ON -> load-next, unchanged.
 do_cload:
+                xor     a
+                ld      (CAS_VERIFY),a      ; default: a real load (not CLOAD?)
                 call    skip_spaces
                 ld      a,(hl)
+                ; Tier-3 Item B: `CLOAD?` is the VERIFY form. Our tokeniser maps
+                ; '?' to PRINT (interp.asm), so `CLOAD?` tokenises to CLOAD_TOKEN
+                ; + PRINT_TOKEN — detect that leading PRINT_TOKEN here.
+                cp      PRINT_TOKEN         ; CLOAD? -> compare-mode verify
+                jr      nz,dcl_name
+                inc     hl                  ; past the '?' (PRINT_TOKEN)
+                ld      a,1
+                ld      (CAS_VERIFY),a      ; compare, do not store
+                xor     a
+                ld      (CAS_VMIS),a        ; fresh verify (no mismatch yet)
+                call    skip_spaces
+                ld      a,(hl)
+dcl_name:
+                ; A = (hl); HL at the first argument char (name or terminator).
                 or      a
-                jr      z,dcl_noname        ; bare CLOAD -> load the next tape file
+                jr      z,dcl_noname        ; bare CLOAD / CLOAD? -> next tape file
                 cp      COLON               ; CLOAD : ... -> bare form
                 jr      z,dcl_noname
                 cp      '"'                 ; CLOAD "name" -> capture the quoted name
@@ -72,6 +88,8 @@ dcl_noname:
 ; the full prefix matches do we commit to the tape path, so a name like "CASETTE"
 ; falls through cleanly to the disk path.
 do_load:
+                xor     a
+                ld      (CAS_VERIFY),a      ; LOAD is a real load, never CLOAD? verify
                 call    skip_spaces
                 ld      a,(hl)
                 cp      '"'                 ; opening quote required
@@ -150,6 +168,8 @@ dl_is_disk:
 ; RUN"file" parses identically to LOAD"file" minus the implicit run. The load
 ; logic is NOT duplicated.
 do_run:
+                xor     a
+                ld      (CAS_VERIFY),a      ; RUN"CAS:" is a real load, never verify
                 call    skip_spaces
                 ld      a,(hl)
                 cp      '"'                 ; a quoted filename -> device load+run
@@ -219,15 +239,12 @@ ccn_pad_lp:
                 dec     b
                 jr      nz,ccn_pad_lp
 ccn_flag:
-                ld      a,c
-                or      a                   ; any name chars copied?
-                jr      z,ccn_none
-                ld      a,1
-                ld      (CAS_WANT_ON),a     ; a name was given -> match it
-                ret
-ccn_none:
-                xor     a
-                ld      (CAS_WANT_ON),a     ; empty name -> load the next file
+                ld      a,c                 ; A = name-char count
+                or      a
+                jr      z,ccn_set           ; empty name -> store 0 (load next file)
+                ld      a,1                 ; a name was given -> match it
+ccn_set:
+                ld      (CAS_WANT_ON),a
                 ret
 
 ; --- cas_open_match: open the next MATCHING cassette file's header ------------
@@ -251,28 +268,27 @@ com_next:
                 call    TAPIN               ; header byte 0 = file-type id
                 ret     c
                 ld      (CAS_HDRID),a       ; keep id for dispatch / skip
-                ld      b,9                 ; header bytes 1..9 (9 more id bytes)
-com_skip_id:
+                ; read header bytes 1..15 (9 more id bytes + the 6-char name); store
+                ; the LAST 6 (B = 6..1) into CAS_HDRNAME[0..5], skip the id bytes.
+                ld      b,15
+com_hdr:
                 push    bc
                 call    TAPIN
                 pop     bc
                 ret     c
-                djnz    com_skip_id
-                ld      b,6                 ; header bytes 10..15 = 6-char name
-com_name:
-                push    bc
-                call    TAPIN
-                pop     bc
-                ret     c
-                ld      c,a                 ; C = the name byte
+                ld      c,a                 ; C = the header byte
+                ld      a,b
+                cp      7
+                jr      nc,com_hdr_next     ; B >= 7 -> still an id byte -> skip store
                 ld      a,6
-                sub     b
-                ld      e,a                 ; E = 6 - B = index 0..5
+                sub     b                   ; index = 6 - B (B = 6..1 -> 0..5)
+                ld      e,a
                 ld      d,0
                 ld      hl,CAS_HDRNAME
                 add     hl,de
                 ld      (hl),c              ; store name[index]
-                djnz    com_name
+com_hdr_next:
+                djnz    com_hdr
                 ld      a,(CAS_WANT_ON)
                 or      a
                 jr      z,com_match         ; bare form -> this file matches
@@ -387,11 +403,15 @@ do_tape_prog:
                 call    cas_open_match      ; find the (named) file; header consumed
                 jp      c,load_error        ; not found / tape error
                 ld      a,(CAS_HDRID)
-                cp      BASIC_ID            ; tokenised BASIC -> the store loop below
+                cp      BASIC_ID            ; tokenised BASIC -> the store/compare loop
                 jr      z,ctp_data_tokenised
                 cp      ASCII_ID            ; ASCII program -> cas_ascii_load
-                jp      z,cas_ascii_load
-                jp      load_error          ; neither id -> unrecognised file
+                jp      nz,load_error       ; neither id -> unrecognised file
+                ; $EA ASCII: CLOAD? verify is tokenised-only (spec §B) -> reject
+                ld      a,(CAS_VERIFY)
+                or      a
+                jp      nz,load_error
+                jp      cas_ascii_load
 ctp_data_tokenised:
                 ; --- data block: skip its leader tone -----------------------
                 ; Like BLOAD, the program data is a SEPARATE tape block, so it
@@ -465,27 +485,20 @@ ctp_line:
                 sbc     hl,de
                 jp      nc,ctp_oom_pop
 
-                ; store the (saved) link word verbatim; relink fixes it later
-                ld      hl,(CLPTR)
-                ld      (hl),c
-                inc     hl
-                ld      (hl),b
-                inc     hl
-                ld      (CLPTR),hl
+                ; store (load) OR compare (CLOAD? verify) the saved link word via
+                ; cas_put — one mode-flagged emit point (relink fixes links later).
+                ld      a,c
+                call    cas_put
+                ld      a,b
+                call    cas_put
 
                 ; line number (2 bytes)
                 call    TAPIN
                 jp      c,ctp_err_pop
-                ld      hl,(CLPTR)
-                ld      (hl),a
-                inc     hl
-                ld      (CLPTR),hl
+                call    cas_put
                 call    TAPIN
                 jp      c,ctp_err_pop
-                ld      hl,(CLPTR)
-                ld      (hl),a
-                inc     hl
-                ld      (CLPTR),hl
+                call    cas_put
                 pop     de                  ; DE = body length
 
                 ; token body: copy EXACTLY DE bytes (embedded $00s and all)
@@ -501,10 +514,7 @@ ctp_body:
                 jp      nc,ctp_oom_pop
                 call    TAPIN
                 jp      c,ctp_err_pop
-                ld      hl,(CLPTR)
-                ld      (hl),a
-                inc     hl
-                ld      (CLPTR),hl
+                call    cas_put             ; store or compare the body byte
                 pop     de                  ; DE = remaining count
                 dec     de
                 jr      ctp_body
@@ -526,6 +536,9 @@ ctp_oom_pop:
 
 ctp_done:
                 call    TAPIOF              ; motor off (program fully read)
+                ld      a,(CAS_VERIFY)
+                or      a
+                jr      nz,ctp_verify_done  ; CLOAD? -> report, do NOT mutate memory
 
                 ; --- write the $0000 end-of-program marker and set PRGEND ---
                 ld      hl,(CLPTR)
@@ -544,14 +557,67 @@ ctp_done:
                 call    relink
                 ret
 
+; --- ctp_verify_done: CLOAD? end-of-tape -> report Ok / Verify error ----------
+; Verify is NON-DESTRUCTIVE: no marker, no PRGEND, no relink — CAS_VMIS holds the
+; verdict. A clean CAS_VMIS = identical (silent Ok); otherwise "Verify error".
+; Any real difference (including nearly all length changes — the saved link words
+; are absolute addresses, so a different program layout differs byte-for-byte and
+; trips CAS_VMIS during the body compare) is caught. The one gap is a tape that is
+; an EXACT PREFIX of a longer in-memory program (all compared bytes equal, tape
+; ends early); that is outside the verify use case (confirming a same-length
+; CSAVE round-trip) and is a documented limitation (spec §B).
+ctp_verify_done:
+                ld      a,(CAS_VMIS)
+                or      a
+                ret     z                   ; no difference -> Ok (memory intact)
+                jp      verify_error        ; a byte differed -> "Verify error"
+
 ctp_oom:
                 call    TAPIOF              ; stop the motor before reporting
+                ld      a,(CAS_VERIFY)
+                or      a
+                jp      nz,verify_error     ; CLOAD? overrun = mismatch, do NOT wipe
                 call    new_prog            ; leave a clean (empty) program
                 ld      a,$CC               ; out-of-memory landmark (as store_line)
                 ld      (ERRMARK),a
                 ld      hl,err_prog_mem
                 jp      print_string
 err_prog_mem:   db      "out of memory",13,10,0
+
+; --- cas_put: store-or-compare one program byte at CLPTR, advance CLPTR --------
+; The single mode-flagged emit point of the tokenised tape reader (spec §B).
+; CAS_VERIFY=0 (a real CLOAD/LOAD"CAS:"/RUN"CAS:") -> store A at CLPTR (plain
+; load). CAS_VERIFY=1 (CLOAD?) -> COMPARE A against the in-memory program byte at
+; CLPTR and set the sticky CAS_VMIS on any difference, WITHOUT writing (verify is
+; non-destructive). CLPTR advances TXTBASE.. either way, so in verify mode it is
+; exactly the in-memory comparand cursor. Preserves BC, DE; clobbers A, HL, flags.
+;   in: A = the program byte just read from tape.
+; Clobbers A, C, HL (BC is dead at every call site — the link bytes are stored
+; before the next TAPIN, and TAPIN then trashes BC anyway).
+cas_put:
+                ld      c,a                 ; C = the byte
+                ld      hl,(CLPTR)
+                ld      a,(CAS_VERIFY)
+                or      a
+                ld      a,c                 ; A = the byte back
+                jr      nz,cput_cmp
+                ld      (hl),a              ; load mode: store the byte
+                jr      cput_adv
+cput_cmp:
+                cp      (hl)                ; verify: compare vs the in-memory byte
+                jr      z,cput_adv
+                ld      a,1
+                ld      (CAS_VMIS),a        ; mismatch -> sticky
+cput_adv:
+                inc     hl
+                ld      (CLPTR),hl
+                ret
+
+; --- verify_error: report a CLOAD? mismatch (memory left untouched) -----------
+verify_error:
+                ld      hl,err_verify
+                jp      print_string
+err_verify:     db      "Verify error",13,10,0
 
 ; --- cas_ascii_load: LOAD of an ASCII (SAVE"CAS:",A) cassette program --------
 ; Reached from do_tape_prog's header dispatch when byte 0 is $EA (ASCII)

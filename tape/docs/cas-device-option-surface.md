@@ -67,7 +67,7 @@ Evidence is `file:line` in `basic/`.
 |---|---|:--:|---|
 | `BLOAD"CAS:name"` | `[,R]` | ✅ | `,R` load-and-run parsed via `parse_close_run` ([bload.asm](../../basic/bload.asm) `is_tape`); `,S` VRAM-from-tape cleanly rejected |
 | `BSAVE"CAS:name"` | `,start,end[,exec]` | ✅ | full binary header+data block ([save.asm:147](../../basic/save.asm:147) `bsv_is_cas`); `,S` VRAM-to-tape rejected (disk-only) |
-| `CLOAD` | `["name"]` / `CLOAD?["name"]` | ◐ | bare + quoted-name load ✅; **name now HONOURED** — `cas_open_match` finds the named file (case-sensitive, CF-3300-confirmed), skipping earlier files ([cload.asm](../../basic/cload.asm) `cas_open_match`, Tier-3 Item A 2026-07-09); **`CLOAD?` verify form ✗** (Item B, open) |
+| `CLOAD` | `["name"]` / `CLOAD?["name"]` | ✅ | bare + quoted-name load ✅; **name HONOURED** — `cas_open_match` finds the named file (case-sensitive, CF-3300-confirmed), skipping earlier files (Item A); **`CLOAD?` verify ✅** — compare-mode reader (`cas_put`) reports `Verify error`, non-destructively (Item B, 2026-07-09; [cload.asm](../../basic/cload.asm)) |
 | `CSAVE` | `["name"][,speed]` | ◐ | name ✅ (6-char, space-pad); **`,speed` (1=1200 / 2=2400) not parsed** — jumps straight to `tape_save_basic` ([save.asm](../../basic/save.asm) `do_csave`); baud instead comes from `SCREEN,,,baud` |
 | `LOAD"CAS:name"` | `[,R]` | ◐ | loads a tokenised program ✅; **`,R` parsed-past and ignored** — `dl_is_cas` skips to the closing quote and jumps to `do_tape_prog`, never checks `,R` ([cload.asm:87](../../basic/cload.asm:87)). Asymmetric with `BLOAD"CAS:",R` which *does* honour it |
 | `SAVE"CAS:name"` | `[,A]` | ✅ | tokenised save ✅; **`,A` ASCII save ✅** (`cas_ascii_save`, [save.asm](../../basic/save.asm)) — `$EA` header + 256-byte blocks, buffer-then-flush tape sink (M2, 2026-07-08) |
@@ -210,9 +210,17 @@ for the signal, they are **deferred, not closable** — admit them only if a con
   tokenised/ASCII/mixed, bare-form no-regression, not-found, case-sensitive). No
   regression: cas_ascii/cas_verbs/cas_options/tape_save, diskbasic-acceptance 34/34,
   unit-test 38/38.
-- ⏳ `CLOAD?` verify form (Tier-3 Item B, spec written + signed off; still to implement)
-  — a compare-mode read path (read the tape program, diff against the in-memory program,
-  `Verify error` on mismatch; non-destructive).
+- ✅ **`CLOAD?` verify** (Tier-3 Item B, 2026-07-09). `CLOAD?` tokenises to
+  `CLOAD_TOKEN` + `PRINT_TOKEN` (our `?`→PRINT), which `do_cload` detects; the tokenised
+  reader then runs in compare-mode (`CAS_VERIFY`): `cas_put` compares each byte against
+  the in-memory program at `CLPTR` (no store) and sets `CAS_VMIS`, so memory is NEVER
+  mutated. Identical → silent `Ok`; any byte difference → `Verify error`. Scope:
+  tokenised (`$D3`) only — `$EA` ASCII under `CLOAD?` → `load error`. Gate:
+  [basic_probe_cas_verify.py](../../probes/basic/basic_probe_cas_verify.py) (Ok / mismatch
+  / non-destructive / ASCII-reject). **This closes the entire `CLOAD` grammar and the
+  tape/CAS Tier-3.** (Note: the BASIC ROM page is now byte-exactly full — code ends at
+  `$8000`; Item B required a size-reclaim pass, and the one dropped nicety is exact-prefix
+  length-mismatch detection, spec §B.)
 
 **Out-of-charter / out-of-scope (recorded, not queued):** `GRP:` (graphics engine, Phase
 3); `COM:` + `AUXIN`/`AUXOUT` (no serial hardware/oracle); numeric `INPUT#` (Phase-3

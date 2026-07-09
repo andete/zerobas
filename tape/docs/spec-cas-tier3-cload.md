@@ -5,7 +5,16 @@ SPDX-License-Identifier: 0BSD
 
 # Closure spec: CAS: options — Tier 3 (`CLOAD` name-matching + `CLOAD?` verify)
 
-**Status: Item A IMPLEMENTED + GATED (2026-07-09); Item B signed off, to implement.**
+**Status: BOTH ITEMS IMPLEMENTED + GATED (2026-07-09) — tape/CAS Tier-3 COMPLETE.**
+Item B (`CLOAD?` verify) landed in `basic/cload.asm` (`do_cload` PRINT_TOKEN detection +
+`cas_put` compare-mode + `ctp_verify_done` + `verify_error`); gate
+[basic_probe_cas_verify.py](../../probes/basic/basic_probe_cas_verify.py) (4/4: Ok /
+mismatch / non-destructive / ASCII-reject). No-regression: cas_match 6/6, cas_ascii/
+cas_verbs/cas_options/tape_save, diskbasic-acceptance 34/34, unit-test 38/38. **Build note:
+the BASIC ROM page is now byte-exactly full (code ends at `$8000`)** — Item B needed a
+size-reclaim pass (cas_put BC-free, merged header read, tightened name-flag + verify-done);
+the single dropped nicety is exact-prefix length-mismatch detection (§B).
+
 All four open decisions resolved (see end); decision #1 oracle-confirmed on the stock
 CF-3300. Item A (name-matching) landed in `basic/cload.asm` (`cas_open_match` /
 `cas_skip_data` / `cas_capture_name`), threaded through `do_cload` / `do_load` / `do_run`
@@ -212,6 +221,15 @@ forms; a leading `PRINT_TOKEN` falls into `load_error` (`jp nz,load_error`,
 - **Interaction with Item A.** `CLOAD?"name"` composes: Item A's matching selects the file,
   then Item B verifies it. `CLOAD?` (bare) verifies the next file. No extra work — verify is
   orthogonal to selection.
+
+### §B.3a As-built length-mismatch caveat
+The BASIC ROM page filled exactly to `$8000` implementing this, so the explicit
+"in-memory program has MORE lines than the tape" end-check was dropped to reclaim space.
+In practice almost all length differences are still caught: the saved link words are
+absolute addresses, so a program of a different shape differs byte-for-byte and trips
+`CAS_VMIS` during the compare. The only undetected case is a tape that is an EXACT PREFIX
+of a longer in-memory program (every compared byte equal, tape ends first) — outside the
+verify use case (confirming a same-length `CSAVE` round-trip). Documented limitation.
 
 ### §B.4 New error string
 Add `err_verify: db "Verify error",13,10,0` and a `load_verify_error` entry that prints it
