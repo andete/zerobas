@@ -600,13 +600,17 @@ oocas_argsok:
                 cp      CAS_OUT_MODE
                 jr      z,oocas_do_out
                 ; --- FOR INPUT: re-lock the tape, verify $EA, prime data block 1 ---
-                call    TAPION              ; sync the header block leader
+                ; OPEN"CAS:" opens the NEXT file (name-matching is Item A's CLOAD/
+                ; LOAD/RUN/MERGE scope, not OPEN) — so match off, then cas_open_match
+                ; consumes the full header and cas_ascii_setup primes block 1.
+                xor     a
+                ld      (CAS_WANT_ON),a     ; load next file (no name-match on OPEN)
+                call    cas_open_match      ; TAPION header + read id/name; CF = tape end
                 jr      c,oocas_ioerr
-                call    TAPIN               ; header byte 0 = file-type id
-                jr      c,oocas_ioerr
+                ld      a,(CAS_HDRID)
                 cp      ASCII_ID            ; a cassette data file is an $EA ASCII file
                 jr      nz,oocas_ioerr
-                call    cas_ascii_setup     ; skip rest of header + prime block 1
+                call    cas_ascii_setup     ; prime data block 1
                 jr      c,oocas_ioerr
                 jr      oocas_mark
 oocas_do_out:
@@ -1311,28 +1315,23 @@ mrg_ioerr:
 ; TAPIOF) — exactly what cas_ascii_load does, minus the new_prog. A tokenised ($D3)
 ; or unknown file is rejected (MERGE needs ASCII text). Clean-room: MERGE semantics
 ; from the MSX-BASIC language reference; format + byte source are our own M1 code.
-; Entry: HL is inside the quotes, past "CAS:". The name is IGNORED (TAPION opens the
-; next tape file), matching LOAD"CAS:"/CLOAD.
+; Entry: HL is inside the quotes, past "CAS:". Tier-3 (spec-cas-tier3-cload.md
+; Item A): the name is now HONOURED — captured into CAS_WANT and located by
+; cas_open_match (case-sensitive), skipping earlier non-matching files. An empty
+; name (MERGE"CAS:") merges the next file, unchanged.
 merge_cas:
-                ; skip the rest of the quoted name up to the closing '"'
-mc_fn:
+                call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON; HL on '"'
                 ld      a,(hl)
-                or      a
-                jp      z,stmt_error        ; unterminated string
                 cp      '"'
-                jr      z,mc_close
-                inc     hl
-                jr      mc_fn
-mc_close:
+                jp      nz,stmt_error       ; unterminated string
                 inc     hl                  ; past the closing '"'
                 push    hl                  ; guard the text cursor across the merge
-                call    TAPION              ; open tape + sync the header block leader
+                call    cas_open_match      ; find the (named) $EA file; header consumed
                 jp      c,mc_ioerr
-                call    TAPIN               ; header byte 0 = file-type id
-                jp      c,mc_ioerr
+                ld      a,(CAS_HDRID)
                 cp      ASCII_ID            ; MERGE requires an ASCII ($EA) file
                 jp      nz,mc_ioerr         ; tokenised / other -> cannot merge
-                call    cas_ascii_setup     ; skip rest of header + prime data block 1
+                call    cas_ascii_setup     ; prime data block 1
                 jp      c,mc_ioerr
                 ; NB: NO new_prog — MERGE inserts into the current program.
                 call    cas_ascii_drive     ; read + tokenise + store each line; CF=bad line

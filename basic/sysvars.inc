@@ -747,6 +747,17 @@ FCH_RECLENS     equ     $F000   ; per-channel record length words [0..FCH_CEIL] 
 GP_RECLEN       equ     $F006   ; active channel's record length (word), loaded per calc
 OO_RECLEN_CHAN  equ     $F008   ; OPEN scratch: channel # stashed across the LEN= eval (1)
 FILES_HASPAT    equ     $F009   ; FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1)
+; --- Tier-3 cassette name-matching (CLOAD"name" / LOAD"CAS:name" / RUN"CAS:" /
+; MERGE"CAS:"): tape/docs/spec-cas-tier3-cload.md Item A. Clean high RAM above
+; FCH_RECLENS ($F00A.., below the C-BIOS sysvars ~$F380). Live ONLY during a
+; cassette program open (cas_open_match): the requested name, the name read from
+; each candidate header, and the matched file-type id for the caller's dispatch.
+; The compare is BYTE-EXACT / case-sensitive — oracle-confirmed on the stock
+; National_CF-3300 (spec §A.5): CLOAD"ABC" does NOT match a tape file "abc".
+CAS_WANT        equ     $F00A   ; requested 6-char tape name, space-padded (6)
+CAS_WANT_ON     equ     $F010   ; 1 = match CAS_WANT; 0 = load next file (bare form) (1)
+CAS_HDRNAME     equ     $F011   ; 6-char name read from the current tape header (6)
+CAS_HDRID       equ     $F017   ; file-type id byte read from the current header (1)
 ; --- Cassette ASCII load 256-byte block buffer (cload.asm cal_getbyte) -------
 ; A DEDICATED 256-byte RAM block buffer the cassette-ASCII byte source serves
 ; from, so TAPIN is called only in the tight 256-read refill loop at each block

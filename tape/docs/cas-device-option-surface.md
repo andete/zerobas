@@ -67,7 +67,7 @@ Evidence is `file:line` in `basic/`.
 |---|---|:--:|---|
 | `BLOAD"CAS:name"` | `[,R]` | ✅ | `,R` load-and-run parsed via `parse_close_run` ([bload.asm](../../basic/bload.asm) `is_tape`); `,S` VRAM-from-tape cleanly rejected |
 | `BSAVE"CAS:name"` | `,start,end[,exec]` | ✅ | full binary header+data block ([save.asm:147](../../basic/save.asm:147) `bsv_is_cas`); `,S` VRAM-to-tape rejected (disk-only) |
-| `CLOAD` | `["name"]` / `CLOAD?["name"]` | ◐ | bare + quoted-name load ✅; **name is parsed-past and ignored** (opens the next tape file regardless, [cload.asm:48](../../basic/cload.asm:48)); **`CLOAD?` verify form ✗** |
+| `CLOAD` | `["name"]` / `CLOAD?["name"]` | ◐ | bare + quoted-name load ✅; **name now HONOURED** — `cas_open_match` finds the named file (case-sensitive, CF-3300-confirmed), skipping earlier files ([cload.asm](../../basic/cload.asm) `cas_open_match`, Tier-3 Item A 2026-07-09); **`CLOAD?` verify form ✗** (Item B, open) |
 | `CSAVE` | `["name"][,speed]` | ◐ | name ✅ (6-char, space-pad); **`,speed` (1=1200 / 2=2400) not parsed** — jumps straight to `tape_save_basic` ([save.asm](../../basic/save.asm) `do_csave`); baud instead comes from `SCREEN,,,baud` |
 | `LOAD"CAS:name"` | `[,R]` | ◐ | loads a tokenised program ✅; **`,R` parsed-past and ignored** — `dl_is_cas` skips to the closing quote and jumps to `do_tape_prog`, never checks `,R` ([cload.asm:87](../../basic/cload.asm:87)). Asymmetric with `BLOAD"CAS:",R` which *does* honour it |
 | `SAVE"CAS:name"` | `[,A]` | ✅ | tokenised save ✅; **`,A` ASCII save ✅** (`cas_ascii_save`, [save.asm](../../basic/save.asm)) — `$EA` header + 256-byte blocks, buffer-then-flush tape sink (M2, 2026-07-08) |
@@ -196,12 +196,23 @@ for the signal, they are **deferred, not closable** — admit them only if a con
   which fills the 6-space name and then runs `csav_speed`. Gate: Item 3 of
   [basic_probe_cas_options.py](../../probes/basic/basic_probe_cas_options.py)
   (`CSAVE,2` → 2400-baud regime).
-- ⏳ `CLOAD?` verify form and `CLOAD "name"` actually matching the named file. These are
-  **not** the quick wins they first look like: our tape model deliberately loads the
-  *next* file and accepts-and-discards the name (own-design, no tape catalogue — see
-  [cload.asm](../../basic/cload.asm) header). Real name-matching needs the reader to
-  expose each header's 6-char name + a skip-non-matching-block loop + a multi-file tape
-  fixture; verify needs a compare-mode read path. Closer to Tier-2 effort.
+- ✅ **`CLOAD"name"` / `LOAD"CAS:name"` / `RUN"CAS:"` / `MERGE"CAS:"` name-matching**
+  (Tier-3 Item A, 2026-07-09). The shared reader now exposes each header's 6-char name
+  (`cas_open_match`, [cload.asm](../../basic/cload.asm)) and compares it BYTE-EXACT /
+  case-sensitive — **oracle-confirmed on the stock National_CF-3300** (the CF-3300 does
+  real name-matching too, so this aligns us toward the oracle;
+  [spec-cas-tier3-cload.md](spec-cas-tier3-cload.md) §A.5, evidence probe
+  [basic_probe_cas_match_cf3300.py](../../probes/basic/basic_probe_cas_match_cf3300.py)).
+  A non-matching file's data is consumed (`cas_skip_data`: tokenised `$0000`-link chain
+  or `$EA` 256-byte-blocks-to-Ctrl-Z) and the next header tried; running out of tape →
+  clean `load_error`. Gate:
+  [basic_probe_cas_match.py](../../probes/basic/basic_probe_cas_match.py) (skip+match for
+  tokenised/ASCII/mixed, bare-form no-regression, not-found, case-sensitive). No
+  regression: cas_ascii/cas_verbs/cas_options/tape_save, diskbasic-acceptance 34/34,
+  unit-test 38/38.
+- ⏳ `CLOAD?` verify form (Tier-3 Item B, spec written + signed off; still to implement)
+  — a compare-mode read path (read the tape program, diff against the in-memory program,
+  `Verify error` on mismatch; non-destructive).
 
 **Out-of-charter / out-of-scope (recorded, not queued):** `GRP:` (graphics engine, Phase
 3); `COM:` + `AUXIN`/`AUXOUT` (no serial hardware/oracle); numeric `INPUT#` (Phase-3

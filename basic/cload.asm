@@ -40,17 +40,25 @@
 
 ; --- do_cload: CLOAD ["filename"] --------------------------------------------
 ; Entry: HL -> the bytes after the CLOAD token. An optional quoted filename may
-; follow; it is parsed-past and ignored (TAPION simply opens the next file).
+; follow. Tier-3 (spec-cas-tier3-cload.md Item A): the name is now HONOURED — it
+; is captured into CAS_WANT and cas_open_match finds the matching tape file
+; (skipping earlier non-matching files), instead of blindly loading the next one.
+; Bare CLOAD (no name) clears CAS_WANT_ON -> load-next, unchanged.
 do_cload:
                 call    skip_spaces
                 ld      a,(hl)
                 or      a
-                jp      z,do_tape_prog      ; bare CLOAD -> load the next tape file
+                jr      z,dcl_noname        ; bare CLOAD -> load the next tape file
                 cp      COLON               ; CLOAD : ... -> bare form
-                jp      z,do_tape_prog
-                cp      '"'                 ; CLOAD "name" -> skip the quoted name
+                jr      z,dcl_noname
+                cp      '"'                 ; CLOAD "name" -> capture the quoted name
                 jp      nz,load_error
-                call    skip_quoted
+                inc     hl                  ; past the opening quote
+                call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON=1
+                jp      do_tape_prog        ; (CLOAD has no ,R; trailing chars ignored)
+dcl_noname:
+                xor     a
+                ld      (CAS_WANT_ON),a     ; no name -> load the next tape file
                 jp      do_tape_prog
 
 ; --- do_load: LOAD "CAS:filename" | LOAD "A:filename"[,R] --------------------
@@ -86,22 +94,13 @@ dl_dev:
                 jr      dl_dev
 dl_is_cas:
                 pop     af                  ; discard saved filename start
-                ; HL is now inside the quotes, past "CAS:": skip the rest of the
-                ; quoted filename UP TO (not past) the closing quote (the filename
-                ; is ignored — TAPION opens the next tape file). Stopping ON the
-                ; quote lets parse_close_run consume it + an optional ,R, exactly
-                ; as the disk branch does, so LOAD"CAS:x",R loads *and runs*
-                ; (previously ,R was silently dropped; BLOAD"CAS:",R already
-                ; honoured it — this closes the asymmetry) and a junk flag is a
-                ; clean Syntax error rather than a silent no-op.
-do_load_fn:
-                ld      a,(hl)
-                or      a
-                jp      z,load_error        ; unterminated string
-                cp      '"'                 ; stop ON the closing quote
-                jr      z,dl_cas_close
-                inc     hl
-                jr      do_load_fn
+                ; HL is now inside the quotes, past "CAS:". Tier-3: CAPTURE the
+                ; quoted filename into CAS_WANT (cas_open_match then finds the named
+                ; tape file, case-sensitive per spec §A.5) and leave HL ON the
+                ; closing quote so parse_close_run can consume it + an optional ,R
+                ; (LOAD"CAS:x",R loads *and runs*; a junk flag is a clean Syntax
+                ; error). Empty name (LOAD"CAS:") -> CAS_WANT_ON=0 = load next.
+                call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON; HL on '"'
 dl_cas_close:
                 call    parse_close_run     ; closing quote + optional ,R -> RUNFLAG
                 jp      c,load_error
@@ -168,17 +167,11 @@ do_run:
                 call    disk_prog_load      ; load the tokenised program into TXTBASE
                 jp      run_prog            ; ...and run it (running is implicit)
 dr_is_cas:
-                ; HL is inside the quotes, past "CAS:": skip the rest of the quoted
-                ; filename up to (not past) the closing quote — the name is ignored
-                ; (TAPION opens the next tape file), exactly like do_load's dl_is_cas.
-dr_cas_fn:
-                ld      a,(hl)
-                or      a
-                jp      z,load_error        ; unterminated string
-                cp      '"'
-                jr      z,dr_cas_close
-                inc     hl
-                jr      dr_cas_fn
+                ; HL is inside the quotes, past "CAS:". Tier-3: CAPTURE the quoted
+                ; filename into CAS_WANT (cas_open_match finds the named tape file,
+                ; case-sensitive) and leave HL ON the closing quote for
+                ; parse_close_run, exactly like do_load's dl_is_cas.
+                call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON; HL on '"'
 dr_cas_close:
                 call    parse_close_run     ; closing quote (+ harmless ,R: run is implicit)
                 jp      c,load_error
@@ -186,52 +179,220 @@ dr_cas_close:
                                             ; $EA ASCII — do_tape_prog's 3-way dispatch)
                 jp      run_prog            ; ...and run it
 
-; --- skip_quoted: HL on the opening '"' -> HL past the closing '"' ------------
-; Used by CLOAD to discard its optional quoted filename. Clobbers A.
-skip_quoted:
-                inc     hl                  ; past the opening quote
-sq_lp:
+; --- cas_capture_name: parse a quoted tape name into CAS_WANT -----------------
+; Entry: HL -> the first char of the name (inside the quotes, past the opening
+; '"' or the "CAS:" prefix). Copies up to 6 chars — CASE PRESERVED, the CF-3300
+; compare is byte-exact (spec §A.5) — into CAS_WANT, space-padding to 6; sets
+; CAS_WANT_ON = 1 iff at least one name char was present (else 0 = load next).
+; Stops ON the closing '"' or a NUL terminator, leaving HL there for the caller's
+; parse_close_run / trailing handling (chars beyond 6 are advanced-over, not
+; stored, so HL still lands on the quote). Clobbers A, BC, DE, HL.
+cas_capture_name:
+                ld      de,CAS_WANT
+                ld      b,6                 ; slots left in CAS_WANT
+                ld      c,0                 ; chars copied so far
+ccn_lp:
                 ld      a,(hl)
                 or      a
-                ret     z                   ; unterminated -> stop (caller proceeds)
-                inc     hl
+                jr      z,ccn_pad           ; NUL -> stop
                 cp      '"'
-                jr      nz,sq_lp
+                jr      z,ccn_pad           ; closing quote -> stop
+                ld      a,b
+                or      a
+                jr      z,ccn_over          ; CAS_WANT full -> ignore extra name chars
+                ld      a,(hl)
+                ld      (de),a              ; store this name char (case preserved)
+                inc     de
+                dec     b
+                inc     c
+ccn_over:
+                inc     hl
+                jr      ccn_lp
+ccn_pad:
+                ld      a,b
+                or      a
+                jr      z,ccn_flag          ; no slots left -> nothing to pad
+ccn_pad_lp:
+                ld      a,' '               ; space-pad the remaining slots
+                ld      (de),a
+                inc     de
+                dec     b
+                jr      nz,ccn_pad_lp
+ccn_flag:
+                ld      a,c
+                or      a                   ; any name chars copied?
+                jr      z,ccn_none
+                ld      a,1
+                ld      (CAS_WANT_ON),a     ; a name was given -> match it
+                ret
+ccn_none:
+                xor     a
+                ld      (CAS_WANT_ON),a     ; empty name -> load the next file
                 ret
 
-; --- do_tape_prog: the shared cassette tokenised-BASIC load path -------------
-; Opens the tape, verifies the BASIC file-type id, reads the program-area image
-; line-by-line into the stored-program area at TXTBASE, relinks it, and makes it
-; the current program. Mirrors bload.asm's tape contract (TAPION per block;
-; TAPIN trashes every register, so state lives in RAM).
-do_tape_prog:
-                ; --- open the tape and skip the header block's leader tone ---
-                call    TAPION              ; sync block 1 (file header)
-                jp      c,load_error
-
-                ; --- file header: 10x BASIC_ID/ASCII_ID + 6-char filename ---
-                ; Mirrors bload.asm: byte 0 is the file-type id. $D3 (tokenised
-                ; BASIC) falls through to the existing path below unchanged;
-                ; $EA (ASCII, SAVE"CAS:",A) branches to cas_ascii_load; anything
-                ; else is an unrecognised cassette file -> load_error. Both
-                ; CLOAD and LOAD"CAS:" reach this dispatch, so both accept
-                ; either format transparently (spec-cas-ascii-saveload.md §4).
-                call    TAPIN
-                jp      c,load_error
-                cp      BASIC_ID            ; tokenised BASIC -> unchanged path
-                jr      z,ctp_hdr_tokenised
-                cp      ASCII_ID            ; ASCII program -> new path
-                jp      z,cas_ascii_load
-                jp      load_error          ; neither id -> unrecognised file
-ctp_hdr_tokenised:
-                ld      b,15                ; remaining header bytes
-ctp_skip_hdr:
-                push    bc                  ; TAPIN trashes all regs
+; --- cas_open_match: open the next MATCHING cassette file's header ------------
+; Loops over the tape's files: TAPION each header block, read the file-type id
+; (into CAS_HDRID) + the 6-char name (into CAS_HDRNAME). If CAS_WANT_ON = 0 the
+; first file matches (bare CLOAD / load-next); else the name is compared BYTE-
+; EXACT against CAS_WANT (case-sensitive — CF-3300-confirmed, spec §A.5). A non-
+; matching file's DATA is consumed (cas_skip_data) and the next header is tried.
+; Running out of tape -> the read stalls on silence and TAPIN/TAPION returns CF
+; (the whole reader's end condition) -> caller reports load_error / "not found".
+; On a match the header is FULLY consumed and the tape sits at the START of the
+; matched file's DATA; the caller dispatches on CAS_HDRID ($D3 tokenised / $EA
+; ASCII) and reads the data block(s).
+;   out: CF clear = matched (CAS_HDRID set); CF set = not found / tape error.
+; STATE-IN-RAM discipline (TAPIN clobbers every register): only loop COUNTERS are
+; pushed across TAPIN (proven safe by ctp_skip_hdr), never a pointer.
+cas_open_match:
+com_next:
+                call    TAPION              ; header block leader
+                ret     c                   ; tape end / no file -> not found
+                call    TAPIN               ; header byte 0 = file-type id
+                ret     c
+                ld      (CAS_HDRID),a       ; keep id for dispatch / skip
+                ld      b,9                 ; header bytes 1..9 (9 more id bytes)
+com_skip_id:
+                push    bc
                 call    TAPIN
                 pop     bc
-                jp      c,load_error
-                djnz    ctp_skip_hdr
+                ret     c
+                djnz    com_skip_id
+                ld      b,6                 ; header bytes 10..15 = 6-char name
+com_name:
+                push    bc
+                call    TAPIN
+                pop     bc
+                ret     c
+                ld      c,a                 ; C = the name byte
+                ld      a,6
+                sub     b
+                ld      e,a                 ; E = 6 - B = index 0..5
+                ld      d,0
+                ld      hl,CAS_HDRNAME
+                add     hl,de
+                ld      (hl),c              ; store name[index]
+                djnz    com_name
+                ld      a,(CAS_WANT_ON)
+                or      a
+                jr      z,com_match         ; bare form -> this file matches
+                ld      hl,CAS_HDRNAME
+                ld      de,CAS_WANT
+                ld      b,6
+com_cmp:
+                ld      a,(de)
+                cp      (hl)                ; byte-exact, case-sensitive
+                jr      nz,com_miss
+                inc     hl
+                inc     de
+                djnz    com_cmp
+com_match:
+                or      a                   ; CF clear = matched
+                ret
+com_miss:
+                call    cas_skip_data       ; consume the non-matching file's data
+                ret     c                   ; tape error while skipping -> fail
+                jr      com_next            ; ...and try the next file
 
+; --- cas_skip_data: consume the DATA of the current (non-matching) file so the
+; next TAPION locks onto the next file's header. Format-aware on CAS_HDRID:
+;   $D3 tokenised -> ONE data block: TAPION, then walk the line-link chain
+;        discarding until the $0000 end-link (length-driven, exactly like
+;        ctp_line, but storing NOTHING — CLINK is scratch here, the matched load
+;        re-inits it).
+;   $EA ASCII    -> N 256-byte blocks: cal_refill each, scan CAL_BUF for Ctrl-Z
+;        ($1A); stop after the block that contains it (the ASCII soft-EOF every
+;        producer puts in the last block, spec-cas-ascii-saveload §0.1).
+;   else -> CF (an unknown file mid-tape is corruption; do not spin).
+;   out: CF clear = data consumed; CF set = tape read error.
+cas_skip_data:
+                ld      a,(CAS_HDRID)
+                cp      BASIC_ID
+                jr      z,csd_tok
+                cp      ASCII_ID
+                jr      z,csd_ascii
+                scf                         ; unknown id -> error
+                ret
+csd_ascii:
+                call    cal_refill          ; TAPION + slurp 256 into CAL_BUF; CF = EOF/err
+                ret     c
+                ld      hl,CAL_BUF
+                ld      b,0                 ; 256-byte scan (djnz with b=0 -> 256)
+csd_asc_scan:
+                ld      a,(hl)
+                cp      $1A                 ; Ctrl-Z -> file complete
+                jr      z,csd_ok
+                inc     hl
+                djnz    csd_asc_scan
+                jr      csd_ascii           ; no Ctrl-Z in this block -> next block
+csd_tok:
+                ; NB: assumes the tokenised data block ENDS at the $0000 end-link
+                ; (our CSAVE writes payload then TAPOOF — no trailing in-block pad),
+                ; so after $0000 the next TAPION relocks on the following header.
+                ; (cas_encode's single-file 16-byte pad would leave slack; the
+                ; name-match gate builds skip fixtures CSAVE-faithfully.)
+                call    TAPION              ; data block leader
+                ret     c
+                ld      hl,TXTBASE
+                ld      (CLINK),hl          ; A_0 = saving machine text base (as ctp)
+csd_tok_line:
+                call    TAPIN               ; link low
+                ret     c
+                push    af                  ; preserve link-low (TAPIN clobbers C)
+                call    TAPIN               ; link high
+                jr      c,csd_tok_perr      ; must pop before leaving
+                ld      b,a
+                pop     af
+                ld      c,a                 ; BC = saved link word L_n
+                ld      a,b
+                or      c
+                jr      z,csd_ok            ; $0000 link -> file complete
+                ld      hl,(CLINK)          ; A_n
+                ld      (CLINK),bc          ; advance CLINK = L_n
+                ld      a,c
+                sub     l
+                ld      e,a
+                ld      a,b
+                sbc     a,h
+                ld      d,a                 ; DE = L_n - A_n = full line length
+                dec     de
+                dec     de                  ; DE = bytes still to discard (lineno + body)
+csd_tok_disc:
+                ld      a,d
+                or      e
+                jr      z,csd_tok_line      ; whole line discarded -> next line
+                push    de                  ; guard count across TAPIN (as ctp_body)
+                call    TAPIN
+                pop     de
+                jr      c,csd_tok_err
+                dec     de
+                jr      csd_tok_disc
+csd_ok:
+                or      a                   ; CF clear = data consumed
+                ret
+csd_tok_perr:
+                pop     af                  ; rebalance the pushed link-low
+csd_tok_err:
+                scf                         ; tape read error while skipping
+                ret
+
+; --- do_tape_prog: the shared cassette BASIC-program load path ----------------
+; Finds the requested tape file (cas_open_match: name-matching per Tier-3, or the
+; next file for the bare form), then dispatches on its file-type id: $D3 reads a
+; tokenised program-area image line-by-line into TXTBASE and relinks it; $EA is an
+; ASCII (SAVE"CAS:",A) program handed to cas_ascii_load. TAPIN trashes every
+; register, so all state lives in RAM. CLOAD, LOAD"CAS:" and RUN"CAS:" all reach
+; here, so all three accept either format and honour the filename transparently.
+do_tape_prog:
+                call    cas_open_match      ; find the (named) file; header consumed
+                jp      c,load_error        ; not found / tape error
+                ld      a,(CAS_HDRID)
+                cp      BASIC_ID            ; tokenised BASIC -> the store loop below
+                jr      z,ctp_data_tokenised
+                cp      ASCII_ID            ; ASCII program -> cas_ascii_load
+                jp      z,cas_ascii_load
+                jp      load_error          ; neither id -> unrecognised file
+ctp_data_tokenised:
                 ; --- data block: skip its leader tone -----------------------
                 ; Like BLOAD, the program data is a SEPARATE tape block, so it
                 ; needs its own TAPION to re-lock onto the data block's leader.
@@ -403,9 +564,9 @@ err_prog_mem:   db      "out of memory",13,10,0
 ; fat_io_getbyte — restored again before returning so a later MERGE/disk LOAD
 ; is unaffected.
 ;
-; Entry: TAPIN has already read + matched header byte 0 ($EA); the remaining
-; 15 header bytes (9 more $EA + 6-char name) are skipped exactly like the
-; tokenised path.
+; Entry: cas_open_match has already consumed the FULL 16-byte header (10x $EA +
+; 6-char name) and matched the requested name; cas_ascii_setup then primes data
+; block 1. (Pre-Tier-3 this routine skipped the 15 trailing header bytes itself.)
 ;
 ; BLOCK-BUFFERED byte source (D2 refinement, see spec §4): TAPIN is a REAL-TIME
 ; read — the tape keeps moving whether or not the CPU polls — so tokenising
@@ -446,21 +607,15 @@ cas_ascii_load:
                 jp      c,load_error        ; non-numbered line -> abort
                 ret                         ; caller handles ,R / returns to the REPL
 
-; --- cas_ascii_setup: consume the remaining 15 header bytes and prime data block 1.
-; Split out of cas_ascii_load so MERGE"CAS:" (merge_cas, files.asm) can reuse the
-; exact same header-skip + block-prime WITHOUT new_prog (merge keeps the current
-; program). Entry: do_tape_prog / merge_cas has already TAPINed + matched header
-; byte 0 ($EA). Leaves CAL_BUF holding a live block, CAL_NEEDFILL=0, CAL_CNT=0.
-;   out: CF set = header or block-1 read failed.
+; --- cas_ascii_setup: prime data block 1 of an $EA cassette file --------------
+; The whole 16-byte header (id + name) is now consumed upstream by cas_open_match
+; (Tier-3 name-matching), so this only PRIMES the first data block. Shared by
+; cas_ascii_load (LOAD), merge_cas and oo_dev_cas (all of which reach it via
+; cas_open_match). Leaves CAL_BUF holding a live block, CAL_NEEDFILL=0, CAL_CNT=0.
+;   out: CF set = data block 1 read failed.
 cas_ascii_setup:
-                ld      b,15                ; remaining header bytes (same skip as $D3)
-cal_skip_hdr:
-                push    bc                  ; TAPIN trashes all regs
-                call    TAPIN
-                pop     bc
-                ret     c                   ; header read fail -> CF
-                djnz    cal_skip_hdr
-                ; prime block 1 PROMPTLY (TAPION + fill, back-to-back)
+                ; prime block 1 PROMPTLY (TAPION + fill, back-to-back) so the
+                ; data-block TAPION stays in the same regime as do_tape_prog's.
                 call    cal_refill          ; data block 1 leader + slurp 256 bytes
                 ret     c                   ; block 1 unreadable -> CF
                 xor     a
