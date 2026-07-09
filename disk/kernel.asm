@@ -2043,6 +2043,167 @@ wsww_divdone:
                 pop     af
                 ret
 
+; ===========================================================================
+; STATEMENT-expansion provider (spec-diskbasic-relocation-impl.md, Phase A).
+; Reached cross-slot from zerobas-BASIC (ex_stmt_ext) via CALSLT of the $4004
+; header vector. A = STMT_* function code; verb args are pre-parsed by BASIC into
+; shared page-3 RAM (DISK_FCB_NAME) + register flags. Executes against the disk
+; FAT12 engine (fat_mount / read_sector / name_cmp) and emits via BIOS CHPUT
+; (page 0 = BIOS across a page-1 CALSLT). Returns A = 0 ok / $FF error.
+; Lives in the $607B-$75A5 free corridor; the `ds $75A5 - $` pad below absorbs
+; its size (net-zero canonical addresses). Clean-room: original code; FILES
+; semantics + 8.3 layout from the MSX-BASIC language reference + black-box
+; CF-3300 observation (see basic/PROVENANCE.md §FILES), directory walk on the
+; Microsoft FAT spec. No disassembly.
+statement_ext:
+                cp      STMT_FILES
+                jr      z, db_files
+                ld      a, $FF          ; unknown function -> not serviced
+                ret
+
+; db_files — list the root directory. B = 1: filter by the 8.3 wildcard pattern
+; in DISK_FCB_NAME; B = 0: list all. Ported from basic/files.asm do_files, rebound
+; to the disk SECTOR_BUF / local read_sector / name_cmp / FAT_DIRSEC-DIRREM cells
+; and BIOS CHPUT. Returns A = 0 ok / $FF I/O error.
+db_files:
+                ld      a, b
+                ld      (DB_HASPAT), a      ; page-3 RAM (NOT a ROM cell)
+                call    fat_mount
+                jr      c, db_err
+                ld      hl, (FAT_FIRSTROOT)
+                ld      (FAT_DIRSEC), hl
+                ld      hl, (FAT_ROOTSECS)
+                ld      (FAT_DIRREM), hl
+db_secloop:
+                ld      hl, (FAT_DIRREM)
+                ld      a, h
+                or      l
+                jr      z, db_end           ; scanned every root sector
+                ld      de, (FAT_DIRSEC)
+                ld      hl, SECTOR_BUF
+                call    read_sector
+                jr      c, db_err
+                xor     a
+                ld      (DB_ENTIDX), a      ; entry 0..15 within this sector
+db_entloop:
+                call    db_entptr           ; HL -> current 32-byte dir entry
+                ld      a, (hl)
+                or      a
+                jr      z, db_end           ; $00 = first free slot -> end of dir
+                cp      $E5
+                jr      z, db_nextent       ; deleted entry
+                push    hl
+                ld      de, 11
+                add     hl, de
+                ld      a, (hl)             ; attribute byte (+11)
+                pop     hl
+                and     $18                 ; volume-label | sub-directory -> skip
+                jr      nz, db_nextent
+                ld      a, (DB_HASPAT)
+                or      a
+                jr      z, db_do_emit       ; list everything
+                push    hl                  ; name_cmp_wild advances HL by 11 -> guard it
+                ld      de, DISK_FCB_NAME
+                call    name_cmp_wild       ; DE=pattern (8.3, '?' wildcards), HL=entry; Z=match
+                pop     hl
+                jr      nz, db_nextent      ; no match -> skip
+db_do_emit:
+                call    db_emit
+db_nextent:
+                ld      a, (DB_ENTIDX)
+                inc     a
+                ld      (DB_ENTIDX), a
+                cp      16                  ; 512 / 32 entries per sector
+                jr      c, db_entloop
+                ld      hl, (FAT_DIRSEC)    ; advance to the next root-dir sector
+                inc     hl
+                ld      (FAT_DIRSEC), hl
+                ld      hl, (FAT_DIRREM)
+                dec     hl
+                ld      (FAT_DIRREM), hl
+                jr      db_secloop
+db_end:
+                ld      a, (CSRX)           ; terminate the final line if mid-line
+                dec     a
+                jr      z, db_ok
+                call    db_crlf
+db_ok:
+                xor     a                   ; A = 0 success
+                ret
+db_err:
+                ld      a, $FF
+                ret
+
+; db_entptr — HL = SECTOR_BUF + DB_ENTIDX*32 (current dir entry), re-derived from
+; RAM each call so CHPUT's register clobber is harmless.
+db_entptr:
+                ld      a, (DB_ENTIDX)
+                ld      l, a
+                ld      h, 0
+                add     hl, hl              ; *2
+                add     hl, hl              ; *4
+                add     hl, hl              ; *8
+                add     hl, hl              ; *16
+                add     hl, hl              ; *32
+                ld      de, SECTOR_BUF
+                add     hl, de
+                ret
+
+; db_emit — print one 8.3 name field (HL -> 32-byte entry), with separator / wrap
+; driven by the live cursor column against LINLEN. Clobbers regs; the entry index
+; lives in RAM so the caller re-derives the pointer.
+db_emit:
+                ld      a, (CSRX)
+                dec     a                   ; 0-based column
+                or      a
+                jr      z, dbe_field        ; first field -> no separator
+                ld      b, a
+                ld      a, (LINLEN)
+                sub     b                   ; columns left on this line
+                cp      13                  ; need 1 (space) + 12 (field)
+                jr      nc, dbe_sep
+                call    db_crlf             ; no room -> wrap
+                jr      dbe_field
+dbe_sep:
+                push    hl
+                ld      a, ' '
+                call    CHPUT
+                pop     hl
+dbe_field:
+                ld      b, 8                ; 8 name chars
+dbe_name:
+                ld      a, (hl)
+                push    hl
+                push    bc
+                call    CHPUT
+                pop     bc
+                pop     hl
+                inc     hl
+                djnz    dbe_name
+                push    hl                  ; '.' between name and ext
+                ld      a, '.'
+                call    CHPUT
+                pop     hl
+                ld      b, 3                ; 3 extension chars
+dbe_ext:
+                ld      a, (hl)
+                push    hl
+                push    bc
+                call    CHPUT
+                pop     bc
+                pop     hl
+                inc     hl
+                djnz    dbe_ext
+                ret
+
+; db_crlf — emit CR + LF via BIOS CHPUT.
+db_crlf:
+                ld      a, 13
+                call    CHPUT
+                ld      a, 10
+                call    CHPUT
+                ret
+
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
                 ds      $77B8 - $, $00

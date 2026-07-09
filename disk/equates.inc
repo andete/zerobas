@@ -91,6 +91,27 @@ FAT_NAMEPTR     equ     $E4B9   ; -> 11-byte search name (word)
 FAT_DIRSEC      equ     $E4BB   ; current root-dir sector being scanned (word)
 FAT_DIRREM      equ     $E4BD   ; root-dir sectors remaining to scan (word)
 
+; --- STATEMENT-expansion verb provider (spec-diskbasic-relocation-impl.md) ---
+; Phase A: zerobas-BASIC dispatches the relocated disk-management verbs into this
+; disk ROM via the $4004 STATEMENT header vector (CALSLT). The function code is
+; passed in A; verb-specific arg bytes travel in a shared page-3 RAM block that
+; BASIC parses into (DISK_FCB_NAME) plus register flags. Codes MUST MATCH the
+; basic side (basic/sysvars.inc STMT_*). Output is via BIOS CHPUT; page 0 stays
+; the main BIOS across a page-1 CALSLT, so a plain call reaches the jump table.
+STMT_FILES      equ     0       ; FILES  (B: 1 = 8.3 pattern in DISK_FCB_NAME, 0 = all)
+STMT_KILL       equ     1       ; KILL   (Phase A step 2)
+STMT_NAME       equ     2       ; NAME   (Phase A step 3)
+CHPUT           equ     $00A2   ; BIOS CHPUT: emit A to the screen (jump table)
+DISK_FCB_NAME   equ     $E0DC   ; shared 11-byte 8.3 name/pattern (basic DISK_FCB+1)
+CSRX            equ     $F3DD   ; cursor column (1-based); C-BIOS sysvar (BASIC-time)
+LINLEN          equ     $F3B0   ; active line length / width; C-BIOS sysvar
+; db_files loop counters — MUST be page-3 RAM (a store to a $4000-$7FFF disk-ROM
+; address silently no-ops, the FDC-window lesson). Reuse the read-dead FAT-write
+; transient scratch: db_files only reads (fat_mount/read_sector), never touches
+; the FAT12 write helpers that own FAT_WRTMP/FAT_WRTMP2.
+DB_HASPAT       equ     $E556       ; 1 = filter by DISK_FCB_NAME pattern (byte; = FAT_WRTMP)
+DB_ENTIDX       equ     $E558       ; dir entry index 0..15 within a sector (byte; = FAT_WRTMP2)
+
 ; --- BDOS / FCB layer (disk/PROVENANCE.md §BDOS interface) ------------------
 ; CP/M-compatible FCB file access reached through the SYSTEM-sysvar vector
 ; INIT installed. Call number in C, FCB pointer in DE; result in A (MSX2 TH,

@@ -101,9 +101,11 @@
 ; `parse_disk_fcb` and the fat.asm engine and expr.asm's `eval`, so it follows them.
                 include "basic/save.asm"
 
-; Disk BASIC file-channel verbs (Phase 2): FILES (defines `do_files`). Reuses the
-; fat.asm engine (`fat_mount` / `read_sector`) + bload.asm's `load_error`, so it
-; follows them in the include order.
+; Disk BASIC file-channel verbs (Phase 2): the sequential OPEN#/PRINT#/INPUT#
+; channel + KILL/NAME (FILES was relocated to disk.rom via STATEMENT expansion —
+; spec-diskbasic-relocation-impl.md; `ex_files` here is now just the arg-parse
+; front-end). Reuses the fat.asm engine + bload.asm's `load_error`, so it follows
+; them in the include order.
                 include "basic/files.asm"
 
 ; Random-access record verbs (Phase 2c): FIELD / LSET / RSET. Builds on the

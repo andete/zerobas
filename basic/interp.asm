@@ -930,6 +930,56 @@ stmt_error:
 err_syntax:
                 db      "syntax error",13,10,0
 
+; --- ex_stmt_ext: dispatch a relocated disk-management verb into the disk ROM --
+; STATEMENT-expansion consumer (spec-diskbasic-relocation-impl.md, Phase A / the
+; "one gap" of msx1-basic-bios-coupling.md). The per-verb front-ends in files.asm
+; parse their arguments with the local interpreter, stage them into shared page-3
+; RAM (DISK_FCB_NAME) + register flags, then jump here with:
+;   A  = STMT_* function code       B = verb-specific flag (e.g. FILES pattern)
+;   HL = the BASIC text cursor past the parsed arguments
+; We fetch the disk ROM's $4004 STATEMENT vector (RDSLT of DISKSLOT:$4004/5) and
+; CALSLT it — direct DISKSLOT dispatch (D3: single built-in disk, not a general
+; slot-walk; matches basic/fat.asm dskio_calslt). CALSLT clobbers the register
+; file and HL, so the text cursor is preserved on the stack across the call. The
+; handler returns A = 0 (ok) or an error code. Reuses initext.asm's rdslt_scan +
+; the SCAN_* CALSLT scratch (dead once the REPL runs), exactly like dskio_calslt.
+ex_stmt_ext:
+                push    hl                  ; preserve the text cursor across CALSLT
+                ld      c,a                 ; C = fn (survives the DISKSLOT_OK test)
+                ld      a,(DISKSLOT_OK)
+                or      a
+                jr      z,ext_nodisk        ; no disk ROM recorded -> verb unavailable
+                push    bc                  ; save fn (C) + flag (B) across RDSLT
+                ld      a,(DISKSLOT)
+                ld      (SCAN_SLOT),a
+                ld      hl,$4004
+                call    rdslt_scan          ; A = [DISKSLOT:$4004] STATEMENT vector lo
+                ld      (SCAN_INIT),a
+                ld      hl,$4005
+                call    rdslt_scan          ; A = [DISKSLOT:$4005] STATEMENT vector hi
+                ld      (SCAN_INIT+1),a
+                pop     bc                  ; C = fn, B = flag
+                ld      hl,(SCAN_INIT)
+                ld      a,h
+                or      l
+                jr      z,ext_noprov        ; STATEMENT vector 0 -> not provided
+                ld      a,(DISKSLOT)
+                ld      (SCAN_IY+1),a       ; CALSLT reads the slot from IYh
+                ld      iy,(SCAN_IY)
+                ld      ix,(SCAN_INIT)      ; IX = the STATEMENT handler entry
+                ld      a,c                 ; A = fn code (CALSLT passes it through)
+                call    CALSLT              ; -> disk statement_ext; returns A = status
+                pop     hl                  ; restore the BASIC text cursor
+                or      a
+                jp      z,exec_stmt         ; A = 0 ok -> continue the statement loop
+                jp      load_error          ; nonzero -> disk / I/O error
+ext_nodisk:
+                pop     hl                  ; balance the pushed cursor
+                jp      load_error
+ext_noprov:
+                pop     hl                  ; balance the pushed cursor
+                jp      stmt_error
+
 ; --- ex_letkw: optional LET keyword before an assignment -------------------
 ex_letkw:
                 inc     hl                  ; past the LET token

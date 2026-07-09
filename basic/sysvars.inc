@@ -496,6 +496,12 @@ DISK_FCB_NAME   equ     DISK_FCB + 1    ; +1..+11: 8.3 name field (11 bytes)
 ; PROVENANCE.md §disk-ROM slot capture.
 DISKSLOT        equ     $E0E7   ; disk ROM slot id for CALSLT (1)
 DISKSLOT_OK     equ     $E0E8   ; 1 = DISKSLOT holds a valid disk-ROM slot id
+; STATEMENT-expansion verb dispatch (spec-diskbasic-relocation-impl.md, Phase A):
+; ex_stmt_ext CALSLTs the disk ROM's $4004 STATEMENT handler with A = one of these
+; function codes. Values MUST MATCH the disk side (disk/equates.inc STMT_*).
+STMT_FILES      equ     0       ; FILES  (B: 1 = 8.3 pattern in DISK_FCB_NAME, 0 = all)
+STMT_KILL       equ     1       ; KILL   (Phase A step 2)
+STMT_NAME       equ     2       ; NAME   (Phase A step 3)
 ; BSAVE/BLOAD ",S" VRAM select (page $E0 free gap $E0E9..$E0EC; dead outside a
 ; BSAVE/BLOAD). 1 = the ",S" flag was given -> the data bytes stream to/from VRAM
 ; (RDVRM/WRTVRM) instead of RAM; the $FE header start/end/exec are stored/read
