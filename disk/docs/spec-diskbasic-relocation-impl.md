@@ -5,19 +5,18 @@ SPDX-License-Identifier: 0BSD
 
 # Implementation spec: relocate disk-BASIC verbs `basic.rom` → `disk.rom`
 
-**Status: PHASE A DELIVERED — stopped at FILES (user, 2026-07-09).**
-Commit `29210b6` built the STATEMENT-expansion dispatcher (the "one gap") and relocated
-**FILES** to `disk.rom`. basic.rom went from byte-full ($7FFF) to ending at **$7F74**
-(~139 B reclaimed). All gates green: diskbasic-acceptance 34/34 (FILES bare+wildcard converge
-vs CF-3300), bdos-acceptance 12/12, bdos-cbios-selfcheck 11/11, unit-test 38/38; loader path
-intact. **KILL + NAME deferred** — on contact they proved to be *write-path* ports
-(BDOS-gate-adjacent) for only ~125 B combined relief: KILL(wild) needs a wildcard multi-delete
-composed on the disk side (disk `fat_find` is exact-match + BDOS-veneer-entangled; `fdel_body`
-is single-name), NAME needs a second shared name buffer + a dir read-modify-write. User chose
-the best relief-per-risk stop at FILES. D4 (dead-symbol reclaim) is **N/A** — `name_cmp`/
-`fat_delete` remain used by the loader + the in-basic KILL/NAME. The dispatcher (`ex_stmt_ext`
-+ the disk `$4004` `statement_ext`) is now a reusable seam for any future relocation. See the
-outcome note in §8. Original sign-off spec follows unchanged for the record.
+**Status: IMPLEMENTED (FILES), THEN REVERTED — kept as measurement only (user, 2026-07-09).**
+Phase A was built and verified (commit `29210b6`: STATEMENT dispatcher + FILES relocated,
+~139 B reclaimed, all gates green) and then **reverted** — the ~139 B (and the ~300 B ceiling
+of the whole relocation lever) is a poor gain for the added cross-slot complexity. What this
+document is now worth is the **measurement**, not the code: relocation is a *low-yield* lever
+because the disk-BASIC verbs are welded to the interpreter core (163 call sites, §1), so the
+clean ceiling is ~300 B (FILES 139 + NAME ~100 + KILL ~25) and the ~2.6 KB that would matter
+needs a whole cross-slot interpreter-services ABI (Phase B, §6.4). **The real headroom lever is
+the C-BIOS repack** (`docs/cbios-repack-space-analysis.md`, ~5.3–7 KB, ships as an additive IPS
+like the tape patch) — pursue that when feature-complete room is wanted. The FILES
+implementation + the one verification bug are recorded in §9 for whoever revisits this.
+Original sign-off spec follows unchanged for the record.
 
 ---
 
@@ -358,10 +357,13 @@ On sign-off, implement one committed step at a time behind the standing gates:
 round-trip with a stub); (2) FILES; (3) KILL; (4) NAME; (5) dead-symbol reclaim + final gate
 sweep.
 
-## 9. Outcome (2026-07-09)
+## 9. Outcome (2026-07-09) — implemented, verified, then REVERTED
 
-Implemented as commit `29210b6`, merging spec-steps 1+2 (the FILES gate cell is the natural
-round-trip proof, and basic.rom being byte-full made the shim + FILES removal atomic anyway):
+Implemented as commit `29210b6`, then reverted (sources restored to `3ebc0c2`, ROMs/IPS
+rebuilt byte-identical to pre-Phase-A, gates re-confirmed 34/34 with FILES back in basic.rom).
+The record below is what a future revisit inherits — the mechanism worked; it just wasn't worth
+carrying for the gain. Merged spec-steps 1+2 (the FILES gate cell is the natural round-trip
+proof, and basic.rom being byte-full made the shim + FILES removal atomic anyway):
 
 - **disk/init.asm** `$4004` STATEMENT vector → `statement_ext`.
 - **disk/kernel.asm** `statement_ext` (dispatch on `A` = `STMT_*`) + `db_files` (the do_files
