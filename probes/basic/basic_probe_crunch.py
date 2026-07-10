@@ -15,6 +15,16 @@ Both reach TAPION mid-BLOAD with the *whole* line already crunched, so each
 buffer holds the tokenised line, 0x00-terminated. We compare the two byte ranges
 up to and including the terminator: equal == byte-identical crunch.
 
+Two zerobas targets:
+  * `--cart build/basic.rom` -- the lean 16 KB cartridge on the reference machine
+    (the original mode; runs LINES + CRUNCH_ONLY).
+  * `--zb-machine C-BIOS_MSX1_EU_REPACK_DISK` -- the merged repack build, whose BASIC
+    is baked into slot 0 (no cart). This mode ADDS the eight string-engine keywords
+    (LEN/LEFT$/RIGHT$/MID$/CHR$/ASC/STR$/VAL): the lean build emits them as verbatim
+    ASCII (they never tokenise), so only the repack build can be proven to crunch
+    them byte-for-byte like the VG-8020 -- AND against the §4 captured suffixes
+    (docs/spec-basic-string-engine.md). This is the crunch half of `string-acceptance`.
+
 Clean-room: this only *compares observed outputs*. No disassembly; the reference
 ROM is a black box. See the clean-room firewall (CONTRIBUTING.md).
 """
@@ -146,6 +156,23 @@ CRUNCH_ONLY = [
     "put#1,1",
 ]
 
+# String-engine keywords (repack-only; --zb-machine). Each is a $FF-prefixed function
+# token from the same contiguous MSX-BASIC function table as LEN/STR$/VAL; the lean
+# build keeps them verbatim ASCII, so they are proven only against the repack build.
+# EXPECT is the §4 captured $FF-suffix (docs/spec-basic-string-engine.md) -- the crunch
+# is checked BOTH ways: zerobas == VG-8020 reference, and the suffix == the table.
+# bload LEADS (freeze at TAPION with the line crunched; the body never executes).
+STR_KEYWORDS = [
+    ('a=len("ab")',      0x92),   # LEN
+    ('a$=left$("hi",1)', 0x81),   # LEFT$
+    ('a$=right$("hi",1)',0x82),   # RIGHT$
+    ('a$=mid$("hi",1,1)',0x83),   # MID$
+    ('a$=chr$(65)',      0x96),   # CHR$
+    ('a=asc("a")',       0x95),   # ASC
+    ('a$=str$(5)',       0x93),   # STR$
+    ('a=val("5")',       0x94),   # VAL
+]
+
 
 def dump_buf(machine, cart, full_line, addr, separate_enter):
     """Run one side, break at TAPION, return the crunch buffer bytes."""
@@ -201,8 +228,17 @@ def crunched(buf):
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--machine", default=MACHINE)
-    ap.add_argument("--cart", required=True, help="zerobas basic.rom")
+    ap.add_argument("--machine", default=MACHINE,
+                    help="reference machine (built-in BASIC oracle; default VG-8020)")
+    grp = ap.add_mutually_exclusive_group(required=True)
+    grp.add_argument("--cart", help="lean zerobas basic.rom (cartridge on --machine)")
+    grp.add_argument("--zb-machine", dest="zb_machine",
+                     help="repack machine with BASIC baked into slot 0 (no cart); "
+                          "runs the 8 string-engine keywords")
+    ap.add_argument("--full", action="store_true",
+                    help="repack mode: also re-run the full LINES+CRUNCH_ONLY corpus on "
+                         "the repack build (the exhaustive relocated-kwtable proof; many "
+                         "boots). Default repack run is just the 8 string keywords.")
     args = ap.parse_args()
 
     global CAS_PATH
@@ -213,23 +249,46 @@ def main() -> int:
 
     ok = True
 
-    def test(body, full_line):
+    def zb_side(full_line):
+        """The zerobas crunch buffer: repack machine (BASIC in slot 0, no cart) if
+        --zb-machine, else the lean basic.rom cart on the reference machine."""
+        if args.zb_machine:
+            return dump_buf(args.zb_machine, None, full_line, TOKBUF, separate_enter=True)
+        return dump_buf(args.machine, args.cart, full_line, TOKBUF, separate_enter=True)
+
+    def test(body, full_line, expect_suffix=None):
         nonlocal ok
         ref = crunched(dump_buf(args.machine, None, full_line, KBUF, separate_enter=False))
-        zb = crunched(dump_buf(args.machine, args.cart, full_line, TOKBUF, separate_enter=True))
+        zb = crunched(zb_side(full_line))
         same = ref is not None and zb is not None and ref == zb
+        # For the string keywords also lock the observed FF-suffix to the §4 table,
+        # so the gate stands even if the reference happened to agree by accident.
+        note = ""
+        if expect_suffix is not None:
+            got = zb[zb.index(0xFF) + 1] if zb and 0xFF in zb else None
+            suffix_ok = got == expect_suffix
+            same = same and suffix_ok
+            note = (f"  [FF {expect_suffix:02X} ok]" if suffix_ok
+                    else f"  [want FF {expect_suffix:02X}, got {('FF %02X' % got) if got is not None else 'none'}]")
         ok = ok and same
         rs = " ".join(f"{b:02X}" for b in ref) if ref else "<no TAPION>"
         zs = " ".join(f"{b:02X}" for b in zb) if zb else "<no TAPION>"
-        print(f"{'PASS' if same else 'FAIL'}  {body}")
+        print(f"{'PASS' if same else 'FAIL'}  {body}{note}")
         print(f"        ref: {rs}")
         if not same:
             print(f"        zb : {zs}")
 
-    for body in LINES:                       # executable lines: bload trails
-        test(body, f'{body}:bload"cas:",r')
-    for body in CRUNCH_ONLY:                 # non-executing bodies: bload leads
-        test(body, f'bload"cas:",r:{body}')
+    # The full corpus runs on the lean cart always; on the repack build only with
+    # --full (its many boots are the exhaustive relocated-kwtable proof, not the gate).
+    if not args.zb_machine or args.full:
+        for body in LINES:                   # executable lines: bload trails
+            test(body, f'{body}:bload"cas:",r')
+        for body in CRUNCH_ONLY:             # non-executing bodies: bload leads
+            test(body, f'bload"cas:",r:{body}')
+    if args.zb_machine:                      # repack-only: the 8 string keywords
+        print("--- string-engine keywords (repack build) ---")
+        for body, suffix in STR_KEYWORDS:
+            test(body, f'bload"cas:",r:{body}', expect_suffix=suffix)
 
     os.unlink(CAS_PATH)
     print("\nALL PASS — crunch is byte-identical" if ok else "\nSOME FAILED")

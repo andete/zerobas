@@ -149,6 +149,16 @@ exp_nl_stmt:
                 call    print_crlf
                 jp      exec_stmt           ; HL on ':' -> exec_stmt steps over it
 exp_str:
+    IF ROM_BASE < $4000
+                ; Repack: a PRINT item that LEADS with a string literal but is
+                ; followed by '+' is a string concat (`"a"+"b"`, `"n="+STR$(x)`).
+                ; Route it through the concat-aware str_eval (exp_strvar's body) so
+                ; the `+` folds like every other string context; a plain literal
+                ; (no trailing '+') keeps the fast char-by-char path below, so a
+                ; literal longer than STRMAX still prints in full (un-clamped).
+                call    str_lit_concat_q    ; ZF=1 if PLUS_TOKEN follows the literal
+                jr      z,exp_strvar        ; HL still @ opening quote -> str_eval
+    ENDIF
                 inc     hl                  ; past the opening quote
 exp_str_lp:
                 ld      a,(hl)
@@ -162,6 +172,31 @@ exp_str_lp:
 exp_str_close:
                 inc     hl                  ; past the closing quote
                 jp      exp_loop
+    IF ROM_BASE < $4000
+; --- str_lit_concat_q: does a '+' follow this string literal? -----------------
+; HL -> the opening '"' of a literal PRINT item. Scans past the closing quote and
+; the intervening spaces (exactly as str_concat_tail does) and reports whether the
+; next token is the '+' operator. HL is preserved. out: ZF=1 iff PLUS_TOKEN follows.
+str_lit_concat_q:
+                push    hl
+                inc     hl                  ; past the opening quote
+slcq_lp:
+                ld      a,(hl)
+                or      a
+                jr      z,slcq_no           ; unterminated (EOL) -> not a concat
+                inc     hl
+                cp      '"'
+                jr      nz,slcq_lp          ; scan to the closing quote
+                call    skip_spaces         ; HL -> next non-space token
+                ld      a,(hl)
+                cp      PLUS_TOKEN          ; '+' ($F1) ? ZF=1 if so
+                pop     hl
+                ret
+slcq_no:
+                pop     hl
+                or      1                   ; A nonzero -> ZF=0 (not a concat)
+                ret
+    ENDIF
 exp_comma:
                 inc     hl
                 call    print_comma_zone    ; pad to the next 14-column zone

@@ -195,6 +195,19 @@ diskbasic-acceptance-repack: $(DISK_ROM) $(DISK_TEST_DSK) repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) \
 	  python3 probes/disk/diskbasic_acceptance.py $(if $(ONLY),--only $(ONLY),)
 
+# --- Standing string-engine acceptance gate (string-engine arc S5) -----------------
+# The two-part proof of the Phase-3 string engine on the merged repack build. CRUNCH:
+# the 8 string keywords (LEN/LEFT$/RIGHT$/MID$/CHR$/ASC/STR$/VAL) tokenise byte-for-byte
+# like the VG-8020 reference AND match the §4 captured $FF-suffixes. EXECUTE: the verbs
+# and `+` concatenation produce the right screen output live on the relocated build.
+# The lean build never tokenises these keywords (verbatim ASCII) and has no engine, so
+# this gate is repack-only -- it boots C-BIOS_MSX1_EU_REPACK_DISK (from repack-machine).
+# HEAVY + oracle-dependent like the other acceptance gates (boots openMSX; needs your
+# VG-8020 reference ROM); NOT part of the emulator-free `unit-test`. `make string-acceptance
+# FULL=1` also re-runs the whole crunch corpus on the repack build (relocated-kwtable proof).
+string-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/string_acceptance.py $(if $(FULL),--full,)
+
 # Standing C-BIOS self-consistency gate: closes the coverage gap that `bdos-acceptance`
 # structurally can't reach. That gate is a DIFFERENTIAL, so it only runs on the CF-3300
 # oracle (the only host with a stock disk ROM + MSX-DOS to diff against); the shipped
@@ -225,4 +238,4 @@ clean:
 .PHONY: all disk patches tape-patches machines machines-oracle install \
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
-        repack-machine diskbasic-acceptance-repack clean
+        repack-machine diskbasic-acceptance-repack string-acceptance clean

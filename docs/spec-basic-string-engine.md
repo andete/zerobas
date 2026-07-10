@@ -5,7 +5,7 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — BASIC string engine (core) — the first Phase-3 feature
 
-**Status: SIGNED OFF — IN PROGRESS. S1–S4 done (2026-07-10); S5 (string-acceptance gate) next.**
+**Status: SIGNED OFF — IN PROGRESS. S1–S5 done (2026-07-10); S6 (close-out) next.**
 All six decisions settled (§6): temp ring N=3; core verb set; **`STRMAX`=64** (the 255-faithful
 option overflows page-3 RAM by ~2 KB — see §5a); repack-only + gated repack machine;
 integer-only `VAL`; **string comparison deferred**. S3 delivered the re-layout + `+` concat
@@ -286,16 +286,35 @@ byte-identity instead of page-1 equality.
    to run if any registry probe fails to honour the env var (no silent lean fallback). This
    closes the
    behavioural-divergence gap S3 opened (STRMAX=64 / concat `str_eval` / relocated kwtable /
-   tokenised keywords all flow through the disk verbs). **Still remaining for S5:** the
-   repack-build crunch differential for the 8 keywords (assert the repack build crunches
-   `LEN`→`$FF$92` … against the §4 captured bytes) + a functional string-concat openMSX
-   probe (`string-acceptance`) + wiring it as a standing gate. (No `bdos-acceptance-repack`:
-   the BDOS gate exercises the disk ROM, which the string arc does not touch.)
+   tokenised keywords all flow through the disk verbs). **S5 completed (2026-07-10):** the
+   standing `string-acceptance` gate (Makefile target → [`probes/basic/string_acceptance.py`](../probes/basic/string_acceptance.py))
+   ties two halves, both on the merged repack build:
+   (a) **CRUNCH** — [`basic_probe_crunch.py`](../probes/basic/basic_probe_crunch.py) gained a
+   `--zb-machine` mode (repack BASIC in slot 0, no cart) that runs the 8 string keywords and
+   asserts each crunches **byte-for-byte like the VG-8020** *and* carries the §4 captured
+   `$FF`-suffix (`LEN`→`FF 92`, `LEFT$`→`FF 81`, … `VAL`→`FF 94`); `--full` also re-runs the
+   whole LINES+CRUNCH_ONLY corpus on the repack build (exhaustive relocated-kwtable proof).
+   (b) **EXECUTE** — a new functional probe [`basic_probe_string.py`](../probes/basic/basic_probe_string.py)
+   boots the repack machine and asserts the 8 verbs + `+` concat produce the right *screen*
+   output live (`PRINT "[";<expr>;"]"`, bracket-wrapped so a result that is a substring of the
+   echoed source can't collide). **Gate finding + fix:** the functional probe exposed that a
+   PRINT item *leading with a string literal* (`PRINT "a"+"b"`) mis-parsed the `+` as numeric —
+   the S4 PRINT hook only rerouted a leading `$FF` function or `$`-variable through the
+   concat-aware `str_eval`, not a leading literal (contradicting `str_eval`'s own "folds into
+   every string context at once" claim). Fixed in [`basic/print.asm`](../basic/print.asm)
+   (`exp_str` now look-aheads for a trailing `PLUS_TOKEN` and reroutes to `str_eval`; a plain
+   literal keeps the fast char-by-char path so a literal longer than STRMAX still prints in
+   full). Repack-gated → **lean `basic.rom` byte-identical**; shipping `zerobas-main-eu.ips`/`.bps`
+   refreshed. Gates: `string-acceptance` PASS (8 crunch + 14 execute), lean byte-identical,
+   unit-test 40/40, `diskbasic-acceptance-repack` 34/34 (shared PRINT parse unregressed),
+   audit-citations clean. (No `bdos-acceptance-repack`: the BDOS gate exercises the disk ROM,
+   which the string arc does not touch.)
 6. **S6 — close-out:** provenance (`basic/PROVENANCE.md` entries), docs harvest, memory +
    TODO update.
 
 **Gates (must stay green):** lean `basic.rom` byte-identical (regression-safe by
-construction); unit-test 38/38; bdos-acceptance 12/12; diskbasic-acceptance 34/34;
+construction); unit-test 40/40; bdos-acceptance 12/12; diskbasic-acceptance 34/34;
 bdos-cbios-selfcheck 10/10; the `$8000` overflow guard stays green in the lean build;
-+ new: `basic_probe_crunch.py` covers the 8 keywords, `string-acceptance` on the repack
-machine.
++ new (S5, wired): `make string-acceptance` — `basic_probe_crunch.py --zb-machine` covers
+the 8 keywords (byte-identical crunch + §4 suffix) and `basic_probe_string.py` proves they
+execute correctly, both on the repack machine; `diskbasic-acceptance-repack` 34/34.
