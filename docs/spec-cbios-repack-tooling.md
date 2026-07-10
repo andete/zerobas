@@ -12,14 +12,16 @@ is signed off (per the project's spec-before-implementation discipline).
 ## 1. Goal
 
 Break the standing wall: **the BASIC ROM page is byte-exactly full** (code ends at
-`$8000`, page 1 = `$4000–$7FFF`, 16 KB). Reclaim ~7 KB of page-0 space *contiguous
-with page 1* by repacking C-BIOS, so BASIC can become one ~23 KB image spanning
-`$23BF–$7FFF` — the real-MSX "BIOS-low + BASIC-high in one 32 KB slot-0 ROM" layout.
+`$8000`, page 1 = `$4000–$7FFF`, 16 KB). Reclaim ~6 KB of page-0 space *contiguous
+with page 1* by repacking C-BIOS, so BASIC can become one ~21.5 KB image spanning
+`$2812–$7FFF` — the real-MSX "BIOS-low + BASIC-high in one 32 KB slot-0 ROM" layout.
+That single 32 KB slot-0 image (C-BIOS + tape page-0 completions + BASIC) *is* the
+MSX **main ROM**, shipped as one IPS (D4).
 
 This arc delivers **the space and the tooling to occupy it**, not a new BASIC
 feature. It *unblocks* Phase-3 BASIC work (floats, strings, graphics…) that is
-otherwise walled. Success = a rebuilt, validated IPS on a pristine C-BIOS where
-BASIC owns `$23BF–$7FFF` and every standing gate stays green.
+otherwise walled. Success = a rebuilt, validated **main-ROM IPS** on a pristine C-BIOS
+where BASIC owns `$2812–$7FFF` and every standing gate stays green.
 
 ## 2. Chosen approach — Approach 1, Tier A (repack, no golfing)
 
@@ -41,43 +43,52 @@ content) are explicitly out of this arc** — Tier A alone reaches ~23 KB.
 
 The prize requires three coordinated changes; none is useful alone.
 
-### WS-1 — C-BIOS source repack (produces the denser page-0 BIOS)
+### WS-1 — C-BIOS source repack (produces the denser page-0 BIOS) — ✅ DONE
 Edit the **C-BIOS source** at the pinned checkout (`~/projects/cbios`,
 `v0.29-3-gb5ad9cb`, rebuilds `cbios_main_msx1_eu.rom` sha1 `baf2e9c6…` byte-exact).
-Confirmed source sites:
-- `src/statements.asm`: `multiple:` (@`$3193`, a real helper — **relocate**),
-  `rombas`/`rombas_text` + the `ds $392e - $` pin + the `rombas_niy` runloop table
-  (all **dead** — zerobas *is* the BASIC, so C-BIOS's "can't run a ROM BASIC" path
-  never executes → **delete**).
-- `src/main.asm` / `src/main_msx1_eu.asm`: the `ds $XXXX - $` phantom pins that force
-  the above-font content to fixed addresses — **remove the ones above the font** so
-  the assembler repacks that content into the pre-font gap.
-- Keep every `$0000–$01B7` jump-table pin and the `B_Font`/`CGTABL` pin **untouched**.
+**Outcome (S2, §8): a one-line edit.** The entire `src/statements.asm` — `multiple`,
+`rombas`, `rombas_niy`, and the runloop/statement dispatch tables — is C-BIOS's
+placeholder for a ROM BASIC it never ships, with **zero references** from anywhere else.
+So the planned above-font relocation was **unnecessary**: comment out `include
+"statements.asm"` in `src/main.asm`; the jump table (`$0000–$01B7`) and `B_Font`/`CGTABL`
+stay untouched. Page-0 ceiling drops to `$2811`. Captured as the D1 tracked patch
+[`../cbios-repack/eu-drop-statements.patch`](../cbios-repack/eu-drop-statements.patch)
+(no C-BIOS bytes in-repo); reproducible pinned-tag + patch → sha1 `edb08440…`.
 
-Edits are captured as **our own patch** against the pinned C-BIOS tag (see Decision D1),
-never as vendored C-BIOS bytes. The assembler does all address fixups on rebuild.
-
-### WS-2 — BASIC org relocation (16 KB → ~23 KB)
+### WS-2 — BASIC org relocation (16 KB → ~21.5 KB)
 `basic.rom` currently assembles to `org $4000`, exactly 16 KB. To span the freed
-region it must assemble from the new low boundary (`$23BF`) up to `$7FFF` (~23 KB).
+region it must assemble from the new low boundary (`$2812`) up to `$7FFF` (~21.5 KB).
 - Audit `basic/*.asm` + `basic/*.inc` for **hardcoded absolute addresses** that assume
   the `$4000` base (the real risk — a label-clean reassemble is free, a hardcoded
   `$4xxx` is a silent corruption). This audit is the technical crux of the arc.
-- The page-0 portion (`$23BF–$3FFF`) and page-1 portion (`$4000–$7FFF`) are one
+- The page-0 portion (`$2812–$3FFF`) and page-1 portion (`$4000–$7FFF`) are one
   contiguous slot-0 image; no cross-page paging is needed (both are slot-0 ROM).
+- **Tape-block coordination (D5).** The zerobas-tape page-0 completions occupy
+  `$3A72–$3C42` — *inside* the freed region. BASIC's layout must dovetail with it (fill
+  around it, or relocate tape to the region edge). Layout settled at the top of WS-2
+  with the real assembler constraints in hand (D5).
 - **The `$8000` code-end wall is removed** as a side effect — that's the payoff.
 
-### WS-3 — Tooling (combine + diff across the new boundary)
-- [`overlay_page1.py`](../tools/overlay_page1.py) hardcodes `PAGE1=0x4000`,
-  `len(basic)==0x4000`, and a page-1-only splice. Generalize to a **parameterized
-  boundary + variable BASIC size**, splicing the ~23 KB image across `$23BF–$7FFF`
-  onto the *repacked* C-BIOS base (not stock).
-- [`build_patches.py`](../tools/build_patches.py) gains a repack path: build the
-  repacked C-BIOS (WS-1), overlay the relocated BASIC (WS-2), diff vs **pristine
-  stock C-BIOS** → IPS/BPS. The shipped diff spans both the repack region and BASIC.
-- Per-variant: only `main_msx1_eu` is targeted first (analysis: re-measure gaps per
-  variant before adding more). The tape build already does per-variant work — reuse
-  that machinery, don't invent new.
+### WS-3 — Tooling (build ONE main-ROM image, diff vs stock)
+Per **D4**, tape + BASIC ship as a single **main ROM** (BIOS-low + BASIC-high, 32 KB
+slot 0 — the MSX-spec model), not two IPS patches. WS-3 builds that combined image and
+emits one patch:
+- Build stages: (1) apply the WS-1 repack patch to the pinned C-BIOS checkout → denser
+  base; (2) assemble the relocated BASIC (`$2812–$7FFF`, WS-2) + the tape page-0
+  completions into the combined 32 KB image; (3) diff vs **pristine stock C-BIOS** →
+  **one** `zerobas-msx1.ips`/`.bps`. The shipped diff spans the repack region, tape, and
+  BASIC — still an overlay on the stock the user brings.
+- [`overlay_page1.py`](../tools/overlay_page1.py) hardcodes `PAGE1=0x4000` /
+  `len(basic)==0x4000` / a page-1-only splice → generalize to a **parameterized boundary
+  + variable BASIC size** onto the *repacked* base.
+- [`build_patches.py`](../tools/build_patches.py) gains the combined-main-ROM path; the
+  separate `tape/zerobas-tape-msx1.ips` deliverable folds into an internal build stage
+  (retain an **optional tape-only target** — D4).
+- **Sources stay split (D4):** `basic/` and `tape/` remain distinct components with their
+  own provenance; only the build *output* merges. `disk.rom` is unaffected (slot-3-1
+  cartridge, not part of the main ROM).
+- Per-variant: `main_msx1_eu` only (D3); the tape build already does per-variant work —
+  reuse that machinery.
 
 ## 4. Validation gates (nothing ships red)
 
@@ -134,6 +145,21 @@ accepted `$2812` (2026-07-10).
 **D3 — variant scope → EU ONLY** (`main_msx1_eu`). Prove the mechanism on one target;
 per-variant (br/jp) gap re-measurement is a documented later add, same pattern as the
 tape build.
+
+**D4 — tape + BASIC ship as ONE main-ROM deliverable** (added 2026-07-10). On the MSX
+spec, BIOS + BASIC = one 32 KB slot-0 "main ROM"; the repack recreates that layout, and
+it *forces the question* because the tape page-0 completions (`$3A72–$3C42`) sit inside
+the region BASIC now grows into. So the two ship as **one** `zerobas-msx1.ips` (repacked
+C-BIOS + tape + relocated BASIC, diffed vs pristine stock). **Merge only the build
+output** — `basic/` and `tape/` stay separate source components with distinct provenance
+(per the component-split rationale: tape = C-BIOS page-0 BIOS completions, not the
+interpreter); keep an optional tape-only build target. *(Rejected: folding tape.asm into
+the basic/ source tree — discards the component split.)*
+
+**D5 — page-0 layout of grown-BASIC vs the tape block → decided at WS-2 start** (added
+2026-07-10). Whether BASIC fills around the tape block (`$3A72–$3C42`) or tape relocates
+to the region edge is settled at the top of S3/WS-2, with the real assembler constraints
+in hand — not committed up front.
 
 ## 7. Risks & non-goals
 
