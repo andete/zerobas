@@ -2572,3 +2572,70 @@ VG-8020 + carry the captured `$FF`-suffix; 14 execute cases print the right scre
 output on the repack machine); lean `basic.rom` byte-identical; unit-test 40/40 (new
 `tests/test_str_engine.py` + `tests/test_str_verbs.py`); `diskbasic-acceptance-repack`
 34/34 (shared PRINT parse unregressed); `repack-boot` PASS; audit-citations clean.
+
+## Phase 3: string comparison — relational operators on strings (basic/str-engine.asm, basic/expr.asm, basic/interp.asm, basic/print.asm, basic/sysvars.inc)
+
+The follow-on to the string engine (the D-F item it deferred): the six relational
+operators — `=` `<>` `<` `>` `<=` `>=` — on two string operands, so `IF A$="YES"` and
+`IF LEFT$(N$,1)<"M"` work. Spec:
+[`docs/spec-basic-string-compare.md`](../docs/spec-basic-string-compare.md) (SIGNED OFF).
+**Repack-only**, like the whole string engine: the entire feature is assembled `IF
+ROM_BASE < $4000`, and the byte-full lean `basic.rom` (default `ROM_BASE=$4000`) is
+**unchanged** — every page-1 hook is a gated near-zero-byte branch, so the lean image
+stays byte-identical (pinned-sha256 regression guard).
+
+**Reuses the numeric relational spine — no new token.** `ev_rel` (basic/expr.asm)
+already factors a comparison into a *requested-relation bit* (`relop_bit`: `<`→1, `=`→2,
+`>`→4; the compound forms `<=`/`>=`/`<>` arrive as two relop tokens and merge to the OR),
+AND'd against an *actual-relation bit* (1/2/4) from the operands, → non-zero ⇒ **-1** /
+zero ⇒ **0**. String comparison substitutes exactly **one** thing: an unsigned-byte
+comparator (`str_cmp_bits`) producing that same 1/2/4 encoding in place of the signed
+`cmp16_bits`. So the six operators, the compound-form merge, the -1/0 convention, and the
+boolean composition above `ev_rel` (`IF A$="Y" AND B=1`) are all inherited. The relop
+tokens (`=`→`$EF`, `<`→`$F0`, `>`→`$EE`, already sourced from MSX2 TH Table 2.20 and
+crunch byte-identical) are **unchanged** — `A$="YES"` already crunched correctly; only its
+*evaluation* is added. No tokeniser / `kwtable` change.
+
+### Comparison semantics + the hook (basic/str-engine.asm, basic/expr.asm)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| String comparison: **unsigned** byte-by-byte, first differing byte's string is less; if one is a prefix of the other the SHORTER is less; equal iff same length + all bytes equal; case-sensitive; result -1/0 | — | standard MSX-BASIC string-ordering contract (public language reference), **oracle-locked black-box** on the Philips VG-8020 (`probes/basic/basic_probe_str_cmp.py`: reference-lock 6/6 for equal / prefix-shorter / case / first-diff-byte / empty × all six operators, then zerobas==reference 6/6) — measured, not assumed | sourced |
+| `str_cmp_bits` unsigned-byte comparator → 1/2/4 (the same encoding `cmp16_bits` produces, so the caller's `and c` is unchanged) | — | **own code**; the relation-bit encoding is zerobas's own (matches expr.asm); not derived from any disassembly | sourced |
+| `ev_rel` hook: probe the LHS (repack-gated) via the IX↔HL bridge + `str_eval`; a string LHS routes to `ev_rel_str` (snapshot LHS into a ring temp, read the relop(s), `str_eval` the RHS, compare), a non-string LHS leaves IX untouched and the unchanged numeric body runs | — | **own code** (mirrors the existing `ev_ff_cvi` IX↔HL bridge + the dup-then-operate discipline); not derived from any disassembly | sourced |
+
+### Type mismatch — D-2, statement-level abort (basic/interp.asm, basic/print.asm, basic/sysvars.inc)
+
+Comparing a string to a non-string (`A$ < 5`, `5 < A$`) is a real error that **aborts the
+line**. zerobas has no mid-expression unwind (every evaluator error sets `ERRMARK` and
+yields 0, continuing), and adding a saved-SP longjmp would touch the **shared lean run
+driver** and threaten the byte-identical invariant — so the abort is raised at the
+**statement boundary** (spec §3c): the comparator sets `ERRMARK` + a distinct `TMISMATCH`
+marker and yields 0; the repack-gated condition-owning statement drivers (`ex_if`, the
+numeric-assignment path, the PRINT-item path) check `TMISMATCH` right after their `eval`
+and `jp` to `type_mismatch_error`. For `IF A$<5 THEN…` / `R=(A$<5)` the comparison is the
+first thing evaluated, so the line aborts with the message before any clause runs —
+observably identical to MSX.
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `TMISMATCH` D-2 marker | `$E55F` (the last free byte below disk's WBUF `$E560`, repack-only page-3 RAM) | own choice (free RAM; the byte the string engine's layout deliberately left) | sourced |
+| `type_mismatch_error` reports zerobas's own lowercase `"type mismatch"` + aborts the line (mirrors `stmt_error`) | — | **own wording** (plain English; NOT MSX's `?Type mismatch Error` verbatim string, which would be reference wording); statement-level abort is **own design** (§3c) | sourced |
+
+### Documented divergences (own design)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| A bare string on a numeric RHS with no relop (`R=A$`) now raises `type mismatch` | — | **own design** — the unconditional LHS probe (spec §3a) makes this a natural consequence; MSX also errors here. Supersedes a pre-existing accidental gap where a `$`-var name-keyed *numeric shadow* cell was silently read (never a documented feature) | quarantined |
+| `PRINT A$<5` **unparenthesized** mis-routes (prints `A$`, then chokes on `<5`); `PRINT (A$<5)` works | — | **own-design limitation** — PRINT's item loop routes a bare `$`-var to the string path *before* `ev_rel`; fixing it is `exp_loop`-level scope beyond the `ev_rel`/statement-abort slice. Matches the spec's own paren convention; probes/tests wrap PRINT comparisons in parens | quarantined |
+
+The two **quarantined** items are deliberate own-design outcomes, not values lifted from
+any reference ROM or disassembly. Both are documented in `basic/str-engine.asm` and the
+spec; the `PRINT A$<5` limitation is a candidate for a later `exp_loop` slice if a stub
+ever needs the unparenthesized form.
+
+**Gates.** `make string-acceptance` PASS (now three halves: crunch + execute + the new
+**compare** — six relational operators, reference-lock + zerobas==reference on the repack
+machine); lean `basic.rom` byte-identical (pinned sha256 unchanged); unit-test 41/41 (new
+`tests/test_str_compare.py`); `diskbasic-acceptance-repack` 34/34 (shared `ev_rel`/`eval`
+path unregressed); `repack-boot` PASS; audit-citations clean.

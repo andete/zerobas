@@ -5,9 +5,14 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — BASIC string comparison — a Phase-3 follow-on slice
 
-**Status: SIGNED OFF — ready to implement (S2).** The D-F item deferred from the
-string-engine arc ([`spec-basic-string-engine.md`](spec-basic-string-engine.md) §6 D-F:
-"string comparison DEFERRED … join the deferred verbs in a follow-on Phase-3 slice").
+**Status: SIGNED OFF — IMPLEMENTED & SHIPPED (S1–S3 all done, 2026-07-10).** The D-F item
+deferred from the string-engine arc
+([`spec-basic-string-engine.md`](spec-basic-string-engine.md) §6 D-F: "string comparison
+DEFERRED … join the deferred verbs in a follow-on Phase-3 slice"). S2 landed the comparator
++ hooks (commit `0f007fb`); S3 wired the standing **compare** half into `make
+string-acceptance`, refreshed the shipping `zerobas-main-eu.ips`/`.bps`, and recorded
+provenance ([`../basic/PROVENANCE.md`](../basic/PROVENANCE.md) → "Phase 3: string
+comparison"). Lean `basic.rom` unchanged.
 This is the *how* + *decisions*; same shape as the engine spec. **Repack-only**, like the
 whole string engine. All four decisions settled (§6): all six operators; **a real
 `type mismatch` error that aborts the line, raised at the statement boundary** (D-2);
@@ -192,10 +197,14 @@ inside the evaluator.
    / the numeric-assignment / `PRINT`-item drivers + the `type_mismatch_error` printer).
    Host unit tests. Gates: lean byte-identical, unit-test green, `basic-reloc` OK,
    `repack-boot` PASS.
-3. **S3 — acceptance + close-out.** Extend `string-acceptance` (execute + crunch) with
-   comparison cases; refresh the shipping `zerobas-main-eu.ips`/`.bps`; provenance section
-   in [`../basic/PROVENANCE.md`](../basic/PROVENANCE.md); update the engine spec's D-F
-   pointer, TODO, memory. Gates: full standing set green.
+3. **S3 — acceptance + close-out.** ✅ (2026-07-10.) Added a third **COMPARE** half to
+   `string-acceptance` (`string_acceptance.py` now runs `basic_probe_str_cmp.py`:
+   reference-lock + zerobas==reference on the six operators) — gate re-run **PASS** (crunch +
+   execute + compare); refreshed the shipping `zerobas-main-eu.ips`/`.bps`; added the
+   provenance section ([`../basic/PROVENANCE.md`](../basic/PROVENANCE.md) → "Phase 3: string
+   comparison", incl. the two documented divergences: `R=A$`→type mismatch, and the
+   unparenthesized-`PRINT A$<5` limitation); updated the engine spec's D-F pointer, TODO,
+   memory. Full standing set green.
 
 Small, self-contained: it adds no token and no new architecture — it substitutes one
 comparator into an existing three-step relational spine, entirely inside the repack

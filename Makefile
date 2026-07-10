@@ -195,11 +195,13 @@ diskbasic-acceptance-repack: $(DISK_ROM) $(DISK_TEST_DSK) repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) \
 	  python3 probes/disk/diskbasic_acceptance.py $(if $(ONLY),--only $(ONLY),)
 
-# --- Standing string-engine acceptance gate (string-engine arc S5) -----------------
-# The two-part proof of the Phase-3 string engine on the merged repack build. CRUNCH:
+# --- Standing string-engine acceptance gate (string-engine arc S5; compare S3) -----
+# The three-part proof of the Phase-3 string engine on the merged repack build. CRUNCH:
 # the 8 string keywords (LEN/LEFT$/RIGHT$/MID$/CHR$/ASC/STR$/VAL) tokenise byte-for-byte
 # like the VG-8020 reference AND match the §4 captured $FF-suffixes. EXECUTE: the verbs
 # and `+` concatenation produce the right screen output live on the relocated build.
+# COMPARE: the six relational operators on string operands (=/<>/</>/<=/>=) match the
+# VG-8020 reference (reference-lock + zerobas==reference; spec-basic-string-compare.md).
 # The lean build never tokenises these keywords (verbatim ASCII) and has no engine, so
 # this gate is repack-only -- it boots C-BIOS_MSX1_EU_REPACK_DISK (from repack-machine).
 # HEAVY + oracle-dependent like the other acceptance gates (boots openMSX; needs your

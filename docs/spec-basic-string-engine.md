@@ -217,8 +217,11 @@ byte-identity instead of page-1 equality.
   carries the repack-becomes-shipping-target infrastructure.
 - **D-E — `VAL` is integer-only** (leading signed decimal), consistent with the
   integer-only numeric core; float `VAL` waits for floating point.
-- **D-F — string comparison DEFERRED.** `A$=B$`/`<>`/`<`/`>` join the deferred verbs in a
-  later slice; this arc ships concat + the §3c functions only. *(User-decided 2026-07-10.)*
+- **D-F — string comparison DEFERRED → DONE in a follow-on slice.** `A$=B$`/`<>`/`<`/`>`/
+  `<=`/`>=` were deferred out of this arc (which ships concat + the §3c functions only) and
+  then delivered by the **string-comparison slice**
+  ([`spec-basic-string-compare.md`](spec-basic-string-compare.md), SIGNED OFF & SHIPPED
+  2026-07-10). *(User-decided 2026-07-10.)*
 
 ## 7. Risks & non-goals
 

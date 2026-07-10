@@ -816,15 +816,19 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
 - [ ] **Floating point** — the math pack, `!`/`#`/`%` type suffixes,
       `DEFINT`/`DEFSNG`/`DEFDBL`/`DEFSTR`, and the float crunch tokens
       (decimal ≥ 32768 etc.) currently out of scope
-- [~] **Full string engine** — **core landed 2026-07-10** (the first Phase-3 feature):
-      `+` concat + `LEN ASC VAL CHR$ STR$ LEFT$ RIGHT$ MID$` in the repack build
-      (own-design temp ring + STRMAX clamp, no heap/GC; integer-only VAL). Spec
-      [`docs/spec-basic-string-engine.md`](docs/spec-basic-string-engine.md), provenance
-      [`basic/PROVENANCE.md`](basic/PROVENANCE.md) → "Phase 3: string engine", gate
-      `make string-acceptance`. **Still deferred:** string comparison (`=`/`<`/`>`),
-      `INSTR HEX$ OCT$ STRING$ SPACE$ INKEY$`, the MID$ statement, floats in VAL/STR$,
-      the real heap+descriptor model, string arrays/`DIM`, and STRMAX→255 (a RAM
-      re-architecture, spec §5a)
+- [~] **Full string engine** — **core + comparison landed 2026-07-10** (the first Phase-3
+      feature and its follow-on): `+` concat + `LEN ASC VAL CHR$ STR$ LEFT$ RIGHT$ MID$`,
+      then the six **relational operators** on strings (`=`/`<>`/`<`/`>`/`<=`/`>=` →
+      -1/0, with a statement-level `type mismatch` abort) — all in the repack build
+      (own-design temp ring + STRMAX clamp, no heap/GC; integer-only VAL). Specs
+      [`docs/spec-basic-string-engine.md`](docs/spec-basic-string-engine.md) +
+      [`docs/spec-basic-string-compare.md`](docs/spec-basic-string-compare.md), provenance
+      [`basic/PROVENANCE.md`](basic/PROVENANCE.md) → "Phase 3: string engine" / "string
+      comparison", gate `make string-acceptance` (crunch + execute + compare). **Still
+      deferred:** `INSTR HEX$ OCT$ STRING$ SPACE$ INKEY$`, the MID$ statement, floats in
+      VAL/STR$, the real heap+descriptor model, string arrays/`DIM`, STRMAX→255 (a RAM
+      re-architecture, spec §5a), and the unparenthesized `PRINT A$<5` form (needs an
+      `exp_loop` slice — see PROVENANCE divergences)
 - [ ] **Arrays + `DIM`** (numeric and string, multi-dimensional)
 - [ ] **`^`** and the math functions
       `ABS SGN INT SQR SIN COS TAN ATN LOG EXP RND FIX CINT CSNG CDBL`
