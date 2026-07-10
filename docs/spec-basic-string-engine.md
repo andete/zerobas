@@ -5,11 +5,12 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — BASIC string engine (core) — the first Phase-3 feature
 
-**Status: SIGNED OFF — IN PROGRESS. S1–S3 done (2026-07-10); S4 (verbs) next.** All six
-decisions settled (§6): temp ring N=3; core verb set; **`STRMAX`=64** (the 255-faithful
+**Status: SIGNED OFF — IN PROGRESS. S1–S4 done (2026-07-10); S5 (string-acceptance gate) next.**
+All six decisions settled (§6): temp ring N=3; core verb set; **`STRMAX`=64** (the 255-faithful
 option overflows page-3 RAM by ~2 KB — see §5a); repack-only + gated repack machine;
 integer-only `VAL`; **string comparison deferred**. S3 delivered the re-layout + `+` concat
-spine (see §8); the 8 verb tokens are already crunched/detokenised, only the handlers remain.
+spine; **S4 delivered the eight verb handlers** (LEN/ASC/VAL + CHR$/STR$/LEFT$/RIGHT$/MID$,
+see §8) — the merged main ROM now boots + ships them.
 First feature of Phase 3, consuming the ~5.5 KB reclaimed by the C-BIOS repack arc
 ([`spec-cbios-repack-tooling.md`](spec-cbios-repack-tooling.md)). This is the *how* +
 *decisions*; it follows the same shape as the repack spec.
@@ -252,7 +253,27 @@ byte-identity instead of page-1 equality.
    spec case `A$+B$+C$`, the 64-char clamp, empty operands, and a 6-operand chain using one
    ring slot. Gates: lean byte-identical, unit-test 39/39, `make basic-reloc` OK. **The S4
    verbs' keyword tokens are already wired (crunch + LIST); only their handlers remain.**
-4. **S4 — the verbs.** LEN/ASC/CHR$/LEFT$/RIGHT$/MID$/STR$/VAL.
+4. **S4 — the verbs.** ✅ (2026-07-10.) All eight handlers in
+   [`basic/str-engine.asm`](../basic/str-engine.asm), reachable via three near-zero-byte
+   gated page-1 hooks (lean stays byte-identical): (a) the numeric factor `ev_f_ff`
+   ([`basic/expr.asm`](../basic/expr.asm)) routes an unrecognised `$FF` selector to
+   `ev_ff_strnum` for **LEN/ASC/VAL** (string→number, via the `ev_str_arg` IX↔HL bridge +
+   `str_val_parse`); (b) `str_eval_maybe_mki`
+   ([`basic/strvar.asm`](../basic/strvar.asm)) routes a non-MKI `$FF` token to `str_func_ff`
+   for **CHR$/STR$/LEFT$/RIGHT$/MID$** (→string); (c) PRINT's item loop
+   ([`basic/print.asm`](../basic/print.asm)) tries `str_eval` on a leading `$FF` token so
+   `PRINT CHR$(…)` etc. print (falling back to numeric on `PEEK`/…). LET into a `$`-var
+   already went through `str_eval`, so `A$=LEFT$(…)` needed no LET change. Design: the
+   substring verbs **dup the source into a fresh ring temp, then slice in place** (LEFT$ =
+   truncate; RIGHT$/MID$ = `LDIR` the slice to the front) so only ONE temp address must
+   survive the numeric-arg eval; STR$ reuses `pu_fmt_int` (public div10), CHR$ takes the low
+   byte, VAL is integer-only leading-parse (D-E). Own-design leniency (STRMAX clamp, N=3 ring
+   depth so a concat chain with ≥3 string-function operands reuses the oldest slot — §3a/§7)
+   is documented in-file. Proof: [`tests/test_str_verbs.py`](../tests/test_str_verbs.py) — 34
+   cases incl. the spec nest `LEFT$(A$+B$,3)`, VAL leading-parse/sign, MID$ optional-arg +
+   clamps, and verb⊕concat composition. Gates: lean byte-identical, unit-test 40/40,
+   `make basic-reloc` OK, `diskbasic-acceptance-repack` 34/34 (shared PRINT parse unregressed),
+   `repack-boot` PASS, `audit-citations` clean (also attested the `main-reloc.asm` header).
 5. **S5 — repack machine + `string-acceptance` gate** (D-D). **Machine + acceptance
    corpus PULLED FORWARD (2026-07-10, commits 24ff24e + 4f90b53):** the gated repack disk
    machine `C-BIOS_MSX1_EU_REPACK_DISK` (merged main ROM + zerobas-disk) is installed by

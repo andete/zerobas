@@ -425,7 +425,11 @@ ev_f_ff:
                 jr      z,ev_ff_arg
                 cp      CVI_TOKEN           ; $A8 -> CVI (takes a STRING arg)
                 jp      z,ev_ff_cvi
+    IF ROM_BASE < $4000
+                jp      ev_ff_strnum        ; repack: LEN/ASC/VAL (string->number), else ev_f_err
+    ELSE
                 jp      ev_f_err            ; unknown $FF function
+    ENDIF
 ev_ff_arg:
                 ld      c,a                 ; C = selector (survives the parse)
                 inc     ix                  ; skip the selector byte

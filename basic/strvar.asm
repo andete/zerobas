@@ -130,8 +130,12 @@ str_eval_maybe_mki:
                 ld      a,(hl)
                 cp      MKI_TOKEN           ; $AE -> MKI$
                 jr      z,str_mki
+    IF ROM_BASE < $4000
+                jp      str_func_ff         ; repack: CHR$/STR$/LEFT$/RIGHT$/MID$ (HL on selector)
+    ELSE
                 dec     hl                  ; other $FF function -> not a string operand
                 jp      str_eval_no
+    ENDIF
 str_mki:
                 inc     hl                  ; past the MKI$ selector
                 ld      a,(hl)

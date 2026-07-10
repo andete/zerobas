@@ -111,6 +111,10 @@ exp_loop:
                 jp      z,exp_comma
                 cp      '"'
                 jp      z,exp_str
+    IF ROM_BASE < $4000
+                cp      PEEK_PREFIX         ; $FF function token -> maybe a string function
+                jp      z,exp_maybe_strfn   ; (repack: CHR$/STR$/LEFT$/…; falls back to exp_num)
+    ENDIF
                 call    is_letter           ; a `$`-suffixed string variable?
                 jr      nc,exp_num
                 call    var_str_type        ; A=1 if `$` suffix

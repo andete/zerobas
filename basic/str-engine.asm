@@ -177,3 +177,461 @@ sct_next:
 sct_err:
                 or      a                   ; CF clear -> malformed operand
                 ret
+
+; ===========================================================================
+; S4 — the core string VERBS (repack build only): LEN/ASC/VAL (string->number)
+; and CHR$/STR$/LEFT$/RIGHT$/MID$ (->string). Their keyword tokens are already
+; crunched + LIST-detokenised (kwtable.inc, S3); these are the handlers.
+;
+; Clean-room: original code. The verb SEMANTICS (1-based MID$, LEFT$/RIGHT$ head/
+; tail clamps, ASC "" = error, VAL's leading-parse, STR$'s leading blank for
+; non-negatives) are from the public MSX-BASIC language reference. Divergences
+; (integer-only VAL per spec D-E; CHR$ takes the low byte of n; the STRMAX length
+; clamp; results that transit the fixed N=3 temp ring, so a concat chain with >=3
+; string-function operands reuses the oldest slot — the documented own-design
+; depth limit, spec §3a/§7) are zerobas's own design. No disassembly.
+; ===========================================================================
+
+; --- helpers ---------------------------------------------------------------
+
+; str_dup_temp: copy the descriptor at (STRPTR) into a fresh result-ring temp and
+; repoint STRPTR at it. The string verbs that take a source string (LEFT$/RIGHT$/
+; MID$) dup first, then slice the copy in place — so only the ONE temp address must
+; survive the numeric-argument eval that follows (which may itself move STRPTR via a
+; nested LEN/VAL). in: STRPTR -> source. out: HL = temp, STRPTR = temp. Clobbers A,BC,DE.
+str_dup_temp:
+                call    str_alloc_temp      ; HL = temp (clobbers A,DE)
+                push    hl                  ; save temp
+                ex      de,hl               ; DE = temp (destination)
+                ld      hl,(STRPTR)         ; HL = source
+                call    str_copy_desc       ; temp := source (clamped to STRMAX)
+                pop     hl                  ; HL = temp
+                ld      (STRPTR),hl
+                ret
+
+; str_min_bc: A = min(A, BC), treating A as a 0..255 length and BC as a 0..65535
+; requested count. Used to clamp a LEFT$/RIGHT$/MID$ count to the bytes available.
+; Preserves BC, DE, HL. Clobbers A + flags.
+str_min_bc:
+                inc     b
+                dec     b                   ; test B (high byte of the count)
+                ret     nz                  ; count >= 256 -> min is the length (A<=STRMAX)
+                cp      c                   ; length - count(low)
+                ret     c                   ; length < count -> length is the min (A)
+                ld      a,c                 ; else the count is the min
+                ret
+
+; str_temp_slice: in the temp descriptor at BC, keep the count bytes starting at
+; offset `start`, moving them to the front and setting the descriptor length. Used
+; by LEFT$ (start 0 -> pure truncation), RIGHT$ and MID$. Pre-validated so that
+; start+count <= length and count <= STRMAX. in: BC = temp, D = start (0-based),
+; E = count. Clobbers A, BC, DE, HL. Leaves the temp in place (STRPTR unchanged).
+str_temp_slice:
+                ld      a,e
+                ld      (bc),a              ; temp length := count
+                or      a
+                ret     z                   ; count 0 -> empty descriptor, done
+                ld      a,d
+                or      a
+                ret     z                   ; start 0 -> slice already at the front
+                push    de                  ; save start:count
+                ld      h,b
+                ld      l,c
+                inc     hl                  ; HL = temp+1 = destination (front)
+                push    hl                  ; save destination
+                ld      c,d
+                ld      b,0                 ; BC = start
+                add     hl,bc               ; HL = temp+1+start = source
+                pop     de                  ; DE = destination
+                pop     bc                  ; B = start, C = count
+                ld      b,0                 ; BC = count
+                ldir                        ; move count bytes forward (dst < src, safe)
+                ret
+
+; --- LEN/ASC/VAL: string-argument functions in the NUMERIC evaluator -------
+; Reached from ev_f_ff (basic/expr.asm) via `jp ev_ff_strnum` on an unrecognised
+; $FF selector (repack build only; the lean build's ev_f_ff still `jp ev_f_err`s).
+; Entered with IX on the function selector byte. Each returns its numeric result in
+; DE (the factor convention), IX advanced past the call.
+ev_ff_strnum:
+                cp      LEN_TOKEN           ; $92 -> LEN(a$)
+                jr      z,ev_ff_len
+                cp      ASC_TOKEN           ; $95 -> ASC(a$)
+                jr      z,ev_ff_asc
+                cp      VAL_TOKEN           ; $94 -> VAL(a$)
+                jr      z,ev_ff_val
+                jp      ev_f_err            ; a $FF string-token used in a numeric slot
+
+; ev_str_arg: parse "( <string-expr> )" from the IX token stream, leaving STRPTR ->
+; the argument's [len][bytes] descriptor and IX past ')'. Mirrors ev_ff_cvi's IX<->HL
+; bridge. On a syntax/type error it does not return — it `jp ev_f_err` like every
+; other factor error. Entered with IX on the function selector byte.
+ev_str_arg:
+                inc     ix                  ; skip the selector
+                call    ev_sp
+                ld      a,(ix+0)
+                cp      '('
+                jp      nz,ev_f_err
+                inc     ix
+                call    ev_sp
+                push    ix
+                pop     hl                  ; HL = cursor
+                call    str_eval            ; STRPTR -> desc; HL advanced; CF=ok
+                jp      nc,ev_f_err
+                push    hl
+                pop     ix                  ; IX = cursor past the string operand
+                call    ev_sp
+                ld      a,(ix+0)
+                cp      ')'
+                jp      nz,ev_f_err
+                inc     ix
+                ret
+ev_ff_len:
+                call    ev_str_arg          ; STRPTR -> desc
+                ld      hl,(STRPTR)
+                ld      e,(hl)              ; DE = descriptor length byte
+                ld      d,0
+                ret
+ev_ff_asc:
+                call    ev_str_arg
+                ld      hl,(STRPTR)
+                ld      a,(hl)              ; length
+                or      a
+                jp      z,ev_f_err          ; ASC("") -> Illegal function call
+                inc     hl
+                ld      e,(hl)              ; DE = first byte
+                ld      d,0
+                ret
+ev_ff_val:
+                call    ev_str_arg
+                ; fall through: parse a leading signed decimal from the descriptor.
+; str_val_parse: STRPTR -> [len][bytes]; parse an optional-sign leading decimal
+; integer -> DE (0 if no digits; integer-only, spec D-E). Clobbers A,BC,HL.
+str_val_parse:
+                ld      hl,(STRPTR)
+                ld      b,(hl)              ; B = remaining byte count
+                inc     hl                  ; HL -> bytes
+                ld      de,0                ; accumulator
+                ld      c,0                 ; C bit0 = negative flag
+svp_sp:
+                ld      a,b
+                or      a
+                jr      z,svp_done          ; consumed all -> value so far
+                ld      a,(hl)
+                cp      ' '
+                jr      nz,svp_sign
+                inc     hl
+                dec     b
+                jr      svp_sp              ; skip leading spaces
+svp_sign:
+                cp      '-'
+                jr      nz,svp_plus
+                ld      c,1                 ; negative
+                inc     hl
+                dec     b
+                jr      svp_digits
+svp_plus:
+                cp      '+'
+                jr      nz,svp_digits
+                inc     hl
+                dec     b
+svp_digits:
+                ld      a,b
+                or      a
+                jr      z,svp_fin
+                ld      a,(hl)
+                cp      '0'
+                jr      c,svp_fin
+                cp      '9'+1
+                jr      nc,svp_fin
+                sub     '0'                 ; A = digit 0..9
+                push    hl                  ; guard the string cursor across the *10
+                push    af                  ; save the digit
+                ld      h,d
+                ld      l,e                 ; HL = acc
+                add     hl,hl               ; *2
+                add     hl,hl               ; *4
+                add     hl,hl               ; *8
+                ex      de,hl               ; DE = acc*8 ; HL = acc
+                add     hl,hl               ; HL = acc*2
+                add     hl,de               ; HL = acc*10
+                pop     af                  ; A = digit
+                ld      d,0
+                ld      e,a
+                add     hl,de               ; HL = acc*10 + digit
+                ex      de,hl               ; DE = new acc
+                pop     hl                  ; restore string cursor
+                inc     hl
+                dec     b
+                jr      svp_digits
+svp_fin:
+                bit     0,c
+                jr      z,svp_done          ; non-negative -> DE is the value
+                ld      hl,0
+                or      a
+                sbc     hl,de               ; HL = -DE
+                ex      de,hl               ; DE = negated value
+svp_done:
+                ret
+
+; --- CHR$/STR$/LEFT$/RIGHT$/MID$: string-VALUED $FF functions ---------------
+; Reached from str_eval_maybe_mki (basic/strvar.asm) via `jp str_func_ff` on a
+; non-MKI$ $FF token (repack build only). Entered with HL on the selector byte and
+; a string context wanting a value. On success each writes its result into a result-
+; ring temp, points STRPTR at it, and joins str_eval_ok (VALTYP=1, CF set, HL past
+; the call). A malformed call or a non-string $FF token falls to str_eval_no (CF
+; clear) so the caller treats it as "not a string operand" (an error, or — in the
+; numeric/PRINT path — a retry as a numeric factor).
+str_func_ff:
+                ld      a,(hl)
+                cp      CHRD_TOKEN          ; $96 -> CHR$
+                jp      z,str_fn_chr
+                cp      STRD_TOKEN          ; $93 -> STR$
+                jp      z,str_fn_str
+                cp      LEFTD_TOKEN         ; $81 -> LEFT$
+                jp      z,str_fn_left
+                cp      RIGHTD_TOKEN        ; $82 -> RIGHT$
+                jp      z,str_fn_right
+                cp      MIDD_TOKEN          ; $83 -> MID$
+                jp      z,str_fn_mid
+                dec     hl                  ; restore HL to the $FF prefix
+                jp      str_eval_no         ; unknown $FF function -> not a string operand
+
+; CHR$(n): a 1-byte string of the low 8 bits of n (own-design leniency — MSX errors
+; on n>255; zerobas is integer-only-lenient and takes E, like its other verbs).
+str_fn_chr:
+                inc     hl                  ; past the selector
+                ld      a,(hl)
+                cp      '('
+                jp      nz,str_eval_no
+                inc     hl
+                call    eval                ; DE = n; HL advanced (IX preserved)
+                ld      a,(hl)
+                cp      ')'
+                jp      nz,str_eval_no
+                inc     hl                  ; HL past ')'
+                push    hl                  ; guard cursor across the temp write
+                ld      a,e                 ; A = the char (low byte of n)
+                push    af
+                call    str_alloc_temp      ; HL = temp (clobbers A,DE)
+                pop     af                  ; A = char
+                ld      (hl),1              ; length = 1
+                inc     hl
+                ld      (hl),a              ; the byte
+                dec     hl                  ; HL = temp base
+                ld      (STRPTR),hl
+                pop     hl                  ; restore cursor
+                jp      str_eval_ok
+
+; STR$(n): the decimal text of n. Leading blank for non-negative n (MSX format);
+; the '-' for a negative is emitted by pu_fmt_int. Reuses print.asm's div10 via
+; pu_fmt_int (NUMBUF = "[-]digits",0, B = digit count) — no perturbation of the
+; existing PRINT/USING paths (they keep their own entry points).
+str_fn_str:
+                inc     hl                  ; past the selector
+                ld      a,(hl)
+                cp      '('
+                jp      nz,str_eval_no
+                inc     hl
+                call    eval                ; DE = n
+                ld      a,(hl)
+                cp      ')'
+                jp      nz,str_eval_no
+                inc     hl                  ; HL past ')'
+                push    hl                  ; guard cursor
+                ld      c,0                 ; C = leading-space count
+                bit     7,d                 ; sign of n
+                jr      nz,sfs_conv         ; negative -> no leading space
+                inc     c                   ; non-negative -> one leading space
+sfs_conv:
+                call    pu_fmt_int          ; NUMBUF="[-]digits",0; B=digit count; C preserved
+                call    str_alloc_temp      ; HL = temp base (clobbers A,DE; B,C survive)
+                push    hl                  ; save temp base
+                ld      a,c
+                add     a,b                 ; total length = leading space + digits
+                ld      (hl),a
+                inc     hl                  ; -> temp bytes
+                ld      a,c
+                or      a
+                jr      z,sfs_digits
+                ld      (hl),' '            ; leading blank
+                inc     hl
+sfs_digits:
+                ld      de,NUMBUF
+sfs_cp:
+                ld      a,(de)
+                ld      (hl),a
+                inc     de
+                inc     hl
+                djnz    sfs_cp              ; B = digit count (>=1)
+                pop     hl                  ; HL = temp base
+                ld      (STRPTR),hl
+                pop     hl                  ; restore cursor
+                jp      str_eval_ok
+
+; LEFT$(a$,n): the first min(n,len) bytes. Dup the source into a temp, then truncate.
+str_fn_left:
+                inc     hl                  ; past the selector
+                ld      a,(hl)
+                cp      '('
+                jp      nz,str_eval_no
+                inc     hl
+                call    str_eval            ; STRPTR -> source; HL advanced; CF=ok
+                jp      nc,str_eval_no
+                push    hl                  ; save cursor@','
+                call    str_dup_temp        ; STRPTR -> temp copy of source; HL=temp
+                pop     hl
+                ld      a,(hl)
+                cp      ','
+                jp      nz,str_eval_no
+                inc     hl
+                ld      bc,(STRPTR)         ; BC = temp addr
+                push    bc                  ; save it across the numeric eval
+                call    eval                ; DE = n
+                pop     bc                  ; BC = temp addr
+                ld      a,(hl)
+                cp      ')'
+                jp      nz,str_eval_no
+                inc     hl                  ; HL = cursor past ')'
+                push    hl                  ; save cursor
+                ld      l,c
+                ld      h,b                 ; HL = temp addr (kept through the clamp)
+                ld      (STRPTR),hl         ; STRPTR = temp (eval may have moved it)
+                ld      a,(bc)              ; A = templen
+                ld      b,d
+                ld      c,e                 ; BC = n (the requested count)
+                call    str_min_bc          ; A = min(templen, n) ; preserves HL=temp
+                ld      e,a                 ; E = count
+                ld      d,0                 ; D = start = 0 (LEFT$ -> pure truncation)
+                ld      b,h
+                ld      c,l                 ; BC = temp addr
+                call    str_temp_slice
+                pop     hl                  ; restore cursor
+                jp      str_eval_ok
+
+; RIGHT$(a$,n): the last min(n,len) bytes. Dup, then slice from (len-count).
+str_fn_right:
+                inc     hl                  ; past the selector
+                ld      a,(hl)
+                cp      '('
+                jp      nz,str_eval_no
+                inc     hl
+                call    str_eval
+                jp      nc,str_eval_no
+                push    hl
+                call    str_dup_temp
+                pop     hl
+                ld      a,(hl)
+                cp      ','
+                jp      nz,str_eval_no
+                inc     hl
+                ld      bc,(STRPTR)
+                push    bc
+                call    eval                ; DE = n
+                pop     bc
+                ld      a,(hl)
+                cp      ')'
+                jp      nz,str_eval_no
+                inc     hl
+                push    hl
+                ld      l,c
+                ld      h,b                 ; HL = temp addr (kept through the clamp)
+                ld      (STRPTR),hl         ; STRPTR = temp
+                ld      a,(bc)              ; templen
+                ld      b,d
+                ld      c,e                 ; BC = n (the requested count)
+                call    str_min_bc          ; A = count = min(templen, n) ; HL=temp preserved
+                ld      e,a                 ; E = count
+                ld      a,(hl)              ; templen (HL still = temp base)
+                sub     e                   ; A = start = templen - count
+                ld      d,a                 ; D = start
+                ld      b,h
+                ld      c,l                 ; BC = temp addr
+                call    str_temp_slice
+                pop     hl
+                jp      str_eval_ok
+
+; MID$(a$,p[,n]): count bytes from 1-based position p (or to end if n omitted).
+; p<1 is clamped to the start; p>len yields "". Dup, then slice.
+str_fn_mid:
+                inc     hl                  ; past the selector
+                ld      a,(hl)
+                cp      '('
+                jp      nz,str_eval_no
+                inc     hl
+                call    str_eval            ; STRPTR -> source
+                jp      nc,str_eval_no
+                push    hl
+                call    str_dup_temp        ; STRPTR -> temp copy; HL=temp
+                pop     hl
+                ld      a,(hl)
+                cp      ','
+                jp      nz,str_eval_no
+                inc     hl
+                ld      bc,(STRPTR)
+                push    bc                  ; [temp]
+                call    eval                ; DE = p (1-based)
+                push    de                  ; [temp][p]
+                ld      a,(hl)
+                cp      ','
+                jr      z,sfm_haveN
+                ld      de,$FFFF            ; n omitted -> "to end" (clamps to avail)
+                jr      sfm_close
+sfm_haveN:
+                inc     hl
+                call    eval                ; DE = n (count)
+sfm_close:
+                ld      a,(hl)
+                cp      ')'
+                jr      nz,sfm_reject2      ; unbalance-safe: pop [temp][p] first
+                inc     hl                  ; HL = cursor past ')'
+                ld      b,d
+                ld      c,e                 ; BC = requested count (n or $FFFF)
+                pop     de                  ; DE = p           stack: [temp]
+                ld      a,d
+                or      e
+                jr      z,sfm_start         ; p==0 -> start 0 (DE already 0)
+                dec     de                  ; DE = p-1 (desired 0-based start)
+sfm_start:
+                ex      (sp),hl             ; HL = temp addr; stack top := cursor
+                ld      a,(hl)              ; A = templen
+                push    hl                  ; [cursor][temp]
+                ld      h,a                 ; H = templen (scratch)
+                ld      a,d
+                or      a
+                jr      nz,sfm_clampmax     ; start high byte set -> beyond end
+                ld      a,e
+                cp      h                   ; start(low) - templen
+                jr      c,sfm_starthave     ; start < templen
+sfm_clampmax:
+                ld      a,h                 ; start = templen (avail becomes 0 -> "")
+sfm_starthave:
+                ld      d,a                 ; D = clamped start (0..templen)
+                ld      a,h                 ; templen
+                sub     d                   ; A = avail = templen - start
+                call    str_min_bc          ; A = count = min(avail, requested)
+                ld      e,a                 ; E = count
+                pop     bc                  ; BC = temp addr    stack: [cursor]
+                ld      l,c
+                ld      h,b
+                ld      (STRPTR),hl         ; STRPTR = temp (before the slice clobbers BC)
+                call    str_temp_slice      ; in-place slice [start..start+count)
+                pop     hl                  ; restore cursor
+                jp      str_eval_ok
+sfm_reject2:
+                pop     bc                  ; discard p
+                pop     bc                  ; discard temp
+                jp      str_eval_no
+
+; --- exp_maybe_strfn: PRINT hook for the string-VALUED $FF functions --------
+; Reached from exp_loop (basic/print.asm) when a PRINT item begins with a $FF
+; function token (repack build only). Try the string path first — CHR$/STR$/LEFT$/
+; RIGHT$/MID$/MKI$ succeed and print; a numeric $FF function (PEEK/…) fails cleanly
+; (str_func_ff restores HL to the $FF), so we fall back to exp_num.
+exp_maybe_strfn:
+                call    str_eval            ; STRPTR -> value; HL advanced; CF=ok
+                jp      nc,exp_num          ; not a string function -> numeric factor
+                push    hl                  ; print_strval clobbers HL (token cursor)
+                call    print_strval
+                pop     hl
+                jp      exp_loop
