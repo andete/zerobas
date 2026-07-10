@@ -160,6 +160,30 @@ def main() -> int:
     ap.add_argument("--keep-tcl", action="store_true", help="don't delete the generated Tcl")
     args = ap.parse_args()
 
+    # Machine remap hook (string-engine arc — run the acceptance corpus on the reloc
+    # build without editing every probe). omsx_run is the single funnel every probe uses
+    # to launch openMSX, so one remap here flips the zerobas-side machine for the whole
+    # corpus while leaving the CF-3300 oracle (National_CF-3300*) untouched.
+    #   ZEROBAS_MACHINE_MAP="OLD1=NEW;OLD2=NEW"  — if --machine equals an OLD, launch NEW.
+    #   ZEROBAS_MACHINE_STRICT=1  — vacuity guard: after remapping, a zerobas BASIC
+    #     machine that is NOT a repack machine means some probe dodged the map and would
+    #     silently run the LEAN build (false coverage). Hard-fail so it is caught, not
+    #     hidden — the analogue of diskbasic_acceptance's oracle-ran vacuity guard.
+    _remap = os.environ.get("ZEROBAS_MACHINE_MAP", "")
+    for _pair in _remap.split(";"):
+        if "=" in _pair:
+            _old, _new = _pair.split("=", 1)
+            if args.machine == _old.strip():
+                args.machine = _new.strip()
+                break
+    if os.environ.get("ZEROBAS_MACHINE_STRICT") == "1":
+        _m = args.machine.upper()
+        if "BASIC" in _m and "C-BIOS_MSX1" in _m and "REPACK" not in _m:
+            sys.exit(f"[omsx_run] STRICT remap: refusing to boot lean zerobas machine "
+                     f"'{args.machine}' — this probe dodged ZEROBAS_MACHINE_MAP and would "
+                     f"run the lean build (false repack coverage). Add its machine name to "
+                     f"the map (see Makefile diskbasic-acceptance-repack).")
+
     if args.bp is None and args.time is None:
         args.time = 6.0  # generous: safely past both C-BIOS and real-BIOS boot
 

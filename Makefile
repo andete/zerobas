@@ -172,6 +172,31 @@ bdos-acceptance: $(DISK_ROM)
 diskbasic-acceptance: $(DISK_ROM) $(DISK_TEST_DSK)
 	python3 probes/disk/diskbasic_acceptance.py $(if $(ONLY),--only $(ONLY),)
 
+# --- REPACK acceptance: the SAME Disk-BASIC corpus on the relocated BASIC build ----
+# (string-engine arc.) The lean gate above proves the 16 KB basic.rom; this proves the
+# merged repack ROM (build/zerobas-main-eu.rom — relocated BASIC $2812-$7FFF, STRMAX=64,
+# concat-aware str_eval, relocated kwtable) against the SAME CF-3300 oracle. The disk
+# verbs flow through the changed str_eval / newly-tokenised keywords, so lean-converges
+# does NOT imply repack-converges. Mechanism (tools/run_repack_acceptance.py): the probes
+# launch openMSX ~32 different ways (mostly direct Popen, some via omsx_run), so we
+# intercept at the BINARY — a wrapper `openmsx` on PATH+$OPENMSX rewrites `-machine
+# <lean> -> <repack>` before exec. Universal, NON-DESTRUCTIVE (never edits the user's
+# installed machine files), and STRICT hard-fails if any probe dodges the remap and would
+# run the lean build. Same deps as the lean gate (machines-oracle + seed + CF-3300).
+#
+# There is deliberately NO bdos-acceptance-repack: the BDOS gate exercises the disk ROM
+# (build/disk.rom) under the real CF-3300 BIOS — the string-engine arc does not touch the
+# disk ROM, so BDOS behaviour is identical across the lean and repack BASIC builds.
+REPACK_MACHINE  := C-BIOS_MSX1_EU_REPACK_DISK
+repack-machine: $(MAIN_ROM) $(DISK_ROM)
+	python3 tools/install-repack-machine.py --merged $(MAIN_ROM) --disk-rom $(DISK_ROM)
+
+diskbasic-acceptance-repack: $(DISK_ROM) $(DISK_TEST_DSK) repack-machine
+	python3 tools/run_repack_acceptance.py \
+	  --map C-BIOS_MSX1_EU_BASIC_DISK=$(REPACK_MACHINE) \
+	  --map C-BIOS_MSX1_BASIC_DISK=$(REPACK_MACHINE) \
+	  -- python3 probes/disk/diskbasic_acceptance.py $(if $(ONLY),--only $(ONLY),)
+
 # Standing C-BIOS self-consistency gate: closes the coverage gap that `bdos-acceptance`
 # structurally can't reach. That gate is a DIFFERENTIAL, so it only runs on the CF-3300
 # oracle (the only host with a stock disk ROM + MSX-DOS to diff against); the shipped
@@ -201,4 +226,5 @@ clean:
 
 .PHONY: all disk patches tape-patches machines machines-oracle install \
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
-        bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot clean
+        bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
+        repack-machine diskbasic-acceptance-repack clean
