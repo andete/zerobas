@@ -69,7 +69,22 @@ plain `CALL`; and it yields ~1.7 KB less than a consolidating repack. Neutering
 page 1 and calls INIT, so those "no cartridge / can't run BASIC" paths never execute
 (verify-on-execute: confirm nothing else jumps into them).
 
-### Approach 1 — Repack (relocate live content): ~7 KB contiguous, the escalation
+### Approach 1 — Repack: ~6 KB contiguous, the escalation
+
+> **CORRECTION (2026-07-10, from the WS-1 spike).** The relocate-below-font mechanism
+> below was based on a wrong gap measurement and is **not achievable**. This paragraph
+> claimed core BIOS ends ~`$1734`, leaving a ~1.4 KB pre-font gap. The binary shows core
+> BIOS actually packs down to `$1AC9`; the pre-font gap is only **253 B** (matching this
+> doc's own gap-2 row), and gaps 1+2 together (~1061 B) can't hold the 1107 B of
+> above-font keep-content. So the above-font content **cannot** move below the font
+> without fragmented deep-in-live-BIOS relocation (Tier B, out of scope). **What actually
+> works** is far simpler: the entire `statements.asm` (`multiple`/`rombas`/`rombas_niy` +
+> the dead dispatch tables) is C-BIOS's *unshipped-ROM-BASIC placeholder* with zero
+> external references — just delete it. Highest kept content is then `vdp_bios` (ends
+> `$2811`), so the clean boundary is **`$2812`**, reclaiming **6126 B** (`$2812–$3FFF`,
+> contiguous with page 1) → **~21.5 KB** BASIC window. No live-content relocation needed.
+> See `spec-cbios-repack-tooling.md` §8. The original (flawed) plan is kept below for the
+> record.
 
 Keep only the **jump table** (`$0000–$01B7`) and the **font** (`$1BBF–$23BE`) pinned;
 everything else is relocatable. The font-pin forces a ~1.4 KB empty gap just below it

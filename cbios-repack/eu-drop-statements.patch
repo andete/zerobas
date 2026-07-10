@@ -1,0 +1,18 @@
+diff --git a/src/main.asm b/src/main.asm
+index 843d6c2..434cd5b 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -3188,7 +3188,12 @@ vdp_bios:
+                 db      $00,$80,$70,$81,$00,$82,$01,$84
+                 db      $F5,$87,$00,$40
+ 
+-                include "statements.asm"
++; zerobas repack (WS-1): statements.asm is C-BIOS's placeholder for a ROM BASIC
++; that this ROM does not ship (multiple/rombas/rombas_niy + the runloop/statement
++; dispatch tables). It has zero references from anywhere else in the source, so
++; removing it is behaviour-neutral and frees $2812-$3A70 in page 0 (contiguous
++; with page 1) for the zerobas BASIC image. See zerobas docs/spec-cbios-repack-tooling.md.
++;                include "statements.asm"
+ 
+ ; FM Music Macro is calling the routine(seems to display message).
+ ; in : HL(an address of string with null termination)

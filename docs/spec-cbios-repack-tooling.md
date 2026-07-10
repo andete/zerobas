@@ -1,6 +1,9 @@
 # Spec — C-BIOS repack tooling (reclaim page-0 space → grow the BASIC window)
 
-**Status: SIGNED OFF (2026-07-09).** Decisions D1–D3 resolved (§6). Next: S2 (WS-1 C-BIOS repack spike). Implementation spec for the arc
+**Status: SIGNED OFF (2026-07-09); WS-1 done + boundary corrected (2026-07-10).**
+Decisions D1–D3 resolved (§6); **D2 boundary corrected `$23BF`→`$2812` after the S2
+spike disproved the analysis's pre-font-gap estimate (§6, §8).** Next: S3 (WS-2 BASIC
+relocation to `$2812`). Implementation spec for the arc
 the user selected after zerobas reached its concluded state. Grounded in the sizing
 analysis [`cbios-repack-space-analysis.md`](cbios-repack-space-analysis.md); this
 doc is the *how* + *decisions*, that doc is the *why* + *budget*. No code until this
@@ -93,12 +96,15 @@ Reuse the standing harness — this arc must not regress it:
 
 ## 5. Session sequencing (one landing per session)
 
-1. **S1 (this session): spec + sign-off.** ← you are here.
-2. **S2 — WS-1 spike:** make the C-BIOS source edits, rebuild `main_msx1_eu`, confirm
-   it still boots C-BIOS standalone and page-0 content now ends ≤`$23BE`. No BASIC
-   changes yet. Gate: C-BIOS self-boot + jump-table/CGTABL re-validation.
-3. **S3 — WS-2 audit + relocation:** hardcoded-address audit, reassemble BASIC from
-   `$23BF`. Gate: BASIC boots to `Ok`, unit-tests green.
+1. **S1: spec + sign-off.** ✅ DONE (commit b24ae7f).
+2. **S2 — WS-1 spike.** ✅ DONE (2026-07-10). Repack = comment out `include
+   "statements.asm"` (the whole file is dead — zero external refs); no live-content
+   relocation needed. Rebuilt `main_msx1_eu` differs from stock in exactly 363 bytes
+   (all `$3193–$3A70`, all zeroed); jump table / font / `CGTABL` / page-1 byte-identical.
+   Captured as `cbios-repack/eu-drop-statements.patch` (reproducible: pinned tag + patch
+   → sha1 `edb08440…`). Page-0 ceiling now `$2811`; **boundary corrected to `$2812`.**
+3. **S3 (next) — WS-2 audit + relocation:** hardcoded-address audit, reassemble BASIC
+   from `$2812`. Gate: BASIC boots to `Ok`, unit-tests green.
 4. **S4 — WS-3 tooling:** parameterize overlay/build, emit the repacked IPS/BPS.
    Gate: full standing-gate sweep + end-to-end loader round-trip.
 5. **S5 — close-out:** provenance write-up (patch-vs-merge firewall), docs harvest,
@@ -116,9 +122,14 @@ patch is a description of edits to BSD source, so the firewall holds (a diff is 
 merge). *(Rejected: vendoring a fork — puts C-BIOS bytes in-repo; hand-edited branch —
 not reproducible.)*
 
-**D2 — relocation boundary → `$23BF` (max reclaim).** Full ~23 KB window; analysis
-shows C-BIOS content ends here cleanly, so no safety margin is left on the table — the
-whole point is to break the wall.
+**D2 — relocation boundary → `$2812`** (corrected 2026-07-10 from `$23BF`). The S2
+spike (§8) proved `$23BF` is **not cleanly achievable**: it assumed a ~1.4 KB pre-font
+gap to relocate the above-font keep-content into, but the binary shows the pre-font gap
+is only 253 B (core BIOS packs down to `$1AC9`, not `$1734`). The clean, surgical
+boundary is `$2812` — reclaim **6126 B** (`$2812–$3FFF`), BASIC window `$2812–$7FFF` ≈
+**21.5 KB** (+37 % over 16 KB). Clawing back the extra ~1.1 KB toward `$23BF` needs
+fragmented deep-in-live-BIOS relocation (Tier B), which this arc excludes — user
+accepted `$2812` (2026-07-10).
 
 **D3 — variant scope → EU ONLY** (`main_msx1_eu`). Prove the mechanism on one target;
 per-variant (br/jp) gap re-measurement is a documented later add, same pattern as the
@@ -135,3 +146,28 @@ tape build.
   any actual Phase-3 BASIC feature. This arc delivers *space + tooling* only.
 - **Firewall unchanged:** ships as an IPS on a pristine C-BIOS, exactly like today's
   patches. A larger diff, still an overlay — no fork, no "own the BIOS" pivot.
+
+## 8. S2 / WS-1 outcome (2026-07-10)
+
+The spike both simplified WS-1 and corrected the budget:
+
+- **WS-1 collapses to one line.** The entire `statements.asm` is C-BIOS's placeholder
+  for a ROM BASIC it never ships (`multiple`, `rombas`, `rombas_niy`, the runloop +
+  statement dispatch tables). Grep proved **zero references** from anywhere else in the
+  source (verify-on-execute, done *before* removal), so the planned "relocate live
+  content below the font" is unnecessary — just comment out the `include`. Captured as
+  [`../cbios-repack/eu-drop-statements.patch`](../cbios-repack/eu-drop-statements.patch).
+- **Proven surgical + reproducible.** Rebuilt `main_msx1_eu` vs pristine stock: exactly
+  **363 differing bytes, all `$3193–$3A70`, all zeroed** (the dead code); jump table,
+  font, `CGTABL`(→`$1BBF`), and the whole page-1 region byte-identical. Pinned tag +
+  patch rebuilds to sha1 `edb0844053a3d428aaef95fcd9106972079bde34` deterministically.
+- **Analysis error found → boundary corrected.** The sizing doc's Approach-1 narrative
+  claimed core BIOS ends ~`$1734`, leaving a ~1.4 KB pre-font gap to relocate the
+  above-font keep-content into. The binary refutes this: core BIOS packs down to
+  `$1AC9`; the pre-font gap is only **253 B**, and gaps 1+2 together (~1061 B) can't even
+  hold the 1107 B of above-font keep-content. So `$23BF` is unreachable without Tier-B
+  moves; the clean boundary is `$2812` (see D2). The analysis doc's Approach-1 section
+  was corrected to match.
+- **Self-boot:** guaranteed by construction — every *reachable* byte is identical to
+  stock; the only change is unreferenced dead code becoming `$00`. Full end-to-end boot
+  is re-proven in S4 when the relocated stack runs the standing gates.
