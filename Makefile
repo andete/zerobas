@@ -71,6 +71,19 @@ basic-reloc: $(ROM) basic/main-reloc.asm basic/main.asm $(DEPS) | $(BUILD)
 	$(PASMO) --bin basic/main-reloc.asm $(RELOC_ROM)
 	python3 tools/check_reloc.py $(RELOC_ROM) $(ROM)
 
+# --- Merged repack main ROM (WS-3 / D4) ---------------------------------------
+# The 32 KB slot-0 "main ROM": repacked C-BIOS + relocated BASIC ($2812-$7FFF) +
+# tape, built reproducibly from the user's C-BIOS checkout (CBIOS=<path>; no
+# C-BIOS bytes in-repo). NOT in `all` -- it needs that external checkout. The
+# patch pair diffs the merged image vs the pristine stock from the same pinned tag.
+CBIOS ?= ~/projects/cbios
+MAIN_ROM   := $(BUILD)/zerobas-main-eu.rom
+MAIN_PATCHES := zerobas-main-eu.ips zerobas-main-eu.bps
+repack-main: basic/main-reloc.asm basic/main.asm $(DEPS) tape/tape.asm | $(BUILD)
+	python3 tools/build_patches.py --main --cbios $(CBIOS)
+repack-boot: repack-main
+	python3 probes/basic/basic_probe_repack_boot.py
+
 # --- Slot-0 page-1 BASIC patch (build/basic.rom spliced into a stock C-BIOS) ---
 # build_patches.py emits BOTH .ips and .bps in one run; express that with a
 # single-recipe target plus a no-op follower (GNU make 3.81 has no grouped
@@ -188,4 +201,4 @@ clean:
 
 .PHONY: all disk patches tape-patches machines machines-oracle install \
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
-        bdos-cbios-selfcheck audit-citations basic-reloc clean
+        bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot clean

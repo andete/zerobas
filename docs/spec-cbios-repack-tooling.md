@@ -1,12 +1,12 @@
 # Spec — C-BIOS repack tooling (reclaim page-0 space → grow the BASIC window)
 
-**Status: SIGNED OFF (2026-07-09); WS-1 done (S2); WS-2 audit + assemble-clean done
-(S3, 2026-07-10).** Decisions D1–D5 resolved (§6); **D2 boundary corrected `$23BF`→
-`$2812` (§6, §8); D5 = leave tape at `$3A72` (§6).** S3 landed the WS-2 hardcoded-address
-audit ([`cbios-repack-ws2-audit.md`](cbios-repack-ws2-audit.md) — the crux is clean; the
-only base-dependent site is `org`) and a parameterized relocated build proving the
-`$2812` layout assembles with the `"AB"` header pinned at `$4000`. Next: S4 (WS-3 merged
-main-ROM splice + boot-to-`Ok`). Implementation spec for the arc
+**Status: SIGNED OFF (2026-07-09); WS-1 (S2) + WS-2 (S3) + WS-3 (S4) DONE (2026-07-10).**
+Decisions D1–D5 resolved (§6). The full merged main ROM — repacked C-BIOS + relocated
+BASIC (`$2812–$7FFF`) + tape — now **builds and boots end to end** (`make repack-boot`:
+title + `zb>` prompt + live `PRINT`), and ships as `zerobas-main-eu.ips`/`.bps` (verified
+byte-exact round-trip). WS-2 proved the relocation is safe (audit:
+[`cbios-repack-ws2-audit.md`](cbios-repack-ws2-audit.md) — only base-dependent site is
+`org`). Next: **S5 close-out** (provenance write-up + commit the IPS/BPS deliverables). Implementation spec for the arc
 the user selected after zerobas reached its concluded state. Grounded in the sizing
 analysis [`cbios-repack-space-analysis.md`](cbios-repack-space-analysis.md); this
 doc is the *how* + *decisions*, that doc is the *why* + *budget*. No code until this
@@ -129,12 +129,28 @@ Reuse the standing harness — this arc must not regress it:
    assembles with the header at `$4000` and a page-1 body byte-identical to shipping.
    **Boot-to-`Ok` deferred to S4** (it needs the WS-3 merged-image splice; user-scoped
    this landing to assemble-clean). Gate met: unit-test 38/38; shipping ROM unchanged.
-4. **S4 (next) — WS-3 tooling:** parameterize overlay/build for the `$2812` boundary,
-   build the merged main-ROM (repacked C-BIOS + tape `$3A72` + relocated BASIC), emit the
-   repacked IPS/BPS, **and run the deferred S3 boot-to-`Ok`.** Gate: full standing-gate
-   sweep + end-to-end loader round-trip.
-5. **S5 — close-out:** provenance write-up (patch-vs-merge firewall), docs harvest,
-   memory + TODO update.
+4. **S4 — WS-3 tooling + deferred boot.** ✅ DONE (2026-07-10). Built the merged
+   main-ROM path end to end:
+   - [`build_repacked_cbios.py`](../tools/build_repacked_cbios.py) — applies the D1 patch
+     to the pinned tag in a throwaway worktree, rebuilds, verifies sha1 (`edb08440…`
+     repacked, `baf2e9c6…` pristine). No C-BIOS bytes in-repo.
+   - [`build_mainrom.py`](../tools/build_mainrom.py) — merges repacked C-BIOS + relocated
+     BASIC (`$2812–$7FFF`) + tape (`$3A72`, D5), reusing `overlay_page1`'s ref-safety
+     check (the 67 overwritten C-BIOS bytes are all unreferenced) and asserting the tape
+     body region is free.
+   - [`build_patches.py --main`](../tools/build_patches.py) — emits `zerobas-main-eu.ips`
+     / `.bps` (diff vs the pristine stock from the same tag). Verified IPS(pristine) and
+     BPS(pristine) both reconstruct the merged image **byte-for-byte**.
+   - **Boot gate** [`basic_probe_repack_boot.py`](../probes/basic/basic_probe_repack_boot.py)
+     (`make repack-boot`): boots the merged ROM as a real MSX main ROM, **no cartridge** —
+     reaches the zerobas title + `zb>` prompt (this is zerobas's ready prompt, the `Ok`
+     analogue) and runs a live `PRINT 12+34 → 46`. The deferred S3 end-to-end proof, met.
+   - Shipping deliverables untouched: `basic.rom` byte-identical; page-1 + tape patch
+     builds unchanged; unit-test 38/38. `repack-main`/`repack-boot` kept out of `all`
+     (they need the external C-BIOS checkout).
+5. **S5 (next) — close-out:** provenance write-up (patch-vs-merge firewall for the merged
+   IPS/BPS), commit the `zerobas-main-eu.ips`/`.bps` deliverables, docs harvest, memory +
+   TODO update.
 
 Each session commits at its gate (commit-after-TODO-point discipline). Judgment calls
 that don't need a stop get logged; forks/irreversible steps hard-stop for sign-off.

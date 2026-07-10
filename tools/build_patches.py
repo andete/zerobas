@@ -23,8 +23,13 @@ it explicitly, or it is auto-detected from your openMSX install. The IPS is
 universal; the BPS is CRC-locked to that exact stock ROM and fails cleanly on a
 mismatch.
 
+  main (--main)    the merged repack main ROM (D4): repacked C-BIOS + relocated
+                   BASIC ($2812-$7FFF) + tape, diffed vs pristine stock built from
+                   the pinned tag -> zerobas-main-eu.ips / .bps.
+
     python3 tools/build_patches.py [STOCK_ROM]          # page-1 BASIC patch
     python3 tools/build_patches.py --tape [STOCK_ROM]   # cassette patch
+    python3 tools/build_patches.py --main               # merged repack main ROM
 """
 from __future__ import annotations
 
@@ -176,15 +181,54 @@ def build_tape(explicit_stock):
     print("done.")
 
 
+def build_main(cbios_checkout):
+    """Merged main-ROM patch (cbios-repack arc, WS-3 / D4): repacked C-BIOS +
+    relocated BASIC ($2812-$7FFF) + tape, diffed vs the PRISTINE stock built from
+    the same pinned tag -> one zerobas-main-eu.ips/.bps. The repacked + pristine
+    ROMs are built reproducibly from the user's C-BIOS checkout (no C-BIOS bytes
+    in-repo, D1)."""
+    patch = os.path.join(TOOLS, "rom_patch.py")
+    build = os.path.join(REPO, "build")
+    os.makedirs(build, exist_ok=True)
+    repacked = os.path.join(build, "cbios_main_msx1_eu-repacked.rom")
+    pristine = os.path.join(build, "cbios_main_msx1_eu-pristine.rom")
+    reloc = os.path.join(build, "basic-reloc.rom")
+    merged = os.path.join(build, "zerobas-main-eu.rom")
+
+    print("building repacked + pristine C-BIOS from the pinned tag...")
+    run([PY, os.path.join(TOOLS, "build_repacked_cbios.py"),
+         "--cbios", cbios_checkout, "-o", repacked, "--pristine", pristine])
+    print("assembling relocated BASIC ($2812) + tape...")
+    run([PASMO, "--bin", os.path.join(REPO, "basic", "main-reloc.asm"), reloc])
+    with tempfile.TemporaryDirectory() as work:
+        tape_bin = os.path.join(work, "tape.bin")
+        tape_sym = os.path.join(work, "tape.sym")
+        run([PASMO, "--bin", os.path.join(REPO, "tape", "tape.asm"), tape_bin, tape_sym])
+        print("merging the main ROM...")
+        run([PY, os.path.join(TOOLS, "build_mainrom.py"),
+             repacked, reloc, tape_bin, tape_sym, merged])
+    print("making patches (vs pristine stock)...")
+    run([PY, patch, "make", pristine, merged, os.path.join(REPO, "zerobas-main-eu.ips")])
+    run([PY, patch, "make", pristine, merged, os.path.join(REPO, "zerobas-main-eu.bps")])
+    print("done.")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--tape", action="store_true",
-                    help="build the cassette-BIOS patch instead of the page-1 patch")
+    mode = ap.add_mutually_exclusive_group()
+    mode.add_argument("--tape", action="store_true",
+                      help="build the cassette-BIOS patch instead of the page-1 patch")
+    mode.add_argument("--main", action="store_true",
+                      help="build the merged repack main-ROM patch (cbios-repack arc)")
+    ap.add_argument("--cbios", default="~/projects/cbios",
+                    help="C-BIOS checkout for --main (default ~/projects/cbios)")
     ap.add_argument("stock", nargs="?",
                     help="stock C-BIOS main ROM (auto-detected from openMSX if omitted)")
     args = ap.parse_args()
-    if args.tape:
+    if args.main:
+        build_main(args.cbios)
+    elif args.tape:
         build_tape(args.stock)
     else:
         build_page1(args.stock)
