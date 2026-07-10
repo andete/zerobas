@@ -19,15 +19,29 @@
 ; own minimal design (the reference's real string heap/descriptor is not
 ; reproduced — Phase 2). No disassembly.
 
-; --- str_eval: evaluate a string operand at (HL) -> descriptor ---------------
-; in:  HL = cursor at a string operand: either a '"'-quoted literal or a
-;      `$`-suffixed variable name (the caller has already established it IS a
-;      string operand, e.g. via a leading '"' or var_str_type).
-; out: STRPTR -> a [len][bytes] descriptor, VALTYP = 1, HL advanced past the
-;      operand. CF set on success; CF clear (and VALTYP untouched) if the operand
-;      is not a recognised string form (caller treats as error).
-; Clobbers A, BC, DE, HL.
+; --- str_eval / str_eval_one: evaluate a string operand at (HL) -> descriptor -
+; str_eval_one evaluates ONE string operand: a '"'-quoted literal or a `$`-suffixed
+; variable name (the caller has already established it IS a string operand, e.g. via a
+; leading '"' or var_str_type).
+; out: STRPTR -> a [len][bytes] descriptor, VALTYP = 1, HL advanced past the operand.
+;      CF set on success; CF clear (and VALTYP untouched) if the operand is not a
+;      recognised string form (caller treats as error). Clobbers A, BC, DE, HL.
+;
+; str_eval is the PUBLIC entry every caller uses. In the lean build it is exactly
+; str_eval_one (no concat) — byte-identical, since the equate emits no bytes and
+; str_eval_one lands at the same address the old str_eval did. In the repack build
+; (string-engine arc S3) it folds any trailing `+ operand` terms via str_concat_tail
+; (basic/str-engine.asm, in the reclaimed low region), giving `A$+B$+C$` concatenation
+; to every string context at once (PRINT, LET, function args, LSET/RSET, PRINT USING).
+    IF ROM_BASE < $4000
 str_eval:
+                call    str_eval_one
+                ret     nc                  ; not a string operand -> propagate
+                jp      str_concat_tail     ; low region: append `+ operand` terms
+    ELSE
+str_eval        equ     str_eval_one        ; lean: a string operand is one operand
+    ENDIF
+str_eval_one:
                 ld      a,(hl)
                 cp      '"'
                 jr      z,str_eval_lit

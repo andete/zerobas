@@ -5,10 +5,11 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — BASIC string engine (core) — the first Phase-3 feature
 
-**Status: DRAFT — decisions RESOLVED, for final sign-off (2026-07-10). No code until
-signed off.** All six decisions settled (§6): temp ring N=3; core verb set; **`STRMAX`=64**
-(the 255-faithful option overflows page-3 RAM by ~2 KB — see §5a); repack-only + gated
-repack machine; integer-only `VAL`; **string comparison deferred**.
+**Status: SIGNED OFF — IN PROGRESS. S1–S3 done (2026-07-10); S4 (verbs) next.** All six
+decisions settled (§6): temp ring N=3; core verb set; **`STRMAX`=64** (the 255-faithful
+option overflows page-3 RAM by ~2 KB — see §5a); repack-only + gated repack machine;
+integer-only `VAL`; **string comparison deferred**. S3 delivered the re-layout + `+` concat
+spine (see §8); the 8 verb tokens are already crunched/detokenised, only the handlers remain.
 First feature of Phase 3, consuming the ~5.5 KB reclaimed by the C-BIOS repack arc
 ([`spec-cbios-repack-tooling.md`](spec-cbios-repack-tooling.md)). This is the *how* +
 *decisions*; it follows the same shape as the repack spec.
@@ -72,7 +73,18 @@ holding **3** temp descriptors of `STRMAX`=64 bytes each, used round-robin. A ro
 write their result there and set `STRPTR`. N=3 covers realistic game-loader expressions
 (a binary concat has ≤2 live operands + 1 result). Depth beyond N reuses the oldest
 slot — documented own-design truncation of expression depth, mirroring the existing
-"truncate at `STRMAX`" philosophy. `STRSCR` folds into this pool (it becomes temp[0]).
+"truncate at `STRMAX`" philosophy.
+
+**S3 implementation deviation (2026-07-10):** `STRSCR` was kept **separate** from the
+ring rather than folded into temp[0]. Folding would require `str_eval`'s literal/MKI$/
+INPUT$ scratch to participate in ring allocation (so a literal operand can't share
+temp[0] with a live concat accumulator) — that means gating `str_eval`'s body per
+build and re-introduces the aliasing hazard the ring exists to remove. Keeping `STRSCR`
+its own 65 B cell (above the widened store) leaves `str_eval` **byte-identical** for the
+lean build and makes a `+` chain use exactly **one** ring slot (the accumulator; each
+operand transits `STRSCR`/its var slot, never the ring). Cost: +65 B RAM (see §5a) —
+still inside the 800 B wall. The ring's 3 slots are headroom for S4's nested function
+temps (`LEFT$(A$+B$,n)`), which is where multiple simultaneously-live temps actually arise.
 
 *Rejected:* a real heap+GC — large, and unjustified for the charter. *Rejected:* one
 temp — fails on any nested/chained string op.
@@ -163,7 +175,10 @@ RAM** for `STRTAB` + the temp ring:
 | 128 | 1441 B | ✗ over by 641 B |
 | 255 (MSX-faithful) | 2838 B | ✗ **over by ~2 KB** |
 
-`STRMAX`=64 is the largest that fits without moving buffers. **255 is deferred** to an
+**As built (S3, separate `STRSCR` — §3a deviation):** `STRTAB` 536 + `STRSCR` 65 + ring
+3×65=195 + `STRTMP_IDX` 1 + `STRCAT_R` 2 = **799 B** ($E240–$E55E, 1 B under the $E560
+wall). The +65 B over the folded 737 estimate is the cost of keeping `STRSCR` separate;
+it still fits. `STRMAX`=64 is the largest that fits without moving buffers. **255 is deferred** to an
 optional future RAM re-architecture (relocate/shrink the file-channel + cassette buffers
 to free ~2 KB contiguous — a sub-project that touches `fat.asm` + cassette code and
 re-runs the disk + tape gates). Not worth bolting onto the first string feature.
@@ -221,9 +236,22 @@ byte-identity instead of page-1 equality.
    add the token equates + provenance. The `kwtable` entries + tokeniser wiring move to S3
    (they can't be placed until the re-layout frees page-1 room — §5b). No differential on
    the byte-full lean build; the zerobas-side crunch check runs on the repack build in S5.
-3. **S3 — low-region re-layout + temp ring + `str_expr` + `+` concat + tokeniser wiring.**
-   Move page-1 includes into the low region to free room; update `check_reloc.py` (§5b);
-   add the `kwtable` entries; build the evaluator spine; prove `A$+B$+C$`.
+3. **S3 — low-region re-layout + temp ring + `str_expr` + `+` concat + tokeniser wiring.** ✅
+   (2026-07-10.) Done: `STRMAX` gated 64 (repack) / 32 (lean); the temp ring + concat
+   accumulator RAM laid out inside the 800 B window (`STRSCR` kept separate — §3a deviation).
+   `kwtable` extracted to [`basic/kwtable.inc`](../basic/kwtable.inc) with **gated placement**
+   (inline page-1 for lean, low region for repack) — the cleanest way to "move page-1 code
+   down": the table is pure data reached only via `ld ix,kwtable`, so relocating it frees
+   ~500 B of page-1 room (page 1 was full to $7FFF) and its 8 new string-keyword entries
+   crunch **and** LIST-detokenise for free (both scan the table). Engine core (temp ring
+   allocator + `+` concat spine) in [`basic/str-engine.asm`](../basic/str-engine.asm)
+   (repack-only, low region); the concat-aware `str_eval` wrapper in
+   [`basic/strvar.asm`](../basic/strvar.asm) folds `+` for every string context at once.
+   `check_reloc.py` rewritten per §5b (low-region-occupied + pinned lean byte-identity).
+   Proof: [`tests/test_str_engine.py`](../tests/test_str_engine.py) — 10 cases incl. the
+   spec case `A$+B$+C$`, the 64-char clamp, empty operands, and a 6-operand chain using one
+   ring slot. Gates: lean byte-identical, unit-test 39/39, `make basic-reloc` OK. **The S4
+   verbs' keyword tokens are already wired (crunch + LIST); only their handlers remain.**
 4. **S4 — the verbs.** LEN/ASC/CHR$/LEFT$/RIGHT$/MID$/STR$/VAL.
 5. **S5 — repack machine + `string-acceptance` gate** (D-D): install the EU repack
    machine, run a repack-build crunch differential for the 8 keywords (against the §4

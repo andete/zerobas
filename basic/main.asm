@@ -18,8 +18,6 @@
 ; C-BIOS's CALBAS ($0159) is therefore never touched.
 ; ===========================================================================
 
-                include "basic/sysvars.inc"
-
 ; --- ROM base (cbios-repack arc, WS-2) -------------------------------------
 ; The shipping build is a 16 KB slot-0 page-1 image based at $4000 (the default
 ; below). The C-BIOS repack (docs/spec-cbios-repack-tooling.md) reclaims
@@ -30,19 +28,37 @@
 ; production basic.rom byte-identical. See docs/cbios-repack-ws2-audit.md — the
 ; hardcoded-address audit proved the interpreter is 100% label-based, so the only
 ; base-dependent site in the whole source is this org.
+;
+; Defined BEFORE sysvars.inc so the string-engine RAM layout there can gate on it
+; (STRMAX / STRSCR / the temp ring differ between the lean and repack builds — see
+; sysvars.inc "string-variable store" and docs/spec-basic-string-engine.md §5).
     IFNDEF ROM_BASE
 ROM_BASE:       equ     $4000
     ENDIF
 
+                include "basic/sysvars.inc"
+
                 org     ROM_BASE
 
 ; --- reclaimed low region ($2812-$3FFF), relocated variant only ------------
-; When based below $4000 we pad the reclaimed page-0 span up to the header. It is
-; reserved (all $00) for now: this arc delivers the space + the assemble-clean
-; layout, not its occupants. Future BASIC growth and the WS-3 splice place code
-; here (the zerobas-tape page-0 completions keep their own org $3A72 and are
-; spliced by the merged main-ROM build, D5 — they are not carved out here).
+; When based below $4000 we fill the reclaimed page-0 span up to the header. The
+; string-engine arc (S3) is its first tenant: the keyword crunch table (moved down
+; from page 1 — which is full to $7FFF — to free room for the engine's growth, spec
+; §5b) and the string engine itself (concat spine now; the S4 functions later). The
+; interpreter is 100% label-based (docs/cbios-repack-ws2-audit.md), so code here is
+; reached from page 1 by ordinary in-slot calls/jumps. Whatever space is left below
+; the header is padded $00. (The zerobas-tape page-0 completions keep their own
+; org $3A72 and are spliced by the merged main-ROM build, D5 — not carved out here.)
     IF ROM_BASE < $4000
+                include "basic/kwtable.inc"
+                include "basic/str-engine.asm"
+; low-region overflow guard: the low-region tenants must not reach the $4000 header.
+; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
+; corruption), so assert first — an overrun references an undefined symbol -> clean
+; ERROR whose name is the diagnostic (mirrors the $8000 page-1 guard in main.asm).
+    IF $ > $4000
+                db      STRING_ENGINE_OVERRAN_4000_HEADER__LOW_REGION_FULL__TRIM_OR_SPLIT
+    ENDIF
                 ds      $4000 - $, $00
     ENDIF
 

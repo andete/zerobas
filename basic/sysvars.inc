@@ -306,10 +306,19 @@ VAREND          equ     VARTAB + VARSLOTS*VARENTSZ
 ; no shared heap and no growth: a value longer than STRMAX is truncated. This is
 ; "enough for PRINT" — assign a literal / copy a string var, then PRINT it.
 STRTAB          equ     $E240   ; base of the string-variable store
-STRMAX          equ     32      ; max chars held per string variable (own choice)
-STRENTSZ        equ     3 + STRMAX  ; [name0][name1][len][bytes:STRMAX] = 35
-STRSLOTS        equ     8       ; max distinct string variables (280 bytes)
-STREND          equ     STRTAB + STRSLOTS*STRENTSZ   ; $E358
+; STRMAX is the ONE knob the string engine widens. The lean 16 KB build keeps the
+; minimal 32 (byte-identical); the repack build (ROM_BASE < $4000) widens it to 64
+; (string-engine arc, spec-basic-string-engine.md D-C). 64 is the largest that fits
+; the 800 B free window STRTAB $E240 .. $E560 (the cassette/file buffers) — see the
+; STRSCR/STRTMP layout below and spec §5a (128 and the MSX-faithful 255 overflow it).
+    IF ROM_BASE < $4000
+STRMAX          equ     64      ; repack build: string engine (own choice; §5a RAM wall)
+    ELSE
+STRMAX          equ     32      ; lean build: max chars per string var (own choice)
+    ENDIF
+STRENTSZ        equ     3 + STRMAX  ; [name0][name1][len][bytes:STRMAX] (35 lean / 67 repack)
+STRSLOTS        equ     8       ; max distinct string variables
+STREND          equ     STRTAB + STRSLOTS*STRENTSZ   ; $E358 lean / $E458 repack
 
 ; Expression value-type signalling (own-design VALTYP notion). After eval_any /
 ; a factor, VALTYP says whether the result is a number (0; value in DE as usual)
@@ -356,7 +365,32 @@ CAS_IN_MODE     equ     8       ; FCH_MODES value: OPEN"CAS:" FOR INPUT (INPUT# 
 ; ([len:1][bytes:STRMAX]); LET copies from here into the variable's slot. Placed
 ; in page $E3 above the string table (NOT in page $E0, which the C-BIOS keyboard
 ; ISR's work area touches — an EI'd interrupt mid-LET would corrupt a $E0 byte).
+    IF ROM_BASE < $4000
+; --- repack build: string-engine RAM (arc S3) ------------------------------
+; With STRMAX=64 the variable store now reaches $E458, so the $E360 scratch would
+; sit inside it — STRSCR moves up to STREND, and the concat/function result ring
+; (STRTMP, spec §3a D-A: N=3) follows. STRSCR is kept SEPARATE from the ring (a
+; documented deviation from the spec's "fold STRSCR into temp[0]"): it keeps
+; str_eval byte-identical for the lean build and removes the aliasing hazard of a
+; literal operand sharing temp[0] with a live concat accumulator. Layout, all inside
+; the 800 B window STRTAB $E240 .. $E560 (spec §5a):
+;   STRTAB     $E240 .. $E458   8 * 67 = 536 B   variable store
+;   STRSCR     $E458 .. $E499   65 B             str_eval literal/MKI$/INPUT$ scratch
+;   STRTMP     $E499 .. $E55C   3 * 65 = 195 B   concat/function result ring
+;   STRTMP_IDX $E55C            1 B              round-robin cursor (0..N-1)
+;   -> top $E55D, 3 B under the $E560 cassette/file buffers.
+STRSCR          equ     STREND              ; $E458: str_eval scratch, above the store
+STRNTMP         equ     3                   ; result-ring depth (spec D-A, N=3)
+STRTMPSZ        equ     1 + STRMAX          ; each slot = [len][bytes:STRMAX] = 65 B
+STRTMP          equ     STRSCR + STRTMPSZ   ; $E499: base of the result ring
+STRTMP_IDX      equ     STRTMP + STRNTMP*STRTMPSZ  ; $E55C: round-robin cursor (1 B)
+; STRCAT_R holds the ABSOLUTE address of the concat accumulator temp for the duration
+; of one string expression (str_concat_tail). Stored (not recomputed from STRTMP_IDX)
+; so a nested string-function operand that allocates its own ring slot cannot move it.
+STRCAT_R        equ     STRTMP_IDX + 1      ; $E55D: concat accumulator pointer (2 B)
+    ELSE
 STRSCR          equ     $E360   ; [len][bytes:STRMAX] = 33 bytes ($E360..$E380)
+    ENDIF
 
 ; --- Step B: stored-program text area (numbered lines) ---------------------
 ; Numbered lines are stored in the real MSX line-link format at the real text
