@@ -144,9 +144,30 @@ ROM_BASE:       equ     $4000
 ; Stored numbered-line program: storage, NEW, RUN (defines `dispatch_line`).
                 include "basic/program.asm"
 
-; --- pad to a full 16 KB page ($4000-$7FFF) -------------------------------
+; --- overflow guard: the image must not overrun the $8000 ceiling ----------
+; $8000 is the top of slot-0 page 1 in BOTH builds — the lean 16 KB $4000-$7FFF
+; image and the repacked ~21.5 KB $2812-$7FFF image (basic/main-reloc.asm). If a
+; future feature pushes code past it, the pad below would be a *negative* `ds`,
+; which pasmo assembles as a WARNING with exit 0 (a truncated/empty ROM) — a
+; silent corruption the build would not catch. So assert first: on overflow this
+; references an undefined symbol, forcing a clean ERROR (exit 1) whose NAME is the
+; diagnostic. When it fits, the IF body emits nothing, so the shipping basic.rom
+; stays byte-identical. A lean-build overflow is the signal to move the feature
+; behind `IF ROM_BASE < $4000` (repack-only) or trim it.
+;
+; Two checks: a moderate overrun leaves $ in $8001-$FFFF (caught by the first); a
+; catastrophic one (>32 KB past the ceiling) wraps $ past 64 KB back below the org,
+; where the location counter can never legitimately sit (caught by the second).
+    IF $ > $8000
+                db      BASIC_IMAGE_OVERRAN_8000_CEILING__GATE_FEATURE_ON_ROM_BASE_OR_TRIM
+    ENDIF
+    IF $ < ROM_BASE
+                db      BASIC_IMAGE_WRAPPED_PAST_64K__FEATURE_FAR_TOO_LARGE__SPLIT_IT
+    ENDIF
+
+; --- pad to the $8000 page ceiling -----------------------------------------
 ; Fill with $00 (not $FF): empty C-BIOS page 1 is $00, so when this image is
 ; shipped as a slot-0 page-1 *patch* (see build-patches.sh) the diff carries
-; only zerobas's real code, not 16 KB of padding. As a cartridge the fill byte
-; is never executed, so $00 vs $FF is immaterial there.
+; only zerobas's real code, not the padding. As a cartridge the fill byte is
+; never executed, so $00 vs $FF is immaterial there.
                 ds      $8000 - $, $00
