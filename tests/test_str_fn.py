@@ -149,6 +149,30 @@ def run():
            b" " * STRMAX)
     ck_str_err('SPACE$(-1) negative -> error', str_expr("SPACE$(-1)"))
 
+    # Regression: SPACE$ must fill EXACTLY `count` bytes, not overrun the ring slot.
+    # The original fill loop did `ld b,0 : djnz`, writing 256 bytes regardless of
+    # count and smearing STRTMP_IDX/STRCAT_R/TMISMATCH ($E55C+) + the file buffers —
+    # invisible to the descriptor-length checks above (they read only `count` bytes),
+    # but it corrupted TMISMATCH and surfaced as a spurious "type mismatch" live.
+    # Seed a sentinel across the whole ring region, run SPACE$, and assert nothing
+    # past the filled bytes changed.
+    STRTMP = s["STRTMP"]
+    STRTMPSZ = s["STRTMPSZ"]
+    STRNTMP = s["STRNTMP"]
+    SENT = 0xAA
+    ring_hi = STRTMP + STRNTMP * STRTMPSZ + 8      # ring + the sysvar cells just above
+    for a in range(STRTMP, ring_hi):
+        m.poke(a, SENT)
+    res = str_expr("SPACE$(2)")
+    ptr = m.mem[STRPTR] | (m.mem[STRPTR + 1] << 8)
+    tail = m.mem[ptr + 1 + 2: ptr + 1 + 2 + 40]    # bytes just past the 2 filled spaces
+    overran = any(b == 0x20 for b in tail)
+    fills2 = res[1] == 2 and res[2] == b"  "
+    ok = fills2 and not overran
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  SPACE$(2) fills exactly 2 (no ring overrun) "
+          f"len={res[1]} tail_has_space={overran}")
+
     # ------------------------------------------------------------------
     print("# --- Group B: STRING$ (numeric code / string first byte / clamp) ---")
     ck_str('STRING$(3,65)  (numeric code)', str_expr("STRING$(3,65)"), b"AAA")

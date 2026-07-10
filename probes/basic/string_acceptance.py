@@ -3,18 +3,25 @@
 # SPDX-License-Identifier: 0BSD
 
 """string-acceptance -- the standing gate for the string engine (arc S5; string
-comparison S3).
+comparison S3; string functions S3).
 
-Runs all three halves against the merged repack build (relocated BASIC + string
+Runs all four halves against the merged repack build (relocated BASIC + string
 engine) and reports one PASS/FAIL:
 
-  1. CRUNCH  (basic_probe_crunch.py --zb-machine) -- the 8 string keywords tokenise
-     byte-for-byte like the VG-8020 reference AND match the §4 captured $FF-suffixes.
-  2. EXECUTE (basic_probe_string.py) -- the 8 verbs and `+` concatenation produce the
-     right screen output live on the relocated build.
-  3. COMPARE (basic_probe_str_cmp.py) -- the six relational operators on string
+  1. CRUNCH    (basic_probe_crunch.py --zb-machine) -- the string keywords
+     (engine + comparison + functions) tokenise byte-for-byte like the VG-8020
+     reference AND match the §4 captured token bytes ($FF-suffixes and the
+     STRING$/INSTR bare single-byte tokens).
+  2. EXECUTE   (basic_probe_string.py) -- the verbs and `+` concatenation produce
+     the right screen output live on the relocated build.
+  3. COMPARE   (basic_probe_str_cmp.py) -- the six relational operators on string
      operands (=/<>/</>/<=/>=) match the VG-8020 reference, both reference-lock and
      zerobas==reference (spec-basic-string-compare.md).
+  4. FUNCTIONS (basic_probe_str_fn.py) -- HEX$/OCT$/SPACE$/STRING$/INSTR match the
+     VG-8020 reference, both reference-lock and zerobas==reference
+     (spec-basic-string-functions.md); two documented STRMAX-clamp divergences
+     (SPACE$/STRING$ overflow) are asserted against zerobas's own contract instead
+     of the reference, per that spec's D-3.
 
 Together: the keywords crunch like a real MSX ROM *and* execute correctly on the
 build we actually ship. Heavy + oracle-dependent (boots openMSX, needs the repack
@@ -34,6 +41,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CRUNCH = os.path.join(HERE, "basic_probe_crunch.py")
 STRING = os.path.join(HERE, "basic_probe_string.py")
 STRCMP = os.path.join(HERE, "basic_probe_str_cmp.py")
+STRFN = os.path.join(HERE, "basic_probe_str_fn.py")
 REPACK_MACHINE = "C-BIOS_MSX1_EU_REPACK_DISK"
 REF_MACHINE = "Philips_VG_8020"
 
@@ -64,12 +72,15 @@ def main() -> int:
                   [STRING, "--machine", args.machine])
     cmp_ok = run("COMPARE (6 relational operators on strings, repack vs VG-8020)",
                  [STRCMP, "--machine", args.ref, "--zb-machine", args.machine])
+    fn_ok = run("FUNCTIONS (HEX$/OCT$/SPACE$/STRING$/INSTR, repack vs VG-8020)",
+                [STRFN, "--machine", args.ref, "--zb-machine", args.machine])
 
-    ok = crunch_ok and exec_ok and cmp_ok
+    ok = crunch_ok and exec_ok and cmp_ok and fn_ok
     print("\n=====================")
-    print(f"crunch  (byte-identical tokenise): {'PASS' if crunch_ok else 'FAIL'}")
-    print(f"execute (correct screen output)  : {'PASS' if exec_ok else 'FAIL'}")
-    print(f"compare (string relops vs oracle): {'PASS' if cmp_ok else 'FAIL'}")
+    print(f"crunch    (byte-identical tokenise) : {'PASS' if crunch_ok else 'FAIL'}")
+    print(f"execute   (correct screen output)   : {'PASS' if exec_ok else 'FAIL'}")
+    print(f"compare   (string relops vs oracle) : {'PASS' if cmp_ok else 'FAIL'}")
+    print(f"functions (HEX$/OCT$/SPACE$/STRING$/INSTR vs oracle): {'PASS' if fn_ok else 'FAIL'}")
     print(f"string-acceptance: {'PASS' if ok else 'FAIL'}")
     return 0 if ok else 1
 

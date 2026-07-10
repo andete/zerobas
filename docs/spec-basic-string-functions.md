@@ -5,10 +5,16 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — BASIC string functions (INSTR / HEX$ / OCT$ / STRING$ / SPACE$) — a Phase-3 follow-on slice
 
-**Status: SIGNED OFF (S1, 2026-07-10) — S2/S3 pending.** All six decisions accepted as
-recommended (§6: five verbs; unsigned-16 HEX$/OCT$; clamp-to-STRMAX + negative→error;
+**Status: IMPLEMENTED & SHIPPED (S1–S3 all done, 2026-07-10).** All six decisions accepted
+as recommended (§6: five verbs; unsigned-16 HEX$/OCT$; clamp-to-STRMAX + negative→error;
 probe-for-string-first for STRING$/INSTR arg typing; repack-only + reuse ring + S2 captures
-token widths black-box first). The next batch of deferred string verbs from
+token widths black-box first). S2 landed the five verbs (commit `6c46d2b`); the S3 **execute
++ oracle** gate caught two integration bugs the S2 unit tests missed (`PRINT STRING$`→type
+mismatch; `SPACE$` 256-byte ring overrun) — both fixed. Standing gate `make string-acceptance`
+now has four halves (crunch + execute + compare + **functions**); provenance in
+[`../basic/PROVENANCE.md`](../basic/PROVENANCE.md) → "Phase 3: string functions". Ships in the
+merged `zerobas-main-eu.ips`/`.bps`; lean `basic.rom` byte-identical. The next batch of
+deferred string verbs from
 the string-engine arc ([`spec-basic-string-engine.md`](spec-basic-string-engine.md) §1
 "Out of scope" / §6 D-B, and [`spec-basic-string-compare.md`](spec-basic-string-compare.md)
 §1 "Out of scope": "`INSTR`, `HEX$`, `OCT$`, `STRING$`, `SPACE$` … separate follow-on
@@ -283,14 +289,21 @@ an existing token equate (an S2 check).
    it, verified black-box) so CHGET reads the bytes with **no matrix scan** — deterministic and
    content-insensitive. Both the zerobas and CF-3300 paths + the lean and repack machines
    re-verified green.
-3. **S3 — acceptance + close-out.** Extend `string-acceptance` (crunch: five keywords
-   byte-identical + suffix; execute: five verbs live on the repack machine; oracle:
-   `basic_probe_str_fn.py` reference-lock + zerobas==reference across the §5 battery).
-   Refresh the shipping `zerobas-main-eu.ips`/`.bps`; add the provenance section
-   ([`../basic/PROVENANCE.md`](../basic/PROVENANCE.md) → "Phase 3: string functions", with
-   the own-design divergences: `STRMAX` clamp on `SPACE$`/`STRING$`, unsigned-16 `HEX$`/
-   `OCT$`, integer-only); update this spec to IMPLEMENTED & SHIPPED, TODO, memory. Full
-   standing set green.
+3. **S3 — acceptance + close-out.** ✅ (2026-07-10.) Added the fourth **FUNCTIONS** half to
+   `string-acceptance` (`basic_probe_str_fn.py` reference-lock + zerobas==reference across
+   the §5 battery), the five keywords to the CRUNCH corpus (HEX$/OCT$/SPACE$ `$FF`-suffix +
+   a `STR_KEYWORDS_1B` bare-token list for STRING$/INSTR), and five EXECUTE cases. **The
+   execute+oracle gate caught two integration bugs the S2 host unit tests missed** (they call
+   `str_eval` directly + read only descriptor bytes): (1) `PRINT STRING$(…)` → spurious `type
+   mismatch` — `exp_loop` (print.asm) lacked a `STRING_TOKEN` case (same class as the S5
+   leading-literal fix); (2) `SPACE$(n)` fill did `ld b,0 : djnz` → a **256-byte ring overrun**
+   smearing `TMISMATCH`/file buffers. Both fixed (repack-gated, lean byte-identical); a host
+   `tests/test_str_fn.py` sentinel-past-fill regression guards the overrun. Refreshed the
+   shipping `zerobas-main-eu.ips`/`.bps`; added the provenance section
+   ([`../basic/PROVENANCE.md`](../basic/PROVENANCE.md) → "Phase 3: string functions"); this
+   spec → IMPLEMENTED & SHIPPED; TODO + memory updated. Gates: **string-acceptance PASS**
+   (4 halves), lean byte-identical, unit-test 42/42, `diskbasic-acceptance-repack` 34/34,
+   `repack-boot` PASS, audit-citations clean.
 
 Small and self-contained like the compare slice, but with one genuinely new structural
 element: two of the five verbs are **single-byte** tokens, so the slice adds `str_eval`

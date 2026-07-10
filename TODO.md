@@ -825,10 +825,12 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       [`docs/spec-basic-string-compare.md`](docs/spec-basic-string-compare.md), provenance
       [`basic/PROVENANCE.md`](basic/PROVENANCE.md) → "Phase 3: string engine" / "string
       comparison", gate `make string-acceptance` (crunch + execute + compare). **String
-      functions slice (in progress):** `INSTR HEX$ OCT$ STRING$ SPACE$` — spec SIGNED OFF
-      2026-07-10 ([`docs/spec-basic-string-functions.md`](docs/spec-basic-string-functions.md),
-      S1 done; S2 oracle+implement / S3 acceptance pending). **Still
-      deferred:** `INKEY$`, the MID$ statement, floats in
+      functions slice DONE 2026-07-10** (S1–S3, commits d96dc67/6c46d2b/…): `INSTR HEX$ OCT$
+      STRING$ SPACE$` — three integration shapes ($FF-prefixed HEX$/OCT$/SPACE$; single-byte
+      STRING$ $E3 / INSTR $E5); spec [`docs/spec-basic-string-functions.md`](docs/spec-basic-string-functions.md),
+      provenance `basic/PROVENANCE.md` → "Phase 3: string functions"; `string-acceptance` gained
+      a fourth **functions** half (the execute+oracle gate caught two bugs the unit tests
+      missed). **Still deferred:** `INKEY$`, the MID$ statement, floats in
       VAL/STR$, the real heap+descriptor model, string arrays/`DIM`, STRMAX→255 (a RAM
       re-architecture, spec §5a), and the unparenthesized `PRINT A$<5` form (needs an
       `exp_loop` slice — see PROVENANCE divergences)

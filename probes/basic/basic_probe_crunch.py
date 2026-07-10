@@ -19,11 +19,14 @@ Two zerobas targets:
   * `--cart build/basic.rom` -- the lean 16 KB cartridge on the reference machine
     (the original mode; runs LINES + CRUNCH_ONLY).
   * `--zb-machine C-BIOS_MSX1_EU_REPACK_DISK` -- the merged repack build, whose BASIC
-    is baked into slot 0 (no cart). This mode ADDS the eight string-engine keywords
-    (LEN/LEFT$/RIGHT$/MID$/CHR$/ASC/STR$/VAL): the lean build emits them as verbatim
-    ASCII (they never tokenise), so only the repack build can be proven to crunch
-    them byte-for-byte like the VG-8020 -- AND against the §4 captured suffixes
-    (docs/spec-basic-string-engine.md). This is the crunch half of `string-acceptance`.
+    is baked into slot 0 (no cart). This mode ADDS the string-engine keywords
+    (LEN/LEFT$/RIGHT$/MID$/CHR$/ASC/STR$/VAL) plus the string-functions slice
+    (HEX$/OCT$/SPACE$ -- $FF-prefixed; STRING$/INSTR -- bare single-byte
+    tokens): the lean build emits them as verbatim ASCII (they never tokenise),
+    so only the repack build can be proven to crunch them byte-for-byte like
+    the VG-8020 -- AND against the §4 captured token bytes
+    (docs/spec-basic-string-engine.md, docs/spec-basic-string-functions.md).
+    This is the crunch half of `string-acceptance`.
 
 Clean-room: this only *compares observed outputs*. No disassembly; the reference
 ROM is a black box. See the clean-room firewall (CONTRIBUTING.md).
@@ -171,6 +174,21 @@ STR_KEYWORDS = [
     ('a=asc("a")',       0x95),   # ASC
     ('a$=str$(5)',       0x93),   # STR$
     ('a=val("5")',       0x94),   # VAL
+    # string-functions slice (spec-basic-string-functions.md §4, S2-locked):
+    # HEX$/OCT$/SPACE$ are $FF-prefixed function tokens, same table as above.
+    ('a$=hex$(255)',     0x9B),   # HEX$
+    ('a$=oct$(8)',       0x9A),   # OCT$
+    ('a$=space$(3)',     0x99),   # SPACE$
+]
+
+# string-functions slice, the other half: STRING$ ($E3) and INSTR ($E5) are
+# SINGLE-BYTE reserved-word tokens (spec §4), NOT $FF-prefixed -- they don't
+# arrive through the $FF function table, so the STR_KEYWORDS suffix checker
+# (which looks for FF <suffix>) does not apply. Checked as bare token bytes
+# instead (same crunch byte-identity assertion vs the VG-8020 reference).
+STR_KEYWORDS_1B = [
+    ('a$=string$(3,65)', 0xE3),   # STRING$
+    ('a=instr("ab","b")',0xE5),   # INSTR
 ]
 
 
@@ -256,7 +274,7 @@ def main() -> int:
             return dump_buf(args.zb_machine, None, full_line, TOKBUF, separate_enter=True)
         return dump_buf(args.machine, args.cart, full_line, TOKBUF, separate_enter=True)
 
-    def test(body, full_line, expect_suffix=None):
+    def test(body, full_line, expect_suffix=None, expect_token=None):
         nonlocal ok
         ref = crunched(dump_buf(args.machine, None, full_line, KBUF, separate_enter=False))
         zb = crunched(zb_side(full_line))
@@ -270,6 +288,13 @@ def main() -> int:
             same = same and suffix_ok
             note = (f"  [FF {expect_suffix:02X} ok]" if suffix_ok
                     else f"  [want FF {expect_suffix:02X}, got {('FF %02X' % got) if got is not None else 'none'}]")
+        # STRING$/INSTR (§4 Group B/C) are bare single-byte reserved-word tokens,
+        # not FF-prefixed -- lock the observed token byte to the §4 table instead.
+        if expect_token is not None:
+            token_ok = zb is not None and expect_token in zb
+            same = same and token_ok
+            note = (f"  [{expect_token:02X} ok]" if token_ok
+                    else f"  [want token {expect_token:02X}, not found]")
         ok = ok and same
         rs = " ".join(f"{b:02X}" for b in ref) if ref else "<no TAPION>"
         zs = " ".join(f"{b:02X}" for b in zb) if zb else "<no TAPION>"
@@ -285,10 +310,13 @@ def main() -> int:
             test(body, f'{body}:bload"cas:",r')
         for body in CRUNCH_ONLY:             # non-executing bodies: bload leads
             test(body, f'bload"cas:",r:{body}')
-    if args.zb_machine:                      # repack-only: the 8 string keywords
+    if args.zb_machine:                      # repack-only: the 11 string keywords
         print("--- string-engine keywords (repack build) ---")
         for body, suffix in STR_KEYWORDS:
             test(body, f'bload"cas:",r:{body}', expect_suffix=suffix)
+        print("--- string-function keywords, single-byte tokens (repack build) ---")
+        for body, token in STR_KEYWORDS_1B:
+            test(body, f'bload"cas:",r:{body}', expect_token=token)
 
     os.unlink(CAS_PATH)
     print("\nALL PASS — crunch is byte-identical" if ok else "\nSOME FAILED")

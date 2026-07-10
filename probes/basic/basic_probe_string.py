@@ -66,6 +66,13 @@ CASES = [
     ("VAL",           'PRINT "[";VAL("34")+1;"]"',             r"\[\s*35\s*\]"),
     # verb wrapping a concat (spec nest `LEFT$(A$+B$,3)`)
     ("nest",          'PRINT "[";LEFT$("XY"+"ZW",3);"]"',      r"\[XYZ\]"),
+    # string-functions slice (spec-basic-string-functions.md §5) -- HEX$/OCT$/
+    # SPACE$/STRING$/INSTR live on the repack build.
+    ("HEX$",          'PRINT "[";HEX$(255);"]"',               r"\[FF\]"),
+    ("OCT$",          'PRINT "[";OCT$(8);"]"',                 r"\[10\]"),
+    ("SPACE$",        'PRINT "[";SPACE$(3);"]"',                r"\[   \]"),
+    ("STRING$",       'PRINT "[";STRING$(3,"*");"]"',           r"\[\*\*\*\]"),
+    ("INSTR",         'PRINT "[";INSTR("HELLO","LL");"]"',      r"\[\s*3\s*\]"),
 ]
 
 BATCH = 4  # cases per boot -- 4 lines (echo+result each) + title/prompts fit 24 rows

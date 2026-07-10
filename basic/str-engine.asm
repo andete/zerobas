@@ -817,11 +817,10 @@ str_fn_space:
                 call    str_min_bc          ; A = min(STRMAX, n) = clamped fill count
                 ld      (hl),a              ; length = clamped count
                 ld      (STRPTR),hl
-                ld      c,a                 ; C = fill count
                 or      a
                 jr      z,sfp_done          ; 0 spaces -> nothing to fill
                 inc     hl                  ; -> temp bytes
-                ld      b,0
+                ld      b,a                 ; B = fill count (djnz counter; <=STRMAX<256)
 sfp_lp:
                 ld      (hl),' '
                 inc     hl

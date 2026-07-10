@@ -2639,3 +2639,87 @@ ever needs the unparenthesized form.
 machine); lean `basic.rom` byte-identical (pinned sha256 unchanged); unit-test 41/41 (new
 `tests/test_str_compare.py`); `diskbasic-acceptance-repack` 34/34 (shared `ev_rel`/`eval`
 path unregressed); `repack-boot` PASS; audit-citations clean.
+
+## Phase 3: string functions — INSTR / HEX$ / OCT$ / STRING$ / SPACE$ (basic/str-engine.asm, basic/kwtable.inc, basic/strvar.asm, basic/expr.asm, basic/print.asm, basic/sysvars.inc)
+
+The next batch of deferred string-library verbs after the engine + comparison. Spec:
+[`docs/spec-basic-string-functions.md`](../docs/spec-basic-string-functions.md) (SIGNED OFF).
+**Repack-only**, like the whole string engine: assembled `IF ROM_BASE < $4000`; the
+byte-full lean `basic.rom` is **unchanged** (every page-1 hook is a gated near-zero-byte
+branch; pinned-sha256 regression guard). Reuses the S4 machinery (the temp-string ring,
+the descriptor, the IX↔HL bridge) — no new RAM, no floats, no heap.
+
+**Three integration shapes, dictated by the tokens (§4).** The reference token map is
+**not** uniform, so the dispatch hook for each verb follows its captured width:
+
+| Verb | Token | Width | Hook |
+|------|-------|-------|------|
+| `SPACE$` | `$FF $99` | 2-byte `$FF`-prefixed function | `str_func_ff` (Group A) |
+| `OCT$` | `$FF $9A` | 2-byte `$FF`-prefixed function | `str_func_ff` (Group A) |
+| `HEX$` | `$FF $9B` | 2-byte `$FF`-prefixed function | `str_func_ff` (Group A) |
+| `STRING$` | `$E3` | 1-byte reserved word | a `str_eval` branch (Group B) |
+| `INSTR` | `$E5` | 1-byte reserved word | an `ev_f` branch beside USR/VARPTR/BASE (Group C) |
+
+### Tokens (basic/kwtable.inc, basic/sysvars.inc)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `SPACED_TOKEN` / `OCTD_TOKEN` / `HEXD_TOKEN` (`$FF`-suffixes) | `$99` / `$9A` / `$9B` | MSX2 TH Table 2.20 (the same contiguous function table as LEN/STR$/VAL) **AND black-box-captured** from the VG-8020 crunch 2026-07-10; the `$` is part of the keyword (like MKI$) | sourced |
+| `STRING_TOKEN` / `INSTR_TOKEN` (bare single-byte reserved words) | `$E3` / `$E5` | MSX2 TH Table 2.20 **AND black-box-captured** from the VG-8020 crunch (`a$=string$(3,65)`→`…E3…`, `a=instr("ab","b")`→`…E5…`); collision-free vs existing token equates | sourced |
+| Both directions (crunch + LIST detok) are data-driven off `kwtable`; adding the five entries wires each | — | own code (the table is scanned by `match_kw` / `detok_kw2`) | sourced |
+
+Never a reference-ROM disassembly ([[no-reference-rom-disasm]]); the token bytes are the
+sourced Table 2.20 values *confirmed by observation* (`probes/basic/basic_probe_str_fn.py`
++ the `basic_probe_crunch.py --zb-machine` corpus: `$FF`-suffix list + a `STR_KEYWORDS_1B`
+bare-token list).
+
+### Semantics + handlers (basic/str-engine.asm)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `HEX$(n)` / `OCT$(n)`: text of `n` as an **unsigned 16-bit** value, uppercase, no leading zeros, ≥1 digit (`HEX$(-1)="FFFF"`, `OCT$(-1)="177777"`) | — | public MSX-BASIC ref, **oracle-locked black-box** (`basic_probe_str_fn.py` reference-lock then zerobas==reference); the digit loop **reimplements** `detok_hex16`/`detok_oct16` (list.asm) into a ring temp reusing only the leaf `hex_digit`/`oct_digit` — `list.asm` stays byte-identical (lean unaffected) | sourced |
+| `SPACE$(n)`: `n` spaces | — | public MSX-BASIC ref, oracle-locked | sourced |
+| `STRING$(n,c)` / `STRING$(n,x$)`: `n` copies of a numeric char code, or of `x$`'s first byte (empty `x$` = error) — 2nd-arg type resolved by probing for a string operand first (D-4) | — | public MSX-BASIC ref, oracle-locked; probe-based type detection is **own code** (reuses the `str_eval`-CF pattern) | sourced |
+| `INSTR([p,]a$,b$)`: 1-based position of `b$` in `a$` from `p` (default 1), 0 if not found; empty `b$` → `p` clamped; optional leading `p` resolved by probing the first arg's type (D-5) | — | public MSX-BASIC ref, oracle-locked; both operands snapshotted into their own ring temp (the dup-then-operate discipline), `instr_search` is **own code** | sourced |
+
+### Documented divergences (own design)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `HEX$`/`OCT$` view `n` as **unsigned 16-bit** (integer-only engine; no float rendering) | — | own design (D-2), consistent with the integer-only core; also the reference behaviour for the integer domain | quarantined |
+| `SPACE$`/`STRING$` length clamps to **`STRMAX`=64** (reference ceiling is 255); a **negative** count is a function error | — | own design (D-3), identical to the concat/substring STRMAX-clamp philosophy; 255 awaits the RAM re-architecture | quarantined |
+| `INSTR` uses the **N=3 ring** for its two live snapshots (a deep `INSTR(a$+b$,c$+d$)` reuses the oldest slot) | — | own design (spec §3a ring bound) | quarantined |
+
+### Two integration bugs the acceptance gate caught (both fixed before ship)
+
+The S2 host unit tests call `str_eval` directly and read only descriptor-length bytes, so
+they passed while two real defects survived; the S3 **execute + oracle** gate
+(`basic_probe_str_fn.py`, live on the merged repack build) surfaced both:
+
+1. **`PRINT STRING$(…)` raised a spurious `type mismatch`.** PRINT's item loop (`exp_loop`,
+   basic/print.asm) special-cased `"`-literals, `$FF` functions, and `$`-vars but had **no
+   `STRING_TOKEN` ($E3) case**, so a bare `STRING$` item fell through to `exp_num`→`ev_rel`,
+   whose LHS string probe found a string with no relop → the D-2 bare-string abort. Fix: a
+   repack-gated `cp STRING_TOKEN / jp z,exp_maybe_strfn` beside the `$FF` case (same class of
+   fix as the S5 leading-literal-concat PRINT reroute).
+2. **`SPACE$(n)` overran its ring slot.** The fill loop did `ld b,0 : djnz`, writing **256**
+   bytes regardless of `count` — invisible to the descriptor-length assertions but it smeared
+   `STRTMP_IDX`/`STRCAT_R`/`TMISMATCH` (`$E55C`–`$E55F`) and the file buffers, corrupting the
+   `TMISMATCH` byte so a later statement spuriously aborted. Fix: loop on the count (`ld b,a`).
+   A host regression (`tests/test_str_fn.py`, sentinel-past-fill) now guards it.
+
+### Harness note
+
+Adding a legitimate keyword cost one extra `match_kw` scan per tokenised word, which tipped
+the disk acceptance suite's REPL driver — it typed lines via openMSX's timing-fragile `type`
+(keyboard matrix) — into doubling a leading keystroke (a **false** `OPEN LEN=` failure, not a
+ROM bug: the merged-ROM diff is all valid relocation). `probes/disk/disk_probe_getput.py` now
+injects each line straight into the BIOS type-ahead buffer (KEYBUF `$FBF0` / GETPNT `$F3FA` /
+PUTPNT `$F3F8`, published MSX2 TH contract — C-BIOS honours it, verified black-box; no
+disassembly) so CHGET reads the bytes with no matrix scan.
+
+**Gates.** `make string-acceptance` PASS (four halves: crunch + execute + compare +
+**functions** — HEX$/OCT$/SPACE$/STRING$/INSTR reference-lock + zerobas==reference on the
+repack machine); lean `basic.rom` byte-identical (pinned sha256 unchanged); unit-test 42/42
+(new `tests/test_str_fn.py`, incl. the SPACE$ overrun regression); `diskbasic-acceptance-repack`
+34/34; `repack-boot` PASS; audit-citations clean.
