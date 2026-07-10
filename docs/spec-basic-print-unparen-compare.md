@@ -5,10 +5,17 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — unparenthesized `PRINT` string comparison (a Phase-3 string follow-on slice)
 
-**Status: SIGNED OFF (S1, 2026-07-10). No code yet — S2 next.** All §4 decisions D-1…D-4
-accepted as recommended; scope = all three string leads (§1 table); S2 implementation
-dispatched to Sonnet-5 on this signed spec, Opus-reviewed. This document is the *how* +
-*decisions*, same shape as the engine / compare / functions / inkey / mid-statement specs.
+**Status: IMPLEMENTED & SHIPPED (S1–S3 all done, 2026-07-10/11).** All §4 decisions D-1…D-4
+accepted as recommended; scope = all three string leads (§1 table). S2 implemented the
+peek-then-reparse dispatch (`relop_peek` + the `exp_strvar`/`exp_maybe_strfn` gates + the
+`str_lit_concat_q` generalization), Sonnet-5 on the signed spec, Opus-reviewed; the
+PRINT-lead cases fold into `string-acceptance`'s **compare** half (no new half). S3
+extended provenance ([`../basic/PROVENANCE.md`](../basic/PROVENANCE.md) → "Phase 3: string
+comparison" → the PRINT-lead reroute subsection) and closed the docs/TODO/memory.
+Repack-only, lean `basic.rom` byte-identical (pinned sha256 `e21f61fe…`); unit-test 43/43,
+string-acceptance PASS (6 halves), diskbasic-acceptance-repack 34/34, audit-citations
+clean. This document is the *how* + *decisions*, same shape as the engine / compare /
+functions / inkey / mid-statement specs.
 **Repack-only**, like the whole string engine — the lean `basic.rom` stays byte-for-byte
 unchanged (every byte is gated `IF ROM_BASE < $4000`). User-selected 2026-07-10 as the next
 Phase-3 session item, the last named entry on the standing string-engine deferral list

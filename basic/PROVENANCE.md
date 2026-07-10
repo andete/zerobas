@@ -2627,12 +2627,43 @@ observably identical to MSX.
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
 | A bare string on a numeric RHS with no relop (`R=A$`) now raises `type mismatch` | — | **own design** — the unconditional LHS probe (spec §3a) makes this a natural consequence; MSX also errors here. Supersedes a pre-existing accidental gap where a `$`-var name-keyed *numeric shadow* cell was silently read (never a documented feature) | quarantined |
-| `PRINT A$<5` **unparenthesized** mis-routes (prints `A$`, then chokes on `<5`); `PRINT (A$<5)` works | — | **own-design limitation** — PRINT's item loop routes a bare `$`-var to the string path *before* `ev_rel`; fixing it is `exp_loop`-level scope beyond the `ev_rel`/statement-abort slice. Matches the spec's own paren convention; probes/tests wrap PRINT comparisons in parens | quarantined |
+| ~~`PRINT A$<5` **unparenthesized** mis-routes~~ — **RESOLVED** by the PRINT-lead dispatch follow-on (below); the bare form now works and `PRINT A$<5` aborts with `type mismatch`, printing nothing | — | own code (the resolving reroute is own design; see the following subsection) | sourced |
 
-The two **quarantined** items are deliberate own-design outcomes, not values lifted from
-any reference ROM or disassembly. Both are documented in `basic/str-engine.asm` and the
-spec; the `PRINT A$<5` limitation is a candidate for a later `exp_loop` slice if a stub
-ever needs the unparenthesized form.
+The remaining **quarantined** item (bare string on a numeric RHS) is a deliberate
+own-design outcome, not a value lifted from any reference ROM or disassembly; it is
+documented in `basic/str-engine.asm` and the spec.
+
+### Unparenthesized PRINT comparison — the PRINT-lead dispatch reroute (S2 follow-on, basic/print.asm, basic/str-engine.asm)
+
+The one remaining surface gap the compare slice quarantined: a *bare* comparison as a
+top-level `PRINT` item (`PRINT A$="YES"`, `PRINT A$<5`). The comparison engine already
+produced the right value wherever a *numeric* expression ran — including the
+**parenthesized** `PRINT (A$="YES")` — but `exp_loop` (PRINT's item loop) classified a
+string-leading item as "a string to print" and emitted it *before* the relop was seen.
+Spec: [`docs/spec-basic-print-unparen-compare.md`](../docs/spec-basic-print-unparen-compare.md)
+(SIGNED OFF → SHIPPED). **Repack-only**; lean `basic.rom` byte-identical (the lean
+`exp_strvar` body is preserved verbatim in the gated `ELSE` branch).
+
+The fix is *only* in PRINT's dispatch — the comparison engine is untouched. It reuses
+`str_eval` as the one string-subexpression parser (it already advances past the whole
+operand + any `+`-concat chain) and then **peeks** the next token: a relop ⇒ the item is
+the LHS of a comparison ⇒ restore the cursor to the operand start and re-drive via
+`eval`→`ev_rel` (which yields -1/0, or sets `TMISMATCH` so `exp_num`'s existing check
+aborts `PRINT A$<5` with nothing printed); no relop ⇒ print the descriptor `str_eval`
+already produced, exactly as before (so plain `PRINT A$` pays no re-parse).
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `relop_peek` — non-consuming test, ZF=1 iff the peeked token ∈ {`GT_TOKEN $EE`, `EQ_TOKEN $EF`, `LT_TOKEN $F0`}; a straight `sub GT_TOKEN` / `cp 3` range test over the established relop equates (testing the FIRST of a compound `<=`/`>=`/`<>` pair suffices — `ev_rel`'s own merge handles the second) | — | **own code**; no disassembly | sourced |
+| `exp_strvar` / `exp_maybe_strfn` relop gate: `push` operand-start before `str_eval`, `relop_peek` after; on a relop `pop`+`jp exp_num` (re-parse via `eval`), else print as before. Stack balanced on all three branches (reparse / print / str_eval-fallback) | — | **own code** (reuses the existing `str_eval`→`print_strval` idiom); the `eval`→`ev_rel` path it re-drives is the same one `PRINT (…)` already used | sourced |
+| `str_lit_concat_q` generalized from "does `+` follow this literal?" to "`+` **or** a relop follows" so a literal LHS (`PRINT "YES"=A$`) routes to the `str_eval` path; a plain literal keeps the fast un-clamped char path (the S5 STRMAX property is preserved) | — | **own code**; not derived from any disassembly | sourced |
+| All three string leads covered: `$`-var, string literal, and the string-valued `$FF`/`INKEY$`/`STRING$` functions, plus `+`-concat chains (`PRINT A$+B$="HELLO"`) | — | own design (one shared `relop_peek` choke point) | sourced |
+
+Oracle-locked black-box on the Philips VG-8020 (`probes/basic/basic_probe_str_cmp.py`
+gained var/literal/function/concat PRINT-lead cases + the `A$<5` abort — reference-lock
+then zerobas==reference), folded into `string-acceptance`'s **compare** half (no new
+half). Host regression cover in `tests/test_str_compare.py` (all leads, the D-2 abort,
+plain-print unchanged, and multi-item stack-balance `PRINT A$;B$<C$`).
 
 **Gates.** `make string-acceptance` PASS (now three halves: crunch + execute + the new
 **compare** — six relational operators, reference-lock + zerobas==reference on the repack

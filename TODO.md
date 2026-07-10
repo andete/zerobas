@@ -842,10 +842,15 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       `$FF`-token-starting-a-statement; spec [`docs/spec-basic-mid-statement.md`](docs/spec-basic-mid-statement.md),
       provenance `basic/PROVENANCE.md` → "Phase 3: MID$ statement"; `string-acceptance` gained a
       sixth **mid-stmt** half + a host unit-test (`tests/test_mid_stmt.py`). Range errors →
-      `syntax error` (no "Illegal function call", documented D-3 divergence). **Still deferred:**
-      floats in VAL/STR$, the real heap+descriptor model, string arrays/`DIM`, STRMAX→255 (a RAM
-      re-architecture, spec §5a), and the unparenthesized `PRINT A$<5` form (needs an
-      `exp_loop` slice — see PROVENANCE divergences)
+      `syntax error` (no "Illegal function call", documented D-3 divergence). **Unparenthesized
+      `PRINT A$<5` slice DONE 2026-07-11** (S1–S3, commits c3b626e/3c2137a/…): the bare comparison
+      as a top-level PRINT item now works across all three string leads (var/literal/function +
+      concat) — `exp_loop`'s peek-then-reparse dispatch (`relop_peek` + the `exp_strvar`/
+      `exp_maybe_strfn` gates); `PRINT A$<5` aborts with `type mismatch`, printing nothing; spec
+      [`docs/spec-basic-print-unparen-compare.md`](docs/spec-basic-print-unparen-compare.md),
+      provenance → "Phase 3: string comparison" PRINT-lead subsection. **Still deferred (all
+      architectural now — every surface form is landed):** floats in VAL/STR$, the real
+      heap+descriptor model, string arrays/`DIM`, STRMAX→255 (a RAM re-architecture, spec §5a)
 - [ ] **Arrays + `DIM`** (numeric and string, multi-dimensional)
 - [ ] **`^`** and the math functions
       `ABS SGN INT SQR SIN COS TAN ATN LOG EXP RND FIX CINT CSNG CDBL`
