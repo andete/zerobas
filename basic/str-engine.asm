@@ -1261,13 +1261,34 @@ ins_zero:
 ; function token (repack build only). Try the string path first — CHR$/STR$/LEFT$/
 ; RIGHT$/MID$/MKI$ succeed and print; a numeric $FF function (PEEK/…) fails cleanly
 ; (str_func_ff restores HL to the $FF), so we fall back to exp_num.
+;
+; S2 (spec-basic-print-unparen-compare.md §3): after a successful string-function
+; parse, remember the operand START (push hl BEFORE str_eval) and peek the token
+; that follows the value for a relational operator. If one follows, this item is
+; really the LHS of an unparenthesized comparison (`PRINT LEFT$(A$,1)="H"`); restore
+; the operand start and re-drive it through eval/ev_rel instead of printing it.
 exp_maybe_strfn:
+                push    hl                  ; operand START (peek may reparse via eval)
                 call    str_eval            ; STRPTR -> value; HL advanced; CF=ok
-                jp      nc,exp_num          ; not a string function -> numeric factor
+                jr      nc,ems_fallback     ; not a string function -> numeric factor
+                call    skip_spaces
+                ld      a,(hl)
+                call    relop_peek          ; ZF=1 iff (HL) is a relop token
+                jr      nz,ems_print        ; no relop -> plain PRINT (below)
+                pop     hl                  ; relop follows -> restore the operand START
+                jp      exp_num             ; re-drive via eval -> ev_rel (-1/0, or D-2 abort)
+ems_print:
+                pop     de                  ; drop the saved operand-start (balances the
+                                             ;  push above; str_eval already clobbers DE)
                 push    hl                  ; print_strval clobbers HL (token cursor)
                 call    print_strval
                 pop     hl
                 jp      exp_loop
+ems_fallback:
+                pop     hl                  ; balance the operand-start push (str_func_ff
+                                             ;  restores HL to the $FF on failure, so this
+                                             ;  is the same cursor exp_num sees un-gated)
+                jp      exp_num
 
 ; ===========================================================================
 ; string-compare S2 (repack build only): the six relational operators on two
@@ -1285,6 +1306,30 @@ exp_maybe_strfn:
 ; relation-bit encoding is zerobas's own (matches cmp16_bits, expr.asm). No
 ; disassembly.
 ; ===========================================================================
+
+; --- relop_peek: is A a relational-operator token? --------------------------
+; PRINT-unparenthesized-compare S2 (spec-basic-print-unparen-compare.md §3a): the
+; one new primitive the PRINT-item dispatch gates use (exp_strvar/print.asm,
+; str_lit_concat_q/print.asm, exp_maybe_strfn above) to decide "does a relational
+; operator follow the string operand str_eval just parsed?" WITHOUT consuming it
+; -- the caller (not this routine) decides whether to print or re-parse via eval.
+; in: A = the current token byte (caller peeks via `ld a,(hl)`; not consumed).
+; out: ZF=1 iff A is one of the three contiguous relop tokens GT_TOKEN ($EE) /
+;      EQ_TOKEN ($EF) / LT_TOKEN ($F0) (basic/sysvars.inc; the compound forms
+;      <=/>=/<> arrive as two of these tokens back-to-back, so testing the FIRST
+;      one is sufficient -- ev_rel's own compound-form merge takes it from there).
+;      ZF=0 otherwise. Does not touch HL/DE/BC/IX -- only A and flags.
+; Clean-room: original code -- a straight range test over the established relop
+; token equates (basic/sysvars.inc). No disassembly.
+relop_peek:
+                sub     GT_TOKEN            ; A -= $EE (0/1/2 for the three relops)
+                cp      3                   ; CF=1 iff A(orig)-$EE < 3, i.e. in range
+                jr      c,rp_yes
+                or      1                   ; not in range -> force A nonzero -> ZF=0
+                ret
+rp_yes:
+                cp      a                   ; in range -> force ZF=1
+                ret
 
 ; --- str_cmp_bits: UNSIGNED byte-by-byte compare of two [len][bytes] descriptors
 ; in: HL = lhs descriptor, DE = rhs descriptor.

@@ -29,6 +29,15 @@ Oracle basis:
   verbatim (spec §3).
 - D-2 (type mismatch aborts the line, statement-level, own lowercase message) --
   spec-basic-string-compare.md §3c / §6.
+
+Also covers the unparenthesized-PRINT-lead follow-on slice
+(spec-basic-print-unparen-compare.md, its own S2): `PRINT A$="YES"` and friends
+(var/literal/function/concat leads, all six operators, the D-2 abort, and a
+plain-PRINT regression watch) -- the dispatch decision (`exp_strvar` /
+`exp_maybe_strfn`'s `relop_peek` gate in print.asm/str-engine.asm) and the
+printed bytes are both BIOS-independent (CHPUT is trapped, not the real BIOS),
+so the full behaviour is exercised here; the openMSX probe
+(basic_probe_str_cmp.py) additionally reference-locks it on real hardware.
 """
 
 import os
@@ -271,6 +280,147 @@ def run():
           f"got {out!r}")
     check("IF A$=\"HI\" THEN T=99 (valid) -> T=99 (THEN ran)",
           var(mm, "T") == 99, f"T={var(mm,'T')}")
+
+    # ------------------------------------------------------------------
+    print("# --- S2 (print-unparen-compare): unparenthesized PRINT-lead "
+          "comparisons, all three leads ---")
+
+    mm, out = run_prog_cap([
+        (10, 'A$="YES"'),
+        (20, 'PRINT A$="YES"'),
+    ])
+    check('PRINT A$="YES"  (var lead, true) -> "-1 "', out == b"-1 \r\n", f"got {out!r}")
+
+    mm, out = run_prog_cap([
+        (10, 'A$="YES"'),
+        (20, 'PRINT A$="NO"'),
+    ])
+    check('PRINT A$="NO"  (var lead, false) -> " 0 "', out == b" 0 \r\n", f"got {out!r}")
+
+    mm, out = run_prog_cap([
+        (10, 'A$="AB"'),
+        (20, 'B$="ABC"'),
+        (30, "PRINT A$<B$"),
+    ])
+    check('PRINT A$<B$  (var lead, var RHS, ordering) -> "-1 "',
+          out == b"-1 \r\n", f"got {out!r}")
+
+    mm, out = run_prog_cap([
+        (10, 'A$="AB"'),
+        (20, 'B$="AB"'),
+        (30, "PRINT A$<=B$"),
+    ])
+    check('PRINT A$<=B$  (var lead, compound form <=, equal) -> "-1 "',
+          out == b"-1 \r\n", f"got {out!r}")
+
+    mm, out = run_prog_cap([
+        (10, 'A$="AB"'),
+        (20, 'B$="AB"'),
+        (30, "PRINT A$<>B$"),
+    ])
+    check('PRINT A$<>B$  (var lead, compound form <>, equal -> false) -> " 0 "',
+          out == b" 0 \r\n", f"got {out!r}")
+
+    mm, out = run_prog_cap([
+        (10, 'A$="YES"'),
+        (20, 'PRINT "YES"=A$'),
+    ])
+    check('PRINT "YES"=A$  (literal lead, var RHS) -> "-1 "',
+          out == b"-1 \r\n", f"got {out!r}")
+
+    mm, out = run_prog_cap([
+        (10, 'PRINT "a"<"b"'),
+    ])
+    check('PRINT "a"<"b"  (literal lead, literal RHS) -> "-1 "',
+          out == b"-1 \r\n", f"got {out!r}")
+
+    mm, out = run_prog_cap([
+        (10, 'A$="HELLO"'),
+        (20, 'PRINT LEFT$(A$,1)="H"'),
+    ])
+    check('PRINT LEFT$(A$,1)="H"  (function lead) -> "-1 "',
+          out == b"-1 \r\n", f"got {out!r}")
+
+    mm, out = run_prog_cap([
+        (10, 'A$="HE"'),
+        (20, 'B$="LLO"'),
+        (30, 'PRINT A$+B$="HELLO"'),
+    ])
+    check('PRINT A$+B$="HELLO"  (concat-chain lead) -> "-1 "',
+          out == b"-1 \r\n", f"got {out!r}")
+
+    # D-2: the bare, UNPARENTHESIZED form aborts with 'type mismatch' and
+    # prints NOTHING for the item itself -- before this slice, exp_loop
+    # mis-dispatched this to exp_strvar's plain-print path, so A$'s value
+    # printed first and a syntax error followed (spec §2 background).
+    mm, out = run_prog_cap([
+        (10, 'A$="HI"'),
+        (20, "PRINT A$<5"),
+    ])
+    check("PRINT A$<5  (bare, unparenthesized) prints 'type mismatch', "
+          "NOT A$'s value", out == b"type mismatch\r\n", f"got {out!r}")
+
+    # D-2: items AFTER the aborting comparison on the same physical line do
+    # not run (the whole line aborts) -- same contract as the parenthesized
+    # form (PRINT (A$<5)) above, now exercised through the bare form.
+    mm, out = run_prog_cap([
+        (10, 'A$="HI"'),
+        (20, 'PRINT A$<5:PRINT "AFTER"'),
+    ])
+    check('PRINT A$<5:PRINT "AFTER"  the trailing PRINT does not run',
+          out == b"type mismatch\r\n", f"got {out!r}")
+
+    # ------------------------------------------------------------------
+    print("# --- S2 regression watch: plain PRINT items unchanged when NO "
+          "relop follows (no re-parse; the S5 STRMAX-clamp lesson) ---")
+
+    mm, out = run_prog_cap([
+        (10, 'A$="HI"'),
+        (20, "PRINT A$"),
+    ])
+    check('PRINT A$  (plain var, no relop) -> "HI"', out == b"HI\r\n", f"got {out!r}")
+
+    mm, out = run_prog_cap([
+        (10, 'PRINT "lit"'),
+    ])
+    check('PRINT "lit"  (plain literal, no relop) -> "lit"',
+          out == b"lit\r\n", f"got {out!r}")
+
+    mm, out = run_prog_cap([
+        (10, 'PRINT "a"+"b"'),
+    ])
+    check('PRINT "a"+"b"  (literal concat, no relop) -> "ab"',
+          out == b"ab\r\n", f"got {out!r}")
+
+    mm, out = run_prog_cap([
+        (10, 'A$="HELLO"'),
+        (20, "PRINT LEFT$(A$,1)"),
+    ])
+    check('PRINT LEFT$(A$,1)  (plain function, no relop) -> "H"',
+          out == b"H\r\n", f"got {out!r}")
+
+    # multi-item PRINT: exercises the "print branch" stack balance across
+    # exp_loop's continuation (';' join, no spacing) -- a stack leak in
+    # exps_print/ems_print would corrupt this or crash the host Z80 core.
+    mm, out = run_prog_cap([
+        (10, 'A$="AB"'),
+        (20, 'B$="CD"'),
+        (30, 'PRINT A$;":";B$'),
+    ])
+    check('PRINT A$;":";B$  (multi-item, stack-balance regression) -> "AB:CD"',
+          out == b"AB:CD\r\n", f"got {out!r}")
+
+    # D-3: a comparison after a ';'-separated item is a FRESH PRINT item and
+    # gets the same relop_peek treatment (each ;/,-separated item re-enters
+    # exp_loop) -- also confirms the earlier item's own stack use didn't leak.
+    mm, out = run_prog_cap([
+        (10, 'A$="X"'),
+        (20, 'B$="AB"'),
+        (30, 'C$="ABC"'),
+        (40, "PRINT A$;B$<C$"),
+    ])
+    check('PRINT A$;B$<C$  (comparison after ";" is a fresh item) -> "X-1 "',
+          out == b"X-1 \r\n", f"got {out!r}")
 
     print()
     print("ALL PASS — string-compare S2 (comparator + type mismatch)" if not fails

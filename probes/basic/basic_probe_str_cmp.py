@@ -2,7 +2,8 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 
-"""Oracle + differential probe -- string comparison (string-compare S2).
+"""Oracle + differential probe -- string comparison (string-compare S2), PLUS the
+unparenthesized-PRINT-lead follow-on slice (spec-basic-print-unparen-compare.md).
 
 Two halves, per spec-basic-string-compare.md §5:
 
@@ -24,6 +25,18 @@ directions), and empty-string pairs -- the §2 D-3 cases -- each exercising all
 six operators (`=` `<>` `<` `>` `<=` `>=`) in one PRINT line via the compound-form
 merge zerobas reuses from the numeric ev_rel (spec §3).
 
+A THIRD section (spec-basic-print-unparen-compare.md §4 D-4, §6) extends this same
+reference-lock + zerobas==reference discipline to the **bare, unparenthesized**
+`PRINT` item -- `PRINT A$="YES"` rather than `PRINT (A$="YES")` -- across all
+three string leads (`$`-variable, string literal, string function) plus a concat
+chain, and the `PRINT A$<5` type-mismatch abort (D-2: the line aborts, printing
+NOTHING for the item -- confirmed against real hardware's own `Type mismatch`
+message, case-divergent from zerobas's lowercase `type mismatch`, same documented
+divergence as the parenthesized form). Each case types SHORT direct-mode lines
+(one assignment per line, then the PRINT) rather than one long compound line --
+openMSX's typed Enter can land mid-typing on a long line and silently drop it
+(probe gotcha from the MID$-statement slice, basic_probe_mid_stmt.py).
+
 Clean-room: this only *observes* black-box behaviour (type a line, read the
 screen). The reference ROM is never read as code. See CONTRIBUTING.md.
 
@@ -37,6 +50,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from collections import namedtuple
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
@@ -125,6 +139,114 @@ def extract_bits(screen_text):
     return tuple(nums) if len(nums) == 6 else None
 
 
+# ===========================================================================
+# unparenthesized PRINT-lead comparisons (spec-basic-print-unparen-compare.md)
+# ===========================================================================
+
+# (label, setup lines, the PRINT line itself, lhs value, op, rhs value) -- the
+# §1 table's three leads (var/literal/function) + a concat chain, all six
+# operators represented across the battery, ordering, and a compound form.
+# `lhs`/`op`/`rhs` are the ACTUAL string values compared (for computing the
+# expected -1/0 in Python -- never assumed); for the concat case `lhs` is the
+# already-concatenated value.
+PrintCase = namedtuple("PrintCase", "label setup print_line lhs op rhs")
+
+OP_EXPECT = {
+    "=":  lambda a, b: a == b,
+    "<>": lambda a, b: a != b,
+    "<":  lambda a, b: a < b,
+    ">":  lambda a, b: a > b,
+    "<=": lambda a, b: a <= b,
+    ">=": lambda a, b: a >= b,
+}
+
+PRINT_CASES = [
+    PrintCase("var-eq-true",     ['A$="YES"'],
+              'PRINT A$="YES"', "YES", "=", "YES"),
+    PrintCase("var-eq-false",    ['A$="YES"'],
+              'PRINT A$="NO"',  "YES", "=", "NO"),
+    PrintCase("var-lt-ordering", ['A$="AB"', 'B$="ABC"'],
+              "PRINT A$<B$",    "AB",  "<", "ABC"),
+    PrintCase("var-le-compound", ['A$="AB"', 'B$="AB"'],
+              "PRINT A$<=B$",   "AB",  "<=", "AB"),
+    PrintCase("literal-lead",    ['A$="YES"'],
+              'PRINT "YES"=A$', "YES", "=", "YES"),
+    PrintCase("function-lead",   ['A$="HELLO"'],
+              'PRINT LEFT$(A$,1)="H"', "H", "=", "H"),
+    PrintCase("concat-lead",     ['A$="HE"', 'B$="LLO"'],
+              'PRINT A$+B$="HELLO"', "HELLO", "=", "HELLO"),
+]
+
+ABORT_SETUP = ['A$="HI"']
+ABORT_LINE = "PRINT A$<5"
+
+
+def run_lines(machine, cart, lines, base=6.0, gap=2.5, tail=8.0, timeout=120):
+    """Type each SHORT direct-mode line (line then a separately-timed Enter),
+    same discipline as basic_probe_mid_stmt.run_prog -- splitting setup/op/print
+    into short lines avoids openMSX's typed Enter landing mid-typing on a long
+    line (which silently drops it). Captures the SCREEN 0 name table and returns
+    it as 24 newline-joined 40-column rows (None on failure), so a caller can
+    find the echoed line and read the row directly below it for the result."""
+    out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="strcmp_pl_cap_")
+    os.close(out_fd)
+    cmd = [sys.executable, OMSX_RUN, "--machine", machine]
+    if cart:
+        cmd += ["--cart", cart]
+    t = base
+    for ln in lines:
+        cmd += ["--type", ln, "--type-delay", f"{t}"]
+        t += gap
+        cmd += ["--type", "\r", "--type-delay", f"{t}"]
+        t += gap
+    cmd += ["--time", f"{t + tail}",
+            "--mem", f"VRAM:0x0000:{NLEN}", "--out", out_path, "--timeout", str(timeout)]
+    subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    cap = ""
+    if os.path.exists(out_path):
+        with open(out_path) as f:
+            cap = f.read()
+        os.unlink(out_path)
+    m = re.search(rf"mem\.VRAM:0x0000:{NLEN}=([0-9a-f]+)", cap)
+    if not m:
+        return None
+    data = bytes.fromhex(m.group(1))
+    rows = ["".join(chr(c) if 32 <= c < 127 else " " for c in
+                     data[r * COLS:(r + 1) * COLS]) for r in range(ROWS)]
+    return "\n".join(rows)
+
+
+def extract_result(screen_text, print_line):
+    """The single integer printed on the row directly below the echoed
+    `print_line` (direct-mode: typed input echoes, then the item prints on the
+    next row -- confirmed live on both the reference and zerobas builds).
+    Returns None if the echo isn't found or the following row isn't exactly
+    one int (leading/trailing spaces from the MSX number format are fine --
+    re.findall strips them)."""
+    if screen_text is None:
+        return None
+    lines = screen_text.split("\n")
+    for i, ln in enumerate(lines):
+        if print_line in ln:
+            if i + 1 >= len(lines):
+                return None
+            nums = re.findall(r"-?\d+", lines[i + 1])
+            return int(nums[0]) if len(nums) == 1 else None
+    return None
+
+
+def extract_next_row(screen_text, print_line):
+    """The raw row directly below the echoed `print_line` (whatever it holds --
+    an error message for the abort case). None if the echo isn't found."""
+    if screen_text is None:
+        return None
+    lines = screen_text.split("\n")
+    for i, ln in enumerate(lines):
+        if print_line in ln:
+            return lines[i + 1] if i + 1 < len(lines) else None
+    return None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -137,35 +259,97 @@ def main() -> int:
     args = ap.parse_args()
 
     cases = [c for c in CASES if not args.only or args.only in c[0]]
-    if not cases:
+    printcases = [c for c in PRINT_CASES if not args.only or args.only in c.label]
+    want_abort = not args.only or args.only in "abort-mismatch"
+    if not cases and not printcases and not want_abort:
         print(f"no cases match --only {args.only!r}")
         return 1
 
     ok = True
 
-    print(f"--- reference oracle lock ({args.machine}, §2 contract) ---")
-    ref_bits = {}
-    for label, lhs, rhs in cases:
-        line = build_line(lhs, rhs)
-        want = expected_bits(lhs, rhs)
-        got = extract_bits(run_line(args.machine, None, line, timeout=180))
-        ref_bits[label] = got
-        good = got == want
-        ok = ok and good
-        print(f"{'PASS' if good else 'FAIL':5} {label:16} {lhs!r:6} vs {rhs!r:6} "
-              f"ops{OPS} got={got} want={want}")
-
-    if not args.ref_only:
-        print(f"\n--- zerobas == reference ({args.zb_machine}) ---")
+    if cases:
+        print(f"--- reference oracle lock ({args.machine}, §2 contract) ---")
+        ref_bits = {}
         for label, lhs, rhs in cases:
             line = build_line(lhs, rhs)
-            ref = ref_bits.get(label)
-            zb = extract_bits(run_line(args.zb_machine, None, line, timeout=120))
-            good = ref is not None and zb is not None and zb == ref
+            want = expected_bits(lhs, rhs)
+            got = extract_bits(run_line(args.machine, None, line, timeout=180))
+            ref_bits[label] = got
+            good = got == want
             ok = ok and good
-            print(f"{'PASS' if good else 'FAIL':5} {label:16} zb={zb} ref={ref}")
+            print(f"{'PASS' if good else 'FAIL':5} {label:16} {lhs!r:6} vs {rhs!r:6} "
+                  f"ops{OPS} got={got} want={want}")
 
-    print("\nALL PASS -- reference matches §2, zerobas matches reference" if ok
+        if not args.ref_only:
+            print(f"\n--- zerobas == reference ({args.zb_machine}) ---")
+            for label, lhs, rhs in cases:
+                line = build_line(lhs, rhs)
+                ref = ref_bits.get(label)
+                zb = extract_bits(run_line(args.zb_machine, None, line, timeout=120))
+                good = ref is not None and zb is not None and zb == ref
+                ok = ok and good
+                print(f"{'PASS' if good else 'FAIL':5} {label:16} zb={zb} ref={ref}")
+
+    # --- unparenthesized PRINT-lead comparisons (print-unparen-compare.md) ---
+    if printcases:
+        print(f"\n--- reference oracle lock: unparenthesized PRINT-lead "
+              f"comparisons ({args.machine}) ---")
+        ref_print = {}
+        for c in printcases:
+            want = -1 if OP_EXPECT[c.op](c.lhs, c.rhs) else 0
+            raw = run_lines(args.machine, None, c.setup + [c.print_line], timeout=180)
+            got = extract_result(raw, c.print_line)
+            ref_print[c.label] = got
+            good = got == want
+            ok = ok and good
+            print(f"{'PASS' if good else 'FAIL':5} {c.label:16} {c.print_line!r:28} "
+                  f"got={got} want={want}")
+
+        if not args.ref_only:
+            print(f"\n--- zerobas == reference: unparenthesized PRINT-lead "
+                  f"comparisons ({args.zb_machine}) ---")
+            for c in printcases:
+                raw = run_lines(args.zb_machine, None, c.setup + [c.print_line], timeout=140)
+                got = extract_result(raw, c.print_line)
+                ref = ref_print.get(c.label)
+                good = ref is not None and got is not None and got == ref
+                ok = ok and good
+                print(f"{'PASS' if good else 'FAIL':5} {c.label:16} zb={got} ref={ref}")
+
+    # --- D-2: PRINT A$<5 (bare) aborts, printing NOTHING for the item -------
+    # Divergence (inherited from the parenthesized form): the reference's own
+    # wording is 'Type mismatch', zerobas's is lowercase 'type mismatch' -- both
+    # asserted per-machine (substring, case-insensitive) rather than as string
+    # equality, same convention basic_probe_mid_stmt.py uses for its range-error
+    # wording divergence. The key claim either way: the row right after the
+    # echoed PRINT holds an error, not a printed value (no digits).
+    if want_abort:
+        print(f"\n--- reference oracle lock: unparenthesized type-mismatch "
+              f"abort ({args.machine}) ---")
+        ref_raw = run_lines(args.machine, None, ABORT_SETUP + [ABORT_LINE], timeout=180)
+        ref_row = extract_next_row(ref_raw, ABORT_LINE)
+        ref_err = ref_row is not None and "type mismatch" in ref_row.lower()
+        ref_noval = ref_row is not None and not re.search(r"-?\d", ref_row)
+        good = ref_err and ref_noval
+        ok = ok and good
+        print(f"{'PASS' if good else 'FAIL':5} abort-mismatch  ref row={ref_row!r} "
+              f"'type mismatch'={ref_err} no-value={ref_noval}")
+
+        if not args.ref_only:
+            print(f"\n--- zerobas: unparenthesized type-mismatch abort "
+                  f"({args.zb_machine}) ---")
+            zb_raw = run_lines(args.zb_machine, None, ABORT_SETUP + [ABORT_LINE], timeout=140)
+            zb_row = extract_next_row(zb_raw, ABORT_LINE)
+            zb_err = zb_row is not None and "type mismatch" in zb_row.lower()
+            zb_noval = zb_row is not None and not re.search(r"-?\d", zb_row)
+            good = zb_err and zb_noval
+            ok = ok and good
+            print(f"{'PASS' if good else 'FAIL':5} abort-mismatch  zb row={zb_row!r} "
+                  f"'type mismatch'={zb_err} no-value={zb_noval}")
+
+    print("\nALL PASS -- reference matches §2/§1, zerobas matches reference "
+          "(the type-mismatch message text is a documented case-wording "
+          "divergence, both sides asserted own-wording)" if ok
           else "\nSOME FAILED")
     return 0 if ok else 1
 

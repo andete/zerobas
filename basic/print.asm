@@ -136,12 +136,43 @@ exp_num:
                 pop     hl                  ;  (same as exp_strvar does for print_strval)
                 jp      exp_loop
 exp_strvar:
+    IF ROM_BASE < $4000
+                ; S2 (spec-basic-print-unparen-compare.md §3): remember the
+                ; operand START before str_eval consumes it -- if a relational
+                ; operator follows the string value, this item is really the
+                ; LHS of an unparenthesized comparison (`PRINT A$="YES"`) and
+                ; must be re-parsed from here via eval/ev_rel instead of printed.
+                push    hl                  ; operand START (peek may reparse via eval)
+    ENDIF
                 call    str_eval            ; STRPTR -> the var's value, HL advanced
+    IF ROM_BASE < $4000
+                jr      nc,exps_fallback    ; defensive: not a string after all
+                call    skip_spaces
+                ld      a,(hl)
+                call    relop_peek          ; ZF=1 iff (HL) is a relop token
+                jr      nz,exps_print       ; no relop -> plain PRINT (below)
+                pop     hl                  ; relop follows -> restore the operand START
+                jp      exp_num             ; re-drive via eval -> ev_rel (-1/0, or D-2 abort)
+exps_print:
+                pop     de                  ; drop the saved operand-start (balances the
+                                             ;  push above; str_eval already clobbers DE,
+                                             ;  so there is nothing in DE worth preserving)
+                push    hl                  ; print_strval clobbers HL (token cursor)
+                call    print_strval        ; emit the descriptor's bytes
+                pop     hl
+                jp      exp_loop
+exps_fallback:
+                pop     hl                  ; balance the operand-start push (str_eval left
+                                             ;  HL unmoved on failure, so this restores the
+                                             ;  same cursor exp_num would see un-gated)
+                jp      exp_num
+    ELSE
                 jp      nc,exp_num          ; defensive: fall back to numeric
                 push    hl                  ; print_strval clobbers HL (token cursor)
                 call    print_strval        ; emit the descriptor's bytes
                 pop     hl
                 jp      exp_loop
+    ENDIF
 exp_semi:
                 inc     hl                  ; ';' = no spacing
                 call    skip_spaces
@@ -160,12 +191,15 @@ exp_nl_stmt:
 exp_str:
     IF ROM_BASE < $4000
                 ; Repack: a PRINT item that LEADS with a string literal but is
-                ; followed by '+' is a string concat (`"a"+"b"`, `"n="+STR$(x)`).
-                ; Route it through the concat-aware str_eval (exp_strvar's body) so
-                ; the `+` folds like every other string context; a plain literal
-                ; (no trailing '+') keeps the fast char-by-char path below, so a
-                ; literal longer than STRMAX still prints in full (un-clamped).
-                call    str_lit_concat_q    ; ZF=1 if PLUS_TOKEN follows the literal
+                ; followed by '+' is a string concat (`"a"+"b"`, `"n="+STR$(x)`),
+                ; and one followed by a relop (S2: `PRINT "YES"=A$`) is the LHS of
+                ; an unparenthesized comparison. Route either through the
+                ; concat-aware str_eval (exp_strvar's body, which now also owns the
+                ; relop_peek gate) so both forms fold like every other string
+                ; context; a plain literal (no trailing '+' or relop) keeps the
+                ; fast char-by-char path below, so a literal longer than STRMAX
+                ; still prints in full (un-clamped).
+                call    str_lit_concat_q    ; ZF=1 if '+' or a relop follows the literal
                 jr      z,exp_strvar        ; HL still @ opening quote -> str_eval
     ENDIF
                 inc     hl                  ; past the opening quote
@@ -182,28 +216,34 @@ exp_str_close:
                 inc     hl                  ; past the closing quote
                 jp      exp_loop
     IF ROM_BASE < $4000
-; --- str_lit_concat_q: does a '+' follow this string literal? -----------------
+; --- str_lit_concat_q: does '+' or a relop follow this string literal? --------
 ; HL -> the opening '"' of a literal PRINT item. Scans past the closing quote and
 ; the intervening spaces (exactly as str_concat_tail does) and reports whether the
-; next token is the '+' operator. HL is preserved. out: ZF=1 iff PLUS_TOKEN follows.
+; next token is the '+' concat operator OR a relational operator (S2: a literal
+; that leads an unparenthesized comparison, e.g. `PRINT "YES"=A$`, must ALSO
+; route through the str_eval path so exp_strvar's relop_peek gate sees it). HL is
+; preserved. out: ZF=1 iff PLUS_TOKEN or a relop token ($EE/$EF/$F0) follows.
 str_lit_concat_q:
                 push    hl
                 inc     hl                  ; past the opening quote
 slcq_lp:
                 ld      a,(hl)
                 or      a
-                jr      z,slcq_no           ; unterminated (EOL) -> not a concat
+                jr      z,slcq_no           ; unterminated (EOL) -> not a concat/compare
                 inc     hl
                 cp      '"'
                 jr      nz,slcq_lp          ; scan to the closing quote
                 call    skip_spaces         ; HL -> next non-space token
                 ld      a,(hl)
                 cp      PLUS_TOKEN          ; '+' ($F1) ? ZF=1 if so
+                jr      z,slcq_yes
+                call    relop_peek          ; else: a relop ($EE/$EF/$F0) follows? (str-engine.asm)
+slcq_yes:
                 pop     hl
                 ret
 slcq_no:
                 pop     hl
-                or      1                   ; A nonzero -> ZF=0 (not a concat)
+                or      1                   ; A nonzero -> ZF=0 (not concat/compare)
                 ret
     ENDIF
 exp_comma:
