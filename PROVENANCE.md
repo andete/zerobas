@@ -10,6 +10,12 @@ value blocks release. This file is the index; each component keeps its own log:
   (`TAPION`/`TAPIN`/`TAPIOF`, waveform timing).
 - [`disk/PROVENANCE.md`](disk/PROVENANCE.md) — the disk component (FDC, FAT).
 
+The merged repack main ROM ([`zerobas-main-eu.ips`](zerobas-main-eu.ips)/`.bps`)
+is built *on top of* C-BIOS bytes, so its firewall is argued separately in
+[`docs/cbios-repack-provenance.md`](docs/cbios-repack-provenance.md): no C-BIOS
+bytes enter the repo (D1 tracked patch) and the shipped patch payload carries only
+our bytes or `$00` (proven against the committed IPS).
+
 ## The two states
 
 - **sourced** — traced to an allowed source (see [`README.md`](README.md) for the

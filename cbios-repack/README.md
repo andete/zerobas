@@ -5,7 +5,9 @@ These are **our own 0BSD patches** against a pinned C-BIOS source tag — they d
 edits to BSD-2-clause C-BIOS source, so **no C-BIOS bytes live in this repo** (decision
 D1). The build applies a patch to the user's `~/projects/cbios` checkout, rebuilds, and
 diffs the result vs pristine stock to emit the shipping IPS. A patch is a description of
-a diff, not a merge — the provenance firewall holds.
+a diff, not a merge — the provenance firewall holds. The full firewall argument for
+the merged main-ROM deliverable (source side + output side, with the empirical proof
+against the shipped IPS) is [`../docs/cbios-repack-provenance.md`](../docs/cbios-repack-provenance.md).
 
 ## Pinned base
 

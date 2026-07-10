@@ -1,12 +1,14 @@
 # Spec — C-BIOS repack tooling (reclaim page-0 space → grow the BASIC window)
 
-**Status: SIGNED OFF (2026-07-09); WS-1 (S2) + WS-2 (S3) + WS-3 (S4) DONE (2026-07-10).**
+**Status: SIGNED OFF (2026-07-09); WS-1 (S2) + WS-2 (S3) + WS-3 (S4) + S5 close-out DONE (2026-07-10) — ARC COMPLETE.**
 Decisions D1–D5 resolved (§6). The full merged main ROM — repacked C-BIOS + relocated
 BASIC (`$2812–$7FFF`) + tape — now **builds and boots end to end** (`make repack-boot`:
 title + `zb>` prompt + live `PRINT`), and ships as `zerobas-main-eu.ips`/`.bps` (verified
 byte-exact round-trip). WS-2 proved the relocation is safe (audit:
 [`cbios-repack-ws2-audit.md`](cbios-repack-ws2-audit.md) — only base-dependent site is
-`org`). Next: **S5 close-out** (provenance write-up + commit the IPS/BPS deliverables). Implementation spec for the arc
+`org`). S5 close-out done: provenance write-up
+[`cbios-repack-provenance.md`](cbios-repack-provenance.md) (patch-vs-merge firewall,
+proven against the shipped IPS) + `zerobas-main-eu.ips`/`.bps` committed. Implementation spec for the arc
 the user selected after zerobas reached its concluded state. Grounded in the sizing
 analysis [`cbios-repack-space-analysis.md`](cbios-repack-space-analysis.md); this
 doc is the *how* + *decisions*, that doc is the *why* + *budget*. No code until this
@@ -148,9 +150,12 @@ Reuse the standing harness — this arc must not regress it:
    - Shipping deliverables untouched: `basic.rom` byte-identical; page-1 + tape patch
      builds unchanged; unit-test 38/38. `repack-main`/`repack-boot` kept out of `all`
      (they need the external C-BIOS checkout).
-5. **S5 (next) — close-out:** provenance write-up (patch-vs-merge firewall for the merged
-   IPS/BPS), commit the `zerobas-main-eu.ips`/`.bps` deliverables, docs harvest, memory +
-   TODO update.
+5. **S5 (done) — close-out:** provenance write-up (patch-vs-merge firewall for the merged
+   IPS/BPS — [`cbios-repack-provenance.md`](cbios-repack-provenance.md), proven against the
+   committed IPS: 0 C-BIOS-leak bytes, payload is our bytes or `$00`, `IPS(pristine)`
+   reconstructs the merged image byte-exact), `zerobas-main-eu.ips`/`.bps` committed
+   (tracked like `zerobas-msx1.ips`), PROVENANCE/README indexes updated, TODO + memory
+   updated. **Arc complete — the byte-full-BASIC wall is broken (`$2812–$7FFF`, ~21.5 KB).**
 
 Each session commits at its gate (commit-after-TODO-point discipline). Judgment calls
 that don't need a stop get logged; forks/irreversible steps hard-stop for sign-off.

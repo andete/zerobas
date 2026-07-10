@@ -796,6 +796,18 @@ stub this supports: `CLEAR …,&Hxxxx : SCREEN n : BLOAD"…",R` or
 
 ## Phase 3+ — full MSX1 BASIC (aspirational)
 
+**Precondition solved — BASIC ROM space (the C-BIOS repack arc, ✅ 2026-07-10).** The
+page-1 `basic.rom` was byte-full at 16 KB, so any Phase-3 feature would have hit a hard
+wall. The repack arc ([`docs/spec-cbios-repack-tooling.md`](docs/spec-cbios-repack-tooling.md))
+broke it: dropping C-BIOS's dead ROM-BASIC placeholder frees `$2812–$3FFF` in page 0,
+contiguous below page 1, so the relocated BASIC grows to a **`$2812–$7FFF` ≈ 21.5 KB**
+window (+37 %). Ships as one merged 32 KB main ROM
+([`zerobas-main-eu.ips`](zerobas-main-eu.ips)/`.bps`, boots end to end via `make
+repack-boot`) with the firewall proven in
+[`docs/cbios-repack-provenance.md`](docs/cbios-repack-provenance.md). Shipping `basic.rom`
++ the page-1/tape patches are untouched (`ROM_BASE` defaults to `$4000`); the grown image
+is the reloc build. Non-EU variants (br/jp) are a documented later add.
+
 Beyond Phase 2's disk axis — the rest of "real MSX BASIC." Listed for reference
 and to mark the natural boundaries, **not** scheduled work; the disk/file story
 (`OPEN`/`CLOSE`/`PRINT#`/… and Disk BASIC delegation) has been pulled forward into
