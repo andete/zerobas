@@ -1,9 +1,12 @@
 # Spec — C-BIOS repack tooling (reclaim page-0 space → grow the BASIC window)
 
-**Status: SIGNED OFF (2026-07-09); WS-1 done + boundary corrected (2026-07-10).**
-Decisions D1–D3 resolved (§6); **D2 boundary corrected `$23BF`→`$2812` after the S2
-spike disproved the analysis's pre-font-gap estimate (§6, §8).** Next: S3 (WS-2 BASIC
-relocation to `$2812`). Implementation spec for the arc
+**Status: SIGNED OFF (2026-07-09); WS-1 done (S2); WS-2 audit + assemble-clean done
+(S3, 2026-07-10).** Decisions D1–D5 resolved (§6); **D2 boundary corrected `$23BF`→
+`$2812` (§6, §8); D5 = leave tape at `$3A72` (§6).** S3 landed the WS-2 hardcoded-address
+audit ([`cbios-repack-ws2-audit.md`](cbios-repack-ws2-audit.md) — the crux is clean; the
+only base-dependent site is `org`) and a parameterized relocated build proving the
+`$2812` layout assembles with the `"AB"` header pinned at `$4000`. Next: S4 (WS-3 merged
+main-ROM splice + boot-to-`Ok`). Implementation spec for the arc
 the user selected after zerobas reached its concluded state. Grounded in the sizing
 analysis [`cbios-repack-space-analysis.md`](cbios-repack-space-analysis.md); this
 doc is the *how* + *decisions*, that doc is the *why* + *budget*. No code until this
@@ -114,10 +117,22 @@ Reuse the standing harness — this arc must not regress it:
    (all `$3193–$3A70`, all zeroed); jump table / font / `CGTABL` / page-1 byte-identical.
    Captured as `cbios-repack/eu-drop-statements.patch` (reproducible: pinned tag + patch
    → sha1 `edb08440…`). Page-0 ceiling now `$2811`; **boundary corrected to `$2812`.**
-3. **S3 (next) — WS-2 audit + relocation:** hardcoded-address audit, reassemble BASIC
-   from `$2812`. Gate: BASIC boots to `Ok`, unit-tests green.
-4. **S4 — WS-3 tooling:** parameterize overlay/build, emit the repacked IPS/BPS.
-   Gate: full standing-gate sweep + end-to-end loader round-trip.
+3. **S3 — WS-2 audit + assemble-clean.** ✅ DONE (2026-07-10). Hardcoded-address audit
+   ([`cbios-repack-ws2-audit.md`](cbios-repack-ws2-audit.md)): every `$2xxx–$7xxx` literal
+   classified — the interpreter is 100% label-based; the sole self-referential absolute
+   address is `org`, so a label-clean reassemble at a new base is safe. Surfaced the one
+   real structural constraint: the `"AB"` header must stay at `$4000` (C-BIOS's cartridge
+   scan never looks at page 0), so relocation *appends* the reclaimed `$2812–$3FFF` below
+   the header rather than moving it. `basic/main.asm` parameterized on `ROM_BASE` (default
+   `$4000` → shipping `basic.rom` byte-identical); `basic/main-reloc.asm` (`ROM_BASE=$2812`)
+   + `make basic-reloc` + `tools/check_reloc.py` prove the 22 510 B `$2812–$7FFF` image
+   assembles with the header at `$4000` and a page-1 body byte-identical to shipping.
+   **Boot-to-`Ok` deferred to S4** (it needs the WS-3 merged-image splice; user-scoped
+   this landing to assemble-clean). Gate met: unit-test 38/38; shipping ROM unchanged.
+4. **S4 (next) — WS-3 tooling:** parameterize overlay/build for the `$2812` boundary,
+   build the merged main-ROM (repacked C-BIOS + tape `$3A72` + relocated BASIC), emit the
+   repacked IPS/BPS, **and run the deferred S3 boot-to-`Ok`.** Gate: full standing-gate
+   sweep + end-to-end loader round-trip.
 5. **S5 — close-out:** provenance write-up (patch-vs-merge firewall), docs harvest,
    memory + TODO update.
 
@@ -156,10 +171,16 @@ output** — `basic/` and `tape/` stay separate source components with distinct 
 interpreter); keep an optional tape-only build target. *(Rejected: folding tape.asm into
 the basic/ source tree — discards the component split.)*
 
-**D5 — page-0 layout of grown-BASIC vs the tape block → decided at WS-2 start** (added
-2026-07-10). Whether BASIC fills around the tape block (`$3A72–$3C42`) or tape relocates
-to the region edge is settled at the top of S3/WS-2, with the real assembler constraints
-in hand — not committed up front.
+**D5 — page-0 layout of grown-BASIC vs the tape block → LEAVE TAPE AT `$3A72`**
+(resolved 2026-07-10 at S3/WS-2 start, user-accepted). The tape page-0 completions keep
+`FREE_ORG = $3A72`; BASIC's low-region occupants fill *around* the 465 B block — the
+4704 B `$2812–$3A71` block below it and the 957 B `$3C43–$3FFF` sliver above it — placed
+as whole includes, so the hole is a non-issue. Chosen over relocating tape to the region
+edge because it is **zero tape churn**: `tape.asm` and its standalone tape-only IPS target
+stay untouched (no tape-gate re-run), and the tape org stays valid on both the pristine
+C-BIOS base and the repacked base. *(Rejected: move tape to `$2812` — cleaner single
+contiguous BASIC window, but edits `tape.asm` + re-tests the tape gates for a contiguity
+that doesn't matter, since every byte is in-slot ROM reachable by CALL regardless.)*
 
 ## 7. Risks & non-goals
 

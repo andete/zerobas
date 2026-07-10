@@ -61,6 +61,16 @@ $(DISK_ROM): $(DISK_SRC) $(DISK_PARTS) | $(BUILD)
 
 disk: $(DISK_ROM)
 
+# --- Relocated BASIC proof (cbios-repack arc, WS-2 / S3) -----------------------
+# Assemble the $2812-based variant (basic/main-reloc.asm) and prove it lands the
+# "AB" header at $4000 and matches the shipping page-1 body byte-for-byte. This is
+# a proof/staging target only -- deliberately NOT in `all`; the merged main-ROM
+# splice that ships it is WS-3 (S4). See docs/cbios-repack-ws2-audit.md.
+RELOC_ROM := $(BUILD)/basic-reloc.rom
+basic-reloc: $(ROM) basic/main-reloc.asm basic/main.asm $(DEPS) | $(BUILD)
+	$(PASMO) --bin basic/main-reloc.asm $(RELOC_ROM)
+	python3 tools/check_reloc.py $(RELOC_ROM) $(ROM)
+
 # --- Slot-0 page-1 BASIC patch (build/basic.rom spliced into a stock C-BIOS) ---
 # build_patches.py emits BOTH .ips and .bps in one run; express that with a
 # single-recipe target plus a no-op follower (GNU make 3.81 has no grouped
@@ -178,4 +188,4 @@ clean:
 
 .PHONY: all disk patches tape-patches machines machines-oracle install \
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
-        bdos-cbios-selfcheck audit-citations clean
+        bdos-cbios-selfcheck audit-citations basic-reloc clean

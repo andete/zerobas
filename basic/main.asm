@@ -20,11 +20,37 @@
 
                 include "basic/sysvars.inc"
 
-                org     $4000
+; --- ROM base (cbios-repack arc, WS-2) -------------------------------------
+; The shipping build is a 16 KB slot-0 page-1 image based at $4000 (the default
+; below). The C-BIOS repack (docs/spec-cbios-repack-tooling.md) reclaims
+; $2812-$3FFF of page 0 *contiguous below* page 1, letting BASIC grow into one
+; ~21.5 KB $2812-$7FFF image. That relocated variant is assembled by the thin
+; wrapper basic/main-reloc.asm, which pre-defines ROM_BASE=$2812 before including
+; this file. Nothing else in the build sets ROM_BASE, so the default keeps the
+; production basic.rom byte-identical. See docs/cbios-repack-ws2-audit.md — the
+; hardcoded-address audit proved the interpreter is 100% label-based, so the only
+; base-dependent site in the whole source is this org.
+    IFNDEF ROM_BASE
+ROM_BASE:       equ     $4000
+    ENDIF
+
+                org     ROM_BASE
+
+; --- reclaimed low region ($2812-$3FFF), relocated variant only ------------
+; When based below $4000 we pad the reclaimed page-0 span up to the header. It is
+; reserved (all $00) for now: this arc delivers the space + the assemble-clean
+; layout, not its occupants. Future BASIC growth and the WS-3 splice place code
+; here (the zerobas-tape page-0 completions keep their own org $3A72 and are
+; spliced by the merged main-ROM build, D5 — they are not carved out here).
+    IF ROM_BASE < $4000
+                ds      $4000 - $, $00
+    ENDIF
 
 ; --- MSX cartridge header (MSX2 Technical Handbook, cartridge ROM format) ---
 ; 16 bytes: ID, INIT, STATEMENT, DEVICE, TEXT, then 6 reserved bytes. INIT
-; therefore begins at $4010.
+; therefore begins at $4010. The header stays pinned at $4000 in every variant:
+; C-BIOS's cartridge boot scan looks for the "AB" header in page 1 ($4000), never
+; page 0, so relocation appends space *below* the header rather than moving it.
                 db      "AB"            ; ROM signature
                 dw      init            ; INIT entry point
                 dw      0               ; STATEMENT expansion handler (none)
