@@ -124,7 +124,7 @@ def _files_lines(rows):
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--machine", default="C-BIOS_MSX1_EU_BASIC_DISK")
+    ap.add_argument("--machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_BASIC_DISK"))
     args = ap.parse_args()
     rc = 0
 

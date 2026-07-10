@@ -38,7 +38,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ASM = os.path.join(HERE, "wrblk_rt.asm")
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 DEFAULT_DOS = os.path.expanduser("~/Documents/msx/msx/disks/test.dsk")
-OUR_MACHINE = "C-BIOS_MSX1_BASIC_DISK"
+OUR_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_BASIC_DISK")
 REF_MACHINE = "National_CF-3300"
 TARGET = ("WRTEST", "BIN")
 

@@ -122,6 +122,32 @@ def _check_registry() -> None:
             sys.exit(f"registry error: {label}: missing probe {script}")
 
 
+def _check_repack_wiring() -> None:
+    """Vacuity guard 3 (repack): when ZEROBAS_BASIC_MACHINE is set we are running the
+    corpus on the RELOCATED BASIC build. Every probe that boots a zerobas-BASIC machine
+    must honour that env var (its --machine/OURS_MACHINE default reads it), or it would
+    silently boot the LEAN machine and 'converge' as FALSE repack coverage — the exact
+    trap this gate exists to prevent. So refuse to run unless each registry probe either
+    references ZEROBAS_BASIC_MACHINE, or delegates to disk_probe_diff / omsx_session (those
+    boot the National_CF-3300 disk-ROM machine — build-invariant w.r.t. the BASIC build,
+    correctly NOT overridden). A newly-added probe that forgets the env wrap fails here."""
+    if not os.environ.get("ZEROBAS_BASIC_MACHINE"):
+        return
+    ENV = "ZEROBAS_BASIC_MACHINE"
+    DISK_ROM_DELEGATORS = ("disk_probe_diff", "omsx_session")
+    offenders = []
+    for label, script, _extra, _style in REGISTRY:
+        src = open(os.path.join(HERE, script), encoding="utf-8", errors="replace").read()
+        if ENV in src or any(d in src for d in DISK_ROM_DELEGATORS):
+            continue
+        offenders.append(f"{label} ({script})")
+    if offenders:
+        sys.exit("repack wiring error: ZEROBAS_BASIC_MACHINE is set, but these probes do "
+                 "not read it and would run the LEAN build (false coverage):\n  - "
+                 + "\n  - ".join(offenders)
+                 + f"\nWrap their zerobas machine default in os.environ.get('{ENV}', ...).")
+
+
 def run_probe(script: str, extra: list[str], env: dict, timeout: float) -> tuple[int, str]:
     try:
         proc = subprocess.run(
@@ -158,6 +184,7 @@ def main() -> int:
     args = ap.parse_args()
 
     _check_registry()
+    _check_repack_wiring()
 
     if args.list:
         print("Disk-BASIC acceptance registry:")

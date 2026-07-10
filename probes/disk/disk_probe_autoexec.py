@@ -70,7 +70,7 @@ from make_test_dsk import Fat12Image  # noqa: E402  (path set up above)
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 ZEROBAS = _ROOT
 
-OURS_MACHINE = "C-BIOS_MSX1_EU_BASIC_DISK"
+OURS_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_BASIC_DISK")
 REF_MACHINE = "National_CF-3300"          # the genuine reference, booted black-box
 
 # --- fixture: `10 POKE &HD005,165` -----------------------------------------

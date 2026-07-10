@@ -88,7 +88,7 @@ from bas_tokenise import make_basic_file  # noqa: E402  (our-ROM tokeniser helpe
 
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 
-OURS_MACHINE = "C-BIOS_MSX1_EU_BASIC_DISK"
+OURS_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_BASIC_DISK")
 REF_MACHINE = "National_CF-3300"          # the genuine reference, booted black-box
 
 TXTBASE = 0x8001

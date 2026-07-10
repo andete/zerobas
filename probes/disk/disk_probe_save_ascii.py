@@ -113,7 +113,7 @@ def run(machine, lines, out, cf3300=False, timeout=150.0):
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--machine", default="C-BIOS_MSX1_EU_BASIC_DISK")
+    ap.add_argument("--machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_BASIC_DISK"))
     ap.add_argument("--ref-machine", default="National_CF-3300")
     ap.add_argument("--no-ref", action="store_true")
     args = ap.parse_args()

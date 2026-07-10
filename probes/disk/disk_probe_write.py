@@ -152,7 +152,7 @@ def main() -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dsk", required=True, help="FAT12 seed image (.dsk); copied to /tmp, never written")
-    ap.add_argument("--our-machine", default="C-BIOS_MSX1_BASIC_DISK")
+    ap.add_argument("--our-machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_BASIC_DISK"))
     ap.add_argument("--ref-machine", default="National_CF-3300")
     ap.add_argument("--sector", type=int, default=TARGET_SEC)
     args = ap.parse_args()
