@@ -52,6 +52,8 @@ str_eval_one:
     IF ROM_BASE < $4000
                 cp      STRING_TOKEN        ; $E3 -> STRING$(n,c) (string-functions Group B;
                 jp      z,str_fn_string     ; single-byte reserved word, not $FF-prefixed)
+                cp      INKEY_TOKEN         ; $EC -> INKEY$ (no args; single-byte reserved word)
+                jp      z,str_fn_inkey
     ENDIF
                 call    is_letter           ; a `$`-suffixed variable?
                 jp      nc,str_eval_no

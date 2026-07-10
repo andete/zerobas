@@ -116,6 +116,8 @@ exp_loop:
                 jp      z,exp_maybe_strfn   ; (repack: CHR$/STR$/LEFT$/…; falls back to exp_num)
                 cp      STRING_TOKEN        ; $E3 STRING$(n,c) -> string (single-byte token,
                 jp      z,exp_maybe_strfn   ;  not $FF-prefixed; str_eval handles it, prints)
+                cp      INKEY_TOKEN         ; $EC INKEY$ -> string (single-byte token; str_eval
+                jp      z,exp_maybe_strfn   ;  reads the key, prints it — else PRINT INKEY$ mismatches)
     ENDIF
                 call    is_letter           ; a `$`-suffixed string variable?
                 jr      nc,exp_num

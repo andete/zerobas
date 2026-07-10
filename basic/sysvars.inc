@@ -12,6 +12,7 @@
 CHGMOD          equ     $005F   ; switch screen mode; A = mode 0..3 (SCREEN n)
 CHGCLR          equ     $0062   ; apply FORCLR/BAKCLR/BDRCLR; A = screen mode (COLOR)
 INITXT          equ     $006C   ; init SCREEN 0 (TEXT1) and enable the display
+CHSNS           equ     $009C   ; test the keyboard buffer -> Z if empty, NZ if a key waits
 CHGET           equ     $009F   ; wait for a character from the keyboard -> A
 CHPUT           equ     $00A2   ; output the character in A at the cursor
 LPTOUT          equ     $00A5   ; print the character in A to the printer (Centronics);
@@ -222,6 +223,8 @@ OCTD_TOKEN      equ     $9A     ; OCT$(n)      -> $FF $9A
 SPACED_TOKEN    equ     $99     ; SPACE$(n)    -> $FF $99
 STRING_TOKEN    equ     $E3     ; STRING$(n,c) -> $E3   (single-byte, reserved word)
 INSTR_TOKEN     equ     $E5     ; INSTR([p,]a$,b$) -> $E5 (single-byte, reserved word)
+INKEY_TOKEN     equ     $EC     ; INKEY$ -> $EC (single-byte reserved word; '$' part of
+                                ; the keyword — S2 black-box capture, VG-8020 crunch)
 ; Memory / I-O access tokens (MSX2 TH Table 2.20; oracle-confirmed byte-for-byte
 ; via basic_probe_crunch.py — see PROVENANCE.md). VPOKE / OUT are one-byte
 ; statement tokens; VPEEK / INP are $FF-prefixed two-byte function tokens (like

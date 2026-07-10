@@ -829,6 +829,39 @@ sfp_done:
                 pop     hl                  ; restore cursor
                 jp      str_eval_ok
 
+; str_fn_inkey: INKEY$ -> a 0- or 1-character string. Samples the keyboard ONCE,
+; strictly non-blocking (D-2): CHSNS ($009C) reports Z = buffer empty / NZ = a key
+; waits; on a key, CHGET ($009F) consumes it (non-blocking here because CHSNS just
+; saw it). The result is a temp-ring [len][bytes] descriptor (D-4): length 0 (empty)
+; or 1 (the key byte). No arguments/parens to parse -- HL just steps past the
+; INKEY_TOKEN. Control keys pass through as their raw code (D-5, own-design). CHSNS /
+; CHGET are published MSX BIOS console entries (MSX Assembly Page / MSX2 TH jump
+; table -- the same source the REPL's CHGET/CHPUT cite); no disassembly. Entered
+; from str_eval_one (basic/strvar.asm) with HL ON the INKEY_TOKEN ($EC). The Z
+; result and both cursors are threaded through the stack across the BIOS calls and
+; str_alloc_temp (which clobbers A/DE). Clobbers A, BC, DE, HL.
+str_fn_inkey:
+                inc     hl                  ; past the INKEY_TOKEN ($EC); no args to parse
+                push    hl                  ; guard the string-eval cursor
+                call    CHSNS               ; Z = keyboard buffer empty
+                push    af                  ; guard the Z result across str_alloc_temp
+                call    str_alloc_temp      ; HL = temp descriptor base (clobbers A, DE)
+                pop     af                  ; recover the CHSNS Z flag
+                ld      (STRPTR),hl
+                jr      z,sfi_empty         ; no key -> empty string
+                push    hl                  ; guard the descriptor base across CHGET
+                call    CHGET               ; A = the waiting key (consumes it)
+                pop     hl
+                ld      (hl),1              ; length = 1
+                inc     hl
+                ld      (hl),a              ; the key byte (raw code, D-5)
+                jr      sfi_done
+sfi_empty:
+                ld      (hl),0              ; length = 0 (empty string)
+sfi_done:
+                pop     hl                  ; restore cursor
+                jp      str_eval_ok
+
 ; str_fn_string: STRING$(n,c) / STRING$(n,x$) -> n copies of a single fill
 ; byte, clamped to STRMAX (D-3). The fill byte is resolved by PROBING the 2nd
 ; argument's type (D-4, the established str_eval-CF pattern): a string x$

@@ -177,5 +177,12 @@ kwtable:
                 db      6,"SPACE$",2,PEEK_PREFIX,SPACED_TOKEN; $FF $99
                 db      7,"STRING$",1,STRING_TOKEN           ; $E3
                 db      5,"INSTR",1,INSTR_TOKEN               ; $E5
+                ; --- INKEY$ slice (repack build only) — S2 ------------------------
+                ; INKEY$: a SINGLE-byte reserved-word token ($EC), the '$' PART of the
+                ; keyword (S2 black-box capture: `a$=inkey$` -> 41 24 EF EC, no separate
+                ; $24; `print inkey$` -> 91 20 EC). match_kw compares the FULL keyword,
+                ; and no keyword is a prefix of "INKEY$" (INPUT/INSTR diverge at char 3),
+                ; so no shadow — order is free. detok_kw2 renders $EC -> "INKEY$" for LIST.
+                db      6,"INKEY$",1,INKEY_TOKEN              ; $EC
     ENDIF
                 db      0
