@@ -253,9 +253,21 @@ byte-identity instead of page-1 equality.
    ring slot. Gates: lean byte-identical, unit-test 39/39, `make basic-reloc` OK. **The S4
    verbs' keyword tokens are already wired (crunch + LIST); only their handlers remain.**
 4. **S4 — the verbs.** LEN/ASC/CHR$/LEFT$/RIGHT$/MID$/STR$/VAL.
-5. **S5 — repack machine + `string-acceptance` gate** (D-D): install the EU repack
-   machine, run a repack-build crunch differential for the 8 keywords (against the §4
-   captured bytes) + the functional string probes, wire the gate.
+5. **S5 — repack machine + `string-acceptance` gate** (D-D). **Machine + acceptance
+   corpus PULLED FORWARD (2026-07-10, commits 24ff24e + 4f90b53):** the gated repack disk
+   machine `C-BIOS_MSX1_EU_REPACK_DISK` (merged main ROM + zerobas-disk) is installed by
+   [`tools/install-repack-machine.py`](../tools/install-repack-machine.py), and the FULL
+   Disk-BASIC acceptance corpus now runs on the relocated BASIC build via
+   [`tools/run_repack_acceptance.py`](../tools/run_repack_acceptance.py) — `make
+   diskbasic-acceptance-repack` → **34/34 verbs converge vs CF-3300**, trustworthy (a
+   binary-level `openmsx` shim remaps every probe's machine to repack regardless of how it
+   launches openMSX, with a STRICT guard that hard-fails any lean fallback). This closes the
+   behavioural-divergence gap S3 opened (STRMAX=64 / concat `str_eval` / relocated kwtable /
+   tokenised keywords all flow through the disk verbs). **Still remaining for S5:** the
+   repack-build crunch differential for the 8 keywords (assert the repack build crunches
+   `LEN`→`$FF$92` … against the §4 captured bytes) + a functional string-concat openMSX
+   probe (`string-acceptance`) + wiring it as a standing gate. (No `bdos-acceptance-repack`:
+   the BDOS gate exercises the disk ROM, which the string arc does not touch.)
 6. **S6 — close-out:** provenance (`basic/PROVENANCE.md` entries), docs harvest, memory +
    TODO update.
 
