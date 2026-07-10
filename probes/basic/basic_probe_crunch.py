@@ -189,6 +189,9 @@ STR_KEYWORDS = [
 STR_KEYWORDS_1B = [
     ('a$=string$(3,65)', 0xE3),   # STRING$
     ('a=instr("ab","b")',0xE5),   # INSTR
+    # INKEY$ slice: single-byte reserved word $EC, the '$' PART of the keyword
+    # (S2 capture: `a$=inkey$` -> 41 24 EF EC, no separate $24). No args.
+    ('a$=inkey$',        0xEC),   # INKEY$
 ]
 
 

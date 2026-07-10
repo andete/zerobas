@@ -830,7 +830,13 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       STRING$ $E3 / INSTR $E5); spec [`docs/spec-basic-string-functions.md`](docs/spec-basic-string-functions.md),
       provenance `basic/PROVENANCE.md` → "Phase 3: string functions"; `string-acceptance` gained
       a fourth **functions** half (the execute+oracle gate caught two bugs the unit tests
-      missed). **Still deferred:** `INKEY$`, the MID$ statement, floats in
+      missed). **INKEY$ slice DONE 2026-07-10** (S1–S3, commits ee65487/dcac69d/…): the first
+      keyboard-reading string verb — non-blocking single sample (empty / 1-char) via published
+      BIOS `CHSNS`+`CHGET`; single-byte token `$EC`; temp-ring result; spec
+      [`docs/spec-basic-inkey.md`](docs/spec-basic-inkey.md), provenance `basic/PROVENANCE.md` →
+      "Phase 3: INKEY$"; `string-acceptance` gained a fifth **inkey** half (the first
+      keyboard-injection acceptance; the live gate caught a `PRINT INKEY$`→type-mismatch
+      `exp_loop` gap). **Still deferred:** the MID$ statement, floats in
       VAL/STR$, the real heap+descriptor model, string arrays/`DIM`, STRMAX→255 (a RAM
       re-architecture, spec §5a), and the unparenthesized `PRINT A$<5` form (needs an
       `exp_loop` slice — see PROVENANCE divergences)

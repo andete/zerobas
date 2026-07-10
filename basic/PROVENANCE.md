@@ -2723,3 +2723,56 @@ disassembly) so CHGET reads the bytes with no matrix scan.
 repack machine); lean `basic.rom` byte-identical (pinned sha256 unchanged); unit-test 42/42
 (new `tests/test_str_fn.py`, incl. the SPACE$ overrun regression); `diskbasic-acceptance-repack`
 34/34; `repack-boot` PASS; audit-citations clean.
+
+## Phase 3: INKEY$ — non-blocking keyboard read (basic/str-engine.asm, basic/kwtable.inc, basic/strvar.asm, basic/print.asm, basic/sysvars.inc)
+
+The first **keyboard-reading** string verb, from the standing string deferral list. Spec:
+[`docs/spec-basic-inkey.md`](../docs/spec-basic-inkey.md) (SIGNED OFF). **Repack-only**:
+assembled `IF ROM_BASE < $4000`; the byte-full lean `basic.rom` is **unchanged** (pinned
+sha256 `e21f61fe…4228005`). Tiny in code (no args, ≤1-byte result) but it crosses one new
+seam the earlier string slices never touched — the BIOS **console input** path.
+
+### Token (basic/kwtable.inc, basic/sysvars.inc)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `INKEY_TOKEN` (bare single-byte reserved word) | `$EC` | MSX2 TH Table 2.20 **AND black-box-captured** from the VG-8020 crunch (`a$=inkey$`→`41 24 EF EC`, `print inkey$`→`91 20 EC`) — the trailing `$24` is absent, so the `$` is **part of the keyword**; collision-free vs existing token equates | sourced |
+| Crunch + LIST detok are data-driven off `kwtable`; the one entry wires both (`match_kw`/`detok_kw2`); no prefix shadow vs `INPUT`/`INSTR` (diverge at char 3) | — | own code | sourced |
+
+### BIOS contract + handler (basic/str-engine.asm `str_fn_inkey`)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `CHSNS` = `$009C` (test keyboard buffer → Z=empty / NZ=key), `CHGET` = `$009F` (fetch a key) | — | published MSX BIOS console entries (MSX Assembly Page / MSX2 TH jump table — the same source the REPL's `CHGET`/`CHPUT` cite); never a reference-ROM disassembly ([[no-reference-rom-disasm]]) | sourced |
+| `INKEY$` samples the keyboard **once, non-blocking**: empty string if no key, a 1-char string (the key) if one waits; the key is **consumed** | — | public MSX-BASIC ref, **oracle-locked black-box** (`basic_probe_inkey.py` reference-lock then zerobas==reference: empty `PRINT INKEY$`→`[]`, poll loop + injected key→the key) | sourced |
+| Result is a 0-/1-byte temp-ring descriptor via `str_alloc_temp` (the same ring SPACE$/STRING$ use); dispatched from `str_eval_one` beside `STRING$` and from `exp_loop` via `exp_maybe_strfn` | — | own code (the established ring + dispatch pattern) | sourced |
+
+### Documented divergence (own design)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| Control keys pass through as their raw code (no special-casing, e.g. Ctrl-STOP → `$03` when untrapped) | — | own design (D-5), matching the reference "raw code" behaviour; no observed VG-8020 divergence on the tested keys | quarantined |
+
+### Integration bug the live gate caught (fixed before ship)
+
+The S2 host path (assignment `A$=INKEY$`) worked immediately, but the first live run found
+`PRINT "[";INKEY$;"]"` raising a spurious **`type mismatch`** — the **same class** the
+string-functions slice hit with `PRINT STRING$`: PRINT's `exp_loop` (basic/print.asm) had no
+`INKEY_TOKEN` ($EC) case, so a bare `INKEY$` item fell through to `exp_num`→`ev_rel` (a
+string with no relop → the D-2 abort). Fix: a repack-gated `cp INKEY_TOKEN / jp z,exp_maybe_strfn`
+beside the `STRING$` case. The `INKEY$` acceptance half keeps a literal `PRINT INKEY$` test so
+the gate keeps guarding that hook.
+
+### Harness note
+
+`INKEY$` is the first verb whose acceptance **drives the keyboard**: `basic_probe_inkey.py`
+injects a keystroke (openMSX `type`) into a bounded poll loop (`10 A$=INKEY$:IF A$=""THEN10`),
+which blocks until a key lands, so the injection instant need not be synchronised between the
+two machines — the differential stays deterministic despite the real-time keyboard. The
+real-speed reference needs ~3 s between a typed line and its Enter (a tighter gap fires Enter
+mid-type and garbles the line).
+
+**Gates.** `make string-acceptance` PASS (five halves: crunch + execute + compare + functions
++ **inkey** — empty-path + injected-key reference-lock + zerobas==reference on the repack
+machine); lean `basic.rom` byte-identical (pinned sha256 unchanged); unit-test 42/42;
+`diskbasic-acceptance-repack` 34/34.

@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: 0BSD
 
 """string-acceptance -- the standing gate for the string engine (arc S5; string
-comparison S3; string functions S3).
+comparison S3; string functions S3; INKEY$ S3).
 
-Runs all four halves against the merged repack build (relocated BASIC + string
+Runs all five halves against the merged repack build (relocated BASIC + string
 engine) and reports one PASS/FAIL:
 
   1. CRUNCH    (basic_probe_crunch.py --zb-machine) -- the string keywords
@@ -22,6 +22,9 @@ engine) and reports one PASS/FAIL:
      (spec-basic-string-functions.md); two documented STRMAX-clamp divergences
      (SPACE$/STRING$ overflow) are asserted against zerobas's own contract instead
      of the reference, per that spec's D-3.
+  5. INKEY$   (basic_probe_inkey.py) -- the keyboard-reading verb: an empty PRINT
+     INKEY$ prints the empty string, and an injected keystroke is handed back by a
+     poll loop; both reference-lock and zerobas==reference (spec-basic-inkey.md).
 
 Together: the keywords crunch like a real MSX ROM *and* execute correctly on the
 build we actually ship. Heavy + oracle-dependent (boots openMSX, needs the repack
@@ -42,6 +45,7 @@ CRUNCH = os.path.join(HERE, "basic_probe_crunch.py")
 STRING = os.path.join(HERE, "basic_probe_string.py")
 STRCMP = os.path.join(HERE, "basic_probe_str_cmp.py")
 STRFN = os.path.join(HERE, "basic_probe_str_fn.py")
+INKEY = os.path.join(HERE, "basic_probe_inkey.py")
 REPACK_MACHINE = "C-BIOS_MSX1_EU_REPACK_DISK"
 REF_MACHINE = "Philips_VG_8020"
 
@@ -74,13 +78,16 @@ def main() -> int:
                  [STRCMP, "--machine", args.ref, "--zb-machine", args.machine])
     fn_ok = run("FUNCTIONS (HEX$/OCT$/SPACE$/STRING$/INSTR, repack vs VG-8020)",
                 [STRFN, "--machine", args.ref, "--zb-machine", args.machine])
+    inkey_ok = run("INKEY$ (keyboard read, empty + injected key, repack vs VG-8020)",
+                   [INKEY, "--machine", args.ref, "--zb-machine", args.machine])
 
-    ok = crunch_ok and exec_ok and cmp_ok and fn_ok
+    ok = crunch_ok and exec_ok and cmp_ok and fn_ok and inkey_ok
     print("\n=====================")
     print(f"crunch    (byte-identical tokenise) : {'PASS' if crunch_ok else 'FAIL'}")
     print(f"execute   (correct screen output)   : {'PASS' if exec_ok else 'FAIL'}")
     print(f"compare   (string relops vs oracle) : {'PASS' if cmp_ok else 'FAIL'}")
     print(f"functions (HEX$/OCT$/SPACE$/STRING$/INSTR vs oracle): {'PASS' if fn_ok else 'FAIL'}")
+    print(f"inkey     (INKEY$ keyboard read vs oracle): {'PASS' if inkey_ok else 'FAIL'}")
     print(f"string-acceptance: {'PASS' if ok else 'FAIL'}")
     return 0 if ok else 1
 

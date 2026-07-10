@@ -5,8 +5,16 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — BASIC `INKEY$` (a Phase-3 string follow-on slice)
 
-**Status: PROPOSED — S1 (spec + sign-off), awaiting decision on §6.** User-selected
-2026-07-10 as the next Phase-3 session item, from the standing string-engine deferral list
+**Status: IMPLEMENTED & SHIPPED (S1–S3 all done, 2026-07-10).** All §6 decisions accepted
+as recommended. S2 captured the token black-box (`$EC`, `$` part of the keyword) and landed
+`str_fn_inkey` (CHSNS→CHGET, temp-ring 0-/1-byte result) + the `str_eval_one`/`exp_loop`
+hooks; the first live run caught the `PRINT INKEY$`→`type mismatch` gap (missing `exp_loop`
+`$EC` case — same class the string-functions slice hit) and fixed it. S3 added the fifth
+**INKEY$** half to `make string-acceptance` (the first keyboard-injection acceptance —
+empty-path + injected-key, differential vs VG-8020); provenance in
+[`../basic/PROVENANCE.md`](../basic/PROVENANCE.md) → "Phase 3: INKEY$". Repack-only, lean
+`basic.rom` byte-identical; unit-test 42/42, string-acceptance PASS, diskbasic-acceptance-repack
+34/34. User-selected 2026-07-10 as the next Phase-3 session item, from the standing string-engine deferral list
 ([`spec-basic-string-engine.md`](spec-basic-string-engine.md) §1 "Out of scope";
 [`spec-basic-string-functions.md`](spec-basic-string-functions.md) §1 "Out of scope":
 "`INKEY$` (needs the keyboard/console read path — a different subsystem)"). This document
