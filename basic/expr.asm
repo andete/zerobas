@@ -362,6 +362,10 @@ ev_f:
                 jp      z,ev_f_varptr
                 cp      BASE_TOKEN          ; $C9 -> BASE(n) function
                 jp      z,ev_f_base
+    IF ROM_BASE < $4000
+                cp      INSTR_TOKEN         ; $E5 -> INSTR([p,]a$,b$) (string-functions
+                jp      z,ev_f_instr        ; Group C; single-byte token, not $FF-prefixed)
+    ENDIF
                 cp      HEX_TOKEN           ; $0C -> 2-byte LE value (&H)
                 jp      z,ev_f_word
                 cp      OCT_TOKEN           ; $0B -> 2-byte LE value (&O)

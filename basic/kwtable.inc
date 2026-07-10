@@ -164,5 +164,18 @@ kwtable:
                 db      3,"VAL",2,PEEK_PREFIX,VAL_TOKEN      ; $FF $94
                 db      3,"ASC",2,PEEK_PREFIX,ASC_TOKEN      ; $FF $95
                 db      4,"CHR$",2,PEEK_PREFIX,CHRD_TOKEN    ; $FF $96
+                ; --- string-functions slice (repack build only) — S2 -------------
+                ; HEX$/OCT$/SPACE$: $FF-prefixed, same shape as the S3 verbs above.
+                ; STRING$/INSTR: SINGLE-byte reserved-word tokens ($E3/$E5) — not
+                ; $FF-prefixed. All five oracle-locked (VG-8020 crunch, MSX2 TH
+                ; Table 2.20; equates in sysvars.inc). "STR$" is already in this
+                ; table above; match_kw compares the FULL keyword (not a prefix),
+                ; so "STRING$" never matches the "STR$" entry (or vice versa) —
+                ; no shadow, order is free.
+                db      4,"HEX$",2,PEEK_PREFIX,HEXD_TOKEN    ; $FF $9B
+                db      4,"OCT$",2,PEEK_PREFIX,OCTD_TOKEN    ; $FF $9A
+                db      6,"SPACE$",2,PEEK_PREFIX,SPACED_TOKEN; $FF $99
+                db      7,"STRING$",1,STRING_TOKEN           ; $E3
+                db      5,"INSTR",1,INSTR_TOKEN               ; $E5
     ENDIF
                 db      0

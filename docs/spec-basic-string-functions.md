@@ -253,13 +253,36 @@ an existing token equate (an S2 check).
 ## 8. Session plan (slices, each commits at its gate)
 
 1. **S1 — this spec + sign-off.** (No code.)
-2. **S2 — oracle token-lock + implement.** Capture the five keywords' token bytes/widths
-   black-box (`basic_probe_str_fn.py` token half + a `kwtable`/equate collision check), add
-   the `kwtable.inc` entries + `sysvars.inc` equates, then the three dispatch hooks
-   (`str_func_ff` cases for Group A; the `str_eval` branch for `STRING$`; the `ev_f` branch
-   for `INSTR`) + the five handlers in `str-engine.asm` (Group A reusing the `detok_*16`→
-   descriptor variants). Host unit tests (`tests/test_str_fn.py`). Gates: lean byte-identical,
-   unit-test green, `make basic-reloc` OK, `repack-boot` PASS.
+2. **S2 — oracle token-lock + implement.** ✅ (2026-07-10.) Tokens captured black-box on
+   the VG-8020 and **confirmed exactly** against §4: HEX$=`FF 9B`, OCT$=`FF 9A`,
+   SPACE$=`FF 99` (Group A, `str_func_ff`), STRING$=`E3` (Group B, a `str_eval` branch),
+   INSTR=`E5` (Group C, an `ev_f` branch beside USR/VARPTR/BASE) — `$E3`/`$E5` collision-free.
+   Equates in [`../basic/sysvars.inc`](../basic/sysvars.inc), entries in
+   [`../basic/kwtable.inc`](../basic/kwtable.inc) (repack-gated block), five handlers +
+   `instr_search` in [`../basic/str-engine.asm`](../basic/str-engine.asm). HEX$/OCT$
+   reimplement the `detok_hex16`/`detok_oct16` digit logic into a ring temp (reusing only the
+   leaf `hex_digit`/`oct_digit`) — **`list.asm` untouched**, so the lean-byte-identity
+   invariant holds without gating a LIST-shared routine. Host tests
+   [`../tests/test_str_fn.py`](../tests/test_str_fn.py) (all five verbs, edge cases).
+   **Opus review found + fixed one defect:** STRING$ silently clamped a negative count to
+   STRMAX instead of erroring (SPACE$ already guarded it) — now `bit 7,d / jp nz,str_eval_no`,
+   consistent with SPACE$ and D-3. Gates: **lean byte-identical**, **unit-test 42/42**,
+   `make basic-reloc` OK, **`repack-boot` PASS**, **`diskbasic-acceptance-repack` 34/34**.
+
+   **Harness hardening (side-deliverable, required to keep the gate honest).** Adding INSTR
+   dropped `diskbasic-acceptance-repack` to 33/34 on the `OPEN LEN=` cell — a **false
+   failure**. Root cause (proven by bisect + a merged-ROM byte diff): the ROM is correct
+   (every diff is a valid relocation); the cell's REPL driver typed whole lines via openMSX's
+   `type`, whose keyboard-MATRIX scan alignment is timing-fragile. One extra `match_kw` scan
+   per tokenised word (the cost of a legitimate new keyword) shifted the fixed emulated-time
+   schedule enough to **double a leading keystroke** (`print`→`pprint` → spurious `syntax
+   error`); an inert same-size byte pad passed, and step-tuning only relocated the doubled
+   key (roulette). Fix: [`../probes/disk/disk_probe_getput.py`](../probes/disk/disk_probe_getput.py)
+   now injects each line straight into the BIOS type-ahead buffer (**KEYBUF `$FBF0`** +
+   GETPNT `$F3FA` / PUTPNT `$F3F8`, published MSX2 TH contract, no disassembly; C-BIOS honours
+   it, verified black-box) so CHGET reads the bytes with **no matrix scan** — deterministic and
+   content-insensitive. Both the zerobas and CF-3300 paths + the lean and repack machines
+   re-verified green.
 3. **S3 — acceptance + close-out.** Extend `string-acceptance` (crunch: five keywords
    byte-identical + suffix; execute: five verbs live on the repack machine; oracle:
    `basic_probe_str_fn.py` reference-lock + zerobas==reference across the §5 battery).

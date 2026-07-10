@@ -72,15 +72,39 @@ PROGRAM = [
 EXPECT = ["alpha|  bet", "gamma|delta"]   # record 1 (RSET "bet"), record 2 (LSET "delta")
 
 
+# REPL line delivery: inject each line straight into the MSX BIOS type-ahead
+# buffer (KEYBUF) rather than emulating keystrokes with openMSX `type`. The `type`
+# command drives the keyboard MATRIX, whose per-key press/scan alignment is timing-
+# fragile: under load a leading key can register twice ("print"->"pprint" -> a
+# spurious `syntax error`), and the exact alignment shifts with any change to CPU
+# timing — e.g. adding one real BASIC keyword costs an extra match_kw scan per word,
+# which silently tipped this into failure. Injection is deterministic and content-
+# insensitive: the interpreter reads these bytes through CHGET exactly as typed, but
+# no matrix scan is involved, so nothing can double. Uses only the PUBLISHED MSX BIOS
+# contract (MSX2 Technical Handbook system-variable map) — no ROM disassembly:
+#   KEYBUF $FBF0 (40-byte circular type-ahead buffer), GETPNT $F3FA / PUTPNT $F3F8
+#   (the read / write cursors CHSNS+CHGET consult; empty when GETPNT==PUTPNT).
+# Verified black-box that C-BIOS honours it (a real MSX1 like the CF-3300 does by
+# construction — this is where the standard comes from).
+_KEYBUF = 0xFBF0
+_GETPNT = 0xF3FA
+_PUTPNT = 0xF3F8
+_KEYBUF_SZ = 40
+
+
 def build_tcl(out_path, lines, cf3300):
+    for ln in lines:
+        if len(ln) + 1 > _KEYBUF_SZ:            # +1 for the trailing CR
+            raise ValueError(f"REPL line too long for KEYBUF ({len(ln)+1}>{_KEYBUF_SZ}): {ln!r}")
     body = []
     t = 12 if cf3300 else 8
-    step = 8 if cf3300 else 5      # CF-3300 is slower and stays busy after disk I/O
+    step = 8 if cf3300 else 5      # emulated seconds per line: enough to consume +
+                                   # execute (disk PUT/GET are slow) before the next
+                                   # inject resets KEYBUF. CF-3300 is slower.
     if cf3300:
-        body.append('after time 11 { type "\\r" }')
+        body.append('after time 11 { __inj "" }')   # initial CR to reach the prompt
     for ln in lines:
-        body.append(f'after time {t} {{ type {{{ln}}} }}')
-        body.append(f'after time {t+3} {{ type "\\r" }}')
+        body.append(f'after time {t} {{ __inj {{{ln}}} }}')
         t += step
     va = "0x1800" if cf3300 else "0x0000"
     key = "scr1" if cf3300 else "scr0"
@@ -90,7 +114,23 @@ def build_tcl(out_path, lines, cf3300):
     return ("set throttle off\n"
             f"set __f [open {{{out_path}}} w]\n"
             "proc __hex_v {a l} { binary scan [debug read_block VRAM $a $l] H* h;"
-            " return $h }\n" + "\n".join(body) + "\n")
+            " return $h }\n"
+            # __inj: write "<line>\r" into KEYBUF and point GETPNT/PUTPNT at it so
+            # CHGET delivers it. Both cursors are reset each call — safe because the
+            # per-line step guarantees the prior line was fully consumed (buffer empty).
+            "proc __inj {s} {\n"
+            "  append s \"\\r\"\n"
+            "  set n [string length $s]\n"
+            "  for {set i 0} {$i < $n} {incr i} {\n"
+            f"    debug write memory [expr {{{_KEYBUF} + $i}}] [scan [string index $s $i] %c]\n"
+            "  }\n"
+            f"  debug write memory {_GETPNT} [expr {{{_KEYBUF} & 0xFF}}]\n"
+            f"  debug write memory [expr {{{_GETPNT}+1}}] [expr {{({_KEYBUF} >> 8) & 0xFF}}]\n"
+            f"  set p [expr {{{_KEYBUF} + $n}}]\n"
+            f"  debug write memory {_PUTPNT} [expr {{$p & 0xFF}}]\n"
+            f"  debug write memory [expr {{{_PUTPNT}+1}}] [expr {{($p >> 8) & 0xFF}}]\n"
+            "}\n"
+            + "\n".join(body) + "\n")
 
 
 def run(machine, lines, out, cf3300=False, timeout=220.0):

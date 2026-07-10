@@ -210,6 +210,18 @@ STRD_TOKEN      equ     $93     ; STR$(n)      -> $FF $93
 VAL_TOKEN       equ     $94     ; VAL(a$)      -> $FF $94
 ASC_TOKEN       equ     $95     ; ASC(a$)      -> $FF $95
 CHRD_TOKEN      equ     $96     ; CHR$(n)      -> $FF $96
+; string-functions slice (Phase 3, repack-only — docs/spec-basic-string-functions.md).
+; HEX$/OCT$/SPACE$ are $FF-prefixed function tokens (same contiguous table as above);
+; STRING$/INSTR are single-byte reserved-word tokens (not $FF-prefixed), like VARPTR/
+; BASE. All five oracle-locked black-box on the Philips VG-8020 crunch 2026-07-10
+; (basic_probe_str_fn.py) AND cross-checked vs MSX2 TH Table 2.20. The `$` in a
+; keyword is part of the name (like MKI$/LEFT$); the equate drops it (…D). No
+; disassembly.
+HEXD_TOKEN      equ     $9B     ; HEX$(n)      -> $FF $9B
+OCTD_TOKEN      equ     $9A     ; OCT$(n)      -> $FF $9A
+SPACED_TOKEN    equ     $99     ; SPACE$(n)    -> $FF $99
+STRING_TOKEN    equ     $E3     ; STRING$(n,c) -> $E3   (single-byte, reserved word)
+INSTR_TOKEN     equ     $E5     ; INSTR([p,]a$,b$) -> $E5 (single-byte, reserved word)
 ; Memory / I-O access tokens (MSX2 TH Table 2.20; oracle-confirmed byte-for-byte
 ; via basic_probe_crunch.py — see PROVENANCE.md). VPOKE / OUT are one-byte
 ; statement tokens; VPEEK / INP are $FF-prefixed two-byte function tokens (like

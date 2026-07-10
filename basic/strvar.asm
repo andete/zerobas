@@ -49,6 +49,10 @@ str_eval_one:
                 jp      z,str_eval_maybe_inputd
                 cp      PEEK_PREFIX         ; $FF + selector -> a function token; MKI$ ?
                 jp      z,str_eval_maybe_mki
+    IF ROM_BASE < $4000
+                cp      STRING_TOKEN        ; $E3 -> STRING$(n,c) (string-functions Group B;
+                jp      z,str_fn_string     ; single-byte reserved word, not $FF-prefixed)
+    ENDIF
                 call    is_letter           ; a `$`-suffixed variable?
                 jp      nc,str_eval_no
                 call    var_str_type        ; A=1 if `$` suffix
