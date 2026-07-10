@@ -258,10 +258,12 @@ byte-identity instead of page-1 equality.
    machine `C-BIOS_MSX1_EU_REPACK_DISK` (merged main ROM + zerobas-disk) is installed by
    [`tools/install-repack-machine.py`](../tools/install-repack-machine.py), and the FULL
    Disk-BASIC acceptance corpus now runs on the relocated BASIC build via
-   [`tools/run_repack_acceptance.py`](../tools/run_repack_acceptance.py) — `make
-   diskbasic-acceptance-repack` → **34/34 verbs converge vs CF-3300**, trustworthy (a
-   binary-level `openmsx` shim remaps every probe's machine to repack regardless of how it
-   launches openMSX, with a STRICT guard that hard-fails any lean fallback). This closes the
+   the probes' now-optional machine arg — `make diskbasic-acceptance-repack` → **34/34
+   verbs converge vs CF-3300**, trustworthy. Each disk probe's zerobas machine default reads
+   `$ZEROBAS_BASIC_MACHINE` (fallback = its lean literal, so lean is unchanged); the target
+   sets it to the repack machine. A completeness guard in `diskbasic_acceptance.py` refuses
+   to run if any registry probe fails to honour the env var (no silent lean fallback). This
+   closes the
    behavioural-divergence gap S3 opened (STRMAX=64 / concat `str_eval` / relocated kwtable /
    tokenised keywords all flow through the disk verbs). **Still remaining for S5:** the
    repack-build crunch differential for the 8 keywords (assert the repack build crunches
