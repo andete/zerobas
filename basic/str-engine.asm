@@ -630,6 +630,135 @@ sfm_reject2:
                 jp      str_eval_no
 
 ; ===========================================================================
+; MID$ STATEMENT (repack build only): MID$(A$,n[,m])=B$ -- overwrite a substring
+; of A$ in place, per docs/spec-basic-mid-statement.md. The FUNCTION MID$(a$,p,n)
+; (read) is str_fn_mid above; this is the ASSIGNMENT statement, dispatched from
+; exec_stmt (basic/interp.asm) when a statement begins with the MID$ function token
+; $FF $83 (the only $FF function that starts a statement).
+;
+; Contract (§2, oracle-locked black-box on the VG-8020): LEN(A$) NEVER changes; the
+; replaced count k = min(m|Lb, Lb, La-n+1); bytes outside [n, n+k) are untouched.
+; n<1 / n>La / m<0 are range errors -> stmt_error ("syntax error"; zerobas has no
+; "Illegal function call", D-3). Target is a plain $-suffixed string var (FIELDed /
+; array lvalues deferred). Reuses var_str_type/var_name_key (LHS), str_get_key (the
+; in-place STRTAB descriptor), eval (n/m), str_eval (RHS). Clean-room: original code;
+; SEMANTICS from the public MSX-BASIC ref. No disassembly.
+;
+; The dest descriptor address is stashed in MIDS_DEST (aliases NUMBUF, dead here) so
+; the token cursor stays in HL through the whole arg parse. Entered with HL ON the
+; $FF (PEEK_PREFIX). Clobbers A, BC, DE, HL.
+ex_mid_stmt:
+                inc     hl                  ; -> the function selector
+                ld      a,(hl)
+                cp      MIDD_TOKEN          ; must be MID$ ($83); any other $FF here is
+                jp      nz,stmt_error       ; not a statement
+                inc     hl                  ; HL past $FF $83
+                ld      a,(hl)
+                cp      '('
+                jp      nz,stmt_error
+                inc     hl                  ; HL -> target var name
+                call    var_str_type        ; A=1 iff `$`-suffixed (HL unmoved)
+                or      a
+                jp      z,stmt_error         ; not a string var -> error
+                call    var_name_key        ; BC = key, HL past name + `$`
+                push    hl                  ; [cursor] guard across str_get_key
+                call    str_get_key         ; HL -> dest [len][bytes] (STRTAB, or STR_EMPTY)
+                ld      (MIDS_DEST),hl      ; stash dest addr; cursor kept on the stack
+                pop     hl                  ; HL = cursor
+                ld      a,(hl)
+                cp      ','
+                jp      nz,stmt_error
+                inc     hl
+                call    eval                ; DE = n (1-based); HL advanced
+                push    de                  ; [n]
+                ld      a,(hl)
+                cp      ','
+                jr      z,ems_have_m
+                ld      de,$00FF            ; m omitted -> a cap larger than any avail (<=64)
+                jr      ems_close
+ems_have_m:
+                inc     hl
+                call    eval                ; DE = m
+ems_close:
+                bit     7,d                 ; m<0 (bit15 set) -> range error
+                jp      nz,ems_err_pop1     ; stack still [n]
+                push    de                  ; [n][m]
+                ld      a,(hl)
+                cp      ')'
+                jp      nz,ems_err_pop2
+                inc     hl
+                ld      a,(hl)
+                cp      EQ_TOKEN            ; '=' crunches to $EF
+                jp      nz,ems_err_pop2
+                inc     hl
+                call    skip_spaces
+                call    str_eval            ; STRPTR -> RHS B$; HL = post-B$ cursor
+                jp      nc,ems_err_pop2     ; not a string operand
+                ; --- compute + copy. HL = the continue cursor (keep it). ---
+                pop     de                  ; DE = m           stack: [n]
+                pop     bc                  ; BC = n           stack: []
+                push    hl                  ; [cursor] guard across the copy
+                ; validate 1 <= n <= La. n in BC (C=low, B=high).
+                ld      a,b
+                or      a
+                jr      nz,ems_range        ; n > 255 -> error
+                ld      a,c
+                or      a
+                jr      z,ems_range         ; n == 0 -> error
+                ld      hl,(MIDS_DEST)
+                ld      a,(hl)              ; A = La
+                cp      c
+                jr      c,ems_range         ; La < n -> n > La -> error
+                sub     c                   ; A = La - n
+                inc     a                   ; A = avail = La - n + 1  (1..La)
+                ; cap = min(avail, m). avail in A, m in DE.
+                ld      b,a                 ; B = avail
+                ld      a,d
+                or      a
+                jr      nz,ems_cap_avail    ; m >= 256 -> cap = avail
+                ld      a,b                 ; avail
+                cp      e                   ; avail - m
+                jr      c,ems_cap_avail     ; avail < m -> cap = avail
+                ld      a,e                 ; cap = m
+                jr      ems_have_cap
+ems_cap_avail:
+                ld      a,b                 ; cap = avail
+ems_have_cap:
+                ; k = min(cap, Lb). cap in A, Lb = (STRPTR).
+                ld      b,a                 ; B = cap
+                ld      hl,(STRPTR)         ; HL -> B$ descriptor
+                ld      a,(hl)              ; A = Lb
+                cp      b
+                jr      nc,ems_k            ; Lb >= cap -> k = cap
+                ld      b,a                 ; k = Lb
+ems_k:
+                ld      a,b
+                or      a
+                jr      z,ems_done          ; k == 0 -> nothing to copy
+                inc     hl                  ; HL -> B$ bytes (source)
+                ld      de,(MIDS_DEST)      ; write_ptr = dest + n (dest[n] = 1-based byte n)
+                ld      a,c                 ; n (1..La <= STRMAX)
+                add     a,e
+                ld      e,a
+                jr      nc,ems_nocarry
+                inc     d
+ems_nocarry:
+                ld      c,b
+                ld      b,0                 ; BC = k
+                ldir                        ; overwrite k bytes of A$ with B$'s bytes
+ems_done:
+                pop     hl                  ; HL = continue cursor
+                jp      exec_stmt
+ems_range:
+                pop     hl                  ; discard the guarded cursor -> stack balanced
+                jp      stmt_error
+ems_err_pop2:
+                pop     de                  ; discard m
+ems_err_pop1:
+                pop     de                  ; discard n
+                jp      stmt_error
+
+; ===========================================================================
 ; string-functions S2 (repack build only): HEX$/OCT$/SPACE$ (Group A, $FF-
 ; prefixed) + STRING$ ($E3, Group B) + INSTR ($E5, Group C) — the five verbs of
 ; docs/spec-basic-string-functions.md. Group A mirrors CHR$/STR$ above (reached

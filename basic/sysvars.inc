@@ -297,6 +297,11 @@ TKNAME          equ     $E028   ; tokeniser: 1 = previous char was part of a nam
 TKRADIX         equ     $E029   ; tokeniser: &H/&O accumulator radix (16 or 8)
 TKRTOK          equ     $E02A   ; tokeniser: &H/&O constant token to emit ($0C/$0B)
 NUMBUF          equ     $E0C0   ; PRINT: decimal-format scratch (8 bytes, 0-term)
+; MID$-statement (repack build only): the destination var's descriptor address,
+; stashed for one MID$(A$,n,m)=B$ so the token cursor can stay in HL through the arg
+; parse. Borrows NUMBUF (the PRINT/LIST decimal scratch) — dead during statement
+; execution (the MID$ statement neither prints nor lists; eval/str_eval don't touch it).
+MIDS_DEST       equ     NUMBUF   ; MID$ statement dest descriptor addr (2 B, aliases NUMBUF)
 ; Buffers and the variable table live in page $E1, clear of $E000.
 LINEBUF         equ     $E100   ; ASCII input line from the keyboard (LINEMAX bytes)
 LINEMAX         equ     96      ; LINEBUF capacity; $E100..$E15F stays in page $E1

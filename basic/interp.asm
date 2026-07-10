@@ -688,6 +688,10 @@ exec_stmt:
                 jr      z,ex_rem
                 cp      LET_TOKEN
                 jp      z,ex_letkw
+    IF ROM_BASE < $4000
+                cp      PEEK_PREFIX         ; $FF -> a function token starting a statement;
+                jp      z,ex_mid_stmt       ; only MID$ ($FF $83) is valid here (str-engine.asm)
+    ENDIF
                 call    is_letter           ; bare letter -> assignment
                 jr      c,ex_let
                 jp      stmt_error
