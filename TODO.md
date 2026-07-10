@@ -836,8 +836,14 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       [`docs/spec-basic-inkey.md`](docs/spec-basic-inkey.md), provenance `basic/PROVENANCE.md` →
       "Phase 3: INKEY$"; `string-acceptance` gained a fifth **inkey** half (the first
       keyboard-injection acceptance; the live gate caught a `PRINT INKEY$`→type-mismatch
-      `exp_loop` gap). **Still deferred:** the MID$ statement, floats in
-      VAL/STR$, the real heap+descriptor model, string arrays/`DIM`, STRMAX→255 (a RAM
+      `exp_loop` gap). **MID$-statement slice DONE 2026-07-10** (S1–S3, commits 6d88037/c915595/…):
+      the assignment form `MID$(A$,n[,m])=B$` — overwrite a substring of A$ in place (`LEN(A$)`
+      invariant, truncate-to-fit); zerobas's first lvalue-into-string-var path + first
+      `$FF`-token-starting-a-statement; spec [`docs/spec-basic-mid-statement.md`](docs/spec-basic-mid-statement.md),
+      provenance `basic/PROVENANCE.md` → "Phase 3: MID$ statement"; `string-acceptance` gained a
+      sixth **mid-stmt** half + a host unit-test (`tests/test_mid_stmt.py`). Range errors →
+      `syntax error` (no "Illegal function call", documented D-3 divergence). **Still deferred:**
+      floats in VAL/STR$, the real heap+descriptor model, string arrays/`DIM`, STRMAX→255 (a RAM
       re-architecture, spec §5a), and the unparenthesized `PRINT A$<5` form (needs an
       `exp_loop` slice — see PROVENANCE divergences)
 - [ ] **Arrays + `DIM`** (numeric and string, multi-dimensional)

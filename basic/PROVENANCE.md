@@ -2776,3 +2776,51 @@ mid-type and garbles the line).
 + **inkey** — empty-path + injected-key reference-lock + zerobas==reference on the repack
 machine); lean `basic.rom` byte-identical (pinned sha256 unchanged); unit-test 42/42;
 `diskbasic-acceptance-repack` 34/34.
+
+## Phase 3: MID$ statement — in-place substring overwrite (basic/str-engine.asm, basic/interp.asm, basic/sysvars.inc)
+
+The `MID$` **assignment statement** `MID$(A$,n[,m])=B$` — overwrite a substring of A$ in
+place (the `MID$` **function** shipped with the string engine). Spec:
+[`docs/spec-basic-mid-statement.md`](../docs/spec-basic-mid-statement.md) (SIGNED OFF).
+**Repack-only**: assembled `IF ROM_BASE < $4000`; the byte-full lean `basic.rom` is
+**unchanged** (pinned sha256 `e21f61fe…4228005`). Two firsts for zerobas: the first
+**lvalue path into the string store**, and the first `$FF`-prefixed token to start a
+**statement**.
+
+### Token + dispatch (basic/interp.asm, basic/sysvars.inc)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| The `MID$` statement crunches with a leading **`$FF $83`** (`MIDD_TOKEN`), the SAME token as the `MID$` function | `$FF $83` | MSX2 TH Table 2.20 **AND black-box-captured** from the VG-8020 crunch (`bload"cas:",r:mid$(a$,1,2)="xy"` freeze → `FF 83 28 41 24 2C 12 2C 13 29 EF …`); the `=` is `EQ_TOKEN $EF` | sourced |
+| `exec_stmt` (interp.asm) dispatches a leading `$FF` at statement start to `ex_mid_stmt`; only `$FF $83` is valid there (other `$FF` → `stmt_error`) | — | own code (a gated `cp PEEK_PREFIX` before the `is_letter` fallback) | sourced |
+
+### Semantics + handler (basic/str-engine.asm `ex_mid_stmt`)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| In-place overwrite, **`LEN(A$)` invariant**; replaced count `k = min(m\|Lb, Lb, La-n+1)`; bytes outside `[n, n+k)` untouched; empty B$ / m=0 = no-op | — | public MSX-BASIC ref, **oracle-locked black-box** (`basic_probe_mid_stmt.py` reference-lock then zerobas==reference: `HELLO`→`HXYZO`/`HELWX`/`ABLLO`, truncate-to-fit) | sourced |
+| Reuses `var_str_type`/`var_name_key` (LHS `$`-var), `str_get_key` (in-place STRTAB descriptor), `eval` (n/m), `str_eval` (RHS); the dest addr is stashed in `MIDS_DEST` (aliases NUMBUF, dead here) so the token cursor stays in HL through the arg parse | — | own code (established idioms) | sourced |
+
+### Documented divergences (own design)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| Range/type errors (`n<1`, `n>La`, `m<0`, non-string LHS/RHS) report via `syntax error` (`stmt_error`), **not** MSX's *Illegal function call* — zerobas has no such error | — | own design (D-3), the same own-wording convention as the string-compare `type mismatch`; the differential asserts both machines abort the line + leave A$ unchanged, only the wording differs | quarantined |
+| Target = a plain `$`-suffixed string variable; `FIELD`ed / array lvalues deferred | — | own design (D-1); string arrays don't exist yet | quarantined |
+| No `STRMAX` interaction — the statement never grows A$ (length invariant), unlike SPACE$/STRING$ | — | falls out of the in-place contract | — |
+
+### Harness note
+
+The overwrite math (compute `k`, copy) is BIOS-independent, so it carries an emulator-free
+host unit-test (`tests/test_mid_stmt.py`, 9 cases): tokenise a full `MID$(…)="…"`, seed A$ in
+STRTAB, call `ex_mid_stmt`, read A$ back — the success path ends in `jp exec_stmt` → `ret` at
+end-of-line with no BIOS output. The error path (through `stmt_error`→`print_string`→CHPUT) is
+covered by the live gate, not the unit test. The differential probe types the setup/op/print as
+**three short direct-mode lines** (A$ persists across them): a single long line lets openMSX's
+`type` Enter land mid-typing and silently drop the line (a real-speed keyboard-scan limit —
+observed as a deterministic capture miss on one 44-char case; short lines fix it).
+
+**Gates.** `make string-acceptance` PASS (six halves: crunch + execute + compare + functions +
+inkey + **mid-stmt** — reference-lock + zerobas==reference on the repack machine + the range-
+error divergence); lean `basic.rom` byte-identical (pinned sha256 unchanged); unit-test 43/43
+(new `tests/test_mid_stmt.py`); `diskbasic-acceptance-repack` 34/34.

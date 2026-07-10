@@ -5,8 +5,17 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — BASIC `MID$` statement (a Phase-3 string follow-on slice)
 
-**Status: PROPOSED — S1 (spec + sign-off), awaiting decision on §6.** User-selected
-2026-07-10 as the next Phase-3 session item, from the standing string-engine deferral list
+**Status: IMPLEMENTED & SHIPPED (S1–S3 all done, 2026-07-10).** All §6 decisions accepted
+as recommended. S2 confirmed the statement token black-box (leading `$FF $83`, same as the
+MID$ function) and landed the `exec_stmt` dispatch + `ex_mid_stmt` (in-place overwrite,
+`LEN(A$)` invariant, reusing `var_name_key`/`str_get_key`/`eval`/`str_eval`); a host
+unit-test (`tests/test_mid_stmt.py`) covers the overwrite math. S3 added the sixth
+**MID$-statement** half to `make string-acceptance` (differential vs VG-8020 + the range-
+error divergence — reference *Illegal function call* vs our `syntax error`, both abort the
+line); provenance in [`../basic/PROVENANCE.md`](../basic/PROVENANCE.md) → "Phase 3: MID$
+statement". Repack-only, lean `basic.rom` byte-identical; unit-test 43/43, string-acceptance
+PASS, diskbasic-acceptance-repack 34/34. User-selected 2026-07-10 as the next Phase-3 session
+item, from the standing string-engine deferral list
 ([`spec-basic-string-engine.md`](spec-basic-string-engine.md) §1 "Out of scope":
 "`MID$` as an assignment *statement*"; [`spec-basic-string-functions.md`](spec-basic-string-functions.md)
 §1: "the `MID$` *assignment statement* (needs an lvalue path into a string var)"). This
