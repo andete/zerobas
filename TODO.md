@@ -21,7 +21,7 @@ item — do **one item per session** to keep context lean.
 |---|---|---|
 | **1 — loader-stub BASIC + transports + standardization** | just enough MSX-BASIC to run `.BAS`/binary loader stubs; tape + disk read/write; standard DSKIO/`HPHYD` interfaces | **✅ closed** |
 | **2 — full disk (Disk BASIC integration)** | the full file-channel verb surface (sequential + random-access + dir mgmt + `CALL FORMAT`), all oracle-validated | **✅ verb surface complete** — only the Tier-2 provider oracle (a distinct DOS-boot sub-track) + a few Phase-3-gated verbs remain |
-| **3+ — full MSX1 BASIC** | floating point, full string engine, arrays, graphics, sound, … | aspirational |
+| **3+ — full MSX1 BASIC** | floating point, full string engine, arrays, graphics, sound, … | aspirational — **first feature landed:** the core **string engine** (`+` concat + LEN/ASC/VAL/CHR$/STR$/LEFT$/RIGHT$/MID$), 2026-07-10 |
 
 ## Phase 1 — committed loader-stub target (✅ closed)
 
@@ -816,8 +816,15 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
 - [ ] **Floating point** — the math pack, `!`/`#`/`%` type suffixes,
       `DEFINT`/`DEFSNG`/`DEFDBL`/`DEFSTR`, and the float crunch tokens
       (decimal ≥ 32768 etc.) currently out of scope
-- [ ] **Full string engine** — string variables + heap, `+` concat,
-      `LEN MID$ LEFT$ RIGHT$ INSTR STR$ VAL CHR$ ASC HEX$ OCT$ STRING$ SPACE$ INKEY$`
+- [~] **Full string engine** — **core landed 2026-07-10** (the first Phase-3 feature):
+      `+` concat + `LEN ASC VAL CHR$ STR$ LEFT$ RIGHT$ MID$` in the repack build
+      (own-design temp ring + STRMAX clamp, no heap/GC; integer-only VAL). Spec
+      [`docs/spec-basic-string-engine.md`](docs/spec-basic-string-engine.md), provenance
+      [`basic/PROVENANCE.md`](basic/PROVENANCE.md) → "Phase 3: string engine", gate
+      `make string-acceptance`. **Still deferred:** string comparison (`=`/`<`/`>`),
+      `INSTR HEX$ OCT$ STRING$ SPACE$ INKEY$`, the MID$ statement, floats in VAL/STR$,
+      the real heap+descriptor model, string arrays/`DIM`, and STRMAX→255 (a RAM
+      re-architecture, spec §5a)
 - [ ] **Arrays + `DIM`** (numeric and string, multi-dimensional)
 - [ ] **`^`** and the math functions
       `ABS SGN INT SQR SIN COS TAN ATN LOG EXP RND FIX CINT CSNG CDBL`

@@ -2461,3 +2461,114 @@ captured CF-3300 format for that geometry; FUNCTIONAL — a file written right a
 FORMAT round-trips (`T.DAT` = `hi\r\n\x1a`), proving the BPB, FAT and dir are all valid.
 The boot-code/OEM divergence is intentional and not compared. test720.dsk is never
 touched (the probe uses a throwaway image).
+
+## Phase 3: string engine — concat (`+`) + LEN/ASC/VAL/CHR$/STR$/LEFT$/RIGHT$/MID$ (basic/str-engine.asm, basic/kwtable.inc, basic/strvar.asm, basic/expr.asm, basic/print.asm, basic/sysvars.inc)
+
+The **first Phase-3 language feature**: the minimal string-VALUE layer (the
+`$`-variable that only held a literal for PRINT — see the previous section) grown
+into a real **string expression engine** — `+` concatenation and the eight core
+string functions LEN / ASC / VAL (string→number) and CHR$ / STR$ / LEFT$ / RIGHT$ /
+MID$ (→string). Spec: [`docs/spec-basic-string-engine.md`](../docs/spec-basic-string-engine.md)
+(SIGNED OFF). Scope-deferred (documented there, not built): string comparison
+(`=`/`<`/`>` on strings), INSTR/HEX$/OCT$/STRING$/SPACE$/INKEY$, the MID$ statement,
+and floats in VAL/STR$.
+
+**Repack-only, quarantined by construction.** The whole engine is assembled ONLY in
+the repack build (`IF ROM_BASE < $4000`), into the page-0 low region `$2812-$3FFF`
+freed by the C-BIOS repack (see the cbios-repack provenance + `docs/cbios-repack-provenance.md`).
+The byte-full lean `basic.rom` (default `ROM_BASE=$4000`) is **unchanged** — it keeps
+the minimal string-VALUE layer, and every page-1 hook below is a gated near-zero-byte
+branch that folds back to the lean `str_eval` path, so the lean image stays
+**byte-identical** (the pinned-sha256 regression guard). No new value in this section
+touches the lean build.
+
+**Clean-room stance.** Every value the engine emits or decodes is oracle-sourced (the
+token bytes) or public-language-reference-sourced (the operator/function *semantics*);
+everything structural — the fixed 3-slot temp-result ring, the STRMAX length clamp, the
+inline `[len][bytes]` descriptor, the dup-then-slice substring strategy — is zerobas's
+**own design**. The reference ROM's string heap + descriptor table + garbage collector
+are deliberately **not** reproduced. No disassembly was read.
+
+### Keyword tokens (basic/sysvars.inc, basic/kwtable.inc)
+
+Captured black-box from the Philips VG-8020 crunch by `probes/basic/basic_probe_str_tokens.py`
+(reference side only — reusing the crunch-probe harness, no disassembly; the probe
+self-asserts) and cross-checked against the contiguous MSX2 TH Table 2.20 function
+table. The eight entries were wired into the relocated `kwtable` (S3), so they crunch
+**and** LIST-detokenise for free; the whole-corpus + string-keyword crunch is proven
+byte-identical to the VG-8020 by `make string-acceptance` (the `basic_probe_crunch.py
+--zb-machine` half) on the repack build.
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `LEN` function token | `$FF $92` | basic_probe_str_tokens.py (oracle); MSX2 TH Table 2.20 | sourced |
+| `LEFT$` function token | `$FF $81` | basic_probe_str_tokens.py (oracle); MSX2 TH Table 2.20 | sourced |
+| `RIGHT$` function token | `$FF $82` | basic_probe_str_tokens.py (oracle); MSX2 TH Table 2.20 | sourced |
+| `MID$` function token | `$FF $83` | basic_probe_str_tokens.py (oracle); MSX2 TH Table 2.20 | sourced |
+| `STR$` function token | `$FF $93` | basic_probe_str_tokens.py (oracle); MSX2 TH Table 2.20 | sourced |
+| `VAL` function token | `$FF $94` | basic_probe_str_tokens.py (oracle); MSX2 TH Table 2.20 | sourced |
+| `ASC` function token | `$FF $95` | basic_probe_str_tokens.py (oracle); MSX2 TH Table 2.20 | sourced |
+| `CHR$` function token | `$FF $96` | basic_probe_str_tokens.py (oracle); MSX2 TH Table 2.20 | sourced |
+
+### `+` concatenation + the temp-result ring (basic/str-engine.asm, basic/strvar.asm)
+
+The concat-aware `str_eval` wrapper (strvar.asm) folds a trailing `+ operand` chain
+for every string context at once (LET, PRINT, PRINT#, the file-write path, …) with no
+caller edits; `str_concat_tail` (str-engine.asm) copies operand 1 into a ring temp and
+appends each further operand, clamped to STRMAX.
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `+` concatenation semantics: left-to-right, result length = sum of operand lengths | — | public MSX-BASIC language reference | sourced |
+| String-result **temp ring**: 3 slots (`STRNTMP=3`), round-robin `[len][bytes]` descriptors | `STRTMP`/`STRTMP_IDX`/`STRSCR` in free page-3 RAM (`$E240–$E55E`, below the `$E560` file/cassette buffers) | **own design** — the reference heap+GC is not reproduced; N=3 covers a binary op's ≤2 live operands + 1 result, a deeper nest reuses the oldest slot (documented depth-truncation) | quarantined |
+| **STRMAX** length clamp: strings longer than STRMAX are truncated | `64` (repack) / `32` (lean) | **own design** — the 255-faithful clamp overflows page-3 RAM by ~2 KB (spec §5a), so a smaller cap is chosen; extra bytes are dropped, no error | quarantined |
+| `str_alloc_temp` / `str_copy_desc` / `str_append_desc` / `str_concat_tail` ring allocator + append algorithm | — | **own code**; not derived from any disassembly | sourced |
+
+### The eight verb handlers (basic/str-engine.asm, reached via gated hooks in basic/expr.asm, basic/strvar.asm, basic/print.asm)
+
+Three near-zero-byte gated page-1 hooks route into the low-region handlers: `ev_f_ff`
+(expr.asm) → `ev_ff_strnum` for LEN/ASC/VAL; `str_eval_maybe_mki` (strvar.asm) →
+`str_func_ff` for CHR$/STR$/LEFT$/RIGHT$/MID$; PRINT's item loop (print.asm) tries
+`str_eval` on a leading `$FF` token (so `PRINT CHR$(…)` prints, PEEK/… fall back to
+numeric with HL restored). The substring verbs **dup the source into a fresh ring temp,
+then slice in place** (LEFT$ = truncate; RIGHT$/MID$ = `LDIR` the slice to the front) so
+only ONE temp address must survive the numeric-argument eval.
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `LEN`/`ASC` semantics (byte length; ASCII code of char 1, `ASC("")` = error) | — | public MSX-BASIC language reference | sourced |
+| `LEFT$`/`RIGHT$`/`MID$` semantics (1-based MID$ position, head/tail count clamped to available bytes, MID$ optional length → to end) | — | public MSX-BASIC language reference | sourced |
+| `STR$(n)` decimal render, leading blank for `n ≥ 0` | — | public MSX-BASIC language reference; reuses `pu_fmt_int`/`div10` (basic/print.asm, already sourced) | sourced |
+| `VAL(a$)` **integer-only** leading-number parse (spec D-E) | — | **own design** — MSX VAL parses floats; the leading-parse of an integer prefix is the loader-stub subset, floats deferred | quarantined |
+| `CHR$(n)` = a 1-byte string of the **low 8 bits** of n (no range error on `n > 255`) | — | **own design** leniency — MSX errors on out-of-range; documented in-file | quarantined |
+| `ev_ff_strnum`/`str_val_parse`/`str_func_ff` + the CHR$/STR$/LEFT$/RIGHT$/MID$ slice code; the `ev_str_arg` IX↔HL bridge and the three gated hooks | — | **own code** (mirrors the existing `ev_f_ff` / `str_eval` dispatch); not derived from any disassembly | sourced |
+
+### PRINT leading-literal concat reroute (basic/print.asm)
+
+A PRINT item *leading with a string literal* followed by `+` (`PRINT "a"+"b"`,
+`PRINT "n="+STR$(x)`) is a string concatenation, but the fast char-by-char literal path
+skipped the `+`-folding `str_eval`. `str_lit_concat_q` (repack-gated) look-aheads past
+the literal — skipping the same intervening spaces `str_concat_tail` does — for a
+trailing `PLUS_TOKEN`, and reroutes to `str_eval` when found; a plain literal keeps the
+fast path (so a literal longer than STRMAX still prints in FULL, un-clamped). This was
+**found by the `string-acceptance` gate**: without it `PRINT "a"+"b"` mis-parsed the
+`+` as numeric and printed `AB 0 CD`.
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| A string literal followed by `+` is a string concatenation (route to `str_eval`) | — | public MSX-BASIC language reference (string `+`) | sourced |
+| `str_lit_concat_q` look-ahead + reroute; plain-literal fast path preserved | — | **own code**; not derived from any disassembly | sourced |
+
+**Quarantined items (this section):** the fixed 3-slot temp ring (no heap/GC), the
+STRMAX length clamp, integer-only VAL, and CHR$'s low-byte leniency — all deliberate
+own-design simplifications of MSX-BASIC's heap-backed float-capable string model,
+chosen to fit the repack window's RAM budget and the loader-first scope. None is a
+value lifted from any reference ROM or disassembly; each is documented in
+`basic/str-engine.asm` and the spec. A future RAM re-architecture could lift STRMAX
+toward the MSX-faithful 255 (spec §5a) and a float pass could complete VAL/STR$.
+
+**Gates.** `make string-acceptance` PASS (8 keywords crunch byte-identical to the
+VG-8020 + carry the captured `$FF`-suffix; 14 execute cases print the right screen
+output on the repack machine); lean `basic.rom` byte-identical; unit-test 40/40 (new
+`tests/test_str_engine.py` + `tests/test_str_verbs.py`); `diskbasic-acceptance-repack`
+34/34 (shared PRINT parse unregressed); `repack-boot` PASS; audit-citations clean.

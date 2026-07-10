@@ -5,12 +5,15 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — BASIC string engine (core) — the first Phase-3 feature
 
-**Status: SIGNED OFF — IN PROGRESS. S1–S5 done (2026-07-10); S6 (close-out) next.**
+**Status: SIGNED OFF — IMPLEMENTED & SHIPPED (S1–S6 all done, 2026-07-10).**
 All six decisions settled (§6): temp ring N=3; core verb set; **`STRMAX`=64** (the 255-faithful
 option overflows page-3 RAM by ~2 KB — see §5a); repack-only + gated repack machine;
 integer-only `VAL`; **string comparison deferred**. S3 delivered the re-layout + `+` concat
 spine; **S4 delivered the eight verb handlers** (LEN/ASC/VAL + CHR$/STR$/LEFT$/RIGHT$/MID$,
-see §8) — the merged main ROM now boots + ships them.
+see §8); S5 wired the standing `make string-acceptance` gate; **S6 closed out** the arc
+(provenance in [`../basic/PROVENANCE.md`](../basic/PROVENANCE.md) → "Phase 3: string engine",
+docs + TODO/memory). The merged main ROM boots + **ships** the engine
+(`zerobas-main-eu.ips`/`.bps`); the byte-full lean `basic.rom` is unchanged.
 First feature of Phase 3, consuming the ~5.5 KB reclaimed by the C-BIOS repack arc
 ([`spec-cbios-repack-tooling.md`](spec-cbios-repack-tooling.md)). This is the *how* +
 *decisions*; it follows the same shape as the repack spec.
@@ -309,8 +312,14 @@ byte-identity instead of page-1 equality.
    unit-test 40/40, `diskbasic-acceptance-repack` 34/34 (shared PRINT parse unregressed),
    audit-citations clean. (No `bdos-acceptance-repack`: the BDOS gate exercises the disk ROM,
    which the string arc does not touch.)
-6. **S6 — close-out:** provenance (`basic/PROVENANCE.md` entries), docs harvest, memory +
-   TODO update.
+6. **S6 — close-out.** ✅ (2026-07-10.) Provenance: [`../basic/PROVENANCE.md`](../basic/PROVENANCE.md)
+   gained the **"Phase 3: string engine"** section (the 8 oracle-sourced keyword tokens; the
+   `+` concat + temp-ring own-design quarantine; the eight verb handlers; the print.asm
+   leading-literal concat reroute), with the four quarantined own-design simplifications
+   (3-slot ring / STRMAX clamp / integer-only VAL / CHR$ low-byte) called out. Docs: this
+   spec marked IMPLEMENTED & SHIPPED; [`../TODO.md`](../TODO.md) records the feature as the
+   first Phase-3 item landed. Memory + arc note updated. No new code — gates unchanged
+   (string-acceptance PASS, lean byte-identical, unit-test 40/40).
 
 **Gates (must stay green):** lean `basic.rom` byte-identical (regression-safe by
 construction); unit-test 40/40; bdos-acceptance 12/12; diskbasic-acceptance 34/34;
