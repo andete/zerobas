@@ -109,10 +109,19 @@ being integer-only).
 
 ## 4. Clean-room / provenance
 
-- **Token selector values** for every new keyword (`LEN`/`LEFT$`/`RIGHT$`/`MID$`/`CHR$`/
-  `ASC`/`STR$`/`VAL`) are **oracle-locked**: captured black-box from the VG-8020 crunch
-  via `probes/basic/basic_probe_crunch.py` and cross-checked against MSX2 TH Table 2.20.
-  Never read from a reference ROM disassembly ([[no-reference-rom-disasm]]).
+- **Token selector values** for every new keyword are **oracle-locked** (captured 2026-07-10,
+  black-box VG-8020 crunch, [`probes/basic/basic_probe_str_tokens.py`](../probes/basic/basic_probe_str_tokens.py)
+  reusing the crunch-probe harness) **and** cross-checked against the sourced MSX2 TH Table 2.20 contiguous function
+  table (`…LEN $92, STR$ $93, VAL $94…`, already in `basic/sysvars.inc`). Never a reference
+  ROM disassembly ([[no-reference-rom-disasm]]). Observed `$FF`-suffixes:
+
+  | `LEN` | `LEFT$` | `RIGHT$` | `MID$` | `STR$` | `VAL` | `ASC` | `CHR$` |
+  |---|---|---|---|---|---|---|---|
+  | `92` | `81` | `82` | `83` | `93` | `94` | `95` | `96` |
+
+  Note: zerobas today emits these keywords as **verbatim ASCII** (it never tokenised them;
+  `LEN=` relied on the host test injecting `FF 92`), so adding the entries is purely
+  additive — the lean build is unaffected (entries gated out), and nothing regresses.
 - **Semantics** (1-based `MID$`, `LEFT$` clamps, `ASC ""` = error, `VAL` leading-parse)
   come from the **public MSX-BASIC language reference**.
 - **Layout** (temp ring, descriptor, STRMAX clamp) is **own-design**, quarantined in
@@ -159,6 +168,23 @@ optional future RAM re-architecture (relocate/shrink the file-channel + cassette
 to free ~2 KB contiguous — a sub-project that touches `fat.asm` + cassette code and
 re-runs the disk + tape gates). Not worth bolting onto the first string feature.
 
+### 5b. ROM layout — the reloc build must re-distribute includes (verified 2026-07-10)
+
+The S3/S4 reloc build put **all** code at $4000+ (page 1, byte-identical to lean) and left
+the reclaimed low region $2812–$3FFF as `$00` pad — it proved *relocation* without yet
+*using* the space. Measured now: reloc **page 1 is full to $7FFF**, low region is 5661 B of
+`$00`. So the string engine cannot be added inline in page-1 structures (`kwtable`, the
+`expr.asm` factor) — any inline growth pushes page 1 past $7FFF. **The engine, its keyword
+table, and its evaluator handlers go in the low region**, and enough existing page-1
+includes are **moved down** into the low region to free the page-1 room the tokeniser /
+evaluator hooks need. Cross-slot reach is a non-issue (all in-slot; S3-audit proved the
+interpreter is 100 % label-based). Consequence: the reloc build's page-1 body **no longer
+equals lean's** — `tools/check_reloc.py`'s "page-1 identical" assertion was a pure-relocation
+(no-features) property and is **superseded** here by the durable regression guarantee:
+**the lean `basic.rom` (default `ROM_BASE=$4000`) stays byte-identical**, enforced by the
+$8000 overflow guard. `check_reloc.py` is updated in S3 to check the low region + lean
+byte-identity instead of page-1 equality.
+
 ## 6. Decisions — RESOLVED (2026-07-10)
 
 - **D-A — temp model → small fixed temp ring, N=3.** (§3a.) Own-design; no heap/GC.
@@ -190,13 +216,18 @@ re-runs the disk + tape gates). Not worth bolting onto the first string feature.
 
 ## 8. Session plan (slices, each commits at its gate)
 
-1. **S1 — this spec + sign-off.**
-2. **S2 — token oracle + tokeniser.** Capture the 8 selector values (probe), add the
-   crunch table entries, gate `basic_probe_crunch.py`. No handlers yet.
-3. **S3 — temp ring + `str_expr` + `+` concat.** The evaluator spine; prove `A$+B$+C$`.
-4. **S4 — the verbs.** LEN/ASC/CHR$/LEFT$/RIGHT$/MID$/STR$/VAL (+ D-F compare if taken).
+1. **S1 — this spec + sign-off.** ✅
+2. **S2 — clean-room token lock.** ✅ Capture the 8 selector values black-box (done) +
+   add the token equates + provenance. The `kwtable` entries + tokeniser wiring move to S3
+   (they can't be placed until the re-layout frees page-1 room — §5b). No differential on
+   the byte-full lean build; the zerobas-side crunch check runs on the repack build in S5.
+3. **S3 — low-region re-layout + temp ring + `str_expr` + `+` concat + tokeniser wiring.**
+   Move page-1 includes into the low region to free room; update `check_reloc.py` (§5b);
+   add the `kwtable` entries; build the evaluator spine; prove `A$+B$+C$`.
+4. **S4 — the verbs.** LEN/ASC/CHR$/LEFT$/RIGHT$/MID$/STR$/VAL.
 5. **S5 — repack machine + `string-acceptance` gate** (D-D): install the EU repack
-   machine, port the string probes onto it, wire the gate.
+   machine, run a repack-build crunch differential for the 8 keywords (against the §4
+   captured bytes) + the functional string probes, wire the gate.
 6. **S6 — close-out:** provenance (`basic/PROVENANCE.md` entries), docs harvest, memory +
    TODO update.
 

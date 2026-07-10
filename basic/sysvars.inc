@@ -196,6 +196,20 @@ PEEK_TOKEN      equ     $97     ; spec-tokens-statements.md
 ; $92, VAL $94…); the LEN= gate (test_open_len / diskbasic-acceptance) types a real
 ; LEN= line, so a wrong suffix here fails the parse and the gate catches it.
 LEN_TOKEN       equ     $92     ; LEN function-token suffix (after PEEK_PREFIX)
+; String-engine function tokens (Phase 3, repack-only — docs/spec-basic-string-engine.md).
+; All $FF-prefixed function suffixes from the same contiguous MSX-BASIC function table as
+; LEN/STR$/VAL above (MSX2 TH Table 2.20) AND black-box-captured from the Philips VG-8020
+; crunch 2026-07-10 (scratchpad/capture_str_tokens.py; e.g. `a$=left$("hi",1)` -> ...EF FF
+; 81 28...). The `$` in a keyword is part of the name (like MKI$); the equate drops it (…D).
+; These crunch entries land in kwtable only in the repack build (the byte-full lean build
+; keeps emitting these words verbatim, as it does today). No disassembly.
+LEFTD_TOKEN     equ     $81     ; LEFT$(a$,n)  -> $FF $81
+RIGHTD_TOKEN    equ     $82     ; RIGHT$(a$,n) -> $FF $82
+MIDD_TOKEN      equ     $83     ; MID$(a$,p,n) -> $FF $83
+STRD_TOKEN      equ     $93     ; STR$(n)      -> $FF $93
+VAL_TOKEN       equ     $94     ; VAL(a$)      -> $FF $94
+ASC_TOKEN       equ     $95     ; ASC(a$)      -> $FF $95
+CHRD_TOKEN      equ     $96     ; CHR$(n)      -> $FF $96
 ; Memory / I-O access tokens (MSX2 TH Table 2.20; oracle-confirmed byte-for-byte
 ; via basic_probe_crunch.py — see PROVENANCE.md). VPOKE / OUT are one-byte
 ; statement tokens; VPEEK / INP are $FF-prefixed two-byte function tokens (like
