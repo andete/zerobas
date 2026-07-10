@@ -577,6 +577,9 @@ exec:
 exec_stmt:
                 xor     a                   ; each statement starts on the screen;
                 ld      (PRDEST),a          ; only PRINT#'s own item loop sets dest=file
+    IF ROM_BASE < $4000
+                ld      (TMISMATCH),a       ; A is still 0: clear the D-2 flag (a stale
+    ENDIF                                   ; set would misfire a later statement's check
                 call    skip_spaces         ; leading spaces are skipped (spec §5)
                 ld      a,(hl)
                 or      a
@@ -755,6 +758,14 @@ ex_let:
                 jr      nz,ex_let_err
                 inc     hl
                 call    eval                ; DE = value, HL = cursor (BC clobbered)
+    IF ROM_BASE < $4000
+                ld      a,(TMISMATCH)       ; D-2: `R=A$<5` / `R=A$` set the comparator's
+                or      a                   ; type-mismatch flag instead of a value
+                jr      z,ex_let_ok
+                pop     bc                  ; discard the saved key (mirrors ex_let_err)
+                jp      type_mismatch_error
+ex_let_ok:
+    ENDIF
                 pop     bc                  ; BC = key
                 push    hl                  ; guard cursor across var_set_key
                 call    var_set_key         ; var[key] = DE
@@ -809,6 +820,27 @@ stmt_error:
 err_syntax:
                 db      "syntax error",13,10,0
 
+; --- type_mismatch_error: D-2's statement-level abort (repack build only) ---
+; string-compare S2 (spec-basic-string-compare.md §3c): the comparator has already
+; set TMISMATCH (+ ERRMARK) and yielded 0 when a string met a non-string; the
+; repack-gated driver that owns the condition (ex_if / ex_let / exp_num) jumps
+; here right after its eval()/ev_rel call. Mirrors stmt_error exactly (zero
+; PRDEST, ERRMARK already set by the comparator, print, ret to the prompt) --
+; ev_rel has no mid-expression unwind, so this IS the line abort, realized at the
+; statement boundary. Message is zerobas's OWN lowercase wording (like "syntax
+; error") -- NOT MSX's verbatim "?Type mismatch Error" string (D-2: reference
+; wording we don't copy).
+    IF ROM_BASE < $4000
+type_mismatch_error:
+                xor     a
+                ld      (PRDEST),a
+                ld      hl,err_type_mismatch
+                call    print_string
+                ret
+err_type_mismatch:
+                db      "type mismatch",13,10,0
+    ENDIF
+
 ; --- ex_letkw: optional LET keyword before an assignment -------------------
 ex_letkw:
                 inc     hl                  ; past the LET token
@@ -853,6 +885,11 @@ ex_if:
                 inc     hl                  ; past the IF token
                 call    skip_spaces
                 call    eval                ; DE = condition, HL after expr
+    IF ROM_BASE < $4000
+                ld      a,(TMISMATCH)       ; D-2: `IF A$<5 THEN...` aborts before either
+                or      a                   ; clause runs (both the THEN and GOTO forms
+                jp      nz,type_mismatch_error  ; share this one eval() call)
+    ENDIF
                 call    skip_spaces
                 ld      a,(hl)
                 cp      THEN_TOKEN

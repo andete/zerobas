@@ -635,3 +635,167 @@ exp_maybe_strfn:
                 call    print_strval
                 pop     hl
                 jp      exp_loop
+
+; ===========================================================================
+; string-compare S2 (repack build only): the six relational operators on two
+; string operands (spec-basic-string-compare.md). Reused spine: ev_rel (expr.asm)
+; already factors a comparison into "requested bits" (relop_bit + the compound-
+; form merge) AND'd against an "actual bit" (1=less/2=equal/4=greater) from the
+; two operands -- today cmp16_bits. This substitutes ONE thing: an UNSIGNED-BYTE
+; string comparator (str_cmp_bits) producing that same 1/2/4 encoding, plus a
+; type-mismatch signal (D-2) when a string meets a non-string.
+;
+; Clean-room: original code. Comparison SEMANTICS (unsigned byte-by-byte,
+; shorter-is-less, case-sensitive, §2 D-3) are the standard MSX-BASIC string-
+; ordering contract (public language reference), oracle-locked black-box on the
+; Philips VG-8020 (probes/basic/basic_probe_str_cmp.py) -- not assumed. The
+; relation-bit encoding is zerobas's own (matches cmp16_bits, expr.asm). No
+; disassembly.
+; ===========================================================================
+
+; --- str_cmp_bits: UNSIGNED byte-by-byte compare of two [len][bytes] descriptors
+; in: HL = lhs descriptor, DE = rhs descriptor.
+; out: A = 1 (lhs<rhs) / 2 (equal) / 4 (lhs>rhs) -- the same encoding cmp16_bits
+;      (expr.asm) produces for the numeric path, so the caller's `and c` (requested
+;      vs actual) is unchanged. Compares corresponding bytes by raw unsigned value;
+;      at the first differing byte the smaller byte's string is less (spec §2.1);
+;      if all shared bytes match, the SHORTER string is less (§2.2); same length +
+;      all bytes equal -> equal (§2.3). Case-sensitive: no folding (§2.4).
+; Preserves BC (the caller keeps its requested-bits register in C across the call).
+; Clobbers A, DE, HL, flags.
+str_cmp_bits:
+                push    bc                  ; guard the caller's C (requested bits)
+                ld      a,(hl)              ; A = lhslen
+                ld      b,a                 ; B = lhslen (temp, for the tie-break)
+                ld      a,(de)              ; A = rhslen
+                ; Tie-break bit (used only if every compared byte matches): the
+                ; SHORTER string is less (§2.2); equal lengths -> equal (§2.3).
+                cp      b                   ; A(rhslen) - B(lhslen)
+                jr      z,scb_tb_eq
+                jr      c,scb_tb_gt         ; rhslen < lhslen -> lhs is the longer -> lhs>rhs
+                ld      a,1                 ; rhslen > lhslen -> lhs is the shorter -> lhs<rhs
+                jr      scb_tb_push
+scb_tb_eq:
+                ld      a,2
+                jr      scb_tb_push
+scb_tb_gt:
+                ld      a,4
+scb_tb_push:
+                push    af                  ; stash the tie-break bit across the byte scan
+                ; minlen = min(lhslen, rhslen) via the existing str_min_bc helper
+                ; (preserves BC/DE/HL); re-read both lengths fresh (A was clobbered above).
+                ld      a,(de)              ; A = rhslen
+                ld      c,a
+                ld      b,0                 ; BC = rhslen (str_min_bc's "count")
+                ld      a,(hl)              ; A = lhslen (str_min_bc's "length")
+                call    str_min_bc          ; A = min(lhslen, rhslen)
+                ld      b,a                 ; B = minlen (loop counter)
+                inc     hl                  ; HL -> lhs bytes
+                inc     de                  ; DE -> rhs bytes
+                ld      a,b
+                or      a
+                jr      z,scb_tie           ; minlen 0 -> nothing to compare
+scb_loop:
+                ld      a,(de)              ; A = rhsbyte
+                cp      (hl)                ; vs lhsbyte (raw unsigned compare)
+                jr      z,scb_eqbyte
+                jr      c,scb_gt            ; rhsbyte < lhsbyte -> lhs > rhs
+                jr      scb_lt              ; rhsbyte > lhsbyte -> lhs < rhs
+scb_eqbyte:
+                inc     hl
+                inc     de
+                djnz    scb_loop
+scb_tie:
+                pop     af                  ; A = the stashed tie-break bit
+                pop     bc                  ; restore the caller's bits (C)
+                ret
+scb_gt:
+                pop     af                  ; discard the stashed tie-break bit
+                ld      a,4
+                pop     bc
+                ret
+scb_lt:
+                pop     af
+                ld      a,1
+                pop     bc
+                ret
+
+; --- type_mismatch_set: D-2's comparator-level signal ------------------------
+; A string on one side of a relational and a non-string on the other (or a bare
+; string LHS with no relop at all) -- sets ERRMARK (the generic expression-error
+; landmark, ev_f_err's convention) plus the distinct TMISMATCH marker, and yields
+; 0 (false). This does NOT abort the line itself: ev_rel has no mid-expression
+; unwind (every existing evaluator error works this way -- see ev_f_err), so the
+; real abort happens at the STATEMENT boundary, once eval() returns, via the
+; repack-gated post-eval check in ex_if / the numeric-assignment / PRINT-item
+; drivers (interp.asm / print.asm) jumping to type_mismatch_error (interp.asm).
+; out: DE = 0; ret. Clobbers A.
+type_mismatch_set:
+                ld      a,$DD               ; expression-error marker (ev_f_err convention)
+                ld      (ERRMARK),a
+                ld      a,1
+                ld      (TMISMATCH),a
+                ld      de,0
+                ret
+
+; --- ev_rel_str: the string-compare path of ev_rel --------------------------
+; Reached from expr.asm's ev_rel (a near-zero-byte gated hook there) when the LHS
+; of a relational probes as a string operand (str_eval succeeded). Entered with
+; HL = cursor past the LHS operand, STRPTR -> the LHS descriptor.
+;
+; Snapshots the LHS into a ring temp (str_dup_temp -- D-4's "reuse a temp-ring
+; slot" -- the same dup-then-operate discipline the substring verbs use) so
+; evaluating the RHS can't clobber it via STRSCR or a reused ring slot (e.g. two
+; literal operands would otherwise BOTH land in STRSCR and the second overwrites
+; the first before the compare). Reads the relop token(s) with the EXISTING
+; relop_bit + compound-form merge (<=/>=/<> fall out unchanged), evaluates the RHS
+; via str_eval, then compares with str_cmp_bits and joins the numeric path's
+; convention (`and c` -> -1/0).
+;
+; A bare string LHS with no following relop, or a non-string RHS (`A$ < 5`), is
+; D-2's type mismatch -> type_mismatch_set (yields 0, ERRMARK+TMISMATCH set).
+; out: DE = -1/0; ret. Clobbers A, BC, DE, HL (like the numeric ev_rel body).
+ev_rel_str:
+                push    hl
+                pop     ix                  ; IX = cursor (bridge back)
+                call    str_dup_temp        ; HL = LHS snapshot in a ring temp (D-4)
+                push    hl                  ; guard the LHS temp addr across the RHS parse
+                call    ev_sp
+                ld      a,(ix+0)
+                call    relop_bit
+                jp      nc,ers_mismatch     ; bare string LHS, no relop -> D-2
+                ld      c,b                 ; C = requested relation bits
+                inc     ix
+                call    ev_sp
+                ld      a,(ix+0)
+                call    relop_bit           ; a second relop? (<=, >=, <>)
+                jr      nc,ers_rhs
+                ld      a,c
+                or      b
+                ld      c,a                 ; merge the two relation bits
+                inc     ix
+ers_rhs:
+                push    bc                  ; guard the bits across the RHS eval
+                push    ix
+                pop     hl
+                call    str_eval            ; STRPTR -> RHS desc, HL advanced, CF=ok
+                pop     bc                  ; C = bits (POP doesn't touch flags)
+                jp      nc,ers_mismatch     ; RHS not a string -> D-2 (`A$ < 5`)
+                push    hl                  ; save the cursor (past the RHS)
+                ld      hl,(STRPTR)         ; HL = RHS descriptor addr
+                ex      (sp),hl             ; stack top := RHS desc addr; HL = cursor
+                push    hl
+                pop     ix                  ; IX = cursor (bridge back)
+                pop     de                  ; DE = RHS descriptor addr
+                pop     hl                  ; HL = LHS descriptor addr (the snapshot)
+                call    str_cmp_bits        ; A = actual relation bit (1/2/4); preserves C
+                and     c                   ; intersect requested with actual
+                jr      z,ers_false
+                ld      de,$FFFF            ; true = -1
+                ret
+ers_false:
+                ld      de,0                ; false = 0
+                ret
+ers_mismatch:
+                pop     hl                  ; discard the guarded LHS temp addr
+                jp      type_mismatch_set

@@ -378,7 +378,9 @@ CAS_IN_MODE     equ     8       ; FCH_MODES value: OPEN"CAS:" FOR INPUT (INPUT# 
 ;   STRSCR     $E458 .. $E499   65 B             str_eval literal/MKI$/INPUT$ scratch
 ;   STRTMP     $E499 .. $E55C   3 * 65 = 195 B   concat/function result ring
 ;   STRTMP_IDX $E55C            1 B              round-robin cursor (0..N-1)
-;   -> top $E55D, 3 B under the $E560 cassette/file buffers.
+;   STRCAT_R   $E55D .. $E55F   2 B              concat accumulator pointer
+;   TMISMATCH  $E55F            1 B              string-compare D-2 flag (S2)
+;   -> top $E560, exactly the cassette/file WBUF boundary (no spare byte left).
 STRSCR          equ     STREND              ; $E458: str_eval scratch, above the store
 STRNTMP         equ     3                   ; result-ring depth (spec D-A, N=3)
 STRTMPSZ        equ     1 + STRMAX          ; each slot = [len][bytes:STRMAX] = 65 B
@@ -388,6 +390,17 @@ STRTMP_IDX      equ     STRTMP + STRNTMP*STRTMPSZ  ; $E55C: round-robin cursor (
 ; of one string expression (str_concat_tail). Stored (not recomputed from STRTMP_IDX)
 ; so a nested string-function operand that allocates its own ring slot cannot move it.
 STRCAT_R        equ     STRTMP_IDX + 1      ; $E55D: concat accumulator pointer (2 B)
+; TMISMATCH: string-comparison D-2 marker (spec-basic-string-compare.md §3c) -- set
+; by the comparator (str-engine.asm ev_rel_str / expr.asm's evr_rhs symmetric guard)
+; alongside ERRMARK when one side of a relational is a string and the other is not
+; (or a bare string with no relop at all). The repack-gated statement drivers
+; (ex_if / the numeric-assignment / PRINT-item paths) check it right after their
+; eval/ev_rel call and, if set, abort the line via type_mismatch_error (interp.asm)
+; -- ev_rel itself has no mid-expression unwind, so this is a same-statement flag,
+; not a persistent error code. STRCAT_R ends at $E55F, the LAST free byte before
+; disk's WBUF ($E560, see the CROSS-COMPONENT OVERLAP INVARIANT below) -- exactly
+; one spare byte, which this claims.
+TMISMATCH       equ     STRCAT_R + 2        ; $E55F: D-2 type-mismatch flag (1 B)
     ELSE
 STRSCR          equ     $E360   ; [len][bytes:STRMAX] = 33 bytes ($E360..$E380)
     ENDIF

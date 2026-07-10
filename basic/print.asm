@@ -122,6 +122,11 @@ exp_loop:
                 jr      nz,exp_strvar       ; string variable -> print its value
 exp_num:
                 call    eval                ; numeric expression -> DE = value
+    IF ROM_BASE < $4000
+                ld      a,(TMISMATCH)       ; D-2: `PRINT (A$<5)` aborts the whole line
+                or      a                   ; before the newline/next item (mirrors ex_if)
+                jp      nz,type_mismatch_error
+    ENDIF
                 push    hl                  ; print_number divides the value in HL,
                 call    print_number        ;  clobbering the token cursor — guard it
                 pop     hl                  ;  (same as exp_strvar does for print_strval)

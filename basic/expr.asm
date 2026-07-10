@@ -126,6 +126,17 @@ ev_not_do:
 ; 16-bit compare. Relop tokens: '<' $F0, '=' $EF, '>' $EE (Table 2.20); the
 ; compound forms (<=, >=, <>) arrive as two operator tokens and are merged.
 ev_rel:
+    IF ROM_BASE < $4000
+                ; string-compare S2 (repack build only): probe the LHS for a string
+                ; operand before committing to the numeric ev_e below. IX is the live
+                ; token cursor throughout the interpreter (str_eval never touches it),
+                ; so a failed probe leaves IX exactly where it was -- no restore needed,
+                ; the unchanged numeric body below just reads IX itself.
+                push    ix
+                pop     hl                  ; HL = cursor (bridge for the probe)
+                call    str_eval            ; CF set -> LHS is a string; STRPTR->desc
+                jp      c,ev_rel_str        ; string LHS -> the string-compare path
+    ENDIF
                 call    ev_e                ; DE = lhs (arithmetic)
                 call    ev_sp
                 ld      a,(ix+0)
@@ -142,6 +153,23 @@ ev_rel:
                 ld      c,a                 ; merge the two relation bits
                 inc     ix
 evr_rhs:
+    IF ROM_BASE < $4000
+                ; D-2 symmetric case (`5 < A$`): the LHS was just confirmed numeric (we
+                ; only reach evr_rhs via the unchanged ev_e call above), so probe the RHS
+                ; cursor for a string operand BEFORE ev_e reads it as a number -- ev_f_var
+                ; would otherwise silently read A$'s name-keyed numeric shadow cell instead
+                ; of erroring. CF clear (not a string) leaves the cursor untouched (the
+                ; same str_eval failure contract the LHS probe above relies on), so the
+                ; unchanged fallthrough is unaffected.
+                push    bc
+                push    de
+                push    ix
+                pop     hl
+                call    str_eval
+                pop     de
+                pop     bc
+                jp      c,evr_mismatch      ; RHS is a string, LHS was numeric -> D-2
+    ENDIF
                 push    de                  ; lhs
                 push    bc                  ; relation bits (in C)
                 call    ev_e                ; DE = rhs
@@ -155,6 +183,10 @@ evr_rhs:
 evr_false:
                 ld      de,0                ; false = 0
                 ret
+    IF ROM_BASE < $4000
+evr_mismatch:
+                jp      type_mismatch_set   ; sets ERRMARK+TMISMATCH, DE=0, ret (str-engine.asm)
+    ENDIF
 
 ; --- relop_bit: A = token -> CF set & B = relation bit, else CF clear -------
 ; '<' -> 1 (less), '=' -> 2 (equal), '>' -> 4 (greater).
