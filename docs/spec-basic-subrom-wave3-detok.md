@@ -1,15 +1,79 @@
 <!-- Provenance: original work (own-design spec over our own detokeniser + the ratified sub-ROM ABI). -->
-# Spec SKETCH — sub-ROM eviction WAVE 3: the detokeniser core
+# Spec — sub-ROM eviction WAVE 3: the detokeniser core
 
-**Status: SKETCH — not for sign-off yet.** Gated behind wave 2 shipping
-([spec-basic-subrom-wave2-tokeniser.md](spec-basic-subrom-wave2-tokeniser.md)), and
-needs its own investigation pass (the buffer-sizing fork, §5, is unresolved). This
-records the design while it's fresh so wave 2's `kwtable` duplication is understood
-as *temporary*. Cross-refs: LIST/detok [`basic/list.asm`](../basic/list.asm),
-dispatch [`basic/subromcall.asm`](../basic/subromcall.asm), wave-1 tenant
-[`sub/tkfloat.asm`](../sub/tkfloat.asm).
+**🏁 Status: SHIPPED 2026-07-11.** Investigation, sign-off (Q3-a), and implementation
+all complete; all 6 gates green (§7). The detokeniser core is evicted to sub-ROM
+page 0 (`sub/detok.asm` + the shared `basic/detok.inc`), the resident `kwtable` is
+DROPPED (sub copy sole, 626 B), page-1 free grew 704 B → **1354 B** and low-region
+to 1348 B. Cross-refs: shared body [`basic/detok.inc`](../basic/detok.inc), resident
+stub [`basic/list.asm`](../basic/list.asm), sub tenant [`sub/detok.asm`](../sub/detok.asm),
+dispatch [`basic/subromcall.asm`](../basic/subromcall.asm), tokeniser eviction
+[`basic/tokenise.inc`](../basic/tokenise.inc).
 
 ---
+
+## 0. Investigation results (2026-07-11) — the two open forks, resolved
+
+The §3 audit (Q2) and the §5 buffer bound (Q1) were the two things blocking sign-off.
+Both are now settled from the actual source; only Q3 (buffer home) remains.
+
+> **Implementation note (2026-07-11).** The forward audit below was necessary but
+> not sufficient: two *reverse* deps also had to move-or-stay. `ln_div_entry`
+> (program.asm's error line-number print), `hex_digit` and `oct_digit`
+> (str-engine.asm's HEX$/OCT$, which reimplement the nibble/group loop but reuse the
+> digit leaves) all have RESIDENT consumers, so they are kept as resident copies in
+> the repack `list.asm` stub block while the sub-side gets byte-identical twins via
+> the shared include. Same class of trap as wave-1's `neg_de` — run the reverse
+> leaf-audit (who calls INTO the evicted body), not just the forward one.
+
+### 0.1 Q2 — the leaf-audit: the core is a CLEAN LIFT (no BIOS in any `dt_*`)
+
+The full call-graph of the detok region ([`list.asm:91-611`](../basic/list.asm:91))
+resolves to exactly **three** symbols defined *outside* `list.asm`:
+
+| symbol | defined in | role | disposition |
+|---|---|---|---|
+| `pchar` | [`print.asm:358`](../basic/print.asm:358) | the I/O sink (CHPUT / fat_io_putbyte / LPTOUT / cas_wbyte) | **STAYS RESIDENT** — this is the drain |
+| `print_string` | [`repl.asm`](../basic/repl.asm) | a 0-terminated-buffer→`pchar` loop | resident; the number renderers stop calling it (see §0.3) |
+| `div10` | [`print.asm:332`](../basic/print.asm:332) | HL/=10, shift-and-subtract — **pure compute, no BIOS** | **clone sub-side** (the `neg_de`/`upcase` pattern) |
+
+Everything else (`dt_*`, `detok_*`, `dop_*`, `dk_*`/`dk2_*`, `dh_*`, `do_*`,
+`hex_digit`, `oct_digit`, `ln_div_entry`, `de_shift3`) is **local to `list.asm` and
+pure compute**. **No `dt_*` path touches the BIOS** — every emit routes through
+`pchar`, and the only external compute leaf is `div10`. So R-W3-2 (a renderer needs
+the BIOS) is **discharged**: the core is a clean lift plus one `div10` clone.
+
+### 0.2 Q1 — worst-case output bound: ≤475 B → the fork collapses to design A
+
+The sketch (§5) feared a 255-char source line → ~767 B output. **The source line is
+capped at 96 bytes, not 255**: `LINEMAX equ 96`, `LINEBUF` is one page `$E100..$E15F`
+([`sysvars.inc:317`](../basic/sysvars.inc:317)), and **both** program-line entry
+paths bound to it — `read_line` ([`repl.asm`](../basic/repl.asm), Enter guard at
+`LINEBUF+LINEMAX-1`) and `ascii_read_lines` ([`files.asm:1382`](../basic/files.asm:1382),
+same guard, covering MERGE / ASCII-LOAD / CLOAD). So every stored line LIST can
+encounter came from **≤95 source chars**.
+
+The **only** source-expanding token is `?`→`PRINT` (1 char → 5;
+[`tokenise.inc:242`](../basic/tokenise.inc:242)) — all keywords are typed in full,
+so they render at their typed length; numbers render at their typed length. Bounds:
+
+- **Realistic worst case** — densest valid `?:?:…?` in 95 chars = 48 `?` + 47 `:` →
+  `48×5 + 47 = 287` chars.
+- **Absolute ceiling** — every char a `?`→PRINT (5× per char) = `95×5 = 475` chars.
+
+A **512 B one-shot buffer** covers the 475 ceiling with margin. That is trivial RAM,
+so **design B (bounded resumable chunked core) is unnecessary** and **risk R-W3-1
+(resumable-state ABI) is eliminated**. Wave 3 is design **A**: one `CALSLT` per line,
+whole line detokenised into a ≤512 B buffer, drained once.
+
+### 0.3 Consequence for the number renderers — near-zero reshape
+
+`detok_dec` / `detok_hex16` / `detok_oct16` already build their **full** text into
+`NUMBUF` and only touch I/O via a terminal `jp print_string`
+([`list.asm:326`](../basic/list.asm:326), `:345`, `:400`). Reshaping them = replace
+that terminal drain with a **`NUMBUF`→`DETOKBUF` append**. They are already
+buffer-shaped; only `dt_*`/`detok_op`/`detok_kw*`'s direct `pchar` calls become
+`DETOKBUF` appends.
 
 ## 1. Proposal
 
@@ -63,39 +127,49 @@ and one drain-loop stub site (the LIST/SAVE caller). Buffer lives in page-2/3 RA
 below the stack (same discipline as [[tape-realtime-read-buffering]]), byte-address-
 identical sub/main via `sysvars.inc`.
 
-## 5. THE open fork — buffer sizing (must resolve before sign-off)
+## 5. Buffer sizing — RESOLVED: design A, ≤512 B (see §0.2)
 
-detok output is **not** bounded by the ≤255-char source line, because some tokens
-*expand*: `?` (1 byte) → `PRINT` (5), keyword tokens → full keyword text. A
-pathological `?:?:?:…` line (~127 `?:` pairs in 255 source chars) detokenises to
-~760+ chars. So a whole-line buffer is not simply 256 B. Two designs:
+The sketch's fork assumed a 255-char source line (→ ~767 B); the real cap is 96
+(§0.2), so the worst-case output is **≤475 B** (realistic ~287). Design **A** —
+one-shot whole-line buffer, one `CALSLT` per line — is adopted:
 
-- **(A) One-shot worst-case buffer** (~1–1.5 KB in page-2/3 RAM): the core
-  detokenises the **whole line** in one `CALSLT`, the resident side drains it once.
-  **Simple** — no resumable state, one `CALSLT` per line, the core keeps its natural
-  straight-through walk. Costs RAM. *Leaning here* — RAM is cheaper than ABI
-  complexity, and LIST is cold.
-- **(B) Bounded buffer + resumable chunked core**: a small (e.g. 64–128 B) buffer,
-  the core fills it and returns "more pending", the resident side drains and re-
-  `CALSLT`s. Less RAM, but the core must **save/restore its walk state** (HL source
-  cursor + which `dt_*` state + partial multi-byte lookahead) across `CALSLT`s, and a
-  keyword/`?`-expansion must not straddle a chunk boundary mid-emit. This is the
-  fiddly part; it's the reason wave 3 is a real refactor, not a lift.
+- **(A) ADOPTED.** A **512 B `DETOKBUF`** in RAM, byte-address-identical sub/main via
+  `sysvars.inc`, below the stack. The core does a straight-through walk into it; the
+  resident side drains it once (LIST→screen or ASCII-SAVE→channel, per `PRDEST`). No
+  resumable state, natural walk, one `CALSLT`/line.
+- **(B) REJECTED.** Its only justification was an unaffordable worst-case buffer;
+  512 B is trivial. Dropping B eliminates its save/restore-walk-state ABI (R-W3-1).
 
-Resolving (A) vs (B) — including the exact worst-case output bound — is wave 3's
-first investigation task.
+**Q3 (the one open sign-off item) — where the 512 B `DETOKBUF` lives.** It must be
+free during *both* LIST→screen and ASCII-SAVE→disk, not collide with the stored
+program (which LIST reads) or the disk sector buffers (which ASCII-SAVE writes), and
+be a fixed `equ` (repack-only). Candidates:
+
+- **(Q3-a) RECOMMENDED — reserve the top 512 B of the program-text region:** lower
+  `TXTMAX` from `$C000` to `$BE00` in the repack build, `DETOKBUF equ $BE00`. Clean:
+  a fixed address, free in both sinks (it is neither program text nor a disk buffer),
+  below the stack, byte-identical trivially. Cost: repack program capacity −512 B
+  (~3% of the ~16 KB text area) → a documented divergence; the `OUT OF MEMORY`
+  threshold moves down 512 B in the repack build only.
+- **(Q3-b) Dedicated page-3 free window** (e.g. inside `$C000..$DFFF` BLOAD region):
+  rejected — BLOADed ML routines persist there; not reliably free.
+- **(Q3-c) Reuse the idle FAT sector buffers** (`FSECTOR_BUF`, page `$E5+`, two
+  512 B): free during LIST but **in use during ASCII-SAVE** — fails R-W3-4, rejected.
 
 ## 6. Risks
 
-- **R-W3-1 — resumable-state ABI** (only under design B): multi-byte lookahead across
-  a chunk boundary. Mitigated by choosing design A if the worst-case buffer is
-  affordable.
-- **R-W3-2 — a `dt_*` renderer needs the BIOS** (§3 audit). Mitigated: named
-  pre-gate; clone or descope.
+- ~~**R-W3-1** — resumable-state ABI~~ **ELIMINATED** (design B dropped, §5).
+- ~~**R-W3-2** — a `dt_*` renderer needs the BIOS~~ **DISCHARGED** by the §0.1 audit
+  (only `pchar` is I/O; only `div10` is an external compute leaf, cloned sub-side).
 - **R-W3-3 — LIST/SAVE output byte-drift.** Mitigated: LIST + ASCII-SAVE output
   byte-identical is a hard gate; the oracle (openMSX) is the arbiter (wave-1 lesson).
-- **R-W3-4 — the same core serves LIST *and* ASCII SAVE** (`PRDEST` 0/1). Both must
-  route through the buffered path; the drain honours `PRDEST` exactly as today.
+- **R-W3-4 — the same core serves LIST *and* ASCII SAVE** (`PRDEST` 0/1). Both route
+  through `DETOKBUF`; the drain honours `PRDEST` exactly as today. (This is why Q3-c
+  is rejected — the ASCII-SAVE sink owns the FAT buffers.)
+- **R-W3-5 — `div10` clone drift.** The sub-side `div10` clone must stay
+  byte-behaviour-identical to [`print.asm:332`](../basic/print.asm:332); same trap as
+  wave-2's leaf clones. Mitigated: it is a 12-instruction pure loop; the byte-
+  identical LIST oracle catches any drift.
 
 ## 7. Gates (all must pass)
 
@@ -120,8 +194,11 @@ first investigation task.
 
 ## 9. Open questions for sign-off
 
-- **Q1.** Buffer design **(A)** one-shot worst-case vs **(B)** bounded resumable
-  (§5). Needs the exact worst-case output bound first.
-- **Q2.** Does any `dt_*` number renderer touch the BIOS (§3 audit)? Determines
-  whether the core is a clean lift or needs clones.
-- **Q3.** Buffer home + size in page-2/3 RAM, below stack.
+- **Q1. RESOLVED → design A, 512 B.** Worst-case output ≤475 B (source cap 96, only
+  `?`→PRINT expands; §0.2). Design B dropped.
+- **Q2. RESOLVED → clean lift + one `div10` clone.** No `dt_*` path touches the BIOS;
+  the number renderers are already `NUMBUF`-buffered (§0.1, §0.3).
+- **Q3. DECIDED 2026-07-11 → Q3-a** (user sign-off). Lower repack `TXTMAX`
+  `$C000`→`$BE00`, `DETOKBUF equ $BE00` (512 B), accepting the documented −512 B
+  repack program-capacity divergence (`OUT OF MEMORY` threshold moves down 512 B,
+  repack build only). **Spec SIGNED OFF; implement wave 3.**

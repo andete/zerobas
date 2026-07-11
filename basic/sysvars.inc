@@ -448,7 +448,23 @@ STRSCR          equ     $E360   ; [len][bytes:STRMAX] = 33 bytes ($E360..$E380)
 ; provenance as the BIOS and token constants used elsewhere here.
 TXTTAB          equ     $F676   ; sysvar: pointer to the BASIC text base
 TXTBASE         equ     $8001   ; text base (oracle: TXTTAB value after boot)
-TXTMAX          equ     $C000   ; text must stay below the $C000 BLOAD region
+; TXTMAX — the program-text ceiling (OUT OF MEMORY threshold). The lean cart keeps
+; the full $C000 BLOAD ceiling; the repack build lowers it 512 B to reserve
+; $BE00-$BFFF as DETOKBUF, the sub-ROM detokeniser's one-shot output buffer (subrom
+; wave 3, docs/spec-basic-subrom-wave3-detok.md §5/Q3-a). This is a documented repack
+; divergence: repack program capacity is 512 B smaller. It is per-build because
+; TXTMAX is emitted as an immediate (`ld de,TXTMAX` in program.asm / cload.asm), so a
+; single value would change lean bytes (byte-identity gate 6).
+    IF ROM_BASE < $4000
+TXTMAX          equ     $BE00   ; repack: text ceiling, 512 B below DETOKBUF's home
+DETOKBUF        equ     $BE00   ; repack: 512 B one-shot detok output buffer ($BE00-$BFFF).
+                                ; Sized for the worst-case LIST/ASCII-SAVE line (<=475 B;
+                                ; source lines cap at LINEMAX=96 and only `?`->PRINT
+                                ; expands, spec §0.2). Free during both sinks (neither
+                                ; program text nor a disk buffer); below the stack.
+    ELSE
+TXTMAX          equ     $C000   ; lean: text must stay below the $C000 BLOAD region
+    ENDIF
 PRGEND          equ     $E026   ; addr of the $0000 end-of-program marker (2 bytes)
 
 ; --- Phase 1: CLEAR memory-top sysvar --------------------------------------
@@ -1056,6 +1072,11 @@ PLF_RA2         equ     $F103   ; ...and for its DIRECT caller's (combine_add/
 ; (decoupled from EXBRSA $FAF8, which a stray program could clobber — D-6/R4).
 SUBSLOT         equ     $F106   ; slot id of zerobas-sub (bit7 exp | 3-2 | 3), 1
 SUBSLOT_OK      equ     $F107   ; 1 = a CD sub-ROM was found and recorded, else 0
+DB_CUR          equ     $F108   ; wave-3 detok: the DETOKBUF write cursor, held across
+                                ; the whole sub-side walk (the core clobbers DE/HL, so
+                                ; the cursor cannot live in a register). Own-choice free
+                                ; RAM, the $F108.. tail of the $F01A-$F194 window (below
+                                ; DRVA_DPB $F195); idle outside a LIST/ASCII-SAVE. (2)
 ; Dispatch ABI (mirror of sub/equates.inc — the append-only page-0 entry table).
 ; IX = SUBROM_ENTRY_BASE_P0 + 3*index selects a tenant; never renumber an index.
 ; IFNDEF-guarded: sub.asm includes BOTH this and sub/equates.inc (which defines
@@ -1067,6 +1088,8 @@ SUBROM_IDX_TOKENISE  equ 1      ; the WHOLE tokeniser tenant (sub/tokenise.inc +
                                 ; sub/tkfloat.asm); wave 2 replaced wave 1's
                                 ; per-literal tk_float entry (the crunch is now an
                                 ; in-slot callee of the co-located loop)
+SUBROM_IDX_DETOK     equ 2      ; the detokeniser core (wave 3; sub/detok.asm). The
+                                ; main-ROM stub is basic/list.asm `detok`.
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

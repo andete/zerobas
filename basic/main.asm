@@ -52,7 +52,11 @@ ROM_BASE:       equ     $4000
 ; main-ROM build; D5 as revised 2026-07-11 when float F2 filled the whole window,
 ; retiring the old $3A72–$3C43 mid-region hole. This region is BASIC's to $4000.)
     IF ROM_BASE < $4000
-                include "basic/kwtable.inc"
+; kwtable is NO LONGER included resident (subrom arc WAVE 3): both of its code
+; readers are now sub-side — match_kw (the wave-2 tokeniser) and detok_kw/detok_kw2
+; (the wave-3 detokeniser) — so the sole copy lives in sub/sub.asm. Dropping the
+; resident table recovers wave-2's duplication + its low-region bytes and removes
+; the drift risk (one source of truth). docs/spec-basic-subrom-wave3-detok.md §2.
                 include "basic/str-engine.asm"
                 include "basic/input.asm"
                 include "basic/float.asm"

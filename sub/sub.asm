@@ -72,6 +72,9 @@ sub_p0_table:
                                                 ;   tokeniser (wave 2). The tk_float crunch
                                                 ;   is no longer a dispatch entry — it is an
                                                 ;   in-slot `jp tk_float` from tk_loop.
+                jp      dtk_tenant              ; index 2 (SUBROM_IDX_DETOK): the LIST /
+                                                ;   ASCII-SAVE detokeniser core (wave 3);
+                                                ;   fills DETOKBUF, resident side drains it.
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $0010 mapped slot 3-2 into PAGE 0 and that page-3 RAM is
@@ -106,6 +109,12 @@ sub_p0_ping:
 ;                                     gating -> the two images can't drift.
                 include "tkfloat.asm"
                 include "basic/tokenise.inc"
+
+; WAVE 3 (index 2 = detok): the LIST / ASCII-SAVE detokeniser core, evicted from
+; the repack main ROM's basic/list.asm. Re-binds pchar/print_string/div10 to
+; DETOKBUF appends and shares the co-located kwtable with the tokeniser above (so
+; the resident kwtable is dropped). Its resident stub is basic/list.asm `detok`.
+                include "detok.asm"
 
 ; --- sub-local is_letter / is_ident_cont (byte-identical own-design clones) --
 ; Resident copies stay in the main ROM (basic/interp.asm is_letter, basic/vars.asm

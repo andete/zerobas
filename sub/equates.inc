@@ -23,8 +23,16 @@ SUBROM_ENTRY_BASE_P1    equ     $4010   ; page-1 table (mirrors the $4010 disk D
 ; reverted, spec §5) — the crunch is no longer a dispatch target, just an internal
 ; `jp tk_float` from the co-located loop. Never renumber an existing entry —
 ; a main-ROM stub hard-codes only its index.
+; index 2 = the DETOKENISER CORE (WAVE 3 eviction, sub/detok.asm): the token->text
+; walk (detok/dt_*/detok_op/detok_kw*/the number renderers) rewritten to append into
+; DETOKBUF instead of streaming through pchar. Its main-ROM stub is basic/list.asm
+; `detok`; the resident side drains DETOKBUF via print_string (honouring PRDEST, so
+; the one core feeds both LIST->screen and ASCII-SAVE->disk). Reuses the co-located
+; sub kwtable (shared with the wave-2 tokeniser -> the resident copy is now dropped,
+; spec §2). docs/spec-basic-subrom-wave3-detok.md.
 SUBROM_IDX_PING         equ     0
 SUBROM_IDX_TOKENISE     equ     1
+SUBROM_IDX_DETOK        equ     2
 
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can

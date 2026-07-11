@@ -2,23 +2,26 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 
-"""Assert the two `kwtable` images are byte-identical (subrom wave 2, spec §4/§7.2).
+"""Assert the `kwtable` SINGLE-COPY invariant (subrom wave 3, spec §2/§7 gate 1).
 
-The keyword crunch table is SHARED by two readers: `match_kw` (the tokeniser,
-evicted to the sub-ROM in wave 2) and `detok_kw`/`detok_kw2` (LIST, which is
-I/O-bound so it stays RESIDENT in the main ROM). A page-0 sub-ROM tenant cannot
-see the main-ROM low region, so the sub-ROM carries its OWN copy of the table and
-the resident copy stays put. Both are assembled from the SAME basic/kwtable.inc
-under the SAME ROM_BASE (<$4000) gating, so they are byte-identical BY
-CONSTRUCTION — this gate makes that a checked invariant (R-W2-3: the two copies
-must never drift).
+The keyword crunch table has exactly two code readers: `match_kw` (the tokeniser)
+and `detok_kw`/`detok_kw2` (the LIST/ASCII-SAVE detokeniser). Wave 2 evicted the
+tokeniser to the sub-ROM, leaving the table duplicated (resident copy for the still-
+resident detokeniser + a sub copy for the tokeniser). Wave 3 evicts the detokeniser
+too, so BOTH readers are now sub-side and the resident copy is DROPPED — the sub-ROM
+copy is the sole source of truth (recovering wave 2's duplication and removing the
+drift risk R-W2-3 entirely).
+
+This gate enforces that end state:
+  * the RELOC (repack main ROM) must have NO `kwtable` symbol — the resident copy
+    is gone;
+  * the SUB image must carry a structurally valid `kwtable` — the sole copy.
 
     python3 tools/check_kwtable_identity.py RELOC.rom RELOC.sym SUB.rom SUB.sym
 
-RELOC image is based at $2812 (reclaimed low region); the SUB image at $0000.
-The `kwtable` label in each sym gives the table start; the table is walked by its
-own [klen][chars][tlen][tokens] structure to its 0-length terminator, so no length
-constant is hardcoded here.
+The SUB image is based at $0000. The `kwtable` label gives the table start; it is
+walked by its own [klen][chars][tlen][tokens] structure to its 0-length terminator,
+so no length constant is hardcoded here.
 """
 from __future__ import annotations
 
@@ -43,7 +46,7 @@ def load_syms(path):
 def kwtable_bytes(rom, base, sym):
     """Return the keyword table bytes, walked from `kwtable` to its 0 terminator."""
     if "kwtable" not in sym:
-        raise SystemExit(f"FAIL: no `kwtable` symbol in {sym!r}")
+        raise SystemExit("FAIL: no `kwtable` symbol in the sub-ROM — the sole copy is missing")
     start = sym["kwtable"] - base
     i = start
     while True:
@@ -65,19 +68,16 @@ def main() -> int:
     sub = open(sys.argv[3], "rb").read()
     sub_sym = load_syms(sys.argv[4])
 
-    a = kwtable_bytes(reloc, RELOC_BASE, reloc_sym)
-    b = kwtable_bytes(sub, SUB_BASE, sub_sym)
-    if a != b:
-        print(f"FAIL: kwtable copies DIFFER — resident {len(a)} B vs sub {len(b)} B",
-              file=sys.stderr)
-        n = min(len(a), len(b))
-        for j in range(n):
-            if a[j] != b[j]:
-                print(f"       first diff at table offset {j}: "
-                      f"resident {a[j]:#04x} vs sub {b[j]:#04x}", file=sys.stderr)
-                break
+    # Gate 1a: the resident copy must be GONE (wave 3 dropped it).
+    if "kwtable" in reloc_sym:
+        print("FAIL: a resident `kwtable` still exists in the repack main ROM — wave 3 "
+              "should have dropped it (both readers are sub-side now)", file=sys.stderr)
         return 1
-    print(f"OK: kwtable byte-identical across resident + sub-ROM copies ({len(a)} B)")
+
+    # Gate 1b: the sub-ROM must carry the sole, structurally valid copy.
+    b = kwtable_bytes(sub, SUB_BASE, sub_sym)
+    print(f"OK: kwtable single-copy — resident dropped (wave 3), sub-ROM copy is the "
+          f"sole source ({len(b)} B)")
     return 0
 
 
