@@ -102,11 +102,25 @@ exp_loop:
                 call    skip_spaces
                 ld      a,(hl)
                 or      a
-                jr      z,exp_nl_ret        ; end of line -> newline, done
+    IF ROM_BASE < $4000
+                jp      z,exp_nl_ret        ; end of line -> newline, done (repack:
+                                            ; the F2 driver checks pushed this out of
+                                            ; jr range; lean stays jr, see below)
+    ELSE
+                jr      z,exp_nl_ret
+    ENDIF
                 cp      COLON
-                jr      z,exp_nl_stmt       ; ':' -> newline, then next statement
+    IF ROM_BASE < $4000
+                jp      z,exp_nl_stmt       ; ':' -> newline, then next statement
+    ELSE
+                jr      z,exp_nl_stmt
+    ENDIF
                 cp      ';'
+    IF ROM_BASE < $4000
+                jp      z,exp_semi
+    ELSE
                 jr      z,exp_semi
+    ENDIF
                 cp      ','
                 jp      z,exp_comma
                 cp      '"'
@@ -127,9 +141,8 @@ exp_loop:
 exp_num:
                 call    eval                ; numeric expression -> DE = value
     IF ROM_BASE < $4000
-                ld      a,(TMISMATCH)       ; D-2: `PRINT (A$<5)` aborts the whole line
-                or      a                   ; before the newline/next item (mirrors ex_if)
-                jp      nz,type_mismatch_error
+                call    check_expr_errors   ; D-2/D-F2-1 (interp.asm): abort the whole
+                                            ; line before the newline/next item
                 ld      a,(FACTYP)          ; §9.4: exp_num dispatches on FACTYP after eval
                 cp      2
                 jr      nz,exp_num_float
@@ -167,6 +180,9 @@ exps_print:
                 pop     de                  ; drop the saved operand-start (balances the
                                              ;  push above; str_eval already clobbers DE,
                                              ;  so there is nothing in DE worth preserving)
+                ld      a,(FPERR)           ; D-F2-1: the string-item path too (e.g.
+                or      a                   ; print hex$(65536.) — the overflow happens
+                jp      nz,fp_runtime_error ; inside str_eval's HEX$ argument conversion)
                 push    hl                  ; print_strval clobbers HL (token cursor)
                 call    print_strval        ; emit the descriptor's bytes
                 pop     hl

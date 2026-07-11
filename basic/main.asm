@@ -47,13 +47,16 @@ ROM_BASE:       equ     $4000
 ; §5b) and the string engine itself (concat spine now; the S4 functions later). The
 ; interpreter is 100% label-based (docs/cbios-repack-ws2-audit.md), so code here is
 ; reached from page 1 by ordinary in-slot calls/jumps. Whatever space is left below
-; the header is padded $00. (The zerobas-tape page-0 completions keep their own
-; org $3A72 and are spliced by the merged main-ROM build, D5 — not carved out here.)
+; the header is padded $00. (The zerobas-tape page-0 completions live at their own
+; org $09EE — C-BIOS gap-1 fill, below this region — and are spliced by the merged
+; main-ROM build; D5 as revised 2026-07-11 when float F2 filled the whole window,
+; retiring the old $3A72–$3C43 mid-region hole. This region is BASIC's to $4000.)
     IF ROM_BASE < $4000
                 include "basic/kwtable.inc"
                 include "basic/str-engine.asm"
                 include "basic/input.asm"
                 include "basic/float.asm"
+                include "basic/float-arith.asm"
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean

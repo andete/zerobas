@@ -964,147 +964,32 @@ neg_de:
                 ret
 
 ; =============================================================================
-; flt_to_int16 / flt_neg / flt_guard (spec §9.4)
+; flt_to_int16 / flt_neg (spec §9.4, corrected per §10.3 — see below)
 ; =============================================================================
 
-; --- flt_to_int16: FAC/FACTYP -> DE, rounded half-up -----------------------
-; The accepted range is the 16-bit ADDRESS domain, not strict int16: a
-; positive value up to 65535 yields its unsigned bit pattern, a negative one
-; down to -32768 its two's complement. Rationale: the int consumers this
-; feeds (POKE/PEEK/HEX$/...) take -32768..65535 per the published MSX-BASIC
-; language reference, zerobas arithmetic is unsigned-16 throughout, and the
-; pre-F1 cruncher's $1C path accepted these decimals unsigned — capping at
-; 32767 would have REGRESSED e.g. POKE 40000,n / HEX$(65535) (caught by
-; tests/test_str_fn.py in F1 review). Outside that range -> DE=0, no error
-; mark (interim divergence D-F1-2; real Overflow semantics land in F2).
-; Reuses TKDIG/TKPC/TKDCOUNT (tk_float's tokenise-time scratch, dead at eval
-; time) + tkf_cmp5 / tkf_int_value. Clobbers A, B, C, D, E, H, L.
+; --- flt_to_int16: FAC/FACTYP -> DE, TRUNCATING toward zero, address domain
+; (-32769<x<65536, a value >=32768 wraps by -65536 first — spec §10.3). Runs
+; EAGERLY on every float factor (ev_f_float, expr.asm), including inside
+; pure-float expressions that must not abort, so it stays SILENT: out of
+; domain -> DE=0, no error flag (this is the fallback value unwired int
+; consumers see; wired ones dispatch on FACTYP instead).
+;
+; F1 shipped this routine with HALF-UP rounding, reasoned from the published
+; POKE/HEX$ -32768..65535 argument range but not oracle-pinned (see the
+; superseded header this replaces, kept in git history). F2's oracle capture
+; (basic_probe_float_arith.py, spec §10.3) corrected that: the reference
+; TRUNCATES. The body is now a thin wrapper over float-arith.asm's
+; domain_convert_core (the same domain/wrap/truncate logic fac_to_int_addr
+; uses for POKE/VPOKE/HEX$'s CHECKED conversion, in its ADDRESS-domain mode)
+; — this call site just ignores the CF (out-of-domain) signal instead of
+; turning it into FPERR, which is exactly the silent-vs-checked distinction
+; the two callers need. tests/test_float.py's flt_to_int16 matrix was
+; updated to the truncating contract in the same review that made this
+; change.
 flt_to_int16:
-                ld      a,(FACTYP)
-                cp      8
-                jr      z,fti_dblsz
-                ld      a,6
-                ld      (TKPC),a
-                ld      a,3
-                ld      (FOMBYTES),a
-                jr      fti_unpackgo
-fti_dblsz:
-                ld      a,14
-                ld      (TKPC),a
-                ld      a,7
-                ld      (FOMBYTES),a
-fti_unpackgo:
-                ld      a,(FAC)
-                or      a
-                jp      z,fti_zero          ; (jp: the range-check insertions
-                                            ;  pushed fti_zero past jr reach)
-                ld      c,a                 ; C = lead byte (sign+exp)
-                ld      a,(FOMBYTES)
-                ld      b,a
-                ld      hl,FAC+1
-                ld      de,TKDIG
-fti_unpack:
-                ld      a,(hl)
-                push    af
-                and     $F0
-                rrca
-                rrca
-                rrca
-                rrca
-                ld      (de),a
-                inc     de
-                pop     af
-                and     $0F
-                ld      (de),a
-                inc     de
-                inc     hl
-                djnz    fti_unpack
-                ld      a,c
-                and     $7F
-                sub     64                  ; A = dec_exp (signed, -64..63)
-                jp      m,fti_zero          ; dec_exp < 0 -> magnitude < 0.1 -> 0
-                jr      nz,fti_pos
-                ; dec_exp == 0: round on the first stored digit alone
-                ld      hl,TKDIG
-                ld      a,(hl)
-                cp      5
-                jr      nc,fti_one
-                jr      fti_zero
-fti_one:
-                ld      de,1
-                jr      fti_applysign
-fti_pos:
-                ld      b,a                 ; B = N = dec_exp (1..63)
-                ld      a,(TKPC)
-                cp      b
-                jr      c,fti_zero          ; N > PC -> way out of int16 range
-                ld      a,b
-                cp      6
-                jr      nc,fti_zero         ; N >= 6 -> >= 100000, out of range
-                cp      5
-                jr      nz,fti_ninrange
-                ; N == 5: the bound depends on the sign (see the header):
-                ; positive <= 65535, negative magnitude <= 32768.
-                ld      de,tkf_ref65535
-                ld      a,(FAC)
-                and     $80
-                jr      z,fti_bound
-                ld      de,tkf_ref32768
-fti_bound:
-                push    bc                  ; tkf_cmp5 clobbers B/C -- N (in B) must
-                call    tkf_cmp5            ; survive the call (see its own header)
-                pop     bc                  ; CF set iff TKDIG[0..4] <= bound
-                jr      nc,fti_zero
-fti_ninrange:
-                ld      a,b
-                ld      (TKDCOUNT),a        ; borrow tk_float's digit-count cell
-                push    bc
-                call    tkf_int_value       ; DE = digits[0..N-1] as a value
-                pop     bc
-                ld      a,(TKPC)
-                cp      b
-                jr      z,fti_applysign     ; N == PC: no digit follows, no rounding
-                ld      a,b
-                ld      c,a
-                ld      b,0                 ; BC = N
-                push    de
-                ld      hl,TKDIG
-                add     hl,bc
-                ld      a,(hl)              ; A = TKDIG[N] (the rounding digit)
-                pop     de
-                cp      5
-                jr      c,fti_applysign
-                inc     de                  ; half-up
-                ; post-round bound re-check: a positive 65535 wraps to 0
-                ; (reject); a negative 32768 steps to 32769 = $8001, the only
-                ; overshoot reachable from the pre-round <= 32768 bound.
-                ld      a,(FAC)
-                and     $80
-                jr      z,fti_rndpos
-                ld      a,d
-                cp      $80
-                jr      nz,fti_applysign
-                ld      a,e
-                dec     a                   ; DE == $8001?
-                jr      z,fti_zero
-                jr      fti_applysign
-fti_rndpos:
-                ld      a,d
-                or      e
-                jr      z,fti_zero          ; wrapped past 65535
-fti_applysign:
-                ld      a,(FAC)
-                and     $80
-                jr      z,fti_ret
-                ld      hl,0
-                or      a
-                sbc     hl,de
-                ex      de,hl
-fti_ret:
-                ret
-fti_zero:
-                ld      de,0
-                ret
+                ld      a,1
+                ld      (CVT_MODE),a
+                jp      domain_convert_core
 
 ; --- flt_neg: flip FAC's sign bit (value-0 lead byte is exempt) -----------
 flt_neg:
@@ -1128,18 +1013,9 @@ flt_int_result:
                 ld      (FACTYP),a
                 ret
 
-; --- flt_guard: sticky-FACTYP combine guard (interim divergence D-F1-3) ---
-; Every binary/unary op-combine site in expr.asm calls this right after
-; producing its (int-only) result: FACTYP<>2 means one of the operands was a
-; float, which this slice cannot yet compute over (F2) -- flag it (ERRMARK
-; $DD, matching ev_f_err's existing expression-error marker) and reset
-; FACTYP to 2 so the NEXT combine doesn't re-trip on a stale sticky flag.
-flt_guard:
-                ld      a,(FACTYP)
-                cp      2
-                ret     z
-                ld      a,$DD
-                ld      (ERRMARK),a
-                ld      a,2
-                ld      (FACTYP),a
-                ret
+; flt_guard (F1's sticky-FACTYP combine guard, interim divergence D-F1-3) is
+; REMOVED — F2 replaces every one of its 12 call sites in expr.asm with real
+; float-aware combine logic (float-arith.asm's combine_add/combine_sub/
+; combine_mul/combine_div_float/combine_cmp, plus fac_to_int_strict at the
+; logical/\/MOD sites), so no site is left that needs "float arithmetic
+; isn't implemented yet" as its fallback.

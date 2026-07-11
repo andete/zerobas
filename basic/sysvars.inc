@@ -960,4 +960,93 @@ FOMBYTES        equ     $F065   ; mantissa byte count: 3 (single) / 7 (double) (
 ; than juggling stack push/pop order against the also-stacked TOKBUF dest
 ; cursor). See tkf_classify / the tkf_go_int / tkf_single / tkf_double tails.
 TKSRCSAVE       equ     $F067   ; (2)
+
+; --- Math float pack, slice F2 RAM (repack build only) ----------------------
+; docs/spec-basic-float-core.md §10. Own-choice free RAM, same rationale as the
+; F1 block above: the window from $F069 (right after TKSRCSAVE) up to DRVA_DPB
+; ($F195, disk/init.asm) is unclaimed by any other component. F2's BCD
+; arithmetic core works over UNPACKED digit arrays (one decimal digit value
+; 0-9 per byte, not the packed-BCD FAC/TKDIG convention) — deliberately
+; separate scratch from TKDIG/FOUTBUF (tokeniser/formatter) per the brief, so
+; a PRINT of an arithmetic result mid-tokenise (never actually concurrent, but
+; keeping the scratch spans disjoint avoids ever having to reason about it).
+;
+; FPNUM record layout (18 bytes), shared by ARGA/ARGB/RES: a sign-magnitude
+; double float held as [sign:1][dexp:2 signed][dig:15] where dig[0..13] are
+; the 14 significant BCD digit VALUES (0-9, MSD first) and dig[14] is a guard
+; digit used mid-computation for half-up rounding (spec §10.2) — own design,
+; unpacked-digit-array representation chosen so add/sub/mul/div can be
+; expressed as ordinary byte arithmetic (no nibble packing) with Z80 LDIR/LDDR
+; doing the alignment/normalisation shifts.
+FPNUM_SIGN      equ     0       ; field offset: 0/$80 (1)
+FPNUM_DEXP      equ     1       ; field offset: signed dec_exp (2)
+FPNUM_DIG       equ     3       ; field offset: digit array, 14 sig + 1 guard (15)
+FPNUM_SIZE      equ     18
+
+FPERR           equ     $F069   ; runtime numeric-error flag: 0 none / 1 overflow /
+                                ; 2 division by zero (spec §10.2 D-F2-1) (1)
+; ARGA doubles as the WORKING/RESULT record: fp_add/fp_sub/fp_mul/fp_div all
+; produce their answer back into ARGA in place (its own operand digits are
+; dead once the op's own algorithm has consumed them), so a separate RES
+; record isn't needed -- one less buffer, one less "which one is the answer"
+; bookkeeping question. round_and_finalize (float-arith.asm) always reads/
+; writes ARGA.
+ARGA            equ     $F06A   ; operand A / working result, FPNUM record (18)
+ARGB            equ     $F07C   ; operand B, FPNUM record (18)
+MULPROD         equ     $F08E   ; fp_mul: 28-digit product (14x14), MSD first (28)
+DIVPAD          equ     $F0AA   ; fp_div: divisor zero-padded to 15 digits (15)
+DIVREM          equ     $F0B9   ; fp_div: running remainder, 15 digits (15)
+CVT             equ     $F0C8   ; fac_to_int_strict/addr + flt_to_int16 (float.asm)
+                                ; shared unpack scratch, FPNUM-shaped (18)
+LHS_FACTYP      equ     $F0DA   ; ev_e/ev_t binary-op sites: the LHS operand's FACTYP,
+                                ; popped off the machine-stack frame (spec §1 bullet 4:
+                                ; "fixed lhs frames live on the machine stack, not RAM")
+                                ; into RAM so the widening loaders can address it (1)
+LHS_FAC         equ     $F0DB   ; ...and the LHS operand's raw FAC bytes (8)
+; Small general scratch cells, own choice — free RAM, grouped so each use is
+; documented once instead of at every call site (float-arith.asm headers name
+; which routine owns which cell at the point of use).
+FP_SHIFTAMT     equ     $F0E3   ; dig15_shr/dig15_shl: shift-amount parameter (1)
+FP_LHSVAL       equ     $F0E4   ; combine_*: the LHS operand's plain int16 value,
+                                ; stashed off the machine stack (2)
+FP_TMP_B        equ     $F0E6   ; combine_*: the RHS operand's plain int16 value,
+                                ; stashed so it survives a widen_* call (2)
+FP_RSIGN        equ     $F0E8   ; signed_div_de_bc/signed_mod_de_bc: result sign (1)
+WIDIG           equ     $F0E9   ; widen_int_to: binary->BCD digit scratch, up to
+                                ; 5 decimal digits (32768 max magnitude) (5)
+MUL_I           equ     $F0EE   ; fp_mul: outer-loop digit index i, 13 downto 0;
+                                ; widen_int_to: digit count N, 0..5 (shared, dead
+                                ; between uses) (1)
+MUL_ADIG        equ     $F0EF   ; fp_mul: A[i], the current outer-loop digit (1)
+MUL_CARRY       equ     $F0F0   ; fp_mul: running carry within one outer pass;
+                                ; fp_div's fpd_trial_digit: trial-subtract count
+                                ; (shared, dead between uses) (1)
+MUL_PP          equ     $F0F1   ; fp_mul: MULPROD write-cursor for the inner loop (2)
+MULCAND         equ     $F0F3   ; mul16x16_32: multiplicand operand (2)
+MULTPLR         equ     $F0F5   ; mul16x16_32: multiplier operand, shifted in place (2)
+MUL32           equ     $F0F7   ; mul16x16_32: 32-bit unsigned product, LE
+                                ; (low16 then high16) (4)
+WSRC            equ     $F0FB   ; widen_fac_to/widen_lhsframe_to (shared unpack
+                                ; body): address of the source's lead+mantissa
+                                ; bytes, FAC or LHS_FAC (2)
+WSRC_TYP        equ     $F0FD   ; ...and the address of its type byte, FACTYP
+                                ; or LHS_FACTYP (2)
+FP_OPMODE       equ     $F0FF   ; combine_add/combine_sub shared body: 0=add,
+                                ; 1=sub (1)
+CVT_MODE        equ     $F100   ; domain_convert_core: 0=strict int16 domain,
+                                ; 1=address domain (1)
+PLF_RA          equ     $F101   ; pop_lhs_and_probe: scratch home for its own
+                                ; "call"-pushed return address (2)
+PLF_RA2         equ     $F103   ; ...and for its DIRECT caller's (combine_add/
+                                ; sub/mul/cmp/div_float's own) "call"-pushed
+                                ; return address, which sits ON TOP of the
+                                ; persistent lhs frame too -- every combine_*
+                                ; is itself reached via a plain "call" from an
+                                ; ev_* site AFTER push_lhs_frame already ran,
+                                ; so ITS return address is in the way exactly
+                                ; like pop_lhs_and_probe's own (own design,
+                                ; see pop_lhs_and_probe's header comment).
+                                ; Neither is a register, since DE (and BC)
+                                ; must stay live across the call for the
+                                ; combine_* callers (2)
     ENDIF

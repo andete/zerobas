@@ -23,14 +23,28 @@
 ; --- do_vpoke: VPOKE addr,value -------------------------------------------
 ; addr = VRAM address (full 16-bit, 0..&H3FFF used on TMS9918); value low byte.
 do_vpoke:
-                call    eval                ; DE = VRAM address, HL = cursor
+    IF ROM_BASE < $4000
+                call    eval_addr           ; spec §10.3: VPOKE's arguments are the
+    ELSE                                    ; checked ADDRESS domain (FPERR on overflow),
+                call    eval                ; not the silent eager conversion (D-F2-2)
+    ENDIF                                   ; -- DE = VRAM address, HL = cursor
                 push    de                  ; save address
                 call    skip_spaces
                 ld      a,(hl)
                 cp      ','                 ; comma required
                 jr      nz,vdp_err
                 inc     hl
+    IF ROM_BASE < $4000
+                call    eval_addr           ; DE = value, HL = cursor
+                ld      a,(FPERR)
+                or      a
+                jr      z,vpoke_ok
+                pop     bc                  ; discard the saved address (mirrors vdp_err)
+                jp      fp_runtime_error
+vpoke_ok:
+    ELSE
                 call    eval                ; DE = value, HL = cursor
+    ENDIF
                 ld      a,e                 ; A = low byte of value
                 pop     bc                  ; BC = VRAM address
                 push    hl                  ; save the executor's cursor

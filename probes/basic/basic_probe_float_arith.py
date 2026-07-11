@@ -1,0 +1,307 @@
+#!/usr/bin/env python3
+
+"""Float ARITHMETIC probe — characterise, then differentially prove, MSX-BASIC
+arithmetic over int/single/double operands (Phase-3 float pack F2;
+docs/spec-basic-float-core.md §1 F2 + D-C).
+
+Each case types  PRINT "[";<expr>;"]"  in direct mode and captures the SCREEN 0
+name table (same bracket technique as basic_probe_float_fmt.py). Two captures
+per case:
+
+- the bracket SPAN (text between the last '[' and the following ']') — the
+  printed value, spaces exact;
+- the screen TAIL (all rows between the echoed command line and the closing
+  'Ok' prompt) — this additionally pins the ERROR surface: whether division by
+  zero / runtime overflow prints a message, whether the statement aborts
+  (no ']' ever prints) or continues with a substitute value, and what that
+  value is.
+
+The matrix covers: result-type promotion for + - * / (int op int -> int,
+'/' always float, mixed -> wider, int overflow -> single), BCD rounding at
+both precisions (including half-way ties), unary minus, parentheses, runtime
+exponent walls (overflow/underflow), division by zero, MSX-signed \\ and MOD
+(the D-C signed-int migration), float->int conversion in \\ / MOD / logical /
+function-argument contexts (rounding mode + domain), and relationals over
+floats (compound + mixed precision).
+
+Characterisation mode (default): print the reference's exact output per case.
+Differential mode (--zb-machine): also run zerobas (repack build) and assert
+equality — TAIL-equal by default; cases in SPAN_ONLY compare just the bracket
+span (zerobas prints its own lowercase error wording, a D-2-style divergence,
+so message text is excluded there; the value/continuation shape is not).
+
+Clean-room: observed outputs only; the reference ROM is a black box.
+"""
+from __future__ import annotations
+
+import os as _os
+import sys as _sys
+_sys.path.insert(0, _os.path.join(
+    _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib"))
+
+import argparse
+import os
+import re
+import subprocess
+import sys
+import tempfile
+
+OMSX_RUN = os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+                        "lib", "omsx_run.py")
+REF_MACHINE = "Philips_VG_8020"
+COLS, ROWS = 40, 24
+NLEN = COLS * ROWS
+
+# The F2 matrix. Each entry is an expression E, typed as  print "[";E;"]".
+# Grouped by the contract facet it pins (spec §1 F2, §6 D-C).
+EXPRS = [
+    # int regression anchors (semantics unchanged by F2)
+    "1+2", "10-4", "6*7", "7-9", "2=2", "2>3", "7<>7",
+    # '/' becomes real division (retires the int-quotient divergence)
+    "7/2", "10/2", "1/3", "2/3", "-7/2", "1/8",
+    # '/' result-precision matrix + division rounding pins (1/512 = .001953125
+    # is a half-way tie at 6 significant digits)
+    "2!/3!", "2#/3", "2/3#", "2#/3#", "1!/512!", "1#/512#",
+    "1!/3!*3", "1/3*3",
+    # + - * over type combos (promotion visibility via digit count)
+    "1+2.5", "1.5+1", "1+2.5#", "1.5!+1#", "2*3.5", "2.5*4", "2.5#*4",
+    "2.5-1.5", ".3-.1", ".1+.2",
+    # int overflow promotes to single (D-C)
+    "32767+1", "-32768-1", "32767+32767", "32000+32000", "-32768-32768",
+    "32767*2", "300*300", "3125*625", "32767*32767", "-32768*2", "-200*300",
+    # BCD rounding pins: half-way ties + carry-out + general rounding
+    "3125!*625!", "1.000005!+1", "1.000025!+1", "1000000!+1", "999999!+1",
+    "123456!*654321!", "2.00001!-1.000005!", "12345678#*87654321#",
+    "99999999999999#+1", "1.000000000000005#+1",
+    # cross-precision arithmetic (single promoted into a double op)
+    "2!/3!-2#/3#", "2#/3#*1!", "1!*2#/3#", "1!/3!+0#", "1e10+1",
+    # unary minus + parentheses + precedence over floats
+    "-1.5*2", "-(1.5+2.5)", "2--3.5", "(1+2)*3.5", "2+3*4.5",
+    "1.5+2.5*3.5-4.5/2", "(1.5+2.5)*(3.5-1.5)",
+    # runtime exponent walls (overflow / underflow surfaces)
+    "1e62*9", "1e62*10", "1e40*1e40", "-1e40*1e40", "9e62+9e62",
+    "1e-40*1e-32", "-1e-40*1e-32", "1e-40/1e30", "1d62*10", "1e62+0#",
+    # zero forms
+    "0*-1", "0!/5", "0/3!", "0.0+0",
+    # division by zero (error surface, D-C oracle question)
+    "1/0", "1!/0", "1#/0", "0/0", "1\\0", "1 mod 0",
+    # MSX-signed \ and MOD (D-C: today's unsigned divergences retire)
+    "7\\2", "-7\\2", "7\\-2", "-7\\-2", "7 mod 2", "-7 mod 2", "7 mod -2",
+    "-7 mod -2", "32767\\-1", "-32768\\-1",
+    # float operands into \ / MOD: int conversion (rounding mode + domain)
+    "7.5\\2", "2.5\\1", "3.5\\1", "-2.5\\1", "7.9 mod 3",
+    "40000!\\2", "40000 mod 7",
+    # relationals over floats (+ compound forms, mixed precision)
+    "1.5=1.5", "1.5>1.4", "1.5<1.4", "1.5<>1.5", "1.5>=1.5", "1.5<=1.4",
+    "1=1.0", "-1.5<-1", ".1!=.1#", "2!/3!=2#/3#", "1!/2!=1#/2#",
+    "2>1.5", "(1.5>1)+5",
+    # logical ops over floats (int conversion + the -32768..65535 domain)
+    "not 1.5", "not 2.5", "1.5 and 3", "1.5 or 4", "40000! and 65535",
+    "100000! and 1",
+    # int-context functions over float exprs (FACTYP-protocol pins; the F1
+    # review lesson: always include a function-over-float case)
+    "hex$(2.5*2)", "hex$(2.5)", "hex$(3.5)",
+    # --- round-2 follow-ups (disambiguate the round-1 findings) -------------
+    # float->int conversion mode: 2.5->2 / 3.5->3 fits BOTH truncation and
+    # round-half-down; 2.9 decides (truncate -> 2, any rounding -> 3)
+    "hex$(2.9)", "hex$(-2.5)", "hex$(40000.5)", "2.9\\1", "-2.9\\1",
+    "7.5 mod 4", "7\\2.5", "7\\1.5",
+    # single (+) single -> double? (round-1 add ties were confounded by
+    # crunch-time rounding; these sums are exact only in double)
+    "123456!+.5", "1000000!+1!",
+    # multiplication overflow = PRE-normalisation exponent sum? (1e62*9
+    # overflowed although 9e62 is representable: 63+1=64. 9e61*9 = 62+1=63
+    # must then pass; 2e62*4 = 63+1=64 must then fail)
+    "9e61*9", "2e62*4",
+    # division exponent walls (pre-norm difference?)
+    "1e40/1e-40", "1e62/.1", "2e62/.4",
+    # rounding mode of the DOUBLE ops themselves (exact ties at digit 15)
+    "1+5e-14", "3+5e-14", "1+6e-14", "1+4e-14", "1-1e-15",
+    "1.0000000000003#/2", "2.5#*1.0000000000001#", "1/3*3-1",
+    # relationals never int-convert their float side (no Overflow)
+    "40000=40000!", "1e10>5",
+    # --- round-3 edge pins ---------------------------------------------------
+    # the address-domain conversion wraps >32767 into signed FIRST, then
+    # truncates toward zero (hex$(40000.5) -> $9C41 = 40001, not $9C40)
+    "hex$(40000.1)",
+    # mul underflow boundary: exponent-sum pre-check vs post-normalise
+    "1e-32*1e-32", "1e-33*1e-32",
+    # division tie at digit 15 + rounding on magnitude (away from zero)
+    "1.0000000000003#/4", "-2/3",
+    # --- round-4: conversion-domain boundaries (exclusive bounds + the
+    # >=32768 wrap threshold; spec §10.3) ------------------------------------
+    "hex$(32767.5)", "hex$(65535.5)", "hex$(65536.)", "hex$(-32768.5)",
+    "hex$(-32768.9)", "32767.5\\1", "-32768.5\\1",
+]
+
+# Full-line cases (multi-item PRINT: pins that the accumulator type resets
+# between PRINT items — a float item must not leak into the next int item;
+# IF truthiness: a float condition is true iff nonzero — `IF .5 THEN` takes
+# the TRUE branch, so the truncated int view of the condition must NOT be
+# the judge).
+RAW_LINES = [
+    'print "[";1.5;2;"]"',
+    'print "[";2;1.5;"]"',
+    'if .5 then print "[y]" else print "[n]"',
+    'if 1.5 then print "[y]" else print "[n]"',
+    'if 1.5-1.5 then print "[y]" else print "[n]"',
+]
+
+# Bare-statement cases: pins the STATEMENT-level int-argument conversion
+# (address domain, wrap-then-truncate, out-of-domain -> Overflow abort).
+# Differential pass criterion: tail EMPTINESS matches (error wording is
+# zerobas's own lowercase D-2-style text, so the text itself is excluded).
+STMT_LINES = [
+    "poke 100000,0",    # out of the -32768..65535 address domain -> Overflow
+    "poke 40000.5,1",   # wrap-then-truncate -> address 40001, silent success
+]
+
+# Cases whose TAIL legitimately differs between reference and zerobas: an
+# error message is printed and zerobas wording is its own lowercase D-2-style
+# text. Differential mode compares only the bracket span (identical value /
+# identical absence-of-']' = identical continuation shape).
+SPAN_ONLY = {
+    "1/0", "1!/0", "1#/0", "0/0", "1\\0", "1 mod 0",
+    "1e62*9", "1e62*10", "1e40*1e40", "-1e40*1e40", "9e62+9e62", "1d62*10",
+    "2e62*4", "1e40/1e-40", "1e62/.1", "2e62/.4",
+    "40000!\\2", "40000 mod 7", "40000! and 65535", "100000! and 1",
+    "hex$(65536.)",
+}
+
+
+def run_line(machine, line, base=8.0, tail=8.0, timeout=120):
+    """Type one direct-mode line (+ separately-timed Enter), return the SCREEN 0
+    name table as one raw row-major string of length NLEN."""
+    out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="floatari_")
+    os.close(out_fd)
+    cmd = [sys.executable, OMSX_RUN, "--machine", machine,
+           "--type", line, "--type-delay", str(base),
+           "--type", "\r", "--type-delay", str(base + 3),
+           "--time", str(base + 3 + tail),
+           "--mem", f"VRAM:0x0000:{NLEN}",
+           "--out", out_path, "--timeout", str(timeout)]
+    subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    cap = ""
+    if os.path.exists(out_path):
+        with open(out_path) as f:
+            cap = f.read()
+        os.unlink(out_path)
+    m = re.search(rf"mem\.VRAM:0x0000:{NLEN}=([0-9a-f]+)", cap)
+    if not m:
+        return None
+    data = bytes.fromhex(m.group(1))
+    return "".join(chr(b) if 32 <= b < 127 else " " for b in data)
+
+
+def result_span(raw):
+    """The printed value: text between the LAST '[' and the following ']'.
+    The echoed source line contains '[' too, but the result's '[' is printed
+    after it. Returns None if the ']' never printed (statement aborted)."""
+    if raw is None:
+        return None
+    i = raw.rfind("[")
+    if i < 0:
+        return None
+    j = raw.find("]", i)
+    if j < 0:
+        return None
+    return raw[i + 1: j]
+
+
+def screen_tail(raw, cmdline):
+    """All rows between the echoed command line and the closing prompt
+    (inclusive of neither), right-stripped, joined with '|'. Pins error
+    messages + abort-vs-continue shape. None if the echo row is not found.
+
+    Machine-agnostic: the reference echoes the line verbatim and closes with
+    'Ok'; zerobas prefixes the echo with its 'zb>' prompt and closes with a
+    bare 'zb>' row — so the echo match is ends-with and both prompt shapes
+    terminate the tail."""
+    if raw is None:
+        return None
+    # rows carry a fixed 2-column left margin on SCREEN 0 — strip both edges;
+    # exact spacing is the SPAN's job, the tail pins text + line structure.
+    rows = [raw[r * COLS:(r + 1) * COLS].strip() for r in range(ROWS)]
+    key = cmdline.strip()
+    idx = None
+    for i, r in enumerate(rows):
+        if r == key or r.endswith(key):
+            idx = i  # keep the LAST occurrence
+    if idx is None:
+        return None
+    out = []
+    for r in rows[idx + 1:]:
+        if r == "Ok" or r == "zb>":
+            break
+        out.append(r)
+    while out and out[-1] == "":
+        out.pop()
+    return "|".join(out)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--machine", default=REF_MACHINE,
+                    help=f"reference oracle machine (default {REF_MACHINE})")
+    ap.add_argument("--zb-machine", dest="zb_machine",
+                    help="differential mode: also run this repack machine and "
+                         "assert span/tail equality")
+    ap.add_argument("--only", help="substring filter on the expression")
+    args = ap.parse_args()
+
+    cases = [(e, f'print "[";{e};"]"', "expr") for e in EXPRS]
+    cases += [(line, line, "raw") for line in RAW_LINES]
+    cases += [(line, line, "stmt") for line in STMT_LINES]
+
+    ok = True
+    for expr, line, kind in cases:
+        if args.only and args.only not in expr:
+            continue
+        ref_raw = run_line(args.machine, line)
+        ref_span, ref_tail = result_span(ref_raw), screen_tail(ref_raw, line)
+        rs = f"[{ref_span}]" if ref_span is not None else "<no span>"
+        if args.zb_machine:
+            zb_raw = run_line(args.zb_machine, line)
+            zb_span, zb_tail = result_span(zb_raw), screen_tail(zb_raw, line)
+            zs = f"[{zb_span}]" if zb_span is not None else "<no span>"
+            if kind == "stmt":
+                same = ref_tail is not None and zb_tail is not None \
+                    and (ref_tail == "") == (zb_tail == "")
+            elif kind == "raw":
+                # RAW lines can exceed one screen row (the echo wraps, so no
+                # single row matches and the tail is unfindable on either
+                # side) — their pin is the bracket SPAN, which is immune to
+                # the wrap. Require a real span on both sides.
+                same = ref_span is not None and ref_span == zb_span
+            elif expr in SPAN_ONLY:
+                # tails must EXIST on both sides (proves the line really ran
+                # — a dead machine must not pass vacuously on two absent
+                # spans); their TEXT differs legitimately (D-2 wording)
+                same = ref_tail is not None and zb_tail is not None \
+                    and ref_span == zb_span
+            else:
+                same = ref_tail is not None and ref_tail == zb_tail
+            ok = ok and same
+            print(f"{'PASS' if same else 'FAIL'}  {expr:<24} ref: {rs}")
+            if not same:
+                print(f"{'':>32}ref tail: {ref_tail!r}")
+                print(f"{'':>32}zb  span: {zs}  tail: {zb_tail!r}")
+        else:
+            extra = ""
+            # show the tail whenever it holds more than the span line alone
+            if ref_tail is not None and ref_tail.count("|") + 1 > 1:
+                extra = f"   tail: {ref_tail!r}"
+            elif ref_span is None:
+                extra = f"   tail: {ref_tail!r}"
+            print(f"{expr:<24} {rs}{extra}")
+
+    if args.zb_machine:
+        print("\nALL PASS — float arithmetic is reference-identical" if ok
+              else "\nSOME FAILED")
+        return 0 if ok else 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

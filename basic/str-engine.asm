@@ -788,6 +788,11 @@ str_fn_hex:
                 jp      nz,str_eval_no
                 inc     hl
                 call    eval                ; DE = n (unsigned-16 view, D-2); HL advanced
+    IF ROM_BASE < $4000
+                push    hl                  ; guard cursor across the checked conversion
+                call    fac_to_int_addr     ; spec §10.3: HEX$'s int argument is the
+                pop     hl                  ; ADDRESS domain, checked (FPERR on overflow) --
+    ENDIF                                   ; overrides eval's silent DE when n was a float
                 ld      a,(hl)
                 cp      ')'
                 jp      nz,str_eval_no
@@ -1284,6 +1289,11 @@ exp_maybe_strfn:
 ems_print:
                 pop     de                  ; drop the saved operand-start (balances the
                                              ;  push above; str_eval already clobbers DE)
+    IF ROM_BASE < $4000
+                ld      a,(FPERR)           ; D-F2-1: e.g. print hex$(65536.) — the
+                or      a                   ; overflow happens inside str_eval's HEX$
+                jp      nz,fp_runtime_error ; argument conversion (fac_to_int_addr)
+    ENDIF
                 push    hl                  ; print_strval clobbers HL (token cursor)
                 call    print_strval
                 pop     hl

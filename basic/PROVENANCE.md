@@ -2962,3 +2962,142 @@ ALL PASS; `basic_probe_float_fmt.py --zb-machine` ALL PASS;
 unit-test 45/45 (new `tests/test_float.py`); `diskbasic-acceptance-repack`
 34/34; `string-acceptance` PASS; `input-acceptance` PASS; `audit-citations`
 clean.
+
+## Phase 3: math float pack, F2 — arithmetic + relationals + signed-int migration (basic/float-arith.asm, basic/float.asm, basic/expr.asm, basic/interp.asm, basic/print.asm, basic/poke.asm, basic/vdpio.asm, basic/str-engine.asm, basic/sysvars.inc)
+
+Slice F2 of the float-pack arc (docs/spec-basic-float-core.md §10, oracle
+round S2, 2026-07-11): `+ - * /` and the relationals now do real double BCD
+arithmetic (single is storage-only, widens on use — supersedes §3b's
+per-precision promotion sketch); `\`/`MOD` become signed and truncating;
+two checked float→int16 domains (strict vs address) replace F1's interim
+half-up rounding. New file `basic/float-arith.asm` (~2 KB); repack build
+only, lean 16 KB `basic.rom` byte-identical (pinned).
+
+### BCD arithmetic core (`basic/float-arith.asm`)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| Working record: sign-magnitude, 14 significant BCD digits + 1 guard, unpacked one-digit-per-byte (`ARGA`/`ARGB`, own scratch — NOT `TKDIG`/`FOUTBUF`) | — | own design; digit width from the number-format spec (MSX2 TH), the unpacked layout and guard-digit rounding are an own-design implementation of the oracle-pinned rounding contract | sourced |
+| `fp_add`/`fp_sub`: align by shifting the smaller-exponent operand (a digit shifted past the guard is dropped), same-sign add / diff-sign subtract-and-renormalise, round-half-up on the guard digit | — | own design implementing spec §10.2's pinned rounding + carry-renormalise cases (`1+5e-14`→tie-up, `1-1e-15`→carry through 14 nines, `99999999999999+1`→mantissa carry) | sourced |
+| `fp_mul`: PRE-normalisation overflow/underflow check on the stored `dexp` sum (`e(a)+e(b)>63`→Overflow even when the normalised product fits); schoolbook 14×14→28-digit multiply; normalise; round | — | own design; the pre-check RULE (not the algorithm) is oracle-pinned (§10.2: `2e62*4`→Overflow though `8e62` is representable) | sourced |
+| `fp_div`: divisor-zero → FPERR=2 (Division by zero); PRE-check on `e(a)-e(b)+1>63`; classic zero-pad/trial-subtract/append-digit long division, 15 quotient digits (14+guard) | — | own design; overflow-PRE-check rule oracle-pinned (§10.2: `2e62/.4`→Overflow though `5e62` fits) | sourced |
+| Underflow (`e<-63` pre-check, either op) → silent 0, no FPERR | — | oracle-pinned (§10.2: `1e-40*1e-32`→`0`; boundary `1e-32*1e-32`→`1E-64` exact, `1e-33*1e-32`→`0`) | sourced |
+| `fp_cmp`: same relation-bit convention as `cmp16_bits` (1/2/4 = lt/eq/gt) | — | own design, reusing the existing int-compare convention (expr.asm) so `combine_cmp`'s float and int paths are interchangeable to `ev_rel` | sourced |
+
+### Domain converters + operator-site dispatch
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `fac_to_int_strict` (domain −32769<x<32768) and `fac_to_int_addr` (domain −32769<x<65536, wrap-then-truncate) — both TRUNCATE, not round | — | oracle-pinned (§10.3: `2.9\1`→`2`, `-2.9\1`→`-2`; address domain `40000.1`→`40001`, `65535.5`→wraps to `0`) | sourced |
+| F1's `flt_to_int16` reworked to the same wrap-then-truncate shape but SILENT (no FPERR) — used eagerly on every float factor, per spec §1 | — | own design; supersedes F1's D-F1-2 half-up interim (§10.3 explicitly corrects it) | sourced |
+| Operator-site protocol: a fixed-size LHS frame (FACTYP+FAC, 9 significant bytes) is pushed onto the Z80 stack at every `+ - * relational` site before the RHS is evaluated (FACTYP reset to 2 first); `combine_add`/`sub`/`mul`/`cmp`/`div_float` pop it back and dispatch int-fast-path-with-overflow-promotion vs BCD widen-and-combine | — | own design (spec §1 bullet 4's named mechanism); overflow-promotion RESULTS are oracle-pinned (§10.2: `32767+1`→`32768.0` double, `3125*625`→`1953125` exact) | sourced |
+| int⊗int overflow detection via the Z80 P/V flag after `ADC`/`SBC HL,ss` (`+`/`-`) and a full 32-bit unsigned product (`mul16x16_32`, `*`) — not 16-bit wraparound | — | own design; Z80 P/V-on-signed-overflow is architecture, not a reference-BASIC behaviour | sourced |
+| `/` is unconditionally the float path in the repack build (no int fast path) | — | oracle-pinned (§10.1: "`/` is always real division, always double") | sourced |
+| Relationals never int-convert either side — both operands widen to double when either is float | — | oracle-pinned (§10.1: `40000=40000!`→`-1`, no Overflow) | sourced |
+
+### Signed `\` / `MOD` (D-C migration)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `signed_div_de_bc`/`signed_mod_de_bc`: truncating signed division/remainder built around the existing unsigned `udiv16` magnitude divide; divisor 0 → FPERR=2 | — | own design; truncating-toward-zero + remainder-takes-dividend's-sign is oracle-pinned (§10.4: `7\2`→`3`, `-7\2`→`-3`, `7\-2`→`-3`, `-7 mod 2`→`-1`) | sourced |
+| Quirk: `-32768\-1` → true magnitude 32768 does not fit int16 → silently promotes to a double `32768.0` (no Overflow) | — | oracle-pinned (§10.4, the one case where signed division's own result escapes int16) | sourced |
+
+### Runtime error surface (D-F2-1)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| New `FPERR` cell (0 none / 1 overflow / 2 division-by-zero); statement drivers (`ex_if`/`ex_let`/`exp_num`) check it right after `eval()`/`ev_rel` and abort the WHOLE statement, mirroring D-2's `TMISMATCH`/`type_mismatch_error` pattern exactly | — | own design, D-2's established abort shape reused verbatim for the new flag | sourced |
+| Abort wording: "overflow" REUSES `program.asm`'s crunch-time `err_overflow` string byte-for-byte (not duplicated); "division by zero" is new, zerobas's own lowercase text | — | own design (D-2 wording convention: not the reference's verbatim capitalised text) | sourced |
+| `POKE`/`VPOKE` switch to `fac_to_int_addr` (checked, FPERR on overflow) instead of the silent eager conversion every other int-argument statement still uses (D-F2-2 residue, listed below) | — | own design; POKE/VPOKE are the two statements whose argument IS the address domain by definition (spec §10.3) | sourced |
+| `HEX$`'s argument conversion also switches to `fac_to_int_addr`, so `PRINT HEX$(65536.)` aborts the whole PRINT line (checked live: `[` never prints) | — | oracle-pinned (§10.2: "in `print "[";1/0;"]"` the `[` prints, then the message, never the value or `]`") | sourced |
+
+### Documented divergences / residue (own design)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| D-F2-1: runtime numeric errors abort the statement with zerobas's own lowercase wording, not the reference's verbatim capitalised text — same shape as D-2 | — | own design (D-2 wording convention, applied to the new flag) | quarantined |
+| D-F2-2: `OUT`'s port/value arguments (`basic/vdpio.asm` `do_out`) were left on the SILENT eager `flt_to_int16` conversion rather than switched to `fac_to_int_addr`; every OTHER int-argument statement not explicitly named above (loop bounds, array subscripts, etc.) is the same residue — out of the F2 brief's explicit wiring list (POKE/VPOKE/HEX$/PRINT only) | — | own design; deferred, not a correctness bug within F2's stated scope | quarantined |
+
+### Correctness fixes found in review (not oracle-pinned; internal control-flow)
+
+Three architectural bugs were found and fixed during F2's own implementation
+review, all instances of the same root cause — a shared "abort the whole
+operation" tail (`raf_zero_ok` / `type_mismatch_error` / `fp_runtime_error`,
+reached via a jump chain) reached through an intervening `call` boundary,
+so the abort's own final `ret` resumed the WRONG frame instead of unwinding
+past it. Fixed by having each such gate (`check_preexp_bounds` in
+float-arith.asm; `push_lhs_frame`/`pop_lhs_and_probe`, also float-arith.asm;
+`check_expr_errors`/`check_expr_errors_popbc` in interp.asm) explicitly
+discard the dead intervening return address(es) before jumping into the
+shared abort tail — own design, no oracle involvement (pure Z80 stack-frame
+mechanics). Caught by `tests/test_float.py`'s F2 matrices and, for the
+`interp.asm` instance, by `tests/test_str_compare.py`'s pre-existing D-2
+regression cases (`unit-test`'s full run, not the float-specific gate
+alone) — a reminder that a shared abort-tail refactor needs the FULL
+`unit-test` suite, not just the touched feature's own gate.
+
+### RAM + gates
+
+New cells `$F069–$F104` (FPERR/ARGA/ARGB/MULPROD/DIVPAD/DIVREM/CVT +
+combine-site scratch), all below zerobas-disk's `DRVA_DPB $F195` except the
+tail (`FP_OPMODE`/`CVT_MODE`/`PLF_RA`/`PLF_RA2` at `$F0FF–$F104`, still
+inside the free window — see sysvars.inc). **Gates:** `make` (lean) clean,
+16384 B, byte-identical to the pre-F2 baseline; `make basic-reloc` +
+`tools/check_reloc.py` clean (relocated image 22510 B, low region occupied,
+lean unchanged); `make unit-test` 45/45 files (`tests/test_float.py`'s F2
+matrices all pass: fp_add/sub/mul/div/cmp, both converters' domain/boundary
+matrices, signed `\`/`MOD` incl. the `-32768\-1` quirk, int-overflow
+promotion via `eval()`); `basic_probe_crunch.py` (lean, `--cart`) ALL PASS;
+`basic_probe_controlflow.py`/`basic_probe_loops.py`/`basic_probe_data.py`/
+`basic_probe_statements.py` (lean, `--cart`) ALL PASS; `audit-citations`
+clean for `basic/`.
+
+**Space blocker found this pass, RESOLVED same day (D5 revision):** F2 grew
+the low region ($2812–$3FFF) past the zerobas-tape page-0 patch's reserved
+splice window at `$3A72–$3C43` (D5), a constraint the implement brief's
+~2.0 KB budget did not account for — `make repack-main` failed its
+free-hole check, blocking the repack-machine differential gates. Resolved
+by revising D5 (spec-cbios-repack-tooling.md §6): the tape body moved to
+`FREE_ORG = $09EE`, the `0x00` fill free in ALL C-BIOS main variants,
+freeing the whole `$2812–$3FFF` window for BASIC. The differential-oracle
+gates were then run by the review pass (results recorded at the F2 S2
+close-out entry below).
+
+### F2 S2 close-out — review pass (Fable) + full gate record (2026-07-11)
+
+The review pass found and fixed TWO further bugs, both invisible to the
+implement pass's own matrices (the F1 lesson repeating: live/differential
+checks catch what the unit matrices structurally cannot):
+
+| What | Cited source | Status |
+|---|---|---|
+| IF truthiness over a float condition (`basic/interp.asm` ex_if): the condition was judged by the eagerly TRUNCATED DE, so `IF .5 THEN` took the FALSE branch. Fixed by a FACTYP dispatch (float -> DE:=0/1 from FAC's lead byte). Oracle-pinned by a companion capture (spec §10.4a: reference takes the TRUE branch on `IF .5 THEN`, FALSE on `IF 1.5-1.5 THEN`); pinned into the probe's RAW_LINES + re-verified live on the repack machine | spec §10.4a (basic_probe_float_arith.py companion capture, VG-8020) | sourced |
+| Float relationals trashed ev_rel's REQUESTED relation bits (`basic/float-arith.asm` combine_cmp): the widen/fp_cmp core clobbers C, so `and c` intersected with a leftover constant that happened to hold the =/> bits — every float `=`/`>` compare passed BY LUCK, every float `<`/`<>`/`<=` answered wrong (`1.5<1.4` -> -1). Caught by the FULL differential gate, first run. Fixed by BC save/restore on the float path; six eval()-integration cases added to tests/test_float.py so the fast layer pins it | own design (fix); spec §10.1 (the pinned contract the bug broke) | sourced |
+
+Probe hardening in the same pass (basic_probe_float_arith.py): machine-
+agnostic screen tails (zerobas's `zb>`-prefixed echo + bare-`zb>` prompt
+terminator), RAW lines compare their bracket SPAN (a >38-char echo wraps and
+has no matchable row), and SPAN_ONLY error cases now REQUIRE a tail on both
+sides (a dead machine can no longer pass vacuously on two absent spans).
+
+Also observed, documented, NOT chased (pre-existing, out of F2 scope): the
+expression-error surface is lenient — an unbalanced `(`-chain sets ERRMARK
+but PRINT still prints a value (lean: the error-marked 0; repack + floats:
+the FAC value, since exp_num dispatches on FACTYP). Same D-2-family
+leniency genre as ev_f_err's 0-result convention; F2 changes its FLAVOR for
+float expressions, nothing more.
+
+**Full gate record (final bits, 2026-07-11):** `make float-acceptance` ALL
+PASS — LITERALS + FORMAT halves (F1, unchanged) + the new ARITH half
+(basic_probe_float_arith.py, **167/167** vs the VG-8020: expressions, error
+surface incl. statement aborts, both conversion domains, signed \/MOD,
+IF truthiness, multi-item PRINT); `make unit-test` **45/45** files (incl.
+the new relational-bits cases); crunch probe byte-identical; the 4
+regression probes ALL PASS; `make string-acceptance` PASS (6 halves);
+`make input-acceptance` ALL PASS; `make diskbasic-acceptance-repack` 34/34;
+`make audit-citations` clean; lean `basic.rom` byte-identical to the pre-F2
+baseline (cmp). The space blocker was resolved by the D5 revision (tape
+body -> `$09EE`, commit 781348f, its own tape-gate re-run recorded there).
+Post-F2 space: page-0 content to `$3FFD` (2 B slack), page-1 tail 29 B —
+the window is essentially FULL; see the spec's D-G addendum for the F3
+space levers.

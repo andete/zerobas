@@ -601,7 +601,8 @@ exec_stmt:
                 ld      (PRDEST),a          ; only PRINT#'s own item loop sets dest=file
     IF ROM_BASE < $4000
                 ld      (TMISMATCH),a       ; A is still 0: clear the D-2 flag (a stale
-    ENDIF                                   ; set would misfire a later statement's check
+                ld      (FPERR),a           ; set would misfire a later statement's check
+    ENDIF                                   ; -- FPERR (F2 D-F2-1) mirrors TMISMATCH here
                 call    skip_spaces         ; leading spaces are skipped (spec §5)
                 ld      a,(hl)
                 or      a
@@ -785,13 +786,8 @@ ex_let:
                 inc     hl
                 call    eval                ; DE = value, HL = cursor (BC clobbered)
     IF ROM_BASE < $4000
-                ld      a,(TMISMATCH)       ; D-2: `R=A$<5` / `R=A$` set the comparator's
-                or      a                   ; type-mismatch flag instead of a value
-                jr      z,ex_let_ok
-                pop     bc                  ; discard the saved key (mirrors ex_let_err)
-                jp      type_mismatch_error
-ex_let_ok:
-    ENDIF
+                call    check_expr_errors_popbc  ; D-2/D-F2-1 (below): discards the
+    ENDIF                                        ; saved key before erroring
                 pop     bc                  ; BC = key
                 push    hl                  ; guard cursor across var_set_key
                 call    var_set_key         ; var[key] = DE
@@ -816,6 +812,13 @@ ex_let_str:
                 call    skip_spaces
                 call    str_eval            ; STRPTR -> RHS descriptor, HL advanced
                 jr      nc,els_err          ; not a string operand -> syntax error
+    IF ROM_BASE < $4000
+                call    cepb_fp             ; D-F2-1: e.g. A$=HEX$(65536.) aborts (the
+                                            ; overflow happens inside str_eval's HEX$
+                                            ; argument conversion, fac_to_int_addr) --
+                                            ; enters check_expr_errors_popbc's FPERR-only
+                                            ; half directly (str_eval already owns D-2)
+    ENDIF
                 pop     bc                  ; BC = dest key
                 push    hl                  ; guard cursor across str_set_key
                 ld      de,(STRPTR)         ; DE -> source descriptor
@@ -858,13 +861,96 @@ err_syntax:
 ; wording we don't copy).
     IF ROM_BASE < $4000
 type_mismatch_error:
-                xor     a
-                ld      (PRDEST),a
                 ld      hl,err_type_mismatch
-                call    print_string
-                ret
+                jr      fre_abort           ; shared PRDEST-zero+print+ret tail
+                                            ; (fp_runtime_error, right below)
 err_type_mismatch:
                 db      "type mismatch",13,10,0
+    ENDIF
+
+; --- fp_runtime_error: F2's statement-level abort for runtime numeric ------
+; errors (spec §10.2 D-F2-1: overflow / division by zero). Mirrors
+; type_mismatch_error exactly (zero PRDEST, print, ret to the prompt) — the
+; float ops (float-arith.asm) have no mid-expression unwind, only SET FPERR
+; and yield a defined value (0), so this IS the abort, realized at the
+; statement boundary by the driver that checks FPERR right after its
+; eval()/ev_rel call (same D-2 pattern as TMISMATCH/type_mismatch_error).
+; Message wording is zerobas's own lowercase text (D-F2-1): "overflow"
+; REUSES program.asm's err_overflow string byte-for-byte (dl_overflow, the
+; crunch-time overflow message) instead of duplicating it; "division by
+; zero" is new. NOT the reference's verbatim "?Overflow"/"?Division by zero
+; Error" text (divergence, like D-2).
+    IF ROM_BASE < $4000
+fp_runtime_error:
+                ld      hl,err_overflow     ; program.asm (dl_overflow); shared wording
+                ld      a,(FPERR)
+                cp      2
+                jr      nz,fre_abort
+                ld      hl,err_fp_divzero
+fre_abort:
+                xor     a
+                ld      (PRDEST),a
+                jp      print_string
+err_fp_divzero:
+                db      "division by zero",13,10,0
+
+; --- check_expr_errors: shared TMISMATCH+FPERR post-eval() check for ------
+; drivers that need no extra stack cleanup before erroring (ex_if, exp_num
+; via print.asm). Falls through (returns) if neither flag is set. On error,
+; type_mismatch_error/fp_runtime_error print the message and, via print_
+; string's own final "ret", return not to us but to OUR caller (ex_if/
+; exp_num) -- a full statement-abort, matching the ORIGINAL inline-check
+; shape this routine replaced (a direct "jp nz,type_mismatch_error" right
+; in the driver, no intervening call). Since THIS routine is itself
+; reached via a plain "call check_expr_errors", its own return address
+; sits on top of whatever our caller's stack looked like, and would
+; otherwise be what that final "ret" lands on instead -- resuming our
+; caller's own subsequent code after the abort already printed its message
+; and should have skipped the rest of the statement (caught live: `IF A$<5
+; THEN` printed "type mismatch" and then ALSO "syntax error", `PRINT A$<5`
+; printed "type mismatch" and then ALSO " 0 " -- the driver's own
+; leftover logic running when it should not have). Fixed the same way as
+; check_preexp_bounds's identical hazard (float-arith.asm): discard our
+; own return address before jumping into the abort chain. Clobbers A.
+check_expr_errors:
+                ld      a,(TMISMATCH)
+                or      a
+                jr      nz,cee_abort_tm
+                ld      a,(FPERR)
+                or      a
+                jr      nz,cee_abort_fp
+                ret
+cee_abort_tm:
+                pop     hl                  ; discard our own dead resume addr
+                jp      type_mismatch_error
+cee_abort_fp:
+                pop     hl                  ; discard our own dead resume addr
+                jp      fp_runtime_error
+
+; --- check_expr_errors_popbc: the same check for drivers that must POP a --
+; saved key (BC) off the stack before erroring (ex_let: both flags; ex_let_
+; str enters at cepb_fp directly — str_eval already handles its own D-2
+; case via `jr nc,els_err`, so only FPERR applies there, e.g.
+; `A$=HEX$(65536.)`). Falls through (returns, BC untouched) if clear. Same
+; own-return-address hazard as check_expr_errors above, PLUS the caller's
+; own saved key sitting just beneath it -- both must be discarded (in that
+; order: ours first, since it's on top) before the abort chain fires.
+check_expr_errors_popbc:
+                ld      a,(TMISMATCH)
+                or      a
+                jr      z,cepb_fp
+                pop     hl                  ; discard our own dead resume addr
+                pop     bc                  ; discard the caller's saved key
+                jp      type_mismatch_error
+cepb_fp:
+                ld      a,(FPERR)
+                or      a
+                jr      nz,cepb_abort_fp
+                ret
+cepb_abort_fp:
+                pop     hl                  ; discard our own dead resume addr
+                pop     bc                  ; discard the caller's saved key
+                jp      fp_runtime_error
     ENDIF
 
 ; --- ex_letkw: optional LET keyword before an assignment -------------------
@@ -912,9 +998,24 @@ ex_if:
                 call    skip_spaces
                 call    eval                ; DE = condition, HL after expr
     IF ROM_BASE < $4000
-                ld      a,(TMISMATCH)       ; D-2: `IF A$<5 THEN...` aborts before either
-                or      a                   ; clause runs (both the THEN and GOTO forms
-                jp      nz,type_mismatch_error  ; share this one eval() call)
+                call    check_expr_errors   ; D-2/D-F2-1: `IF A$<5 THEN...` / a runtime
+                                            ; numeric error both abort before either clause
+                ; Float truthiness (F2 review live-check, 2026-07-11: the
+                ; reference takes the TRUE branch on `IF .5 THEN` — any
+                ; nonzero float is true): a float condition must not be
+                ; judged by the eagerly TRUNCATED DE (.5 -> 0, falsely
+                ; false). FACTYP<>2 -> substitute DE := 0/1 from FAC's lead
+                ; byte (whole lead byte 0 <=> value 0, spec §9.1), so the
+                ; existing D/E tests below stay the only truthiness judges.
+                ld      a,(FACTYP)
+                cp      2
+                jr      z,exif_truth_ok
+                ld      de,0
+                ld      a,(FAC)
+                or      a
+                jr      z,exif_truth_ok
+                inc     e                   ; nonzero float -> DE=1 (true)
+exif_truth_ok:
     ENDIF
                 call    skip_spaces
                 ld      a,(hl)

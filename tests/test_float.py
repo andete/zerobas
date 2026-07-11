@@ -139,6 +139,298 @@ def hx(s):
     return bytes.fromhex(s)
 
 
+# =============================================================================
+# F2 additions: arithmetic + relationals + signed-int migration
+# (docs/spec-basic-float-core.md §10). Drives float-arith.asm's routines
+# directly (fp_add/fp_sub/fp_mul/fp_div, fac_to_int_strict/fac_to_int_addr,
+# signed_div_de_bc/signed_mod_de_bc, fp_cmp) plus a handful of eval()
+# integration cases for int-overflow promotion. Mirrors every §10.2/§10.3/
+# §10.4 pin cited in the spec; this is the fast regression layer under the
+# oracle gate (make float-acceptance ARITH half), not a replacement for it.
+# =============================================================================
+
+import decimal
+decimal.getcontext().prec = 40
+D = decimal.Decimal
+
+
+def poke_fpnum(m, base, value):
+    """Write an FPNUM record (sign:1, dexp:2, dig:15) at `base` representing
+    the exact decimal `value` (a Decimal or int; 0 -> canonical zero)."""
+    value = D(value)
+    if value == 0:
+        m.poke(base, bytes(18))
+        return
+    sign = 0x80 if value < 0 else 0x00
+    mag = -value if value < 0 else value
+    digits, exp = mag.as_tuple().digits, mag.as_tuple().exponent
+    # digits is the significant-digit tuple MSD-first; the value's dec_exp
+    # (0.d1d2...*10^dec_exp convention) = (len(digits) + exp).
+    dec_exp = len(digits) + exp
+    dig14 = (list(digits) + [0] * 14)[:14]
+    m.poke(base, bytes([sign]))
+    m.poke_w(base + 1, dec_exp & 0xFFFF)
+    m.poke(base + 3, bytes(dig14 + [0]))  # 14 sig + 1 guard(always 0 on load)
+
+
+def decode_fac(m, s):
+    """Read FAC/FACTYP -> exact Decimal value (0 for the canonical-zero lead
+    byte)."""
+    FAC = s["FAC"]
+    lead = m.peek(FAC)[0]
+    if lead == 0:
+        return D(0)
+    factyp = m.peek(s["FACTYP"])[0]
+    nbytes = 7 if factyp == 8 else 3
+    mant = m.peek(FAC + 1, nbytes)
+    digits = []
+    for b in mant:
+        digits.append(b >> 4)
+        digits.append(b & 0xF)
+    sign = -1 if (lead & 0x80) else 1
+    dec_exp = (lead & 0x7F) - 64
+    mantissa_int = int("".join(str(d) for d in digits)) if digits else 0
+    return sign * D(mantissa_int) * (D(10) ** (dec_exp - len(digits)))
+
+
+def enc_int(n):
+    """Encode a 0..32767 int as its crunched token bytes (no unary minus;
+    interp.asm tk_number's own shapes)."""
+    assert 0 <= n <= 32767
+    if n <= 9:
+        return bytes([0x11 + n])
+    if n <= 255:
+        return bytes([0x0F, n])
+    return bytes([0x1C, n & 0xFF, (n >> 8) & 0xFF])
+
+
+def run_f2(m, s, ck):
+    fails = 0
+
+    def ckf(label, got, want):
+        nonlocal fails
+        ok = got == want
+        fails += not ok
+        print(f"{'PASS' if ok else 'FAIL'}  {label}: got {got!r} want {want!r}")
+
+    ARGA = s["ARGA"]
+    ARGB = s["ARGB"]
+    FACTYP = s["FACTYP"]
+    FPERR = s["FPERR"]
+
+    def do_op(routine, a, b):
+        """poke ARGA<-a, ARGB<-b, call the BCD op, return (decoded FAC value
+        or None if FPERR set, FPERR byte)."""
+        poke_fpnum(m, ARGA, a)
+        poke_fpnum(m, ARGB, b)
+        m.poke(FPERR, 0)
+        m.call(routine)
+        err = m.peek(FPERR)[0]
+        if err:
+            return None, err
+        return decode_fac(m, s), err
+
+    print("# --- F2: fp_add / fp_sub (spec §10.2) ---")
+    ADD_CASES = [
+        ("fp_add", D("1"), D("5E-14"), D("1.0000000000001")),   # tie up
+        ("fp_add", D("1"), D("4E-14"), D("1")),                  # no round
+        ("fp_add", D("1"), D("-1E-15"), D("1")),                  # carry thru 14 nines
+        ("fp_add", D("99999999999999"), D("1"), D("1E+14")),       # mantissa carry
+        ("fp_add", D("1E+62"), D("0"), D("1E+62")),
+        ("fp_add", D("123456"), D("0.5"), D("123456.5")),           # single+single->double exact
+        ("fp_add", D("1000000"), D("1"), D("1000001")),
+        ("fp_sub", D("2.00001"), D("1.000005"), D("1.000005")),
+        ("fp_sub", D("0"), D("0"), D("0")),
+    ]
+    for routine, a, b, want in ADD_CASES:
+        got, err = do_op(routine, a, b)
+        ckf(f"{routine}({a},{b})", got, want)
+        ckf(f"{routine}({a},{b}) FPERR", err, 0)
+
+    print("# --- F2: fp_add/fp_sub overflow (spec §10.2) ---")
+    got, err = do_op("fp_add", D("9E+62"), D("9E+62"))
+    ckf("fp_add(9e62,9e62) FPERR=overflow", err, 1)
+
+    print("# --- F2: fp_mul (spec §10.2) ---")
+    MUL_CASES = [
+        (D("3125"), D("625"), D("1953125")),
+        (D("123456"), D("654321"), D("80779853376")),
+        (D("9E+61"), D("9"), D("8.1E+62")),                       # 62+1=63 passes
+        (D("1E-32"), D("1E-32"), D("1E-64")),                       # underflow boundary
+        (D("2.5"), D("1.0000000000001"), D("2.5000000000003")),      # mul tie up
+    ]
+    for a, b, want in MUL_CASES:
+        got, err = do_op("fp_mul", a, b)
+        ckf(f"fp_mul({a},{b})", got, want)
+        ckf(f"fp_mul({a},{b}) FPERR", err, 0)
+    got, err = do_op("fp_mul", D("2E+62"), D("4"))
+    ckf("fp_mul(2e62,4) FPERR=overflow (63+1=64, pre-check)", err, 1)
+    got, err = do_op("fp_mul", D("1E-33"), D("1E-32"))
+    ckf("fp_mul(1e-33,1e-32) -> 0 (underflow, silent)", got, D(0))
+    ckf("fp_mul(1e-33,1e-32) FPERR", err, 0)
+
+    print("# --- F2: fp_div (spec §10.2) ---")
+    DIV_CASES = [
+        (D("1"), D("3"), D("0.33333333333333")),
+        (D("2"), D("3"), D("0.66666666666667")),
+        (D("-2"), D("3"), D("-0.66666666666667")),                  # magnitude rounding
+        (D("1.0000000000003"), D("4"), D("0.25000000000008")),        # div tie up
+        (D("1"), D("512"), D("0.001953125")),
+    ]
+    for a, b, want in DIV_CASES:
+        got, err = do_op("fp_div", a, b)
+        ckf(f"fp_div({a},{b})", got, want)
+        ckf(f"fp_div({a},{b}) FPERR", err, 0)
+    got, err = do_op("fp_div", D("2E+62"), D("0.4"))
+    ckf("fp_div(2e62,.4) FPERR=overflow (63-0+1=64, pre-check)", err, 1)
+    got, err = do_op("fp_div", D("1"), D("0"))
+    ckf("fp_div(1,0) FPERR=division by zero", err, 2)
+    got, err = do_op("fp_div", D("1E-40"), D("1E+30"))
+    ckf("fp_div(1e-40,1e30) -> 0 (underflow, silent)", got, D(0))
+    ckf("fp_div(1e-40,1e30) FPERR", err, 0)
+
+    print("# --- F2: fp_cmp (spec §10.1) ---")
+    CMP_CASES = [
+        (D("1.5"), D("1.5"), 2), (D("1.5"), D("1.4"), 4), (D("1.4"), D("1.5"), 1),
+        (D("-1.5"), D("-1"), 1), (D("2"), D("1.5"), 4), (D("0"), D("0"), 2),
+        (D("0"), D("1"), 1), (D("1"), D("0"), 4), (D("0"), D("-1"), 4),
+        (D("-1"), D("0"), 1), (D("40000"), D("40000"), 2),
+        (D(".1"), D(".1"), 2),
+    ]
+    for a, b, want in CMP_CASES:
+        poke_fpnum(m, ARGA, a)
+        poke_fpnum(m, ARGB, b)
+        cpu = m.call("fp_cmp")
+        ckf(f"fp_cmp({a},{b})", cpu.a, want)
+
+    print("# --- F2: fac_to_int_strict (spec §10.3, strict int16 domain) ---")
+    STRICT_CASES = [
+        (D("2.9"), 2), (D("-2.9"), -2), (D("32767.5"), 32767),
+        (D("-32768.5"), -32768), (D("40000"), None),   # overflow
+        (D("-32769"), None),                             # overflow (excluded bound)
+    ]
+    for value, want in STRICT_CASES:
+        _poke_fac_from_decimal(m, s, value)
+        m.poke(FPERR, 0)
+        cpu = m.call("fac_to_int_strict")
+        err = m.peek(FPERR)[0]
+        if want is None:
+            ckf(f"fac_to_int_strict({value}) overflow", err, 1)
+        else:
+            ckf(f"fac_to_int_strict({value})", cpu.de & 0xFFFF, want & 0xFFFF)
+            ckf(f"fac_to_int_strict({value}) FPERR", err, 0)
+
+    print("# --- F2: fac_to_int_addr (spec §10.3, address domain + wrap) ---")
+    ADDR_CASES = [
+        (D("2.9"), 2), (D("-2.5"), -2), (D("32767.5"), 32767),
+        (D("40000.1"), 0x9C41), (D("40000.5"), 0x9C41), (D("65535.5"), 0),
+        (D("65536"), None), (D("-32768.9"), -32768 & 0xFFFF),
+        (D("100000"), None), (D("40000"), 40000),
+    ]
+    for value, want in ADDR_CASES:
+        _poke_fac_from_decimal(m, s, value)
+        m.poke(FPERR, 0)
+        cpu = m.call("fac_to_int_addr")
+        err = m.peek(FPERR)[0]
+        if want is None:
+            ckf(f"fac_to_int_addr({value}) overflow", err, 1)
+        else:
+            ckf(f"fac_to_int_addr({value})", cpu.de & 0xFFFF, want & 0xFFFF)
+            ckf(f"fac_to_int_addr({value}) FPERR", err, 0)
+
+    print("# --- F2: signed \\ and MOD (spec §10.4, D-C migration) ---")
+    SDIV_CASES = [
+        (7, 2, 3), (-7, 2, -3), (7, -2, -3), (-7, -2, 3), (32767, -1, -32767),
+    ]
+    for a, b, want in SDIV_CASES:
+        m.poke(FPERR, 0)
+        cpu = m.call("signed_div_de_bc", de=a & 0xFFFF, bc=b & 0xFFFF)
+        ckf(f"signed_div_de_bc({a}\\{b})", to_signed(cpu.de), want)
+        ckf(f"signed_div_de_bc({a}\\{b}) FPERR", m.peek(FPERR)[0], 0)
+    SMOD_CASES = [
+        (7, 2, 1), (-7, 2, -1), (7, -2, 1), (-7, -2, -1),
+    ]
+    for a, b, want in SMOD_CASES:
+        m.poke(FPERR, 0)
+        cpu = m.call("signed_mod_de_bc", de=a & 0xFFFF, bc=b & 0xFFFF)
+        ckf(f"signed_mod_de_bc({a} mod {b})", to_signed(cpu.de), want)
+        ckf(f"signed_mod_de_bc({a} mod {b}) FPERR", m.peek(FPERR)[0], 0)
+    # div-by-zero
+    m.poke(FPERR, 0)
+    cpu = m.call("signed_div_de_bc", de=1, bc=0)
+    ckf("signed_div_de_bc(1\\0) FPERR=division by zero", m.peek(FPERR)[0], 2)
+    ckf("signed_div_de_bc(1\\0) DE", cpu.de, 0)
+    m.poke(FPERR, 0)
+    cpu = m.call("signed_mod_de_bc", de=1, bc=0)
+    ckf("signed_mod_de_bc(1 mod 0) FPERR=division by zero", m.peek(FPERR)[0], 2)
+    # the -32768\-1 escape quirk: true magnitude 32768 doesn't fit int16 ->
+    # promoted to double (FAC=32768.0, FACTYP=8), DE = silent flt_to_int16
+    m.poke(FPERR, 0)
+    cpu = m.call("signed_div_de_bc", de=(-32768) & 0xFFFF, bc=(-1) & 0xFFFF)
+    ckf("signed_div_de_bc(-32768\\-1) FPERR (no error, quirk)", m.peek(FPERR)[0], 0)
+    ckf("signed_div_de_bc(-32768\\-1) promotes to double", m.peek(FACTYP)[0], 8)
+    ckf("signed_div_de_bc(-32768\\-1) FAC value", decode_fac(m, s), D(32768))
+
+    print("# --- F2: int-overflow promotion (eval() integration, spec §10.2) ---")
+    PROMOTE_CASES = [
+        (enc_int(32767) + bytes([0xF1]) + enc_int(1), D(32768)),        # 32767+1
+        (enc_int(32000) + bytes([0xF1]) + enc_int(32000), D(64000)),     # 32000+32000
+        (enc_int(32767) + bytes([0xF3]) + enc_int(2), D(65534)),          # 32767*2
+        (enc_int(300) + bytes([0xF3]) + enc_int(300), D(90000)),           # 300*300
+    ]
+    SRC2 = 0xC200
+    for tokens, want in PROMOTE_CASES:
+        m.poke(SRC2, tokens + b"\x00")
+        m.poke(FACTYP, 2)
+        cpu = m.call("eval", hl=SRC2)
+        ckf(f"eval(overflow case) FACTYP", m.peek(FACTYP)[0], 8)
+        ckf(f"eval(overflow case) value", decode_fac(m, s), want)
+
+    # --- F2 review: float relationals must PRESERVE ev_rel's requested ------
+    # relation bits in C across the widen/fp_cmp core (combine_cmp pushes BC
+    # on its float path). Caught by the full differential gate: with C
+    # trashed to a value holding the =/> bits, every float `=`/`>` compare
+    # passed by luck and every `<`/`<>`/`<=` answered wrong (spec §10.1).
+    print("# --- F2: float relational requested-bits preservation (eval) ---")
+    SNG15 = bytes.fromhex("1D41150000")   # 1.5  (ENCODE_CASES above)
+    SNG14 = bytes.fromhex("1D41140000")   # 1.4
+    REL_CASES = [
+        ("1.5<1.4",  SNG15 + b"\xF0" + SNG14, 0),
+        ("1.5>1.4",  SNG15 + b"\xEE" + SNG14, -1),
+        ("1.5=1.5",  SNG15 + b"\xEF" + SNG15, -1),
+        ("1.5<>1.5", SNG15 + b"\xF0\xEE" + SNG15, 0),
+        ("1.5<=1.4", SNG15 + b"\xF0\xEF" + SNG14, 0),
+        ("-1.5<-1",  b"\xF2" + SNG15 + b"\xF0\xF2\x12", -1),
+    ]
+    for name, tokens, want in REL_CASES:
+        m.poke(SRC2, tokens + b"\x00")
+        m.poke(FACTYP, 2)
+        m.poke(FPERR, 0)
+        cpu = m.call("eval", hl=SRC2)
+        ckf(f"eval({name}) FACTYP int", m.peek(FACTYP)[0], 2)
+        ckf(f"eval({name})", to_signed(cpu.de), want)
+
+    return fails
+
+
+def to_signed(v):
+    v &= 0xFFFF
+    return v - 0x10000 if v >= 0x8000 else v
+
+
+def _poke_fac_from_decimal(m, s, value):
+    """Populate FAC/FACTYP (double) directly from a Decimal, for converter
+    tests that read FAC/FACTYP rather than ARGA/ARGB."""
+    ARGA = s["ARGA"]
+    poke_fpnum(m, ARGA, value)
+    # ARGA is [sign:1][dexp:2][dig:15]; FAC/FACTYP want the packed format,
+    # so route through fp_add(ARGA,0) to get a clean packed FAC via the
+    # already-verified pack path (round_and_finalize).
+    poke_fpnum(m, s["ARGB"], D(0))
+    m.poke(s["FPERR"], 0)
+    m.call("fp_add")
+
+
 def run():
     build()
     m = Machine(ROM, SYM, rom_base=RELOC_BASE)
@@ -193,28 +485,37 @@ def run():
         got = "".join(chr(b) for b in out)
         ck(f"flt_out(FAC={fac_hex},FACTYP={factyp})", got, want)
 
-    print("# --- flt_to_int16: half-up, 16-bit address domain (D-F1-2) ---")
-    # Range is -32768..65535 (positive -> unsigned bit pattern), matching the
-    # published POKE/HEX$ argument domain and the pre-F1 unsigned $1C cruncher
-    # (see flt_to_int16's header). Wants are given as ordinary ints and
-    # compared as raw 16-bit patterns (want & 0xFFFF), so +32768 and -32768
-    # both mean $8000.
+    print("# --- flt_to_int16: TRUNCATING, address domain (spec §10.3, F2) ---")
+    # F2 correction (spec §10.3): the reference TRUNCATES toward zero (not F1's
+    # reasoned-not-pinned half-up); a value >=32768 wraps by -65536 first, any
+    # fractional remainder then rounds the wrapped magnitude UP by one. Range
+    # is -32769<x<65536; out of domain -> silent 0 (this converter has no
+    # error flag -- flt_to_int16 runs eagerly on every float factor). Wants
+    # are ordinary ints, compared as raw 16-bit patterns (want & 0xFFFF).
     FTI_CASES = [
-        ("41 15 00 00", 4, 2),                    # 1.5 -> 2 (half-up)
+        ("41 15 00 00", 4, 1),                    # 1.5 -> 1 (truncate)
         ("41 24 00 00", 4, 2),                     # 2.4 -> 2
-        ("41 25 00 00", 4, 3),                      # 2.5 -> 3 (half-up)
-        ("C1 25 00 00", 4, -3),                      # -2.5 -> -3
+        ("41 25 00 00", 4, 2),                      # 2.5 -> 2 (truncate, not half-up)
+        ("C1 25 00 00", 4, -2),                      # -2.5 -> -2 (truncate toward 0)
         ("49 00 00 00 00 00 00 00", 8, 0),            # dec_exp=9, N>=6 -> out of range -> 0
-        ("45 32 76 74", 4, 32767),                     # 32767.4 -> 32767 (no round)
-        ("45 32 76 76", 4, 32768),                      # 32767.6 -> 32768 (in domain now)
+        ("45 32 76 74", 4, 32767),                     # 32767.4 -> 32767
+        ("45 32 76 76", 4, 32767),                      # 32767.6 -> 32767 (truncate)
         ("45 40 00 00", 4, 40000),                       # POKE-address regression anchor
         ("45 65 53 50", 4, 65535),                        # unsigned ceiling
-        ("45 65 53 55", 4, 0),                             # 65535.5 -> wraps -> 0
-        ("45 99 99 99", 4, 0),                              # 99999 > 65535 -> 0
-        ("C5 32 76 80", 4, -32768),                          # negative floor
-        ("C5 32 76 85", 4, 0),                                # -32768.5 -> past floor -> 0
-        ("C5 32 76 90", 4, 0),                                 # -32769 -> 0
+        ("45 65 53 55", 4, 0),                             # 65535.5 -> wrap -> -0.5 -> 0
+        ("45 99 99 99", 4, 0),                              # 99999 > 65535 -> out of domain -> 0
+        ("C5 32 76 80", 4, -32768),                          # negative floor, exact
+        ("C5 32 76 85", 4, -32768),                           # -32768.5 -> truncate -> -32768
+                                                                # (magnitude 32768 <= bound, in
+                                                                # domain -- same shape as the
+                                                                # -32768.9 pin below)
+        ("C5 32 76 89", 4, -32768),                            # -32768.9 -> truncate -> -32768
+                                                                 # (spec §10.3 pin: hex$(-32768.9)
+                                                                 # -> "8000")
+        ("C5 32 76 90", 4, 0),                                  # -32769 exact -> out of domain -> 0
         ("00 00 00 00", 4, 0),                                  # 0
+        ("45 40 00 05", 4, 0x9C41),                              # 40000.5 -> wrap+frac -> 40001
+                                                                   # (spec §10.3 pin: hex$(40000.5))
     ]
     for fac_hex, factyp, want in FTI_CASES:
         facbytes = hx(fac_hex)
@@ -223,7 +524,7 @@ def run():
         cpu = m.call("flt_to_int16")
         ck(f"flt_to_int16(FAC={fac_hex},FACTYP={factyp})", cpu.de, want & 0xFFFF)
 
-    print("# --- flt_neg / flt_guard ---")
+    print("# --- flt_neg ---")
     m.poke(FAC, hx("41150000"))
     m.call("flt_neg")
     ck("flt_neg flips the sign bit", m.peek(FAC)[0], 0xC1)
@@ -232,17 +533,6 @@ def run():
     m.poke(FAC, hx("00000000"))
     m.call("flt_neg")
     ck("flt_neg exempts the value-0 lead byte", m.peek(FAC)[0], 0x00)
-
-    ERRMARK = s["ERRMARK"]
-    m.poke(FACTYP, 4)
-    m.poke(ERRMARK, 0)
-    m.call("flt_guard")
-    ck("flt_guard: FACTYP<>2 sets ERRMARK", m.peek(ERRMARK)[0], 0xDD)
-    ck("flt_guard: FACTYP<>2 resets FACTYP to 2", m.peek(FACTYP)[0], 2)
-    m.poke(FACTYP, 2)
-    m.poke(ERRMARK, 0)
-    m.call("flt_guard")
-    ck("flt_guard: FACTYP==2 is a no-op", m.peek(ERRMARK)[0], 0)
 
     print("# --- FACTYP leak through function factors (F1 review live-catch) ---")
     # `PRINT PEEK(40000.)` printed 40000 (the sticky FAC) instead of the
@@ -260,7 +550,9 @@ def run():
     m.poke(SRC, b"(" + hx("1D 41 15 00 00") + b")\x00")
     cpu = m.call("eval", hl=SRC)
     ck("(1.5) keeps FACTYP=4 (parens preserve floatness)", m.peek(FACTYP)[0], 4)
-    ck("(1.5) still yields the rounded int in DE", cpu.de, 2)
+    ck("(1.5) still yields the truncated int in DE", cpu.de, 1)
+
+    fails += run_f2(m, s, ck)
 
     print(f"\n{'ALL PASS' if not fails else f'{fails} FAILED'}")
     return 1 if fails else 0

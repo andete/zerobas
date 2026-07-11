@@ -57,9 +57,22 @@ ev_xor_lp:
                 ld      a,(ix+0)
                 cp      XOR_TOKEN
                 ret     nz
+    IF ROM_BASE < $4000
+                ; spec §10.3 "strict int16 domain": convert the operand NOW
+                ; (fac_to_int_strict re-derives it from FAC/FACTYP if it was
+                ; float, ignoring the already-address-domain-rounded DE), then
+                ; reset FACTYP=2 so it doesn't leak stale into the rhs eval —
+                ; no FAC save is needed here (unlike ev_e/ev_t's double-
+                ; widening sites) because the conversion to a plain int
+                ; happens immediately, before the rhs eval can clobber FAC.
+                call    fac_to_int_strict_reset
+    ENDIF
                 inc     ix
                 push    de
                 call    ev_or               ; DE = rhs
+    IF ROM_BASE < $4000
+                call    fac_to_int_strict_reset
+    ENDIF
                 pop     hl                  ; HL = lhs
                 ld      a,l
                 xor     e
@@ -68,9 +81,6 @@ ev_xor_lp:
                 xor     d
                 ld      h,a
                 ex      de,hl               ; DE = lhs XOR rhs
-    IF ROM_BASE < $4000
-                call    flt_guard
-    ENDIF
                 jr      ev_xor_lp
 ev_or:
                 call    ev_and
@@ -79,9 +89,15 @@ ev_or_lp:
                 ld      a,(ix+0)
                 cp      OR_TOKEN
                 ret     nz
+    IF ROM_BASE < $4000
+                call    fac_to_int_strict_reset
+    ENDIF
                 inc     ix
                 push    de
                 call    ev_and
+    IF ROM_BASE < $4000
+                call    fac_to_int_strict_reset
+    ENDIF
                 pop     hl
                 ld      a,l
                 or      e
@@ -90,9 +106,6 @@ ev_or_lp:
                 or      d
                 ld      h,a
                 ex      de,hl               ; DE = lhs OR rhs
-    IF ROM_BASE < $4000
-                call    flt_guard
-    ENDIF
                 jr      ev_or_lp
 ev_and:
                 call    ev_not
@@ -101,9 +114,15 @@ ev_and_lp:
                 ld      a,(ix+0)
                 cp      AND_TOKEN
                 ret     nz
+    IF ROM_BASE < $4000
+                call    fac_to_int_strict_reset
+    ENDIF
                 inc     ix
                 push    de
                 call    ev_not
+    IF ROM_BASE < $4000
+                call    fac_to_int_strict_reset
+    ENDIF
                 pop     hl
                 ld      a,l
                 and     e
@@ -112,9 +131,6 @@ ev_and_lp:
                 and     d
                 ld      h,a
                 ex      de,hl               ; DE = lhs AND rhs
-    IF ROM_BASE < $4000
-                call    flt_guard
-    ENDIF
                 jr      ev_and_lp
 ev_not:
                 call    ev_sp
@@ -125,15 +141,15 @@ ev_not:
 ev_not_do:
                 inc     ix
                 call    ev_not              ; unary, right-assoc (NOT NOT x)
+    IF ROM_BASE < $4000
+                call    fac_to_int_strict_reset
+    ENDIF
                 ld      a,e
                 cpl
                 ld      e,a
                 ld      a,d
                 cpl
                 ld      d,a                 ; DE = ~DE (ones complement)
-    IF ROM_BASE < $4000
-                call    flt_guard
-    ENDIF
                 ret
 
 ; --- ev_rel: relational layer ----------------------------------------------
@@ -187,23 +203,32 @@ evr_rhs:
                 jp      c,evr_mismatch      ; RHS is a string, LHS was numeric -> D-2
     ENDIF
                 push    de                  ; lhs
+    IF ROM_BASE < $4000
+                ; spec §10.1: relationals over any float operand compare AS
+                ; floats after widening (never int-converted, `40000=40000!`
+                ; -> -1, no Overflow). Save the LHS's FACTYP+FAC on the
+                ; machine stack (same fixed-size frame protocol as the ev_e/
+                ; ev_t double-arithmetic sites) before the rhs eval clobbers
+                ; FAC, then reset FACTYP=2 for the rhs eval.
+                call    push_lhs_frame
+                call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
+    ENDIF
                 push    bc                  ; relation bits (in C)
                 call    ev_e                ; DE = rhs
                 pop     bc                  ; C = bits
+    IF ROM_BASE < $4000
+                call    combine_cmp         ; pops the lhs frame + value; A =
+                                            ; relation bit (1/2/4); FACTYP:=2
+    ELSE
                 pop     hl                  ; HL = lhs
                 call    cmp16_bits          ; A = actual relation bit (1/2/4)
+    ENDIF
                 and     c                   ; intersect requested with actual
                 jr      z,evr_false
                 ld      de,$FFFF            ; true = -1
-    IF ROM_BASE < $4000
-                call    flt_guard
-    ENDIF
                 ret
 evr_false:
                 ld      de,0                ; false = 0
-    IF ROM_BASE < $4000
-                call    flt_guard
-    ENDIF
                 ret
     IF ROM_BASE < $4000
 evr_mismatch:
@@ -285,24 +310,38 @@ ev_e_lp:
 ev_e_add:
                 inc     ix
                 push    de                  ; lhs
+    IF ROM_BASE < $4000
+                ; spec §1 bullet 4: save the lhs's FACTYP+FAC on the machine
+                ; stack (fixed-size frame) before the rhs eval clobbers FAC,
+                ; reset FACTYP=2 for the rhs eval. combine_add decides int-
+                ; fast-path (with signed-overflow-promotion) vs BCD add.
+                call    push_lhs_frame
+                call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
+    ENDIF
                 call    ev_mod              ; DE = rhs
+    IF ROM_BASE < $4000
+                call    combine_add         ; pops the frame; DE = result
+    ELSE
                 pop     hl                  ; HL = lhs
                 add     hl,de
                 ex      de,hl               ; DE = sum
-    IF ROM_BASE < $4000
-                call    flt_guard
     ENDIF
                 jr      ev_e_lp
 ev_e_sub:
                 inc     ix
                 push    de                  ; lhs
+    IF ROM_BASE < $4000
+                call    push_lhs_frame
+                call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
+    ENDIF
                 call    ev_mod              ; DE = rhs
+    IF ROM_BASE < $4000
+                call    combine_sub
+    ELSE
                 pop     hl                  ; HL = lhs
                 or      a                   ; clear carry
                 sbc     hl,de               ; HL = lhs - rhs
                 ex      de,hl
-    IF ROM_BASE < $4000
-                call    flt_guard
     ENDIF
                 jr      ev_e_lp
 
@@ -314,15 +353,26 @@ ev_mod_lp:
                 ld      a,(ix+0)
                 cp      MOD_TOKEN
                 ret     nz
+    IF ROM_BASE < $4000
+                ; spec §10.3: \ / MOD operands convert via the STRICT int16
+                ; domain (not the address domain) -- immediately, no FAC save
+                ; needed since the plain int value is captured before the
+                ; rhs eval can clobber FAC.
+                call    fac_to_int_strict_reset
+    ENDIF
                 inc     ix
                 push    de                  ; lhs (dividend)
                 call    ev_idiv             ; DE = rhs (divisor)
+    IF ROM_BASE < $4000
+                call    fac_to_int_strict_reset
+    ENDIF
                 ld      b,d
                 ld      c,e                 ; BC = divisor
                 pop     de                  ; DE = dividend
-                call    mod_de_bc           ; DE = remainder
     IF ROM_BASE < $4000
-                call    flt_guard
+                call    signed_mod_de_bc    ; D-C: MSX-signed MOD (spec §10.4)
+    ELSE
+                call    mod_de_bc           ; DE = remainder
     ENDIF
                 jr      ev_mod_lp
 
@@ -334,21 +384,28 @@ ev_idiv_lp:
                 ld      a,(ix+0)
                 cp      IDIV_TOKEN          ; '\'
                 ret     nz
+    IF ROM_BASE < $4000
+                call    fac_to_int_strict_reset
+    ENDIF
                 inc     ix
                 push    de                  ; lhs (dividend)
                 call    ev_t                ; DE = rhs (divisor)
+    IF ROM_BASE < $4000
+                call    fac_to_int_strict_reset
+    ENDIF
                 ld      b,d
                 ld      c,e                 ; BC = divisor
                 pop     de                  ; DE = dividend
-                call    div_de_bc           ; DE = quotient
     IF ROM_BASE < $4000
-                call    flt_guard
+                call    signed_div_de_bc    ; D-C: MSX-signed \ (spec §10.4)
+    ELSE
+                call    div_de_bc           ; DE = quotient
     ENDIF
                 jr      ev_idiv_lp
 
 ; --- ev_t: term := factor { ('*' | '/') factor } ---------------------------
-; '/' is real division on MSX; zerobas is integer-only, so it computes the
-; integer quotient (documented divergence; floats are Phase 2).
+; '/' is real division on MSX; the repack build makes it always float (spec
+; §10.1); the lean build keeps the integer-quotient divergence (unchanged).
 ev_t:
                 call    ev_f                ; DE = factor
 ev_t_lp:
@@ -362,24 +419,34 @@ ev_t_lp:
 ev_t_mul:
                 inc     ix
                 push    de                  ; lhs
+    IF ROM_BASE < $4000
+                call    push_lhs_frame
+                call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
+    ENDIF
                 call    ev_f                ; DE = rhs
+    IF ROM_BASE < $4000
+                call    combine_mul
+    ELSE
                 pop     hl                  ; HL = lhs
                 call    mul16               ; HL = lhs * rhs (low 16 bits)
                 ex      de,hl               ; DE = product
-    IF ROM_BASE < $4000
-                call    flt_guard
     ENDIF
                 jr      ev_t_lp
 ev_t_div:
                 inc     ix
+    IF ROM_BASE < $4000
+                push    de                  ; lhs
+                call    push_lhs_frame
+                call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
+                call    ev_f                ; DE = rhs
+                call    combine_div_float   ; ALWAYS float (spec §10.1)
+    ELSE
                 push    de                  ; lhs (dividend)
                 call    ev_f                ; DE = rhs (divisor)
                 ld      b,d
                 ld      c,e                 ; BC = divisor
                 pop     de                  ; DE = dividend
                 call    div_de_bc           ; DE = quotient
-    IF ROM_BASE < $4000
-                call    flt_guard
     ENDIF
                 jr      ev_t_lp
 

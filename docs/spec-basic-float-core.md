@@ -132,7 +132,8 @@ must re-verify the string-engine §5a RAM analysis before moving anything.
 - **D-A — arc slicing** F1 literals+PRINT → F2 arithmetic → F3 typed vars,
   each slice its own S2/S3 + commit. Interim seams are documented divergences:
   after F1, floats print but don't compute; after F2, `LET` of a float value
-  **rounds to int16** (resolved by F3).
+  **TRUNCATES to int16** (resolved by F3; F1's sign-off said "rounds" — the
+  §10.3 oracle correction made the interim conversion truncating too).
 - **D-B — typed accumulator with int16 fast path** (§3b), not all-through-FAC:
   zero risk to the locked integer surface (addresses, disk verbs, FOR/NEXT).
 - **D-C — signed-int migration rides in F2** (repack build only): `/ \ MOD`
@@ -147,6 +148,18 @@ must re-verify the string-engine §5a RAM analysis before moving anything.
 - **D-F — one BCD routine set, length-parameterised** (6 vs 14 digits): true
   per-precision arithmetic (matches the reference's single results) without
   two code copies.
+- **D-G addendum (2026-07-11, F2 close-out input):** the F2 build leaves the
+  repack window ESSENTIALLY FULL (page-0 slack 2 B, page-1 tail 29 B), so F3's
+  ~0.6 KB has no home in the contiguous image. Remaining space = C-BIOS gap-1
+  remainder (~322 B at `$0BBF`) + gap-2 (253 B at `$1ACA`), both usable only by
+  fixed-position overlay code today. The D-G re-decide must therefore also pick
+  the space lever: (a) a multi-region BASIC image (assemble around the gaps —
+  at which point folding the tape body into the main assembly becomes natural
+  and the tape-IPS layout coupling should be dropped, per the user's 2026-07-11
+  suggestion; the standalone tape IPS build then needs its own org variant),
+  (b) the next C-BIOS repack tranche (Tier-B content cuts,
+  cbios-repack-space-analysis.md), or (c) heap-arc-first if its RAM work
+  shrinks F3's ROM need.
 - **D-G — F3 ordering vs the heap arc is re-decided at F2 close-out.** The
   real heap+descriptor model (string-engine deferral: heap, arrays/`DIM`,
   STRMAX→255) is orthogonal to F1/F2 — only F3's variable-store re-layout
@@ -264,7 +277,10 @@ precisions, same rules; `E` notation for both (never `D` on this reference).
   POKE/HEX$ −32768..65535 argument range and the pre-F1 unsigned `$1C`
   cruncher (a strict-int16 cap would regress `POKE 40000,n`). Outside that
   → DE=0, NO error mark (interim divergence D-F1-2: float into an int
-  context rounds silently; real Overflow semantics are F2). FACTYP is STICKY through operators; every binary/unary op-combine
+  context rounds silently; real Overflow semantics are F2). **F2
+  correction (§10.3): the reference conversion TRUNCATES (wrap-then-
+  truncate in the address domain) and errors out of domain — F1's half-up
+  was reasoned, not oracle-pinned, and is superseded.** FACTYP is STICKY through operators; every binary/unary op-combine
   site calls a guard: FACTYP≠2 → ERRMARK `$DD`, FACTYP:=2, operands as the
   already-rounded ints (interim divergence D-F1-3: no float arithmetic
   until F2). Unary minus on a float flips the FAC sign bit (zero exempt)
@@ -276,3 +292,127 @@ precisions, same rules; `E` notation for both (never `D` on this reference).
   emit the EXACT existing forms). `tk_loop` additionally routes `.`+digit
   (outside a name) into it. Lean build: byte-identical, all hooks
   `IF ROM_BASE < $4000`-gated.
+
+## 10. F2 S2 — oracle-pinned contracts (VG-8020, 2026-07-11)
+
+Black-box captures by `probes/basic/basic_probe_float_arith.py` (PRINT-bracket
+span for values + screen-tail for the error surface; bare-statement lines for
+statement-argument conversion). Three capture rounds; round 2/3 disambiguated
+round-1 cases that crunch-time literal rounding had confounded. Re-runnable;
+the same probe in `--zb-machine` mode is the F2 differential gate (the ARITH
+half of `make float-acceptance`). "e(x)" below = a value's excess-64 decimal
+exponent as stored, i.e. dec_exp.
+
+### 10.1 Value model — all float arithmetic is DOUBLE
+
+- **Single precision is a STORAGE format only.** Every `+ - * /` with any
+  non-int operand widens both operands to double (BCD zero-pad — exact) and
+  yields a DOUBLE result. Pins: `2!/3!` → `.66666666666667` (14 digits);
+  `123456!+.5` → `123456.5` and `1000000!+1!` → `1000001` (sums exact only
+  beyond single's 6 digits); `123456!*654321!` → `80779853376` (exact
+  11-digit product); `2!/3!=2#/3#` → −1 (identical double computations).
+  This SUPERSEDES §3b's per-precision promotion sketch and simplifies D-F:
+  only one 14-digit routine set exists at runtime.
+- `/` is always real division, always double: `7/2` → `3.5`, `1/3` →
+  `.33333333333333`, `-7/2` → `-3.5` — retires the integer-quotient
+  divergence (D-C).
+- int⊗int `+ - *` stays int16 (fast path); on 16-bit overflow the operation
+  promotes and the result is EXACT (`32767*32767` → `1073676289`,
+  `-32768-32768` → `-65536`, `3125*625` → `1953125`). Whether the reference
+  types these single or double is black-box-invisible for `+`/`-` (results
+  ≤ 6 digits) but `*` products print > 6 exact digits ⇒ double; zerobas
+  promotes to double uniformly (own-design where unobservable).
+- Relationals over any float operand compare AS floats after widening —
+  never int-converted (`40000=40000!` → −1, `1e10>5` → −1 — no Overflow;
+  `.1!=.1#` → −1). Result is int −1/0 (`(1.5>1)+5` → `4`). All six forms
+  pinned incl. compounds (`>=`, `<=`, `<>`).
+- Multi-item PRINT: the accumulator type resets per item
+  (`print 1.5;2` → ` 1.5  2 `).
+
+### 10.2 Double arithmetic semantics
+
+- **Rounding: guard-digit HALF-UP on the magnitude** (away from zero), all
+  four ops: `1+5e-14` → `1.0000000000001` (tie up) vs `1+4e-14` → `1`;
+  `1-1e-15` → `1` (carry through all 14 nines); `2.5#*1.0000000000001#` →
+  `2.5000000000003` (mul tie up); `1.0000000000003#/4` → `.25000000000008`
+  (div tie up); `-2/3` → `-.66666666666667` (magnitude, not toward +∞).
+- Add/sub are exact through the 14-digit window (`1/3*3-1` → `-1E-14`;
+  `99999999999999#+1` → `1E+14` — mantissa carry renormalises).
+- **Overflow checks are PRE-normalisation on the operand exponents:**
+  - mul: e(a)+e(b) > 63 → "Overflow" even when the normalised result fits:
+    `2e62*4` → Overflow (63+1=64) though 8e62 is representable; `1e62*9` →
+    Overflow; `9e61*9` → `8.1E+62` (62+1=63 passes).
+  - div: e(a)−e(b)+1 > 63 → "Overflow" even when the quotient fits:
+    `2e62/.4` → Overflow (63−0+1) though 5e62 is representable;
+    `1e40/1e-40` → Overflow.
+  - add/sub: only genuine result overflow observed (`9e62+9e62` → Overflow;
+    `1e62+0#` → `1E+62`).
+- Underflow → 0, silently, both ops (`1e-40*1e-32` → `0`, `1e-40/1e30` →
+  `0`); boundary exact: `1e-32*1e-32` → `1E-64` (representable, lead $01),
+  `1e-33*1e-32` → `0`.
+- Division by zero: `x/0`, `x\0`, `x mod 0` → "Division by zero", ALL
+  precisions including int (`1/0`, `1!/0`, `1#/0`, `0/0`).
+- **Error model: runtime numeric errors ABORT the statement** — in
+  `print "[";1/0;"]"` the `[` prints, then the message, never the value or
+  `]`. zerobas prints its own lowercase wording, same abort shape
+  (divergence D-F2-1, the D-2 pattern).
+
+### 10.3 Float→int16 conversion contexts — two domains, both TRUNCATE
+
+Both conversions share one shape: an EXCLUSIVE-bounds domain check on the
+un-truncated value, then truncate toward zero (after a wrap, in the address
+domain's high half). Fractional values just inside a bound are legal;
+truncation can then land ON the bound.
+
+- **Strict int16 domain** — operands of `\`, `MOD`, `AND`, `OR`, `XOR`,
+  `NOT`: domain −32769 < x < 32768, truncate toward zero (`2.9\1` → `2`,
+  `-2.9\1` → `-2`, `7.5 mod 4` → `3`, `7\1.5` → `7`, `not 2.5` → `-3`
+  = NOT 2; boundaries: `32767.5\1` → `32767`, `-32768.5\1` → `-32768`);
+  outside → "Overflow" abort (`40000!\2`, `40000 mod 7`,
+  `40000! and 65535`, `100000! and 1` — note the LOGICAL ops are strict
+  too, not address-domain).
+- **Address domain** (the published POKE/HEX$ −32768..65535 range) —
+  statement/function int arguments: domain −32769 < x < 65536; a value
+  ≥ 32768 is wrapped by −65536 into the signed domain FIRST, then
+  truncated toward zero (⇔ ceiling mod 65536 for the high half):
+  `hex$(2.9)` → `2`, `hex$(-2.5)` → `FFFE` (−2), `hex$(32767.5)` → `7FFF`
+  (below the wrap threshold — plain truncation), but `hex$(40000.5)` AND
+  `hex$(40000.1)` → `9C41` = 40001 (40000.x → −25535.9̄ → −25535: any
+  fraction rounds UP in the high half), `hex$(65535.5)` → `0` (→ −0.5 →
+  0), `hex$(-32768.9)` → `8000`. Outside the domain → "Overflow" abort
+  (`hex$(65536.)`, `poke 100000,0` → Overflow; `poke 40000.5,1` → legal,
+  silent, address 40001). This RETIRES interim divergence D-F1-2 (silent
+  round, DE=0 out of range) and CORRECTS F1's `flt_to_int16` (its half-up
+  mode was reasoned from the published range, not oracle-pinned; the
+  reference truncates).
+- F1's crunch-time HALF-UP literal rounding (§9.2 rule 5) is unaffected —
+  that is tokenise-time mantissa rounding, byte-pinned separately.
+
+### 10.4 Signed integer `\` and `MOD` (the D-C migration)
+
+- `\` truncates toward zero: `7\2` → `3`, `-7\2` → `-3`, `7\-2` → `-3`,
+  `-7\-2` → `3`; `32767\-1` → `-32767`.
+- Quirk: `-32768\-1` → `32768` printed — the result ESCAPES int16 without
+  error (promoted; the int16 bit pattern $8000 would have printed −32768).
+- `MOD` takes the DIVIDEND's sign: `7 mod 2` → `1`, `-7 mod 2` → `-1`,
+  `7 mod -2` → `1`, `-7 mod -2` → `-1` (identity a = (a\b)*b + (a mod b)
+  holds with truncation).
+- Division by zero for both → "Division by zero" abort (replaces zerobas's
+  0 + ERRMARK divergence, D-C).
+
+### 10.4a IF truthiness over a float condition
+
+`IF x THEN` takes the TRUE branch iff x ≠ 0 for FLOAT x too — `IF .5 THEN`
+is TRUE on the reference (companion capture, F2 review live-check
+2026-07-11), so the truncated int view of a float condition must never be
+the truthiness judge (a truncate-to-DE model would make every |x|<1 float
+falsely FALSE). `IF 1.5-1.5 THEN` → false. Note the OPERANDS of the logical
+operators stay §10.3 strict-int (`.5 AND 1` → 0 AND 1 = 0 — consistent on
+both sides); only the bare condition value is float-aware.
+
+### 10.5 Formatter interaction (F1 unchanged)
+
+Results print through the F1 §9.3 formatter as-is: `12345678#*87654321#` →
+`1.0821520223746E+15`, `1!/512!` → `1.953125E-03` (dec_exp −2 → E form),
+`1e-32*1e-32` → `1E-64`. No new output shapes were observed in ~140 arith
+captures.
