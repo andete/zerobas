@@ -14,10 +14,31 @@ side. Runs in milliseconds with none of the openMSX boot/timing determinism
 hazards, so it is the fast regression layer beneath the differential probes.
 """
 
+import os
 import re
+import subprocess
 from z80 import Z80
 
 _SENTINEL = 0xFFFF          # return address that marks "the routine returned"
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_SUB_CACHE = {}             # process-wide cache of the assembled sub-ROM bytes
+
+
+def _build_subrom():
+    """Assemble sub/sub.asm once per process -> (low-page bytes, symbols). The
+    sub-ROM's page-0 tenants (its dispatch table + the evicted float crunch) live
+    in $0000..~$0800, entirely below the relocated main ROM's $2812 base, so they
+    can be dropped into the SAME flat memory without overlap — which is what lets
+    a host test reach a page-0 sub-ROM tenant across the (un-emulated) CALSLT."""
+    if "bytes" not in _SUB_CACHE:
+        rom = "/tmp/msxtest_sub.rom"
+        sym = "/tmp/msxtest_sub.sym"
+        subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", rom, sym],
+                       check=True, capture_output=True, cwd=_ROOT)
+        with open(rom, "rb") as fh:
+            _SUB_CACHE["bytes"] = fh.read()[:0x0800]
+        _SUB_CACHE["sym"] = load_symbols(sym)
+    return _SUB_CACHE["bytes"], _SUB_CACHE["sym"]
 
 
 def load_symbols(path):
@@ -41,6 +62,39 @@ class Machine:
         self.sym = load_symbols(sym_path)
         self.cpu = Z80(self.mem)
         self.traps = {}                # addr -> callback(machine)
+        if "subrom_call" in self.sym:
+            self._install_subrom_bridge()
+
+    def _install_subrom_bridge(self):
+        """Bridge the sub-ROM dispatch the flat harness can't page (subrom S2b).
+        On the real machine `subrom_call` does a CALSLT into the sub-ROM's page 0.
+        The flat host harness can't page, and the sub-ROM's page-0 code sits at
+        $0000..~$0400 — the SAME low addresses the (real-machine page-0)
+        interpreter and its stack occupy — so running the tenant IN the caller's
+        machine corrupts execution state. Instead we run it in a SEPARATE machine
+        (its own low memory + stack) and shuttle only RAM: the tenant reads its
+        args and writes its results in page-2/3 RAM ($8000+), which is the same in
+        both slots on the real machine. Copy that RAM in, run, copy back only the
+        below-stack range the tenant may have written. Transparent to every test
+        that tokenises a numeric literal (the crunch lives in the sub-ROM)."""
+        sub_bytes, _ = _build_subrom()
+        sub = object.__new__(Machine)          # bare Machine, no recursive bridge
+        sub.mem = bytearray(0x10000)
+        sub.mem[0:len(sub_bytes)] = sub_bytes
+        sub.sym = {}
+        sub.cpu = Z80(sub.mem)
+        sub.traps = {}
+        RAM_LO, STACK = 0x8000, 0xF300         # shuttle $8000..stack; leave stacks private
+
+        def bridge(mach):
+            cpu = mach.cpu
+            sub.mem[RAM_LO:0x10000] = mach.mem[RAM_LO:0x10000]   # args/scratch in
+            sub.call(cpu.ix, hl=cpu.hl, de=cpu.de)               # own stack + low mem
+            mach.mem[RAM_LO:STACK] = sub.mem[RAM_LO:STACK]       # results back (not the stack)
+            cpu.hl, cpu.de, cpu.a = sub.cpu.hl, sub.cpu.de, sub.cpu.a
+            cpu.f &= ~0x01                     # CF=0: dispatch completed (never "absent" here)
+
+        self.trap("subrom_call", bridge)
 
     # --- symbol / memory access ------------------------------------------
     def addr(self, name):
@@ -90,12 +144,13 @@ class Machine:
         return log
 
     # --- call a routine by name and run to its RET -----------------------
-    def call(self, name_or_addr, max_steps=2_000_000, **regs):
+    def call(self, name_or_addr, max_steps=2_000_000, keep_sp=False, **regs):
         cpu = self.cpu
         for k, v in regs.items():
             setattr(cpu, k, v)
-        cpu.sp = 0xF380
-        cpu.push(_SENTINEL)
+        if not keep_sp:
+            cpu.sp = 0xF380     # keep_sp=True: reuse the caller's stack (nested run,
+        cpu.push(_SENTINEL)     #   e.g. the subrom bridge) so it doesn't stomp it
         cpu.pc = name_or_addr if isinstance(name_or_addr, int) else self.sym[name_or_addr]
         steps = 0
         while cpu.pc != _SENTINEL:

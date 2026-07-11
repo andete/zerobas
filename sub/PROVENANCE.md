@@ -39,13 +39,19 @@ Allowed sources (same master list as [`../README.md`](../README.md)):
   private dispatch path; `EXBRSA` $FAF8 is the published MSX2 sub-ROM-slot work
   area (*source:* MSX2 TH work-area map), written for convention-compat but not
   read at dispatch (spec D-6/R4).
-- **`sub/fltout.asm` — the evicted float PRINT formatter (S2b WAVE 1).** *Own
-  design*, copied verbatim from our own `../basic/float.asm` (`flt_out`); the
-  number FORMAT layout it emits is MSX2 TH. Two changes make it a pure-leaf
-  page-0 tenant: the two tail `jp print_string` became `ret` (the main-ROM stub
-  prints), and its two resident/page-1 leaf callees `cmp16_bits`
+- **`sub/tkfloat.asm` — the evicted float literal CRUNCH (S2b WAVE 1).** *Own
+  design*, copied verbatim from our own `../basic/float.asm` (`tk_float`); the
+  classification/format rules are oracle-pinned + MSX2 TH, the token bytes
+  oracle-pinned. Made a pure-leaf page-0 tenant by: (a) its `jp`-threaded
+  tokeniser exits (`jp tk_loop`/`jp tk_end`) become a RETURN with a disposition
+  byte in `A` (the main-ROM stub resumes `tk_loop`/`tk_end`); (b) its page-1 /
+  resident leaf callees `upcase` (`../basic/interp.asm`), `cmp16_bits`
   (`../basic/expr.asm`) and `neg_de` (`../basic/float.asm`) are duplicated as
-  byte-identical *own-design* sub-local clones. No stock-ROM bytes involved.
+  byte-identical *own-design* sub-local clones. The `tkf_ref*` bound tables stay
+  with the crunch (a resident copy is kept in `../basic/float.asm` for
+  float-arith). No stock-ROM bytes involved. (The PRINT formatter `flt_out` was
+  the first candidate but stays RESIDENT — runtime-hot; see the spec's WAVE-1
+  REVISED note.)
 
 ## Own-design divergences from real MSX (spec §6)
 

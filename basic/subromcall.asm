@@ -52,15 +52,17 @@ subrom_call:
                 or      a
                 scf
                 ret     z                   ; absent -> CF=1, no call (caller errors)
+                push    de                  ; a tenant may take DE as an arg (crunch: dest)
                 ld      a,(SUBSLOT)
                 ld      d,a
                 ld      e,0
                 push    de
                 pop     iy                  ; IYh = sub-ROM slot id (CALSLT ABI)
+                pop     de                  ; restore the tenant's DE arg
                 di
-                call    CALSLT              ; page-0 tenant runs under DI
+                call    CALSLT              ; HL/DE pass through; tenant runs under DI
                 ei
-                or      a                   ; CF=0: call completed
+                or      a                   ; CF=0: call completed (A = tenant's result)
                 ret
 
 ; subrom_absent_error: defensive statement abort for a sub-ROM-backed statement in

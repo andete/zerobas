@@ -30,7 +30,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/clear.asm basic/usr.asm basic/print.asm basic/screen.asm basic/list.asm \
          basic/fat.asm basic/bload.asm basic/cload.asm basic/save.asm basic/files.asm \
          basic/field.asm basic/format.asm basic/printusing.asm basic/program.asm basic/float.asm \
-         basic/float-arith.asm \
+         basic/float-arith.asm basic/subromcall.asm \
          basic/sysvars.inc
 ROM   := $(BUILD)/basic.rom
 
@@ -49,7 +49,7 @@ DISK_ROM := $(BUILD)/disk.rom
 # empty skeleton (CD header + one round-trip ping per page); real tenants arrive
 # with the eviction session. See docs/spec-basic-subrom.md.
 SUB_SRC   := sub/sub.asm
-SUB_PARTS := sub/equates.inc sub/fltout.asm basic/sysvars.inc
+SUB_PARTS := sub/equates.inc sub/tkfloat.asm basic/sysvars.inc
 SUB_ROM   := $(BUILD)/sub.rom
 
 # Tracked patch deliverables (regenerable; live at their committed paths).

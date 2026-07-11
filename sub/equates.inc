@@ -16,11 +16,11 @@ SUBROM_ENTRY_BASE_P1    equ     $4010   ; page-1 table (mirrors the $4010 disk D
 
 ; --- Page-0 tenant indices (append-only; IX = SUBROM_ENTRY_BASE_P0 + 3*index) --
 ; index 0 = the S2a round-trip PING (kept as a standing discovery self-check).
-; index 1 = the float PRINT formatter (WAVE 1 eviction, sub/fltout.asm); its
-; main-ROM stub is basic/print.asm exp_num_float. Never renumber an existing
-; entry — a main-ROM stub hard-codes only its index.
+; index 1 = the float LITERAL CRUNCH (WAVE 1 eviction, sub/tkfloat.asm); its
+; main-ROM stub is basic/float.asm tk_float. Never renumber an existing entry —
+; a main-ROM stub hard-codes only its index.
 SUBROM_IDX_PING         equ     0
-SUBROM_IDX_FLTOUT       equ     1
+SUBROM_IDX_TKFLOAT      equ     1
 
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can

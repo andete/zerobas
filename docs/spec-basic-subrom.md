@@ -34,6 +34,36 @@ reuses *"Illegal function call"*; D-1…D-11 otherwise as proposed).
 > prose stands as written with only the number changed. "slot-0 page 1" (main
 > BASIC) and RAM references are unchanged.
 
+> **WAVE-1 REVISED 2026-07-11 (S2b, user call) — the tenant is the CRUNCH, not
+> the formatter.** After the formatter eviction was built and green, the user set
+> a sharper principle: **never evict a runtime-hot path.** The `flt_out` formatter
+> runs on *every* float `PRINT` (a per-`PRINT` CALSLT + DI), so it stays
+> **resident**. A page-0 sub-ROM tenant runs with the BIOS + low region switched
+> out, so it must be **pure computation** — which disqualifies the cold
+> *peripheral* verbs (LIST/SAVE/CLOAD are all I/O-bound and can't run sub-side).
+> The one cold, pure-computation body is the `tk_float` **literal crunch**
+> (tokenise-time only), so it becomes WAVE 1. Delta vs the formatter plan:
+> - Evict `tk_float` (~825 B) → sub-ROM page-0 index 1; `flt_out` returns to the
+>   main ROM. Frees **~727 B** in page 0 (more than the formatter's ~400 B).
+> - The crunch's `jp`-threaded exits (`jp tk_loop`/`jp tk_end`) are refactored to
+>   **return a disposition** in `A` (0 = continue → the main-ROM stub does
+>   `jp tk_loop`; 1 = end/overflow → `jp tk_end`); `HL`/`DE` (source + dest
+>   cursors) pass through CALSLT both ways (`subrom_call` preserves `DE`).
+> - Pure-leaf via sub-local clones of `upcase`/`cmp16_bits`/`neg_de`, and the
+>   crunch keeps its own `tkf_ref*` copy while `float.asm` gets a **resident**
+>   copy for `float-arith` — so **no cross-ROM equate link** (the crunch does not
+>   call `tk_loop`/`tk_end` any more; they became the stub's job).
+> - Host harness: the crunch is on the tokenise path used by 11 unit tests. The
+>   flat, single-slot host harness can't page a CALSLT, so `msxtest` runs the
+>   tenant in a **separate machine** and shuttles only RAM (a low-mem/stack-shared
+>   bridge corrupts host execution — verified). All gates green; the ROM itself
+>   is proven correct by the openMSX gates (float LITERALS byte-identical, FORMAT
+>   reference-identical, string-acceptance PASS).
+>
+> The prose below is the original formatter-based amendment, kept for the
+> reasoning; read "wave 1 = the formatter" as **superseded by the crunch** per
+> this block. The dispatch-mechanism and two-wave framing are unchanged.
+>
 > **WAVE-1 AMENDMENT 2026-07-11 (S2b open, user-ratified) — the §3f leaf-audit
 > re-scoped the eviction.** S2b's named pre-gate (the §3f leaf-audit) ran and
 > **falsified the §2 wholesale-eviction premise** (F2 had coupled float.asm ↔

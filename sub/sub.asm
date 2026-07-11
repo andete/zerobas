@@ -35,7 +35,7 @@
 
                 include "equates.inc"
 
-; Shared RAM-cell addresses (FAC/FACTYP/FOUTBUF/TKDIG/... used by fltout.asm).
+; Shared RAM-cell addresses (TKPOS/TKDIG/TKPC/TKSRCSAVE/... used by tkfloat.asm).
 ; ROM_BASE selects the repack cell layout from the SAME sysvars.inc the merged
 ; main ROM uses, so a sub-ROM tenant's RAM scratch is byte-address-identical to
 ; the main ROM's — no marshalling translation. sysvars.inc is pure equates
@@ -68,7 +68,7 @@ ROM_BASE        equ     $2812
     ENDIF
 sub_p0_table:
                 jp      sub_p0_ping             ; index 0 (SUBROM_IDX_PING)
-                jp      flt_out                 ; index 1 (SUBROM_IDX_FLTOUT): PRINT formatter
+                jp      tk_float                ; index 1 (SUBROM_IDX_TKFLOAT): float literal crunch
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $0010 mapped slot 3-2 into PAGE 0 and that page-3 RAM is
@@ -81,10 +81,11 @@ sub_p0_ping:
                 ld      (SUB_PING),a
                 ret
 
-; --- Page-0 tenants (WAVE 1: the float PRINT formatter, index 1) -----------
-; Pure-leaf: touches only RAM + its own body (sub-local cmp16_bits/neg_de). The
-; main-ROM stub (basic/print.asm) marshals FAC in RAM and prints FOUTBUF after.
-                include "fltout.asm"
+; --- Page-0 tenants (WAVE 1: the float LITERAL CRUNCH, index 1) -------------
+; Pure-leaf: touches only RAM + its own body (sub-local upcase/cmp16_bits). The
+; main-ROM stub (basic/float.asm tk_float) dispatches here and acts on the
+; returned disposition (A=0 continue -> tk_loop / A=1 end -> tk_end).
+                include "tkfloat.asm"
 
 ; --- pad page 0 to the $4000 boundary --------------------------------------
                 ds      $4000 - $, $FF

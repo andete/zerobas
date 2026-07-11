@@ -449,10 +449,10 @@ def run():
     FACTYP = s["FACTYP"]
     TKOVF = s["TKOVF"]
 
-    # Second machine for the evicted formatter (sub.rom, page-0 tenant). Same RAM
-    # cell addresses (shared sysvars.inc), so FAC/FACTYP/FOUTBUF poke/peek align.
+    # Second machine for the evicted literal CRUNCH (sub.rom, page-0 tenant,
+    # subrom S2b). Same RAM cell addresses (shared sysvars.inc), so SRC/TOKBUF/
+    # TKOVF poke/peek align. The formatter (flt_out) stays RESIDENT in main-reloc.
     ms = Machine(SUB_ROM, SUB_SYM, rom_base=0x0000)
-    SUB_FOUTBUF = ms.sym["FOUTBUF"]
 
     fails = 0
 
@@ -462,46 +462,42 @@ def run():
         fails += not ok
         print(f"{'PASS' if ok else 'FAIL'}  {label}: got {got!r} want {want!r}")
 
-    print("# --- encode matrix: tk_float(literal) -> crunched bytes ---")
-    # Every source is `<literal>;\0`, not just the bare literal, and the
-    # expected crunch is `want + ";\\x00"`: tk_float's own paths all end in
-    # `jp tk_loop` (a tail jump, not `ret`), so the harness's "run to return"
-    # call keeps going -- tk_loop copies the ';' verbatim and tk_end (a real
-    # `ret`) supplies the terminator. This also catches the regression that
-    # bit tk_float three times during development: HL is the LIVE source
-    # cursor tk_loop needs back, but tkf_int_value / tkf_calc_and_round /
-    # tkf_emit_mantissa / tke_ddone's exponent-sign negation all used HL as
-    # scratch at some point without saving it first -- corrupting the
-    # cursor let tk_loop read garbage "source" bytes after the value, which
-    # a bare-literal-only byte check (nothing follows) would never expose.
+    print("# --- encode matrix: tk_float(literal) -> crunched bytes (sub-ROM crunch) ---")
+    # tk_float is the evicted sub-ROM crunch (subrom S2b): it emits the value
+    # bytes at TOKBUF and RETURNS (disposition A=0 continue / A=1 end), instead of
+    # the resident version's `jp tk_loop`. So the check is the emitted VALUE bytes
+    # (no trailing ';'/terminator -- those were added by tk_loop/tk_end, which the
+    # crunch no longer tail-jumps to). The cursor-integrity regression the old
+    # tail-continuation check caught (tkf_int_value/tkf_calc_and_round/
+    # tkf_emit_mantissa/tke_ddone using HL as scratch without saving it) is
+    # preserved directly here: the RETURNED HL must point just past the literal.
     for lit, want_hex in ENCODE_CASES:
-        want = hx(want_hex) + b";\x00"
-        m.poke(SRC, lit.encode("ascii") + b";\x00")
-        m.mem[TOKBUF:TOKBUF + 32] = b"\xAA" * 32
-        m.call("tk_float", hl=SRC, de=TOKBUF)
-        got = m.peek(TOKBUF, len(want))
-        ck(f"tk_float({lit!r})", got, want)
+        want = hx(want_hex)
+        ms.poke(SRC, lit.encode("ascii") + b";\x00")
+        ms.mem[TOKBUF:TOKBUF + 32] = b"\xAA" * 32
+        ms.call("tk_float", hl=SRC, de=TOKBUF)
+        ck(f"tk_float({lit!r}) bytes", ms.peek(TOKBUF, len(want)), want)
+        ck(f"tk_float({lit!r}) cursor", ms.cpu.hl, SRC + len(lit))
 
-    print("# --- crunch-time overflow: TKOVF set, whole literal rejected ---")
+    print("# --- crunch-time overflow: TKOVF set, disposition A=1 ---")
     for lit in OVERFLOW_CASES:
-        m.mem[TOKBUF:TOKBUF + 32] = b"\xAA" * 32
-        m.poke(SRC, lit.encode("ascii") + b"\x00")
-        m.poke(TKOVF, 0)
-        m.call("tk_float", hl=SRC, de=TOKBUF)
-        ck(f"tk_float({lit!r}) sets TKOVF", m.peek(TKOVF)[0], 1)
+        ms.mem[TOKBUF:TOKBUF + 32] = b"\xAA" * 32
+        ms.poke(SRC, lit.encode("ascii") + b"\x00")
+        ms.poke(TKOVF, 0)
+        ms.call("tk_float", hl=SRC, de=TOKBUF)
+        ck(f"tk_float({lit!r}) sets TKOVF", ms.peek(TKOVF)[0], 1)
+        ck(f"tk_float({lit!r}) disposition", ms.cpu.a, 1)
 
-    print("# --- format matrix: flt_out(FAC,FACTYP) -> FOUTBUF (sub-ROM tenant) ---")
-    # flt_out now runs from sub.rom and returns with the NUL-terminated result in
-    # FOUTBUF (the print_string tail moved to the main-ROM stub, subrom S2b), so
-    # read FOUTBUF rather than capturing CHPUT.
+    print("# --- format matrix: flt_out(FAC,FACTYP) -> printed string (resident) ---")
+    # flt_out stays RESIDENT in the main ROM (runtime-hot PRINT path, not evicted),
+    # ending in print_string -> CHPUT; capture what it emits.
     for fac_hex, factyp, want in FORMAT_CASES:
         facbytes = hx(fac_hex)
-        ms.poke(FAC, facbytes + b"\x00" * (8 - len(facbytes)))
-        ms.poke(FACTYP, factyp)
-        ms.poke(SUB_FOUTBUF, b"\xAA" * 24)          # poison, so a short write is visible
-        ms.call("flt_out")
-        raw = ms.peek(SUB_FOUTBUF, 24)
-        got = "".join(chr(b) for b in raw[:raw.index(0)])
+        m.poke(FAC, facbytes + b"\x00" * (8 - len(facbytes)))
+        m.poke(FACTYP, factyp)
+        out = m.capture_chput()
+        m.call("flt_out")
+        got = "".join(chr(b) for b in out)
         ck(f"flt_out(FAC={fac_hex},FACTYP={factyp})", got, want)
 
     print("# --- flt_to_int16: TRUNCATING, address domain (spec §10.3, F2) ---")
