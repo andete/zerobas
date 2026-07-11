@@ -2,10 +2,13 @@
 ; `IF ROM_BASE < $4000`, basic/main.asm). docs/spec-basic-float-core.md.
 ;
 ; The float LITERAL CRUNCH (tk_float) was evicted to the sub-ROM as a cold,
-; pure-computation page-0 tenant (subrom S2b WAVE 1, sub/tkfloat.asm); what
-; stays HERE is the runtime-hot / resident code that must not pay a per-call
+; pure-computation page-0 tenant (subrom S2b, sub/tkfloat.asm). WAVE 1 kept a thin
+; main-side dispatch STUB here (a per-literal CALSLT); WAVE 2 evicted the WHOLE
+; tokeniser to the sub-ROM too, so the crunch is now reached by an in-slot
+; `jp tk_float` from the co-located tk_loop and the main-side stub is GONE (spec
+; §5 — `tokenise` in basic/interp.asm is the sole sub-ROM entry now). What stays
+; HERE is the runtime-hot / resident float code that must not pay a per-call
 ; CALSLT:
-;   * tk_float  — a thin main-side DISPATCH STUB into the sub-ROM crunch;
 ;   * flt_out   — the PRINT formatter (FAC/FACTYP -> FOUTBUF -> print_string).
 ;     RUNTIME-HOT (every float PRINT), so it stays resident (it is NOT paged out
 ;     — the user's "never evict a hot path" rule, spec §WAVE-1 AMENDMENT);
@@ -17,23 +20,6 @@
 ; Representation and all format/classification RULES are unchanged and live with
 ; their code (crunch rules in sub/tkfloat.asm; format rules below). Own-design
 ; algorithms; number FORMAT is MSX2 TH; token bytes oracle-pinned. No disassembly.
-
-; --- tk_float: main-side dispatch stub -> the sub-ROM crunch ---------------
-; The tokeniser reaches this by `jp tk_float` (interp.asm) with HL = source
-; cursor, DE = TOKBUF dest. The crunch runs in the sub-ROM (pure computation on
-; page-2/3 RAM), returns HL/DE advanced and A = disposition (0 continue / 1
-; end). CALSLT passes HL/DE through and back (subrom_call preserves DE across
-; its IY setup). Absence (reduced build) -> defensive error; the merged machine
-; always ships the sub-ROM.
-tk_float:
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_TKFLOAT
-                call    subrom_call         ; HL/DE in, HL/DE/A out; CF=1 if absent
-                jr      c,tk_float_absent
-                or      a
-                jp      z,tk_loop           ; A=0: continue tokenising (HL/DE set)
-                jp      tk_end              ; A=1: overflow/end (crunch set TKOVF)
-tk_float_absent:
-                jp      subrom_absent_error
 
 ; --- tkf_ref*: RESIDENT copy of the 5-digit bound tables -------------------
 ; Byte-identical to the copy inside sub/tkfloat.asm. float-arith.asm's

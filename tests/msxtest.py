@@ -25,18 +25,21 @@ _SUB_CACHE = {}             # process-wide cache of the assembled sub-ROM bytes
 
 
 def _build_subrom():
-    """Assemble sub/sub.asm once per process -> (low-page bytes, symbols). The
-    sub-ROM's page-0 tenants (its dispatch table + the evicted float crunch) live
-    in $0000..~$0800, entirely below the relocated main ROM's $2812 base, so they
-    can be dropped into the SAME flat memory without overlap — which is what lets
-    a host test reach a page-0 sub-ROM tenant across the (un-emulated) CALSLT."""
+    """Assemble sub/sub.asm once per process -> (page-0 bytes, symbols). The
+    sub-ROM's page-0 tenants (its dispatch table + the WHOLE evicted tokeniser and
+    its duplicated keyword table, wave 2) live in $0000..~$0900, entirely below the
+    relocated main ROM's $2812 base, so they can be dropped into a bridge machine's
+    low memory without colliding with anything the caller placed — which is what
+    lets a host test reach a page-0 sub-ROM tenant across the (un-emulated) CALSLT.
+    We copy the whole page-0 span ($0000..$2812, up to the reloc base) so the slice
+    can never truncate a tenant as page 0 grows (wave 1 ended ~$0800; wave 2 ~$0886)."""
     if "bytes" not in _SUB_CACHE:
         rom = "/tmp/msxtest_sub.rom"
         sym = "/tmp/msxtest_sub.sym"
         subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", rom, sym],
                        check=True, capture_output=True, cwd=_ROOT)
         with open(rom, "rb") as fh:
-            _SUB_CACHE["bytes"] = fh.read()[:0x0800]
+            _SUB_CACHE["bytes"] = fh.read()[:0x2812]
         _SUB_CACHE["sym"] = load_symbols(sym)
     return _SUB_CACHE["bytes"], _SUB_CACHE["sym"]
 

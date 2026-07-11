@@ -74,8 +74,9 @@ disk: $(DISK_ROM)
 
 # zerobas-sub: assembled with `pasmo -I sub` (its includes resolve under sub/);
 # the source spans $0000-$7FFF so pad_rom just asserts the 32 KB size.
+SUB_SYM   := $(BUILD)/sub.sym
 $(SUB_ROM): $(SUB_SRC) $(SUB_PARTS) | $(BUILD)
-	$(PASMO) -I sub --bin $(SUB_SRC) $(SUB_ROM)
+	$(PASMO) -I sub --bin $(SUB_SRC) $(SUB_ROM) $(SUB_SYM)
 	python3 tools/pad_rom.py $(SUB_ROM) 32768
 
 sub: $(SUB_ROM)
@@ -86,9 +87,11 @@ sub: $(SUB_ROM)
 # a proof/staging target only -- deliberately NOT in `all`; the merged main-ROM
 # splice that ships it is WS-3 (S4). See docs/cbios-repack-ws2-audit.md.
 RELOC_ROM := $(BUILD)/basic-reloc.rom
-basic-reloc: $(ROM) basic/main-reloc.asm basic/main.asm $(DEPS) | $(BUILD)
-	$(PASMO) --bin basic/main-reloc.asm $(RELOC_ROM)
-	python3 tools/check_reloc.py $(RELOC_ROM) $(ROM)
+RELOC_SYM := $(BUILD)/basic-reloc.sym
+basic-reloc: $(ROM) $(SUB_ROM) basic/main-reloc.asm basic/main.asm $(DEPS) | $(BUILD)
+	$(PASMO) --bin basic/main-reloc.asm $(RELOC_ROM) $(RELOC_SYM)
+	python3 tools/check_reloc.py $(RELOC_ROM) $(ROM) $(RELOC_SYM)
+	python3 tools/check_kwtable_identity.py $(RELOC_ROM) $(RELOC_SYM) $(SUB_ROM) $(SUB_SYM)
 
 # --- Merged repack main ROM (WS-3 / D4) ---------------------------------------
 # The 32 KB slot-0 "main ROM": repacked C-BIOS + relocated BASIC ($2812-$7FFF) +

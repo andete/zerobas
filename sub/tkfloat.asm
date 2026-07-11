@@ -1,29 +1,28 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 
-; zerobas-sub — tkfloat.asm  (WAVE 1 eviction tenant, docs/spec-basic-subrom.md)
+; zerobas-sub — tkfloat.asm  (float literal crunch; WAVE 1 tenant, now a co-located
+; callee of the WAVE 2 whole-tokeniser eviction, docs/spec-basic-subrom.md)
 ; ===========================================================================
 ; The float LITERAL CRUNCH (tk_float, FAC-less: ASCII literal -> tokenised BCD
 ; value bytes), evicted from the repack main ROM's basic/float.asm into sub-ROM
-; PAGE 0 as a pure leaf. Reached via the page-0 entry table (index
-; SUBROM_IDX_TKFLOAT); a main-ROM stub (basic/float.asm tk_float) dispatches
-; here, then acts on the returned disposition.
+; PAGE 0 as a pure leaf. Wave 1 reached it through its OWN page-0 entry with a
+; per-literal CALSLT + an A-disposition return protocol; WAVE 2 evicted the whole
+; tokeniser here too, so tk_float is now reached by an ordinary in-slot
+; `jp tk_float` from tk_loop, and its exits are plain `jp tk_loop` / `jp tk_end`
+; back into the co-located loop again (the disposition protocol + the float.asm
+; dispatch stub were reverted, spec §5) — one CALSLT per LINE, not per literal.
 ;
-; WHY THE CRUNCH AND NOT THE FORMATTER (user call 2026-07-11): a page-0 sub-ROM
-; tenant runs with the BIOS + low region switched out, so it must be pure
-; computation. The PRINT formatter is pure-compute too but RUNTIME-HOT (every
-; float PRINT), so it stays resident. The crunch runs only at TOKENISE time
-; (line edit / program load) — cold — so it is the right thing to page out.
+; WHY THE CRUNCH IS SUB-SIDE (user call 2026-07-11): a page-0 sub-ROM tenant runs
+; with the BIOS + low region switched out, so it must be pure computation. The
+; PRINT formatter is pure-compute too but RUNTIME-HOT (every float PRINT), so it
+; stays resident. The crunch runs only at TOKENISE time (line edit / program
+; load) — cold — so it is the right thing to page out (as is the whole loop).
 ;
-; PURE-LEAF DISCIPLINE (§3b). Two changes from the resident original make the
-; crunch self-contained (it may touch ONLY page-2/3 RAM + its own body):
-;   * its jp-threaded exits back into the tokeniser become a RETURN with a
-;     disposition byte in A: A=0 "continue" (the stub does jp tk_loop), A=1
-;     "end/overflow" (the stub does jp tk_end; TKOVF is set here first). HL (the
-;     advanced source cursor) and DE (the advanced TOKBUF dest) are returned for
-;     the tokeniser to resume with — both pass through CALSLT unchanged.
-;   * its two page-1 leaf callees `upcase` (basic/interp.asm) and `cmp16_bits`
-;     (basic/expr.asm) are duplicated below as byte-identical own-design clones.
+; PURE-LEAF DISCIPLINE (§3b). The crunch may touch ONLY page-2/3 RAM + co-located
+; sub-ROM code: its two page-1 leaf callees `upcase` (basic/interp.asm) and
+; `cmp16_bits` (basic/expr.asm) are duplicated below as byte-identical own-design
+; clones; tk_loop / tk_end live in the co-located sub/tokenise.inc.
 ; The tkf_ref* bound tables live INSIDE this body (used by tkf_cmp32767); the
 ; resident float-arith needs them too, so basic/float.asm keeps its OWN copy —
 ; no cross-ROM reference either way.
@@ -123,7 +122,7 @@ tkf_single:
                 inc     de
                 call    tkf_emit_mantissa   ; also clobbers HL (own TKDIG walk)
                 ld      hl,(TKSRCSAVE)      ; restore the source cursor for tk_loop
-                jp      crx_cont            ; sub-crunch: disposition A=0 (continue), HL/DE set
+                jp      tk_loop             ; continue tokenising (HL/DE advanced)
 tkf_double:
                 ld      a,DBL_DIGITS
                 ld      (TKPC),a
@@ -137,7 +136,7 @@ tkf_double:
                 inc     de
                 call    tkf_emit_mantissa
                 ld      hl,(TKSRCSAVE)
-                jp      crx_cont            ; sub-crunch: disposition A=0 (continue), HL/DE set
+                jp      tk_loop             ; continue tokenising (HL/DE advanced)
 tkf_go_int:
                 call    tkf_int_value       ; DE = value (0..32767); clobbers HL
                 ld      b,d
@@ -150,7 +149,8 @@ tkf_overflow:
                                              ; so DE is exactly the line-truncation point
                 ld      a,1
                 ld      (TKOVF),a
-                ret                     ; sub-crunch: disposition A=1 (end; TKOVF already set)
+                jp      tk_end              ; end the line here (TKOVF flags the reject;
+                                             ; DE is the truncation point for the 0 term)
 
 ; --- tkf_scan_digits: consume a run of ASCII digits at (HL) -----------------
 ; Shared by the integer-part and fractional-part scans (pos is continuous
@@ -434,7 +434,7 @@ tkf_emit_int_bc:
                 add     a,INT_DIGIT_BASE
                 ld      (de),a
                 inc     de
-                jp      crx_cont            ; sub-crunch: disposition A=0 (continue), HL/DE set
+                jp      tk_loop             ; continue tokenising (HL/DE advanced)
 tei_b:
                 ld      a,INT1_TOKEN
                 ld      (de),a
@@ -442,7 +442,7 @@ tei_b:
                 ld      a,c
                 ld      (de),a
                 inc     de
-                jp      crx_cont            ; sub-crunch: disposition A=0 (continue), HL/DE set
+                jp      tk_loop             ; continue tokenising (HL/DE advanced)
 tei_w:
                 ld      a,INT2_TOKEN
                 ld      (de),a
@@ -453,7 +453,7 @@ tei_w:
                 ld      a,b
                 ld      (de),a
                 inc     de
-                jp      crx_cont            ; sub-crunch: disposition A=0 (continue), HL/DE set
+                jp      tk_loop             ; continue tokenising (HL/DE advanced)
 
 ; --- tkf_calc_and_round: dec_exp + rounded mantissa -> TKLEAD/TKDIG --------
 ; in: TKPC = target precision (6/14), TKHAVESIG/TKINTLEN/TKNZPOS/TKEXP/
@@ -628,13 +628,6 @@ tem_lp:
                 ld      (de),a
                 inc     de
                 djnz    tem_lp
-                ret
-
-; --- crx_cont: the "continue" disposition return (A=0) --------------------
-; Every normal crunch exit reaches here with HL = advanced source cursor and
-; DE = advanced TOKBUF dest already set; the main-ROM stub resumes tk_loop.
-crx_cont:
-                xor     a
                 ret
 
 ; --- sub-local neg_de (byte-identical clone of basic/float.asm neg_de) ------

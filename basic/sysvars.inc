@@ -1063,7 +1063,10 @@ SUBSLOT_OK      equ     $F107   ; 1 = a CD sub-ROM was found and recorded, else 
 ; (no equates.inc) define its own — one ABI, no double-definition.
     IFNDEF SUBROM_ENTRY_BASE_P0
 SUBROM_ENTRY_BASE_P0 equ $0010  ; sub-ROM page-0 jp-table base
-SUBROM_IDX_TKFLOAT   equ 1      ; the float literal-crunch tenant (sub/tkfloat.asm)
+SUBROM_IDX_TOKENISE  equ 1      ; the WHOLE tokeniser tenant (sub/tokenise.inc +
+                                ; sub/tkfloat.asm); wave 2 replaced wave 1's
+                                ; per-literal tk_float entry (the crunch is now an
+                                ; in-slot callee of the co-located loop)
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

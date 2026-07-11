@@ -462,31 +462,31 @@ def run():
         fails += not ok
         print(f"{'PASS' if ok else 'FAIL'}  {label}: got {got!r} want {want!r}")
 
-    print("# --- encode matrix: tk_float(literal) -> crunched bytes (sub-ROM crunch) ---")
-    # tk_float is the evicted sub-ROM crunch (subrom S2b): it emits the value
-    # bytes at TOKBUF and RETURNS (disposition A=0 continue / A=1 end), instead of
-    # the resident version's `jp tk_loop`. So the check is the emitted VALUE bytes
-    # (no trailing ';'/terminator -- those were added by tk_loop/tk_end, which the
-    # crunch no longer tail-jumps to). The cursor-integrity regression the old
-    # tail-continuation check caught (tkf_int_value/tkf_calc_and_round/
-    # tkf_emit_mantissa/tke_ddone using HL as scratch without saving it) is
-    # preserved directly here: the RETURNED HL must point just past the literal.
+    print("# --- encode matrix: tokenise(literal;) -> crunched bytes (sub-ROM crunch) ---")
+    # WAVE 2: the WHOLE tokeniser is the sub-ROM tenant now, and tk_float is an
+    # internal `jp tk_loop`/`jp tk_end` callee again (the wave-1 disposition-return
+    # protocol was reverted, spec §5), so we drive the whole body by calling
+    # `tokenise` directly in the sub machine. A bare literal line "<lit>;" crunches
+    # to [value bytes][';' verbatim][00]: check the value bytes AND that the byte
+    # right after them is ';' ($3B) -- the latter proves the loop resumed at the
+    # correct source position after the literal (the same cursor-integrity
+    # regression the old post-tk_float HL check caught: tkf_int_value/
+    # tkf_calc_and_round/tkf_emit_mantissa/tke_ddone using HL as scratch).
     for lit, want_hex in ENCODE_CASES:
         want = hx(want_hex)
         ms.poke(SRC, lit.encode("ascii") + b";\x00")
         ms.mem[TOKBUF:TOKBUF + 32] = b"\xAA" * 32
-        ms.call("tk_float", hl=SRC, de=TOKBUF)
-        ck(f"tk_float({lit!r}) bytes", ms.peek(TOKBUF, len(want)), want)
-        ck(f"tk_float({lit!r}) cursor", ms.cpu.hl, SRC + len(lit))
+        ms.call("tokenise", hl=SRC, de=TOKBUF)
+        ck(f"tokenise({lit!r};) bytes", ms.peek(TOKBUF, len(want)), want)
+        ck(f"tokenise({lit!r};) resume", ms.peek(TOKBUF + len(want), 2), b";\x00")
 
-    print("# --- crunch-time overflow: TKOVF set, disposition A=1 ---")
+    print("# --- crunch-time overflow: TKOVF set, line rejected ---")
     for lit in OVERFLOW_CASES:
         ms.mem[TOKBUF:TOKBUF + 32] = b"\xAA" * 32
         ms.poke(SRC, lit.encode("ascii") + b"\x00")
         ms.poke(TKOVF, 0)
-        ms.call("tk_float", hl=SRC, de=TOKBUF)
-        ck(f"tk_float({lit!r}) sets TKOVF", ms.peek(TKOVF)[0], 1)
-        ck(f"tk_float({lit!r}) disposition", ms.cpu.a, 1)
+        ms.call("tokenise", hl=SRC, de=TOKBUF)
+        ck(f"tokenise({lit!r}) sets TKOVF", ms.peek(TKOVF)[0], 1)
 
     print("# --- format matrix: flt_out(FAC,FACTYP) -> printed string (resident) ---")
     # flt_out stays RESIDENT in the main ROM (runtime-hot PRINT path, not evicted),

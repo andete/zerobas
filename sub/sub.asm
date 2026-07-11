@@ -68,7 +68,10 @@ ROM_BASE        equ     $2812
     ENDIF
 sub_p0_table:
                 jp      sub_p0_ping             ; index 0 (SUBROM_IDX_PING)
-                jp      tk_float                ; index 1 (SUBROM_IDX_TKFLOAT): float literal crunch
+                jp      tokenise                ; index 1 (SUBROM_IDX_TOKENISE): the WHOLE
+                                                ;   tokeniser (wave 2). The tk_float crunch
+                                                ;   is no longer a dispatch entry — it is an
+                                                ;   in-slot `jp tk_float` from tk_loop.
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $0010 mapped slot 3-2 into PAGE 0 and that page-3 RAM is
@@ -81,11 +84,66 @@ sub_p0_ping:
                 ld      (SUB_PING),a
                 ret
 
-; --- Page-0 tenants (WAVE 1: the float LITERAL CRUNCH, index 1) -------------
-; Pure-leaf: touches only RAM + its own body (sub-local upcase/cmp16_bits). The
-; main-ROM stub (basic/float.asm tk_float) dispatches here and acts on the
-; returned disposition (A=0 continue -> tk_loop / A=1 end -> tk_end).
+; --- Page-0 tenants -------------------------------------------------------
+; WAVE 2 (index 1 = tokenise): the WHOLE tokeniser body, evicted from the repack
+; main ROM's basic/interp.asm and reunited here with the wave-1 tk_float literal
+; crunch. It is pure buffer computation over page-2/3 RAM — no BIOS / low-region /
+; ISR touch (leaf-audit, spec §3) — so it is a valid page-0 tenant run under DI.
+; Its only non-RAM callees are pure leaves co-resident in this page:
+;   * upcase / cmp16_bits / neg_de  — clones in tkfloat.asm (below).
+;   * is_letter / is_ident_cont     — clones right below (the tokeniser's
+;                                     identifier path; not needed by the crunch).
+;   * tk_float                      — the wave-1 crunch, now reached by an ordinary
+;                                     in-slot `jp tk_float` from tk_loop (wave 1's
+;                                     per-literal CALSLT + disposition protocol were
+;                                     reverted, spec §5).
+;   * kwtable                       — a byte-identical DUPLICATE of the resident
+;                                     repack copy (§4: the resident copy stays for
+;                                     LIST/detok, which is I/O-bound and can't go
+;                                     sub-side; a page-0 tenant can't see the
+;                                     main-ROM low region either, so it needs its
+;                                     own copy). Same kwtable.inc + same ROM_BASE
+;                                     gating -> the two images can't drift.
                 include "tkfloat.asm"
+                include "basic/tokenise.inc"
+
+; --- sub-local is_letter / is_ident_cont (byte-identical own-design clones) --
+; Resident copies stay in the main ROM (basic/interp.asm is_letter, basic/vars.asm
+; is_ident_cont) for the rest of the interpreter; a page-0 tenant can't reach them,
+; so the tokeniser's identifier path uses these co-located clones. is_letter ->
+; upcase (tkfloat.asm), is_ident_cont -> is_letter — the whole chain is here.
+is_letter:
+                push    af
+                call    upcase
+                cp      'A'
+                jr      c,sil_no
+                cp      'Z'+1
+                jr      nc,sil_no
+                pop     af
+                scf
+                ret
+sil_no:
+                pop     af
+                or      a                   ; CF clear
+                ret
+is_ident_cont:
+                call    is_letter           ; letter -> CF set, A preserved
+                ret     c
+                cp      '0'
+                jr      c,siic_no
+                cp      '9'+1
+                jr      nc,siic_no
+                scf                          ; digit -> CF set
+                ret
+siic_no:
+                or      a                    ; CF clear
+                ret
+
+; --- sub-local keyword table (duplicate of the resident repack copy, §4) -----
+; Assembled from the SAME basic/kwtable.inc under the SAME ROM_BASE (<$4000) as the
+; resident repack copy, so the two are byte-identical by construction; the reloc
+; build's byte-identity assert (tools/check_reloc.py) is the standing guard.
+                include "basic/kwtable.inc"
 
 ; --- pad page 0 to the $4000 boundary --------------------------------------
                 ds      $4000 - $, $FF

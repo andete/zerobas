@@ -67,6 +67,9 @@ ROM_BASE:       equ     $4000
     IF $ > $4000
                 db      STRING_ENGINE_OVERRAN_4000_HEADER__LOW_REGION_FULL__TRIM_OR_SPLIT
     ENDIF
+; Measurement label (subrom wave-2 pre-gate, spec §7.1): low-region free =
+; $4000 - __MEAS_LOW_END. Emits no bytes; read from the reloc sym by check_reloc.py.
+__MEAS_LOW_END:
                 ds      $4000 - $, $00
     ENDIF
 
@@ -188,6 +191,12 @@ ROM_BASE:       equ     $4000
     IF $ < ROM_BASE
                 db      BASIC_IMAGE_WRAPPED_PAST_64K__FEATURE_FAR_TOO_LARGE__SPLIT_IT
     ENDIF
+
+; Measurement label (subrom wave-2 pre-gate, spec §7.1): page-1 free =
+; $8000 - __MEAS_PAGE1_END. Emits no bytes; present in BOTH builds (the wave-2
+; win — evicting the whole tokeniser to sub-ROM — shows up here as the reloc build's
+; page-1 tail growing). Read from the reloc sym by check_reloc.py.
+__MEAS_PAGE1_END:
 
 ; --- pad to the $8000 page ceiling -----------------------------------------
 ; Fill with $00 (not $FF): empty C-BIOS page 1 is $00, so when this image is

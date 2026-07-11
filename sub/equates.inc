@@ -16,11 +16,15 @@ SUBROM_ENTRY_BASE_P1    equ     $4010   ; page-1 table (mirrors the $4010 disk D
 
 ; --- Page-0 tenant indices (append-only; IX = SUBROM_ENTRY_BASE_P0 + 3*index) --
 ; index 0 = the S2a round-trip PING (kept as a standing discovery self-check).
-; index 1 = the float LITERAL CRUNCH (WAVE 1 eviction, sub/tkfloat.asm); its
-; main-ROM stub is basic/float.asm tk_float. Never renumber an existing entry —
+; index 1 = the WHOLE TOKENISER (WAVE 2 eviction, sub/tokenise.inc + the wave-1
+; tk_float crunch sub/tkfloat.asm, now its in-slot callee); its main-ROM stub is
+; basic/interp.asm `tokenise`. Wave 2 repurposed wave 1's per-literal tk_float
+; entry into this whole-body entry (the float stub + per-literal CALSLT were
+; reverted, spec §5) — the crunch is no longer a dispatch target, just an internal
+; `jp tk_float` from the co-located loop. Never renumber an existing entry —
 ; a main-ROM stub hard-codes only its index.
 SUBROM_IDX_PING         equ     0
-SUBROM_IDX_TKFLOAT      equ     1
+SUBROM_IDX_TOKENISE     equ     1
 
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can

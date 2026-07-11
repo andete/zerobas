@@ -23,12 +23,29 @@ assertion is superseded (spec §5b). The durable guarantees this gate now enforc
      string engine is gated behind IF ROM_BASE < $4000, so the lean 16 KB build must
      not change by construction; this pins that as a hard regression gate).
 
-    python3 tools/check_reloc.py build/basic-reloc.rom build/basic.rom
+    python3 tools/check_reloc.py build/basic-reloc.rom build/basic.rom [build/basic-reloc.sym]
+
+With the optional reloc symbol file, it also REPORTS the page-0 low-region and
+page-1 free space from the __MEAS_LOW_END / __MEAS_PAGE1_END labels (subrom
+wave-2 measurement pre-gate, spec §7.1) — the eviction relief must be positive
+and recorded.
 """
 from __future__ import annotations
 
 import hashlib
+import re
 import sys
+
+
+def load_syms(path):
+    syms = {}
+    pat = re.compile(r"^(\S+)\s+EQU\s+([0-9A-Fa-f]+)H", re.IGNORECASE)
+    with open(path) as fh:
+        for line in fh:
+            m = pat.match(line.strip())
+            if m:
+                syms[m.group(1)] = int(m.group(2), 16)
+    return syms
 
 LOW = 0x2812
 HDR = 0x4000
@@ -42,7 +59,7 @@ LEAN_SHA256 = "e21f61fe9ecb855ce69a29831a5990070c215613479310da368c350bd4228005"
 
 
 def main() -> int:
-    if len(sys.argv) != 3:
+    if len(sys.argv) not in (3, 4):
         sys.exit(__doc__)
     reloc = open(sys.argv[1], "rb").read()
     ship = open(sys.argv[2], "rb").read()
@@ -72,6 +89,17 @@ def main() -> int:
     used = max((i for i, b in enumerate(reloc[:off]) if b != 0), default=-1) + 1
     print(f"OK: relocated image {len(reloc)} B, header @ $4000, low region "
           f"$2812-$3FFF holds {used} B of string engine, lean basic.rom byte-identical")
+    if len(sys.argv) == 4:
+        syms = load_syms(sys.argv[3])
+        low_end = syms.get("__MEAS_LOW_END")
+        p1_end = syms.get("__MEAS_PAGE1_END")
+        if low_end is not None:
+            print(f"    measure: page-0 low region free = {HDR - low_end} B "
+                  f"($2812-$3FFF, __MEAS_LOW_END @ {low_end:#06x})")
+        if p1_end is not None:
+            print(f"    measure: page-1 free            = {TOP - p1_end} B "
+                  f"($4000-$7FFF, __MEAS_PAGE1_END @ {p1_end:#06x}) "
+                  f"<- subrom wave-2 tokeniser-eviction relief")
     return 0
 
 
