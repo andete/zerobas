@@ -813,9 +813,33 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
 (`OPEN`/`CLOSE`/`PRINT#`/… and Disk BASIC delegation) has been pulled forward into
 **Phase 2** above. These remain explicitly out of scope until then.
 
-- [ ] **Floating point** — the math pack, `!`/`#`/`%` type suffixes,
-      `DEFINT`/`DEFSNG`/`DEFDBL`/`DEFSTR`, and the float crunch tokens
-      (decimal ≥ 32768 etc.) currently out of scope
+- [~] **Floating point** — the math-pack arc is UNDERWAY
+      ([`docs/spec-basic-float-core.md`](docs/spec-basic-float-core.md), signed off
+      2026-07-11): three slices, F1 literals+PRINT → F2 arithmetic+relationals+
+      signed-int migration → F3 typed variables (`%`/`!`/`#`, unsuffixed=double).
+      **F1 DONE 2026-07-11** (S1–S3, commits 223da0f/506381c/…): decimal float
+      literals crunch to the real `$1D` (single, 4 B) / `$1F` (double, 8 B) BCD
+      tokens byte-identically vs the VG-8020 — **decimal ≥ 32768 finally correct**
+      (the old `$1C` wrap divergence retired) — and PRINT renders them
+      reference-identically (fixed vs `E±nn` at dec_exp ∈ [-1,14]; `E` for BOTH
+      precisions on this MSX1 reference). Oracle-pinned quirks reproduced: half-up
+      rounding with the single-precision NON-renormalising carry (`9999995!` →
+      1000000), suffix-after-exponent left unconsumed, `1e-65` underflow-to-zero
+      with mantissa retained, crunch-time `overflow` rejection (own lowercase
+      wording, D-F1-1). New `basic/float.asm` + repack-gated hooks; RAM `$F01A+`;
+      lean `basic.rom` byte-identical. Interim seams (documented, F2/F3 resolve):
+      no float arithmetic (`flt_guard` → ERRMARK, D-F1-3); a float in an int
+      context rounds half-up into the −32768..65535 ADDRESS domain, outside → 0
+      silently (D-F1-2 — the range widened in F1 review after `POKE 40000,n` /
+      `HEX$(65535)` regressed under a strict-int16 cap); `LET` stores the rounded
+      int. Standing gate **`make float-acceptance`** (LITERALS + FORMAT halves,
+      60+ cases each) + host `tests/test_float.py`; spec §9 holds the full pinned
+      contract; provenance `basic/PROVENANCE.md` → "Phase 3: math float pack, F1".
+      Window after F1: 1844 B page-0 + 160 B tail ≈ 2.0 KB for F2+F3 (tight; next
+      repack tranche is the fallback). Still out of scope (arc §1):
+      `DEFINT/DEFSNG/DEFDBL/DEFSTR`, `^` + math functions, float
+      `VAL`/`STR$`/`INPUT`/`FOR`, `MKS$/MKD$/CVS/CVD`, float `PRINT USING`.
+      D-G checkpoint at F2 close-out: re-decide F3 vs the heap arc ordering.
 - [~] **Full string engine** — **core + comparison landed 2026-07-10** (the first Phase-3
       feature and its follow-on): `+` concat + `LEN ASC VAL CHR$ STR$ LEFT$ RIGHT$ MID$`,
       then the six **relational operators** on strings (`=`/`<>`/`<`/`>`/`<=`/`>=` →

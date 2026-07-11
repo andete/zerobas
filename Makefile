@@ -226,6 +226,20 @@ string-acceptance: $(DISK_ROM) repack-machine
 input-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_input.py $(if $(ONLY),--only $(ONLY),)
 
+# --- Standing float-pack acceptance gate (float arc, F1 S3) -------------------
+# Two differential halves against the VG-8020 reference (docs/
+# spec-basic-float-core.md §9): LITERALS (basic_probe_floatlit.py -- the
+# crunched $1D/$1F token bytes ARE the stored BCD representation, so this is
+# both the classification and the encoder proof) and FORMAT
+# (basic_probe_float_fmt.py -- PRINT's fixed/E-notation output, spaces exact).
+# Grows a half per slice (F2 arith, F3 vars). Repack-only; HEAVY +
+# oracle-dependent (boots openMSX per case; needs your VG-8020 reference ROM);
+# NOT part of the emulator-free `unit-test` (tests/test_float.py is the fast
+# layer under it). Scope one case with `make float-acceptance ONLY=9999995`.
+float-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_floatlit.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
+	python3 probes/basic/basic_probe_float_fmt.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
+
 # Standing C-BIOS self-consistency gate: closes the coverage gap that `bdos-acceptance`
 # structurally can't reach. That gate is a DIFFERENTIAL, so it only runs on the CF-3300
 # oracle (the only host with a stock disk ROM + MSX-DOS to diff against); the shipped
@@ -257,4 +271,4 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance \
-        input-acceptance clean
+        input-acceptance float-acceptance clean
