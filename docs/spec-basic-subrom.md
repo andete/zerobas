@@ -7,7 +7,34 @@ SPDX-License-Identifier: 0BSD
 
 Status: **SIGNED OFF 2026-07-11** — the §9 open questions are answered
 (name = `zerobas-sub`; size = **32 KB, both pages up front**; absence error
-reuses *"Illegal function call"*; D-1…D-11 otherwise as proposed). This is S1
+reuses *"Illegal function call"*; D-1…D-11 otherwise as proposed).
+
+> **AMENDMENT 2026-07-11 (S2 open, user-ratified) — D-2 slot map revised.**
+> On re-examining compatibility for non-sub-slot-aware MSX1 software, the
+> map is changed to **3-0 = RAM (UNCHANGED), 3-1 = disk (unchanged), 3-2 =
+> zerobas-sub (NEW), 3-3 = empty** — i.e. the sub-ROM takes an *empty* subslot
+> and **RAM does not move**. Rationale: the compatibility cliff for a program
+> that pokes only `$A8` (never selects a subslot) is *expanded-vs-unexpanded*
+> slot 3, which the disk machine already crossed; the RAM subslot *index*
+> (0 vs 3) does not discriminate — both break the same naive programs
+> identically. So the 3-0-vs-3-3 choice was only ever a faithfulness-vs-risk
+> call, and keeping RAM in 3-0 (a) **eliminates R1 / §3e entirely** (no
+> `$83→$8F` RAM-slot-id change, no disk/BDOS anchor re-baseline) and (b) is
+> marginally *safer* for naive code (RAM stays in the reset-default subslot 0).
+> The only cost is the 3-0-sub-ROM convention + HB-F700D homage (§8a). The
+> sub-ROM slot id is now **`$8B`** (3-2 expanded); RAM keeps **`$83`**. All of
+> §3a / §3e / §8-R1 / D-2 / §9-Q5 below are read under this amendment. The ABI
+> (§3b/§3c) is unaffected — it depends only on the sub-ROM being a page-0 `CD`
+> ROM *somewhere* in expanded slot 3, which `init_ext_roms` discovers by
+> scanning all four subslots.
+>
+> **Reading the body under this amendment:** everywhere §3b–§3g below says
+> "slot 3-0" or "3-0 pg0 / pg1" as *the sub-ROM's subslot*, read **3-2**; the
+> opposite-island / placement architecture is subslot-index-independent, so the
+> prose stands as written with only the number changed. "slot-0 page 1" (main
+> BASIC) and RAM references are unchanged.
+
+This is S1
 (spec + sign-off) of the sub-ROM arc — step 1 of the concrete sequence in the
 signed-off
 [`decision-phase3-space-strategy.md`](decision-phase3-space-strategy.md) §6,
@@ -22,8 +49,9 @@ Cadence: this is an **arc** (like the float pack), S1 (this) → then a slice pe
 and its own commit-at-gate:
 
 - **S2 — skeleton + tooling:** the empty sub-ROM builds and ships; machine
-  configs gain it (RAM moves 3-0 → 3-3); boot scan records its slot; a stub
-  dispatch + absence-error path exists; new present/absent boot gate.
+  configs gain it (sub-ROM added in **3-2**; RAM stays 3-0, disk stays 3-1);
+  boot scan records its slot; a stub dispatch + absence-error path exists; new
+  present/absent boot gate.
 - **S3 — eviction wave 1:** `float.asm` (F1 tokeniser + output formatter,
   ~1 294 B) moves into the sub-ROM; full `float-acceptance` + crunch re-run;
   the in-window window regains ~1.3 KB.
@@ -44,11 +72,11 @@ only be met by evicting cold code into a second ROM.
 **In scope for the arc (S1 design + S2/S3 build):**
 
 - The sub-ROM as a built-in **32 KB** ROM spanning **both pages** of expanded
-  slot **3-0** — page 0 `$0000–$3FFF` (`CD` signature, the callable-from-main
-  region) and page 1 `$4000–$7FFF` (the BIOS-visible island, F700-style) — of
-  the merged/main zerobas machine, with the machine's slot-3 map becoming
-  **3-0 = sub-ROM, 3-1 = disk ROM (unchanged), 3-3 = RAM** (moved from 3-0) —
-  the layout ratified in `decision §8a` after the Sony HB-F700D.
+  slot **3-2** (amended; was 3-0) — page 0 `$0000–$3FFF` (`CD` signature, the
+  callable-from-main region) and page 1 `$4000–$7FFF` (the BIOS-visible island,
+  F700-style) — of the merged/main zerobas machine, with the machine's slot-3
+  map becoming **3-0 = RAM (unchanged), 3-1 = disk ROM (unchanged), 3-2 =
+  sub-ROM (new), 3-3 = empty** (top-of-file AMENDMENT; RAM does not move).
 - The **boot-scan** addition that records the sub-ROM's slot (MSX2 `CD`
   page-0 signature + EXBRSA `$FAF8` convention), reusing `init_ext_roms`.
 - The **dispatch ABI**: main-ROM token handlers become thin stubs that parse
@@ -59,7 +87,8 @@ only be met by evicting cold code into a second ROM.
   error instead of jumping into unmapped ROM.
 - The **placement discipline** (`decision §8d`) as an inherited design rule that
   every downstream slice's spec must apply per-routine.
-- S2's **RAM 3-0 → 3-3 verification** budget (`decision §8c`).
+- ~~S2's **RAM 3-0 → 3-3 verification** budget~~ — retired by the amendment
+  (RAM stays 3-0); S2 instead just re-runs the disk gates as an additive check.
 - S3's first eviction (`float.asm`) as the proof-of-mechanism tenant.
 
 The **32 KB choice (§9-Q2)** brings the page-1 island into scope *as tooling +
@@ -91,14 +120,16 @@ fill it.
   the sub-ROM stubs mirror — but see §3c: the sub-ROM's page-0 mapping makes it
   *cheaper* than the disk case, not the same.
 - **Host-adaptive RAM slot** ([init.asm](../disk/init.asm) `set_ramad`,
-  `page0_ram_in`/`page0_ram_out`): verified to derive the RAM slot id from
-  page 3's *actual* runtime slot, not a hard-coded `$83` — so the 3-0 → 3-3 RAM
-  move is a config-and-verify change on the disk side, not a code rewrite
-  (`decision §8c`; the routines are already documented HOST-ADAPTIVE).
+  `page0_ram_in`/`page0_ram_out`): derives the RAM slot id from page 3's
+  *actual* runtime slot, not a hard-coded `$83`. Under the amendment RAM does
+  not move at all, so this host-adaptivity is not even exercised by the arc —
+  RAM keeps `$83`; the property is noted only because it means the disk side is
+  robust regardless.
 - **Machine tooling** ([install-openmsx-machine.py](../tools/install-openmsx-machine.py)
   `expand_slot3`, [install-repack-machine.py](../tools/install-repack-machine.py)):
   today lay slot 3 as `3-0 = 64 KB RAM, 3-1 = zerobas-disk, 3-2/3-3 empty`.
-  S2 re-lays them to `3-0 = zerobas-sub, 3-1 = disk, 3-3 = RAM`.
+  S2 adds the sub-ROM in the empty **3-2** (`3-0 = RAM, 3-1 = disk, 3-2 =
+  zerobas-sub, 3-3 = empty`); the RAM and disk blocks are unchanged.
 - **float.asm ↔ float-arith decoupling** (verified: no call edge in either
   direction): the S3 eviction of `float.asm` (tokeniser + formatter) does NOT
   drag `float-arith.asm` (the low-region BCD core, `$3809–$3FFD`) into the
@@ -109,8 +140,10 @@ fill it.
   (byte-identical), string-acceptance (6), input-acceptance (8),
   float-acceptance (3 halves), diskbasic-acceptance-repack (34), the BDOS
   battery, `bdos-cbios-selfcheck` (10), unit-test (44),
-  lean-`basic.rom`-byte-identical. The RAM move (S2) puts the disk/BDOS gates
-  and the selfcheck at risk (§3e) — that is the arc's one real verification cost.
+  lean-`basic.rom`-byte-identical. Under the amendment the RAM move is gone, so
+  the disk/BDOS gates and the selfcheck are **not** at risk (§3e) — S2 re-runs
+  them only to confirm that adding a device in the empty 3-2 subslot perturbs
+  nothing.
 
 ## 3. Design
 
@@ -118,18 +151,20 @@ fill it.
 
 Expanded slot 3 of the merged/main zerobas machine:
 
-| Subslot | Tenant | Was | Signature / page |
-|---|---|---|---|
-| 3-0 | **zerobas-sub** (NEW) | empty | `CD` at `$0000`, **page 0** `$0000–$3FFF` |
-| 3-1 | zerobas-disk | unchanged | `AB` at `$4000`, page 1 |
-| 3-2 | empty | empty | — |
-| 3-3 | **RAM** | was 3-0 | 64 KB mapper |
+Expanded slot 3, **as amended 2026-07-11** (see the top-of-file AMENDMENT):
 
-Each element is individually precedented (`decision §8a` full-library survey:
-sub-ROM in 3-0 is the convention in 53/72 sub-ROM machines; RAM in 3-3 follows
-the Sony HB-F700 family). Disk stays at 3-1 (not F700-style 3-0 stacking):
-no functional gain, and `DRVTBL`/Tier-2 machinery assume 3-1 — moving it would
-force disk-gate re-baselining for nothing.
+| Subslot | Tenant | Was | Signature / page | Slot id |
+|---|---|---|---|---|
+| 3-0 | **RAM** | unchanged | 64 KB mapper | `$83` |
+| 3-1 | zerobas-disk | unchanged | `AB` at `$4000`, page 1 | `$87` |
+| 3-2 | **zerobas-sub** (NEW) | empty | `CD` at `$0000`, **both pages** `$0000–$7FFF` | `$8B` |
+| 3-3 | empty | empty | — | — |
+
+RAM and disk are both **unchanged** from the shipping disk machine; the sub-ROM
+takes the previously-empty 3-2. This diverges from the `decision §8a` convention
+(sub-ROM in 3-0 in 53/72 machines) *deliberately*, to avoid moving RAM — the
+amendment's faithfulness-vs-risk trade. Disk stays at 3-1 (not F700-style 3-0
+stacking): no functional gain, and `DRVTBL`/Tier-2 machinery assume 3-1.
 
 ### 3b. Two pages, opposite visibility (the architecture, from `decision §8b`/§8d)
 
@@ -232,22 +267,23 @@ fake", `decision §8b`).
   LIST or PLAY moved sub-side) must either stay short or re-map the BIOS
   mid-body via an explicit trampoline (`decision §8d` 3-0 pg0 rule).
 
-### 3e. The RAM 3-0 → 3-3 move — the arc's real verification cost (S2)
+### 3e. ~~The RAM 3-0 → 3-3 move~~ — ELIMINATED by the 2026-07-11 amendment
 
-The RAM slot id changes `$83` → `$8F` wherever it is *derived*. Because
-`set_ramad` / `page0_ram_in` / `page0_ram_out` are host-adaptive by design
-(§2, verified), the disk **code** needs no edit — but this must be *verified,
-not assumed*, per `decision §8c`. S2 budget:
+**The RAM move is gone.** Under the amended map RAM stays in 3-0, so its slot id
+stays `$83` and nothing the disk side derives (`set_ramad` /
+`page0_ram_in` / `page0_ram_out`) sees any change. The arc's one-time
+verification cost — the §3e RAM-move re-baseline and its `bdos-cbios-selfcheck`
+risk (R1) — no longer exists.
 
-- Regenerate machine configs (`expand_slot3` in `install-openmsx-machine.py`;
-  the repack machine in `install-repack-machine.py`).
-- Re-run the **full disk gate suite** (bdos-acceptance, diskbasic-acceptance,
-  diskbasic-acceptance-repack).
-- **`bdos-cbios-selfcheck` may need re-baselining**: if any captured anchor
-  embeds the RAM slot id, a C-BIOS-side slot-id change can legitimately break
-  byte-identity against the CF-3300 oracle (which keeps its own real layout).
-  This is an *expected, explainable* re-baseline, not a regression — S2 must
-  distinguish the two and document any anchor that moves.
+S2's machine-config work is now purely *additive*: `expand_slot3` and the repack
+machine gain a 3-2 sub-ROM block while their 3-0 RAM / 3-1 disk blocks are
+byte-for-byte as today. The disk gates (bdos-acceptance, diskbasic-acceptance,
+diskbasic-acceptance-repack, bdos-cbios-selfcheck) must still be **run** as a
+regression check — merely adding a device to a new subslot must not perturb
+them — but any change there would be a *regression to fix*, not an expected
+re-baseline. (Historical note: the original signed-off spec put the sub-ROM in
+3-0 and moved RAM to 3-3, which is what this section costed; that trade was
+reversed on 2026-07-11.)
 
 ### 3f. Placement discipline (inherited design rule, `decision §8d`)
 
@@ -295,11 +331,13 @@ passive callee, so recording the slot is the whole job. (Whether the sub-ROM
 carries an INIT word at all is an S2 detail; if present it may publish an
 entry-table version byte for forward-compat, but S1 does not require one.)
 
-- **Ordering:** the sub-ROM sits in slot 3-0, which the existing expanded-slot
-  `ier_sloop` already reaches; the `CD` record must be taken **before** the disk
-  ROM's INIT is CALSLTed (the disk INIT does not touch page 0 of slot 3-0, so
-  either order is safe, but recording first keeps EXBRSA valid for any INIT that
-  might want it).
+- **Ordering (amended):** the sub-ROM now sits in slot **3-2**, which
+  `ier_sloop` (secondaries 0..3) reaches *after* the disk ROM in 3-1. So the
+  disk INIT is CALSLTed **before** the sub-ROM's `CD` is recorded — the reverse
+  of the original 3-0 plan. This is safe: the disk INIT does not read `EXBRSA`
+  or the sub-ROM slot (it is our own disk ROM, and the two subslots are
+  independent), so recording the `CD` after the disk INIT loses nothing. Neither
+  ROM depends on the other's slot record at boot.
 - **Firewall:** the added RDSLTs read *our own* sub-ROM bytes; no C-BIOS code is
   read or relocated. Sourcing: RDSLT `$000C`, CALSLT `$001C`, EXPTBL `$FCC1`,
   EXBRSA `$FAF8`, port `$A8`, slot-id byte format, `CD` sub-ROM signature — all
@@ -311,7 +349,7 @@ entry-table version byte for forward-compat, but S1 does not require one.)
 | # | Decision | Proposed | Basis |
 |---|---|---|---|
 | D-1 | Component name | **`zerobas-sub`** ✅ | naming convention `zerobas-<component>` ([[naming-convention]]); matches `zerobas-disk`/`zerobas-tape`. §9-Q1 answered |
-| D-2 | Slot map | 3-0 sub / 3-1 disk / 3-3 RAM | `decision §8a`, ratified — recorded here, not re-opened |
+| D-2 | Slot map | ~~3-0 sub / 3-1 disk / 3-3 RAM~~ → **AMENDED 2026-07-11: 3-0 RAM / 3-1 disk / 3-2 sub / 3-3 empty** | top-of-file AMENDMENT — RAM stays put (compat + risk); sub-ROM id `$8B` |
 | D-3 | Signature | `CD` at `$0000` (page 0) | `decision §8b`; MSX2 TH sub-ROM convention |
 | D-4 | Size | **32 KB (page 0 + page 1)** ✅ | §9-Q2 answered — reserve the F700-style island up front; both pages built + ABI'd from S2 |
 | D-5 | Dispatch | CALSLT, IX = fixed `jp`-table entry; **two bases** `$0010` (pg0) / `$4010` (pg1), append-only | §3c; `$4010`-style + MSX2 EXTROM IX contract |
@@ -324,15 +362,40 @@ entry-table version byte for forward-compat, but S1 does not require one.)
 
 ## 5. Arc slices & gates
 
+> **S2 RE-SLICED 2026-07-11 (measured constraint + user call).** The window has
+> exactly **2 B free in page 0, 29 B in page 1** (measured via `__MEAS_*`
+> labels on the reloc build). The signed-off S2 skeleton's *main-ROM* parts —
+> boot-scan+presence-flag (~50 B) and dispatch stub+absence error (~55 B),
+> ~100 B — do **not** fit, and S3's `float.asm` eviction (which frees the room)
+> can't precede the dispatch stub the evicted code calls back through
+> (circular). So S2 is split:
+> - **S2a (this session) — foundation, ZERO main-ROM bytes.** The `sub.rom`
+>   binary (32 KB, `CD` header, ping `jp`-entries at `$0010`/`$4010`), the
+>   machine tooling (3-2 sub-ROM block), and a **boot-gate-by-injection**: the
+>   probe reads the sub-ROM's `CD` and drives a `CALSLT` to each ping entry from
+>   the openMSX debugger, proving discovery + the two-page ABI + the round-trip
+>   against the sub-ROM's own bytes — with no main-ROM change, so nothing can
+>   overflow and the frozen lean/repack images stay byte-identical.
+> - **S2b (folded into the eviction session) — main-ROM integration.** The
+>   `init_ext_roms` `CD` scan (records `SUBSLOT`/`SUBSLOT_OK`/`EXBRSA`) and the
+>   `subrom_call` dispatch stub + absence-error path land *together with* the
+>   `float.asm` eviction, whose freed ~1.3 KB pays for them; `float.asm` becomes
+>   the first real tenant through the entry table (subsumes the old S3). The
+>   §3f leaf-audit stays that session's named pre-gate.
+>
+> Everything below under "S2" is the union S2a+S2b; the *tooling + injection
+> gate* is S2a, the *main-ROM boot-scan/dispatch + absence gate* is S2b.
+
 - **S1 (this)** — spec + sign-off. Gate: user answers §9, status → SIGNED OFF.
 - **S2 — skeleton + tooling.** Empty **32 KB** `zerobas-sub` builds + ships as a
   plain `.rom` (disk.rom-style) spanning both pages, with a `CD` header + empty
-  `jp`-table stubs at both entry bases (`$0010`, `$4010`); machine configs re-laid
-  (RAM → 3-3, slot 3-0 = 32 KB sub-ROM); boot scan records the slot; a main-ROM
-  stub + absence path exist; **new boot gate** (present: slot recorded, a probe
-  stub round-trips through a CALSLT in *each* page; absent: stub errors cleanly
-  with "Illegal function call"). Also: the §3e RAM-move verification (full disk
-  suite + selfcheck re-baseline as needed). Existing standing gates all green.
+  `jp`-table stubs at both entry bases (`$0010`, `$4010`); machine configs gain
+  the 32 KB sub-ROM in the empty **slot 3-2** (RAM stays 3-0, disk stays 3-1);
+  boot scan records the slot; a main-ROM stub + absence path exist; **new boot
+  gate** (present: slot recorded, a probe stub round-trips through a CALSLT in
+  *each* page; absent: stub errors cleanly with "Illegal function call"). Also:
+  re-run the disk gate suite as an additive-regression check (the §3e RAM move
+  is retired — nothing should perturb). Existing standing gates all green.
   ~1 session.
 - **S3 — eviction wave 1.** `float.asm` → sub-ROM after the §3f leaf-audit; F1
   becomes the first real tenant through the entry table. Gate: full
@@ -368,10 +431,10 @@ ceiling per page and a proven-mechanism path to a second page if ever needed.
 
 ## 8. Risks
 
-- **R1 — the RAM move breaks a disk/BDOS anchor byte-identity** (§3e). Mitigated:
-  expected + explainable; S2 distinguishes a legitimate slot-id re-baseline from
-  a regression and documents each moved anchor. Blast radius bounded to
-  slot-derived anchors.
+- **R1 — ~~the RAM move breaks a disk/BDOS anchor byte-identity~~ RETIRED**
+  (§3e). The 2026-07-11 amendment keeps RAM in 3-0, so no slot id changes and
+  there is no re-baseline to reason about. The disk gates are still run in S2 as
+  a plain additive-regression check.
 - **R2 — a float.asm callee resolves in the low region** (§3f), forcing an
   unbudgeted page-1 move before S3. Mitigated: preliminary audit already clears
   the float-arith edge; the full audit is a named S3 pre-gate, and a page-1
@@ -392,4 +455,6 @@ ceiling per page and a proven-mechanism path to a second page if ever needed.
 3. **Entry-table base & shape** → accepted; extended to **two** append-only
    bases, `$0010` (page 0) / `$4010` (page 1), `IX = base + 3*index`. (D-5.)
 4. **Absence-path error** → reuse **"Illegal function call"**. (D-8.)
-5. **D-1…D-11 changes** → only D-4 (size); the rest stand as proposed.
+5. **D-1…D-11 changes** → at sign-off, only D-4 (size). **AMENDED 2026-07-11:**
+   D-2 also revised — sub-ROM → empty 3-2, RAM stays 3-0 (see top-of-file
+   AMENDMENT). The rest stand as proposed.

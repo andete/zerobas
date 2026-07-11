@@ -348,6 +348,17 @@ slot 3 laid out as: **3-0 = sub-ROM, 3-1 = disk ROM (unchanged), 3-3 = RAM
 
 ### 8a. Precedent check (real machines, openMSX hardware configs)
 
+> **AMENDED 2026-07-11 (during sub-ROM S2, user-ratified).** The map below —
+> sub-ROM in 3-0, RAM moved to 3-3 — was reversed. Final map: **3-0 = RAM
+> (unchanged), 3-1 = disk (unchanged), 3-2 = sub-ROM (new), 3-3 = empty**;
+> RAM does not move (keeps `$83`), sub-ROM id is `$8B`. Reasoning: for
+> non-sub-slot-aware software the compatibility cliff is *expanded-vs-unexpanded*
+> slot 3 (already crossed by the disk machine), not the RAM subslot index — so
+> 3-0-vs-3-3 was only faithfulness-vs-risk, and keeping RAM put eliminates the
+> §8c RAM-move cost (R1) at the price of the sub-ROM-in-3-0 convention below.
+> §8a's survey stands as the precedent record; the *choice* it fed is
+> superseded. See `spec-basic-subrom.md` top-of-file AMENDMENT.
+
 | Machine | Sub-ROM | Disk | RAM |
 |---|---|---|---|
 | Philips NMS 8250 | **3-0** | 3-3 | 3-2 (mapper) |
@@ -405,7 +416,12 @@ and note those two are exactly the tape component's charter shape
 ("stubbed page-0 BIOS vectors C-BIOS leaves fake", cf. the `$015F`
 fake-EXTROM `ret` in C-BIOS MSX1).
 
-### 8c. Priced consequence — the RAM move 3-0 → 3-3
+### 8c. ~~Priced consequence — the RAM move 3-0 → 3-3~~ (RETIRED 2026-07-11)
+
+> **This cost is gone.** The 2026-07-11 amendment (§8a) keeps RAM in 3-0, so no
+> slot id changes and there is no re-baseline. S2 re-runs the disk gates only as
+> an additive check that a new device in the empty 3-2 subslot perturbs nothing.
+> The paragraph below is the historical pricing of the reversed choice.
 
 The RAM slot id changes `$83`→`$8F` everywhere it is derived
 (`set_ramad`, `page0_ram_in/out` are host-adaptive by design — verify, not

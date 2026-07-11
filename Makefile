@@ -43,12 +43,21 @@ DISK_PARTS := disk/equates.inc disk/init.asm disk/pageenv.asm disk/driver.asm \
               disk/fat.asm disk/kernel.asm disk/runtime.asm
 DISK_ROM := $(BUILD)/disk.rom
 
+# zerobas-sub: the built-in MSX2-style sub-ROM, a standalone 32 KB ROM spanning
+# BOTH pages of an internal expanded subslot (slot 3-2 on the merged machine).
+# Ships as a plain .rom like disk.rom (no IPS, no C-BIOS interaction). S2a is the
+# empty skeleton (CD header + one round-trip ping per page); real tenants arrive
+# with the eviction session. See docs/spec-basic-subrom.md.
+SUB_SRC   := sub/sub.asm
+SUB_PARTS := sub/equates.inc
+SUB_ROM   := $(BUILD)/sub.rom
+
 # Tracked patch deliverables (regenerable; live at their committed paths).
 PATCHES      := zerobas-msx1.ips zerobas-msx1.bps
 TAPE_PATCHES := tape/zerobas-tape-msx1.ips tape/zerobas-tape-msx1.bps
 
 # Default goal: every portable deliverable (ROMs + both patch pairs).
-all: $(ROM) $(DISK_ROM) $(PATCHES) $(TAPE_PATCHES)
+all: $(ROM) $(DISK_ROM) $(SUB_ROM) $(PATCHES) $(TAPE_PATCHES)
 
 $(BUILD):
 	mkdir -p $(BUILD)
@@ -62,6 +71,14 @@ $(DISK_ROM): $(DISK_SRC) $(DISK_PARTS) | $(BUILD)
 	python3 tools/pad_rom.py $(DISK_ROM) 16384
 
 disk: $(DISK_ROM)
+
+# zerobas-sub: assembled with `pasmo -I sub` (its includes resolve under sub/);
+# the source spans $0000-$7FFF so pad_rom just asserts the 32 KB size.
+$(SUB_ROM): $(SUB_SRC) $(SUB_PARTS) | $(BUILD)
+	$(PASMO) -I sub --bin $(SUB_SRC) $(SUB_ROM)
+	python3 tools/pad_rom.py $(SUB_ROM) 32768
+
+sub: $(SUB_ROM)
 
 # --- Relocated BASIC proof (cbios-repack arc, WS-2 / S3) -----------------------
 # Assemble the $2812-based variant (basic/main-reloc.asm) and prove it lands the
@@ -272,7 +289,7 @@ audit-citations:
 clean:
 	rm -rf $(BUILD)
 
-.PHONY: all disk patches tape-patches machines machines-oracle install \
+.PHONY: all disk sub patches tape-patches machines machines-oracle install \
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance \
