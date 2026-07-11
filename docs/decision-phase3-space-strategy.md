@@ -300,16 +300,28 @@ function-shaped ext") that answers every future slice's "where does it go".
    (eventually) graphics/sound are real Phase-3 goals. If the charter stops
    at "numeric core complete", staging A (gap-fill, no evictions, math pack
    ext later) becomes defensible. Which is it?
+   **→ ANSWERED 2026-07-11: ambition is ALL of MSX1.** Staging B confirmed;
+   the full eviction ladder and (eventually) 3-0 page 1 are in play; the
+   ~14–21 KB roadmap remainder is the planning figure.
 3. **Divergence acceptance:** core math functions (SIN/COS/…) living in an
    extension cart rather than the main ROM is faithful in mechanism but not
    in placement — acceptable as a documented own-design divergence?
+   (Largely dissolved by §8 — a built-in sub-ROM is a faithful MSX
+   placement; the residual divergence is "MSX2-style sub-ROM on an MSX1
+   machine", documented.)
 4. **Tier-B relocation formally rejected?** Confirm retiring the space-analysis
    doc's "~2–3 KB Tier B" as a strategy option on firewall grounds
    (deletion-only micro-cuts remain available under 4a).
+   **→ ANSWERED 2026-07-11: rejected.** The relocation tranche is retired;
+   cbios-repack-space-analysis.md's Tier-B figure is no longer a strategy
+   option. Deletion-only micro-cuts remain pocketed (only usable if 4a's
+   machinery ever exists).
 5. **Gap-fill machinery (a) + tape fold-in:** shelve as reserve (recommended)
    even though the fold-in was your suggestion — or build it anyway in
    parallel because you want the gaps harvested and the merged build
    simplified regardless?
+   **→ ANSWERED 2026-07-11: shelved.** Tape stays at `$09EE` via the
+   existing splice; the ~756 B of gaps remain an unharvested reserve.
 6. **F2 close-out riders:** the D5 tape move to `$09EE` (judgment call,
    flagged) — OK to ratify as part of this sign-off?
 
