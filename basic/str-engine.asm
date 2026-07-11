@@ -285,7 +285,9 @@ ev_str_arg:
                 cp      ')'
                 jp      nz,ev_f_err
                 inc     ix
-                ret
+                jp      flt_int_result      ; LEN/ASC/VAL return ints even when a float
+                                            ; is nested in the string arg (float.asm F1;
+                                            ; clobbers A only, then ret to the caller)
 ev_ff_len:
                 call    ev_str_arg          ; STRPTR -> desc
                 ld      hl,(STRPTR)
@@ -1164,7 +1166,9 @@ efi_p_ok:
                 push    hl                  ; guard the real cursor               [cursor]
                 call    instr_search        ; DE = result; clobbers A,BC,HL; IX/IY preserved
                 pop     ix                  ; IX = cursor (bridge back to ev_f's convention)
-                ret
+                jp      flt_int_result      ; INSTR returns an int even when a float rode
+                                            ; in via p or a nested STR$ arg (float.asm F1;
+                                            ; clobbers A only, then ret to the caller)
 efi_reject_pa:
                 pop     hl                  ; discard [aT]                        [p]
                 pop     hl                  ; discard [p]                         [ ]
@@ -1470,10 +1474,12 @@ ers_rhs:
                 and     c                   ; intersect requested with actual
                 jr      z,ers_false
                 ld      de,$FFFF            ; true = -1
-                ret
+                jp      flt_int_result      ; the -1/0 result is an int even when a float
+                                            ; rode in via a nested STR$ operand (float.asm
+                                            ; F1; clobbers A only, then ret to the caller)
 ers_false:
                 ld      de,0                ; false = 0
-                ret
+                jp      flt_int_result      ; (same)
 ers_mismatch:
                 pop     hl                  ; discard the guarded LHS temp addr
                 jp      type_mismatch_set

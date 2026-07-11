@@ -225,6 +225,12 @@ STRING_TOKEN    equ     $E3     ; STRING$(n,c) -> $E3   (single-byte, reserved w
 INSTR_TOKEN     equ     $E5     ; INSTR([p,]a$,b$) -> $E5 (single-byte, reserved word)
 INKEY_TOKEN     equ     $EC     ; INKEY$ -> $EC (single-byte reserved word; '$' part of
                                 ; the keyword — S2 black-box capture, VG-8020 crunch)
+; Math float pack, slice F1 (Phase 3, repack-only — docs/spec-basic-float-core.md).
+; Single/double float-literal tokens: MSX2 TH Table 2.20 (the number-format chapter
+; lists $1D/$1F alongside the $11-$1C int forms) + oracle-captured byte-exact by
+; basic_probe_floatlit.py (VG-8020 KBUF, e.g. `a=1.5`->1D 41 15.., `a=1#`->1F 41 10..).
+SNG_TOKEN       equ     $1D     ; single-precision float literal: token + 4 value bytes
+DBL_TOKEN       equ     $1F     ; double-precision float literal: token + 8 value bytes
 ; Memory / I-O access tokens (MSX2 TH Table 2.20; oracle-confirmed byte-for-byte
 ; via basic_probe_crunch.py — see PROVENANCE.md). VPOKE / OUT are one-byte
 ; statement tokens; VPEEK / INP are $FF-prefixed two-byte function tokens (like
@@ -899,3 +905,59 @@ DATAPTR         equ     $E0B9   ; next unread DATA item (ASCII) in the program (
 DATALINE        equ     $E0BB   ; link-field of the line holding DATAPTR (2)
 RESTORE_LINE    equ     $E0BD   ; link-field a READ seeks DATA from when unpositioned (2)
 READVAR         equ     $E0BF   ; READ: name of the variable being filled (1)
+
+; --- Math float pack, slice F1 RAM (repack build only) ----------------------
+; docs/spec-basic-float-core.md §9.4 suggests FACTYP $E0BB / TKOVF $E0BC /
+; FAC $E0C8 / FOUTBUF $E0D0 / TKDIG $E0E8, but every byte of $E010-$E0FF is
+; ALREADY claimed (verified against this file 2026-07-11): DATALINE/
+; RESTORE_LINE/READVAR own $E0BB-$E0BF, VALTYP/STRPTR/PRDEST/PRDEV/
+; OO_DEVTYPE/ARL_GETBYTE own $E0C8-$E0CF, and CONTLINE/CONTPTR/CONTVALID/
+; SCAN_*/DISK_FCB/DISKSLOT* own $E0D0-$E0E8 — none of it is free. Genuinely
+; free own-choice RAM instead: the window starting at $F01A, between basic's
+; own last claim (CAS_VMIS $F019 above) and zerobas-disk's first resident
+; claim (DRVA_DPB $F195, disk/init.asm) — neither component's scratch reaches
+; into it, and it sits below HIMEM ($F380, the documented top of BASIC-usable
+; RAM; see TODO.md §8.19-8.20 / disk/docs/provider-oracle-scope.md §8.20,
+; "HIMEM $F380 = the no-disk baseline"), so it is legitimate low RAM whether
+; or not zerobas-disk is present in the combined machine. "own choice — free
+; RAM" (like every other cell in this section), just relocated off the
+; spec's suggested addresses to avoid the collision.
+    IF ROM_BASE < $4000
+FACTYP          equ     $F01A   ; 2=int / 4=single / 8=double (1)
+TKOVF           equ     $F01B   ; tokeniser: 1 = a crunched literal overflowed (1)
+FAC             equ     $F01C   ; float accumulator: value bytes as tokenised (8)
+FOUTBUF         equ     $F024   ; flt_out formatter output scratch (24)
+TKDIG           equ     $F03C   ; tokeniser/formatter: significant-digit array,
+                                ; one decimal digit value (0-9) per byte (24)
+; tk_float single-literal scan state (own choice — free RAM; transient, dead
+; between literals). See basic/float.asm tk_float for field semantics.
+TKPOS           equ     $F054   ; running digit-position counter (1)
+TKINTLEN        equ     $F055   ; integer-part digit count = P (1)
+TKHAVESIG       equ     $F056   ; 1 once the first nonzero digit is seen (1)
+TKNZPOS         equ     $F057   ; position of the first nonzero digit = f (1)
+TKDCOUNT        equ     $F058   ; classification digit count = D, saturating (1)
+TKSTORED        equ     $F059   ; digits actually written to TKDIG, capped 24 (1)
+TKFLAGS         equ     $F05A   ; bit0=dot bit1=exp bit2=expD bit3=! bit4=# bit5=% (1)
+TKEXP           equ     $F05B   ; signed explicit exponent, saturated +-9999 (2)
+TKEXPD          equ     $F05D   ; 1 = the exponent marker being parsed is D/d (1)
+TKEXPSIGN       equ     $F05E   ; 1 = the exponent being parsed is negative (1)
+TKPC            equ     $F05F   ; target precision digit count: 6 / 14 (1)
+TKDEXP          equ     $F060   ; signed dec_exp, pre-/post-round (2)
+TKLEAD          equ     $F062   ; computed lead byte (sign+excess-64 exponent) (1)
+; flt_out formatter scratch (own choice — free RAM; transient, dead between
+; PRINT items). TKPC/TKDEXP/TKDIG above are reused here too — flt_out never
+; runs concurrently with tk_float (tokenising a line always finishes before
+; any statement, including PRINT, executes).
+FOSIGN          equ     $F063   ; 0 / $80 = the value's sign bit (1)
+FOSIGCOUNT      equ     $F064   ; significant digit count = s, trailing zeros
+                                ; stripped (1)
+FOMBYTES        equ     $F065   ; mantissa byte count: 3 (single) / 7 (double) (1)
+; tk_float's own final-encode helpers (tkf_int_value/tkf_calc_and_round/
+; tkf_emit_mantissa) all use HL as scratch to walk TKDIG -- but HL is also
+; tk_float's LIVE SOURCE CURSOR, which tk_loop needs back, unclobbered, the
+; moment control returns to it. TKSRCSAVE parks the post-scan source cursor
+; across those calls (own choice — free RAM; simpler and less error-prone
+; than juggling stack push/pop order against the also-stacked TOKBUF dest
+; cursor). See tkf_classify / the tkf_go_int / tkf_single / tkf_double tails.
+TKSRCSAVE       equ     $F067   ; (2)
+    ENDIF

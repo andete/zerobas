@@ -36,6 +36,10 @@ eval:
                 push    ix
                 push    hl
                 pop     ix                  ; IX = cursor
+    IF ROM_BASE < $4000
+                ld      a,2
+                ld      (FACTYP),a          ; §9.4: eval() sets FACTYP=2 (int) on entry
+    ENDIF
                 call    ev_xor              ; lowest precedence layer
                 push    ix
                 pop     hl                  ; HL = cursor (advanced)
@@ -64,6 +68,9 @@ ev_xor_lp:
                 xor     d
                 ld      h,a
                 ex      de,hl               ; DE = lhs XOR rhs
+    IF ROM_BASE < $4000
+                call    flt_guard
+    ENDIF
                 jr      ev_xor_lp
 ev_or:
                 call    ev_and
@@ -83,6 +90,9 @@ ev_or_lp:
                 or      d
                 ld      h,a
                 ex      de,hl               ; DE = lhs OR rhs
+    IF ROM_BASE < $4000
+                call    flt_guard
+    ENDIF
                 jr      ev_or_lp
 ev_and:
                 call    ev_not
@@ -102,6 +112,9 @@ ev_and_lp:
                 and     d
                 ld      h,a
                 ex      de,hl               ; DE = lhs AND rhs
+    IF ROM_BASE < $4000
+                call    flt_guard
+    ENDIF
                 jr      ev_and_lp
 ev_not:
                 call    ev_sp
@@ -118,6 +131,9 @@ ev_not_do:
                 ld      a,d
                 cpl
                 ld      d,a                 ; DE = ~DE (ones complement)
+    IF ROM_BASE < $4000
+                call    flt_guard
+    ENDIF
                 ret
 
 ; --- ev_rel: relational layer ----------------------------------------------
@@ -179,9 +195,15 @@ evr_rhs:
                 and     c                   ; intersect requested with actual
                 jr      z,evr_false
                 ld      de,$FFFF            ; true = -1
+    IF ROM_BASE < $4000
+                call    flt_guard
+    ENDIF
                 ret
 evr_false:
                 ld      de,0                ; false = 0
+    IF ROM_BASE < $4000
+                call    flt_guard
+    ENDIF
                 ret
     IF ROM_BASE < $4000
 evr_mismatch:
@@ -267,6 +289,9 @@ ev_e_add:
                 pop     hl                  ; HL = lhs
                 add     hl,de
                 ex      de,hl               ; DE = sum
+    IF ROM_BASE < $4000
+                call    flt_guard
+    ENDIF
                 jr      ev_e_lp
 ev_e_sub:
                 inc     ix
@@ -276,6 +301,9 @@ ev_e_sub:
                 or      a                   ; clear carry
                 sbc     hl,de               ; HL = lhs - rhs
                 ex      de,hl
+    IF ROM_BASE < $4000
+                call    flt_guard
+    ENDIF
                 jr      ev_e_lp
 
 ; --- ev_mod: { MOD } over '\'-expressions (MSX precedence level 5) ----------
@@ -293,6 +321,9 @@ ev_mod_lp:
                 ld      c,e                 ; BC = divisor
                 pop     de                  ; DE = dividend
                 call    mod_de_bc           ; DE = remainder
+    IF ROM_BASE < $4000
+                call    flt_guard
+    ENDIF
                 jr      ev_mod_lp
 
 ; --- ev_idiv: { '\' } over terms (integer division, level 4) ---------------
@@ -310,6 +341,9 @@ ev_idiv_lp:
                 ld      c,e                 ; BC = divisor
                 pop     de                  ; DE = dividend
                 call    div_de_bc           ; DE = quotient
+    IF ROM_BASE < $4000
+                call    flt_guard
+    ENDIF
                 jr      ev_idiv_lp
 
 ; --- ev_t: term := factor { ('*' | '/') factor } ---------------------------
@@ -332,6 +366,9 @@ ev_t_mul:
                 pop     hl                  ; HL = lhs
                 call    mul16               ; HL = lhs * rhs (low 16 bits)
                 ex      de,hl               ; DE = product
+    IF ROM_BASE < $4000
+                call    flt_guard
+    ENDIF
                 jr      ev_t_lp
 ev_t_div:
                 inc     ix
@@ -341,6 +378,9 @@ ev_t_div:
                 ld      c,e                 ; BC = divisor
                 pop     de                  ; DE = dividend
                 call    div_de_bc           ; DE = quotient
+    IF ROM_BASE < $4000
+                call    flt_guard
+    ENDIF
                 jr      ev_t_lp
 
 ; --- ev_f: factor ----------------------------------------------------------
@@ -374,6 +414,12 @@ ev_f:
                 jp      z,ev_f_word
                 cp      INT1_TOKEN          ; $0F -> 1-byte value
                 jp      z,ev_f_byte
+    IF ROM_BASE < $4000
+                cp      SNG_TOKEN           ; $1D -> single float literal (basic/float.asm)
+                jp      z,ev_f_float
+                cp      DBL_TOKEN           ; $1F -> double float literal
+                jp      z,ev_f_float
+    ENDIF
                 cp      INT_DIGIT_BASE      ; $11
                 jr      c,ev_f_var
                 cp      $1A+1               ; $11..$1A -> digit token
@@ -421,6 +467,35 @@ ev_f_word:                                  ; $0C/$1C,<word LE>
                 inc     ix
                 ret
 
+    IF ROM_BASE < $4000
+; --- ev_f_float: SNG_TOKEN/DBL_TOKEN factor -> FAC/FACTYP + DE (§9.4) ------
+; Copies the token's 4 (single) / 8 (double) value bytes into FAC, sets
+; FACTYP (4/8), and returns DE = the value rounded to int16 (flt_to_int16,
+; basic/float.asm) so every existing int consumer keeps working unchanged
+; (interim divergence D-F1-2: float into an int context rounds silently).
+ev_f_float:
+                ld      a,(ix+0)            ; SNG_TOKEN or DBL_TOKEN
+                ld      c,4                 ; C = value byte count (single)
+                ld      b,4                 ; B = FACTYP value (single)
+                cp      DBL_TOKEN
+                jr      nz,eff_sz
+                ld      c,8
+                ld      b,8
+eff_sz:
+                inc     ix                  ; past the token
+                ld      a,b
+                ld      (FACTYP),a
+                ld      hl,FAC
+                ld      b,c                 ; B = copy count
+eff_cp:
+                ld      a,(ix+0)
+                ld      (hl),a
+                inc     hl
+                inc     ix
+                djnz    eff_cp
+                jp      flt_to_int16        ; DE = rounded int16 (0 if out of range)
+    ENDIF
+
 ev_f_neg:
                 inc     ix
                 call    ev_f                ; DE = operand
@@ -428,6 +503,13 @@ ev_f_neg:
                 or      a
                 sbc     hl,de               ; HL = 0 - operand
                 ex      de,hl
+    IF ROM_BASE < $4000
+                ld      a,(FACTYP)
+                cp      2
+                jr      z,evfn_ret
+                call    flt_neg
+evfn_ret:
+    ENDIF
                 ret
 
 ev_f_paren:
@@ -482,6 +564,9 @@ ev_ff_arg:
                 cp      ')'
                 jp      nz,ev_f_err
                 inc     ix
+    IF ROM_BASE < $4000
+                call    flt_int_result      ; the function returns an int even if its
+    ENDIF                                   ;  arg was a float (clobbers A only; C kept)
                 ld      a,c                 ; dispatch on the selector
                 cp      VPEEK_TOKEN
                 jr      z,ev_ff_vpeek
@@ -601,6 +686,9 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                 cp      ')'
                 jp      nz,ev_f_err
                 inc     ix
+    IF ROM_BASE < $4000
+                call    flt_int_result      ; CVI returns an int; a float nested in
+    ENDIF                                   ;  the string arg must not stick (A only)
                 ld      hl,(STRPTR)
                 inc     hl                  ; -> the value bytes
                 ld      e,(hl)              ; low byte
@@ -683,6 +771,9 @@ ev_f_base:
                 cp      ')'
                 jp      nz,ev_f_err
                 inc     ix
+    IF ROM_BASE < $4000
+                call    flt_int_result      ; BASE yields an int (0) even over a float arg
+    ENDIF
                 ld      a,$DD               ; BASE is descoped -> expression-error marker
                 ld      (ERRMARK),a
                 ld      de,0                ; ...and a 0 result (no fabricated address)

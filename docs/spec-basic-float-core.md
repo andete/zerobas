@@ -90,24 +90,17 @@ they already dispatch on the string/number split. The whole pack is
 **repack-only** (`IF ROM_BASE < $4000`), same firewall as the string engine;
 the lean 16 KB ROM stays byte-identical.
 
-### 3c. Literal classification (F1, oracle-pinned in S2)
+### 3c. Literal classification (F1) — PINNED, see §9
 
-Working rules to verify: `%`-suffixed or plain ≤ 6-digit integer ≤ 32767 →
-the int forms; `!` suffix, a `.` or `E` exponent, or an integer > 32767, all
-within 6 significant digits → single `$1D`; `#` suffix, `D` exponent, or > 6
-significant digits → double `$1F`. Exponent range ±63 (excess-64); overflow
-at crunch time is an oracle question. The S2 probe matrix walks the
-boundaries (32767/32768, 6/7 digits, `1e63`, `.5`, `1.`, negative forms —
-noting `-` crunches as an operator token, not into the literal).
+Oracle-pinned 2026-07-11 by `basic_probe_floatlit.py` (VG-8020). Full rule
+set + captures in §9.1–§9.2.
 
-### 3d. Output formatter (F1 — the hardest oracle match)
+### 3d. Output formatter (F1) — PINNED, see §9
 
-One routine, int/single/double: sign space or `-`, up to 6 (single) / 14
-(double) significant digits, trailing zeros dropped, integer-valued floats
-print with no point, `<1` values lead with `.`, out-of-range magnitudes use
-`E±nn` (single) / `D±nn` (double), trailing space. Thresholds and *rounding*
-of the displayed digits are S2 oracle questions; the acceptance gate locks
-the formatter output line-by-line against the VG-8020.
+Oracle-pinned 2026-07-11 by `basic_probe_float_fmt.py` (VG-8020). Notable:
+the reference prints `E` notation for BOTH precisions (no `D` output form),
+and the fixed↔E wall is decimal exponent ∈ [-1, 14] for both. Full rules +
+captures in §9.3.
 
 ## 4. Clean-room / provenance
 
@@ -184,3 +177,102 @@ must re-verify the string-engine §5a RAM analysis before moving anything.
 3. F3 RAM growth (+224 B, moving the string region) — acceptable, or cap
    VARSLOTS lower?
 4. Gate name `float-acceptance` OK?
+
+## 9. F1 S2 — oracle-pinned contracts (VG-8020, 2026-07-11)
+
+Black-box captures by `probes/basic/basic_probe_floatlit.py` (crunch bytes;
+BLOAD-leads freeze at TAPION, KBUF read) and
+`probes/basic/basic_probe_float_fmt.py` (PRINT output; bracketed VRAM span).
+Re-runnable; the same probes in `--zb-machine` mode are the F1 differential
+gates. "dec_exp" below = (lead byte & $7F) − 64.
+
+### 9.1 Representation (confirms the MSX2 TH format)
+
+- Token `$1D` + 4 bytes (single) / `$1F` + 8 bytes (double). Byte 0 = sign
+  (bit 7) + excess-64 exponent (bits 6..0); byte 0 = `$00` ⇒ value 0. Then
+  packed BCD mantissa digits (2/byte, left-justified, zero-padded): 6 digits
+  (single) / 14 (double), normalised 0.1 ≤ m < 1.
+  Captures: `32768` → `1D 45 32 76 80`; `.000001` → `1D 3B 10 00 00`;
+  `9999999` → `1F 47 99 99 99 90 00 00 00`.
+- The crunch never sets the sign bit (`-` is the operator token `$F2`).
+- Zero encodes as token + ALL-ZERO value bytes (`0!` → `1D 00 00 00 00`).
+
+### 9.2 Literal classification + conversion (tokeniser contract)
+
+Let D = typed digit count, excluding leading zeros, INCLUDING trailing
+zeros and post-`.` digits (`1e6` is D=1 → single, but `1000000` is D=7 →
+double, same value — the rule counts CHARS, not numeric significance).
+
+1. `%` suffix → int forms; the `%` is consumed, NO extra byte (`1%` → `$12`,
+   `100%` → `0F 64`, `30000%` → `1C 30 75`); value > 32767 → crunch-time
+   error (`65535%`: BLOAD leading the line never ran).
+2. No `.`, no exponent, no suffix: D ≤ 5 and value ≤ 32767 → int forms
+   (unchanged); D ≤ 6 with value > 32767 → single; D ≥ 7 → double
+   (`999999` → single, `1000000` → double).
+3. `.` and/or `E` exponent: D ≤ 6 → single, D ≥ 7 → double
+   (`3.14159` → single, `3.141592`/`123456.7` → double).
+4. `D` exponent or `#` suffix → double, always. `!` suffix → single, always.
+5. Rounding to the precision's digit count is HALF-UP at both precisions
+   (`1234565!`/`1234575!` → `123457`/`123458`; `…345`+`5` tail → `…35`).
+   **Carry-out-of-all-digits quirk:** the single path does NOT renormalise —
+   `9999995!` → `1D 47 10 00 00` = 1000000 (a 10× value change, faithfully
+   reproduced); the double path DOES — 16 nines → `1F 51 10 00 …` = 1E16.
+6. dec_exp = int-digit count (post-leading-zero-skip; negative for leading
+   post-`.` zeros) + explicit exponent. Range: +63 max (`1e62` → `$7F`;
+   `1e63` → crunch-time error, line never runs); −63 min encodable
+   (`1e-64` → `$01`); BELOW that, byte 0 with mantissa RETAINED
+   (`1e-65` → `1D 00 10 00 00` — reads as value 0, no error).
+7. Crunch-time error surface: on the reference the whole line is rejected
+   before any statement runs. zerobas: tokeniser sets an overflow flag;
+   dispatch_line prints its own lowercase `overflow` and skips
+   execute/store (message wording = D-2-style divergence, D-F1-1).
+8. (Found during F1 implement, extra targeted capture — see
+   `basic/float.asm` `tkf_try_exponent`:) a type suffix (`!`/`#`/`%`) is
+   recognised only when NO `E`/`D` exponent was parsed; after an exponent
+   the suffix char is left UNCONSUMED in the stream (`1e10#` leaves a raw
+   `#` that derails the evaluator identically on both sides).
+
+### 9.3 PRINT output format (formatter contract)
+
+Shape: sign position (space or `-`) + digits + ONE trailing space. Both
+precisions, same rules; `E` notation for both (never `D` on this reference).
+
+- Value 0 (lead byte 0, mantissa ignored) → `0`.
+- FIXED form iff −1 ≤ dec_exp ≤ 14 (`.01` fixed, `.001` → `1E-03`;
+  `1e13`/`1d13` fixed 14-digit, `1e14`/`1d14` → `1E+14`).
+  Layout: significant digits s = mantissa with trailing zeros stripped;
+  dec_exp ≤ 0 → `.` + (−dec_exp) zeros + digits;
+  s ≤ dec_exp → digits + (dec_exp − s) zeros, NO point (`1234567!` →
+  `1234570`, `1.0` → `1`, `100000!` → `100000`);
+  else digits[0..dec_exp) + `.` + rest (`3.14159`, `.0123`).
+- E form: first digit, then (if s > 1) `.` + remaining significant digits;
+  `E`; explicit sign; TWO-digit zero-padded |dec_exp − 1|
+  (`6.023E+23`, `1.23E-03`, `2.5E-10`, `1E-64`, `1.2345678901235E+17`).
+- Doubles display all 14 stored digits (trailing zeros stripped); singles 6.
+
+### 9.4 F1 implementation protocol (repack-only)
+
+- RAM (all free `$E0xx`, own choice): `FACTYP $E0BB` (2=int / 4=sng /
+  8=dbl), `TKOVF $E0BC` (crunch overflow flag), `FAC $E0C8` (8 B, holds the
+  value bytes exactly as tokenised), `FOUTBUF $E0D0` (24 B formatter out),
+  `TKDIG $E0E8` (24 B tokeniser digit scratch). NUMBUF/print_number int
+  path untouched.
+- Evaluator: `eval` sets FACTYP=2 on entry. A `$1D`/`$1F` factor in `ev_f`
+  copies the value bytes to FAC, sets FACTYP, and returns DE = the value
+  rounded (half-up) into the 16-bit ADDRESS domain: positives to 65535 as
+  their unsigned bit pattern, negatives to −32768 — matching the published
+  POKE/HEX$ −32768..65535 argument range and the pre-F1 unsigned `$1C`
+  cruncher (a strict-int16 cap would regress `POKE 40000,n`). Outside that
+  → DE=0, NO error mark (interim divergence D-F1-2: float into an int
+  context rounds silently; real Overflow semantics are F2). FACTYP is STICKY through operators; every binary/unary op-combine
+  site calls a guard: FACTYP≠2 → ERRMARK `$DD`, FACTYP:=2, operands as the
+  already-rounded ints (interim divergence D-F1-3: no float arithmetic
+  until F2). Unary minus on a float flips the FAC sign bit (zero exempt)
+  AND negates DE.
+- PRINT: `exp_num` dispatches on FACTYP after eval — 2 → `print_number`,
+  else the new formatter (FAC → FOUTBUF → `print_string`).
+- Tokeniser: repack build replaces `tk_number` with the float-aware scanner
+  (single pass into TKDIG + flags, then §9.2 classify/emit; int results
+  emit the EXACT existing forms). `tk_loop` additionally routes `.`+digit
+  (outside a name) into it. Lean build: byte-identical, all hooks
+  `IF ROM_BASE < $4000`-gated.

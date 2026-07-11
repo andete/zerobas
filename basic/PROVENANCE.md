@@ -2916,3 +2916,49 @@ the repack machine; `?redo`/`?extra` differential the final value, wording diffe
 `basic.rom` byte-identical (pinned sha256 unchanged); unit-test 44/44 (new `tests/test_input.py`);
 `diskbasic-acceptance-repack` 34/34 (the file `INPUT#`/`LINE INPUT#` path shares `read_into_strscr`
 — unregressed); `string-acceptance` PASS; `repack-boot` PASS; `audit-citations` clean.
+
+## Phase 3: math float pack, F1 — float literals + PRINT (basic/float.asm, basic/interp.asm, basic/expr.asm, basic/print.asm, basic/program.asm, basic/sysvars.inc)
+
+Slice F1 of the float-pack arc (docs/spec-basic-float-core.md, signed off
+2026-07-11): decimal float literals crunch to the real `$1D`/`$1F` tokens and
+PRINT renders them reference-identically. No float arithmetic yet (F2) and no
+float variables (F3). Repack build only; the lean 16 KB `basic.rom` is
+byte-identical (pinned sha256 unchanged).
+
+### Representation + tokens
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| Number format: lead byte = sign(bit7)+excess-64 exponent (byte 0 ⇒ value 0), then packed-BCD mantissa, 6 digits (single) / 14 (double), normalised 0.1 ≤ m < 1 | — | MSX2 Technical Handbook number-format chapter; **cross-checked byte-exact** black-box (`basic_probe_floatlit.py`, VG-8020 — the crunched value bytes ARE the stored form) | sourced |
+| `SNG_TOKEN` / `DBL_TOKEN` literal tokens | `$1D`+4 B / `$1F`+8 B | MSX2 TH Table 2.20 + oracle capture | sourced |
+| Classification (docs/spec-basic-float-core.md §9.2): `%`→int (consumed; >32767 = crunch error); `#`/`D`-exp→double; `!`→single; else D≤5 & ≤32767→int, D≤6→single, D≥7→double (D counts typed chars incl. trailing zeros) | — | oracle-locked black-box (`basic_probe_floatlit.py`, 60+ literal matrix incl. boundary/tie cases) | sourced |
+| Rounding half-up at both precisions; carry-out-of-all-digits does NOT renormalise the exponent on the single path (`9999995!` → `1D 47 10 00 00` = 1000000) but DOES on the double path (16 nines → `1F 51 10 …` = 1E16) | — | oracle-locked (tie-breaker + carry captures, §9.2 rule 5) | sourced |
+| Exponent walls: dec_exp ≤ 63 else crunch-time rejection; dec_exp < −63 → lead byte 0, mantissa retained (value 0) | — | oracle-locked (`1e62`/`1e63`/`1e-64`/`1e-65` captures; BLOAD-leads proves the rejection precedes execution) | sourced |
+| Suffix-after-exponent is left unconsumed (`1e10#` leaves a raw `#`) | — | oracle-locked (extra S2 capture; `basic/float.asm` `tkf_try_exponent` header) | sourced |
+| All algorithms: digit scan, big-decimal round, BCD pack/unpack, `flt_out` layout | — | own-design (spec §9 distils the observed contract; no disassembly anywhere) | sourced |
+
+### PRINT formatter (`flt_out`)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| Display: sign space/`-` + digits + one trailing space; FIXED iff −1 ≤ dec_exp ≤ 14, else `E±nn` (2-digit, always signed; BOTH precisions use `E` — no `D` output form on this MSX1 reference); trailing zeros stripped; integer-valued → no point; <1 → leading `.`; value 0 → `0` | — | oracle-locked black-box (`basic_probe_float_fmt.py`, 60+ case matrix, VG-8020 ref-lock then zerobas==reference) | sourced |
+
+### Documented divergences (own design)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| D-F1-1: crunch-time rejection message is zerobas's own lowercase `overflow`; the reference's wording is not copied | — | own design (the D-2 wording convention) | quarantined |
+| D-F1-2: a float in an int context rounds half-up into the 16-bit ADDRESS domain (positives ≤65535 as the unsigned pattern — the published POKE/HEX$ −32768..65535 argument range; negatives ≥−32768); outside → 0 silently. Real Overflow semantics land in F2 | — | own design (interim; a strict-int16 cap would regress `POKE 40000,n` — caught in F1 review by `tests/test_str_fn.py` HEX$(65535)) | quarantined |
+| D-F1-3: float operands under any operator (`+ - * / \ MOD AND OR XOR NOT` relationals) flag ERRMARK `$DD` and fall back to the rounded ints — no float arithmetic until F2 | — | own design (interim; `flt_guard` at every combine site) | quarantined |
+
+### RAM + gates
+
+New cells `$F01A–$F068` (FACTYP/TKOVF/FAC/FOUTBUF/TKDIG + scanner state) — own
+choice, free RAM between basic's `CAS_VMIS $F019` and zerobas-disk's
+`DRVA_DPB $F195` (the spec's suggested `$E0xx` cells were already occupied —
+see sysvars.inc's comment). **Gates:** `basic_probe_floatlit.py --zb-machine`
+ALL PASS; `basic_probe_float_fmt.py --zb-machine` ALL PASS;
+`basic_probe_crunch.py` (lean + repack) ALL PASS; lean ROM byte-identical;
+unit-test 45/45 (new `tests/test_float.py`); `diskbasic-acceptance-repack`
+34/34; `string-acceptance` PASS; `input-acceptance` PASS; `audit-citations`
+clean.

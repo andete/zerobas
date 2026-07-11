@@ -121,6 +121,9 @@ ev_usr:
                 cp      ')'
                 jr      nz,ev_usr_err
                 inc     ix
+    IF ROM_BASE < $4000
+                call    flt_int_result      ; USR returns an int even if its arg was a
+    ENDIF                                   ;  float (basic/float.asm; clobbers A only)
                 pop     af                  ; A = index
                 jp      usr_call            ; perform the call (preserves IX) -> DE
 ev_usr_err:

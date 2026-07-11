@@ -39,6 +39,9 @@ init:
 tokenise:
                 xor     a
                 ld      (TKNAME),a          ; a fresh line starts outside any name
+    IF ROM_BASE < $4000
+                ld      (TKOVF),a           ; ...and no float-literal overflow yet (F1,
+    ENDIF                                   ;  basic/float.asm); A is still 0 here
 tk_loop:
                 ld      a,(TKNAME)
                 ld      b,a                 ; B = were we inside a name? (digit rule)
@@ -61,7 +64,12 @@ tk_loop:
                 ld      a,b
                 or      a
                 jr      nz,tk_namedig
+    IF ROM_BASE < $4000
+                jp      tk_float            ; '0'..'9' starting a numeric constant
+                                             ; (float-aware, basic/float.asm)
+    ELSE
                 jp      tk_number           ; '0'..'9' starting a numeric constant
+    ENDIF
 tk_namedig:
                 ld      a,1
                 ld      (TKNAME),a          ; the digit extends the name
@@ -71,6 +79,20 @@ tk_namedig:
                 inc     hl
                 jp      tk_loop
 tk_nondigit:
+    IF ROM_BASE < $4000
+                cp      '.'                 ; '.'+digit leads a float literal (spec
+                jr      nz,tk_nondot        ; §9.2); a lone '.' (no digit) stays
+                push    hl                  ; verbatim below, like today
+                inc     hl
+                ld      a,(hl)
+                pop     hl
+                cp      '0'
+                jr      c,tk_nondot
+                cp      '9'+1
+                jr      nc,tk_nondot
+                jp      tk_float            ; basic/float.asm
+tk_nondot:
+    ENDIF
                 cp      '&'                 ; "&H" hex constant
                 jp      z,tk_hex
                 call    match_kw            ; keyword match runs at EVERY position, so

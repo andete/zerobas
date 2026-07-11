@@ -48,6 +48,11 @@ dl_cmd:
                 ld      hl,LINEBUF
                 ld      de,TOKBUF
                 call    tokenise
+    IF ROM_BASE < $4000
+                ld      a,(TKOVF)           ; float-literal crunch-time overflow (F1,
+                or      a                   ; basic/float.asm) -> reject the whole line,
+                jp      nz,dl_overflow      ; own wording (D-F1-1); never execute/store
+    ENDIF
                 ld      hl,TOKBUF
                 jp      exec                ; returns to the REPL
 dl_store:
@@ -56,9 +61,22 @@ dl_store:
                 call    skip_spaces         ; one or more spaces before the body
                 ld      de,TOKBUF
                 call    tokenise            ; crunch the remainder of the line
+    IF ROM_BASE < $4000
+                ld      a,(TKOVF)
+                or      a
+                jr      nz,dl_overflow_pop
+    ENDIF
                 pop     bc
                 ld      hl,TOKBUF
                 jp      store_line          ; returns to the REPL
+    IF ROM_BASE < $4000
+dl_overflow_pop:
+                pop     bc                  ; balance the stack (line number now unused)
+dl_overflow:
+                ld      hl,err_overflow
+                jp      print_string        ; reports and returns to the REPL
+err_overflow:   db      "overflow",13,10,0
+    ENDIF
 dl_run:
                 jp      run_prog
 dl_new:
