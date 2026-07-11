@@ -329,13 +329,21 @@ slot 3 laid out as: **3-0 = sub-ROM, 3-1 = disk ROM (unchanged), 3-3 = RAM
 | Philips NMS 8250 | **3-0** | 3-3 | 3-2 (mapper) |
 | Sony HB-F900 | **3-0** | 3-2 | 3-1 (mapper) |
 | Sanyo PHC-23 | **3-0** | — | 3-2 |
-| Sony HB-F700P | **3-0** (shares w/ disk) | 3-0 | **3-3** (mapper) |
+| Sony HB-F700P/D | **3-0** (shares w/ disk) | 3-0 | **3-3** (mapper) |
 
-Sub-ROM in 3-0 is the dominant real-world pattern; RAM in 3-3 has direct
-precedent (HB-F700P); disk placement varies per maker, so keeping ours at
-3-1 (zero churn: the DRVTBL slot byte `$87` and all Tier-2 disk machinery
-assume it) is within convention. The proposed map is a legitimate
-"existing systems" layout.
+Full-library survey (all 102 openMSX machine configs carrying a sub-ROM):
+sub-ROM location is 3-0 in 53 machines (3-1 in 19 — 3-0 is decisively the
+convention); main RAM sits in **3-2 in 50** machines (the plurality, e.g.
+NMS 8250), 3-0 in 17 (FS-A1 family), **3-3 in 12** — among them the whole
+Sony HB-F700 family, whose exact layout is `3-0 = sub-ROM (page 0) + disk
+ROM (page 1), 3-3 = mapper RAM`. Since the sub-ROM takes 3-0, RAM must
+move out of 3-0 either way, and the gate-churn cost of 3-2 (`$8B`) vs 3-3
+(`$8F`) is identical — a pure precedent/taste call. **Chosen: RAM in 3-3,
+after the user's own Sony HB-F700D.** Disk stays at 3-1 rather than
+mimicking the F700's disk-in-3-0 stacking (no functional gain, extra
+disk-gate re-baselining churn; the DRVTBL slot byte `$87` and all Tier-2
+disk machinery assume 3-1). Each element of the resulting map is
+individually precedented.
 
 ### 8b. Architectural consequence — the page-0 sub-ROM model supersedes §4d's cartridge model
 
