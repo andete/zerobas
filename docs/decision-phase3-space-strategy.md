@@ -5,8 +5,12 @@ SPDX-License-Identifier: 0BSD
 
 # Decision — Phase-3 ROM-space strategy
 
-Status: **PROPOSED 2026-07-11, awaiting user sign-off.** Deliverable of the
-deep-think session commissioned by
+Status: **SIGNED OFF 2026-07-11** — all §7 open questions answered (Q1 via
+the §8 sub-ROM direction; Q2 all-of-MSX1 ambition; Q3 dissolved by §8; Q4
+Tier-B relocation rejected; Q5 gap-fill machinery shelved; Q6 D5-as-revised
+ratified). The strategy of record is staging B (§6) under the §8 virtual-
+machine architecture. Next step: the sub-ROM arc S1 spec, its own session.
+Deliverable of the deep-think session commissioned by
 [`handover-phase3-space-strategy.md`](handover-phase3-space-strategy.md).
 Every number below is **measured** on the post-F2 tree (commit `ba90d1d`,
 fresh `make` + `make basic-reloc` + `make repack-main` artifacts) or on the
@@ -324,6 +328,9 @@ function-shaped ext") that answers every future slice's "where does it go".
    existing splice; the ~756 B of gaps remain an unharvested reserve.
 6. **F2 close-out riders:** the D5 tape move to `$09EE` (judgment call,
    flagged) — OK to ratify as part of this sign-off?
+   **→ ANSWERED 2026-07-11: ratified.** D5-as-revised is settled: tape
+   bodies at `$09EE` (all-variant gap-1 fill), BASIC owns `$2812–$3FFF`
+   outright; no revert consideration remains open.
 
 ## 8. Addendum (2026-07-11) — user direction on Q1: a built-in sub-ROM in the virtual zerobas machine
 
