@@ -57,6 +57,9 @@ ROM_BASE:       equ     $4000
                 include "basic/input.asm"
                 include "basic/float.asm"
                 include "basic/float-arith.asm"
+; zerobas-sub discovery recorder + dispatch helper (subrom S2b): lives in the
+; page-0 low region freed by evicting the float PRINT formatter (page 1 is full).
+                include "basic/subromcall.asm"
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean

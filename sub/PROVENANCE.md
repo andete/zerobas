@@ -34,6 +34,18 @@ Allowed sources (same master list as [`../README.md`](../README.md)):
   [`../basic/sysvars.inc`](../basic/sysvars.inc)). Used only by the S2a skeleton
   pings so the boot-gate probe can observe the round-trip; S2b's dispatch stub
   formalises the marshalling block that begins here.
+- **`SUBSLOT`/`SUBSLOT_OK` = $F106/$F107, `EXBRSA` = $FAF8 (S2b).** `SUBSLOT`/
+  `SUBSLOT_OK` are *own-choice free-RAM* cells (same repack-only window) for the
+  private dispatch path; `EXBRSA` $FAF8 is the published MSX2 sub-ROM-slot work
+  area (*source:* MSX2 TH work-area map), written for convention-compat but not
+  read at dispatch (spec D-6/R4).
+- **`sub/fltout.asm` — the evicted float PRINT formatter (S2b WAVE 1).** *Own
+  design*, copied verbatim from our own `../basic/float.asm` (`flt_out`); the
+  number FORMAT layout it emits is MSX2 TH. Two changes make it a pure-leaf
+  page-0 tenant: the two tail `jp print_string` became `ret` (the main-ROM stub
+  prints), and its two resident/page-1 leaf callees `cmp16_bits`
+  (`../basic/expr.asm`) and `neg_de` (`../basic/float.asm`) are duplicated as
+  byte-identical *own-design* sub-local clones. No stock-ROM bytes involved.
 
 ## Own-design divergences from real MSX (spec §6)
 

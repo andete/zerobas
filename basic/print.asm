@@ -153,10 +153,24 @@ exp_num:
                 jp      exp_loop
     IF ROM_BASE < $4000
 exp_num_float:
-                push    hl                  ; flt_out ends in print_string, which guards
-                call    flt_out             ;  HL across CHPUT the same way (basic/float.asm)
+                ; The float PRINT formatter was evicted to the sub-ROM (subrom S2b,
+                ; docs/spec-basic-subrom.md WAVE 1). It runs as a pure-leaf page-0
+                ; tenant: FAC/FACTYP in (RAM), formatted text out in FOUTBUF (RAM).
+                ; We marshal via RAM, CALSLT it, then print FOUTBUF here — because
+                ; print_string reaches CHPUT/BIOS, which is switched OUT during the
+                ; sub-ROM call. HL (the token cursor) is guarded across the whole
+                ; thing (CALSLT + print_string both clobber it).
+                push    hl
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_FLTOUT
+                call    subrom_call         ; FAC -> FOUTBUF (initext.asm); CF=1 if absent
+                jr      c,exp_num_float_absent
+                ld      hl,FOUTBUF
+                call    print_string
                 pop     hl
                 jp      exp_loop
+exp_num_float_absent:
+                pop     hl                  ; defensive; the merged machine always ships the sub-ROM
+                jp      subrom_absent_error
     ENDIF
 exp_strvar:
     IF ROM_BASE < $4000

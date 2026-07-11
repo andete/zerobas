@@ -49,7 +49,7 @@ DISK_ROM := $(BUILD)/disk.rom
 # empty skeleton (CD header + one round-trip ping per page); real tenants arrive
 # with the eviction session. See docs/spec-basic-subrom.md.
 SUB_SRC   := sub/sub.asm
-SUB_PARTS := sub/equates.inc
+SUB_PARTS := sub/equates.inc sub/fltout.asm basic/sysvars.inc
 SUB_ROM   := $(BUILD)/sub.rom
 
 # Tracked patch deliverables (regenerable; live at their committed paths).

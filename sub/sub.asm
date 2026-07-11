@@ -35,6 +35,14 @@
 
                 include "equates.inc"
 
+; Shared RAM-cell addresses (FAC/FACTYP/FOUTBUF/TKDIG/... used by fltout.asm).
+; ROM_BASE selects the repack cell layout from the SAME sysvars.inc the merged
+; main ROM uses, so a sub-ROM tenant's RAM scratch is byte-address-identical to
+; the main ROM's — no marshalling translation. sysvars.inc is pure equates
+; (emits no bytes), so it does not perturb this ROM's $0000-based layout.
+ROM_BASE        equ     $2812
+                include "basic/sysvars.inc"
+
 ; ===========================================================================
 ; PAGE 0 — $0000-$3FFF (the callable-from-main region; `CD` signature)
 ; ===========================================================================
@@ -59,7 +67,8 @@
                 db      SUB_P0_TABLE_NOT_AT_0010__HEADER_SIZE_DRIFT
     ENDIF
 sub_p0_table:
-                jp      sub_p0_ping             ; index 0: round-trip ping
+                jp      sub_p0_ping             ; index 0 (SUBROM_IDX_PING)
+                jp      flt_out                 ; index 1 (SUBROM_IDX_FLTOUT): PRINT formatter
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $0010 mapped slot 3-2 into PAGE 0 and that page-3 RAM is
@@ -71,6 +80,11 @@ sub_p0_ping:
                 ld      a,SUB_PING_P0
                 ld      (SUB_PING),a
                 ret
+
+; --- Page-0 tenants (WAVE 1: the float PRINT formatter, index 1) -----------
+; Pure-leaf: touches only RAM + its own body (sub-local cmp16_bits/neg_de). The
+; main-ROM stub (basic/print.asm) marshals FAC in RAM and prints FOUTBUF after.
+                include "fltout.asm"
 
 ; --- pad page 0 to the $4000 boundary --------------------------------------
                 ds      $4000 - $, $FF

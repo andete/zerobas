@@ -43,6 +43,13 @@ ROM = "/tmp/zb_float.rom"
 SYM = "/tmp/zb_float.sym"
 RELOC_BASE = 0x2812
 
+# The float PRINT formatter (flt_out) was evicted to the sub-ROM (subrom S2b):
+# it now lives in build/sub.rom's page 0 and ends in `ret` (writing FOUTBUF in
+# RAM) rather than tail-calling print_string. The format matrix therefore runs
+# against a second Machine loaded from sub.rom and reads FOUTBUF directly.
+SUB_ROM = "/tmp/zb_sub.rom"
+SUB_SYM = "/tmp/zb_sub.sym"
+
 SRC = 0xC000       # ASCII literal source
 TOKBUF = 0xC100    # crunch destination
 
@@ -50,6 +57,9 @@ TOKBUF = 0xC100    # crunch destination
 def build():
     src = os.path.join(ROOT, "basic", "main-reloc.asm")
     subprocess.run(["pasmo", "--bin", src, ROM, SYM], check=True, capture_output=True)
+    # sub.rom (formatter tenant); -I sub for its includes, cwd=ROOT for basic/sysvars.inc
+    subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", SUB_ROM, SUB_SYM],
+                   check=True, capture_output=True, cwd=ROOT)
 
 
 # --- encode matrix: literal -> exact crunched bytes (hex, spaces ignored) --
@@ -439,6 +449,11 @@ def run():
     FACTYP = s["FACTYP"]
     TKOVF = s["TKOVF"]
 
+    # Second machine for the evicted formatter (sub.rom, page-0 tenant). Same RAM
+    # cell addresses (shared sysvars.inc), so FAC/FACTYP/FOUTBUF poke/peek align.
+    ms = Machine(SUB_ROM, SUB_SYM, rom_base=0x0000)
+    SUB_FOUTBUF = ms.sym["FOUTBUF"]
+
     fails = 0
 
     def ck(label, got, want):
@@ -475,14 +490,18 @@ def run():
         m.call("tk_float", hl=SRC, de=TOKBUF)
         ck(f"tk_float({lit!r}) sets TKOVF", m.peek(TKOVF)[0], 1)
 
-    print("# --- format matrix: flt_out(FAC,FACTYP) -> printed string ---")
+    print("# --- format matrix: flt_out(FAC,FACTYP) -> FOUTBUF (sub-ROM tenant) ---")
+    # flt_out now runs from sub.rom and returns with the NUL-terminated result in
+    # FOUTBUF (the print_string tail moved to the main-ROM stub, subrom S2b), so
+    # read FOUTBUF rather than capturing CHPUT.
     for fac_hex, factyp, want in FORMAT_CASES:
         facbytes = hx(fac_hex)
-        m.poke(FAC, facbytes + b"\x00" * (8 - len(facbytes)))
-        m.poke(FACTYP, factyp)
-        out = m.capture_chput()
-        m.call("flt_out")
-        got = "".join(chr(b) for b in out)
+        ms.poke(FAC, facbytes + b"\x00" * (8 - len(facbytes)))
+        ms.poke(FACTYP, factyp)
+        ms.poke(SUB_FOUTBUF, b"\xAA" * 24)          # poison, so a short write is visible
+        ms.call("flt_out")
+        raw = ms.peek(SUB_FOUTBUF, 24)
+        got = "".join(chr(b) for b in raw[:raw.index(0)])
         ck(f"flt_out(FAC={fac_hex},FACTYP={factyp})", got, want)
 
     print("# --- flt_to_int16: TRUNCATING, address domain (spec §10.3, F2) ---")

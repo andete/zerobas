@@ -35,6 +35,9 @@
 init_ext_roms:
                 xor     a
                 ld      (DISKSLOT_OK),a     ; no disk-ROM slot recorded yet
+    IF ROM_BASE < $4000
+                ld      (SUBSLOT_OK),a      ; no zerobas-sub slot recorded yet (subrom S2b)
+    ENDIF
                 di                          ; slot switching must be uninterrupted
                 in      a,(PSLTREG)         ; primary slot select register
                 rrca
@@ -65,6 +68,9 @@ ier_sloop:
                 or      $80                 ; expanded-slot flag
                 push    bc                  ; try_init_slot / CALSLT clobber BC
                 call    try_init_slot
+    IF ROM_BASE < $4000
+                call    try_sub_slot        ; also record a CD sub-ROM here (3-2; subrom S2b)
+    ENDIF
                 pop     bc
                 inc     b
                 ld      a,b
@@ -130,3 +136,11 @@ try_init_slot:
 rdslt_scan:
                 ld      a,(SCAN_SLOT)
                 jp      RDSLT               ; tail call: RDSLT's RET returns to caller
+
+; NOTE (subrom S2b): the sub-ROM discovery recorder (try_sub_slot) and the
+; dispatch helper/absence path (subrom_call / subrom_absent_error) live in
+; basic/subromcall.asm, in the PAGE-0 low region freed by evicting the float
+; formatter — NOT here. init_ext_roms is in page 1, whose tail is nearly full;
+; keeping only the two tiny hooks above (the SUBSLOT_OK clear + the
+; `call try_sub_slot`) in page 1 leaves the ~90 B of routine bodies in the
+; freed page-0 space. See main.asm's include order and spec §WAVE-1 AMENDMENT.

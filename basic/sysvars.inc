@@ -1049,4 +1049,24 @@ PLF_RA2         equ     $F103   ; ...and for its DIRECT caller's (combine_add/
                                 ; Neither is a register, since DE (and BC)
                                 ; must stay live across the call for the
                                 ; combine_* callers (2)
+; --- sub-ROM dispatch (subrom S2b, docs/spec-basic-subrom.md §3c/§3g) ---------
+; Recorded by init_ext_roms' page-0 CD scan; read by subrom_call at dispatch.
+; SUB_PING ($F105, sub/equates.inc) is the S2a injection-gate cell and is not
+; referenced by main-ROM code; SUBSLOT/SUBSLOT_OK are the private dispatch path
+; (decoupled from EXBRSA $FAF8, which a stray program could clobber — D-6/R4).
+SUBSLOT         equ     $F106   ; slot id of zerobas-sub (bit7 exp | 3-2 | 3), 1
+SUBSLOT_OK      equ     $F107   ; 1 = a CD sub-ROM was found and recorded, else 0
+; Dispatch ABI (mirror of sub/equates.inc — the append-only page-0 entry table).
+; IX = SUBROM_ENTRY_BASE_P0 + 3*index selects a tenant; never renumber an index.
+; IFNDEF-guarded: sub.asm includes BOTH this and sub/equates.inc (which defines
+; these first), so the guard lets the sub build reuse those and the main build
+; (no equates.inc) define its own — one ABI, no double-definition.
+    IFNDEF SUBROM_ENTRY_BASE_P0
+SUBROM_ENTRY_BASE_P0 equ $0010  ; sub-ROM page-0 jp-table base
+SUBROM_IDX_FLTOUT    equ 1      ; the float PRINT formatter tenant (sub/fltout.asm)
+    ENDIF
+; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
+; for convention-compat with a future real SUBROM/EXTROM; our private dispatch
+; reads SUBSLOT, not EXBRSA (R4). Source: MSX2 Technical Handbook work-area map.
+EXBRSA          equ     $FAF8
     ENDIF
