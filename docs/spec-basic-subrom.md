@@ -34,6 +34,55 @@ reuses *"Illegal function call"*; D-1…D-11 otherwise as proposed).
 > prose stands as written with only the number changed. "slot-0 page 1" (main
 > BASIC) and RAM references are unchanged.
 
+> **WAVE-1 AMENDMENT 2026-07-11 (S2b open, user-ratified) — the §3f leaf-audit
+> re-scoped the eviction.** S2b's named pre-gate (the §3f leaf-audit) ran and
+> **falsified the §2 wholesale-eviction premise** (F2 had coupled float.asm ↔
+> float-arith and made parts of float.asm hot — see the corrected §2 bullet).
+> Post-audit reality of float.asm (`$32FB–$3808`, 1294 B):
+> - **Cold + cleanly evictable:** `tk_float` crunch (`$32FB–$3634`) and `flt_out`
+>   formatter (`$3635–$37E7`). Audit-clean: their only external code edges land
+>   in page 1 (visible from sub-ROM pg0).
+> - **Hot glue — must stay resident** in the low region: `flt_to_int16`
+>   (per-factor), `flt_int_result` (8 callers), `flt_neg`, `neg_de`. A
+>   CALSLT-per-factor would wreck the interpreter.
+> - **`tkf_ref32767/65535/32768` data** sits in the crunch block but is read by
+>   the *resident* float-arith core.
+>
+> So the eviction is **re-sliced into two waves along the pure-leaf/needs-linkage
+> seam** (user chose "pure-leaf formatter", 2026-07-11):
+> - **WAVE 1 (this S2b session) = the `flt_out` formatter, evicted as a ZERO-
+>   LINKAGE PURE LEAF.** Two trivial moves make it self-contained: (a) its two
+>   tail `jp print_string` become `ret` — the formatter writes `FOUTBUF` (RAM)
+>   and returns, and the main-ROM *stub* does the `print_string` (which reaches
+>   CHPUT/BIOS — switched OUT during a sub-ROM pg0 call, so it *cannot* run
+>   sub-side anyway); (b) its only other page-1 callee, the 11-byte `cmp16_bits`,
+>   is duplicated sub-side. Result: the evicted formatter references **only RAM**
+>   → `sub.rom` stays self-contained, **no main→sub symbol-import build step**.
+>   One stub site (`print.asm`), no float.asm split around `tkf_ref`, ~400 B
+>   freed in page 0 — enough to fund the dispatch machinery and break the
+>   circularity. Proves the *complete* mechanism: CD discovery
+>   (SUBSLOT/SUBSLOT_OK/EXBRSA), CALSLT dispatch (already round-tripped by the
+>   S2a ping gate), RAM marshalling (`FOUTBUF`), absence path.
+> - **WAVE 2 (a later session) = the `tk_float` crunch.** This is where the
+>   float.asm split, the `tkf_ref`→page-1 relocation, the cross-ROM equate link
+>   (crunch calls `tk_loop`/`tk_end`/`upcase`/`cmp16_bits` in page 1), and its 2
+>   stub sites (interp) genuinely belong — done once, with the mechanism proven
+>   and page-0 space comfortable.
+>
+> The spec's original "fold all of float.asm into one eviction session" (§5-S3,
+> §2, R2) was the source of the risk; splitting along the pure-leaf seam is the
+> clean decomposition. Everything below that says "wave 1 = float.asm" now means
+> **wave 1 = the `flt_out` formatter only**; the crunch is wave 2.
+>
+> **Dispatch mechanism (both waves, this session lands it):** `init_ext_roms`
+> gains the page-0 `CD` scan (records SUBSLOT/SUBSLOT_OK/EXBRSA); a shared
+> `subrom_call` helper does DI → `IY=SUBSLOT` / `IX=entry` → `call CALSLT` → EI,
+> with `SUBSLOT_OK` clear → *Illegal function call* (§3d). All of it
+> `IF ROM_BASE < $4000` (repack-only); the lean `basic.rom` has no float at all
+> so it is byte-identical by construction. SUBSLOT/SUBSLOT_OK live in the
+> repack-only free RAM window (`$F106+`, after S2a's `SUB_PING $F105`, below
+> `DRVA_DPB $F195`).
+
 This is S1
 (spec + sign-off) of the sub-ROM arc — step 1 of the concrete sequence in the
 signed-off
@@ -130,12 +179,18 @@ fill it.
   today lay slot 3 as `3-0 = 64 KB RAM, 3-1 = zerobas-disk, 3-2/3-3 empty`.
   S2 adds the sub-ROM in the empty **3-2** (`3-0 = RAM, 3-1 = disk, 3-2 =
   zerobas-sub, 3-3 = empty`); the RAM and disk blocks are unchanged.
-- **float.asm ↔ float-arith decoupling** (verified: no call edge in either
-  direction): the S3 eviction of `float.asm` (tokeniser + formatter) does NOT
-  drag `float-arith.asm` (the low-region BCD core, `$3809–$3FFD`) into the
-  sub-ROM. This de-risks the `decision §8b` caveat-1 hazard *for wave 1* — but
-  the full leaf-audit (§3f) is still an S3 gate, because float.asm may call
-  *other* low-region page-0 code that is invisible from sub-ROM page 0.
+- **float.asm ↔ float-arith decoupling** — ⚠️ **STALE, corrected 2026-07-11 by
+  the S2b leaf-audit** (see the WAVE-1 AMENDMENT below). This bullet's original
+  claim ("no call edge in either direction") was true at S1 sign-off but **F2
+  introduced deep mutual coupling** after the spec was written: `flt_to_int16`
+  (float.asm) `jp domain_convert_core` (float-arith, low region `$3C6F`), and
+  float-arith calls back into `neg_de`/`flt_to_int16`/`flt_int_result` + reads
+  the `tkf_ref*` data constants — all living inside float.asm. float.asm also
+  now hosts *hot* glue (`flt_int_result` has 8 callers, `flt_to_int16` runs on
+  every float factor). So "evict float.asm wholesale" is no longer viable; the
+  leaf-audit re-scoped the arc into two waves (WAVE-1 AMENDMENT). The audit
+  (§3f) worked exactly as intended — it caught the R2 hazard before any code
+  moved.
 - **Gates that must stay green after every slice**: crunch probe
   (byte-identical), string-acceptance (6), input-acceptance (8),
   float-acceptance (3 halves), diskbasic-acceptance-repack (34), the BDOS
