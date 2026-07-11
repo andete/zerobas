@@ -155,7 +155,7 @@ gate, enforced by the overflow guard added in commit 3fd1a2c). Consequences:
    no external deps. Byte-identical `basic.rom` (regression-safe).
 2. **The repack build gains the engine** — assembled into the reclaimed `$2812–$3FFF`
    low region (the string engine is a natural tenant; place as whole includes around the
-   tape hole `$3A72–$3C42`, per D5).
+   tape hole `$3A72–$3C42`, per D5; hole retired by the 2026-07-11 D5 revision — tape now at `$09EE`).
 3. **This is the first feature that requires the repack**, so it must **stand up a gated
    repack openMSX machine** (EU merged main ROM) and run the new string probes there —
    today's acceptance gates run only on the lean stack. That machine + a

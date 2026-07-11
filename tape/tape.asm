@@ -62,7 +62,14 @@ LOWLIM:         equ     $FCA4           ; read discrimination threshold work byt
 ; write-timing tables, so it never collides. It is a derived cache, not a baud
 ; selector: the system's choice still lives in the active table, read each TAPOON.
 CASBAUD:        equ     $FCA5           ; = WINWID (resolved-baud cache; see above)
-FREE_ORG:       equ     $3A72           ; start of unused page-0 ROM fill
+; FREE_ORG history: $3A72 until 2026-07-11 (D5, spec-cbios-repack-tooling.md §6);
+; retargeted to $09EE when the float pack (F2) grew the merged-ROM BASIC window
+; over the old block (D5 revision, same spec). $09EE-$0D00 is 0x00 fill in ALL
+; twelve C-BIOS main variants (MSX1/2/2+ x generic/EU/JP/BR, measured 2026-07-11
+; by tools/build_patches.py verify_all_variants -- the MSX2 mains have content up
+; to $09ED, so the old MSX1-only gap start $09D9 is NOT universal). Layout fact
+; observed from the BSD-licensed C-BIOS artifacts themselves; no reference ROM.
+FREE_ORG:       equ     $09EE           ; start of unused page-0 ROM fill (all variants)
 
 ; Printer (Centronics) interface ports -- MSX2 Technical Handbook Ch.5a §4.1
 ; "Printer interface": port 91H = 8-bit data latch; port 90H bit 0 (WRITE) =

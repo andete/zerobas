@@ -126,7 +126,7 @@ nothing on the C-BIOS target until this fills it in.
 
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
-| Free page-0 ROM origin for our code | `$3A72` | C-BIOS v0.29 build — start of unused `0x00` fill | sourced |
+| Free page-0 ROM origin for our code | `$09EE` | C-BIOS v0.29 build — `0x00` fill in ALL main variants (was `$3A72` until the 2026-07-11 D5 revision) | sourced |
 | Page-0 size limit | code must end `< $4000` | MSX2 Tech Handbook, memory map (page 1 paged out) | sourced |
 
 ## Timing and algorithm constants (derived; round-trip justified)
@@ -168,4 +168,4 @@ quarantined rows split into two kinds, **neither copied from a reference ROM**:
 
 No stock-C-BIOS code is carried, and (now that the motor routine is our own) the patch
 calls into none: the sole remaining C-BIOS-specific *address* is the free-ROM origin
-(`$3A72`), from C-BIOS's own BSD-2 source.
+(`$09EE`; `$3A72` before the 2026-07-11 D5 revision), from C-BIOS's own BSD-2 source.

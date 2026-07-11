@@ -76,7 +76,7 @@ make                        # -> zerobas-tape-msx1.ips + .bps
 
 `pasmo` assembles `tape.asm` to just the bytes the patch adds, then
 `tools/rom_patch.py forge` slices the three changed regions out (LPTOUT vector at
-`0xA5`, cassette vectors at `0xE2`, code from `0x3A72` to the `tape_end` label).
+`0xA5`, cassette vectors at `0xE2`, code from `0x9EE` to the `tape_end` label).
 **No C-BIOS is compiled.** A stock C-BIOS v0.29 ROM is the patch *target*, not a
 build input — it is used only to stamp the BPS source/target CRC32 and verify the
 result (apply → `c3da57a6…`); the build auto-detects openMSX's bundled copy, or pass
@@ -94,14 +94,14 @@ stock C-BIOS code. The patch touches exactly three places:
   (TAPION, TAPIN, TAPIOF, TAPOON, TAPOUT, TAPOOF, STMOTR), repointed to the new code.
   STMOTR (`$00F3`) now dispatches to *our own* motor routine, so the patch relies on
   no stock-C-BIOS code at all — only on the spare ROM being free.
-- `0x3A72–tape_end` — our routine bodies (cassette + `LPTOUT`), over former `0x00`
+- `0x9EE–tape_end` — our routine bodies (cassette + `LPTOUT`), over former `0x00`
   fill.
 
 Everything else is byte-identical to stock, including C-BIOS's original cassette
 stubs (`0x16B2`), which are left untouched. The code lives entirely in the first
 16 KB (`< 0x4000`), because the second 16 KB is paged out for BASIC/cartridges; a
 `ds $4000 - tape_end` guard in the source enforces this. `tools/build_patches.py`
-verifies the `$00A5`/`$00E1` vectors and the `$3A72..tape_end` fill are as expected
+verifies the `$00A5`/`$00E1` vectors and the `$09EE..tape_end` fill are as expected
 in **all 12** C-BIOS main ROMs before forging, so the one IPS stays universal.
 
 | | |
@@ -128,14 +128,17 @@ load time via a `<patches><ips>` element on the ROM.
 The patch carries its own `STMOTR` (it toggles i8255 PPI Port C bit 4 via the same
 BSR control port `$AB` the write path uses for `CASW`), so it no longer depends on
 the stock motor routine's address. Its **only** remaining ROM-specific fact is
-`FREE_ORG = $3A72` — the spare `0x00` fill it lands in.
+`FREE_ORG = $09EE` — the spare `0x00` fill it lands in (until 2026-07-11 this was
+$3A72; retargeted to the all-variant gap-1 fill when the float-pack F2 slice grew
+the merged-ROM BASIC window over the old block — D5 revision,
+docs/spec-cbios-repack-tooling.md §6).
 
 That fact holds in **all 12** C-BIOS main ROMs openMSX ships — every MSX1, MSX2, and
-MSX2+ variant: each has `$3A72..tape_end` as `0x00` fill, `$00E1 = $C3` (the cassette
+MSX2+ variant: each has `$09EE..tape_end` as `0x00` fill, `$00E1 = $C3` (the cassette
 jump table), and `$00A5 = $C3` (the LPTOUT vector — its target differs per variant,
 `JP $14D9` on MSX1 / `JP $158D` on MSX2/2+, but it is always a `C3` vector we
 overwrite). So the *same* IPS bytes apply, byte-safely, to all of them, and the
-repointed dispatch (incl. `$00F3 → $3A72` and `$00A5 → lptout`) is live in each.
+repointed dispatch (incl. `$00F3 → $09EE` and `$00A5 → lptout`) is live in each.
 `tools/build_patches.py` asserts these invariants across every C-BIOS main ROM it
 finds before forging, so a future C-BIOS layout change can't silently break the
 universal IPS. (The **BPS** stays EU-specific — its CRC32 is keyed to `baf2e9c6…` —

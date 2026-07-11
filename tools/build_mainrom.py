@@ -13,10 +13,13 @@ splices the three source components into that combined image:
   2. the relocated BASIC ($2812-$7FFF, basic/main-reloc.asm; "AB" header pinned at
      $4000, reclaimed low region $2812-$3FFF reserved $00 for now), and
   3. the zerobas-tape page-0 completions (LPTOUT vector $00A5, cassette vectors
-     $00E2-$00F6, routine bodies $3A72-tape_end -- D5 keeps them at $3A72).
+     $00E2-$00F6, routine bodies $09EE-tape_end -- D5 as revised 2026-07-11:
+     moved from $3A72 into the all-variant gap-1 fill when float F2 grew BASIC
+     over the old block; see tape/tape.asm FREE_ORG).
 
 Overlay order is BASIC then tape: BASIC's reserved low region is $00, and the tape
-bodies sit inside it ($3A72-$3C42), so tape must land last. The two never conflict
+bodies sit below it ($09EE-tape_end, C-BIOS gap-1 fill), so order no longer
+matters, but tape still lands last. The two never conflict
 in the vector regions ($00A5/$00E1 are below BASIC's $2812 base).
 
 Safety: reuses overlay_page1's ref check -- if BASIC would clobber any repacked
@@ -45,7 +48,8 @@ TOP = 0x8000
 TAPE_BIN_BASE = 0x00A5
 LPTOUT_VEC = (0x00A5, 0x00A8)      # C3 JP vector, target repointed to LPTOUT body
 CASSETTE_VECS = (0x00E2, 0x00F6)   # seven cassette vector targets
-TAPE_BODY_LO = 0x3A72              # routine bodies; hi = tape_end (arg)
+TAPE_BODY_LO = 0x09EE              # routine bodies; hi = tape_end (arg); must
+                                   # equal tape/tape.asm FREE_ORG (D5 rev 2026-07-11)
 
 
 def build(repacked: bytes, basic: bytes, tape: bytes, tape_end: int) -> bytes:
@@ -85,13 +89,13 @@ def build(repacked: bytes, basic: bytes, tape: bytes, tape_end: int) -> bytes:
     body = merged[TAPE_BODY_LO:tape_end]
     if any(x != 0 for x in body):
         bad = TAPE_BODY_LO + next(i for i, x in enumerate(body) if x)
-        sys.exit(f"error: tape body region $3A72-${tape_end:04X} not free "
+        sys.exit(f"error: tape body region ${TAPE_BODY_LO:04X}-${tape_end:04X} not free "
                  f"(non-zero at ${bad:04X}) in the merged base")
     for lo, hi in (LPTOUT_VEC, CASSETTE_VECS, (TAPE_BODY_LO, tape_end)):
         merged[lo:hi] = tape[lo - TAPE_BIN_BASE:hi - TAPE_BIN_BASE]
 
     print(f"OK: merged main ROM -- repacked C-BIOS + BASIC(${BASIC_BASE:04X}-$7FFF) "
-          f"+ tape($3A72-${tape_end:04X})")
+          f"+ tape(${TAPE_BODY_LO:04X}-${tape_end:04X})")
     return bytes(merged)
 
 

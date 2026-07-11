@@ -4,7 +4,7 @@
 
 tape.asm is a self-contained C-BIOS page-0 patch: the LPTOUT jump vector at
 `org $00A5` (its lowest org), the seven cassette jump vectors at `org $00E1`,
-and the routine bodies at `org FREE_ORG` ($3A72). pasmo emits a flat image whose
+and the routine bodies at `org FREE_ORG` ($09EE; D5 rev 2026-07-11). pasmo emits a flat image whose
 first byte IS the lowest org ($00A5), so we load it at rom_base=0x00A5 and the
 (absolute) symbols line up directly.
 

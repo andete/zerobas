@@ -90,14 +90,14 @@ def verify_all_variants(tape_sym: str) -> None:
         fill = b[FREE_ORG_ADDR:tape_end]
         if any(x != 0x00 for x in fill):
             bad = FREE_ORG_ADDR + next(i for i, x in enumerate(fill) if x)
-            sys.exit(f"  FAIL {name}: page-0 fill $3A72..${tape_end:04X} is not all "
+            sys.exit(f"  FAIL {name}: page-0 fill ${FREE_ORG_ADDR:04X}..${tape_end:04X} is not all "
                      f"0x00 (first non-zero at ${bad:04X}) -- our routine bodies "
                      f"would collide with stock code")
-    print(f"  OK: $00A5/$00E1 are JP vectors and $3A72..${tape_end:04X} is free "
+    print(f"  OK: $00A5/$00E1 are JP vectors and ${FREE_ORG_ADDR:04X}..${tape_end:04X} is free "
           f"in all {len(roms)} ROM(s).")
 
 
-FREE_ORG_ADDR = 0x3A72
+FREE_ORG_ADDR = 0x09EE   # D5 revision 2026-07-11: was 0x3A72 (see tape/tape.asm FREE_ORG)
 
 
 def ensure_basic_rom() -> str:
@@ -154,7 +154,7 @@ def build_tape(explicit_stock):
         # the one universal IPS stays byte-safe across all variants (DESIGN.md):
         #   - $00A5 is a C3 JP vector (we repoint its target -> LPTOUT)
         #   - $00E1 is a C3 JP vector (the cassette table -- long-standing)
-        #   - $3A72..tape_end is 0x00 fill (our routine bodies land there)
+        #   - $09EE..tape_end is 0x00 fill (our routine bodies land there)
         verify_all_variants(tape_sym)
 
         def forge(out, with_source):
@@ -162,7 +162,7 @@ def build_tape(explicit_stock):
                    "--base", "0xA5",
                    "--region", "0xA5:0xA8",         # $00A5 LPTOUT vector
                    "--region", "0xE2:0xF6",         # seven cassette vector targets
-                   "--region", "0x3A72:tape_end"]   # routine bodies (cassette + LPTOUT)
+                   "--region", "0x9EE:tape_end"]    # routine bodies (cassette + LPTOUT)
             if with_source:
                 cmd += ["--source", stock]
             run(cmd)

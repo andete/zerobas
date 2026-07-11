@@ -49,7 +49,7 @@ three of our own sources:
 | Region | Source of the changed bytes | Provenance |
 |---|---|---|
 | `$00A5–$00A7`, `$00E2–$00F5` | tape page-0 vectors (`tape/tape.asm`) | ours |
-| `$2812–$7FFF` | relocated BASIC (`basic/main-reloc.asm`), tape bodies `$3A72–$3C42` | ours |
+| `$2812–$7FFF` | relocated BASIC (`basic/main-reloc.asm`) — all of it since the 2026-07-11 D5 revision (tape bodies now at `$09EE–tape_end`, gap-1 fill) | ours |
 | dropped dead-code holes | zeroed by the repack → `$00` in the diff | not a C-BIOS byte |
 
 No retained BIOS byte can appear in the payload, because at those offsets the diff
@@ -69,7 +69,7 @@ classifying every payload byte:
 Grounding those "owned" bytes as *literally ours*, not a coincidental match:
 
 - `IPS(pristine)` reconstructs the merged image **byte-for-byte** (patch integrity).
-- `merged[$2812:$8000]` equals `basic-reloc.rom` everywhere **except** `$3A72–$3C42`,
+- `merged[$2812:$8000]` equals `basic-reloc.rom` everywhere **except** (pre-D5-revision layouts) `$3A72–$3C42`,
   and those exception offsets are `$00` in `basic-reloc.rom` — i.e. the only
   non-BASIC bytes in the BASIC window are the tape bodies dropped into BASIC's
   reserved `$00` hole. Every window byte therefore traces to `basic/` or `tape/`.

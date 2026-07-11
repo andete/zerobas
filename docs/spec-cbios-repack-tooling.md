@@ -203,6 +203,21 @@ C-BIOS base and the repacked base. *(Rejected: move tape to `$2812` — cleaner 
 contiguous BASIC window, but edits `tape.asm` + re-tests the tape gates for a contiguity
 that doesn't matter, since every byte is in-slot ROM reachable by CALL regardless.)*
 
+> **D5 REVISED 2026-07-11 → TAPE MOVES TO `$09EE` (C-BIOS gap-1 fill).** The float-pack
+> F2 slice broke D5's premise: BASIC's low-region content now fills the ENTIRE
+> `$2812–$3FFF` window including the old tape block (`make repack-main` failed its
+> free-hole check; the ~454 B deficit ≈ the hole's own 465 B). Of the levers, moving the
+> tape body is the one D5 itself had pre-analysed (cost = a one-constant `tape.asm` edit
+> + a tape-gate re-run; contiguity/safety already argued fine above), versus a far more
+> invasive multi-region BASIC image or forbidden code-squeezing. New home: `$09EE`, the
+> start of the `0x00` fill that is free in ALL twelve C-BIOS main variants
+> (MSX1/2/2+ × generic/EU/JP/BR — measured by `verify_all_variants`; note the MSX1-only
+> gap start `$09D9` is NOT universal, the MSX2 mains have content to `$09ED`). 787 B
+> available, 465 B used, ~322 B remain as the next reserve alongside gap 2 (`$1ACA`,
+> 253 B). Judgment call taken autonomously mid-F2 (the arc spec's §5 fallback lever was
+> pre-authorised; this is the cheaper, firewall-preserving variant of it) — flagged for
+> user review at F2 S2 close-out. Full tape gate suite re-run as the D5 cost demanded.
+
 ## 7. Risks & non-goals
 
 - **Risk (highest): WS-2 hidden absolute addresses.** A `$4xxx` literal that assumed
