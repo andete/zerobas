@@ -2855,3 +2855,64 @@ observed as a deterministic capture miss on one 44-char case; short lines fix it
 inkey + **mid-stmt** — reference-lock + zerobas==reference on the repack machine + the range-
 error divergence); lean `basic.rom` byte-identical (pinned sha256 unchanged); unit-test 43/43
 (new `tests/test_mid_stmt.py`); `diskbasic-acceptance-repack` 34/34.
+
+## Phase 3: console INPUT / LINE INPUT — keyboard line read (basic/input.asm, basic/files.asm, basic/main.asm, basic/sysvars.inc)
+
+The **console** forms `INPUT ["prompt"{;|,}] var[,var…]` and `LINE INPUT ["prompt";] A$` — read a
+typed line from the keyboard and parse it into variables. The **file** forms (`INPUT #n`,
+`LINE INPUT #n`) already shipped (Phase-2 disk/tape); both stubbed the console form —
+`input_common` did `jp nz,stmt_error ; console INPUT = Phase 3` (basic/files.asm). This slice
+fills that stub. The biggest missing **interactivity** primitive: a program can compute and
+`PRINT` but could not read a typed line (only `INKEY$`, one key). Spec:
+[`docs/spec-basic-input.md`](../docs/spec-basic-input.md) (SIGNED OFF → SHIPPED). **Repack-only**:
+the whole handler is assembled `IF ROM_BASE < $4000`; the byte-full lean `basic.rom` is
+**unchanged** (pinned sha256 `e21f61fe…4228005`). Almost entirely **composition** of shipped
+routines — the reason it is a slice, not a subsystem.
+
+### Dispatch + reuse (basic/files.asm, basic/main.asm)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| `INPUT`→`$85` / `LINE`→`$AF` keyword crunch already tokenised (the file forms use them) — **no tokeniser / kwtable change** | — | pre-existing; the file forms shipped these | sourced |
+| `input_common` branches `jp nz,input_console` (repack) / `jp nz,stmt_error` (lean) on the non-`#` (console) path; `FCH_RDMODE` (0=INPUT / 1=LINE INPUT), already set by `input_common`, selects the mode | — | own code (a gated one-line hook) | sourced |
+| Reuses `read_line` (repl.asm; keyboard→LINEBUF), `read_into_strscr`+`ARL_GETBYTE`+`FCH_RDMODE` (files.asm; the file forms' field/line splitter, re-pointed at a console byte source), `var_name_key`/`var_set_key`/`var_str_type`/`str_set_key` (vars.asm; exactly as `ex_let`/`ex_let_str`) | — | own code (established idioms) — the shared splitter gives the console form the file forms' exact `,`/CR split, STRMAX clamp, and STRSCR descriptor | sourced |
+
+### Semantics + handler (basic/input.asm `input_console`)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| Prompt: a `"…"` literal is printed via CHPUT; then `;` → also print `"? "`, `,` → print nothing, bare `INPUT` → print `"? "`; `LINE INPUT` prints the literal but **never** `"? "` | — | public MSX-BASIC ref, **oracle-locked black-box** (`basic_probe_input.py` reference-lock then zerobas==reference: numeric/string/multi-var/LINE INPUT/prompt-`;`) | sourced |
+| Comma-separated var list: each field split by `read_into_strscr` (mode 0) via `linebuf_getbyte`; numeric var → `input_num_field` → `var_set_key`; string var (`$`) → `str_set_key` (raw field bytes); numeric fields are **signed 16-bit integers** | — | public MSX-BASIC ref + oracle-locked; integer-only is the engine's stance (same as VAL, string-engine D-E) | sourced |
+| `LINE INPUT` reads the **whole line** (mode 1 — commas and the leading space are data) into one `$`-var; a non-`$` var → `stmt_error` | — | public MSX-BASIC ref, oracle-locked (`" A,B C"` round-trips verbatim) | sourced |
+| `linebuf_getbyte` — the one new `ARL_GETBYTE` source: next LINEBUF byte, advance `INP_CURSOR`; the 0 terminator reports EOF (CF set) **without** advancing — the same end contract `fat_io_getbyte`/`cas_in_getbyte` present, so the shared splitter drives the console line unchanged | — | own code (the tiny source vector) | sourced |
+| `input_num_field` — strict signed-int16 validator accepting exactly `(spaces)(+\|-)?(digit+)(spaces)`; `str_val_parse` (VAL's parser) is too lenient — it accepts `"12x"` as `12`, which must `?redo` instead | — | own code (the documented integer INPUT-field contract; str_val_parse stays available for VAL) | sourced |
+
+### Documented divergences (own design)
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| Re-prompt **wording** is zerobas's own lowercase — `?redo from start` (bad numeric field or too-few values → re-read the whole line) and `?extra ignored` (too-many → keep the matched, continue) — NOT MSX's verbatim `?Redo from start` / `?Extra ignored` | — | own design (D-2), the same own-wording convention as `syntax error` / `type mismatch`; the differential asserts both machines re-prompt / continue to the **same final value**, only the message differs | quarantined |
+| Numeric fields are integer-only; a fractional / out-of-range field triggers the `?redo` re-prompt, not a float | — | own design (D-6); revisited when floats land | quarantined |
+| `INPUT$(n)` (the no-echo n-key **function**) and numeric `INPUT#` (file form) are out of scope — separate later slices | — | own design (D-1); distinct mechanisms | — |
+
+### Harness note
+
+The parse core is BIOS-independent, so it carries an emulator-free host unit-test
+(`tests/test_input.py`, 29 cases): `input_num_field` strict validation (rejects
+empty/trailing-junk/embedded-space/fractional), `linebuf_getbyte` byte source + EOF, the
+`read_into_strscr` field/line split driven through it, and `inpc_more_input`. The full statement
+(prompt printing + `read_line` + assignment) needs the keyboard and screen — the openMSX oracle
+probe's job. `basic_probe_input.py` **drives the keyboard** with a genuinely new wrinkle over the
+INKEY$ probe: the program is typed and `RUN` first, and the INPUT **response** is a *separate*
+keystroke burst delivered **after** the prompt appears (not batched with the program); `read_line`
+blocks on Enter, so a response's arrival need only be ordered after `RUN`, and a `?redo` case
+queues a second response after the first. A one-line harness fix landed in `omsx_run.py`: `type --`
+ends option parsing so a response starting with `-` (a negative-number INPUT) is typed verbatim
+instead of being swallowed as a command switch.
+
+**Gates.** `make input-acceptance` PASS (8 cases: numeric / negative / string / multi-var / LINE
+INPUT / prompt-`;` / `?redo` / `?extra` — reference-lock on the VG-8020 then zerobas==reference on
+the repack machine; `?redo`/`?extra` differential the final value, wording differs per D-2); lean
+`basic.rom` byte-identical (pinned sha256 unchanged); unit-test 44/44 (new `tests/test_input.py`);
+`diskbasic-acceptance-repack` 34/34 (the file `INPUT#`/`LINE INPUT#` path shares `read_into_strscr`
+— unregressed); `string-acceptance` PASS; `repack-boot` PASS; `audit-citations` clean.

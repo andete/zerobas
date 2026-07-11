@@ -5,7 +5,11 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — BASIC console `INPUT` / `LINE INPUT` (Phase-3 interactivity slice)
 
-**Status: SIGNED OFF (S1, 2026-07-11). No code yet — S2 next.** Decisions settled at
+**Status: SHIPPED (S3, 2026-07-11).** Implemented in `basic/input.asm` per this spec;
+provenance in [`basic/PROVENANCE.md`](../basic/PROVENANCE.md) ("Phase 3: console INPUT / LINE
+INPUT"). Standing gate `make input-acceptance` (8 cases, reference-locked + zerobas==reference);
+host cover `tests/test_input.py` (29 cases, in `unit-test` 44/44); lean `basic.rom` byte-identical.
+Decisions settled at
 sign-off: **D-2 faithful** (`?redo from start` on a bad numeric field or too-few values with
 re-read; `?extra ignored` + continue on too-many; zerobas's own lowercase wording); handler
 in a **new `basic/input.asm`** (low region) with a **standalone `make input-acceptance`**
@@ -164,12 +168,16 @@ No new token. No kwtable change. Lean `basic.rom` byte-identical.
 
 ## 7. Session plan
 
-- **S1 — spec + sign-off (this document). No code.** ← *you are here.*
-- **S2 — oracle + implement.** Reference-lock the console forms on the VG-8020 (validate the
-  typed-response harness first); implement the console handler + `linebuf_getbyte` + the D-2
-  loop; host tests; all gates. (Sonnet-5 on the signed spec, Opus-reviewed.)
-- **S3 — acceptance + close-out.** Fold `input` into the acceptance gate; PROVENANCE "Phase 3:
-  console INPUT"; spec → SHIPPED; TODO + memory; refresh `zerobas-main-eu.ips`/`.bps`.
+- **S1 — spec + sign-off (this document). No code.** ✅ DONE (50c231f).
+- **S2 — oracle + implement.** ✅ DONE (d362551). Validated the typed-response harness against
+  the VG-8020 first (numeric case reproduced a known result before trusting the mechanism);
+  implemented `input_console` + `linebuf_getbyte` + `input_num_field` + the D-2 loop; host tests
+  (29 cases); standalone `make input-acceptance` (8 cases, differential); all gates green.
+  Opus-solo per sign-off. A harness fix (`type --` in `omsx_run.py`) let a negative-number
+  response type verbatim.
+- **S3 — acceptance + close-out.** ✅ DONE. Standalone `make input-acceptance` gate (Q2/Q3);
+  PROVENANCE "Phase 3: console INPUT / LINE INPUT"; this spec → SHIPPED; TODO + memory;
+  `zerobas-main-eu.ips`/`.bps` refreshed (in S2).
 
 ## 8. Open questions for sign-off
 

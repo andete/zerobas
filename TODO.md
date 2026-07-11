@@ -848,15 +848,28 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       concat) — `exp_loop`'s peek-then-reparse dispatch (`relop_peek` + the `exp_strvar`/
       `exp_maybe_strfn` gates); `PRINT A$<5` aborts with `type mismatch`, printing nothing; spec
       [`docs/spec-basic-print-unparen-compare.md`](docs/spec-basic-print-unparen-compare.md),
-      provenance → "Phase 3: string comparison" PRINT-lead subsection. **Still deferred (all
-      architectural now — every surface form is landed):** floats in VAL/STR$, the real
-      heap+descriptor model, string arrays/`DIM`, STRMAX→255 (a RAM re-architecture, spec §5a)
+      provenance → "Phase 3: string comparison" PRINT-lead subsection. **Console INPUT / LINE INPUT
+      slice DONE 2026-07-11** (S1–S3, commits 50c231f/d362551/…): the keyboard forms
+      `INPUT ["prompt"{;|,}] var[,var…]` and `LINE INPUT ["prompt";] A$` — fills the console stub
+      the file `INPUT#`/`LINE INPUT#` forms left (`jp nz,stmt_error ; console INPUT = Phase 3`); the
+      biggest missing interactivity primitive. Almost entirely composition — re-points the shipped
+      `read_into_strscr` splitter at a new `linebuf_getbyte` source (shares the file forms' field
+      split / STRMAX clamp / STRSCR); only new code is that vector, the strict `input_num_field`
+      int16 validator, the prompt/var-list driver, and the D-2 re-prompt loop. Own lowercase
+      `?redo from start` / `?extra ignored` (D-2 divergence). New `basic/input.asm`; standalone gate
+      `make input-acceptance` (8 cases, keyboard-driven, reference-lock + zerobas==reference) + host
+      `tests/test_input.py` (29 cases); spec [`docs/spec-basic-input.md`](docs/spec-basic-input.md),
+      provenance `basic/PROVENANCE.md` → "Phase 3: console INPUT / LINE INPUT". Harness fix in
+      `omsx_run.py` (`type --` so a negative-number response types verbatim). **Still deferred (all
+      architectural now — every string SURFACE form is landed):** floats in VAL/STR$, the real
+      heap+descriptor model, string arrays/`DIM`, STRMAX→255 (a RAM re-architecture, spec §5a);
+      `INPUT$(n)` (no-echo n-key function) + numeric `INPUT#` are the next I/O slices
 - [ ] **Arrays + `DIM`** (numeric and string, multi-dimensional)
 - [ ] **`^`** and the math functions
       `ABS SGN INT SQR SIN COS TAN ATN LOG EXP RND FIX CINT CSNG CDBL`
-- [ ] **I/O** — `INPUT`, `LINE INPUT`, `INPUT$`, `PRINT USING`; file I/O
-      (`OPEN CLOSE PRINT# INPUT# GET PUT EOF LOF LOC`, `MAXFILES`); full tape
-      verbs (`SAVE LOAD CSAVE CLOAD MERGE BSAVE`, `MOTOR`)
+- [ ] **I/O** — ✅ console `INPUT` + `LINE INPUT` (DONE 2026-07-11, see the slice log
+      above); `PRINT USING` shipped; still open: `INPUT$(n)` (no-echo function), numeric
+      `INPUT#`, `GET PUT EOF LOF LOC` file I/O; full tape verbs already ship
 - [ ] **Graphics** (TMS9918) — `SCREEN 0–3`, `LINE`, `PSET`/`PRESET`,
       `CIRCLE`, `PAINT`, `DRAW`, sprites (`GET`/`PUT`, `SPRITE$`), `VDP`
 - [ ] **Sound** (AY-3-8910) — `SOUND`, `PLAY` (MML), `BEEP`
