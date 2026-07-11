@@ -839,7 +839,25 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       repack tranche is the fallback). Still out of scope (arc §1):
       `DEFINT/DEFSNG/DEFDBL/DEFSTR`, `^` + math functions, float
       `VAL`/`STR$`/`INPUT`/`FOR`, `MKS$/MKD$/CVS/CVD`, float `PRINT USING`.
-      D-G checkpoint at F2 close-out: re-decide F3 vs the heap arc ordering.
+      **F2 DONE 2026-07-11** (S2+S3, commits 781348f/dee70a9): `+ - * /`, the six
+      relationals, promotion, and the **D-C signed-int migration** (`/` real
+      division always; `\`/`MOD` MSX-signed; div-by-zero + Overflow are real
+      statement aborts, lowercase wording D-F2-1) — **reference-identical,
+      167/167** differential cases (spec §10 holds the full pinned contract).
+      Headline oracle findings: ALL float arithmetic is DOUBLE (single =
+      storage-only); guard-digit half-up rounding; PRE-normalisation
+      overflow walls; float→int conversion TRUNCATES in two exclusive-bounds
+      domains (F1's half-up `flt_to_int16` corrected); `-32768\-1` → +32768
+      promoted; IF truthiness float-aware (§10.4a). New `basic/float-arith.asm`
+      (unpacked-BCD 14+guard core) + FPERR abort wiring; the ARITH half joined
+      `make float-acceptance`. Unblocking the window took the **D5 revision**
+      (tape body `$3A72`→`$09EE`, all-variant gap-1 fill — flagged for user
+      review; full tape battery re-run green). Interim seams: `LET` of a float
+      TRUNCATES to int16 (F3 resolves); D-F2-2 = `OUT` + unwired int-arg
+      statements/functions (e.g. `PEEK(100000.)`) still on the silent eager
+      conversion. **Window now FULL** (2 B page-0 + 29 B tail); F3 needs a
+      space lever — see the spec's D-G addendum (multi-region image / next
+      repack tranche / heap-first), decision pending.
 - [~] **Full string engine** — **core + comparison landed 2026-07-10** (the first Phase-3
       feature and its follow-on): `+` concat + `LEN ASC VAL CHR$ STR$ LEFT$ RIGHT$ MID$`,
       then the six **relational operators** on strings (`=`/`<>`/`<`/`>`/`<=`/`>=` →
