@@ -207,12 +207,24 @@ diskbasic-acceptance: $(DISK_ROM) $(DISK_TEST_DSK)
 # (build/disk.rom) under the real CF-3300 BIOS — the string-engine arc does not touch the
 # disk ROM, so BDOS behaviour is identical across the lean and repack BASIC builds.
 REPACK_MACHINE  := C-BIOS_MSX1_EU_REPACK_DISK
-repack-machine: $(MAIN_ROM) $(DISK_ROM)
-	python3 tools/install-repack-machine.py --merged $(MAIN_ROM) --disk-rom $(DISK_ROM)
+repack-machine: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM)
+	python3 tools/install-repack-machine.py --merged $(MAIN_ROM) --disk-rom $(DISK_ROM) \
+	  --sub-rom $(SUB_ROM)
 
 diskbasic-acceptance-repack: $(DISK_ROM) $(DISK_TEST_DSK) repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) \
 	  python3 probes/disk/diskbasic_acceptance.py $(if $(ONLY),--only $(ONLY),)
+
+# --- Standing sub-ROM boot gate (zerobas-sub arc, S2a) -------------------------
+# Proves the built-in sub-ROM's discovery + two-page CALSLT ABI end-to-end with
+# NO main-ROM change (the main-ROM boot-scan + dispatch land in the eviction
+# session, S2b). Boots a minimal C-BIOS MSX1 with slot 3 expanded (3-0 = RAM,
+# 3-2 = build/sub.rom), injects a 44-byte stub, and CALSLTs each page's entry
+# ($0010 page 0 -> tag $C0, $4010 page 1 -> tag $C1). HEAVY (boots openMSX) but
+# needs only openMSX's bundled C-BIOS ROMs -- NOT the merged main ROM, reference
+# ROMs, or a disk image. NOT part of the emulator-free `unit-test`.
+subrom-acceptance: $(SUB_ROM)
+	python3 probes/basic/basic_probe_subrom_boot.py
 
 # --- Standing string-engine acceptance gate (string-engine arc S5; compare S3) -----
 # The three-part proof of the Phase-3 string engine on the merged repack build. CRUNCH:
@@ -293,4 +305,4 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance \
-        input-acceptance float-acceptance clean
+        input-acceptance float-acceptance subrom-acceptance clean

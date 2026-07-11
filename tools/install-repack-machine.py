@@ -14,8 +14,10 @@ longer implies "repack matches the oracle" for the string-touching verbs.
 
 This writes a sibling machine "C-BIOS_MSX1_EU_REPACK_DISK" that is the same disk hardware
 (zerobas-disk behind a National-style WD2793 in slot 3-1, 64 KB RAM in slot 3-0) but whose
-slot-0 main ROM is the MERGED repack ROM directly — no IPS patch, BASIC is baked in. Point
-the acceptance runner at it with the omsx_run remap:
+slot-0 main ROM is the MERGED repack ROM directly — no IPS patch, BASIC is baked in. With
+--sub-rom it also places zerobas-sub (the built-in MSX2-style sub-ROM) in the previously-empty
+slot 3-2, per the 2026-07-11 slot-map amendment (RAM stays 3-0, disk stays 3-1, sub takes 3-2).
+Point the acceptance runner at it with the omsx_run remap:
 
     ZEROBAS_MACHINE_MAP=C-BIOS_MSX1_EU_BASIC_DISK=C-BIOS_MSX1_EU_REPACK_DISK \
         python3 probes/disk/diskbasic_acceptance.py
@@ -59,12 +61,34 @@ def find_logo() -> str:
     sys.exit("cbios_logo_msx1.rom not found in any openMSX share dir")
 
 
-def config(merged_abs: str, logo_abs: str, disk_rom_abs: str) -> str:
+def sub_secondary(sub_rom_abs: str) -> str:
+    """The slot-3-2 secondary block holding zerobas-sub — the built-in MSX2-style
+    sub-ROM, a plain 32 KB ROM mapped linearly across BOTH pages ($0000-$7FFF).
+    RAM stays in 3-0 and disk in 3-1 (the 2026-07-11 slot-map amendment: the
+    sub-ROM takes the previously-empty 3-2 so RAM does not move). Empty string
+    when no sub ROM is supplied, so the machine falls back to an empty 3-2."""
+    if not sub_rom_abs:
+        return '      <secondary slot="2"/>'
+    return (
+        '      <secondary slot="2">\n'
+        '        <ROM id="zerobas-sub ROM">\n'
+        '          <rom>\n'
+        f'            <filename>{sub_rom_abs}</filename>\n'
+        '          </rom>\n'
+        '          <mem base="0x0000" size="0x8000"/>\n'
+        '        </ROM>\n'
+        '      </secondary>'
+    )
+
+
+def config(merged_abs: str, logo_abs: str, disk_rom_abs: str, sub_rom_abs: str = "") -> str:
     """Slot 0 = merged repack main ROM (0x0000-0x7FFF) + C-BIOS logo (0x8000-0xBFFF);
-    slot 3 expanded: 3-0 = 64 KB RAM, 3-1 = zerobas-disk behind a National WD2793.
-    Hardware (PPI/VDP/PSG/Printer/Cassette) mirrors the stock C-BIOS MSX1 EU machine and
+    slot 3 expanded: 3-0 = 64 KB RAM, 3-1 = zerobas-disk behind a National WD2793,
+    3-2 = zerobas-sub (the built-in sub-ROM, when --sub-rom is given). Hardware
+    (PPI/VDP/PSG/Printer/Cassette) mirrors the stock C-BIOS MSX1 EU machine and
     the repack-boot probe machine so the only difference from the lean disk machine is the
-    baked-in relocated BASIC."""
+    baked-in relocated BASIC (plus the sub-ROM in the previously-empty 3-2)."""
+    sub_block = sub_secondary(sub_rom_abs)
     return f"""<?xml version="1.0" ?>
 <!DOCTYPE msxconfig SYSTEM 'msxconfig2.dtd'>
 <msxconfig>
@@ -103,7 +127,7 @@ def config(merged_abs: str, logo_abs: str, disk_rom_abs: str) -> str:
         </WD2793>
       </secondary>
 
-      <secondary slot="2"/>
+{sub_block}
 
       <secondary slot="3"/>
 
@@ -132,6 +156,11 @@ def main() -> int:
     ap.add_argument("--disk-rom", default=os.path.join(os.path.dirname(HERE), "build",
                                                        "disk.rom"),
                     help="zerobas-disk ROM (default build/disk.rom)")
+    ap.add_argument("--sub-rom", nargs="?", const=os.path.join(os.path.dirname(HERE),
+                                                               "build", "sub.rom"),
+                    default=None, metavar="ROM",
+                    help="also place zerobas-sub (the built-in sub-ROM) in slot 3-2 "
+                         "(default ROM: build/sub.rom). Omit to leave 3-2 empty.")
     ap.add_argument("--dry-run", action="store_true", help="print the config, do not write")
     args = ap.parse_args()
 
@@ -142,7 +171,13 @@ def main() -> int:
         if not os.path.isfile(p):
             sys.exit(f"missing {what}: {p}")
 
-    cfg = config(merged, find_logo(), disk)
+    sub = ""
+    if args.sub_rom is not None:
+        sub = os.path.abspath(args.sub_rom)
+        if not os.path.isfile(sub):
+            sys.exit(f"missing sub ROM (build it: make sub): {sub}")
+
+    cfg = config(merged, find_logo(), disk, sub)
     if args.dry_run:
         print(cfg)
         return 0
@@ -151,8 +186,9 @@ def main() -> int:
     os.makedirs(mdir, exist_ok=True)
     out = os.path.join(mdir, MACHINE + ".xml")
     open(out, "w").write(cfg)
+    subtail = ", zerobas-sub in slot 3-2" if sub else ""
     print(f"wrote {MACHINE}  (-> machine \"{MACHINE}\": merged repack ROM in slot 0, "
-          f"zerobas-disk in slot 3-1)")
+          f"zerobas-disk in slot 3-1{subtail})")
     print(f"     {out}")
     return 0
 
