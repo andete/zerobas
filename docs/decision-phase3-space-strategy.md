@@ -393,7 +393,45 @@ so a C-BIOS-side slot-id change can legitimately break byte-identity of
 slot-derived anchor bytes). This is the one place the layout choice costs
 verification work; budget it into the arc's S2.
 
-### 8d. Remaining §7 questions unaffected
+### 8d. Placement discipline (user caution, 2026-07-11) — the four ROM regions are not interchangeable
+
+With the sub-ROM in the map, WHERE a routine lives determines WHO can call
+it. A CALSLT switches only the called page, so each executing context has
+its own visibility set:
+
+| Executing from | slot-0 pg0 (BIOS + low region `$2812–$3FFF` + tape + ISR) | slot-0 pg1 (main BASIC) | RAM pg2/3 | Ints |
+|---|---|---|---|---|
+| slot 0 (normal) | ✓ | ✓ | ✓ | ✓ |
+| 3-0 pg0 (sub-ROM) | ✗ (switched out, incl. `$0038` ISR) | ✓ | ✓ | **DI** |
+| 3-0 pg1 (if used) | ✓ (BIOS + ISR reachable) | ✗ | ✓ | may EI |
+| 3-1 pg1 (disk ROM) | ✓ | ✗ (the measured 163-site wall) | ✓ | existing |
+
+Note the symmetry: 3-0 pg0 sees main BASIC but not the BIOS; 3-0 pg1 sees
+the BIOS but not main BASIC. Rules the arc spec must inherit:
+
+- **Slot-0 page 1 is the premium region** — the only ROM visible to
+  sub-ROM pg0 code. Shared services (float-arith core, `pchar`, FAC/eval
+  helpers) must live there; evictions should preferentially move **leaf**
+  code out of page 1 (to the low region or the sub-ROM) to keep page-1
+  bytes for services, not the naive "cold code moves out".
+- **Slot-0 page-0 low region is leaf-only**: nothing a sub-ROM tenant will
+  ever call may sit in `$2812–$3FFF`, the gap fills, or the tape block.
+  Existing tenants (kwtable, str-engine, input, float, float-arith) need a
+  call-graph audit against each named sub-ROM tenant; float-arith is
+  already flagged as a page-1 mover (§8b).
+- **3-0 pg0 tenants**: may call main BASIC pg1 + RAM; must not need the
+  BIOS mid-execution (or pay an explicit re-map trampoline); run under DI.
+  RSTs there dispatch into the sub-ROM's own `$00xx` (cheap local
+  dispatch; mind the `CD` header at `$0000`).
+- **3-0 pg1 tenants** (optional second 16 KB, F700-style): BIOS-heavy
+  bodies that don't need main BASIC (future graphics/VDP primitives);
+  interrupts can stay enabled. In-slot pg0↔pg1 calls need explicit paging
+  — treat the pages as separate islands.
+- Every future slice's spec states, per new routine, its region and the
+  contexts that may call it — placement is now part of the design, not an
+  assembler accident.
+
+### 8e. Remaining §7 questions unaffected
 
 Q2 (ambition), Q3 (math-functions placement divergence — now "built-in
 sub-ROM" rather than "extension cart", a strictly more faithful framing),
