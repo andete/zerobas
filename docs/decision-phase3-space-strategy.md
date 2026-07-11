@@ -294,6 +294,8 @@ function-shaped ext") that answers every future slice's "where does it go".
    shape (README/charter list, a second cartridge on real hardware next to
    the disk interface). Approve the deliverable in principle? Preferred slot
    (3-2 internal, like disk's 3-1, vs. a cartridge slot) and name?
+   **→ ANSWERED 2026-07-11, see §8: built-in MSX2-style sub-ROM in slot 3-0
+   of the virtual zerobas machine, not a cartridge.**
 2. **Phase-3 ambition check.** The sizing assumes heap+arrays and
    (eventually) graphics/sound are real Phase-3 goals. If the charter stops
    at "numeric core complete", staging A (gap-fill, no evictions, math pack
@@ -310,3 +312,82 @@ function-shaped ext") that answers every future slice's "where does it go".
    simplified regardless?
 6. **F2 close-out riders:** the D5 tape move to `$09EE` (judgment call,
    flagged) — OK to ratify as part of this sign-off?
+
+## 8. Addendum (2026-07-11) — user direction on Q1: a built-in sub-ROM in the virtual zerobas machine
+
+The user reframed the deliverable: zerobas is ultimately **a virtual MSX1
+machine whose built-in ROM complement we lay out ourselves, following the
+example of real systems**. The Phase-3 spill-over ROM is therefore not a
+cartridge but a **built-in MSX2-style sub-ROM**, with the machine's expanded
+slot 3 laid out as: **3-0 = sub-ROM, 3-1 = disk ROM (unchanged), 3-3 = RAM
+(moved from 3-0)**.
+
+### 8a. Precedent check (real machines, openMSX hardware configs)
+
+| Machine | Sub-ROM | Disk | RAM |
+|---|---|---|---|
+| Philips NMS 8250 | **3-0** | 3-3 | 3-2 (mapper) |
+| Sony HB-F900 | **3-0** | 3-2 | 3-1 (mapper) |
+| Sanyo PHC-23 | **3-0** | — | 3-2 |
+| Sony HB-F700P | **3-0** (shares w/ disk) | 3-0 | **3-3** (mapper) |
+
+Sub-ROM in 3-0 is the dominant real-world pattern; RAM in 3-3 has direct
+precedent (HB-F700P); disk placement varies per maker, so keeping ours at
+3-1 (zero churn: the DRVTBL slot byte `$87` and all Tier-2 disk machinery
+assume it) is within convention. The proposed map is a legitimate
+"existing systems" layout.
+
+### 8b. Architectural consequence — the page-0 sub-ROM model supersedes §4d's cartridge model
+
+A real MSX2 sub-ROM maps at **page 0** (`$0000–$3FFF`, `CD` signature) of
+its slot; CALSLT switches only the *called* page. So during a sub-ROM call
+**page 1 still maps slot 0 — the main BASIC ROM stays directly callable**,
+and pages 2/3 (program RAM, sysvars, FAC/ARG) stay visible. This dissolves
+§4d's biggest constraint: no cross-slot interpreter-services ABI, no
+CALSLT-back per callback, and eviction wave 2's buffered-sink refactor
+becomes unnecessary — cold page-1 modules can move to the sub-ROM and keep
+calling `pchar`/`eval`/the var store directly. The eviction ladder
+simplifies to: (1) anything cold in **page 1**, near-free; (2) the hot BCD
+core only if ever needed, and even then the tax is one CALSLT at the
+*entry* boundary, not per callback.
+
+Two caveats replace it:
+
+1. **The page-0 low region `$2812–$3FFF` is invisible during a sub-ROM
+   call.** Shared cores the sub-ROM needs (float-arith, if the math pack
+   calls back into it) must sit in page 1 — an include-order shuffle
+   (move ~2 KB of cold page-1 code down, hot shared code up), free in
+   bytes, one full gate sweep.
+2. **Interrupts stay disabled while the sub-ROM is mapped** (the `$0038`
+   vector is switched out with the BIOS — precedented MSX2 behaviour, known
+   JIFFY-tick loss on long calls). Long tenants (LIST, later PLAY) need the
+   DI-span budgeted in the arc spec; BREAKX-style direct PPI polling still
+   works under DI.
+
+Design details for the arc spec (S1): `init_ext_roms` gains a
+`CD`-at-page-0 slot scan recording the sub-ROM slot (published MSX2
+convention: EXBRSA `$FAF8`); dispatch = direct CALSLT with the MSX2
+EXTROM register contract (IX = entry), so that actually implementing the
+stubbed `$015C SUBROM`/`$015F EXTROM` BIOS vectors later is a drop-in —
+and note those two are exactly the tape component's charter shape
+("stubbed page-0 BIOS vectors C-BIOS leaves fake", cf. the `$015F`
+fake-EXTROM `ret` in C-BIOS MSX1).
+
+### 8c. Priced consequence — the RAM move 3-0 → 3-3
+
+The RAM slot id changes `$83`→`$8F` everywhere it is derived
+(`set_ramad`, `page0_ram_in/out` are host-adaptive by design — verify, not
+assume). Machine configs regenerate (`install-openmsx-machine.py`
+`expand_slot3`, the repack machine); the full disk gate suite re-runs, and
+**`bdos-cbios-selfcheck` may need re-baselining** if any captured anchor
+embeds the RAM slot id (the CF-3300 oracle machine keeps its real layout,
+so a C-BIOS-side slot-id change can legitimately break byte-identity of
+slot-derived anchor bytes). This is the one place the layout choice costs
+verification work; budget it into the arc's S2.
+
+### 8d. Remaining §7 questions unaffected
+
+Q2 (ambition), Q3 (math-functions placement divergence — now "built-in
+sub-ROM" rather than "extension cart", a strictly more faithful framing),
+Q4 (Tier-B rejection), Q5 (shelve the gap-fill machinery), Q6 (ratify D5)
+still stand as asked.
