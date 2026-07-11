@@ -210,6 +210,21 @@ diskbasic-acceptance-repack: $(DISK_ROM) $(DISK_TEST_DSK) repack-machine
 string-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/string_acceptance.py $(if $(FULL),--full,)
 
+# --- Standing console-INPUT acceptance gate (input slice S3) ------------------------
+# Console INPUT / LINE INPUT (docs/spec-basic-input.md). Its own gate rather than a half
+# of string-acceptance: INPUT is I/O, not the string engine (spec §8 Q2). DRIVES THE
+# KEYBOARD -- types a small program, RUNs it, then delivers the INPUT *response* as a
+# separate keystroke burst after the prompt appears (spec §6 harness wrinkle). Two
+# halves: reference-lock each case on the VG-8020 (numeric/string/multi-var/LINE INPUT/
+# prompt separator/?redo/?extra), then assert zerobas==reference on the repack build.
+# The ?redo/?extra WORDING is zerobas's own lowercase (D-2), so those cases differential
+# the final VALUE, not the message. Console INPUT is repack-only, so this boots
+# C-BIOS_MSX1_EU_REPACK_DISK. HEAVY + oracle-dependent (needs your VG-8020 reference
+# ROM); NOT part of the emulator-free `unit-test`. Scope with `make input-acceptance
+# ONLY=numeric`.
+input-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_input.py $(if $(ONLY),--only $(ONLY),)
+
 # Standing C-BIOS self-consistency gate: closes the coverage gap that `bdos-acceptance`
 # structurally can't reach. That gate is a DIFFERENTIAL, so it only runs on the CF-3300
 # oracle (the only host with a stock disk ROM + MSX-DOS to diff against); the shipped
@@ -240,4 +255,5 @@ clean:
 .PHONY: all disk patches tape-patches machines machines-oracle install \
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
-        repack-machine diskbasic-acceptance-repack string-acceptance clean
+        repack-machine diskbasic-acceptance-repack string-acceptance \
+        input-acceptance clean

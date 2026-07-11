@@ -737,8 +737,12 @@ input_common:
                 ld      (FCH_RDMODE),a
                 call    skip_spaces
                 ld      a,(hl)
-                cp      '#'                 ; only the file form (#n) is supported
-                jp      nz,stmt_error       ; console INPUT = Phase 3
+                cp      '#'                 ; file form (#n) vs the console form
+    IF ROM_BASE < $4000
+                jp      nz,input_console    ; repack: console INPUT / LINE INPUT (basic/input.asm)
+    ELSE
+                jp      nz,stmt_error       ; lean: console INPUT = Phase 3
+    ENDIF
                 inc     hl
                 call    eval                ; DE = channel number
                 ld      a,e

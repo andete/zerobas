@@ -52,6 +52,7 @@ ROM_BASE:       equ     $4000
     IF ROM_BASE < $4000
                 include "basic/kwtable.inc"
                 include "basic/str-engine.asm"
+                include "basic/input.asm"
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean

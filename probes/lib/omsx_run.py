@@ -119,8 +119,11 @@ def build_tcl(out_path: str, regs: list[str], mems: list[str],
     # time windows, which is more reliable than one burst under `throttle off`.
     # Emit each as a Tcl double-quoted literal so control characters survive as
     # escapes (a literal CR byte in braces gets mangled and the Enter is lost).
+    # `type --` ends option parsing so a payload that starts with '-' (e.g. a
+    # negative-number INPUT response "-7") is typed verbatim instead of being
+    # swallowed as a command switch.
     for delay, text in (type_events or []):
-        lines.append(f"after time {delay} {{ type {_tcl_dquote(text)} }}")
+        lines.append(f"after time {delay} {{ type -- {_tcl_dquote(text)} }}")
     if bp is not None:
         lines.append(f"debug set_bp {bp} {{}} {{ __capture }}")
     else:

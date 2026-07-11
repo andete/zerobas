@@ -302,6 +302,11 @@ NUMBUF          equ     $E0C0   ; PRINT: decimal-format scratch (8 bytes, 0-term
 ; parse. Borrows NUMBUF (the PRINT/LIST decimal scratch) — dead during statement
 ; execution (the MID$ statement neither prints nor lists; eval/str_eval don't touch it).
 MIDS_DEST       equ     NUMBUF   ; MID$ statement dest descriptor addr (2 B, aliases NUMBUF)
+; Console INPUT (repack build only): the LINEBUF read cursor for linebuf_getbyte
+; (basic/input.asm). LINEBUF is one page ($E1xx), so a single low byte suffices.
+; Aliases NUMBUF like MIDS_DEST — dead during INPUT, which formats no numbers; the
+; MID$ statement and console INPUT never execute simultaneously.
+INP_CURSOR      equ     NUMBUF   ; console INPUT LINEBUF read cursor (1 B, aliases NUMBUF)
 ; Buffers and the variable table live in page $E1, clear of $E000.
 LINEBUF         equ     $E100   ; ASCII input line from the keyboard (LINEMAX bytes)
 LINEMAX         equ     96      ; LINEBUF capacity; $E100..$E15F stays in page $E1
