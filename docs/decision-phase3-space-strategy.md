@@ -267,8 +267,13 @@ strategy; do not spend a session on the gap-fill machinery first.**
 Concrete sequence (each its own spec'd, gated session per the standing
 cadence):
 
-1. **S1 — `zerobas-basic-ext` arc spec** (naming, slot choice, entry-table
-   ABI, presence/absence semantics, real-hardware stance) → sign-off.
+1. **S1 — sub-ROM arc spec** (naming, slot choice, entry-table ABI,
+   presence/absence semantics, real-hardware stance) → sign-off.
+   **→ DONE + SIGNED OFF 2026-07-11:** [`spec-basic-subrom.md`](spec-basic-subrom.md).
+   Component `zerobas-sub`; **32 KB, both pages** of slot 3-0 (page-1 island
+   reserved up front); dual entry tables `$0010`/`$4010`; `CD`/EXBRSA discovery
+   via `init_ext_roms`; absence → "Illegal function call". S2 (skeleton +
+   tooling) is the green-lit next session.
 2. **S2 — skeleton + tooling:** empty ext ROM builds, machine configs gain
    it, presence flag + stub-error path, new boot gate (present + absent).
    ~1 session; reuses the disk.rom patterns wholesale.
