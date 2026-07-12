@@ -5,15 +5,23 @@
 """Differential crunch probe — prove zerobas tokenises byte-for-byte like a real
 MSX-BASIC ROM (Step A).
 
-For each test line we feed the *identical* line (ending in `:bload"cas:",r`) to
-both sides and break both at TAPION ($00E1):
+Mechanism (harness rework, 2026-07-12): each test body is injected as the STORED
+line  `1 <body>`  (a numbered line, so it is tokenised into the program area but
+never executed — no RUN, no BLOAD, no CPU freeze) via omsx_repl's typing-free
+KEYBUF path. The crunched line then lives at TXTTAB ($F676): link(2) + lineno(2)
++ tokens + 0x00. We read the EXACT line back (`omsx_repl`'s ("stored_line", …)
+capture dereferences the link pointer, so an embedded 0x00 in a value byte never
+truncates it) and compare the body tokens (bytes after the 4-byte header) between
+the two sides: equal == byte-identical crunch.
 
-  * reference (Philips VG-8020, built-in BASIC) crunches into KBUF ($F41F);
-  * zerobas (the cartridge) crunches into TOKBUF (its fixed sysvars.inc address).
-
-Both reach TAPION mid-BLOAD with the *whole* line already crunched, so each
-buffer holds the tokenised line, 0x00-terminated. We compare the two byte ranges
-up to and including the terminator: equal == byte-identical crunch.
+This shed the former per-line BLOAD-freeze-at-TAPION capture (KBUF on the
+reference, TOKBUF on zerobas): a stored line neither freezes nor executes, so the
+whole corpus shares ONE boot per side (batched), and the two execution disciplines
+(LINES vs CRUNCH_ONLY, bload-trails vs bload-leads) collapse — nothing runs, so
+every body is just `1 <body>`. Proven byte-identical to the old freeze capture
+across the whole corpus on both machines before the switch (spike_crunch), and
+strictly stronger: embedded-0x00 lines (a=256, goto 40, bsave …,&hc000) are now
+compared in FULL instead of truncated at the first embedded zero.
 
 Two zerobas targets:
   * `--cart build/basic.rom` -- the lean 16 KB cartridge on the reference machine
@@ -41,20 +49,11 @@ _sys.path.insert(0, _os.path.join(
     _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib"))  # shared infra
 
 import argparse
-import os
-import subprocess
-import sys
-import tempfile
 
+import omsx_repl  # typing-free KEYBUF-injection REPL driver (harness rework)
 
-from cas_encode import build_cas  # noqa: E402
-
-OMSX_RUN = os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib", "omsx_run.py")
 MACHINE = "Philips_VG_8020"
-TAPION = 0x00E1
-KBUF = 0xF41F     # reference crunch buffer (MSX2 TH sysvar map)
-TOKBUF = 0xE160   # zerobas crunch buffer (zerobas/src/sysvars.inc)
-DUMPLEN = 48
+TXTTAB = 0xF676   # sysvar: 2-byte LE pointer to the BASIC text base (both machines)
 
 # Test lines (the probe appends `:bload"cas:",r`). They exercise the integer
 # encoding across magnitudes, &H, the operators, and representative whole lines.
@@ -195,55 +194,23 @@ STR_KEYWORDS_1B = [
 ]
 
 
-def dump_buf(machine, cart, full_line, addr, separate_enter):
-    """Run one side, break at TAPION, return the crunch buffer bytes."""
-    out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="crunch_")
-    os.close(out_fd)
-    cmd = [sys.executable, OMSX_RUN, "--machine", machine]
-    if cart:
-        cmd += ["--cart", cart]
-    cmd += ["--cassette", CAS_PATH]
-    if separate_enter:
-        # zerobas REPL: a trailing CR in the same burst is dropped under
-        # `throttle off`, so inject Enter as a separate, later event.
-        cmd += ["--type", full_line, "--type-delay", "8",
-                "--type", "\r", "--type-delay", "12"]
-    else:
-        cmd += ["--type", full_line + "\r", "--type-delay", "5"]
-    cmd += ["--bp", hex(TAPION), "--reg", "PC",
-            "--mem", f"memory:0x{addr:04X}:{DUMPLEN}",
-            "--out", out_path, "--timeout", "30"]
-    subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    cap = ""
-    if os.path.exists(out_path):
-        with open(out_path) as f:
-            cap = f.read()
-        os.unlink(out_path)
-    if f"reg.PC=0x{TAPION:04X}" not in cap:
-        return None  # never reached TAPION (crunch/exec failed before BLOAD)
-    key = f"mem.memory:0x{addr:04X}:{DUMPLEN}="
-    for cl in cap.splitlines():
-        if cl.startswith(key):
-            return bytes.fromhex(cl[len(key):])
-    return None
-
-
-def crunched(buf):
-    """The crunched line, up to and including its terminator.
-
-    A constant's value bytes can contain 0x00 (e.g. 256 -> 1C 00 01, &HD000 ->
-    0C 00 D0), so the *first* 0x00 is not necessarily the terminator. Every test
-    line ends in `:bload"cas:",r`, whose crunch (CF 22 63 61 73 3A 22 2C 52 00)
-    has no embedded 0x00 — so the real terminator is the first 0x00 at or after
-    the BLOAD token (CF). Including the value bytes means embedded-0x00 cases are
-    actually compared, not truncated."""
-    if buf is None or 0xCF not in buf:
+def tokens(raw: str | None) -> bytes | None:
+    """Body tokens (up to and including the 0x00 terminator) from a stored_line
+    capture: the bytes after the 4-byte header (link + line number). None when
+    the line was NOT stored -- a crunch that errored on entry leaves the program
+    empty, so ("stored_line", …) captures "" (link == 00 00). The link-pointer
+    extraction gives the line's exact extent, so an embedded 0x00 in a value byte
+    (a=256 -> 1C 00 01, goto 40 -> 0E 28 00) is INSIDE the tokens, never a false
+    terminator."""
+    if not raw:
         return None
-    i = buf.index(0xCF)
-    if 0 not in buf[i:]:
-        return None
-    z = i + buf[i:].index(0)
-    return buf[:z + 1]
+    b = bytes.fromhex(raw)
+    return b[4:] if len(b) >= 5 else None
+
+
+def _capture(machine: str, specs, *, cart: str | None, batch: bool):
+    return omsx_repl.run_cases(machine, specs, batch=batch, reset=("NEW",),
+                               capture=("stored_line", TXTTAB), cart=cart)
 
 
 def main() -> int:
@@ -255,73 +222,67 @@ def main() -> int:
     grp.add_argument("--cart", help="lean zerobas basic.rom (cartridge on --machine)")
     grp.add_argument("--zb-machine", dest="zb_machine",
                      help="repack machine with BASIC baked into slot 0 (no cart); "
-                          "runs the 8 string-engine keywords")
+                          "runs the string-engine keywords")
     ap.add_argument("--full", action="store_true",
                     help="repack mode: also re-run the full LINES+CRUNCH_ONLY corpus on "
-                         "the repack build (the exhaustive relocated-kwtable proof; many "
-                         "boots). Default repack run is just the 8 string keywords.")
+                         "the repack build (the exhaustive relocated-kwtable proof). "
+                         "Default repack run is just the string keywords.")
+    ap.add_argument("--boot-per-case", dest="boot_per_case", action="store_true",
+                    help="isolate each case in its own boot instead of the default "
+                         "single-boot batch (to rule out inter-case leakage)")
     args = ap.parse_args()
 
-    global CAS_PATH
-    cas = build_cas("TOK", 0xC000, 0xC000, bytes([0x18, 0xFE]))
-    cas_fd, CAS_PATH = tempfile.mkstemp(suffix=".cas", prefix="crunch_probe_")
-    os.write(cas_fd, cas)
-    os.close(cas_fd)
+    # Assemble the corpus: (body, expect_suffix, expect_token). Every body is the
+    # stored line `1 <body>`; nothing executes, so LINES and CRUNCH_ONLY need no
+    # distinct handling. The full corpus runs on the lean cart always; on the
+    # repack build only with --full (its cases are the relocated-kwtable proof,
+    # not the gate). The string keywords run repack-only (the lean build keeps
+    # them verbatim ASCII, so only the repack build can crunch them).
+    tests: list[tuple[str, int | None, int | None]] = []
+    if not args.zb_machine or args.full:
+        tests += [(body, None, None) for body in LINES + CRUNCH_ONLY]
+    if args.zb_machine:
+        tests += [(body, suf, None) for body, suf in STR_KEYWORDS]
+        tests += [(body, None, tok) for body, tok in STR_KEYWORDS_1B]
+
+    specs = [("direct", [f"1 {body}"]) for body, _, _ in tests]
+    batch = not args.boot_per_case
+
+    ref_raws = _capture(args.machine, specs, cart=None, batch=batch)
+    if args.zb_machine:
+        zb_raws = _capture(args.zb_machine, specs, cart=None, batch=batch)
+    else:
+        zb_raws = _capture(args.machine, specs, cart=args.cart, batch=batch)
 
     ok = True
-
-    def zb_side(full_line):
-        """The zerobas crunch buffer: repack machine (BASIC in slot 0, no cart) if
-        --zb-machine, else the lean basic.rom cart on the reference machine."""
-        if args.zb_machine:
-            return dump_buf(args.zb_machine, None, full_line, TOKBUF, separate_enter=True)
-        return dump_buf(args.machine, args.cart, full_line, TOKBUF, separate_enter=True)
-
-    def test(body, full_line, expect_suffix=None, expect_token=None):
-        nonlocal ok
-        ref = crunched(dump_buf(args.machine, None, full_line, KBUF, separate_enter=False))
-        zb = crunched(zb_side(full_line))
+    for (body, expect_suffix, expect_token), ref_raw, zb_raw in zip(
+            tests, ref_raws, zb_raws):
+        ref, zb = tokens(ref_raw), tokens(zb_raw)
         same = ref is not None and zb is not None and ref == zb
-        # For the string keywords also lock the observed FF-suffix to the §4 table,
-        # so the gate stands even if the reference happened to agree by accident.
+        # For the string keywords also lock the observed FF-suffix / single-byte
+        # token to the §4 table, so the gate stands even if the reference happened
+        # to agree by accident.
         note = ""
         if expect_suffix is not None:
             got = zb[zb.index(0xFF) + 1] if zb and 0xFF in zb else None
             suffix_ok = got == expect_suffix
             same = same and suffix_ok
             note = (f"  [FF {expect_suffix:02X} ok]" if suffix_ok
-                    else f"  [want FF {expect_suffix:02X}, got {('FF %02X' % got) if got is not None else 'none'}]")
-        # STRING$/INSTR (§4 Group B/C) are bare single-byte reserved-word tokens,
-        # not FF-prefixed -- lock the observed token byte to the §4 table instead.
+                    else f"  [want FF {expect_suffix:02X}, got "
+                         f"{('FF %02X' % got) if got is not None else 'none'}]")
         if expect_token is not None:
             token_ok = zb is not None and expect_token in zb
             same = same and token_ok
             note = (f"  [{expect_token:02X} ok]" if token_ok
                     else f"  [want token {expect_token:02X}, not found]")
         ok = ok and same
-        rs = " ".join(f"{b:02X}" for b in ref) if ref else "<no TAPION>"
-        zs = " ".join(f"{b:02X}" for b in zb) if zb else "<no TAPION>"
+        rs = " ".join(f"{b:02X}" for b in ref) if ref else "<not stored>"
+        zs = " ".join(f"{b:02X}" for b in zb) if zb else "<not stored>"
         print(f"{'PASS' if same else 'FAIL'}  {body}{note}")
         print(f"        ref: {rs}")
         if not same:
             print(f"        zb : {zs}")
 
-    # The full corpus runs on the lean cart always; on the repack build only with
-    # --full (its many boots are the exhaustive relocated-kwtable proof, not the gate).
-    if not args.zb_machine or args.full:
-        for body in LINES:                   # executable lines: bload trails
-            test(body, f'{body}:bload"cas:",r')
-        for body in CRUNCH_ONLY:             # non-executing bodies: bload leads
-            test(body, f'bload"cas:",r:{body}')
-    if args.zb_machine:                      # repack-only: the 11 string keywords
-        print("--- string-engine keywords (repack build) ---")
-        for body, suffix in STR_KEYWORDS:
-            test(body, f'bload"cas:",r:{body}', expect_suffix=suffix)
-        print("--- string-function keywords, single-byte tokens (repack build) ---")
-        for body, token in STR_KEYWORDS_1B:
-            test(body, f'bload"cas:",r:{body}', expect_token=token)
-
-    os.unlink(CAS_PATH)
     print("\nALL PASS — crunch is byte-identical" if ok else "\nSOME FAILED")
     return 0 if ok else 1
 

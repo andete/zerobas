@@ -6,12 +6,13 @@
 the Phase-3 string-engine keywords (LEN/LEFT$/RIGHT$/MID$/CHR$/ASC/STR$/VAL).
 
 Reference side only (cart=None): drives the VG-8020's built-in BASIC as a black
-box, breaks at TAPION with the whole line already crunched, and prints the token
-bytes it observes. This is the oracle lock behind the token equates in
-basic/sysvars.inc (LEFTD_TOKEN etc.) — the values are ALSO the sourced MSX2 TH
-Table 2.20 contiguous function table; this confirms them by observation. No
-disassembly (the reference ROM is never read as code). See
-docs/spec-basic-string-engine.md §4.
+box, injecting each keyword as the STORED line `1 <body>` (tokenised into the
+program but never executed) and reading its crunch back from TXTTAB ($F676) via
+omsx_repl's ("stored_line", …) capture — no disassembly (the reference ROM is
+never read as code), no CPU freeze. This is the oracle lock behind the token
+equates in basic/sysvars.inc (LEFTD_TOKEN etc.) — the values are ALSO the sourced
+MSX2 TH Table 2.20 contiguous function table; this confirms them by observation.
+See docs/spec-basic-string-engine.md §4.
 
 The zerobas-SIDE differential (proving zerobas crunches these identically) runs on
 the repack build in S5 — the byte-full lean build never tokenises them.
@@ -22,16 +23,14 @@ from __future__ import annotations
 
 import os
 import sys
-import tempfile
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)                                   # sibling probes
 sys.path.insert(0, os.path.join(os.path.dirname(_HERE), "lib"))
 
-import basic_probe_crunch as C  # noqa: E402  (reuse dump_buf/crunched/build_cas)
+import basic_probe_crunch as C  # noqa: E402  (reuse MACHINE/TXTTAB/tokens)
+import omsx_repl                # noqa: E402  (typing-free stored-line capture)
 
-# bload leads (freeze at TAPION with the line crunched); the body after ':' is
-# crunched but never executed — the CRUNCH_ONLY discipline.
 KEYWORDS = [
     ("LEN",    'a=len("ab")'),
     ("LEFT$",  'a$=left$("hi",1)'),
@@ -50,15 +49,13 @@ EXPECT = {"LEN": 0x92, "LEFT$": 0x81, "RIGHT$": 0x82, "MID$": 0x83,
 
 
 def main() -> int:
-    cas = C.build_cas("TOK", 0xC000, 0xC000, bytes([0x18, 0xFE]))
-    fd, C.CAS_PATH = tempfile.mkstemp(suffix=".cas", prefix="strtok_")
-    os.write(fd, cas)
-    os.close(fd)
+    specs = [("direct", [f"1 {body}"]) for _, body in KEYWORDS]
+    raws = omsx_repl.run_cases(C.MACHINE, specs, batch=True, reset=("NEW",),
+                               capture=("stored_line", C.TXTTAB))
 
     ok = True
-    for name, body in KEYWORDS:
-        full = f'bload"cas:",r:{body}'
-        ref = C.crunched(C.dump_buf(C.MACHINE, None, full, C.KBUF, separate_enter=False))
+    for (name, body), raw in zip(KEYWORDS, raws):
+        ref = C.tokens(raw)
         got = None
         if ref and 0xFF in ref:
             i = ref.index(0xFF)
@@ -66,11 +63,10 @@ def main() -> int:
         want = EXPECT[name]
         good = got == want
         ok = ok and good
-        s = " ".join(f"{b:02X}" for b in ref) if ref else "<no TAPION>"
+        s = " ".join(f"{b:02X}" for b in ref) if ref else "<not stored>"
         tag = "OK" if good else f"FAIL want FF {want:02X}"
         print(f"{tag:14} {name:7} {body:22} -> {s}")
 
-    os.unlink(C.CAS_PATH)
     print("\nALL OK — VG-8020 crunch matches Table 2.20" if ok else "\nMISMATCH")
     return 0 if ok else 1
 

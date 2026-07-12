@@ -143,6 +143,9 @@ def _cap_expr(capture) -> str:
     if isinstance(capture, tuple) and capture and capture[0] == "mem_indirect":
         _, ptr, length = capture
         return f"[__hex_mi {ptr} {length}]"
+    if isinstance(capture, tuple) and capture and capture[0] == "stored_line":
+        _, ptr = capture
+        return f"[__hex_line {ptr}]"
     raise ValueError(f"unknown capture spec: {capture!r}")
 
 
@@ -200,6 +203,18 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         "  set b [expr {[debug read memory $p] + 256*[debug read memory [expr {$p+1}]]}]\n"
         "  binary scan [debug read_block memory $b $l] H* h; return $h\n"
         "}\n"
+        # __hex_line: dump the EXACT first stored program line -- deref TXTTAB at
+        # $p to the text base, read that line's link (its first 2 bytes = absolute
+        # address of the NEXT line), and return base..link (link+lineno+tokens+00).
+        # Empty program (link <= base, i.e. the 00 00 end-marker) -> "" (rejected).
+        # Using the link gives the line's precise extent so an embedded 0x00 in a
+        # value byte never truncates it (the crunch/tokenise probes need this).
+        "proc __hex_line {p} {\n"
+        "  set base [expr {[debug read memory $p] + 256*[debug read memory [expr {$p+1}]]}]\n"
+        "  set link [expr {[debug read memory $base] + 256*[debug read memory [expr {$base+1}]]}]\n"
+        "  if {$link <= $base} { return \"\" }\n"
+        "  binary scan [debug read_block memory $base [expr {$link - $base}]] H* h; return $h\n"
+        "}\n"
         # __key: write the raw bytes of `s` into KEYBUF and point GETPNT/PUTPNT at
         # them so CHGET delivers them (no CR). Cursors reset each call -- safe
         # because the per-slot step guarantees the prior chunk was consumed.
@@ -246,9 +261,13 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
 
     `capture` selects what each case returns: "screen" (DEFAULT) -> the raw
     SCREEN-0 name-table string (length SCR_LEN, non-print bytes -> space);
-    ("mem_indirect", PTR, LEN) -> the LEN captured bytes as a lowercase hex
-    string (dereferenced through the 2-byte LE pointer at PTR). The probe decodes
-    a mem capture itself (e.g. floatlit's marker+trim)."""
+    ("mem_indirect", PTR, LEN) -> the LEN captured bytes as a lowercase hex string
+    (dereferenced through the 2-byte LE pointer at PTR); ("stored_line", PTR) ->
+    the FIRST stored program line's exact bytes (link+lineno+tokens+00) as hex,
+    "" when the program is empty (link == 00 00, i.e. the line was rejected on
+    entry) -- reads the line's link pointer for its precise extent so an embedded
+    0x00 never truncates it (the crunch/tokenise probes). The probe decodes a mem
+    capture itself (e.g. floatlit's marker+trim, crunch's header-strip)."""
     binary = find_omsx(omsx)
     out = tempfile.NamedTemporaryFile(suffix=".txt", prefix="repl_", delete=False).name
     tcl = out + ".tcl"

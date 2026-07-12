@@ -93,11 +93,14 @@ def crunched(raw: str | None) -> bytes | None:
 
     Trimming at the first 0x00 can truncate a value with an embedded zero
     MID-value (e.g. 256 -> 1C 00, 1e-65 -> 1D 00) rather than only at the real
-    terminator — a known, already-precedented weakening (the standing
-    basic_probe_crunch.py trims identically) that the exhaustive byte-for-byte
-    proof in tests/test_float.py covers. It also makes the check immune to the
-    cold-boot ambient RAM past the terminator (which differs between a real
-    VG-8020 and the C-BIOS repack)."""
+    terminator — a known, deliberate weakening that the exhaustive byte-for-byte
+    proof in tests/test_float.py covers. (basic_probe_crunch.py avoids the
+    truncation entirely by dereferencing the line's link pointer for its exact
+    extent; floatlit keeps the simpler first-0x00 trim because every float
+    literal's terminator IS its first 0x00 unless the value embeds one, and the
+    embedded-zero cases are what test_float.py locks byte-for-byte.) It also makes
+    the check immune to the cold-boot ambient RAM past the terminator (which
+    differs between a real VG-8020 and the C-BIOS repack)."""
     if not raw:
         return None
     b = bytes.fromhex(raw)
