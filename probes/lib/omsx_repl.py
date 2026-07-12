@@ -64,6 +64,12 @@ KEYBUF = 0xFBF0
 GETPNT = 0xF3FA
 PUTPNT = 0xF3F8
 KEYBUF_SZ = 40
+# A 40-byte CIRCULAR buffer holds at most 39 bytes unambiguously: with 40 bytes
+# written, PUTPNT wraps to equal GETPNT (full is indistinguishable from empty),
+# and the ROM re-reads the buffer -> the line executes TWICE (observed for a
+# 39-char line: 39 + CR = 40). So an injected line + its CR must be <= 39, i.e.
+# the line itself is at most 38 source chars.
+MAX_DIRECT = KEYBUF_SZ - 2  # 38: longest line injectable verbatim (CR excluded)
 
 # SCREEN 0 name table (both Philips_VG_8020 and the repack disk machine boot
 # 40-column text; a stock SCREEN-1 machine would need 0x1800/768/32 instead).
@@ -89,13 +95,14 @@ def as_stored(line: str) -> list[str]:
         else:
             cur.append(ch)
     stmts.append("".join(cur))
-    # greedily pack statements into <=35-char bodies (leaving room for "NN " and
-    # the CR); a single statement longer than that is emitted alone and, if it
-    # still overflows, will trip the length guard in _tcl (-> TXTTAB fallback).
+    # greedily pack statements into <=34-char bodies so a numbered line
+    # ("NNN " prefix, up to 4 chars) still fits MAX_DIRECT (38); a single
+    # statement longer than that is emitted alone and, if the numbered line
+    # still overflows, trips the length guard in _tcl (-> TXTTAB fallback).
     bodies, cur_body = [], ""
     for s in stmts:
         cand = s if not cur_body else cur_body + ":" + s
-        if len(cand) <= 35:
+        if len(cand) <= 34:
             cur_body = cand
         else:
             if cur_body:
@@ -113,11 +120,11 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
     emulated-time slot spaced by `step`, so the previous line is fully consumed
     (CHGET drains KEYBUF) and executed before the next __inj resets the buffer."""
     def inj(t, s):
-        if len(s) + 1 > KEYBUF_SZ:
+        if len(s) > MAX_DIRECT:
             # TODO: TXTTAB fallback (spec s2.2) -- inject pre-tokenised bytes into
             # TXTTAB + fix VARTAB/ARYTAB/STREND, RUN. Deferred; no case needs it.
             raise ValueError(
-                f"REPL line too long for KEYBUF ({len(s)+1}>{KEYBUF_SZ}): {s!r} "
+                f"REPL line too long for KEYBUF ({len(s)}>{MAX_DIRECT}): {s!r} "
                 f"-- split via as_stored()/mode='stored', or build the TXTTAB "
                 f"fallback (spec s2.2)")
         return f"after time {t:.1f} {{ __inj {{{s}}} }}"

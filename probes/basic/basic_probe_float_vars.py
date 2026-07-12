@@ -46,17 +46,10 @@ _sys.path.insert(0, _os.path.join(
     _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib"))
 
 import argparse
-import os
-import re
-import subprocess
-import sys
-import tempfile
 
-OMSX_RUN = os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
-                        "lib", "omsx_run.py")
+import omsx_repl  # typing-free KEYBUF-injection REPL driver (harness rework S1)
+
 REF_MACHINE = "Philips_VG_8020"
-COLS, ROWS = 40, 24
-NLEN = COLS * ROWS
 
 # Each case: (label, line, kind, expect)
 #   kind "value": a normal PRINT — compare the bracket SPAN only (mirrors the
@@ -250,139 +243,34 @@ CASES = [
 ]
 
 
-def run_line(machine, line, base=8.0, tail=8.0, gap=3.0, timeout=120):
-    """Type one direct-mode line (+ separately-timed Enter), return the SCREEN 0
-    name table as one raw row-major string of length NLEN.
+def capture(machine, line, kind):
+    """Return (span, tail) for one case on one machine, delivered via the
+    typing-free KEYBUF driver (omsx_repl), one boot per case (power-on-fresh
+    state, so this is a pure delivery-layer swap from the old matrix-typing
+    path -- same line, same kind semantics, same span/tail extraction).
 
-    `gap` is the emulated-seconds delay from the line-injection to the Enter:
-    openMSX types the source char-by-char over emulated time, so the Enter must
-    fire only AFTER the whole line has landed. The default 3 s covers the short
-    majority; a ~45-char line (the VARPTR-compare cases) takes ~8 s to type, so
-    the caller passes a wider gap for those or the Enter is swallowed mid-type
-    (the line echoes fully but never executes)."""
-    out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="floatvars_")
-    os.close(out_fd)
-    cmd = [sys.executable, OMSX_RUN, "--machine", machine,
-           "--type", line, "--type-delay", str(base),
-           "--type", "\r", "--type-delay", str(base + gap),
-           "--time", str(base + gap + tail),
-           "--mem", f"VRAM:0x0000:{NLEN}",
-           "--out", out_path, "--timeout", str(timeout)]
-    subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    cap = ""
-    if os.path.exists(out_path):
-        with open(out_path) as f:
-            cap = f.read()
-        os.unlink(out_path)
-    m = re.search(rf"mem\.VRAM:0x0000:{NLEN}=([0-9a-f]+)", cap)
-    if not m:
-        return None
-    data = bytes.fromhex(m.group(1))
-    return "".join(chr(b) if 32 <= b < 127 else " " for b in data)
-
-
-def run_stored(machine, body, base=8.0, tail=8.0, timeout=120):
-    """Store `body` as program line 10, then RUN it -- for constructs (a
-    re-entrant NEXT) whose resume-and-loop-back only the run_prog line-walking
-    loop honours (RESUMEFLAG/RESUMEPTR/CURLINE, program.asm); direct-mode
-    dispatch never consults them, so a direct-mode multi-pass FOR/NEXT never
-    reaches its own trailing statements (confirmed pre-existing, F3-unrelated,
-    on the lean int-only build too). Returns the raw screen buffer, same shape
-    as run_line."""
-    out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="floatvars_")
-    os.close(out_fd)
-    cmd = [sys.executable, OMSX_RUN, "--machine", machine,
-           "--type", "10 " + body, "--type-delay", str(base),
-           "--type", "\r", "--type-delay", str(base + 3),
-           "--type", "RUN", "--type-delay", str(base + 6),
-           "--type", "\r", "--type-delay", str(base + 9),
-           "--time", str(base + 9 + tail),
-           "--mem", f"VRAM:0x0000:{NLEN}",
-           "--out", out_path, "--timeout", str(timeout)]
-    subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    cap = ""
-    if os.path.exists(out_path):
-        with open(out_path) as f:
-            cap = f.read()
-        os.unlink(out_path)
-    m = re.search(rf"mem\.VRAM:0x0000:{NLEN}=([0-9a-f]+)", cap)
-    if not m:
-        return None
-    data = bytes.fromhex(m.group(1))
-    return "".join(chr(b) if 32 <= b < 127 else " " for b in data)
-
-
-def result_span(raw):
-    """The printed value: text between the LAST '[' and the following ']'.
-    The echoed source line contains '[' too, but the result's '[' is printed
-    after it. Returns None if the ']' never printed (statement aborted)."""
-    if raw is None:
-        return None
-    i = raw.rfind("[")
-    if i < 0:
-        return None
-    j = raw.find("]", i)
-    if j < 0:
-        return None
-    return raw[i + 1: j]
-
-
-def screen_tail(raw, cmdline):
-    """All rows between the echoed command line and the closing prompt
-    (inclusive of neither), right-stripped, joined with '|'. Pins error
-    messages + abort-vs-continue shape. None if the echo row is not found.
-
-    Machine-agnostic: the reference echoes the line verbatim and closes with
-    'Ok'; zerobas prefixes the echo with its 'zb>' prompt and closes with a
-    bare 'zb>' row — so the echo match is ends-with and both prompt shapes
-    terminate the tail."""
-    if raw is None:
-        return None
-    rows = [raw[r * COLS:(r + 1) * COLS].strip() for r in range(ROWS)]
-    key = cmdline.strip()
-    idx = None
-    for i, r in enumerate(rows):
-        if r == key or r.endswith(key):
-            idx = i  # keep the LAST occurrence
-    if idx is None:
-        return None
-    out = []
-    for r in rows[idx + 1:]:
-        if r == "Ok" or r == "zb>":
-            break
-        out.append(r)
-    while out and out[-1] == "":
-        out.pop()
-    return "|".join(out)
-
-
-def result_span_after_echo(raw, cmdline):
-    """Like result_span, but restricted to the rows AFTER the echoed command
-    line. Needed here (unlike basic_probe_float_arith.py, whose every case
-    errors out MID the same PRINT statement that already emitted the "["
-    literal): several F3 cases abort in an EARLIER `:`-separated statement
-    (e.g. `A%="X":PRINT"[";A%;"]"`), so the PRINT statement — and its own
-    "[" / "]" literals — never actually RUNS at all; the only bracket
-    characters anywhere on screen are then the ones sitting in the typed
-    ECHO of the source line itself. A plain whole-buffer result_span() would
-    misread that echoed source text as if it were real printed output (a
-    real bug caught while building this probe — the F1/F2 review lesson
-    generalises to probe-harness code too, not just the ROM). Restricting the
-    search to rows after the echo makes "no real value was ever printed"
-    (CF the "abort" / "abort_or_value" cases below) unambiguous. None if the
-    echo row itself can't be found."""
-    if raw is None:
-        return None
-    rows = [raw[r * COLS:(r + 1) * COLS] for r in range(ROWS)]
-    stripped = [r.strip() for r in rows]
-    key = cmdline.strip()
-    idx = None
-    for i, r in enumerate(stripped):
-        if r == key or r.endswith(key):
-            idx = i  # keep the LAST occurrence, same convention as screen_tail
-    if idx is None:
-        return None
-    return result_span("".join(rows[idx + 1:]))
+    Routing:
+      - "stored": run as a stored program (as_stored splits the :-joined body
+        into <=39-char numbered lines) -- for a re-entrant NEXT whose resume
+        only the run_prog line loop honours (RESUMEFLAG/RESUMEPTR/CURLINE);
+        span only, no tail (matches the old run_stored).
+      - "value": direct mode -- EXCEPT a value line past the KEYBUF direct cap
+        (omsx_repl.MAX_DIRECT = 38 chars: def.int.list, alias.all4, the 3
+        varptr.* cases, all pure assignment+PRINT) is run as a stored program,
+        semantically identical for those (no re-entrant control flow). The old
+        path handled these with a wide type-gap; the driver has no per-char
+        schedule so the cap, not timing, is the reason.
+      - "abort"/"abort_or_value": direct mode; span is read only AFTER the echo
+        row so an aborted case's echoed '[' is not misread as output."""
+    stored = kind == "stored" or (kind == "value" and len(line) > omsx_repl.MAX_DIRECT)
+    mode = "stored" if stored else "direct"
+    lines = omsx_repl.as_stored(line) if stored else [line]
+    raw = omsx_repl.run_case(machine, mode, lines)
+    if stored:
+        return omsx_repl.result_span(raw), None
+    if kind == "value":
+        return omsx_repl.result_span(raw), omsx_repl.screen_tail(raw, line)
+    return omsx_repl.result_span_after_echo(raw, line), omsx_repl.screen_tail(raw, line)
 
 
 def main() -> int:
@@ -395,33 +283,6 @@ def main() -> int:
                          "assert span/tail equality")
     ap.add_argument("--only", help="substring filter on the case label")
     args = ap.parse_args()
-
-    def capture(machine, line, kind):
-        """Return (span, tail) for one case on one machine. Span-extraction
-        differs by kind: a "value"/"stored" case ALWAYS reaches its PRINT, so
-        the real value is the LAST '[' anywhere on screen -- plain result_span,
-        which is immune to the source line wrapping past 40 columns (the
-        varptr cases do). An "abort"/"abort_or_value" case may NOT reach its
-        PRINT, so its echoed '[' must not be misread as output -- result_span_
-        after_echo restricts the search to rows after the echo, at the cost of
-        needing the echo row to be findable (so those cases are kept <=40
-        cols).
-
-        Timing: a line that wraps past 40 columns (the VARPTR-compare cases,
-        ~45 chars) takes ~8 emulated seconds for openMSX to type char-by-char,
-        so the Enter must fire on a WIDER gap than the 3 s default or it is
-        swallowed mid-type -- the line echoes fully but never executes, and the
-        capture reads only the echoed source (a false FAIL that survived only on
-        timing luck; it flipped when a rebuild shifted boot timing by a hair).
-        The short majority keep the fast default."""
-        g = 11.0 if len(line) > 40 else 3.0
-        if kind == "stored":
-            raw = run_stored(machine, line)
-            return result_span(raw), None
-        raw = run_line(machine, line, gap=g)
-        if kind == "value":
-            return result_span(raw), screen_tail(raw, line)
-        return result_span_after_echo(raw, line), screen_tail(raw, line)
 
     ok = True
     for label, line, kind, expect in CASES:
