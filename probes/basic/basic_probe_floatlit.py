@@ -4,19 +4,26 @@
 MSX-BASIC crunches decimal floating-point literals (Phase-3 float pack F1;
 docs/spec-basic-float-core.md §3c).
 
-Characterisation mode (default, reference only):
-  For each literal L the line  bload"cas:",r:a=L  is fed to the reference
-  (Philips VG-8020, built-in BASIC). BLOAD leads, so the machine freezes at
-  TAPION ($00E1) with the WHOLE line already crunched into KBUF ($F41F) and
-  the body never executes (same freeze technique as basic_probe_crunch.py).
-  The bytes after the `:a=` marker (3A 41 EF) are the literal's crunched
-  form — for a float literal that IS the stored representation (token $1D +
-  4 value bytes single / $1F + 8 value bytes double), so this one capture
-  pins both the classification rule AND the BCD encoding, black-box.
+Mechanism (harness rework, 2026-07-12): each literal L is injected as the STORED
+line  `1 A=L`  (a numbered line, so it is tokenised into the program area but
+never executed — no RUN), via omsx_repl's typing-free KEYBUF path. The crunched
+line then lives in the program at TXTTAB ($F676): after the 2-byte link and
+2-byte line number come the tokens `A` `=` (41 EF) followed by the literal's
+crunched form — for a float literal that IS the stored representation (token $1D
++ 4 value bytes single / $1F + 8 value bytes double; int forms $0F/$1C/$11-$1A),
+the same bytes this probe pins. So reading TXTTAB captures the classification
+rule AND the BCD encoding, black-box, WITHOUT freezing the CPU — which lets the
+whole matrix share ONE boot (batched, ~35x faster than the former one-boot-per-
+literal BLOAD-freeze, and free of the matrix-typing flake).
 
-Differential mode (--zb-machine, F1 implement/acceptance):
-  Additionally crunches the same line on the zerobas repack build (TOKBUF)
-  and asserts the tail bytes are identical to the reference's.
+The prior mechanism (BLOAD-freeze at TAPION with the line crunched in KBUF) was
+proven byte-identical to this stored-line capture across all 66 literals on BOTH
+machines before the switch (incl. the "both rejected" 1e63/65535% cases, which
+here leave the program empty -> no `A=` marker -> rejected).
+
+Characterisation mode (default, reference only): print each literal's crunched
+bytes.  Differential mode (--zb-machine, F1 acceptance): also crunch on the
+zerobas repack build and assert the bytes are identical.
 
 Clean-room: observed outputs only; the reference ROM is a black box. No
 disassembly. See the clean-room firewall (CONTRIBUTING.md).
@@ -29,26 +36,17 @@ _sys.path.insert(0, _os.path.join(
     _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib"))
 
 import argparse
-import os
-import subprocess
-import sys
-import tempfile
 
-from cas_encode import build_cas  # noqa: E402
+import omsx_repl  # typing-free KEYBUF-injection REPL driver (harness rework)
 
-OMSX_RUN = os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
-                        "lib", "omsx_run.py")
 REF_MACHINE = "Philips_VG_8020"
-TAPION = 0x00E1
-KBUF = 0xF41F     # reference crunch buffer (MSX2 TH sysvar map)
-TOKBUF = 0xE160   # zerobas crunch buffer (basic/sysvars.inc)
-DUMPLEN = 48
-MARKER = bytes([0x3A, 0x41, 0xEF])   # ':' 'A' '='  — the literal starts after this
-TAIL = 12                            # bytes of literal to show (>= 1+8+terminator)
+TXTTAB = 0xF676   # sysvar: 2-byte LE pointer to the BASIC text base (both machines)
+DUMPLEN = 32      # bytes read from the text base (link+lineno+A=+longest literal)
+MARKER = bytes([0x41, 0xEF])   # 'A' '=' — the crunched literal starts after this
 
 # The classification/encoding matrix (spec §3c working rules — this probe is
-# what pins them). Grouped for the analysis write-up; each entry is typed as
-# `a=<lit>` on the reference.
+# what pins them). Grouped for the analysis write-up; each entry is stored as
+# the line `1 A=<lit>`.
 LITERALS = [
     # int forms stay int (regression anchors)
     "0", "9", "10", "255", "256", "32767",
@@ -79,69 +77,42 @@ LITERALS = [
 ]
 
 
-def dump_buf(machine, cart, full_line, addr, separate_enter, cas_path):
-    """Run one side, break at TAPION, return the crunch-buffer bytes."""
-    out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="floatlit_")
-    os.close(out_fd)
-    cmd = [sys.executable, OMSX_RUN, "--machine", machine]
-    if cart:
-        cmd += ["--cart", cart]
-    cmd += ["--cassette", cas_path]
-    if separate_enter:
-        cmd += ["--type", full_line, "--type-delay", "8",
-                "--type", "\r", "--type-delay", "12"]
-    else:
-        cmd += ["--type", full_line + "\r", "--type-delay", "5"]
-    cmd += ["--bp", hex(TAPION), "--reg", "PC",
-            "--mem", f"memory:0x{addr:04X}:{DUMPLEN}",
-            "--out", out_path, "--timeout", "30"]
-    subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    cap = ""
-    if os.path.exists(out_path):
-        with open(out_path) as f:
-            cap = f.read()
-        os.unlink(out_path)
-    if f"reg.PC=0x{TAPION:04X}" not in cap:
-        return None  # never reached TAPION (crunch/edit error before BLOAD ran)
-    key = f"mem.memory:0x{addr:04X}:{DUMPLEN}="
-    for cl in cap.splitlines():
-        if cl.startswith(key):
-            return bytes.fromhex(cl[len(key):])
-    return None
+def crunched(raw: str | None) -> bytes | None:
+    """The crunched literal from a TXTTAB hex capture (`raw` = the bytes from the
+    text base): the bytes after the `A=` marker (41 EF), up to and including the
+    first 0x00 terminator. None when the literal was REJECTED at crunch time
+    (e.g. 1e63 / 65535%).
 
+    Rejection is detected by the LINK POINTER, not the marker: a rejected `1 A=L`
+    line is never stored, and the preceding NEW leaves the 2-byte link at the
+    base = 00 00 (the empty-program marker) — but NEW only rewrites that link, it
+    does NOT wipe the prior line's physical bytes, so a raw `41 EF` search would
+    read STALE data past a zero link. A stored line always has a link whose high
+    byte is >= $80 (the program lives in page 2, $8000+), so link == 00 00 ⇔
+    empty ⇔ rejected.
 
-def literal_tail(buf):
-    """The crunched literal: TAIL bytes after the `:a=` marker (3A 41 EF)."""
-    if buf is None:
+    Trimming at the first 0x00 can truncate a value with an embedded zero
+    MID-value (e.g. 256 -> 1C 00, 1e-65 -> 1D 00) rather than only at the real
+    terminator — a known, already-precedented weakening (the standing
+    basic_probe_crunch.py trims identically) that the exhaustive byte-for-byte
+    proof in tests/test_float.py covers. It also makes the check immune to the
+    cold-boot ambient RAM past the terminator (which differs between a real
+    VG-8020 and the C-BIOS repack)."""
+    if not raw:
         return None
-    i = buf.find(MARKER)
+    b = bytes.fromhex(raw)
+    if len(b) < 2 or (b[0] == 0 and b[1] == 0):
+        return None                       # empty program -> literal rejected
+    i = b.find(MARKER)
     if i < 0:
         return None
-    return buf[i + len(MARKER): i + len(MARKER) + TAIL]
+    tail = b[i + len(MARKER):]
+    j = tail.find(0)
+    return tail if j < 0 else tail[:j + 1]
 
 
-def trim_to_terminator(tail):
-    """tail, up to and including its first embedded 0x00 (else unchanged).
-
-    F1 implement/acceptance fix (2026-07-11): TAIL is a fixed 12-byte window,
-    wider than every literal's real crunch (int forms are 1-3 bytes, float
-    forms 5/9), so the bytes past the true 0x00 terminator are ambient RAM,
-    not crunch output — and the reference (a real VG-8020) and zerobas
-    (C-BIOS_MSX1_EU_REPACK_DISK) cold-boot with DIFFERENT ambient RAM
-    (observed: the reference reads 0x00 there, zerobas 0xFF), so a raw
-    fixed-window compare fails on padding alone even when the crunch itself
-    is byte-identical. Same technique + same accepted imprecision as the
-    standing `basic_probe_crunch.py`'s `crunched()`: trim at the first 0x00,
-    which can truncate early for a value with an embedded zero MID-value
-    (e.g. `256` -> `1C 00 01`, `1e-65` -> `... 10 00 00` -- long before its
-    own terminator) rather than only the terminator itself. That is a known,
-    already-precedented weakening of the check (it stops verifying the
-    trailing bytes of such a case), not a correctness fix to zerobas; the
-    exhaustive byte-for-byte proof for those cases is tests/test_float.py."""
-    if tail is None:
-        return None
-    i = tail.find(0)
-    return tail if i < 0 else tail[:i + 1]
+def _hex(bs: bytes | None) -> str:
+    return " ".join(f"{b:02X}" for b in bs) if bs else "<rejected>"
 
 
 def main() -> int:
@@ -151,50 +122,50 @@ def main() -> int:
                     help=f"reference oracle machine (default {REF_MACHINE})")
     ap.add_argument("--zb-machine", dest="zb_machine",
                     help="differential mode: also crunch on this repack machine "
-                         "(BASIC in slot 0) and assert tail equality")
+                         "(BASIC in slot 0) and assert byte equality")
     ap.add_argument("--only", help="substring filter on the literal")
+    ap.add_argument("--boot-per-case", dest="boot_per_case", action="store_true",
+                    help="isolate each case in its own boot (slow) instead of the "
+                         "default single-boot batch — use to rule out inter-case "
+                         "leakage when a batched case looks wrong")
     args = ap.parse_args()
 
-    cas = build_cas("TOK", 0xC000, 0xC000, bytes([0x18, 0xFE]))
-    cas_fd, cas_path = tempfile.mkstemp(suffix=".cas", prefix="floatlit_")
-    os.write(cas_fd, cas)
-    os.close(cas_fd)
+    lits = [l for l in LITERALS if not (args.only and args.only not in l)]
+    # each literal is a numbered STORED line -> tokenised, never executed; NEW
+    # between cases clears the program so a REJECTED literal reads back empty.
+    specs = [("direct", [f"1 A={lit}"]) for lit in lits]
+    cap = ("mem_indirect", TXTTAB, DUMPLEN)
+
+    # Characterisation mode: reference only -> plain batch.
+    if not args.zb_machine:
+        for lit, raw in zip(lits, omsx_repl.run_cases(
+                args.machine, specs, batch=not args.boot_per_case,
+                reset=("NEW",), capture=cap)):
+            print(f"a={lit:<22} {_hex(crunched(raw))}")
+        return 0
+
+    def compare(i, ref_raw, zb_raw):
+        ref, zb = crunched(ref_raw), crunched(zb_raw)
+        if ref is None and zb is None:
+            return True   # pre-authorised: crunch-time rejection on BOTH sides
+        return ref is not None and zb is not None and ref == zb
+
+    verdicts, ref_raws, zb_raws = omsx_repl.run_differential(
+        args.machine, args.zb_machine, specs, compare,
+        batch=not args.boot_per_case, reset=("NEW",), capture=cap)
 
     ok = True
-    try:
-        for lit in LITERALS:
-            if args.only and args.only not in lit:
-                continue
-            full_line = f'bload"cas:",r:a={lit}'
-            ref = literal_tail(dump_buf(args.machine, None, full_line, KBUF,
-                                        separate_enter=False, cas_path=cas_path))
-            rs = " ".join(f"{b:02X}" for b in ref) if ref else "<no TAPION>"
-            if args.zb_machine:
-                zb = literal_tail(dump_buf(args.zb_machine, None, full_line, TOKBUF,
-                                           separate_enter=True, cas_path=cas_path))
-                zs = " ".join(f"{b:02X}" for b in zb) if zb else "<no TAPION>"
-                if ref is None and zb is None:
-                    # pre-authorised: a crunch-time rejection on BOTH sides
-                    # (e.g. 1e63 / 65535%) is a pass, not a byte comparison
-                    ok = ok and True
-                    print(f"PASS  a={lit:<22} ref: {rs}  [both rejected]")
-                    continue
-                same = (ref is not None and zb is not None
-                        and trim_to_terminator(ref) == trim_to_terminator(zb))
-                ok = ok and same
-                print(f"{'PASS' if same else 'FAIL'}  a={lit:<22} ref: {rs}")
-                if not same:
-                    print(f"{'':>32}zb : {zs}")
-            else:
-                print(f"a={lit:<22} {rs}")
-    finally:
-        os.unlink(cas_path)
+    for lit, good, ref_raw, zb_raw in zip(lits, verdicts, ref_raws, zb_raws):
+        ok = ok and good
+        ref = crunched(ref_raw)
+        note = "  [both rejected]" if ref is None and crunched(zb_raw) is None else ""
+        print(f"{'PASS' if good else 'FAIL'}  a={lit:<22} ref: {_hex(ref)}{note}")
+        if not good:
+            print(f"{'':>32}zb : {_hex(crunched(zb_raw))}")
 
-    if args.zb_machine:
-        print("\nALL PASS — float-literal crunch is byte-identical" if ok
-              else "\nSOME FAILED")
-        return 0 if ok else 1
-    return 0
+    print("\nALL PASS — float-literal crunch is byte-identical" if ok
+          else "\nSOME FAILED")
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

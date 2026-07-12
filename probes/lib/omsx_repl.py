@@ -132,13 +132,28 @@ def as_stored(line: str) -> list[str]:
 MAX_BUF = 250  # MSX line-input buffer (BUF/LINBUF) holds ~255 chars incl CR
 
 
+def _cap_expr(capture) -> str:
+    """The Tcl expression yielding one case's capture as a hex string.
+    "screen" (default) scrapes the SCREEN-0 name table; ("mem_indirect", PTR,
+    LEN) reads a 2-byte LE pointer at PTR and dumps LEN bytes from that base --
+    used to read the crunched program from TXTTAB ($F676) without freezing the
+    CPU (basic_probe_floatlit)."""
+    if capture == "screen":
+        return f"[__hex_v {SCR_ADDR} {SCR_LEN}]"
+    if isinstance(capture, tuple) and capture and capture[0] == "mem_indirect":
+        _, ptr, length = capture
+        return f"[__hex_mi {ptr} {length}]"
+    raise ValueError(f"unknown capture spec: {capture!r}")
+
+
 def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
          boot: float, step: float, cap_gap: float,
-         reset: tuple[str, ...]) -> str:
+         reset: tuple[str, ...], capture="screen") -> str:
     """Build the whole-batch Tcl timeline. Each scheduled action gets its own
     emulated-time slot spaced by `step`, so the previous chunk is fully consumed
     (CHGET drains KEYBUF into the line editor) before the next write resets it."""
     body: list[str] = []
+    cap = _cap_expr(capture)
 
     def emit(t: float, s: str) -> float:
         """Schedule injection of one CR-terminated line `s` at/after time `t`;
@@ -171,7 +186,7 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         for ln in seq:
             t = emit(t, ln)
         body.append(f'after time {t:.1f} {{ puts $__f "case.{idx}='
-                    f'[__hex_v {SCR_ADDR} {SCR_LEN}]"; flush $__f }}')
+                    f'{cap}"; flush $__f }}')
         t += cap_gap
     body.append(f"after time {t:.1f} {{ close $__f; exit }}")
     return (
@@ -179,6 +194,12 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         f"set __f [open {{{out_path}}} w]\n"
         "proc __hex_v {a l} { binary scan [debug read_block VRAM $a $l] H* h;"
         " return $h }\n"
+        # __hex_mi: dereference a 2-byte LE pointer at $p, dump $l bytes from
+        # that base as hex (e.g. TXTTAB $F676 -> the stored program).
+        "proc __hex_mi {p l} {\n"
+        "  set b [expr {[debug read memory $p] + 256*[debug read memory [expr {$p+1}]]}]\n"
+        "  binary scan [debug read_block memory $b $l] H* h; return $h\n"
+        "}\n"
         # __key: write the raw bytes of `s` into KEYBUF and point GETPNT/PUTPNT at
         # them so CHGET delivers them (no CR). Cursors reset each call -- safe
         # because the per-slot step guarantees the prior chunk was consumed.
@@ -211,22 +232,28 @@ def run_case(machine: str, mode: str, lines: list[str], **kw) -> str | None:
 
 def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
               boot: float = 8.0, step: float = 2.5, cap_gap: float = 2.5,
-              reset: tuple[str, ...] = (),
+              reset: tuple[str, ...] = (), capture="screen",
               timeout: float = 240.0, omsx: str | None = None,
               cart: str | None = None, diska: str | None = None) -> list[str | None]:
     """Boot `machine` once and drive `cases` (each `(mode, lines)`), returning one
-    raw SCREEN-0 name-table string (length SCR_LEN, non-print bytes -> space) per
-    case, or None where that case's capture is missing. `reset` injects the given
-    lines before EACH case; on the repack build NEW/CLEAR now DO reset variables
-    and the DEF table (fixed 2026-07-12, see module docstring), so `reset=("NEW",)`
-    is a valid cheap inter-case reset there. Prefer run_case unless a probe has
-    validated its reset. mode "direct": inject each line verbatim (<=39 chars).
-    mode "stored": `lines` are body statements; numbered 10/20/... + "RUN"."""
+    capture per case (or None where that case's capture is missing). `reset`
+    injects the given lines before EACH case; on the repack build NEW/CLEAR now DO
+    reset variables and the DEF table (fixed 2026-07-12, see module docstring), so
+    `reset=("NEW",)` is a valid cheap inter-case reset there. Prefer run_case
+    unless a probe has validated its reset. mode "direct": inject each line
+    verbatim (<=39 chars). mode "stored": `lines` are body statements; numbered
+    10/20/... + "RUN".
+
+    `capture` selects what each case returns: "screen" (DEFAULT) -> the raw
+    SCREEN-0 name-table string (length SCR_LEN, non-print bytes -> space);
+    ("mem_indirect", PTR, LEN) -> the LEN captured bytes as a lowercase hex
+    string (dereferenced through the 2-byte LE pointer at PTR). The probe decodes
+    a mem capture itself (e.g. floatlit's marker+trim)."""
     binary = find_omsx(omsx)
     out = tempfile.NamedTemporaryFile(suffix=".txt", prefix="repl_", delete=False).name
     tcl = out + ".tcl"
     with open(tcl, "w") as f:
-        f.write(_tcl(out, cases, boot, step, cap_gap, reset))
+        f.write(_tcl(out, cases, boot, step, cap_gap, reset, capture))
     if os.path.exists(out):
         os.unlink(out)
 
@@ -251,9 +278,12 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
         for ln in open(out):
             m = re.match(r"case\.(\d+)=([0-9a-f]*)", ln.strip())
             if m and m.group(2):
-                data = bytes.fromhex(m.group(2))
-                caps[int(m.group(1))] = "".join(
-                    chr(b) if 32 <= b < 127 else " " for b in data)
+                if capture == "screen":
+                    data = bytes.fromhex(m.group(2))
+                    caps[int(m.group(1))] = "".join(
+                        chr(b) if 32 <= b < 127 else " " for b in data)
+                else:                      # mem capture: hand back the raw hex
+                    caps[int(m.group(1))] = m.group(2)
         os.unlink(out)
     os.unlink(tcl)
     if timed_out and not caps:
@@ -263,6 +293,7 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
 
 def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
               batch: bool = True, reset: tuple[str, ...] = ("CLS",),
+              capture="screen",
               boot: float = 8.0, step: float = 2.5, cap_gap: float = 2.5,
               timeout: float | None = None, omsx: str | None = None,
               cart: str | None = None, diska: str | None = None) -> list[str | None]:
@@ -288,7 +319,7 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
     long batched timeline (throttle-off but still many emulated seconds) has room
     to finish; the batch self-terminates via `exit`, so this is only a safety net.
     """
-    kw = dict(boot=boot, step=step, cap_gap=cap_gap,
+    kw = dict(boot=boot, step=step, cap_gap=cap_gap, capture=capture,
               omsx=omsx, cart=cart, diska=diska)
     if batch:
         # scale the safety-net timeout with the emulated timeline length
