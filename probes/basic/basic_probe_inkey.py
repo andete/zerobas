@@ -40,14 +40,13 @@ from __future__ import annotations
 import argparse
 import os
 import re
-import subprocess
 import sys
-import tempfile
 from collections import namedtuple
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-OMSX_RUN = os.path.join(REPO, "probes", "lib", "omsx_run.py")
+sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
+import omsx_repl  # noqa: E402  typing-free KEYBUF-injection REPL driver
 
 REF_MACHINE = "Philips_VG_8020"    # reference: built-in MSX-BASIC, no cartridge
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
@@ -55,52 +54,28 @@ COLS, ROWS = 40, 24
 NLEN = COLS * ROWS
 
 
-def _capture(cmd_tail, timeout):
-    """Run omsx_run with the given tail args + a VRAM dump; return the SCREEN 0
-    name table as one raw, row-major string of length NLEN (None on failure)."""
-    out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="inkey_cap_")
-    os.close(out_fd)
-    cmd = ([sys.executable, OMSX_RUN] + cmd_tail
-           + ["--mem", f"VRAM:0x0000:{NLEN}", "--out", out_path, "--timeout", str(timeout)])
-    subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    cap = ""
-    if os.path.exists(out_path):
-        with open(out_path) as f:
-            cap = f.read()
-        os.unlink(out_path)
-    m = re.search(rf"mem\.VRAM:0x0000:{NLEN}=([0-9a-f]+)", cap)
-    if not m:
-        return None
-    data = bytes.fromhex(m.group(1))
-    return "".join(chr(b) if 32 <= b < 127 else " " for b in data)
+def run_line(machine, line, **_):
+    """Inject one direct-mode line via omsx_repl (KEYBUF, typing-free) and return
+    the SCREEN 0 name table as one raw row-major string of length NLEN (non-print
+    bytes -> space). For the empty INKEY$ case: the line editor drains KEYBUF (the
+    line + its CR) before the statement executes, so INKEY$ finds nothing pending
+    and PRINT emits []."""
+    return omsx_repl.run_case(machine, "direct", [line])
 
 
-def run_line(machine, line, base=8.0, tail=8.0, timeout=120):
-    """Type one direct-mode line (+ a separately-timed Enter) and capture VRAM."""
-    return _capture([
-        "--machine", machine,
-        "--type", line, "--type-delay", str(base),
-        "--type", "\r", "--type-delay", str(base + 3),
-        "--time", str(base + 3 + tail)], timeout)
-
-
-def run_key_prog(machine, key, timeout=160):
-    """Type the INKEY$ poll-loop program, RUN it, then INJECT `key` while the loop
-    spins; capture VRAM. Each line and its Enter are separate events spaced ~3s
-    apart -- the real-speed reference needs the gap so its keyboard scan finishes a
-    line before the Enter (a tighter gap fires Enter mid-type and garbles the line).
-    The loop blocks until a key lands, so `key`'s arrival time need only be after RUN
-    -- not synchronised between machines."""
-    return _capture([
-        "--machine", machine,
-        "--type", '10 A$=INKEY$:IF A$=""THEN10', "--type-delay", "8",
-        "--type", "\r", "--type-delay", "11",
-        "--type", '20 PRINT"<";A$;">"', "--type-delay", "14",
-        "--type", "\r", "--type-delay", "17",
-        "--type", "RUN", "--type-delay", "20",
-        "--type", "\r", "--type-delay", "23",
-        "--type", key, "--type-delay", "27",    # inject the key mid-spin
-        "--time", "30"], timeout)
+def run_key_prog(machine, key, **_):
+    """Enter the INKEY$ poll-loop program as two direct-mode numbered lines, RUN
+    it, then INJECT `key` as a trailing raw line while the loop spins; capture the
+    SCREEN 0 name table. The line editor consumes each of `10 ...`, `20 ...`, `RUN`
+    (and their CRs) in turn, so by the time `key` is injected RUN is already
+    executing and the loop is spinning on INKEY$; the loop blocks until a key
+    lands, so `key`'s exact arrival instant is not timing-critical (both machines
+    capture whatever key arrives), keeping the differential deterministic despite
+    the real-time keyboard. INKEY$ reads the single `key` char out of KEYBUF; the
+    submitting CR left behind is harmless (the program has already left the loop)."""
+    return omsx_repl.run_case(machine, "direct",
+                              ['10 A$=INKEY$:IF A$=""THEN10',
+                               '20 PRINT"<";A$;">"', 'RUN', key])
 
 
 def extract_bracket(raw, open_c, close_c):
