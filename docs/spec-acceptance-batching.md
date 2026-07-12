@@ -60,20 +60,41 @@ Measured (repack machine, differential vs `Philips_VG_8020`):
 After the floatlit slice (above), the only non-batched `float-acceptance` probe
 left is `var_reset` (~8 s, stays boot-per-case by design — it *tests* the reset).
 
+## Done — `string-acceptance` (2026-07-12, this slice)
+
+All six halves `string_acceptance.py` dispatches to (`crunch`, `string`,
+`str_cmp`, `str_fn`, `inkey`, `mid_stmt`) are off `omsx_run` matrix typing and
+onto `omsx_repl`; the whole gate went **~57 s → ~14.5 s** (originally minutes),
+flake-free. Three mechanisms, by sub-probe shape:
+
+- **`crunch`** (+ its ref-only sibling `str_tokens`) was BLOAD-freeze-at-TAPION
+  like `floatlit`; redesigned to the same **stored-line TXTTAB capture**. Added a
+  reusable `capture=("stored_line", PTR)` mode to `omsx_repl` that dereferences
+  the first program line's **link pointer** for its exact bytes (link+lineno+
+  tokens+00) — strictly stronger than the old first-0x00 trim (embedded-0x00
+  lines like `goto 40`, `a=256` compared in full). Nothing executes, so the
+  LINES-vs-CRUNCH_ONLY (bload-trails/leads) split collapsed. Proven byte-
+  identical to the freeze capture on both machines before the switch. `--full`
+  corpus ×2 sides ~minutes → ~4.6 s.
+- **`string`** (single-machine execute+regex) — fully **batched** via
+  `run_cases(reset=("NEW","CLS"))`: 19 boots → 1, ~1.3 s.
+- **`str_cmp` / `str_fn` / `mid_stmt`** (differential: oracle-lock +
+  zb==ref, bespoke extraction) — delivery-swapped, then **batched** one boot per
+  side (str_cmp all three batteries; str_fn's CASES with `SPACE$.clamp` marker
+  arithmetic left boot-per-case; mid_stmt overwrite battery + range-error). Each
+  verified differential-inert against `--boot-per-case` (these string-op cases
+  can't wedge the interpreter, so no self-heal needed). 14.8/24.2/11.6 s →
+  2.0/3.2/1.9 s.
+- **`inkey`** (stateful: poll-loop program + injected key) — the key is a
+  trailing raw line; the line editor drains KEYBUF before RUN, so it lands while
+  the loop spins on INKEY$. Boot-per-case (3 cases), ~2.7 s.
+
+All keep a `--boot-per-case` escape hatch; all documented divergences still
+asserted per-machine (STRMAX=64 clamp; MID$ range wording; type-mismatch case).
+
 ## The rest — prioritized by ROI
 
-### 1. `string-acceptance` — convert its sub-probes off matrix typing first
-
-`string_acceptance.py` dispatches to `crunch`, `str_cmp`, `str_fn`, `string`,
-`strvar` — **all** still on `omsx_run --type` (flaky + boot-per-case). Two steps:
-first port each to `omsx_repl` (the delivery-layer swap the float probes already
-model — same `--type` line becomes a `run_case`), then batch the ones whose cases
-allow a `("NEW","CLS")` reset via `run_differential`. `crunch`/`tokenise` are
-breakpoint-synced like `floatlit` was, and can now follow the same TXTTAB
-stored-line redesign (see the floatlit "Done" slice above + its reusable
-`capture=("mem_indirect", …)` mode on `run_batch`).
-
-### 2. `input-acceptance` — stateful, batch with care
+### 1. `input-acceptance` — stateful, batch with care
 
 `basic_probe_input` types a program, `RUN`s it, then types a *separate* INPUT
 response synchronised to the blocked read. Each case is a small stored program +
@@ -83,7 +104,7 @@ concern), so this is a `run_cases(mode="stored")` variant with an extra
 post-`RUN` injected line, not a plain matrix. Medium effort; validate the
 response never races the next case's `NEW`.
 
-### 3. `diskbasic-acceptance` / `bdos-acceptance` — different mechanism, separate track
+### 2. `diskbasic-acceptance` / `bdos-acceptance` — different mechanism, separate track
 
 These boot per *probe* (not per case) and drive disk `.COM` exercisers / FAT12
 images, not REPL lines. Not an `omsx_repl` target; batching them is a distinct
