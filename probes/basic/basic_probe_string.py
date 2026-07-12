@@ -75,22 +75,38 @@ CASES = [
     ("INSTR",         'PRINT "[";INSTR("HELLO","LL");"]"',      r"\[\s*3\s*\]"),
 ]
 
-BATCH = 4  # cases per boot -- 4 lines (echo+result each) + title/prompts fit 24 rows
+# One case per boot. Typing more than ~2 lines into a single REPL session over the
+# emulated keyboard matrix is inherently flaky: the 3rd+ line of a session either
+# drops its leading keys (`PRINT` -> `INT`, from a typed-Enter landing mid-typing and
+# backing up openMSX's key queue) OR double-registers the first key (`PRINT` ->
+# `PPRINT`). Both are keyboard-matrix races, not ROM bugs, and no `gap` value kills
+# both. The first line of a *fresh* session is reliable, though -- it's the recipe the
+# shipping float_fmt/str_fn gates use -- so we boot once per case. Slower (one boot
+# per case), but every line is a rock-solid "line 1". To avoid the keyboard entirely a future
+# rework could inject pre-tokenised BASIC via `debug write_block` (see probe-inject-idea).
+BATCH = 1
 
 
-def screen(machine, lines):
+def screen(machine, lines, base=6.0, gap=3.0, tail=8.0):
     """Boot `machine`, type each line (line then a separate Enter), settle, return the
-    40x24 VRAM text as one newline-joined string (None on capture failure)."""
+    40x24 VRAM text as one newline-joined string (None on capture failure).
+
+    `gap` is the emulated-time spacing between successive keyboard events, matching the
+    proven single-line float_fmt/str_fn recipe: openMSX `type` presses keys over
+    emulated time, so a ~26-char line takes over a second to type; scheduling the Enter
+    (a separate `type "\\r"`) 3 s later guarantees it never lands mid-typing. With
+    BATCH=1 there is only ever one line per call, so no cross-line key backlog can
+    build -- the failure mode that made this gate flake. Do NOT batch multiple lines."""
     cap = tempfile.mkstemp(suffix=".txt", prefix="strfn_")[1]
     cmd = [sys.executable, OMSX_RUN, "--machine", machine,
            "--mem", f"VRAM:0x0000:{NLEN}", "--out", cap, "--timeout", "120"]
-    t = 6.0
+    t = base
     for ln in lines:
         cmd += ["--type", ln, "--type-delay", f"{t}"]
-        t += 1.0
+        t += gap
         cmd += ["--type", "\r", "--type-delay", f"{t}"]
-        t += 1.0
-    cmd += ["--time", f"{t + 2.0}"]
+        t += gap
+    cmd += ["--time", f"{t + tail}"]
     subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     txt = open(cap).read() if os.path.exists(cap) else ""
     if os.path.exists(cap):
