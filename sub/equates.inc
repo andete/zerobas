@@ -33,6 +33,14 @@ SUBROM_ENTRY_BASE_P1    equ     $4010   ; page-1 table (mirrors the $4010 disk D
 SUBROM_IDX_PING         equ     0
 SUBROM_IDX_TOKENISE     equ     1
 SUBROM_IDX_DETOK        equ     2
+; index 3 = the INTERRUPT SELF-TEST tenant (trampoline slice, sub/sub.asm
+; sub_int_selftest): a standing self-check that a page-0 tenant can run EI and
+; have interrupts serviced through the sub-ROM's own $0038 trampoline. It reads
+; JIFFY, EI's, spins past one 50/60 Hz frame, DI's, and stores the JIFFY delta in
+; SUB_INT_DELTA; the subrom-inttest gate CALSLTs it and asserts delta >= 1 (which
+; reads 0 if the trampoline is absent or the tenant left interrupts off).
+; docs/spec-basic-subrom-trampoline.md.
+SUBROM_IDX_INTTEST      equ     3
 
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can

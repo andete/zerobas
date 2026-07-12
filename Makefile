@@ -229,6 +229,16 @@ diskbasic-acceptance-repack: $(DISK_ROM) $(DISK_TEST_DSK) repack-machine
 subrom-acceptance: $(SUB_ROM)
 	python3 probes/basic/basic_probe_subrom_boot.py
 
+# --- Interrupt-trampoline gate (subrom trampoline slice) -----------------------
+# Proves a page-0 sub-ROM tenant can run EI: the shipped merged machine installs
+# the RAM interrupt trampoline at boot (init_ext_roms -> sub_int_install), then the
+# probe CALSLTs the self-test tenant (index 3), which spins under EI and returns the
+# JIFFY delta serviced through the sub-ROM's own $0038. Asserts delta >= 1. Depends
+# on repack-machine (the C-BIOS_MSX1_EU_REPACK_DISK machine with the sub-ROM in 3-2).
+# docs/spec-basic-subrom-trampoline.md.
+subrom-inttest: repack-machine
+	python3 probes/basic/basic_probe_subrom_inttest.py
+
 # --- Standing string-engine acceptance gate (string-engine arc S5; compare S3) -----
 # The three-part proof of the Phase-3 string engine on the merged repack build. CRUNCH:
 # the 8 string keywords (LEN/LEFT$/RIGHT$/MID$/CHR$/ASC/STR$/VAL) tokenise byte-for-byte
@@ -308,4 +318,4 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance \
-        input-acceptance float-acceptance subrom-acceptance clean
+        input-acceptance float-acceptance subrom-acceptance subrom-inttest clean

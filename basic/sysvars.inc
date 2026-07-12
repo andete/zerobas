@@ -1077,6 +1077,24 @@ DB_CUR          equ     $F108   ; wave-3 detok: the DETOKBUF write cursor, held 
                                 ; the cursor cannot live in a register). Own-choice free
                                 ; RAM, the $F108.. tail of the $F01A-$F194 window (below
                                 ; DRVA_DPB $F195); idle outside a LIST/ASCII-SAVE. (2)
+; --- interrupt trampoline (subrom trampoline slice, docs/spec-basic-subrom-trampoline.md) ----
+; Lets a page-0 sub-ROM tenant run EI. The sub-ROM's own $0038 does `jp SUB_INT_RAM`,
+; a RAM-resident stub (page 3 stays mapped through any page-0 switch) that maps the
+; MAIN (BIOS) slot back into page 0, `call $0038` the real ISR (VDP ack, JIFFY++,
+; H.TIMI/H.KEYI), then maps the sub-ROM back and RETIs to the tenant. Installed at boot
+; by sub_int_install (basic/subromcall.asm) when SUBSLOT_OK. These cells are permanent
+; (unlike the transient DB_CUR), so they take fresh RAM above it. HOST ASSUMPTION: the
+; main page-0 slot is UNEXPANDED (slot 0 on the merged machine), so only its $A8 primary
+; field is toggled — mirrors disk/init.asm page0_ram_in's single-slot philosophy. The
+; stub is the SAME technique the BIOS uses for CLPRIM ($F38C, the RAM inter-slot call
+; primitive); these cells sit at $F10A.. — well below the C-BIOS sysvar/primitive area
+; (RDPRIM/WRPRIM/CLPRIM $F380+ and the C-BIOS stack), so there is no collision.
+SUB_INT_RAM     equ     $F10A   ; the copied trampoline stub (<= 64 B; executes from RAM)
+INT_MAIN_PRIM   equ     $F14A   ; page-0 primary field of the MAIN (BIOS) slot (=0)
+INT_SUB_PRIM    equ     $F14B   ; page-0 primary field of the sub-ROM slot (=3, slot 3)
+INT_SUB_SUBSL   equ     $F14C   ; page-0 subslot  field of the sub-ROM slot (=2, i.e. 3-2)
+SUB_INT_DELTA   equ     $F14D   ; self-test tenant result: JIFFY ticks observed under EI (1)
+JIFFY           equ     $FC9E   ; MSX software clock, bumped by the timer ISR (MSX2 TH work area)
 ; Dispatch ABI (mirror of sub/equates.inc — the append-only page-0 entry table).
 ; IX = SUBROM_ENTRY_BASE_P0 + 3*index selects a tenant; never renumber an index.
 ; IFNDEF-guarded: sub.asm includes BOTH this and sub/equates.inc (which defines
@@ -1090,6 +1108,10 @@ SUBROM_IDX_TOKENISE  equ 1      ; the WHOLE tokeniser tenant (sub/tokenise.inc +
                                 ; in-slot callee of the co-located loop)
 SUBROM_IDX_DETOK     equ 2      ; the detokeniser core (wave 3; sub/detok.asm). The
                                 ; main-ROM stub is basic/list.asm `detok`.
+SUBROM_IDX_INTTEST   equ 3      ; the interrupt self-test tenant (trampoline slice;
+                                ; sub/sub.asm sub_int_selftest). Runs EI, spins > 1
+                                ; frame, returns the JIFFY delta in SUB_INT_DELTA —
+                                ; the subrom-inttest gate asserts it is >= 1.
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

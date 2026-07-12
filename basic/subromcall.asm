@@ -76,3 +76,103 @@ subrom_absent_error:
                 jp      print_string
 err_subrom_absent:
                 db      "illegal function call",13,10,0
+
+; ===========================================================================
+; Interrupt trampoline — install + template (docs/spec-basic-subrom-trampoline.md)
+; ===========================================================================
+; Lets a page-0 sub-ROM tenant run EI. While a page-0 tenant runs, CALSLT has
+; switched slot-0 page 0 (BIOS + the real $0038 ISR) OUT and mapped the sub-ROM
+; in, so the CPU's $0038 vector reads sub-ROM bytes — an interrupt there would
+; crash. The sub-ROM therefore carries its OWN $0038 (`jp SUB_INT_RAM`) pointing
+; at a RAM-resident stub that maps the BIOS back into page 0, `call $0038`s the
+; real ISR, maps the sub-ROM back, and RETIs. The stub lives in RAM (page 3,
+; always mapped) so the page-0 slot write never pages out its own next instruction
+; (spec §1.2). A tenant opts in simply by running EI after entry and DI before ret;
+; short tenants (ping/tokenise/detok) keep running fully-DI and are unaffected.
+;
+; CANONICAL MECHANISM. A RAM-resident inter-slot caller is exactly what the MSX
+; BIOS itself installs: RDPRIM $F380 / WRPRIM $F385 / CLPRIM $F38C are copied into
+; RAM at boot (C-BIOS main.asm) precisely so the $A8-writing code does not page
+; itself out. So this stub is the STANDARD technique, not a novel one. We do NOT
+; route through CLPRIM, though: CLPRIM restores the caller's slot with interrupts
+; in the CALLER's state, and our target — the real ISR — ends EI/RETI, so a
+; CLPRIM tail would run its slot-restore interrupts-live (an IRQ landing just after
+; page 0 flips back to sub-ROM re-enters $0038). Our stub adds the explicit `di`
+; before the switch-back that CLPRIM lacks — the adaptation an interrupt target
+; needs. So: CLPRIM is the precedent, this is CLPRIM + an interrupt-safe DI guard.
+;
+; SOURCES (allowed): $0038 maskable-interrupt vector + CLPRIM $F38C RAM inter-slot
+; primitive (published MSX contracts — CALLed/cited, never read/disassembled,
+; exactly as the disk ROM calls BIOS entries); $A8 primary + $FFFF secondary slot
+; registers — MSX2 TH slot architecture; the host-adaptive page-0 primary switch
+; mirrors our own disk/init.asm page0_ram_in. No C-BIOS code is read or relocated
+; (firewall §3g / cbios-repack-provenance.md). Own-design divergence (the DI-guarded
+; adaptation) logged in sub/PROVENANCE.md.
+
+; sub_int_install: copy the trampoline template into RAM and record the two slot
+; configs. Called from init_ext_roms (basic/initext.asm) after the CD scan, under
+; the boot DI, only when a sub-ROM was found. Clobbers AF/BC/DE/HL.
+sub_int_install:
+                ld      a,(SUBSLOT_OK)
+                or      a
+                ret     z                   ; no sub-ROM -> no trampoline to install
+                ld      hl,sub_int_template
+                ld      de,SUB_INT_RAM
+                ld      bc,sub_int_template_end - sub_int_template
+                ldir                        ; copy the stub into page-3 RAM
+                ; MAIN page-0 primary field (page 0 is the BIOS right now).
+                in      a,(PSLTREG)
+                and     %00000011
+                ld      (INT_MAIN_PRIM),a
+                ; SUB page-0 primary + subslot fields, from the recorded slot id
+                ; (bit7 exp | %ss bits3-2 | %pp bits1-0).
+                ld      a,(SUBSLOT)
+                ld      c,a
+                and     %00000011           ; sub primary  -> page-0 primary field (3)
+                ld      (INT_SUB_PRIM),a
+                ld      a,c
+                rrca
+                rrca
+                and     %00000011           ; sub secondary -> page-0 subslot field (2)
+                ld      (INT_SUB_SUBSL),a
+                ret
+
+; sub_int_template: the RAM trampoline, copied verbatim to SUB_INT_RAM. Entered
+; from the sub-ROM $0038 with IFF already cleared by the CPU. POSITION-INDEPENDENT
+; — every memory reference is absolute ($A8/$FFFF/$0038 and the fixed INT_* cells),
+; no internal branch — so the flat copy runs correctly at its RAM address. Only A
+; and C are touched before the ISR call (the real ISR saves/restores the rest, as
+; any transparent maskable handler must), so preserving AF/BC is sufficient.
+sub_int_template:
+                push    af
+                push    bc
+                ; --- page 0: sub-ROM -> MAIN (BIOS); primary field only (main
+                ;     slot is unexpanded, so no page-0 subslot to set) ---
+                in      a,(PSLTREG)
+                and     %11111100
+                ld      c,a
+                ld      a,(INT_MAIN_PRIM)
+                or      c
+                out     (PSLTREG),a
+                ; page 0 now = BIOS; $0038 reads the real `JP int_h`.
+                call    $0038               ; VDP ack, JIFFY++, H.TIMI/H.KEYI hooks
+                di                          ; the ISR EI'd on the way out; guard the switch-back
+                ; --- page 0: MAIN -> sub-ROM (primary, then subslot) ---
+                in      a,(PSLTREG)
+                and     %11111100
+                ld      c,a
+                ld      a,(INT_SUB_PRIM)
+                or      c
+                out     (PSLTREG),a
+                ld      a,($FFFF)           ; slot-3 secondary reg (reads inverted)
+                cpl                         ; -> live value
+                and     %11111100
+                ld      c,a
+                ld      a,(INT_SUB_SUBSL)
+                or      c
+                ld      ($FFFF),a
+                pop     bc
+                pop     af
+                ei
+                reti                        ; resume the tenant, interrupts live
+sub_int_template_end:

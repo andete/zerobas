@@ -74,6 +74,40 @@ Allowed sources (same master list as [`../README.md`](../README.md)):
   assert (`../tools/check_kwtable_identity.py`, run by `make basic-reloc`) guards
   against drift. No stock-ROM bytes involved.
 
+- **Interrupt trampoline — the sub-ROM's own `$0038` (trampoline slice).** *Own
+  design.* Lets a page-0 tenant run interrupt-live: the sub-ROM reserves the
+  maskable-interrupt vector `$0038` (`jp SUB_INT_RAM`, [`sub.asm`](sub.asm)); the
+  RAM-resident stub it targets ([`../basic/subromcall.asm`](../basic/subromcall.asm)
+  `sub_int_template`, copied to RAM at boot by `sub_int_install`) maps the BIOS
+  back into page 0, `call $0038`s the real ISR, maps the sub-ROM back, and RETIs.
+  **A RAM-resident inter-slot caller is the canonical BIOS mechanism**, not a novel
+  one: the MSX BIOS installs `RDPRIM`/`WRPRIM`/`CLPRIM` at `$F380`/`$F385`/`$F38C`
+  in RAM at boot (C-BIOS copies `m_rdprim..m_prim_end` there,
+  [`slot.asm`](../../cbios/src/slot.asm)/[`main.asm`](../../cbios/src/main.asm))
+  for exactly this self-paging reason. We do **not** route through `CLPRIM`: it
+  restores the caller's slot with interrupts in the *caller's* state, and our
+  target — the real ISR — ends `EI`/`RETI`, so a `CLPRIM` tail would run its
+  slot-restore interrupts-live (an IRQ landing just after page 0 flips back to
+  sub-ROM re-enters `$0038`). Our stub adds the explicit `di` before the switch-back
+  that `CLPRIM` lacks — i.e. it is `CLPRIM` **plus an interrupt-safe DI guard**.
+  *Sources (allowed):* the `$0038` maskable-interrupt vector and `CLPRIM $F38C` are
+  **published contract addresses** — CALLed/cited, never read or disassembled,
+  exactly as the disk ROM calls BIOS entries; the `$A8` primary / `$FFFF` secondary
+  slot registers and the host-adaptive page-0 primary switch follow MSX2 TH slot
+  architecture and mirror our own [`../disk/init.asm`](../disk/init.asm)
+  `page0_ram_in`. No C-BIOS code is read or relocated. The stub lives in RAM (page
+  3, always mapped) so the page-0 slot write never pages out its own next
+  instruction. `SUB_INT_RAM` +
+  `INT_MAIN_PRIM`/`INT_SUB_PRIM`/`INT_SUB_SUBSL` + `SUB_INT_DELTA` are *own-choice
+  free-RAM* cells in the same repack-only window (`$F10A..$F14D`, below `DRVA_DPB`
+  $F195). **Host assumption:** the main page-0 slot is unexpanded (slot 0 on the
+  merged machine), so only its `$A8` primary field is toggled — the same
+  single-RAM-slot simplification `page0_ram_in` already relies on.
+- **`sub_int_selftest` (page-0 tenant index 3).** *Own design.* A standing
+  self-check that the page-0 island is interrupt-live: reads `JIFFY` ($FC9E,
+  published MSX2 TH work area), EI's, spins past one 50/60 Hz frame, and stores the
+  `JIFFY` delta in `SUB_INT_DELTA` for the `subrom-inttest` gate to assert `>= 1`.
+
 ## Own-design divergences from real MSX (spec §6)
 
 - **(a) An MSX2-style sub-ROM on an MSX1-class machine.** Faithful in *mechanism*
@@ -83,3 +117,8 @@ Allowed sources (same master list as [`../README.md`](../README.md)):
   session on) rather than the main ROM. Faithful in *mechanism*; a documented
   divergence in *placement* — real MSX kept e.g. SIN/COS in the main ROM. Accepted
   under the sub-ROM framing (spec §6 / decision §7 Q3).
+- **(c) An own-design sub-ROM interrupt trampoline.** Real MSX2 sub-ROMs carry an
+  equivalent (a valid `$0038` entry that services the interrupt in the main slot);
+  ours is reconstructed from the MSX2 TH Ch.5 mechanism + our own `page0_ram_in`,
+  with no stock code read. Faithful in *mechanism*; the RAM-stub placement + the
+  unexpanded-main-slot simplification are documented own-design choices.

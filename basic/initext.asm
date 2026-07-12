@@ -86,6 +86,10 @@ ier_pnext:
                 ld      (SCAN_PRIM),a
                 jr      ier_ploop
 ier_done:
+    IF ROM_BASE < $4000
+                call    sub_int_install     ; install the page-0 EI trampoline if a
+                                            ; sub-ROM was recorded (subrom trampoline)
+    ENDIF
                 ei
                 ret
 

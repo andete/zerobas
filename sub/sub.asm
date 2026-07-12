@@ -75,6 +75,9 @@ sub_p0_table:
                 jp      dtk_tenant              ; index 2 (SUBROM_IDX_DETOK): the LIST /
                                                 ;   ASCII-SAVE detokeniser core (wave 3);
                                                 ;   fills DETOKBUF, resident side drains it.
+                jp      sub_int_selftest        ; index 3 (SUBROM_IDX_INTTEST): the interrupt
+                                                ;   self-test — runs EI, verifies the $0038
+                                                ;   trampoline serviced the timer (JIFFY++).
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $0010 mapped slot 3-2 into PAGE 0 and that page-3 RAM is
@@ -85,6 +88,43 @@ sub_p0_table:
 sub_p0_ping:
                 ld      a,SUB_PING_P0
                 ld      (SUB_PING),a
+                ret
+
+; --- $0038 interrupt trampoline entry (subrom trampoline slice) ------------
+; The maskable-interrupt vector for the page-0 island. While a page-0 tenant runs
+; EI, an IRQ lands here with page 0 = sub-ROM; jump to the RAM-resident stub, which
+; maps the BIOS back into page 0, runs the real ISR, and returns (see
+; basic/subromcall.asm sub_int_template, docs/spec-basic-subrom-trampoline.md). One
+; instruction, executed BEFORE any slot switch, so it never pages out its own
+; continuation. SUB_INT_RAM is a fixed RAM address, so this `jp` is byte-identical
+; every build and needs no relocation. Reserving $0038 costs 3 bytes of page-0 body.
+    IF $ > $0038
+                db      SUB_P0_OVERRAN_0038__ENTRY_TABLE_OR_PING_TOO_BIG
+    ENDIF
+                ds      $0038 - $, $FF          ; pad the $001x tenants gap up to the vector
+                jp      SUB_INT_RAM             ; $0038: -> the RAM trampoline
+
+; --- Interrupt self-test tenant (index 3; the subrom-inttest gate) ---------
+; A standing self-check that this page-0 island is interrupt-live. Entered under DI
+; by CALSLT (spec §2.2 opt-in = EI after entry, DI before ret): read JIFFY, EI, spin
+; well past one 50/60 Hz frame (~1.7 M cycles), DI, store the JIFFY delta in
+; SUB_INT_DELTA. With the trampoline installed the timer ISR runs through the
+; sub-ROM $0038 -> RAM stub, so the delta is >= 1; with it absent (or if the tenant
+; stayed DI) it is 0. A byte delta suffices (~24-28 ticks < 256).
+sub_int_selftest:
+                ld      a,(JIFFY)               ; JIFFY low byte before
+                ld      b,a
+                ei
+                ld      hl,0
+sis_spin:
+                dec     hl                      ; 0 -> 65536 iters (~1.7 M cycles) >> one frame
+                ld      a,h
+                or      l
+                jr      nz,sis_spin
+                di
+                ld      a,(JIFFY)               ; JIFFY low byte after
+                sub     b                       ; delta (mod 256; >= 1 if the timer ticked)
+                ld      (SUB_INT_DELTA),a
                 ret
 
 ; --- Page-0 tenants -------------------------------------------------------
