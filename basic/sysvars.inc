@@ -1127,6 +1127,17 @@ LHS_VARTYPE     equ     $F152   ; ex_let (interp.asm): the LHS variable's resolv
                                 ; overwrites the GLOBAL (VARTYPE), so a cross-type
                                 ; assignment (A%=A#) must read this latched copy for
                                 ; the var_store_fac target, not the clobbered global (1)
+; --- Math float pack, slice F3 S3b RAM (repack build only) ------------------
+; docs/spec-basic-float-core.md §11.1. The per-letter DEFtbl: a 26-byte map
+; (index name0-'A', A..Z) holding the resolved default type of an UNSUFFIXED
+; name of that first letter -- 2 int / 4 single / 8 double / 1 string
+; (DEFTBL_STR). Written by DEFINT/DEFSNG/DEFDBL/DEFSTR ranges (ex_def_type,
+; usr.asm); consulted at every reference by var_name_key (numeric default type)
+; and var_str_type (string vs numeric). Reset to all-8 (double) by clear_vars
+; at INIT/RUN. Own-choice free RAM, the $F153.. tail below DRVA_DPB ($F195).
+DEFTBL          equ     $F153   ; per-letter default-type map, A..Z (26)
+DEFTBL_STR      equ     1       ; sentinel value: an unsuffixed name is a STRING var
+                                ; (not a numeric width; distinct from 2/4/8)
 JIFFY           equ     $FC9E   ; MSX software clock, bumped by the timer ISR (MSX2 TH work area)
 ; Dispatch ABI (mirror of sub/equates.inc — the append-only page-0 entry table).
 ; IX = SUBROM_ENTRY_BASE_P0 + 3*index selects a tenant; never renumber an index.

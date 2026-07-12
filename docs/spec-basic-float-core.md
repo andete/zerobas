@@ -439,6 +439,56 @@ STORED program with a float literal broke (fixed with gated +4/+8 strides). RAM
 cells `VARTYPE`/`VS_TARGET_TYPE`/`VS_INT_VAL`/`LHS_VARTYPE` at $F14E–$F152 (free
 window below DRVA_DPB $F195). Lean `basic.rom` byte-identical.
 
+**S3b SHIPPED 2026-07-12** (`DEFINT`/`DEFSNG`/`DEFDBL`/`DEFSTR` — the last F3
+half). The mnemonics are NOT keyword tokens (only `DEF` is), so after the `DEF`
+token they arrive as plain upcased ASCII; `ex_def_type` (basic/usr.asm) parses
+`INT`/`SNG`/`DBL`/`STR` + a comma-list of `letter`/`letter-letter` range items
+into a 26-byte `DEFTBL` ($F153, sysvars.inc), reset to all-double by
+`clear_vars` at INIT/RUN. `var_name_key` (numeric default) and `var_str_type`
+(DEFSTR → the unsuffixed name selects STRTAB) consult it at every reference; an
+explicit `%`/`!`/`#`/`$` suffix always wins. All 14 spec §11.1 cases pinned in
+the vars probe (now 58 cases), incl. the orphan-on-redeclare and DEFSTR-numeric
+Type-mismatch contracts. Gate: `make float-acceptance` (vars half). Lean
+`basic.rom` byte-identical.
+
+The DEFtbl "unsuffixed name → default type" rule lives in ONE place,
+`deftbl_lookup` (vars.asm), shared by `var_name_key`'s no-suffix path,
+`var_str_type`, and the single-letter `var_get`/`var_set` shims.
+
+Three bugs were fixed before ship; the matrix passed each time until the case
+that exposed them was added — the F1/F2/S3a "differential + review beats the
+happy-path matrix" lesson again:
+- **The range-fill** loaded its count from `D` (range-end) AFTER `ld de,DEFTBL`
+  had already clobbered `D` → a garbage ~177-byte fill corrupting the $F1xx
+  sysvar area. Caught by the differential (`def.int.range.out`: D outside `A-C`
+  must stay double). Now the count is computed before the address.
+- **The FOR/NEXT + READ shims** (`var_get`/`var_set`) hardcoded type-8, correct
+  under S3a's "unsuffixed ≡ double" invariant but WRONG once S3b made unsuffixed
+  references resolve via the DEFtbl: a `DEFINT` loop/READ variable was stored as
+  double yet read back as an int (a never-written `var_find_typed` (name,type)
+  entry) = 0 — silent because the loop iterates self-consistently. Caught by the
+  Fable review (no probe combined DEF with FOR/READ); fixed by routing the shims
+  through `deftbl_lookup`. Pinned by `reg.S3b.fornext_defint{,_sum}` and
+  `reg.S3b.read_defint`.
+- **`var_str_type`** became letter-keyed for the DEFtbl default, but
+  `ex_mid_stmt` calls it on the RAW target, so a non-letter (a `MID$` string
+  LITERAL target) indexed the DEFtbl out of range. Fixed with an `is_letter`
+  guard (restores the pre-S3b totality). Pinned by `reg.S3b.mid_literal_target`.
+
+Two DIVERGENCES the review surfaced are left as-is because they are the SAME
+pre-existing behaviour as an explicit `$` string variable in the same context,
+not new to S3b (verified live: `A$="HI":B=A$+1` already prints ` 1 `, and
+`VARPTR(A$)` already allocates a phantom numeric entry): a DEFSTR-defaulted name
+used in a NUMERIC expression evaluates as 0 instead of `Type mismatch`, and
+`VARPTR` of one allocates a phantom entry. Both are the "string variable in a
+numeric/VARPTR context" limitation; closing it (a real Type-mismatch in
+expression context) is a separate cross-cutting change, out of F3 scope.
+
+The probe also grew a length-scaled Enter gap: openMSX types a ~45-char line
+over ~8 emulated seconds, so the VARPTR-compare cases need the Enter fired later
+than the 3 s default or it is swallowed mid-type (a latent flake that only
+surfaced when this rebuild shifted timing).
+
 Typed numeric variables. Captured via `A…=<expr>:PRINT"[";A…;"]"` on the
 reference; span = the printed value, tail = the error surface. Storage model =
 **variable-width entries** (user pick 2026-07-12, the D-G heap-aligned option):

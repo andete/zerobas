@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
 """Float VARIABLES probe — characterise, then differentially prove, MSX-BASIC
-TYPED numeric variables (Phase-3 float pack F3 S3a;
-docs/spec-basic-float-core.md §11.1/§11.2/§11.4). DEF statements
-(DEFINT/DEFSNG/DEFDBL/DEFSTR) are a SEPARATE later slice (S3b) — no DEF cases
-here.
+TYPED numeric variables (Phase-3 float pack F3 S3a + S3b;
+docs/spec-basic-float-core.md §11.1/§11.2/§11.4). S3b adds the DEF statements
+(DEFINT/DEFSNG/DEFDBL/DEFSTR) at the end of the matrix: they set a letter's
+default type, consulted at every unsuffixed reference (an explicit suffix still
+wins), with an orphan-on-redeclare case and the DEFSTR-numeric Type mismatch.
 
 Each case types one or more `:`-separated statements ending in
 `PRINT"[";<vars>;"]"` (or, for the Type-mismatch cases, a bare assignment that
@@ -192,18 +193,79 @@ CASES = [
     # bytes) to reach ELSE -- exercises tok_skip identically without needing a
     # stored program.
     ("reg.C.if_skip_over_float", 'IF 0 THEN A=1.5 ELSE PRINT"[";9;"]"', "value", " 9 "),
+
+    # === F3 S3b: DEFINT / DEFSNG / DEFDBL / DEFSTR (§11.1) ===================
+    # DEF<type> sets the DEFAULT resolved type for an UNSUFFIXED name whose
+    # first letter falls in the given range(s). The mnemonics are NOT keyword
+    # tokens (only "DEF" is), so after the DEF token they arrive as plain
+    # upcased ASCII ("INT"/"SNG"/"DBL"/"STR"), parsed by ex_def_type
+    # (basic/usr.asm) into a 26-byte per-letter DEFTBL (sysvars.inc) that
+    # var_name_key / var_str_type consult at every reference.
+    # --- single-letter default override, one per type -----------------------
+    ("def.int.basic",  'DEFINT A:A=1.9:PRINT"[";A;"]"',            "value", " 1 "),
+    ("def.sng.basic",  'DEFSNG A:A=1/3:PRINT"[";A;"]"',            "value", " .333333 "),
+    ("def.dbl.basic",  'DEFDBL A:A=1/3:PRINT"[";A;"]"',            "value", " .33333333333333 "),
+    ("def.str.basic",  'DEFSTR S:S="HI":PRINT"[";S;"]"',           "value", "HI"),
+    # --- letter RANGE: an in-range first letter takes the type; out-of-range
+    # keeps the double default (the two spec §11.1 cases verbatim) ------------
+    ("def.int.range.in",  'DEFINT A-C:B=1.9:PRINT"[";B;"]"',       "value", " 1 "),
+    ("def.int.range.out", 'DEFINT A-C:D=1.9:PRINT"[";D;"]"',       "value", " 1.9 "),
+    # --- comma-separated item list ------------------------------------------
+    ("def.int.list", 'DEFINT A,C:A=1.9:C=2.9:PRINT"[";A;C;"]"',    "value", " 1  2 "),
+    # --- an EXPLICIT suffix always beats the DEF default (A# stays double
+    # even though DEFINT A made the unsuffixed A an int) ---------------------
+    ("def.suffix_overrides", 'DEFINT A:A#=1.5:PRINT"[";A#;"]"',    "value", " 1.5 "),
+    # --- a DEFSTR unsuffixed name IS the same variable as A$ (one STRTAB
+    # slot, keyed (name,0)) --------------------------------------------------
+    ("def.str.alias_dollar", 'DEFSTR S:S$="X":PRINT"[";S;"]"',     "value", "X"),
+    # --- the table is consulted at EACH reference: redeclaring a letter's
+    # type ORPHANS any value held under the old type (§11.1 verbatim) --------
+    ("def.orphan", 'A=7:DEFINT A:PRINT"[";A;"]"',                  "value", " 0 "),
+    # --- the LAST DEF for a letter wins -------------------------------------
+    ("def.redeclare_wins", 'DEFINT A:DEFDBL A:A=1/3:PRINT"[";A;"]"', "value", " .33333333333333 "),
+    # --- DEFSTR then a NUMERIC RHS on the unsuffixed name -> Type mismatch,
+    # the assignment aborts before storing (D-2 abort shape) -----------------
+    ("def.str.numeric_rhs", 'DEFSTR S:S=5:PRINT"[";S;"]"',         "abort", None),
+    # --- a malformed DEF mnemonic is a syntax error (aborts) ----------------
+    ("def.bad.mnemonic", 'DEFZ A:PRINT"[";1;"]"',                  "abort", None),
+
+    # === S3b Fable-review regressions (found 2026-07-12; each FAILED pre-fix) =
+    # R1 (HIGH): the single-letter FOR/NEXT + READ shims (var_get/var_set)
+    # hardcoded type-8, but S3b made unsuffixed references resolve via the
+    # DEFtbl -- so a DEFINT loop/READ variable was STORED as double yet READ
+    # BACK as int (a never-written int entry) = 0. Fixed by routing the shims
+    # through deftbl_lookup so the stored and referenced types agree. STORED
+    # (RUN) so the re-entrant NEXT resumes (see fornext.default_double).
+    ("reg.S3b.fornext_defint",
+     'DEFINT I:FOR I=1 TO 3:NEXT:PRINT"[";I;"]"',                 "stored", " 4 "),
+    ("reg.S3b.fornext_defint_sum",
+     'DEFINT I:A%=0:FOR I=1 TO 3:A%=A%+I:NEXT:PRINT"[";A%;"]"',   "stored", " 6 "),
+    ("reg.S3b.read_defint",
+     'DEFINT X:READ X:PRINT"[";X;"]":DATA 42',                    "stored", " 42 "),
+    # R2 (robustness): var_str_type is now letter-keyed for the DEFtbl default;
+    # ex_mid_stmt calls it on the RAW target, so a non-letter target (a MID$
+    # string LITERAL) must reach a deterministic error, not a wild out-of-range
+    # DEFtbl read -- guarded with is_letter.
+    ("reg.S3b.mid_literal_target", 'MID$("AB",1)="X"',            "abort", None),
 ]
 
 
-def run_line(machine, line, base=8.0, tail=8.0, timeout=120):
+def run_line(machine, line, base=8.0, tail=8.0, gap=3.0, timeout=120):
     """Type one direct-mode line (+ separately-timed Enter), return the SCREEN 0
-    name table as one raw row-major string of length NLEN."""
+    name table as one raw row-major string of length NLEN.
+
+    `gap` is the emulated-seconds delay from the line-injection to the Enter:
+    openMSX types the source char-by-char over emulated time, so the Enter must
+    fire only AFTER the whole line has landed. The default 3 s covers the short
+    majority; a ~45-char line (the VARPTR-compare cases) takes ~8 s to type, so
+    the caller passes a wider gap for those or the Enter is swallowed mid-type
+    (the line echoes fully but never executes)."""
     out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="floatvars_")
     os.close(out_fd)
     cmd = [sys.executable, OMSX_RUN, "--machine", machine,
            "--type", line, "--type-delay", str(base),
-           "--type", "\r", "--type-delay", str(base + 3),
-           "--time", str(base + 3 + tail),
+           "--type", "\r", "--type-delay", str(base + gap),
+           "--time", str(base + gap + tail),
            "--mem", f"VRAM:0x0000:{NLEN}",
            "--out", out_path, "--timeout", str(timeout)]
     subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -343,11 +405,20 @@ def main() -> int:
         PRINT, so its echoed '[' must not be misread as output -- result_span_
         after_echo restricts the search to rows after the echo, at the cost of
         needing the echo row to be findable (so those cases are kept <=40
-        cols)."""
+        cols).
+
+        Timing: a line that wraps past 40 columns (the VARPTR-compare cases,
+        ~45 chars) takes ~8 emulated seconds for openMSX to type char-by-char,
+        so the Enter must fire on a WIDER gap than the 3 s default or it is
+        swallowed mid-type -- the line echoes fully but never executes, and the
+        capture reads only the echoed source (a false FAIL that survived only on
+        timing luck; it flipped when a rebuild shifted boot timing by a hair).
+        The short majority keep the fast default."""
+        g = 11.0 if len(line) > 40 else 3.0
         if kind == "stored":
             raw = run_stored(machine, line)
             return result_span(raw), None
-        raw = run_line(machine, line)
+        raw = run_line(machine, line, gap=g)
         if kind == "value":
             return result_span(raw), screen_tail(raw, line)
         return result_span_after_echo(raw, line), screen_tail(raw, line)

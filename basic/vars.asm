@@ -95,8 +95,14 @@ vnk_suffix:
                 jr      z,vnk_hash
                 cp      '$'
                 jr      z,vnk_dollar
-                ld      a,8                 ; unsuffixed numeric -> default DOUBLE
-                ld      (VARTYPE),a         ; (S3a hardcodes this; DEFtbl is S3b)
+                ; No suffix (S3b): the resolved type is the DEFtbl default for
+                ; name0 (B, set at entry and preserved through the name walk) --
+                ; DEFINT/SNG/DBL/STR may have overridden the double default.
+                ; deftbl_lookup preserves BC/DE/HL, so the key + cursor survive.
+                call    deftbl_lookup       ; A = DEFtbl default for name0 (B)
+                ld      (VARTYPE),a         ; a DEFSTR letter yields 1 here, harmless:
+                                            ; the numeric path is never entered for a
+                                            ; name var_str_type routed to STRTAB
                 ret                         ; no suffix -> HL NOT advanced (unchanged)
 vnk_pct:
                 ld      a,2
@@ -135,12 +141,23 @@ vnk_eat:
 
 ; --- var_str_type: does the name at (HL) carry a `$` suffix? -----------------
 ; in:  HL = cursor at the first name char (a letter). HL is NOT advanced.
-; out: A = 1 if a `$` suffix follows the identifier (string variable), else 0.
-;      CF = the A==1 condition is also reflected (set iff string). Clobbers A.
-; Walks the identifier (letters/digits) to the first non-identifier char and
-; tests it for `$`. Used by LET / PRINT / the factor layer to choose the string
-; path before delegating the real advance to var_name_key.
+; out: A = 1 if the name is a string variable, else 0. CF = the A==1 condition
+;      is also reflected (set iff string). Clobbers A (repack build additionally
+;      uses B/DE as scratch for the DEFtbl lookup -- no caller relies on those
+;      across this call: each follows with eval() or var_name_key, which reset
+;      BC/DE).
+; Walks the identifier (letters/digits) to the first non-identifier char. A name
+; is a string variable if it carries a `$` suffix OR (repack, S3b) it is
+; unsuffixed and its first letter's DEFtbl default is DEFTBL_STR (DEFSTR). An
+; explicit `% ! #` suffix is always numeric. Used by LET / PRINT / the factor
+; layer to choose the string path before delegating the real advance to
+; var_name_key.
 var_str_type:
+    IF ROM_BASE < $4000
+                ld      a,(hl)              ; F3 S3b: capture name0 for the DEFtbl
+                call    upcase              ; default lookup below (the walk preserves
+                ld      b,a                 ; B); repack-only scratch use of B/DE
+    ENDIF
                 push    hl
 vst_walk:
                 ld      a,(hl)
@@ -151,6 +168,24 @@ vst_walk:
 vst_suffix:
                 cp      '$'
                 jr      z,vst_yes
+    IF ROM_BASE < $4000
+                cp      '%'                 ; an EXPLICIT numeric suffix is never a string,
+                jr      z,vst_no            ; whatever DEFSTR may say for this letter
+                cp      '!'
+                jr      z,vst_no
+                cp      '#'
+                jr      z,vst_no
+                ld      a,b                 ; no suffix -> consult the DEFtbl default
+                call    is_letter           ; ...but only for a real name: MID$ literal
+                jr      nc,vst_no           ; targets (MID$("AB",1)=..) and other non-
+                                            ; letters reach here unguarded, and a non-
+                                            ; letter name0 is never a string variable --
+                                            ; guard keeps the DEFtbl index in range
+                call    deftbl_lookup       ; A = DEFtbl default for name0 (B)
+                cp      DEFTBL_STR          ; (DEFSTR makes an unsuffixed name a string)
+                jr      z,vst_yes
+    ENDIF
+vst_no:
                 pop     hl
                 xor     a                   ; not a string (A=0, CF clear)
                 ret
@@ -493,6 +528,29 @@ vsf_wb_int:
                 inc     hl
                 ld      (hl),d
                 ret
+
+; --- deftbl_lookup: resolve a name's DEFtbl default type (S3b) ---------------
+; in:  B = upcased name0 letter ('A'..'Z'). out: A = DEFTBL[B-'A'] (2 int / 4
+; single / 8 double / DEFTBL_STR string). Preserves BC, DE, HL. The one home of
+; the "unsuffixed name -> default type" rule: shared by var_name_key's no-suffix
+; path, var_str_type, and the var_get/var_set single-letter shims (FOR/NEXT,
+; READ), so a DEFINT/SNG/DBL/STR default reaches EVERY reference of a name, not
+; just the multi-char LET path. Callers guarantee B is a letter (var_name_key
+; entry requires one; var_str_type guards with is_letter; the shims upcase a
+; loop/READ variable, always a letter).
+deftbl_lookup:
+                push    hl
+                push    de
+                ld      a,b
+                sub     'A'
+                ld      e,a
+                ld      d,0
+                ld      hl,DEFTBL
+                add     hl,de
+                ld      a,(hl)
+                pop     de
+                pop     hl
+                ret
     ENDIF
 
 ; --- var_get / var_set: single-letter compatibility shims ------------------
@@ -501,18 +559,22 @@ vsf_wb_int:
 ; fully interoperable with multi-character ones. Used by FOR/NEXT and READ, whose
 ; loop/target variables are single-letter. var_set preserves DE (the value).
 ;
-; F3 S3a (repack build): both shims route through the typed store at the
-; unsuffixed default type (double), converting int16<->FAC so the FOR/NEXT loop
-; math and READ's DATA parsing stay plain int16 (D-D: a typed/float loop
-; variable is deferred) while the STORED/PRINTED value is a real double entry,
-; consistent with every other unsuffixed name.
+; F3 S3a/S3b (repack build): both shims route through the typed store at the
+; letter's RESOLVED default type -- S3a hardcoded double; S3b resolves it via
+; deftbl_lookup so DEFINT/SNG/DBL/STR reach FOR/NEXT and READ too. This is
+; load-bearing: every unsuffixed REFERENCE resolves through the DEFtbl, and
+; var_find_typed keys on (name,type), so a loop/READ variable stored under a
+; DIFFERENT type than its references resolve to would read back as an unset 0
+; (the S3b regression the shims must match). The loop math itself stays plain
+; int16 (D-D: a typed/float loop variable is deferred); var_set tags DE as int16
+; (FACTYP=2) so var_store_fac coerces the int value into the resolved type.
 var_get:
                 call    upcase
                 ld      b,a
                 ld      c,0
     IF ROM_BASE < $4000
-                ld      a,8                 ; unsuffixed default type (S3a)
-                jp      var_load_fac        ; FAC/FACTYP=8, DE=int16 fast path (tail call)
+                call    deftbl_lookup       ; A = the letter's resolved default type
+                jp      var_load_fac        ; FAC/FACTYP=type, DE=int16 fast path (tail)
     ELSE
                 jp      var_get_key
     ENDIF
@@ -525,10 +587,10 @@ var_set:
                 ld      (FACTYP),a          ; FOR/NEXT & READ always hand var_set a plain
                                             ; int16 value (D-D: the loop math itself stays
                                             ; int16 in F3) -- tag it so var_store_fac's
-                                            ; double-target coercion widens DE via
-                                            ; widen_int_to instead of misreading FAC
-                ld      a,8                 ; unsuffixed default type (S3a)
-                jp      var_store_fac       ; tail call
+                                            ; target coercion widens DE via widen_int_to
+                                            ; instead of misreading FAC
+                call    deftbl_lookup       ; A = the letter's resolved default type
+                jp      var_store_fac       ; tail call (DE preserved across the lookup)
     ELSE
                 jp      var_set_key
     ENDIF
@@ -642,6 +704,15 @@ ssk_len_ok:
 ; region keeps it tidy; for strings, zeroing each entry's name0 marks it free.
 ; Clobbers A, BC, HL.
 clear_vars:
+    IF ROM_BASE < $4000
+                ld      hl,DEFTBL           ; F3 S3b: reset every letter's default type
+                ld      b,26                ; to DOUBLE (8) -- DEFINT/SNG/DBL/STR are
+                ld      a,8                 ; re-established by re-running their statements
+cv_deftbl:                                  ; (RUN clears here first, then the program's
+                ld      (hl),a              ;  DEF lines run); consulted by var_name_key /
+                inc     hl                  ;  var_str_type at every variable reference
+                djnz    cv_deftbl
+    ENDIF
                 ld      hl,VARTAB
                 ld      bc,VARSLOTS*VARENTSZ
 cv_loop:
