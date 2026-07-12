@@ -23,13 +23,16 @@ this is where the standard comes from). Lifted from the proven `__inj` proc in
 probes/disk/disk_probe_getput.py.
 
 Design (docs/spec-acceptance-harness-rework.md):
-  * KEYBUF is the DEFAULT line driver. Each injected line + CR must fit the
-    40-byte buffer (<=39 source chars). A longer line is expressed as a STORED
-    program: split its `:`-joined statements into numbered body lines with
-    `as_stored()` and pass mode="stored".
-  * write_block->TXTTAB tokenised injection (for a single unsplittable statement
-    >39 chars) is a documented FALLBACK, deferred until a case needs it; the
-    seam is `# TODO: TXTTAB fallback (spec s2.2)` in _tcl().
+  * KEYBUF is the DEFAULT line driver. A line up to MAX_DIRECT (38) source chars
+    injects in one write; a LONGER line is CHUNKED -- written in <=38-char pieces
+    with the submitting CR only on the last, so the ROM line editor accumulates
+    an arbitrarily long line (to ~255 chars) while the 40-byte buffer never
+    overflows. So a long DIRECT line needs no special handling at the call site.
+  * `as_stored()` + mode="stored" is still available to run a `:`-joined line as
+    a multi-line stored program (needed where stored-vs-direct semantics differ,
+    e.g. a re-entrant FOR/NEXT).
+  * The write_block->TXTTAB tokenised-injection fallback (spec s2.2) is therefore
+    UNNEEDED for line length -- chunking covers it -- and remains unbuilt.
 
 The driver draws NO conclusions: it delivers bytes and scrapes the SCREEN 0 name
 table from VRAM, returning one raw 40x24 screen string per case. Span/tail
@@ -113,33 +116,47 @@ def as_stored(line: str) -> list[str]:
     return bodies
 
 
+MAX_BUF = 250  # MSX line-input buffer (BUF/LINBUF) holds ~255 chars incl CR
+
+
 def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
          boot: float, step: float, cap_gap: float,
          reset: tuple[str, ...]) -> str:
     """Build the whole-batch Tcl timeline. Each scheduled action gets its own
-    emulated-time slot spaced by `step`, so the previous line is fully consumed
-    (CHGET drains KEYBUF) and executed before the next __inj resets the buffer."""
-    def inj(t, s):
-        if len(s) > MAX_DIRECT:
-            # TODO: TXTTAB fallback (spec s2.2) -- inject pre-tokenised bytes into
-            # TXTTAB + fix VARTAB/ARYTAB/STREND, RUN. Deferred; no case needs it.
-            raise ValueError(
-                f"REPL line too long for KEYBUF ({len(s)}>{MAX_DIRECT}): {s!r} "
-                f"-- split via as_stored()/mode='stored', or build the TXTTAB "
-                f"fallback (spec s2.2)")
-        return f"after time {t:.1f} {{ __inj {{{s}}} }}"
-
+    emulated-time slot spaced by `step`, so the previous chunk is fully consumed
+    (CHGET drains KEYBUF into the line editor) before the next write resets it."""
     body: list[str] = []
+
+    def emit(t: float, s: str) -> float:
+        """Schedule injection of one CR-terminated line `s` at/after time `t`;
+        return the next free time. A line longer than the 40-byte KEYBUF cap is
+        CHUNKED into <=MAX_DIRECT pieces written with NO CR until the last -- the
+        ROM line editor accumulates them into its own (~255-byte) buffer, so an
+        arbitrarily long DIRECT line works without a tokeniser or TXTTAB. (The
+        TXTTAB tokenised-injection fallback, spec s2.2, is thus still unneeded.)"""
+        if len(s) > MAX_BUF:
+            raise ValueError(f"line exceeds MSX line buffer (~{MAX_BUF}): "
+                             f"{len(s)} chars {s!r}")
+        if len(s) <= MAX_DIRECT:
+            body.append(f'after time {t:.1f} {{ __inj {{{s}}} }}')
+            return t + step
+        chunks = [s[i:i + MAX_DIRECT] for i in range(0, len(s), MAX_DIRECT)]
+        for k, ch in enumerate(chunks):
+            proc = "__inj" if k == len(chunks) - 1 else "__key"  # CR only on last
+            body.append(f'after time {t:.1f} {{ {proc} {{{ch}}} }}')
+            t += step
+        return t
+
     t = boot
     for idx, (mode, lines) in enumerate(cases):
         for r in reset:                       # power-on-clean vars + DEFtbl + screen
-            body.append(inj(t, r)); t += step
+            t = emit(t, r)
         if mode == "stored":
             seq = [f"{10 * (i + 1)} {ln}" for i, ln in enumerate(lines)] + ["RUN"]
         else:
             seq = list(lines)
         for ln in seq:
-            body.append(inj(t, ln)); t += step
+            t = emit(t, ln)
         body.append(f'after time {t:.1f} {{ puts $__f "case.{idx}='
                     f'[__hex_v {SCR_ADDR} {SCR_LEN}]"; flush $__f }}')
         t += cap_gap
@@ -149,11 +166,10 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         f"set __f [open {{{out_path}}} w]\n"
         "proc __hex_v {a l} { binary scan [debug read_block VRAM $a $l] H* h;"
         " return $h }\n"
-        # __inj: write "<line>\r" into KEYBUF, point GETPNT/PUTPNT at it so CHGET
-        # delivers it. Both cursors reset each call -- safe because the per-slot
-        # step guarantees the prior line was already consumed (buffer empty).
-        "proc __inj {s} {\n"
-        "  append s \"\\r\"\n"
+        # __key: write the raw bytes of `s` into KEYBUF and point GETPNT/PUTPNT at
+        # them so CHGET delivers them (no CR). Cursors reset each call -- safe
+        # because the per-slot step guarantees the prior chunk was consumed.
+        "proc __key {s} {\n"
         "  set n [string length $s]\n"
         "  for {set i 0} {$i < $n} {incr i} {\n"
         f"    debug write memory [expr {{{KEYBUF} + $i}}] "
@@ -165,6 +181,9 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         f"  debug write memory {PUTPNT} [expr {{$p & 0xFF}}]\n"
         f"  debug write memory [expr {{{PUTPNT}+1}}] [expr {{($p >> 8) & 0xFF}}]\n"
         "}\n"
+        # __inj: __key plus the submitting CR (appended here so a literal CR byte
+        # never has to survive Tcl brace-quoting).
+        "proc __inj {s} { append s \"\\r\"; __key $s }\n"
         + "\n".join(body) + "\n")
 
 
@@ -299,6 +318,10 @@ _REPRO = [
         ["FOR I=1 TO 3:NEXT", 'PRINT"[";I;"]"'],                     "value", " 4 "),
     ("stored.split", "stored",
         ["A=1:A%=2:A!=3:A#=4", 'PRINT"[";A;A%;A!;A#;"]"'],           "value", " 4  2  3  4 "),
+    # a 44-char DIRECT line (no top-level ':', unsplittable) -> exercises the
+    # chunked KEYBUF injection; 1.5-1.5=0 is false so ELSE runs -> prints [y].
+    ("direct.long", "direct",
+        ['IF 1.5-1.5 THEN PRINT"[n]" ELSE PRINT"[y]"'],             "value", "y"),
 ]
 
 

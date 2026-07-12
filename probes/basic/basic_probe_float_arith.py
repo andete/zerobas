@@ -40,17 +40,10 @@ _sys.path.insert(0, _os.path.join(
     _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib"))
 
 import argparse
-import os
-import re
-import subprocess
-import sys
-import tempfile
 
-OMSX_RUN = os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
-                        "lib", "omsx_run.py")
+import omsx_repl  # typing-free KEYBUF-injection REPL driver (harness rework S2)
+
 REF_MACHINE = "Philips_VG_8020"
-COLS, ROWS = 40, 24
-NLEN = COLS * ROWS
 
 # The F2 matrix. Each entry is an expression E, typed as  print "[";E;"]".
 # Grouped by the contract facet it pins (spec §1 F2, §6 D-C).
@@ -169,74 +162,17 @@ SPAN_ONLY = {
 }
 
 
-def run_line(machine, line, base=8.0, tail=8.0, timeout=120):
-    """Type one direct-mode line (+ separately-timed Enter), return the SCREEN 0
-    name table as one raw row-major string of length NLEN."""
-    out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="floatari_")
-    os.close(out_fd)
-    cmd = [sys.executable, OMSX_RUN, "--machine", machine,
-           "--type", line, "--type-delay", str(base),
-           "--type", "\r", "--type-delay", str(base + 3),
-           "--time", str(base + 3 + tail),
-           "--mem", f"VRAM:0x0000:{NLEN}",
-           "--out", out_path, "--timeout", str(timeout)]
-    subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    cap = ""
-    if os.path.exists(out_path):
-        with open(out_path) as f:
-            cap = f.read()
-        os.unlink(out_path)
-    m = re.search(rf"mem\.VRAM:0x0000:{NLEN}=([0-9a-f]+)", cap)
-    if not m:
-        return None
-    data = bytes.fromhex(m.group(1))
-    return "".join(chr(b) if 32 <= b < 127 else " " for b in data)
+# Delivery via the typing-free KEYBUF driver (omsx_repl.run_case, boot-per-case).
+# All cases are direct-mode; a RAW line that exceeds the KEYBUF cap (the three
+# IF/THEN/ELSE lines, no top-level ':') is delivered by the driver's chunked
+# injection, so it stays direct-mode -- a pure delivery-layer swap from the old
+# matrix-typing run_line. result_span / screen_tail come from omsx_repl.
+def run_line(machine, line):
+    return omsx_repl.run_case(machine, "direct", [line])
 
 
-def result_span(raw):
-    """The printed value: text between the LAST '[' and the following ']'.
-    The echoed source line contains '[' too, but the result's '[' is printed
-    after it. Returns None if the ']' never printed (statement aborted)."""
-    if raw is None:
-        return None
-    i = raw.rfind("[")
-    if i < 0:
-        return None
-    j = raw.find("]", i)
-    if j < 0:
-        return None
-    return raw[i + 1: j]
-
-
-def screen_tail(raw, cmdline):
-    """All rows between the echoed command line and the closing prompt
-    (inclusive of neither), right-stripped, joined with '|'. Pins error
-    messages + abort-vs-continue shape. None if the echo row is not found.
-
-    Machine-agnostic: the reference echoes the line verbatim and closes with
-    'Ok'; zerobas prefixes the echo with its 'zb>' prompt and closes with a
-    bare 'zb>' row — so the echo match is ends-with and both prompt shapes
-    terminate the tail."""
-    if raw is None:
-        return None
-    # rows carry a fixed 2-column left margin on SCREEN 0 — strip both edges;
-    # exact spacing is the SPAN's job, the tail pins text + line structure.
-    rows = [raw[r * COLS:(r + 1) * COLS].strip() for r in range(ROWS)]
-    key = cmdline.strip()
-    idx = None
-    for i, r in enumerate(rows):
-        if r == key or r.endswith(key):
-            idx = i  # keep the LAST occurrence
-    if idx is None:
-        return None
-    out = []
-    for r in rows[idx + 1:]:
-        if r == "Ok" or r == "zb>":
-            break
-        out.append(r)
-    while out and out[-1] == "":
-        out.pop()
-    return "|".join(out)
+result_span = omsx_repl.result_span
+screen_tail = omsx_repl.screen_tail
 
 
 def main() -> int:
