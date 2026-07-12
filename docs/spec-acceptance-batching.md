@@ -92,19 +92,29 @@ flake-free. Three mechanisms, by sub-probe shape:
 All keep a `--boot-per-case` escape hatch; all documented divergences still
 asserted per-machine (STRMAX=64 clamp; MID$ range wording; type-mismatch case).
 
+## Done — `input-acceptance` (2026-07-12, this slice)
+
+`basic_probe_input` is off `omsx_run` matrix typing and onto `omsx_repl`. The
+post-`RUN` INPUT response turned out to need NO new `_tcl` mode: it is just a
+**trailing raw line in a direct-mode case** — the exact shape `basic_probe_inkey`
+already used for its injected key (`[..., 'RUN', response]`). The line editor
+drains the program lines + `RUN` first, so each CR-terminated response lands in
+KEYBUF while the read is blocked; a `?redo` case queues a second response line
+that lands on the re-prompt. Each case is `("direct", prog + ["RUN"] + responses)`.
+
+Batched by default via `run_cases(reset=("NEW","CLS"))` — one boot per machine for
+the whole 8-case matrix (NEW clears the case's INPUT vars, CLS the screen). No case
+wedges the shared boot: console INPUT completes and returns to the `Ok`/`zb>` prompt
+between cases, so the response never races the next case's `NEW` — **verified
+differential-inert**: `--boot-per-case` produces byte-identical captures and
+identical PASS verdicts for all 8 cases. `--boot-per-case` kept as the escape hatch.
+
+Measured: **~2 s** batched / ~6 s boot-per-case (was HEAVY minutes on the
+real-speed matrix-typing path), flake-free. `make input-acceptance` = 8/8.
+
 ## The rest — prioritized by ROI
 
-### 1. `input-acceptance` — stateful, batch with care
-
-`basic_probe_input` types a program, `RUN`s it, then types a *separate* INPUT
-response synchronised to the blocked read. Each case is a small stored program +
-a response; batching means `NEW`+program+`RUN`+response per case in one boot. The
-response injection must still land after the read blocks (the existing timing
-concern), so this is a `run_cases(mode="stored")` variant with an extra
-post-`RUN` injected line, not a plain matrix. Medium effort; validate the
-response never races the next case's `NEW`.
-
-### 2. `diskbasic-acceptance` / `bdos-acceptance` — different mechanism, separate track
+### 1. `diskbasic-acceptance` / `bdos-acceptance` — different mechanism, separate track
 
 These boot per *probe* (not per case) and drive disk `.COM` exercisers / FAT12
 images, not REPL lines. Not an `omsx_repl` target; batching them is a distinct

@@ -4,15 +4,19 @@
 
 """Oracle + differential probe -- console INPUT / LINE INPUT (input slice S3).
 
-Console INPUT / LINE INPUT, per docs/spec-basic-input.md. Like basic_probe_inkey.py
-this DRIVES THE KEYBOARD, but INPUT adds a genuinely new harness wrinkle (spec §6):
-the program is typed and RUN first, and the INPUT *response* is a SEPARATE deliberate
-keystroke burst delivered AFTER the prompt appears -- not batched with the program.
-read_line blocks until Enter, so (as with the INKEY$ poll loop) the exact instant a
-response lands is not timing-critical, only its ORDER after RUN; a re-prompt (?redo)
-case simply queues a second response after the first.
+Console INPUT / LINE INPUT, per docs/spec-basic-input.md. Delivered through the
+typing-free KEYBUF-injection REPL driver (probes/lib/omsx_repl.py), like the
+string/float acceptance halves -- NOT the old omsx_run matrix-typing path, whose
+per-char Enter could land mid-line and garble a program. Each case is a small
+stored program typed as numbered direct-mode lines, then `RUN`, then the INPUT
+*response(s)* injected as trailing raw lines AFTER RUN (spec §6). This is exactly
+the basic_probe_inkey.py shape: read_line blocks until Enter, so a response's
+exact arrival instant is not timing-critical -- only its ORDER after RUN -- and a
+re-prompt (?redo) case simply queues a second response line after the first, which
+lands on the re-prompt while the read is still blocked. The KEYBUF injection means
+no matrix scan, so the old "Enter fires mid-type" garble mode is gone.
 
-Two halves, modelled on basic_probe_inkey.py:
+Two halves, modelled on basic_probe_str_cmp.py:
 
 1. REFERENCE ORACLE (black-box, no disassembly). Runs each case on the real Philips
    VG-8020's built-in MSX-BASIC (no cartridge) and asserts the reference's own screen
@@ -33,73 +37,44 @@ the INPUT, so the result is the LAST bracket in the top-down-scrolling screen du
 (the echoed source line carries the same delimiters earlier / higher). This is the
 extract_bracket trick from basic_probe_str_fn / basic_probe_inkey.
 
+Batched by default: all cases share ONE boot per machine, `("NEW","CLS")` reset
+between cases (NEW clears the case's INPUT variables, CLS the screen so each capture
+holds only its own case). Console INPUT completes and returns to the prompt between
+cases, so no case wedges the shared boot; still, `--boot-per-case` isolates every
+case in its own boot to rule out inter-case leakage / a response racing the next
+case's NEW (the guardrail from docs/spec-acceptance-batching.md).
+
 Clean-room: this only *observes* black-box behaviour (type a program, type a response,
 read the screen). The reference ROM is never read as code. See CONTRIBUTING.md.
 
     python3 probes/basic/basic_probe_input.py
-    python3 probes/basic/basic_probe_input.py --ref-only     # oracle-lock only
+    python3 probes/basic/basic_probe_input.py --ref-only        # oracle-lock only
+    python3 probes/basic/basic_probe_input.py --boot-per-case   # isolation escape hatch
 """
 from __future__ import annotations
 
 import argparse
 import os
 import re
-import subprocess
 import sys
-import tempfile
 from collections import namedtuple
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-OMSX_RUN = os.path.join(REPO, "probes", "lib", "omsx_run.py")
+sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
+import omsx_repl  # noqa: E402  typing-free KEYBUF-injection REPL driver
 
 REF_MACHINE = "Philips_VG_8020"    # reference: built-in MSX-BASIC, no cartridge
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
-COLS, ROWS = 40, 24
-NLEN = COLS * ROWS
 
 
-def _capture(cmd_tail, timeout):
-    """Run omsx_run with the given tail args + a VRAM dump; return the SCREEN 0
-    name table as one raw, row-major string of length NLEN (None on failure)."""
-    out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="input_cap_")
-    os.close(out_fd)
-    cmd = ([sys.executable, OMSX_RUN] + cmd_tail
-           + ["--mem", f"VRAM:0x0000:{NLEN}", "--out", out_path, "--timeout", str(timeout)])
-    subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    cap = ""
-    if os.path.exists(out_path):
-        with open(out_path) as f:
-            cap = f.read()
-        os.unlink(out_path)
-    m = re.search(rf"mem\.VRAM:0x0000:{NLEN}=([0-9a-f]+)", cap)
-    if not m:
-        return None
-    data = bytes.fromhex(m.group(1))
-    return "".join(chr(b) if 32 <= b < 127 else " " for b in data)
-
-
-def run_prog(machine, prog_lines, responses, timeout=200):
-    """Type each program line (each followed by a separately-timed Enter), RUN, then
-    deliver each INPUT `response` (Enter-terminated) as its own keystroke burst AFTER
-    RUN starts. Events are spaced ~3 emulated-seconds apart -- the real-speed
-    reference needs the gap so its keyboard scan finishes a line before the Enter (a
-    tighter gap fires Enter mid-type and garbles the line). Because read_line blocks
-    on Enter, a response's arrival time need only be after the prompt appears -- not
-    synchronised between machines -- and a second response naturally waits for the
-    re-prompt."""
-    tail = ["--machine", machine]
-    t = 8.0
-    for line in prog_lines:
-        tail += ["--type", line, "--type-delay", f"{t}"]; t += 3
-        tail += ["--type", "\r", "--type-delay", f"{t}"]; t += 3
-    tail += ["--type", "RUN", "--type-delay", f"{t}"]; t += 3
-    tail += ["--type", "\r", "--type-delay", f"{t}"]; t += 3
-    for resp in responses:
-        tail += ["--type", resp, "--type-delay", f"{t}"]; t += 3
-        tail += ["--type", "\r", "--type-delay", f"{t}"]; t += 3
-    tail += ["--time", f"{t + 4}"]
-    return _capture(tail, timeout)
+def spec(c):
+    """The omsx_repl direct-mode case for `c`: the numbered program lines, `RUN`,
+    then each INPUT response as a trailing raw line injected after RUN. The line
+    editor consumes the program lines + RUN (and their CRs) in order, so by the
+    time a response is injected RUN is executing and the read is blocked; the
+    response's CR-terminated line lands in KEYBUF and CHGET hands it to INPUT."""
+    return ("direct", list(c.prog) + ["RUN"] + list(c.responses))
 
 
 def extract_bracket(raw):
@@ -148,10 +123,6 @@ CASES = [
 ]
 
 
-def measure(machine, c, timeout):
-    return extract_bracket(run_prog(machine, c.prog, c.responses, timeout=timeout))
-
-
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -162,6 +133,10 @@ def main() -> int:
     ap.add_argument("--only", help="run only cases whose label contains this substring")
     ap.add_argument("--ref-only", action="store_true",
                     help="skip the zerobas side (oracle-lock only)")
+    ap.add_argument("--boot-per-case", dest="boot_per_case", action="store_true",
+                    help="isolate each case in its own boot instead of the default "
+                         "single-boot batch (to rule out inter-case leakage / a "
+                         "response racing the next case's NEW)")
     args = ap.parse_args()
 
     cases = [c for c in CASES if not args.only or args.only in c.label]
@@ -170,11 +145,19 @@ def main() -> int:
         return 1
 
     ok = True
+    batch = not args.boot_per_case
+
+    # One boot per machine drives the whole matrix; NEW clears each case's INPUT
+    # variables, CLS the screen (so each capture holds only its own case's output).
+    specs = [spec(c) for c in cases]
+    ref_raws = omsx_repl.run_cases(args.machine, specs, batch=batch, reset=("NEW", "CLS"))
+    zb_raws = (omsx_repl.run_cases(args.zb_machine, specs, batch=batch, reset=("NEW", "CLS"))
+               if not args.ref_only else [None] * len(specs))
 
     print(f"--- reference oracle lock ({args.machine}, §1 contract) ---")
     ref_captured = {}
-    for c in cases:
-        got = measure(args.machine, c, timeout=220)
+    for c, ref_raw in zip(cases, ref_raws):
+        got = extract_bracket(ref_raw)
         ref_captured[c.label] = got
         good = got == c.expect
         ok = ok and good
@@ -182,8 +165,8 @@ def main() -> int:
 
     if not args.ref_only:
         print(f"\n--- zerobas == reference ({args.zb_machine}) ---")
-        for c in cases:
-            zb = measure(args.zb_machine, c, timeout=200)
+        for c, zb_raw in zip(cases, zb_raws):
+            zb = extract_bracket(zb_raw)
             ref = ref_captured.get(c.label)
             good = ref is not None and zb is not None and zb == ref
             ok = ok and good
