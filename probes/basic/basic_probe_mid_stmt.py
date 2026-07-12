@@ -38,14 +38,13 @@ from __future__ import annotations
 import argparse
 import os
 import re
-import subprocess
 import sys
-import tempfile
 from collections import namedtuple
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-OMSX_RUN = os.path.join(REPO, "probes", "lib", "omsx_run.py")
+sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
+import omsx_repl  # noqa: E402  typing-free KEYBUF-injection REPL driver
 
 REF_MACHINE = "Philips_VG_8020"
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
@@ -66,35 +65,14 @@ def mid_assign(a: bytes, n: int, b: bytes, m: int | None) -> bytes:
     return a[:n - 1] + b[:k] + a[n - 1 + k:]
 
 
-def run_prog(machine, lines, timeout=140):
-    """Type each SHORT direct-mode line (line then a separately-timed Enter) and
-    capture the SCREEN 0 name table as one raw row-major string of length NLEN
-    (None on failure). Short lines are deliberate: a long single line lets the
-    openMSX `type` Enter land mid-typing (the real-speed keyboard scan can't keep
-    up), which silently drops the line; splitting setup/op/print into short lines
-    (A$ persists across direct-mode lines) keeps each Enter after its line."""
-    out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="midstmt_cap_")
-    os.close(out_fd)
-    cmd = [sys.executable, OMSX_RUN, "--machine", machine]
-    t = 6.0
-    for ln in lines:
-        cmd += ["--type", ln, "--type-delay", f"{t}"]
-        t += 2.0
-        cmd += ["--type", "\r", "--type-delay", f"{t}"]
-        t += 2.0
-    cmd += ["--time", f"{t + 2.0}",
-            "--mem", f"VRAM:0x0000:{NLEN}", "--out", out_path, "--timeout", str(timeout)]
-    subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    cap = ""
-    if os.path.exists(out_path):
-        with open(out_path) as f:
-            cap = f.read()
-        os.unlink(out_path)
-    m = re.search(rf"mem\.VRAM:0x0000:{NLEN}=([0-9a-f]+)", cap)
-    if not m:
-        return None
-    data = bytes.fromhex(m.group(1))
-    return "".join(chr(b) if 32 <= b < 127 else " " for b in data)
+def run_prog(machine, lines, **_):
+    """Inject each SHORT direct-mode line via omsx_repl (KEYBUF, typing-free) in
+    one boot and return the SCREEN 0 name table as one raw row-major string of
+    length NLEN (non-print bytes -> space; None on failure). A$ persists across
+    the direct-mode lines. The former matrix-typing split (setup/op/print as
+    separate short lines to dodge a mid-line Enter) is no longer forced by the
+    delivery layer, but is kept as the natural per-statement structure."""
+    return omsx_repl.run_case(machine, "direct", lines)
 
 
 def result(raw):

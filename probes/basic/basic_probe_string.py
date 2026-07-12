@@ -27,13 +27,12 @@ from __future__ import annotations
 import argparse
 import os
 import re
-import subprocess
 import sys
-import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-OMSX_RUN = os.path.join(REPO, "probes", "lib", "omsx_run.py")
+sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
+import omsx_repl  # noqa: E402  typing-free KEYBUF-injection REPL driver
 
 # The repack acceptance target (merged main ROM + zerobas-disk); same machine the
 # repack crunch differential and diskbasic-acceptance-repack boot. $ZEROBAS_BASIC_MACHINE
@@ -75,49 +74,13 @@ CASES = [
     ("INSTR",         'PRINT "[";INSTR("HELLO","LL");"]"',      r"\[\s*3\s*\]"),
 ]
 
-# One case per boot. Typing more than ~2 lines into a single REPL session over the
-# emulated keyboard matrix is inherently flaky: the 3rd+ line of a session either
-# drops its leading keys (`PRINT` -> `INT`, from a typed-Enter landing mid-typing and
-# backing up openMSX's key queue) OR double-registers the first key (`PRINT` ->
-# `PPRINT`). Both are keyboard-matrix races, not ROM bugs, and no `gap` value kills
-# both. The first line of a *fresh* session is reliable, though -- it's the recipe the
-# shipping float_fmt/str_fn gates use -- so we boot once per case. Slower (one boot
-# per case), but every line is a rock-solid "line 1". To avoid the keyboard entirely a future
-# rework could inject pre-tokenised BASIC via `debug write_block` (see probe-inject-idea).
-BATCH = 1
-
-
-def screen(machine, lines, base=6.0, gap=3.0, tail=8.0):
-    """Boot `machine`, type each line (line then a separate Enter), settle, return the
-    40x24 VRAM text as one newline-joined string (None on capture failure).
-
-    `gap` is the emulated-time spacing between successive keyboard events, matching the
-    proven single-line float_fmt/str_fn recipe: openMSX `type` presses keys over
-    emulated time, so a ~26-char line takes over a second to type; scheduling the Enter
-    (a separate `type "\\r"`) 3 s later guarantees it never lands mid-typing. With
-    BATCH=1 there is only ever one line per call, so no cross-line key backlog can
-    build -- the failure mode that made this gate flake. Do NOT batch multiple lines."""
-    cap = tempfile.mkstemp(suffix=".txt", prefix="strfn_")[1]
-    cmd = [sys.executable, OMSX_RUN, "--machine", machine,
-           "--mem", f"VRAM:0x0000:{NLEN}", "--out", cap, "--timeout", "120"]
-    t = base
-    for ln in lines:
-        cmd += ["--type", ln, "--type-delay", f"{t}"]
-        t += gap
-        cmd += ["--type", "\r", "--type-delay", f"{t}"]
-        t += gap
-    cmd += ["--time", f"{t + tail}"]
-    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    txt = open(cap).read() if os.path.exists(cap) else ""
-    if os.path.exists(cap):
-        os.unlink(cap)
-    m = re.search(rf"mem\.VRAM:0x0000:{NLEN}=([0-9a-f]+)", txt)
-    if not m:
+def _rows(raw: str | None) -> str | None:
+    """Reshape an omsx_repl flat SCREEN-0 capture into 24 newline-joined
+    40-column rows (each right-stripped, as the former VRAM scraper produced).
+    None passes through (capture failure)."""
+    if raw is None:
         return None
-    data = bytes.fromhex(m.group(1))
-    return "\n".join(
-        "".join(chr(c) if 32 <= c < 127 else " " for c in data[i * COLS:(i + 1) * COLS]).rstrip()
-        for i in range(ROWS))
+    return "\n".join(raw[i * COLS:(i + 1) * COLS].rstrip() for i in range(ROWS))
 
 
 def main() -> int:
@@ -127,6 +90,9 @@ def main() -> int:
                     help="repack machine (default $ZEROBAS_BASIC_MACHINE or "
                          "C-BIOS_MSX1_EU_REPACK_DISK)")
     ap.add_argument("--only", help="run only cases whose label contains this substring")
+    ap.add_argument("--boot-per-case", dest="boot_per_case", action="store_true",
+                    help="isolate each case in its own boot instead of the default "
+                         "single-boot batch (to rule out inter-case leakage)")
     args = ap.parse_args()
 
     cases = [c for c in CASES if not args.only or args.only in c[0]]
@@ -134,24 +100,26 @@ def main() -> int:
         print(f"no cases match --only {args.only!r}")
         return 1
 
+    # Every case is an independent direct-mode PRINT (a few set A$/B$ first), so
+    # the whole matrix shares ONE boot with a ("NEW","CLS") reset between cases
+    # (NEW drops any string var; CLS clears the screen so each capture holds only
+    # its own case). Typing-free KEYBUF injection -- no keyboard-matrix race, so
+    # the former one-line-per-boot discipline is no longer needed.
+    specs = [("direct", [line]) for _, line, _ in cases]
+    screens = omsx_repl.run_cases(args.machine, specs, batch=not args.boot_per_case,
+                                  reset=("NEW", "CLS"), capture="screen")
+
     ok = True
-    for start in range(0, len(cases), BATCH):
-        batch = cases[start:start + BATCH]
-        scr = screen(args.machine, [ln for _, ln, _ in batch])
-        if scr is None:
-            for label, _, _ in batch:
-                print(f"FAIL  {label:14} <no VRAM capture>")
-            ok = False
-            continue
-        for label, line, pat in batch:
-            good = re.search(pat, scr) is not None
-            ok = ok and good
-            print(f"{'PASS' if good else 'FAIL':5} {label:14} {line}")
-            if not good:
-                print(f"        want /{pat}/  in screen:")
-                for row in scr.splitlines():
-                    if row:
-                        print(f"        | {row}")
+    for (label, line, pat), raw in zip(cases, screens):
+        scr = _rows(raw)
+        good = scr is not None and re.search(pat, scr) is not None
+        ok = ok and good
+        print(f"{'PASS' if good else 'FAIL':5} {label:14} {line}")
+        if not good:
+            print(f"        want /{pat}/  in screen:")
+            for row in (scr.splitlines() if scr else []):
+                if row:
+                    print(f"        | {row}")
 
     print("\nALL PASS -- string engine executes correctly on the repack build"
           if ok else "\nSOME FAILED")

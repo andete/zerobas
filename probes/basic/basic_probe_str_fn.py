@@ -70,14 +70,13 @@ from __future__ import annotations
 import argparse
 import os
 import re
-import subprocess
 import sys
-import tempfile
 from collections import namedtuple
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-OMSX_RUN = os.path.join(REPO, "probes", "lib", "omsx_run.py")
+sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
+import omsx_repl  # noqa: E402  typing-free KEYBUF-injection REPL driver
 
 REF_MACHINE = "Philips_VG_8020"    # reference: built-in MSX-BASIC, no cartridge
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
@@ -194,34 +193,14 @@ CASES = [
 ]
 
 
-def run_line(machine, cart, line, base=8.0, tail=8.0, timeout=120):
-    """Type one direct-mode line (+ a separately-timed Enter) on `machine`, with
-    or without `cart`, then capture the SCREEN 0 name table as one raw,
-    row-major string of length NLEN (no per-row separator -- the video RAM
-    itself has no line-break byte, and every case in CASES fits on one visual
-    row, so no wrap-geometry correction is needed here; see
-    measure_space_clamp_length below for the one case that DOES wrap)."""
-    out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="strfn_cap_")
-    os.close(out_fd)
-    cmd = [sys.executable, OMSX_RUN, "--machine", machine]
-    if cart:
-        cmd += ["--cart", cart]
-    cmd += ["--type", line, "--type-delay", str(base),
-            "--type", "\r", "--type-delay", str(base + 3),
-            "--time", str(base + 3 + tail),
-            "--mem", f"VRAM:0x0000:{NLEN}",
-            "--out", out_path, "--timeout", str(timeout)]
-    subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    cap = ""
-    if os.path.exists(out_path):
-        with open(out_path) as f:
-            cap = f.read()
-        os.unlink(out_path)
-    m = re.search(rf"mem\.VRAM:0x0000:{NLEN}=([0-9a-f]+)", cap)
-    if not m:
-        return None
-    data = bytes.fromhex(m.group(1))
-    return "".join(chr(b) if 32 <= b < 127 else " " for b in data)
+def run_line(machine, cart, line, **_):
+    """Inject one direct-mode line via omsx_repl (KEYBUF, typing-free) on
+    `machine` (optionally with `cart`) and return the SCREEN 0 name table as one
+    raw, row-major string of length NLEN (non-print bytes -> space). No per-row
+    separator: the video RAM has no line-break byte, and _marker_positions /
+    extract search this flat string directly (the marker arithmetic in
+    measure_space_clamp_length needs the raw row-major layout to count wraps)."""
+    return omsx_repl.run_case(machine, "direct", [line], cart=cart)
 
 
 # --- SPACE$.clamp: length-by-marker-arithmetic (avoids the wrap-geometry trap) -

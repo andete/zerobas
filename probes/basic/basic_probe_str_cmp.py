@@ -47,19 +47,27 @@ from __future__ import annotations
 import argparse
 import os
 import re
-import subprocess
 import sys
-import tempfile
 from collections import namedtuple
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-OMSX_RUN = os.path.join(REPO, "probes", "lib", "omsx_run.py")
+sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
+import omsx_repl  # noqa: E402  typing-free KEYBUF-injection REPL driver
 
 REF_MACHINE = "Philips_VG_8020"    # reference: built-in MSX-BASIC, no cartridge
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
 COLS, ROWS = 40, 24
 NLEN = COLS * ROWS
+
+
+def _rows(raw: str | None) -> str | None:
+    """Reshape an omsx_repl flat SCREEN-0 capture (SCR_LEN chars, non-print ->
+    space) into the 24 newline-joined 40-column rows the extract_* helpers read.
+    None passes through (capture failure)."""
+    if raw is None:
+        return None
+    return "\n".join(raw[r * COLS:(r + 1) * COLS] for r in range(ROWS))
 
 # (label, lhs, rhs) -- the §2 D-3 battery: equal, prefix-shorter (both
 # directions), case, first-diff-byte (both directions covered by re-running with
@@ -93,33 +101,12 @@ def build_line(lhs: str, rhs: str) -> str:
             'PRINT"[";(A$=B$);(A$<>B$);(A$<B$);(A$>B$);(A$<=B$);(A$>=B$);"]"')
 
 
-def run_line(machine, cart, line, base=8.0, tail=8.0, timeout=120):
-    """Type one direct-mode line (+ a separately-timed Enter) on `machine`, with
-    or without `cart`, then capture the SCREEN 0 name table (same technique as
-    basic_probe_print.py / basic_probe_string.py)."""
-    out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="strcmp_cap_")
-    os.close(out_fd)
-    cmd = [sys.executable, OMSX_RUN, "--machine", machine]
-    if cart:
-        cmd += ["--cart", cart]
-    cmd += ["--type", line, "--type-delay", str(base),
-            "--type", "\r", "--type-delay", str(base + 3),
-            "--time", str(base + 3 + tail),
-            "--mem", f"VRAM:0x0000:{NLEN}",
-            "--out", out_path, "--timeout", str(timeout)]
-    subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    cap = ""
-    if os.path.exists(out_path):
-        with open(out_path) as f:
-            cap = f.read()
-        os.unlink(out_path)
-    m = re.search(rf"mem\.VRAM:0x0000:{NLEN}=([0-9a-f]+)", cap)
-    if not m:
-        return None
-    data = bytes.fromhex(m.group(1))
-    rows = ["".join(chr(c) if 32 <= c < 127 else " " for c in
-                     data[r * COLS:(r + 1) * COLS]) for r in range(ROWS)]
-    return "\n".join(rows)
+def run_line(machine, cart, line, **_):
+    """Inject one direct-mode line via omsx_repl (KEYBUF, typing-free) on
+    `machine` (optionally with `cart`) and return the SCREEN 0 name table as 24
+    newline-joined rows. Replaces the former omsx_run matrix-typing capture: no
+    per-char type schedule to race, so the Enter can no longer land mid-typing."""
+    return _rows(omsx_repl.run_case(machine, "direct", [line], cart=cart))
 
 
 def extract_bits(screen_text):
@@ -181,39 +168,14 @@ ABORT_SETUP = ['A$="HI"']
 ABORT_LINE = "PRINT A$<5"
 
 
-def run_lines(machine, cart, lines, base=6.0, gap=2.5, tail=8.0, timeout=120):
-    """Type each SHORT direct-mode line (line then a separately-timed Enter),
-    same discipline as basic_probe_mid_stmt.run_prog -- splitting setup/op/print
-    into short lines avoids openMSX's typed Enter landing mid-typing on a long
-    line (which silently drops it). Captures the SCREEN 0 name table and returns
-    it as 24 newline-joined 40-column rows (None on failure), so a caller can
-    find the echoed line and read the row directly below it for the result."""
-    out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="strcmp_pl_cap_")
-    os.close(out_fd)
-    cmd = [sys.executable, OMSX_RUN, "--machine", machine]
-    if cart:
-        cmd += ["--cart", cart]
-    t = base
-    for ln in lines:
-        cmd += ["--type", ln, "--type-delay", f"{t}"]
-        t += gap
-        cmd += ["--type", "\r", "--type-delay", f"{t}"]
-        t += gap
-    cmd += ["--time", f"{t + tail}",
-            "--mem", f"VRAM:0x0000:{NLEN}", "--out", out_path, "--timeout", str(timeout)]
-    subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    cap = ""
-    if os.path.exists(out_path):
-        with open(out_path) as f:
-            cap = f.read()
-        os.unlink(out_path)
-    m = re.search(rf"mem\.VRAM:0x0000:{NLEN}=([0-9a-f]+)", cap)
-    if not m:
-        return None
-    data = bytes.fromhex(m.group(1))
-    rows = ["".join(chr(c) if 32 <= c < 127 else " " for c in
-                     data[r * COLS:(r + 1) * COLS]) for r in range(ROWS)]
-    return "\n".join(rows)
+def run_lines(machine, cart, lines, **_):
+    """Inject each SHORT direct-mode line via omsx_repl (KEYBUF, typing-free) in
+    one boot, then return the SCREEN 0 name table as 24 newline-joined rows (None
+    on failure), so a caller can find the echoed line and read the row directly
+    below it for the result. The former matrix-typing split (setup/op/print as
+    separate short lines to dodge a mid-line Enter) is no longer forced by the
+    delivery layer, but is kept as the natural per-statement structure."""
+    return _rows(omsx_repl.run_case(machine, "direct", lines, cart=cart))
 
 
 def extract_result(screen_text, print_line):
