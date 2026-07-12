@@ -162,15 +162,13 @@ SPAN_ONLY = {
 }
 
 
-# Delivery via the typing-free KEYBUF driver (omsx_repl.run_case, boot-per-case).
-# All cases are direct-mode; a RAW line that exceeds the KEYBUF cap (the three
-# IF/THEN/ELSE lines, no top-level ':') is delivered by the driver's chunked
-# injection, so it stays direct-mode -- a pure delivery-layer swap from the old
-# matrix-typing run_line. result_span / screen_tail come from omsx_repl.
-def run_line(machine, line):
-    return omsx_repl.run_case(machine, "direct", [line])
-
-
+# Delivery via the typing-free KEYBUF driver. All cases are direct-mode; a RAW
+# line that exceeds the KEYBUF cap (the three IF/THEN/ELSE lines, no top-level
+# ':') is delivered by the driver's chunked injection, so it stays direct-mode.
+# The whole matrix ships in ONE boot (omsx_repl.run_cases, batched, CLS reset
+# between cases -- no case here assigns a variable, so a screen clear is the
+# only inter-case state that matters); --boot-per-case restores the historical
+# one-boot-per-case isolation. result_span / screen_tail come from omsx_repl.
 result_span = omsx_repl.result_span
 screen_tail = omsx_repl.screen_tail
 
@@ -184,46 +182,24 @@ def main() -> int:
                     help="differential mode: also run this repack machine and "
                          "assert span/tail equality")
     ap.add_argument("--only", help="substring filter on the expression")
+    ap.add_argument("--boot-per-case", dest="boot_per_case", action="store_true",
+                    help="isolate each case in its own boot (slow) instead of the "
+                         "default single-boot batch -- use to rule out inter-case "
+                         "leakage when a batched case looks wrong")
     args = ap.parse_args()
 
     cases = [(e, f'print "[";{e};"]"', "expr") for e in EXPRS]
     cases += [(line, line, "raw") for line in RAW_LINES]
     cases += [(line, line, "stmt") for line in STMT_LINES]
+    cases = [c for c in cases if not (args.only and args.only not in c[0])]
+    specs = [("direct", [line]) for _, line, _ in cases]
 
-    ok = True
-    for expr, line, kind in cases:
-        if args.only and args.only not in expr:
-            continue
-        ref_raw = run_line(args.machine, line)
-        ref_span, ref_tail = result_span(ref_raw), screen_tail(ref_raw, line)
-        rs = f"[{ref_span}]" if ref_span is not None else "<no span>"
-        if args.zb_machine:
-            zb_raw = run_line(args.zb_machine, line)
-            zb_span, zb_tail = result_span(zb_raw), screen_tail(zb_raw, line)
-            zs = f"[{zb_span}]" if zb_span is not None else "<no span>"
-            if kind == "stmt":
-                same = ref_tail is not None and zb_tail is not None \
-                    and (ref_tail == "") == (zb_tail == "")
-            elif kind == "raw":
-                # RAW lines can exceed one screen row (the echo wraps, so no
-                # single row matches and the tail is unfindable on either
-                # side) — their pin is the bracket SPAN, which is immune to
-                # the wrap. Require a real span on both sides.
-                same = ref_span is not None and ref_span == zb_span
-            elif expr in SPAN_ONLY:
-                # tails must EXIST on both sides (proves the line really ran
-                # — a dead machine must not pass vacuously on two absent
-                # spans); their TEXT differs legitimately (D-2 wording)
-                same = ref_tail is not None and zb_tail is not None \
-                    and ref_span == zb_span
-            else:
-                same = ref_tail is not None and ref_tail == zb_tail
-            ok = ok and same
-            print(f"{'PASS' if same else 'FAIL'}  {expr:<24} ref: {rs}")
-            if not same:
-                print(f"{'':>32}ref tail: {ref_tail!r}")
-                print(f"{'':>32}zb  span: {zs}  tail: {zb_tail!r}")
-        else:
+    # Characterisation mode: reference only, no differential -> plain batch.
+    if not args.zb_machine:
+        for (expr, line, kind), raw in zip(cases, omsx_repl.run_cases(
+                args.machine, specs, batch=not args.boot_per_case, reset=("CLS",))):
+            ref_span, ref_tail = result_span(raw), screen_tail(raw, line)
+            rs = f"[{ref_span}]" if ref_span is not None else "<no span>"
             extra = ""
             # show the tail whenever it holds more than the span line alone
             if ref_tail is not None and ref_tail.count("|") + 1 > 1:
@@ -231,6 +207,43 @@ def main() -> int:
             elif ref_span is None:
                 extra = f"   tail: {ref_tail!r}"
             print(f"{expr:<24} {rs}{extra}")
+        return 0
+
+    def compare(i, ref_raw, zb_raw):
+        expr, line, kind = cases[i]
+        ref_span, ref_tail = result_span(ref_raw), screen_tail(ref_raw, line)
+        zb_span, zb_tail = result_span(zb_raw), screen_tail(zb_raw, line)
+        if kind == "stmt":
+            return ref_tail is not None and zb_tail is not None \
+                and (ref_tail == "") == (zb_tail == "")
+        if kind == "raw":
+            # RAW lines can exceed one screen row (the echo wraps, so no single
+            # row matches and the tail is unfindable on either side) — their pin
+            # is the bracket SPAN, immune to the wrap. Require a span both sides.
+            return ref_span is not None and ref_span == zb_span
+        if expr in SPAN_ONLY:
+            # tails must EXIST on both sides (a dead machine must not pass
+            # vacuously on two absent spans); their TEXT differs legitimately.
+            return ref_tail is not None and zb_tail is not None \
+                and ref_span == zb_span
+        return ref_tail is not None and ref_tail == zb_tail
+
+    verdicts, ref_raws, zb_raws = omsx_repl.run_differential(
+        args.machine, args.zb_machine, specs, compare,
+        batch=not args.boot_per_case, reset=("CLS",))
+
+    ok = True
+    for (expr, line, kind), good, ref_raw, zb_raw in zip(
+            cases, verdicts, ref_raws, zb_raws):
+        ok = ok and good
+        ref_span = result_span(ref_raw)
+        rs = f"[{ref_span}]" if ref_span is not None else "<no span>"
+        print(f"{'PASS' if good else 'FAIL'}  {expr:<24} ref: {rs}")
+        if not good:
+            zb_span, zb_tail = result_span(zb_raw), screen_tail(zb_raw, line)
+            zs = f"[{zb_span}]" if zb_span is not None else "<no span>"
+            print(f"{'':>32}ref tail: {screen_tail(ref_raw, line)!r}")
+            print(f"{'':>32}zb  span: {zs}  tail: {zb_tail!r}")
 
     if args.zb_machine:
         print("\nALL PASS — float arithmetic is reference-identical" if ok

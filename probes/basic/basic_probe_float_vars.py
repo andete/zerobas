@@ -243,29 +243,27 @@ CASES = [
 ]
 
 
-def capture(machine, line, kind):
-    """Return (span, tail) for one case on one machine, delivered via the
-    typing-free KEYBUF driver (omsx_repl), one boot per case (power-on-fresh
-    state, so this is a pure delivery-layer swap from the old matrix-typing
-    path -- same line, same kind semantics, same span/tail extraction).
+def spec_for(line, kind):
+    """The (mode, lines) delivery spec for one case, plus a `stored` flag.
 
-    Routing:
+    Routing (unchanged from the boot-per-case capture it replaces):
       - "stored": run as a stored program (as_stored splits the :-joined body
         into <=39-char numbered lines) -- for a re-entrant NEXT whose resume
-        only the run_prog line loop honours (RESUMEFLAG/RESUMEPTR/CURLINE);
-        span only, no tail (matches the old run_stored).
+        only the run_prog line loop honours (RESUMEFLAG/RESUMEPTR/CURLINE).
       - "value": direct mode -- EXCEPT a value line past the KEYBUF direct cap
-        (omsx_repl.MAX_DIRECT = 38 chars: def.int.list, alias.all4, the 3
-        varptr.* cases, all pure assignment+PRINT) is run as a stored program,
-        semantically identical for those (no re-entrant control flow). The old
-        path handled these with a wide type-gap; the driver has no per-char
-        schedule so the cap, not timing, is the reason.
-      - "abort"/"abort_or_value": direct mode; span is read only AFTER the echo
-        row so an aborted case's echoed '[' is not misread as output."""
+        (omsx_repl.MAX_DIRECT = 38: def.int.list, alias.all4, the 3 varptr.*
+        cases) is run as a stored program, semantically identical for those (no
+        re-entrant control flow).
+      - "abort"/"abort_or_value": direct mode."""
     stored = kind == "stored" or (kind == "value" and len(line) > omsx_repl.MAX_DIRECT)
-    mode = "stored" if stored else "direct"
-    lines = omsx_repl.as_stored(line) if stored else [line]
-    raw = omsx_repl.run_case(machine, mode, lines)
+    return (("stored", omsx_repl.as_stored(line)) if stored
+            else ("direct", [line])), stored
+
+
+def extract(raw, line, kind, stored):
+    """(span, tail) from one raw capture, matching spec_for's routing. A stored
+    case has no findable tail (no direct echo row); an abort case reads its span
+    only AFTER the echo row so the echoed '[' is not misread as output."""
     if stored:
         return omsx_repl.result_span(raw), None
     if kind == "value":
@@ -282,45 +280,68 @@ def main() -> int:
                     help="differential mode: also run this repack machine and "
                          "assert span/tail equality")
     ap.add_argument("--only", help="substring filter on the case label")
+    ap.add_argument("--boot-per-case", dest="boot_per_case", action="store_true",
+                    help="isolate each case in its own boot (slow) instead of the "
+                         "default single-boot batch")
     args = ap.parse_args()
 
-    ok = True
-    for label, line, kind, expect in CASES:
-        if args.only and args.only not in label:
-            continue
-        ref_span, ref_tail = capture(args.machine, line, kind)
-        rs = f"[{ref_span}]" if ref_span is not None else "<no span>"
+    cases = [c for c in CASES if not (args.only and args.only not in c[0])]
+    # These cases ASSIGN typed variables and set DEF-table defaults, so the
+    # inter-case reset must clear both -- NEW resets variables + DEFtbl (fixed
+    # 2026-07-12 5cde8a8, proven by basic_probe_var_reset), CLS clears the
+    # screen. run_differential re-runs any disagreeing case boot-per-case, so a
+    # leak the reset somehow missed can only ever slow the run, never mis-pass.
+    specs, stored = zip(*(spec_for(line, kind) for _, line, kind, _ in cases))
+    specs = list(specs)
 
-        if args.zb_machine:
-            zb_span, zb_tail = capture(args.zb_machine, line, kind)
-            zs = f"[{zb_span}]" if zb_span is not None else "<no span>"
-
-            if kind in ("value", "stored"):
-                same = ref_span is not None and ref_span == zb_span
-            elif kind == "abort":
-                same = (ref_span is None and zb_span is None
-                        and bool(ref_tail) and bool(zb_tail))
-            else:  # "abort_or_value": accept whichever shape the REFERENCE
-                   # took, as long as zerobas took the SAME shape (value vs
-                   # abort) and, if a value, the same value.
-                if ref_span is None:
-                    same = zb_span is None and bool(ref_tail) and bool(zb_tail)
-                else:
-                    same = zb_span is not None and ref_span == zb_span
-
-            ok = ok and same
-            print(f"{'PASS' if same else 'FAIL'}  {label:<24} ref: {rs}")
-            if not same:
-                print(f"{'':>32}ref tail: {ref_tail!r}")
-                print(f"{'':>32}zb  span: {zs}  tail: {zb_tail!r}")
-        else:
+    # Characterisation mode: reference only, no differential -> plain batch.
+    if not args.zb_machine:
+        raws = omsx_repl.run_cases(args.machine, specs,
+                                   batch=not args.boot_per_case, reset=("NEW", "CLS"))
+        for (label, line, kind, expect), raw, st in zip(cases, raws, stored):
+            ref_span, ref_tail = extract(raw, line, kind, st)
+            rs = f"[{ref_span}]" if ref_span is not None else "<no span>"
             note = ""
             if expect is not None:
-                match = "OK" if ref_span == expect else "MISMATCH vs spec!"
-                note = f"   expect {expect!r} -> {match}"
+                note = f"   expect {expect!r} -> " \
+                       f"{'OK' if ref_span == expect else 'MISMATCH vs spec!'}"
             elif ref_span is None:
                 note = f"   tail: {ref_tail!r}"
             print(f"{label:<24} {rs}{note}")
+        return 0
+
+    def compare(i, ref_raw, zb_raw):
+        _, line, kind, _ = cases[i]
+        ref_span, ref_tail = extract(ref_raw, line, kind, stored[i])
+        zb_span, zb_tail = extract(zb_raw, line, kind, stored[i])
+        if kind in ("value", "stored"):
+            return ref_span is not None and ref_span == zb_span
+        if kind == "abort":
+            return (ref_span is None and zb_span is None
+                    and bool(ref_tail) and bool(zb_tail))
+        # "abort_or_value": accept whichever shape the REFERENCE took, as long as
+        # zerobas took the SAME shape (value vs abort) and, if a value, the value.
+        if ref_span is None:
+            return zb_span is None and bool(ref_tail) and bool(zb_tail)
+        return zb_span is not None and ref_span == zb_span
+
+    verdicts, ref_raws, zb_raws = omsx_repl.run_differential(
+        args.machine, args.zb_machine, specs, compare,
+        batch=not args.boot_per_case, reset=("NEW", "CLS"))
+
+    ok = True
+    for (label, line, kind, expect), good, ref_raw, zb_raw, st in zip(
+            cases, verdicts, ref_raws, zb_raws, stored):
+        ok = ok and good
+        ref_span, _ = extract(ref_raw, line, kind, st)
+        rs = f"[{ref_span}]" if ref_span is not None else "<no span>"
+        print(f"{'PASS' if good else 'FAIL'}  {label:<24} ref: {rs}")
+        if not good:
+            zb_span, zb_tail = extract(zb_raw, line, kind, st)
+            zs = f"[{zb_span}]" if zb_span is not None else "<no span>"
+            _, ref_tail = extract(ref_raw, line, kind, st)
+            print(f"{'':>32}ref tail: {ref_tail!r}")
+            print(f"{'':>32}zb  span: {zs}  tail: {zb_tail!r}")
 
     if args.zb_machine:
         print("\nALL PASS — float variables (F3 S3a) reference-identical" if ok

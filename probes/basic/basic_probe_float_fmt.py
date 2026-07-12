@@ -59,15 +59,6 @@ LITERALS = [
 ]
 
 
-def result_span(machine, line):
-    """The printed number for `line`, delivered via the typing-free KEYBUF driver
-    (omsx_repl.run_case, boot-per-case): text between the LAST '[' and the
-    following ']'. Every LITERALS line is a short direct-mode PRINT (<=38 chars),
-    so this is a pure delivery-layer swap from the old matrix-typing run_line."""
-    raw = omsx_repl.run_case(machine, "direct", [line])
-    return omsx_repl.result_span(raw)
-
-
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -77,35 +68,58 @@ def main() -> int:
                     help="differential mode: also run this repack machine and "
                          "assert span equality")
     ap.add_argument("--only", help="substring filter on the literal")
+    ap.add_argument("--boot-per-case", dest="boot_per_case", action="store_true",
+                    help="isolate each case in its own boot (slow) instead of the "
+                         "default single-boot batch")
     args = ap.parse_args()
 
+    lits = [l for l in LITERALS if not (args.only and args.only not in l)]
+
+    # Every LITERALS line is a short direct-mode PRINT (<=38 chars). CLS reset --
+    # no case assigns a variable. The printed number is the last '['..']' span.
+    specs = [("direct", [f'print "[";{lit};"]"']) for lit in lits]
+    # 1e10# is an exponent-then-suffix combo the tokeniser rejects, leaving a
+    # stray token that spins the interpreter -- run it boot-per-case so it never
+    # poisons the shared batch (run_differential's `isolate`); the self-heal would
+    # rescue its followers anyway, but isolating it keeps the batch full-speed.
+    WEDGERS = {"1e10#"}
+    isolate = frozenset(i for i, lit in enumerate(lits) if lit in WEDGERS)
+
+    # Characterisation mode: reference only, no differential -> plain batch.
+    if not args.zb_machine:
+        for lit, raw in zip(lits, omsx_repl.run_cases(
+                args.machine, specs, batch=not args.boot_per_case, reset=("CLS",))):
+            span = omsx_repl.result_span(raw)
+            print(f"{lit:<22} {f'[{span}]' if span is not None else '<no capture>'}")
+        return 0
+
+    def compare(i, ref_raw, zb_raw):
+        ref, zb = omsx_repl.result_span(ref_raw), omsx_repl.result_span(zb_raw)
+        # pre-authorised: a crunch-time rejection on BOTH sides is a pass (e.g.
+        # 1e10# -- an exponent-then-suffix combo neither side's tokeniser accepts
+        # as a single literal, so the trailing suffix char is left in the token
+        # stream and derails the expression evaluator identically on both sides;
+        # see basic/float.asm tkf_try_exponent's header). run_differential re-runs
+        # such a case boot-per-case so its shared-boot derail can't poison others.
+        if ref is None and zb is None:
+            return True
+        return ref is not None and zb is not None and ref == zb
+
+    verdicts, ref_raws, zb_raws = omsx_repl.run_differential(
+        args.machine, args.zb_machine, specs, compare,
+        batch=not args.boot_per_case, reset=("CLS",), isolate=isolate)
+
     ok = True
-    for lit in LITERALS:
-        if args.only and args.only not in lit:
-            continue
-        line = f'print "[";{lit};"]"'
-        ref = result_span(args.machine, line)
+    for lit, good, ref_raw, zb_raw in zip(lits, verdicts, ref_raws, zb_raws):
+        ok = ok and good
+        ref, zb = omsx_repl.result_span(ref_raw), omsx_repl.result_span(zb_raw)
         rs = f"[{ref}]" if ref is not None else "<no capture>"
-        if args.zb_machine:
-            zb = result_span(args.zb_machine, line)
-            zs = f"[{zb}]" if zb is not None else "<no capture>"
-            if ref is None and zb is None:
-                # pre-authorised: a crunch-time rejection on BOTH sides is a
-                # pass (e.g. 1e10# -- an exponent-then-suffix combo neither
-                # side's tokeniser accepts as a single literal, so the
-                # trailing suffix char is left in the token stream and
-                # derails the expression evaluator identically on both
-                # sides; see basic/float.asm tkf_try_exponent's header)
-                ok = ok and True
-                print(f"PASS  {lit:<22} ref: {rs}  [both rejected]")
-                continue
-            same = ref is not None and zb is not None and ref == zb
-            ok = ok and same
-            print(f"{'PASS' if same else 'FAIL'}  {lit:<22} ref: {rs}")
-            if not same:
-                print(f"{'':>30}zb : {zs}")
-        else:
-            print(f"{lit:<22} {rs}")
+        if good and ref is None and zb is None:
+            print(f"PASS  {lit:<22} ref: {rs}  [both rejected]")
+            continue
+        print(f"{'PASS' if good else 'FAIL'}  {lit:<22} ref: {rs}")
+        if not good:
+            print(f"{'':>30}zb : {f'[{zb}]' if zb is not None else '<no capture>'}")
 
     if args.zb_machine:
         print("\nALL PASS — float output format is reference-identical" if ok

@@ -74,14 +74,34 @@ contract, no disasm) so the ROM tokenises it with no matrix scan — determinist
   are numbered `10`/`20`/… and `RUN`; use `as_stored(":"-joined line)` to split.
 - `result_span` / `screen_tail` / `result_span_after_echo` — the reusable
   `[…]`-bracket value + error-tail extractors (machine-agnostic re `Ok` vs `zb>`).
-- **Boot per case** is the default (`run_case`) — power-on-fresh state, matching
-  the old harness. Multi-case batching (`run_batch`) is retained but currently
-  UNSAFE on zerobas (its `NEW`/`CLEAR` don't reset variables/DEFtbl; the
-  reference does). Self-test + this boundary: `omsx_repl.py --selftest <machine>`.
 
-The `basic_probe_float_*` probes (except the `--bp`-landmark `floatlit`) use this
-driver; copy them as the template. A probe that syncs on a breakpoint (`--bp`,
-e.g. the crunch/tokenise probes) is not flaky and stays on `omsx_run.py`.
+**Batched delivery is now the default for a whole matrix** (since `5cde8a8` fixed
+`NEW`/`CLEAR` to reset variables + DEFtbl on the repack build — `omsx_repl.py
+--selftest <machine>` reports `batching AVAILABLE`). A gate that boots openMSX
+once per case pays the ~0.4 s boot ×N; batching amortises it to one boot for the
+whole matrix (~20× on the float gate). Two entry points build the pattern:
+
+- `run_cases(machine, specs, *, batch=True, reset=("CLS",))` — deliver a list of
+  `(mode, lines)` in ONE boot, `reset` injected before each case. Pick the reset
+  per matrix: `("CLS",)` when no case assigns a variable (screen-clean suffices);
+  `("NEW","CLS")` when cases set typed vars / DEF defaults that must not leak.
+  `batch=False` restores boot-per-case (power-on-fresh, `reset` ignored).
+- `run_differential(ref, zb, specs, compare, *, isolate=…)` — the differential
+  driver: delivers to both machines batched, judges each case with `compare`, and
+  **self-heals** — any disagreeing case is re-run boot-per-case (authoritative),
+  so results equal a full boot-per-case run while clean cases keep batch speed.
+  This tames batching's one hazard: a case that *wedges* the interpreter (a
+  tokeniser-derail literal like `1e10#` spins the machine so no `reset` recovers
+  it, poisoning every follower in that shared boot). Declare known wedgers in
+  `isolate` to keep them out of the batch; the self-heal catches undeclared ones.
+- `--boot-per-case` on each converted probe forces `batch=False` end-to-end — the
+  isolation escape hatch when a batched case looks wrong.
+
+The `basic_probe_float_{fmt,arith,vars}` probes use `run_differential`; copy them
+as the template. `floatlit` and other breakpoint-synced probes (`--bp`, e.g. the
+crunch/tokenise probes) are not flaky, use `omsx_run.py`, and stay boot-per-case
+(they freeze the CPU at a landmark, so they can't share a boot — see
+`docs/spec-acceptance-batching.md` for the plan to batch them).
 
 `make probe` runs one probe per component as a smoke check (needs steps 1–4 above).
 

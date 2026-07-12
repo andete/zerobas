@@ -38,21 +38,29 @@ The driver draws NO conclusions: it delivers bytes and scrapes the SCREEN 0 name
 table from VRAM, returning one raw 40x24 screen string per case. Span/tail
 extraction (the `[...]` bracket convention) lives in the reusable helpers below.
 
-DEFAULT GRANULARITY -- BOOT PER CASE (`run_case`): a fresh boot gives every case
-power-on-clean variables AND a default (all-double) DEF type table, exactly like
-the matrix-typing harness it replaces, so the conversion is differential-inert.
-Boot-per-case remains the DEFAULT for its simplicity and power-on cleanliness.
-Historically it was also forced: the `--selftest` isolation check established
-(2026-07-12) that zerobas's `NEW` and `CLEAR` did NOT clear variables or the DEF
-table (the reference does -- a real zerobas divergence). That divergence is now
-FIXED in the repack build (basic/clear.asm + basic/program.asm; gated
-`IF ROM_BASE < $4000` since the lean build is byte-full and has no DEFtbl),
-proven reference-identical by basic_probe_var_reset.py in the float-acceptance
-gate -- so on the repack machine `run_batch(..., reset=("NEW",))` (or a bare
-`CLEAR`) now genuinely resets shared variable/DEF state between cases in one
-boot. `run_batch` is still used only where cases are provably independent or an
-explicit reset is supplied; matrices that never validated a reset stay on
-run_case out of caution, not necessity.
+GRANULARITY -- three layers, batched by default for a whole matrix:
+  * `run_case(machine, mode, lines)`  -- ONE case, ONE boot: power-on-clean
+    variables + default DEF table. The single-case primitive (= run_batch of one
+    case, no reset) and the isolation escape hatch.
+  * `run_cases(machine, specs, batch=, reset=)`  -- a whole matrix; batch=True
+    (DEFAULT) ships it in one boot with `reset` between cases (~20x faster).
+  * `run_differential(ref, zb, specs, compare, isolate=)`  -- the differential
+    driver: batched delivery to both machines + a SELF-HEAL pass that re-runs any
+    disagreeing case boot-per-case, so verdicts equal a full boot-per-case run.
+
+Batching became safe on 2026-07-12: the `--selftest` isolation check established
+that zerobas's `NEW`/`CLEAR` did NOT clear variables or the DEF table (the
+reference does -- a real divergence), now FIXED in the repack build
+(basic/clear.asm + basic/program.asm; gated `IF ROM_BASE < $4000` since the lean
+build is byte-full and has no DEFtbl), proven reference-identical by
+basic_probe_var_reset.py -- so `--selftest` reports "batching AVAILABLE" and a
+`("NEW","CLS")` reset genuinely resets shared variable/DEF/screen state between
+cases in one boot. The one residual hazard is a case that WEDGES the interpreter
+(a tokeniser-derail literal spins the machine so no reset recovers it, poisoning
+its shared-boot followers); run_differential's `isolate` + self-heal handle it
+(see that function's docstring). A breakpoint-synced probe that FREEZES the CPU
+at a landmark (basic_probe_floatlit, the crunch/tokenise probes on omsx_run.py)
+cannot share a boot and stays boot-per-case.
 """
 from __future__ import annotations
 
@@ -251,6 +259,104 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     if timed_out and not caps:
         raise SystemExit(f"omsx_repl: TIMEOUT running {machine}")
     return [caps.get(i) for i in range(len(cases))]
+
+
+def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
+              batch: bool = True, reset: tuple[str, ...] = ("CLS",),
+              boot: float = 8.0, step: float = 2.5, cap_gap: float = 2.5,
+              timeout: float | None = None, omsx: str | None = None,
+              cart: str | None = None, diska: str | None = None) -> list[str | None]:
+    """Deliver `cases` (each `(mode, lines)`) and return one raw SCREEN-0 string
+    per case, aligned with `cases`. THE DEFAULT ENTRY POINT for a whole probe
+    matrix -- it picks the delivery granularity:
+
+      batch=True (DEFAULT): ONE boot for the whole matrix, `reset` injected
+        before EACH case (see run_batch). This amortises the ~0.5s openMSX boot
+        across every case -> ~20x faster than boot-per-case on a large matrix.
+        Safe since 2026-07-12 (5cde8a8) made NEW/CLEAR reset variables + DEFtbl
+        on the repack build, confirmed by omsx_repl --selftest reporting
+        "batching AVAILABLE". Pick `reset` per matrix: ("CLS",) when no case sets
+        a variable (screen-clean is all that's needed); ("NEW", "CLS") when cases
+        assign typed vars / DEF defaults that must not leak between cases.
+
+      batch=False: boot-per-case (the historical default) -- each case gets
+        power-on-fresh variables AND a default DEFtbl, and `reset` is ignored.
+        The isolation escape hatch: when a batched case looks wrong, re-run with
+        --boot-per-case to rule out inter-case leakage vs a real divergence.
+
+    `timeout` defaults to a generous cap that scales with the matrix size so a
+    long batched timeline (throttle-off but still many emulated seconds) has room
+    to finish; the batch self-terminates via `exit`, so this is only a safety net.
+    """
+    kw = dict(boot=boot, step=step, cap_gap=cap_gap,
+              omsx=omsx, cart=cart, diska=diska)
+    if batch:
+        # scale the safety-net timeout with the emulated timeline length
+        to = timeout if timeout is not None else max(240.0, 1.5 * len(cases) + 120.0)
+        return run_batch(machine, cases, reset=reset, timeout=to, **kw)
+    to = timeout if timeout is not None else 240.0
+    return [run_batch(machine, [c], reset=(), timeout=to, **kw)[0] for c in cases]
+
+
+def run_differential(ref_machine: str, zb_machine: str,
+                     specs: list[tuple[str, list[str]]], compare, *,
+                     batch: bool = True, reset: tuple[str, ...] = ("CLS",),
+                     isolate: frozenset[int] | set[int] = frozenset(),
+                     **kw) -> tuple[list[bool], list[str | None], list[str | None]]:
+    """Deliver `specs` (each `(mode, lines)`) to BOTH the reference and zerobas
+    machines and return `(verdicts, ref_raws, zb_raws)`, all aligned with `specs`.
+
+    Batched by default (ONE boot per machine, `reset` between cases -> ~20x). Two
+    mechanisms make batching as trustworthy as boot-per-case:
+
+      * `isolate` -- indices of cases KNOWN to wedge the interpreter (a
+        tokeniser-derail literal like `1e10#` leaves a stray token that spins the
+        machine so no `reset` recovers it, and every FOLLOWER in that shared boot
+        captures garbage). Isolated cases skip the batch and run boot-per-case, so
+        they never get a chance to poison the batch. Pre-declaring the handful the
+        matrix already knows about keeps the batch clean and full-speed.
+      * SELF-HEAL -- after the batch, `compare(i, ref_raw, zb_raw) -> bool` judges
+        each case, and ANY case that does NOT agree is RE-RUN boot-per-case on both
+        machines and re-judged, its isolated raws replacing the batched ones. This
+        catches an UNDECLARED wedger's fallout (its poisoned followers re-run
+        clean) and guarantees the final verdicts equal a full boot-per-case run.
+
+    So a clean matrix re-runs nothing (full batch speed); a declared wedger costs
+    one boot-per-case pair; an undeclared wedger self-heals at the price of
+    re-running the tail it poisoned (add it to `isolate` to reclaim that speed).
+    `batch=False` forces boot-per-case throughout (the isolation escape hatch)."""
+    n = len(specs)
+    ref_raws: list[str | None] = [None] * n
+    zb_raws: list[str | None] = [None] * n
+
+    if batch:
+        bidx = [i for i in range(n) if i not in isolate]
+        if bidx:
+            rb = run_cases(ref_machine, [specs[i] for i in bidx], batch=True,
+                           reset=reset, **kw)
+            zbb = run_cases(zb_machine, [specs[i] for i in bidx], batch=True,
+                            reset=reset, **kw)
+            for j, i in enumerate(bidx):
+                ref_raws[i], zb_raws[i] = rb[j], zbb[j]
+        iso = [i for i in range(n) if i in isolate]
+    else:
+        iso = list(range(n))            # boot-per-case for everything
+    if iso:
+        ri = run_cases(ref_machine, [specs[i] for i in iso], batch=False, **kw)
+        zi = run_cases(zb_machine, [specs[i] for i in iso], batch=False, **kw)
+        for j, i in enumerate(iso):
+            ref_raws[i], zb_raws[i] = ri[j], zi[j]
+
+    verdicts = [compare(i, ref_raws[i], zb_raws[i]) for i in range(n)]
+    if batch:
+        fails = [i for i, ok in enumerate(verdicts) if not ok and i not in isolate]
+        if fails:
+            r2 = run_cases(ref_machine, [specs[i] for i in fails], batch=False, **kw)
+            z2 = run_cases(zb_machine, [specs[i] for i in fails], batch=False, **kw)
+            for j, i in enumerate(fails):
+                ref_raws[i], zb_raws[i] = r2[j], z2[j]
+                verdicts[i] = compare(i, ref_raws[i], zb_raws[i])
+    return verdicts, ref_raws, zb_raws
 
 
 # --- reusable span/tail extraction (the `[...]` bracket convention) ----------
