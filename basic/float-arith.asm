@@ -1829,3 +1829,71 @@ wu_rev_lp:
                 dec     de
                 djnz    wu_rev_lp
                 ret
+
+; =============================================================================
+; fp_trunc — math pack slice 1a: float->float truncate-toward-zero primitive
+; (docs/spec-basic-math-pack.md §9.2). The one new page-0 numeric primitive
+; the slice adds; every other slice-1a routine (ABS/SGN/INT/FIX/CINT/CSNG/
+; CDBL) lives in expr.asm (page 1) as a thin wrapper, per the spec's home
+; decision (§9: "the one new numeric primitive in the page-0 low region
+; alongside the other fp_* -- it is a shared leaf").
+; =============================================================================
+
+; --- fp_trunc: ARGA (an already-widened FPNUM: sign/dexp/dig[0..13]; guard --
+; dig[14] not read) -> zero every mantissa digit at or past the decimal point,
+; leaving the integer part untouched -- truncation toward 0. In place on
+; ARGA; does NOT pack FAC or touch FACTYP (the expr.asm callers do that once
+; they know which precision to preserve -- INT/FIX may return single OR
+; double, unlike every other fp_* op here which always promotes to double).
+; out: CF set iff at least one nonzero digit was dropped (INT's caller uses
+; this to decide its -1 floor adjustment on a negative operand; FIX ignores
+; it). Same dexp<=0 "-> |x|<1" classification domain_convert_core already
+; uses (own design, same idiom reused). Clobbers A, B, C, D, E, H, L.
+fp_trunc:
+                ld      hl,(ARGA+FPNUM_DEXP)
+                ld      a,h
+                or      a
+                jp      m,fpt_allfrac       ; dexp<0 -> |x|<1, whole mantissa is fraction
+                ld      a,l
+                or      a
+                jr      z,fpt_allfrac       ; dexp==0 -> also |x|<1 (dcc_zero's own rule)
+                cp      14
+                jr      nc,fpt_none         ; dexp>=14 -> already a full-range integer,
+                                            ; no fractional digit exists to drop
+                ; 1<=dexp<=13: zero dig[dexp..13] (14-dexp digits), reporting
+                ; whether any of them was nonzero before clearing
+                ld      e,a                 ; E = dexp
+                ld      d,0
+                ld      hl,ARGA+FPNUM_DIG
+                add     hl,de               ; HL = &dig[dexp]
+                ld      a,14
+                sub     e
+                ld      b,a                 ; B = count = 14-dexp
+                ld      c,0                 ; C = "any nonzero" accumulator
+fpt_lp:
+                ld      a,(hl)
+                or      c
+                ld      c,a
+                xor     a
+                ld      (hl),a
+                inc     hl
+                djnz    fpt_lp
+                ld      a,c
+                or      a
+                ret     z
+                scf
+                ret
+fpt_none:
+                or      a
+                ret
+fpt_allfrac:
+                ld      hl,ARGA+FPNUM_DIG
+                call    dig15_iszero        ; ZF set iff ARGA was already the canonical
+                                            ; zero (0 flags no fraction was dropped)
+                push    af
+                ld      hl,ARGA+FPNUM_DIG
+                call    dig15_zero15
+                pop     af
+                ret     z
+                scf
+                ret

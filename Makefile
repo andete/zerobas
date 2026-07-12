@@ -49,7 +49,12 @@ DISK_ROM := $(BUILD)/disk.rom
 # empty skeleton (CD header + one round-trip ping per page); real tenants arrive
 # with the eviction session. See docs/spec-basic-subrom.md.
 SUB_SRC   := sub/sub.asm
-SUB_PARTS := sub/equates.inc sub/tkfloat.asm basic/sysvars.inc
+# basic/kwtable.inc: sub/sub.asm includes it (the sole resident copy, wave 3 --
+# see check_kwtable_identity.py); missing this prerequisite let a kwtable-only
+# edit silently ship a STALE sub.rom (caught 2026-07-12, math pack slice 1a: a
+# new keyword crunched fine on the reference but parsed as a bare variable on
+# zerobas because sub.rom hadn't picked up the new kwtable.inc entries).
+SUB_PARTS := sub/equates.inc sub/tkfloat.asm basic/sysvars.inc basic/kwtable.inc
 SUB_ROM   := $(BUILD)/sub.rom
 
 # Tracked patch deliverables (regenerable; live at their committed paths).
@@ -289,6 +294,17 @@ float-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_float_vars.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
 	python3 probes/basic/basic_probe_var_reset.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
 
+# --- Standing math-pack acceptance gate (math pack slice 1a) -------------------
+# ABS/SGN/INT/FIX/CINT/CSNG/CDBL (docs/spec-basic-math-pack.md §9.4): token
+# crunch-byte-identity (vs MSX2 TH Table 2.20) + the value differential vs the
+# VG-8020 reference (INT/FIX negative-operand divergence, CINT rounding +
+# domain-overflow edges, FACTYP-leak, the ABS(-32768%) int-domain escape).
+# Repack-only; HEAVY + oracle-dependent (boots openMSX; needs your VG-8020
+# reference ROM); NOT part of the emulator-free `unit-test`. Scope with
+# `make math-acceptance ONLY=cint`.
+math-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_math_conv.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
+
 # Standing C-BIOS self-consistency gate: closes the coverage gap that `bdos-acceptance`
 # structurally can't reach. That gate is a DIFFERENTIAL, so it only runs on the CF-3300
 # oracle (the only host with a stock disk ROM + MSX-DOS to diff against); the shipped
@@ -320,4 +336,5 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance \
-        input-acceptance float-acceptance subrom-acceptance subrom-inttest clean
+        input-acceptance float-acceptance math-acceptance subrom-acceptance \
+        subrom-inttest clean

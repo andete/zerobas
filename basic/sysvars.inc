@@ -231,6 +231,21 @@ INKEY_TOKEN     equ     $EC     ; INKEY$ -> $EC (single-byte reserved word; '$' 
 ; basic_probe_floatlit.py (VG-8020 KBUF, e.g. `a=1.5`->1D 41 15.., `a=1#`->1F 41 10..).
 SNG_TOKEN       equ     $1D     ; single-precision float literal: token + 4 value bytes
 DBL_TOKEN       equ     $1F     ; double-precision float literal: token + 8 value bytes
+; Math pack slice 1a (Phase 3, repack-only — docs/spec-basic-math-pack.md §9.3).
+; ABS/SGN/INT/FIX/CINT/CSNG/CDBL: $FF-prefixed function tokens from the same
+; contiguous MSX-BASIC function table as LEN/VAL/HEX$ above (MSX2 TH Table
+; 2.20) + black-box VG-8020 crunch capture (probes/basic/basic_probe_math_conv.py).
+; Bare-byte namespace overlaps with existing SINGLE-byte statement/keyword
+; tokens are expected + harmless (same PEEK_TOKEN/DEF_TOKEN precedent, line
+; above): SGN==DATA_TOKEN($84), INT==INPUT_TOKEN($85), FIX==ELSE_TOKEN($A1),
+; CDBL==WIDTH_TOKEN($A0) as raw byte values — the $FF prefix disambiguates.
+ABS_TOKEN       equ     $86     ; ABS(x)  -> $FF $86
+SGN_TOKEN       equ     $84     ; SGN(x)  -> $FF $84
+INT_TOKEN       equ     $85     ; INT(x)  -> $FF $85
+FIX_TOKEN       equ     $A1     ; FIX(x)  -> $FF $A1
+CINT_TOKEN      equ     $9E     ; CINT(x) -> $FF $9E
+CSNG_TOKEN      equ     $9F     ; CSNG(x) -> $FF $9F
+CDBL_TOKEN      equ     $A0     ; CDBL(x) -> $FF $A0
 ; Memory / I-O access tokens (MSX2 TH Table 2.20; oracle-confirmed byte-for-byte
 ; via basic_probe_crunch.py — see PROVENANCE.md). VPOKE / OUT are one-byte
 ; statement tokens; VPEEK / INP are $FF-prefixed two-byte function tokens (like
@@ -1138,6 +1153,15 @@ LHS_VARTYPE     equ     $F152   ; ex_let (interp.asm): the LHS variable's resolv
 DEFTBL          equ     $F153   ; per-letter default-type map, A..Z (26)
 DEFTBL_STR      equ     1       ; sentinel value: an unsuffixed name is a STRING var
                                 ; (not a numeric width; distinct from 2/4/8)
+; --- Math pack slice 1a RAM (repack build only) ------------------------------
+; docs/spec-basic-math-pack.md §9.2. Own-choice free RAM, the $F16D.. tail
+; below DRVA_DPB ($F195), immediately following DEFTBL (ends $F153+26=$F16D).
+MC_TYPE         equ     $F16D   ; evmc_sub1 (expr.asm): the operand's FACTYP (4/8),
+                                ; stashed across fp_sub's forced-double
+                                ; round_and_finalize so INT's post-truncate -1
+                                ; adjustment (negative operand, spec §9.2) can
+                                ; re-round the exact result back to single when
+                                ; the original argument was single (1)
 JIFFY           equ     $FC9E   ; MSX software clock, bumped by the timer ISR (MSX2 TH work area)
 ; Dispatch ABI (mirror of sub/equates.inc — the append-only page-0 entry table).
 ; IX = SUBROM_ENTRY_BASE_P0 + 3*index selects a tenant; never renumber an index.

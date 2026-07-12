@@ -616,7 +616,8 @@ ev_f_ff:
                 cp      CVI_TOKEN           ; $A8 -> CVI (takes a STRING arg)
                 jp      z,ev_ff_cvi
     IF ROM_BASE < $4000
-                jp      ev_ff_strnum        ; repack: LEN/ASC/VAL (string->number), else ev_f_err
+                jp      ev_ff_mathconv      ; repack: ABS/SGN/INT/FIX/CINT/CSNG/CDBL, else
+                                            ; LEN/ASC/VAL (string->number), else ev_f_err
     ELSE
                 jp      ev_f_err            ; unknown $FF function
     ENDIF
@@ -767,6 +768,238 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                 inc     hl
                 ld      d,(hl)              ; high byte  -> DE = int (LE)
                 ret
+
+    IF ROM_BASE < $4000
+; =============================================================================
+; Math pack slice 1a: ABS/SGN/INT/FIX/CINT/CSNG/CDBL (docs/spec-basic-math-
+; pack.md §9). Thin wrappers over the resident page-0 fp_*/widen_*/round_*
+; primitives (float-arith.asm) + the new fp_trunc leaf (same file, §9.2).
+; =============================================================================
+
+; --- ev_ff_mathconv: dispatch on the $FF-selector byte for the seven slice- -
+; 1a functions. Entered exactly like ev_ff_strnum (IX on the selector byte, A
+; = the selector — same contract, str-engine.asm), reached from ev_f_ff's
+; repack branch; falls through to ev_ff_strnum (LEN/ASC/VAL) when the
+; selector matches none of these seven, which in turn falls to ev_f_err.
+ev_ff_mathconv:
+                cp      ABS_TOKEN
+                jp      z,evmc_abs
+                cp      SGN_TOKEN
+                jp      z,evmc_sgn
+                cp      INT_TOKEN
+                jp      z,evmc_int
+                cp      FIX_TOKEN
+                jp      z,evmc_fix
+                cp      CINT_TOKEN
+                jp      z,evmc_cint
+                cp      CSNG_TOKEN
+                jp      z,evmc_csng
+                cp      CDBL_TOKEN
+                jp      z,evmc_cdbl
+                jp      ev_ff_strnum        ; not ours -> LEN/ASC/VAL, else ev_f_err
+
+; --- ev_mc_arg: parse "( <numeric expr> )" from IX (positioned on the -------
+; selector byte, per this group's entry contract). Leaves DE = the argument's
+; int16 fast value and FAC/FACTYP set to its real type by ev_xor's own float
+; plumbing (expr.asm/float-arith.asm) — UNLIKE ev_ff_arg, this does NOT force
+; FACTYP:=2 afterward: every evmc_* below must see the argument's true type
+; to decide its own result type (spec §9.1's "same FACTYP as x" / int-result
+; columns). IX advanced past ')'. Clobbers as ev_xor.
+ev_mc_arg:
+                inc     ix                  ; skip the selector byte
+                call    ev_sp
+                ld      a,(ix+0)
+                cp      '('
+                jp      nz,ev_f_err
+                inc     ix
+                call    ev_xor              ; DE = argument; FAC/FACTYP = its type
+                call    ev_sp
+                ld      a,(ix+0)
+                cp      ')'
+                jp      nz,ev_f_err
+                inc     ix
+                ret
+
+; --- evconv_pack_same_type: ARGA (already truncated by the caller — exact, --
+; no guard-digit rounding pending) -> FAC, preserving FACTYP exactly as it
+; already stands (4 single / 8 double; the FACTYP==2 case is handled by each
+; caller's own early-out before this is ever reached). Refreshes DE via
+; flt_to_int16 (float.asm), the same silent address-domain contract every
+; other ev_f_* factor tail keeps. Shared by evmc_int/evmc_fix. Clobbers A, B,
+; C, D, E, H, L.
+evconv_pack_same_type:
+                ld      hl,ARGA+FPNUM_DIG
+                call    dig15_iszero
+                jr      z,ecpst_zero
+                ld      a,(FACTYP)
+                cp      8
+                jr      z,ecpst_dbl
+                call    arga_pack_single
+                jp      flt_to_int16
+ecpst_dbl:
+                call    arga_pack_fac
+                jp      flt_to_int16
+ecpst_zero:
+                xor     a
+                ld      (FAC),a
+                ld      de,0
+                ret
+
+; --- evmc_abs: ABS(x) -> |x|, same FACTYP as x (spec §9.1). Int path: plain -
+; magnitude, except the -32768 edge escapes int16 (promotes to a double
+; +32768.0, mirroring float-arith.asm's -32768\-1 quirk, spec §10.4/§9.1's
+; "int-domain per §10 float core"). Float path: clear FAC's sign bit in place
+; (0's sign bit is already clear) and refresh DE; FACTYP untouched.
+evmc_abs:
+                call    ev_mc_arg
+                ld      a,(FACTYP)
+                cp      2
+                jr      nz,evabs_float
+                ld      a,d
+                cp      $80
+                jr      nz,evabs_noesc
+                ld      a,e
+                or      a
+                jr      nz,evabs_noesc
+                ; DE == -32768: escapes int16 -> promote to double +32768.0
+                ld      hl,ARGA
+                xor     a
+                ld      de,32768
+                call    widen_uint_to
+                jp      round_and_finalize
+evabs_noesc:
+                ex      de,hl
+                call    abs16
+                ex      de,hl
+                ret
+evabs_float:
+                ld      a,(FAC)
+                or      a
+                ret     z                   ; zero: nothing to clear, DE already 0
+                and     $7F
+                ld      (FAC),a
+                jp      flt_to_int16        ; tail call: DE refreshed; FACTYP untouched
+
+; --- evmc_sgn: SGN(x) -> -1/0/+1, always int (FACTYP:=2, spec §9.1). -------
+evmc_sgn:
+                call    ev_mc_arg
+                ld      a,(FACTYP)
+                cp      2
+                jr      z,evsgn_int
+                ld      a,(FAC)
+                or      a
+                jr      z,evsgn_zero
+                and     $80
+                jr      z,evsgn_pos
+                jr      evsgn_neg
+evsgn_int:
+                ld      a,d
+                or      e
+                jr      z,evsgn_zero
+                ld      a,d
+                and     $80
+                jr      z,evsgn_pos
+evsgn_neg:
+                ld      de,$FFFF
+                jr      evsgn_settype
+evsgn_pos:
+                ld      de,1
+                jr      evsgn_settype
+evsgn_zero:
+                ld      de,0
+evsgn_settype:
+                ld      a,2
+                ld      (FACTYP),a
+                ret
+
+; --- evmc_int: INT(x) -> floor toward -infinity, same FACTYP as x (spec ----
+; §9.1). fp_trunc (float-arith.asm) truncates toward 0; if a fraction was
+; dropped AND x was negative, one more step (-1) makes it a floor (§9.2).
+evmc_int:
+                call    ev_mc_arg
+                ld      a,(FACTYP)
+                cp      2
+                ret     z                   ; already int: INT(x)=x
+                ld      hl,ARGA
+                call    widen_rhs_operand   ; ARGA := FPNUM(x)
+                call    fp_trunc            ; CF set iff a fraction was dropped
+                jr      nc,evmc_int_pack
+                ld      a,(ARGA+FPNUM_SIGN)
+                or      a
+                jr      z,evmc_int_pack     ; positive: truncate == floor already
+                jp      evmc_sub1           ; negative + fraction dropped: floor = trunc-1
+evmc_int_pack:
+                jp      evconv_pack_same_type
+
+; --- evmc_fix: FIX(x) -> truncate toward 0, same FACTYP as x (spec §9.1). --
+; Never needs the INT adjustment ("FIX = fp_trunc", §9.2).
+evmc_fix:
+                call    ev_mc_arg
+                ld      a,(FACTYP)
+                cp      2
+                ret     z
+                ld      hl,ARGA
+                call    widen_rhs_operand
+                call    fp_trunc            ; CF ignored -- FIX never adjusts
+                jp      evconv_pack_same_type
+
+; --- evmc_sub1: ARGA (INT's fp_trunc result, truncated toward 0) -= 1, ------
+; preserving FACTYP as it stood on entry: fp_sub always packs a double via
+; round_and_finalize, so a single-typed operand is re-rounded back down via
+; round_single_and_pack — exact, since ARGA holds only integer digits at this
+; point (guard digit 0), so no precision is lost by the re-round. A
+; double-typed operand passes straight through fp_sub's own double result.
+; Clobbers as fp_sub + round_single_and_pack.
+evmc_sub1:
+                ld      a,(FACTYP)
+                ld      (MC_TYPE),a
+                ld      hl,ARGB
+                xor     a
+                ld      de,1
+                call    widen_uint_to       ; ARGB := +1 (exact int widen)
+                call    fp_sub              ; ARGA/FAC := ARGA - 1 (FACTYP forced to 8)
+                ld      a,(MC_TYPE)
+                cp      8
+                ret     z                   ; was already double: fp_sub's result stands
+                jp      round_single_and_pack  ; re-round the exact ARGA to single (tail)
+
+; --- evmc_cint: CINT(x) -> int16, domain -32768..32767 else Overflow -------
+; (spec §9.1). ORACLE CORRECTION (2026-07-12, basic_probe_math_conv.py
+; characterisation): the spec text says "rounds (half-up)", reasoned from
+; general BASIC docs, but the VG-8020 does NOT round CINT at all --
+; cint(2.9)=2, cint(1.5000001#)=1, cint(32767.6)=32767 (in range, not
+; Overflow), cint(-32768.6)=-32768 (also in range) -- every captured case is
+; bit-identical to a plain TRUNCATE toward 0. That is exactly the EXISTING
+; strict int16 domain conversion \\/MOD/AND/OR/XOR/NOT operands already share
+; (spec-basic-float-core.md §10.3: -32769<x<32768, truncate toward 0, else
+; Overflow) -- fac_to_int_strict_reset (float-arith.asm) IS CINT, unchanged;
+; no new arithmetic needed. Per the project's "the capture wins" rule, this
+; supersedes the spec's stated rounding contract -- flagged in the slice
+; report, not silently papered over.
+evmc_cint:
+                call    ev_mc_arg
+                jp      fac_to_int_strict_reset ; strict -32768..32767 domain,
+                                            ; truncate toward 0; FACTYP:=2 always
+
+; --- evmc_csng: CSNG(x) -> narrow to single, round half-up (spec §11.2's ---
+; store-coercion rule, reused as-is). widen_rhs_operand already dispatches on
+; the live FACTYP (int/single/double), so no int early-out is needed here —
+; an int operand is always exact at 6 digits anyway.
+evmc_csng:
+                call    ev_mc_arg
+                ld      hl,ARGA
+                call    widen_rhs_operand
+                jp      round_single_and_pack
+
+; --- evmc_cdbl: CDBL(x) -> widen to double, exact (spec §11.2's "double: ---
+; exact" rule). Same widen_rhs_operand + round_and_finalize composition CSNG
+; uses above, just the double pack (no digit loss possible from any source).
+evmc_cdbl:
+                call    ev_mc_arg
+                ld      hl,ARGA
+                call    widen_rhs_operand
+                jp      round_and_finalize
+    ENDIF
 
 ; --- ev_f_varptr: VARPTR(<var>) -> address of the variable's value field -----
 ; Returns the address of the 2-byte value cell in zerobas's own variable table

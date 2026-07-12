@@ -116,6 +116,31 @@ kwtable:
                 ; Phase 1: CLEAR [<strings>][,<himem>] (MSX2 TH Table 2.20).
                 db      5,"CLEAR",1,CLEAR_TOKEN
                 ; Phase 1: DEF USR / USR + screen verbs (MSX2 TH Table 2.20).
+    IF ROM_BASE < $4000
+                ; math pack slice 1a fallout: adding "INT" as a real keyword
+                ; (below) broke DEFINT specifically -- match_kw's linear,
+                ; boundary-free scan matched plain "DEF" (3 chars) first,
+                ; leaving "INT A-C" for the NEXT match_kw call to find, which
+                ; (now that INT is a keyword) tokenised it to $FF $85 instead
+                ; of leaving it as the literal ASCII "INT" ex_def_type expects
+                ; (usr.asm: "the mnemonics are NOT keyword tokens ... they
+                ; arrive as plain upcased ASCII"). Caught live by
+                ; float-acceptance's def.* cases regressing. Fix: match the
+                ; WHOLE "DEFINT" word as its own entry, EMITTING THE SAME
+                ; BYTES the old DEF+copied-name path produced (DEF_TOKEN then
+                ; literal 'I','N','T') -- so ex_def_type is untouched and the
+                ; crunched byte stream is identical to before this slice.
+                ; Placed BEFORE the plain "DEF" entry: match_kw stops at the
+                ; FIRST table entry that matches (no longest-match, no word-
+                ; boundary check), so DEFINT must be tried first or "DEF"
+                ; wins the first 3 chars and the collision reproduces. DEFSNG/
+                ; DEFDBL/DEFSTR do NOT collide (no "SNG"/"DBL"/"STR"-alone
+                ; keyword exists -- only "CSNG"/"CDBL" do, both requiring a
+                ; leading 'C' that DEF's suffix never has, and "STR$" needs a
+                ; trailing '$' DEFSTR's suffix never has), so no matching
+                ; entry is needed for them.
+                db      6,"DEFINT",4,DEF_TOKEN,"INT"
+    ENDIF
                 db      3,"DEF",1,DEF_TOKEN
                 db      3,"USR",1,USR_TOKEN
                 db      4,"LIST",1,LIST_TOKEN
@@ -184,5 +209,21 @@ kwtable:
                 ; and no keyword is a prefix of "INKEY$" (INPUT/INSTR diverge at char 3),
                 ; so no shadow — order is free. detok_kw2 renders $EC -> "INKEY$" for LIST.
                 db      6,"INKEY$",1,INKEY_TOKEN              ; $EC
+                ; --- math pack slice 1a (repack build only) -----------------------
+                ; docs/spec-basic-math-pack.md §9.3. ABS/SGN/INT/FIX/CINT/CSNG/CDBL:
+                ; $FF-prefixed function tokens, same contiguous MSX-BASIC function
+                ; table as LEN/VAL/HEX$ above (MSX2 TH Table 2.20), black-box
+                ; captured from the VG-8020 crunch (probes/basic/basic_probe_math_
+                ; conv.py) and cross-checked. None share a keyword prefix with an
+                ; existing entry (INT/INPUT/INSTR/INKEY$ all diverge by the 2nd
+                ; char; CINT/CSNG/CDBL vs CVI/CLS diverge by the 2nd char) — order
+                ; is free (match_kw is full-keyword, not prefix, regardless).
+                db      3,"ABS",2,PEEK_PREFIX,ABS_TOKEN        ; $FF $86
+                db      3,"SGN",2,PEEK_PREFIX,SGN_TOKEN        ; $FF $84
+                db      3,"INT",2,PEEK_PREFIX,INT_TOKEN        ; $FF $85
+                db      3,"FIX",2,PEEK_PREFIX,FIX_TOKEN        ; $FF $A1
+                db      4,"CINT",2,PEEK_PREFIX,CINT_TOKEN      ; $FF $9E
+                db      4,"CSNG",2,PEEK_PREFIX,CSNG_TOKEN      ; $FF $9F
+                db      4,"CDBL",2,PEEK_PREFIX,CDBL_TOKEN      ; $FF $A0
     ENDIF
                 db      0
