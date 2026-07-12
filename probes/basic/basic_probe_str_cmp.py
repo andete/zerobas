@@ -101,14 +101,6 @@ def build_line(lhs: str, rhs: str) -> str:
             'PRINT"[";(A$=B$);(A$<>B$);(A$<B$);(A$>B$);(A$<=B$);(A$>=B$);"]"')
 
 
-def run_line(machine, cart, line, **_):
-    """Inject one direct-mode line via omsx_repl (KEYBUF, typing-free) on
-    `machine` (optionally with `cart`) and return the SCREEN 0 name table as 24
-    newline-joined rows. Replaces the former omsx_run matrix-typing capture: no
-    per-char type schedule to race, so the Enter can no longer land mid-typing."""
-    return _rows(omsx_repl.run_case(machine, "direct", [line], cart=cart))
-
-
 def extract_bits(screen_text):
     """Pull the six ints out of the bracketed `[...]` PRINT OUTPUT row. The
     echoed command text itself contains a literal `"["`/`"]"` (the PRINT
@@ -168,16 +160,6 @@ ABORT_SETUP = ['A$="HI"']
 ABORT_LINE = "PRINT A$<5"
 
 
-def run_lines(machine, cart, lines, **_):
-    """Inject each SHORT direct-mode line via omsx_repl (KEYBUF, typing-free) in
-    one boot, then return the SCREEN 0 name table as 24 newline-joined rows (None
-    on failure), so a caller can find the echoed line and read the row directly
-    below it for the result. The former matrix-typing split (setup/op/print as
-    separate short lines to dodge a mid-line Enter) is no longer forced by the
-    delivery layer, but is kept as the natural per-statement structure."""
-    return _rows(omsx_repl.run_case(machine, "direct", lines, cart=cart))
-
-
 def extract_result(screen_text, print_line):
     """The single integer printed on the row directly below the echoed
     `print_line` (direct-mode: typed input echoes, then the item prints on the
@@ -218,6 +200,9 @@ def main() -> int:
     ap.add_argument("--only", help="run only cases whose label contains this substring")
     ap.add_argument("--ref-only", action="store_true",
                     help="skip the zerobas side (oracle-lock only)")
+    ap.add_argument("--boot-per-case", dest="boot_per_case", action="store_true",
+                    help="isolate each case in its own boot instead of the default "
+                         "single-boot batch (to rule out inter-case leakage)")
     args = ap.parse_args()
 
     cases = [c for c in CASES if not args.only or args.only in c[0]]
@@ -228,14 +213,27 @@ def main() -> int:
         return 1
 
     ok = True
+    batch = not args.boot_per_case
+
+    # All three batteries share ONE boot per side: the bit-battery (one compound
+    # direct line each), the PRINT-lead cases (setup + PRINT), and the abort case
+    # -- each an independent direct-mode case with a ("NEW","CLS") reset between
+    # (NEW clears A$/B$, CLS the screen so each capture holds only its own case).
+    specs = [("direct", [build_line(lhs, rhs)]) for _, lhs, rhs in cases]
+    specs += [("direct", c.setup + [c.print_line]) for c in printcases]
+    if want_abort:
+        specs.append(("direct", ABORT_SETUP + [ABORT_LINE]))
+    ref_raws = omsx_repl.run_cases(args.machine, specs, batch=batch, reset=("NEW", "CLS"))
+    zb_raws = (omsx_repl.run_cases(args.zb_machine, specs, batch=batch, reset=("NEW", "CLS"))
+               if not args.ref_only else [None] * len(specs))
+    n1, n2 = len(cases), len(printcases)
 
     if cases:
         print(f"--- reference oracle lock ({args.machine}, §2 contract) ---")
         ref_bits = {}
-        for label, lhs, rhs in cases:
-            line = build_line(lhs, rhs)
+        for (label, lhs, rhs), ref_raw in zip(cases, ref_raws[:n1]):
             want = expected_bits(lhs, rhs)
-            got = extract_bits(run_line(args.machine, None, line, timeout=180))
+            got = extract_bits(_rows(ref_raw))
             ref_bits[label] = got
             good = got == want
             ok = ok and good
@@ -244,10 +242,9 @@ def main() -> int:
 
         if not args.ref_only:
             print(f"\n--- zerobas == reference ({args.zb_machine}) ---")
-            for label, lhs, rhs in cases:
-                line = build_line(lhs, rhs)
+            for (label, lhs, rhs), zb_raw in zip(cases, zb_raws[:n1]):
                 ref = ref_bits.get(label)
-                zb = extract_bits(run_line(args.zb_machine, None, line, timeout=120))
+                zb = extract_bits(_rows(zb_raw))
                 good = ref is not None and zb is not None and zb == ref
                 ok = ok and good
                 print(f"{'PASS' if good else 'FAIL':5} {label:16} zb={zb} ref={ref}")
@@ -257,10 +254,9 @@ def main() -> int:
         print(f"\n--- reference oracle lock: unparenthesized PRINT-lead "
               f"comparisons ({args.machine}) ---")
         ref_print = {}
-        for c in printcases:
+        for c, ref_raw in zip(printcases, ref_raws[n1:n1 + n2]):
             want = -1 if OP_EXPECT[c.op](c.lhs, c.rhs) else 0
-            raw = run_lines(args.machine, None, c.setup + [c.print_line], timeout=180)
-            got = extract_result(raw, c.print_line)
+            got = extract_result(_rows(ref_raw), c.print_line)
             ref_print[c.label] = got
             good = got == want
             ok = ok and good
@@ -270,9 +266,8 @@ def main() -> int:
         if not args.ref_only:
             print(f"\n--- zerobas == reference: unparenthesized PRINT-lead "
                   f"comparisons ({args.zb_machine}) ---")
-            for c in printcases:
-                raw = run_lines(args.zb_machine, None, c.setup + [c.print_line], timeout=140)
-                got = extract_result(raw, c.print_line)
+            for c, zb_raw in zip(printcases, zb_raws[n1:n1 + n2]):
+                got = extract_result(_rows(zb_raw), c.print_line)
                 ref = ref_print.get(c.label)
                 good = ref is not None and got is not None and got == ref
                 ok = ok and good
@@ -288,8 +283,7 @@ def main() -> int:
     if want_abort:
         print(f"\n--- reference oracle lock: unparenthesized type-mismatch "
               f"abort ({args.machine}) ---")
-        ref_raw = run_lines(args.machine, None, ABORT_SETUP + [ABORT_LINE], timeout=180)
-        ref_row = extract_next_row(ref_raw, ABORT_LINE)
+        ref_row = extract_next_row(_rows(ref_raws[n1 + n2]), ABORT_LINE)
         ref_err = ref_row is not None and "type mismatch" in ref_row.lower()
         ref_noval = ref_row is not None and not re.search(r"-?\d", ref_row)
         good = ref_err and ref_noval
@@ -300,8 +294,7 @@ def main() -> int:
         if not args.ref_only:
             print(f"\n--- zerobas: unparenthesized type-mismatch abort "
                   f"({args.zb_machine}) ---")
-            zb_raw = run_lines(args.zb_machine, None, ABORT_SETUP + [ABORT_LINE], timeout=140)
-            zb_row = extract_next_row(zb_raw, ABORT_LINE)
+            zb_row = extract_next_row(_rows(zb_raws[n1 + n2]), ABORT_LINE)
             zb_err = zb_row is not None and "type mismatch" in zb_row.lower()
             zb_noval = zb_row is not None and not re.search(r"-?\d", zb_row)
             good = zb_err and zb_noval

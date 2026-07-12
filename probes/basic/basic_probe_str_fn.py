@@ -306,6 +306,9 @@ def main() -> int:
     ap.add_argument("--only", help="run only cases whose label contains this substring")
     ap.add_argument("--ref-only", action="store_true",
                     help="skip the zerobas side (oracle-lock only)")
+    ap.add_argument("--boot-per-case", dest="boot_per_case", action="store_true",
+                    help="isolate each case in its own boot instead of the default "
+                         "single-boot batch (to rule out inter-case leakage)")
     args = ap.parse_args()
 
     cases = [c for c in CASES if not args.only or args.only in c.label]
@@ -315,12 +318,23 @@ def main() -> int:
         return 1
 
     ok = True
+    batch = not args.boot_per_case
+
+    # The CASES battery shares ONE boot per side (each case is an independent
+    # direct-mode PRINT; ("NEW","CLS") reset between). The SPACE$.clamp case stays
+    # boot-per-case below -- its marker arithmetic runs two captures per side.
+    specs = [("direct", [c.line]) for c in cases]
+    ref_case_raws = (omsx_repl.run_cases(args.machine, specs, batch=batch,
+                                         reset=("NEW", "CLS")) if cases else [])
+    zb_case_raws = (omsx_repl.run_cases(args.zb_machine, specs, batch=batch,
+                                        reset=("NEW", "CLS"))
+                    if cases and not args.ref_only else [None] * len(cases))
 
     if cases:
         print(f"--- reference oracle lock ({args.machine}, §2 contract) ---")
         ref_captured = {}
-        for c in cases:
-            got = extract(run_line(args.machine, None, c.line, timeout=180), c.kind)
+        for c, ref_raw in zip(cases, ref_case_raws):
+            got = extract(ref_raw, c.kind)
             ref_captured[c.label] = got
             good = got == c.expect_ref
             ok = ok and good
@@ -344,8 +358,8 @@ def main() -> int:
     if not args.ref_only:
         if cases:
             print(f"\n--- zerobas == reference ({args.zb_machine}) ---")
-            for c in cases:
-                zb = extract(run_line(args.zb_machine, None, c.line, timeout=120), c.kind)
+            for c, zb_raw in zip(cases, zb_case_raws):
+                zb = extract(zb_raw, c.kind)
                 if c.expect_zb is None:
                     ref = ref_captured.get(c.label)
                     good = ref is not None and zb is not None and zb == ref

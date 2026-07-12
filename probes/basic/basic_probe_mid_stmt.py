@@ -65,16 +65,6 @@ def mid_assign(a: bytes, n: int, b: bytes, m: int | None) -> bytes:
     return a[:n - 1] + b[:k] + a[n - 1 + k:]
 
 
-def run_prog(machine, lines, **_):
-    """Inject each SHORT direct-mode line via omsx_repl (KEYBUF, typing-free) in
-    one boot and return the SCREEN 0 name table as one raw row-major string of
-    length NLEN (non-print bytes -> space; None on failure). A$ persists across
-    the direct-mode lines. The former matrix-typing split (setup/op/print as
-    separate short lines to dodge a mid-line Enter) is no longer forced by the
-    delivery layer, but is kept as the natural per-statement structure."""
-    return omsx_repl.run_case(machine, "direct", lines)
-
-
 def result(raw):
     """The LAST `[..]` bracket content (the mutated A$, printed after the echo)."""
     if raw is None:
@@ -101,10 +91,16 @@ CASES = [
 
 def prog_for(c: Case) -> list[str]:
     """Three short direct-mode lines: seed A$, do the overwrite, print it. A$
-    persists across the lines; short lines keep the Enter after each line."""
+    persists across the lines within a case; a ("NEW","CLS") reset between cases
+    clears it (and the screen) so a batched matrix shares one boot."""
     a = c.a.decode("ascii")
     b = c.b.decode("ascii")
     return [f'A$="{a}"', f'MID$({c.args})="{b}"', 'PRINT"[";A$;"]"']
+
+
+# The range-error program (n>LEN(A$)): seed A$, the out-of-range op (errors),
+# then a would-be PRINT. Its own spec, appended after the overwrite cases.
+ERRPROG = ['A$="HI"', 'MID$(A$,5,1)="X"', 'PRINT"[";A$;"]"']
 
 
 def main() -> int:
@@ -116,6 +112,9 @@ def main() -> int:
                     help="zerobas repack machine (string engine is repack-only)")
     ap.add_argument("--only", help="run only cases whose label contains this substring")
     ap.add_argument("--ref-only", action="store_true", help="skip the zerobas side")
+    ap.add_argument("--boot-per-case", dest="boot_per_case", action="store_true",
+                    help="isolate each case in its own boot instead of the default "
+                         "single-boot batch (to rule out inter-case leakage)")
     args = ap.parse_args()
 
     cases = [c for c in CASES if not args.only or args.only in c.label]
@@ -125,14 +124,26 @@ def main() -> int:
         return 1
 
     ok = True
+    batch = not args.boot_per_case
+
+    # Every case is a direct-mode 3-line program (seed A$, op, PRINT); the whole
+    # matrix shares ONE boot per side with a ("NEW","CLS") reset between cases
+    # (NEW clears the persisted A$, CLS the screen). The range-error program is
+    # the final spec.
+    specs = [("direct", prog_for(c)) for c in cases]
+    if want_err:
+        specs.append(("direct", ERRPROG))
+    ref_raws = omsx_repl.run_cases(args.machine, specs, batch=batch, reset=("NEW", "CLS"))
+    zb_raws = (omsx_repl.run_cases(args.zb_machine, specs, batch=batch, reset=("NEW", "CLS"))
+               if not args.ref_only else [None] * len(specs))
 
     # --- overwrite cases: reference-lock then zerobas==reference ---
     if cases:
         print(f"--- reference oracle lock ({args.machine}, §2 contract) ---")
         ref_cap = {}
-        for c in cases:
+        for c, ref_raw in zip(cases, ref_raws):
             want = mid_assign(c.a, c.n, c.b, c.m).decode("ascii")
-            got = result(run_prog(args.machine, prog_for(c), timeout=180))
+            got = result(ref_raw)
             ref_cap[c.label] = got
             good = got == want
             ok = ok and good
@@ -140,8 +151,8 @@ def main() -> int:
 
         if not args.ref_only:
             print(f"\n--- zerobas == reference ({args.zb_machine}) ---")
-            for c in cases:
-                zb = result(run_prog(args.zb_machine, prog_for(c), timeout=140))
+            for c, zb_raw in zip(cases, zb_raws):
+                zb = result(zb_raw)
                 ref = ref_cap.get(c.label)
                 good = ref is not None and zb == ref
                 ok = ok and good
@@ -151,9 +162,7 @@ def main() -> int:
     if want_err:
         print("\n--- range error n>LEN(A$) [divergence: reference 'Illegal function "
               "call' vs zerobas 'syntax error'; both abort the line] ---")
-        # short lines: seed A$, the out-of-range op (errors), then a would-be PRINT.
-        errprog = ['A$="HI"', 'MID$(A$,5,1)="X"', 'PRINT"[";A$;"]"']
-        ref_raw = run_prog(args.machine, errprog, timeout=180)
+        ref_raw = ref_raws[len(cases)]
         ref_err = ref_raw is not None and "illegal function call" in ref_raw.lower()
         # the PRINT line still runs (direct mode), but A$ is unchanged -> [HI], never
         # [XI]; the key assertion is the error string appears + A$ was not mutated.
@@ -163,7 +172,7 @@ def main() -> int:
         print(f"{'PASS' if good else 'FAIL':5} range-err ref: 'Illegal function call'"
               f"={ref_err}, A$ unchanged={ref_noresult}")
         if not args.ref_only:
-            zb_raw = run_prog(args.zb_machine, errprog, timeout=140)
+            zb_raw = zb_raws[len(cases)]
             zb_err = zb_raw is not None and "syntax error" in zb_raw.lower()
             zb_noresult = result(zb_raw) != "XI"
             good = zb_err and zb_noresult
