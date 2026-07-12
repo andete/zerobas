@@ -124,12 +124,38 @@ complements the fast emulator-free `make unit-test`:
 
 ```
 probes/
-  lib/omsx_run.py                        # headless openMSX driver
+  lib/omsx_run.py                        # headless openMSX driver (--bp trigger path)
+  lib/omsx_repl.py                       # typing-free KEYBUF REPL driver (VRAM probes)
   lib/cas_encode.py                      # build_cas() — make a .cas payload
   basic/basic_probe_*.py                 # differential + functional probes
   disk/disk_probe_*.py                   # zerobas-disk vs CF-3300 / MSX-DOS 1
   tape/bios_probe_*.py                   # cbios-tape cassette path
 ```
+
+### omsx_repl.py — the typing-free REPL driver (use for VRAM-scraping probes)
+
+A probe that types BASIC at the prompt and reads the result from VRAM must drive
+lines through `omsx_repl.run_case(machine, mode, lines)`, **not** `omsx_run
+--type`. `type` emulates the keyboard MATRIX on a fixed emulated-time schedule and
+is timing-fragile (leading key doubles; Enter swallowed mid-type — the F3 S3b
+`varptr` flake). `omsx_repl` injects each line into the BIOS type-ahead buffer
+(`KEYBUF $FBF0` + `GETPNT`/`PUTPNT`; published MSX2-TH contract, no disasm) so the
+ROM tokenises it with no matrix scan — deterministic, no per-char schedule.
+
+```sh
+python3 probes/lib/omsx_repl.py --selftest C-BIOS_MSX1_EU_REPACK_DISK   # + Philips_VG_8020
+```
+
+- `run_case(machine, "direct", [line])` — one direct line (auto-chunked past the
+  40-byte KEYBUF cap, so any length works); `"stored"` numbers `body_lines`
+  10/20/… + `RUN` (split a `:`-line with `as_stored`).
+- Reuse `result_span` / `screen_tail` / `result_span_after_echo` for the
+  `[…]`-bracket value + error-tail (machine-agnostic re `Ok` vs `zb>`).
+- **Boot per case** (`run_case`) is the default — power-on-fresh state. Batching
+  (`run_batch`) is UNSAFE on zerobas today: its `NEW`/`CLEAR` don't reset
+  variables/DEFtbl (the reference does — a known divergence).
+- Template: `basic_probe_float_vars/_fmt/_arith.py`. A `--bp`-landmark probe
+  (crunch/tokenise) is not flaky — leave it on `omsx_run.py`.
 
 ### Byte-identical crunch probe (run after ANY tokeniser change)
 

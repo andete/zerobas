@@ -1,6 +1,30 @@
 # Spec — acceptance-harness injection rework
 
-**Status:** DRAFT, awaiting sign-off (2026-07-12)
+**Status:** APPROVED 2026-07-12; S0–S2 + S4 DONE, S3 (string/other probes)
+pending. Float-acceptance fully converted (floatlit stays on `omsx_run` --bp).
+
+**Progress & findings:**
+- **S0** (2b540cf): `probes/lib/omsx_repl.py` + self-test, green on both machines.
+- **S1** (62858b2): `basic_probe_float_vars.py` converted, 56/56 identical to
+  baseline, former-flaky cases now deterministic across repeats. Found+fixed a
+  KEYBUF *circular-buffer* boundary bug: line+CR = 40 wraps PUTPNT onto GETPNT →
+  the line executes TWICE; cap is `MAX_DIRECT = 38` (line+CR ≤ 39).
+- **S2** (5169293): `float_fmt` (60/60) + `float_arith` (167/167) identical to
+  baseline. Added **chunked KEYBUF injection** (write >38-char lines in ≤38-char
+  pieces, CR on the last) → a direct line of any length works with no tokeniser,
+  so the **TXTTAB fallback (§2.2) is never needed** and stays unbuilt.
+- **S4** (docs): `probes/README.md` + `docs/dev-workflow.md` updated.
+- **Batching (G4) dropped on the zerobas build:** the self-test established that
+  zerobas `NEW`/`CLEAR` don't reset variables/DEFtbl (the reference does — a real
+  divergence, flagged for a separate fix), so state can't be reset between cases
+  in one boot. `run_case` is boot-per-case — which still fully kills the flake
+  (G1, the primary goal); the batching wall-clock win under `throttle off` was
+  modest anyway. The `--selftest` reports the batching-safety verdict.
+
+---
+
+**Original draft (approved as written below):**
+
 **Track:** harness rework (parked next-up after F3; see memory
 `acceptance-harness-injection-rework`)
 **Mechanism decision (user, 2026-07-12):** *layered* — KEYBUF injection is the

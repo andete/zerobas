@@ -20,7 +20,7 @@ dumps, or disassembles any reference ROM. This is the clean-room discipline of
 
 | Dir | Contents |
 |-----|----------|
-| `lib/`   | shared infrastructure — `omsx_run.py` (headless openMSX state capture), `z80probe.py` (Z80 cartridge builder), `probe_cart.py` (sentinel-cart generator), `cas_encode.py` / `cas_decode.py` (cassette codecs) |
+| `lib/`   | shared infrastructure — `omsx_run.py` (headless openMSX state capture; the `--bp`-landmark trigger path), `omsx_repl.py` (typing-free KEYBUF-injection REPL driver — see below), `z80probe.py` (Z80 cartridge builder), `probe_cart.py` (sentinel-cart generator), `cas_encode.py` / `cas_decode.py` (cassette codecs) |
 | `basic/` | `basic_probe_*.py` — zerobas-BASIC vs a reference MSX-BASIC ROM (Philips VG-8020) |
 | `disk/`  | `disk_probe_*.py`, `diskbasic_probe_*.py` — zerobas-disk vs a reference disk ROM (National CF-3300) and real MSX-DOS 1 |
 | `tape/`  | `bios_probe_*.py` — the cbios-tape cassette read/write path (TAPION/TAPIN/TAPOON/TAPOUT…) on patched C-BIOS |
@@ -57,6 +57,31 @@ python3 probes/disk/disk_probe_lstout_cbios.py                       # prints "L
 # every probe takes --help
 python3 probes/disk/disk_probe_bdos.py --help
 ```
+
+### Driving the REPL — `lib/omsx_repl.py`
+
+A probe that types BASIC at the `Ok`/`zb>` prompt and scrapes the result from
+VRAM should deliver its lines through **`omsx_repl.run_case(machine, mode,
+lines)`**, NOT openMSX `type`. `type` drives the keyboard *matrix* on a fixed
+emulated-time schedule, which is timing-fragile (a leading key can double, an
+Enter can be swallowed mid-type). `omsx_repl` instead injects each line into the
+BIOS type-ahead buffer (`KEYBUF $FBF0` + `GETPNT`/`PUTPNT`, published MSX2-TH
+contract, no disasm) so the ROM tokenises it with no matrix scan — deterministic.
+
+- `run_case(machine, "direct", [line])` — one direct-mode REPL line. A line past
+  the 40-byte KEYBUF cap is chunked transparently (no length limit up to ~255).
+- `run_case(machine, "stored", body_lines)` — run a program: the body statements
+  are numbered `10`/`20`/… and `RUN`; use `as_stored(":"-joined line)` to split.
+- `result_span` / `screen_tail` / `result_span_after_echo` — the reusable
+  `[…]`-bracket value + error-tail extractors (machine-agnostic re `Ok` vs `zb>`).
+- **Boot per case** is the default (`run_case`) — power-on-fresh state, matching
+  the old harness. Multi-case batching (`run_batch`) is retained but currently
+  UNSAFE on zerobas (its `NEW`/`CLEAR` don't reset variables/DEFtbl; the
+  reference does). Self-test + this boundary: `omsx_repl.py --selftest <machine>`.
+
+The `basic_probe_float_*` probes (except the `--bp`-landmark `floatlit`) use this
+driver; copy them as the template. A probe that syncs on a breakpoint (`--bp`,
+e.g. the crunch/tokenise probes) is not flaky and stays on `omsx_run.py`.
 
 `make probe` runs one probe per component as a smoke check (needs steps 1–4 above).
 
