@@ -41,13 +41,18 @@ extraction (the `[...]` bracket convention) lives in the reusable helpers below.
 DEFAULT GRANULARITY -- BOOT PER CASE (`run_case`): a fresh boot gives every case
 power-on-clean variables AND a default (all-double) DEF type table, exactly like
 the matrix-typing harness it replaces, so the conversion is differential-inert.
-This is the default because batching is NOT safe on the current zerobas build:
-the `--selftest` isolation check established (2026-07-12) that zerobas's `NEW` and
-`CLEAR` do NOT clear variables or the DEF table (the reference does -- a real
-zerobas divergence, flagged separately), so there is no cheap way to reset state
-between cases in one boot. `run_batch` (many cases/boot) is retained for probes
-whose cases are provably independent (share no variable/DEF state), and MUST NOT
-be used for a shared-state matrix until that divergence is fixed.
+Boot-per-case remains the DEFAULT for its simplicity and power-on cleanliness.
+Historically it was also forced: the `--selftest` isolation check established
+(2026-07-12) that zerobas's `NEW` and `CLEAR` did NOT clear variables or the DEF
+table (the reference does -- a real zerobas divergence). That divergence is now
+FIXED in the repack build (basic/clear.asm + basic/program.asm; gated
+`IF ROM_BASE < $4000` since the lean build is byte-full and has no DEFtbl),
+proven reference-identical by basic_probe_var_reset.py in the float-acceptance
+gate -- so on the repack machine `run_batch(..., reset=("NEW",))` (or a bare
+`CLEAR`) now genuinely resets shared variable/DEF state between cases in one
+boot. `run_batch` is still used only where cases are provably independent or an
+explicit reset is supplied; matrices that never validated a reset stay on
+run_case out of caution, not necessity.
 """
 from __future__ import annotations
 
@@ -204,9 +209,10 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     """Boot `machine` once and drive `cases` (each `(mode, lines)`), returning one
     raw SCREEN-0 name-table string (length SCR_LEN, non-print bytes -> space) per
     case, or None where that case's capture is missing. `reset` injects the given
-    lines before EACH case -- but note NEW/CLEAR do not reset zerobas state (see
-    module docstring), so multi-case batching is only safe for state-independent
-    cases; prefer run_case. mode "direct": inject each line verbatim (<=39 chars).
+    lines before EACH case; on the repack build NEW/CLEAR now DO reset variables
+    and the DEF table (fixed 2026-07-12, see module docstring), so `reset=("NEW",)`
+    is a valid cheap inter-case reset there. Prefer run_case unless a probe has
+    validated its reset. mode "direct": inject each line verbatim (<=39 chars).
     mode "stored": `lines` are body statements; numbered 10/20/... + "RUN"."""
     binary = find_omsx(omsx)
     out = tempfile.NamedTemporaryFile(suffix=".txt", prefix="repl_", delete=False).name

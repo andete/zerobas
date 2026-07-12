@@ -14,12 +14,18 @@ pending. Float-acceptance fully converted (floatlit stays on `omsx_run` --bp).
   pieces, CR on the last) → a direct line of any length works with no tokeniser,
   so the **TXTTAB fallback (§2.2) is never needed** and stays unbuilt.
 - **S4** (docs): `probes/README.md` + `docs/dev-workflow.md` updated.
-- **Batching (G4) dropped on the zerobas build:** the self-test established that
-  zerobas `NEW`/`CLEAR` don't reset variables/DEFtbl (the reference does — a real
-  divergence, flagged for a separate fix), so state can't be reset between cases
-  in one boot. `run_case` is boot-per-case — which still fully kills the flake
-  (G1, the primary goal); the batching wall-clock win under `throttle off` was
-  modest anyway. The `--selftest` reports the batching-safety verdict.
+- **Batching (G4) originally dropped on the zerobas build:** the self-test
+  established that zerobas `NEW`/`CLEAR` didn't reset variables/DEFtbl (the
+  reference does — a real divergence). That divergence is now **FIXED** in the
+  repack build (2026-07-12; `basic/clear.asm` + `basic/program.asm`, gated
+  `IF ROM_BASE < $4000`; proven reference-identical by
+  `probes/basic/basic_probe_var_reset.py` in the `float-acceptance` gate), so a
+  bare `CLEAR` / `NEW` reset between cases in one boot is now viable on the
+  repack machine (`run_batch(..., reset=("NEW",))`). `run_case` (boot-per-case)
+  stays the default — it fully kills the flake (G1, the primary goal) and the
+  batching wall-clock win under `throttle off` was modest — but batching is no
+  longer *blocked* by a state-reset wall. The `--selftest` reports the
+  batching-safety verdict.
 
 ---
 

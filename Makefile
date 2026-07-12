@@ -287,6 +287,7 @@ float-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_float_fmt.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
 	python3 probes/basic/basic_probe_float_arith.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
 	python3 probes/basic/basic_probe_float_vars.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
+	python3 probes/basic/basic_probe_var_reset.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
 
 # Standing C-BIOS self-consistency gate: closes the coverage gap that `bdos-acceptance`
 # structurally can't reach. That gate is a DIFFERENTIAL, so it only runs on the CF-3300

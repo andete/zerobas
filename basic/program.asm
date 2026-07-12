@@ -80,6 +80,14 @@ err_overflow:   db      "overflow",13,10,0
 dl_run:
                 jp      run_prog
 dl_new:
+    IF ROM_BASE < $4000
+                ; NEW clears ALL variables (VARTAB / DEFtbl / strings), not just
+                ; the stored program — MS-BASIC semantics. Gated to the repack
+                ; build: the lean 16 KB basic.rom is byte-full at its $8000
+                ; ceiling AND has no typed vars / DEFtbl, so it stays byte-
+                ; identical. LOAD's own new_prog calls stay variable-safe.
+                call    clear_vars
+    ENDIF
                 jp      new_prog
 
 ; --- is_cmd: does the word at (HL) match the uppercase template at (DE)? ------
