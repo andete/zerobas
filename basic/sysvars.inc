@@ -321,10 +321,20 @@ TOKBUF          equ     $E160   ; crunch buffer: the tokenised line (0-terminate
 ; Names are significant to 2 characters (public MSX-BASIC language reference);
 ; name1 = 0 for a 1-char name. A name0 of 0 marks the first free slot. Phase 1
 ; grew this from the single-letter A..Z store to multi-character names.
+;
+; F3 S3a (repack build only, docs/spec-basic-float-core.md §11): typed numeric
+; variables replace the fixed 4-byte stride with VARIABLE-WIDTH entries
+; [name0:1][name1:1][type:1][value: 2 int / 4 single / 8 double], keyed on
+; (name0,name1,type) so `A`/`A%`/`A!`/`A#` are independent entries. VARENTSZ/
+; VARSLOTS below no longer describe the repack entry shape (there is no single
+; fixed stride any more), but their PRODUCT still pins the numeric pool to the
+; same 128-byte span ending at VAREND=$E240 — the hard constraint (STRTAB must
+; not move) — so both constants stay exactly as Phase 1 left them and only the
+; lean build still reads them as a literal stride/count.
 VARTAB          equ     $E1C0   ; base of the variable table
-VARENTSZ        equ     4       ; [name0:1][name1:1][value:2]
-VARSLOTS        equ     32      ; max distinct variables (128 bytes -> $E240)
-VAREND          equ     VARTAB + VARSLOTS*VARENTSZ
+VARENTSZ        equ     4       ; lean build: [name0:1][name1:1][value:2] stride
+VARSLOTS        equ     32      ; lean build: max distinct variables (128 bytes -> $E240)
+VAREND          equ     VARTAB + VARSLOTS*VARENTSZ  ; $E240 in EITHER build (pinned)
 
 ; --- Phase 1: minimal string-variable store (own-design; see PROVENANCE.md) --
 ; A `$`-suffixed variable (e.g. A$) holds a short string value. This is a
@@ -1094,6 +1104,29 @@ INT_MAIN_PRIM   equ     $F14A   ; page-0 primary field of the MAIN (BIOS) slot (
 INT_SUB_PRIM    equ     $F14B   ; page-0 primary field of the sub-ROM slot (=3, slot 3)
 INT_SUB_SUBSL   equ     $F14C   ; page-0 subslot  field of the sub-ROM slot (=2, i.e. 3-2)
 SUB_INT_DELTA   equ     $F14D   ; self-test tenant result: JIFFY ticks observed under EI (1)
+; --- Math float pack, slice F3 S3a RAM (repack build only) ------------------
+; docs/spec-basic-float-core.md §11. Own-choice free RAM, same rationale as the
+; F1/F2 blocks above: $F14E.. is unclaimed free RAM below DRVA_DPB ($F195,
+; disk/init.asm) and above SUB_INT_DELTA (permanent, not transient like DB_CUR).
+VARTYPE         equ     $F14E   ; var_name_key: the RESOLVED type (2/4/8) of the
+                                ; just-parsed name's suffix (unsuffixed -> 8,
+                                ; hardcoded double in S3a; the per-letter DEFtbl
+                                ; override is S3b, not here). Read by ev_f_var/
+                                ; ev_f_varptr/ex_let right after var_name_key (1)
+VS_TARGET_TYPE  equ     $F14F   ; var_store_fac/var_alloc_or_find (vars.asm):
+                                ; the target type parameter, stashed across the
+                                ; coercion calls that clobber A (1)
+VS_INT_VAL      equ     $F150   ; var_store_fac (vars.asm): the coerced int16 value
+                                ; (fac_to_int_strict's DE), stashed across the
+                                ; var_alloc_or_find call that CLOBBERS DE for its
+                                ; own room-check arithmetic, so the int write-back
+                                ; sees the value and not leftover VAREND (2)
+LHS_VARTYPE     equ     $F152   ; ex_let (interp.asm): the LHS variable's resolved
+                                ; type, latched from (VARTYPE) BEFORE eval -- every
+                                ; RHS variable factor re-runs var_name_key, which
+                                ; overwrites the GLOBAL (VARTYPE), so a cross-type
+                                ; assignment (A%=A#) must read this latched copy for
+                                ; the var_store_fac target, not the clobbered global (1)
 JIFFY           equ     $FC9E   ; MSX software clock, bumped by the timer ISR (MSX2 TH work area)
 ; Dispatch ABI (mirror of sub/equates.inc — the append-only page-0 entry table).
 ; IX = SUBROM_ENTRY_BASE_P0 + 3*index selects a tenant; never renumber an index.

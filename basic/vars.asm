@@ -19,6 +19,20 @@
 ; significant characters, default 0) follow the public MSX-BASIC language
 ; reference; the table layout is our own choice (see PROVENANCE.md). No
 ; disassembly.
+;
+; F3 S3a (repack build only — docs/spec-basic-float-core.md §11): numeric
+; variables become TYPED. A variable's identity is (name0, name1, resolved
+; type); the resolved type comes from the name's suffix (`%`->2 int, `!`->4
+; single, `#`->8 double, unsuffixed->8 double, hardcoded in S3a — the per-
+; letter DEFtbl that can override the unsuffixed default is S3b, a separate
+; slice). `A`, `A%`, `A!`, `A#` are up to 4 distinct entries. The numeric pool
+; stays the SAME 128-byte span $E1C0..$E240 (VARTAB/VAREND, sysvars.inc,
+; unchanged), now packed with VARIABLE-WIDTH entries
+; [name0:1][name1:1][type:1][value: 2/4/8] instead of a fixed 4-byte stride —
+; see var_find_typed/var_load_fac/var_store_fac below. `var_find`/
+; `var_get_key`/`var_set_key` (this section, unmodified) remain the LEAN
+; build's int-only implementation; every new typed routine is gated
+; `IF ROM_BASE < $4000` so the lean 16 KB basic.rom stays byte-identical.
 
 ; --- is_ident_cont: CF set if A is an identifier continuation char ----------
 ; (a letter 'A'..'Z'/'a'..'z' or a digit '0'..'9'). A preserved.
@@ -65,6 +79,45 @@ vnk_more:
 vnk_dig2:
                 ld      a,(hl)              ; digit second char, verbatim
                 jr      vnk_set2
+    IF ROM_BASE < $4000
+; F3 S3a: the suffix now additionally RESOLVES the variable's type into
+; (VARTYPE), sysvars.inc — replacing the lean build's "consume and ignore"
+; vnk_suffix below. Consuming behaviour (which chars advance HL) is UNCHANGED:
+; `%`/`!`/`#`/`$` are all still eaten; no suffix leaves HL on the following
+; char, exactly as before.
+vnk_suffix:
+                ld      a,(hl)              ; optional type suffix
+                cp      '%'
+                jr      z,vnk_pct
+                cp      '!'
+                jr      z,vnk_bang
+                cp      '#'
+                jr      z,vnk_hash
+                cp      '$'
+                jr      z,vnk_dollar
+                ld      a,8                 ; unsuffixed numeric -> default DOUBLE
+                ld      (VARTYPE),a         ; (S3a hardcodes this; DEFtbl is S3b)
+                ret                         ; no suffix -> HL NOT advanced (unchanged)
+vnk_pct:
+                ld      a,2
+                ld      (VARTYPE),a
+                jr      vnk_eat
+vnk_bang:
+                ld      a,4
+                ld      (VARTYPE),a
+                jr      vnk_eat
+vnk_hash:
+                ld      a,8
+                ld      (VARTYPE),a
+                jr      vnk_eat
+vnk_dollar:
+                ld      a,8                 ; VARTYPE is unused by the string store (the
+                ld      (VARTYPE),a         ; `$` path never reads it) — kept defined so a
+                                            ; stray read never sees garbage
+vnk_eat:
+                inc     hl
+                ret
+    ELSE
 vnk_suffix:
                 ld      a,(hl)              ; optional type suffix, consumed/ignored
                 cp      '%'
@@ -78,6 +131,7 @@ vnk_suffix:
 vnk_eat:
                 inc     hl
                 ret
+    ENDIF
 
 ; --- var_str_type: does the name at (HL) carry a `$` suffix? -----------------
 ; in:  HL = cursor at the first name char (a letter). HL is NOT advanced.
@@ -188,21 +242,296 @@ vsk_store:
                 ld      (hl),d
                 ret
 
+    IF ROM_BASE < $4000
+; =============================================================================
+; F3 S3a — typed variable store (repack build only, docs/spec-basic-float-
+; core.md §11). var_find above stays the LEAN build's int-only 4-byte-stride
+; walk; these are its variable-width counterparts, keyed on (name0,name1,type).
+; =============================================================================
+
+; --- var_find_typed: locate the entry for (key BC, type A) ------------------
+; in:  BC = key (name0,name1), A = type (2/4/8).
+; out: CF set  -> found,     HL = entry address (name0 field).
+;      CF clear -> not found, HL = first free slot (bump pointer, i.e. the
+;                  first name0==0 byte) or VAREND if the table is completely
+;                  full. Since entries are never deleted, the free slot found
+;                  here IS always the end of the list (a bump allocator).
+; An entry whose name matches but whose OWN type byte differs from A is NOT a
+; match (spec: `A`/`A%`/`A!`/`A#` are independent entries) — the walk skips
+; past it by ITS OWN stored width and keeps looking. Clobbers A, D, H, L (BC
+; preserved).
+var_find_typed:
+                ld      d,a                 ; D = target type
+                ld      hl,VARTAB
+vft_lp:
+                ld      a,h
+                cp      high VAREND
+                jr      nz,vft_test
+                ld      a,l
+                cp      low VAREND
+                jr      z,vft_full
+vft_test:
+                ld      a,(hl)              ; name0
+                or      a
+                jr      z,vft_free          ; empty slot -> not found
+                cp      b
+                jr      nz,vft_skip
+                inc     hl
+                ld      a,(hl)              ; name1
+                dec     hl
+                cp      c
+                jr      nz,vft_skip
+                push    hl
+                inc     hl
+                inc     hl
+                ld      a,(hl)              ; this entry's type
+                pop     hl
+                cp      d
+                jr      z,vft_hit
+vft_skip:
+                ; advance by THIS entry's own stride (3 header bytes + its value
+                ; width, which is exactly its type value: 2/4/8 -> 5/7/11 total)
+                push    hl
+                inc     hl
+                inc     hl
+                ld      a,(hl)              ; type byte (stride source)
+                pop     hl
+                add     a,3                 ; A = total entry width
+                add     a,l
+                ld      l,a
+                jr      nc,vft_lp
+                inc     h
+                jr      vft_lp
+vft_hit:
+                scf
+                ret
+vft_free:
+                or      a
+                ret
+vft_full:
+                or      a
+                ret
+
+; --- var_alloc_or_find: BC=key, A=type -> HL = entry base, CF set ------------
+; (name0/name1/type already written if this call just allocated the entry; a
+; freshly allocated entry's VALUE bytes are zero-filled too, so an unset
+; variable always reads back as 0). CF clear = the pool has no room left for a
+; new entry of this width; HL is then meaningless and nothing was written.
+; Shared by var_store_fac (which overwrites the value field afterward) and
+; VARPTR (ev_f_varptr, expr.asm), which only needs the entry to EXIST.
+; Clobbers A, B, C, D, E, H, L (BC not preserved — callers needing the key
+; afterward must save it themselves).
+var_alloc_or_find:
+                ld      (VS_TARGET_TYPE),a  ; stash the type across var_find_typed
+                call    var_find_typed      ; BC,A -> CF/HL
+                ret     c                   ; already exists
+                ; not found: HL = free slot (bump ptr) or VAREND (no room at all)
+                ld      a,h
+                cp      high VAREND
+                jr      nz,vaof_check_room
+                ld      a,l
+                cp      low VAREND
+                ret     z                   ; HL==VAREND exactly -> CF clear, no room
+vaof_check_room:
+                push    hl                  ; guard the free-slot address
+                ld      a,(VS_TARGET_TYPE)
+                add     a,3                 ; A = this entry's total stride
+                ld      e,a
+                ld      d,0
+                add     hl,de               ; HL = free + stride (one past the new entry)
+                ld      de,VAREND
+                or      a
+                sbc     hl,de               ; HL = (free+stride) - VAREND
+                jr      c,vaof_room_ok       ; borrow -> fits with room to spare
+                ld      a,h
+                or      l
+                jr      z,vaof_room_ok       ; exact zero -> fits exactly up to VAREND
+                pop     hl                  ; doesn't fit -> balance the stack, drop
+                or      a                   ; CF clear
+                ret
+vaof_room_ok:
+                pop     hl                  ; HL = free slot address (restored)
+                ld      (hl),b              ; name0
+                inc     hl
+                ld      (hl),c              ; name1
+                inc     hl
+                ld      a,(VS_TARGET_TYPE)
+                ld      (hl),a              ; type
+                inc     hl                  ; HL -> value field
+                ld      b,a                 ; B = value width (2/4/8) -- zero_fill counts
+                                            ; in B via djnz (float-arith.asm), NOT C; a
+                                            ; B=0 here would zero 256 bytes and plough
+                                            ; through STRTAB ($E240), wiping string vars
+                push    hl
+                call    zero_fill           ; auto-init a fresh entry's value to 0
+                                            ; (float-arith.asm; matches the pre-F3
+                                            ; var_set_key "new" path's explicit zero
+                                            ; write, which VARPTR relies on)
+                pop     hl
+                dec     hl
+                dec     hl
+                dec     hl                  ; HL back to entry base (name0) — same
+                                            ; "HL=entry base" contract as the found path
+                scf
+                ret
+
+; --- var_load_fac: BC=key, A=type -> FAC set, FACTYP=type, DE=int16 fast ----
+; path (§9.4/§10.3 discipline: same sticky-FACTYP + flt_int_result contract
+; ev_f_float uses for literals). An unset variable reads back as 0 (MSX auto-
+; init). Clobbers A, B, C, D, E, H, L.
+var_load_fac:
+                push    af                  ; stash the target type across the call
+                call    var_find_typed      ; BC,A -> CF/HL
+                jr      c,vlf_found
+                pop     af                  ; A = target type (unset -> zero value)
+                ld      (FACTYP),a
+                cp      2
+                jr      z,vlf_unset_int
+                xor     a
+                ld      (FAC),a             ; lead byte 0 -> float zero
+                ld      de,0
+                ret
+vlf_unset_int:
+                ld      de,0
+                ret
+vlf_found:
+                pop     af                  ; A = type (== the entry's own stored type)
+                ld      (FACTYP),a
+                cp      2
+                jr      z,vlf_found_int
+                ld      c,a                 ; C = byte count (4 single / 8 double)
+                ld      b,0
+                push    hl
+                pop     de
+                inc     de
+                inc     de
+                inc     de                  ; DE -> value field (entry+3)
+                ld      hl,FAC
+                ex      de,hl               ; HL=value field(source), DE=FAC(dest)
+                ldir
+                jp      flt_to_int16        ; DE = int16 fast path (tail call)
+vlf_found_int:
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL -> value field (entry+3, 2 bytes LE)
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)
+                ret
+
+; --- var_store_fac: BC=key, A=target type (2/4/8) -> coerce the live RHS -----
+; (DE, valid iff the CURRENT (FACTYP)==2; else FAC/FACTYP hold the RHS's own
+; float value) into type A per spec §11.2, then store (allocate-if-new; the
+; pool-full case is a silent drop, matching the pre-F3 behaviour). On a
+; coercion-time Overflow (int store outside -32768..32767; an extreme single/
+; double whose dec_exp escapes -63..63 after rounding) this sets FPERR and
+; returns WITHOUT storing — mirrors fac_to_int_strict's own contract; the
+; caller (ex_let) checks FPERR right after, same D-F2-1 pattern as eval()'s own
+; runtime errors. Clobbers A, B, C, D, E, H, L.
+;   -> int:    TRUNCATE toward zero, STRICT int16 domain (fac_to_int_strict —
+;              the same rule as \, MOD, AND, OR, XOR, NOT operands; a variable
+;              store is an operand context, not a POKE/HEX$ address argument,
+;              so the address domain's wrap-then-truncate does NOT apply here).
+;   -> single: ROUND to 6 significant digits, half-up, carry renormalise
+;              (round_single_and_pack, float-arith.asm).
+;   -> double: exact (round_and_finalize on an exact widen; its own guard
+;              digit is always 0 for an int/single/double source, so it never
+;              actually rounds — reused purely for its bound-check + BCD-pack
+;              tail).
+var_store_fac:
+                ld      (VS_TARGET_TYPE),a  ; stash the target type across coercion
+                push    bc                  ; guard the key (coercion clobbers BC)
+                cp      2
+                jr      z,vsf_int
+                cp      4
+                jr      z,vsf_single
+                ld      hl,ARGA
+                call    widen_rhs_operand   ; exact widen of the live RHS (int/single/
+                                            ; double) into a 14-digit ARGA (float-
+                                            ; arith.asm)
+                call    round_and_finalize  ; no-op round (guard digit is 0) + pack as
+                                            ; double + FACTYP=8 + DE
+                jr      vsf_coerced
+vsf_single:
+                ld      hl,ARGA
+                call    widen_rhs_operand
+                call    round_single_and_pack ; 6-digit half-up round + pack as single +
+                                              ; FACTYP=4 + DE
+                jr      vsf_coerced
+vsf_int:
+                call    fac_to_int_strict   ; -> DE (truncate, strict int16 domain);
+                                            ; sets FPERR=1 on overflow (spec §10.3)
+                ld      (VS_INT_VAL),de     ; stash it: var_alloc_or_find (below) CLOBBERS
+                                            ; DE for its room-check arithmetic, so the int
+                                            ; write-back must reload from RAM, not DE
+vsf_coerced:
+                pop     bc                  ; BC = key restored
+                ld      a,(FPERR)
+                or      a
+                ret     nz                  ; coercion overflow -> drop the store
+                ld      a,(VS_TARGET_TYPE)
+                call    var_alloc_or_find   ; BC,A -> CF/HL (name/type written + value
+                                            ; zeroed if freshly allocated); clobbers DE
+                ret     nc                  ; pool completely full -> silently drop
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL -> value field (entry+3)
+                ld      a,(VS_TARGET_TYPE)
+                cp      2
+                jr      z,vsf_wb_int
+                ld      c,a                 ; C = byte count (4 single / 8 double)
+                ld      b,0
+                push    hl
+                pop     de
+                ld      hl,FAC
+                ldir                        ; FAC -> value field, verbatim (same [lead+
+                                            ; mantissa] bytes flt_out/var_load_fac read)
+                ret
+vsf_wb_int:
+                ld      de,(VS_INT_VAL)     ; the coerced value (DE was clobbered above)
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
+                ret
+    ENDIF
+
 ; --- var_get / var_set: single-letter compatibility shims ------------------
 ; A = name (one char). Map to key (upcased name, 0) — identical to the key a
 ; 1-char name produces via var_name_key, so single-letter variables set here are
 ; fully interoperable with multi-character ones. Used by FOR/NEXT and READ, whose
 ; loop/target variables are single-letter. var_set preserves DE (the value).
+;
+; F3 S3a (repack build): both shims route through the typed store at the
+; unsuffixed default type (double), converting int16<->FAC so the FOR/NEXT loop
+; math and READ's DATA parsing stay plain int16 (D-D: a typed/float loop
+; variable is deferred) while the STORED/PRINTED value is a real double entry,
+; consistent with every other unsuffixed name.
 var_get:
                 call    upcase
                 ld      b,a
                 ld      c,0
+    IF ROM_BASE < $4000
+                ld      a,8                 ; unsuffixed default type (S3a)
+                jp      var_load_fac        ; FAC/FACTYP=8, DE=int16 fast path (tail call)
+    ELSE
                 jp      var_get_key
+    ENDIF
 var_set:
                 call    upcase
                 ld      b,a
                 ld      c,0
+    IF ROM_BASE < $4000
+                ld      a,2
+                ld      (FACTYP),a          ; FOR/NEXT & READ always hand var_set a plain
+                                            ; int16 value (D-D: the loop math itself stays
+                                            ; int16 in F3) -- tag it so var_store_fac's
+                                            ; double-target coercion widens DE via
+                                            ; widen_int_to instead of misreading FAC
+                ld      a,8                 ; unsuffixed default type (S3a)
+                jp      var_store_fac       ; tail call
+    ELSE
                 jp      var_set_key
+    ENDIF
 
 ; --- string-variable store (own-design; see PROVENANCE.md) -----------------
 ; Parallel to the numeric var_find/get/set, but over STRTAB, whose entries are

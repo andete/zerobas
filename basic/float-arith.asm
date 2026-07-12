@@ -388,6 +388,132 @@ raf_zero_ok:
                 ret
 
 ; =============================================================================
+; F3 S3a store coercion — single-precision (6 sig digit) round + pack
+; (docs/spec-basic-float-core.md §11.2). vars.asm's var_store_fac calls these
+; after widen_rhs_operand has filled ARGA with an EXACT widen of the RHS (int/
+; single/double source, always exact — no rounding happened yet); these round
+; that exact 14-digit array down to 6 significant digits, half-up with carry
+; renormalise, and pack the result as a single FAC. Same shape as arga_inc14/
+; arga_carry_renorm/arga_pack_fac/round_and_finalize above, scoped to 6 digits
+; / 3 mantissa bytes instead of 14/7 — kept as SEPARATE routines rather than
+; parameterising the existing ones, so F2's hot arithmetic path (fp_add/sub/
+; mul/div, all always 14-digit double) is untouched byte-for-byte.
+; =============================================================================
+
+; --- arga_inc6: ARGA_DIG[0..5] += 1 (six-digit big-decimal), for the SINGLE --
+; store-coercion's guard-digit half-up round. out: CF set iff the increment
+; carried out of index 0 (all six digits were 9). Clobbers A, B, HL.
+arga_inc6:
+                ld      hl,ARGA+FPNUM_DIG+5
+                ld      b,6
+                scf
+ai6_lp:
+                jr      nc,ai6_done
+                ld      a,(hl)
+                add     a,1
+                cp      10
+                jr      c,ai6_nc
+                sub     10
+                scf
+                jr      ai6_st
+ai6_nc:
+                or      a
+ai6_st:
+                ld      (hl),a
+                dec     hl
+                djnz    ai6_lp
+ai6_done:
+                ret
+
+; --- arga_renorm6: after arga_inc6 carries out of digit 0 (six 9's rounded --
+; up, e.g. 999999+1 -> 1000000), ARGA_DIG[0]:=1, ARGA_DIG[1..5]:=0, ARGA_DEXP
+; += 1. Unlike the double-precision arga_carry_renorm (which shifts a 14-wide
+; window right to drop the old guard), single coercion has no wider mantissa
+; to preserve — the digits beyond index 5 were never part of the 6-digit
+; result, so this just re-seeds a canonical "1 followed by zeros". Clobbers
+; A, B, HL.
+arga_renorm6:
+                ld      a,1
+                ld      (ARGA+FPNUM_DIG),a
+                xor     a
+                ld      hl,ARGA+FPNUM_DIG+1
+                ld      b,5
+ar6_lp:
+                ld      (hl),a
+                inc     hl
+                djnz    ar6_lp
+                ld      hl,(ARGA+FPNUM_DEXP)
+                inc     hl
+                ld      (ARGA+FPNUM_DEXP),hl
+                ret
+
+; --- arga_pack_single: ARGA_SIGN/ARGA_DEXP/ARGA_DIG[0..5] -> FAC (single). ---
+; Same nibble-packing technique as arga_pack_fac, scoped to 6 digits / 3
+; mantissa bytes. Caller (round_single_and_pack) has already verified
+; -63<=dexp<=63 and that ARGA_DIG isn't the all-zero case. Clobbers A, B, HL,
+; DE.
+arga_pack_single:
+                ld      a,(ARGA+FPNUM_SIGN)
+                ld      b,a
+                ld      hl,(ARGA+FPNUM_DEXP)
+                ld      a,l
+                add     a,64
+                or      b
+                ld      (FAC),a
+                ld      hl,ARGA+FPNUM_DIG
+                ld      de,FAC+1
+                ld      b,3
+aps_lp:
+                ld      a,(hl)
+                add     a,a
+                add     a,a
+                add     a,a
+                add     a,a
+                inc     hl
+                or      (hl)
+                inc     hl
+                ld      (de),a
+                inc     de
+                djnz    aps_lp
+                ret
+
+; --- round_single_and_pack: ARGA (exact, widen_rhs_operand'd) -> FAC (packed -
+; single) + FACTYP=4 + DE (silent flt_to_int16). Store-coercion counterpart of
+; round_and_finalize: round to 6 sig digits, half-up, carry renormalise (spec
+; §11.2), then the shared -63..63 dec_exp bound check (reused from
+; check_preexp_bounds — on overflow its own abort tail sets FACTYP=8, a
+; harmless wrinkle here since FPERR=1 makes the caller (var_store_fac) drop
+; the store unconditionally, so nothing ever reads that stale FACTYP=8).
+round_single_and_pack:
+                ld      hl,ARGA+FPNUM_DIG
+                call    dig15_iszero
+                jr      z,rsp_zero_ok
+                ld      a,(ARGA+FPNUM_DIG+6)   ; the 7th digit is the round digit
+                cp      5
+                jr      c,rsp_noround
+                call    arga_inc6
+                jr      nc,rsp_noround
+                call    arga_renorm6
+rsp_noround:
+                ld      hl,(ARGA+FPNUM_DEXP)
+                ld      (FP_TMP_B),hl
+                call    check_preexp_bounds ; shared -63..63 bound gate (defined above,
+                                            ; with round_and_finalize); out of bounds ->
+                                            ; aborts straight to OUR caller (see its own
+                                            ; header comment)
+                call    arga_pack_single
+                ld      a,4
+                ld      (FACTYP),a
+                jp      flt_to_int16        ; tail call: sets DE, returns to our caller
+rsp_zero_ok:
+                xor     a
+                ld      (FAC),a
+                ld      a,4
+                ld      (FACTYP),a
+                ld      de,0
+                ret
+
+; =============================================================================
 ; fp_add / fp_sub — double BCD add/subtract (spec §10.2)
 ; =============================================================================
 

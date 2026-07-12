@@ -501,8 +501,13 @@ ev_f_var:
                 call    var_name_key        ; BC = key, HL past the (multi-char) name
                 push    hl
                 pop     ix                  ; IX = advanced cursor
+    IF ROM_BASE < $4000
+                ld      a,(VARTYPE)         ; F3: resolved type from var_name_key
+                jp      var_load_fac        ; FAC/FACTYP=type, DE=int16 (tail call)
+    ELSE
                 call    var_get_key         ; BC = key -> DE = value
                 ret
+    ENDIF
 ev_f_err:
                 ld      a,$DD               ; expression error marker
                 ld      (ERRMARK),a
@@ -786,6 +791,19 @@ ev_f_varptr:
                 call    var_name_key        ; BC = key, HL past the name
                 push    hl
                 pop     ix                  ; IX = advanced cursor
+    IF ROM_BASE < $4000
+                ; F3: ensure the variable exists AT ITS RESOLVED TYPE (var_alloc_or_
+                ; find allocates a zero-valued entry if none exists yet, leaving an
+                ; existing one untouched), then hand back the address of its value
+                ; field (entry+3 in the typed layout).
+                ld      a,(VARTYPE)
+                call    var_alloc_or_find   ; BC,A -> CF/HL = entry base
+                jr      nc,vptr_none        ; table full -> address 0 (defensive)
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL = value field (entry+3)
+                ex      de,hl               ; DE = the value-field address
+    ELSE
                 ; ensure the variable exists: read its value, write it back. A new
                 ; variable is allocated with its current (0) value; an existing one
                 ; is left unchanged. Then var_find gives the entry address.
@@ -800,6 +818,7 @@ ev_f_varptr:
                 inc     hl
                 inc     hl                  ; HL = value field (entry+2)
                 ex      de,hl               ; DE = the value-field address
+    ENDIF
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      ')'

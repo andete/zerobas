@@ -229,7 +229,16 @@ def run():
         return mm, bytes(out)
 
     def var(mm, name):
-        return mm.call("var_get_key", b=ord(name), c=0).de
+        # F3 S3a (docs/spec-basic-float-core.md §11): numeric variables are now
+        # TYPED, keyed on (name, resolved type) with variable-width entries: an
+        # unsuffixed name like T/U/V/R defaults to DOUBLE. var_get_key still
+        # exists (byte-identical, lean-build-only int accessor) but no longer
+        # matches the repack build's actual storage shape, so probing it directly
+        # here would misread past the [type] byte this slice inserted. Read
+        # through var_load_fac instead (BC=key, A=8=double), which returns the
+        # variable's int16 fast-path value exactly like every other float-aware
+        # int consumer (ev_f_var, PRINT, ...).
+        return mm.call("var_load_fac", a=8, b=ord(name), c=0).de
 
     # IF <string vs number> THEN <clause>: the clause must NOT run, and the
     # program continues to the line below the offending one (mirrors stmt_error's

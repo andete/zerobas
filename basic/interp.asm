@@ -276,7 +276,15 @@ ex_let:
                 call    var_str_type        ; A=1 if the name carries a `$` suffix
                 or      a
                 jr      nz,ex_let_str       ; string variable -> string assignment
-                call    var_name_key        ; BC = key, HL past the name
+                call    var_name_key        ; BC = key, HL past the name; (VARTYPE) =
+                                            ; the resolved type (F3, repack only)
+    IF ROM_BASE < $4000
+                ld      a,(VARTYPE)         ; F3: latch the LHS type NOW -- eval below
+                ld      (LHS_VARTYPE),a     ; re-runs var_name_key for every RHS variable
+                                            ; factor, clobbering the global (VARTYPE)
+                                            ; (e.g. A%=A#: the A# factor would leave
+                                            ; VARTYPE=8, mis-storing A% as double)
+    ENDIF
                 push    bc                  ; save key across '=' + eval
                 call    skip_spaces
                 ld      a,(hl)
@@ -288,9 +296,21 @@ ex_let:
                 call    check_expr_errors_popbc  ; D-2/D-F2-1 (below): discards the
     ENDIF                                        ; saved key before erroring
                 pop     bc                  ; BC = key
-                push    hl                  ; guard cursor across var_set_key
+                push    hl                  ; guard cursor across the store
+    IF ROM_BASE < $4000
+                ld      a,(LHS_VARTYPE)     ; F3 §11.2: coerce DE/FAC into the LHS's
+                call    var_store_fac       ; LATCHED resolved type and store (vars.asm);
+                                            ; may set FPERR on a coercion-time Overflow
+    ELSE
                 call    var_set_key         ; var[key] = DE
+    ENDIF
                 pop     hl
+    IF ROM_BASE < $4000
+                ld      a,(FPERR)           ; store-coercion Overflow (§11.2) aborts the
+                or      a                   ; statement exactly like an eval()-time one
+                jp      nz,fp_runtime_error ; (D-F2-1 pattern); no stack cleanup needed --
+    ENDIF                                   ; this is a plain in-line check, not a "call"ed
+                                            ; checker (unlike check_expr_errors_popbc)
                 jp      exec_stmt           ; continue the line
 ex_let_err:
                 pop     bc
@@ -582,6 +602,16 @@ tok_skip:
                 jr      z,tsk1
                 cp      PEEK_PREFIX         ; $FF ,function-token byte
                 jr      z,tsk1
+    IF ROM_BASE < $4000
+                cp      SNG_TOKEN           ; $1D ,4 float value bytes (repack only —
+                jr      z,tsk4              ; float literals only exist in the repack
+                cp      DBL_TOKEN           ; build; gated so lean stays byte-identical).
+                jr      z,tsk8              ; $1F ,8 float value bytes. A mantissa byte
+                                            ; can be $00 (e.g. .5 -> 1D 40 50 00 00), so
+                                            ; without this stride skip_to_eol/if_skip_to_
+                                            ; else/data_seek mistake it for the line/stmt
+                                            ; terminator -- a stored `10 A=1.5` never RUNs.
+    ENDIF
                 cp      '"'                 ; string literal
                 jr      z,tsk_str
                 cp      REM_TOKEN           ; REM -> rest of line
@@ -596,6 +626,19 @@ tsk2:
                 inc     hl
                 inc     hl
                 ret
+    IF ROM_BASE < $4000
+tsk8:                                       ; DBL_TOKEN: 8 value bytes (4 here + 4 in tsk4)
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl
+tsk4:                                       ; SNG_TOKEN: 4 value bytes
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl
+                ret
+    ENDIF
 tsk_str:
                 ld      a,(hl)
                 or      a

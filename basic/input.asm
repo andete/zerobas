@@ -97,7 +97,8 @@ inpc_vloop:
                 or      a
                 jr      nz,inpc_vstr
                 ; --- numeric variable ---
-                call    var_name_key        ; BC = key, HL past the name
+                call    var_name_key        ; BC = key, HL past the name; (VARTYPE) =
+                                            ; the resolved type (F3)
                 push    bc                  ; [stack: varstart, key]
                 push    hl                  ; [stack: varstart, key, textcur]
                 call    read_into_strscr    ; STRSCR <- the next field (mode 0)
@@ -105,8 +106,13 @@ inpc_vloop:
                 jr      c,inpc_redo3        ; bad numeric field -> ?redo
                 pop     hl                  ; textcur
                 pop     bc                  ; key
-                push    hl                  ; guard textcur across var_set_key
-                call    var_set_key         ; var[key] = DE
+                push    hl                  ; guard textcur across the store
+                ld      a,2
+                ld      (FACTYP),a          ; input_num_field's DE is a plain int16 value
+                                            ; (F3: var_store_fac widens it per the
+                                            ; variable's resolved type, e.g. double)
+                ld      a,(VARTYPE)
+                call    var_store_fac       ; var[key] := DE, coerced (vars.asm)
                 pop     hl
                 jr      inpc_after
 inpc_vstr:

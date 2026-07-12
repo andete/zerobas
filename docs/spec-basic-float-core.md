@@ -123,9 +123,11 @@ each slice's S3 re-measures, and the fallback lever is the next repack tranche
 NOT squeezing correctness.
 
 RAM: FAC+ARG+NUMTYP ≈ 20 B in the `$E0xx` scratch page (free cells exist).
-F3 widens the numeric store to `[name0][name1][type:1][value:8]` = 11 B/entry;
-32 slots = 352 B (+224 B), which pushes STRTAB/STRSCR/temp-ring up — F3's S2
-must re-verify the string-engine §5a RAM analysis before moving anything.
+F3 widens the numeric store to carry a type + full value. **SUPERSEDED by §11
+(2026-07-12): the store is VARIABLE-WIDTH** (`[name0][name1][type][value:
+2/4/8]`, sized to the resolved type), not the fixed 11 B slot floated here —
+user pick, the D-G heap-aligned option; VARSLOTS stays 32 and the string region
+need not move as far. See §11 intro + §11.4.
 
 ## 6. Decisions (recommendations for sign-off)
 
@@ -148,7 +150,11 @@ must re-verify the string-engine §5a RAM analysis before moving anything.
 - **D-F — one BCD routine set, length-parameterised** (6 vs 14 digits): true
   per-precision arithmetic (matches the reference's single results) without
   two code copies.
-- **D-G addendum (2026-07-11, F2 close-out input):** the F2 build leaves the
+- **D-G addendum — RESOLVED 2026-07-12: the space lever was the sub-ROM arc.**
+  The blocker below is dissolved — evicting the tokeniser + detokeniser to the
+  built-in sub-ROM (waves 1-3) freed **1260 B page-0 + 1351 B page-1** on the
+  repack build, so F3 now lands in-window. (Original blocker text kept for
+  history:) the F2 build leaves the
   repack window ESSENTIALLY FULL (page-0 slack 2 B, page-1 tail 29 B), so F3's
   ~0.6 KB has no home in the contiguous image. Remaining space = C-BIOS gap-1
   remainder (~322 B at `$0BBF`) + gap-2 (253 B at `$1ACA`), both usable only by
@@ -187,8 +193,10 @@ must re-verify the string-engine §5a RAM analysis before moving anything.
 1. Approve the D-A slicing (or fold F1+F2 into one bigger slice)?
 2. Approve D-C (signed migration inside F2) — it changes behaviour the
    existing acceptance corpus may silently rely on; the corpus runs decide.
-3. F3 RAM growth (+224 B, moving the string region) — acceptable, or cap
-   VARSLOTS lower?
+3. F3 RAM growth — **RESOLVED 2026-07-12: variable-width entries** (int 2 /
+   single 4 / double 8 B), VARSLOTS stays 32; see §11. (Was: +224 B fixed 11 B
+   table moving the string region — user chose the heap-aligned variable-width
+   model instead.)
 4. Gate name `float-acceptance` OK?
 
 ## 9. F1 S2 — oracle-pinned contracts (VG-8020, 2026-07-11)
@@ -416,3 +424,85 @@ Results print through the F1 §9.3 formatter as-is: `12345678#*87654321#` →
 `1.0821520223746E+15`, `1!/512!` → `1.953125E-03` (dec_exp −2 → E form),
 `1e-32*1e-32` → `1E-64`. No new output shapes were observed in ~140 arith
 captures.
+
+## 11. F3 S2 — oracle-pinned contracts (Philips VG-8020, 2026-07-12)
+
+**S3a SHIPPED 2026-07-12** (typed variable-width store + `%`/`!`/`#` suffixes +
+coercion; NO DEF statements yet — that is S3b). Gate = the vars half of
+`make float-acceptance` (`basic_probe_float_vars.py`, 40 cases). The Fable
+review caught three matrix-invisible bugs, each now pinned by a regression case:
+(A) fresh-entry zero-init wiped 256 B (wrong `zero_fill` count register) →
+corrupted STRTAB; (B) cross-type LET read the LHS type from a global clobbered by
+the RHS's `var_name_key` (now latched in `LHS_VARTYPE` before eval); (C) —
+PRE-EXISTING F1 — `tok_skip` lacked the `$1D`/`$1F` float-literal strides, so any
+STORED program with a float literal broke (fixed with gated +4/+8 strides). RAM
+cells `VARTYPE`/`VS_TARGET_TYPE`/`VS_INT_VAL`/`LHS_VARTYPE` at $F14E–$F152 (free
+window below DRVA_DPB $F195). Lean `basic.rom` byte-identical.
+
+Typed numeric variables. Captured via `A…=<expr>:PRINT"[";A…;"]"` on the
+reference; span = the printed value, tail = the error surface. Storage model =
+**variable-width entries** (user pick 2026-07-12, the D-G heap-aligned option):
+each entry `[name0][name1][type][value: 2 int / 4 single / 8 double]`, sized to
+the resolved type — VARSLOTS stays 32, no fixed 11 B slot, and it pre-aligns
+with the future heap arc's real-MSX variable area. The `$` suffix still selects
+the separate STRTAB store.
+
+### 11.1 Type resolution — variable identity is (name, resolved type)
+
+- **Unsuffixed numeric default = DOUBLE** (confirms D-E; MSX-BASIC really does
+  default to double — `A=1/3` → ` .33333333333333`, identical to `A#`, not the
+  6-digit `A!`). This corrects the arc's earlier "MSX default is single" doubt.
+- Suffix forces the type: `%` int, `!` single, `#` double, `$` string. `A%`,
+  `A!`, `A#` are up to **three distinct entries**; `A` ≡ `A#` while the default
+  is double (`A=1:A!=2:A#=3:PRINT A;A!;A#` → ` 3  2  3` — `A#=3` overwrote `A`).
+- `DEFINT/DEFSNG/DEFDBL/DEFSTR <letter-range>` set the default type for name
+  **first letters** in the range. `DEFINT A-C:B=1.9` → `1` (B in range → int);
+  `…:D=1.9` → `1.9` (D outside → default double). `DEFSTR S:S="HI"` → `HI` (an
+  unsuffixed name becomes a **string** variable — selects STRTAB).
+- The type table is consulted at **each variable reference**, so re-declaring a
+  letter's type **orphans** any value stored under the old type:
+  `A=7:DEFINT A:PRINT A` → ` 0` (the double `A=7` is now unreachable as
+  unsuffixed `A`, which resolves to the unset int slot).
+
+### 11.2 Store coercion — RHS value → the variable's declared type
+
+- **→ int: TRUNCATE toward zero** — `A%=1.7` → `1`, `A%=-1.7` → `-1`,
+  `DEFINT A:A=1.7` → `1`. Same rule as F2's §10.3 float→int contract (not a new
+  rounding domain).
+- **→ single: ROUND to 6 significant digits**, half-up with carry
+  renormalisation — `A!=1234567` → `1234570`, `A!=123456.7` → `123457`,
+  `A!=2/3` → `.666667`, `A!=1.9999999` → `2`. **Asymmetry to preserve:** int
+  store truncates, single store rounds.
+- **→ double: exact** (14 significant digits retained).
+- **Cross-type numeric↔string assignment → `Type mismatch`, statement aborts**
+  (no value stored): `A%="X"` and `A$=5` both print `Type mismatch`.
+
+### 11.3 PRINT precision + interactions
+
+- PRINT of a typed variable formats per the stored FACTYP through the F1 §9.3
+  formatter unchanged: int / 6-digit single / 14-digit double.
+- **Deferred (D-D):** a **typed/float FOR/NEXT loop variable** — the reference
+  drives the loop in the variable's own type; zerobas keeps the int16 loop path
+  in F3 (documented divergence, fast-follow slice). Note the interaction that
+  unsuffixed loop vars now default to double on the reference.
+
+### 11.4 F3 implementation protocol (repack-only)
+
+- All F3 code is `IF ROM_BASE < $4000` (lean `basic.rom` stays byte-identical),
+  landing in the sub-ROM-arc-freed window (1260 B page-0 / 1351 B page-1 as of
+  2026-07-12 — the D-G "no home" blocker is dissolved).
+- Rework `var_find`/`var_get_key`/`var_set_key` (`basic/vars.asm`) from the
+  fixed 4 B int-only walk to a **variable-stride** walk keyed on (name, type),
+  reading the type byte to advance. Preserve the single-letter `var_get`/
+  `var_set` shims (FOR/NEXT, READ) on the int16 path (D-D).
+- Add a DEFtbl (26-entry letter→type map) consulted by `var_name_key` /
+  `var_str_type` to resolve unsuffixed names; `DEFINT/SNG/DBL/STR` statements
+  write ranges into it. Retire the `vnk_suffix` "consume and ignore" path.
+- Store coercion: int = the §10.3 truncate; single = a 14→6 digit BCD round
+  (reuse F1's `round_and_finalize`); double = copy.
+- Gate: `basic_probe_float_vars.py` becomes the **vars half** of
+  `make float-acceptance` (characterise + `--zb-machine` differential), plus the
+  full standing battery + lean byte-identical. Per the model split, S3 is a
+  Sonnet implement drop + Fable review — both F1 and F2 reviews caught
+  matrix-invisible bugs, so give the vars matrix false-EXPECTED and
+  function-over-typed cases and always run the whole differential.
