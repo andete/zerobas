@@ -592,7 +592,7 @@ fpa_leadzero:
                                             ; here already reflects A (=k) --
                                             ; ret/jr don't touch flags, so no
                                             ; need to re-test
-                jr      z,fpa_done          ; k=0: already normalised
+                jr      z,fpa_sub_finalize  ; k=0: already normalised
                 ld      (FP_SHIFTAMT),a
                 ld      hl,ARGA+FPNUM_DIG
                 call    dig15_shl
@@ -603,11 +603,28 @@ fpa_leadzero:
                 or      a
                 sbc     hl,de
                 ld      (ARGA+FPNUM_DEXP),hl
-                jr      fpa_done
+                jr      fpa_sub_finalize
 fpa_zero_result:
                 ld      hl,ARGA+FPNUM_DIG
                 call    dig15_zero15
 fpa_done:
+                jp      round_and_finalize
+
+; --- fpa_sub_finalize: effective-subtraction (opposite-sign combine) tail --
+; bug-for-bug reference-compat (docs/spec-float-subtract-tie-compat.md §3):
+; the reference rounds an exact guard-digit tie (==5) TOWARD ZERO for
+; effective subtraction, vs round_and_finalize's blanket half-up (which stays
+; correct for effective addition). Pre-nudge the tie 5->4 so the unchanged
+; half-up tail drops it, then fall into the shared, byte-identical tail.
+; Only the two fpa_leadzero exits (k=0 and post-shift) route here; the
+; same-sign add exits (dig15_add_inplace's jr nc/call arga_carry_renorm)
+; keep going straight to fpa_done, unchanged.
+fpa_sub_finalize:
+                ld      a,(ARGA+FPNUM_DIG+14)   ; guard digit
+                cp      5
+                jp      nz,round_and_finalize   ; 0-4 down, 6-9 up: unchanged half-up tail
+                dec     a                       ; exact tie 5 -> 4 so half-up drops it (toward zero)
+                ld      (ARGA+FPNUM_DIG+14),a
                 jp      round_and_finalize
 
 ; --- fp_sub: ARGA - ARGB, realised as ARGA + (-ARGB) (flip ARGB's sign, ----

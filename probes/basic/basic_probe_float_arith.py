@@ -125,6 +125,15 @@ EXPRS = [
     # >=32768 wrap threshold; spec §10.3) ------------------------------------
     "hex$(32767.5)", "hex$(65535.5)", "hex$(65536.)", "hex$(-32768.5)",
     "hex$(-32768.9)", "32767.5\\1", "-32768.5\\1",
+    # --- round-5: subtraction guard-tie bug-compat (docs/spec-float-subtract-
+    # tie-compat.md §3/§4). Effective-SUBTRACT (opposite-sign combine) exact
+    # guard-digit ties round TOWARD ZERO on the reference; effective-ADD
+    # (like-sign combine) ties stay AWAY FROM ZERO (half-up, unchanged) --
+    # keyed on the effective op, not the surface +/- token.
+    "2-5e-14", "5e-14-2", "8.5-5e-14", "100-5e-12",
+    "2+(-5e-14)",               # '+' token, opposite signs -> effective subtract
+    "-1-5e-14", "2-(-5e-14)",   # '-' token, like signs -> effective add (regression)
+    "2-4e-14", "2-6e-14",       # near-tie both sides, unchanged on both machines
 ]
 
 # Full-line cases (multi-item PRINT: pins that the accumulator type resets
