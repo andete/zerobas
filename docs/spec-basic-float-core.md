@@ -339,11 +339,36 @@ exponent as stored, i.e. dec_exp.
 
 ### 10.2 Double arithmetic semantics
 
-- **Rounding: guard-digit HALF-UP on the magnitude** (away from zero), all
-  four ops: `1+5e-14` → `1.0000000000001` (tie up) vs `1+4e-14` → `1`;
+- **Rounding: guard-digit HALF-UP on the magnitude** (away from zero) for
+  add / mul / div: `1+5e-14` → `1.0000000000001` (tie up) vs `1+4e-14` → `1`;
   `1-1e-15` → `1` (carry through all 14 nines); `2.5#*1.0000000000001#` →
   `2.5000000000003` (mul tie up); `1.0000000000003#/4` → `.25000000000008`
   (div tie up); `-2/3` → `-.66666666666667` (magnitude, not toward +∞).
+  **EXCEPTION — effective subtraction ties round TOWARD ZERO** (opposite-sign
+  combine, incl. every `-`): `2-5e-14` → `1.9999999999999` (not `2`). This is
+  bug-for-bug reference behaviour (the reference keys the tie on the effective
+  op, not the surface token); implemented 2026-07-13 (commit `fe0d99c`,
+  `fpa_sub_finalize`), see [spec-float-subtract-tie-compat.md](spec-float-subtract-tie-compat.md).
+
+> **⚠️ Reference-divergence addendum (2026-07-13) — the F1–F3 "reference-identical"
+> claim has TWO known exceptions, both in DIVISION-driven rounding, both
+> characterized black-box:**
+> 1. **`fp_div` is correctly-rounded; the reference's is LOW-BIASED** (0 to −5 ulp,
+>    growing with divisor significant-length). Live example: `2/1.4142135623731` →
+>    zerobas `1.4142135623731` (correct) vs reference `1.4142135623729`. Identical
+>    for divisors ≤10 significant digits; diverges (we're *more* accurate) beyond.
+>    The reference's exact per-digit rule lives in the hidden 15th digit and is
+>    **not clean-room black-box recoverable** (RE campaign plateaued ~80%/±1 ulp;
+>    reading it needs disasm, barred) — so this is a **documented deviation, kept**,
+>    not a bug to fix. See [[bug-for-bug-compat-over-accuracy]] + spec-basic-math-pack §10.3.1.
+> 2. **`SQR`** (math pack) inherits this: correctly-rounded Heron over our div,
+>    diverges from the reference exactly where the reference's div-driven Heron is
+>    1 ulp off truth (~40% of near-boundary inputs); zerobas is always ≥ as accurate.
+>
+> The original `float-acceptance` matrix (349/349) never included near-unity
+> 14-digit divisions, so it reported "reference-identical" with this blind spot;
+> the exposing cases are now pinned in `basic_probe_float_arith.py` as
+> characterized known-deviations.
 - Add/sub are exact through the 14-digit window (`1/3*3-1` → `-1E-14`;
   `99999999999999#+1` → `1E+14` — mantissa carry renormalises).
 - **Overflow checks are PRE-normalisation on the operand exponents:**

@@ -173,6 +173,24 @@ SPAN_ONLY = {
     "hex$(65536.)",
 }
 
+# Near-unity 14-digit divisions: the reference's fp_div is LOW-BIASED (0..-5 ulp,
+# its exact per-digit rule lives in the hidden 15th digit and is NOT clean-room
+# black-box recoverable -- docs/spec-basic-float-core.md §10.2 addendum,
+# spec-basic-math-pack §10.3.1, [[bug-for-bug-compat-over-accuracy]]). zerobas's
+# fp_div is correctly-rounded, so it DIVERGES here: zb == mathematical truth, the
+# reference is 1-2 ulp low. These close float-acceptance's original blind spot
+# (the 349-case matrix had no near-unity 14-digit division). Pinned as
+# characterized KNOWN-DEVIATIONS -- asserted == the correctly-rounded zb value
+# (stripped span), the reference's low value noted, NOT asserted == reference.
+KNOWN_DEV_DIV = {
+    # expr                     : (zb == truth,        reference low-biased)
+    "2/1.4142135623731":       ("1.4142135623731", "1.4142135623729"),
+    "3/1.7320508075689":       ("1.7320508075689", "1.7320508075687"),
+    "10/3.1622776601684":      ("3.1622776601684", "3.1622776601683"),
+    "123.456/11.111075555499": ("11.111075555498", "11.111075555496"),
+    "1/1.3333333333333":       (".75000000000002", ".75000000000001"),
+}
+
 
 # Delivery via the typing-free KEYBUF driver. All cases are direct-mode; a RAW
 # line that exceeds the KEYBUF cap (the three IF/THEN/ELSE lines, no top-level
@@ -201,6 +219,7 @@ def main() -> int:
     args = ap.parse_args()
 
     cases = [(e, f'print "[";{e};"]"', "expr") for e in EXPRS]
+    cases += [(e, f'print "[";{e};"]"', "known_dev") for e in KNOWN_DEV_DIV]
     cases += [(line, line, "raw") for line in RAW_LINES]
     cases += [(line, line, "stmt") for line in STMT_LINES]
     cases = [c for c in cases if not (args.only and args.only not in c[0])]
@@ -225,6 +244,11 @@ def main() -> int:
         expr, line, kind = cases[i]
         ref_span, ref_tail = result_span(ref_raw), screen_tail(ref_raw, line)
         zb_span, zb_tail = result_span(zb_raw), screen_tail(zb_raw, line)
+        if kind == "known_dev":
+            # div divergence: assert zb == the correctly-rounded value (NOT ref,
+            # which is low-biased); the ref span is reported informationally below.
+            return zb_span is not None \
+                and zb_span.strip() == KNOWN_DEV_DIV[expr][0]
         if kind == "stmt":
             return ref_tail is not None and zb_tail is not None \
                 and (ref_tail == "") == (zb_tail == "")
@@ -250,7 +274,11 @@ def main() -> int:
         ok = ok and good
         ref_span = result_span(ref_raw)
         rs = f"[{ref_span}]" if ref_span is not None else "<no span>"
-        print(f"{'PASS' if good else 'FAIL'}  {expr:<24} ref: {rs}")
+        note = ""
+        if kind == "known_dev":
+            zb_s = (result_span(zb_raw) or "").strip()
+            note = f"   [KNOWN-DEV: zb={zb_s} (correct) vs ref low-biased]"
+        print(f"{'PASS' if good else 'FAIL'}  {expr:<24} ref: {rs}{note}")
         if not good:
             zb_span, zb_tail = result_span(zb_raw), screen_tail(zb_raw, line)
             zs = f"[{zb_span}]" if zb_span is not None else "<no span>"
@@ -258,7 +286,10 @@ def main() -> int:
             print(f"{'':>32}zb  span: {zs}  tail: {zb_tail!r}")
 
     if args.zb_machine:
-        print("\nALL PASS — float arithmetic is reference-identical" if ok
+        print(f"\nALL PASS — float arithmetic is reference-identical except "
+              f"{len(KNOWN_DEV_DIV)} documented division known-deviations "
+              f"(zerobas correctly-rounded, reference low-biased; see "
+              f"KNOWN_DEV_DIV / spec-basic-float-core.md §10.2 addendum)" if ok
               else "\nSOME FAILED")
         return 0 if ok else 1
     return 0
