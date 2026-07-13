@@ -83,6 +83,22 @@ byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
 
 ## Open (awaiting next sync)
 
+**[JUDGMENT CALL — mathpack slice 2b, 2026-07-13] Never-worse invariant shape for
+EXP/LOG = the ATN bounded-deviation form, not per-input strict.** §11.10 asserted "the
+other five functions (references 4–20 ulp off) keep the strict [per-input never-worse]
+invariant trivially at 14 digits." Writing the 2b contract against the pre-proven chain
+sim showed that claim was optimistic *in per-input form*: the reference EXP/LOG are
+correctly-rounded on scattered inputs (~15 %/~30 % of the characterization battery), and
+our 14-digit chains land 1–2 ulp off on SOME inputs (EXP worst 1 ulp/92 % exact; LOG
+worst 4 ulp/87 % exact, all >2-ulp cases in the fold path's den-15-digit +
+∂r/∂s=2 wall) — so on an unlucky overlap the reference can win per-input. Applied the
+framework the user already ratified for ATN (§2/§11.10, the more demanding case):
+gate = truth-bound (EXP ≤ 2, LOG ≤ 4) + exact-count floor, reference captured
+informationally. Aggregate superiority is overwhelming (reference EXP worst −45 ulp
+@x=88 — measured this slice; ours exact there). Full rationale spec §12.1. Flag if the
+per-input form should instead be escalated (would need the extended-precision layer
+already declined for ATN).
+
 **RESOLUTION 2026-07-07 — BDOS harness AUTOEXEC.BAT auto-run DONE (user: "all 8 now",
 one commit per script, --settle left untouched).** Signed-off spec
 [tier2-autoexec-bat-harness-spec.md](tier2-autoexec-bat-harness-spec.md). Verify-first

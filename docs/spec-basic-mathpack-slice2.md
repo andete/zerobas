@@ -62,8 +62,18 @@ Key points:
 ### 1.3 Domain / error / exactness
 
 - `LOG(0)`, `LOG(-1)` → **"Illegal function call"** (same disposition path as `SQR(<0)`).
-- `EXP(1000)` → **"Overflow"**; `EXP(-1000)` → 0 (underflow); `EXP(88)` ≈ 1.65E38 OK
-  (overflow threshold ≈ e^88, the FAC magnitude ceiling).
+- `EXP(1000)` → **"Overflow"**; `EXP(-1000)` → 0 (underflow); `EXP(88)` ≈ 1.65E38 OK.
+  > **CORRECTED (slice-2b characterization, 2026-07-13):** the original "overflow
+  > threshold ≈ e^88 ≈ the FAC magnitude ceiling" note here was an unverified
+  > inference (1E38 is a *binary*-Microsoft-BASIC ceiling). Measured on the
+  > VG-8020: `EXP(145.062)`=`9.9913951180409E+62` (finite), `EXP(145.063)`→
+  > `Overflow`; `EXP(-147.3)`=`1.0676350345268E-64` (finite), `EXP(-147.4)`→`0`.
+  > I.e. the true thresholds are exactly the BCD FAC range ends
+  > (`ln(9.99999999999999E62)`=145.06286…, `ln(1E-64)`=−147.36544…) — which our
+  > float core SHARES, so zerobas's natural dispositions match the reference at
+  > the range ends with no special-casing. Informational: the reference's own
+  > `EXP(88)` is −45 ulp off truth and its `EXP(-147.3)` ~2.7e-8 relative off
+  > (error grows with |x|); zerobas is exact at both (§12).
 - `TAN` near π/2 → very large finite (no error; `SIN/COS` with tiny COS).
 - `ATN` saturates to ±π/2 for huge \|x\| (`ATN(1E38)` = 1.5707963267949).
 - **Exact & guarded:** `EXP(0)`=1, `LOG(1)`=0, `SIN(0)`=0, `COS(0)`=1, `TAN(0)`=0,
@@ -196,8 +206,8 @@ errors return a **disposition** (never `jp`), raised main-side (§3).
 
 | Fn | Domain | Error | Notes |
 |---|---|---|---|
-| `EXP(x)` | x ≤ ~88 | **Overflow** above; underflow→0 | reduce mod ln2, minimax; `EXP(0)`=1 exact |
-| `LOG(x)` | x > 0 | **Illegal function call** for x≤0 (main-side pre-check) | `LOG(1)`=0 exact |
+| `EXP(x)` | x ≤ 145.062 (FAC ceiling; §1.3 corrected) | **Overflow** above; underflow→0 below −147.36 | decimal-native reduce (×10^n exact), minimax; `EXP(0)`=1 exact — §12 |
+| `LOG(x)` | x > 0 | **Illegal function call** for x≤0 (main-side pre-check) | `LOG(1)`=0 exact — §12 |
 | `SIN(x)`/`COS(x)` | all x | none (huge-x → reduction floor, capture) | shared kernel; `SIN(0)`=0/`COS(0)`=1 exact |
 | `TAN(x)` | all x | none (near π/2 → large finite) | = `SIN/COS`; `TAN(0)`=0 exact |
 | `ATN(x)` | all x | none | saturates ±π/2; `ATN(0)`=0 exact |
@@ -449,3 +459,198 @@ untested — the hand-rolled zero exit); (2) added a battery-wide correctly-roun
 "correctly-rounded / never-worse" pre-§11.10); (4) header comment nits; (5) made
 `gen_math_coeffs.py`'s Chebyshev nodes fully deterministic (Decimal `cos`, no host libm) —
 regenerated `.inc` is byte-identical.
+
+---
+
+## 12. Slice 2b implementation contract — `EXP` + `LOG` (concrete, implementation-ready)
+
+**Status: 🟢 CONTRACT 2026-07-13** — the ratified §5/§8 slicing's second cut. Written
+against the live code (fp_atan.asm as the tenant template, expr.asm `evmc_sqr`/`evmc_atn`,
+sub.asm `sub_p1_table`, basic-resident-abi.inc) and — the §11.10 lesson applied *forward* —
+against a **pre-proven 14-digit chain simulation** ([tools/sim_math_chain.py](../tools/sim_math_chain.py),
+committed 4e1a2a6): the fits AND the full op-chain accuracy were measured BEFORE this
+contract was finalized. Implementation = Sonnet on this contract, Fable review after.
+
+### 12.1 Proven accuracy envelope (sim, ~4000-input batteries, model = exact-then-
+round-14-HALF_UP per op — the model that reproduced fp_atan bit-for-bit)
+
+| Fn | worst | correctly-rounded | bound asserted | exact-floor | reference (for contrast, informational) |
+|---|---|---|---|---|---|
+| `EXP` | **1 ulp** | 92.0 % | ≤ 2 (margin +1) | ≥ 90 % | mean −3, worst −45 @x=88, ~15 % exact |
+| `LOG` | **4 ulp** | 87.3 % | ≤ 4 | ≥ 85 % | mean −0.45, worst −5, ~30 % exact |
+
+Anchors proven exact in-chain: `EXP(0)`=1, `EXP(1)`, `EXP(88)`, `EXP(145.062)`,
+`EXP(-147.3)`, `LOG(1)`=0, `LOG(10)`, `LOG(9.9999999999999E62)`, `LOG(1E-64)`.
+LOG's five >2-ulp cases are ALL in the j=8 fold path (x∈[0.866,1)): `den=m′+1`
+inherently spans 15 digits and ∂r/∂s=2 doubles the division rounding — the same
+extended-precision wall as §11.10/division; **documented bounded deviation** (the
+ratified §2/§11.10 framework). **Per-input never-worse vs the reference is NOT
+asserted** (the reference is exact on scattered inputs where a 14-digit chain can be
+1–2 ulp off — the exact situation the user already resolved for ATN); the gate asserts
+the truth-bound + exact-floor instead, with the reference captured informationally.
+*Judgment call logged in the review queue: §11.10's "the other five keep the strict
+invariant" claim was optimistic in per-input form; this contract extends the ATN
+bounded-deviation shape to EXP/LOG. Aggregate superiority over the reference is
+overwhelming (see table).*
+
+### 12.2 Home + tokens + dispatch
+
+- **Homes:** bodies `fp_exp` ([sub/fp_exp.asm](../sub/fp_exp.asm)) + `fp_log`
+  ([sub/fp_log.asm](../sub/fp_log.asm)), page-1 tenants after `fp_atan`, both REUSING
+  `fp_poly_horner` + `fat_copy18` (same assembly unit — direct call). Main-ROM stubs
+  `evmc_exp`/`evmc_log` (repack-only, `IF ROM_BASE < $4000`). Lean 16 KB `basic.rom`
+  **byte-identical**.
+- **Tokens (§1.4 captured):** `EXP` = `$FF $8B`, `LOG` = `$FF $8A`. `EXP_TOKEN equ $8B` /
+  `LOG_TOKEN equ $8A` in sysvars.inc (repack block, beside `ATN_TOKEN`) + two kwtable.inc
+  crunch entries (`db 3,"EXP",2,PEEK_PREFIX,EXP_TOKEN`, same for LOG — no prefix
+  collision: EXP/LOG diverge from every existing keyword by char 2 or 3; detok/LIST is
+  free via the single-copy table). Gate confirms both bytes vs the real crunch.
+- **Tenant indices:** `SUBROM_IDX_EXP equ 3`, `SUBROM_IDX_LOG equ 4` (append-only, both
+  sysvars.inc IFNDEF block and sub/equates.inc); `jp fp_exp` / `jp fp_log` appended to
+  `sub_p1_table`.
+- **Dispatch:** two selectors in `ev_ff_mathconv` (`cp EXP_TOKEN / jp z,evmc_exp`, same
+  for LOG), after the ATN selector.
+
+### 12.3 Constants (already emitted + committed, 4e1a2a6 — sub/math-coeffs.inc)
+
+All OWN decimal derivations (gen_math_coeffs.py §4 provenance; `check_2b_invariants`
+asserts every exactness precondition below at generation time):
+
+- `EXP_COEF` — **E(r) = (exp(r)−1)/r**, deg 9 (10 terms), fit 1.9e-19 on |r| ≤ ln10/16+pad.
+  The leading 1 of exp(r) = 1 + r·E(r) is **implicit and exact** — reconstruction
+  amplifies the poly's rounding by T·r ≈ 1.1×, not T ≤ 7.5× (the sim measured the direct
+  exp-poly form 2 ulp worse from exactly that decade-crossing multiply).
+- `LOG_COEF` — 2·atanh(√g)/√g, deg 5 (6 terms), fit 1.4e-18 on g ∈ [0, gmax] where gmax
+  is computed FROM the emitted rounded `LOG_BP`/`POW8_TBL` records (closed intervals,
+  both fp_cmp boundary outcomes covered).
+- `EXP_RC` = 8/ln10 (n8 selector); `EXP_C1` (10 sig digits → **n8·C1 exact** for
+  |n8| ≤ 3475, asserted) + `EXP_C2` (the remainder); `LN10_C1` (12 sig digits →
+  **e′·C1 exact** for |e′| ≤ 64, asserted) + `LN10_C2`.
+- `POW8_TBL[j]` = round14(10^(j/8)), j=0..7, record 0 exactly 1.0 — EXP's T̂ **and**
+  LOG's K̂ (one shared table). `EXP_TCOR[m]` = round14(ln(T̂ₘ)−m·ln10/8), m=1..7 — the
+  T̂ representation-error absorber. `LNK_TBL[j]` = round14(ln(K̂ⱼ)), j=1..7 — ln OF THE
+  ROUNDED record (absorption). `LOG_BP[j]` = round14(10^((2j−1)/16)), j=1..8.
+- `NEGLNK_TBL[j]` = round14(ln(K̂ⱼ)−ln10), j=0..7 — the **e′=−1 decade's merged
+  additive**: without it the intermediate r+LNK sits a decade above the cancelled
+  result and its rounding costs up to 10 result-ulps (sim measured worst 9 → 4).
+
+### 12.4 `fp_exp` (tenant; input ARGA = widened x, |x| < 1000 guaranteed by the stub)
+
+Persistent cells (all aliases, §12.6): `MATH_A` (FPNUM), `MATH_T`/`HORNER_G` (FPNUM,
+sequential), `MATH_R`/`HORNER_ACC` (FPNUM), `MATH_N` (2B int16), `MATH_J` (1B).
+
+1. `MATH_A := x` (copy). `q := x·EXP_RC` (fp_mul, widen).
+2. **n8 := nearest-int(q)** — hand-extracted from the widened record: dexp ≤ 0 → int
+   part 0 (round via d0 when dexp=0); 1 ≤ dexp ≤ 4 → int part = digits d0..d(dexp−1),
+   round-half-away via digit d(dexp) ≥ 5; apply sign; defensive dexp > 4 → treat as
+   step-3 bound breach by sign. Store `MATH_N`.
+3. **Bounds:** n8 > 552 → `FPERR:=1`, `FAC:=0`, ret. n8 < −552 → `FAC:=0`, ret.
+   (Keeps every later dexp within fp_mul's ±126 preExp envelope; borderline
+   overflow/underflow inside the bound is disposed by round_and_finalize itself, which
+   the sim proved lands EXACTLY on the reference's characterized thresholds.)
+4. `m := n8 & 7` (low byte AND 7 — two's-complement floor semantics), `n := n8 >> 3`
+   (arithmetic, sra h/rr l ×3). Store m in `MATH_J`; n stays in registers/`MATH_N` as
+   convenient (n8 itself is dead after the two C1/C2 products).
+5. **Reduce:** n8fp := widen |n8| (widen_uint_to) + sign poke → `MATH_T`.
+   `r := x − n8fp·EXP_C1` (fp_mul EXACT by invariant, fp_sub EXACT by alignment —
+   proven in-contract);  `r := r − n8fp·EXP_C2`;  if m ≠ 0: `r := r − EXP_TCOR[m−1]`.
+   Result r canonical → `HORNER_G` (MATH_T retired: n8fp dead) and r survives there
+   through the Horner call (fp_poly_horner never writes HORNER_G).
+6. **Core:** `E := fp_poly_horner(HORNER_G, EXP_COEF)`; `w := r·E` (fp_mul, r re-read
+   from HORNER_G).
+7. **Reconstruct mantissa:** m ≠ 0 → `v := T̂[m]·w`; `res := T̂[m] + v` (table copy is
+   canonical; addressing 18·m via HL×16+HL×2). m = 0 → `res := 1.0 + w`
+   (widen_uint_to 1).
+8. **Scale (exact):** build the 10^n record DIRECTLY in ARGB — sign 0, dexp = n+1
+   (signed word), dig = 1,0×13, guard 0; `FAC := res·10^n` (fp_mul: mantissa ×1.0 is
+   exact; round_and_finalize disposes borderline overflow → FPERR=1 / underflow → 0).
+   Plain `ret` — COMPUTE-ONLY (FACTYP/DE are the stub's).
+
+x = 0 needs **no special path** (n8=0 → r=x → E≈1 → res=1+0·… wait, res=1+w with
+w=x·E=0 → exactly 1; ×10^0 exact): `EXP(0)=1` EXACT, proven in-sim.
+
+### 12.5 `fp_log` (tenant; input ARGA = widened x, x > 0 guaranteed by the stub)
+
+1. **Split (exact, free):** `e′ := dexp − 1` → `MATH_N` (int16); `MATH_A := x` with
+   dexp forced to 1 (m ∈ [1,10)).
+2. **j-scan:** j := #{j ∈ 1..8 : m > LOG_BP[j]} — fp_cmp loop, ascending, early-exit on
+   first not-greater (A==4 ⟺ greater, the fp_atan idiom); loop counter/table pointer in
+   `HORNER_CNT`/`HORNER_PTR` (free until Horner). **j = 8 fold:** m's dexp := 0 (m/10,
+   exact), e′ := e′+1, j := 0. Store `MATH_J`.
+3. **s:** `num := m − K̂[j]` (fp_sub — EXACT: same-dexp aligned 14-digit subtract; the
+   fold case is dexp 0-vs-1 with the 14th digit landing in the guard slot, still exact)
+   → `MATH_T`; `den := m + K̂[j]` (fp_add); `s := num/den` (fp_div) → `MATH_A`
+   (m retired). K̂[j] = `POW8_TBL[j]` — record 0 is exactly 1.0, NO j=0 branch.
+4. **Core:** `g := s·s` → `HORNER_G` (MATH_T retired); `Q := fp_poly_horner(g,
+   LOG_COEF)`; `r := s·Q` (s from MATH_A; r replaces it there).
+5. **Reconstruct (ascending magnitude; the sim-proven order):**
+   - e′ = −1 → `FAC := r + NEGLNK_TBL[j]` (ONE scale-matched add), ret.
+   - else: if e′ ≠ 0: e′fp := widen |e′| + sign → `MATH_T`; `r += e′fp·LN10_C2`.
+     If j ≠ 0: `r += LNK_TBL[j−1]`. If e′ ≠ 0: `r += e′fp·LN10_C1` (product EXACT by
+     invariant; the largest addend rounds last, at result scale). FAC := r, ret.
+
+`LOG(1)`: j=0, num exact 0 → s=0 → r=0, no adds → **exactly 0** (proven in-sim); no
+special path. COMPUTE-ONLY, plain `ret` everywhere (both functions are total over
+their stub-guarded domains — every disposition inside the tenant is via FPERR/FAC,
+never a status byte in A, per the CALSLT lesson).
+
+### 12.6 Main-ROM stubs + RAM
+
+- **`evmc_log`** = `evmc_sqr`'s shape with the domain check extended to sign-OR-zero:
+  `ARGA+FPNUM_SIGN ≠ 0` → err; `dig15_iszero(ARGA+FPNUM_DIG)` Z → err; err tail =
+  `FPERR:=3, DE:=0, ret` (verbatim evmc_sqr_err). Then push ix / dispatch
+  `SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LOG` / pop ix / `jp c,subrom_absent_error` /
+  FACTYP:=8 / `jp flt_to_int16`.
+- **`evmc_exp`** = same shape, domain check replaced by the **coarse magnitude
+  disposition**: read ARGA+FPNUM_DEXP (signed word); dexp ≥ 4 (|x| ≥ 1000, SIGNED
+  compare — tiny x has negative dexp) → sign clear: `FPERR:=1, DE:=0, ret`; sign set:
+  `FAC:=0` (zero lead byte) then fall into the common FACTYP:=8 + flt_to_int16 tail
+  (EXP(−huge) returns value 0, not an error). Otherwise dispatch
+  `SUBROM_IDX_EXP`. This guarantees the tenant's |x| < 1000 / |n8| ≤ 3475 invariant.
+- **RAM (§11.6 standing: NO new claims):** two new aliases in sysvars.inc —
+  `MATH_N equ SQRT_K` (**2 bytes**, spans SQRT_K+SQRT_ITER $F192–$F193, both dead
+  outside SQR; fp_atan's MATH_SIGN/MATH_RECIP alias the same bytes — SQR/ATN/EXP/LOG
+  never run concurrently, one factor at a time) and `MATH_J equ SQRT_POW10` ($F194,
+  = fp_atan's MATH_BREAK, same argument). FPNUM cells reuse MATH_A/MATH_T/HORNER_G/
+  MATH_R/HORNER_ACC exactly as documented per-step above; `HORNER_CNT`/`HORNER_PTR`
+  double as the LOG j-scan bookkeeping (dead until the Horner call).
+
+### 12.7 Gate — extend `basic_probe_math_conv.py` (do NOT fork)
+
+- **Tokens:** append `("EXP","a=exp(1)",0x8B)`, `("LOG","a=log(1)",0x8A)`.
+- **Truth oracles** `truth_exp14`/`truth_log14` (Decimal, prec 50 → round14, the
+  truth_atan14 shape) + pure-call matchers `_EXP_PURE_RE`/`_LOG_PURE_RE`.
+- **Value batteries** (pure calls, asserted to the §12.1 bounds vs truth):
+  - `EXP_BROAD_XS` (~35): 0, ±1e-13, ±1e-9, ±0.001, ±0.5, ±1, ±2, ±10, ±20, 88, 100,
+    142.7, the r≈0 stress points (±2.3025850929940, 4.6051701859881, 23.025850929940),
+    the n8-boundary straddle (±0.14391156831213/14), and the range straddles 145.062 /
+    −147.3 (finite, value-asserted) — plus the characterization anchors.
+  - `LOG_BROAD_XS` (~35): 1, 1±10^−k ladder (k=1,5,9,13), 0.99, 2, 3, 7,
+    2.7182818284590, 0.5, 0.25, 0.1, 0.001, 1000, decades 1E±10/1E62/1E−64/
+    9.9999999999999E62, fold-zone samples (0.87, 0.9245459892507, 0.95), breakpoint
+    straddles (LOG_BP[1]/[4]/[8] values ±1 ulp as 14-sig literals), K̂-hits
+    (1.3335214321633, 5.6234132519035 — s=0 rails).
+  - Assert `|zb − truth| ≤ EXP_MAX_ULP(=2) / LOG_MAX_ULP(=4)` per input + battery-wide
+    exact-count floors (`EXP_EXACT_FLOOR`/`LOG_EXACT_FLOOR`, set from the hardware run,
+    cross-checked against the sim's per-input prediction — sim/hardware disagreement on
+    any input is itself a finding for the review).
+- **Domain/disposition rows (per-machine wording):** `LOG(0)`, `LOG(-1)` →
+  `illegal function call`; **all three overflow paths**: `EXP(146)` (round_and_finalize
+  FPERR=1), `EXP(200)` (tenant n8-bound), `EXP(1000)` (stub dexp≥4) → `overflow`; all
+  three underflow paths: `EXP(-147.4)`, `EXP(-200)`, `EXP(-1000)` → `0`.
+- **FACTYP-leak rows:** `PRINT EXP(1)+0.5`, `A%=EXP(1)`, `PRINT LOG(10)+0.5`,
+  `A%=LOG(100)`, EXP/LOG over `PEEK` and over a single literal.
+- **Reference-deviation report** (informational, ATN shape): capture the reference on
+  both batteries, print the ulp summary — documents §1.1's envelope (and the newly
+  found −45-ulp EXP(88) tail) without ever asserting against it.
+
+### 12.8 Verification / standing gates
+
+`make math-acceptance` (extended) green; `python3 tools/sim_math_chain.py` green
+(committed proof stays a fast regression); `subrom-closure-check` green (both tenants'
+resident surface ⊆ SQR's: fp_add/sub/mul/div/cmp, dig15_iszero, widen_fac_to/uint_to,
+arga_pack_fac — NO new page-0 relocations); `subrom-acceptance`/`subrom-inttest` green
+(indices 3+4); **lean basic.rom byte-identical**; sub.rom fits + boots; `unit-test`,
+`float/string/input-acceptance`, reloc, kwtable single-copy green. **Fable review of
+the whole slice** (standing float-pack lesson), including a per-input sim-vs-hardware
+differential over the gate batteries.
