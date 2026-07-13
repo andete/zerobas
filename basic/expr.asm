@@ -796,6 +796,8 @@ ev_ff_mathconv:
                 jp      z,evmc_csng
                 cp      CDBL_TOKEN
                 jp      z,evmc_cdbl
+                cp      SQR_TOKEN
+                jp      z,evmc_sqr
                 jp      ev_ff_strnum        ; not ours -> LEN/ASC/VAL, else ev_f_err
 
 ; --- ev_mc_arg: parse "( <numeric expr> )" from IX (positioned on the -------
@@ -999,6 +1001,30 @@ evmc_cdbl:
                 ld      hl,ARGA
                 call    widen_rhs_operand
                 jp      round_and_finalize
+
+; --- evmc_sqr: SQR(x) -> non-negative square root, DOUBLE (math pack slice --
+; 1b, docs/spec-basic-math-pack.md §10.5). Same arg-parse + widen shape as
+; evmc_int/evmc_fix (ev_mc_arg then widen_rhs_operand into ARGA), then the new
+; fp_sqrt leaf (float-arith.asm). fp_sqrt's disposition contract (§3.4/§10.4
+; point 5): A=0 ok (FAC/FACTYP/DE already fully consistent -- every fp_sqrt
+; exit finalizes via round_and_finalize or an equivalent explicit pack, so
+; nothing more is needed here), A<>0 -> domain error (x<0). The raise itself
+; -- FPERR:=3 + DE:=0 -- lives HERE, not in fp_sqrt, mirroring evmc_cint's
+; shape (fac_to_int_go, the deeper leaf, sets FPERR:=1 for Overflow); interp.
+; asm's fp_runtime_error maps FPERR=3 to "illegal function call" at the next
+; statement-boundary check (check_expr_errors/_popbc), same D-F2-1 pattern as
+; Overflow/division-by-zero -- never a `jp` out of the evaluator itself.
+evmc_sqr:
+                call    ev_mc_arg
+                ld      hl,ARGA
+                call    widen_rhs_operand
+                call    fp_sqrt
+                or      a
+                ret     z                   ; ok: FAC/FACTYP/DE already set
+                ld      a,3
+                ld      (FPERR),a
+                ld      de,0
+                ret
     ENDIF
 
 ; --- ev_f_varptr: VARPTR(<var>) -> address of the variable's value field -----

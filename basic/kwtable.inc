@@ -225,5 +225,13 @@ kwtable:
                 db      4,"CINT",2,PEEK_PREFIX,CINT_TOKEN      ; $FF $9E
                 db      4,"CSNG",2,PEEK_PREFIX,CSNG_TOKEN      ; $FF $9F
                 db      4,"CDBL",2,PEEK_PREFIX,CDBL_TOKEN      ; $FF $A0
+                ; --- math pack slice 1b (repack build only) -----------------
+                ; docs/spec-basic-math-pack.md §10.1. SQR: same $FF-prefixed
+                ; function-token shape, MSX2 TH Table 2.20, black-box captured
+                ; from the VG-8020 crunch (probes/basic/basic_probe_math_
+                ; conv.py). No prefix collision with any existing 3-char
+                ; entry (SGN/INT/FIX/ABS all diverge by char 1 or 2) -- order
+                ; is free.
+                db      3,"SQR",2,PEEK_PREFIX,SQR_TOKEN         ; $FF $87
     ENDIF
                 db      0

@@ -246,6 +246,11 @@ FIX_TOKEN       equ     $A1     ; FIX(x)  -> $FF $A1
 CINT_TOKEN      equ     $9E     ; CINT(x) -> $FF $9E
 CSNG_TOKEN      equ     $9F     ; CSNG(x) -> $FF $9F
 CDBL_TOKEN      equ     $A0     ; CDBL(x) -> $FF $A0
+; Math pack slice 1b (Phase 3, repack-only -- docs/spec-basic-math-pack.md
+; §10.1). SQR: same $FF-prefixed function-token table, MSX2 TH Table 2.20 +
+; black-box VG-8020 crunch capture (probes/basic/basic_probe_math_conv.py).
+; Interleaves cleanly: ABS $86 . SQR $87 . RND $88 (RND not yet implemented).
+SQR_TOKEN       equ     $87     ; SQR(x) -> $FF $87
 ; Memory / I-O access tokens (MSX2 TH Table 2.20; oracle-confirmed byte-for-byte
 ; via basic_probe_crunch.py — see PROVENANCE.md). VPOKE / OUT are one-byte
 ; statement tokens; VPEEK / INP are $FF-prefixed two-byte function tokens (like
@@ -1025,7 +1030,10 @@ FPNUM_DIG       equ     3       ; field offset: digit array, 14 sig + 1 guard (1
 FPNUM_SIZE      equ     18
 
 FPERR           equ     $F069   ; runtime numeric-error flag: 0 none / 1 overflow /
-                                ; 2 division by zero (spec §10.2 D-F2-1) (1)
+                                ; 2 division by zero (spec §10.2 D-F2-1) / 3 illegal
+                                ; function call (math pack slice 1b, SQR(x<0),
+                                ; spec-basic-math-pack.md §10.4/§10.5 -- same
+                                ; disposition idiom, new value) (1)
 ; ARGA doubles as the WORKING/RESULT record: fp_add/fp_sub/fp_mul/fp_div all
 ; produce their answer back into ARGA in place (its own operand digits are
 ; dead once the op's own algorithm has consumed them), so a separate RES
@@ -1162,6 +1170,34 @@ MC_TYPE         equ     $F16D   ; evmc_sub1 (expr.asm): the operand's FACTYP (4/
                                 ; adjustment (negative operand, spec §9.2) can
                                 ; re-round the exact result back to single when
                                 ; the original argument was single (1)
+; --- Math pack slice 1b RAM (repack build only) ------------------------------
+; docs/spec-basic-math-pack.md §10.4. Own-choice free RAM, the $F16E.. tail
+; immediately following MC_TYPE (ends $F16D+1=$F16E). fp_sqrt (float-arith.asm)
+; needs two PERSISTENT FPNUM-shaped operands across its Heron loop -- unlike
+; every other fp_* consumer, which widens a fresh ARGA/ARGB right before each
+; single op and never needs the value again -- because the iterate (y) and the
+; efficiency-normalized argument (x') must survive MULTIPLE fp_add/fp_div
+; calls that themselves clobber ARGA/ARGB. Both are kept CANONICAL (guard
+; digit dig[14] always 0, i.e. always populated via widen_fac_to/a raw copy of
+; an already-canonical record, never a raw copy of a fresh fp_add/fp_div
+; result) -- fp_add's dig15_shr/dig15_add_inplace read the FULL 15-byte digit
+; array including the guard, so reusing an op's own post-round leftover guard
+; digit as if it were real extra precision would silently corrupt the next
+; alignment/round (own-design pitfall, caught in this slice's design pass).
+SQRT_X          equ     $F16E   ; the efficiency-normalized argument x' (constant
+                                ; across the whole iterate loop), FPNUM record (18)
+SQRT_Y          equ     $F180   ; the current iterate y (updated once per loop
+                                ; pass, canonical/clean per the note above),
+                                ; FPNUM record (18)
+SQRT_K          equ     $F192   ; signed net count of the x'/y<->x/y-under-100^k
+                                ; rescale (spec §10.4 step 2): +1 per /100 step,
+                                ; -1 per *100 step applied to reach x'∈[1,100);
+                                ; the result is rescaled by 10^SQRT_K at the end
+                                ; (dexp+=SQRT_K -- exact, no digit shift, since
+                                ; the FPNUM digit array is magnitude-independent) (1)
+SQRT_ITER       equ     $F193   ; Heron loop iteration counter, 1-based (the stop-
+                                ; rule's "suppress the check on iteration 1" needs
+                                ; to know which pass this is) (1)
 JIFFY           equ     $FC9E   ; MSX software clock, bumped by the timer ISR (MSX2 TH work area)
 ; Dispatch ABI (mirror of sub/equates.inc — the append-only page-0 entry table).
 ; IX = SUBROM_ENTRY_BASE_P0 + 3*index selects a tenant; never renumber an index.

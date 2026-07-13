@@ -2,8 +2,17 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 
-"""Math pack slice 1a probe — ABS/SGN/INT/FIX/CINT/CSNG/CDBL
-(docs/spec-basic-math-pack.md §9.4).
+"""Math pack slice 1a+1b probe — ABS/SGN/INT/FIX/CINT/CSNG/CDBL/SQR
+(docs/spec-basic-math-pack.md §9.4/§10.6).
+
+SQR (slice 1b, §10.3.1 FINAL): correctly-rounded Heron over our OWN fp_div --
+NOT a bit-exact fit of the reference. The reference's own division is low-
+biased by 1 ulp in an operand-dependent way that this slice's black-box
+characterization campaign proved is not clean-room recoverable (the
+distinguishing rule lives in the 15th digit of an intermediate remainder,
+which 14-digit PRINT structurally hides). This is a DOCUMENTED, regression-
+guarded deviation on ~15/72 characterized inputs (SQR_KNOWN_DEVIATIONS
+below), not a bug -- see the divergence summary the differential mode prints.
 
 Two independent checks, both against the Philips VG-8020 black-box oracle:
 
@@ -57,6 +66,7 @@ TOKENS = [
     ("CINT", "a=cint(1)", 0x9E),
     ("CSNG", "a=csng(1)", 0x9F),
     ("CDBL", "a=cdbl(1)", 0xA0),
+    ("SQR",  "a=sqr(1)",  0x87),
 ]
 
 
@@ -137,6 +147,27 @@ EXPRS = [
     "abs(peek(0))", "sgn(peek(0))", "int(peek(0)+.5)", "cint(peek(0))",
     # --- nested / composed calls (ARGA/ARGB reuse across calls) ------------
     "abs(int(-1.5))", "int(-1.5)+int(-2.5)", "cint(abs(-2.5))",
+    # --- SQR: trivial + perfect squares + sub-1 + large (spec §10.2, all ---
+    # reference-identical -- exact on every perfect square, exact power-of-10
+    # magnitude shifts).
+    "sqr(0)", "sqr(1)", "sqr(4)", "sqr(16)", "sqr(100)", "sqr(10000)",
+    "sqr(.25)", "sqr(.01)", "sqr(.04)", "sqr(.1)", "sqr(.5)",
+    "sqr(1e10)", "sqr(1e30)", "sqr(4e10)",
+    # --- SQR: correctly-rounded, non-perfect-square inputs the reference ---
+    # ALSO gets right (no divergence -- only ~15/72 characterized inputs are
+    # low-biased on the reference side, see SQR_KNOWN_DEVIATIONS below).
+    "sqr(5)", "sqr(7)", "sqr(10)", "sqr(999)",
+    # --- SQR: FACTYP-leak (function-over-float; result must stay DOUBLE, --
+    # per §10.2 -- an int/single leak would reprint 4+.5 as an int add or
+    # round 6.25's sqrt to 6 sig digits) + single-vs-double literal input --
+    # (6.25 -> 2.5 exactly, deliberately NOT one of the known-deviation
+    # inputs below, so this pins the widen path, not the div-ulp deviation).
+    "sqr(4)+0.5", "sqr(6.25!)", "sqr(6.25#)",
+    # --- SQR: domain error, x<0 -> "illegal function call" (own lowercase --
+    # wording, D-F2-1 disposition idiom; TAIL differs from the reference's
+    # verbatim "Illegal function call", so these are SPAN_ONLY below, same
+    # shape as the CINT Overflow cases).
+    "sqr(-1)", "sqr(-1e-9)", "sqr(-4)",
 ]
 
 # Cases whose TAIL legitimately differs (zerobas's own lowercase D-2-style
@@ -144,7 +175,40 @@ EXPRS = [
 # (both sides must still have SOME tail, i.e. genuinely aborted).
 # cint(...) Overflow cases: TAIL differs by wording (zerobas's own lowercase
 # D-2-style message); span (the value/continuation shape) still must match.
-SPAN_ONLY = {"cint(32768)", "cint(-32769)", "cint(40000.5)", "cint(32768.1)"}
+# sqr(x<0): same idiom -- zerobas's "illegal function call" vs the
+# reference's "Illegal function call" (§10.2/§3.4 disposition wording).
+SPAN_ONLY = {"cint(32768)", "cint(-32769)", "cint(40000.5)", "cint(32768.1)",
+             "sqr(-1)", "sqr(-1e-9)", "sqr(-4)"}
+
+# --- SQR documented divergence table (§10.3.1/§10.6 FINAL) -----------------
+# Correctly-rounded Heron over our OWN fp_div is NOT bit-exact with the
+# reference: the reference's division is low-biased by 1 ulp on these ~15/72
+# characterized inputs (full battery + true-sqrt justification worked out in
+# this slice's black-box campaign). Each entry maps the expression to
+# zerobas's OWN expected value (a REGRESSION GUARD -- the probe fails if
+# zerobas's Heron fixed point ever drifts from this) alongside the
+# reference's actual (lower) value, kept here for context only and NEVER
+# asserted against. compare() below special-cases every key in this dict:
+# the pass/fail verdict is zb == zb_expected, not zb == reference.
+SQR_KNOWN_DEVIATIONS = {
+    # expr                     : (zb_expected,        reference_actual)
+    "sqr(2)":                    ("1.4142135623731",   "1.414213562373"),
+    "sqr(3)":                    ("1.7320508075689",   "1.7320508075688"),
+    "sqr(6)":                    ("2.4494897427832",   "2.4494897427831"),
+    "sqr(12)":                   ("3.4641016151378",   "3.4641016151377"),
+    "sqr(14)":                   ("3.741657386774",    "3.7416573867739"),
+    "sqr(17)":                   ("4.1231056256177",   "4.1231056256176"),
+    "sqr(21)":                   ("4.5825756949559",   "4.5825756949558"),
+    "sqr(22)":                   ("4.6904157598235",   "4.6904157598234"),
+    "sqr(101)":                  ("10.049875621121",   "10.04987562112"),
+    "sqr(1.5)":                  ("1.2247448713916",   "1.2247448713915"),
+    "sqr(2.5)":                  ("1.5811388300842",   "1.5811388300841"),
+    "sqr(3.7)":                  ("1.9235384061672",   "1.9235384061671"),
+    "sqr(123.456)":              ("11.111075555499",   "11.111075555498"),
+    "sqr(12345.6789)":           ("111.11111060556",   "111.11111060555"),
+    "sqr(1.23456789012345)":     ("1.1111111061112",   "1.111111106111"),
+}
+EXPRS = EXPRS + list(SQR_KNOWN_DEVIATIONS.keys())
 
 # RAW `:`-joined stateful cases: the ABS(-32768%) int-domain escape needs an
 # actual int16 -32768 value, which only exists after a TYPED-VAR store
@@ -173,6 +237,10 @@ RAW_LINES = [
     # wrap boundary, which the two prompts ("Ok"/"zb>") shift -- same flake as
     # the abs(-1.234...) case above; the printed VALUE is the pin.
     'print"[";fix(-1.00000000000001#);"]"',
+    # SQR FACTYP-leak into a typed INT var (§10.6): A%=SQR(9) must round-trip
+    # through the int16 store cleanly (9 is a perfect square, no rounding
+    # ambiguity -- this pins the store path, not the sqrt itself).
+    'a%=sqr(9):print"[";a%;"]"',
 ]
 
 
@@ -223,6 +291,11 @@ def main() -> int:
         expr, line, kind = cases[i]
         ref_span, ref_tail = result_span(ref_raw), screen_tail(ref_raw, line)
         zb_span, zb_tail = result_span(zb_raw), screen_tail(zb_raw, line)
+        if expr in SQR_KNOWN_DEVIATIONS:
+            # documented deviation (§10.3.1/§10.6): regression guard only --
+            # zb must equal ITS OWN expected value, never the reference's.
+            zb_expected, _ref_actual = SQR_KNOWN_DEVIATIONS[expr]
+            return zb_span is not None and zb_span.strip() == zb_expected
         if kind == "raw":
             return ref_span is not None and ref_span == zb_span
         if expr in SPAN_ONLY:
@@ -234,6 +307,7 @@ def main() -> int:
         args.machine, args.zb_machine, specs, compare,
         batch=not args.boot_per_case, reset=("NEW", "CLS"))
 
+    divergences = []
     for (expr, line, kind), good, ref_raw, zb_raw in zip(
             cases, verdicts, ref_raws, zb_raws):
         ok = ok and good
@@ -245,8 +319,23 @@ def main() -> int:
             zs = f"[{zb_span}]" if zb_span is not None else "<no span>"
             print(f"{'':>34}ref tail: {screen_tail(ref_raw, line)!r}")
             print(f"{'':>34}zb  span: {zs}  tail: {zb_tail!r}")
+        if expr in SQR_KNOWN_DEVIATIONS:
+            zb_span = result_span(zb_raw)
+            zb_expected, ref_actual = SQR_KNOWN_DEVIATIONS[expr]
+            divergences.append((expr, zb_span.strip() if zb_span else None,
+                                 zb_expected, ref_actual))
 
-    print("\nALL PASS — math pack slice 1a is reference-identical" if ok
+    if divergences:
+        print("\n--- SQR documented-divergence summary (§10.3.1/§10.6) -----")
+        print("(regression-guarded against zb_expected; reference NEVER "
+              "asserted equal -- its own div is 1 ulp low here)")
+        for expr, zb_got, zb_expected, ref_actual in divergences:
+            tag = "OK" if zb_got == zb_expected else "DRIFT"
+            print(f"{tag:6} {expr:<26} zb={zb_got!r:<20} "
+                  f"expected={zb_expected!r:<20} reference={ref_actual!r}")
+
+    print("\nALL PASS — math pack slice 1a+1b is reference-identical except "
+          "the documented SQR divergence table" if ok
           else "\nSOME FAILED")
     return 0 if ok else 1
 

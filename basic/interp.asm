@@ -404,14 +404,24 @@ fp_runtime_error:
                 ld      hl,err_overflow     ; program.asm (dl_overflow); shared wording
                 ld      a,(FPERR)
                 cp      2
-                jr      nz,fre_abort
+                jr      z,fre_divzero
+                cp      3
+                jr      z,fre_illegal
+                jr      fre_abort
+fre_divzero:
                 ld      hl,err_fp_divzero
+                jr      fre_abort
+fre_illegal:
+                ld      hl,err_illegal_fn   ; math pack slice 1b: SQR(x<0) (spec
+                                            ; -basic-math-pack.md §10.4/§10.5)
 fre_abort:
                 xor     a
                 ld      (PRDEST),a
                 jp      print_string
 err_fp_divzero:
                 db      "division by zero",13,10,0
+err_illegal_fn:
+                db      "illegal function call",13,10,0
 
 ; --- check_expr_errors: shared TMISMATCH+FPERR post-eval() check for ------
 ; drivers that need no extra stack cleanup before erroring (ex_if, exp_num

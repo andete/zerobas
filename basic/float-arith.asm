@@ -1914,3 +1914,248 @@ fpt_allfrac:
                 ret     z
                 scf
                 ret
+
+; =============================================================================
+; fp_sqrt -- math pack slice 1b: SQR(x) primitive (docs/spec-basic-math-
+; pack.md §10.4). Correctly-rounded Heron fixed-point over our OWN resident
+; fp_add/fp_div -- NOT a bit-exact fit of the reference (§10.3.1: the
+; reference's own division is low-biased by an amount not clean-room black-
+; box recoverable, a documented ~15/72 1-ulp deviation, gated by
+; probes/basic/basic_probe_math_conv.py). Page-0 low region beside fp_trunc,
+; the slice's other new numeric primitive.
+; =============================================================================
+
+SQRT_MAX_ITER   equ     16          ; safety cap on the Heron loop -- the
+                                    ; efficiency-normalized domain x'in[1,100)
+                                    ; needs <=~9 passes even from the crude
+                                    ; y0:=x' seed (worst case x'->100, ratio
+                                    ; y0/sqrt(x')~10, ~8 quadratic-convergence
+                                    ; steps to 14 sig digits); every
+                                    ; characterized input converges to a flat
+                                    ; fixed point by pass 3 (this slice's own
+                                    ; bulk-fit campaign, 72/72 inputs) -- this
+                                    ; cap is a never-expected-to-fire guard
+                                    ; against an infinite loop, not a tuned
+                                    ; bound.
+
+; --- fp_sqrt: ARGA (an already-widened FPNUM: the caller's x, dig[14]=0 -----
+; fresh per widen_rhs_operand's contract) -> FAC (double) + A=status (0 ok,
+; nonzero domain error -- x<0, DISPOSITION per spec §3.4/§10.4 point 5: NEVER
+; a `jp`, just a plain `ret`; the caller, expr.asm's evmc_sqr, maps a nonzero
+; A to FPERR:=3 + the "illegal function call" abort). On success FAC/FACTYP/
+; DE are already fully consistent (every exit path finalizes via
+; round_and_finalize, arga_pack_fac+flt_to_int16, or the explicit zero-pack --
+; evmc_sqr needs no further fixup). Never touches FPERR itself (kept out of
+; this page-0 leaf per the leaf-audit's page-1-reverse-dep discipline, even
+; though FPERR is plain RAM -- the DISPOSITION split stays in expr.asm, same
+; shape as fac_to_int_go's Overflow -- reused instead of duplicated here).
+;
+; Domain/trivial guard (§10.4 step 1): x<0 -> status 1, FAC untouched. x=0 ->
+; FAC:=0 (packed zero), status 0. x=1 -> FAC:=1 exactly (ARGA already IS the
+; FPNUM for 1.0 at this point -- just pack it), status 0, avoiding a pointless
+; iterate.
+;
+; Efficiency normalize (§10.4 step 2): shift ARGA's dexp by +-2 until it lands
+; in {1,2} (x'=x/100^SQRT_K, x'in[1,100)) -- own design, exact and digit-array-
+; free: the FPNUM format stores value=mantissa*10^dexp with the digit array
+; independent of magnitude, so a 100^k rescale is JUST a dexp+-2k edit (spec's
+; "agent-verified scale-covariant" claim). Seed y0:=x' (see SQRT_MAX_ITER's
+; comment for the convergence-bound justification -- a leading-digit table
+; would shave a couple of passes but isn't needed to hit the ~9-step target).
+;
+; Heron iterate (§10.4 step 3): y <- (y+x'/y)/2 via resident fp_div/fp_add,
+; halving via a second fp_div against a widen_uint_to'd constant 2 (one of
+; the spec's two named halving options; chosen because it reuses widen_uint_to
+; already in this file -- no separate 0.5 literal needed). STOP RULE (agent-
+; locked, spec's own text): unconditionally take iteration 1's result with NO
+; comparison (for a seed below sqrt(x) the first step can RISE -- doesn't
+; happen with this y0>=sqrt(x') seed, but the reference's own shape suppresses
+; the check regardless, so this does too); from iteration 2 on, compare the
+; new y against the previous y (fp_cmp) and stop at the first y that is NOT
+; smaller (AM-GM guarantees y1>=sqrt(x), so the sequence is monotone-
+; decreasing to the fixed point -- "non-decreasing" only ever means "reached
+; it").
+;
+; CANONICAL-OPERAND DISCIPLINE (own-design correctness note, see SQRT_X/
+; SQRT_Y's sysvars.inc header): every fp_add/fp_div operand this loop feeds in
+; is either a raw copy of an already-canonical record (SQRT_X, SQRT_Y -- both
+; always stored with a widen_fac_to'd, guard-digit-zero copy) or a FRESH
+; widen_fac_to of the immediately-preceding op's own FAC result. Never the
+; raw post-op ARGA bytes directly -- fp_add's dig15_shr/dig15_add_inplace walk
+; the FULL 15-byte digit array (guard included), so an op's own leftover
+; (meaningful-looking but stale) guard digit would silently masquerade as
+; real extra precision in the NEXT unrelated op, diverging from how real
+; expression evaluation re-widens from the packed (guard-free) FAC after
+; every sub-result -- caught in this slice's design pass, before it ever
+; reached the gate.
+;
+; No special final rounding (§10.4 point 4): the last fp_div's own
+; round_and_finalize tail IS the result -- correctly-rounded-ish per our own
+; div, nothing more.
+;
+; Leaf-audit (§3.5/spec's own callout): touches only page-0-resident
+; fp_add/fp_div/fp_cmp/dig15_iszero/arga_pack_fac/widen_fac_to/widen_uint_to/
+; flt_to_int16 + RAM (ARGA/ARGB/FAC/FACTYP/SQRT_*) -- no page-1 reference.
+; Clobbers A, B, C, D, E, H, L (as the routines it calls).
+fp_sqrt:
+                ld      a,(ARGA+FPNUM_SIGN)
+                or      a
+                jr      z,fsq_nonneg
+                ld      a,1                 ; x<0 -> domain error, disposition in A
+                ret
+fsq_nonneg:
+                ld      hl,ARGA+FPNUM_DIG
+                call    dig15_iszero
+                jr      nz,fsq_nonzero
+                ; x==0: FAC:=0 (double), status ok
+                xor     a
+                ld      (FAC),a
+                ld      a,8
+                ld      (FACTYP),a
+                ld      de,0
+                xor     a
+                ret
+fsq_nonzero:
+                ; x==1 exactly? (dexp==1, dig[0]==1, dig[1..13]==0 -- dig[14]
+                ; already 0, the caller's widen contract)
+                ld      hl,(ARGA+FPNUM_DEXP)
+                ld      a,h
+                or      a
+                jr      nz,fsq_notone
+                ld      a,l
+                cp      1
+                jr      nz,fsq_notone
+                ld      a,(ARGA+FPNUM_DIG)
+                cp      1
+                jr      nz,fsq_notone
+                ld      hl,ARGA+FPNUM_DIG+1
+                ld      b,13
+fsq_one_chk:
+                ld      a,(hl)
+                or      a
+                jr      nz,fsq_notone
+                inc     hl
+                djnz    fsq_one_chk
+                ; exactly 1.0 -- ARGA already IS the FPNUM for it; pack as-is
+                call    arga_pack_fac
+                ld      a,8
+                ld      (FACTYP),a
+                call    flt_to_int16
+                xor     a
+                ret
+fsq_notone:
+                ; --- efficiency-normalize: dexp -> {1,2} in +-2 steps -------
+                xor     a
+                ld      (SQRT_K),a
+fsq_norm_lp:
+                ld      hl,(ARGA+FPNUM_DEXP)
+                ld      a,h
+                or      a
+                jp      m,fsq_norm_lo       ; dexp<0 -> too low
+                ld      a,l
+                cp      3
+                jr      nc,fsq_norm_hi      ; dexp>=3 -> too high
+                cp      1
+                jr      nc,fsq_norm_done    ; dexp in {1,2} -> done
+                                            ; (falls through: dexp==0 -> too low)
+fsq_norm_lo:
+                ld      hl,(ARGA+FPNUM_DEXP)
+                inc     hl
+                inc     hl
+                ld      (ARGA+FPNUM_DEXP),hl
+                ld      a,(SQRT_K)
+                dec     a
+                ld      (SQRT_K),a
+                jr      fsq_norm_lp
+fsq_norm_hi:
+                ld      hl,(ARGA+FPNUM_DEXP)
+                dec     hl
+                dec     hl
+                ld      (ARGA+FPNUM_DEXP),hl
+                ld      a,(SQRT_K)
+                inc     a
+                ld      (SQRT_K),a
+                jr      fsq_norm_lp
+fsq_norm_done:
+                ; ARGA now holds x' in [1,100), dig[14] still 0 (only dexp
+                ; changed) -- seed both persistent buffers from it
+                ld      hl,ARGA
+                ld      de,SQRT_X
+                ld      bc,18
+                ldir
+                ld      hl,ARGA
+                ld      de,SQRT_Y
+                ld      bc,18
+                ldir
+                ld      a,1
+                ld      (SQRT_ITER),a
+fsq_iter_lp:
+                ; --- t := x'/y ---
+                ld      hl,SQRT_X
+                ld      de,ARGA
+                ld      bc,18
+                ldir
+                ld      hl,SQRT_Y
+                ld      de,ARGB
+                ld      bc,18
+                ldir
+                call    fp_div              ; FAC/ARGA := x'/y (rounded)
+                ; --- sum := y + t (both operands re-derived canonical) -----
+                ld      hl,ARGB
+                call    widen_fac_to        ; ARGB := clean widen of t
+                ld      hl,SQRT_Y
+                ld      de,ARGA
+                ld      bc,18
+                ldir                        ; ARGA := y (already canonical)
+                call    fp_add              ; FAC/ARGA := y+t (rounded)
+                ; --- y_new := sum/2 -----------------------------------------
+                ld      hl,ARGA
+                call    widen_fac_to        ; ARGA := clean widen of sum
+                ld      hl,ARGB
+                xor     a
+                ld      de,2
+                call    widen_uint_to       ; ARGB := 2.0 (clean)
+                call    fp_div              ; FAC/ARGA := sum/2 = y_new (rounded)
+                ; --- stop rule (suppressed on iteration 1) ------------------
+                ld      a,(SQRT_ITER)
+                cp      1
+                jr      z,fsq_no_check
+                ld      hl,SQRT_Y
+                ld      de,ARGB
+                ld      bc,18
+                ldir                        ; ARGB := y_old (fp_cmp only reads
+                                            ; the 14 significant digits, so a
+                                            ; raw copy is fine here)
+                call    fp_cmp              ; A=1(y_new<y_old)/2(==)/4(>)
+                cp      1
+                jr      nz,fsq_stop         ; non-decreasing -> stop; y_new
+                                            ; already stands in FAC/ARGA
+fsq_no_check:
+                ld      hl,SQRT_Y
+                call    widen_fac_to        ; SQRT_Y := clean widen of y_new
+                ld      a,(SQRT_ITER)
+                inc     a
+                ld      (SQRT_ITER),a
+                cp      SQRT_MAX_ITER+1
+                jr      nc,fsq_stop         ; safety cap -- current y_new stands
+                jr      fsq_iter_lp
+fsq_stop:
+                ; --- rescale by 10^SQRT_K (dexp+=SQRT_K -- exact) -----------
+                ld      a,(SQRT_K)
+                ld      l,a
+                or      a
+                jp      p,fsq_k_pos
+                ld      h,$FF
+                jr      fsq_k_ext_done
+fsq_k_pos:
+                ld      h,0
+fsq_k_ext_done:
+                ld      de,(ARGA+FPNUM_DEXP)
+                add     hl,de
+                ld      (ARGA+FPNUM_DEXP),hl
+                call    arga_pack_fac
+                ld      a,8
+                ld      (FACTYP),a
+                call    flt_to_int16
+                xor     a
+                ret
