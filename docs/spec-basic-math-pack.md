@@ -320,6 +320,209 @@ gates green; lean `basic.rom` byte-identical. Three review findings, all resolve
   A real fix is evaluator-wide (all `$FF` functions + parens), NOT math-only — **deferred**
   as its own decision; fixing math-only would make it inconsistent with PEEK.
 
+## 10. Slice-1b implementation contract — `SQR` (DRAFT, awaiting sign-off)
+
+**Status: 🟠 DRAFT 2026-07-13 — spec input, NOT a green light** (per
+[[spec-before-implementation]]). Slice 1a shipped `ABS/SGN/INT/FIX/CINT/CSNG/CDBL`
+(§9.5). This cut adds the one remaining slice-1 algebraic function, `SQR`. It is
+*not* a trivial wrapper — §5.1 proved the oracle's `SQR` is a **standalone
+Newton-style algebraic** routine (not `EXP(.5·LOG(x))`), so it is
+reference-identical-able in slice 1, but matching its **exact last-ulp behaviour**
+is a distinct fitting task, hence its own sub-slice.
+
+### 10.1 Home + token
+
+- **Home: main BASIC, repack-only** (`IF ROM_BASE < $4000`), exactly like 1a — the
+  body is a short algebraic loop over resident page-0 `fp_*` primitives, no heavy
+  coefficient tables, so it stays in-window; lean 16 KB `basic.rom` **byte-identical**
+  (SHA1-proven). No sub-ROM page-1 tenant yet (that is slice 2's transcendentals).
+- **Token: `SQR` = `$FF $87`** (§6 target, MSX2 TH Table 2.20). **Captured, not
+  asserted** — add `SQR_TOKEN` to [basic/sysvars.inc](../basic/sysvars.inc) (repack
+  block) + crunch entry to [basic/kwtable.inc](../basic/kwtable.inc), confirmed by the
+  gate's token-capture check against the real VG-8020 crunch (interleaves cleanly:
+  `ABS $86 · SQR $87 · RND $88`).
+
+### 10.2 Result contract (oracle-locked by the gate, not asserted from memory)
+
+| Fn | Token | Semantics | Result |
+|---|---|---|---|
+| `SQR(x)` | `$FF $87` | non-negative square root; **DOUBLE** compute per float-core §10 (all float arith is double); exact on perfect squares | **double** (FACTYP=8) unless the oracle narrows for single input — capture and match |
+| `SQR(x<0)` | — | domain error → **"Illegal function call"** via the §3.4 disposition path (never `jp`; return status, main-side stub raises) |
+
+Edge inputs the battery must pin: `SQR(0)`=0, `SQR(1)`=1, perfect squares
+(`SQR(4)`/`SQR(16)`/`SQR(100)`/`SQR(10000)` all exact), the known one-ulp-low cases
+(`SQR(2)`, `SQR(3)`), correctly-rounded cases (`SQR(5)`, `SQR(7)`, `SQR(10)`),
+sub-1 (`SQR(.25)`=.5, `SQR(.01)`=.1), large (`SQR(1E10)`, `SQR(1E30)`), FACTYP-leak
+(`PRINT SQR(4)+0.5`, `A%=SQR(9)`, `SQR` of a single vs a double literal), and the
+negative-domain error (`SQR(-1)`, `SQR(-1E-9)`).
+
+### 10.3 RESOLVED (user, 2026-07-13) — full bug-for-bug compatibility, no accuracy flag
+
+The characterization campaign (this session, continuing §5.1) found the oracle's
+`SQR` anomaly does **not** originate in the sqrt algorithm: `SQR` is exactly
+**Heron fixed-point under the oracle's own arithmetic** (verified 72/72), and the
+one-ulp-low pattern comes from the **reference's DIVISION** being biased low by
+0–3+ ulp in an operand-dependent way. Our `fp_div` is correctly-rounded
+(mathematically *more* accurate) → Heron lands a different last ulp on ~15/72 inputs,
+so bit-exact `SQR` is **impossible over our current div**. This is a **live divergence
+today, independent of SQR** (`PRINT 2/1.4142135623731` → oracle `…729`, zerobas
+`…731`), which means the float pack's "reference-identical" claim was silently
+**falsified for division** — `float-acceptance` (349/349) has a blind spot: its matrix
+never included near-unity 14-digit divisions.
+
+**Decision:** **compatibility is the product's ultimate goal** — a divergent result can
+make real programs branch differently — so **`fp_div` is reworked to reproduce the
+reference's low-biased rounding exactly** (a float-core change). **No compile-time
+accuracy option:** a `strict-vs-accurate` flag was considered and **rejected** — a
+reference-identity project has no consumer for an "accuracy" build, and a live second
+branch would double the affected gate surface and cost scarce lean-cart bytes. Once the
+div is compat, **`SQR` = plain Heron over it → reference-identical automatically** (no
+per-function divergence table). §10.4's `fp_sqrt` therefore simplifies to the iterate
+loop with no special rounding of its own.
+
+**Blocking prerequisite:** reverse-engineer the reference division micro-rule *exactly*
+(campaign at 76/104 → close via active disagreement-probing). The `fp_div` bug-compat
+rework then gets **its own spec + sign-off** before any [float-arith.asm](../basic/float-arith.asm)
+edit (it reopens the concluded float pack), and **closes the `float-acceptance` blind
+spot** by adding the near-unity 14-digit-division cases.
+
+### 10.3.1 FINAL (user, 2026-07-13, post-campaign) — documented deviation; ship SQR correctly-rounded
+
+The "rework fp_div bug-compatible" plan in §10.3 was **attempted and abandoned**. A
+time-boxed reverse-engineering campaign (two spans, error-map fitting vs
+adversarial + fresh held-out sets, full family sweep: Knuth Alg-D estimate ×
+trial-subtraction × divisor-rounding × remainder-width × guard-count) **plateaued at
+~80% (fresh) / ±1 ulp** and could not reach bit-exact. The reference division's
+distinguishing per-digit rule lives in the **15th digit of intermediate remainders**,
+which its 14-digit `PRINT` structurally hides; recovering it requires reading the ROM's
+internal state or code — both barred by [[no-reference-rom-disasm]]. **Conclusion: the
+reference's division rounding is not clean-room black-box reproducible.** This is the
+honest boundary of black-box reproduction, not an unexplored-model gap.
+
+**Decision (documented deviation):**
+- **Keep zerobas's correctly-rounded `fp_div`** (it is *more* accurate). Do **not** rework
+  it. The div deviation envelope is **narrow**: identical to the reference for divisors
+  with ≤10 significant digits; ≤~5 ulp more accurate (in the 14th digit) beyond.
+- **`SQR` ships as correctly-rounded Heron over our `fp_div`** — §10.4 simplifies to a
+  plain iterate loop with a normal final round; it is **not** reference-identical, and
+  the gate carries a **documented divergence table** (~15/72 characterized inputs differ
+  by 1 ulp; the reference is 1 ulp low there — see [[bug-for-bug-compat-over-accuracy]]).
+- **Document the division + SQR deviation envelope** in the float-pack record and add the
+  exposing near-unity 14-digit-division cases to `float-acceptance` **as characterized
+  known-deviations** (closes the blind spot without asserting a false identity).
+- **Principle intact:** bug-for-bug is still the goal *where clean-room-achievable*. The
+  **subtraction** guard-tie divergence IS achievable and is fixed bug-compat
+  ([spec-float-subtract-tie-compat.md](spec-float-subtract-tie-compat.md)); division is
+  the one place clean-room reproduction is provably capped.
+
+The original fork framing is retained below for provenance.
+
+### 10.3-orig THE open decision — bit-exact fit vs documented divergence (superseded by 10.3)
+
+§5.1 characterized *what* the oracle computes (standalone algebraic, exact on
+squares, 5/7/10 correctly rounded, 2/3 one ulp low) but **not the exact iteration**
+(seed form + iteration count + final rounding/truncation) that reproduces that
+specific ulp pattern. Reproducing it clean-room, **without ROM disasm**
+([[no-reference-rom-disasm]]), forces a fork — this is slice 1b's Q-M1-analogue:
+
+- **(a) Characterize-then-fit → bit-exact reference-identity** *(recommended, matches
+  the float-pack bar).* Run a **black-box campaign first** (mirrors §5.1's method):
+  capture `SQR` at full precision over a designed input battery, then fit a decimal
+  Newton/Heron recurrence — `y₀` seed (likely exponent-halving + a short mantissa
+  approximation), fixed iteration count, and the **final-step rounding mode** — that
+  reproduces the exact last digit on *every* sample incl. the 2/3-low anomaly.
+  Clean-room reimplement that fitted recurrence. Highest confidence of `float-acceptance`-
+  grade identity; cost = the fit campaign may take a few capture/model rounds.
+- **(b) Correctly-rounded interim divergence** — ship a clean correctly-rounded Newton
+  now, **document** the last-ulp divergence on `SQR(2)`/`SQR(3)` (like F1's interim
+  seams), unify later. Cheaper, but spends effort on a path a later fit replaces and
+  breaks the "reference-identical slice 1" property.
+- **(c) Defer `SQR` to slice 2** — fold it in alongside EXP/LOG if the fit proves
+  intractable. Least attractive (§5.1 already proved it is *not* exp/log, so it gains
+  nothing from slice 2's machinery).
+
+**Recommendation: (a).** The whole slice-1 thesis is reference-identity; a
+characterize-first campaign is the same discipline that produced §5.1 and every clean
+float-pack slice. Do the campaign as an explicit **pre-gate** and only commit the
+recurrence once the fit is clean across the full battery.
+
+### 10.4 New primitive — `fp_sqrt`
+
+A single page-0-low leaf beside the other `fp_*` (where `fp_trunc`=$3AF5 landed in 1a),
+`IF ROM_BASE < $4000`. **Correctly-rounded Heron over our `fp_div`** (§10.3.1 — NOT a
+bit-exact fit of the reference; the reference's div-driven ~15/72 1-ulp-low anomaly is a
+documented deviation, §10.6):
+
+1. **Domain/trivial guard:** x<0 → return error status (A≠0). x=0 → FAC:=0, done.
+   x=1 → FAC:=1 (avoid iterating).
+2. **Seed y₀:** `y₀ = x` is correct but slow at exponent extremes; for efficiency
+   normalize x to `x'∈[1,100)` by an even-decade shift (rescale the root by `10^k` —
+   BCD ops make the map exactly `100^k`-covariant, agent-verified scale-covariant) so
+   the iterate needs ≤~9 steps, seed `y₀` from the leading digits of `x'`.
+3. **Heron iterate:** `y ← (y + x/y)/2` via resident `fp_div`=$3632, `fp_add`=$3469,
+   and a halving (exponent-decrement or `fp_mul`=$3547 by .5). **Stop rule (agent-locked,
+   reproduces the reference's own iteration shape): iterate while `y` decreases; return
+   the first non-decreasing `y'` (suppress the check on iteration 1, since for x<1 the
+   first step rises).** AM-GM guarantees `y₁≥√x`, so the sequence is monotone-decreasing
+   to the fixed point.
+4. **No special final rounding** — the result is whatever the standard `fp_add`/`fp_div`
+   `round_and_finalize` half-up tail produces at the fixed point. (Our div is
+   correctly-rounded, so this lands a correctly-rounded-ish √x; it differs from the
+   reference by ≤1 ulp exactly where our div differs — the documented deviation.)
+5. Leave result in FAC, FACTYP per §10.2. **Never `jp` an error** — return disposition
+   in A (§3.4).
+
+Per-function **leaf-audit** (§3.5) still required even though the body is main-side:
+confirm `fp_sqrt` touches only page-0-resident `fp_*`/`dig15_*` + RAM (no page-1
+reverse-dep — the recurring `neg_de`-class trap).
+
+### 10.5 Dispatch integration
+
+- **Evaluator:** extend the slice-1a **`evmc_` numeric-math group** (`ev_ff_mathconv`,
+  [expr.asm:619](basic/expr.asm:619)) with an `SQR_TOKEN` selector → new `evmc_sqr`:
+  parse `( <numeric expr> )` leaving the arg in FAC/FACTYP (the existing math-group arg
+  path), `call fp_sqrt`, on CF/status≠0 raise "Illegal function call" via the disposition
+  map, else set result FACTYP per §10.2. Same shape as `evmc_abs`/`evmc_int`.
+- **FACTYP discipline** (float-pack standing trap, bit twice): the returning tail must
+  leave FAC + FACTYP consistent for the double/promoted result; cover
+  `SQR`-over-float and store-into-typed-var cases in the battery (§10.6).
+
+### 10.6 Gate — extend `math-acceptance`
+
+Extend [basic_probe_math_conv.py](../probes/basic/basic_probe_math_conv.py) (do **not**
+fork a new probe — same `omsx_repl` batched differential vs VG-8020, `reset=("NEW","CLS")`):
+
+- **Token capture:** append `("SQR", "a=sqr(1)", 0x87)` to the `TOKENS` table (crunch
+  byte-identity vs Table 2.20).
+- **Value differential:** the full §10.2 battery — perfect-square exactness (assert
+  ==reference), sub-1, large-magnitude, FACTYP-leak `PRINT SQR(4)+0.5` / `A%=SQR(9)`,
+  single-vs-double input type (all assert ==reference).
+- **DOCUMENTED-DIVERGENCE table (§10.3.1):** the ~15/72 characterized inputs where the
+  reference is 1 ulp low (2, 3, 6, 17, 123.456, …) are asserted against the **expected
+  zerobas** value with an explicit `known_deviation` marker + the reference value in a
+  comment, NOT asserted equal. The probe must FAIL if zerobas drifts from its own
+  expected value (regression guard) and print a divergence summary. This mirrors how the
+  `float-acceptance` div blind-spot cases (near-unity 14-digit divisions) are recorded.
+- **Domain error:** `SQR(-1)` / `SQR(-1E-9)` assert "Illegal function call" per-machine.
+- Standing gates stay green (§7 list); **Fable review of the whole slice** (the float-pack
+  standing lesson — every slice hid ≥1 matrix-invisible bug; the differential + review
+  together, never the passing matrix alone).
+
+### 10.7 Sign-off — ✅ ALL RESOLVED (2026-07-13)
+
+1. **§10.3 fork** → **§10.3.1 documented deviation** (bit-exact div not black-box
+   recoverable; keep our accurate div; ship SQR correctly-rounded Heron + divergence
+   table). ✅
+2. **Scope** → `SQR` only this cut; `RND`/`^`/transcendentals stay slice 2; the
+   evaluator-wide unbalanced-paren fix (§9.5 F3) stays deferred. ✅
+3. **Model split** → characterization done Fable-solo; implementation = Sonnet on this
+   signed-off spec. ✅
+4. **Subtraction** guard-tie bug-compat fix approved separately
+   ([spec-float-subtract-tie-compat.md](spec-float-subtract-tie-compat.md)) — lands
+   before/independent of SQR.
+
+---
+
 ## 8. Sequencing
 
 F3 typed vars concluded (2026-07-12) → this. Slice 1 = §4.1 (+ Q-M2 decision on RND),
