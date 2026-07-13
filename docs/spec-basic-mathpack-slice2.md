@@ -240,3 +240,143 @@ and function-of-`PEEK`.
 Next: write the concrete **slice 2a (`ATN`) implementation contract** (seed/reduction,
 minimax degree, RAM scratch, `evmc_atn` evaluator stub, page-1 tenant index, gate battery)
 — then Sonnet implements it, Fable reviews.
+
+---
+
+## 11. Slice 2a implementation contract — `ATN` (concrete, implementation-ready)
+
+**Status: 🟢 CONTRACT 2026-07-13** — the concrete cut for the ratified ATN-first slice.
+Written against the live code (expr.asm `evmc_sqr` / `ev_ff_mathconv`, sub.asm
+`sub_p1_table`, float-arith.asm `fp_*`, basic-resident-abi.inc). Implementation = Sonnet
+on this contract, Fable review after.
+
+### 11.1 Home + token + dispatch
+
+- **Home:** body `fp_atan` in the sub-ROM **page-1 island** (sub/, appended after
+  `fp_sqrt`); main-ROM stub `evmc_atn` (repack-only, `IF ROM_BASE < $4000`). Lean 16 KB
+  `basic.rom` **byte-identical**.
+- **Token:** `ATN` = `$FF $8E` (§1.4, captured). Add `ATN_TOKEN equ $8E` to
+  [basic/sysvars.inc](../basic/sysvars.inc) (repack block, beside `SQR_TOKEN`) + a crunch
+  entry to [basic/kwtable.inc](../basic/kwtable.inc) (repack-only, the "math pack slice 2a"
+  block). Gate confirms the byte vs the real crunch.
+- **Tenant index:** `SUBROM_IDX_ATN equ 2` (append after `SUBROM_IDX_SQR`=1; never renumber).
+  Append `jp fp_atan` at index 2 of `sub_p1_table` ([sub/sub.asm](../sub/sub.asm)).
+
+### 11.2 Algorithm — Cody-Waite ATAN (decimal, OWN minimax), NOT halving+series
+
+**Design decision (resolved here):** ATN uses a **two-stage argument reduction + a single
+minimax polynomial** (the Cody & Waite ATAN structure), *not* the argument-halving +
+Taylor scheme. Rationale:
+1. **Accuracy invariant.** The reference ATN is already ~correctly-rounded (§1.1: 15/20
+   exact). Argument-halving reduces `x` k times and multiplies the result by `2^k`, which
+   **amplifies accumulated 14-digit rounding by up to ~8×** → real risk of landing *worse*
+   than the reference on some inputs, violating the "never less accurate than the
+   reference" invariant. Direct Horner evaluation of a minimax polynomial has **no such
+   amplification** — the tightest accuracy control.
+2. **Builds the reusable machinery.** The coeff-table + Horner evaluator this needs is
+   exactly what 2b/2c/2d (EXP/LOG/SIN) all reuse — the stated ATN-first rationale (§5).
+3. Faster (no `fp_sqrt`/halving loop under the `subrom_call` DI span).
+
+**Steps** (`fp_atan`, input operand in **ARGA** already widened by `widen_rhs_operand`,
+`dig[14]`=0 fresh; total function — no domain error):
+
+0. **Trivial:** `x==0` → FAC:=0 (packed), return. (`dig15_iszero` on `ARGA+FPNUM_DIG`.)
+1. **Sign fold:** atan is odd. Record `s = ARGA sign`, clear it (work with `a=|x|`),
+   restore `s` onto the final result's `FPNUM_SIGN`.
+2. **Reduction 1 — |x|>1:** if `a > 1` (`fp_cmp` vs a `widen_uint_to` 1.0), set
+   `a := 1/a` (`fp_div`: ARGA=1.0, ARGB=|x|) and remember `flag_recip`. Now `a ∈ [0,1]`.
+3. **Reduction 2 — breakpoint `a > 2−√3` (≈0.267949):** if `a > BREAK`, set
+   `a := (a·√3 − 1)/(a + √3)` (constants `SQRT3`, using `fp_mul`/`fp_sub`/`fp_add`/`fp_div`)
+   and remember `flag_break`. Now `|a| ≤ 2−√3 ≈ 0.268`.
+4. **Core minimax:** `g := a·a` (`fp_mul`); `P := horner(g, ATAN_COEF)` (§11.3);
+   `r := a·P` (`fp_mul`). `P` is a minimax polynomial in `g` for `atan(a)/a` on
+   `g ∈ [0, (2−√3)²] ≈ [0, 0.0718]`, degree chosen so the fit error ≤ 0.5 ulp of the
+   14-digit result (§11.3; gen tool reports it; est. degree ~7–8).
+5. **Reconstruct:** if `flag_break`: `r := r + PI_6` (`fp_add`, `PI_6`=π/6). If
+   `flag_recip`: `r := PI_2 − r` (`fp_sub`: ARGA=`PI_2`, ARGB=r; `PI_2`=π/2). Apply `s`
+   (sign byte). Pack FAC (result already in FAC/ARGA from the last op; `arga_pack_fac` if a
+   trivial path left it in ARGA only). Return status implicit-ok (no `A` reliance).
+
+**Canonical-operand discipline** (fp_sqrt's hard-won lesson, §fp_sqrt header): between every
+`fp_*` op, re-`widen_fac_to` the result into a clean record before feeding it as the next
+operand — never the raw post-op ARGA guard bytes.
+
+### 11.3 New infrastructure (first transcendental → reused by 2b–2d)
+
+1. **FPNUM constant-table format.** An assembler macro `FPCONST sign,dexp,d0,…,d13`
+   emitting an 18-byte record (`db sign` / `dw dexp` / 14 digit bytes / `db 0` guard),
+   placed in the page-1 island. Named constants for 2a: `PI_2`, `PI_6`, `SQRT3`, `BREAK`
+   (=2−√3), and the coeff table `ATAN_COEF`.
+2. **Horner evaluator `fp_poly_horner`** (tenant-local, page-1 — NOT a resident-ABI add):
+   inputs `g` in a scratch FPNUM cell + `HL`→a count-prefixed coeff table
+   (`db n` then n×18-byte `FPCONST` records, `c[n-1]…c[0]`); returns FAC = `Σ c[i]·g^i`.
+   Loop: `acc := c[top]`; for each lower coeff `acc := acc·g + c[i]` (`fp_mul` acc×g,
+   re-widen, `fp_add` +c[i], re-widen). Reused verbatim by EXP/LOG/SIN.
+3. **`tools/gen_math_coeffs.py`** — host tool (deterministic, `Decimal`/Remez), emits
+   `sub/math-coeffs.inc` (the `FPCONST` records) + prints each fit's max error. Committed
+   generated file + a Makefile rule (mirrors `gen_resident_abi.py`). **Provenance:** OWN
+   Remez minimax for `atan(a)/a` on the reduced domain, ≥16 sig digits; the fit spec
+   (function, domain, degree, target) is the trail; **cross-checked vs published Cody &
+   Waite ATAN coefficients**, never the MSX ROM (which is binary-format anyway — no relation
+   to launder). This turn PROVES the fit (degree + error bound) before any asm.
+
+### 11.4 Resident-ABI surface — a SUBSET of SQR's (no new relocations)
+
+`fp_atan`'s direct resident callees: `fp_add · fp_sub · fp_mul · fp_div · fp_cmp ·
+dig15_iszero · widen_fac_to · widen_uint_to · arga_pack_fac` — **all already in**
+[sub/basic-resident-abi.inc](../sub/basic-resident-abi.inc) (the SQR import set). No new
+page-0 relocation needed. `fp_poly_horner` + the constants are tenant-local (page-1).
+`check_tenant_closure.py` re-audits the full transitive closure automatically and must stay
+green (the `cmp16_bits`/`div10` escape class is already fenced).
+
+### 11.5 `evmc_atn` (main-ROM stub) — mirror `evmc_sqr` minus the domain check
+
+Add the `ATN_TOKEN` selector to `ev_ff_mathconv` ([basic/expr.asm:817](../basic/expr.asm:817)).
+`evmc_atn` = `evmc_sqr` ([expr.asm:1059](../basic/expr.asm:1059)) **without** the
+`ARGA+FPNUM_SIGN` domain branch (atan is total): `ev_mc_arg` → `widen_rhs_operand` (ARGA) →
+`push ix` → `ld ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_ATN` → `call subrom_call` → `pop ix`
+→ `jp c,subrom_absent_error` → `ld a,8 / ld (FACTYP),a` → `jp flt_to_int16` (DE := int16,
+FACTYP untouched). Result FACTYP=8 (double) per §6. `A` is NOT read after the call (CALSLT
+doesn't preserve it; SQR lesson).
+
+### 11.6 RAM scratch — REUSE `SQRT_X`/`SQRT_Y` (RAM below `DRVA_DPB` is exhausted)
+
+Slice-1b took the last free byte below `DRVA_DPB`=$F195. `fp_atan` MUST NOT allocate new
+RAM. It reuses the SQR scratch cells as generic math scratch — SQR and ATN never run
+concurrently (one factor evaluated at a time): `SQRT_X`=$F16E and `SQRT_Y`=$F180 are two
+18-byte FPNUM cells; plus `ARGA`/`ARGB`/`FAC`. If a 3rd persistent FPNUM cell is needed,
+reuse `FOUTBUF` (as `SQRT_R` already does — idle outside PRINT/LIST). The implementer
+confirms the working-set fits ≤ these cells; if not, flag before adding RAM (there is none).
+Add sysvars.inc comments noting the shared SQR/ATN use (rename intent: generic `MATH_*`
+aliases over the same addresses, optional).
+
+### 11.7 Gate — extend `basic_probe_math_conv.py` (do NOT fork)
+
+- **Token:** append `("ATN", "a=atn(1)", 0x8E)` to `TOKENS`.
+- **Value differential (oracle = mathematical truth, §2):** assert `atn(x)` == host
+  `Decimal` correctly-rounded 14-sig `atan(x)` over a BROAD battery — the 20 characterization
+  inputs + fresh draws spanning: near-breakpoint `a≈0.268` (both sides), near 1 (both
+  reduction paths meet), huge saturating to ±π/2 (`ATN(1E38)`), tiny (`ATN(1E-9)`),
+  oddness (`ATN(-x)==-ATN(x)`), and mid-range. Pin any near-tie floor cases in
+  `ATN_KNOWN_FLOOR` (SQR precedent).
+- **Never-worse invariant:** for each input, `|zb−truth| ≤ |reference−truth|` (assert).
+- **Documented reference-deviation:** capture the reference on the same inputs, print the
+  ulp summary (informational; the reference is ~correctly-rounded so this table is small).
+- **FACTYP-leak:** `PRINT ATN(1)+0.5`, `A%=ATN(1)`, `ATN` over a single/double literal and
+  over `PEEK`.
+- No domain-error case (atan total). `make math-acceptance` green.
+
+### 11.8 Verification / standing gates
+
+`math-acceptance` (extended) green; `gen_math_coeffs.py` deterministic + Makefile rule +
+`sub/math-coeffs.inc` committed; `subrom-closure-check` green (surface ⊆ SQR's);
+`subrom-acceptance`/`subrom-inttest` green (new page-1 index 2); **lean `basic.rom`
+byte-identical** (evmc_atn is repack-only); `sub.rom` fits + boots; `unit-test`,
+`float-acceptance`, `string-acceptance`, `input-acceptance`, reloc, kwtable single-copy all
+green. **Fable review of the whole slice** (float-pack standing lesson).
+
+### 11.9 First implementation step (this session) — prove the minimax fit
+
+Before any asm: build `tools/gen_math_coeffs.py` and PROVE the ATN minimax degree + error
+bound (≤0.5 ulp on `[0, (2−√3)²]`) so the asm is written against real, feasibility-verified
+coefficients. Then Sonnet implements §11.1–§11.6 and the gate §11.7.
