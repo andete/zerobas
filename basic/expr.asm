@@ -831,6 +831,8 @@ ev_ff_mathconv:
                 jp      z,evmc_cdbl
                 cp      SQR_TOKEN
                 jp      z,evmc_sqr
+                cp      ATN_TOKEN
+                jp      z,evmc_atn
                 jp      ev_ff_strnum        ; not ours -> LEN/ASC/VAL, else ev_f_err
 
 ; --- ev_mc_arg: parse "( <numeric expr> )" from IX (positioned on the -------
@@ -1094,6 +1096,36 @@ evmc_sqr_err:
                 ld      (FPERR),a
                 ld      de,0
                 ret
+
+; --- evmc_atn: ATN(x) -> arctangent, DOUBLE (math pack slice 2a, docs/spec- -
+; basic-mathpack-slice2.md §11.5). Same arg-parse + widen shape as evmc_sqr
+; (ev_mc_arg then widen_rhs_operand into ARGA), then DISPATCHES to fp_atan in
+; the sub-ROM PAGE-1 island (sub/sub.asm) via subrom_call/
+; SUBROM_ENTRY_BASE_P1+SUBROM_IDX_ATN. This is evmc_sqr's shape MINUS the
+; domain check: ATN is total over all x (§6 "no error"), so there is no
+; ARGA+FPNUM_SIGN branch and no error tail -- every call falls straight
+; through to the dispatch. Same CALSLT-A-not-preserved discipline as
+; evmc_sqr: fp_atan is COMPUTE-ONLY (leaves FAC correct but does not touch
+; FACTYP/DE), so THIS stub sets FACTYP:=8 + refreshes DE via flt_to_int16
+; after a successful return; CF (not A) is the only reliable post-call
+; signal, and CF=1 only means "sub-ROM absent" (never on the merged machine).
+evmc_atn:
+                call    ev_mc_arg
+                ld      hl,ARGA
+                call    widen_rhs_operand
+                push    ix                  ; save the parser's text-position pointer --
+                                            ; subrom_call/CALSLT clobbers ALL registers,
+                                            ; and IX IS that text cursor here (same
+                                            ; discipline as evmc_sqr)
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_ATN
+                call    subrom_call         ; CF=1 iff sub-ROM absent. Result in FAC.
+                pop     ix                  ; restore the text-position pointer (POP
+                                            ; does not touch flags -- CF survives)
+                jp      c,subrom_absent_error ; reduced build w/o sub-ROM (never on the
+                                            ; merged machine, which always ships it)
+                ld      a,8
+                ld      (FACTYP),a
+                jp      flt_to_int16        ; tail: DE := flt_to_int16(FAC)
     ENDIF
 
 ; --- ev_f_varptr: VARPTR(<var>) -> address of the variable's value field -----

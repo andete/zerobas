@@ -92,6 +92,103 @@ def truth_sqrt14(x) -> "decimal.Decimal":
         return root.quantize(quantum)
 
 
+# --- ATN truth oracle (math pack slice 2a, docs/spec-basic-mathpack-slice2.md
+# §11.7): the SAME "the oracle is mathematical truth, not the reference"
+# framework as SQR's truth_sqrt14 above. Python's `decimal` has no native
+# atan, so this is our OWN independent-precision (50+ working digits, far
+# above zerobas's 14) reference implementation -- sign-fold + reciprocal
+# reduction (x>1) + repeated half-angle reduction + a Taylor series. This is
+# NOT zerobas's own algorithm (different reduction depth, different series
+# length, Python Decimal vs Z80 BCD) -- an independent computation used only
+# as the host truth oracle for the gate.
+_PI60 = D("3.14159265358979323846264338327950288419716939937510582097494")
+
+
+def _atan_dec(x: "decimal.Decimal", prec: int = 50) -> "decimal.Decimal":
+    with decimal.localcontext() as ctx:
+        ctx.prec = prec + 15
+        x = D(x)
+        if x == 0:
+            return D(0)
+        sign = 1
+        if x < 0:
+            sign, x = -1, -x
+        big = x > 1
+        if big:
+            x = 1 / x
+        halvings = 0
+        while x > D("0.01"):
+            x = x / (1 + (1 + x * x).sqrt())
+            halvings += 1
+        x2 = x * x
+        term = x
+        total = x
+        k = 1
+        while True:
+            term *= -x2
+            add = term / (2 * k + 1)
+            total += add
+            if abs(add) < D(1).scaleb(-(prec + 10)):
+                break
+            k += 1
+        total *= D(2) ** halvings
+        if big:
+            total = _PI60 / 2 - total
+        return -total if sign < 0 else total
+
+
+def truth_atan14(x) -> "decimal.Decimal":
+    """Host-computed, correctly-rounded 14-significant-digit atan(x)
+    (docs/spec-basic-mathpack-slice2.md §11.7: mathematical truth, not the
+    reference ROM -- same framework as SQR's truth_sqrt14)."""
+    x = D(x)
+    if x == 0:
+        return D(0)
+    with decimal.localcontext() as ctx:
+        ctx.prec = 60
+        root = _atan_dec(x, prec=50)
+    digits = root.as_tuple().digits
+    exp = root.as_tuple().exponent
+    if len(digits) <= 14:
+        return root
+    quant_exp = exp + (len(digits) - 14)
+    quantum = D(1).scaleb(quant_exp)
+    with decimal.localcontext() as ctx:
+        ctx.prec = 60
+        ctx.rounding = decimal.ROUND_HALF_UP
+        return root.quantize(quantum)
+
+
+# ATN documented-deviation bound (§11.7 REVISED, user sign-off 2026-07-13):
+# ATN is NOT strictly correctly-rounded -- its 14-digit reduction+16-step
+# Horner+reconstruction chain accumulates rounding to ~2 ulp (reaching truly
+# correctly-rounded needs 3 internal guard digits, i.e. an extended-precision
+# layer the resident 14-digit BCD primitives don't provide -- the same
+# clean-room wall as the division deviation and the SQR precision floor). The
+# user chose DOCUMENTED BOUNDED DEVIATION over building that layer: ATN is the
+# ONLY slice-2 function whose reference is accurate enough (~correctly-rounded)
+# for our chain to lose; the other five (LOG/SIN/TAN/EXP/COS) beat the 4-20+ ulp
+# reference trivially at 14 digits. So the gate asserts a BOUND vs mathematical
+# truth (<= the reference's OWN worst envelope), not == truth and not the
+# strict never-worse-than-reference invariant (relaxed per §2 resolution).
+ATN_MAX_ULP = 2
+# Battery-wide correctly-rounded floor (drift tripwire, Fable review finding #2):
+# fail if fewer than this many pure-atn inputs are exactly == truth, catching a
+# uniform 1-2-ulp degradation that the per-input <=2-ulp bound would miss.
+# Current is 44/61 correctly-rounded; 40 leaves benign-shift margin.
+ATN_EXACT_FLOOR = 40
+
+
+def ulp_dist(val, truth) -> "decimal.Decimal | None":
+    """Distance |val - truth| in units of the 14th significant digit of truth."""
+    if val is None or truth is None:
+        return None
+    if truth == 0:
+        return abs(val)            # atan(0)=0 exact path; any nonzero is a gross fail
+    scale = D(10) ** (truth.adjusted() - 13)
+    return (abs(val - truth) / scale)
+
+
 _NUM_RE = re.compile(r"[+-]?(\d+\.?\d*|\.\d+)([eEdD][+-]?\d+)?")
 
 
@@ -127,6 +224,7 @@ TOKENS = [
     ("CSNG", "a=csng(1)", 0x9F),
     ("CDBL", "a=cdbl(1)", 0xA0),
     ("SQR",  "a=sqr(1)",  0x87),
+    ("ATN",  "a=atn(1)",  0x8E),
 ]
 
 
@@ -262,6 +360,46 @@ SQR_BROAD_XS = [
 ]
 EXPRS = EXPRS + [f"sqr({_x})" for _x in SQR_BROAD_XS]
 
+# --- ATN value battery (math pack slice 2a, §11.7): the oracle is MATHEMATICAL
+# TRUTH (truth_atan14 above), same "the oracle is truth" framework as SQR --
+# every entry is a PURE `atn(x)` call (matched by _ATN_PURE_RE below) so its
+# assertion routes to truth_atan14(x), never to the reference span. ATN is
+# already ~correctly-rounded on the reference (§1.1: 15/20 exact, worst 2 ulp
+# -- the best-behaved transcendental), so this battery is a broader stress
+# test than the characterization campaign, deliberately covering: near-
+# BREAK=2-sqrt(3)~=0.26794919243112 from both sides (where reduction-2
+# switches on), near a=1 from both sides (where reduction-1 switches on),
+# values requiring BOTH reductions (1<x<2+sqrt(3)~=3.732), huge saturating
+# arguments (->+-pi/2), tiny arguments, negative mirrors (oddness, checked
+# separately below via a value-map pairing, not a new BASIC line), and
+# general mid-range/decimal-shape coverage.
+ATN_BROAD_XS = [
+    # --- zero fast path (exercises fp_atan's hand-rolled x==0 exit) -------
+    "0",
+    # --- tiny -----------------------------------------------------------
+    "1e-20", "1e-9", "0.0001", "0.001", "0.01",
+    # --- near BREAK=0.26794919243112 (both sides) -----------------------
+    "0.2", "0.25", "0.26", "0.267", "0.2679", "0.26794", "0.267949",
+    "0.2679491924311", "0.268", "0.27", "0.28", "0.3",
+    # --- mid-range --------------------------------------------------------
+    "0.4", "0.5", "0.6", "0.7", "0.75", "0.8", "0.9", "0.95", "0.99", "1.7",
+    # --- near a=1 (reduction-1 boundary, both sides) -----------------------
+    "0.9999999", "0.99999999999", "1", "1.00000000001", "1.0001", "1.5",
+    # --- >1, needs reciprocal reduction (some also cross BREAK again) ------
+    "2", "3", "3.7", "3.732", "3.8", "5", "10", "50", "100", "1000",
+    # --- huge, saturating toward +-pi/2 ------------------------------------
+    "1e6", "1e15", "1e30", "1e38",
+    # --- negative mirrors (direct truth match; oddness cross-check below) --
+    "-0.5", "-1", "-1.7", "-2", "-3.7", "-10", "-100", "-1e-9", "-1e38",
+    # --- general decimal-shape coverage -------------------------------------
+    "1.23456789", "12.3456789", "123.456789", "0.123456789",
+]
+EXPRS = EXPRS + [f"atn({_x})" for _x in ATN_BROAD_XS]
+
+# --- ATN FACTYP-leak (§11.7): function-over-float (result must stay DOUBLE),
+# single-vs-double literal input widen path, function-over-PEEK.
+EXPRS = EXPRS + ["atn(1)+0.5", "atn(0.5!)", "atn(0.5#)", "atn(peek(0))"]
+
 # --- empty-argument / empty parenthesised expression -> "syntax error" -------
 # (spec-basic-empty-expr-syntax-error.md, D-F2-3, 2026-07-13). The reference
 # raises "Syntax error"; zerobas raises its OWN lowercase "syntax error" (the D-2
@@ -276,7 +414,7 @@ EXPRS = EXPRS + [f"sqr({_x})" for _x in SQR_BROAD_XS]
 # -- deliberately NOT in this battery.
 EMPTY_ARG = [
     "sqr()", "abs()", "int()", "cint()", "sgn()", "fix()", "csng()", "cdbl()",
-    "peek()", "sqr(())", "()", "(5+)", "-()", "(,)",
+    "atn()", "peek()", "sqr(())", "()", "(5+)", "-()", "(,)",
     "len()", "asc()", "val()",
     "chr$()", "str$()", "left$()", "right$()", "mid$()", "hex$()",
     "space$()", "string$()", "instr()",
@@ -302,6 +440,21 @@ SQR_KNOWN_FLOOR = {
     "99.99998": "9.9999990000000",
 }
 
+# ATN documented-deviation catalog (informational; §11.10). The gate does NOT
+# pin these -- compare() asserts the ATN_MAX_ULP bound vs truth for EVERY input,
+# so this dict launders nothing. It records the inputs (from the slice's
+# adversarial pass, cross-checked vs an independent 14-digit op-chain sim) where
+# the 14-digit chain lands off truth, split by whether zerobas ties/beats the
+# reference or is 1-2 ulp WORSE than it -- the honest picture of the bounded
+# deviation the user accepted (§2 resolution). All are within ATN_MAX_ULP.
+ATN_DEVIATION_TIE_OR_BETTER = [        # zb off truth but <= reference (near-ties)
+    "0.25", "0.268", "0.3", "0.4", "0.6", "0.7", "1.5", "3.732", "1.23456789",
+]
+ATN_DEVIATION_WORSE_THAN_REF = [       # zb 1-2 ulp off where the reference is exact
+    "0.01", "0.75", "0.95", "0.99999999999", "1", "1.00000000001", "-1",
+    "0.123456789",
+]
+
 # Cases whose TAIL legitimately differs (zerobas's own lowercase D-2-style
 # Overflow wording vs the reference's) -- compare only the bracket span
 # (both sides must still have SOME tail, i.e. genuinely aborted).
@@ -324,6 +477,25 @@ def _sqr_arg(expr: str):
     """Return the Decimal argument if `expr` is a pure `sqr(x)` call
     (x a bare numeric literal), else None."""
     m = _SQR_PURE_RE.match(expr)
+    if not m:
+        return None
+    lit = m.group(1).replace("D", "E").replace("d", "e")
+    try:
+        return D(lit)
+    except decimal.InvalidOperation:
+        return None
+
+# --- ATN pure-call matcher: same shape/rationale as _SQR_PURE_RE above -- ---
+# routes a plain `atn(x)` call to the truth assertion, never the reference;
+# the FACTYP-leak compounds (`atn(1)+0.5`, `atn(0.5!)`, `atn(peek(0))`, ...)
+# never match, so they stay reference-compared.
+_ATN_PURE_RE = re.compile(r"^atn\((-?[0-9.eEdD+-]+)\)$")
+
+
+def _atn_arg(expr: str):
+    """Return the Decimal argument if `expr` is a pure `atn(x)` call
+    (x a bare numeric literal), else None."""
+    m = _ATN_PURE_RE.match(expr)
     if not m:
         return None
     lit = m.group(1).replace("D", "E").replace("d", "e")
@@ -363,6 +535,11 @@ RAW_LINES = [
     # through the int16 store cleanly (9 is a perfect square, no rounding
     # ambiguity -- this pins the store path, not the sqrt itself).
     'a%=sqr(9):print"[";a%;"]"',
+    # ATN FACTYP-leak into a typed INT var (§11.7): A%=ATN(1) truncates the
+    # double 0.785... to 0 on both sides regardless of the 14th-digit
+    # accuracy difference between zerobas and the reference -- this pins the
+    # int-store path, not atan's own rounding (that's the truth battery's job).
+    'a%=atn(1):print"[";a%;"]"',
 ]
 
 
@@ -436,6 +613,21 @@ def main() -> int:
                 return zb_val is not None \
                     and zb_val == parse_basic_number(SQR_KNOWN_FLOOR[arg])
             return zb_val is not None and zb_val == truth_sqrt14(sqr_x)
+        atn_x = _atn_arg(expr) if expr not in SPAN_ONLY else None
+        if atn_x is not None:
+            # §11.7 REVISED (documented bounded deviation, user 2026-07-13):
+            # the oracle is mathematical truth, but ATN is asserted to a BOUND
+            # (<= ATN_MAX_ULP of the 14-sig truth) rather than == truth. ATN's
+            # chained 14-digit evaluation is not strictly correctly-rounded and
+            # reaching that needs an extended-precision layer we chose not to
+            # build (see ATN_MAX_ULP's header). The specific per-input
+            # deviations (incl. the handful worse than the reference) are
+            # catalogued in the informational report below, not laundered.
+            zb_val = parse_basic_number(zb_span)
+            if zb_val is None:
+                return False
+            d = ulp_dist(zb_val, truth_atan14(atn_x))
+            return d is not None and d <= ATN_MAX_ULP
         if kind == "raw":
             return ref_span is not None and ref_span == zb_span
         if expr in SPAN_ONLY:
@@ -448,6 +640,8 @@ def main() -> int:
         batch=not args.boot_per_case, reset=("NEW", "CLS"))
 
     ref_deviations = []     # (expr, x, reference_val, truth) -- reference != truth (informational)
+    atn_ref_deviations = []  # same, for ATN (§11.7's documented-deviation report)
+    atn_zb_by_x = {}         # Decimal(x) -> zb_val, for the oddness cross-check below
     for (expr, line, kind), good, ref_raw, zb_raw in zip(
             cases, verdicts, ref_raws, zb_raws):
         ok = ok and good
@@ -465,6 +659,15 @@ def main() -> int:
             truth = truth_sqrt14(sqr_x)
             if ref_val is not None and ref_val != truth:
                 ref_deviations.append((expr, sqr_x, ref_val, truth))
+        atn_x = _atn_arg(expr) if expr not in SPAN_ONLY else None
+        if atn_x is not None:
+            zb_val = parse_basic_number(result_span(zb_raw))
+            if zb_val is not None:
+                atn_zb_by_x[atn_x] = zb_val
+            ref_val = parse_basic_number(ref_span)
+            truth = truth_atan14(atn_x)
+            if ref_val is not None and ref_val != truth:
+                atn_ref_deviations.append((expr, atn_x, ref_val, truth))
 
     if ref_deviations:
         print(f"\n--- SQR reference-deviation report ({len(ref_deviations)}/"
@@ -476,11 +679,82 @@ def main() -> int:
         for expr, x, ref_val, truth in ref_deviations:
             print(f"  {expr:<26} reference={ref_val!s:<20} truth={truth!s}")
 
+    # --- ATN documented bounded-deviation summary (§11.10, user 2026-07-13):
+    # zerobas ATN is asserted to <= ATN_MAX_ULP of truth (not == truth, not
+    # never-worse). Print zb's own worst deviation from truth + the honest
+    # split (ties/beats reference vs 1-2 ulp worse than it). This is the
+    # accepted deviation, catalogued -- not laundered (the bound decides
+    # pass/fail independently in compare()).
+    atn_worst = D(0); atn_exact = 0; atn_total = 0
+    atn_worse_seen = []
+    for x, zb_val in atn_zb_by_x.items():
+        d = ulp_dist(zb_val, truth_atan14(x))
+        if d is None:
+            continue
+        atn_total += 1
+        if d == 0:
+            atn_exact += 1
+        if d > atn_worst:
+            atn_worst = d
+    if atn_total:
+        print(f"\n--- ATN accuracy vs mathematical truth ({atn_total} pure atn "
+              f"inputs) -- bound = {ATN_MAX_ULP} ulp (§11.7 REVISED) ---")
+        print(f"  correctly-rounded (== truth): {atn_exact}/{atn_total}; "
+              f"worst deviation: {atn_worst} ulp (bound {ATN_MAX_ULP}).")
+        # Drift tripwire (Fable review finding #2): the <=2-ulp bound alone
+        # would let a UNIFORM 1-2-ulp degradation (e.g. a coeff-regen bug or a
+        # dropped final widen) pass silently -- every input still within bound.
+        # Assert a battery-wide correctly-rounded FLOOR so such a regression
+        # fails the gate. NOT a per-value pin (compatible with the ratified
+        # bounded-deviation resolution): current is 44/61; floor 40 leaves
+        # margin for benign last-ulp shifts while catching a gross uniform drop.
+        if atn_exact < ATN_EXACT_FLOOR:
+            print(f"FAIL  ATN correctly-rounded count {atn_exact} < floor "
+                  f"{ATN_EXACT_FLOOR} -- uniform accuracy regression (all still "
+                  "within bound but the exact-count collapsed).")
+            ok = False
+        print(f"  DOCUMENTED bounded deviation (user sign-off): ATN's 14-digit "
+              "chain is not strictly correctly-rounded; reaching that needs an "
+              "extended-precision layer (not built -- §2/§11 resolution). "
+              "Within the reference's own <=2-ulp envelope.")
+        print(f"  tie/beat reference: {', '.join(ATN_DEVIATION_TIE_OR_BETTER)}")
+        print(f"  1-2 ulp WORSE than reference (accepted): "
+              f"{', '.join(ATN_DEVIATION_WORSE_THAN_REF)}")
+
+    if atn_ref_deviations:
+        print(f"\n--- ATN reference-deviation report ({len(atn_ref_deviations)}/"
+              f"{len(ATN_BROAD_XS)}) -- INFORMATIONAL ---")
+        print("(inputs where the reference ROM's own ATN misses mathematical "
+              "truth; ~correctly-rounded overall per §1.1. Never asserted against.)")
+        for expr, x, ref_val, truth in atn_ref_deviations:
+            print(f"  {expr:<26} reference={ref_val!s:<20} truth={truth!s}")
+
+    # --- ATN oddness cross-check (§11.7): atn(-x) == -atn(x) for every x in
+    # the broad battery whose negative mirror is ALSO present -- verified
+    # from the already-collected zb values (no extra machine round-trip).
+    # By construction fp_atan computes a positive magnitude and applies the
+    # sign last (sub/fp_atan.asm step 5), so this should hold EXACTLY (zero
+    # rounding slack -- a+(-a) is exact cancellation, not a rounding event).
+    odd_checked = 0
+    for x, zb_val in list(atn_zb_by_x.items()):
+        if -x in atn_zb_by_x:
+            odd_checked += 1
+            if atn_zb_by_x[-x] != -zb_val:
+                print(f"FAIL  oddness: atn({x}) = {zb_val}  but  "
+                      f"atn({-x}) = {atn_zb_by_x[-x]}  (expected {-zb_val})")
+                ok = False
+    if odd_checked:
+        print(f"\nATN oddness cross-check: {odd_checked // 2} mirrored pair(s) "
+              "verified atn(-x) == -atn(x)")
+
     print("\nALL PASS — SQR is correctly-rounded (== mathematical truth) over "
           "the broad battery except the pinned near-tie precision floor "
           f"({', '.join(SQR_KNOWN_FLOOR)}, where zerobas ties the reference, "
-          "never worse); the reference ROM's own ~1-ulp bias is documented "
-          "above, not asserted against" if ok
+          f"never worse); ATN is within {ATN_MAX_ULP} ulp of truth over its "
+          "broad battery (documented bounded deviation, user sign-off -- ATN's "
+          "reference is the one ~correctly-rounded case, and our 14-digit chain "
+          "matches its <=2-ulp envelope), oddness holds exactly; both reference "
+          "ROMs' own biases are documented above, never asserted against" if ok
           else "\nSOME FAILED")
     return 0 if ok else 1
 

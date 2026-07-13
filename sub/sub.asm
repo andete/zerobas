@@ -223,6 +223,12 @@ sub_p1_table:
                                                 ;   low (docs/spec-basic-subrom-
                                                 ;   mathpack.md). Main-ROM stub is
                                                 ;   basic/expr.asm `evmc_sqr`.
+                jp      fp_atan                 ; index 2 (SUBROM_IDX_ATN): ATN(x)'s
+                                                ;   reduction + minimax-polynomial body
+                                                ;   (math pack slice 2a, docs/spec-
+                                                ;   basic-mathpack-slice2.md §11) -- the
+                                                ;   FIRST transcendental tenant. Main-ROM
+                                                ;   stub is basic/expr.asm `evmc_atn`.
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -250,6 +256,15 @@ sub_p1_ping:
                 include "basic-resident-abi.inc"
 
                 include "fp_sqrt.asm"
+
+; fp_atan (math pack slice 2a, docs/spec-basic-mathpack-slice2.md §11): the
+; SECOND page-1 tenant and the FIRST transcendental. Reuses the identical
+; resident-ABI import above (its own callee list is a SUBSET of fp_sqrt's --
+; no new symbols needed) and math-coeffs.inc's generated FPNUM constant
+; records (own decimal minimax, tools/gen_math_coeffs.py -- never the MSX
+; ROM's own coefficients, which are binary-format anyway).
+                include "math-coeffs.inc"
+                include "fp_atan.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF

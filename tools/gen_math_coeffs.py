@@ -59,16 +59,24 @@ def solve(A, b):
                 M[r][k] -= f * M[c][k]
     return [M[i][n] / M[i][i] for i in range(n)]
 
+def _cos(theta):
+    """cos(theta) in Decimal (Taylor). Deterministic -- avoids host libm so the
+    committed math-coeffs.inc regenerates byte-identically anywhere (review #5)."""
+    s = D(0); term = D(1); t2 = theta * theta; k = 0; sign = 1
+    while abs(term) > D(10) ** (-55):
+        s += sign * term
+        term = term * t2 / ((k + 1) * (k + 2)); k += 2; sign = -sign
+    return s
+
 def cheb_interp_coeffs(f, a, b, deg):
     """Interpolate f at deg+1 Chebyshev nodes on [a,b]; return monomial coeffs
     c[0..deg] (ascending, for Horner). Solve the Vandermonde in Decimal."""
     n = deg + 1
-    import math
-    # Chebyshev nodes of the 2nd kind mapped to [a,b]
+    # Chebyshev nodes of the 1st kind mapped to [a,b]; cos computed in Decimal
+    # (fully deterministic -- no host math dependency).
     nodes = []
     for i in range(n):
-        # cos((2i+1)pi/(2n)) via Decimal-friendly host math (nodes only, not the fit values)
-        t = D(repr(math.cos((2 * i + 1) * math.pi / (2 * n))))
+        t = _cos(D(2 * i + 1) * PI / (2 * n))
         nodes.append((a + b) / 2 + (b - a) / 2 * t)
     V = [[x ** j for j in range(n)] for x in nodes]
     y = [f(x) for x in nodes]

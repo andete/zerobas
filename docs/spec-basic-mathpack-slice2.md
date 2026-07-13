@@ -102,6 +102,16 @@ precision floor (§10.4's `SQR` floor, same *kind* of limit); the gate pins the 
 known-deviations so they can't silently drift. Invariant asserted by the gate: **zerobas is
 never LESS accurate than the reference on any input.**
 
+> **RELAXED for `ATN` (user sign-off 2026-07-13, §11.10).** Slice 2a found the strict
+> per-input "never LESS accurate than the reference" invariant is **not achievable for `ATN`
+> without an extended-precision arithmetic layer** — its 14-digit reduction+Horner+
+> reconstruction chain accumulates ~2 ulp, and `ATN` is the *only* slice-2 function whose
+> reference is accurate enough (~correctly-rounded) for that to lose. The user chose a
+> **documented bounded deviation** (the div/SQR-floor precedent) over building the layer:
+> the gate asserts `|zerobas − truth| ≤ 2 ulp` (the reference's *own* worst envelope) and
+> catalogues the per-input deviations. The other five functions (references 4–20+ ulp off)
+> keep the strict invariant trivially at 14 digits.
+
 **Compatibility note (honest, per [[bug-for-bug-compat-over-accuracy]]):** the principle is
 "bug-for-bug where **clean-room-achievable**." For transcendentals it is provably *not*
 achievable, so accuracy wins by necessity. A program doing `IF SIN(x)=k` could branch
@@ -380,3 +390,62 @@ green. **Fable review of the whole slice** (float-pack standing lesson).
 Before any asm: build `tools/gen_math_coeffs.py` and PROVE the ATN minimax degree + error
 bound (≤0.5 ulp on `[0, (2−√3)²]`) so the asm is written against real, feasibility-verified
 coefficients. Then Sonnet implements §11.1–§11.6 and the gate §11.7.
+
+### 11.10 Implementation outcome + `ATN` accuracy resolution (2026-07-13)
+
+Implemented (Sonnet on §11) + accuracy fork investigated (this session) + resolved (user).
+`make math-acceptance` GREEN; all standing gates green (unit-test, basic-reloc lean
+byte-identical + kwtable single-copy + resident-ABI + **tenant-closure 118 routines all
+page-0, no page-1 escape**, subrom-acceptance/inttest, float/string/input-acceptance).
+
+**The accuracy finding (a real §11.2 contract gap, surfaced by the implementer, not hidden).**
+The faithful 14-digit `fp_atan` chain (reduction 1+2 → `g=a²` → 8-degree Horner →
+reconstruction ≈ 15 chained `fp_*` ops) accumulates ~2 ulp of rounding with **no correction
+stage** — §11.2 rejected argument-halving's `2^k` amplification but never addressed chain
+*accumulation*. Verified NOT an asm bug: an independent 14-digit op-chain simulation
+reproduces the exact wrong digits (`atn(1)=.78539816339746` bit-for-bit). Quantified
+(scratchpad sim): the chain needs **3 internal guard digits (17-sig)** to be strictly
+correctly-rounded; the resident BCD `fp_*` primitives carry effectively **0** usable guard
+(canonical-operand discipline zeroes it). Reaching correctly-rounded therefore needs an
+**extended-precision arithmetic layer** — the same clean-room wall as the division deviation
+(§10.3.1) and the SQR floor (§10.4). Compensated-Horner alone does **not** fix it (the error
+is spread across the reduction/reconstruction ops, not just Horner).
+
+**Decisive reframing:** `ATN` is the **only** slice-2 function affected — its reference is the
+sole ~correctly-rounded one (§1.1: worst 2 ulp). The other five (LOG/SIN/TAN/EXP/COS
+references 4–20+ ulp off truth) are beaten trivially by our ~2-ulp chain, so they keep the
+strict never-worse invariant at 14 digits without any extended precision.
+
+**Resolution (user sign-off 2026-07-13): documented bounded deviation** (the div/SQR-floor
+precedent) over building an extended-precision layer for the one function within the
+reference's own envelope:
+- Keep the faithful 14-digit `fp_atan`. Gate asserts **`|zerobas − truth| ≤ 2 ulp`** (the
+  reference's own worst envelope), NOT `== truth` and NOT strict never-worse.
+- Result: **43/60 correctly-rounded, worst 2 ulp**, oddness exact. The reference itself
+  misses truth on 20/60 of the same inputs (informational report) — our accuracy is
+  genuinely comparable, not inferior.
+- The deviations are **catalogued** (probe `ATN_DEVIATION_TIE_OR_BETTER` /
+  `ATN_DEVIATION_WORSE_THAN_REF`), not pinned/laundered — the ≤2-ulp bound decides pass/fail
+  independently, so no specific value can silently drift.
+- **Future option (not built):** an extended-precision (double-double / error-compensated)
+  core would make `ATN` (and later slice-2 fns) uniformly correctly-rounded and restore the
+  strict invariant. Deferred as disproportionate — only `ATN` needs it and it's already
+  within envelope.
+
+**Minor implementation notes (agent-flagged, accepted):** `fat_copy18` is a private duplicate
+of `fsq_copy18` (file self-containment); `HORNER_CNT`/`HORNER_PTR` reuse 2 still-dead trailing
+bytes of the `FOUTBUF` region (Horner's loop counter/table pointer must survive the `fp_*`
+calls; no new RAM claimed) — a contained widening of §11.6's "reuse SQRT_X/SQRT_Y/FOUTBUF".
+
+**Fable adversarial review (2026-07-13): SHIP after gate hardening.** Independently
+re-derived all constants + 9 coeffs from the emitted bytes (byte-exact; poly max error
+8.74e-17), simulated the exact op-chain over the full battery (worst 2 ulp, `atn(1)`
+bit-for-bit), and traced reconstruction order, canonical-operand discipline, RAM live-ranges,
+`evmc_atn`, clean-room, and the lean guard — **no functional defect in the asm.** Five
+findings, all gate/doc hardening, all addressed: (1) added `atn(0)` to the battery (was
+untested — the hand-rolled zero exit); (2) added a battery-wide correctly-rounded FLOOR
+(`ATN_EXACT_FLOOR=40`) as a drift tripwire, since the ≤2-ulp bound alone would let a *uniform*
+1–2-ulp degradation pass silently; (3) corrected the `fp_atan.asm` header (it still claimed
+"correctly-rounded / never-worse" pre-§11.10); (4) header comment nits; (5) made
+`gen_math_coeffs.py`'s Chebyshev nodes fully deterministic (Decimal `cos`, no host libm) —
+regenerated `.inc` is byte-identical.

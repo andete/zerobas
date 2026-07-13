@@ -251,6 +251,13 @@ CDBL_TOKEN      equ     $A0     ; CDBL(x) -> $FF $A0
 ; black-box VG-8020 crunch capture (probes/basic/basic_probe_math_conv.py).
 ; Interleaves cleanly: ABS $86 . SQR $87 . RND $88 (RND not yet implemented).
 SQR_TOKEN       equ     $87     ; SQR(x) -> $FF $87
+; Math pack slice 2a (Phase 3, repack-only -- docs/spec-basic-mathpack-
+; slice2.md §11.1). ATN: same $FF-prefixed function-token table, MSX2 TH
+; Table 2.20 + black-box VG-8020 crunch capture (probes/basic/basic_probe_
+; math_conv.py, §1.4). Interleaves cleanly: SIN $89 . LOG $8A . EXP $8B .
+; COS $8C . TAN $8D . ATN $8E . RND $88 (SIN/LOG/EXP/COS/TAN/RND not yet
+; implemented -- later sub-slices).
+ATN_TOKEN       equ     $8E     ; ATN(x) -> $FF $8E
 ; Memory / I-O access tokens (MSX2 TH Table 2.20; oracle-confirmed byte-for-byte
 ; via basic_probe_crunch.py — see PROVENANCE.md). VPOKE / OUT are one-byte
 ; statement tokens; VPEEK / INP are $FF-prefixed two-byte function tokens (like
@@ -1230,6 +1237,74 @@ SQRT_POW10      equ     $F194   ; final decision-loop (§10.4 step 4, REVISED
                                 ; otherwise. The LAST free byte below DRVA_DPB
                                 ; ($F195, disk/init.asm) -- no more room here
                                 ; after this (1)
+; --- Math pack slice 2a RAM (repack build only) ------------------------------
+; docs/spec-basic-mathpack-slice2.md §11.6: RAM below DRVA_DPB is exhausted
+; (SQRT_POW10 above took the last free byte), so fp_atan (sub/fp_atan.asm)
+; MUST NOT claim new RAM -- it reuses the SAME SQR scratch cells as generic
+; math scratch (SQR and ATN never run concurrently: one factor evaluated at a
+; time). Pure ALIASES, no new addresses -- just renamed for the generic
+; (non-Heron-specific) role this slice puts them to.
+MATH_SIGN       equ     SQRT_K  ; fp_atan's saved input sign s (0/$80, atan is
+                                ; odd -- applied to the final magnitude at the
+                                ; very end); alias of SQR's rescale counter,
+                                ; dead outside SQR's own routine (1)
+MATH_RECIP      equ     SQRT_ITER   ; fp_atan's reduction-1 flag (1 = "a:=1/a"
+                                ; was applied, so the reconstruction needs
+                                ; PI_2-r); alias of SQR's Heron iteration
+                                ; counter, same reuse (1)
+MATH_BREAK      equ     SQRT_POW10  ; fp_atan's reduction-2 flag (1 = the
+                                ; a>BREAK substitution was applied, so the
+                                ; reconstruction needs r+PI_6); alias of SQR's
+                                ; power-of-10 decision flag, same reuse (1)
+MATH_A          equ     SQRT_Y  ; fp_atan's persistent reduced-argument "a" --
+                                ; set by the sign-fold/reduction steps, held
+                                ; canonical across the whole routine including
+                                ; through the fp_poly_horner call (which never
+                                ; touches this cell), consumed one final time
+                                ; by the core "r := a*P" product (1)
+MATH_T          equ     SQRT_X  ; fp_atan's reduction-stage scratch (the
+                                ; reduction-2 numerator/denominator algebra),
+                                ; RETIRED before the core stage begins and then
+                                ; reused as HORNER_G below (sequential reuse,
+                                ; never simultaneously live) (1)
+HORNER_G        equ     SQRT_X  ; fp_poly_horner's "g" input cell (an alias of
+                                ; MATH_T -- fp_atan's reduction scratch is
+                                ; retired by the time it computes g:=a*a and
+                                ; calls the Horner evaluator, so reusing the
+                                ; same cell is safe; see fp_atan.asm step 4) (1)
+MATH_R          equ     SQRT_R  ; fp_atan's own "r" (post-core, pre-
+                                ; reconstruction result) scratch -- an alias of
+                                ; fp_sqrt's FOUTBUF-backed residual cell, dead
+                                ; for fp_atan's whole duration for the exact
+                                ; same reason SQRT_R's own header argues (no
+                                ; PRINT-formatter call is live mid-expression-
+                                ; evaluation). REUSED, mid-routine, as
+                                ; fp_poly_horner's OWN accumulator (see
+                                ; HORNER_ACC below) during the core stage,
+                                ; then re-populated with the real "r" right
+                                ; after the Horner call returns -- never
+                                ; simultaneously needed as both (1)
+HORNER_ACC      equ     SQRT_R  ; fp_poly_horner's running Horner accumulator
+                                ; (an alias of MATH_R -- see above) (1)
+HORNER_CNT      equ     FOUTBUF+18  ; fp_poly_horner's own remaining-term loop
+                                ; counter, 1 byte. FOUTBUF is a 24-byte
+                                ; scratch region and SQRT_R/MATH_R/HORNER_ACC
+                                ; only claim its FIRST 18 bytes (a single
+                                ; FPNUM); this reuses one of the 6 still-dead
+                                ; TRAILING bytes of that SAME already-justified
+                                ; region (see SQRT_R's own header above) --
+                                ; NOT a new RAM claim, no additional region is
+                                ; touched. Needed because B (the natural
+                                ; Z80 loop-counter register) is clobbered by
+                                ; the fp_mul/fp_add calls inside the loop body,
+                                ; same reasoning as every other persistent
+                                ; cell on this page (1)
+HORNER_PTR      equ     FOUTBUF+19  ; fp_poly_horner's own advancing coeff-
+                                ; table read pointer, 2 bytes (ends at
+                                ; FOUTBUF+20, still inside the 24-byte region,
+                                ; same reuse as HORNER_CNT above) -- HL is
+                                ; clobbered by the same calls, so the pointer
+                                ; must be stashed across each iteration too (2)
 JIFFY           equ     $FC9E   ; MSX software clock, bumped by the timer ISR (MSX2 TH work area)
 ; Dispatch ABI (mirror of sub/equates.inc — the append-only page-0 entry table).
 ; IX = SUBROM_ENTRY_BASE_P0 + 3*index selects a tenant; never renumber an index.
@@ -1257,6 +1332,11 @@ SUBROM_ENTRY_BASE_P1 equ $4010  ; sub-ROM page-1 jp-table base
 SUBROM_IDX_SQR       equ 1      ; fp_sqrt tenant (sub/sub.asm, migrated from
                                 ; main-ROM page-0 low 2026-07-13). Main-ROM
                                 ; stub is basic/expr.asm `evmc_sqr`.
+SUBROM_IDX_ATN       equ 2      ; fp_atan tenant (math pack slice 2a, sub/
+                                ; fp_atan.asm) -- the FIRST transcendental
+                                ; page-1 tenant (docs/spec-basic-mathpack-
+                                ; slice2.md §11.1). Main-ROM stub is
+                                ; basic/expr.asm `evmc_atn`.
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

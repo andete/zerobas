@@ -233,5 +233,13 @@ kwtable:
                 ; entry (SGN/INT/FIX/ABS all diverge by char 1 or 2) -- order
                 ; is free.
                 db      3,"SQR",2,PEEK_PREFIX,SQR_TOKEN         ; $FF $87
+                ; --- math pack slice 2a (repack build only) -----------------
+                ; docs/spec-basic-mathpack-slice2.md §11.1. ATN: same $FF-
+                ; prefixed function-token shape, MSX2 TH Table 2.20, black-box
+                ; captured from the VG-8020 crunch (probes/basic/basic_probe_
+                ; math_conv.py). No prefix collision with any existing 3-char
+                ; entry (ABS/SGN/INT/FIX/SQR all diverge by char 1 or 2) --
+                ; order is free.
+                db      3,"ATN",2,PEEK_PREFIX,ATN_TOKEN         ; $FF $8E
     ENDIF
                 db      0

@@ -58,8 +58,12 @@ SUB_SRC   := sub/sub.asm
 # tenant body + its GENERATED resident-ABI import (tools/gen_resident_abi.py,
 # rule below) -- same staleness hazard as kwtable.inc above, same fix (a real
 # prerequisite so a stale sub.rom cannot silently ship).
-SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm basic/sysvars.inc \
-             basic/kwtable.inc sub/basic-resident-abi.inc
+# sub/fp_atan.asm + sub/math-coeffs.inc (math pack slice 2a, docs/spec-basic-
+# mathpack-slice2.md §11): the ATN tenant body + its GENERATED FPNUM coefficient
+# table (tools/gen_math_coeffs.py, rule below) -- same staleness hazard, same fix.
+SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
+             sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
+             sub/basic-resident-abi.inc
 SUB_ROM   := $(BUILD)/sub.rom
 
 # Tracked patch deliverables (regenerable; live at their committed paths).
@@ -121,6 +125,17 @@ $(RELOC_ROM): $(RELOC_SYM)
 # only (never $(SUB_ROM) -- see the cycle note above).
 sub/basic-resident-abi.inc: $(RELOC_SYM) tools/gen_resident_abi.py
 	python3 tools/gen_resident_abi.py $(RELOC_SYM) sub/basic-resident-abi.inc
+
+# --- Math-pack coefficient generator (math pack slice 2a, spec §11.3 point 3) --
+# fp_atan's ATAN_COEF/PI_2/PI_6/SQRT3/BREAK FPNUM records are a deterministic own
+# decimal-minimax fit (tools/gen_math_coeffs.py; no reloc-sym dependency, unlike
+# the resident-ABI import above -- it needs no build artifact, just the tool
+# itself), so a real prerequisite here (mirroring the resident-ABI rule) means an
+# edit to the generator can never leave a stale sub/math-coeffs.inc silently
+# shipping in $(SUB_ROM) (same staleness class as the kwtable.inc/resident-ABI
+# fixes above).
+sub/math-coeffs.inc: tools/gen_math_coeffs.py
+	python3 tools/gen_math_coeffs.py --emit
 
 # --- Standing resident-ABI consistency gate (spec §4.3/§8 sign-off) ------------
 # STRONG assert: re-runs the SAME generator against the CURRENT basic-reloc.sym
