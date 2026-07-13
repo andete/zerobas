@@ -106,8 +106,15 @@ basic-reloc: $(ROM) $(SUB_ROM) basic/main-reloc.asm basic/main.asm $(DEPS) | $(B
 CBIOS ?= ~/projects/cbios
 MAIN_ROM   := $(BUILD)/zerobas-main-eu.rom
 MAIN_PATCHES := zerobas-main-eu.ips zerobas-main-eu.bps
-repack-main: basic/main-reloc.asm basic/main.asm $(DEPS) tape/tape.asm | $(BUILD)
+# Real file rule so `repack-machine` (and every *-acceptance gate that depends on
+# it) rebuilds the merged main ROM when any BASIC source changes — previously
+# $(MAIN_ROM) had no rule, so a stale zerobas-main-eu.rom was silently reinstalled
+# after a basic/*.asm edit and gates tested STALE BASIC ([[ips-rebuild-after-basic-change]]).
+# $(DEPS) already lists float-arith.asm/expr.asm/sysvars.inc, so float/math slices
+# now retrigger correctly. `repack-main` stays a phony alias for existing callers.
+$(MAIN_ROM): basic/main-reloc.asm basic/main.asm $(DEPS) tape/tape.asm | $(BUILD)
 	python3 tools/build_patches.py --main --cbios $(CBIOS)
+repack-main: $(MAIN_ROM)
 repack-boot: repack-main
 	python3 probes/basic/basic_probe_repack_boot.py
 
