@@ -1172,7 +1172,9 @@ MC_TYPE         equ     $F16D   ; evmc_sub1 (expr.asm): the operand's FACTYP (4/
                                 ; the original argument was single (1)
 ; --- Math pack slice 1b RAM (repack build only) ------------------------------
 ; docs/spec-basic-math-pack.md §10.4. Own-choice free RAM, the $F16E.. tail
-; immediately following MC_TYPE (ends $F16D+1=$F16E). fp_sqrt (float-arith.asm)
+; immediately following MC_TYPE (ends $F16D+1=$F16E). fp_sqrt (sub/sub.asm,
+; migrated to the sub-ROM page-1 tenant 2026-07-13 -- docs/spec-basic-subrom-
+; mathpack.md; this RAM stays resident, always mapped from either page)
 ; needs two PERSISTENT FPNUM-shaped operands across its Heron loop -- unlike
 ; every other fp_* consumer, which widens a fresh ARGA/ARGB right before each
 ; single op and never needs the value again -- because the iterate (y) and the
@@ -1244,6 +1246,15 @@ SUBROM_IDX_INTTEST   equ 3      ; the interrupt self-test tenant (trampoline sli
                                 ; sub/sub.asm sub_int_selftest). Runs EI, spins > 1
                                 ; frame, returns the JIFFY delta in SUB_INT_DELTA —
                                 ; the subrom-inttest gate asserts it is >= 1.
+; Page-1 dispatch (docs/spec-basic-subrom-mathpack.md §2): the FIRST page-1
+; tenant. SUBROM_ENTRY_BASE_P1 mirrors the disk $4010 DSKIO convention (also
+; independently defined in sub/equates.inc for the sub build — same value,
+; IFNDEF-guarded here so the two never drift/double-define). Index 0 (not
+; re-listed here) is the S2a page-1 ping (sub/sub.asm sub_p1_ping).
+SUBROM_ENTRY_BASE_P1 equ $4010  ; sub-ROM page-1 jp-table base
+SUBROM_IDX_SQR       equ 1      ; fp_sqrt tenant (sub/sub.asm, migrated from
+                                ; main-ROM page-0 low 2026-07-13). Main-ROM
+                                ; stub is basic/expr.asm `evmc_sqr`.
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

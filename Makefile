@@ -54,7 +54,12 @@ SUB_SRC   := sub/sub.asm
 # edit silently ship a STALE sub.rom (caught 2026-07-12, math pack slice 1a: a
 # new keyword crunched fine on the reference but parsed as a bare variable on
 # zerobas because sub.rom hadn't picked up the new kwtable.inc entries).
-SUB_PARTS := sub/equates.inc sub/tkfloat.asm basic/sysvars.inc basic/kwtable.inc
+# sub/fp_sqrt.asm + sub/basic-resident-abi.inc (subrom-mathpack arc): the SQR
+# tenant body + its GENERATED resident-ABI import (tools/gen_resident_abi.py,
+# rule below) -- same staleness hazard as kwtable.inc above, same fix (a real
+# prerequisite so a stale sub.rom cannot silently ship).
+SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm basic/sysvars.inc \
+             basic/kwtable.inc sub/basic-resident-abi.inc
 SUB_ROM   := $(BUILD)/sub.rom
 
 # Tracked patch deliverables (regenerable; live at their committed paths).
@@ -87,16 +92,63 @@ $(SUB_ROM): $(SUB_SRC) $(SUB_PARTS) | $(BUILD)
 sub: $(SUB_ROM)
 
 # --- Relocated BASIC proof (cbios-repack arc, WS-2 / S3) -----------------------
+# $(RELOC_SYM)/$(RELOC_ROM) get their OWN file rule here (depending ONLY on the
+# BASIC sources, NEVER on $(SUB_ROM)) so sub/basic-resident-abi.inc below can
+# depend on $(RELOC_SYM) without creating a BUILD-GRAPH CYCLE: $(SUB_ROM)
+# depends on the .inc (via SUB_PARTS), the .inc depends on $(RELOC_SYM) -- so
+# $(RELOC_SYM) must never depend back on $(SUB_ROM), directly or through the
+# old phony `basic-reloc` (which used to build RELOC_SYM itself while ALSO
+# depending on $(SUB_ROM) for its own cross-checks -- that shape is exactly
+# the cycle this split avoids; same class of fix as the earlier $(MAIN_ROM)
+# real-file-rule change). The `basic-reloc` PHONY target (further down) still
+# depends on $(RELOC_SYM)/$(SUB_ROM) for ITS OWN cross-checks, which is fine --
+# phony targets are never anyone else's prerequisite.
+RELOC_ROM := $(BUILD)/basic-reloc.rom
+RELOC_SYM := $(BUILD)/basic-reloc.sym
+$(RELOC_SYM): basic/main-reloc.asm basic/main.asm $(DEPS) | $(BUILD)
+	$(PASMO) --bin basic/main-reloc.asm $(RELOC_ROM) $(RELOC_SYM)
+# Grouped-target workaround (GNU make 3.81 has no `&:`): $(RELOC_SYM)'s recipe
+# above produces BOTH files; this is a no-op follower, same pattern as the
+# zerobas-msx1.ips/.bps pair below.
+$(RELOC_ROM): $(RELOC_SYM)
+	@: # produced by the pasmo run above
+
+# --- Resident-ABI import (subrom-mathpack arc, spec §4) ------------------------
+# fp_sqrt (sub/fp_sqrt.asm, the first page-1 tenant) calls back into 9 main-ROM
+# page-0-resident routines; their absolute addresses live in $(RELOC_SYM) and
+# shift whenever the page-0 low region changes. This generated .inc is a real
+# prerequisite of $(SUB_ROM) (via SUB_PARTS below) — depends on $(RELOC_SYM)
+# only (never $(SUB_ROM) -- see the cycle note above).
+sub/basic-resident-abi.inc: $(RELOC_SYM) tools/gen_resident_abi.py
+	python3 tools/gen_resident_abi.py $(RELOC_SYM) sub/basic-resident-abi.inc
+
+# --- Standing resident-ABI consistency gate (spec §4.3/§8 sign-off) ------------
+# STRONG assert: re-runs the SAME generator against the CURRENT basic-reloc.sym
+# and diffs the result against the on-disk sub/basic-resident-abi.inc, catching
+# a stale .inc (and therefore a stale sub.rom calling wrong addresses) that the
+# build-order dependency above should prevent but a partial/interrupted build
+# or a hand-edit might not. Also run as a step of `basic-reloc` below.
+subrom-abi-check: sub/basic-resident-abi.inc $(RELOC_SYM)
+	python3 tools/check_resident_abi.py $(RELOC_SYM) sub/basic-resident-abi.inc
+
+# --- Standing page-1-escape gate for page-1 tenants (subrom-mathpack arc) ------
+# A page-1 tenant runs with main-ROM page 1 switched OUT, so the FULL transitive
+# call closure of the resident-ABI surface it calls must be page-0-resident. Two
+# escapes (cmp16_bits, div10) reached page 1 via out-of-file fallthrough callees
+# and hung the tenant; the manual leaf-audit missed both. This walks the closure
+# and fails on any escape >= $4000. Also a step of `basic-reloc`.
+subrom-closure-check: sub/basic-resident-abi.inc $(RELOC_SYM)
+	python3 tools/check_tenant_closure.py $(RELOC_SYM) sub/basic-resident-abi.inc
+
 # Assemble the $2812-based variant (basic/main-reloc.asm) and prove it lands the
 # "AB" header at $4000 and matches the shipping page-1 body byte-for-byte. This is
 # a proof/staging target only -- deliberately NOT in `all`; the merged main-ROM
 # splice that ships it is WS-3 (S4). See docs/cbios-repack-ws2-audit.md.
-RELOC_ROM := $(BUILD)/basic-reloc.rom
-RELOC_SYM := $(BUILD)/basic-reloc.sym
-basic-reloc: $(ROM) $(SUB_ROM) basic/main-reloc.asm basic/main.asm $(DEPS) | $(BUILD)
-	$(PASMO) --bin basic/main-reloc.asm $(RELOC_ROM) $(RELOC_SYM)
+basic-reloc: $(ROM) $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM)
 	python3 tools/check_reloc.py $(RELOC_ROM) $(ROM) $(RELOC_SYM)
 	python3 tools/check_kwtable_identity.py $(RELOC_ROM) $(RELOC_SYM) $(SUB_ROM) $(SUB_SYM)
+	python3 tools/check_resident_abi.py $(RELOC_SYM) sub/basic-resident-abi.inc
+	python3 tools/check_tenant_closure.py $(RELOC_SYM) sub/basic-resident-abi.inc
 
 # --- Merged repack main ROM (WS-3 / D4) ---------------------------------------
 # The 32 KB slot-0 "main ROM": repacked C-BIOS + relocated BASIC ($2812-$7FFF) +
@@ -301,15 +353,20 @@ float-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_float_vars.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
 	python3 probes/basic/basic_probe_var_reset.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
 
-# --- Standing math-pack acceptance gate (math pack slice 1a) -------------------
-# ABS/SGN/INT/FIX/CINT/CSNG/CDBL (docs/spec-basic-math-pack.md §9.4): token
-# crunch-byte-identity (vs MSX2 TH Table 2.20) + the value differential vs the
-# VG-8020 reference (INT/FIX negative-operand divergence, CINT rounding +
-# domain-overflow edges, FACTYP-leak, the ABS(-32768%) int-domain escape).
-# Repack-only; HEAVY + oracle-dependent (boots openMSX; needs your VG-8020
-# reference ROM); NOT part of the emulator-free `unit-test`. Scope with
-# `make math-acceptance ONLY=cint`.
-math-acceptance: $(DISK_ROM) repack-machine
+# --- Standing math-pack acceptance gate (math pack slice 1a + SQR/1b) ----------
+# ABS/SGN/INT/FIX/CINT/CSNG/CDBL/SQR (docs/spec-basic-math-pack.md §9.4/§10.4):
+# token crunch-byte-identity (vs MSX2 TH Table 2.20) + the value differential vs
+# the VG-8020 reference (INT/FIX negative-operand divergence, CINT rounding +
+# domain-overflow edges, FACTYP-leak, the ABS(-32768%) int-domain escape, SQR's
+# correctly-rounded battery). SQR's body is now a sub-ROM page-1 tenant
+# (docs/spec-basic-subrom-mathpack.md) -- this gate's byte-identical SQR outputs
+# are the PROOF the tenant migration is correct (algorithm unchanged, only its
+# home moved), so `subrom-abi-check` runs first: a stale resident-ABI import
+# would otherwise surface as a confusing SQR value mismatch instead of a clear
+# staleness error. Repack-only; HEAVY + oracle-dependent (boots openMSX; needs
+# your VG-8020 reference ROM); NOT part of the emulator-free `unit-test`. Scope
+# with `make math-acceptance ONLY=cint`.
+math-acceptance: $(DISK_ROM) repack-machine subrom-abi-check
 	python3 probes/basic/basic_probe_math_conv.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
 
 # Standing C-BIOS self-consistency gate: closes the coverage gap that `bdos-acceptance`
@@ -344,4 +401,4 @@ clean:
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance \
         input-acceptance float-acceptance math-acceptance subrom-acceptance \
-        subrom-inttest clean
+        subrom-inttest subrom-abi-check subrom-closure-check clean

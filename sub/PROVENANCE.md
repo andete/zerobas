@@ -107,6 +107,25 @@ Allowed sources (same master list as [`../README.md`](../README.md)):
   self-check that the page-0 island is interrupt-live: reads `JIFFY` ($FC9E,
   published MSX2 TH work area), EI's, spins past one 50/60 Hz frame, and stores the
   `JIFFY` delta in `SUB_INT_DELTA` for the `subrom-inttest` gate to assert `>= 1`.
+- **`sub/fp_sqrt.asm` — the SQR(x) Heron/Newton body (FIRST page-1 tenant, index
+  1; [`../docs/spec-basic-subrom-mathpack.md`](../docs/spec-basic-subrom-mathpack.md),
+  2026-07-13).** *Relocation, not new sourcing* — this is the SAME own-design
+  algorithm math-pack slice 1b already attested in
+  [`../basic/PROVENANCE.md`](../basic/PROVENANCE.md) (Heron fixed-point +
+  correction, deliberately NOT a bit-exact fit of the reference's own low-biased
+  division), moved verbatim from `basic/float-arith.asm` (main-ROM page-0 low,
+  where it had grown to 709 B, leaving only 27 B free) into this page-1 island.
+  Nothing about the algorithm changed — `math-acceptance`'s byte-identical SQR
+  outputs are the standing proof. New here is the FIRST non-leaf tenant shape:
+  `fp_sqrt` calls back into 9 main-ROM page-0-resident routines (`fp_add`/
+  `fp_sub`/`fp_mul`/`fp_div`/`fp_cmp`/`dig15_iszero`/`arga_pack_fac`/
+  `widen_fac_to`/`widen_uint_to`) via a GENERATED resident-ABI import
+  (`sub/basic-resident-abi.inc`, `tools/gen_resident_abi.py`, re-extracted from
+  `build/basic-reloc.sym` on every build). `flt_to_int16` is deliberately NOT
+  imported — it stays main-ROM-resident, called by the stub (`basic/expr.asm`
+  `evmc_sqr`) after a successful return, so the tenant itself is compute-only.
+  No C-BIOS code is read; the resident addresses are OUR OWN build's symbol
+  table, never a reference ROM's.
 
 ## Own-design divergences from real MSX (spec §6)
 

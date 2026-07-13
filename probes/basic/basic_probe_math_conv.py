@@ -6,8 +6,10 @@
 (docs/spec-basic-math-pack.md §9.4/§10.6).
 
 SQR (slice 1b, §10.3.1/§10.6 FINAL, REVISED 2026-07-13): correctly-rounded
-Heron+Newton over our OWN fp_div/fp_mul/fp_sub/fp_add (basic/float-arith.asm
-fp_sqrt) -- intentionally NOT a bit-exact fit of the reference. A time-boxed
+Heron+Newton over our OWN fp_div/fp_mul/fp_sub/fp_add (sub/fp_sqrt.asm --
+migrated to the sub-ROM page-1 tenant 2026-07-13, docs/spec-basic-subrom-
+mathpack.md; algorithm unchanged, only its home moved) -- intentionally NOT
+a bit-exact fit of the reference. A time-boxed
 black-box campaign proved the reference's own division is low-biased by 1
 ulp in a way that is not clean-room recoverable (the distinguishing rule
 lives in the 15th digit of an intermediate remainder, which 14-digit PRINT
@@ -236,7 +238,7 @@ EXPRS = [
 # non-square integers, decimals, incl. near-perfect-square boundary stress
 # like 11833599.999919 -- found live to matter: the Newton step alone can
 # land exactly 1 ulp off truth at these boundaries, which the final decision
-# step (basic/float-arith.asm fsq_stop) exists specifically to correct).
+# step (sub/fp_sqrt.asm fsq_stop) exists specifically to correct).
 SQR_BROAD_XS = [
     # --- the 72-input characterization battery -----------------------------
     "2", "3", "5", "6", "7", "8", "10", "11", "12", "13", "14", "15", "17",

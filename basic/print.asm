@@ -329,6 +329,17 @@ pn_tail:
 
 ; --- div10: HL = HL/10, A = remainder (0..9) -------------------------------
 ; Shift-and-subtract (standard binary divide). Clobbers A, B, HL.
+;
+; HOME depends on the build (subrom-mathpack migration, 2026-07-13):
+;   * lean 16 KB cart (ROM_BASE >= $4000): defined HERE (page 1), byte-identical
+;     to the pre-migration print.asm.
+;   * repack build (ROM_BASE < $4000): defined in the page-0 low region
+;     (basic/float-arith.asm) instead, so the fp_sqrt PAGE-1 sub-ROM tenant's
+;     page-0-resident float core (widen_uint_to) can still reach it while main-
+;     ROM page 1 is switched out (see float-arith.asm's div10 header). All
+;     callers here (pn_div, list.asm, printusing.asm) resolve to that page-0
+;     copy by label, unchanged.
+    IF ROM_BASE >= $4000
 div10:
                 xor     a
                 ld      b,16
@@ -342,6 +353,7 @@ d10_lp:
 d10_skip:
                 djnz    d10_lp
                 ret
+    ENDIF
 
 ; --- print_crlf: CR + LF ---------------------------------------------------
 print_crlf:

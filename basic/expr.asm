@@ -261,6 +261,16 @@ rb_gt:
 
 ; --- cmp16_bits: signed compare HL(lhs) vs DE(rhs) -> A = 1/2/4 -------------
 ; 1 = lhs<rhs, 2 = equal, 4 = lhs>rhs. Clobbers A, HL, flags (DE preserved).
+;
+; HOME depends on the build (subrom-mathpack migration, 2026-07-13):
+;   * lean 16 KB cart (ROM_BASE >= $4000): defined HERE (page 1), byte-identical
+;     to the pre-migration expr.asm.
+;   * repack build (ROM_BASE < $4000): defined in the page-0 low region
+;     (basic/float-arith.asm) instead, so the fp_sqrt PAGE-1 sub-ROM tenant's
+;     page-0-resident float core can still reach it while main-ROM page 1 is
+;     switched out (see float-arith.asm's cmp16_bits header). All callers here
+;     (ev_rel etc.) resolve to that page-0 copy by label, unchanged.
+    IF ROM_BASE >= $4000
 cmp16_bits:
                 ld      a,h
                 cp      d
@@ -285,6 +295,7 @@ c16_lt:
 c16_gt:
                 ld      a,4
                 ret
+    ENDIF
 
 ; --- ev_sp: skip spaces in the IX stream -----------------------------------
 ev_sp:
@@ -1004,23 +1015,59 @@ evmc_cdbl:
 
 ; --- evmc_sqr: SQR(x) -> non-negative square root, DOUBLE (math pack slice --
 ; 1b, docs/spec-basic-math-pack.md §10.5). Same arg-parse + widen shape as
-; evmc_int/evmc_fix (ev_mc_arg then widen_rhs_operand into ARGA), then the new
-; fp_sqrt leaf (float-arith.asm). fp_sqrt's disposition contract (§3.4/§10.4
-; point 5): A=0 ok (FAC/FACTYP/DE already fully consistent -- every fp_sqrt
-; exit finalizes via round_and_finalize or an equivalent explicit pack, so
-; nothing more is needed here), A<>0 -> domain error (x<0). The raise itself
-; -- FPERR:=3 + DE:=0 -- lives HERE, not in fp_sqrt, mirroring evmc_cint's
-; shape (fac_to_int_go, the deeper leaf, sets FPERR:=1 for Overflow); interp.
-; asm's fp_runtime_error maps FPERR=3 to "illegal function call" at the next
+; evmc_int/evmc_fix (ev_mc_arg then widen_rhs_operand into ARGA), then
+; DISPATCHES to fp_sqrt in the sub-ROM PAGE-1 island (sub/sub.asm) via
+; subrom_call/SUBROM_ENTRY_BASE_P1+SUBROM_IDX_SQR (docs/spec-basic-subrom-
+; mathpack.md §2/§3 -- fp_sqrt migrated 2026-07-13; this stub is the ONLY
+; main-ROM-side change of that migration, everything else is unchanged
+; behaviour). subrom_call's `or a` before its `ret` preserves A (the tenant's
+; status: 0 ok, nonzero domain error x<0) and clears CF on a completed call;
+; CF=1 means the sub-ROM is absent (never on the merged machine, which always
+; ships it) -- handled the same defensive way as the tokeniser/detok call
+; sites (basic/interp.asm/list.asm). fp_sqrt is now COMPUTE-ONLY (§3/§4): on
+; success it leaves FAC correct but does NOT set FACTYP or DE (flt_to_int16
+; is main-ROM-resident, not part of the imported resident-ABI surface), so
+; THIS stub sets FACTYP:=8 + refreshes DE via flt_to_int16 after a successful
+; return -- the same finalization fp_sqrt used to do internally before the
+; move. On domain error (A<>0): FPERR:=3 + DE:=0, mirroring evmc_cint's shape
+; (fac_to_int_go, the deeper leaf, sets FPERR:=1 for Overflow); interp.asm's
+; fp_runtime_error maps FPERR=3 to "illegal function call" at the next
 ; statement-boundary check (check_expr_errors/_popbc), same D-F2-1 pattern as
 ; Overflow/division-by-zero -- never a `jp` out of the evaluator itself.
 evmc_sqr:
                 call    ev_mc_arg
                 ld      hl,ARGA
                 call    widen_rhs_operand
-                call    fp_sqrt
+                ; Domain check (x<0 -> "illegal function call") is done HERE, not
+                ; in the tenant: CALSLT does NOT preserve A, so a tenant status
+                ; byte cannot ride back in A (existing tenants return via RAM
+                ; buffers, never A). ARGA holds the widened operand; sign<>0 =
+                ; negative (same test fp_sqrt used internally, sign-first order,
+                ; so -0.0 -> error exactly as before). x>=0 always succeeds in the
+                ; tenant, so nothing is read from A after the call.
+                ld      a,(ARGA+FPNUM_SIGN)
                 or      a
-                ret     z                   ; ok: FAC/FACTYP/DE already set
+                jr      nz,evmc_sqr_err
+                push    ix                  ; save the parser's text-position pointer --
+                                            ; subrom_call/CALSLT clobbers ALL registers
+                                            ; (subromcall.asm's own header: "the caller
+                                            ; guards anything live, e.g. the text
+                                            ; cursor"), and IX IS that text cursor here
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SQR
+                call    subrom_call         ; CF=1 iff sub-ROM absent (subrom_call's
+                                            ; own `or a` sets CF deterministically --
+                                            ; that flag IS reliable across the call;
+                                            ; A is NOT, which is why the domain check
+                                            ; ran main-side above). Result is in FAC.
+                pop     ix                  ; restore the text-position pointer (POP
+                                            ; does not touch flags -- CF survives)
+                jp      c,subrom_absent_error ; reduced build w/o sub-ROM (never on the
+                                            ; merged machine, which always ships it)
+                ld      a,8
+                ld      (FACTYP),a
+                jp      flt_to_int16        ; tail: DE := flt_to_int16(FAC) (moved out
+                                            ; of the tenant, now main-side per §3/§4)
+evmc_sqr_err:
                 ld      a,3
                 ld      (FPERR),a
                 ld      de,0
