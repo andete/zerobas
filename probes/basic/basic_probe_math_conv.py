@@ -5,14 +5,20 @@
 """Math pack slice 1a+1b probe — ABS/SGN/INT/FIX/CINT/CSNG/CDBL/SQR
 (docs/spec-basic-math-pack.md §9.4/§10.6).
 
-SQR (slice 1b, §10.3.1 FINAL): correctly-rounded Heron over our OWN fp_div --
-NOT a bit-exact fit of the reference. The reference's own division is low-
-biased by 1 ulp in an operand-dependent way that this slice's black-box
-characterization campaign proved is not clean-room recoverable (the
-distinguishing rule lives in the 15th digit of an intermediate remainder,
-which 14-digit PRINT structurally hides). This is a DOCUMENTED, regression-
-guarded deviation on ~15/72 characterized inputs (SQR_KNOWN_DEVIATIONS
-below), not a bug -- see the divergence summary the differential mode prints.
+SQR (slice 1b, §10.3.1/§10.6 FINAL, REVISED 2026-07-13): correctly-rounded
+Heron+Newton over our OWN fp_div/fp_mul/fp_sub/fp_add (basic/float-arith.asm
+fp_sqrt) -- intentionally NOT a bit-exact fit of the reference. A time-boxed
+black-box campaign proved the reference's own division is low-biased by 1
+ulp in a way that is not clean-room recoverable (the distinguishing rule
+lives in the 15th digit of an intermediate remainder, which 14-digit PRINT
+structurally hides). Decision: keep our correctly-rounded div (more
+accurate) and ship SQR correctly-rounded too, so it is always >= as accurate
+as the reference. The SQR value oracle below is therefore MATHEMATICAL TRUTH
+(host `Decimal`, correctly-rounded 14 significant digits), not the
+reference -- this is what actually guarantees "correctly-rounded" (a narrow
+reference-matching battery could hide a boundary the correction still
+misses). The reference ROM's own ~1-ulp-off-truth cases are captured
+separately as an INFORMATIONAL deviation report (never asserted against).
 
 Two independent checks, both against the Philips VG-8020 black-box oracle:
 
@@ -29,7 +35,10 @@ Two independent checks, both against the Philips VG-8020 black-box oracle:
    RAW line for a stateful case) and captures the SCREEN 0 bracket span + the
    tail (same technique as basic_probe_float_arith.py). Characterisation mode
    (default) prints the reference's exact output; --zb-machine also runs
-   zerobas (repack build) and asserts equality.
+   zerobas (repack build) and asserts equality -- EXCEPT every pure `sqr(x)`
+   call (SQR_BROAD_XS, ~100 inputs: the 72-input characterization battery +
+   ~30 fresh draws spanning every magnitude/decimal shape), which asserts
+   zerobas == truth_sqrt14(x) instead of zerobas == reference.
 
 The matrix deliberately includes every trap the spec calls out as
 matrix-invisible: INT vs FIX on negatives, CINT rounding direction + the
@@ -48,9 +57,58 @@ _sys.path.insert(0, _HERE)
 _sys.path.insert(0, _os.path.join(_os.path.dirname(_HERE), "lib"))
 
 import argparse
+import decimal
+import re
 
 import basic_probe_crunch as C  # noqa: E402  (reuse MACHINE/TXTTAB/tokens)
 import omsx_repl                # noqa: E402  (typing-free KEYBUF REPL driver)
+
+D = decimal.Decimal
+
+
+def truth_sqrt14(x) -> "decimal.Decimal":
+    """Host-computed, correctly-rounded 14-significant-digit sqrt(x)
+    (docs/spec-basic-math-pack.md §10.3.1/§10.6 FINAL: the SQR oracle is
+    mathematical truth, not the reference ROM). Decimal, prec>=30 internally,
+    ROUND_HALF_UP to 14 significant digits -- the same rounding rule as
+    round_and_finalize's own guard-digit half-up (basic/float-arith.asm)."""
+    x = D(x)
+    if x == 0:
+        return D(0)
+    with decimal.localcontext() as ctx:
+        ctx.prec = 40
+        root = x.sqrt()
+    digits = root.as_tuple().digits
+    exp = root.as_tuple().exponent
+    if len(digits) <= 14:
+        return root
+    quant_exp = exp + (len(digits) - 14)
+    quantum = D(1).scaleb(quant_exp)
+    with decimal.localcontext() as ctx:
+        ctx.prec = 40
+        ctx.rounding = decimal.ROUND_HALF_UP
+        return root.quantize(quantum)
+
+
+_NUM_RE = re.compile(r"[+-]?(\d+\.?\d*|\.\d+)([eEdD][+-]?\d+)?")
+
+
+def parse_basic_number(span: "str | None"):
+    """Parse a captured PRINT bracket span (e.g. ' 3.7416573867739 ' or
+    ' 1E+15 ') into a Decimal, comparing by VALUE rather than by exact
+    printed string -- avoids needing to reimplement flt_out's own fixed-vs-E
+    notation/trailing-zero-stripping rules just to check a numeric result.
+    Returns None if the span isn't a bare number (e.g. an error message)."""
+    if span is None:
+        return None
+    s = span.strip().replace("D", "E").replace("d", "e")
+    m = _NUM_RE.fullmatch(s)
+    if not m:
+        return None
+    try:
+        return D(s)
+    except decimal.InvalidOperation:
+        return None
 
 REF_MACHINE = "Philips_VG_8020"
 
@@ -147,21 +205,14 @@ EXPRS = [
     "abs(peek(0))", "sgn(peek(0))", "int(peek(0)+.5)", "cint(peek(0))",
     # --- nested / composed calls (ARGA/ARGB reuse across calls) ------------
     "abs(int(-1.5))", "int(-1.5)+int(-2.5)", "cint(abs(-2.5))",
-    # --- SQR: trivial + perfect squares + sub-1 + large (spec §10.2, all ---
-    # reference-identical -- exact on every perfect square, exact power-of-10
-    # magnitude shifts).
-    "sqr(0)", "sqr(1)", "sqr(4)", "sqr(16)", "sqr(100)", "sqr(10000)",
-    "sqr(.25)", "sqr(.01)", "sqr(.04)", "sqr(.1)", "sqr(.5)",
-    "sqr(1e10)", "sqr(1e30)", "sqr(4e10)",
-    # --- SQR: correctly-rounded, non-perfect-square inputs the reference ---
-    # ALSO gets right (no divergence -- only ~15/72 characterized inputs are
-    # low-biased on the reference side, see SQR_KNOWN_DEVIATIONS below).
-    "sqr(5)", "sqr(7)", "sqr(10)", "sqr(999)",
     # --- SQR: FACTYP-leak (function-over-float; result must stay DOUBLE, --
     # per §10.2 -- an int/single leak would reprint 4+.5 as an int add or
     # round 6.25's sqrt to 6 sig digits) + single-vs-double literal input --
-    # (6.25 -> 2.5 exactly, deliberately NOT one of the known-deviation
-    # inputs below, so this pins the widen path, not the div-ulp deviation).
+    # (6.25 -> 2.5 exactly, an EXACT perfect square so reference-identical
+    # regardless of the truth-vs-reference SQR split below; this pins the
+    # widen path, not correctness). Still reference-compared (kept OUT of
+    # SQR_BROAD_XS below, which drives the truth assertion): these test the
+    # dispatch/store plumbing around SQR, not SQR's own rounding.
     "sqr(4)+0.5", "sqr(6.25!)", "sqr(6.25#)",
     # --- SQR: domain error, x<0 -> "illegal function call" (own lowercase --
     # wording, D-F2-1 disposition idiom; TAIL differs from the reference's
@@ -169,6 +220,44 @@ EXPRS = [
     # shape as the CINT Overflow cases).
     "sqr(-1)", "sqr(-1e-9)", "sqr(-4)",
 ]
+
+# --- SQR value battery (§10.3.1/§10.6 FINAL): the oracle is MATHEMATICAL
+# TRUTH, not the reference ROM (a plain Heron fixed-point over our correctly-
+# rounded fp_div is NOT bit-exact with the reference's own low-biased
+# division -- §10.3.1's black-box campaign proved that divergence is not
+# clean-room recoverable). Every value here is a PURE `sqr(x)` call (matched
+# by the regex in compare(), below) so its assertion routes to
+# truth_sqrt14(x), never to the reference span -- this is what actually
+# guarantees "correctly-rounded": a narrow battery could miss a boundary a
+# fitted correction still misses. The 72 entries are this slice's own black-
+# box characterization campaign (VG-8020, 2026-07-12/13, the same battery
+# `sqr_bulkfit.py`/`sqr_oracle.json` captured); the rest are fresh draws
+# added for this broad-battery requirement (mixed magnitude, sub-1, large,
+# non-square integers, decimals, incl. near-perfect-square boundary stress
+# like 11833599.999919 -- found live to matter: the Newton step alone can
+# land exactly 1 ulp off truth at these boundaries, which the final decision
+# step (basic/float-arith.asm fsq_stop) exists specifically to correct).
+SQR_BROAD_XS = [
+    # --- the 72-input characterization battery -----------------------------
+    "2", "3", "5", "6", "7", "8", "10", "11", "12", "13", "14", "15", "17",
+    "18", "19", "20", "21", "22", "23", "24", "26", "27", "28", "29", "30",
+    "31", "33", "37", "41", "43", "47", "50", "53", "59", "61", "67", "71",
+    "73", "79", "83", "89", "97", "99", "101", "999",
+    "4", "9", "16", "25", "36", "49", "64", "81", "100", "10000",
+    ".25", ".04", ".01", "2.25", "6.25", ".5", "1.5", "2.5", "3.7",
+    "123.456", ".1", ".001", "12345.6789",
+    "1.0000000000001", "99.999999999999", "0.99999999999999",
+    "1.23456789012345",
+    # --- ~30 fresh draws: broader magnitude/decimal-shape coverage ---------
+    "0", "1", "8", "42", "1000001", "88888888888888", "19999999999999",
+    "1.999999999999", "2.000000000001", "1.41421356237", "7.5", ".0009",
+    "55555.55555", "333333333.3333", "9.87654321098", "1234567.891234",
+    "3.14159265358", "2.71828182845", "1e-20", "1e15", "1e-30", "1e10",
+    "1e30", "4e10", "31622.7766017", "0.30102999566398", "123456789.12345",
+    "7.389056098931", "2.71828182846e10", "4.44444444444",
+    "11833599.999919",
+]
+EXPRS = EXPRS + [f"sqr({_x})" for _x in SQR_BROAD_XS]
 
 # Cases whose TAIL legitimately differs (zerobas's own lowercase D-2-style
 # Overflow wording vs the reference's) -- compare only the bracket span
@@ -180,35 +269,25 @@ EXPRS = [
 SPAN_ONLY = {"cint(32768)", "cint(-32769)", "cint(40000.5)", "cint(32768.1)",
              "sqr(-1)", "sqr(-1e-9)", "sqr(-4)"}
 
-# --- SQR documented divergence table (§10.3.1/§10.6 FINAL) -----------------
-# Correctly-rounded Heron over our OWN fp_div is NOT bit-exact with the
-# reference: the reference's division is low-biased by 1 ulp on these ~15/72
-# characterized inputs (full battery + true-sqrt justification worked out in
-# this slice's black-box campaign). Each entry maps the expression to
-# zerobas's OWN expected value (a REGRESSION GUARD -- the probe fails if
-# zerobas's Heron fixed point ever drifts from this) alongside the
-# reference's actual (lower) value, kept here for context only and NEVER
-# asserted against. compare() below special-cases every key in this dict:
-# the pass/fail verdict is zb == zb_expected, not zb == reference.
-SQR_KNOWN_DEVIATIONS = {
-    # expr                     : (zb_expected,        reference_actual)
-    "sqr(2)":                    ("1.4142135623731",   "1.414213562373"),
-    "sqr(3)":                    ("1.7320508075689",   "1.7320508075688"),
-    "sqr(6)":                    ("2.4494897427832",   "2.4494897427831"),
-    "sqr(12)":                   ("3.4641016151378",   "3.4641016151377"),
-    "sqr(14)":                   ("3.741657386774",    "3.7416573867739"),
-    "sqr(17)":                   ("4.1231056256177",   "4.1231056256176"),
-    "sqr(21)":                   ("4.5825756949559",   "4.5825756949558"),
-    "sqr(22)":                   ("4.6904157598235",   "4.6904157598234"),
-    "sqr(101)":                  ("10.049875621121",   "10.04987562112"),
-    "sqr(1.5)":                  ("1.2247448713916",   "1.2247448713915"),
-    "sqr(2.5)":                  ("1.5811388300842",   "1.5811388300841"),
-    "sqr(3.7)":                  ("1.9235384061672",   "1.9235384061671"),
-    "sqr(123.456)":              ("11.111075555499",   "11.111075555498"),
-    "sqr(12345.6789)":           ("111.11111060556",   "111.11111060555"),
-    "sqr(1.23456789012345)":     ("1.1111111061112",   "1.111111106111"),
-}
-EXPRS = EXPRS + list(SQR_KNOWN_DEVIATIONS.keys())
+# --- SQR pure-call matcher: routes a plain `sqr(x)` expression to the -------
+# truth assertion (compare(), below) instead of the reference. Deliberately
+# narrow (bare numeric literal argument only, optional leading '-') so the
+# FACTYP-leak/domain-error compound expressions above (`sqr(4)+0.5`,
+# `sqr(6.25!)`, `sqr(-1)`, ...) never match -- those stay reference-compared.
+_SQR_PURE_RE = re.compile(r"^sqr\((-?[0-9.eEdD+-]+)\)$")
+
+
+def _sqr_arg(expr: str):
+    """Return the Decimal argument if `expr` is a pure `sqr(x)` call
+    (x a bare numeric literal), else None."""
+    m = _SQR_PURE_RE.match(expr)
+    if not m:
+        return None
+    lit = m.group(1).replace("D", "E").replace("d", "e")
+    try:
+        return D(lit)
+    except decimal.InvalidOperation:
+        return None
 
 # RAW `:`-joined stateful cases: the ABS(-32768%) int-domain escape needs an
 # actual int16 -32768 value, which only exists after a TYPED-VAR store
@@ -291,11 +370,18 @@ def main() -> int:
         expr, line, kind = cases[i]
         ref_span, ref_tail = result_span(ref_raw), screen_tail(ref_raw, line)
         zb_span, zb_tail = result_span(zb_raw), screen_tail(zb_raw, line)
-        if expr in SQR_KNOWN_DEVIATIONS:
-            # documented deviation (§10.3.1/§10.6): regression guard only --
-            # zb must equal ITS OWN expected value, never the reference's.
-            zb_expected, _ref_actual = SQR_KNOWN_DEVIATIONS[expr]
-            return zb_span is not None and zb_span.strip() == zb_expected
+        sqr_x = _sqr_arg(expr) if expr not in SPAN_ONLY else None
+        if sqr_x is not None:
+            # §10.3.1/§10.6 FINAL: the oracle is mathematical truth, NOT the
+            # reference (its own division is 1 ulp low on ~15/72 -- see the
+            # reference-deviation report below, informational only). This is
+            # what actually guarantees "correctly-rounded": comparing zb to
+            # the reference would just re-certify the reference's own bias.
+            # (SPAN_ONLY excluded first: sqr(x<0) is a domain error, not a
+            # value to truth-check -- it must fall through to the ordinary
+            # tail-comparison path below.)
+            zb_val = parse_basic_number(zb_span)
+            return zb_val is not None and zb_val == truth_sqrt14(sqr_x)
         if kind == "raw":
             return ref_span is not None and ref_span == zb_span
         if expr in SPAN_ONLY:
@@ -307,7 +393,7 @@ def main() -> int:
         args.machine, args.zb_machine, specs, compare,
         batch=not args.boot_per_case, reset=("NEW", "CLS"))
 
-    divergences = []
+    ref_deviations = []     # (expr, x, reference_val, truth) -- reference != truth (informational)
     for (expr, line, kind), good, ref_raw, zb_raw in zip(
             cases, verdicts, ref_raws, zb_raws):
         ok = ok and good
@@ -319,23 +405,26 @@ def main() -> int:
             zs = f"[{zb_span}]" if zb_span is not None else "<no span>"
             print(f"{'':>34}ref tail: {screen_tail(ref_raw, line)!r}")
             print(f"{'':>34}zb  span: {zs}  tail: {zb_tail!r}")
-        if expr in SQR_KNOWN_DEVIATIONS:
-            zb_span = result_span(zb_raw)
-            zb_expected, ref_actual = SQR_KNOWN_DEVIATIONS[expr]
-            divergences.append((expr, zb_span.strip() if zb_span else None,
-                                 zb_expected, ref_actual))
+        sqr_x = _sqr_arg(expr) if expr not in SPAN_ONLY else None
+        if sqr_x is not None:
+            ref_val = parse_basic_number(ref_span)
+            truth = truth_sqrt14(sqr_x)
+            if ref_val is not None and ref_val != truth:
+                ref_deviations.append((expr, sqr_x, ref_val, truth))
 
-    if divergences:
-        print("\n--- SQR documented-divergence summary (§10.3.1/§10.6) -----")
-        print("(regression-guarded against zb_expected; reference NEVER "
-              "asserted equal -- its own div is 1 ulp low here)")
-        for expr, zb_got, zb_expected, ref_actual in divergences:
-            tag = "OK" if zb_got == zb_expected else "DRIFT"
-            print(f"{tag:6} {expr:<26} zb={zb_got!r:<20} "
-                  f"expected={zb_expected!r:<20} reference={ref_actual!r}")
+    if ref_deviations:
+        print(f"\n--- SQR reference-deviation report ({len(ref_deviations)}/"
+              f"{len(SQR_BROAD_XS)}) -- INFORMATIONAL, does not affect "
+              "pass/fail (§10.3.1/§10.6) ---")
+        print("(the reference ROM's own SQR is ~1 ulp off mathematical "
+              "truth on these inputs -- its division is low-biased; "
+              "zerobas is correct here. Never asserted against.)")
+        for expr, x, ref_val, truth in ref_deviations:
+            print(f"  {expr:<26} reference={ref_val!s:<20} truth={truth!s}")
 
-    print("\nALL PASS — math pack slice 1a+1b is reference-identical except "
-          "the documented SQR divergence table" if ok
+    print("\nALL PASS — SQR is correctly-rounded (== mathematical truth) "
+          "over the broad battery; the reference ROM's own ~1-ulp bias is "
+          "documented above, not asserted against" if ok
           else "\nSOME FAILED")
     return 0 if ok else 1
 

@@ -1188,7 +1188,10 @@ SQRT_X          equ     $F16E   ; the efficiency-normalized argument x' (constan
                                 ; across the whole iterate loop), FPNUM record (18)
 SQRT_Y          equ     $F180   ; the current iterate y (updated once per loop
                                 ; pass, canonical/clean per the note above),
-                                ; FPNUM record (18)
+                                ; FPNUM record (18). REUSED post-loop (§10.4
+                                ; step 4, REVISED 2026-07-13) as the final
+                                ; Newton-correction's canonical-y scratch --
+                                ; the loop is done with it by then.
 SQRT_K          equ     $F192   ; signed net count of the x'/y<->x/y-under-100^k
                                 ; rescale (spec §10.4 step 2): +1 per /100 step,
                                 ; -1 per *100 step applied to reach x'∈[1,100);
@@ -1197,7 +1200,32 @@ SQRT_K          equ     $F192   ; signed net count of the x'/y<->x/y-under-100^k
                                 ; the FPNUM digit array is magnitude-independent) (1)
 SQRT_ITER       equ     $F193   ; Heron loop iteration counter, 1-based (the stop-
                                 ; rule's "suppress the check on iteration 1" needs
-                                ; to know which pass this is) (1)
+                                ; to know which pass this is) (1); REUSED post-loop
+                                ; as the final decision-loop's own pass counter.
+SQRT_R          equ     FOUTBUF ; final-correction high-precision residual scratch
+                                ; (§10.4 step 4, REVISED 2026-07-13), FPNUM record
+                                ; (18). ALIASES FOUTBUF (basic/float.asm's flt_out
+                                ; PRINT-formatter scratch, 24 B, own-choice-free-RAM
+                                ; region above) -- NOT a fresh "own choice free RAM"
+                                ; claim: flt_out only runs AFTER a PRINT argument's
+                                ; expression has FULLY evaluated (converting the
+                                ; already-computed FAC to text), so it is always
+                                ; dead for fp_sqrt's own duration (a nested call
+                                ; like STR$(SQR(x)) still finishes SQR(x) -- and
+                                ; releases this scratch -- before STR$'s own
+                                ; flt_out runs). Same reuse discipline as
+                                ; MUL_CARRY/fpd_trial_digit above (two routines
+                                ; that provably never run concurrently sharing a
+                                ; cell) -- avoids a second SQRT_* RAM claim when
+                                ; the $F194..$F195(DRVA_DPB) gap has only 1 free
+                                ; byte left.
+SQRT_POW10      equ     $F194   ; final decision-loop (§10.4 step 4, REVISED
+                                ; 2026-07-13): 1=SQRT_Y is exactly a power of 10
+                                ; (its "step down" needs the next decade's finer
+                                ; ulp, not its own -- see fsqn_down_check), 0
+                                ; otherwise. The LAST free byte below DRVA_DPB
+                                ; ($F195, disk/init.asm) -- no more room here
+                                ; after this (1)
 JIFFY           equ     $FC9E   ; MSX software clock, bumped by the timer ISR (MSX2 TH work area)
 ; Dispatch ABI (mirror of sub/equates.inc — the append-only page-0 entry table).
 ; IX = SUBROM_ENTRY_BASE_P0 + 3*index selects a tenant; never renumber an index.

@@ -403,10 +403,14 @@ honest boundary of black-box reproduction, not an unexplored-model gap.
 - **Keep zerobas's correctly-rounded `fp_div`** (it is *more* accurate). Do **not** rework
   it. The div deviation envelope is **narrow**: identical to the reference for divisors
   with ≤10 significant digits; ≤~5 ulp more accurate (in the 14th digit) beyond.
-- **`SQR` ships as correctly-rounded Heron over our `fp_div`** — §10.4 simplifies to a
-  plain iterate loop with a normal final round; it is **not** reference-identical, and
-  the gate carries a **documented divergence table** (~15/72 characterized inputs differ
-  by 1 ulp; the reference is 1 ulp low there — see [[bug-for-bug-compat-over-accuracy]]).
+- **`SQR` ships correctly-rounded** — Heron over our `fp_div` + a final correction step
+  (§10.4) so the result is the **true correctly-rounded 14-digit √x**, always ≥ as
+  accurate as the reference. It is **not** reference-identical; the gate's oracle is
+  **mathematical truth** (host `Decimal`), and it carries a **documented table** of the
+  ~15/72 inputs where the **reference ROM** is 1 ulp off truth (zerobas is correct there —
+  see [[bug-for-bug-compat-over-accuracy]]). *(A plain Heron fixed-point was tried first
+  and rejected: it is ±1 ulp off truth, sometimes LESS accurate than the reference —
+  `SQR(14)` 1 ulp high — which defeats the "at least as accurate" rationale.)*
 - **Document the division + SQR deviation envelope** in the float-pack record and add the
   exposing near-unity 14-digit-division cases to `float-acceptance` **as characterized
   known-deviations** (closes the blind spot without asserting a false identity).
@@ -465,10 +469,18 @@ documented deviation, §10.6):
    the first non-decreasing `y'` (suppress the check on iteration 1, since for x<1 the
    first step rises).** AM-GM guarantees `y₁≥√x`, so the sequence is monotone-decreasing
    to the fixed point.
-4. **No special final rounding** — the result is whatever the standard `fp_add`/`fp_div`
-   `round_and_finalize` half-up tail produces at the fixed point. (Our div is
-   correctly-rounded, so this lands a correctly-rounded-ish √x; it differs from the
-   reference by ≤1 ulp exactly where our div differs — the documented deviation.)
+4. **Final correction → correctly-rounded (REVISED 2026-07-13).** A plain Heron
+   fixed-point is NOT correctly-rounded — it carries a ±1-ulp double-rounding error
+   (verified: `SQR(14)`/`21`/`22`/`3.7` land 1 ulp HIGH, i.e. *less* accurate than the
+   reference). Since the whole point of the documented deviation is "zerobas is at least
+   as accurate as the reference," `fp_sqrt` MUST return the **true correctly-rounded
+   14-digit √x**. After the Heron loop yields a candidate `y` (within 1 ulp), apply a
+   final correction — either one Newton step `y ← y + (x − y·y)/(2y)` then round once
+   (simplest; `fp_mul`/`fp_sub`/`fp_div`/halve/`fp_add`, all resident), or an explicit
+   neighbour-test (`y` vs `y±1ulp`, pick the candidate whose square brackets x). The
+   **gate is the arbiter** (§10.6): SQR must equal the host-computed correctly-rounded
+   √x across a broad battery; whichever method the implementer picks, if any case is
+   off, escalate to the neighbour-test.
 5. Leave result in FAC, FACTYP per §10.2. **Never `jp` an error** — return disposition
    in A (§3.4).
 
@@ -497,12 +509,15 @@ fork a new probe — same `omsx_repl` batched differential vs VG-8020, `reset=("
 - **Value differential:** the full §10.2 battery — perfect-square exactness (assert
   ==reference), sub-1, large-magnitude, FACTYP-leak `PRINT SQR(4)+0.5` / `A%=SQR(9)`,
   single-vs-double input type (all assert ==reference).
-- **DOCUMENTED-DIVERGENCE table (§10.3.1):** the ~15/72 characterized inputs where the
-  reference is 1 ulp low (2, 3, 6, 17, 123.456, …) are asserted against the **expected
-  zerobas** value with an explicit `known_deviation` marker + the reference value in a
-  comment, NOT asserted equal. The probe must FAIL if zerobas drifts from its own
-  expected value (regression guard) and print a divergence summary. This mirrors how the
-  `float-acceptance` div blind-spot cases (near-unity 14-digit divisions) are recorded.
+- **Oracle = mathematical truth (REVISED):** SQR is intentionally correctly-rounded, so
+  the value battery asserts `SQR(x)` == host-computed **correctly-rounded 14-digit √x**
+  (`Decimal`, ≥16 guard digits) over a BROAD battery (the 72 characterization inputs +
+  more random draws), NOT == the reference. This is what guarantees "correctly-rounded";
+  a narrow battery could miss a Newton-correction boundary miss.
+- **DOCUMENTED reference-deviation table (§10.3.1):** separately capture the reference
+  ROM's `SQR` on the same inputs and list the ~15/72 where the **reference** ≠ truth
+  (it is 1 ulp off; zerobas is correct). This documents the ROM's inaccuracy, not ours;
+  the probe prints the summary. Mirrors the `float-acceptance` div blind-spot cases.
 - **Domain error:** `SQR(-1)` / `SQR(-1E-9)` assert "Illegal function call" per-machine.
 - Standing gates stay green (§7 list); **Fable review of the whole slice** (the float-pack
   standing lesson — every slice hid ≥1 matrix-invisible bug; the differential + review
