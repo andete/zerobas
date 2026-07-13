@@ -468,6 +468,19 @@ ev_t_div:
 ev_f:
                 call    ev_sp
                 ld      a,(ix+0)
+    IF ROM_BASE < $4000
+                ; empty parenthesised/argument expression: a factor can never
+                ; begin with a closing ')' or a ',' (ev_f is reached only where a
+                ; factor is REQUIRED -- expression start, or right after '(' /
+                ; a binary operator / a function open-paren), so such a delimiter
+                ; here is a missing operand. Raise the deferred "syntax error"
+                ; (D-F2-3), matching the reference's `SQR()`/`()`/`(5+)`/`(,)`
+                ; Syntax error (spec-basic-empty-expr-syntax-error.md).
+                cp      ')'
+                jp      z,ev_f_empty
+                cp      ','
+                jp      z,ev_f_empty
+    ENDIF
                 cp      MINUS_TOKEN         ; unary minus
                 jp      z,ev_f_neg
                 cp      '('
@@ -518,6 +531,15 @@ ev_f_var:
     ELSE
                 call    var_get_key         ; BC = key -> DE = value
                 ret
+    ENDIF
+    IF ROM_BASE < $4000
+ev_f_empty:                                 ; D-F2-3: the empty parenthesised/argument
+                ld      a,4                 ; expression -> deferred FPERR "syntax error",
+                ld      (FPERR),a           ; checked at the statement boundary (the D-F2-1
+                                            ; pattern: no mid-expression unwind). The value
+                                            ; below (DE=0) survives every downstream success
+                                            ; op unchanged, but the flag makes the driver
+                                            ; abort. Fall into ev_f_err for the $DD landmark.
     ENDIF
 ev_f_err:
                 ld      a,$DD               ; expression error marker

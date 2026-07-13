@@ -274,6 +274,18 @@ ev_str_arg:
                 jp      nz,ev_f_err
                 inc     ix
                 call    ev_sp
+                ld      a,(ix+0)
+                ; empty string-argument (LEN()/ASC()/VAL(), or a trailing ','):
+                ; the same missing-operand syntax error as ev_f's ')'/',' gate
+                ; (D-F2-3). Route to ev_f_empty so FPERR=4 is set on THIS eval --
+                ; then the PRINT/LET driver's check_expr_errors aborts before the
+                ; caller's stale-STRPTR read can print a garbage length/byte
+                ; (spec-basic-empty-expr-syntax-error.md). A non-empty non-string
+                ; arg (e.g. LEN(5)) still falls to str_eval's own type handling.
+                cp      ')'
+                jp      z,ev_f_empty
+                cp      ','
+                jp      z,ev_f_empty
                 push    ix
                 pop     hl                  ; HL = cursor
                 call    str_eval            ; STRPTR -> desc; HL advanced; CF=ok
@@ -478,12 +490,28 @@ sfs_cp:
                 jp      str_eval_ok
 
 ; LEFT$(a$,n): the first min(n,len) bytes. Dup the source into a temp, then truncate.
+; str_arg_empty: an empty string-function first argument (LEFT$()/RIGHT$()/MID$(),
+; or a leading ','). Raise the deferred "syntax error" (D-F2-3) like ev_f's ')'/','
+; gate, then take the ordinary str_eval_no "not a string operand" exit -- the PRINT/
+; LET driver's FPERR check (ems_print / check_expr_errors) then aborts the statement.
+; This is what BREAKS the pre-existing runaway: without the flag, the numeric
+; fallback (ev_ff_strnum -> ev_f_err) returns 0 WITHOUT advancing the cursor and the
+; PRINT item loop spins forever printing 0 (spec-basic-empty-expr-syntax-error.md).
+str_arg_empty:
+                ld      a,4
+                ld      (FPERR),a
+                jp      str_eval_no
 str_fn_left:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
                 cp      '('
                 jp      nz,str_eval_no
                 inc     hl
+                ld      a,(hl)              ; empty first arg -> deferred syntax error
+                cp      ')'
+                jp      z,str_arg_empty
+                cp      ','
+                jp      z,str_arg_empty
                 call    str_eval            ; STRPTR -> source; HL advanced; CF=ok
                 jp      nc,str_eval_no
                 push    hl                  ; save cursor@','
@@ -524,6 +552,11 @@ str_fn_right:
                 cp      '('
                 jp      nz,str_eval_no
                 inc     hl
+                ld      a,(hl)              ; empty first arg -> deferred syntax error
+                cp      ')'
+                jp      z,str_arg_empty
+                cp      ','
+                jp      z,str_arg_empty
                 call    str_eval
                 jp      nc,str_eval_no
                 push    hl
@@ -567,6 +600,11 @@ str_fn_mid:
                 cp      '('
                 jp      nz,str_eval_no
                 inc     hl
+                ld      a,(hl)              ; empty first arg -> deferred syntax error
+                cp      ')'
+                jp      z,str_arg_empty
+                cp      ','
+                jp      z,str_arg_empty
                 call    str_eval            ; STRPTR -> source
                 jp      nc,str_eval_no
                 push    hl

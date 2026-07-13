@@ -1033,7 +1033,9 @@ FPERR           equ     $F069   ; runtime numeric-error flag: 0 none / 1 overflo
                                 ; 2 division by zero (spec §10.2 D-F2-1) / 3 illegal
                                 ; function call (math pack slice 1b, SQR(x<0),
                                 ; spec-basic-math-pack.md §10.4/§10.5 -- same
-                                ; disposition idiom, new value) (1)
+                                ; disposition idiom, new value) / 4 syntax error
+                                ; (empty parenthesised/argument expression, D-F2-3,
+                                ; spec-basic-empty-expr-syntax-error.md) (1)
 ; ARGA doubles as the WORKING/RESULT record: fp_add/fp_sub/fp_mul/fp_div all
 ; produce their answer back into ARGA in place (its own operand digits are
 ; dead once the op's own algorithm has consumed them), so a separate RES

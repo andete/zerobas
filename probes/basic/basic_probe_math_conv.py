@@ -262,6 +262,31 @@ SQR_BROAD_XS = [
 ]
 EXPRS = EXPRS + [f"sqr({_x})" for _x in SQR_BROAD_XS]
 
+# --- empty-argument / empty parenthesised expression -> "syntax error" -------
+# (spec-basic-empty-expr-syntax-error.md, D-F2-3, 2026-07-13). The reference
+# raises "Syntax error"; zerobas raises its OWN lowercase "syntax error" (the D-2
+# wording idiom), same statement-abort shape. The contract this pins: both sides
+# ABORT (no value span) AND print an error tail -- which guards against BOTH the
+# original value-leak (`SQR()` -> 0, `PEEK()` -> garbage) and the string-function
+# runaway (`LEFT$()` spinning 0s forever). A factor can never begin with ')' or
+# ',', so the ev_f / ev_str_arg / str_fn_* gates catch every empty-argument
+# intrinsic, bare/nested/trailing-operator parens, and the string functions.
+# NOTE (out of scope): a trailing operator at END-OF-STATEMENT (`5+`) is the
+# reference's SEPARATE "Missing operand" error, which zerobas does not implement
+# -- deliberately NOT in this battery.
+EMPTY_ARG = [
+    "sqr()", "abs()", "int()", "cint()", "sgn()", "fix()", "csng()", "cdbl()",
+    "peek()", "sqr(())", "()", "(5+)", "-()", "(,)",
+    "len()", "asc()", "val()",
+    "chr$()", "str$()", "left$()", "right$()", "mid$()", "hex$()",
+    "space$()", "string$()", "instr()",
+]
+# regression guards: valid parenthesised exprs that must STILL print their value
+# (sqr(4) routes to the truth assertion via _sqr_arg; the others compare normally).
+EMPTY_ARG_OK = ["(5)", "(5+6)"]
+EMPTY_ARG_SET = set(EMPTY_ARG)
+EXPRS = EXPRS + EMPTY_ARG + EMPTY_ARG_OK
+
 # Known precision-floor inputs: SQR is correctly-rounded EXCEPT a handful of
 # razor-thin near-ties (within ~1e-7 ulp of a 14-digit rounding boundary) that
 # a 14+guard-digit method fundamentally cannot resolve (docs/spec-basic-math-
@@ -388,6 +413,13 @@ def main() -> int:
         expr, line, kind = cases[i]
         ref_span, ref_tail = result_span(ref_raw), screen_tail(ref_raw, line)
         zb_span, zb_tail = result_span(zb_raw), screen_tail(zb_raw, line)
+        if expr in EMPTY_ARG_SET:
+            # D-F2-3: BOTH abort with an error tail and print NO value span.
+            # "error" in the tail rules out a runaway (LEFT$() spinning 0s ->
+            # a long digit tail, no "error") as well as a value leak.
+            return (ref_span is None and zb_span is None
+                    and bool(zb_tail) and "error" in zb_tail.lower()
+                    and bool(ref_tail) and "error" in ref_tail.lower())
         sqr_x = _sqr_arg(expr) if expr not in SPAN_ONLY else None
         if sqr_x is not None:
             # §10.3.1/§10.6 FINAL: the oracle is mathematical truth, NOT the

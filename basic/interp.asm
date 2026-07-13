@@ -407,9 +407,17 @@ fp_runtime_error:
                 jr      z,fre_divzero
                 cp      3
                 jr      z,fre_illegal
+                cp      4
+                jr      z,fre_syntax
                 jr      fre_abort
 fre_divzero:
                 ld      hl,err_fp_divzero
+                jr      fre_abort
+fre_syntax:
+                ld      hl,err_syntax       ; D-F2-3: empty parenthesised/argument
+                                            ; expression (SQR()/()/(5+)/(,)); reuse
+                                            ; stmt_error's own lowercase "syntax error"
+                                            ; string (spec-basic-empty-expr-syntax-error.md)
                 jr      fre_abort
 fre_illegal:
                 ld      hl,err_illegal_fn   ; math pack slice 1b: SQR(x<0) (spec

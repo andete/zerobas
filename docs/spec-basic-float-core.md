@@ -389,6 +389,17 @@ exponent as stored, i.e. dec_exp.
   `print "[";1/0;"]"` the `[` prints, then the message, never the value or
   `]`. zerobas prints its own lowercase wording, same abort shape
   (divergence D-F2-1, the D-2 pattern).
+- **D-F2-3 — empty parenthesised / argument expression → `syntax error`**
+  (2026-07-13, spec-basic-empty-expr-syntax-error.md). An empty factor closed
+  by `)` or `,` (`SQR()`, `ABS()`, … `PEEK()`, `LEN()`/`LEFT$()`, bare `()`,
+  `(5+)`, `-()`, `(,)`) reaches an `ev_f`/`ev_str_arg`/`str_fn_*` gate that sets
+  a new `FPERR=4` code, checked at the statement boundary like every other
+  runtime error (no mid-expression unwind). zerobas raises its own lowercase
+  `syntax error` (D-2 wording idiom); the reference raises `Syntax error`.
+  Pre-fix this returned 0 (or garbage/a runaway). The reference's SEPARATE
+  end-of-statement variant (`5+`, `-` → `Missing operand`, an EOL terminator
+  rather than `)`/`,`) is NOT implemented — a noted deviation; `ev_f` at EOL
+  keeps its current 0-return.
 
 ### 10.3 Float→int16 conversion contexts — two domains, both TRUNCATE
 
