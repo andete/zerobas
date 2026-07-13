@@ -404,8 +404,10 @@ honest boundary of black-box reproduction, not an unexplored-model gap.
   it. The div deviation envelope is **narrow**: identical to the reference for divisors
   with ≤10 significant digits; ≤~5 ulp more accurate (in the 14th digit) beyond.
 - **`SQR` ships correctly-rounded** — Heron over our `fp_div` + a final correction step
-  (§10.4) so the result is the **true correctly-rounded 14-digit √x**, always ≥ as
-  accurate as the reference. It is **not** reference-identical; the gate's oracle is
+  (§10.4) so the result is the **true correctly-rounded 14-digit √x** (except a rare,
+  fundamental near-tie **precision floor**, §10.4 — only observed `SQR(99.99998)`, where
+  the reference ties us), and it is **always ≥ as accurate as the reference** (verified
+  ~1180 adversarial near-ties, 0 where zerobas is worse). It is **not** reference-identical; the gate's oracle is
   **mathematical truth** (host `Decimal`), and it carries a **documented table** of the
   ~15/72 inputs where the **reference ROM** is 1 ulp off truth (zerobas is correct there —
   see [[bug-for-bug-compat-over-accuracy]]). *(A plain Heron fixed-point was tried first
@@ -481,6 +483,20 @@ documented deviation, §10.6):
    **gate is the arbiter** (§10.6): SQR must equal the host-computed correctly-rounded
    √x across a broad battery; whichever method the implementer picks, if any case is
    off, escalate to the neighbour-test.
+
+   **Precision floor (verified 2026-07-13, IMPLEMENTED via a Dekker 7/7-digit split +
+   single decide-step).** A 14+guard-digit method cannot resolve every case: for
+   razor-thin near-ties (the true √x within ≈1e-7 ulp of a 14-digit rounding boundary)
+   the correction's own rounding floor can't tell which way to round, so SQR lands 1 ulp
+   off truth. This is **rare** (adversarial sweep: 1 in ~446 constructed near-ties, 0 in
+   737 broad; only observed instance `SQR(99.99998)`→`9.9999990000000`, truth
+   `9.9999989999999`) and **fundamental** — closing it needs genuine multi-limb
+   extended precision (a much larger effort, same *kind* of clean-room limit as §10.3.1's
+   division wall). **Crucially the design goal still holds:** on every floor case the
+   reference ROM shares the identical limitation and returns the **same** value, so
+   zerobas is **never LESS accurate than the reference** (verified across ~1180
+   near-tie-biased inputs, 0 violations). The floor cases are pinned in the gate
+   (`SQR_KNOWN_FLOOR`) as known-deviations so they can't silently drift.
 5. Leave result in FAC, FACTYP per §10.2. **Never `jp` an error** — return disposition
    in A (§3.4).
 

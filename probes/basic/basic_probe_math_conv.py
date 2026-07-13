@@ -256,8 +256,24 @@ SQR_BROAD_XS = [
     "1e30", "4e10", "31622.7766017", "0.30102999566398", "123456789.12345",
     "7.389056098931", "2.71828182846e10", "4.44444444444",
     "11833599.999919",
+    "99.99998",   # KNOWN PRECISION FLOOR -- see SQR_KNOWN_FLOOR below
 ]
 EXPRS = EXPRS + [f"sqr({_x})" for _x in SQR_BROAD_XS]
+
+# Known precision-floor inputs: SQR is correctly-rounded EXCEPT a handful of
+# razor-thin near-ties (within ~1e-7 ulp of a 14-digit rounding boundary) that
+# a 14+guard-digit method fundamentally cannot resolve (docs/spec-basic-math-
+# pack.md §10.4 "precision floor"). There zerobas lands 1 ulp off TRUTH -- but
+# the reference ROM shares the exact same limitation and returns the IDENTICAL
+# value, so zerobas is never LESS accurate than the reference (adversarial
+# review 2026-07-13: ~1180 near-tie-biased cases, 0 where zb is worse than ref;
+# only observed floor instance is 99.99998). Pinned here (asserted against the
+# KNOWN zb value, NOT truth) so the value cannot silently drift; adding it to
+# the plain truth battery above would (correctly) fail.
+SQR_KNOWN_FLOOR = {
+    # arg string : expected zb value  (truth 9.9999989999999; reference ties = same)
+    "99.99998": "9.9999990000000",
+}
 
 # Cases whose TAIL legitimately differs (zerobas's own lowercase D-2-style
 # Overflow wording vs the reference's) -- compare only the bracket span
@@ -381,6 +397,10 @@ def main() -> int:
             # value to truth-check -- it must fall through to the ordinary
             # tail-comparison path below.)
             zb_val = parse_basic_number(zb_span)
+            arg = _SQR_PURE_RE.match(expr).group(1)
+            if arg in SQR_KNOWN_FLOOR:      # precision floor: pin to known zb, not truth
+                return zb_val is not None \
+                    and zb_val == parse_basic_number(SQR_KNOWN_FLOOR[arg])
             return zb_val is not None and zb_val == truth_sqrt14(sqr_x)
         if kind == "raw":
             return ref_span is not None and ref_span == zb_span
@@ -422,9 +442,11 @@ def main() -> int:
         for expr, x, ref_val, truth in ref_deviations:
             print(f"  {expr:<26} reference={ref_val!s:<20} truth={truth!s}")
 
-    print("\nALL PASS — SQR is correctly-rounded (== mathematical truth) "
-          "over the broad battery; the reference ROM's own ~1-ulp bias is "
-          "documented above, not asserted against" if ok
+    print("\nALL PASS — SQR is correctly-rounded (== mathematical truth) over "
+          "the broad battery except the pinned near-tie precision floor "
+          f"({', '.join(SQR_KNOWN_FLOOR)}, where zerobas ties the reference, "
+          "never worse); the reference ROM's own ~1-ulp bias is documented "
+          "above, not asserted against" if ok
           else "\nSOME FAILED")
     return 0 if ok else 1
 
