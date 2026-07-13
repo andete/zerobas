@@ -130,7 +130,10 @@ EXPRS = [
     # guard-digit ties round TOWARD ZERO on the reference; effective-ADD
     # (like-sign combine) ties stay AWAY FROM ZERO (half-up, unchanged) --
     # keyed on the effective op, not the surface +/- token.
-    "2-5e-14", "5e-14-2", "8.5-5e-14", "100-5e-12",
+    "2-5e-14", "5e-14-2", "8.5-5e-14", "200-5e-12",  # 200-: real large-mag tie
+    # (NB: 100-5e-12 is NOT a tie -- 100's lead digit cancels, the guard is
+    # absorbed by the leading-zero renormalise -> exact 99.999999999995; use a
+    # lead-digit>=2 magnitude like 200 so k=0 keeps guard==5 reaching the nudge.)
     "2+(-5e-14)",               # '+' token, opposite signs -> effective subtract
     "-1-5e-14", "2-(-5e-14)",   # '-' token, like signs -> effective add (regression)
     "2-4e-14", "2-6e-14",       # near-tie both sides, unchanged on both machines
