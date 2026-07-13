@@ -654,3 +654,59 @@ arga_pack_fac — NO new page-0 relocations); `subrom-acceptance`/`subrom-inttes
 `float/string/input-acceptance`, reloc, kwtable single-copy green. **Fable review of
 the whole slice** (standing float-pack lesson), including a per-input sim-vs-hardware
 differential over the gate batteries.
+
+### 12.9 Implementation outcome (2026-07-13) — SHIPPED
+
+Implemented (Sonnet on §12, Fable adversarial review after — the §8.5 split). All
+§12.8 gates GREEN, independently re-run by the reviewer: `math-acceptance` ALL PASS
+(**EXP 24/32 correctly-rounded, worst 1 ulp; LOG 26/35, worst 2 ulp** — floors set
+23/25), `unit-test` 45/45, tenant-closure 118 routines all page-0, subrom-acceptance/
+inttest, float/string/input-acceptance, reloc + kwtable single-copy, **lean
+`basic.rom` byte-identical to HEAD's** (SHA-256 verified twice, agent + reviewer).
+
+**One real CONTRACT bug (mine, §12.4 step 8), found live by the implementer's gate
+run:** the "FAC := res·10^n via fp_mul; round_and_finalize disposes borderline"
+design missed that `fp_mul` runs `check_preexp_bounds` as a **pre-normalisation
+gate** (`dexpA+dexpB > 63 → FPERR=1` even when the true product fits) — `EXP(145.062)`,
+a sim-proven exact anchor, spuriously overflowed (p<1 → dexp(p)=0, scale-record
+dexp=64, preExp=64>63). Verified from float-arith.asm source by the reviewer. Fix
+(agent's, ratified): rescale by adjusting p's OWN dexp field directly (a pure decimal
+shift — fp_sqrt's SQRT_K precedent) and dispose via `fp_add` with a **dexp-matched
+zero** operand (fp_add has NO pre-check; round_and_finalize's post-check on the TRUE
+dexp does the disposition). The first fix attempt used a canonical dexp=0 zero and hit
+a second trap — fp_add's alignment adopts the LARGER dexp, corrupting any result with
+negative true dexp (caught live via EXP(−10) etc.) — hence the dexp-matched zero. The
+sim was NOT wrong (it models value semantics, which the fixed asm now matches); the
+contract's step-8 mechanism was.
+
+**Sim-vs-hardware per-input differential (§12.8):** LOG matched the sim
+**bit-for-bit on all 35 battery inputs**. EXP had 6 inputs where hardware measured
+1 ulp where the sim predicted exact — all within the sim's documented
+no-sticky-digit modelling limit, which is precisely what EXP_MAX_ULP's +1 margin was
+sized for. No unexplained disagreement.
+
+**Accepted implementation deviations (agent-flagged):** (1) `sub/equates.inc` not
+touched — the ATN precedent never declared tenant indices there (sub_p1_table is
+positional); (2) the 8 FACTYP-leak compound rows route to a truth-based check
+(±6 ulp) instead of ATN's raw reference-tail compare — the EXP/LOG reference is
+imprecise enough (e.g. `exp(1)+0.5` prints …588 vs truth …590) that a reference
+compare would fail on REFERENCE error, not ours; the rows still catch a real
+FACTYP-narrowing bug (thousands of ulp); (3) the PEEK row is `exp(peek(0)\100)` — a
+bare `exp(peek(0))` overflows (PEEK(0)=243, the BIOS DI opcode); LOG's is
+`log(peek(0)+1)`.
+
+**Informational finds:** the reference's own `EXP(-200)` throws `Overflow` (a full
+disposition BUG in the reference — the true answer underflows to 0, which zerobas
+returns); its `EXP(88)` is −45 ulp off truth; its LOG misses truth on 19/35 of our
+battery. All captured in the gate's informational reports, never asserted against.
+
+**Fable review verdict: SHIP.** Constants/tables independently re-derived from the
+emitted bytes (all 41 records byte-exact vs closed forms; both polys re-validated on
+a 2001-point dense grid: EXP 7.9e-17, LOG 1.9e-17); both tenant bodies traced
+step-by-step against §12.4/§12.5 (cmp16 signed-compare, ×10 digit-extraction loop,
+two's-complement m/n split, fold/e′ interaction hand-traced for x=0.99/0.5/0.05,
+RAM live-ranges, canonical-operand discipline); both fp_mul-pre-check claims verified
+from float-arith.asm source; stubs traced (the `sub 4 / jp p` signed dexp test is
+correct over the full −64..63 range). One nit fixed (MATH_N byte-count comment).
+**NEXT = 2c `^`** (integer exponent = exact repeated-multiply; fractional =
+`EXP(y·LOG(x))`, unlocked by this slice).

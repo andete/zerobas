@@ -61,7 +61,11 @@ SUB_SRC   := sub/sub.asm
 # sub/fp_atan.asm + sub/math-coeffs.inc (math pack slice 2a, docs/spec-basic-
 # mathpack-slice2.md §11): the ATN tenant body + its GENERATED FPNUM coefficient
 # table (tools/gen_math_coeffs.py, rule below) -- same staleness hazard, same fix.
+# sub/fp_exp.asm + sub/fp_log.asm (math pack slice 2b, docs/spec-basic-mathpack-
+# slice2.md §12): the EXP/LOG tenant bodies -- same staleness hazard, same fix
+# (math-coeffs.inc already listed above covers their shared coefficient tables).
 SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
+             sub/fp_exp.asm sub/fp_log.asm \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
              sub/basic-resident-abi.inc
 SUB_ROM   := $(BUILD)/sub.rom

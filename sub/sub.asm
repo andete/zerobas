@@ -229,6 +229,18 @@ sub_p1_table:
                                                 ;   basic-mathpack-slice2.md §11) -- the
                                                 ;   FIRST transcendental tenant. Main-ROM
                                                 ;   stub is basic/expr.asm `evmc_atn`.
+                jp      fp_exp                  ; index 3 (SUBROM_IDX_EXP): EXP(x)'s
+                                                ;   table-assisted range reduction +
+                                                ;   minimax-polynomial body (math pack
+                                                ;   slice 2b, docs/spec-basic-mathpack-
+                                                ;   slice2.md §12). Main-ROM stub is
+                                                ;   basic/expr.asm `evmc_exp`.
+                jp      fp_log                  ; index 4 (SUBROM_IDX_LOG): LOG(x)'s
+                                                ;   split + breakpoint-table reduction +
+                                                ;   minimax-polynomial body (math pack
+                                                ;   slice 2b, docs/spec-basic-mathpack-
+                                                ;   slice2.md §12). Main-ROM stub is
+                                                ;   basic/expr.asm `evmc_log`.
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -265,6 +277,17 @@ sub_p1_ping:
 ; ROM's own coefficients, which are binary-format anyway).
                 include "math-coeffs.inc"
                 include "fp_atan.asm"
+
+; fp_exp + fp_log (math pack slice 2b, docs/spec-basic-mathpack-slice2.md
+; §12): the THIRD and FOURTH page-1 tenants, delivered as a matched pair --
+; both reuse fp_atan.asm's fat_copy18/fp_poly_horner directly (same
+; assembly unit) and fp_exp.asm's own new fexp_cmp16/fexp_tbl18addr helpers
+; (fp_log.asm calls the latter too, see each file's own header for the
+; reuse rationale). Same math-coeffs.inc (already included above) supplies
+; EXP_COEF/LOG_COEF/EXP_RC/EXP_C1/EXP_C2/LN10_C1/LN10_C2/POW8_TBL/EXP_TCOR/
+; LNK_TBL/NEGLNK_TBL/LOG_BP.
+                include "fp_exp.asm"
+                include "fp_log.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF

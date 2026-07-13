@@ -258,6 +258,14 @@ SQR_TOKEN       equ     $87     ; SQR(x) -> $FF $87
 ; COS $8C . TAN $8D . ATN $8E . RND $88 (SIN/LOG/EXP/COS/TAN/RND not yet
 ; implemented -- later sub-slices).
 ATN_TOKEN       equ     $8E     ; ATN(x) -> $FF $8E
+; Math pack slice 2b (Phase 3, repack-only -- docs/spec-basic-mathpack-
+; slice2.md §12.2). EXP/LOG: same $FF-prefixed function-token table, MSX2
+; TH Table 2.20 + black-box VG-8020 crunch capture (probes/basic/basic_
+; probe_math_conv.py, §1.4). Interleaves cleanly with the slice-2a comment
+; above: SIN $89 . LOG $8A . EXP $8B . COS $8C . TAN $8D . ATN $8E . RND $88
+; (SIN/COS/TAN/RND not yet implemented -- later sub-slices).
+EXP_TOKEN       equ     $8B     ; EXP(x) -> $FF $8B
+LOG_TOKEN       equ     $8A     ; LOG(x) -> $FF $8A
 ; Memory / I-O access tokens (MSX2 TH Table 2.20; oracle-confirmed byte-for-byte
 ; via basic_probe_crunch.py — see PROVENANCE.md). VPOKE / OUT are one-byte
 ; statement tokens; VPEEK / INP are $FF-prefixed two-byte function tokens (like
@@ -1305,6 +1313,22 @@ HORNER_PTR      equ     FOUTBUF+19  ; fp_poly_horner's own advancing coeff-
                                 ; same reuse as HORNER_CNT above) -- HL is
                                 ; clobbered by the same calls, so the pointer
                                 ; must be stashed across each iteration too (2)
+; --- Math pack slice 2b RAM (repack build only, docs/spec-basic-mathpack- --
+; slice2.md §12.6) -- two MORE aliases over the SAME already-justified SQR
+; cells (RAM below DRVA_DPB is still exhausted, no new claim permitted):
+; fp_exp/fp_log's own n8/e' (16-bit signed int) and m/j (1 byte) scratch.
+; SQR/ATN/EXP/LOG never run concurrently (one factor evaluated at a time),
+; so aliasing fp_atan's own MATH_SIGN/MATH_RECIP cells here is safe by the
+; exact same argument fp_atan's own header already makes.
+MATH_N          equ     SQRT_K  ; fp_exp's n8 (steps 2-4)/n (steps 4-8) or
+                                ; fp_log's e' (whole routine) -- SIGNED int16,
+                                ; 2 bytes spanning SQRT_K+SQRT_ITER
+                                ; ($F192-$F193, an alias of fp_atan's
+                                ; MATH_SIGN+MATH_RECIP taken TOGETHER as one
+                                ; word instead of two independent flags) (2)
+MATH_J          equ     SQRT_POW10  ; fp_exp's m (0..7) or fp_log's j (0..8),
+                                ; 1 byte; alias of fp_atan's MATH_BREAK
+                                ; ($F194), same reuse argument (1)
 JIFFY           equ     $FC9E   ; MSX software clock, bumped by the timer ISR (MSX2 TH work area)
 ; Dispatch ABI (mirror of sub/equates.inc — the append-only page-0 entry table).
 ; IX = SUBROM_ENTRY_BASE_P0 + 3*index selects a tenant; never renumber an index.
@@ -1337,6 +1361,14 @@ SUBROM_IDX_ATN       equ 2      ; fp_atan tenant (math pack slice 2a, sub/
                                 ; page-1 tenant (docs/spec-basic-mathpack-
                                 ; slice2.md §11.1). Main-ROM stub is
                                 ; basic/expr.asm `evmc_atn`.
+SUBROM_IDX_EXP       equ 3      ; fp_exp tenant (math pack slice 2b, sub/
+                                ; fp_exp.asm), docs/spec-basic-mathpack-
+                                ; slice2.md §12.2. Main-ROM stub is
+                                ; basic/expr.asm `evmc_exp`.
+SUBROM_IDX_LOG       equ 4      ; fp_log tenant (math pack slice 2b, sub/
+                                ; fp_log.asm), docs/spec-basic-mathpack-
+                                ; slice2.md §12.2. Main-ROM stub is
+                                ; basic/expr.asm `evmc_log`.
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

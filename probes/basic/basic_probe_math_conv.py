@@ -179,6 +179,87 @@ ATN_MAX_ULP = 2
 ATN_EXACT_FLOOR = 40
 
 
+# --- EXP/LOG truth oracles (math pack slice 2b, docs/spec-basic-mathpack-
+# slice2.md §12.7): the SAME "the oracle is mathematical truth, not the
+# reference" framework as SQR/ATN. Python's `decimal` has native .exp()/.ln()
+# (unlike atan), so these are plain high-precision Decimal calls -- still an
+# INDEPENDENT computation from zerobas's own table-reduction+minimax-Horner
+# chain, used only as the host truth oracle for the gate. truth_exp14 also
+# applies the SAME MAXV/MINV engine-boundary disposal tools/sim_math_chain.py's
+# own exp_truth() does, so it represents what a perfect 14-digit engine's
+# OWN defined overflow("Overflow")/underflow(0) behaviour looks like -- not
+# raw unbounded math -- which lets the three underflow-to-0 dispositions
+# (EXP(-147.4)/(-200)/(-1000), §12.7) flow through the ordinary pure-call
+# truth assertion with no special-casing (LOG never overflows/underflows its
+# own FPNUM range for any x in its stub-guaranteed positive domain, so
+# truth_log14 needs no such floor).
+_EXP_MAXV = D("9.9999999999999E+62")   # FPNUM magnitude ceiling (dexp +63)
+_EXP_MINV = D("1E-64")                 # smallest positive normal (dexp -63)
+
+
+def _round14(val: "decimal.Decimal") -> "decimal.Decimal":
+    """Correctly-rounded (half-up) 14-significant-digit re-quantization of an
+    already-high-precision Decimal -- the same quantize shape truth_sqrt14/
+    truth_atan14 each use."""
+    digits = val.as_tuple().digits
+    exp = val.as_tuple().exponent
+    if len(digits) <= 14:
+        return val
+    quant_exp = exp + (len(digits) - 14)
+    quantum = D(1).scaleb(quant_exp)
+    with decimal.localcontext() as ctx:
+        ctx.prec = 60
+        ctx.rounding = decimal.ROUND_HALF_UP
+        return val.quantize(quantum)
+
+
+def truth_exp14(x) -> "decimal.Decimal | str":
+    """Host-computed, correctly-rounded 14-significant-digit exp(x), WITH the
+    engine's own MAXV/MINV boundary disposal (see module comment above)."""
+    x = D(x)
+    with decimal.localcontext() as ctx:
+        ctx.prec = 50
+        val = x.exp()
+    rounded = _round14(val)
+    if rounded > _EXP_MAXV:
+        return "Overflow"
+    if rounded != 0 and abs(rounded) < _EXP_MINV:
+        return D(0)
+    return rounded
+
+
+def truth_log14(x) -> "decimal.Decimal":
+    """Host-computed, correctly-rounded 14-significant-digit ln(x) (x>0)."""
+    x = D(x)
+    with decimal.localcontext() as ctx:
+        ctx.prec = 50
+        val = x.ln()
+    return _round14(val)
+
+
+# EXP/LOG documented-deviation bounds (§12.1/§12.7, pre-proven by
+# tools/sim_math_chain.py BEFORE this asm/probe was written -- the §11.10
+# lesson applied forward): worst-case ulp measured by the sim over its own
+# ~4000-input batteries, PLUS a margin for EXP (the sim's own no-sticky-digit
+# modelling limit, see sim_math_chain.py's module comment). Per-input never-
+# worse-than-reference is NOT asserted (§12.1: the reference is itself 3-45
+# ulp (EXP) / 1-5 ulp (LOG) off truth, so that invariant would be vacuous).
+EXP_MAX_ULP = 2
+LOG_MAX_ULP = 4
+# Battery-wide correctly-rounded floors (drift tripwires, ATN_EXACT_FLOOR
+# precedent): fail if fewer than this many pure EXP/LOG inputs are exactly
+# == truth, catching a uniform ulp degradation the per-input bound alone
+# would miss. MEASURED on THIS probe's own (smaller) hardware battery
+# 2026-07-13 (VG-8020 reference / C-BIOS_MSX1_EU_REPACK_DISK zerobas):
+# EXP 24/32 correctly-rounded (worst 1 ulp); LOG 26/35 correctly-rounded
+# (worst 2 ulp) -- both comfortably inside their §12.1 sim-predicted
+# envelopes (92.0%/87.3% on the sim's own much larger ~4000-input battery).
+# Floor set to (measured-1) to leave a 1-count margin for a benign last-ulp
+# shift, same rationale as ATN_EXACT_FLOOR.
+EXP_EXACT_FLOOR = 23
+LOG_EXACT_FLOOR = 25
+
+
 def ulp_dist(val, truth) -> "decimal.Decimal | None":
     """Distance |val - truth| in units of the 14th significant digit of truth."""
     if val is None or truth is None:
@@ -225,6 +306,8 @@ TOKENS = [
     ("CDBL", "a=cdbl(1)", 0xA0),
     ("SQR",  "a=sqr(1)",  0x87),
     ("ATN",  "a=atn(1)",  0x8E),
+    ("EXP",  "a=exp(1)",  0x8B),
+    ("LOG",  "a=log(1)",  0x8A),
 ]
 
 
@@ -400,6 +483,121 @@ EXPRS = EXPRS + [f"atn({_x})" for _x in ATN_BROAD_XS]
 # single-vs-double literal input widen path, function-over-PEEK.
 EXPRS = EXPRS + ["atn(1)+0.5", "atn(0.5!)", "atn(0.5#)", "atn(peek(0))"]
 
+# --- EXP value battery (math pack slice 2b, §12.7): the oracle is
+# MATHEMATICAL TRUTH (truth_exp14 above), same framework as SQR/ATN -- every
+# entry is a PURE `exp(x)` call (matched by _EXP_PURE_RE below) so its
+# assertion routes to truth_exp14(x), never to the reference span. Covers:
+# the zero/tiny/mid-range/decimal-shape characterization anchors, the
+# r~=0 stress points (ln10 multiples, where the n8 reduction lands exactly
+# on a decade), the n8-boundary straddle (both sides of a table-index flip),
+# and the two FINITE range straddles (145.062/-147.3, still in-range,
+# value-asserted) plus the three deep-underflow-to-0 dispositions (these
+# flow through the SAME truth assertion -- truth_exp14's own MAXV/MINV floor
+# gives exactly 0, matching the tenant's own silent-underflow behaviour, so
+# no special-casing is needed here; contrast the THREE OVERFLOW dispositions
+# below, which abort with no value and so must be excluded from this pure-
+# call routing via SPAN_ONLY).
+EXP_BROAD_XS = [
+    "0",
+    "1e-13", "-1e-13", "1e-9", "-1e-9", "0.001", "-0.001", "0.5", "-0.5",
+    "1", "-1", "2", "-2", "10", "-10", "20", "-20",
+    "88", "100", "142.7",
+    # --- r~=0 stress points (ln10 multiples -- n8 reduction lands exactly
+    # on a decade boundary) --------------------------------------------------
+    "2.3025850929940", "-2.3025850929940", "4.6051701859881",
+    "23.025850929940",
+    # --- n8-boundary straddle (both sides of a table-index flip) -----------
+    "0.14391156831213", "0.14391156831214", "-0.14391156831213",
+    # --- finite range straddles (still in-range, value-asserted) ----------
+    "145.062", "-147.3",
+    # --- deep underflow-to-0 (truth_exp14's own MINV floor gives 0) --------
+    "-147.4", "-200", "-1000",
+]
+EXPRS = EXPRS + [f"exp({_x})" for _x in EXP_BROAD_XS]
+
+# --- LOG value battery (§12.7): same truth-oracle framework. Covers: the
+# near-1 ladder (both the j-scan and the e'=-1/e'=0 boundary), mid-range/
+# decimal-shape anchors, the extreme decades (including the MAXV/MINV
+# corners), the j=8 FOLD zone (x in [0.866,1), the >2-ulp-worst region per
+# §12.1), breakpoint straddles (both scan outcomes, LOG_BP[1]/[4]/[8] +-1
+# ulp), and the two exact K-hat hits (s=0 rails, POW8_TBL[1]/[6]).
+LOG_BROAD_XS = [
+    "1",
+    # --- 1 +- 10^-k ladder (near-1 accuracy / j-scan+e' boundary) ----------
+    "1.1", "0.9", "1.00001", "0.99999", "1.000000001", "0.999999999",
+    "1.0000000000001", "0.9999999999999",
+    "0.99", "2", "3", "7", "2.7182818284590", "0.5", "0.25", "0.1",
+    "0.001", "1000",
+    # --- extreme decades (incl. MAXV/MINV corners) -------------------------
+    "1E10", "1E-10", "1E62", "1E-64", "9.9999999999999E62",
+    # --- j=8 fold zone (x in [0.866,1), the >2-ulp-worst region, §12.1) ----
+    "0.87", "0.9245459892507", "0.95",
+    # --- breakpoint straddles (both scan outcomes; LOG_BP[1]/[4]/[8] +-1
+    # ulp as 14-sig literals) -----------------------------------------------
+    "1.1547819846894", "1.1547819846896",
+    "2.7384196342643", "2.7384196342645",
+    "8.6596432336006", "8.6596432336008",
+    # --- exact K-hat hits (s=0 rails: POW8_TBL[1]/[6]) ---------------------
+    "1.3335214321633", "5.6234132519035",
+]
+EXPRS = EXPRS + [f"log({_x})" for _x in LOG_BROAD_XS]
+
+# --- EXP/LOG FACTYP-leak (§12.7): function-over-float (result must stay
+# DOUBLE), single-vs-double literal input widen path, function-over-PEEK.
+# EXP's PEEK case uses `\100` (integer division, still FACTYP=2 into EXP) --
+# a bare `exp(peek(0))` was found LIVE to overflow (this machine's PEEK(0)
+# is 243, well past EXP's ~146 ceiling), an accidental domain hit ATN's own
+# TOTAL-function precedent (`atn(peek(0))`) never has to dodge; `\100`
+# guarantees a small in-range int operand regardless of the actual byte at
+# address 0. LOG's PEEK case adds 1 to keep the operand positive -- LOG's
+# domain check would otherwise turn a stray PEEK(0)==0 into an unrelated
+# error.
+EXPRS = EXPRS + ["exp(1)+0.5", "exp(0.5!)", "exp(0.5#)", "exp(peek(0)\\100)",
+                 "log(10)+0.5", "log(2!)", "log(2#)", "log(peek(0)+1)"]
+
+# --- EXP/LOG FACTYP-leak rows route to a TRUTH-based check, NOT the ---------
+# reference (departs from the ATN precedent, where the identically-shaped
+# `atn(1)+0.5` etc. compare cleanly against the reference span). Found LIVE
+# (this probe's own characterization run, --skip-tokens --only "exp("/"log("):
+# EXP/LOG's own reference is markedly less accurate than ATN's near-
+# correctly-rounded one (§12.1: only ~15%/~30% exact) and, unlike ATN's
+# `atn(1)+0.5` (whose 0.785->1.285 digit-COUNT shift happens to absorb a
+# last-digit slip), these particular compounds do NOT get that masking
+# shift: `exp(1)+0.5` printed 3.2182818284588 on the reference vs zerobas's
+# truth-exact 3.2182818284590 (2 ulp, matching EXP's own -3-ulp-mean
+# characterization), and `log(2!)`/`log(2#)` likewise (reference
+# .69314718055993 vs truth .69314718055995). A raw reference-tail compare
+# would fail these NOT because of a zerobas bug but because the reference
+# itself is imprecise here -- so each routes to its own truth-based
+# expected value (still exercising the SAME FACTYP-leak/widen-path
+# plumbing) with a generous ulp allowance that comfortably absorbs the
+# compound operation's own final re-rounding while still catching a real
+# FACTYP-narrowing bug (which would be many thousands of ulp off, not a
+# handful).
+_MATH_FACTYP_LEAK_TRUTH = {
+    "exp(1)+0.5":        lambda: truth_exp14("1") + D("0.5"),
+    "exp(0.5!)":         lambda: truth_exp14("0.5"),
+    "exp(0.5#)":         lambda: truth_exp14("0.5"),
+    "exp(peek(0)\\100)": lambda: truth_exp14("2"),   # this machine's PEEK(0)=243
+    "log(10)+0.5":       lambda: truth_log14("10") + D("0.5"),
+    "log(2!)":           lambda: truth_log14("2"),
+    "log(2#)":           lambda: truth_log14("2"),
+    "log(peek(0)+1)":    lambda: truth_log14("244"),  # PEEK(0)+1 = 243+1
+}
+_MATH_FACTYP_LEAK_ULP = 6
+
+# --- EXP/LOG domain/disposition rows (§12.7, per-machine wording) ---------
+# LOG(0)/LOG(-1): "illegal function call" (SPAN_ONLY below, evmc_sqr_err's
+# shape verbatim -- own lowercase D-2 wording vs the reference's). EXP's
+# THREE overflow paths each exercise a DIFFERENT disposition point: EXP(146)
+# is round_and_finalize's own true-magnitude bound (the tenant's step-8
+# scale multiply); EXP(200) is the tenant's own internal n8-bound (n8>552,
+# §12.4 step 3); EXP(1000) is evmc_exp's own coarse stub pre-check
+# (dexp>=4). All three abort with NO printed value (SPAN_ONLY, same as the
+# CINT-Overflow precedent) -- contrast the underflow trio above, which DOES
+# print a value (0) and so flows through the ordinary truth assertion.
+EXPRS = EXPRS + ["log(0)", "log(-1)", "exp(146)", "exp(200)", "exp(1000)"]
+
 # --- empty-argument / empty parenthesised expression -> "syntax error" -------
 # (spec-basic-empty-expr-syntax-error.md, D-F2-3, 2026-07-13). The reference
 # raises "Syntax error"; zerobas raises its OWN lowercase "syntax error" (the D-2
@@ -463,7 +661,8 @@ ATN_DEVIATION_WORSE_THAN_REF = [       # zb 1-2 ulp off where the reference is e
 # sqr(x<0): same idiom -- zerobas's "illegal function call" vs the
 # reference's "Illegal function call" (§10.2/§3.4 disposition wording).
 SPAN_ONLY = {"cint(32768)", "cint(-32769)", "cint(40000.5)", "cint(32768.1)",
-             "sqr(-1)", "sqr(-1e-9)", "sqr(-4)"}
+             "sqr(-1)", "sqr(-1e-9)", "sqr(-4)",
+             "log(0)", "log(-1)", "exp(146)", "exp(200)", "exp(1000)"}
 
 # --- SQR pure-call matcher: routes a plain `sqr(x)` expression to the -------
 # truth assertion (compare(), below) instead of the reference. Deliberately
@@ -496,6 +695,40 @@ def _atn_arg(expr: str):
     """Return the Decimal argument if `expr` is a pure `atn(x)` call
     (x a bare numeric literal), else None."""
     m = _ATN_PURE_RE.match(expr)
+    if not m:
+        return None
+    lit = m.group(1).replace("D", "E").replace("d", "e")
+    try:
+        return D(lit)
+    except decimal.InvalidOperation:
+        return None
+
+# --- EXP/LOG pure-call matchers: same shape/rationale as _SQR_PURE_RE/ ------
+# _ATN_PURE_RE above -- route a plain `exp(x)`/`log(x)` call to the truth
+# assertion, never the reference; the FACTYP-leak compounds (`exp(1)+0.5`,
+# `log(2!)`, `exp(peek(0))`, ...) and the SPAN_ONLY domain/overflow rows
+# never match (the latter excluded explicitly in compare(), same as sqr/atn).
+_EXP_PURE_RE = re.compile(r"^exp\((-?[0-9.eEdD+-]+)\)$")
+_LOG_PURE_RE = re.compile(r"^log\((-?[0-9.eEdD+-]+)\)$")
+
+
+def _exp_arg(expr: str):
+    """Return the Decimal argument if `expr` is a pure `exp(x)` call
+    (x a bare numeric literal), else None."""
+    m = _EXP_PURE_RE.match(expr)
+    if not m:
+        return None
+    lit = m.group(1).replace("D", "E").replace("d", "e")
+    try:
+        return D(lit)
+    except decimal.InvalidOperation:
+        return None
+
+
+def _log_arg(expr: str):
+    """Return the Decimal argument if `expr` is a pure `log(x)` call
+    (x a bare numeric literal), else None."""
+    m = _LOG_PURE_RE.match(expr)
     if not m:
         return None
     lit = m.group(1).replace("D", "E").replace("d", "e")
@@ -540,6 +773,13 @@ RAW_LINES = [
     # accuracy difference between zerobas and the reference -- this pins the
     # int-store path, not atan's own rounding (that's the truth battery's job).
     'a%=atn(1):print"[";a%;"]"',
+    # EXP/LOG FACTYP-leak into a typed INT var (§12.7): A%=EXP(1) truncates
+    # 2.718... to 2, A%=LOG(100) truncates 4.605... to 4 -- both sides agree
+    # trivially at this coarse an integer regardless of the 14th-digit
+    # accuracy difference between zerobas and the reference (same reasoning
+    # as the SQR/ATN rows above).
+    'a%=exp(1):print"[";a%;"]"',
+    'a%=log(100):print"[";a%;"]"',
 ]
 
 
@@ -597,6 +837,12 @@ def main() -> int:
             return (ref_span is None and zb_span is None
                     and bool(zb_tail) and "error" in zb_tail.lower()
                     and bool(ref_tail) and "error" in ref_tail.lower())
+        if expr in _MATH_FACTYP_LEAK_TRUTH:
+            zb_val = parse_basic_number(zb_span)
+            if zb_val is None:
+                return False
+            d = ulp_dist(zb_val, _MATH_FACTYP_LEAK_TRUTH[expr]())
+            return d is not None and d <= _MATH_FACTYP_LEAK_ULP
         sqr_x = _sqr_arg(expr) if expr not in SPAN_ONLY else None
         if sqr_x is not None:
             # §10.3.1/§10.6 FINAL: the oracle is mathematical truth, NOT the
@@ -628,6 +874,26 @@ def main() -> int:
                 return False
             d = ulp_dist(zb_val, truth_atan14(atn_x))
             return d is not None and d <= ATN_MAX_ULP
+        exp_x = _exp_arg(expr) if expr not in SPAN_ONLY else None
+        if exp_x is not None:
+            # §12.1/§12.7 (documented bounded deviation, same shape as ATN):
+            # the oracle is mathematical truth, asserted to a BOUND
+            # (<= EXP_MAX_ULP) rather than == truth.
+            zb_val = parse_basic_number(zb_span)
+            if zb_val is None:
+                return False
+            truth = truth_exp14(exp_x)
+            if not isinstance(truth, D):
+                return False    # defensive -- the battery excludes overflow
+            d = ulp_dist(zb_val, truth)
+            return d is not None and d <= EXP_MAX_ULP
+        log_x = _log_arg(expr) if expr not in SPAN_ONLY else None
+        if log_x is not None:
+            zb_val = parse_basic_number(zb_span)
+            if zb_val is None:
+                return False
+            d = ulp_dist(zb_val, truth_log14(log_x))
+            return d is not None and d <= LOG_MAX_ULP
         if kind == "raw":
             return ref_span is not None and ref_span == zb_span
         if expr in SPAN_ONLY:
@@ -642,6 +908,10 @@ def main() -> int:
     ref_deviations = []     # (expr, x, reference_val, truth) -- reference != truth (informational)
     atn_ref_deviations = []  # same, for ATN (§11.7's documented-deviation report)
     atn_zb_by_x = {}         # Decimal(x) -> zb_val, for the oddness cross-check below
+    exp_ref_deviations = []  # same, for EXP (§12.7's documented-deviation report)
+    log_ref_deviations = []  # same, for LOG
+    exp_zb_by_x = {}         # Decimal(x) -> zb_val, for the accuracy summary below
+    log_zb_by_x = {}
     for (expr, line, kind), good, ref_raw, zb_raw in zip(
             cases, verdicts, ref_raws, zb_raws):
         ok = ok and good
@@ -668,6 +938,24 @@ def main() -> int:
             truth = truth_atan14(atn_x)
             if ref_val is not None and ref_val != truth:
                 atn_ref_deviations.append((expr, atn_x, ref_val, truth))
+        exp_x = _exp_arg(expr) if expr not in SPAN_ONLY else None
+        if exp_x is not None:
+            zb_val = parse_basic_number(result_span(zb_raw))
+            if zb_val is not None:
+                exp_zb_by_x[exp_x] = zb_val
+            ref_val = parse_basic_number(ref_span)
+            truth = truth_exp14(exp_x)
+            if ref_val is not None and isinstance(truth, D) and ref_val != truth:
+                exp_ref_deviations.append((expr, exp_x, ref_val, truth))
+        log_x = _log_arg(expr) if expr not in SPAN_ONLY else None
+        if log_x is not None:
+            zb_val = parse_basic_number(result_span(zb_raw))
+            if zb_val is not None:
+                log_zb_by_x[log_x] = zb_val
+            ref_val = parse_basic_number(ref_span)
+            truth = truth_log14(log_x)
+            if ref_val is not None and ref_val != truth:
+                log_ref_deviations.append((expr, log_x, ref_val, truth))
 
     if ref_deviations:
         print(f"\n--- SQR reference-deviation report ({len(ref_deviations)}/"
@@ -747,14 +1035,97 @@ def main() -> int:
         print(f"\nATN oddness cross-check: {odd_checked // 2} mirrored pair(s) "
               "verified atn(-x) == -atn(x)")
 
+    # --- EXP documented bounded-deviation summary (§12.1/§12.7, same shape
+    # as ATN's above): zerobas EXP is asserted to <= EXP_MAX_ULP of truth,
+    # plus a battery-wide correctly-rounded floor (drift tripwire).
+    exp_worst = D(0); exp_exact = 0; exp_total = 0
+    for x, zb_val in exp_zb_by_x.items():
+        truth = truth_exp14(x)
+        if not isinstance(truth, D):
+            continue
+        d = ulp_dist(zb_val, truth)
+        if d is None:
+            continue
+        exp_total += 1
+        if d == 0:
+            exp_exact += 1
+        if d > exp_worst:
+            exp_worst = d
+    if exp_total:
+        print(f"\n--- EXP accuracy vs mathematical truth ({exp_total} pure exp "
+              f"inputs) -- bound = {EXP_MAX_ULP} ulp (§12.1) ---")
+        print(f"  correctly-rounded (== truth): {exp_exact}/{exp_total}; "
+              f"worst deviation: {exp_worst} ulp (bound {EXP_MAX_ULP}).")
+        if exp_exact < EXP_EXACT_FLOOR:
+            print(f"FAIL  EXP correctly-rounded count {exp_exact} < floor "
+                  f"{EXP_EXACT_FLOOR} -- uniform accuracy regression (all still "
+                  "within bound but the exact-count collapsed).")
+            ok = False
+        print("  DOCUMENTED bounded deviation (§12.1, same framework as ATN's "
+              "§11.10): the 14-digit table-reduction+Horner chain is not "
+              "strictly correctly-rounded; per-input never-worse-than-"
+              "reference is NOT asserted (the reference is itself 3-45 ulp "
+              "off truth here, per the characterization).")
+
+    if exp_ref_deviations:
+        print(f"\n--- EXP reference-deviation report ({len(exp_ref_deviations)}/"
+              f"{len(EXP_BROAD_XS)}) -- INFORMATIONAL ---")
+        print("(inputs where the reference ROM's own EXP misses mathematical "
+              "truth; the reference is a low-accuracy 1980s poly, mean -3 ulp, "
+              "worst -45 @x=88 per §1.1/§12.1. Never asserted against.)")
+        for expr, x, ref_val, truth in exp_ref_deviations:
+            print(f"  {expr:<26} reference={ref_val!s:<20} truth={truth!s}")
+
+    # --- LOG documented bounded-deviation summary (§12.1/§12.7) -------------
+    log_worst = D(0); log_exact = 0; log_total = 0
+    for x, zb_val in log_zb_by_x.items():
+        d = ulp_dist(zb_val, truth_log14(x))
+        if d is None:
+            continue
+        log_total += 1
+        if d == 0:
+            log_exact += 1
+        if d > log_worst:
+            log_worst = d
+    if log_total:
+        print(f"\n--- LOG accuracy vs mathematical truth ({log_total} pure log "
+              f"inputs) -- bound = {LOG_MAX_ULP} ulp (§12.1) ---")
+        print(f"  correctly-rounded (== truth): {log_exact}/{log_total}; "
+              f"worst deviation: {log_worst} ulp (bound {LOG_MAX_ULP}).")
+        if log_exact < LOG_EXACT_FLOOR:
+            print(f"FAIL  LOG correctly-rounded count {log_exact} < floor "
+                  f"{LOG_EXACT_FLOOR} -- uniform accuracy regression (all still "
+                  "within bound but the exact-count collapsed).")
+            ok = False
+        print("  DOCUMENTED bounded deviation (§12.1): every >2-ulp case is in "
+              "the j=8 FOLD path (x in [0.866,1)) where den=m'+1 inherently "
+              "spans 15 digits and d(r)/d(s)=2 doubles the division's own "
+              "rounding -- the same extended-precision wall as the division "
+              "deviation/SQR floor. Per-input never-worse-than-reference is "
+              "NOT asserted (the reference is itself 1-5 ulp off truth here).")
+
+    if log_ref_deviations:
+        print(f"\n--- LOG reference-deviation report ({len(log_ref_deviations)}/"
+              f"{len(LOG_BROAD_XS)}) -- INFORMATIONAL ---")
+        print("(inputs where the reference ROM's own LOG misses mathematical "
+              "truth; mean -0.45 ulp, worst -5 per §1.1/§12.1. Never asserted "
+              "against.)")
+        for expr, x, ref_val, truth in log_ref_deviations:
+            print(f"  {expr:<26} reference={ref_val!s:<20} truth={truth!s}")
+
     print("\nALL PASS — SQR is correctly-rounded (== mathematical truth) over "
           "the broad battery except the pinned near-tie precision floor "
           f"({', '.join(SQR_KNOWN_FLOOR)}, where zerobas ties the reference, "
           f"never worse); ATN is within {ATN_MAX_ULP} ulp of truth over its "
           "broad battery (documented bounded deviation, user sign-off -- ATN's "
           "reference is the one ~correctly-rounded case, and our 14-digit chain "
-          "matches its <=2-ulp envelope), oddness holds exactly; both reference "
-          "ROMs' own biases are documented above, never asserted against" if ok
+          "matches its <=2-ulp envelope), oddness holds exactly; EXP is within "
+          f"{EXP_MAX_ULP} ulp and LOG within {LOG_MAX_ULP} ulp of truth over "
+          "their own broad batteries (documented bounded deviation, §12.1 -- "
+          "both references are low-accuracy on these functions, so our chain "
+          "beats them in aggregate even where a per-input tie isn't asserted); "
+          "every reference ROM's own bias is documented above, never asserted "
+          "against" if ok
           else "\nSOME FAILED")
     return 0 if ok else 1
 

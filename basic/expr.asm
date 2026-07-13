@@ -833,6 +833,10 @@ ev_ff_mathconv:
                 jp      z,evmc_sqr
                 cp      ATN_TOKEN
                 jp      z,evmc_atn
+                cp      EXP_TOKEN
+                jp      z,evmc_exp
+                cp      LOG_TOKEN
+                jp      z,evmc_log
                 jp      ev_ff_strnum        ; not ours -> LEN/ASC/VAL, else ev_f_err
 
 ; --- ev_mc_arg: parse "( <numeric expr> )" from IX (positioned on the -------
@@ -1126,6 +1130,90 @@ evmc_atn:
                 ld      a,8
                 ld      (FACTYP),a
                 jp      flt_to_int16        ; tail: DE := flt_to_int16(FAC)
+
+; --- evmc_log: LOG(x) -> natural logarithm, DOUBLE (math pack slice 2b, ----
+; docs/spec-basic-mathpack-slice2.md §12.6). Same arg-parse + widen shape as
+; evmc_sqr (ev_mc_arg then widen_rhs_operand into ARGA), then a domain check
+; EXTENDED to sign-OR-zero (LOG's total domain is x>0, wider than SQR's
+; x>=0): the sign check (ARGA+FPNUM_SIGN<>0) catches x<0 -- same "sign-first,
+; so a hypothetical -0.0 also errors" order as evmc_sqr -- and a SEPARATE
+; dig15_iszero(ARGA+FPNUM_DIG) check catches x==0 (a canonical +0.0 has
+; sign=0, so the sign check alone would miss it). Both routes to the SAME
+; error tail as evmc_sqr_err (verbatim: FPERR:=3 "illegal function call",
+; DE:=0). Dispatches to fp_log in the sub-ROM PAGE-1 island via subrom_call/
+; SUBROM_ENTRY_BASE_P1+SUBROM_IDX_LOG; same CALSLT-A-not-preserved
+; discipline as evmc_sqr/evmc_atn: fp_log is COMPUTE-ONLY (leaves FAC
+; correct, does not touch FACTYP/DE), so THIS stub sets FACTYP:=8 +
+; refreshes DE via flt_to_int16 after a successful return.
+evmc_log:
+                call    ev_mc_arg
+                ld      hl,ARGA
+                call    widen_rhs_operand
+                ld      a,(ARGA+FPNUM_SIGN)
+                or      a
+                jr      nz,evmc_log_err
+                ld      hl,ARGA+FPNUM_DIG
+                call    dig15_iszero
+                jr      z,evmc_log_err
+                push    ix                  ; save the parser's text-position pointer
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LOG
+                call    subrom_call         ; CF=1 iff sub-ROM absent. Result in FAC.
+                pop     ix
+                jp      c,subrom_absent_error
+                ld      a,8
+                ld      (FACTYP),a
+                jp      flt_to_int16
+evmc_log_err:
+                ld      a,3
+                ld      (FPERR),a
+                ld      de,0
+                ret
+
+; --- evmc_exp: EXP(x) -> e^x, DOUBLE (math pack slice 2b, docs/spec-basic- --
+; mathpack-slice2.md §12.6). Same arg-parse + widen shape as evmc_sqr/
+; evmc_atn, then a COARSE MAGNITUDE disposition instead of a domain error
+; (EXP is total, but the tenant's own n8 table-reduction algebra needs
+; |x|<1000 to keep every downstream dexp inside fp_mul's own preExp
+; envelope, §12.4 step 3): ARGA+FPNUM_DEXP read as a SIGNED byte (safe --
+; every canonical FPNUM's dexp fits widen_fac_to's own -64..63 range, so the
+; high byte is always pure sign-extension); dexp>=4 <=> |x|>=1000 (a TINY x
+; has a NEGATIVE dexp, so this is genuinely a magnitude test, not a sign
+; test). Positive x this large -> Overflow (matches the characterized
+; EXP(1000) disposition). Negative x this large -> the true mathematical
+; answer underflows to 0, so this returns 0 WITHOUT an error (matches
+; EXP(-1000)) -- same "fall into the common successful tail" shape as any
+; other non-error disposition. Otherwise dispatch to fp_exp (SUBROM_IDX_EXP).
+evmc_exp:
+                call    ev_mc_arg
+                ld      hl,ARGA
+                call    widen_rhs_operand
+                ld      a,(ARGA+FPNUM_DEXP) ; low byte -- signed, safe (see
+                                            ; header above)
+                sub     4
+                jp      p,evmc_exp_huge     ; dexp-4 >= 0 (no overflow in
+                                            ; this range) <=> dexp>=4
+                push    ix                  ; save the parser's text-position pointer
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_EXP
+                call    subrom_call         ; CF=1 iff sub-ROM absent. Result in FAC.
+                pop     ix
+                jp      c,subrom_absent_error
+                ld      a,8
+                ld      (FACTYP),a
+                jp      flt_to_int16
+evmc_exp_huge:
+                ld      a,(ARGA+FPNUM_SIGN)
+                or      a
+                jr      z,evmc_exp_overflow
+                xor     a
+                ld      (FAC),a             ; EXP(-huge) -> 0, not an error
+                ld      a,8
+                ld      (FACTYP),a
+                jp      flt_to_int16
+evmc_exp_overflow:
+                ld      a,1
+                ld      (FPERR),a
+                ld      de,0
+                ret
     ENDIF
 
 ; --- ev_f_varptr: VARPTR(<var>) -> address of the variable's value field -----
