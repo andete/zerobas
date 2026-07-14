@@ -83,6 +83,24 @@ byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
 
 ## Open (awaiting next sync)
 
+**[JUDGMENT CALL — mathpack slice 2c, 2026-07-14] `^`'s spurious-overflow surface kept
+bug-for-bug; positive-y int path asserted BIT-IDENTICAL (stronger than the signed
+ATN-shape bar).** Characterization (spec §13.1) revealed the reference's integer `^`
+overflows on inputs whose RESULT fits (`10^62`→Overflow though 1E62 is representable;
+`1D62^1`→Overflow) — an emergent artifact of its LSB-first square-and-multiply feeding
+its multiply's own E1+E2≥64 pre-normalisation gate, which our fp_mul already carries
+IDENTICALLY (probed 6/6 on plain `*`, both machines). Two calls made under
+[[bug-for-bug-compat-over-accuracy]] without an interim sync: (1) we REPRODUCE that
+surface (a user typing `10^62` gets Overflow like the reference, though the value is
+representable — the alternative, a "better" loop shape, would break the bit-identity
+and diverge the error surface); (2) since the composition is then bit-exact for free,
+the gate ASSERTS positive-y int-path bit-identity differentially (exceeds the ratified
+documented-deviation bar; neg-y/frac stay truth-bound: our correctly-rounded div beats
+the reference's low-biased one by ≤1 ulp, and the frac path inherits our own EXP/LOG).
+Also: our `10^-70.5`=0 where the reference throws its own EXP(-162) disposition-bug
+Overflow (the §12.9 reference bug, inherited by its `^`) — kept OURS-correct, captured
+informationally. Flag if either call should flip. Full record spec §13.1/§13.2/§13.8.
+
 **[JUDGMENT CALL — mathpack slice 2b, 2026-07-13] Never-worse invariant shape for
 EXP/LOG = the ATN bounded-deviation form, not per-input strict.** §11.10 asserted "the
 other five functions (references 4–20 ulp off) keep the strict [per-input never-worse]
