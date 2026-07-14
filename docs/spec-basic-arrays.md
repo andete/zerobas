@@ -17,10 +17,12 @@ base 0, no ERASE/OPTION; Q-A2 anchor `ARYTAB` at program-end, ceiling
 INPUT fold in cheaply-or-slice-2; Q-A4 keep scalars/strings in fixed pools through
 slices 1–3, unify in slice 4; Q-A5 include multi-dim in slice 1). This doc covers
 the arc scope, the target memory model, the slice-1 cut, the reference-semantics
-campaign, and (now-resolved) sign-off questions. Next = the oracle characterization
-campaign (§4/§5), then the slice-1 implementation contract; each sub-slice still
-gets its own concrete contract + Fable review before its own code, exactly as the
-float pack, string engine, and math pack slices did.
+campaign, and (now-resolved) sign-off questions. **Oracle characterization DONE
+(§4.1/§5, 2026-07-14)** — all semantics + token pins captured on the stock
+VG-8020; headline finding: `OPTION BASE` is unsupported on MSX1 (dropped from the
+arc; arrays are permanently base 0). Next = the slice-1 implementation contract;
+each sub-slice still gets its own concrete contract + Fable review before its own
+code, exactly as the float pack, string engine, and math pack slices did.
 
 Builds on: the typed-variable store ([spec-basic-float-core.md](spec-basic-float-core.md)
 §11, F3), the string engine ([spec-basic-string-engine.md](spec-basic-string-engine.md)),
@@ -44,9 +46,10 @@ The arc delivers the full DOS1-class MSX-BASIC array surface:
   lvalue (`LET`, `FOR`, `READ`, `INPUT`, `MID$`, `LSET`/`RSET`, file `INPUT#`)
   and as an rvalue (any expression factor).
 - **Auto-dimensioning** — referencing an undeclared array auto-declares it with an
-  upper bound of 10 per dimension (to be oracle-confirmed, §5).
-- **`OPTION BASE 0|1`** — the subscript lower bound.
+  upper bound of 10 per dimension (oracle-confirmed, §4.1).
 - **`ERASE`** — free arrays (and permit re-`DIM`).
+- ~~`OPTION BASE`~~ — **dropped**: MSX-BASIC 1.0 has no such statement (§4.1);
+  arrays are permanently base 0.
 - Reference error surface — `Subscript out of range`, `Redimensioned array`,
   `Out of memory`, plus the existing `Syntax error` for malformed forms.
 
@@ -144,9 +147,9 @@ thinnest vertical slice first.
 
 ### 3.2 Deferred to later slices (arc roadmap)
 
-- **Slice 2 — `OPTION BASE` + `ERASE`.** Lower-bound selection and array freeing
-  (ERASE also enables clean re-DIM). Small, self-contained; split out so slice 1
-  can hardcode base 0.
+- **Slice 2 — `ERASE`.** Array freeing (also enables clean re-DIM). Small,
+  self-contained. (`OPTION BASE` was originally paired here but is **dropped** —
+  §4.1: unsupported on MSX1; base 0 is hardcoded in slice 1 permanently.)
 - **Slice 3 — string arrays.** `DIM A$(n)`; each element is a string value. Ties
   into the string store; may ride the STRMAX-widening decision.
 - **Slice 4 — scalar/string relocation into the contiguous model + STRMAX→255.**
@@ -203,15 +206,61 @@ language reference, to be **confirmed**, not asserted):
 
 ---
 
-## 5. Token pinning (to be captured, not asserted)
+## 4.1 Characterization results — VG-8020 stock MSX-BASIC 1.0 (2026-07-14)
+
+Black-box on the stock `Philips_VG_8020` (real MSX-BASIC 1.0) via the KEYBUF REPL
+driver; observed outputs only, no ROM disassembly. All §4 targets **confirmed**:
+
+| # | Behaviour | Observed (VG-8020) | Pin |
+|---|---|---|---|
+| 1 | Auto-dim default upper bound | `A(10)=9` ok; `A(11)` → error | **10** (elements 0..10), per dimension |
+| — | Auto-dim onset | `A(5)=1 : A(10)` → 0 | first touch of any index auto-dims all dims to 10 |
+| 2 | **`OPTION BASE`** | `OPTION BASE 1` → **`Syntax error`** | **NOT supported on MSX1** — arrays are permanently base 0. Drops the slice-2 OPTION item. |
+| 3 | DIM upper bound | `DIM B(5):B(5)` ok; `B(6)` → error | **inclusive** upper |
+| — | Lower bound | `DIM B(2):B(0)=7` → 7 | **base 0** always |
+| 4 | Re-DIM | `DIM B(3):DIM B(3)` → | **`Redimensioned array`** |
+| 5 | Multi-dim value | `DIM C(2,3):C(1,2)=5` → 5 | row/col mapping is internal (own-design); only value correctness observed |
+| — | Multi-dim inclusive | `DIM C(2,3):C(2,3)` → 0 | valid up to `(2,3)` inclusive |
+| — | Wrong dimension count | `DIM C(2,3):C(1)` → | **`Subscript out of range`** |
+| 6 | Auto-init | `DIM B(3):B(2)` → 0 | fresh elements = 0 |
+| 7 | Type independence | `A(1)=11 : A%(1)=22` → `11,22` | `A()`/`A%()`/`A$()` are **distinct arrays** (as scalars are) |
+| — | Multiple arrays / DIM | `DIM P(2),Q(3)` → both live | comma-separated list in one `DIM` |
+| — | Float/typed elements | `DIM D(3):D(1)=1.5` → 1.5 | element holds the resolved type's value |
+| — | String array | `DIM S$(3):S$(1)="HI"` → `HI` | slice 3 |
+| 8 | Over-bound at runtime | `A(11)` / `B(6)` → | **`Subscript out of range`** |
+| 9 | **Negative subscript** | `DIM B(5):B(-1)` → | **`Illegal function call`** — NOT "Subscript out of range" |
+
+**Consequences for the arc.**
+- **`OPTION BASE` is dropped** (§1, §3.2): the reference has no such statement, so
+  there is nothing to be reference-compatible *with*. Arrays are base 0, hardcoded.
+  Slice 2 becomes **`ERASE` only**.
+- **Two distinct error dispositions** the slice-1 evaluator must produce: an
+  in-range-violation is `Subscript out of range`, but a **negative** index is
+  `Illegal function call` (index < 0 is caught before the bound compare).
+- **Wrong dimension count** (fewer/more subscripts than the array's `ndim`) is
+  `Subscript out of range`, not a syntax error.
+
+---
+
+## 5. Token pinning — captured (2026-07-14)
 
 Per the established discipline (math-pack §6, string-engine): every new keyword's
 token is captured from the **VG-8020 crunch** and cross-checked against **MSX2 TH
 Table 2.20 / MSX Assembly Page** — never asserted from memory, never from ROM
-disassembly. New reserved words this arc introduces: **`DIM`**, **`ERASE`**,
-**`OPTION`** (+ `BASE` handling). The `(`/`,`/`)` around subscripts are existing
-punctuation tokens. Each value is pinned in the sub-slice contract with its crunch
-capture, plus a crunch-byte-identity gate case.
+disassembly. Captured crunch bytes (stock VG-8020, stored-line dereference):
+
+| Word | Crunch bytes | Token |
+|---|---|---|
+| `DIM A(5)` | `86 20 41 28 16 29 00` | **`DIM` = $86** |
+| `ERASE A` | `a5 20 41 00` | **`ERASE` = $A5** |
+| `X=A(3)` | `58 ef 41 28 14 29 00` | subscript ref = **no token** — `name ( subs )` verbatim (`(`=$28, `)`=$29, digit=`$11+n`) |
+| `OPTION BASE 1` | `4f 50 54 49 95 20 c9 20 12 00` | "OPTI" literal + `ON`($95) + `BASE`($C9) — tokenises but **`OPTION BASE` is not an executable statement** (Syntax error), so no OPTION handling is built |
+
+The `(`/`,`/`)` around subscripts are existing punctuation. The load-bearing parse
+consequence: an array reference is lexically identical to a function call
+(`NAME(args)`), so the factor layer + LET target must **dispatch on whether NAME is
+a known function token vs a plain variable name** — a subscripted plain name is an
+array element. Each value gets a crunch-byte-identity gate case.
 
 ---
 
