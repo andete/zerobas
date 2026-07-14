@@ -1269,3 +1269,153 @@ no-sticky-digit claim was false for trig (~23 % differ by 1 ulp, within bounds) 
 (a faithful-core model is a **2e follow-up**); (3) §14.1's "never worse" softened for the
 meaningless [1E13, 1.57E14) band. **NEXT = 2e `RND`** (black-box LCG capture campaign;
 §5 — will want the faithful-core sim model).
+
+---
+
+## 15. Slice 2e — `RND` (implementation contract)
+
+`RND` is the LAST slice-2 function and is **categorically different** from the six
+transcendentals + `^`: it is not an approximation with a bounded-deviation envelope, it is a
+**pseudo-random generator whose entire contract is sequence reproducibility**. So the target
+is **bit-for-bit reference-IDENTITY** (the strongest form, like the 2c `^` positive-int
+path), *not* documented deviation — and reference-identity is both **achievable** (the
+recurrence is exact integer arithmetic mod 10¹⁴; there is no coefficients-in-ROM wall) and
+**required** (a program that reseeds with `RND(-k)` and reads the sequence must get the same
+numbers as the reference). `A`/`C`/`S₀` below are three constants **recovered purely
+black-box** (observe output, fit the recurrence — admissible per §4.2, the same footing as
+the division characterization; no ROM disassembly).
+
+### 15.1 Characterization (black-box, Philips VG-8020, 2026-07-14 — don't re-probe)
+
+Harness `scratchpad/char_rnd*.py` (KEYBUF REPL, ~15 consecutive transitions + a reseed
+battery + edge probes, **every value exact**). The complete model:
+
+| | |
+|---|---|
+| State `S` | a 14-digit decimal integer ∈ [0, 10¹⁴) |
+| Multiplier `A` | `21132486540519` |
+| Increment `C` | `14389820420821` |
+| Power-on / reset seed `S₀` | `40649651372358` |
+| Modulus `M` | `10¹⁴` |
+| **advance(S)** | **`(A·S + C) mod 10¹⁴`** |
+
+- `RND(x>0)`: `S := advance(S)`; return `S·10⁻¹⁴`. **The argument VALUE is ignored** — any
+  positive x advances exactly once (confirmed: `RND(7)`, `RND(.3)`, `RND(12345)`, `RND(99)`,
+  `RND(2)` all step identically to `RND(1)`).
+- `RND(0)`: return `S·10⁻¹⁴` (**no advance** — repeats the last value).
+- `RND(x<0)`: `S := advance(mant14)`; return `S·10⁻¹⁴`, where **`mant14` = the 14 mantissa
+  digit slots of the argument as an integer** (sign & exponent ignored). This is literally
+  the widened-ARGA digit array `d[0..13]` read as a 14-digit integer (`d[0]` = the 10¹³
+  place). A *double* fills all 14 slots; a *single* fills 6 + trailing zeros (hence
+  `RND(-A!)` with `A!=1/3` ⇒ mant14 `33333300000000`, different from `RND(-1/3)`'s
+  `33333333333333`). Exponent-independence explains the observed collision
+  `RND(-1)`=`RND(-0.001)`=`RND(-1E9)` (all have mantissa `1.000…`).
+- **Return type is DOUBLE** (FACTYP=8; `PRINT RND(1)` with no `DEFDBL` shows 14 digits).
+  Value ∈ [0,1). **No domain errors** (all args valid).
+- **Reset**: `S := S₀` happens in **`clear_vars`** — confirmed reference-identical:
+  `NEW`, `CLEAR`, `RUN` all reset the seed to S₀ (first `RND(1)` after each =
+  `advance(S₀)`=`.59521943994623`); `CLS` does **not** (screen-only, no var wipe). This is
+  exactly DEFTBL's reset site, and cold boot runs `clear_vars` too — so one hook covers
+  power-on + all three clears, no separate cold-boot path.
+- **`RANDOMIZE` is OUT OF SCOPE**: the reference MSX1 BASIC 1.0 answers `RANDOMIZE 1` /
+  `RANDOMIZE 42` with **`Syntax error`** — it is not a supported keyword here. Noted as a
+  potential separate follow-up (a statement, not the `RND` function); not a 2e deliverable.
+
+Proven in `tools/sim_math_chain.py` (`rnd_validate`, commit bc6417b): the exact recurrence
+AND a **model of the intended asm algorithm** reproduce all 19 captured anchors bit-for-bit.
+
+### 15.2 The arithmetic — why `fp_mul` is the WRONG tool
+
+`advance` needs the **LOW 14 digits** of `A·S + C`. `A·S ≈ 2·10²⁷`; `fp_mul` produces the
+**HIGH 14 significant digits** of a product (that is what a *float* multiply is) and would
+discard exactly the digits `RND` keeps. So `RND` does **not** use the resident fp ops at
+all. It needs a dedicated **14-digit BCD modular multiply-add**:
+
+```
+unpack S -> 14 digit bytes (MSD-first d[0..13])
+acc := 0 (14 digit bytes)
+for each digit A[j] of the constant A (weight 10^(13-j)):
+    multiply the 14-digit S by A[j] with a running BCD carry, add into acc
+    SHIFTED by A[j]'s weight; DROP every partial-product digit at a place >= 10^14
+    (they cannot affect the result mod 1e14 -- this is the "keep low digits" rule)
+acc := acc + C  (14-digit BCD ripple-carry add, carry out of the top dropped)
+```
+
+This is `rnd_advance_bcd` in the sim (little-endian there; the asm is MSD-first — same math),
+asserted equal to `(A·S+C) mod 1e14` over the 19 anchors **and 20 000 swept states**. `A`
+(`21132486540519`) and `C` (`14389820420821`) are page-1 constants living beside the tenant;
+`S₀` (`40649651372358`) is a main-side constant in `clear.asm`. A mis-transcribed digit is
+caught **immediately** by the differential gate (the sequence diverges on step 1).
+
+### 15.3 Placement, RAM, dispatch
+
+- **Page-1 tenant** `fp_rnd` (`sub/fp_rnd.asm`), the 9th, appended to `sub_p1_table` after
+  `fp_tan`: `jp fp_rnd` at **`SUBROM_IDX_RND = 9`**. Self-contained: needs only RAM
+  (RND_SEED/FAC/ARGA + transient scratch) + its own page-1 `A`/`C` constants; the resident-ABI
+  surface it touches is a **subset** (`dig15_iszero`, `arga_pack_fac`) — **no new page-0
+  relocation**, closure-check clean.
+- **Token** `RND = $88` ($FF-prefixed, §1.4 / memory).
+- **`RND_SEED`** — the persistent 14-digit state. RAM below `DRVA_DPB $F195` is **exhausted**
+  (§11.6), and the seed must survive arbitrary statements between calls (so it cannot reuse
+  transient math scratch). It is stored **packed BCD, 7 bytes** (two digits/byte, MSD-first)
+  in the **tail slack of the `SUB_INT_RAM` trampoline reservation**: the trampoline template
+  is a fixed ~47-byte position-independent stub but its reservation runs to `$F149` (64 B),
+  so `RND_SEED equ $F142` (7 B, → `$F148`) sits in the unused tail. **Safe-by-construction:**
+  `fp_rnd.asm`/`subromcall.asm` carries a build-time
+  `ASSERT sub_int_template_end - sub_int_template <= RND_SEED - SUB_INT_RAM`
+  (currently 47 ≤ 56) so any future trampoline growth that would collide **fails the build**
+  loudly rather than silently overlapping. (The disk-area `$F2B8–$F33F` gap was rejected — it
+  is MSX-DOS work-area, semantically reserved even where un-`equ`'d, and cross-component.)
+  `IF ROM_BASE < $4000` — repack-only, like every math sysvar; the lean build has no RND.
+- **`clear_vars`** (basic/clear.asm) gains a 7-byte copy `RND_SEED := packed(S₀)` at the same
+  point it resets DEFTBL to all-8 (`IF ROM_BASE < $4000`).
+
+### 15.4 `evmc_rnd` stub + `fp_rnd` tenant
+
+- **`evmc_rnd`** (basic/expr.asm) = the **`evmc_atn` shape** (total function, NO domain
+  check): `ev_mc_arg` → `widen_rhs_operand` into ARGA → `push ix` / dispatch
+  `SUBROM_ENTRY_BASE_P1 + 3·SUBROM_IDX_RND` / `pop ix` → `jp c,subrom_absent_error` →
+  `ld a,8 / ld (FACTYP),a` → `jp flt_to_int16` tail. Selector added to `ev_ff_mathconv`.
+- **`fp_rnd`** (page-1, COMPUTE-ONLY — leaves FAC correct, does NOT touch FACTYP/DE, exactly
+  like fp_atan/fp_sin) receives **ARGA = the widened argument**:
+  1. `dig15_iszero(ARGA+FPNUM_DIG)` → **zero** ⇒ `RND(0)` path: skip the advance, go to
+     step 3 with the *current* RND_SEED.
+  2. else `ld a,(ARGA+FPNUM_SIGN)`: **negative** ($80) ⇒ reseed — the advance input `S`
+     is `mant14` = ARGA's 14 digit slots read as a 14-digit integer (`dexp`/sign ignored);
+     **positive** ⇒ the advance input `S` is the current RND_SEED (unpacked). Run
+     `rnd_advance` (§15.2), store the result back to RND_SEED (packed).
+  3. **Output**: normalize the 14-digit state to a FAC double = `S·10⁻¹⁴`. Left-shift out
+     leading zeros: if the state has `k` leading zeros, mantissa = digits `d[k..13]`
+     left-justified (pad low with 0), `dexp := -k`, sign := 0, guard := 0 → `arga_pack_fac`
+     → FAC (value `= d[k].d[k+1]…×10^(−1−k)`). Guard S=0 (all-zero) with `dig15_iszero` →
+     `FAC:=0` directly (the `arga_pack_fac` not-all-zero precondition, the recurring 2c/2d
+     class); S=0 is astronomically rare but valid.
+
+### 15.5 Gate (extend `basic_probe_math_conv.py` / `math-acceptance`)
+
+- **Token capture** row for `RND $88` (§1.4 pattern).
+- **Reference-IDENTITY differential** (not a truth-bound — the whole point of RND): assert
+  zerobas reproduces the reference sequence **bit-for-bit** on: (a) the cold sequence from
+  power-on (`NEW`-reset), (b) `RND(-k)` reseed for the characterization battery (incl. the
+  `-1`/`-0.001`/`-1E9` collision and the single-vs-double `1/3` pair), (c) a long
+  `RND(1)` run, (d) `RND(0)` repeat, (e) positive-arg-ignored (`RND(7)`≡`RND(1)` from a
+  common seed), (f) `NEW`/`CLEAR`/`RUN` reset to S₀ and `CLS` non-reset. The captured
+  anchors already live in the sim (`RND_COLD`/`RND_AFTER_M1`/`RND_RESEED`); the gate captures
+  the same on both machines and asserts equality.
+- **FACTYP discipline** (standing trap, bit twice): `RND` over a typed store, `RND` of a
+  `PEEK`, `A#=RND(1)` then re-read — assert double, no FACTYP leak.
+- Standing gates stay green: `unit-test`, `subrom-closure-check`, `subrom-inttest` (the
+  trampoline still fits below RND_SEED — the new build ASSERT guards it), `float`/`string`/
+  `input`-acceptance, **lean byte-identical**, reloc, kwtable single-copy.
+- **Fable adversarial review** after (every slice hid ≥1 matrix-invisible bug).
+
+### 15.6 Notes / deferrals
+
+- `RANDOMIZE` — out of scope (reference rejects it, §15.1); a potential separate statement
+  follow-up.
+- The reset-on-`RUN`/`NEW`/`CLEAR` (to a *fixed* S₀) means the default sequence is
+  deterministic per program run unless the program itself reseeds with `RND(-x)` — a
+  reproducibility feature, reference-identical.
+- `RND` is the **faithful-core-model win** flagged in §14.10: its sim model (`rnd_advance_bcd`)
+  is an EXACT bit-for-bit oracle, not a bounds envelope — the first slice-2 function where the
+  sim proves reference-identity outright.
