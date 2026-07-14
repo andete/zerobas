@@ -306,8 +306,156 @@ A new **`array-acceptance`** gate (peer of `float-acceptance` / `string-acceptan
 
 ## 8. Next step
 
-On sign-off of §7: write the **slice-1 implementation contract** (the concrete
-descriptor layout, allocator pointer set + sysvars, DIM parser, subscript
-evaluator, auto-dim, bound/OOM checks, and the token captures), then implement +
-gate + Fable-review, per [[opus-vs-sonnet-model-split]] (Sonnet 5 on the signed-off
-contract).
+§7 signed off + §4.1/§5 characterized. Next = the **slice-1 implementation
+contract** (§9 below), then implement + gate + Fable-review, per
+[[opus-vs-sonnet-model-split]] (Sonnet 5 on the signed-off contract).
+
+---
+
+## 9. Slice-1 implementation contract (DRAFT — awaiting sign-off)
+
+**Status: 🟡 DRAFT 2026-07-14.** The concrete cut for slice 1: the dynamic
+allocator + numeric arrays (base 0, multi-dim), grounded in §4.1/§5 and the current
+code. New file `basic/arrays.asm`, all `IF ROM_BASE < $4000` (lean stays
+byte-identical). No scalar/string relocation (that is slice 4).
+
+### 9.1 RAM model + allocator pointers (new sysvars, repack-only)
+
+The array area is the **low free region**: it begins at the stored program's end
+and grows up, sharing the `$8001..TXTMAX` span with the program text exactly as the
+real MSX model shares it. Two 2-byte pointers + a small index scratch:
+
+| Sysvar | Size | Meaning |
+|---|---|---|
+| `ARYTAB` | 2 | base of the array area = program end (recomputed, §9.6) |
+| `ARYEND` | 2 | bump pointer = first free byte (empty when `== ARYTAB`) |
+| `ARY_NIDX` | 1 | subscript count parsed for the current reference |
+| `ARY_IDX` | 2·`MAXDIM` | parsed subscript values (int16), one per dimension |
+| `ARY_SCR` | ~8 | offset-arithmetic scratch (running offset, stride) |
+
+Placement: `ARYTAB`/`ARYEND`/`ARY_*` go in the page-`$E0`/`$F0` own-choice free RAM
+(pick a hole in the slice-1 contract review — e.g. near the other Phase-2/3 scratch;
+they are 2+2+1+2·MAXDIM+8 ≈ 21 B for MAXDIM=4). **`MAXDIM` = 4** for slice 1
+(documented cap; games use ≤3; a reference with >4 subscripts → `Subscript out of
+range`, a documented divergence from the reference's larger internal cap).
+
+**Ceiling** (the OOM bound) = `min(HIMEM, TXTMAX)`. `TXTMAX = $BE00` (repack) already
+bounds program text and sits below every work-area pool (`VARTAB $E1C0`, strings,
+disk buffers) and below DETOKBUF — so arrays can never trample them. `HIMEM`
+(`$FC4A`, set by `CLEAR ,&Hxxxx`, [basic/clear.asm](../basic/clear.asm)) lowers the
+ceiling further when a loader reserves high RAM; `min` picks the binding one. This
+makes `CLEAR` load-bearing (the deferred item in clear.asm's comment).
+
+### 9.2 Array descriptor (own design — clean-room)
+
+Variable-width, bump-allocated, never moved or freed within slice 1 (ERASE = slice
+2). One descriptor:
+
+```
++0  name0 : 1     upcased first char (0 in no slot — but the area has no free slots,
++1  name1 : 1       it is a packed bump list; walk stops at ARYEND)
++2  type  : 1     2 / 4 / 8  (int / single / double), from suffix / DEFtbl (§9.4)
++3  ndim  : 1     dimension count (1..MAXDIM)
++4  bound0: 2     inclusive upper subscript of dim 0 (LE)   ] ndim of these
+    ...             ...
+    element data : elsize · Πk(boundk+1) bytes, zero-filled on alloc
+```
+
+`elsize = type` (2/4/8). Element order = **column-major** (first subscript varies
+fastest): `off(i0,i1,…) = i0 + (b0+1)·(i1 + (b1+1)·(i2 + …))`, `elem_addr =
+data + off·elsize`. Ordering is internal/own-choice (unobservable in slice 1 —
+VARPTR of an element is deferred, Q-A3); column-major is chosen to match MSX
+convention should VARPTR arrive later.
+
+### 9.3 Routines (`basic/arrays.asm`)
+
+- **`ary_find`** — in: BC=key, A=type. Walk `ARYTAB..ARYEND` by each descriptor's
+  own stride (`4 + 2·ndim + elsize·Πk(boundk+1)`); match on (name0,name1,type).
+  Out: CF=found + HL=descriptor base, else CF clear + HL=`ARYEND`. (Type is part of
+  the key: `A`/`A%` are distinct arrays, §4.1 #7.)
+- **`ary_parse_subs`** — in: HL at `(`. Eval each comma-separated subscript via
+  `eval` into `ARY_IDX[]`, incrementing `ARY_NIDX`; require closing `)`. Each
+  subscript is coerced to int16 (existing `fac_to_int_strict`/`flt_to_int16`). Saves
+  the key (eval clobbers BC). `> MAXDIM` subscripts → `Subscript out of range`.
+- **`ary_resolve`** — in: BC=key, A=type, `ARY_NIDX`/`ARY_IDX` filled. `ary_find`;
+  if missing, **auto-dim**: create a descriptor with `ndim = ARY_NIDX`, every bound
+  = **10** (§4.1 #1), zero-filled (OOM-checked, §9.5). Then validate: `ARY_NIDX ≠
+  descriptor.ndim` → `Subscript out of range`; for each k, `ARY_IDX[k] < 0` →
+  **`Illegal function call`** (§4.1 #9), `ARY_IDX[k] > boundk` → `Subscript out of
+  range` (§4.1 #8). Compute `elem_addr` (§9.2). Out: HL=elem_addr, A=type.
+- **`ary_load`** (rvalue) — `ary_resolve` → read the element into FAC/FACTYP + DE
+  int16 fast path (mirrors `var_load_fac`'s value-field read: int16 for type 2,
+  `LDIR` of `elsize` bytes into FAC for 4/8).
+- **`ary_store`** (lvalue) — `ary_resolve` → coerce the live RHS (DE/FAC) into `type`
+  and write the element (mirrors `var_store_fac`'s value-field write + coercion:
+  `fac_to_int_strict` / `round_single_and_pack` / `round_and_finalize`; Overflow →
+  FPERR, D-F2-1 abort). *(Mirror, not refactor, `var_*_fac` — keep the F3 typed
+  scalar store untouched; factor a shared `elem` codec only if it falls out cleanly
+  in review.)*
+- **`ex_dim`** — DIM handler (§9.4).
+
+### 9.4 `DIM` statement + parse integration
+
+- **Token/dispatch:** add `DIM` (`$86`) to [kwtable.inc](../basic/kwtable.inc)
+  (repack-only) and a `cp DIM_TOKEN : jp z,ex_dim` arm in `exec_stmt`
+  ([interp.asm](../basic/interp.asm):~213, in the `IF ROM_BASE < $4000` block).
+  `ERASE`/`$A5` token + handler are **slice 2** — not added now, so `ERASE` stays a
+  `Syntax error` in slice 1 (out of scope).
+- **`ex_dim`:** for each comma-separated `NAME(b0[,b1…])`: `var_str_type` (string →
+  slice 3, so a `$` name in slice 1 → `Syntax error` or defer; **decide in review**,
+  Q-9a) then `var_name_key` (BC=key, A/`VARTYPE`=type); parse the bound list (each
+  bound `eval`'d to int16 ≥ 0); `ary_find` — if already present → **`Redimensioned
+  array`** (§4.1 #4); else allocate + zero (OOM-checked). Loop on `,`.
+- **lvalue `A(i)=x`:** in `ex_let` ([interp.asm](../basic/interp.asm):279), after
+  `var_name_key` peek `(HL)`: if `'('` → `ary_parse_subs` + `ary_store` (RHS after
+  `=` via `eval`), else the existing scalar path. The `$`-name string-array lvalue is
+  slice 3.
+- **rvalue `A(i)`:** in `ev_f_var` ([expr.asm](../basic/expr.asm):551), after
+  `var_name_key` peek `(HL)`: if `'('` → `ary_parse_subs` + `ary_load` (auto-dim on
+  read), else the existing `var_load_fac`. This is the array-vs-function
+  disambiguation (§5): `ev_f` reaches `ev_f_var` only for a plain letter, never a
+  function token, so a `(` after a plain name is unambiguously a subscript.
+
+### 9.5 Errors (§4.1) + OOM
+
+Reuse the existing disposition machinery: `Subscript out of range` / `Illegal
+function call` / `Redimensioned array` / `Out of memory` are raised via the same
+`stmt_error`-class path the other runtime errors use (exact message text + numbers
+oracle-locked; capture each in the gate). OOM check before every allocation:
+`ARYEND + descriptor_size > ceiling` → `Out of memory` (nothing written).
+
+### 9.6 Allocator reset (edit/clear coupling)
+
+`ARYTAB`/`ARYEND` are reset to the **program end** at:
+- `clear_vars` ([vars.asm](../basic/vars.asm)) — already the NEW/CLEAR/RUN hook;
+  add `ARYTAB = ARYEND = program_end`.
+- **`store_line`** ([program.asm](../basic/program.asm)) — editing the program shifts
+  its end, so any live array is invalidated; reset the allocator there too. This
+  matches the reference "editing a line clears variables" semantics (for arrays;
+  scalars/strings in fixed pools are a documented slice-1 divergence until slice 4).
+
+`program_end` = the address just past the program's `$0000` terminator (derive from
+the existing `PRGEND`/text-scan; pin the exact source in the contract review).
+
+### 9.7 Gate (`array-acceptance`, slice-1 cases)
+
+Differential vs the VG-8020 (numeric arrays are diskless-testable), driven by the
+KEYBUF REPL harness — promote the §4.1 characterization cases: auto-dim/bound-10,
+DIM inclusive/over, base-0, auto-init-0, redim, multi-dim value+init+wrong-count,
+type independence, negative→ILL, float element, `DIM P(2),Q(3)`. Plus a `DIM`
+crunch-byte-identity case (`86 20 41 28 16 29 00`). Host unit tests for the offset
+arithmetic + bound checks + `ary_find` stride walk. Lean byte-identity + Fable
+review.
+
+### 9.8 Open contract questions (for sign-off before coding)
+
+- **Q-9a.** In slice 1, a string-array `DIM A$(n)` or `A$(i)=…` → plain `Syntax
+  error`, or a clearer deferral? (Recommended: `Syntax error` — it is genuinely
+  unsupported until slice 3; the reference has no divergence to match since ours
+  simply lacks the feature.)
+- **Q-9b.** `MAXDIM = 4` acceptable (a `Subscript out of range` beyond it), or size
+  the index buffer higher? (Recommended: 4.)
+- **Q-9c.** Confirm `store_line` array-reset is acceptable (any current probe that
+  DIMs then edits? — none exist yet; new behaviour).
+- **Q-9d.** Exact free-RAM home for the ~21 B of `ARY*` sysvars — to be picked
+  against sysvars.inc in the first implementation step (not a semantic choice).
