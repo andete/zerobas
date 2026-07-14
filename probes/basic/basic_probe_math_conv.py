@@ -725,6 +725,19 @@ MALFORMED_SPECS += [
      ["DEFDBL A", 'PRINT RND(-1.5', 'A=RND(1):PRINT"[";A;"]"']),
     ("seed: RND() then RND(1)", "seed",
      ["DEFDBL A", 'PRINT RND()', 'A=RND(1):PRINT"[";A;"]"']),
+    # first-error-wins (D-F2-4 regression guard): when the ARGUMENT expression
+    # raises a hard error BEFORE the malformed ')' is seen, the reference reports
+    # THAT error, not "syntax error". The malformed-')' exit must not relabel a
+    # pending FPERR. kind "errmatch": ref and zb must report the SAME error token
+    # (and no value leaks). These have an erroring arg, so the plain battery above
+    # (clean args) could never surface the bug.
+    ("first-err SIN(1/0,2)",   "errmatch", ['PRINT"[";SIN(1/0,2);"]"']),
+    ("first-err LOG(1/0,2)",   "errmatch", ['PRINT"[";LOG(1/0,2);"]"']),
+    ("first-err SQR(9E62*9E62","errmatch", ['PRINT"[";SQR(9E62*9E62;"]"']),
+    ("first-err RND(1/0,2)",   "errmatch", ['PRINT"[";RND(1/0,2);"]"']),
+    # D-F2-3 sibling repaired in passing (bare-parens empty factor after an
+    # erroring one): reference keeps the first error.
+    ("D-F2-3 sib (1/0)+()",    "errmatch", ['PRINT"[";(1/0)+();"]"']),
 ]
 
 
@@ -739,10 +752,14 @@ def check_malformed(ref_machine: str, zb_machine: str) -> bool:
         if kind == "seed":
             rv, zv = _rnd_brackets(ref_raw), _rnd_brackets(zb_raw)
             return len(rv) > 0 and rv == zv
-        # kind == "err": no value may leak (no closed bracket on EITHER machine)
-        # and BOTH must report a plain syntax error (not illegal/overflow).
+        # no value may leak (no closed bracket on EITHER machine) for any err kind
         if _rnd_brackets(ref_raw) or _rnd_brackets(zb_raw):
             return False
+        if kind == "errmatch":
+            # first-error-wins: ref and zb must report the SAME (non-None) error.
+            rt = _err_token(ref_raw)
+            return rt is not None and rt == _err_token(zb_raw)
+        # kind == "err": BOTH must report a plain syntax error (not illegal/overflow).
         return (_err_token(ref_raw) == "syntax error" and
                 _err_token(zb_raw) == "syntax error")
 

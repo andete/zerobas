@@ -136,6 +136,20 @@ advances the seed first on BOTH (left-to-right eval) then aborts.
     malformed-CALL case, and is not addressed.
   - Non-`ev_mc_arg` functions (`PEEK`/`VPEEK`/`INP`/`USR`/`VARPTR`/`BASE`/
     string funcs) keep their own arg-parse contracts.
+  - **Driver-coverage (pre-existing, unchanged):** the deferred FPERR=4 only
+    becomes a visible `syntax error` in a statement driver that calls
+    `check_expr_errors` after its `eval` — verified for `PRINT`, `LET`
+    (`A=SIN`, `A=LOG()`), and `IF` (`IF SIN(1,2) THEN …`), including the RND
+    seed-untouched property in `LET`. The **`FOR`** initial-value driver
+    (`ex_for`) does NOT check FPERR, so `FOR I=SIN TO 3` yields `out of memory`
+    (a stale-operand FOR set-up) instead of `Syntax error`. This is
+    **pre-existing** — identical on the pre-fix build (bare `SIN` gave
+    `out of memory` before and after) — and is a `FOR`-driver FPERR-propagation
+    gap, not a malformed-CALL issue; the same class the D-F2-3 empty-parens
+    slice also left to each driver. (`FOR I=SIN(1,2)` still errors via FOR's
+    own missing-`TO` structural check.) Other numeric-expression drivers that
+    may not propagate FPERR (`WHILE`, `ON…GOTO`, subscripts, `PRINT USING`)
+    are the same pre-existing category and out of scope here.
 
 ## 5. Gate
 
@@ -155,6 +169,46 @@ reference-identical output (both emit their own "Syntax error"/"syntax error"
 line; the differential compares the normalised error token + the surviving
 RND sequence value, not the exact capitalisation).
 
-## 6. Outcome
+## 6. Outcome — SHIPPED (2026-07-14)
 
-_(filled after implementation + Fable review)_
+Implemented in two commits (the `ev_mc_arg` exits + `ev_mc_arg_checked` gate +
+15 site guards + the `MALFORMED_CALL` battery), then a review-fix commit for
+the Fable adversarial pass below. All gates green: `math-acceptance` (full
+value matrix + RND reference-identity + `MALFORMED_CALL` 33/33), `unit-test`
+45/45, `float-acceptance`. Lean `basic.rom` byte-identical (same SHA-256 with
+and without the change — verified by clean-tree rebuild). Every affected
+context now reference-correct: PRINT / LET / IF give the reference's error,
+RND's seed is provably untouched by a malformed call (incl. the LET context).
+
+**Fable adversarial review — verdict SHIP, one real finding fixed:**
+
+- **Finding 1 (NEW REGRESSION, FIXED):** the two new `jp nz,ev_f_empty` exits
+  routed through `ev_f_empty`, which stored FPERR=4 **unconditionally** — so a
+  malformed call whose *argument* already raised a hard error reported "syntax
+  error" instead of that first error (`SIN(1/0,2)` → the reference's `Division
+  by zero`; `SQR(9E62*9E62` → `Overflow`). The reference is first-error-wins.
+  Fixed by making `ev_f_empty` store 4 only when FPERR==0 (keep any pending
+  error). This ALSO repaired the **pre-existing D-F2-3 sibling** `(1/0)+()`
+  (was `syntax error`, now `Division by zero`). New `errmatch` battery rows
+  (`SIN/LOG/SQR/RND(1/0,2)`, `(1/0)+()`) lock it in — the original battery's
+  args never errored, so this was matrix-invisible.
+- **Finding 2 (hardening, DONE):** the gate now also bails on a pending D-2
+  `TMISMATCH` (`RND("A")`), so the "no body runs while a deferred error is
+  pending" invariant literally holds for BOTH deferred flags — previously RND's
+  seed-safety under a type-mismatched arg was only incidental (the stale
+  operand happened to be int-0). Verified: `RND("A")` → `type mismatch`, seed
+  untouched.
+- **Findings 3 & 4 (PRE-EXISTING, logged, NOT this fix's scope):** driver
+  coverage — `FOR`/`SCREEN`/`COLOR`/`OUT`/`ON…GOTO`/`PRINT USING`/file-channel/
+  etc. drivers don't check the deferred flags, so a malformed call there is
+  silent or `out of memory` rather than `Syntax error` (identical before this
+  commit; the commit only improves the stale value to 0); and stored-mode `RUN`
+  continues past a deferred error instead of halting (the D-F2-1 statement-abort
+  model, not this fix). Both logged to disk/docs/tier2-review-queue.md as the
+  natural next steps for the deferred-error architecture.
+
+Fable verified sound (no live divergence): stack/return balance of the
+`ret nz` idiom across all 15 sites; no false bail on legal nested calls
+(`RND(RND(RND(1)))`, `PRINT SQR(-1)+RND(1)` ordering); A-clobber transparent;
+stale-FAC + trailing binary op effectively unreachable (cursor parks on a
+non-operator, operands are 0); RND seed untouched in every ordering/form.

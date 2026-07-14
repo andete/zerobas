@@ -566,12 +566,21 @@ ev_f_var:
     ENDIF
     IF ROM_BASE < $4000
 ev_f_empty:                                 ; D-F2-3: the empty parenthesised/argument
-                ld      a,4                 ; expression -> deferred FPERR "syntax error",
-                ld      (FPERR),a           ; checked at the statement boundary (the D-F2-1
+                                            ; expression -> deferred FPERR "syntax error",
+                                            ; checked at the statement boundary (the D-F2-1
                                             ; pattern: no mid-expression unwind). The value
-                                            ; below (DE=0) survives every downstream success
-                                            ; op unchanged, but the flag makes the driver
-                                            ; abort. Fall into ev_f_err for the $DD landmark.
+                                            ; (DE=0) survives every downstream success op
+                                            ; unchanged, but the flag makes the driver abort.
+                ld      a,(FPERR)           ; D-F2-4 first-error-wins: if the argument
+                or      a                   ; expression ALREADY raised a hard error
+                jr      nz,ev_f_err         ; (div0/overflow/illegal), keep THAT -- the
+                                            ; reference reports the first error, not the
+                                            ; later missing-')' (e.g. SIN(1/0,2) -> Division
+                                            ; by zero, NOT syntax error). Only a still-clean
+                                            ; FPERR becomes "syntax error".
+                ld      a,4
+                ld      (FPERR),a
+                ; fall into ev_f_err for the $DD landmark.
     ENDIF
 ev_f_err:
                 ld      a,$DD               ; expression error marker
@@ -922,15 +931,19 @@ ev_mc_arg:
 ; expression. In ALL those cases the reference has already aborted the statement,
 ; so the caller must NOT run its body: no domain/overflow check (which would
 ; clobber FPERR=4 -> a wrong `illegal function call`/`overflow` message) and, for
-; RND, no fp_rnd (which would mutate the persistent seed). exec_stmt clears FPERR
-; per statement, so a clean arg leaves FPERR==0 here and the body runs unchanged.
-; Returns Z iff FPERR==0. Clobbers only A (every evmc_* reloads it); DE/FAC/FACTYP
-; are ev_mc_arg's.
+; RND, no fp_rnd (which would mutate the persistent seed). The D-2 TMISMATCH flag
+; (e.g. `RND("A")`) is checked the same way -- it too means the reference aborted.
+; exec_stmt clears BOTH flags per statement, so a clean arg leaves them 0 here and
+; the body runs unchanged. Returns Z iff FPERR==0 AND TMISMATCH==0. Clobbers only A
+; (every evmc_* reloads it); DE/FAC/FACTYP are ev_mc_arg's.
 ev_mc_arg_checked:
                 call    ev_mc_arg
                 ld      a,(FPERR)
                 or      a
-                ret
+                ret     nz                  ; a deferred numeric error is pending
+                ld      a,(TMISMATCH)       ; ...and the OTHER deferred flag (D-2 type
+                or      a                   ; mismatch, e.g. RND("A")) equally means the
+                ret                         ; reference already aborted -> Z iff BOTH clean
 
 ; --- evconv_pack_same_type: ARGA (already truncated by the caller — exact, --
 ; no guard-digit rounding pending) -> FAC, preserving FACTYP exactly as it
