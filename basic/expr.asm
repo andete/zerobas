@@ -898,14 +898,38 @@ ev_mc_arg:
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      '('
-                jp      nz,ev_f_err
+                jp      nz,ev_f_empty       ; D-F2-4: missing '(' (bare fn / operator- or
+                                            ; space-separated) -> deferred FPERR=4 "syntax
+                                            ; error", NOT the silent ev_f_err. Same chokepoint
+                                            ; the empty-parens gate (D-F2-3) uses.
                 inc     ix
                 call    ev_xor              ; DE = argument; FAC/FACTYP = its type
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      ')'
-                jp      nz,ev_f_err
+                jp      nz,ev_f_empty       ; D-F2-4: missing ')' (extra arg `f(x,y)` /
+                                            ; unclosed `f(x`) -> deferred "syntax error"
                 inc     ix
+                ret
+
+; --- ev_mc_arg_checked: ev_mc_arg + "bail if a deferred error is already ----
+; pending" gate (D-F2-4, docs/spec-basic-malformed-call-syntax-error.md). Every
+; evmc_* below calls THIS instead of ev_mc_arg and does `ret nz` immediately
+; after. FPERR is nonzero here iff the argument raised a deferred statement-abort
+; -- ev_mc_arg's own missing-'('/')' exits above (FPERR=4), OR an empty-expr arg
+; (`SQR()`/`LOG()`) that set FPERR=4 deep in ev_f_empty while ev_mc_arg still
+; returned normally, OR any nested hard error (overflow/div0/illegal) in the arg
+; expression. In ALL those cases the reference has already aborted the statement,
+; so the caller must NOT run its body: no domain/overflow check (which would
+; clobber FPERR=4 -> a wrong `illegal function call`/`overflow` message) and, for
+; RND, no fp_rnd (which would mutate the persistent seed). exec_stmt clears FPERR
+; per statement, so a clean arg leaves FPERR==0 here and the body runs unchanged.
+; Returns Z iff FPERR==0. Clobbers only A (every evmc_* reloads it); DE/FAC/FACTYP
+; are ev_mc_arg's.
+ev_mc_arg_checked:
+                call    ev_mc_arg
+                ld      a,(FPERR)
+                or      a
                 ret
 
 ; --- evconv_pack_same_type: ARGA (already truncated by the caller — exact, --
@@ -939,7 +963,8 @@ ecpst_zero:
 ; "int-domain per §10 float core"). Float path: clear FAC's sign bit in place
 ; (0's sign bit is already clear) and refresh DE; FACTYP untouched.
 evmc_abs:
-                call    ev_mc_arg
+                call    ev_mc_arg_checked   ; D-F2-4 gate
+                ret     nz                  ; malformed/empty arg -> deferred syntax error
                 ld      a,(FACTYP)
                 cp      2
                 jr      nz,evabs_float
@@ -970,7 +995,8 @@ evabs_float:
 
 ; --- evmc_sgn: SGN(x) -> -1/0/+1, always int (FACTYP:=2, spec §9.1). -------
 evmc_sgn:
-                call    ev_mc_arg
+                call    ev_mc_arg_checked   ; D-F2-4 gate
+                ret     nz                  ; malformed/empty arg -> deferred syntax error
                 ld      a,(FACTYP)
                 cp      2
                 jr      z,evsgn_int
@@ -1004,7 +1030,8 @@ evsgn_settype:
 ; §9.1). fp_trunc (float-arith.asm) truncates toward 0; if a fraction was
 ; dropped AND x was negative, one more step (-1) makes it a floor (§9.2).
 evmc_int:
-                call    ev_mc_arg
+                call    ev_mc_arg_checked   ; D-F2-4 gate
+                ret     nz                  ; malformed/empty arg -> deferred syntax error
                 ld      a,(FACTYP)
                 cp      2
                 ret     z                   ; already int: INT(x)=x
@@ -1022,7 +1049,8 @@ evmc_int_pack:
 ; --- evmc_fix: FIX(x) -> truncate toward 0, same FACTYP as x (spec §9.1). --
 ; Never needs the INT adjustment ("FIX = fp_trunc", §9.2).
 evmc_fix:
-                call    ev_mc_arg
+                call    ev_mc_arg_checked   ; D-F2-4 gate
+                ret     nz                  ; malformed/empty arg -> deferred syntax error
                 ld      a,(FACTYP)
                 cp      2
                 ret     z
@@ -1065,7 +1093,8 @@ evmc_sub1:
 ; supersedes the spec's stated rounding contract -- flagged in the slice
 ; report, not silently papered over.
 evmc_cint:
-                call    ev_mc_arg
+                call    ev_mc_arg_checked   ; D-F2-4 gate
+                ret     nz                  ; malformed/empty arg -> deferred syntax error
                 jp      fac_to_int_strict_reset ; strict -32768..32767 domain,
                                             ; truncate toward 0; FACTYP:=2 always
 
@@ -1074,7 +1103,8 @@ evmc_cint:
 ; the live FACTYP (int/single/double), so no int early-out is needed here —
 ; an int operand is always exact at 6 digits anyway.
 evmc_csng:
-                call    ev_mc_arg
+                call    ev_mc_arg_checked   ; D-F2-4 gate
+                ret     nz                  ; malformed/empty arg -> deferred syntax error
                 ld      hl,ARGA
                 call    widen_rhs_operand
                 jp      round_single_and_pack
@@ -1083,7 +1113,8 @@ evmc_csng:
 ; exact" rule). Same widen_rhs_operand + round_and_finalize composition CSNG
 ; uses above, just the double pack (no digit loss possible from any source).
 evmc_cdbl:
-                call    ev_mc_arg
+                call    ev_mc_arg_checked   ; D-F2-4 gate
+                ret     nz                  ; malformed/empty arg -> deferred syntax error
                 ld      hl,ARGA
                 call    widen_rhs_operand
                 jp      round_and_finalize
@@ -1110,7 +1141,8 @@ evmc_cdbl:
 ; statement-boundary check (check_expr_errors/_popbc), same D-F2-1 pattern as
 ; Overflow/division-by-zero -- never a `jp` out of the evaluator itself.
 evmc_sqr:
-                call    ev_mc_arg
+                call    ev_mc_arg_checked   ; D-F2-4 gate
+                ret     nz                  ; malformed/empty arg -> deferred syntax error
                 ld      hl,ARGA
                 call    widen_rhs_operand
                 ; Domain check (x<0 -> "illegal function call") is done HERE, not
@@ -1161,7 +1193,8 @@ evmc_sqr_err:
 ; after a successful return; CF (not A) is the only reliable post-call
 ; signal, and CF=1 only means "sub-ROM absent" (never on the merged machine).
 evmc_atn:
-                call    ev_mc_arg
+                call    ev_mc_arg_checked   ; D-F2-4 gate
+                ret     nz                  ; malformed/empty arg -> deferred syntax error
                 ld      hl,ARGA
                 call    widen_rhs_operand
                 push    ix                  ; save the parser's text-position pointer --
@@ -1193,7 +1226,8 @@ evmc_atn:
 ; correct, does not touch FACTYP/DE), so THIS stub sets FACTYP:=8 +
 ; refreshes DE via flt_to_int16 after a successful return.
 evmc_log:
-                call    ev_mc_arg
+                call    ev_mc_arg_checked   ; D-F2-4 gate
+                ret     nz                  ; malformed/empty arg -> deferred syntax error
                 ld      hl,ARGA
                 call    widen_rhs_operand
                 ld      a,(ARGA+FPNUM_SIGN)
@@ -1231,7 +1265,8 @@ evmc_log_err:
 ; EXP(-1000)) -- same "fall into the common successful tail" shape as any
 ; other non-error disposition. Otherwise dispatch to fp_exp (SUBROM_IDX_EXP).
 evmc_exp:
-                call    ev_mc_arg
+                call    ev_mc_arg_checked   ; D-F2-4 gate
+                ret     nz                  ; malformed/empty arg -> deferred syntax error
                 ld      hl,ARGA
                 call    widen_rhs_operand
                 ld      a,(ARGA+FPNUM_DEXP) ; low byte -- signed, safe (see
@@ -1273,7 +1308,8 @@ evmc_exp_overflow:
 ; successful return; CF (not A) is the only reliable post-call signal, and
 ; CF=1 only means "sub-ROM absent" (never on the merged machine).
 evmc_sin:
-                call    ev_mc_arg
+                call    ev_mc_arg_checked   ; D-F2-4 gate
+                ret     nz                  ; malformed/empty arg -> deferred syntax error
                 ld      hl,ARGA
                 call    widen_rhs_operand
                 push    ix                  ; save the parser's text-position pointer
@@ -1285,7 +1321,8 @@ evmc_sin:
                 ld      (FACTYP),a
                 jp      flt_to_int16
 evmc_cos:
-                call    ev_mc_arg
+                call    ev_mc_arg_checked   ; D-F2-4 gate
+                ret     nz                  ; malformed/empty arg -> deferred syntax error
                 ld      hl,ARGA
                 call    widen_rhs_operand
                 push    ix
@@ -1297,7 +1334,8 @@ evmc_cos:
                 ld      (FACTYP),a
                 jp      flt_to_int16
 evmc_tan:
-                call    ev_mc_arg
+                call    ev_mc_arg_checked   ; D-F2-4 gate
+                ret     nz                  ; malformed/empty arg -> deferred syntax error
                 ld      hl,ARGA
                 call    widen_rhs_operand
                 push    ix
@@ -1323,7 +1361,10 @@ evmc_tan:
 ; when positive, consumed as mant14 when negative, ignored when zero) --
 ; this stub does not interpret it at all, just widens+dispatches.
 evmc_rnd:
-                call    ev_mc_arg
+                call    ev_mc_arg_checked   ; D-F2-4 gate: a malformed/empty RND call must
+                ret     nz                  ; NOT run fp_rnd (would mutate the seed on a
+                                            ; float stale operand -- RND(1.5,2) advances,
+                                            ; RND(-1.5 reseeds); reference leaves it untouched)
                 ld      hl,ARGA
                 call    widen_rhs_operand
                 push    ix                  ; save the parser's text-position pointer

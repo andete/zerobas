@@ -671,6 +671,100 @@ def check_rnd(ref_machine: str, zb_machine: str) -> bool:
     return ok
 
 
+# --- 1c. malformed-call battery (D-F2-4, docs/spec-basic-malformed-call- ------
+# syntax-error.md) -----------------------------------------------------------
+# Every malformed CALL of an ev_mc_arg-family function -> reference "Syntax
+# error", side-effect-free. Reference-DIFFERENTIAL (needs both machines) across
+# the behaviour classes: pure-total (SIN/ABS), domain-checked (LOG/SQR),
+# overflow-checked (CINT), stateful (RND + seed-untouched). Forms: bare (missing
+# '('), extra arg + unclosed (missing ')'), empty 'f()'. Origin: slice-2e RND
+# Finding 1 (this also fixes the transcendentals-era regression where LOG()/
+# CINT() misreported illegal-function-call/overflow instead of syntax error).
+_ERR_TOKENS = ("syntax error", "illegal function call", "division by zero",
+               "overflow", "type mismatch", "missing operand")
+
+
+def _err_token(raw: "str | None") -> "str | None":
+    if raw is None:
+        return None
+    txt = "".join(raw[i:i + 40] for i in range(0, len(raw), 40)).lower()
+    for t in _ERR_TOKENS:
+        if t in txt:
+            return t
+    return None
+
+
+# (label, kind, lines). kind "err": a malformed factor wrapped in
+# PRINT"[";...;"]" so a spuriously-returned VALUE surfaces as a closed bracket
+# (BOTH machines must show NONE) AND the error token must be "syntax error" on
+# both (proves LOG()/CINT() no longer misreport). kind "seed": a malformed RND
+# call followed by RND(1); the bracket value must be reference-IDENTICAL (proves
+# the malformed call left the persistent seed untouched -- the actual 2e finding:
+# RND(1.5,2) used to advance it, RND(-1.5 to reseed it).
+_MC_FUNCS_ERR = ["SIN", "ABS", "LOG", "SQR", "CINT"]
+MALFORMED_SPECS: list[tuple[str, str, list[str]]] = []
+for _f in _MC_FUNCS_ERR:
+    MALFORMED_SPECS += [
+        (f"{_f} bare",       "err", [f'PRINT"[";{_f};"]"']),
+        (f"{_f}(1,2) extra", "err", [f'PRINT"[";{_f}(1,2);"]"']),
+        (f"{_f}(1 unclosed", "err", [f'PRINT"[";{_f}(1;"]"']),
+        (f"{_f}() empty",    "err", [f'PRINT"[";{_f}();"]"']),
+    ]
+MALFORMED_SPECS += [
+    ("RND bare",       "err", ['PRINT"[";RND;"]"']),
+    ("RND(1,2) extra", "err", ['PRINT"[";RND(1,2);"]"']),
+    ("RND(1 unclosed", "err", ['PRINT"[";RND(1;"]"']),
+    ("RND() empty",    "err", ['PRINT"[";RND();"]"']),
+    # seed untouched: after a malformed RND of each form, RND(1) must equal the
+    # first advance from S0 (v1). The NEW reset before each spec restores S0.
+    ("seed: bare RND then RND(1)", "seed",
+     ["DEFDBL A", 'PRINT RND', 'A=RND(1):PRINT"[";A;"]"']),
+    ("seed: RND(1.5,2) then RND(1)", "seed",
+     ["DEFDBL A", 'PRINT RND(1.5,2)', 'A=RND(1):PRINT"[";A;"]"']),
+    ("seed: RND(-1.5 then RND(1)", "seed",
+     ["DEFDBL A", 'PRINT RND(-1.5', 'A=RND(1):PRINT"[";A;"]"']),
+    ("seed: RND() then RND(1)", "seed",
+     ["DEFDBL A", 'PRINT RND()', 'A=RND(1):PRINT"[";A;"]"']),
+]
+
+
+def check_malformed(ref_machine: str, zb_machine: str) -> bool:
+    """D-F2-4 reference-differential: malformed ev_mc_arg-family calls -> Syntax
+    error, side-effect-free (incl. RND seed untouched). Returns pass/fail."""
+    print("\n--- malformed-call -> syntax error (D-F2-4) ---")
+    specs = [("direct", lines) for _, _, lines in MALFORMED_SPECS]
+
+    def compare(i, ref_raw, zb_raw):
+        _lbl, kind, _lines = MALFORMED_SPECS[i]
+        if kind == "seed":
+            rv, zv = _rnd_brackets(ref_raw), _rnd_brackets(zb_raw)
+            return len(rv) > 0 and rv == zv
+        # kind == "err": no value may leak (no closed bracket on EITHER machine)
+        # and BOTH must report a plain syntax error (not illegal/overflow).
+        if _rnd_brackets(ref_raw) or _rnd_brackets(zb_raw):
+            return False
+        return (_err_token(ref_raw) == "syntax error" and
+                _err_token(zb_raw) == "syntax error")
+
+    verdicts, ref_raws, zb_raws = omsx_repl.run_differential(
+        ref_machine, zb_machine, specs, compare, reset=("NEW", "CLS"))
+    ok = True
+    for (label, kind, _l), good, ref_raw, zb_raw in zip(
+            MALFORMED_SPECS, verdicts, ref_raws, zb_raws):
+        ok = ok and good
+        print(f"{'OK' if good else 'FAIL':4} {label}")
+        if not good:
+            if kind == "seed":
+                print(f"       ref: {_rnd_brackets(ref_raw)}  "
+                      f"zb: {_rnd_brackets(zb_raw)}")
+            else:
+                print(f"       ref: err={_err_token(ref_raw)} "
+                      f"brk={_rnd_brackets(ref_raw)}  "
+                      f"zb: err={_err_token(zb_raw)} brk={_rnd_brackets(zb_raw)}")
+    print("malformed-call: ALL OK" if ok else "malformed-call: MISMATCH")
+    return ok
+
+
 # --- 2. value matrix ---------------------------------------------------------
 # Grouped by the contract facet it pins (spec §9.1/§9.2/§9.4).
 EXPRS = [
@@ -1488,6 +1582,8 @@ def main() -> int:
     # sequence equality), so it only runs when --zb-machine is given.
     if args.zb_machine and not args.only:
         ok = check_rnd(args.machine, args.zb_machine) and ok
+        print()
+        ok = check_malformed(args.machine, args.zb_machine) and ok
         print()
 
     cases = [(e, f'print "[";{e};"]"', "expr") for e in EXPRS]
