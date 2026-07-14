@@ -1032,6 +1032,19 @@ EXPRS = EXPRS + [f"tan({_x})" for _x in TAN_BAND_XS]
 # --- TAN near-pi/2 + large-|x| rows (§14.8): pinned to captured-zerobas, NOT
 # truth (the documented near-pole/large-x deviation, SQR_KNOWN_FLOOR shape).
 TAN_NEARPI2_XS = ["1.5707", "1.57079", "1000", "1E5", "1E8", "1E13"]
+# --- SIN/COS/TAN reduction-FLOOR rows (§14.5 sck_floor, dexp'>=15, |x| >=
+# ~1.57E14): the kernel bails to the DESIGNED floor sv=0/cv=1 (SIN=0, COS=1,
+# TAN=0) -- x is meaningless there (its own 14-sig ULP >= ~10 rad), so these
+# are pinned to the DESIGNED floor values, NOT truth (which is garbage) and
+# NOT the reference (which returns its own 0). Added 2026-07-14 after the
+# slice-2d adversarial review flagged that NOTHING exercised this path (no
+# gate/sim/unit row) -- exactly the project's matrix-invisible hiding spot.
+TRIG_FLOOR_XS = ["1E15", "-1E15", "2E14"]
+TRIG_FLOOR_KNOWN = {}
+for _x in TRIG_FLOOR_XS:
+    for _fn, _v in (("sin", "0"), ("cos", "1"), ("tan", "0")):
+        TRIG_FLOOR_KNOWN[f"{_fn}({_x})"] = _v
+        EXPRS = EXPRS + [f"{_fn}({_x})"]
 EXPRS = EXPRS + [f"tan({_x})" for _x in TAN_NEARPI2_XS]
 # Filled from this probe's own --zb-machine characterization run against the
 # repack build (2026-07-14) -- captured-zerobas values, asserted verbatim
@@ -1433,6 +1446,12 @@ def main() -> int:
                 truth = -truth
             d = ulp_dist(zb_val, truth)
             return d is not None and d <= cap
+        if expr in TRIG_FLOOR_KNOWN:
+            # §14.5 sck_floor: pinned to the DESIGNED floor value (0/1/0), not
+            # truth or reference (both meaningless at |x| >= ~1.57E14).
+            zb_val = parse_basic_number(zb_span)
+            return zb_val is not None \
+                and zb_val == parse_basic_number(TRIG_FLOOR_KNOWN[expr])
         sin_x = _sin_arg(expr) if expr not in SPAN_ONLY else None
         if sin_x is not None:
             # §14.2/§14.8 (documented bounded deviation, ATN/EXP/LOG shape):

@@ -1043,7 +1043,12 @@ cached char_trig.json), extending §1.1/§1.2 with the quantitative reduction fl
 - **Reduction floor: the reference RETURNS 0 for |x| ≥ 1E13** (both SIN and COS by 1E14;
   SIN already 0 at 1E13). This is exactly where x's OWN 14-sig ULP reaches ≥ 1 rad, so the
   argument is meaningless and *no* implementation can do better. Our design's natural floor
-  (§14.5 step 3, dexp′≥15) sits even further out (~1.57E14), so we are **never worse**.
+  (§14.5 step 3, dexp′≥15) sits even further out (~1.57E14). In [0, 1E13) we are
+  dramatically better; in the meaningless band **[1E13, 1.57E14) we return bounded values in
+  [−1,1] while the reference returns 0** — *both* are garbage (x's ULP ≥ 10 rad there;
+  e.g. `sin(1E14)` ours −0.948 vs truth −0.209, reference 0), so "never worse" is not a
+  meaningful per-input claim in that band (nothing asserts it — the gate pins our floor
+  outputs 0/1/0 for |x|≥1.57E14 by capture, §14.8). Above 1.57E14 we too return 0/1/0.
 - **Near π/2:** `TAN` → large finite (no error); `TAN(1.5707963267949)` = −15915494309189
   (reference), a large finite our fp_div reproduces in kind (not bit).
 - **Tokens (§1.4):** `SIN`=`$FF $89`, `COS`=`$FF $8C`, `TAN`=`$FF $8D` (gate re-confirms
@@ -1210,11 +1215,21 @@ sim-vs-hardware differential over the gate batteries.
 
 ### 14.10 Open watch-items for implementation (flagged by the contract author)
 
-1. **`sincos_kernel` round-half (step 3) modelling boundary:** the sim models `n` as the
+1. **`sincos_kernel` round-half (step 3) modelling boundary + sim is NOT a bit-exact
+   oracle (RESOLVED by the 2026-07-14 adversarial review):** the sim models `n` as the
    exact round of the 14-digit q; the asm does `fp_add(q,0.5)` then truncate. These agree
-   except when the fp_add itself rounds (q ≳ 1E13 — already the floor regime, unasserted).
-   Confirm on hardware that the moderate battery matches the sim bit-for-bit (the §12.9 EXP
-   sim-vs-hardware step); any moderate-range disagreement is a real finding.
+   except when the fp_add rounds (q ≳ 1E13 — floor regime, unasserted). MORE IMPORTANTLY,
+   the review's mandated sim-vs-hardware differential found the sim's exact-then-round op
+   model differs from the real core (no-sticky-digit alignment) by 1 ulp on **~23 % of the
+   moderate battery** (small-u Horner adds), so the original "matches the sim bit-for-bit"
+   expectation is UNACHIEVABLE and was wrong to state. The correct check is **"hardware
+   matches a FAITHFUL digit-level core model"**, which the review verified (all 111 live
+   gate values bit-for-bit) — and it re-measured the whole §14.2 envelope under real-core
+   semantics with every bound holding. The gate's truth-bound tolerances (3E-14 abs / 16
+   ulp) carry that 1-ulp margin, so the shipped values + bounds are correct; the sim stays
+   a valid **bounds/envelope** regression proof (its docstring now says so). Promoting the
+   faithful-core model into `sim_math_chain.py` is a **slice-2e follow-up** (RND's black-box
+   capture will want a bit-exact model).
 2. **`fp_tan` cosv→0:** exactly-zero cosv (x landing on a 14-sig π/2 where the selected cos
    rounds to 0) would hit fp_div's Division-by-zero rather than the reference's large-finite.
    The characterized `TAN(1.5707963267949)` is a *tiny-nonzero* cos → large finite (fp_div

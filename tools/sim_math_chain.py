@@ -12,10 +12,19 @@ significant-digits HALF_UP (Decimal localcontext prec=14) -- the model that
 reproduced fp_atan's emitted digits bit-for-bit in the 2a investigation.
 Known modelling limit: the real core keeps 14+1 guard digits through
 alignment and drops the rest (no sticky digit), which can differ from
-exact-then-round by 1 ulp only when an add/sub crosses a power-of-10
-boundary with an operand-exponent gap of ~15 -- measure-zero in these
-chains; the on-hardware gate (basic_probe_math_conv.py) is the final
-arbiter and its bounds carry that margin.
+exact-then-round by 1 ulp when an add/sub aligns operands with a large
+exponent gap. For EXP/LOG/POW this is rare (the +1 EXP_MAX_ULP margin
+absorbs it). For the TRIG chain it is NOT measure-zero: the slice-2d
+adversarial review (2026-07-14) measured ~23% of the 6026-input SIN/COS
+battery differing from real hardware by exactly 1 ulp (small-u Horner adds
+constantly drop shifted-out digits), and a faithful digit-level core model
+reproduced all 111 live gate values bit-for-bit. This does NOT break the
+ASSERTED BOUNDS -- the review re-measured the whole §14.2 envelope under
+real-core semantics and every bound held (SIN/COS worst abs 1.0E-14, TAN
+11 ulp) -- but this sim is a bounds/envelope proof, NOT a bit-exact
+hardware oracle. The on-hardware gate (basic_probe_math_conv.py) is the
+final per-input arbiter; its truth-bound tolerances carry that 1-ulp
+margin. (Promoting the review's faithful-core model here is a 2e follow-up.)
 
 Constants/coefficients are PARSED FROM sub/math-coeffs.inc -- the sim
 validates the artifact that actually ships, not a recomputation.
@@ -331,6 +340,13 @@ def sincos_chain(K, x, fn):
     a = abs(x)
     xs = -1 if x < 0 else 1
     q = op(a, K["TWO_OVER_PI"], "*")
+    # sck_floor (§14.5): the asm bails when q'=q+0.5 has dexp'>=15 (the units
+    # digit falls off the 14-digit array, |x| >= ~1.57E14) -> designed floor
+    # sv=0/cv=1 (SIN=0, COS=1, TAN=0). Mirror it so the sim and asm agree past
+    # 1E14 (the moderate/large batteries stop well below, so this only guards
+    # the boundary and keeps tan_chain from a 0/0 there).
+    if op(q, D("0.5"), "+") >= D("1E14"):
+        return fp14(D(1)) if fn == "cos" else fp14(D(0))
     n = _round_int(q)
     nf = fp14(D(n))
     r = op(a, op(nf, K["SIN_C1"], "*"), "-")
@@ -715,6 +731,11 @@ if __name__ == "__main__":
     assert sincos_chain(K, D(0), "sin") == 0, "SIN(0) must be exactly 0"
     assert sincos_chain(K, D(0), "cos") == 1, "COS(0) must be exactly 1"
     assert tan_chain(K, D(0)) == 0, "TAN(0) must be exactly 0"
+    # sck_floor anchors (§14.5, |x| >= ~1.57E14 -> designed 0/1/0)
+    for fv in (D("1E15"), D("-1E15"), D("2E14")):
+        assert sincos_chain(K, fv, "sin") == 0, f"floor SIN({fv}) must be 0"
+        assert sincos_chain(K, fv, "cos") == 1, f"floor COS({fv}) must be 1"
+        assert tan_chain(K, fv) == 0, f"floor TAN({fv}) must be 0"
     # oddness / evenness (exact structural identities)
     for xv in ("1", "2.5", "100"):
         xx = fp14(D(xv))

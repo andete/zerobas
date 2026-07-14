@@ -15,8 +15,12 @@
 ; minimax deg-6 Horner polys (S(u)=sin(sqrt u)/sqrt u, C(u)=cos(sqrt u),
 ; tools/gen_math_coeffs.py -- never the MSX ROM's own coefficients).
 ;
-; ACCURACY (§14.2, pre-proven by tools/sim_math_chain.py BEFORE this asm was
-; written, 24cb6f2): SIN/COS worst abs error 1.0E-14 (~1 ulp), 100%
+; ACCURACY (§14.2; the sim ENVELOPE was pre-proven by tools/sim_math_chain.py
+; BEFORE this asm was written, 24cb6f2, and the slice-2d adversarial review
+; RE-VERIFIED every bound under real-core semantics -- note the sim's
+; exact-then-round op model differs from the real core by <=1 ulp on ~23% of
+; the trig battery, WITHIN these bounds; the on-hardware gate is the per-input
+; arbiter): SIN/COS worst abs error 1.0E-14 (~1 ulp), 100%
 ; correctly-rounded on the moderate battery (|x|<=~1000); large-|x| abs error
 ; grows ~|x|*1E-14 (n*C2 rounding, the ONLY reduction error given the exact
 ; n*C1) but stays 3-6 orders better than the reference's own weak ~13-digit
