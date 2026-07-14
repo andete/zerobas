@@ -1014,3 +1014,211 @@ the stale-dexp-zero × huge-dexp-y pre-check compound the reviewer flagged —
 plus 0^0/0^.5/0^-1/2^-3^2/1D62^1/(0.5)^-2000 dispositions).
 **NEXT = 2d SIN/COS/TAN** (shared kernel: TAN=SIN/COS bit-for-bit,
 COS=SIN(x+π/2), §1.2), then 2e RND (LCG capture campaign).
+
+---
+
+## 14. Slice 2d implementation contract — `SIN` + `COS` + `TAN` (concrete, implementation-ready)
+
+**Status: 🟢 CONTRACT 2026-07-14** — the ratified §5/§8 slicing's fourth cut, the
+trig cluster. Written against the live code (fp_exp.asm as the reduction template,
+fp_pow.asm for the tenant-to-tenant / stashing precedent, expr.asm `evmc_atn` for the
+no-domain-check stub, sub.asm `sub_p1_table`) and — the §12/§13 process — against a
+**pre-proven 14-digit chain simulation** ([tools/sim_math_chain.py](../tools/sim_math_chain.py),
+committed 24cb6f2): the fits AND the full reduce+poly chain accuracy were measured
+BEFORE this contract was finalized. Implementation = Sonnet on this contract, Fable
+review after (§8.5 split).
+
+### 14.1 Characterization result (pinned 2026-07-14 — do NOT re-run)
+
+Fresh VG-8020 black-box capture ([scratchpad/char_trig.py](../scratchpad/char_trig.py),
+cached char_trig.json), extending §1.1/§1.2 with the quantitative reduction floor:
+
+- **Exact anchors (confirmed):** `SIN(0)`=0, `COS(0)`=1, `TAN(0)`=0.
+- **`TAN(x)` = `SIN(x)/COS(x)`** bit-for-bit (§1.2); `COS(x)` = `SIN(x+π/2)` (shares the
+  SIN kernel; the near-π/2 catastrophic COS error is the reduction signature).
+- **The reference's reduction is WEAK** (limited-precision ~13-digit stored π): signed
+  ulp-vs-truth grows ≈ linearly with |x| — `SIN(1000)` **1649 ulp**, `SIN(1E5)` **2.9M
+  ulp**, `SIN(1E8)` **1.1E8 ulp** off truth. Its first few digits stay right (7 at 1E5),
+  the rest are garbage.
+- **Reduction floor: the reference RETURNS 0 for |x| ≥ 1E13** (both SIN and COS by 1E14;
+  SIN already 0 at 1E13). This is exactly where x's OWN 14-sig ULP reaches ≥ 1 rad, so the
+  argument is meaningless and *no* implementation can do better. Our design's natural floor
+  (§14.5 step 3, dexp′≥15) sits even further out (~1.57E14), so we are **never worse**.
+- **Near π/2:** `TAN` → large finite (no error); `TAN(1.5707963267949)` = −15915494309189
+  (reference), a large finite our fp_div reproduces in kind (not bit).
+- **Tokens (§1.4):** `SIN`=`$FF $89`, `COS`=`$FF $8C`, `TAN`=`$FF $8D` (gate re-confirms
+  vs the real crunch; capture wins on any disagreement).
+
+### 14.2 Proven accuracy envelope (sim, ~6000-input moderate battery + 4000 large-|x|)
+
+SIN/COS ∈ [−1,1], so **ABSOLUTE error is the uniform metric** (relative ulp inherently
+blows up at the result-zeros — the reference too, §1.1); TAN uses relative-ulp in the
+well-conditioned band away from both its zeros (k·π) and poles (π/2+k·π).
+
+| Fn | metric | measured worst | bound asserted | reference (informational) |
+|---|---|---|---|---|
+| `SIN` | abs error | **1.0E-14** (~1 ulp), **100 %** correctly-rounded (\|val\|≥0.1) | abs ≤ `3E-14`, CR ≥ 85 % | 1649 ulp @1000, 2.9M @1E5 |
+| `COS` | abs error | **1.0E-14**, **100 %** correctly-rounded | abs ≤ `3E-14`, CR ≥ 85 % | catastrophic near π/2 |
+| `TAN` | rel ulp (0.1≤\|tan\|≤10) | **11 ulp** @ x≈950 (band edge: \|sin\| or \|cos\|≈0.1 amplifies) | ≤ `16` (~1.5× margin) | 44577 ulp @12345 |
+| SIN/COS large-\|x\| | abs error | grows ~\|x\|·1E-14 (n·C2 rounding) | ≤ \|x\|·1E-13 (structural tripwire) | 0 (gives up) @≥1E13 |
+
+Anchors proven exact in-chain: `SIN(0)`=0, `COS(0)`=1, `TAN(0)`=0; oddness
+`SIN(−x)`=−`SIN(x)` / evenness `COS(−x)`=`COS(x)` bit-exact. **Documented bounded
+deviation, ATN/EXP/LOG-shape gate** (truth-bound + informational reference report; no
+per-input never-worse claim — but here it's academic, the reference is 3–6 orders worse
+everywhere it matters).
+
+### 14.3 Constants (already emitted + committed, 24cb6f2 — sub/math-coeffs.inc)
+
+OWN decimal minimax (gen_math_coeffs.py §4 provenance; `check_2d_invariants` asserts every
+precondition at generation time):
+
+- `SIN_COEF` — **S(u) = sin(√u)/√u**, deg 6 (7 terms), fit 3.1E-18 on u∈[0,(π/4)²]; the
+  odd sine is `sin(r) = r·S(r²)`, so S carries only even powers of r. `S(0)`=c0 rounds to
+  **exactly 1** (⇒ `SIN(0)`=r·S=0 exact).
+- `COS_COEF` — **C(u) = cos(√u)**, deg 6 (7 terms), fit 4.7E-17 on the same domain;
+  `cos(r) = C(r²)`. `C(0)`=c0 rounds to **exactly 1** (⇒ `COS(0)`=1 exact).
+- `TWO_OVER_PI` = round14(2/π) — the reduction selector (n := round(x·2/π)).
+- `SIN_C1` = π/2 to **5 significant digits (exactly 1.5708, trailing zeros)** so **n·C1 is
+  EXACT in 14 digits for |n| ≤ 10⁹** (5 sig + 9-digit n = 14), asserted; `SIN_C2` =
+  round14(π/2 − C1) (≈ −3.673E-6) carries the next 14 digits, so C1+C2 ≈ π/2 to ~19 digits.
+  The ONLY reduction error is n·C2's rounding (~|x|·1E-14) — see §14.2's floor row.
+
+### 14.4 Home + tokens + dispatch
+
+- **Home:** one body file [sub/fp_sin.asm](../sub/fp_sin.asm) holding the **shared
+  `sincos_kernel`** plus three thin tenant entries `fp_sin`/`fp_cos`/`fp_tan`, page-1
+  tenants after `fp_pow`. REUSES `fp_poly_horner` + `fat_copy18` directly (same assembly
+  unit; sub.asm includes fp_atan.asm…fp_pow.asm before this file). Main-ROM stubs
+  `evmc_sin`/`evmc_cos`/`evmc_tan` (repack-only, `IF ROM_BASE < $4000`). Lean 16 KB
+  `basic.rom` **byte-identical** (all new code is sub-side).
+- **Tokens (§1.4):** `SIN_TOKEN equ $89` / `COS_TOKEN equ $8C` / `TAN_TOKEN equ $8D` in
+  sysvars.inc (repack block, beside `ATN_TOKEN`) + three kwtable.inc crunch entries
+  (`db 3,"SIN",2,PEEK_PREFIX,SIN_TOKEN`, same for COS/TAN). Gate confirms all three bytes
+  vs the real crunch; detok/LIST free via the single-copy table.
+- **Tenant indices:** `SUBROM_IDX_SIN equ 6`, `SUBROM_IDX_COS equ 7`, `SUBROM_IDX_TAN
+  equ 8` (append-only, sysvars.inc IFNDEF block); `jp fp_sin` / `jp fp_cos` / `jp fp_tan`
+  appended to `sub_p1_table` (positional — sub/equates.inc NOT touched, the ATN/EXP/LOG
+  precedent).
+- **Dispatch:** three selectors in `ev_ff_mathconv` (`cp SIN_TOKEN / jp z,evmc_sin`, same
+  for COS/TAN), after the LOG selector.
+
+### 14.5 `sincos_kernel` (shared; input ARGA = widened x → sets sv, cv, quad)
+
+The heart of the slice: **ONE reduction produces BOTH sv=sin(r) and cv=cos(r)**, so SIN,
+COS, and TAN differ only in a final quadrant-select (no second reduction, no re-run, no
+stack stash — the fp_pow y-stash problem is sidestepped entirely). COMPUTE-ONLY, plain
+`ret`; leaves `sv`→`MATH_A`, `cv`→`MATH_R`, `quad` (0..3)→`MATH_J`. Works on **a = |x|**
+(the wrappers own the x-sign). Persistent cells (all §14.7 aliases): `MATH_A` (a→r→sv),
+`MATH_T`/`HORNER_G` (nf→u), `MATH_R`/`HORNER_ACC` (r1-temp→cv), `MATH_J` (quad byte);
+`MATH_N` is UNUSED by the kernel (free for the wrappers' x-sign stash).
+
+1. **a := |x|:** `fat_copy18` ARGA→`MATH_A`, force `MATH_A+FPNUM_SIGN`:=0.
+2. **q := a·TWO_OVER_PI** (fp_mul, widen → ARGA).
+3. **n := round(q), quad := n&3, via add-half-then-truncate** (avoids a digit-carry loop):
+   - `q′ := q + 0.5` (fp_add; build ARGB=0.5 inline: sign 0, dexp 0, dig[0]=5 rest 0 —
+     value 5·10⁻¹; widen result). round(q)=floor(q+0.5) for q≥0.
+   - Read `dexp′` (signed low byte, safe per widen_fac_to's ±64 guarantee — same idiom as
+     fexp step 2). **dexp′ ≤ 0** → q′∈[0.5,1) → n=0: `quad:=0`, `nf:=0.0` (skip the
+     reduction; r=a). **dexp′ ≥ 15** → the units digit (index dexp′−1) falls off the
+     14-digit array → **FLOOR** (x meaningless, |x|≥~1.57E14): set `sv:=0.0`, `cv:=1.0`
+     (so SIN=0, COS=1, TAN=0 — closest to the reference's own 0-return, finite, no 0/0),
+     `quad:=0`, `ret`.
+   - **1 ≤ dexp′ ≤ 14:** `nf := q′` with digits `d[dexp′..13]` and guard zeroed (a pure
+     suffix-zero truncation — NO round-up, the +0.5 already rounded). `quad`: dexp′==1 →
+     `d[0] & 3`; else `(2·d[dexp′−2] + d[dexp′−1]) & 3` (10≡2 mod 4). Store `quad`→`MATH_J`.
+     Copy `nf`→`MATH_T`.
+4. **Reduce (nf·C1 EXACT by the §14.3 invariant; fp_sub EXACT by alignment — the fexp
+   step-5 pattern verbatim):** `r := a − nf·SIN_C1` (fp_mul nf·C1, widen, ARGB; ARGA:=a
+   from MATH_A; fp_sub, widen → `MATH_R` temp); `r := r − nf·SIN_C2` (fp_mul nf·C2, widen,
+   ARGB; ARGA:=r from MATH_R; fp_sub, widen → ARGA). nf now dead (MATH_T free).
+5. **u := r·r:** copy r→`MATH_A` (a retired), copy→ARGB, fp_mul (ARGA still r) → u, widen →
+   `HORNER_G` (=MATH_T). [MATH_A=r, HORNER_G=u]
+6. **sv := r·S(u):** `S := fp_poly_horner(HORNER_G, SIN_COEF)` (FAC; HORNER_G=u preserved),
+   widen, ARGB:=S; ARGA:=`MATH_A`(r); fp_mul → sv=r·S, widen; store sv→`MATH_A` (r retired).
+7. **cv := C(u):** `C := fp_poly_horner(HORNER_G, COS_COEF)` (FAC=cv; HORNER_ACC=MATH_R is
+   the horner's own transient, done on return), widen; store cv→`MATH_R`. `ret`.
+   [MATH_A=sv, MATH_R=cv, MATH_J=quad]
+
+x=0 needs no special path: n=0, r=a=0, u=0, sv=0·S=0, cv=C(0)=1 (proven in-sim).
+
+### 14.6 `fp_sin` / `fp_cos` / `fp_tan` (tenant entries; quadrant-select over sv/cv)
+
+A shared `sc_select(q)`: `q&1==0` → source `MATH_A`(sv) else `MATH_R`(cv); `fat_copy18`
+source→the target FPNUM (ARGA or ARGB per caller); `q&2` → flip the target's sign byte
+(fp negate is exact). `qq := (quad + off) & 3`:
+
+- **`fp_sin`** (off=0): save x-sign (`MATH_N` := `ARGA+FPNUM_SIGN`, before the kernel);
+  `call sincos_kernel`; `sc_select(quad+0)`→ARGA/FAC; if `MATH_N`≠0 flip `FAC` sign; `ret`.
+- **`fp_cos`** (off=1): `call sincos_kernel`; `sc_select((quad+1)&3)`→FAC; `ret` (COS even —
+  no x-sign; COS(|x|)=COS(x)).
+- **`fp_tan`** (off=0, odd): save x-sign→`MATH_N`; `call sincos_kernel`;
+  `sc_select(quad+0)`→**ARGA** (=sinv); `sc_select((quad+1)&3)`→**ARGB** (=cosv);
+  `fp_div` (FAC := sinv/cosv); if `MATH_N`≠0 flip `FAC` sign; `ret`. cosv→0 (x at π/2) is
+  disposed by fp_div's own tail (reference returns a large finite; captured, not asserted).
+
+All three COMPUTE-ONLY (plain `ret`; the stubs own FACTYP/DE). `sincos_kernel` is a local
+`call` (registers survive per normal call/ret; the wrappers keep the x-sign in `MATH_N`,
+which the kernel never touches, NOT a register).
+
+### 14.7 Main-ROM stubs + RAM
+
+- **`evmc_sin`/`evmc_cos`/`evmc_tan`** = **`evmc_atn`'s shape verbatim** (SIN/COS/TAN are
+  total over all x, §6 — NO domain check, no error tail): `ev_mc_arg`; `widen_rhs_operand`
+  into ARGA; `push ix`; `ld ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_{SIN,COS,TAN}`;
+  `subrom_call`; `pop ix`; `jp c,subrom_absent_error`; `FACTYP:=8`; `jp flt_to_int16`.
+- **RAM (§12.6 standing: NO new claims):** the kernel reuses `MATH_A`/`MATH_T`/`HORNER_G`/
+  `MATH_R`/`HORNER_ACC` exactly as EXP/LOG do; `MATH_J` (=`SQRT_POW10`) holds `quad`;
+  `MATH_N` (=`SQRT_K`+`SQRT_ITER`, 2 B) holds the wrapper's x-sign byte (the kernel leaves
+  it untouched — the whole point of NOT keeping it in a register). SIN/COS/TAN never run
+  concurrently with SQR/ATN/EXP/LOG/POW (one factor at a time — every prior slice's
+  argument).
+
+### 14.8 Gate — extend `basic_probe_math_conv.py` (do NOT fork)
+
+- **Tokens:** append `("SIN","a=sin(1)",0x89)`, `("COS","a=cos(1)",0x8C)`,
+  `("TAN","a=tan(1)",0x8D)`.
+- **Truth oracles** `truth_sin14`/`truth_cos14`/`truth_tan14` (Decimal prec 50 → the
+  high-precision quadrant reduction of char_trig.py, promoted) + pure-call matchers.
+- **Value batteries** (asserted vs truth):
+  - `SIN_BROAD_XS`/`COS_BROAD_XS` (~40 each): 0, small angles, the quadrant boundaries
+    (π/4, π/2, π, 3π/2, 2π as 14-sig literals) and ±1 ulp straddles, negatives (oddness/
+    evenness rows), 100, 628.318…, 1000, plus the §14.1 anchors. **Assert
+    `|zb − truth| ≤ SIN_ABS_TOL (3E-14)` per input** (absolute — sin/cos are bounded) +
+    a correctly-rounded floor (`SIN_CR_FLOOR`/`COS_CR_FLOOR` on |val|≥0.1 inputs, set from
+    the hardware run, cross-checked vs the sim's per-input prediction — any disagreement is
+    itself a review finding).
+  - `TAN_BAND_XS` (~25): x giving 0.1≤|tan|≤10; assert relative ulp ≤ `TAN_MAX_ULP (16)`.
+  - **`TAN_NEARPI2_XS` / large-|x| rows** (1.5707, 1.57079, 1000, 1E5, 1E8, 1E13): **pin to
+    captured-zerobas** (SPAN_ONLY / a `TAN_KNOWN` map), NOT truth — the near-π/2 poles and
+    the reduction floor are documented deviations (the SQR-floor precedent).
+- **Reference-deviation report** (informational, ATN/EXP shape): capture the reference on
+  the batteries, print the ulp summary (documents §14.1's weak-reduction envelope + the
+  1E13 zero-floor) without ever asserting against it.
+
+### 14.9 Verification / standing gates
+
+`make math-acceptance` (extended) green; `python3 tools/sim_math_chain.py` green (the
+committed proof stays a fast regression); `subrom-closure-check` green (the three tenants'
+resident surface ⊆ the existing set: fp_add/sub/mul/div/cmp, dig15_iszero, widen_fac_to/
+uint_to, arga_pack_fac, fp_poly_horner — **NO new page-0 relocation**); `subrom-acceptance`/
+`subrom-inttest` green (indices 6/7/8); **lean basic.rom byte-identical**; sub.rom fits +
+boots; `unit-test`, `float/string/input-acceptance`, reloc, kwtable single-copy green.
+IPS rebuild + reinstall before machine probes ([[ips-rebuild-after-basic-change]]).
+**Fable review of the whole slice** (standing float-pack lesson), including a per-input
+sim-vs-hardware differential over the gate batteries.
+
+### 14.10 Open watch-items for implementation (flagged by the contract author)
+
+1. **`sincos_kernel` round-half (step 3) modelling boundary:** the sim models `n` as the
+   exact round of the 14-digit q; the asm does `fp_add(q,0.5)` then truncate. These agree
+   except when the fp_add itself rounds (q ≳ 1E13 — already the floor regime, unasserted).
+   Confirm on hardware that the moderate battery matches the sim bit-for-bit (the §12.9 EXP
+   sim-vs-hardware step); any moderate-range disagreement is a real finding.
+2. **`fp_tan` cosv→0:** exactly-zero cosv (x landing on a 14-sig π/2 where the selected cos
+   rounds to 0) would hit fp_div's Division-by-zero rather than the reference's large-finite.
+   The characterized `TAN(1.5707963267949)` is a *tiny-nonzero* cos → large finite (fp_div
+   fine); an exactly-0 case is not known to occur, but the implementer should confirm
+   fp_div's disposition there and add a guard only if a live probe surfaces one.
+3. **Token bytes** are asserted from §1.4's prior capture; the gate's token check is the
+   arbiter (capture wins on disagreement).
