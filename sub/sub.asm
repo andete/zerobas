@@ -262,6 +262,12 @@ sub_p1_table:
                                                 ;   SIN(x)/COS(x) (math pack slice 2d,
                                                 ;   §14). Main-ROM stub is basic/
                                                 ;   expr.asm `evmc_tan`.
+                jp      fp_rnd                  ; index 9 (SUBROM_IDX_RND): RND(x)'s
+                                                ;   14-digit BCD LCG advance (math
+                                                ;   pack slice 2e, docs/spec-basic-
+                                                ;   mathpack-slice2.md §15). LAST
+                                                ;   slice-2 tenant. Main-ROM stub is
+                                                ;   basic/expr.asm `evmc_rnd`.
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -327,6 +333,17 @@ sub_p1_ping:
 ; resident-ABI surface subset as the other page-1 tenants; no new
 ; math-coeffs.inc constants beyond what's already emitted.
                 include "fp_sin.asm"
+
+; fp_rnd (math pack slice 2e, docs/spec-basic-mathpack-slice2.md §15): the
+; NINTH and LAST page-1 tenant, RND(x). Reuses fsc_pack_arga directly
+; (fp_sin.asm, same assembly unit, already included above) for its own
+; zero-safe FAC pack tail; needs NEITHER fat_copy18/fp_poly_horner NOR any
+; math-coeffs.inc record (its own A/C constants are page-1 data local to
+; fp_rnd.asm) -- RND is the only slice-2 tenant that calls no resident fp
+; op at all (§15.2). Resident-ABI surface subset: dig15_iszero +
+; arga_pack_fac only (no widen_fac_to/widen_uint_to, since RND never widens
+; an fp record through the resident ops either).
+                include "fp_rnd.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF

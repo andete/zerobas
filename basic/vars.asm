@@ -712,6 +712,13 @@ cv_deftbl:                                  ; (RUN clears here first, then the p
                 ld      (hl),a              ;  DEF lines run); consulted by var_name_key /
                 inc     hl                  ;  var_str_type at every variable reference
                 djnz    cv_deftbl
+                ld      hl,RND_S0_PACKED    ; math pack slice 2e (docs/spec-basic-
+                ld      de,RND_SEED         ; mathpack-slice2.md §15.3): reset the
+                ld      bc,7                ; RND generator's persistent 14-digit
+                ldir                        ; state to S0 on every NEW/CLEAR/RUN +
+                                            ; cold boot -- this clear_vars call IS
+                                            ; the single hook that covers all four
+                                            ; (§15.1's reference-identical reset).
     ENDIF
                 ld      hl,VARTAB
                 ld      bc,VARSLOTS*VARENTSZ
@@ -731,3 +738,15 @@ cv_str:
                 add     hl,de
                 djnz    cv_str
                 jp      fld_init            ; also reset the random-access field table
+
+; --- RND_S0_PACKED: math pack slice 2e (repack build only, docs/spec-basic- -
+; mathpack-slice2.md §15.1/§15.3). S0's 7-byte packed-BCD encoding (2
+; digits/byte, MSD-first -- same nibble convention as arga_pack_fac's own
+; FAC-mantissa packing) of S0=40649651372358, the RND generator's power-on/
+; reset seed (black-box recovered from the VG-8020, §15.1). Pure data, used
+; ONLY by clear_vars above (via `ld hl,RND_S0_PACKED`) -- not reached by
+; fallthrough, since clear_vars's own tail `jp fld_init` ends the routine
+; before this point.
+    IF ROM_BASE < $4000
+RND_S0_PACKED:  db      $40,$64,$96,$51,$37,$23,$58
+    ENDIF

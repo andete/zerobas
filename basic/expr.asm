@@ -882,6 +882,8 @@ ev_ff_mathconv:
                 jp      z,evmc_cos
                 cp      TAN_TOKEN
                 jp      z,evmc_tan
+                cp      RND_TOKEN
+                jp      z,evmc_rnd
                 jp      ev_ff_strnum        ; not ours -> LEN/ASC/VAL, else ev_f_err
 
 ; --- ev_mc_arg: parse "( <numeric expr> )" from IX (positioned on the -------
@@ -1301,6 +1303,32 @@ evmc_tan:
                 push    ix
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_TAN
                 call    subrom_call
+                pop     ix
+                jp      c,subrom_absent_error
+                ld      a,8
+                ld      (FACTYP),a
+                jp      flt_to_int16
+
+; --- evmc_rnd: RND(x) -> pseudo-random value in [0,1), DOUBLE (math pack ---
+; slice 2e, docs/spec-basic-mathpack-slice2.md §15.4/§15.5). evmc_atn's
+; shape VERBATIM (RND is total over all x -- no domain check, no error
+; tail): ev_mc_arg then widen_rhs_operand into ARGA, dispatch to fp_rnd in
+; the sub-ROM PAGE-1 island via subrom_call/SUBROM_ENTRY_BASE_P1+
+; 3*SUBROM_IDX_RND, same CALSLT-A-not-preserved discipline as every prior
+; evmc_*: fp_rnd is COMPUTE-ONLY (leaves FAC correct but does not touch
+; FACTYP/DE), so THIS stub sets FACTYP:=8 + refreshes DE via flt_to_int16
+; after a successful return; CF (not A) is the only reliable post-call
+; signal, and CF=1 only means "sub-ROM absent" (never on the merged
+; machine). Note: the argument's VALUE is read by fp_rnd itself (ignored
+; when positive, consumed as mant14 when negative, ignored when zero) --
+; this stub does not interpret it at all, just widens+dispatches.
+evmc_rnd:
+                call    ev_mc_arg
+                ld      hl,ARGA
+                call    widen_rhs_operand
+                push    ix                  ; save the parser's text-position pointer
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_RND
+                call    subrom_call         ; CF=1 iff sub-ROM absent. Result in FAC.
                 pop     ix
                 jp      c,subrom_absent_error
                 ld      a,8

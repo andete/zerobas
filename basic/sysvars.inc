@@ -275,6 +275,13 @@ LOG_TOKEN       equ     $8A     ; LOG(x) -> $FF $8A
 SIN_TOKEN       equ     $89     ; SIN(x) -> $FF $89
 COS_TOKEN       equ     $8C     ; COS(x) -> $FF $8C
 TAN_TOKEN       equ     $8D     ; TAN(x) -> $FF $8D
+; Math pack slice 2e (Phase 3, repack-only -- docs/spec-basic-mathpack-
+; slice2.md §15.4). RND: same $FF-prefixed function-token table, MSX2 TH
+; Table 2.20 + black-box VG-8020 crunch capture (probes/basic/basic_probe_
+; math_conv.py, §15.5). LAST slice-2 function: completes the interleave
+; SIN $89 . LOG $8A . EXP $8B . COS $8C . TAN $8D . ATN $8E . RND $88
+; every slice-1b/2a/2b/2d comment above already forward-referenced.
+RND_TOKEN       equ     $88     ; RND(x) -> $FF $88
 ; Memory / I-O access tokens (MSX2 TH Table 2.20; oracle-confirmed byte-for-byte
 ; via basic_probe_crunch.py — see PROVENANCE.md). VPOKE / OUT are one-byte
 ; statement tokens; VPEEK / INP are $FF-prefixed two-byte function tokens (like
@@ -1158,6 +1165,27 @@ INT_MAIN_PRIM   equ     $F14A   ; page-0 primary field of the MAIN (BIOS) slot (
 INT_SUB_PRIM    equ     $F14B   ; page-0 primary field of the sub-ROM slot (=3, slot 3)
 INT_SUB_SUBSL   equ     $F14C   ; page-0 subslot  field of the sub-ROM slot (=2, i.e. 3-2)
 SUB_INT_DELTA   equ     $F14D   ; self-test tenant result: JIFFY ticks observed under EI (1)
+; --- Math pack slice 2e RND_SEED (repack build only, docs/spec-basic- -------
+; mathpack-slice2.md §15.3): the RND generator's persistent 14-digit LCG
+; state, packed BCD (2 digits/byte, MSD-first -- same nibble convention as
+; arga_pack_fac's own FAC-mantissa packing), 7 bytes. It must survive
+; arbitrary statements between calls, so it cannot reuse transient math
+; scratch (unlike fp_rnd's own working cells below) -- but RAM below
+; DRVA_DPB ($F195) is exhausted (SQRT_POW10 took the last free byte, see the
+; F3 S3a block's own header below). Placement: the TAIL SLACK of the
+; SUB_INT_RAM trampoline reservation above. The copied stub
+; (sub_int_template, basic/subromcall.asm) is currently 47 bytes, but its
+; reservation runs a conservative 64 B ($F10A..$F149) so future trampoline
+; growth has headroom -- RND_SEED claims 7 bytes of that UNUSED tail
+; ($F142..$F148), safely below $F149 and clear of INT_MAIN_PRIM ($F14A)
+; above. Safe-by-construction: subromcall.asm carries a build-time ASSERT
+; (`sub_int_template_end - sub_int_template <= RND_SEED - SUB_INT_RAM`,
+; currently 47<=56) right after sub_int_template_end, so any future
+; trampoline growth that would collide with RND_SEED FAILS THE BUILD loudly
+; instead of silently overlapping. Reset to packed(S0) by clear_vars
+; (basic/vars.asm), the same single hook DEFTBL's own reset uses (covers
+; NEW/CLEAR/RUN + cold boot, §15.1/§15.3).
+RND_SEED        equ     $F142   ; packed BCD, MSD-first, 7 bytes (-> $F148)
 ; --- Math float pack, slice F3 S3a RAM (repack build only) ------------------
 ; docs/spec-basic-float-core.md §11. Own-choice free RAM, same rationale as the
 ; F1/F2 blocks above: $F14E.. is unclaimed free RAM below DRVA_DPB ($F195,
@@ -1343,6 +1371,56 @@ MATH_N          equ     SQRT_K  ; fp_exp's n8 (steps 2-4)/n (steps 4-8) or
 MATH_J          equ     SQRT_POW10  ; fp_exp's m (0..7) or fp_log's j (0..8),
                                 ; 1 byte; alias of fp_atan's MATH_BREAK
                                 ; ($F194), same reuse argument (1)
+; --- Math pack slice 2e RAM (repack build only, docs/spec-basic-mathpack- ---
+; slice2.md §15.2/§15.4) -- fp_rnd's OWN transient working cells, all
+; ALIASES over already-justified dead scratch (RAM below DRVA_DPB is still
+; exhausted, no new claim permitted). Safe by the SAME "one factor at a
+; time" argument fp_atan's own header makes (SQR/ATN/EXP/LOG/POW/SIN/COS/
+; TAN/RND never run concurrently) -- and safer still: unlike every other
+; slice-2 tenant, fp_rnd calls NEITHER fp_add/fp_sub/fp_mul/fp_div NOR
+; fp_poly_horner internally (§15.2 -- the 14-digit BCD multiply-add is NOT
+; built from the resident fp ops), so there is no nested-call risk of a
+; callee clobbering these cells mid-routine either.
+RND_STATE       equ     MATH_A  ; the 14-digit decimal state, UNPACKED digit
+                                ; array (values 0-9, MSD-first -- d[0]=the
+                                ; 10^13 place, same convention as ARGA_DIG),
+                                ; first 14 of MATH_A's (=SQRT_Y) 18-byte
+                                ; cell. Holds S BEFORE the advance (either
+                                ; RND_SEED unpacked, or -- read directly, not
+                                ; via this alias -- ARGA+FPNUM_DIG for a
+                                ; reseed) and the NEW state AFTER it; also
+                                ; the value fp_rnd normalises to FAC (14)
+RND_LE          equ     MATH_T  ; S's digits, byte-REVERSED to little-endian
+                                ; (index 0 = units/LSD) for the multiply-add
+                                ; core (rnd_advance_bcd_le mirrors tools/
+                                ; sim_math_chain.py's rnd_advance_bcd, which
+                                ; is little-endian) -- first 14 of MATH_T's
+                                ; (=SQRT_X/HORNER_G) 18-byte cell (14)
+RND_ACCLE       equ     MULPROD ; the multiply-add's running accumulator,
+                                ; little-endian, 14-digit window (values
+                                ; mod 1e14 -- overflow past digit 13 is
+                                ; dropped, §15.2); first 14 of MULPROD's own
+                                ; 28-byte cell (dead outside fp_mul, and
+                                ; fp_rnd never calls fp_mul -- see header
+                                ; above) (14)
+RND_I           equ     MULPROD+14  ; multiply-add loop: S/acc digit index i
+                                ; (0..13), the SAME MULPROD cell's own spare
+                                ; second half (1)
+RND_J           equ     MULPROD+15  ; multiply-add loop: A's digit index j
+                                ; (0..13) (1)
+RND_IJ          equ     MULPROD+16  ; multiply-add loop: i+j, the target
+                                ; accumulator index for the current (i,j)
+                                ; pair (1)
+RND_AJ          equ     MULPROD+17  ; multiply-add loop: A_LE[j], stashed
+                                ; across the inner i-loop (1)
+RND_CARRY       equ     MULPROD+18  ; multiply-add loop: running BCD carry,
+                                ; shared by both the multiply phase (per
+                                ; outer j pass) and the final +C ripple-add
+                                ; phase (reset to 0 at the start of each) (1)
+RND_K           equ     MULPROD+19  ; output normalisation: count of leading
+                                ; zero digits in the post-advance state
+                                ; (0..14 -- 14 means S=0, the astronomically
+                                ; rare all-zero guard, §15.4 step 3) (1)
 JIFFY           equ     $FC9E   ; MSX software clock, bumped by the timer ISR (MSX2 TH work area)
 ; Dispatch ABI (mirror of sub/equates.inc — the append-only page-0 entry table).
 ; IX = SUBROM_ENTRY_BASE_P0 + 3*index selects a tenant; never renumber an index.
@@ -1403,6 +1481,11 @@ SUBROM_IDX_TAN       equ 8      ; fp_tan tenant (math pack slice 2d, sub/
                                 ; sincos_kernel, docs/spec-basic-mathpack-
                                 ; slice2.md §14.4/§14.6. Main-ROM stub is
                                 ; basic/expr.asm `evmc_tan`.
+SUBROM_IDX_RND       equ 9      ; fp_rnd tenant (math pack slice 2e, sub/
+                                ; fp_rnd.asm): the 14-digit BCD LCG advance,
+                                ; docs/spec-basic-mathpack-slice2.md §15.3/
+                                ; §15.4. LAST slice-2 tenant. Main-ROM stub
+                                ; is basic/expr.asm `evmc_rnd`.
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

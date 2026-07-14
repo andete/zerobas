@@ -81,8 +81,11 @@ SUB_SRC   := sub/sub.asm
 # sub/fp_sin.asm (math pack slice 2d, docs/spec-basic-mathpack-slice2.md §14):
 # the SIN/COS/TAN tenant body (shared sincos_kernel) -- same staleness hazard,
 # same fix.
+# sub/fp_rnd.asm (math pack slice 2e, docs/spec-basic-mathpack-slice2.md §15):
+# the LAST page-1 tenant, RND(x) -- same staleness hazard, same fix.
 SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
              sub/fp_exp.asm sub/fp_log.asm sub/fp_pow.asm sub/fp_sin.asm \
+             sub/fp_rnd.asm \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
              basic/tokenise.inc basic/detok.inc \
              sub/basic-resident-abi.inc

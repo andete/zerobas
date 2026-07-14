@@ -472,6 +472,7 @@ TOKENS = [
     ("SIN",  "a=sin(1)",  0x89),
     ("COS",  "a=cos(1)",  0x8C),
     ("TAN",  "a=tan(1)",  0x8D),
+    ("RND",  "a=rnd(1)",  0x88),
 ]
 
 
@@ -524,6 +525,149 @@ def check_pow_token(machine: str) -> bool:
     ok = ok and list_ok
     print(f"{'OK' if list_ok else 'FAIL'} LIST round-trip renders '2^3'")
     print("POW token capture: ALL OK" if ok else "POW token capture: MISMATCH")
+    return ok
+
+
+# =============================================================================
+# RND (math pack slice 2e, docs/spec-basic-mathpack-slice2.md §15) -----------
+# =============================================================================
+# RND is categorically different from every other function in this probe: its
+# whole contract IS sequence reproducibility (§15/§15.5), so the assertion is
+# bit-for-bit REFERENCE-IDENTITY on a whole multi-line, STATEFUL sequence —
+# never a truth bound, never a single-expression span compare. Each spec below
+# is a "direct" mode line list producing one or more `[...]`-bracketed prints
+# (the char_rnd*.py characterization scripts' own idiom, scratchpad/
+# char_rnd3.py/char_rnd4.py/char_rnd5.py); the whole ORDERED LIST of bracketed
+# values extracted from the captured screen must match, element for element,
+# between the reference and zerobas. No Python-side LCG prediction is needed
+# for the gate itself (that already lives in tools/sim_math_chain.py, proven
+# against these same anchors before this file was written) — the gate only
+# needs reference==zerobas, which is the actual contract.
+#
+# `reset=("NEW","CLS")` is applied by run_differential BEFORE EACH spec (same
+# convention the main matrix uses), so every spec starts from a genuinely
+# cold S0 seed — a spec that wants to test NEW/CLEAR/RUN/CLS's OWN reset
+# behaviour does so via a MID-SEQUENCE statement, not the inter-spec reset.
+_RND_BRACKET_RE = re.compile(r"\[\s*([-.0-9E]+)\s*\]")
+
+
+def _rnd_brackets(raw: "str | None") -> list[str]:
+    if raw is None:
+        return []
+    txt = "".join(raw[i:i + 40] for i in range(0, len(raw), 40))
+    return _RND_BRACKET_RE.findall(txt)
+
+
+RND_SPECS: list[tuple[str, list[str]]] = [
+    # (a) cold sequence straight off the NEW-reset (§15.1's S0 anchor chain,
+    # tools/sim_math_chain.py RND_COLD minus its own seed-0 entry).
+    ("cold sequence (5x RND(1) from S0)",
+     ["DEFDBL A"] + ['A=RND(1):PRINT"[";A;"]"'] * 5),
+    # (b) RND(-k) reseed battery, INCLUDING the -1/-0.001/-1E9 mantissa
+    # collision (§15.1: all three widen to mant14=1.000...0, so each of these
+    # THREE INDEPENDENT NEW-reset specs reseeding to the SAME state is exactly
+    # what proves the collision transitively via reference-identity — no
+    # separate cross-spec check needed).
+    ("reseed RND(-1)", ["DEFDBL A", 'A=RND(-1):PRINT"[";A;"]"']),
+    ("reseed RND(-.001)", ["DEFDBL A", 'A=RND(-.001):PRINT"[";A;"]"']),
+    ("reseed RND(-1E9)", ["DEFDBL A", 'A=RND(-1E9):PRINT"[";A;"]"']),
+    # (c) single-vs-double mant14 widening for the SAME mathematical value
+    # 1/3 (§15.1: A!=1/3 is single -> mant14="333333" + 8 zeros; the bare
+    # literal division 1/3 evaluates double -> mant14=14 threes -- DIFFERENT
+    # reseed states). Exact idiom from scratchpad/char_rnd4.py (characterized
+    # 2026-07-14, don't re-probe).
+    ("reseed single-vs-double 1/3",
+     ["A!=1/3", "DEFDBL B",
+      'B=RND(-A!):PRINT"[";B;"]"',
+      'B=RND(-1/3):PRINT"[";B;"]"']),
+    # (d) RND(0): repeats the last value, no advance.
+    ("RND(0) repeat (no advance)",
+     ["DEFDBL A", 'A=RND(-1):PRINT"[";A;"]"',
+      'A=RND(0):PRINT"[";A;"]"', 'A=RND(0):PRINT"[";A;"]"']),
+    # (e) positive-arg-ignored: RND(7)/RND(.3)/RND(12345)/RND(1)/RND(99)/
+    # RND(2) all step identically to RND(1) (§15.1) -- exact idiom from
+    # scratchpad/char_rnd3.py boot2.
+    ("positive-arg-ignored (varied x, all step like RND(1))",
+     ["DEFDBL A", 'A=RND(-1):PRINT"[";A;"]"']
+     + [f'A=RND({x}):PRINT"[";A;"]"'
+        for x in ("7", ".3", "12345", "1", "99", "2")]),
+    # (f) a LONG RND(1) run past a reseed -- the over-determine battery,
+    # scratchpad/char_rnd3.py boot1 (verbatim shape: 2 setup lines + 6
+    # prints). Capped at 6 prints deliberately (char_rnd3.py's own docstring:
+    # "scroll-safe, <=6 prints/boot") -- SCREEN 0 only holds so many rows
+    # before the top scrolls off, which would make an EARLIER (still
+    # correct) value silently vanish from the capture and read as a
+    # mismatch; this is a CAPTURE-WINDOW limit, not an algorithm one (found
+    # live: a first attempt at 10 prints here dropped the oldest 3 rows on
+    # the reference capture while zerobas's own 10-value list was correct
+    # digit-for-digit in the tail that WAS captured).
+    ("long RND(1) run (6x after reseed)",
+     ["DEFDBL A", "A=RND(-1)"] + ['A=RND(1):PRINT"[";A;"]"'] * 6),
+    # (g) NEW resets the seed to S0 (clear_vars, §15.3) -- reseed away from
+    # S0, NEW, then the next RND(1) must equal advance(S0), the SAME cold
+    # first value spec (a)'s own first bracket proves.
+    ("NEW resets the seed to S0",
+     ["DEFDBL A", 'A=RND(-1):PRINT"[";A;"]"', "NEW", "DEFDBL A",
+      'A=RND(1):PRINT"[";A;"]"']),
+    # (h) CLEAR resets the seed to S0 too (same clear_vars hook).
+    ("CLEAR resets the seed to S0",
+     ["DEFDBL A", 'A=RND(-1):PRINT"[";A;"]"', "CLEAR", "DEFDBL A",
+      'A=RND(1):PRINT"[";A;"]"']),
+    # (i) RUN resets the seed to S0 too -- exact idiom from scratchpad/
+    # char_rnd5.py's RUN-persistence test (a stored line reads RND(1), then
+    # RUN re-executes it from a fresh S0, then a direct-mode read follows).
+    ("RUN resets the seed to S0",
+     ["DEFDBL A", 'A=RND(-1):PRINT"seed[";A;"]"',
+      '10 A=RND(1):PRINT"run[";A;"]"', "RUN",
+      'A=RND(1):PRINT"after[";A;"]"']),
+    # (j) CLS does NOT reset (screen-only, §15.1) -- the seed keeps advancing
+    # across a CLS exactly as it would without one. The pre-CLS bracket is
+    # deliberately not printed (CLS would wipe it from the capture anyway);
+    # only the post-CLS value needs to match, which reference-identity
+    # already proves reflects a continued (not reset) sequence.
+    ("CLS does not reset the seed",
+     ["DEFDBL A", "A=RND(-1)", "CLS", 'A=RND(1):PRINT"[";A;"]"']),
+    # (k) FACTYP discipline (§15.5 "standing trap, bit twice"): RND over an
+    # INT-typed factor (the arg's own type must not leak into the RESULT,
+    # which is always double), RND of a PEEK, and A#=RND(1) stored then
+    # RE-READ (the double precision must survive the round-trip, not just
+    # the live FAC right after the call).
+    ("FACTYP: RND(int-typed factor) stays double",
+     ["A%=1", 'PRINT"[";RND(A%);"]"']),
+    ("FACTYP: RND(PEEK(...)) stays double",
+     ['PRINT"[";RND(PEEK(0));"]"']),
+    ("FACTYP: A#=RND(1) then re-read stays double",
+     ["A#=RND(1)", 'PRINT"[";A#;"]"']),
+]
+
+
+def check_rnd(ref_machine: str, zb_machine: str) -> bool:
+    """Bit-for-bit REFERENCE-IDENTITY differential over RND_SPECS (§15.5) --
+    every extracted bracket value, in order, must match between the two
+    machines. Returns overall pass/fail; prints a per-spec report."""
+    print("\n--- RND reference-identity (bit-for-bit, not a truth bound) ---")
+    specs = [("direct", lines) for _, lines in RND_SPECS]
+
+    def compare(i, ref_raw, zb_raw):
+        ref_vals = _rnd_brackets(ref_raw)
+        zb_vals = _rnd_brackets(zb_raw)
+        return len(ref_vals) > 0 and ref_vals == zb_vals
+
+    verdicts, ref_raws, zb_raws = omsx_repl.run_differential(
+        ref_machine, zb_machine, specs, compare, reset=("NEW", "CLS"))
+    ok = True
+    for (label, _lines), good, ref_raw, zb_raw in zip(
+            RND_SPECS, verdicts, ref_raws, zb_raws):
+        ok = ok and good
+        ref_vals = _rnd_brackets(ref_raw)
+        zb_vals = _rnd_brackets(zb_raw)
+        tag = "OK" if good else "FAIL"
+        print(f"{tag:4} {label}")
+        if not good:
+            print(f"       ref: {ref_vals}")
+            print(f"       zb : {zb_vals}")
+    print("RND reference-identity: ALL OK" if ok else
+          "RND reference-identity: MISMATCH")
     return ok
 
 
@@ -1335,6 +1479,15 @@ def main() -> int:
     if not args.skip_tokens:
         ok = check_tokens(args.machine) and ok
         ok = check_pow_token(args.machine) and ok
+        print()
+
+    # RND (§15.5): a bit-for-bit reference-identity differential over
+    # STATEFUL multi-line sequences -- it needs BOTH machines (there is no
+    # meaningful single-machine "characterization" mode for it the way the
+    # EXPRS/RAW_LINES matrix has, since the whole point is cross-machine
+    # sequence equality), so it only runs when --zb-machine is given.
+    if args.zb_machine and not args.only:
+        ok = check_rnd(args.machine, args.zb_machine) and ok
         print()
 
     cases = [(e, f'print "[";{e};"]"', "expr") for e in EXPRS]

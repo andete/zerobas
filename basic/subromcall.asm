@@ -176,3 +176,16 @@ sub_int_template:
                 ei
                 reti                        ; resume the tenant, interrupts live
 sub_int_template_end:
+
+; --- RND_SEED tail-slack guard (math pack slice 2e, docs/spec-basic- -------
+; mathpack-slice2.md §15.3). RND_SEED (basic/sysvars.inc) lives in the
+; UNUSED tail of the SUB_INT_RAM reservation above ($F142..$F148, inside the
+; conservative 64-byte reservation that runs $F10A..$F149) -- safe only as
+; long as the copied stub (sub_int_template..sub_int_template_end) never
+; grows past that reservation. This build-time assert makes any future
+; growth that would collide FAIL THE BUILD loudly (an undefined symbol,
+; pasmo's own diagnostic) instead of silently overlapping RND_SEED at
+; runtime. Currently 47<=56 (RND_SEED-SUB_INT_RAM=$F142-$F10A=$38=56).
+    IF (sub_int_template_end - sub_int_template) > (RND_SEED - SUB_INT_RAM)
+                db      RND_SEED_COLLIDES_WITH_GROWN_INT_TRAMPOLINE__MOVE_RND_SEED
+    ENDIF
