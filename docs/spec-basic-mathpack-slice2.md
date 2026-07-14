@@ -710,3 +710,251 @@ from float-arith.asm source; stubs traced (the `sub 4 / jp p` signed dexp test i
 correct over the full −64..63 range). One nit fixed (MATH_N byte-count comment).
 **NEXT = 2c `^`** (integer exponent = exact repeated-multiply; fractional =
 `EXP(y·LOG(x))`, unlocked by this slice).
+
+---
+
+## 13. Slice 2c implementation contract — `^` (POW operator, concrete, implementation-ready)
+
+Grounded in a NEW five-round black-box characterization (VG-8020, 2026-07-14 —
+scratchpad char_pow rounds 1–5, ~75 captures) and pre-proven by the committed
+chain-sim (`tools/sim_math_chain.py`, 7f3f31f): **all 32 captured reference
+anchors reproduce bit-for-bit** in the sim's model. The §12 process ("sim
+before contract before asm") applied again.
+
+### 13.1 Characterization result (pinned — do NOT re-run)
+
+**Grammar** (all captured):
+- `^` = single-byte token `$F5`, LEFT-associative: `2^3^2`=64, `2^2^3`=64,
+  `(2^3)^2`=64.
+- Binds ABOVE `*` `/` `\` (`2*3^2`=18, `7\2^2`=1) and above unary minus:
+  `-2^2`=−4, `-2^-2`=−.25, `-2^.5`=−1.414… (a leading `-` NEVER makes the
+  base negative; it negates the whole pow-chain).
+- An exponent-side `-` wraps the ENTIRE following pow-chain (right-nested):
+  `2^-3^2` = 2^−(3²) = 1.953125E−03, `2^-2^-2` = 2^−(2^−2) = .84089641525371.
+  (This is exactly what falls out of `ev_f`'s unary-minus handler calling the
+  pow layer — no special case needed, §13.3.)
+
+**Semantics — the evaluation ladder** (each rule pinned by capture):
+1. `y == 0` → result 1 (double). Includes `0^0`=1, `12345.678^0`=1.
+2. `x == 0`: `y > 0` → 0 (incl. fractional y: `0^.5`=0 — the zero-base check
+   PRECEDES the fractional path, no LOG(0) error); `y < 0` → **Division by
+   zero** (`0^-1`, `0^-.5`, `0^-2`).
+3. `y` integer-valued AND `−32768 ≤ y ≤ 32767` (asymmetric int16:
+   `(-1)^32767`=−1 but `(-1)^32768`→IFC; `(-1)^-32768`=1) → **integer path**:
+   - n := |y| as UNSIGNED 16-bit (32768 = $8000 representable).
+   - **LSB-first square-and-multiply, acc initialised to a REAL 1.0**:
+     ```
+     acc := 1.0 ; s := x
+     loop: if n&1: acc := fp_mul(acc, s)      ; overflow -> Overflow error
+           n >>= 1 ; if n == 0: done
+           s := fp_mul(s, s)                  ; overflow -> Overflow error
+     ```
+     Every fp_mul carries the `check_preexp_bounds` PRE-normalisation gate
+     (`dexpA+dexpB > 63 → Overflow even when the true product fits`) — this is
+     NOT a zerobas artifact: the reference's own `*` was probed to behave
+     identically (`1D61*10`, `1D31*1D31`, `2D62*4` (product FITS) → Overflow;
+     `9D61*9`=8.1E+62, `5D61*2`=1E+62 fine; zerobas repack differential 6/6
+     IDENTICAL). The loop shape above makes the reference's whole odd
+     overflow surface EMERGENT: `10^62`→Overflow (acc(10^30)·s5(10^32):
+     E-sum 64) while `2^207`=2.0568806966517E+62 (worst sum 63) and
+     `10^32`/`10^47`/`5^88`/`2^127` all fine; `1D62^1`→Overflow (acc=1·x:
+     E-sum 1+63=64); `1D31^3`→Overflow (square chain 32+32); `1D12^5`=1E+60.
+     Mul UNDERFLOW is silent → 0 (`.5^2000`=0).
+   - `y < 0`: reciprocal AFTER the power (pinned: `.1^63`=1E-63 but
+     `10^-63`→Overflow — reciprocal-FIRST would make them equal):
+     p=Overflow → Overflow; **p==0 → Overflow error** (pinned `.5^-2000` →
+     Overflow, NOT Division by zero — the reference's float div-by-zero
+     including by a COMPUTED zero is "Division by zero", probed separately,
+     so ^ must special-case p==0 BEFORE dividing); else result := fp_div(1, p)
+     (our correctly-rounded div → ≤1-ulp documented deviation from the
+     reference's low-biased div: ref `3^-5`=…4485, truth/us …4486).
+4. else (fractional y, or integer-valued y outside int16): `x < 0` →
+   **Illegal function call** (`(-2)^2.5`, `(-1)^32768`, `(-1)^3.0000001`);
+   `x > 0` → **EXP(y·LOG(x))** (§5.1: bit-for-bit the reference's own
+   derivation on all probes; ends follow OUR EXP's §12 dispositions — the
+   reference's `10^-70.5`→Overflow is its own EXP(−162) disposition BUG
+   (§12.9), ours correctly returns 0: documented deviation).
+
+**Type**: result is ALWAYS double (`2!^3!`=8, `A%^B%`=8, `2!^.5!` prints the
+full 14-digit 1.414213562373 — no single-width chain).
+
+### 13.2 Accuracy contract (sim-proven 2026-07-14, commit 7f3f31f)
+
+- **Positive-y integer path: REFERENCE-IDENTICAL BIT-FOR-BIT** (a composition
+  of our reference-identical fp_mul in the reference's own pinned loop —
+  clean-room: structure from black-box probes + published square-and-multiply;
+  32/32 anchors incl. `3^33`=5.5590605665554E+15 (1 ulp BELOW truth — the
+  reference's rounding, kept bug-for-bug per the §2 framework), `2^50`,
+  `7^19`, `1.01^100`, `5^88`). The gate asserts BIT-IDENTITY differentially
+  on this sub-surface — stronger than the ATN-shape truth gate.
+- vs truth the int path inherits the structure's squaring amplification
+  (each s:=s·s DOUBLES accumulated relative error → deviation ~2^bitlen(n)):
+  sim battery 615 pairs, per-row structural cap `3·2^bitlen(n)` ulp HELD
+  (worst measured 353 ulp @ 1.0392660791291^176 = 0.46 of cap). This is the
+  reference's own error, not ours to fix.
+- Negative-y (adds one correctly-rounded fp_div): same caps (measured within).
+- **Fractional path**: deviation scales with |t| = |y·log x| (result rel err
+  ≈ Δt): sim battery 2677 pairs, per-row cap `12·max(1,|t|)+10` ulp HELD
+  (worst 91 ulp @ t≈11.3 = 0.62 of cap; ~7 ulp per unit t worst-case).
+  ATN-shape gate: truth-bound caps + informational reference report; NO
+  per-input never-worse claim (§2 relaxation, review-queue 2026-07-13).
+
+### 13.3 Grammar implementation — new `ev_pw` layer (repack-only)
+
+All under `IF ROM_BASE < $4000` (the lean build gets NO `^` — lean stays
+byte-identical; `^` remains a plain uncrunched char there, an expression
+error, unchanged behavior):
+
+- `POW_TOKEN equ $F5` (basic/sysvars.inc, next to STAR_TOKEN/IDIV_TOKEN).
+- **Tokeniser** (basic/tokenise.inc, SHARED lean+sub — guard the addition):
+  `cp '^' → jp z,tk_op_pow` in the tk_notkw compare chain; `tk_op_pow: ld
+  a,POW_TOKEN / jr tk_op_emit` beside tk_op_idiv.
+- **Detokeniser** (basic/detok.inc detok_op, SHARED — guard): `cp POW_TOKEN →
+  dop_pow: ld a,'^' / jr dop_emit`.
+- **Evaluator** (basic/expr.asm): new layer between ev_t and ev_f —
+  ```
+  ev_pw:        call ev_f
+  ev_pw_lp:     call ev_sp
+                ld a,(ix+0) ; cp POW_TOKEN ; ret nz
+                inc ix
+                push de
+                call push_lhs_frame
+                call set_factyp_int_ret     ; FACTYP:=2 for the rhs eval
+                call ev_f                   ; rhs (ev_f's unary-minus -> ev_pw
+                call combine_pow            ;  gives the pinned -nesting free)
+                jr ev_pw_lp                 ; loop = LEFT-assoc
+  ```
+  ev_t's THREE `call ev_f` operand sites (entry, after `*`, after `/`) become
+  `call ev_pw` (IF-gated; lean keeps `call ev_f`). `ev_f_neg`'s operand call
+  becomes `call ev_pw` (IF-gated) — this single change yields BOTH `-2^2`=−4
+  AND `2^-3^2`=2^−9 (ev_f sees the exponent's `-`, recurses into ev_pw, and
+  negates the whole chain).
+
+### 13.4 `combine_pow` (basic/float-arith.asm, repack section) — dispositions MAIN-SIDE
+
+Mirrors combine_div_float's frame protocol, then the §13.1 ladder before any
+dispatch (per the CALSLT A-not-preserved rule, ALL classification/errors are
+main-side):
+```
+combine_pow:
+    call pop_lhs_and_probe        ; ZF ignored: ^ is always float
+    call widen_both_operands      ; ARGA := x (lhs), ARGB := y (rhs), FPNUMs
+    1) dig15_iszero(ARGB+FPNUM_DIG)  -> FAC := 1.0 double, DE via flt_to_int16, ret
+    2) dig15_iszero(ARGA+FPNUM_DIG)  -> ARGB sign 0 ? (FAC := 0, done)
+                                              : (FPERR := 2, DE := 0, ret)
+    3) classify y from the ARGB RECORD (integer-valued iff every digit at
+       index >= dexp is 0, for 1 <= dexp <= 5; dexp <= 0 -> fractional;
+       dexp > 5 -> out of int16 -> fractional path):
+       dexp==5 -> digit-string compare d0..d4 vs "32767" (ARGB sign 0) /
+                  "32768" (sign $80); above -> fractional path.
+       int: n := d0..d(dexp-1) accumulated *10 (fits uint16, pre-checked),
+            MATH_N := n; MATH_J := bit0 = ARGB sign set (y negative), bit7=0.
+       frac: ARGA sign nonzero -> FPERR := 3, DE := 0, ret (IFC)
+             MATH_J := $80.
+    4) push ix / ld ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_POW /
+       call subrom_call / pop ix / jp c,subrom_absent_error
+       FACTYP := 8 ; jp flt_to_int16       (evmc_log's exact tail shape)
+```
+Rationale for main-side classification: it reads only ARGB fields + does
+16-bit arithmetic (no fp calls), and every error exit needs main-side FPERR
+discipline anyway. The tenant receives x in ARGA, y in ARGB, n in MATH_N,
+mode/sign in MATH_J.
+
+### 13.5 `fp_pow` tenant (sub/fp_pow.asm, PAGE-1, `SUBROM_IDX_POW equ 5`)
+
+Appended to sub_p1_table after fp_log (idx 4). COMPUTE-ONLY (FAC correct on
+exit, FACTYP/DE untouched — stub's job), no A-returns, errors via FPERR only.
+
+**RAM live-ranges** (all existing cells, no new allocation):
+- int path: `SQRT_X` := s (the running square), `SQRT_Y` := acc stash across
+  the squaring mul, `MATH_N` := n (consumed bit-by-bit), `MATH_J` bit0 read at
+  the end (y-negative). fp_mul/fp_div touch none of these. acc lives in ARGA.
+- frac path: y is copied to the **FOUTBUF FPNUM cell** (the §11.6 "3rd cell"
+  precedent — SQRT_X/SQRT_Y are CLOBBERED by fp_log/fp_exp internals: MATH_A
+  aliases SQRT_Y, HORNER_G aliases SQRT_X), MATH_J read ONCE at entry (fp_exp/
+  fp_log clobber it: MATH_J aliases their m/j).
+
+```
+fp_pow:  MATH_J bit7 ? -> fp_pow_frac
+ ; --- int path: LSB-first square-and-multiply (§13.1 rule 3, sim-proven) ---
+         copy18 ARGA -> SQRT_X               ; s := x
+         widen_uint_to(1) -> ARGA            ; acc := 1.0  (a REAL one: the
+                                             ;  1D62^1 anchor NEEDS acc=1*x)
+ fpw_lp: bit0(MATH_N)? : copy18 SQRT_X -> ARGB ; acc := acc*s
+                         call fp_mul ; FPERR? -> ret
+         srl (MATH_N) 16-bit ; zero? -> fpw_done
+         copy18 ARGA -> SQRT_Y               ; stash acc
+         copy18 SQRT_X -> ARGA ; copy18 SQRT_X -> ARGB
+         call fp_mul ; FPERR? -> ret         ; s := s*s
+         copy18 ARGA -> SQRT_X ; copy18 SQRT_Y -> ARGA
+         jr fpw_lp
+ fpw_done:
+         MATH_J bit0 clear -> arga_pack_fac, ret
+         dig15_iszero(ARGA)? -> FPERR := 1, ret   ; reciprocal of underflowed
+                                             ; 0 = Overflow (pinned .5^-2000)
+         copy18 ARGA -> ARGB ; widen_uint_to(1) -> ARGA
+         call fp_div                          ; 1/p, correctly rounded
+         arga_pack_fac, ret                   ; (fp_div's own bound check
+                                              ;  handles 1/1E-63 -> Overflow)
+ ; --- frac path: EXP(y*LOG(x)) (§13.1 rule 4) ------------------------------
+ fp_pow_frac:
+         copy18 ARGB -> FOUTBUF-cell          ; save y across fp_log
+         call fp_log                          ; ARGA/FAC := ln(x)  (x>0
+                                              ;  guaranteed by the stub)
+         copy18 FOUTBUF-cell -> ARGB
+         call fp_mul ; FPERR? -> ret          ; t := ln(x)*y  (pre-check on a
+                                              ;  huge-E y IS the right
+                                              ;  disposition: |t| overflows)
+         ARGA dexp >= 4 ?                     ; |t| >= 1000: fp_exp's stub
+             sign neg -> FAC := 0, ret        ;  precondition (§12.6) —
+             else FPERR := 1, ret             ;  replicate evmc_exp's coarse
+                                              ;  disposition TENANT-side
+         call fp_exp                          ; FAC := e^t (packs FAC itself)
+         ret
+```
+copy18 = the fat_copy18/fsq_copy18 idiom (in-page). fp_log/fp_exp are DIRECT
+in-page calls (same assembly unit sub/sub.asm — the first tenant-to-tenant
+composition; NO nested subrom_call). Verify fp_log's exit leaves ARGA = the
+result FPNUM (it ends in round_and_finalize/arga_pack_fac — if it only
+guarantees FAC, insert widen_fac_to ARGA after it).
+
+Resident-ABI surface: fp_mul, fp_div, widen_uint_to, dig15_iszero,
+arga_pack_fac (+ transitively whatever fp_log/fp_exp already import) — a
+SUBSET of the existing imports, NO new page-0 relocations expected;
+`make subrom-closure-check` re-audits mechanically.
+
+### 13.6 Gate — extend `basic_probe_math_conv.py` (do NOT fork)
+
+- **Token row**: crunch capture `2^3` → `… $F5 …` (check_tokens extension) +
+  a LIST round-trip row (detok renders `^`).
+- **Grammar battery (differential, EXACT-match both machines)**: the §13.1
+  grammar pins — `2^3^2`, `2^2^3`, `-2^2`, `2^-3`, `-2^-2`, `2^-3^2`,
+  `2^-2^-2`, `2*3^2`, `7\2^2`, `-2^.5`, `(2^3)^2`, `2^-3*4`.
+- **Int-path battery (differential, BIT-IDENTITY — the §13.2 claim)**: the 18
+  value anchors + the 8 disposition anchors from POW_REF_ANCHORS (sim table,
+  same rows) + ~15 random in-envelope (x,n) pairs frozen by seed. Error rows
+  use the probe's per-machine wording mechanism (`Overflow`/`overflow` etc.).
+- **Neg-y battery (truth-bound, ATN shape)**: `3^-5`, `2^-40`, `2^-10`,
+  `10^-31`, `.1^-63`(→Overflow both sides expected — informational
+  differential), caps per §13.2 + informational reference-deviation report.
+- **Frac battery (truth-bound, ATN shape)**: ~20 (x,y) pairs across |t| ∈
+  [0.1, 140] with per-row `12·max(1,|t|)+10` caps vs truth_pow (new
+  `truth_pow14` helper mirroring the sim's pow_truth) + the §13.1 rule-4
+  domain rows ((-2)^2.5 → IFC; 10^62.5 value; 10^63.5 → Overflow both;
+  10^-70.5 → 0 OURS vs Overflow REFERENCE — the documented §12.9-bug
+  deviation row, asserted OURS=0 + reference captured informationally).
+- **Zero/one/type rows**: 0^0, 0^2, 0^.5, 0^-1, 0^-.5, x^0, 1^123456789,
+  2!^3!, A%=2:B%=3:A%^B%, and FACTYP-leak `a%=2^3`, `a#=2^.5:a#*a#`.
+- **Sim-vs-hardware per-input differential** on the int + frac batteries
+  (the §12.8/§12.9 practice: LOG matched 35/35; expect the int path to match
+  bit-for-bit, frac within the no-sticky modelling margin).
+
+### 13.7 Verification / standing gates
+
+Same §12.8 list: `math-acceptance` extended + green; `sim_math_chain.py`
+green; `subrom-closure-check` (fp_pow's closure ⊆ existing); lean basic.rom
+**byte-identical**; sub.rom fits (fp_pow ≈ 250–350 B page-1 island, ~13 KB
+free); `unit-test`, float/string/input-acceptance, reloc, kwtable
+single-copy; IPS rebuild + reinstall before machine probes
+([[ips-rebuild-after-basic-change]]). Fable review after implementation
+(§8.5 model split).
