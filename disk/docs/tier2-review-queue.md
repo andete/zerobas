@@ -83,6 +83,40 @@ byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
 
 ## Open (awaiting next sync)
 
+**[RESOLVED — malformed-call fix D-F2-4, 2026-07-14] The slice-2e RND Finding 1
+(malformed-call seed mutation) is FIXED as the family-wide slice it was deferred
+to.** `ev_mc_arg`'s two error exits now raise the deferred FPERR=4 syntax error,
+and a shared `ev_mc_arg_checked` gate makes all 15 ev_mc_arg-family functions
+bail (no body run) whenever a deferred FPERR/TMISMATCH is pending -> clean
+`syntax error` for bare/extra/unclosed/empty forms in PRINT/LET/IF, RND seed
+provably untouched, AND fixes a transcendentals-era regression (LOG()/CINT()
+were misreporting illegal/overflow). Fable review = SHIP; it caught a real
+first-error-wins regression in my first cut (unconditional FPERR=4 clobbered an
+erroring arg's div0/overflow) -> fixed (ev_f_empty conditional), which also
+repaired the pre-existing D-F2-3 sibling `(1/0)+()`. Spec
+docs/spec-basic-malformed-call-syntax-error.md; commits 2929365 + review-fix.
+Two PRE-EXISTING gaps surfaced (below) remain the natural next steps.
+
+**[JUDGMENT CALL — malformed-call review, 2026-07-14] Deferred-error DRIVER
+COVERAGE + stored-mode RUN halt: two pre-existing architectural gaps, LOGGED not
+fixed.** (1) Only PRINT (num+str items), LET, IF, POKE, VPOKE call
+`check_expr_errors` after their eval, so a deferred FPERR/TMISMATCH is only
+surfaced there. `FOR I=SIN TO 3` -> zb `out of memory` (vs ref `Syntax error`);
+`SCREEN SIN` -> zb silent (executes SCREEN 0). Same class: COLOR/WIDTH/OUT/
+ON..GOTO/GOSUB/PRINT USING/CLEAR/file-channel evals (OPEN/CLOSE/PRINT#/FIELD/
+GET/PUT)/MID$-stmt counts/USR/SAVE/BSAVE args -- none check the deferred flags.
+**Pre-existing** (identical before the D-F2-4 commit; the commit only upgrades
+the stale value to 0). (2) Stored-mode `10 PRINT SIN`/`RUN` prints the error but
+**continues** to line 20 (reference halts with `Syntax error in 10`); control
+`10 PRINT 1/0` behaves the same -> it's the D-F2-1 statement-abort model (the RUN
+loop proceeds past a per-line abort), the single largest divergence in the whole
+deferred-error architecture. **Call made:** DEFER both -- they are one coherent
+"propagate deferred errors through every statement driver + make RUN halt on
+abort" slice, orthogonal to malformed-CALL handling, and regression-sensitive
+(must audit every numeric-expr driver). No reference-legal program observes
+them (all inputs are themselves illegal). Confidence high; undo = a follow-up
+slice. Full record spec-basic-malformed-call-syntax-error.md §4/§6.
+
 **[JUDGMENT CALL — mathpack slice 2e, 2026-07-14] `RND` SHIPPED reference-IDENTICAL; a
 malformed-`RND`-call seed-mutation deviation DEFERRED to a family-wide fix (not bolted onto
 2e).** `RND` (spec §15, commit d68426a) is the last slice-2 function and the FIRST to hit
