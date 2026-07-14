@@ -591,6 +591,11 @@ LT_TOKEN        equ     $F0     ; '<'
 ; Phase 1: division + logical/bitwise operators (MSX2 TH Table 2.20).
 DIV_TOKEN       equ     $F4     ; '/'  (real division; zerobas approximates with int divide)
 IDIV_TOKEN      equ     $FC     ; '\'  integer division
+; Math pack slice 2c (Phase 3, repack-only -- docs/spec-basic-mathpack-
+; slice2.md §13.1/§13.3). `^` (POW): single-byte operator token, MSX2 TH
+; Table 2.20 + black-box VG-8020 crunch capture (probes/basic/basic_probe_
+; math_conv.py), same family as STAR_TOKEN/IDIV_TOKEN above.
+POW_TOKEN       equ     $F5     ; '^'  power (binds above * / and unary minus)
 MOD_TOKEN       equ     $FB     ; MOD  remainder
 AND_TOKEN       equ     $F6     ; AND  (bitwise)
 OR_TOKEN        equ     $F7     ; OR   (bitwise)
@@ -1369,6 +1374,12 @@ SUBROM_IDX_LOG       equ 4      ; fp_log tenant (math pack slice 2b, sub/
                                 ; fp_log.asm), docs/spec-basic-mathpack-
                                 ; slice2.md §12.2. Main-ROM stub is
                                 ; basic/expr.asm `evmc_log`.
+SUBROM_IDX_POW       equ 5      ; fp_pow tenant (math pack slice 2c, sub/
+                                ; fp_pow.asm): the `^` operator's int-path
+                                ; square-and-multiply / frac-path EXP(y*LOG(x))
+                                ; body, docs/spec-basic-mathpack-slice2.md
+                                ; §13.2/§13.5. Main-ROM stub is basic/
+                                ; float-arith.asm `combine_pow`.
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

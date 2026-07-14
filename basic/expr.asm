@@ -418,7 +418,11 @@ ev_idiv_lp:
 ; '/' is real division on MSX; the repack build makes it always float (spec
 ; §10.1); the lean build keeps the integer-quotient divergence (unchanged).
 ev_t:
+    IF ROM_BASE < $4000
+                call    ev_pw               ; `^` binds above * / (§13.3)
+    ELSE
                 call    ev_f                ; DE = factor
+    ENDIF
 ev_t_lp:
                 call    ev_sp
                 ld      a,(ix+0)
@@ -433,11 +437,10 @@ ev_t_mul:
     IF ROM_BASE < $4000
                 call    push_lhs_frame
                 call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
-    ENDIF
-                call    ev_f                ; DE = rhs
-    IF ROM_BASE < $4000
+                call    ev_pw               ; DE = rhs
                 call    combine_mul
     ELSE
+                call    ev_f                ; DE = rhs
                 pop     hl                  ; HL = lhs
                 call    mul16               ; HL = lhs * rhs (low 16 bits)
                 ex      de,hl               ; DE = product
@@ -449,7 +452,7 @@ ev_t_div:
                 push    de                  ; lhs
                 call    push_lhs_frame
                 call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
-                call    ev_f                ; DE = rhs
+                call    ev_pw               ; DE = rhs
                 call    combine_div_float   ; ALWAYS float (spec §10.1)
     ELSE
                 push    de                  ; lhs (dividend)
@@ -460,6 +463,35 @@ ev_t_div:
                 call    div_de_bc           ; DE = quotient
     ENDIF
                 jr      ev_t_lp
+
+    IF ROM_BASE < $4000
+; --- ev_pw: `^` layer (power operator, math pack slice 2c, repack-only -----
+; docs/spec-basic-mathpack-slice2.md §13.3). Sits between ev_t and ev_f:
+; binds ABOVE `*`/`/` (ev_t's three operand sites above call ev_pw instead of
+; ev_f) and ABOVE unary minus (ev_f_neg's operand call below becomes ev_pw
+; too) -- this single change yields BOTH `-2^2`=-4 (ev_f_neg negates the
+; WHOLE pow-chain, never just the base) AND `2^-3^2`=2^-(3^2) (the exponent's
+; own unary minus recurses into ev_pw, giving the pinned right-nesting for
+; free -- no special case needed). LEFT-associative loop (`2^3^2`=64,
+; `2^2^3`=64): each `^` pops the running lhs and combines immediately, same
+; shape as ev_t_mul/ev_t_div above.
+ev_pw:
+                call    ev_f
+ev_pw_lp:
+                call    ev_sp
+                ld      a,(ix+0)
+                cp      POW_TOKEN
+                ret     nz
+                inc     ix
+                push    de                  ; lhs
+                call    push_lhs_frame
+                call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
+                call    ev_f                ; rhs (ev_f's own unary-minus ->
+                                            ; ev_pw call below gives the
+                                            ; pinned right-nesting for free)
+                call    combine_pow
+                jr      ev_pw_lp            ; loop = left-assoc
+    ENDIF
 
 ; --- ev_f: factor ----------------------------------------------------------
 ; Decodes the crunched tokens (spec §3): constant tokens carry their binary
@@ -603,7 +635,14 @@ eff_cp:
 
 ev_f_neg:
                 inc     ix
+    IF ROM_BASE < $4000
+                call    ev_pw               ; DE = operand (`^` binds tighter
+                                            ; than unary minus, §13.1/13.3 --
+                                            ; this is what makes -2^2=-4 AND
+                                            ; 2^-3^2=2^-(3^2) fall out for free)
+    ELSE
                 call    ev_f                ; DE = operand
+    ENDIF
                 ld      hl,0
                 or      a
                 sbc     hl,de               ; HL = 0 - operand

@@ -123,6 +123,14 @@ tk_notkw:
                 jp      z,tk_op_div
                 cp      '\'
                 jp      z,tk_op_idiv
+    IF ROM_BASE < $4000
+                ; math pack slice 2c (repack-only -- docs/spec-basic-mathpack-
+                ; slice2.md §13.3): '^' -> POW_TOKEN. Guarded so the lean 16 KB
+                ; cart (assembled with this same shared file at ROM_BASE>=$4000)
+                ; stays byte-identical -- lean has no `^` operator.
+                cp      '^'
+                jp      z,tk_op_pow
+    ENDIF
                 cp      '?'                 ; '?' abbreviates PRINT
                 jp      z,tk_print_q
                 cp      '_'                 ; '_' abbreviates CALL: the name is verbatim
@@ -248,6 +256,11 @@ tk_op_div:
 tk_op_idiv:
                 ld      a,IDIV_TOKEN
                 jr      tk_op_emit
+    IF ROM_BASE < $4000
+tk_op_pow:
+                ld      a,POW_TOKEN
+                jr      tk_op_emit
+    ENDIF
 
     IF ROM_BASE >= $4000
 ; --- tk_number: crunch a decimal integer constant (spec §3) ----------------

@@ -25,12 +25,22 @@ BUILD := build
 
 PASMO ?= pasmo
 SRC   := basic/main.asm
+# basic/tokenise.inc + basic/detok.inc: include'd by interp.asm/list.asm (and
+# by sub/sub.asm/sub/detok.asm for the sub-ROM's own copies, SUB_PARTS below)
+# but were NOT tracked as prerequisites -- the same staleness class as the
+# str-engine.asm/input.asm gap the empty-expr slice fixed (ba652b7). Caught
+# here (math pack slice 2c, docs/spec-basic-mathpack-slice2.md §13.3) because
+# `^` is the first math-pack change to touch the tokeniser/detokeniser at all
+# (SQR/ATN/EXP/LOG are $FF-prefixed function tokens, reached via kwtable, not
+# tk_notkw's single-char operator chain) -- without this, an edit to either
+# file could silently ship a stale basic.rom/sub.rom.
 DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/vars.asm basic/strvar.asm basic/str-engine.asm basic/expr.asm basic/poke.asm basic/vdpio.asm \
          basic/clear.asm basic/usr.asm basic/print.asm basic/screen.asm basic/list.asm \
          basic/fat.asm basic/bload.asm basic/cload.asm basic/save.asm basic/files.asm \
          basic/field.asm basic/format.asm basic/printusing.asm basic/program.asm basic/float.asm \
          basic/float-arith.asm basic/subromcall.asm basic/input.asm \
+         basic/tokenise.inc basic/detok.inc \
          basic/sysvars.inc
 ROM   := $(BUILD)/basic.rom
 
@@ -64,9 +74,14 @@ SUB_SRC   := sub/sub.asm
 # sub/fp_exp.asm + sub/fp_log.asm (math pack slice 2b, docs/spec-basic-mathpack-
 # slice2.md §12): the EXP/LOG tenant bodies -- same staleness hazard, same fix
 # (math-coeffs.inc already listed above covers their shared coefficient tables).
+# sub/fp_pow.asm (math pack slice 2c, docs/spec-basic-mathpack-slice2.md §13):
+# the `^` tenant body -- same staleness hazard, same fix. Also adds
+# basic/tokenise.inc + basic/detok.inc (the sub-ROM's own tokeniser/detok
+# copies, sub/sub.asm/sub/detok.asm) -- see the DEPS comment above for why.
 SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
-             sub/fp_exp.asm sub/fp_log.asm \
+             sub/fp_exp.asm sub/fp_log.asm sub/fp_pow.asm \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
+             basic/tokenise.inc basic/detok.inc \
              sub/basic-resident-abi.inc
 SUB_ROM   := $(BUILD)/sub.rom
 

@@ -1731,6 +1731,164 @@ combine_div_float:
                 call    widen_both_operands
                 jp      fp_div
 
+; =============================================================================
+; combine_pow -- ev_pw's `^` site (math pack slice 2c, docs/spec-basic-
+; mathpack-slice2.md §13.4). ALWAYS float (like combine_div_float); every
+; disposition/classification decision is done MAIN-SIDE (never in the
+; tenant): `A` is NOT preserved across CALSLT (the SQR/ATN/EXP/LOG lesson,
+; subrom-mathpack §3), so a domain/error status byte can't ride back from
+; fp_pow in a register -- only FPERR (a RAM flag) and CF (subrom_call's own
+; "sub-ROM absent" signal) are reliable. Classifying y here also means the
+; tenant never needs an fp_cmp against literal "32767"/"32768" bounds: this
+; routine reads ARGB's own dexp/digit fields directly (pure 16-bit/digit-
+; array work, no fp_* calls) and hands the tenant a pre-decided (n, mode)
+; pair in MATH_N/MATH_J.
+;
+; Ladder (§13.1, evaluated in this order -- each rule pinned by capture):
+;   1) y==0            -> result 1.0 (double), incl. 0^0=1.
+;   2) x==0             -> y>0: 0 ; y<0: Division by zero (FPERR=2).
+;   3) y integer-valued AND -32768<=y<=32767 -> INT PATH: n:=|y| (uint16,
+;      32768 representable), MATH_N:=n, MATH_J bit0:=(y<0), bit7:=0.
+;      "integer-valued" = every digit at index>=dexp is 0, for 1<=dexp<=5
+;      (dexp<=0 -> fractional; dexp>5 -> out of int16 -> fractional). At
+;      dexp==5 the 5-digit integer part must ALSO clear the asymmetric bound
+;      (32767 if y>=0, 32768 if y<0) or it falls through to fractional
+;      (pins `(-1)^32768` -> Illegal function call vs `(-1)^-32768`=1, §13.1).
+;   4) else (fractional y, or integer-valued y outside int16): x<0 ->
+;      Illegal function call (FPERR=3); x>0 -> dispatch the tenant's
+;      EXP(y*LOG(x)) path, MATH_J:=$80.
+;
+; The tenant (sub/fp_pow.asm, SUBROM_IDX_POW) receives x in ARGA, y in ARGB
+; (untouched by this classification -- needed verbatim by the frac path),
+; n in MATH_N, mode/sign in MATH_J; it is COMPUTE-ONLY (leaves FAC correct,
+; errors via FPERR only), so the tail here is evmc_log's exact shape:
+; FACTYP:=8 + flt_to_int16, unconditionally, after the CALSLT -- a FPERR set
+; inside the tenant is caught by the interpreter's own statement-boundary
+; check (D-F2-1), not here.
+combine_pow:
+                call    pop_lhs_and_probe   ; ZF ignored -- ^ is always float
+                call    widen_both_operands ; ARGA := x (lhs), ARGB := y (rhs)
+
+                ; --- 1) y == 0 -> result 1.0 (double), incl. 0^0=1 ---------
+                ld      hl,ARGB+FPNUM_DIG
+                call    dig15_iszero
+                jr      nz,cpow_y_nonzero
+                ld      hl,ARGA
+                xor     a
+                ld      de,1
+                call    widen_uint_to       ; ARGA := 1.0 (exact)
+                jp      round_and_finalize  ; FAC:=1.0 double, FACTYP:=8, DE
+cpow_y_nonzero:
+                ; --- 2) x == 0: y>0 -> 0 ; y<0 -> Division by zero ---------
+                ld      hl,ARGA+FPNUM_DIG
+                call    dig15_iszero
+                jr      nz,cpow_x_nonzero
+                ld      a,(ARGB+FPNUM_SIGN)
+                or      a
+                jr      z,cpow_x0_pos
+                ld      a,2
+                ld      (FPERR),a           ; Division by zero
+cpow_x0_pos:
+                xor     a
+                ld      (FAC),a             ; FAC := 0 (double lead byte)
+                ld      a,8
+                ld      (FACTYP),a
+                ld      de,0
+                ret
+cpow_x_nonzero:
+                ; --- 3) classify y (ARGB record; no fp_* calls needed) -----
+                ld      hl,(ARGB+FPNUM_DEXP)
+                ld      a,h
+                or      a
+                jp      m,cpow_frac         ; dexp<0 -> fractional
+                ld      a,l
+                or      a
+                jr      z,cpow_frac         ; dexp==0 -> fractional
+                cp      6
+                jr      nc,cpow_frac        ; dexp>5 -> out of int16 -> frac
+                ; 1<=dexp<=5: integer-valued iff dig[dexp..13] are all 0
+                ld      c,a                 ; C := dexp (survives the scan)
+                ld      e,a
+                ld      d,0
+                ld      hl,ARGB+FPNUM_DIG
+                add     hl,de               ; HL -> dig[dexp]
+                ld      a,14
+                sub     c
+                ld      b,a                 ; B := 14-dexp (fractional digits)
+cpow_intscan:
+                ld      a,(hl)
+                or      a
+                jr      nz,cpow_frac        ; a nonzero fractional digit -> frac
+                inc     hl
+                djnz    cpow_intscan
+                ld      a,c
+                cp      5
+                jr      z,cpow_dexp5
+                ; 1<=dexp<=4: n := digits[0..dexp-1] (always <= 9999)
+                ld      hl,ARGB+FPNUM_DIG
+                ld      b,c
+                call    dig_to_word         ; DE := n
+                jr      cpow_int_have_n
+cpow_dexp5:
+                ; dexp==5: asymmetric bound compare vs 32767(y>=0)/32768(y<0)
+                ; (own float.asm resident tkf_ref32767/32768 tables, the same
+                ; unpacked-digit bound compare domain_convert_core/dcc_bound5
+                ; use for POKE/HEX$'s address-domain conversion)
+                ld      de,tkf_ref32768
+                ld      a,(ARGB+FPNUM_SIGN)
+                or      a
+                jr      nz,cpow_d5_cmp
+                ld      de,tkf_ref32767
+cpow_d5_cmp:
+                push    de
+                ld      hl,ARGB+FPNUM_DIG
+                ld      b,5
+                call    dig15_cmp           ; A=1(<)/2(=)/4(>)
+                pop     de
+                cp      4
+                jr      z,cpow_frac         ; > bound -> fractional path
+                ld      hl,ARGB+FPNUM_DIG
+                ld      b,5
+                call    dig_to_word         ; DE := n (0..32768)
+cpow_int_have_n:
+                ld      (MATH_N),de
+                ld      a,(ARGB+FPNUM_SIGN)
+                or      a
+                jr      z,cpow_j_int_pos
+                ld      a,1
+                jr      cpow_j_int_store
+cpow_j_int_pos:
+                xor     a
+cpow_j_int_store:
+                ld      (MATH_J),a          ; bit0 = y negative, bit7 = 0 (int)
+                jr      cpow_dispatch
+cpow_frac:
+                ; --- 4) fractional y (or int-valued y outside int16) -------
+                ld      a,(ARGA+FPNUM_SIGN)
+                or      a
+                jr      z,cpow_frac_ok
+                ld      a,3
+                ld      (FPERR),a           ; illegal function call
+                ld      de,0
+                ret
+cpow_frac_ok:
+                ld      a,$80
+                ld      (MATH_J),a          ; bit7 = 1 (frac path)
+cpow_dispatch:
+                push    ix                  ; save the parser's text-position
+                                            ; pointer -- subrom_call/CALSLT
+                                            ; clobbers ALL registers, and IX
+                                            ; IS the token cursor here (same
+                                            ; discipline as evmc_sqr/atn/log)
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_POW
+                call    subrom_call         ; CF=1 iff sub-ROM absent. Result
+                                            ; in FAC (COMPUTE-ONLY tenant).
+                pop     ix
+                jp      c,subrom_absent_error
+                ld      a,8
+                ld      (FACTYP),a
+                jp      flt_to_int16        ; tail: DE := flt_to_int16(FAC)
+
 ; --- combine_cmp: ev_rel's numeric-compare site. Both-int -> the EXISTING --
 ; cmp16_bits (byte-for-byte the same as before, tail-called). Any float ->
 ; widen both to double + fp_cmp. Result FACTYP is always reset to 2 (a

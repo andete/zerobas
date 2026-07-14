@@ -393,6 +393,11 @@ detok_op:
                 jr      z,dop_div
                 cp      IDIV_TOKEN          ; '\'
                 jr      z,dop_idiv
+    IF ROM_BASE < $4000
+                cp      POW_TOKEN           ; '^' (math pack slice 2c, repack-
+                jr      z,dop_pow           ; only -- docs/spec-basic-mathpack-
+                                            ; slice2.md §13.3; lean has no `^`)
+    ENDIF
                 cp      GT_TOKEN            ; '>'
                 jr      z,dop_gt
                 cp      LT_TOKEN            ; '<'
@@ -411,6 +416,10 @@ dop_div:        ld      a,'/'
                 jr      dop_emit
 dop_idiv:       ld      a,'\'
                 jr      dop_emit
+    IF ROM_BASE < $4000
+dop_pow:        ld      a,'^'
+                jr      dop_emit
+    ENDIF
 dop_gt:         ld      a,'>'
                 jr      dop_emit
 dop_lt:         ld      a,'<'

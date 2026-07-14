@@ -958,3 +958,59 @@ free); `unit-test`, float/string/input-acceptance, reloc, kwtable
 single-copy; IPS rebuild + reinstall before machine probes
 ([[ips-rebuild-after-basic-change]]). Fable review after implementation
 (§8.5 model split).
+
+### 13.8 Implementation outcome (2026-07-14) — SHIPPED
+
+Implemented (Sonnet on §13, Fable adversarial review after — the §8.5 split).
+All §13.7 gates GREEN, independently re-run by the reviewer: `math-acceptance`
+470 PASS / 0 FAIL (grammar 12/12 differential-exact; **int-path anchors 32/32
+BIT-IDENTICAL to the reference** + 10 frozen random pairs; neg-y/frac rows
+inside their per-row caps), `unit-test` 45/45, tenant-closure 118 routines all
+page-0 (no new relocation; the resident-ABI inc regenerated for the
+combine_pow-shifted page-0 addresses), subrom-acceptance/inttest, float/
+string/input-acceptance, basic-reloc, **lean basic.rom byte-identical to
+HEAD's** (SHA-256 verified from both trees by the reviewer). Sim-vs-hardware:
+int anchors 32/32 bit-for-bit; frac battery 4/20 rows 1 ulp from the sim —
+inside the documented no-sticky-digit modelling margin (the §12.9 EXP
+precedent).
+
+**Three real fp-core interaction bugs found live by the implementer** (all
+§13.5-contract gaps, fixed in sub/fp_pow.asm with in-place mechanism notes):
+(1) fp_mul's silent UNDERFLOW abort sets FAC:=0 but leaves ARGA completely
+untouched → the loop's raw copy18-from-ARGA froze a stale partial product
+(`0.5^2000` printed 2.43…E-63) — fixed with `widen_fac_to` after every loop
+fp_mul; (2) fp_mul's zero-PRODUCT path leaves a stale nonzero dexp in ARGA →
+the frac path's coarse |t|≥1000 test misread `ln(1)*bigY` as huge
+(`1^123456789` → spurious Overflow) — same fix at the t site; (3)
+arga_pack_fac's documented not-all-zero precondition is violated by a
+genuinely-zero acc (`0.5^2000` then printed `.`) — fixed by NOT re-packing at
+the positive exit (the loop guarantees the last fp_mul was the acc-multiply,
+so FAC is already authoritative), and by tail-jumping fp_div on the
+reciprocal (its own tail is the sole authority — an explicit re-pack would
+resurrect the stale pre-div ARGA=1.0 over a correct Overflow disposition).
+
+**Contract corrections (ratified in review):** §13.5's FOUTBUF y-stash is
+infeasible — FOUTBUF aliases HORNER_ACC, clobbered by fp_log/fp_exp's own
+Horner; y is stashed on the machine stack instead (18 bytes, zero new RAM).
+§13.6 mis-listed `-2^.5` as an exact-match grammar row — `2^.5` rides the
+frac path where we deviate from the reference by design (the reference's own
+EXP·LOG 2^.5 is 1 ulp low, printing 13 digits); routed through the
+truth-bound cap instead. §13.2's bit-identity claim is positive-y only —
+live runs confirm random negative-y pairs deviate ≤1 ulp via our
+correctly-rounded div (expected, documented).
+
+**Also fixed (latent, pre-existing):** basic/tokenise.inc + basic/detok.inc
+were never build prerequisites (main OR sub ROM) — the ba652b7 staleness
+class; `^` is the first change to touch them since.
+
+**Reviewer verdict: SHIP.** combine_pow's classification ladder traced
+against §13.1 (dexp word read, digit-scan, asymmetric dexp==5 bound via the
+established tkf_ref32767/32768 + dig15_cmp idiom, dig_to_word accumulate);
+ev_pw's frame protocol matched against ev_t_mul's; both tenant paths traced
+including the three fix mechanisms verified against round_and_finalize/
+check_preexp_bounds headers; the stack-stash's byte-exact save/restore order
+hand-verified; live edge probes on BOTH machines (8/8 match: `1^9.5D62`=1 —
+the stale-dexp-zero × huge-dexp-y pre-check compound the reviewer flagged —
+plus 0^0/0^.5/0^-1/2^-3^2/1D62^1/(0.5)^-2000 dispositions).
+**NEXT = 2d SIN/COS/TAN** (shared kernel: TAN=SIN/COS bit-for-bit,
+COS=SIN(x+π/2), §1.2), then 2e RND (LCG capture campaign).
