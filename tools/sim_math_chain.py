@@ -43,6 +43,21 @@ INC = os.path.join(os.path.dirname(__file__), "..", "sub", "math-coeffs.inc")
 EXP_MAX_ULP = 2
 LOG_MAX_ULP = 4
 
+# POW (`^`, §13): the positive-y int path is REFERENCE-IDENTICAL by
+# construction (square-and-multiply over the reference-identical fp_mul; the
+# POW_REF_ANCHORS assert it bit-for-bit), so vs TRUTH it inherits the
+# structure's squaring amplification: each s := s*s DOUBLES the accumulated
+# relative error, so the truth deviation grows ~2^bitlen(n) -- that is the
+# reference's own error, not ours to fix (bug-for-bug principle). The sim
+# asserts a PER-ROW structural tripwire d <= POW_INT_ROW_K * 2^bitlen(n)
+# instead of a flat bound. The frac path (EXP(y*LOG(x))) deviation scales
+# with |t| = |y*log x| (result rel err ~= Delta t = t * rel-err(LOG)):
+# per-row cap POW_FRAC_T_K * max(1, |t|) + POW_FRAC_T_C. Measured worst
+# 2026-07-14: 7.2 ulp per unit t (835 ulp @ t=117); caps carry ~1.7x margin.
+POW_INT_ROW_K = 3
+POW_FRAC_T_K = 12
+POW_FRAC_T_C = 10
+
 # Correctly-rounded floors (drift tripwires, ATN_EXACT_FLOOR precedent):
 # a uniform 1-2 ulp degradation would pass the bounds silently without these.
 EXP_EXACT_FLOOR_PCT = 90        # measured 92.0%
@@ -207,6 +222,189 @@ def log_truth(x):
     return fp14(x.ln())
 
 
+# ---- POW (`^`) chain (§13) ---------------------------------------------------
+# Integer path: the black-box-pinned reference structure (char_pow rounds 1-5,
+# 2026-07-14): acc := 1; per SET bit of n=|y| acc := fp_mul(acc, s); n >>= 1;
+# if n != 0, s := fp_mul(s, s).  Every fp_mul carries the E1+E2 >= 64
+# PRE-normalisation Overflow gate (E = offset exponent of 0.m*10^E == our
+# dexp) -- the same check_preexp_bounds our fp_mul already has, CONFIRMED in
+# the reference's own `*` (1D61*10 / 1D31*1D31 / 2D62*4 all Overflow though
+# 2D62*4's product fits; 9D61*9 fine).  This makes the reference's odd
+# overflow surface (10^62 Overflow yet 2^207=2.06e62 fine, 1D62^1 Overflow)
+# an emergent property we reproduce for free.  Negative y: p := x^|y| FIRST,
+# then reciprocal -- p==0 (underflow) => Overflow error (.5^-2000), else 1/p.
+# Fractional path: EXP(y*LOG(x)) (bit-for-bit the reference's own derivation,
+# math-pack spec 5.1); x<0 => Illegal function call; zero-base and y==0
+# dispositions precede everything (0^0=1, 0^neg => Division by zero).
+
+def fpE(v):
+    """Offset decimal exponent: v = 0.m * 10^E (== the FPNUM dexp field)."""
+    return v.adjusted() + 1
+
+def mul_chk(a, b):
+    """fp_mul with the pre-normalisation E-sum gate + underflow-to-zero."""
+    if not isinstance(a, D) or not isinstance(b, D):
+        return "Overflow"                      # propagate
+    if a == 0 or b == 0:
+        return D(0)
+    if fpE(a) + fpE(b) >= 64:
+        return "Overflow"
+    p = op(a, b, "*")
+    if p != 0 and abs(p) < MINV:
+        return D(0)
+    return p
+
+def pow_int_core(x, n):
+    """x^n for n in 0..32768 via the pinned LSB-first square-and-multiply."""
+    acc, s = D(1), x
+    while n:
+        if n & 1:
+            acc = mul_chk(acc, s)
+            if acc == "Overflow":
+                return "Overflow"
+        n >>= 1
+        if n:
+            s = mul_chk(s, s)
+            if s == "Overflow":
+                return "Overflow"
+    return acc
+
+def pow_chain(K, x, y):
+    """Full `^` model. Returns Decimal, 'Overflow', 'Division by zero',
+    or 'Illegal function call'."""
+    if y == 0:
+        return D(1)                            # incl. 0^0 = 1
+    if x == 0:
+        return D(0) if y > 0 else "Division by zero"
+    if y == y.to_integral_value() and -32768 <= y <= 32767:
+        p = pow_int_core(x, int(abs(y)))
+        if y > 0 or p == "Overflow":
+            return p
+        if p == 0:
+            return "Overflow"                  # reciprocal of underflowed 0
+        r = op(D(1), p, "/")                   # our fp_div: correctly rounded
+        if abs(r) > MAXV:
+            return "Overflow"
+        return r
+    if x < 0:
+        return "Illegal function call"
+    lg = log_chain(K, x)
+    t = mul_chk(y, lg)
+    if t == "Overflow":
+        return "Overflow"
+    return exp_chain(K, t)
+
+def pow_truth(x, y):
+    """14-digit-rounded true x^y with the FPNUM range mapping."""
+    if y == 0:
+        return D(1)
+    if x == 0:
+        return D(0) if y > 0 else "Division by zero"
+    if y == y.to_integral_value():
+        with decimal.localcontext() as c:
+            c.prec = 80
+            t = x ** int(y)
+    else:
+        if x < 0:
+            return "Illegal function call"
+        with decimal.localcontext() as c:
+            c.prec = 60
+            t = (y * x.ln()).exp()
+    t = fp14(t)
+    if abs(t) > MAXV:
+        return "Overflow"
+    if t != 0 and abs(t) < MINV:
+        return D(0)
+    return t
+
+
+# The captured reference outputs (char_pow rounds 1-5, VG-8020 2026-07-14):
+# positive-y integer-path rows are asserted BIT-FOR-BIT -- our fp_mul is
+# reference-identical, so the composition must be too; this pins the loop
+# structure. Negative-y and fractional rows are NOT asserted against the
+# reference (our correctly-rounded div / own EXP+LOG deviate by design).
+POW_REF_ANCHORS = [
+    ("2",      40,     D("1099511627776")),
+    ("3",      20,     D("3486784401")),
+    ("2",      50,     D("1.1258999068426E+15")),
+    ("3",      33,     D("5.5590605665554E+15")),
+    ("7",      19,     D("1.1398895185373E+16")),
+    ("1.1",    20,     D("6.7274999493256")),
+    ("1.01",   100,    D("2.7048138294216")),
+    ("5",      27,     D("7.4505805969238E+18")),
+    ("5",      88,     D("3.2311742677853E+61")),
+    ("2",      127,    D("1.7014118346047E+38")),
+    ("2",      207,    D("2.0568806966517E+62")),
+    ("10",     31,     D("1E+31")),
+    ("10",     32,     D("1E+32")),
+    ("10",     47,     D("1E+47")),
+    ("0.1",    63,     D("1E-63")),
+    ("-2",     3,      D("-8")),
+    ("-2",     10,     D("1024")),
+    ("-1",     32767,  D("-1")),
+    ("-1",     32768,  "Illegal function call"),   # past int16 -> frac path
+    ("10",     62,     "Overflow"),    # acc(10^30)*s5(10^32): E 31+33 = 64
+    ("10",     63,     "Overflow"),
+    ("2",      210,    "Overflow"),    # true overflow (1.6e63 > ceiling)
+    ("-10",    63,     "Overflow"),
+    ("1E62",   1,      "Overflow"),    # acc=1*x: E 1+63 = 64
+    ("1E31",   3,      "Overflow"),    # square chain: E 32+32 = 64
+    ("1E12",   5,      D("1E+60")),
+    ("0.5",    2000,   D(0)),
+    ("0.5",    -2000,  "Overflow"),    # reciprocal of underflowed 0
+    ("2",      -32768, "Overflow"),    # 2^32768 overflows first
+    ("10",     -63,    "Overflow"),    # 10^63 overflows before the reciprocal
+    ("10",     -31,    D("1E-31")),
+    ("10",     -32,    D("1E-32")),
+]
+
+
+def battery_pow_int():
+    """(x, n) truth battery for the integer path (chain-error growth ~log2 n)."""
+    pairs = []
+    seed = 0x77
+    for i in range(3000):
+        seed = (seed * 6364136223846793005 + 1442695040888963407) % (1 << 64)
+        u = D(seed % 10 ** 14) / D(10 ** 14)
+        mant = fp14(u * 9 + 1)                     # [1,10) 14-digit
+        ex = (seed >> 24) % 7 - 3                  # modest decades
+        x = fp14(mant * D(10) ** ex)
+        n = (seed >> 40) % 300 + 2
+        if i % 3 == 0:
+            n = -n
+        # keep the pair inside the representable envelope (with margin for
+        # the square chain: it reaches x^(2^ceil(log2 n)))
+        span = abs(D(n) * x.ln() / D(10).ln())
+        if span > 55:
+            continue
+        pairs.append((x, D(n)))
+    pairs += [(D("0.99999999999999"), D(32767)),
+              (D("1.0000000000001"), D(32767)),
+              (D("1.0000000000001"), D(-32768)),
+              (D("2"), D(-40)), (D("3"), D(-5)), (D("2"), D(-10))]
+    return pairs
+
+def battery_pow_frac():
+    """(x, y) truth battery for the EXP(y*LOG(x)) path."""
+    pairs = [(D("2"), D("0.5")), (D("7"), D("2.5")), (D("10"), D("-2.5")),
+             (D("123.456"), D("7.89")), (D("10"), D("62.5")),
+             (D("1.0000000000001"), D("1234.5")), (D("0.5"), D("-100.25"))]
+    seed = 0x5C
+    for i in range(3000):
+        seed = (seed * 6364136223846793005 + 1442695040888963407) % (1 << 64)
+        u = D(seed % 10 ** 14) / D(10 ** 14)
+        x = fp14((u * 9 + 1) * D(10) ** ((seed >> 20) % 11 - 5))
+        v = D((seed >> 32) % 10 ** 8) / D(10 ** 8)
+        y = fp14((v - D("0.5")) * 40)              # [-20, 20)
+        if y == y.to_integral_value():
+            y += D("0.5")
+        span = abs(y * x.ln() / D(10).ln())
+        if span > 62:
+            continue
+        pairs.append((x, y))
+    return pairs
+
+
 # ---- ulp + batteries ----------------------------------------------------------
 def ulp_dist(val, truth):
     if truth == 0:
@@ -318,4 +516,70 @@ if __name__ == "__main__":
     run("LOG", battery_log() + battery_log_breakpoints(K),
         lambda x: log_chain(K, x), log_truth, LOG_MAX_ULP, verbose,
         LOG_EXACT_FLOOR_PCT)
+
+    # --- POW (§13) -----------------------------------------------------------
+    # 1) the reference anchors, BIT-FOR-BIT (positive-y int path + the whole
+    #    disposition surface): this is the loop-structure proof.
+    bad = []
+    for xs_, n_, want in POW_REF_ANCHORS:
+        got = pow_chain(K, fp14(D(xs_)), D(n_))
+        if isinstance(want, D):
+            okrow = isinstance(got, D) and got == want
+        else:
+            okrow = got == want
+        if not okrow:
+            bad.append((xs_, n_, got, want))
+    for xs_, n_, got, want in bad:
+        print(f"POW ANCHOR MISS: {xs_}^{n_}: got {got}, reference {want}")
+    assert not bad, f"{len(bad)} POW reference anchors missed"
+    print(f"\nPOW: all {len(POW_REF_ANCHORS)} reference anchors reproduced "
+          f"bit-for-bit")
+    # 2) int-path truth battery: PER-ROW structural tripwire (see bound notes)
+    pairs = battery_pow_int()
+    worst_ratio, worst_pair, worst_d, total = D(0), None, D(0), 0
+    for x_, y_ in pairs:
+        got = pow_chain(K, x_, y_)
+        want = pow_truth(x_, y_)
+        d = ulp_dist(got, want)
+        if d is None:
+            total += 1
+            continue
+        total += 1
+        cap = D(POW_INT_ROW_K * (1 << int(abs(y_)).bit_length()))
+        assert d <= cap, \
+            f"POW-int {x_}^{y_}: {d} ulp exceeds structural cap {cap}"
+        if isinstance(d, D):
+            ratio = d / cap
+            if ratio > worst_ratio:
+                worst_ratio, worst_pair, worst_d = ratio, (x_, y_), d
+    print(f"\n--- POW-int: {total} inputs, per-row caps HELD "
+          f"(K={POW_INT_ROW_K} * 2^bitlen(n)) ---")
+    if worst_pair:
+        print(f"worst cap-fraction {worst_ratio:.2f} "
+              f"({worst_d} ulp) @ {worst_pair[0]}^{worst_pair[1]}")
+    # 3) frac-path truth battery: per-row t-scaled cap (see bound notes)
+    fpairs = battery_pow_frac()
+    worst_ratio, worst_pair, worst_d, total = D(0), None, D(0), 0
+    for x_, y_ in fpairs:
+        got = pow_chain(K, x_, y_)
+        want = pow_truth(x_, y_)
+        d = ulp_dist(got, want)
+        total += 1
+        if d is None:
+            continue
+        with decimal.localcontext() as c:
+            c.prec = 30
+            t_ = abs(y_ * x_.ln())
+        cap = D(POW_FRAC_T_K) * max(D(1), t_) + POW_FRAC_T_C
+        assert d <= cap, \
+            f"POW-frac {x_}^{y_} (t={t_:.1f}): {d} ulp exceeds cap {cap:.0f}"
+        if isinstance(d, D):
+            ratio = d / cap
+            if ratio > worst_ratio:
+                worst_ratio, worst_pair, worst_d = ratio, (x_, y_), d
+    print(f"\n--- POW-frac: {total} inputs, per-row t-scaled caps HELD "
+          f"({POW_FRAC_T_K}*max(1,|t|)+{POW_FRAC_T_C}) ---")
+    if worst_pair:
+        print(f"worst cap-fraction {worst_ratio:.2f} "
+              f"({worst_d} ulp) @ {worst_pair[0]}^{worst_pair[1]}")
     print("\nsim_math_chain: ALL BOUNDS HELD")
