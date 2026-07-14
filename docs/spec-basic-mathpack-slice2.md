@@ -1237,3 +1237,35 @@ sim-vs-hardware differential over the gate batteries.
    fp_div's disposition there and add a guard only if a live probe surfaces one.
 3. **Token bytes** are asserted from §1.4's prior capture; the gate's token check is the
    arbiter (capture wins on disagreement).
+
+### 14.11 Implementation outcome (2026-07-14) — SHIPPED
+
+Implemented (Sonnet on §14, independent Fable adversarial review after — the §8.5 split;
+commit 5ec4935, review follow-ups d082fd7). All §14.9 gates GREEN, independently re-run:
+`math-acceptance` **ALL PASS** (tokens `$89`/`$8C`/`$8D` confirmed vs the fresh VG-8020
+crunch; **SIN 28/28, COS 31/31 correctly-rounded** on the moderate battery, worst abs
+1.0E-14 — matching the sim exactly; TAN worst 4 ulp in-band vs bound 16; the 9 floor rows
+and the near-π/2/large-|x| pins all hold), `unit-test` 45/45, `subrom-closure-check` 118
+routines all page-0 (**no new relocation**), `subrom-acceptance`/`inttest`, float/string/
+input-acceptance, reloc + kwtable single-copy, **lean `basic.rom` byte-identical to HEAD**
+(worktree sha match, independently reverified), sub.rom fits + boots, `sim_math_chain`
+green.
+
+**One real CONTRACT gap, self-caught live by the implementer** (the fp_pow §13.8 class):
+§14.6's `sc_select`-then-`arga_pack_fac` missed that `arga_pack_fac` has a **not-all-zero
+ARGA precondition** — `SIN(0)`=0 (kernel's dexp′≤0 path → exact-zero sv) packs a
+non-canonical `$40` lead byte instead of `FAC:=0`. Fixed with `fsc_pack_arga`, a
+`dig15_iszero`-guarded pack tail on fp_sin/fp_cos (fp_tan is safe — fp_div's own
+round_and_finalize carries the guard). The shared-kernel design (one reduction → sv+cv,
+select for SIN/COS/TAN) worked as specified — TAN needed no stack-stash, unlike fp_pow.
+
+**Adversarial review verdict: SHIP** (no value-level bug survived a hostile pass; the
+reviewer built an independent faithful digit-level core model that reproduced all 111 live
+gate values bit-for-bit and re-measured the entire §14.2 envelope under real-core
+semantics — every bound held). Three follow-ups landed (d082fd7): (1) the `sck_floor` path
+was gated by nothing → 9 pinned floor rows + sim anchors added; (2) the sim's "measure-zero"
+no-sticky-digit claim was false for trig (~23 % differ by 1 ulp, within bounds) → docstring
++ §14.10 + header corrected, sim reframed as a bounds/envelope proof not a bit-exact oracle
+(a faithful-core model is a **2e follow-up**); (3) §14.1's "never worse" softened for the
+meaningless [1E13, 1.57E14) band. **NEXT = 2e `RND`** (black-box LCG capture campaign;
+§5 — will want the faithful-core sim model).
