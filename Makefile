@@ -78,8 +78,11 @@ SUB_SRC   := sub/sub.asm
 # the `^` tenant body -- same staleness hazard, same fix. Also adds
 # basic/tokenise.inc + basic/detok.inc (the sub-ROM's own tokeniser/detok
 # copies, sub/sub.asm/sub/detok.asm) -- see the DEPS comment above for why.
+# sub/fp_sin.asm (math pack slice 2d, docs/spec-basic-mathpack-slice2.md §14):
+# the SIN/COS/TAN tenant body (shared sincos_kernel) -- same staleness hazard,
+# same fix.
 SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
-             sub/fp_exp.asm sub/fp_log.asm sub/fp_pow.asm \
+             sub/fp_exp.asm sub/fp_log.asm sub/fp_pow.asm sub/fp_sin.asm \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
              basic/tokenise.inc basic/detok.inc \
              sub/basic-resident-abi.inc

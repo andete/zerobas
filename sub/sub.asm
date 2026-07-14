@@ -248,6 +248,20 @@ sub_p1_table:
                                                 ;   mathpack-slice2.md §13). Main-ROM
                                                 ;   stub is basic/float-arith.asm
                                                 ;   `combine_pow`.
+                jp      fp_sin                  ; index 6 (SUBROM_IDX_SIN): SIN(x)'s
+                                                ;   sincos_kernel + quadrant-select
+                                                ;   (math pack slice 2d, docs/spec-
+                                                ;   basic-mathpack-slice2.md §14).
+                                                ;   Main-ROM stub is basic/expr.asm
+                                                ;   `evmc_sin`.
+                jp      fp_cos                  ; index 7 (SUBROM_IDX_COS): COS(x),
+                                                ;   same sincos_kernel (math pack
+                                                ;   slice 2d, §14). Main-ROM stub is
+                                                ;   basic/expr.asm `evmc_cos`.
+                jp      fp_tan                  ; index 8 (SUBROM_IDX_TAN): TAN(x) =
+                                                ;   SIN(x)/COS(x) (math pack slice 2d,
+                                                ;   §14). Main-ROM stub is basic/
+                                                ;   expr.asm `evmc_tan`.
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -304,6 +318,15 @@ sub_p1_ping:
 ; resident-ABI surface subset as the other page-1 tenants; no new
 ; math-coeffs.inc constants (POW needs none of its own).
                 include "fp_pow.asm"
+
+; fp_sin (math pack slice 2d, docs/spec-basic-mathpack-slice2.md §14): the
+; SIXTH/SEVENTH/EIGHTH page-1 tenants (fp_sin/fp_cos/fp_tan, one body file
+; sharing the sincos_kernel). Reuses fp_atan.asm's fat_copy18/fp_poly_horner
+; directly (same assembly unit) and math-coeffs.inc's SIN_COEF/COS_COEF/
+; TWO_OVER_PI/SIN_C1/SIN_C2 records (already included above). Same
+; resident-ABI surface subset as the other page-1 tenants; no new
+; math-coeffs.inc constants beyond what's already emitted.
+                include "fp_sin.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF

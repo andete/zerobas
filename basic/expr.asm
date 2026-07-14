@@ -876,6 +876,12 @@ ev_ff_mathconv:
                 jp      z,evmc_exp
                 cp      LOG_TOKEN
                 jp      z,evmc_log
+                cp      SIN_TOKEN
+                jp      z,evmc_sin
+                cp      COS_TOKEN
+                jp      z,evmc_cos
+                cp      TAN_TOKEN
+                jp      z,evmc_tan
                 jp      ev_ff_strnum        ; not ours -> LEN/ASC/VAL, else ev_f_err
 
 ; --- ev_mc_arg: parse "( <numeric expr> )" from IX (positioned on the -------
@@ -1253,6 +1259,53 @@ evmc_exp_overflow:
                 ld      (FPERR),a
                 ld      de,0
                 ret
+
+; --- evmc_sin / evmc_cos / evmc_tan: SIN(x)/COS(x)/TAN(x), DOUBLE (math -----
+; pack slice 2d, docs/spec-basic-mathpack-slice2.md §14.7). evmc_atn's shape
+; VERBATIM (SIN/COS/TAN are total over all x, §6/§14.1 "no domain check" --
+; no ARGA+FPNUM_SIGN branch, no coarse magnitude check like evmc_exp's, no
+; error tail): every call falls straight through to the dispatch. Same
+; CALSLT-A-not-preserved discipline as every prior evmc_*: fp_sin/fp_cos/
+; fp_tan are COMPUTE-ONLY (leave FAC correct but do not touch FACTYP/DE), so
+; each of these stubs sets FACTYP:=8 + refreshes DE via flt_to_int16 after a
+; successful return; CF (not A) is the only reliable post-call signal, and
+; CF=1 only means "sub-ROM absent" (never on the merged machine).
+evmc_sin:
+                call    ev_mc_arg
+                ld      hl,ARGA
+                call    widen_rhs_operand
+                push    ix                  ; save the parser's text-position pointer
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SIN
+                call    subrom_call         ; CF=1 iff sub-ROM absent. Result in FAC.
+                pop     ix
+                jp      c,subrom_absent_error
+                ld      a,8
+                ld      (FACTYP),a
+                jp      flt_to_int16
+evmc_cos:
+                call    ev_mc_arg
+                ld      hl,ARGA
+                call    widen_rhs_operand
+                push    ix
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_COS
+                call    subrom_call
+                pop     ix
+                jp      c,subrom_absent_error
+                ld      a,8
+                ld      (FACTYP),a
+                jp      flt_to_int16
+evmc_tan:
+                call    ev_mc_arg
+                ld      hl,ARGA
+                call    widen_rhs_operand
+                push    ix
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_TAN
+                call    subrom_call
+                pop     ix
+                jp      c,subrom_absent_error
+                ld      a,8
+                ld      (FACTYP),a
+                jp      flt_to_int16
     ENDIF
 
 ; --- ev_f_varptr: VARPTR(<var>) -> address of the variable's value field -----

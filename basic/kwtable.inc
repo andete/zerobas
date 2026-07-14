@@ -250,5 +250,15 @@ kwtable:
                 ; order is free regardless -- same as every entry above).
                 db      3,"EXP",2,PEEK_PREFIX,EXP_TOKEN         ; $FF $8B
                 db      3,"LOG",2,PEEK_PREFIX,LOG_TOKEN         ; $FF $8A
+                ; --- math pack slice 2d (repack build only) -----------------
+                ; docs/spec-basic-mathpack-slice2.md §14.4. SIN/COS/TAN: same
+                ; $FF-prefixed function-token shape, MSX2 TH Table 2.20,
+                ; black-box captured from the VG-8020 crunch (probes/basic/
+                ; basic_probe_math_conv.py). No prefix collision with any
+                ; existing entry (match_kw compares the FULL keyword, so
+                ; order is free regardless -- same as every entry above).
+                db      3,"SIN",2,PEEK_PREFIX,SIN_TOKEN         ; $FF $89
+                db      3,"COS",2,PEEK_PREFIX,COS_TOKEN         ; $FF $8C
+                db      3,"TAN",2,PEEK_PREFIX,TAN_TOKEN         ; $FF $8D
     ENDIF
                 db      0

@@ -266,6 +266,15 @@ ATN_TOKEN       equ     $8E     ; ATN(x) -> $FF $8E
 ; (SIN/COS/TAN/RND not yet implemented -- later sub-slices).
 EXP_TOKEN       equ     $8B     ; EXP(x) -> $FF $8B
 LOG_TOKEN       equ     $8A     ; LOG(x) -> $FF $8A
+; Math pack slice 2d (Phase 3, repack-only -- docs/spec-basic-mathpack-
+; slice2.md §14.1/§14.4). SIN/COS/TAN: same $FF-prefixed function-token
+; table, MSX2 TH Table 2.20 + black-box VG-8020 crunch capture (probes/
+; basic/basic_probe_math_conv.py, §14.8, fresh 2026-07-14 capture). Completes
+; the interleave: SIN $89 . LOG $8A . EXP $8B . COS $8C . TAN $8D . ATN $8E .
+; RND $88 (RND not yet implemented -- a later sub-slice).
+SIN_TOKEN       equ     $89     ; SIN(x) -> $FF $89
+COS_TOKEN       equ     $8C     ; COS(x) -> $FF $8C
+TAN_TOKEN       equ     $8D     ; TAN(x) -> $FF $8D
 ; Memory / I-O access tokens (MSX2 TH Table 2.20; oracle-confirmed byte-for-byte
 ; via basic_probe_crunch.py — see PROVENANCE.md). VPOKE / OUT are one-byte
 ; statement tokens; VPEEK / INP are $FF-prefixed two-byte function tokens (like
@@ -1380,6 +1389,20 @@ SUBROM_IDX_POW       equ 5      ; fp_pow tenant (math pack slice 2c, sub/
                                 ; body, docs/spec-basic-mathpack-slice2.md
                                 ; §13.2/§13.5. Main-ROM stub is basic/
                                 ; float-arith.asm `combine_pow`.
+SUBROM_IDX_SIN       equ 6      ; fp_sin tenant (math pack slice 2d, sub/
+                                ; fp_sin.asm): the shared sincos_kernel +
+                                ; SIN's own quadrant-select, docs/spec-basic-
+                                ; mathpack-slice2.md §14.4/§14.5/§14.6.
+                                ; Main-ROM stub is basic/expr.asm `evmc_sin`.
+SUBROM_IDX_COS       equ 7      ; fp_cos tenant (math pack slice 2d, sub/
+                                ; fp_sin.asm, same sincos_kernel), docs/spec-
+                                ; basic-mathpack-slice2.md §14.4/§14.6.
+                                ; Main-ROM stub is basic/expr.asm `evmc_cos`.
+SUBROM_IDX_TAN       equ 8      ; fp_tan tenant (math pack slice 2d, sub/
+                                ; fp_sin.asm): SIN(x)/COS(x) over the same
+                                ; sincos_kernel, docs/spec-basic-mathpack-
+                                ; slice2.md §14.4/§14.6. Main-ROM stub is
+                                ; basic/expr.asm `evmc_tan`.
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

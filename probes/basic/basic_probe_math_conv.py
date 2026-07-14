@@ -326,6 +326,111 @@ def pow_frac_cap(x, y) -> "decimal.Decimal":
     return D(POW_FRAC_T_K) * max(D(1), t) + POW_FRAC_T_C
 
 
+# --- SIN/COS/TAN truth oracles (math pack slice 2d, docs/spec-basic-
+# mathpack-slice2.md §14.8): the SAME "the oracle is mathematical truth, not
+# the reference" framework as SQR/ATN/EXP/LOG/POW. Independent high-precision
+# quadrant reduction (Decimal prec~60, k=round-half-even(x/(pi/2)),
+# r=x-k*(pi/2), Taylor series for sin(r)/cos(r) -- NOT zerobas's own
+# Cody-Waite-style round-then-truncate reduction or its own minimax Horner
+# polys) -- the SAME reduction shape as scratchpad/char_trig.py's own
+# truth() (the slice's black-box characterization tool) and
+# tools/sim_math_chain.py's sincos_truth, promoted here to the same
+# 14-significant-digit correctly-rounded quantize every other truth_*14
+# oracle in this file uses.
+_TRIG_PI = D("3.14159265358979323846264338327950288419716939937510582097494")
+
+
+def _trig_series_sin(r: "decimal.Decimal") -> "decimal.Decimal":
+    acc = D(0); term = r; t2 = r * r; k = 1; sg = 1
+    for _ in range(60):
+        acc += sg * term
+        term = term * t2 / ((k + 1) * (k + 2))
+        k += 2
+        sg = -sg
+    return acc
+
+
+def _trig_series_cos(r: "decimal.Decimal") -> "decimal.Decimal":
+    acc = D(0); term = D(1); t2 = r * r; k = 0; sg = 1
+    for _ in range(60):
+        acc += sg * term
+        term = term * t2 / ((k + 1) * (k + 2))
+        k += 2
+        sg = -sg
+    return acc
+
+
+def _trig_reduce(x: "decimal.Decimal"):
+    """-> (sin(x), cos(x)) at ~60 working digits, independent quadrant
+    reduction (round-half-even k, matching char_trig.py's truth())."""
+    with decimal.localcontext() as ctx:
+        ctx.prec = 60
+        k = (x / (_TRIG_PI / 2)).to_integral_value(rounding=decimal.ROUND_HALF_EVEN)
+        r = x - k * (_TRIG_PI / 2)
+        sv = _trig_series_sin(r)
+        cv = _trig_series_cos(r)
+        q = int(k) % 4
+        sin_v = {0: sv, 1: cv, 2: -sv, 3: -cv}[q]
+        cos_v = {0: cv, 1: -sv, 2: -cv, 3: sv}[q]
+    return sin_v, cos_v
+
+
+def truth_sin14(x) -> "decimal.Decimal":
+    """Host-computed, correctly-rounded 14-significant-digit sin(x) --
+    mathematical truth, not the reference ROM (same framework as
+    truth_sqrt14/truth_atan14/truth_exp14/truth_log14/truth_pow14)."""
+    sv, _ = _trig_reduce(D(x))
+    return _round14(sv)
+
+
+def truth_cos14(x) -> "decimal.Decimal":
+    """Host-computed, correctly-rounded 14-significant-digit cos(x)."""
+    _, cv = _trig_reduce(D(x))
+    return _round14(cv)
+
+
+def truth_tan14(x):
+    """Host-computed 14-significant-digit tan(x) = truth_sin14(x)/
+    truth_cos14(x) -- the SAME two-step 'round sin/cos to 14 digits THEN
+    divide' model tools/sim_math_chain.py's own tan_truth uses (not a raw
+    high-precision tan/(x)) -- TAN_MAX_ULP below is calibrated against that
+    model, the same 14-digit sinv/cosv-then-fp_div chain sub/fp_sin.asm's
+    own fp_tan computes. Returns the 'Overflow' sentinel (mirrors
+    truth_exp14's own non-Decimal sentinel convention) if cos rounds to
+    exactly 0 at 14 digits."""
+    s = truth_sin14(x)
+    c = truth_cos14(x)
+    if c == 0:
+        return "Overflow"
+    with decimal.localcontext() as ctx:
+        ctx.prec = 40
+        val = s / c
+    return _round14(val)
+
+
+# SIN/COS/TAN documented-deviation bounds (§14.2, pre-proven by
+# tools/sim_math_chain.py BEFORE this asm/probe was written -- the §12.9/
+# §11.10 lesson applied forward): SIN/COS are bounded in [-1,1], so ABSOLUTE
+# error is the uniform metric (relative ulp blows up near the result-zeros,
+# inherent to every reduction incl. the reference's own catastrophic
+# near-pi/2 COS, §1.1); TAN uses relative ulp in the well-conditioned band
+# 0.1<=|tan|<=10 (bounded away from both TAN's zeros and poles). Sim-measured
+# 2026-07-14: SIN/COS worst abs 1.0E-14, 100% correctly-rounded (|val|>=.1);
+# TAN worst 11 ulp @ x~=950 (band edge).
+SIN_ABS_TOL = D("3E-14")          # abs-error bound over the moderate battery
+                                  # (|x|<=~1000 -- the sim's own scoping)
+SIN_CR_FLOOR = 27                 # correctly-rounded (abs<=1 ulp) floor over
+COS_CR_FLOOR = 30                 # |val|>=.1 inputs -- drift tripwire
+                                  # (ATN_EXACT_FLOOR "measured-1" precedent):
+                                  # measured on THIS probe's own hardware
+                                  # battery 2026-07-14, SIN 28/28 (100%), COS
+                                  # 31/31 (100%) correctly-rounded, both
+                                  # comfortably matching §14.2's sim-predicted
+                                  # 100% envelope; floor = measured-1
+TAN_MAX_ULP = 16                  # rel-ulp bound, 0.1<=|tan|<=10 (sim worst
+                                  # 11 @ x~=950, ~1.5x margin)
+
+
 _NUM_RE = re.compile(r"[+-]?(\d+\.?\d*|\.\d+)([eEdD][+-]?\d+)?")
 
 
@@ -364,6 +469,9 @@ TOKENS = [
     ("ATN",  "a=atn(1)",  0x8E),
     ("EXP",  "a=exp(1)",  0x8B),
     ("LOG",  "a=log(1)",  0x8A),
+    ("SIN",  "a=sin(1)",  0x89),
+    ("COS",  "a=cos(1)",  0x8C),
+    ("TAN",  "a=tan(1)",  0x8D),
 ]
 
 
@@ -861,6 +969,98 @@ for _px, _py in POW_FRAC_XS:
     POW_TRUTH_ROWS[f"({_px})^({_py})"] = (_px, _py, pow_frac_cap(_px, _py), False)
 POW_TRUTH_ROWS["-2^.5"] = ("2", "0.5", pow_frac_cap("2", "0.5"), True)
 
+# =============================================================================
+# SIN / COS / TAN battery (math pack slice 2d, docs/spec-basic-mathpack-
+# slice2.md §14.8). Four row kinds:
+#   * SIN_BROAD_XS/COS_BROAD_XS (~40 each, SHARED list -- both functions need
+#     the same domain coverage): 0, small angles, the quadrant boundaries
+#     (pi/4, pi/2, pi, 3pi/2, 2pi as 14-sig literals) and +-1 ulp straddles,
+#     negatives (oddness/evenness rows), 100, 628.318...(=200*pi), 1000, plus
+#     the §14.1 anchors -- asserted |zb-truth| <= SIN_ABS_TOL (absolute) +
+#     the correctly-rounded floor (SIN_CR_FLOOR/COS_CR_FLOOR, |val|>=0.1).
+#   * TAN_BAND_XS (~25): x giving 0.1<=|tan|<=10 -- asserted relative ulp
+#     <= TAN_MAX_ULP.
+#   * TAN_NEARPI2_XS / large-|x| rows (1.5707, 1.57079, 1000, 1E5, 1E8, 1E13,
+#     §14.8): pinned to CAPTURED-ZEROBAS (TAN_KNOWN map), NOT truth -- the
+#     near-pi/2 pole and the large-x reduction-accuracy falloff are
+#     documented deviations (the SQR_KNOWN_FLOOR precedent), captured live
+#     against the repack build (this probe's own characterization pass,
+#     2026-07-14) rather than asserted against an independent truth oracle
+#     that would need its own (unverified) modelling choices at these
+#     magnitudes.
+#   * FACTYP-leak rows (function-over-float/PEEK, single-vs-double literal
+#     widen path): routed through the SAME truth-bound _MATH_FACTYP_LEAK_TRUTH
+#     dict EXP/LOG/POW's own compound rows use (NOT the ATN precedent of a
+#     direct reference-tail compare) -- SIN/COS/TAN's own reference is a weak
+#     ~13-digit-pi 1980s poly (§1.1/§14.1), so a raw reference-tail compare on
+#     a compound expression would fail on the REFERENCE's own imprecision,
+#     not a zerobas bug, exactly the EXP/LOG finding this dict's own header
+#     documents.
+# =============================================================================
+TRIG_BROAD_XS = [
+    "0",
+    "0.0001", "0.001", "0.01", "0.1",
+    "0.5", "-0.5", "1", "-1", "1.5", "-1.5", "2", "-2", "3", "-3",
+    ".7853981633974", "-.7853981633974",              # +-pi/4
+    "1.5707963267949", "-1.5707963267949",             # +-pi/2
+    "1.5707963267948", "1.5707963267950",              # pi/2 +-1 ulp
+    "3.1415926535898", "-3.1415926535898",             # +-pi
+    "3.1415926535897", "3.1415926535899",              # pi +-1 ulp
+    "4.7123889803847", "-4.7123889803847",             # +-3pi/2
+    "6.2831853071796",                                  # 2pi
+    "10", "50", "100", "-100",
+    "628.31853071796",                                  # 200*pi
+    "1000", "-1000",
+    "1.23456789", "12.3456789", "123.456789",
+    "0.123456789",
+]
+SIN_BROAD_XS = TRIG_BROAD_XS
+COS_BROAD_XS = TRIG_BROAD_XS
+EXPRS = EXPRS + [f"sin({_x})" for _x in SIN_BROAD_XS]
+EXPRS = EXPRS + [f"cos({_x})" for _x in COS_BROAD_XS]
+
+# --- TAN band battery (~25, 0.1<=|tan|<=10, the well-conditioned band away
+# from both TAN's zeros k*pi and poles pi/2+k*pi -- asserted relative ulp) --
+TAN_BAND_XS = [
+    "0.1", "-0.1", "0.5", "-0.5", ".7853981633974", "-.7853981633974",
+    "0.9", "-0.9", "1", "-1", "1.1", "-1.1", "1.2", "-1.2", "1.4", "-1.4",
+    "2", "-2", "2.5", "-2.5", "3", "-3",
+    "100", "-100", "12345.678", "-12345.678", "1000000",
+]
+EXPRS = EXPRS + [f"tan({_x})" for _x in TAN_BAND_XS]
+
+# --- TAN near-pi/2 + large-|x| rows (§14.8): pinned to captured-zerobas, NOT
+# truth (the documented near-pole/large-x deviation, SQR_KNOWN_FLOOR shape).
+TAN_NEARPI2_XS = ["1.5707", "1.57079", "1000", "1E5", "1E8", "1E13"]
+EXPRS = EXPRS + [f"tan({_x})" for _x in TAN_NEARPI2_XS]
+# Filled from this probe's own --zb-machine characterization run against the
+# repack build (2026-07-14) -- captured-zerobas values, asserted verbatim
+# (never re-derived, never asserted against the reference or a truth
+# oracle): a regression pin, not a correctness proof, per §14.8's own
+# framing ("pin to captured-zerobas ... NOT truth").
+TAN_KNOWN = {
+    "tan(1.5707)":  "10381.327417571",
+    "tan(1.57079)": "158057.91341853",
+    "tan(1000)":    "1.4703241557027",
+    "tan(1E5)":     "-.035771662952895",
+    "tan(1E8)":     "-2.5637789067217",
+    "tan(1E13)":    "-.032273197819333",
+}
+
+# --- SIN/COS/TAN FACTYP-leak (§14.8): function-over-float (result must stay
+# DOUBLE), single-vs-double literal input widen path, function-over-PEEK.
+# Routed through _MATH_FACTYP_LEAK_TRUTH below (the EXP/LOG/POW precedent),
+# NOT a direct reference-tail compare (see this section's header comment).
+EXPRS = EXPRS + ["sin(1)+0.5", "cos(1)+0.5", "tan(1)+0.5",
+                 "sin(0.5!)", "cos(0.5#)", "tan(peek(0))"]
+_MATH_FACTYP_LEAK_TRUTH["sin(1)+0.5"] = lambda: truth_sin14("1") + D("0.5")
+_MATH_FACTYP_LEAK_TRUTH["cos(1)+0.5"] = lambda: truth_cos14("1") + D("0.5")
+_MATH_FACTYP_LEAK_TRUTH["tan(1)+0.5"] = lambda: truth_tan14("1") + D("0.5")
+_MATH_FACTYP_LEAK_TRUTH["sin(0.5!)"] = lambda: truth_sin14("0.5")
+_MATH_FACTYP_LEAK_TRUTH["cos(0.5#)"] = lambda: truth_cos14("0.5")
+_MATH_FACTYP_LEAK_TRUTH["tan(peek(0))"] = lambda: truth_tan14("243")  # this
+                                          # machine's PEEK(0)=243, §12.7
+
 # --- empty-argument / empty parenthesised expression -> "syntax error" -------
 # (spec-basic-empty-expr-syntax-error.md, D-F2-3, 2026-07-13). The reference
 # raises "Syntax error"; zerobas raises its OWN lowercase "syntax error" (the D-2
@@ -993,6 +1193,53 @@ def _log_arg(expr: str):
     """Return the Decimal argument if `expr` is a pure `log(x)` call
     (x a bare numeric literal), else None."""
     m = _LOG_PURE_RE.match(expr)
+    if not m:
+        return None
+    lit = m.group(1).replace("D", "E").replace("d", "e")
+    try:
+        return D(lit)
+    except decimal.InvalidOperation:
+        return None
+
+# --- SIN/COS/TAN pure-call matchers: same shape/rationale as _sqr_arg/ ------
+# _atn_arg/_exp_arg/_log_arg above -- route a plain `sin(x)`/`cos(x)`/
+# `tan(x)` call to the truth/band assertion, never the reference; the
+# FACTYP-leak compounds (`sin(1)+0.5`, `tan(peek(0))`, ...) never match.
+_SIN_PURE_RE = re.compile(r"^sin\((-?[0-9.eEdD+-]+)\)$")
+_COS_PURE_RE = re.compile(r"^cos\((-?[0-9.eEdD+-]+)\)$")
+_TAN_PURE_RE = re.compile(r"^tan\((-?[0-9.eEdD+-]+)\)$")
+
+
+def _sin_arg(expr: str):
+    """Return the Decimal argument if `expr` is a pure `sin(x)` call
+    (x a bare numeric literal), else None."""
+    m = _SIN_PURE_RE.match(expr)
+    if not m:
+        return None
+    lit = m.group(1).replace("D", "E").replace("d", "e")
+    try:
+        return D(lit)
+    except decimal.InvalidOperation:
+        return None
+
+
+def _cos_arg(expr: str):
+    """Return the Decimal argument if `expr` is a pure `cos(x)` call
+    (x a bare numeric literal), else None."""
+    m = _COS_PURE_RE.match(expr)
+    if not m:
+        return None
+    lit = m.group(1).replace("D", "E").replace("d", "e")
+    try:
+        return D(lit)
+    except decimal.InvalidOperation:
+        return None
+
+
+def _tan_arg(expr: str):
+    """Return the Decimal argument if `expr` is a pure `tan(x)` call
+    (x a bare numeric literal), else None."""
+    m = _TAN_PURE_RE.match(expr)
     if not m:
         return None
     lit = m.group(1).replace("D", "E").replace("d", "e")
@@ -1186,6 +1433,38 @@ def main() -> int:
                 truth = -truth
             d = ulp_dist(zb_val, truth)
             return d is not None and d <= cap
+        sin_x = _sin_arg(expr) if expr not in SPAN_ONLY else None
+        if sin_x is not None:
+            # §14.2/§14.8 (documented bounded deviation, ATN/EXP/LOG shape):
+            # SIN is bounded in [-1,1], so the assertion is an ABSOLUTE-error
+            # bound vs mathematical truth, not a ulp bound (relative ulp
+            # blows up near SIN's own zeros -- inherent, not a defect).
+            zb_val = parse_basic_number(zb_span)
+            if zb_val is None:
+                return False
+            return abs(zb_val - truth_sin14(sin_x)) <= SIN_ABS_TOL
+        cos_x = _cos_arg(expr) if expr not in SPAN_ONLY else None
+        if cos_x is not None:
+            zb_val = parse_basic_number(zb_span)
+            if zb_val is None:
+                return False
+            return abs(zb_val - truth_cos14(cos_x)) <= SIN_ABS_TOL
+        tan_x = _tan_arg(expr) if expr not in SPAN_ONLY else None
+        if tan_x is not None:
+            zb_val = parse_basic_number(zb_span)
+            if zb_val is None:
+                return False
+            if expr in TAN_KNOWN:
+                # §14.8: near-pi/2 pole + large-|x| reduction falloff --
+                # pinned to captured-zerobas, NOT truth (this battery's own
+                # header comment; the SQR_KNOWN_FLOOR precedent).
+                return zb_val == parse_basic_number(TAN_KNOWN[expr])
+            truth = truth_tan14(tan_x)
+            if not isinstance(truth, D):
+                return False    # defensive -- the band battery excludes the
+                                # exact-pole case
+            d = ulp_dist(zb_val, truth)
+            return d is not None and d <= TAN_MAX_ULP
         if kind == "raw":
             return ref_span is not None and ref_span == zb_span
         if expr in SPAN_ONLY:
@@ -1206,6 +1485,12 @@ def main() -> int:
     log_zb_by_x = {}
     pow_worst = D(0); pow_exact = 0; pow_total = 0   # POW accuracy summary
     pow_ref_deviations = []  # (expr, x, y, ref_val, truth) -- informational
+    sin_zb_by_x = {}         # Decimal(x) -> zb_val, for the accuracy summary
+    cos_zb_by_x = {}         # + oddness/evenness cross-check below
+    sin_ref_deviations = []  # (expr, x, ref_val, truth) -- informational
+    cos_ref_deviations = []
+    tan_worst = D(0); tan_exact = 0; tan_total = 0   # TAN band accuracy summary
+    tan_ref_deviations = []
     for (expr, line, kind), good, ref_raw, zb_raw in zip(
             cases, verdicts, ref_raws, zb_raws):
         ok = ok and good
@@ -1267,6 +1552,39 @@ def main() -> int:
             ref_val = parse_basic_number(ref_span)
             if ref_val is not None and ref_val != truth:
                 pow_ref_deviations.append((expr, px, py, ref_val, truth))
+        sin_x = _sin_arg(expr) if expr not in SPAN_ONLY else None
+        if sin_x is not None:
+            zb_val = parse_basic_number(result_span(zb_raw))
+            if zb_val is not None:
+                sin_zb_by_x[sin_x] = zb_val
+            ref_val = parse_basic_number(ref_span)
+            truth = truth_sin14(sin_x)
+            if ref_val is not None and ref_val != truth:
+                sin_ref_deviations.append((expr, sin_x, ref_val, truth))
+        cos_x = _cos_arg(expr) if expr not in SPAN_ONLY else None
+        if cos_x is not None:
+            zb_val = parse_basic_number(result_span(zb_raw))
+            if zb_val is not None:
+                cos_zb_by_x[cos_x] = zb_val
+            ref_val = parse_basic_number(ref_span)
+            truth = truth_cos14(cos_x)
+            if ref_val is not None and ref_val != truth:
+                cos_ref_deviations.append((expr, cos_x, ref_val, truth))
+        tan_x = _tan_arg(expr) if expr not in SPAN_ONLY and expr not in TAN_KNOWN else None
+        if tan_x is not None:
+            zb_val = parse_basic_number(result_span(zb_raw))
+            truth = truth_tan14(tan_x)
+            if zb_val is not None and isinstance(truth, D):
+                d = ulp_dist(zb_val, truth)
+                if d is not None:
+                    tan_total += 1
+                    if d == 0:
+                        tan_exact += 1
+                    if d > tan_worst:
+                        tan_worst = d
+            ref_val = parse_basic_number(ref_span)
+            if ref_val is not None and isinstance(truth, D) and ref_val != truth:
+                tan_ref_deviations.append((expr, tan_x, ref_val, truth))
 
     if ref_deviations:
         print(f"\n--- SQR reference-deviation report ({len(ref_deviations)}/"
@@ -1453,6 +1771,114 @@ def main() -> int:
             print(f"  {expr:<26} x={x:<18} y={y:<12} "
                   f"reference={ref_val!s:<20} truth={truth!s}")
 
+    # --- SIN/COS documented bounded-deviation summary (§14.2/§14.8, ABSOLUTE
+    # error -- SIN/COS are bounded in [-1,1]): worst abs error + correctly-
+    # rounded (abs<=1 ulp, |val|>=.1) floor, same drift-tripwire shape as
+    # ATN_EXACT_FLOOR/EXP_EXACT_FLOOR/LOG_EXACT_FLOOR.
+    for name, zb_by_x, truth_fn, tol, floor in (
+            ("SIN", sin_zb_by_x, truth_sin14, SIN_ABS_TOL, SIN_CR_FLOOR),
+            ("COS", cos_zb_by_x, truth_cos14, SIN_ABS_TOL, COS_CR_FLOOR)):
+        worst_abs = D(0); worst_x = None; cr = 0; tot = 0
+        for x, zb_val in zb_by_x.items():
+            truth = truth_fn(x)
+            ae = abs(zb_val - truth)
+            if ae > worst_abs:
+                worst_abs, worst_x = ae, x
+            if abs(truth) >= D("0.1"):
+                tot += 1
+                d = ulp_dist(zb_val, truth)
+                if d is None or d <= 1:
+                    cr += 1
+        if tot:
+            pct = 100.0 * cr / tot
+            print(f"\n--- {name} accuracy vs mathematical truth "
+                  f"({len(zb_by_x)} pure {name.lower()} inputs) -- bound = "
+                  f"abs<={tol} (§14.2) ---")
+            print(f"  worst abs error {worst_abs:.2e} @ x={worst_x}; "
+                  f"correctly-rounded (abs<=1 ulp, |val|>=.1) {cr}/{tot} "
+                  f"({pct:.1f}%).")
+            if cr < floor:
+                print(f"FAIL  {name} correctly-rounded count {cr} < floor "
+                      f"{floor} -- uniform accuracy regression (all still "
+                      "within the abs bound but the exact-count collapsed).")
+                ok = False
+            print(f"  DOCUMENTED bounded deviation (§14.2, same framework as "
+                  "ATN/EXP/LOG's own): the reduction+minimax-Horner chain is "
+                  "not strictly correctly-rounded everywhere; per-input "
+                  "never-worse-than-reference is NOT asserted (academic here "
+                  "-- the reference is 3-6 orders worse everywhere it "
+                  "matters, §14.1).")
+
+    # --- SIN/COS oddness/evenness cross-check (§14.2): SIN(-x)=-SIN(x) /
+    # COS(-x)=COS(x) for every x in the broad battery whose negative mirror
+    # is ALSO present -- verified from the already-collected zb values (no
+    # extra machine round-trip), same shape as ATN's own oddness check above.
+    # By construction sincos_kernel computes on a=|x| and the wrappers apply
+    # the sign last (sub/fp_sin.asm §14.5/§14.6), so this should hold EXACTLY.
+    sin_odd_checked = 0
+    for x, zb_val in list(sin_zb_by_x.items()):
+        if -x in sin_zb_by_x:
+            sin_odd_checked += 1
+            if sin_zb_by_x[-x] != -zb_val:
+                print(f"FAIL  oddness: sin({x}) = {zb_val}  but  "
+                      f"sin({-x}) = {sin_zb_by_x[-x]}  (expected {-zb_val})")
+                ok = False
+    if sin_odd_checked:
+        print(f"\nSIN oddness cross-check: {sin_odd_checked // 2} mirrored "
+              "pair(s) verified sin(-x) == -sin(x)")
+    cos_even_checked = 0
+    for x, zb_val in list(cos_zb_by_x.items()):
+        if -x in cos_zb_by_x:
+            cos_even_checked += 1
+            if cos_zb_by_x[-x] != zb_val:
+                print(f"FAIL  evenness: cos({x}) = {zb_val}  but  "
+                      f"cos({-x}) = {cos_zb_by_x[-x]}  (expected {zb_val})")
+                ok = False
+    if cos_even_checked:
+        print(f"COS evenness cross-check: {cos_even_checked // 2} mirrored "
+              "pair(s) verified cos(-x) == cos(x)")
+
+    if sin_ref_deviations:
+        print(f"\n--- SIN reference-deviation report ({len(sin_ref_deviations)}/"
+              f"{len(SIN_BROAD_XS)}) -- INFORMATIONAL ---")
+        print("(inputs where the reference ROM's own SIN misses mathematical "
+              "truth; the reference has a weak ~13-digit stored pi, §1.1/"
+              "§14.1. Never asserted against.)")
+        for expr, x, ref_val, truth in sin_ref_deviations:
+            print(f"  {expr:<26} reference={ref_val!s:<20} truth={truth!s}")
+    if cos_ref_deviations:
+        print(f"\n--- COS reference-deviation report ({len(cos_ref_deviations)}/"
+              f"{len(COS_BROAD_XS)}) -- INFORMATIONAL ---")
+        print("(inputs where the reference ROM's own COS misses mathematical "
+              "truth; catastrophic near pi/2, §1.1/§14.1. Never asserted "
+              "against.)")
+        for expr, x, ref_val, truth in cos_ref_deviations:
+            print(f"  {expr:<26} reference={ref_val!s:<20} truth={truth!s}")
+
+    # --- TAN documented bounded-deviation summary (§14.2/§14.8, relative ulp,
+    # 0.1<=|tan|<=10 band only -- the near-pi/2/large-|x| rows are pinned to
+    # captured-zerobas above, NOT included here).
+    if tan_total:
+        print(f"\n--- TAN accuracy vs mathematical truth ({tan_total} "
+              "band inputs, 0.1<=|tan|<=10) -- bound = "
+              f"{TAN_MAX_ULP} ulp (§14.2) ---")
+        print(f"  correctly-rounded (== truth): {tan_exact}/{tan_total}; "
+              f"worst deviation: {tan_worst} ulp (bound {TAN_MAX_ULP}).")
+        print("  DOCUMENTED bounded deviation (§14.2): TAN(x)=SIN(x)/COS(x) "
+              "bit-for-bit (§1.2); the band bound reflects the one "
+              "correctly-rounded fp_div on top of SIN/COS's own abs-error "
+              "envelope, amplified near the band edges (|sin| or |cos| "
+              "~=0.1). Per-input never-worse-than-reference is NOT asserted "
+              "(academic -- the reference is 4+ orders worse here, §14.1).")
+    if tan_ref_deviations:
+        print(f"\n--- TAN reference-deviation report ({len(tan_ref_deviations)}/"
+              f"{len(TAN_BAND_XS)}) -- INFORMATIONAL ---")
+        print("(inputs where the reference ROM's own TAN misses mathematical "
+              "truth; up to 4e4+ ulp off truth in this project's own "
+              "characterization, §14.1. Never asserted against.)")
+        for expr, x, ref_val, truth in tan_ref_deviations:
+            print(f"  {expr:<26} reference={ref_val!s:<20} truth={truth!s}")
+
     print("\nALL PASS — SQR is correctly-rounded (== mathematical truth) over "
           "the broad battery except the pinned near-tie precision floor "
           f"({', '.join(SQR_KNOWN_FLOOR)}, where zerobas ties the reference, "
@@ -1466,7 +1892,14 @@ def main() -> int:
           "beats them in aggregate even where a per-input tie isn't asserted); "
           "POW's positive-y integer path is REFERENCE-IDENTICAL BIT-FOR-BIT "
           "(§13.2), and its neg-y/frac/grammar-outlier rows hold their own "
-          "per-row truth-bound caps (documented bounded deviation, §13.2); "
+          f"per-row truth-bound caps (documented bounded deviation, §13.2); "
+          f"SIN/COS are within {SIN_ABS_TOL} absolute of truth over their "
+          "broad battery and TAN within "
+          f"{TAN_MAX_ULP} ulp over its well-conditioned band (documented "
+          "bounded deviation, §14.2 -- the reference is 3-6 orders worse "
+          "here via its own weak stored pi), oddness/evenness hold exactly, "
+          "and the near-pi/2/large-|x| rows are pinned to captured-zerobas "
+          "(§14.8); "
           "every reference ROM's own bias is documented above, never asserted "
           "against" if ok
           else "\nSOME FAILED")
