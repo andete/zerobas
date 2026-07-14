@@ -1419,3 +1419,38 @@ caught **immediately** by the differential gate (the sequence diverges on step 1
 - `RND` is the **faithful-core-model win** flagged in §14.10: its sim model (`rnd_advance_bcd`)
   is an EXACT bit-for-bit oracle, not a bounds envelope — the first slice-2 function where the
   sim proves reference-identity outright.
+
+### 15.7 Implementation outcome — SHIPPED (commit d68426a)
+
+Implemented per §15 (Sonnet on the signed contract, [[opus-vs-sonnet-model-split]]).
+`sub/fp_rnd.asm` (9th page-1 tenant) + `evmc_rnd` + `clear_vars` reset + `RND_SEED` in the
+trampoline tail slack (build-ASSERT-guarded) + the `check_rnd` reference-identity
+differential (15 stateful specs). All gates green: **math-acceptance ALL PASS** (RND 15/15
+bit-for-bit on the VG-8020), unit-test 45/45, closure-check clean, subrom-inttest PASS, **lean
+`basic.rom` byte-identical** (verified by clean-tree rebuild), sub.rom 32768. The BCD
+multiply-add is a literal transcription of the sim's proven `rnd_advance_bcd`; A/C/S0 verified
+digit-for-digit; RAM aliases disjoint; output normalization exact for all k=0..13 + the S=0
+guard.
+
+**Fable adversarial review verdict: SHIP** — the advance core, output normalization (incl.
+gate-uncovered k≥2 and the reachable S=0 path), mant14 extraction, RAM lifetime, the S=0
+`fsc_pack_arga` precondition guard, `RND_S0_PACKED` endianness, and the build ASSERT (verified
+to actually fire in pasmo) all traced clean over a ~12k-state instruction-faithful mirror.
+
+**DEFERRED deviation (Finding 1 — logged, `disk/docs/tier2-review-queue.md`):** a **malformed**
+`RND` call — extra arg `RND(1.5,2)`, or **bare `RND`** with no parens — is rejected by the
+reference with `Syntax error` (aborting the line, seed untouched), but zerobas silently
+proceeds (`ev_mc_arg`'s `ev_f_err` sets the `$DD` ERRMARK landmark but does not abort these
+evmc paths), running `fp_rnd` on the stale operand. Because RND is the **first tenant with
+persistent state**, this **mutates the seed** (reseed on a negative stale FAC, advance on a
+positive one; bare `RND` reads as `RND(0)`), permanently diverging the sequence until the next
+clear. This is a **pre-existing evmc-family gap** (bare `SIN` likewise returns `0` vs the
+reference `Syntax error`), *not* a 2e regression — RND merely escalates its visibility from
+"wrong value on a rejected line" to "persistent state mutated by a rejected line." No
+reference-legal program can observe it (the reference aborts the RUN at the syntax error). The
+correct fix is a **dedicated family-wide "malformed function-call → `Syntax error`" effort**
+(the sibling of the empty-parens slice, `spec-basic-empty-expr-syntax-error.md`, which itself
+deferred the adjacent EOL `Missing operand` case) — out of scope for a single function slice,
+and bolting an RND-only guard on would be inconsistent with the six other evmc math functions.
+Flagged as the family's **worst member** (state mutation) → highest-priority when that effort
+is taken up.

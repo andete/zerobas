@@ -83,6 +83,30 @@ byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
 
 ## Open (awaiting next sync)
 
+**[JUDGMENT CALL — mathpack slice 2e, 2026-07-14] `RND` SHIPPED reference-IDENTICAL; a
+malformed-`RND`-call seed-mutation deviation DEFERRED to a family-wide fix (not bolted onto
+2e).** `RND` (spec §15, commit d68426a) is the last slice-2 function and the FIRST to hit
+bit-for-bit reference-identity as its native target (exact decimal LCG mod 1e14, A/C/S0
+black-box-recovered per §4.2). Fable review = SHIP; its one matrix-invisible finding: a
+**malformed** `RND` call the reference rejects with `Syntax error` (extra arg `RND(1.5,2)`,
+or bare `RND` with no parens — reference aborts the line, seed untouched) is silently run by
+zerobas on the stale FAC operand (`ev_mc_arg`'s `ev_f_err` sets the `$DD` ERRMARK landmark but
+does NOT abort these evmc paths), which **mutates the persistent seed** (reseed/advance;
+bare `RND`→`RND(0)`) and diverges the sequence until the next NEW/CLEAR/RUN. **Call made:**
+DEFER, not fix in 2e — (1) it is a **pre-existing evmc-family gap** (bare `SIN` also returns
+`0` vs reference `Syntax error`), not a 2e regression; RND only escalates its *visibility*
+(persistent-state mutation vs a transient wrong value); (2) the correct fix is a **dedicated
+family-wide "malformed function-call → `Syntax error`" slice** — the sibling of the empty-parens
+slice (`spec-basic-empty-expr-syntax-error.md`, which itself deferred the adjacent EOL
+`Missing operand` case), so this matches precedent exactly; (3) an RND-only guard would be
+inconsistent with the six other evmc math functions and STILL wouldn't emit `Syntax error`
+without the family plumbing; (4) **no reference-legal program can observe it** (the reference
+aborts the RUN at the syntax error). Flagged as the family's **worst member** (only one that
+mutates persistent state) → highest priority when that family-wide effort is taken up.
+Confidence high; undo = trivial (a follow-up slice, nothing to revert). Full record spec §15.7.
+Alternative considered + rejected: a cheap RND-local `evmc_rnd` guard (prevents the mutation
+but not the missing `Syntax error`, and breaks family symmetry).
+
 **[JUDGMENT CALL — mathpack slice 2c, 2026-07-14] `^`'s spurious-overflow surface kept
 bug-for-bug; positive-y int path asserted BIT-IDENTICAL (stronger than the signed
 ATN-shape bar).** Characterization (spec §13.1) revealed the reference's integer `^`
