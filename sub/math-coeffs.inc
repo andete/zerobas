@@ -308,3 +308,77 @@ LOG_BP:         ; [j] = round14(10^((2j-1)/16)), j=1..8 (j-scan breakpoints)
                 db 000h            ; sign  (+)
                 dw 1              ; dexp  (value = d0.d1.. x 10^(dexp-1))
                 db 8, 6, 5, 9, 6, 4, 3, 2, 3, 3, 6, 0, 0, 7, 0   ; dig[0..13], guard=0
+
+; ---- math pack slice 2d: SIN + COS (docs/spec-basic-mathpack-slice2.md §14) ----
+SIN_COEF_DEG    equ 6
+SIN_COEF:       db 7                ; term count (c[6]..c[0]) -- S(u)=sin(sqrt u)/sqrt u, sin(r)=r*S(r^2)
+                ; c[6]
+                db 000h            ; sign  (+)
+                dw 65527          ; dexp  (value = d0.d1.. x 10^(dexp-1))
+                db 1, 5, 8, 9, 4, 7, 3, 5, 0, 1, 6, 6, 8, 6, 0   ; dig[0..13], guard=0
+                ; c[5]
+                db 080h            ; sign  (-)
+                dw 65529          ; dexp  (value = d0.d1.. x 10^(dexp-1))
+                db 2, 5, 0, 5, 0, 7, 1, 6, 9, 4, 6, 3, 6, 3, 0   ; dig[0..13], guard=0
+                ; c[4]
+                db 000h            ; sign  (+)
+                dw 65531          ; dexp  (value = d0.d1.. x 10^(dexp-1))
+                db 2, 7, 5, 5, 7, 3, 1, 3, 3, 7, 6, 2, 2, 5, 0   ; dig[0..13], guard=0
+                ; c[3]
+                db 080h            ; sign  (-)
+                dw 65533          ; dexp  (value = d0.d1.. x 10^(dexp-1))
+                db 1, 9, 8, 4, 1, 2, 6, 9, 8, 2, 8, 6, 5, 0, 0   ; dig[0..13], guard=0
+                ; c[2]
+                db 000h            ; sign  (+)
+                dw 65534          ; dexp  (value = d0.d1.. x 10^(dexp-1))
+                db 8, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 0, 4, 0   ; dig[0..13], guard=0
+                ; c[1]
+                db 080h            ; sign  (-)
+                dw 0              ; dexp  (value = d0.d1.. x 10^(dexp-1))
+                db 1, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 0   ; dig[0..13], guard=0
+                ; c[0]
+                db 000h            ; sign  (+)
+                dw 1              ; dexp  (value = d0.d1.. x 10^(dexp-1))
+                db 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0   ; dig[0..13], guard=0
+COS_COEF_DEG    equ 6
+COS_COEF:       db 7                ; term count (c[6]..c[0]) -- C(u)=cos(sqrt u), cos(r)=C(r^2)
+                ; c[6]
+                db 000h            ; sign  (+)
+                dw 65528          ; dexp  (value = d0.d1.. x 10^(dexp-1))
+                db 2, 0, 6, 3, 0, 4, 5, 1, 9, 3, 0, 0, 7, 1, 0   ; dig[0..13], guard=0
+                ; c[5]
+                db 080h            ; sign  (-)
+                dw 65530          ; dexp  (value = d0.d1.. x 10^(dexp-1))
+                db 2, 7, 5, 5, 5, 2, 3, 3, 8, 4, 3, 2, 9, 1, 0   ; dig[0..13], guard=0
+                ; c[4]
+                db 000h            ; sign  (+)
+                dw 65532          ; dexp  (value = d0.d1.. x 10^(dexp-1))
+                db 2, 4, 8, 0, 1, 5, 7, 8, 5, 3, 8, 3, 0, 1, 0   ; dig[0..13], guard=0
+                ; c[3]
+                db 080h            ; sign  (-)
+                dw 65534          ; dexp  (value = d0.d1.. x 10^(dexp-1))
+                db 1, 3, 8, 8, 8, 8, 8, 8, 8, 6, 9, 9, 7, 8, 0   ; dig[0..13], guard=0
+                ; c[2]
+                db 000h            ; sign  (+)
+                dw 65535          ; dexp  (value = d0.d1.. x 10^(dexp-1))
+                db 4, 1, 6, 6, 6, 6, 6, 6, 6, 6, 6, 4, 7, 2, 0   ; dig[0..13], guard=0
+                ; c[1]
+                db 080h            ; sign  (-)
+                dw 0              ; dexp  (value = d0.d1.. x 10^(dexp-1))
+                db 4, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0   ; dig[0..13], guard=0
+                ; c[0]
+                db 000h            ; sign  (+)
+                dw 1              ; dexp  (value = d0.d1.. x 10^(dexp-1))
+                db 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0   ; dig[0..13], guard=0
+TWO_OVER_PI:  ; 2/pi (n := nearest-int(x*2/pi))
+                db 000h            ; sign  (+)
+                dw 0              ; dexp  (value = d0.d1.. x 10^(dexp-1))
+                db 6, 3, 6, 6, 1, 9, 7, 7, 2, 3, 6, 7, 5, 8, 0   ; dig[0..13], guard=0
+SIN_C1:  ; pi/2 hi split, 5 sig 1.5708 (n*C1 EXACT, |n|<=1e9)
+                db 000h            ; sign  (+)
+                dw 1              ; dexp  (value = d0.d1.. x 10^(dexp-1))
+                db 1, 5, 7, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0   ; dig[0..13], guard=0
+SIN_C2:  ; pi/2 lo split (pi/2 - C1)
+                db 080h            ; sign  (-)
+                dw 65531          ; dexp  (value = d0.d1.. x 10^(dexp-1))
+                db 3, 6, 7, 3, 2, 0, 5, 1, 0, 3, 3, 8, 0, 8, 0   ; dig[0..13], guard=0

@@ -248,6 +248,95 @@ def fit_log():
         print(f"  deg(g)={deg:2d}  terms={deg+1:2d}  max_err={m:.3e} @g={float(w):.5f}{flag}")
     return chosen, G
 
+# ---- slice 2d: SIN + COS (docs/spec-basic-mathpack-slice2.md §14) -----------
+# Argument reduction (DECIMAL-native, pre-proven by tools/sim_math_chain.py
+# BEFORE this generator was extended -- the §12/§13 process): n := round(x*2/pi)
+# kept as an EXACT-integer FPNUM; r := x - n*(pi/2) via a 2-part Cody-Waite
+# split of pi/2 = C1 + C2, C1 = pi/2 rounded to 5 significant digits (1.5708,
+# trailing zeros) so n*C1 is EXACT in 14 digits for |n| <= 10^9 (5 sig + 9
+# digit n = 14), and C2 = round14(pi/2 - C1) carries the next 14 digits so
+# C1+C2 approximates pi/2 to ~19 digits. The quadrant q = (n + off) & 3 (off=0
+# SIN, off=1 COS -- COS(x)=SIN(x+pi/2) reuses the SAME reduction of |x|, more
+# accurate than adding pi/2 to x). sin(r) = r*S(r^2), cos(r) = C(r^2) with S/C
+# own minimax polys in u=r^2 over u in [0, (pi/4)^2]. Off-by-one at a half-
+# integer boundary is HARMLESS: the quadrant identity sin(n*pi/2+r) holds for
+# ANY integer n, so a wrong nearest-n just puts r at the OTHER pi/4 edge (still
+# in the poly domain) with the matching quadrant -- value stays correct.
+HALFPI = PI / 2
+SIN_C1 = round14(HALFPI).quantize(D("1e-4"), rounding=decimal.ROUND_HALF_UP)  # 1.5708
+SIN_C2 = round14(HALFPI - SIN_C1)
+TWO_OVER_PI = 2 / PI
+SIN_N_MAX = 999999999                  # |n| bound for the n*C1-exact invariant
+
+def sin_over_arg_of_u(u):
+    """S(u) = sin(sqrt u)/sqrt u = sum_{k>=0} (-u)^k/(2k+1)!, exact to prec.
+    sin(r) = r*S(r^2); S(0)=1."""
+    s = D(0); k = 0; uk = D(1); fact = D(1); sign = 1
+    while True:
+        contrib = D(sign) * uk / fact
+        s += contrib
+        if k > 3 and abs(contrib) < D(10) ** (-60):
+            break
+        k += 1; sign = -sign; uk *= u
+        fact *= (2 * k) * (2 * k + 1)      # (2k+1)! incrementally
+    return s
+
+def cos_of_sqrt_u(u):
+    """C(u) = cos(sqrt u) = sum_{k>=0} (-u)^k/(2k)!, exact to prec. cos(r)=C(r^2);
+    C(0)=1."""
+    s = D(0); k = 0; uk = D(1); fact = D(1); sign = 1
+    while True:
+        contrib = D(sign) * uk / fact
+        s += contrib
+        if k > 3 and abs(contrib) < D(10) ** (-60):
+            break
+        k += 1; sign = -sign; uk *= u
+        fact *= (2 * k - 1) * (2 * k)      # (2k)! incrementally
+    return s
+
+def fit_sin():
+    U = (PI / 4) ** 2 * (1 + D("1e-5"))    # u = r^2, r in [-pi/4, pi/4] (+ pad
+                                            # for the off-by-one domain-edge case)
+    print(f"SIN: u=r^2 in [0, {U}]  (r in [-pi/4, pi/4], padded)")
+    print(f"     fitting S(u) = sin(sqrt u)/sqrt u  (sin(r) = r*S(r^2), S(0)=1)")
+    chosen = None
+    for deg in range(4, 12):
+        c = cheb_interp_coeffs(sin_over_arg_of_u, D(0), U, deg)
+        m, w = max_err(c, sin_over_arg_of_u, D(0), U)
+        flag = ""
+        if chosen is None and m <= D("1e-16"):
+            chosen = (deg, c, m); flag = "  <== CHOSEN (minimal degree meeting target)"
+        print(f"  deg(u)={deg:2d}  terms={deg+1:2d}  max_err={m:.3e} @u={float(w):.4f}{flag}")
+    return chosen, U
+
+def fit_cos():
+    U = (PI / 4) ** 2 * (1 + D("1e-5"))
+    print(f"COS: u=r^2 in [0, {U}]  (r in [-pi/4, pi/4], padded)")
+    print(f"     fitting C(u) = cos(sqrt u)  (cos(r) = C(r^2), C(0)=1)")
+    chosen = None
+    for deg in range(4, 12):
+        c = cheb_interp_coeffs(cos_of_sqrt_u, D(0), U, deg)
+        m, w = max_err(c, cos_of_sqrt_u, D(0), U)
+        flag = ""
+        if chosen is None and m <= D("1e-16"):
+            chosen = (deg, c, m); flag = "  <== CHOSEN (minimal degree meeting target)"
+        print(f"  deg(u)={deg:2d}  terms={deg+1:2d}  max_err={m:.3e} @u={float(w):.4f}{flag}")
+    return chosen, U
+
+def check_2d_invariants(sin_coeffs, cos_coeffs):
+    """The exactness preconditions the §14 asm design RELIES on."""
+    # C1 = pi/2 to 5 significant digits (1.5708), trailing zeros -> n*C1 EXACT
+    # in 14 digits for |n| <= 10^9. Verify the digit count and the product.
+    assert SIN_C1 == HALFPI.quantize(D("1e-4"), rounding=decimal.ROUND_HALF_UP)
+    assert SIN_C1 == D("1.5708"), SIN_C1
+    assert (SIN_N_MAX * SIN_C1) == round14(SIN_N_MAX * SIN_C1), "n*C1 not exact"
+    # C2 is the tiny residual (|C2| < 1e-5), C1+C2 ~ pi/2 to ~19 digits.
+    assert abs(SIN_C2) < D("1e-5")
+    assert abs((SIN_C1 + SIN_C2) - HALFPI) < D("1e-18"), "C1+C2 too coarse"
+    # SIN(0)=0 (r=0 -> r*S=0) and COS(0)=1 (C(0)=c0) exactness: c0 rounds to 1.
+    assert round14(sin_coeffs[0]) == 1, "SIN S-c0 must round to exactly 1"
+    assert round14(cos_coeffs[0]) == 1, "COS C-c0 must round to exactly 1"
+
 def check_2b_invariants(exp_coeffs, log_coeffs):
     """The exactness preconditions the §12 asm design RELIES on -- assert them
     here so a constant tweak can never silently break them."""
@@ -351,6 +440,18 @@ if __name__ == "__main__":
 
     check_2b_invariants(coeffs_e, coeffs_l)
 
+    res_s, US = fit_sin()
+    assert res_s, "no degree met the SIN fit target"
+    deg_s, coeffs_s, err_s = res_s
+    print(f"\nchosen SIN_COEF degree in u = {deg_s} ({deg_s+1} coeffs), max_err={err_s:.3e}\n")
+
+    res_c, UC = fit_cos()
+    assert res_c, "no degree met the COS fit target"
+    deg_c, coeffs_c, err_c = res_c
+    print(f"\nchosen COS_COEF degree in u = {deg_c} ({deg_c+1} coeffs), max_err={err_c:.3e}")
+
+    check_2d_invariants(coeffs_s, coeffs_c)
+
     out = [HEADER]
     # ATAN_COEF: Horner table, HIGH-to-LOW (c[deg]..c[0]); count byte first.
     out.append(f"ATAN_DEG        equ {deg}\n")
@@ -397,6 +498,21 @@ if __name__ == "__main__":
     emit_rec_table(out, "LOG_BP", LOG_BP,
                    "; [j] = round14(10^((2j-1)/16)), j=1..8 (j-scan"
                    " breakpoints)", first_index=1)
+
+    # ---- slice 2d: SIN + COS (spec §14) --------------------------------------
+    out.append("\n; ---- math pack slice 2d: SIN + COS (docs/spec-basic-mathpack-"
+               "slice2.md §14) ----\n")
+    emit_coef_table(out, "SIN_COEF", deg_s, coeffs_s,
+                    " -- S(u)=sin(sqrt u)/sqrt u, sin(r)=r*S(r^2)")
+    emit_coef_table(out, "COS_COEF", deg_c, coeffs_c,
+                    " -- C(u)=cos(sqrt u), cos(r)=C(r^2)")
+    for name, v, cm in [
+            ("TWO_OVER_PI", TWO_OVER_PI, "; 2/pi (n := nearest-int(x*2/pi))"),
+            ("SIN_C1", SIN_C1, "; pi/2 hi split, 5 sig 1.5708 (n*C1 EXACT, |n|<=1e9)"),
+            ("SIN_C2", SIN_C2, "; pi/2 lo split (pi/2 - C1)")]:
+        rec, _ = emit_record(name, v)
+        rec = rec.replace("\n", f"  {cm}\n", 1)
+        out.append(rec)
 
     text = "".join(out)
     path = "sub/math-coeffs.inc"

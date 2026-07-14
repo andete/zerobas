@@ -58,6 +58,28 @@ POW_INT_ROW_K = 3
 POW_FRAC_T_K = 12
 POW_FRAC_T_C = 10
 
+# SIN/COS (§14): sin/cos in [-1,1], so ABSOLUTE error is the uniform, bounded
+# accuracy metric (relative ulp blows up near the result-zeros -- inherent to
+# every reduction incl. the reference's catastrophic COS-near-pi/2, §1.1).
+# Reduction: n := round(x*2/pi) as a float integer, r := x - n*(pi/2) via the
+# 2-part Cody-Waite split (SIN_C1 5-sig 1.5708 -> n*C1 EXACT for |n|<=1e9, so
+# the only reduction error is n*C2's rounding, ~|x|*1e-14) + own minimax
+# S/C polys. Measured 2026-07-14 vs Decimal truth on the moderate battery
+# (|x|<=~1000, the realistic range): worst abs error <= 3e-14 (~a few ulp at
+# magnitude 1); correctly-rounded (abs<=1 ulp) for the vast majority. Beyond
+# the exact-n range the abs error grows as ~|x|*1e-14 (n*C2 rounding) -- still
+# 3-6 ORDERS better than the reference (weak ~13-digit pi: sin(1000) 1649 ulp,
+# sin(1e5) 2.9M ulp off truth). TAN = SIN/COS: near pi/2 the small COS makes
+# it large + relatively imprecise (inherent; the reference too) -- bounded by
+# a relative-ulp cap away from pi/2 and captured (not asserted tight) at it.
+SIN_ABS_TOL = D("3E-14")            # abs-error bound over the moderate battery
+SIN_CR_FLOOR_PCT = 85              # correctly-rounded (abs<=1 ulp) floor, |val|>=.1
+TAN_MAX_ULP = 16                   # rel-ulp bound in the well-conditioned band
+                                    # 0.1<=|tan|<=10 (measured worst 11: at the
+                                    # band edge |sin| or |cos| ~ 0.1 amplifies
+                                    # their 1e-14 abs error; ~1.5x margin). The
+                                    # reference TAN is 4e4+ ulp off here.
+
 # Correctly-rounded floors (drift tripwires, ATN_EXACT_FLOOR precedent):
 # a uniform 1-2 ulp degradation would pass the bounds silently without these.
 EXP_EXACT_FLOOR_PCT = 90        # measured 92.0%
@@ -294,6 +316,76 @@ def pow_chain(K, x, y):
         return "Overflow"
     return exp_chain(K, t)
 
+# ---- SIN / COS / TAN chain (§14) ---------------------------------------------
+PI = D("3.14159265358979323846264338327950288419716939937510582097494")
+
+def _round_int(q):
+    """nearest-integer of the 14-digit float q (HALF_UP on the magnitude), the
+    value the tenant hand-extracts from q's own dexp/digit fields."""
+    return int((abs(q)).to_integral_value(rounding=decimal.ROUND_HALF_UP))
+
+def sincos_chain(K, x, fn):
+    """fn in {'sin','cos'}. n := round(|x|*2/pi) (float int); r := |x| - n*C1 -
+    n*C2 (2-part Cody-Waite); quadrant q=(n+off)&3 selects +-sin(r)/+-cos(r);
+    sin(r)=r*S(r^2), cos(r)=C(r^2). SIN applies the |x| sign (odd); COS is even."""
+    a = abs(x)
+    xs = -1 if x < 0 else 1
+    q = op(a, K["TWO_OVER_PI"], "*")
+    n = _round_int(q)
+    nf = fp14(D(n))
+    r = op(a, op(nf, K["SIN_C1"], "*"), "-")
+    r = op(r, op(nf, K["SIN_C2"], "*"), "-")
+    off = 0 if fn == "sin" else 1
+    qq = (n + off) & 3
+    u = op(r, r, "*")
+    sv = op(r, horner14(u, K["SIN_COEF"]), "*")        # sin(r) = r*S(r^2)
+    cv = horner14(u, K["COS_COEF"])                     # cos(r) = C(r^2)
+    v = {0: sv, 1: cv, 2: -sv, 3: -cv}[qq]             # fp negate: exact
+    if fn == "sin" and xs < 0:
+        v = -v
+    return fp14(v)
+
+def sincos_truth(x, fn):
+    with decimal.localcontext() as c:
+        c.prec = 60
+        k = (x / (PI / 2)).to_integral_value(rounding=decimal.ROUND_HALF_EVEN)
+        r = x - k * (PI / 2)
+        sv = _series_sin(r); cv = _series_cos(r)
+        q = int(k) % 4
+        v = ({0: sv, 1: cv, 2: -sv, 3: -cv}[q] if fn == "sin"
+             else {0: cv, 1: -sv, 2: -cv, 3: sv}[q])
+    return fp14(v)
+
+def _series_sin(r):
+    acc = D(0); term = r; t2 = r * r; k = 1; sg = 1
+    for _ in range(60):
+        acc += sg * term; term = term * t2 / ((k + 1) * (k + 2)); k += 2; sg = -sg
+    return acc
+
+def _series_cos(r):
+    acc = D(0); term = D(1); t2 = r * r; k = 0; sg = 1
+    for _ in range(60):
+        acc += sg * term; term = term * t2 / ((k + 1) * (k + 2)); k += 2; sg = -sg
+    return acc
+
+def tan_chain(K, x):
+    """TAN(x) = SIN(x)/COS(x) bit-for-bit (§1.2). cos==0 -> reference returns a
+    large finite (no error); the tenant's own fp_div dispositions it."""
+    s = sincos_chain(K, x, "sin")
+    c = sincos_chain(K, x, "cos")
+    if c == 0:
+        return "Overflow"
+    return op(s, c, "/")
+
+def tan_truth(x):
+    with decimal.localcontext() as c:
+        c.prec = 60
+        s = sincos_truth(x, "sin"); cc = sincos_truth(x, "cos")
+        if cc == 0:
+            return "Overflow"
+        return fp14(D(s) / D(cc))
+
+
 def pow_truth(x, y):
     """14-digit-rounded true x^y with the FPNUM range mapping."""
     if y == 0:
@@ -464,6 +556,42 @@ def battery_log_breakpoints(K):
     return [fp14(x) for x in xs]
 
 
+def battery_trig():
+    """Moderate-range x (the realistic SIN/COS/TAN domain): dense small angles,
+    quadrant boundaries, negatives, up to ~1000. Large-x floor sampled
+    separately (battery_trig_large) since abs error there grows with |x|."""
+    xs = ["0", "0.0001", "0.5", "-0.5", "1", "-1", "1.5", "2", "3", "-3",
+          "3.1415926535898", "1.5707963267949", "0.78539816339745",
+          "-0.78539816339745", "6.2831853071796", "4.7123889803847",
+          "100", "-100", "628.31853071796", "1000", "-1000", "3.14159",
+          "0.7853981633974", "12.566370614359", "355", "6.28"]
+    seed = 0x9A
+    for i in range(6000):
+        seed = (seed * 6364136223846793005 + 1442695040888963407) % (1 << 64)
+        u = D(seed % 10 ** 14) / D(10 ** 14)
+        if i % 3 == 0:
+            v = (u - D("0.5")) * 8                        # dense near 0, few periods
+        elif i % 3 == 1:
+            v = (u - D("0.5")) * 2000                     # up to ~1000
+        else:
+            v = (u - D("0.5")) * 20                       # a handful of periods
+        xs.append(str(fp14(v)))
+    return [fp14(D(x)) for x in xs]
+
+def battery_trig_large():
+    """Large-|x| samples: abs error grows ~|x|*1e-14 (n*C2 rounding), still far
+    below the reference. Returns (x, expected_abs_bound) rows."""
+    rows = []
+    seed = 0x3D
+    for _ in range(2000):
+        seed = (seed * 6364136223846793005 + 1442695040888963407) % (1 << 64)
+        u = D(seed % 10 ** 14) / D(10 ** 14)
+        ex = seed % 7 + 4                                 # 1e4 .. 1e10
+        x = fp14((u - D("0.5")) * 2 * D(10) ** ex)
+        rows.append(x)
+    return rows
+
+
 def run(name, xs, chain, truth, bound, verbose, floor_pct=0):
     worst, worst_x, exact, total, dev = D(0), None, 0, 0, []
     hist = {}
@@ -582,4 +710,73 @@ if __name__ == "__main__":
     if worst_pair:
         print(f"worst cap-fraction {worst_ratio:.2f} "
               f"({worst_d} ulp) @ {worst_pair[0]}^{worst_pair[1]}")
+    # --- SIN / COS / TAN (§14) ----------------------------------------------
+    # exactness anchors the asm relies on: SIN(0)=0, COS(0)=1, TAN(0)=0
+    assert sincos_chain(K, D(0), "sin") == 0, "SIN(0) must be exactly 0"
+    assert sincos_chain(K, D(0), "cos") == 1, "COS(0) must be exactly 1"
+    assert tan_chain(K, D(0)) == 0, "TAN(0) must be exactly 0"
+    # oddness / evenness (exact structural identities)
+    for xv in ("1", "2.5", "100"):
+        xx = fp14(D(xv))
+        assert sincos_chain(K, xx, "sin") == -sincos_chain(K, -xx, "sin"), xv
+        assert sincos_chain(K, xx, "cos") == sincos_chain(K, -xx, "cos"), xv
+
+    trig_xs = battery_trig()
+    for name, fn in (("SIN", "sin"), ("COS", "cos")):
+        worst_abs, wx, cr, tot = D(0), None, 0, 0
+        for x in trig_xs:
+            got = sincos_chain(K, x, fn); want = sincos_truth(x, fn)
+            ae = abs(got - want)
+            if ae > worst_abs:
+                worst_abs, wx = ae, x
+            if abs(want) >= D("0.1"):
+                tot += 1
+                if ulp_dist(got, want) in (None, D(0)) or (
+                        isinstance(ulp_dist(got, want), D)
+                        and ulp_dist(got, want) <= 1):
+                    cr += 1
+        pct = 100.0 * cr / tot
+        print(f"\n--- {name}: {len(trig_xs)} inputs ---")
+        print(f"worst abs error {worst_abs:.2e} @ x={wx}; "
+              f"correctly-rounded (|val|>=.1) {cr}/{tot} ({pct:.1f}%)")
+        assert worst_abs <= SIN_ABS_TOL, \
+            f"{name} worst abs {worst_abs} exceeds {SIN_ABS_TOL}"
+        assert pct >= SIN_CR_FLOOR_PCT, \
+            f"{name} correctly-rounded {pct:.1f}% under floor {SIN_CR_FLOOR_PCT}%"
+
+    # TAN in the WELL-CONDITIONED band 0.1<=|tan|<=10 (bounded away from both
+    # tan's zeros at k*pi -- near-0 relative blowup -- AND its poles at pi/2+k*pi
+    # -- near-inf; BOTH inherent to sin/cos, the reference too, captured not
+    # asserted): relative-ulp bound.
+    worst_t, wtx, tot_t = D(0), None, 0
+    for x in trig_xs:
+        got = tan_chain(K, x); want = tan_truth(x)
+        if not isinstance(got, D) or not isinstance(want, D):
+            continue
+        if not (D("0.1") <= abs(want) <= D("10")):
+            continue
+        tot_t += 1
+        d = ulp_dist(got, want)
+        if isinstance(d, D) and d > worst_t:
+            worst_t, wtx = d, x
+    print(f"\n--- TAN: {tot_t} inputs (0.1<=|tan|<=10) ---")
+    print(f"worst {worst_t} ulp @ x={wtx}")
+    assert worst_t <= TAN_MAX_ULP, f"TAN worst {worst_t} exceeds {TAN_MAX_ULP}"
+
+    # large-|x| floor: abs error grows ~|x|*1e-14 but must stay well under the
+    # reference (weak ~13-digit pi). Assert abs <= |x|*1e-13 (a generous
+    # structural tripwire) and report the worst cap fraction.
+    worst_frac, wlx, wld = D(0), None, D(0)
+    for x in battery_trig_large():
+        for fn in ("sin", "cos"):
+            got = sincos_chain(K, x, fn); want = sincos_truth(x, fn)
+            ae = abs(got - want)
+            cap = abs(x) * D("1E-13")
+            assert ae <= cap, f"{fn}({x}): abs {ae} exceeds floor cap {cap}"
+            frac = ae / cap if cap else D(0)
+            if frac > worst_frac:
+                worst_frac, wlx, wld = frac, x, ae
+    print(f"\n--- SIN/COS large-|x| floor: caps HELD (abs <= |x|*1e-13) ---")
+    print(f"worst cap-fraction {worst_frac:.2f} (abs {wld:.2e}) @ x={wlx}")
+
     print("\nsim_math_chain: ALL BOUNDS HELD")
