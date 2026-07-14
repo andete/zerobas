@@ -642,6 +642,139 @@ def run(name, xs, chain, truth, bound, verbose, floor_pct=0):
     return worst, exact, total
 
 
+# ---- RND (§15): EXACT decimal LCG, reference-IDENTICAL --------------------
+# UNLIKE the transcendentals, RND is not an approximation with a deviation
+# envelope -- it is a pseudo-random generator whose entire contract is that a
+# fixed-seed program reproduces the reference's sequence bit-for-bit. The
+# recurrence is EXACT integer arithmetic mod 10^14, so reference-identity is
+# both ACHIEVABLE (no coefficients-in-ROM wall; A/C/S0 are constants recovered
+# purely black-box, admissible §4.2) and REQUIRED. Characterized on the
+# Philips VG-8020 2026-07-14 (scratchpad/char_rnd*.py, ~15 transitions + the
+# reseed battery, all exact):
+RND_A = 21132486540519      # multiplier
+RND_C = 14389820420821      # increment
+RND_S0 = 40649651372358     # power-on seed (cold RND(0) reads it; step->cold S1)
+RND_M = 10 ** 14            # modulus (14-digit BCD state)
+
+
+def rnd_advance_ref(S):
+    """The exact recurrence, as a Python big-int (the oracle)."""
+    return (RND_A * S + RND_C) % RND_M
+
+
+def _digits14(n):
+    """14-element little-endian decimal digit list (d[0]=units) of n mod 1e14."""
+    n %= RND_M
+    return [(n // 10 ** i) % 10 for i in range(14)]
+
+
+def _from_digits(d):
+    return sum(d[i] * 10 ** i for i in range(len(d)))
+
+
+def rnd_advance_bcd(S):
+    """MODEL OF THE INTENDED ASM ALGORITHM (proven here BEFORE asm): 14-digit
+    BCD schoolbook multiply-add keeping ONLY the low 14 digits (mod 1e14) --
+    fp_mul is the WRONG tool (it keeps the HIGH 14 significant digits of
+    A*S ~ 2e27; we need the LOW 14). Multiply S by A one A-digit at a time with
+    a running BCD carry, accumulate shifted, and DROP every partial-product
+    digit at position >=14 (they cannot affect the result mod 1e14). Then add C
+    with a 14-digit BCD ripple carry. This must equal rnd_advance_ref exactly."""
+    sd = _digits14(S)
+    ad = _digits14(RND_A)
+    acc = [0] * 14                       # 14-digit accumulator (the low window)
+    for j in range(14):                  # for each digit of A at weight 10^j
+        if ad[j] == 0:
+            continue
+        carry = 0
+        # partial = sd * ad[j], written starting at digit position j; any digit
+        # that would land at position >=14 is dropped (mod 1e14).
+        for i in range(14 - j):
+            p = sd[i] * ad[j] + acc[i + j] + carry
+            acc[i + j] = p % 10
+            carry = p // 10
+        # remaining carry falls off the top (>= position 14) -> dropped.
+    # + C with a 14-digit ripple-carry BCD add
+    cd = _digits14(RND_C)
+    carry = 0
+    for i in range(14):
+        s = acc[i] + cd[i] + carry
+        acc[i] = s % 10
+        carry = s // 10
+    return _from_digits(acc)
+
+
+def rnd_output(S):
+    """The FAC value the state produces: S * 10^-14 in [0,1), 14-sig BCD."""
+    return (D(S) / D(RND_M))
+
+
+def rnd_mant14(coef_digits):
+    """mant14 for RND(x<0): the FAC's 14 mantissa-digit slots of the argument
+    (normalized coefficient, exponent & sign ignored) as an integer. `coef_digits`
+    is that 14-char digit string (a double fills 14; a single 6 + trailing 0s)."""
+    return int(coef_digits.ljust(14, "0"))
+
+
+# Reference anchors captured black-box (scratchpad/char_rnd*.py). Every value is
+# the EXACT 14-digit state; the model must reproduce each bit-for-bit.
+RND_COLD = [40649651372358, 59521943994623, 10658628050158,
+            76597651772823, 57756392935958]                 # S0 then 4 advances
+RND_AFTER_M1 = [4389820420821, 9624868166920, 21069655852301,
+                32651736305040, 47775124336581, 34091470846360,
+                12971184081661]                             # RND(-1) seed + 6 adv
+# RND(-arg): (mant14 digit string, resulting seed state)
+RND_RESEED = [
+    ("10000000000000", 4389820420821),   # -1  (also -0.001, -1E9: same mantissa)
+    ("50000000000000", 64389820420821),  # -.5
+    ("15000000000000", 99389820420821),  # -1.5
+    ("32767000000000", 462820420821),    # -32767
+    ("25600000000000", 789820420821),    # -256
+    ("65536000000000", 67573820420821),  # -65536
+    ("33333333333333", 7345658240648),   # -1/3 (double: 14 threes)
+    ("66666666666667", 21433982600994),  # -2/3 (double: rounds 14th up)
+    ("33333300000000", 96372520420821),  # -A! where A!=1/3 (single: 6 + zeros)
+]
+
+
+def rnd_validate():
+    """Assert the exact model AND the intended BCD algorithm reproduce every
+    captured reference anchor bit-for-bit, and that the BCD algorithm equals the
+    reference recurrence over a large deterministic battery."""
+    # 1) advance reproduces the cold sequence and the post-reseed sequence
+    for seq, tag in ((RND_COLD, "cold"), (RND_AFTER_M1, "after-(-1)")):
+        S = seq[0]
+        for k in range(1, len(seq)):
+            r = rnd_advance_ref(S)
+            b = rnd_advance_bcd(S)
+            assert r == seq[k], f"RND {tag} step {k}: ref {r} != captured {seq[k]}"
+            assert b == seq[k], f"RND {tag} step {k}: BCD {b} != captured {seq[k]}"
+            S = r
+    # 2) reseed: advance(mant14) == captured seed (both ref and BCD algorithm)
+    for digs, seed in RND_RESEED:
+        m = rnd_mant14(digs)
+        assert rnd_advance_ref(m) == seed, f"RND reseed {digs}: ref != {seed}"
+        assert rnd_advance_bcd(m) == seed, f"RND reseed {digs}: BCD != {seed}"
+    # 3) BCD algorithm == exact recurrence over a big deterministic battery
+    #    (Weyl-ish spread of states; no RNG so the run is reproducible)
+    S = RND_S0
+    mism = 0
+    for _ in range(20000):
+        if rnd_advance_bcd(S) != rnd_advance_ref(S):
+            mism += 1
+        S = (S + 3141592653589) % RND_M         # deterministic sweep of states
+    assert mism == 0, f"BCD algorithm diverged from recurrence on {mism} states"
+    # 4) output is exactly S*10^-14 in [0,1)
+    assert rnd_output(4389820420821) == D("0.04389820420821")
+    assert D(0) <= rnd_output(RND_S0) < D(1)
+    print("\n--- RND (§15): exact LCG reference-IDENTITY ---")
+    print(f"  A={RND_A} C={RND_C} S0={RND_S0} M=1e14")
+    print(f"  {len(RND_COLD)-1 + len(RND_AFTER_M1)-1} advance anchors + "
+          f"{len(RND_RESEED)} reseed anchors reproduced bit-for-bit "
+          f"(ref AND intended-BCD algorithm)")
+    print(f"  intended-BCD multiply-add == exact recurrence over 20000 states")
+
+
 if __name__ == "__main__":
     verbose = "--verbose" in sys.argv
     K = parse_inc()
@@ -799,5 +932,8 @@ if __name__ == "__main__":
                 worst_frac, wlx, wld = frac, x, ae
     print(f"\n--- SIN/COS large-|x| floor: caps HELD (abs <= |x|*1e-13) ---")
     print(f"worst cap-fraction {worst_frac:.2f} (abs {wld:.2e}) @ x={wlx}")
+
+    # --- RND (§15): exact decimal LCG, reference-IDENTICAL -------------------
+    rnd_validate()
 
     print("\nsim_math_chain: ALL BOUNDS HELD")
