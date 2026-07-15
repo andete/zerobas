@@ -906,7 +906,17 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       architectural now — every string SURFACE form is landed):** floats in VAL/STR$, the real
       heap+descriptor model, string arrays/`DIM`, STRMAX→255 (a RAM re-architecture, spec §5a);
       `INPUT$(n)` (no-echo n-key function) + numeric `INPUT#` are the next I/O slices
-- [ ] **Arrays + `DIM`** (numeric and string, multi-dimensional)
+- [~] **Arrays + `DIM`** (numeric and string, multi-dimensional) — **slice 1 DONE
+      2026-07-15** (numeric arrays: `DIM`, multi-dim, subscript rvalue/lvalue, auto-
+      dim-to-10, base 0, `Subscript out of range`/`Illegal function call`/`Redimensioned
+      array`/`Out of memory`). Dynamic-allocator model (real MSX `ARYTAB`→ceiling
+      bounded by HIMEM); the array engine is a **sub-ROM page-0 tenant** (the first
+      non-leaf feature to be split glue-in-main + pure-RAM-leaf-tenant — see
+      [`docs/subrom-tenant-playbook.md`](docs/subrom-tenant-playbook.md)). Gate `make
+      array-acceptance` (23 cases + adversarial regression); spec
+      [`docs/spec-basic-arrays.md`](docs/spec-basic-arrays.md). `OPTION BASE` dropped
+      (unsupported on MSX1). **Remaining slices:** 2 = `ERASE`; 3 = string arrays; 4 =
+      relocate scalars/strings into the contiguous model + STRMAX→255.
 - [ ] **`^`** and the math functions
       `ABS SGN INT SQR SIN COS TAN ATN LOG EXP RND FIX CINT CSNG CDBL`
 - [ ] **I/O** — ✅ console `INPUT` + `LINE INPUT` (DONE 2026-07-11, see the slice log

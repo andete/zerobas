@@ -413,6 +413,18 @@ float-acceptance: $(DISK_ROM) repack-machine
 math-acceptance: $(DISK_ROM) repack-machine subrom-abi-check
 	python3 probes/basic/basic_probe_math_conv.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
 
+# --- Standing arrays acceptance gate (arrays arc, slice 1 -- numeric arrays) ---
+# DIM + subscript rvalue/lvalue for numeric arrays (docs/spec-basic-arrays.md
+# §9/§10). Differential vs the VG-8020 across the §4.1 semantics matrix PLUS the
+# adversarial regression the literal-only first cut missed (variable/nested/FOR-
+# loop subscripts -- the showstopper the review caught). The array *engine* is a
+# page-0 sub-ROM tenant (sub/arrays.asm), so these byte-identical outputs also
+# prove the split's ABI wiring. Repack-only; HEAVY + oracle-dependent (boots
+# openMSX; needs your VG-8020 reference ROM, reachable via OPENMSX=); NOT part of
+# the emulator-free `unit-test` (tests/test_arrays.py is the fast layer under it).
+array-acceptance: $(DISK_ROM) $(SUB_ROM) repack-machine
+	python3 probes/basic/basic_probe_arrays.py
+
 # Standing C-BIOS self-consistency gate: closes the coverage gap that `bdos-acceptance`
 # structurally can't reach. That gate is a DIFFERENTIAL, so it only runs on the CF-3300
 # oracle (the only host with a stock disk ROM + MSX-DOS to diff against); the shipped
