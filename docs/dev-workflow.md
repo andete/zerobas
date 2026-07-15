@@ -243,3 +243,8 @@ preserved or the crunch probe regresses:
 - **Statement dispatch** is by token in `basic/interp.asm`; one source file per
   verb (`basic/clear.asm`, `basic/usr.asm`, `basic/print.asm`, …) added to both
   `basic/main.asm` (include) and the `Makefile` `DEPS`.
+- **Out of ROM space?** The repack main ROM is near-full; overflow goes to a
+  zerobas-sub tenant. See the [sub-ROM tenant playbook](subrom-tenant-playbook.md)
+  for the decision tree (leaf → whole tenant; non-leaf touching `eval`/`float-arith`
+  → glue-in-main + pure-RAM-leaf split), the ABI recipe, and the gates. Measure the
+  wall + classify *before* implementing (the arrays lesson).

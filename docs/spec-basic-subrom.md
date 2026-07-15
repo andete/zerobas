@@ -5,6 +5,10 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — zerobas sub-ROM (Phase-3 space-strategy arc)
 
+> **Adding the next tenant?** This spec is the *architecture*; the reusable
+> *how-to* (decision tree + ABI recipe + gates) is
+> [subrom-tenant-playbook.md](subrom-tenant-playbook.md). Start there.
+
 Status: **SIGNED OFF 2026-07-11** — the §9 open questions are answered
 (name = `zerobas-sub`; size = **32 KB, both pages up front**; absence error
 reuses *"Illegal function call"*; D-1…D-11 otherwise as proposed).
