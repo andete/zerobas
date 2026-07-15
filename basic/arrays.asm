@@ -64,6 +64,17 @@ err_mem_arr:                                ; FPERR=6 (fre_msgtab entry 6) is se
                                             ; err_mem (store_line's crunch-time OOM,
                                             ; printed directly, never via FPERR) is
                                             ; untouched.
+err_syntax:                                 ; interp.asm's own stmt_error + fre_msgtab
+                db      "syntax error",13,10,0
+                                            ; entry 4 (D-F2-3) both reference this by
+                                            ; absolute address; relocated here (repack
+                                            ; only -- interp.asm keeps its own copy for
+                                            ; the lean build) by the slice-3 space
+                                            ; audit: page-1 was 7 B short even after
+                                            ; the ary_op0_resolve dedup, and this
+                                            ; string's home is unobserved (arrays
+                                            ; slice-3, docs/spec-basic-arrays-slice3-
+                                            ; strings.md §5.3).
 
 ; --- fre_abort_low: the PRDEST-zero + fresh-line + print tail of ------------
 ; fp_runtime_error/type_mismatch_error (interp.asm page 1 jumps here; the
@@ -261,11 +272,21 @@ ary_engine_call:
                 ld      hl,ary_errmap-1
                 ld      d,0
                 ld      e,a
-                add     hl,de
+                add     hl,de               ; Z80 ADD HL,rr affects C/H/N only --
+                                            ; S/Z/P-V are UNCHANGED (documented Z80
+                                            ; behaviour), so the NZ this routine
+                                            ; must return is STILL the one the `or a`
+                                            ; above set (A was nonzero, else we'd
+                                            ; have taken `ret z`) and survives,
+                                            ; untouched, through every instruction
+                                            ; between here and the final `ret` below
+                                            ; (none of LD (nn),A / LD A,(HL) / LD
+                                            ; A,(nn) touch flags either) -- slice-3
+                                            ; space audit: the trailing "ensure NZ"
+                                            ; `or a` this comment replaces was
+                                            ; therefore provably redundant
                 ld      a,(hl)
                 ld      (FPERR),a
-                or      a                   ; ensure NZ (mapped codes are 5/6/7/8,
-                                            ; never 0)
                 ret
 ary_errmap:                                 ; ARY_ERR 1..4 -> FPERR (§4.1 dispositions)
                 db      5                   ; 1 Subscript-oor  -> 5 Subscript out of range
@@ -280,38 +301,74 @@ ary_errmap:                                 ; ARY_ERR 1..4 -> FPERR (§4.1 dispo
                                             ;   setter)
 
 ; --- ex_dim: DIM statement. HL enters on the DIM token. ---------------------
-; For each comma-separated NAME(b0[,b1...]): reject a `$` string-array name
-; (slice 3, Q-9a — plain Syntax error), parse the name, then the bound list
-; via ary_parse_subs (reused — a DIM bound list is the identical "comma-
-; separated int expr list in parens" shape as a subscript list, §9.4), then
-; dispatch to the tenant (op=DIM) for the redim-check + allocation. Loops on
-; ','.
+; For each comma-separated NAME(b0[,b1...]): parse the name (a `$` string
+; name is now LIVE, arrays slice 3, docs/spec-basic-arrays-slice3-strings.md
+; §5.2 -- the old Q-9a reject is gone), then the bound list via ary_parse_subs
+; (reused — a DIM bound list is the identical "comma-separated int expr list
+; in parens" shape as a subscript list, §9.4), then dispatch to the tenant
+; (op=DIM) for the redim-check + allocation. Loops on ','.
+;
+; String-ness detection mirrors ex_erase's own var_str_type-first idiom
+; (docs/spec-basic-arrays-slice2-erase.md §4.1, the F1 lesson): var_name_key's
+; own (VARTYPE) canNOT be trusted for a `$` name (vnk_dollar hardcodes
+; VARTYPE=8, identical to a default-double `A`), so the string-ness flag is
+; captured BEFORE var_name_key (which clobbers everything, incl. flags) and
+; carried across it on the stack, then used to FORCE type=1 for a string name
+; rather than trusting VARTYPE. This is what makes `DIM S$(5)` allocate a
+; real type=1 (string) descriptor instead of an 8-byte-element double one.
 ex_dim:
                 inc     hl                  ; past the DIM token
 ed_lp:
-                call    skip_spaces
-                call    var_str_type        ; A=1 if a `$` suffix (string array)
-                or      a
-                jp      nz,stmt_error       ; Q-9a: string arrays are slice 3
+                call    skip_spaces         ; A = (hl), first non-space char
+                call    is_letter           ; a DIM target must START with a letter;
+                jp      nc,stmt_error       ; reject bare `$` / a digit name (D1,
+                                            ; slice-3 adversarial catch: `DIM $(5)`
+                                            ; and `DIM 1(5)` were silently accepted
+                                            ; -- the deleted slice-2 `$`-reject had
+                                            ; masked exactly this). Mirrors ex_erase's
+                                            ; own is_letter guard below.
+                call    var_str_type        ; A=1/CF set iff a `$` suffix (or a
+                                            ; DEFSTR-defaulted bare name) --
+                                            ; string array. HL NOT advanced.
+                push    af                  ; [STR?] -- survives var_name_key
                 call    var_name_key        ; BC=key, HL past name; (VARTYPE)=type
                 call    skip_spaces
                 ld      a,(hl)
                 cp      '('
-                jp      nz,stmt_error       ; DIM requires a bound list
-                ld      a,(VARTYPE)
+                jr      z,ed_haveparen
+                jr      ee_synerr_pop       ; DIM requires a bound list -- shares
+                                            ; ex_erase's own identical "pop [STR?];
+                                            ; jp stmt_error" tail (below in this
+                                            ; file), slice-3 space audit
+ed_haveparen:
+                pop     af                  ; recover string-ness (CF set iff string)
+                ld      a,(VARTYPE)         ; numeric default: type 2/4/8 as parsed
+                jr      nc,ed_settype
+                ld      a,1                 ; string name -> FORCE type=1 (the F1
+                                            ; lesson above): ary_alloc/ary_resolve
+                                            ; then size it via elsize_from_type
+                                            ; (sub/arrays.asm §4), not as an
+                                            ; 8-byte-element double
+ed_settype:
                 call    ary_parse_subs_kt   ; BC,A,HL(@'(') -> BC,A restored (key,type);
                                             ; fills ARY_NIDX/ARY_IDX; [CURSOR] pushed
                 ld      d,a                 ; stash TYPE across the FPERR peek
                 ld      a,(FPERR)
                 or      a
-                jr      nz,ed_abort         ; the bound-list parse already aborted
+                jp      nz,ela_parse_abort  ; the bound-list parse already aborted --
+                                            ; shares ex_let_arr's own identical
+                                            ; "pop [CURSOR];jp fp_runtime_error" stub
+                                            ; (below in this file; a plain `jr` can't
+                                            ; reach that far, hence `jp` here, still a
+                                            ; net win over a THIRD local copy of the
+                                            ; 4-byte body, slice-3 space audit)
                 ld      (ARY_KEY),bc
                 ld      a,d                 ; TYPE restored
                 ld      (ARY_TYPE),a
                 ld      a,1
                 ld      (ARY_OP),a          ; op = DIM
                 call    ary_engine_call     ; -> Z ok / NZ: FPERR already mapped+set
-                jr      nz,ed_abort
+                jp      nz,ela_parse_abort
                 pop     hl                  ; [CURSOR] restored
                 call    skip_spaces
                 ld      a,(hl)
@@ -321,9 +378,6 @@ ed_lp:
                 jr      ed_lp
 ed_done:
                 jp      exec_stmt
-ed_abort:
-                pop     hl                  ; discard [CURSOR] (balance the stack)
-                jp      fp_runtime_error
 
 ; --- ex_erase: ERASE statement. HL enters on the ERASE token. --------------
 ; docs/spec-basic-arrays-slice2-erase.md §4.1. For each comma-separated bare
@@ -499,28 +553,23 @@ asw_wb_int:
 ; --- ex_let_arr: array-element assignment  A(i[,j...]) = <expr> -----------
 ; BC=key, (VARTYPE)=type, HL=cursor at '(' on entry (reached from ex_let,
 ; interp.asm, right after var_name_key). Resolves the element address via
-; the sub-ROM tenant (op=RESOLVE) BEFORE evaluating the RHS (so a self-
-; referencing RHS like A(1)=B(2), or even A(1)=A(1)+1, can freely reuse the
-; shared param-block subscript scratch without disturbing an already-
-; resolved LHS target — ary_parse_subs's own ARY_NIDX/ARY_IDX are transient,
-; reused by every array reference), then coerces+stores exactly like the
-; scalar path (var_store_fac's own D-F2-1 contract, mirrored by
-; ary_store_write above).
+; ary_op0_resolve (the sub-ROM tenant op=RESOLVE, wrapped) BEFORE evaluating
+; the RHS (so a self-referencing RHS like A(1)=B(2), or even A(1)=A(1)+1, can
+; freely reuse the shared param-block subscript scratch without disturbing an
+; already-resolved LHS target — ary_parse_subs's own ARY_NIDX/ARY_IDX are
+; transient, reused by every array reference), then coerces+stores exactly
+; like the scalar path (var_store_fac's own D-F2-1 contract, mirrored by
+; ary_store_write above). ary_op0_resolve was originally this routine's own
+; inlined prologue (parse-subs + fill ARY_KEY/TYPE + check FPERR + RESOLVE +
+; check NZ), generalised out to a shared TYPE-parameterised helper (also used
+; by the string array glue, below) once the slice-3 space audit needed the
+; low-region bytes back.
 ex_let_arr:
                 ld      a,(VARTYPE)
-                call    ary_parse_subs_kt   ; BC,A restored (key,type); ARY_NIDX/ARY_IDX
-                                            ; filled; [CURSOR] pushed
-                ld      (ARY_KEY),bc
-                ld      (ARY_TYPE),a
-                ld      a,(FPERR)
-                or      a
-                jr      nz,ela_parse_abort  ; malformed subscript list / overflow
-                xor     a
-                ld      (ARY_OP),a          ; op = 0 (RESOLVE)
-                call    ary_engine_call     ; -> Z ok / NZ: FPERR already mapped+set
-                jr      nz,ela_resolve_abort
-                pop     hl                  ; [CURSOR] restored
-                ld      de,(ARY_ADDR)
+                call    ary_op0_resolve     ; Z: HL=cursor,DE=elem_addr / NZ:
+                                            ; HL=cursor, FPERR already set
+                jp      nz,fp_runtime_error ; [CURSOR] already consumed by
+                                            ; ary_op0_resolve -- nothing to pop
                 push    de                  ; [ADDR]
                 ld      a,(ARY_TYPE)
                 push    af                  ; [TYPE]
@@ -565,42 +614,29 @@ ela_abort_fp:
 ela_parse_abort:
                 pop     hl                  ; discard [CURSOR]
                 jp      fp_runtime_error
-ela_resolve_abort:
-                pop     hl                  ; discard [CURSOR]
-                jp      fp_runtime_error
 
 ; --- ev_f_arr: array-element rvalue  A(i[,j...])  --------------------------
 ; BC=key, (VARTYPE)=type, HL=cursor at '(' on entry (reached from ev_f_var,
 ; expr.asm, right after var_name_key — ev_f reaches ev_f_var only for a
 ; plain letter, never a function token, so a '(' right after a plain name is
-; unambiguously a subscript, §5/§9.4). Resolves via the sub-ROM tenant
-; (op=RESOLVE, auto-dim on read), then loads FAC/FACTYP + the DE int16 fast
-; path exactly like var_load_fac's own value-field read. Every array
-; evaluation error is DEFERRED (matches ev_f_err's own convention: FPERR set,
-; DE=0, checked at the statement boundary) — never an immediate `jp` out of
-; the evaluator, the same D-F2-1 discipline the WIP's ary_load already
-; followed.
+; unambiguously a subscript, §5/§9.4). Resolves via ary_op0_resolve (the sub-
+; ROM tenant op=RESOLVE, wrapped; auto-dim on read), then loads FAC/FACTYP +
+; the DE int16 fast path exactly like var_load_fac's own value-field read.
+; Every array evaluation error is DEFERRED (matches ev_f_err's own
+; convention: FPERR set, DE=0, checked at the statement boundary) — never an
+; immediate `jp` out of the evaluator, the same D-F2-1 discipline the WIP's
+; ary_load already followed. ary_op0_resolve's own error return (NZ, HL=
+; cursor already popped, whether from a parse-time deferred FPERR — ev_f_
+; empty/apsub_toomany — or a resolve-time one) lands exactly on eva_deferred
+; below with nothing further to unwind.
 ev_f_arr:
                 ld      a,(VARTYPE)
-                call    ary_parse_subs_kt   ; BC,A restored; ARY_NIDX/ARY_IDX filled;
-                                            ; [CURSOR] pushed. A malformed list already
-                                            ; set a deferred FPERR (ev_f_empty/
-                                            ; apsub_toomany) but still returns normally.
-                ld      (ARY_KEY),bc
-                ld      (ARY_TYPE),a
-                ld      a,(FPERR)
-                or      a
-                jr      nz,eva_deferred     ; parse-time error already deferred
-                xor     a
-                ld      (ARY_OP),a          ; op = 0 (RESOLVE, auto-dim on read)
-                call    ary_engine_call     ; -> Z ok / NZ: FPERR already mapped+set
-                                            ; (deferred, matches ary_resolve's own
-                                            ; original convention)
+                call    ary_op0_resolve     ; Z: HL=cursor,DE=elem_addr / NZ:
+                                            ; HL=cursor, FPERR already set (deferred)
                 jr      nz,eva_deferred
-                pop     hl                  ; [CURSOR] restored
                 push    hl
                 pop     ix                  ; IX = cursor (ev_f_var's own return contract)
-                ld      hl,(ARY_ADDR)
+                ex      de,hl               ; HL = elem addr (DE dead)
                 ld      a,(ARY_TYPE)
                 cp      2
                 jr      z,eva_int
@@ -618,11 +654,177 @@ eva_int:
                 ld      d,(hl)              ; DE = the loaded value
                 ret
 eva_deferred:
-                pop     hl                  ; [CURSOR] restored
                 push    hl
                 pop     ix                  ; IX = cursor (ev_f_var's contract even on
                                             ; a deferred error)
                 ld      de,0                ; matches ev_f_err's own convention
                 ret
+
+; =============================================================================
+; Arrays slice 3 — STRING arrays (docs/spec-basic-arrays-slice3-strings.md).
+; The tenant (sub/arrays.asm) now sizes/zero-fills a type=1 element as an
+; inline [len][bytes:STRMAX] value via elsize_from_type (§4) — ary_find/DIM/
+; RESOLVE/bound/neg/ndim checks are otherwise UNCHANGED. The STORE COPY body
+; itself is ALSO tenant-side now (op=3 COPY_STR, sub/arrays.asm's
+; aeng_copy_str) — unlike the numeric store (which needs FAC/type coercion, a
+; main-only concept), a string element store is a pure-RAM length-clamped
+; LDIR, a textbook shape-C leaf carve-out (subrom-tenant-playbook.md §3) that
+; the razor-thin low region (§5.3) cannot otherwise afford. What's left here
+; is the minimum main-ROM glue: the two dispatch sites' own tails, reached
+; from page-1 call sites via a `$`-name-followed-by-`(` peek (interp.asm's
+; ex_let_str, basic/strvar.asm's str_eval_one), mirroring the numeric
+; ex_let/ev_f_var disambiguation exactly, both now built on ary_op0_resolve
+; (below, shared with the NUMERIC ex_let_arr too — the slice-3 space audit's
+; own generalisation of what was originally a string-only str_ary_resolve).
+; =============================================================================
+
+; --- ary_op0_resolve: BC=key, A=type, HL=cursor at '(' -> resolves an ------
+; array element address (op=0 RESOLVE, auto-dim on first touch). SHARED by
+; every RESOLVE-then-something call site: ex_let_arr (numeric store, TYPE=
+; VARTYPE), ex_let_arr_str/str_eval_arr (string store/load, TYPE=1, below) --
+; originally a string-only "str_ary_resolve" (arrays slice 3), generalised
+; (TYPE became a caller-supplied parameter instead of a hardcoded 1) once the
+; slice-3 space audit found the identical parse-subscripts+resolve prefix
+; ex_let_arr had inlined its own copy of, §5.3's razor-thin-low-region
+; pressure making the dedup worth it. Out: Z (ok) — HL=cursor (POPPED, i.e.
+; [CURSOR] is consumed by this call, not left on the stack), DE=element
+; address (== ARY_ADDR). NZ (error, already FPERR-mapped by ary_engine_call)
+; — HL=cursor (POPPED), DE undefined. Either way [CURSOR] is popped EXACTLY
+; ONCE by this routine; callers must not pop it again (a caller that used to
+; land on a "pop hl;jp fp_runtime_error" abort stub after a NZ from the OLD
+; inlined prologue must now `jp` straight to fp_runtime_error/its own deferred
+; tail instead — the pop already happened in here). Clobbers A,B,C,D,E,H,
+; L,IX (ary_parse_subs_kt/ary_engine_call's own clobbers).
+ary_op0_resolve:
+                call    ary_parse_subs_kt   ; BC,A restored (key,type);
+                                            ; ARY_NIDX/ARY_IDX filled; [CURSOR]
+                                            ; pushed
+                ld      (ARY_KEY),bc
+                ld      (ARY_TYPE),a
+                ld      a,(FPERR)
+                or      a
+                jr      nz,aor_err          ; malformed subscript list / overflow
+                xor     a
+                ld      (ARY_OP),a          ; op = 0 (RESOLVE, auto-dim)
+                call    ary_engine_call     ; -> Z ok / NZ: FPERR already mapped+set
+                jr      nz,aor_err
+                pop     hl                  ; [CURSOR] restored
+                ld      de,(ARY_ADDR)       ; Z still holds from ary_engine_call's
+                                            ; own success return (`or a`/`ret z`) --
+                                            ; neither POP nor LD (nn) touches flags,
+                                            ; so no separate flag-set instruction is
+                                            ; needed here either (mirrors aor_err's
+                                            ; own reasoning just below)
+                ret
+aor_err:
+                pop     hl                  ; [CURSOR] restored -- NZ already
+                                            ; holds from the `jr nz` that landed
+                                            ; us here (POP touches no flag), so
+                                            ; no separate flag-set instruction
+                                            ; is needed
+                ret
+
+; --- ex_let_arr_str: string array-element assignment  S$(i[,j...])=<expr$> -
+; BC=key, HL=cursor at '(' on entry (reached from ex_let_str, interp.asm,
+; right after var_name_key — a `$` name followed by '(' is unambiguously a
+; subscript, the exact string sibling of the numeric ev_f_arr/ex_let_arr
+; disambiguation). Resolves elem_addr via ary_op0_resolve (type=1) BEFORE
+; evaluating the RHS: this mirrors ex_let_arr's own self-reference discipline
+; (S$(1)=S$(2), or even S$(1)=S$(1)+"X" once concat lands) — the RHS's own
+; str_eval may itself resolve a NESTED array element via str_eval_arr
+; (below), which clobbers the SAME shared ARY_KEY/ARY_TYPE/ARY_NIDX/ARY_IDX/
+; ARY_ADDR param block ary_op0_resolve just wrote. So the LHS's resolved
+; element address is kept on the STACK (not left in RAM) across str_eval —
+; the identical hazard (and fix) ex_let_arr's own [ADDR] push documents for
+; the numeric RHS-eval case. Once the RHS is stable (STRPTR set, no further
+; array engine calls to race), the LHS address is re-published as ARY_ADDR
+; and op=3 (COPY_STR, sub/arrays.asm) does the actual copy — safe ONLY
+; because it runs strictly after the RHS is done, never fused with the
+; resolve itself.
+ex_let_arr_str:
+                ld      a,1                 ; type = 1 (string, always — this
+                                            ; routine is only ever reached for
+                                            ; a `$` name)
+                call    ary_op0_resolve     ; Z: HL=cursor,DE=elem_addr / NZ:
+                                            ; HL=cursor, FPERR already set
+                jp      nz,fp_runtime_error ; [CURSOR] already consumed by
+                                            ; ary_op0_resolve -- nothing to pop
+                push    de                  ; [ADDR] -- guarded across str_eval
+                                            ; (see the header above)
+                call    skip_spaces
+                ld      a,(hl)
+                cp      EQ_TOKEN
+                jr      nz,elas_err
+                inc     hl
+                call    skip_spaces
+                call    str_eval            ; STRPTR -> RHS descriptor, HL advanced
+                jr      nc,elas_err         ; not a string operand -> syntax error
+                                            ; ([ADDR] still on the stack -- elas_err
+                                            ; pops it)
+                ld      a,(FPERR)           ; D-F2-1: a deferred error inside the RHS
+                or      a                   ; (HEX$ overflow, or a nested array
+                jr      nz,elas_abort_fp    ; subscript/bound error, §5.2) aborts
+                                            ; here -- the SAME inline check
+                                            ; ex_let_arr's own numeric RHS uses, NOT
+                                            ; cepb_fp (that routine's own pop-two-
+                                            ; off-the-stack contract assumes a
+                                            ; DIFFERENT stack shape than this
+                                            ; routine's single [ADDR] frame)
+                pop     de                  ; DE = elem_addr ([ADDR] restored)
+                ld      (ARY_ADDR),de       ; re-publish as op=3's INPUT (STRPTR
+                                            ; already holds the stable RHS)
+                ld      a,3
+                ld      (ARY_OP),a          ; op = 3 (COPY_STR, pure-RAM leaf)
+                push    hl                  ; [CURSOR] -- ary_engine_call/CALSLT
+                                            ; clobbers everything, incl. HL
+                call    ary_engine_call     ; -> always Z (op=3 cannot fail)
+                pop     hl                  ; [CURSOR] restored
+                jp      exec_stmt
+elas_err:
+                pop     de                  ; discard [ADDR]
+                jp      stmt_error
+elas_abort_fp:
+                pop     de                  ; discard [ADDR]
+                jp      fp_runtime_error
+
+; --- str_eval_arr: string array-element rvalue  S$(i[,j...]) ---------------
+; BC=key, HL=cursor at '(' on entry (reached from str_eval_one, basic/
+; strvar.asm, right after var_name_key — a `$` name followed by '(' is
+; unambiguously a subscript: str_eval_one's variable case is reached only
+; for a plain `$` name, never a string FUNCTION token — LEN/MID$/etc. all
+; dispatch earlier on their OWN distinct token bytes — the same
+; disambiguation ev_f_var's numeric array check already relies on).
+; Resolves via ary_op0_resolve (type=1, auto-dim on read), then -- UNLIKE the
+; numeric load (ev_f_arr's FAC copy) -- sets STRPTR = elem_addr DIRECTLY and
+; joins str_eval_ok: the element IS already a valid [len][bytes] descriptor
+; (contract §4/§5.2), so every string consumer (print_strval, concat,
+; LEN/MID$/...) reads it in place — zero-copy, exactly how str_get_key hands
+; back an in-place STRTAB descriptor. Every array evaluation error is
+; DEFERRED (mirrors ev_f_arr's own D-F2-1 discipline): FPERR is left set
+; (already mapped by ary_engine_call, inside ary_op0_resolve), and STRPTR is
+; pointed at the shared STR_EMPTY descriptor (vars.asm) instead of a
+; stale/garbage address, so a caller that reads STRPTR before its own
+; statement-boundary FPERR check (str_eval's own callers all do one right
+; after — ex_let_str's cepb_fp, print's check_expr_errors) sees a harmless
+; "" rather than crashing. CF is still SET / VALTYP=1 either way (a
+; well-formed string OPERAND FORM was recognised — only its VALUE errored),
+; joining str_eval_ok exactly like the success path.
+str_eval_arr:
+                ld      a,1                 ; type = 1 (string, always)
+                call    ary_op0_resolve     ; Z: HL=cursor,DE=elem_addr / NZ:
+                                            ; HL=cursor, FPERR already set
+                jr      z,sea_have_de       ; success: DE already = elem_addr,
+                                            ; the [len][bytes] descriptor itself
+                                            ; (zero-copy) -- skip past the override
+                ld      de,STR_EMPTY        ; deferred error: DE, not HL (HL still
+                                            ; holds the cursor, untouched since
+                                            ; ary_op0_resolve's own NZ return, which
+                                            ; str_eval_ok needs) -- STR_EMPTY so a
+                                            ; pre-FPERR-check read (if any) can't
+                                            ; see garbage
+sea_have_de:
+                ld      (STRPTR),de         ; shared tail: whichever DE the branch
+                                            ; above left, both paths do this
+                jp      str_eval_ok
 
     ENDIF

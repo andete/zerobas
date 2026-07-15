@@ -1,20 +1,23 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 
-; sub/arrays.asm — BASIC numeric arrays engine (slice-1 SPLIT design, the
-; sub-ROM page-0 tenant half). docs/spec-basic-arrays.md §10 (the split
-; contract): the array *semantics* (auto-dim to 10, base 0, subscript range/
-; error dispositions) are oracle-locked to the public MSX-BASIC language
-; reference + the VG-8020 black-box capture (spec §4.1/§5), carried over
-; unchanged from the monolithic WIP (branch arrays-slice1-wip, basic/
-; arrays.asm) — this is a RE-HOME + ABI-WIRE, not a rewrite of the algorithm.
-; The array descriptor byte layout is zerobas's OWN design (spec §9.2/§10.3),
-; exactly as VARTAB/STRTAB already are — never ROM disassembly.
+; sub/arrays.asm — BASIC numeric + string arrays engine (slice-1 SPLIT
+; design, the sub-ROM page-0 tenant half; slice-3 extends it to string
+; elements, docs/spec-basic-arrays-slice3-strings.md §4/§5.1). docs/spec-
+; basic-arrays.md §10 (the split contract): the array *semantics* (auto-dim
+; to 10, base 0, subscript range/error dispositions) are oracle-locked to the
+; public MSX-BASIC language reference + the VG-8020 black-box capture (spec
+; §4.1/§5), carried over unchanged from the monolithic WIP (branch arrays-
+; slice1-wip, basic/arrays.asm) — this is a RE-HOME + ABI-WIRE, not a rewrite
+; of the algorithm. The array descriptor byte layout is zerobas's OWN design
+; (spec §9.2/§10.3), exactly as VARTAB/STRTAB already are — never ROM
+; disassembly.
 ;
 ; --- own-design descriptor (unchanged from the WIP, spec §9.2) -------------
 ;   +0  name0  : 1    upcased first char (0 = the terminator sentinel)
 ;   +1  name1  : 1
-;   +2  type   : 1    2/4/8 (int/single/double), from suffix/DEFtbl
+;   +2  type   : 1    2/4/8 (int/single/double) or 1 (string, slice-3), from
+;                     suffix/DEFtbl
 ;   +3  ndim   : 1    dimension count (1..MAXDIM)
 ;   +4  stride : 2    CACHED total descriptor size in bytes (6+2*ndim+elsize*
 ;                     count) -- own-design redundancy, see the WIP's own
@@ -23,9 +26,12 @@
 ;   +6  bound0 : 2    inclusive upper subscript of dim 0 (LE)  ] ndim of these
 ;       ...             ...
 ;       element data : elsize*Pi(boundK+1) bytes, zero-filled on alloc
-; elsize = type (2/4/8). Element order is column-major (first subscript
-; varies fastest): off(i0,i1,..) = i0 + (b0+1)*(i1 + (b1+1)*(i2 + ...)),
-; elem_addr = data_start + off*elsize.
+; elsize = elsize_from_type(type) (below): type/2/4/8 for numeric (unchanged
+; identity elsize=type), but 1+STRMAX for a string (type=1, slice-3 §4 -- an
+; inline [len][bytes:STRMAX] value, byte-identical to a STRTAB slot's value
+; portion, NOT 1 byte). Element order is column-major (first subscript varies
+; fastest): off(i0,i1,..) = i0 + (b0+1)*(i1 + (b1+1)*(i2 + ...)), elem_addr =
+; data_start + off*elsize.
 ;
 ; --- allocator: ARYBASE derived, NO stored ARYEND (WIP deviation, retained) -
 ; ARYBASE is DERIVED (never stored) as (PRGEND)+2 -- the first byte after the
@@ -79,20 +85,30 @@
 ; resolution, auto-dimensioning an undeclared array to bound 10 on first
 ; touch (§4.1 #1). op=1 (DIM): explicit declaration, redim-checked. op=2
 ; (ERASE, slice-2 -- docs/spec-basic-arrays-slice2-erase.md §4.2): free an
-; existing array, reverting it to undeclared. Writes ARY_ADDR (RESOLVE only,
-; harmless on DIM/ERASE) and ARY_ERR (0 ok; 1 Subscript-oor; 2 Illegal-fn/
-; negative/not-found; 3 Redimensioned; 4 OOM) either way. Clobbers everything
-; (tenant convention; the caller is under subrom_call/CALSLT, which already
-; clobbers all registers).
+; existing array, reverting it to undeclared. op=3 (COPY_STR, slice-3 --
+; docs/spec-basic-arrays-slice3-strings.md §5.2): a pure-RAM STRMAX-clamped
+; copy from (STRPTR) into (ARY_ADDR), for the string ARRAY STORE path only --
+; unlike op=0/1/2, this op does NOT consult ARY_KEY/TYPE/NIDX/IDX at all (the
+; caller has already RESOLVED the destination via a prior op=0 call and
+; passes it directly as ARY_ADDR; see the main-ROM glue's own header,
+; basic/arrays.asm's ex_let_arr_str, for why the resolve and the copy are two
+; separate tenant calls rather than one fused op). Writes ARY_ADDR (RESOLVE
+; only, harmless on DIM/ERASE/COPY_STR) and ARY_ERR (0 ok; 1 Subscript-oor;
+; 2 Illegal-fn/negative/not-found; 3 Redimensioned; 4 OOM; COPY_STR always
+; writes 0 -- it cannot fail) either way. Clobbers everything (tenant
+; convention; the caller is under subrom_call/CALSLT, which already clobbers
+; all registers).
 ary_engine:
                 ld      a,(ARY_OP)
                 or      a
                 jr      z,aeng_resolve
                 cp      1
                 jp      z,aeng_dim
-                jp      aeng_erase          ; op==2: the only other value the
-                                            ; main-ROM glue ever writes (ex_erase,
-                                            ; basic/arrays.asm)
+                cp      2
+                jp      z,aeng_erase
+                jp      aeng_copy_str       ; op==3: the only other value the
+                                            ; main-ROM glue ever writes
+                                            ; (ex_let_arr_str, basic/arrays.asm)
 aeng_resolve:
                 ld      bc,(ARY_KEY)
                 ld      a,(ARY_TYPE)
@@ -230,6 +246,49 @@ aer_notfound:
                 ld      (ARY_ERR),a         ; 2 -> IFC (ary_errmap -> FPERR=8)
                 ret
 
+; --- aeng_copy_str: ARY_OP=3 (slice-3 COPY_STR, docs/spec-basic-arrays- ----
+; slice3-strings.md §5.1/§5.2). dest = (ARY_ADDR) -- an element address the
+; caller has ALREADY resolved via a prior op=0 call; source = (STRPTR), a
+; plain RAM sysvar visible here exactly like PRGEND/HIMEM (RAM pages 2/3 are
+; always mapped to a page-0 tenant). Pure-RAM STRMAX-clamped copy: the
+; string sibling of the numeric ary_store_write's FAC-copy tail
+; (basic/arrays.asm), moved tenant-side because (unlike the numeric store,
+; which needs FAC/type coercion, a main-only concept) it needs nothing but a
+; length-clamped LDIR -- a textbook pure-RAM leaf (subrom-tenant-playbook.md
+; §3 shape-C carve-out), reusing str_set_key's own copy-body logic
+; (basic/vars.asm's ssk_store tail) minus the find-or-allocate-a-slot step
+; (the element's address is already resolved -- a fixed 1+STRMAX-byte slot,
+; never grown/found). This op is called ONLY after the main-ROM glue has
+; fully evaluated the RHS into STRPTR (so nothing here can race a nested
+; array load the way a fused resolve+copy would -- see the glue's own
+; header). Always succeeds (ARY_ERR=0 unconditionally -- a bad ARY_ADDR is
+; not a condition this op can detect; the caller supplies it, already
+; validated by the earlier RESOLVE). Value semantics (contract §2 probe #13,
+; no aliasing) fall out of the byte copy exactly as they do for
+; str_set_key. Clobbers A,B,C,D,E,H,L.
+aeng_copy_str:
+                ld      hl,(ARY_ADDR)       ; HL = dest (already-resolved elem addr)
+                ld      de,(STRPTR)         ; DE = source descriptor
+                ld      a,(de)              ; source length
+                cp      STRMAX+1
+                jr      c,acs_len_ok
+                ld      a,STRMAX            ; clamp to STRMAX
+acs_len_ok:
+                ld      (hl),a              ; store the (clamped) length at dest
+                inc     hl                  ; HL -> dest bytes
+                inc     de                  ; DE -> source bytes
+                or      a
+                jr      z,acs_done          ; zero-length -> done
+                ld      c,a
+                ld      b,0                 ; BC = byte count
+                ex      de,hl               ; LDIR copies (HL)->(DE): HL=source,
+                                            ; DE=dest
+                ldir
+acs_done:
+                xor     a
+                ld      (ARY_ERR),a         ; 0 ok (this op cannot fail)
+                ret
+
 ; --- ARY_AUTODIM_BOUNDS: MAXDIM words, each = 10 (§4.1 #1). Read-only tenant
 ; data; ary_resolve's auto-dim path points IX here (vs. aeng_dim's IX, which
 ; points at the caller-parsed ARY_IDX for an explicit DIM) -- same ary_alloc,
@@ -325,6 +384,32 @@ ace_ovf:
                 pop     hl                  ; balance: discard advanced cursor
                 pop     bc                  ; balance: discard ndim_remaining
                 scf
+                ret
+
+; --- elsize_from_type: A=type (1/2/4/8) -> A=elsize (bytes per element) ----
+; (arrays slice-3, docs/spec-basic-arrays-slice3-strings.md §4/§5.1). Slice-1
+; baked in the identity elsize=type (2/4/8, int/single/double) -- a STRING
+; element (type=1) breaks that identity: it is NOT 1 byte, it is a full
+; inline [len][bytes:STRMAX] value (§4's own-design choice, byte-identical to
+; the value portion of a STRTAB slot -- value-copy semantics for free, no
+; heap). STRMAX is a build constant (basic/sysvars.inc, included above with
+; ROM_BASE=$2812 -- always the repack value, 64, since this tenant exists
+; only in the repack build), baked in at assembly time. Consulted at every
+; site that previously read `type` directly as a byte count: ary_alloc's
+; data-region sizing (+ the zero-fill it drives) and ary_resolve's ELSIZE
+; cache (which also drives the final offset*elsize multiply and, via the
+; stride-from-data-end arithmetic below, the DESCRIPTOR'S cached stride word
+; too -- no separate stride fix needed, it falls out of DATA_BYTES being
+; correct). The descriptor's OWN stored type byte is UNCHANGED (still the raw
+; 1/2/4/8 -- ary_find's key match, and the main-ROM glue's numeric coercion,
+; need the true type, not the element byte count). Preserves BC,D,E,H,L.
+; Clobbers A only.
+elsize_from_type:
+                cp      1
+                ret     nz                  ; numeric (2/4/8): elsize = type,
+                                            ; unchanged from slice 1
+                ld      a,1+STRMAX          ; string (type=1): elsize = the
+                                            ; inline [len][bytes:STRMAX] size
                 ret
 
 ; --- ary_stride: HL=descriptor base (name0) -> DE=total byte size ----------
@@ -432,7 +517,9 @@ aal_tail:
                 call    ary_count_elems     ; -> DE=count, CF=overflow
                 jp      c,aal_oom
                 ex      de,hl               ; HL = count
-                ld      a,(iy+2)            ; TYPE (elsize)
+                ld      a,(iy+2)            ; TYPE
+                call    elsize_from_type    ; A = elsize (2/4/8, or 1+STRMAX for
+                                            ; a string element -- slice-3 §4)
                 ld      d,0
                 ld      e,a
                 call    ary_mul16_checked   ; DE = data bytes; CF=overflow
@@ -610,7 +697,13 @@ aryr_have_desc:
                 inc     hl
                 inc     hl                  ; HL -> type field
                 ld      a,(hl)
-                ld      (iy+4),a            ; TYPE (= elsize)
+                call    elsize_from_type    ; A = elsize (slice-3 §4) -- NOT the
+                                            ; raw type; ary_resolve never reports
+                                            ; type back to the caller (already
+                                            ; known: ARY_TYPE, passed in)
+                ld      (iy+4),a            ; ELSIZE (renamed from the slice-1
+                                            ; "TYPE (=elsize)" comment: that
+                                            ; identity breaks for a string, §4)
                 inc     hl                  ; HL -> ndim field
                 ld      a,(ARY_NIDX)
                 cp      (hl)
@@ -685,7 +778,7 @@ aryr_loop_done:
                 push    hl                  ; guard data start
                 ld      e,(iy+0)
                 ld      d,(iy+1)            ; DE = final OFFSET
-                ld      a,(iy+4)            ; A = TYPE (elsize)
+                ld      a,(iy+4)            ; A = ELSIZE (slice-3 §4)
                 ex      de,hl               ; HL = OFFSET
                 ld      d,0
                 ld      e,a                 ; DE = elsize (zero-extended)

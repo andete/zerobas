@@ -160,10 +160,17 @@ ev_not_do:
 ev_rel:
     IF ROM_BASE < $4000
                 ; string-compare S2 (repack build only): probe the LHS for a string
-                ; operand before committing to the numeric ev_e below. IX is the live
-                ; token cursor throughout the interpreter (str_eval never touches it),
-                ; so a failed probe leaves IX exactly where it was -- no restore needed,
-                ; the unchanged numeric body below just reads IX itself.
+                ; operand before committing to the numeric ev_e below. Load-bearing
+                ; invariant: a FAILED probe (str_eval returns NC) leaves IX exactly
+                ; where it was, so the unchanged numeric body below just reads IX
+                ; itself -- no restore needed. This holds even though str_eval's
+                ; string-ARRAY path (str_eval_arr, arrays slice-3) DOES clobber IX via
+                ; the sub-ROM tenant call: that path ALWAYS returns CF set (a `$` name
+                ; + `(` is a recognised string operand), so it can only reach the
+                ; `jp c,ev_rel_str` branch (which re-derives IX from HL at its own
+                ; re-entries), NEVER the NC fallthrough. Any future str_eval sub-path
+                ; that clobbers IX and can return NC would break this -- keep the
+                ; "NC => IX intact" contract if you touch str_eval.
                 push    ix
                 pop     hl                  ; HL = cursor (bridge for the probe)
                 call    str_eval            ; CF set -> LHS is a string; STRPTR->desc

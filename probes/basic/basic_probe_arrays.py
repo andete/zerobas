@@ -113,11 +113,92 @@ CASES = [
     ("erase.double.comma",  "direct", ['DIM A(5):ERASE A,,B'],      "synerr"),
     ("erase.paren.form",    "direct", ['DIM A(5):ERASE A()'],       "synerr"),
     ("erase.sub.form",      "direct", ['DIM A(5):ERASE A(1)'],      "synerr"),
+
+    # === arrays slice 3: STRING arrays (docs/spec-basic-arrays-slice3-strings.md
+    # §6) — every semantic mirrors the numeric slice (base-0, DIM inclusive,
+    # auto-dim upper 10, same four error dispositions) plus the string-value
+    # additions (store/load, auto-init "", element string-ops, value-copy
+    # semantics). Value/behaviour cases are STORED (both machines run to
+    # completion, differential on the "[..]" span); every error-tier case is
+    # DIRECT (the same stored-RUN-doesn't-abort landmine as slice 1/2).
+    ("strarr.store.load",       "stored", ['DIM S$(3):S$(1)="HI"', 'PRINT"[";S$(1);"]"'], "value"),
+    ("strarr.autodim.bound10.ok","direct",['S$(10)="Z":PRINT"[";S$(10);"]"'],            "value"),
+    ("strarr.autodim.11.oor",   "direct", ['S$(11)="Z":PRINT"[";S$(11);"]"'],            "err"),
+    ("strarr.autoinit.empty",   "stored", ['DIM S$(3)', 'PRINT"[";S$(2);"]"'],           "value"),
+    ("strarr.autoinit.len0",    "stored", ['DIM S$(3)', 'PRINT"[";LEN(S$(2));"]"'],      "value"),
+    ("strarr.dim.inclusive",    "stored", ['DIM S$(5):S$(5)="E"', 'PRINT"[";S$(5);"]"'], "value"),
+    ("strarr.base0",            "stored", ['DIM S$(2):S$(0)="Z"', 'PRINT"[";S$(0);"]"'], "value"),
+    ("strarr.dim.over.oor",     "direct", ['DIM S$(5):S$(6)="X":PRINT"[x]"'],            "err"),
+    ("strarr.redim",            "direct", ['DIM S$(3):DIM S$(3):PRINT"[ok]"'],           "err"),
+    ("strarr.neg.illegal",      "direct", ['DIM S$(5):PRINT"[";S$(-1);"]"'],             "err"),
+    ("strarr.multidim.val",     "stored", ['DIM S$(2,3):S$(1,2)="HI"', 'PRINT"[";S$(1,2);"]"'], "value"),
+    ("strarr.multidim.init0",   "stored", ['DIM S$(2,3)', 'PRINT"[";S$(2,3);"]"'],       "value"),
+    ("strarr.multidim.wrongn.oor","direct",['DIM S$(2,3):PRINT"[";S$(1);"]"'],           "err"),
+    # type-independence (S / S% / S$ coexist as distinct arrays, §2 probe #10):
+    ("strarr.typeindep.dbl",    "stored", ['S(1)=11:S$(1)="Q"', 'PRINT"[";S(1);S$(1);"]"'], "value"),
+    ("strarr.typeindep.pct",    "stored", ['S%(1)=5:S$(1)="Q"', 'PRINT"[";S%(1);S$(1);"]"'], "value"),
+    # element string-ops (§2 probe #11 — element is a first-class rvalue):
+    ("strarr.len",              "stored", ['DIM S$(3):S$(1)="ABC"', 'PRINT"[";LEN(S$(1));"]"'], "value"),
+    ("strarr.mid",              "stored", ['DIM S$(3):S$(1)="ABC"', 'PRINT"[";MID$(S$(1),2);"]"'], "value"),
+    ("strarr.left",             "stored", ['DIM S$(3):S$(1)="ABC"', 'PRINT"[";LEFT$(S$(1),2);"]"'], "value"),
+    ("strarr.concat",           "stored", ['DIM S$(3):S$(1)="AB"', 'PRINT"[";S$(1)+"C";"]"'], "value"),
+    # 3 copy directions + the NO-ALIAS case (§2 probe #12/#13 — value-copy
+    # semantics: elements hold copies, no aliasing):
+    ("strarr.copy.scalar2elem", "stored", ['DIM S$(3):A$="HI":S$(1)=A$', 'PRINT"[";S$(1);"]"'], "value"),
+    ("strarr.copy.elem2elem",   "stored", ['DIM S$(3):S$(1)="HI":S$(2)=S$(1)', 'PRINT"[";S$(2);"]"'], "value"),
+    ("strarr.copy.elem2scalar", "stored", ['DIM S$(3):S$(1)="HI":A$=S$(1)', 'PRINT"[";A$;"]"'], "value"),
+    ("strarr.noalias",          "stored", ['DIM S$(3):S$(1)="HI":S$(2)=S$(1)', 'S$(1)="XY"', 'PRINT"[";S$(2);"]"'], "value"),
+    # ERASE / CLEAR free the array contents (§2 probe #14):
+    ("strarr.erase.frees",      "stored", ['DIM S$(3):S$(1)="HI"', 'ERASE S$', 'PRINT"[";S$(1);"]"'], "value"),
+    ("strarr.clear.frees",      "stored", ['DIM S$(3):S$(1)="HI"', 'CLEAR', 'PRINT"[";S$(1);"]"'], "value"),
+    # STRMAX-clamp deviation (§2 probe #15 / §7 D-1): the reference has a real
+    # heap and would raise "Out of string space" on an over-long STRING$; zb
+    # has no heap and clamps to STRMAX (64, repack) instead — a documented,
+    # NON-differential deviation (the same one the scalar string store already
+    # documents, string-engine §5a). Asserted against the zb-only expected
+    # value, not the reference (which errors here).
+    ("strarr.strmax.clamp",     "stored", ['DIM S$(1):S$(1)=STRING$(90,65)', 'PRINT"[";LEN(S$(1));"]"'], "zbval"),
+    # --- ADVERSARIAL: variable/nested/self-ref subscripts, the slice-1 lesson
+    # applied to strings (the literal-only string cases above hid nothing this
+    # time -- verified -- but the gate must exercise the array IDIOM, not just
+    # literals; every case here confirmed reference-identical 2026-07-15).
+    ("strarr.varsub",           "stored", ['I=1:S$(I)="HI"', 'PRINT"[";S$(I);"]"'], "value"),
+    ("strarr.nestsub",          "stored", ['A(0)=1:S$(A(0))="HI"', 'PRINT"[";S$(A(0));"]"'], "value"),
+    ("strarr.selfconcat.var",   "stored", ['I=1:S$(I)="AB"', 'S$(I)=S$(I)+"C"', 'PRINT"[";S$(I);"]"'], "value"),
+    ("strarr.two.elem.concat",  "stored", ['S$(1)="A":S$(2)="B"', 'PRINT"[";S$(1)+S$(2);"]"'], "value"),
+    ("strarr.for.store",        "stored", ['DIM S$(3)', 'FORI=1TO3:S$(I)=CHR$(64+I):NEXT', 'PRINT"[";S$(1);S$(2);S$(3);"]"'], "value"),
+    ("strarr.md.varsub",        "stored", ['I=1:J=2:DIM S$(2,3)', 'S$(I,J)="HI"', 'PRINT"[";S$(I,J);"]"'], "value"),
+    ("strarr.if.cmp",           "stored", ['S$(1)="A"', 'IFS$(1)="A"THEN?"[Y]"ELSE?"[N]"'], "value"),
+    ("strarr.dim.varbound",     "stored", ['N=4:DIM S$(N)', 'S$(N)="Z"', 'PRINT"[";S$(N);"]"'], "value"),
+    # D1 (slice-3 regression fix): a DIM target must start with a letter -- a
+    # bare `$` or a digit name is a syntax error (was silently accepted; the
+    # deleted slice-2 `$`-reject had masked it). Tier-A, house-lowercase.
+    ("strarr.dim.bare.dollar",  "direct", ['DIM $(5):PRINT"[x]"'], "synerr"),
+    ("strarr.dim.digit.name",   "direct", ['DIM 1(5):PRINT"[x]"'], "synerr"),
+    # D2 (§7 deviation): a big string DIM exhausts RAM on zb (inline 65-byte
+    # elements) where the reference's 3-byte descriptors survive -- zb "Out of
+    # memory", ref succeeds. NON-differential (zberr).
+    ("strarr.dim.huge.oom",     "direct", ['DIM S$(1000)'], "zberr"),
 ]
+
+# zbval: non-differential, house-expected VALUE (mirrors ZB_SYNTAX_ERROR's own
+# non-differential text assertion, but for a printed value instead of an error
+# message) — used only by strarr.strmax.clamp above, §7's documented deviation.
+# " 64 " (not "64"): MSX PRINT's own leading-space-for-non-negative-numbers
+# convention (matches every OTHER numeric PRINT span in this probe; observed,
+# not asserted from memory — captured 2026-07-15 alongside the reference's own
+# unclamped ' 90 ' for the SAME source, confirming the reference has NO
+# STRMAX-style limit at this length while zb's clamp is real).
+ZB_STRMAX_CLAMP_LEN = " 64 "
 
 # Tier-A house-style text (zerobas prints lowercase where the reference prints
 # capitalised; not differential-gateable, asserted against this literal).
 ZB_SYNTAX_ERROR = "syntax error"
+
+# §7 D-2: zb raises this where the reference succeeds (the inline-element memory
+# cost of the signed-off slice-3 element format). Reference wording, matched
+# against zb's own tail (observed 2026-07-15, DIM S$(1000) on the repack build).
+ZB_OOM = "Out of memory"
 
 # Crunch-identity rows (§2): the exact stored-line token bytes. Checked BOTH ways
 # (zerobas == VG-8020 reference AND == this literal), the same discipline
@@ -125,6 +206,10 @@ ZB_SYNTAX_ERROR = "syntax error"
 CRUNCH_CASES = [
     ("crunch.erase.a",  "ERASE A",   "a5204100"),
     ("crunch.erase.ab", "ERASE A,B", "a520412c4200"),
+    # arrays slice 3 (§2): "no tokeniser/detokeniser change" pin -- DIM S$(5)
+    # crunches exactly like the numeric DIM A(5) case (basic-arrays.md §5),
+    # `$`=$24 riding inside the crunched name with no new token.
+    ("crunch.dim.s5",   "DIM S$(5)", "8620532428162900"),
 ]
 TXTTAB = 0xF676  # 2-byte LE pointer to the BASIC text base (both machines)
 
@@ -150,6 +235,17 @@ def compare(i, ref, zb):
         # capitalised "Syntax error" -- documented deviation). Assert the zb tail
         # is exactly the house string; ref is ignored for the verdict.
         return R.screen_tail(zb, cmd) == ZB_SYNTAX_ERROR
+    if kind == "zbval":
+        # NON-differential: the reference ERRORS here (§7 D-1, no heap on zb's
+        # side to match) -- assert zb's own printed value only; ref is ignored.
+        zv = R.result_span(zb) if mode == "stored" else R.result_span_after_echo(zb, cmd)
+        return zv == ZB_STRMAX_CLAMP_LEN
+    if kind == "zberr":
+        # NON-differential the OTHER way: zb ERRORS where the reference SUCCEEDS
+        # (§7 D-2 -- the inline 65-byte string element makes a big DIM exhaust
+        # RAM that the reference's 3-byte [len][ptr] descriptors survive). Assert
+        # zb's own error tail only; ref is ignored (it prints a value).
+        return R.screen_tail(zb, cmd) == ZB_OOM
     # "either": compare value if ref printed one, else the tail
     rv = R.result_span_after_echo(ref, cmd)
     if rv is not None:

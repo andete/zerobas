@@ -331,6 +331,16 @@ ex_let_err:
 ; string operand into STRPTR and copy it into the variable's slot.
 ex_let_str:
                 call    var_name_key        ; BC = dest key, HL past name + `$`
+    IF ROM_BASE < $4000
+                ld      a,(hl)
+                cp      '('
+                jp      z,ex_let_arr_str    ; string array-element lvalue (arrays
+                                            ; slice-3, docs/spec-basic-arrays-
+                                            ; slice3-strings.md §5.2,
+                                            ; basic/arrays.asm) — the string
+                                            ; sibling of ex_let's own numeric
+                                            ; '(' peek right above
+    ENDIF
                 push    bc                  ; save key across '=' + str_eval
                 call    skip_spaces
                 ld      a,(hl)
@@ -339,7 +349,16 @@ ex_let_str:
                 inc     hl
                 call    skip_spaces
                 call    str_eval            ; STRPTR -> RHS descriptor, HL advanced
+    IF ROM_BASE < $4000
+                jr      nc,ex_let_err       ; not a string operand -> syntax error;
+                                            ; shares ex_let's own identical "pop bc;
+                                            ; jp stmt_error" tail (repack only, to
+                                            ; free page-1 bytes, slice-3 space audit
+                                            ; -- lean keeps its own separate els_err,
+                                            ; below, so its bytes stay untouched)
+    ELSE
                 jr      nc,els_err          ; not a string operand -> syntax error
+    ENDIF
     IF ROM_BASE < $4000
                 call    cepb_fp             ; D-F2-1: e.g. A$=HEX$(65536.) aborts (the
                                             ; overflow happens inside str_eval's HEX$
@@ -353,9 +372,11 @@ ex_let_str:
                 call    str_set_key         ; A$[key] := descriptor (clamped)
                 pop     hl
                 jp      exec_stmt
+    IF ROM_BASE >= $4000
 els_err:
                 pop     bc
                 jp      stmt_error
+    ENDIF
 
 ; --- skip_spaces: advance HL past 0x20 bytes -------------------------------
 skip_spaces:
@@ -374,8 +395,17 @@ stmt_error:
                 ld      hl,err_syntax
                 call    print_string
                 ret
+    IF ROM_BASE >= $4000
 err_syntax:
                 db      "syntax error",13,10,0
+    ENDIF
+    ; repack build: err_syntax now lives in the low region (basic/arrays.asm,
+    ; near err_subscript/err_redim/...) instead of here -- page-1 is razor-
+    ; thin (arrays slice 3, docs/spec-basic-arrays-slice3-strings.md §5.3
+    ; space audit) and this string's home is unobserved (any absolute
+    ; address costs the same to `ld hl,err_syntax`/print_string, and every
+    ; OTHER reader -- fre_msgtab entry 4, D-F2-3 -- is itself repack-only).
+    ; The lean build keeps it here (ROM_BASE >= $4000 above), byte-identical.
 
 ; --- type_mismatch_error: D-2's statement-level abort (repack build only) ---
 ; string-compare S2 (spec-basic-string-compare.md §3c): the comparator has already
@@ -511,8 +541,10 @@ cee_abort_fp:
 ; --- check_expr_errors_popbc: the same check for drivers that must POP a --
 ; saved key (BC) off the stack before erroring (ex_let: both flags; ex_let_
 ; str enters at cepb_fp directly — str_eval already handles its own D-2
-; case via `jr nc,els_err`, so only FPERR applies there, e.g.
-; `A$=HEX$(65536.)`). Falls through (returns, BC untouched) if clear. Same
+; case via its own `jr nc` (target: `els_err` lean / `ex_let_err` repack,
+; slice-3 space audit merged the two — same body either way), so only FPERR
+; applies there, e.g. `A$=HEX$(65536.)`). Falls through (returns, BC
+; untouched) if clear. Same
 ; own-return-address hazard as check_expr_errors above, PLUS the caller's
 ; own saved key sitting just beneath it -- both must be discarded (in that
 ; order: ours first, since it's on top) before the abort chain fires.

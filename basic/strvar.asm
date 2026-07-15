@@ -62,6 +62,23 @@ str_eval_one:
                 jp      z,str_eval_no       ; numeric name -> not a string operand
                 ; string variable: key it and point STRPTR at its stored value.
                 call    var_name_key        ; BC = key, HL past name + `$`
+    IF ROM_BASE < $4000
+                ld      a,(hl)
+                cp      '('
+                jp      z,str_eval_arr      ; string array-element rvalue (arrays
+                                            ; slice-3, docs/spec-basic-arrays-
+                                            ; slice3-strings.md §5.2,
+                                            ; basic/arrays.asm) — str_eval_one
+                                            ; reaches this variable case only for
+                                            ; a plain `$` name, never a string
+                                            ; FUNCTION token (those dispatch
+                                            ; earlier on their own distinct
+                                            ; bytes), so a `(` here is
+                                            ; unambiguously a subscript — the
+                                            ; same disambiguation ev_f_var's
+                                            ; numeric array check already relies
+                                            ; on
+    ENDIF
                 push    hl                  ; guard cursor across the lookup
                 call    fld_lookup          ; FIELDed var? -> STRPTR=FLD_DESC slice, CF set
                 jr      c,sev_have          ; fielded -> STRPTR already set
