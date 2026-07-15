@@ -215,6 +215,8 @@ exec_stmt:
                 jp      z,ex_mid_stmt       ; only MID$ ($FF $83) is valid here (str-engine.asm)
                 cp      DIM_TOKEN           ; DIM A(n)[,...]  (arrays slice-1, arrays.asm)
                 jp      z,ex_dim
+                cp      ERASE_TOKEN         ; ERASE name[,...]  (arrays slice-2, arrays.asm)
+                jp      z,ex_erase
     ENDIF
                 call    is_letter           ; bare letter -> assignment
                 jr      c,ex_let

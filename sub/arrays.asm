@@ -77,15 +77,23 @@
 ; --- ary_engine: the tenant entry point (SUBROM_IDX_ARY, sub/equates.inc) --
 ; Reads ARY_OP and dispatches. op=0 (RESOLVE): read/write element address
 ; resolution, auto-dimensioning an undeclared array to bound 10 on first
-; touch (§4.1 #1). op=1 (DIM): explicit declaration, redim-checked. Writes
-; ARY_ADDR (RESOLVE only, harmless on DIM) and ARY_ERR (0 ok; 1 Subscript-oor;
-; 2 Illegal-fn/negative; 3 Redimensioned; 4 OOM) either way. Clobbers
-; everything (tenant convention; the caller is under subrom_call/CALSLT,
-; which already clobbers all registers).
+; touch (§4.1 #1). op=1 (DIM): explicit declaration, redim-checked. op=2
+; (ERASE, slice-2 -- docs/spec-basic-arrays-slice2-erase.md §4.2): free an
+; existing array, reverting it to undeclared. Writes ARY_ADDR (RESOLVE only,
+; harmless on DIM/ERASE) and ARY_ERR (0 ok; 1 Subscript-oor; 2 Illegal-fn/
+; negative/not-found; 3 Redimensioned; 4 OOM) either way. Clobbers everything
+; (tenant convention; the caller is under subrom_call/CALSLT, which already
+; clobbers all registers).
 ary_engine:
                 ld      a,(ARY_OP)
                 or      a
-                jp      nz,aeng_dim
+                jr      z,aeng_resolve
+                cp      1
+                jp      z,aeng_dim
+                jp      aeng_erase          ; op==2: the only other value the
+                                            ; main-ROM glue ever writes (ex_erase,
+                                            ; basic/arrays.asm)
+aeng_resolve:
                 ld      bc,(ARY_KEY)
                 ld      a,(ARY_TYPE)
                 call    ary_resolve         ; -> HL=elem addr, A=err (0 ok)
@@ -151,6 +159,75 @@ aeng_dim_redim:
                 ret
 aeng_dim_err:
                 ld      (ARY_ERR),a
+                ret
+
+; --- aeng_erase: ARY_OP=2 (ERASE, slice-2 -- docs/spec-basic-arrays-slice2- -
+; erase.md §4.2). BC/A resolved from ARY_KEY/ARY_TYPE by the caller (main-ROM
+; ex_erase). ary_find first: not found (never dimmed/auto-dimmed, already
+; erased, or a type mismatch -- type is part of the key, §4.1 #7) -> ARY_ERR=2
+; (Illegal function call, Tier B of the two-tier error split, §3); found ->
+; compact the descriptor list by sliding every FOLLOWING descriptor (plus the
+; terminator) down over the erased one, freeing exactly its own stride worth
+; of space.
+aeng_erase:
+                ld      bc,(ARY_KEY)
+                ld      a,(ARY_TYPE)
+                call    ary_find            ; CF set+HL=desc base if found; CF
+                                            ; clear if not (BC preserved, unused
+                                            ; again here)
+                jr      nc,aer_notfound
+                ; found: HL = desc (= DST, the compaction target). src =
+                ; desc+stride; count = ARYTOP-src, where ARYTOP = the byte
+                ; past the current $0000 terminator, found by a stride-walk
+                ; starting AT src (every byte before src is untouched by this
+                ; erase, so there is no need to re-walk from ARYBASE) -- the
+                ; same "name0==0 marks the end" convention ary_alloc's own
+                ; aal_walk already uses. Nothing stores ARYEND (the file
+                ; header's own design note): the terminator IS the sentinel,
+                ; so the LDIR below, which moves it along with every other
+                ; following descriptor, IS the entire fix-up -- no separate
+                ; pointer to patch. Erasing the last (or the only) array: src
+                ; lands exactly on the terminator, so the walk falls through
+                ; immediately (count=2) and the LDIR just slides the 2-byte
+                ; terminator itself onto desc -- which is ARYBASE when desc
+                ; was the only array -- the "no arrays" state, same as
+                ; ary_reset (basic/arrays.asm) writes directly.
+                push    hl                  ; [DST] (= desc)
+                call    ary_stride          ; HL(preserved=desc) -> DE=stride
+                add     hl,de               ; HL = SRC = desc+stride
+                push    hl                  ; [SRC]
+aer_walk:
+                ld      a,(hl)              ; name0 (0 = terminator)
+                or      a
+                jr      z,aer_top
+                call    ary_stride          ; HL(preserved) -> DE=stride
+                add     hl,de
+                jr      aer_walk
+aer_top:
+                inc     hl
+                inc     hl                  ; HL = ARYTOP (byte past the terminator)
+                pop     de                  ; DE = SRC restored
+                or      a
+                sbc     hl,de               ; HL = ARYTOP - SRC = COUNT
+                ld      b,h
+                ld      c,l                 ; BC = COUNT
+                ex      de,hl               ; HL = SRC (was DE); DE = COUNT
+                                            ; (dead -- already latched in BC)
+                pop     de                  ; DE = DST (desc) restored
+                ldir                        ; slide [SRC..SRC+COUNT) down onto
+                                            ; DST -- moves every following
+                                            ; descriptor AND the terminator in
+                                            ; one shot; safe (dst < src by a
+                                            ; constant `stride` throughout, the
+                                            ; standard ascending-LDIR
+                                            ; shift-left idiom -- no byte is
+                                            ; written before it has been read)
+                xor     a
+                ld      (ARY_ERR),a         ; 0 ok
+                ret
+aer_notfound:
+                ld      a,2
+                ld      (ARY_ERR),a         ; 2 -> IFC (ary_errmap -> FPERR=8)
                 ret
 
 ; --- ARY_AUTODIM_BOUNDS: MAXDIM words, each = 10 (§4.1 #1). Read-only tenant

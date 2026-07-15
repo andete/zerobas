@@ -290,6 +290,11 @@ RND_TOKEN       equ     $88     ; RND(x) -> $FF $88
 ; BINARY_ID and NAME_TOKEN/BASIC_ID above (a bare exec_stmt dispatch byte is
 ; never confused with a $FF-prefixed function selector).
 DIM_TOKEN       equ     $86     ; DIM A(n)[,B(n1,n2)...] (statement)
+; Arrays slice-2 (docs/spec-basic-arrays-slice2-erase.md §2). ERASE: single-byte
+; STATEMENT token, black-box VG-8020 crunch capture ("ERASE A" -> a5 20 41 00)
+; cross-checked vs MSX2 TH Table 2.20/MAP (never asserted from memory) --
+; same provenance discipline as DIM_TOKEN above.
+ERASE_TOKEN     equ     $A5     ; ERASE <name>[,<name>...] (statement)
 ; Memory / I-O access tokens (MSX2 TH Table 2.20; oracle-confirmed byte-for-byte
 ; via basic_probe_crunch.py — see PROVENANCE.md). VPOKE / OUT are one-byte
 ; statement tokens; VPEEK / INP are $FF-prefixed two-byte function tokens (like
@@ -575,7 +580,9 @@ PRGEND          equ     $E026   ; addr of the $0000 end-of-program marker (2 byt
 MAXDIM          equ     4       ; slice-1 subscript-count cap (§9.1 Q-9b;
                                 ; >MAXDIM subscripts -> Subscript out of range)
 ARY_OP          equ     $E028   ; 0=RESOLVE (read/write element, auto-dim on
-                                ; read) / 1=DIM (explicit declare) (1)
+                                ; read) / 1=DIM (explicit declare) / 2=ERASE
+                                ; (free, slice-2, docs/spec-basic-arrays-
+                                ; slice2-erase.md §4.2) (1)
 ARY_KEY         equ     $E029   ; name0/name1 key (BC round-trip: written via
                                 ; `ld (ARY_KEY),bc`, read via `ld bc,(ARY_KEY)`
                                 ; on both sides -- byte order unobserved) (2)

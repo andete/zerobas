@@ -275,5 +275,14 @@ kwtable:
                 ; entry (match_kw compares the FULL keyword, so order is free
                 ; regardless -- same as every entry above).
                 db      3,"DIM",1,DIM_TOKEN                     ; $86
+                ; --- arrays slice-2 (repack build only) -----------------------
+                ; docs/spec-basic-arrays-slice2-erase.md §2. ERASE: single-byte
+                ; STATEMENT token ($A5, NOT $FF-prefixed), black-box VG-8020
+                ; crunch capture + MSX2 TH Table 2.20. No prefix collision with
+                ; any existing entry (EOF/ELSE/END/EXP are the only other "E..."
+                ; keywords and none is a prefix of "ERASE"; match_kw compares
+                ; the FULL keyword, so order is free regardless -- same as
+                ; every entry above).
+                db      5,"ERASE",1,ERASE_TOKEN                 ; $A5
     ENDIF
                 db      0

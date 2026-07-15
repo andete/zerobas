@@ -915,8 +915,16 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       [`docs/subrom-tenant-playbook.md`](docs/subrom-tenant-playbook.md)). Gate `make
       array-acceptance` (23 cases + adversarial regression); spec
       [`docs/spec-basic-arrays.md`](docs/spec-basic-arrays.md). `OPTION BASE` dropped
-      (unsupported on MSX1). **Remaining slices:** 2 = `ERASE`; 3 = string arrays; 4 =
-      relocate scalars/strings into the contiguous model + STRMAX→255.
+      (unsupported on MSX1). **Slice 2 = `ERASE` DONE 2026-07-15** (`ERASE
+      A[,B%...]`; frees arrays → revert-to-undeclared + clean re-`DIM`; two-tier
+      error surface — `syntax error` for malformed/paren forms, `Illegal function
+      call` for an undeclared name; type-scoped; tenant `op=ERASE` compacts the
+      descriptor list). Gate now `array-acceptance` **52 cases**; spec
+      [`docs/spec-basic-arrays-slice2-erase.md`](docs/spec-basic-arrays-slice2-erase.md).
+      Adversarial review caught F1 (`ERASE A$` freed the numeric `A` — `$` key
+      collides with default-double at type 8; fixed via `var_str_type`→type-1).
+      **Remaining slices:** 3 = string arrays; 4 = relocate scalars/strings into
+      the contiguous model + STRMAX→255.
 - [ ] **`^`** and the math functions
       `ABS SGN INT SQR SIN COS TAN ATN LOG EXP RND FIX CINT CSNG CDBL`
 - [ ] **I/O** — ✅ console `INPUT` + `LINE INPUT` (DONE 2026-07-11, see the slice log
@@ -935,7 +943,8 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       in place, and re-enter it. Needs cursor-key handling and VDP line-readback.
       Our `repl.asm` is a deliberate simplification; full replacement is Phase 3.
 - [ ] **Editor / program management** — full `LIST`, `DELETE`, `RENUM`, `AUTO`,
-      `TRON`/`TROFF`, `SWAP`, `WAIT`, `ERASE`, `FRE`, full `CLEAR` semantics
+      `TRON`/`TROFF`, `SWAP`, `WAIT`, `FRE`, full `CLEAR` semantics (`ERASE`
+      shipped 2026-07-15 with the arrays arc, slice 2)
 
 ## Beyond — post-MSX1 axes (out of charter, far future)
 

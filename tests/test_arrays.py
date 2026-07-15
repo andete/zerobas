@@ -372,8 +372,119 @@ def run():
     print(f"{'PASS' if ok_autoh else 'FAIL'} ary_engine op=RESOLVE: H(7) "
           f"(undeclared) auto-dims cleanly (err={err3})")
 
+    # ==================================================================
+    # Case 7: ERASE (slice 2, docs/spec-basic-arrays-slice2-erase.md §4.2).
+    # aeng_erase (op=2): ary_find, then compact the descriptor list by
+    # sliding every following descriptor + the $0000 terminator down over
+    # the erased one (the moved terminator IS the fix-up -- no stored
+    # ARYEND). not-found -> ARY_ERR=2; type is part of the key. Descriptors
+    # are hand-built (descriptor_bytes) with a distinct 16-bit marker in
+    # element 0 so a surviving neighbour's DATA (not just its header) is
+    # asserted intact after the LDIR compaction.
+    # ==================================================================
+    def peek_w(mm, a):
+        b = mm.peek(a, 2)
+        return b[0] | (b[1] << 8)
+
+    def build_three(mm):
+        """Three back-to-back int arrays A/B/C (each 1-D bound0=2, type 2),
+        distinct element-0 markers. Returns the common stride."""
+        dA, st = descriptor_bytes(ord("A"), 0, 2, [2])
+        dB, _ = descriptor_bytes(ord("B"), 0, 2, [2])
+        dC, _ = descriptor_bytes(ord("C"), 0, 2, [2])
+        mm.poke(ARYBASE + 0 * st, dA)
+        mm.poke(ARYBASE + 1 * st, dB)
+        mm.poke(ARYBASE + 2 * st, dC)
+        mm.poke(ARYBASE + 3 * st, b"\x00\x00")   # terminator
+        mm.poke_w(ARYBASE + 0 * st + 8, 0xAAAA)   # A.elem0 (data starts at desc+8)
+        mm.poke_w(ARYBASE + 1 * st + 8, 0xBBBB)   # B.elem0
+        mm.poke_w(ARYBASE + 2 * st + 8, 0xCCCC)   # C.elem0
+        return st
+
+    def erase(mm, name0, dtype):
+        mm.poke_w(s["ARY_KEY"], (name0 << 8))     # name1 = 0
+        mm.poke(s["ARY_TYPE"], dtype)
+        mm.poke(s["ARY_OP"], 2)                   # op = ERASE
+        mm.call("ary_engine")
+        return mm.peek(s["ARY_ERR"])[0]
+
+    # -- erase the MIDDLE of three: A stays, C slides down over B --------
+    m = make_machine()
+    st = build_three(m)
+    err = erase(m, ord("B"), 2)
+    a_ok = (m.peek(ARYBASE)[0] == ord("A")) and (peek_w(m, ARYBASE + 8) == 0xAAAA)
+    c_slid = (m.peek(ARYBASE + st)[0] == ord("C")) and (peek_w(m, ARYBASE + st + 8) == 0xCCCC)
+    term_ok = peek_w(m, ARYBASE + 2 * st) == 0    # terminator moved down by one stride
+    ok = (err == 0) and a_ok and c_slid and term_ok
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'} ERASE middle: B freed, A intact@base, C+data "
+          f"slid down, term relocated (err={err}, A={a_ok}, C={c_slid}, term={term_ok})")
+
+    # -- erase the LAST of three: A,B stay, terminator lands after B -----
+    m = make_machine()
+    st = build_three(m)
+    err = erase(m, ord("C"), 2)
+    ab_ok = (m.peek(ARYBASE)[0] == ord("A") and peek_w(m, ARYBASE + 8) == 0xAAAA
+             and m.peek(ARYBASE + st)[0] == ord("B") and peek_w(m, ARYBASE + st + 8) == 0xBBBB)
+    term_ok = peek_w(m, ARYBASE + 2 * st) == 0
+    ok = (err == 0) and ab_ok and term_ok
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'} ERASE last: C freed, A/B+data intact, term "
+          f"after B (err={err}, AB={ab_ok}, term={term_ok})")
+
+    # -- erase the ONLY array: terminator lands at ARYBASE (no-arrays) ---
+    m = make_machine()
+    dA, st = descriptor_bytes(ord("A"), 0, 2, [2])
+    m.poke(ARYBASE, dA)
+    m.poke(ARYBASE + st, b"\x00\x00")
+    err = erase(m, ord("A"), 2)
+    ok = (err == 0) and (peek_w(m, ARYBASE) == 0)  # ARYBASE now the $0000 sentinel
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'} ERASE only: A freed, terminator at ARYBASE "
+          f"= no-arrays state (err={err}, term@base={peek_w(m, ARYBASE):#06x})")
+
+    # -- not-found -> ARY_ERR=2, descriptors untouched ------------------
+    m = make_machine()
+    st = build_three(m)
+    err = erase(m, ord("Z"), 2)
+    untouched = (m.peek(ARYBASE)[0] == ord("A")
+                 and m.peek(ARYBASE + 2 * st)[0] == ord("C")
+                 and peek_w(m, ARYBASE + 3 * st) == 0)
+    ok = (err == 2) and untouched
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'} ERASE absent 'Z' -> ARY_ERR=2, list untouched "
+          f"(err={err}, untouched={untouched})")
+
+    # -- type-scoped key: ERASE A as type 8 does NOT match the int 'A' --
+    m = make_machine()
+    st = build_three(m)           # A/B/C are all type 2 (int)
+    err = erase(m, ord("A"), 8)   # ask to erase the DOUBLE 'A' (distinct key)
+    a_intact = (m.peek(ARYBASE)[0] == ord("A") and m.peek(ARYBASE + 2)[0] == 2
+                and peek_w(m, ARYBASE + 8) == 0xAAAA)
+    ok = (err == 2) and a_intact
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'} ERASE type-scoped: A#(double) misses A%(int) "
+          f"-> ARY_ERR=2, int A intact (err={err}, intact={a_intact})")
+
+    # -- F1 regression: a STRING-typed key (type 1) never matches a -----
+    # numeric descriptor. A default bare `A` is stored as type 8 (double);
+    # ex_erase forces a `$` name to type 1, so ary_find must NOT match --
+    # else `ERASE A$` would destructively free the numeric `A` (the F1 bug).
+    m = make_machine()
+    dA, st = descriptor_bytes(ord("A"), 0, 8, [2])   # 'A' as DOUBLE (default bare)
+    m.poke(ARYBASE, dA)
+    m.poke(ARYBASE + st, b"\x00\x00")
+    m.poke_w(ARYBASE + 8, 0x1234)                    # A.elem0 marker (double field low word)
+    err = erase(m, ord("A"), 1)                      # string-typed key (type 1)
+    a_intact = (m.peek(ARYBASE)[0] == ord("A") and m.peek(ARYBASE + 2)[0] == 8
+                and peek_w(m, ARYBASE + 8) == 0x1234)
+    ok = (err == 2) and a_intact
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'} ERASE F1: string key (type 1) misses numeric "
+          f"A (type 8) -> ARY_ERR=2, A intact (err={err}, intact={a_intact})")
+
     print()
-    print("ALL PASS -- arrays slice-1 split (sub/arrays.asm)" if not fails
+    print("ALL PASS -- arrays slice-1+2 split (sub/arrays.asm)" if not fails
           else f"{fails} CASE(S) FAILED")
     return fails
 

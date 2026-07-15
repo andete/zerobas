@@ -325,6 +325,123 @@ ed_abort:
                 pop     hl                  ; discard [CURSOR] (balance the stack)
                 jp      fp_runtime_error
 
+; --- ex_erase: ERASE statement. HL enters on the ERASE token. --------------
+; docs/spec-basic-arrays-slice2-erase.md §4.1. For each comma-separated bare
+; NAME (no bound/subscript list): detect string-ness (var_str_type) then parse
+; the name+type via var_name_key -- shared identity derivation, the slice-1
+; lesson: any drift in (name0,name1,type) desyncs ary_find -- then dispatch to
+; the tenant (op=ERASE) to free it. A STRING name (explicit `$` OR a DEFSTR-
+; defaulted bare name) is FORCED to type=1 so ary_find can never match a
+; numeric array; unlike ex_dim, a `$` name is NOT rejected up front -- it just
+; falls through to Tier-B IFC (reference-faithful, since string arrays don't
+; exist until slice 3, §1). (F1 fix 2026-07-15: keying on (VARTYPE) alone was
+; WRONG -- var_name_key's vnk_dollar hardcodes VARTYPE=8 for a `$` suffix,
+; identical to a default DOUBLE, so `ERASE A$` matched+freed the numeric `A`.
+; The type-1 force below is what makes the string key distinct; see the inline
+; comment at the var_str_type call.) Two-tier error split (§3):
+;   Tier A `stmt_error` (lowercase house-style "syntax error", NOT the
+;     reference's capitalised "Syntax error" -- same documented deviation as
+;     every other zerobas syntax error) -- a malformed token where a NAME is
+;     expected (bare ERASE / leading,trailing,double comma / a digit), or a
+;     `(` right after a name (ERASE A() / ERASE A(1), which tokenise fine but
+;     are a subscript/paren FORM error at statement execution).
+;   Tier B `fp_runtime_error` (ARY_ERR=2 -> ary_errmap -> FPERR=8, the
+;     reference-verbatim capitalised "Illegal function call", arrays' own
+;     string above) -- a well-formed bare name that ary_find can't match (never
+;     dimmed/auto-dimmed, already erased, or a type mismatch -- type is part
+;     of array identity, slice-1 §4.1 #7).
+; Left-to-right, first-bad-name-wins (§3): a name already processed before an
+; abort stays erased (only observable via ON ERROR, out of scope, matches the
+; oracle's own `erase.partial.A.first`/`erase.badname.first` captures).
+;
+; Simpler than ex_dim in one way (no bound list to parse, so no
+; ary_parse_subs_kt call) but the SAME in another: ary_engine_call still needs
+; the cursor parked on the stack across it, NOT left in HL. subrom_call's own
+; "HL/DE pass through" note (basic/subromcall.asm) means the caller's HL rides
+; INTO the sub-ROM tenant and comes back holding whatever the tenant (which
+; clobbers everything, tenant convention) last left there -- never restored.
+; ex_dim/ex_let_arr/ev_f_arr all already park the cursor on the stack for
+; exactly this reason (via ary_parse_subs_kt's own [CURSOR] push); ex_erase has
+; no subscript parse to piggyback that push on, so it pushes explicitly right
+; around this call instead (adversarial-differential catch, 2026-07-15: a
+; literal `ERASE A` on a previously-DIM'd array corrupted the cursor and threw
+; a phantom "syntax error" on the FOLLOWING statement -- the not-found/Tier-B
+; path never showed it, because fp_runtime_error abandons the cursor anyway).
+ex_erase:
+                inc     hl                  ; past the ERASE token
+ee_lp:
+                call    skip_spaces         ; A = (hl), the first non-space char
+                call    is_letter           ; CF set = letter. This ONE peek covers
+                                            ; every Tier-A "no name where a name is
+                                            ; expected" case: bare ERASE (EOL), a
+                                            ; leading/trailing/double comma (','),
+                                            ; and a numeric argument (digit) --
+                                            ; none of those set CF.
+                jp      nc,stmt_error
+                call    var_str_type        ; A=1 / CF set iff this is a STRING name --
+                                            ; the unifying detector for BOTH an explicit
+                                            ; `$` suffix AND a DEFSTR-defaulted bare name
+                                            ; (basic/vars.asm). HL is NOT advanced. Needed
+                                            ; because var_name_key's own (VARTYPE) can't
+                                            ; distinguish a `$` name from a default DOUBLE:
+                                            ; vnk_dollar hardcodes VARTYPE=8 (== type 8,
+                                            ; double), so keying on (VARTYPE) alone would
+                                            ; make `ERASE A$` match+free the numeric `A`
+                                            ; (F1, 2026-07-15). Same var_str_type-first
+                                            ; idiom ex_dim/LET/PRINT use to pick the
+                                            ; string path before the real name advance.
+                push    af                  ; [STRFLAG] -- CF/A survive var_name_key
+                                            ; (which clobbers everything, incl. the flags
+                                            ; and var_str_type's own B/DE scratch)
+                call    var_name_key        ; BC=key, HL past name; (VARTYPE)=type
+                call    skip_spaces
+                ld      a,(hl)
+                cp      '('
+                jr      z,ee_synerr_pop     ; Tier A: 'ERASE A(' -- subscript/paren form
+                                            ; (ERASE A(1)/A()) is a syntax error, not a
+                                            ; lookup. Must POP [STRFLAG] first (below).
+                ld      (ARY_KEY),bc
+                pop     af                  ; recover string-ness (CF set iff string).
+                                            ; LD (below) doesn't touch flags, so CF
+                                            ; survives to the jr nc.
+                ld      a,(VARTYPE)         ; numeric default: type 2/4/8 as-is
+                jr      nc,ee_settype
+                ld      a,1                 ; STRING name -> force type=1: no numeric
+                                            ; array (2/4/8) can carry it, so ary_find
+                                            ; never matches -> Tier-B IFC. Reference-
+                                            ; faithful for slice 2 (string arrays don't
+                                            ; exist yet, §1 divergence): explicit `$`
+                                            ; AND DEFSTR-bare both land here uniformly.
+                                            ; Slice 3 makes string arrays real and this
+                                            ; key starts matching them.
+ee_settype:
+                ld      (ARY_TYPE),a
+                ld      a,2
+                ld      (ARY_OP),a          ; op = ERASE
+                push    hl                  ; [CURSOR] -- guard across ary_engine_call
+                                            ; (see the header comment above: the tenant
+                                            ; clobbers HL, so it cannot ride in a
+                                            ; register through this call)
+                call    ary_engine_call     ; -> Z ok / NZ: FPERR already mapped+set
+                                            ; (ARY_ERR=2 -> FPERR=8, Tier B)
+                pop     hl                  ; [CURSOR] restored either way (harmless on
+                                            ; the abort path too -- fp_runtime_error
+                                            ; never reads HL, just tidy stack balance)
+                jp      nz,fp_runtime_error
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jr      nz,ee_done
+                inc     hl
+                jr      ee_lp               ; next name
+ee_done:
+                jp      exec_stmt
+ee_synerr_pop:
+                pop     af                  ; discard [STRFLAG] (balance the stack) before
+                                            ; the Tier-A abort -- the '(' check is the one
+                                            ; exit that happens with [STRFLAG] still live
+                jp      stmt_error
+
 ; --- ary_store_write: HL=element address, A=type(2/4/8); DE valid iff the -
 ; current FACTYP==2, else FAC/FACTYP hold the RHS's float value (the SAME
 ; RHS contract var_store_fac's own tail uses). Coerces into `type` and
