@@ -446,9 +446,12 @@ fre_msgtab:
                                             ; expression; reuse stmt_error's own string
                 dw      err_subscript       ; 5: arrays slice-1 (§4.1 #3/#8): index out
                                             ; of range, or wrong dimension count
-                dw      err_mem             ; 6: program.asm's own "out of memory"
-                                            ; string (store_line's OOM), REUSED;
-                                            ; arrays slice-1: DIM/auto-dim OOM
+                dw      err_mem_arr         ; 6: arrays slice-1 DIM/auto-dim OOM --
+                                            ; the ONLY FPERR=6 setter (ary_errmap), so
+                                            ; it takes arrays' reference-verbatim
+                                            ; capitalised "Out of memory"
+                                            ; (basic/arrays.asm, low region); program's
+                                            ; own lowercase err_mem stays direct-print
                 dw      err_redim           ; 7: arrays slice-1 (§4.1 #4): a second DIM
                                             ; of a live array
                 dw      err_illegal_fn_arr  ; 8: arrays slice-1 (§4.1 #9): negative

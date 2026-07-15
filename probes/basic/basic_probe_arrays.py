@@ -47,6 +47,25 @@ CASES = [
     ("ordering.2x2",        "stored",
         ['DIM C(1,1):C(0,0)=1:C(1,0)=2:C(0,1)=3:C(1,1)=4',
          'PRINT"[";C(0,0);C(1,0);C(0,1);C(1,1);"]"'], "value"),
+    # --- variable-subscript regression class (slice-1 fix, 2026-07-15) -----
+    # Root causes guarded forever: (1) fac_to_int_strict clobbers HL on the
+    # float path only, so any VARIABLE (default double) subscript/bound
+    # trashed ary_parse_subs's cursor -> phantom "syntax error" while literal
+    # (int) subscripts sailed through; (2) the shared ARY_NIDX/ARY_IDX param
+    # block was written incrementally per subscript, so a NESTED array rvalue
+    # X(X(0)) re-entrantly clobbered the outer parse's partial count/values.
+    ("var.subscript",       "stored", ['DIM X(3):I=1:X(I)=5', 'PRINT"[";X(I);"]"'], "value"),
+    ("var.dim.bound",       "stored", ['N=4:DIM X(N):X(4)=7', 'PRINT"[";X(4);"]"'], "value"),
+    ("nested.subscript",    "stored", ['DIM X(3):X(0)=2:X(2)=9', 'PRINT"[";X(X(0));"]"'], "value"),
+    ("for.loop.fill",       "stored", ['DIM X(3):FOR I=0 TO 3:X(I)=I:NEXT', 'PRINT"[";X(3);"]"'], "value"),
+    # DIM-then-use at MAXDIM guards the aeng_dim key-write path (a clobbered
+    # ARY_KEY made every DIM'd descriptor invisible; small bounds silently
+    # fell through to auto-dim, 4-dim exposed it as a phantom auto-dim OOM).
+    ("dim.then.use.4d",     "stored", ['DIM C(1,1,1,1):C(1,1,1,1)=6', 'PRINT"[";C(1,1,1,1);"]"'], "value"),
+    # error-surface casing: DIM OOM is reference-verbatim "Out of memory";
+    # DIM with a negative bound is "Illegal function call" (tenant-side check)
+    ("dim.oom.casing",      "direct", ['DIM X(5000):PRINT"[x]"'],  "err"),
+    ("dim.neg.illegal",     "direct", ['DIM E(-1):PRINT"[x]"'],    "err"),
 ]
 
 

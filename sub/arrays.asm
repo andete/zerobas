@@ -99,6 +99,30 @@ ary_engine:
 ; touched it) -> ARY_ERR=3 (Redimensioned array, §4.1 #4); else ary_alloc
 ; with the parsed bounds.
 aeng_dim:
+                ; negative-bound check (§4.1 #9 disposition applied to the DIM
+                ; bound list): the reference raises Illegal function call for
+                ; DIM A(-1) -- the same check ary_resolve's aryr_neg does per
+                ; subscript. Without it, bound=-1 ($FFFF) reaches
+                ; ary_count_elems as bound+1 = 0 and silently allocates an
+                ; empty array (found in the 2026-07-15 adversarial
+                ; differential, zb printed the follow-up instead of erroring).
+                ; Runs BEFORE the ARY_KEY load: it counts the loop in B, and a
+                ; check placed between ary_find and ary_alloc would clobber the
+                ; key's name0 -- every DIM'd descriptor got key $0000, i.e.
+                ; read back as the TERMINATOR, so lookups fell through to
+                ; auto-dim (caught live, 2026-07-15: DIM A(1,1,1,1) then
+                ; A(1,1,1,1)=6 -> phantom auto-dim OOM).
+                ld      a,(ARY_NIDX)
+                ld      b,a                 ; B = ndim (>=1: the parser aborts an
+                                            ; empty list before the engine call)
+                ld      ix,ARY_IDX
+aeng_dim_neglp:
+                ld      a,(ix+1)            ; bound_k high byte
+                and     $80
+                jr      nz,aeng_dim_neg
+                inc     ix
+                inc     ix
+                djnz    aeng_dim_neglp
                 ld      bc,(ARY_KEY)
                 ld      a,(ARY_TYPE)
                 call    ary_find            ; BC,A -> CF/HL (BC preserved, but A is
@@ -116,6 +140,10 @@ aeng_dim:
                 jr      nc,aeng_dim_err     ; A already holds the OOM err code (4)
                 xor     a
                 ld      (ARY_ERR),a         ; ok
+                ret
+aeng_dim_neg:
+                ld      a,2                 ; Illegal function call (negative bound)
+                ld      (ARY_ERR),a
                 ret
 aeng_dim_redim:
                 ld      a,3                 ; Redimensioned array

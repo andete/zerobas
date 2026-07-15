@@ -53,6 +53,17 @@ err_redim:
                 db      "Redimensioned array",13,10,0
 err_illegal_fn_arr:
                 db      "Illegal function call",13,10,0
+err_mem_arr:                                ; FPERR=6 (fre_msgtab entry 6) is set ONLY
+                db      "Out of memory",13,10,0
+                                            ; by ary_errmap (DIM/auto-dim OOM), so the
+                                            ; whole FPERR=6 surface takes the reference-
+                                            ; verbatim capitalised text (§9.5, same rule
+                                            ; as err_subscript above; verified: VG-8020
+                                            ; DIM X(5000) -> "Out of memory",
+                                            ; 2026-07-15). program.asm's own lowercase
+                                            ; err_mem (store_line's crunch-time OOM,
+                                            ; printed directly, never via FPERR) is
+                                            ; untouched.
 
 ; --- fre_abort_low: the PRDEST-zero + fresh-line + print tail of ------------
 ; fp_runtime_error/type_mismatch_error (interp.asm page 1 jumps here; the
@@ -106,57 +117,105 @@ ary_reset:
 ; Any operand error inside a subscript expression itself (overflow/div0/
 ; illegal/...) leaves FPERR already set by eval()/fac_to_int_strict — not
 ; re-checked mid-parse here (first-error-wins, deferred to the statement
-; boundary, same discipline as D-F2-1/D-F2-4 elsewhere). Unchanged from the
-; WIP other than the ARY_NIDX/ARY_IDX field addresses (basic/sysvars.inc
-; §10.2). Clobbers A,B,C,D,E,H,L.
+; boundary, same discipline as D-F2-1/D-F2-4 elsewhere).
+;
+; RE-ENTRANCY (slice-1 fix 2026-07-15): a subscript expression can itself
+; contain an array rvalue — X(X(0)) — whose inner ev_f_arr runs THIS parse
+; again, on the same global ARY_NIDX/ARY_IDX block. The WIP wrote the block
+; incrementally per subscript, so the inner parse clobbered the outer's
+; partial count/values ("Subscript out of range" on every nested subscript).
+; Now the values are collected on the CPU STACK during the loop — each
+; nesting level gets its own stack region for free — and the block is
+; written ATOMICALLY only at the close paren, after the last eval() has
+; returned: any inner parse's whole write+resolve+read sequence completes
+; strictly before (never interleaved with) the outer's single block write.
+; Loop stack shape between evals: [COUNT(B), v_{n-1} .. v_0, RET] — the
+; count word rides ON TOP so eval's own balanced pushes never disturb it.
+; Clobbers A,B,C,D,E,H,L + IX (IX is free here: every caller's next step is
+; ary_engine_call, which clobbers IX anyway).
 ary_parse_subs:
                 inc     hl                  ; past '('
-                xor     a
-                ld      (ARY_NIDX),a
+                ld      b,0
+                push    bc                  ; [COUNT] = 0 (C = don't-care)
 apsub_lp:
                 call    skip_spaces
                 call    eval                ; DE=value, HL=cursor advanced
+                push    hl                  ; guard the cursor: fac_to_int_strict
+                                            ; CLOBBERS HL on the float path (FACTYP
+                                            ; 4/8 -> domain_convert_core) while the
+                                            ; FACTYP=2 path returns early with HL
+                                            ; intact -- exactly why literal
+                                            ; subscripts worked and variable ones
+                                            ; (default DOUBLE) hit the ','/')' check
+                                            ; with a trashed cursor -> phantom
+                                            ; "syntax error" (slice-1 fix
+                                            ; 2026-07-15). Same push/pop idiom as
+                                            ; eval_addr (float-arith.asm).
                 call    fac_to_int_strict   ; DE=strict int16 (FPERR=1 on overflow)
-                ld      a,(ARY_NIDX)
+                pop     hl                  ; cursor restored
+                pop     bc                  ; B = count so far
+                ld      a,b
                 cp      MAXDIM
                 jr      nc,apsub_toomany
-                push    hl                  ; guard cursor across the ARY_IDX write
-                ld      hl,ARY_IDX
-                ld      c,a
-                ld      b,0
-                add     hl,bc
-                add     hl,bc               ; HL = ARY_IDX + 2*a
-                ld      (hl),e
-                inc     hl
-                ld      (hl),d
-                pop     hl                  ; cursor restored
-                ld      a,(ARY_NIDX)
-                inc     a
-                ld      (ARY_NIDX),a
+                push    de                  ; [VALUE] collected on the stack
+                inc     b
+                push    bc                  ; [COUNT] back on top
                 call    skip_spaces
                 ld      a,(hl)
                 cp      ','
                 jr      z,apsub_comma
                 cp      ')'
                 jr      z,apsub_close
-                jp      ev_f_empty          ; malformed list -> deferred syntax error
+                pop     bc                  ; malformed list: unwind [COUNT]+values
+apsub_mf_drop:
+                pop     de                  ; (B>=1 here — a value was just pushed)
+                djnz    apsub_mf_drop
+                jp      ev_f_empty          ; -> deferred syntax error
 apsub_comma:
                 inc     hl
                 jr      apsub_lp
 apsub_close:
                 inc     hl                  ; past ')'
+                push    hl
+                pop     ix                  ; IX = cursor (parked across the pops)
+                pop     bc                  ; B = n (1..MAXDIM)
+                ld      a,b
+                ld      (ARY_NIDX),a        ; the block write happens ONLY here,
+                add     a,a                 ; after every subscript eval is done
+                ld      hl,ARY_IDX
+                add     a,l
+                ld      l,a
+                adc     a,h
+                sub     l
+                ld      h,a                 ; HL = ARY_IDX + 2n (values pop in
+                                            ; reverse: last subscript first)
+apsub_wr_lp:
+                pop     de
+                dec     hl
+                ld      (hl),d
+                dec     hl
+                ld      (hl),e
+                djnz    apsub_wr_lp
+                push    ix
+                pop     hl                  ; HL = cursor (past ')')
                 ret
-apsub_toomany:
+apsub_toomany:                              ; B = MAXDIM values already on the stack
                 ld      a,5
                 ld      (FPERR),a
+apsub_tm_drop:
+                pop     de                  ; unwind the collected values (B=MAXDIM
+                djnz    apsub_tm_drop       ; here, never 0)
 apsub_skip_lp:
                 ld      a,(hl)              ; best-effort: skip to ')' or end of line so
                 or      a                   ; the cursor lands somewhere sane (the
                 ret     z                   ; statement aborts via FPERR either way)
                 cp      ')'
-                jr      z,apsub_close
+                jr      z,apsub_skip_done
                 inc     hl
                 jr      apsub_skip_lp
+apsub_skip_done:
+                inc     hl                  ; past ')'
+                ret
 
 ; --- ary_parse_subs_kt: BC=key, A=type, HL=cursor at '(' -> BC=key, A=type --
 ; (both RESTORED, surviving ary_parse_subs's own eval()-clobbering calls),
@@ -215,7 +274,10 @@ ary_errmap:                                 ; ARY_ERR 1..4 -> FPERR (§4.1 dispo
                                             ;   shared lowercase FPERR=3 — see the
                                             ;   err_subscript block comment above)
                 db      7                   ; 3 Redimensioned  -> 7 Redimensioned array
-                db      6                   ; 4 OOM             -> 6 out of memory
+                db      6                   ; 4 OOM             -> 6 Out of memory
+                                            ;   (arrays' OWN capitalised string too --
+                                            ;   err_mem_arr above; FPERR=6 has no other
+                                            ;   setter)
 
 ; --- ex_dim: DIM statement. HL enters on the DIM token. ---------------------
 ; For each comma-separated NAME(b0[,b1...]): reject a `$` string-array name
