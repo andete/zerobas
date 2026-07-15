@@ -555,6 +555,16 @@ ev_f_var:
                 push    ix
                 pop     hl                  ; HL = cursor
                 call    var_name_key        ; BC = key, HL past the (multi-char) name
+    IF ROM_BASE < $4000
+                ld      a,(hl)
+                cp      '('
+                jp      z,ev_f_arr          ; array-element rvalue (arrays slice-1,
+                                            ; docs/spec-basic-arrays.md §9.4/§10: ev_f
+                                            ; reaches ev_f_var only for a plain letter,
+                                            ; never a function token, so a '(' right
+                                            ; after a plain name is unambiguously a
+                                            ; subscript, not a function call)
+    ENDIF
                 push    hl
                 pop     ix                  ; IX = advanced cursor
     IF ROM_BASE < $4000

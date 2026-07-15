@@ -71,6 +71,9 @@ clr_himem:
 clr_done:
                 push    hl                  ; clear_vars clobbers HL; guard the
                 call    clear_vars          ; statement cursor across the wipe
+                call    ary_reset           ; arrays slice-1 (§9.6): CLEAR wipes any
+                                            ; live arrays too; PRGEND is already valid
+                                            ; here (a program may already exist)
                 pop     hl
                 jp      exec_stmt           ; HL = cursor; run the next statement
     ELSE

@@ -64,6 +64,20 @@ ROM_BASE:       equ     $4000
 ; zerobas-sub discovery recorder + dispatch helper (subrom S2b): lives in the
 ; page-0 low region freed by evicting the float PRINT formatter (page 1 is full).
                 include "basic/subromcall.asm"
+; Arrays slice-1 (docs/spec-basic-arrays.md §10, SPLIT design): the main-ROM
+; glue half — DIM/subscript parsing (needs `eval`) and the FAC<->element
+; copy/coercion (needs var_store_fac's value-field codec). The engine itself
+; (descriptor walk, offset arithmetic, alloc, bound checks) is a sub-ROM
+; page-0 tenant (sub/arrays.asm, SUBROM_IDX_ARY) — moved there because the
+; monolithic design overran this low region by ~284 B. Wholly repack-only
+; (every byte inside `IF ROM_BASE < $4000`), so — like str-engine/input/
+; float/float-arith/subromcall above — it lands in the reclaimed low region
+; rather than page 1 (page 1 is otherwise full to $7FFF). References
+; vars.asm/expr.asm/float-arith.asm/float.asm/interp.asm labels defined
+; LATER in this same assembly (var_name_key, eval, stmt_error, ...) —
+; forward references across `include`s are fine for a whole-file multi-pass
+; assembler like pasmo; only ORG-based layout needs include order.
+                include "basic/arrays.asm"
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean

@@ -213,6 +213,8 @@ exec_stmt:
     IF ROM_BASE < $4000
                 cp      PEEK_PREFIX         ; $FF -> a function token starting a statement;
                 jp      z,ex_mid_stmt       ; only MID$ ($FF $83) is valid here (str-engine.asm)
+                cp      DIM_TOKEN           ; DIM A(n)[,...]  (arrays slice-1, arrays.asm)
+                jp      z,ex_dim
     ENDIF
                 call    is_letter           ; bare letter -> assignment
                 jr      c,ex_let
@@ -279,6 +281,11 @@ ex_let:
                 call    var_name_key        ; BC = key, HL past the name; (VARTYPE) =
                                             ; the resolved type (F3, repack only)
     IF ROM_BASE < $4000
+                ld      a,(hl)
+                cp      '('
+                jp      z,ex_let_arr        ; array-element lvalue (arrays slice-1,
+                                            ; docs/spec-basic-arrays.md §9.4/§10,
+                                            ; basic/arrays.asm)
                 ld      a,(VARTYPE)         ; F3: latch the LHS type NOW -- eval below
                 ld      (LHS_VARTYPE),a     ; re-runs var_name_key for every RHS variable
                                             ; factor, clobbering the global (VARTYPE)
@@ -400,36 +407,58 @@ err_type_mismatch:
 ; zero" is new. NOT the reference's verbatim "?Overflow"/"?Division by zero
 ; Error" text (divergence, like D-2).
     IF ROM_BASE < $4000
+; Message dispatch is a jump TABLE indexed by FPERR (1..7), not a compare
+; chain: every caller of fp_runtime_error has already confirmed FPERR is
+; nonzero (the D-F2-1 "check right after eval()" pattern), so 1..7 is the
+; only domain this ever sees — no "0/default" case is needed. This is
+; smaller than 6 "cp n/jr z" pairs + 6 separate label bodies (arrays
+; slice-1's own §4.1 #3/#4/#8/#9/OOM dispositions pushed the chain to 7
+; entries, the point where a table pays for itself in ROM bytes).
 fp_runtime_error:
-                ld      hl,err_overflow     ; program.asm (dl_overflow); shared wording
                 ld      a,(FPERR)
-                cp      2
-                jr      z,fre_divzero
-                cp      3
-                jr      z,fre_illegal
-                cp      4
-                jr      z,fre_syntax
-                jr      fre_abort
-fre_divzero:
-                ld      hl,err_fp_divzero
-                jr      fre_abort
-fre_syntax:
-                ld      hl,err_syntax       ; D-F2-3: empty parenthesised/argument
-                                            ; expression (SQR()/()/(5+)/(,)); reuse
-                                            ; stmt_error's own lowercase "syntax error"
-                                            ; string (spec-basic-empty-expr-syntax-error.md)
-                jr      fre_abort
-fre_illegal:
-                ld      hl,err_illegal_fn   ; math pack slice 1b: SQR(x<0) (spec
-                                            ; -basic-math-pack.md §10.4/§10.5)
-fre_abort:
+                dec     a                  ; 0-based index (1..7 -> 0..6)
+                add     a,a                ; *2 (word table)
+                ld      e,a
+                ld      d,0
+                ld      hl,fre_msgtab
+                add     hl,de
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)
+                ex      de,hl              ; HL = the message string
+fre_abort:                                 ; shared PRDEST-zero+print+ret tail
+                                            ; (type_mismatch_error jumps in here too)
                 xor     a
                 ld      (PRDEST),a
                 jp      print_string
+fre_msgtab:
+                dw      err_overflow        ; 1: program.asm's own string (dl_overflow),
+                                            ; REUSED byte-for-byte
+                dw      err_fp_divzero      ; 2
+                dw      err_illegal_fn      ; 3: math pack slice 1b SQR(x<0); arrays
+                                            ; slice-1 reuses this SAME disposition for
+                                            ; a negative subscript (§4.1 #9)
+                dw      err_syntax          ; 4: D-F2-3 empty parenthesised/argument
+                                            ; expression; reuse stmt_error's own string
+                dw      err_subscript       ; 5: arrays slice-1 (§4.1 #3/#8): index out
+                                            ; of range, or wrong dimension count
+                dw      err_mem             ; 6: program.asm's own "out of memory"
+                                            ; string (store_line's OOM), REUSED;
+                                            ; arrays slice-1: DIM/auto-dim OOM
+                dw      err_redim           ; 7: arrays slice-1 (§4.1 #4): a second DIM
+                                            ; of a live array
 err_fp_divzero:
                 db      "division by zero",13,10,0
 err_illegal_fn:
                 db      "illegal function call",13,10,0
+; err_subscript/err_redim (arrays slice-1, §4.1 #3/#4/#8) live in
+; basic/arrays.asm (the low region) instead of here: page 1 is nearly full
+; (~30 B free pre-slice-1), and these two strings (~49 B) do not need to be
+; page-1 resident — only the fre_msgtab POINTER above does (a plain absolute
+; address, same cost regardless of which region the bytes it points at live
+; in). Every other new page-1 byte this slice adds is the handful of
+; unavoidable dispatch-site instructions (the DIM/`(`-peek checks) that must
+; live where exec_stmt/ex_let/ev_f_var already do.
 
 ; --- check_expr_errors: shared TMISMATCH+FPERR post-eval() check for ------
 ; drivers that need no extra stack cleanup before erroring (ex_if, exp_num

@@ -268,5 +268,12 @@ kwtable:
                 ; existing entry (match_kw compares the FULL keyword, so
                 ; order is free regardless -- same as every entry above).
                 db      3,"RND",2,PEEK_PREFIX,RND_TOKEN         ; $FF $88
+                ; --- arrays slice-1 (repack build only) -----------------------
+                ; docs/spec-basic-arrays.md §5. DIM: single-byte STATEMENT token
+                ; ($86, NOT $FF-prefixed), black-box VG-8020 crunch capture +
+                ; MSX2 TH Table 2.20. No prefix collision with any existing
+                ; entry (match_kw compares the FULL keyword, so order is free
+                ; regardless -- same as every entry above).
+                db      3,"DIM",1,DIM_TOKEN                     ; $86
     ENDIF
                 db      0
