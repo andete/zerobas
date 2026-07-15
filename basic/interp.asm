@@ -407,16 +407,16 @@ err_type_mismatch:
 ; zero" is new. NOT the reference's verbatim "?Overflow"/"?Division by zero
 ; Error" text (divergence, like D-2).
     IF ROM_BASE < $4000
-; Message dispatch is a jump TABLE indexed by FPERR (1..7), not a compare
+; Message dispatch is a jump TABLE indexed by FPERR (1..8), not a compare
 ; chain: every caller of fp_runtime_error has already confirmed FPERR is
-; nonzero (the D-F2-1 "check right after eval()" pattern), so 1..7 is the
+; nonzero (the D-F2-1 "check right after eval()" pattern), so 1..8 is the
 ; only domain this ever sees — no "0/default" case is needed. This is
 ; smaller than 6 "cp n/jr z" pairs + 6 separate label bodies (arrays
 ; slice-1's own §4.1 #3/#4/#8/#9/OOM dispositions pushed the chain to 7
 ; entries, the point where a table pays for itself in ROM bytes).
 fp_runtime_error:
                 ld      a,(FPERR)
-                dec     a                  ; 0-based index (1..7 -> 0..6)
+                dec     a                  ; 0-based index (1..8 -> 0..7)
                 add     a,a                ; *2 (word table)
                 ld      e,a
                 ld      d,0
@@ -426,11 +426,15 @@ fp_runtime_error:
                 inc     hl
                 ld      d,(hl)
                 ex      de,hl              ; HL = the message string
-fre_abort:                                 ; shared PRDEST-zero+print+ret tail
-                                            ; (type_mismatch_error jumps in here too)
-                xor     a
-                ld      (PRDEST),a
-                jp      print_string
+fre_abort:                                 ; shared PRDEST-zero+fresh-line+print tail
+                                            ; (type_mismatch_error jumps in here too).
+                                            ; Body = fre_abort_low (basic/arrays.asm,
+                                            ; low region -- page 1 keeps only this jp):
+                                            ; zero PRDEST, CRLF if the cursor is
+                                            ; mid-line (the reference starts every
+                                            ; runtime error message at column 0), then
+                                            ; print_string.
+                jp      fre_abort_low
 fre_msgtab:
                 dw      err_overflow        ; 1: program.asm's own string (dl_overflow),
                                             ; REUSED byte-for-byte
@@ -447,6 +451,12 @@ fre_msgtab:
                                             ; arrays slice-1: DIM/auto-dim OOM
                 dw      err_redim           ; 7: arrays slice-1 (§4.1 #4): a second DIM
                                             ; of a live array
+                dw      err_illegal_fn_arr  ; 8: arrays slice-1 (§4.1 #9): negative
+                                            ; subscript -- arrays' OWN reference-verbatim
+                                            ; capitalised "Illegal function call"
+                                            ; (basic/arrays.asm; §9.5 pins the array
+                                            ; error surface oracle-exact, unlike the
+                                            ; lowercase shared FPERR=3 SQR/LOG keep)
 err_fp_divzero:
                 db      "division by zero",13,10,0
 err_illegal_fn:

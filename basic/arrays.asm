@@ -38,10 +38,47 @@
 ; nearly full (~30 B free pre-slice-1) and these ~49 B do not need to be
 ; page-1 resident — only the table's own pointer word does, and an absolute
 ; address costs the same regardless of which region it targets.
+; Wording: reference-VERBATIM capitalised text ("Subscript out of range" /
+; "Redimensioned array" / "Illegal function call"), NOT the lowercase house
+; style of the D-2/D-F2-1 messages — spec §9.5 pins the array error surface
+; "exact message text ... oracle-locked", and the §9.7 differential gate
+; compares the screen tail against the VG-8020 byte-for-byte. The lowercase
+; deviation stays confined to the pre-existing shared messages (overflow /
+; division by zero / the shared FPERR=3 illegal-function-call that SQR/LOG
+; still raise); the negative-subscript case therefore gets its OWN FPERR
+; code (8) + capitalised string below instead of reusing FPERR=3.
 err_subscript:
-                db      "subscript out of range",13,10,0
+                db      "Subscript out of range",13,10,0
 err_redim:
-                db      "redimensioned array",13,10,0
+                db      "Redimensioned array",13,10,0
+err_illegal_fn_arr:
+                db      "Illegal function call",13,10,0
+
+; --- fre_abort_low: the PRDEST-zero + fresh-line + print tail of ------------
+; fp_runtime_error/type_mismatch_error (interp.asm page 1 jumps here; the
+; body lives in the low region to keep page 1 shrinking, not growing). The
+; reference starts every runtime error message at column 0 — if the aborted
+; statement left the cursor mid-line (e.g. `PRINT"[";B(-1)` printed the `[`),
+; it emits a CRLF first; at column 0 it prints no blank line. Oracle: the
+; §9.7 differential tails ('[' then the message on its OWN row). CSRX is the
+; 1-based cursor column (C-BIOS sysvar, same source print_comma_zone uses).
+; HL = message string; pchar preserves all registers.
+fre_abort_low:
+                xor     a
+                ld      (PRDEST),a          ; error text always goes to the screen
+                ld      a,(CSRX)
+                cp      2                   ; CSRX is 1-BASED: 1 = column 0. CF for
+                                            ; 0 too -- CSRX=0 never occurs on real
+                                            ; hardware, but the host unit-test
+                                            ; harness (tests/msxtest.py) runs with
+                                            ; zeroed RAM and no screen, and must not
+                                            ; grow a phantom leading CRLF there.
+                jp      c,print_string      ; at line start -> no fresh-line CRLF
+                ld      a,13
+                call    pchar
+                ld      a,10
+                call    pchar
+                jp      print_string
 
 ; --- ary_reset: write the "no arrays" sentinel at the current ARYBASE ------
 ; (= PRGEND+2). Called whenever the program area may have moved or variables
@@ -123,11 +160,17 @@ apsub_skip_lp:
 
 ; --- ary_parse_subs_kt: BC=key, A=type, HL=cursor at '(' -> BC=key, A=type --
 ; (both RESTORED, surviving ary_parse_subs's own eval()-clobbering calls),
-; HL=cursor advanced past ')' PUSHED onto the stack (the caller pops it back
-; whenever its own tail is ready for it). Shared front-end for every array-
-; reference site (ex_dim's own bound-list parse, ex_let_arr/ev_f_arr's own
-; subscript-list parse). Unchanged from the WIP. Clobbers D,E,H,L (+
-; ary_parse_subs's own A,B,C clobbers, absorbed by the restore below).
+; the cursor advanced past ')' left PUSHED on the stack UNDER the return (the
+; caller pops it back whenever its own tail is ready for it; HL itself comes
+; back holding the return address, i.e. clobbered — no caller reads HL before
+; popping [CURSOR]). Shared front-end for every array-reference site (ex_dim's
+; own bound-list parse, ex_let_arr/ev_f_arr's own subscript-list parse).
+; NOTE the tail: after the two pops the return address is back on top, so the
+; cursor must be slid UNDER it — `ex (sp),hl` + `jp (hl)`, NOT `push hl` +
+; `ret` (that sequence *returns to the cursor address* and executes the
+; tokenised line as code — the slice-1 integration bug, fixed 2026-07-15).
+; Clobbers D,E,H,L (+ ary_parse_subs's own A,B,C clobbers, absorbed by the
+; restore below).
 ary_parse_subs_kt:
                 push    bc                  ; [KEY]
                 push    af                  ; [TYPE]
@@ -135,8 +178,8 @@ ary_parse_subs_kt:
                 pop     af                  ; TYPE restored (ary_parse_subs's own pushes
                 pop     bc                  ; are already balanced by its own return, so
                                             ; KEY/TYPE sit exactly where we left them)
-                push    hl                  ; [CURSOR] (the sole item left on the stack)
-                ret
+                ex      (sp),hl             ; TOS <- [CURSOR]; HL <- the return address
+                jp      (hl)                ; return, leaving [CURSOR] on the stack
 
 ; --- ary_engine_call: subrom_call to the array tenant (SUBROM_IDX_ARY). ----
 ; The caller has already filled ARY_OP/ARY_KEY/ARY_TYPE (and ARY_NIDX/
@@ -162,13 +205,16 @@ ary_engine_call:
                 add     hl,de
                 ld      a,(hl)
                 ld      (FPERR),a
-                or      a                   ; ensure NZ (mapped codes are 3/5/6/7,
+                or      a                   ; ensure NZ (mapped codes are 5/6/7/8,
                                             ; never 0)
                 ret
 ary_errmap:                                 ; ARY_ERR 1..4 -> FPERR (§4.1 dispositions)
-                db      5                   ; 1 Subscript-oor  -> 5 subscript out of range
-                db      3                   ; 2 Illegal-fn/neg -> 3 illegal function call
-                db      7                   ; 3 Redimensioned  -> 7 redimensioned array
+                db      5                   ; 1 Subscript-oor  -> 5 Subscript out of range
+                db      8                   ; 2 Illegal-fn/neg -> 8 Illegal function call
+                                            ;   (arrays' OWN capitalised message, NOT the
+                                            ;   shared lowercase FPERR=3 — see the
+                                            ;   err_subscript block comment above)
+                db      7                   ; 3 Redimensioned  -> 7 Redimensioned array
                 db      6                   ; 4 OOM             -> 6 out of memory
 
 ; --- ex_dim: DIM statement. HL enters on the DIM token. ---------------------
