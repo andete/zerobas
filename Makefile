@@ -40,6 +40,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/fat.asm basic/bload.asm basic/cload.asm basic/save.asm basic/files.asm \
          basic/field.asm basic/format.asm basic/printusing.asm basic/program.asm basic/float.asm \
          basic/float-arith.asm basic/subromcall.asm basic/input.asm \
+         basic/arrays.asm \
          basic/tokenise.inc basic/detok.inc \
          basic/sysvars.inc
 ROM   := $(BUILD)/basic.rom
@@ -83,9 +84,12 @@ SUB_SRC   := sub/sub.asm
 # same fix.
 # sub/fp_rnd.asm (math pack slice 2e, docs/spec-basic-mathpack-slice2.md §15):
 # the LAST page-1 tenant, RND(x) -- same staleness hazard, same fix.
+# sub/arrays.asm (arrays slice-1 SPLIT design, docs/spec-basic-arrays.md §10):
+# the numeric-array engine tenant (page-0, SUBROM_IDX_ARY) -- same staleness
+# hazard, same fix.
 SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
              sub/fp_exp.asm sub/fp_log.asm sub/fp_pow.asm sub/fp_sin.asm \
-             sub/fp_rnd.asm \
+             sub/fp_rnd.asm sub/arrays.asm \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
              basic/tokenise.inc basic/detok.inc \
              sub/basic-resident-abi.inc

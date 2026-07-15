@@ -41,6 +41,13 @@ SUBROM_IDX_DETOK        equ     2
 ; reads 0 if the trampoline is absent or the tenant left interrupts off).
 ; docs/spec-basic-subrom-trampoline.md.
 SUBROM_IDX_INTTEST      equ     3
+; index 4 = the ARRAY ENGINE tenant (arrays slice-1 SPLIT design, sub/
+; arrays.asm ary_engine): docs/spec-basic-arrays.md §10. A pure-RAM leaf --
+; ary_find/ary_alloc/ary_resolve (the descriptor walk, offset arithmetic,
+; bound/negative/wrong-ndim checks, DIM allocation) -- reading the ARY_OP..
+; ARY_ERR param block (basic/sysvars.inc §10.2). Its main-ROM stub is
+; basic/arrays.asm `ary_engine_call` (ex_dim / ex_let_arr / ev_f_arr).
+SUBROM_IDX_ARY          equ     4
 
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can

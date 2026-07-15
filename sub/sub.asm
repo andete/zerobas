@@ -78,6 +78,12 @@ sub_p0_table:
                 jp      sub_int_selftest        ; index 3 (SUBROM_IDX_INTTEST): the interrupt
                                                 ;   self-test — runs EI, verifies the $0038
                                                 ;   trampoline serviced the timer (JIFFY++).
+                jp      ary_engine              ; index 4 (SUBROM_IDX_ARY): the numeric-array
+                                                ;   engine (arrays slice-1 SPLIT design,
+                                                ;   docs/spec-basic-arrays.md §10) — a
+                                                ;   pure-RAM leaf (descriptor walk, offset
+                                                ;   arithmetic, alloc, bound checks). Main-ROM
+                                                ;   stub is basic/arrays.asm `ary_engine_call`.
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $0010 mapped slot 3-2 into PAGE 0 and that page-3 RAM is
@@ -155,6 +161,13 @@ sis_spin:
 ; DETOKBUF appends and shares the co-located kwtable with the tokeniser above (so
 ; the resident kwtable is dropped). Its resident stub is basic/list.asm `detok`.
                 include "detok.asm"
+
+; ARRAYS SLICE-1 SPLIT (index 4 = ary_engine): the numeric-array engine
+; (docs/spec-basic-arrays.md §10), moved whole into the sub-ROM because it
+; overran the repack ROM by ~284 B as a monolithic main-ROM feature. Pure-RAM
+; leaf: no BIOS / low-region / main-ROM-resident touch (leaf-audit, §10.1) —
+; calls nothing outside this file. Its own header has the full rationale.
+                include "arrays.asm"
 
 ; --- sub-local is_letter / is_ident_cont (byte-identical own-design clones) --
 ; Resident copies stay in the main ROM (basic/interp.asm is_letter, basic/vars.asm

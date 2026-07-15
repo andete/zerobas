@@ -282,6 +282,14 @@ TAN_TOKEN       equ     $8D     ; TAN(x) -> $FF $8D
 ; SIN $89 . LOG $8A . EXP $8B . COS $8C . TAN $8D . ATN $8E . RND $88
 ; every slice-1b/2a/2b/2d comment above already forward-referenced.
 RND_TOKEN       equ     $88     ; RND(x) -> $FF $88
+; Arrays slice-1 (Phase 3, repack-only -- docs/spec-basic-arrays.md §5). DIM: a
+; single-byte STATEMENT token (not $FF-prefixed), black-box VG-8020 crunch
+; capture ("DIM A(5)" -> 86 20 41 28 16 29 00) + MSX2 TH Table 2.20. NUMERIC
+; coincidence with ABS_TOKEN ($86, a $FF-prefixed FUNCTION token) is expected
+; and harmless -- same disambiguated-by-namespace precedent as SAVE_TOKEN/
+; BINARY_ID and NAME_TOKEN/BASIC_ID above (a bare exec_stmt dispatch byte is
+; never confused with a $FF-prefixed function selector).
+DIM_TOKEN       equ     $86     ; DIM A(n)[,B(n1,n2)...] (statement)
 ; Memory / I-O access tokens (MSX2 TH Table 2.20; oracle-confirmed byte-for-byte
 ; via basic_probe_crunch.py — see PROVENANCE.md). VPOKE / OUT are one-byte
 ; statement tokens; VPEEK / INP are $FF-prefixed two-byte function tokens (like
@@ -527,6 +535,59 @@ DETOKBUF        equ     $BE00   ; repack: 512 B one-shot detok output buffer ($B
 TXTMAX          equ     $C000   ; lean: text must stay below the $C000 BLOAD region
     ENDIF
 PRGEND          equ     $E026   ; addr of the $0000 end-of-program marker (2 bytes)
+
+; --- Arrays slice-1, SPLIT design (repack build only, docs/spec-basic- ------
+; arrays.md §10). The array area is the LOW free region: it begins right
+; after the stored program's own $0000 terminator (PRGEND) and grows up
+; toward the allocator ceiling (min(HIMEM,TXTMAX)). own-design descriptor
+; (§9.2/§10.3): [name0][name1][type][ndim][stride:2][bound0:2]...[boundK:2]
+; [element data...], packed back-to-back, TERMINATED by a 2-byte $0000
+; sentinel. ARYBASE (= PRGEND+2) is DERIVED, never stored -- there is no
+; separately-stored "ARYEND" pointer either: the sentinel IS the "end of
+; array area" marker (sub/arrays.asm ary_find/ary_alloc; ary_reset,
+; basic/arrays.asm, rewrites it whenever the program area rebases, §9.6).
+;
+; The engine (ary_find/ary_alloc/ary_resolve) is a SUB-ROM page-0 tenant
+; (SUBROM_IDX_ARY, sub/equates.inc) -- §10's split fix for a ~284 B repack
+; ROM overrun in the monolithic design. Main and the tenant marshal through
+; this RAM param block instead of registers (subrom_call/CALSLT clobbers
+; everything): main fills ARY_OP..ARY_IDX, `subrom_call`s, then reads
+; ARY_ADDR/ARY_ERR. This REPLACES the monolithic WIP's own ARY_NIDX/ARY_IDX-
+; only scratch (basic/arrays.asm on branch arrays-slice1-wip) with the wider
+; ~16-byte block below, at the SAME address range and under the SAME
+; aliasing argument (kept verbatim, only the field boundaries changed):
+; TKNAME/TKRADIX/TKRTOK (tokeniser scratch -- a line's whole tokenise pass
+; always completes BEFORE any of its tokens execute, so this is dead for the
+; entire duration of any statement's execution, including array references)
+; + CLPTR/CLINK/RUNFLAG (CLOAD/BLOAD scratch -- CLOAD's filename is kept
+; verbatim ASCII, never an expression, so it can never itself evaluate an
+; array subscript while these are live; RUNFLAG is BLOAD's own ",R" parse
+; flag, same argument) + SL_NUM/SL_SLOT/SL_SIZE/SL_TOK (store_line scratch --
+; store_line only STORES a numbered line, it never EXECUTES one, so it can
+; never itself be mid-array-reference). None of these three "owners" can be
+; active at the same moment array-subscript parsing is (single-threaded
+; interpreter, one statement executing at a time). $E028..$E037, 16 bytes --
+; EXACTLY the span this aliasing argument already covers (CURLINE, live
+; during almost all statement execution, sits immediately above at $E038, so
+; there is no slack for anything more — see sub/arrays.asm's own header for
+; where the split engine's ADDITIONAL transient bookkeeping went instead, a
+; per-call hardware-stack frame, since no further RAM byte was available).
+MAXDIM          equ     4       ; slice-1 subscript-count cap (§9.1 Q-9b;
+                                ; >MAXDIM subscripts -> Subscript out of range)
+ARY_OP          equ     $E028   ; 0=RESOLVE (read/write element, auto-dim on
+                                ; read) / 1=DIM (explicit declare) (1)
+ARY_KEY         equ     $E029   ; name0/name1 key (BC round-trip: written via
+                                ; `ld (ARY_KEY),bc`, read via `ld bc,(ARY_KEY)`
+                                ; on both sides -- byte order unobserved) (2)
+ARY_TYPE        equ     $E02B   ; 2/4/8 (int/single/double) (1)
+ARY_NIDX        equ     $E02C   ; parsed subscript/bound count for the CURRENT
+                                ; reference (1)
+ARY_IDX         equ     $E02D   ; parsed subscripts (RESOLVE) or bounds (DIM),
+                                ; int16 LE x MAXDIM (8)
+ARY_ADDR        equ     $E035   ; [tenant return, RESOLVE] element address (2)
+ARY_ERR         equ     $E037   ; [tenant return] 0 ok; 1 Subscript-oor;
+                                ; 2 Illegal-fn (negative); 3 Redimensioned;
+                                ; 4 Out of memory (1)
 
 ; --- Phase 1: CLEAR memory-top sysvar --------------------------------------
 ; HIMEM is the documented home of CLEAR's "highest address BASIC may use"
@@ -1439,6 +1500,11 @@ SUBROM_IDX_INTTEST   equ 3      ; the interrupt self-test tenant (trampoline sli
                                 ; sub/sub.asm sub_int_selftest). Runs EI, spins > 1
                                 ; frame, returns the JIFFY delta in SUB_INT_DELTA —
                                 ; the subrom-inttest gate asserts it is >= 1.
+SUBROM_IDX_ARY       equ 4      ; the numeric-array engine (arrays slice-1 SPLIT
+                                ; design, docs/spec-basic-arrays.md §10; sub/
+                                ; arrays.asm ary_engine) — a pure-RAM leaf (no
+                                ; resident-ABI import). Main-ROM stub is
+                                ; basic/arrays.asm `ary_engine_call`.
 ; Page-1 dispatch (docs/spec-basic-subrom-mathpack.md §2): the FIRST page-1
 ; tenant. SUBROM_ENTRY_BASE_P1 mirrors the disk $4010 DSKIO convention (also
 ; independently defined in sub/equates.inc for the sub build — same value,
