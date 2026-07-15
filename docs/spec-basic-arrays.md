@@ -459,3 +459,82 @@ review.
   DIMs then edits? — none exist yet; new behaviour).
 - **Q-9d.** Exact free-RAM home for the ~21 B of `ARY*` sysvars — to be picked
   against sysvars.inc in the first implementation step (not a semantic choice).
+
+---
+
+## 10. Split design — glue in main, resolver in the sub-ROM (SIGNED OFF 2026-07-15)
+
+**Why (space).** The monolithic slice-1 engine (WIP branch `arrays-slice1-wip`,
+verified lean-byte-identical) is complete but overruns the repack ROM by ~284 B:
+on clean `main` there are **730 B free in the low region** (`$3D26..$4000`) and
+only **30 B free in page 1** (`$7FE2..$8000`); the engine needs ~812 B low + ~232 B
+page-1 ≈ 1 KB. No redistribution closes a ~284 B *total* deficit. The **sub-ROM is
+nearly empty** (~13 KB free page-0, ~10.6 KB page-1 — the "nearly full" note was a
+stale reference to the superseded basic-window-in-sub design), so the ratified fix
+(user, 2026-07-15) is to **move the array engine's leaf bulk into a sub-ROM
+tenant**, freeing the low region.
+
+**Why it fits the existing tenant ABI with no extension.** The math tenants are
+page-0 tenants: while one runs, slot-0 page 0 (the low region) is switched out but
+main **page 1 stays visible**; they are pure FAC-leaves. The array engine can't
+run *whole* as a tenant (it needs `eval` for subscripts, which reaches into page-0
+`float-arith` — switched out). But the split isolates a **pure-RAM leaf** that
+needs *neither* main page: the resolver walks the array area, does offset
+arithmetic, allocates, and bound-checks — all over **RAM (pages 2/3, always
+mapped)**. So it marshals through the standard `subrom_call` (IX=entry, args/results
+in RAM, `A`=result, `CF`=absent, under DI) exactly as the math tenants do.
+
+### 10.1 Partition
+
+**Main page-1 glue** (the small part that must see main's eval/var machinery):
+- `ex_dim` — parse each `NAME(b0[,b1…])`: `var_name_key`→key+type; `eval` each
+  bound into the param block; `subrom_call` op=`DIM`; on a nonzero result code
+  raise the mapped error (`Redimensioned array`/`Out of memory`).
+- `ex_let_arr` (from `ex_let`) / `ev_f_arr` (from `ev_f_var`) — parse + `eval` each
+  subscript into the param block; `subrom_call` op=`RESOLVE` (auto-dim on read);
+  the tenant returns the **element address**; glue then does the FAC↔element copy +
+  the type coercion (reusing the `var_store_fac`/`var_load_fac` value-field codec —
+  int16 for type 2, `LDIR` of `elsize` for 4/8), and raises on the result code
+  (`Subscript out of range` / `Illegal function call`).
+- The array-vs-function `(`-peek after `var_name_key` (interp.asm:279 / expr.asm:551)
+  stays in main — it is 2–3 instructions per site.
+
+**Sub-ROM page-0 tenant `ary_engine`** (the bulk, ~400–600 B, pure-RAM leaf):
+`ary_find` (descriptor stride walk), auto-dim allocation + zero-fill, the
+column-major offset arithmetic, the bound / negative / wrong-`ndim` checks, and the
+`DIM` descriptor construction. **No `eval`, no float-arith, no main-ROM call** —
+only RAM reads/writes over the array area (`ARYTAB..ARYEND`, derived from
+`PRGEND`+ceiling) and the param block. One op-dispatched entry (op byte in the
+param block) added to the sub-ROM page-0 entry table, per the math-pack tenant
+pattern ([spec-basic-subrom-mathpack.md](spec-basic-subrom-mathpack.md)); subject to
+`check_tenant_closure.py` (its whole callee set must be co-resident/RAM).
+
+### 10.2 Param / return block (new RAM, ~24 B, page-2/3)
+
+```
+ARY_OP    : 1     0 = RESOLVE (read/write element), 1 = DIM
+ARY_KEY   : 2     name0, name1
+ARY_TYPE  : 1     2 / 4 / 8
+ARY_NIDX  : 1     subscript / dimension count (1..MAXDIM=4)
+ARY_IDX   : 2·4   the eval'd subscripts (RESOLVE) or bounds (DIM), int16 LE
+ARY_ADDR  : 2     [return] element address (RESOLVE) — into the RAM array area
+ARY_ERR   : 1     [return] 0 ok; 1 Subscript-oor; 2 Illegal-fn (neg); 3 Redimensioned; 4 OOM
+```
+
+Main fills `ARY_OP..ARY_IDX`, `subrom_call`s, then reads `ARY_ADDR`/`ARY_ERR`. This
+replaces the WIP's `ARY_NIDX`/`ARY_IDX` scratch (which aliased tokeniser scratch —
+keep that aliasing analysis) and needs **no new persistent allocator sysvars**
+(`ARYTAB` stays derived as `PRGEND+2`, `ARYEND` is the descriptor-terminator
+sentinel — the WIP's deviation #1, retained).
+
+### 10.3 Reuse + build
+
+The WIP engine's *logic* is correct (contract §9) — this is a **re-home + ABI-wire**,
+not a rewrite: lift `ary_find`/offset/alloc/bounds/`ex_dim`-core bodies into a new
+`sub/arrays.asm` tenant reading the param block; reduce `basic/arrays.asm` to the
+main-side glue (parse/eval/copy/coerce + `subrom_call` + error raising). Gates
+unchanged (§9.7) + the tenant-closure gate. Expected: low-region pressure drops by
+the ~400–600 B moved to the sub-ROM, so both regions fit; re-measure
+`__MEAS_LOW_END`/`__MEAS_PAGE1_END` to confirm. Lean `basic.rom` stays
+byte-identical (all main-side additions `IF ROM_BASE < $4000`; the sub-ROM is a
+separate artifact).
