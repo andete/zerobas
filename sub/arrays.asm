@@ -541,8 +541,19 @@ aal_tail:
                 add     hl,de               ; HL = data end (= new tail)
                 jp      c,aal_oom
                 push    hl                  ; [DEND] (the only guarded value)
-                inc     hl
-                inc     hl                  ; +2: reserve the fresh terminator
+                ld      de,2
+                add     hl,de               ; +2: reserve the fresh terminator
+                jp      c,aal_oom_pop1      ; data_end == $FFFE/$FFFF: the terminator
+                                            ; reservation wraps candidate_end past
+                                            ; $FFFF -> OOM. Was two unchecked `inc hl`
+                                            ; (16-bit INC sets no carry), so a wrapped
+                                            ; $0000/$0001 candidate slipped the ceiling
+                                            ; sbc below and corrupted top-of-RAM
+                                            ; instead of erroring (pre-existing slice-1
+                                            ; alloc bug, 65-B string elements widened
+                                            ; the window; caught by the slice-3
+                                            ; adversarial review, fixed 2026-07-16).
+                                            ; aal_oom_pop1 pops the [DEND] just pushed.
                 ex      de,hl               ; DE = candidate end
                 ; ceiling = min(HIMEM,TXTMAX), inlined (single call site) -- unchanged
                 ; from the WIP (HIMEM==0 -> "never CLEAR'd" -> default TXTMAX).

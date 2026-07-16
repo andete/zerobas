@@ -297,6 +297,38 @@ def run():
           f"HIMEM ceiling -> CF clear, A=4 (CF={carry(cpu)}, A={cpu.a})")
 
     # ==================================================================
+    # Case 5b: terminator-wrap guard (regression, fixed 2026-07-16). If
+    # data_end lands EXACTLY on $FFFE/$FFFF, the 2-byte terminator reservation
+    # wraps candidate_end to $0000/$0001, which then SLIPS the ceiling sbc
+    # (it is compared against the WRAPPED value) -- the old two unchecked
+    # `inc hl` (16-bit INC sets no carry) accepted the alloc and let the
+    # descriptor write + zero-fill corrupt top-of-RAM instead of raising OOM.
+    # Fix: reserve the terminator with a carry-checked `add hl,2 / jp c`. With
+    # HIMEM=0 the ceiling is TXTMAX, and the wrapped $0000/$0001 candidate is
+    # below ANY ceiling, so ONLY this guard -- not the ceiling -- can catch it
+    # (revert the fix and this case returns CF set / A=0, a wrapped alloc).
+    # data_end = TAIL + header(6+2*ndim=8) + data_bytes(1 elem * elsize 2) =
+    # TAIL + 10, so TAIL=$FFF4 -> data_end=$FFFE (PRGEND=$FFF2); TAIL=$FFF5 ->
+    # $FFFF. Pre-existing slice-1 alloc bug; 65-B string elements widened the
+    # window (Fable slice-3 adversarial review).
+    # ==================================================================
+    for prgend, dend in ((0xFFF2, 0xFFFE), (0xFFF3, 0xFFFF)):
+        m = make_machine()
+        arybase = prgend + 2
+        m.poke_w(s["PRGEND"], prgend)
+        m.poke_w(s["HIMEM"], 0)        # ceiling = TXTMAX (wrapped candidate slips it)
+        m.poke_w(arybase, 0)           # empty array region: $0000 terminator at TAIL
+        BOUNDS_BUF = 0x9200
+        m.poke_w(BOUNDS_BUF, 0)        # bound0=0 -> 1 element
+        m.poke(s["ARY_NIDX"], 1)
+        cpu = m.call("ary_alloc", b=ord("W"), c=0, a=2, ix=BOUNDS_BUF)
+        ok_wrap = (not carry(cpu)) and (cpu.a == 4)
+        fails += not ok_wrap
+        print(f"{'PASS' if ok_wrap else 'FAIL'} ary_alloc terminator-wrap "
+              f"(data_end={dend:#06x}) -> OOM not corruption "
+              f"(CF={carry(cpu)}, A={cpu.a})")
+
+    # ==================================================================
     # Case 6: ary_engine, the tenant's ACTUAL dispatch entry (SUBROM_IDX_ARY)
     # -- the ABI surface basic/arrays.asm's ary_engine_call drives via
     # subrom_call, exercised here through the ARY_OP..ARY_ERR param block
