@@ -367,11 +367,20 @@ TKNAME          equ     $E028   ; tokeniser: 1 = previous char was part of a nam
 TKRADIX         equ     $E029   ; tokeniser: &H/&O accumulator radix (16 or 8)
 TKRTOK          equ     $E02A   ; tokeniser: &H/&O constant token to emit ($0C/$0B)
 NUMBUF          equ     $E0C0   ; PRINT: decimal-format scratch (8 bytes, 0-term)
-; MID$-statement (repack build only): the destination var's descriptor address,
-; stashed for one MID$(A$,n,m)=B$ so the token cursor can stay in HL through the arg
-; parse. Borrows NUMBUF (the PRINT/LIST decimal scratch) — dead during statement
-; execution (the MID$ statement neither prints nor lists; eval/str_eval don't touch it).
-MIDS_DEST       equ     NUMBUF   ; MID$ statement dest descriptor addr (2 B, aliases NUMBUF)
+; MID$-statement: the destination var's descriptor address, stashed for one
+; MID$(A$,n,m)=B$ so the token cursor can stay in HL through the arg parse.
+    IF ROM_BASE < $4000
+; Repack (arrays slice-4a, S8 fix): a DEDICATED cell in the freed STRTAB
+; window (above TMISMATCH $E3D8, below the $E560 WBUF wall) — it can NO LONGER
+; alias NUMBUF, because slice-4a moved HEX$/OCT$'s digit-building into NUMBUF
+; (sub-side sh_hex_build/sh_oct_build), so `MID$(A$,1)=HEX$(N)` would clobber
+; the stashed dest across the RHS str_eval. 2 B.
+MIDS_DEST       equ     $E3D9
+    ELSE
+; Lean: still borrows NUMBUF (the MID$ statement is repack-only, so this alias
+; is unused in the lean build and keeps it byte-identical).
+MIDS_DEST       equ     NUMBUF
+    ENDIF
 ; Console INPUT (repack build only): the LINEBUF read cursor for linebuf_getbyte
 ; (basic/input.asm). LINEBUF is one page ($E1xx), so a single low byte suffices.
 ; Aliases NUMBUF like MIDS_DEST — dead during INPUT, which formats no numbers; the
@@ -588,7 +597,9 @@ ISRCH_B         equ     ISRCH_A + 2         ; $E3D6: resolved B-operand body bas
 ; TMISMATCH: string-comparison D-2 marker (spec-basic-string-compare.md §3c) --
 ; unchanged in role from pre-4a, just re-homed after the heap layout above.
 TMISMATCH       equ     ISRCH_B + 2         ; $E3D8: D-2 type-mismatch flag (1 B)
-    IF TMISMATCH + 1 > $E560
+; MIDS_DEST ($E3D9, 2 B, defined above) sits right here — the last claimed
+; cell in the freed STRTAB window; everything up to $E560 (disk WBUF) is spare.
+    IF MIDS_DEST + 2 > $E560
                 db      STRING_HEAP_LAYOUT_OVERRAN_E560_DISK_WBUF_WALL
     ENDIF
     ELSE

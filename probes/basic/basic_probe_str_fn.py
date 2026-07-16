@@ -83,9 +83,12 @@ ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK
 COLS, ROWS = 40, 24
 NLEN = COLS * ROWS
 
-# repack build's own-design length clamp (basic/sysvars.inc:327); real hardware
-# has no such ceiling (its own limit, ~255, is well above every case tested here).
-STRMAX = 64
+# Arrays slice-4a: the repack build's string length limit is now STRMAX=255
+# (heap-backed strings, basic/sysvars.inc), same as real hardware's own byte-
+# length ceiling -- so the old 64-char own-design clamp is retired, and
+# SPACE$(100)/STRING$(100,c) now yield the full 100 on BOTH machines (no
+# divergence: min(100,255)==100==reference). Every case tested here is <=255.
+STRMAX = 255
 
 
 # --- §2 contract, computed in Python (never assumed) -----------------------
@@ -167,17 +170,14 @@ CASES = [
          string_of(3, "A"), None, None),
     Case("STRING$.str", "str", 'PRINT "[";STRING$(3,"*");"]"',
          string_of(3, "*"), None, None),
-    # clamp: measured via LEN(STRING$(...)) rather than printing the literal
-    # 100-char result. Not just a wrapping workaround -- see the KNOWN BUGS
-    # section of the module docstring: a bare `PRINT STRING$(...)` item hits a
-    # real, separately-confirmed print.asm dispatch defect unrelated to STRMAX,
-    # so a direct print of the clamp case would conflate two different
-    # findings. LEN(...) isolates exactly the property under test (the clamped
-    # COUNT) and is confirmed unaffected by that defect.
-    Case("STRING$.clamp", "num", 'PRINT "[";LEN(STRING$(100,"Z"));"]"',
-         100, STRMAX,
-         f"own-design STRMAX={STRMAX} clamp (spec D-3): zerobas clamps to "
-         f"{STRMAX}, real hardware doesn't -- documented divergence"),
+    # long: measured via LEN(STRING$(100,...)) rather than printing the literal
+    # 100-char result (a bare PRINT of it hits a separate print-wrap issue --
+    # see the docstring). Arrays slice-4a: heap-backed strings hold the full
+    # 100 (STRMAX=255), so this NO LONGER diverges -- zb == reference == 100.
+    # (expect_zb None -> pure differential; was the retired STRMAX=64 clamp.)
+    Case("STRING$.long", "num", 'PRINT "[";LEN(STRING$(100,"Z"));"]"',
+         100, None,
+         "heap-backed STRING$(100)=100, no old-64 clamp (STRMAX=255)"),
 
     # INSTR([p,]a$,b$) -- {found, not-found->0, empty-needle, 3-arg p mid, p past end->0}
     Case("INSTR.found",    "num", 'PRINT "[";INSTR("HELLO","LL");"]"',
@@ -377,12 +377,14 @@ def main() -> int:
 
         if want_clamp:
             zb_len = measure_space_clamp_length(args.zb_machine, None, clamp_n, timeout=120)
-            good = zb_len == STRMAX
+            # Arrays slice-4a: heap-backed SPACE$(100)=100 (STRMAX=255), so this
+            # NO LONGER diverges -- zb == reference == clamp_n. (Was the retired
+            # STRMAX=64 clamp divergence.)
+            good = zb_len == clamp_n
             ok = ok and good
-            print(f"{'PASS' if good else 'FAIL':5} {'SPACE$.clamp':16} "
-                  f"zb={zb_len!r} want_zb={STRMAX!r} (ref={clamp_n!r}) "
-                  f"[divergence: own-design STRMAX={STRMAX} clamp (spec D-3): "
-                  f"zerobas clamps, real hardware doesn't]")
+            print(f"{'PASS' if good else 'FAIL':5} {'SPACE$.long':16} "
+                  f"zb={zb_len!r} want={clamp_n!r} (ref={clamp_n!r}) "
+                  f"[heap-backed SPACE$(100)=100, no old-64 clamp (STRMAX=255)]")
 
     print("\nALL PASS -- reference matches §2, zerobas matches reference "
           "(clamp cases match zerobas's own documented D-3 semantics)" if ok

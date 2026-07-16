@@ -603,7 +603,10 @@ aal_ceil_try:
                 jp      nz,aal_oom_pop1     ; already retried once -> genuine OOM
                 ld      a,1
                 ld      (iy+9),a
-                call    strheap_gc          ; compact the heap; may raise FRETOP
+                push    ix                  ; S3: strheap_gc clobbers IX (its own GC
+                call    strheap_gc          ; frame base, never restored); IX is our
+                pop     ix                  ; ARY_IDX bounds-source pointer, read by
+                                            ; aal_bounds_lp below -- guard it
                 jr      aal_ceil_try
 aal_ceil_fits:
                 ; --- fits: write the descriptor header (incl. cached stride) ---

@@ -51,6 +51,19 @@ CASES = [
     ("concat.chain",  'PRINT "[";"AB"+"CD"+"EF";"]"',          r"\[ABCDEF\]"),
     ("concat.var",    'A$="AB":B$="CD":PRINT "[";A$+B$;"]"',   r"\[ABCD\]"),
     ("concat.litfn",  'PRINT "[";"N="+STR$(7);"]"',            r"\[N= 7\]"),
+    # STRCAT_R nested-concat cases (arrays slice-4a §7, the retired
+    # spec-basic-string-concat-nesting-fix.md): a concat operand whose OWN
+    # evaluation is a function-with-a-nested-concat used to corrupt the global
+    # accumulator ("A"+MID$("XY"+"Z",1,2)+"B" -> "XYZXYB"). The accumulator is
+    # now a per-expression temp, so these are correct by construction.
+    ("concat.fn-mid", 'PRINT "[";"A"+MID$("XY"+"Z",1,2)+"B";"]"', r"\[AXYB\]"),
+    ("concat.fn-last",'PRINT "[";"A"+LEFT$("PQ"+"RS",3);"]"',   r"\[APQR\]"),
+    ("concat.fn-var", 'A$="XY":B$="Z":PRINT "[";"A"+MID$(A$+B$,1,2)+"B";"]"', r"\[AXYB\]"),
+    ("concat.fn-rt",  'PRINT "[";STR$(1)+"-"+STR$(2);"]"',      r"\[ 1- 2\]"),
+    # MID$-statement with a function (HEX$) RHS -- slice-4a moved HEX$/OCT$
+    # digit-building into NUMBUF sub-side, which used to alias MIDS_DEST (S8);
+    # re-homed, so A$'s stashed dest survives the RHS eval.
+    ("mid.stmt.hex",  'A$="ZZ":MID$(A$,1)=HEX$(255):PRINT "[";A$;"]"', r"\[FF\]"),
     # string -> string verbs
     ("LEFT$",         'PRINT "[";LEFT$("HELLO",3);"]"',        r"\[HEL\]"),
     ("RIGHT$",        'PRINT "[";RIGHT$("HELLO",2);"]"',       r"\[LO\]"),

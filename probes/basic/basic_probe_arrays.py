@@ -151,13 +151,12 @@ CASES = [
     # ERASE / CLEAR free the array contents (§2 probe #14):
     ("strarr.erase.frees",      "stored", ['DIM S$(3):S$(1)="HI"', 'ERASE S$', 'PRINT"[";S$(1);"]"'], "value"),
     ("strarr.clear.frees",      "stored", ['DIM S$(3):S$(1)="HI"', 'CLEAR', 'PRINT"[";S$(1);"]"'], "value"),
-    # STRMAX-clamp deviation (§2 probe #15 / §7 D-1): the reference has a real
-    # heap and would raise "Out of string space" on an over-long STRING$; zb
-    # has no heap and clamps to STRMAX (64, repack) instead — a documented,
-    # NON-differential deviation (the same one the scalar string store already
-    # documents, string-engine §5a). Asserted against the zb-only expected
-    # value, not the reference (which errors here).
-    ("strarr.strmax.clamp",     "stored", ['DIM S$(1):S$(1)=STRING$(90,65)', 'PRINT"[";LEN(S$(1));"]"'], "zbval"),
+    # Arrays slice-4a (§14/§15): a string-array element is now a HEAP-backed
+    # [len][ptr] descriptor, DECOUPLED from STRMAX (255). A 90-char STRING$
+    # into an element is no longer clamped to the old 64 -- it holds the full
+    # 90, matching the reference exactly. So this is now a normal differential
+    # "value" test (was the slice-3 "zbval" 64-clamp deviation, now retired).
+    ("strarr.longstr.90",       "stored", ['DIM S$(1):S$(1)=STRING$(90,65)', 'PRINT"[";LEN(S$(1));"]"'], "value"),
     # --- ADVERSARIAL: variable/nested/self-ref subscripts, the slice-1 lesson
     # applied to strings (the literal-only string cases above hid nothing this
     # time -- verified -- but the gate must exercise the array IDIOM, not just
@@ -175,21 +174,50 @@ CASES = [
     # deleted slice-2 `$`-reject had masked it). Tier-A, house-lowercase.
     ("strarr.dim.bare.dollar",  "direct", ['DIM $(5):PRINT"[x]"'], "synerr"),
     ("strarr.dim.digit.name",   "direct", ['DIM 1(5):PRINT"[x]"'], "synerr"),
-    # D2 (§7 deviation): a big string DIM exhausts RAM on zb (inline 65-byte
-    # elements) where the reference's 3-byte descriptors survive -- zb "Out of
-    # memory", ref succeeds. NON-differential (zberr).
-    ("strarr.dim.huge.oom",     "direct", ['DIM S$(1000)'], "zberr"),
+    # Arrays slice-4a (§14/§15): with 3-byte [len][ptr] elements a big string
+    # DIM now FITS (the slice-3 inline-65-byte OOM is gone) -- DIM S$(1000)
+    # succeeds on both, differential. (Was "strarr.dim.huge.oom"/zberr.)
+    ("strarr.dim.large.ok",     "stored", ['DIM S$(1000):S$(500)="Z"', 'PRINT"[";S$(500);"]"'], "value"),
+    # Arrays slice-4a DIM-after-heap-pressure (Fable gate: S3, ary_alloc's
+    # ceiling=FRETOP + GC-before-OOM retry, aal_ceil_try). Churn a SCALAR to
+    # fill the heap with garbage (1 root -> the reference's own GC stays fast),
+    # THEN DIM a numeric array whose growth meets the string-heap boundary and
+    # must reclaim before it fits; A$ and the array element both survive.
+    # Differential.
+    # zb-only (zbval): the reference's tiny default string space (~200 B, no
+    # CLEAR) can't even hold a 250-char STRING$ ("Out of string space"), so it
+    # is not an oracle for zb's whole-free-RAM heap under this churn. The
+    # result is derivable-correct.
+    ("strarr.dim.aftergc",      "stored",
+        ['FORI=1TO70:A$=STRING$(250,65):NEXT', 'DIM B(500):B(250)=99',
+         'PRINT"[";LEN(A$);"/";B(250);"]"'], "zbval"),
+    # Arrays slice-4a GC INTEGRITY (Fable gate): keep only a FEW live string-
+    # array elements (5) but CHURN them hard (15 rounds x 5 reassigns = 75
+    # allocations of 250 B = ~18 KB), orphaning the old heap bodies. That
+    # exceeds zb's ~15 KB heap so a compacting GC fires mid-churn WITH the 5
+    # elements live as roots -- exercising array-element ptr fix-up. Only 5
+    # roots keeps the REFERENCE's own (O(n^2)) GC fast enough to not time out
+    # the differential (a 50-element churn timed the reference out). Both
+    # machines end with S$(3) = 250 'B's, GC or not (GC is unobservable).
+    ("strarr.gc.churn",         "stored",
+        ['DIM S$(5):FORI=1TO5:S$(I)=STRING$(250,65):NEXT',
+         'FORJ=1TO15:FORI=1TO5:S$(I)=STRING$(250,66):NEXT:NEXT',
+         'PRINT"[";LEN(S$(3));LEFT$(S$(3),1);"]"'], "zbval"),
 ]
 
-# zbval: non-differential, house-expected VALUE (mirrors ZB_SYNTAX_ERROR's own
-# non-differential text assertion, but for a printed value instead of an error
-# message) — used only by strarr.strmax.clamp above, §7's documented deviation.
-# " 64 " (not "64"): MSX PRINT's own leading-space-for-non-negative-numbers
-# convention (matches every OTHER numeric PRINT span in this probe; observed,
-# not asserted from memory — captured 2026-07-15 alongside the reference's own
-# unclamped ' 90 ' for the SAME source, confirming the reference has NO
-# STRMAX-style limit at this length while zb's clamp is real).
-ZB_STRMAX_CLAMP_LEN = " 64 "
+# zbval: NON-DIFFERENTIAL, house-expected printed VALUE (keyed by label). Used
+# for a property the reference is NOT a meaningful oracle for -- here, GC
+# integrity: whether zb's OWN compacting collector corrupts memory is a
+# zb-internal property (the reference has different memory behaviour and its
+# slow O(n^2) collector / smaller RAM can't even complete the churn), so the
+# result is asserted against the DERIVABLE-correct value. The spans use MSX
+# PRINT's leading-space-for-non-negatives convention (observed, not asserted
+# from memory). strarr.gc.churn: 5 elements, each finally STRING$(250,66) ->
+# LEN=250 (" 250 ") + LEFT$=first char ("B") -> span " 250 B".
+ZBVAL_EXPECT = {
+    "strarr.gc.churn": " 250 B",
+    "strarr.dim.aftergc": " 250 / 99 ",
+}
 
 # Tier-A house-style text (zerobas prints lowercase where the reference prints
 # capitalised; not differential-gateable, asserted against this literal).
@@ -236,10 +264,11 @@ def compare(i, ref, zb):
         # is exactly the house string; ref is ignored for the verdict.
         return R.screen_tail(zb, cmd) == ZB_SYNTAX_ERROR
     if kind == "zbval":
-        # NON-differential: the reference ERRORS here (§7 D-1, no heap on zb's
-        # side to match) -- assert zb's own printed value only; ref is ignored.
+        # NON-differential: assert zb's own printed value against the derivable-
+        # correct expectation (ZBVAL_EXPECT[label]); ref is ignored (not a
+        # meaningful oracle -- see ZBVAL_EXPECT's comment).
         zv = R.result_span(zb) if mode == "stored" else R.result_span_after_echo(zb, cmd)
-        return zv == ZB_STRMAX_CLAMP_LEN
+        return zv == ZBVAL_EXPECT[label]
     if kind == "zberr":
         # NON-differential the OTHER way: zb ERRORS where the reference SUCCEEDS
         # (§7 D-2 -- the inline 65-byte string element makes a big DIM exhaust
