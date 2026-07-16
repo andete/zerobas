@@ -102,12 +102,16 @@ exec_stmt:
                 ld      (TMISMATCH),a       ; A is still 0: clear the D-2 flag (a stale
                 ld      (FPERR),a           ; set would misfire a later statement's check
                                             ; -- FPERR (F2 D-F2-1) mirrors TMISMATCH here
-                ld      hl,TEMPBASE         ; arrays slice-4a §6: the temp-descriptor
-                ld      (TEMPTOP),hl        ; stack is emptied at every statement
+                ld      de,TEMPBASE         ; arrays slice-4a §6: the temp-descriptor
+                ld      (TEMPTOP),de        ; stack is emptied at every statement
                                             ; boundary (mirrors the old STRTMP ring's
                                             ; implicit per-statement reset) -- temps
                                             ; never survive past the statement that
-                                            ; created them
+                                            ; created them. MUST use DE, not HL: HL is
+                                            ; the live statement cursor here (in: HL =
+                                            ; token buffer) -- clobbering it made every
+                                            ; statement dispatch on $E3D4 -> syntax error
+                                            ; (Fable review 2026-07-16). DE is dead on entry.
     ENDIF
                 call    skip_spaces         ; leading spaces are skipped (spec §5)
                 ld      a,(hl)
