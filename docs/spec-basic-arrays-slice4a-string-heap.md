@@ -5,7 +5,14 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — Arrays slice 4a: string heap + STRMAX→255 (+ STRCAT_R absorption)
 
-Status: **DRAFT for sign-off (2026-07-16).** Implementation contract for the first
+Status: **SIGNED OFF 2026-07-16.** §17 resolved as recommended: (1) temp-stack
+depth `D` = implementation maximizes within the freed window (≥8); (2) tenant
+boundary = `heap_alloc`+GC in the sub-ROM tenant, temp-stack + `+`-chain walk
+main-side; (3) GC sort = radix, O(n), transient stack buffer (zero permanent RAM);
+(4) `String formula too complex` added to `fre_msgtab`; (5) 4a/4b split kept hard.
+Next: Sonnet implements against this contract, Fable adversarial review.
+
+Implementation contract for the first
 half of the split slice 4 (space plan
 [`decision-arrays-slice4-space.md`](decision-arrays-slice4-space.md), SIGNED OFF;
 `4a = string heap + STRMAX→255 + STRCAT_R`, `4b = scalar relocation`, deferred).
