@@ -859,13 +859,24 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                 inc     ix
     IF ROM_BASE < $4000
                 call    flt_int_result      ; CVI returns an int; a float nested in
-    ENDIF                                   ;  the string arg must not stick (A only)
+                                            ;  the string arg must not stick (A only)
+                ld      hl,(STRPTR)
+                call    pu_deref_body       ; arrays slice-4a: HL(desc)->HL(body);
+                                            ; shared with printusing.asm/field.asm
+                ld      a,(hl)              ; low byte
+                inc     hl
+                ld      e,a
+                ld      a,(hl)              ; high byte
+                ld      d,a                 ; DE = int (LE)
+                ret
+    ELSE
                 ld      hl,(STRPTR)
                 inc     hl                  ; -> the value bytes
                 ld      e,(hl)              ; low byte
                 inc     hl
                 ld      d,(hl)              ; high byte  -> DE = int (LE)
                 ret
+    ENDIF
 
     IF ROM_BASE < $4000
 ; =============================================================================

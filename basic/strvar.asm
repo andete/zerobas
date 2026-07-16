@@ -44,7 +44,13 @@ str_eval        equ     str_eval_one        ; lean: a string operand is one oper
 str_eval_one:
                 ld      a,(hl)
                 cp      '"'
+    IF ROM_BASE < $4000
+                jp      z,str_eval_lit      ; repack: str_eval_lit is in the low
+                                            ; region (str-engine.asm) — out of jr
+                                            ; range from here (page 1)
+    ELSE
                 jr      z,str_eval_lit
+    ENDIF
                 cp      INPUT_TOKEN         ; INPUT$(...) ? -> $85 ('INPUT') then '$'
                 jp      z,str_eval_maybe_inputd
                 cp      PEEK_PREFIX         ; $FF + selector -> a function token; MKI$ ?
@@ -87,6 +93,11 @@ str_eval_one:
 sev_have:
                 pop     hl
                 jp      str_eval_ok
+    IF ROM_BASE < $4000
+; Arrays slice-4a: the repack str_eval_lit (zero-copy literal-lift into
+; RVDESC) lives in the low region (basic/str-engine.asm) — page 1 is byte-
+; full; str_eval_one reaches it by the jp above.
+    ELSE
 str_eval_lit:
                 ; copy the literal's bytes into STRSCR as a [len][bytes] descriptor,
                 ; clamped to STRMAX, advancing HL past the closing quote. HL stays
@@ -120,6 +131,7 @@ sel_close:
                 ld      (STRPTR),hl
                 pop     hl                  ; HL = cursor past the operand
                 jp      str_eval_ok
+    ENDIF
 str_eval_no:
                 or      a                   ; CF clear -> not a string operand
                 ret
@@ -177,7 +189,13 @@ str_mki:
                 ld      (STRSCR+1),a        ; low byte of n
                 ld      a,d
                 ld      (STRSCR+2),a        ; high byte of n
+    IF ROM_BASE < $4000
+                call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
+                                            ; (arrays slice-4a §10: every STRPTR
+                                            ; target is a [len:1][ptr:2] descriptor)
+    ELSE
                 ld      hl,STRSCR
+    ENDIF
                 ld      (STRPTR),hl
                 pop     hl                  ; restore the eval cursor
                 jp      str_eval_ok
@@ -220,7 +238,12 @@ str_inputd:
                 cp      1                   ; must be open FOR INPUT
                 jr      nz,str_inputd_err
                 call    str_inputd_read     ; fill STRSCR [len][bytes] with n bytes
+    IF ROM_BASE < $4000
+                call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
+                                            ; (arrays slice-4a §10)
+    ELSE
                 ld      hl,STRSCR           ; set STRPTR while the cursor is still on
+    ENDIF
                 ld      (STRPTR),hl         ; the stack (HL here would clobber it)
                 pop     hl                  ; restore the eval cursor (past ')')
                 jp      str_eval_ok
@@ -261,10 +284,15 @@ sidr_done:
                 ld      (STRSCR),a          ; descriptor length
                 ret
 
-; --- print_strval: emit the [len][bytes] descriptor at STRPTR via CHPUT -------
+; --- print_strval: emit the descriptor at STRPTR via CHPUT ------------------
 ; Reads STRPTR (set by str_eval). CHPUT makes no register guarantees, so the
 ; descriptor cursor (HL) and the remaining count (B) are guarded across it.
 ; Clobbers A, B, HL.
+    IF ROM_BASE < $4000
+; Arrays slice-4a: the repack print_strval lives in the low region (basic/
+; str-engine.asm) — page 1 is byte-full; print.asm reaches it by in-slot
+; call. strscr_desc / pu_deref_body live there too.
+    ELSE
 print_strval:
                 ld      hl,(STRPTR)
                 ld      b,(hl)              ; B = length
@@ -278,3 +306,4 @@ psv_lp:
                 inc     hl
                 djnz    psv_lp
                 ret
+    ENDIF

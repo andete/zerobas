@@ -247,46 +247,62 @@ aer_notfound:
                 ret
 
 ; --- aeng_copy_str: ARY_OP=3 (slice-3 COPY_STR, docs/spec-basic-arrays- ----
-; slice3-strings.md §5.1/§5.2). dest = (ARY_ADDR) -- an element address the
-; caller has ALREADY resolved via a prior op=0 call; source = (STRPTR), a
-; plain RAM sysvar visible here exactly like PRGEND/HIMEM (RAM pages 2/3 are
-; always mapped to a page-0 tenant). Pure-RAM STRMAX-clamped copy: the
-; string sibling of the numeric ary_store_write's FAC-copy tail
-; (basic/arrays.asm), moved tenant-side because (unlike the numeric store,
-; which needs FAC/type coercion, a main-only concept) it needs nothing but a
-; length-clamped LDIR -- a textbook pure-RAM leaf (subrom-tenant-playbook.md
-; §3 shape-C carve-out), reusing str_set_key's own copy-body logic
-; (basic/vars.asm's ssk_store tail) minus the find-or-allocate-a-slot step
-; (the element's address is already resolved -- a fixed 1+STRMAX-byte slot,
-; never grown/found). This op is called ONLY after the main-ROM glue has
-; fully evaluated the RHS into STRPTR (so nothing here can race a nested
-; array load the way a fused resolve+copy would -- see the glue's own
-; header). Always succeeds (ARY_ERR=0 unconditionally -- a bad ARY_ADDR is
-; not a condition this op can detect; the caller supplies it, already
-; validated by the earlier RESOLVE). Value semantics (contract §2 probe #13,
-; no aliasing) fall out of the byte copy exactly as they do for
-; str_set_key. Clobbers A,B,C,D,E,H,L.
+; slice3-strings.md §5.1/§5.2; REVISED arrays slice-4a, docs/spec-basic-
+; arrays-slice4a-string-heap.md §10 "String array element load/store"). dest
+; = (ARY_ADDR) -- an element address the caller has ALREADY resolved via a
+; prior op=0 call (now a 3-byte [len][ptr] slot, not an inline value);
+; source = (STRPTR), a plain RAM sysvar visible here exactly like PRGEND/
+; HIMEM (RAM pages 2/3 are always mapped to a page-0 tenant). Store =
+; heap_alloc(len) + copy + write the [len][ptr] descriptor (value semantics
+; preserved -- a fresh body per store, no aliasing, exactly like str_set_key,
+; vars.asm), reusing heap_alloc/str_body_copy directly (co-resident in this
+; page-0 image, an in-page `call`, no subrom_call round trip).
+;
+; UNLIKE slice-3 (a fixed-size inline copy that could never fail), this now
+; CAN fail: heap_alloc may return OOM. ARY_ERR=4 on that path (the SAME code
+; ary_alloc's own OOM already uses) -- the main-ROM glue's existing
+; ary_errmap (basic/arrays.asm) already maps ARY_ERR=4 -> FPERR=6 "Out of
+; memory", so NO main-ROM change was needed to surface this new failure mode.
+; §5.2(4) GC-safety: heap_alloc(len) may itself trigger a GC; the source
+; descriptor is re-read FRESH via STRPTR (a stable sysvar address, never a
+; bare body pointer) only AFTER heap_alloc returns, so a mid-alloc relocation
+; of the source's own body (if it is itself heap-resident, e.g. a var being
+; stored into an array) is picked up correctly by str_body_copy's own re-read
+; contract. Clobbers A,B,C,D,E,H,L.
 aeng_copy_str:
-                ld      hl,(ARY_ADDR)       ; HL = dest (already-resolved elem addr)
-                ld      de,(STRPTR)         ; DE = source descriptor
-                ld      a,(de)              ; source length
-                cp      STRMAX+1
-                jr      c,acs_len_ok
-                ld      a,STRMAX            ; clamp to STRMAX
-acs_len_ok:
-                ld      (hl),a              ; store the (clamped) length at dest
-                inc     hl                  ; HL -> dest bytes
-                inc     de                  ; DE -> source bytes
-                or      a
-                jr      z,acs_done          ; zero-length -> done
-                ld      c,a
-                ld      b,0                 ; BC = byte count
-                ex      de,hl               ; LDIR copies (HL)->(DE): HL=source,
-                                            ; DE=dest
-                ldir
-acs_done:
+                ld      hl,(STRPTR)         ; HL = source descriptor (stable address)
+                ld      a,(hl)              ; source length (already 0..255 --
+                                            ; STRMAX=255 is the length field's own
+                                            ; max, no clamp arithmetic needed)
+                call    heap_alloc          ; A=len -> CF+HL=new body ptr / CF clear=OOM
+                jr      nc,acs_oom
+                push    hl                  ; guard the new (fresh, unaliased) body ptr
+                ld      hl,(STRPTR)         ; HL = source descriptor (stable; re-fetch —
+                                            ; str_body_copy re-reads len+ptr fresh from
+                                            ; here, §5.2(4) GC-safety)
+                pop     de                  ; DE = new body ptr
+                push    de                  ; re-guard it for the descriptor write below
+                call    str_body_copy       ; HL(source desc), DE(dest body) -> copies
+                                            ; the source's CURRENT length bytes
+                ld      hl,(STRPTR)
+                ld      a,(hl)              ; length (re-read once more; unchanged —
+                                            ; nothing mutates the source mid-op)
+                ld      hl,(ARY_ADDR)       ; HL = dest element slot
+                ld      (hl),a              ; dest.len
+                inc     hl
+                pop     de                  ; DE = body ptr (guarded above)
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d              ; dest.ptr := the new heap body
                 xor     a
-                ld      (ARY_ERR),a         ; 0 ok (this op cannot fail)
+                ld      (ARY_ERR),a         ; 0 ok
+                ret
+acs_oom:
+                ld      a,4                 ; ARY_ERR: Out of memory (the SAME code
+                                            ; ary_alloc's own OOM uses; the main-ROM
+                                            ; glue's existing ary_errmap already maps
+                                            ; it -> FPERR=6, no main-ROM change needed)
+                ld      (ARY_ERR),a
                 ret
 
 ; --- ARY_AUTODIM_BOUNDS: MAXDIM words, each = 10 (§4.1 #1). Read-only tenant
@@ -387,29 +403,30 @@ ace_ovf:
                 ret
 
 ; --- elsize_from_type: A=type (1/2/4/8) -> A=elsize (bytes per element) ----
-; (arrays slice-3, docs/spec-basic-arrays-slice3-strings.md §4/§5.1). Slice-1
+; (arrays slice-3, docs/spec-basic-arrays-slice3-strings.md §4/§5.1; REVISED
+; arrays slice-4a, docs/spec-basic-arrays-slice4a-string-heap.md §3). Slice-1
 ; baked in the identity elsize=type (2/4/8, int/single/double) -- a STRING
-; element (type=1) breaks that identity: it is NOT 1 byte, it is a full
-; inline [len][bytes:STRMAX] value (§4's own-design choice, byte-identical to
-; the value portion of a STRTAB slot -- value-copy semantics for free, no
-; heap). STRMAX is a build constant (basic/sysvars.inc, included above with
-; ROM_BASE=$2812 -- always the repack value, 64, since this tenant exists
-; only in the repack build), baked in at assembly time. Consulted at every
-; site that previously read `type` directly as a byte count: ary_alloc's
-; data-region sizing (+ the zero-fill it drives) and ary_resolve's ELSIZE
-; cache (which also drives the final offset*elsize multiply and, via the
-; stride-from-data-end arithmetic below, the DESCRIPTOR'S cached stride word
-; too -- no separate stride fix needed, it falls out of DATA_BYTES being
-; correct). The descriptor's OWN stored type byte is UNCHANGED (still the raw
-; 1/2/4/8 -- ary_find's key match, and the main-ROM glue's numeric coercion,
-; need the true type, not the element byte count). Preserves BC,D,E,H,L.
-; Clobbers A only.
+; element (type=1) breaks that identity. Slice-3 sized it as a full inline
+; [len][bytes:STRMAX] value; slice-4a REPLACES that with a 3-byte
+; [len:1][ptr:2] descriptor pointing at a body in the string heap -- the
+; SAME shape as a `$`-var STRTAB slot's own tail and a temp-descriptor-stack
+; entry (§3 of the spec: "a small superset of today's [len][bytes...]
+; convention"). This DECOUPLES a string array's element size from STRMAX
+; entirely (elsize=3 regardless of STRMAX's value) and is what shrinks a
+; string array 1+STRMAX-per-element (65 B at old STRMAX=64) down to 3 B/
+; element. Consulted at every site that previously read `type` directly as a
+; byte count: ary_alloc's data-region sizing (+ the zero-fill it drives,
+; which now zero-fills [len=0][ptr=0] elements -- an empty string per the
+; len==0/ptr==0 convention, exactly matching STR_EMPTY) and ary_resolve's
+; ELSIZE cache. The descriptor's OWN stored type byte is UNCHANGED (still the
+; raw 1/2/4/8). Preserves BC,D,E,H,L. Clobbers A only.
 elsize_from_type:
                 cp      1
                 ret     nz                  ; numeric (2/4/8): elsize = type,
                                             ; unchanged from slice 1
-                ld      a,1+STRMAX          ; string (type=1): elsize = the
-                                            ; inline [len][bytes:STRMAX] size
+                ld      a,3                 ; string (type=1): elsize = the
+                                            ; [len:1][ptr:2] heap descriptor
+                                            ; (slice-4a; was 1+STRMAX inline)
                 ret
 
 ; --- ary_stride: HL=descriptor base (name0) -> DE=total byte size ----------
@@ -481,9 +498,13 @@ af_notfound:
 ; written) -- this differs from the WIP's own ary_alloc, which set FPERR
 ; (a main-ROM-only concept this tenant has no access to); every other detail
 ; (the terminator walk, the ceiling formula, the zero-fill) is unchanged.
-; Own scratch frame on the STACK (IY-addressed, 7 bytes: KEY(2)/TYPE(1)/
-; TAIL(2)/DATA_BYTES(2) -- see the file header for why this moved off
-; ARY_SCR). Clobbers A,B,C,D,E,H,L,IX,IY.
+; Own scratch frame on the STACK (IY-addressed, 10 bytes: KEY(2)/TYPE(1)/
+; TAIL(2)/DATA_BYTES(2)/CEND(2)/RETRIED(1) -- see the file header for why
+; this moved off ARY_SCR. CEND/RETRIED are arrays slice-4a additions (docs/
+; spec-basic-arrays-slice4a-string-heap.md §2/§5.4): the ceiling is now
+; FRETOP (the string heap's own low boundary), and a ceiling collision GCs
+; the heap once before retrying, reclaiming any slack the heap can give
+; back). Clobbers A,B,C,D,E,H,L,IX,IY.
 ary_alloc:
                 dec     sp
                 dec     sp
@@ -491,7 +512,10 @@ ary_alloc:
                 dec     sp
                 dec     sp
                 dec     sp
-                dec     sp                  ; reserve a 7-byte scratch frame
+                dec     sp
+                dec     sp
+                dec     sp
+                dec     sp                  ; reserve a 10-byte scratch frame
                 ld      iy,0
                 add     iy,sp               ; IY = frame base
                 ld      (iy+0),c            ; KEY name1 (C)
@@ -555,26 +579,33 @@ aal_tail:
                                             ; adversarial review, fixed 2026-07-16).
                                             ; aal_oom_pop1 pops the [DEND] just pushed.
                 ex      de,hl               ; DE = candidate end
-                ; ceiling = min(HIMEM,TXTMAX), inlined (single call site) -- unchanged
-                ; from the WIP (HIMEM==0 -> "never CLEAR'd" -> default TXTMAX).
-                ld      hl,(HIMEM)
-                ld      a,h
-                or      l
-                jr      z,aal_ceil_txtmax
-                push    hl                  ; guard HIMEM value across the sbc
-                ld      bc,TXTMAX
-                or      a
-                sbc     hl,bc               ; HL = HIMEM-TXTMAX
-                pop     hl                  ; HL = HIMEM restored
-                jr      c,aal_ceil_have     ; HIMEM<TXTMAX -> ceiling=HIMEM (in HL)
-aal_ceil_txtmax:
-                ld      hl,TXTMAX
-aal_ceil_have:
-                ; HL = ceiling, DE = candidate end (never touched above)
+                ; ceiling = FRETOP (arrays slice-4a §2, docs/spec-basic-arrays-
+                ; slice4a-string-heap.md): the array region may not grow past the
+                ; string heap's low boundary (the heap occupies [FRETOP,C) above
+                ; it). On a collision, GC the heap ONCE (reclaim any compaction
+                ; slack) and retry before declaring OOM (§5.4) -- GC never
+                ; touches array data, so CEND (candidate end, stashed in the
+                ; frame) survives the retry unguarded; only FRETOP can move.
+                ld      (iy+7),e
+                ld      (iy+8),d            ; CEND = candidate end
+                xor     a
+                ld      (iy+9),a            ; RETRIED = 0
+aal_ceil_try:
+                ld      hl,(FRETOP)         ; ceiling
+                ld      e,(iy+7)
+                ld      d,(iy+8)            ; DE = CEND
                 ex      de,hl               ; HL = candidate end, DE = ceiling
                 or      a
                 sbc     hl,de               ; HL = candidate_end - ceiling
-                jp      nc,aal_oom_pop1     ; candidate_end >= ceiling -> OOM
+                jr      c,aal_ceil_fits     ; candidate_end < ceiling -> fits
+                ld      a,(iy+9)
+                or      a
+                jp      nz,aal_oom_pop1     ; already retried once -> genuine OOM
+                ld      a,1
+                ld      (iy+9),a
+                call    strheap_gc          ; compact the heap; may raise FRETOP
+                jr      aal_ceil_try
+aal_ceil_fits:
                 ; --- fits: write the descriptor header (incl. cached stride) ---
                 pop     hl                  ; [DEND] -> HL = data end (= new tail)
                 ld      e,(iy+3)
@@ -647,7 +678,10 @@ aal_zero_done:
                 inc     sp
                 inc     sp
                 inc     sp
-                inc     sp                  ; deallocate the 7-byte frame (INC SP: no
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp                  ; deallocate the 10-byte frame (INC SP: no
                                             ; register/flag effect other than SP)
                 scf
                 ret
@@ -660,7 +694,10 @@ aal_oom:
                 inc     sp
                 inc     sp
                 inc     sp
-                inc     sp                  ; deallocate the 7-byte frame
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp                  ; deallocate the 10-byte frame
                 ld      a,4                 ; ARY_ERR: Out of memory
                 or      a                   ; CF clear
                 ret

@@ -84,6 +84,12 @@ sub_p0_table:
                                                 ;   pure-RAM leaf (descriptor walk, offset
                                                 ;   arithmetic, alloc, bound checks). Main-ROM
                                                 ;   stub is basic/arrays.asm `ary_engine_call`.
+                jp      strheap_engine          ; index 5 (SUBROM_IDX_STRHEAP): the string
+                                                ;   heap engine (arrays slice-4a, docs/spec-
+                                                ;   basic-arrays-slice4a-string-heap.md §9) —
+                                                ;   heap_alloc + GC compaction, a pure-RAM
+                                                ;   leaf. Main-ROM stub is basic/str-
+                                                ;   engine.asm `str_heap_alloc`.
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $0010 mapped slot 3-2 into PAGE 0 and that page-3 RAM is
@@ -168,6 +174,13 @@ sis_spin:
 ; leaf: no BIOS / low-region / main-ROM-resident touch (leaf-audit, §10.1) —
 ; calls nothing outside this file. Its own header has the full rationale.
                 include "arrays.asm"
+
+; ARRAYS SLICE-4a (index 5 = strheap_engine): the string heap engine (docs/
+; spec-basic-arrays-slice4a-string-heap.md), a sibling pure-RAM leaf sharing
+; this page with the array engine above (co-resident, so aeng_copy_str/
+; ary_alloc can call its heap_alloc/strheap_gc entry points directly, no
+; CALSLT). Its own header has the full rationale.
+                include "strheap.asm"
 
 ; --- sub-local is_letter / is_ident_cont (byte-identical own-design clones) --
 ; Resident copies stay in the main ROM (basic/interp.asm is_letter, basic/vars.asm

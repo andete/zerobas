@@ -34,13 +34,18 @@
 
 BACKSLASH       equ     $5C                 ; '\' (avoid the assembler's escape char)
 
+; pu_deref_body ([len][ptr] -> body) lives in the low region (basic/str-
+; engine.asm), shared with print_strval / field.asm / expr.asm's CVI — page 1
+; is byte-full. PRINT USING's string-field sites below reach it by in-slot call.
+
 ex_print_using:
                 inc     hl                  ; past the USING token
                 call    skip_spaces
                 call    str_eval            ; STRPTR -> the format [len][bytes]
                 jp      nc,stmt_error       ; the format must be a string
                 ; copy the format into PU_FMT (it must survive later str_eval calls,
-                ; which reuse STRSCR for literal string VALUES). Clamp to PU_FMTMAX.
+                ; which reuse STRSCR/RVDESC for literal string VALUES). Clamp to
+                ; PU_FMTMAX.
                 push    hl                  ; guard the token cursor
                 ld      hl,(STRPTR)
                 ld      a,(hl)
@@ -49,7 +54,11 @@ ex_print_using:
                 ld      a,PU_FMTMAX
 puf_lenok:
                 ld      (PU_FMTLEN),a
+    IF ROM_BASE < $4000
+                call    pu_deref_body       ; arrays slice-4a: HL(desc)->HL(body)
+    ELSE
                 inc     hl                  ; HL -> format bytes
+    ENDIF
                 ld      de,PU_FMT
                 ld      c,a
                 ld      b,0
@@ -428,7 +437,11 @@ pu_do_string:
                 ld      hl,(STRPTR)
                 ld      a,(hl)
                 ld      c,a                 ; C = source length
+    IF ROM_BASE < $4000
+                call    pu_deref_body       ; HL -> source bytes
+    ELSE
                 inc     hl                  ; HL -> source bytes
+    ENDIF
                 ld      a,(PU_W)
                 ld      b,a                 ; B = field width
 pus_fx_lp:
@@ -452,7 +465,11 @@ pus_fx_pad:
 pus_whole:
                 ld      hl,(STRPTR)
                 ld      b,(hl)              ; length
+    IF ROM_BASE < $4000
+                call    pu_deref_body       ; HL -> bytes
+    ELSE
                 inc     hl
+    ENDIF
 pus_whole_lp:
                 ld      a,b
                 or      a
@@ -467,8 +484,13 @@ pus_first:
                 ld      a,(hl)
                 or      a
                 jr      z,pus_done          ; empty string -> emit nothing
+    IF ROM_BASE < $4000
+                call    pu_deref_body       ; HL -> bytes
+                ld      a,(hl)              ; A = first byte
+    ELSE
                 inc     hl
                 ld      a,(hl)
+    ENDIF
                 call    pchar
 pus_done:
                 pop     hl

@@ -340,7 +340,19 @@ lrs_filled:
                 ld      de,(STRPTR)
                 ld      a,(de)              ; source length
                 ld      c,a                 ; C = source length
+    IF ROM_BASE < $4000
+                push    hl                  ; guard field start
+                ld      h,d
+                ld      l,e                 ; HL = source descriptor addr
+                call    pu_deref_body       ; HL -> source bytes (arrays
+                                            ; slice-4a; shared with
+                                            ; printusing.asm — page 1 has no
+                                            ; slack for a 3rd duplicate)
+                ex      de,hl               ; DE = source bytes
+                pop     hl                  ; HL = field start (restored)
+    ELSE
                 inc     de                  ; DE -> source bytes
+    ENDIF
                 ld      a,(LRSET_W)
                 cp      c
                 jr      nc,lrs_ncopy        ; width >= len -> copy len
@@ -409,7 +421,18 @@ fll_cp:
                 inc     de
                 djnz    fll_cp
 fll_done:
+    IF ROM_BASE < $4000
+                ; arrays slice-4a: FLD_DESC stays a fixed inline [len][bytes:255]
+                ; buffer (never in the heap, spec §5.2) — wrap it as a [len][ptr]
+                ; rvalue descriptor in the shared RVDESC (via the low-region
+                ; mk_rvdesc; safe because fld_lookup's result is consumed
+                ; immediately, RVDESC's standing single-shared-cell property).
+                ld      a,(FLD_DESC)
+                ld      hl,FLD_DESC+1
+                call    mk_rvdesc           ; RVDESC := [len][ptr]; HL = RVDESC
+    ELSE
                 ld      hl,FLD_DESC
+    ENDIF
                 ld      (STRPTR),hl
                 scf
                 ret

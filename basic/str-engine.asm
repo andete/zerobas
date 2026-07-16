@@ -7,128 +7,301 @@
 ; reclaimed page-0 low region ($2812-$3FFF). It is NOT part of the lean 16 KB
 ; basic.rom — the byte-full lean image keeps the minimal string-VALUE layer
 ; (basic/strvar.asm) and this file's callers fold back to str_eval_one there.
-; See docs/spec-basic-string-engine.md and basic/PROVENANCE.md.
+; See docs/spec-basic-arrays-slice4a-string-heap.md and basic/PROVENANCE.md.
 ;
-; S3 delivers the CONCAT spine: the temp-result ring (own-design, spec §3a D-A,
-; N=3) and `+` concatenation of string operands. The core string FUNCTIONS
-; (LEN/ASC/VAL/CHR$/STR$/LEFT$/RIGHT$/MID$) land in S4 — their keyword tokens are
-; already crunched (kwtable.inc) but have no handler yet.
+; REVISED arrays slice-4a (docs/spec-basic-arrays-slice4a-string-heap.md):
+; every string descriptor everywhere is now a uniform 3-byte [len:1][ptr:2]
+; triple; `ptr` -> a body in the string HEAP (a compacting allocator in the
+; sub-ROM tenant, sub/strheap.asm) OR somewhere stable outside it (a token-
+; stream literal, STRSCR, STR_EMPTY, FLD_DESC). The old fixed N=3 STRTMP ring
+; + STRCAT_R global accumulator are GONE, replaced by a temp-descriptor STACK
+; (§6) whose entries own real heap bodies; the concat spine (§7) evaluates
+; every operand into an owned temp BEFORE allocating the final result once,
+; which structurally eliminates the STRCAT_R re-entrancy bug (retiring
+; spec-basic-string-concat-nesting-fix.md).
 ;
-; Clean-room: original code. Concatenation SEMANTICS (left-to-right, truncate the
-; combined length) are from the public MSX-BASIC language reference; the fixed temp
-; ring, the STRMAX clamp, and the descriptor layout are zerobas's own design — the
-; reference ROM's string heap + garbage collector are deliberately NOT reproduced.
-; No disassembly.
+; Clean-room: original code. Concatenation SEMANTICS (left-to-right,
+; truncate the combined length) are from the public MSX-BASIC language
+; reference; the temp-descriptor stack, the heap descriptor layout, and the
+; GC are zerobas's own design (sub/strheap.asm's own header has the full
+; provenance/deviation notes). No disassembly.
 ; ===========================================================================
 
-; --- str_alloc_temp: hand out the next result-ring slot ---------------------
-; The string-producing ops (concat here; the S4 functions later) write their result
-; into a [len][bytes] slot of the STRTMP ring and point STRPTR at it. Slots are used
-; round-robin over STRNTMP entries: a fresh call advances STRTMP_IDX and returns that
-; slot's address. N=3 covers the real expression depth (a binary op has <=2 live
-; operands + 1 result); a deeper nest reuses the oldest slot — a documented own-design
-; truncation of expression depth (spec §3a/§7), mirroring the STRMAX length clamp.
-; out: HL = address of the slot's [len][bytes] descriptor.
-; Clobbers A, DE.
-str_alloc_temp:
-                ld      a,(STRTMP_IDX)
-                inc     a
-                cp      STRNTMP
-                jr      c,sat_store         ; < N -> keep
-                xor     a                   ; wrap to slot 0 (also self-heals garbage RAM)
-sat_store:
-                ld      (STRTMP_IDX),a      ; A = new slot index (0..N-1)
-                ; HL = STRTMP + A*STRTMPSZ
-                ld      hl,STRTMP
+; ===========================================================================
+; String-heap glue (main-ROM side, spec §9/§10): the thin wrapper around the
+; SUBROM_IDX_STRHEAP tenant (heap_alloc/GC live there, sub/strheap.asm) plus
+; the temp-descriptor stack (§6) built on top of it. Every string-producing
+; routine below (concat, the S4 functions) is built on str_temp_alloc /
+; str_snapshot_to_temp.
+; ===========================================================================
+
+; --- call_strheap: dispatch to the string-heap tenant (SUBROM_IDX_STRHEAP) -
+; Shared tail every SH_* glue wrapper below funnels through (13 call sites)
+; instead of repeating "ld ix,.. / call subrom_call / jp c,subrom_absent_
+; error" inline — this low region has no room to spare for the duplication.
+; Clobbers A, IX.
+call_strheap:
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_STRHEAP
+                call    subrom_call
+                ret     nc
+                jp      subrom_absent_error
+
+; --- str_heap_alloc: A=len(0..255) -> CF set+HL=body ptr / CF clear=OOM ----
+; Main-ROM glue for the string-heap tenant's ALLOC op (mirrors
+; basic/arrays.asm's ary_engine_call). Clobbers A, DE, IX.
+str_heap_alloc:
+                ld      (SH_LEN),a
+                xor     a
+                ld      (SH_OP),a           ; op = 0 (ALLOC)
+                call    call_strheap
+                ld      a,(SH_ERR)
                 or      a
-                ret     z                   ; slot 0 -> base
-                ld      de,STRTMPSZ
-sat_add:
-                add     hl,de
-                dec     a
-                jr      nz,sat_add
+                jr      nz,sha_oom
+                ld      hl,(SH_PTR)
+                scf
+                ret
+sha_oom:
+                or      a                   ; CF clear
                 ret
 
-; --- str_copy_desc: copy a [len][bytes] descriptor, clamped to STRMAX -------
-; in:  HL = source descriptor, DE = destination descriptor (>= STRTMPSZ bytes).
-; out: dst len = min(srclen, STRMAX); that many bytes copied. Clobbers A, B, HL, DE.
-str_copy_desc:
-                ld      a,(hl)              ; source length
-                cp      STRMAX + 1
-                jr      c,scd_len           ; <= STRMAX
-                ld      a,STRMAX            ; clamp
-scd_len:
-                ld      (de),a              ; store dst length
+; --- str_heap_oom_error: raise "Out of memory" (FPERR=6 — the SAME code ----
+; arrays' own OOM uses; the shared fre_msgtab entry, no new message).
+str_heap_oom_error:
+                ld      a,6
+                ld      (FPERR),a
+                jp      fp_runtime_error
+
+; err_too_complex: fre_msgtab entry 9's string (interp.asm). MSX-authentic
+; wording (the reference raises exactly this when its own temp-descriptor
+; stack fills, §6/§11) — homed here (low region), not interp.asm's page 1
+; (no slack there), same placement discipline as err_subscript et al
+; (basic/arrays.asm).
+err_too_complex:
+                db      "String formula too complex",13,10,0
+
+; ===========================================================================
+; Shared low-region helpers (arrays slice-4a). Homed HERE (the reclaimed low
+; region) rather than in their page-1 callers because page 1 is byte-full;
+; page 1 reaches them by ordinary in-slot call (page 1 <-> low region are the
+; main ROM's co-mapped slot-0 pages). NOT reachable from a page-0 sub-ROM
+; tenant — but every caller is main-ROM page-1/low code, never a tenant.
+; ===========================================================================
+
+; --- heap_reset: reset the string heap + temp-descriptor stack to EMPTY -----
+; FRETOP := C = min(HIMEM,TXTMAX); TEMPTOP := TEMPBASE. Called by clear_vars
+; (vars.asm) at init/NEW/RUN/CLEAR — the single "variables wiped" hook (§2/§6).
+; Clobbers A,B,C,H,L.
+heap_reset:
+                ld      hl,(HIMEM)
+                ld      a,h
+                or      l
+                jr      z,hr_txtmax
+                push    hl
+                ld      bc,TXTMAX
                 or      a
-                ret     z                   ; empty -> done
-                ld      b,a
-                inc     hl                  ; -> src bytes
-                inc     de                  ; -> dst bytes
-scd_cp:
-                ld      a,(hl)
-                ld      (de),a
+                sbc     hl,bc
+                pop     hl
+                jr      c,hr_have           ; HIMEM<TXTMAX -> ceiling=HIMEM
+hr_txtmax:
+                ld      hl,TXTMAX
+hr_have:
+                ld      (FRETOP),hl
+                ld      hl,TEMPBASE
+                ld      (TEMPTOP),hl
+                ret
+
+; --- pu_deref_body: HL = a [len:1][ptr:2] descriptor address (its len byte
+; already consumed by the caller if needed) -> HL = its CURRENT body address
+; (dereferences the ptr tail). The single shared "[len][ptr] -> bytes" reader
+; for every page-1 string consumer (print_strval, PRINT USING string fields,
+; LSET/RSET, CVI). Clobbers A.
+pu_deref_body:
                 inc     hl
-                inc     de
-                djnz    scd_cp
+                ld      a,(hl)              ; ptr-lo
+                inc     hl
+                ld      h,(hl)              ; ptr-hi
+                ld      l,a                 ; HL = body
                 ret
 
-; --- str_append_desc: append a descriptor onto an accumulator, clamped ------
-; Appends the source string onto the destination accumulator, clamping the COMBINED
-; length to STRMAX (extra source bytes are dropped — the documented own-design
-; truncation, consistent with STRMAX everywhere).
-; in:  HL = source [len][bytes], DE = destination accumulator [len][bytes].
-; out: dst length = min(dstlen + srclen, STRMAX), appended bytes copied.
-; Clobbers A, BC, HL, DE.
-str_append_desc:
-                ld      a,(de)              ; current dst length
-                ld      c,a                 ; C = dst length
-                ld      a,STRMAX
-                sub     c                   ; A = room left (dstlen <= STRMAX, so >= 0)
-                ret     z                   ; full -> append nothing (len already STRMAX)
-                ld      b,(hl)              ; B = source length (bytes available)
-                cp      b
-                jr      nc,sad_cnt          ; room >= srclen -> copy srclen
-                ld      b,a                 ; else copy only 'room' bytes
-sad_cnt:
+; --- mk_rvdesc: A = len, HL = body address -> RVDESC := [len][ptr(=body)];
+; returns HL = RVDESC. The shared "wrap a fixed RAM buffer as a [len][ptr]
+; rvalue descriptor" builder (STRSCR/FLD_DESC producers). Safe as ONE shared
+; RVDESC cell only because each producer's value is consumed immediately
+; (copied into a heap temp / a var's heap body) before the next string sub-
+; expression reuses it. Clobbers A? no — preserves A. Clobbers nothing but the
+; RVDESC cell + HL.
+mk_rvdesc:
+                ld      (RVDESC),a          ; RVDESC.len
+                ld      (RVDESC+1),hl       ; RVDESC.ptr = body
+                ld      hl,RVDESC
+                ret
+
+; --- strscr_desc: wrap the CURRENT STRSCR byte buffer as a [len][ptr] rvalue
+; descriptor in RVDESC (RVDESC.len=(STRSCR), RVDESC.ptr=STRSCR+1). Used by
+; every producer that fills STRSCR directly (MKI$/INPUT$/read_into_strscr
+; callers). out: HL = RVDESC. Clobbers A.
+strscr_desc:
+                ld      a,(STRSCR)
+                ld      hl,STRSCR+1
+                jr      mk_rvdesc
+
+; --- str_eval_lit (repack): a '"'-quoted literal -> a [len][ptr] rvalue -----
+; descriptor over the literal's bytes IN PLACE in the tokenised line (§3:
+; zero-copy — a literal is never mutated, so RVDESC.ptr points straight at
+; the token stream; its ptr sits outside [FRETOP,C) so it is never a GC
+; root). Entered with HL on the opening quote; advances HL past the closing
+; quote. Homed in the low region (page 1 full); str_eval_one (strvar.asm)
+; reaches it by jp. Joins str_eval_ok (page 1) on success. Clobbers A,B,DE,HL.
+str_eval_lit:
+                inc     hl                  ; past the opening quote; HL = literal[0]
+                push    hl                  ; save the literal start
+                ld      b,0                 ; B = length so far (clamped to STRMAX=255)
+sel_lp:
+                ld      a,(hl)
+                or      a
+                jr      z,sel_close         ; unterminated -> stop (treat EOL as end)
+                cp      '"'
+                jr      z,sel_close_q
+                ld      a,b
+                cp      STRMAX
+                jr      nc,sel_skip         ; full: stop counting (scan on to the quote)
+                inc     b
+sel_skip:
+                inc     hl
+                jr      sel_lp
+sel_close_q:
+                inc     hl                  ; past the closing quote
+sel_close:
+                ; HL = cursor past the operand
+                ld      a,b                 ; A = length
+                pop     de                  ; DE = literal start (RVDESC.ptr target)
+                push    hl                  ; guard the advanced cursor
+                ex      de,hl               ; HL = literal start (mk_rvdesc's body)
+                call    mk_rvdesc           ; RVDESC := [len][ptr]; HL = RVDESC
+                ld      (STRPTR),hl
+                pop     hl                  ; HL = cursor past the operand
+                jp      str_eval_ok
+
+; --- print_strval (repack): emit the [len][ptr] descriptor at STRPTR via -----
+; pchar (screen or file per PRDEST). Homed in the low region (page 1 full);
+; print.asm / printusing reach it by in-slot call. The lean build keeps its
+; own inline [len][bytes] copy in strvar.asm. Clobbers A, B, HL.
+print_strval:
+                ld      hl,(STRPTR)
+                ld      b,(hl)              ; B = length
                 ld      a,b
                 or      a
-                ret     z                   ; nothing to append -> dst length unchanged
-                ; update the dst length FIRST (C + B), before the copy loop consumes B.
-                ld      a,c
-                add     a,b                 ; new length = old dstlen + appended count
-                ld      (de),a              ; DE still = dst base
-                inc     hl                  ; HL -> source bytes[0]
-                ; DE -> dst append point = dstbase + 1 + dstlen(C)
-                inc     de                  ; past the length byte
-                ld      a,c
-                add     a,e
-                ld      e,a
-                ld      a,0
-                adc     a,d
-                ld      d,a
-sad_cp:
+                ret     z                   ; empty string -> nothing to print
+                call    pu_deref_body       ; HL = body
+psv_lp:
                 ld      a,(hl)
-                ld      (de),a
+                call    pchar               ; screen or file (PRDEST); preserves all
                 inc     hl
-                inc     de
-                djnz    sad_cp
+                djnz    psv_lp
                 ret
 
-; --- str_concat_tail: fold trailing `+ operand` terms into a temp -----------
-; Entered by str_eval (basic/strvar.asm) AFTER the first operand: HL = cursor just
-; past operand 1, STRPTR -> operand 1's [len][bytes] descriptor, VALTYP = 1. If the
-; next non-space token is the '+' operator (PLUS_TOKEN), allocate ONE result temp,
-; copy operand 1 into it, then repeatedly evaluate "+ <operand>" and append into that
-; temp (clamped to STRMAX), leaving STRPTR -> the result. Otherwise leave STRPTR at
-; operand 1 (single operand — byte-for-byte the old str_eval behaviour).
-;
-; The accumulator R is allocated once and its address held in STRCAT_R, so a whole
-; `A$+B$+C$+...` chain uses a SINGLE ring slot (only R plus one transient operand are
-; ever live). A nested string-function operand (S4) may allocate its own ring slot;
-; the N=3 ring caps the simultaneously-live temps (spec §3a/§7).
-; out: STRPTR -> result, VALTYP = 1, HL past the whole expression, CF set. CF clear if
-;      a trailing operand is malformed (caller errors), matching str_eval_one.
-; Clobbers A, BC, DE, HL.
+
+; --- str_temp_alloc: A=length(0..255) -> push a temp-descriptor-stack ------
+; entry owning a FRESH heap body of that length (§6/§7). Thin main-ROM glue
+; for the string-heap tenant's TEMP_ALLOC op (mirrors str_heap_alloc) — the
+; actual push+alloc mechanics moved to the sub-ROM (sub/strheap.asm
+; she_temp_alloc/sh_temp_push_alloc) once this low region ran out of room
+; for them; see the tenant's own header for the shape-C rationale (§9). out:
+; HL = the new temp-stack descriptor address; DE = the heap body address to
+; fill (0 if length 0). On ANY failure (temp-stack overflow -> FPERR=9
+; "String formula too complex"; heap OOM -> FPERR=6 "Out of memory") sets
+; FPERR and returns a NEUTRALISED len-0/ptr-0 entry instead of aborting here
+; — matches the established deferred-error discipline (D-F2-1/ev_f_empty):
+; every str_eval() caller already checks FPERR at the statement boundary, so
+; the caller can keep going structurally and the abort still happens before
+; any bad value is ever consumed. Clobbers A, DE, IX.
+str_temp_alloc:
+                ld      (SH_LEN),a
+                ld      a,3
+                ld      (SH_OP),a           ; op = 3 (TEMP_ALLOC)
+                call    call_strheap
+                ld      a,(SH_ERR)
+                or      a
+                jr      z,sta_ok
+                cp      2
+                jr      z,sta_overflow
+                ld      a,6
+                ld      (FPERR),a           ; "Out of memory" — the tenant still
+                                            ; hands back a valid (neutralised)
+                                            ; slot on this path
+                ld      hl,(SH_PTR)
+                ld      de,0
+                ret
+sta_ok:
+                ld      hl,(SH_PTR)
+                ld      de,(SH_PTR2)
+                ret
+sta_overflow:
+                ld      a,9
+                ld      (FPERR),a           ; "String formula too complex"
+                ld      hl,STR_EMPTY        ; no slot was reserved -- STR_EMPTY is
+                                            ; always a safe, never-a-GC-root fallback
+                ld      de,0
+                ret
+
+; --- str_snapshot_to_temp: STRPTR -> some source descriptor (anywhere) -----
+; push a NEW temp-stack entry OWNING a fresh heap-copied body, and repoint
+; STRPTR at it. The general "snapshot an rvalue so it survives a later alloc/
+; GC and so a shared mutable scratch (STRSCR) can't be clobbered by
+; evaluating the next sub-expression" primitive — replaces the old
+; str_dup_temp (ring-slot copy); SAME calling convention (out: HL = temp,
+; STRPTR = temp), so every caller below is unchanged beyond the rename. Thin
+; main-ROM glue for the tenant's SNAPSHOT op (same shape-C move as
+; str_temp_alloc above; the copy itself happens tenant-side, she_snapshot).
+; Clobbers A, DE, IX.
+str_snapshot_to_temp:
+                ld      hl,(STRPTR)
+                ld      (SH_SRC),hl         ; source descriptor address (stable)
+                ld      a,4
+                ld      (SH_OP),a           ; op = 4 (SNAPSHOT)
+                call    call_strheap
+                ld      a,(SH_ERR)
+                or      a
+                jr      z,sst_ok
+                cp      2
+                jr      z,sst_overflow
+                ld      a,6
+                ld      (FPERR),a           ; "Out of memory"
+                ld      hl,(SH_PTR)
+                ld      (STRPTR),hl
+                ret
+sst_ok:
+                ld      hl,(SH_PTR)
+                ld      (STRPTR),hl
+                ret
+sst_overflow:
+                ld      a,9
+                ld      (FPERR),a           ; "String formula too complex"
+                ld      hl,STR_EMPTY
+                ld      (STRPTR),hl
+                ret
+
+; ===========================================================================
+; Concat spine (§7): evaluate-all-operands-then-allocate-once. Each operand
+; is snapshotted into its OWN owned temp the moment it's evaluated (before
+; the next operand's eval can clobber it via STRSCR, or the next alloc can
+; GC it) — there is no shared mutable accumulator to clobber, so the old
+; STRCAT_R re-entrancy bug ("A"+MID$("XY"+"Z",1,2)+"B" -> XYZXYB) cannot
+; occur by construction (retires spec-basic-string-concat-nesting-fix.md).
+; ===========================================================================
+
+; --- str_concat_tail: fold trailing `+ operand` terms into one result ------
+; Entered by str_eval (basic/strvar.asm) AFTER the first operand: HL = cursor
+; just past operand 1, STRPTR -> operand 1's descriptor, VALTYP = 1. If the
+; next non-space token is '+' (PLUS_TOKEN), snapshot operand 1 then walk the
+; chain, snapshotting each further operand; once the chain ends, build one
+; result temp (sct_build_result) summing + copying every snapshot in order,
+; clamped to STRMAX=255 (reference left-to-right truncation at the cap).
+; Otherwise leave STRPTR at operand 1 unchanged (single operand — byte-for-
+; byte the old str_eval behaviour, zero-copy).
+; out: STRPTR -> result, VALTYP = 1, HL past the whole expression, CF set. CF
+; clear if a trailing operand is malformed (caller errors), matching
+; str_eval_one. Clobbers A, BC, DE, HL.
 str_concat_tail:
                 push    hl                  ; save cursor (operand-1 end)
                 call    skip_spaces         ; HL -> next non-space
@@ -139,43 +312,89 @@ str_concat_tail:
                 scf
                 ret
 sct_go:
-                pop     bc                  ; discard the stale saved cursor
-                ; HL -> the '+' token. Allocate R, remember it, copy operand 1 into it.
+                pop     bc                  ; discard the stale saved cursor (HL is
+                                            ; already correct: the '+' token, from
+                                            ; skip_spaces above)
                 push    hl                  ; save cursor (@ '+')
-                call    str_alloc_temp      ; HL = R
-                ld      (STRCAT_R),hl       ; remember the accumulator address
-                ex      de,hl               ; DE = R (destination)
-                ld      hl,(STRPTR)         ; HL = operand 1 (source)
-                call    str_copy_desc       ; R := operand 1 (clamped)
+                call    str_snapshot_to_temp ; snapshot operand 1 as a temp
                 pop     hl                  ; HL = cursor (@ '+')
+                ld      b,1                 ; B = operand count so far
+                push    bc                  ; guard the count across the loop's own
+                                            ; register churn
 sct_loop:
                 inc     hl                  ; past the '+'
                 call    skip_spaces         ; HL -> the next operand
                 call    str_eval_one        ; STRPTR -> operand, HL advanced, CF set/clear
-                jr      nc,sct_err          ; malformed operand
+                jr      nc,sct_err          ; malformed operand ([CNT] outstanding,
+                                            ; harmless — the statement aborts
+                                            ; via stmt_error, stack unwound by RET
+                                            ; to a fresh command line, same as
+                                            ; every other malformed-operand exit)
                 push    hl                  ; save advanced cursor
-                ld      de,(STRCAT_R)       ; DE = R (destination)
-                ld      hl,(STRPTR)         ; HL = operand (source)
-                call    str_append_desc     ; R := R + operand (clamped)
+                call    str_snapshot_to_temp ; snapshot this operand as a temp
                 pop     hl                  ; restore cursor
-                ; another '+' ?
+                pop     bc                  ; B = count (restored)
+                inc     b                   ; one more operand
+                push    bc                  ; re-guard
                 push    hl
                 call    skip_spaces
                 ld      a,(hl)
                 cp      PLUS_TOKEN
                 jr      z,sct_next
                 pop     hl                  ; no more terms -> HL past the last operand
-                push    hl                  ; keep the cursor
-                ld      hl,(STRCAT_R)
-                ld      (STRPTR),hl         ; result = R
-                pop     hl                  ; HL = cursor
-                scf
-                ret
+                jr      sct_finish
 sct_next:
                 pop     hl                  ; HL -> the '+' token
                 jr      sct_loop
+sct_finish:
+                pop     bc                  ; B = final operand count            [ ]
+                call    sct_build_result    ; B=count -> HL = result temp descriptor
+                ld      (STRPTR),hl
+                scf
+                ret
 sct_err:
                 or      a                   ; CF clear -> malformed operand
+                ret
+
+; --- sct_build_result: B=operand count -> HL = result temp descriptor ------
+; Thin main-ROM glue for the string-heap tenant's BUILD_CONCAT op (mirrors
+; str_heap_alloc / ary_engine_call). The actual work — sum the last B temp-
+; descriptor-stack entries' lengths (clamped to STRMAX=255), push one new
+; result temp, copy each operand's bytes into it in order — is PURE-RAM
+; pointer/memory work with no `eval`/token-cursor dependency, so it moved to
+; the sub-ROM tenant (sub/strheap.asm strheap_build_concat) once this main-
+; ROM low region ran out of room for it (§9's own "shape C" split: only the
+; `+`-chain WALK — which touches `eval`/the cursor — needs to stay main-
+; side; the temp-stack bookkeeping this performs does not). On SH_ERR=2 (the
+; temp-descriptor stack itself was too full to hold even the ONE result
+; entry) falls back to STR_EMPTY + FPERR=9, matching str_temp_alloc's own
+; deferred-neutralise convention. Clobbers A, B, DE, IX.
+sct_build_result:
+                ld      a,b
+                ld      (SH_LEN),a          ; operand count
+                ld      a,2
+                ld      (SH_OP),a           ; op = 2 (BUILD_CONCAT)
+                call    call_strheap
+                ld      a,(SH_ERR)
+                cp      2
+                jr      z,sbr_overflow
+                cp      1
+                jr      z,sbr_oom
+                ld      hl,(SH_PTR)
+                ret
+sbr_oom:
+                ld      a,6
+                ld      (FPERR),a           ; "Out of memory" (result truncated —
+                                            ; SH_PTR is still a valid, if short,
+                                            ; temp; the deferred FPERR check aborts
+                                            ; the statement before it is consumed)
+                ld      hl,(SH_PTR)
+                ret
+sbr_overflow:
+                ld      a,9
+                ld      (FPERR),a           ; "String formula too complex"
+                ld      hl,STR_EMPTY        ; no result slot at all -- STR_EMPTY is
+                                            ; always a safe, never-a-GC-root fallback
                 ret
 
 ; ===========================================================================
@@ -186,32 +405,17 @@ sct_err:
 ; Clean-room: original code. The verb SEMANTICS (1-based MID$, LEFT$/RIGHT$ head/
 ; tail clamps, ASC "" = error, VAL's leading-parse, STR$'s leading blank for
 ; non-negatives) are from the public MSX-BASIC language reference. Divergences
-; (integer-only VAL per spec D-E; CHR$ takes the low byte of n; the STRMAX length
-; clamp; results that transit the fixed N=3 temp ring, so a concat chain with >=3
-; string-function operands reuses the oldest slot — the documented own-design
-; depth limit, spec §3a/§7) are zerobas's own design. No disassembly.
+; (integer-only VAL per spec D-E; CHR$ takes the low byte of n; results transit
+; the heap-backed temp-descriptor stack, §6/§7) are zerobas's own design. No
+; disassembly.
 ; ===========================================================================
 
 ; --- helpers ---------------------------------------------------------------
 
-; str_dup_temp: copy the descriptor at (STRPTR) into a fresh result-ring temp and
-; repoint STRPTR at it. The string verbs that take a source string (LEFT$/RIGHT$/
-; MID$) dup first, then slice the copy in place — so only the ONE temp address must
-; survive the numeric-argument eval that follows (which may itself move STRPTR via a
-; nested LEN/VAL). in: STRPTR -> source. out: HL = temp, STRPTR = temp. Clobbers A,BC,DE.
-str_dup_temp:
-                call    str_alloc_temp      ; HL = temp (clobbers A,DE)
-                push    hl                  ; save temp
-                ex      de,hl               ; DE = temp (destination)
-                ld      hl,(STRPTR)         ; HL = source
-                call    str_copy_desc       ; temp := source (clamped to STRMAX)
-                pop     hl                  ; HL = temp
-                ld      (STRPTR),hl
-                ret
-
 ; str_min_bc: A = min(A, BC), treating A as a 0..255 length and BC as a 0..65535
 ; requested count. Used to clamp a LEFT$/RIGHT$/MID$ count to the bytes available.
-; Preserves BC, DE, HL. Clobbers A + flags.
+; Preserves BC, DE, HL. Clobbers A + flags. Unchanged from pre-4a (a pure
+; length compare, no descriptor-format dependency).
 str_min_bc:
                 inc     b
                 dec     b                   ; test B (high byte of the count)
@@ -221,31 +425,27 @@ str_min_bc:
                 ld      a,c                 ; else the count is the min
                 ret
 
-; str_temp_slice: in the temp descriptor at BC, keep the count bytes starting at
-; offset `start`, moving them to the front and setting the descriptor length. Used
-; by LEFT$ (start 0 -> pure truncation), RIGHT$ and MID$. Pre-validated so that
-; start+count <= length and count <= STRMAX. in: BC = temp, D = start (0-based),
-; E = count. Clobbers A, BC, DE, HL. Leaves the temp in place (STRPTR unchanged).
+; str_temp_slice: in the temp descriptor at BC, keep E bytes starting at
+; offset D (0-based) of its CURRENT body, moving them to the front of that
+; SAME body (already uniquely owned — no realloc needed, slicing only
+; shrinks/moves within memory we already own) and setting the descriptor's
+; length to E. Used by LEFT$ (start 0 -> pure truncation), RIGHT$ and MID$.
+; Pre-validated so that start+count <= length and count <= STRMAX. in:
+; BC = temp descriptor address, D = start, E = count. Clobbers A, BC, DE, HL.
+; Thin main-ROM glue for the string-heap tenant's SLICE op (mirrors
+; str_heap_alloc) — the byte-move mechanics moved to the sub-ROM
+; (sub/strheap.asm she_slice) once this low region ran out of room for
+; them; SAME calling convention (BC=temp descriptor, D=start, E=count), so
+; every caller (str_fn_left/right/mid) is unchanged. Clobbers A, BC, DE, IX.
 str_temp_slice:
-                ld      a,e
-                ld      (bc),a              ; temp length := count
-                or      a
-                ret     z                   ; count 0 -> empty descriptor, done
+                ld      (SH_SRC),bc
                 ld      a,d
-                or      a
-                ret     z                   ; start 0 -> slice already at the front
-                push    de                  ; save start:count
-                ld      h,b
-                ld      l,c
-                inc     hl                  ; HL = temp+1 = destination (front)
-                push    hl                  ; save destination
-                ld      c,d
-                ld      b,0                 ; BC = start
-                add     hl,bc               ; HL = temp+1+start = source
-                pop     de                  ; DE = destination
-                pop     bc                  ; B = start, C = count
-                ld      b,0                 ; BC = count
-                ldir                        ; move count bytes forward (dst < src, safe)
+                ld      (SH_START),a
+                ld      a,e
+                ld      (SH_COUNT),a
+                ld      a,5
+                ld      (SH_OP),a           ; op = 5 (SLICE)
+                call    call_strheap
                 ret
 
 ; --- LEN/ASC/VAL: string-argument functions in the NUMERIC evaluator -------
@@ -263,9 +463,10 @@ ev_ff_strnum:
                 jp      ev_f_err            ; a $FF string-token used in a numeric slot
 
 ; ev_str_arg: parse "( <string-expr> )" from the IX token stream, leaving STRPTR ->
-; the argument's [len][bytes] descriptor and IX past ')'. Mirrors ev_ff_cvi's IX<->HL
+; the argument's descriptor and IX past ')'. Mirrors ev_ff_cvi's IX<->HL
 ; bridge. On a syntax/type error it does not return — it `jp ev_f_err` like every
-; other factor error. Entered with IX on the function selector byte.
+; other factor error. Entered with IX on the function selector byte. UNCHANGED
+; from pre-4a (format-agnostic — it only ever hands off to str_eval).
 ev_str_arg:
                 inc     ix                  ; skip the selector
                 call    ev_sp
@@ -303,8 +504,8 @@ ev_str_arg:
 ev_ff_len:
                 call    ev_str_arg          ; STRPTR -> desc
                 ld      hl,(STRPTR)
-                ld      e,(hl)              ; DE = descriptor length byte
-                ld      d,0
+                ld      e,(hl)              ; DE = descriptor length byte (still
+                ld      d,0                 ; offset 0 in the new format — unchanged)
                 ret
 ev_ff_asc:
                 call    ev_str_arg
@@ -313,89 +514,34 @@ ev_ff_asc:
                 or      a
                 jp      z,ev_f_err          ; ASC("") -> Illegal function call
                 inc     hl
-                ld      e,(hl)              ; DE = first byte
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = ptr (the body address)
+                ld      a,(de)              ; first byte of the body
+                ld      e,a
                 ld      d,0
                 ret
 ev_ff_val:
-                call    ev_str_arg
-                ; fall through: parse a leading signed decimal from the descriptor.
-; str_val_parse: STRPTR -> [len][bytes]; parse an optional-sign leading decimal
-; integer -> DE (0 if no digits; integer-only, spec D-E). Clobbers A,BC,HL.
-str_val_parse:
-                ld      hl,(STRPTR)
-                ld      b,(hl)              ; B = remaining byte count
-                inc     hl                  ; HL -> bytes
-                ld      de,0                ; accumulator
-                ld      c,0                 ; C bit0 = negative flag
-svp_sp:
-                ld      a,b
-                or      a
-                jr      z,svp_done          ; consumed all -> value so far
-                ld      a,(hl)
-                cp      ' '
-                jr      nz,svp_sign
-                inc     hl
-                dec     b
-                jr      svp_sp              ; skip leading spaces
-svp_sign:
-                cp      '-'
-                jr      nz,svp_plus
-                ld      c,1                 ; negative
-                inc     hl
-                dec     b
-                jr      svp_digits
-svp_plus:
-                cp      '+'
-                jr      nz,svp_digits
-                inc     hl
-                dec     b
-svp_digits:
-                ld      a,b
-                or      a
-                jr      z,svp_fin
-                ld      a,(hl)
-                cp      '0'
-                jr      c,svp_fin
-                cp      '9'+1
-                jr      nc,svp_fin
-                sub     '0'                 ; A = digit 0..9
-                push    hl                  ; guard the string cursor across the *10
-                push    af                  ; save the digit
-                ld      h,d
-                ld      l,e                 ; HL = acc
-                add     hl,hl               ; *2
-                add     hl,hl               ; *4
-                add     hl,hl               ; *8
-                ex      de,hl               ; DE = acc*8 ; HL = acc
-                add     hl,hl               ; HL = acc*2
-                add     hl,de               ; HL = acc*10
-                pop     af                  ; A = digit
-                ld      d,0
-                ld      e,a
-                add     hl,de               ; HL = acc*10 + digit
-                ex      de,hl               ; DE = new acc
-                pop     hl                  ; restore string cursor
-                inc     hl
-                dec     b
-                jr      svp_digits
-svp_fin:
-                bit     0,c
-                jr      z,svp_done          ; non-negative -> DE is the value
-                ld      hl,0
-                or      a
-                sbc     hl,de               ; HL = -DE
-                ex      de,hl               ; DE = negated value
-svp_done:
+                call    ev_str_arg          ; STRPTR -> the string-arg descriptor
+                ; VAL's leading-signed-decimal parse (integer-only, spec D-E)
+                ; moved to the sub-ROM tenant (sub/strheap.asm sh_val_parse,
+                ; op=13) — pure-RAM parse of (STRPTR)'s body, page-1/low both
+                ; byte-full. Thin glue mirrors str_heap_alloc.
+                ld      a,13
+                ld      (SH_OP),a           ; op = 13 (VAL_PARSE)
+                call    call_strheap
+                ld      de,(SH_PTR)         ; DE = the parsed integer value
                 ret
 
 ; --- CHR$/STR$/LEFT$/RIGHT$/MID$: string-VALUED $FF functions ---------------
 ; Reached from str_eval_maybe_mki (basic/strvar.asm) via `jp str_func_ff` on a
 ; non-MKI$ $FF token (repack build only). Entered with HL on the selector byte and
-; a string context wanting a value. On success each writes its result into a result-
-; ring temp, points STRPTR at it, and joins str_eval_ok (VALTYP=1, CF set, HL past
-; the call). A malformed call or a non-string $FF token falls to str_eval_no (CF
-; clear) so the caller treats it as "not a string operand" (an error, or — in the
-; numeric/PRINT path — a retry as a numeric factor).
+; a string context wanting a value. On success each pushes its result as a new
+; temp-descriptor-stack entry, points STRPTR at it, and joins str_eval_ok
+; (VALTYP=1, CF set, HL past the call). A malformed call or a non-string $FF
+; token falls to str_eval_no (CF clear) so the caller treats it as "not a
+; string operand" (an error, or — in the numeric/PRINT path — a retry as a
+; numeric factor). Dispatch shell UNCHANGED from pre-4a.
 str_func_ff:
                 ld      a,(hl)
                 cp      CHRD_TOKEN          ; $96 -> CHR$
@@ -431,15 +577,14 @@ str_fn_chr:
                 jp      nz,str_eval_no
                 inc     hl                  ; HL past ')'
                 push    hl                  ; guard cursor across the temp write
-                ld      a,e                 ; A = the char (low byte of n)
-                push    af
-                call    str_alloc_temp      ; HL = temp (clobbers A,DE)
-                pop     af                  ; A = char
-                ld      (hl),1              ; length = 1
-                inc     hl
-                ld      (hl),a              ; the byte
-                dec     hl                  ; HL = temp base
-                ld      (STRPTR),hl
+                ld      a,1
+                ld      (SH_LEN),a          ; length = 1 (FILL op, same as
+                ld      a,e                 ; SPACE$/STRING$ — shape-C follow-up)
+                ld      (SH_FILLBYTE),a     ; fill byte = the char (low byte of n)
+                ld      a,8
+                ld      (SH_OP),a           ; op = 8 (FILL)
+                call    call_strheap
+                call    shx_finish          ; shared SH_ERR/SH_PTR -> STRPTR tail
                 pop     hl                  ; restore cursor
                 jp      str_eval_ok
 
@@ -458,45 +603,48 @@ str_fn_str:
                 cp      ')'
                 jp      nz,str_eval_no
                 inc     hl                  ; HL past ')'
-                push    hl                  ; guard cursor
+                push    hl                  ; guard cursor                       [CURSOR]
                 ld      c,0                 ; C = leading-space count
                 bit     7,d                 ; sign of n
                 jr      nz,sfs_conv         ; negative -> no leading space
                 inc     c                   ; non-negative -> one leading space
 sfs_conv:
                 call    pu_fmt_int          ; NUMBUF="[-]digits",0; B=digit count; C preserved
-                call    str_alloc_temp      ; HL = temp base (clobbers A,DE; B,C survive)
-                push    hl                  ; save temp base
                 ld      a,c
                 add     a,b                 ; total length = leading space + digits
-                ld      (hl),a
-                inc     hl                  ; -> temp bytes
+                push    bc                  ; guard B(digits),C(leadspace)         [CURSOR][BC]
+                call    str_temp_alloc      ; A=total -> HL=temp desc, DE=body (or 0)
+                pop     bc                  ; B=digits, C=leadspace                [CURSOR]
+                push    hl                  ; guard temp desc addr                  [CURSOR][TDESC]
+                ld      a,d
+                or      e
+                jr      z,sfs_finish        ; failure -> DE=0, nothing to fill
                 ld      a,c
                 or      a
                 jr      z,sfs_digits
-                ld      (hl),' '            ; leading blank
-                inc     hl
-sfs_digits:
-                ld      de,NUMBUF
-sfs_cp:
-                ld      a,(de)
-                ld      (hl),a
+                ld      a,' '
+                ld      (de),a
                 inc     de
+sfs_digits:
+                ld      hl,NUMBUF
+sfs_cp:
+                ld      a,(hl)
+                ld      (de),a
                 inc     hl
+                inc     de
                 djnz    sfs_cp              ; B = digit count (>=1)
-                pop     hl                  ; HL = temp base
+sfs_finish:
+                pop     hl                  ; HL = temp desc addr                    [CURSOR]
                 ld      (STRPTR),hl
-                pop     hl                  ; restore cursor
+                pop     hl                  ; restore cursor                            [ ]
                 jp      str_eval_ok
 
-; LEFT$(a$,n): the first min(n,len) bytes. Dup the source into a temp, then truncate.
+; LEFT$(a$,n): the first min(n,len) bytes. Snapshot the source into an owned
+; temp, then truncate in place.
 ; str_arg_empty: an empty string-function first argument (LEFT$()/RIGHT$()/MID$(),
 ; or a leading ','). Raise the deferred "syntax error" (D-F2-3) like ev_f's ')'/','
 ; gate, then take the ordinary str_eval_no "not a string operand" exit -- the PRINT/
 ; LET driver's FPERR check (ems_print / check_expr_errors) then aborts the statement.
-; This is what BREAKS the pre-existing runaway: without the flag, the numeric
-; fallback (ev_ff_strnum -> ev_f_err) returns 0 WITHOUT advancing the cursor and the
-; PRINT item loop spins forever printing 0 (spec-basic-empty-expr-syntax-error.md).
 str_arg_empty:
                 ld      a,4
                 ld      (FPERR),a
@@ -515,7 +663,7 @@ str_fn_left:
                 call    str_eval            ; STRPTR -> source; HL advanced; CF=ok
                 jp      nc,str_eval_no
                 push    hl                  ; save cursor@','
-                call    str_dup_temp        ; STRPTR -> temp copy of source; HL=temp
+                call    str_snapshot_to_temp ; STRPTR -> owned temp copy; HL=temp
                 pop     hl
                 ld      a,(hl)
                 cp      ','
@@ -545,7 +693,7 @@ str_fn_left:
                 pop     hl                  ; restore cursor
                 jp      str_eval_ok
 
-; RIGHT$(a$,n): the last min(n,len) bytes. Dup, then slice from (len-count).
+; RIGHT$(a$,n): the last min(n,len) bytes. Snapshot, then slice from (len-count).
 str_fn_right:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
@@ -560,7 +708,7 @@ str_fn_right:
                 call    str_eval
                 jp      nc,str_eval_no
                 push    hl
-                call    str_dup_temp
+                call    str_snapshot_to_temp
                 pop     hl
                 ld      a,(hl)
                 cp      ','
@@ -593,7 +741,7 @@ str_fn_right:
                 jp      str_eval_ok
 
 ; MID$(a$,p[,n]): count bytes from 1-based position p (or to end if n omitted).
-; p<1 is clamped to the start; p>len yields "". Dup, then slice.
+; p<1 is clamped to the start; p>len yields "". Snapshot, then slice.
 str_fn_mid:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
@@ -608,7 +756,7 @@ str_fn_mid:
                 call    str_eval            ; STRPTR -> source
                 jp      nc,str_eval_no
                 push    hl
-                call    str_dup_temp        ; STRPTR -> temp copy; HL=temp
+                call    str_snapshot_to_temp ; STRPTR -> owned temp copy; HL=temp
                 pop     hl
                 ld      a,(hl)
                 cp      ','
@@ -687,6 +835,11 @@ sfm_reject2:
 ; The dest descriptor address is stashed in MIDS_DEST (aliases NUMBUF, dead here) so
 ; the token cursor stays in HL through the whole arg parse. Entered with HL ON the
 ; $FF (PEEK_PREFIX). Clobbers A, BC, DE, HL.
+;
+; Arrays slice-4a REVISION: A$/B$ are now [len:1][ptr:2] descriptors, not inline
+; [len][bytes]. The write target is A$'s CURRENT body (dereferenced from MIDS_DEST,
+; +n-1 for the 1-based position) — MID$ overwrites bytes IN PLACE inside A$'s own
+; already-owned heap body (its length never changes, so no realloc is ever needed).
 ex_mid_stmt:
                 inc     hl                  ; -> the function selector
                 ld      a,(hl)
@@ -702,7 +855,7 @@ ex_mid_stmt:
                 jp      z,stmt_error         ; not a string var -> error
                 call    var_name_key        ; BC = key, HL past name + `$`
                 push    hl                  ; [cursor] guard across str_get_key
-                call    str_get_key         ; HL -> dest [len][bytes] (STRTAB, or STR_EMPTY)
+                call    str_get_key         ; HL -> dest descriptor (STRTAB, or STR_EMPTY)
                 ld      (MIDS_DEST),hl      ; stash dest addr; cursor kept on the stack
                 pop     hl                  ; HL = cursor
                 ld      a,(hl)
@@ -714,7 +867,7 @@ ex_mid_stmt:
                 ld      a,(hl)
                 cp      ','
                 jr      z,ems_have_m
-                ld      de,$00FF            ; m omitted -> a cap larger than any avail (<=64)
+                ld      de,$00FF            ; m omitted -> a cap larger than any avail (<=255)
                 jr      ems_close
 ems_have_m:
                 inc     hl
@@ -735,58 +888,27 @@ ems_close:
                 call    str_eval            ; STRPTR -> RHS B$; HL = post-B$ cursor
                 jp      nc,ems_err_pop2     ; not a string operand
                 ; --- compute + copy. HL = the continue cursor (keep it). ---
+                ; n<1/n>255 and the La>=n check, the avail/cap derivation, the
+                ; final k=min(cap,Lb), and the actual byte-overwrite ALL moved
+                ; to the sub-ROM tenant (sub/strheap.asm sh_mid_store, op=9,
+                ; SH_ERR=3 signals the range error) — shape-C follow-up, this
+                ; low region ran out of room for the arithmetic too.
                 pop     de                  ; DE = m           stack: [n]
                 pop     bc                  ; BC = n           stack: []
-                push    hl                  ; [cursor] guard across the copy
-                ; validate 1 <= n <= La. n in BC (C=low, B=high).
-                ld      a,b
-                or      a
-                jr      nz,ems_range        ; n > 255 -> error
-                ld      a,c
-                or      a
-                jr      z,ems_range         ; n == 0 -> error
+                push    hl                  ; [cursor] guard across the call
+                ld      (SH_NUM),de         ; m
+                ld      (SH_START),bc       ; n (full 16-bit; sub-side range-
+                                            ; checks 1..255 itself)
+                ld      hl,(STRPTR)
+                ld      (SH_SRC),hl         ; B$ descriptor address
                 ld      hl,(MIDS_DEST)
-                ld      a,(hl)              ; A = La
-                cp      c
-                jr      c,ems_range         ; La < n -> n > La -> error
-                sub     c                   ; A = La - n
-                inc     a                   ; A = avail = La - n + 1  (1..La)
-                ; cap = min(avail, m). avail in A, m in DE.
-                ld      b,a                 ; B = avail
-                ld      a,d
-                or      a
-                jr      nz,ems_cap_avail    ; m >= 256 -> cap = avail
-                ld      a,b                 ; avail
-                cp      e                   ; avail - m
-                jr      c,ems_cap_avail     ; avail < m -> cap = avail
-                ld      a,e                 ; cap = m
-                jr      ems_have_cap
-ems_cap_avail:
-                ld      a,b                 ; cap = avail
-ems_have_cap:
-                ; k = min(cap, Lb). cap in A, Lb = (STRPTR).
-                ld      b,a                 ; B = cap
-                ld      hl,(STRPTR)         ; HL -> B$ descriptor
-                ld      a,(hl)              ; A = Lb
-                cp      b
-                jr      nc,ems_k            ; Lb >= cap -> k = cap
-                ld      b,a                 ; k = Lb
-ems_k:
-                ld      a,b
-                or      a
-                jr      z,ems_done          ; k == 0 -> nothing to copy
-                inc     hl                  ; HL -> B$ bytes (source)
-                ld      de,(MIDS_DEST)      ; write_ptr = dest + n (dest[n] = 1-based byte n)
-                ld      a,c                 ; n (1..La <= STRMAX)
-                add     a,e
-                ld      e,a
-                jr      nc,ems_nocarry
-                inc     d
-ems_nocarry:
-                ld      c,b
-                ld      b,0                 ; BC = k
-                ldir                        ; overwrite k bytes of A$ with B$'s bytes
-ems_done:
+                ld      (SH_DEST),hl        ; A$ descriptor address
+                ld      a,9
+                ld      (SH_OP),a           ; op = 9 (MID_STORE)
+                call    call_strheap
+                ld      a,(SH_ERR)
+                cp      3
+                jr      z,ems_range         ; range error (n<1/n>255/n>La)
                 pop     hl                  ; HL = continue cursor
                 jp      exec_stmt
 ems_range:
@@ -808,17 +930,16 @@ ems_err_pop1:
 ; Clean-room: original code. Verb SEMANTICS (unsigned-16 HEX$/OCT$ text, STRING$
 ; numeric-code-vs-string-first-byte dual form, INSTR 1-based search) are from the
 ; public MSX-BASIC language reference, oracle-locked black-box on the Philips
-; VG-8020 (S2 gate). The STRMAX clamp / negative-length error (D-3) and the N=3
-; ring reuse are zerobas's own design, consistent with the rest of the engine.
-; No disassembly.
+; VG-8020 (S2 gate). The STRMAX clamp / negative-length error (D-3) are zerobas's
+; own design, consistent with the rest of the engine. No disassembly.
 ; ===========================================================================
 
 ; str_fn_hex: HEX$(n) -> uppercase hex text of n viewed as an UNSIGNED 16-bit
 ; value, no leading zeros, always >=1 digit (D-2: HEX$(0)="0", HEX$(-1)="FFFF").
-; Reimplements detok_hex16's (list.asm:330) nibble/leading-zero-suppression logic
-; writing into a ring temp (length-counted) instead of NUMBUF+print_string --
-; detok_hex16 itself stays byte-identical (LIST unperturbed). hex_digit is a
-; pure leaf (clobbers only A), so it's safe to call with BC/DE/HL live.
+; The nibble/leading-zero-suppression build (was inline here) moved to the
+; sub-ROM tenant (sub/strheap.asm sh_hex_build, op=6) — shape-C follow-up,
+; this low region ran out of room for it; only the argument PARSE (needs
+; `eval`) stays main-side. Thin glue mirrors str_heap_alloc.
 str_fn_hex:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
@@ -835,58 +956,18 @@ str_fn_hex:
                 cp      ')'
                 jp      nz,str_eval_no
                 inc     hl                  ; HL past ')'
-                push    hl                  ; guard cursor across the temp write
-                push    de                  ; guard n across str_alloc_temp (clobbers A,DE)
-                call    str_alloc_temp      ; HL = temp base
-                pop     de                  ; DE = n
-                push    hl                  ; save temp base
-                inc     hl                  ; HL -> temp bytes (write cursor)
-                ld      c,0                 ; C = digit count so far
-                ld      b,0                 ; B = "a non-zero nibble was seen" flag
-                ld      a,d
-                call    sfx_nib_hi
-                ld      a,d
-                call    sfx_nib_lo
-                ld      a,e
-                call    sfx_nib_hi
-                ld      a,e
-                and     $0F                 ; the last nibble is always emitted
-                call    hex_digit
-                ld      (hl),a
-                inc     hl
-                inc     c
-                pop     hl                  ; HL = temp base
-                ld      (hl),c              ; length = digit count (1..4)
-                ld      (STRPTR),hl
+                push    hl                  ; guard cursor
+                ld      (SH_NUM),de
+                ld      a,6
+                ld      (SH_OP),a           ; op = 6 (HEX_BUILD)
+                call    call_strheap
+                call    shx_finish
                 pop     hl                  ; restore cursor
                 jp      str_eval_ok
-sfx_nib_hi:
-                rrca
-                rrca
-                rrca
-                rrca
-sfx_nib_lo:
-                and     $0F
-                jr      nz,sfx_emit         ; non-zero nibble -> always emit
-                ld      a,b
-                or      a
-                ret     z                   ; still in leading zeros -> skip
-                xor     a                   ; a zero after a non-zero -> emit 0
-sfx_emit:
-                ld      b,1                 ; mark: from now on emit everything
-                call    hex_digit
-                ld      (hl),a
-                inc     hl
-                inc     c
-                ret
 
 ; str_fn_oct: OCT$(n) -> octal text of n (unsigned 16-bit view), no leading
-; zeros, always >=1 digit. Reimplements detok_oct16's (list.asm:376) digit-group
-; loop into a ring temp; detok_oct16 itself stays byte-identical. Unlike
-; str_fn_hex (a fixed 4 nibbles, so a running count in C is free), the octal
-; loop already uses C as its "remaining groups" countdown, so the digit count
-; is derived AFTER the loop by pointer difference (end-of-write-cursor minus
-; the saved temp base) instead of threading a second counter through it.
+; zeros, always >=1 digit. Same shape-C move (sub/strheap.asm sh_oct_build,
+; op=7); only the argument PARSE stays main-side.
 str_fn_oct:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
@@ -898,76 +979,46 @@ str_fn_oct:
                 cp      ')'
                 jp      nz,str_eval_no
                 inc     hl                  ; HL past ')'
-                push    hl                  ; guard cursor                stack: [cursor]
-                push    de                  ; guard n across str_alloc_temp
-                call    str_alloc_temp      ; HL = temp base
-                pop     de                  ; DE = n
-                push    hl                  ; save temp base       stack: [cursor][tempbase]
-                inc     hl                  ; HL -> temp bytes (write cursor)
-                ld      b,0                 ; B = leading-zero suppression flag
-                ld      a,d                 ; digit 0 = bit 15 (0 or 1)
-                rlca                        ; CF = bit 15
-                ld      a,0
-                rla                         ; A = bit 15
-                call    sfo_digit_susp      ; emit unless a suppressed leading zero
-                sla     e                   ; discard bit 15 (already emitted)
-                rl      d
-                ld      c,5                 ; five remaining 3-bit groups
-sfo_lp:
-                call    sfo_shift3          ; A = next 3 bits (DE <<= 3)
-                dec     c
-                jr      z,sfo_last          ; the last group is always emitted
-                call    sfo_digit_susp
-                jr      sfo_lp
-sfo_last:
-                call    oct_digit
-                ld      (hl),a
-                inc     hl                  ; HL = end (temp base + 1 + ndigits)
-                pop     bc                  ; BC = temp base               stack: [cursor]
-                or      a
-                sbc     hl,bc               ; HL = end - base = 1 + ndigits
-                dec     hl                  ; HL = ndigits (1..6; H=0)
-                ld      a,l
-                ld      (bc),a              ; temp[0] = length
-                ld      h,b
-                ld      l,c                 ; HL = temp base
-                ld      (STRPTR),hl
+                push    hl                  ; guard cursor
+                ld      (SH_NUM),de
+                ld      a,7
+                ld      (SH_OP),a           ; op = 7 (OCT_BUILD)
+                call    call_strheap
+                call    shx_finish
                 pop     hl                  ; restore cursor
                 jp      str_eval_ok
-; emit octal digit in A unless it is a leading zero (B tracks "seen non-zero").
-; Writes the digit at (hl) and advances HL when emitted; C (the loop's
-; remaining-groups countdown) is untouched.
-sfo_digit_susp:
+
+; shx_finish: shared HEX_BUILD/OCT_BUILD result tail. Reads SH_ERR/SH_PTR
+; (set by either op), maps SH_ERR=2 (temp-descriptor stack full) to FPERR=9
+; and STR_EMPTY, else publishes SH_PTR as the new STRPTR (SH_ERR=1, heap OOM,
+; is honoured too — FPERR=6 — though a <=6-byte alloc essentially never hits
+; it). Clobbers A, HL.
+shx_finish:
+                ld      a,(SH_ERR)
                 or      a
-                jr      nz,sfo_set
-                ld      a,b
-                or      a
-                ret     z                   ; leading zero -> skip
-                xor     a                   ; non-leading zero -> emit '0'
-sfo_set:
-                ld      b,1
-                call    oct_digit
-                ld      (hl),a
-                inc     hl
+                jr      z,shxf_ok
+                cp      2
+                jr      z,shxf_overflow
+                ld      a,6
+                ld      (FPERR),a           ; "Out of memory"
+                ld      hl,(SH_PTR)
+                ld      (STRPTR),hl
                 ret
-; sfo_shift3: shift DE left 3 bits, return the 3 bits that fell off the top in A.
-sfo_shift3:
-                ld      a,0
-                sla     e
-                rl      d
-                rla
-                sla     e
-                rl      d
-                rla
-                sla     e
-                rl      d
-                rla
-                and     7
+shxf_ok:
+                ld      hl,(SH_PTR)
+                ld      (STRPTR),hl
+                ret
+shxf_overflow:
+                ld      a,9
+                ld      (FPERR),a           ; "String formula too complex"
+                ld      hl,STR_EMPTY
+                ld      (STRPTR),hl
                 ret
 
 ; str_fn_space: SPACE$(n) -> n space ($20) bytes, clamped to STRMAX (D-3); a
 ; negative n is a function error (own-design, mirrors ASC ""). The clamp reuses
-; str_min_bc (A=STRMAX ceiling, BC=n) exactly like LEFT$/RIGHT$/MID$'s count clamp.
+; str_min_bc (A=STRMAX ceiling, BC=n), exactly like LEFT$/RIGHT$/MID$'s count clamp.
+; Length is known upfront -> allocate once, fill directly.
 str_fn_space:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
@@ -981,59 +1032,56 @@ str_fn_space:
                 inc     hl                  ; HL past ')'
                 bit     7,d
                 jp      nz,str_eval_no      ; negative n -> function error (D-3)
-                push    hl                  ; guard cursor across the temp write
+                push    hl                  ; guard cursor
                 ld      b,d
                 ld      c,e                 ; BC = n (str_min_bc's "count")
-                push    bc                  ; guard n across str_alloc_temp (clobbers A,DE)
-                call    str_alloc_temp      ; HL = temp base
-                pop     bc                  ; BC = n
                 ld      a,STRMAX            ; A = ceiling
                 call    str_min_bc          ; A = min(STRMAX, n) = clamped fill count
-                ld      (hl),a              ; length = clamped count
-                ld      (STRPTR),hl
-                or      a
-                jr      z,sfp_done          ; 0 spaces -> nothing to fill
-                inc     hl                  ; -> temp bytes
-                ld      b,a                 ; B = fill count (djnz counter; <=STRMAX<256)
-sfp_lp:
-                ld      (hl),' '
-                inc     hl
-                djnz    sfp_lp
-sfp_done:
+                ld      (SH_LEN),a
+                ld      a,' '
+                ld      (SH_FILLBYTE),a
+                ld      a,8
+                ld      (SH_OP),a           ; op = 8 (FILL) -- shape-C follow-up:
+                                            ; the fill loop moved to the sub-ROM
+                                            ; tenant (sub/strheap.asm sh_fill),
+                                            ; this low region ran out of room
+                call    call_strheap
+                call    shx_finish          ; shared SH_ERR/SH_PTR -> STRPTR tail
                 pop     hl                  ; restore cursor
                 jp      str_eval_ok
 
 ; str_fn_inkey: INKEY$ -> a 0- or 1-character string. Samples the keyboard ONCE,
 ; strictly non-blocking (D-2): CHSNS ($009C) reports Z = buffer empty / NZ = a key
 ; waits; on a key, CHGET ($009F) consumes it (non-blocking here because CHSNS just
-; saw it). The result is a temp-ring [len][bytes] descriptor (D-4): length 0 (empty)
-; or 1 (the key byte). No arguments/parens to parse -- HL just steps past the
-; INKEY_TOKEN. Control keys pass through as their raw code (D-5, own-design). CHSNS /
-; CHGET are published MSX BIOS console entries (MSX Assembly Page / MSX2 TH jump
-; table -- the same source the REPL's CHGET/CHPUT cite); no disassembly. Entered
-; from str_eval_one (basic/strvar.asm) with HL ON the INKEY_TOKEN ($EC). The Z
-; result and both cursors are threaded through the stack across the BIOS calls and
-; str_alloc_temp (which clobbers A/DE). Clobbers A, BC, DE, HL.
+; saw it). No arguments/parens to parse -- HL just steps past the INKEY_TOKEN.
+; Control keys pass through as their raw code (D-5, own-design). Entered from
+; str_eval_one (basic/strvar.asm) with HL ON the INKEY_TOKEN ($EC).
 str_fn_inkey:
-                inc     hl                  ; past the INKEY_TOKEN ($EC); no args to parse
-                push    hl                  ; guard the string-eval cursor
+                inc     hl                  ; past the INKEY_TOKEN; no args to parse
+                push    hl                  ; guard cursor                            [CURSOR]
                 call    CHSNS               ; Z = keyboard buffer empty
-                push    af                  ; guard the Z result across str_alloc_temp
-                call    str_alloc_temp      ; HL = temp descriptor base (clobbers A, DE)
-                pop     af                  ; recover the CHSNS Z flag
+                jr      z,sfi_empty
+                call    CHGET               ; A = the waiting key
+                push    af                  ; guard key byte                            [CURSOR][KEY]
+                ld      a,1
+                call    str_temp_alloc      ; -> HL=temp desc, DE=body(1B, or 0 on fail)
                 ld      (STRPTR),hl
-                jr      z,sfi_empty         ; no key -> empty string
-                push    hl                  ; guard the descriptor base across CHGET
-                call    CHGET               ; A = the waiting key (consumes it)
-                pop     hl
-                ld      (hl),1              ; length = 1
-                inc     hl
-                ld      (hl),a              ; the key byte (raw code, D-5)
+                ld      a,d
+                or      e
+                jr      z,sfi_nowrite       ; failure -> DE=0
+                pop     af                  ; A = key byte                              [CURSOR]
+                ld      (de),a
                 jr      sfi_done
-sfi_empty:
-                ld      (hl),0              ; length = 0 (empty string)
+sfi_nowrite:
+                pop     af                  ; discard the guarded key byte (balance)     [CURSOR]
 sfi_done:
-                pop     hl                  ; restore cursor
+                pop     hl                  ; restore cursor                                [ ]
+                jp      str_eval_ok
+sfi_empty:
+                xor     a
+                call    str_temp_alloc      ; A=0 -> HL=temp desc(len0,ptr0), DE=0
+                ld      (STRPTR),hl
+                pop     hl                  ; restore cursor                                [ ]
                 jp      str_eval_ok
 
 ; str_fn_string: STRING$(n,c) / STRING$(n,x$) -> n copies of a single fill
@@ -1043,13 +1091,8 @@ sfi_done:
 ; mirrors ASC ""); otherwise it is re-parsed numerically via `eval` and the low
 ; byte is the character code. Entered from str_eval_one (basic/strvar.asm) with
 ; HL ON the STRING_TOKEN byte itself ($E3) -- a single-byte reserved-word
-; token (Group B), unlike the $FF-prefixed Group A verbs above.
-;
-; The clamped count is computed EARLY (right after `n`, before the 2nd arg is
-; even parsed) so only ONE byte (the count) -- not the full 16-bit `n` -- needs
-; to survive the 2nd-arg probe/eval and the ')' check; count, fill byte, and
-; the cursor are then threaded through str_alloc_temp (which clobbers A/DE) via
-; the stack, popped back in matching LIFO order. Clobbers A, BC, DE, HL.
+; token (Group B), unlike the $FF-prefixed Group A verbs above. Length known
+; upfront -> allocate once, fill directly.
 str_fn_string:
                 inc     hl                  ; past the STRING_TOKEN byte ($E3)
                 ld      a,(hl)
@@ -1059,9 +1102,7 @@ str_fn_string:
                 call    eval                ; DE = n; HL advanced (IX preserved)
                 bit     7,d
                 jp      nz,str_eval_no      ; negative n -> function error (D-3),
-                                            ; consistent with SPACE$ (str_min_bc's
-                                            ; unsigned clamp would otherwise treat a
-                                            ; negative count as >=256 -> STRMAX)
+                                            ; consistent with SPACE$
                 ld      b,d
                 ld      c,e                 ; BC = n
                 ld      a,STRMAX
@@ -1079,37 +1120,41 @@ str_fn_string:
                 ld      a,e                 ; A = fill byte
                 jr      sfg_close
 sfg_str2:
-                ld      de,(STRPTR)
-                ld      a,(de)              ; length of the string operand
+                push    hl                  ; guard the str_eval-advanced cursor across
+                                            ; the descriptor dereference (which uses HL)
+                ld      hl,(STRPTR)
+                ld      a,(hl)              ; length of the string operand
                 or      a
-                jr      z,sfg_reject1       ; empty x$ -> error (mirrors ASC "")
-                inc     de
+                jr      z,sfg_str2_empty    ; empty x$ -> error (mirrors ASC "")
+                inc     hl
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = ptr (body address)
                 ld      a,(de)              ; A = fill byte (first byte of x$)
+                pop     hl                  ; HL = cursor (restored)
+                jr      sfg_close
+sfg_str2_empty:
+                pop     hl                  ; balance (cursor discarded -- error exit)
+                jr      sfg_reject1
 sfg_close:
                 push    af                  ; guard fill byte                  [count][fill]
                 ld      a,(hl)
                 cp      ')'
                 jr      nz,sfg_reject2      ; unbalance-safe: pop [count][fill] first
                 inc     hl                  ; HL = cursor, past ')'
-                push    hl                  ; guard cursor                     [count][fill][cursor]
-                call    str_alloc_temp      ; HL = temp base (clobbers A,DE; BC untouched)
-                pop     de                  ; DE = cursor                      [count][fill]
+                push    hl
+                pop     ix                  ; IX = cursor (parked)
                 pop     af                  ; A = fill byte                    [count]
-                ld      c,a                 ; C = fill byte
+                ld      (SH_FILLBYTE),a
                 pop     af                  ; A = clamped count                [ ]
-                ld      (hl),a              ; temp[0] = count
-                ld      (STRPTR),hl
-                or      a
-                jr      z,sfg_done          ; count 0 -> nothing to fill
-                ld      b,a                 ; B = count (loop counter)
-                inc     hl                  ; HL -> temp bytes
-sfg_fill:
-                ld      (hl),c              ; fill byte
-                inc     hl
-                djnz    sfg_fill
-sfg_done:
-                ld      h,d
-                ld      l,e                 ; HL = cursor (restore)
+                ld      (SH_LEN),a
+                ld      a,8
+                ld      (SH_OP),a           ; op = 8 (FILL) -- shape-C follow-up
+                                            ; (same move as SPACE$ above)
+                push    ix                  ; guard the parked cursor across the call
+                call    call_strheap
+                call    shx_finish          ; shared SH_ERR/SH_PTR -> STRPTR tail
+                pop     hl                  ; HL = cursor (restore)
                 jp      str_eval_ok
 sfg_reject1:
                 pop     af                  ; discard [count]
@@ -1129,17 +1174,17 @@ sfg_reject2:
 ; two-arg form; p defaults to 1); CF clear -> it's the numeric p (reparse via
 ; `eval`, then read ',' then str_eval for a$).
 ;
-; Both a$ and b$ are snapshotted into their OWN ring-temp slot (str_dup_temp)
+; Both a$ and b$ are snapshotted into their OWN owned temp (str_snapshot_to_temp)
 ; immediately after being parsed, so evaluating the second string can't clobber
-; the first via STRSCR / a reused ring slot -- the same dup-then-operate
-; discipline the substring verbs and ev_rel_str's LHS snapshot use (N=3 covers
-; a$+b$+headroom, D-6). p<1 is a function error (ev_f_err); the search itself
-; (empty b$ / p past LEN(a$)) is instr_search's contract below.
+; the first via STRSCR or the token stream -- the same snapshot-then-operate
+; discipline the substring verbs and ev_rel_str's LHS snapshot use. p<1 is a
+; function error (ev_f_err); the search itself (empty b$ / p past LEN(a$)) is
+; instr_search's contract below.
 ;
-; IX/IY are repurposed as the two descriptor pointers (aT/bT) for instr_search
-; once parsing is complete -- the real token cursor is safe in HL by then (str_eval/
-; eval never touch IX), and is bridged back into IX only right before the return,
-; so ev_f's "IX = cursor advanced past the call" convention still holds.
+; IX/IY are repurposed as the two temp-descriptor pointers (aT/bT) for
+; instr_search once parsing is complete -- the real token cursor is safe in HL
+; by then, and is bridged back into IX only right before the return, so ev_f's
+; "IX = cursor advanced past the call" convention still holds.
 ev_f_instr:
                 inc     ix                  ; skip the INSTR selector
                 call    ev_sp
@@ -1172,7 +1217,7 @@ efi_have_a:
                 push    de                  ; guard p                             [p]
 efi_dup_a:
                 push    hl                  ; guard cursor (past a$)              [p][cursor]
-                call    str_dup_temp        ; HL = aT (a$ snapshot); STRPTR=aT
+                call    str_snapshot_to_temp ; HL = aT (a$ snapshot); STRPTR=aT
                 ex      (sp),hl             ; HL=cursor(restored); top:=aT        [p][aT]
                 ld      a,(hl)
                 cp      ','
@@ -1182,7 +1227,7 @@ efi_dup_a:
                 call    str_eval            ; STRPTR -> b$; HL advanced; CF=ok
                 jp      nc,efi_reject_pa
                 push    hl                  ; guard cursor (past b$)              [p][aT][cursor]
-                call    str_dup_temp        ; HL = bT (b$ snapshot); STRPTR=bT
+                call    str_snapshot_to_temp ; HL = bT (b$ snapshot); STRPTR=bT
                 ex      (sp),hl             ; HL=cursor(restored); top:=bT        [p][aT][bT]
                 ld      a,(hl)
                 cp      ')'
@@ -1206,8 +1251,24 @@ efi_p_nonneg:
                 pop     ix                  ; restore IX = real cursor before erroring
                 jp      ev_f_err            ; p == 0 -> error (p<1)
 efi_p_ok:
+                ; Thin main-ROM glue for the string-heap tenant's
+                ; INSTR_SEARCH op (mirrors str_heap_alloc) — the search body
+                ; (now dereferencing aT/bT's [len:1][ptr:2] to find their
+                ; CURRENT bodies, was inline-bodied) moved to the sub-ROM
+                ; (sub/strheap.asm sh_instr_search) once this low region ran
+                ; out of room for it.
                 push    hl                  ; guard the real cursor               [cursor]
-                call    instr_search        ; DE = result; clobbers A,BC,HL; IX/IY preserved
+                push    ix
+                pop     hl
+                ld      (SH_SRC),hl         ; a$ temp descriptor address
+                push    iy
+                pop     hl
+                ld      (SH_DEST),hl        ; b$ temp descriptor address
+                ld      (SH_P),bc           ; p
+                ld      a,11
+                ld      (SH_OP),a           ; op = 11 (INSTR_SEARCH)
+                call    call_strheap
+                ld      de,(SH_PTR)         ; DE = result (1-based match / 0)
                 pop     ix                  ; IX = cursor (bridge back to ev_f's convention)
                 jp      flt_int_result      ; INSTR returns an int even when a float rode
                                             ; in via p or a nested STR$ arg (float.asm F1;
@@ -1222,87 +1283,6 @@ efi_reject_pab:
                 pop     hl                  ; discard [p]                         [ ]
                 jp      ev_f_err
 
-; instr_search: 1-based search of b$ (descriptor at IY) within a$ (descriptor
-; at IX), starting from position p (BC, already validated >=1 by the caller).
-; out: DE = 1-based match position, or 0 if not found. Clobbers A, BC, DE, HL;
-; IX/IY (the fixed descriptor bases) are preserved throughout -- ev_f_instr no
-; longer needs them as the live token cursor by the time this runs, so they're
-; free to use as extra scratch pointers here (avoids any new RAM, D-6).
-;
-; Empty b$ (len_b=0): result = min(len_a+1, p) -- the spec §2 "empty needle"
-; contract, reusing str_min_bc for the clamp exactly like SPACE$/LEFT$/RIGHT$/MID$.
-; Otherwise: max_start = len_a-len_b+1 (<=0 -> no room -> 0); if p > max_start,
-; no match; else try start = p..max_start, comparing len_b bytes each time
-; (adjacent/overlapping starts are all tried -- no skip-by-len_b shortcut).
-instr_search:
-                ld      a,(iy+0)            ; A = len_b
-                or      a
-                jr      nz,ins_nonempty
-                ; --- empty b$ (spec §2): result = min(len_a+1, p) ---
-                ld      a,(ix+0)            ; len_a
-                inc     a                   ; ceiling = len_a+1 (<=STRMAX+1, no wrap)
-                call    str_min_bc          ; A = min(ceiling, p=BC); BC preserved
-                ld      e,a
-                ld      d,0
-                ret
-ins_nonempty:
-                ; max_start = len_a - len_b + 1; <1 -> no room for any match.
-                ld      a,(ix+0)            ; len_a
-                sub     (iy+0)              ; A = len_a - len_b (signed byte arithmetic)
-                inc     a                   ; A = max_start
-                jp      m,ins_zero          ; negative -> no room
-                or      a
-                jr      z,ins_zero          ; zero -> no room (p>=1 always exceeds it)
-                ld      d,a                 ; D = max_start (constant for the whole search)
-                ; is p (BC) > max_start (D)?
-                ld      a,b
-                or      a
-                jr      nz,ins_zero         ; p >= 256 > max_start (<=64) -> no match
-                ld      a,c                 ; A = p (fits a byte, since B=0)
-                cp      d
-                jr      z,ins_outer         ; p == max_start -> exactly one position to try
-                jr      c,ins_outer         ; p < max_start -> ok, start the search
-                jr      ins_zero            ; p > max_start -> no match
-ins_outer:
-                ld      c,a                 ; C = start (current outer-loop position, 1-based)
-                ; apos = aT + start (IX's byte[start-1] lives at ix+start)
-                push    ix
-                pop     hl                  ; HL = aT
-                ld      b,0
-                add     hl,bc               ; HL = aT + start = apos (C=start; B momentarily 0)
-                push    iy
-                pop     de
-                inc     de                  ; DE = bT + 1 = bpos (b$'s first byte)
-                ld      b,(iy+0)            ; B = len_b (inner-loop counter)
-ins_cmp:
-                ld      a,(de)
-                cp      (hl)
-                jr      nz,ins_next
-                inc     hl
-                inc     de
-                djnz    ins_cmp
-                ; full match -> result = start (C)
-                ld      e,c
-                ld      d,0
-                ret
-ins_next:
-                ; D does NOT survive ins_outer (its `pop de` for bpos clobbers it), so
-                ; max_start is recomputed fresh here rather than cached across iterations.
-                ld      a,c                 ; A = start
-                inc     a                   ; start++
-                push    af                  ; guard the new start value across the recompute
-                ld      a,(ix+0)            ; len_a
-                sub     (iy+0)              ; len_a - len_b
-                inc     a                   ; A = max_start
-                ld      d,a                 ; D = max_start (transient, this comparison only)
-                pop     af                  ; A = start (restored)
-                cp      d
-                jr      z,ins_outer         ; == max_start -> try the last position
-                jr      c,ins_outer         ; < max_start -> keep going
-ins_zero:
-                ld      de,0
-                ret
-
 ; --- exp_maybe_strfn: PRINT hook for the string-VALUED $FF functions --------
 ; Reached from exp_loop (basic/print.asm) when a PRINT item begins with a $FF
 ; function token (repack build only). Try the string path first — CHR$/STR$/LEFT$/
@@ -1314,6 +1294,7 @@ ins_zero:
 ; that follows the value for a relational operator. If one follows, this item is
 ; really the LHS of an unparenthesized comparison (`PRINT LEFT$(A$,1)="H"`); restore
 ; the operand start and re-drive it through eval/ev_rel instead of printing it.
+; UNCHANGED from pre-4a — format-agnostic (only ever calls str_eval/print_strval).
 exp_maybe_strfn:
                 push    hl                  ; operand START (peek may reparse via eval)
                 call    str_eval            ; STRPTR -> value; HL advanced; CF=ok
@@ -1360,19 +1341,12 @@ ems_fallback:
 ; ===========================================================================
 
 ; --- relop_peek: is A a relational-operator token? --------------------------
-; PRINT-unparenthesized-compare S2 (spec-basic-print-unparen-compare.md §3a): the
-; one new primitive the PRINT-item dispatch gates use (exp_strvar/print.asm,
-; str_lit_concat_q/print.asm, exp_maybe_strfn above) to decide "does a relational
-; operator follow the string operand str_eval just parsed?" WITHOUT consuming it
-; -- the caller (not this routine) decides whether to print or re-parse via eval.
+; UNCHANGED from pre-4a — a straight range test over the established relop
+; token equates (basic/sysvars.inc); no descriptor-format dependency.
 ; in: A = the current token byte (caller peeks via `ld a,(hl)`; not consumed).
 ; out: ZF=1 iff A is one of the three contiguous relop tokens GT_TOKEN ($EE) /
-;      EQ_TOKEN ($EF) / LT_TOKEN ($F0) (basic/sysvars.inc; the compound forms
-;      <=/>=/<> arrive as two of these tokens back-to-back, so testing the FIRST
-;      one is sufficient -- ev_rel's own compound-form merge takes it from there).
-;      ZF=0 otherwise. Does not touch HL/DE/BC/IX -- only A and flags.
-; Clean-room: original code -- a straight range test over the established relop
-; token equates (basic/sysvars.inc). No disassembly.
+;      EQ_TOKEN ($EF) / LT_TOKEN ($F0). ZF=0 otherwise. Does not touch
+;      HL/DE/BC/IX -- only A and flags.
 relop_peek:
                 sub     GT_TOKEN            ; A -= $EE (0/1/2 for the three relops)
                 cp      3                   ; CF=1 iff A(orig)-$EE < 3, i.e. in range
@@ -1383,7 +1357,7 @@ rp_yes:
                 cp      a                   ; in range -> force ZF=1
                 ret
 
-; --- str_cmp_bits: UNSIGNED byte-by-byte compare of two [len][bytes] descriptors
+; --- str_cmp_bits: UNSIGNED byte-by-byte compare of two descriptors --------
 ; in: HL = lhs descriptor, DE = rhs descriptor.
 ; out: A = 1 (lhs<rhs) / 2 (equal) / 4 (lhs>rhs) -- the same encoding cmp16_bits
 ;      (expr.asm) produces for the numeric path, so the caller's `and c` (requested
@@ -1392,73 +1366,35 @@ rp_yes:
 ;      if all shared bytes match, the SHORTER string is less (§2.2); same length +
 ;      all bytes equal -> equal (§2.3). Case-sensitive: no folding (§2.4).
 ; Preserves BC (the caller keeps its requested-bits register in C across the call).
-; Clobbers A, DE, HL, flags.
+; Clobbers DE, HL, IX, flags.
+;
+; Thin main-ROM glue for the string-heap tenant's CMP op (mirrors
+; str_heap_alloc) — the byte-compare mechanics (now dereferencing each
+; descriptor's [len:1][ptr:2] to find the CURRENT body, was inline
+; [len][bytes]) moved to the sub-ROM (sub/strheap.asm sh_cmp_bits) once this
+; low region ran out of room for it.
 str_cmp_bits:
                 push    bc                  ; guard the caller's C (requested bits)
-                ld      a,(hl)              ; A = lhslen
-                ld      b,a                 ; B = lhslen (temp, for the tie-break)
-                ld      a,(de)              ; A = rhslen
-                ; Tie-break bit (used only if every compared byte matches): the
-                ; SHORTER string is less (§2.2); equal lengths -> equal (§2.3).
-                cp      b                   ; A(rhslen) - B(lhslen)
-                jr      z,scb_tb_eq
-                jr      c,scb_tb_gt         ; rhslen < lhslen -> lhs is the longer -> lhs>rhs
-                ld      a,1                 ; rhslen > lhslen -> lhs is the shorter -> lhs<rhs
-                jr      scb_tb_push
-scb_tb_eq:
-                ld      a,2
-                jr      scb_tb_push
-scb_tb_gt:
-                ld      a,4
-scb_tb_push:
-                push    af                  ; stash the tie-break bit across the byte scan
-                ; minlen = min(lhslen, rhslen) via the existing str_min_bc helper
-                ; (preserves BC/DE/HL); re-read both lengths fresh (A was clobbered above).
-                ld      a,(de)              ; A = rhslen
-                ld      c,a
-                ld      b,0                 ; BC = rhslen (str_min_bc's "count")
-                ld      a,(hl)              ; A = lhslen (str_min_bc's "length")
-                call    str_min_bc          ; A = min(lhslen, rhslen)
-                ld      b,a                 ; B = minlen (loop counter)
-                inc     hl                  ; HL -> lhs bytes
-                inc     de                  ; DE -> rhs bytes
-                ld      a,b
-                or      a
-                jr      z,scb_tie           ; minlen 0 -> nothing to compare
-scb_loop:
-                ld      a,(de)              ; A = rhsbyte
-                cp      (hl)                ; vs lhsbyte (raw unsigned compare)
-                jr      z,scb_eqbyte
-                jr      c,scb_gt            ; rhsbyte < lhsbyte -> lhs > rhs
-                jr      scb_lt              ; rhsbyte > lhsbyte -> lhs < rhs
-scb_eqbyte:
-                inc     hl
-                inc     de
-                djnz    scb_loop
-scb_tie:
-                pop     af                  ; A = the stashed tie-break bit
+                ld      (SH_SRC),hl
+                ld      (SH_DEST),de
+                ld      a,10
+                ld      (SH_OP),a           ; op = 10 (CMP)
+                call    call_strheap
+                ld      a,(SH_LEN)          ; A = 1/2/4 relation bits (the
+                                            ; tenant reuses SH_LEN as CMP's
+                                            ; 1-byte result field)
                 pop     bc                  ; restore the caller's bits (C)
-                ret
-scb_gt:
-                pop     af                  ; discard the stashed tie-break bit
-                ld      a,4
-                pop     bc
-                ret
-scb_lt:
-                pop     af
-                ld      a,1
-                pop     bc
                 ret
 
 ; --- type_mismatch_set: D-2's comparator-level signal ------------------------
-; A string on one side of a relational and a non-string on the other (or a bare
-; string LHS with no relop at all) -- sets ERRMARK (the generic expression-error
-; landmark, ev_f_err's convention) plus the distinct TMISMATCH marker, and yields
-; 0 (false). This does NOT abort the line itself: ev_rel has no mid-expression
-; unwind (every existing evaluator error works this way -- see ev_f_err), so the
-; real abort happens at the STATEMENT boundary, once eval() returns, via the
-; repack-gated post-eval check in ex_if / the numeric-assignment / PRINT-item
-; drivers (interp.asm / print.asm) jumping to type_mismatch_error (interp.asm).
+; UNCHANGED from pre-4a. A string on one side of a relational and a non-string
+; on the other (or a bare string LHS with no relop at all) -- sets ERRMARK
+; (the generic expression-error landmark, ev_f_err's convention) plus the
+; distinct TMISMATCH marker, and yields 0 (false). This does NOT abort the
+; line itself: ev_rel has no mid-expression unwind, so the real abort happens
+; at the STATEMENT boundary, once eval() returns, via the repack-gated
+; post-eval check in ex_if / the numeric-assignment / PRINT-item drivers
+; jumping to type_mismatch_error (interp.asm).
 ; out: DE = 0; ret. Clobbers A.
 type_mismatch_set:
                 ld      a,$DD               ; expression-error marker (ev_f_err convention)
@@ -1473,14 +1409,14 @@ type_mismatch_set:
 ; of a relational probes as a string operand (str_eval succeeded). Entered with
 ; HL = cursor past the LHS operand, STRPTR -> the LHS descriptor.
 ;
-; Snapshots the LHS into a ring temp (str_dup_temp -- D-4's "reuse a temp-ring
-; slot" -- the same dup-then-operate discipline the substring verbs use) so
-; evaluating the RHS can't clobber it via STRSCR or a reused ring slot (e.g. two
-; literal operands would otherwise BOTH land in STRSCR and the second overwrites
-; the first before the compare). Reads the relop token(s) with the EXISTING
-; relop_bit + compound-form merge (<=/>=/<> fall out unchanged), evaluates the RHS
-; via str_eval, then compares with str_cmp_bits and joins the numeric path's
-; convention (`and c` -> -1/0).
+; Snapshots the LHS into an OWNED temp (str_snapshot_to_temp — was str_dup_temp
+; pre-4a, same calling convention) so evaluating the RHS can't clobber it via
+; STRSCR or a later alloc/GC (e.g. two literal operands would otherwise BOTH
+; land on the shared RVDESC/STRSCR scratch and the second overwrites the
+; first before the compare — the same discipline the substring verbs use).
+; Reads the relop token(s) with the EXISTING relop_bit + compound-form merge
+; (<=/>=/<> fall out unchanged), evaluates the RHS via str_eval, then compares
+; with str_cmp_bits and joins the numeric path's convention (`and c` -> -1/0).
 ;
 ; A bare string LHS with no following relop, or a non-string RHS (`A$ < 5`), is
 ; D-2's type mismatch -> type_mismatch_set (yields 0, ERRMARK+TMISMATCH set).
@@ -1488,7 +1424,7 @@ type_mismatch_set:
 ev_rel_str:
                 push    hl
                 pop     ix                  ; IX = cursor (bridge back)
-                call    str_dup_temp        ; HL = LHS snapshot in a ring temp (D-4)
+                call    str_snapshot_to_temp ; HL = LHS snapshot (owned temp)
                 push    hl                  ; guard the LHS temp addr across the RHS parse
                 call    ev_sp
                 ld      a,(ix+0)

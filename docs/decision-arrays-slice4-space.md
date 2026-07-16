@@ -5,8 +5,14 @@ SPDX-License-Identifier: 0BSD
 
 # Decision — Arrays slice-4 ROM-space strategy
 
-Status: **DRAFT for sign-off (2026-07-16)** — the space-reclamation plan that must
-precede the slice-4 implementation contract. No functional design here (heap
+Status: **SIGNED OFF 2026-07-16** — space plan ratified; the four §6 questions
+answered by the user (folded into §6): **(a)** split slice 4 → **4a** = string heap
++ STRMAX→255 + STRCAT_R absorption, **4b** = scalar relocation; **(b)** heap policy
+= **GC-compaction (MSX-faithful)** — sub-ROM has the room, take the better approach;
+**(c)** STRMAX→255 scratch RAM budget = **deferred to the 4a spec**; **(d)** shape-C
+reframe **confirmed** (net-neutral-to-positive main ROM, no speculative eviction).
+Next step: the **slice-4a implementation contract**. The space-reclamation plan that
+must precede that contract. No functional design here (heap
 algorithm, descriptor format, GC policy belong in the slice-4 spec); this doc
 answers only **"both main-ROM regions are full — what gets offloaded to the
 sub-ROM to make room for slice 4, and does slice 4 net cost or free main-ROM

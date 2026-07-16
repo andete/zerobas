@@ -654,13 +654,20 @@ sgk_empty:
                 ret
 STR_EMPTY:      db      0                   ; a shared empty-string descriptor
 
-; --- str_set_key: BC = key, DE -> source descriptor [len][bytes...] ----------
-; Copy the source string (len-prefixed at DE) into the key's slot, allocating a
-; new slot if needed. Length is clamped to STRMAX (own-design truncation; no
-; heap growth). If the table is full the assignment is silently dropped.
-; Clobbers A, DE, HL (BC kept). DE may point into STRTAB itself (var-to-var copy
-; A$=B$); the copy is forward and the destination is a different slot, so a plain
-; LDIR is safe (a self-copy A$=A$ writes identical bytes).
+; --- str_set_key: BC = key, DE -> source descriptor [len][ptr-or-bytes] ------
+; Copy the source string into the key's slot, allocating a new slot if
+; needed. If the table is full the assignment is silently dropped.
+; Clobbers A, DE, HL (BC kept). DE may point into STRTAB itself (var-to-var
+; copy A$=B$).
+;
+; Two build-gated bodies (the descriptor FORMAT itself differs — the lean
+; build's slot is still an inline [len][bytes:32] value; the repack build's
+; is a [len:1][ptr:2] heap descriptor, arrays slice-4a, docs/spec-basic-
+; arrays-slice4a-string-heap.md §10). str_find/str_get_key above are
+; FORMAT-AGNOSTIC (they only locate/return the entry's len-field address,
+; offset +2, identical in both formats) and stay completely shared/
+; unmodified — only the STORE path (which must know how to reach/copy the
+; VALUE bytes) diverges.
 str_set_key:
                 push    de                  ; str_find clobbers DE — guard the source ptr
                 call    str_find
@@ -678,6 +685,30 @@ ssk_new:
                 ld      (hl),c
                 dec     hl
 ssk_store:
+    IF ROM_BASE < $4000
+                ; HL = dest entry name0 field; DE = source descriptor address
+                ; (STABLE -- a STRTAB slot / array element / temp-stack entry /
+                ; RVDESC / STR_EMPTY, NEVER a bare heap body address). Thin
+                ; main-ROM glue for the string-heap tenant's VAR_STORE op
+                ; (mirrors str_heap_alloc) — the heap_alloc+copy+write
+                ; mechanics (value-copy semantics: a fresh body per store, the
+                ; old one becomes GC garbage) moved to the sub-ROM
+                ; (sub/strheap.asm sh_var_store) once page 1 ran out of room
+                ; for them.
+                inc     hl
+                inc     hl                  ; HL -> dest len/ptr field
+                ld      (SH_DEST),hl
+                ld      (SH_SRC),de
+                ld      a,12
+                ld      (SH_OP),a           ; op = 12 (VAR_STORE)
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_STRHEAP
+                call    subrom_call
+                jp      c,subrom_absent_error
+                ld      a,(SH_ERR)
+                or      a
+                ret     z
+                jp      str_heap_oom_error
+    ELSE
                 ; HL = entry name0 field; DE = source descriptor. LDIR copies
                 ; (HL)->(DE), so the COPY needs HL=source, DE=dest: we read the
                 ; length here, then swap the roles before the LDIR.
@@ -698,6 +729,7 @@ ssk_len_ok:
                 ex      de,hl               ; LDIR copies (HL)->(DE): HL=source, DE=dest
                 ldir
                 ret
+    ENDIF
 
 ; --- clear_vars: empty the numeric AND string tables (called at INIT / RUN) --
 ; Zero name0 of every slot (a 0 name0 = empty). Clearing the whole numeric
@@ -719,6 +751,16 @@ cv_deftbl:                                  ; (RUN clears here first, then the p
                                             ; cold boot -- this clear_vars call IS
                                             ; the single hook that covers all four
                                             ; (§15.1's reference-identical reset).
+                ; Arrays slice-4a (docs/spec-basic-arrays-slice4a-string-
+                ; heap.md §2/§6): reset the string heap + temp-descriptor
+                ; stack to empty. The reset body lives in the low region
+                ; (basic/str-engine.asm heap_reset) — reached by an in-slot
+                ; call (page 1 <-> low region are the main ROM's co-mapped
+                ; slot-0 pages) — because page 1 is byte-full; clear_vars IS
+                ; the single init/NEW/RUN/CLEAR hook (not folded into
+                ; ary_reset, which also runs on a bare relink where STRTAB
+                ; heap bodies must survive).
+                call    heap_reset
     ENDIF
                 ld      hl,VARTAB
                 ld      bc,VARSLOTS*VARENTSZ

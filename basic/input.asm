@@ -124,7 +124,8 @@ inpc_vstr:
                 pop     hl
                 pop     bc
                 push    hl                  ; guard textcur across str_set_key
-                ld      de,STRSCR
+                call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
+                ex      de,hl               ; DE = RVDESC (str_set_key's source arg)
                 call    str_set_key         ; var$[key] = the field bytes
                 pop     hl
 inpc_after:
@@ -183,7 +184,8 @@ inpc_line:
                 ld      (ARL_GETBYTE),de
                 call    read_into_strscr    ; STRSCR <- the whole line (mode 1)
                 pop     bc                  ; key
-                ld      de,STRSCR
+                call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
+                ex      de,hl               ; DE = RVDESC (str_set_key's source arg)
                 call    str_set_key
                 pop     hl                  ; text cursor after the variable
                 jp      exec_stmt

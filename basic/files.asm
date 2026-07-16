@@ -791,7 +791,12 @@ inp_readvar:
                 push    bc                  ; guard the variable key across the read
                 call    read_into_strscr    ; fill STRSCR [len][bytes] from the file
                 pop     bc
+    IF ROM_BASE < $4000
+                call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
+                ex      de,hl               ; DE = RVDESC (str_set_key's source arg)
+    ELSE
                 ld      de,STRSCR
+    ENDIF
                 call    str_set_key         ; store the line into the string variable
                 pop     hl
                 jp      exec_stmt

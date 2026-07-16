@@ -412,18 +412,23 @@ VAREND          equ     VARTAB + VARSLOTS*VARENTSZ  ; $E240 in EITHER build (pin
 ; "enough for PRINT" — assign a literal / copy a string var, then PRINT it.
 STRTAB          equ     $E240   ; base of the string-variable store
 ; STRMAX is the ONE knob the string engine widens. The lean 16 KB build keeps the
-; minimal 32 (byte-identical); the repack build (ROM_BASE < $4000) widens it to 64
-; (string-engine arc, spec-basic-string-engine.md D-C). 64 is the largest that fits
-; the 800 B free window STRTAB $E240 .. $E560 (the cassette/file buffers) — see the
-; STRSCR/STRTMP layout below and spec §5a (128 and the MSX-faithful 255 overflow it).
+; minimal 32 (byte-identical, fixed-pool inline store, unchanged since S3). The
+; repack build (ROM_BASE < $4000) now (arrays slice-4a, spec-basic-arrays-
+; slice4a-string-heap.md) widens it to the MSX-faithful 255 (a string length is a
+; single byte, so 255 is the true ceiling) — the old 64-byte RAM-wall limit is
+; GONE because the repack STRTAB slot is now a small fixed-size DESCRIPTOR
+; ([name0][name1][len:1][ptr:2] = 5 B) pointing at a body in the string HEAP
+; (§2/§3 of the spec), not an inline STRMAX-byte value; STRENTSZ no longer scales
+; with STRMAX in the repack build.
     IF ROM_BASE < $4000
-STRMAX          equ     64      ; repack build: string engine (own choice; §5a RAM wall)
+STRMAX          equ     255     ; repack build: string heap (slice-4a §8)
+STRENTSZ        equ     5       ; [name0][name1][len:1][ptr:2] descriptor slot
     ELSE
 STRMAX          equ     32      ; lean build: max chars per string var (own choice)
+STRENTSZ        equ     3 + STRMAX  ; [name0][name1][len][bytes:STRMAX] (35 B)
     ENDIF
-STRENTSZ        equ     3 + STRMAX  ; [name0][name1][len][bytes:STRMAX] (35 lean / 67 repack)
 STRSLOTS        equ     8       ; max distinct string variables
-STREND          equ     STRTAB + STRSLOTS*STRENTSZ   ; $E358 lean / $E458 repack
+STREND          equ     STRTAB + STRSLOTS*STRENTSZ   ; $E358 lean / $E268 repack
 
 ; Expression value-type signalling (own-design VALTYP notion). After eval_any /
 ; a factor, VALTYP says whether the result is a number (0; value in DE as usual)
@@ -471,41 +476,121 @@ CAS_IN_MODE     equ     8       ; FCH_MODES value: OPEN"CAS:" FOR INPUT (INPUT# 
 ; in page $E3 above the string table (NOT in page $E0, which the C-BIOS keyboard
 ; ISR's work area touches — an EI'd interrupt mid-LET would corrupt a $E0 byte).
     IF ROM_BASE < $4000
-; --- repack build: string-engine RAM (arc S3) ------------------------------
-; With STRMAX=64 the variable store now reaches $E458, so the $E360 scratch would
-; sit inside it — STRSCR moves up to STREND, and the concat/function result ring
-; (STRTMP, spec §3a D-A: N=3) follows. STRSCR is kept SEPARATE from the ring (a
-; documented deviation from the spec's "fold STRSCR into temp[0]"): it keeps
-; str_eval byte-identical for the lean build and removes the aliasing hazard of a
-; literal operand sharing temp[0] with a live concat accumulator. Layout, all inside
-; the 800 B window STRTAB $E240 .. $E560 (spec §5a):
-;   STRTAB     $E240 .. $E458   8 * 67 = 536 B   variable store
-;   STRSCR     $E458 .. $E499   65 B             str_eval literal/MKI$/INPUT$ scratch
-;   STRTMP     $E499 .. $E55C   3 * 65 = 195 B   concat/function result ring
-;   STRTMP_IDX $E55C            1 B              round-robin cursor (0..N-1)
-;   STRCAT_R   $E55D .. $E55F   2 B              concat accumulator pointer
-;   TMISMATCH  $E55F            1 B              string-compare D-2 flag (S2)
-;   -> top $E560, exactly the cassette/file WBUF boundary (no spare byte left).
-STRSCR          equ     STREND              ; $E458: str_eval scratch, above the store
-STRNTMP         equ     3                   ; result-ring depth (spec D-A, N=3)
-STRTMPSZ        equ     1 + STRMAX          ; each slot = [len][bytes:STRMAX] = 65 B
-STRTMP          equ     STRSCR + STRTMPSZ   ; $E499: base of the result ring
-STRTMP_IDX      equ     STRTMP + STRNTMP*STRTMPSZ  ; $E55C: round-robin cursor (1 B)
-; STRCAT_R holds the ABSOLUTE address of the concat accumulator temp for the duration
-; of one string expression (str_concat_tail). Stored (not recomputed from STRTMP_IDX)
-; so a nested string-function operand that allocates its own ring slot cannot move it.
-STRCAT_R        equ     STRTMP_IDX + 1      ; $E55D: concat accumulator pointer (2 B)
-; TMISMATCH: string-comparison D-2 marker (spec-basic-string-compare.md §3c) -- set
-; by the comparator (str-engine.asm ev_rel_str / expr.asm's evr_rhs symmetric guard)
-; alongside ERRMARK when one side of a relational is a string and the other is not
-; (or a bare string with no relop at all). The repack-gated statement drivers
-; (ex_if / the numeric-assignment / PRINT-item paths) check it right after their
-; eval/ev_rel call and, if set, abort the line via type_mismatch_error (interp.asm)
-; -- ev_rel itself has no mid-expression unwind, so this is a same-statement flag,
-; not a persistent error code. STRCAT_R ends at $E55F, the LAST free byte before
-; disk's WBUF ($E560, see the CROSS-COMPONENT OVERLAP INVARIANT below) -- exactly
-; one spare byte, which this claims.
-TMISMATCH       equ     STRCAT_R + 2        ; $E55F: D-2 type-mismatch flag (1 B)
+; --- repack build: string HEAP RAM (arrays slice-4a, spec-basic-arrays- -----
+; slice4a-string-heap.md). Shrinking STRTAB to 5-B descriptors (from 8*67=536 B
+; to 8*5=40 B) frees ~500 B of the STRTAB..$E560 window; this layout spends that
+; on the heap boundary, the temp-descriptor stack (replaces the old STRTMP N=3
+; ring — the STRCAT_R re-entrancy bug that lived in that ring is GONE, §7), the
+; string-heap sub-ROM tenant's param block, and INSTR's body-base scratch —
+; still well inside the 800 B window, with margin to spare (§12 of the spec):
+;   STRTAB    $E240 .. $E268     40 B            [name0][name1][len][ptr] * 8
+;   FRETOP    $E268 .. $E26A      2 B            string-heap low boundary (§2)
+;   RVDESC    $E26A .. $E26D      3 B            non-heap rvalue scratch descriptor
+;                                                 (literal-lift/MKI$/INPUT$/STRSCR
+;                                                 wrap — never a GC root, §5.2)
+;   STRSCR    $E26D .. $E36D    256 B            [len][bytes:255] staging buffer
+;                                                 for a value of unknown-until-
+;                                                 read length (read_into_strscr/
+;                                                 INPUT$)
+;   SH_*      $E36D .. $E372      5 B            string-heap tenant param block
+;   TEMPTOP   $E372 .. $E374      2 B            temp-descriptor stack cursor
+;   (pool)    $E374 .. $E3D4     96 B            TEMPD=32 * 3 B temp-stack slots
+;   ISRCH_*   $E3D4 .. $E3D8      4 B            INSTR resolved-body-base scratch
+;   TMISMATCH $E3D8 .. $E3D9      1 B            string-compare D-2 flag (S2)
+;   -> top $E3D9, well below the disk WBUF wall at $E560 (391 B spare).
+FRETOP          equ     STREND              ; $E268: heap low boundary; heap occupies
+                                            ; [FRETOP,C), grows DOWN as strings alloc.
+                                            ; Reset to the ceiling C at cold start/
+                                            ; NEW/RUN/CLEAR (fretop_reset, arrays.asm),
+                                            ; paired with clear_vars — NOT inside
+                                            ; ary_reset itself, which also runs on a
+                                            ; bare relink (store_line edit/ CLOAD
+                                            ; without clearing vars) where existing
+                                            ; STRTAB descriptors' heap bodies must
+                                            ; stay valid (§2 own design note).
+RVDESC          equ     FRETOP + 2          ; $E26A: [len:1][ptr:2] scratch descriptor
+                                            ; for a value whose body is NOT in the
+                                            ; heap (a token-stream literal / STRSCR) —
+                                            ; excluded from GC roots by construction
+                                            ; (ptr never lands in [FRETOP,C)); reused
+                                            ; by str_eval_lit/str_mki/str_inputd/the
+                                            ; INPUT#/LINE INPUT#/MERGE STRSCR-store
+                                            ; sites. Safe as a SINGLE shared cell only
+                                            ; because each producer's content is
+                                            ; consumed (copied out, e.g. into a heap
+                                            ; temp or a var's heap body) before the
+                                            ; next string sub-expression can reuse it
+                                            ; — the same "single shared scratch, safe
+                                            ; by immediate consumption" property the
+                                            ; pre-4a STRSCR already relied on.
+STRSCR          equ     RVDESC + 3          ; $E26D: [len][bytes:STRMAX] staging
+                                            ; buffer — UNCHANGED role from pre-4a,
+                                            ; just widened 65->256 B (1+STRMAX).
+                                            ; NOT a heap root (fixed RAM, outside
+                                            ; [FRETOP,C)) — same as a literal.
+; String-heap sub-ROM tenant (SUBROM_IDX_STRHEAP, sub/equates.inc) param block —
+; mirrors the ARY_* block's marshalling convention (basic/sysvars.inc §10.2).
+; ops: 0=ALLOC, 1=GC, 2=BUILD_CONCAT, 3=TEMP_ALLOC, 4=SNAPSHOT (the last two
+; are the shape-C follow-up move of the temp-descriptor-stack allocators
+; themselves into the tenant — basic/str-engine.asm ran out of low-region
+; room for them; see str_temp_alloc/str_snapshot_to_temp's own headers).
+SH_OP           equ     STRSCR + 1 + STRMAX ; $E36D (1 B)
+SH_LEN          equ     SH_OP + 1           ; ALLOC/TEMP_ALLOC/BUILD_CONCAT arg:
+                                            ; requested length / operand count (1 B)
+SH_SRC          equ     SH_LEN + 1          ; SNAPSHOT arg: source descriptor
+                                            ; address (2 B)
+SH_PTR          equ     SH_SRC + 2          ; result: ALLOC's body ptr / GC's new
+                                            ; FRETOP / BUILD_CONCAT's & TEMP_ALLOC's
+                                            ; & SNAPSHOT's new temp-stack slot (2 B)
+SH_PTR2         equ     SH_PTR + 2          ; result: TEMP_ALLOC's body-to-fill
+                                            ; address (0 if length 0 or OOM) (2 B)
+SH_START        equ     SH_PTR2 + 2         ; SLICE (op=5) arg: 0-based start (1 B)
+SH_COUNT        equ     SH_START + 1        ; SLICE (op=5) arg: byte count (1 B)
+SH_NUM          equ     SH_COUNT + 1        ; HEX_BUILD/OCT_BUILD (op=6/7) arg: the
+                                            ; unsigned-16 value to render (2 B)
+SH_FILLBYTE     equ     SH_NUM + 2          ; FILL (op=8) arg: the byte to repeat
+                                            ; SH_LEN times (1 B) — covers SPACE$/
+                                            ; STRING$/CHR$'s shared "n copies of
+                                            ; one byte" shape
+SH_DEST         equ     SH_FILLBYTE + 1     ; MID_STORE (op=9) arg: the MID$-
+                                            ; statement destination (A$)
+                                            ; descriptor address (2 B) — SH_SRC
+                                            ; doubles as the source (B$) descriptor,
+                                            ; SH_START as the 1-based position,
+                                            ; SH_COUNT as the pre-Lb-clamped cap.
+                                            ; CMP (op=10) reuses SH_SRC/SH_DEST as
+                                            ; the lhs/rhs descriptors. INSTR_SEARCH
+                                            ; (op=11) reuses SH_SRC/SH_DEST as the
+                                            ; a$/b$ descriptors, SH_P as the
+                                            ; 1-based start position.
+SH_P            equ     SH_DEST + 2         ; INSTR_SEARCH (op=11) arg: p (2 B)
+SH_ERR          equ     SH_P + 2            ; result: 0 ok, 1 Out of memory, 2 =
+                                            ; temp-descriptor stack full (1 B)
+; Temp-descriptor stack (§6): replaces the old STRTMP N=3 ring. A downward-
+; growing array of [len:1][ptr:2] entries; TEMPTOP is the live cursor (reset to
+; TEMPBASE — the empty-stack value — at every statement boundary, exec_stmt,
+; and by clear_vars at cold start). TEMPD is chosen generously within the freed
+; window (spec §17 Q-1: "implementation maximizes within the freed window,
+; >= 8") — 32 is 4x the reference's ~8 and costs only 96 B, leaving ~290 B of
+; further headroom in the historical 800 B window for future growth.
+TEMPTOP         equ     SH_ERR + 1          ; $E372: current cursor (2 B)
+TEMPD           equ     32                  ; temp-descriptor stack depth
+TEMPPOOL        equ     TEMPTOP + 2         ; $E374: low (deepest-push) address
+TEMPBASE        equ     TEMPPOOL + TEMPD*3  ; $E3D4: high boundary = the empty-
+                                            ; stack value for TEMPTOP
+; INSTR (ev_f_instr/instr_search, str-engine.asm) resolves both operand
+; descriptors' heap-body BASE addresses once up front (their [len][ptr]
+; descriptors, aT/bT, are no longer inline-bodied, so IX/IY can't index bytes
+; directly off them any more) — two scratch cells hold those bases across the
+; search loop.
+ISRCH_A         equ     TEMPBASE            ; $E3D4: resolved A-operand body base (2 B)
+ISRCH_B         equ     ISRCH_A + 2         ; $E3D6: resolved B-operand body base (2 B)
+; TMISMATCH: string-comparison D-2 marker (spec-basic-string-compare.md §3c) --
+; unchanged in role from pre-4a, just re-homed after the heap layout above.
+TMISMATCH       equ     ISRCH_B + 2         ; $E3D8: D-2 type-mismatch flag (1 B)
+    IF TMISMATCH + 1 > $E560
+                db      STRING_HEAP_LAYOUT_OVERRAN_E560_DISK_WBUF_WALL
+    ENDIF
     ELSE
 STRSCR          equ     $E360   ; [len][bytes:STRMAX] = 33 bytes ($E360..$E380)
     ENDIF
@@ -1512,6 +1597,11 @@ SUBROM_IDX_ARY       equ 4      ; the numeric-array engine (arrays slice-1 SPLIT
                                 ; arrays.asm ary_engine) — a pure-RAM leaf (no
                                 ; resident-ABI import). Main-ROM stub is
                                 ; basic/arrays.asm `ary_engine_call`.
+SUBROM_IDX_STRHEAP   equ 5      ; the string-heap engine (arrays slice-4a, docs/
+                                ; spec-basic-arrays-slice4a-string-heap.md §9;
+                                ; sub/strheap.asm strheap_engine) — a pure-RAM
+                                ; leaf. Main-ROM stub is basic/str-engine.asm
+                                ; `str_heap_alloc`.
 ; Page-1 dispatch (docs/spec-basic-subrom-mathpack.md §2): the FIRST page-1
 ; tenant. SUBROM_ENTRY_BASE_P1 mirrors the disk $4010 DSKIO convention (also
 ; independently defined in sub/equates.inc for the sub build — same value,

@@ -48,6 +48,17 @@ SUBROM_IDX_INTTEST      equ     3
 ; ARY_ERR param block (basic/sysvars.inc §10.2). Its main-ROM stub is
 ; basic/arrays.asm `ary_engine_call` (ex_dim / ex_let_arr / ev_f_arr).
 SUBROM_IDX_ARY          equ     4
+; index 5 = the STRING HEAP tenant (arrays slice-4a, sub/strheap.asm
+; strheap_engine): docs/spec-basic-arrays-slice4a-string-heap.md §9. A
+; pure-RAM leaf -- heap_alloc (bump allocator on the downward frontier
+; FRETOP) + GC (root enumeration over STRTAB/array elements/the temp-
+; descriptor stack, then compaction) -- reading the SH_OP..SH_ERR param
+; block (basic/sysvars.inc). Its main-ROM stub is basic/str-engine.asm
+; `str_heap_alloc`. Also called IN-PAGE (no CALSLT) by sub/arrays.asm's
+; aeng_copy_str (string array element store) and ary_alloc's own GC-before-
+; OOM retry (§5.4), since both are co-resident in the same sub-ROM page-0
+; image.
+SUBROM_IDX_STRHEAP      equ     5
 
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can

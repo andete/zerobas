@@ -144,21 +144,12 @@ dde_tail:
                 ld      hl,NUMBUF
                 jp      print_string
 
-; hex_digit / oct_digit (RESIDENT copies): A (0..15 / 0..7) -> ASCII. Shared leaves
-; — str-engine.asm's HEX$/OCT$ (which reimplement the nibble/group loop but reuse
-; these leaves) stay resident and reach them by in-slot call, so they cannot move
-; sub-side. detok.inc carries byte-identical twins for the evicted number renderers.
-hex_digit:
-                cp      10
-                jr      c,hd_dec
-                add     a,'A'-10
-                ret
-hd_dec:
-                add     a,'0'
-                ret
-oct_digit:
-                add     a,'0'
-                ret
+; (Arrays slice-4a: the resident hex_digit/oct_digit copies that used to live
+; here for str-engine.asm's HEX$/OCT$ are GONE — HEX$/OCT$ moved their digit-
+; building bodies into the sub-ROM tenant (sub/strheap.asm sh_hex_build/
+; sh_oct_build, with their own local digit leaves), so nothing in the repack
+; main ROM references hex_digit/oct_digit any more. detok.inc still carries the
+; lean build's own twins for the inline detokeniser.)
     ELSE
                 include "basic/detok.inc"
     ENDIF

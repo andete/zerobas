@@ -101,7 +101,14 @@ exec_stmt:
     IF ROM_BASE < $4000
                 ld      (TMISMATCH),a       ; A is still 0: clear the D-2 flag (a stale
                 ld      (FPERR),a           ; set would misfire a later statement's check
-    ENDIF                                   ; -- FPERR (F2 D-F2-1) mirrors TMISMATCH here
+                                            ; -- FPERR (F2 D-F2-1) mirrors TMISMATCH here
+                ld      hl,TEMPBASE         ; arrays slice-4a §6: the temp-descriptor
+                ld      (TEMPTOP),hl        ; stack is emptied at every statement
+                                            ; boundary (mirrors the old STRTMP ring's
+                                            ; implicit per-statement reset) -- temps
+                                            ; never survive past the statement that
+                                            ; created them
+    ENDIF
                 call    skip_spaces         ; leading spaces are skipped (spec §5)
                 ld      a,(hl)
                 or      a
@@ -492,6 +499,15 @@ fre_msgtab:
                                             ; (basic/arrays.asm; §9.5 pins the array
                                             ; error surface oracle-exact, unlike the
                                             ; lowercase shared FPERR=3 SQR/LOG keep)
+                dw      err_too_complex     ; 9: arrays slice-4a (docs/spec-basic-
+                                            ; arrays-slice4a-string-heap.md §6/§11):
+                                            ; temp-descriptor stack overflow -- a new,
+                                            ; MSX-authentic message (the reference
+                                            ; raises exactly this when ITS OWN temp-
+                                            ; descriptor stack fills); string lives in
+                                            ; basic/str-engine.asm (low region, page 1
+                                            ; has no slack -- same placement discipline
+                                            ; as err_subscript et al above)
 err_fp_divzero:
                 db      "division by zero",13,10,0
 err_illegal_fn:
