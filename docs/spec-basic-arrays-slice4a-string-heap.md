@@ -346,15 +346,19 @@ via the bare `ev_f_err` path (sets `ERRMARK` only, not `FPERR`), so the numeric 
 prints a silent ` 0` instead of surfacing the error. Two were swept to `ev_f_empty`
 (deferred `FPERR=4` syntax) during the pass-4 fixes — the STRING$/LEFT$/MID$/CVI-`(`
 cases; `PRINT CVI` now → `syntax error` (ref = `Syntax error`). **Two remain, because
-they need a non-syntax deferral the sweep pattern doesn't produce:** (1) `INSTR(0,…)` /
-negative-p (str-engine.asm `efi_p_nonneg`/`efi_p_ok`, the `p<1` exits at ~:1256/:1263) —
-ref = **`Illegal function call`** (needs an `FPERR`=IFC-code deferral, not `=4`); (2)
-`PRINT LEN(5)` (a numeric arg to a string fn) — ref = **`Type mismatch`**. Both are
-pre-existing (the `p<1` check + `ev_f_err` predate slice-4a) and give a silent wrong
-value on unusual malformed input (no hang, no corruption). Gate targets recorded (`INSTR(0,
-"AB","A")`→IFC, `LEN(5)`→Type mismatch). Fix = route those exits through an IFC/type-mismatch
-deferral (mirror `ev_f_empty` with the right `FPERR` code); small follow-up, out of the
-slice-4a string-heap scope.
+they need a non-syntax deferral the sweep pattern doesn't produce.** A 21-case malformed-
+input **hang battery confirms NO remaining hangs / no corruption** — the severe
+(slice-4a-introduced, garbage-IX-spin) members are all closed; what's left is only a
+*wrong error message* on two value-error edge cases, both pre-existing (`ev_f_err`
+sets `ERRMARK` only, no `FPERR`, since before slice-4a) and both a silent ` 0` where the
+reference raises **`Illegal function call`**: (1) `INSTR(0,…)` / negative-p (str-engine.asm
+`efi_p_nonneg`/`efi_p_ok`, the `p<1` exits ~:1256/:1263); (2) `ASC("")` (str-engine.asm
+~:517, `jp z,ev_f_err`). Both need an IFC-code (`FPERR`) deferral, not the `=4` syntax one
+the sweep uses. (`LEN(5)` etc. now defer cleanly to `syntax error` — reference says
+`Type mismatch`, a message-only diff, no silent value.) Gate targets recorded
+(`INSTR(0,"AB","A")`→IFC, `ASC("")`→IFC). Fix = mirror `ev_f_empty` with the IFC `FPERR`
+code at those two exits; small follow-up, out of the slice-4a string-heap scope (no hang,
+no corruption — value-error message fidelity only).
 
 ## 12. RAM budget
 
