@@ -205,6 +205,51 @@ CASES = [
          'PRINT"[";LEN(S$(3));LEFT$(S$(3),1);"]"'], "zbval"),
 ]
 
+# --- S6 2nd-review GC-STRESS battery (its OWN pass, gc_stress_check below, with
+# a big per-case step -- these churn 400-800 loop iterations + real GC pauses,
+# far longer than the main batch's per-case time). The GC sort buffer moved
+# from the high-RAM hardware stack (which grew down through the disk resident
+# work area $F242+, corruptible under DI) to DETOKBUF ($BE00). The path is
+# chosen by ROOT COUNT: n<=256 -> DETOKBUF sub-quadratic sort; n>256 -> gc_slow
+# (in-place O(n^2) selection, no buffer). ALL zb-only (the reference's ~200 B
+# default string space can't hold these churns); each asserts the DERIVABLE-
+# correct value and forces a real compacting GC (refill garbage + live > zb's
+# ~15 KB heap). (label, lines, expected_span).
+GC_STRESS = [
+    # (a)+(c-high) gc_slow path: >256 LIVE roots force the O(n^2) fallback and
+    # exercise the switch on the OVER-256 side. EXHAUSTIVE integrity -- the sum
+    # of ALL 270 element lengths (270*35=9450) + both boundary chars catch any
+    # element whose ptr GC failed to fix up. STRING$(35) keeps 270 live bodies
+    # (9450 B) well under the ~15 KB heap so the refill fires gc_slow a bounded
+    # 1-2 times (STRING$(50)=13500 B near-fills the heap -> GC thrashes on nearly
+    # every reassign, 270 * O(n^2), which blows the capture window).
+    ("gc.n270.slow",
+     ['DIM S$(270):FORI=1TO270:S$(I)=STRING$(35,65):NEXT',
+      'FORI=1TO270:S$(I)=STRING$(35,66):NEXT',
+      'T=0:FORI=1TO270:T=T+LEN(S$(I)):NEXT:PRINT"[";T;LEFT$(S$(1),1);LEFT$(S$(270),1);"]"'],
+     " 9450 BB"),
+    # (b)+(c-low) DETOKBUF fast path, ~200 roots (under the 256 cap) -> the
+    # switch's UNDER-256 side + the DETOKBUF sort. Exhaustive sum.
+    ("gc.n200.detok",
+     ['DIM S$(200):FORI=1TO200:S$(I)=STRING$(60,65):NEXT',
+      'FORI=1TO200:S$(I)=STRING$(60,66):NEXT',
+      'T=0:FORI=1TO200:T=T+LEN(S$(I)):NEXT:PRINT"[";T;LEFT$(S$(100),1);"]"'],
+     " 12000 B"),
+    # (e) DISK-INTERLEAVED GC -- the exact $F240 bug class. Stamp sentinels into
+    # the disk resident work-area cells the old high-RAM stack buffer would
+    # trample (W50A9_WRKB $F242 / CURDRV $F247 / RES_STUBS $F24E / DRVTBL $F348),
+    # force a heavy GC with ~100 array roots (the old 200-byte buffer at SP-200
+    # reached $F242+), then read them back: intact IFF GC used DETOKBUF, not the
+    # stack. FAILS on the old $F240 code (NON-VACUOUS). Leaving the sentinels is
+    # harmless -- gc_stress runs last, then the next suite reboots.
+    ("gc.diskcells",
+     ['POKE&HF242,111:POKE&HF247,122:POKE&HF24E,133:POKE&HF348,144',
+      'DIM S$(100):FORI=1TO100:S$(I)=STRING$(100,65):NEXT',
+      'FORI=1TO100:S$(I)=STRING$(100,66):NEXT',
+      'PRINT"[";PEEK(&HF242);PEEK(&HF247);PEEK(&HF24E);PEEK(&HF348);"]"'],
+     " 111  122  133  144 "),
+]
+
 # zbval: NON-DIFFERENTIAL, house-expected printed VALUE (keyed by label). Used
 # for a property the reference is NOT a meaningful oracle for -- here, GC
 # integrity: whether zb's OWN compacting collector corrupts memory is a
@@ -313,6 +358,29 @@ def crunch_check():
     return npass, len(CRUNCH_CASES)
 
 
+def gc_stress_check():
+    """S6 GC-stress battery (zb-only): heavy string-array churns that force a
+    real compacting GC on BOTH paths (n<=256 DETOKBUF sort / n>256 gc_slow) and
+    the disk-work-area-intact case. Its OWN pass with a LARGE per-case step --
+    each case runs 400-800 interpreted-BASIC allocations + GC pauses, well past
+    the main batch's per-case time. Non-differential (the VG-8020's ~200 B
+    string space can't run these), asserted against the derivable-correct span.
+    Returns (npass, ntotal)."""
+    # Each case runs in its OWN single-case batch with a large step: these
+    # churns run far past the multi-case batch's per-case window (which would
+    # misalign the capture), so one boot each keeps the capture clean.
+    npass = 0
+    for label, lines, want in GC_STRESS:
+        zr = R.run_cases(ZB, [("stored", lines)], batch=True, reset=("NEW", "CLS"),
+                         step=90.0, boot=8.0, omsx=OMSX)[0]
+        got = R.result_span(zr)
+        ok = got == want
+        npass += ok
+        print(f"  {'PASS' if ok else 'FAIL':4}  {label:<22} "
+              f"{'' if ok else f'want={want!r} zb={got!r}'}")
+    return npass, len(GC_STRESS)
+
+
 def main():
     specs = [(m, l) for _, m, l, _ in CASES]
     verdicts, refs, zbs = R.run_differential(
@@ -330,7 +398,10 @@ def main():
         print(f"  {tag}  {label:<22} {detail}")
     cpass, ctotal = crunch_check()
     npass += cpass
-    total = len(CASES) + ctotal
+    print("--- S6 GC-stress (zb-only; DETOKBUF sort / gc_slow / disk-cell intact) ---")
+    gpass, gtotal = gc_stress_check()
+    npass += gpass
+    total = len(CASES) + ctotal + gtotal
     print(f"=== arrays: {npass}/{total} {'ALL PASS' if npass == total else 'SOME FAILED'} ===")
     return 0 if npass == total else 1
 

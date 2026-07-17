@@ -40,30 +40,45 @@
 ; The reference MS-BASIC/MSX collector is O(n^2) (no per-string linkage -> it
 ; rescans all descriptors to find the highest unmoved body, once per body --
 ; the notorious multi-second GARBAGE COLLECTION freeze). zerobas beats it: it
-; enumerates the live-body root descriptors into a TRANSIENT hardware-stack
-; buffer, SORTS them by heap address, then does ONE address-ordered
-; compaction sweep -- the spec §5 design. The sort is an in-place SHELL SORT
-; with Knuth (3k+1) gaps: O(n^1.5) worst case. This is the spec §5.3-permitted
-; "O(n log n)-class sort" FALLBACK to the recommended O(n) radix counting
-; sort -- chosen because it needs only the 2n-byte descriptor-address array on
-; the stack (no 256/512-byte count array, no ping-pong output buffer), so it
-; is markedly less error-prone to implement correctly while still crushing the
-; reference's O(n^2) rescan for the string-array-heavy case (the whole point).
-; GC is unobservable (it changes only timing, never a program's results), so
+; enumerates the live-body root descriptors into a TRANSIENT buffer, SORTS
+; them by heap address, then does ONE address-ordered compaction sweep -- the
+; spec §5 design. The sort is an in-place SHELL SORT with Knuth (3k+1) gaps:
+; O(n^1.5) worst case, the spec §5.3-permitted "O(n log n)-class sort" fallback
+; to the recommended O(n) radix counting sort (it needs only the 2n-byte
+; descriptor-address array, no count array / ping-pong buffer), still crushing
+; the reference's O(n^2) rescan for the string-array-heavy case. GC is
+; unobservable (it changes only timing, never a program's results), so
 ; [bug-for-bug compat](bug-for-bug-compat-over-accuracy.md) does not bind it.
-; Zero PERMANENT RAM (the stack buffer is freed on return). NOTE for Fable: the
-; deviation from the spec is the SORT ALGORITHM only (shell vs radix) -- the
-; enumerate/sort/single-sweep STRUCTURE is exactly §5.1/§5.3. No disassembly.
+; Zero PERMANENT RAM. NOTE for Fable: the only deviation from the spec is the
+; SORT ALGORITHM (shell vs radix) -- the enumerate/sort/single-sweep STRUCTURE
+; is exactly §5.1/§5.3. No disassembly.
 ;
-; S6 SAFETY: n (live-root count) is UNBOUNDED (a big string array yields
-; thousands of roots), so the 2n stack buffer is reserved ONLY while it
-; provably stays above GC_STACK_FLOOR (leaving GC's own walk/sort stack clear
-; of the zerobas sysvars, which top out ~$F194). When it would not fit, GC
-; falls back to gc_slow -- an O(n^2) selection compaction that needs NO buffer
-; (safe + correct for arbitrary n, just slower). The sub-quadratic shell path
-; is the common case; the fallback is the pathological-many-roots safety net.
-GC_STACK_FLOOR  equ     $F240   ; buffer base floor: above the highest zerobas
-                                ; sysvar (~$F194) with GC-working-stack margin
+; SORT-BUFFER HOME (S6, 2nd Fable review). The 2n descriptor-address sort
+; buffer lives in DETOKBUF ($BE00, 512 B) -- an EXISTING page-2 RAM buffer
+; (the sub-ROM LIST/ASCII-SAVE detokeniser's one-shot output area, always
+; mapped + writable from a page-0 tenant), NOT on the high-RAM hardware stack.
+; The earlier stack-buffer design grew down from SP through the DISK RESIDENT
+; WORK AREA (W50A9_WRKB $F242 / CURDRV_CELL $F247 / RES_STUBS $F24E-$F2B7 /
+; DRVTBL $F340) and could corrupt the disk kernel under DI -- retired entirely
+; (no GC scratch on the stack, ever; that deletes the whole bug class). 512 B
+; / 2 = a 256-ROOT cap for this sub-quadratic path; a bigger live-root set
+; (n > 256, a big filled string array) falls back to gc_slow -- the in-place
+; O(n^2) selection compaction that needs NO buffer (exactly what real MSX
+; does). The switch is on the ROOT COUNT n, never on SP.
+;
+; DETOKBUF-IDLE AUDIT (obligation discharged, not assumed). Borrowing DETOKBUF
+; is safe iff it is idle at every point a STRING GC can fire. String GC fires
+; only inside heap_alloc / ary_alloc (mid string-expression or DIM). DETOKBUF /
+; DB_CUR are written ONLY by the LIST / ASCII-SAVE detokeniser (basic/list.asm,
+; basic/save.asm's list_walk reuse, sub/detok.asm) -- and that path NEVER calls
+; str_eval / heap_alloc / str_temp / concat (verified: no such reference in
+; list.asm/detok.asm/save.asm's detok body), so it can allocate no heap string
+; and can trigger no GC. Detok also fills DETOKBUF fully then drains it with no
+; heap alloc in between (list.asm: subrom_call detok -> DETOKBUF -> print_string;
+; no str_eval between), so DETOKBUF is never LIVE across an allocation. LIST /
+; SAVE and string-expression eval are disjoint statements. Therefore DETOKBUF
+; is provably idle whenever a string GC runs. The string engine itself never
+; touches DETOKBUF / DB_CUR.
 
     IF ROM_BASE < $4000
 
@@ -371,9 +386,9 @@ shc_have:
 ; RVDESC-over-STRSCR/FLD_DESC) sits OUTSIDE [OLD_FRETOP,C) and is skipped by
 ; the range test, so it is never a root (§5.2).
 ;
-; Own scratch frame on the STACK (IX-addressed, 22 bytes) + a transient 2n
-; descriptor-address buffer reserved BELOW it:
-;   +0 OLD_FRETOP  +2 CEIL(C)  +4 N  +6 BASE(buffer)  +8 DEST  +10 GAP2/CURSOR
+; Own scratch frame on the STACK (IX-addressed, 22 bytes); the 2n descriptor-
+; address sort buffer is in DETOKBUF (fixed, NOT on the stack):
+;   +0 OLD_FRETOP  +2 CEIL(C)  +4 N  +6 BASE(=DETOKBUF)  +8 DEST  +10 GAP2/CURSOR
 ;   +12 P  +14 Q  +16 GAP(elem)  +18 TMP(descaddr)  +20 MODE(1)
 ; (+10 doubles as the FILL cursor during enumeration and gap*2 during sort;
 ;  +12/+14 double as the array-walk's ARR_CUR/ARR_END during enumeration and
@@ -403,40 +418,23 @@ strheap_gc:
                 ld      a,(ix+4)
                 or      (ix+5)
                 jp      z,sg_finish
-                ; --- Phase C: reserve the 2n descriptor-address buffer, BUT only
-                ; if it fits SAFELY on the hardware stack (S6). n is unbounded
-                ; (a big string array -> thousands of roots); a 2n buffer below
-                ; SP could trample the zerobas sysvars (top out ~$F194) / STRTAB
-                ; / the heap, silently under DI. So: reserve only while the
-                ; buffer base stays >= GC_STACK_FLOOR (which also leaves GC's own
-                ; walk/sort working stack clear of the sysvars); otherwise fall
-                ; back to the no-buffer O(n^2) selection GC (gc_slow) -- correct
-                ; for arbitrary n, just slower. The sub-quadratic shell path is
-                ; the common case; the O(n^2) fallback is the safety net for
-                ; pathologically-many live roots.
+                ; --- Phase C: the sort buffer is DETOKBUF ($BE00), for n <= 256
+                ; roots (2N <= 512 B). A larger live-root set can't fit -> fall
+                ; back to gc_slow (in-place O(n^2), no buffer). Switch on N, not
+                ; SP: no GC scratch on the hardware stack, ever (see the header's
+                ; SORT-BUFFER HOME + DETOKBUF-IDLE AUDIT notes).
                 ld      l,(ix+4)
                 ld      h,(ix+5)
-                add     hl,hl               ; HL = 2N (needed bytes)
-                ex      de,hl               ; DE = 2N
-                ld      hl,0
-                add     hl,sp               ; HL = SP
-                push    de                  ; guard 2N
-                ld      de,GC_STACK_FLOOR
+                ld      de,256
                 or      a
-                sbc     hl,de               ; HL = SP - FLOOR (available bytes)
-                pop     de                  ; DE = 2N
-                jp      c,gc_slow           ; SP <= FLOOR (defensive) -> slow path
-                or      a
-                sbc     hl,de               ; available - 2N
-                jp      c,gc_slow           ; not enough room -> O(n^2) fallback
-                ; fits: reserve the 2N buffer
-                ld      hl,0
-                or      a
-                sbc     hl,de               ; HL = -(2N)
-                add     hl,sp
-                ld      sp,hl               ; sp -= 2N
+                sbc     hl,de               ; N - 256
+                jr      c,gc_detok          ; N < 256 -> DETOKBUF path
+                jp      nz,gc_slow          ; N > 256 -> O(n^2) fallback
+                                            ; (N == 256 exactly -> 2N=512, fits)
+gc_detok:
+                ld      hl,DETOKBUF
                 ld      (ix+6),l
-                ld      (ix+7),h            ; BASE = buffer base
+                ld      (ix+7),h            ; BASE = DETOKBUF (fixed page-2 buffer)
                 ld      (ix+10),l
                 ld      (ix+11),h           ; CURSOR = BASE (for the fill walk)
                 ; --- Phase D: fill the buffer with the root descriptor addrs ---
@@ -478,13 +476,12 @@ sg_sweep:
                 sbc     hl,de               ; P - BASE
                 pop     hl
                 jp      nc,sg_sweep         ; P >= BASE -> more elements
-                ; --- Phase G: publish new FRETOP, free buffer + frame ---
+                ; --- Phase G: publish new FRETOP, free the frame ---
+                ; (the sort buffer is DETOKBUF, not on the stack -- nothing to
+                ; free but the 22-B IX frame.)
                 ld      l,(ix+8)
                 ld      h,(ix+9)
                 ld      (FRETOP),hl
-                push    ix
-                pop     hl                  ; HL = frame base (buffer freed by this)
-                ld      sp,hl               ; free the 2n buffer (sp := frame base)
                 jr      sg_freeframe
 sg_finish:
                 ld      l,(ix+2)
@@ -496,13 +493,14 @@ sg_freeframe:
                 ld      sp,hl               ; free the 22-byte frame
                 ret
 
-; --- gc_slow: O(n^2) selection compaction, NO buffer (the S6 safety fallback
-; when the 2n sort buffer would not fit safely on the stack). Repeatedly walk
-; all roots (MODE=2) to find the highest-ptr not-yet-compacted body, move it up
-; to DEST, repeat until none remain. Correct for arbitrary n; slower. Reuses
-; sg_move_one for the move. BEST_PTR in frame +6 (BASE slot, unused in this
-; path), BEST_DESC in +16 (GAP slot, unused) — both clear of the array-walk's
-; own +12/+14 scratch. No buffer was reserved, so it frees only the 22-B frame.
+; --- gc_slow: O(n^2) selection compaction, NO buffer (the fallback for n > 256
+; roots, which the 512-B DETOKBUF sort buffer cannot hold -- a big FILLED
+; string array; exactly what real MSX's own collector always does). Repeatedly
+; walk all roots (MODE=2) to find the highest-ptr not-yet-compacted body, move
+; it up to DEST, repeat until none remain. Correct for arbitrary n; slower.
+; Reuses sg_move_one for the move. BEST_PTR in frame +6 (BASE slot, unused in
+; this path), BEST_DESC in +16 (GAP slot, unused) — both clear of the array-
+; walk's own +12/+14 scratch. No buffer -> frees only the 22-B frame.
 gc_slow:
                 ; DEST is already CEIL (ix+8/9, set before Phase B).
 gcs_outer:
