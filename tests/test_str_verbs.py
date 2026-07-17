@@ -37,7 +37,8 @@ RELOC_BASE = 0x2812
 
 SRC = 0xC000     # ASCII expression source
 TOKBUF = 0xC100  # crunched-token buffer
-SETSRC = 0xC300  # str_set_key source descriptor scratch
+SETSRC = 0xC300  # str_set_key source descriptor scratch ([len][ptr])
+BODY = 0xC500    # scratch body the SETSRC descriptor points at (slice-4a heap)
 
 
 def build():
@@ -61,20 +62,52 @@ def run():
     m.poke(0x9000, b"\x00\x00")
     m.poke_w(s["ARYTAB"], 0x9002)
     m.poke(0x9002, b"\x00\x00")
+    # Arrays slice-4a (docs/spec-basic-arrays-slice4a-string-heap.md §2/§5):
+    # in the repack build a string VALUE lives in the compacting heap and a
+    # descriptor is [len:1][ptr:2]. heap_reset seeds FRETOP = min(HIMEM,TXTMAX)
+    # (an empty heap) and TEMPTOP = TEMPBASE (an empty temp-descriptor stack),
+    # exactly as clear_vars/NEW/RUN do at a real cold boot. Without it a fresh
+    # Machine leaves FRETOP=0, so the first heap_alloc underflows and every
+    # string comes back garbage.
+    m.call("heap_reset")
     STRPTR = s["STRPTR"]
     VALTYP = s["VALTYP"]
     STRTAB = s["STRTAB"]
     STRENTSZ = s["STRENTSZ"]
     STRSLOTS = s["STRSLOTS"]
+    TEMPBASE = s["TEMPBASE"]
+    TEMPTOP = s["TEMPTOP"]
 
     fails = 0
+
+    def read_val(addr):
+        """Read a [len:1][ptr:2] descriptor -> the body bytes it points at.
+        Slice-4a heap format: the value bytes live at ptr, NOT inline after
+        len (that was the pre-4a [len][bytes] convention)."""
+        dlen = m.mem[addr]
+        if dlen == 0:
+            return 0, b""
+        bptr = m.mem[addr + 1] | (m.mem[addr + 2] << 8)
+        return dlen, bytes(m.mem[bptr: bptr + dlen])
 
     def reset_strtab():
         for i in range(STRSLOTS):
             m.poke(STRTAB + i * STRENTSZ, 0)
 
+    def stmt_boundary():
+        """Mirror exec_stmt (interp.asm): empty the temp-descriptor stack at
+        each statement boundary so temps never accumulate across the many
+        expressions this test evaluates directly (str_eval/eval bypass
+        exec_stmt, which is where the ROM does this reset)."""
+        m.poke_w(TEMPTOP, TEMPBASE)
+
     def set_var(name, value):
-        m.poke(SETSRC, bytes([len(value)]) + value)
+        # A str_set_key source is a STABLE [len][ptr] descriptor (slice-4a §10):
+        # sh_var_store reads len from (SETSRC) then follows ptr to copy the body
+        # into a fresh heap allocation. Point ptr at a scratch body buffer.
+        m.poke(BODY, value)
+        m.poke(SETSRC, bytes([len(value)]))
+        m.poke_w(SETSRC + 1, BODY)
         m.call("str_set_key", b=ord(name), c=0, de=SETSRC)
 
     def tok(text):
@@ -85,18 +118,19 @@ def run():
     def num_expr(text):
         """Evaluate a NUMERIC expression -> DE (unsigned 16)."""
         tok(text)
+        stmt_boundary()
         cpu = m.call("eval", hl=TOKBUF)
         return cpu.de & 0xFFFF
 
     def str_expr(text):
         """Evaluate a STRING expression -> (cpu, len, bytes)."""
         tok(text)
+        stmt_boundary()
         m.poke(VALTYP, 0)
         m.poke_w(STRPTR, 0)
         cpu = m.call("str_eval", hl=TOKBUF)
         ptr = m.mem[STRPTR] | (m.mem[STRPTR + 1] << 8)
-        dlen = m.mem[ptr]
-        dbytes = bytes(m.mem[ptr + 1: ptr + 1 + dlen])
+        dlen, dbytes = read_val(ptr)
         return cpu, dlen, dbytes
 
     def ck_num(label, got, want):

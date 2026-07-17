@@ -43,7 +43,8 @@ RELOC_BASE = 0x2812
 
 SRC = 0xC000     # ASCII expression source
 TOKBUF = 0xC100  # crunched-token buffer
-SETSRC = 0xC300  # str_set_key source descriptor scratch
+SETSRC = 0xC300  # str_set_key source descriptor scratch ([len][ptr])
+BODY = 0xC500    # scratch body the SETSRC descriptor points at (slice-4a heap)
 
 
 def build():
@@ -67,22 +68,49 @@ def run():
     m.poke(0x9000, b"\x00\x00")
     m.poke_w(s["ARYTAB"], 0x9002)
     m.poke(0x9002, b"\x00\x00")
+    # Arrays slice-4a (docs/spec-basic-arrays-slice4a-string-heap.md §2/§5):
+    # a repack-build string VALUE lives in the compacting heap and a descriptor
+    # is [len:1][ptr:2]. heap_reset seeds FRETOP (empty heap) + TEMPTOP (empty
+    # temp-descriptor stack) exactly as a real cold boot does, so the string
+    # functions have somewhere to allocate their result bodies.
+    m.call("heap_reset")
     STRPTR = s["STRPTR"]
     VALTYP = s["VALTYP"]
     STRTAB = s["STRTAB"]
     STRENTSZ = s["STRENTSZ"]
     STRSLOTS = s["STRSLOTS"]
     ERRMARK = s["ERRMARK"]
-    STRMAX = s["STRMAX"]
+    STRMAX = s["STRMAX"]     # 255 in the repack build (slice-4a widened 64->255)
+    TEMPBASE = s["TEMPBASE"]
+    TEMPTOP = s["TEMPTOP"]
 
     fails = 0
+
+    def read_val(addr):
+        """Read a [len:1][ptr:2] descriptor -> the heap body bytes it points
+        at (slice-4a: value bytes are no longer inline after len)."""
+        dlen = m.mem[addr]
+        if dlen == 0:
+            return 0, b""
+        bptr = m.mem[addr + 1] | (m.mem[addr + 2] << 8)
+        return dlen, bytes(m.mem[bptr: bptr + dlen])
 
     def reset_strtab():
         for i in range(STRSLOTS):
             m.poke(STRTAB + i * STRENTSZ, 0)
 
+    def stmt_boundary():
+        """Mirror exec_stmt (interp.asm): empty the temp-descriptor stack at
+        each statement boundary so temps don't accumulate across the many
+        direct str_eval/eval calls this test makes (they bypass exec_stmt)."""
+        m.poke_w(TEMPTOP, TEMPBASE)
+
     def set_var(name, value):
-        m.poke(SETSRC, bytes([len(value)]) + value)
+        # str_set_key source = a STABLE [len][ptr] descriptor (slice-4a §10):
+        # sh_var_store follows ptr to copy the body into a fresh heap alloc.
+        m.poke(BODY, value)
+        m.poke(SETSRC, bytes([len(value)]))
+        m.poke_w(SETSRC + 1, BODY)
         m.call("str_set_key", b=ord(name), c=0, de=SETSRC)
 
     def tok(text):
@@ -97,6 +125,7 @@ def run():
         """Evaluate a NUMERIC expression -> DE (unsigned 16)."""
         tok(text)
         clear_markers()
+        stmt_boundary()
         cpu = m.call("eval", hl=TOKBUF)
         return cpu.de & 0xFFFF
 
@@ -104,12 +133,12 @@ def run():
         """Evaluate a STRING expression -> (cpu, len, bytes)."""
         tok(text)
         clear_markers()
+        stmt_boundary()
         m.poke(VALTYP, 0)
         m.poke_w(STRPTR, 0)
         cpu = m.call("str_eval", hl=TOKBUF)
         ptr = m.mem[STRPTR] | (m.mem[STRPTR + 1] << 8)
-        dlen = m.mem[ptr]
-        dbytes = bytes(m.mem[ptr + 1: ptr + 1 + dlen])
+        dlen, dbytes = read_val(ptr)
         return cpu, dlen, dbytes
 
     def ck_num(label, got, want):
@@ -161,29 +190,33 @@ def run():
            b" " * STRMAX)
     ck_str_err('SPACE$(-1) negative -> error', str_expr("SPACE$(-1)"))
 
-    # Regression: SPACE$ must fill EXACTLY `count` bytes, not overrun the ring slot.
-    # The original fill loop did `ld b,0 : djnz`, writing 256 bytes regardless of
-    # count and smearing STRTMP_IDX/STRCAT_R/TMISMATCH ($E55C+) + the file buffers —
-    # invisible to the descriptor-length checks above (they read only `count` bytes),
-    # but it corrupted TMISMATCH and surfaced as a spurious "type mismatch" live.
-    # Seed a sentinel across the whole ring region, run SPACE$, and assert nothing
-    # past the filled bytes changed.
-    STRTMP = s["STRTMP"]
-    STRTMPSZ = s["STRTMPSZ"]
-    STRNTMP = s["STRNTMP"]
+    # Regression: SPACE$ must fill EXACTLY `count` bytes, not overrun its buffer.
+    # The original (pre-4a) fill loop did `ld b,0 : djnz`, writing 256 bytes
+    # regardless of count and smearing the sysvars above the old STRTMP ring —
+    # invisible to the descriptor-length checks above (they read only `count`
+    # bytes) but it corrupted TMISMATCH and surfaced as a spurious "type
+    # mismatch" live. Slice-4a retired the ring: a SPACE$ result now owns a
+    # freshly heap_alloc'd body of exactly `count` bytes (sh_fill), so the
+    # heap-model equivalent of the guard is "nothing BELOW the body (into the
+    # rest of the free heap, where an over-fill would spill) became a space".
+    # Seed a non-space sentinel across the heap span just under FRETOP, run
+    # SPACE$(2), then assert the body is exactly two spaces and the sentinel
+    # bytes below it are untouched.
+    FRETOP = s["FRETOP"]
     SENT = 0xAA
-    ring_hi = STRTMP + STRNTMP * STRTMPSZ + 8      # ring + the sysvar cells just above
-    for a in range(STRTMP, ring_hi):
+    ceil = m.mem[FRETOP] | (m.mem[FRETOP + 1] << 8)
+    for a in range(ceil - 64, ceil):
         m.poke(a, SENT)
     res = str_expr("SPACE$(2)")
     ptr = m.mem[STRPTR] | (m.mem[STRPTR + 1] << 8)
-    tail = m.mem[ptr + 1 + 2: ptr + 1 + 2 + 40]    # bytes just past the 2 filled spaces
-    overran = any(b == 0x20 for b in tail)
+    bptr = m.mem[ptr + 1] | (m.mem[ptr + 2] << 8)     # SPACE$ result body address
+    below = m.mem[bptr - 40: bptr]                     # heap bytes just below the body
+    overran = any(b == 0x20 for b in below)
     fills2 = res[1] == 2 and res[2] == b"  "
     ok = fills2 and not overran
     fails += not ok
-    print(f"{'PASS' if ok else 'FAIL'}  SPACE$(2) fills exactly 2 (no ring overrun) "
-          f"len={res[1]} tail_has_space={overran}")
+    print(f"{'PASS' if ok else 'FAIL'}  SPACE$(2) fills exactly 2 (no heap overrun) "
+          f"len={res[1]} below_has_space={overran}")
 
     # ------------------------------------------------------------------
     print("# --- Group B: STRING$ (numeric code / string first byte / clamp) ---")

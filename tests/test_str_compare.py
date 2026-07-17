@@ -56,9 +56,12 @@ RELOC_BASE = 0x2812
 
 SRC = 0xC000       # ASCII expression / line-body source
 TOKBUF = 0xC100    # crunched-token buffer
-SETSRC = 0xC300    # str_set_key source descriptor scratch
-DESC_L = 0xC400    # scratch [len][bytes] descriptor (lhs, for direct str_cmp_bits)
-DESC_R = 0xC480    # scratch [len][bytes] descriptor (rhs, for direct str_cmp_bits)
+SETSRC = 0xC300    # str_set_key source descriptor scratch ([len][ptr])
+DESC_L = 0xC400    # scratch [len][ptr] descriptor (lhs, for direct str_cmp_bits)
+DESC_R = 0xC480    # scratch [len][ptr] descriptor (rhs, for direct str_cmp_bits)
+LBODY = 0xC500     # body the DESC_L descriptor points at (slice-4a heap format)
+RBODY = 0xC580     # body the DESC_R descriptor points at
+BODY = 0xC600      # body the SETSRC descriptor points at (set_var)
 
 
 def build():
@@ -83,6 +86,13 @@ def run():
     m.poke(0x9000, b"\x00\x00")
     m.poke_w(s["ARYTAB"], 0x9002)
     m.poke(0x9002, b"\x00\x00")
+    # Arrays slice-4a (docs/spec-basic-arrays-slice4a-string-heap.md §2/§5): a
+    # repack-build string VALUE lives in the compacting heap; a descriptor is
+    # [len:1][ptr:2] (the comparator dereferences ptr on both sides). heap_reset
+    # seeds FRETOP (empty heap) + TEMPTOP (empty temp stack) as a real cold boot
+    # does, so str_eval's operand snapshots have somewhere to allocate -- without
+    # it same-length operands' bodies deref to garbage and every == misfires.
+    m.call("heap_reset")
     STRPTR = s["STRPTR"]
     VALTYP = s["VALTYP"]
     STRTAB = s["STRTAB"]
@@ -90,6 +100,8 @@ def run():
     STRSLOTS = s["STRSLOTS"]
     ERRMARK = s["ERRMARK"]
     TMISMATCH = s["TMISMATCH"]
+    TEMPBASE = s["TEMPBASE"]
+    TEMPTOP = s["TEMPTOP"]
 
     fails = 0
 
@@ -103,7 +115,11 @@ def run():
             m.poke(STRTAB + i * STRENTSZ, 0)
 
     def set_var(name, value):
-        m.poke(SETSRC, bytes([len(value)]) + value)
+        # str_set_key source = a STABLE [len][ptr] descriptor (slice-4a §10):
+        # sh_var_store follows ptr to copy the body into a fresh heap alloc.
+        m.poke(BODY, value)
+        m.poke(SETSRC, bytes([len(value)]))
+        m.poke_w(SETSRC + 1, BODY)
         m.call("str_set_key", b=ord(name), c=0, de=SETSRC)
 
     def tok(text):
@@ -116,9 +132,12 @@ def run():
         m.poke(TMISMATCH, 0)
 
     def num_expr(text):
-        """Evaluate a NUMERIC expression through the full ev_rel path -> DE."""
+        """Evaluate a NUMERIC expression through the full ev_rel path -> DE.
+        Resets the temp stack first (exec_stmt's per-statement boundary, which
+        the direct eval call bypasses) so operand snapshots don't accumulate."""
         tok(text)
         clear_markers()
+        m.poke_w(TEMPTOP, TEMPBASE)
         cpu = m.call("eval", hl=TOKBUF)
         return cpu.de & 0xFFFF
 
@@ -128,12 +147,16 @@ def run():
     # ------------------------------------------------------------------
     print("# --- str_cmp_bits: the unsigned-byte comparator (§2 D-3) ---")
 
-    def desc(addr, data: bytes):
-        m.poke(addr, bytes([len(data)]) + data)
+    def desc(addr, body_addr, data: bytes):
+        # slice-4a: a descriptor is [len:1][ptr:2]; str_cmp_bits dereferences
+        # ptr on both operands, so the value bytes live at body_addr, not inline.
+        m.poke(body_addr, data)
+        m.poke(addr, bytes([len(data)]))
+        m.poke_w(addr + 1, body_addr)
 
     def cmp_bits(lhs: bytes, rhs: bytes):
-        desc(DESC_L, lhs)
-        desc(DESC_R, rhs)
+        desc(DESC_L, LBODY, lhs)
+        desc(DESC_R, RBODY, rhs)
         cpu = m.call("str_cmp_bits", hl=DESC_L, de=DESC_R, bc=0x1234)
         return cpu.a, cpu.bc
 

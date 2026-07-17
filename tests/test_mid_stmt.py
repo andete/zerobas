@@ -38,7 +38,8 @@ RELOC_BASE = 0x2812
 
 SRC = 0xC000     # ASCII statement source
 TOKBUF = 0xC100  # crunched-token buffer
-SETSRC = 0xC300  # str_set_key source descriptor scratch
+SETSRC = 0xC300  # str_set_key source descriptor scratch ([len][ptr])
+BODY = 0xC500    # scratch body the SETSRC descriptor points at (slice-4a heap)
 
 
 def build():
@@ -63,6 +64,12 @@ def run():
     m.poke(0x9000, b"\x00\x00")
     m.poke_w(s["ARYTAB"], 0x9002)
     m.poke(0x9002, b"\x00\x00")
+    # Arrays slice-4a (docs/spec-basic-arrays-slice4a-string-heap.md §2/§5):
+    # a repack-build string VALUE lives in the compacting heap; the STRTAB slot
+    # holds a [len:1][ptr:2] descriptor. heap_reset seeds FRETOP (empty heap) +
+    # TEMPTOP (empty temp stack) as a real cold boot does, so str_set_key's
+    # heap_alloc has somewhere to put A$'s body.
+    m.call("heap_reset")
     STRTAB = s["STRTAB"]
     STRENTSZ = s["STRENTSZ"]
     STRSLOTS = s["STRSLOTS"]
@@ -74,14 +81,23 @@ def run():
             m.poke(STRTAB + i * STRENTSZ, 0)
 
     def set_var(name, value):
-        m.poke(SETSRC, bytes([len(value)]) + value)
+        # str_set_key source = a STABLE [len][ptr] descriptor (slice-4a §10):
+        # sh_var_store follows ptr to copy the body into a fresh heap alloc.
+        m.poke(BODY, value)
+        m.poke(SETSRC, bytes([len(value)]))
+        m.poke_w(SETSRC + 1, BODY)
         m.call("str_set_key", b=ord(name), c=0, de=SETSRC)
 
     def get_var(name):
+        # str_get_key returns HL -> the slot's [len][ptr] descriptor; follow
+        # ptr to the heap body (the value bytes are no longer inline).
         cpu = m.call("str_get_key", b=ord(name), c=0)
-        ptr = cpu.hl & 0xFFFF
-        dlen = m.mem[ptr]
-        return bytes(m.mem[ptr + 1: ptr + 1 + dlen])
+        addr = cpu.hl & 0xFFFF
+        dlen = m.mem[addr]
+        if dlen == 0:
+            return b""
+        bptr = m.mem[addr + 1] | (m.mem[addr + 2] << 8)
+        return bytes(m.mem[bptr: bptr + dlen])
 
     def mid_stmt(stmt, avar, aval):
         """Seed A$=aval, tokenise `stmt`, run ex_mid_stmt, return A$'s new bytes."""
