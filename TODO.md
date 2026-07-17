@@ -948,10 +948,17 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       identical; 9 B low / 19 B page-1 free. Spec
       [`docs/spec-basic-arrays-slice4c-string-scalar-unification.md`](docs/spec-basic-arrays-slice4c-string-scalar-unification.md).
       **🏁 The arrays/DIM arc is CONCLUDED — the faithful unified variable area is
-      reached; no fixed variable pool remains.** Open follow-up chips (not
-      4c-scope): `VARPTR(A$)` returns a phantom numeric cell (F3-era `vnk_dollar`
-      hardcodes VARTYPE=8 for `$`; cheap faithful fix now); INPUT/LINE INPUT/
-      INPUT# silently swallow the new scalar-chain OOM (safe — no hang/corruption).
+      reached; no fixed variable pool remains.** Two follow-ups **SHIPPED
+      2026-07-17** (commit d92c3da, +75fbe2b docs; Fable-reviewed clean):
+      `VARPTR(A$)` now returns the string `[len][ptr]` descriptor (was a phantom
+      numeric cell — `ev_f_varptr` passes type 1 for a `$` var); INPUT/LINE
+      INPUT/INPUT# now surface the scalar-chain OOM as `Out of memory` (was a
+      silent `""`; reused `check_expr_errors`/`_popbc`). Gate `array-acceptance`
+      **140/140** + `input-acceptance` 16/16. **Remaining faithfulness candidates
+      (not regressions):** array-element VARPTR `VARPTR(A(0))`/`VARPTR(S$(0))`
+      raises "syntax error" (reference supports it — pre-existing for numeric,
+      now string-visible); `INPUT#` surfaces a mid-statement FP error after
+      consuming the field vs the reference's abort-before-read.
 - [ ] **`^`** and the math functions
       `ABS SGN INT SQR SIN COS TAN ATN LOG EXP RND FIX CINT CSNG CDBL`
 - [ ] **I/O** — ✅ console `INPUT` + `LINE INPUT` (DONE 2026-07-11, see the slice log
