@@ -22,7 +22,7 @@ item — do **one item per session** to keep context lean.
 |---|---|---|
 | **1 — loader-stub BASIC + transports + standardization** | just enough MSX-BASIC to run `.BAS`/binary loader stubs; tape + disk read/write; standard DSKIO/`HPHYD` interfaces | **✅ closed** |
 | **2 — full disk (Disk BASIC integration)** | the full file-channel verb surface (sequential + random-access + dir mgmt + `CALL FORMAT`), all oracle-validated | **✅ verb surface complete** — only the Tier-2 provider oracle (a distinct DOS-boot sub-track) + a few Phase-3-gated verbs remain |
-| **3+ — full MSX1 BASIC** | floating point, full string engine, arrays, graphics, sound, … | **active charter** (raised from loader-stub) — landed: string engine, float pack, math pack, arrays/DIM (through slice-4b numeric scalar relocation); string-scalar unification (slice-4c) next |
+| **3+ — full MSX1 BASIC** | floating point, full string engine, arrays, graphics, sound, … | **active charter** (raised from loader-stub) — landed: string engine, float pack, math pack, **arrays/DIM arc CONCLUDED** (through slice-4c string-scalar unification — the faithful unified variable area; no fixed variable pool remains) |
 
 ## Phase 1 — committed loader-stub target (✅ closed)
 
@@ -907,7 +907,7 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       architectural now — every string SURFACE form is landed):** floats in VAL/STR$, the real
       heap+descriptor model, string arrays/`DIM`, STRMAX→255 (a RAM re-architecture, spec §5a);
       `INPUT$(n)` (no-echo n-key function) + numeric `INPUT#` are the next I/O slices
-- [~] **Arrays + `DIM`** (numeric and string, multi-dimensional) — **slice 1 DONE
+- [x] **Arrays + `DIM`** (numeric and string, multi-dimensional) — **ARC CONCLUDED 2026-07-17** (all slices 1–4c shipped; faithful unified variable area). **slice 1 DONE
       2026-07-15** (numeric arrays: `DIM`, multi-dim, subscript rvalue/lvalue, auto-
       dim-to-10, base 0, `Subscript out of range`/`Illegal function call`/`Redimensioned
       array`/`Out of memory`). Dynamic-allocator model (real MSX `ARYTAB`→ceiling
@@ -934,10 +934,24 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       `ARY_OP` codes 4/5 — no new sub-ROM leaf. `make array-acceptance`
       **127/127**; net **+64 B** main-ROM delta freed; lean build untouched.
       Spec [`docs/spec-basic-arrays-slice4b-scalar-reloc.md`](docs/spec-basic-arrays-slice4b-scalar-reloc.md)).
-      **Remaining: slice 4c** = string-SCALAR unification into the same
-      variable area (retires the `STRTAB` fixed pool, reaches the faithful
-      unified endpoint) — committed, own contract, re-touches the string-heap
-      GC root set so split out from 4b on purpose.
+      **Slice 4c = string-SCALAR unification DONE 2026-07-17** (commits
+      6d60540 impl → eeb9a8a Makefile SUB_PARTS fix → ea26bca gate/doc):
+      string scalars relocated out of the fixed `STRTAB $E240..$E268` pool into
+      the SAME unified variable chain — string find/alloc IS numeric find/alloc
+      with type=1 once `scv_find`/`scv_alloc` stride routes through the slice-3
+      `elsize_from_type` (type 1 → 3-byte `[len][ptr]` descriptor); GC root walk
+      `sg_walk_strtab` → `sg_walk_scalars` (visit type==1 at descriptor entry+3);
+      `str_get_key`/`str_set_key` → thin ARY_OP 4/5 glue; edit now clears ALL
+      vars (resolves the 4b interim caveat). H1 hazard (fresh string STORE shifts
+      arrays → stale SOURCE descriptor, `A$=S$(0)`) fixed via a temp-descriptor-
+      stack source snapshot. `make array-acceptance` **138/138**; lean byte-
+      identical; 9 B low / 19 B page-1 free. Spec
+      [`docs/spec-basic-arrays-slice4c-string-scalar-unification.md`](docs/spec-basic-arrays-slice4c-string-scalar-unification.md).
+      **🏁 The arrays/DIM arc is CONCLUDED — the faithful unified variable area is
+      reached; no fixed variable pool remains.** Open follow-up chips (not
+      4c-scope): `VARPTR(A$)` returns a phantom numeric cell (F3-era `vnk_dollar`
+      hardcodes VARTYPE=8 for `$`; cheap faithful fix now); INPUT/LINE INPUT/
+      INPUT# silently swallow the new scalar-chain OOM (safe — no hang/corruption).
 - [ ] **`^`** and the math functions
       `ABS SGN INT SQR SIN COS TAN ATN LOG EXP RND FIX CINT CSNG CDBL`
 - [ ] **I/O** — ✅ console `INPUT` + `LINE INPUT` (DONE 2026-07-11, see the slice log
