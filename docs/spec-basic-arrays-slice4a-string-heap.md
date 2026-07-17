@@ -5,12 +5,25 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — Arrays slice 4a: string heap + STRMAX→255 (+ STRCAT_R absorption)
 
-Status: **SIGNED OFF 2026-07-16.** §17 resolved as recommended: (1) temp-stack
+Status: **SHIPPED 2026-07-17** (commits `a6194c3` impl → `8d2cc95` root-cause fix →
+`b1107ec` S1–S8 → `372b795` GC-stack-floor→DETOKBUF → `6b442a4` bugs A/B/C →
+`577b81d` bug-C class sweep → `14e579c` residual log). `make array-acceptance`
+**106/106** + `make string-acceptance` 6/6; lean SHA byte-identical; tenant closure
+clean; 9 B low / 14 B page-1 free. Hardened across **4 Fable adversarial passes**
+(they caught the root-cause HL clobber, S1–S8, a disk-work-area GC overwrite, and a
+one-line interpreter hang — all invisible to the green suites; the standing arc
+lesson). Final GC design as built = **shell sort (O(n^1.5)) into the idle DETOKBUF
+buffer** for ≤256 roots, in-place `gc_slow` (O(n²), zero-scratch = real-MSX mode)
+beyond — `GC_STACK_FLOOR` retired (see §5 as-built note). Two PRE-EXISTING value-error
+message residuals logged (§11 KNOWN RESIDUAL 2), handed to a follow-up session.
+
+Originally **SIGNED OFF 2026-07-16.** §17 resolved as recommended: (1) temp-stack
 depth `D` = implementation maximizes within the freed window (≥8); (2) tenant
 boundary = `heap_alloc`+GC in the sub-ROM tenant, temp-stack + `+`-chain walk
-main-side; (3) GC sort = radix, O(n), transient stack buffer (zero permanent RAM);
-(4) `String formula too complex` added to `fre_msgtab`; (5) 4a/4b split kept hard.
-Next: Sonnet implements against this contract, Fable adversarial review.
+main-side; (3) GC sort — signed off as radix O(n)/transient-stack; **as-built = shell
+sort into DETOKBUF** (radix's stack buffer would have trampled the disk work area —
+that was one of the Fable finds); (4) `String formula too complex` added to
+`fre_msgtab`; (5) 4a/4b split kept hard.
 
 Implementation contract for the first
 half of the split slice 4 (space plan
