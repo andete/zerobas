@@ -87,9 +87,16 @@ SUB_SRC   := sub/sub.asm
 # sub/arrays.asm (arrays slice-1 SPLIT design, docs/spec-basic-arrays.md §10):
 # the numeric-array engine tenant (page-0, SUBROM_IDX_ARY) -- same staleness
 # hazard, same fix.
+# sub/strheap.asm (arrays slice-4a string-heap tenant) + sub/detok.asm (the
+# wave-3 detokeniser tenant body): BOTH were MISSING here since their
+# introduction -- an edit to either silently shipped a STALE sub.rom (caught
+# 2026-07-17, slice-4c adversarial review: a revert-and-observe experiment on
+# sub/strheap.asm did not rebuild sub.rom, so the machine probes ran the
+# reverted GC walk after the source was restored). Same staleness hazard as
+# kwtable.inc above, same fix (real prerequisites).
 SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
              sub/fp_exp.asm sub/fp_log.asm sub/fp_pow.asm sub/fp_sin.asm \
-             sub/fp_rnd.asm sub/arrays.asm \
+             sub/fp_rnd.asm sub/arrays.asm sub/strheap.asm sub/detok.asm \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
              basic/tokenise.inc basic/detok.inc \
              sub/basic-resident-abi.inc
