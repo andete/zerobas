@@ -26,36 +26,46 @@ byte-identical.
 
 ---
 
-## 0. TL;DR + the honest payoff question (read before signing)
+## 0. TL;DR + scope under the faithful-full-BASIC charter
 
 Slice 4b moves numeric scalar variables out of the fixed high-RAM pool
 `VARTAB $E1C0..$E240` and into the real-MSX contiguous bottom-up chain
 (`program-text → scalars → arrays → free → string-heap → HIMEM`), the same chain
-arrays and string bodies already live in. It is the arc's **"mechanically simpler,
-lower payoff"** slice (arc spec §15).
+arrays and string bodies already live in. It is arc spec §15's **"mechanically
+simpler"** slice — but **not** a low-value one.
 
-**What it buys (be candid):**
-1. **Architectural completeness of memory model A** — the last numeric fixed pool
-   dissolves; the allocator chain becomes real, not half-real.
-2. **Reclaims the 128-byte `$E1C0` RAM pool** and **removes the fixed scalar cap**
-   (today ~11–25 scalars depending on type mix; after 4b, bounded only by
-   `HIMEM`/the shared free region).
+**Charter note (2026-07-17):** zerobas's BASIC is now on the **faithful full MSX1
+BASIC** charter, no longer game-loader-scoped
+([`charter-faithful-full-msx1-basic`](../../.claude/projects/-Users-joost-projects-zerobas/memory/charter-faithful-full-msx1-basic.md)).
+Under that charter the real MSX contiguous variable model *is the deliverable*, so the
+earlier "the loader never exhausts the pool, so maybe skip it" framing is **retired**.
+Scalar relocation is in scope; the only open decisions are staging and mechanism, not
+whether to do it.
+
+**What it delivers:**
+1. **Faithfulness** — the real MSX
+   `TXTTAB→VARTAB→ARYTAB→STREND→free→FRETOP(strings)→MEMSIZ` model, of which zerobas
+   already runs the array + string-heap half; 4b completes the numeric-scalar leg. The
+   last numeric fixed pool dissolves.
+2. **Removes the fixed scalar cap** (today ~11–25 scalars by type mix; after 4b,
+   bounded only by `HIMEM`/the shared free region) and **reclaims the 128-byte
+   `$E1C0` RAM pool**.
 3. **`HIMEM` becomes a live scalar ceiling** — currently record-only
    ([`clear.asm:29-30`](../basic/clear.asm) "No allocator consults HIMEM yet").
 
 **What it costs / risks:**
 - The core mechanism is an **insert-and-shift** (creating a scalar moves the entire
-  array region up), plus the same `FRETOP` collision / GC-retry arrays already do.
-  This is genuinely more delicate than the current bump-into-fixed-pool store.
-- The zerobas charter is **game-loader-scoped**; loader stubs use few scalars and
-  essentially never exhaust the 128-byte pool. So the *user-facing* value is low —
-  this is an internal-architecture slice.
+  array region up), plus the same `FRETOP` collision / GC-retry arrays already do —
+  genuinely more delicate than the current bump-into-fixed-pool store. Managed by the
+  arc's standard discipline (small slice, differential + adversarial + Fable, §9).
 
-**Decision the sign-off must make (Q0, §13):** proceed with 4b now, or **close the
-arrays/DIM arc after 4a** and treat scalar relocation as a documented, deliberately-
-deferred divergence (the fixed pool works; the only observable loss is the scalar
-cap, which the charter never hits). This contract is written so that either answer
-is defensible; if we proceed, §1–§12 are the plan.
+**The faithful endpoint** is the *unified* variable area — real MSX keeps string and
+numeric scalars in one table, a string entry's value being the 3-byte `[len][ptr]`
+descriptor. So `STRTAB`-as-a-side-pool is a divergence to eliminate, not a resting
+point. The live sign-off decision is therefore **staging** (§6 / Q1): reach the
+unified model in one combined slice, or split **4b = numeric** (this contract) then
+**4c = string-scalar unification** — the arc's "smaller slices" lesson favouring the
+split, with 4c committed (not optional) toward the faithful endpoint.
 
 ---
 
@@ -256,22 +266,29 @@ by construction (no main-page call).
 After 4a, **string scalars** live in a *separate* fixed pool `STRTAB $E240` as 5-B
 `[name0][name1][len][ptr]` descriptors (already heap-pointer form). Two scopes:
 
-- **(A) Numeric-only 4b (recommended).** Relocate the numeric pool; leave `STRTAB` a
-  fixed pool. One fixed pool remains, retired later as an optional **4c**. Bounded
-  risk: the insert-shift touches **no GC roots** (string-array element descriptors
-  move with their array block but their heap `ptr` values are unchanged; string
-  *scalar* descriptors don't move at all). Matches arc spec §15's literal scope.
-- **(B) Unify string scalars into the same variable area too.** Fully faithful (one
-  MSX simple-variable area; a string entry is `[name0][name1][type=1][len][ptr]`).
-  But it makes **string-scalar descriptors chain-resident**, so **`strheap_gc`'s root
-  enumeration must walk the variable area** instead of `STRTAB`, and edit/relink must
-  reclaim orphaned bodies — i.e. it re-touches the GC root set that 4a stabilised.
-  Higher risk, and it re-opens heap territory 4b is otherwise clean of.
+Under the faithful-full-BASIC charter the **endpoint is the unified variable area**
+(real MSX stores string + numeric scalars together). So this is **not** a "whether"
+question — `STRTAB` as a side pool is a divergence to eliminate — it is a **staging**
+question:
 
-**Recommendation: (A).** It respects the arc's hard-won "smaller slices" lesson
-(every slice hid ≥1 matrix-invisible bug), keeps 4b a pure pointer-shift with no GC
-interaction, and defers the GC-root-touching unification to its own signed-off slice
-(4c) if ever wanted. The charter never needs it. **Your call at sign-off.**
+- **(A) Split: 4b = numeric now, 4c = string-scalar unification next (recommended).**
+  4b relocates the numeric pool and leaves `STRTAB` a fixed pool *temporarily*; 4c
+  (committed, not optional) folds string scalars into the same variable area,
+  reaching the faithful endpoint. Bounded per-slice risk: 4b's insert-shift touches
+  **no GC roots** (string-array element descriptors move with their array block but
+  their heap `ptr` values are unchanged; string *scalar* descriptors don't move at
+  all). 4c then takes on the one hard interaction in isolation.
+- **(B) Combined: one slice does numeric + string unification.** Reaches the endpoint
+  in a single slice, but makes **string-scalar descriptors chain-resident**, so
+  **`strheap_gc`'s root enumeration must walk the variable area** instead of `STRTAB`
+  and edit/relink must reclaim orphaned bodies — re-touching the GC root set that 4a
+  stabilised, in the *same* slice as the insert-shift. Higher blast radius.
+
+**Recommendation: (A), with 4c committed.** The arc's hard-won "smaller slices"
+lesson (every slice hid ≥1 matrix-invisible bug; 4a needed 4 Fable passes) argues
+for isolating the GC-root-touching change from the insert-shift change. Same faithful
+destination, lower per-slice risk. **Your call at sign-off** is A-split vs B-combined,
+not whether to unify.
 
 ---
 
@@ -358,22 +375,27 @@ Page), the code is ours. Note in `basic/PROVENANCE.md` §variable area.
 
 ## 11. Slices boundary
 
-4b = **numeric** scalar relocation (this doc). **4c** (optional, only if signed off)
-= string-scalar unification into the same variable area (§6-B) — deferred because it
-re-touches the heap GC root set. After 4b (A), the arrays/DIM arc's *numeric* memory
-model is fully real; `STRTAB` remains the one intentional fixed pool.
+4b = **numeric** scalar relocation (this doc). **4c** (committed under the faithful
+charter, its own signed-off contract) = string-scalar unification into the same
+variable area (§6) — split out because it re-touches the heap GC root set. After 4b,
+the *numeric* memory model is fully real and `STRTAB` remains a **temporary** fixed
+pool; 4c retires it, reaching the faithful unified endpoint. (If Q1 chooses B, 4b and
+4c collapse into one slice.)
 
 ---
 
 ## 12. Open questions for sign-off
 
-- **Q0 — proceed at all?** 4b is low user-facing value (charter is game-loader-scoped;
-  the fixed pool is never exhausted). Proceed now, or **close the arc after 4a** and
-  log scalar relocation as a deliberate deferral? (§0)
-- **Q1 — scope: numeric-only (A) vs. also unify string scalars (B)?** Recommend **A**
-  (§6): bounded risk, no GC-root interaction, arc "smaller slices" lesson.
-- **Q2 — edit-clears-scalars.** Confirm the new (MSX-faithful, correctness-required)
-  behaviour that a program edit clears scalars is acceptable (§3b, §7.1).
+- **Q0 — RESOLVED by the faithful-full-BASIC charter (§0).** Scalar relocation is in
+  scope; "close the arc after 4a" is off the table. No longer a sign-off question.
+- **Q1 — staging: split (A) 4b-numeric → 4c-strings, vs. combined (B) one slice to the
+  unified variable area?** The endpoint (unified, faithful) is fixed either way.
+  Recommend **A-split with 4c committed** (§6): isolate the GC-root-touching change
+  from the insert-shift change; same destination, lower per-slice risk.
+- **Q2 — edit-clears-scalars = YES (confirm).** MSX-faithful *and* correctness-required
+  (a scalar's base moves with `PRGEND` on edit); under the faithful charter this is
+  simply the authentic behaviour (§3b, §7.1). Flagged only because it changes current
+  zerobas behaviour (scalars used to survive an edit).
 - **Q3 — `ARYTAB` as a real stored pointer** vs. keeping the "derive by walk"
   minimalism arrays use today. Recommend a **stored `ARYTAB` cell** (the scalar region
   has no self-describing terminator the way the array `$0000` sentinel does; a stored
