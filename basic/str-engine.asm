@@ -469,7 +469,7 @@ ev_str_arg:
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      '('
-                jp      nz,ev_f_err
+                jp      nz,ev_f_empty
                 inc     ix
                 call    ev_sp
                 ld      a,(ix+0)
@@ -478,8 +478,7 @@ ev_str_arg:
                 ; (D-F2-3). Route to ev_f_empty so FPERR=4 is set on THIS eval --
                 ; then the PRINT/LET driver's check_expr_errors aborts before the
                 ; caller's stale-STRPTR read can print a garbage length/byte
-                ; (spec-basic-empty-expr-syntax-error.md). A non-empty non-string
-                ; arg (e.g. LEN(5)) still falls to str_eval's own type handling.
+                ; (spec-basic-empty-expr-syntax-error.md).
                 cp      ')'
                 jp      z,ev_f_empty
                 cp      ','
@@ -487,13 +486,19 @@ ev_str_arg:
                 push    ix
                 pop     hl                  ; HL = cursor
                 call    str_eval            ; STRPTR -> desc; HL advanced; CF=ok
-                jp      nc,ev_f_err
+                ; BUG C class (Fable 2026-07-17): a NON-string arg -- LEN(5), or a
+                ; NESTED malformed string fn LEN(LEFT$("AB")) whose str_eval CALSLT'd
+                ; then exited NC -- used to `jp ev_f_err` (ERRMARK only, un-advanced
+                ; IX): the caller then read a STALE STRPTR as the answer and dropped
+                ; the statement tail. Defer FPERR=4 via ev_f_empty so the driver's
+                ; check_expr_errors aborts (garbage IX/STRPTR then can't matter).
+                jp      nc,ev_f_empty
                 push    hl
                 pop     ix                  ; IX = cursor past the string operand
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      ')'
-                jp      nz,ev_f_err
+                jp      nz,ev_f_empty
                 inc     ix
                 jp      flt_int_result      ; LEN/ASC/VAL return ints even when a float
                                             ; is nested in the string arg (float.asm F1;
@@ -1097,12 +1102,15 @@ str_fn_string:
                 inc     hl                  ; past the STRING_TOKEN byte ($E3)
                 ld      a,(hl)
                 cp      '('
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty    ; BUG C class (Fable 2026-07-17): STRING$ is a
+                                            ; SINGLE-byte token ($E3) -> its malformed re-
+                                            ; drive never reaches ev_ff_strnum's deferred
+                                            ; error, so a bare str_eval_no INFINITE-LOOPED
+                                            ; (screen fills with " 0"). Defer FPERR=4 here.
                 inc     hl
                 call    eval                ; DE = n; HL advanced (IX preserved)
                 bit     7,d
-                jp      nz,str_eval_no      ; negative n -> function error (D-3),
-                                            ; consistent with SPACE$
+                jp      nz,str_arg_empty    ; negative n -> deferred syntax error (not a hang)
                 ld      b,d
                 ld      c,e                 ; BC = n
                 ld      a,STRMAX
@@ -1158,11 +1166,12 @@ sfg_close:
                 jp      str_eval_ok
 sfg_reject1:
                 pop     af                  ; discard [count]
-                jp      str_eval_no
+                jp      str_arg_empty       ; BUG C class: defer FPERR=4 (missing ',' / empty
+                                            ; x$) -- STRING$ single-byte token would else hang
 sfg_reject2:
                 pop     af                  ; discard [fill]
                 pop     af                  ; discard [count]
-                jp      str_eval_no
+                jp      str_arg_empty       ; BUG C class: defer FPERR=4 (missing ')')
 
 ; ev_f_instr: INSTR([p,]a$,b$) -> 1-based position of b$ within a$, searching
 ; from position p (default 1); 0 if not found. Entered from ev_f (basic/expr.asm)
@@ -1190,7 +1199,8 @@ ev_f_instr:
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      '('
-                jp      nz,ev_f_err
+                jp      nz,ev_f_empty       ; BUG C class: INSTR without '(' -> deferred
+                                            ; syntax error (was silent ev_f_err)
                 inc     ix
                 call    ev_sp
                 push    ix
@@ -1211,7 +1221,8 @@ ev_f_instr:
                 jr      efi_dup_a
 efi_reject_p:
                 pop     de                  ; discard [p]
-                jp      ev_f_err
+                jp      ev_f_empty          ; BUG C class: 3-arg form missing ',' / a$
+                                            ; not a string -> deferred syntax error
 efi_have_a:
                 ld      de,1                ; default p = 1 (two-arg form)
                 push    de                  ; guard p                             [p]
@@ -1276,12 +1287,14 @@ efi_p_ok:
 efi_reject_pa:
                 pop     hl                  ; discard [aT]                        [p]
                 pop     hl                  ; discard [p]                         [ ]
-                jp      ev_f_err
+                jp      ev_f_empty          ; BUG C class: malformed a$/b$ or missing ','
+                                            ; (INSTR("AB")) -> deferred syntax error, not the
+                                            ; silent ev_f_err (stale STRPTR + dropped tail)
 efi_reject_pab:
                 pop     hl                  ; discard [bT]                        [p][aT]
                 pop     hl                  ; discard [aT]                        [p]
                 pop     hl                  ; discard [p]                         [ ]
-                jp      ev_f_err
+                jp      ev_f_empty          ; BUG C class: missing ')' -> deferred syntax error
 
 ; --- exp_maybe_strfn: PRINT hook for the string-VALUED $FF functions --------
 ; Reached from exp_loop (basic/print.asm) when a PRINT item begins with a $FF

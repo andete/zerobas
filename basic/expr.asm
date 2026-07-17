@@ -854,19 +854,38 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      '('
+    IF ROM_BASE < $4000
+                jp      nz,ev_f_empty       ; BUG C class (Fable 2026-07-17): CVI missing
+                                            ; '(' -> deferred syntax error (was silent
+                                            ; ev_f_err -> " 0"); ref = Syntax error
+    ELSE
                 jp      nz,ev_f_err
+    ENDIF
                 inc     ix
                 call    ev_sp
                 push    ix
                 pop     hl
                 call    str_eval            ; STRPTR -> [len][bytes]; HL advanced; CF=ok
+    IF ROM_BASE < $4000
+                ; BUG C class (Fable 2026-07-17): repack str_eval CALSLTs and can
+                ; exit NC with garbage IX on a nested malformed string fn
+                ; (CVI(LEFT$("AB")) -> silent 0) or a non-string arg -- defer FPERR=4
+                ; via ev_f_empty so check_expr_errors aborts. Lean str_eval is local
+                ; (IX-safe), so it keeps the plain ev_f_err (ev_f_empty is repack-only).
+                jp      nc,ev_f_empty
+    ELSE
                 jp      nc,ev_f_err         ; not a string operand
+    ENDIF
                 push    hl
                 pop     ix                  ; IX = cursor past the string operand
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      ')'
+    IF ROM_BASE < $4000
+                jp      nz,ev_f_empty       ; BUG C class: missing ')' -> deferred syntax err
+    ELSE
                 jp      nz,ev_f_err
+    ENDIF
                 inc     ix
     IF ROM_BASE < $4000
                 call    flt_int_result      ; CVI returns an int; a float nested in

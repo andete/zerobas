@@ -313,6 +313,11 @@ ABC_REGRESSION = [
     # regression guard: the VALID forms still work (no over-eager error).
     ("bugC.left.ok",          ['PRINT LEFT$("ABCDE",3)'], "ABC"),
     ("bugC.strcmp.ok",        ['A$="XY":PRINT A$="XY"'],  "-1"),
+    # BUG C straggler (Fable pass 4): CVI without '(' -- ev_ff_cvi's missing-'('
+    # exit was a bare ev_f_err (no FPERR) -> silent " 0"; now deferred syntax
+    # error. ref (VG-8020) = "Syntax error"; zb house-lowercase.
+    ("bugC.cvi.noparen",      ['PRINT CVI'],             "syntax error"),
+    ("bugC.cvi.ok",           ['B$="XY":PRINT CVI(B$)'], "22872"),
 ]
 
 # zbval: NON-DIFFERENTIAL, house-expected printed VALUE (keyed by label). Used

@@ -340,6 +340,22 @@ low region + page 1 are byte-full). All current string-value drivers do check `F
 so it is latent. Fix when a non-checking string driver is added, or when a token-skip
 helper already exists to reuse.
 
+**KNOWN RESIDUAL 2 (Fable pass 4, 2026-07-17 — PRE-EXISTING `ev_f_err`-silent-0 family,
+NOT a slice-4a regression):** a few malformed-input edge cases raise the deferred error
+via the bare `ev_f_err` path (sets `ERRMARK` only, not `FPERR`), so the numeric driver
+prints a silent ` 0` instead of surfacing the error. Two were swept to `ev_f_empty`
+(deferred `FPERR=4` syntax) during the pass-4 fixes — the STRING$/LEFT$/MID$/CVI-`(`
+cases; `PRINT CVI` now → `syntax error` (ref = `Syntax error`). **Two remain, because
+they need a non-syntax deferral the sweep pattern doesn't produce:** (1) `INSTR(0,…)` /
+negative-p (str-engine.asm `efi_p_nonneg`/`efi_p_ok`, the `p<1` exits at ~:1256/:1263) —
+ref = **`Illegal function call`** (needs an `FPERR`=IFC-code deferral, not `=4`); (2)
+`PRINT LEN(5)` (a numeric arg to a string fn) — ref = **`Type mismatch`**. Both are
+pre-existing (the `p<1` check + `ev_f_err` predate slice-4a) and give a silent wrong
+value on unusual malformed input (no hang, no corruption). Gate targets recorded (`INSTR(0,
+"AB","A")`→IFC, `LEN(5)`→Type mismatch). Fix = route those exits through an IFC/type-mismatch
+deferral (mirror `ev_f_empty` with the right `FPERR` code); small follow-up, out of the
+slice-4a string-heap scope.
+
 ## 12. RAM budget
 
 Net RAM effect is **positive** (the point of "no extra RAM cost"):
