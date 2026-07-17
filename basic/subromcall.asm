@@ -18,6 +18,11 @@
 ; SOURCES (allowed, new vs initext.asm's block): CD sub-ROM signature + EXBRSA
 ; $FAF8 sub-ROM-slot work area — MSX2 Technical Handbook. The RDSLTs read only
 ; our OWN sub-ROM bytes; no C-BIOS code is read or relocated (firewall §3g).
+;
+; Clean-room: nothing here is derived from a disassembly or byte-copy of any
+; reference BIOS/BASIC ROM. The RDSLTs read only our own sub-ROM's signature
+; bytes; the CD signature / EXBRSA / CALSLT contracts are public MSX2 Technical
+; Handbook ABIs, and the dispatch glue is own-design. See basic/PROVENANCE.md.
 
 ; try_sub_slot: if the slot just scanned by try_init_slot (SCAN_SLOT) carries the
 ; MSX2 sub-ROM signature "CD" at $0000 (page 0), record it. Called right after
