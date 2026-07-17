@@ -329,6 +329,21 @@ ABC_REGRESSION = [
     ("ifc.instr.ok",          ['PRINT INSTR(1,"AB","A")'],   "1"),
     ("ifc.instr.ok2",         ['PRINT INSTR(2,"ABAB","AB")'], "3"),
     ("ifc.asc.ok",            ['PRINT ASC("A")'],            "65"),
+    # LEN(5) FINALLY (2026-07-17): a string fn given a NUMERIC arg is "type
+    # mismatch" (ref), was silent " 0" then a wrong "syntax error". ev_str_arg's
+    # non-string exit -> ev_f_tmm (FPERR=10). First-error-wins SPLITS numeric-arg
+    # (type mismatch) from a nested-malformed string fn (syntax error) -- the
+    # latter enabled by routing str_fn_*'s structural exits through str_arg_empty.
+    ("tmm.len.num",           ['PRINT LEN(5)'],              "type mismatch"),
+    ("tmm.asc.num",           ['PRINT ASC(5)'],              "type mismatch"),
+    ("tmm.val.num",           ['PRINT VAL(5)'],              "type mismatch"),
+    # regression guard: a nested MALFORMED string fn stays "syntax error" (NOT
+    # type mismatch) -- the case the str_arg_empty retarget protects.
+    ("tmm.len.nested.syn",    ['PRINT LEN(LEFT$("AB"))'],    "syntax error"),
+    ("tmm.rt.nested.syn",     ['PRINT LEN(RIGHT$("AB"))'],   "syntax error"),
+    # regression guard: valid nested/plain string args still compute.
+    ("tmm.len.chr.ok",        ['PRINT LEN(CHR$(65))'],       "1"),
+    ("tmm.len.str.ok",        ['PRINT LEN("HELLO")'],        "5"),
 ]
 
 # zbval: NON-DIFFERENTIAL, house-expected printed VALUE (keyed by label). Used

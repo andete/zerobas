@@ -490,9 +490,12 @@ ev_str_arg:
                 ; NESTED malformed string fn LEN(LEFT$("AB")) whose str_eval CALSLT'd
                 ; then exited NC -- used to `jp ev_f_err` (ERRMARK only, un-advanced
                 ; IX): the caller then read a STALE STRPTR as the answer and dropped
-                ; the statement tail. Defer FPERR=4 via ev_f_empty so the driver's
-                ; check_expr_errors aborts (garbage IX/STRPTR then can't matter).
-                jp      nc,ev_f_empty
+                ; the statement tail. Defer via ev_f_tmm so the driver's check_expr_errors
+                ; aborts (garbage IX/STRPTR then can't matter). ev_f_tmm's first-error-wins
+                ; SPLITS the two: LEN(5) (FPERR clean, genuinely numeric) -> FPERR=10
+                ; "type mismatch" (ref); LEN(LEFT$("AB")) (inner fn already set FPERR=4)
+                ; -> keeps "syntax error". (2026-07-17: was ev_f_empty -> always "syntax".)
+                jp      nc,ev_f_tmm
                 push    hl
                 pop     ix                  ; IX = cursor past the string operand
                 call    ev_sp
@@ -575,12 +578,12 @@ str_fn_chr:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
                 cp      '('
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl
                 call    eval                ; DE = n; HL advanced (IX preserved)
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl                  ; HL past ')'
                 push    hl                  ; guard cursor across the temp write
                 ld      a,1
@@ -602,12 +605,12 @@ str_fn_str:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
                 cp      '('
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl
                 call    eval                ; DE = n
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl                  ; HL past ')'
                 push    hl                  ; guard cursor                       [CURSOR]
                 ld      c,0                 ; C = leading-space count
@@ -659,7 +662,7 @@ str_fn_left:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
                 cp      '('
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl
                 ld      a,(hl)              ; empty first arg -> deferred syntax error
                 cp      ')'
@@ -673,7 +676,7 @@ str_fn_left:
                 pop     hl
                 ld      a,(hl)
                 cp      ','
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl
                 ld      bc,(STRPTR)         ; BC = temp addr
                 push    bc                  ; save it across the numeric eval
@@ -681,7 +684,7 @@ str_fn_left:
                 pop     bc                  ; BC = temp addr
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl                  ; HL = cursor past ')'
                 push    hl                  ; save cursor
                 ld      l,c
@@ -704,7 +707,7 @@ str_fn_right:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
                 cp      '('
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl
                 ld      a,(hl)              ; empty first arg -> deferred syntax error
                 cp      ')'
@@ -718,7 +721,7 @@ str_fn_right:
                 pop     hl
                 ld      a,(hl)
                 cp      ','
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl
                 ld      bc,(STRPTR)
                 push    bc
@@ -726,7 +729,7 @@ str_fn_right:
                 pop     bc
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl
                 push    hl
                 ld      l,c
@@ -752,7 +755,7 @@ str_fn_mid:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
                 cp      '('
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl
                 ld      a,(hl)              ; empty first arg -> deferred syntax error
                 cp      ')'
@@ -766,7 +769,7 @@ str_fn_mid:
                 pop     hl
                 ld      a,(hl)
                 cp      ','
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl
                 ld      bc,(STRPTR)
                 push    bc                  ; [temp]
@@ -950,7 +953,7 @@ str_fn_hex:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
                 cp      '('
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl
                 call    eval                ; DE = n (unsigned-16 view, D-2); HL advanced
     IF ROM_BASE < $4000
@@ -960,7 +963,7 @@ str_fn_hex:
     ENDIF                                   ; overrides eval's silent DE when n was a float
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl                  ; HL past ')'
                 push    hl                  ; guard cursor
                 ld      (SH_NUM),de
@@ -978,12 +981,12 @@ str_fn_oct:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
                 cp      '('
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl
                 call    eval                ; DE = n (unsigned-16 view)
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl                  ; HL past ')'
                 push    hl                  ; guard cursor
                 ld      (SH_NUM),de
@@ -1029,12 +1032,12 @@ str_fn_space:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
                 cp      '('
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl
                 call    eval                ; DE = n; HL advanced
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,str_eval_no
+                jp      nz,str_arg_empty
                 inc     hl                  ; HL past ')'
                 bit     7,d
                 jp      nz,str_eval_no      ; negative n -> function error (D-3)

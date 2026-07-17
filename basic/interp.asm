@@ -512,6 +512,11 @@ fre_msgtab:
                                             ; basic/str-engine.asm (low region, page 1
                                             ; has no slack -- same placement discipline
                                             ; as err_subscript et al above)
+                dw      err_type_mismatch   ; 10: a string function given a NON-string arg
+                                            ; (LEN(5)/ASC(5)/VAL(5)); ev_f_tmm (expr.asm)
+                                            ; defers this via FPERR=10. Points at the SAME
+                                            ; house-lowercase "type mismatch" string the D-2
+                                            ; comparator's type_mismatch_error uses (below).
 err_fp_divzero:
                 db      "division by zero",13,10,0
 err_illegal_fn:

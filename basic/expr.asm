@@ -593,6 +593,17 @@ ev_f_var:
                 ret
     ENDIF
     IF ROM_BASE < $4000
+ev_f_tmm:                                   ; deferred FPERR=10 "type mismatch" for a string
+                                            ; function given a NON-string arg (LEN(5)/ASC(5)/
+                                            ; VAL(5)): str_eval returned NC with FPERR clean.
+                                            ; First-error-wins keeps an inner error (a nested
+                                            ; malformed string fn like LEN(LEFT$("AB")) already
+                                            ; set FPERR=4 -> stays syntax error). fre_msgtab
+                                            ; entry 10 = err_type_mismatch (interp.asm), the
+                                            ; same house-lowercase "type mismatch" the D-2
+                                            ; comparator prints; ref = capitalised.
+                ld      e,10
+                jr      ev_f_defer
 ev_f_ifc:                                   ; deferred FPERR=3 "illegal function call" for a
                                             ; function-domain VALUE error whose operand parsed
                                             ; cleanly but is out of range (INSTR p<1, ASC(""))

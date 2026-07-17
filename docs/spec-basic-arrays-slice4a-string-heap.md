@@ -376,9 +376,23 @@ first-error-wins tail via a dead code-carrier register (E, which `ev_f_err` zero
 `FPERR=8` because these are function-domain value errors exactly like `SQR(x<0)`/`LOG` —
 so `INSTR(0,…)`/`ASC("")` → `illegal function call`, matching the reference disposition
 with the standing house-lowercase convention. Gate cases `ifc.instr.zero/neg`, `ifc.asc.empty`
-+ regression guards `ifc.instr.ok/ok2`, `ifc.asc.ok` (array-acceptance **112/112**, string 6/6,
-lean SHA held, closure clean, 9 B low / 9 B page-1 free). `LEN(5)` remains a message-only
-diff (zb `syntax error` vs ref `Type mismatch`) — left as-is per scope.
++ regression guards `ifc.instr.ok/ok2`, `ifc.asc.ok`.
+
+**LEN(5) FIXED 2026-07-17 (same follow-up session).** A string function given a
+NUMERIC arg (`LEN(5)`/`ASC(5)`/`VAL(5)`) now raises **`type mismatch`** (ref
+`Type mismatch`), was a wrong `syntax error`. `ev_str_arg`'s non-string exit routes to a
+new **`ev_f_tmm`** (deferred **`FPERR=10`** → `err_type_mismatch`, a new `fre_msgtab`
+entry pointing at the existing house-lowercase string; +6 B page-1, reuses the
+`ev_f_defer` first-error-wins tail). First-error-wins **splits** the two NC causes:
+a genuinely-numeric arg → type mismatch, a *nested malformed* string fn
+(`LEN(LEFT$("AB"))`) → **stays** `syntax error` — the latter enabled by routing the
+18 structural `str_fn_*` missing-delimiter exits (`cp '('/','/')' ; jp nz,str_eval_no`)
+through `str_arg_empty` (0-byte retargets; direct-mode behaviour unchanged by
+first-error-wins, only the nested leak corrected). The negative-n value exit
+(str-engine.asm ~:1043, `bit 7,d`) was deliberately NOT retargeted. Gates `tmm.len/asc/val.num`
+→ type mismatch, `tmm.len/rt.nested.syn` → syntax error, `tmm.len.chr/str.ok` value guards.
+**All KNOWN RESIDUAL 2 items now resolved.** Final: array-acceptance **119/119**, string 6/6,
+lean SHA held, closure clean, 9 B low / 3 B page-1 free.
 
 ## 12. RAM budget
 
