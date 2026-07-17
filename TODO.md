@@ -5,9 +5,10 @@ components (BASIC interpreter + cassette + disk) combined with an open BIOS (C-B
 only at runtime — with **two co-equal goals**: the clean-room implementations
 themselves, and the clean-provenance **documentation** of how these systems work
 that the same discipline yields (see [`MISSION.md`](MISSION.md)). Scope today
-is MSX1; the BASIC half is **game-loader-scoped** (just enough to run the `.BAS` /
-binary loader stubs that boot disk and tape games), while tape and disk are
-device-complete (read **and** write).
+is MSX1; the BASIC half targets **faithful, full MSX1 BASIC** (Phase 1 shipped the
+*game-loader-stub* subset — enough to boot disk/tape game loaders — and the charter
+has since been raised to full-language faithfulness, pursued in Phase 3), while tape
+and disk are device-complete (read **and** write).
 
 See [`README.md`](README.md) for the charter and the legal/provenance firewall,
 [`PROVENANCE.md`](PROVENANCE.md) for the traceability rules every item below must
@@ -21,7 +22,7 @@ item — do **one item per session** to keep context lean.
 |---|---|---|
 | **1 — loader-stub BASIC + transports + standardization** | just enough MSX-BASIC to run `.BAS`/binary loader stubs; tape + disk read/write; standard DSKIO/`HPHYD` interfaces | **✅ closed** |
 | **2 — full disk (Disk BASIC integration)** | the full file-channel verb surface (sequential + random-access + dir mgmt + `CALL FORMAT`), all oracle-validated | **✅ verb surface complete** — only the Tier-2 provider oracle (a distinct DOS-boot sub-track) + a few Phase-3-gated verbs remain |
-| **3+ — full MSX1 BASIC** | floating point, full string engine, arrays, graphics, sound, … | aspirational — **first feature landed:** the core **string engine** (`+` concat + LEN/ASC/VAL/CHR$/STR$/LEFT$/RIGHT$/MID$), 2026-07-10 |
+| **3+ — full MSX1 BASIC** | floating point, full string engine, arrays, graphics, sound, … | **active charter** (raised from loader-stub) — landed: string engine, float pack, math pack, arrays/DIM (through slice-4a string heap); scalar relocation (slice-4b) contract signed off |
 
 ## Phase 1 — committed loader-stub target (✅ closed)
 

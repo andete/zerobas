@@ -80,9 +80,12 @@ cleanly documented negative result is still a contribution.
 
 - **MSX1 today.** Three components mirror the hardware they replace: `basic/` (a 16 KB
   cartridge ROM), `tape/` (a C-BIOS cassette patch), `disk/` (a disk-interface ROM).
-- **BASIC is game-loader-scoped** — *just enough* MSX-BASIC to run the `.BAS` / binary
-  loader stubs that boot many disk and tape games, not full-language compatibility —
-  while cassette and disk are **device-complete** (read and write).
+- **BASIC targets faithful, full MSX1 BASIC** — a clean-room reimplementation of the
+  real MSX1 MSX-BASIC language, reference-compatible where clean-room-achievable.
+  (Phase 1 was *game-loader-scoped* — just enough to boot disk/tape game loader stubs;
+  that target is complete and the charter has since been raised to full-language
+  faithfulness, pursued in Phase 3.) Cassette and disk are **device-complete** (read
+  and write).
 - **The firewall is load-bearing, not aspirational.** Every constant, address, table,
   and algorithm must trace to an allowed source or be explicitly quarantined; an
   unexplained magic value blocks release. This is what makes *both* deliverables real.

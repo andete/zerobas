@@ -12,12 +12,15 @@ because the same discipline makes the resulting facts publishable — producing
 **clean-provenance documentation** of how these systems actually work, especially
 where good documentation does not yet exist (see [`MISSION.md`](MISSION.md)).
 
-**Scope today is MSX1.** The BASIC half is deliberately **game-loader-scoped** — *just
-enough* MSX-BASIC to run the small `.BAS` / binary loader stubs that boot many disk and
-tape games, not full-language compatibility — while the cassette and disk halves are
-device-complete (read **and** write). Post-MSX1 axes (MSX2 / 2+ / Turbo-R, and
-extension hardware such as the V9990 and Konami SCC/SCC+) are catalogued in
-[`TODO.md`](TODO.md) but remain out of charter until a charter raise.
+**Scope today is MSX1.** The BASIC half targets **faithful, full MSX1 BASIC** — a
+clean-room reimplementation of the real MSX1 MSX-BASIC language, reference-compatible
+where clean-room-achievable. (It began life *game-loader-scoped* — just enough to run
+the `.BAS` / binary loader stubs that boot disk and tape games; that Phase-1 target is
+complete, and the charter has since been raised to full-language faithfulness, which
+Phase-3 pursues.) The cassette and disk halves are device-complete (read **and**
+write). Post-MSX1 axes (MSX2 / 2+ / Turbo-R, and extension hardware such as the V9990
+and Konami SCC/SCC+) are catalogued in [`TODO.md`](TODO.md) but remain out of charter
+until a charter raise.
 
 zerobas is a deliberately **separate project**. It is combined with an open MSX
 BIOS (such as C-BIOS) only *at runtime*, never merged into its source tree. This
@@ -364,9 +367,11 @@ hooks + `GETDPB`), `basic.rom` owns the FAT12 filesystem and drives it through t
 standard `$4010` DSKIO interface, and the interpreter exposes a full Disk BASIC
 file-channel verb surface (`OPEN`/`PRINT#`/`INPUT#`, random-access
 `FIELD`/`GET`/`PUT`, `FILES`/`KILL`/`NAME`, `PRINT USING`, `CALL FORMAT`, …), each
-oracle-validated against a real National CF-3300. The verb surface is the
-**Phase 2** charter raise on the disk axis (the core *language* stays loader-stub
-scoped — floats, the full string engine, arrays, graphics and sound are Phase 3+).
+oracle-validated against a real National CF-3300. The verb surface was the
+**Phase 2** charter raise on the disk axis; **Phase 3** then raised the core
+*language* charter from loader-stub to **faithful full MSX1 BASIC** — floats, the
+full string engine, and arrays/DIM have since landed, with graphics and sound still
+ahead.
 See [`TODO.md`](TODO.md) for the per-verb status.
 
 ## Layout
