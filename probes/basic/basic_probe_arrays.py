@@ -397,6 +397,20 @@ CASES = [
     ("h2.varptr.strarg.elem",  "stored",
         ['DIM A(1):A(0)=VARPTR(B$):C=VARPTR(B$)',
          'PRINT"[";A(0)=C;"]"'], "zbval"),
+    # h2.varptr.defstr.elem (Fable review 2026-07-17): the case above LOOKS
+    # like a string-triggered shift but is NOT -- `$`-suffixed VARPTR(B$)
+    # resolves VARTYPE=8 in vnk_dollar, so it allocates a NUMERIC double B#
+    # (stride 11), a numeric-triggered shift. The ONLY true mid-eval STRING-
+    # scalar allocator is VARPTR of a DEFSTR-typed BARE name (deftbl_lookup ->
+    # type 1 -> a stride-6 string entry). This case forces that stride-6
+    # insert-and-shift with a numeric array-element LHS (A(0)) held across the
+    # eval, proving the 4b §13a delta-correction fires for a STRING-triggered
+    # shift too (it keys on the ARYTAB delta regardless of the shift's stride).
+    # value-at-address checked like scalar.varptr.elem: re-read VARPTR(B) after
+    # B exists (a plain find, no shift) and compare. zb-only (auto-alloc VARPTR).
+    ("h2.varptr.defstr.elem",  "stored",
+        ['DEFSTR B:DIM A(1):A(0)=VARPTR(B):C=VARPTR(B)',
+         'PRINT"[";A(0)=C;"]"'], "zbval"),
 
     # GC-root correctness (§9): several string SCALARS + a string ARRAY
     # element, then a real compacting GC (70x STRING$(250) churn), then
@@ -612,6 +626,7 @@ ZBVAL_EXPECT = {
     "h1.srcconcat": "foobar",
     "h1.self": "",
     "h2.varptr.strarg.elem": "-1 ",
+    "h2.varptr.defstr.elem": "-1 ",
     "gcroot.scalars.survive": "alphabetagammadelta",
 }
 

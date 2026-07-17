@@ -558,7 +558,9 @@ og_end:
 
 ; --- relink: recompute every line's link pointer, stopping at the end marker -
 ; A line's link = the address of the following line's link field. Clobbers
-; A, DE, HL.
+; A, DE, HL (repack: also B, C -- the tail vars_reset now chains into
+; heap_reset for the 4c string-scalar clear; all four relink call sites are
+; indifferent to BC afterward).
 relink:
                 ld      hl,TXTBASE
 rl_lp:

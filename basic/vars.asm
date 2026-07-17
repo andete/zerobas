@@ -769,7 +769,8 @@ STR_EMPTY:      db      0                   ; a shared empty-string descriptor
 ; (not a blind +3) so it stays correct even if the snapshot itself overflowed
 ; the temp stack (TEMPTOP then untouched by str_snapshot_to_temp; FPERR is
 ; already set either way, deferred-error discipline). Clobbers A, B, C, D,
-; E, H, L.
+; E, H, L; also leaves (STRPTR) dangling at the released temp slot (no caller
+; reads STRPTR after a store -- verified across every str_set_key call site).
 str_set_key:
                 ld      hl,(TEMPTOP)
                 push    hl                  ; [SAVED_TEMPTOP] -- exact restore
