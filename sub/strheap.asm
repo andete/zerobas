@@ -5,11 +5,15 @@
 ; page-0 tenant half; docs/spec-basic-arrays-slice4a-string-heap.md §4/§5/§9).
 ;
 ; A compacting string heap sharing the low free RAM span with the array
-; region (spec §2): arrays grow UP from ARYBASE (= (PRGEND)+2), the heap grows
-; DOWN from the ceiling C = min(HIMEM,TXTMAX) via the sysvar FRETOP. The
-; collision test is the single invariant ARYEND <= FRETOP, where ARYEND is the
-; array region's own $0000 terminator address (derived by a stride-walk from
-; ARYBASE, exactly like sub/arrays.asm's own aal_walk — never stored).
+; region (spec §2): arrays grow UP from ARYBASE, the heap grows DOWN from the
+; ceiling C = min(HIMEM,TXTMAX) via the sysvar FRETOP. The collision test is
+; the single invariant ARYEND <= FRETOP, where ARYEND is the array region's
+; own $0000 terminator address (derived by a stride-walk from ARYBASE,
+; exactly like sub/arrays.asm's own aal_walk — never stored). ARYBASE itself
+; was (PRGEND)+2 through slice-4a; arrays slice-4b (docs/spec-basic-arrays-
+; slice4b-scalar-reloc.md §2) inserts a numeric-scalar region below the array
+; area, so ARYBASE is now the STORED live cell `ARYTAB` (sysvars.inc)
+; instead — the scalar region's OWN base is still (PRGEND)+2.
 ;
 ; Every string descriptor everywhere in this codebase is now a uniform 3-byte
 ; [len:1][ptr:2] triple: a `$`-var STRTAB slot's tail, a string array
@@ -329,9 +333,9 @@ ha_oom:
 ; do). Never stored; O(number of arrays), acceptable (small in practice; only
 ; GC itself is required to be O(n) in the ROOT count). Clobbers A,D,E,H,L.
 strheap_aryend:
-                ld      hl,(PRGEND)
-                inc     hl
-                inc     hl                  ; HL = ARYBASE
+                ld      hl,(ARYTAB)         ; HL = ARYBASE (arrays slice-4b:
+                                            ; the STORED scalar-region-end
+                                            ; cell, was derived (PRGEND)+2)
 sae_walk:
                 ld      a,(hl)
                 or      a
@@ -627,9 +631,7 @@ sgw_st_n:
 ; per-array element cursor/end live in the enclosing frame's +12/+14 (free
 ; during the walk — they become the sort's P/Q afterward).
 sg_walk_arrays:
-                ld      hl,(PRGEND)
-                inc     hl
-                inc     hl                  ; HL = ARYBASE
+                ld      hl,(ARYTAB)         ; HL = ARYBASE (arrays slice-4b)
 sgw_ar_lp:
                 ld      a,(hl)
                 or      a

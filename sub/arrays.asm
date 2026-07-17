@@ -62,7 +62,9 @@
 ; below resolves outside this file).
 ;
 ; --- RAM: the param block is the ONLY RAM this file touches (besides -------
-; PRGEND/HIMEM, both read-only here) -- basic/sysvars.inc's ARY_OP..ARY_ERR
+; PRGEND/HIMEM, both read-only here, and ARYTAB -- arrays slice-4b, read
+; AND written here: the one live pointer the scalar insert-and-shift
+; maintains) -- basic/sysvars.inc's ARY_OP..ARY_ERR
 ; span ($E028-$E037, aliased onto tokeniser/CLOAD/store_line scratch that is
 ; provably dead whenever an array reference can execute, spec §10.2/the WIP's
 ; own aliasing analysis, carried over unchanged). That span has NO slack left
@@ -106,7 +108,14 @@ ary_engine:
                 jp      z,aeng_dim
                 cp      2
                 jp      z,aeng_erase
-                jp      aeng_copy_str       ; op==3: the only other value the
+                cp      3
+                jp      z,aeng_copy_str
+                cp      4
+                jp      z,aeng_scalar_find  ; arrays slice-4b (docs/spec-
+                                            ; basic-arrays-slice4b-scalar-
+                                            ; reloc.md §4, Q4): scalar ops
+                                            ; folded into this SAME tenant
+                jp      aeng_scalar_alloc   ; op==5: the only other value the
                                             ; main-ROM glue ever writes
                                             ; (ex_let_arr_str, basic/arrays.asm)
 aeng_resolve:
@@ -305,6 +314,335 @@ acs_oom:
                 ld      (ARY_ERR),a
                 ret
 
+; =============================================================================
+; Arrays slice-4b — numeric SCALAR relocation (docs/spec-basic-arrays-
+; slice4b-scalar-reloc.md). Q4 (signed off): folded into THIS tenant as new
+; ARY_OP codes 4 (SCALAR_FIND) / 5 (SCALAR_ALLOC), reusing the ARY_KEY/
+; ARY_TYPE/ARY_ADDR/ARY_ERR fields verbatim (identical shape to RESOLVE) --
+; no new param block, no new SUBROM_IDX. Scalars now live in the SAME
+; contiguous region arrays do: [PRGEND+2, ARYTAB) is the scalar region,
+; [ARYTAB, ARYEND) the array region, sharing the one FRETOP collision / GC-
+; once-retry invariant (§2/§4). Entry format is UNCHANGED from the pre-4b
+; fixed pool ([name0][name1][type][value:2/4/8], stride = type+3, key
+; (name0,name1,type)) -- only the location + walk moved.
+; =============================================================================
+
+; --- aeng_scalar_find: ARY_OP=4 (find-only, no insert -- reading an unset -
+; scalar must NOT create it, exactly like the pre-4b var_find_typed). Writes
+; ARY_ADDR = the entry address, or 0 if not found (0 is never a valid entry
+; address -- program text starts at $8001); ARY_ERR always 0 (a miss is not
+; an error, it is the MSX auto-init-to-0 contract).
+aeng_scalar_find:
+                ld      bc,(ARY_KEY)
+                ld      a,(ARY_TYPE)
+                call    scv_find            ; BC,A -> CF/HL
+                jr      c,asf_found
+                ld      hl,0                ; not found -> ARY_ADDR=0
+asf_found:
+                ld      (ARY_ADDR),hl
+                xor     a
+                ld      (ARY_ERR),a         ; find never errors
+                ret
+
+; --- aeng_scalar_alloc: ARY_OP=5 (find-or-insert, §3a). Writes ARY_ADDR = --
+; the entry address (found or freshly inserted) and ARY_ERR (0 ok / 4 Out of
+; memory -- the SAME code + main-ROM ary_errmap mapping arrays' own OOM
+; already uses, §7.3: this REPLACES the pre-4b fixed-pool silent-drop with a
+; real surfaced error, matching the array disposition).
+aeng_scalar_alloc:
+                ld      bc,(ARY_KEY)
+                ld      a,(ARY_TYPE)
+                call    scv_alloc           ; BC,A -> CF+HL=addr / CF clear+A=err(4)
+                jr      nc,asa_err
+                ld      (ARY_ADDR),hl
+                xor     a
+                ld      (ARY_ERR),a
+                ret
+asa_err:
+                ld      (ARY_ERR),a         ; A already = 4 (OOM)
+                ret
+
+; --- scv_find: BC=key(name0,name1), A=type -> CF set+HL=entry base if found;
+; CF clear+HL=(ARYTAB) if not found (the insertion point -- a not-found
+; result always lands exactly at the current scalar-region end, since the
+; walk below never overshoots it). Preserves BC (mirrors ary_find's own
+; contract -- the caller needs the key intact afterward, e.g. scv_alloc's own
+; insert). Type is part of the key (A/A%/A! are distinct scalars, exactly
+; like arrays' own §4.1 #7). The scalar region has NO self-describing
+; terminator (Q3: bounded by the stored ARYTAB, not a $0000 sentinel like the
+; array region) -- unlike ary_find's af_lp, this walk's loop test is "have we
+; reached ARYTAB yet", not "is name0 0" (a scalar entry's name0 is never 0;
+; entries are never deleted). Clobbers A,D,E,H,L.
+scv_find:
+                ld      d,a                 ; D = target type
+                ld      hl,(PRGEND)
+                inc     hl
+                inc     hl                  ; HL = scalar-region base
+scvf_lp:
+                ; end-of-region test is done BYTE-WISE against (ARYTAB), NOT
+                ; via `ld de,(ARYTAB)` + a 16-bit subtract -- specifically so
+                ; D (the target type, loaded once above and needed on every
+                ; hit-check for the rest of the walk) is never clobbered. A
+                ; real bug this slice's own unit test caught: `ld de,(ARYTAB)`
+                ; silently overwrote D each iteration, so the type compare
+                ; after a name match compared against ARYTAB's own high byte
+                ; instead of the caller's type -- every re-find of a just-
+                ; inserted entry came back "not found".
+                ld      a,(ARYTAB+1)        ; ARYTAB high byte
+                cp      h
+                jr      nz,scvf_go
+                ld      a,(ARYTAB)          ; ARYTAB low byte
+                cp      l
+                jr      z,scvf_notfound     ; HL == ARYTAB -> reached the end
+scvf_go:
+                ld      a,(hl)              ; name0
+                cp      b
+                jr      nz,scvf_skip
+                push    hl
+                inc     hl
+                ld      a,(hl)              ; name1
+                inc     hl
+                ld      e,(hl)              ; type
+                pop     hl
+                cp      c
+                jr      nz,scvf_skip
+                ld      a,e
+                cp      d
+                jr      nz,scvf_skip
+                scf
+                ret
+scvf_skip:
+                ; advance by THIS entry's own stride (3 header bytes + its
+                ; value width, which is exactly its type value: 2/4/8 ->
+                ; 5/7/11 total) -- the identical skip arithmetic vars.asm's
+                ; pre-4b vft_skip used over the fixed pool.
+                push    hl
+                inc     hl
+                inc     hl
+                ld      a,(hl)              ; type byte (stride source)
+                pop     hl
+                add     a,3                 ; A = total entry width
+                add     a,l
+                ld      l,a
+                jr      nc,scvf_lp
+                inc     h
+                jr      scvf_lp
+scvf_notfound:
+                or      a                   ; CF clear; HL = ARYTAB
+                ret
+
+; --- scv_alloc: BC=key, A=type -> CF set+HL=entry base (found OR newly ------
+; inserted) / CF clear+A=4 (Out of memory: nothing moved, nothing written --
+; leaves state consistent, mirroring the pre-4b var_store_fac silent-drop
+; contract, §7.3). Not found -> insert-and-shift (§3a): open a `stride`-byte
+; hole at the current ARYTAB by shifting the ENTIRE array region
+; [ARYTAB, ARYEND+2) up by `stride`, collision-checked BEFORE moving anything
+; (GC-once-retry, the SAME invariant ary_alloc's own aal_ceil_try uses --
+; string-array element descriptors move with their array block but their
+; heap `ptr` values are untouched, only the descriptor relocates).
+; Own scratch frame on the STACK (IY-addressed, 19 bytes -- the sub/
+; arrays.asm ary_alloc / sub/strheap.asm convention, since no fixed RAM byte
+; is spare here either):
+;   +0 KEY_C(name1) +1 KEY_B(name0) +2 TYPE +3 STRIDE +4/5 OLDBASE(=old
+;   ARYTAB) +6/7 OLDEND(=old array terminator addr) +8/9 NEWEND(=OLDEND+
+;   STRIDE) +10/11 CEND(=NEWEND+2) +12 RETRIED +13/14 SRC_LAST(=OLDEND+1)
+;   +15/16 DST_LAST(=SRC_LAST+STRIDE) +17/18 COUNT(=SRC_LAST-OLDBASE+1)
+; Clobbers A,B,C,D,E,H,L,IX,IY.
+scv_alloc:
+                call    scv_find            ; BC,A -> CF/HL; BC preserved
+                ret     c                   ; already exists -> done
+                ; not found: HL = ARYTAB (= old scalar-region end = the
+                ; insertion point). Open the frame -- dec sp/inc sp touch no
+                ; register or flag other than SP, so HL survives untouched.
+                dec     sp
+                dec     sp
+                dec     sp
+                dec     sp
+                dec     sp
+                dec     sp
+                dec     sp
+                dec     sp
+                dec     sp
+                dec     sp
+                dec     sp
+                dec     sp
+                dec     sp
+                dec     sp
+                dec     sp
+                dec     sp
+                dec     sp
+                dec     sp
+                dec     sp                  ; reserve a 19-byte scratch frame
+                ld      iy,0
+                add     iy,sp               ; IY = frame base
+                ld      (iy+4),l
+                ld      (iy+5),h            ; OLDBASE = HL (from scv_find)
+                ld      (iy+0),c            ; KEY name1
+                ld      (iy+1),b            ; KEY name0
+                ld      a,(ARY_TYPE)        ; reload (scv_find clobbers A --
+                                            ; the SAME A-not-preserved trap
+                                            ; aeng_dim's own comment documents)
+                ld      (iy+2),a            ; TYPE
+                add     a,3
+                ld      (iy+3),a            ; STRIDE = type+3
+                call    strheap_aryend      ; HL = OLDEND (current array-
+                                            ; region terminator address; the
+                                            ; SAME in-page call ary_alloc's
+                                            ; own GC-retry already makes)
+                ld      (iy+6),l
+                ld      (iy+7),h            ; OLDEND
+                ld      e,(iy+3)
+                ld      d,0
+                add     hl,de               ; HL = NEWEND = OLDEND + STRIDE
+                jp      c,scv_oom           ; defensive wrap guard (mirrors
+                                            ; ary_alloc's own $FFFE/$FFFF one)
+                ld      (iy+8),l
+                ld      (iy+9),h            ; NEWEND
+                ld      de,2
+                add     hl,de               ; HL = CEND = NEWEND+2 (address
+                                            ; just past the shifted terminator)
+                jp      c,scv_oom
+                ld      (iy+10),l
+                ld      (iy+11),h           ; CEND
+                xor     a
+                ld      (iy+12),a           ; RETRIED = 0
+scv_ceil_try:
+                ld      hl,(FRETOP)         ; ceiling
+                ld      e,(iy+10)
+                ld      d,(iy+11)           ; DE = CEND
+                ex      de,hl               ; HL = CEND, DE = ceiling
+                or      a
+                sbc     hl,de               ; HL = CEND - ceiling
+                jr      c,scv_ceil_fits     ; CEND < ceiling -> fits
+                ld      a,(iy+12)
+                or      a
+                jp      nz,scv_oom          ; already retried once -> genuine OOM
+                ld      a,1
+                ld      (iy+12),a
+                call    strheap_gc          ; recompute FRETOP (GC never
+                                            ; touches array/scalar data --
+                                            ; PRESERVES IY, so our frame
+                                            ; survives, exactly like
+                                            ; ary_alloc's own retry)
+                jr      scv_ceil_try
+scv_ceil_fits:
+                ; SRC_LAST = OLDEND+1 ; DST_LAST = SRC_LAST+STRIDE ;
+                ; COUNT = SRC_LAST-OLDBASE+1  (the block to shift is
+                ; [OLDBASE, OLDEND+2), i.e. SRC_LAST is its last byte)
+                ld      l,(iy+6)
+                ld      h,(iy+7)            ; HL = OLDEND
+                inc     hl                  ; HL = SRC_LAST
+                ld      (iy+13),l
+                ld      (iy+14),h
+                ld      e,(iy+3)
+                ld      d,0                 ; DE = STRIDE
+                add     hl,de               ; HL = DST_LAST
+                ld      (iy+15),l
+                ld      (iy+16),h
+                ld      e,(iy+4)
+                ld      d,(iy+5)            ; DE = OLDBASE
+                ld      l,(iy+13)
+                ld      h,(iy+14)           ; HL = SRC_LAST
+                or      a
+                sbc     hl,de               ; HL = SRC_LAST - OLDBASE
+                inc     hl                  ; HL = COUNT
+                ld      (iy+17),l
+                ld      (iy+18),h
+                ; --- LDDR: (DE=DST_LAST) <- (HL=SRC_LAST), BC=COUNT --------
+                ; top-down (descending) to handle the growing overlap: the
+                ; destination is ABOVE the source throughout (dst = src +
+                ; STRIDE, STRIDE > 0), the textbook "shift right" idiom -- no
+                ; byte is written before it has been read (the SAME
+                ; direction discipline sg_move_one's own LDDR uses).
+                ld      l,(iy+13)
+                ld      h,(iy+14)           ; HL = SRC_LAST
+                ld      e,(iy+15)
+                ld      d,(iy+16)           ; DE = DST_LAST
+                ld      c,(iy+17)
+                ld      b,(iy+18)           ; BC = COUNT
+                lddr
+                ; --- write the new scalar entry at OLDBASE (the freed hole) -
+                ld      l,(iy+4)
+                ld      h,(iy+5)            ; HL = OLDBASE = new entry addr
+                ld      a,(iy+1)            ; name0
+                ld      (hl),a
+                inc     hl
+                ld      a,(iy+0)            ; name1
+                ld      (hl),a
+                inc     hl
+                ld      a,(iy+2)            ; type
+                ld      (hl),a
+                inc     hl                  ; HL -> value field
+                ld      b,a                 ; B = value width (2/4/8) -- same
+                                            ; "count via B" convention
+                                            ; var_alloc_or_find's own pre-4b
+                                            ; zero_fill call used; reimplemented
+                                            ; IN-TENANT (a local loop, not a
+                                            ; call) since this tenant cannot
+                                            ; call resident main-ROM code
+                                            ; (zero_fill lives in float-
+                                            ; arith.asm) -- the SAME reasoning
+                                            ; ary_alloc's own aal_zero_lp
+                                            ; already documents.
+scva_zero_lp:
+                ld      (hl),0
+                inc     hl
+                djnz    scva_zero_lp
+                ; --- ARYTAB += STRIDE (the scalar region has grown) --------
+                ld      hl,(ARYTAB)
+                ld      e,(iy+3)
+                ld      d,0
+                add     hl,de
+                ld      (ARYTAB),hl
+                ; --- return HL = new entry base, CF set ---------------------
+                ld      l,(iy+4)
+                ld      h,(iy+5)
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp                  ; deallocate the 19-byte frame
+                scf
+                ret
+scv_oom:
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp
+                inc     sp                  ; deallocate the 19-byte frame
+                ld      a,4                 ; ARY_ERR: Out of memory (same
+                                            ; code arrays' own OOM uses)
+                or      a                   ; CF clear
+                ret
+
 ; --- ARY_AUTODIM_BOUNDS: MAXDIM words, each = 10 (§4.1 #1). Read-only tenant
 ; data; ary_resolve's auto-dim path points IX here (vs. aeng_dim's IX, which
 ; points at the caller-parsed ARY_IDX for an explicit DIM) -- same ary_alloc,
@@ -452,9 +790,9 @@ ary_stride:
 ; A,D,E,H,L.
 ary_find:
                 ld      d,a                 ; D = target type
-                ld      hl,(PRGEND)
-                inc     hl
-                inc     hl                  ; HL = ARYBASE
+                ld      hl,(ARYTAB)         ; HL = ARYBASE (arrays slice-4b:
+                                            ; the STORED scalar-region-end
+                                            ; cell, was derived (PRGEND)+2)
 af_lp:
                 ld      a,(hl)              ; name0 (0 = terminator)
                 or      a
@@ -521,9 +859,7 @@ ary_alloc:
                 ld      (iy+0),c            ; KEY name1 (C)
                 ld      (iy+1),b            ; KEY name0 (B)
                 ld      (iy+2),a            ; TYPE
-                ld      hl,(PRGEND)
-                inc     hl
-                inc     hl                  ; HL = ARYBASE
+                ld      hl,(ARYTAB)         ; HL = ARYBASE (arrays slice-4b)
 aal_walk:
                 ld      a,(hl)
                 or      a

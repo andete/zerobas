@@ -25,13 +25,19 @@
 ; type); the resolved type comes from the name's suffix (`%`->2 int, `!`->4
 ; single, `#`->8 double, unsuffixed->8 double, hardcoded in S3a — the per-
 ; letter DEFtbl that can override the unsuffixed default is S3b, a separate
-; slice). `A`, `A%`, `A!`, `A#` are up to 4 distinct entries. The numeric pool
-; stays the SAME 128-byte span $E1C0..$E240 (VARTAB/VAREND, sysvars.inc,
-; unchanged), now packed with VARIABLE-WIDTH entries
-; [name0:1][name1:1][type:1][value: 2/4/8] instead of a fixed 4-byte stride —
-; see var_find_typed/var_load_fac/var_store_fac below. `var_find`/
-; `var_get_key`/`var_set_key` (this section, unmodified) remain the LEAN
-; build's int-only implementation; every new typed routine is gated
+; slice). `A`, `A%`, `A!`, `A#` are up to 4 distinct entries, packed with
+; VARIABLE-WIDTH entries [name0:1][name1:1][type:1][value: 2/4/8] instead of
+; a fixed 4-byte stride — see var_find_typed/var_load_fac/var_store_fac
+; below. Through F3/slice-4a the numeric pool stayed the fixed 128-byte span
+; $E1C0..$E240 (VARTAB/VAREND, sysvars.inc); arrays slice-4b (docs/spec-
+; basic-arrays-slice4b-scalar-reloc.md) RELOCATES it out of that fixed pool
+; into the real-MSX contiguous chain (program text -> scalars -> arrays ->
+; free -> string heap), where var_find_typed/var_alloc_or_find below become
+; thin glue over the ARY sub-ROM tenant's new SCALAR_FIND/SCALAR_ALLOC ops
+; (sub/arrays.asm) — VARTAB/VAREND are now DEAD in the repack build (the 128
+; B they described is freed RAM), unchanged/still-live in the lean build.
+; `var_find`/`var_get_key`/`var_set_key` (this section, unmodified) remain
+; the LEAN build's int-only implementation; every new typed routine is gated
 ; `IF ROM_BASE < $4000` so the lean 16 KB basic.rom stays byte-identical.
 
 ; --- is_ident_cont: CF set if A is an identifier continuation char ----------
@@ -282,132 +288,91 @@ vsk_store:
 ; F3 S3a — typed variable store (repack build only, docs/spec-basic-float-
 ; core.md §11). var_find above stays the LEAN build's int-only 4-byte-stride
 ; walk; these are its variable-width counterparts, keyed on (name0,name1,type).
+;
+; Arrays slice-4b (docs/spec-basic-arrays-slice4b-scalar-reloc.md §3/§4/§5):
+; the fixed VARTAB pool walk/room-check that used to live here MOVED into the
+; ARY sub-ROM tenant (sub/arrays.asm scv_find/scv_alloc, new ARY_OP codes 4/5,
+; Q4) — scalars now live in the real-MSX contiguous chain, sharing arrays' own
+; [PRGEND+2, FRETOP) region and its FRETOP collision/GC-once-retry invariant.
+; var_find_typed / var_alloc_or_find below are now THIN main-ROM glue: fill
+; the (reused, unchanged) ARY_KEY/ARY_TYPE param-block fields, dispatch, read
+; back ARY_ADDR/ARY_ERR. Both keep their PRE-4b register contract exactly, so
+; var_load_fac/var_store_fac (below) and VARPTR (ev_f_varptr, expr.asm) —
+; which call them — are UNCHANGED.
 ; =============================================================================
 
 ; --- var_find_typed: locate the entry for (key BC, type A) ------------------
 ; in:  BC = key (name0,name1), A = type (2/4/8).
 ; out: CF set  -> found,     HL = entry address (name0 field).
-;      CF clear -> not found, HL = first free slot (bump pointer, i.e. the
-;                  first name0==0 byte) or VAREND if the table is completely
-;                  full. Since entries are never deleted, the free slot found
-;                  here IS always the end of the list (a bump allocator).
-; An entry whose name matches but whose OWN type byte differs from A is NOT a
-; match (spec: `A`/`A%`/`A!`/`A#` are independent entries) — the walk skips
-; past it by ITS OWN stored width and keeps looking. Clobbers A, D, H, L (BC
-; preserved).
+;      CF clear -> not found, HL undefined (does NOT allocate — reading an
+;                  unset scalar must not create it; that's var_alloc_or_find,
+;                  below). Clobbers A, B, C, D, E, H, L (BC no longer needs to
+;                  survive — the caller, var_load_fac, never re-uses it after
+;                  this call). IX is GUARDED (push/pop) across
+;                  ary_engine_call: this pre-4b routine's documented contract
+;                  never touched IX, and callers up the chain (ev_f_var,
+;                  var_get/var_set, ev_f_varptr) hold the TEXT CURSOR in IX
+;                  across it — a real bug this slice's own array-acceptance
+;                  differential caught (every variable-subscript/loop-var
+;                  reference through a scalar produced a phantom "syntax
+;                  error": the cursor IX was silently trashed by
+;                  ary_engine_call's own `ld ix,SUBROM_ENTRY_BASE_P0+...`).
 var_find_typed:
-                ld      d,a                 ; D = target type
-                ld      hl,VARTAB
-vft_lp:
+                ld      (ARY_KEY),bc
+                ld      (ARY_TYPE),a
+                ld      a,4                 ; op = SCALAR_FIND
+                ld      (ARY_OP),a
+                push    ix                  ; guard the caller's IX (the text
+                                            ; cursor, in every real caller)
+                call    ary_engine_call     ; find never errors (ARY_ERR
+                                            ; always 0 for op=4) -- the NZ/
+                                            ; FPERR-mapping path is simply
+                                            ; never taken here
+                pop     ix
+                ld      hl,(ARY_ADDR)
                 ld      a,h
-                cp      high VAREND
-                jr      nz,vft_test
-                ld      a,l
-                cp      low VAREND
-                jr      z,vft_full
-vft_test:
-                ld      a,(hl)              ; name0
-                or      a
-                jr      z,vft_free          ; empty slot -> not found
-                cp      b
-                jr      nz,vft_skip
-                inc     hl
-                ld      a,(hl)              ; name1
-                dec     hl
-                cp      c
-                jr      nz,vft_skip
-                push    hl
-                inc     hl
-                inc     hl
-                ld      a,(hl)              ; this entry's type
-                pop     hl
-                cp      d
-                jr      z,vft_hit
-vft_skip:
-                ; advance by THIS entry's own stride (3 header bytes + its value
-                ; width, which is exactly its type value: 2/4/8 -> 5/7/11 total)
-                push    hl
-                inc     hl
-                inc     hl
-                ld      a,(hl)              ; type byte (stride source)
-                pop     hl
-                add     a,3                 ; A = total entry width
-                add     a,l
-                ld      l,a
-                jr      nc,vft_lp
-                inc     h
-                jr      vft_lp
-vft_hit:
+                or      l
+                jr      z,vft_notfound      ; ARY_ADDR=0 -> not found (0 is
+                                            ; never a valid entry address --
+                                            ; program text starts at $8001)
                 scf
                 ret
-vft_free:
-                or      a
-                ret
-vft_full:
+vft_notfound:
                 or      a
                 ret
 
 ; --- var_alloc_or_find: BC=key, A=type -> HL = entry base, CF set ------------
 ; (name0/name1/type already written if this call just allocated the entry; a
 ; freshly allocated entry's VALUE bytes are zero-filled too, so an unset
-; variable always reads back as 0). CF clear = the pool has no room left for a
-; new entry of this width; HL is then meaningless and nothing was written.
-; Shared by var_store_fac (which overwrites the value field afterward) and
-; VARPTR (ev_f_varptr, expr.asm), which only needs the entry to EXIST.
-; Clobbers A, B, C, D, E, H, L (BC not preserved — callers needing the key
-; afterward must save it themselves).
+; variable always reads back as 0). CF clear = Out of memory: the WHOLE chain
+; is exhausted (§7.3 — this REPLACES the pre-4b fixed-pool silent-drop with a
+; SURFACED runtime error, matching the array OOM disposition: FPERR is
+; already set via ary_errmap by the time this returns NC, since op=5's
+; ARY_ERR=4 maps through the SAME table entry arrays' own OOM uses). Nothing
+; is written on failure (leaves state consistent). Shared by var_store_fac
+; (which overwrites the value field afterward) and VARPTR (ev_f_varptr,
+; expr.asm), which only needs the entry to EXIST. Clobbers A, B, C, D, E, H,
+; L (BC not preserved — callers needing the key afterward must save it
+; themselves, unchanged from the pre-4b contract). IX is GUARDED (push/pop)
+; across ary_engine_call — see var_find_typed's own header just above for
+; why (the SAME caller-held-cursor hazard; var_store_fac's own caller,
+; ex_let, needs its cursor to survive var_store_fac intact).
 var_alloc_or_find:
-                ld      (VS_TARGET_TYPE),a  ; stash the type across var_find_typed
-                call    var_find_typed      ; BC,A -> CF/HL
-                ret     c                   ; already exists
-                ; not found: HL = free slot (bump ptr) or VAREND (no room at all)
-                ld      a,h
-                cp      high VAREND
-                jr      nz,vaof_check_room
-                ld      a,l
-                cp      low VAREND
-                ret     z                   ; HL==VAREND exactly -> CF clear, no room
-vaof_check_room:
-                push    hl                  ; guard the free-slot address
-                ld      a,(VS_TARGET_TYPE)
-                add     a,3                 ; A = this entry's total stride
-                ld      e,a
-                ld      d,0
-                add     hl,de               ; HL = free + stride (one past the new entry)
-                ld      de,VAREND
-                or      a
-                sbc     hl,de               ; HL = (free+stride) - VAREND
-                jr      c,vaof_room_ok       ; borrow -> fits with room to spare
-                ld      a,h
-                or      l
-                jr      z,vaof_room_ok       ; exact zero -> fits exactly up to VAREND
-                pop     hl                  ; doesn't fit -> balance the stack, drop
-                or      a                   ; CF clear
-                ret
-vaof_room_ok:
-                pop     hl                  ; HL = free slot address (restored)
-                ld      (hl),b              ; name0
-                inc     hl
-                ld      (hl),c              ; name1
-                inc     hl
-                ld      a,(VS_TARGET_TYPE)
-                ld      (hl),a              ; type
-                inc     hl                  ; HL -> value field
-                ld      b,a                 ; B = value width (2/4/8) -- zero_fill counts
-                                            ; in B via djnz (float-arith.asm), NOT C; a
-                                            ; B=0 here would zero 256 bytes and plough
-                                            ; through STRTAB ($E240), wiping string vars
-                push    hl
-                call    zero_fill           ; auto-init a fresh entry's value to 0
-                                            ; (float-arith.asm; matches the pre-F3
-                                            ; var_set_key "new" path's explicit zero
-                                            ; write, which VARPTR relies on)
-                pop     hl
-                dec     hl
-                dec     hl
-                dec     hl                  ; HL back to entry base (name0) — same
-                                            ; "HL=entry base" contract as the found path
+                ld      (ARY_KEY),bc
+                ld      (ARY_TYPE),a
+                ld      a,5                 ; op = SCALAR_ALLOC (find-or-
+                                            ; insert-and-shift, §3a)
+                ld      (ARY_OP),a
+                push    ix                  ; guard the caller's IX
+                call    ary_engine_call     ; Z ok (ARY_ADDR=addr) / NZ:
+                                            ; FPERR already mapped+set (OOM)
+                pop     ix
+                jr      nz,vaof_fail
+                ld      hl,(ARY_ADDR)
                 scf
+                ret
+vaof_fail:
+                or      a                   ; CF clear
                 ret
 
 ; --- var_load_fac: BC=key, A=type -> FAC set, FACTYP=type, DE=int16 fast ----
@@ -551,6 +516,140 @@ deftbl_lookup:
                 pop     de
                 pop     hl
                 ret
+
+; =============================================================================
+; §13a fix — the stale-array-element-address bug (docs/spec-basic-arrays-
+; slice4b-scalar-reloc.md §13a). Shared page-1 home for basic/arrays.asm's
+; ex_let_arr / ex_let_arr_str delta-correction calls: the LOW region ($2812-
+; $3FFF) has only 3 B of headroom, nowhere near this arithmetic's footprint,
+; while page 1 has 73 B free (§13a "the hard part" / §4 space accounting) —
+; so the correction lives HERE instead, reached from arrays.asm by an
+; ordinary same-bank `call` (low region and page 1 are the main ROM's
+; co-mapped slot-0 pages, per clear_vars's own heap_reset call just above —
+; no subrom_call/bank-switch is involved, unlike the SUBROM_IDX_ARY tenant).
+;
+; Mechanism (documented MSX memory model TXTTAB->VARTAB->ARYTAB->...->FRETOP
+; ->HIMEM, own realisation — arc spec §2/§3a, no disassembly): a scalar
+; insertion shifts everything at/above ARYTAB up by exactly the amount ARYTAB
+; itself moves. ary_snapshot_offset (called right after ary_op0_resolve,
+; before the RHS `eval`/`str_eval`) captures OFFSET = ARYTAB_before - elem_addr
+; and pushes it (ONE word, replacing the pre-fix code's raw [ADDR] push —
+; same stack footprint, so callers' error-tail pop counts are UNCHANGED).
+; ary_apply_offset / ary_apply_offset_hl_sub (called after the RHS is safely
+; evaluated) re-read ARYTAB and recover the CORRECTED address = ARYTAB_now -
+; OFFSET = elem_addr + (ARYTAB_now - ARYTAB_before) — exactly the spec §13a
+; formula. Two apply variants because the two call sites have different live
+; registers at the correction point: ex_let_arr already has the text cursor
+; parked in IX (so HL is free — the simple variant clobbers it and returns
+; the corrected address IN HL) and the RHS's int-fast-path value in DE (which
+; MUST survive, and does — neither variant touches DE); ex_let_arr_str still
+; has the cursor live IN HL at that point (str_eval's own return contract),
+; so the _hl_sub variant preserves HL and returns the corrected address in DE
+; instead (also untouched by the plain variant, so the choice is per-caller
+; convenience, not a hard constraint).
+; =============================================================================
+
+; --- ary_snapshot_offset: push [OFFSET]=ARYTAB-elem_addr; guard the cursor -
+; in:  HL = cursor (live, e.g. just past the array reference's ')'),
+;      DE = elem_addr (ary_op0_resolve's own RESOLVE-path return).
+; out: HL = cursor, UNCHANGED. Stack gains exactly ONE word, [OFFSET] (signed
+;      16-bit, ARYTAB_before - elem_addr), pushed on top of whatever the
+;      caller already had there. Clobbers BC only — A/DE are NOT touched, so
+;      a caller that still needs (ARY_TYPE) or elem_addr's own value in DE a
+;      moment longer is unaffected (ex_let_arr reads (ARY_TYPE) right after
+;      this call).
+ary_snapshot_offset:
+                pop     bc              ; BC = our own return address
+                push    hl              ; stash the cursor (local temp)
+                ld      hl,(ARYTAB)     ; HL = ARYTAB_before
+                or      a
+                sbc     hl,de           ; HL = ARYTAB_before - elem_addr = OFFSET
+                ex      (sp),hl         ; TOS(cursor)<->HL(OFFSET): HL=cursor
+                                        ; restored, TOS=OFFSET (left for the
+                                        ; caller)
+                push    bc              ; restore the return address on top
+                ret
+
+; --- ary_apply_offset: pop [OFFSET] -> HL = the CORRECTED element address --
+; in:  stack top (below this call's own return address) = [OFFSET], as
+;      pushed by ary_snapshot_offset above.
+; out: HL = ARYTAB_now - OFFSET = the corrected element address (§13a
+;      formula). [OFFSET] popped (net stack effect: -1 word, like a plain
+;      `pop`). Clobbers BC only — A (TYPE) and DE (the RHS's live int-fast-
+;      path value / FAC) are NOT touched, so ex_let_arr's caller-held TYPE
+;      (in A) and RHS value (in DE) survive straight through into
+;      ary_store_write.
+ary_apply_offset:
+                pop     hl              ; HL = our own return address
+                pop     bc              ; BC = OFFSET
+                push    hl              ; restore the return address on top
+                ld      hl,(ARYTAB)     ; HL = ARYTAB_now
+                or      a
+                sbc     hl,bc           ; HL = ARYTAB_now - OFFSET = corrected
+                ret
+
+; --- ary_apply_offset_hl_sub: pop [OFFSET] -> DE = corrected address; -------
+; HL (the text cursor) PRESERVED, unlike ary_apply_offset above (whose
+; caller already parked its cursor in IX before calling, so HL was free to
+; clobber — ex_let_arr_str's str_eval return contract leaves the cursor IN
+; HL instead, so this variant guards it exactly like ary_snapshot_offset
+; does on the way in).
+; in:  HL = cursor (live), stack top (below this call's own return address)
+;      = [OFFSET].
+; out: HL = cursor, UNCHANGED. DE = ARYTAB_now - OFFSET = the corrected
+;      element address. [OFFSET] popped. Clobbers BC only.
+ary_apply_offset_hl_sub:
+                pop     bc              ; BC = our own return address
+                ex      (sp),hl         ; TOS(OFFSET)<->HL(cursor): HL=OFFSET,
+                                        ; TOS=cursor (stashed)
+                push    bc              ; return address on top of the stash
+                push    hl              ; stash OFFSET too (need HL free below)
+                ld      hl,(ARYTAB)     ; HL = ARYTAB_now
+                pop     bc              ; BC = OFFSET restored
+                or      a
+                sbc     hl,bc           ; HL = ARYTAB_now - OFFSET = corrected
+                ex      de,hl           ; DE = corrected (output); HL = don't-care
+                pop     bc              ; BC = our own return address
+                pop     hl              ; HL = cursor restored
+                push    bc              ; return address back on top
+                ret
+
+; --- ela_err/ela_abort_tm/ela_abort_fp: ex_let_arr's error tails ------------
+; (basic/arrays.asm), RELOCATED here by the §13a space fix (the low region's
+; 3 B headroom had no room even for the two `jr`->`jp` conversions this
+; relocation itself forces, let alone the routines above — moving these
+; three small tails out is what pays for it, arrays.asm's own header
+; explains the net-negative low-region delta). Bodies are BYTE-IDENTICAL to
+; the pre-fix ones: each still discards exactly the two-word [TYPE],[OFFSET]
+; frame ary_snapshot_offset/the TYPE push leave on the stack (the OFFSET
+; word is the same SIZE as the old raw [ADDR] word, so the pop count here is
+; UNCHANGED from pre-fix — only the location and the `jr`->`jp` at the call
+; site changed). stmt_error/type_mismatch_error/fp_runtime_error (interp.asm)
+; are page-1 resident too, so these are now a same-region tail all the way
+; through.
+ela_err:
+                pop     af
+                pop     hl                  ; discard [TYPE],[OFFSET]
+                jp      stmt_error
+ela_abort_tm:
+                pop     af
+                pop     hl
+                jp      type_mismatch_error
+ela_abort_fp:
+                pop     af
+                pop     hl
+                jp      fp_runtime_error
+
+; --- elas_err/elas_abort_fp: ex_let_arr_str's error tails -------------------
+; (basic/arrays.asm), RELOCATED here for the identical reason (above). Each
+; discards exactly ONE word ([OFFSET], same size as the pre-fix [ADDR]) —
+; byte-identical bodies, only moved + the call sites' `jr`->`jp`.
+elas_err:
+                pop     de                  ; discard [OFFSET]
+                jp      stmt_error
+elas_abort_fp:
+                pop     de                  ; discard [OFFSET]
+                jp      fp_runtime_error
     ENDIF
 
 ; --- var_get / var_set: single-letter compatibility shims ------------------
@@ -777,7 +876,20 @@ cv_deftbl:                                  ; (RUN clears here first, then the p
                 ; ary_reset, which also runs on a bare relink where STRTAB
                 ; heap bodies must survive).
                 call    heap_reset
-    ENDIF
+                ; arrays slice-4b (§3b) + §13a-F1 fix: DO NOT call vars_reset
+                ; here. vars_reset reads (PRGEND) and WRITES the $0000 array
+                ; sentinel THROUGH (ARYTAB)=(PRGEND)+2. At cold INIT
+                ; (interp.asm) clear_vars runs BEFORE new_prog sets PRGEND, so
+                ; PRGEND still holds power-on RAM garbage -> a wild write (Fable
+                ; F1, empirically zeroed HIMEM; green-suite-invisible because
+                ; openMSX zero-fills RAM so the write lands in ROM). INVARIANT:
+                ; every clear_vars caller resets the scalar+array regions ITSELF
+                ; AFTER establishing PRGEND -- init -> new_prog (jp vars_reset),
+                ; NEW -> jp new_prog, run_prog / ex_clear -> explicit vars_reset.
+                ; So the numeric scalar region no longer needs a fixed-pool wipe
+                ; here (the lean ELSE branch below still owns its own 128-byte
+                ; VARTAB wipe, so the lean build stays byte-identical).
+    ELSE
                 ld      hl,VARTAB
                 ld      bc,VARSLOTS*VARENTSZ
 cv_loop:
@@ -787,6 +899,7 @@ cv_loop:
                 ld      a,b
                 or      c
                 jr      nz,cv_loop
+    ENDIF
                 ; clear the string store: name0 = 0 in every slot
                 ld      hl,STRTAB
                 ld      b,STRSLOTS

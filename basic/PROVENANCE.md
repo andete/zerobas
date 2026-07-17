@@ -208,6 +208,29 @@ round-trip (`AB`/`AC` distinct) was verified functionally in openMSX.
 | `TKNAME` in-name flag | `$E028` | own choice (free page-3 RAM) | sourced |
 | `VARTAB`/`VAREND` (32 slots × 4 bytes, $E1C0..$E23F) | — | own choice (free page-3 RAM) | sourced |
 
+### §variable area — arrays slice-4b: numeric scalar relocation (repack build only, docs/spec-basic-arrays-slice4b-scalar-reloc.md)
+
+The fixed `VARTAB`/`VAREND` numeric pool above (Phase 1, unchanged in the
+LEAN build) is **relocated in the repack build** out of the fixed $E1C0..$E240
+span into the real-MSX contiguous chain (`TXTTAB→VARTAB→ARYTAB→…→FRETOP→
+MEMSIZ`), joining arrays' own `[PRGEND+2, FRETOP)` region (arrays slice-1,
+docs/spec-basic-arrays.md; string heap arrays slice-4a, docs/spec-basic-
+arrays-slice4a-string-heap.md). Numeric scalars now share the SAME
+insert-and-shift / `FRETOP` collision / GC-once-retry mechanism arrays
+already use — creating a scalar opens a `stride`-byte hole at the current
+`ARYTAB` by shifting the whole array region up (a bottom-up `LDDR`), the
+mirror image of arrays' own top-down growth. The freed $E1C0..$E240 (128 B)
+becomes ordinary RAM; the new `ARYTAB` live cell (2 B) is homed at its foot.
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| Contiguous chain order `program text → scalars → arrays → free → string heap → HIMEM` | — | documented MSX memory model (MSX2 Technical Handbook / MSX Assembly Page: `TXTTAB→VARTAB→ARYTAB→STREND→FRETOP→MEMSIZ`) | sourced |
+| `ARYTAB` stored live cell = scalar-region end = array-region base | `$E1C0` (repack only; the just-freed foot of the dead `VARTAB` span) | own choice (free RAM) | sourced |
+| Scalar entry format `[name0][name1][type][value:2/4/8]`, stride = type+3, key (name0,name1,type) | — | **own code / own choice** — carried over UNCHANGED from the pre-4b fixed-pool layout (F3 S3a, above); only the location + walk moved | sourced |
+| Insert-and-shift mechanism (open a hole at `ARYTAB`, `LDDR` the array block up by `stride`, collision-checked BEFORE moving) + the `FRETOP` collision/GC-once-retry reuse | — | zerobas's own realisation of the documented memory model, reusing the arc's own arrays/heap machinery (sub/arrays.asm `ary_alloc`'s identical ceiling discipline) | sourced |
+| Behaviour delta: a program EDIT now clears NUMERIC scalars + arrays (relink chains through the shared `vars_reset`); STRING scalars (fixed `STRTAB` pool) still survive an edit until slice 4c | — | More MSX-faithful (stock MSX-BASIC clears ALL variables on a direct-mode edit); pre-4b zerobas kept all scalars across an edit as an off-to-the-side-pool artifact. Interim divergence: numeric+arrays clear, string scalars persist to 4c (string-scalar unification) — documented, not yet fully faithful | sourced |
+| Behaviour delta: scalar creation can now raise `Out of memory` (matches the array OOM disposition) instead of the pre-4b fixed-pool's silent drop | — | own design (the SAME `ARY_ERR`/`ary_errmap` codepath arrays' own OOM already uses) | sourced |
+
 ## Phase 1: PRINT statement (basic/print.asm, basic/interp.asm)
 
 Behavioural source: the public MSX-BASIC *language* reference (PRINT items,

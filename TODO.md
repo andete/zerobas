@@ -22,7 +22,7 @@ item — do **one item per session** to keep context lean.
 |---|---|---|
 | **1 — loader-stub BASIC + transports + standardization** | just enough MSX-BASIC to run `.BAS`/binary loader stubs; tape + disk read/write; standard DSKIO/`HPHYD` interfaces | **✅ closed** |
 | **2 — full disk (Disk BASIC integration)** | the full file-channel verb surface (sequential + random-access + dir mgmt + `CALL FORMAT`), all oracle-validated | **✅ verb surface complete** — only the Tier-2 provider oracle (a distinct DOS-boot sub-track) + a few Phase-3-gated verbs remain |
-| **3+ — full MSX1 BASIC** | floating point, full string engine, arrays, graphics, sound, … | **active charter** (raised from loader-stub) — landed: string engine, float pack, math pack, arrays/DIM (through slice-4a string heap); scalar relocation (slice-4b) contract signed off |
+| **3+ — full MSX1 BASIC** | floating point, full string engine, arrays, graphics, sound, … | **active charter** (raised from loader-stub) — landed: string engine, float pack, math pack, arrays/DIM (through slice-4b numeric scalar relocation); string-scalar unification (slice-4c) next |
 
 ## Phase 1 — committed loader-stub target (✅ closed)
 
@@ -924,8 +924,20 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       [`docs/spec-basic-arrays-slice2-erase.md`](docs/spec-basic-arrays-slice2-erase.md).
       Adversarial review caught F1 (`ERASE A$` freed the numeric `A` — `$` key
       collides with default-double at type 8; fixed via `var_str_type`→type-1).
-      **Remaining slices:** 3 = string arrays; 4 = relocate scalars/strings into
-      the contiguous model + STRMAX→255.
+      **Slice 3 = string arrays DONE**, **slice 4a = string HEAP (compacting,
+      STRMAX→255) DONE 2026-07-17**, **slice 4b = numeric SCALAR relocation
+      DONE 2026-07-17** (repack build only: numeric scalars move out of the
+      fixed `VARTAB $E1C0..$E240` pool into the real-MSX contiguous chain
+      `program text → scalars → arrays → free → string heap`, sharing arrays'
+      own insert-and-shift/`FRETOP` collision/GC-once-retry mechanism; new
+      `ARYTAB` live cell; fold into the `SUBROM_IDX_ARY` tenant as new
+      `ARY_OP` codes 4/5 — no new sub-ROM leaf. `make array-acceptance`
+      **127/127**; net **+64 B** main-ROM delta freed; lean build untouched.
+      Spec [`docs/spec-basic-arrays-slice4b-scalar-reloc.md`](docs/spec-basic-arrays-slice4b-scalar-reloc.md)).
+      **Remaining: slice 4c** = string-SCALAR unification into the same
+      variable area (retires the `STRTAB` fixed pool, reaches the faithful
+      unified endpoint) — committed, own contract, re-touches the string-heap
+      GC root set so split out from 4b on purpose.
 - [ ] **`^`** and the math functions
       `ABS SGN INT SQR SIN COS TAN ATN LOG EXP RND FIX CINT CSNG CDBL`
 - [ ] **I/O** — ✅ console `INPUT` + `LINE INPUT` (DONE 2026-07-11, see the slice log

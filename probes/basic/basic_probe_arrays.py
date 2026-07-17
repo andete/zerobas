@@ -203,6 +203,137 @@ CASES = [
         ['DIM S$(5):FORI=1TO5:S$(I)=STRING$(250,65):NEXT',
          'FORJ=1TO15:FORI=1TO5:S$(I)=STRING$(250,66):NEXT:NEXT',
          'PRINT"[";LEN(S$(3));LEFT$(S$(3),1);"]"'], "zbval"),
+
+    # === arrays slice-4b: numeric SCALAR relocation into the contiguous ====
+    # chain (docs/spec-basic-arrays-slice4b-scalar-reloc.md §9). Scalars now
+    # live in the SAME [PRGEND+2, FRETOP) region arrays/strings do, sharing
+    # the insert-and-shift + FRETOP collision/GC-once-retry mechanism.
+    #
+    # Type round-trip: A%/A!/A#/default-double are four DISTINCT chain
+    # entries (unchanged identity rule, now over the relocated store).
+    ("scalar.types.roundtrip",  "stored",
+        ['A%=1:A!=2.5:A#=3.5:A=4',
+         'PRINT"[";A%;A!;A#;A;"]"'], "value"),
+    # Many-scalar program: 26 distinct default-double scalars (26*11=286 B)
+    # comfortably exceeds the pre-4b fixed pool's ~11-25 scalar ceiling --
+    # the fixed cap is GONE (§0 "removes the fixed scalar cap").
+    (
+        "scalar.many.overflow128", "stored",
+        # 26 single-letter names in chunks of 6 (each stored LINE must clear
+        # the KEYBUF-injection 40-byte cap, probes/lib/omsx_repl.py) -- A=1
+        # .. Z=26, 26*11=286 B of default-double entries, well past the
+        # pre-4b fixed pool's ~11-25 scalar ceiling.
+        [":".join(f"{chr(ord('A') + k + j)}={k + j + 1}" for j in range(min(6, 26 - k)))
+         for k in range(0, 26, 6)]
+        + ['PRINT"[";A;M;Z;"]"'],
+        "value",
+    ),
+    # Interleave scalar creation with array growth (§9's own worked example)
+    # -- the insert-shift's core hazard. Assert array CONTENT survives (not
+    # just length -- the standing 4a lesson), across TWO separate arrays
+    # each shifted by a LATER scalar's insertion.
+    ("scalar.array.interleave", "stored",
+        ['DIM A(5):A(2)=11:B=1',
+         'DIM C(5):C(3)=22:D=2:E=3',
+         'PRINT"[";A(2);B;C(3);D;E;"]"'], "value"),
+    # String-array elements survive scalar shifts: their descriptor MOVES
+    # with the array block, but the heap `ptr` value (and hence the string
+    # CONTENT) must stay valid (§7's own "string-array element load/store"
+    # note; no GC root touched by a plain scalar insert).
+    ("strarr.scalar.shift.survive", "stored",
+        ['DIM S$(3):S$(0)="hello":X=1:Y=2:Z=3',
+         'PRINT"[";S$(0);X;Y;Z;"]"'], "value"),
+    # Edit clears scalars too (§7.1, §3b Q2): a program EDIT (storing a new
+    # numbered line via the REPL) invalidates PRGEND's own downstream
+    # scalar-region base, so relink's vars_reset must clear scalars, not
+    # just arrays -- the deliberate MSX-faithful behaviour change from
+    # pre-4b zerobas (which kept scalars across an edit as an off-to-the-
+    # side-pool artifact). A%=5 in direct mode, then STORE a numbered line
+    # (an edit), then re-read A% -- must read back 0 on BOTH machines now.
+    ("scalar.edit.clears",      "direct",
+        ['A%=5', '10 PRINT 1', 'PRINT"[";A%;"]"'], "value"),
+    # VARPTR: the gate asserts the VALUE AT THE RETURNED ADDRESS immediately
+    # after VARPTR (§7.2 -- no gate can pin a moving address, since a later
+    # allocation is free to relocate it).
+    ("scalar.varptr.value",     "direct",
+        ['A%=5', 'PRINT"[";PEEK(VARPTR(A%));"]"'], "value"),
+    # FOR/NEXT + READ over a typed (post-relocation) loop/target variable --
+    # the shim path (var_get/var_set, vars.asm) now also routes through the
+    # relocated chain via var_load_fac/var_store_fac's own thin ARY-tenant
+    # glue.
+    ("scalar.for.read.typed",   "stored",
+        ['DATA 10,20,30', 'DIM X(3):FORI=1TO3:READV:X(I)=V:NEXT',
+         'PRINT"[";X(1);X(2);X(3);"]"'], "value"),
+    # zb-only (zbval, the established 4a precedent -- the reference's tiny
+    # default string space can't run a heap-pressure churn without CLEAR):
+    # a scalar creation that COLLIDES with a tight FRETOP, GCs once, and
+    # succeeds (§3a steps 3-4) -- the SAME mechanism arrays' own OOM-retry
+    # uses, now reachable from scalar creation too.
+    ("scalar.collision.gc.ok",  "stored",
+        ['FORI=1TO70:A$=STRING$(250,65):NEXT', 'ZZ=12345',
+         'PRINT"[";LEN(A$);"/";ZZ;"]"'], "zbval"),
+
+    # --- §13a: STALE ARRAY-ELEMENT ADDRESS (docs/spec-basic-arrays-slice4b-
+    # scalar-reloc.md §13a). ex_let_arr/ex_let_arr_str resolve the element
+    # address, then `eval`/`str_eval` the RHS -- and VARPTR(newvar) is the
+    # ONLY eval-time scalar allocator, so a FRESH var inside the RHS shifts
+    # the whole array region mid-store, staling the address the LET is about
+    # to write through. Fixed via an ARYTAB before/after delta correction
+    # (basic/vars.asm ary_snapshot_offset/ary_apply_offset*, page-1 -- the
+    # low region had no headroom for the arithmetic).
+    #
+    # ALL THREE are zb-only (zbval): triggering the shift needs a variable
+    # VARPTR has never touched before (find-only would just skip the
+    # allocation and never reproduce the hazard) -- and the VG-8020
+    # reference's own VARPTR requires its argument to already exist,
+    # raising "Illegal function call" on a fresh name (confirmed empirically,
+    # 2026-07-17: `PRINT VARPTR(ZZ)` on a never-referenced ZZ -> "Illegal
+    # function call"; `ZZ=1:PRINT VARPTR(ZZ)` succeeds). zerobas's own
+    # auto-allocating VARPTR (a pre-existing, signed-off slice-4b design
+    # choice, §3a -- not touched by this fix) is exactly what CAN hit this
+    # class, so the reference can never be an oracle for it; not a
+    # regression in the differential coverage, a genuinely zb-only mechanism
+    # (same class as the GC-collision/churn cases just above).
+    #
+    # scalar.varptr.elem: the exact repro (§13a "Repro"). A(0)=VARPTR(B)
+    # allocates B mid-eval, shifting A's own element out from under the
+    # already-resolved store address -- pre-fix this corrupted memory and
+    # HUNG the interpreter (confirmed via probes/lib/omsx_repl.py
+    # run_case(...) timing out, 2026-07-17). Asserted PORTABLY (no hardcoded
+    # address, which would be fragile to any unrelated memory-layout change):
+    # re-read VARPTR(B) (now a plain find, B already exists) and compare
+    # against what A(0) actually stored -- must be the SAME value, i.e. the
+    # store landed at the address VARPTR(B) really is, not a stale one.
+    ("scalar.varptr.elem",      "stored",
+        ['DIM A(1):A(0)=VARPTR(B):C=VARPTR(B)',
+         'PRINT"[";A(0)=C;"]"'], "zbval"),
+    # scalar.varptr.neighbor: the OTHER repro (§13a "Repro" 2nd form) -- a
+    # NEIGHBOUR element (not the one being stored) must survive the shift.
+    # Pre-fix this also corrupted memory/hung (the stale address could land
+    # anywhere in the shifted region, including atop A(3)'s own slot).
+    ("scalar.varptr.neighbor",  "stored",
+        ['DIM A(3):A(0)=11:A(3)=22:A(0)=VARPTR(C)',
+         'PRINT"[";A(3);"]"'], "zbval"),
+    # strarr.varptr.neighbor: the STRING sibling (ex_let_arr_str) -- a
+    # numeric VARPTR sub-argument INSIDE the string RHS (STRING$'s charcode
+    # argument) allocates mid-str_eval, exercising ary_apply_offset_hl_sub
+    # (the HL-preserving variant, since str_eval leaves the cursor live in
+    # HL rather than parked in IX like the numeric routine). `MID$("XYZ",
+    # VARPTR(D),1)` (the task's own suggested form) does NOT work here: a
+    # freshly-allocated scalar's address is a large magnitude (e.g.
+    # -32719, confirmed empirically) that MID$'s position argument rejects
+    # as out of 1..LEN(string$) range ("Illegal function call") regardless
+    # of the shift/correction fix -- an argument-DOMAIN error, unrelated to
+    # this bug. `VARPTR(D) AND 255` sidesteps that (any byte 0..255 is a
+    # valid STRING$ charcode) while still exercising the identical hazard
+    # (a numeric VARPTR call nested inside the string RHS expression).
+    # Asserted on the NEIGHBOUR S$(3) (not S$(0), whose own STRING$-built
+    # content depends on the unpredictable VARPTR byte) -- "world" must
+    # survive untouched.
+    ("strarr.varptr.neighbor",  "stored",
+        ['DIM S$(3):S$(0)="hello":S$(3)="world":'
+         'S$(0)=STRING$(3,VARPTR(D) AND 255)',
+         'PRINT"[";S$(3);"]"'], "zbval"),
 ]
 
 # --- S6 2nd-review GC-STRESS battery (its OWN pass, gc_stress_check below, with
@@ -358,6 +489,16 @@ ABC_REGRESSION = [
 ZBVAL_EXPECT = {
     "strarr.gc.churn": " 250 B",
     "strarr.dim.aftergc": " 250 / 99 ",
+    # scalar.collision.gc.ok (arrays slice-4b §9): 70 x STRING$(250) leaves
+    # A$ holding the LAST one (LEN=250); ZZ=12345 -- the SCALAR_ALLOC that
+    # must collide-then-GC-then-succeed.
+    "scalar.collision.gc.ok": " 250 / 12345 ",
+    # §13a stale-array-element-address fix (see the CASES entries above for
+    # why these are zb-only): observed 2026-07-17 on the repack build via
+    # probes/lib/omsx_repl.py directly, post-fix.
+    "scalar.varptr.elem": "-1 ",
+    "scalar.varptr.neighbor": " 22 ",
+    "strarr.varptr.neighbor": "world",
 }
 
 # Tier-A house-style text (zerobas prints lowercase where the reference prints

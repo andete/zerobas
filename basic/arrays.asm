@@ -15,10 +15,12 @@
 ;     tenant (op=RESOLVE, auto-dim on read) for the element address, then do
 ;     the FAC<->element copy + type coercion (reusing var_store_fac/
 ;     var_load_fac's own value-field codec).
-;   - ary_reset: rewrites the "no arrays" sentinel at the current
-;     PRGEND+2 whenever the program area is rebased (§9.6) — pure RAM,
-;     trivial, kept main-side rather than round-tripping through the
-;     sub-ROM for a two-byte write.
+;   - vars_reset / ary_reset: arrays slice-4b (docs/spec-basic-arrays-
+;     slice4b-scalar-reloc.md §3b) — vars_reset re-anchors ARYTAB=PRGEND+2
+;     (the scalar region) then falls into ary_reset, which rewrites the "no
+;     arrays" sentinel at the (now current) ARYTAB, whenever the program
+;     area is rebased (§9.6) — pure RAM, trivial, kept main-side rather than
+;     round-tripping through the sub-ROM for a two-byte write.
 ;   - ary_parse_subs(_kt): the shared "eval a comma-separated int-expr list
 ;     in parens into the ARY_NIDX/ARY_IDX param-block fields" front end,
 ;     used by both ex_dim (bound list) and ex_let_arr/ev_f_arr (subscript
@@ -102,16 +104,34 @@ fre_abort_low:
                 call    pchar
                 jp      print_string
 
-; --- ary_reset: write the "no arrays" sentinel at the current ARYBASE ------
-; (= PRGEND+2). Called whenever the program area may have moved or variables
-; are wiped (§9.6): new_prog, run_prog, ex_clear, and relink (program.asm) —
-; the last one covers store_line's own edits (Q-9c) AND CLOAD/LOAD's program
-; replacement in one shot, since both funnel through relink. Idempotent
-; (safe to call more than once). Unchanged from the WIP. Clobbers A, HL.
-ary_reset:
+; --- vars_reset: re-anchor ARYTAB = PRGEND+2 (empty scalar region), then ---
+; fall through into ary_reset to write the "no arrays" sentinel at the (now
+; freshly re-anchored) ARYTAB. Arrays slice-4b (docs/spec-basic-arrays-
+; slice4b-scalar-reloc.md §3b/Q2): a scalar's chain address is PRGEND-
+; relative, so whenever PRGEND moves (every program edit) the scalar region's
+; base moves under it — the two regions MUST reset together, or the "old"
+; scalars sit at the WRONG address (or under program text). This is also the
+; deliberate MSX-faithful behaviour change from pre-4b zerobas (which kept
+; scalars across a direct-mode edit as an artifact of the off-to-the-side
+; fixed pool): stock MSX-BASIC clears ALL variables on a program edit too.
+; The four call sites that used to call ary_reset directly (new_prog,
+; run_prog, ex_clear, relink) now call THIS instead, so scalar + array reset
+; stay a single call at each site (§3b). Clobbers A, HL.
+vars_reset:
                 ld      hl,(PRGEND)
                 inc     hl
-                inc     hl                  ; HL = ARYBASE
+                inc     hl                  ; HL = PRGEND+2 (empty scalar region)
+                ld      (ARYTAB),hl
+                ; fall through: write the "no arrays" sentinel at (ARYTAB)
+
+; --- ary_reset: write the "no arrays" sentinel at the current ARYTAB -------
+; (= ARYBASE). Idempotent (safe to call more than once); re-anchored from
+; the pre-4b `(PRGEND)+2` derivation onto the STORED `ARYTAB` cell (§4).
+; Reached both via vars_reset's own fall-through (the normal path, every
+; external call site) and callable standalone (kept as a separate label for
+; clarity — no code currently calls it directly any more). Clobbers A, HL.
+ary_reset:
+                ld      hl,(ARYTAB)         ; HL = ARYBASE
                 xor     a
                 ld      (hl),a
                 inc     hl
@@ -564,34 +584,53 @@ asw_wb_int:
 ; check NZ), generalised out to a shared TYPE-parameterised helper (also used
 ; by the string array glue, below) once the slice-3 space audit needed the
 ; low-region bytes back.
+;
+; §13a FIX (docs/spec-basic-arrays-slice4b-scalar-reloc.md §13a, 2026-07-17):
+; the RHS `eval` below can itself allocate a numeric SCALAR (VARPTR(newvar) is
+; the only eval-time scalar allocator — a plain variable read is find-only).
+; Slice-4b's insert-and-shift (§3a) means a scalar allocation shifts the
+; WHOLE array region up by the entry's stride — so the element address
+; resolved above goes STALE the instant `eval` allocates one. Documented
+; MSX memory model (arc TXTTAB->VARTAB->ARYTAB->...): everything at or above
+; ARYTAB shifts by exactly the amount ARYTAB itself moves, so the fix is a
+; before/after ARYTAB delta correction. `ary_snapshot_offset`/
+; `ary_apply_offset` (basic/vars.asm, page-1 — the low region has no headroom
+; left for this arithmetic, §13a "the hard part") do the actual work; this
+; routine only adds two 3-byte CALLs (replacing the old bare push/pop of a
+; raw element address) — net LOW-REGION-NEGATIVE once ela_err/ela_abort_tm/
+; ela_abort_fp relocate alongside them (below).
 ex_let_arr:
                 ld      a,(VARTYPE)
                 call    ary_op0_resolve     ; Z: HL=cursor,DE=elem_addr / NZ:
                                             ; HL=cursor, FPERR already set
                 jp      nz,fp_runtime_error ; [CURSOR] already consumed by
                                             ; ary_op0_resolve -- nothing to pop
-                push    de                  ; [ADDR]
+                call    ary_snapshot_offset ; §13a: push [OFFSET]=ARYTAB-ADDR
+                                            ; (page-1); HL=cursor preserved
                 ld      a,(ARY_TYPE)
                 push    af                  ; [TYPE]
                 call    skip_spaces
                 ld      a,(hl)
                 cp      EQ_TOKEN
-                jr      nz,ela_err
+                jp      nz,ela_err
                 inc     hl
                 call    eval                ; DE=RHS value, HL=cursor advanced
                 ld      a,(TMISMATCH)
                 or      a
-                jr      nz,ela_abort_tm
+                jp      nz,ela_abort_tm
                 ld      a,(FPERR)
                 or      a
-                jr      nz,ela_abort_fp
+                jp      nz,ela_abort_fp
                 push    hl                  ; [CURSOR]
                 pop     ix                  ; IX = cursor (free to reuse here — nothing
                                             ; in this statement chain relies on the
                                             ; caller's IX surviving through ex_let_arr)
                 pop     af                  ; TYPE
-                pop     hl                  ; ADDR (into HL — DE holds the live RHS
-                                            ; value/FAC, which ary_store_write reads)
+                call    ary_apply_offset    ; §13a: pops [OFFSET], HL = the
+                                            ; CORRECTED element address (DE
+                                            ; holds the live RHS value/FAC,
+                                            ; untouched, which ary_store_write
+                                            ; reads)
                 call    ary_store_write     ; HL=elem addr,A=type; DE/FAC=RHS -> writes
                 push    ix
                 pop     hl                  ; HL = cursor restored
@@ -599,21 +638,16 @@ ex_let_arr:
                 or      a
                 jp      nz,fp_runtime_error ; coercion-time overflow (D-F2-1 pattern)
                 jp      exec_stmt
-ela_err:
-                pop     af
-                pop     de                  ; discard [TYPE],[ADDR]
-                jp      stmt_error
-ela_abort_tm:
-                pop     af
-                pop     de                  ; discard [TYPE],[ADDR]
-                jp      type_mismatch_error
-ela_abort_fp:
-                pop     af
-                pop     de                  ; discard [TYPE],[ADDR]
-                jp      fp_runtime_error
 ela_parse_abort:
                 pop     hl                  ; discard [CURSOR]
                 jp      fp_runtime_error
+; ela_err/ela_abort_tm/ela_abort_fp themselves RELOCATED to basic/vars.asm
+; (page-1, §13a space fix) — reached via the `jp` (not `jr`, now out of
+; branch range) above. Each still discards exactly TWO stack words
+; ([TYPE],[OFFSET] — the SAME word count as the pre-fix [TYPE],[ADDR] frame,
+; since ary_snapshot_offset collapses the old two-word ADDR+ARYTAB-snapshot
+; into one), so their bodies are byte-identical to the pre-fix ones, only
+; moved.
 
 ; --- ev_f_arr: array-element rvalue  A(i[,j...])  --------------------------
 ; BC=key, (VARTYPE)=type, HL=cursor at '(' on entry (reached from ev_f_var,
@@ -741,6 +775,15 @@ aor_err:
 ; and op=3 (COPY_STR, sub/arrays.asm) does the actual copy — safe ONLY
 ; because it runs strictly after the RHS is done, never fused with the
 ; resolve itself.
+;
+; §13a FIX: the SAME hazard ex_let_arr's own header documents — a numeric
+; VARPTR sub-argument inside the string RHS (e.g. S$(0)=MID$(A$,VARPTR(B)))
+; can allocate a scalar during `str_eval`, shifting the whole array region
+; and staling the LHS address exactly like the numeric case. Shares
+; ary_snapshot_offset/ary_apply_offset (basic/vars.asm, page-1) with
+; ex_let_arr verbatim — this routine's own [ADDR] slot becomes ary_snapshot_
+; offset's single [OFFSET] word (same size, so elas_err/elas_abort_fp's pop
+; count is UNCHANGED, only relocated below).
 ex_let_arr_str:
                 ld      a,1                 ; type = 1 (string, always — this
                                             ; routine is only ever reached for
@@ -749,28 +792,31 @@ ex_let_arr_str:
                                             ; HL=cursor, FPERR already set
                 jp      nz,fp_runtime_error ; [CURSOR] already consumed by
                                             ; ary_op0_resolve -- nothing to pop
-                push    de                  ; [ADDR] -- guarded across str_eval
-                                            ; (see the header above)
+                call    ary_snapshot_offset ; §13a: push [OFFSET] -- guarded
+                                            ; across str_eval exactly like the
+                                            ; old [ADDR] push (see header)
                 call    skip_spaces
                 ld      a,(hl)
                 cp      EQ_TOKEN
-                jr      nz,elas_err
+                jp      nz,elas_err
                 inc     hl
                 call    skip_spaces
                 call    str_eval            ; STRPTR -> RHS descriptor, HL advanced
-                jr      nc,elas_err         ; not a string operand -> syntax error
-                                            ; ([ADDR] still on the stack -- elas_err
-                                            ; pops it)
+                jp      nc,elas_err         ; not a string operand -> syntax error
+                                            ; ([OFFSET] still on the stack --
+                                            ; elas_err pops it)
                 ld      a,(FPERR)           ; D-F2-1: a deferred error inside the RHS
                 or      a                   ; (HEX$ overflow, or a nested array
-                jr      nz,elas_abort_fp    ; subscript/bound error, §5.2) aborts
+                jp      nz,elas_abort_fp    ; subscript/bound error, §5.2) aborts
                                             ; here -- the SAME inline check
                                             ; ex_let_arr's own numeric RHS uses, NOT
                                             ; cepb_fp (that routine's own pop-two-
                                             ; off-the-stack contract assumes a
                                             ; DIFFERENT stack shape than this
-                                            ; routine's single [ADDR] frame)
-                pop     de                  ; DE = elem_addr ([ADDR] restored)
+                                            ; routine's single [OFFSET] frame)
+                call    ary_apply_offset_hl_sub ; §13a: pops [OFFSET]; HL=cursor
+                                            ; PRESERVED (str_eval's own advance),
+                                            ; DE = the CORRECTED elem_addr
                 ld      (ARY_ADDR),de       ; re-publish as op=3's INPUT (STRPTR
                                             ; already holds the stable RHS)
                 ld      a,3
@@ -780,12 +826,10 @@ ex_let_arr_str:
                 call    ary_engine_call     ; -> always Z (op=3 cannot fail)
                 pop     hl                  ; [CURSOR] restored
                 jp      exec_stmt
-elas_err:
-                pop     de                  ; discard [ADDR]
-                jp      stmt_error
-elas_abort_fp:
-                pop     de                  ; discard [ADDR]
-                jp      fp_runtime_error
+; elas_err/elas_abort_fp RELOCATED to basic/vars.asm (page-1, §13a space
+; fix) — reached via `jp` (was `jr`, now out of branch range) above; each
+; still discards exactly ONE stack word ([OFFSET], same as the pre-fix
+; [ADDR]), byte-identical bodies, only moved.
 
 ; --- str_eval_arr: string array-element rvalue  S$(i[,j...]) ---------------
 ; BC=key, HL=cursor at '(' on entry (reached from str_eval_one, basic/

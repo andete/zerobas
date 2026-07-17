@@ -50,6 +50,19 @@ def run():
     build()
     m = Machine(ROM, SYM, rom_base=RELOC_BASE)
     s = m.sym
+    # Arrays slice-4b (docs/spec-basic-arrays-slice4b-scalar-reloc.md §2/Q3):
+    # every string-heap op derives its array-region ceiling via ARYTAB (was
+    # (PRGEND)+2). A fresh Machine zero-inits ALL RAM, so an unpoked PRGEND/
+    # ARYTAB=0 makes that derivation land inside the SUB-ROM'S OWN CODE BYTES
+    # (shuttled 0x8000+ RAM aside, ARYBASE=0 sits at the very start of the
+    # bridged sub-ROM image) -- a stride-walk over $FF padding can spin
+    # (near-)forever. Seed both to a safe placeholder RAM address (matching
+    # tests/test_arrays.py's own convention) so any heap_alloc/strheap_gc
+    # this statement triggers walks harmless (empty) RAM instead.
+    m.poke_w(s["PRGEND"], 0x9000)
+    m.poke(0x9000, b"\x00\x00")
+    m.poke_w(s["ARYTAB"], 0x9002)
+    m.poke(0x9002, b"\x00\x00")
     STRTAB = s["STRTAB"]
     STRENTSZ = s["STRENTSZ"]
     STRSLOTS = s["STRSLOTS"]

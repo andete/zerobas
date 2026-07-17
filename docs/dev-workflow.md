@@ -236,10 +236,20 @@ preserved or the crunch probe regresses:
   ev_mod → ev_idiv (\) → ev_t (* /) → ev_f`. Factors live in `ev_f`; add a new
   function/literal there. Cursor in `IX`, value out in `DE`; `eval` bridges
   `HL ↔ IX`.
-- **Variables** (`basic/vars.asm`): 2-significant-char keys, 4-byte entries
-  `[name0][name1][value:2]` at `VARTAB ($E1C0)`. Use `var_name_key` (HL→BC key)
-  + `var_get_key` / `var_set_key`. Single-letter shims keep FOR/NEXT/READ
-  working.
+- **Variables** (`basic/vars.asm`): 2-significant-char keys. LEAN build:
+  4-byte entries `[name0][name1][value:2]` at `VARTAB ($E1C0)`, via
+  `var_name_key` (HL→BC key) + `var_get_key`/`var_set_key`. REPACK build
+  (typed, F3+): variable-width entries `[name0][name1][type][value:2/4/8]`,
+  key (name0,name1,type). Through slice-4a these ALSO lived at `VARTAB`;
+  arrays slice-4b (docs/spec-basic-arrays-slice4b-scalar-reloc.md) relocated
+  them into the real-MSX contiguous chain (`program text → scalars → arrays
+  → free → string heap`), sharing arrays' own `[PRGEND+2, FRETOP)` region and
+  its insert-and-shift/GC-retry mechanism — `VARTAB` is now DEAD RAM in the
+  repack build (128 B freed; `ARYTAB`, the new scalar/array boundary cell,
+  lives at its foot). `var_find_typed`/`var_alloc_or_find` (vars.asm) are thin
+  glue over the ARY sub-ROM tenant's `SCALAR_FIND`/`SCALAR_ALLOC` ops
+  (sub/arrays.asm); `var_load_fac`/`var_store_fac` (the value codec) and the
+  single-letter FOR/NEXT/READ shims are unchanged above that glue.
 - **Statement dispatch** is by token in `basic/interp.asm`; one source file per
   verb (`basic/clear.asm`, `basic/usr.asm`, `basic/print.asm`, …) added to both
   `basic/main.asm` (include) and the `Makefile` `DEPS`.

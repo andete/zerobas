@@ -170,9 +170,11 @@ new_prog:
                 ld      hl,0
                 ld      (TXTBASE),hl        ; $0000 end marker at the base
     IF ROM_BASE < $4000
-                jp      ary_reset           ; arrays slice-1 (§9.6): rebase the array
-                                            ; area's "no arrays" sentinel to the new
-                                            ; PRGEND+2 (tail call; ary_reset just rets)
+                jp      vars_reset          ; arrays slice-1 (§9.6) + slice-4b (§3b):
+                                            ; rebase BOTH the scalar region (ARYTAB=
+                                            ; PRGEND+2) and the array area's "no
+                                            ; arrays" sentinel to the new PRGEND+2
+                                            ; (tail call; vars_reset/ary_reset just ret)
     ELSE
                 ret
     ENDIF
@@ -187,10 +189,15 @@ new_prog:
 run_prog:
                 call    clear_vars
     IF ROM_BASE < $4000
-                call    ary_reset           ; arrays slice-1 (§9.6): a fresh RUN has no
-                                            ; live arrays either; PRGEND is already
-                                            ; correct here (unlike at boot -- see
-                                            ; ary_alloc's own ceiling note, sub/arrays.asm)
+                call    vars_reset          ; arrays slice-1 (§9.6) + slice-4b (§3b): a
+                                            ; fresh RUN has no live scalars/arrays
+                                            ; either; PRGEND is already correct here
+                                            ; (unlike at boot -- see ary_alloc's own
+                                            ; ceiling note, sub/arrays.asm). Redundant
+                                            ; with clear_vars's own vars_reset just
+                                            ; above (same PRGEND, same result) --
+                                            ; harmless, kept for the "four call sites"
+                                            ; symmetry (§3b).
     ENDIF
                 xor     a
                 ld      (CONTVALID),a       ; a fresh RUN has no CONT resume point yet
@@ -562,11 +569,15 @@ rl_lp:
                 cp      l
     IF ROM_BASE < $4000
                 jr      nz,rl_more          ; HL != PRGEND -> more lines to link
-                jp      ary_reset           ; arrays slice-1 (§9.6): every relink call
-                                            ; (store_line edits, Q-9c, AND CLOAD/LOAD's
-                                            ; own program replacement) invalidates any
-                                            ; live arrays -- tail call, ary_reset ends
-                                            ; in `ret`
+                jp      vars_reset          ; arrays slice-1 (§9.6) + slice-4b (§3b/Q2):
+                                            ; every relink call (store_line edits,
+                                            ; Q-9c, AND CLOAD/LOAD's own program
+                                            ; replacement) invalidates any live
+                                            ; scalars/arrays -- tail call, vars_reset/
+                                            ; ary_reset ends in `ret`. This is the
+                                            ; slice-4b "edit clears scalars too"
+                                            ; behaviour change (deliberate, MSX-
+                                            ; faithful, §7.1).
     ELSE
                 ret     z                   ; HL == PRGEND -> all lines linked (lean:
                                             ; byte-identical to the pre-slice-1 form)

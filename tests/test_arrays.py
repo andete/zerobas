@@ -76,8 +76,28 @@ def make_machine():
     # HIMEM=0 -> the ceiling defaults to TXTMAX (never CLEAR'd, the common
     # case for these low-level tests).
     m.poke_w(s["HIMEM"], 0)
+    # Arrays slice-4b (docs/spec-basic-arrays-slice4b-scalar-reloc.md §2/Q3):
+    # ARYTAB is now the STORED live cell every array-anchor site (ary_find/
+    # ary_alloc/strheap_aryend/sg_walk_arrays) reads instead of deriving
+    # (PRGEND)+2 -- these tests exercise the ARRAY engine only (an always-
+    # empty scalar region), so ARYTAB == ARYBASE throughout.
+    m.poke_w(s["ARYTAB"], ARYBASE)
     # "no arrays" sentinel at ARYBASE.
     m.poke(ARYBASE, b"\x00\x00")
+    # TEMPTOP = TEMPBASE (empty temp-descriptor stack): a fresh Machine
+    # zero-inits ALL RAM, so an unpoked TEMPTOP=0 makes strheap_gc's own
+    # root walk (sg_walk_temps) scan every 3-byte stride from $0000 up to
+    # TEMPBASE ($E3E1) as a bogus "live" entry -- ~19000 wasted visits,
+    # occasionally enough to blow the harness's step budget (a genuine
+    # pre-existing gap: ANY ary_alloc call here forces a strheap_gc, since
+    # FRETOP is deliberately left at 0 below so the OOM cases can pick up a
+    # later HIMEM override via the GC-triggered ceiling recompute, §Case 5).
+    # Seeding TEMPTOP to its real cold-boot value (heap_reset's own
+    # contract) makes that walk a same-address no-op, matching what a real
+    # CLEAR/NEW/RUN would have left behind before any of these entry points
+    # ever run. FRETOP is intentionally NOT seeded here (stays 0) -- see the
+    # Case 5 OOM comment below for why.
+    m.poke_w(s["TEMPTOP"], s["TEMPBASE"])
     return m
 
 
@@ -316,6 +336,7 @@ def run():
         m = make_machine()
         arybase = prgend + 2
         m.poke_w(s["PRGEND"], prgend)
+        m.poke_w(s["ARYTAB"], arybase)  # re-anchor ARYTAB with PRGEND (§Q3)
         m.poke_w(s["HIMEM"], 0)        # ceiling = TXTMAX (wrapped candidate slips it)
         m.poke_w(arybase, 0)           # empty array region: $0000 terminator at TAIL
         BOUNDS_BUF = 0x9200
@@ -515,8 +536,136 @@ def run():
     print(f"{'PASS' if ok else 'FAIL'} ERASE F1: string key (type 1) misses numeric "
           f"A (type 8) -> ARY_ERR=2, A intact (err={err}, intact={a_intact})")
 
+    # ==================================================================
+    # Case 8: Arrays slice-4b (docs/spec-basic-arrays-slice4b-scalar-
+    # reloc.md) -- numeric SCALAR relocation: the insert-and-shift
+    # mechanism (§3a) + the FRETOP collision/GC-once-retry math (§3a step
+    # 3/4), exercised through ary_engine's ACTUAL dispatch entry (ARY_OP=4
+    # SCALAR_FIND / 5 SCALAR_ALLOC, Q4) -- the SAME ABI surface vars.asm's
+    # var_find_typed/var_alloc_or_find glue drives via ary_engine_call.
+    # Non-vacuous: reverting the collision-BEFORE-move ordering (moving the
+    # array block unconditionally, THEN checking FRETOP) turns case 8e
+    # green-but-CORRUPTING instead of a clean OOM -- caught by the
+    # "ARYTAB unchanged" assertion there, not just CF/ARY_ERR=4.
+    # ==================================================================
+    def scalar_find(name0, dtype, name1=0):
+        set_key(name0, name1)
+        m.poke(s["ARY_TYPE"], dtype)
+        m.poke(s["ARY_OP"], 4)             # op = SCALAR_FIND
+        m.call("ary_engine")
+        return peek_w(m, s["ARY_ADDR"]), m.peek(s["ARY_ERR"])[0]
+
+    def scalar_alloc(name0, dtype, name1=0):
+        set_key(name0, name1)
+        m.poke(s["ARY_TYPE"], dtype)
+        m.poke(s["ARY_OP"], 5)             # op = SCALAR_ALLOC
+        m.call("ary_engine")
+        return peek_w(m, s["ARY_ADDR"]), m.peek(s["ARY_ERR"])[0]
+
+    # -- 8a: find on an empty scalar region -> not-found (ARY_ADDR=0) -----
+    m = make_machine()
+    addr, err = scalar_find(ord("X"), 8)
+    ok = (addr == 0) and (err == 0)
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'} SCALAR_FIND on empty region: not "
+          f"found (ARY_ADDR={addr:#06x}, ARY_ERR={err})")
+
+    # -- 8b: alloc creates the entry at the scalar base, zero-filled; -----
+    # ARYTAB advances by stride (type+3=11 for a double); a second find
+    # sees the SAME entry unchanged (no re-insert on a hit).
+    m = make_machine()
+    addr, err = scalar_alloc(ord("X"), 8)      # double, stride 11
+    ok_new = (addr == ARYBASE) and (err == 0)
+    fails += not ok_new
+    print(f"{'PASS' if ok_new else 'FAIL'} SCALAR_ALLOC 'X#' creates at "
+          f"ARYBASE (addr={addr:#06x}, err={err})")
+    entry = m.peek(addr, 11)
+    ok_entry = (entry[0] == ord("X") and entry[1] == 0 and entry[2] == 8
+                and entry[3:] == bytes(8))
+    fails += not ok_entry
+    print(f"{'PASS' if ok_entry else 'FAIL'} 'X#' entry = "
+          f"[name0][name1][type][value:8=0] ({entry.hex()})")
+    new_arytab = peek_w(m, s["ARYTAB"])
+    ok_arytab = new_arytab == ARYBASE + 11
+    fails += not ok_arytab
+    print(f"{'PASS' if ok_arytab else 'FAIL'} ARYTAB advanced by stride 11 "
+          f"({new_arytab:#06x}, want {ARYBASE + 11:#06x})")
+    addr2, err2 = scalar_find(ord("X"), 8)
+    ok_refind = (addr2 == ARYBASE) and (err2 == 0)
+    fails += not ok_refind
+    print(f"{'PASS' if ok_refind else 'FAIL'} re-find 'X#' unchanged "
+          f"(addr={addr2:#06x})")
+
+    # -- 8c: insert-and-shift -- an EXISTING array survives a scalar's -----
+    # insertion (CONTENT, not just its new address -- the standing 4a
+    # lesson applied to 4b). Array 'A' (int, 1-D bound0=2) sits at ARYBASE;
+    # a scalar 'Z%' (stride 5) must shift the WHOLE array block up by 5 and
+    # leave its element-0 marker intact.
+    m = make_machine()
+    dA, stA = descriptor_bytes(ord("A"), 0, 2, [2])
+    m.poke(ARYBASE, dA)
+    m.poke_w(ARYBASE + stA, 0)             # array-region terminator
+    m.poke_w(ARYBASE + 8, 0xBEEF)          # elem0 marker (data starts at +8)
+    addr_z, err_z = scalar_alloc(ord("Z"), 2)   # int, stride 5
+    ok_z = (addr_z == ARYBASE) and (err_z == 0)
+    fails += not ok_z
+    print(f"{'PASS' if ok_z else 'FAIL'} SCALAR_ALLOC 'Z%' inserted at the "
+          f"old ARYBASE (addr={addr_z:#06x}, err={err_z})")
+    new_base = peek_w(m, s["ARYTAB"])
+    ok_shift = new_base == ARYBASE + 5
+    fails += not ok_shift
+    print(f"{'PASS' if ok_shift else 'FAIL'} ARYTAB (array base) shifted by "
+          f"stride 5 ({new_base:#06x}, want {ARYBASE + 5:#06x})")
+    a_name0 = m.peek(new_base)[0]
+    a_elem0 = peek_w(m, new_base + 8)
+    ok_content = (a_name0 == ord("A")) and (a_elem0 == 0xBEEF)
+    fails += not ok_content
+    print(f"{'PASS' if ok_content else 'FAIL'} array 'A' CONTENT survived "
+          f"the shift (name0={chr(a_name0)}, elem0={a_elem0:#06x}, want beef)")
+    # ary_find must now see 'A' at its NEW (shifted) address.
+    cpu = m.call("ary_find", b=ord("A"), c=0, a=2)
+    ok_find = carry(cpu) and (cpu.hl == new_base)
+    fails += not ok_find
+    print(f"{'PASS' if ok_find else 'FAIL'} ary_find locates shifted 'A' at "
+          f"{cpu.hl:#06x} (want {new_base:#06x})")
+
+    # -- 8d: FRETOP collision -> GC-once -> success (§3a steps 3-4) --------
+    # A tight FRETOP collides with the FIRST attempt; strheap_gc recomputes
+    # it from the (loose) ceiling min(HIMEM,TXTMAX) and the retry succeeds.
+    m = make_machine()
+    m.poke_w(s["HIMEM"], 0)                # ceiling after GC = TXTMAX
+    m.poke_w(s["FRETOP"], ARYBASE + 8)      # tight: collides with 'Y#' (11 B)
+    addr_y, err_y = scalar_alloc(ord("Y"), 8)
+    ok_gc = (addr_y == ARYBASE) and (err_y == 0)
+    fails += not ok_gc
+    print(f"{'PASS' if ok_gc else 'FAIL'} SCALAR_ALLOC 'Y#' collides once, "
+          f"GCs, retries, succeeds (addr={addr_y:#06x}, err={err_y})")
+    ok_fretop = peek_w(m, s["FRETOP"]) == s["TXTMAX"]
+    fails += not ok_fretop
+    print(f"{'PASS' if ok_fretop else 'FAIL'} FRETOP recomputed to TXTMAX "
+          f"by the retry GC ({peek_w(m, s['FRETOP']):#06x})")
+
+    # -- 8e: genuine OOM -- even after the GC-retry, still no room. --------
+    # NON-VACUOUS proof: asserts CF clear + ARY_ERR=4 AND that ARYTAB did
+    # NOT move -- nothing was written or shifted (the collision-check-
+    # before-move ordering, §3a step 3).
+    m = make_machine()
+    m.poke_w(s["HIMEM"], ARYBASE + 4)      # tight even after the GC recompute
+    m.poke_w(s["FRETOP"], ARYBASE + 4)     # tight from the start too
+    before = peek_w(m, s["ARYTAB"])
+    addr_oom, err_oom = scalar_alloc(ord("Q"), 8)
+    ok_oom = (addr_oom == 0) and (err_oom == 4)
+    fails += not ok_oom
+    print(f"{'PASS' if ok_oom else 'FAIL'} SCALAR_ALLOC 'Q#' exhausts the "
+          f"chain -> ARY_ERR=4 (addr={addr_oom:#06x}, err={err_oom})")
+    after = peek_w(m, s["ARYTAB"])
+    ok_notouch = after == before
+    fails += not ok_notouch
+    print(f"{'PASS' if ok_notouch else 'FAIL'} OOM left ARYTAB UNTOUCHED "
+          f"(before={before:#06x}, after={after:#06x})")
+
     print()
-    print("ALL PASS -- arrays slice-1+2 split (sub/arrays.asm)" if not fails
+    print("ALL PASS -- arrays slice-1+2+4b split (sub/arrays.asm)" if not fails
           else f"{fails} CASE(S) FAILED")
     return fails
 

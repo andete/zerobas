@@ -416,6 +416,24 @@ VARTAB          equ     $E1C0   ; base of the variable table
 VARENTSZ        equ     4       ; lean build: [name0:1][name1:1][value:2] stride
 VARSLOTS        equ     32      ; lean build: max distinct variables (128 bytes -> $E240)
 VAREND          equ     VARTAB + VARSLOTS*VARENTSZ  ; $E240 in EITHER build (pinned)
+    IF ROM_BASE < $4000
+; Arrays slice-4b (docs/spec-basic-arrays-slice4b-scalar-reloc.md §2/Q3):
+; numeric scalars are RELOCATED out of the fixed VARTAB pool above into the
+; real-MSX contiguous chain (program text -> scalars -> arrays -> free ->
+; string heap), joining arrays' own [PRGEND+2, FRETOP) region. VARTAB/VAREND
+; above are therefore DEAD in the repack build from this slice on (the lean
+; build still owns them unchanged, byte-identical) -- their 128-byte span
+; $E1C0..$E240 is freed RAM. ARYTAB is the ONE new STORED live cell the
+; target model needs (§2/§4): scalar base is DERIVED as (PRGEND)+2 exactly
+; like the array base used to be; ARYTAB = end of the scalar region = base
+; of the array region (every array-anchor site that used to read
+; `(PRGEND)+2` now reads `(ARYTAB)` instead -- sub/arrays.asm ary_find/
+; ary_alloc, sub/strheap.asm strheap_aryend/sg_walk_arrays, basic/arrays.asm
+; ary_reset). Homed at the foot of the now-dead VARTAB span so no new RAM
+; claim was needed anywhere else (own choice -- just-freed RAM).
+ARYTAB          equ     $E1C0   ; live 2-byte cell: scalar-region end == array
+                                ; base (repack only; VARTAB's own dead RAM)
+    ENDIF
 
 ; --- Phase 1: minimal string-variable store (own-design; see PROVENANCE.md) --
 ; A `$`-suffixed variable (e.g. A$) holds a short string value. This is a
@@ -659,10 +677,15 @@ PRGEND          equ     $E026   ; addr of the $0000 end-of-program marker (2 byt
 ; toward the allocator ceiling (min(HIMEM,TXTMAX)). own-design descriptor
 ; (§9.2/§10.3): [name0][name1][type][ndim][stride:2][bound0:2]...[boundK:2]
 ; [element data...], packed back-to-back, TERMINATED by a 2-byte $0000
-; sentinel. ARYBASE (= PRGEND+2) is DERIVED, never stored -- there is no
-; separately-stored "ARYEND" pointer either: the sentinel IS the "end of
-; array area" marker (sub/arrays.asm ary_find/ary_alloc; ary_reset,
-; basic/arrays.asm, rewrites it whenever the program area rebases, §9.6).
+; sentinel. There is no separately-stored "ARYEND" pointer: the sentinel IS
+; the "end of array area" marker (sub/arrays.asm ary_find/ary_alloc;
+; ary_reset, basic/arrays.asm, rewrites it whenever the program area
+; rebases, §9.6). ARYBASE itself WAS derived as (PRGEND)+2 through slice-4a;
+; arrays slice-4b (docs/spec-basic-arrays-slice4b-scalar-reloc.md §2) inserts
+; a numeric-SCALAR region between the program text and the array area, so
+; ARYBASE is now the STORED live cell `ARYTAB` (above, in the freed VARTAB
+; span) instead -- the scalar region itself is still derived as (PRGEND)+2,
+; exactly the array area's old anchor.
 ;
 ; The engine (ary_find/ary_alloc/ary_resolve) is a SUB-ROM page-0 tenant
 ; (SUBROM_IDX_ARY, sub/equates.inc) -- §10's split fix for a ~284 B repack
@@ -694,7 +717,14 @@ MAXDIM          equ     4       ; slice-1 subscript-count cap (§9.1 Q-9b;
 ARY_OP          equ     $E028   ; 0=RESOLVE (read/write element, auto-dim on
                                 ; read) / 1=DIM (explicit declare) / 2=ERASE
                                 ; (free, slice-2, docs/spec-basic-arrays-
-                                ; slice2-erase.md §4.2) (1)
+                                ; slice2-erase.md §4.2) / 3=COPY_STR (slice-3/
+                                ; 4a) / 4=SCALAR_FIND / 5=SCALAR_ALLOC (arrays
+                                ; slice-4b, docs/spec-basic-arrays-slice4b-
+                                ; scalar-reloc.md §4: numeric scalar find /
+                                ; find-or-insert-and-shift, folded into this
+                                ; SAME tenant + param block per Q4 -- reuses
+                                ; ARY_KEY/ARY_TYPE in, ARY_ADDR/ARY_ERR out,
+                                ; identical shape to RESOLVE) (1)
 ARY_KEY         equ     $E029   ; name0/name1 key (BC round-trip: written via
                                 ; `ld (ARY_KEY),bc`, read via `ld bc,(ARY_KEY)`
                                 ; on both sides -- byte order unobserved) (2)
@@ -704,9 +734,17 @@ ARY_NIDX        equ     $E02C   ; parsed subscript/bound count for the CURRENT
 ARY_IDX         equ     $E02D   ; parsed subscripts (RESOLVE) or bounds (DIM),
                                 ; int16 LE x MAXDIM (8)
 ARY_ADDR        equ     $E035   ; [tenant return, RESOLVE] element address (2)
+                                ; -- also SCALAR_FIND/SCALAR_ALLOC's own
+                                ; return (§4b): the scalar entry address, or
+                                ; 0 for SCALAR_FIND's "not found" (0 is never
+                                ; a valid entry address -- program text
+                                ; starts at $8001)
 ARY_ERR         equ     $E037   ; [tenant return] 0 ok; 1 Subscript-oor;
                                 ; 2 Illegal-fn (negative); 3 Redimensioned;
-                                ; 4 Out of memory (1)
+                                ; 4 Out of memory (1) -- SCALAR_FIND always 0
+                                ; (a miss is not an error); SCALAR_ALLOC 0 ok
+                                ; / 4 Out of memory (the SAME code + mapping
+                                ; arrays' own OOM uses, §4b §7.3)
 
 ; --- Phase 1: CLEAR memory-top sysvar --------------------------------------
 ; HIMEM is the documented home of CLEAR's "highest address BASIC may use"
