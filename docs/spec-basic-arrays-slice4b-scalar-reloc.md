@@ -5,13 +5,14 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — Arrays slice 4b: numeric scalar relocation into the contiguous chain
 
-Status: **DRAFT — AWAITING SIGN-OFF (2026-07-17).** Per the
-[spec-before-implementation](../../.claude/projects/-Users-joost-projects-zerobas/memory/spec-before-implementation.md)
-rule, nothing here is a green light until signed off. This contract is the
-*implementation contract* the slice-4 space decision
+Status: **SIGNED OFF 2026-07-17 — READY FOR IMPLEMENTATION.** All five §12 sign-off
+decisions resolved (Q0 proceed / Q1 split / Q2 edit-clears-scalars / Q3 stored
+`ARYTAB` / Q4 fold into ARY tenant). This contract is the *implementation contract*
+the slice-4 space decision
 ([`decision-arrays-slice4-space.md`](decision-arrays-slice4-space.md) §7) calls
-for, restricted to the **4b** half (scalar relocation); the 4a half (string heap)
-shipped 2026-07-17.
+for, restricted to the **4b** half (numeric scalar relocation); the 4a half (string
+heap) shipped 2026-07-17, and **4c** (string-scalar unification) is the committed
+follow-on (§11).
 
 Builds on: [`spec-basic-arrays.md`](spec-basic-arrays.md) (arc + memory model A),
 [`spec-basic-arrays-slice4a-string-heap.md`](spec-basic-arrays-slice4a-string-heap.md)
@@ -211,41 +212,50 @@ the find/alloc call.
 
 Per [`decision-arrays-slice4-space.md`](decision-arrays-slice4-space.md) §3–4 and the
 playbook, 4b is a **shape-C** feature: pure-RAM pointer/memory bulk → a page-0
-sub-ROM leaf; thin `FAC`-adjacent glue stays main-side. This is exactly how arrays
+sub-ROM tenant; thin `FAC`-adjacent glue stays main-side. This is exactly how arrays
 split.
+
+**Q4 locked — fold into the existing ARY tenant** (`SUBROM_IDX_ARY`,
+[`sub/arrays.asm`](../sub/arrays.asm)) as **new `ARY_OP` op-codes**, not a new leaf.
+Rationale: scalars and arrays share one region `[PRGEND+2, FRETOP)` and the same
+`strheap_gc` collision retry; one tenant owning the whole region keeps the invariant
+in a single place, and the scalar ops' args/results fit the **existing `ARY_*` param
+block** (key + type in, addr + err out — identical to array resolve), so no new param
+block and no new `SUBROM_IDX` are needed.
 
 | Piece | Home | Notes |
 |---|---|---|
-| Scalar walk (find by key,type), insert-and-shift, `FRETOP` collision + GC-once-retry, `vars_reset` | **page-0 sub-ROM leaf** — new `SUBROM_IDX_SCALAR=6` *or* folded into the existing ARY tenant (Q4, §12) | pure-RAM pointer work; calls in-page sibling `strheap_gc` (like `ary_alloc`) |
+| Scalar walk (find by key,type), insert-and-shift, `FRETOP` collision + GC-once-retry, `vars_reset` | **ARY tenant, new `ARY_OP` ops** ([`sub/arrays.asm`](../sub/arrays.asm)) | pure-RAM pointer work; calls in-page sibling `strheap_gc` (like `ary_alloc`) |
 | `var_name_key`, `deftbl_lookup`, `var_str_type`, `ex_def_type` | **main** (unchanged) | pure key/type resolution, no pool address |
 | `var_load_fac` / `var_store_fac` value codec + coercion | **main** (unchanged bodies) | needs `FAC` + float routines (`fac_to_int_strict`, `round_single_and_pack`) — must stay main-side |
-| `var_alloc_or_find` / `var_find_typed` | **become thin main glue** → marshal `SCV_*` param block, `subrom_call`, read result addr | mirrors `ary_engine_call` ([`basic/arrays.asm:265-274`](../basic/arrays.asm)) |
+| `var_alloc_or_find` / `var_find_typed` | **become thin main glue** → set `ARY_OP` = scalar-find/alloc, `ary_engine_call`, read `ARY_ADDR` | reuses `ary_engine_call` + `ary_errmap` ([`basic/arrays.asm:265-301`](../basic/arrays.asm)) verbatim |
 | `ARYTAB` derivation at the 4 array-anchor sites | **in place** (`(PRGEND)+2` → `(ARYTAB)`) | 2 tenant sites + `strheap_aryend` + `ary_reset` |
 
 **ABI** (reuse wholesale, [`basic/subromcall.asm:50-66`](../basic/subromcall.asm),
-[`sub/equates.inc:33-61`](../sub/equates.inc)): `IX = SUBROM_ENTRY_BASE_P0 +
-3*SUBROM_IDX_SCALAR`; a new `SCV_*` param block (op / key / type / return-addr /
-err) aliased onto provably-dead scratch like `ARY_*`; `A`=result, `CF`=absent, DI.
-`SUBROM_IDX_SCALAR = 6` is the next append-only enum slot (never renumber).
+[`basic/arrays.asm:265-301`](../basic/arrays.asm)): `IX = SUBROM_ENTRY_BASE_P0 +
+3*SUBROM_IDX_ARY`; the **existing `ARY_*` param block** ([`sysvars.inc:694-709`](../basic/sysvars.inc))
+carries op / `ARY_KEY` / `ARY_TYPE` in and `ARY_ADDR` / `ARY_ERR` out; new op-codes
+appended to the `ARY_OP` dispatch (append-only, after the current resolve/alloc/erase/
+copy-str set). `A`=result, `CF`=absent, DI. New tenant-err codes extend `ary_errmap`
+(e.g. scalar OOM → `FPERR` `Out of memory`, matching the array disposition).
 
-**Tenant closure:** the leaf touches only its param block, read-only sysvars
+**Tenant closure:** the added ops touch only the `ARY_*` block, read-only sysvars
 (`PRGEND`, `ARYTAB`, `FRETOP`, `HIMEM`), the scalar/array RAM regions, and the
-in-page `strheap_gc`/`ary_stride` siblings — so it passes `check_tenant_closure.py`
-by construction (no main-page call).
+in-page `strheap_gc`/`ary_stride` siblings — so the tenant still passes
+`check_tenant_closure.py` by construction (no main-page call).
 
 ---
 
 ## 5. What changes, by file
 
 - [`basic/vars.asm`](../basic/vars.asm) — `var_find_typed` (298-348) + `var_alloc_or_find`
-  (359-411) lose their fixed-`VAREND` walk/room-check and become thin glue over the
-  new leaf; `clear_vars` (754-798) swaps the 128-byte wipe for `vars_reset`
-  (`ARYTAB=PRGEND+2`). `var_load_fac`/`var_store_fac`/`var_name_key`/`deftbl_lookup`
-  unchanged.
-- **new** `sub/scalar.asm` — the page-0 leaf (walk / insert-shift / collision-retry /
-  reset). ~130–180 B est.
-- [`sub/arrays.asm`](../sub/arrays.asm) — `ary_alloc` (524), `ary_find` (455): base
-  `(PRGEND)+2` → `(ARYTAB)`.
+  (359-411) lose their fixed-`VAREND` walk/room-check and become thin glue that sets
+  `ARY_OP` = scalar-find/alloc and calls `ary_engine_call`; `clear_vars` (754-798)
+  swaps the 128-byte wipe for `vars_reset` (`ARYTAB=PRGEND+2`).
+  `var_load_fac`/`var_store_fac`/`var_name_key`/`deftbl_lookup` unchanged.
+- [`sub/arrays.asm`](../sub/arrays.asm) — **gains the scalar ops** (walk / insert-shift /
+  collision-retry / reset, ~130–180 B est., new `ARY_OP` dispatch entries); and
+  `ary_alloc` (524), `ary_find` (455) re-anchor base `(PRGEND)+2` → `(ARYTAB)`.
 - [`sub/strheap.asm`](../sub/strheap.asm) — `strheap_aryend` (331-341): base
   `(PRGEND)+2` → `(ARYTAB)`.
 - [`basic/arrays.asm`](../basic/arrays.asm) — `ary_reset` (111-119) re-anchors on
@@ -254,10 +264,10 @@ by construction (no main-page call).
   (173) / `run_prog` (190) reset **scalars too**; [`basic/clear.asm`](../basic/clear.asm)
   `ex_clear` (74) likewise; make `HIMEM` a live ceiling input (it already is, for the
   heap — the scalar path just reuses `strheap_ceiling`/the `FRETOP` collision).
-- [`basic/sysvars.inc`](../basic/sysvars.inc) — new `ARYTAB` live cell + `SCV_*`
-  param block; retire/repurpose the `VARTAB`/`VAREND`/`VARSLOTS` fixed-pool equates
-  (repack path); the 128 B `$E1C0..$E240` window is **freed** (RAM win).
-- [`sub/equates.inc`](../sub/equates.inc) — `SUBROM_IDX_SCALAR = 6`.
+- [`basic/sysvars.inc`](../basic/sysvars.inc) — new `ARYTAB` live cell (Q3); retire/
+  repurpose the `VARTAB`/`VAREND`/`VARSLOTS` fixed-pool equates (repack path); the
+  128 B `$E1C0..$E240` window is **freed** (RAM win). `ARY_*` param block reused as-is
+  (no new fields).
 
 ---
 
@@ -352,7 +362,7 @@ collision-before-move ordering (never move on OOM), `ARYTAB` consistency across 
 4 anchor sites + the heap's `strheap_aryend`, the edit/relink reset of *both*
 regions, register/`IX` clobber across the new `subrom_call`, and zero-fill width.
 
-**Standing gates:** `check_tenant_closure` (new leaf), `subrom-abi-check`,
+**Standing gates:** `check_tenant_closure` (ARY tenant + its new ops), `subrom-abi-check`,
 `__MEAS_LOW_END`/`__MEAS_PAGE1_END` re-measure (prove ≥0 main delta), lean
 byte-identity SHA, full `make array-acceptance` (119) + `make string-acceptance` (6),
 and the disk-interleaved heavy-churn case (a scalar-shift GC must not corrupt disk
@@ -379,31 +389,27 @@ Page), the code is ours. Note in `basic/PROVENANCE.md` §variable area.
 charter, its own signed-off contract) = string-scalar unification into the same
 variable area (§6) — split out because it re-touches the heap GC root set. After 4b,
 the *numeric* memory model is fully real and `STRTAB` remains a **temporary** fixed
-pool; 4c retires it, reaching the faithful unified endpoint. (If Q1 chooses B, 4b and
-4c collapse into one slice.)
+pool; 4c retires it, reaching the faithful unified endpoint.
 
 ---
 
-## 12. Open questions for sign-off
+## 12. Sign-off decisions (all resolved 2026-07-17)
 
-- **Q0 — RESOLVED by the faithful-full-BASIC charter (§0).** Scalar relocation is in
-  scope; "close the arc after 4a" is off the table. No longer a sign-off question.
-- **Q1 — staging: split (A) 4b-numeric → 4c-strings, vs. combined (B) one slice to the
-  unified variable area?** The endpoint (unified, faithful) is fixed either way.
-  Recommend **A-split with 4c committed** (§6): isolate the GC-root-touching change
-  from the insert-shift change; same destination, lower per-slice risk.
-- **Q2 — edit-clears-scalars = YES (confirm).** MSX-faithful *and* correctness-required
-  (a scalar's base moves with `PRGEND` on edit); under the faithful charter this is
-  simply the authentic behaviour (§3b, §7.1). Flagged only because it changes current
-  zerobas behaviour (scalars used to survive an edit).
-- **Q3 — `ARYTAB` as a real stored pointer** vs. keeping the "derive by walk"
-  minimalism arrays use today. Recommend a **stored `ARYTAB` cell** (the scalar region
-  has no self-describing terminator the way the array `$0000` sentinel does; a stored
-  end pointer is cleaner and the 2 B is trivial against the 128 B freed).
-- **Q4 — tenant boundary.** Confirm the shape-C split (§4): find/insert-shift/collision
-  in a new `SUBROM_IDX_SCALAR=6` page-0 leaf; codec + coercion stay main-side. Or fold
-  into the existing `SUBROM_IDX_ARY` tenant (shared region, shared collision code) as
-  a new op rather than a new leaf — arguably tighter, since scalars and arrays share
-  the same span and the same `strheap_gc` retry. **Recommend folding into the ARY
-  tenant as new ops** (one leaf owns the whole `[PRGEND+2, FRETOP)` region), unless you
-  prefer a separate leaf for clarity.
+- **Q0 — proceed:** ✅ **YES.** Resolved by the faithful-full-BASIC charter (§0);
+  "close the arc after 4a" is off the table.
+- **Q1 — staging:** ✅ **SPLIT (A).** 4b = numeric now; **4c committed** =
+  string-scalar unification (its own contract). Isolates the GC-root-touching change
+  from the insert-shift change (§6).
+- **Q2 — edit-clears-scalars:** ✅ **YES.** Authentic MSX behaviour + correctness-
+  required (§3b, §7.1); documented behaviour change from current zerobas.
+- **Q3 — `ARYTAB` pointer:** ✅ **STORED live cell.** The scalar region has no
+  self-describing terminator; a stored end pointer is cleaner, 2 B trivial against the
+  128 B freed.
+- **Q4 — tenant boundary:** ✅ **FOLD into the ARY tenant** (`SUBROM_IDX_ARY`) as new
+  `ARY_OP` ops reusing the `ARY_*` param block — no new leaf, no new `SUBROM_IDX`
+  (§4). One tenant owns the whole `[PRGEND+2, FRETOP)` region and the shared
+  `strheap_gc` retry.
+
+**→ CONTRACT SIGNED OFF. Ready for implementation** ([[opus-vs-sonnet-model-split]]:
+Sonnet implements + Fable adversarial review; the arc's Definition of Done includes
+the openMSX acceptance suites actually *run*, [[gate-during-implementation]]).
