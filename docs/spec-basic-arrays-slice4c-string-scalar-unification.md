@@ -5,7 +5,13 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — Arrays slice 4c: string-scalar unification into the variable area
 
-Status: **DRAFT — AWAITING SIGN-OFF (2026-07-17).** This is the *implementation
+Status: **SIGNED OFF 2026-07-17 — READY TO IMPLEMENT.** All four §12 decisions
+resolved: **Q1** = temp-descriptor-stack snapshot of the source before the target
+alloc (H1 fix); **Q2** = reuse `elsize_from_type` (type 1 → 3) for the scalar stride;
+**Q3** = Sonnet implements against this contract, then mandatory Fable adversarial +
+empirical-injection review with the openMSX acceptance suites in the Definition of Done
+([[gate-during-implementation]]); **Q4** = fix the H3 `FRETOP`-reset-on-edit body
+reclamation in this slice (intrinsic to chain-resident string scalars). This is the *implementation
 contract* for the final slice of the arrays/DIM arc: dissolve the fixed `STRTAB`
 string-scalar pool (`$E240..$E268`) and relocate string scalars into the same
 real-MSX contiguous variable chain that numeric scalars (4b) and arrays (1–3) already
