@@ -593,20 +593,32 @@ ev_f_var:
                 ret
     ENDIF
     IF ROM_BASE < $4000
+ev_f_ifc:                                   ; deferred FPERR=3 "illegal function call" for a
+                                            ; function-domain VALUE error whose operand parsed
+                                            ; cleanly but is out of range (INSTR p<1, ASC(""))
+                                            ; -- was a bare ev_f_err (ERRMARK only, no FPERR)
+                                            ; -> silent " 0". Same first-error-wins + DE=0
+                                            ; contract as ev_f_empty; mirrors SQR(x<0)/LOG
+                                            ; (FPERR=3, house-lowercase). E is a dead code
+                                            ; carrier -- ev_f_err zeroes DE below.
+                ld      e,3
+                jr      ev_f_defer
 ev_f_empty:                                 ; D-F2-3: the empty parenthesised/argument
-                                            ; expression -> deferred FPERR "syntax error",
+                                            ; expression -> deferred FPERR=4 "syntax error",
                                             ; checked at the statement boundary (the D-F2-1
                                             ; pattern: no mid-expression unwind). The value
                                             ; (DE=0) survives every downstream success op
                                             ; unchanged, but the flag makes the driver abort.
+                ld      e,4
+ev_f_defer:                                 ; shared tail: E = FPERR code to defer.
                 ld      a,(FPERR)           ; D-F2-4 first-error-wins: if the argument
                 or      a                   ; expression ALREADY raised a hard error
                 jr      nz,ev_f_err         ; (div0/overflow/illegal), keep THAT -- the
                                             ; reference reports the first error, not the
-                                            ; later missing-')' (e.g. SIN(1/0,2) -> Division
-                                            ; by zero, NOT syntax error). Only a still-clean
-                                            ; FPERR becomes "syntax error".
-                ld      a,4
+                                            ; later reject (e.g. SIN(1/0,2) -> Division by
+                                            ; zero, NOT syntax error). Only a still-clean
+                                            ; FPERR takes E's deferred code.
+                ld      a,e
                 ld      (FPERR),a
                 ; fall into ev_f_err for the $DD landmark.
     ENDIF

@@ -318,6 +318,17 @@ ABC_REGRESSION = [
     # error. ref (VG-8020) = "Syntax error"; zb house-lowercase.
     ("bugC.cvi.noparen",      ['PRINT CVI'],             "syntax error"),
     ("bugC.cvi.ok",           ['B$="XY":PRINT CVI(B$)'], "22872"),
+    # KNOWN RESIDUAL 2 follow-up (2026-07-17): two PRE-EXISTING function-domain
+    # value errors used a bare ev_f_err (ERRMARK only, no FPERR) -> silent " 0".
+    # Now deferred FPERR=3 -> "illegal function call" (house-lowercase, like
+    # SQR(x<0)); ref (VG-8020) = capitalised "Illegal function call".
+    ("ifc.instr.zero",        ['PRINT INSTR(0,"AB","A")'],   "illegal function call"),
+    ("ifc.instr.neg",         ['PRINT INSTR(-1,"AB","A")'],  "illegal function call"),
+    ("ifc.asc.empty",         ['PRINT ASC("")'],             "illegal function call"),
+    # regression guards: valid INSTR/ASC unchanged (no over-eager IFC).
+    ("ifc.instr.ok",          ['PRINT INSTR(1,"AB","A")'],   "1"),
+    ("ifc.instr.ok2",         ['PRINT INSTR(2,"ABAB","AB")'], "3"),
+    ("ifc.asc.ok",            ['PRINT ASC("A")'],            "65"),
 ]
 
 # zbval: NON-DIFFERENTIAL, house-expected printed VALUE (keyed by label). Used

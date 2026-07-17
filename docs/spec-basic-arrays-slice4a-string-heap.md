@@ -366,12 +366,19 @@ input **hang battery confirms NO remaining hangs / no corruption** — the sever
 sets `ERRMARK` only, no `FPERR`, since before slice-4a) and both a silent ` 0` where the
 reference raises **`Illegal function call`**: (1) `INSTR(0,…)` / negative-p (str-engine.asm
 `efi_p_nonneg`/`efi_p_ok`, the `p<1` exits ~:1256/:1263); (2) `ASC("")` (str-engine.asm
-~:517, `jp z,ev_f_err`). Both need an IFC-code (`FPERR`) deferral, not the `=4` syntax one
-the sweep uses. (`LEN(5)` etc. now defer cleanly to `syntax error` — reference says
-`Type mismatch`, a message-only diff, no silent value.) Gate targets recorded
-(`INSTR(0,"AB","A")`→IFC, `ASC("")`→IFC). Fix = mirror `ev_f_empty` with the IFC `FPERR`
-code at those two exits; small follow-up, out of the slice-4a string-heap scope (no hang,
-no corruption — value-error message fidelity only).
+~:517, `jp z,ev_f_err`).
+
+**FIXED 2026-07-17 (follow-up session).** Added `ev_f_ifc` (expr.asm, repack-gated) — a
+deferred **`FPERR=3`** ("illegal function call") sibling of `ev_f_empty`, sharing its
+first-error-wins tail via a dead code-carrier register (E, which `ev_f_err` zeroes), so
+**+5 bytes page-1 only, low region untouched**. Routed the three exits above through it.
+`FPERR=3` (house-lowercase, `fre_msgtab` entry 3) chosen over the arrays' capitalised
+`FPERR=8` because these are function-domain value errors exactly like `SQR(x<0)`/`LOG` —
+so `INSTR(0,…)`/`ASC("")` → `illegal function call`, matching the reference disposition
+with the standing house-lowercase convention. Gate cases `ifc.instr.zero/neg`, `ifc.asc.empty`
++ regression guards `ifc.instr.ok/ok2`, `ifc.asc.ok` (array-acceptance **112/112**, string 6/6,
+lean SHA held, closure clean, 9 B low / 9 B page-1 free). `LEN(5)` remains a message-only
+diff (zb `syntax error` vs ref `Type mismatch`) — left as-is per scope.
 
 ## 12. RAM budget
 

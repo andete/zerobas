@@ -514,7 +514,8 @@ ev_ff_asc:
                 ld      hl,(STRPTR)
                 ld      a,(hl)              ; length
                 or      a
-                jp      z,ev_f_err          ; ASC("") -> Illegal function call
+                jp      z,ev_f_ifc          ; ASC("") -> illegal function call (deferred
+                                            ; FPERR=3; was a bare ev_f_err -> silent " 0")
                 inc     hl
                 ld      e,(hl)
                 inc     hl
@@ -1253,14 +1254,16 @@ efi_dup_a:
                 jr      z,efi_p_nonneg
                 push    hl
                 pop     ix                  ; restore IX = real cursor before erroring
-                jp      ev_f_err            ; p negative -> error (D-5/§2 p<1)
+                jp      ev_f_ifc            ; p negative -> illegal function call (D-5/§2
+                                            ; p<1; deferred FPERR=3, was silent ev_f_err)
 efi_p_nonneg:
                 ld      a,b
                 or      c
                 jr      nz,efi_p_ok
                 push    hl
                 pop     ix                  ; restore IX = real cursor before erroring
-                jp      ev_f_err            ; p == 0 -> error (p<1)
+                jp      ev_f_ifc            ; p == 0 -> illegal function call (p<1;
+                                            ; deferred FPERR=3, was silent ev_f_err)
 efi_p_ok:
                 ; Thin main-ROM glue for the string-heap tenant's
                 ; INSTR_SEARCH op (mirrors str_heap_alloc) — the search body
