@@ -327,6 +327,19 @@ error raises are page-1/low-region main-side. Errors surface via the existing
 `stmt_error`/FPERR path; the same "stored-RUN doesn't abort on runtime error" landmine
 applies → **gate error cases in DIRECT mode** (the standing arrays-arc rule).
 
+**KNOWN RESIDUAL (Fable 2026-07-17, deferred — same family as the empty-expr /
+`check_expr_errors` landmine):** `str_concat_tail`'s mid-chain OOM/overflow exit
+(`sct_append_err`, str-engine.asm) sets `FPERR` (`Out of memory` / `String formula
+too complex`) and returns CF set with the result = the partial accumulator, but it
+leaves the *remaining* `+ operand …` terms UNCONSUMED in the token stream. A driver
+that checks `FPERR` right after `str_eval` (PRINT / LET / IF) raises the correct OOM
+message and never sees the leftover. A driver that does NOT check `FPERR` would hit
+the stray `+` and raise a spurious `syntax error` instead. Not fixed here: consuming
+the tail correctly means skipping tokens to the statement boundary (fragile, and the
+low region + page 1 are byte-full). All current string-value drivers do check `FPERR`,
+so it is latent. Fix when a non-checking string driver is added, or when a token-skip
+helper already exists to reuse.
+
 ## 12. RAM budget
 
 Net RAM effect is **positive** (the point of "no extra RAM cost"):

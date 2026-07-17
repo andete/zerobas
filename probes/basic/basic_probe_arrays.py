@@ -217,24 +217,47 @@ CASES = [
 # ~15 KB heap). (label, lines, expected_span).
 GC_STRESS = [
     # (a)+(c-high) gc_slow path: >256 LIVE roots force the O(n^2) fallback and
-    # exercise the switch on the OVER-256 side. EXHAUSTIVE integrity -- the sum
-    # of ALL 270 element lengths (270*35=9450) + both boundary chars catch any
-    # element whose ptr GC failed to fix up. STRING$(35) keeps 270 live bodies
+    # exercise the switch on the OVER-256 side. STRING$(35) keeps 270 live bodies
     # (9450 B) well under the ~15 KB heap so the refill fires gc_slow a bounded
     # 1-2 times (STRING$(50)=13500 B near-fills the heap -> GC thrashes on nearly
     # every reassign, 270 * O(n^2), which blows the capture window).
+    # STRENGTHENED (Fable 2026-07-17 gate-gap): the old assert summed only LEN(),
+    # which lives in the DESCRIPTOR and is UNTOUCHED by a body-move bug -> it
+    # passed even with every body corrupted. Now do a per-element CONTENT compare
+    # (F = count of elements whose bytes != STRING$(35,66)); F=0 witnesses the
+    # actual heap bodies survived GC. Kept the sum + both boundary chars too.
+    # A pre-built reference R$ (one heap body) drives the CONTENT compare instead
+    # of allocating a STRING$ temp per element -- else 270 allocs in a near-full
+    # heap balloon the run past the capture window.
     ("gc.n270.slow",
      ['DIM S$(270):FORI=1TO270:S$(I)=STRING$(35,65):NEXT',
       'FORI=1TO270:S$(I)=STRING$(35,66):NEXT',
-      'T=0:FORI=1TO270:T=T+LEN(S$(I)):NEXT:PRINT"[";T;LEFT$(S$(1),1);LEFT$(S$(270),1);"]"'],
-     " 9450 BB"),
+      'R$=STRING$(35,66):F=0:T=0:FORI=1TO270:T=T+LEN(S$(I)):IFS$(I)<>R$THENF=F+1',
+      'NEXT:PRINT"[";F;T;LEFT$(S$(1),1);LEFT$(S$(270),1);"]"'],
+     " 0  9450 BB"),
     # (b)+(c-low) DETOKBUF fast path, ~200 roots (under the 256 cap) -> the
-    # switch's UNDER-256 side + the DETOKBUF sort. Exhaustive sum.
+    # switch's UNDER-256 side + the DETOKBUF sort. Per-element CONTENT check.
     ("gc.n200.detok",
      ['DIM S$(200):FORI=1TO200:S$(I)=STRING$(60,65):NEXT',
       'FORI=1TO200:S$(I)=STRING$(60,66):NEXT',
-      'T=0:FORI=1TO200:T=T+LEN(S$(I)):NEXT:PRINT"[";T;LEFT$(S$(100),1);"]"'],
-     " 12000 B"),
+      'R$=STRING$(60,66):F=0:T=0:FORI=1TO200:T=T+LEN(S$(I)):IFS$(I)<>R$THENF=F+1',
+      'NEXT:PRINT"[";F;T;LEFT$(S$(100),1);"]"'],
+     " 0  12000 B"),
+    # (c-boundary) pin the EXACT 256/257 path switch. n=256 (last DETOKBUF slot,
+    # 2N=512 B fills the buffer exactly) and n=257 (first gc_slow) must BOTH keep
+    # every body intact through a forced GC. One case per side; content-checked.
+    ("gc.n256.edge",
+     ['DIM S$(256):FORI=1TO256:S$(I)=STRING$(40,65):NEXT',
+      'FORI=1TO256:S$(I)=STRING$(40,66):NEXT',
+      'R$=STRING$(40,66):F=0:FORI=1TO256:IFS$(I)<>R$THENF=F+1',
+      'NEXT:PRINT"[";F;LEN(S$(256));LEFT$(S$(256),1);"]"'],
+     " 0  40 B"),
+    ("gc.n257.edge",
+     ['DIM S$(257):FORI=1TO257:S$(I)=STRING$(40,65):NEXT',
+      'FORI=1TO257:S$(I)=STRING$(40,66):NEXT',
+      'R$=STRING$(40,66):F=0:FORI=1TO257:IFS$(I)<>R$THENF=F+1',
+      'NEXT:PRINT"[";F;LEN(S$(257));LEFT$(S$(257),1);"]"'],
+     " 0  40 B"),
     # (e) DISK-INTERLEAVED GC -- the exact $F240 bug class. Stamp sentinels into
     # the disk resident work-area cells the old high-RAM stack buffer would
     # trample (W50A9_WRKB $F242 / CURDRV $F247 / RES_STUBS $F24E / DRVTBL $F348),
@@ -248,6 +271,48 @@ GC_STRESS = [
       'FORI=1TO100:S$(I)=STRING$(100,66):NEXT',
       'PRINT"[";PEEK(&HF242);PEEK(&HF247);PEEK(&HF24E);PEEK(&HF348);"]"'],
      " 111  122  133  144 "),
+    # BUG B (Fable 2026-07-17) -- a FRESH STRTAB slot's stale [len][ptr] read as a
+    # phantom GC root. Seed slot 0 (STRTAB=$E240; len@$E242, ptr@$E243/4) with a
+    # bogus in-heap descriptor [len=200][ptr=$BD80]. String array elements are heap
+    # [len][ptr] descriptors, so DIM S$(64) x STRING$(250) over-fills the ~15 KB
+    # heap: the FIRST scalar store (P$ -> slot 0) is HEAP-FULL and OOMs. On the
+    # FIXED code ssk_new neutralized slot 0's len, so the OOM'd P$ reads "" ->
+    # LEN=0. NON-VACUOUS: on the pre-fix code the stale [200][$BD80] survived and
+    # P$ read LEN=200 (verified: reverted ' 200 ' x3 stable vs fixed ' 0 '). LEN(P$)
+    # is the deterministic witness; the array-integrity sum can't be pinned here
+    # (the fill sits at the OOM boundary), so this asserts LEN(P$) alone.
+    ("gc.bugB.phantom",
+     ['POKE&HE242,200:POKE&HE243,&H80:POKE&HE244,&HBD',
+      'DIMS$(64):FORI=1TO64:S$(I)=STRING$(250,65):NEXT',
+      'P$=STRING$(250,67)',
+      'PRINT"[";LEN(P$);"]"'],
+     " 0 "),
+]
+
+# BUG A + BUG C regression cases (Fable 2026-07-17), DIRECT mode (fast; the
+# error-disposition ones must run in DIRECT so the abort is observable -- the
+# stored-RUN "doesn't halt on runtime error" landmine). zb house behaviour
+# (lowercase message / in-place MID$ overwrite), asserted against the literal.
+# (label, lines, expected_span).
+ABC_REGRESSION = [
+    # BUG A: MID$(A$,n)=RHS whose RHS pushes >=3 temps. CHR$(66)+CHR$(67) is the
+    # coordinator's exact repro; the old MIDS_DEST=$E3D9 aliased the 3rd temp
+    # slot's ptr field -> sh_mid_store LDIR'd through garbage (no-op / corruption).
+    # Now MIDS_DEST=TMISMATCH+1 ($E3E6), clear of the pool: A$ -> "BCLLO".
+    ("bugA.mid3temp",
+     ['A$="HELLO":MID$(A$,1)=CHR$(66)+CHR$(67)', 'PRINT A$'], "BCLLO"),
+    # BUG C: a '+' commits to string concat but the trailing operand is numeric.
+    # Old code silently re-drove numerically (" 0"); now a deferred Type mismatch.
+    ("bugC.concat.typemis",
+     ['A$="HELLO"', 'PRINT A$+5'], "type mismatch"),
+    # BUG C: LEFT$/MID$/RIGHT$ with a missing 2nd arg. The old IX-clobber-on-NC
+    # re-drove into ev_f with garbage IX and SPUN the print loop emitting " 0";
+    # now ev_rel restores IX + ev_ff_strnum defers FPERR=4 -> clean syntax error.
+    ("bugC.leftmiss.syntax",  ['PRINT LEFT$("AB")'],  "syntax error"),
+    ("bugC.midmiss.syntax",   ['PRINT MID$("AB")'],   "syntax error"),
+    # regression guard: the VALID forms still work (no over-eager error).
+    ("bugC.left.ok",          ['PRINT LEFT$("ABCDE",3)'], "ABC"),
+    ("bugC.strcmp.ok",        ['A$="XY":PRINT A$="XY"'],  "-1"),
 ]
 
 # zbval: NON-DIFFERENTIAL, house-expected printed VALUE (keyed by label). Used
@@ -372,13 +437,34 @@ def gc_stress_check():
     npass = 0
     for label, lines, want in GC_STRESS:
         zr = R.run_cases(ZB, [("stored", lines)], batch=True, reset=("NEW", "CLS"),
-                         step=90.0, boot=8.0, omsx=OMSX)[0]
+                         step=150.0, boot=8.0, omsx=OMSX)[0]
         got = R.result_span(zr)
         ok = got == want
         npass += ok
         print(f"  {'PASS' if ok else 'FAIL':4}  {label:<22} "
               f"{'' if ok else f'want={want!r} zb={got!r}'}")
     return npass, len(GC_STRESS)
+
+
+def abc_regression_check():
+    """BUG A/B/C regressions (Fable 2026-07-17), zb-only house behaviour: DIRECT
+    mode so the deferred type-mismatch / syntax-error aborts are observable (the
+    stored-RUN 'no runtime-error halt' landmine). Asserted against the literal
+    span after the echoed command. Returns (npass, ntotal)."""
+    specs = [("direct", lines) for _, lines, _ in ABC_REGRESSION]
+    out = R.run_cases(ZB, specs, batch=True, reset=("NEW", "CLS"),
+                      step=6.0, boot=8.0, omsx=OMSX)
+    npass = 0
+    for (label, lines, want), zr in zip(ABC_REGRESSION, out):
+        cmd = lines[-1]
+        # screen_tail (not result_span): the error-message cases print no '['..']'
+        # bracket, so grab the raw text between the echo and the prompt.
+        got = R.screen_tail(zr, cmd)
+        ok = got == want
+        npass += ok
+        print(f"  {'PASS' if ok else 'FAIL':4}  {label:<22} "
+              f"{'' if ok else f'want={want!r} zb={got!r}'}")
+    return npass, len(ABC_REGRESSION)
 
 
 def main():
@@ -398,10 +484,13 @@ def main():
         print(f"  {tag}  {label:<22} {detail}")
     cpass, ctotal = crunch_check()
     npass += cpass
+    print("--- BUG A/B/C regressions (Fable 2026-07-17; zb house behaviour) ---")
+    apass, atotal = abc_regression_check()
+    npass += apass
     print("--- S6 GC-stress (zb-only; DETOKBUF sort / gc_slow / disk-cell intact) ---")
     gpass, gtotal = gc_stress_check()
     npass += gpass
-    total = len(CASES) + ctotal + gtotal
+    total = len(CASES) + ctotal + atotal + gtotal
     print(f"=== arrays: {npass}/{total} {'ALL PASS' if npass == total else 'SOME FAILED'} ===")
     return 0 if npass == total else 1
 

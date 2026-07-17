@@ -683,6 +683,22 @@ ssk_new:
                 ld      (hl),b              ; write the name into the free slot
                 inc     hl
                 ld      (hl),c
+    IF ROM_BASE < $4000
+                ; BUG B (Fable, 2026-07-17): a FRESH slot's [len][ptr] is STALE
+                ; -- clear_vars zeroes only name0. sh_var_store's heap_alloc can
+                ; GC BEFORE the real value lands, and sg_walk_strtab would then
+                ; read this slot (name0!=0) as a live root off its stale
+                ; [len>0][ptr] -> a phantom root: returns garbage AND corrupts
+                ; the compaction floor. Zero the len byte NOW (an empty string is
+                ; never a root; sg_inrange bails on len==0) so the slot is inert
+                ; until VAR_STORE overwrites it. On a later OOM the var reads "".
+                ; Mirrors the S2 temp-slot pattern; ptr is a don't-care while
+                ; len==0. Repack-only: lean slots are inline values with no heap
+                ; GC, so this keeps the lean build byte-identical.
+                inc     hl                  ; -> len field (name0+2)
+                ld      (hl),0
+                dec     hl
+    ENDIF
                 dec     hl
 ssk_store:
     IF ROM_BASE < $4000

@@ -393,7 +393,9 @@ shc_have:
 ; (+10 doubles as the FILL cursor during enumeration and gap*2 during sort;
 ;  +12/+14 double as the array-walk's ARR_CUR/ARR_END during enumeration and
 ;  the sort's outer/inner pointers afterward — never overlapping in time.)
-; Clobbers A,B,C,D,E,H,L,IX,IY.
+; Clobbers A,B,C,D,E,H,L,IX. PRESERVES IY (the body never touches it) -- load-
+; bearing: heap_alloc holds its retry flag in (iy+3) ACROSS its `call strheap_gc`
+; (heap_alloc ~:307), and ary_alloc likewise relies on IY surviving the GC.
 strheap_gc:
                 ld      hl,-22
                 add     hl,sp

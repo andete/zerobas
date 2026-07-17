@@ -370,12 +370,20 @@ NUMBUF          equ     $E0C0   ; PRINT: decimal-format scratch (8 bytes, 0-term
 ; MID$-statement: the destination var's descriptor address, stashed for one
 ; MID$(A$,n,m)=B$ so the token cursor can stay in HL through the arg parse.
     IF ROM_BASE < $4000
-; Repack (arrays slice-4a, S8 fix): a DEDICATED cell in the freed STRTAB
-; window (above TMISMATCH $E3D8, below the $E560 WBUF wall) — it can NO LONGER
-; alias NUMBUF, because slice-4a moved HEX$/OCT$'s digit-building into NUMBUF
-; (sub-side sh_hex_build/sh_oct_build), so `MID$(A$,1)=HEX$(N)` would clobber
-; the stashed dest across the RHS str_eval. 2 B.
-MIDS_DEST       equ     $E3D9
+; Repack (arrays slice-4a): a DEDICATED cell in the freed STRTAB window
+; (ABOVE the last-used byte TMISMATCH $E3E5, below the $E560 WBUF wall) — it
+; can NO LONGER alias NUMBUF, because slice-4a moved HEX$/OCT$'s digit-building
+; into NUMBUF (sub-side sh_hex_build/sh_oct_build), so `MID$(A$,1)=HEX$(N)`
+; would clobber the stashed dest across the RHS str_eval. 2 B.
+; BUG A (Fable, 2026-07-17): the S8 fix hardcoded $E3D9 from a STALE layout
+; comment (SH_* as 5 B / TEMPTOP $E372). The SH_* param block is actually 18 B
+; (twelve extra cells added since), so the temp-descriptor pool assembles to
+; TEMPPOOL $E381..TEMPBASE $E3E1 and $E3D9 lands INSIDE the 3rd temp slot's ptr
+; field ($E3D8-$E3DA). Any MID$(A$,..)=RHS whose RHS pushed >=3 temps overwrote
+; the stashed dest -> sh_mid_store LDIR'd through a garbage pointer (silent
+; corruption). Now anchored SYMBOLICALLY to TMISMATCH+1 so it tracks the real
+; top of the block; $E3E6, 378 B under the wall.
+MIDS_DEST       equ     TMISMATCH + 1
     ELSE
 ; Lean: still borrows NUMBUF (the MID$ statement is repack-only, so this alias
 ; is unused in the lean build and keeps it byte-identical).
@@ -501,12 +509,20 @@ CAS_IN_MODE     equ     8       ; FCH_MODES value: OPEN"CAS:" FOR INPUT (INPUT# 
 ;                                                 for a value of unknown-until-
 ;                                                 read length (read_into_strscr/
 ;                                                 INPUT$)
-;   SH_*      $E36D .. $E372      5 B            string-heap tenant param block
-;   TEMPTOP   $E372 .. $E374      2 B            temp-descriptor stack cursor
-;   (pool)    $E374 .. $E3D4     96 B            TEMPD=32 * 3 B temp-stack slots
-;   ISRCH_*   $E3D4 .. $E3D8      4 B            INSTR resolved-body-base scratch
-;   TMISMATCH $E3D8 .. $E3D9      1 B            string-compare D-2 flag (S2)
-;   -> top $E3D9, well below the disk WBUF wall at $E560 (391 B spare).
+;   SH_*      $E36D .. $E37F     18 B            string-heap tenant param block
+;                                                 (SH_OP..SH_ERR; grew from the
+;                                                 original 5 B as slice-4a added
+;                                                 SLICE/HEX/FILL/MID/INSTR cells)
+;   TEMPTOP   $E37F .. $E381      2 B            temp-descriptor stack cursor
+;   (pool)    $E381 .. $E3E1     96 B            TEMPD=32 * 3 B temp-stack slots
+;   ISRCH_*   $E3E1 .. $E3E5      4 B            INSTR resolved-body-base scratch
+;   TMISMATCH $E3E5 .. $E3E6      1 B            string-compare D-2 flag (S2)
+;   MIDS_DEST $E3E6 .. $E3E8      2 B            MID$-statement stashed dest desc
+;   -> top $E3E8, well below the disk WBUF wall at $E560 (376 B spare).
+; NOTE: these addresses are the ACTUAL assembled values (verify in build/
+; basic-reloc.sym). An earlier copy of this table still said SH_*=5 B /
+; TEMPTOP=$E372 and caused BUG A (MIDS_DEST hardcoded at $E3D9, inside the
+; temp pool). Keep it in sync with the EQU chain below.
 FRETOP          equ     STREND              ; $E268: heap low boundary; heap occupies
                                             ; [FRETOP,C), grows DOWN as strings alloc.
                                             ; Reset to the ceiling C at cold start/
@@ -582,23 +598,23 @@ SH_ERR          equ     SH_P + 2            ; result: 0 ok, 1 Out of memory, 2 =
 ; window (spec §17 Q-1: "implementation maximizes within the freed window,
 ; >= 8") — 32 is 4x the reference's ~8 and costs only 96 B, leaving ~290 B of
 ; further headroom in the historical 800 B window for future growth.
-TEMPTOP         equ     SH_ERR + 1          ; $E372: current cursor (2 B)
+TEMPTOP         equ     SH_ERR + 1          ; $E37F: current cursor (2 B)
 TEMPD           equ     32                  ; temp-descriptor stack depth
-TEMPPOOL        equ     TEMPTOP + 2         ; $E374: low (deepest-push) address
-TEMPBASE        equ     TEMPPOOL + TEMPD*3  ; $E3D4: high boundary = the empty-
+TEMPPOOL        equ     TEMPTOP + 2         ; $E381: low (deepest-push) address
+TEMPBASE        equ     TEMPPOOL + TEMPD*3  ; $E3E1: high boundary = the empty-
                                             ; stack value for TEMPTOP
 ; INSTR (ev_f_instr/instr_search, str-engine.asm) resolves both operand
 ; descriptors' heap-body BASE addresses once up front (their [len][ptr]
 ; descriptors, aT/bT, are no longer inline-bodied, so IX/IY can't index bytes
 ; directly off them any more) — two scratch cells hold those bases across the
 ; search loop.
-ISRCH_A         equ     TEMPBASE            ; $E3D4: resolved A-operand body base (2 B)
-ISRCH_B         equ     ISRCH_A + 2         ; $E3D6: resolved B-operand body base (2 B)
+ISRCH_A         equ     TEMPBASE            ; $E3E1: resolved A-operand body base (2 B)
+ISRCH_B         equ     ISRCH_A + 2         ; $E3E3: resolved B-operand body base (2 B)
 ; TMISMATCH: string-comparison D-2 marker (spec-basic-string-compare.md §3c) --
 ; unchanged in role from pre-4a, just re-homed after the heap layout above.
-TMISMATCH       equ     ISRCH_B + 2         ; $E3D8: D-2 type-mismatch flag (1 B)
-; MIDS_DEST ($E3D9, 2 B, defined above) sits right here — the last claimed
-; cell in the freed STRTAB window; everything up to $E560 (disk WBUF) is spare.
+TMISMATCH       equ     ISRCH_B + 2         ; $E3E5: D-2 type-mismatch flag (1 B)
+; MIDS_DEST ($E3E6, 2 B, TMISMATCH+1, defined above) sits right above here — the
+; last claimed cell in the freed STRTAB window; up to $E560 (disk WBUF) is spare.
     IF MIDS_DEST + 2 > $E560
                 db      STRING_HEAP_LAYOUT_OVERRAN_E560_DISK_WBUF_WALL
     ENDIF

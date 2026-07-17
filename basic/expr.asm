@@ -159,22 +159,25 @@ ev_not_do:
 ; compound forms (<=, >=, <>) arrive as two operator tokens and are merged.
 ev_rel:
     IF ROM_BASE < $4000
-                ; string-compare S2 (repack build only): probe the LHS for a string
-                ; operand before committing to the numeric ev_e below. Load-bearing
-                ; invariant: a FAILED probe (str_eval returns NC) leaves IX exactly
-                ; where it was, so the unchanged numeric body below just reads IX
-                ; itself -- no restore needed. This holds even though str_eval's
-                ; string-ARRAY path (str_eval_arr, arrays slice-3) DOES clobber IX via
-                ; the sub-ROM tenant call: that path ALWAYS returns CF set (a `$` name
-                ; + `(` is a recognised string operand), so it can only reach the
-                ; `jp c,ev_rel_str` branch (which re-derives IX from HL at its own
-                ; re-entries), NEVER the NC fallthrough. Any future str_eval sub-path
-                ; that clobbers IX and can return NC would break this -- keep the
-                ; "NC => IX intact" contract if you touch str_eval.
+                ; string-compare S2 (repack build only): probe the LHS for a
+                ; string operand before committing to the numeric ev_e below.
+                ; BUG C (Fable, 2026-07-17): the old "NC => IX intact" invariant
+                ; DIED with slice-4a. str_eval sub-paths now CALSLT (which loads
+                ; IX before the ROM call) and then return NC -- str_fn_left/right/
+                ; mid on a missing ','/')' , str_concat_tail on a malformed
+                ; trailing operand, str_fn_string. Falling into ev_e with that
+                ; garbage IX parsed from nowhere (PRINT LEFT$("AB") -> " 0"). So
+                ; GUARD IX across the probe and RESTORE it on the NC (numeric)
+                ; fallthrough; the CF (string) path discards the guard, since
+                ; ev_rel_str re-derives IX from the returned HL. (The string-ARRAY
+                ; path str_eval_arr also clobbers IX but always returns CF -> it
+                ; only reaches evr_lhs_str, never the NC restore.)
+                push    ix                  ; [guard] the cursor across str_eval
                 push    ix
                 pop     hl                  ; HL = cursor (bridge for the probe)
                 call    str_eval            ; CF set -> LHS is a string; STRPTR->desc
-                jp      c,ev_rel_str        ; string LHS -> the string-compare path
+                jr      c,evr_lhs_str       ; string LHS -> discard guard, str path
+                pop     ix                  ; NC: restore the cursor str_eval trashed
     ENDIF
                 call    ev_e                ; DE = lhs (arithmetic)
                 call    ev_sp
@@ -197,14 +200,18 @@ evr_rhs:
                 ; only reach evr_rhs via the unchanged ev_e call above), so probe the RHS
                 ; cursor for a string operand BEFORE ev_e reads it as a number -- ev_f_var
                 ; would otherwise silently read A$'s name-keyed numeric shadow cell instead
-                ; of erroring. CF clear (not a string) leaves the cursor untouched (the
-                ; same str_eval failure contract the LHS probe above relies on), so the
-                ; unchanged fallthrough is unaffected.
+                ; of erroring. BUG C (Fable, 2026-07-17): as with the LHS probe,
+                ; a slice-4a str_eval sub-path can CALSLT then return NC, trashing
+                ; IX -- so GUARD IX across the probe and restore it before both the
+                ; NC fallthrough (ev_e reads IX) and the CF exit (evr_mismatch's
+                ; deferred error wants a coherent cursor, not CALSLT garbage).
                 push    bc
                 push    de
+                push    ix                  ; [bc][de][guard]
                 push    ix
                 pop     hl
                 call    str_eval
+                pop     ix                  ; restore the cursor str_eval may have trashed
                 pop     de
                 pop     bc
                 jp      c,evr_mismatch      ; RHS is a string, LHS was numeric -> D-2
@@ -238,6 +245,10 @@ evr_false:
                 ld      de,0                ; false = 0
                 ret
     IF ROM_BASE < $4000
+evr_lhs_str:
+                pop     af                  ; BUG C: drop the LHS-probe IX guard
+                                            ; (ev_rel_str re-derives IX from HL)
+                jp      ev_rel_str
 evr_mismatch:
                 jp      type_mismatch_set   ; sets ERRMARK+TMISMATCH, DE=0, ret (str-engine.asm)
     ENDIF
