@@ -805,7 +805,17 @@ inp_readvar:
                 ; scalar-CHAIN OOM here sets FPERR but does not itself abort.
                 ; SP is at statement level (the guard words above are both
                 ; popped) -- check_expr_errors (interp.asm) is the SP-clean-
-                ; site variant; TMISMATCH is always 0 (INPUT# never sets it).
+                ; site variant. It also aborts on a stale TMISMATCH/FPERR from
+                ; the earlier channel-number eval (files.asm ~:748, unchecked):
+                ; a type-poisoned channel expr hard-zeroes to channel 0 and
+                ; derails to "load error"/"syntax error" BEFORE this read, so
+                ; no spurious late "type mismatch" is constructible here; but a
+                ; mid-statement FP error like `INPUT#1+0*(1/0),B$` now surfaces
+                ; "division by zero" AFTER the field is read (pre-slice-4c it
+                ; was swallowed) -- a deliberate deviation from the reference's
+                ; abort-before-read ordering (an earlier post-eval check would
+                ; close it; deferred, out of this slice's scope -- Fable review
+                ; 2026-07-17 finding A).
                 call    check_expr_errors
     ENDIF
                 jp      exec_stmt

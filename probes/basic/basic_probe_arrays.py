@@ -398,34 +398,29 @@ CASES = [
     # their own comments above).
 
     # H2 (§6): a mid-eval scalar allocator (VARPTR) whose ARGUMENT is a
-    # STRING variable -- generalises the §13a numeric-VARPTR fix
-    # (scalar.varptr.elem above) to a STRING-triggered shift. The contract's
-    # own literal example (`DIM S$(1):S$(0)=VARPTR(A$):PRINT S$(0)`) does
-    # NOT parse -- storing a NUMERIC VARPTR result into a STRING array
-    # element is a type mismatch (confirmed empirically: "syntax error",
-    # str_eval never accepts VARPTR as a string operand) -- so the
-    # equivalent valid form here stores into a NUMERIC array element
-    # instead, with the VARPTR ARGUMENT (not the storage target) being the
-    # string var whose allocation triggers the shift; "value-at-address"
-    # checked exactly like scalar.varptr.elem (re-evaluate VARPTR(B$) after
-    # B$ already exists -- a plain find, no further shift -- and compare).
+    # STRING variable -- the §13a numeric-VARPTR fix (scalar.varptr.elem
+    # above) generalised to a STRING-triggered shift. Since the VARPTR(A$)
+    # fix (commit d92c3da), `VARPTR(B$)` allocates a real stride-6 STRING
+    # scalar (type 1), so evaluating it inside the RHS opens a 6-byte hole
+    # at ARYTAB and shifts the array region up -- with the numeric element
+    # A(0) already resolved (held) across the eval. This case proves the 4b
+    # delta-correction fires for that string-sized shift too (it keys on the
+    # ARYTAB delta, stride-agnostic -- confirmed empirically by the Fable
+    # d92c3da review's 17-case battery incl. multi-shift + GC-interleave).
+    # "value-at-address" checked like scalar.varptr.elem: re-read VARPTR(B$)
+    # after B$ already exists (a plain find, no further shift) and compare.
     # zb-only for the same reason as every other auto-allocating-VARPTR case
     # (scalar.varptr.elem/neighbor, strarr.varptr.neighbor above): the
     # reference's VARPTR requires its argument to already exist.
     ("h2.varptr.strarg.elem",  "stored",
         ['DIM A(1):A(0)=VARPTR(B$):C=VARPTR(B$)',
          'PRINT"[";A(0)=C;"]"'], "zbval"),
-    # h2.varptr.defstr.elem (Fable review 2026-07-17): the case above LOOKS
-    # like a string-triggered shift but is NOT -- `$`-suffixed VARPTR(B$)
-    # resolves VARTYPE=8 in vnk_dollar, so it allocates a NUMERIC double B#
-    # (stride 11), a numeric-triggered shift. The ONLY true mid-eval STRING-
-    # scalar allocator is VARPTR of a DEFSTR-typed BARE name (deftbl_lookup ->
-    # type 1 -> a stride-6 string entry). This case forces that stride-6
-    # insert-and-shift with a numeric array-element LHS (A(0)) held across the
-    # eval, proving the 4b §13a delta-correction fires for a STRING-triggered
-    # shift too (it keys on the ARYTAB delta regardless of the shift's stride).
-    # value-at-address checked like scalar.varptr.elem: re-read VARPTR(B) after
-    # B exists (a plain find, no shift) and compare. zb-only (auto-alloc VARPTR).
+    # h2.varptr.defstr.elem: the SAME string-triggered shift as strarg.elem
+    # above, but reaching type 1 via a DEFSTR-typed BARE name (var_name_key ->
+    # deftbl_lookup -> type 1) rather than the `$` suffix (var_str_type). Both
+    # now allocate a stride-6 string entry post-d92c3da; this case is retained
+    # to cover the DEFTBL type-resolution path specifically (the two routes to
+    # a string scalar exercise different key/type code in var_name_key).
     ("h2.varptr.defstr.elem",  "stored",
         ['DEFSTR B:DIM A(1):A(0)=VARPTR(B):C=VARPTR(B)',
          'PRINT"[";A(0)=C;"]"'], "zbval"),
