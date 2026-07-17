@@ -445,25 +445,24 @@ ARYTAB          equ     $E1C0   ; live 2-byte cell: scalar-region end == array
 ; name0 = 0 marks a free slot; len is the live byte count (0..STRMAX). There is
 ; no shared heap and no growth: a value longer than STRMAX is truncated. This is
 ; "enough for PRINT" — assign a literal / copy a string var, then PRINT it.
-STRTAB          equ     $E240   ; base of the string-variable store
-; STRMAX is the ONE knob the string engine widens. The lean 16 KB build keeps the
-; minimal 32 (byte-identical, fixed-pool inline store, unchanged since S3). The
-; repack build (ROM_BASE < $4000) now (arrays slice-4a, spec-basic-arrays-
-; slice4a-string-heap.md) widens it to the MSX-faithful 255 (a string length is a
-; single byte, so 255 is the true ceiling) — the old 64-byte RAM-wall limit is
-; GONE because the repack STRTAB slot is now a small fixed-size DESCRIPTOR
-; ([name0][name1][len:1][ptr:2] = 5 B) pointing at a body in the string HEAP
-; (§2/§3 of the spec), not an inline STRMAX-byte value; STRENTSZ no longer scales
-; with STRMAX in the repack build.
+;
+; Arrays slice-4c (docs/spec-basic-arrays-slice4c-string-scalar-unification.md
+; §5): on the repack path this fixed pool is RETIRED — string scalars now live
+; in the unified scalar chain [PRGEND+2, ARYTAB) alongside numeric scalars
+; (basic/vars.asm str_get_key/str_set_key -> ARY_OP 4/5 glue over sub/
+; arrays.asm scv_find/scv_alloc). STRTAB/STRENTSZ/STRSLOTS/STREND are LEAN-ONLY
+; below; the repack build's $E240..$E268 window they used to occupy is freed
+; RAM. STRMAX stays a repack-wide knob (consulted by string-heap body
+; allocation, unrelated to where scalar descriptors live) in both branches.
     IF ROM_BASE < $4000
 STRMAX          equ     255     ; repack build: string heap (slice-4a §8)
-STRENTSZ        equ     5       ; [name0][name1][len:1][ptr:2] descriptor slot
     ELSE
+STRTAB          equ     $E240   ; base of the string-variable store (lean only)
 STRMAX          equ     32      ; lean build: max chars per string var (own choice)
 STRENTSZ        equ     3 + STRMAX  ; [name0][name1][len][bytes:STRMAX] (35 B)
-    ENDIF
 STRSLOTS        equ     8       ; max distinct string variables
-STREND          equ     STRTAB + STRSLOTS*STRENTSZ   ; $E358 lean / $E268 repack
+STREND          equ     STRTAB + STRSLOTS*STRENTSZ   ; $E358 lean
+    ENDIF
 
 ; Expression value-type signalling (own-design VALTYP notion). After eval_any /
 ; a factor, VALTYP says whether the result is a number (0; value in DE as usual)
@@ -541,16 +540,32 @@ CAS_IN_MODE     equ     8       ; FCH_MODES value: OPEN"CAS:" FOR INPUT (INPUT# 
 ; basic-reloc.sym). An earlier copy of this table still said SH_*=5 B /
 ; TEMPTOP=$E372 and caused BUG A (MIDS_DEST hardcoded at $E3D9, inside the
 ; temp pool). Keep it in sync with the EQU chain below.
-FRETOP          equ     STREND              ; $E268: heap low boundary; heap occupies
+; Arrays slice-4c (spec §5): FRETOP is now its OWN literal cell — the STRTAB
+; pool it used to derive from (via STREND) no longer exists on the repack
+; path (dissolved into the unified scalar chain). Value UNCHANGED ($E268,
+; the old STRTAB+40 B) so every other repack-side address below (RVDESC,
+; STRSCR, SH_*, TEMPTOP, the temp pool, ISRCH_*, TMISMATCH, MIDS_DEST) stays
+; at its EXACT pre-4c address — no reshuffle, no reflow.
+FRETOP          equ     $E268               ; heap low boundary; heap occupies
                                             ; [FRETOP,C), grows DOWN as strings alloc.
                                             ; Reset to the ceiling C at cold start/
-                                            ; NEW/RUN/CLEAR (fretop_reset, arrays.asm),
-                                            ; paired with clear_vars — NOT inside
-                                            ; ary_reset itself, which also runs on a
-                                            ; bare relink (store_line edit/ CLOAD
-                                            ; without clearing vars) where existing
-                                            ; STRTAB descriptors' heap bodies must
-                                            ; stay valid (§2 own design note).
+                                            ; NEW/RUN/CLEAR (heap_reset, str-
+                                            ; engine.asm) -- called from clear_vars
+                                            ; AND (arrays slice-4c §3d/H3 fix) from
+                                            ; vars_reset itself (basic/arrays.asm),
+                                            ; so it also runs on a bare relink
+                                            ; (store_line edit / CLOAD without a
+                                            ; full clear_vars). Pre-4c this was
+                                            ; deliberately NOT the case (a bare
+                                            ; relink left string-SCALAR bodies
+                                            ; valid, since their STRTAB descriptors
+                                            ; survived the edit untouched); post-4c
+                                            ; those descriptors are THEMSELVES wiped
+                                            ; by the SAME vars_reset call (chain-
+                                            ; resident scalars), so nothing valid
+                                            ; can still reference the heap after it
+                                            ; runs -- reclaiming it there too is
+                                            ; correct, not just permitted.
 RVDESC          equ     FRETOP + 2          ; $E26A: [len:1][ptr:2] scratch descriptor
                                             ; for a value whose body is NOT in the
                                             ; heap (a token-stream literal / STRSCR) —

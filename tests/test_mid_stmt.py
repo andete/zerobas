@@ -70,15 +70,20 @@ def run():
     # TEMPTOP (empty temp stack) as a real cold boot does, so str_set_key's
     # heap_alloc has somewhere to put A$'s body.
     m.call("heap_reset")
-    STRTAB = s["STRTAB"]
-    STRENTSZ = s["STRENTSZ"]
-    STRSLOTS = s["STRSLOTS"]
 
     fails = 0
 
     def reset_strtab():
-        for i in range(STRSLOTS):
-            m.poke(STRTAB + i * STRENTSZ, 0)
+        # Arrays slice-4c (docs/spec-basic-arrays-slice4c-string-scalar-
+        # unification.md §3d): string scalars are chain-resident now,
+        # sharing [PRGEND+2, ARYTAB) with numeric scalars/arrays -- the
+        # fixed STRTAB pool this helper used to zero is GONE. The
+        # equivalent reset is re-anchoring ARYTAB to the scalar-region
+        # base and rewriting the "no arrays" sentinel there (exactly what
+        # vars_reset/ary_reset do; mirrors the identical poke in the
+        # initial setup above).
+        m.poke_w(s["ARYTAB"], 0x9002)
+        m.poke(0x9002, b"\x00\x00")
 
     def set_var(name, value):
         # str_set_key source = a STABLE [len][ptr] descriptor (slice-4a §10):

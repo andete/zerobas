@@ -700,6 +700,131 @@ var_set:
 ; variable; the `$` suffix (handled by the caller) is what selects this store
 ; instead of the numeric one, so `A` and `A$` are independent (as in MSX-BASIC).
 
+; Arrays slice-4c (docs/spec-basic-arrays-slice4c-string-scalar-
+; unification.md §3c): on the repack path string scalars are now ordinary
+; entries in the SAME unified chain numeric scalars (4b) and arrays (1-3)
+; already share — str_get_key/str_set_key become thin glue over the ARY
+; tenant's scalar ops (ARY_OP 4/5, type=1), mirroring var_find_typed/
+; var_alloc_or_find (above) exactly. str_find (the old STRTAB walk) is
+; DELETED on the repack path — the lean build keeps it unmodified below
+; (its STRTAB pool is untouched, per H4 byte-identity).
+    IF ROM_BASE < $4000
+
+; --- str_get_key: BC = key -> HL = descriptor [len][ptr] ---------------------
+; Read-only: op=4 (SCALAR_FIND) never inserts, so an unset variable is never
+; created by a mere read (the pre-4c contract, preserved). Returns HL ->
+; STR_EMPTY (a len-0 descriptor) on a miss, so the caller always has a
+; printable/copyable value. Clobbers A, B, C, D, E, H, L.
+str_get_key:
+                ld      (ARY_KEY),bc
+                ld      a,1                 ; type=1 -- the `$` unifier
+                                            ; (var_str_type; A/A%/A!/A#/A$
+                                            ; are five distinct entries)
+                ld      (ARY_TYPE),a
+                ld      a,4                 ; op = SCALAR_FIND
+                ld      (ARY_OP),a
+                call    ary_engine_call     ; find never errors (ARY_ERR
+                                            ; always 0 for op=4)
+                ld      hl,(ARY_ADDR)
+                ld      a,h
+                or      l
+                jr      z,sgk_empty         ; ARY_ADDR=0 -> unset -> STR_EMPTY
+                ld      de,3
+                add     hl,de               ; HL -> descriptor (entry+3, past
+                                            ; [name0][name1][type] -- ONE
+                                            ; byte later than the pre-4c
+                                            ; STRTAB slot+2, since a chain
+                                            ; entry carries the explicit
+                                            ; type byte a dedicated string
+                                            ; pool omitted)
+                ret
+sgk_empty:
+                ld      hl,STR_EMPTY        ; len-0 descriptor (uninitialised = "")
+                ret
+STR_EMPTY:      db      0                   ; a shared empty-string descriptor
+
+; --- str_set_key: BC = key, DE -> source descriptor [len][ptr] ---------------
+; Store: op=5 (SCALAR_ALLOC, find-or-insert) resolves/creates the dest entry,
+; then the unchanged sub-side sh_var_store (op=12) heap-allocs a fresh body
+; copy and writes [len][ptr]. scv_alloc (sub/arrays.asm) already writes the
+; name + zero-fills a fresh entry's value field -- the old ssk_new manual
+; name-write + BUG-B len-zeroing are SUBSUMED (structural, not a special
+; case any more).
+;
+; H1 (docs/spec-basic-arrays-slice4c-string-scalar-unification.md §6, Q1 —
+; the LOAD-BEARING fix): the target alloc below can shift the array region
+; (any insert) and, on a FRETOP collision, run strheap_gc (which compacts
+; heap bodies). A source that is a string-ARRAY element (its descriptor
+; address moves with the shift) or RVDESC (fixed address, but NOT a GC root)
+; would otherwise go STALE mid-store -- silently wrong content, green-suite-
+; invisible (needs a FRESH dest var + RAM near FRETOP to force the collision
+; GC). Fix: snapshot the source descriptor onto the temp-descriptor stack
+; BEFORE the target alloc (str_snapshot_to_temp, the SAME primitive 4a's own
+; concat uses for its operands) -- a temp entry is both fixed-address (the
+; shift only touches [ARYTAB,ARYEND), never the temp pool) and an enumerated
+; GC root (sg_walk_temps), so it is immune to BOTH hazards uniformly
+; (existing string-scalar / temp-stack sources were already safe; this
+; extends the same safety to array-element and RVDESC sources). Released
+; (TEMPTOP restored) after the store on every exit path -- exact-restore
+; (not a blind +3) so it stays correct even if the snapshot itself overflowed
+; the temp stack (TEMPTOP then untouched by str_snapshot_to_temp; FPERR is
+; already set either way, deferred-error discipline). Clobbers A, B, C, D,
+; E, H, L.
+str_set_key:
+                ld      hl,(TEMPTOP)
+                push    hl                  ; [SAVED_TEMPTOP] -- exact restore
+                                            ; point, correct whether or not
+                                            ; the snapshot below actually
+                                            ; pushes a slot
+                push    bc                  ; [KEY] guard the destination key
+                                            ; across the snapshot (CALSLT
+                                            ; clobbers everything)
+                ld      (STRPTR),de         ; STRPTR := source descriptor addr
+                call    str_snapshot_to_temp ; HL = temp desc (fixed addr, GC
+                                            ; root) / STR_EMPTY on overflow --
+                                            ; FPERR already set either way
+                ld      (SH_SRC),hl         ; stash now -- a plain RAM cell,
+                                            ; survives the target alloc below
+                                            ; untouched (no CPU-stack relay
+                                            ; needed for it)
+                pop     bc                  ; [KEY] restored
+                ld      (ARY_KEY),bc
+                ld      a,1                 ; type=1 -- the `$` unifier
+                ld      (ARY_TYPE),a
+                ld      a,5                 ; op = SCALAR_ALLOC (find-or-
+                                            ; insert-and-shift)
+                ld      (ARY_OP),a
+                call    ary_engine_call     ; Z: ARY_ADDR=entry (found or
+                                            ; newly inserted) / NZ: FPERR
+                                            ; already mapped+set (OOM)
+                jr      nz,ssk_target_oom
+                ld      hl,(ARY_ADDR)
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL -> dest descriptor (entry+3)
+                ld      (SH_DEST),hl
+                ld      a,12
+                ld      (SH_OP),a           ; op = 12 (VAR_STORE) -- unchanged
+                                            ; sub-side body copy
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_STRHEAP
+                call    subrom_call
+                jp      c,subrom_absent_error
+                pop     hl                  ; [SAVED_TEMPTOP]
+                ld      (TEMPTOP),hl        ; release the H1 snapshot
+                ld      a,(SH_ERR)
+                or      a
+                ret     z
+                jp      str_heap_oom_error
+ssk_target_oom:
+                pop     hl                  ; [SAVED_TEMPTOP]
+                ld      (TEMPTOP),hl        ; release the H1 snapshot (the
+                                            ; target alloc failed before ANY
+                                            ; store happened, but the
+                                            ; snapshot push above still ran)
+                ret                         ; FPERR already mapped+set (OOM)
+
+    ELSE
+
 ; --- str_find: locate the string entry for key BC --------------------------
 ; out: CF set  -> found,     HL = entry address (name0 field).
 ;      CF clear -> not found, HL = first free slot (or STREND if full).
@@ -759,14 +884,9 @@ STR_EMPTY:      db      0                   ; a shared empty-string descriptor
 ; Clobbers A, DE, HL (BC kept). DE may point into STRTAB itself (var-to-var
 ; copy A$=B$).
 ;
-; Two build-gated bodies (the descriptor FORMAT itself differs — the lean
-; build's slot is still an inline [len][bytes:32] value; the repack build's
-; is a [len:1][ptr:2] heap descriptor, arrays slice-4a, docs/spec-basic-
-; arrays-slice4a-string-heap.md §10). str_find/str_get_key above are
-; FORMAT-AGNOSTIC (they only locate/return the entry's len-field address,
-; offset +2, identical in both formats) and stay completely shared/
-; unmodified — only the STORE path (which must know how to reach/copy the
-; VALUE bytes) diverges.
+; The lean build's slot is an inline [len][bytes:32] value (unlike the
+; repack build's heap descriptor, which is why the repack body above has
+; diverged into ARY_OP glue) — this body is UNCHANGED since S3.
 str_set_key:
                 push    de                  ; str_find clobbers DE — guard the source ptr
                 call    str_find
@@ -782,48 +902,8 @@ ssk_new:
                 ld      (hl),b              ; write the name into the free slot
                 inc     hl
                 ld      (hl),c
-    IF ROM_BASE < $4000
-                ; BUG B (Fable, 2026-07-17): a FRESH slot's [len][ptr] is STALE
-                ; -- clear_vars zeroes only name0. sh_var_store's heap_alloc can
-                ; GC BEFORE the real value lands, and sg_walk_strtab would then
-                ; read this slot (name0!=0) as a live root off its stale
-                ; [len>0][ptr] -> a phantom root: returns garbage AND corrupts
-                ; the compaction floor. Zero the len byte NOW (an empty string is
-                ; never a root; sg_inrange bails on len==0) so the slot is inert
-                ; until VAR_STORE overwrites it. On a later OOM the var reads "".
-                ; Mirrors the S2 temp-slot pattern; ptr is a don't-care while
-                ; len==0. Repack-only: lean slots are inline values with no heap
-                ; GC, so this keeps the lean build byte-identical.
-                inc     hl                  ; -> len field (name0+2)
-                ld      (hl),0
-                dec     hl
-    ENDIF
                 dec     hl
 ssk_store:
-    IF ROM_BASE < $4000
-                ; HL = dest entry name0 field; DE = source descriptor address
-                ; (STABLE -- a STRTAB slot / array element / temp-stack entry /
-                ; RVDESC / STR_EMPTY, NEVER a bare heap body address). Thin
-                ; main-ROM glue for the string-heap tenant's VAR_STORE op
-                ; (mirrors str_heap_alloc) — the heap_alloc+copy+write
-                ; mechanics (value-copy semantics: a fresh body per store, the
-                ; old one becomes GC garbage) moved to the sub-ROM
-                ; (sub/strheap.asm sh_var_store) once page 1 ran out of room
-                ; for them.
-                inc     hl
-                inc     hl                  ; HL -> dest len/ptr field
-                ld      (SH_DEST),hl
-                ld      (SH_SRC),de
-                ld      a,12
-                ld      (SH_OP),a           ; op = 12 (VAR_STORE)
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_STRHEAP
-                call    subrom_call
-                jp      c,subrom_absent_error
-                ld      a,(SH_ERR)
-                or      a
-                ret     z
-                jp      str_heap_oom_error
-    ELSE
                 ; HL = entry name0 field; DE = source descriptor. LDIR copies
                 ; (HL)->(DE), so the COPY needs HL=source, DE=dest: we read the
                 ; length here, then swap the roles before the LDIR.
@@ -844,6 +924,7 @@ ssk_len_ok:
                 ex      de,hl               ; LDIR copies (HL)->(DE): HL=source, DE=dest
                 ldir
                 ret
+
     ENDIF
 
 ; --- clear_vars: empty the numeric AND string tables (called at INIT / RUN) --
@@ -871,10 +952,17 @@ cv_deftbl:                                  ; (RUN clears here first, then the p
                 ; stack to empty. The reset body lives in the low region
                 ; (basic/str-engine.asm heap_reset) — reached by an in-slot
                 ; call (page 1 <-> low region are the main ROM's co-mapped
-                ; slot-0 pages) — because page 1 is byte-full; clear_vars IS
-                ; the single init/NEW/RUN/CLEAR hook (not folded into
-                ; ary_reset, which also runs on a bare relink where STRTAB
-                ; heap bodies must survive).
+                ; slot-0 pages) — because page 1 is byte-full. clear_vars IS
+                ; the single init/CLEAR/RUN hook that runs BEFORE PRGEND is
+                ; necessarily established (see the vars_reset-NOT-called-here
+                ; note just below) — arrays slice-4c (§3d/H3) ALSO calls
+                ; heap_reset from vars_reset itself (basic/arrays.asm), so a
+                ; bare relink (store_line edit / CLOAD, which does NOT run
+                ; clear_vars) gets its own heap reset too, now that string
+                ; SCALARS are chain-resident and relink's vars_reset already
+                ; wipes their descriptors (pre-4c this call site alone was
+                ; sufficient, since STRTAB heap bodies had to survive a bare
+                ; relink; that is no longer true post-4c).
                 call    heap_reset
                 ; arrays slice-4b (§3b) + §13a-F1 fix: DO NOT call vars_reset
                 ; here. vars_reset reads (PRGEND) and WRITES the $0000 array
@@ -900,6 +988,14 @@ cv_loop:
                 or      c
                 jr      nz,cv_loop
     ENDIF
+    IF ROM_BASE < $4000
+                ; Arrays slice-4c (§3d): string scalars are chain-resident
+                ; now, cleared by vars_reset (which every clear_vars CALLER
+                ; invokes itself, AFTER establishing PRGEND -- the §13a-F1
+                ; invariant documented above). The STRTAB pool this loop
+                ; used to wipe no longer exists on the repack path --
+                ; nothing to do here. cv_str (the wipe loop) is LEAN-ONLY.
+    ELSE
                 ; clear the string store: name0 = 0 in every slot
                 ld      hl,STRTAB
                 ld      b,STRSLOTS
@@ -908,6 +1004,7 @@ cv_str:
                 ld      de,STRENTSZ
                 add     hl,de
                 djnz    cv_str
+    ENDIF
                 jp      fld_init            ; also reset the random-access field table
 
 ; --- RND_S0_PACKED: math pack slice 2e (repack build only, docs/spec-basic- -

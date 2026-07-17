@@ -116,8 +116,23 @@ fre_abort_low:
 ; fixed pool): stock MSX-BASIC clears ALL variables on a program edit too.
 ; The four call sites that used to call ary_reset directly (new_prog,
 ; run_prog, ex_clear, relink) now call THIS instead, so scalar + array reset
-; stay a single call at each site (§3b). Clobbers A, HL.
+; stay a single call at each site (§3b). Clobbers A, B, C, H, L.
+;
+; Arrays slice-4c (§3d/H3): also resets the string heap (FRETOP/TEMPTOP ->
+; heap_reset, basic/str-engine.asm — an ordinary in-slot call, both this file
+; and str-engine.asm are low-region). A vars_reset wipes the WHOLE chain
+; (scalars, now including STRING scalars, + arrays), so nothing live can
+; still hold a reference into the heap afterward — reclaim it immediately
+; instead of leaving it for the next GC. clear_vars (vars.asm) already makes
+; this same call, so run_prog/ex_clear (which call clear_vars first) see it
+; twice (idempotent, harmless); relink and a standalone new_prog (LOAD,
+; cload.asm) call vars_reset WITHOUT clear_vars, so this was the one gap —
+; pre-4c it was correct to skip it here (string-SCALAR descriptors lived in
+; the untouched fixed STRTAB pool and had to stay valid across a bare
+; relink), but post-4c those descriptors are wiped by THIS SAME call's
+; ARYTAB re-anchor, so nothing is lost by also freeing their bodies.
 vars_reset:
+                call    heap_reset
                 ld      hl,(PRGEND)
                 inc     hl
                 inc     hl                  ; HL = PRGEND+2 (empty scalar region)

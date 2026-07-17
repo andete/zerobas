@@ -382,6 +382,23 @@ ex_let_str:
                 ld      de,(STRPTR)         ; DE -> source descriptor
                 call    str_set_key         ; A$[key] := descriptor (clamped)
                 pop     hl
+    IF ROM_BASE < $4000
+                ; Arrays slice-4c (docs/spec-basic-arrays-slice4c-string-
+                ; scalar-unification.md §7.3): a scalar-CHAIN OOM (the table-
+                ; full disposition, now dynamic/unbounded rather than the
+                ; pre-4c fixed 8-slot STRTAB) sets FPERR via str_set_key's
+                ; own ARY_OP=5 -> ary_errmap path but does NOT itself abort
+                ; (mirrors var_alloc_or_find's identical contract) -- must be
+                ; surfaced HERE, exactly like ex_let's own post-store check
+                ; just above for the numeric path. Without this the OOM was
+                ; silently swallowed (the OLD STRTAB-full "silent drop"
+                ; contract this slice retires; a string-heap BODY OOM is
+                ; UNAFFECTED -- str_heap_oom_error already aborts
+                ; unconditionally inside str_set_key itself).
+                ld      a,(FPERR)
+                or      a
+                jp      nz,fp_runtime_error
+    ENDIF
                 jp      exec_stmt
     IF ROM_BASE >= $4000
 els_err:

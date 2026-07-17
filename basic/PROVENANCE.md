@@ -231,6 +231,36 @@ becomes ordinary RAM; the new `ARYTAB` live cell (2 B) is homed at its foot.
 | Behaviour delta: a program EDIT now clears NUMERIC scalars + arrays (relink chains through the shared `vars_reset`); STRING scalars (fixed `STRTAB` pool) still survive an edit until slice 4c | — | More MSX-faithful (stock MSX-BASIC clears ALL variables on a direct-mode edit); pre-4b zerobas kept all scalars across an edit as an off-to-the-side-pool artifact. Interim divergence: numeric+arrays clear, string scalars persist to 4c (string-scalar unification) — documented, not yet fully faithful | sourced |
 | Behaviour delta: scalar creation can now raise `Out of memory` (matches the array OOM disposition) instead of the pre-4b fixed-pool's silent drop | — | own design (the SAME `ARY_ERR`/`ary_errmap` codepath arrays' own OOM already uses) | sourced |
 
+### §variable area — arrays slice-4c: string-scalar unification (repack build only, docs/spec-basic-arrays-slice4c-string-scalar-unification.md)
+
+The fixed `STRTAB` string-scalar pool (`$E240..$E268`, 8 × 5-B `[name0][name1]
+[len][ptr]` descriptors) is **dissolved in the repack build**: string scalars
+join the SAME unified chain 4b relocated numeric scalars into, as ordinary
+`[name0][name1][type=1][len:1][ptr:2]` entries (stride 6, keyed on
+`(name0,name1,type)` exactly like a numeric entry — the `$` suffix resolves to
+type 1 via the existing `var_str_type` unifier). This reaches the full real-MSX
+`TXTTAB→VARTAB→ARYTAB→…→FRETOP→HIMEM` model: no fixed variable pool remains.
+`str_get_key`/`str_set_key` (basic/vars.asm) become thin glue over the SAME
+`ARY_OP` 4/5 (`SCALAR_FIND`/`SCALAR_ALLOC`) scalar ops 4b already added to the
+ARY tenant (sub/arrays.asm) — no new op-code, no new param block — with the
+stride substituted through the existing `elsize_from_type` map (already used by
+`ary_stride`/`ary_alloc`) so a type=1 entry strides 6 (3 header + the 3-byte
+heap descriptor) instead of the raw `type+3`. `sg_walk_scalars`
+(sub/strheap.asm) replaces `sg_walk_strtab` as the GC root-enumeration pass
+over the chain, visiting a type=1 entry's descriptor at `entry+3` (one byte
+past the `STRTAB`-slot convention, since a chain entry carries an explicit type
+byte a dedicated pool omitted).
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| String-scalar entry format `[name0][name1][type=1][len:1][ptr:2]`, stride = `elsize_from_type(type)+3` | — | **own code / own choice** — the pre-4c `STRTAB` descriptor's `[len][ptr]` tail carried over unchanged, only the location/stride/walk changed | sourced |
+| `sg_walk_scalars` (GC root enumeration over the unified chain, entry+3 offset) | — | own code, modelled on the sibling `sg_walk_arrays` (already `(ARYTAB)`-anchored, type-filtered, `elsize_from_type`-strided) | sourced |
+| H1 fix: a `str_set_key` var-to-var copy snapshots the SOURCE descriptor onto the temp-descriptor stack (the same mechanism 4a's own concat operand-snapshot uses, `str_snapshot_to_temp`) before the target scalar alloc, so the source survives both the target's insert-shift and a possible collision GC | — | own design; the load-bearing fix this slice exists to isolate (§6 of the spec) — a string-array-element or RVDESC source would otherwise go stale mid-store | sourced |
+| H3 fix: `vars_reset` (basic/arrays.asm) now also resets the string heap (`heap_reset`) on every scalar+array reset, not just via `clear_vars` — closes an orphaned-body leak on `relink` (program edit) / a standalone `new_prog` (LOAD), the two call sites that don't otherwise run `heap_reset` | — | own design (intrinsic to making string scalars chain-resident; §3d/Q4 of the spec) | sourced |
+| Behaviour delta: a program EDIT now clears string scalars TOO (resolves the 4b §7.1 interim divergence — `A$` no longer survives an edit) | — | More MSX-faithful (stock MSX-BASIC clears ALL variables on a direct-mode edit); differential-confirmed against the VG-8020 reference (both clear `A$`+`A` on a stored-line edit) | sourced |
+| Behaviour delta: `str_set_key`'s scalar-chain OOM (the table-full disposition, now dynamic/unbounded rather than the pre-4c fixed 8-slot cap) raises a surfaced `Out of memory` instead of a silent drop — required wiring an `(FPERR)` check into `ex_let_str` (basic/interp.asm) mirroring `ex_let`'s own numeric post-store check, since `str_set_key`'s pre-4c contract never needed one (a STRTAB-full store was ALWAYS a silent, deliberate drop) | — | own design (the SAME `ARY_ERR`/`ary_errmap` codepath arrays'/numeric-scalars' own OOM already uses) | sourced |
+| KNOWN RESIDUAL: the same OOM-surfacing gap (FPERR set by `str_set_key` but never checked by the caller) is UNFIXED at the other three `str_set_key` call sites — `basic/input.asm`'s `inpc_vstr` (plain `INPUT` string variable) and `inpc_line` (`LINE INPUT`), and `basic/files.asm`'s `INPUT#` site — a scalar-chain OOM during any of those three still silently drops the assignment. Only `ex_let_str` (LET) was fixed + gated this slice; flagged for a follow-up, not fixed here (scope/risk judgment call — `inpc_vstr` in particular is a multi-variable loop with `?redo`/`?extra ignored` stack bookkeeping not touched to avoid destabilising the input-acceptance gate under time pressure) | — | own design gap | sourced |
+
 ## Phase 1: PRINT statement (basic/print.asm, basic/interp.asm)
 
 Behavioural source: the public MSX-BASIC *language* reference (PRINT items,

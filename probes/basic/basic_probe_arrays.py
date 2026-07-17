@@ -334,6 +334,114 @@ CASES = [
         ['DIM S$(3):S$(0)="hello":S$(3)="world":'
          'S$(0)=STRING$(3,VARPTR(D) AND 255)',
          'PRINT"[";S$(3);"]"'], "zbval"),
+
+    # === arrays slice-4c: string-scalar unification (docs/spec-basic- =======
+    # arrays-slice4c-string-scalar-unification.md §9). String scalars are
+    # now ordinary chain entries sharing [PRGEND+2, ARYTAB) with numeric
+    # scalars/arrays, and their descriptors are GC roots walked by
+    # sg_walk_scalars (sub/strheap.asm) instead of the retired STRTAB pool.
+    #
+    # H1 battery (§6, the LOAD-BEARING fix): A$=<source>, A$ FRESH, with RAM
+    # churned near FRETOP so the TARGET alloc (A$'s own insert) can collide
+    # and trigger strheap_gc mid-store. Without the H1 temp-stack source-
+    # snapshot, a source that is a string-array element (its descriptor
+    # address moves with the insert-shift) or an RVDESC/temp value not
+    # re-snapshotted goes STALE across the shift+GC -- silently wrong
+    # content. zb-only (zbval): the reference's ~200 B default string space
+    # can't complete a 70x STRING$(250) churn (confirmed empirically -- the
+    # reference run never reaches the PRINT), so it is not an oracle here
+    # (the same "zb-only heap-pressure" class as scalar.collision.gc.ok /
+    # strarr.gc.churn above).
+    ("h1.srcarrelem",  "stored",
+        ['DIM S$(1):S$(0)="hello":FORI=1TO70:Z$=STRING$(250,65):NEXT:A$=S$(0)',
+         'PRINT"[";A$;"]"'], "zbval"),
+    # h1.srcconcat: source = a `+` concat result. Empirically, str_eval's own
+    # concat spine (str_concat_tail) ALREADY snapshots operand 1 into an
+    # owned temp-stack entry before appending (so THIS specific shape is
+    # safe independent of the H1 fix -- confirmed by temporarily disabling
+    # the fix and re-running: this case still passed) -- kept in the
+    # battery anyway per the contract's explicit case list (§9) as a
+    # standing regression guard, not because it isolates the bug alone.
+    ("h1.srcconcat",   "stored",
+        ['B$="foo":C$="bar":FORI=1TO70:Z$=STRING$(250,65):NEXT:A$=B$+C$',
+         'PRINT"[";A$;"]"'], "zbval"),
+    # h1.self: A$=A$ with A$ fresh (reads STR_EMPTY, then allocates). A
+    # degenerate/edge member of the battery per the contract's own listing.
+    ("h1.self",        "stored",
+        ['FORI=1TO70:Z$=STRING$(250,65):NEXT:A$=A$',
+         'PRINT"[";A$;"]"'], "zbval"),
+    # NON-VACUOUS proof for h1.srcarrelem (recorded here, verified by hand
+    # during implementation): reverting the H1 snapshot (str_set_key using
+    # the raw source pointer DE directly, no str_snapshot_to_temp) turns
+    # this case's printed value from "hello" into garbage (observed:
+    # single stray byte "!") -- the array-region shift from A$'s own insert
+    # moved S$(0)'s descriptor out from under the held (now-stale) source
+    # address. h1.srcconcat/h1.self were unaffected by the same revert (see
+    # their own comments above).
+
+    # H2 (§6): a mid-eval scalar allocator (VARPTR) whose ARGUMENT is a
+    # STRING variable -- generalises the §13a numeric-VARPTR fix
+    # (scalar.varptr.elem above) to a STRING-triggered shift. The contract's
+    # own literal example (`DIM S$(1):S$(0)=VARPTR(A$):PRINT S$(0)`) does
+    # NOT parse -- storing a NUMERIC VARPTR result into a STRING array
+    # element is a type mismatch (confirmed empirically: "syntax error",
+    # str_eval never accepts VARPTR as a string operand) -- so the
+    # equivalent valid form here stores into a NUMERIC array element
+    # instead, with the VARPTR ARGUMENT (not the storage target) being the
+    # string var whose allocation triggers the shift; "value-at-address"
+    # checked exactly like scalar.varptr.elem (re-evaluate VARPTR(B$) after
+    # B$ already exists -- a plain find, no further shift -- and compare).
+    # zb-only for the same reason as every other auto-allocating-VARPTR case
+    # (scalar.varptr.elem/neighbor, strarr.varptr.neighbor above): the
+    # reference's VARPTR requires its argument to already exist.
+    ("h2.varptr.strarg.elem",  "stored",
+        ['DIM A(1):A(0)=VARPTR(B$):C=VARPTR(B$)',
+         'PRINT"[";A(0)=C;"]"'], "zbval"),
+
+    # GC-root correctness (§9): several string SCALARS + a string ARRAY
+    # element, then a real compacting GC (70x STRING$(250) churn), then
+    # assert EVERY string scalar's content survived -- proves
+    # sg_walk_scalars enumerates the chain roots at the correct entry+3
+    # offset (a revert to entry+2 turns this case red -- verified by hand,
+    # see tests/test_arrays.py Case 9c for the isolated non-emulator proof
+    # of the same offset). zb-only (heap-pressure churn).
+    ("gcroot.scalars.survive", "stored",
+        ['A$="alpha":B$="beta":C$="gamma":DIM S$(1):S$(0)="delta"',
+         'FORI=1TO70:Z$=STRING$(250,65):NEXT',
+         'PRINT"[";A$;B$;C$;S$(0);"]"'], "zbval"),
+
+    # Edit-clears-all (§7.1/§7 deliverable 1): the case 4b's OWN spec
+    # explicitly withheld ("would have gone red on the interim state" --
+    # 4b left string scalars in the untouched fixed STRTAB pool, surviving
+    # an edit). Now string scalars are chain-resident, cleared by the SAME
+    # vars_reset a numeric-scalar edit already clears through -- DIFFEREN-
+    # TIAL (confirmed empirically: the VG-8020 reference ALSO clears both
+    # A$ and A on a program-line store, i.e. real MSX-BASIC's own faithful
+    # "edit clears all variables" behaviour -- not a zb-only property).
+    ("scalar.edit.clears.str", "direct",
+        ['A$="X"', 'A=5', '10 PRINT 1', 'PRINT"[";A$;A;"]"'], "value"),
+
+    # OOM (§7.3): the fixed 8-slot STRTAB cap is GONE; string-scalar count
+    # is now bounded only by the shared free chain region, and exhausting
+    # it must raise a SURFACED "Out of memory" (matching the array/numeric-
+    # scalar OOM disposition), NOT silently drop the assignment (the old
+    # STRTAB-full contract). CLEAR sets a tight ceiling ($8050, ~77 B of
+    # scalar-region room -- ~12 6-byte string-scalar entries) so a run of
+    # distinct one-letter `$` names exhausts it deterministically. zberr
+    # (zb-only: the byte-for-byte ceiling arithmetic is zb's own chain
+    # layout, not a property the reference's differently-shaped variable
+    # table can be an oracle for) -- asserted against the reference-wording
+    # ZB_OOM literal, the SAME string arrays' own OOM already uses.
+    #
+    # NON-VACUOUS proof (recorded here, verified by hand during
+    # implementation): before wiring the FPERR check into ex_let_str
+    # (basic/interp.asm), str_set_key's own scalar-chain-OOM correctly set
+    # FPERR via ary_errmap, but NOTHING checked it afterward -- the
+    # assignment silently dropped exactly like the pre-4c fixed-pool
+    # contract (observed: no "Out of memory" text anywhere in the capture).
+    ("scalar.str.chain.oom",   "direct",
+        ['CLEAR,&H8050'] + [f'{c}$="1"' for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"],
+        "zberr"),
 ]
 
 # --- S6 2nd-review GC-STRESS battery (its OWN pass, gc_stress_check below, with
@@ -499,6 +607,12 @@ ZBVAL_EXPECT = {
     "scalar.varptr.elem": "-1 ",
     "scalar.varptr.neighbor": " 22 ",
     "strarr.varptr.neighbor": "world",
+    # arrays slice-4c (§9): H1 battery + H2 + GC-root correctness.
+    "h1.srcarrelem": "hello",
+    "h1.srcconcat": "foobar",
+    "h1.self": "",
+    "h2.varptr.strarg.elem": "-1 ",
+    "gcroot.scalars.survive": "alphabetagammadelta",
 }
 
 # Tier-A house-style text (zerobas prints lowercase where the reference prints

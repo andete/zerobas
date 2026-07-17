@@ -95,9 +95,6 @@ def run():
     m.call("heap_reset")
     STRPTR = s["STRPTR"]
     VALTYP = s["VALTYP"]
-    STRTAB = s["STRTAB"]
-    STRENTSZ = s["STRENTSZ"]
-    STRSLOTS = s["STRSLOTS"]
     ERRMARK = s["ERRMARK"]
     TMISMATCH = s["TMISMATCH"]
     TEMPBASE = s["TEMPBASE"]
@@ -111,8 +108,12 @@ def run():
         print(f"{'PASS' if cond else 'FAIL'}  {label}" + (f"  {detail}" if detail else ""))
 
     def reset_strtab():
-        for i in range(STRSLOTS):
-            m.poke(STRTAB + i * STRENTSZ, 0)
+        # Arrays slice-4c (§3d): string scalars are chain-resident now
+        # (STRTAB is gone) -- re-anchor ARYTAB to the scalar-region base
+        # and rewrite the "no arrays" sentinel there (mirrors the initial
+        # setup's ARYTAB poke above; the vars_reset/ary_reset equivalent).
+        m.poke_w(s["ARYTAB"], 0x9002)
+        m.poke(0x9002, b"\x00\x00")
 
     def set_var(name, value):
         # str_set_key source = a STABLE [len][ptr] descriptor (slice-4a §10):

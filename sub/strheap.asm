@@ -582,11 +582,13 @@ smo_fixup:
                 ret
 
 ; --- sg_walk: visit EVERY live root descriptor, calling sg_visit(HL=descaddr)
-; on each (spec §5.2 root set: STRTAB slots, string-array elements, temp-
-; descriptor-stack entries). PRESERVES IX (the strheap_gc frame); ary_stride
-; preserves IX/IY/BC too. Clobbers A,B,C,D,E,H,L (+ sg_visit's).
+; on each (arrays slice-4c, docs/spec-basic-arrays-slice4c-string-scalar-
+; unification.md §5.2 root set, REVISED from the pre-4c STRTAB slots: the
+; unified scalar chain, string-array elements, temp-descriptor-stack
+; entries). PRESERVES IX (the strheap_gc frame); ary_stride preserves
+; IX/IY/BC too. Clobbers A,B,C,D,E,H,L (+ sg_visit's).
 sg_walk:
-                call    sg_walk_strtab
+                call    sg_walk_scalars
                 call    sg_walk_arrays
                 ; fall through to sg_walk_temps
 ; temp-stack entries [TEMPTOP, TEMPBASE), stride 3.
@@ -603,29 +605,58 @@ sgw_tm_lp:
                 ld      de,3
                 add     hl,de
                 jr      sgw_tm_lp
-; STRTAB slots (stride STRENTSZ); descriptor = slot+2 (skip name0/name1).
-sg_walk_strtab:
-                ld      hl,STRTAB
-sgw_st_lp:
-                ld      a,h
-                cp      high STREND
-                jr      nz,sgw_st_t
-                ld      a,l
-                cp      low STREND
-                ret     z
-sgw_st_t:
-                ld      a,(hl)              ; name0
-                or      a
-                jr      z,sgw_st_n          ; free slot -> skip
-                push    hl
+; --- sg_walk_scalars: the unified scalar chain [PRGEND+2, ARYTAB) --------
+; (arrays slice-4c §3b, REPLACES sg_walk_strtab). Every entry is
+; [name0][name1][type][value...]; a type==1 (string) entry's value is the
+; [len:1][ptr:2] heap descriptor at entry+3 -- visit it; a numeric entry
+; (2/4/8) is never a root, skip it. Stride is per-entry:
+; elsize_from_type(type)+3, modelled directly on sg_walk_arrays/ary_stride's
+; own per-descriptor stride. End-test is BYTE-WISE against (ARYTAB), not a
+; 16-bit `ld de,(ARYTAB)` + subtract, mirroring scv_find's own scvf_lp
+; (sub/arrays.asm) so no register beyond A is disturbed by the test.
+;
+; THE single most bug-prone byte in this slice: the descriptor offset is
+; entry+3 (past [name0][name1][type]), NOT entry+2 like the old STRTAB
+; slot (which had no type byte to skip). A stale +2 here would visit the
+; TYPE byte as a [len], corrupting every GC compaction -- gated directly
+; (array-acceptance's GC-root-correctness case is written to go red on a
+; +2 regression, docs/spec-basic-arrays-slice4c-string-scalar-
+; unification.md §9).
+sg_walk_scalars:
+                ld      hl,(PRGEND)
                 inc     hl
-                inc     hl                  ; -> descriptor (slot+2)
-                call    sg_visit
-                pop     hl
-sgw_st_n:
-                ld      de,STRENTSZ
-                add     hl,de
-                jr      sgw_st_lp
+                inc     hl                  ; HL = scalar-region base
+sgw_sc_lp:
+                ld      a,(ARYTAB+1)        ; end-of-region test, byte-wise
+                cp      h
+                jr      nz,sgw_sc_go
+                ld      a,(ARYTAB)
+                cp      l
+                ret     z                   ; HL == ARYTAB -> every scalar scanned
+sgw_sc_go:
+                push    hl                  ; [ENTRY]
+                inc     hl
+                inc     hl                  ; -> type field (entry+2)
+                ld      a,(hl)              ; A = type (kept live across the
+                                            ; conditional visit, on the CPU
+                                            ; stack, below)
+                push    af                  ; [ENTRY][TYPE]
+                cp      1
+                jr      nz,sgw_sc_skip
+                inc     hl                  ; -> descriptor (entry+3, NOT +2)
+                call    sg_visit            ; visits [len][ptr] at entry+3
+sgw_sc_skip:
+                pop     af                  ; A = type restored
+                call    elsize_from_type    ; A = elsize (identity 2/4/8;
+                                            ; 3 for type=1 string); preserves
+                                            ; BC,D,E,H,L
+                pop     hl                  ; HL = entry base
+                add     a,3                 ; A = total entry width
+                add     a,l
+                ld      l,a
+                jr      nc,sgw_sc_lp
+                inc     h
+                jr      sgw_sc_lp
 ; string-array elements: every element (stride 3) of every type==1 array
 ; descriptor, from data_start (desc+6+2*ndim) to data_end (desc+stride). The
 ; per-array element cursor/end live in the enclosing frame's +12/+14 (free

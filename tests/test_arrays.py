@@ -664,8 +664,110 @@ def run():
     print(f"{'PASS' if ok_notouch else 'FAIL'} OOM left ARYTAB UNTOUCHED "
           f"(before={before:#06x}, after={after:#06x})")
 
+    # ==================================================================
+    # Case 9: Arrays slice-4c (docs/spec-basic-arrays-slice4c-string-
+    # scalar-unification.md §3a/§3b) -- the elsize_from_type-driven scalar
+    # stride (scv_alloc/scv_find, sub/arrays.asm) and the sg_walk_scalars
+    # GC-root descriptor offset (sub/strheap.asm). Non-vacuous: reverting
+    # either the STRIDE substitution (back to raw "type+3", giving a
+    # type=1 entry stride 4 instead of 6) or the sg_walk_scalars visit
+    # offset (entry+3 -> entry+2) turns the assertions below RED.
+    # ==================================================================
+
+    # -- 9a: SCALAR_ALLOC of a STRING scalar (type=1) strides by ----------
+    # elsize_from_type(1)+3 = 6, NOT raw type+3 = 4; the fresh entry's
+    # 3-byte value field ([len][ptr]) is zero-filled in FULL (not just 1
+    # byte, which is what a reverted "B=type" zero-fill count would leave).
+    m = make_machine()
+    addr_s, err_s = scalar_alloc(ord("S"), 1)          # string, elsize 3
+    ok_s = (addr_s == ARYBASE) and (err_s == 0)
+    fails += not ok_s
+    print(f"{'PASS' if ok_s else 'FAIL'} SCALAR_ALLOC 'S$' (type=1) creates "
+          f"at ARYBASE (addr={addr_s:#06x}, err={err_s})")
+    entry_s = m.peek(addr_s, 6)
+    ok_entry_s = (entry_s[0] == ord("S") and entry_s[1] == 0
+                  and entry_s[2] == 1 and entry_s[3:] == bytes(3))
+    fails += not ok_entry_s
+    print(f"{'PASS' if ok_entry_s else 'FAIL'} 'S$' entry = "
+          f"[name0][name1][type=1][len=0][ptr=0] fully zero-filled 3 B "
+          f"({entry_s.hex()})")
+    arytab_s = peek_w(m, s["ARYTAB"])
+    ok_stride6 = arytab_s == ARYBASE + 6
+    fails += not ok_stride6
+    print(f"{'PASS' if ok_stride6 else 'FAIL'} ARYTAB advanced by "
+          f"elsize_from_type(1)+3=6, NOT raw type+3=4 "
+          f"({arytab_s:#06x}, want {ARYBASE + 6:#06x})")
+
+    # -- 9b: scv_find's skip walk (scvf_skip) over a STRING entry uses the -
+    # SAME elsize-driven stride -- a second (numeric) scalar allocated
+    # after a string one must land 6 bytes past it, and both must
+    # re-SCALAR_FIND at their correct (distinct) addresses afterward.
+    m = make_machine()
+    scalar_alloc(ord("S"), 1)                          # 'S$' at ARYBASE, stride 6
+    addr_n, err_n = scalar_alloc(ord("N"), 8)           # 'N#' double, stride 11
+    ok_n_addr = (addr_n == ARYBASE + 6) and (err_n == 0)
+    fails += not ok_n_addr
+    print(f"{'PASS' if ok_n_addr else 'FAIL'} SCALAR_ALLOC 'N#' lands at "
+          f"ARYBASE+6 (past the 6-byte string entry), not ARYBASE+4 "
+          f"(addr={addr_n:#06x}, want {ARYBASE + 6:#06x})")
+    addr_s2, err_s2 = scalar_find(ord("S"), 1)
+    ok_refind_s = (addr_s2 == ARYBASE) and (err_s2 == 0)
+    fails += not ok_refind_s
+    print(f"{'PASS' if ok_refind_s else 'FAIL'} re-SCALAR_FIND 'S$' still "
+          f"at ARYBASE (addr={addr_s2:#06x})")
+    addr_n2, err_n2 = scalar_find(ord("N"), 8)
+    ok_refind_n = (addr_n2 == ARYBASE + 6) and (err_n2 == 0)
+    fails += not ok_refind_n
+    print(f"{'PASS' if ok_refind_n else 'FAIL'} SCALAR_FIND 'N#' locates "
+          f"it past the string entry's 6-byte stride (addr={addr_n2:#06x}, "
+          f"want {ARYBASE + 6:#06x}) -- proves scvf_skip's own walk used "
+          f"elsize_from_type, not raw type+3")
+
+    # -- 9c: sg_walk_scalars (sub/strheap.asm) visits a string scalar's ---
+    # descriptor at entry+3 (past [name0][name1][type]), NOT entry+2 (the
+    # old STRTAB-slot offset). Built directly against sg_walk_scalars
+    # (skipping strheap_gc's sort/compaction machinery, which is out of
+    # scope here): a hand-built chain of [numeric 'N#'][string 'S$'], with
+    # 'S$'.ptr deliberately placed INSIDE the [OLD_FRETOP,CEIL) window and
+    # its OWN [len][ptr] bytes chosen so that reading them ONE BYTE EARLY
+    # (the entry+2 regression, which would treat the type byte as "len"
+    # and the true [len][ptr_lo] pair as a bogus 2-byte "ptr") lands
+    # OUTSIDE that window -- so the MODE=0 (count) root tally is 1 with
+    # the correct +3 offset and 0 under a +2 regression: non-vacuous.
+    m = make_machine()
+    FRAME = 0x9500                      # scratch IX frame (mirrors strheap_gc's
+                                        # own 22-byte layout, §"Own scratch
+                                        # frame" strheap.asm:393-396); only the
+                                        # fields sg_walk_scalars/sg_visit's
+                                        # MODE=0 path touch are seeded
+    OLD_FRETOP = 0xE000
+    CEIL = 0xF000
+    STR_PTR = 0xE500                    # inside [OLD_FRETOP,CEIL) -- a real
+                                        # heap body is never dereferenced by
+                                        # MODE=0 (sg_inrange only range-checks
+                                        # the ptr value, per its own header)
+    m.poke_w(FRAME + 0, OLD_FRETOP)     # +0 OLD_FRETOP
+    m.poke_w(FRAME + 2, CEIL)           # +2 CEIL
+    m.poke_w(FRAME + 4, 0)              # +4 N (count) = 0
+    m.poke(FRAME + 20, 0)               # +20 MODE = 0 (count)
+    entry_n = bytes([ord("N"), 0, 8]) + bytes(8)    # [name0][name1][type=8][val:8=0]
+    entry_str = bytes([ord("S"), 0, 1, 5,
+                        STR_PTR & 0xFF, (STR_PTR >> 8) & 0xFF])  # [S][0][1][len=5][ptr]
+    m.poke(ARYBASE, entry_n)                        # 11 B numeric entry
+    m.poke(ARYBASE + 11, entry_str)                 # 6 B string entry
+    m.poke_w(s["ARYTAB"], ARYBASE + 11 + 6)          # scalar-region end
+    m.call("sg_walk_scalars", ix=FRAME)
+    count = peek_w(m, FRAME + 4)
+    ok_walk = count == 1
+    fails += not ok_walk
+    print(f"{'PASS' if ok_walk else 'FAIL'} sg_walk_scalars visits exactly "
+          f"1 root (the string entry's descriptor at entry+3) -- N={count}, "
+          f"want 1 (a +3->+2 offset regression reads the TYPE byte as "
+          f"[len] and the true [len][ptr_lo] as a bogus out-of-range ptr, "
+          f"which sg_inrange rejects -> N would read 0)")
+
     print()
-    print("ALL PASS -- arrays slice-1+2+4b split (sub/arrays.asm)" if not fails
+    print("ALL PASS -- arrays slice-1+2+4b+4c split (sub/arrays.asm)" if not fails
           else f"{fails} CASE(S) FAILED")
     return fails
 

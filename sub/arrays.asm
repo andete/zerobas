@@ -412,15 +412,20 @@ scvf_go:
                 scf
                 ret
 scvf_skip:
-                ; advance by THIS entry's own stride (3 header bytes + its
-                ; value width, which is exactly its type value: 2/4/8 ->
-                ; 5/7/11 total) -- the identical skip arithmetic vars.asm's
-                ; pre-4b vft_skip used over the fixed pool.
+                ; advance by THIS entry's own stride: 3 header bytes +
+                ; elsize_from_type(type) -- arrays slice-4c (§3a): routed
+                ; through the SAME map ary_stride/ary_alloc already use,
+                ; instead of the raw pre-4c "type+3" (identity for numeric
+                ; 2/4/8, but type=1 (string) now strides 6 = 3+3, not 4).
+                ; elsize_from_type preserves BC,D,E,H,L (clobbers A only) --
+                ; safe to call with D still holding the caller's target type.
                 push    hl
                 inc     hl
                 inc     hl
                 ld      a,(hl)              ; type byte (stride source)
                 pop     hl
+                call    elsize_from_type    ; A = elsize (identity for 2/4/8;
+                                            ; 3 for type=1 string)
                 add     a,3                 ; A = total entry width
                 add     a,l
                 ld      l,a
@@ -483,8 +488,15 @@ scv_alloc:
                                             ; the SAME A-not-preserved trap
                                             ; aeng_dim's own comment documents)
                 ld      (iy+2),a            ; TYPE
+                ; arrays slice-4c (§3a): STRIDE = elsize_from_type(type)+3,
+                ; NOT raw type+3 -- routes through the SAME map scv_find/
+                ; ary_stride/ary_alloc already use, so a type=1 (string)
+                ; scalar strides 6 (3 header + the [len][ptr] descriptor),
+                ; not 4. Identity for numeric 2/4/8 (unchanged from pre-4c).
+                ; Clobbers A only -- IY/the frame survive.
+                call    elsize_from_type
                 add     a,3
-                ld      (iy+3),a            ; STRIDE = type+3
+                ld      (iy+3),a            ; STRIDE = elsize_from_type(type)+3
                 call    strheap_aryend      ; HL = OLDEND (current array-
                                             ; region terminator address; the
                                             ; SAME in-page call ary_alloc's
@@ -573,7 +585,13 @@ scv_ceil_fits:
                 ld      a,(iy+2)            ; type
                 ld      (hl),a
                 inc     hl                  ; HL -> value field
-                ld      b,a                 ; B = value width (2/4/8) -- same
+                ; arrays slice-4c (§3a): B = elsize_from_type(type), NOT the
+                ; raw type byte -- a type=1 (string) scalar's value field is
+                ; the 3-byte [len][ptr] descriptor, not 1 byte. Identity for
+                ; numeric 2/4/8 (unchanged from pre-4c). elsize_from_type
+                ; clobbers A only -- HL (the write cursor) survives.
+                call    elsize_from_type
+                ld      b,a                 ; B = value width (elsize) -- same
                                             ; "count via B" convention
                                             ; var_alloc_or_find's own pre-4b
                                             ; zero_fill call used; reimplemented

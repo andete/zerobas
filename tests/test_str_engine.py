@@ -75,9 +75,6 @@ def run():
     TEMPPOOL = s["TEMPPOOL"]    # temp-descriptor stack floor / current frontier top
     TEMPBASE = s["TEMPBASE"]    # temp-descriptor stack base (empty = TEMPTOP)
     TEMPTOP = s["TEMPTOP"]
-    STRTAB = s["STRTAB"]
-    STRENTSZ = s["STRENTSZ"]
-    STRSLOTS = s["STRSLOTS"]
 
     fails = 0
 
@@ -94,8 +91,12 @@ def run():
         return dlen, bytes(m.mem[bptr: bptr + dlen])
 
     def reset_strtab():
-        for i in range(STRSLOTS):
-            m.poke(STRTAB + i * STRENTSZ, 0)
+        # Arrays slice-4c (§3d): string scalars are chain-resident now
+        # (STRTAB is gone) -- re-anchor ARYTAB to the scalar-region base
+        # and rewrite the "no arrays" sentinel there (mirrors the initial
+        # setup's ARYTAB poke above; the vars_reset/ary_reset equivalent).
+        m.poke_w(s["ARYTAB"], 0x9002)
+        m.poke(0x9002, b"\x00\x00")
 
     def set_var(name, value):
         """Store value under key (name,0) via str_set_key. The source is a
