@@ -257,6 +257,24 @@ CASES = [
     # allocation is free to relocate it).
     ("scalar.varptr.value",     "direct",
         ['A%=5', 'PRINT"[";PEEK(VARPTR(A%));"]"'], "value"),
+    # VARPTR(A$) fix (post-slice-4c follow-up): a `$`-suffixed name resolves
+    # (VARTYPE)=8 in vnk_dollar (the DEFTBL/suffix numeric slot, not a
+    # string-ness flag), so pre-fix ev_f_varptr allocated a phantom NUMERIC
+    # entry B# for VARPTR(B$) instead of returning B$'s own STRING
+    # descriptor -- PEEK(VARPTR(B$)) read a stray byte of the numeric
+    # double's (auto-init 0) value field instead of the descriptor's LEN
+    # byte. Fixed by detecting string-ness via var_str_type (before
+    # var_name_key resolves VARTYPE) and passing type=1 to var_alloc_or_
+    # find, selecting the SAME stride-6 [len][ptr] entry str_set_key uses.
+    # Differential (VARPTR/PEEK are standard MSX-BASIC, and B$ already
+    # exists before VARPTR is called, satisfying the reference's own
+    # "argument must already exist" VARPTR requirement -- see the h2.*
+    # cases' comments above). NON-VACUOUS (verified by hand 2026-07-17,
+    # `git stash` on the expr.asm fix + rebuild): pre-fix zb read ' 0 '
+    # (the phantom B#'s zero value byte); post-fix zb reads ' 2 ', matching
+    # the VG-8020 reference exactly (both ' 2 ' for B$="hi").
+    ("scalar.varptr.str.value", "direct",
+        ['B$="hi"', 'PRINT"[";PEEK(VARPTR(B$));"]"'], "value"),
     # FOR/NEXT + READ over a typed (post-relocation) loop/target variable --
     # the shim path (var_get/var_set, vars.asm) now also routes through the
     # relocated chain via var_load_fac/var_store_fac's own thin ARY-tenant
@@ -703,6 +721,55 @@ def _line_tokens(raw):
     return b[4:].hex() if len(b) >= 5 else None
 
 
+# --- INPUT chain-OOM (arrays slice-4c §7.3 follow-up, post-4c Fix 1) -------
+# console/LINE INPUT/INPUT# string-store now SURFACES a scalar-CHAIN OOM
+# (str_set_key's own ARY_OP=5 path, exactly like ex_let_str's already-shipped
+# check just above -- scalar.str.chain.oom in CASES) instead of silently
+# swallowing it (basic/input.asm inpc_vstr/inpc_line, basic/files.asm
+# inp_readvar; reuses check_expr_errors/check_expr_errors_popbc, interp.asm,
+# rather than a bespoke checker). zb-only (zberr-class): the tight CLEAR
+# ceiling is zb's own chain layout, same disposition as scalar.str.chain.oom.
+# LINE INPUT is used here (not console INPUT) because it needs no field-list
+# bookkeeping and exercises the SP-clean-site helper (check_expr_errors);
+# console INPUT's own extra-word-drop helper (check_expr_errors_popbc) is
+# exercised live by every "multi"/"redo"/"extra" case in basic_probe_
+# input.py (input-acceptance) already, just never at OOM. Each LINE INPUT
+# statement needs its OWN typed response line before the next statement can
+# run, so this can't fit the (label, mode, lines, kind) CASES shape (whose
+# "err"/"zberr" dispositions anchor on lines[-1] -- here that would be a
+# RESPONSE, not the command) -- it gets its own small battery + check
+# function instead (like ABC_REGRESSION/GC_STRESS below), anchoring
+# screen_tail on the LAST LINE INPUT statement's own echo explicitly.
+#
+# NON-VACUOUS (verified by hand 2026-07-17, `git stash` on the input.asm/
+# files.asm fix + rebuild): pre-fix the tail after the LAST 'LINE INPUT Z$'
+# echo was plain '1' (the response, silently accepted, no OOM text -- the
+# retired pre-4c STRTAB-full "silent drop" contract survived into the INPUT
+# path even after ex_let_str's own fix); post-fix it is '1|Out of memory'.
+INPUT_OOM = [
+    ("scalar.input.chain.oom",
+     ['CLEAR,&H8050'] +
+     [ln for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" for ln in (f'LINE INPUT {c}$', '1')],
+     "LINE INPUT Z$", "1|Out of memory"),
+]
+
+
+def input_oom_check():
+    """INPUT chain-OOM battery (see INPUT_OOM's own header comment above).
+    Returns (npass, ntotal)."""
+    specs = [("direct", lines) for _, lines, _cmd, _want in INPUT_OOM]
+    out = R.run_cases(ZB, specs, batch=True, reset=("NEW", "CLS"),
+                      step=6.0, boot=8.0, omsx=OMSX)
+    npass = 0
+    for (label, _lines, cmd, want), zr in zip(INPUT_OOM, out):
+        got = R.screen_tail(zr, cmd)
+        ok = got == want
+        npass += ok
+        print(f"  {'PASS' if ok else 'FAIL':4}  {label:<22} "
+              f"{'' if ok else f'want={want!r} zb={got!r}'}")
+    return npass, len(INPUT_OOM)
+
+
 def crunch_check():
     """§2 crunch identity: prove ERASE tokenises byte-for-byte like the VG-8020
     AND matches the captured literal. Its own stored_line capture pass (the value/
@@ -791,7 +858,10 @@ def main():
     print("--- S6 GC-stress (zb-only; DETOKBUF sort / gc_slow / disk-cell intact) ---")
     gpass, gtotal = gc_stress_check()
     npass += gpass
-    total = len(CASES) + ctotal + atotal + gtotal
+    print("--- INPUT chain-OOM (post-4c Fix 1; zb-only) ---")
+    ipass, itotal = input_oom_check()
+    npass += ipass
+    total = len(CASES) + ctotal + atotal + gtotal + itotal
     print(f"=== arrays: {npass}/{total} {'ALL PASS' if npass == total else 'SOME FAILED'} ===")
     return 0 if npass == total else 1
 

@@ -6,12 +6,12 @@
 ; regenerated on every build so a page-0-low shift can never leave this
 ; sub-ROM calling stale addresses. docs/spec-basic-subrom-mathpack.md §4.
 
-fp_add equ 034C6H
-fp_sub equ 03578H
-fp_mul equ 035B3H
-fp_div equ 0369EH
-fp_cmp equ 03743H
-dig15_iszero equ 032DFH
-arga_pack_fac equ 033DFH
-widen_fac_to equ 03874H
-widen_uint_to equ 03BDDH
+fp_add equ 034CCH
+fp_sub equ 0357EH
+fp_mul equ 035B9H
+fp_div equ 036A4H
+fp_cmp equ 03749H
+dig15_iszero equ 032E5H
+arga_pack_fac equ 033E5H
+widen_fac_to equ 0387AH
+widen_uint_to equ 03BE3H

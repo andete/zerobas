@@ -128,6 +128,21 @@ inpc_vstr:
                 ex      de,hl               ; DE = RVDESC (str_set_key's source arg)
                 call    str_set_key         ; var$[key] = the field bytes
                 pop     hl
+    IF ROM_BASE < $4000
+                ; arrays slice-4c (§7.3) follow-up: a scalar-CHAIN OOM here
+                ; sets FPERR (str_set_key's own ARY_OP=5 path) but does not
+                ; itself abort (var_alloc_or_find's contract) -- was silently
+                ; swallowed (FPERR cleared at the next exec_stmt) before this
+                ; check. Reuses check_expr_errors_popbc (interp.asm) rather
+                ; than a bespoke checker: [stack: varstart] is live here
+                ; (pushed at inpc_dispatch, line 83), matching that routine's
+                ; own "discard our return addr + ONE caller word" abort
+                ; contract exactly (TMISMATCH is always 0 here -- INPUT never
+                ; sets it -- so only its FPERR half ever fires). OK path is a
+                ; plain `ret`, HL (textcur, needed by inpc_after below)
+                ; untouched.
+                call    check_expr_errors_popbc
+    ENDIF
 inpc_after:
                 call    skip_spaces
                 ld      a,(hl)
@@ -188,6 +203,16 @@ inpc_line:
                 ex      de,hl               ; DE = RVDESC (str_set_key's source arg)
                 call    str_set_key
                 pop     hl                  ; text cursor after the variable
+    IF ROM_BASE < $4000
+                ; arrays slice-4c (§7.3) follow-up, same disposition as
+                ; console INPUT's own check just above: a scalar-CHAIN OOM
+                ; here sets FPERR but does not itself abort. SP is at
+                ; statement level here (both guard words already popped) --
+                ; check_expr_errors (interp.asm) is the SP-clean-site variant
+                ; (no extra word to discard); TMISMATCH is always 0 (LINE
+                ; INPUT never sets it).
+                call    check_expr_errors
+    ENDIF
                 jp      exec_stmt
 
 ; --- inpc_print_q: emit the "? " input prompt to the screen ----------------

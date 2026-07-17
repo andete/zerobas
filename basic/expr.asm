@@ -1491,6 +1491,23 @@ ev_f_varptr:
                 jp      nc,ev_f_err
                 push    ix
                 pop     hl                  ; HL = cursor at the name
+    IF ROM_BASE < $4000
+                ; Fix (arrays slice-4c follow-up): VARPTR(A$) must hand back
+                ; the STRING descriptor address ([len][ptr], entry+3 of the
+                ; stride-6 string-scalar layout -- sub/arrays.asm elsize_
+                ; from_type(1)=3), not a phantom NUMERIC entry. var_name_key's
+                ; own vnk_dollar path always leaves (VARTYPE)=8 for a `$`
+                ; name (that field resolves the DEFTBL/suffix numeric type
+                ; only, it is not a string-ness flag), so VARTYPE alone can't
+                ; steer var_alloc_or_find to the right entry kind. var_str_
+                ; type (HL unmoved) answers string-ness directly; its A=1/0
+                ; result is stashed in D across var_name_key below --
+                ; deftbl_lookup, the only routine var_name_key's own no-
+                ; suffix path calls, preserves BC/DE/HL per its own header,
+                ; so D survives untouched.
+                call    var_str_type        ; A = 1 iff the name has a '$' suffix
+                ld      d,a
+    ENDIF
                 call    var_name_key        ; BC = key, HL past the name
                 push    hl
                 pop     ix                  ; IX = advanced cursor
@@ -1498,8 +1515,15 @@ ev_f_varptr:
                 ; F3: ensure the variable exists AT ITS RESOLVED TYPE (var_alloc_or_
                 ; find allocates a zero-valued entry if none exists yet, leaving an
                 ; existing one untouched), then hand back the address of its value
-                ; field (entry+3 in the typed layout).
+                ; field (entry+3 in the typed layout). type=1 (string) routes
+                ; through the SAME string-scalar entry str_set_key/str_get_key
+                ; use, instead of VARTYPE's numeric resolution (always 8 for a
+                ; `$` name).
+                ld      a,d
+                or      a
+                jr      nz,vptr_gottype     ; string: A is already 1 (from D)
                 ld      a,(VARTYPE)
+vptr_gottype:
                 call    var_alloc_or_find   ; BC,A -> CF/HL = entry base
                 jr      nc,vptr_none        ; table full -> address 0 (defensive)
                 inc     hl

@@ -799,6 +799,15 @@ inp_readvar:
     ENDIF
                 call    str_set_key         ; store the line into the string variable
                 pop     hl
+    IF ROM_BASE < $4000
+                ; arrays slice-4c (§7.3) follow-up, same disposition as
+                ; console/LINE INPUT's own checks (basic/input.asm): a
+                ; scalar-CHAIN OOM here sets FPERR but does not itself abort.
+                ; SP is at statement level (the guard words above are both
+                ; popped) -- check_expr_errors (interp.asm) is the SP-clean-
+                ; site variant; TMISMATCH is always 0 (INPUT# never sets it).
+                call    check_expr_errors
+    ENDIF
                 jp      exec_stmt
 
 ; read_into_strscr — read bytes from the open channel into the STRSCR descriptor
