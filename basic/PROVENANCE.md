@@ -1852,9 +1852,14 @@ CALSLT (clobbers HL = the text cursor), so HL is stacked across each — the sam
 rule that fixed the read-path OPEN bug.
 
 **Divergences (own design, quarantined):** single channel; `OPEN FOR APPEND` not
-yet implemented; `PRINT# USING` is a later item; the comma-zone wrap divergence of
-screen PRINT (PROVENANCE.md §PRINT) applies equally to PRINT#; write errors
-(disk full / not-open) reuse `load_error`.
+yet implemented; the comma-zone wrap divergence of screen PRINT (PROVENANCE.md
+§PRINT) applies equally to PRINT#; write errors (disk full / not-open) reuse
+`load_error`. `PRINT# USING` (the file form) IS supported (repack) and CF-3300-
+validated byte-for-byte (`disk_probe_printusing_file.py`); ex_print dispatches a
+USING after a #channel into printusing.asm with PRDEST=1. The format-copy fix that
+made it correct (pu_deref_body must preserve A across the length→ldir-count window,
+or the copy overruns the literal into the token stream) is in basic/str-engine.asm +
+docs/spec-print-hash-using.md.
 
 Clean-room: original code; semantics from the public MSX-BASIC reference + the
 black-box CF-3300 trace; the write engine reuses fat.asm. No disassembly.

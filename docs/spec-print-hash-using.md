@@ -1,8 +1,15 @@
-# Spec (DRAFT — sign-off pending): `PRINT# USING` file-form fix
+# `PRINT# USING` file-form fix — LANDED 2026-07-18
 
-Status: **DRAFT / investigation complete, implementation NOT started.** Awaiting
-sign-off before any ROM change. Repack-only (like every Phase-3 feature); lean
-16 KB `basic.rom` stays byte-identical.
+Status: **LANDED.** One-line fix (repack-only): `pu_deref_body` preserves A across the
+length→ldir-count window. All gates green; lean 16 KB `basic.rom` byte-identical.
+
+The fix confirmed the root cause below exactly. Empirical verification: emit-time
+`PU_FMTLEN` now 3 (was 255); `disk_probe_printusing_file.py` PASS (byte-identical to
+CF-3300) 10/10 stable; `diskbasic-acceptance-repack` 34/34; lean disk 34/34;
+`basic_probe_printusing.py` (screen) still green; unit 46/46; string / array (150) /
+float / math / input / error acceptance all PASS. Actual fix was slightly different
+from proposal step 1 (see "As landed" below): the corrupted quantity was **A (the copy
+count)**, clobbered by `pu_deref_body`, not the descriptor length read.
 
 ## Problem
 
@@ -65,20 +72,35 @@ KEYBUF injection (omsx_repl, atomic lines) and the screen captured — the six s
 lines echoed perfectly clean, yet the file was still corrupt and `syntax error`
 still showed. Clean injection ⇒ the corruption is the ROM, not the harness.
 
-## Proposed fix (to be validated during implementation)
+## As landed
 
-1. **Make the format copy self-contained against the entry preamble.** Capture the
-   format string's length + body pointer from the `str_eval` result *before* any
-   step that can disturb the transient descriptor, or copy via an
-   entry-preamble-independent length. The copy must never exceed the true format
-   length. (Confirm the exact corrupted quantity — descriptor length byte vs
-   `STRPTR` target — with a during-emit dump, not a post-statement one.)
-2. Re-verify the `syntax error` on multi-value reuse disappears once the overrun is
-   fixed (it is most likely a downstream consequence of the same overrun desyncing
-   the value-list cursor — verify, don't assume).
-3. **Gate:** `disk_probe_printusing_file.py` → PASS (file byte-identical to CF-3300),
-   `basic_probe_printusing.py` still green, `make diskbasic-acceptance-repack` → 34/34,
-   full lean byte-identity (`tools/check_reloc.py`), unit-tests green.
+The during-emit watchpoint (not the earlier post-statement dump, which the REPL had
+clobbered) pinned the corrupted quantity precisely: **not** the descriptor length read
+(that was correctly 3), but **A, reused as the `ldir` copy count**. In `ex_print_using`
+([basic/printusing.asm](../basic/printusing.asm)) the repack path is
+`ld (PU_FMTLEN),a` → `call pu_deref_body` → (shared tail) `ld c,a` / `ld b,0` / `ldir`.
+`pu_deref_body` ([basic/str-engine.asm](../basic/str-engine.asm)) did `ld a,(hl)` to
+fetch the pointer-low byte, **clobbering A** — so `ld c,a` used the literal's address
+low byte (here `$FF`) as the count. The `ldir` copied 255 bytes of token stream into
+`PU_FMT`, overrunning `PU_FMT+32` (= `PU_FMTLEN`) and setting it to a garbage 255;
+`pu_emit_tail` then streamed the residue. The lean path is `inc hl` (no A-clobber), so
+lean was always correct. Screen `PRINT USING` escaped it only when the literal's address
+low byte stayed ≤ ~32, so the overrun never reached `PU_FMTLEN` — luck, not correctness.
+
+**Fix:** `pu_deref_body` now `push af`/`pop af` around its body, preserving every register
+except HL. Repack-only, LOW region (+2 B, 22→20 B free; page-1 untouched at 2 B). This
+also removes the latent overrun for every other `pu_deref_body` caller (print_strval,
+LSET/RSET, CVI, string fields). The multi-value `syntax error` was indeed a downstream
+consequence of the same overrun and disappeared with the fix (verified, not assumed).
+
+Watchpoint evidence:
+`FMTLEN pc=0x5447 val=0x03` (correct len write) → `FMT+4 pc=0x5457 val=0x3B` +
+`FMTLEN pc=0x5457 val=0xFF` (the 255-byte `ldir` overrunning `PU_FMTLEN`).
+
+**Gate (all green):** `disk_probe_printusing_file.py` PASS (byte-identical to CF-3300)
+10/10; `basic_probe_printusing.py` green; `diskbasic-acceptance-repack` 34/34; lean disk
+34/34; `tools/check_reloc.py` lean byte-identical; unit 46/46; string/array/float/math/
+input/error acceptance all PASS.
 
 ## Scope / space
 

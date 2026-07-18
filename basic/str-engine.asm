@@ -114,13 +114,21 @@ hr_have:
 ; already consumed by the caller if needed) -> HL = its CURRENT body address
 ; (dereferences the ptr tail). The single shared "[len][ptr] -> bytes" reader
 ; for every page-1 string consumer (print_strval, PRINT USING string fields,
-; LSET/RSET, CVI). Clobbers A.
+; LSET/RSET, CVI). Preserves EVERY register except HL (the returned body ptr).
+; The A-preservation is load-bearing: ex_print_using's format copy keeps the
+; format length in A across this call and uses it as the ldir count; an earlier
+; A-clobber here let the copy count become the literal's pointer-low byte, so the
+; format overran into the token stream and PRINT# USING wrote garbage to the file
+; (screen PRINT USING only escaped it by luck of the literal's address). See
+; docs/spec-print-hash-using.md.
 pu_deref_body:
+                push    af                  ; keep the caller's A (the format length)
                 inc     hl
                 ld      a,(hl)              ; ptr-lo
                 inc     hl
                 ld      h,(hl)              ; ptr-hi
                 ld      l,a                 ; HL = body
+                pop     af
                 ret
 
 ; --- mk_rvdesc: A = len, HL = body address -> RVDESC := [len][ptr(=body)];

@@ -275,15 +275,13 @@ commands the documented expansion seam exists — fork still open, gated on Step
 Full DOS1-class Disk BASIC vocabulary, grouped; **[in]** = recommended Phase-2,
 **[?]** = scope to confirm, **[out]** = deferred. Build smallest end-to-end path
 first (`FILES`, then `OPEN`+`INPUT#`+`CLOSE`), grow outward.
-- [~] **Sequential file I/O [in]** — `OPEN`, `CLOSE`, `PRINT#`, `PRINT# USING`,
-      `INPUT#`, `LINE INPUT#`, `INPUT$(n,#f)`. The spike-confirmed core. Core **DONE**
-      + oracle-validated. **EXCEPT `PRINT# USING` (file form) is BROKEN** — dispatched
-      by print.asm but the format-copy overruns into the line buffer (garbage on disk;
-      multi-value → `syntax error`). Deferred/unfinished per PROVENANCE.md §PRINT# +
-      printusing.asm header; `disk_probe_printusing_file.py` (in
-      `diskbasic-acceptance-repack`) correctly fails on it. Fix spec drafted:
-      [docs/spec-print-hash-using.md](docs/spec-print-hash-using.md) (own slice,
-      sign-off pending).
+- [x] **Sequential file I/O [in]** — `OPEN`, `CLOSE`, `PRINT#`, `PRINT# USING`,
+      `INPUT#`, `LINE INPUT#`, `INPUT$(n,#f)`. The spike-confirmed core. **DONE** —
+      every sub-item below landed + oracle-validated. (`PRINT# USING` file form: a
+      format-copy overrun corrupted it until 2026-07-18 — pu_deref_body clobbered the
+      A holding the length, so the ldir count became the literal's pointer-low byte;
+      fixed by preserving A. CF-3300 byte-validated, `disk_probe_printusing_file.py`.
+      Root cause + fix: [docs/spec-print-hash-using.md](docs/spec-print-hash-using.md).)
       - [x] **read path: `OPEN…FOR INPUT` + `INPUT#` + `LINE INPUT#` + `CLOSE`** —
             DONE (basic/files.asm). EXTEND over the fat.asm sequential reader
             (`fat_io_open`/`fat_io_getbyte`); single channel; string vars only.

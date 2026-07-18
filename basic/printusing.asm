@@ -22,9 +22,15 @@
 ;
 ; This is the COMPLETE feature for zerobas's current numeric domain (integers): the
 ; float-only format specs — the decimal point '.', exponential '^^^^', and the
-; '+'/'-'/','/'**'/'$$' embellishments — arrive with Phase-3 floats. PRINT# USING
-; (the file form) and the '_' literal-escape are likewise deferred. (PROVENANCE.md
-; §PRINT USING.)
+; '+'/'-'/','/'**'/'$$' embellishments — arrive with Phase-3 floats. The '_' literal-
+; escape is likewise deferred. (PROVENANCE.md §PRINT USING.)
+;
+; PRINT# USING (the file form) IS supported (repack): ex_print (basic/print.asm)
+; dispatches a USING after a #channel here with PRDEST=1, so the formatter streams
+; through pchar to the file. CF-3300-validated byte-for-byte
+; (disk_probe_printusing_file.py). The format-copy A-preservation fix that made it
+; correct is documented in pu_deref_body (basic/str-engine.asm) + docs/spec-print-
+; hash-using.md.
 ;
 ; Clean-room: original code. Field semantics follow the public MSX-BASIC language
 ; reference; the USING token ($E4) is oracle-locked to the VG-8020 crunch. The
