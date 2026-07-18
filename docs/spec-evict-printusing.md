@@ -43,8 +43,10 @@ PRDEST); `string`/`input`/`float`/`math`-acceptance ALL PASS; `array-acceptance`
 `diskbasic-acceptance` 34 lean + 34 repack. **`repack-boot` "live PRINT 12+34" FAILS, but
 PRE-EXISTING** — it fails identically on clean `main` (cold-boot title passes; the ROM boots
 and every other BASIC gate runs PRINT fine); a matrix-typing timing issue in that gate on
-this host, unrelated to the eviction. TODO (follow-up, not blocking): extend
-`check_tenant_closure.py` with a page-0-direction mode (§7 note).
+this host, unrelated to the eviction. Follow-up DONE (commit 2838ea5):
+`check_tenant_closure.py --page0` now mechanically audits page-0 tenants (no
+low-region/BIOS/sub-page-1 escape), wired into `subrom-closure-check` +
+`basic-reloc` — the tenant's manual audit is now gated (§7 note resolved).
 
 ## 1. Why PRINT USING (the audit result)
 
