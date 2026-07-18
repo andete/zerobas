@@ -965,15 +965,14 @@ cv_deftbl:                                  ; (RUN clears here first, then the p
                 ; sufficient, since STRTAB heap bodies had to survive a bare
                 ; relink; that is no longer true post-4c).
                 call    heap_reset
-                ; Error-handling S2a (docs/spec-basic-error-handling-s2a-packet.md
-                ; §4): ERRCODE/ERRLINE do not survive NEW/CLEAR/RUN or cold boot --
-                ; ERR/ERL must read 0 before any error has been raised yet
-                ; (reference behaviour). clear_vars is the single hook that covers
-                ; all four call sites, same as the RND seed reset just above.
-                xor     a
-                ld      (ERRCODE),a
-                ld      hl,0
-                ld      (ERRLINE),hl
+                ; Error-handling S2a: ERRCODE/ERRLINE are NOT reset here. Empirically
+                ; (adversarial verify pass, 2026-07-18) the reference PRESERVES ERR/ERL
+                ; across NEW/CLEAR/RUN -- they hold the last raised error's code/line
+                ; until the NEXT error, and are zeroed ONLY at cold boot. clear_vars
+                ; runs on all four hooks (INIT/NEW/CLEAR/RUN), so the zero lives in
+                ; `init` alone (interp.asm), not here. (The signed-off packet §4 claimed
+                ; clear_vars-wide zeroing "matched reference"; that claim was false --
+                ; see docs/spec-basic-error-handling-s2a-packet.md §4 correction.)
                 ; arrays slice-4b (§3b) + §13a-F1 fix: DO NOT call vars_reset
                 ; here. vars_reset reads (PRGEND) and WRITES the $0000 array
                 ; sentinel THROUGH (ARYTAB)=(PRGEND)+2. At cold INIT

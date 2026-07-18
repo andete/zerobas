@@ -17,6 +17,17 @@
 init:
                 ei                          ; keyboard ISR must run for CHGET
                 call    clear_vars          ; deterministic variable table
+    IF ROM_BASE < $4000
+                ; Error-handling S2a: ERR/ERL are zeroed at COLD BOOT ONLY (this is
+                ; the sole cold-only hook; clear_vars also runs on NEW/CLEAR/RUN, which
+                ; the reference does NOT clear -- verified empirically 2026-07-18).
+                ; On real hardware power-on RAM is garbage, so this explicit zero is
+                ; load-bearing (openMSX zero-fills RAM, hiding the omission).
+                xor     a
+                ld      (ERRCODE),a
+                ld      hl,0
+                ld      (ERRLINE),hl
+    ENDIF
                 call    clear_usrtab        ; zero the DEF USR vectors
                 call    init_filechan       ; no open channel; PRINT dest = screen
                 call    new_prog            ; empty stored program (Step B)

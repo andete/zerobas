@@ -121,8 +121,24 @@ table's hole handling — reference-faithful enough for S2a (exact echo-of-code 
 | `ERRCODE` | 1 | $E1C5 | raise_error |
 | `ERRLINE` | 2 | $E1C6 | record_errline |
 
-(S2a needs only these two. `ONELIN`/`ONEFLG`/`ERRRESUME`/`SAVSTK` are S2b.) Cold boot +
-`clear_vars` zero `ERRCODE`/`ERRLINE` (so `ERR`/`ERL` read 0 before any error — reference).
+(S2a needs only these two. `ONELIN`/`ONEFLG`/`ERRRESUME`/`SAVSTK` are S2b.)
+
+> **CORRECTION (2026-07-18, adversarial verify pass).** The original text here said
+> "Cold boot + `clear_vars` zero `ERRCODE`/`ERRLINE` … — reference." **The `clear_vars`
+> part was empirically false.** Boot-per-case diff vs the VG-8020 reference
+> (`ERROR 11 : NEW/CLEAR/RUN : PRINT ERR`) shows the reference **PRESERVES** `ERR`/`ERL`
+> across `NEW`, `CLEAR`, and `RUN` — they hold the last raised error's code/line until the
+> *next* error, and are zeroed **only at cold boot**. The implementation was corrected to
+> zero them in `init` alone (the sole cold-only hook), not `clear_vars`. Cold boot still
+> reads 0 (verified). Lesson (recurring): the packet asserted "reference" without an
+> empirical capture; the green suite missed it because no case read `ERR` after
+> `NEW`/`CLEAR`/`RUN`.
+
+**Known S2a gap deferred to S2b (packet-sanctioned, §3(g)):** `ERROR 0` on the reference
+raises `ERR 5` (illegal function call — arg 0 rejected), whereas S2a records code 0 and
+prints "unprintable error". `ERROR n` for `n` in 1..255 matches the reference (raw code
+held, incl. out-of-table `ERROR 200`→200, `ERROR 23`→23). The `ERROR 0` argument-validation
+is S2b's ERROR-n-echo polish, consistent with §3(g)'s "reference-faithful enough for S2a."
 
 ---
 
