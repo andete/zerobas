@@ -493,8 +493,13 @@ sl_delete:
 sl_oom:
                 ld      a,$CC               ; out-of-memory landmark (distinct byte)
                 ld      (ERRMARK),a
+    IF ROM_BASE < $4000
+                ld      a,7                 ; ERR 7: out of memory (error-handling S2a)
+                jp      raise_error
+    ELSE
                 ld      hl,err_mem
                 jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
+    ENDIF
 err_mem:        db      "out of memory",13,10,0
 
 ; --- prog_find_del: locate the slot for SL_NUM, deleting an exact match ------
@@ -707,8 +712,13 @@ egs_over:
                 pop     bc                  ; discard saved target
                 ld      a,$CE               ; control-stack overflow landmark
                 ld      (ERRMARK),a
+    IF ROM_BASE < $4000
+                ld      a,7                 ; ERR 7: out of memory (error-handling S2a)
+                jp      raise_error
+    ELSE
                 ld      hl,err_stack
                 jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
+    ENDIF
 
 ; --- ex_return: RETURN -------------------------------------------------------
 ; Pop the top GOSUB frame and resume at its saved (CURLINE, resume-ptr) via the
@@ -737,8 +747,13 @@ ex_return:
 ex_ret_under:
                 ld      a,$CD               ; "return without gosub" landmark
                 ld      (ERRMARK),a
+    IF ROM_BASE < $4000
+                ld      a,3                 ; ERR 3: return without gosub (error-handling S2a)
+                jp      raise_error
+    ELSE
                 ld      hl,err_noret
                 jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
+    ENDIF
 
 ; --- ex_for: FOR <var> = <init> TO <limit> [STEP <step>] ---------------------
 ; Assign init to the loop variable, then push a frame
@@ -807,8 +822,13 @@ ef_havestep:
 ef_over:
                 ld      a,$CE
                 ld      (ERRMARK),a
+    IF ROM_BASE < $4000
+                ld      a,7                 ; ERR 7: out of memory (error-handling S2a)
+                jp      raise_error
+    ELSE
                 ld      hl,err_stack
                 jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
+    ENDIF
 
 ; --- ex_next: NEXT [<var>] ---------------------------------------------------
 ; Step the loop variable of the matching FOR frame, test against the limit, and
@@ -898,8 +918,13 @@ nx_nofor:
                 pop     hl                  ; discard the saved cursor
                 ld      a,$CB               ; "next without for" landmark
                 ld      (ERRMARK),a
+    IF ROM_BASE < $4000
+                ld      a,1                 ; ERR 1: next without for (error-handling S2a)
+                jp      raise_error
+    ELSE
                 ld      hl,err_nofor
                 jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
+    ENDIF
 
     IF ROM_BASE < $4000
 err_stack       equ     err_mem             ; repack: share sl_oom's "out of memory"
@@ -945,8 +970,13 @@ exr_nodata:
                 pop     hl                  ; discard exec cursor (balance the stack)
                 ld      a,$CA               ; "out of data" landmark
                 ld      (ERRMARK),a
+    IF ROM_BASE < $4000
+                ld      a,4                 ; ERR 4: out of data (error-handling S2a)
+                jp      raise_error
+    ELSE
                 ld      hl,err_data
                 jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
+    ENDIF
 err_data:       db      "out of data",13,10,0
 
 ; --- ex_restore: RESTORE [<line>] --------------------------------------------
@@ -1244,8 +1274,13 @@ eon_over:
                 pop     bc                  ; discard target
                 ld      a,$CE
                 ld      (ERRMARK),a
+    IF ROM_BASE < $4000
+                ld      a,7                 ; ERR 7: out of memory (error-handling S2a)
+                jp      raise_error
+    ELSE
                 ld      hl,err_stack
                 jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
+    ENDIF
 
 ; --- eon_seek_nth: find Nth $0E entry in an ON...GOTO/GOSUB target list ------
 ; in:  HL = first token after the GOTO/GOSUB token, DE = N (1-based index)

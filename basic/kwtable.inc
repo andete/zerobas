@@ -284,5 +284,17 @@ kwtable:
                 ; the FULL keyword, so order is free regardless -- same as
                 ; every entry above).
                 db      5,"ERASE",1,ERASE_TOKEN                 ; $A5
+                ; --- error-handling S2a (repack build only) -------------------
+                ; docs/spec-basic-error-handling-s2a-packet.md §1. ERROR/ERR/ERL:
+                ; single-byte tokens, black-box VG-8020 crunch capture (probes/
+                ; basic/basic_probe_pin_errtokens.py) + MSX2 TH Table 2.20 cross-
+                ; check. HARD HAZARD: "ERR" is a prefix of "ERROR"; match_kw
+                ; returns the FIRST matching entry (no longest-match), so ERROR's
+                ; entry MUST precede ERR's here or "ERROR" would crunch to
+                ; ERR_TOKEN + verbatim "OR". ERL shares no prefix with either, so
+                ; its position is free.
+                db      5,"ERROR",1,ERROR_TOKEN                 ; $A6 (statement)
+                db      3,"ERR",1,ERR_TOKEN                     ; $E2 (value token)
+                db      3,"ERL",1,ERL_TOKEN                     ; $E1 (value token)
     ENDIF
                 db      0

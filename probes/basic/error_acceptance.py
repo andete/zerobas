@@ -29,6 +29,19 @@ FAMILY B -- run-mode " in <line>" reporting (the D-2 fix). Wording stays house-s
   reference), but the *structure* is asserted on BOTH machines: a run-mode error's
   message carries " in <erroring-line>", a direct-mode error's does not. Screen-scrape.
 
+FAMILY C -- the S2a dispatcher (docs/spec-basic-error-handling-s2a-packet.md):
+  `ERROR n`, and the `ERR`/`ERL` functions. `ERROR`/`ERR`/`ERL` are standard MSX-BASIC
+  (allowed-source L110), so the NUMERIC facts (ERR's code, ERL's line/65535 sentinel)
+  are diffed against the reference like family A; the MESSAGE TEXT for `ERROR 5` is
+  checked on zerobas only (house-style wording, same policy as family B). Cases:
+    * `ERROR 5` direct -> "illegal function call" text, no " in <n>" suffix.
+    * `ERROR 5` in a run at line 10 -> " in 10" suffix present.
+    * `ERROR 5` (aborts) then a fresh direct `PRINT ERR` -> 5 (ERRCODE survives the
+      abort back to the prompt; NOT cleared until the next NEW/CLEAR/RUN).
+    * a run-mode error at line 10 -> a fresh `PRINT ERL` -> 10 (record_errline's
+      CURLINE+2 read, same line print_in_lineno's own " in <n>" would report).
+    * a direct-mode error -> `PRINT ERL` -> 65535 (the ERL-in-direct sentinel).
+
 Batched by default (one boot per machine drives the whole matrix; ("NEW","CLS") resets
 each case). Exit 0 iff every enabled assertion passes.
 """
@@ -95,6 +108,16 @@ def in_line_number(raw):
     return m[-1] if m else None
 
 
+# --- Family C: S2a -- ERROR n / ERR / ERL --------------------------------------
+CErrCase = namedtuple("CErrCase", "label lines")
+
+C_ERROR5_DIRECT = CErrCase("error5_direct", ["ERROR 5"])
+C_ERROR5_RUN    = CErrCase("error5_run",    ["10 ERROR 5", "RUN"])
+C_ERR_AFTER     = CErrCase("err_after",     ["ERROR 5", 'PRINT"R<";ERR;">"'])
+C_ERL_RUN       = CErrCase("erl_run",       ["10 ERROR 5", "RUN", 'PRINT"R<";ERL;">"'])
+C_ERL_DIRECT    = CErrCase("erl_direct",    ["PRINT SQR(-1)", 'PRINT"R<";ERL;">"'])
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -150,6 +173,55 @@ def main() -> int:
                 good = got == w
                 ok = ok and good
                 print(f"{'PASS' if good else 'FAIL':5} [{tag}] {lbl:8} in-line={got!r} (want {w!r})")
+
+    # ---------------- Family C ----------------
+    if not args.only or "c_" in (args.only or "") or "error5" in (args.only or "") \
+       or "err_after" in (args.only or "") or "erl_" in (args.only or ""):
+        print(f"\n--- FAMILY C: S2a dispatcher (ERROR n / ERR / ERL) ---")
+
+        # -- message text (zerobas only; house-style wording, not diffed) --
+        cspecs_msg = [("direct", C_ERROR5_DIRECT.lines), ("direct", C_ERROR5_RUN.lines)]
+        zb_msg = omsx_repl.run_cases(args.zb_machine, cspecs_msg, batch=batch,
+                                     reset=("NEW", "CLS"))
+        got_direct_text = "illegal function call" in (zb_msg[0] or "").lower()
+        good = got_direct_text
+        ok = ok and good
+        print(f"{'PASS' if good else 'FAIL':5} [zb] {C_ERROR5_DIRECT.label:14} "
+              f"message contains 'illegal function call' = {got_direct_text}")
+
+        got_direct_inline = in_line_number(zb_msg[0])
+        good = got_direct_inline is None
+        ok = ok and good
+        print(f"{'PASS' if good else 'FAIL':5} [zb] {C_ERROR5_DIRECT.label:14} "
+              f"in-line={got_direct_inline!r} (want None, direct mode)")
+
+        got_run_inline = in_line_number(zb_msg[1])
+        good = got_run_inline == "10"
+        ok = ok and good
+        print(f"{'PASS' if good else 'FAIL':5} [zb] {C_ERROR5_RUN.label:14} "
+              f"in-line={got_run_inline!r} (want '10')")
+
+        # -- numeric facts (ERR/ERL): diffed vs the reference, like family A --
+        ccases = [C_ERR_AFTER, C_ERL_RUN, C_ERL_DIRECT]
+        cspecs = [("direct", c.lines) for c in ccases]
+        want_num = {"err_after": "5", "erl_run": "10", "erl_direct": "65535"}
+        ref_c = omsx_repl.run_cases(args.machine, cspecs, batch=batch, reset=("NEW", "CLS"))
+        zb_c = (omsx_repl.run_cases(args.zb_machine, cspecs, batch=batch, reset=("NEW", "CLS"))
+                if not args.ref_only else [None] * len(cspecs))
+
+        for c, r in zip(ccases, ref_c):
+            got = read_A(r)
+            good = got == want_num[c.label]
+            ok = ok and good
+            print(f"{'PASS' if good else 'FAIL':5} [ref] {c.label:14} value={got!r} "
+                  f"(want {want_num[c.label]!r})")
+        if not args.ref_only:
+            for c, r in zip(ccases, zb_c):
+                got = read_A(r)
+                good = got == want_num[c.label]
+                ok = ok and good
+                print(f"{'PASS' if good else 'FAIL':5} [zb]  {c.label:14} value={got!r} "
+                      f"(want {want_num[c.label]!r})")
 
     print("\nALL PASS" if ok else "\nSOME FAILED")
     return 0 if ok else 1

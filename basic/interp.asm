@@ -228,6 +228,8 @@ exec_stmt:
                 jp      z,ex_dim
                 cp      ERASE_TOKEN         ; ERASE name[,...]  (arrays slice-2, arrays.asm)
                 jp      z,ex_erase
+                cp      ERROR_TOKEN         ; ERROR n  (error-handling S2a, below)
+                jp      z,ex_error
     ENDIF
                 call    is_letter           ; bare letter -> assignment
                 jr      c,ex_let
@@ -463,9 +465,10 @@ err_syntax:
 ; wording we don't copy).
     IF ROM_BASE < $4000
 type_mismatch_error:
-                ld      hl,err_type_mismatch
-                jr      fre_abort           ; shared PRDEST-zero+print+ret tail
-                                            ; (fp_runtime_error, right below)
+                ld      a,13                ; ERR 13: type mismatch (error-handling
+                jp      raise_error         ; S2a §2/(d), below) -- was ld hl,err_
+                                            ; type_mismatch + jr fre_abort (byte-
+                                            ; neutral: 2+3 vs 3+2)
 err_type_mismatch:
                 db      "type mismatch",13,10,0
     ENDIF
@@ -483,85 +486,232 @@ err_type_mismatch:
 ; zero" is new. NOT the reference's verbatim "?Overflow"/"?Division by zero
 ; Error" text (divergence, like D-2).
     IF ROM_BASE < $4000
-; Message dispatch is a jump TABLE indexed by FPERR (1..8), not a compare
-; chain: every caller of fp_runtime_error has already confirmed FPERR is
-; nonzero (the D-F2-1 "check right after eval()" pattern), so 1..8 is the
-; only domain this ever sees — no "0/default" case is needed. This is
-; smaller than 6 "cp n/jr z" pairs + 6 separate label bodies (arrays
-; slice-1's own §4.1 #3/#4/#8/#9/OOM dispositions pushed the chain to 7
-; entries, the point where a table pays for itself in ROM bytes).
+; Error-handling S2a (spec-basic-error-handling-s2a-packet.md §2/(c)): FPERR
+; (1..10, this project's own internal deferred-error numbering) maps to the
+; MSX ERR code via `fperr_to_err`, then funnels into `raise_error` (below) —
+; the single dispatcher that records ERRCODE/ERRLINE and prints the message
+; (indexed from `err_msgtab` by ERR code, not FPERR). This REPLACES the old
+; FPERR-indexed `fre_msgtab` (20 B, one dw per FPERR code) with a 10-byte
+; byte map (FPERR -> ERR code) — every caller of fp_runtime_error has already
+; confirmed FPERR is nonzero (the D-F2-1 "check right after eval()" pattern),
+; so 1..10 is the only domain this ever sees.
 fp_runtime_error:
                 ld      a,(FPERR)
-                dec     a                  ; 0-based index (1..8 -> 0..7)
-                add     a,a                ; *2 (word table)
+                cp      6                   ; FPERR 6 is special-cased below: ERR 7's
+                jp      z,fre_arymem_oom    ; err_msgtab entry is the LOWERCASE shared
+                                            ; "out of memory" (program.asm err_mem), but
+                                            ; FPERR=6's own message must stay arrays' own
+                                            ; reference-verbatim CAPITALISED string
+                                            ; (err_mem_arr, §9.5 keep) -- one ERR code,
+                                            ; two dispositions depending on the SITE, so
+                                            ; it cannot flow through the generic code->
+                                            ; message table like every other FPERR.
+                cp      3                   ; FPERR 3 is ALSO special-cased: ERR 5's
+                jp      z,fre_illegalfn_lc  ; err_msgtab entry is arrays' CAPITALISED
+                                            ; "Illegal function call" (needed by FPERR=8
+                                            ; and a bare `ERROR 5`), but FPERR=3's own
+                                            ; sites (SQR(x<0)/LOG(x<=0), and the deferred
+                                            ; INSTR/ASC domain checks, ev_f_ifc) keep the
+                                            ; pre-existing LOWERCASE err_illegal_fn (§9.5's
+                                            ; "unlike the lowercase shared FPERR=3 SQR/LOG
+                                            ; keep") -- same one-code-two-dispositions
+                                            ; split as FPERR=6/ERR=7 above.
+                dec     a                   ; 0-based index (1..10 -> 0..9)
                 ld      e,a
                 ld      d,0
-                ld      hl,fre_msgtab
+                ld      hl,fperr_to_err
                 add     hl,de
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)
-                ex      de,hl              ; HL = the message string
-fre_abort:                                 ; shared PRDEST-zero+fresh-line+print tail
-                                            ; (type_mismatch_error jumps in here too).
-                                            ; Body = fre_abort_low (basic/arrays.asm,
-                                            ; low region -- page 1 keeps only this jp):
-                                            ; zero PRDEST, CRLF if the cursor is
-                                            ; mid-line (the reference starts every
-                                            ; runtime error message at column 0), then
-                                            ; print_string.
+                ld      a,(hl)              ; A = MSX ERR code
+                jp      raise_error
+; --- fre_arymem_oom / fre_illegalfn_lc: the two FPERR codes (6/3) whose ------
+; message can't flow through raise_error's generic err_msgtab lookup (see
+; above) -- each duplicates raise_error's ERRCODE/record_errline/
+; fre_abort_low shape with a fixed message pointer instead of a table index.
+; Clobbers as raise_error.
+fre_arymem_oom:
+                ld      a,7                 ; ERR 7: out of memory
+                ld      (ERRCODE),a
+                call    record_errline
+                ld      hl,err_mem_arr
                 jp      fre_abort_low
-fre_msgtab:
-                dw      err_overflow        ; 1: program.asm's own string (dl_overflow),
-                                            ; REUSED byte-for-byte
-                dw      err_fp_divzero      ; 2
-                dw      err_illegal_fn      ; 3: math pack slice 1b SQR(x<0); arrays
-                                            ; slice-1 reuses this SAME disposition for
-                                            ; a negative subscript (§4.1 #9)
-                dw      err_syntax          ; 4: D-F2-3 empty parenthesised/argument
-                                            ; expression; reuse stmt_error's own string
-                dw      err_subscript       ; 5: arrays slice-1 (§4.1 #3/#8): index out
-                                            ; of range, or wrong dimension count
-                dw      err_mem_arr         ; 6: arrays slice-1 DIM/auto-dim OOM --
-                                            ; the ONLY FPERR=6 setter (ary_errmap), so
-                                            ; it takes arrays' reference-verbatim
-                                            ; capitalised "Out of memory"
-                                            ; (basic/arrays.asm, low region); program's
-                                            ; own lowercase err_mem stays direct-print
-                dw      err_redim           ; 7: arrays slice-1 (§4.1 #4): a second DIM
-                                            ; of a live array
-                dw      err_illegal_fn_arr  ; 8: arrays slice-1 (§4.1 #9): negative
-                                            ; subscript -- arrays' OWN reference-verbatim
-                                            ; capitalised "Illegal function call"
-                                            ; (basic/arrays.asm; §9.5 pins the array
-                                            ; error surface oracle-exact, unlike the
-                                            ; lowercase shared FPERR=3 SQR/LOG keep)
-                dw      err_too_complex     ; 9: arrays slice-4a (docs/spec-basic-
-                                            ; arrays-slice4a-string-heap.md §6/§11):
-                                            ; temp-descriptor stack overflow -- a new,
-                                            ; MSX-authentic message (the reference
-                                            ; raises exactly this when ITS OWN temp-
-                                            ; descriptor stack fills); string lives in
-                                            ; basic/str-engine.asm (low region, page 1
-                                            ; has no slack -- same placement discipline
-                                            ; as err_subscript et al above)
-                dw      err_type_mismatch   ; 10: a string function given a NON-string arg
-                                            ; (LEN(5)/ASC(5)/VAL(5)); ev_f_tmm (expr.asm)
-                                            ; defers this via FPERR=10. Points at the SAME
-                                            ; house-lowercase "type mismatch" string the D-2
-                                            ; comparator's type_mismatch_error uses (below).
+fre_illegalfn_lc:
+                ld      a,5                 ; ERR 5: illegal function call (lowercase)
+                ld      (ERRCODE),a
+                call    record_errline
+                ld      hl,err_illegal_fn
+                jp      fre_abort_low
+fperr_to_err:
+                db      6                   ; FPERR 1: overflow (err_overflow, program.asm's
+                                            ; own string, dl_overflow -- REUSED byte-for-byte)
+                db      11                  ; FPERR 2: division by zero (err_fp_divzero)
+                db      0                   ; FPERR 3: UNUSED slot (intercepted above via
+                                            ; fre_illegalfn_lc before this table is ever
+                                            ; indexed for FPERR=3 -- math pack slice 1b
+                                            ; SQR(x<0)/LOG, and the deferred INSTR/ASC
+                                            ; domain checks, ev_f_ifc, all keep the
+                                            ; lowercase err_illegal_fn, unlike FPERR=8's
+                                            ; capitalised err_illegal_fn_arr below)
+                db      2                   ; FPERR 4: syntax error (D-F2-3 empty
+                                            ; parenthesised/argument expression; reuses
+                                            ; stmt_error's own ERR-2 table entry)
+                db      9                   ; FPERR 5: subscript out of range -- arrays
+                                            ; slice-1 (§4.1 #3/#8): index out of range, or
+                                            ; wrong dimension count
+                db      0                   ; FPERR 6: UNUSED slot (intercepted above via
+                                            ; fre_arymem_oom before this table is ever
+                                            ; indexed for FPERR=6) -- kept as a placeholder
+                                            ; so every other FPERR's index stays FPERR-1,
+                                            ; simpler than compacting the table
+                db      10                  ; FPERR 7: redimensioned array -- arrays
+                                            ; slice-1 (§4.1 #4): a second DIM of a live array
+                db      5                   ; FPERR 8: illegal function call -- arrays
+                                            ; slice-1 (§4.1 #9): negative subscript; arrays'
+                                            ; OWN reference-verbatim capitalised
+                                            ; "Illegal function call" (basic/arrays.asm
+                                            ; err_illegal_fn_arr; §9.5 pins the array error
+                                            ; surface oracle-exact, unlike the lowercase
+                                            ; shared FPERR=3 SQR/LOG keep) -- ERR-5's table
+                                            ; entry still points at THAT string, not FPERR=3's
+                db      16                  ; FPERR 9: string formula too complex -- arrays
+                                            ; slice-4a (docs/spec-basic-arrays-slice4a-
+                                            ; string-heap.md §6/§11): temp-descriptor stack
+                                            ; overflow (basic/str-engine.asm err_too_complex,
+                                            ; low region)
+                db      13                  ; FPERR 10: type mismatch -- a string function
+                                            ; given a NON-string arg (LEN(5)/ASC(5)/VAL(5));
+                                            ; ev_f_tmm (expr.asm) defers this via FPERR=10.
+                                            ; Same ERR-13 table entry type_mismatch_error uses.
 err_fp_divzero:
                 db      "division by zero",13,10,0
 err_illegal_fn:
                 db      "illegal function call",13,10,0
 ; err_subscript/err_redim (arrays slice-1, §4.1 #3/#4/#8) live in
-; basic/arrays.asm (the low region) instead of here: page 1 is nearly full
-; (~30 B free pre-slice-1), and these two strings (~49 B) do not need to be
-; page-1 resident — only the fre_msgtab POINTER above does (a plain absolute
-; address, same cost regardless of which region the bytes it points at live
-; in). Every other new page-1 byte this slice adds is the handful of
-; unavoidable dispatch-site instructions (the DIM/`(`-peek checks) that must
-; live where exec_stmt/ex_let/ev_f_var already do.
+; basic/arrays.asm (the low region) instead of here: page 1 is nearly full,
+; and these two strings (~49 B) do not need to be page-1 resident — only the
+; err_msgtab POINTER (below) does (a plain absolute address, same cost
+; regardless of which region the bytes it points at live in).
+
+; --- raise_error: the S2a dispatcher (docs/spec-basic-error-handling-s2a- --
+; packet.md §3/(d)). in: A = MSX ERR code (1..23). Never returns to its
+; caller. Records ERR/ERL (ERRCODE/ERRLINE, sysvars.inc), looks up the
+; code's message in err_msgtab, then falls into the S1 abort body
+; (fre_abort_low, basic/arrays.asm low region: zero PRDEST, fresh-line if
+; mid-line, print the message, and — run mode only — " in <line>", D-2).
+; DEVIATION vs spec-basic-error-handling-s2.md §8's S2a listing: no handler/
+; trap check and no SAVSTK save here — S2a builds no trap branch (ONELIN is
+; never written this slice, so a check would always take the abort path
+; anyway); deferring SAVSTK's two RAM writes to S2b (when ON ERROR first
+; exists) saves 8 scarce page-1 bytes now. The seam for S2b's insertion is
+; exactly between the `call record_errline` below and the message lookup.
+; Clobbers A, DE, HL.
+raise_error:
+                ld      (ERRCODE),a
+                call    record_errline
+                ld      a,(ERRCODE)
+                or      a                  ; code 0 -> out of the 1..23 table domain
+                jr      z,rerr_unprintable
+                cp      24                 ; code > 23 -> also out of domain (e.g. a
+                jr      nc,rerr_unprintable ; wild `ERROR n` argument)
+                dec     a                  ; 1-based -> 0-based index
+                add     a,a                ; *2 (word table)
+                ld      e,a
+                ld      d,0
+                ld      hl,err_msgtab
+                add     hl,de
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)
+                ex      de,hl              ; HL = the message string
+                jp      fre_abort_low
+rerr_unprintable:
+                ld      hl,err_unprintable
+                jp      fre_abort_low
+
+; --- record_errline: ERRLINE := run mode? CURLINE+2 : 65535 (direct) -------
+; docs/spec-basic-error-handling-s2a-packet.md §3/(e). DIRECTF (D-2, D-1) is
+; always valid here (set by run_prog/ex_cont/dispatch_line before any
+; statement runs). The run-mode read mirrors print_in_lineno's own CURLINE+2
+; fetch (program.asm) byte-for-byte. 65535 is the ERL-in-direct-mode
+; sentinel (spec-basic-error-handling-s2.md §9 Q2, black-box-pinned GW/MSX
+; convention). Clobbers A, DE, HL.
+record_errline:
+                ld      a,(DIRECTF)
+                or      a
+                jr      nz,rel_direct
+                ld      hl,(CURLINE)
+                inc     hl
+                inc     hl
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)
+                ex      de,hl              ; HL = the erroring line number
+                ld      (ERRLINE),hl
+                ret
+rel_direct:
+                ld      hl,65535
+                ld      (ERRLINE),hl
+                ret
+
+; --- err_msgtab: MSX ERR code (1..23) -> message string (docs/spec-basic- --
+; error-handling-s2a-packet.md §2/(a)). Every code's message is stored ONCE
+; (this table replaces the old FPERR-indexed fre_msgtab AND every direct
+; site's own `ld hl,msg`); holes (12/14/15/18/19/20/21/22 -- not yet raised by
+; any S2a site) point at the code-23 "unprintable error" string, same as an
+; out-of-table `ERROR n` argument (raise_error, above). The capitalised
+; arrays-arc strings (err_subscript/err_redim/err_mem_arr/err_illegal_fn_arr)
+; stay separate from the lowercase shared strings, unmerged (spec-basic-
+; arrays §9.5) -- their codes (9/10/7/5) just index this table at their own
+; entries, same string, no new copy.
+err_msgtab:
+                dw      err_nofor           ; 1: next without for
+                dw      err_syntax          ; 2: syntax error
+                dw      err_noret           ; 3: return without gosub
+                dw      err_data            ; 4: out of data
+                dw      err_illegal_fn_arr  ; 5: illegal function call (arrays' own
+                                            ; capitalised string; §9.5 keep)
+                dw      err_overflow        ; 6: overflow (program.asm's dl_overflow
+                                            ; string, reused byte-for-byte)
+                dw      err_mem             ; 7: out of memory (program.asm err_mem;
+                                            ; err_stack aliases it -- program.asm)
+                dw      err_line            ; 8: undefined line number (zerobas's own
+                                            ; "undefined line" wording, spec-basic-error-
+                                            ; handling.md §4)
+                dw      err_subscript       ; 9: subscript out of range (arrays' own
+                                            ; capitalised string; §9.5 keep)
+                dw      err_redim           ; 10: redimensioned array (arrays' own
+                                            ; capitalised string; §9.5 keep)
+                dw      err_fp_divzero      ; 11: division by zero
+                dw      err_unprintable     ; 12: illegal direct (hole -- not yet raised)
+                dw      err_type_mismatch   ; 13: type mismatch
+                dw      err_unprintable     ; 14: out of string space (hole)
+                dw      err_unprintable     ; 15: string too long (hole)
+                dw      err_too_complex     ; 16: string formula too complex
+                dw      err_cont            ; 17: can't continue
+                dw      err_unprintable     ; 18: undefined user function (hole)
+                dw      err_unprintable     ; 19: device I/O error (load_error family
+                                            ; unification is its own later item, S1 §9.1;
+                                            ; hole here)
+                dw      err_unprintable     ; 20: verify error (hole -- cload.asm's own
+                                            ; err_verify is a separate, untouched path)
+                dw      err_unprintable     ; 21: no RESUME (hole -- S2b)
+                dw      err_unprintable     ; 22: RESUME without error (hole -- S2b)
+                dw      err_unprintable     ; 23: unprintable error (self; ERROR n with
+                                            ; an out-of-table code, or any hole above)
+err_unprintable:
+                db      "unprintable error",13,10,0
+
+; --- ex_error: ERROR n statement (docs/spec-basic-error-handling-s2a-------
+; packet.md §3/(g)). Evaluates the numeric argument and raises it as if it
+; were any other MSX ERR code; an out-of-table code still reaches
+; raise_error and prints "unprintable error" (code 23) via err_msgtab's own
+; hole handling above -- reference-faithful enough for S2a (echoing the
+; wild code back in the message is S2b polish). HL enters on the ERROR
+; token. Clobbers A, BC, DE, HL.
+ex_error:
+                inc     hl                  ; past the ERROR token
+                call    eval                ; DE = code, HL advanced (unused past here)
+                ld      a,e                 ; ERRCODE is a single byte (0..255 domain)
+                jp      raise_error
 
 ; --- check_expr_errors: shared TMISMATCH+FPERR post-eval() check for ------
 ; drivers that need no extra stack cleanup before erroring (ex_if, exp_num
@@ -663,8 +813,13 @@ ex_goto_at:
 ex_goto_undef:
                 ld      a,$DB               ; "undefined line" landmark
                 ld      (ERRMARK),a
+    IF ROM_BASE < $4000
+                ld      a,8                 ; ERR 8: undefined line number
+                jp      raise_error
+    ELSE
                 ld      hl,err_line
                 jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
+    ENDIF
 err_line:
                 db      "undefined line",13,10,0
 

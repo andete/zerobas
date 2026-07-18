@@ -546,6 +546,13 @@ ev_f:
     IF ROM_BASE < $4000
                 cp      INSTR_TOKEN         ; $E5 -> INSTR([p,]a$,b$) (string-functions
                 jp      z,ev_f_instr        ; Group C; single-byte token, not $FF-prefixed)
+                ; error-handling S2a (docs/spec-basic-error-handling-s2a-packet.md
+                ; §3/(f)): ERR/ERL, single-byte value tokens, same shape as
+                ; VARPTR/BASE/INSTR above.
+                cp      ERR_TOKEN           ; $E2 -> ERR (last error's MSX ERR code)
+                jp      z,ev_f_errfn
+                cp      ERL_TOKEN           ; $E1 -> ERL (last error's line, 65535=direct)
+                jp      z,ev_f_erlfn
     ENDIF
                 cp      HEX_TOKEN           ; $0C -> 2-byte LE value (&H)
                 jp      z,ev_f_word
@@ -638,6 +645,48 @@ ev_f_err:
                 ld      (ERRMARK),a
                 ld      de,0
                 ret
+
+    IF ROM_BASE < $4000
+; --- ev_f_errfn / ev_f_erlfn: ERR / ERL -> DE (error-handling S2a, docs/ ---
+; spec-basic-error-handling-s2a-packet.md §3/(f)). Single-byte value tokens,
+; no operand bytes -- same "read a RAM cell, widen to DE, step one token"
+; shape as ev_f_digit/byte/word above, so the outer eval()'s FACTYP=2 (int)
+; setting on entry already gives these the right numeric domain; no extra
+; widening code is needed here.
+ev_f_errfn:                                 ; ERR -> ERRCODE (1 B) widened to DE
+                ld      a,(ERRCODE)
+                ld      e,a
+                ld      d,0
+                inc     ix
+                ret
+ev_f_erlfn:                                 ; ERL -> ERRLINE (word), widened to FAC
+                                            ; (NOT the plain-DE int16 path ev_f_digit/
+                                            ; byte/word use): ERRLINE holds an UNSIGNED
+                                            ; word 0..65535 (a real line number can
+                                            ; exceed 32767, and the direct-mode sentinel
+                                            ; IS 65535), which would print as a negative
+                                            ; number through the strict signed-int16
+                                            ; PRINT path (print.asm exp_num: FACTYP==2 ->
+                                            ; print_number, "DE = signed-16 value").
+                                            ; Route through the SAME "escapes int16 ->
+                                            ; promote to float" pattern evmc_abs already
+                                            ; uses for ABS(-32768) (float-arith.asm
+                                            ; evabs_float): widen_uint_to (HL=dest FPNUM,
+                                            ; A=sign 0/$80, DE=unsigned magnitude) into
+                                            ; the ARGA scratch, then round_and_finalize
+                                            ; (FAC:=packed double, FACTYP:=8, DE:=silent
+                                            ; flt_to_int16) -- FACTYP=8 makes print.asm's
+                                            ; exp_num take the float path (flt_out reads
+                                            ; FAC), rendering the true unsigned value.
+                ld      hl,(ERRLINE)
+                ex      de,hl               ; DE = ERRLINE (unsigned magnitude)
+                ld      hl,ARGA
+                xor     a                   ; sign = positive (ERRLINE is never negative)
+                call    widen_uint_to
+                call    round_and_finalize
+                inc     ix
+                ret
+    ENDIF
 
 ; constant decoders --------------------------------------------------------
 ev_f_digit:                                 ; $11..$1A -> value 0..9

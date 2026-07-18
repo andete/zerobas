@@ -440,8 +440,16 @@ DIRECTF         equ     $E1C2   ; 1 = executing a DIRECT-mode line, 0 = running 
                                 ; the run-mode " in <line>" suffix. Written by
                                 ; run_prog/ex_cont (0) and dispatch_line (1) before
                                 ; any statement runs, so it is always valid when an
-                                ; error reads it — no cold-boot init needed. (S2 will
-                                ; add ERRCODE/ERRLINE alongside, per §5.5.)
+                                ; error reads it — no cold-boot init needed.
+; Error-handling S2a (spec-basic-error-handling-s2.md §4; packet §4): $E1C3/C4
+; are left clear for S2b's SAVSTK (not needed this slice — raise_error has no
+; trap branch yet, so no stack anchor to restore). ERRCODE/ERRLINE are the only
+; two S2a cells; verified clear (grep) of the freed $E1C2..$E240 VARTAB window.
+ERRCODE         equ     $E1C5   ; 1 B: last error's MSX ERR code (0 = none yet).
+                                ; Set by raise_error; read by the ERR function.
+ERRLINE         equ     $E1C6   ; 2 B: last error's line number, or 65535 if it
+                                ; happened in direct mode. Set by record_errline;
+                                ; read by the ERL function.
     ENDIF
 
 ; --- Phase 1: minimal string-variable store (own-design; see PROVENANCE.md) --
@@ -820,6 +828,13 @@ NEW_TOKEN       equ     $94
 END_TOKEN       equ     $81
 STOP_TOKEN      equ     $90
 ON_TOKEN        equ     $95
+; Error-handling S2a (docs/spec-basic-error-handling-s2a-packet.md §1): tokens
+; black-box-pinned via probes/basic/basic_probe_pin_errtokens.py on the VG-8020
+; (`ERROR` -> $A6 statement token; `a=err` -> ...EF E2, `a=erl` -> ...EF E1 --
+; both single-byte value tokens, expr.asm). RESUME=$A7 is S2b -- not added yet.
+ERROR_TOKEN     equ     $A6     ; ERROR n  (also ON ERROR GOTO, S2b)
+ERR_TOKEN       equ     $E2     ; ERR function (last error's MSX code)
+ERL_TOKEN       equ     $E1     ; ERL function (last error's line, 65535=direct)
 CONT_TOKEN      equ     $99     ; CONT (resume a STOPped/broken program). Oracle-
                                 ; confirmed byte-identical via basic_probe_crunch.py
                                 ; against the Philips VG-8020 (`cont` -> $99);
