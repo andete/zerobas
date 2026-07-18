@@ -1,10 +1,14 @@
-# Spec (DRAFT — sign-off pending): Error-handling arc **S2 — trapping**
+# Spec: Error-handling arc **S2 — trapping**
 
-Status: **DRAFT.** Sign-off required before any ROM code. Repack-only (every byte
-behind `IF ROM_BASE < $4000`, like all Phase-3 surface); lean 16 KB `basic.rom` stays
-byte-identical. Builds directly on **S1 (COMPLETE: D-1 abort + D-2 ` in <line>`)** —
-see [spec-basic-error-handling.md](spec-basic-error-handling.md). This is the "its own
-spec" that §7 of the S1 doc deferred.
+Status: **SIGNED OFF 2026-07-18** (user, this session). The §9 decisions are LOCKED with
+the recommended defaults: (1) site-funnelling into `raise_error` (choice **B**); (2)
+`ERL`-in-direct sentinel = 65535, black-box-pinned at impl; (3) capture the resume context
+at trap time; (4) the **S2a / S2b** slice split; (5) scope = `ON ERROR GOTO`/`GOTO 0`,
+`RESUME`/`NEXT`/`<line>`, `ERR`, `ERL`, `ERROR n` (MSX2 `ON ERROR RESUME NEXT` and ERR ≥ 50
+disk codes excluded). **NEXT ACTION = implement S2a** (§8) as its own session's single
+item. Repack-only (every byte behind `IF ROM_BASE < $4000`); lean 16 KB `basic.rom` stays
+byte-identical. Builds on **S1 (COMPLETE: D-1 abort + D-2 ` in <line>`)** —
+see [spec-basic-error-handling.md](spec-basic-error-handling.md).
 
 S2 delivers user-level error trapping: `ON ERROR GOTO`, `RESUME` (+ `NEXT` / `<line>`),
 the `ERR` / `ERL` functions, and the `ERROR n` statement.
