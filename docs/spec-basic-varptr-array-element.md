@@ -145,7 +145,7 @@ classes**, not slice-introduced — out of scope.
 - No change to the lean build (arrays absent there).
 - No change to scalar `VARPTR` (shipped) or `VARPTR(A$)` (shipped).
 - INPUT# mid-statement FP-error ordering (the arc's *other* candidate) is out
-  of scope — a separate slice.
+  of scope — a separate slice. **Shipped 2026-07-18**, see TODO.md.
 
 ## 8. Review
 

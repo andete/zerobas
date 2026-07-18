@@ -569,6 +569,13 @@ check_expr_errors:
                 ld      a,(TMISMATCH)
                 or      a
                 jr      nz,cee_abort_tm
+; check_fperr_only — same SP-clean-site shape as check_expr_errors above, but
+; skips the TMISMATCH check (fall-in entry point, adds no bytes). For a
+; caller where a TMISMATCH here would be a behaviour change vs today's
+; ordering (e.g. INPUT#'s channel-number eval, files.asm: a TMISMATCH channel
+; expr already hard-zeroes to channel 0 and derails through fch_valid to
+; "load error" -- unrelated to this FPERR-only check).
+check_fperr_only:
                 ld      a,(FPERR)
                 or      a
                 jr      nz,cee_abort_fp

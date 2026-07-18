@@ -745,6 +745,20 @@ input_common:
     ENDIF
                 inc     hl
                 call    eval                ; DE = channel number
+    IF ROM_BASE < $4000
+                ; arrays slice-4c follow-up (TODO "remaining faithfulness
+                ; candidate"): a mid-statement FP error in the channel-number
+                ; expression (e.g. `INPUT#1+0*(1/0),B$`) must abort BEFORE the
+                ; field is read, matching the reference's abort-before-read
+                ; ordering (was: swallowed here, only surfaced later via the
+                ; post-read check_expr_errors below). check_fperr_only
+                ; (interp.asm) — FPERR-only, not the full check_expr_errors:
+                ; a TMISMATCH channel expr already hard-zeroes DE to 0 via
+                ; type_mismatch_set (expr.asm) and derails through fch_valid
+                ; below to "load error" -- that pre-existing ordering is
+                ; untouched by this fix. 3-byte call; page-1 budget is tight.
+                call    check_fperr_only
+    ENDIF
                 ld      a,e
                 call    fch_valid
                 jp      nc,load_error       ; 0 or > MAXF -> bad file number
@@ -805,17 +819,13 @@ inp_readvar:
                 ; scalar-CHAIN OOM here sets FPERR but does not itself abort.
                 ; SP is at statement level (the guard words above are both
                 ; popped) -- check_expr_errors (interp.asm) is the SP-clean-
-                ; site variant. It also aborts on a stale TMISMATCH/FPERR from
-                ; the earlier channel-number eval (files.asm ~:748, unchecked):
-                ; a type-poisoned channel expr hard-zeroes to channel 0 and
-                ; derails to "load error"/"syntax error" BEFORE this read, so
-                ; no spurious late "type mismatch" is constructible here; but a
-                ; mid-statement FP error like `INPUT#1+0*(1/0),B$` now surfaces
-                ; "division by zero" AFTER the field is read (pre-slice-4c it
-                ; was swallowed) -- a deliberate deviation from the reference's
-                ; abort-before-read ordering (an earlier post-eval check would
-                ; close it; deferred, out of this slice's scope -- Fable review
-                ; 2026-07-17 finding A).
+                ; site variant. The channel-number expression's own FPERR is
+                ; now caught earlier, before the field read (the FPERR-only
+                ; check right after `call eval` above) -- this call only
+                ; catches a post-read scalar-chain OOM from str_set_key plus a
+                ; TMISMATCH from that same store (the latter always 0 here in
+                ; practice: str_set_key's own D-2 path handles a bad source
+                ; descriptor before it would reach here).
                 call    check_expr_errors
     ENDIF
                 jp      exec_stmt

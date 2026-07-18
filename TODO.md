@@ -968,9 +968,27 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       Fable review clean (ship; 6 design claims + ~30-case injection battery);
       one byte-neutral follow-up (malformed-`)` VARPTR now surfaces the checked
       deferred syntax error, not a silent 0). Gate `array-acceptance` **150/150**.
-      **Remaining faithfulness candidate (not a regression):** `INPUT#` surfaces
-      a mid-statement FP error after consuming the field vs the reference's
-      abort-before-read.
+      **`INPUT#` mid-statement FP-error ordering SHIPPED 2026-07-18** (the arc's
+      last remaining faithfulness candidate): a mid-statement FP error in the
+      channel-number expression (e.g. `INPUT#1+0*(1/0),B$`) now aborts BEFORE
+      the field is read, matching the reference's abort-before-read ordering
+      (was: swallowed until the post-read `check_expr_errors`, so the field got
+      consumed anyway). Fix = a new `check_fperr_only` fall-in entry point in
+      `check_expr_errors` (`basic/interp.asm`) — FPERR-only, not the full
+      TMISMATCH+FPERR check, since a TMISMATCH channel expr already hard-zeroes
+      to channel 0 and derails through `fch_valid` to `load error` (that
+      pre-existing ordering is untouched); one 3-byte `call` site in
+      `basic/files.asm`'s `ex_input`/`ex_line` shared channel-eval path
+      (page-1 had only 3 B free, so a 3-byte call reusing the shared checker
+      was required over a 7-byte inline check). Verified non-vacuous by hand
+      (pre-fix: `B$` got the file's line despite the error; post-fix: `B$`
+      stays empty) — confirms real MSX BASIC's own quirk that Division-by-
+      zero/Overflow are non-fatal (the RUN continues to the next statement)
+      holds on both sides of the fix; only the field-read ordering changed.
+      Gates green: `unit-test` 46/46, `input-acceptance` 16/16,
+      `diskbasic-acceptance` 34/34 (`INPUT#` converged), `array-acceptance`
+      150/150; lean `basic.rom` byte-identical (still pinned `e21f61fe…`);
+      repack page-1 now byte-full (0 B free).
 - [ ] **`^`** and the math functions
       `ABS SGN INT SQR SIN COS TAN ATN LOG EXP RND FIX CINT CSNG CDBL`
 - [ ] **I/O** — ✅ console `INPUT` + `LINE INPUT` (DONE 2026-07-11, see the slice log
