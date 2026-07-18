@@ -283,13 +283,14 @@ def run():
     # runtime error now aborts the RUN, matching real MSX. This REVERSES the
     # earlier own-design "continue to the next line" divergence that this test used
     # to assert; the type-mismatch here funnels through fre_abort_low, which now
-    # sets ENDFLAG.)
+    # sets ENDFLAG.) S1 D-2 further appends " in <line>" in RUN mode, so the message
+    # is "type mismatch in 20" (the error is on line 20 in each program below).
     mm, out = run_prog_cap([
         (10, 'A$="HI"'),
         (20, "IF A$<5 THEN T=99"),
         (30, "U=7"),
     ])
-    check("IF A$<5 THEN ...  prints 'type mismatch'", out == b"type mismatch\r\n",
+    check("IF A$<5 THEN ...  prints 'type mismatch'", out == b"type mismatch in 20\r\n",
           f"got {out!r}")
     check("IF A$<5 THEN ...  the THEN clause did not run (T stays 0)",
           var(mm, "T") == 0, f"T={var(mm,'T')}")
@@ -304,7 +305,7 @@ def run():
         (20, "R=A$<5:U=88"),
         (30, "V=7"),
     ])
-    check("R=A$<5:U=88  prints 'type mismatch'", out == b"type mismatch\r\n",
+    check("R=A$<5:U=88  prints 'type mismatch'", out == b"type mismatch in 20\r\n",
           f"got {out!r}")
     check("R=A$<5:U=88  R was not assigned", var(mm, "R") == 0, f"R={var(mm,'R')}")
     check("R=A$<5:U=88  the rest of the SAME line did not run (U stays 0)",
@@ -318,7 +319,7 @@ def run():
         (20, "PRINT (A$<5)"),
     ])
     check("PRINT (A$<5)  prints 'type mismatch' (no numeric item)",
-          out == b"type mismatch\r\n", f"got {out!r}")
+          out == b"type mismatch in 20\r\n", f"got {out!r}")
 
     # Control: a well-typed IF/LET/PRINT must NOT print the mismatch message and
     # must behave normally (gating does not misfire on valid comparisons).
@@ -408,7 +409,7 @@ def run():
         (20, "PRINT A$<5"),
     ])
     check("PRINT A$<5  (bare, unparenthesized) prints 'type mismatch', "
-          "NOT A$'s value", out == b"type mismatch\r\n", f"got {out!r}")
+          "NOT A$'s value", out == b"type mismatch in 20\r\n", f"got {out!r}")
 
     # D-2: items AFTER the aborting comparison on the same physical line do
     # not run (the whole line aborts) -- same contract as the parenthesized
@@ -418,7 +419,7 @@ def run():
         (20, 'PRINT A$<5:PRINT "AFTER"'),
     ])
     check('PRINT A$<5:PRINT "AFTER"  the trailing PRINT does not run',
-          out == b"type mismatch\r\n", f"got {out!r}")
+          out == b"type mismatch in 20\r\n", f"got {out!r}")
 
     # ------------------------------------------------------------------
     print("# --- S2 regression watch: plain PRINT items unchanged when NO "

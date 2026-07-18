@@ -52,6 +52,9 @@ dl_cmd:
                 ld      a,(TKOVF)           ; float-literal crunch-time overflow (F1,
                 or      a                   ; basic/float.asm) -> reject the whole line,
                 jp      nz,dl_overflow      ; own wording (D-F1-1); never execute/store
+                ld      a,1
+                ld      (DIRECTF),a         ; D-2: direct-mode exec -> error carries NO
+                                            ; " in <line>" suffix (there is no line)
     ENDIF
                 ld      hl,TOKBUF
                 jp      exec                ; returns to the REPL
@@ -204,6 +207,9 @@ run_prog:
                 ld      (GOTOFLAG),a
                 ld      (ENDFLAG),a
                 ld      (RESUMEFLAG),a
+    IF ROM_BASE < $4000
+                ld      (DIRECTF),a         ; D-2: run mode (0) — errors get " in <line>"
+    ENDIF
                 ld      hl,GOSUB_STK        ; empty return stack
                 ld      (GSP),hl
                 ld      hl,FOR_STK          ; empty FOR stack
@@ -292,6 +298,14 @@ do_break:
                 ; CURLINE+2 (the lineno field after the 2-byte link).
                 ld      hl,brk_msg
                 call    print_string
+    IF ROM_BASE < $4000
+                ; repack (D-2): the " in <lineno>" + CRLF tail is the SHARED
+                ; print_in_lineno routine (below) — the same one fre_abort_low uses
+                ; for a runtime error's " in <line>" suffix. do_break is always
+                ; reached in run mode, so the suffix is unconditional here; output is
+                ; byte-for-byte the old inline tail ("break" + " in " + <N> + CRLF).
+                jp      print_in_lineno
+    ELSE
                 ld      hl,(CURLINE)
                 inc     hl
                 inc     hl
@@ -301,7 +315,47 @@ do_break:
                 ex      de,hl               ; HL = line number
                 call    ln_div_entry        ; print HL as bare unsigned decimal
                 jp      print_crlf
+    ENDIF
+    IF ROM_BASE < $4000
+brk_msg:        db      "break",0           ; repack: " in " moved into print_in_lineno
+    ELSE
 brk_msg:        db      "break in ",0
+    ENDIF
+
+    IF ROM_BASE < $4000
+; --- print_in_lineno: " in <CURLINE lineno>" + CRLF (repack, error-handling D-2) --
+; Shared by do_break ("break in <N>") and fre_abort_low (a runtime error's run-mode
+; " in <line>" suffix). CURLINE = the current line's link-field address; the line
+; number is the 2-byte field at CURLINE+2. ln_div_entry prints HL as a bare unsigned
+; decimal. Clobbers A, BC, DE, HL. See docs/spec-basic-error-handling.md §5.4.
+print_in_lineno:
+                ld      hl,in_msg
+                call    print_string        ; " in "
+                ld      hl,(CURLINE)
+                inc     hl
+                inc     hl
+                ld      e,(hl)              ; lineno LE -> DE
+                inc     hl
+                ld      d,(hl)
+                ex      de,hl               ; HL = line number
+                call    ln_div_entry
+                jp      print_crlf
+in_msg:         db      " in ",0
+
+; --- print_string_stopcr: print (HL) up to (not including) the first CR (13) -----
+; Runtime-error message strings end 13,10,0. In run mode fre_abort_low prints the
+; body with this, then appends print_in_lineno; so it must halt at the baked CR.
+; Returns HL pointing AT the CR, letting the DIRECT-mode path resume print_string
+; there to emit the string's own 13,10 (= CRLF). Clobbers A. (No NUL check — every
+; caller's string carries a CR before its terminator.)
+print_string_stopcr:
+                ld      a,(hl)
+                cp      13
+                ret     z
+                call    pchar               ; PRDEST sink (fre_abort_low zeroed it)
+                inc     hl
+                jr      print_string_stopcr
+    ENDIF
 
 ; --- ex_stop: STOP statement — break and record a CONT resume point ----------
 ; STOP halts the program exactly like END, but ALSO records where to continue so
@@ -330,6 +384,9 @@ ex_cont:
                 xor     a
                 ld      (ENDFLAG),a
                 ld      (GOTOFLAG),a
+    IF ROM_BASE < $4000
+                ld      (DIRECTF),a         ; D-2: CONT resumes the RUN -> run mode (0)
+    ENDIF
                 ld      hl,(CONTLINE)
                 ld      (CURLINE),hl
                 ld      hl,(CONTPTR)
@@ -844,7 +901,16 @@ nx_nofor:
                 ld      hl,err_nofor
                 jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
 
+    IF ROM_BASE < $4000
+err_stack       equ     err_mem             ; repack: share sl_oom's "out of memory"
+                                            ; (D-2 self-funding — the string bytes are
+                                            ; identical; lean keeps its own copy below,
+                                            ; byte-identical). Saves 15 B in the repack
+                                            ; page-1 budget for the run-mode " in <line>"
+                                            ; suffix (docs/spec-basic-error-handling.md S1 D-2).
+    ELSE
 err_stack:      db      "out of memory",13,10,0
+    ENDIF
 err_noret:      db      "return without gosub",13,10,0
 err_nofor:      db      "next without for",13,10,0
 

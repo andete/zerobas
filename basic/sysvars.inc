@@ -433,6 +433,15 @@ VAREND          equ     VARTAB + VARSLOTS*VARENTSZ  ; $E240 in EITHER build (pin
 ; claim was needed anywhere else (own choice -- just-freed RAM).
 ARYTAB          equ     $E1C0   ; live 2-byte cell: scalar-region end == array
                                 ; base (repack only; VARTAB's own dead RAM)
+; Error-handling S1 (docs/spec-basic-error-handling.md §5.5): the freed VARTAB
+; window $E1C2..$E240 is the home for error-handling state. D-2 needs one byte:
+DIRECTF         equ     $E1C2   ; 1 = executing a DIRECT-mode line, 0 = running a
+                                ; stored program. Read by fre_abort_low to decide
+                                ; the run-mode " in <line>" suffix. Written by
+                                ; run_prog/ex_cont (0) and dispatch_line (1) before
+                                ; any statement runs, so it is always valid when an
+                                ; error reads it — no cold-boot init needed. (S2 will
+                                ; add ERRCODE/ERRLINE alongside, per §5.5.)
     ENDIF
 
 ; --- Phase 1: minimal string-variable store (own-design; see PROVENANCE.md) --

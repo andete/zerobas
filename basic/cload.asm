@@ -582,7 +582,14 @@ ctp_oom:
                 ld      (ERRMARK),a
                 ld      hl,err_prog_mem
                 jp      print_string
+    IF ROM_BASE < $4000
+err_prog_mem    equ     err_mem             ; repack: share sl_oom's "out of memory"
+                                            ; (program.asm) — identical bytes; lean keeps
+                                            ; its own copy below (byte-identical). Part of
+                                            ; D-2's self-funding string dedup (S1).
+    ELSE
 err_prog_mem:   db      "out of memory",13,10,0
+    ENDIF
 
 ; --- cas_put: store-or-compare one program byte at CLPTR, advance CLPTR --------
 ; The single mode-flagged emit point of the tokenised tape reader (spec §B).

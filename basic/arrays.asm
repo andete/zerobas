@@ -115,7 +115,15 @@ fre_abort_low:
                                             ; ld a,13/pchar/ld a,10/pchar (print.asm
                                             ; print_crlf IS that pair), reclaiming the
                                             ; funnel's ENDFLAG cost.
-                jp      print_string
+                ; D-2 (docs/spec-basic-error-handling.md §5.4): a RUN-mode error
+                ; appends " in <line>"; a DIRECT-mode error prints unchanged (no line
+                ; to name). DIRECTF is set 0/1 by run_prog/ex_cont/dispatch_line before
+                ; any statement runs, so it is valid here.
+                ld      a,(DIRECTF)
+                or      a
+                jp      nz,print_string     ; direct: message + its own baked CRLF (as before)
+                call    print_string_stopcr ; run: print the body, stop at the baked CR
+                jp      print_in_lineno     ; run: " in <line>" + CRLF (program.asm)
 
 ; --- vars_reset: re-anchor ARYTAB = PRGEND+2 (empty scalar region), then ---
 ; fall through into ary_reset to write the "no arrays" sentinel at the (now

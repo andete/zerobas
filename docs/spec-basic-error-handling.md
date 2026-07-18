@@ -5,8 +5,9 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — Error handling arc (`ON ERROR`, `RESUME`, `ERR`/`ERL`, `ERROR n`)
 
-Status: **S1 IN PROGRESS 2026-07-18 — D-1 (untrapped-error abort) LANDED; D-2 (`in N`)
-next.** User go-ahead this session. Two scoping decisions locked: the arc is sliced
+Status: **S1 COMPLETE 2026-07-18 — D-1 (untrapped-error abort) + D-2 (`in <line>`)
+BOTH LANDED.** S2 (trapping) is the next slice, its own spec. User go-ahead this
+session. Two scoping decisions locked: the arc is sliced
 **S1 foundation → S2 trapping** (§2), and the printed-message wording stays
 **house-style plus an `in <line>` suffix**, with `ERR` codes reference-exact (§4,
 §5.4). The four §9 open questions are resolved with their recommended defaults. The
@@ -34,6 +35,31 @@ Related specs: [`spec-basic-empty-expr-syntax-error.md`](spec-basic-empty-expr-s
 [`spec-basic-float-core.md`](spec-basic-float-core.md) §10.2 (`fp_runtime_error`,
 FPERR D-F2-1), [`spec-basic-arrays.md`](spec-basic-arrays.md) §4.1/§9.5 (the array
 error surface + FPERR internal-code table this arc must reconcile).
+
+**D-2 landed (2026-07-18) as a self-funding bolt-on riding D-1's single funnel —
+the central `raise_error` dispatcher of §5.1–5.3 is DEFERRED to S2.** Because D-1
+already funnels every run-mode error site through `fre_abort_low`, the suffix logic
+went in that ONE place, not a 15-site refactor. New RAM `DIRECTF` ($E1C2, §5.5) =
+1 direct / 0 run, written by `run_prog`/`ex_cont` (0) and `dispatch_line` (1) before
+any statement runs (no cold-boot init; every run-loop entry traced). `fre_abort_low`
+branches on it: direct → `jp print_string` (unchanged); run → `print_string_stopcr`
+(message body up to the baked CR) + `print_in_lineno` (" in " + `CURLINE+2` line no.
+via `ln_div_entry` + CRLF). `do_break`'s "break in <N>" tail is refactored (repack)
+to share `print_in_lineno`; lean keeps its exact inline tail (byte-identical). This
+was self-funded on the byte-full page 1 by sharing duplicate message strings in the
+repack build via `equ` aliases (lean keeps its own, byte-identical): `"out of
+memory"` ×3→×1 (~32 B) and `"illegal function call"` ×2→×1 (24 B, in the low region
+where `fre_abort_low` needed it), plus `do_break`'s factored tail. Final free: page-1
+2 B, low region 22 B; lean `basic.rom` byte-identical. Gates: `error-acceptance`
+Family B (the `in <line>` structure) now green on zerobas (was RED by design);
+`unit-test` 46/46 (`test_str_compare`'s 5 stored-mode `type mismatch` → `type
+mismatch in 20`); array/string/float/math/input ALL PASS; `diskbasic-repack` 33/34
+(the lone PRINT#-USING failure is the pre-existing harness injection flake). Empirical
+VG-8020 differential: suffix + correct line across 9 error types, direct-mode no
+suffix, multi-statement (`division by zero in 25`), and STOP/CONT (`break in 15` +
+mid-line resume). **S2 reuses `print_in_lineno` unchanged and adds the `raise_error`
+dispatcher (SAVSTK stack-reset, ERR/ERL, ON ERROR trap) — the §5.1–5.3 design, now
+scheduled where trapping actually needs it.**
 
 ---
 

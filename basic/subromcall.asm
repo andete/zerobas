@@ -79,8 +79,12 @@ subrom_absent_error:
                 ld      (PRDEST),a
                 ld      hl,err_subrom_absent
                 jp      print_string
-err_subrom_absent:
-                db      "illegal function call",13,10,0
+err_subrom_absent equ   err_illegal_fn      ; share interp.asm's identical "illegal
+                                            ; function call" string (both repack-only) —
+                                            ; reclaims 24 B in this LOW region to fund
+                                            ; D-2's run-mode " in <line>" suffix in
+                                            ; fre_abort_low (arrays.asm). Direct print,
+                                            ; no suffix (unchanged behaviour).
 
 ; ===========================================================================
 ; Interrupt trampoline — install + template (docs/spec-basic-subrom-trampoline.md)
