@@ -384,6 +384,19 @@ string-acceptance: $(DISK_ROM) repack-machine
 input-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_input.py $(if $(ONLY),--only $(ONLY),)
 
+# --- Error-handling acceptance gate (error-handling arc, S1) -------------------
+# Two differential families against the VG-8020 reference (docs/
+# spec-basic-error-handling.md): FAMILY A -- untrapped-error ABORT semantics
+# (the D-1 fix), observable-variable (10 A=1 / 20 <error> / 30 A=2 / RUN /
+# PRINT A: A==1 iff the run aborted, ==2 iff it wrongly continued) across all ten
+# fatal error types; FAMILY B -- run-mode " in <line>" reporting (the D-2 fix),
+# structure asserted on both machines (wording stays house-style, D-2, so the
+# text itself is NOT compared). Repack-only; HEAVY + oracle-dependent (boots
+# openMSX per case; needs your VG-8020 reference ROM); NOT part of the
+# emulator-free `unit-test`. Scope one case with `make error-acceptance ONLY=divzero`.
+error-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/error_acceptance.py $(if $(ONLY),--only $(ONLY),)
+
 # --- Standing float-pack acceptance gate (float arc, F1 S3 + F2 S2) -----------
 # Three differential halves against the VG-8020 reference (docs/
 # spec-basic-float-core.md §9-§10): LITERALS (basic_probe_floatlit.py -- the
@@ -463,5 +476,5 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance \
-        input-acceptance float-acceptance math-acceptance subrom-acceptance \
+        input-acceptance error-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check clean
