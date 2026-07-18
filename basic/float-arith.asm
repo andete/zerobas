@@ -1272,6 +1272,30 @@ eval_addr:
                 pop     hl
                 ret
 
+; --- eval_chan: evaluate a file-channel-number expression, surfacing a channel-
+; expr FP error as a run abort (spec §5.7 gaps). eval, then — for a NUMERIC
+; channel only — an address-domain int coercion so an out-of-range channel value
+; sets FPERR=1 (Overflow) (gap 1: `INPUT#99999*99999`); then check_fperr_only
+; surfaces that Overflow OR a deferred mid-expression Division-by-zero (gap 2:
+; `PRINT#1+0*(1/0)`) as an abort. A TMISMATCH channel (`INPUT#A$`) SKIPS the
+; coercion so it still derails through fch_valid to "load error" exactly as
+; before (the coercion on a hard-zeroed type-mismatch state must not spuriously
+; fault). Shared by INPUT#/LINE INPUT# (files.asm) and PRINT# (print.asm); the
+; tail `jp check_fperr_only` keeps that routine's SP-clean abort semantics (it
+; pops the driver's resume addr, which is eval_chan's caller). Repack-only (low
+; region). out: DE = channel number, HL past the expr. Clobbers as eval +
+; fac_to_int_addr.
+eval_chan:
+                call    eval
+                ld      a,(TMISMATCH)
+                or      a
+                jr      nz,evc_check        ; string channel -> derail as-is (no coerce)
+                push    hl
+                call    fac_to_int_addr     ; out-of-int-domain channel -> FPERR=1 (overflow)
+                pop     hl
+evc_check:
+                jp      check_fperr_only    ; surface Overflow/DivZero as abort, else ret
+
 ; --- fac_to_int_strict_reset: fac_to_int_strict, then FACTYP := 2. Shared --
 ; tail for expr.asm's logical/\/MOD operand sites (ev_xor/ev_or/ev_and/
 ; ev_not/ev_mod/ev_idiv), every one of which needs the reset immediately

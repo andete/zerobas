@@ -744,20 +744,22 @@ input_common:
                 jp      nz,stmt_error       ; lean: console INPUT = Phase 3
     ENDIF
                 inc     hl
-                call    eval                ; DE = channel number
     IF ROM_BASE < $4000
-                ; arrays slice-4c follow-up (TODO "remaining faithfulness
-                ; candidate"): a mid-statement FP error in the channel-number
-                ; expression (e.g. `INPUT#1+0*(1/0),B$`) must abort BEFORE the
-                ; field is read, matching the reference's abort-before-read
-                ; ordering (was: swallowed here, only surfaced later via the
-                ; post-read check_expr_errors below). check_fperr_only
-                ; (interp.asm) — FPERR-only, not the full check_expr_errors:
-                ; a TMISMATCH channel expr already hard-zeroes DE to 0 via
-                ; type_mismatch_set (expr.asm) and derails through fch_valid
-                ; below to "load error" -- that pre-existing ordering is
-                ; untouched by this fix. 3-byte call; page-1 budget is tight.
-                call    check_fperr_only
+                ; §5.7 gaps: a mid-statement FP error in the channel-number
+                ; expression must abort the RUN here, before the field is read,
+                ; matching the reference's abort-before-read ordering (was:
+                ; swallowed, then either surfaced late via the post-read
+                ; check_expr_errors — the arrays-4c `INPUT#1+0*(1/0)` divzero
+                ; ordering fix — or, for an OUT-OF-RANGE channel like
+                ; `INPUT#99999*99999`, never raised at all and derailed to "load
+                ; error", gap 1). eval_chan (float-arith.asm) = eval + numeric-
+                ; channel int coercion (out-of-range -> Overflow) + check_fperr_
+                ; only (deferred Division-by-zero). A TMISMATCH channel (INPUT#A$)
+                ; still derails through fch_valid to "load error" (coercion skipped
+                ; on a hard-zeroed type mismatch) -- that ordering is untouched.
+                call    eval_chan
+    ELSE
+                call    eval                ; DE = channel number
     ENDIF
                 ld      a,e
                 call    fch_valid

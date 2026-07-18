@@ -13,5 +13,5 @@ fp_div equ 036A6H
 fp_cmp equ 0374BH
 dig15_iszero equ 032E7H
 arga_pack_fac equ 033E7H
-widen_fac_to equ 0387CH
-widen_uint_to equ 03BE5H
+widen_fac_to equ 0388DH
+widen_uint_to equ 03BF6H

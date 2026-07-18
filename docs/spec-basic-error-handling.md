@@ -330,22 +330,30 @@ task that re-verified 8c1b4a8 and corrected the stale "div-by-zero/overflow non-
 wording in [TODO.md](../TODO.md) (that claim was a misread of the very D-1 bug).
 
 The same differential surfaced **two adjacent gaps** (real divergences, but **not**
-D-1 escapes — zerobas prints *no* error message in either, so nothing is *raised* for
-D-1 to abort; both then fall through to the deliberately-deferred non-fatal `load_error`
-of §5.6, which is why they continue):
+D-1 escapes — zerobas printed *no* error message in either, so nothing was *raised* for
+D-1 to abort; both then fell through to the deliberately-deferred non-fatal `load_error`
+of §5.6, which is why they continued). **BOTH FIXED + LANDED 2026-07-18:**
 
-| case | reference | zerobas today | root cause | S-slice home |
+| case | reference | zerobas (pre-fix) | root cause | fix |
 |---|---|---|---|---|
-| `INPUT#99999*99999,B$` | `Overflow in N`, abort | `load error`, continues | channel-number **float→int coercion doesn't raise Overflow** — the known D-F2-2 unwired-int-arg seam (TODO §float) | S1 funnel *and* D-F2-2 coercion fix |
-| `PRINT#1+0*(1/0),"x"` | `Division by zero in N`, abort | `load error`, continues | **PRINT#'s channel `eval` has no FPERR check** — the exact sibling of 8c1b4a8's INPUT# `check_fperr_only`, on the PRINT#/`ex_print_file` path | S1 (add the sibling check) |
+| `INPUT#99999*99999,B$` | `Overflow in N`, abort | `load error`, continues | channel-number **float→int coercion doesn't raise Overflow** — the channel `eval` used the bare `eval`, never coercing to the int domain | `eval_chan`: coerce a numeric channel via `fac_to_int_addr` (out-of-domain → FPERR=1) |
+| `PRINT#1+0*(1/0),"x"` | `Division by zero in N`, abort | `load error`, continues | **PRINT#'s channel `eval` has no FPERR check** — the sibling of 8c1b4a8's INPUT# `check_fperr_only`, absent on the PRINT# path | `eval_chan`: `check_fperr_only` surfaces the deferred divzero |
 
-Both are pre-existing, independent of D-1 and of 8c1b4a8's scope (which touched only the
-`INPUT#`/`LINE INPUT#` channel path). Faithful behaviour needs the *specific* FP-error
-raise (Overflow on coercion; FPERR check on the PRINT# channel) so the abort carries the
-right message at the right point — funnelling `load_error` alone would abort with the
-wrong (`Device I/O`) message. Deferred to the S1 site-funnelling pass / D-F2-2; captured
-here so the S1 error-site inventory (§5.3) is complete. **Page-1 is byte-full (0 B
-free)**, so like the rest of S1 these need the space lever of §8 before they can land.
+**As landed:** both fold into one shared helper `eval_chan` (basic/float-arith.asm,
+low region) = `eval` + (numeric-channel-only) `fac_to_int_addr` int coercion +
+`check_fperr_only`, used by INPUT#/LINE INPUT# (basic/files.asm) and PRINT#
+(basic/print.asm). A numeric channel now raises **Overflow** when out of int range
+(gap 1) and surfaces a deferred **Division-by-zero** (gap 2); both then abort via the
+D-1 funnel with the D-2 ` in <line>` suffix (verified: `overflow in 20` /
+`division by zero in 20`, observable-var `A`=1). A **TMISMATCH** channel (`INPUT#A$`)
+skips the coercion (guarded on `TMISMATCH`, since `type_mismatch_set` leaves `FACTYP`
+untouched and a blind coerce on the hard-zeroed state could spuriously fault) and still
+derails to `load error` — verified unchanged. This is a *targeted channel-eval*
+coercion, not the broad D-F2-2 general-coercion change (that stays its own future item).
+Byte budget: `eval_chan` is +17 B low region, but folding INPUT#'s `eval`+`check_fperr_
+only` into one call *freed* 3 B on page-1 (net page-1 2→5 B free, low 20→3 B); lean
+16 KB `basic.rom` byte-identical (all repack-only). Gates: unit 46/46, input / error /
+string / float / math acceptance, array 150, diskbasic 34 (lean) + 34 (repack) all green.
 
 ---
 

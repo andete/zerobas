@@ -999,8 +999,22 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       the abort.)*
       Gates green: `unit-test` 46/46, `input-acceptance` 16/16,
       `diskbasic-acceptance` 34/34 (`INPUT#` converged), `array-acceptance`
-      150/150; lean `basic.rom` byte-identical (still pinned `e21f61fe…`);
-      repack page-1 now byte-full (0 B free).
+      150/150; lean `basic.rom` byte-identical (still pinned `e21f61fe…`).
+      **Two adjacent channel-eval FP-error gaps SHIPPED 2026-07-18** (error-
+      handling arc, spec §5.7): (gap 1) `INPUT#99999*99999,B$` — an out-of-int-
+      range channel number now raises **Overflow** (`overflow in N`) instead of
+      derailing to `load error`; (gap 2) `PRINT#1+0*(1/0),"X"` — the PRINT#
+      channel `eval` now surfaces a deferred **Division-by-zero** (`division by
+      zero in N`), the missing sibling of the INPUT# check above. Both fold into
+      one shared low-region helper `eval_chan` (`basic/float-arith.asm`) = `eval`
+      + numeric-channel `fac_to_int_addr` int-coercion + `check_fperr_only`, used
+      by INPUT#/LINE INPUT# (`files.asm`) and PRINT# (`print.asm`); a TMISMATCH
+      channel (`INPUT#A$`) skips the coercion and still derails to `load error`
+      (verified unchanged). Folding INPUT#'s `eval`+`check_fperr_only` into one
+      call **freed** page-1 (net 2→5 B free; low 20→3 B). This is the *targeted*
+      channel-eval coercion; the broad D-F2-2 general float→int coercion stays a
+      separate future item. Gates all green (unit/input/error/string/float/math/
+      array-150/diskbasic-34-lean+repack); lean byte-identical.
 - [ ] **`^`** and the math functions
       `ABS SGN INT SQR SIN COS TAN ATN LOG EXP RND FIX CINT CSNG CDBL`
 - [ ] **I/O** — ✅ console `INPUT` + `LINE INPUT` (DONE 2026-07-11, see the slice log

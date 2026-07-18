@@ -34,7 +34,13 @@ ex_print:
                 cp      '#'
                 jr      nz,exp_loop         ; no '#': ordinary screen PRINT
                 inc     hl
+    IF ROM_BASE < $4000
+                call    eval_chan           ; §5.7 gap 2: surface a channel-expr FP
+                                            ; error (Division-by-zero / Overflow) as
+                                            ; a run abort, matching INPUT# (files.asm)
+    ELSE
                 call    eval                ; DE = channel number
+    ENDIF
                 ld      a,e
                 call    fch_valid
                 jp      nc,load_error       ; 0 or > MAXF -> bad file number
