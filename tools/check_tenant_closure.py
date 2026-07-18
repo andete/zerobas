@@ -2,29 +2,48 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 
-"""Standing page-1-escape gate for sub-ROM page-1 tenants (subrom-mathpack arc).
+"""Standing closure gates for sub-ROM tenants — BOTH page directions.
 
-A page-1 tenant (e.g. fp_sqrt) runs with main-ROM PAGE 1 switched OUT. Every
-routine in the TRANSITIVE call closure of the resident-ABI surface the tenant
-calls MUST therefore live in the page-0 low region (< $4000). If any transitive
-callee sits at >= $4000 (page 1), the tenant calls into sub-ROM $FF padding at
-runtime -> rst $38 / wild jump / hang. This bit us twice (cmp16_bits @ $4A02,
-div10 @ $5233) because the manual leaf-audit only checked DIRECT, in-file
-callees. This gate walks the FULL transitive closure across all basic/*.asm and
-fails on any page-1 escape.
+CALSLT switches only the CALLED page, so the two tenant flavours have OPPOSITE
+visibility (docs/decision-phase3-space-strategy.md §8d, subrom-tenant-playbook §2):
 
-Seed = the symbols imported in sub/basic-resident-abi.inc (exactly the page-0
-entry points the tenant calls). Extends automatically as slice-2 transcendental
-tenants add callees to that .inc.
+  * PAGE-1 tenant (e.g. fp_sqrt) runs with main-ROM PAGE 1 switched OUT, so every
+    MAIN routine it (transitively) calls MUST live in the page-0 low region
+    (< $4000). A callee at >= $4000 (main page 1) is switched out -> rst $38 /
+    wild jump / hang. (This bit us twice: cmp16_bits @ $4A02, div10 @ $5233.)
+
+  * PAGE-0 tenant (e.g. dtk_tenant, ary_engine, pu_tofield_tenant) runs with
+    slot-0 PAGE 0 (BIOS + the low region $2812-$3FFF + the $0038 ISR) switched
+    OUT, while main PAGE 1 stays mapped. So every callee must be SUB-LOCAL (the
+    sub-ROM's own page-0 code / RAM) or a MAIN PAGE-1 routine ($4000-$7FFF); a
+    call into the main low region ($2812-$3FFF) or the BIOS (< $2812) hits code
+    that is paged out -> crash. It must ALSO not reach the sub-ROM's OWN page 1
+    (>= $4000 sub-local), which is unmapped during a page-0 call.
+
+Two modes:
+
+  page-1 (default) — seed = the symbols imported in sub/basic-resident-abi.inc;
+  walk the MAIN call graph (basic/*.asm); fail on any callee >= $4000.
 
     python3 tools/check_tenant_closure.py build/basic-reloc.sym sub/basic-resident-abi.inc
+
+  page-0 (--page0) — seed = the page-0 entry-table tenants (sub/sub.asm
+  sub_p0_table); walk the SUB call graph (sub/*.asm + its includes); fail on any
+  callee that is a MAIN routine < $4000 (low region / BIOS) or a SUB-LOCAL label
+  >= $4000 (the sub's own page 1). Sub-local page-0 code + main page-1 + RAM are
+  fine. Distinguishing a sub-local $2900 (ok) from a main low-region $2900
+  (escape) is by NAME (sub-defined label vs external equ import), not address.
+
+    python3 tools/check_tenant_closure.py --page0 build/sub.sym sub/sub.asm
 """
 from __future__ import annotations
+import os
 import re
 import sys
 import glob
 
 PAGE1 = 0x4000
+LOWREGION = 0x2812   # main page-0 low region starts here; below it is BIOS
 
 _SYM = re.compile(r'^(\S+)\s+EQU\s+([0-9A-Fa-f]+)H', re.IGNORECASE)
 _LBL = re.compile(r'^([A-Za-z_]\w*):')
@@ -68,15 +87,20 @@ def _is_terminator(code: str) -> bool:
     return False
 
 
-def build_callgraph():
+def build_callgraph(files):
     """label -> set(transfer targets) using each routine's LINEAR SPAN: from its
     label through any fallthrough into later labels, up to and including the first
     unconditional terminator. This captures call/jp targets that sit past a
     fallthrough into an internal label (how div10 was missed by naive
     nearest-label attribution). Over-attribution across fallthrough is safe (a
-    page-1-escape gate must never MISS an edge)."""
+    closure gate must never MISS an edge). Fallthrough is tracked WITHIN a file
+    only (each `include` is scanned separately), matching how the original
+    basic/*.asm glob worked; edges between routines are still connected by name
+    across the whole file set."""
     graph = {}
-    for f in sorted(glob.glob("basic/*.asm")):
+    for f in files:
+        if not os.path.exists(f):
+            continue
         lines = [ln.split(';', 1)[0] for ln in open(f)]
         labels = []  # (line_index, name)
         for i, code in enumerate(lines):
@@ -101,14 +125,59 @@ def seeds_from_inc(inc_path):
             if (m := _INC_SYM.match(line))]
 
 
-def main() -> int:
-    if len(sys.argv) != 3:
-        sys.exit(__doc__)
-    syms = load_syms(sys.argv[1])
-    graph = build_callgraph()
-    seeds = seeds_from_inc(sys.argv[2])
+_INCLUDE = re.compile(r'^\s*include\s+"([^"]+)"', re.IGNORECASE)
+
+
+def _resolve_include(arg):
+    """Mirror the sub build's `-I sub` search: a bare name resolves under sub/;
+    an explicit path (basic/...) is repo-root relative."""
+    return arg if '/' in arg else os.path.join('sub', arg)
+
+
+def collect_sources(top, seen=None):
+    """Ordered, de-duplicated list of every source file the assembly at `top`
+    pulls in via `include` (recursively). Used to build the whole sub call graph
+    (its own .asm + basic/pu-render.inc, basic/detok.inc, ...)."""
+    if seen is None:
+        seen = []
+    if top in seen or not os.path.exists(top):
+        return seen
+    seen.append(top)
+    for line in open(top):
+        m = _INCLUDE.match(line.split(';', 1)[0])
+        if m:
+            collect_sources(_resolve_include(m.group(1)), seen)
+    return seen
+
+
+def page0_seeds(sub_asm):
+    """The page-0 entry-table tenants: the `jp <tenant>` run right after the
+    `sub_p0_table:` label (comment-only continuation lines are skipped; the run
+    ends at the first non-jp code line)."""
+    seeds, in_table = [], False
+    for line in open(sub_asm):
+        code = line.split(';', 1)[0]
+        if not in_table:
+            if re.match(r'^\s*sub_p0_table:', code):
+                in_table = True
+            continue
+        s = code.strip()
+        if not s:
+            continue                              # comment-only / blank -> skip
+        m = re.match(r'jp\s+([A-Za-z_]\w*)$', s)
+        if m:
+            seeds.append(m.group(1))
+        else:
+            break                                 # first non-jp -> table ended
+    return seeds
+
+
+def check_page1(argv) -> int:
+    syms = load_syms(argv[0])
+    graph = build_callgraph(sorted(glob.glob("basic/*.asm")))
+    seeds = seeds_from_inc(argv[1])
     if not seeds:
-        print(f"FAIL: no seed symbols in {sys.argv[2]}", file=sys.stderr)
+        print(f"FAIL: no seed symbols in {argv[1]}", file=sys.stderr)
         return 1
 
     seen = set()
@@ -134,6 +203,70 @@ def main() -> int:
     print(f"OK: {len(seen)} routines in the resident closure of {len(seeds)} "
           f"ABI seeds, all page-0 (< ${PAGE1:04X}). No page-1 escapes.")
     return 0
+
+
+def check_page0(argv) -> int:
+    sub_sym, sub_asm = argv[0], argv[1]
+    syms = load_syms(sub_sym)
+    sources = collect_sources(sub_asm)
+    graph = build_callgraph(sources)
+    sub_local = set(graph)                        # every label DEFINED in the sub image
+    seeds = page0_seeds(sub_asm)
+    if not seeds:
+        print(f"FAIL: no page-0 seeds found (sub_p0_table) in {sub_asm}",
+              file=sys.stderr)
+        return 1
+
+    seen = set()
+    stack = list(seeds)
+    while stack:
+        n = stack.pop()
+        if n in seen:
+            continue
+        seen.add(n)
+        stack.extend(c for c in graph.get(n, ()) if c not in seen)
+
+    # Classify every callee reached from the page-0 tenants. Sub-local page-0
+    # code + main page-1 + RAM are fine; escapes are (a) an external/main import
+    # < $4000 (main low region / BIOS, paged out), or (b) a sub-local label
+    # >= $4000 (the sub's OWN page 1, not mapped during a page-0 call).
+    escapes = []
+    for n in sorted(seen):
+        addr = syms.get(n)
+        if addr is None:
+            continue                              # constant / not a placed label
+        if n in sub_local:
+            if addr >= PAGE1:
+                escapes.append((n, addr, "sub page-1 (own $4000+ island, unmapped "
+                                         "during a page-0 call)"))
+        elif addr < PAGE1:
+            where = ("main low region $2812-$3FFF" if addr >= LOWREGION
+                     else "main BIOS < $2812")
+            escapes.append((n, addr, f"{where} (switched out under a page-0 call)"))
+
+    if escapes:
+        print("FAIL: page-0 escapes — a page-0 tenant runs with slot-0 page 0 "
+              "(BIOS + low region + ISR) switched out, so these callees crash "
+              "when reached. Keep them sub-local (page 0) or call only main "
+              "page-1 ($4000-$7FFF):", file=sys.stderr)
+        for n, a, why in escapes:
+            print(f"  {n} = {a:04X}  <- {why}", file=sys.stderr)
+        return 1
+    print(f"OK: {len(seen)} routines in the closure of {len(seeds)} page-0 "
+          f"tenants ({', '.join(seeds)}); every callee is sub-local page-0, "
+          f"main page-1, or RAM. No low-region/BIOS escape.")
+    return 0
+
+
+def main() -> int:
+    args = sys.argv[1:]
+    if args and args[0] == "--page0":
+        if len(args) != 3:
+            sys.exit(__doc__)
+        return check_page0(args[1:])
+    if len(args) != 2:
+        sys.exit(__doc__)
+    return check_page1(args)
 
 
 if __name__ == "__main__":

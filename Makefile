@@ -183,14 +183,18 @@ sub/math-coeffs.inc: tools/gen_math_coeffs.py
 subrom-abi-check: sub/basic-resident-abi.inc $(RELOC_SYM)
 	python3 tools/check_resident_abi.py $(RELOC_SYM) sub/basic-resident-abi.inc
 
-# --- Standing page-1-escape gate for page-1 tenants (subrom-mathpack arc) ------
-# A page-1 tenant runs with main-ROM page 1 switched OUT, so the FULL transitive
-# call closure of the resident-ABI surface it calls must be page-0-resident. Two
-# escapes (cmp16_bits, div10) reached page 1 via out-of-file fallthrough callees
-# and hung the tenant; the manual leaf-audit missed both. This walks the closure
-# and fails on any escape >= $4000. Also a step of `basic-reloc`.
-subrom-closure-check: sub/basic-resident-abi.inc $(RELOC_SYM)
+# --- Standing closure gates for sub-ROM tenants (both page directions) ---------
+# CALSLT switches only the called page, so the two flavours have OPPOSITE
+# visibility. PAGE-1: a page-1 tenant runs with main page 1 switched OUT, so the
+# transitive closure of the resident-ABI surface it calls must be page-0-resident
+# (< $4000) -- two escapes (cmp16_bits, div10) hung the tenant before this gate.
+# PAGE-0 (--page0): a page-0 tenant (detok/arrays/strheap/printusing) runs with
+# slot-0 page 0 (BIOS + low region + ISR) switched OUT, so it must reach only
+# sub-local page-0 code / main page-1 / RAM -- never the main low region
+# ($2812-$3FFF), the BIOS, or the sub's own page 1. Both are steps of `basic-reloc`.
+subrom-closure-check: sub/basic-resident-abi.inc $(RELOC_SYM) $(SUB_ROM)
 	python3 tools/check_tenant_closure.py $(RELOC_SYM) sub/basic-resident-abi.inc
+	python3 tools/check_tenant_closure.py --page0 $(SUB_SYM) sub/sub.asm
 
 # Assemble the $2812-based variant (basic/main-reloc.asm) and prove it lands the
 # "AB" header at $4000 and matches the shipping page-1 body byte-for-byte. This is
@@ -201,6 +205,7 @@ basic-reloc: $(ROM) $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM)
 	python3 tools/check_kwtable_identity.py $(RELOC_ROM) $(RELOC_SYM) $(SUB_ROM) $(SUB_SYM)
 	python3 tools/check_resident_abi.py $(RELOC_SYM) sub/basic-resident-abi.inc
 	python3 tools/check_tenant_closure.py $(RELOC_SYM) sub/basic-resident-abi.inc
+	python3 tools/check_tenant_closure.py --page0 $(SUB_SYM) sub/sub.asm
 
 # --- Merged repack main ROM (WS-3 / D4) ---------------------------------------
 # The 32 KB slot-0 "main ROM": repacked C-BIOS + relocated BASIC ($2812-$7FFF) +
