@@ -1524,8 +1524,21 @@ ev_f_varptr:
                 jr      nz,vptr_gottype     ; string: A is already 1 (from D)
                 ld      a,(VARTYPE)
 vptr_gottype:
+                ; ARRAY-ELEMENT form?  VARPTR(A(subs)) / VARPTR(S$(subs)) -- a
+                ; '(' right after a plain name is unambiguously a subscript list
+                ; (arrays spec §9.4, the same disambiguation ev_f_var uses to
+                ; reach ev_f_arr). Resolve the element ADDRESS via the shared
+                ; ary_op0_resolve (op=0 RESOLVE, auto-dim on read -- exactly what
+                ; ev_f_arr does, minus the FAC load) and hand it back, just as
+                ; the scalar path below hands back a scalar's value-field
+                ; address. Type in E across the '(' peek (which clobbers A).
+                ld      e,a                 ; E = resolved type
+                ld      a,(ix+0)
+                cp      '('
+                jr      z,vptr_arr          ; subscript -> array element
+                ld      a,e                 ; scalar: A = type
                 call    var_alloc_or_find   ; BC,A -> CF/HL = entry base
-                jr      nc,vptr_none        ; table full -> address 0 (defensive)
+                jr      nc,vptr_none        ; OOM (FPERR set) -> deferred, DE=0
                 inc     hl
                 inc     hl
                 inc     hl                  ; HL = value field (entry+3)
@@ -1546,20 +1559,58 @@ vptr_gottype:
                 inc     hl                  ; HL = value field (entry+2)
                 ex      de,hl               ; DE = the value-field address
     ENDIF
+vptr_close:
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      ')'
+    IF ROM_BASE < $4000
+                jp      nz,ev_f_empty       ; malformed close (incl. a consumed
+                                            ; array subscript with no outer ')') ->
+                                            ; the CHECKED deferred FPERR=4 syntax
+                                            ; error, not the bare ERRMARK ev_f_err
+                                            ; (which PRINT/LET's check_expr_errors
+                                            ; never reads -> a silent wrong 0). Byte-
+                                            ; neutral vs ev_f_err; repack-only, as
+                                            ; ev_f_empty itself is (lean keeps the
+                                            ; frozen ev_f_err below).
+    ELSE
                 jp      nz,ev_f_err
+    ENDIF
                 inc     ix
                 ret
+    IF ROM_BASE < $4000
+vptr_arr:
+                ; HL is still the cursor at '(' (var_name_key left it here and
+                ; nothing since -- push hl/pop ix copies, the type select and
+                ; the peek read via IX -- has touched it), BC = key, E = type.
+                ld      a,e                 ; A = type (ary_op0_resolve wants it in A)
+                call    ary_op0_resolve     ; Z: HL=cursor past ')', DE=elem addr
+                                            ; NZ: FPERR mapped+set (subscript out of
+                                            ; range / illegal fn call / syntax error),
+                                            ; HL=cursor -- both pop [CURSOR] once
+                push    hl
+                pop     ix                  ; IX = cursor (ev_f_var's return contract)
+                jr      z,vptr_close        ; Z: DE = element addr -> shared ')' tail
+                                            ; NZ: fall into vptr_none -- deferred
+                                            ; error (eva_deferred convention; the
+                                            ; statement aborts at check_expr_errors)
+    ENDIF
 vptr_none:
-                ld      de,0                ; table full: no address (own-design)
-                call    ev_sp
+                ld      de,0                ; no address (OOM / deferred error -> 0)
+    IF ROM_BASE < $4000
+                ret                         ; repack: FPERR already set on every path
+                                            ; that reaches here (var_alloc_or_find OOM
+                                            ; or an ary_op0_resolve error), so return
+                                            ; the deferred 0 -- no ')' check (it could
+                                            ; only raise a masking second error)
+    ELSE
+                call    ev_sp               ; lean: original bytes (byte-frozen)
                 ld      a,(ix+0)
                 cp      ')'
                 jp      nz,ev_f_err
                 inc     ix
                 ret
+    ENDIF
 
 ; --- ev_f_base: BASE(<n>) -> a VDP table base address ----------------------
 ; BASE(n) returns the base address of a VDP table for the current screen mode

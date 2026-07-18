@@ -469,6 +469,63 @@ CASES = [
     ("scalar.str.chain.oom",   "direct",
         ['CLEAR,&H8050'] + [f'{c}$="1"' for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"],
         "zberr"),
+
+    # === VARPTR of an ARRAY ELEMENT (post-4c faithfulness follow-up, ==========
+    # docs/spec-basic-varptr-array-element.md). Pre-slice ev_f_varptr expected
+    # ')' right after the name, so a subscript '(' fell to a "syntax error";
+    # the reference resolves the element and returns its value-field address.
+    # ev_f_varptr now reuses ary_op0_resolve (op=0 RESOLVE, auto-dim on read --
+    # the SAME resolver ev_f_arr uses) when the char after the name is '('. As
+    # with the scalar VARPTR cases, no gate pins the moving ADDRESS itself --
+    # each asserts the byte(s) AT the returned address, immediately, or the
+    # error tail. Reference behaviour black-box characterised on VG-8020
+    # 2026-07-18 (docs spec §2).
+    #
+    # numeric element: PEEK the value field. A%(0)=513 ($0201) -> low byte 1.
+    ("arrelem.varptr.num",      "direct",
+        ['A%(0)=513', 'PRINT"[";PEEK(VARPTR(A%(0)));"]"'], "value"),
+    # multi-dimensional element resolves (DIM B(2,3); the default-double
+    # element's first byte matches between machines).
+    ("arrelem.varptr.multidim", "direct",
+        ['DIM B(2,3):B(1,1)=513', 'PRINT"[";PEEK(VARPTR(B(1,1)));"]"'], "value"),
+    # string element: VARPTR returns the [len][ptr] descriptor address; PEEK
+    # of byte 0 is the length. S$(0)="hi" -> 2.
+    ("arrelem.varptr.str",      "direct",
+        ['S$(0)="hi"', 'PRINT"[";PEEK(VARPTR(S$(0)));"]"'], "value"),
+    # auto-dim on read: VARPTR(GG(0)) on an undeclared array dims GG to 10
+    # (read semantics), so GG(10) is then in range and reads 0 -- if VARPTR did
+    # NOT auto-dim, the line would abort before the PRINT. Both machines -> 0.
+    ("arrelem.varptr.autodim",  "direct",
+        ['Z=VARPTR(GG(0))', 'PRINT"[";GG(10);"]"'], "value"),
+    # element address is distinct from the same-named scalar's (E(0) vs E).
+    ("arrelem.varptr.distinct", "direct",
+        ['DIM E(3):E(0)=9:E=8', 'PRINT"[";VARPTR(E(0))<>VARPTR(E);"]"'], "value"),
+    # out-of-range subscript -> the reference's "Subscript out of range"
+    # (deferred FPERR, surfaced at the PRINT boundary; differential).
+    ("arrelem.varptr.oor",      "direct",
+        ['DIM C(2)', 'PRINT"[";VARPTR(C(5));"]"'], "err"),
+    # negative subscript -> "Illegal function call" (differential).
+    ("arrelem.varptr.neg",      "direct",
+        ['DIM D(2)', 'PRINT"[";VARPTR(D(-1));"]"'], "err"),
+    # empty subscript -> the deferred syntax error (zerobas lowercase house
+    # text vs the reference's capitalised "Syntax error" -- documented
+    # deviation, so synerr not err). A LET (not PRINT"[";...) so no leading
+    # bracket precedes the aborting error -- the tail is the bare house text.
+    ("arrelem.varptr.empty",    "direct",
+        ['A=VARPTR(H())'], "synerr"),
+    # H4 re-entrancy (Fable review): the subscript is itself an array rvalue,
+    # so the inner ev_f_arr runs the SAME parse machinery ary_op0_resolve does.
+    # X(0)=2, X(2)=513 -> VARPTR(X(X(0)))=VARPTR(X(2)); X default-double, so
+    # PEEK of the value field's first byte matches the reference.
+    ("arrelem.varptr.nested",   "direct",
+        ['DIM X(3):X(0)=2:X(2)=513', 'PRINT"[";PEEK(VARPTR(X(X(0))));"]"'], "value"),
+    # malformed close: a subscript with no outer ')' (VARPTR(A(0)) missing one
+    # ')'). ev_f_arr consumes the subscript's own ')', then vptr_close finds no
+    # VARPTR ')' -> the CHECKED deferred syntax error (Fable review: pre-fix
+    # this silently returned 0 because the reject went through the bare ERRMARK
+    # ev_f_err). LET so no bracket precedes the abort; synerr (lowercase house).
+    ("arrelem.varptr.noparen",  "direct",
+        ['DIM A(3):B=VARPTR(A(0)'], "synerr"),
 ]
 
 # --- S6 2nd-review GC-STRESS battery (its OWN pass, gc_stress_check below, with

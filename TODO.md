@@ -954,11 +954,23 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       numeric cell — `ev_f_varptr` passes type 1 for a `$` var); INPUT/LINE
       INPUT/INPUT# now surface the scalar-chain OOM as `Out of memory` (was a
       silent `""`; reused `check_expr_errors`/`_popbc`). Gate `array-acceptance`
-      **140/140** + `input-acceptance` 16/16. **Remaining faithfulness candidates
-      (not regressions):** array-element VARPTR `VARPTR(A(0))`/`VARPTR(S$(0))`
-      raises "syntax error" (reference supports it — pre-existing for numeric,
-      now string-visible); `INPUT#` surfaces a mid-statement FP error after
-      consuming the field vs the reference's abort-before-read.
+      **140/140** + `input-acceptance` 16/16. **Array-element VARPTR SHIPPED
+      2026-07-18** (spec [`docs/spec-basic-varptr-array-element.md`](docs/spec-basic-varptr-array-element.md)):
+      `VARPTR(A(i))`/`VARPTR(S$(i))` now resolve the element address (was
+      "syntax error") by reusing `ary_op0_resolve` (op=0 RESOLVE, auto-dim on
+      read — the same resolver `ev_f_arr` uses) in `ev_f_varptr` when a `(`
+      follows the name; numeric value-field / string `[len][ptr]` descriptor
+      address, deferred `Subscript out of range`/`Illegal function call`/
+      `syntax error` for bad subscripts — all reference-identical (VG-8020
+      black-box-characterised). Repack-only; **self-funded** (the array branch's
+      +23 B net against the old block was offset by collapsing `vptr_none`'s
+      duplicated `)`-tail repack-only → net **+5 B** page-1, lean byte-frozen).
+      Fable review clean (ship; 6 design claims + ~30-case injection battery);
+      one byte-neutral follow-up (malformed-`)` VARPTR now surfaces the checked
+      deferred syntax error, not a silent 0). Gate `array-acceptance` **150/150**.
+      **Remaining faithfulness candidate (not a regression):** `INPUT#` surfaces
+      a mid-statement FP error after consuming the field vs the reference's
+      abort-before-read.
 - [ ] **`^`** and the math functions
       `ABS SGN INT SQR SIN COS TAN ATN LOG EXP RND FIX CINT CSNG CDBL`
 - [ ] **I/O** — ✅ console `INPUT` + `LINE INPUT` (DONE 2026-07-11, see the slice log
