@@ -291,6 +291,36 @@ abort memory) is delicate; folding it into `raise_error` is a deliberate S2-or-l
 call, flagged in §9. `check_expr_errors`' existing behaviour is preserved (it already
 routes to `fp_runtime_error`, which now tails into `raise_error`).
 
+### 5.7 Empirical re-verification of commit 8c1b4a8 (2026-07-18, post-D-1)
+
+Re-running the `INPUT#` mid-statement FP-error work (commit 8c1b4a8) against the
+VG-8020 oracle post-D-1 (scratchpad `err_input.py` / `err_input_screen.py`, observable-
+variable + screen capture) **confirms the fix is correct and non-vacuous after D-1**:
+`INPUT#1+0*(1/0),B$` now raises `division by zero` and **aborts** (`A`=1, matching the
+reference), where pre-D-1 it continued. The fix governs *ordering within the statement*
+(the FP error is caught right after the channel-`eval`, before the field read),
+orthogonal to D-1's *whole-RUN* abort — both are needed and both hold. This resolves the
+task that re-verified 8c1b4a8 and corrected the stale "div-by-zero/overflow non-fatal"
+wording in [TODO.md](../TODO.md) (that claim was a misread of the very D-1 bug).
+
+The same differential surfaced **two adjacent gaps** (real divergences, but **not**
+D-1 escapes — zerobas prints *no* error message in either, so nothing is *raised* for
+D-1 to abort; both then fall through to the deliberately-deferred non-fatal `load_error`
+of §5.6, which is why they continue):
+
+| case | reference | zerobas today | root cause | S-slice home |
+|---|---|---|---|---|
+| `INPUT#99999*99999,B$` | `Overflow in N`, abort | `load error`, continues | channel-number **float→int coercion doesn't raise Overflow** — the known D-F2-2 unwired-int-arg seam (TODO §float) | S1 funnel *and* D-F2-2 coercion fix |
+| `PRINT#1+0*(1/0),"x"` | `Division by zero in N`, abort | `load error`, continues | **PRINT#'s channel `eval` has no FPERR check** — the exact sibling of 8c1b4a8's INPUT# `check_fperr_only`, on the PRINT#/`ex_print_file` path | S1 (add the sibling check) |
+
+Both are pre-existing, independent of D-1 and of 8c1b4a8's scope (which touched only the
+`INPUT#`/`LINE INPUT#` channel path). Faithful behaviour needs the *specific* FP-error
+raise (Overflow on coercion; FPERR check on the PRINT# channel) so the abort carries the
+right message at the right point — funnelling `load_error` alone would abort with the
+wrong (`Device I/O`) message. Deferred to the S1 site-funnelling pass / D-F2-2; captured
+here so the S1 error-site inventory (§5.3) is complete. **Page-1 is byte-full (0 B
+free)**, so like the rest of S1 these need the space lever of §8 before they can land.
+
 ---
 
 ## 6. S1 acceptance & gates

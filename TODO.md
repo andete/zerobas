@@ -982,9 +982,17 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       (page-1 had only 3 B free, so a 3-byte call reusing the shared checker
       was required over a 7-byte inline check). Verified non-vacuous by hand
       (pre-fix: `B$` got the file's line despite the error; post-fix: `B$`
-      stays empty) — confirms real MSX BASIC's own quirk that Division-by-
-      zero/Overflow are non-fatal (the RUN continues to the next statement)
-      holds on both sides of the fix; only the field-read ordering changed.
+      stays empty) — this fix governs **ordering within the statement** (abort
+      before vs after the field read), orthogonal to whether the RUN then
+      continues. *(Wording corrected 2026-07-18, error-handling arc: an earlier
+      version of this note claimed div-by-zero/Overflow are "non-fatal, the RUN
+      continues to the next statement" — that was a MISREAD of zerobas's own
+      pre-D-1 continue-bug as reference behaviour. Div-by-zero and Overflow are
+      **fatal** on the reference (statement abort + RUN abort → `Ok`, matching
+      the F2 entry above); the whole-RUN abort is fixed separately by the
+      error-handling arc's S1 D-1. This ordering fix stays correct and
+      non-vacuous after D-1: it decides whether the field was consumed before
+      the abort.)*
       Gates green: `unit-test` 46/46, `input-acceptance` 16/16,
       `diskbasic-acceptance` 34/34 (`INPUT#` converged), `array-acceptance`
       150/150; lean `basic.rom` byte-identical (still pinned `e21f61fe…`);
