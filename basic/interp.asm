@@ -414,6 +414,17 @@ skip_spaces:
                 inc     hl
                 jr      skip_spaces
 
+; --- fre_abort_low lean alias --------------------------------------------------
+; The repack build's abort funnel (basic/arrays.asm) sets ENDFLAG (D-1) + emits the
+; fresh-line and prints; the shared error sites in interp.asm/program.asm jump to it.
+; The lean 16 KB build has no abort funnel (untrapped-error abort is a repack-only
+; Phase-3 feature, docs/spec-basic-error-handling.md S1), so there `fre_abort_low`
+; is just `print_string` -- every `jp fre_abort_low` in shared code assembles
+; byte-for-byte to the old `jp print_string`, keeping basic.rom byte-identical.
+    IF ROM_BASE >= $4000
+fre_abort_low   equ     print_string
+    ENDIF
+
 ; --- stmt_error: unknown statement — report and return to the prompt -------
 stmt_error:
                 xor     a                   ; an error mid-PRINT# must reach the
@@ -421,8 +432,13 @@ stmt_error:
                 ld      a,$DD               ; distinct from BLOAD's $EE tape error
                 ld      (ERRMARK),a
                 ld      hl,err_syntax
-                call    print_string
+    IF ROM_BASE < $4000
+                jp      fre_abort_low       ; repack: abort the RUN (D-1) + fresh-line;
+                                            ; fre_abort_low re-zeroes PRDEST (harmless)
+    ELSE
+                call    print_string        ; lean: unchanged (byte-identical)
                 ret
+    ENDIF
     IF ROM_BASE >= $4000
 err_syntax:
                 db      "syntax error",13,10,0
@@ -648,7 +664,7 @@ ex_goto_undef:
                 ld      a,$DB               ; "undefined line" landmark
                 ld      (ERRMARK),a
                 ld      hl,err_line
-                jp      print_string
+                jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
 err_line:
                 db      "undefined line",13,10,0
 

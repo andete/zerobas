@@ -277,10 +277,13 @@ def run():
         # int consumer (ev_f_var, PRINT, ...).
         return mm.call("var_load_fac", a=8, b=ord(name), c=0).de
 
-    # IF <string vs number> THEN <clause>: the clause must NOT run, and the
-    # program continues to the line below the offending one (mirrors stmt_error's
-    # existing "ret to whoever called exec" convention -- an own-design divergence
-    # from real MSX halting the whole run, pre-dating this slice).
+    # IF <string vs number> THEN <clause>: the clause must NOT run, AND the whole
+    # RUN aborts to the prompt -- the line below the offending one does NOT run.
+    # (Error-handling arc S1, D-1, docs/spec-basic-error-handling.md: an untrapped
+    # runtime error now aborts the RUN, matching real MSX. This REVERSES the
+    # earlier own-design "continue to the next line" divergence that this test used
+    # to assert; the type-mismatch here funnels through fre_abort_low, which now
+    # sets ENDFLAG.)
     mm, out = run_prog_cap([
         (10, 'A$="HI"'),
         (20, "IF A$<5 THEN T=99"),
@@ -290,11 +293,12 @@ def run():
           f"got {out!r}")
     check("IF A$<5 THEN ...  the THEN clause did not run (T stays 0)",
           var(mm, "T") == 0, f"T={var(mm,'T')}")
-    check("IF A$<5 THEN ...  the NEXT line still runs (U=7)",
-          var(mm, "U") == 7, f"U={var(mm,'U')}")
+    check("IF A$<5 THEN ...  the RUN aborts, the NEXT line does NOT run (U stays 0)",
+          var(mm, "U") == 0, f"U={var(mm,'U')}")
 
-    # LET (numeric assignment): R=A$<5 must NOT assign R, and the rest of the
-    # SAME line (after the ':') must NOT run either -- a full line abort.
+    # LET (numeric assignment): R=A$<5 must NOT assign R, the rest of the SAME line
+    # (after the ':') must NOT run, AND the RUN aborts -- the next stored line does
+    # not run either (D-1, as above).
     mm, out = run_prog_cap([
         (10, 'A$="HI"'),
         (20, "R=A$<5:U=88"),
@@ -305,8 +309,8 @@ def run():
     check("R=A$<5:U=88  R was not assigned", var(mm, "R") == 0, f"R={var(mm,'R')}")
     check("R=A$<5:U=88  the rest of the SAME line did not run (U stays 0)",
           var(mm, "U") == 0, f"U={var(mm,'U')}")
-    check("R=A$<5:U=88  the NEXT stored line still runs (V=7)",
-          var(mm, "V") == 7, f"V={var(mm,'V')}")
+    check("R=A$<5:U=88  the RUN aborts, the NEXT stored line does NOT run (V stays 0)",
+          var(mm, "V") == 0, f"V={var(mm,'V')}")
 
     # PRINT item: PRINT (A$<5) must print the message, not a numeric value.
     mm, out = run_prog_cap([

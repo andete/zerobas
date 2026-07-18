@@ -5,14 +5,29 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — Error handling arc (`ON ERROR`, `RESUME`, `ERR`/`ERL`, `ERROR n`)
 
-Status: **SIGNED OFF 2026-07-18 — S1 READY TO IMPLEMENT.** User go-ahead this
-session. Two scoping decisions locked: the arc is sliced **S1 foundation → S2
-trapping** (§2), and the printed-message wording stays **house-style plus an
-`in <line>` suffix**, with `ERR` codes reference-exact (§4, §5.4). The four §9 open
-questions are resolved with their recommended defaults (see §9). The empirical
-findings in §1/§3 are black-box observations on the reference oracle (Philips
-VG-8020) — an allowed source (allowed-sources.md, "This project's own black-box
-oracle").
+Status: **S1 IN PROGRESS 2026-07-18 — D-1 (untrapped-error abort) LANDED; D-2 (`in N`)
+next.** User go-ahead this session. Two scoping decisions locked: the arc is sliced
+**S1 foundation → S2 trapping** (§2), and the printed-message wording stays
+**house-style plus an `in <line>` suffix**, with `ERR` codes reference-exact (§4,
+§5.4). The four §9 open questions are resolved with their recommended defaults. The
+empirical findings in §1/§3 are black-box observations on the reference oracle
+(Philips VG-8020) — an allowed source. **Implementation is split within S1 for
+risk-staging: D-1 first (the correctness fix), D-2 (message text) as a follow-up
+(broader test-expectation blast radius).**
+
+**D-1 landed (2026-07-18).** `fre_abort_low` (basic/arrays.asm) is now the single
+abort funnel: it sets `ENDFLAG`, so the run loop's post-`call exec` check unwinds to
+the REPL. All run-mode error sites `jp fre_abort_low` — aliased to `print_string` in
+the lean build (interp.asm), so lean stays byte-identical. Self-funded: reusing
+`print_crlf` for the fresh-line reclaimed more than the `ENDFLAG` cost (repack low
+region 3→8 B free). Gate `error-acceptance` Family A **10/10 green** (all ten error
+types abort, matching the reference); `unit-test` 46/46 (`test_str_compare` updated —
+it had asserted the *old buggy* continue-after-error); float/math/string/input
+ALL PASS; `array-acceptance` **150/150**. Notable: the `gc.bugB.phantom` GC
+regression test's re-tune (Fable) revealed it was **already stale/vacuous** pre-D-1
+— slice-4c dissolved the `$E240..$E268` STRTAB pool it seeded into, so it had been
+seeding dead RAM; it now seeds the real next-descriptor slot via `VARPTR(A$)+6` and
+is empirically non-vacuous.
 
 Related specs: [`spec-basic-empty-expr-syntax-error.md`](spec-basic-empty-expr-syntax-error.md)
 (the `check_expr_errors` deferred-error discipline this arc generalises),
@@ -284,13 +299,13 @@ New probe `basic_probe_error_acceptance.py` (repack machine + VG-8020 differenti
 asserting **abort semantics** and **`in N` reporting** — not verbatim wording (D-2:
 differential asserts behaviour, house-style text differs by design). Cases:
 
-* **Abort**: for each fatal code reachable today (illegal-fn / subscript / next-no-for
-  / return-no-gosub / redim / type-mismatch / out-of-data / undefined-line / overflow*
-  ) — a 3-line program erroring at line 20 with a marker `PRINT` at line 30; assert
-  the marker does **not** print on either machine, and both return to their prompt.
-  (*overflow/divzero are the reference's own non-fatal quirk — float-core §10.2; those
-  cases assert *continue*, matching the existing `INPUT#` FP-ordering finding. The
-  probe encodes which codes are fatal vs non-fatal, per the reference.)
+* **Abort (uniform)**: for **all ten** error types reachable today (illegal-fn 5 /
+  subscript 9 / next-without-for 1 / return-without-gosub 3 / redim 10 / type-mismatch
+  13 / out-of-data 4 / undefined-line 8 / division-by-zero 11 / overflow 6) — the
+  **observable-variable** design (line 10 `A=1`, error at line 20, line 30 `A=2`; after
+  RUN a direct `PRINT A`): assert `A`=1 on **both** machines (the run aborted, line 30
+  never ran). Robust (no marker-vs-echo disambiguation) and already locked green on the
+  reference (all ten `A`=1) and red on zerobas today (all ten `A`=2 — the D-1 bug).
 * **`in N`**: run-mode error carries ` in <lineno>` with the correct line (the
   *statement's* line, e.g. `in 25`); direct-mode error carries no suffix.
 * **Multi-statement**: error mid-`:`-line reports the right line and aborts the line.
@@ -351,12 +366,19 @@ fall back to the tenant only if the byte count demands it.
    device-load error path keeps its own `ret`-based semantics in S1; its nested-reject
    CF contract (load-error-is-not-abort memory) is delicate, and it is already
    direct-mode-anchored. S1 does not touch it.
-2. **Non-fatal overflow/divzero — PRESERVED as documented deviation.** The reference
-   treats Overflow/Division-by-zero as **non-fatal** (RUN continues — float-core §10.2,
-   re-confirmed by the `INPUT#` FP-ordering work). Those codes pass through
-   `raise_error` but take the *continue* path, not abort. The §6 probe encodes
-   fatal-vs-non-fatal per the reference — this **is** the oracle. (Consistent with the
-   bug-for-bug-compat memo; zerobas keeps correctly-rounded division regardless.)
+2. **Overflow/divzero are FATAL — uniform abort model (CORRECTED 2026-07-18).** An
+   earlier note (and this spec's first draft) claimed the reference treats
+   Overflow/Division-by-zero as *non-fatal* (RUN continues). **A definitive
+   differential (`err_lock.py`, this session) falsifies that:** on the VG-8020 ALL ten
+   reachable error types — including `B=1/0` (`Division by zero in 20`) and `C%=99999`
+   (`Overflow in 20`) — **abort the run** (observable `A` stays 1; the run returns to
+   `Ok`). The "continues" behaviour that was mistaken for a reference quirk was in fact
+   **zerobas's own D-1 bug** (all ten continue on zerobas today, `A`=2). So there is
+   **no non-fatal-error special case**: `raise_error` aborts (or traps) for every code
+   uniformly. This simplifies S1. (Float overflow that stays *in* MSX's BCD range —
+   e.g. `1E30*1E30`=1E60, representable — raises no error at all and is not an error
+   case; only genuinely out-of-range/int-overflow raises `Overflow`.) See the §6 probe
+   and the caveat in §9a below re: the `INPUT#` FP-ordering fix's premise.
 3. **`ERRLINE` in direct mode — S1 records 0; exact sentinel pinned in S2.** The
    reference `ERL` after a direct-mode error is a large sentinel (commonly 65535); its
    exact value only matters once `ERL` is readable (S2), pinned black-box then.
@@ -366,6 +388,20 @@ fall back to the tenant only if the byte count demands it.
    makes `ERROR n` + message reuse clean in S2.
 
 ---
+
+## 9a. Caveat — the `INPUT#` FP-ordering fix's stated premise was wrong
+
+The last arrays-arc commit (`8c1b4a8`, `INPUT# mid-statement FP-error ordering`) is
+documented (TODO.md + memory) as resting on "real MSX BASIC's own quirk that
+Division-by-zero/Overflow are non-fatal (the RUN continues to the next statement)."
+§9.2's differential shows that premise is **false** — those errors abort. The
+behaviour that looked non-fatal was zerobas's D-1 bug. The *fix itself* (abort the
+channel-number FP error before the field read) is plausibly still correct or a no-op
+once S1 lands (S1 makes the whole statement abort the RUN, which subsumes "abort
+before the field read"). **Action:** when S1 makes all errors fatal, re-run
+`diskbasic-acceptance` (the `INPUT#` cases) and re-examine `8c1b4a8`'s behaviour
+against the reference; correct its TODO/PROVENANCE wording. Flagged as a separate
+follow-up (not S1-blocking); logged to the review queue / a background task.
 
 ## 10. Provenance
 

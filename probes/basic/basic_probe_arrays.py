@@ -594,22 +594,47 @@ GC_STRESS = [
       'FORI=1TO100:S$(I)=STRING$(100,66):NEXT',
       'PRINT"[";PEEK(&HF242);PEEK(&HF247);PEEK(&HF24E);PEEK(&HF348);"]"'],
      " 111  122  133  144 "),
-    # BUG B (Fable 2026-07-17) -- a FRESH STRTAB slot's stale [len][ptr] read as a
-    # phantom GC root. Seed slot 0 (STRTAB=$E240; len@$E242, ptr@$E243/4) with a
-    # bogus in-heap descriptor [len=200][ptr=$BD80]. String array elements are heap
-    # [len][ptr] descriptors, so DIM S$(64) x STRING$(250) over-fills the ~15 KB
-    # heap: the FIRST scalar store (P$ -> slot 0) is HEAP-FULL and OOMs. On the
-    # FIXED code ssk_new neutralized slot 0's len, so the OOM'd P$ reads "" ->
-    # LEN=0. NON-VACUOUS: on the pre-fix code the stale [200][$BD80] survived and
-    # P$ read LEN=200 (verified: reverted ' 200 ' x3 stable vs fixed ' 0 '). LEN(P$)
-    # is the deterministic witness; the array-integrity sum can't be pinned here
-    # (the fill sits at the OOM boundary), so this asserts LEN(P$) alone.
+    # BUG B (Fable 2026-07-17) -- a FRESH string-scalar slot's stale [len][ptr]
+    # must NOT survive as a phantom GC root. RE-TUNED TWICE since the original:
+    #   * slice-4c dissolved the fixed STRTAB pool ($E240-$E268 freed), so the
+    #     original $E242 slot-0 POKE seeds dead RAM now. A fresh string scalar
+    #     is a stride-6 [name0][name1][type][len][ptr:2] entry INSERTED at
+    #     ARYTAB (end of the unified scalar chain, sub/arrays.asm scv_alloc);
+    #     the BUG-B neutralizer is scv_alloc's zero-fill (scva_zero_lp) of the
+    #     3-byte value field. Seed address is therefore VARPTR-anchored: with
+    #     A$ the LAST scalar created, the next entry lands at VARPTR(A$)+3 and
+    #     its descriptor at VARPTR(A$)+6.
+    #   * the error-handling arc S1 D-1 fix (untrapped runtime error ABORTS
+    #     the RUN) killed the old 64-element over-fill: the FOR loop's first
+    #     OOM now aborts, so the old construction left >250 B free and P$
+    #     stored fine. DIRECT mode (4th field) + a CLEAR-shrunk heap replace
+    #     it: each direct line survives the previous line's abort, and
+    #     CLEAR,&H82C0 pins the heap ceiling (C=min(HIMEM,TXTMAX), FRETOP
+    #     reset to C) so no fill loop is needed at all.
+    # Sizing (boundary ~$8016 with V+A$; empirical 2026-07-18, ~120 B margin
+    # each way): P$=STRING$(250,67) must (a) build its temp (needs 250 free:
+    # C-LA-boundary>=250), (b) SUCCEED at str_set_key's H1 snapshot (another
+    # 250-byte body copy -- if the snapshot OOM'd, str_set_key would proceed
+    # to store "" via SH_SRC=STR_EMPTY and OVERWRITE the descriptor: vacuous),
+    # then (c) FAIL op=12 sh_var_store's own heap_alloc(250) (svs_oom never
+    # touches SH_DEST) -> the freshly inserted P$ entry keeps its scv_alloc
+    # zero-fill. NON-VACUITY (all mis-fires fail loudly): W folds all 3
+    # descriptor bytes. Genuine path: LEN=0, W=0. Zero-fill broken (BUG B):
+    # descriptor = seed [200][$8200] (in [FRETOP,C) -> a live phantom root)
+    # -> LEN=200, W=330. P$ never inserted (temp OOM'd): seed intact -> W=330
+    # (verified: without the P$ line the PEEKs read 330). Snapshot-OOM
+    # empty-store path: op=12 writes a real (nonzero, ~$80xx) body ptr ->
+    # W>=128. Heap too big: LEN=250 (verified at CLEAR,&H8400). Only
+    # "insert ran AND zero-filled AND store OOM'd untouched" prints ' 0  0 '.
     ("gc.bugB.phantom",
-     ['POKE&HE242,200:POKE&HE243,&H80:POKE&HE244,&HBD',
-      'DIMS$(64):FORI=1TO64:S$(I)=STRING$(250,65):NEXT',
+     ['CLEAR,&H82C0',
+      'V=0:A$=STRING$(60,66)',
+      'V=VARPTR(A$):POKEV+6,200',
+      'POKEV+7,0:POKEV+8,&H82',
       'P$=STRING$(250,67)',
-      'PRINT"[";LEN(P$);"]"'],
-     " 0 "),
+      'W=PEEK(V+6)+PEEK(V+7)+PEEK(V+8)',
+      'PRINT"[";LEN(P$);W;"]"'],
+     " 0  0 ", "direct"),
 ]
 
 # BUG A + BUG C regression cases (Fable 2026-07-17), DIRECT mode (fast; the
@@ -855,8 +880,12 @@ def gc_stress_check():
     # churns run far past the multi-case batch's per-case window (which would
     # misalign the capture), so one boot each keeps the capture clean.
     npass = 0
-    for label, lines, want in GC_STRESS:
-        zr = R.run_cases(ZB, [("stored", lines)], batch=True, reset=("NEW", "CLS"),
+    for entry in GC_STRESS:
+        label, lines, want = entry[0], entry[1], entry[2]
+        mode = entry[3] if len(entry) > 3 else "stored"  # default stored; error-
+        # dependent cases opt into "direct" (D-1: a runtime error aborts the RUN,
+        # so a stored program can't observe state past its first error).
+        zr = R.run_cases(ZB, [(mode, lines)], batch=True, reset=("NEW", "CLS"),
                          step=150.0, boot=8.0, omsx=OMSX)[0]
         got = R.result_span(zr)
         ok = got == want

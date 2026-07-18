@@ -437,7 +437,7 @@ sl_oom:
                 ld      a,$CC               ; out-of-memory landmark (distinct byte)
                 ld      (ERRMARK),a
                 ld      hl,err_mem
-                jp      print_string        ; reports and returns to the REPL
+                jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
 err_mem:        db      "out of memory",13,10,0
 
 ; --- prog_find_del: locate the slot for SL_NUM, deleting an exact match ------
@@ -651,7 +651,7 @@ egs_over:
                 ld      a,$CE               ; control-stack overflow landmark
                 ld      (ERRMARK),a
                 ld      hl,err_stack
-                jp      print_string
+                jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
 
 ; --- ex_return: RETURN -------------------------------------------------------
 ; Pop the top GOSUB frame and resume at its saved (CURLINE, resume-ptr) via the
@@ -681,7 +681,7 @@ ex_ret_under:
                 ld      a,$CD               ; "return without gosub" landmark
                 ld      (ERRMARK),a
                 ld      hl,err_noret
-                jp      print_string
+                jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
 
 ; --- ex_for: FOR <var> = <init> TO <limit> [STEP <step>] ---------------------
 ; Assign init to the loop variable, then push a frame
@@ -751,7 +751,7 @@ ef_over:
                 ld      a,$CE
                 ld      (ERRMARK),a
                 ld      hl,err_stack
-                jp      print_string
+                jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
 
 ; --- ex_next: NEXT [<var>] ---------------------------------------------------
 ; Step the loop variable of the matching FOR frame, test against the limit, and
@@ -842,7 +842,7 @@ nx_nofor:
                 ld      a,$CB               ; "next without for" landmark
                 ld      (ERRMARK),a
                 ld      hl,err_nofor
-                jp      print_string
+                jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
 
 err_stack:      db      "out of memory",13,10,0
 err_noret:      db      "return without gosub",13,10,0
@@ -880,7 +880,7 @@ exr_nodata:
                 ld      a,$CA               ; "out of data" landmark
                 ld      (ERRMARK),a
                 ld      hl,err_data
-                jp      print_string
+                jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
 err_data:       db      "out of data",13,10,0
 
 ; --- ex_restore: RESTORE [<line>] --------------------------------------------
@@ -1179,7 +1179,7 @@ eon_over:
                 ld      a,$CE
                 ld      (ERRMARK),a
                 ld      hl,err_stack
-                jp      print_string
+                jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
 
 ; --- eon_seek_nth: find Nth $0E entry in an ON...GOTO/GOSUB target list ------
 ; in:  HL = first token after the GOTO/GOSUB token, DE = N (1-based index)

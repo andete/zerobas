@@ -88,6 +88,19 @@ err_syntax:                                 ; interp.asm's own stmt_error + fre_
 ; 1-based cursor column (C-BIOS sysvar, same source print_comma_zone uses).
 ; HL = message string; pchar preserves all registers.
 fre_abort_low:
+                ld      a,1
+                ld      (ENDFLAG),a         ; D-1 (docs/spec-basic-error-handling.md
+                                            ; S1): an untrapped runtime error ABORTS the
+                                            ; RUN. The run loop's post-`call exec`
+                                            ; ENDFLAG check (program.asm rp_exec) then
+                                            ; unwinds to the REPL; without this the loop
+                                            ; found ENDFLAG clear and ran on past the
+                                            ; error (the D-1 bug). Harmless in direct
+                                            ; mode (run_prog + ex_cont re-clear ENDFLAG
+                                            ; before any run). This is now the single
+                                            ; abort funnel: the program.asm/interp.asm
+                                            ; error sites `jp fre_abort_low` too (lean:
+                                            ; aliased to print_string -> byte-identical).
                 xor     a
                 ld      (PRDEST),a          ; error text always goes to the screen
                 ld      a,(CSRX)
@@ -97,11 +110,11 @@ fre_abort_low:
                                             ; harness (tests/msxtest.py) runs with
                                             ; zeroed RAM and no screen, and must not
                                             ; grow a phantom leading CRLF there.
-                jp      c,print_string      ; at line start -> no fresh-line CRLF
-                ld      a,13
-                call    pchar
-                ld      a,10
-                call    pchar
+                call    nc,print_crlf       ; mid-line (CSRX>=2) -> fresh line first;
+                                            ; byte-for-byte the old inline
+                                            ; ld a,13/pchar/ld a,10/pchar (print.asm
+                                            ; print_crlf IS that pair), reclaiming the
+                                            ; funnel's ENDFLAG cost.
                 jp      print_string
 
 ; --- vars_reset: re-anchor ARYTAB = PRGEND+2 (empty scalar region), then ---
