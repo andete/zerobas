@@ -4,13 +4,47 @@ SPDX-License-Identifier: 0BSD
 -->
 # Spec — evict the PRINT USING render engine to the sub-ROM
 
-Status: **DRAFT, sign-off pending.** The first eviction commissioned directly to free
+Status: **SIGNED OFF 2026-07-18** (user, this session; user implements directly). The first eviction commissioned directly to free
 main-window space (staging B of the signed-off [decision-phase3-space-strategy.md](decision-phase3-space-strategy.md)).
 Its purpose is to unblock **error-handling S2a** (needs ~230 B of slot-0 window; measured
 overrun ~143 B low + ~85 B page-1 over the current 3 B / 5 B free — see
 [spec-basic-error-handling-s2a-packet.md](spec-basic-error-handling-s2a-packet.md) and the
 `wip/s2a-mechanism` branch), and to prove the durable eviction mechanism the rest of Phase 3
 needs. Repack-only; lean 16 KB `basic.rom` stays byte-identical.
+
+## 0. AS-BUILT (2026-07-18) — the lower-risk 2-leaf cut, not the full render-move
+
+The design §3 below planned to move the whole render engine (incl. the number/string
+render halves + `pu_fmt_int`/`INT2DEC`) for ~347 B. **As built, only the two PURE format
+scanners `pu_to_field` + `pu_emit_tail` were evicted** (RAM + `pchar` only — no `eval`, no
+`pu_deref_body`, no `div10`), leaving the recently-fragile value-render/deref paths
+(`pu_do_number`/`pu_do_string`/`pu_fmt_int`, incl. the 003ff70 fix) **100 % resident and
+untouched**. The value renders stay main-side and stream directly via `pchar`, so ordering
+is preserved: a `TOFIELD`/`TAIL` op renders leading/trailing literals into `DETOKBUF`, the
+resident stub drains it (honouring PRDEST), then the value render emits directly — in order.
+
+Deliberate deviation vs §3/§5, in the spirit of §7's "load-bearing differential risk":
+much lower regression risk on the paths that have bitten us ~12×, at a smaller yield.
+
+**Measured yield: page-1 5 B → 222 B (freed 217 B)**; low region unchanged (3 B). Sufficient
+for S2a's ~85 B page-1 need directly, and its other content homes in the freed page-1 (the
+`wip/s2a-mechanism` "~143 B low" figure was pre-string-dedup). If S2b overruns, `format.asm`
+is the recorded second-tier reserve (§1). Files: `basic/pu-render.inc` (shared body),
+`sub/printusing.asm` (tenant, indices 6/7, reuses `sub/detok.asm`'s `pchar`),
+`basic/printusing.asm` (repack stubs / lean include), `sub/sub.asm` + both `SUBROM_IDX_*`
+copies + Makefile `SUB_PARTS`.
+
+**Gates (all green except a pre-existing, non-eviction failure):** lean `basic.rom`
+byte-identical; `check_reloc`/`check_kwtable_identity`/`check_resident_abi`/
+`check_tenant_closure` OK + manual page-0 closure audit (tenant → `pu_to_field`/`pu_emit_tail`
+→ `pchar`, all sub-local); `unit-test` 46/46; PRINT USING **screen** differential byte-identical
+to VG-8020; PRINT# USING **file** differential byte-identical to CF-3300 (guards 003ff70 +
+PRDEST); `string`/`input`/`float`/`math`-acceptance ALL PASS; `array-acceptance` 150/150;
+`diskbasic-acceptance` 34 lean + 34 repack. **`repack-boot` "live PRINT 12+34" FAILS, but
+PRE-EXISTING** — it fails identically on clean `main` (cold-boot title passes; the ROM boots
+and every other BASIC gate runs PRINT fine); a matrix-typing timing issue in that gate on
+this host, unrelated to the eviction. TODO (follow-up, not blocking): extend
+`check_tenant_closure.py` with a page-0-direction mode (§7 note).
 
 ## 1. Why PRINT USING (the audit result)
 

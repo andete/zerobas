@@ -41,7 +41,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/field.asm basic/format.asm basic/printusing.asm basic/program.asm basic/float.asm \
          basic/float-arith.asm basic/subromcall.asm basic/input.asm \
          basic/arrays.asm \
-         basic/tokenise.inc basic/detok.inc \
+         basic/tokenise.inc basic/detok.inc basic/pu-render.inc \
          basic/sysvars.inc
 ROM   := $(BUILD)/basic.rom
 
@@ -97,6 +97,7 @@ SUB_SRC   := sub/sub.asm
 SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
              sub/fp_exp.asm sub/fp_log.asm sub/fp_pow.asm sub/fp_sin.asm \
              sub/fp_rnd.asm sub/arrays.asm sub/strheap.asm sub/detok.asm \
+             sub/printusing.asm basic/pu-render.inc \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
              basic/tokenise.inc basic/detok.inc \
              sub/basic-resident-abi.inc

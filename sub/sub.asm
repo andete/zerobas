@@ -90,6 +90,13 @@ sub_p0_table:
                                                 ;   heap_alloc + GC compaction, a pure-RAM
                                                 ;   leaf. Main-ROM stub is basic/str-
                                                 ;   engine.asm `str_heap_alloc`.
+                jp      pu_tofield_tenant       ; index 6 (SUBROM_IDX_PU_TOFIELD): PRINT USING
+                                                ;   format scanner — emit leading literals +
+                                                ;   identify the next field (docs/spec-evict-
+                                                ;   printusing.md). Main stub basic/printusing.asm.
+                jp      pu_tail_tenant          ; index 7 (SUBROM_IDX_PU_TAIL): PRINT USING
+                                                ;   trailing-literal emitter. Both are pure
+                                                ;   PU_*-RAM+pchar leaves; render into DETOKBUF.
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $0010 mapped slot 3-2 into PAGE 0 and that page-3 RAM is
@@ -181,6 +188,12 @@ sis_spin:
 ; ary_alloc can call its heap_alloc/strheap_gc entry points directly, no
 ; CALSLT). Its own header has the full rationale.
                 include "strheap.asm"
+
+; PRINT USING format scanners (index 6/7 = pu_tofield_tenant / pu_tail_tenant):
+; the two pure PU_*-RAM+pchar leaves evicted from basic/printusing.asm to free
+; page-1 window space (docs/spec-evict-printusing.md). Reuses detok.asm's
+; sub-local pchar (DETOKBUF append), included above — so this must follow it.
+                include "printusing.asm"
 
 ; --- sub-local is_letter / is_ident_cont (byte-identical own-design clones) --
 ; Resident copies stay in the main ROM (basic/interp.asm is_letter, basic/vars.asm

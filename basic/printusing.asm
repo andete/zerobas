@@ -191,161 +191,38 @@ phf_yes:
                 scf
                 ret
 
-; pu_to_field — emit literal format chars from PU_POS until a field; on reaching the
-; format end, wrap to 0 ONCE (format reuse). Out: CF clear + PU_TYPE/PU_W set +
-; PU_POS advanced past the field; CF set if no field exists (after one wrap).
-; Clobbers A, B, C, DE, HL.
+; --- pu_to_field / pu_emit_tail: the PRINT USING format literal-scanners ------
+; docs/spec-evict-printusing.md. These two are pure leaves (PU_* RAM + pchar), so
+; in the repack build they are EVICTED to sub-ROM page 0 (sub/printusing.asm) to
+; free page-1 window space; the lean 16 KB cart keeps them inline (via the shared
+; pu-render.inc → BYTE-IDENTICAL). The repack stubs CALSLT the tenant (which emits
+; the literals into DETOKBUF), then drain DETOKBUF through print_string, honouring
+; PRDEST — so PRINT# USING's file form (print.asm PRDEST=1) is untouched. The
+; fragile value-render/deref paths (pu_do_number/pu_do_string/pu_fmt_int) stay
+; resident, unchanged.
+    IF ROM_BASE < $4000
 pu_to_field:
-                ld      a,(PU_FLAGS)
-                and     $FD                 ; clear "wrapped" (bit1)
-                ld      (PU_FLAGS),a
-ptf_scan:
-                ld      a,(PU_POS)
-                ld      b,a
-                ld      a,(PU_FMTLEN)
-                cp      b
-                jr      z,ptf_wrap          ; at end of format
-                ld      e,b
-                ld      d,0
-                ld      hl,PU_FMT
-                add     hl,de
-                ld      a,(hl)
-                cp      '#'
-                jp      z,ptf_num
-                cp      '!'
-                jp      z,ptf_bang
-                cp      '&'
-                jp      z,ptf_amp
-                cp      BACKSLASH
-                jp      z,ptf_back
-                call    pchar               ; literal -> emit
-                ld      a,(PU_POS)
-                inc     a
-                ld      (PU_POS),a
-                jr      ptf_scan
-ptf_wrap:
-                ld      a,(PU_FLAGS)
-                bit     1,a
-                jr      nz,ptf_nofield      ; already wrapped -> no field at all
-                set     1,a
-                ld      (PU_FLAGS),a
-                xor     a
-                ld      (PU_POS),a
-                jr      ptf_scan
-ptf_nofield:
-                scf
-                ret
-ptf_num:
-                ; width = run of '#' from PU_POS (bounded by the format end).
-                ld      a,(PU_POS)
-                ld      c,a                 ; C = scan index
-                ld      b,0                 ; B = width
-ptf_num_lp:
-                ld      a,(PU_FMTLEN)
-                cp      c
-                jr      z,ptf_num_done
-                ld      e,c
-                ld      d,0
-                ld      hl,PU_FMT
-                add     hl,de
-                ld      a,(hl)
-                cp      '#'
-                jr      nz,ptf_num_done
-                inc     b
-                inc     c
-                jr      ptf_num_lp
-ptf_num_done:
-                ld      a,b
-                ld      (PU_W),a
-                ld      a,c
-                ld      (PU_POS),a
-                xor     a
-                ld      (PU_TYPE),a         ; numeric (also CF clear)
-                ret
-ptf_bang:
-                ld      a,(PU_POS)
-                inc     a
-                ld      (PU_POS),a
-                ld      a,1
-                ld      (PU_W),a
-                ld      a,2                 ; type 2 = '!'
-                ld      (PU_TYPE),a
-                or      a                   ; CF clear
-                ret
-ptf_amp:
-                ld      a,(PU_POS)
-                inc     a
-                ld      (PU_POS),a
-                ld      a,1                 ; type 1 = '&'
-                ld      (PU_TYPE),a
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_PU_TOFIELD
+                call    subrom_call         ; tenant: emit leading literals -> DETOKBUF,
+                                            ; set PU_TYPE/PU_W/PU_POS, A = no-field flag
+                jp      c,subrom_absent_error
+                push    af                  ; guard the no-field flag across the drain
+                ld      hl,DETOKBUF
+                call    print_string        ; drain literals -> pchar (PRDEST sink)
+                pop     af                  ; A = 0 field found / 1 none
                 or      a
+                ret     z                   ; field -> CF clear
+                scf                         ; no field -> CF set (pu_main: jr c,pu_endlist)
                 ret
-ptf_back:
-                ; find the closing '\' from PU_POS+1; width = closepos-PU_POS+1.
-                ld      a,(PU_POS)
-                ld      c,a
-                inc     c                   ; scan from the char after the opening '\'
-ptf_back_lp:
-                ld      a,(PU_FMTLEN)
-                cp      c
-                jr      z,ptf_back_unterm   ; no closing '\' before the end
-                ld      e,c
-                ld      d,0
-                ld      hl,PU_FMT
-                add     hl,de
-                ld      a,(hl)
-                cp      BACKSLASH
-                jr      z,ptf_back_close
-                inc     c
-                jr      ptf_back_lp
-ptf_back_close:
-                ld      a,c
-                ld      hl,PU_POS
-                sub     (hl)
-                inc     a                   ; width = (close - open) + 1  (>= 2)
-                ld      (PU_W),a
-                inc     c                   ; PU_POS past the closing '\'
-                ld      a,c
-                ld      (PU_POS),a
-                ld      a,3                 ; type 3 = '\..\'
-                ld      (PU_TYPE),a
-                or      a
-                ret
-ptf_back_unterm:
-                ; lone '\' with no close -> treat it as a literal and keep scanning.
-                ld      a,BACKSLASH
-                call    pchar
-                ld      a,(PU_POS)
-                inc     a
-                ld      (PU_POS),a
-                jp      ptf_scan
-
-; pu_emit_tail — emit literal format chars from PU_POS up to (not including) the next
-; field or the format end. No wrap. Clobbers A, B, DE, HL.
 pu_emit_tail:
-                ld      a,(PU_POS)
-                ld      b,a
-                ld      a,(PU_FMTLEN)
-                cp      b
-                ret     z                   ; end of format
-                ld      e,b
-                ld      d,0
-                ld      hl,PU_FMT
-                add     hl,de
-                ld      a,(hl)
-                cp      '#'
-                ret     z
-                cp      '!'
-                ret     z
-                cp      '&'
-                ret     z
-                cp      BACKSLASH
-                ret     z
-                call    pchar
-                ld      a,(PU_POS)
-                inc     a
-                ld      (PU_POS),a
-                jr      pu_emit_tail
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_PU_TAIL
+                call    subrom_call         ; tenant: emit trailing literals -> DETOKBUF
+                jp      c,subrom_absent_error
+                ld      hl,DETOKBUF
+                jp      print_string        ; drain -> pchar (PRDEST), then ret
+    ELSE
+                include "basic/pu-render.inc"
+    ENDIF
 
 ; pu_do_number — eval the next value and emit it right-justified in PU_W; '%' + full
 ; number on overflow. HL = token cursor (guarded across div10). Clobbers everything.

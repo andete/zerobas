@@ -59,6 +59,16 @@ SUBROM_IDX_ARY          equ     4
 ; OOM retry (§5.4), since both are co-resident in the same sub-ROM page-0
 ; image.
 SUBROM_IDX_STRHEAP      equ     5
+; index 6/7 = the PRINT USING FORMAT SCANNERS (eviction, sub/printusing.asm):
+; pu_to_field (emit leading literals + identify the next field) and pu_emit_tail
+; (emit trailing literals). Pure leaves over PU_* RAM + pchar -- the fragile value-
+; render/deref paths (pu_do_number/pu_do_string/pu_fmt_int) stay resident. The two
+; tenants render literals into DETOKBUF (sub-local pchar re-bind); their main-ROM
+; stubs (basic/printusing.asm, ROM_BASE<$4000) drain DETOKBUF via print_string
+; (honouring PRDEST, so the file form PRINT# USING is untouched). TOFIELD returns
+; the no-field flag in A (0=field found, 1=none). docs/spec-evict-printusing.md.
+SUBROM_IDX_PU_TOFIELD   equ     6
+SUBROM_IDX_PU_TAIL      equ     7
 
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can

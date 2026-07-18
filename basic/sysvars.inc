@@ -1691,6 +1691,13 @@ SUBROM_IDX_STRHEAP   equ 5      ; the string-heap engine (arrays slice-4a, docs/
                                 ; sub/strheap.asm strheap_engine) — a pure-RAM
                                 ; leaf. Main-ROM stub is basic/str-engine.asm
                                 ; `str_heap_alloc`.
+SUBROM_IDX_PU_TOFIELD equ 6     ; PRINT USING format scanner: emit leading literals +
+                                ; identify the next field (docs/spec-evict-printusing.md;
+                                ; sub/printusing.asm pu_tofield_tenant) — a pure PU_*-RAM
+                                ; leaf. Main-ROM stub basic/printusing.asm `pu_to_field`.
+SUBROM_IDX_PU_TAIL   equ 7      ; PRINT USING trailing-literal emitter (sub/printusing.asm
+                                ; pu_tail_tenant). Main-ROM stub `pu_emit_tail`. (Both
+                                ; kept in sync with sub/equates.inc.)
 ; Page-1 dispatch (docs/spec-basic-subrom-mathpack.md §2): the FIRST page-1
 ; tenant. SUBROM_ENTRY_BASE_P1 mirrors the disk $4010 DSKIO convention (also
 ; independently defined in sub/equates.inc for the sub build — same value,
