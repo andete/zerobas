@@ -383,7 +383,11 @@ like the arrays/float/string engines — see §8).
 
 ---
 
-## 7. S2 outline (trapping — later, its own spec)
+## 7. S2 outline (trapping)
+
+> **Detailed S2 spec drafted (sign-off pending):**
+> [spec-basic-error-handling-s2.md](spec-basic-error-handling-s2.md). The outline
+> below is superseded by it; kept here for the at-a-glance summary.
 
 * **`ON ERROR GOTO <line>`** — resolve `<line>` to an addr, store in `ONELIN`;
   `GOTO 0` clears it (`ONELIN`=0). `raise_error` step 4: if `ONELIN`≠0 and `ONEFLG`=0,
