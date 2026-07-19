@@ -117,6 +117,13 @@ exec_stmt:
                 xor     a                   ; each statement starts on the screen;
                 ld      (PRDEST),a          ; only PRINT#'s own item loop sets dest=file
     IF ROM_BASE < $4000
+                ld      (SAVTXT),hl         ; error-handling S2b §4: capture THIS
+                                            ; statement's start for RESUME. HL is
+                                            ; still the untouched in: pointer here
+                                            ; (reached at line start AND after every
+                                            ; ':' via ex_sep) -- the ONLY clean source
+                                            ; since raise_error fires from arbitrary
+                                            ; call depth, not the statement head.
                 ld      (TMISMATCH),a       ; A is still 0: clear the D-2 flag (a stale
                 ld      (FPERR),a           ; set would misfire a later statement's check
                                             ; -- FPERR (F2 D-F2-1) mirrors TMISMATCH here
@@ -603,28 +610,61 @@ err_fp_divzero:
                 db      "division by zero",13,10,0
 err_illegal_fn:
                 db      "illegal function call",13,10,0
+err_resume_noerr:                          ; error-handling S2b (docs/spec-basic-error-
+                db      "resume without error",13,10,0
+                                            ; handling-s2b-packet.md §5.4, ERR 22): a
+                                            ; bare RESUME with ONEFLG=0 (no active trap).
+                                            ; House-style lowercase wording (D-2 policy,
+                                            ; not the arrays arc's reference-verbatim
+                                            ; capitalised text); referenced by err_msgtab
+                                            ; entry 22 below.
 ; err_subscript/err_redim (arrays slice-1, §4.1 #3/#4/#8) live in
 ; basic/arrays.asm (the low region) instead of here: page 1 is nearly full,
 ; and these two strings (~49 B) do not need to be page-1 resident — only the
 ; err_msgtab POINTER (below) does (a plain absolute address, same cost
 ; regardless of which region the bytes it points at live in).
 
-; --- raise_error: the S2a dispatcher (docs/spec-basic-error-handling-s2a- --
-; packet.md §3/(d)). in: A = MSX ERR code (1..23). Never returns to its
-; caller. Records ERR/ERL (ERRCODE/ERRLINE, sysvars.inc), looks up the
-; code's message in err_msgtab, then falls into the S1 abort body
-; (fre_abort_low, basic/arrays.asm low region: zero PRDEST, fresh-line if
-; mid-line, print the message, and — run mode only — " in <line>", D-2).
-; DEVIATION vs spec-basic-error-handling-s2.md §8's S2a listing: no handler/
-; trap check and no SAVSTK save here — S2a builds no trap branch (ONELIN is
-; never written this slice, so a check would always take the abort path
-; anyway); deferring SAVSTK's two RAM writes to S2b (when ON ERROR first
-; exists) saves 8 scarce page-1 bytes now. The seam for S2b's insertion is
-; exactly between the `call record_errline` below and the message lookup.
-; Clobbers A, DE, HL.
+; --- raise_error: the S2 dispatcher (docs/spec-basic-error-handling-s2b- ---
+; packet.md §5.1). in: A = MSX ERR code (1..23). Never returns to its caller.
+; Records ERR/ERL (ERRCODE/ERRLINE, sysvars.inc), then decides trap vs abort:
+; ONELIN==0 (no handler) or ONEFLG!=0 (already inside a handler with no
+; RESUME yet -> real-MSX forced abort with the INNER message) fall to
+; rerr_report, the unchanged S1/S2a abort body (err_msgtab lookup -> fre_
+; abort_low, basic/arrays.asm low region: zero PRDEST, fresh-line if mid-
+; line, print the message, and — run mode only — " in <line>", D-2). Otherwise
+; the trap is taken: reset SP to the run-loop-clean SAVSTK anchor (the trap
+; fires from arbitrary call depth — this MUST precede jp rp_lp, the whole
+; reason SAVSTK exists), capture the erroring statement's resume context
+; (CURLINE + SAVTXT) into ERRRESUME for a later RESUME, then reuse GOTO's own
+; branch mechanism (GOTOTGT/GOTOFLAG + jp rp_lp) to jump to ONELIN's line —
+; ONELIN stores the handler line's LINK address (find_line_bc's return
+; convention, a CURLINE-shaped value), exactly what rp_goto expects.
+; Clobbers A, DE, HL (and SP, on the trap path only).
 raise_error:
                 ld      (ERRCODE),a
                 call    record_errline
+                ; --- S2b trap decision (the seam S2a's header comment reserved) ---
+                ld      hl,(ONELIN)
+                ld      a,h
+                or      l
+                jr      z,rerr_report        ; ONELIN==0 -> no handler -> abort
+                ld      a,(ONEFLG)
+                or      a
+                jr      nz,rerr_report        ; nested error, no RESUME yet -> forced abort
+                ; take the trap:
+                ld      sp,(SAVSTK)          ; §6: unwind to the run-loop-clean depth
+                ld      de,(CURLINE)         ; capture the resume context (§4)
+                ld      (ERRRESUME),de
+                ld      de,(SAVTXT)
+                ld      (ERRRESUME+2),de
+                ld      (GOTOTGT),hl         ; HL still = ONELIN (nothing above touched it)
+                ld      a,1
+                ld      (ONEFLG),a           ; inside a handler now
+                ld      (GOTOFLAG),a         ; reuse A=1
+                xor     a
+                ld      (RESUMEFLAG),a       ; defensive: rp_lp must take the GOTO arm
+                jp      rp_lp                ; run loop honours GOTOFLAG -> ONELIN's line
+rerr_report:                                 ; == the S1/S2a abort body, unchanged
                 ld      a,(ERRCODE)
                 or      a                  ; code 0 -> out of the 1..23 table domain
                 jr      z,rerr_unprintable
@@ -644,6 +684,19 @@ raise_error:
 rerr_unprintable:
                 ld      hl,err_unprintable
                 jp      fre_abort_low
+
+; --- raise_error_forced: like raise_error but ALWAYS aborts, never traps ---
+; (docs/spec-basic-error-handling-s2b-packet.md §5.4). Used exactly where
+; there is no error context to resume FROM, so re-entering ONELIN's handler
+; would be wrong even if one happens to be armed — "RESUME without error"
+; (ERR 22): raise_error's own ONEFLG==0 trap-decision would otherwise
+; WRONGLY re-trap (ONELIN can be non-zero — a handler armed but not
+; currently active — while ONEFLG is exactly 0, the "without error"
+; condition itself). in: A = MSX ERR code. Clobbers A, DE, HL.
+raise_error_forced:
+                ld      (ERRCODE),a
+                call    record_errline
+                jr      rerr_report
 
 ; --- record_errline: ERRLINE := run mode? CURLINE+2 : 65535 (direct) -------
 ; docs/spec-basic-error-handling-s2a-packet.md §3/(e). DIRECTF (D-2, D-1) is
@@ -711,8 +764,13 @@ err_msgtab:
                                             ; hole here)
                 dw      err_unprintable     ; 20: verify error (hole -- cload.asm's own
                                             ; err_verify is a separate, untouched path)
-                dw      err_unprintable     ; 21: no RESUME (hole -- S2b)
-                dw      err_unprintable     ; 22: RESUME without error (hole -- S2b)
+                dw      err_unprintable     ; 21: no RESUME (hole -- no S2b site raises
+                                            ; it: real MSX raises 21 when a trapped run
+                                            ; falls off the END of the program without a
+                                            ; RESUME, a control-flow edge this slice does
+                                            ; not implement -- deliberately deferred)
+                dw      err_resume_noerr    ; 22: RESUME without error (raised by
+                                            ; raise_error_forced, below)
                 dw      err_unprintable     ; 23: unprintable error (self; ERROR n with
                                             ; an out-of-table code, or any hole above)
 err_unprintable:
