@@ -5,7 +5,9 @@ SPDX-License-Identifier: 0BSD
 
 # Implementation packet — Error-handling **S2b** (`ON ERROR GOTO` + trap + `RESUME`)
 
-Status: **DRAFT — sign-off pending.** This is the detailed implementation packet for
+Status: **LANDED 2026-07-19 (main tip)** — signed off + implemented; see the AS-BUILT
+section below (3 severe trap bugs caught by the lead's empirical pass, one minor
+divergence deferred). This is the detailed implementation packet for
 S2b, the final slice of the error-handling arc, built on top of the landed **S1**
 (D-1 abort + D-2 ` in <line>`) and **S2a** (`raise_error` dispatcher + `ERR`/`ERL` +
 `ERROR n`, no trapping). It refines the signed-off outline in
@@ -19,6 +21,36 @@ must stay **byte-identical** (hash `9e723a02…`, `tools/check_reloc.py`).
 **Model-split note:** this packet is the sign-off target; implementation is a Sonnet
 task per [[opus-vs-sonnet-model-split]] once signed off. Its Definition of Done
 **includes running the openMSX acceptance suites** ([[gate-during-implementation]]).
+
+
+
+## AS-BUILT (2026-07-19) — LANDED on main; adversarial pass caught 3 severe bugs
+
+S2b shipped (main tip): ON ERROR GOTO/GOTO 0, the trap branch, SAVSTK, SAVTXT capture,
+the full RESUME family (RESUME/0/NEXT/<line>), scan_stmt_end as a page-1 sub-ROM leaf
+tenant (SUBROM_IDX_SCANSTMT=11, quote-aware). Funded by the CALL FORMAT eviction
+(spec-evict-call-format.md; page-1 17->262B). Space consumed to **1B free**, lean
+byte-identical. Gates ALL GREEN: unit 46, error/error-trap/input/string/float/math
+acceptance, array 150, diskbasic 34 lean+34 repack, tenant-closure (--page0 393 /
+--page1 167 incl. scan_stmt_end)/kwtable/resident-abi.
+
+**The lead's adversarial+empirical VG-8020 differential (load-bearing, the recurring
+lesson again) caught THREE severe bugs the green build HID** — the trap NEVER fired
+until fixed (the landed subset built green but was catastrophically broken):
+1. Trap set GOTOTGT/GOTOFLAG then `jp rp_lp`, but rp_lp ignores GOTOFLAG (only rp_goto's
+   post-exec arm consumes it) -> re-ran the erroring line -> forced abort. Fix: set
+   CURLINE=ONELIN directly.
+2. FPERR=3 (SQR/LOG illegal-fn) and FPERR=6 (array OOM) `jp`'d fre_abort_low DIRECTLY
+   (an S2a message-override shortcut predating the trap) -> never trapped, while 1/0 did.
+   Fix: raise_error refactored to resolve message first, then funnel ALL paths through a
+   shared `raise_error_hl` trap decision (ONELIN via DE so HL=message survives).
+3. RESUME 0 / RESUME <line> -> syntax error: tokeniser's branch_lineno list omitted
+   RESUME -> the arg wasn't crunched to $0E. Fix: add RESUME (repack-guarded, sub-side).
+
+**KNOWN DEFERRED (charter-debt):** the reference resets ERR/ERL to 0 on RESUME; zerobas
+keeps the last code (ERR read AFTER a RESUME gives 5 vs ref 0). Minor edge; needs its own
+semantics pin + ~8B page-1 reclaim. Documented in the resume_line probe case (reported,
+not gated). Sibling of the S2a-deferred `ERROR 0`->ERR 5 item.
 
 ---
 
