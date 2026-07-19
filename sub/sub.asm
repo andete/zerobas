@@ -307,6 +307,20 @@ sub_p1_table:
                                                 ;   mathpack-slice2.md §15). LAST
                                                 ;   slice-2 tenant. Main-ROM stub is
                                                 ;   basic/expr.asm `evmc_rnd`.
+                jp      format_tenant           ; index 10 (SUBROM_IDX_FORMAT): CALL
+                                                ;   FORMAT's sector-build/write bulk
+                                                ;   (docs/spec-evict-call-format.md),
+                                                ;   evicted to fund error-handling
+                                                ;   S2b. A SPLIT design (not a whole
+                                                ;   leaf): the interactive menu +
+                                                ;   dispatch stay main-resident
+                                                ;   (basic/format.asm `do_format`);
+                                                ;   this tenant is the pure geometry
+                                                ;   -driven build/write engine, with
+                                                ;   its own sub-local CALSLT write
+                                                ;   path (main's write_sector is
+                                                ;   page-1-main-resident, invisible
+                                                ;   here).
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -383,6 +397,13 @@ sub_p1_ping:
 ; arga_pack_fac only (no widen_fac_to/widen_uint_to, since RND never widens
 ; an fp record through the resident ops either).
                 include "fp_rnd.asm"
+
+; CALL FORMAT build/write engine (index 10 = format_tenant, sub/format.asm): the
+; TENTH page-1 tenant and the FIRST that is a SPLIT (not a whole leaf) — its
+; main-side counterpart (basic/format.asm) keeps the interactive menu resident.
+; Needs no resident-ABI import (unlike fp_sqrt/the transcendentals): it is a
+; pure RAM + BIOS(CALSLT) leaf, own header has the full rationale.
+                include "format.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF

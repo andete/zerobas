@@ -70,6 +70,16 @@ SUBROM_IDX_STRHEAP      equ     5
 SUBROM_IDX_PU_TOFIELD   equ     6
 SUBROM_IDX_PU_TAIL      equ     7
 
+; --- Page-1 tenant index kept in sync with basic/sysvars.inc (spec sync note) --
+; SUBROM_IDX_FORMAT = 10 (basic/sysvars.inc SUBROM_ENTRY_BASE_P1 list, after
+; SUBROM_IDX_RND=9): format_tenant (sub/format.asm), the CALL FORMAT eviction
+; (docs/spec-evict-call-format.md). Unlike the page-0 indices above, page-1
+; tenants are reached sub-side by their real label name (sub_p1_table's
+; `jp format_tenant`), not by this index -- only the main-ROM stub computes
+; `IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FORMAT`. Defined here anyway so the
+; two files never drift on the numeric value (spec §6 sync requirement).
+SUBROM_IDX_FORMAT       equ     10
+
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can
 ; confirm a CALSLT to each entry round-tripped through the correct page. This is
