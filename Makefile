@@ -195,10 +195,19 @@ subrom-abi-check: sub/basic-resident-abi.inc $(RELOC_SYM)
 # PAGE-0 (--page0): a page-0 tenant (detok/arrays/strheap/printusing) runs with
 # slot-0 page 0 (BIOS + low region + ISR) switched OUT, so it must reach only
 # sub-local page-0 code / main page-1 / RAM -- never the main low region
-# ($2812-$3FFF), the BIOS, or the sub's own page 1. Both are steps of `basic-reloc`.
+# ($2812-$3FFF), the BIOS, or the sub's own page 1. PAGE-1 TENANT WALK
+# (--page1, added for the CALL FORMAT eviction, docs/spec-evict-call-format.md
+# §6): the mirror of --page0 -- walks the SUB call graph from sub_p1_table
+# (fp_sqrt..fp_rnd, format_tenant) and fails on a callee that is main-BASIC
+# page-1 (switched out) or the sub's own page-0 island (also unmapped). This
+# is DISTINCT from the unflagged default above, which only audits the
+# resident-ABI IMPORT LIST and never walks a tenant that imports nothing from
+# it (format_tenant is a pure RAM+BIOS leaf). All three are steps of
+# `basic-reloc`.
 subrom-closure-check: sub/basic-resident-abi.inc $(RELOC_SYM) $(SUB_ROM)
 	python3 tools/check_tenant_closure.py $(RELOC_SYM) sub/basic-resident-abi.inc
 	python3 tools/check_tenant_closure.py --page0 $(SUB_SYM) sub/sub.asm
+	python3 tools/check_tenant_closure.py --page1 $(SUB_SYM) sub/sub.asm
 
 # Assemble the $2812-based variant (basic/main-reloc.asm) and prove it lands the
 # "AB" header at $4000 and matches the shipping page-1 body byte-for-byte. This is
@@ -210,6 +219,7 @@ basic-reloc: $(ROM) $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM)
 	python3 tools/check_resident_abi.py $(RELOC_SYM) sub/basic-resident-abi.inc
 	python3 tools/check_tenant_closure.py $(RELOC_SYM) sub/basic-resident-abi.inc
 	python3 tools/check_tenant_closure.py --page0 $(SUB_SYM) sub/sub.asm
+	python3 tools/check_tenant_closure.py --page1 $(SUB_SYM) sub/sub.asm
 
 # --- Merged repack main ROM (WS-3 / D4) ---------------------------------------
 # The 32 KB slot-0 "main ROM": repacked C-BIOS + relocated BASIC ($2812-$7FFF) +
