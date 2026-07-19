@@ -1022,25 +1022,21 @@ TSV_NAME        equ     $E0F6   ; tape save: 6-char filename buffer (space-padde
 ; from main (page-1 resident stub) and the sub-ROM page-1 tenant alike.
 FMT_GEOMSEL     equ     TSV_CNT ; main -> tenant: 0 = 360k, 1 = 720k (1)
 FMT_RESULT      equ     TSV_NAME ; tenant -> main: 0 = ok, 1 = DSKIO write error (1)
-; scan_stmt_end (SUBROM_IDX_SCANSTMT, sub/errtrap.asm) args/result -- error-
+; scan_stmt_end (SUBROM_IDX_SCANSTMT, sub/errtrap.asm) result -- error-
 ; handling S2b's RESUME NEXT (docs/spec-basic-error-handling-s2b-packet.md
 ; §5.5). ALIASED over the SAME tape CSAVE/BSAVE write scratch as FMT_GEOMSEL/
 ; FMT_RESULT just above -- RESUME NEXT, a tape CSAVE/BSAVE, and CALL FORMAT
 ; are three distinct top-level statements that never run at the same instant
 ; (the same collision-checked-reuse pattern), and RAM below DRVA_DPB is
-; exhausted. SSE_IN/SSE_OUT reuse TSV_PTR/TSV_END (both untouched by FMT_*,
-; which only claims TSV_CNT/TSV_NAME); SSE_EOL reuses TSV_CNT (== FMT_GEOMSEL)
-; -- a second alias onto the same byte, still collision-safe by the same
-; argument. Both RAM, so visible from main (page-1 resident stub) and the
-; sub-ROM page-1 tenant alike.
-SSE_IN          equ     TSV_PTR ; main -> tenant: erroring statement's own
-                                ; start pointer (SAVTXT/ERRRESUME value) (2)
-SSE_OUT         equ     TSV_END ; tenant -> main: next statement's start,
-                                ; valid only when SSE_EOL=0 (2)
-SSE_EOL         equ     TSV_CNT ; tenant -> main: 0 = SSE_OUT valid (next
-                                ; statement on the same line, just past a
-                                ; COLON); 1 = the erroring statement ran to
-                                ; end-of-line (SSE_OUT undefined) (1)
+; exhausted. No dedicated input cell: the tenant reads ERRRESUME+2 directly
+; (own header has the rationale). A single output cell (TSV_PTR, untouched by
+; FMT_*, which only claims TSV_CNT/TSV_NAME): $0000 doubles as the failure
+; sentinel (a real statement/line pointer is never $0000), so no separate
+; disposition byte is needed. RAM, so visible from main (page-1 resident
+; stub) and the sub-ROM page-1 tenant alike.
+SSE_OUT         equ     TSV_PTR ; tenant -> main: next statement's start, or
+                                ; $0000 if the erroring line's own link was
+                                ; $0000 (degenerate -- nothing to resume to) (2)
 ; Disk BASIC FILES scratch (page $E0; dead outside a FILES listing). One byte in
 ; the $E0FC.. gap below LINEBUF ($E100). The dir-walk position lives in the
 ; fat.asm FAT_DIRSEC/FAT_DIRREM scratch; only the per-sector entry index needs a

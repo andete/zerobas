@@ -20,24 +20,45 @@
 ; on the PAGE-1 island (sub_p1_table) alongside the math pack / format_tenant,
 ; needing no resident-ABI import (an empty leaf-audit, same shape as fp_rnd).
 ;
-; ABI (docs/subrom-tenant-playbook.md §4): args/result marshalled through RAM
-; (SSE_IN/SSE_OUT/SSE_EOL, basic/sysvars.inc -- aliased over the tape-CSAVE/
-; CALL-FORMAT scratch window, the same collision-checked-reuse pattern those
-; two already use: RESUME NEXT, a tape CSAVE/BSAVE, and CALL FORMAT never run
-; at the same instant). Not through registers: CALSLT does not reliably
-; preserve A across the call (the math-pack-subrom-tenant lesson), and this
-; scanner's result is a 2-byte pointer PLUS a 1-byte disposition, too wide for
-; a register-only return, so both directions go through RAM.
+; ABI (docs/subrom-tenant-playbook.md §4): the result is marshalled through
+; RAM (SSE_OUT, basic/sysvars.inc -- aliased over the tape-CSAVE/CALL-FORMAT
+; scratch window, the same collision-checked-reuse pattern those two already
+; use: RESUME NEXT, a tape CSAVE/BSAVE, and CALL FORMAT never run at the same
+; instant). Not through registers: CALSLT does not reliably preserve A across
+; the call (the math-pack-subrom-tenant lesson), so the result goes through
+; RAM, not A -- and it collapses to a PLAIN POINTER, no separate disposition
+; byte: $0000 doubles as the one failure sentinel (a real statement/line
+; pointer is never $0000), so one RAM cell carries the whole result. The
+; INPUT needs no dedicated cell at all: this entry ALSO does the ONEFLG/
+; CURLINE prep that RESUME's other three forms get from the main-side
+; res_ctx (basic/interp.asm) -- ONEFLG and CURLINE are plain RAM, always
+; visible sub-side (docs/subrom-tenant-playbook.md §2), and this entry reads
+; ERRRESUME for its own input anyway, so absorbing the prep here (free --
+; the sub-ROM has room) means the RESUME-NEXT main-side stub does not need
+; to `call res_ctx` at all, one fewer page-1 call site.
 ;
-; in:  SSE_IN = the erroring statement's own start pointer (a SAVTXT/
-;      ERRRESUME value: tokenised program-text RAM, never BIOS/low-region).
-; out: SSE_EOL = 0 and SSE_OUT = the next statement's start (just past a
-;      COLON, same line); SSE_EOL = 1 if the erroring statement ran to
-;      end-of-line (SSE_OUT undefined -- the caller re-derives the next LINE
-;      itself via the erroring line's own link field, res_next_eol in
-;      basic/interp.asm). Clobbers A, HL (sub-side only; the caller relies on
-;      nothing surviving back through subrom_call/CALSLT except the RAM cells
-;      above -- see the math-pack-subrom-tenant lesson on A specifically).
+; in:  ERRRESUME (RAM, set by the trap capture at basic/interp.asm
+;      raise_error): [0..1] = the erroring line's own CURLINE value, [2..3] =
+;      the erroring statement's own start pointer (a SAVTXT value: tokenised
+;      program-text RAM, never BIOS/low-region).
+; out: SSE_OUT<>0 is the correct resume pointer, with CURLINE already correct
+;      too -- either the next statement just past a COLON on the SAME line
+;      (CURLINE untouched), or (if the erroring statement ran to end-of-line)
+;      the FOLLOWING line's first statement, in which case THIS tenant does
+;      the CURLINE advance itself (CURLINE is plain RAM, always visible from
+;      either sub-ROM page, docs/subrom-tenant-playbook.md §2 -- no need to
+;      hand that arithmetic back to main). This collapses what would
+;      otherwise be two different main-side cases into one: after a
+;      successful call, the main stub always just does `ld hl,(SSE_OUT)` and
+;      treats a nonzero result as the resume pointer.
+;      SSE_OUT=0 is the one case the tenant CANNOT resolve on its own: the
+;      erroring line's own link field was $0000 (the program ends there,
+;      nothing to resume to -- degenerate; no ERR-21 site this slice,
+;      err_msgtab's own comment) -- the main stub reports "Undefined line
+;      number" (reusing GOTO's own path).
+;      Clobbers A, HL (sub-side only; the caller relies on nothing surviving
+;      back through subrom_call/CALSLT except the RAM cell above -- see the
+;      math-pack-subrom-tenant lesson on A specifically).
 ;
 ; CLEAN-ROOM: original code; the quote-aware string-literal skip and the
 ; REM/DATA/ELSE consume-to-EOL statement shape are drawn from the published
@@ -47,7 +68,12 @@
 
 ; --- scan_stmt_end: SUBROM_IDX_SCANSTMT entry -------------------------------
 scan_stmt_end:
-                ld      hl,(SSE_IN)
+                xor     a
+                ld      (ONEFLG),a          ; leaving the handler (RESUME NEXT commits)
+                ld      hl,(ERRRESUME)
+                ld      (CURLINE),hl        ; restore the erroring line (sse_eol below
+                                            ; reads this back to find the NEXT line)
+                ld      hl,(ERRRESUME+2)    ; the erroring statement's own start
 sse_lp:
                 ld      a,(hl)
                 or      a
@@ -84,12 +110,30 @@ sse_toeol:                                  ; REM/DATA/ELSE -- consume verbatim 
                 inc     hl
                 jr      sse_toeol
 sse_colon:
-                inc     hl                  ; HL -> the next statement
+                inc     hl                  ; HL -> the next statement (same line)
                 ld      (SSE_OUT),hl
-                xor     a
-                ld      (SSE_EOL),a
                 ret
-sse_eol:
-                ld      a,1
-                ld      (SSE_EOL),a
+sse_eol:                                    ; erroring statement ran to end-of-line ->
+                                            ; advance CURLINE to the FOLLOWING line and
+                                            ; hand back ITS first statement (CURLINE is
+                                            ; plain RAM -- the header's whole point)
+                ld      hl,(CURLINE)        ; the erroring line's own link field
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = link to the next line
+                ex      de,hl               ; HL = next line's link-field address
+                ld      a,h
+                or      l
+                jr      z,sse_degenerate    ; $0000 link -> nothing to resume to
+                ld      (CURLINE),hl        ; advance CURLINE to the next line
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL -> next line's token body
+                ld      (SSE_OUT),hl
+                ret
+sse_degenerate:                            ; HL is already $0000 here (the failed
+                                            ; link-field test above) -- the sentinel
+                                            ; the main stub checks for
+                ld      (SSE_OUT),hl
                 ret

@@ -255,6 +255,8 @@ exec_stmt:
                 jp      z,ex_erase
                 cp      ERROR_TOKEN         ; ERROR n  (error-handling S2a, below)
                 jp      z,ex_error
+                cp      RESUME_TOKEN        ; RESUME family (error-handling S2b, below)
+                jp      z,ex_resume
     ENDIF
                 call    is_letter           ; bare letter -> assignment
                 jr      c,ex_let
@@ -789,6 +791,110 @@ ex_error:
                 ld      a,e                 ; ERRCODE is a single byte (0..255 domain)
                 jp      raise_error
 
+; --- ex_resume: RESUME / RESUME 0 / RESUME NEXT / RESUME <line> ------------
+; (docs/spec-basic-error-handling-s2b-packet.md §5.4). HL enters on the
+; RESUME token. ONEFLG=0 (no active trap) -> "RESUME without error" (ERR 22)
+; via raise_error_forced (NOT the ordinary raise_error -- see that routine's
+; own header: ONELIN can be non-zero, a handler armed but not currently
+; active, while ONEFLG is exactly 0, the "without error" condition itself).
+; Otherwise clears ONEFLG and, per the crucial subtlety of §5.4: this
+; routine RETURNS into the run loop, it does not itself jump (RESUME/RESUME
+; NEXT are statements executed INSIDE the handler, reached via the run
+; loop's `call exec`) -- res_same/res_next set RESUMEFLAG+RESUMEPTR(+
+; CURLINE) and `ret`, so exec's normal return unwinds to rp_exec, which
+; sees RESUMEFLAG and loops to rp_resume -> jumps to (RESUMEPTR). No SAVSTK
+; reset needed here (the handler ran at the SAVSTK-clean depth the trap
+; already established). RESUME <line> is the one exception -- a genuine
+; line branch, so it goes via GOTOTGT/GOTOFLAG like GOTO, not RESUMEFLAG.
+; RESUME NEXT's statement-advance (scan_stmt_end) is a pure-leaf sub-ROM
+; tenant (SUBROM_IDX_SCANSTMT, sub/errtrap.asm, docs/subrom-tenant-
+; playbook.md §3A) -- see res_next below for the marshaling. RESUME <line>'s
+; tail (find_line_bc onward) shares code with GOTO's own tail via the
+; goto_resolve label (basic/program.asm, a zero-cost label added at ex_goto_
+; at's own `call find_line_bc` point -- GOTO's bytes/behaviour are otherwise
+; untouched). Clobbers A, BC, DE, HL.
+ex_resume:
+                ld      a,(ONEFLG)
+                or      a
+                jr      z,ex_resume_noerr
+                inc     hl                  ; past RESUME_TOKEN
+                call    skip_spaces         ; A = (hl)
+                or      a                   ; bare RESUME / RESUME<EOL>?
+                jr      z,res_same
+                cp      COLON               ; bare RESUME before a further ':'-statement?
+                jr      z,res_same
+                cp      NEXT_TOKEN          ; RESUME NEXT
+                jr      z,res_next
+                cp      LINENO_TOKEN        ; RESUME <line> / RESUME 0
+                jp      nz,stmt_error
+                inc     hl
+                ld      c,(hl)              ; target line number, LE
+                inc     hl
+                ld      b,(hl)
+                inc     hl
+                ld      a,b
+                or      c
+                jr      z,res_same          ; RESUME 0 == RESUME
+                xor     a
+                ld      (ONEFLG),a          ; leaving the handler -- CURLINE needs no
+                                            ; touch here (rp_goto sets it from GOTOTGT
+                                            ; the moment the branch below executes)
+                jr      goto_resolve        ; shares find_line_bc + the undef check +
+                                            ; GOTOTGT/GOTOFLAG + ret with GOTO's own
+                                            ; tail (program.asm) -- BC already holds
+                                            ; the target line number, exactly what
+                                            ; goto_resolve expects
+; res_next: RESUME NEXT -> the statement AFTER the erroring one. UNLIKE
+; res_same, this does NOT call res_ctx: the tenant does that prep itself
+; (ONEFLG:=0, CURLINE:=erroring CURLINE, reading ERRRESUME directly) since
+; both are plain RAM, always visible sub-side (docs/subrom-tenant-
+; playbook.md §2) -- no need to pay for it main-side AND sub-side when the
+; tenant needs the same ERRRESUME read anyway for its own input. It reports
+; via SSE_OUT alone (CALSLT clobbers all registers, and A specifically is not
+; reliable back across it -- the math-pack-subrom-tenant lesson -- so the
+; result goes through RAM, not A): a plain 2-byte pointer, with $0000 doing
+; double duty as the one failure sentinel (a real statement/line pointer is
+; never $0000) -- one RAM cell instead of a pointer-plus-flag pair. The
+; tenant does the FULL job, including the EOL->next-line advance (it reads/
+; writes CURLINE directly): SSE_OUT<>0 means it is the correct resume
+; pointer AND CURLINE is already correct (unchanged for a same-line colon,
+; advanced by the tenant itself for an end-of-line roll to the next line);
+; SSE_OUT=0 is the degenerate case (the erroring line's own link was $0000
+; -- program ends there, nothing to resume to; no ERR-21 site this slice,
+; err_msgtab's own comment). subrom_call returns CF=1 only if the sub-ROM is
+; absent (never on the merged machine).
+res_next:
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SCANSTMT
+                call    subrom_call
+                jp      c,subrom_absent_error ; reduced build w/o sub-ROM (never on
+                                            ; the merged machine, which always ships it)
+                ld      hl,(SSE_OUT)        ; next statement -- CURLINE already correct
+                ld      a,h
+                or      l
+                jr      z,ex_goto_undef     ; degenerate (see header) -- reuses GOTO's
+                                            ; own "Undefined line number" report
+                jr      res_setptr
+res_same:                                   ; RESUME / RESUME 0 -> re-run the erroring
+                xor     a                   ; statement. Formerly a shared res_ctx
+                ld      (ONEFLG),a          ; (called from here AND the RESUME <line>
+                ld      hl,(ERRRESUME)      ; arm above); inlined now that this is the
+                ld      (CURLINE),hl        ; only remaining site that needs CURLINE
+                ld      hl,(ERRRESUME+2)    ; restored too (RESUME NEXT's res_next does
+                                            ; the equivalent prep itself, sub-side; the
+                                            ; RESUME <line> arm only needs ONEFLG:=0,
+                                            ; above) -- ONEFLG:=0, CURLINE:=the erroring
+                                            ; statement's CURLINE, HL:=its own text ptr
+                                            ; (SAVTXT, as captured into ERRRESUME at
+                                            ; trap time), falls through to res_setptr.
+res_setptr:
+                ld      (RESUMEPTR),hl
+                jp      set_resumeflag_ret  ; shares RESUMEFLAG:=1 + ret with RETURN's
+                                            ; own tail (program.asm) -- run loop's
+                                            ; rp_resume jumps to (RESUMEPTR)
+ex_resume_noerr:
+                ld      a,22
+                jp      raise_error_forced
+
 ; --- check_expr_errors: shared TMISMATCH+FPERR post-eval() check for ------
 ; drivers that need no extra stack cleanup before erroring (ex_if, exp_num
 ; via print.asm). Falls through (returns) if neither flag is set. On error,
@@ -880,6 +986,13 @@ ex_goto_at:
                 inc     hl
                 ld      b,(hl)
                 inc     hl
+; goto_resolve: shared tail (error-handling S2b space fix) -- RESUME <line>
+; (ex_resume, above) jumps in here with BC already holding its target line
+; number (after its own RESUME-0 special-case check, which GOTO itself does
+; not need), reusing find_line_bc + the undef check + the GOTOTGT/GOTOFLAG
+; set + ret verbatim. A zero-cost label: GOTO's own bytes/behaviour here are
+; completely unchanged.
+goto_resolve:
                 call    find_line_bc        ; CF set + HL = line addr if found
                 jr      nc,ex_goto_undef
                 ld      (GOTOTGT),hl

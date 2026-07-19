@@ -757,6 +757,12 @@ ex_return:
                 ld      (GSP),hl            ; GSP -= 4 (popped)
                 ld      (CURLINE),de
                 ld      (RESUMEPTR),bc
+; set_resumeflag_ret: shared tail (error-handling S2b space fix) -- ex_resume's
+; res_setptr (basic/interp.asm, repack-only) jumps in here after its own
+; `ld (RESUMEPTR),hl`, reusing the RESUMEFLAG:=1 + ret verbatim. A zero-cost
+; label: RETURN's own bytes/behaviour here are completely unchanged, and this
+; label costs nothing in the lean build either (nothing lean-side jumps to it).
+set_resumeflag_ret:
                 ld      a,1
                 ld      (RESUMEFLAG),a
                 ret
