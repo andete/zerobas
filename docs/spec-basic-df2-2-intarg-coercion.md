@@ -8,8 +8,11 @@ SPDX-License-Identifier: 0BSD
 Status: **IN PROGRESS.** Signed off; **stage A1 (OUT) LANDED 2026-07-19** (self-funded by
 tightening the sibling `do_vpoke` to the shared `check_fperr_only`, page-1 0→6 B; gated in
 `make intarg-acceptance`). A1's empirical pass also CORRECTED the surface: VPOKE's domain is
-the VRAM size 0..16383, not the address domain — it moves to stage B (§1.1). A2 (PEEK/INP)
-and B (STRING$/SPACE$/ON/WIDTH + VPOKE) pending.
+the VRAM size 0..16383, not the address domain — it moves to stage B (§1.1). **A2's empirical
+pass (2026-07-19, `char_a2_vpeek.py`) then (i) RESOLVED Q1 → an inline FPERR check at
+`ev_ff_arg`, not the statement boundary (the ref aborts even in FOR bounds), and (ii) caught
+a SECOND missing site: `VPEEK`, the read-twin of VPOKE with the identical VRAM 0..16383 domain
+(§1.1).** A2 (PEEK/INP) and B (STRING$/SPACE$/ON/WIDTH + VPOKE + VPEEK) pending sign-off.
 This is the scope/design doc for the last cross-cutting faithfulness residual after the
 error-handling arc closed (2026-07-19). It fixes the "silent eager `flt_to_int16`" that
 every int-argument statement/function *not* explicitly wired during F2 (POKE/VPOKE/HEX$/
@@ -56,6 +59,16 @@ per-site upper bound (0..255 for the byte sites, 0..16383 for VPOKE's VRAM addre
 | `ON n GOTO/GOSUB` | `basic/program.asm` `ex_on` | 255 | ERR 5 | ERR 6 | ERR 5 | cont |
 | `WIDTH n` | `basic/screen.asm` `ex_width` | 255 | ERR 5 | ERR 6 | ERR 5 | cont |
 | **`VPOKE addr`** | `basic/vdpio.asm` `do_vpoke` | **16383** | ERR 5 | ERR 6 | ERR 5 | **cont (WRONG)** |
+| **`VPEEK(addr)`** | `basic/expr.asm` `ev_ff_vpeek` | **16383** | ERR 5 | ERR 6 | ERR 5 | **cont (MISSING)** |
+
+**VPEEK correction (found by the A2 empirical pass 2026-07-19, `scratchpad/char_a2_vpeek.py`):**
+VPEEK was **absent from the draft surface entirely** — the read-twin of VPOKE, and the second
+VPOKE-class omission the empirical discipline has caught. The VG-8020 domain sweep is byte-for-byte
+identical to VPOKE's: `VPEEK(16383)`=cont, `VPEEK(16384)`=**ERR 5**, `VPEEK(32768)`/`(40000)`/
+`(99999)`=**ERR 6**, `VPEEK(-1)`=**ERR 5**. So VPEEK is a Group-B VRAM site (int16-coerce → ERR 6
+if `|x|>32767`, then 0..16383 range-check → ERR 5 outside), NOT the address domain PEEK/INP use. It
+is a *function* though (Q1 propagation applies), so it lands with VPOKE on the shared VRAM leaf
+(stage B) but reuses A2's inline-abort-at-the-function mechanism (§3.1).
 
 `ON 0 GOTO` = cont on BOTH (0 is the valid "no branch" selector, not an error).
 
@@ -111,16 +124,24 @@ through the landed S1/S2a/S2b funnel.
   `call eval_addr` (repack-gated, lean keeps `eval`), one `FPERR` check before the `OUT`.
   Lowest risk; the template is proven.
 * **`PEEK(a)` / `INP(p)`** (*functions*): swap their coercion (`flt_to_int16` →
-  `fac_to_int_addr`) so an out-of-domain arg sets FPERR **at the function**. Then the
-  **enclosing statement's existing `check_expr_errors`** (ex_let/print/…) aborts.
-  **OPEN QUESTION Q1 (the key design risk):** the reference overflows *immediately at the
-  PEEK* — `A=PEEK(99999)+1` aborts before the `+1`. zerobas checks FPERR only at the
-  statement boundary (deferred model). Must verify the intervening float ops (`+1`, etc.)
-  do **not clear FPERR** before the boundary check, and that every context that consumes a
-  numeric function result runs a `check_expr_errors` (PRINT/LET/IF do; **FOR/POKE-addr/
-  channel do not** per [[empty-expr-syntax-error]]'s landmine). If propagation is lossy,
-  PEEK/INP need an *inline* FPERR check at the function (more bytes) rather than relying on
-  the boundary. **Pin empirically per consuming context before committing the cheap path.**
+  `fac_to_int_addr`) so an out-of-domain arg sets FPERR **at the function**, then an
+  **INLINE FPERR check at `ev_ff_arg`** (`expr.asm`, the shared PEEK/VPEEK/INP parse point)
+  aborts immediately via `fp_runtime_error`.
+  **Q1 RESOLVED 2026-07-19 (`scratchpad/char_a2_vpeek.py`) — inline, NOT the boundary path.**
+  Two empirical facts settle it: (a) the FPERR model is sound for propagation — `exec_stmt`
+  (interp.asm:130) clears FPERR once per statement, float ops only ever *set* it (sticky, no
+  mid-expression unwind, interp.asm:508), so `A=PEEK(99999)+1` carries the flag to a boundary.
+  BUT (b) the reference aborts at the function in **every** consuming context, including ones
+  that run **no** `check_expr_errors`: `FOR I=PEEK(99999) TO 1` and `FOR I=1 TO PEEK(99999)`
+  both → **ERR 6** on VG-8020 (FOR bounds skip the check per [[empty-expr-syntax-error]]'s
+  landmine). The boundary path structurally cannot reproduce those, so it is **rejected**. An
+  inline check at `ev_ff_arg` reproduces the ref in all contexts (LET/PRINT/IF/POKE-addr/FOR/
+  nested `PEEK(PEEK(…))`/array-subscript — all pinned → ERR 6) with **one** check covering
+  PEEK+INP+VPEEK, since all three share that parse point. Raising from inside `eval` is safe
+  now that the error arc's `raise_error`/SAVSTK unwinds from arbitrary call depth (the F2-era
+  reason the boundary model existed no longer binds; `ev_f_err` already aborts from here).
+  Cost: the inline check is **not** byte-neutral (unlike A1's statement-site swaps) — needs a
+  small funder (§5).
 
 ### 3.2 Group B (byte domain) — int16 overflow + 0..255 guard
 
@@ -169,10 +190,14 @@ Group B = 5 arg-sites through one shared `get_byte_arg` leaf. Total NEW code ≈
    address was still on the stack; popping the address *before* the check (as `do_out` now
    does) makes the site SP-clean so it reuses the shared `check_fperr_only` (−7 B; +1 B for
    OUT → page-1 0→6 B). Lean byte-identical. Gate: `make intarg-acceptance`.
-2. **A2 — `PEEK`/`INP`** (functions; blocked on Q1 propagation pin — may need inline check).
+2. **A2 — `PEEK`/`INP`** (functions, ADDRESS domain). Q1 RESOLVED (§3.1): swap the coercion to
+   `fac_to_int_addr` + an **inline** FPERR check at `ev_ff_arg`. This also builds the shared
+   inline-abort choke point that VPEEK reuses in B. Needs a small funder (not byte-neutral).
 3. **B — `get_byte_arg`-style range-check + STRING$/SPACE$/ON/WIDTH (0..255) + VPOKE
-   (0..16383)** (the int16-overflow + per-site range-check leaf; Q2 page-visibility). VPOKE
-   joins here (§1.1 correction) — same shape, just a 16383 bound instead of 255.
+   (0..16383) + VPEEK (0..16383)** (the int16-overflow + per-site range-check leaf; Q2
+   page-visibility). VPOKE (statement) and **VPEEK (function)** both join here (§1.1
+   corrections) on a shared VRAM leaf — same shape, a 16383 bound instead of 255. VPEEK routes
+   its VRAM check through the `ev_ff_arg` inline-abort point A2 introduces.
 
 Order rationale: A1 validates the address-domain move end-to-end at a statement site (no
 propagation question); A2 resolves the function-propagation question on a small surface; B
@@ -182,7 +207,20 @@ is the largest and gated on the shared leaf. Land + gate + adversarial-pin each 
 
 ## 5. Space budget & funder (the blocker)
 
-**Page-1 = 0 B free** (post the 2026-07-19 ERROR-n landing; `tools/check_reloc.py`). The
+**A2+VPEEK MEASURED 2026-07-19 (implemented on `ev_ff_arg`, then reverted pending a funder):
+the checked-coercion block is 39 B; page-1 had 6 B free → `__MEAS_PAGE1_END` $7FFA→$8021, a
+33 B overrun past the $8000 ceiling.** The block is already golfed hard: shared `push bc`
+selector guard, both overflow gates reuse the existing `check_fperr_only` helper (3 B/site,
+the OUT/eval_chan pattern), VPEEK's VRAM range = `ld a,d / and $C0` (top-two-bits). The ~33 B
+is irreducible new function (checked coercion for 3 functions across 2 domains). **Funder
+NEEDED — this stage nets +33 B, unlike A1 (self-funded +1).** Note: both paved evictions
+(PRINT USING 2026-07-18 +217 B; CALL FORMAT for S2b) are already SPENT — the S2a/S2b/ERROR-n
+landings consumed page-1 back to 6 B. The only recorded reserve left is `format.asm`'s
+value-render/deref paths (`pu_do_number`/`pu_do_string`/`pu_fmt_int`/`INT2DEC`) deliberately
+left resident by the printusing as-built (§0 of [docs/spec-evict-printusing.md]) — the code
+that has "bitten us ~12×", so a HIGH-regression-risk eviction.
+
+**Page-1 = 6 B free** (post the 2026-07-19 ERROR-n landing; `tools/check_reloc.py`). The
 arc needs a funder before any stage that nets positive:
 
 * **Lever 1 — golf** (proven this session): the ERROR-n slice self-funded via a raise_error
@@ -200,11 +238,12 @@ Lean 16 KB stays byte-identical throughout (every byte repack-gated, like all Ph
 
 ## 6. Faithfulness / open decisions (sign-off)
 
-1. **Q1 — PEEK/INP FPERR propagation** (§3.1). Cheap boundary-check path vs inline check.
-   Pin `A=PEEK(99999)+1`, `PRINT PEEK(99999)`, `POKE PEEK(99999),0`, `PEEK(99999) AND 1`
-   per consuming context on both machines; choose the path that reproduces the ref's
-   *immediate* abort. **Load-bearing — the exact register/order bug class the arc keeps
-   catching only empirically.**
+1. **Q1 — PEEK/INP FPERR propagation** (§3.1). ✅ **RESOLVED 2026-07-19 → inline check at
+   `ev_ff_arg`.** The ref aborts at the function in every context incl. FOR bounds (which run
+   no `check_expr_errors`), so the cheap boundary path is rejected; a single inline check at
+   the shared PEEK/VPEEK/INP parse point reproduces it and also serves VPEEK (stage B). The
+   empirical pass ALSO surfaced VPEEK as a missing Group-B VRAM site (§1.1). Sign-off needed:
+   inline path confirmed, and whether VPEEK folds into A2 or stays in stage B with VPOKE.
 2. **Q2 — Group-B leaf siting** (§3.2) vs the sub-ROM string tenants' page.
 3. **Scope confirm:** all 8 arg-sites (this doc), or a subset (e.g. Group A only) first.
 4. **Funder:** golf-first per stage, `format.asm` eviction held as the reserve — confirm.

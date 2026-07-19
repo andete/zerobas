@@ -43,8 +43,21 @@ ASSERTED = [
 
 # Not yet faithful — reported as a straight differential until their stage lands.
 PENDING = [
-    ("A2", "peek",     "A=PEEK(99999)"),
-    ("A2", "inp",      "A=INP(99999)"),
+    # A2 = PEEK/INP (ADDRESS domain, function form). ref aborts at the function in
+    # EVERY consuming context incl. FOR bounds (pinned char_a2_vpeek.py) -> the fix
+    # is an INLINE FPERR check at ev_ff_arg, not the statement boundary.
+    ("A2", "peek",     "A=PEEK(99999)"),      # >addr -> ref ERR6
+    ("A2", "inp",      "A=INP(99999)"),       # >addr -> ref ERR6
+    ("A2", "peek_for", "FOR I=PEEK(99999) TO 1:NEXT"),  # non-checking consumer -> ref ERR6
+    ("A2", "peek_hi",  "A=PEEK(65535)"),      # in address domain -> cont (regression guard)
+    # VPEEK = the read-twin of VPOKE: IDENTICAL VRAM domain 0..16383 (int16-coerce
+    # ERR6 >32767, then 0..16383 range-check ERR5 outside). A Group-B site, absent
+    # from the draft surface — caught by the A2 empirical pass 2026-07-19. Lands with
+    # VPOKE on the shared VRAM leaf (stage B), reusing A2's inline-abort mechanism.
+    ("B",  "vpeek_ill","A=VPEEK(16384)"),     # >VRAM, <=int16 -> ref ERR5
+    ("B",  "vpeek_ovf","A=VPEEK(40000)"),     # >int16 -> ref ERR6
+    ("B",  "vpeek_neg","A=VPEEK(-1)"),        # <0 -> ref ERR5
+    ("B",  "vpeek_ok", "A=VPEEK(16383)"),     # VRAM max -> cont
     ("B",  "vpoke_vram","VPOKE 40000,0"),   # VRAM domain 0..16383 -> ref ERR6, zb cont
     ("B",  "vpoke_ill", "VPOKE 16384,0"),   # -> ref ERR5 (illegal fn), zb cont
     ("B",  "string_n",  "A$=STRING$(99999,42)"),
