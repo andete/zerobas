@@ -695,6 +695,10 @@ rerr_unprintable:
 ; WRONGLY re-trap (ONELIN can be non-zero — a handler armed but not
 ; currently active — while ONEFLG is exactly 0, the "without error"
 ; condition itself). in: A = MSX ERR code. Clobbers A, DE, HL.
+ex_resume_noerr:                    ; ERR 22 "resume without error" entry — falls
+                ld      a,22        ; through into raise_error_forced (S2b space
+                                    ; fix: raise_error_forced's ONLY caller, so the
+                                    ; separate `ld a,22`/`jp` block is merged in here)
 raise_error_forced:
                 ld      (ERRCODE),a
                 call    record_errline
@@ -891,9 +895,6 @@ res_setptr:
                 jp      set_resumeflag_ret  ; shares RESUMEFLAG:=1 + ret with RETURN's
                                             ; own tail (program.asm) -- run loop's
                                             ; rp_resume jumps to (RESUMEPTR)
-ex_resume_noerr:
-                ld      a,22
-                jp      raise_error_forced
 
 ; --- check_expr_errors: shared TMISMATCH+FPERR post-eval() check for ------
 ; drivers that need no extra stack cleanup before erroring (ex_if, exp_num
