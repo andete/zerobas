@@ -831,10 +831,14 @@ ON_TOKEN        equ     $95
 ; Error-handling S2a (docs/spec-basic-error-handling-s2a-packet.md §1): tokens
 ; black-box-pinned via probes/basic/basic_probe_pin_errtokens.py on the VG-8020
 ; (`ERROR` -> $A6 statement token; `a=err` -> ...EF E2, `a=erl` -> ...EF E1 --
-; both single-byte value tokens, expr.asm). RESUME=$A7 is S2b -- not added yet.
-ERROR_TOKEN     equ     $A6     ; ERROR n  (also ON ERROR GOTO, S2b)
+; both single-byte value tokens, expr.asm).
+ERROR_TOKEN     equ     $A6     ; ERROR n  (also ON ERROR GOTO)
 ERR_TOKEN       equ     $E2     ; ERR function (last error's MSX code)
 ERL_TOKEN       equ     $E1     ; ERL function (last error's line, 65535=direct)
+; Error-handling S2b (docs/spec-basic-error-handling-s2b-packet.md §2): RESUME.
+; Black-box-pinned ([[s2-error-token-pins]]): `resume next` -> A7 20 83,
+; `resume 0` -> A7 20 0E 00 00. No prefix hazard (unlike ERR/ERROR).
+RESUME_TOKEN    equ     $A7     ; RESUME / RESUME 0 / RESUME NEXT / RESUME <line>
 CONT_TOKEN      equ     $99     ; CONT (resume a STOPped/broken program). Oracle-
                                 ; confirmed byte-identical via basic_probe_crunch.py
                                 ; against the Philips VG-8020 (`cont` -> $99);

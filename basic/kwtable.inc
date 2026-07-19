@@ -296,5 +296,11 @@ kwtable:
                 db      5,"ERROR",1,ERROR_TOKEN                 ; $A6 (statement)
                 db      3,"ERR",1,ERR_TOKEN                     ; $E2 (value token)
                 db      3,"ERL",1,ERL_TOKEN                     ; $E1 (value token)
+                ; --- error-handling S2b (repack build only) -------------------
+                ; docs/spec-basic-error-handling-s2b-packet.md §2. RESUME:
+                ; single-byte STATEMENT token ($A7), black-box VG-8020 crunch
+                ; capture ([[s2-error-token-pins]]) + MSX2 TH Table 2.20 cross-
+                ; check. No prefix collision with any existing entry.
+                db      6,"RESUME",1,RESUME_TOKEN                ; $A7
     ENDIF
                 db      0
