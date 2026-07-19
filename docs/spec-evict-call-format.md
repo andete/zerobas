@@ -22,6 +22,60 @@ S2a the same way).
 
 ---
 
+## AS-BUILT (2026-07-19) — LANDED, as specified, no deviations from the split shape
+
+Implemented exactly as designed (§2/§3/§4): dispatch + interactive 360k/720k menu
+stay main-resident (`basic/format.asm`); the sector-build/write bulk moved to a NEW
+sub-ROM page-1 tenant `format_tenant` (`sub/format.asm`, `SUBROM_IDX_FORMAT = 10`,
+the next free page-1 index after `SUBROM_IDX_RND = 9`), carrying its own ~20 B
+sub-local `write_sector`/`CALSLT` write path (spec §3's "one duplication"). The bulk's
+code is shared verbatim via a new `basic/format-body.inc`, included inline by the lean
+cart (byte-identical) and by `sub/format.asm` (repack tenant) — the c3fc2d8 pattern.
+`FMT_GEOMSEL`/`FMT_RESULT` (§3/§4's RAM args/result channel) alias the tape CSAVE/
+BSAVE write scratch (`TSV_CNT`/`TSV_NAME`) — no fresh RAM claim was available (RAM
+below `DRVA_DPB` is exhausted), collision-checked reuse (same pattern as
+`IN_RDLEN`/`FILES_ENTIDX`).
+
+**Measured yield: page-1 free 17 B → 262 B (freed 245 B)** — well past the ≥140 B S2b
+funding target; low region unchanged (3 B). Lean `basic.rom` byte-identical
+(sha256 `e21f61fe...`, unchanged). DI window: bare-DI (§8 Q3's recommended default) —
+no format visibly hung; the trampoline was not needed.
+
+**Tooling addition (beyond the spec's literal ask):** `tools/check_tenant_closure.py`
+had a page-1 mode already, but it only audited the resident-ABI IMPORT LIST
+(`sub/basic-resident-abi.inc`) — it never walked a tenant's own call graph, so it
+would have passed trivially without ever examining `format_tenant` (a pure RAM+BIOS
+leaf that imports nothing from that list). Added `--page1`, the mirror of `--page0`
+(the fix commit 2838ea5 made for the equivalent page-0 gap): walks the SUB call graph
+from `sub_p1_table`'s tenants and fails on a main-BASIC-page-1 escape or a sub-page-0
+escape. Verified: 158 routines across all 11 page-1 tenants, no escapes. Wired into
+`subrom-closure-check` and `basic-reloc` as a third standing step.
+
+**Gates (all green):** `unit-test` 46/46; `diskbasic-acceptance` 34/34 lean **and**
+34/34 repack (CALL FORMAT case converged both times, both builds); a direct
+`disk_probe_format.py` run on both machines confirms BOTH geometries (360K menu '1',
+720K menu '2') structural (BPB/FAT-head vs the CF-3300 capture) + functional
+(round-trip file) PASS; `array-acceptance` 150/150; `input-acceptance` 16/16;
+`string-acceptance`/`float-acceptance`/`math-acceptance` ALL PASS;
+`check_reloc`/`check_kwtable_identity`/`check_resident_abi`/`check_tenant_closure`
+(default + `--page0` + new `--page1`) all OK. `repack-boot`'s "live PRINT" sub-check
+FAILS, but confirmed PRE-EXISTING (identical failure reproduced on a clean
+`7270bf8` worktree, before this eviction touched anything) — the same host
+matrix-typing timing flake documented in the printusing landing (commit c3fc2d8).
+Not run: a dedicated "tape battery" gate (no such Makefile target exists; CALL
+FORMAT/disk code has zero overlap with `tape/*.asm`).
+
+Every `.dsk` used for the empirical differential was a `/tmp` copy
+(`disk_probe_format.py`'s own junk image, never the committed `test720.dsk`);
+`git status` was clean before/after each run (only the tracked
+`zerobas-main-eu.ips`/`.bps` patch pair changed, as expected for a repack-ROM edit).
+
+Commits: `ab6effd` (shared `.inc` extraction + lean byte-identity + resident stub),
+`5389587` (the sub-ROM tenant + Makefile wiring), `a58c181` (the `--page1` closure
+tool), `81b7cd0` (rebuilt `zerobas-main-eu.ips`/`.bps`).
+
+---
+
 ## 0. The classification correction (why this needs its own spec)
 
 The S2b implementation agent proposed evicting `CALL FORMAT` as a *"clean page-0
