@@ -317,6 +317,34 @@ def main() -> int:
         print(f"{'PASS' if good else 'FAIL':5} [zb] error_n_regression "
               f"message={has_msg} in-line={in_line_number(raw)!r} (want None, direct mode)")
 
+    # ---------------- ERROR n argument validation (S2a-deferred, landed 2026-07-19)
+    # The faithful ERROR <n> domain is 1..255 (empirically pinned VG-8020): 0, 256,
+    # and any value out of range within int16 raise ERR 5 (illegal function call),
+    # while 1..255 raise that code verbatim. Straight ERR-value differential (via a
+    # handler). NOTE: |n| that OVERFLOWS int16 (e.g. 32768 -> ref ERR 6 Overflow, zb
+    # ERR 5) is the SEPARATE pre-existing D-F2-2 int-arg-coercion seam, out of scope
+    # here (zerobas does not overflow-check int-arg coercion for any statement).
+    if not args.only or "error_arg" in (args.only or ""):
+        print(f"\n--- error_arg: ERROR <n> domain 1..255 else ERR 5 (int16 range) ---")
+        arg_cases = ["0", "256", "-1", "1000", "32767", "-32768",  # -> 5
+                     "1", "5", "200", "255"]                       # -> verbatim
+        for n in arg_cases:
+            prog = ["10 ON ERROR GOTO 100", f"20 ERROR {n}",
+                    '100 PRINT"A<";ERR;">"', "RUN"]
+            ref = omsx_repl.run_case(args.machine, "direct", prog)
+            rv = (re.findall(r"A<([^<>]*)>", ref or "") or [None])[-1]
+            rv = rv.strip() if rv else None
+            if args.ref_only:
+                print(f"  [ref] ERROR {n:>6} -> ERR {rv!r}")
+                continue
+            zbc = omsx_repl.run_case(args.zb_machine, "direct", prog)
+            zv = (re.findall(r"A<([^<>]*)>", zbc or "") or [None])[-1]
+            zv = zv.strip() if zv else None
+            good = zv == rv
+            ok = ok and good
+            print(f"{'PASS' if good else 'FAIL':5} ERROR {n:>6} -> zb ERR {zv!r} "
+                  f"ref ERR {rv!r}")
+
     # ---------------- §7 reset-scope: RAW differential, no hardcoded want ------
     rscases = sel(RESET_SCOPE_CASES)
     if rscases:

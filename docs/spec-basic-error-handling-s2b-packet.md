@@ -57,8 +57,27 @@ still forced-aborts with ONEFLG intact — both empirically re-pinned). SELF-FUN
 provably-redundant `xor a` reclaims (`run_prog`, `init`, `oe_disable` — each preceded by
 code that leaves A=0; repack-only, lean byte-identical): page-1 net 1->0 B free. Gated in
 `basic_probe_error_trap.py`'s resume_line case (ERR->0 AND ERL kept, both machines). All
-standing gates green. The S2a-deferred `ERROR 0`->ERR 5 arg-validation item remains the
-last open error-handling edge.
+standing gates green.
+
+**ERROR n arg-validation follow-up — LANDED 2026-07-19 (the S2a §3(g) / §9 Q5 deferral).**
+The empirical VG-8020 pin fixed the faithful domain: `ERROR n` is valid for **1..255**;
+0, 256, and any out-of-range value WITHIN int16 raise **ERR 5** (illegal function call);
+1..255 raise that code verbatim (`ERROR 200`->ERR 200, an unprintable-message code). So
+`ex_error` now rejects the FULL evaluated value (`D<>0` -> >255/negative, or `E==0` ->
+value 0) instead of blindly taking the low byte (which mishandled 0/256/-1 and e.g.
+300->44). SELF-FUNDED, all repack-only, lean byte-identical: `raise_error`'s domain guard
+golfed `or a`/`jr z`/`cp 24`/`jr nc`/`dec a` -> `dec a`/`cp 23`/`jr nc` (-3 B, code 0 wraps
+to $FF, still caught) + the two FPERR one-code-two-message specials (`fre_arymem_oom`/
+`fre_illegalfn_lc`) factored to a shared `ld (ERRCODE),a`/`record_errline`/`raise_error_hl`
+tail (-5 B) fund the +8 B check; page-1 stays 0 B. **KNOWN boundary (out of scope, the
+separate pre-existing D-F2-2 int-arg-coercion seam):** `|n|` that OVERFLOWS int16 (e.g.
+`ERROR 32768`) -> reference ERR 6 (Overflow, raised by its int coercion) vs zerobas ERR 5;
+zerobas does not overflow-check int-arg coercion for ANY statement. Gated in
+`basic_probe_error_trap.py`'s error_arg differential (10 cases across the int16 domain).
+
+**The error-handling arc is now CLOSED** — no remaining faithful-domain edges (the only
+open item is the cross-cutting D-F2-2 int-coercion seam, tracked with the float pack, not
+error handling).
 
 ---
 

@@ -407,8 +407,13 @@ like the arrays/float/string engines — see §8).
   reuse vehicle. `RESUME` with `ONEFLG`=0 → `RESUME without error` (ERR 22).
 * **`ERR` / `ERL`** — numeric functions returning `ERRCODE` / `ERRLINE` (expr.asm
   function tokens). Trivial once S1 records them.
-* **`ERROR n`** — statement: `ld a,n` + `jp raise_error` (n outside the table →
-  `Unprintable error`, ERR 23). This is also the cheapest black-box code-verifier.
+* **`ERROR n`** — statement: evaluate the argument, then raise it. **Faithful domain
+  = 1..255** (empirically pinned VG-8020): `ERROR 0`, `ERROR 256`, and any out-of-range
+  value within int16 raise **ERR 5** (illegal function call); `1..255` raise that code
+  verbatim (a code with no message string still prints `unprintable error`/ERR 23 but ERR
+  = n, e.g. `ERROR 200`). `ex_error` rejects the full evaluated value (`D<>0` or `E==0`),
+  not just the low byte (arg-validation landed 2026-07-19). *Boundary:* `|n|` overflowing
+  int16 hits the separate D-F2-2 int-coercion seam (ref ERR 6 Overflow vs zb ERR 5).
 
 S2 oracle = §3's `ON ERROR` transcript, extended per statement.
 

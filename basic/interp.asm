@@ -561,15 +561,16 @@ fp_runtime_error:
 ; Clobbers as raise_error.
 fre_arymem_oom:
                 ld      a,7                 ; ERR 7: out of memory
-                ld      (ERRCODE),a
-                call    record_errline
                 ld      hl,err_mem_arr
-                jp      raise_error_hl
+                jr      fre_store_raise
 fre_illegalfn_lc:
                 ld      a,5                 ; ERR 5: illegal function call (lowercase)
+                ld      hl,err_illegal_fn
+fre_store_raise:                            ; shared tail (space fix): A=ERR code, HL=msg.
+                push    hl                  ; record_errline clobbers HL -- save the msg
                 ld      (ERRCODE),a
                 call    record_errline
-                ld      hl,err_illegal_fn
+                pop     hl
                 jp      raise_error_hl
 fperr_to_err:
                 db      6                   ; FPERR 1: overflow (err_overflow, program.asm's
@@ -656,11 +657,13 @@ raise_error:
                 ; still get the trap check (S2b fix: before this they jp'd fre_abort_
                 ; low directly, so SQR(-1)/LOG/OOM errors NEVER trapped).
                 ld      a,(ERRCODE)
-                or      a                  ; code 0 -> out of the 1..23 table domain
-                jr      z,rerr_unprintable
-                cp      24                 ; code > 23 -> also out of domain (e.g. a
-                jr      nc,rerr_unprintable ; wild `ERROR n` argument)
-                dec     a                  ; 1-based -> 0-based index
+                dec     a                  ; 1-based code -> 0-based index; code 0 wraps
+                                           ; to $FF (>= 23, so it too falls to unprintable
+                                           ; -- ERROR n now validates 1..255 upstream, so
+                                           ; 0 no longer reaches here, but keep it safe)
+                cp      23                 ; index >= 23  <=>  code 0 (via $FF) or code >= 24
+                jr      nc,rerr_unprintable ; -> "unprintable error" (rerr_unprintable
+                                           ; ignores A, so the pre-decrement is harmless)
                 add     a,a                ; *2 (word table)
                 ld      e,a
                 ld      d,0
@@ -803,16 +806,26 @@ err_unprintable:
                 db      "unprintable error",13,10,0
 
 ; --- ex_error: ERROR n statement (docs/spec-basic-error-handling-s2a-------
-; packet.md §3/(g)). Evaluates the numeric argument and raises it as if it
-; were any other MSX ERR code; an out-of-table code still reaches
-; raise_error and prints "unprintable error" (code 23) via err_msgtab's own
-; hole handling above -- reference-faithful enough for S2a (echoing the
-; wild code back in the message is S2b polish). HL enters on the ERROR
-; token. Clobbers A, BC, DE, HL.
+; packet.md §3/(g); arg-validation follow-up 2026-07-19). The argument's
+; FAITHFUL domain is 1..255 -- empirically pinned on the VG-8020: ERROR 0,
+; ERROR 256 (and any >255 or <0) all raise ERR 5 "Illegal function call", while
+; 1..255 raise that code verbatim (ERROR 200 -> ERR 200, an unprintable-message
+; code, still ERR 200). So we reject the FULL evaluated value (not just its low
+; byte): D<>0 (>= 256 or negative) OR E==0 (value 0) -> A=5 (same disposition as
+; a plain `ERROR 5`, via raise_error/err_msgtab entry 5). In range -> A=E. An
+; out-of-table but in-range code (24..255) still prints "unprintable error" via
+; err_msgtab's hole handling. HL enters on the ERROR token. Clobbers A, DE, HL.
 ex_error:
                 inc     hl                  ; past the ERROR token
                 call    eval                ; DE = code, HL advanced (unused past here)
-                ld      a,e                 ; ERRCODE is a single byte (0..255 domain)
+                ld      a,d
+                or      a                   ; high byte set -> value >255 or negative ->
+                jr      nz,ee_illegal       ;   out of the 1..255 domain -> illegal fn
+                or      e                   ; A was 0 (=d), so A:=e; Z <=> value 0
+                jr      nz,ee_raise         ; 1..255 -> raise E verbatim
+ee_illegal:
+                ld      a,5                 ; 0 / >255 / negative -> ERR 5 illegal fn
+ee_raise:
                 jp      raise_error
 
 ; --- ex_resume: RESUME / RESUME 0 / RESUME NEXT / RESUME <line> ------------
