@@ -552,21 +552,23 @@ fp_runtime_error:
                 jp      raise_error
 ; --- fre_arymem_oom / fre_illegalfn_lc: the two FPERR codes (6/3) whose ------
 ; message can't flow through raise_error's generic err_msgtab lookup (see
-; above) -- each duplicates raise_error's ERRCODE/record_errline/
-; fre_abort_low shape with a fixed message pointer instead of a table index.
+; above) -- each sets ERRCODE/record_errline with a fixed message pointer, then
+; enters the SHARED raise_error_hl trap decision (S2b fix: they MUST go through
+; the trap check, else SQR(x<0)/LOG (FPERR=3) and array OOM (FPERR=6) errors
+; never trap under ON ERROR -- the bug the empirical pass caught). HL = message.
 ; Clobbers as raise_error.
 fre_arymem_oom:
                 ld      a,7                 ; ERR 7: out of memory
                 ld      (ERRCODE),a
                 call    record_errline
                 ld      hl,err_mem_arr
-                jp      fre_abort_low
+                jp      raise_error_hl
 fre_illegalfn_lc:
                 ld      a,5                 ; ERR 5: illegal function call (lowercase)
                 ld      (ERRCODE),a
                 call    record_errline
                 ld      hl,err_illegal_fn
-                jp      fre_abort_low
+                jp      raise_error_hl
 fperr_to_err:
                 db      6                   ; FPERR 1: overflow (err_overflow, program.asm's
                                             ; own string, dl_overflow -- REUSED byte-for-byte)
@@ -645,28 +647,12 @@ err_resume_noerr:                          ; error-handling S2b (docs/spec-basic
 raise_error:
                 ld      (ERRCODE),a
                 call    record_errline
-                ; --- S2b trap decision (the seam S2a's header comment reserved) ---
-                ld      hl,(ONELIN)
-                ld      a,h
-                or      l
-                jr      z,rerr_report        ; ONELIN==0 -> no handler -> abort
-                ld      a,(ONEFLG)
-                or      a
-                jr      nz,rerr_report        ; nested error, no RESUME yet -> forced abort
-                ; take the trap:
-                ld      sp,(SAVSTK)          ; §6: unwind to the run-loop-clean depth
-                ld      de,(CURLINE)         ; capture the resume context (§4)
-                ld      (ERRRESUME),de
-                ld      de,(SAVTXT)
-                ld      (ERRRESUME+2),de
-                ld      (GOTOTGT),hl         ; HL still = ONELIN (nothing above touched it)
-                ld      a,1
-                ld      (ONEFLG),a           ; inside a handler now
-                ld      (GOTOFLAG),a         ; reuse A=1
-                xor     a
-                ld      (RESUMEFLAG),a       ; defensive: rp_lp must take the GOTO arm
-                jp      rp_lp                ; run loop honours GOTOFLAG -> ONELIN's line
-rerr_report:                                 ; == the S1/S2a abort body, unchanged
+                ; resolve the abort-fallback message FIRST (into HL), THEN decide
+                ; trap vs abort in the shared raise_error_hl tail. Message-first so
+                ; the two FPERR one-code-two-message special cases (fre_illegalfn_lc/
+                ; fre_arymem_oom) can enter raise_error_hl with THEIR OWN message and
+                ; still get the trap check (S2b fix: before this they jp'd fre_abort_
+                ; low directly, so SQR(-1)/LOG/OOM errors NEVER trapped).
                 ld      a,(ERRCODE)
                 or      a                  ; code 0 -> out of the 1..23 table domain
                 jr      z,rerr_unprintable
@@ -682,10 +668,41 @@ rerr_report:                                 ; == the S1/S2a abort body, unchang
                 inc     hl
                 ld      d,(hl)
                 ex      de,hl              ; HL = the message string
+; --- raise_error_hl: the shared S2b trap decision. in: HL = abort-fallback -----
+; message, ERRCODE/ERRLINE already set. ONELIN is read via DE so HL (the message)
+; survives to the abort path. Take the trap iff a handler is armed (ONELIN!=0) and
+; we are not already inside one (ONEFLG==0); otherwise fall to ra_abort with HL.
+raise_error_hl:
+                ld      a,(ONEFLG)
+                or      a
+                jr      nz,ra_abort          ; inside a handler, no RESUME -> forced abort
+                ld      de,(ONELIN)          ; DE = handler line LINK addr (kept to the end)
+                ld      a,d
+                or      e
+                jr      z,ra_abort           ; no handler armed -> abort with HL's message
+                ; take the trap (HL message discarded -- a trap prints nothing):
+                ld      sp,(SAVSTK)          ; §6: unwind to the run-loop-clean depth
+                ld      hl,(CURLINE)         ; capture the resume context (§4) via HL, so DE
+                ld      (ERRRESUME),hl       ; keeps ONELIN for the CURLINE store below
+                ld      hl,(SAVTXT)
+                ld      (ERRRESUME+2),hl
+                ld      (CURLINE),de         ; CURLINE := ONELIN: point the run loop AT the
+                                             ; handler line. rp_lp runs CURLINE's own body, so
+                                             ; setting CURLINE IS the branch (GOTOFLAG is only
+                                             ; consumed by rp_goto's POST-exec arm, never by
+                                             ; rp_lp; a plain jp rp_lp would re-run the ERRORING
+                                             ; line and, ONEFLG now 1, force-abort)
+                ld      a,1
+                ld      (ONEFLG),a           ; inside a handler now
+                xor     a
+                ld      (RESUMEFLAG),a       ; rp_lp runs CURLINE (the handler) fresh
+                jp      rp_lp
+ra_abort:                                    ; the S1/S2a abort body (HL = message)
                 jp      fre_abort_low
 rerr_unprintable:
                 ld      hl,err_unprintable
-                jp      fre_abort_low
+                jp      raise_error_hl       ; through the trap check (ERROR n with a
+                                             ; wild code still traps if a handler is armed)
 
 ; --- raise_error_forced: like raise_error but ALWAYS aborts, never traps ---
 ; (docs/spec-basic-error-handling-s2b-packet.md §5.4). Used exactly where
@@ -699,10 +716,11 @@ ex_resume_noerr:                    ; ERR 22 "resume without error" entry — fa
                 ld      a,22        ; through into raise_error_forced (S2b space
                                     ; fix: raise_error_forced's ONLY caller, so the
                                     ; separate `ld a,22`/`jp` block is merged in here)
-raise_error_forced:
+raise_error_forced:                          ; reached ONLY via ex_resume_noerr, A=22
                 ld      (ERRCODE),a
                 call    record_errline
-                jr      rerr_report
+                ld      hl,err_resume_noerr  ; ERR 22's message directly (this routine is
+                jp      fre_abort_low        ; ERR-22-only) -> ALWAYS abort, never trap
 
 ; --- record_errline: ERRLINE := run mode? CURLINE+2 : 65535 (direct) -------
 ; docs/spec-basic-error-handling-s2a-packet.md §3/(e). DIRECTF (D-2, D-1) is

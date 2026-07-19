@@ -513,6 +513,13 @@ branch_lineno:
                 jr      z,bl_yes
                 cp      RUN_TOKEN
                 jr      z,bl_yes
+    IF ROM_BASE < $4000
+                cp      RESUME_TOKEN        ; RESUME <line> / RESUME 0 (error-handling S2b,
+                jr      z,bl_yes            ; repack-only): crunch the following number as
+                                            ; $0E, like GOTO. RESUME NEXT / bare RESUME are
+                                            ; unaffected (no digit follows -> bl_num returns
+                                            ; without emitting). Lean stays byte-identical.
+    ENDIF
                 ret                         ; not a branch keyword
 bl_yes:
                 ld      a,(hl)              ; copy spaces verbatim
