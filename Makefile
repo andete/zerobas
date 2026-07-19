@@ -435,6 +435,15 @@ error-acceptance: $(DISK_ROM) repack-machine
 error-trap-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_error_trap.py $(if $(ONLY),--only $(ONLY),)
 
+# --- D-F2-2 int-argument coercion gate (docs/spec-basic-df2-2-intarg-coercion.md)
+# VG-8020 differential: out-of-domain int args must raise the reference's Overflow
+# (ERR 6) / Illegal function call (ERR 5), not silently coerce. ASSERTED cases gate
+# the landed stages (A1 = OUT + address-domain regression guards); PENDING cases are
+# reported as a straight differential until their stage (A2 PEEK/INP, B STRING$/
+# SPACE$/ON/WIDTH/VPOKE-VRAM) lands. Repack-only; oracle-dependent.
+intarg-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_intarg.py $(if $(ONLY),--only $(ONLY),)
+
 # --- Standing float-pack acceptance gate (float arc, F1 S3 + F2 S2) -----------
 # Three differential halves against the VG-8020 reference (docs/
 # spec-basic-float-core.md §9-§10): LITERALS (basic_probe_floatlit.py -- the
@@ -514,5 +523,5 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance \
-        input-acceptance error-acceptance error-trap-acceptance float-acceptance math-acceptance subrom-acceptance \
+        input-acceptance error-acceptance error-trap-acceptance intarg-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check clean

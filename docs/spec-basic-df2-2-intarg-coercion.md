@@ -5,7 +5,11 @@ SPDX-License-Identifier: 0BSD
 
 # Scope + spec — **D-F2-2 int-argument coercion** (Overflow/illegal-fn on out-of-domain args)
 
-Status: **DRAFT — awaiting sign-off (spec-before-implementation).** No code yet.
+Status: **IN PROGRESS.** Signed off; **stage A1 (OUT) LANDED 2026-07-19** (self-funded by
+tightening the sibling `do_vpoke` to the shared `check_fperr_only`, page-1 0→6 B; gated in
+`make intarg-acceptance`). A1's empirical pass also CORRECTED the surface: VPOKE's domain is
+the VRAM size 0..16383, not the address domain — it moves to stage B (§1.1). A2 (PEEK/INP)
+and B (STRING$/SPACE$/ON/WIDTH + VPOKE) pending.
 This is the scope/design doc for the last cross-cutting faithfulness residual after the
 error-handling arc closed (2026-07-19). It fixes the "silent eager `flt_to_int16`" that
 every int-argument statement/function *not* explicitly wired during F2 (POKE/VPOKE/HEX$/
@@ -40,23 +44,35 @@ Overflow ERR 6 only beyond). This is the SAME domain POKE/VPOKE already use.
 | `PEEK(a)` | `basic/expr.asm` (ev PEEK) | cont | **ERR 6** | cont | cont (silent) |
 | `INP(p)` | `basic/expr.asm` (ev INP) | cont | **ERR 6** | cont | cont (silent) |
 
-**Group B — BYTE domain** (int16-coerce → Overflow ERR 6 if `|x|>32767`; then range-check
-0..255 → illegal function call ERR 5). The GETBYT pattern.
+**Group B — RANGE-checked** (int16-coerce → Overflow ERR 6 if `|x|>32767`; then range-check
+to the site's valid max → illegal function call ERR 5 outside). The GETBYT pattern, with a
+per-site upper bound (0..255 for the byte sites, 0..16383 for VPOKE's VRAM address).
 
-| Site | Code | `arg=256` | `arg=32768` | `arg=-1` | zb today |
-|---|---|---|---|---|---|
-| `STRING$(n,…)` count | `basic/str-engine.asm` `str_fn_string` | **ERR 5** | **ERR 6** | **ERR 5** | cont |
-| `STRING$(n,c)` char-code | `str_fn_string` | **ERR 5** | **ERR 6** | **ERR 5** | cont |
-| `SPACE$(n)` | `str-engine.asm` `str_fn_space` | **ERR 5** | **ERR 6** | **ERR 5** | cont |
-| `ON n GOTO/GOSUB` | `basic/program.asm` `ex_on` | **ERR 5** | **ERR 6** | **ERR 5** | cont |
-| `WIDTH n` | `basic/screen.asm` `ex_width` | **ERR 5** | **ERR 6** | **ERR 5** | cont |
+| Site | Code | valid max | `=max+1` | `=32768` | `=-1` | zb today |
+|---|---|---|---|---|---|---|
+| `STRING$(n,…)` count | `basic/str-engine.asm` `str_fn_string` | 255 | ERR 5 | ERR 6 | ERR 5 | cont |
+| `STRING$(n,c)` char-code | `str_fn_string` | 255 | ERR 5 | ERR 6 | ERR 5 | cont |
+| `SPACE$(n)` | `str-engine.asm` `str_fn_space` | 255 | ERR 5 | ERR 6 | ERR 5 | cont |
+| `ON n GOTO/GOSUB` | `basic/program.asm` `ex_on` | 255 | ERR 5 | ERR 6 | ERR 5 | cont |
+| `WIDTH n` | `basic/screen.asm` `ex_width` | 255 | ERR 5 | ERR 6 | ERR 5 | cont |
+| **`VPOKE addr`** | `basic/vdpio.asm` `do_vpoke` | **16383** | ERR 5 | ERR 6 | ERR 5 | **cont (WRONG)** |
 
 `ON 0 GOTO` = cont on BOTH (0 is the valid "no branch" selector, not an error).
 
+**VPOKE correction (found by the A1 empirical pass 2026-07-19):** VPOKE was wired during F2
+to `fac_to_int_addr` (address domain 0..65535) and previously assumed "already faithful"
+(only `VPOKE 99999`→ERR 6 had been checked, which the too-wide domain happens to get right).
+But the reference restricts VPOKE's address to the **VRAM size 0..16383** — `VPOKE 16384..
+32767`→**ERR 5**, `>32767`→**ERR 6**, `-1`→**ERR 5**. So VPOKE is a Group-B site (int16 +
+0..16383 range-check), NOT an address-domain one. The A1 `do_vpoke` tidy (§3.1) left this
+pre-existing domain behaviour-equivalent (still too wide); the fix belongs to stage B.
+
 ### 1.2 Already faithful (NO work — regression-guard only)
 
-POKE addr/val, VPOKE, HEX$, PRINT (F2-wired); `DIM A(n)`, array subscripts, `TAB(n)`,
-`SPC(n)` (already raise ERR 6 on 99999). These prove the fix templates already ship.
+POKE addr/val, HEX$, PRINT (F2-wired, full address domain — POKE `40000`/`-1`/`65535` all
+cont, `99999`→ERR 6, confirmed); `DIM A(n)`, array subscripts, `TAB(n)`, `SPC(n)` (raise
+ERR 6 on 99999). These prove the fix templates already ship. (**VPOKE was mistakenly here
+in the draft — it is a Group-B site, see above.**)
 
 ### 1.3 Out of scope
 
@@ -146,9 +162,17 @@ Group B = 5 arg-sites through one shared `get_byte_arg` leaf. Total NEW code ≈
 
 ## 4. Staging (each stage independently gated + lead-verified)
 
-1. **A1 — `OUT`** (statement, proven POKE template; smallest, self-contained).
+1. **A1 — `OUT`** ✅ **LANDED 2026-07-19.** Mirrored the POKE `eval_addr` template + one
+   `check_fperr_only` (both port/value are the address domain; FPERR sticky across the two
+   `eval_addr`s → one end-check catches either). **Self-funded** by tightening the sibling
+   `do_vpoke`: it used a 10 B inline FPERR check + a stack-balancing `pop bc` because its
+   address was still on the stack; popping the address *before* the check (as `do_out` now
+   does) makes the site SP-clean so it reuses the shared `check_fperr_only` (−7 B; +1 B for
+   OUT → page-1 0→6 B). Lean byte-identical. Gate: `make intarg-acceptance`.
 2. **A2 — `PEEK`/`INP`** (functions; blocked on Q1 propagation pin — may need inline check).
-3. **B — `get_byte_arg` + STRING$/SPACE$/ON/WIDTH** (the byte-domain leaf + 5 sites; Q2).
+3. **B — `get_byte_arg`-style range-check + STRING$/SPACE$/ON/WIDTH (0..255) + VPOKE
+   (0..16383)** (the int16-overflow + per-site range-check leaf; Q2 page-visibility). VPOKE
+   joins here (§1.1 correction) — same shape, just a 16383 bound instead of 255.
 
 Order rationale: A1 validates the address-domain move end-to-end at a statement site (no
 propagation question); A2 resolves the function-propagation question on a small surface; B

@@ -3074,7 +3074,7 @@ only, lean 16 KB `basic.rom` byte-identical (pinned).
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
 | D-F2-1: runtime numeric errors abort the statement with zerobas's own lowercase wording, not the reference's verbatim capitalised text — same shape as D-2 | — | own design (D-2 wording convention, applied to the new flag) | quarantined |
-| D-F2-2: `OUT`'s port/value arguments (`basic/vdpio.asm` `do_out`) were left on the SILENT eager `flt_to_int16` conversion rather than switched to `fac_to_int_addr`; every OTHER int-argument statement not explicitly named above (loop bounds, array subscripts, etc.) is the same residue — out of the F2 brief's explicit wiring list (POKE/VPOKE/HEX$/PRINT only) | — | own design; deferred, not a correctness bug within F2's stated scope | quarantined |
+| D-F2-2: the SILENT eager `flt_to_int16` residue on int-argument sites not wired in F2 (POKE/VPOKE/HEX$/PRINT only) is being closed by the dedicated D-F2-2 arc (docs/spec-basic-df2-2-intarg-coercion.md, VG-8020-pinned). **Stage A1 LANDED 2026-07-19: `OUT` (`basic/vdpio.asm` `do_out`) port+value now use the checked ADDRESS domain `eval_addr` + `check_fperr_only` (Overflow ERR 6 outside 0..65535)** — mirrors POKE; self-funded by tightening `do_vpoke` to the same shared check. Remaining: A2 (PEEK/INP, address domain) + B (STRING$/SPACE$/ON/WIDTH byte domain 0..255, and the VPOKE VRAM-domain correction 0..16383 — VPOKE's F2 `fac_to_int_addr` wiring is too wide: `VPOKE 16384`→ref ERR 5, pinned by A1's empirical pass) | — | own design; A1 landed + gated (`make intarg-acceptance`), rest deferred to the arc | quarantined |
 
 ### Correctness fixes found in review (not oracle-pinned; internal control-flow)
 

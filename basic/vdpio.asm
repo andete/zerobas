@@ -36,18 +36,19 @@ do_vpoke:
                 inc     hl
     IF ROM_BASE < $4000
                 call    eval_addr           ; DE = value, HL = cursor
-                ld      a,(FPERR)
-                or      a
-                jr      z,vpoke_ok
-                pop     bc                  ; discard the saved address (mirrors vdp_err)
-                jp      fp_runtime_error
-vpoke_ok:
+                pop     bc                  ; BC = VRAM address (popped BEFORE the check so
+                                            ; the stack is SP-clean for check_fperr_only --
+                                            ; same shape do_out now uses; an out-of-domain
+                                            ; addr OR value -> Overflow abort, ERR 6)
+                call    check_fperr_only
+                ld      a,e                 ; A = low byte of value
+                push    hl                  ; save the executor's cursor
     ELSE
                 call    eval                ; DE = value, HL = cursor
-    ENDIF
                 ld      a,e                 ; A = low byte of value
                 pop     bc                  ; BC = VRAM address
                 push    hl                  ; save the executor's cursor
+    ENDIF
                 ld      h,b
                 ld      l,c                 ; HL = VRAM address (WRTVRM wants it here)
                 call    WRTVRM              ; write A to VRAM[HL]
@@ -57,20 +58,43 @@ vpoke_ok:
 ; --- do_out: OUT port,value -----------------------------------------------
 ; port = Z80 I/O port (BC = port for `out (c),a`), value low byte.
 do_out:
-                call    eval                ; DE = port, HL = cursor
+    IF ROM_BASE < $4000
+                call    eval_addr           ; D-F2-2 A1: OUT's port/value are the checked
+    ELSE                                    ; ADDRESS domain (FPERR on overflow), not the
+                call    eval                ; silent eager conversion -- mirrors POKE
+    ENDIF                                   ; (basic/poke.asm). DE = port, HL = cursor
                 push    de                  ; save port
                 call    skip_spaces
                 ld      a,(hl)
                 cp      ','                 ; comma required
                 jr      nz,vdp_err
                 inc     hl
-                call    eval                ; DE = value, HL = cursor
+    IF ROM_BASE < $4000
+                call    eval_addr           ; DE = value, HL = cursor
+    ELSE
+                call    eval
+    ENDIF
                 pop     bc                  ; BC = port (C = port number)
+    IF ROM_BASE < $4000
+                call    check_fperr_only    ; an out-of-domain port OR value (FPERR sticky
+                                            ; across both eval_addr's, set-only) -> Overflow
+                                            ; abort (ERR 6). Same SP-clean tail-jumped-driver
+                                            ; shape as ex_if/ex_let: on abort it discards our
+                                            ; dead resume addr; on OK it returns here. Lean
+                                            ; keeps its own tail below (byte-identical); the
+                                            ; guard push/pop hl around `out (c),a` there is
+                                            ; dead (out preserves HL), so the repack tail
+                                            ; simply omits it.
+                ld      a,e                 ; A = low byte of value
+                out     (c),a               ; raw Z80 port write
+                jp      exec_stmt           ; HL still the cursor (out preserves it)
+    ELSE
                 push    hl                  ; guard the cursor across the port write
                 ld      a,e                 ; A = low byte of value
                 out     (c),a               ; raw Z80 port write
                 pop     hl                  ; HL = cursor
                 jp      exec_stmt           ; run the next statement
+    ENDIF
 vdp_err:
                 pop     bc                  ; discard the saved address / port
                 jp      stmt_error
