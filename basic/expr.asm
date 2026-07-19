@@ -840,14 +840,9 @@ ev_ff_ckaddr:                               ; PEEK/INP: address domain, Overflow
                 call    fac_to_int_addr     ; DE=checked addr; FPERR=1 outside 0..65535 wrap
                 call    check_fperr_only    ; -> ERR 6 (aborts; else returns clean)
                 jr      ev_ff_ckdone
-ev_ff_ckvram:                               ; VPEEK: int16 (Overflow) then VRAM 0..16383
-                call    fac_to_int_strict   ; DE=int16; FPERR=1 if |x|>32767
-                call    check_fperr_only    ; -> ERR 6 (or the arg's own FPERR, e.g. SQR(-1))
-                ld      a,d                 ; 0..16383 iff top two bits clear ($0000..$3FFF)
-                and     $C0
-                jr      z,ev_ff_ckdone
-                ld      a,5
-                jp      raise_error         ; -> ERR 5 illegal function call
+ev_ff_ckvram:                               ; VPEEK: VRAM 0..16383 (the shared get_vram_arg
+                call    get_vram_arg        ; leaf D-F2-2 stage B added — same as VPOKE's:
+                                            ; DE=checked addr; ERR 6 >int16 / ERR 5 outside)
 ev_ff_ckdone:
                 pop     bc                  ; C = selector restored for the read dispatch
                 call    flt_int_result      ; the function returns an int even if its

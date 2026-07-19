@@ -51,20 +51,34 @@ ASSERTED = [
     ("vpeek_ovf",     "A=VPEEK(40000)", "ERR6"),  # >int16 -> ERR6
     ("vpeek_neg",     "A=VPEEK(-1)",    "ERR5"),  # <0 -> ERR5
     ("vpeek_ok",      "A=VPEEK(16383)", "cont"),  # VRAM max -> cont
+    # --- B: VPOKE VRAM-domain correction (0..16383, NOT the 0..65535 address ------
+    # domain F2 wired) + STRING$/SPACE$/ON/WIDTH byte domain 0..255. Shared leaf
+    # get_byte_arg (0..255) / get_vram_arg (0..16383): int16-coerce (ERR6 >32767)
+    # then per-site range-check (ERR5 outside). LANDED (this commit).
+    ("vpoke_vram",    "VPOKE 40000,0",       "ERR6"),  # >int16 -> ERR6
+    ("vpoke_ill",     "VPOKE 16384,0",       "ERR5"),  # >VRAM, <=int16 -> ERR5
+    ("vpoke_neg",     "VPOKE -1,0",          "ERR5"),  # <0 -> ERR5 (was cont: wrapped)
+    ("vpoke_vmax",    "VPOKE 16383,0",       "cont"),  # VRAM max -> cont
+    ("string_n",      "A$=STRING$(99999,42)","ERR6"),  # count >int16 -> ERR6
+    ("string_c",      "A$=STRING$(5,256)",   "ERR5"),  # char code >255 -> ERR5
+    ("string_neg",    "A$=STRING$(-1,65)",   "ERR5"),  # negative count -> ERR5
+    ("string_ok",     "A$=STRING$(3,255)",   "cont"),  # count 3, char 255 -> cont
+    ("space_n",       "A$=SPACE$(99999)",    "ERR6"),  # >int16 -> ERR6
+    ("space_neg",     "A$=SPACE$(-1)",       "ERR5"),  # negative -> ERR5
+    ("space_ok",      "A$=SPACE$(100)",      "cont"),  # in byte domain + fits string pool -> cont
+    #  (SPACE$(255) is NOT used here: the ref's default 200-byte string pool
+    #   raises ERR 14 out-of-string-space first — a memory limit, not coercion.)
+    ("on_n",          "ON 99999 GOTO 30",    "ERR6"),  # >int16 -> ERR6
+    ("on_ill",        "ON 256 GOTO 30",      "ERR5"),  # >255, <=int16 -> ERR5
+    ("on_ok",         "ON 1 GOTO 30",        "cont"),  # branches to 30 -> C# -> cont
+    ("width_n",       "WIDTH 256",           "ERR5"),  # >255, <=int16 -> ERR5
+    ("width_ovf",     "WIDTH 99999",         "ERR6"),  # >int16 -> ERR6
+    ("width_ok",      "WIDTH 32",            "cont"),  # in byte domain (valid both modes) -> cont
 ]
 
 # Not yet faithful — reported as a straight differential until their stage lands.
-PENDING = [
-    # A2 (PEEK/INP) and VPEEK LANDED 2026-07-19 -> promoted to ASSERTED above.
-    # Remaining = stage B: the VPOKE VRAM-domain correction + the byte-range sites.
-    ("B",  "vpoke_vram","VPOKE 40000,0"),   # VRAM domain 0..16383 -> ref ERR6, zb cont
-    ("B",  "vpoke_ill", "VPOKE 16384,0"),   # -> ref ERR5 (illegal fn), zb cont
-    ("B",  "string_n",  "A$=STRING$(99999,42)"),
-    ("B",  "string_c",  "A$=STRING$(5,256)"),
-    ("B",  "space_n",   "A$=SPACE$(99999)"),
-    ("B",  "on_n",      "ON 99999 GOTO 30"),
-    ("B",  "width_n",   "WIDTH 256"),
-]
+# (Empty: stage B was the last of the arc; every site is now ASSERTED above.)
+PENDING = []
 
 
 def run(machine, stmt):

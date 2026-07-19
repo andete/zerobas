@@ -5,7 +5,7 @@ SPDX-License-Identifier: 0BSD
 
 # Scope + spec — **D-F2-2 int-argument coercion** (Overflow/illegal-fn on out-of-domain args)
 
-Status: **IN PROGRESS.** Signed off; **stage A1 (OUT) LANDED 2026-07-19** (self-funded by
+Status: **✅ ARC COMPLETE — all stages LANDED 2026-07-19.** Signed off; **stage A1 (OUT) LANDED 2026-07-19** (self-funded by
 tightening the sibling `do_vpoke` to the shared `check_fperr_only`, page-1 0→6 B; gated in
 `make intarg-acceptance`). A1's empirical pass also CORRECTED the surface: VPOKE's domain is
 the VRAM size 0..16383, not the address domain — it moves to stage B (§1.1). **A2's empirical
@@ -18,8 +18,25 @@ repack-only + lean byte-identical. The parked `scratchpad/a2-vpeek-impl.patch` r
 all 8 differentials (PEEK/INP address-domain → ERR 6, incl. the `FOR I=PEEK(99999)` non-checking
 consumer; VPEEK VRAM 0..16383 → ERR 5 / >32767 → ERR 6) now MATCH the VG-8020 ref and are
 **promoted to the gated `ASSERTED` set** (19/19). No regression at the shared `ev_ff_arg` point
-(EOF/LOF/DSKF/CVI/INPUT# still converge). **Stage B (STRING$/SPACE$/ON/WIDTH + VPOKE VRAM-domain)
-pending** — the last of the arc.
+(EOF/LOF/DSKF/CVI/INPUT# still converge). **Stage B (STRING$/SPACE$/ON/WIDTH byte 0..255 +
+VPOKE/VPEEK VRAM 0..16383) LANDED 2026-07-19 — the LAST of the arc, closing it.** Two shared
+main-resident leaves at the end of `interp.asm` (repack-gated): `get_byte_arg` (int16-coerce →
+ERR 6, then 0..255 range → ERR 5) and `get_vram_arg` (int16 → ERR 6, then 0..16383 `and $C0`
+→ ERR 5), both over the shared `get_int16_checked` (HL-guarded `fac_to_int_strict` +
+`check_fperr_only`). Wired: `do_vpoke` addr (was the too-wide 0..65535 address domain F2
+mis-wired), `ex_on` selector, `ex_width` column, `str_fn_string` count+char, `str_fn_space`
+count; the landed VPEEK inline block deduped to `call get_vram_arg` (−11 B). Placed at the file
+tail because a mid-file 31 B insert split page 1's dense forward `jr`s to `goto_resolve`/`ex_if`.
+**All 7 stage-B differentials PROMOTED to gated `ASSERTED` (`make intarg-acceptance` 37/37)**;
+lean byte-identical; page-1 1146→1120 B, low region 3→19 B (the removed STRMAX clamp + D-3
+negative check freed 16 B). **My adversarial + empirical pass caught a real state-dependency the
+green build hid** ([[error-handling-arc]] recurring lesson): `get_byte_arg`'s FPERR check is
+correct, but the host `test_str_fn.py` harness cleared ERRMARK/TEMPTOP per case yet **not FPERR**,
+so a stale `FPERR=4` from a prior `STRING$(3,"")` deferred-error case misfired the next case's
+coercion — fixed by making the harness's `stmt_boundary()` mirror `exec_stmt` fully (clear
+TMISMATCH + FPERR, interp.asm:129). All standing gates green (unit-test 46/46, string/error/
+error-trap/float/math/input/subrom, diskbasic 34/34; array 149/150 = one PRE-EXISTING
+`arrelem.varptr.nested` divergence, baseline-identical, unrelated).
 This is the scope/design doc for the last cross-cutting faithfulness residual after the
 error-handling arc closed (2026-07-19). It fixes the "silent eager `flt_to_int16`" that
 every int-argument statement/function *not* explicitly wired during F2 (POKE/VPOKE/HEX$/
@@ -204,11 +221,19 @@ Group B = 5 arg-sites through one shared `get_byte_arg` leaf. Total NEW code ≈
    `and $C0` range-check → ERR 5. Fires even in non-checking consumers (FOR bounds, verified).
    Funded by the disk/file eviction Phase 1 (39 B; page-1 1185→1146 B). Lean byte-identical.
    Gate: `make intarg-acceptance` (8 differentials promoted to ASSERTED, 19/19).
-3. **B — `get_byte_arg`-style range-check + STRING$/SPACE$/ON/WIDTH (0..255) + VPOKE
-   (0..16383) + VPEEK (0..16383)** (the int16-overflow + per-site range-check leaf; Q2
-   page-visibility). VPOKE (statement) and **VPEEK (function)** both join here (§1.1
-   corrections) on a shared VRAM leaf — same shape, a 16383 bound instead of 255. VPEEK routes
-   its VRAM check through the `ev_ff_arg` inline-abort point A2 introduces.
+3. **B — `get_byte_arg`/`get_vram_arg` range-check + STRING$/SPACE$/ON/WIDTH (0..255) + VPOKE
+   (0..16383) + VPEEK (0..16383)** ✅ **LANDED 2026-07-19 — closes the arc.** Two shared leaves
+   at the tail of `interp.asm` over `get_int16_checked` (HL-guarded `fac_to_int_strict` +
+   `check_fperr_only` → ERR 6). `get_byte_arg`: high byte set → ERR 5; `get_vram_arg`:
+   `ld a,d / and $C0` → ERR 5. VPOKE addr moved OFF the F2-mis-wired 0..65535 address domain;
+   the landed VPEEK inline block deduped to `call get_vram_arg`. **Q2 resolved:** every Group-B
+   caller is main-resident (str-engine is page-0 low region, the rest page 1) so ONE main leaf
+   reaches all; no sub-ROM marshalling needed. Leaf sited at the file tail (not inline near
+   `check_fperr_only`) because a 31 B mid-file insert split page 1's dense forward `jr`s to
+   `goto_resolve`/`ex_if` (out-of-range at assembly). Gate: `make intarg-acceptance` 37/37 (7
+   stage-B differentials promoted to ASSERTED + boundary/negative/in-domain guards). Empirical
+   pass caught a host-harness FPERR-leak (see status header). Lean byte-identical; page-1 1146→
+   1120 B, low region 3→19 B.
 
 Order rationale: A1 validates the address-domain move end-to-end at a statement site (no
 propagation question); A2 resolves the function-propagation question on a small surface; B

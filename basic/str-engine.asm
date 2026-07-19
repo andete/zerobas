@@ -1047,13 +1047,12 @@ str_fn_space:
                 cp      ')'
                 jp      nz,str_arg_empty
                 inc     hl                  ; HL past ')'
-                bit     7,d
-                jp      nz,str_eval_no      ; negative n -> function error (D-3)
-                push    hl                  ; guard cursor
-                ld      b,d
-                ld      c,e                 ; BC = n (str_min_bc's "count")
-                ld      a,STRMAX            ; A = ceiling
-                call    str_min_bc          ; A = min(STRMAX, n) = clamped fill count
+                push    hl                  ; guard cursor (across call_strheap below)
+                call    get_byte_arg        ; D-F2-2 stage B: SPACE$ count is a byte 0..255
+                                            ; (>int16 ERR 6, 256.. ERR 5, negative ERR 5) —
+                                            ; replaces the old clamp-to-STRMAX + D-3 negative
+                                            ; check (STRMAX=255 == the byte ceiling, so an
+                                            ; in-range count is unchanged). A = fill count.
                 ld      (SH_LEN),a
                 ld      a,' '
                 ld      (SH_FILLBYTE),a
@@ -1121,12 +1120,10 @@ str_fn_string:
                                             ; (screen fills with " 0"). Defer FPERR=4 here.
                 inc     hl
                 call    eval                ; DE = n; HL advanced (IX preserved)
-                bit     7,d
-                jp      nz,str_arg_empty    ; negative n -> deferred syntax error (not a hang)
-                ld      b,d
-                ld      c,e                 ; BC = n
-                ld      a,STRMAX
-                call    str_min_bc          ; A = clamped fill count
+                call    get_byte_arg        ; D-F2-2 stage B: STRING$ count is a byte 0..255
+                                            ; (>int16 ERR 6, 256.. ERR 5, negative ERR 5) —
+                                            ; replaces the clamp + D-3 negative hang-fix
+                                            ; (STRMAX=255 == byte ceiling). A = fill count.
                 push    af                  ; guard the count                  [count]
                 ld      a,(hl)
                 cp      ','
@@ -1135,9 +1132,9 @@ str_fn_string:
                 ; --- resolve the fill byte: probe for a string 2nd arg (D-4) ---
                 call    str_eval            ; CF set -> string 2nd arg; STRPTR->desc
                 jr      c,sfg_str2
-                ; numeric 2nd arg: re-parse via eval, take the low byte as the code
+                ; numeric 2nd arg: re-parse via eval, CHECK the byte domain (D-F2-2 stage B)
                 call    eval                ; DE = char code; HL advanced past it
-                ld      a,e                 ; A = fill byte
+                call    get_byte_arg        ; char code is a byte 0..255 (256.. ERR 5, >int16 ERR 6)
                 jr      sfg_close
 sfg_str2:
                 push    hl                  ; guard the str_eval-advanced cursor across

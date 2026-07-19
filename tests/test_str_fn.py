@@ -101,9 +101,16 @@ def run():
         m.poke(0x9002, b"\x00\x00")
 
     def stmt_boundary():
-        """Mirror exec_stmt (interp.asm): empty the temp-descriptor stack at
-        each statement boundary so temps don't accumulate across the many
-        direct str_eval/eval calls this test makes (they bypass exec_stmt)."""
+        """Mirror exec_stmt (interp.asm:129): at each statement boundary clear
+        the deferred numeric-error flags (TMISMATCH, FPERR) AND empty the temp-
+        descriptor stack, so neither error state nor temps accumulate across the
+        many direct str_eval/eval calls this test makes (they bypass exec_stmt).
+        FPERR matters since D-F2-2 stage B: STRING$/SPACE$ route their count/char
+        through get_byte_arg, whose check_fperr_only aborts on a set FPERR — a
+        stale FPERR=4 left by a prior deferred-error case (e.g. STRING$(3,""))
+        would otherwise misfire the next case's coercion (exec_stmt clears it)."""
+        m.poke(s["TMISMATCH"], 0)
+        m.poke(s["FPERR"], 0)
         m.poke_w(TEMPTOP, TEMPBASE)
 
     def set_var(name, value):
@@ -187,9 +194,15 @@ def run():
     print("# --- Group A: SPACE$ ---")
     ck_str('SPACE$(0)', str_expr("SPACE$(0)"), b"")
     ck_str('SPACE$(3)', str_expr("SPACE$(3)"), b"   ")
-    ck_str(f'SPACE$({STRMAX + 20}) clamp', str_expr(f"SPACE$({STRMAX + 20})"),
-           b" " * STRMAX)
-    ck_str_err('SPACE$(-1) negative -> error', str_expr("SPACE$(-1)"))
+    ck_str('SPACE$(255)', str_expr("SPACE$(255)"), b" " * 255)
+    # D-F2-2 stage B: an out-of-byte-domain SPACE$ count is NO LONGER clamped/
+    # gracefully rejected — SPACE$(256..32767) raises ERR 5 (illegal function
+    # call) and SPACE$(>32767)/negative raises ERR 6/ERR 5 via get_byte_arg ->
+    # raise_error. That full error-abort unwind (SAVSTK/error handler) is not
+    # modelled by this graceful-return host harness (it bypasses exec_stmt); it
+    # is verified end-to-end against the VG-8020 reference by the openMSX gate
+    # `make intarg-acceptance` (space_n/space_neg). Here we keep only the
+    # in-byte-domain fill mechanics (above) + the exact-fill overrun guard below.
 
     # Regression: SPACE$ must fill EXACTLY `count` bytes, not overrun its buffer.
     # The original (pre-4a) fill loop did `ld b,0 : djnz`, writing 256 bytes
@@ -225,10 +238,13 @@ def run():
     ck_str('STRING$(3,"*")  (string fill)', str_expr('STRING$(3,"*")'), b"***")
     ck_str('STRING$(3,"abc")  (first byte)', str_expr('STRING$(3,"abc")'), b"aaa")
     ck_str('STRING$(0,65)', str_expr("STRING$(0,65)"), b"")
-    ck_str(f'STRING$({STRMAX + 20},88) clamp', str_expr(f"STRING$({STRMAX + 20},88)"),
-           b"X" * STRMAX)
+    ck_str('STRING$(255,88)', str_expr("STRING$(255,88)"), b"X" * 255)
     ck_str_err('STRING$(3,"") empty x$ -> error', str_expr('STRING$(3,"")'))
-    ck_str_err('STRING$(-1,65) negative -> error', str_expr("STRING$(-1,65)"))
+    # D-F2-2 stage B: STRING$ count>255 and char-code>255 (and negatives) NO
+    # LONGER clamp/reject gracefully — they raise ERR 5 / ERR 6 via get_byte_arg
+    # -> raise_error, whose error-abort unwind this graceful-return harness does
+    # not model. Verified against VG-8020 by `make intarg-acceptance` (string_n
+    # count>int16 ERR 6, string_c char>255 ERR 5, string_neg negative ERR 5).
     reset_strtab()
     set_var("A", b"Q")
     ck_str('STRING$(4,A$)  A$="Q"', str_expr("STRING$(4,A$)"), b"QQQQ")

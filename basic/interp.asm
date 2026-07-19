@@ -1220,3 +1220,51 @@ skip_to_eol:
 ste_done:
                 inc     hl                  ; advance past the 00 terminator
                 ret
+
+    IF ROM_BASE < $4000
+; --- D-F2-2 stage B: the shared Group-B checked-coercion leaves -------------
+; The int-argument statements/functions NOT wired during F2 (STRING$/SPACE$/ON/
+; WIDTH byte 0..255; VPOKE/VPEEK VRAM 0..16383) must raise the reference's
+; Overflow (ERR 6, arg > int16) or Illegal function call (ERR 5, in-int16 but
+; out of the per-site range), not silently take a wrong low byte. Every caller
+; is main-resident (str-engine lives in the page-0 low region, the rest in
+; page 1; all reach here in the same $0000-$7FFF map). Each re-coerces the arg
+; CHECKED from FAC (fac_to_int_strict re-derives it — an out-of-int16 value is
+; still a FLOAT in FAC even though eval's silent flt_to_int16 zeroed DE). Sited
+; at the end of interp.asm (not inline near check_fperr_only) so the 31 B do not
+; land between page 1's dense forward `jr`s and their targets (goto_resolve/ex_if).
+;
+; get_int16_checked: FAC -> DE = int16 (-32768..32767), aborting ERR 6 if the
+; magnitude exceeds int16. HL (the caller's token cursor) is guarded across the
+; conversion (fac_to_int_addr/_strict clobber HL — see eval_addr). check_fperr_
+; only tail: on FPERR it pops this frame's return addr and jumps into the abort
+; chain (SAVSTK resets SP), else returns clean with DE preserved. Clobbers A.
+get_int16_checked:
+                push    hl
+                call    fac_to_int_strict   ; DE = int16; FPERR=1 if |x|>32767
+                pop     hl
+                jp      check_fperr_only    ; ERR 6 (aborts) or ret with DE intact
+; get_vram_arg: FAC -> DE = a VRAM address 0..16383, else abort (ERR 6 if >int16,
+; ERR 5 if in-int16 but outside 0..16383 — top two address bits set, incl. any
+; negative). Serves VPOKE (statement) and VPEEK (function; see expr.asm). A/HL kept.
+get_vram_arg:
+                call    get_int16_checked
+                ld      a,d
+                and     $C0                 ; 0..16383 iff $0000..$3FFF (top 2 bits clear)
+                ret     z
+                jr      gb_illegal
+; get_byte_arg: FAC -> A = E = a byte 0..255, else abort (ERR 6 if >int16, ERR 5
+; if in-int16 but >255 or negative — high byte non-zero). Serves STRING$ (count
+; and char code), SPACE$, ON n, WIDTH n. DE preserved (D=0, E=byte) for ON's
+; eon_seek_nth. Clobbers A.
+get_byte_arg:
+                call    get_int16_checked
+                ld      a,d
+                or      a                   ; high byte set -> >255 or negative
+                jr      nz,gb_illegal
+                ld      a,e
+                ret
+gb_illegal:
+                ld      a,5
+                jp      raise_error         ; ERR 5 illegal function call
+    ENDIF

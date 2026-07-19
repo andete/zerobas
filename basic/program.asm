@@ -1244,6 +1244,11 @@ ex_on:
                 jp      z,ex_on_error       ; -- NOT an <expr> ON...GOTO/GOSUB list
     ENDIF
                 call    eval                ; DE = N (1-based index), HL past expression
+    IF ROM_BASE < $4000
+                call    get_byte_arg        ; D-F2-2 stage B: ON's selector is a byte 0..255
+                                            ; (>int16 ERR 6, 256.. ERR 5); DE=N, D=0 for
+                                            ; eon_seek_nth. ON 0 = valid no-branch (falls thru).
+    ENDIF
                 call    skip_spaces
                 ld      a,(hl)
                 cp      GOTO_TOKEN

@@ -145,7 +145,11 @@ ex_width:
                 inc     hl                  ; past the WIDTH token
                 call    skip_spaces
                 call    eval                ; DE = column count
-                ld      a,e
+    IF ROM_BASE < $4000
+                call    get_byte_arg        ; D-F2-2 stage B: WIDTH n is a byte 0..255
+    ELSE                                    ; (>int16 ERR 6, 256.. ERR 5); A = width
+                ld      a,e                 ; (lean: silent low byte)
+    ENDIF
                 ld      (LINLEN),a
                 ld      b,a                 ; keep the width across the SCRMOD read
                 ld      a,(SCRMOD)
