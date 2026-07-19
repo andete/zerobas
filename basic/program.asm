@@ -1230,6 +1230,11 @@ dp_hbad:
 ; Source: public MSX-BASIC language reference (ON…GOTO/GOSUB semantics).
 ex_on:
                 inc     hl                  ; past ON_TOKEN
+    IF ROM_BASE < $4000
+                call    skip_spaces         ; A = (hl)
+                cp      ERROR_TOKEN         ; ON ERROR GOTO / GOTO 0 (error-handling S2b)
+                jp      z,ex_on_error       ; -- NOT an <expr> ON...GOTO/GOSUB list
+    ENDIF
                 call    eval                ; DE = N (1-based index), HL past expression
                 call    skip_spaces
                 ld      a,(hl)
@@ -1377,3 +1382,53 @@ esn_scan_lp:
 esn_nocf:
                 or      a                   ; CF clear
                 ret
+
+; --- ex_on_error: ON ERROR GOTO <line> / GOTO 0 -----------------------------
+; (docs/spec-basic-error-handling-s2b-packet.md §5.3). HL enters on the
+; ERROR token (ex_on has already peeked ON_TOKEN,ERROR_TOKEN before jumping
+; here). `GOTO 0` disables the handler (ONELIN:=0) and also clears an
+; in-progress handler state (real-MSX: ON ERROR GOTO 0 re-enables normal
+; aborts even from inside a handler). An undefined <line> aborts with
+; "Undefined line number" at definition time (reference behaviour). Success
+; falls through to exec_stmt: ON ERROR GOTO is an ordinary non-branching
+; statement (unlike GOTO/RESUME), so `ON ERROR GOTO 100:PRINT"x"` must still
+; run the rest of the line. Clobbers A, BC, DE, HL.
+    IF ROM_BASE < $4000
+ex_on_error:
+                inc     hl                  ; past ERROR_TOKEN
+                call    skip_spaces         ; A = (hl)
+                cp      GOTO_TOKEN          ; syntax: ON ERROR *GOTO* <line>
+                jp      nz,stmt_error
+                inc     hl                  ; past GOTO_TOKEN
+                call    skip_spaces
+                cp      LINENO_TOKEN        ; $0E,lo,hi expected (GOTO's own operand shape)
+                jp      nz,stmt_error
+                inc     hl
+                ld      c,(hl)              ; target line number, LE
+                inc     hl
+                ld      b,(hl)
+                inc     hl                  ; HL -> cursor past the $0E operand
+                ld      a,b
+                or      c
+                jr      z,oe_disable        ; GOTO 0 -> disable
+                push    hl                  ; [cursor] guard across find_line_bc (which
+                                            ; clobbers HL, returning the match in it)
+                call    find_line_bc        ; CF set + HL = link addr if found
+                jr      nc,oe_undef
+                ld      (ONELIN),hl         ; ONELIN := the handler line's LINK address
+                                            ; (find_line_bc's return convention -- exactly
+                                            ; what raise_error's trap / rp_goto expect)
+                pop     hl                  ; HL = cursor again (ON ERROR GOTO does not
+                                            ; redirect flow -- continue the same line)
+                jp      exec_stmt
+oe_undef:
+                pop     hl                  ; balance the stack (cursor unused, aborting)
+                jp      ex_goto_undef       ; undefined line -> Undefined line number
+oe_disable:
+                ld      de,0                ; (DE, not HL -- HL still holds the cursor
+                ld      (ONELIN),de         ; to continue the line with)
+                xor     a
+                ld      (ONEFLG),a          ; GOTO 0 inside a handler clears the in-
+                                            ; handler state (re-enables normal aborts)
+                jp      exec_stmt
+    ENDIF
