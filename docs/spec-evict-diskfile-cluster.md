@@ -267,6 +267,68 @@ MUST stay green after every phase (this is the whole disk/file surface):
 
 ---
 
+## 11. Phase 1 — concrete design (empirical Q-A resolution, 2026-07-19)
+
+The ▶START measurement is done. **Q-A is resolved to a third shape, not either menu option**
+(user-approved 2026-07-19): move **only the FAT12 primitive/sector layer**, keep the
+`fat_io_*` byte cursor resident. Rationale is empirical:
+
+**Measured layer split of `fat.asm` (2121 B, from `build/basic-reloc.sym`):**
+| Layer | Span | Bytes | Profile |
+|---|---|---:|---|
+| FAT12 primitive/sector | `dskio_calslt $58E0` → `fat_io_open $5F0E`, + `fat_delete $60D5`→`$6129` | **~1666 (79%)** | coarse (per-sector/cluster/dir), CALSLT-pure, RAM-interfaced, no `eval`/vector coupling |
+| `fat_io_*` byte cursor | `fat_io_open $5F0E` → `fat_delete $60D5` | ~455 (21%) | per-**byte**, reached via the `ARL_GETBYTE` **polymorphic RAM vector**, called from eval/print/input context |
+
+**Why the cursor must NOT move now:** `fat_io_getbyte` is 18 of the ~54 sites (15 direct + 3
+vector installs). `ARL_GETBYTE` (RAM) is pointed at *many* byte-sources (disk getbyte, tape
+reader, console LINEBUF splitter, `CAS:` reader) and invoked indirectly from the resident
+`ascii_read_lines` loop. If `fat_io_getbyte` moved into a page-1 tenant its address is only
+valid while the sub is paged in → `call (ARL_GETBYTE)` lands on a random main byte. Fat-alone
+would force a resident trampoline **plus** a page-switching `subrom_call` on a per-byte hot path,
+undone later anyway. The cursor moves in Phase 3/4 with its consuming loops (getbyte then
+sub-local again). This phase leaves the entire per-byte/vector surface resident and untouched.
+
+**Tenant = the primitive engine (sub page-1), one index, selector-dispatched.** Rather than
+burn ~13 P1 indices, use a **single** new `SUBROM_IDX_FATPRIM` (next free P1 index = **12**;
+`SUBROM_ENTRY_BASE_P1=$4010`, indices 1–11 taken through `SCANSTMT`) whose tenant entry reads a
+`DISKOP_OP` selector byte and internally `jp`s to the requested primitive with **HL/DE intact**
+(`subrom_call` passes HL/DE through CALSLT, `basic/subromcall.asm:60-68`). Selector table uses
+BC for indexing so HL/DE survive to the primitive.
+
+**Uniform shim convention (robust against the register-bug trap — the load-bearing lesson).**
+Every primitive is register-input, mostly RAM/CF-output; the *only* register outputs across the
+whole set are: `fat_alloc_cluster`→HL (2 ext callers, field.asm 576/599), `name_cmp`→Z (1 ext,
+files.asm:105), `read_sector`/`write_sector`→A=err (usually only CF consumed — Sonnet must
+verify no site reads A). `fat_next_cluster`→HL is **internal-only** (fat_advance/fat_delete) →
+stays tenant-local, no marshalling. So adopt ONE convention for ALL: on tenant exit, stash
+`{HL, A, a CF/Z status byte}` into a small **`DISKOP` result block** (page-3 RAM); every resident
+shim reloads HL+A and reconstructs CF/Z **identically**. Safe because DSKIO/CALSLT already
+clobbers HL at every existing call site — no caller relies on HL-preservation across a primitive,
+so a uniform reload changes nothing for the RAM-output primitives.
+
+**Resident shims replace the moved bodies**, keeping all ~34 call sites (24 external verb→prim +
+~10 cursor→prim) **byte-for-byte unchanged** (`call read_sector` still works — `read_sector` is
+now a ~12-16 B resident shim). Net free ≈ **1666 − ~200 shim ≈ 1460 B** page-1 → funds D-F2-2
+A2+VPEEK (33 B) + stage B with headroom. Sub page-1 has ~10 KB free (last tenant `scan_stmt_end`
+≈ `$579E`, page-1 runs to `$7FFF`) → 1.6 KB fits easily.
+
+**Lean byte-identity idiom (mirror `basic/format.asm:125-161`).** Primitive bodies live in a
+shared `basic/fat-prim-body.inc` (byte-identical bytes). `IF ROM_BASE >= $4000` (lean 16 KB
+cart): include the bodies inline exactly as today → `basic.rom` unchanged. `ELSE` (repack): main
+emits only the shims; `sub/fatprim.asm` includes `fat-prim-body.inc` + the selector dispatch +
+its own sub-local `dskio_calslt`/read/write CALSLT copy (the sanctioned duplication, exactly as
+`sub/format.asm` duplicates `write_sector`, because main's is invisible to a page-1 tenant).
+
+**Build wiring (§7 traps):** add `sub/fatprim.asm` (+`fat-prim-body.inc` dep) to Makefile
+`SUB_PARTS`; add `SUBROM_IDX_FATPRIM equ 12` to **both** index copies; force-rebuild sub +
+rebuild/reinstall the IPS before any machine gate.
+
+**Q-C/Q-D confirmed for Phase 1:** `parse_disk_fcb`/`load_error` untouched (not primitives);
+`DISKOP` result block is tiny (HL:2 + A:1 + status:1 + op:1 = 5 B) → trivially fits page-3
+scratch without colliding with FCB/channel buffers.
+
+---
+
 ## 10. Clean-room
 
 Original code; the split mechanism, DISKOP marshalling, and sub-local CALSLT are own-design
