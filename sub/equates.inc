@@ -79,6 +79,11 @@ SUBROM_IDX_PU_TAIL      equ     7
 ; `IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FORMAT`. Defined here anyway so the
 ; two files never drift on the numeric value (spec §6 sync requirement).
 SUBROM_IDX_FORMAT       equ     10
+; index 11 = scan_stmt_end (error-handling S2b RESUME NEXT's statement-advance
+; helper, sub/errtrap.asm), a pure-leaf tenant (docs/subrom-tenant-playbook.md
+; §3A: walks only tokenised program RAM text, calls nothing in main). Args/
+; result marshalled through RAM (SSE_IN/SSE_OUT/SSE_EOL, basic/sysvars.inc).
+SUBROM_IDX_SCANSTMT     equ     11
 
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can

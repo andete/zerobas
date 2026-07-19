@@ -321,6 +321,17 @@ sub_p1_table:
                                                 ;   path (main's write_sector is
                                                 ;   page-1-main-resident, invisible
                                                 ;   here).
+                jp      scan_stmt_end           ; index 11 (SUBROM_IDX_SCANSTMT):
+                                                ;   RESUME NEXT's quote-aware
+                                                ;   statement-advance (sub/
+                                                ;   errtrap.asm, docs/spec-basic-
+                                                ;   error-handling-s2b-packet.md
+                                                ;   §5.5) -- a PURE LEAF (playbook
+                                                ;   §3A): walks only tokenised
+                                                ;   program RAM text, calls
+                                                ;   nothing in main. Main-ROM
+                                                ;   stub is basic/interp.asm
+                                                ;   `ex_resume`'s res_next arm.
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -404,6 +415,13 @@ sub_p1_ping:
 ; Needs no resident-ABI import (unlike fp_sqrt/the transcendentals): it is a
 ; pure RAM + BIOS(CALSLT) leaf, own header has the full rationale.
                 include "format.asm"
+
+; scan_stmt_end (index 11 = SUBROM_IDX_SCANSTMT, sub/errtrap.asm): RESUME
+; NEXT's statement-advance (error-handling S2b). A pure-leaf tenant (needs no
+; resident-ABI import, same shape as fp_rnd/format_tenant) -- args/result
+; marshalled through RAM (SSE_IN/SSE_OUT/SSE_EOL), own header has the full
+; rationale.
+                include "errtrap.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF

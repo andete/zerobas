@@ -97,11 +97,16 @@ SUB_SRC   := sub/sub.asm
 # sub/format.asm + basic/format-body.inc (CALL FORMAT eviction, docs/spec-
 # evict-call-format.md): the build/write-engine tenant body + its shared
 # .inc with the lean cart's inline copy -- same staleness hazard, same fix.
+# sub/errtrap.asm (scan_stmt_end, error-handling S2b RESUME NEXT, docs/spec-
+# basic-error-handling-s2b-packet.md §5.5): same staleness hazard, same fix
+# ([[makefile-subparts-stale-tenant]] -- a sub include missing from SUB_PARTS
+# silently ships a STALE sub.rom).
 SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
              sub/fp_exp.asm sub/fp_log.asm sub/fp_pow.asm sub/fp_sin.asm \
              sub/fp_rnd.asm sub/arrays.asm sub/strheap.asm sub/detok.asm \
              sub/printusing.asm basic/pu-render.inc \
              sub/format.asm basic/format-body.inc \
+             sub/errtrap.asm \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
              basic/tokenise.inc basic/detok.inc \
              sub/basic-resident-abi.inc
