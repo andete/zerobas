@@ -422,6 +422,19 @@ input-acceptance: $(DISK_ROM) repack-machine
 error-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/error_acceptance.py $(if $(ONLY),--only $(ONLY),)
 
+# --- Error-handling trap/RESUME acceptance gate (error-handling arc, S2b) -----
+# The RESUME-family DoD gate (docs/spec-basic-error-handling-s2b-packet.md §10):
+# trap fires + ERR/ERL; RESUME/RESUME 0/RESUME NEXT (incl. the scan_stmt_end
+# quote-awareness case, a mid-':'-line error inside a string literal)/RESUME
+# <line>; nested-error forced abort (inner message); ON ERROR GOTO 0 disable;
+# ON ERROR GOTO <undefined>; RESUME without error (ERR 22); ERROR n regression;
+# and the §7 reset-scope cases (UNVERIFIED pin -- straight differential, no
+# hardcoded expectation). Repack-only; HEAVY + oracle-dependent, same shape as
+# error-acceptance above. Scope one case with `make error-trap-acceptance
+# ONLY=resume_next`.
+error-trap-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_error_trap.py $(if $(ONLY),--only $(ONLY),)
+
 # --- Standing float-pack acceptance gate (float arc, F1 S3 + F2 S2) -----------
 # Three differential halves against the VG-8020 reference (docs/
 # spec-basic-float-core.md §9-§10): LITERALS (basic_probe_floatlit.py -- the
@@ -501,5 +514,5 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance \
-        input-acceptance error-acceptance float-acceptance math-acceptance subrom-acceptance \
+        input-acceptance error-acceptance error-trap-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check clean
