@@ -1015,6 +1015,14 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       channel-eval coercion; the broad D-F2-2 general float→int coercion stays a
       separate future item. Gates all green (unit/input/error/string/float/math/
       array-150/diskbasic-34-lean+repack); lean byte-identical.
+      **SCOPED 2026-07-19 → [docs/spec-basic-df2-2-intarg-coercion.md] (DRAFT,
+      awaiting sign-off).** Surface empirically pinned: ~8 divergent arg-sites in
+      two groups — Group A (address domain: OUT/PEEK/INP, the fac_to_int_addr
+      template already proven by POKE/VPOKE) and Group B (byte domain 0..255 via a
+      shared get_byte_arg: STRING$×2/SPACE$/ON n/WIDTH). Already-faithful: POKE/
+      VPOKE/HEX$/PRINT/DIM/subscript/TAB/SPC. Blocked by page-1 0 B free (funder =
+      golf then format.asm eviction). Key open question Q1 = PEEK/INP FPERR
+      propagation through a deferred boundary check.
 - [ ] **`^`** and the math functions
       `ABS SGN INT SQR SIN COS TAN ATN LOG EXP RND FIX CINT CSNG CDBL`
 - [ ] **I/O** — ✅ console `INPUT` + `LINE INPUT` (DONE 2026-07-11, see the slice log
