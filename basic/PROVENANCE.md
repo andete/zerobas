@@ -3159,3 +3159,87 @@ body -> `$09EE`, commit 781348f, its own tape-gate re-run recorded there).
 Post-F2 space: page-0 content to `$3FFD` (2 B slack), page-1 tail 29 B —
 the window is essentially FULL; see the spec's D-G addendum for the F3
 space levers.
+
+## FAT12 primitive/sector-layer eviction, Phase 1 (basic/fat.asm, basic/fat-prim-body.inc, basic/fat-delete-body.inc, sub/fatprim.asm, basic/sysvars.inc, sub/equates.inc, sub/sub.asm)
+
+**What changed and why.** `docs/spec-evict-diskfile-cluster.md` §11 (SIGNED
+OFF 2026-07-19). Phase 1 of the disk/file command cluster eviction: the
+FAT12 **primitive/sector layer** of `basic/fat.asm` (`dskio_calslt`,
+`read_sector`/`write_sector`, `fat_mount`, `fat_find`/`name_cmp`, the
+cluster-chain walk, free-cluster allocation + FAT12 write-back, directory
+create/update, and `fat_delete`) moves to a NEW sub-ROM PAGE-1 tenant
+(`sub/fatprim.asm` `fatprim_tenant`, `SUBROM_IDX_FATPRIM=12`). The
+byte-granular `fat_io_*` cursor (`fat_io_open`..`fat_io_close`) stays
+main-ROM-resident in BOTH builds — it is reached via the `ARL_GETBYTE`
+polymorphic RAM vector, valid only while the owning code is mapped in, so it
+cannot move yet (spec §11's empirical rationale, measured 2026-07-19).
+
+**Shape.** One selector-dispatched tenant entry (not 15 separate indices):
+`fatprim_tenant` reads a `DISKOP_OP` byte (RAM) and jumps to the requested
+primitive via a table indexed by `BC*3` (not `HL`/`DE` — those carry the
+primitive's real inputs, passed through `subrom_call`/`CALSLT` untouched).
+The shared bodies are `basic/fat-prim-body.inc` (`dskio_calslt`..
+`fat_dir_update`) and `basic/fat-delete-body.inc` (`fat_delete` — kept in a
+SEPARATE file only because it sits AFTER the resident `fat_io_*` cursor in
+`basic/fat.asm`, so the lean cart's original byte ORDER — primitives, then
+cursor, then `fat_delete` — could only be preserved by including it
+separately at its original position). Lean 16 KB cart (`ROM_BASE >= $4000`):
+both `.inc` files are included inline at their original positions,
+BYTE-IDENTICAL to the pre-eviction build. Repack build (`ROM_BASE < $4000`):
+`basic/fat.asm` emits resident SHIMS under the SAME 15 names instead, so
+every existing call site across the codebase (`field.asm`/`files.asm`/
+`cload.asm`/`expr.asm`, plus the resident `fat_io_*` cursor's OWN calls into
+the primitive layer) is unchanged.
+
+**Marshalling.** Cy cannot ride back through `subrom_call`/`CALSLT` (its own
+`or a` always clears it — the `sub/format.asm` rule). Every primitive's exit
+funnels through a uniform tenant-side stash of `{HL, A, a 0/nonzero STATUS
+byte}` into a small `DISKOP` result block (`basic/sysvars.inc`); every
+resident shim reloads HL+A and reconstructs Cy from STATUS identically. Two
+primitives needed a non-uniform tail: `name_cmp` (Z, not Cy — STATUS doubles
+as the Z surrogate) and `fat_count_free` (DE, not Cy/HL — mirrored into
+`FAT_WRTMP2`, its own already-RAM-visible scratch, rather than a new RAM
+cell, since the DISKOP block's 5-byte gap was already fully claimed by
+OP/STATUS/A/HL). `fat_alloc_cluster`'s HL (the one real caller-read register
+output besides the two above, `field.asm:576/599`) is covered by the
+uniform reload — no bespoke handling needed.
+
+**RAM.** The `DISKOP` block claims the LAST 5 free bytes below `FCH_CTX`
+(`$E9FB`..`$E9FF`) — a genuine unclaimed gap, not a live-scratch alias:
+unlike `FMT_GEOMSEL`/`FMT_RESULT` (safe to alias tape CSAVE/BSAVE scratch
+because CALL FORMAT never nests inside a tape save), a FATPRIM shim is
+reachable from INSIDE `do_save`'s `DSV_PTR`/`DSV_END` walk and `field.asm`'s
+`GP_*` random-access loop state, so aliasing onto either would let a
+primitive call clobber the caller's own live loop variables mid-walk.
+
+**A same-assembly naming collision, found and fixed.** `sub/format.asm`
+already defines its own private `write_sector` (FORMAT's sub-local CALSLT
+write path, with its own `FMT_RESULT` stash) in the same `sub.rom` image —
+pasmo has one flat global namespace, so `fat-prim-body.inc`'s copy could not
+also be named `write_sector` once both tenants shared one assembly. Fixed by
+naming the shared body's copy `fatprim_write_sector` and adding a zero-byte
+`write_sector equ fatprim_write_sector` alias in `basic/fat.asm`'s lean
+branch (right after the include) so every existing external call site
+(`field.asm`/`files.asm`'s literal `call write_sector`) is unaffected; the
+repack shim is independently named `write_sector` already (a different code
+path, no collision).
+
+**Gates (2026-07-19).** `make unit-test` 46/46 files. `make basic-reloc`:
+lean `basic.rom` byte-identical (SHA256 matches `LEAN_SHA256` unchanged);
+`check_kwtable_identity` OK; `check_resident_abi` OK; `check_tenant_closure`
+(`--page1`, seeded from `sub_p1_table` incl. `fatprim_tenant`) OK — 168
+routines closed, no main-page-1 escape (a pure RAM+BIOS(CALSLT) leaf, same
+shape as `format_tenant`/`scan_stmt_end`, no resident-ABI import needed).
+Page-1 free: **6 B before → 1185 B after** (`__MEAS_PAGE1_END`), i.e. **+1179
+B freed** — funds D-F2-2 A2+VPEEK (33 B) + stage B with large headroom.
+Machine-based disk-verb differential gates (`make diskbasic-acceptance`,
+the adversarial VG-8020/CF-3300 pass) were NOT run in this session — they
+need the installed oracle machines (a shared side effect out of scope here)
+and are the parent's job per the implementation brief.
+
+Clean-room: original code (the split mechanism, DISKOP marshalling, and
+selector dispatch are own-design, the `CALL FORMAT` precedent + MSX2
+Technical Handbook CALSLT/EXBRSA/sub-ROM-signature ABIs); the primitive
+bodies are copied verbatim from our own `basic/fat.asm` (see that file's
+header, and `§disk DSKIO host engine` above, for the full FAT12/DSKIO
+provenance / oracle citations). No reference-ROM disassembly.

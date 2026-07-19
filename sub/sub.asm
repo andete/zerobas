@@ -332,6 +332,20 @@ sub_p1_table:
                                                 ;   nothing in main. Main-ROM
                                                 ;   stub is basic/interp.asm
                                                 ;   `ex_resume`'s res_next arm.
+                jp      fatprim_tenant          ; index 12 (SUBROM_IDX_FATPRIM):
+                                                ;   the FAT12 primitive/sector
+                                                ;   layer (docs/spec-evict-
+                                                ;   diskfile-cluster.md §11,
+                                                ;   Phase 1) -- ONE selector-
+                                                ;   dispatched entry (DISKOP_OP
+                                                ;   picks the routine) covering
+                                                ;   all 15 marshalled
+                                                ;   primitives, a pure
+                                                ;   RAM+BIOS(CALSLT) leaf like
+                                                ;   format_tenant/scan_stmt_end.
+                                                ;   Main-ROM stubs are the
+                                                ;   resident shims in
+                                                ;   basic/fat.asm (repack).
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -422,6 +436,13 @@ sub_p1_ping:
 ; marshalled through RAM (SSE_IN/SSE_OUT/SSE_EOL), own header has the full
 ; rationale.
                 include "errtrap.asm"
+
+; FAT12 primitive/sector layer (index 12 = fatprim_tenant, sub/fatprim.asm):
+; the TWELFTH page-1 tenant, Phase 1 of the disk/file cluster eviction
+; (docs/spec-evict-diskfile-cluster.md §11). Needs no resident-ABI import
+; (same shape as fp_rnd/format_tenant/scan_stmt_end): a pure RAM+BIOS(CALSLT)
+; leaf -- own header has the full rationale.
+                include "fatprim.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF

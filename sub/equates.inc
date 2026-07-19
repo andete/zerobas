@@ -84,6 +84,13 @@ SUBROM_IDX_FORMAT       equ     10
 ; §3A: walks only tokenised program RAM text, calls nothing in main). Args/
 ; result marshalled through RAM (SSE_IN/SSE_OUT/SSE_EOL, basic/sysvars.inc).
 SUBROM_IDX_SCANSTMT     equ     11
+; index 12 = fatprim_tenant (sub/fatprim.asm): the FAT12 primitive/sector
+; layer (docs/spec-evict-diskfile-cluster.md §11, Phase 1 of the disk/file
+; cluster eviction) -- ONE selector-dispatched entry covering all 15
+; marshalled primitives (DISKOP_OP, basic/sysvars.inc, picks the routine;
+; only the main-ROM stubs compute `IX = SUBROM_ENTRY_BASE_P1 +
+; 3*SUBROM_IDX_FATPRIM`, same sync-note pattern as SUBROM_IDX_FORMAT above).
+SUBROM_IDX_FATPRIM      equ     12
 
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can

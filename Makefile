@@ -42,6 +42,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/float-arith.asm basic/subromcall.asm basic/input.asm \
          basic/arrays.asm \
          basic/tokenise.inc basic/detok.inc basic/pu-render.inc basic/format-body.inc \
+         basic/fat-prim-body.inc basic/fat-delete-body.inc \
          basic/sysvars.inc
 ROM   := $(BUILD)/basic.rom
 
@@ -101,12 +102,17 @@ SUB_SRC   := sub/sub.asm
 # basic-error-handling-s2b-packet.md §5.5): same staleness hazard, same fix
 # ([[makefile-subparts-stale-tenant]] -- a sub include missing from SUB_PARTS
 # silently ships a STALE sub.rom).
+# sub/fatprim.asm + basic/fat-prim-body.inc + basic/fat-delete-body.inc
+# (FAT12 primitive/sector-layer eviction, docs/spec-evict-diskfile-cluster.md
+# §11, Phase 1): the tenant body + its two shared .inc files (the lean cart's
+# inline copies) -- same staleness hazard, same fix.
 SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
              sub/fp_exp.asm sub/fp_log.asm sub/fp_pow.asm sub/fp_sin.asm \
              sub/fp_rnd.asm sub/arrays.asm sub/strheap.asm sub/detok.asm \
              sub/printusing.asm basic/pu-render.inc \
              sub/format.asm basic/format-body.inc \
              sub/errtrap.asm \
+             sub/fatprim.asm basic/fat-prim-body.inc basic/fat-delete-body.inc \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
              basic/tokenise.inc basic/detok.inc \
              sub/basic-resident-abi.inc

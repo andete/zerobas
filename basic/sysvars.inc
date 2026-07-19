@@ -1162,6 +1162,56 @@ FWR_BUFLEN      equ     $E9F1   ; bytes currently buffered in FSECTOR_BUF (word,
 FWR_BYTES       equ     $E9F3   ; total bytes written so far = final file size (4-byte LE)
 FWR_DIRSEC      equ     $E9F7   ; logical sector holding the open file's dir entry (word)
 FWR_DIROFF      equ     $E9F9   ; byte offset of that dir entry within its sector (word)
+; DISKOP marshalling block (repack eviction, docs/spec-evict-diskfile-cluster.md
+; §11): the FAT12 primitive/sector layer's resident<->tenant ABI. Claims the
+; LAST 5 free bytes below FCH_CTX ($E9FB..$E9FF, between FWR_DIROFF+2 and the
+; $EA00 channel-context table) -- a genuine unclaimed gap (FCH_STATESZ's own
+; comment below computes the span as ending at $E9FA), not a live-scratch
+; alias: unlike FMT_GEOMSEL/FMT_RESULT (which safely alias tape CSAVE/BSAVE
+; scratch because CALL FORMAT never nests inside a tape save), a FATPRIM shim
+; is reachable from INSIDE do_save's DSV_PTR/DSV_END walk and field.asm's
+; GP_* random-access loop state, so aliasing onto EITHER of those would let a
+; primitive call clobber the caller's own live loop variables mid-walk. RAM,
+; so visible from main (page-1 resident shims) and the sub-ROM page-1 tenant
+; (sub/fatprim.asm) alike.
+DISKOP_OP       equ     $E9FB   ; main -> tenant: DISKOP_SEL_* primitive selector (1)
+DISKOP_STATUS   equ     $E9FC   ; tenant -> main: 0 = ok (Cy=0 / Z set); nonzero =
+                                ; error (Cy=1) or no-match (NZ), per primitive (1)
+DISKOP_A        equ     $E9FD   ; tenant -> main: the primitive's real A output,
+                                ; if it has one (read_sector/write_sector's DSKIO
+                                ; error code); reloaded uniformly even where no
+                                ; caller currently reads it (1)
+DISKOP_HL       equ     $E9FE   ; tenant -> main: the primitive's real HL output
+                                ; (fat_alloc_cluster's allocated cluster number);
+                                ; reloaded uniformly for every primitive (2)
+; fat_count_free's DE output (free cluster count) is NOT a new DISKOP_DE cell --
+; the 5-byte gap above is already fully claimed. It rides back over FAT_WRTMP2
+; instead (fat_count_free's OWN scratch, already RAM-visible both sides): the
+; tenant wrapper (sub/fatprim.asm t_fat_count_free) copies DE into FAT_WRTMP2
+; unconditionally before returning (harmless on the normal path, where
+; fat_count_free already left DE == FAT_WRTMP2 at fcf_done; corrective on the
+; fcf_zero/mount-failure path, which sets DE=0 directly without touching
+; FAT_WRTMP2). No external code reads FAT_WRTMP2 (grep-verified), so this is
+; safe to repurpose as fat_count_free's own dedicated return channel.
+; DISKOP_OP selector values -- one per marshalled FAT12 primitive (spec §11's
+; 15-routine "danger list" + the plain Cy-only primitives), in basic/fat.asm's
+; original routine order. Never renumber (both basic/fat.asm's shims and
+; sub/fatprim.asm's dispatch table key off these numerically).
+DISKOP_SEL_READ_SECTOR          equ 0
+DISKOP_SEL_WRITE_SECTOR         equ 1
+DISKOP_SEL_FAT_MOUNT            equ 2
+DISKOP_SEL_FAT_FIND             equ 3
+DISKOP_SEL_NAME_CMP             equ 4
+DISKOP_SEL_FAT_OPEN             equ 5
+DISKOP_SEL_FAT_READ_FAT_SECTOR  equ 6
+DISKOP_SEL_FAT_READ_FILE_SECTOR equ 7
+DISKOP_SEL_FAT_ALLOC_CLUSTER    equ 8
+DISKOP_SEL_FAT_WRITE_FAT_ENTRY  equ 9
+DISKOP_SEL_FAT_COUNT_FREE       equ 10
+DISKOP_SEL_FAT_FLUSH_DATA_SECTOR equ 11
+DISKOP_SEL_FAT_DIR_CREATE       equ 12
+DISKOP_SEL_FAT_DIR_UPDATE       equ 13
+DISKOP_SEL_FAT_DELETE           equ 14
 ; --- Phase 2: MAXFILES per-channel context blocks --------------------------
 ; A channel's live streaming state spans TWO global regions: the 512-byte data
 ; buffer FSECTOR_BUF, and a contiguous engine-state span FCH_STATE0..(+FCH_STATESZ).
@@ -1846,6 +1896,19 @@ SUBROM_IDX_SCANSTMT  equ 11     ; scan_stmt_end tenant (error-handling S2b
                                 ; §3A: walks only tokenised program RAM text,
                                 ; calls nothing in main). Main-ROM stub is
                                 ; basic/interp.asm `ex_resume`'s res_next arm.
+SUBROM_IDX_FATPRIM   equ 12     ; fatprim_tenant (sub/fatprim.asm): the FAT12
+                                ; primitive/sector layer (docs/spec-evict-
+                                ; diskfile-cluster.md §11, Phase 1) -- a SINGLE
+                                ; selector-dispatched tenant (one index for
+                                ; all 15 marshalled primitives, not one index
+                                ; each -- DISKOP_OP picks the routine). A pure
+                                ; RAM+BIOS(CALSLT) leaf, same shape as
+                                ; format_tenant/scan_stmt_end (needs no
+                                ; resident-ABI import). Main-ROM stubs are the
+                                ; resident shims in basic/fat.asm (repack,
+                                ; ROM_BASE < $4000), replacing the moved
+                                ; bodies under the SAME names (read_sector,
+                                ; write_sector, fat_mount, fat_find, ...).
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch
