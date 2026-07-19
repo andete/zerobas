@@ -5,7 +5,9 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — evict `CALL FORMAT` to a sub-ROM tenant (free page-1 to fund S2b)
 
-Status: **DRAFT — sign-off pending.** Funding slice for error-handling **S2b**: the S2b
+Status: **SIGNED OFF 2026-07-19** (user, this session) — §8 decisions locked with the
+recommended defaults (split shape; menu resident; bare-DI unless a format visibly hangs;
+Sonnet impl + lead-run disk-byte differential). Funding slice for error-handling **S2b**: the S2b
 main-resident glue needs ~140 B of page-1 that isn't there (17 B free; measured — see
 [spec-basic-error-handling-s2b-packet.md](spec-basic-error-handling-s2b-packet.md) §8
 and the WIP on branch `wip/s2b-mechanism`). String-dedup (lever 1) is dry and the S2b
