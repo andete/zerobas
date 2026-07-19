@@ -971,6 +971,15 @@ TSV_PTR         equ     $E0F1   ; tape save: current source-byte pointer (2)
 TSV_END         equ     $E0F3   ; tape save: last source-byte address, inclusive (2)
 TSV_CNT         equ     $E0F5   ; tape save: loop counter (1)
 TSV_NAME        equ     $E0F6   ; tape save: 6-char filename buffer (space-padded)
+; CALL FORMAT sub-ROM tenant args/result (repack eviction, docs/spec-evict-call-
+; format.md §3/§4). ALIASED over the tape CSAVE/BSAVE write scratch just above —
+; CALL FORMAT and a tape CSAVE/BSAVE are distinct top-level statements that never
+; run at the same instant (the same collision-checked-reuse pattern as
+; IN_RDLEN/FILES_ENTIDX below), and RAM below DRVA_DPB ($F195) is exhausted (math
+; pack slice 2 §11.6), so no fresh claim is available. Both are RAM, so visible
+; from main (page-1 resident stub) and the sub-ROM page-1 tenant alike.
+FMT_GEOMSEL     equ     TSV_CNT ; main -> tenant: 0 = 360k, 1 = 720k (1)
+FMT_RESULT      equ     TSV_NAME ; tenant -> main: 0 = ok, 1 = DSKIO write error (1)
 ; Disk BASIC FILES scratch (page $E0; dead outside a FILES listing). One byte in
 ; the $E0FC.. gap below LINEBUF ($E100). The dir-walk position lives in the
 ; fat.asm FAT_DIRSEC/FAT_DIRREM scratch; only the per-sector entry index needs a
@@ -1161,7 +1170,10 @@ PU_FLAGS        equ     $EEFA   ; bit0 = trailing separator (suppress NL); bit1 
 PU_WP           equ     $EEFB   ; pu_fmt_int scratch write pointer (2)
 ; CALL FORMAT loop counter — the current sector being written. write_sector's CALSLT
 ; clobbers every register, so the format loop keeps its position here in RAM. One byte
-; ($EEFD) in the gap below FLD_DESC. See basic/format.asm.
+; ($EEFD) in the gap below FLD_DESC. Repack eviction (docs/spec-evict-call-format.md):
+; the sub-ROM page-1 tenant now owns these two cells (it runs the build/write loop);
+; the lean cart's resident do_format still owns them directly. Either way they are
+; RAM, always visible. See basic/format.asm / basic/format-body.inc / sub/format.asm.
 FMT_SEC         equ     $EEFD   ; CALL FORMAT: current sector index being written (1)
 FMT_DESC        equ     $EEFE   ; CALL FORMAT: chosen geometry descriptor pointer (2)
 FLD_DESC        equ     $EF00   ; transient fielded-read descriptor [len][bytes:255]
@@ -1760,6 +1772,16 @@ SUBROM_IDX_RND       equ 9      ; fp_rnd tenant (math pack slice 2e, sub/
                                 ; docs/spec-basic-mathpack-slice2.md §15.3/
                                 ; §15.4. LAST slice-2 tenant. Main-ROM stub
                                 ; is basic/expr.asm `evmc_rnd`.
+SUBROM_IDX_FORMAT    equ 10     ; format_tenant (CALL FORMAT eviction, sub/
+                                ; format.asm, docs/spec-evict-call-format.md):
+                                ; the pure sector-build/write bulk (shared
+                                ; basic/format-body.inc), reached via its OWN
+                                ; sub-local CALSLT write path (main's
+                                ; write_sector/dskio_calslt are page-1
+                                ; main-resident, invisible to a page-1
+                                ; tenant). Main-ROM stub is basic/format.asm
+                                ; `do_format`'s fmt_dispatch; the interactive
+                                ; 360k/720k menu stays main-side (console I/O).
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

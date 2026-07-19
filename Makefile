@@ -41,7 +41,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/field.asm basic/format.asm basic/printusing.asm basic/program.asm basic/float.asm \
          basic/float-arith.asm basic/subromcall.asm basic/input.asm \
          basic/arrays.asm \
-         basic/tokenise.inc basic/detok.inc basic/pu-render.inc \
+         basic/tokenise.inc basic/detok.inc basic/pu-render.inc basic/format-body.inc \
          basic/sysvars.inc
 ROM   := $(BUILD)/basic.rom
 

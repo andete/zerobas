@@ -22,7 +22,7 @@
 ; GEOMETRY IS PARAMETERISED. All geometry lives in descriptor tables (GEOM_720K,
 ; GEOM_360K); the format logic reads their fields, with no hardcoded constants. The
 ; menu selection just picks which descriptor to hand the routine — the routine itself
-; does not change. A further geometry is a new descriptor + a new menu line.
+; does not change. A further geometry is a new descriptor + a menu line.
 ;
 ; Clean-room: original code. The CALL token ($CA) is oracle-locked to the VG-8020
 ; crunch. The BPB *geometry* (512 B/sec, 2 sec/clus, 1 reserved, 2 FATs, 112 root
@@ -31,14 +31,17 @@
 ; National CF-3300 "2 sides, double track" format. The boot-CODE region and OEM name
 ; are zerobas' OWN (not copied from any ROM) — the one documented divergence from a
 ; byte-identical CF-3300 format. No disassembly. See basic/PROVENANCE.md §CALL FORMAT.
-
-; --- geometry descriptor offsets -------------------------------------------
-GM_FIRSTFAT     equ     0       ; word: first FAT sector (= reserved sector count)
-GM_NUMFATS      equ     2       ; byte: number of FAT copies
-GM_SECPERFAT    equ     3       ; word: sectors per FAT copy
-GM_LASTSYS      equ     5       ; word: last system sector to clear (= firstData - 1)
-GM_MEDIA        equ     7       ; byte: media descriptor (FAT entry 0)
-GM_BOOT         equ     8       ; 32-byte boot-sector template (jump + OEM + BPB + hidden)
+;
+; REPACK EVICTION (docs/spec-evict-call-format.md, funding error-handling S2b): the
+; sector-build/write BULK (everything past the menu — clear/stamp/boot-write, the
+; geometry helpers, the GEOM_* tables) straddles both main-BASIC page-1 (console I/O)
+; and the page-0 BIOS (write_sector -> CALSLT), so it can't be a single-shape sub-ROM
+; tenant (playbook §3). The design is a SPLIT: this file keeps the dispatch + the
+; interactive menu RESIDENT (console I/O is page-1 main, trivially resident); the
+; bulk moves to a sub-ROM PAGE-1 tenant (sub/format.asm format_tenant) that carries
+; its own sub-local CALSLT write path. The bulk's CODE is shared verbatim via
+; basic/format-body.inc (the c3fc2d8 printusing.asm pattern) — the lean 16 KB cart
+; still includes it inline here, BYTE-IDENTICAL to the pre-eviction build.
 
 ; --- ex_call / _<name> — extended-statement dispatch -----------------------
 ; HL -> the CALL token (ex_call) or the '_' char (ex_call_us). Only CALL FORMAT is
@@ -65,7 +68,9 @@ exc_go:
                 push    hl                  ; save the statement-end cursor (CALSLT clobbers)
                 call    do_format
                 pop     hl
-                jp      c,load_error        ; format I/O error
+                jp      c,load_error        ; format I/O error (or, repack: the tenant
+                                            ; absent/reporting an error — folded into
+                                            ; Cy by do_format below, spec §4)
                 jp      exec_stmt
 
 ; fmt_match_format — CF set iff the 6 chars at (HL) are "FORMAT" (case-insensitive);
@@ -92,14 +97,15 @@ fmt_name:       db      "FORMAT"
 
 
 ; --- do_format — interactively pick a geometry, then write a fresh filesystem ----
-;   out: Cy = 0 ok; Cy = 1 = no disk / write error.
+;   out: Cy = 0 ok; Cy = 1 = no disk / write error (repack: OR the sub-ROM tenant
+;        is absent, spec §4 — same disposition class as any other format I/O error).
 ; A real CALL FORMAT lets you choose the disk geometry; with two geometries there now
 ; IS something to choose, so zerobas prompts a minimal 1=360K / 2=720K menu (its own —
-; zerobas-disk's CHOICE offers none) and reads the answer via the REPL line editor. The
-; chosen descriptor's base goes in FMT_DESC; the rest reads its fields through that
-; pointer, so the logic is geometry-agnostic. Buffer: FSECTOR_BUF is the 512-byte write
-; source (write_sector reads, never writes it, so one zero-fill is reused). Order: clear
-; the FAT + root region, stamp each FAT's head (media + two $FF), write the boot sector.
+; zerobas-disk's CHOICE offers none) and reads the answer via the REPL line editor.
+; The MENU stays resident (console I/O is main-BASIC page-1) in both builds; only the
+; build/write engine past the choice differs: lean runs it inline (format-body.inc);
+; repack dispatches it to the sub-ROM page-1 tenant (sub/format.asm format_tenant),
+; marshalling just the 1-byte geometry selector through RAM (FMT_GEOMSEL).
 do_format:
                 ld      a,(DISKSLOT_OK)
                 or      a
@@ -116,139 +122,43 @@ fmt_menu:
                 cp      '2'
                 jr      z,fmt_sel_720
                 jr      fmt_menu            ; invalid -> re-prompt (like the CF-3300 '?')
+    IF ROM_BASE < $4000
+fmt_sel_360:
+                xor     a                   ; A = 0 -> 360k (format_tenant's GEOM select)
+                jr      fmt_dispatch
+fmt_sel_720:
+                ld      a,1                 ; A = 1 -> 720k
+fmt_dispatch:
+                ld      (FMT_GEOMSEL),a
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FORMAT
+                call    subrom_call         ; CF=1 iff the sub-ROM is absent (no call made).
+                                            ; No live pointer to guard here: exc_go already
+                                            ; saved HL (the token cursor) before `call
+                                            ; do_format`, and IX is not otherwise live.
+                ret     c                   ; absent -> Cy=1 (do_format's own error contract;
+                                            ; exc_go folds it into the same load_error as a
+                                            ; real DSKIO error, spec §4)
+                ld      a,(FMT_RESULT)      ; the tenant's DSKIO disposition (RAM, not CF --
+                                            ; subrom_call's CF is claimed by the absence
+                                            ; signal, spec §4)
+                or      a
+                ret     z                   ; tenant ok -> Cy=0 (subrom_call already cleared
+                                            ; it on a completed call)
+                scf                         ; tenant reported a write error -> Cy=1
+                ret
+; fmt_menu_text has its own copy here (repack resident): the lean cart's copy lives
+; INSIDE basic/format-body.inc, at its original position between fmt_boot and
+; fmt_geom_byte (byte-identity, see that file) -- format-body.inc is sub-ROM-only
+; in the repack build (sub/format.asm), not included resident here, so the menu
+; needs its own text. Same 17 bytes, no functional difference.
+fmt_menu_text:  db      "1=360k 2=720k? ",0
+    ELSE
 fmt_sel_360:
                 ld      hl,GEOM_360K
                 jr      fmt_selected
 fmt_sel_720:
                 ld      hl,GEOM_720K
-fmt_selected:
-                ld      (FMT_DESC),hl
-                ; --- clear sectors firstFAT..lastSys (FATs + root directory) ---
-                call    fmt_zero_buf        ; FSECTOR_BUF = 512 zeros
-                ld      a,GM_FIRSTFAT
-                call    fmt_geom_byte       ; firstFAT (low byte; < 256)
-                ld      (FMT_SEC),a
-fmt_zloop:
-                ld      a,GM_LASTSYS
-                call    fmt_geom_byte       ; lastSys (low byte; < 256)
-                ld      c,a
-                ld      a,(FMT_SEC)
-                cp      c
-                jr      c,fmt_zwrite        ; sec < lastSys -> write
-                jr      z,fmt_zwrite        ; sec == lastSys -> write (inclusive)
-                jr      fmt_fatheads        ; sec > lastSys -> done clearing
-fmt_zwrite:
-                ld      a,(FMT_SEC)
-                ld      e,a
-                ld      d,0
-                ld      hl,FSECTOR_BUF
-                call    write_sector
-                ret     c
-                ld      a,(FMT_SEC)
-                inc     a
-                ld      (FMT_SEC),a
-                jr      fmt_zloop
-                ; --- stamp each FAT copy's head: [media][$FF][$FF] ---
-fmt_fatheads:
-                call    fmt_zero_buf
-                ld      a,GM_MEDIA
-                call    fmt_geom_byte
-                ld      (FSECTOR_BUF),a
-                ld      a,$FF
-                ld      (FSECTOR_BUF + 1),a
-                ld      (FSECTOR_BUF + 2),a
-                ld      a,GM_NUMFATS
-                call    fmt_geom_byte
-                ld      (FMT_SEC),a         ; reuse FMT_SEC as the FAT-copy counter
-                ld      a,GM_FIRSTFAT
-                call    fmt_geom_word       ; HL = first FAT-copy sector
-fmt_fatlp:
-                ld      a,(FMT_SEC)
-                or      a
-                jr      z,fmt_boot
-                push    hl
-                ex      de,hl               ; DE = sector
-                ld      hl,FSECTOR_BUF
-                call    write_sector
-                pop     hl
-                ret     c
-                push    hl                  ; HL = current FAT-copy sector
-                ld      a,GM_SECPERFAT
-                call    fmt_geom_word       ; HL = secPerFAT
-                ex      de,hl               ; DE = secPerFAT
-                pop     hl
-                add     hl,de               ; next FAT copy
-                ld      a,(FMT_SEC)
-                dec     a
-                ld      (FMT_SEC),a
-                jr      fmt_fatlp
-                ; --- write the boot sector (BPB) last ---
-fmt_boot:
-                call    fmt_zero_buf
-                ld      hl,(FMT_DESC)
-                ld      de,GM_BOOT
-                add     hl,de               ; HL = the 32-byte boot template
-                ld      de,FSECTOR_BUF
-                ld      bc,32
-                ldir
-                ld      de,0                ; sector 0
-                ld      hl,FSECTOR_BUF
-                jp      write_sector        ; tail: returns its Cy (ok / error)
-
-fmt_menu_text:  db      "1=360k 2=720k? ",0
-
-; fmt_geom_byte / fmt_geom_word — read a field at (FMT_DESC)+A. byte -> A; word -> HL.
-fmt_geom_byte:
-                ld      hl,(FMT_DESC)
-                ld      e,a
-                ld      d,0
-                add     hl,de
-                ld      a,(hl)
-                ret
-fmt_geom_word:
-                ld      hl,(FMT_DESC)
-                ld      e,a
-                ld      d,0
-                add     hl,de
-                ld      a,(hl)
-                inc     hl
-                ld      h,(hl)
-                ld      l,a
-                ret
-
-; fmt_zero_buf — fill FSECTOR_BUF with 512 zero bytes. Clobbers BC, DE, HL.
-fmt_zero_buf:
-                ld      hl,FSECTOR_BUF
-                ld      de,FSECTOR_BUF + 1
-                ld      bc,511
-                ld      (hl),0
-                ldir
-                ret
-
-; --- geometry descriptors --------------------------------------------------
-; All format geometry lives HERE — adding another is a new descriptor + a menu entry;
-; do_format is geometry-agnostic. Each: [firstFAT:2][numFATs:1][secPerFAT:2][lastSys:2]
-; [media:1] then a 32-byte boot template (jump + own OEM + BPB +11..27 + hidden). The
-; boot-code region (+36..) stays zero (not copied from any ROM). Geometry confirmed
-; field-for-field against black-box CF-3300 formats (720K = "2 sides, double track";
-; 360K = "2 sides").
-GEOM_720K:                                  ; 720 KB, media $F9 (1440 sectors, 3 sec/FAT)
-                dw      1                   ; GM_FIRSTFAT
-                db      2                   ; GM_NUMFATS
-                dw      3                   ; GM_SECPERFAT
-                dw      13                  ; GM_LASTSYS  : firstRoot(7)+rootSecs(7)-1
-                db      $F9                 ; GM_MEDIA
-                db      $EB,$FE,$90
-                db      "ZEROBAS "
-                db      $00,$02,$02,$01,$00,$02,$70,$00,$A0,$05,$F9,$03,$00,$09,$00,$02,$00
-                db      $00,$00,$00,$00
-GEOM_360K:                                  ; 360 KB, media $FD (720 sectors, 2 sec/FAT)
-                dw      1                   ; GM_FIRSTFAT
-                db      2                   ; GM_NUMFATS
-                dw      2                   ; GM_SECPERFAT
-                dw      11                  ; GM_LASTSYS  : firstRoot(5)+rootSecs(7)-1
-                db      $FD                 ; GM_MEDIA
-                db      $EB,$FE,$90
-                db      "ZEROBAS "
-                db      $00,$02,$02,$01,$00,$02,$70,$00,$D0,$02,$FD,$02,$00,$09,$00,$02,$00
-                db      $00,$00,$00,$00
+                include "basic/format-body.inc"    ; lean: inline bulk, byte-identical
+                                                   ; (fmt_menu_text lives inside it,
+                                                   ; at its original position)
+    ENDIF
