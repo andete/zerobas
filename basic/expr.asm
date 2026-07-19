@@ -819,6 +819,37 @@ ev_ff_arg:
                 jp      nz,ev_f_err
                 inc     ix
     IF ROM_BASE < $4000
+                ; D-F2-2 A2: CHECKED int coercion for PEEK/INP (address domain) and
+                ; VPEEK (VRAM 0..16383) — the arg's FAC/FACTYP is still its own type
+                ; here (flt_int_result below forces int), so re-coerce it CHECKED and
+                ; abort INLINE on an out-of-domain arg. The reference overflows AT the
+                ; function even in contexts that run no statement-boundary FPERR check
+                ; (FOR bounds → ERR 6, pinned char_a2_vpeek.py), so this must not defer.
+                ; fac_to_int_addr/_strict clobber C → guard the selector for the read
+                ; dispatch below (abort paths leave BC on the stack; SAVSTK resets SP).
+                ; EOF/LOF/DSKF keep their own channel handling (skip the coercion).
+                push    bc
+                ld      a,c
+                cp      VPEEK_TOKEN
+                jr      z,ev_ff_ckvram
+                cp      INP_TOKEN
+                jr      z,ev_ff_ckaddr
+                cp      PEEK_TOKEN
+                jr      nz,ev_ff_ckdone
+ev_ff_ckaddr:                               ; PEEK/INP: address domain, Overflow beyond
+                call    fac_to_int_addr     ; DE=checked addr; FPERR=1 outside 0..65535 wrap
+                call    check_fperr_only    ; -> ERR 6 (aborts; else returns clean)
+                jr      ev_ff_ckdone
+ev_ff_ckvram:                               ; VPEEK: int16 (Overflow) then VRAM 0..16383
+                call    fac_to_int_strict   ; DE=int16; FPERR=1 if |x|>32767
+                call    check_fperr_only    ; -> ERR 6 (or the arg's own FPERR, e.g. SQR(-1))
+                ld      a,d                 ; 0..16383 iff top two bits clear ($0000..$3FFF)
+                and     $C0
+                jr      z,ev_ff_ckdone
+                ld      a,5
+                jp      raise_error         ; -> ERR 5 illegal function call
+ev_ff_ckdone:
+                pop     bc                  ; C = selector restored for the read dispatch
                 call    flt_int_result      ; the function returns an int even if its
     ENDIF                                   ;  arg was a float (clobbers A only; C kept)
                 ld      a,c                 ; dispatch on the selector

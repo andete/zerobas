@@ -12,7 +12,14 @@ the VRAM size 0..16383, not the address domain — it moves to stage B (§1.1). 
 pass (2026-07-19, `char_a2_vpeek.py`) then (i) RESOLVED Q1 → an inline FPERR check at
 `ev_ff_arg`, not the statement boundary (the ref aborts even in FOR bounds), and (ii) caught
 a SECOND missing site: `VPEEK`, the read-twin of VPOKE with the identical VRAM 0..16383 domain
-(§1.1).** A2 (PEEK/INP) and B (STRING$/SPACE$/ON/WIDTH + VPOKE + VPEEK) pending sign-off.
+(§1.1).** **Stage A2+VPEEK LANDED 2026-07-19** — funded by the disk/file cluster eviction
+Phase 1 (`[[diskfile-cluster-eviction]]`, page-1 6→1146 B; the A2 block cost the measured 39 B),
+repack-only + lean byte-identical. The parked `scratchpad/a2-vpeek-impl.patch` re-applied cleanly;
+all 8 differentials (PEEK/INP address-domain → ERR 6, incl. the `FOR I=PEEK(99999)` non-checking
+consumer; VPEEK VRAM 0..16383 → ERR 5 / >32767 → ERR 6) now MATCH the VG-8020 ref and are
+**promoted to the gated `ASSERTED` set** (19/19). No regression at the shared `ev_ff_arg` point
+(EOF/LOF/DSKF/CVI/INPUT# still converge). **Stage B (STRING$/SPACE$/ON/WIDTH + VPOKE VRAM-domain)
+pending** — the last of the arc.
 This is the scope/design doc for the last cross-cutting faithfulness residual after the
 error-handling arc closed (2026-07-19). It fixes the "silent eager `flt_to_int16`" that
 every int-argument statement/function *not* explicitly wired during F2 (POKE/VPOKE/HEX$/
@@ -190,9 +197,13 @@ Group B = 5 arg-sites through one shared `get_byte_arg` leaf. Total NEW code ≈
    address was still on the stack; popping the address *before* the check (as `do_out` now
    does) makes the site SP-clean so it reuses the shared `check_fperr_only` (−7 B; +1 B for
    OUT → page-1 0→6 B). Lean byte-identical. Gate: `make intarg-acceptance`.
-2. **A2 — `PEEK`/`INP`** (functions, ADDRESS domain). Q1 RESOLVED (§3.1): swap the coercion to
-   `fac_to_int_addr` + an **inline** FPERR check at `ev_ff_arg`. This also builds the shared
-   inline-abort choke point that VPEEK reuses in B. Needs a small funder (not byte-neutral).
+2. **A2 — `PEEK`/`INP` + `VPEEK`** ✅ **LANDED 2026-07-19.** Q1 RESOLVED (§3.1): the coercion
+   swaps to `fac_to_int_addr`/`fac_to_int_strict` + an **inline** FPERR check at `ev_ff_arg`
+   (the shared PEEK/VPEEK/INP parse point), dispatched by the selector token in `C` so EOF/LOF/
+   DSKF/CVI skip it. PEEK/INP = address domain → ERR 6; VPEEK = int16 (ERR 6 >32767) then VRAM
+   `and $C0` range-check → ERR 5. Fires even in non-checking consumers (FOR bounds, verified).
+   Funded by the disk/file eviction Phase 1 (39 B; page-1 1185→1146 B). Lean byte-identical.
+   Gate: `make intarg-acceptance` (8 differentials promoted to ASSERTED, 19/19).
 3. **B — `get_byte_arg`-style range-check + STRING$/SPACE$/ON/WIDTH (0..255) + VPOKE
    (0..16383) + VPEEK (0..16383)** (the int16-overflow + per-site range-check leaf; Q2
    page-visibility). VPOKE (statement) and **VPEEK (function)** both join here (§1.1
