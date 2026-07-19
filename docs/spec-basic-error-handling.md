@@ -161,6 +161,12 @@ Confirmed facts this pins:
 * `ERR` = 5 for Illegal function call, `ERL` = the erroring line's number; both are
   ordinary numeric values (PRINT renders ` 5 ` / ` 20 ` with sign-space).
 * `RESUME NEXT` resumes at the statement **after** the one that erred.
+* Any `RESUME` (all four forms: bare / `0` / `NEXT` / `<line>`) **resets `ERR` to 0
+  but KEEPS `ERL`** — empirically pinned on the VG-8020 (a read after RESUME gives
+  `0 / 20`, not `0 / 0`; ERL holds the last erroring line until the next error).
+  Implemented as a 1-byte `ERRCODE` clear at `ex_resume`'s trap-active head (landed
+  2026-07-19; see the S2b packet's ERR-reset follow-up). This corrected the S2b-
+  deferred note's premise, which had guessed both cells reset.
 
 ---
 

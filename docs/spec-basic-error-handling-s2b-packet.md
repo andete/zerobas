@@ -47,10 +47,18 @@ until fixed (the landed subset built green but was catastrophically broken):
 3. RESUME 0 / RESUME <line> -> syntax error: tokeniser's branch_lineno list omitted
    RESUME -> the arg wasn't crunched to $0E. Fix: add RESUME (repack-guarded, sub-side).
 
-**KNOWN DEFERRED (charter-debt):** the reference resets ERR/ERL to 0 on RESUME; zerobas
-keeps the last code (ERR read AFTER a RESUME gives 5 vs ref 0). Minor edge; needs its own
-semantics pin + ~8B page-1 reclaim. Documented in the resume_line probe case (reported,
-not gated). Sibling of the S2a-deferred `ERROR 0`->ERR 5 item.
+**ERR-reset-on-RESUME follow-up — LANDED 2026-07-19 (was the S2b "KNOWN DEFERRED"
+charter-debt item).** The empirical VG-8020 pin CORRECTED the deferred note's premise:
+the reference resets **only ERR to 0 on RESUME and KEEPS ERL** (all four forms print
+`0 / 20`, not `0 / 0`) — so the fix is a 1-byte cell (ERRCODE), not the word ERRLINE.
+Implementation: a 4 B `xor a` / `ld (ERRCODE),a` at `ex_resume`'s trap-active head (after
+the `ONEFLG!=0` check, so `ex_resume_noerr`/ERR 22 is untouched and a malformed RESUME
+still forced-aborts with ONEFLG intact — both empirically re-pinned). SELF-FUNDED by three
+provably-redundant `xor a` reclaims (`run_prog`, `init`, `oe_disable` — each preceded by
+code that leaves A=0; repack-only, lean byte-identical): page-1 net 1->0 B free. Gated in
+`basic_probe_error_trap.py`'s resume_line case (ERR->0 AND ERL kept, both machines). All
+standing gates green. The S2a-deferred `ERROR 0`->ERR 5 arg-validation item remains the
+last open error-handling edge.
 
 ---
 

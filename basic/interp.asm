@@ -32,8 +32,10 @@ init:
                 ; above -- see sysvars.inc's own comment): a handler cannot
                 ; survive power-on RAM garbage.
                 ld      (ONELIN),hl         ; hl still 0 from just above
-                xor     a
-                ld      (ONEFLG),a
+                ld      (ONEFLG),a          ; A still 0 from the xor a above (the ld hl/
+                                            ; ld (nn),hl between don't touch A) -- the
+                                            ; ERR-reset-on-RESUME follow-up reclaimed
+                                            ; this once-redundant xor a
     ENDIF
                 call    clear_usrtab        ; zero the DEF USR vectors
                 call    init_filechan       ; no open channel; PRINT dest = screen
@@ -839,6 +841,14 @@ ex_resume:
                 ld      a,(ONEFLG)
                 or      a
                 jr      z,ex_resume_noerr
+                xor     a                   ; RESUME resets ERR to 0 (ERL is KEPT --
+                ld      (ERRCODE),a         ; empirically pinned VG-8020, all four RESUME
+                                            ; forms: `0 / 20`, not `0 / 0`). Placed on the
+                                            ; trap-active path only (after the ONEFLG!=0
+                                            ; check) so ex_resume_noerr (ERR 22) is
+                                            ; untouched; a malformed RESUME still aborts
+                                            ; with ONEFLG intact (raise_error re-sets its
+                                            ; own code, so ERRCODE=0 here is invisible).
                 inc     hl                  ; past RESUME_TOKEN
                 call    skip_spaces         ; A = (hl)
                 or      a                   ; bare RESUME / RESUME<EOL>?

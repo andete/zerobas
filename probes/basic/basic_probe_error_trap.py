@@ -6,12 +6,9 @@ s2b-packet.md §10). Differential against the reference oracle Philips VG-8020,
 driven through the typing-free KEYBUF-injection REPL driver (probes/lib/omsx_repl.py),
 modelled on probes/basic/error_acceptance.py's family shapes.
 
-NOTE (2026-07-19): written against the wip/s2b-resume-family-v2 branch state, which
-does NOT yet build (page-1 overrun by 3 B — see that branch's own commit message and
-the session report). This probe has NOT been run against a real repack build. Run it
-(`make error-trap-acceptance` or directly) the moment the 3 B gap is resolved and the
-repack image builds again; it is the Definition-of-Done gate for the RESUME family
-([[gate-during-implementation]] — an untested impl is not done).
+Standing gate for the RESUME family (`make error-trap-acceptance`); the S2b arc landed
+on main 2026-07-19. The resume_line case additionally gates the ERR-reset-on-RESUME
+follow-up (ERR->0, ERL kept), landed 2026-07-19.
 
 Cases (observable-variable design throughout, matching error_acceptance.py's own
 robustness rule — screen-scrape only where the packet needs the message TEXT or its
@@ -116,11 +113,13 @@ NUM_CASES = [
     Case("resume_line", [
         "10 ON ERROR GOTO 100", "20 B=SQR(-1)",
         '30 PRINT"R<";1;">"',
-        '40 PRINT"R<";ERR;">"',
+        '40 PRINT"R<";ERR;"/";ERL;">"',
         "100 RESUME 40",
         "RUN",
-    ]),  # want "5" as the LAST R<> marker on screen; line 30's "R<1>" must NOT
-         # appear (RESUME 40 skips it) -- checked separately via full-text below
+    ]),  # RESUME 40 branches to 40 + SKIPS line 30's "R<1...>". Line 40 then prints
+         # ERR/ERL: after ANY RESUME the reference RESETS ERR to 0 but KEEPS ERL
+         # (empirically pinned VG-8020, all four forms -> "0/20"). Both are gated
+         # below (the ERR-reset was S2b-deferred, landed 2026-07-19).
     Case("on_error_goto_0", [
         "10 ON ERROR GOTO 100", "20 ON ERROR GOTO 0", "30 B=SQR(-1)",
         '100 PRINT"R<";7;">"',
@@ -225,25 +224,30 @@ def main() -> int:
 
     # ---------------- resume_line: RESUME <line> branches + skips intervening ---
     # RESUME <line> must branch to <line> (line 40) and SKIP the intervening
-    # statement (line 30's "R< 1 >") -- that mechanism is the gate, and it holds on
-    # both machines. The ERR value line 40 then prints is a KNOWN DEVIATION
-    # (deferred, charter-debt): the reference RESETS ERR to 0 on RESUME (prints
-    # "R< 0 >"), zerobas keeps the last code ("R< 5 >"). Reported, not gated --
-    # fixing it needs its own semantics pin + ~8B page-1 reclaim (spec S2b §follow-up).
+    # statement (line 30's "R< 1 ...>"). Line 40 then prints "R< ERR / ERL >": after
+    # ANY RESUME the reference RESETS ERR to 0 but KEEPS ERL (empirically pinned on
+    # the VG-8020, all four RESUME forms -> "0 / 20"). The ERR-reset was S2b-deferred
+    # (the reference "0" vs zerobas's then-last-code) and LANDED 2026-07-19 (a 4 B
+    # `xor a`/`ld (ERRCODE),a` at ex_resume's trap-active head, funded by three
+    # provably-redundant `xor a` reclaims). Now GATED on BOTH machines: line-30
+    # skipped, ERR reset to 0, ERL kept at 20.
     if not args.only or "resume_line" in (args.only or ""):
         rl = next(c for c in NUM_CASES if c.label == "resume_line")
-        print(f"\n--- resume_line: RESUME <line> branches to 40 + skips line 30 ---")
+        print(f"\n--- resume_line: RESUME <line> -> 40, skip 30, ERR->0, ERL kept ---")
         for machine, tag in ([(args.machine, "ref")] +
                              ([(args.zb_machine, "zb")] if not args.ref_only else [])):
             raw = omsx_repl.run_case(machine, "direct", rl.lines)
             markers = [m.strip() for m in re.findall(r"R<([^<>]*)>", raw or "")]
-            skipped = "1" not in markers          # line 30's "R< 1 >" must NOT appear
-            errval = markers[-1] if markers else None
-            good = skipped
+            skipped = not any(m.startswith("1") for m in markers)  # "R< 1 >" must NOT appear
+            errerl = markers[-1] if markers else None               # "0 / 20"
+            parts = [p.strip() for p in (errerl or "").split("/")]
+            err_reset = len(parts) == 2 and parts[0] == "0"         # ERR reset to 0
+            erl_kept = len(parts) == 2 and parts[1] == "20"         # ERL kept at 20
+            good = skipped and err_reset and erl_kept
             ok = ok and good
             print(f"{'PASS' if good else 'FAIL':5} [{tag}] resume_line line-30-skipped="
-                  f"{skipped} (want True); ERR-after-RESUME={errval!r} "
-                  f"[KNOWN DEVIATION: ref '0' vs zb '5', deferred]")
+                  f"{skipped} (want True); ERR/ERL-after-RESUME={errerl!r} "
+                  f"(want '0 / 20': ERR reset, ERL kept)")
 
     # ---------------- on_error_goto_0: handler disabled ------------------------
     if not args.only or "on_error_goto_0" in (args.only or ""):

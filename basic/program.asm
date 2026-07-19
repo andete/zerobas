@@ -223,8 +223,10 @@ run_prog:
                                             ; ON ERROR handler armed. UNVERIFIED,
                                             ; flagged for the lead's VG-8020 pin
                                             ; (packet §7).
-                xor     a
-                ld      (ONEFLG),a          ; not inside a handler at RUN start
+                ld      (ONEFLG),a          ; not inside a handler at RUN start (A is
+                                            ; still 0 from the xor a above -- nothing
+                                            ; since touches it: the ERR-reset-on-RESUME
+                                            ; follow-up reclaimed the redundant xor a)
     ENDIF
                 ld      hl,GOSUB_STK        ; empty return stack
                 ld      (GSP),hl
@@ -1433,8 +1435,11 @@ oe_undef:
 oe_disable:
                 ld      de,0                ; (DE, not HL -- HL still holds the cursor
                 ld      (ONELIN),de         ; to continue the line with)
-                xor     a
                 ld      (ONEFLG),a          ; GOTO 0 inside a handler clears the in-
-                                            ; handler state (re-enables normal aborts)
+                                            ; handler state (re-enables normal aborts).
+                                            ; A is already 0 (the `or c` that branched
+                                            ; here left it 0; ld de,0/ld (nn),de don't
+                                            ; touch A) -- ERR-reset-on-RESUME follow-up
+                                            ; reclaimed the redundant xor a
                 jp      exec_stmt
     ENDIF
