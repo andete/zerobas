@@ -441,15 +441,53 @@ DIRECTF         equ     $E1C2   ; 1 = executing a DIRECT-mode line, 0 = running 
                                 ; run_prog/ex_cont (0) and dispatch_line (1) before
                                 ; any statement runs, so it is always valid when an
                                 ; error reads it — no cold-boot init needed.
-; Error-handling S2a (spec-basic-error-handling-s2.md §4; packet §4): $E1C3/C4
-; are left clear for S2b's SAVSTK (not needed this slice — raise_error has no
-; trap branch yet, so no stack anchor to restore). ERRCODE/ERRLINE are the only
-; two S2a cells; verified clear (grep) of the freed $E1C2..$E240 VARTAB window.
+; Error-handling S2b (docs/spec-basic-error-handling-s2b-packet.md §3): the
+; trap + RESUME state. SAVSTK claims the $E1C3/C4 window S2a reserved for it.
+SAVSTK          equ     $E1C3   ; 2 B: SP anchor for the trap unwind. Written by
+                                ; run_prog / dispatch_line's direct-exec path
+                                ; before any statement runs; raise_error's trap
+                                ; branch does `ld sp,(SAVSTK)` to reset the stack
+                                ; to a clean run-loop depth before jumping to the
+                                ; handler line (the trap fires from arbitrary
+                                ; call depth). No cold-init needed (written
+                                ; before read, same as DIRECTF).
 ERRCODE         equ     $E1C5   ; 1 B: last error's MSX ERR code (0 = none yet).
                                 ; Set by raise_error; read by the ERR function.
 ERRLINE         equ     $E1C6   ; 2 B: last error's line number, or 65535 if it
                                 ; happened in direct mode. Set by record_errline;
                                 ; read by the ERL function.
+ONELIN          equ     $E1C8   ; 2 B: ON ERROR handler line's LINK address (the
+                                ; find_line_bc / GOTOTGT-shaped value, NOT the
+                                ; token body) — 0 = no handler armed. Written by
+                                ; ex_on_error; read by raise_error's trap
+                                ; decision. Reset scope (packet §7, UNVERIFIED --
+                                ; flagged for the lead's VG-8020 adversarial
+                                ; pin): zeroed at run_prog (RUN re-arms) and
+                                ; init (cold boot); NOT clear_vars, so NEW/CLEAR
+                                ; alone do not disarm a handler under this
+                                ; hypothesis.
+ONEFLG          equ     $E1CA   ; 1 B: 1 = currently inside a handler (no RESUME
+                                ; yet) — a second error while set is a forced
+                                ; abort with the INNER message (real-MSX nested-
+                                ; error semantics, via raise_error_forced/rerr_
+                                ; report). Same reset scope as ONELIN.
+ERRRESUME       equ     $E1CB   ; 4 B: resume context captured at trap time —
+                                ; [0..1] the erroring statement's CURLINE (link
+                                ; addr), [2..3] the erroring statement's text
+                                ; pointer (from SAVTXT). Read by the RESUME
+                                ; family. No cold-init needed (written by the
+                                ; trap before RESUME can ever read it — ONEFLG=0
+                                ; guards a premature read via "RESUME without
+                                ; error", ERR 22).
+SAVTXT          equ     $E1CF   ; 2 B: the CURRENT statement's text pointer,
+                                ; refreshed at every exec_stmt entry (line start
+                                ; AND after every ':' via ex_sep) — mirrors
+                                ; MSX's own SAVTXT/NEWSTT. This is the ONLY
+                                ; source for the erroring statement's start
+                                ; address (raise_error fires from arbitrary
+                                ; call depth, not at the statement head). No
+                                ; cold-init needed (written before any raise_
+                                ; error can read it via ERRRESUME capture).
     ENDIF
 
 ; --- Phase 1: minimal string-variable store (own-design; see PROVENANCE.md) --

@@ -55,6 +55,10 @@ dl_cmd:
                 ld      a,1
                 ld      (DIRECTF),a         ; D-2: direct-mode exec -> error carries NO
                                             ; " in <line>" suffix (there is no line)
+                ld      (SAVSTK),sp         ; error-handling S2b §6: direct-mode anchor
+                                            ; (a direct ERROR n/error WITH a handler
+                                            ; resets cleanly; without one, S1's REPL
+                                            ; return already worked)
     ENDIF
                 ld      hl,TOKBUF
                 jp      exec                ; returns to the REPL
@@ -209,6 +213,18 @@ run_prog:
                 ld      (RESUMEFLAG),a
     IF ROM_BASE < $4000
                 ld      (DIRECTF),a         ; D-2: run mode (0) — errors get " in <line>"
+                ld      (SAVSTK),sp         ; error-handling S2b §6: run anchor — the
+                                            ; trap resets SP here before jumping to
+                                            ; the handler (a trap fires from
+                                            ; arbitrary call depth)
+                ld      hl,0
+                ld      (ONELIN),hl         ; error-handling S2b §7 hypothesis: RUN
+                                            ; re-arms, so a fresh RUN starts with no
+                                            ; ON ERROR handler armed. UNVERIFIED,
+                                            ; flagged for the lead's VG-8020 pin
+                                            ; (packet §7).
+                xor     a
+                ld      (ONEFLG),a          ; not inside a handler at RUN start
     ENDIF
                 ld      hl,GOSUB_STK        ; empty return stack
                 ld      (GSP),hl

@@ -27,6 +27,13 @@ init:
                 ld      (ERRCODE),a
                 ld      hl,0
                 ld      (ERRLINE),hl
+                ; Error-handling S2b (packet §7, same cold-only hook, same
+                ; UNVERIFIED-hypothesis flag as ONELIN/ONEFLG's run_prog re-arm
+                ; above -- see sysvars.inc's own comment): a handler cannot
+                ; survive power-on RAM garbage.
+                ld      (ONELIN),hl         ; hl still 0 from just above
+                xor     a
+                ld      (ONEFLG),a
     ENDIF
                 call    clear_usrtab        ; zero the DEF USR vectors
                 call    init_filechan       ; no open channel; PRINT dest = screen
