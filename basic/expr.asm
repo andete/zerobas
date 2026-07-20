@@ -1665,6 +1665,22 @@ vptr_arr:
                                             ; HL=cursor -- both pop [CURSOR] once
                 push    hl
                 pop     ix                  ; IX = cursor (ev_f_var's return contract)
+                ; VARPTR yields an int16 ADDRESS in DE, so the factor's type must
+                ; be int. The scalar path below gets that for free (eval() sets
+                ; FACTYP=2 on entry and nothing between there and the return
+                ; changes it), but THIS path runs a nested eval() -- the subscript
+                ; list -- which leaves FACTYP as the SUBSCRIPT's type. A literal
+                ; subscript leaves 2 (so VARPTR(X(2)) worked), but any non-literal
+                ; one (scalar var, or the H4 nested array rvalue X(X(0))) leaves
+                ; FACTYP=8 with the subscript's value still in FAC -- and every
+                ; consumer (print.asm exp_num, LET) then reads FAC and IGNORES DE,
+                ; so VARPTR(X(V)) returned V, not the address (arrays gate case
+                ; arrelem.varptr.nested, root-caused 2026-07-20). Re-assert int
+                ; AFTER the resolve; LD touches no flag and CALL preserves them,
+                ; so the `jr z` below still reads ary_op0_resolve's own result,
+                ; and DE (the address) is untouched. Covers the vptr_none
+                ; fall-through too. Repack-only -- lean has no array path here.
+                call    set_factyp_int_ret  ; FACTYP := 2 (clobbers A only)
                 jr      z,vptr_close        ; Z: DE = element addr -> shared ')' tail
                                             ; NZ: fall into vptr_none -- deferred
                                             ; error (eva_deferred convention; the

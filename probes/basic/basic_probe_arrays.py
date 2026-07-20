@@ -517,8 +517,22 @@ CASES = [
     # so the inner ev_f_arr runs the SAME parse machinery ary_op0_resolve does.
     # X(0)=2, X(2)=513 -> VARPTR(X(X(0)))=VARPTR(X(2)); X default-double, so
     # PEEK of the value field's first byte matches the reference.
+    # ROOT CAUSE (2026-07-20), for the record: this failed 67-vs-18 not because
+    # of re-entrancy but because ev_f_varptr never set FACTYP=2. It returns the
+    # address in DE, and the subscript's own eval() left FACTYP=8 with the
+    # SUBSCRIPT still in FAC -- so PRINT/LET read FAC and ignored DE, i.e.
+    # VARPTR(X(X(0))) evaluated to 2 (=X(0)) and PEEK(2) is 18. A LITERAL
+    # subscript leaves FACTYP=2, which is why every other varptr case above
+    # passed. Fixed by a set_factyp_int_ret in expr.asm's vptr_arr.
     ("arrelem.varptr.nested",   "direct",
         ['DIM X(3):X(0)=2:X(2)=513', 'PRINT"[";PEEK(VARPTR(X(X(0))));"]"'], "value"),
+    # ...and the SIMPLER form of that same FACTYP bug, which was ungated: a
+    # plain SCALAR-variable subscript is also non-literal, so it too left
+    # FACTYP=8 (V default-double). Cheaper than the nested case and fails
+    # independently of the array-re-entrancy path -- keep BOTH so a regression
+    # in either can't hide behind the other.
+    ("arrelem.varptr.varsub",   "direct",
+        ['DIM X(3):X(2)=513:V=2', 'PRINT"[";PEEK(VARPTR(X(V)));"]"'], "value"),
     # malformed close: a subscript with no outer ')' (VARPTR(A(0)) missing one
     # ')'). ev_f_arr consumes the subscript's own ')', then vptr_close finds no
     # VARPTR ')' -> the CHECKED deferred syntax error (Fable review: pre-fix
