@@ -1680,7 +1680,10 @@ vptr_arr:
                 ; so the `jr z` below still reads ary_op0_resolve's own result,
                 ; and DE (the address) is untouched. Covers the vptr_none
                 ; fall-through too. Repack-only -- lean has no array path here.
-                call    set_factyp_int_ret  ; FACTYP := 2 (clobbers A only)
+                ; flt_int_result (NOT the byte-identical set_factyp_int_ret):
+                ; `grep flt_int_result` is the audit tool for "which factors
+                ; return an int" -- VARPTR must show up in it.
+                call    flt_int_result      ; FACTYP := 2 (clobbers A only)
                 jr      z,vptr_close        ; Z: DE = element addr -> shared ')' tail
                                             ; NZ: fall into vptr_none -- deferred
                                             ; error (eva_deferred convention; the
