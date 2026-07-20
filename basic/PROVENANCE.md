@@ -3243,3 +3243,79 @@ Technical Handbook CALSLT/EXBRSA/sub-ROM-signature ABIs); the primitive
 bodies are copied verbatim from our own `basic/fat.asm` (see that file's
 header, and `§disk DSKIO host engine` above, for the full FAT12/DSKIO
 provenance / oracle citations). No reference-ROM disassembly.
+
+## Directory-verb I/O eviction, Phase 2 — KILL + NAME (basic/files.asm, sub/dirverb.asm, basic/sysvars.inc, sub/equates.inc, sub/sub.asm)
+
+**What changed and why.** `docs/spec-evict-diskfile-cluster.md` §12. Phase 2
+of the disk/file command cluster eviction: the disk **I/O bodies** of the two
+directory-write verbs `KILL` and `NAME` move to a NEW sub-ROM PAGE-1 tenant
+(`sub/dirverb.asm` `dirverb_tenant`, `SUBROM_IDX_DIRVERB=13`). Their `eval`/
+parse HEADS stay main-resident (a page-1 tenant cannot reach `eval`/the
+parser): `parse_disk_fcb`, the verbatim-ASCII `"AS"` scan, and the
+`DISKSLOT_OK` check run resident and marshal their result into page-3 RAM
+(`DISK_FCB_NAME`, plus `FWR_DIRSEC`/`FWR_DIROFF` set by the resident
+`fat_mount`+`fat_find` shims for NAME) before a single `subrom_call` hands the
+CALSLT-side sector work to the tenant.
+
+**Why Phase 2 is small (measured).** Phase 1 already relocated the heavy
+FAT12 primitive/sector engine to `fatprim_tenant`, so KILL/NAME were already
+thin orchestration over sub-ROM shims. The tenant bodies call those Phase-1
+primitives (`fat_delete` / `read_sector` / `fatprim_write_sector`) SUB-LOCALLY
+(co-resident in the same page-1, no nested marshalling). Net page-1 relief was
+therefore modest — **1117 B free before → 1134 B after (+17 B)** — and the
+phase's real value is proving the selector-dispatched verb-body tenant pattern
+that Phase 3 (LOAD/SAVE/BLOAD/BSAVE/MERGE/RUN) will scale up. `FILES` was left
+resident by design (user decision): its listing loop interleaves `CHPUT` +
+main-resident `print_crlf`, a head/body fork not worth Phase 2's risk.
+
+**Shape.** ONE selector-dispatched tenant entry (like `fatprim_tenant`):
+`dirverb_tenant` reads `DISKOP_OP` and branches — `DISKOP_SEL_KILL=0` →
+`tnt_kill` (the `fat_delete` loop), `DISKOP_SEL_NAME_STAMP=1` →
+`tnt_name_stamp` (read dir sector, overwrite the 11-byte 8.3 name in place,
+write it back). These two values are a SEPARATE namespace on the same
+`DISKOP_OP` cell as fatprim's `SEL_*` (only one `subrom_call` reaches one
+tenant at a time, so 0/1 here do not alias fatprim's `READ_SECTOR`/
+`WRITE_SECTOR`). Lean 16 KB cart (`ROM_BASE >= $4000`): the verb bodies stay
+inline in `basic/files.asm`, BYTE-IDENTICAL to the pre-eviction build. Repack
+(`ROM_BASE < $4000`): the `ELSE` branches of `do_kill`/`do_name` emit the
+`subrom_call` head instead.
+
+**NAME is a "stamp-only" split (no new RAM).** The resident head keeps
+`fat_mount`+`fat_find` as the existing shims (OLD name in `DISK_FCB_NAME`),
+then parses the NEW name into `DISK_FCB_NAME`; the tenant only does the
+read+overwrite+write using `FWR_DIRSEC`/`FWR_DIROFF` + `DISK_FCB_NAME`. This
+avoids a second 11-byte name buffer (the `$E0ED+` gap is fully claimed by
+DSV/TSV/FILES/FCH scratch) and preserves the ORIGINAL statement ordering
+(find-old-then-parse-new) exactly. A hypothetical full-op NAME (marshal both
+names, fold mount+find into the tenant) would reorder new-name parsing before
+the find, but since `parse_disk_fcb` errors and old-not-found BOTH route to
+`load_error` ("load error"), even that reorder would be observationally
+identical — recorded here as the reason the stamp-only choice costs no
+behaviour.
+
+**Marshalling.** Cy cannot ride back through `subrom_call`/`CALSLT`, so each
+body returns disposition in `DISKOP_STATUS`. The two bodies use DIFFERENT
+polarity, each read only by its OWN head: NAME_STAMP → 0 ok / 1 error
+(standard); KILL → the deleted-any flag (0 = nothing matched → the head
+raises "File not found" via `load_error`; nonzero = ok). KILL's flag mirrors
+`basic/files.asm`'s ORIGINAL `do_kill` bug-for-bug: a real I/O error mid-loop
+is treated as "no further match" (`fat_delete`'s Cy stops the loop), and
+success is reported iff ≥1 entry was freed before the error.
+
+**Gates (2026-07-20).** Lean `basic.rom` byte-identical; `check_tenant_
+closure --page1` OK (14 page-1 tenants incl. `dirverb_tenant`, no main-page-1
+escape); `check_resident_abi`/`subrom-abi-check` OK (sub.rom not stale);
+`make unit-test` 46/46. `make diskbasic-acceptance` (lean **34/34**) +
+`diskbasic-acceptance-repack` (**34/34**) — boot-per-probe differential vs the
+real National CF-3300, incl. `disk_probe_kill.py` (real file delete → disk
+byte-identical to CF-3300) and `disk_probe_name.py` (rename → byte-identical).
+Adversarial boot-per-case edges the happy-path corpus skips: `KILL"NOSUCH.FIL"`
+→ "load error" (confirms the STATUS=deleted-any=0 → `load_error` polarity),
+`NAME"GHOST" AS ...` (old absent) → "load error". Test disks were /tmp copies;
+no committed `.dsk` mutated.
+
+Clean-room: original code (dispatch/marshalling glue own-design, the
+`CALL FORMAT`/`fatprim` precedent + MSX2 Technical Handbook CALSLT ABIs); the
+sector work reuses our own `basic/fat.asm` primitives sub-locally; KILL/NAME
+*semantics* trace to `§KILL`/`§NAME` above (public MSX-BASIC language reference
++ black-box CF-3300). No reference-ROM disassembly.

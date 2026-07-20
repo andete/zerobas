@@ -91,6 +91,14 @@ SUBROM_IDX_SCANSTMT     equ     11
 ; only the main-ROM stubs compute `IX = SUBROM_ENTRY_BASE_P1 +
 ; 3*SUBROM_IDX_FATPRIM`, same sync-note pattern as SUBROM_IDX_FORMAT above).
 SUBROM_IDX_FATPRIM      equ     12
+; index 13 = dirverb_tenant (sub/dirverb.asm): the directory-verb I/O bodies
+; (docs/spec-evict-diskfile-cluster.md §12, Phase 2 of the disk/file cluster
+; eviction) -- ONE selector-dispatched entry covering KILL's delete loop and
+; NAME's dir-entry stamp (DISKOP_OP, basic/sysvars.inc, picks the body). Both
+; bodies call the Phase-1 fatprim primitives (fat_delete / read_sector /
+; fatprim_write_sector) SUB-LOCALLY, no marshalling. Only the main-ROM heads
+; compute `IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_DIRVERB`.
+SUBROM_IDX_DIRVERB      equ     13
 
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can

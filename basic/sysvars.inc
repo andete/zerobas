@@ -1212,6 +1212,13 @@ DISKOP_SEL_FAT_FLUSH_DATA_SECTOR equ 11
 DISKOP_SEL_FAT_DIR_CREATE       equ 12
 DISKOP_SEL_FAT_DIR_UPDATE       equ 13
 DISKOP_SEL_FAT_DELETE           equ 14
+; DISKOP_OP selector values for the dirverb_tenant (SUBROM_IDX_DIRVERB, Phase 2,
+; spec §12). A SEPARATE value namespace on the SAME DISKOP_OP cell: fatprim
+; (index 12) and dirverb (index 13) are never in flight at once (one subrom_call
+; reaches exactly one tenant), so 0/1 here are dirverb-local and do NOT alias
+; fatprim's READ_SECTOR/WRITE_SECTOR despite sharing the numeric value.
+DISKOP_SEL_KILL                 equ 0   ; dirverb: KILL's fat_delete loop
+DISKOP_SEL_NAME_STAMP           equ 1   ; dirverb: NAME's read+overwrite+write
 ; --- Phase 2: MAXFILES per-channel context blocks --------------------------
 ; A channel's live streaming state spans TWO global regions: the 512-byte data
 ; buffer FSECTOR_BUF, and a contiguous engine-state span FCH_STATE0..(+FCH_STATESZ).
@@ -1909,6 +1916,16 @@ SUBROM_IDX_FATPRIM   equ 12     ; fatprim_tenant (sub/fatprim.asm): the FAT12
                                 ; ROM_BASE < $4000), replacing the moved
                                 ; bodies under the SAME names (read_sector,
                                 ; write_sector, fat_mount, fat_find, ...).
+SUBROM_IDX_DIRVERB   equ 13     ; dirverb_tenant (sub/dirverb.asm): the
+                                ; directory-verb I/O bodies (docs/spec-evict-
+                                ; diskfile-cluster.md §12, Phase 2) -- a SINGLE
+                                ; selector-dispatched tenant (DISKOP_OP picks
+                                ; KILL's delete loop vs NAME's dir-entry stamp).
+                                ; Its bodies call the Phase-1 fatprim primitives
+                                ; (fat_delete / read_sector / fatprim_write_
+                                ; sector) SUB-LOCALLY. A pure RAM+BIOS(CALSLT)
+                                ; leaf. Main-ROM heads are the repack `ELSE`
+                                ; branches of do_kill/do_name (basic/files.asm).
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

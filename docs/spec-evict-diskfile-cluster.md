@@ -329,6 +329,56 @@ scratch without colliding with FCB/channel buffers.
 
 ---
 
+## 12. Phase 2 — concrete design + outcome (KILL + NAME, LANDED 2026-07-20)
+
+**Scope reshaped by measurement (user-decided).** Phase 1 had already evicted the FAT12
+primitive/sector engine, so the directory verbs were left as thin orchestration over sub-ROM
+shims. Measured freeable page-1 for the three §4 directory verbs: FILES ~150 B (but its emit
+loop interleaves `CHPUT` + main-resident `print_crlf` — a head/body fork §4 didn't anticipate),
+NAME ~44 B, KILL ~0 (its `dk_loop` ≈ the `subrom_call` boilerplate that replaces it). Given the
+yield/risk had shifted from §4's assumptions and page-1 free was a healthy 1117 B with no pending
+funder, the user chose **KILL + NAME only** (leave FILES resident, avoiding the CHPUT fork). The
+value of the phase is proving the **selector-dispatched verb-body tenant** that Phase 3 scales up,
+not the bytes.
+
+**Tenant = one selector-dispatched entry (like fatprim), `SUBROM_IDX_DIRVERB=13`.**
+`dirverb_tenant` reads `DISKOP_OP` and branches: `DISKOP_SEL_KILL=0` → `tnt_kill`,
+`DISKOP_SEL_NAME_STAMP=1` → `tnt_name_stamp`. A separate value namespace on the same `DISKOP_OP`
+cell as fatprim (only one `subrom_call` is in flight at a time). Both bodies call the Phase-1
+primitives (`fat_delete` / `read_sector` / `fatprim_write_sector`) **sub-locally** — they are
+co-resident in the same sub page-1, so no nested marshalling. `sub/dirverb.asm` is included after
+`sub/fatprim.asm` in `sub/sub.asm`; it is a pure RAM+BIOS(CALSLT) leaf (no resident-ABI import).
+
+**NAME is stamp-only (no new RAM).** The `$E0ED+` gap is fully claimed (DSV/TSV/FILES/FCH), so a
+second 11-byte name buffer isn't free. The resident head keeps `fat_mount`+`fat_find` as the
+existing shims (OLD name in `DISK_FCB_NAME`), then parses the NEW name into `DISK_FCB_NAME`; the
+tenant only does read+overwrite+write via `FWR_DIRSEC`/`FWR_DIROFF`. This preserves the ORIGINAL
+find-old-then-parse-new ordering. (A full-op NAME folding mount+find into the tenant would need
+the buffer + reorder new-name parsing before the find; harmless anyway since `parse_disk_fcb`
+errors and old-not-found both route to `load_error`, but stamp-only avoids the question.)
+
+**Status polarity (each read only by its own head).** NAME_STAMP → 0 ok / 1 error; KILL →
+deleted-any flag (0 = nothing matched → head raises "File not found" via `load_error`; nonzero =
+ok). KILL mirrors the original `do_kill` bug-for-bug (a mid-loop I/O error is treated as "no
+further match"). Lean cart keeps both verb bodies inline (byte-identical); repack emits the
+`subrom_call` heads via the `ELSE` branches of `do_kill`/`do_name`.
+
+**Outcome + gates (2026-07-20).** Page-1 free **1117 → 1134 B (+17 B)**; lean `basic.rom`
+byte-identical. `check_tenant_closure --page1` OK (14 tenants incl. `dirverb_tenant`, no
+main-page-1 escape); `subrom-abi-check` OK; `unit-test` 46/46. `diskbasic-acceptance` lean
+**34/34** + repack **34/34** — boot-per-probe differential vs real CF-3300, incl.
+`disk_probe_kill.py`/`disk_probe_name.py` (byte-identical disk images). Adversarial boot-per-case
+(the paths the corpus skips): no-match `KILL"NOSUCH.FIL"` → "load error"; absent-old NAME → "load
+error". /tmp disk copies; no committed `.dsk` mutated. Landed with the `.ips`/`.bps` repack
+patches regenerated ([[ips-rebuild-after-basic-change]]).
+
+**Q-A/Q-C/Q-D for Phase 2:** `parse_disk_fcb`/`load_error` stay resident (confirmed — the tenant
+never reaches them; it returns `DISKOP_STATUS` and the head does `jp z/c,load_error`). No new RAM.
+**NEXT = Phase 3** (program load/store LOAD/SAVE/BLOAD/BSAVE/MERGE/RUN, spec §4) — the first
+genuinely high-yield phase.
+
+---
+
 ## 10. Clean-room
 
 Original code; the split mechanism, DISKOP marshalling, and sub-local CALSLT are own-design

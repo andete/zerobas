@@ -106,6 +106,11 @@ SUB_SRC   := sub/sub.asm
 # (FAT12 primitive/sector-layer eviction, docs/spec-evict-diskfile-cluster.md
 # §11, Phase 1): the tenant body + its two shared .inc files (the lean cart's
 # inline copies) -- same staleness hazard, same fix.
+# sub/dirverb.asm (KILL/NAME directory-verb I/O bodies, docs/spec-evict-
+# diskfile-cluster.md §12, Phase 2): a self-contained tenant (no new .inc -- it
+# reuses fatprim's already-listed primitive bodies sub-locally); the lean cart
+# keeps its verb-body copies inline in basic/files.asm -- same staleness hazard,
+# same fix.
 SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
              sub/fp_exp.asm sub/fp_log.asm sub/fp_pow.asm sub/fp_sin.asm \
              sub/fp_rnd.asm sub/arrays.asm sub/strheap.asm sub/detok.asm \
@@ -113,6 +118,7 @@ SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
              sub/format.asm basic/format-body.inc \
              sub/errtrap.asm \
              sub/fatprim.asm basic/fat-prim-body.inc basic/fat-delete-body.inc \
+             sub/dirverb.asm \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
              basic/tokenise.inc basic/detok.inc \
              sub/basic-resident-abi.inc

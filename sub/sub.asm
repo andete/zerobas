@@ -346,6 +346,19 @@ sub_p1_table:
                                                 ;   Main-ROM stubs are the
                                                 ;   resident shims in
                                                 ;   basic/fat.asm (repack).
+                jp      dirverb_tenant          ; index 13 (SUBROM_IDX_DIRVERB):
+                                                ;   the KILL/NAME directory-verb
+                                                ;   I/O bodies (docs/spec-evict-
+                                                ;   diskfile-cluster.md §12,
+                                                ;   Phase 2) -- ONE selector-
+                                                ;   dispatched entry (DISKOP_OP
+                                                ;   picks KILL's delete loop vs
+                                                ;   NAME's dir-entry stamp), each
+                                                ;   calling the Phase-1 fatprim
+                                                ;   primitives sub-locally. Main-
+                                                ;   ROM heads are the repack
+                                                ;   ELSE branches of do_kill/
+                                                ;   do_name (basic/files.asm).
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -443,6 +456,15 @@ sub_p1_ping:
 ; (same shape as fp_rnd/format_tenant/scan_stmt_end): a pure RAM+BIOS(CALSLT)
 ; leaf -- own header has the full rationale.
                 include "fatprim.asm"
+
+; KILL/NAME directory-verb I/O bodies (index 13 = dirverb_tenant, sub/
+; dirverb.asm): the THIRTEENTH page-1 tenant, Phase 2 of the disk/file cluster
+; eviction (docs/spec-evict-diskfile-cluster.md §12). Needs no resident-ABI
+; import (same shape as fatprim_tenant): a pure RAM+BIOS(CALSLT) leaf whose two
+; bodies call the Phase-1 fatprim primitives (included just above) sub-locally.
+; Placed AFTER fatprim so its sub-local calls resolve within the same page-1
+; region -- own header has the full rationale.
+                include "dirverb.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF

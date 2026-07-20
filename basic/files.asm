@@ -1177,6 +1177,8 @@ do_kill:
                 ; remains. C tracks whether anything was deleted -> File not found
                 ; (load_error) if the pattern matched nothing (Q4.1). A non-wildcard
                 ; name simply matches once, exactly as before.
+    IF ROM_BASE >= $4000
+                ; lean cart: the delete loop inline (byte-identical baseline).
                 ld      c,0                 ; C = deleted-any flag
 dk_loop:
                 push    bc
@@ -1191,6 +1193,21 @@ dk_done:
                 or      a
                 jp      z,load_error        ; nothing matched -> File not found
                 jp      exec_stmt
+    ELSE
+                ; repack: the loop runs in the dirverb_tenant (sub page 1),
+                ; calling fat_delete sub-locally; DISKOP_STATUS returns the
+                ; deleted-any flag (docs/spec-evict-diskfile-cluster.md §12).
+                ld      a,DISKOP_SEL_KILL
+                ld      (DISKOP_OP),a
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_DIRVERB
+                call    subrom_call
+                pop     hl                  ; restore text cursor
+                jp      c,load_error        ; sub-ROM absent -> error
+                ld      a,(DISKOP_STATUS)
+                or      a
+                jp      z,load_error        ; nothing matched -> File not found
+                jp      exec_stmt
+    ENDIF
 
 ; --- NAME "old" AS "new" — rename a file -----------------------------------
 ; Locate the OLD file, then overwrite its directory entry's 11-byte 8.3 name field
@@ -1245,6 +1262,8 @@ do_name:
                 inc     hl
                 ; read the dir sector, overwrite the 11-byte name, write it back.
                 push    hl                  ; guard text cursor across CALSLT
+    IF ROM_BASE >= $4000
+                ; lean cart: stamp inline (byte-identical baseline).
                 ld      de,(FWR_DIRSEC)
                 ld      hl,FSECTOR_BUF
                 call    read_sector
@@ -1260,6 +1279,20 @@ do_name:
                 ld      hl,FSECTOR_BUF
                 call    write_sector
                 jr      c,nm_fail2
+    ELSE
+                ; repack: the read+overwrite+write runs in the dirverb_tenant
+                ; (sub page 1). FWR_DIRSEC/FWR_DIROFF (the located OLD entry, set
+                ; by the resident fat_mount+fat_find above) and DISK_FCB_NAME (the
+                ; new 8.3 name) are already marshalled in page-3 RAM (spec §12).
+                ld      a,DISKOP_SEL_NAME_STAMP
+                ld      (DISKOP_OP),a
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_DIRVERB
+                call    subrom_call
+                jr      c,nm_fail2          ; sub-ROM absent -> error
+                ld      a,(DISKOP_STATUS)
+                or      a
+                jr      nz,nm_fail2         ; tenant I/O error
+    ENDIF
                 pop     hl                  ; restore text cursor
                 jp      exec_stmt
 nm_fail:
