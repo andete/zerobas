@@ -35,8 +35,13 @@ correct, but the host `test_str_fn.py` harness cleared ERRMARK/TEMPTOP per case 
 so a stale `FPERR=4` from a prior `STRING$(3,"")` deferred-error case misfired the next case's
 coercion — fixed by making the harness's `stmt_boundary()` mirror `exec_stmt` fully (clear
 TMISMATCH + FPERR, interp.asm:129). All standing gates green (unit-test 46/46, string/error/
-error-trap/float/math/input/subrom, diskbasic 34/34; array 149/150 = one PRE-EXISTING
-`arrelem.varptr.nested` divergence, baseline-identical, unrelated).
+error-trap/float/math/input/subrom, diskbasic 34/34; array 149/150 = one `arrelem.varptr.nested`
+divergence, logged here at the time as "PRE-EXISTING, baseline-identical,
+unrelated" — **that annotation was wrong on every count**. It was a real bug
+introduced by the VARPTR-array-element slice (missing `FACTYP=2`), root-caused
+and fixed 2026-07-20, commits 7afc3d0 / a9de159; gate now 151/151. See
+`spec-basic-varptr-array-element.md` §8. Lesson: a red case must be
+root-caused, not annotated as someone else's problem).
 This is the scope/design doc for the last cross-cutting faithfulness residual after the
 error-handling arc closed (2026-07-19). It fixes the "silent eager `flt_to_int16`" that
 every int-argument statement/function *not* explicitly wired during F2 (POKE/VPOKE/HEX$/

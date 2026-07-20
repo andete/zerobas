@@ -1,10 +1,13 @@
 # Spec / scope — `VARPTR` of an array element  `VARPTR(A(i[,j…]))` / `VARPTR(S$(i))`
 
-Status: **SHIPPED 2026-07-18** (user-signed-off; Fable-reviewed clean — verdict
-ship, all 6 design claims confirmed + ~30-case empirical injection battery
-reference-identical across the well-formed surface). Net **+5 B** page-1
-(measured; page-1 free 8→3 B), low region + lean untouched (byte-frozen).
-Gate `array-acceptance` 140→**150**.
+Status: **SHIPPED 2026-07-18**, **DEFECT FIXED 2026-07-20** (see §8 post-ship
+note). Shipped user-signed-off and Fable-reviewed "clean" — but it shipped with
+one gate case RED (`arrelem.varptr.nested`), and that red was a REAL
+slice-introduced bug (missing `FACTYP=2`), not the "pre-existing, unrelated"
+divergence it was logged as. The ~30-case injection battery could not see it:
+every varptr case used a **literal** subscript, which masks the whole defect
+class. Net **+5 B** page-1 on ship, **+3 B** more for the fix.
+Gate `array-acceptance` 140→150 on ship → **151** after the fix (all green).
 Charter: faithful full MSX1 BASIC ([[charter-faithful-full-msx1-basic]]).
 Closes the arrays/DIM arc's first logged remaining faithfulness candidate
 (the arc itself is CONCLUDED; this is a post-arc faithfulness follow-up, the
@@ -115,9 +118,10 @@ New cases (zerobas == VG-8020), all repack build:
 7. `arrelem.varptr.str` — `S$(0)="hi"`, `PEEK(VARPTR(S$(0)))` → `2`.
 8. `arrelem.varptr.distinct` — `DIM E(3):E(0)=9:E=8`, `VARPTR(E(0))<>VARPTR(E)`
    → `-1`.
-9. `arrelem.varptr.nested` — `VARPTR(X(X(0)))` re-entrancy (zbval/PEEK).
-
-10. `arrelem.varptr.nested` — `VARPTR(X(X(0)))` re-entrancy (value/PEEK).
+9. `arrelem.varptr.nested` — `VARPTR(X(X(0)))` re-entrancy (value/PEEK). This
+   case FAILED on ship and stayed red until 2026-07-20 — see §8.
+10. `arrelem.varptr.varsub` — `V=2`, `PEEK(VARPTR(X(V)))` (added 2026-07-20 with
+    the §8 fix: the scalar-variable-subscript form of the same defect).
 11. `arrelem.varptr.noparen` — `B=VARPTR(A(0)` (subscript consumed, no outer
     `)`) → the checked deferred `syntax error` (see the Fable follow-up below).
 
@@ -153,3 +157,39 @@ Fable adversarial pass after green (arc precedent: every slice hid ≥1
 matrix-invisible bug), with the H1–H4 injection battery run empirically, not
 reasoned. Implementation model per [[opus-vs-sonnet-model-split]] /
 [[spec-before-implementation]].
+
+### Post-ship defect — `FACTYP` (found + fixed 2026-07-20, commits 7afc3d0 / a9de159)
+
+The slice shipped with `arrelem.varptr.nested` **RED** (`array-acceptance`
+149/150), and it stayed red across the whole D-F2-2 arc, wrongly logged there
+as an unrelated pre-existing divergence. It was neither unrelated nor a
+re-entrancy bug: it was introduced by THIS slice.
+
+`ev_f_varptr` returns the address in `DE` but never asserted `FACTYP=2`. The
+scalar path got that for free (`eval()` sets `FACTYP=2` on entry and nothing
+between there and the return changes it), but the array-element path added
+here runs a **nested `eval()`** — the subscript list — which leaves `FACTYP` as
+the *subscript's* type. Consumers (`print.asm` `exp_num`, LET) then read FAC
+and **ignore DE**, so `VARPTR(X(X(0)))` evaluated to `2` (=`X(0)`);
+`PEEK(2)`=18 vs the reference's 67.
+
+Fix: `call flt_int_result` in `vptr_arr`, after `ary_op0_resolve` and before
+the `jr z` (LD sets no flag, CALL preserves them, so the branch still reads the
+resolve's own result; DE untouched; covers the `vptr_none` fall-through).
++3 B page-1, repack-only, lean byte-identical.
+
+**Why the ~30-case battery and the review both missed it.** Every varptr case
+in the battery used a **LITERAL** subscript, and a literal leaves `FACTYP=2` —
+which masks the defect completely. The one case that did not (`.nested`) was
+the one that failed, and its red was rationalised as pre-existing instead of
+being root-caused. Two durable lessons:
+
+- A factor returning an int16 in `DE` must ALSO set `FACTYP=2`. `grep
+  flt_int_result` is the audit tool for this; the 2026-07-20 audit found
+  VARPTR was the ONLY factor missing it (PEEK/INP/VPEEK/EOF/LOF/DSKF, CVI,
+  BASE, USR, LEN/ASC/VAL, INSTR and the string compares all had it).
+- Exercise argument-taking functions with a **non-literal** argument. A literal
+  argument is a masking value for the whole FACTYP class, so a battery built
+  only from literals is structurally blind to it regardless of case count.
+- A red case at ship time must be root-caused, not annotated. "Pre-existing
+  and unrelated" was asserted, never verified — and was false on both counts.
