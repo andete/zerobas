@@ -718,13 +718,22 @@ opr_bad:
                 scf
                 ret
 
-; --- LINE INPUT #n, A$  (only the "LINE INPUT" form of LINE is supported) ---
+; --- LINE: disambiguate LINE INPUT (file/console) from graphics LINE (G3) ------
+; Runtime disambiguation (docs/spec-basic-graphics-g3.md §7, measured §11.1): after
+; the LINE token, an INPUT token ($85) means LINE INPUT; anything else — the graphics
+; forms all begin with '(' ($28), '-' ($F2) or STEP ($DC) — is a graphics LINE. On
+; the lean build there is no graphics tenant, so the non-INPUT branch stays a Syntax
+; error (byte-identical lean cart).
 ex_line:
                 inc     hl                  ; HL -> bytes after the LINE token
                 call    skip_spaces
                 ld      a,(hl)
-                cp      INPUT_TOKEN         ; LINE must be followed by INPUT
-                jp      nz,stmt_error       ; graphics LINE = Phase 3
+                cp      INPUT_TOKEN         ; LINE must be followed by INPUT ...
+    IF ROM_BASE < $4000
+                jp      nz,ex_line_gfx      ; repack: else it's a graphics LINE (graphics.asm)
+    ELSE
+                jp      nz,stmt_error       ; lean: graphics LINE unsupported (byte-identical)
+    ENDIF
                 inc     hl                  ; HL -> after INPUT
                 ld      a,1                 ; read mode = LINE (stop at CR only)
                 jr      input_common

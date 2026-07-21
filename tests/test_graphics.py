@@ -87,6 +87,73 @@ RANGE_CASES = [
 ]
 
 
+# --- gfx_abs16 (G3): HL=|HL|, A=$01 if orig>=0 else $FF -----------------------
+ABS_CASES = [
+    (0, 0, 0x01), (5, 5, 0x01), (0x7FFF, 0x7FFF, 0x01),
+    (-1, 1, 0xFF), (-5, 5, 0xFF), (-0x8000, 0x8000, 0xFF), (-100, 100, 0xFF),
+]
+
+# --- gfx_bres_init/next (G3): the Bresenham point set -------------------------
+# Oracle: the VG-8020 captured bitmaps (scratchpad/g3_line_char.out). pybres()
+# replicates the fitted variant (err=dmaj>>1, step when err>=dmaj, major sorted
+# ascending) and is asserted == the captured ground truth below; the asm is then
+# asserted == pybres over a battery -> asm == reference, transitively.
+CAPTURED = {
+    (0, 0, 20, 7): {(x, y) for y, xs in {
+        0: [0, 1], 1: [2, 3, 4], 2: [5, 6, 7], 3: [8, 9], 4: [10, 11, 12],
+        5: [13, 14, 15], 6: [16, 17, 18], 7: [19, 20]}.items() for x in xs},
+    (0, 0, 7, 20): {(x, y) for x, ys in {
+        0: [0, 1], 1: [2, 3, 4], 2: [5, 6, 7], 3: [8, 9], 4: [10, 11, 12],
+        5: [13, 14, 15], 6: [16, 17, 18], 7: [19, 20]}.items() for y in ys},
+    (0, 0, 15, 15): {(i, i) for i in range(16)},
+    (0, 15, 15, 0): {(x, 15 - x) for x in range(16)},
+}
+# battery for asm == pybres (both directions -> direction independence; axis-aligned)
+BRES_LINES = list(CAPTURED) + [
+    (20, 7, 0, 0), (7, 20, 0, 0), (15, 15, 0, 0), (15, 0, 0, 15),  # reversed
+    (0, 2, 20, 2), (3, 0, 3, 20), (5, 5, 5, 5),                     # horiz/vert/degenerate
+    (0, 0, 200, 70), (200, 70, 0, 0), (10, 100, 100, 10),          # bigger, both dirs
+]
+
+
+def pybres(x0, y0, x1, y1):
+    dx, dy = abs(x1 - x0), abs(y1 - y0)
+    steep = dy > dx
+    if steep:
+        x0, y0, x1, y1, dx, dy = y0, x0, y1, x1, dy, dx
+    if x0 > x1:
+        x0, y0, x1, y1 = x1, y1, x0, y0
+    sy = 1 if y1 >= y0 else -1
+    err, y, pts = dx >> 1, y0, set()
+    for x in range(x0, x1 + 1):
+        pts.add((y, x) if steep else (x, y))
+        err += dy
+        if err >= dx:
+            y += sy
+            err -= dx
+    return pts
+
+
+def _rd16s(m, name):
+    b = m.peek(m.addr(name), 2)
+    v = b[0] | (b[1] << 8)
+    return v - 0x10000 if v >= 0x8000 else v
+
+
+def zbres(m, x0, y0, x1, y1):
+    """Drive the real asm rasteriser: poke endpoints, init, then step, collecting
+    the visited (CX,CY) points exactly as gfx_draw_seg's loop would plot them."""
+    for name, val in (("GFX_X1", x0), ("GFX_Y1", y0), ("GFX_X2", x1), ("GFX_Y2", y1)):
+        m.poke_w(m.addr(name), val & 0xFFFF)
+    m.call("gfx_bres_init")
+    pts = [(_rd16s(m, "GFX_CX"), _rd16s(m, "GFX_CY"))]
+    cnt = int.from_bytes(m.peek(m.addr("GFX_CNT"), 2), "little")
+    for _ in range(cnt):
+        m.call("gfx_bres_next")
+        pts.append((_rd16s(m, "GFX_CX"), _rd16s(m, "GFX_CY")))
+    return set(pts)
+
+
 def build_sub():
     subprocess.run(["pasmo", "-I", os.path.join(ROOT, "sub"), "--bin",
                     os.path.join(ROOT, "sub", "sub.asm"), SUB_ROM, SUB_SYM],
@@ -130,6 +197,26 @@ def run():
         check(cpu.a == want,
               f"gfx_point_extract pat=${pat:02X} mask=${mask:02X} col=${col:02X} "
               f"-> {cpu.a} (want {want})")
+
+    # --- gfx_abs16 (G3) ---
+    for v, want_abs, want_sign in ABS_CASES:
+        cpu = m.call("gfx_abs16", h=(v >> 8) & 0xFF, l=v & 0xFF)
+        check(cpu.hl == want_abs and cpu.a == want_sign,
+              f"gfx_abs16 {v:>7} -> |{cpu.hl}| (want {want_abs}) "
+              f"sign=${cpu.a:02X} (want ${want_sign:02X})")
+
+    # --- pybres == the VG-8020 captured bitmaps (locks the oracle generator) ---
+    for line, want in CAPTURED.items():
+        got = pybres(*line)
+        check(got == want, f"pybres{line} == captured VG-8020 bitmap "
+              f"({len(got)} pts)" + ("" if got == want else f"  DIFF {got ^ want}"))
+
+    # --- the asm rasteriser == pybres over the battery (=> == reference) -------
+    for line in BRES_LINES:
+        want = pybres(*line)
+        got = zbres(m, *line)
+        check(got == want, f"gfx_bres {line} -> {len(got)} pts"
+              + ("" if got == want else f"  DIFF asm^py={sorted(got ^ want)[:6]}"))
 
     # --- resident leaf (repack build, rom_base=$2812) ---
     build_reloc()

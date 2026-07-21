@@ -127,8 +127,102 @@ def phase_b() -> int:
     return fails
 
 
+# =====================================================================
+# G3 -- LINE (+ ,B / ,BF). docs/spec-basic-graphics-g3.md §8. The load-bearing
+# differential: draw each LINE case on BOTH machines, read the pattern (and, where
+# the clash matters, colour) plane of the covered band back, assert byte-identical.
+# INIT clears SCREEN 2 to bg 1 / fg 15 so a drawn pixel = fg nibble F, bg = 1.
+LINIT = "COLOR15,1,1:SCREEN2:CLS"
+
+
+def band_segs(xr, yr, color=False):
+    off = 0x2000 if color else 0
+    cols = range(xr[0] >> 3, (xr[1] >> 3) + 1)
+    rows = range(yr[0] >> 3, (yr[1] >> 3) + 1)
+    return [(off + cr * 256 + cc * 8, 8) for cr in rows for cc in cols]
+
+
+# label, ops, x-range, y-range, read-colour-plane?  (each a pinned §11 fact)
+LINE_CASES = [
+    ("shallow",     "LINE(0,0)-(20,7),15",            (0, 20), (0, 7),  False),
+    ("steep",       "LINE(0,0)-(7,20),15",            (0, 7),  (0, 20), False),
+    ("diag45",      "LINE(0,0)-(15,15),15",           (0, 15), (0, 15), False),
+    ("negslope",    "LINE(0,15)-(15,0),15",           (0, 15), (0, 15), False),
+    ("rev_shallow", "LINE(20,7)-(0,0),15",            (0, 20), (0, 7),  False),  # dir-indep
+    ("horiz",       "LINE(0,3)-(20,3),15",            (0, 20), (0, 7),  False),
+    ("vert",        "LINE(4,0)-(4,20),15",            (0, 7),  (0, 20), False),
+    ("degenerate",  "LINE(5,5)-(5,5),15",             (0, 12), (0, 12), False),
+    ("continuation","PSET(3,3):LINE-(3,12),15",       (0, 8),  (0, 15), False),
+    ("step_chain",  "PSET(10,10):LINE STEP(2,2)-STEP(3,3),15", (8, 23), (8, 23), False),
+    ("box_b",       "LINE(1,1)-(14,10),15,B",         (0, 15), (0, 11), False),
+    ("box_bf",      "LINE(1,1)-(14,10),15,BF",        (0, 15), (0, 11), False),
+    ("box_rev",     "LINE(14,10)-(1,1),15,B",         (0, 15), (0, 11), False),  # reversed corners
+    ("clash_line",  "LINE(0,0)-(15,0),6",             (0, 15), (0, 1),  True),   # colour plane
+    ("clip_negTL",  "LINE(-100,-100)-(50,50),15",     (0, 24), (0, 24), False),  # clip = masking
+    ("clip_frac",   "LINE(-7,-2)-(60,18),15",         (0, 24), (0, 8),  False),  # frac-slope off-start
+    ("clip_alloff", "LINE(300,300)-(400,400),15",     (0, 24), (0, 24), False),  # fully-off = blank
+]
+
+
+def phase_c() -> int:
+    fails = 0
+    print("=== PHASE C: LINE pixel/colour plane differential (VG-8020 vs zerobas) ===")
+    for label, ops, xr, yr, col in LINE_CASES:
+        segs = band_segs(xr, yr, color=col)
+        specs = [("stored", prog([LINIT, ops]))]
+        ref = omsx_repl.run_cases(REF, specs, batch=False, capture=("vram_segs", segs))[0]
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, capture=("vram_segs", segs))[0]
+        ok = ref is not None and ref == zb
+        fails += not ok
+        plane = "colour" if col else "pattern"
+        note = "" if ok else f"  ref={ref} zb={zb}"
+        print(f"  {'PASS' if ok else 'FAIL'} {label:13} {plane} band {len(ref or '')//2}B{note}")
+    return fails
+
+
+# label, program lines, tag  (SCREEN0-funnelled behaviour: errors / GRPAC)
+LINE_BEHAV = [
+    ("ovf_end",   ["ON ERROR GOTO 40", "SCREEN2:LINE(0,0)-(32768,0),15",
+                   'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    # -32768 is a valid int16 -> no ERR 6 (unlike -32769). Tested with a SHORT
+    # extreme-coordinate line: a full (0,0)-(-32768,0) span is a documented perf
+    # edge (spec §4.4 / §9 G3-perf) -- masking iterates all 32768 off-screen steps
+    # (~1 s under EI), too slow to differential on completion, so it is out of scope.
+    ("ovf_ok_min",["ON ERROR GOTO 40", "SCREEN2:LINE(-32768,0)-(-32767,0),15",
+                   'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "K"),
+    ("scr0_err",  ["ON ERROR GOTO 40", "SCREEN0:LINE(0,0)-(10,10),15",
+                   'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("bf_scr0",   ["ON ERROR GOTO 40", "SCREEN0:LINE(0,0)-(9,9),15,BF",
+                   'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("nodash",    ["ON ERROR GOTO 40", "SCREEN2:LINE(5,5)",
+                   'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("badsuffix", ["ON ERROR GOTO 40", "SCREEN2:LINE(0,0)-(9,9),15,X",
+                   'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("grpac_line",["SCREEN2:PSET(5,5):LINE(10,20)-(30,40)",
+                   'SCREEN0:PRINT"G";PEEK(&HFCB7)+256*PEEK(&HFCB8);PEEK(&HFCB9)+256*PEEK(&HFCBA)'], "G"),
+    ("grpac_box", ["SCREEN2:LINE(10,10)-(30,20),15,B",
+                   'SCREEN0:PRINT"B";PEEK(&HFCB7)+256*PEEK(&HFCB8);PEEK(&HFCB9)+256*PEEK(&HFCBA)'], "B"),
+    ("off_ok",    ["ON ERROR GOTO 40", "SCREEN2:LINE(0,0)-(300,300),15",
+                   'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "K"),
+]
+
+
+def phase_d() -> int:
+    fails = 0
+    print("=== PHASE D: LINE behaviour (errors / GRPAC / clip-ok) ===")
+    specs = [("stored", body) for _, body, _ in LINE_BEHAV]
+    ref = omsx_repl.run_cases(REF, specs, batch=True, reset=("NEW", "CLS"))
+    zb = omsx_repl.run_cases(ZB, specs, batch=True, reset=("NEW", "CLS"))
+    for (label, _, tag), r, z in zip(LINE_BEHAV, ref, zb):
+        ra, za = _answer(r, tag), _answer(z, tag)
+        ok = ra is not None and ra == za
+        fails += not ok
+        print(f"  {'PASS' if ok else 'FAIL'} {label:12} ref={ra!r} zb={za!r}")
+    return fails
+
+
 def main() -> int:
-    fails = phase_a() + phase_b()
+    fails = phase_a() + phase_b() + phase_c() + phase_d()
     print("-------------------")
     print("graphics-acceptance:", "PASS" if fails == 0 else f"FAIL ({fails})")
     return 1 if fails else 0

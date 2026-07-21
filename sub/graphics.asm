@@ -56,6 +56,8 @@ graphics_tenant:
                 jp      z,gfx_plot          ; GFX_OP == 1
                 dec     a
                 jp      z,gfx_point         ; GFX_OP == 2
+                dec     a
+                jp      z,gfx_line_op       ; GFX_OP == 3 (LINE / box -- G3)
                 ; GFX_OP == 0 (or any other value) -> the G1 floor self-test
                 ; (falls through to graphics_selftest below).
 
@@ -374,4 +376,404 @@ gfx_point_extract:
                 rrca
 gpe_bg:
                 and     $0F                 ; low nibble (bg, or the shifted-down fg)
+                ret
+
+; ===========================================================================
+; G3 -- LINE (+ ,B / ,BF box). GFX_OP=3, GFX_MODE selects segment/outline/fill.
+; docs/spec-basic-graphics-g3.md. The FIRST long, EI-during-draw op (arc D1): the
+; tenant EIs at the top so a long draw keeps H.TIMI/JIFFY alive (music plays), and
+; drops to a BRIEF di ONLY around each pixel's read-modify-write (gfx_plot_cur).
+;
+; Rasteriser (own-design, host-fit to the VG-8020 -- spec §4.1): integer Bresenham,
+; endpoints sorted so the MAJOR axis ascends (=> drawing is direction-independent,
+; measured), err = dmaj>>1, minor step when err >= dmaj (then err -= dmaj). Runs over
+; the TRUE int16 endpoints and plots only in-range pixels -- that per-pixel mask IS
+; the clip (spec §3.4/§4.4): off-screen portions silently produce no pixel, on-screen
+; portions draw. The pure stepping (gfx_bres_init/gfx_bres_next, RAM state only, no
+; ports) is host-unit-tested against the captured reference bitmaps (tests/test_
+; graphics.py) -- the crux-1 de-risker, emulator-free. gfx_calc_addr / gfx_color_rmw
+; are reused verbatim from G1/G2; the per-pixel reads reuse gfx_rd_raw for its VDP
+; fetch-window settle ([[vdp-direct-port-read-fetch-window]]) -- now INSIDE the di
+; bracket, since with interrupts live both the latch-reset race and the read-ahead
+; race apply per pixel.
+; ===========================================================================
+gfx_line_op:
+                ei                          ; interrupts LIVE for the (possibly long) draw
+                ld      a,(GFX_MODE)
+                or      a
+                jr      z,glo_seg           ; mode 0 -> one segment
+                dec     a
+                jr      z,glo_box           ; mode 1 -> box outline
+                call    gfx_box_fill        ; mode 2 -> box fill
+                jr      glo_done
+glo_seg:
+                call    gfx_draw_seg
+                jr      glo_done
+glo_box:
+                call    gfx_box_outline
+glo_done:
+                di                          ; leave the EI region before returning via CALSLT
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_draw_seg -- rasterise+plot the segment currently in GFX_X1/Y1/GFX_X2/Y2.
+; Plots dmaj+1 pixels (start + one per major step). Assumes interrupts are already
+; EI (caller = gfx_line_op / the box helpers); each pixel's VDP RMW is di-guarded
+; inside gfx_plot_cur. Clobbers everything.
+; ---------------------------------------------------------------------------
+gfx_draw_seg:
+                call    gfx_bres_init       ; state <- endpoints; CX/CY = start; CNT = dmaj
+gds_loop:
+                call    gfx_plot_cur        ; plot (CX,CY) if on-screen (di-guarded RMW)
+                ld      hl,(GFX_CNT)
+                ld      a,h
+                or      l
+                ret     z                   ; no steps left -> the last pixel is drawn
+                dec     hl
+                ld      (GFX_CNT),hl
+                call    gfx_bres_next        ; advance one major step
+                jr      gds_loop
+
+; ---------------------------------------------------------------------------
+; gfx_plot_cur -- plot the pixel at (GFX_CX,GFX_CY) IF it is on-screen (the clip,
+; spec §4.2), read-modify-write with the colour clash. GFX_C = colour. Interrupts
+; are EI on entry; we di ONLY around the VDP access (arc §2). Off-screen -> no-op.
+; ---------------------------------------------------------------------------
+gfx_plot_cur:
+                ld      hl,(GFX_CX)
+                ld      a,h
+                or      a
+                ret     nz                  ; x high byte != 0 -> x<0 or x>255 -> clip (skip)
+                ld      hl,(GFX_CY)
+                ld      a,h
+                or      a
+                ret     nz                  ; y high byte != 0 -> clip
+                ld      a,l
+                cp      192
+                ret     nc                  ; y >= 192 -> clip
+                ; --- on-screen: brief di around the read-modify-write ---
+                di
+                ld      a,(GFX_CY)
+                ld      d,a                 ; D = y (0..191)
+                ld      a,(GFX_CX)
+                ld      e,a                 ; E = x (0..255)
+                call    gfx_rmw_at
+                ei
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_rmw_at -- plot one pixel with the colour-clash RMW. in: D=y, E=x (both in
+; range, caller-checked), GFX_C = colour 0..15. Caller HOLDS DI. Uses gfx_rd_raw
+; (VDP fetch-window settle) for reads and gfx_wr_raw for writes -- so the di bracket
+; is the caller's alone (no premature ei). Updates CLOC/CMASK. Clobbers A/BC/HL.
+; This is G2 gfx_plot's body with raw writes; G2's gfx_plot is left untouched.
+; ---------------------------------------------------------------------------
+gfx_rmw_at:
+                call    gfx_calc_addr       ; HL = pattern addr, C = mask (B clobbered)
+                ld      (CLOC),hl
+                ld      a,c
+                ld      (CMASK),a
+                call    gfx_rd_raw          ; A = pattern byte (HL preserved)
+                ld      e,a                 ; E = pattern byte
+                ld      a,h                 ; colour addr = pattern addr + $2000
+                add     a,$20               ; pattern high <= $17 -> no carry out
+                ld      h,a
+                call    gfx_rd_raw          ; A = colour byte (HL = colour addr)
+                ld      b,a
+                ld      a,(GFX_C)
+                call    gfx_color_rmw       ; CF=1 set (A=new colour) / CF=0 clear
+                jr      nc,gra_clear
+                ld      c,a                 ; new colour byte
+                call    gfx_wr_raw          ; colour[HL] = C
+                ld      a,h
+                sub     $20                 ; back to pattern addr
+                ld      h,a
+                ld      a,(CMASK)
+                or      e                   ; pattern |= mask
+                ld      c,a
+                jp      gfx_wr_raw          ; pattern[HL] = C ; ret
+gra_clear:
+                ld      a,h
+                sub     $20
+                ld      h,a
+                ld      a,(CMASK)
+                cpl                         ; ~mask
+                and     e                   ; pattern &= ~mask
+                ld      c,a
+                jp      gfx_wr_raw
+
+; ---------------------------------------------------------------------------
+; gfx_bres_init -- set up Bresenham state from GFX_X1/Y1/GFX_X2/Y2 (spec §4.1).
+; Sorts so the MAJOR axis ascends (direction independence). Sets GFX_CX/CY = the
+; start (min-major) point, GFX_DMAJ/DMIN, GFX_ERR = DMAJ>>1, GFX_CNT = DMAJ,
+; GFX_STEEP (0 = x-major, 1 = y-major), GFX_SMIN (minor step $0001/$FFFF).
+; Pure (RAM only, no ports) -> host-unit-testable. Clobbers A/BC/DE/HL.
+; ---------------------------------------------------------------------------
+gfx_bres_init:
+                ld      hl,(GFX_X2)
+                ld      de,(GFX_X1)
+                or      a
+                sbc     hl,de               ; HL = x2 - x1 (signed)
+                call    gfx_abs16           ; HL = |dx|, A = sign(dx) ($01/$FF)
+                ld      (GFX_DMAJ),hl       ; provisional adx
+                ld      (GFX_SDX),a
+                ld      hl,(GFX_Y2)
+                ld      de,(GFX_Y1)
+                or      a
+                sbc     hl,de               ; HL = y2 - y1
+                call    gfx_abs16           ; HL = |dy|, A = sign(dy)
+                ld      (GFX_DMIN),hl       ; provisional ady
+                ld      (GFX_SDY),a
+                ; --- steep = ady > adx ? ---
+                ld      hl,(GFX_DMIN)       ; ady
+                ld      de,(GFX_DMAJ)       ; adx
+                or      a
+                sbc     hl,de               ; ady - adx
+                jr      c,gbi_shallow       ; ady < adx -> x-major
+                ld      a,h
+                or      l
+                jr      z,gbi_shallow       ; ady == adx -> x-major (45 deg, measured)
+                ; --- steep (y-major): DMAJ=ady, DMIN=adx (swap) ---
+                ld      a,1
+                ld      (GFX_STEEP),a
+                ld      hl,(GFX_DMAJ)
+                ld      bc,(GFX_DMIN)
+                ld      (GFX_DMIN),hl       ; DMIN = adx
+                ld      (GFX_DMAJ),bc       ; DMAJ = ady
+                ld      a,(GFX_SDY)
+                cp      $01
+                jr      nz,gbi_st_p2        ; dy < 0 -> start p2, SMIN = -sign(dx)
+                call    gbi_start_p1
+                ld      a,(GFX_SDX)
+                call    gbi_smin
+                jr      gbi_fin
+gbi_st_p2:
+                call    gbi_start_p2
+                ld      a,(GFX_SDX)
+                xor     $FE                 ; flip sign byte: $01<->$FF
+                call    gbi_smin
+                jr      gbi_fin
+gbi_shallow:
+                xor     a
+                ld      (GFX_STEEP),a       ; x-major; DMAJ=adx, DMIN=ady already
+                ld      a,(GFX_SDX)
+                cp      $01
+                jr      nz,gbi_sh_p2        ; dx < 0 -> start p2, SMIN = -sign(dy)
+                call    gbi_start_p1
+                ld      a,(GFX_SDY)
+                call    gbi_smin
+                jr      gbi_fin
+gbi_sh_p2:
+                call    gbi_start_p2
+                ld      a,(GFX_SDY)
+                xor     $FE
+                call    gbi_smin
+gbi_fin:
+                ld      hl,(GFX_DMAJ)
+                ld      (GFX_CNT),hl        ; CNT = dmaj (major steps after the start)
+                srl     h
+                rr      l                   ; HL = dmaj >> 1
+                ld      (GFX_ERR),hl
+                ret
+
+; start-point setters + minor-sign helper (used by gfx_bres_init)
+gbi_start_p1:
+                ld      hl,(GFX_X1)
+                ld      (GFX_CX),hl
+                ld      hl,(GFX_Y1)
+                ld      (GFX_CY),hl
+                ret
+gbi_start_p2:
+                ld      hl,(GFX_X2)
+                ld      (GFX_CX),hl
+                ld      hl,(GFX_Y2)
+                ld      (GFX_CY),hl
+                ret
+; gbi_smin -- A = $01 (>=0) or $FF (<0) -> GFX_SMIN = $0001 / $FFFF.
+gbi_smin:
+                cp      $01
+                jr      z,gbi_smin_pos
+                ld      hl,$FFFF
+                ld      (GFX_SMIN),hl
+                ret
+gbi_smin_pos:
+                ld      hl,$0001
+                ld      (GFX_SMIN),hl
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_bres_next -- advance the Bresenham state one MAJOR step (spec §4.1). Major
+; coordinate += 1 (sorted ascending); err += dmin; if err >= dmaj: minor += SMIN,
+; err -= dmaj. err stays in [0,dmaj) via a carry-aware compare/subtract, so it is
+; correct for full 16-bit deltas (the transient err+dmin can be 17-bit). Pure (RAM
+; only) -> host-testable. Clobbers A/BC/DE/HL.
+; ---------------------------------------------------------------------------
+gfx_bres_next:
+                ; --- major step: STEEP ? CY++ : CX++ ---
+                ld      a,(GFX_STEEP)
+                or      a
+                jr      nz,gbn_major_y
+                ld      hl,(GFX_CX)
+                inc     hl
+                ld      (GFX_CX),hl
+                jr      gbn_err
+gbn_major_y:
+                ld      hl,(GFX_CY)
+                inc     hl
+                ld      (GFX_CY),hl
+gbn_err:
+                ; --- err += dmin ; carry (bit 16) means definitely >= dmaj ---
+                ld      hl,(GFX_ERR)
+                ld      de,(GFX_DMIN)
+                add     hl,de               ; HL = err+dmin ; CF = 17th bit
+                ld      de,(GFX_DMAJ)
+                jr      c,gbn_step          ; overflow past 65535 -> >= dmaj -> step
+                or      a
+                sbc     hl,de               ; HL = (err+dmin) - dmaj ; CF=1 iff < dmaj (borrow)
+                jr      nc,gbn_step_stored  ; no borrow -> HL is the new err in [0,dmaj); step
+                add     hl,de               ; borrow: restore err+dmin, NO minor step
+                ld      (GFX_ERR),hl
+                ret
+gbn_step:
+                or      a
+                sbc     hl,de               ; HL = (65536+HL) - dmaj = new err (borrow expected)
+gbn_step_stored:
+                ld      (GFX_ERR),hl
+                ; --- minor step: STEEP ? CX += SMIN : CY += SMIN ---
+                ld      de,(GFX_SMIN)
+                ld      a,(GFX_STEEP)
+                or      a
+                jr      nz,gbn_minor_x
+                ld      hl,(GFX_CY)
+                add     hl,de
+                ld      (GFX_CY),hl
+                ret
+gbn_minor_x:
+                ld      hl,(GFX_CX)
+                add     hl,de
+                ld      (GFX_CX),hl
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_abs16 -- HL = |HL| (signed 16-bit). Returns A = $01 if original HL >= 0,
+; else $FF. Clobbers A/flags; DE preserved. Pure leaf (host-testable).
+; ---------------------------------------------------------------------------
+gfx_abs16:
+                bit     7,h
+                jr      z,gab_pos
+                xor     a
+                sub     l
+                ld      l,a
+                sbc     a,a                 ; A = 0 - borrow = $FF if borrow else $00
+                sub     h                   ; A = (0 or -1) - h ...
+                ld      h,a                 ; HL = 0 - HL (two's complement negate)
+                ld      a,$FF
+                ret
+gab_pos:
+                ld      a,$01
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_box_outline -- ,B: the four inclusive edges of the rectangle whose corners
+; are GFX_X1/Y1 and GFX_X2/Y2 (spec §5). Each edge is a segment through gfx_draw_seg
+; (axis-aligned => dmin=0). Corners are stashed first because gfx_draw_seg consumes
+; GFX_X1..Y2 for each edge. Interrupts already EI (caller). Clobbers everything.
+; ---------------------------------------------------------------------------
+gfx_box_outline:
+                call    gfx_box_stash       ; TX1/TY1/TX2/TY2 = the two corners
+                ; top edge: (TX1,TY1)-(TX2,TY1)
+                ld      hl,(GFX_TX1)
+                ld      (GFX_X1),hl
+                ld      hl,(GFX_TY1)
+                ld      (GFX_Y1),hl
+                ld      hl,(GFX_TX2)
+                ld      (GFX_X2),hl
+                ld      hl,(GFX_TY1)
+                ld      (GFX_Y2),hl
+                call    gfx_draw_seg
+                ; bottom edge: (TX1,TY2)-(TX2,TY2)
+                ld      hl,(GFX_TX1)
+                ld      (GFX_X1),hl
+                ld      hl,(GFX_TY2)
+                ld      (GFX_Y1),hl
+                ld      hl,(GFX_TX2)
+                ld      (GFX_X2),hl
+                ld      hl,(GFX_TY2)
+                ld      (GFX_Y2),hl
+                call    gfx_draw_seg
+                ; left edge: (TX1,TY1)-(TX1,TY2)
+                ld      hl,(GFX_TX1)
+                ld      (GFX_X1),hl
+                ld      (GFX_X2),hl
+                ld      hl,(GFX_TY1)
+                ld      (GFX_Y1),hl
+                ld      hl,(GFX_TY2)
+                ld      (GFX_Y2),hl
+                call    gfx_draw_seg
+                ; right edge: (TX2,TY1)-(TX2,TY2)
+                ld      hl,(GFX_TX2)
+                ld      (GFX_X1),hl
+                ld      (GFX_X2),hl
+                ld      hl,(GFX_TY1)
+                ld      (GFX_Y1),hl
+                ld      hl,(GFX_TY2)
+                ld      (GFX_Y2),hl
+                jp      gfx_draw_seg
+
+; ---------------------------------------------------------------------------
+; gfx_box_fill -- ,BF: solid rectangle GFX_X1/Y1..GFX_X2/Y2 as horizontal scanline
+; segments (spec §5). Iterates y from TY1 toward TY2 by +-1 (draw order is
+; irrelevant for a solid fill), one gfx_draw_seg per row. Clobbers everything.
+; ---------------------------------------------------------------------------
+gfx_box_fill:
+                call    gfx_box_stash
+                ; X extent is constant across rows: X1=TX1, X2=TX2
+                ld      hl,(GFX_TX1)
+                ld      (GFX_X1),hl
+                ld      hl,(GFX_TX2)
+                ld      (GFX_X2),hl
+                ; row step = sign(TY2-TY1) ; count = |TY2-TY1| + 1
+                ld      hl,(GFX_TY2)
+                ld      de,(GFX_TY1)
+                or      a
+                sbc     hl,de
+                call    gfx_abs16           ; HL = |dy|, A = sign
+                inc     hl
+                ld      (GFX_FILLCNT),hl    ; scanline count
+                cp      $01
+                jr      z,gbf_ystep_pos
+                ld      hl,$FFFF
+                jr      gbf_ystep_set
+gbf_ystep_pos:
+                ld      hl,$0001
+gbf_ystep_set:
+                ld      (GFX_YSTEP),hl
+                ld      hl,(GFX_TY1)
+                ld      (GFX_Y1),hl         ; first row = TY1
+gbf_loop:
+                ld      hl,(GFX_Y1)
+                ld      (GFX_Y2),hl         ; horizontal segment: Y2 = Y1
+                call    gfx_draw_seg
+                ld      hl,(GFX_FILLCNT)
+                dec     hl
+                ld      (GFX_FILLCNT),hl
+                ld      a,h
+                or      l
+                ret     z
+                ld      hl,(GFX_Y1)
+                ld      de,(GFX_YSTEP)
+                add     hl,de
+                ld      (GFX_Y1),hl
+                jr      gbf_loop
+
+; gfx_box_stash -- copy the two corners GFX_X1/Y1/X2/Y2 into GFX_TX1/TY1/TX2/TY2.
+gfx_box_stash:
+                ld      hl,(GFX_X1)
+                ld      (GFX_TX1),hl
+                ld      hl,(GFX_Y1)
+                ld      (GFX_TY1),hl
+                ld      hl,(GFX_X2)
+                ld      (GFX_TX2),hl
+                ld      hl,(GFX_Y2)
+                ld      (GFX_TY2),hl
                 ret

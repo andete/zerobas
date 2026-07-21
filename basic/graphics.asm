@@ -115,6 +115,131 @@ pt_return:
                 pop     ix                  ; restore IX = cursor for the expr evaluator
                 ret
 
+; --- ex_line_gfx: graphics LINE (+ ,B / ,BF box) --- G3 -----------------------
+; Entry (from ex_line, files.asm): HL at the first non-space char after the LINE
+; token — one of '(' / STEP / '-' . docs/spec-basic-graphics-g3.md.
+;   LINE [[STEP](x1,y1)] - [STEP](x2,y2) [, [c] [, B|BF]]
+; The first coordinate is optional ('-' -> continue from the last point GRPAC); the
+; '-' and second coordinate are mandatory. STEP CHAINS (§3.3, measured): the 2nd
+; coordinate's STEP is relative to the FIRST resolved endpoint, so we stage
+; GRPACX/GRPACY = p1 before parsing p2 (parse_coord resolves STEP against GRPAC),
+; then set GRPAC = p2 at the end. Off-screen endpoints are legal (the tenant clips
+; per pixel, §3.4); only |coord| > int16 (in parse_coord) or SCREEN 0/1 raises.
+ex_line_gfx:
+                ld      a,(SCRMOD)
+                cp      2                   ; SCREEN 2 only (arc D4)
+                jp      nz,gfx_err5         ; SCREEN 0/1 -> Illegal function call
+                ld      a,(FORCLR)
+                and     $0F
+                ld      (GFX_C),a           ; default colour = foreground (overridden by ,c)
+                ld      a,(hl)
+                cp      MINUS_TOKEN         ; '-' -> continuation (p1 = last point)
+                jr      z,elg_from_grpac
+                ; --- explicit first endpoint ---
+                call    parse_coord         ; BC = x1, DE = y1 (STEP rel current GRPAC)
+                ld      (GFX_X1),bc
+                ld      (GFX_Y1),de
+                ld      (GRPACX),bc         ; stage running ref = p1 (STEP chain, §3.3)
+                ld      (GRPACY),de
+                call    skip_spaces
+                ld      a,(hl)
+                cp      MINUS_TOKEN         ; '-' between the two coordinates is mandatory
+                jp      nz,elg_syntax
+                inc     hl                  ; consume '-'
+                jr      elg_second
+elg_from_grpac:
+                inc     hl                  ; consume '-'
+                ld      bc,(GRPACX)         ; p1 = last-referenced point
+                ld      (GFX_X1),bc
+                ld      bc,(GRPACY)
+                ld      (GFX_Y1),bc         ; GRPAC already = p1 -> p2's STEP resolves vs it
+elg_second:
+                call    parse_coord         ; BC = x2, DE = y2 (STEP rel GRPAC = p1)
+                ld      (GFX_X2),bc
+                ld      (GFX_Y2),de
+                ; --- optional ",[c][,B|BF]" ---
+                xor     a
+                ld      (GFX_MODE),a        ; default: segment
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jp      nz,elg_draw         ; no options
+                inc     hl                  ; consume the 1st comma
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','                 ; ",," -> colour omitted, straight to box field
+                jr      z,elg_box_comma
+                call    is_box_kw           ; single-comma box (",B"/",BF") ?
+                jr      z,elg_box_read
+                ; --- colour expression ---
+                call    eval                ; DE = colour (silent int16)
+                call    get_int16_checked   ; ERR 6 if > int16
+                ld      a,e
+                and     $0F
+                ld      (GFX_C),a
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jp      nz,elg_draw         ; ",c" only
+elg_box_comma:
+                inc     hl                  ; consume the box-introducing comma
+                call    skip_spaces
+elg_box_read:
+                ld      a,(hl)
+                cp      'B'                 ; box keyword
+                jp      nz,elg_syntax
+                inc     hl
+                ld      c,1                 ; ,B -> outline
+                ld      a,(hl)
+                cp      'F'
+                jr      nz,elg_box_set
+                inc     hl
+                ld      c,2                 ; ,BF -> fill
+elg_box_set:
+                ld      a,c
+                ld      (GFX_MODE),a
+elg_draw:
+                ; --- work area: GXPOS/GYPOS + GRPACX/GRPACY = p2 (endpoint, §11.5) ---
+                ld      bc,(GFX_X2)
+                ld      (GXPOS),bc
+                ld      (GRPACX),bc
+                ld      bc,(GFX_Y2)
+                ld      (GYPOS),bc
+                ld      (GRPACY),bc
+                ld      a,3                 ; GFX_OP = 3 -> tenant LINE/box
+                ld      (GFX_OP),a
+                push    hl                  ; guard the token cursor -- CALSLT clobbers HL
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
+                call    subrom_call         ; CF=1 iff the sub-ROM is absent
+                pop     hl
+                jp      c,gfx_absent        ; defensive: merged ROM always ships the tenant
+                jp      exec_stmt           ; chain the next ':'-separated statement
+elg_syntax:
+                ld      a,2                 ; Syntax error (bad LINE form)
+                jp      raise_error
+
+; --- is_box_kw: is HL at a "B"/"BF" box suffix? (does NOT advance HL) ----------
+; ZF=1 iff HL points at 'B' or 'BF' terminating the statement (next char after it is
+; the line/statement terminator 0 or ':'), i.e. a genuine box flag rather than a
+; colour expression that merely starts with the variable B (e.g. "B*2"). Clobbers A.
+is_box_kw:
+                ld      a,(hl)
+                cp      'B'
+                ret     nz                  ; not 'B' -> NZ (not a box suffix)
+                push    hl
+                inc     hl
+                ld      a,(hl)              ; char after 'B'
+                cp      'F'
+                jr      nz,ibk_term
+                inc     hl
+                ld      a,(hl)              ; "BF" -> char after 'F'
+ibk_term:
+                pop     hl                  ; restore HL (non-destructive peek)
+                or      a
+                ret     z                   ; 0 (end of line) -> box (ZF=1)
+                cp      ':'                 ; ':' (next statement) -> box; else NZ
+                ret
+
 ; --- parse_coord: parse "[STEP] (x,y)" at HL -------------------------------
 ; in:  HL = cursor at the coordinate (after the verb/function token).
 ; out: BC = x, DE = y (int16; STEP already added to GRPACX/GRPACY); HL past ')'.

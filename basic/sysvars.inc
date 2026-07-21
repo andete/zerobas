@@ -390,6 +390,38 @@ GFX_OP          equ     $E030   ; main->tenant op: 0=selftest(G1) 1=plot(PSET/PR
 GFX_C           equ     $E031   ; main->tenant: resolved plot colour 0..15 (PSET/PRESET) (1)
 GFX_RES         equ     $E032   ; tenant->main: POINT result colour 0..15 (1)
 GFX_REL         equ     $E033   ; parse_coord: 1 = STEP (relative) coordinate, 0 = absolute (1)
+; Graphics G3 (LINE) marshalling + Bresenham state. G3 needs ~40 B that persist for
+; the WHOLE draw (the tenant loops while EI). The $E034+ gap is NOT usable: CURLINE /
+; the FOR/GOSUB stacks / GOTOTGT live there and must be preserved across the
+; subrom_call (the main interpreter is frozen mid-`LINE`, not dead). TOKBUF ($E160) is
+; the EXECUTING token stream in direct mode (`SCREEN2:LINE...` typed live) -> unsafe.
+; Home = the LINEBUF region ($E100..$E15F, docs/spec-basic-graphics-g3.md §6): the raw
+; keyboard-input line is consumed by the crunch (execution runs from TOKBUF / the
+; program text, never re-reads LINEBUF), so it is dead during ANY graphics statement,
+; is not the token stream, holds no preserved interpreter state, and is below the PLAY
+; ISR region ($F959+) so a live PLAY drain can't race it (arc D1). Dead outside a
+; GFX_OP=3 call. GFX_OP/GFX_C stay at $E030 (G1/G2 dispatch + colour, unchanged).
+GFX_X1          equ     $E100   ; LINE endpoint 1 X (int16 LE) -- resident marshals, tenant reads
+GFX_Y1          equ     $E102   ; LINE endpoint 1 Y (int16 LE)
+GFX_X2          equ     $E104   ; LINE endpoint 2 X (int16 LE)
+GFX_Y2          equ     $E106   ; LINE endpoint 2 Y (int16 LE)
+GFX_MODE        equ     $E108   ; GFX_OP=3 sub-mode: 0=segment 1=box outline 2=box fill (1)
+GFX_CX          equ     $E109   ; Bresenham: current pixel X (int16, may be off-screen) (2)
+GFX_CY          equ     $E10B   ; Bresenham: current pixel Y (int16) (2)
+GFX_ERR         equ     $E10D   ; Bresenham: error accumulator, in [0,DMAJ) (2)
+GFX_DMAJ        equ     $E10F   ; Bresenham: major-axis delta (2)
+GFX_DMIN        equ     $E111   ; Bresenham: minor-axis delta (2)
+GFX_CNT         equ     $E113   ; Bresenham: major steps still to take (2)
+GFX_STEEP       equ     $E115   ; Bresenham: 0 = x-major, 1 = y-major (1)
+GFX_SMIN        equ     $E116   ; Bresenham: minor-axis step, $0001 (+1) or $FFFF (-1) (2)
+GFX_SDX         equ     $E118   ; init scratch: sign of (x2-x1), $01/$FF (1)
+GFX_SDY         equ     $E119   ; init scratch: sign of (y2-y1), $01/$FF (1)
+GFX_TX1         equ     $E11A   ; box: stashed corner 1 X (2)
+GFX_TY1         equ     $E11C   ; box: stashed corner 1 Y (2)
+GFX_TX2         equ     $E11E   ; box: stashed corner 2 X (2)
+GFX_TY2         equ     $E120   ; box: stashed corner 2 Y (2)
+GFX_FILLCNT     equ     $E122   ; box fill: scanlines remaining (2)
+GFX_YSTEP       equ     $E124   ; box fill: row step, $0001/$FFFF (2)   -> ends $E126
 CURPTR          equ     $E020   ; current load pointer (2 bytes)
 ENDPTR          equ     $E022   ; final load address  (2 bytes)
 EXECPTR         equ     $E024   ; execution address   (2 bytes)
