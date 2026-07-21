@@ -405,6 +405,17 @@ graphics-floor-acceptance: repack-machine
 graphics-floor-teeth:
 	ZB_GFX_UNGUARDED=1 python3 probes/basic/basic_probe_graphics_floor.py --expect-fail
 
+# --- Graphics G2 acceptance (PSET/PRESET/POINT VG-8020 differential) ----------
+# The load-bearing gate for the pixel op (docs/spec-basic-graphics-g2.md §8): draws
+# PSET/PRESET on BOTH the VG-8020 reference and the merged zerobas build, reads the
+# pattern AND colour planes back, and asserts byte-identical results -- the colour
+# plane is where the 8-pixel colour clash lives (a pattern-only check would pass a
+# wrong-attribute plot). Phase B differentials the clip/error/POINT/STEP behaviour.
+# Repack-only + oracle-dependent (boots openMSX; needs your VG-8020 reference ROM);
+# NOT part of the emulator-free `unit-test`.
+graphics-acceptance: repack-machine
+	python3 probes/basic/basic_probe_graphics.py
+
 # --- Standing string-engine acceptance gate (string-engine arc S5; compare S3) -----
 # The three-part proof of the Phase-3 string engine on the merged repack build. CRUNCH:
 # the 8 string keywords (LEN/LEFT$/RIGHT$/MID$/CHR$/ASC/STR$/VAL) tokenise byte-for-byte
@@ -600,4 +611,4 @@ clean:
         repack-machine diskbasic-acceptance-repack string-acceptance \
         input-acceptance error-acceptance error-trap-acceptance intarg-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
-        graphics-floor-acceptance graphics-floor-teeth clean
+        graphics-floor-acceptance graphics-floor-teeth graphics-acceptance clean

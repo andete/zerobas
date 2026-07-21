@@ -45,9 +45,10 @@ GFX_ST_END      equ     $4000       ; one past the last cell (8 KB pass)
 ;   GFX_OP = 0  -> graphics_selftest  (G1 floor gate; the floor probe sets it)
 ;          = 1  -> gfx_plot           (PSET/PRESET: one colour-clash RMW pixel)
 ;          = 2  -> gfx_point          (POINT: read one pixel's colour)
-; The short pixel ops (1/2) run entirely under the entry DI -- they never spin long
-; enough for the EI-during-draw question to bite (arc §2); the VRAM accesses inside
-; are each di-guarded anyway (gfx_vram_wr/rd). Only the long self-test EI's.
+; The short pixel ops (1/2) never spin long enough for the EI-during-draw question
+; to bite (arc §2), so they use the lean gfx_rd_raw/gfx_wr_raw (no per-access di/ei;
+; the VDP fetch-window NOPs in gfx_rd_raw are the real correctness detail). Only the
+; long self-test EI's and uses the di-guarded gfx_vram_wr/rd.
 ; ===========================================================================
 graphics_tenant:
                 ld      a,(GFX_OP)
@@ -206,13 +207,59 @@ gca_mask_set:
                 ret
 
 ; ===========================================================================
+; gfx_wr_raw / gfx_rd_raw — one VRAM byte via direct ports for the SHORT G2 pixel
+; ops. in gfx_wr_raw: HL=addr, C=data. gfx_rd_raw: HL=addr -> A=data. Clobbers A.
+;
+; NO per-access di/ei. The G1 self-test's gfx_vram_wr/rd guard EACH access because
+; they run EI (to prove interrupts stay live); a SHORT PSET/POINT never needs that.
+; PROVEN empirically (basic_probe_graphics.py differential): the ISR is NOT the
+; hazard here -- a whole-op di made no difference. The real one is the VDP FETCH
+; WINDOW below.
+;
+; THE VDP FETCH WINDOW (gfx_rd_raw). On the TMS9918 (and openMSX's cycle-accurate
+; model) a VRAM read is: set the address (two $99 writes, high byte without $40),
+; then read $98 -- but the byte is valid only AFTER the VDP has fetched VRAM[addr]
+; into its read-ahead latch. Read $98 too soon and you get the STALE previous latch.
+; The BIOS RDVRM gets the gap for free (SETRD's ei/ret + the call/ret framing, ~30
+; T-states); our tight in-line read has ZERO gap, so the $98 read races the fetch.
+; The symptom was maddening whack-a-mole: a plot's colour read (the 2nd of two
+; back-to-back reads) intermittently returned the pattern byte, and which cases
+; failed shifted with unrelated timing (a STEP-token parse upstream flipped it).
+; The eight NOPs are that settle window (~32 T-states, matching RDVRM); the G2
+; differential is byte-identical to the VG-8020 with them, and regressed without.
+gfx_wr_raw:
+                ld      a,l
+                out     (VDP_ADDR),a        ; address low
+                ld      a,h
+                or      $40                 ; write-enable bit
+                out     (VDP_ADDR),a        ; address high | $40
+                ld      a,c
+                out     (VDP_DATA),a        ; store (auto-increments)
+                ret
+gfx_rd_raw:
+                ld      a,l
+                out     (VDP_ADDR),a        ; address low
+                ld      a,h
+                out     (VDP_ADDR),a        ; address high (NO $40 -> read mode)
+                nop                         ; VDP fetch window (~32 T; see above) --
+                nop                         ; without it the read races the VDP's
+                nop                         ; read-ahead fetch and returns a stale byte
+                nop
+                nop
+                nop
+                nop
+                nop
+                in      a,(VDP_DATA)        ; fetch (now VRAM[addr] is in the latch)
+                ret
+
+; ===========================================================================
 ; gfx_plot — GFX_OP=1: plot ONE SCREEN-2 pixel with the colour-clash RMW (§3).
 ; The resident stub has already range-checked (0..255 x 0..191) and marshalled
 ; the target into GXPOS/GYPOS (low byte = coord) and the resolved colour into
-; GFX_C. Reads the group's colour byte, applies the pinned clash rule (gfx_color_
-; rmw), then sets/clears the pattern bit accordingly. Publishes CLOC/CMASK (the
-; drawn pixel's computed address + mask -- work-area faithful, §6). Each VRAM byte
-; access is di-guarded (gfx_vram_rd/wr). Returns nothing.
+; GFX_C. Reads the pattern AND colour bytes FIRST (back-to-back, no interleaved
+; write), applies the pinned clash rule (gfx_color_rmw), then writes. Publishes
+; CLOC/CMASK (the drawn pixel's address + mask -- work-area faithful, §6). Runs
+; fully DI (gfx_rd_raw/gfx_wr_raw); returns nothing.
 ; ===========================================================================
 gfx_plot:
                 ld      a,(GXPOS)           ; x (low byte; 0..255 guaranteed in-range)
@@ -222,38 +269,37 @@ gfx_plot:
                 call    gfx_calc_addr       ; HL = pattern addr, C = mask (B clobbered)
                 ld      (CLOC),hl           ; publish the computed pixel address
                 ld      a,c
-                ld      (CMASK),a           ; publish the mask (also our stash for the RMW)
-                push    hl                  ; [pattern addr]
-                ld      de,GFX_COLOR_OFST   ; colour byte = pattern byte + $2000
-                add     hl,de
-                push    hl                  ; [pattern addr][colour addr]
-                call    gfx_vram_rd         ; A = current colour byte (HL preserved)
+                ld      (CMASK),a           ; publish the mask
+                call    gfx_rd_raw          ; A = current pattern byte (HL preserved)
+                ld      e,a                 ; E = pattern byte (D=y no longer needed)
+                ld      a,h                 ; colour addr = pattern addr + $2000
+                add     a,$20               ; pattern high <= $17 -> no carry out
+                ld      h,a
+                call    gfx_rd_raw          ; A = current colour byte (cur); HL = colour addr
                 ld      b,a                 ; B = cur colour byte
                 ld      a,(GFX_C)           ; A = resolved plot colour c (0..15)
-                call    gfx_color_rmw       ; CF=1 -> set bit (A=new colour); CF=0 -> clear
+                call    gfx_color_rmw       ; CF=1 -> set (A=new colour); CF=0 -> clear
                 jr      nc,gp_clear
-                ; --- SET: write the new colour byte, then OR the pattern bit in ---
-                pop     hl                  ; HL = colour addr
+                ; --- SET: write the new colour byte, then set the pattern bit ---
                 ld      c,a                 ; C = new colour byte = (c<<4)|(cur&$0F)
-                call    gfx_vram_wr         ; colour[HL] = C
-                pop     hl                  ; HL = pattern addr
-                call    gfx_vram_rd         ; A = current pattern byte
-                ld      b,a
+                call    gfx_vram_wr         ; colour[HL] = C   (HL = colour addr)
+                ld      a,h                 ; back to the pattern addr
+                sub     $20
+                ld      h,a
                 ld      a,(CMASK)
-                or      b                   ; pattern |= mask
+                or      e                   ; pattern (E) |= mask
                 ld      c,a
-                jp      gfx_vram_wr         ; pattern[HL] = C ; ret via gfx_vram_wr
+                jp      gfx_vram_wr         ; pattern[HL] = C ; ret
 gp_clear:
                 ; --- CLEAR: colour byte untouched, clear the pattern bit (§3 branch 3) ---
-                pop     hl                  ; discard colour addr
-                pop     hl                  ; HL = pattern addr
-                call    gfx_vram_rd         ; A = current pattern byte
-                ld      b,a
+                ld      a,h                 ; HL is the colour addr -> back to pattern addr
+                sub     $20
+                ld      h,a
                 ld      a,(CMASK)
                 cpl                         ; A = ~mask
-                and     b                   ; pattern &= ~mask
+                and     e                   ; pattern (E) &= ~mask
                 ld      c,a
-                jp      gfx_vram_wr         ; pattern[HL] = C ; ret via gfx_vram_wr
+                jp      gfx_vram_wr         ; pattern[HL] = C ; ret
 
 ; ===========================================================================
 ; gfx_point — GFX_OP=2: read one pixel's colour into GFX_RES (POINT). The resident
@@ -268,13 +314,13 @@ gfx_point:
                 ld      a,(GYPOS)
                 ld      d,a
                 call    gfx_calc_addr       ; HL = pattern addr, C = mask
-                call    gfx_vram_rd         ; A = pattern byte (HL/BC/DE preserved -> C=mask)
+                call    gfx_rd_raw          ; A = pattern byte (HL/BC/DE preserved -> C=mask)
                 ld      d,a                 ; D = pattern byte
                 ld      e,c                 ; E = mask
                 ld      a,h                 ; colour addr = pattern addr + $2000
                 add     a,$20               ; pattern high <= $17, so +$20 never carries out
                 ld      h,a
-                call    gfx_vram_rd         ; A = colour byte (D/E preserved)
+                call    gfx_rd_raw          ; A = colour byte (D/E preserved)
                 ld      c,a                 ; C = colour byte
                 ld      a,d                 ; A = pattern byte
                 ld      b,e                 ; B = mask

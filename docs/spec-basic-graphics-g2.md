@@ -1,9 +1,34 @@
 # Spec — graphics Slice G2: `PSET` / `PRESET` / `POINT` (the pixel op + color clash)
 
-**Status: SIGNED OFF; capture pass COMPLETE (2026-07-21) — implementing.** The §9
-decisions are approved and the three open measurements (G2-d/f/g) are RESOLVED on the
-Philips VG-8020 (folded into §4/§5/§6/§9 and arc §11.5/§11.8/§11.9). Slice-design
-addendum to the arc
+**Status: LANDED (2026-07-21).** Signed off, implemented, gated. `PSET`/`PRESET`/
+`POINT` land byte-identical to the VG-8020.
+
+> **Verified (2026-07-21).** `make graphics-acceptance` — the VG-8020 differential —
+> is **PASS**: Phase A (9 pixel cases: single / clash / clear-bg / PRESET-erase /
+> PRESET-c / STEP / mid-screen / default-FORCLR / off-screen-no-op) reads back the
+> **pattern AND colour planes** and matches the reference byte-for-byte; Phase B (5
+> behaviour cases: SCREEN-0 ERR 5, >int16 ERR 6, off-screen no-op, POINT values,
+> POINT STEP) matches too. `make unit-test` (35 graphics leaf cases) PASS; the G1
+> floor gate still PASS; lean `basic.rom` byte-identical.
+>
+> **Load-bearing bug found only by the differential (the arc lesson, [[error-handling-arc]]):**
+> the tenant's direct-port VRAM read raced the VDP's **read-ahead fetch window**. A
+> tight `out $99 / out $99 / in $98` reads the data port before the VDP has fetched
+> `VRAM[addr]` into its read-ahead latch, so the byte is the STALE previous latch —
+> the BIOS `RDVRM` gets the ~30-T gap for free from its `SETRD` ei/ret/call framing,
+> our inline read had zero. Symptom: a plot's colour read intermittently returned the
+> pattern byte, and *which* cases failed shifted with unrelated upstream timing (a
+> STEP-token parse flipped it) — a textbook Heisenbug. Fixed with an 8-NOP settle
+> window in `gfx_rd_raw` (matching RDVRM's gap); the gate regresses without it.
+> Interrupts were NOT the cause (a whole-op `di` changed nothing). Every step was
+> measured empirically ([[graphics-arc]] direct-port fragility). Implementation:
+> [sub/graphics.asm](sub/graphics.asm), [basic/graphics.asm](basic/graphics.asm),
+> [probes/basic/basic_probe_graphics.py](probes/basic/basic_probe_graphics.py),
+> [tests/test_graphics.py](tests/test_graphics.py).
+
+The §9 decisions are approved and the three open measurements (G2-d/f/g) are RESOLVED
+on the Philips VG-8020 (folded into §4/§5/§6/§9 and arc §11.5/§11.8/§11.9).
+Slice-design addendum to the arc
 spec [`spec-basic-graphics.md`](spec-basic-graphics.md) (crux D1/D2/D3/D4 approved;
 §11 characterization complete) and the landed floor [`spec-basic-graphics-g1.md`](
 spec-basic-graphics-g1.md). G1 built and proved the VDP floor (direct-port I/O,

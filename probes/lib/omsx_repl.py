@@ -146,6 +146,22 @@ def _cap_expr(capture) -> str:
     if isinstance(capture, tuple) and capture and capture[0] == "stored_line":
         _, ptr = capture
         return f"[__hex_line {ptr}]"
+    if isinstance(capture, tuple) and capture and capture[0] == "vram":
+        # ("vram", addr, len) -> LEN bytes of VRAM from ADDR (the graphics probes
+        # read the pattern/colour planes back mid-draw). Case must hold the screen
+        # (loop forever) so the capture reads before the prompt corrupts VRAM.
+        _, addr, length = capture
+        return f"[__hex_v {addr} {length}]"
+    if isinstance(capture, tuple) and capture and capture[0] == "mem_abs":
+        # ("mem_abs", [(addr,len),...]) -> absolute CPU-memory segments concatenated
+        # as one hex string (graphics tenant RAM: GFX_*, GXPOS/GYPOS, CLOC/CMASK).
+        _, segs = capture
+        return "".join(f"[__hex_m {a} {l}]" for a, l in segs)
+    if isinstance(capture, tuple) and capture and capture[0] == "vram_segs":
+        # ("vram_segs", [(addr,len),...]) -> the segments concatenated as one hex
+        # string (Tcl concatenates bracketed exprs inside the "case.N=..." string).
+        _, segs = capture
+        return "".join(f"[__hex_v {a} {l}]" for a, l in segs)
     raise ValueError(f"unknown capture spec: {capture!r}")
 
 
@@ -196,6 +212,8 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
         "set throttle off\n"
         f"set __f [open {{{out_path}}} w]\n"
         "proc __hex_v {a l} { binary scan [debug read_block VRAM $a $l] H* h;"
+        " return $h }\n"
+        "proc __hex_m {a l} { binary scan [debug read_block memory $a $l] H* h;"
         " return $h }\n"
         # __hex_mi: dereference a 2-byte LE pointer at $p, dump $l bytes from
         # that base as hex (e.g. TXTTAB $F676 -> the stored program).
