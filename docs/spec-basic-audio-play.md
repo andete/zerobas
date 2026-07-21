@@ -1,0 +1,335 @@
+# Spec — zerobas BASIC audio: `SOUND` + `PLAY` (PSG, MSX1)
+
+**Status: SIGNED OFF (2026-07-21).** All of Q1–Q6 resolved (see below). Ready to
+implement in the Q3 slice order, starting with Slice 1 (`SOUND` + PSG init).
+Greenfield: no
+audio token, handler, PSG access, or queue exists today (surveyed — see §1). This
+spec scopes the whole MSX1 audio surface (`SOUND` direct-write + `PLAY` MML music).
+The heavy MML **parser** lands as a **page-1 sub-ROM tenant**; the small live
+**queue servicer** stays **resident in the main-ROM page-0 window** (reached from
+the interrupt path by a near `JP`, never an inter-slot call).
+
+### Sign-off decisions (2026-07-21)
+
+- **Servicer is resident main-ROM page-0, not a tenant** (supersedes the earlier
+  "servicer as page-1 tenant" draft). The reference drains the queue *internally*
+  in the BIOS `$0038` ISR — it is not an `H.TIMI` extension. Our ISR is C-BIOS's,
+  so `H.TIMI` is our *seam* into it, but the servicer *code* is page-0-resident,
+  so the seam is a near `JP` and there is **no inter-slot call in the ISR path**.
+  This dissolves the §4.3 reentrancy hazard. Premise: the servicer is small
+  (~100–200 B est.) — confirm against the page-0 window budget.
+- **Q2 RAM faithfulness: YES** — place the program-visible work-area variables at
+  their documented reference addresses (§2.4). More probing, better compatibility.
+- **Q3 staging: confirmed** (`SOUND` → parser → live servicer).
+- **Q4 PSG access: direct `OUT`** (slot-independent ports).
+- **Q5 MML subset: confirmed, MSX1/PSG only**, no MSX-MUSIC/FM.
+- **Q6 (`X` substring exec): IN SCOPE as Slice 2b** — land the linear MML grammar
+  in 2a, add nested `X` + its resume-stack in 2b (§5).
+
+**Charter fit:** `PLAY`/`SOUND` are core MSX1 BASIC statements, so they are in
+scope under the faithful-full-MSX1-BASIC charter ([memory: charter]). MSX1 audio
+is **PSG (AY-3-8910) only** — no MSX-MUSIC/FM/PCM (those are MSX2+ / cartridge
+extensions, out of charter).
+
+**One-line goal:** parse MML once in a page-1 tenant, drain the music queue live
+in a page-1 tenant driven by a tiny resident H.TIMI hook, and write the PSG
+directly — so a byte-full main ROM ([memory: basic-rom-space-and-growth]) spends
+only a small resident hook + a few RAM cells on a large feature.
+
+---
+
+## 0. Provenance boundary (read first)
+
+Everything in §2 is **contract-level, clean-provenance** fact: BIOS entry-point
+register contracts, documented work-area addresses, published MML/`SOUND` syntax
+(sources in Appendix A). We do **not** derive the internal queue-drain algorithm
+by decoding the stock ROM's music player ([memory: no-reference-rom-disasm]).
+
+The *behavior* of the live servicer (packet format, per-frame drain order,
+duration accounting, `MUSICF` transition timing) is therefore an **own-design**
+built to the documented contract and **verified empirically** on the openMSX
+harness against a real machine (black-box), not lifted from ROM code. §3 marks
+each such item `[BLACK-BOX]`. This matters because the recurring arc lesson is
+that green builds hide interrupt/init-order bugs — the empirical boot-per-case
+differential is load-bearing here ([memory: error-handling-arc]).
+
+---
+
+## 1. Current state (surveyed 2026-07-21)
+
+- **No audio anywhere:** no `PLAY`/`SOUND` token in [`basic/kwtable.inc`](../basic/kwtable.inc),
+  no handler, no PSG/`WRTPSG`/`GICINI` access, no queue, no audio doc.
+- **The mechanism this rides already exists:**
+  - The EI-capable page-0 `$0038` trampoline — [`basic/subromcall.asm:89`](../basic/subromcall.asm)
+    (relevant only to §4's reentrancy discussion; the audio tenants are page-1).
+  - The append-only sub-ROM tenant ABI — dispatcher [`subrom_call`](../basic/subromcall.asm),
+    index tables [`sub/equates.inc:14`](../sub/equates.inc) + main mirror
+    [`basic/sysvars.inc:1808`](../basic/sysvars.inc). Highest index today = **13**
+    (`IDX_DIRVERB`). Audio takes **14+**.
+  - Page-1 entry base `SUBROM_ENTRY_BASE_P1 = $4010`; page-1 tenants keep page 0
+    (BIOS + real `$0038` ISR) resident — the property that makes an ISR-time
+    CALSLT into them safe without the trampoline.
+
+---
+
+## 2. The real-MSX contract (clean-provenance)
+
+### 2.1 `SOUND reg, value` — direct PSG write
+
+- Syntax: `SOUND register, value`. `register` 0–15, `value` 0–255.
+- **Faithfulness masking (bug-for-bug):** registers **14 and 15 are not
+  writable** via `SOUND` (they are the PSG I/O ports — joystick/cassette), and the
+  **top two bits of register 7** (the I/O-direction bits of the mixer) are **not
+  settable** — they stay as the BIOS configured them. A faithful `SOUND` masks
+  these. (Source: MSX Wiki SOUND / PSG Registers.)
+- No interrupt involvement — `SOUND` is a synchronous single register write.
+
+### 2.2 `PLAY "mml"[,"mml"[,"mml"]]` — MML music, up to 3 PSG voices
+
+- Up to three MML strings, one per PSG tone channel. String-var forms allowed
+  (`PLAY A$,B$,C$`). A missing voice string = that channel unchanged.
+- MML subset for PSG (published, MSX Wiki PLAY / MML refs):
+  - `A`–`G` notes with optional `#`/`+`/`-` accidental and optional length digits;
+    `N n` (note number); `R` rest; `O n` octave (1–8); `>` / `<` octave shift.
+  - `L n` default length (1–64); `.` dotted; `T n` tempo (32–255); `V n` volume
+    (0–15); `S n` envelope shape; `M n` envelope period; `&` tie.
+  - `X var;` substring execution — **decide in Q6** whether in scope for MSX1.
+- **Live/asynchronous semantics (the crux):** each string is parsed by the
+  interpreter into a queue of data packets terminated by an end byte; the *drain*
+  — dequeue packet, decode, set PSG — happens in the **timer-interrupt handler**,
+  so `PLAY` returns immediately and music continues under the program. (Source:
+  MSX2 Technical Handbook Ch.5 / work-area appendix.)
+
+### 2.3 BIOS entry-point contracts (register-level, published)
+
+| Entry | Addr | Contract |
+|---|---|---|
+| `GICINI` | `$0090` | Init PSG + the `PLAY` work area/static data. No in/out. |
+| `WRTPSG` | `$0093` | Write PSG: `A`=reg, `E`=data. |
+| `RDPSG`  | `$0096` | Read PSG: `A`=reg → `A`=data. |
+| `CHGSND` | `$0135` | Key-click on/off (not music). |
+
+PSG I/O ports: address-latch `$A0`, data-write `$A1`, data-read `$A2` — **slot-
+independent**, so a tenant may `OUT` the PSG directly. (Source: MSX BIOS list,
+map.grauw.nl.)
+
+### 2.4 Reference work-area addresses (MSX2 TH work-area appendix)
+
+Documented *reference* layout — zerobas is clean-room and owns its own RAM map,
+so these inform **faithfulness** (programs that `PEEK`/`POKE` them), not a
+mandate. See Q2.
+
+| Addr | Name | Meaning |
+|---|---|---|
+| `FB3FH` | `MUSICF` | interrupt flag: which of the 3 queues are active |
+| `FB40H` | `PLYCNT` | number of `PLAY` statements queued |
+| `FB38H` | `VOICEN` | voice currently being interpreted |
+| `FB3EH` | `QUEUEN` | PLAY internal |
+| `FB41H` | `VCBA` | static data, voice 0 |
+| `F959H` | `QUETAB` | queue table (4 queues: 3 PLAY + 1 RS-232), 6-byte blocks |
+| `FD9AH` | `H.KEYI` | keyboard-interrupt hook (5-byte) |
+| `FD9FH` | `H.TIMI` | **timer-interrupt hook (5-byte)** — our servicer entry point |
+
+**Note on `H.TIMI` (corrected):** on a real MSX the queue-drain is *internal* to
+the BIOS `$0038` ISR — the music player is **not** an `H.TIMI` extension (that
+5-byte hook exists for *external* ROMs, e.g. the disk ROM). In zerobas the ISR
+belongs to C-BIOS, not our ROM, so `H.TIMI` is our **seam into** that ISR — but
+the servicer *code* is resident in our main-ROM page-0 window, so the seam is a
+near `JP servicer`, **not** an inter-slot `CALSLT`. See §3.B.
+
+---
+
+## 3. Architecture — where each piece lives
+
+Audio splits into **one-shot heavy** (a page-1 tenant) and **live light** (a
+small resident routine):
+
+```
+  PLAY "…"  ──► [resident stub] marshal string ptr(s)
+                     │
+                     ▼   (page-1 tenant, one CALSLT, synchronous)
+             IDX_PLAY_PARSE ── parse MML ─► fill voice queues in RAM ─► set MUSICF
+                     │  returns immediately
+   ── BASIC continues ──
+        each VBLANK:  C-BIOS $0038 ISR ─► H.TIMI seam = JP play_service (near)
+                             │  if MUSICF==0: ret            (common idle case)
+                             │  else: save regs ▼ NO interslot call — resident
+                     play_service ── drain queues 1 frame ─► OUT PSG ─► restore; ret
+  SOUND r,v ──► [resident leaf] mask r/v ─► OUT PSG          (no interrupt, no tenant)
+```
+
+**A. `IDX_PLAY_PARSE` (page-1 sub-ROM tenant, index 14) — the only sub-ROM code.**
+The big code chunk. Parses each MML voice string into its RAM packet queue and
+sets `MUSICF`. Pure synchronous leaf like `IDX_FORMAT`/`IDX_FATPRIM` — one
+`CALSLT`, RAM in / RAM out, returns. `[BLACK-BOX]` the packet encoding — with Q2
+RAM-faithfulness we additionally aim to match the reference `QUETAB`-block layout
+so a program that inspects the queue sees compatible bytes (probing scope, §3.1).
+
+**B. `play_service` (RESIDENT, main-ROM page-0 window) — the "play live" part.**
+One frame's work: for each active voice, decrement the running note's duration;
+on expiry pull the next packet and program the PSG (tone period, amplitude/
+envelope, that channel's mixer bit in R7); clear the voice's `MUSICF` bit at
+end-of-queue. Reached from the ISR via the `H.TIMI` seam as a **near `JP`** — it
+is always mapped (page 0 stays resident during page-1 tenant CALSLTs and after
+the page-0 trampoline), so **no inter-slot call ever occurs in the ISR path**.
+Must be **register-transparent** (save/restore everything it touches) and
+**non-reentrant**. `[BLACK-BOX]` the exact per-frame drain order + duration
+accounting — matched to a real machine on the harness. **Sizing is the load-
+bearing assumption:** this must fit the page-0 window as a small routine.
+
+**C. `H.TIMI` seam (RESIDENT, tiny).** Installed at boot next to
+[`sub_int_install`](../basic/subromcall.asm) (from
+[`initext.asm`](../basic/initext.asm)): point `H.TIMI` (`FD9FH`) at `JP
+play_service`. `play_service` itself does the `MUSICF==0 → ret` fast-out, so the
+seam is a bare jump. (If another `H.TIMI` client must chain, preserve the prior
+hook — check whether C-BIOS/disk already own it.)
+
+**D. `SOUND` (resident leaf).** Coerce `reg` (0–15) and `value` (0–255) per the
+D-F2-2 byte-arg idiom ([memory: df2-2-intarg-coercion-arc]), apply the §2.1 mask
+(drop reg 14/15; preserve R7 top 2 bits), `OUT` the PSG. No tenant, no interrupt.
+
+**E. `GICINI`-equivalent init.** On cold start / first `PLAY`: silence the three
+tone channels, zero the queues, clear `MUSICF`. Small resident routine.
+
+### 3.1 RAM faithfulness (Q2 = yes) — probing scope
+
+Place the **program-visible** work-area variables at their documented addresses
+(§2.4): `MUSICF FB3FH`, `PLYCNT FB40H`, `VOICEN FB38H`, `QUEUEN FB3EH`,
+`VCBA FB41H`, and the `QUETAB F959H` queue table. Two depths:
+
+- **Variable-level (required):** `MUSICF` bit semantics + address, `PLYCNT`,
+  `VOICEN`, and the `QUETAB` block structure — so programs that `PEEK MUSICF` to
+  detect "music finished" or drive the queue behave correctly.
+- **Byte-exact packet encoding inside the queue buffers (stretch):** match the
+  reference so a program that dumps the queue sees identical bytes. Needs black-
+  box queue snapshots on the harness; scope it inside Slice 2's characterization,
+  don't block Slice 1/core on it.
+
+This trades more probing for compatibility, per the sign-off decision. It must not
+collide with zerobas's existing [`sysvars.inc`](../basic/sysvars.inc) RAM map —
+**audit `FB35H–FB41H`, `F959H+`, `FD9FH` for conflicts before Slice 1** and record
+the reconciliation.
+
+### 3.2 Resident footprint (the budget to hold the line on)
+
+Resident main-ROM cost: `PLAY`/`SOUND` tokens + dispatch stubs; **`play_service`
++ the `H.TIMI` seam** (the new resident item vs the v1 plan); the `SOUND` leaf;
+the init routine; the RAM work-area cells. Only the MML **grammar** is sub-ROM.
+**Target: keep net main-ROM growth (page-0 window + page-1) under a stated byte
+budget (fill in at sign-off). If `play_service` overruns the page-0 window, fall
+back to the page-1-tenant servicer of the v1 draft (re-accepting §4.3) — but the
+resident form is strongly preferred.** `SOUND`-only Slice 1 lands regardless.
+
+---
+
+## 4. The hard parts (where this goes wrong if unspecified)
+
+1. **Interrupt transparency.** The servicer runs inside the ISR; it must preserve
+   every register and not disturb `JIFFY`/keyboard servicing (H.TIMI is called
+   *after* the BIOS did its own work — confirm ordering `[BLACK-BOX]`).
+2. **Non-reentrancy.** A slow frame must not re-enter the servicer. Guard: a
+   "servicer busy" flag or rely on H.TIMI being non-reentrant by ISR DI. Specify.
+3. **Reentrancy vs an in-progress page-1 tenant CALSLT — DISSOLVED by §3.B.**
+   The earlier hazard was: run `PLAY` then evaluate `SIN(x)` (a page-1 math
+   tenant); the CPU is *inside* a page-1 CALSLT when VBLANK fires. With the
+   servicer as a page-1 *tenant* that would mean a nested same-slot CALSLT with
+   shared-scratch corruption risk. Making `play_service` **resident page-0** code
+   removes it: page 0 is mapped throughout a page-1 tenant call, so the ISR reaches
+   the servicer by a plain near call — no nested CALSLT, no shared marshalling
+   scratch. Residual (small): the servicer reads queues the parser wrote, so the
+   parser must set `MUSICF` **last/atomically**, after the queues are committed,
+   so a VBLANK mid-parse never drains a half-built queue. Still verify on the
+   empirical differential — this is the class of bug it exists to catch.
+4. **PSG mixer discipline.** Voices share PSG register 7 (mixer) and the volume
+   registers; the servicer and `SOUND` must read-modify-write R7 per channel and
+   never clobber the R7 I/O-direction bits or R14/15. Same masking contract as
+   §2.1.
+
+---
+
+## 5. Decisions (resolved 2026-07-21) + the one open item
+
+- **Q1 — Servicer placement: RESOLVED → resident main-ROM page-0** (`play_service`,
+  §3.B). Not a tenant. Fallback to a page-1 tenant only if it overruns the window.
+- **Q2 — RAM faithfulness: RESOLVED → yes** (§3.1). Documented addresses for the
+  program-visible variables; byte-exact queue encoding a Slice-2 stretch. Accepts
+  extra probing for compatibility.
+- **Q3 — Risk staging: RESOLVED → confirmed.** Slice 1 = `SOUND` + PSG init +
+  mixer masking (synchronous). Slice 2 = `IDX_PLAY_PARSE` (MML→queue, no live
+  drain; validate statically). Slice 3 = `play_service` + `H.TIMI` seam (the
+  interrupt part, gated by the empirical differential).
+- **Q4 — PSG access: RESOLVED → direct `OUT $A0/$A1`** from both the tenant and
+  resident code (slot-independent; no `WRTPSG` CALSLT).
+- **Q5 — MML subset: RESOLVED → §2.2 PSG subset, MSX1 only**; MSX-MUSIC/FM/PCM
+  explicitly out of charter.
+
+### Q6 — `X` (substring execution): what it is, so you can decide
+
+`X` is MML's "execute another string" command — MML's macro/subroutine call.
+Syntax `X<string-var>;` (the `;` terminates the variable name). Mid-parse it
+suspends the current string, fetches the *named BASIC string variable*, parses its
+MML contents, then resumes. Example:
+
+```basic
+10 A$="O4 CDEG"
+20 PLAY "T120 XA$; XA$; O5 C"      ' plays A$ twice, then a high C
+```
+
+It exists to factor out repeated phrases (choruses, riffs) without duplicating
+MML text, and it **nests** (an `X`-invoked string may itself contain `X`).
+
+**Cost:** it's the parser's hardest feature. It forces the MML parser to (a) look
+up a BASIC string variable *by name* from inside the tenant (reach into the
+variable table / VARPTR machinery — [memory: varptr-factyp-bug] territory), and
+(b) maintain a **parse-resume stack** for nesting, with a depth cap and a
+"string too complex"/overflow error to match. Everything else in §2.2 is a linear
+single-pass scan; `X` is the one recursive, variable-coupled piece.
+
+**Faithfulness view:** `X` **is** standard MSX `PLAY` MML, so under the faithful-
+full-MSX1 charter ([memory: charter]) omitting it is a real gap, not a clean cut.
+
+**Recommendation:** keep it **in scope**, but isolate it as **Slice 2b** — land
+the linear grammar (notes/octave/length/tempo/volume/rest/tie/envelope) in Slice
+2a first, add `X` + its resume-stack in 2b. That way the recursion/variable-lookup
+risk is staged behind a working core, consistent with the risk-staging norm.
+**RESOLVED (2026-07-21): in scope as Slice 2b.**
+
+## 6. Gates (Definition of Done per slice)
+
+- New `make audio-acceptance` corpus (openMSX, boot-per-case differential vs
+  Philips VG-8020 [memory: probe-machine-philips]) — the load-bearing empirical
+  pass, not just a green build.
+- Slice 1: `SOUND` writes the exact PSG registers a real machine does for a swept
+  set of `reg,value` (incl. the 14/15 + R7-top-bit masking); host unit-test.
+- Slice 2: parsed queue bytes for representative MML match our own decoder's
+  expectation (host unit-test); `PLAY` returns without hanging; `MUSICF`/`QUETAB`
+  land at the §2.4 addresses (RAM-faithfulness variable-level check). Slice 2b
+  adds nested `X` substring exec with a depth-cap overflow error (if in scope).
+- Slice 3: differential — for a set of MML tunes, the **PSG register write trace
+  over N frames** matches the reference machine within tolerance; `MUSICF` clears
+  at end-of-queue; the `PLAY`-then-`SIN`-loop case (former §4.3 hazard) produces
+  no corruption; a VBLANK landing mid-parse never drains a half-built queue
+  (`MUSICF`-set-last ordering, §4.3 residual).
+- Byte budget respected: report page-0-window bytes for `play_service` + seam and
+  page-1 bytes for the parser tenant; state the funder if `PLAY` needs one. If
+  `play_service` overruns the window, invoke the §3.2 page-1-tenant fallback.
+
+---
+
+## Appendix A — Sources (clean-provenance, contract-level)
+
+- MSX Wiki, **PLAY** — https://www.msx.org/wiki/PLAY (MML syntax, per-voice strings).
+- MSX Wiki, **SOUND** / **PSG Registers** — `SOUND` reg/value ranges + the 14/15
+  and R7-top-bit masking; PSG register semantics.
+- **MSX BIOS calls**, map.grauw.nl/resources/msxbios.php — `GICINI $0090`,
+  `WRTPSG $0093`, `RDPSG $0096`, `CHGSND $0135` register contracts; PSG ports.
+- **MSX2 Technical Handbook**, work-area appendix (konamiman.com/msx/msx2th) —
+  work-area addresses `MUSICF FB3FH`, `PLYCNT FB40H`, `VOICEN FB38H`,
+  `QUETAB F959H`, `H.KEYI FD9AH`, `H.TIMI FD9FH`; the "interpreter fills queues,
+  timer-interrupt drains them" division of labor.
+- MSX Wiki, **System variables and work area** — queue-table description.
+
+> Provenance note: the above are **published contracts + documented addresses**.
+> The internal music-player *algorithm* (packet format, drain order, duration
+> accounting) is **own-design, verified black-box** on our harness — never lifted
+> from stock-ROM code ([memory: no-reference-rom-disasm], [memory: clean-room-audit-checks]).
