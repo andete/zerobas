@@ -799,7 +799,7 @@ stub this supports: `CLEAR …,&Hxxxx : SCREEN n : BLOAD"…",R` or
       wording are own-design — zerobas's run loop is its own design, not the
       reference's CONTXT/OLDLIN sysvars — both quarantined in basic/PROVENANCE.md.)
 
-## Phase 3+ — full MSX1 BASIC (aspirational)
+## Phase 3+ — full MSX1 BASIC (active charter)
 
 **Precondition solved — BASIC ROM space (the C-BIOS repack arc, ✅ 2026-07-10).** The
 page-1 `basic.rom` was byte-full at 16 KB, so any Phase-3 feature would have hit a hard
@@ -813,12 +813,19 @@ repack-boot`) with the firewall proven in
 + the page-1/tape patches are untouched (`ROM_BASE` defaults to `$4000`); the grown image
 is the reloc build. Non-EU variants (br/jp) are a documented later add.
 
-Beyond Phase 2's disk axis — the rest of "real MSX BASIC." Listed for reference
-and to mark the natural boundaries, **not** scheduled work; the disk/file story
-(`OPEN`/`CLOSE`/`PRINT#`/… and Disk BASIC delegation) has been pulled forward into
-**Phase 2** above. These remain explicitly out of scope until then.
+Beyond Phase 2's disk axis — the rest of "real MSX BASIC." **Charter raised
+2026-07-17 from loader-stub to faithful, full MSX1 BASIC** (see the banner in
+[`README.md`](README.md) and [`MISSION.md`](MISSION.md)); this section is the
+**active work-face**, no longer aspirational. Several arcs have **concluded on
+main** — floating point (F1+F2+F3), the string engine, arrays/`DIM`, math pack,
+console `INPUT`, error handling, `SOUND`/`PLAY`/`BEEP`, D-F2-2 int-arg coercion —
+each with a standing acceptance gate. The remaining unchecked items below are the
+open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
+**Phase 2** above.
 
-- [~] **Floating point** — the math-pack arc is UNDERWAY
+- [x] **Floating point** — **ARC CONCLUDED** (F1+F2+F3 all landed on main;
+      `%`/`!`/`#` typed vars + `DEFINT/DEFSNG/DEFDBL/DEFSTR` shipped, commits
+      a1e77d3/2a7c1ce). Standing gate `make float-acceptance`.
       ([`docs/spec-basic-float-core.md`](docs/spec-basic-float-core.md), signed off
       2026-07-11): three slices, F1 literals+PRINT → F2 arithmetic+relationals+
       signed-int migration → F3 typed variables (`%`/`!`/`#`, unsuffixed=double).
@@ -862,8 +869,17 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       statements/functions (e.g. `PEEK(100000.)`) still on the silent eager
       conversion. **Window now FULL** (2 B page-0 + 29 B tail); F3 needs a
       space lever — see the spec's D-G addendum (multi-region image / next
-      repack tranche / heap-first), decision pending.
-- [~] **Full string engine** — **core + comparison landed 2026-07-10** (the first Phase-3
+      repack tranche / heap-first).
+      **F3 DONE (arc CONCLUDED)** — typed numeric variables (variable-width store,
+      `%`/`!`/`#` suffixes, commit a1e77d3) and `DEFINT/DEFSNG/DEFDBL/DEFSTR`
+      per-letter default types (`deftbl_lookup`, commit 2a7c1ce); `LET` of a float
+      now stores at the variable's declared type (the F2 int16-truncate seam
+      resolved). The `^`/math-functions and D-F2-2 int-arg items in the two lines
+      above **also shipped** — see their own checkboxes below. Still genuinely
+      deferred: float `MKS$/MKD$/CVS/CVD`, float-only `PRINT USING` specs. Spec §11
+      (typed vars); provenance `basic/PROVENANCE.md` → "Phase 3: … F3".
+- [x] **Full string engine** — **ARC CONCLUDED** (every string SURFACE form landed;
+      standing gate `make string-acceptance`). **core + comparison landed 2026-07-10** (the first Phase-3
       feature and its follow-on): `+` concat + `LEN ASC VAL CHR$ STR$ LEFT$ RIGHT$ MID$`,
       then the six **relational operators** on strings (`=`/`<>`/`<`/`>`/`<=`/`>=` →
       -1/0, with a statement-level `type mismatch` abort) — all in the repack build
@@ -907,10 +923,12 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       `make input-acceptance` (8 cases, keyboard-driven, reference-lock + zerobas==reference) + host
       `tests/test_input.py` (29 cases); spec [`docs/spec-basic-input.md`](docs/spec-basic-input.md),
       provenance `basic/PROVENANCE.md` → "Phase 3: console INPUT / LINE INPUT". Harness fix in
-      `omsx_run.py` (`type --` so a negative-number response types verbatim). **Still deferred (all
-      architectural now — every string SURFACE form is landed):** floats in VAL/STR$, the real
-      heap+descriptor model, string arrays/`DIM`, STRMAX→255 (a RAM re-architecture, spec §5a);
-      `INPUT$(n)` (no-echo n-key function) + numeric `INPUT#` are the next I/O slices
+      `omsx_run.py` (`type --` so a negative-number response types verbatim). **Deferred items
+      since RESOLVED by the arrays arc** (2026-07-17, see the Arrays + `DIM` entry below): the
+      **real heap + descriptor model** (slice-4a compacting string heap), **string arrays/`DIM`**
+      (slice 3), and **STRMAX→255** (slice-4a) all landed. **Still genuinely deferred:** floats in
+      `VAL`/`STR$`, `INPUT$(n)` (no-echo n-key keyboard function), numeric `INPUT#` (out of MSX1
+      charter) — tracked under the **I/O** item below.
 - [x] **Arrays + `DIM`** (numeric and string, multi-dimensional) — **ARC CONCLUDED 2026-07-17** (all slices 1–4c shipped; faithful unified variable area). **slice 1 DONE
       2026-07-15** (numeric arrays: `DIM`, multi-dim, subscript rvalue/lvalue, auto-
       dim-to-10, base 0, `Subscript out of range`/`Illegal function call`/`Redimensioned
@@ -1023,11 +1041,20 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       VPOKE/HEX$/PRINT/DIM/subscript/TAB/SPC. Blocked by page-1 0 B free (funder =
       golf then format.asm eviction). Key open question Q1 = PEEK/INP FPERR
       propagation through a deferred boundary check.
-- [ ] **`^`** and the math functions
-      `ABS SGN INT SQR SIN COS TAN ATN LOG EXP RND FIX CINT CSNG CDBL`
-- [ ] **I/O** — ✅ console `INPUT` + `LINE INPUT` (DONE 2026-07-11, see the slice log
-      above); `PRINT USING` shipped; still open: `INPUT$(n)` (no-echo function), numeric
-      `INPUT#`, `GET PUT EOF LOF LOC` file I/O; full tape verbs already ship
+- [x] **`^`** and the math functions
+      `ABS SGN INT SQR SIN COS TAN ATN LOG EXP RND FIX CINT CSNG CDBL` — **MATH PACK
+      ARC CONCLUDED.** `^`/`SIN`/`COS`/`TAN`/`ATN`/`LOG`/`EXP`/`RND` shipped as the
+      transcendentals slice (documented-deviation framework, spec §13.1/§14.1/§15;
+      page-1 sub-ROM tenant); `ABS`/`SGN`/`INT`/`SQR`/`FIX`/`CINT`/`CSNG`/`CDBL`
+      shipped with the float pack. Standing gate `make math-acceptance`. Specs
+      [`docs/spec-basic-math-pack.md`](docs/spec-basic-math-pack.md) +
+      [`docs/spec-basic-mathpack-slice2.md`](docs/spec-basic-mathpack-slice2.md).
+- [~] **I/O** — mostly shipped. ✅ console `INPUT` + `LINE INPUT` (DONE 2026-07-11,
+      see the slice log above); ✅ `PRINT USING`; ✅ `GET`/`PUT`/`EOF`/`LOF` file I/O
+      (Phase 2, random-access + sequential); ✅ `INPUT$(n,#f)` channel form; ✅ full
+      tape verbs. **Still open:** `INPUT$(n)` (no-echo n-key *keyboard* function),
+      numeric `INPUT#` (out of MSX1 charter), `LOC(#n)` (deferred — unclear CF-3300
+      semantics, see Phase 2 §File-position).
 - [ ] **Graphics** (TMS9918) — `SCREEN 0–3`, `LINE`, `PSET`/`PRESET`,
       `CIRCLE`, `PAINT`, `DRAW`, sprites (`GET`/`PUT`, `SPRITE$`), `VDP`
 - [x] **Sound** (AY-3-8910) — `SOUND`✅, `PLAY` (MML)✅, `BEEP`✅ — **ARC CONCLUDED
@@ -1045,8 +1072,15 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       blind to (spec §5.2). Lean byte-identical; page-1 landmine (a downstream `jr`
       out of range) fixed with a ROM_BASE-conditional `jp` in `interp.asm`.
 - [ ] **Input devices** — `STICK STRIG PAD PDL`, `KEY(n)`, `STRIG(n) ON/OFF/STOP`
-- [ ] **Error handling** — `ON ERROR GOTO`, `RESUME`, `ERR`/`ERL`, `ERROR n`,
-      numbered error messages
+- [x] **Error handling** — `ON ERROR GOTO`, `RESUME`, `ERR`/`ERL`, `ERROR n`,
+      numbered error messages — **ARC CLOSED 2026-07-19** (S1→S2a→S2b + `ERROR n`
+      domain 1..255 + `ERR`-reset-on-`RESUME`, all landed on main; commits
+      2551d1f→3496ce5). Full `RESUME`/`RESUME NEXT`/`RESUME <line>` family, trap
+      branch, `SAVSTK`/`SAVTXT`. Standing gates `make error-acceptance` +
+      `make error-trap-acceptance`. Specs
+      [`docs/spec-basic-error-handling.md`](docs/spec-basic-error-handling.md) +
+      the S2 packets. Known boundary: `ERROR 32768` → zerobas ERR 5 vs ref ERR 6
+      (the D-F2-2 int-arg seam, documented).
 - [ ] **Interrupt traps** — `ON INTERVAL/KEY/SPRITE/STOP GOSUB`
 - [ ] **Screen-editor REPL** — real MSX BASIC does not use a sequential prompt
       loop; Enter reads the *current cursor line from VRAM* (not a dedicated
