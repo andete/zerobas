@@ -158,6 +158,13 @@ __MEAS_LOW_END:
 ; build. Placed here in page 1 rather than the now-full reclaimed low region.
                 include "basic/sound.asm"
 
+; Audio Slice 2a (docs/spec-basic-audio-play-slice2a.md): the PLAY statement's
+; resident stub (defines `ex_play`) — evaluates up to three MML string arguments
+; and marshals each into its VCB, then hands off to the page-1 MML-parser tenant
+; (sub/playparse.asm) with one subrom_call. Repack-only like `ex_sound` (the tenant
+; it drives is page-1, reachable only in the repack build); lean stays byte-identical.
+                include "basic/play.asm"
+
 ; The LIST statement + the detokeniser (defines `ex_list`, `detok`).
                 include "basic/list.asm"
 

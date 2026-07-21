@@ -1,8 +1,12 @@
 # Spec — zerobas BASIC audio: `SOUND` + `PLAY` (PSG, MSX1)
 
-**Status: SIGNED OFF (2026-07-21). Slice 1 (`SOUND`) LANDED 2026-07-21** — see
-§3.D / §6; the empirical VG-8020 pass corrected §2.1 (reg 14/15 raise ERR 5, they
-are not silently masked). Q3 slice order continues at Slice 2 (`IDX_PLAY_PARSE`).
+**Status: SIGNED OFF (2026-07-21). Slice 1 (`SOUND`) + Slice 2a (`PLAY` parser,
+`IDX_PLAY_PARSE`) LANDED 2026-07-21.** Slice 2a detail + gates live in
+[spec-basic-audio-play-slice2a.md](spec-basic-audio-play-slice2a.md); its VG-8020
+differential corrected §2.2 (`&` tie is NOT MSX1 MML → ERR 5; a voice is a required
+string expression — bare comma → Syntax error). Slice 1: the empirical VG-8020 pass
+corrected §2.1 (reg 14/15 raise ERR 5, not silently masked). NEXT = Slice 3 (the
+live interrupt servicer + `H.TIMI` seam).
 Greenfield at spec time: no
 audio token, handler, PSG access, or queue exists today (surveyed — see §1). This
 spec scopes the whole MSX1 audio surface (`SOUND` direct-write + `PLAY` MML music).
@@ -103,7 +107,10 @@ differential is load-bearing here ([memory: error-handling-arc]).
   - `A`–`G` notes with optional `#`/`+`/`-` accidental and optional length digits;
     `N n` (note number); `R` rest; `O n` octave (1–8); `>` / `<` octave shift.
   - `L n` default length (1–64); `.` dotted; `T n` tempo (32–255); `V n` volume
-    (0–15); `S n` envelope shape; `M n` envelope period; `&` tie.
+    (0–15); `S n` envelope shape; `M n` envelope period.
+  - **`&` tie: NOT MSX1 PLAY MML** — the VG-8020 raises Illegal function call for
+    it (empirically confirmed in Slice 2a; this list originally drew `&` from a
+    broader MML reference). zerobas rejects it (ERR 5) to match.
   - `X var;` substring execution — **decide in Q6** whether in scope for MSX1.
 - **Live/asynchronous semantics (the crux):** each string is parsed by the
   interpreter into a queue of data packets terminated by an end byte; the *drain*

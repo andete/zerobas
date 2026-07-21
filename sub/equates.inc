@@ -99,6 +99,13 @@ SUBROM_IDX_FATPRIM      equ     12
 ; fatprim_write_sector) SUB-LOCALLY, no marshalling. Only the main-ROM heads
 ; compute `IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_DIRVERB`.
 SUBROM_IDX_DIRVERB      equ     13
+; index 14 = play_parse_tenant (sub/playparse.asm): the audio Slice-2a MML parser
+; (docs/spec-basic-audio-play-slice2a.md). A pure RAM leaf -- reads the per-voice
+; MML (ptr,len) from the VCBs + AUDIO_VMASK, parses each string into its VOICxQ
+; ring buffer (own-design PLAY_OP_* packets), sets MUSICF last. Reached sub-side by
+; label (sub_p1_table `jp play_parse_tenant`); only ex_play (basic/play.asm)
+; computes IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PLAY_PARSE.
+SUBROM_IDX_PLAY_PARSE   equ     14
 
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can

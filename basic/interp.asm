@@ -261,6 +261,8 @@ exec_stmt:
                 jp      z,ex_resume
                 cp      SOUND_TOKEN         ; SOUND reg,value  (audio slice 1, sound.asm)
                 jp      z,ex_sound
+                cp      PLAY_TOKEN          ; PLAY "mml"[,..]  (audio slice 2a, play.asm)
+                jp      z,ex_play
     ENDIF
                 call    is_letter           ; bare letter -> assignment
                 jr      c,ex_let

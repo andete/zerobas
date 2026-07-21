@@ -195,6 +195,10 @@ STR_KEYWORDS_1B = [
     # audio-play.md; VG-8020 capture `sound 1,255` -> C4 20 12 2C 0F FF 00). The
     # lean build keeps "SOUND" verbatim ASCII, so this is proven repack-only.
     ('sound 1,255',      0xC4),   # SOUND
+    # Audio slice 2a: PLAY is a single-byte STATEMENT token $C1 (docs/spec-basic-
+    # audio-play-slice2a.md; VG-8020 capture). Lean keeps "PLAY" verbatim ASCII, so
+    # like SOUND this crunch is proven repack-only.
+    ('play"cde"',        0xC1),   # PLAY
 ]
 
 

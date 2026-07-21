@@ -310,5 +310,11 @@ kwtable:
                 ; existing entry ("SCREEN"/"STOP"/"STEP"/"STR$"/"SPACE$" share
                 ; no prefix with "SOUND"; match_kw compares the FULL keyword).
                 db      5,"SOUND",1,SOUND_TOKEN                  ; $C4
+                ; --- audio slice 2a (repack build only) -----------------------
+                ; docs/spec-basic-audio-play-slice2a.md. PLAY: single-byte
+                ; STATEMENT token ($C1, black-box VG-8020 crunch capture; see
+                ; sysvars.inc). No prefix collision (PRINT/POKE/PEEK share only
+                ; "P"; match_kw compares the FULL keyword).
+                db      4,"PLAY",1,PLAY_TOKEN                    ; $C1
     ENDIF
                 db      0

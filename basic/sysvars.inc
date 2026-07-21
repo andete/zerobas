@@ -311,6 +311,7 @@ BASE_TOKEN      equ     $C9     ; BASE(n)     (single-byte function token)
 ; TH Table 2.20 -- NOT asserted from memory (the guessed $C2 was wrong). PLAY is
 ; captured as $C1 for its later slice. Same provenance discipline as DIM/ERASE.
 SOUND_TOKEN     equ     $C4     ; SOUND reg,value (statement)
+PLAY_TOKEN      equ     $C1     ; PLAY "mml"[,..] (statement; audio Slice 2a, play.asm)
 ; ASCII bytes the tokeniser / evaluator treat specially (all public ASCII).
 COLON           equ     $3A     ; ':' statement separator
 QUOTE_REM       equ     $27     ; "'" — apostrophe comment, treated as REM
@@ -1225,6 +1226,71 @@ DISKOP_SEL_FAT_DELETE           equ 14
 ; fatprim's READ_SECTOR/WRITE_SECTOR despite sharing the numeric value.
 DISKOP_SEL_KILL                 equ 0   ; dirverb: KILL's fat_delete loop
 DISKOP_SEL_NAME_STAMP           equ 1   ; dirverb: NAME's read+overwrite+write
+
+; --- Audio: PLAY work area + queue packet format (audio Slice 2a) -----------
+; docs/spec-basic-audio-play-slice2a.md. The program-visible cells are the
+; STANDARD MSX music work area at their MSX2-Technical-Handbook addresses (a
+; published-contract layout, ALSO reserved by our open target C-BIOS -- it inits
+; QUETAB at boot but never drains; its PLAY is a TODO stub). Placing everything
+; here is the placement AND the Q2 faithfulness: a program that PEEKs MUSICF /
+; QUETAB / a VCB sees reference-compatible values. No stock-ROM disassembly, no
+; C-BIOS bytes copied ([memory: no-reference-rom-disasm]). The queue *packet
+; bytes* are own-design (byte-exact match to the reference queue content is the
+; deferred Slice-3 stretch); the drain algorithm is Slice 3.
+QUETAB          equ     $F959   ; 4 x 6-byte ring descriptors (3 voice + 1 RS232)
+VOICAQ          equ     $F975   ; voice-0 packet buffer (128 B)
+VOICBQ          equ     $F9F5   ; voice-1 packet buffer (128 B)
+VOICCQ          equ     $FA75   ; voice-2 packet buffer (128 B)
+VOICEN          equ     $FB38   ; voice currently being parsed (0..2)
+MCLPTR          equ     $FB3C   ; address of the MML string being parsed (source cursor)
+QUEUEN          equ     $FB3E   ; active queue # scratch (0..2)
+MUSICF          equ     $FB3F   ; bitmask: bit v = voice v queue active (SET LAST)
+PLYCNT          equ     $FB40   ; count of PLAY statements parsed, not yet executed
+VCBA            equ     $FB41   ; Voice Control Block, voice 0 (37 B)
+VCBB            equ     $FB66   ; Voice Control Block, voice 1
+VCBC            equ     $FB8B   ; Voice Control Block, voice 2
+VCB_STRIDE      equ     VCBB - VCBA         ; $25 = 37 B between voice blocks
+; QUETAB per-voice ring descriptor field offsets (base = QUETAB + 6*voice):
+QD_PUT          equ     0       ; put (write) position within the buffer
+QD_GET          equ     1       ; get (read) position -- 0 in Slice 2a (no drain)
+QD_PUTBAK       equ     2       ; putback flag (unused in 2a)
+QD_SIZE         equ     3       ; buffer size (128)
+QD_ADDR         equ     4       ; buffer base address (VOICxQ), 2 B
+QD_STRIDE       equ     6       ; bytes per descriptor
+; VCB field offsets (MSX2-TH layout; base = VCBA/VCBB/VCBC). 2a uses the parse
+; state (persisted across PLAY statements per D4-B) + the packet-source fields:
+VCX_VCXLEN      equ     2       ; MCLLEN for this voice (marshalled string length)
+VCX_VCXPTR      equ     3       ; MCLPTR for this voice (marshalled string ptr, 2 B)
+VCX_ENVPER      equ     13      ; ENVPRX: envelope period (M command), 2 B
+VCX_OCTAVE      equ     15      ; OCTAVX: current octave 1..8
+VCX_NOTEL       equ     16      ; NOTELX: default note length 1..64
+VCX_TEMPO       equ     17      ; TEMPOX: tempo 32..255
+VCX_VOLUME      equ     18      ; VOLUMX: volume 0..15
+VCX_ENVSH       equ     19      ; ENVLPX: envelope shape 0..15 ($10 bit = env mode on)
+; PLAY parse defaults (cold-boot seed; TEMPOX==0 is the "not seeded" sentinel,
+; reliable because C-BIOS zeroes $F380.. at boot):
+PLAY_DEF_OCTAVE equ     4
+PLAY_DEF_NOTEL  equ     4
+PLAY_DEF_TEMPO  equ     120
+PLAY_DEF_VOLUME equ     8
+; Marshalling: audio and disk are never in flight together (a PLAY does no disk
+; I/O, one subrom_call reaches one tenant), so audio reuses the DISKOP cells --
+; the same "separate namespace, same cell" precedent as fatprim vs dirverb above.
+AUDIO_VMASK     equ     DISKOP_OP       ; $E9FB main->tenant: voices-present bitmask
+AUDIO_STATUS    equ     DISKOP_STATUS   ; $E9FC tenant->main: 0 ok / nonzero ERR code
+; play_parse_tenant parse scratch -- transient, dead outside a PLAY parse. Reuses
+; the DISKOP result cells ($E9FD-FF, audio/disk never concurrent) + the unused
+; QUEBAK putback area ($F971-F974, a "TODO purpose" cell in the music work area we
+; do not use in 2a). The persistent per-voice state (octave/length/tempo/...) lives
+; in the VCBs; the source cursor rides HL and the byte count B during a voice parse.
+PLY_NUM         equ     DISKOP_A        ; $E9FD (2): decimal number-literal accumulator
+PLY_LASTDUR     equ     $F971           ; QUEBAK+0 (2): saved write pointer across pt_length
+PLY_BUFEND      equ     $F973           ; QUEBAK+2 (2): current voice buffer end (overflow guard)
+; Queue packet opcodes (own-design; docs spec §6). A voice buffer is a stream of:
+PLAY_OP_NOTE    equ     $00     ; + amp:1, tone_lo:1, tone_hi:1, dur:2  (rest = amp 0)
+PLAY_OP_ENV     equ     $01     ; + shape:1, per_lo:1, per_hi:1         (S/M envelope)
+PLAY_OP_END     equ     $FF     ; end of this voice's queue
+
 ; --- Phase 2: MAXFILES per-channel context blocks --------------------------
 ; A channel's live streaming state spans TWO global regions: the 512-byte data
 ; buffer FSECTOR_BUF, and a contiguous engine-state span FCH_STATE0..(+FCH_STATESZ).
@@ -1932,6 +1998,13 @@ SUBROM_IDX_DIRVERB   equ 13     ; dirverb_tenant (sub/dirverb.asm): the
                                 ; sector) SUB-LOCALLY. A pure RAM+BIOS(CALSLT)
                                 ; leaf. Main-ROM heads are the repack `ELSE`
                                 ; branches of do_kill/do_name (basic/files.asm).
+SUBROM_IDX_PLAY_PARSE equ 14    ; play_parse_tenant (sub/playparse.asm): the audio
+                                ; Slice-2a MML parser (docs/spec-basic-audio-play-
+                                ; slice2a.md). A pure RAM leaf: reads the per-voice
+                                ; (ptr,len) from the VCBs + AUDIO_VMASK, parses each
+                                ; MML string into its VOICxQ ring buffer, sets MUSICF
+                                ; LAST. Only ex_play (basic/play.asm) computes
+                                ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PLAY_PARSE.
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

@@ -40,7 +40,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/fat.asm basic/bload.asm basic/cload.asm basic/save.asm basic/files.asm \
          basic/field.asm basic/format.asm basic/printusing.asm basic/program.asm basic/float.asm \
          basic/float-arith.asm basic/subromcall.asm basic/input.asm \
-         basic/arrays.asm \
+         basic/arrays.asm basic/sound.asm basic/play.asm \
          basic/tokenise.inc basic/detok.inc basic/pu-render.inc basic/format-body.inc \
          basic/fat-prim-body.inc basic/fat-delete-body.inc \
          basic/sysvars.inc
@@ -118,7 +118,7 @@ SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
              sub/format.asm basic/format-body.inc \
              sub/errtrap.asm \
              sub/fatprim.asm basic/fat-prim-body.inc basic/fat-delete-body.inc \
-             sub/dirverb.asm \
+             sub/dirverb.asm sub/playparse.asm \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
              basic/tokenise.inc basic/detok.inc \
              sub/basic-resident-abi.inc
@@ -467,6 +467,19 @@ intarg-acceptance: $(DISK_ROM) repack-machine
 sound-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_sound.py $(if $(ONLY),--only $(ONLY),)
 
+# --- Standing PLAY acceptance gate (audio arc, Slice 2a) ----------------------
+# docs/spec-basic-audio-play-slice2a.md §8. Two halves: ERROR SURFACE (differential
+# vs the VG-8020 -- exercises the full ex_play -> str_eval -> marshal -> subrom_call
+# -> parser-tenant path the host layer cannot, and locked the '&'-unsupported /
+# bare-comma-Syntax-error / numeric-Type-mismatch facts against the reference) plus a
+# zerobas MUSICF integration self-check (present voices marked active, PLAY returns).
+# Repack-only; HEAVY + oracle-dependent (boots openMSX per case; the differential half
+# needs your VG-8020 reference ROM). The emulator-free fast layer is
+# tests/test_play_parse.py under `unit-test`. Scope one case with `make play-acceptance
+# ONLY=badcmd`; pass `--no-ref` (edit the recipe) for the zerobas-only self-check.
+play-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_play.py $(if $(ONLY),--only $(ONLY),)
+
 # --- Standing float-pack acceptance gate (float arc, F1 S3 + F2 S2) -----------
 # Three differential halves against the VG-8020 reference (docs/
 # spec-basic-float-core.md §9-§10): LITERALS (basic_probe_floatlit.py -- the
@@ -546,5 +559,5 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance \
-        input-acceptance error-acceptance error-trap-acceptance intarg-acceptance sound-acceptance float-acceptance math-acceptance subrom-acceptance \
+        input-acceptance error-acceptance error-trap-acceptance intarg-acceptance sound-acceptance play-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check clean

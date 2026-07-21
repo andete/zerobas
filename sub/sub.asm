@@ -359,6 +359,14 @@ sub_p1_table:
                                                 ;   ROM heads are the repack
                                                 ;   ELSE branches of do_kill/
                                                 ;   do_name (basic/files.asm).
+                jp      play_parse_tenant       ; index 14 (SUBROM_IDX_PLAY_PARSE):
+                                                ;   the audio Slice-2a MML parser
+                                                ;   (sub/playparse.asm) -- a pure
+                                                ;   RAM leaf turning up to three MML
+                                                ;   voice strings into PLAY_OP_*
+                                                ;   packet queues (VOICxQ) + MUSICF.
+                                                ;   Its main-ROM head is ex_play
+                                                ;   (basic/play.asm).
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -465,6 +473,13 @@ sub_p1_ping:
 ; Placed AFTER fatprim so its sub-local calls resolve within the same page-1
 ; region -- own header has the full rationale.
                 include "dirverb.asm"
+
+; play_parse_tenant (audio Slice 2a MML parser, docs/spec-basic-audio-play-
+; slice2a.md). A pure RAM leaf: reads the marshalled per-voice MML (ptr,len) from
+; the VCBs + AUDIO_VMASK, parses each string into its VOICxQ ring buffer, sets
+; MUSICF last. No resident-ABI import (calls nothing in main); its note->period
+; table + tempo->frame math are self-contained page-1 data.
+                include "playparse.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF
