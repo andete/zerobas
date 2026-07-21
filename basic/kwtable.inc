@@ -333,5 +333,11 @@ kwtable:
                 db      4,"PSET",1,PSET_TOKEN                    ; $C2
                 db      6,"PRESET",1,PRESET_TOKEN                ; $C3
                 db      5,"POINT",1,POINT_TOKEN                  ; $ED
+                ; --- graphics slice G4 (repack build only) --------------------
+                ; docs/spec-basic-graphics-g4.md §7/§11.1. CIRCLE is a NEW
+                ; single-byte STATEMENT token (unlike G3's LINE, which reused
+                ; LINE=$AF). No prefix collision: match_kw compares the FULL
+                ; keyword, and no other keyword shares "CIRCLE".
+                db      6,"CIRCLE",1,CIRCLE_TOKEN                ; $BC
     ENDIF
                 db      0

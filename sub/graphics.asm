@@ -58,6 +58,8 @@ graphics_tenant:
                 jp      z,gfx_point         ; GFX_OP == 2
                 dec     a
                 jp      z,gfx_line_op       ; GFX_OP == 3 (LINE / box -- G3)
+                dec     a
+                jp      z,gfx_circle_op     ; GFX_OP == 4 (CIRCLE -- G4)
                 ; GFX_OP == 0 (or any other value) -> the G1 floor self-test
                 ; (falls through to graphics_selftest below).
 
@@ -776,4 +778,657 @@ gfx_box_stash:
                 ld      (GFX_TX2),hl
                 ld      hl,(GFX_Y2)
                 ld      (GFX_TY2),hl
+                ret
+
+; ===========================================================================
+; G4 -- CIRCLE (+ ellipse aspect + start/end-angle arcs + negative-angle
+; spokes). GFX_OP=4. docs/spec-basic-graphics-g4.md. Reuses G3's EI-between-
+; pixels / DI-per-pixel gfx_plot_cur VERBATIM (spec §2) -- the only new tenant
+; code is the midpoint-circle octant generator (spec §4.1), the per-point 8.8
+; minor scale (§4.2), and the integer cross-product arc mask (§5.2). Spokes
+; are NOT tenant code at all: the resident marshals a separate GFX_OP=3 line
+; call (spec §5.3), reusing the landed G3 op.
+;
+; Own-design integer midpoint circle (host-fit against 6 captured VG-8020
+; circles, scratchpad/g4_circle_fit.py -- spec §4.1):
+;   x=0, y=r, d=1-r
+;   while x<=y: emit the 8 mirrored octant points; if d<0: d+=2x+3
+;               else: d+=2(x-y)+5, y--; x++
+; State lives in GFX_QX/QY/QD (own cells, distinct from G3's GFX_CX/CY --
+; those are reserved for the FINAL absolute screen point fed to gfx_plot_cur,
+; per spec §6 "plot scratch ... reuse G3 GFX_CX/CY for the plotted pixel").
+;
+; Per-point minor scale (§4.2): the resident resolves aspect into GFX_ASPMAJ
+; (which raw offset is the SCALED one -- y if x-major, x if y-major) and an
+; 8.8 fixed-point GFX_ASPS (256 = no scale). The tenant applies
+; off' = sign(off)*((|off|*ASPS+128)>>8) to whichever offset GFX_ASPMAJ
+; selects, for EVERY mirrored point (gfx_circ_scale).
+;
+; Arc mask (§5.2): when GFX_ARCF=1, a mirrored+scaled point P=(GFX_PX,GFX_PY)
+; (the offset from centre, BEFORE the centre is added back) is kept iff it
+; lies in the CCW wedge from the boundary vectors S (GFX_SVX/SVY) to E
+; (GFX_EVX/EVY): cross(S,P)>=0 AND cross(P,E)>=0 when the sweep is <=pi
+; (GFX_ARCBIG=0), OR when >pi (GFX_ARCBIG=1). All cross-product sign tests
+; are INTEGER (gfx_cross_ge0, own 16x16 unsigned multiply + sign-magnitude
+; decomposition) -- the tenant has no float, per the arc's own "no tenant
+; float" rule (spec §5.2/§9 G4-e). S/E share the SAME r-scaled (and, where
+; applicable, minor-scaled) magnitude used for the spoke endpoints (spec
+; §5.3) -- an implementation choice where the spec leaves the S/E scale
+; unspecified ("scaled to small integers"); see the G4 slice report for the
+; rationale (untested combined ellipse+arc case).
+;
+; REVISED 2026-07-21 (spec §5.2.1): S/E and GFX_ARCBIG are now TENANT-
+; computed (gfx_circ_bvec_prep, below), from the resident-marshalled
+; GFX_SBRAD/EBRAD (brad) + GFX_SSGNC/SSGNS/ESGNC/ESGNS (quadrant signs) --
+; the TRIG-FREE replacement for the original float SIN/COS pipeline, which
+; infinite-looped in the sub-ROM math pack's own series fp_mul. Own-design,
+; host-fit against every captured arc + boundary re-capture BEFORE coding
+; (scratchpad/g4_trigfree_final_model.py: ALL MATCH); ARCBIG's own wrap-
+; around fix (gfx_circ_arcbig_calc) is the reason it moved tenant-side too:
+; a naive mod-256 boundary diff collapses a near-2*pi sweep (e.g. 0->6.28)
+; to a false zero when BOTH ends round to the same 256-bucket, so the
+; resolution needs the RAW (unmasked) brad pair, which only the tenant sees
+; whole (the resident marshals two separate int16 cells, never subtracts
+; them itself).
+;
+; Bounded-domain note (mirrors spec §4.1's own 16-bit-clean domain, r<=255):
+; gfx_mul16u / gfx_cross_ge0 keep only the LOW 16 bits of each product, which
+; is exact as long as no factor pair exceeds 65535 -- guaranteed for the
+; blessed r<=255 domain (offsets and boundary-vector magnitudes both <=255).
+; A radius far outside that domain may mis-rasterise the arc mask (never
+; crash) -- the same documented residual as G3's off-screen-span perf note.
+; ===========================================================================
+gfx_circle_op:
+                ei                          ; interrupts LIVE for the (possibly long) draw
+                ld      a,(GFX_ARCF)
+                or      a
+                jr      z,gco_noarc         ; full circle/ellipse -- S/E/ARCBIG unused
+                call    gfx_circ_bvec_prep  ; S/E/ARCBIG from GFX_SBRAD/EBRAD (§5.2.1)
+gco_noarc:
+                call    gfx_circ_init
+gco_loop:
+                ; while QX <= QY -- SIGNED compare. r=0 (and the last step of any
+                ; radius) can drive QY to -1, which an UNSIGNED cf-based test reads
+                ; as 65535 (>= QX), never terminating -- found live via r_zero
+                ; drawing extra garbage octant points (see the G4 slice report).
+                ; sbc hl,de sets S = bit15 of the 16-bit result (unlike add hl,de,
+                ; sbc DOES affect S/Z), so "QY-QX < 0" (QX>QY) is a plain `jp m`.
+                ld      hl,(GFX_QY)
+                ld      de,(GFX_QX)
+                or      a
+                sbc     hl,de               ; HL = QY - QX (signed)
+                jp      m,gco_done          ; QY < QX -> done
+                call    gco_emit8
+                call    gfx_circ_next
+                jr      gco_loop
+gco_done:
+                di                          ; leave the EI region before returning via CALSLT
+                ret
+
+; ===========================================================================
+; G4 arc boundary -- TRIG-FREE (spec §5.2.1 REVISED 2026-07-21). Own-design,
+; host-fit against every captured VG-8020 arc + boundary re-capture BEFORE
+; coding (scratchpad/g4_trigfree_final_model.py: ALL MATCH). Replaces the
+; original float SIN/COS pipeline, whose series fp_mul infinite-looped in the
+; CIRCLE call context (scratchpad/g4_hang_probe.py). The resident half
+; (basic/graphics.asm gfx_circ_boundary_prep) marshals, per boundary (start
+; and end): brad = round(|angle|*128/pi) as a RAW/unmasked int16 (ONE bounded
+; fp_mul -- not a series), and the quadrant signs sign_c/sign_s ($01/$FF/$00)
+; from THREE bounded fp_cmp compares (continuous, NOT derived from brad --
+; a brad-derived quadrant collapses the near-cardinal 1.57-vs-1.58 precision
+; the reference is shown to preserve, since both round to the identical
+; brad=64). This tenant half turns (brad, sign_c, sign_s) into the actual
+; vector via an integer quarter-wave sine table (QTAB) -- genuinely no float
+; here, per the arc's "no tenant float" rule (spec §5.2/§9 G4-e).
+; ===========================================================================
+
+; ---------------------------------------------------------------------------
+; QTAB -- 65-entry quarter-wave magnitude table: QTAB[i] = round(256*sin(2*pi*
+; i/256)) for i=0..64, CAPPED at 255 (i=62/63/64 round to 256, which overflows
+; an unsigned byte -- capping loses <0.4% relative magnitude at those 3
+; entries only, verified harmless against the round-to-pixel domain: r=15's
+; capped-vs-uncapped magnitude at i=64 both round to 15 -- scratchpad/
+; g4_trigfree_final_model.py). Folded via symmetry (gfx_qtab_fold) to cover
+; the full 256-entry circle from a 65-byte table -- the letter's "64-entry
+; quarter + symmetry" option, chosen to keep the page-0 tenant lean.
+; ---------------------------------------------------------------------------
+QTAB:
+                db      0,   6,  13,  19,  25,  31,  38,  44,  50,  56
+                db      62,  68,  74,  80,  86,  92,  98, 104, 109, 115
+                db      121, 126, 132, 137, 142, 147, 152, 157, 162, 167
+                db      172, 177, 181, 185, 190, 194, 198, 202, 206, 209
+                db      213, 216, 220, 223, 226, 229, 231, 234, 237, 239
+                db      241, 243, 245, 247, 248, 250, 251, 252, 253, 254
+                db      255, 255, 255, 255, 255
+
+; ---------------------------------------------------------------------------
+; gfx_qtab_fold -- IN: A = b (any byte 0..255). OUT: A = fold index 0..64
+; s.t. QTAB[fold(b)] = round(256*|sin(2*pi*b/256)|) (own-design quarter-wave
+; symmetry: m = b mod 128; if m>64 then m := 128-m). Clobbers B.
+; ---------------------------------------------------------------------------
+gfx_qtab_fold:
+                and     $7F
+                cp      65
+                ret     c                   ; m<=64 -> keep as-is
+                ld      b,a
+                ld      a,128
+                sub     b
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_qtab_lookup -- IN: A = b (any byte 0..255). OUT: A = QTAB[fold(b)] =
+; round(256*|sin(2*pi*b/256)|), 0..255. Clobbers B, HL, DE.
+; ---------------------------------------------------------------------------
+gfx_qtab_lookup:
+                call    gfx_qtab_fold
+                ld      l,a
+                ld      h,0
+                ld      de,QTAB
+                add     hl,de
+                ld      a,(hl)
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_circ_bvec_mag -- IN: A = tab (0..255, unsigned QTAB value). Uses GFX_R
+; (radius, 0..255 domain). OUT: HL = round(r*tab/256) = (r*tab+128)>>8,
+; unsigned. The SAME round-half-up 8.8-style shape as gfx_circ_scale.
+; Clobbers A, BC, DE.
+; ---------------------------------------------------------------------------
+gfx_circ_bvec_mag:
+                ld      e,a
+                ld      d,0
+                ld      hl,(GFX_R)
+                call    gfx_mul16u          ; HL := r * tab (bounded: <=255*255)
+                ld      de,128
+                add     hl,de
+                ld      l,h
+                ld      h,0                 ; HL = (r*tab+128) >> 8
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_circ_bvec_nudge -- IN: HL = unsigned magnitude; (GFX_CS_T1) = sign
+; ($01/$FF/$00). OUT: HL = the signed, nudged component: 0 if sign=0;
+; sign*HL if HL!=0; else +-1 (the near-cardinal nudge, spec §5.4/§5.2.1).
+; Clobbers A, BC.
+; ---------------------------------------------------------------------------
+gfx_circ_bvec_nudge:
+                ld      a,(GFX_CS_T1)
+                or      a
+                jr      z,gcbn_zero
+                ld      b,h
+                ld      c,l
+                ld      a,c
+                or      b
+                jr      nz,gcbn_apply       ; magnitude != 0 -> apply the sign
+                ld      hl,1                ; magnitude==0, sign!=0 -> nudge to +-1
+gcbn_apply:
+                ld      a,(GFX_CS_T1)
+                or      a
+                ret     p                   ; sign>=0 ($01) -> HL already correct
+                xor     a                   ; negative: two's-complement negate HL
+                sub     l
+                ld      l,a
+                sbc     a,a
+                sub     h
+                ld      h,a
+                ret
+gcbn_zero:
+                ld      hl,0
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_circ_bvec -- compute ONE boundary vector (S or E) from its resident-
+; marshalled record. IN: HL = src record base (GFX_SBRAD or GFX_EBRAD:
+; brad_lo,brad_hi,signc,signs -- 4 bytes); DE = dest vector base (GFX_SVX or
+; GFX_EVX; Y half at dest+2). OUT: (dest)/(dest+2) = the minor-scaled Vx,Vy.
+; Magnitude: round(r*QTAB[fold(brad)]/256); cos = sin folded at (brad+64).
+; Sign: the resident's continuous quadrant compare (NOT re-derived here --
+; see basic/graphics.asm gfx_circ_boundary_prep for why). Nudge: magnitude
+; rounds to 0 but sign!=0 -> +-1. Screen convention: Vy = -(sin component).
+; The minor-axis 8.8 scale (gfx_circ_scale) is applied to whichever of Vx/Vy
+; GFX_ASPMAJ selects -- the SAME rule gfx_circ_emit_point uses for octant
+; points. Clobbers everything + GFX_CS_AX/AY/BX/BY/T1 scratch (dead here,
+; called only before the octant loop starts).
+; ---------------------------------------------------------------------------
+gfx_circ_bvec:
+                ld      (GFX_CS_AY),de      ; stash dest base
+                ld      a,(hl)
+                ld      (GFX_CS_AX),a       ; stash bradlo (only byte that matters)
+                inc     hl
+                inc     hl                  ; skip bradhi
+                ld      a,(hl)
+                ld      (GFX_CS_BX),a       ; sign_c
+                inc     hl
+                ld      a,(hl)
+                ld      (GFX_CS_BY),a       ; sign_s
+                ; --- X = cos component ---
+                ld      a,(GFX_CS_AX)
+                add     a,64                ; b_cos = bradlo+64 (mod 256, byte wrap)
+                call    gfx_qtab_lookup     ; A = |cos| table value
+                call    gfx_circ_bvec_mag   ; HL = round(r*A/256)
+                ld      a,(GFX_CS_BX)
+                ld      (GFX_CS_T1),a
+                call    gfx_circ_bvec_nudge ; HL = signed nudged X
+                ld      a,(GFX_ASPMAJ)
+                or      a
+                jr      z,gcbv_x_store
+                call    gfx_circ_scale      ; X is minor iff ASPMAJ=1 (y-major)
+gcbv_x_store:
+                ld      de,(GFX_CS_AY)
+                ld      a,l
+                ld      (de),a
+                inc     de
+                ld      a,h
+                ld      (de),a
+                ; --- Y = sin component ---
+                ld      a,(GFX_CS_AX)
+                call    gfx_qtab_lookup     ; A = |sin| table value
+                call    gfx_circ_bvec_mag   ; HL = round(r*A/256)
+                ld      a,(GFX_CS_BY)
+                ld      (GFX_CS_T1),a
+                call    gfx_circ_bvec_nudge ; HL = signed nudged (pre-negate) Y
+                ld      a,(GFX_ASPMAJ)
+                or      a
+                jr      nz,gcbv_y_scaled
+                call    gfx_circ_scale      ; Y is minor iff ASPMAJ=0 (incl. default)
+gcbv_y_scaled:
+                xor     a                   ; screen convention: Vy = -(sin component)
+                sub     l
+                ld      l,a
+                sbc     a,a
+                sub     h
+                ld      h,a
+                ld      de,(GFX_CS_AY)
+                inc     de
+                inc     de                  ; dest+2 = Vy cell
+                ld      a,l
+                ld      (de),a
+                inc     de
+                ld      a,h
+                ld      (de),a
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_circ_arcbig_calc -- sets GFX_ARCBIG from GFX_SBRAD/GFX_EBRAD (spec
+; §5.2.1 REVISED). diff8 = (brad_e - brad_s) mod 256; ARCBIG = diff8>128,
+; EXCEPT: if diff8==0 but the RAW (unmasked) brad_e != brad_s -- a near-full-
+; turn wrap where BOTH ends round to the SAME 256-bucket (e.g. start=0,
+; end=6.28 -> brad_e=256, brad_s=0; a naive mod-256 diff collapses this to a
+; falsely-zero sweep) -- ARCBIG is forced true (a near-2*pi sweep IS >pi).
+; Host-fit + validated: scratchpad/g4_trigfree_final_model.py (arc_full628,
+; arc_wrap both MATCH only with this fix). Clobbers everything.
+; ---------------------------------------------------------------------------
+gfx_circ_arcbig_calc:
+                ld      hl,(GFX_EBRAD)
+                ld      de,(GFX_SBRAD)
+                or      a
+                sbc     hl,de               ; HL = raw_e - raw_s (16-bit, may be negative)
+                ld      a,l                 ; A = diff8 (mod-256 wrap; correct regardless
+                                            ; of HL's sign via two's complement)
+                or      a
+                jr      nz,gac_have_diff8
+                ld      a,h
+                or      a
+                jr      z,gac_small         ; HL==0 exactly -> truly coincident -> small
+                ld      a,1                 ; HL!=0 but low byte 0 -> exact-256-wrap -> big
+                ld      (GFX_ARCBIG),a
+                ret
+gac_have_diff8:
+                cp      129
+                jr      c,gac_small         ; diff8 in 1..128 -> not big
+                ld      a,1
+                ld      (GFX_ARCBIG),a
+                ret
+gac_small:
+                xor     a
+                ld      (GFX_ARCBIG),a
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_circ_bvec_prep -- compute S, E (GFX_SVX/SVY/EVX/EVY) and GFX_ARCBIG from
+; the resident-marshalled brad/sign records, once per CIRCLE arc call, BEFORE
+; the octant loop starts (spec §5.2.1 REVISED). Clobbers everything.
+; ---------------------------------------------------------------------------
+gfx_circ_bvec_prep:
+                ld      hl,GFX_SBRAD
+                ld      de,GFX_SVX
+                call    gfx_circ_bvec
+                ld      hl,GFX_EBRAD
+                ld      de,GFX_EVX
+                call    gfx_circ_bvec
+                jp      gfx_circ_arcbig_calc    ; tail call: ret serves both
+
+; ---------------------------------------------------------------------------
+; gfx_circ_init -- IN: GFX_R (radius). OUT: GFX_QX=0, GFX_QY=r, GFX_QD=1-r
+; (spec §4.1). Pure (RAM only, no ports) -> host-unit-testable, mirroring
+; G3's gfx_bres_init. Clobbers A, DE, HL.
+; ---------------------------------------------------------------------------
+gfx_circ_init:
+                ld      hl,(GFX_R)
+                ld      (GFX_QY),hl
+                ld      hl,0
+                ld      (GFX_QX),hl
+                ld      hl,1
+                ld      de,(GFX_R)
+                or      a
+                sbc     hl,de
+                ld      (GFX_QD),hl
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_circ_next -- advance the midpoint-circle state one step (spec §4.1):
+; d<0 ? d+=2x+3 : (d+=2(x-y)+5, y--); x++. Pure (RAM only) -> host-unit-
+; testable, mirroring G3's gfx_bres_next. Clobbers A, DE, HL.
+; ---------------------------------------------------------------------------
+gfx_circ_next:
+                ld      hl,(GFX_QD)
+                bit     7,h
+                jr      z,gco_else
+                ld      hl,(GFX_QX)
+                add     hl,hl               ; 2x
+                ld      de,3
+                add     hl,de
+                ld      de,(GFX_QD)
+                add     hl,de
+                ld      (GFX_QD),hl
+                jr      gco_incx
+gco_else:
+                ld      hl,(GFX_QX)
+                ld      de,(GFX_QY)
+                or      a
+                sbc     hl,de               ; x - y (signed; may be negative)
+                add     hl,hl               ; 2(x-y)
+                ld      de,5
+                add     hl,de
+                ld      de,(GFX_QD)
+                add     hl,de
+                ld      (GFX_QD),hl
+                ld      hl,(GFX_QY)
+                dec     hl
+                ld      (GFX_QY),hl
+gco_incx:
+                ld      hl,(GFX_QX)
+                inc     hl
+                ld      (GFX_QX),hl
+                ret
+
+; ---------------------------------------------------------------------------
+; gco_emit8 -- emit the 8 mirrored points of the current (GFX_QX,GFX_QY):
+; (+-x,+-y) and (+-y,+-x), each through gfx_circ_emit_point. Clobbers
+; everything.
+; ---------------------------------------------------------------------------
+gco_emit8:
+                ld      bc,(GFX_QX)
+                ld      de,(GFX_QY)
+                call    gfx_circ_emit_point ; (+x,+y)
+                ld      bc,(GFX_QX)
+                ld      de,(GFX_QY)
+                call    gfx_neg16_de
+                call    gfx_circ_emit_point ; (+x,-y)
+                ld      bc,(GFX_QX)
+                call    gfx_neg16_bc
+                ld      de,(GFX_QY)
+                call    gfx_circ_emit_point ; (-x,+y)
+                ld      bc,(GFX_QX)
+                call    gfx_neg16_bc
+                ld      de,(GFX_QY)
+                call    gfx_neg16_de
+                call    gfx_circ_emit_point ; (-x,-y)
+                ld      bc,(GFX_QY)
+                ld      de,(GFX_QX)
+                call    gfx_circ_emit_point ; (+y,+x)
+                ld      bc,(GFX_QY)
+                ld      de,(GFX_QX)
+                call    gfx_neg16_de
+                call    gfx_circ_emit_point ; (+y,-x)
+                ld      bc,(GFX_QY)
+                call    gfx_neg16_bc
+                ld      de,(GFX_QX)
+                call    gfx_circ_emit_point ; (-y,+x)
+                ld      bc,(GFX_QY)
+                call    gfx_neg16_bc
+                ld      de,(GFX_QX)
+                call    gfx_neg16_de
+                call    gfx_circ_emit_point ; (-y,-x)
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_circ_emit_point -- IN: BC=dx (raw octant offset, signed), DE=dy (raw).
+; Applies the minor-axis 8.8 scale (GFX_ASPMAJ selects which of dx/dy), the
+; arc mask (gfx_circ_keep), and if kept, plots (GFX_CXC+dx',GFX_CYC+dy') via
+; gfx_plot_cur (its own clip + DI-guarded RMW). Clobbers everything.
+; ---------------------------------------------------------------------------
+gfx_circ_emit_point:
+                ld      (GFX_PX),bc
+                ld      (GFX_PY),de
+                ld      a,(GFX_ASPMAJ)
+                or      a
+                jr      z,gcep_scaley
+                ; y-major (aspect>1): the MINOR axis is x
+                ld      hl,(GFX_PX)
+                call    gfx_circ_scale
+                ld      (GFX_PX),hl
+                jr      gcep_test
+gcep_scaley:
+                ; x-major (aspect<=1, incl. the no-scale default): minor is y
+                ld      hl,(GFX_PY)
+                call    gfx_circ_scale
+                ld      (GFX_PY),hl
+gcep_test:
+                call    gfx_circ_keep       ; CF=1 iff this point survives the arc mask
+                ret     nc
+                ld      hl,(GFX_CXC)
+                ld      de,(GFX_PX)
+                add     hl,de
+                ld      (GFX_CX),hl
+                ld      hl,(GFX_CYC)
+                ld      de,(GFX_PY)
+                add     hl,de
+                ld      (GFX_CY),hl
+                jp      gfx_plot_cur        ; tail call: clip + DI-guarded RMW; ret
+
+; ---------------------------------------------------------------------------
+; gfx_circ_scale -- IN: HL=v (signed raw offset). OUT: HL = sign(v) *
+; ((|v|*GFX_ASPS+128)>>8), the 8.8 minor scale (spec §4.2). Bounded-domain:
+; |v|*ASPS assumed <=65535 (true for |v|<=255, ASPS<=256 -- the blessed
+; r<=255 domain). Clobbers A, BC, DE.
+; ---------------------------------------------------------------------------
+gfx_circ_scale:
+                call    gfx_abs16           ; HL=|v|, A=sign ($01 pos / $FF neg)
+                push    af
+                ex      de,hl               ; DE=|v|
+                ld      hl,(GFX_ASPS)
+                call    gfx_mul16u          ; HL = ASPS * |v|  (HL:=HL*DE)
+                ld      de,128
+                add     hl,de
+                ld      l,h
+                ld      h,0                 ; HL = (|v|*ASPS+128) >> 8
+                pop     af
+                cp      $01
+                ret     z                   ; was non-negative -> done
+                ; negate HL (own-design two's-complement negate, gfx_abs16's idiom)
+                xor     a
+                sub     l
+                ld      l,a
+                sbc     a,a
+                sub     h
+                ld      h,a
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_circ_keep -- IN: GFX_PX/PY = the current (scaled) point P. OUT: CF=1
+; iff P should be plotted: always when GFX_ARCF=0 (full circle/ellipse); else
+; the arc mask (spec §5.2) -- cross(S,P)>=0 AND cross(P,E)>=0 when
+; GFX_ARCBIG=0 (sweep<=pi), OR when GFX_ARCBIG=1 (sweep>pi). Clobbers
+; everything + GFX_CS_*/GFX_CS_T1 scratch.
+; ---------------------------------------------------------------------------
+; G4-arcbnd (pinned, scratchpad/g4_arc_boundary_capture.py): BOTH boundary
+; tests are INCLUSIVE (<=0), matched exact (0 diffs) on every pinned arc +
+; a 7-point boundary sweep, once combined with the resident's near-zero
+; nudge (gfx_round_nonzero, basic/graphics.asm) that keeps S/E direction
+; information the reference itself is shown to preserve at near-cardinal
+; angles. cross(S,P)<=0 == cross(P,S)>=0 and cross(P,E)<=0 == cross(E,P)>=0
+; (anticommutativity), so both reuse gfx_cross_ge0 with swapped arguments --
+; no separate "<=0" primitive needed.
+gfx_circ_keep:
+                ld      a,(GFX_ARCF)
+                or      a
+                jr      z,gck_keep
+                ; --- S-side: cross(S,P)<=0  <=>  cross(P,S)>=0 ---
+                ld      hl,(GFX_PX)
+                ld      (GFX_CS_AX),hl
+                ld      hl,(GFX_PY)
+                ld      (GFX_CS_AY),hl
+                ld      hl,(GFX_SVX)
+                ld      (GFX_CS_BX),hl
+                ld      hl,(GFX_SVY)
+                ld      (GFX_CS_BY),hl
+                call    gfx_cross_ge0
+                sbc     a,a                 ; A = $FF if CF=1 else $00
+                ld      (GFX_CS_T1),a
+                ; --- E-side: cross(P,E)<=0  <=>  cross(E,P)>=0 ---
+                ld      hl,(GFX_EVX)
+                ld      (GFX_CS_AX),hl
+                ld      hl,(GFX_EVY)
+                ld      (GFX_CS_AY),hl
+                ld      hl,(GFX_PX)
+                ld      (GFX_CS_BX),hl
+                ld      hl,(GFX_PY)
+                ld      (GFX_CS_BY),hl
+                call    gfx_cross_ge0
+                sbc     a,a
+                ld      b,a                 ; B = cross(P,E)<=0 flag
+                ld      a,(GFX_CS_T1)       ; A = cross(S,P)<=0 flag
+                ld      c,a
+                ld      a,(GFX_ARCBIG)
+                or      a
+                jr      nz,gck_or
+                ld      a,c
+                and     b
+                jr      gck_final
+gck_or:
+                ld      a,c
+                or      b
+gck_final:
+                or      a
+                jr      z,gck_reject
+gck_keep:
+                scf
+                ret
+gck_reject:
+                or      a
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_cross_ge0 -- cross(A,B) = Ax*By - Ay*Bx, reading vector A from
+; GFX_CS_AX/AY and vector B from GFX_CS_BX/BY (caller-populated). OUT: CF=1
+; iff cross(A,B)>=0. Sign-magnitude decomposition (gfx_abs16 + gfx_mul16u,
+; own 16x16->16 unsigned multiply) -- bounded-domain (see this section's
+; header). Clobbers AF, BC, DE, HL.
+; ---------------------------------------------------------------------------
+gfx_cross_ge0:
+                ; term1 = |Ax|*|By|, sign1 = sign(Ax) xor sign(By)
+                ld      hl,(GFX_CS_AX)
+                call    gfx_abs16           ; HL=|Ax|, A=sign1a
+                ld      b,a
+                ex      de,hl               ; DE=|Ax|
+                ld      hl,(GFX_CS_BY)
+                call    gfx_abs16           ; HL=|By|, A=sign1b
+                xor     b                   ; A=0 (same sign) or nonzero (differ)
+                push    af                  ; [stack: sign1 flag]
+                ex      de,hl               ; HL=|Ax|, DE=|By|
+                call    gfx_mul16u          ; HL := |Ax| * |By| = mag1
+                push    hl                  ; [stack: sign1 flag, mag1]
+                ; term2 = |Ay|*|Bx|, sign2 = sign(Ay) xor sign(Bx)
+                ld      hl,(GFX_CS_AY)
+                call    gfx_abs16
+                ld      b,a
+                ex      de,hl
+                ld      hl,(GFX_CS_BX)
+                call    gfx_abs16
+                xor     b                   ; A = sign2 flag
+                push    af                  ; stash it -- gfx_mul16u clobbers BC, so C
+                                            ; cannot hold it across the call below
+                ex      de,hl               ; HL=|Ay|, DE=|Bx|
+                call    gfx_mul16u          ; HL := mag2
+                pop     af
+                ld      c,a                 ; C = sign2 flag (restored AFTER mul16u)
+                pop     de                  ; DE = mag1
+                pop     af                  ; A = sign1 flag
+                or      a
+                jr      nz,gcx_1neg
+                ; --- sign1 non-negative (term1 >= 0) ---
+                ld      a,c
+                or      a
+                jr      nz,gcx_keep         ; term1>=0, term2<0 -> sum always >=0
+                ; both non-negative: keep iff mag1>=mag2.  HL=mag2, DE=mag1
+                ex      de,hl               ; HL=mag1, DE=mag2
+                or      a
+                sbc     hl,de               ; mag1-mag2 ; CF=1 iff mag1<mag2
+                ccf
+                ret
+gcx_1neg:
+                ld      a,c
+                or      a
+                jr      z,gcx_negpos
+                ; both negative: keep iff mag2>=mag1.  HL=mag2, DE=mag1
+                or      a
+                sbc     hl,de               ; mag2-mag1 ; CF=1 iff mag2<mag1
+                ccf
+                ret
+gcx_negpos:
+                ; term1<0, term2>=0: keep only if BOTH magnitudes are zero
+                ld      a,h
+                or      l
+                or      d
+                or      e
+                jr      nz,gcx_reject
+gcx_keep:
+                scf
+                ret
+gcx_reject:
+                or      a
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_mul16u -- HL := HL * DE, low 16 bits, unsigned (own copy of expr.asm's
+; mul16 -- a page-0 tenant cannot reach the main-ROM low region, which is
+; swapped OUT for the duration of this CALSLT). Clobbers A, BC, DE.
+; ---------------------------------------------------------------------------
+gfx_mul16u:
+                ld      b,h
+                ld      c,l                 ; BC = original HL (multiplicand)
+                ld      hl,0
+                ld      a,16
+gmu_lp:
+                add     hl,hl
+                ex      de,hl
+                add     hl,hl
+                ex      de,hl
+                jr      nc,gmu_skip
+                add     hl,bc
+gmu_skip:
+                dec     a
+                jr      nz,gmu_lp
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_neg16_bc / gfx_neg16_de -- two's-complement negate BC / DE in place
+; (gfx_abs16's own idiom). Clobbers A.
+; ---------------------------------------------------------------------------
+gfx_neg16_bc:
+                xor     a
+                sub     c
+                ld      c,a
+                sbc     a,a
+                sub     b
+                ld      b,a
+                ret
+gfx_neg16_de:
+                xor     a
+                sub     e
+                ld      e,a
+                sbc     a,a
+                sub     d
+                ld      d,a
                 ret

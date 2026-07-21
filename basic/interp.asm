@@ -275,6 +275,8 @@ exec_stmt:
                 jp      z,ex_pset
                 cp      PRESET_TOKEN        ; PRESET (x,y)[,c]  (graphics G2)
                 jp      z,ex_preset
+                cp      CIRCLE_TOKEN        ; CIRCLE (x,y),r[,c[,s[,e[,a]]]]  (graphics G4)
+                jp      z,ex_circle
     ENDIF
                 call    is_letter           ; bare letter -> assignment
                 jr      c,ex_let

@@ -221,8 +221,112 @@ def phase_d() -> int:
     return fails
 
 
+
+# =====================================================================
+# G4 -- CIRCLE (+ aspect ellipse + start/end-angle arcs + negative-angle
+# spokes). docs/spec-basic-graphics-g4.md §8. Same INIT/pattern as G3
+# (LINIT: COLOR15,1,1:SCREEN2:CLS -- drawn pixel = fg 15, bg 1).
+
+# label, ops, centre, half-band, read-colour-plane?
+CIRCLE_CASES = [
+    ("circ_r4",  "CIRCLE(40,40),4,15",  (40, 40), 6, False),
+    ("circ_r7",  "CIRCLE(40,40),7,15",  (40, 40), 9, False),
+    ("circ_r8",  "CIRCLE(40,40),8,15",  (40, 40), 10, False),
+    ("circ_r12", "CIRCLE(60,60),12,15", (60, 60), 14, False),
+    ("circ_r15", "CIRCLE(60,60),15,15", (60, 60), 17, False),
+    ("circ_r20", "CIRCLE(80,80),20,15", (80, 80), 22, False),
+    ("ell_a025", "CIRCLE(80,80),20,15,,,.25", (80, 80), 22, False),
+    ("ell_a05",  "CIRCLE(80,80),20,15,,,.5",  (80, 80), 22, False),
+    ("ell_a2",   "CIRCLE(80,80),20,15,,,2",   (80, 80), 22, False),
+    ("ell_a3",   "CIRCLE(80,80),20,15,,,3",   (80, 80), 22, False),
+    ("ell_a05r15", "CIRCLE(60,60),15,15,,,.5", (60, 60), 17, False),
+    ("arc_0_hpi",    "CIRCLE(60,60),15,15,0,1.57",    (60, 60), 17, False),
+    ("arc_hpi_pi",   "CIRCLE(60,60),15,15,1.57,3.14", (60, 60), 17, False),
+    ("arc_wrap",     "CIRCLE(60,60),15,15,3,1",       (60, 60), 17, False),
+    ("arc_full628",  "CIRCLE(60,60),15,15,0,6.28",    (60, 60), 17, False),
+    ("spoke_270",    "CIRCLE(60,60),15,15,-1.57,0",   (60, 60), 17, False),
+    ("spoke_wedge2", "CIRCLE(60,60),15,15,-0.1,-1.57", (60, 60), 17, False),
+    ("clash_circle", "CIRCLE(40,40),8,6", (40, 40), 10, True),   # colour plane
+    ("r_zero",       "CIRCLE(50,50),0,15", (50, 50), 2, False),
+]
+
+
+def phase_e() -> int:
+    fails = 0
+    print("=== PHASE E: CIRCLE pixel/colour plane differential (VG-8020 vs zerobas) ===")
+    for label, ops, (cx, cy), h, col in CIRCLE_CASES:
+        xr = (max(0, cx - h), cx + h)
+        yr = (max(0, cy - h), cy + h)
+        segs = band_segs(xr, yr, color=col)
+        specs = [("stored", prog([LINIT, ops]))]
+        ref = omsx_repl.run_cases(REF, specs, batch=False, capture=("vram_segs", segs))[0]
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, capture=("vram_segs", segs))[0]
+        ok = ref is not None and ref == zb
+        fails += not ok
+        plane = "colour" if col else "pattern"
+        note = "" if ok else f"  ref={ref} zb={zb}"
+        print(f"  {'PASS' if ok else 'FAIL'} {label:14} {plane} band {len(ref or '')//2}B{note}")
+    return fails
+
+
+# label, program lines, tag  (SCREEN0-funnelled behaviour: errors / GRPAC / work-area)
+# GXPOS=$FCB3/$FCB4 (LE), GYPOS=$FCB5/$FCB6, GRPACX=$FCB7/$FCB8, GRPACY=$FCB9/$FCBA
+# (arc §11.5 / g4_circle_char3.py gxpos_pattern -- same cells LINE_BEHAV already reads).
+CIRCLE_BEHAV = [
+    ("ovf_centre", ["ON ERROR GOTO 40", "SCREEN2:CIRCLE(32768,0),10",
+                    'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("ovf_radius", ["ON ERROR GOTO 40", "SCREEN2:CIRCLE(0,0),32768",
+                    'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("scr0_err",   ["ON ERROR GOTO 40", "SCREEN0:CIRCLE(5,5),3",
+                    'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("colour16_err", ["ON ERROR GOTO 40", "SCREEN2:CIRCLE(5,5),3,16",
+                      'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("aspect_neg_err", ["ON ERROR GOTO 40", "SCREEN2:CIRCLE(5,5),3,,,,-1",
+                        'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("clip_offscr_ok", ["ON ERROR GOTO 40", "SCREEN2:CIRCLE(300,300),10",
+                        'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "K"),
+    ("clip_neg_ok",    ["ON ERROR GOTO 40", "SCREEN2:CIRCLE(-5,-5),10",
+                        'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "K"),
+    ("grpac_step", ["SCREEN2:PSET(10,10):CIRCLE STEP(5,5),8",
+                    'SCREEN0:PRINT"G";PEEK(&HFCB7)+256*PEEK(&HFCB8);PEEK(&HFCB9)+256*PEEK(&HFCBA)'], "G"),
+    ("work_quirk", ["SCREEN2:CIRCLE(30,40),10",
+                    'SCREEN0:PRINT"W";PEEK(&HFCB3)+256*PEEK(&HFCB4);PEEK(&HFCB5)+256*PEEK(&HFCB6)'], "W"),
+]
+
+
+def phase_f() -> int:
+    fails = 0
+    print("=== PHASE F: CIRCLE behaviour (errors / GRPAC / work-area quirk) ===")
+    specs = [("stored", body) for _, body, _ in CIRCLE_BEHAV]
+    ref = omsx_repl.run_cases(REF, specs, batch=True, reset=("NEW", "CLS"))
+    zb = omsx_repl.run_cases(ZB, specs, batch=True, reset=("NEW", "CLS"))
+    for (label, _, tag), r, z in zip(CIRCLE_BEHAV, ref, zb):
+        ra, za = _answer(r, tag), _answer(z, tag)
+        ok = ra is not None and ra == za
+        fails += not ok
+        print(f"  {'PASS' if ok else 'FAIL'} {label:16} ref={ra!r} zb={za!r}")
+    return fails
+
+
+def phase_g_rneg() -> int:
+    """G4-rneg (signed-off deviation, spec §9): the REFERENCE HANGS on a
+    negative radius (unsigned-wrap), so this is NOT a differential -- only
+    zerobas is exercised, asserting the documented ERR 5 deviation."""
+    fails = 0
+    print("=== PHASE G: CIRCLE negative radius (zerobas-only; reference hangs) ===")
+    body = ["ON ERROR GOTO 40", "SCREEN2:CIRCLE(30,30),-1,15",
+            'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END']
+    zb = omsx_repl.run_cases(ZB, [("stored", body)], batch=False, reset=("NEW", "CLS"))[0]
+    za = _answer(zb, "E")
+    ok = za is not None and za.strip() == "E 5"
+    fails += not ok
+    print(f"  {'PASS' if ok else 'FAIL'} rneg_err zb={za!r} (want 'E 5')")
+    return fails
+
+
 def main() -> int:
-    fails = phase_a() + phase_b() + phase_c() + phase_d()
+    fails = (phase_a() + phase_b() + phase_c() + phase_d()
+              + phase_e() + phase_f() + phase_g_rneg())
     print("-------------------")
     print("graphics-acceptance:", "PASS" if fails == 0 else f"FAIL ({fails})")
     return 1 if fails else 0

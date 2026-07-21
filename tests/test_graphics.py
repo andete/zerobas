@@ -16,6 +16,8 @@ the G2 capture pass). Emulator-free -- assembles the real asm and drives it by
 label. Locks the logic the load-bearing VG-8020 differential (basic_probe_
 graphics.py) proves. Never ROM disassembly.
 """
+import decimal
+import json
 import os
 import subprocess
 import sys
@@ -25,6 +27,349 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
 from msxtest import Machine, carry  # noqa: E402
+
+decimal.getcontext().prec = 40
+D = decimal.Decimal
+
+
+def poke_fpnum(m, base, value):
+    """Write an FPNUM record (sign:1, dexp:2, dig:15) at `base` representing the
+    exact decimal `value` (own copy of test_float.py's helper -- kept local so
+    this file stays self-contained). 0 -> canonical zero."""
+    value = D(value)
+    if value == 0:
+        m.poke(base, bytes(18))
+        return
+    sign = 0x80 if value < 0 else 0x00
+    mag = -value if value < 0 else value
+    digits, exp = mag.as_tuple().digits, mag.as_tuple().exponent
+    dec_exp = len(digits) + exp
+    dig14 = (list(digits) + [0] * 14)[:14]
+    m.poke(base, bytes([sign]))
+    m.poke_w(base + 1, dec_exp & 0xFFFF)
+    m.poke(base + 3, bytes(dig14 + [0]))
+
+
+# --- G4 CIRCLE (docs/spec-basic-graphics-g4.md) --------------------------------
+# The TENANT (sub/graphics.asm, rom_base=0) and, since the G4 REVISED trig-free
+# arc rewrite shrank the resident stub, the RESIDENT (ex_circle, basic/graphics.
+# asm, rom_base=$2812 via main-reloc.asm) are both testable here.
+G4_DATA = json.load(open(os.path.join(ROOT, "scratchpad", "g4_pointsets.json")))
+G4_BND = json.load(open(os.path.join(ROOT, "scratchpad", "g4_arc_boundary_capture.json")))
+
+
+def midpoint_circle_octants(r):
+    """own-design integer midpoint circle (spec §4.1); the same function as
+    scratchpad/g4_circle_fit.py's host-fit oracle."""
+    pts = set()
+    x, y = 0, r
+    d = 1 - r
+    while x <= y:
+        for sx in (1, -1):
+            for sy in (1, -1):
+                pts.add((sx * x, sy * y))
+                pts.add((sx * y, sy * x))
+        if d < 0:
+            d += 2 * x + 3
+        else:
+            d += 2 * (x - y) + 5
+            y -= 1
+        x += 1
+    return pts
+
+
+def gfx_scale_off(off, S):
+    sign = 1 if off >= 0 else -1
+    mag = (abs(off) * S + 128) >> 8
+    return sign * mag
+
+
+def py_cross_ge0(ax, ay, bx, by):
+    return (ax * by - ay * bx) >= 0
+
+
+SCALE_CASES = [
+    (0, 256), (10, 256), (-10, 256), (20, 128), (-20, 128), (255, 256),
+    (100, 64), (-100, 64), (7, 200), (-7, 200), (1, 1), (-1, 1), (0, 0),
+    (255, 255), (-255, 255), (128, 200), (-128, 200),
+]
+
+CROSS_CASES = [
+    (1, 0, 0, 1), (0, 1, 1, 0), (1, 1, -1, 1), (1, 1, 1, -1),
+    (5, 0, 0, 5), (0, 0, 5, 5), (5, 5, 0, 0),
+    (-3, 4, 4, 3), (4, 3, -3, 4),
+    (100, 50, -50, 100), (-50, 100, 100, 50),
+    (200, 200, 200, 200), (-1, -1, -1, -1), (-5, 0, 0, -5),
+    (0, -5, -5, 0), (3, -4, -4, -3),
+]
+
+
+def _w16(v):
+    return v & 0xFFFF
+
+
+# --- G4-arcbnd (docs/spec-basic-graphics-g4.md §5.4/§9): the arc cross- ------
+# product mask polarity, pinned by scratchpad/g4_arc_boundary_capture.py.
+# Both boundary tests are INCLUSIVE (<=0), and the resident's r-scaled S/E
+# vectors NUDGE an artificial exact-zero rounding to +-1 (preserves direction
+# at near-cardinal angles the reference is shown to distinguish -- e.g.
+# CIRCLE(60,60),15,15,1.57,3.14 vs the SAME with a0=1.58 flip the inclusion
+# of pixel (61,45) even though a bare round(r*cos(a0)) is identical (0) for
+# both angles at r=15). Verified 4/4 exact on every pinned arc + 7/7 on the
+# capture's boundary sweep BEFORE this asm rewrite; these tests lock the same
+# arithmetic in the real asm (gfx_circ_keep + the resident's gfx_round_nonzero
+# nudge, reproduced here in Python as the independent oracle).
+import math  # noqa: E402
+
+
+def rscale_vec_nudge(r, angle):
+    """own-design: round(r*cos/sin(angle)), nudged to +-1 if the pre-round
+    value was nonzero but rounds to 0 (G4-arcbnd). Matches gfx_round_nonzero
+    + gfx_circ_axis_val (basic/graphics.asm)."""
+    cx, cy = r * math.cos(angle), r * math.sin(angle)
+    x = round(cx)
+    if x == 0 and cx != 0:
+        x = 1 if cx > 0 else -1
+    y = round(cy)
+    if y == 0 and cy != 0:
+        y = 1 if cy > 0 else -1
+    return x, -y
+
+
+def py_cross(ax, ay, bx, by):
+    return ax * by - ay * bx
+
+
+def py_arc_arcbig(S, E):
+    return py_cross(S[0], S[1], E[0], E[1]) >= 0
+
+
+def py_arc_keep(S, E, arcbig, px, py):
+    s_ok = py_cross(S[0], S[1], px, py) <= 0     # cross(S,P)<=0
+    e_ok = py_cross(px, py, E[0], E[1]) <= 0     # cross(P,E)<=0
+    return (s_ok and e_ok) if not arcbig else (s_ok or e_ok)
+
+
+# (label, start_angle, end_angle) -- the 4 pinned arcs, re-used from G4_DATA
+# for their (cx,cy,r) + captured point-set.
+ARC_CASES = [
+    ("arc_0_hpi", 0.0, 1.57), ("arc_hpi_pi", 1.57, 3.14),
+    ("arc_wrap", 3.0, 1.0), ("arc_full628", 0.0, 6.28),
+]
+
+
+# =============================================================================
+# TRIG-FREE arc boundary (spec §5.2.1 REVISED 2026-07-21) -- the independent
+# Python oracle, host-fit + validated BEFORE writing the asm
+# (scratchpad/g4_trigfree_final_model.py: ALL MATCH against every captured arc
+# + round1 boundary re-capture). Reproduced here so the SAME battery drives the
+# REAL asm (gfx_circ_bvec / gfx_circ_arcbig_calc / gfx_circ_boundary_prep,
+# below) instead of just the OLD continuous-trig rscale_vec_nudge oracle.
+# =============================================================================
+PY_QTAB = []
+for _i in range(65):
+    _v = round(256 * math.sin(2 * math.pi * _i / 256))
+    PY_QTAB.append(255 if _v > 255 else _v)
+
+
+def py_qtab_fold(b):
+    m = b & 0x7F
+    return m if m <= 64 else 128 - m
+
+
+def py_qtab_lookup(b):
+    return PY_QTAB[py_qtab_fold(b & 0xFF)]
+
+
+HALF_PI = math.pi / 2
+PI_ = math.pi
+THREE_HALF_PI = 3 * math.pi / 2
+
+
+def py_raw_brad(theta_abs):
+    """resident gfx_circ_boundary_prep: ONE bounded fp_mul (theta*128/pi) +
+    round-half-up (gfx_round_arga_de) -- NOT masked/reduced."""
+    return round(theta_abs * 128.0 / math.pi)
+
+
+def py_resident_signs(theta_abs):
+    """resident gfx_circ_boundary_prep: THREE bounded fp_cmp-style continuous
+    compares (theta vs HALF_PI/THREE_HALF_PI/PI_), NOT derived from brad."""
+    if theta_abs < HALF_PI:
+        sign_c = 1
+    elif theta_abs == HALF_PI:
+        sign_c = 0
+    elif theta_abs < THREE_HALF_PI:
+        sign_c = -1
+    elif theta_abs == THREE_HALF_PI:
+        sign_c = 0
+    else:
+        sign_c = 1
+    if theta_abs == 0:
+        sign_s = 0
+    elif theta_abs < PI_:
+        sign_s = 1
+    elif theta_abs == PI_:
+        sign_s = 0
+    else:
+        sign_s = -1
+    return sign_c, sign_s
+
+
+def py_bvec_mag(r, tab):
+    return (r * tab + 128) >> 8
+
+
+def py_bvec_nudge(mag, sign):
+    if sign == 0:
+        return 0
+    if mag != 0:
+        return sign * mag
+    return sign
+
+
+def py_gfx_circ_bvec(bradlo, sign_c, sign_s, r):
+    """tenant gfx_circ_bvec (pre-minor-scale; screen convention applied)."""
+    tab_c = py_qtab_lookup((bradlo + 64) & 0xFF)
+    x = py_bvec_nudge(py_bvec_mag(r, tab_c), sign_c)
+    tab_s = py_qtab_lookup(bradlo & 0xFF)
+    y = py_bvec_nudge(py_bvec_mag(r, tab_s), sign_s)
+    return x, -y
+
+
+def py_arcbig_calc(raw_s, raw_e):
+    """tenant gfx_circ_arcbig_calc: mod-256 diff, with the exact-256-wrap fix
+    (raw_e/raw_s differ but land in the SAME bucket -> forced big)."""
+    diff = (raw_e - raw_s) & 0xFF
+    if diff == 0 and raw_e != raw_s:
+        return True
+    return diff > 128
+
+
+def py_bvec_record(theta_abs, r):
+    """Resident-then-tenant, end to end (Python oracle): angle -> (Sx,Sy),
+    raw_brad (the latter needed by py_arcbig_calc)."""
+    raw = py_raw_brad(theta_abs)
+    sc, ss = py_resident_signs(theta_abs)
+    return py_gfx_circ_bvec(raw & 0xFF, sc, ss, r), raw
+
+
+def zcirc_keep(m, arcf, svx, svy, evx, evy, arcbig, px, py):
+    m.poke(m.addr("GFX_ARCF"), arcf)
+    m.poke_w(m.addr("GFX_SVX"), _w16(svx))
+    m.poke_w(m.addr("GFX_SVY"), _w16(svy))
+    m.poke_w(m.addr("GFX_EVX"), _w16(evx))
+    m.poke_w(m.addr("GFX_EVY"), _w16(evy))
+    m.poke(m.addr("GFX_ARCBIG"), arcbig)
+    m.poke_w(m.addr("GFX_PX"), _w16(px))
+    m.poke_w(m.addr("GFX_PY"), _w16(py))
+    cpu = m.call("gfx_circ_keep")
+    return carry(cpu)
+
+
+def zbvec(m, bradlo, bradhi, signc, signs, r, aspmaj=0, asps=256, dest="GFX_SVX"):
+    """Drive the REAL tenant gfx_circ_bvec (sub/graphics.asm): pokes a 4-byte
+    boundary record (brad_lo/hi, signc, signs) at GFX_SBRAD, GFX_R/ASPMAJ/ASPS,
+    calls gfx_circ_bvec(HL=GFX_SBRAD, DE=dest), returns the (Vx,Vy) it wrote."""
+    base = m.addr("GFX_SBRAD")
+    m.poke(base, bytes([bradlo & 0xFF, bradhi & 0xFF, signc & 0xFF, signs & 0xFF]))
+    m.poke_w(m.addr("GFX_R"), _w16(r))
+    m.poke(m.addr("GFX_ASPMAJ"), aspmaj)
+    m.poke_w(m.addr("GFX_ASPS"), _w16(asps))
+    m.call("gfx_circ_bvec", h=(base >> 8) & 0xFF, l=base & 0xFF,
+           d=(m.addr(dest) >> 8) & 0xFF, e=m.addr(dest) & 0xFF)
+    return _rd16s(m, dest), _rd16s2(m, dest)
+
+
+def _rd16s2(m, name):
+    """second int16 (the Y half) at addr(name)+2."""
+    b = m.peek(m.addr(name) + 2, 2)
+    v = b[0] | (b[1] << 8)
+    return v - 0x10000 if v >= 0x8000 else v
+
+
+def zarcbig(m, raw_s, raw_e):
+    """Drive the REAL tenant gfx_circ_arcbig_calc."""
+    m.poke_w(m.addr("GFX_SBRAD"), _w16(raw_s))
+    m.poke_w(m.addr("GFX_EBRAD"), _w16(raw_e))
+    m.call("gfx_circ_arcbig_calc")
+    return m.peek(m.addr("GFX_ARCBIG"))[0]
+
+
+def zbvec_prep(m, sbrad, ssgnc, ssgns, ebrad, esgnc, esgns, r, aspmaj=0, asps=256):
+    """Drive the REAL tenant gfx_circ_bvec_prep end to end: marshals the two
+    boundary records + GFX_R/ASPMAJ/ASPS, calls it, returns (S, E, arcbig) as
+    read back from GFX_SVX/SVY/EVX/EVY/GFX_ARCBIG."""
+    m.poke(m.addr("GFX_SBRAD"), bytes([sbrad & 0xFF, (sbrad >> 8) & 0xFF,
+                                        ssgnc & 0xFF, ssgns & 0xFF]))
+    m.poke(m.addr("GFX_EBRAD"), bytes([ebrad & 0xFF, (ebrad >> 8) & 0xFF,
+                                        esgnc & 0xFF, esgns & 0xFF]))
+    m.poke_w(m.addr("GFX_R"), _w16(r))
+    m.poke(m.addr("GFX_ASPMAJ"), aspmaj)
+    m.poke_w(m.addr("GFX_ASPS"), _w16(asps))
+    m.call("gfx_circ_bvec_prep")
+    S = (_rd16s(m, "GFX_SVX"), _rd16s2(m, "GFX_SVX"))
+    E = (_rd16s(m, "GFX_EVX"), _rd16s2(m, "GFX_EVX"))
+    big = m.peek(m.addr("GFX_ARCBIG"))[0]
+    return S, E, big
+
+
+def zboundary_prep_resident(mr, theta_abs, dest="GFX_SBRAD"):
+    """Drive the REAL RESIDENT gfx_circ_boundary_prep (basic/graphics.asm,
+    rom_base=$2812): pokes a canonical FPNUM into ARGA (poke_fpnum), points
+    GFX_CS_AY at `dest`, calls it, returns (brad_raw, sign_c, sign_s) read
+    back from the 4-byte record it wrote."""
+    poke_fpnum(mr, mr.addr("ARGA"), theta_abs)
+    mr.poke_w(mr.addr("GFX_CS_AY"), mr.addr(dest))
+    mr.call("gfx_circ_boundary_prep")
+    b = mr.peek(mr.addr(dest), 2)
+    brad = b[0] | (b[1] << 8)
+    signc = mr.peek(mr.addr(dest) + 2)[0]
+    signs = mr.peek(mr.addr(dest) + 3)[0]
+    to_signed = lambda v: v - 256 if v >= 128 else v
+    return brad, to_signed(signc), to_signed(signs)
+
+
+def zcirc_full_draw(m, cx, cy, r):
+    """Drive the REAL gfx_circle_op loop end-to-end, including its OWN gco_loop
+    termination test -- unlike zcirc_octant_steps, which drives gfx_circ_init/
+    next via a PYTHON-decided "while x<=y" and never exercises the asm's own
+    termination check. This is the actual site of the r=0 bug (signed vs.
+    unsigned compare when QY goes negative -- see the G4 slice report)."""
+    m.poke_w(m.addr("GFX_CXC"), _w16(cx))
+    m.poke_w(m.addr("GFX_CYC"), _w16(cy))
+    m.poke_w(m.addr("GFX_R"), _w16(r))
+    m.poke(m.addr("GFX_ASPMAJ"), 0)
+    m.poke_w(m.addr("GFX_ASPS"), 256)
+    m.poke(m.addr("GFX_ARCF"), 0)
+    m.poke(m.addr("GFX_C"), 15)
+    m.call("gfx_circle_op", max_steps=200_000)
+
+
+def zcirc_octant_steps(m, r):
+    """Drive gfx_circ_init/gfx_circ_next (sub/graphics.asm); collect the raw
+    (x,y) stepper sequence (pre-mirroring) -- mirrors zbres's role for the
+    G3 Bresenham test below."""
+    m.poke_w(m.addr("GFX_R"), _w16(r))
+    m.call("gfx_circ_init")
+    x, y = _rd16s(m, "GFX_QX"), _rd16s(m, "GFX_QY")
+    steps = [(x, y)]
+    while x <= y:
+        m.call("gfx_circ_next")
+        x, y = _rd16s(m, "GFX_QX"), _rd16s(m, "GFX_QY")
+        if x <= y:
+            steps.append((x, y))
+    return steps
+
+
+def pymirror(steps):
+    pts = set()
+    for x, y in steps:
+        for sx in (1, -1):
+            for sy in (1, -1):
+                pts.add((sx * x, sy * y))
+                pts.add((sx * y, sy * x))
+    return pts
 
 SUB_ROM = "/tmp/zb_graphics_sub.rom"
 SUB_SYM = "/tmp/zb_graphics_sub.sym"
@@ -218,6 +563,249 @@ def run():
         check(got == want, f"gfx_bres {line} -> {len(got)} pts"
               + ("" if got == want else f"  DIFF asm^py={sorted(got ^ want)[:6]}"))
 
+    # --- G4 CIRCLE tenant math (sub-rom, rom_base=0) ---------------------------
+    # gfx_circ_init/next: the pure midpoint-circle stepper == pymidpoint (own
+    # design, spec §4.1) for a battery incl. every captured radius + small edges.
+    for r in (0, 1, 2, 3, 4, 7, 8, 12, 15, 20):
+        want = midpoint_circle_octants(r)
+        got = pymirror(zcirc_octant_steps(m, r))
+        check(got == want, f"gfx_circ_init/next r={r:2d} octant set == pymidpoint oracle "
+              f"({len(got)} pts)" + ("" if got == want else f"  DIFF {sorted(got ^ want)[:6]}"))
+
+    # asm octants + centre == the CAPTURED VG-8020 circles (the real oracle,
+    # scratchpad/g4_pointsets.json) -- the crux-1 de-risker, emulator-free.
+    for label in ("circ_r4", "circ_r7", "circ_r8", "circ_r12", "circ_r15", "circ_r20"):
+        d = G4_DATA[label]
+        r = int("".join(c for c in label if c.isdigit()))
+        ref = {(x, y) for x, y in d["pts"]}
+        got = {(d["cx"] + dx, d["cy"] + dy) for dx, dy in pymirror(zcirc_octant_steps(m, r))}
+        check(got == ref, f"gfx_circ asm+centre == captured VG-8020 {label} (n={d['n']})"
+              + ("" if got == ref else f"  DIFF {sorted(got ^ ref)[:6]}"))
+
+    # teeth: perturbing d0 (1-r -> -r) must break at least one radius
+    def zcirc_bad_d0(m, r):
+        m.poke_w(m.addr("GFX_R"), _w16(r))
+        m.call("gfx_circ_init")
+        m.poke_w(m.addr("GFX_QD"), _w16(r - 1))    # corrupt d0 (was 1-r; flip its sign)
+        x, y = _rd16s(m, "GFX_QX"), _rd16s(m, "GFX_QY")
+        steps = [(x, y)]
+        while x <= y:
+            m.call("gfx_circ_next")
+            x, y = _rd16s(m, "GFX_QX"), _rd16s(m, "GFX_QY")
+            if x <= y:
+                steps.append((x, y))
+        return steps
+    bad = pymirror(zcirc_bad_d0(m, 15))
+    good = midpoint_circle_octants(15)
+    check(bad != good, "teeth: corrupting d0 changes the r=15 point set (anti-green-build)")
+
+    # --- gco_loop termination (r=0 bug, G4 slice report): the REAL asm loop's --
+    # own "while QX<=QY" test must be SIGNED. r=0 drives QY to -1 after the one
+    # valid step; an unsigned cf-based test reads -1 as 65535 (never <= QX) and
+    # the loop never stops, drawing extra garbage octant points. Drives the
+    # actual gfx_circle_op loop (not just the pure init/next stepper, which is
+    # driven by a PYTHON while-loop and never exercises the asm's own check) and
+    # asserts it halts at the SAME (QX,QY) the pure stepper says is one-past-the-
+    # last-valid-point, for a battery including the r=0 edge and every captured
+    # radius.
+    for r in (0, 1, 2, 3, 4, 7, 8, 12, 15, 20):
+        zcirc_octant_steps(m, r)               # leaves the machine one step PAST
+                                                # the last valid (x,y) (its own
+                                                # python while-loop always calls
+                                                # gfx_circ_next once more than it
+                                                # appends) -- this IS the reference
+                                                # termination point, read directly.
+        want_x, want_y = _rd16s(m, "GFX_QX"), _rd16s(m, "GFX_QY")
+        zcirc_full_draw(m, 50, 50, r)          # drives gco_loop's OWN check
+        got_x, got_y = _rd16s(m, "GFX_QX"), _rd16s(m, "GFX_QY")
+        check((got_x, got_y) == (want_x, want_y),
+              f"gco_loop terminates r={r:2d} at ({got_x},{got_y}) (want ({want_x},{want_y}))")
+
+    # --- gfx_circ_scale: the 8.8 minor-axis fixed-point scale (spec §4.2) ------
+    for off, S in SCALE_CASES:
+        m.poke_w(m.addr("GFX_ASPS"), _w16(S))
+        v16 = _w16(off)
+        cpu = m.call("gfx_circ_scale", h=(v16 >> 8) & 0xFF, l=v16 & 0xFF)
+        got = cpu.hl - 0x10000 if cpu.hl >= 0x8000 else cpu.hl
+        want = gfx_scale_off(off, S)
+        check(got == want, f"gfx_circ_scale v={off:4d} S={S:3d} -> {got} (want {want})")
+
+    # --- gfx_cross_ge0: the integer arc cross-product sign test (spec §5.2) ----
+    for ax, ay, bx, by in CROSS_CASES:
+        m.poke_w(m.addr("GFX_CS_AX"), _w16(ax))
+        m.poke_w(m.addr("GFX_CS_AY"), _w16(ay))
+        m.poke_w(m.addr("GFX_CS_BX"), _w16(bx))
+        m.poke_w(m.addr("GFX_CS_BY"), _w16(by))
+        cpu = m.call("gfx_cross_ge0")
+        got = carry(cpu)
+        want = py_cross_ge0(ax, ay, bx, by)
+        check(got == want, f"gfx_cross_ge0 A=({ax:4d},{ay:4d}) B=({bx:4d},{by:4d}) "
+              f"-> {got} (want {want})")
+
+    # --- gfx_circ_keep: the arc mask polarity, pinned by scratchpad/g4_arc_ -----
+    # boundary_capture.py (G4-arcbnd). S=(1,0),E=(0,1) is a small(<=pi) sweep
+    # covering the first quadrant; a battery of direct polarity/boundary checks
+    # plus the FULL captured-arc integration test (below) locks the resolved rule.
+    KEEP_CASES = [
+        # arcf, S,         E,        arcbig, P,        want
+        (1, (15, 0), (0, -15), 0, (15, 0), True),      # P == S itself -> keep
+        (1, (15, 0), (0, -15), 0, (0, -15), True),     # P == E itself -> keep
+        (1, (15, 0), (0, -15), 0, (11, -11), True),    # clearly inside
+        (1, (15, 0), (0, -15), 0, (-11, -11), False),  # clearly outside
+        (1, (1, -15), (-15, -1), 0, (1, -15), True),   # nudged S == the boundary pixel itself
+        (0, (15, 0), (0, -15), 0, (-11, -11), True),   # ARCF=0 -> always keep
+    ]
+    for arcf, S, E, arcbig, P, want in KEEP_CASES:
+        got = zcirc_keep(m, arcf, S[0], S[1], E[0], E[1], arcbig, P[0], P[1])
+        check(got == want, f"gfx_circ_keep ARCF={arcf} S={S} E={E} big={arcbig} "
+              f"P={P} -> {got} (want {want})")
+
+    # --- FULL arc integration: octant generator + arc mask == every pinned -----
+    # captured VG-8020 arc, EXACTLY (0 diffs) -- the crux-3 de-risker + the
+    # G4-arcbnd resolution, emulator-free. Reproduces the resident's nudge in
+    # Python (rscale_vec_nudge) as an independent oracle, then drives the REAL
+    # asm (gfx_circ_init/next for the octant sequence, gfx_circ_keep for the
+    # mask) to reproduce the identical point set.
+    for label, s, e in ARC_CASES:
+        d = G4_DATA[label]
+        r = int(d["ops"].split(")")[1].split(",")[1])
+        S = rscale_vec_nudge(r, abs(s))
+        E = rscale_vec_nudge(r, abs(e))
+        arcbig = 1 if py_arc_arcbig(S, E) else 0
+        ref = {(x, y) for x, y in d["pts"]}
+        got = set()
+        for dx, dy in pymirror(zcirc_octant_steps(m, r)):
+            if zcirc_keep(m, 1, S[0], S[1], E[0], E[1], arcbig, dx, dy):
+                got.add((d["cx"] + dx, d["cy"] + dy))
+        check(got == ref, f"gfx_circ arc {label} (S={S} E={E} big={arcbig}) == "
+              f"captured VG-8020 (n={d['n']})"
+              + ("" if got == ref else f"  DIFF {sorted(got ^ ref)[:6]}"))
+
+    # teeth (anti-green-build): P==S and P==E (an endpoint testing itself, cross
+    # product exactly 0) MUST be kept under the resolved inclusive rule; a
+    # strict "<0"/">0" polarity would flip both to rejected. The two P==S/P==E
+    # rows in KEEP_CASES above already assert `want=True` for exactly this
+    # boundary case, so a regression to strict polarity fails THIS suite.
+    check(zcirc_keep(m, 1, 15, 0, 0, -15, 0, 15, 0) is True,
+          "teeth: P==S (cross==0 exactly) is kept under the inclusive <=0 rule")
+
+    # =========================================================================
+    # G4 TRIG-FREE arc boundary (spec §5.2.1 REVISED 2026-07-21) -- the
+    # replacement for the float SIN/COS pipeline that infinite-looped
+    # (scratchpad/g4_hang_probe.py). Drives the REAL new tenant asm
+    # (gfx_circ_bvec / gfx_circ_arcbig_calc / gfx_circ_bvec_prep) against the
+    # independent Python oracle above, host-fit BEFORE this asm was written
+    # (scratchpad/g4_trigfree_final_model.py).
+    # =========================================================================
+
+    # --- gfx_circ_bvec: a battery of (brad, sign_c, sign_s, r) incl. every
+    # brad the 4 pinned arcs + round1 re-captures actually use, plus the
+    # near-cardinal brad=64/192 boundary where BOTH signs occur. ---
+    BVEC_CASES = []
+    for r in (15, 20, 1, 255):
+        for bradlo in (0, 1, 40, 41, 63, 64, 65, 96, 122, 127, 128, 129, 160,
+                       192, 200, 255):
+            for sc in (1, -1, 0):
+                for ss in (1, -1, 0):
+                    BVEC_CASES.append((bradlo, sc, ss, r))
+    for bradlo, sc, ss, r in BVEC_CASES:
+        got = zbvec(m, bradlo, 0, sc & 0xFF, ss & 0xFF, r)
+        want = py_gfx_circ_bvec(bradlo, sc, ss, r)
+        check(got == want,
+              f"gfx_circ_bvec brad={bradlo:3d} signc={sc:2d} signs={ss:2d} r={r:3d} "
+              f"-> {got} (want {want})")
+
+    # teeth: the near-cardinal nudge is what distinguishes brad=64 (cos~0) with
+    # sign_c=+1 from sign_c=-1 -- a bare round(r*cos) (no nudge) would give 0
+    # for BOTH, losing the direction the reference is shown to preserve
+    # (spec §5.4, the 1.57-vs-1.58 pin). Assert the asm actually keeps them
+    # apart AND matches the +-1 nudge exactly (not just "nonzero").
+    xp, _ = zbvec(m, 64, 0, 1, 1, 15)
+    xn, _ = zbvec(m, 64, 0, -1 & 0xFF, 1, 15)
+    check(xp == 1 and xn == -1 and xp != xn,
+          f"teeth: gfx_circ_bvec brad=64 nudge distinguishes sign_c=+1 ({xp}) "
+          f"from sign_c=-1 ({xn})")
+
+    # --- gfx_circ_arcbig_calc: mod-256 diff + the exact-wrap fix (raw_e/raw_s
+    # differ but land in the SAME bucket, e.g. 0 vs 256 for a near-2pi sweep --
+    # arc_full628's actual raw pair) ---
+    ARCBIG_CASES = [
+        (0, 64, False), (64, 0, True), (64, 128, False), (0, 256, True),
+        (0, 0, False), (256, 0, True), (122, 41, True), (0, 122, False),
+        (200, 210, False), (10, 200, True), (0, 129, True), (0, 128, False),
+    ]
+    for rs, re_, want in ARCBIG_CASES:
+        got = bool(zarcbig(m, rs, re_))
+        py_want = py_arcbig_calc(rs, re_)
+        check(got == want == py_want,
+              f"gfx_circ_arcbig_calc raw_s={rs} raw_e={re_} -> {got} (want {want})")
+
+    # --- FULL trig-free pipeline: gfx_circ_bvec_prep + the (unchanged) octant
+    # generator/mask == every pinned captured VG-8020 arc, EXACTLY (0 diffs).
+    # This is the actual crux-3 de-risker for the REVISED design (the OLD
+    # rscale_vec_nudge-fed integration test above only re-proves gfx_circ_keep's
+    # polarity, not this new brad/table/nudge chain). angle -> (brad, signs) is
+    # computed by py_raw_brad/py_resident_signs, standing in for the RESIDENT
+    # gfx_circ_boundary_prep (proven separately below); everything from there
+    # on (gfx_circ_bvec_prep, gfx_circ_arcbig_calc, the octant loop, the mask)
+    # is the REAL asm.
+    def full_trigfree(m, cx, cy, r, a0, a1, aspmaj=0, asps=256):
+        raw_s = py_raw_brad(abs(a0))
+        sc_s, ss_s = py_resident_signs(abs(a0))
+        raw_e = py_raw_brad(abs(a1))
+        sc_e, ss_e = py_resident_signs(abs(a1))
+        S, E, big = zbvec_prep(m, raw_s & 0xFFFF, sc_s & 0xFF, ss_s & 0xFF,
+                                raw_e & 0xFFFF, sc_e & 0xFF, ss_e & 0xFF,
+                                r, aspmaj, asps)
+        got = set()
+        for dx, dy in pymirror(zcirc_octant_steps(m, r)):
+            if zcirc_keep(m, 1, S[0], S[1], E[0], E[1], big, dx, dy):
+                got.add((cx + dx, cy + dy))
+        return got, S, E, big
+
+    for label, s, e in ARC_CASES:
+        d = G4_DATA[label]
+        r = int(d["ops"].split(")")[1].split(",")[1])
+        ref = {(x, y) for x, y in d["pts"]}
+        got, S, E, big = full_trigfree(m, d["cx"], d["cy"], r, s, e)
+        check(got == ref,
+              f"TRIG-FREE gfx_circ_bvec_prep arc {label} (S={S} E={E} big={big}) "
+              f"== captured VG-8020 (n={d['n']})"
+              + ("" if got == ref else f"  DIFF {sorted(got ^ ref)[:6]}"))
+
+    # round1 boundary re-captures (scratchpad/g4_arc_boundary_capture.py) --
+    # the same targeted near-cardinal captures that pinned G4-arcbnd originally.
+    for label, c in G4_BND["round1"].items():
+        ops = c["ops"]
+        args = ops.split(")", 1)[1].lstrip(",").split(",")
+        r = int(args[0])
+        a0, a1 = float(args[2]), float(args[3])
+        ref = {(x, y) for x, y in c["pts"]}
+        got, S, E, big = full_trigfree(m, c["cx"], c["cy"], r, a0, a1)
+        check(got == ref,
+              f"TRIG-FREE gfx_circ_bvec_prep {label} ({a0},{a1}) (S={S} E={E} "
+              f"big={big}) == captured (n={len(ref)})"
+              + ("" if got == ref else f"  DIFF {sorted(got ^ ref)[:6]}"))
+
+    # teeth: flipping the start boundary's sign_c for arc_hpi_pi (a0=1.57,
+    # quad-boundary brad=64) must regress the match -- proves the resident's
+    # continuous quadrant sign (not a brad-derived one) is load-bearing.
+    d = G4_DATA["arc_hpi_pi"]
+    r = int(d["ops"].split(")")[1].split(",")[1])
+    ref = {(x, y) for x, y in d["pts"]}
+    raw_s = py_raw_brad(1.57)
+    sc_s, ss_s = py_resident_signs(1.57)
+    raw_e = py_raw_brad(3.14)
+    sc_e, ss_e = py_resident_signs(3.14)
+    S, E, big = zbvec_prep(m, raw_s, (-sc_s) & 0xFF, ss_s & 0xFF,
+                            raw_e, sc_e & 0xFF, ss_e & 0xFF, r)
+    bad = set()
+    for dx, dy in pymirror(zcirc_octant_steps(m, r)):
+        if zcirc_keep(m, 1, S[0], S[1], E[0], E[1], big, dx, dy):
+            bad.add((d["cx"] + dx, d["cy"] + dy))
+    check(bad != ref, "teeth: flipping arc_hpi_pi's start sign_c breaks the "
+          "captured match (anti-green-build)")
+
     # --- resident leaf (repack build, rom_base=$2812) ---
     build_reloc()
     mr = Machine(RES_ROM, RES_SYM, rom_base=RELOC_BASE)
@@ -228,6 +816,31 @@ def run():
         check(got == want,
               f"gfx_in_range x={x:>5} y={y:>5} -> {'in' if got else 'off':>3} "
               f"(want {'in' if want else 'off'})")
+
+    # --- resident gfx_circ_boundary_prep (§5.2.1 REVISED): the brad + ---
+    # continuous quadrant-sign marshal. Battery incl. the 1.57-vs-1.58 pair
+    # (the whole point of the continuous-not-brad-derived sign, spec §5.4) and
+    # every cardinal/near-cardinal edge (0, pi/2, pi, 3pi/2, 2pi-ish).
+    BOUNDARY_PREP_CASES = [
+        0.0, 0.01, 1.0, 1.50, 1.504, 1.51, 1.55, 1.57, 1.58, 1.60,
+        math.pi / 2, 3.0, 3.14, math.pi, 4.71238898038469, 6.28,
+    ]
+    for theta in BOUNDARY_PREP_CASES:
+        brad, sc, ss = zboundary_prep_resident(mr, theta)
+        want_brad = py_raw_brad(theta)
+        want_sc, want_ss = py_resident_signs(theta)
+        check(brad == want_brad and sc == want_sc and ss == want_ss,
+              f"gfx_circ_boundary_prep theta={theta} -> brad={brad} "
+              f"(want {want_brad}) signc={sc} (want {want_sc}) "
+              f"signs={ss} (want {want_ss})")
+
+    # teeth: 1.57 and 1.58 MUST resolve to different sign_c despite an
+    # (almost certainly) identical brad -- the whole reason the sign comes
+    # from a continuous compare, not brad>>6.
+    b57, sc57, _ = zboundary_prep_resident(mr, 1.57)
+    b58, sc58, _ = zboundary_prep_resident(mr, 1.58)
+    check(sc57 != sc58, f"teeth: gfx_circ_boundary_prep distinguishes theta=1.57 "
+          f"(brad={b57} signc={sc57}) from 1.58 (brad={b58} signc={sc58})")
 
     print("-------------------")
     print("test_graphics:", "PASS" if fails == 0 else f"FAIL ({fails})")

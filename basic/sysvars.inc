@@ -357,6 +357,12 @@ BEEP_TOKEN      equ     $C0     ; BEEP (statement, no args; audio close-out, sou
 PSET_TOKEN      equ     $C2     ; PSET (x,y)[,c]      (statement, basic/graphics.asm)
 PRESET_TOKEN    equ     $C3     ; PRESET (x,y)[,c]    (statement)
 POINT_TOKEN     equ     $ED     ; POINT(x,y)          (function -> pixel colour / -1)
+; Graphics G4 (docs/spec-basic-graphics-g4.md §7/§11.1). CIRCLE is a NEW single-byte
+; STATEMENT token (unlike G3's LINE, which reused an existing token). $BC collides
+; with nothing in the existing table (arc §7); re-confirmed by the G4 characterisation
+; pass (stored-line crunch, spec §11.1: "CIRCLE(30,30),10" -> BC 28 ... 29 ... 00).
+; Repack-only kwtable entry (lean cart ships no graphics).
+CIRCLE_TOKEN    equ     $BC     ; CIRCLE (x,y),r[,c[,start[,end[,aspect]]]] (statement)
 ; ASCII bytes the tokeniser / evaluator treat specially (all public ASCII).
 COLON           equ     $3A     ; ':' statement separator
 QUOTE_REM       equ     $27     ; "'" — apostrophe comment, treated as REM
@@ -422,6 +428,60 @@ GFX_TX2         equ     $E11E   ; box: stashed corner 2 X (2)
 GFX_TY2         equ     $E120   ; box: stashed corner 2 Y (2)
 GFX_FILLCNT     equ     $E122   ; box fill: scanlines remaining (2)
 GFX_YSTEP       equ     $E124   ; box fill: row step, $0001/$FFFF (2)   -> ends $E126
+; Graphics G4 (CIRCLE, docs/spec-basic-graphics-g4.md §6). Append-only after G3's
+; $E126, same LINEBUF-region discipline (dead during any graphics statement, below
+; the PLAY ISR region). GFX_OP=4 selects the tenant arm; GFX_OP/GFX_C ($E030/$E031)
+; stay shared with G1/G2/G3 (op selector + resolved colour). Spoke lines (§5.3) are
+; marshalled through the EXISTING G3 GFX_X1/Y1/X2/Y2/GFX_MODE cells with GFX_OP=3 --
+; no new cells needed for that reuse.
+GFX_CXC         equ     $E126   ; centre X (int16 LE) (2)
+GFX_CYC         equ     $E128   ; centre Y (int16 LE) (2)
+GFX_R           equ     $E12A   ; radius (int16, >=0 -- resident guards G4-rneg) (2)
+GFX_ASPMAJ      equ     $E12C   ; 0 = x-major (aspect<=1), 1 = y-major (aspect>1) (1)
+GFX_ASPS        equ     $E12D   ; 8.8 minor scale S, round(minor_ratio*256); 256=no scale (2)
+GFX_ARCF        equ     $E12F   ; 0 = full circle (ignore S/E), 1 = arc (apply the mask) (1)
+GFX_SVX         equ     $E130   ; start boundary vector X, screen-offset scaled ints (2)
+GFX_SVY         equ     $E132   ; start boundary vector Y (2)
+GFX_EVX         equ     $E134   ; end boundary vector X (2)
+GFX_EVY         equ     $E136   ; end boundary vector Y (2)
+GFX_ARCBIG      equ     $E138   ; sweep > pi flag (0/1); TENANT-computed (§5.2.1 REVISED --
+                                ; trig-free: gfx_circ_arcbig_calc, sub/graphics.asm) (1)
+GFX_QX          equ     $E139   ; midpoint-circle octant state: x (2)
+GFX_QY          equ     $E13B   ; midpoint-circle octant state: y (2)
+GFX_QD          equ     $E13D   ; midpoint-circle octant state: d (signed) (2)
+GFX_PX          equ     $E13F   ; tenant scratch: current (mirrored+scaled) offset X,
+                                ; used as the arc cross-product test point P (2)
+GFX_PY          equ     $E141   ; tenant scratch: current offset Y (2)
+GFX_CS_AX       equ     $E143   ; gfx_cross_ge0 input: vector A.x; ALSO reused as
+                                ; gfx_circ_bvec scratch (dead there before the octant
+                                ; loop starts) (2)
+GFX_CS_AY       equ     $E145   ; gfx_cross_ge0 input: vector A.y; ALSO gfx_circ_bvec's
+                                ; dest-vector-base scratch (2)
+GFX_CS_BX       equ     $E147   ; gfx_cross_ge0 input: vector B.x; ALSO gfx_circ_bvec's
+                                ; sign_c scratch (2)
+GFX_CS_BY       equ     $E149   ; gfx_cross_ge0 input: vector B.y; ALSO gfx_circ_bvec's
+                                ; sign_s scratch (2)
+GFX_CS_T1       equ     $E14B   ; gfx_circ_keep scratch: cross(S,P)>=0 flag ($00/$FF);
+                                ; ALSO gfx_circ_bvec_nudge's sign-byte scratch (1)
+; --- G4 REVISED (2026-07-21, spec §5.2.1): trig-free arc boundary. Replaces the
+; original float SIN/COS resident pipeline (which infinite-looped in the sub-ROM
+; math pack's series fp_mul -- root-caused via scratchpad/g4_hang_probe.py) with a
+; resident brad+quadrant-sign marshal (ONE bounded fp_mul + 3 bounded fp_cmp
+; compares -- no series, cannot hang) and a tenant integer table lookup
+; (sub/graphics.asm gfx_circ_bvec). GFX_ATMP (the old FAC-repack stash, 18 bytes)
+; is retired -- these 8 bytes replace it, net -10 bytes.
+GFX_SBRAD       equ     $E14C   ; start angle: round(|a0|*128/pi), RAW/unmasked int16
+                                ; (only the low byte is a mod-256 table index; the
+                                ; full word feeds gfx_circ_arcbig_calc's wrap fix) (2)
+GFX_SSGNC       equ     $E14E   ; start: cos-component quadrant sign ($01/$FF/$00) (1)
+GFX_SSGNS       equ     $E14F   ; start: sin-component quadrant sign ($01/$FF/$00) (1)
+GFX_EBRAD       equ     $E150   ; end angle: round(|a1|*128/pi), RAW/unmasked (2)
+GFX_ESGNC       equ     $E152   ; end: cos-component quadrant sign (1)
+GFX_ESGNS       equ     $E153   ; end: sin-component quadrant sign (1)
+GFX_SNEG        equ     $E154   ; resident: start angle was negative -> spoke pending (1)
+GFX_ENEG        equ     $E155   ; resident: end angle was negative -> spoke pending (1)
+                                ; -> ends $E156 (LINEBUF region ends $E15F inclusive;
+                                ; well within the G3 header's own budget note)
 CURPTR          equ     $E020   ; current load pointer (2 bytes)
 ENDPTR          equ     $E022   ; final load address  (2 bytes)
 EXECPTR         equ     $E024   ; execution address   (2 bytes)

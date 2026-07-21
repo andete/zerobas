@@ -40,7 +40,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/fat.asm basic/bload.asm basic/cload.asm basic/save.asm basic/files.asm \
          basic/field.asm basic/format.asm basic/printusing.asm basic/program.asm basic/float.asm \
          basic/float-arith.asm basic/subromcall.asm basic/input.asm \
-         basic/arrays.asm basic/sound.asm basic/play.asm \
+         basic/arrays.asm basic/sound.asm basic/play.asm basic/graphics.asm \
          basic/tokenise.inc basic/detok.inc basic/pu-render.inc basic/format-body.inc \
          basic/fat-prim-body.inc basic/fat-delete-body.inc \
          basic/randio-body.inc basic/fld-fill-body.inc \
