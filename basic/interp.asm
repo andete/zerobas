@@ -259,6 +259,8 @@ exec_stmt:
                 jp      z,ex_error
                 cp      RESUME_TOKEN        ; RESUME family (error-handling S2b, below)
                 jp      z,ex_resume
+                cp      SOUND_TOKEN         ; SOUND reg,value  (audio slice 1, sound.asm)
+                jp      z,ex_sound
     ENDIF
                 call    is_letter           ; bare letter -> assignment
                 jr      c,ex_let

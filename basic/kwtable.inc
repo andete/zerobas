@@ -302,5 +302,13 @@ kwtable:
                 ; capture ([[s2-error-token-pins]]) + MSX2 TH Table 2.20 cross-
                 ; check. No prefix collision with any existing entry.
                 db      6,"RESUME",1,RESUME_TOKEN                ; $A7
+                ; --- audio slice 1 (repack build only) ------------------------
+                ; docs/spec-basic-audio-play.md. SOUND: single-byte STATEMENT
+                ; token ($C4), black-box VG-8020 crunch capture ("sound 1,255"
+                ; -> C4 20 12 2C 0F FF 00; scratchpad/spike_sound_token.py) +
+                ; MSX2 TH Table 2.20 cross-check. No prefix collision with any
+                ; existing entry ("SCREEN"/"STOP"/"STEP"/"STR$"/"SPACE$" share
+                ; no prefix with "SOUND"; match_kw compares the FULL keyword).
+                db      5,"SOUND",1,SOUND_TOKEN                  ; $C4
     ENDIF
                 db      0

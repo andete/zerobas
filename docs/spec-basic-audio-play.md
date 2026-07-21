@@ -1,8 +1,9 @@
 # Spec — zerobas BASIC audio: `SOUND` + `PLAY` (PSG, MSX1)
 
-**Status: SIGNED OFF (2026-07-21).** All of Q1–Q6 resolved (see below). Ready to
-implement in the Q3 slice order, starting with Slice 1 (`SOUND` + PSG init).
-Greenfield: no
+**Status: SIGNED OFF (2026-07-21). Slice 1 (`SOUND`) LANDED 2026-07-21** — see
+§3.D / §6; the empirical VG-8020 pass corrected §2.1 (reg 14/15 raise ERR 5, they
+are not silently masked). Q3 slice order continues at Slice 2 (`IDX_PLAY_PARSE`).
+Greenfield at spec time: no
 audio token, handler, PSG access, or queue exists today (surveyed — see §1). This
 spec scopes the whole MSX1 audio surface (`SOUND` direct-write + `PLAY` MML music).
 The heavy MML **parser** lands as a **page-1 sub-ROM tenant**; the small live
@@ -76,12 +77,22 @@ differential is load-bearing here ([memory: error-handling-arc]).
 
 ### 2.1 `SOUND reg, value` — direct PSG write
 
-- Syntax: `SOUND register, value`. `register` 0–15, `value` 0–255.
-- **Faithfulness masking (bug-for-bug):** registers **14 and 15 are not
-  writable** via `SOUND` (they are the PSG I/O ports — joystick/cassette), and the
-  **top two bits of register 7** (the I/O-direction bits of the mixer) are **not
-  settable** — they stay as the BIOS configured them. A faithful `SOUND` masks
-  these. (Source: MSX Wiki SOUND / PSG Registers.)
+- Syntax: `SOUND register, value`. **`register` 0–13**, `value` 0–255.
+- **Register domain (empirically corrected 2026-07-21).** This draft originally
+  said registers 14/15 are "silently masked". **The VG-8020 does NOT mask them —
+  it raises Illegal function call (ERR 5).** Black-box capture (scratchpad/
+  spike_sound_edges.py): `SOUND 14,0`→ERR5, `SOUND 15,0`→ERR5, `SOUND 16,0`→ERR5,
+  `SOUND 255,0`→ERR5. So the writable register set is **0–13**; **14–255 →
+  Illegal function call (ERR 5)**. (14/15 ARE the PSG I/O ports — joystick/
+  cassette — hence rejected, not written.) Register/value coercion follows the
+  D-F2-2 byte domain: `>int16` → Overflow (ERR 6); in-int16 but `>255` or negative
+  → ERR 5.
+- **Register 7 (mixer) top-bit mask (empirically confirmed).** The **top two bits
+  of register 7** (the I/O-direction bits) are **not settable** — a faithful
+  `SOUND 7,v` writes `R7' = (curR7 & $C0) | (v & $3F)`. Confirmed by reading the
+  PSG back after the write: `SOUND 7,255`→R7=`$BF`, `SOUND 7,192`→R7=`$80` (value
+  bits 6–7 dropped; BIOS I/O bits preserved). Registers 0–6, 8–13 store the whole
+  value byte.
 - No interrupt involvement — `SOUND` is a synchronous single register write.
 
 ### 2.2 `PLAY "mml"[,"mml"[,"mml"]]` — MML music, up to 3 PSG voices
@@ -184,12 +195,23 @@ play_service`. `play_service` itself does the `MUSICF==0 → ret` fast-out, so t
 seam is a bare jump. (If another `H.TIMI` client must chain, preserve the prior
 hook — check whether C-BIOS/disk already own it.)
 
-**D. `SOUND` (resident leaf).** Coerce `reg` (0–15) and `value` (0–255) per the
-D-F2-2 byte-arg idiom ([memory: df2-2-intarg-coercion-arc]), apply the §2.1 mask
-(drop reg 14/15; preserve R7 top 2 bits), `OUT` the PSG. No tenant, no interrupt.
+**D. `SOUND` (resident leaf). ✅ LANDED (Slice 1, 2026-07-21).** Coerce `reg` and
+`value` (0–255) per the D-F2-2 byte-arg idiom ([memory: df2-2-intarg-coercion-arc]),
+range-check `reg ≤ 13` (else ERR 5 per §2.1's empirical correction), preserve R7's
+top 2 bits on a register-7 write, `OUT` the PSG directly (`$A0` latch / `$A1`
+data). No tenant, no interrupt. Implementation: [`basic/sound.asm`](../basic/sound.asm)
+(`ex_sound`); dispatched from [`interp.asm`](../basic/interp.asm); token `$C4`
+([`sysvars.inc`](../basic/sysvars.inc), `SOUND_TOKEN`). Resident in **page 1** (the
+disk/file eviction freed ~1.1 KB there; the reclaimed page-0 low region is full),
+repack-only (whole body under `IF ROM_BASE < $4000`; lean ROM byte-identical). Cost
+~72 B. Gate: `make sound-acceptance` (13/13 error surface + 7/7 PSG bytes, VG-8020
+differential) + `tests/test_sound.py` (fast host layer, 10/10).
 
-**E. `GICINI`-equivalent init.** On cold start / first `PLAY`: silence the three
-tone channels, zero the queues, clear `MUSICF`. Small resident routine.
+**E. `GICINI`-equivalent init. — DEFERRED to Slice 2.** Slice 1 needs no init of
+ours: C-BIOS's own boot `GICINI` already leaves the PSG quiet (amplitudes 0), so a
+fresh `SOUND` works, and there are no `PLAY` queues / `MUSICF` to zero yet. On cold
+start / first `PLAY` (Slice 2): silence the three tone channels, zero the queues,
+clear `MUSICF`. Small resident routine.
 
 ### 3.1 RAM faithfulness (Q2 = yes) — probing scope
 
@@ -209,6 +231,15 @@ This trades more probing for compatibility, per the sign-off decision. It must n
 collide with zerobas's existing [`sysvars.inc`](../basic/sysvars.inc) RAM map —
 **audit `FB35H–FB41H`, `F959H+`, `FD9FH` for conflicts before Slice 1** and record
 the reconciliation.
+
+**RAM audit — reconciliation (done 2026-07-21, pre-Slice-1). NO CONFLICTS.**
+Across the whole `$F800–$FBFF` range zerobas allocates exactly one cell, `EXBRSA`
+`$FAF8` (`< $FB35`), and its own scratch lives in pages `$E0–$E3` (nowhere near
+`F959`); it installs **no** `H.TIMI` hook (C-BIOS owns `$0038` and services
+`H.TIMI` itself — see [`subromcall.asm`](../basic/subromcall.asm)). Therefore
+`FB35–FB41` (PLAY work area), `F959+` (QUETAB), and `FD9F` (H.TIMI) are all free
+for the reference-faithful layout, and the Slice-3 servicer seam. (Slice 1 uses
+none of these — `SOUND` is a stateless direct write.)
 
 ### 3.2 Resident footprint (the budget to hold the line on)
 
@@ -298,9 +329,16 @@ risk is staged behind a working core, consistent with the risk-staging norm.
 
 - New `make audio-acceptance` corpus (openMSX, boot-per-case differential vs
   Philips VG-8020 [memory: probe-machine-philips]) — the load-bearing empirical
-  pass, not just a green build.
-- Slice 1: `SOUND` writes the exact PSG registers a real machine does for a swept
-  set of `reg,value` (incl. the 14/15 + R7-top-bit masking); host unit-test.
+  pass, not just a green build. (Slice 1 ships this as `make sound-acceptance`;
+  a `play-acceptance`/`audio-acceptance` umbrella follows with Slice 2/3.)
+- Slice 1: ✅ **DONE (2026-07-21).** `make sound-acceptance` — VG-8020 differential,
+  two halves: **13/13 error surface** (`reg` 0–13 domain; 14–255 → ERR 5; byte
+  coercion ERR 5/6) + **7/7 PSG register bytes** (`SOUND reg,value` → read the
+  openMSX "PSG regs" debuggable; register-7 top-2-bit I/O mask included). Fast
+  host layer: [`tests/test_sound.py`](../tests/test_sound.py) (10/10, captures the
+  OUT sequence + R7 read-modify-write). Token crunch byte-identity ($C4) added to
+  `basic_probe_crunch.py`. **The empirical differential corrected the spec**: reg
+  14/15 are ERR 5, not silently masked (§2.1).
 - Slice 2: parsed queue bytes for representative MML match our own decoder's
   expectation (host unit-test); `PLAY` returns without hanging; `MUSICF`/`QUETAB`
   land at the §2.4 addresses (RAM-faithfulness variable-level check). Slice 2b

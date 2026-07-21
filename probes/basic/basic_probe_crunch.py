@@ -191,6 +191,10 @@ STR_KEYWORDS_1B = [
     # INKEY$ slice: single-byte reserved word $EC, the '$' PART of the keyword
     # (S2 capture: `a$=inkey$` -> 41 24 EF EC, no separate $24). No args.
     ('a$=inkey$',        0xEC),   # INKEY$
+    # Audio slice 1: SOUND is a single-byte STATEMENT token $C4 (docs/spec-basic-
+    # audio-play.md; VG-8020 capture `sound 1,255` -> C4 20 12 2C 0F FF 00). The
+    # lean build keeps "SOUND" verbatim ASCII, so this is proven repack-only.
+    ('sound 1,255',      0xC4),   # SOUND
 ]
 
 

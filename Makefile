@@ -456,6 +456,17 @@ error-trap-acceptance: $(DISK_ROM) repack-machine
 intarg-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_intarg.py $(if $(ONLY),--only $(ONLY),)
 
+# --- SOUND acceptance gate (audio arc, Slice 1 — docs/spec-basic-audio-play.md)
+# VG-8020 differential, two halves: (1) the ERROR SURFACE — SOUND's register 0..13
+# range + the D-F2-2 byte coercion (14..255 -> ERR 5, >int16 -> ERR 6); (2) the PSG
+# REGISTER WRITE — `SOUND reg,value` then read the openMSX "PSG regs" debuggable and
+# compare the written register's byte (register 7's top-2-bit I/O mask included).
+# Repack-only; HEAVY + oracle-dependent (boots openMSX per case; needs your VG-8020
+# reference ROM). The emulator-free fast layer is tests/test_sound.py under
+# `unit-test`. Scope one case with `make sound-acceptance ONLY=r7_ff`.
+sound-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_sound.py $(if $(ONLY),--only $(ONLY),)
+
 # --- Standing float-pack acceptance gate (float arc, F1 S3 + F2 S2) -----------
 # Three differential halves against the VG-8020 reference (docs/
 # spec-basic-float-core.md §9-§10): LITERALS (basic_probe_floatlit.py -- the
@@ -535,5 +546,5 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance \
-        input-acceptance error-acceptance error-trap-acceptance intarg-acceptance float-acceptance math-acceptance subrom-acceptance \
+        input-acceptance error-acceptance error-trap-acceptance intarg-acceptance sound-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check clean

@@ -150,6 +150,14 @@ __MEAS_LOW_END:
 ; Screen-setup verbs SCREEN/COLOR/CLS/WIDTH/KEY (defines `ex_screen`, …).
                 include "basic/screen.asm"
 
+; Audio slice 1 (docs/spec-basic-audio-play.md §3.D): the SOUND statement handler
+; (defines `ex_sound`) — a small synchronous resident leaf that coerces/masks the
+; register+value and writes the PSG directly. Its whole body is inside
+; `IF ROM_BASE < $4000`, so it emits nothing in the byte-full lean build and lands
+; in page 1 (which the disk/file eviction freed to ~1.1 KB) only in the repack
+; build. Placed here in page 1 rather than the now-full reclaimed low region.
+                include "basic/sound.asm"
+
 ; The LIST statement + the detokeniser (defines `ex_list`, `detok`).
                 include "basic/list.asm"
 

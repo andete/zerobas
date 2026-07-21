@@ -305,6 +305,12 @@ VPEEK_TOKEN     equ     $98     ; VPEEK(addr) -> $FF $98 (function)
 INP_TOKEN       equ     $90     ; INP(port)   -> $FF $90 (function)
 VARPTR_TOKEN    equ     $E7     ; VARPTR(var) (single-byte function token)
 BASE_TOKEN      equ     $C9     ; BASE(n)     (single-byte function token)
+; Audio (docs/spec-basic-audio-play.md). SOUND is a single-byte STATEMENT token,
+; black-box VG-8020 crunch capture ("sound 1,255" -> C4 20 12 2C 0F FF 00 =>
+; SOUND=$C4; scratchpad/spike_sound_token.py, 2026-07-21) cross-checked vs MSX2
+; TH Table 2.20 -- NOT asserted from memory (the guessed $C2 was wrong). PLAY is
+; captured as $C1 for its later slice. Same provenance discipline as DIM/ERASE.
+SOUND_TOKEN     equ     $C4     ; SOUND reg,value (statement)
 ; ASCII bytes the tokeniser / evaluator treat specially (all public ASCII).
 COLON           equ     $3A     ; ':' statement separator
 QUOTE_REM       equ     $27     ; "'" — apostrophe comment, treated as REM
