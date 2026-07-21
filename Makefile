@@ -493,6 +493,18 @@ play-acceptance: $(DISK_ROM) repack-machine
 play-trace-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_playtrace.py $(if $(ONLY),--only $(ONLY),)
 
+# --- Standing BEEP acceptance gate (audio arc, close-out) ---------------------
+# docs/spec-basic-audio-beep.md §5. Per-VBLANK PSG-register trace differential vs the
+# VG-8020: for `beep` and its edge cases, assert the (R0,R1,R7,R8) transient is
+# byte-identical to the reference -- ON = tone-A period 85 / mixer $be / vol 7, OFF =
+# amp 0 / mixer wiped to the default $b8. The `sound 7,190:beep` / `sound 8,10:beep`
+# cases prove the restore is dynamic (not a hardcoded $b8) and R8 is zeroed not
+# restored. Repack-only; HEAVY + oracle-dependent (boots openMSX per case; needs your
+# VG-8020 reference ROM). The emulator-free fast layer is tests/test_beep.py under
+# `unit-test`. Scope one case with `make beep-acceptance ONLY=r7dyn`.
+beep-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_beep.py $(if $(ONLY),--only $(ONLY),)
+
 # --- Standing float-pack acceptance gate (float arc, F1 S3 + F2 S2) -----------
 # Three differential halves against the VG-8020 reference (docs/
 # spec-basic-float-core.md §9-§10): LITERALS (basic_probe_floatlit.py -- the
@@ -572,5 +584,5 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance \
-        input-acceptance error-acceptance error-trap-acceptance intarg-acceptance sound-acceptance play-acceptance play-trace-acceptance float-acceptance math-acceptance subrom-acceptance \
+        input-acceptance error-acceptance error-trap-acceptance intarg-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check clean

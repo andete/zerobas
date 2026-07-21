@@ -199,6 +199,11 @@ STR_KEYWORDS_1B = [
     # audio-play-slice2a.md; VG-8020 capture). Lean keeps "PLAY" verbatim ASCII, so
     # like SOUND this crunch is proven repack-only.
     ('play"cde"',        0xC1),   # PLAY
+    # Audio close-out: BEEP is a single-byte STATEMENT token $C0, no arguments
+    # (docs/spec-basic-audio-beep.md; VG-8020 capture `beep` -> C0 00, `beep:beep`
+    # -> C0 3A C0 00). Lean keeps "BEEP" verbatim ASCII, so proven repack-only.
+    ('beep',             0xC0),   # BEEP (no args)
+    ('beep:beep',        0xC0),   # BEEP chained -> C0 3A C0
 ]
 
 

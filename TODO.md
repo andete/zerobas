@@ -1030,7 +1030,20 @@ and to mark the natural boundaries, **not** scheduled work; the disk/file story
       `INPUT#`, `GET PUT EOF LOF LOC` file I/O; full tape verbs already ship
 - [ ] **Graphics** (TMS9918) — `SCREEN 0–3`, `LINE`, `PSET`/`PRESET`,
       `CIRCLE`, `PAINT`, `DRAW`, sprites (`GET`/`PUT`, `SPRITE$`), `VDP`
-- [ ] **Sound** (AY-3-8910) — `SOUND`, `PLAY` (MML), `BEEP`
+- [x] **Sound** (AY-3-8910) — `SOUND`✅, `PLAY` (MML)✅, `BEEP`✅ — **ARC CONCLUDED
+      2026-07-21** (all repack-only, page-1 resident, direct-PSG, VG-8020-byte-faithful).
+      `SOUND`/`PLAY`+live servicer landed earlier that day (commits baf…→f6bfe76); the
+      **`BEEP` close-out slice** (spec [`docs/spec-basic-audio-beep.md`](docs/spec-basic-audio-beep.md))
+      lands the last verb: single-byte token `$C0`, no args, one short tone-A blip
+      (period 85, fixed vol 7, ~2-frame delay, then silence + mixer wiped to default
+      `$b8`). Direct-PSG not `CALL $00C0` (C-BIOS's `$00C0` is silent on our runtime).
+      Restore mixer is RECONSTRUCTED from the read-back I/O bits (`(read & $C0)|$38`),
+      since R7's low 6 bits don't read back — same limitation SOUND's R7 path has;
+      BEEP wipes a prior `SOUND 7` value and zeroes R8. Gates: `make beep-acceptance`
+      (PSG-trace differential, 4 cases), `tests/test_beep.py` (host), crunch corpus.
+      Adversarial pass caught a `beep_delay`-clobbers-`C` bug the differential was
+      blind to (spec §5.2). Lean byte-identical; page-1 landmine (a downstream `jr`
+      out of range) fixed with a ROM_BASE-conditional `jp` in `interp.asm`.
 - [ ] **Input devices** — `STICK STRIG PAD PDL`, `KEY(n)`, `STRIG(n) ON/OFF/STOP`
 - [ ] **Error handling** — `ON ERROR GOTO`, `RESUME`, `ERR`/`ERL`, `ERROR n`,
       numbered error messages

@@ -316,5 +316,11 @@ kwtable:
                 ; sysvars.inc). No prefix collision (PRINT/POKE/PEEK share only
                 ; "P"; match_kw compares the FULL keyword).
                 db      4,"PLAY",1,PLAY_TOKEN                    ; $C1
+                ; --- audio close-out (repack build only) ----------------------
+                ; docs/spec-basic-audio-beep.md. BEEP: single-byte STATEMENT token
+                ; ($C0, black-box VG-8020 crunch capture; see sysvars.inc). No arg.
+                ; No prefix collision (no keyword shares the "BEEP" prefix;
+                ; match_kw compares the FULL keyword).
+                db      4,"BEEP",1,BEEP_TOKEN                    ; $C0
     ENDIF
                 db      0

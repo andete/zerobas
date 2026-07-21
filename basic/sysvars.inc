@@ -312,6 +312,10 @@ BASE_TOKEN      equ     $C9     ; BASE(n)     (single-byte function token)
 ; captured as $C1 for its later slice. Same provenance discipline as DIM/ERASE.
 SOUND_TOKEN     equ     $C4     ; SOUND reg,value (statement)
 PLAY_TOKEN      equ     $C1     ; PLAY "mml"[,..] (statement; audio Slice 2a, play.asm)
+BEEP_TOKEN      equ     $C0     ; BEEP (statement, no args; audio close-out, sound.asm).
+                                ; Black-box VG-8020 crunch capture ("beep" -> C0 00;
+                                ; "beep:beep" -> C0 3A C0 00; scratchpad/spike_beep_token.py)
+                                ; + MSX2 TH Table 2.20 cross-check. See spec-basic-audio-beep.md.
 ; ASCII bytes the tokeniser / evaluator treat specially (all public ASCII).
 COLON           equ     $3A     ; ':' statement separator
 QUOTE_REM       equ     $27     ; "'" — apostrophe comment, treated as REM

@@ -217,7 +217,13 @@ exec_stmt:
                 cp      LIST_TOKEN
                 jp      z,ex_list
                 cp      REM_TOKEN
+    IF ROM_BASE < $4000
+                jp      z,ex_rem            ; repack: the IF-ROM_BASE dispatch block below
+                                            ; widens this forward span past jr's +-127 reach
+                                            ; (audio-beep insert tipped it); lean keeps jr.
+    ELSE
                 jr      z,ex_rem
+    ENDIF
                 cp      DATA_TOKEN          ; DATA: skip this statement at run time
                 jp      z,ex_data
                 cp      READ_TOKEN
@@ -263,6 +269,8 @@ exec_stmt:
                 jp      z,ex_sound
                 cp      PLAY_TOKEN          ; PLAY "mml"[,..]  (audio slice 2a, play.asm)
                 jp      z,ex_play
+                cp      BEEP_TOKEN          ; BEEP  (no args; audio close-out, sound.asm)
+                jp      z,ex_beep
     ENDIF
                 call    is_letter           ; bare letter -> assignment
                 jr      c,ex_let
