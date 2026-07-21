@@ -553,6 +553,8 @@ ev_f:
                 jp      z,ev_f_errfn
                 cp      ERL_TOKEN           ; $E1 -> ERL (last error's line, 65535=direct)
                 jp      z,ev_f_erlfn
+                cp      POINT_TOKEN         ; $ED -> POINT(x,y) (graphics G2, graphics.asm)
+                jp      z,ev_f_point
     ENDIF
                 cp      HEX_TOKEN           ; $0C -> 2-byte LE value (&H)
                 jp      z,ev_f_word

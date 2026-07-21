@@ -97,11 +97,11 @@ sub_p0_table:
                 jp      pu_tail_tenant          ; index 7 (SUBROM_IDX_PU_TAIL): PRINT USING
                                                 ;   trailing-literal emitter. Both are pure
                                                 ;   PU_*-RAM+pchar leaves; render into DETOKBUF.
-                jp      graphics_selftest       ; index 8 (SUBROM_IDX_GRAPHICS): the SCREEN-2
+                jp      graphics_tenant         ; index 8 (SUBROM_IDX_GRAPHICS): the SCREEN-2
                                                 ;   geometry engine's page-0 island (graphics
-                                                ;   arc, docs/spec-basic-graphics-g1.md). G1
-                                                ;   dispatches only the VDP-floor self-test;
-                                                ;   later slices add GFX_OP selectors here.
+                                                ;   arc). GFX_OP-selector dispatched (G2):
+                                                ;   0=floor self-test (G1) 1=PSET/PRESET plot
+                                                ;   2=POINT read. docs/spec-basic-graphics-g2.md.
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $0010 mapped slot 3-2 into PAGE 0 and that page-3 RAM is

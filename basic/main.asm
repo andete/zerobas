@@ -172,6 +172,15 @@ __MEAS_LOW_END:
 ; out). Repack-only like ex_sound/ex_play; lean stays byte-identical.
                 include "basic/playsvc.asm"
 
+; Graphics Slice G2 (docs/spec-basic-graphics-g2.md): the resident PSET/PRESET/POINT
+; stubs (defines `ex_pset`, `ex_preset`, `ev_f_point`, `parse_coord`, `gfx_in_range`).
+; Eval the coordinate/colour expressions + STEP/clip/SCREEN policy, then marshal a
+; tiny param block and hand off the pixel RMW to the page-0 tenant (sub/graphics.asm)
+; via one subrom_call. Repack-only (every byte inside `IF ROM_BASE < $4000`), landing
+; in the page-1 tail freed by the disk/file eviction (the reclaimed low region is full)
+; -- same placement rationale as sound/play above. Lean stays byte-identical.
+                include "basic/graphics.asm"
+
 ; The LIST statement + the detokeniser (defines `ex_list`, `detok`).
                 include "basic/list.asm"
 

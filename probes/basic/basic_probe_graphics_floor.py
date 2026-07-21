@@ -63,6 +63,7 @@ STUB_ADDR = 0xC000
 STUB_HALT = 0xC00E
 GFX_DJ = 0xC120
 GFX_BAD = 0xC121
+GFX_OP = 0xE030   # G2: index 8 is now selector-dispatched; 0 = the floor self-test
 STUB_BYTES = bytes([
     0xF3,                    # di
     0xFD, 0x21, 0x00, 0x8B,  # ld iy,$8B00                (slot 3-2)
@@ -93,6 +94,7 @@ def run() -> tuple[int, int] | None:
         # self-test writes+reads 8 KB under EI (a few frames), so give the bp room.
         "after time 6.0 {",
         f"  debug write_block memory {STUB_ADDR} [binary format H* {{{stub_hex}}}]",
+        f"  debug write memory {GFX_OP} 0x00",   # select the floor self-test (G2 selector)
         f"  debug write memory {GFX_DJ} 0x00",
         f"  debug write memory {GFX_BAD} 0xff",   # sentinel: a no-run leaves 0xff (a visible FAIL)
         f"  debug set_bp {STUB_HALT} {{}} {{ __cap }}",

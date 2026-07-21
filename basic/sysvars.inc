@@ -348,6 +348,15 @@ BEEP_TOKEN      equ     $C0     ; BEEP (statement, no args; audio close-out, sou
                                 ; Black-box VG-8020 crunch capture ("beep" -> C0 00;
                                 ; "beep:beep" -> C0 3A C0 00; scratchpad/spike_beep_token.py)
                                 ; + MSX2 TH Table 2.20 cross-check. See spec-basic-audio-beep.md.
+; Graphics G2 (docs/spec-basic-graphics-g2.md). Single-byte tokens, RE-VERIFIED
+; black-box on VG-8020 (stored-line crunch, arc §11.9): "PSET(0,0)" -> C2 28 11 2C
+; 11 29 00; "PRESET(0,0)" -> C3 ...; "X=POINT(0,0)" -> 58 EF ED ...  So PSET=$C2 (the
+; value the WRONG SOUND guess used -- now confirmed genuinely PSET), PRESET=$C3, and
+; POINT=$ED is a FUNCTION token (dispatched in expr.asm like BASE/VARPTR). STEP=$DC
+; already exists. All repack-only kwtable entries (lean cart ships no graphics).
+PSET_TOKEN      equ     $C2     ; PSET (x,y)[,c]      (statement, basic/graphics.asm)
+PRESET_TOKEN    equ     $C3     ; PRESET (x,y)[,c]    (statement)
+POINT_TOKEN     equ     $ED     ; POINT(x,y)          (function -> pixel colour / -1)
 ; ASCII bytes the tokeniser / evaluator treat specially (all public ASCII).
 COLON           equ     $3A     ; ':' statement separator
 QUOTE_REM       equ     $27     ; "'" — apostrophe comment, treated as REM
@@ -369,6 +378,18 @@ STAR_TOKEN      equ     $F3     ; '*'
 ; --- RAM scratch (page-3 RAM; NOT part of the ROM image) -------------------
 ; Chosen to avoid the demo blob's regions ($C000 load, $E000 "JONG" marker /
 ; POKE test target). All "own choice — free RAM"; see PROVENANCE.md.
+; Graphics G2 own-design marshalling block (main -> page-0 graphics tenant, selector
+; dispatch). MUST NOT alias the audio/disk param cells (DISKOP_OP/AUDIO_VMASK $E9FB):
+; graphics runs CONCURRENTLY with a live PLAY drain (arc D1 -- music keeps playing
+; during a draw), so a shared cell would race the ISR. Homed in the free $E030 gap
+; ($E02F RUNFLAG..$E0C0 NUMBUF). Coordinates are marshalled through the pinned
+; GXPOS/GYPOS cells (the resident stub writes them anyway, §6); only the op selector,
+; the resolved colour, and the POINT result need own bytes. All dead outside a GFX
+; call. GFX_OP=0 is still G1's floor self-test (the floor probe now sets it).
+GFX_OP          equ     $E030   ; main->tenant op: 0=selftest(G1) 1=plot(PSET/PRESET) 2=point (1)
+GFX_C           equ     $E031   ; main->tenant: resolved plot colour 0..15 (PSET/PRESET) (1)
+GFX_RES         equ     $E032   ; tenant->main: POINT result colour 0..15 (1)
+GFX_REL         equ     $E033   ; parse_coord: 1 = STEP (relative) coordinate, 0 = absolute (1)
 CURPTR          equ     $E020   ; current load pointer (2 bytes)
 ENDPTR          equ     $E022   ; final load address  (2 bytes)
 EXECPTR         equ     $E024   ; execution address   (2 bytes)
@@ -1958,6 +1979,12 @@ SUBROM_IDX_PU_TOFIELD equ 6     ; PRINT USING format scanner: emit leading liter
 SUBROM_IDX_PU_TAIL   equ 7      ; PRINT USING trailing-literal emitter (sub/printusing.asm
                                 ; pu_tail_tenant). Main-ROM stub `pu_emit_tail`. (Both
                                 ; kept in sync with sub/equates.inc.)
+SUBROM_IDX_GRAPHICS  equ 8      ; the SCREEN-2 geometry engine (graphics arc; sub/
+                                ; graphics.asm graphics_tenant) — GFX_OP-selector
+                                ; dispatched (0=floor self-test G1, 1=PSET/PRESET plot,
+                                ; 2=POINT read). Main-ROM stubs basic/graphics.asm
+                                ; ex_pset/ex_preset/ev_f_point; IX = SUBROM_ENTRY_BASE_P0
+                                ; + 3*8 = $0028. (Kept in sync with sub/equates.inc.)
 ; Page-1 dispatch (docs/spec-basic-subrom-mathpack.md §2): the FIRST page-1
 ; tenant. SUBROM_ENTRY_BASE_P1 mirrors the disk $4010 DSKIO convention (also
 ; independently defined in sub/equates.inc for the sub build — same value,

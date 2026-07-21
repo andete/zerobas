@@ -322,5 +322,16 @@ kwtable:
                 ; No prefix collision (no keyword shares the "BEEP" prefix;
                 ; match_kw compares the FULL keyword).
                 db      4,"BEEP",1,BEEP_TOKEN                    ; $C0
+                ; --- graphics slice G2 (repack build only) --------------------
+                ; docs/spec-basic-graphics-g2.md. PSET/PRESET STATEMENT tokens and
+                ; POINT FUNCTION token, single-byte, RE-VERIFIED black-box on the
+                ; VG-8020 (stored-line crunch, sysvars.inc / arc §11.9). match_kw
+                ; compares the FULL keyword: PSET vs PRESET differ at the 2nd char
+                ; (no prefix overlap), and POINT shares no full keyword with
+                ; POKE/POS/PRINT. $C2 is the value the WRONG SOUND guess used --
+                ; now confirmed genuinely PSET.
+                db      4,"PSET",1,PSET_TOKEN                    ; $C2
+                db      6,"PRESET",1,PRESET_TOKEN                ; $C3
+                db      5,"POINT",1,POINT_TOKEN                  ; $ED
     ENDIF
                 db      0

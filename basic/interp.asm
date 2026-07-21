@@ -271,6 +271,10 @@ exec_stmt:
                 jp      z,ex_play
                 cp      BEEP_TOKEN          ; BEEP  (no args; audio close-out, sound.asm)
                 jp      z,ex_beep
+                cp      PSET_TOKEN          ; PSET (x,y)[,c]  (graphics G2, graphics.asm)
+                jp      z,ex_pset
+                cp      PRESET_TOKEN        ; PRESET (x,y)[,c]  (graphics G2)
+                jp      z,ex_preset
     ENDIF
                 call    is_letter           ; bare letter -> assignment
                 jr      c,ex_let
