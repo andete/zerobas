@@ -306,7 +306,10 @@ conservatively and note in the G2 gate.
 (10,20); `LINE` then sets all of GXPOS/GYPOS/GRPACX/GRPACY to the endpoint (30,40).
 `PSET STEP(5,5)` after `PSET(10,20)` → (15,25); negative STEP verified. Work-area
 diff pinned `GXPOS=$FCB3 GYPOS=$FCB5 GRPACX=$FCB7 GRPACY=$FCB9 CLOC=$F92A
-CMASK=$F92C`.
+CMASK=$F92C`. **G2 addendum (2026-07-21):** a drawn `PSET(10,20)` writes BOTH
+GXPOS/GYPOS AND GRPACX/GRPACY = (10,20); and an **off-screen no-op** `PSET(300,100)`
+still moves GRPACX/GRPACY to the **raw unclipped** (300,100) — the work-area update is
+unconditional, only the pixel plot is range-gated (G2 spec §4/§6, G2-d).
 
 **11.6 Interrupts live during a draw** — JIFFY (`$FC9E`) advanced `$0584→$0599`
 (21 frames ≈ 0.42 s) across `CIRCLE(128,96),80,15`. Confirms the reference services
@@ -318,7 +321,15 @@ behavior is Syntax error; §1 scope corrected.
 
 **11.8 POINT** — returns the pixel's color (bonus): a `c=13` pixel → 13, its neighbor
 → 4 (bg); **off-screen `POINT` → -1**; `POINT` in SCREEN 0 does **not** error (value
-is screen-content dependent — only "no error" is pinned).
+is screen-content dependent — only "no error" is pinned). **G2 addendum:** re-confirmed
+(`POINT(50,50)` of a color-9 pixel → 9, neighbor → 4, `POINT(300,300)` → -1); and
+**`POINT STEP(dx,dy)` is accepted** — STEP resolved against the last point (GRPAC),
+`POINT STEP(0,0)` after `PSET(50,50),9` → 9 (G2 spec §5, G2-g).
+
+**11.9 Tokens re-verified (G2, 2026-07-21):** stored-line crunch on VG-8020 —
+`PSET(0,0)`→`C2 28 11 2C 11 29 00`, `PRESET(0,0)`→`C3 …`, `X=POINT(0,0)`→`58 EF ED …`,
+`PSET STEP(1,2)`→`C2 20 DC 28 …`. Confirms **PSET=$C2 PRESET=$C3 POINT=$ED STEP=$DC**
+(the §7 table; `$C2` — the value the wrong `SOUND` guess used — is genuinely PSET).
 
 ---
 
