@@ -1308,6 +1308,17 @@ DISKOP_SEL_FAT_FLUSH_DATA_SECTOR equ 11
 DISKOP_SEL_FAT_DIR_CREATE       equ 12
 DISKOP_SEL_FAT_DIR_UPDATE       equ 13
 DISKOP_SEL_FAT_DELETE           equ 14
+; DISKOP_SEL_RAND_OPEN/GET/PUT (docs/spec-eviction-g4-space.md §3, carve #1):
+; three MORE rows on the SAME fp_table/DISKOP_OP selector (still
+; SUBROM_IDX_FATPRIM, no new tenant index) -- the fat_rand_* random-access
+; record engine (basic/field.asm), evicted whole to sub/randio.asm and
+; co-located after fatprim so its own FAT12 primitive calls (fat_mount/
+; fat_find/fat_dir_create/fat_alloc_cluster/fat_write_fat_entry/
+; fat_read_fat_sector/read_sector/write_sector/fat_dir_update) resolve
+; sub-locally, the same "dirverb" pattern. Never renumber.
+DISKOP_SEL_RAND_OPEN            equ 15
+DISKOP_SEL_RAND_GET             equ 16
+DISKOP_SEL_RAND_PUT             equ 17
 ; DISKOP_OP selector values for the dirverb_tenant (SUBROM_IDX_DIRVERB, Phase 2,
 ; spec §12). A SEPARATE value namespace on the SAME DISKOP_OP cell: fatprim
 ; (index 12) and dirverb (index 13) are never in flight at once (one subrom_call

@@ -485,6 +485,15 @@ sub_p1_ping:
 ; region -- own header has the full rationale.
                 include "dirverb.asm"
 
+; fat_rand_* random-access record engine (index 12 = fatprim_tenant, extra
+; fp_table rows 15-17; sub/randio.asm): docs/spec-eviction-g4-space.md §3,
+; carve #1 of the G4-space eviction slice. Needs no resident-ABI import (same
+; shape as fatprim_tenant/dirverb_tenant): a pure RAM+BIOS(CALSLT) leaf whose
+; bodies call the Phase-1 fatprim primitives (included just above) sub-
+; locally. Placed AFTER fatprim (+ dirverb) so its sub-local calls resolve
+; within the same page-1 region -- own header has the full rationale.
+                include "randio.asm"
+
 ; play_parse_tenant (audio Slice 2a MML parser, docs/spec-basic-audio-play-
 ; slice2a.md). A pure RAM leaf: reads the marshalled per-voice MML (ptr,len) from
 ; the VCBs + AUDIO_VMASK, parses each string into its VOICxQ ring buffer, sets

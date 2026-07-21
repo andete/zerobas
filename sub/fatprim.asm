@@ -92,6 +92,13 @@ fp_table:
                 jp      t_fat_dir_create        ; 12 DISKOP_SEL_FAT_DIR_CREATE
                 jp      t_fat_dir_update        ; 13 DISKOP_SEL_FAT_DIR_UPDATE
                 jp      t_fat_delete            ; 14 DISKOP_SEL_FAT_DELETE
+; --- rows 15-17: the fat_rand_* random-access record engine (docs/spec-
+; eviction-g4-space.md §3, carve #1). Same fp_table/DISKOP_OP selector, no new
+; tenant index -- the bodies live in sub/randio.asm, included right after
+; this file (+ dirverb.asm) in sub/sub.asm.
+                jp      t_fat_rand_open         ; 15 DISKOP_SEL_RAND_OPEN
+                jp      t_fat_rand_get          ; 16 DISKOP_SEL_RAND_GET
+                jp      t_fat_rand_put          ; 17 DISKOP_SEL_RAND_PUT
 
 ; --- uniform result-stash tails --------------------------------------------
 ; Persist {HL, A, STATUS} into the DISKOP block; STATUS=0 (ok) from
@@ -186,6 +193,27 @@ t_fat_dir_update:
                 jp      fp_stash_ok
 t_fat_delete:
                 call    fat_delete
+                jp      c,fp_stash_err
+                jp      fp_stash_ok
+
+; t_fat_rand_open/get/put (docs/spec-eviction-g4-space.md §3, carve #1): call
+; the sub-local bodies (sub/randio.asm, included after this file + dirverb.asm
+; so `call read_sector`/`fat_mount`/... inside them resolve to the fatprim
+; primitive bodies already resident in this page -- the same mechanism
+; t_read_sector etc. above use). Uniform Cy-only convention; fp_stash_ok/err
+; still persist HL/A for consistency with the other primitives, though no
+; caller currently reads them back for any of the three (field.asm/files.asm
+; only test Cy).
+t_fat_rand_open:
+                call    fat_rand_open
+                jp      c,fp_stash_err
+                jp      fp_stash_ok
+t_fat_rand_get:
+                call    fat_rand_get
+                jp      c,fp_stash_err
+                jp      fp_stash_ok
+t_fat_rand_put:
+                call    fat_rand_put
                 jp      c,fp_stash_err
                 jp      fp_stash_ok
 
