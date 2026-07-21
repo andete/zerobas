@@ -378,6 +378,17 @@ sub_p1_table:
                                                 ;   packet queues (VOICxQ) + MUSICF.
                                                 ;   Its main-ROM head is ex_play
                                                 ;   (basic/play.asm).
+                jp      lineedit_tenant         ; index 15 (SUBROM_IDX_LINEEDIT):
+                                                ;   the numbered-line editor's
+                                                ;   TXTTAB-memmove engine (docs/
+                                                ;   spec-eviction-g4-space.md §4,
+                                                ;   carve #2) -- LE_OP-selector
+                                                ;   dispatched (0=store/delete via
+                                                ;   SL_NUM/SL_TOK, 1=relink-only).
+                                                ;   Calls vars_reset (resident-ABI
+                                                ;   import). Main-ROM stubs are
+                                                ;   basic/program.asm `store_line`/
+                                                ;   `relink`.
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -500,6 +511,13 @@ sub_p1_ping:
 ; MUSICF last. No resident-ABI import (calls nothing in main); its note->period
 ; table + tempo->frame math are self-contained page-1 data.
                 include "playparse.asm"
+
+; lineedit_tenant (numbered-line editor TXTTAB-memmove engine, index 15,
+; sub/lineedit.asm): docs/spec-eviction-g4-space.md §4, carve #2 of the
+; G4-space eviction slice. Needs the resident-ABI import above (calls
+; vars_reset directly, page-0 low-region resident -- own header has the
+; full closure rationale for why this is not a straddle).
+                include "lineedit.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF

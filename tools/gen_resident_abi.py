@@ -4,19 +4,21 @@
 
 """Generate the sub-ROM's resident-ABI import (subrom-mathpack arc, spec §4).
 
-`fp_sqrt` (sub/fp_sqrt.asm, a sub-ROM PAGE-1 tenant) calls back into a fixed
-set of main-ROM page-0-resident routines. Their absolute addresses live in
+Several sub-ROM PAGE-1 tenants call back into a fixed set of main-ROM
+page-0-resident routines (fp_sqrt started this list, docs/spec-basic-subrom-
+mathpack.md §4; sub/lineedit.asm's vars_reset call, docs/spec-eviction-g4-
+space.md §4, is the newest addition). Their absolute addresses live in
 build/basic-reloc.sym and SHIFT whenever the page-0 low region changes (any
 edit to basic/float-arith.asm / basic/str-engine.asm / basic/input.asm /
-basic/subromcall.asm, all assembled below $4000 in the repack build). This
-tool re-extracts EXACTLY the routines fp_sqrt needs from a fresh
-build/basic-reloc.sym and emits pasmo equates the sub-ROM build includes —
-so a page-0-low shift can never leave a stale sub.rom calling wrong
-addresses (the same class of stale-artifact trap as the old $(MAIN_ROM)
-Makefile bug, see [[ips-rebuild-after-basic-change]]).
+basic/subromcall.asm / basic/arrays.asm, all assembled below $4000 in the
+repack build). This tool re-extracts EXACTLY the routines the sub-ROM needs
+from a fresh build/basic-reloc.sym and emits pasmo equates the sub-ROM build
+includes — so a page-0-low shift can never leave a stale sub.rom calling
+wrong addresses (the same class of stale-artifact trap as the old
+$(MAIN_ROM) Makefile bug, see [[ips-rebuild-after-basic-change]]).
 
 Fails loudly (nonzero exit) if:
-  * any of the 9 required symbols is missing from the reloc sym file, or
+  * any of the required symbols is missing from the reloc sym file, or
   * any of them resolves to $3FE5 (__MEAS_LOW_END) or above — i.e. it is
     NOT page-0-resident (< $4000), so a page-1 CALSLT could never reach it
     by absolute address (page 0 is switched OUT while the page-1 tenant
@@ -29,11 +31,16 @@ from __future__ import annotations
 import re
 import sys
 
-# The exact resident-ABI surface fp_sqrt needs (docs/spec-basic-subrom-
-# mathpack.md §4) — compute-only leaves, all page-0-resident. flt_to_int16 is
-# DELIBERATELY excluded (it moved main-side, called by evmc_sqr instead —
-# spec §3). Never add a symbol here without updating the spec + fp_sqrt's own
-# header comment (sub/fp_sqrt.asm) that documents this exact list.
+# The resident-ABI surface the sub-ROM's page-1 tenants need — compute-only
+# leaves, all page-0-resident. The first 9 are fp_sqrt's own list (docs/spec-
+# basic-subrom-mathpack.md §4; flt_to_int16 is DELIBERATELY excluded, it
+# moved main-side, called by evmc_sqr instead — spec §3); fp_atan/fp_exp/
+# fp_log/fp_pow/fp_sin/fp_cos/fp_tan/fp_rnd reuse a SUBSET, no new symbols.
+# vars_reset (docs/spec-eviction-g4-space.md §4, carve #2) is sub/
+# lineedit.asm's relink-tail call — arrays slice-1/4b's re-anchor + string-
+# heap reset, page-0-low-region resident (basic/arrays.asm). Never add a
+# symbol here without updating the spec + the calling tenant's own header
+# comment that documents its exact resident-ABI list.
 REQUIRED = [
     "fp_add",
     "fp_sub",
@@ -44,6 +51,7 @@ REQUIRED = [
     "arga_pack_fac",
     "widen_fac_to",
     "widen_uint_to",
+    "vars_reset",
 ]
 
 # Page-0-resident ceiling (basic/main.asm __MEAS_LOW_END — the reclaimed low

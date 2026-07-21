@@ -1327,6 +1327,18 @@ DISKOP_SEL_RAND_PUT             equ 17
 DISKOP_SEL_KILL                 equ 0   ; dirverb: KILL's fat_delete loop
 DISKOP_SEL_NAME_STAMP           equ 1   ; dirverb: NAME's read+overwrite+write
 
+; --- Line-editor tenant ABI (SUBROM_IDX_LINEEDIT, docs/spec-eviction-g4-
+; space.md §4, carve #2): reuses the SAME DISKOP_OP/DISKOP_STATUS RAM cells,
+; ANOTHER separate value namespace (fatprim/dirverb/audio/lineedit are never
+; in flight at once -- one subrom_call reaches exactly one tenant), aliased
+; under line-editor-local names for readability at the call sites.
+LE_OP           equ     DISKOP_OP       ; main -> tenant: LE_OP_* selector
+LE_STATUS       equ     DISKOP_STATUS   ; tenant -> main: 0 ok / 1 out of memory
+                                        ; (store_line's op only; relink-only
+                                        ; never fails, does not touch this)
+LE_OP_STORE             equ 0   ; lineedit: process SL_NUM/SL_TOK (store or delete)
+LE_OP_RELINK            equ 1   ; lineedit: relink-only (cload.asm's own call sites)
+
 ; --- Audio: PLAY work area + queue packet format (audio Slice 2a) -----------
 ; docs/spec-basic-audio-play-slice2a.md. The program-visible cells are the
 ; STANDARD MSX music work area at their MSX2-Technical-Handbook addresses (a
@@ -2122,6 +2134,21 @@ SUBROM_IDX_PLAY_PARSE equ 14    ; play_parse_tenant (sub/playparse.asm): the aud
                                 ; MML string into its VOICxQ ring buffer, sets MUSICF
                                 ; LAST. Only ex_play (basic/play.asm) computes
                                 ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PLAY_PARSE.
+SUBROM_IDX_LINEEDIT  equ 15     ; lineedit_tenant (sub/lineedit.asm): the numbered-
+                                ; line editor's TXTTAB memmove engine (docs/spec-
+                                ; eviction-g4-space.md §4, carve #2 of the G4-space
+                                ; eviction slice) -- store_line's insert/delete body
+                                ; (prog_find_del/delete_at/open_gap/copy) + the
+                                ; relink loop, LE_OP-selector dispatched (0=process
+                                ; store/delete via SL_NUM/SL_TOK, 1=relink-only, for
+                                ; cload.asm's own `call relink` sites). Calls
+                                ; vars_reset directly (page-0 low-region resident,
+                                ; in the resident-ABI import list -- reachable, NOT
+                                ; a straddle). Main-ROM stubs are basic/program.asm
+                                ; `store_line`/`relink`. NOTE: the spec's own §4 text
+                                ; said "index 14" -- stale by the time of impl
+                                ; (SUBROM_IDX_PLAY_PARSE claimed 14 first); 15 is the
+                                ; actual next-free index.
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

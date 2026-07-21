@@ -25,21 +25,20 @@ _SUB_CACHE = {}             # process-wide cache of the assembled sub-ROM bytes
 
 
 def _build_subrom():
-    """Assemble sub/sub.asm once per process -> (page-0 bytes, symbols). The
-    sub-ROM's page-0 tenants (its dispatch table + the WHOLE evicted tokeniser and
-    its duplicated keyword table, wave 2) live in $0000..~$0900, entirely below the
-    relocated main ROM's $2812 base, so they can be dropped into a bridge machine's
-    low memory without colliding with anything the caller placed — which is what
-    lets a host test reach a page-0 sub-ROM tenant across the (un-emulated) CALSLT.
-    We copy the whole page-0 span ($0000..$2812, up to the reloc base) so the slice
-    can never truncate a tenant as page 0 grows (wave 1 ended ~$0800; wave 2 ~$0886)."""
+    """Assemble sub/sub.asm once per process -> (full 32 KB bytes, symbols). The
+    sub-ROM's own file layout already matches its two-page CALSLT contract: page-0
+    tenants (the dispatch table + the WHOLE evicted tokeniser and its duplicated
+    keyword table, wave 2, ...) sit at file/address $0000-$3FFF, page-1 tenants
+    (fp_sqrt, fatprim_tenant, lineedit_tenant, ...) sit at $4000-$7FFF -- exactly
+    where a real page-0 or page-1 CALSLT would map them into CPU space. Callers
+    slice the piece they need (see _install_subrom_bridge)."""
     if "bytes" not in _SUB_CACHE:
         rom = "/tmp/msxtest_sub.rom"
         sym = "/tmp/msxtest_sub.sym"
         subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", rom, sym],
                        check=True, capture_output=True, cwd=_ROOT)
         with open(rom, "rb") as fh:
-            _SUB_CACHE["bytes"] = fh.read()[:0x2812]
+            _SUB_CACHE["bytes"] = fh.read()
         _SUB_CACHE["sym"] = load_symbols(sym)
     return _SUB_CACHE["bytes"], _SUB_CACHE["sym"]
 
@@ -70,31 +69,59 @@ class Machine:
 
     def _install_subrom_bridge(self):
         """Bridge the sub-ROM dispatch the flat harness can't page (subrom S2b).
-        On the real machine `subrom_call` does a CALSLT into the sub-ROM's page 0.
-        The flat host harness can't page, and the sub-ROM's page-0 code sits at
-        $0000..~$0400 — the SAME low addresses the (real-machine page-0)
-        interpreter and its stack occupy — so running the tenant IN the caller's
-        machine corrupts execution state. Instead we run it in a SEPARATE machine
-        (its own low memory + stack) and shuttle only RAM: the tenant reads its
-        args and writes its results in page-2/3 RAM ($8000+), which is the same in
-        both slots on the real machine. Copy that RAM in, run, copy back only the
-        below-stack range the tenant may have written. Transparent to every test
-        that tokenises a numeric literal (the crunch lives in the sub-ROM)."""
+        On the real machine `subrom_call` does a CALSLT into ONE sub-ROM page,
+        chosen by whether IX is a page-0 ($0010+) or page-1 ($4010+) entry-table
+        address (sub/equates.inc SUBROM_ENTRY_BASE_P0/P1). The flat host harness
+        can't page, so each direction gets its own bridge machine, run separately
+        so the tenant's own low memory/stack never collides with the caller's:
+
+          * PAGE 0 (IX < $4000): the sub-ROM's page-0 tenants sit at $0000-$3FFF,
+            the SAME low addresses the caller's own (real-machine page-0)
+            interpreter/stack occupy -- must run in a bare machine loaded with
+            ONLY the sub-ROM's page-0 half, never the caller's bytes.
+          * PAGE 1 (IX >= $4000): the sub-ROM's page-1 tenants sit at $4000-$7FFF
+            and (spec: docs/spec-eviction-g4-space.md §4, tools/check_tenant_
+            closure.py --page1) may call back into the CALLER's own low region /
+            BIOS (< $4000, which STAYS mapped while only page 1 switches -- e.g.
+            sub/lineedit.asm's `call vars_reset`). So the page-1 bridge starts
+            from a COPY of the caller's ENTIRE image (giving it that low region
+            for free) and overlays ONLY $4000-$7FFF with the sub-ROM's page-1
+            bytes -- mirroring a real page-1 CALSLT exactly (page 0 unchanged,
+            page 1 swapped to the sub-ROM).
+
+        Both directions shuttle only RAM ($8000+): the tenant reads its args and
+        writes its results in page-2/3 RAM, the same in both slots on the real
+        machine. Copy that RAM in, run, copy back only the below-stack range the
+        tenant may have written. Transparent to every test that tokenises a
+        numeric literal (page 0) or reaches a page-1 tenant like fatprim/
+        lineedit through a resident shim."""
         sub_bytes, _ = _build_subrom()
-        sub = object.__new__(Machine)          # bare Machine, no recursive bridge
-        sub.mem = bytearray(0x10000)
-        sub.mem[0:len(sub_bytes)] = sub_bytes
-        sub.sym = {}
-        sub.cpu = Z80(sub.mem)
-        sub.traps = {}
+        sub0 = object.__new__(Machine)         # bare Machine, page-0 half only
+        sub0.mem = bytearray(0x10000)
+        sub0.mem[0:0x4000] = sub_bytes[0:0x4000]
+        sub0.sym = {}
+        sub0.cpu = Z80(sub0.mem)
+        sub0.traps = {}
         RAM_LO, STACK = 0x8000, 0xF300         # shuttle $8000..stack; leave stacks private
 
         def bridge(mach):
             cpu = mach.cpu
-            sub.mem[RAM_LO:0x10000] = mach.mem[RAM_LO:0x10000]   # args/scratch in
-            sub.call(cpu.ix, hl=cpu.hl, de=cpu.de)               # own stack + low mem
-            mach.mem[RAM_LO:STACK] = sub.mem[RAM_LO:STACK]       # results back (not the stack)
-            cpu.hl, cpu.de, cpu.a = sub.cpu.hl, sub.cpu.de, sub.cpu.a
+            if cpu.ix < 0x4000:
+                sub0.mem[RAM_LO:0x10000] = mach.mem[RAM_LO:0x10000]  # args/scratch in
+                sub0.call(cpu.ix, hl=cpu.hl, de=cpu.de)               # own stack + low mem
+                mach.mem[RAM_LO:STACK] = sub0.mem[RAM_LO:STACK]       # results back
+                res = sub0.cpu
+            else:
+                sub1 = object.__new__(Machine)     # page-1 half over the CALLER's own image
+                sub1.mem = bytearray(mach.mem)     # low region/BIOS + RAM, all borrowed
+                sub1.mem[0x4000:0x8000] = sub_bytes[0x4000:0x8000]    # page 1 -> sub-ROM
+                sub1.sym = {}
+                sub1.cpu = Z80(sub1.mem)
+                sub1.traps = {}
+                sub1.call(cpu.ix, hl=cpu.hl, de=cpu.de)
+                mach.mem[RAM_LO:STACK] = sub1.mem[RAM_LO:STACK]       # results back
+                res = sub1.cpu
+            cpu.hl, cpu.de, cpu.a = res.hl, res.de, res.a
             cpu.f &= ~0x01                     # CF=0: dispatch completed (never "absent" here)
 
         self.trap("subrom_call", bridge)

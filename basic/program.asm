@@ -453,231 +453,53 @@ flb_no:
                 or      a                   ; CF clear
                 ret
 
-; --- store_line: insert / replace / delete a numbered line -------------------
-; in: BC = line number, HL = crunched token body (0-terminated, in TOKBUF).
-; An empty body (first byte 00) deletes the line; otherwise the line replaces
-; any existing line of the same number, else is inserted in number order.
+    IF ROM_BASE < $4000
+; --- store_line / relink: resident marshalling shims -----------------------
+; docs/spec-eviction-g4-space.md §4 (carve #2). prog_find_del/delete_at/
+; open_gap AND the relink loop moved whole to sub/lineedit.asm
+; (SUBROM_IDX_LINEEDIT); store_line marshals {SL_NUM,SL_TOK} (already RAM
+; cells, unchanged) then subrom_calls the tenant, which does the full
+; store/delete + relink + vars_reset internally (vars_reset is page-0 low-
+; region resident, directly `call`-reachable sub-side -- see sub/
+; lineedit.asm's own header) and reports back only an OOM status byte; the
+; actual err_mem RAISE stays here (raise_error is main page-1 resident,
+; unreachable from a page-1 tenant). `relink` itself stays as a thin shim
+; too, for cload.asm's 2 plain `call relink` sites (own header, same file).
 store_line:
                 xor     a
                 ld      (CONTVALID),a       ; editing the program invalidates CONT
                 ld      (SL_NUM),bc
                 ld      (SL_TOK),hl
-                ld      a,(hl)
+                xor     a                   ; LE_OP_STORE = 0
+                ld      (LE_OP),a
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
+                call    subrom_call
+                jp      c,subrom_absent_error
+                ld      a,(LE_STATUS)
                 or      a
-                jr      z,sl_delete         ; empty body -> delete only
-                ; line size = 4 (link+lineno) + body length (incl 00), found by a
-                ; token-aware walk so embedded 00 operand bytes don't truncate it.
-                call    skip_to_eol         ; HL (= TOKBUF) -> past the body's 00
-                ld      de,(SL_TOK)
-                or      a
-                sbc     hl,de               ; HL = body length incl. terminator
-                ld      bc,4
-                add     hl,bc               ; HL = full line size
-                ld      (SL_SIZE),hl
-                ld      b,h
-                ld      c,l                 ; BC = size (for the bounds check)
-                ; bounds: PRGEND + size must stay below TXTMAX
-                ld      hl,(PRGEND)
-                add     hl,bc
-                ld      de,TXTMAX
-                or      a
-                sbc     hl,de               ; (PRGEND+size) - TXTMAX
-                jr      nc,sl_oom           ; >= TXTMAX -> out of memory
-                call    prog_find_del       ; SL_SLOT = insertion point (post-delete)
-                call    open_gap            ; make room of SL_SIZE at SL_SLOT
-                ld      hl,(SL_SLOT)
-                ld      (hl),0              ; link placeholder (relink fills it)
-                inc     hl
-                ld      (hl),0
-                inc     hl
-                ld      a,(SL_NUM)          ; line number, LE
-                ld      (hl),a
-                inc     hl
-                ld      a,(SL_NUM+1)
-                ld      (hl),a
-                inc     hl
-                ld      de,(SL_TOK)         ; source = tokenised body
-                ex      de,hl               ; HL = source, DE = dest (after lineno)
-                ld      bc,(SL_SIZE)        ; body length = full size - 4 header bytes
-                dec     bc
-                dec     bc
-                dec     bc
-                dec     bc
-                ldir                        ; copy body incl. its 00 terminator
-                jp      relink
-sl_delete:
-                call    prog_find_del       ; deletes a matching line if present
-                jp      relink
-sl_oom:
+                ret     z                   ; ok (tenant already relinked +
+                                            ; vars_reset)
                 ld      a,$CC               ; out-of-memory landmark (distinct byte)
                 ld      (ERRMARK),a
-    IF ROM_BASE < $4000
                 ld      a,7                 ; ERR 7: out of memory (error-handling S2a)
                 jp      raise_error
-    ELSE
-                ld      hl,err_mem
-                jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
-    ENDIF
+; err_mem: the message STRING must stay resident even though sl_oom's own
+; CODE moved sub-side -- interp.asm's err_msgtab (repack-only, ERR 7) takes
+; its ADDRESS directly (`dw err_mem`), which must resolve to a main-ROM
+; address, never a sub-ROM one. err_stack (further down this file) and
+; cload.asm's err_prog_mem both `equ err_mem` unchanged.
 err_mem:        db      "out of memory",13,10,0
 
-; --- prog_find_del: locate the slot for SL_NUM, deleting an exact match ------
-; Walks the (currently valid) link chain. Sets SL_SLOT to the first line whose
-; number >= SL_NUM (or the end marker). If a line of exactly SL_NUM exists, it
-; is removed first so the caller can insert in its place. Clobbers A, BC, DE, HL.
-prog_find_del:
-                ld      hl,TXTBASE
-pfd_lp:
-                ld      e,(hl)              ; DE = link
-                inc     hl
-                ld      d,(hl)
-                dec     hl
-                ld      a,d
-                or      e
-                jr      z,pfd_here          ; end marker -> insert here, no match
-                push    hl                  ; stored number at slot+2..+3
-                inc     hl
-                inc     hl
-                ld      c,(hl)
-                inc     hl
-                ld      b,(hl)              ; BC = stored line number
-                pop     hl
-                ld      de,(SL_NUM)
-                ld      a,c                 ; compare stored(BC) - target(DE)
-                sub     e
-                ld      a,b
-                sbc     a,d
-                jr      c,pfd_next          ; stored < target -> keep walking
-                ; stored >= target: this is the slot
-                ld      a,c                 ; exact match?
-                cp      e
-                jr      nz,pfd_here
-                ld      a,b
-                cp      d
-                jr      nz,pfd_here
-                ld      (SL_SLOT),hl        ; same number -> delete then reuse slot
-                call    delete_at
-                ld      hl,(SL_SLOT)
-                ret
-pfd_here:
-                ld      (SL_SLOT),hl
-                ret
-pfd_next:
-                ld      e,(hl)              ; reload link (the compare clobbered DE
-                inc     hl                  ;  with SL_NUM), then advance to it
-                ld      d,(hl)
-                ex      de,hl               ; HL = link -> next line
-                jr      pfd_lp
-
-; --- delete_at: remove the line whose slot is in SL_SLOT ---------------------
-; Shifts the rest of the program (including the end marker) down over it and
-; shrinks PRGEND. Clobbers A, BC, DE, HL.
-delete_at:
-                ld      hl,(SL_SLOT)
-                inc     hl                  ; skip link(2)+lineno(2) -> body
-                inc     hl
-                inc     hl
-                inc     hl
-                call    skip_to_eol         ; HL = next-line address (token-aware)
-                ex      de,hl               ; DE = next-line address
-                ; count = (PRGEND+2) - next   (bytes to move, incl. end marker)
-                push    de                  ; next (move source)
-                ld      hl,(PRGEND)
-                inc     hl
-                inc     hl
-                or      a
-                sbc     hl,de
-                ld      b,h
-                ld      c,l                 ; BC = count
-                ; PRGEND -= (next - slot)
-                ld      hl,(SL_SLOT)
-                ex      de,hl               ; DE = slot, HL = next
-                or      a
-                sbc     hl,de               ; HL = removed size (next - slot)
-                ex      de,hl               ; DE = size, HL = slot
-                ld      hl,(PRGEND)
-                or      a
-                sbc     hl,de
-                ld      (PRGEND),hl
-                pop     hl                  ; HL = next (source)
-                ld      de,(SL_SLOT)        ; DE = slot (dest)
-                ld      a,b
-                or      c
-                ret     z                   ; nothing trailing to move
-                ldir
-                ret
-
-; --- open_gap: insert SL_SIZE bytes at SL_SLOT, shifting the tail up ----------
-; Moves [SL_SLOT .. PRGEND+1] (program tail incl. end marker) up by SL_SIZE and
-; grows PRGEND. Caller has already bounds-checked. Clobbers A, BC, DE, HL.
-open_gap:
-                ld      hl,(PRGEND)         ; count = (PRGEND+2) - slot
-                inc     hl
-                inc     hl
-                ld      de,(SL_SLOT)
-                or      a
-                sbc     hl,de
-                ld      b,h
-                ld      c,l                 ; BC = count
-                ld      hl,(PRGEND)
-                inc     hl                  ; HL = last tail byte (PRGEND+1) = source end
-                ld      de,(SL_SIZE)
-                push    hl
-                add     hl,de               ; dest end = source end + size
-                ex      de,hl               ; DE = dest end
-                pop     hl                  ; HL = source end
-                ld      a,b
-                or      c
-                jr      z,og_end
-                lddr                        ; shift the tail upward
-og_end:
-                ld      hl,(PRGEND)         ; PRGEND += SL_SIZE
-                ld      de,(SL_SIZE)
-                add     hl,de
-                ld      (PRGEND),hl
-                ret
-
-; --- relink: recompute every line's link pointer, stopping at the end marker -
-; A line's link = the address of the following line's link field. Clobbers
-; A, DE, HL (repack: also B, C -- the tail vars_reset now chains into
-; heap_reset for the 4c string-scalar clear; all four relink call sites are
-; indifferent to BC afterward).
 relink:
-                ld      hl,TXTBASE
-rl_lp:
-                ld      a,(PRGEND+1)        ; reached the end marker (HL == PRGEND)?
-                cp      h                   ; (a fresh line's link is a placeholder
-                jr      nz,rl_more          ;  0000, so we cannot stop on link==0)
-                ld      a,(PRGEND)
-                cp      l
-    IF ROM_BASE < $4000
-                jr      nz,rl_more          ; HL != PRGEND -> more lines to link
-                jp      vars_reset          ; arrays slice-1 (§9.6) + slice-4b (§3b/Q2):
-                                            ; every relink call (store_line edits,
-                                            ; Q-9c, AND CLOAD/LOAD's own program
-                                            ; replacement) invalidates any live
-                                            ; scalars/arrays -- tail call, vars_reset/
-                                            ; ary_reset ends in `ret`. This is the
-                                            ; slice-4b "edit clears scalars too"
-                                            ; behaviour change (deliberate, MSX-
-                                            ; faithful, §7.1).
+                ld      a,1                 ; LE_OP_RELINK
+                ld      (LE_OP),a
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
+                call    subrom_call
+                jp      c,subrom_absent_error
+                ret
     ELSE
-                ret     z                   ; HL == PRGEND -> all lines linked (lean:
-                                            ; byte-identical to the pre-slice-1 form)
+                include "basic/lineedit-body.inc"   ; lean: inline, byte-identical
     ENDIF
-rl_more:
-                push    hl                  ; remember this link field
-                inc     hl                  ; skip link (2) + lineno (2)
-                inc     hl
-                inc     hl
-                inc     hl
-                call    skip_to_eol         ; HL = next line (token-aware end-find)
-                ex      de,hl               ; DE = next-line address
-                pop     hl                  ; HL = link field to fill
-                ld      (hl),e
-                inc     hl
-                ld      (hl),d
-                ex      de,hl               ; HL = next-line address
-                jr      rl_lp
 
 ; --- ex_gosub: GOSUB <line> --------------------------------------------------
 ; Push a return frame [CURLINE:2][resume-ptr:2] (resume = the token position
