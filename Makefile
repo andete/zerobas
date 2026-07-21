@@ -480,6 +480,19 @@ sound-acceptance: $(DISK_ROM) repack-machine
 play-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_play.py $(if $(ONLY),--only $(ONLY),)
 
+# --- Standing PLAY live-servicer trace gate (audio arc, Slice 3) ---------------
+# docs/audio-slice3-characterization.md. Per-VBLANK PSG register trace differential
+# vs the VG-8020 -- proves play_service (reached from the $0038 ISR via the H.TIMI
+# seam) reproduces the reference's live drain: note tone periods (the black-box
+# 96-note table), frame durations (12000//tl floor), rests (amp 0, period kept),
+# dots, envelope (R11/12/13 + amp $10|vol), 3-voice independent drain, R7 never
+# touched, and a DI-safety liveness case (PLAY then a tight SIN loop). Repack-only;
+# HEAVY + oracle-dependent (boots openMSX twice per case; needs your VG-8020 ROM).
+# The emulator-free fast layer is tests/test_play_frame_sim.py under `unit-test`.
+# Scope one case with `make play-trace-acceptance ONLY=env`.
+play-trace-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_playtrace.py $(if $(ONLY),--only $(ONLY),)
+
 # --- Standing float-pack acceptance gate (float arc, F1 S3 + F2 S2) -----------
 # Three differential halves against the VG-8020 reference (docs/
 # spec-basic-float-core.md §9-§10): LITERALS (basic_probe_floatlit.py -- the
@@ -559,5 +572,5 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance \
-        input-acceptance error-acceptance error-trap-acceptance intarg-acceptance sound-acceptance play-acceptance float-acceptance math-acceptance subrom-acceptance \
+        input-acceptance error-acceptance error-trap-acceptance intarg-acceptance sound-acceptance play-acceptance play-trace-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check clean

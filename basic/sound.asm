@@ -63,7 +63,13 @@ ex_sound:
                 ld      b,a                 ; B = value byte to write
                 ld      a,c
                 cp      7                   ; register 7 (mixer) preserves its I/O bits
-                jr      nz,snd_write
+                jr      nz,snd_nomask
+                ; The latch+access below must be atomic against play_service, which
+                ; also programs the PSG from the $0038 ISR (audio Slice 3) -- a VBLANK
+                ; landing between a latch and its access would misdirect the write.
+                ; DI/EI mirrors the reference WRTPSG (Slice-1's "no DI needed" premise
+                ; held only while nothing in the ISR touched the PSG latch).
+                di
                 ld      a,7                 ; --- R7 read-modify-write: keep top 2 bits ---
                 out     (PSG_ADDR),a        ; latch register 7
                 in      a,(PSG_DATR)        ; A = current R7 (BIOS I/O-direction bits in 6-7)
@@ -74,11 +80,15 @@ ex_sound:
                 or      c                   ; merge: (curR7 & $C0) | (val & $3F)
                 ld      b,a                 ; B = merged byte to write
                 ld      c,7                 ; C = register 7 again (snd_write latches C)
+                jr      snd_write
+snd_nomask:
+                di                          ; single write, likewise atomic vs play_service
 snd_write:
                 ld      a,c
                 out     (PSG_ADDR),a        ; latch the register number
                 ld      a,b
                 out     (PSG_DATW),a        ; write the data byte
+                ei
                 jp      exec_stmt           ; out preserves HL (still the cursor); next stmt
 snd_illegal:
                 ld      a,5

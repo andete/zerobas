@@ -177,10 +177,12 @@ def run():
     m, st = parse([b"C&C"])
     check("'&' tie unsupported -> ERR 5", st, 5)
 
-    # --- S/M envelope emits OP_ENV; S sets envelope-mode amplitude $10 ----------
+    # --- S/M envelope emits OP_ENV; S sets envelope-mode amplitude $10|volume ----
+    # (bit4 = follow envelope; the VG-8020 also writes the volume nibble -> default
+    # V8 gives $18. The PSG ignores bits 0-3 in envelope mode; the byte is faithful.)
     m, st = parse([b"S3M1000C"])
     check("S3 M1000 C -> ENV packets + envelope-mode note", decode_queue(m, 0),
-          [("ENV", 3, 0), ("ENV", 3, 1000), ("NOTE", mml_ref.note_period(C4), 0x10,
+          [("ENV", 3, 0), ("ENV", 3, 1000), ("NOTE", mml_ref.note_period(C4), 0x18,
            mml_ref.note_frames(120, 4)), ("END",)])
 
     # --- three voices ----------------------------------------------------------

@@ -165,6 +165,13 @@ __MEAS_LOW_END:
 ; it drives is page-1, reachable only in the repack build); lean stays byte-identical.
                 include "basic/play.asm"
 
+; Audio Slice 3 (docs/audio-slice3-characterization.md): the live music servicer
+; (defines `play_service` + `play_install`) — drained from C-BIOS's $0038 ISR via
+; the H.TIMI seam. Main-ROM PAGE-1 resident, reached by a near JP (NOT page-0, NOT a
+; tenant — §4a: page-1 tenants run DI so the ISR never fires with page 1 switched
+; out). Repack-only like ex_sound/ex_play; lean stays byte-identical.
+                include "basic/playsvc.asm"
+
 ; The LIST statement + the detokeniser (defines `ex_list`, `detok`).
                 include "basic/list.asm"
 

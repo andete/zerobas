@@ -89,6 +89,8 @@ ier_done:
     IF ROM_BASE < $4000
                 call    sub_int_install     ; install the page-0 EI trampoline if a
                                             ; sub-ROM was recorded (subrom trampoline)
+                call    play_install        ; install the PLAY servicer H.TIMI seam
+                                            ; (audio Slice 3; H.TIMI is C9-free here)
     ENDIF
                 ei
                 ret

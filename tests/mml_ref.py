@@ -20,37 +20,60 @@ Slice 3's frame-trace differential). No stock-ROM disassembly.
 
 # PSG tone clock: MSX master 3.579545 MHz / 2 = 1.7897725 MHz, tone = clk/(16*TP).
 PSG_TONE_CLK = 3579545 / 2.0
-# Tempo baseline: frames-per-whole-note = BASE / T. T=120,L=4 (quarter) -> 30
-# frames = 0.5 s at 60 Hz. BASE = 60 fps * 240 = 14400 (60 Hz baseline; Slice 3
-# tunes for PAL/NTSC against the reference).
-FRAME_BASE = 14400
+# Tempo baseline: frames = BASE // (T*L), floor. Empirically pinned against the
+# VG-8020 (docs/audio-slice3-characterization.md §1): quarter @ T120 = 25 frames,
+# verified exact on 8 T/L points. BASE = 240 * 50 = 12000 -> on PAL/50 Hz tempo T
+# equals BPM (quarter @ T120 = 0.5 s). The frame *count* is Hz-independent (the ISR
+# counts VBLANKs), so no NTSC branch. Corrects the earlier 14400 half-up guess on
+# BOTH axes: constant 14400->12000 AND rounding half-up->floor.
+FRAME_BASE = 12000
 
 # MML note numbering used by the parser: N = (octave-1)*12 + semitone, octave 1..8,
 # semitone 0=C .. 11=B. 96 entries, index 0 = C1 .. 95 = B8.
 NOTE_MIN, NOTE_MAX = 0, 95
 
 
+# The VG-8020's actual 96-note PSG tone-period table, BLACK-BOX MEASURED per-VBLANK
+# (docs/audio-slice3-characterization.md; probes/lib/psgtrace.py). This is the
+# ground truth the asm table + host decoder must match: the reference does NOT equal
+# round(PSG_TONE_CLK/(16*f)) on the equal-tempered frequency (9 of 96 differ by 1 --
+# e.g. B4 measures 227 where the exact formula rounds to 226; 226.49 rounds UP on the
+# reference, which no single round/floor/ceil reproduces). Measuring the values is
+# clean-provenance (black-box PSG observation, NOT stock-ROM disassembly, exactly like
+# the frame-tempo constant). Index n = (octave-1)*12 + semitone, 0 = C1 .. 95 = B8.
+REF_PERIODS = [
+    3421, 3228, 3047, 2876, 2715, 2562, 2419, 2283, 2155, 2034, 1920, 1812,   # O1
+    1711, 1614, 1524, 1438, 1358, 1281, 1210, 1142, 1078, 1017,  960,  906,   # O2
+     855,  807,  762,  719,  679,  641,  605,  571,  539,  509,  480,  453,   # O3
+     428,  404,  381,  360,  339,  320,  302,  285,  269,  254,  240,  227,   # O4
+     214,  202,  190,  180,  170,  160,  151,  143,  135,  127,  120,  113,   # O5
+     107,  101,   95,   90,   85,   80,   76,   71,   67,   64,   60,   57,   # O6
+      53,   50,   48,   45,   42,   40,   38,   36,   34,   32,   30,   28,   # O7
+      27,   25,   24,   22,   21,   20,   19,   18,   17,   16,   15,   14,   # O8
+]
+
+
 def note_period(n):
-    """note number 0..95 -> 12-bit PSG tone period (clamped to 1..4095)."""
-    # frequency of note n: A4 (440 Hz) is octave 4, semitone 9 -> global index 3*12+9=45.
-    semis_from_a4 = n - 45
-    freq = 440.0 * (2.0 ** (semis_from_a4 / 12.0))
-    tp = round(PSG_TONE_CLK / (16.0 * freq))
-    return max(1, min(4095, tp))
+    """note number 0..95 -> 12-bit PSG tone period, the VG-8020-measured value."""
+    return REF_PERIODS[max(0, min(95, n))]
 
 
 def note_frames(tempo, length, dots=0, tie_frames=0):
     """(tempo 32..255, length 1..64, dots) -> interrupt-frame count (>=1).
 
-    frames = BASE / (tempo*length), integer half-up; each dot adds half of the
-    running value; a preceding tie adds tie_frames. Matches the asm exactly
-    (integer arithmetic, no float round)."""
+    frames = BASE // (tempo*length), floor. Dots (VG-8020-pinned, §1): the FIRST
+    dot adds ceil(base/2); each subsequent dot adds floor of the running addend
+    (base=25 -> +13 -> +6: L4.=38, L4..=44; base=12 -> +6: L8.=18). Matches the asm
+    exactly (integer arithmetic); the asm realises 'ceil first, floor after' with a
+    single `inc de` before the halving loop."""
     tl = tempo * length
-    fr = (FRAME_BASE + tl // 2) // tl          # half-up integer divide
-    add = fr
-    for _ in range(dots):
-        add //= 2
+    fr = FRAME_BASE // tl                       # floor divide
+    if dots:
+        add = (fr + 1) // 2                      # first dot: ceil(base/2)
         fr += add
+        for _ in range(dots - 1):
+            add //= 2                            # subsequent dots: floor of running addend
+            fr += add
     fr += tie_frames
     return max(1, fr)
 

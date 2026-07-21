@@ -1267,6 +1267,17 @@ VCX_NOTEL       equ     16      ; NOTELX: default note length 1..64
 VCX_TEMPO       equ     17      ; TEMPOX: tempo 32..255
 VCX_VOLUME      equ     18      ; VOLUMX: volume 0..15
 VCX_ENVSH       equ     19      ; ENVLPX: envelope shape 0..15 ($10 bit = env mode on)
+; Audio Slice 3 (docs/audio-slice3-characterization.md §2): the live drain servicer's
+; per-voice frame down-counter. OWN-DESIGN offset (past the parse-state fields; the
+; MSX music player keeps an equivalent counter in the VCB, exact offset not lifted --
+; no disassembly). Seeded to 0 by the parser's queue reset so the first VBLANK fetches
+; packet 0; play_service loads it with a note's `dur` and decrements once per frame.
+VCX_FRAMES      equ     20      ; frames remaining for this voice's current note, 2 B
+; H.TIMI ($FD9F) timer-interrupt hook -- the seam play_service installs at boot (a
+; JP; the hook is C9-free on our target so no chain). It is our entry into C-BIOS's
+; $0038 ISR; play_service is main-ROM page-1 resident (reached by a near JP, mapped
+; whenever the ISR fires -- page-1 tenants run DI, §4a) and does the MUSICF==0 fast-out.
+H_TIMI          equ     $FD9F   ; timer-interrupt hook, 5-byte inter-slot call area
 ; PLAY parse defaults (cold-boot seed; TEMPOX==0 is the "not seeded" sentinel,
 ; reliable because C-BIOS zeroes $F380.. at boot):
 PLAY_DEF_OCTAVE equ     4
