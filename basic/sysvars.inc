@@ -33,6 +33,38 @@ BREAKX          equ     $00B7   ; check Ctrl-STOP via keyboard matrix; CF set = 
 WRTVRM          equ     $004D   ; write A to VRAM address HL (VPOKE)
 RDVRM           equ     $004A   ; read VRAM address HL -> A (VPEEK)
 
+; --- Graphics arc (SCREEN 2 geometry engine; docs/spec-basic-graphics.md) ----
+; The graphics tenant (sub/graphics.asm, page-0) does DIRECT VDP port I/O -- it
+; runs with the BIOS paged out (page-0 island) so it cannot CALSLT WRTVRM, and a
+; pixel engine must not pay a CALSLT per byte anyway (arc D2). Ports are the fixed
+; MSX VDP hardware contract (TMS9918A datasheet), identical on every MSX1.
+VDP_DATA        equ     $98     ; VDP VRAM data port (write = store+autoinc; read = fetch+autoinc)
+VDP_ADDR        equ     $99     ; VDP address/register port; READ = status S#0 (the ISR reads
+                                ; this every VBLANK, which resets the addr latch flip-flop --
+                                ; the race the 2-byte-latch DI guard closes, spec-...-g1 §3)
+; SCREEN 2 (GRAPHIC-2) VRAM base tables -- PINNED black-box (BASE(10..14),
+; docs/spec-basic-graphics.md §11.2): pattern generator @ $0000, color @ $2000.
+; Pixel byte addr = (y>>3)*256 + (x>>3)*8 + (y&7); color byte = pattern + $2000.
+GFX_PGEN_BASE   equ     $0000   ; SCREEN 2 pattern generator (the pixel/pattern plane)
+GFX_COLOR_OFST  equ     $2000   ; color-plane offset from the pattern byte (fg|bg per 8x1 group)
+; Graphics work-area cells -- PINNED addresses (RAM-scan diff, §11.5), matching the
+; published MSX2-TH work area. DECLARED in G1 (pin the addresses once); WRITTEN by
+; G2+ (no plot statement in G1). GXPOS/GYPOS = pending pixel target; GRPACX/GRPACY =
+; the last-referenced point for LINE -(x,y)/STEP; CLOC/CMASK = computed VRAM addr+mask.
+GXPOS           equ     $FCB3   ; pending plot X (int16 LE)
+GYPOS           equ     $FCB5   ; pending plot Y (int16 LE)
+GRPACX          equ     $FCB7   ; last-referenced point X (int16 LE)
+GRPACY          equ     $FCB9   ; last-referenced point Y (int16 LE)
+CLOC            equ     $F92A   ; computed VRAM byte address of the current pixel (2)
+CMASK           equ     $F92C   ; MSB-first bit mask of the current pixel (1)
+; G1 floor self-test results (PROBE-ONLY; docs/spec-basic-graphics-g1.md §5). The
+; graphics self-test tenant (SUBROM_IDX_GRAPHICS, GFX_OP=0) is never invoked by real
+; BASIC -- only by basic_probe_graphics_floor.py -- so its two result bytes live in
+; high scratch RAM (page 3, the same $C0xx region the inttest probe uses), NOT in the
+; exhausted system-variable area. The probe reads them straight after the CALSLT.
+GFX_DJ          equ     $C120   ; JIFFY delta observed while drawing under EI (1; >=1 = live)
+GFX_BAD         equ     $C121   ; VRAM read-back mismatch count (1; 0 = no latch corruption)
+
 ; --- Slot access BIOS entry points + work area (extension-ROM INIT scan) ----
 ; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook. The
 ; slot-id byte format is the MSX2 TH slot architecture convention: bit 7 = slot

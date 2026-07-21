@@ -97,6 +97,11 @@ sub_p0_table:
                 jp      pu_tail_tenant          ; index 7 (SUBROM_IDX_PU_TAIL): PRINT USING
                                                 ;   trailing-literal emitter. Both are pure
                                                 ;   PU_*-RAM+pchar leaves; render into DETOKBUF.
+                jp      graphics_selftest       ; index 8 (SUBROM_IDX_GRAPHICS): the SCREEN-2
+                                                ;   geometry engine's page-0 island (graphics
+                                                ;   arc, docs/spec-basic-graphics-g1.md). G1
+                                                ;   dispatches only the VDP-floor self-test;
+                                                ;   later slices add GFX_OP selectors here.
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $0010 mapped slot 3-2 into PAGE 0 and that page-3 RAM is
@@ -194,6 +199,12 @@ sis_spin:
 ; page-1 window space (docs/spec-evict-printusing.md). Reuses detok.asm's
 ; sub-local pchar (DETOKBUF append), included above — so this must follow it.
                 include "printusing.asm"
+
+; GRAPHICS ARC SLICE G1 (index 8 = graphics_selftest): the SCREEN-2 geometry
+; engine's page-0 island — the VDP direct-port I/O floor + its interrupt-under-
+; draw self-test (docs/spec-basic-graphics-g1.md). Self-contained: touches only
+; the VDP ports + page-3 RAM result cells, calls nothing else in this file.
+                include "graphics.asm"
 
 ; --- sub-local is_letter / is_ident_cont (byte-identical own-design clones) --
 ; Resident copies stay in the main ROM (basic/interp.asm is_letter, basic/vars.asm

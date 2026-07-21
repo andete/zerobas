@@ -118,7 +118,7 @@ SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
              sub/format.asm basic/format-body.inc \
              sub/errtrap.asm \
              sub/fatprim.asm basic/fat-prim-body.inc basic/fat-delete-body.inc \
-             sub/dirverb.asm sub/playparse.asm \
+             sub/dirverb.asm sub/playparse.asm sub/graphics.asm \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
              basic/tokenise.inc basic/detok.inc \
              sub/basic-resident-abi.inc
@@ -390,6 +390,20 @@ subrom-acceptance: $(SUB_ROM)
 # docs/spec-basic-subrom-trampoline.md.
 subrom-inttest: repack-machine
 	python3 probes/basic/basic_probe_subrom_inttest.py
+
+# --- Graphics G1 floor gate (graphics arc, docs/spec-basic-graphics-g1.md) -----
+# Proves the SCREEN-2 geometry engine's architectural floor on the shipped merged
+# machine: the probe CALSLTs the page-0 graphics self-test (index 8), which writes
+# an 8 KB VRAM block via the di-guarded direct-port primitives while running EI,
+# reads it all back, and reports the JIFFY delta + mismatch count. Asserts delta>=1
+# (interrupts serviced mid-draw) AND mismatch=0 (the address-latch race is closed).
+# The teeth check `make graphics-floor-teeth` rebuilds the sub-ROM with the guard
+# stripped (pasmo --equ GFX_UNGUARDED=1) and asserts the gate then FAILs.
+graphics-floor-acceptance: repack-machine
+	python3 probes/basic/basic_probe_graphics_floor.py
+
+graphics-floor-teeth:
+	ZB_GFX_UNGUARDED=1 python3 probes/basic/basic_probe_graphics_floor.py --expect-fail
 
 # --- Standing string-engine acceptance gate (string-engine arc S5; compare S3) -----
 # The three-part proof of the Phase-3 string engine on the merged repack build. CRUNCH:

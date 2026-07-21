@@ -1,11 +1,23 @@
 # Spec — graphics Slice G1: the VDP floor + interrupt-under-draw proof
 
-**Status: DRAFT — SIGN-OFF NEEDED (2026-07-21).** Slice-design addendum to the
-signed-off arc spec [`spec-basic-graphics.md`](spec-basic-graphics.md) (crux D1/D2/D4
-approved; §11 characterization complete). G1 writes **no user-visible statement** —
-it builds and *proves* the architectural floor every later slice rides on. That is
-deliberate risk-staging: if the page-0 EI-trampoline + direct-VDP-port + DI-guarded
-address-latch design has a flaw, it must surface here, cheaply, not inside `PAINT`.
+**Status: LANDED (2026-07-21).** Signed off, implemented, and gated. Slice-design
+addendum to the arc spec [`spec-basic-graphics.md`](spec-basic-graphics.md) (crux
+D1/D2/D4 approved; §11 characterization complete). G1 writes **no user-visible
+statement** — it builds and *proves* the architectural floor every later slice rides
+on. That is deliberate risk-staging: if the page-0 EI-trampoline + direct-VDP-port +
+DI-guarded address-latch design has a flaw, it must surface here, cheaply, not inside
+`PAINT`.
+
+> **Verified (2026-07-21).** `make graphics-floor-acceptance` on the merged machine:
+> JIFFY delta = **34** (interrupts serviced through the whole 8 KB draw under EI) and
+> **0** read-back mismatches (the di-guarded latch held). The teeth check
+> (`GFX_UNGUARDED=1`, guard stripped) → delta 32 but **3** mismatches — the gate
+> genuinely fails without the guard, so the 0-mismatch pass is real. `gfx_calc_addr`
+> host unit test (11 cases) PASS; `subrom-inttest` still PASS (dispatch table intact);
+> closure check confirms `graphics_selftest` is page-0-closed with no BIOS escape.
+> Implementation: [sub/graphics.asm](sub/graphics.asm),
+> [probes/basic/basic_probe_graphics_floor.py](probes/basic/basic_probe_graphics_floor.py),
+> [tests/test_graphics.py](tests/test_graphics.py).
 
 Model precedent: the interrupt self-test tenant `SUBROM_IDX_INTTEST` +
 [`spec-basic-subrom-trampoline.md`](spec-basic-subrom-trampoline.md) — G1 is the

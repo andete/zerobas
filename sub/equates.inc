@@ -118,3 +118,20 @@ SUBROM_IDX_PLAY_PARSE   equ     14
 SUB_PING                equ     $F105   ; PING page tag: $C0 (page 0) / $C1 (page 1)
 SUB_PING_P0             equ     $C0     ; written by the page-0 ping
 SUB_PING_P1             equ     $C1     ; written by the page-1 ping
+
+; --- Graphics arc, Slice G1 (page-0 tenant; docs/spec-basic-graphics-g1.md) ----
+; index 8 = graphics_selftest / the SCREEN-2 geometry engine's page-0 island
+; (sub/graphics.asm). Page-0 (EI-capable via the RAM interrupt trampoline) so a
+; long draw keeps interrupts live -- music keeps playing (arc D1). Reached by
+; IX = SUBROM_ENTRY_BASE_P0 + 3*8 = $0028; G1 ships only the floor (VDP port I/O
+; primitives + the interrupt-under-draw self-test), no statement/token yet.
+SUBROM_IDX_GRAPHICS     equ     8
+
+; GFX_UNGUARDED: the G1 "teeth check" toggle (spec §4). Default 0 = the DI guard
+; around the 2-byte VDP address latch is present (shipped). Building the sub-ROM
+; with `pasmo --equ GFX_UNGUARDED=1` strips the guard, so the floor gate can
+; confirm it then FAILs (latch race observed) -- proving the guarded pass is a
+; real result, not a test that cannot fail. NEVER shipped =1.
+    IFNDEF GFX_UNGUARDED
+GFX_UNGUARDED           equ     0
+    ENDIF
