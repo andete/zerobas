@@ -5,13 +5,51 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — evict the disk/file command cluster to sub-ROM tenants (free ~3–4 KB of page-1)
 
-Status: **SIGNED OFF 2026-07-19** (user, at end of the commissioning session) — **handed over
+Status: **ARC CONCLUDED after Phase 2 (2026-07-21, user-decided).** Phases 1 + 2 LANDED
+(§11/§12). **Phases 3–5 deprioritized — the yield premise did not survive measurement** (see
+▼ ARC CONCLUSION below): Phase 1 lifted the ONE large self-contained CALSLT-side chunk (+1179 B);
+everything left straddles `eval`/the resident `fat_io_*` RAM cursor/`program.asm`, so the
+remaining phases would free only a few hundred bytes total (not §6's ~1.5–2 KB) AND require
+duplicating `fat_io_getbyte`/`putbyte` into a tenant. With page-1 free at a healthy 1134 B and no
+funder pending, the user chose to stop here rather than pursue low-yield / rising-risk evictions.
+Reopen only if a concrete page-1 funding need re-emerges. History below preserved as-written.
+
+Originally: **SIGNED OFF 2026-07-19** (user, at end of the commissioning session) — **handed over
 to a new session for implementation.** Commissioned 2026-07-19 (user: "we do need to evict more,
 large code blocks coming — can we evict all load/save/open/close related in one big block?").
 This is the scope/design doc for the largest planned eviction: the disk/tape file command
 subsystem. It generalises the proven `CALL FORMAT` split ([spec-evict-call-format.md]) from one
 verb to the whole cluster. Repack-only; the lean 16 KB `basic.rom` stays byte-identical
 throughout (every moved byte is behind `IF ROM_BASE < $4000`).
+
+## ▼ ARC CONCLUSION — why Phases 3–5 were deprioritized (measured 2026-07-21)
+
+After Phases 1–2 landed, a measurement pass over the remaining verbs (LOAD/SAVE/BLOAD/BSAVE/
+MERGE/RUN + the Phase 4–5 channel/field verbs) established that the eviction's high-yield window
+has closed:
+
+1. **Phase 1 already lifted the only large self-contained CALSLT-side leaf** — the 1666 B FAT12
+   primitive/sector engine (§11), +1179 B page-1. That was the yield; the spec's §6 "Phases 2–5:
+   ~1.5–2 KB" figure was computed against pre-Phase-1 byte counts and does not hold post-Phase-1.
+2. **Phase 2 confirmed the new reality empirically** (§12): the two directory verbs freed only
+   +17 B net, because they were already thin orchestration over Phase-1 tenant shims.
+3. **Everything remaining straddles.** Each remaining verb body interleaves `eval` (resident —
+   e.g. BSAVE's `expect_comma_eval` for start/end addresses), the `fat_io_*` byte cursor, and
+   `program.asm` (`new_prog`/`relink`/`run_prog`, resident). None is a liftable CALSLT-side leaf.
+4. **The `fat_io_*` cursor is already optimally placed.** It is a thin *resident* RAM-buffer
+   layer (`FSECTOR_BUF`/`FREAD_OFF`) that already delegates every sector access to Phase-1 tenant
+   primitives (`fat_read_file_sector`, …). Moving it gains ~nothing and would break the shared
+   `ARL_GETBYTE` polymorphic vector (disk/tape/console/field byte sources all route through it) —
+   the exact hazard §11 flagged when it deferred the cursor.
+5. **Any further verb eviction is Phase-2-sized AND adds duplication.** The binary BLOAD/BSAVE
+   loops could move (~tens–low-hundreds of bytes each) only by *duplicating* `fat_io_getbyte`/
+   `putbyte` into the tenant (they must stay resident for the ascii `ARL_GETBYTE` path). Poor
+   yield-to-risk, worsening for the disk-write and program-load verbs.
+
+Net: the disk/file cluster is now split as well as it usefully can be without a redesign of the
+byte-cursor/vector architecture. If a future feature creates real page-1 pressure, the best next
+lever is likely NOT more file-cluster eviction but the untouched non-file targets or a C-BIOS
+repack pass (see [[basic-rom-space-and-growth]]).
 
 **▶ START HERE (new session).** Begin **Phase 1 — `fat.asm` anchor** (§4). First resolve the
 Q-A shape decision (§9.1) empirically: prototype the fat-alone marshalling cost (~49 call-site
