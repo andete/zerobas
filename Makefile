@@ -599,4 +599,5 @@ clean:
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance \
         input-acceptance error-acceptance error-trap-acceptance intarg-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
-        subrom-inttest subrom-abi-check subrom-closure-check clean
+        subrom-inttest subrom-abi-check subrom-closure-check \
+        graphics-floor-acceptance graphics-floor-teeth clean
