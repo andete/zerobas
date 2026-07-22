@@ -1064,9 +1064,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `X <expr$>;`, `=<expr>;`), the measured scale arithmetic and its wraps, the
       angle's relative-only rotation, the S/A state that survives `RUN`, and the
       shared-`ATRBYT` colour rule (which also retro-fits `PSET`/`LINE`/`CIRCLE`/`PAINT`).
-      Gate: `make graphics-acceptance` Phases K/L/M. **Still open:** G7 sprites
-      (`SPRITE$`/`PUT SPRITE` — graphics `GET`/`PUT` do NOT exist on MSX1), `SCREEN 3`
-      (multicolor, deferred), `VDP`.
+      Gate: `make graphics-acceptance` Phases K/L/M. ·
+      ✅ **G7 sprites** (2026-07-22, [`docs/spec-basic-graphics-g7.md`](docs/spec-basic-graphics-g7.md)):
+      `SPRITE$(n)=` and `A$=SPRITE$(n)` (8/32-byte entries, pad/truncate, the
+      `& $3FFF` index wrap), `PUT SPRITE` (the `y,x,pattern,colour` entry, the
+      early-clock rule for a negative x, coordinates stored mod 256, the ×4
+      pattern scaling in 16×16, and "an omitted argument keeps the byte already
+      there"), `SPRITE ON|OFF|STOP` as accepted no-ops, and **`SCREEN`'s
+      sprite-size argument**, which used to be evaluated and discarded — including
+      the mode-set init and the size's persistence across a later bare `SCREEN`.
+      Gate: Phases N/O/P. Funded by the two-carve eviction
+      [`docs/spec-eviction-g7-space.md`](docs/spec-eviction-g7-space.md).
+      **Still open:** `SCREEN 3` (multicolor, deferred), `VDP`, and the sprite
+      COLLISION trap (`ON SPRITE GOSUB`) which belongs to the interrupt-trap item.
 - [x] **Sound** (AY-3-8910) — `SOUND`✅, `PLAY` (MML)✅, `BEEP`✅ — **ARC CONCLUDED
       2026-07-21** (all repack-only, page-1 resident, direct-PSG, VG-8020-byte-faithful).
       `SOUND`/`PLAY`+live servicer landed earlier that day (commits baf…→f6bfe76); the

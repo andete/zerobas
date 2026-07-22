@@ -266,7 +266,7 @@ own-design-packet note.
 | **D3** | Color-clash / attribute rule | RESOLVED — pinned (§4/§11.3): compare `c` vs the byte's own low nibble; set→hi-nibble, preserve lo |
 | **D4** | SCREEN 3 (multicolor) | **Defer** to a post-arc slice; SCREEN 2 only now (§1) |
 | **D5** | Engine granularity | **One selector-dispatched page-0 tenant** for G2–G6 (§6) |
-| **D6** | Sprites (G7) placement | Open — own tenant vs join the graphics tenant; decide at G7 |
+| **D6** | Sprites (G7) placement | SETTLED 2026-07-22 — join the graphics tenant (`GFX_OP` 7–12), spec-basic-graphics-g7.md §2 |
 | **D7** | Slice ordering / first cut | G1→G2→G3 as the de-risking core, then G4–G7 |
 
 ---

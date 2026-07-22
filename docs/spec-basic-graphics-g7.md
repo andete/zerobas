@@ -1,6 +1,11 @@
 # Spec — graphics Slice G7: sprites (`SPRITE$`, `PUT SPRITE`, `SCREEN`'s size arg)
 
-**Status: SIGNED OFF (2026-07-22).** All of §9 approved as recommended, and
+**Status: LANDED (2026-07-22)** — commits `444b24b` (both halves, resident gated
+off), `f6a578a` + `8cc45d2` (the eviction, then switch-on). Gates green:
+`graphics-acceptance` Phases N/O/P, floor gate + teeth, `unit-test` 51/51,
+`diskbasic` 34/34, `bdos` 12/12, lean cart byte-identical. The eviction that
+funded it is [spec-eviction-g7-space.md](spec-eviction-g7-space.md).
+**Originally signed off (2026-07-22):** All of §9 approved as recommended, and
 D-G7-4 settled on (a): `SPRITE ON/OFF/STOP` parse as accepted no-ops in G7. Slice G7 of the graphics arc
 ([spec-basic-graphics.md](spec-basic-graphics.md)) and its **last slice**: the
 drawing statements G1–G6 have landed, and sprites are the remaining MSX1
@@ -242,7 +247,26 @@ The recurring lesson stands: a green build that was never run against the
 reference is not evidence. Sprites are VRAM-visible state, so the differential
 can see everything that matters here — there is no excuse for a static-only pass.
 
-## 11. Impl order
+## 11. Impl order — as it actually went
+
+**Step 1 answered D-G7-3:** C-BIOS `CHGMOD` already reproduces the reference's
+mode-set init (`y=209`, pattern = plane, colour = **FORCLR**) — and differs in
+exactly one respect: it also **zeroes the x byte**, where the reference leaves it.
+So G7 brackets its `CHGMOD` with tenant ops 10/11, which snapshot the 32 x bytes
+and put them back (`scratchpad/g7_chgmod_init.py`).
+
+**Two bugs survived to first run, both caught by the differential and invisible
+to host tests** — the arc's recurring lesson, again:
+1. `gfx_vram_rd` (the G1 di-guarded read) had **no fetch-window settle** — the G2
+   lesson had only ever been applied to `gfx_rd_raw`. A 4-byte attribute read came
+   back ROTATED and `SPRITE$` read zeros. Fixing it also showed that the G1 teeth
+   check had really been detecting the missing settle all along (eviction spec §7).
+2. Every malformed sprite statement used `jp stmt_error`, which PRINTS and aborts
+   the RUN — so `ON ERROR GOTO` never saw it, while the reference raises a
+   trappable `ERR 2`. Phase O puts both outcomes behind one tag, so the flip could
+   not pass.
+
+The original plan, for the record:
 
 1. Measure C-BIOS `CHGMOD`'s sprite init (D-G7-3) — one probe, before any asm.
 2. Tenant `GFX_OP = 7/8` + host-unit-tested leaves.
