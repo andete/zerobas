@@ -564,10 +564,177 @@ def phase_j() -> int:
     return fails
 
 
+# ===========================================================================
+# G6 -- DRAW (docs/spec-basic-graphics-g6.md §10). Three phases:
+#   K  the pixel differential (POINT-sampled, so pattern AND colour)
+#   L  the error surface
+#   M  the PERSISTENCE of S/A across RUN -- invisible to any single-program test
+# ===========================================================================
+
+# label, setup ops, POINT sample coords
+DRAW_FILL_CASES = [
+    # the eight directions, as a closed box drawn by DRAW alone
+    ("box_udlr", ['PSET(20,20)', 'DRAW"A0S4R10D10L10U10"'],
+     [(20, 20), (30, 20), (30, 30), (20, 30), (25, 20), (25, 25)]),
+    # a diagonal: E moves n in BOTH axes
+    ("diag_e", ['PSET(20,20)', 'DRAW"A0S4E10"'],
+     [(20, 20), (25, 15), (30, 10), (25, 20)]),
+    # DRAW's M-segment must be the SAME rasteriser as LINE (spec §2)
+    ("m_line_identity", ['PSET(20,20)', 'DRAW"A0S4M53,37"'],
+     [(20, 20), (30, 25), (40, 30), (53, 37), (40, 34)]),
+    ("line_for_compare", ['LINE(20,20)-(53,37),15'],
+     [(20, 20), (30, 25), (40, 30), (53, 37), (40, 34)]),
+    # B = move without drawing; N = draw then restore
+    ("blank_move", ['PSET(20,20)', 'DRAW"A0S4BR10D5"'],
+     [(20, 20), (25, 20), (30, 20), (30, 25)]),
+    ("no_update", ['PSET(20,20)', 'DRAW"A0S4NR10D5"'],
+     [(25, 20), (30, 20), (20, 25), (25, 25)]),
+    # scale (quarter units) and angle (relative motion only)
+    ("scale_s8", ['PSET(50,50)', 'DRAW"A0S8R10"'],
+     [(50, 50), (60, 50), (70, 50), (71, 50)]),
+    ("scale_s2", ['PSET(50,50)', 'DRAW"A0S2R10"'],
+     [(50, 50), (55, 50), (56, 50)]),
+    ("angle_a1", ['PSET(50,50)', 'DRAW"S4A1R10"'],
+     [(50, 50), (50, 45), (50, 40), (55, 50)]),
+    ("angle_abs_m_unrotated", ['PSET(50,50)', 'DRAW"S4A1M70,50"'],
+     [(50, 50), (60, 50), (70, 50)]),
+    # substitutions
+    ("eqvar", ['V=10', 'PSET(20,20)', 'DRAW"A0S4R=V;"'],
+     [(20, 20), (25, 20), (30, 20), (31, 20)]),
+    ("xsub", ['A$="R10"', 'PSET(20,20)', 'DRAW"A0S4XA$;D5"'],
+     [(20, 20), (30, 20), (30, 25)]),
+    ("xnest", ['A$="XB$;"', 'B$="R10"', 'PSET(20,20)', 'DRAW"A0S4XA$;"'],
+     [(20, 20), (25, 20), (30, 20)]),
+    # off-screen motion clips by masking (and does NOT error)
+    ("clip_left", ['PSET(5,5)', 'DRAW"A0S4L100"'],
+     [(5, 5), (2, 5), (0, 5)]),
+    # negative count reverses; chaining + ';' separators
+    ("neg_and_chain", ['PSET(40,40)', 'DRAW"A0S4U-5;R5"'],
+     [(40, 40), (40, 45), (43, 45), (45, 45)]),
+]
+
+# The COLOUR rule (spec §6) is a CROSS-STATEMENT behaviour, so it gets its own
+# fixtures: DRAW reads the shared attribute and writes it only on `C n`.
+DRAW_COLOUR_CASES = [
+    ("c_sets", ['PSET(20,20)', 'DRAW"A0S4C6R10"'], [(25, 20)]),
+    ("c_persists_next_draw", ['PSET(20,20)', 'DRAW"A0S4C6R10"', 'DRAW"BM20,40R10"'],
+     [(25, 20), (25, 40)]),
+    # the discriminating one: a colourless DRAW inherits the PREVIOUS
+    # statement's colour, so this draws in 4, not in FORCLR
+    ("inherits_from_line", ['LINE(20,60)-(30,60),4', 'DRAW"BM20,80R10"'],
+     [(25, 60), (25, 80)]),
+    # ...while a colourless LINE re-stamps FORCLR, so the next DRAW is 15 again
+    ("colourless_line_restamps", ['PSET(20,20)', 'DRAW"A0S4C6R10"',
+                                  'LINE(20,100)-(30,100)', 'DRAW"BM20,120R10"'],
+     [(25, 20), (25, 100), (25, 120)]),
+]
+
+# The error surface. Both outcomes are printed behind ONE distinctive tag
+# ("ZK" ok / "ZE <n>" raised) so a case that is SUPPOSED to be accepted and a
+# case that is supposed to raise are compared by the same extractor -- a
+# per-case "expected" tag would silently pass whenever both machines produced
+# the other outcome.
+DRAW_BEHAV = [
+    (l, ['ON ERROR GOTO 40', body, 'SCREEN0:PRINT"ZK":END',
+         'SCREEN0:PRINT"ZE";ERR:END'])
+    for l, body in [
+        ("badletter",  'SCREEN2:DRAW"Z10"'),
+        ("bare_s",     'SCREEN2:DRAW"SU10"'),
+        ("bare_a",     'SCREEN2:DRAW"AU10"'),
+        ("bare_c",     'SCREEN2:DRAW"CU10"'),
+        ("bare_m",     'SCREEN2:DRAW"MU10"'),
+        ("angle4",     'SCREEN2:DRAW"A4U10"'),
+        ("colour16",   'SCREEN2:DRAW"C16U10"'),
+        ("colour_neg", 'SCREEN2:DRAW"C-1U10"'),
+        ("scale256",   'SCREEN2:DRAW"S256U10"'),
+        ("scale255ok", 'SCREEN2:DRAW"S255U1":DRAW"S4"'),
+        ("count_big",  'SCREEN2:DRAW"U99999"'),
+        ("m_missing",  'SCREEN2:DRAW"M100"'),
+        ("eq_nosemi",  'SCREEN2:V=10:DRAW"U=V"'),
+        ("x_nosemi",   'SCREEN2:A$="U10":DRAW"XA$"'),
+        ("lead_semi",  'SCREEN2:DRAW";U10"'),
+        ("dbl_semi",   'SCREEN2:DRAW"U10;;D5"'),
+        ("comma_sep",  'SCREEN2:DRAW"U10,D5"'),
+        ("junk",       'SCREEN2:DRAW"U10*"'),
+        ("screen0",    'SCREEN0:DRAW"U10"'),
+        ("screen1",    'SCREEN1:DRAW"U10"'),
+        ("numeric",    'SCREEN2:DRAW 5'),
+        ("empty",      'SCREEN2:DRAW""'),
+        ("bare_b",     'SCREEN2:DRAW"B"'),
+        ("offscreen",  'SCREEN2:PSET(5,5):DRAW"U100"'),
+        ("scale0",     'SCREEN2:DRAW"S0U10":DRAW"S4"'),
+    ]
+]
+
+
+def _outcome(raw: str | None) -> str | None:
+    """"ZK" (accepted) or "ZE <n>" (raised), whichever the case produced."""
+    if not raw:
+        return None
+    txt = " ".join("".join(raw).split())
+    m = re.search(r"Z[KE][ \d]*", txt)
+    return re.sub(r"\s+", " ", m.group(0)).strip() if m else None
+
+
+def phase_k() -> int:
+    fails = 0
+    print("=== PHASE K: DRAW pixel differential (POINT-sampled: pattern AND colour) ===")
+    for label, setup, pts in DRAW_FILL_CASES + DRAW_COLOUR_CASES:
+        specs = [("stored", paint_points_prog(setup, pts))]
+        ref = omsx_repl.run_cases(REF, specs, batch=False)[0]
+        zb = omsx_repl.run_cases(ZB, specs, batch=False)[0]
+        ra, za = _points(ref, len(pts)), _points(zb, len(pts))
+        ok = ra is not None and ra == za
+        fails += not ok
+        print(f"  {'PASS' if ok else 'FAIL'} {label:26} ref={ra} zb={za}")
+    return fails
+
+
+def phase_l() -> int:
+    fails = 0
+    print("=== PHASE L: DRAW errors + accepted edges ===")
+    specs = [("stored", body) for _, body in DRAW_BEHAV]
+    ref = omsx_repl.run_cases(REF, specs, batch=True, reset=("NEW", "CLS"))
+    zb = omsx_repl.run_cases(ZB, specs, batch=True, reset=("NEW", "CLS"))
+    for (label, _), r, z in zip(DRAW_BEHAV, ref, zb):
+        ra, za = _outcome(r), _outcome(z)
+        ok = ra is not None and ra == za
+        fails += not ok
+        print(f"  {'PASS' if ok else 'FAIL'} {label:14} ref={ra!r} zb={za!r}")
+    return fails
+
+
+def phase_m() -> int:
+    """The S/A state survives a RUN (spec §4). Two programs run back to back in
+    ONE boot: the first sets S8/A1, the second draws a plain U10 and reports
+    where it ended up. A build that reset the state at statement/SCREEN/RUN
+    entry passes every single-program test and fails only here."""
+    fails = 0
+    print("=== PHASE M: DRAW S/A persistence ACROSS RUN ===")
+    rd = ('SCREEN0:PRINT"P";PEEK(&HFCB7)+256*PEEK(&HFCB8);'
+          'PEEK(&HFCB9)+256*PEEK(&HFCBA)')
+    specs = [
+        ("stored", ['SCREEN2:DRAW"S8A1BM100,100"', 'PRINT"SET"']),
+        ("stored", ['SCREEN2', 'PSET(100,100):DRAW"U10"', rd]),
+        # and that an explicit reset in a later program takes effect
+        ("stored", ['SCREEN2:DRAW"S4A0BM100,100"', 'PRINT"RST"']),
+        ("stored", ['SCREEN2', 'PSET(100,100):DRAW"U10"', rd]),
+    ]
+    ref = omsx_repl.run_cases(REF, specs, batch=True, reset=("NEW",))
+    zb = omsx_repl.run_cases(ZB, specs, batch=True, reset=("NEW",))
+    for idx, label in ((1, "after S8/A1 in a PRIOR run"), (3, "after an explicit S4/A0")):
+        ra, za = _answer(ref[idx], "P"), _answer(zb[idx], "P")
+        ok = ra is not None and ra == za
+        fails += not ok
+        print(f"  {'PASS' if ok else 'FAIL'} {label:28} ref={ra!r} zb={za!r}")
+    return fails
+
+
 def main() -> int:
     fails = (phase_a() + phase_b() + phase_c() + phase_d()
               + phase_e() + phase_f() + phase_g_rneg()
-              + phase_h() + phase_i_aliasing() + phase_j())
+              + phase_h() + phase_i_aliasing() + phase_j()
+              + phase_k() + phase_l() + phase_m())
     print("-------------------")
     print("graphics-acceptance:", "PASS" if fails == 0 else f"FAIL ({fails})")
     return 1 if fails else 0

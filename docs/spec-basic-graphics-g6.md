@@ -185,16 +185,30 @@ its whole callee closure lands on one side. Anything reached through `eval` is
 effectively barred from page-0 tenancy, because `eval` bottoms out in the float
 pack.
 
-**Two ways forward (§9 D-G6-6).**
+**RESOLVED (2026-07-22).** Option (a) was taken and the deficit is closed with
+room to spare — page-1 now has **45 B free with `DRAW` resident**, more headroom
+than the arc had *before* G6 started:
+
+| step | bytes |
+|---|---|
+| D-G6-1b co-routine (replaces the resident pre-pass) | −124 |
+| the two G5 DRY levers, re-applied and now re-verified | −46 |
+| `DEFtype` → page-0 sub tenant ([spec-eviction-g6-space.md](spec-eviction-g6-space.md)) | −115 |
+| **net vs the 239 B overrun** | **45 B free** |
+
+The carve was found by `scratchpad/g6_carve_scout.py`, which applies the tenancy
+rule above to every resident routine transitively — the eviction spec records
+both the rule and why the previously-banked runway failed it.
 
 ## 9. Decisions
 
-- **D-G6-1 substitution mechanism.** (a) resident pre-pass into a scratch buffer
-  with a binary literal escape + inline `X` splice — **recommended** (§7);
-  (b) tenant-side scan with a co-routine callback to the resident for each
-  substitution (cheaper resident, more moving parts, re-entrant tenant);
-  (c) tenant calls resident page-1 lookup directly (**not recommended** — the
-  float-coercion path is unreachable from a page-0 tenant).
+- **D-G6-1 substitution mechanism — SETTLED on (b), the co-routine.** (a) the
+  resident pre-pass was implemented first, measured, and then replaced by (b)
+  when the space verdict came in: the tenant scans in place and keeps an
+  X-substring frame stack, and calls back to the resident once per substitution.
+  −124 B resident, and it deletes the 256 B pre-pass buffer. (c) — calling
+  resident page-1 lookup directly — stays rejected: the float coercion behind
+  `=var;` is unreachable from a page-0 tenant.
 - **D-G6-2 persistent state.** `S`/`A` in the graphics RAM block, **cold-boot init
   only** (§4). Confirm we are willing to carry statement state that no `RUN`,
   `CLEAR` or `NEW` clears — it is what the reference measurably does.
@@ -243,10 +257,20 @@ reference is not evidence.
 
 ## 11. Impl order
 
-**Progress 2026-07-22:** steps 2 and 3 are written (tenant unconditional, resident
-gated off) and step 1 is re-scoped by the §8 measurement — see D-G6-6. Nothing has
-been run against the reference yet: the resident half cannot link until the space
-lands, so the gates below are all still outstanding.
+**LANDED 2026-07-22.** All of §10 is green: `make graphics-acceptance` PASS
+(Phases K/L/M — the pixel differential incl. the cross-statement colour rule, the
+25-case error surface, and the across-`RUN` persistence), `make unit-test` 51/51
+with the `gdrw_scale`/`gdrw_rotate` leaves, `make diskbasic-acceptance` 34/34,
+`make bdos-acceptance` 12/12, lean cart byte-identical, `make audit-citations`
+clean.
+
+One bug survived to first run and was caught by running it: **nested `X` hung**
+— the banked-substitution counter was reset only at end-of-command, so an inner
+frame's first command consumed the *outer* command's value and re-executed the
+outer string forever. The reset belongs at the start-of-command path, which a
+resume deliberately enters below (that is what lets `M`'s two substitutions
+accumulate across two round trips). Host tests could not have seen it; it is the
+arc's recurring lesson again.
 
 1. eviction (measure first, then carve) → re-gate → 2. tenant `GFX_OP = 6` parser
 + movement over the G3 primitive (host-unit-tested leaves) → 3. resident

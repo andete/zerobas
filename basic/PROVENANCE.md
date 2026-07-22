@@ -3319,3 +3319,58 @@ Clean-room: original code (dispatch/marshalling glue own-design, the
 sector work reuses our own `basic/fat.asm` primitives sub-locally; KILL/NAME
 *semantics* trace to `§KILL`/`§NAME` above (public MSX-BASIC language reference
 + black-box CF-3300). No reference-ROM disassembly.
+
+## Phase 3: graphics G6 — `DRAW` (basic/graphics.asm, basic/usr.asm, basic/interp.asm, basic/kwtable.inc, basic/sysvars.inc, sub/graphics.asm, sub/deftype.asm, sub/sub.asm)
+
+`DRAW <string>` — the MML-style macro language: `U D L R E F G H`, absolute and
+relative `M`, the `B` (blank) and `N` (no-update) prefixes, `C` colour, `S`
+scale, `A` angle, `X <expr$>;` substring execution and `=<expr>;` substitution.
+
+**Language source.** `DRAW`'s *syntax and command repertoire* is the public
+MSX-BASIC language reference. Every *numeric and behavioural* rule below is this
+project's own black-box measurement of a reference machine profile — inputs in,
+observed effects out — recorded in `scratchpad/g6_draw_notes.md` with the probes
+that produced it (`scratchpad/g6_draw_char{1..7}.py`) and distilled into
+[docs/spec-basic-graphics-g6.md](../docs/spec-basic-graphics-g6.md). No
+reference-ROM disassembly; nothing here is derived from stock ROM bytes.
+
+Measured contracts new to this slice (spec §3–§6):
+
+- **the scale/count arithmetic**: `distance = signed16((n × S) mod 65536) / 4`,
+  truncating **toward zero** — one rule that reproduces every large-count wrap
+  observed (`U32767` → *down* 1, `U32768` → no move, `U33000` → up 232,
+  `U40000` → up 7232, `U65535` → down 1) and the negative rounding
+  (`S3U-10` → 7, not 8); falsified on seven fresh (n,S) pairs before coding;
+- **`S` and `A` persist across `RUN`/`NEW`/`CLEAR`/`CLS`/`COLOR`/`SCREEN`** —
+  only a power-on resets them (to 4 / 0), hence the cold-only init in `init`;
+- **the angle rotates relative motion only** (never absolute `M`);
+- **`DRAW`'s colour is the shared graphics attribute `ATRBYT` `$F3F2`** (the
+  address is the published MSX work area): every graphics statement given an
+  explicit colour stamps it, every colourless one stamps `FORCLR`, and `DRAW`
+  reads it, writing only on `C n`. Introduced here and stamped from the tenant's
+  dispatcher so `PSET`/`PRESET`/`LINE`/`CIRCLE`/`PAINT` all feed it;
+- the error surface (§5), and that a `DRAW` `M`-segment is **byte-identical to
+  the same `LINE`** — so G6 adds no rasteriser and reuses the landed G3 one.
+
+**Own-design.** The parser, the co-routine split between the page-0 tenant and
+the resident (the tenant cannot resolve `=var;` itself: a page-0 tenant has the
+float pack switched out), the frame stack behind `X`, and the marshalling are
+all zerobas's own. Two own-design caps have no measured counterpart and are
+documented as such (spec D-G6-4): `X` nesting depth (8) and the total spliced
+text (256 B), both raising `ERR 5`.
+
+**Gate.** `make graphics-acceptance` Phases K/L/M — a differential against the
+reference machine profile reading pattern **and** colour through `POINT`, the
+25-case error surface, and the across-`RUN` persistence that no single-program
+test can see. Plus `make unit-test` (`gdrw_scale`/`gdrw_rotate`, whose fixtures
+are the measurements themselves).
+
+## Space: `DEFtype` → page-0 sub tenant (basic/usr.asm, sub/deftype.asm, sub/sub.asm, basic/sysvars.inc)
+
+`DEFINT`/`DEFSNG`/`DEFDBL`/`DEFSTR`'s body moved to the sub-ROM to fund G6's
+resident half — see [docs/spec-eviction-g6-space.md](../docs/spec-eviction-g6-space.md).
+Our own code, relocated verbatim bar the tenant ABI (cursor through `DEFT_PTR`,
+`stmt_error`/`exec_stmt` tails become a status and a `ret`). The language is
+unchanged, and the routine was already repack-only, so the lean cart is
+byte-identical by construction. Clean-room: no disassembly — this is a move of
+code we wrote.

@@ -1055,8 +1055,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       tape verbs. **Still open:** `INPUT$(n)` (no-echo n-key *keyboard* function),
       numeric `INPUT#` (out of MSX1 charter), `LOC(#n)` (deferred — unclear CF-3300
       semantics, see Phase 2 §File-position).
-- [ ] **Graphics** (TMS9918) — `SCREEN 0–3`, `LINE`, `PSET`/`PRESET`,
-      `CIRCLE`, `PAINT`, `DRAW`, sprites (`GET`/`PUT`, `SPRITE$`), `VDP`
+- [~] **Graphics** (TMS9918, SCREEN 2) — arc live since 2026-07-21, spec
+      [`docs/spec-basic-graphics.md`](docs/spec-basic-graphics.md) + per-slice addenda.
+      ✅ G1 VDP floor · ✅ G2 `PSET`/`PRESET`/`POINT` · ✅ G3 `LINE` (+`,B`/`,BF`) ·
+      ✅ G4 `CIRCLE` (aspect ellipse, arcs, spokes) · ✅ G5 `PAINT` ·
+      ✅ **G6 `DRAW`** (2026-07-22, [`docs/spec-basic-graphics-g6.md`](docs/spec-basic-graphics-g6.md)):
+      the full MML surface (`U D L R E F G H`, abs/rel `M`, `B`/`N`, `C`/`S`/`A`,
+      `X <expr$>;`, `=<expr>;`), the measured scale arithmetic and its wraps, the
+      angle's relative-only rotation, the S/A state that survives `RUN`, and the
+      shared-`ATRBYT` colour rule (which also retro-fits `PSET`/`LINE`/`CIRCLE`/`PAINT`).
+      Gate: `make graphics-acceptance` Phases K/L/M. **Still open:** G7 sprites
+      (`SPRITE$`/`PUT SPRITE` — graphics `GET`/`PUT` do NOT exist on MSX1), `SCREEN 3`
+      (multicolor, deferred), `VDP`.
 - [x] **Sound** (AY-3-8910) — `SOUND`✅, `PLAY` (MML)✅, `BEEP`✅ — **ARC CONCLUDED
       2026-07-21** (all repack-only, page-1 resident, direct-PSG, VG-8020-byte-faithful).
       `SOUND`/`PLAY`+live servicer landed earlier that day (commits baf…→f6bfe76); the

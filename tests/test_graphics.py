@@ -624,6 +624,63 @@ def build_reloc():
                    check=True, capture_output=True, cwd=ROOT)
 
 
+
+# --- G6 DRAW (docs/spec-basic-graphics-g6.md §3/§4) --------------------------
+# The two pure leaves of the DRAW tenant. Both are exactly-measured rules, so
+# the fixtures below ARE the measurements (scratchpad/g6_draw_notes.md §3/§4),
+# not a re-derivation of the implementation.
+#
+#   gdrw_scale   distance = signed16((n * S) mod 65536) / 4, truncating TOWARD
+#                ZERO. The wrap is load-bearing: it is what makes `U32767` move
+#                DOWN one pixel on the reference.
+#   gdrw_rotate  one angle step is (dx,dy) -> (dy,-dx); A1 turns U into L.
+def zscale(m, n, s):
+    m.poke_w(m.addr("GFX_DARG"), n & 0xFFFF)
+    m.poke(m.addr("GFX_DSCALE"), [s & 0xFF])
+    m.call("gdrw_scale")
+    return _rd16s(m, "GFX_DARG")
+
+
+def py_scale(n, s):
+    p = (n * s) & 0xFFFF
+    if p >= 0x8000:
+        p -= 0x10000
+    return int(p / 4) if p < 0 else p // 4     # truncate toward zero
+
+
+def zrotate(m, dx, dy, angle):
+    m.poke_w(m.addr("GFX_DDX"), dx & 0xFFFF)
+    m.poke_w(m.addr("GFX_DDY"), dy & 0xFFFF)
+    m.poke(m.addr("GFX_DANGLE"), [angle])
+    m.call("gdrw_rotate")
+    return _rd16s(m, "GFX_DDX"), _rd16s(m, "GFX_DDY")
+
+
+# (n, S) pairs: the five large-count wraps MEASURED on the reference, the
+# quarter-unit cases, and the negative-rounding cases that discriminate
+# truncate-toward-zero from floor (S3U-10 gives 7 on the reference, not 8).
+DRAW_SCALE_CASES = [(n, s) for n, s in [
+    (10, 4), (1, 4), (0, 4), (10, 1), (10, 2), (10, 3), (10, 5), (10, 7),
+    (2, 5), (100, 255), (1000, 9), (9000, 9), (20000, 5), (123, 4),
+    (32767, 4), (32768, 4), (33000, 4), (40000, 4), (65535, 4),
+    (-5, 4), (-10, 3), (-10, 5), (-2, 1), (-2, 3), (-1, 4),
+]]
+
+MEASURED_SCALE = {          # the reference's own answers, as dy for `U<n>`
+    (32767, 4): -1, (32768, 4): 0, (33000, 4): 232, (40000, 4): 7232,
+    (65535, 4): -1, (10, 3): 7, (10, 5): 12, (2, 5): 2, (-10, 3): -7,
+}
+
+ROTATE_CASES = [
+    # (dx, dy, angle, want) -- U is (0,-10), E is (+10,-10)
+    ((0, -10), 0, (0, -10)),
+    ((0, -10), 1, (-10, 0)),      # A1 turns U into L (measured)
+    ((0, -10), 2, (0, 10)),       # A2 turns U into D
+    ((0, -10), 3, (10, 0)),       # A3 turns U into R
+    ((10, -10), 1, (-10, -10)),   # A1 turns E into H (measured)
+    ((10, 0), 1, (0, -10)),       # A1 turns R into U
+]
+
 def run():
     fails = 0
 
@@ -1114,6 +1171,21 @@ def run():
     b58, sc58, _ = zboundary_prep_resident(mr, 1.58)
     check(sc57 != sc58, f"teeth: gfx_circ_boundary_prep distinguishes theta=1.57 "
           f"(brad={b57} signc={sc57}) from 1.58 (brad={b58} signc={sc58})")
+
+    # --- G6 DRAW leaves (same sub-ROM machine) ---
+    for n, sc in DRAW_SCALE_CASES:
+        got, want = zscale(m, n, sc), py_scale(n, sc)
+        check(got == want, f"gdrw_scale n={n:>6} S={sc:>3} -> {got:>7} (want {want})")
+    for (n, sc), want in MEASURED_SCALE.items():
+        got = zscale(m, n, sc)
+        check(got == want, f"gdrw_scale MEASURED n={n} S={sc} -> {got} (want {want})")
+    # teeth: floor rounding instead of truncate-toward-zero would break exactly
+    # the negative cases, so assert the two disagree where they should
+    check(py_scale(-10, 3) == -7 and (-30 // 4) == -8,
+          "teeth: the negative-count rule is truncate-toward-zero, not floor")
+    for (dx, dy), ang, want in ROTATE_CASES:
+        got = zrotate(m, dx, dy, ang)
+        check(got == want, f"gdrw_rotate ({dx},{dy}) A{ang} -> {got} (want {want})")
 
     print("-------------------")
     print("test_graphics:", "PASS" if fails == 0 else f"FAIL ({fails})")
