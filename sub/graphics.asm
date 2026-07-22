@@ -60,6 +60,8 @@ graphics_tenant:
                 jp      z,gfx_line_op       ; GFX_OP == 3 (LINE / box -- G3)
                 dec     a
                 jp      z,gfx_circle_op     ; GFX_OP == 4 (CIRCLE -- G4)
+                dec     a
+                jp      z,gfx_paint_op      ; GFX_OP == 5 (PAINT -- G5)
                 ; GFX_OP == 0 (or any other value) -> the G1 floor self-test
                 ; (falls through to graphics_selftest below).
 
@@ -1431,4 +1433,519 @@ gfx_neg16_de:
                 sbc     a,a
                 sub     d
                 ld      d,a
+                ret
+
+; ===========================================================================
+; G5 -- PAINT (SCREEN-2 flood fill). GFX_OP=5. docs/spec-basic-graphics-g5.md.
+; Reuses G3's EI-between-pixels / DI-per-pixel gfx_rmw_at RMW and G2's
+; gfx_point_extract read verbatim -- the only new tenant code is the scanline
+; span-fill engine itself (spec §4, own-design Smith-style) and its
+; fixed-capacity span stack (GFX_PSTK, sysvars.inc; D3).
+;
+; INSIDE TEST (own-design; spec §4 permits "any correct flood algorithm" since
+; the final bitmap is traversal-order-independent, §4 crux). A pixel "needs
+; fill" (gfx_paint_inside) iff its LIVE effective colour is neither B NOR
+; ALREADY C. The spec's own step-1/2 wording says "not-yet-B"; this tenant
+; also stops at "already C" -- a pixel we (or a coincidentally pre-existing
+; C-coloured pixel) already painted -- for two reasons: (1) it is the ONLY
+; termination argument available without Smith's parent-direction/overhang
+; bookkeeping (spec's own ~5 B/entry stack-entry estimate), since re-scanning
+; an already-filled span with a bare "!=B" test bounces forever between two
+; open rows (traced by hand: neither row ever stops testing "fillable", so
+; neighbour pushes recur without end); testing "!=C" too makes every re-scan
+; of an already-painted span an immediate, cheap no-op, giving the standard
+; amortized-O(area) termination with a plain 3 B/entry (y,xL,xR) stack -- see
+; sysvars.inc's GFX_PSTK header for the capacity this buys back. (2) it
+; matches a well-known PUBLIC MSX/GW-BASIC PAINT-dialect quirk (paint also
+; stops at a point already the same colour as the paint colour) -- so this is
+; not merely a safe internal shortcut, it is plausibly the MORE faithful
+; choice. When C==B this collapses to plain "!=B" (spec's own BOUNDED case).
+; NOT measured by the pinned battery either way (no captured case has a
+; coincidental pre-existing-C pixel inside an otherwise-open region); flagged
+; here as the one place this slice's own algorithm choice could in principle
+; diverge from an untested reference edge case.
+;
+; EI/DI discipline (spec §2/§4): gfx_paint_op EIs once for the whole
+; (possibly long) fill; gfx_border_read (the border test) and gfx_paint_plot
+; (the paint) each bracket their OWN di/ei around their VDP access -- finer
+; grain than "between spans" (spec's own words), matching G3/G4's per-pixel
+; RMW discipline exactly, just applied to reads too (PAINT is the first op
+; whose EI'd loop also does VDP READS, not just writes).
+;
+; Overflow (D3, measured): gfx_pstk_push sets GFX_POVF=1 and simply declines
+; to store past capacity; the flood loop notices GFX_POVF after every
+; gfx_paint_process and aborts immediately (di, ret) with an INCOMPLETE
+; bitmap -- irrelevant, since the resident raises ERR 7 (Out of memory) on
+; return, which aborts the whole statement (raise_error resets SP).
+; ===========================================================================
+
+; ---------------------------------------------------------------------------
+; gfx_pstk_addr -- IN: A = index (0..GFX_PSTK_CAP-1). OUT: HL = GFX_PSTK +
+; index*GFX_PSTK_ENTSZ. Pure address arithmetic. Clobbers DE/HL; A preserved.
+; ---------------------------------------------------------------------------
+gfx_pstk_addr:
+                ld      l,a
+                ld      h,0                 ; HL = index
+                ld      e,a
+                ld      d,0                 ; DE = index
+                add     hl,hl               ; HL = index*2
+                add     hl,de               ; HL = index*3 (GFX_PSTK_ENTSZ)
+                ld      de,GFX_PSTK
+                add     hl,de
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_pstk_reset -- empties the span stack and clears the overflow flag.
+; Clobbers A.
+; ---------------------------------------------------------------------------
+gfx_pstk_reset:
+                xor     a
+                ld      (GFX_PTOP),a
+                ld      (GFX_POVF),a
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_pstk_push -- IN: A=y, B=xL, C=xR. Pushes one span entry. On overflow
+; (GFX_PTOP already at capacity) sets GFX_POVF=1 and drops the entry instead
+; of storing it -- the caller (gfx_paint_flood) checks GFX_POVF and aborts the
+; fill (spec §4 D3: overflow -> ERR 7, raised by the resident). Clobbers
+; A/DE/HL; B/C preserved.
+; ---------------------------------------------------------------------------
+gfx_pstk_push:
+                push    af                  ; stash y
+                ld      a,(GFX_PTOP)
+                cp      GFX_PSTK_CAP
+                jr      c,gpp_ok
+                pop     af
+                ld      a,1
+                ld      (GFX_POVF),a
+                ret
+gpp_ok:
+                call    gfx_pstk_addr       ; HL = slot addr (A=index still loaded; BC preserved)
+                pop     af                  ; A = y
+                ld      (hl),a
+                inc     hl
+                ld      (hl),b
+                inc     hl
+                ld      (hl),c
+                ld      a,(GFX_PTOP)
+                inc     a
+                ld      (GFX_PTOP),a
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_pstk_pop -- OUT: CF=1 and A=y,B=xL,C=xR (an entry was popped), or CF=0
+; (the stack was already empty; A/B/C untouched). Clobbers A/DE/HL (+B/C on
+; success only).
+; ---------------------------------------------------------------------------
+gfx_pstk_pop:
+                ld      a,(GFX_PTOP)
+                or      a
+                jr      z,gpop_empty
+                dec     a
+                ld      (GFX_PTOP),a
+                call    gfx_pstk_addr       ; HL = slot addr
+                ld      a,(hl)
+                inc     hl
+                ld      b,(hl)
+                inc     hl
+                ld      c,(hl)
+                scf
+                ret
+gpop_empty:
+                or      a
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_border_read -- IN: D=y, E=x (both already known valid -- see
+; gfx_paint_flood/_process's own row/column bounds, never out of 0..191/
+; 0..255). OUT: A = effective pixel colour 0..15. di-guarded (mirrors
+; gfx_point's body, GFX_OP=2 above -- called freely while the PAINT tenant
+; runs EI, unlike gfx_point itself which runs wholly under CALSLT's ambient
+; DI). Clobbers BC/DE/HL.
+; ---------------------------------------------------------------------------
+gfx_border_read:
+                di
+                call    gfx_calc_addr       ; HL = pattern addr, C = mask
+                call    gfx_rd_raw          ; A = pattern byte
+                ld      d,a                 ; D = pattern byte
+                ld      e,c                 ; E = mask
+                ld      a,h                 ; colour addr = pattern addr + $2000
+                add     a,$20               ; pattern high <= $17 -> no carry out
+                ld      h,a
+                call    gfx_rd_raw          ; A = colour byte
+                ld      c,a                 ; C = colour byte
+                ld      a,d                 ; A = pattern byte
+                ld      b,e                 ; B = mask
+                call    gfx_point_extract   ; A = pixel colour nibble
+                ei
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_paint_plot -- paints the pixel at (GFX_PTESTY,GFX_PTESTX) with GFX_C.
+; di-guarded RMW (mirrors gfx_plot_cur's discipline; skips its 16-bit clip
+; test -- unnecessary here, the fill never generates an out-of-range pixel).
+; Clobbers everything.
+; ---------------------------------------------------------------------------
+gfx_paint_plot:
+                ld      a,(GFX_PTESTY)
+                ld      d,a
+                ld      a,(GFX_PTESTX)
+                ld      e,a
+                di
+                call    gfx_rmw_at
+                ei
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_paint_read -- like gfx_border_read (IN: D=y,E=x; di-guarded; clobbers
+; BC/DE/HL), but ALSO reports whether the pixel's PATTERN BIT is set (drawn)
+; vs clear (never-drawn background). OUT: A = effective colour nibble 0..15;
+; Zf=1 iff the bit is CLEAR (background).
+;
+; WHY THIS EXISTS (BUG FIX, empirically found via the VG-8020 PAINT
+; differential, docs/spec-basic-graphics-g5.md): a group's shared colour
+; byte only ever changes a SET-bit pixel's apparent colour (its own bit
+; picks fg vs bg; painting a DIFFERENT pixel in the same group only changes
+; fg, never bg) -- so a never-drawn (bit-clear) pixel ALWAYS reads back as
+; the group's background nibble, by construction, REGARDLESS of what
+; happens to paint elsewhere in its group. If "border" is tested purely as
+; "effective colour == GFX_B" (gfx_paint_inside's original form), a caller
+; that passes a border colour equal to the CURRENT background (e.g.
+; `PAINT(100,100),7,1` with BAKCLR=1) would see every untouched neighbour
+; pixel read as B and refuse to extend AT ALL, even though nothing was ever
+; actually drawn there -- measured on the reference to still flood (a
+; background match on B is NOT a real border). "Border" therefore means a
+; DRAWN pixel (bit set) whose colour is B; an undrawn pixel is never a
+; border, independent of colour.
+; ---------------------------------------------------------------------------
+gfx_paint_read:
+                di
+                call    gfx_calc_addr       ; HL = pattern addr, C = mask
+                call    gfx_rd_raw          ; A = pattern byte
+                ld      d,a                 ; D = pattern byte
+                ld      e,c                 ; E = mask
+                ld      a,h                 ; colour addr = pattern addr + $2000
+                add     a,$20               ; pattern high <= $17 -> no carry out
+                ld      h,a
+                call    gfx_rd_raw          ; A = colour byte
+                ld      c,a                 ; C = colour byte
+                ld      a,d                 ; A = pattern byte
+                and     e                   ; Zf=1 iff the bit is clear (background)
+                push    af                  ; save that Zf across gfx_point_extract
+                ld      a,d
+                ld      b,e                 ; B = mask (gfx_point_extract's own IN)
+                call    gfx_point_extract   ; A = effective colour nibble (clobbers flags)
+                ld      b,a                 ; stash colour (LD r,r' never touches flags)
+                pop     af                  ; restore the bit-clear Zf (A now stale)
+                ld      a,b                 ; A = colour nibble; Zf still the bit test
+                ei
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_paint_inside -- IN: (GFX_PTESTY)=y, (GFX_PTESTX)=x. OUT: CF=1 iff the
+; pixel "needs fill": a DRAWN pixel counts as border/already-done if its
+; colour is GFX_B/GFX_C; an UNDRAWN (background) pixel can never be "border"
+; (gfx_paint_read's own header) but is still short-circuited by the
+; "already C" rule if its background nibble happens to coincide with GFX_C
+; (a PAINT whose C equals the current background is a no-op everywhere,
+; matching the PSET clash rule "c==bg -> clear bit"). Used ONLY to decide
+; whether to PUSH a pixel as the start of a NEW span (gfx_paint_flood's seed
+; test -- see ITS header for why the seed itself no longer even calls this --
+; and gfx_paint_scan_row's neighbour-row scan): the "already C" stop is what
+; keeps an already-fully-painted region from being re-pushed onto the span
+; stack over and over (the D3 stack-budget property). NOT used for
+; extend_lr's own L/R walk -- see gfx_paint_passable below (a SEPARATE bug
+; fix: the "already C" stop here would otherwise also block extend_lr from
+; walking PAST a border pixel that colour-clash "ate" from an adjacent
+; painted pixel, since that eaten pixel now incidentally reads as C too;
+; extend_lr needs the looser passable test to keep walking into newly-opened
+; territory beyond it). Clobbers everything.
+; ---------------------------------------------------------------------------
+gfx_paint_inside:
+                ld      a,(GFX_PTESTY)
+                ld      d,a
+                ld      a,(GFX_PTESTX)
+                ld      e,a
+                call    gfx_paint_read      ; A = colour; Zf=1 iff bit clear (background)
+                ld      b,a                 ; B = colour (LD doesn't touch flags)
+                jr      z,gpi_bg            ; background -> B can never block it (skip)
+                ld      a,(GFX_B)
+                cp      b
+                ret     z                   ; drawn AND == B -> CF=0 (border, not inside)
+gpi_bg:
+                ld      a,(GFX_C)
+                cp      b
+                ret     z                   ; == C already -> CF=0 (own-design stop)
+                scf
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_paint_passable -- IN/OUT/clobbers same as gfx_paint_inside, but CF=1
+; iff the pixel is not a DRAWN==B border (an undrawn/background pixel is
+; always passable regardless of colour -- gfx_paint_read's own header; an
+; already-C pixel is ALSO passable here, unlike gfx_paint_inside). Used ONLY
+; by gfx_paint_extend_lr's L/R walk (own header): a span's visual extent is
+; bounded purely by actual DRAWN border pixels, not by "have I already
+; painted this" -- that distinction belongs to the push decision
+; (gfx_paint_inside above), not the walk. Re-painting an already-C pixel
+; while walking through it is a safe no-op (the clash RMW is idempotent when
+; the group's fg is already C). BUG FIX: without this split, a border pixel
+; incidentally recoloured to C by an adjacent painted pixel's group-clash
+; (the "border eaten" mechanism, spec §3) would falsely look like an
+; impassable stop to extend_lr too, trapping the fill inside the (now
+; partially C-coloured) wall instead of continuing outward -- confirmed
+; empirically (VG-8020 differential: a thin 1-px LINE...,B wall correctly
+; gets "eaten" up to the wall pixel itself on the pre-fix build, but the
+; fill never continued past it into the newly-open region beyond).
+; ---------------------------------------------------------------------------
+gfx_paint_passable:
+                ld      a,(GFX_PTESTY)
+                ld      d,a
+                ld      a,(GFX_PTESTX)
+                ld      e,a
+                call    gfx_paint_read      ; A = colour; Zf=1 iff bit clear (background)
+                ld      b,a                 ; B = colour (LD doesn't touch flags)
+                jr      z,gpsb_ok           ; background -> always passable
+                ld      a,(GFX_B)
+                cp      b
+                ret     z                   ; drawn AND == B -> CF=0 (border, blocked)
+gpsb_ok:
+                scf
+                ret                         ; background, or drawn-but-!=B -> CF=1
+
+; ---------------------------------------------------------------------------
+; gfx_paint_op -- GFX_OP=5 entry. EI for the (possibly long) fill; DI only
+; around each pixel's VDP access (gfx_border_read/gfx_paint_plot each
+; bracket their own). Seed = (GXPOS,GYPOS) low bytes, already range-checked
+; on-screen by the resident (off-screen seed is ERR 5 there -- the tenant
+; never sees one). GFX_C/GFX_B = the resident-marshalled paint/border colours.
+; ---------------------------------------------------------------------------
+gfx_paint_op:
+                ei
+                call    gfx_pstk_reset
+                call    gfx_paint_flood
+                di
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_paint_extend_lr -- given a starting span (GFX_PFY,GFX_PXL,GFX_PXR)
+; already known to lie inside the fillable region, extend PXL leftward and
+; PXR rightward while Inside (stop at a B/already-C pixel or the x=0/255
+; screen edge) -- spec §4 step 1's "walk left/right" shape. Shared by
+; gfx_paint_flood (the seed, where PXL=PXR=seedx to start) AND
+; gfx_paint_process (every span POPped off the stack, not just the seed):
+; gfx_paint_scan_row only tests columns WITHIN its caller's [xL,xR] (its own
+; header), so a pushed sub-span's [xL,xR] is maximal *within that scanned
+; range*, NOT necessarily the row's true geometric extent -- if a bounding
+; wall on the row ABOVE/BELOW ends partway (a concave notch reopening into a
+; wider area), the true width is only found by re-walking every popped span
+; exactly like the seed. Safe to call unconditionally (no separate "is xL
+; still inside" gate needed). Uses gfx_paint_PASSABLE (not gfx_paint_inside)
+; for its own walk -- BUG FIX (empirically found via the VG-8020 differential,
+; docs/spec-basic-graphics-g5.md): a wall pixel "eaten" by an adjacent
+; painted pixel's group-clash now incidentally reads as C, and the stricter
+; gfx_paint_inside would treat that as a stop too, trapping the fill instead
+; of letting it continue into the newly-open territory beyond. Repainting an
+; already-C pixel while walking through it is a safe no-op.
+;
+; PAINTS EACH NEWLY-DISCOVERED PIXEL IMMEDIATELY (2nd half of the same bug
+; fix): a group-clash only takes effect the instant a pixel in that group is
+; actually painted, not merely tested-passable -- so if we only RECORDED the
+; new bound here and left the actual painting to gfx_paint_process's later
+; "paint xL..xR" loop, a wall pixel one step further out (a DIFFERENT VRAM
+; group) would still see the old (un-eaten) colour when ITS OWN passability
+; is tested moments later in this same walk, and extend_lr would stop one
+; group too early. Painting inline as we cross each new pixel means the very
+; next pixel's border_read sees the clash's effect immediately, letting the
+; walk cross a whole chain of single-pixel-wide "eaten" walls in one pass
+; (this call site's caller re-paints the same range again afterwards via its
+; own idempotent loop -- harmless).
+; Updates GFX_PXL/GFX_PXR in place. Clobbers everything + GFX_PSCX scratch.
+; ---------------------------------------------------------------------------
+gfx_paint_extend_lr:
+gpel_left:
+                ld      a,(GFX_PXL)
+                or      a
+                jr      z,gpel_left_done    ; x=0 -> screen edge, stop
+                dec     a
+                ld      (GFX_PSCX),a        ; candidate x
+                ld      (GFX_PTESTX),a
+                ld      a,(GFX_PFY)
+                ld      (GFX_PTESTY),a
+                call    gfx_paint_passable
+                jr      nc,gpel_left_done
+                ld      a,(GFX_PSCX)
+                ld      (GFX_PXL),a
+                call    gfx_paint_plot      ; paint NOW (GFX_PTESTX/Y still set)
+                jr      gpel_left
+gpel_left_done:
+gpel_right:
+                ld      a,(GFX_PXR)
+                cp      255
+                jr      z,gpel_right_done   ; x=255 -> screen edge, stop
+                inc     a
+                ld      (GFX_PSCX),a
+                ld      (GFX_PTESTX),a
+                ld      a,(GFX_PFY)
+                ld      (GFX_PTESTY),a
+                call    gfx_paint_passable
+                jr      nc,gpel_right_done
+                ld      a,(GFX_PSCX)
+                ld      (GFX_PXR),a
+                call    gfx_paint_plot      ; paint NOW (GFX_PTESTX/Y still set)
+                jr      gpel_right
+gpel_right_done:
+                ret
+
+; ---------------------------------------------------------------------------
+; gfx_paint_flood -- MAIN (spec §4 step 1): extend the seed to its maximal
+; span (gfx_paint_extend_lr), push it, then drain the stack via
+; gfx_paint_process until empty or GFX_POVF fires. Clobbers everything.
+;
+; BUG FIX (empirically found via the VG-8020 differential, docs/spec-basic-
+; graphics-g5.md): the seed pixel is ALWAYS painted and used as the flood
+; origin, UNCONDITIONALLY -- it is NOT skipped just because its own effective
+; colour already happens to equal GFX_B (or GFX_C). Measured on the
+; reference: `PAINT(100,100),7,1` on a plain background already == the
+; given border (1) still floods (does NOT no-op); `PAINT(16,16),7,15` with
+; the seed placed EXACTLY on a drawn border pixel (colour 15 == the given
+; border) also floods past it. "== B stops the walk" only applies to
+; pixels the flood extends INTO (gfx_paint_extend_lr/scan_row), never to the
+; seed's own starting point. Painting an already-B/already-C seed pixel is a
+; safe, idempotent RMW either way.
+; ---------------------------------------------------------------------------
+gfx_paint_flood:
+                ld      a,(GYPOS)
+                ld      (GFX_PFY),a
+                ld      a,(GXPOS)
+                ld      (GFX_PXL),a
+                ld      (GFX_PXR),a
+                call    gfx_paint_extend_lr
+                ; --- push the discovered seed span, then drain the stack ---
+                ld      a,(GFX_PXL)
+                ld      b,a
+                ld      a,(GFX_PXR)
+                ld      c,a
+                ld      a,(GFX_PFY)
+                call    gfx_pstk_push       ; A=y,B=xL,C=xR
+gpf_drain:
+                call    gfx_pstk_pop
+                ret     nc                  ; stack empty -> fill complete
+                ld      (GFX_PFY),a
+                ld      a,b
+                ld      (GFX_PXL),a
+                ld      a,c
+                ld      (GFX_PXR),a
+                call    gfx_paint_process
+                ld      a,(GFX_POVF)
+                or      a
+                ret     nz                  ; overflow signalled mid-process -> abort
+                jr      gpf_drain
+
+; ---------------------------------------------------------------------------
+; gfx_paint_process -- PROCESS(y,xL,xR) (spec §4 steps 1b/2), reading
+; (GFX_PFY)/(GFX_PXL)/(GFX_PXR): FIRST re-extend [xL,xR] to its true maximal
+; extent (gfx_paint_extend_lr -- see its header for why this is needed on
+; every popped span, not just the seed), THEN paint the (possibly wider)
+; span (idempotent where some pixels are already C), THEN for row y-1 and
+; y+1 (clipped to 0..191) scan columns [xL,xR] for maximal Inside sub-spans
+; and push each via gfx_paint_scan_row. Clobbers everything + GFX_PSCX
+; scratch.
+; ---------------------------------------------------------------------------
+gfx_paint_process:
+                call    gfx_paint_extend_lr
+                ; --- paint xL..xR at row y ---
+                ld      a,(GFX_PXL)
+                ld      (GFX_PSCX),a
+gpp_paint_lp:
+                ld      a,(GFX_PFY)
+                ld      (GFX_PTESTY),a
+                ld      a,(GFX_PSCX)
+                ld      (GFX_PTESTX),a
+                call    gfx_paint_plot
+                ld      hl,GFX_PXR
+                ld      a,(GFX_PSCX)
+                cp      (hl)
+                jr      z,gpp_paint_done
+                inc     a
+                ld      (GFX_PSCX),a
+                jr      gpp_paint_lp
+gpp_paint_done:
+                ; --- neighbour row y-1 (skip if y==0) ---
+                ld      a,(GFX_PFY)
+                or      a
+                jr      z,gpp_up_done
+                dec     a
+                call    gfx_paint_scan_row
+gpp_up_done:
+                ; --- neighbour row y+1 (skip if y==191) ---
+                ld      a,(GFX_PFY)
+                cp      191
+                ret     z
+                inc     a
+                jp      gfx_paint_scan_row  ; tail call: ret serves both
+
+; ---------------------------------------------------------------------------
+; gfx_paint_scan_row -- IN: A = row ny (0..191, caller-clipped). Scans
+; columns (GFX_PXL)..(GFX_PXR) of row ny for maximal Inside sub-spans and
+; pushes each (spec §4 step 2). Own scratch: GFX_PSCY (the row, stashed since
+; gfx_paint_inside clobbers everything) + GFX_PSCX (scan cursor, reused from
+; gfx_paint_process's paint pass above -- dead by this point) + GFX_PSPA
+; (pending sub-span's start column). Clobbers everything.
+; ---------------------------------------------------------------------------
+gfx_paint_scan_row:
+                ld      (GFX_PSCY),a
+                ld      a,(GFX_PXL)
+                ld      (GFX_PSCX),a
+gpsr_loop:
+                ld      hl,GFX_PXR
+                ld      a,(GFX_PSCX)
+                cp      (hl)
+                jr      z,gpsr_test         ; PSCX == PXR -> last column, still test it
+                jr      nc,gpsr_ret         ; PSCX > PXR -> row fully scanned
+gpsr_test:
+                ld      a,(GFX_PSCY)
+                ld      (GFX_PTESTY),a
+                ld      a,(GFX_PSCX)
+                ld      (GFX_PTESTX),a
+                call    gfx_paint_inside
+                jr      nc,gpsr_advance     ; not inside -> skip this column
+                ; --- found the start of a sub-span; extend right while
+                ; Inside and while still within [xL,xR] ---
+                ld      a,(GFX_PSCX)
+                ld      (GFX_PSPA),a        ; span start = current column
+gpsr_extend:
+                ld      hl,GFX_PXR
+                ld      a,(GFX_PSCX)
+                cp      (hl)
+                jr      nc,gpsr_span_end    ; PSCX>=PXR -> can't extend further
+                inc     a
+                ld      (GFX_PTESTX),a
+                ld      a,(GFX_PSCY)
+                ld      (GFX_PTESTY),a
+                call    gfx_paint_inside
+                jr      nc,gpsr_span_end    ; next column not inside -> span ends
+                ld      a,(GFX_PTESTX)
+                ld      (GFX_PSCX),a        ; commit the extension
+                jr      gpsr_extend
+gpsr_span_end:
+                ld      a,(GFX_PSPA)
+                ld      b,a
+                ld      a,(GFX_PSCX)
+                ld      c,a
+                ld      a,(GFX_PSCY)
+                call    gfx_pstk_push       ; A=y,B=xL,C=xR
+                ld      a,(GFX_POVF)
+                or      a
+                jr      nz,gpsr_ret         ; overflow -> unwind, caller aborts
+gpsr_advance:
+                ld      hl,GFX_PXR
+                ld      a,(GFX_PSCX)
+                cp      (hl)
+                ret     z                   ; was the last column -> row scan done
+                inc     a
+                ld      (GFX_PSCX),a
+                jr      gpsr_loop
+gpsr_ret:
                 ret

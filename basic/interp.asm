@@ -277,6 +277,8 @@ exec_stmt:
                 jp      z,ex_preset
                 cp      CIRCLE_TOKEN        ; CIRCLE (x,y),r[,c[,s[,e[,a]]]]  (graphics G4)
                 jp      z,ex_circle
+                cp      PAINT_TOKEN         ; PAINT [STEP](x,y)[,[c][,[b]]]  (graphics G5)
+                jp      z,ex_paint
     ENDIF
                 call    is_letter           ; bare letter -> assignment
                 jr      c,ex_let

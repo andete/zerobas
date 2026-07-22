@@ -339,5 +339,12 @@ kwtable:
                 ; LINE=$AF). No prefix collision: match_kw compares the FULL
                 ; keyword, and no other keyword shares "CIRCLE".
                 db      6,"CIRCLE",1,CIRCLE_TOKEN                ; $BC
+                ; --- graphics slice G5 (repack build only) --------------------
+                ; docs/spec-basic-graphics-g5.md §7. PAINT is a NEW single-byte
+                ; STATEMENT token (sysvars.inc PAINT_TOKEN=$BF), black-box
+                ; crunch-pinned (scratchpad/g5_paint_notes.md C1). No prefix
+                ; collision: match_kw compares the FULL keyword, and no other
+                ; keyword shares "PAINT".
+                db      5,"PAINT",1,PAINT_TOKEN                  ; $BF
     ENDIF
                 db      0

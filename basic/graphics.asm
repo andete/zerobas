@@ -328,6 +328,45 @@ gfx_err5:
 gfx_absent:
                 ld      a,5                 ; defensive: sub-ROM missing (never on merged build)
                 jp      raise_error
+gfx_typeerr:
+                ld      a,13                ; Type mismatch (G5 PAINT's MSX2 tile$ form, §5)
+                jp      raise_error
+
+; --- gfx_eval_int16: "evaluate + strict-int16-check" pair -------------------
+; (spec-basic-graphics-g5.md §8 D4 DRY lever). IN: HL = cursor at the
+; expression. OUT: DE = value, HL advanced past the expression (ERR 6 aborts
+; if the magnitude exceeds int16 -- get_int16_checked's own contract). A
+; mechanical fold of the `call eval / call get_int16_checked` pair used at
+; ex_paint's C/B sites below. NOTE (space hard-stop, see the G5 slice
+; report): this was ALSO applied at PSET/LINE/CIRCLE/parse_coord's own
+; pre-existing eval+check sites during the DRY pass (~18 B saved) but was
+; REVERTED there once the image still overran $8000 by ~93 B even with it --
+; the resident build is currently blocked (see basic/main.asm's own $8000
+; gate), so those already-landed, differentially-tested sites could not be
+; re-verified before landing; reapplying that broader DRY is safe to retry
+; once the space question is resolved. Clobbers A (+ whatever eval/
+; get_int16_checked already clobber).
+gfx_eval_int16:
+                call    eval
+                jp      get_int16_checked   ; tail call: ret serves both
+
+; --- gfx_store_colour_checked: "C" RANGE-CHECK+STORE tail -------------------
+; (spec-basic-graphics-g5.md §8 D4 DRY lever). IN: DE = an already-eval'd +
+; get_int16_checked'd colour value. Range-checks 0..15 (ERR 5 if outside --
+; the stricter CIRCLE/PAINT rule, unlike PSET's silent `and $0F` mask) and
+; stores to GFX_C. Used by ex_paint's colour parse below. (Was ALSO factored
+; into ex_circle/circ_c during the DRY pass, ~10 B saved -- reverted for the
+; same reason as gfx_eval_int16 above: unverifiable while the resident build
+; is blocked.) Clobbers A.
+gfx_store_colour_checked:
+                ld      a,d
+                or      a
+                jr      nz,gfx_err5         ; negative -> ERR 5
+                ld      a,e
+                cp      16
+                jp      nc,gfx_err5         ; > 15 -> ERR 5
+                ld      (GFX_C),a
+                ret
 
 ; =============================================================================
 ; G4 -- CIRCLE (+ ellipse aspect + start/end-angle arcs + negative-angle
@@ -412,7 +451,9 @@ circ_c:
                 call    get_int16_checked   ; ERR 6 if > int16
                 ld      a,d
                 or      a
-                jr      nz,gfx_err5         ; negative -> ERR 5
+                jp      nz,gfx_err5         ; negative -> ERR 5 (jp: jr went out of
+                                            ; range once this slice's new G5 code
+                                            ; earlier in the file lengthened it)
                 ld      a,e
                 cp      16
                 jp      nc,gfx_err5         ; > 15 -> ERR 5
@@ -833,5 +874,114 @@ gbh_lp:
                 inc     hl
                 djnz    gbh_lp
                 ret
+
+; =============================================================================
+; G5 -- PAINT (SCREEN-2 flood fill). docs/spec-basic-graphics-g5.md. Entry: HL
+; just past the PAINT token. Grammar (§3): PAINT [STEP](x,y)[,[C][,[B]]].
+;
+; SPLIT (as G2/G3/G4): the tenant (sub/graphics.asm, GFX_OP=5) owns the whole
+; scanline span-fill engine; this resident stub owns the grammar walk, the
+; SCREEN-2 precheck, the off-screen-seed ERR 5 (DISTINCT from PSET/LINE, which
+; silently clip/no-op a point -- spec §3), the C/B parses (incl. the MSX2
+; tile$ -> ERR 13 reject and the 4th-argument -> ERR 2 reject), and the
+; work-area writes. The tenant's own span-stack overflow (GFX_POVF) is
+; surfaced here as ERR 7 (Out of memory) -- spec §4 D3, measured on the
+; reference.
+;
+; Unlike PSET/LINE/CIRCLE, the work-area write (GRPAC/GXPOS/GYPOS = seed) is
+; deferred to AFTER every field is parsed (spec §6) -- so a syntax error in
+; the C/B fields leaves the work area untouched (raise_error resets SP
+; anyway, so this is really just spec-fidelity bookkeeping, not a correctness
+; requirement of the abort path itself).
+; =============================================================================
+ex_paint:
+                inc     hl                  ; past the PAINT token
+                ld      a,(SCRMOD)
+                cp      2                   ; SCREEN 2 only (arc D4)
+                jp      nz,gfx_err5         ; SCREEN 0/1 -> Illegal function call
+                call    parse_coord         ; BC = seed x, DE = seed y (STEP resolved)
+                call    gfx_in_range        ; CF = 1 iff 0<=x<=255 and 0<=y<=191
+                jp      nc,gfx_err5         ; off-screen seed -> ERR 5 (spec §3 --
+                                            ; NOT a silent clip like PSET/LINE)
+                push    bc                  ; guard the seed across the C/B field
+                push    de                  ; parses (eval/str_eval_one clobber all)
+                ; --- default colour = FORCLR ---
+                ld      a,(FORCLR)
+                and     $0F
+                ld      (GFX_C),a
+                ; --- optional ",[C][,[B]]" ---
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jr      nz,ep_default_b     ; no fields at all -> C=FORCLR, B=C
+                inc     hl                  ; consume the comma
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jr      z,ep_c_empty        ; ",," -> C omitted; this comma intros B
+                or      a
+                jr      z,ep_default_b      ; terminator -> C=FORCLR, B=C
+                cp      COLON
+                jr      z,ep_default_b
+                ; --- given C: the MSX2 tile$ form -> ERR 13 (spec §5); else
+                ; eval + range-check 0..15 -> ERR 5 (the CIRCLE/PAINT rule) ---
+                call    str_eval_one        ; CF=1 iff a string operand (HL past it)
+                jp      c,gfx_typeerr       ; a string colour operand -> Type mismatch
+                call    gfx_eval_int16      ; DE = value (silent int16); ERR 6 if > int16
+                call    gfx_store_colour_checked  ; ERR 5 if outside 0..15; GFX_C=value
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jr      nz,ep_default_b     ; no ",B" -> B = C
+                inc     hl                  ; consume the comma introducing B
+                jr      ep_parse_b
+ep_c_empty:
+                inc     hl                  ; consume the shared comma
+ep_parse_b:
+                call    skip_spaces
+                ld      a,(hl)
+                or      a
+                jr      z,ep_default_b      ; empty B field -> B = C
+                cp      COLON
+                jr      z,ep_default_b
+                cp      ','
+                jp      z,ep_syntax         ; a 3rd comma here => a 4th argument -> ERR 2
+                ; --- given B: eval only, NOT range-checked (spec §3/§5 -- a
+                ; border of 16+ is legal, just a comparison value no pixel hits) ---
+                call    gfx_eval_int16      ; DE = value (silent int16); ERR 6 if > int16
+                ld      a,e
+                ld      (GFX_B),a           ; low byte only (spec §6: GFX_B is 1 B)
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jp      z,ep_syntax         ; a 4th argument -> ERR 2
+                jr      ep_draw
+ep_default_b:
+                ld      a,(GFX_C)
+                ld      (GFX_B),a
+ep_draw:
+                pop     de                  ; seed y
+                pop     bc                  ; seed x
+                ld      (GXPOS),bc          ; work area (spec §6): unconditional, AFTER
+                ld      (GRPACX),bc         ; every field is parsed (unlike PSET's
+                ld      (GYPOS),de          ; "unconditional as soon as the seed is
+                ld      (GRPACY),de         ; known" -- both already validated on-screen)
+                ld      a,5                 ; GFX_OP = 5 -> tenant PAINT
+                ld      (GFX_OP),a
+                push    hl                  ; guard the token cursor -- CALSLT clobbers HL
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
+                call    subrom_call         ; CF=1 iff the sub-ROM is absent
+                pop     hl
+                jp      c,gfx_absent        ; defensive: merged ROM always ships the tenant
+                ld      a,(GFX_POVF)
+                or      a
+                jp      nz,ep_overflow      ; span-stack overflow -> ERR 7 (spec §4 D3)
+                jp      exec_stmt           ; chain the next ':'-separated statement
+ep_overflow:
+                ld      a,7                 ; Out of memory (measured, spec §4 D3)
+                jp      raise_error
+ep_syntax:
+                ld      a,2                 ; Syntax error (a 4th PAINT argument)
+                jp      raise_error
 
     ENDIF

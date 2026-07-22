@@ -363,6 +363,11 @@ POINT_TOKEN     equ     $ED     ; POINT(x,y)          (function -> pixel colour 
 ; pass (stored-line crunch, spec §11.1: "CIRCLE(30,30),10" -> BC 28 ... 29 ... 00).
 ; Repack-only kwtable entry (lean cart ships no graphics).
 CIRCLE_TOKEN    equ     $BC     ; CIRCLE (x,y),r[,c[,start[,end[,aspect]]]] (statement)
+; Graphics G5 (docs/spec-basic-graphics-g5.md §7). PAINT is a NEW single-byte
+; STATEMENT token; pinned by the G5 black-box crunch characterisation pass
+; (scratchpad/g5_paint_notes.md C1: PAINT=$BF, matches no other keyword's
+; prefix). Repack-only kwtable entry (lean cart ships no graphics).
+PAINT_TOKEN     equ     $BF     ; PAINT [STEP](x,y)[,[c][,[b]]] (statement)
 ; ASCII bytes the tokeniser / evaluator treat specially (all public ASCII).
 COLON           equ     $3A     ; ':' statement separator
 QUOTE_REM       equ     $27     ; "'" — apostrophe comment, treated as REM
@@ -482,6 +487,15 @@ GFX_SNEG        equ     $E154   ; resident: start angle was negative -> spoke pe
 GFX_ENEG        equ     $E155   ; resident: end angle was negative -> spoke pending (1)
                                 ; -> ends $E156 (LINEBUF region ends $E15F inclusive;
                                 ; well within the G3 header's own budget note)
+; G5 PAINT (docs/spec-basic-graphics-g5.md §6). ONE new LINEBUF-region cell:
+; the resident-marshalled border colour (the raw, NOT range-checked comparison
+; value -- spec §3/§5). Same LINEBUF-region discipline as G3/G4 (dead during
+; any graphics statement, below the PLAY ISR region). GFX_OP=5 selects the
+; tenant arm; GFX_OP/GFX_C stay shared with G1-G4. The much bigger span-stack
+; + its own working scratch do NOT fit here (only 9 B remain, $E157-$E15F) --
+; they live in a separate repack-only RAM window below (GFX_PSTK).
+GFX_B           equ     $E156   ; border colour B (raw comparison value 0..255,
+                                ; NOT range-checked -- spec §3) (1) -> ends $E157
 CURPTR          equ     $E020   ; current load pointer (2 bytes)
 ENDPTR          equ     $E022   ; final load address  (2 bytes)
 EXECPTR         equ     $E024   ; execution address   (2 bytes)
@@ -861,6 +875,82 @@ TMISMATCH       equ     ISRCH_B + 2         ; $E3E5: D-2 type-mismatch flag (1 B
 ; last claimed cell in the freed STRTAB window; up to $E560 (disk WBUF) is spare.
     IF MIDS_DEST + 2 > $E560
                 db      STRING_HEAP_LAYOUT_OVERRAN_E560_DISK_WBUF_WALL
+    ENDIF
+
+; --- G5 PAINT (docs/spec-basic-graphics-g5.md §4/D3): the scanline span-fill
+; stack home. The fill needs a FIXED-CAPACITY span stack (D3, sign-off'd) that
+; the LINEBUF region (G3/G4's own window) is far too small for (only 9 free B
+; there after GFX_B, see above) -- this needs hundreds of bytes.
+;
+; ALIASING-SAFETY ARGUMENT (must NOT alias live interpreter/PLAY state, the
+; recurring bug class flagged by the spec):
+;   * NOT touched by the PLAY ISR (H.TIMI drains QUETAB/VOIC*Q/VCB* at
+;     $F959+, MSX-JIFFY at $FC9E) -- this window is entirely below that, so a
+;     PAINT running EI (music-plays-during-draw, spec §2) never races it.
+;   * NOT live interpreter state that must survive PAST this one PAINT
+;     statement's execution: MIDS_DEST above (TMISMATCH+1, ends $E3E8) is the
+;     LAST cell the repack string engine currently claims out of its own
+;     originally-reserved $E240..$E560 (800 B) window -- TEMPTOP's own header
+;     already documents "~290 B of further headroom in the historical 800 B
+;     window for future growth" as unclaimed. $E3E8..$E560 (376 B) is that
+;     unclaimed span TODAY (grepped: no other basic-core/sub/tape equ falls in
+;     it). Spending PART of it on PAINT's stack is a real, if quantifiable,
+;     claim against that future headroom -- documented here as the tradeoff
+;     (there was no OTHER aliasing-safe window big enough; see the G5 slice
+;     report). It is empty at the START of any statement (the string engine's
+;     own scratch there, e.g. TEMPPOOL, is reset at every statement boundary,
+;     per TEMPTOP's own header) and PAINT's own C/B/coordinate evals (which
+;     DO touch the string engine, e.g. via str_eval_one's tile$ probe) all run
+;     in ex_paint BEFORE the tenant's subrom_call -- so by the time the
+;     tenant writes here, no in-flight string-engine state can still need it.
+;   * NOT the disk component's own RAM: disk/equates.inc places its FAT12/BDOS
+;     scratch (FAT_SECPERCLUS.. BDOS_DTA etc.) at $E4A0-$E55B, DIRECTLY
+;     overlapping this same window -- but that is the STANDALONE MSX1 disk-ROM
+;     (slot 3-1, docs/spec-msx1-disk-rom.md), which only ever runs while
+;     booting/driving MSX-DOS, never while the BASIC interpreter (and so never
+;     a PAINT statement) is live. This is the SAME "mutually-exclusive
+;     execution context" aliasing precedent basic-core RAM already uses
+;     against that same disk-ROM component (basic-core's own STRTAB/SH_*/
+;     TEMPPOOL/etc. above already overlap disk's SECTOR_BUF $E2A0-$E49F for
+;     the identical reason), not a new risk class.
+;   * NOT zerobas-disk's OWN (different) FAT scratch used by BASIC's disk
+;     statements (basic/sysvars.inc's own FAT_* cluster) -- that lives at
+;     $E9C0+, nowhere near here.
+;
+; Layout: GFX_PTOP/GFX_POVF (the stack cursor + overflow flag) and the flood
+; loop's own small working cells, then the span-stack array itself -- entries
+; are [y:1][xL:1][xR:1] (3 B; NO stored parent-direction byte, unlike the
+; spec's own ~5 B/entry estimate: gfx_paint_inside's border test also stops at
+; "already == C", not just "== B" -- see sub/graphics.asm gfx_paint_op header
+; -- which makes re-scanning an already-filled span a safe, cheap no-op and
+; removes the need for Smith's direction/overhang bookkeeping entirely). This
+; buys MORE capacity per byte than the spec's own estimate assumed.
+GFX_PTOP        equ     $E3E8   ; span-stack top-of-stack index, 0..GFX_PSTK_CAP (1)
+GFX_POVF        equ     $E3E9   ; 1 = the stack overflowed; resident raises ERR 7 (1)
+GFX_PTESTX      equ     $E3EA   ; gfx_paint_inside/gfx_paint_plot: pixel-under-test X (1)
+GFX_PTESTY      equ     $E3EB   ; ...Y (1)
+GFX_PFY         equ     $E3EC   ; gfx_paint_flood/_process: current span's row (1)
+GFX_PXL         equ     $E3ED   ; ...current span's left column (1)
+GFX_PXR         equ     $E3EE   ; ...current span's right column (1)
+GFX_PSCX        equ     $E3EF   ; gfx_paint_process/_scan_row: scan cursor column (1)
+GFX_PSCY        equ     $E3F0   ; gfx_paint_scan_row: the neighbour row being scanned (1)
+GFX_PSPA        equ     $E3F1   ; gfx_paint_scan_row: pending sub-span's start column (1)
+GFX_PSTK        equ     $E3F2   ; span-stack array base: GFX_PSTK_CAP * [y][xL][xR]
+GFX_PSTK_ENTSZ  equ     3
+GFX_PSTK_CAP    equ     120     ; capacity (360 B); window is 376 B ($E3E8..$E560)
+                                ; minus 10 B of the working cells above -> 366 B
+                                ; available for the array, 6 B headroom kept spare.
+                                ; Comfortably above every realistic-fill span count
+                                ; measured (scratchpad/g5_paint_notes.md D3: even a
+                                ; 73-parallel-channel comb pattern completed at
+                                ; normal HIMEM); short of the spec's own aspirational
+                                ; "target >=128" (which assumed a fatter ~5 B/entry
+                                ; that would not have fit this window AT ALL: 128*5
+                                ; =640 B > 376 B available) but achievable ONLY
+                                ; because of the 3 B/entry redesign above.
+GFX_PSTK_END    equ     GFX_PSTK + GFX_PSTK_CAP*GFX_PSTK_ENTSZ
+    IF GFX_PSTK_END > $E560
+                db      PAINT_SPAN_STACK_OVERRAN_E560_DISK_WBUF_WALL
     ENDIF
     ELSE
 STRSCR          equ     $E360   ; [len][bytes:STRMAX] = 33 bytes ($E360..$E380)

@@ -324,9 +324,250 @@ def phase_g_rneg() -> int:
     return fails
 
 
+# =====================================================================
+# G5 -- PAINT (SCREEN-2 flood fill). docs/spec-basic-graphics-g5.md §10.
+# CRITICAL (the harness-budget trap, [[paint-slow-emulated-budget-trap]]):
+# PAINT is genuinely SLOW in EMULATED time -- a small `step` (the default
+# 2.5 s omsx_repl uses between the RUN line and the capture) fires the
+# capture MID-FILL and looks like a hang or a wrong (partial) result. Every
+# fill-differential case below uses a big `step` (>=55 s, matching the
+# characterization's own g5_confirm.py step=35 for a similar arena) so the
+# whole-screen C!=B flood case genuinely completes before capture. ALSO a big
+# `timeout` (the WALL-CLOCK kill switch) -- the total scheduled emulated
+# timeline is boot + (#lines+1)*step, and an insufficient timeout can KILL
+# the openMSX process mid-write, truncating the capture to look like a clean
+# all-zero/empty read that is easy to mistake for a real result (found the
+# hard way while characterizing this gate; always re-verify a suspicious
+# result at a bigger timeout before trusting it). Compare the EFFECTIVE
+# colour (POINT), not raw VRAM planes -- bit-vs-bg is unobservable/impl-free
+# per the spec's own traversal-order-independence argument (§3): a bounded
+# C==B fill converges to the connected set, a C!=B fill converges to the
+# whole clipped screen, REGARDLESS of algorithm.
+#
+# THE "BORDER EATEN" MECHANISM -- own investigation, empirically derived
+# (black-box, no disassembly) while gating this slice, since the shipped
+# implementation initially DIVERGED from VG-8020 on every C!=B case with a
+# drawn wall in the way. Root-caused + fixed two real bugs in
+# sub/graphics.asm (see gfx_paint_read/gfx_paint_passable/gfx_paint_flood's
+# own headers for the full mechanism + fix rationale):
+#   1. A "border" is a DRAWN (pattern-bit SET) pixel whose colour == B; an
+#      UNDRAWN (background) pixel is NEVER a border, regardless of whether
+#      its background nibble happens to equal B (a never-drawn pixel's
+#      effective colour is always its group's bg, unaffected by ANY fg
+#      change elsewhere -- so a plain "effective colour == B" test wrongly
+#      blocked spreading into open space whenever the caller's B happened to
+#      equal the current background colour, e.g. `PAINT(100,100),7,1` with
+#      BAKCLR=1). Measured: the reference still floods that case.
+#   2. The seed pixel is ALWAYS painted/used as the flood origin
+#      UNCONDITIONALLY, even when its own effective colour already equals B
+#      or C -- "== B stops the walk" only applies to pixels the flood
+#      extends INTO, never to the seed itself. Measured: a seed placed
+#      EXACTLY on a drawn border pixel (colour == B) still floods past it.
+#   3. gfx_paint_extend_lr's own L/R walk must use the LOOSER "passable"
+#      test (only a genuine drawn==B pixel stops it) and must PAINT each
+#      newly-discovered pixel INLINE as it walks (not defer to a later
+#      pass) -- a group's colour only actually changes the instant a pixel
+#      in it is painted, so the walk needs to see that effect immediately
+#      to cross a whole chain of single-pixel-wide "eaten" walls in one
+#      pass. The STRICTER gfx_paint_inside (stops at ==B OR ==C) stays used
+#      only for the "should I push a new span" decision (scan_row/the
+#      seed's own extend), preserving the D3 stack-budget property (an
+#      already-fully-painted region is never re-pushed).
+# RESIDUAL, NARROWER FINDING (reported, not silently hidden): an enclosure
+# whose walls are BYTE-ALIGNED to VRAM's 8-pixel colour-group boundaries in
+# BOTH axes (e.g. a `,BF`-filled box at x=16..23/y=16..47, or a `,B` outline
+# at exactly (16,16)-(40,40)) never shares a single VRAM group with anything
+# outside it -- clash-based escape is topologically impossible under this
+# (or seemingly any pixel-accurate) model, yet the VG-8020 reference still
+# escapes such enclosures by some other, unreverse-engineered mechanism (no
+# disassembly permitted). All fixtures below therefore use DELIBERATELY
+# NON-byte-aligned coordinates (the common case -- a program rarely draws a
+# box at exact multiples of 8), which is what the fix above is verified
+# against; a byte-aligned enclosure is out of scope for this gate.
+BOX = "LINE(20,20)-(60,60),15,B"       # a realistic (non-byte-aligned) 1px box
+
+PAINT_STEP = 90.0     # emulated seconds RUN..capture (generous; see above)
+PAINT_CAP_GAP = 10.0
+PAINT_TIMEOUT = 900.0  # wall-clock kill switch -- generous (see above; the
+                       # actual wall time is typically a few seconds under
+                       # throttle-off, this just avoids a false truncation)
+
+
+def paint_points_prog(setup: list[str], pts: list[tuple[int, int]]) -> list[str]:
+    """SCREEN-2 setup + `pts`' POINT()s stashed to vars A,B,C.. then PRINTed
+    (tagged "R") after SCREEN0 -- the g5_confirm.py methodology, the reliable
+    pixel oracle (scratchpad/g5_paint_notes.md: POINT queried IN SCREEN 2,
+    stashed, PRINTed after SCREEN0; the raw-VRAM renderer used during
+    characterization had its own addressing bug)."""
+    q = ":".join(f"{chr(65 + i)}=POINT({x},{y})" for i, (x, y) in enumerate(pts))
+    pr = 'SCREEN0:PRINT"R";' + ";".join(chr(65 + i) for i in range(len(pts))) + ":END"
+    return [LINIT] + setup + [q, pr]
+
+
+def _points(raw: str | None, n: int) -> list[int] | None:
+    if not raw:
+        return None
+    txt = " ".join("".join(raw).split())
+    m = re.search(r"R((?:\s*-?\d+){%d})" % n, txt)
+    return [int(v) for v in m.group(1).split()] if m else None
+
+
+# label, setup ops, POINT sample coords (interior.., border.., far-outside)
+PAINT_FILL_CASES = [
+    # C==B self-limit: bounded to the box interior; the far corner (a
+    # background pixel well outside) MUST stay untouched -- proves enclosure.
+    ("box_bounded_c15b15", [BOX, "PAINT(40,40),15,15"],
+     [(40, 40), (21, 21), (59, 59), (100, 100)]),
+    # C!=B: the SAME box floods the WHOLE clipped screen (border "eaten" by
+    # the group-row colour clash) -- the far corner becomes C too.
+    ("box_flood_c4b15", [BOX, "PAINT(40,40),4,15"],
+     [(40, 40), (21, 21), (59, 59), (100, 100)]),
+    # A DIFFERENT self-colour bounded box (own fg/bg pair) -- extra
+    # confidence beyond the primary fixture.
+    ("box_bounded_c9b9", ["LINE(20,20)-(60,60),9,B", "PAINT(40,40),9,9"],
+     [(40, 40), (21, 21), (59, 59), (100, 100)]),
+    # STEP-relative seed (arc D1: same parse_coord as PSET) -- PSET plants
+    # GXPOS/GYPOS near the box centre, PAINT STEP(5,5) reseeds at (40,40).
+    # NB a literal STEP(0,0) (zero offset) is a REFERENCE-side degenerate
+    # case (measured: it behaves unlike every other seed-placement case,
+    # including a nonzero-offset STEP resolving to the exact same point) --
+    # avoided here, out of scope for this gate.
+    ("step_form", [BOX, "PSET(35,35)", "PAINT STEP(5,5),15,15"],
+     [(40, 40), (21, 21), (59, 59), (100, 100)]),
+    # Defaults: C omitted -> FORCLR (=15 per LINIT's COLOR15,1,1); B omitted
+    # -> = C. Same bounded profile as box_bounded_c15b15 (C=B=15 either way).
+    ("defaults_c_and_b", [BOX, "PAINT(40,40)"],
+     [(40, 40), (21, 21), (59, 59), (100, 100)]),
+    # ",,B" form: C omitted (-> FORCLR=15) but B explicit (=15) -- exercises
+    # the empty-first-field comma path through the same bounded profile.
+    ("comma_empty_c", [BOX, "PAINT(40,40),,15"],
+     [(40, 40), (21, 21), (59, 59), (100, 100)]),
+    # Border NOT range-checked (spec §3/§5): B=16 can never match a real 0..15
+    # pixel, so this is really a C!=B flood (no error, whole screen -> C=1).
+    ("border16_flood_ok", ["PAINT(5,5),1,16"],
+     [(5, 5), (200, 150), (0, 0), (255, 191)]),
+    # Seed on an OPEN background pixel whose colour happens to equal the
+    # given border -- measured to still flood (bug #1 above: an undrawn
+    # pixel is never a "border").
+    ("seed_on_border_still_floods", ["PAINT(100,100),7,1"],
+     [(100, 100), (6, 6)]),
+    # Seed placed EXACTLY on a drawn wall pixel (its colour == the given
+    # border) -- measured to still flood past it AND into the interior
+    # (bug #2 above: the seed is unconditionally the flood origin).
+    ("seed_on_wall_pixel", ["LINE(17,17)-(41,41),15,B", "PAINT(17,17),7,15"],
+     [(17, 17), (29, 29), (6, 6)]),
+]
+
+
+def phase_h() -> int:
+    fails = 0
+    print("=== PHASE H: PAINT fill differential (VG-8020 POINT vs zerobas, "
+          f"step={PAINT_STEP}s) ===")
+    for label, setup, pts in PAINT_FILL_CASES:
+        prog_lines = paint_points_prog(setup, pts)
+        specs = [("stored", prog_lines)]
+        ref = omsx_repl.run_cases(REF, specs, batch=False, step=PAINT_STEP,
+                                  cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
+        zb = omsx_repl.run_cases(ZB, specs, batch=False, step=PAINT_STEP,
+                                 cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
+        rp, zp = _points(ref, len(pts)), _points(zb, len(pts))
+        ok = rp is not None and rp == zp
+        fails += not ok
+        print(f"  {'PASS' if ok else 'FAIL'} {label:22} ref={rp} zb={zp}")
+    return fails
+
+
+def phase_i_aliasing() -> int:
+    """The RECURRING ALIASING BUG CLASS check (do not trust the static
+    argument in basic/sysvars.inc's own GFX_PTOP header): run string-heap-
+    heavy work (STRING$/MID$, which touch the temp-descriptor stack right
+    below the PAINT span-stack window, $E3E1/TEMPBASE vs $E3E8/GFX_PTOP)
+    immediately before a PAINT, in the SAME statement sequence, then assert
+    BOTH the fill result (POINT samples) AND the string values (LEN) survive
+    intact. A real aliasing bug would corrupt one or both."""
+    fails = 0
+    print("=== PHASE I: PAINT-after-string-heavy-work aliasing stress ===")
+    # NB string length 40 (not e.g. 200): the VG-8020 REFERENCE's own string
+    # heap raises "Out of string space" well before 200 chars for this
+    # program (measured) -- unrelated to PAINT, just its resource limit. 40
+    # is plenty to prove the corruption question either way.
+    lines = [LINIT, 'A$=STRING$(40,"X")', 'B$=MID$(A$,10,20)', BOX,
+             "PAINT(40,40),15,15",
+             "L=LEN(A$):M=LEN(B$)",
+             "P=POINT(40,40):Q=POINT(21,21):W=POINT(100,100)",
+             'SCREEN0:PRINT"S";L;M;P;Q;W:END']
+    specs = [("stored", lines)]
+    ref = omsx_repl.run_cases(REF, specs, batch=False, step=PAINT_STEP,
+                              cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
+    zb = omsx_repl.run_cases(ZB, specs, batch=False, step=PAINT_STEP,
+                             cap_gap=PAINT_CAP_GAP, timeout=PAINT_TIMEOUT)[0]
+
+    def vals(raw):
+        if not raw:
+            return None
+        txt = " ".join("".join(raw).split())
+        m = re.search(r"S((?:\s*-?\d+){5})", txt)
+        return [int(v) for v in m.group(1).split()] if m else None
+
+    rv, zv = vals(ref), vals(zb)
+    ok = rv is not None and rv == zv
+    fails += not ok
+    print(f"  {'PASS' if ok else 'FAIL'} paint_after_string_heavy ref={rv} zb={zv} "
+          "(L,M,P,Q,W = LEN(A$),LEN(B$),3x POINT)")
+    return fails
+
+
+# label, program lines, tag  (SCREEN0-funnelled errors; all raise BEFORE the
+# tenant is ever invoked -- resident ex_paint's own grammar/range checks --
+# so these are fast, default-step cases, unlike phase_h/i above)
+PAINT_BEHAV = [
+    ("scr0_err",       ["ON ERROR GOTO 40", "SCREEN0:PAINT(5,5)",
+                        'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("scr1_err",       ["ON ERROR GOTO 40", "SCREEN1:PAINT(5,5)",
+                        'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("colour16_err",   ["ON ERROR GOTO 40", "SCREEN2:PAINT(5,5),16",
+                        'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("colour_neg_err", ["ON ERROR GOTO 40", "SCREEN2:PAINT(5,5),-1",
+                        'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("offscreen_pos_err", ["ON ERROR GOTO 40", "SCREEN2:PAINT(300,100),15",
+                           'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("offscreen_neg_err", ["ON ERROR GOTO 40", "SCREEN2:PAINT(-5,-5),15",
+                           'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("ovf_err",        ["ON ERROR GOTO 40", "SCREEN2:PAINT(32768,0),15",
+                        'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("tile_str_err",   ["ON ERROR GOTO 40", 'SCREEN2:PAINT(5,5),"A",15',
+                        'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    # C=4,B=15 (NOT C=B) -- matches the exact combo the characterization
+    # pinned (scratchpad/g5_paint_char2.py S8). Measured wrinkle: a C=B combo
+    # here does NOT reject fast on the reference (it runs long enough to miss
+    # the default small step -- looks like "no error" within budget, an
+    # artifact of the reference's own internal check ordering, not a zerobas
+    # difference); zerobas's own 4th-arg check is unconditional (grammar-only,
+    # fires before any fill regardless of C/B -- basic/graphics.asm ep_syntax)
+    # so only THIS pinned combo is a safe, fast differential case.
+    ("fourth_arg_err", ["ON ERROR GOTO 40", "SCREEN2:PAINT(28,28),4,15,7",
+                        'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+]
+
+
+def phase_j() -> int:
+    fails = 0
+    print("=== PHASE J: PAINT errors (all pre-tenant, fast/default-step) ===")
+    specs = [("stored", body) for _, body, _ in PAINT_BEHAV]
+    ref = omsx_repl.run_cases(REF, specs, batch=True, reset=("NEW", "CLS"))
+    zb = omsx_repl.run_cases(ZB, specs, batch=True, reset=("NEW", "CLS"))
+    for (label, _, tag), r, z in zip(PAINT_BEHAV, ref, zb):
+        ra, za = _answer(r, tag), _answer(z, tag)
+        ok = ra is not None and ra == za
+        fails += not ok
+        print(f"  {'PASS' if ok else 'FAIL'} {label:18} ref={ra!r} zb={za!r}")
+    return fails
+
+
 def main() -> int:
     fails = (phase_a() + phase_b() + phase_c() + phase_d()
-              + phase_e() + phase_f() + phase_g_rneg())
+              + phase_e() + phase_f() + phase_g_rneg()
+              + phase_h() + phase_i_aliasing() + phase_j())
     print("-------------------")
     print("graphics-acceptance:", "PASS" if fails == 0 else f"FAIL ({fails})")
     return 1 if fails else 0

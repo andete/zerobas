@@ -499,6 +499,119 @@ def zbres(m, x0, y0, x1, y1):
     return set(pts)
 
 
+# --- G5 PAINT (docs/spec-basic-graphics-g5.md) -----------------------------
+# The tenant's span-fill engine (sub/graphics.asm gfx_paint_flood/_process/
+# _scan_row + the GFX_PSTK stack) is pure RAM-and-VDP-access logic; msxtest has
+# no VDP model (the real hardware colour-clash/latch behaviour is differential-
+# only, probes/basic_probe_graphics.py), so gfx_border_read (the border test's
+# VDP read) and gfx_paint_plot (the paint) are TRAPPED against a host-side
+# "virtual screen" dict {(x,y): colour} -- everything ELSE under test (the span
+# stack, the extend/scan/push/pop control flow) is the REAL assembled tenant.
+def py_paint_flood(screen, w, h, seed, C, B):
+    """Own-design oracle mirroring gfx_paint_inside's own rule EXACTLY: 4-
+    connected flood from seed, painting C, stopping a walk at a pixel whose
+    colour is already B OR already C (see sub/graphics.asm gfx_paint_op's
+    header for why "already C" is needed, not just "!=B" -- the teeth test
+    below). BIT-AWARE (matches the gfx_paint_read/gfx_paint_inside VG-8020
+    bug fix, sub/graphics.asm): a pixel not present in `screen` is UNDRAWN
+    background -- it can never be a B-border (only an actual drawn pixel can
+    be), it is only short-circuited by the "already C" rule. `screen` (the
+    virtual VDP model this whole test file uses) already encodes "drawn" as
+    "has an entry" -- a fixture never stores a drawn pixel whose colour is 0,
+    so this is a faithful mapping, not a new fixture requirement. screen is
+    mutated in place; returns the painted-pixel set."""
+    def inside(x, y):
+        if not (0 <= x < w and 0 <= y < h):
+            return False
+        if (x, y) in screen:
+            colour = screen[(x, y)]
+            return colour != B and colour != C
+        return C != 0               # background (bit clear) -- B can't block it
+    sx, sy = seed
+    if not inside(sx, sy):
+        return set()
+    stack, painted = [(sx, sy)], set()
+    while stack:
+        x, y = stack.pop()
+        if not inside(x, y):
+            continue
+        screen[(x, y)] = C
+        painted.add((x, y))
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if inside(nx, ny):
+                stack.append((nx, ny))
+    return painted
+
+
+def run_asm_paint(m, screen, seed, C, B):
+    """Drive the REAL gfx_paint_op against `screen` (mutated in place) via
+    trapped gfx_paint_read/gfx_paint_plot. Returns GFX_POVF (1 = the span
+    stack overflowed and the fill aborted early).
+
+    gfx_paint_read (not gfx_border_read -- the VG-8020 bug fix,
+    sub/graphics.asm gfx_paint_read's own header) reports BOTH the effective
+    colour AND whether the pixel is DRAWN (present in `screen`) via Zf: a
+    pixel absent from `screen` is undrawn background, Zf=1. This host model
+    cannot represent real VDP colour-CLASH (one group's shared attribute
+    byte) -- that mechanism is VDP-differential-only, gated by
+    probes/basic/basic_probe_graphics.py's PAINT phases, not here; this
+    trapped model validates the pure flood-fill graph-walk (topology, stack
+    behaviour, termination) against the Python oracle below."""
+    m.poke(m.addr("GFX_PTOP"), 0)
+    m.poke(m.addr("GFX_POVF"), 0)
+
+    def do_read(mm):
+        pt = (mm.cpu.e, mm.cpu.d)
+        drawn = pt in screen
+        mm.cpu.a = screen.get(pt, 0)
+        mm.cpu.f = 0x00 if drawn else 0x40   # Zf=1 iff bit CLEAR (background)
+    m.trap("gfx_paint_read", do_read)
+
+    def do_plot(mm):
+        x = mm.peek(mm.addr("GFX_PTESTX"))[0]
+        y = mm.peek(mm.addr("GFX_PTESTY"))[0]
+        c = mm.peek(mm.addr("GFX_C"))[0]
+        screen[(x, y)] = c
+    m.trap("gfx_paint_plot", do_plot)
+    m.poke_w(m.addr("GXPOS"), seed[0])
+    m.poke_w(m.addr("GYPOS"), seed[1])
+    m.poke(m.addr("GFX_C"), C)
+    m.poke(m.addr("GFX_B"), B)
+    m.call("gfx_paint_op", max_steps=4_000_000)
+    return m.peek(m.addr("GFX_POVF"))[0]
+
+
+def rect_ring(x0, y0, x1, y1):
+    """The 4 edges of an axis-aligned rectangle, as a set of (x,y) points."""
+    pts = set()
+    for x in range(x0, x1 + 1):
+        pts.add((x, y0)); pts.add((x, y1))
+    for y in range(y0, y1 + 1):
+        pts.add((x0, y)); pts.add((x1, y))
+    return pts
+
+
+def naive_flood_pushes(w, h, seed, B, budget):
+    """Teeth oracle: the SAME per-pixel stack shape as a scanline flood, but
+    WITHOUT gfx_paint_inside's "already == C" stop (only "!= B") -- a painted
+    pixel (marked 1, deliberately != B) always re-qualifies as fillable, so
+    revisits never stop. Pure Python; returns the push count (capped at
+    `budget`) to show it explodes rather than converging."""
+    def inside_naive(x, y, scr):
+        return 0 <= x < w and 0 <= y < h and scr.get((x, y), 0) != B
+    scr, stack, pushes = {}, [seed], 0
+    while stack and pushes < budget:
+        x, y = stack.pop()
+        if not inside_naive(x, y, scr):
+            continue
+        scr[(x, y)] = 1
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if inside_naive(nx, ny, scr):
+                stack.append((nx, ny))
+                pushes += 1
+    return pushes
+
+
 def build_sub():
     subprocess.run(["pasmo", "-I", os.path.join(ROOT, "sub"), "--bin",
                     os.path.join(ROOT, "sub", "sub.asm"), SUB_ROM, SUB_SYM],
@@ -805,6 +918,166 @@ def run():
             bad.add((d["cx"] + dx, d["cy"] + dy))
     check(bad != ref, "teeth: flipping arc_hpi_pi's start sign_c breaks the "
           "captured match (anti-green-build)")
+
+    # --- G5 PAINT (docs/spec-basic-graphics-g5.md) -- span-stack push/pop ---
+    CAP = m.sym["GFX_PSTK_CAP"]
+    m.poke(m.addr("GFX_PTOP"), 0)
+    m.poke(m.addr("GFX_POVF"), 0)
+    seq = [(1, 2, 3), (10, 20, 30), (191, 0, 255)]
+    for y, xl, xr in seq:
+        m.call("gfx_pstk_push", a=y, b=xl, c=xr)
+    got = []
+    while True:
+        cpu = m.call("gfx_pstk_pop")
+        if not carry(cpu):
+            break
+        got.append((cpu.a, cpu.b, cpu.c))
+    check(got == list(reversed(seq)), f"gfx_pstk push/pop LIFO order {got}")
+
+    m.poke(m.addr("GFX_PTOP"), 0)
+    m.poke(m.addr("GFX_POVF"), 0)
+    for i in range(CAP):
+        m.call("gfx_pstk_push", a=i & 0xFF, b=0, c=0)
+    top = m.peek(m.addr("GFX_PTOP"))[0]
+    ovf = m.peek(m.addr("GFX_POVF"))[0]
+    check(top == CAP and ovf == 0,
+          f"gfx_pstk fills exactly to CAP={CAP} without overflow (top={top} ovf={ovf})")
+    m.call("gfx_pstk_push", a=99, b=0, c=0)
+    top2 = m.peek(m.addr("GFX_PTOP"))[0]
+    ovf2 = m.peek(m.addr("GFX_POVF"))[0]
+    check(top2 == CAP and ovf2 == 1,
+          f"gfx_pstk push past CAP sets overflow, top unchanged (top={top2} ovf={ovf2})")
+    # teeth: an entry that DOES land (index CAP-1, not dropped) must be poppable
+    m.poke(m.addr("GFX_PTOP"), 0)
+    m.poke(m.addr("GFX_POVF"), 0)
+    for i in range(CAP - 1):
+        m.call("gfx_pstk_push", a=0, b=0, c=0)
+    m.call("gfx_pstk_push", a=77, b=88, c=99)      # the CAP-th (last legal) entry
+    cpu = m.call("gfx_pstk_pop")
+    check(carry(cpu) and (cpu.a, cpu.b, cpu.c) == (77, 88, 99),
+          "teeth: the boundary (CAP-th) push actually stores its payload, "
+          "not just bumps the counter (anti-green-build)")
+
+    # --- G5 PAINT -- gfx_paint_inside/gfx_paint_passable decision logic -----
+    # (gfx_paint_read trapped -- BIT-AWARE, the VG-8020 bug fix's own header
+    # in sub/graphics.asm: a DRAWN pixel (bit_set=True) is tested against
+    # both GFX_B and GFX_C; an UNDRAWN/background pixel (bit_set=False) is
+    # NEVER a border -- only the "already C" rule can stop it there.)
+    def trap_paint_read(mm, c, s):
+        mm.cpu.a = c
+        mm.cpu.f = 0x00 if s else 0x40     # Zf=1 iff bit CLEAR (background)
+
+    for b, c, colour, bit_set, want in [
+        (5, 5, 5, True,  False),  # drawn, == B -> not inside
+        (5, 7, 7, True,  False),  # drawn, == C already -> not inside (own-design stop)
+        (5, 7, 3, True,  True),   # drawn, neither -> inside
+        (0, 0, 0, True,  False),  # drawn, C==B==colour (the C==B bounded-case collapse)
+        (5, 7, 5, False, True),   # BUG FIX: background whose bg-nibble==B is
+                                  # NEVER a border (an undrawn pixel can't be)
+        (5, 7, 7, False, False),  # background whose bg-nibble==C -> still the
+                                  # "already done" stop (a no-op PAINT, C==bg)
+    ]:
+        m.trap("gfx_paint_read", lambda mm, c=colour, s=bit_set: trap_paint_read(mm, c, s))
+        m.poke(m.addr("GFX_B"), b)
+        m.poke(m.addr("GFX_C"), c)
+        m.poke(m.addr("GFX_PTESTX"), 10)
+        m.poke(m.addr("GFX_PTESTY"), 10)
+        cpu = m.call("gfx_paint_inside")
+        check(carry(cpu) == want,
+              f"gfx_paint_inside B={b} C={c} colour={colour} bit_set={bit_set} "
+              f"-> {carry(cpu)} want {want}")
+
+    # gfx_paint_passable: CF=1 iff NOT (drawn AND ==B) -- an already-C pixel
+    # (drawn or background) IS passable here, unlike gfx_paint_inside (own
+    # header: extend_lr's walk must cross an "eaten" pixel, not stop at it).
+    for b, colour, bit_set, want in [
+        (5, 5, True,  False),   # drawn, == B -> blocked
+        (5, 3, True,  True),    # drawn, != B -> passable
+        (5, 5, False, True),    # BUG FIX: background whose bg-nibble==B is
+                                # still passable (never a real border)
+        (5, 3, False, True),    # background, != B anyway -> passable
+    ]:
+        m.trap("gfx_paint_read", lambda mm, c=colour, s=bit_set: trap_paint_read(mm, c, s))
+        m.poke(m.addr("GFX_B"), b)
+        m.poke(m.addr("GFX_PTESTX"), 10)
+        m.poke(m.addr("GFX_PTESTY"), 10)
+        cpu = m.call("gfx_paint_passable")
+        check(carry(cpu) == want,
+              f"gfx_paint_passable B={b} colour={colour} bit_set={bit_set} "
+              f"-> {carry(cpu)} want {want}")
+
+    # --- G5 PAINT -- whole-algorithm span-fill vs the Python oracle ---------
+    # Case A: bounded box, C==B -- fill self-limits to the interior (spec's
+    # BOUNDED case).
+    W, H = 40, 30
+    walls_a = rect_ring(5, 5, 20, 20)
+    screen_asm = {p: 2 for p in walls_a}
+    screen_py = dict(screen_asm)
+    seed_a = (12, 12)
+    ovf_a = run_asm_paint(m, screen_asm, seed_a, C=2, B=2)
+    want_a = py_paint_flood(screen_py, W, H, seed_a, C=2, B=2)
+    got_a = {p for p, c in screen_asm.items() if c == 2 and p not in walls_a}
+    check(ovf_a == 0 and got_a == want_a,
+          f"G5 bounded box C==B: painted interior == oracle ({len(got_a)} pts)"
+          + ("" if got_a == want_a else f"  DIFF {sorted(got_a ^ want_a)[:8]}"))
+    leak = {p for p in got_a if not (5 < p[0] < 20 and 5 < p[1] < 20)}
+    check(not leak, f"G5 bounded box: no leak outside the ring {sorted(leak)[:5]}")
+
+    # Case B: concave L-shaped room, C!=B -- a notch wall juts partway into
+    # the room; the fill must wrap around its open end into the far chamber.
+    # (This case caught a REAL bug during implementation: gfx_paint_scan_row
+    # only tests columns within its CALLER's [xL,xR], so a span popped by
+    # gfx_paint_process must re-extend its own left/right bounds -- see
+    # gfx_paint_extend_lr's header, sub/graphics.asm -- else the fill stalls
+    # at the notch and never reaches the far chamber. Kept as a regression
+    # case, not just a shape exercise.)
+    walls_b = rect_ring(2, 2, 25, 20)
+    for y in range(2, 12):
+        walls_b.add((14, y))
+    screen_asm_b = {p: 2 for p in walls_b}
+    screen_py_b = dict(screen_asm_b)
+    seed_b = (5, 5)
+    ovf_b = run_asm_paint(m, screen_asm_b, seed_b, C=9, B=2)
+    want_b = py_paint_flood(screen_py_b, W, H, seed_b, C=9, B=2)
+    got_b = {p for p, c in screen_asm_b.items() if c == 9}
+    check(ovf_b == 0 and got_b == want_b,
+          f"G5 concave L-room C!=B: matches oracle ({len(got_b)} pts)"
+          + ("" if got_b == want_b else f"  DIFF {sorted(got_b ^ want_b)[:8]}"))
+    check(any(x > 14 for x, y in got_b),
+          "G5 concave room: fill wraps around the notch into the far chamber")
+
+    # Case C: seed at the screen corner (0,0) -- exercises the hardcoded
+    # x=0/y=0 screen-edge stops against the REAL full domain (0..255x0..191);
+    # an enclosing wall only on the right/bottom, relying on the screen edge
+    # itself for the other two sides.
+    walls_c = set()
+    for y in range(0, 16):
+        walls_c.add((15, y))
+    for x in range(0, 16):
+        walls_c.add((x, 15))
+    screen_asm_c = {p: 2 for p in walls_c}
+    screen_py_c = dict(screen_asm_c)
+    seed_c = (0, 0)
+    ovf_c = run_asm_paint(m, screen_asm_c, seed_c, C=4, B=4)
+    want_c = py_paint_flood(screen_py_c, 256, 192, seed_c, C=4, B=4)
+    got_c = {p for p, c in screen_asm_c.items() if c == 4}
+    check(ovf_c == 0 and got_c == want_c and (0, 0) in got_c,
+          f"G5 edge seed (0,0): matches oracle incl. the screen corner ({len(got_c)} pts)"
+          + ("" if got_c == want_c else f"  DIFF {sorted(got_c ^ want_c)[:8]}"))
+
+    # teeth: WITHOUT gfx_paint_inside's "already == C" stop (only "!= B"), a
+    # naive flood on the SAME open room (case B, C!=B) never converges --
+    # proves the own-design "!=B AND !=C" rule is load-bearing for
+    # termination, not just an optimisation (see gfx_paint_op's own header).
+    BUDGET = 20000
+    naive_pushes = naive_flood_pushes(W, H, seed_b, B=2, budget=BUDGET)
+    check(naive_pushes >= BUDGET,
+          f"teeth: naive '!=B only' flood explodes past {BUDGET} pushes on the "
+          f"SAME open room ({naive_pushes}) -- the 'already==C' rule is "
+          "load-bearing for termination (anti-green-build)")
+    check(len(want_b) < BUDGET,
+          f"sanity: the real (correct) painted set is small/finite ({len(want_b)} "
+          f"pts) vs the naive explosion's {BUDGET}+ pushes above")
 
     # --- resident leaf (repack build, rom_base=$2812) ---
     build_reloc()
