@@ -60,6 +60,10 @@ str_eval_one:
                 jp      z,str_fn_string     ; single-byte reserved word, not $FF-prefixed)
                 cp      INKEY_TOKEN         ; $EC -> INKEY$ (no args; single-byte reserved word)
                 jp      z,str_fn_inkey
+    IF G7_RESIDENT
+                cp      SPRITE_TOKEN        ; $C7 -> SPRITE$(n) (graphics G7; the `$` is
+                jp      z,ev_f_sprite       ; separate ASCII after the token)
+    ENDIF
     ENDIF
                 call    is_letter           ; a `$`-suffixed variable?
                 jp      nc,str_eval_no

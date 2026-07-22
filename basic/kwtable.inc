@@ -355,5 +355,13 @@ kwtable:
     IF G6_RESIDENT
                 db      4,"DRAW",1,DRAW_TOKEN                    ; $BE
     ENDIF
+                ; --- graphics slice G7 (repack build only) --------------------
+                ; docs/spec-basic-graphics-g7.md §1. SPRITE is ONE reserved word
+                ; ($C7) behind the whole sprite surface: `SPRITE$(n)` (the `$` is
+                ; separate ASCII), `PUT SPRITE`, and `SPRITE ON|OFF|STOP`. No
+                ; prefix collision -- match_kw compares the FULL keyword.
+    IF G7_RESIDENT
+                db      6,"SPRITE",1,SPRITE_TOKEN                ; $C7
+    ENDIF
     ENDIF
                 db      0

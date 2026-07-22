@@ -1059,4 +1059,262 @@ gdw_hand_string:
                 ret
     ENDIF
 
+; ===========================================================================
+; G7 -- SPRITES: SPRITE$(n)= / SPRITE$(n) / PUT SPRITE / SPRITE ON|OFF|STOP
+; docs/spec-basic-graphics-g7.md. The RESIDENT half EVALUATES and nothing else:
+; `eval`, the string heap and the token cursor are page-1 resident, so the parse
+; lives here and every decision downstream of the values -- entry size and
+; address, the domain checks, the early-clock rule, the x4 pattern scaling, the
+; merge that makes an omitted argument keep the byte already in the entry -- is
+; the page-0 tenant's (sub/graphics.asm, GFX_OP = 7/8/9). That split is what
+; keeps this half inside the page-1 tail (spec §7/§8).
+;
+; Every rule is a black-box measurement (scratchpad/g7_sprite_notes.md), never a
+; disassembly.
+; ===========================================================================
+    IF G7_RESIDENT
+
+; --- ex_sprite: the statement forms that START with the SPRITE token --------
+; `SPRITE$(n) = <string$>` (the pattern write) and the three trap-arming forms
+; `SPRITE ON|OFF|STOP`, which are accepted no-ops (D-G7-4: the trap itself is the
+; interrupt-trap slice's; the reference accepts them in EVERY mode, SCREEN 0 too).
+; A bare `SPRITE` is Syntax error (measured).
+ex_sprite:
+                inc     hl                  ; past the SPRITE token
+                ld      a,(hl)
+                cp      '$'                 ; the `$` is separate ASCII (crunch pin)
+                jr      z,spr_assign
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ON_TOKEN
+                jr      z,spr_noop
+                cp      OFF_TOKEN
+                jr      z,spr_noop
+                cp      STOP_TOKEN
+                jp      nz,stmt_error       ; bare SPRITE -> ERR 2 (measured)
+spr_noop:
+                inc     hl
+                jp      exec_stmt
+
+; --- SPRITE$(n) = <string$> ------------------------------------------------
+; WRITING needs a graphics mode (SCREEN 0 -> ERR 5) even though READING does not
+; (§3, the measured asymmetry). Short strings zero-pad and long ones truncate --
+; both fall out of handing the tenant min(len,32) bytes and their count.
+spr_assign:
+                inc     hl                  ; past the '$'
+                ld      a,(SCRMOD)
+                or      a
+                jp      z,gfx_err5          ; SPRITE$= in SCREEN 0 -> ERR 5
+                call    spr_parse_index     ; GFX_SN = n; HL past ')'
+                call    skip_spaces
+                ld      a,(hl)
+                cp      EQ_TOKEN
+                jp      nz,stmt_error       ; `SPRITE$(0)` with no `=` -> ERR 2
+                inc     hl
+                call    str_eval            ; STRPTR -> [len][ptr]; CF=1 iff a string
+                jp      nc,gfx_typeerr      ; SPRITE$(0)=5 -> ERR 13 (measured)
+                call    check_expr_errors
+                push    hl                  ; guard the statement cursor
+                ld      hl,(STRPTR)
+                ld      a,(hl)
+                cp      33
+                jr      c,spa_len_ok
+                ld      a,32                ; longer than any entry -> truncate here
+spa_len_ok:
+                ld      (GFX_VLEN),a
+                ld      c,a
+                ld      b,0
+                call    pu_deref_body       ; HL = body address (A preserved)
+                ld      de,GFX_VBUF
+                ld      a,c
+                or      a
+                jr      z,spa_empty
+                ldir                        ; the supplied bytes; the tenant pads
+spa_empty:
+                ld      a,7                 ; GFX_OP = 7 -> tenant pattern write
+                call    spr_tenant
+                pop     hl
+                jp      exec_stmt
+
+; --- ev_f_sprite: SPRITE$(n) as a string FACTOR -----------------------------
+; Reached from str_eval_one (basic/strvar.asm) with HL ON the SPRITE token. The
+; result is EXACTLY the entry size the tenant reports -- never the length that was
+; assigned (§3). Legal in every screen mode, SCREEN 0 included.
+ev_f_sprite:
+                inc     hl                  ; past the SPRITE token
+                ld      a,(hl)
+                cp      '$'
+                jp      nz,str_eval_no      ; not SPRITE$ -> not a string operand
+                inc     hl
+                call    spr_parse_index     ; GFX_SN = n; HL past ')'
+                push    hl                  ; guard the cursor across the read
+                ld      a,8                 ; GFX_OP = 8 -> tenant pattern read
+                call    spr_tenant
+                ld      a,(GFX_VLEN)
+                call    str_temp_alloc      ; HL = temp descriptor, DE = body (0 = failed)
+                ld      (STRPTR),hl
+                ld      a,d
+                or      e
+                jr      z,spr_rd_done       ; allocation failed -> the empty temp stands
+                ld      hl,GFX_VBUF
+                ld      a,(GFX_VLEN)
+                ld      c,a
+                ld      b,0
+                ldir
+spr_rd_done:
+                pop     hl
+                jp      str_eval_ok
+
+; --- spr_parse_index: "(n)" -> GFX_SN, HL past ')' -------------------------
+; n is an ordinary numeric expression (ERR 6 beyond int16, inside gfx_eval_int16);
+; its 0..255 domain is the tenant's check, so the ERR 5 comes back through
+; spr_tenant like every other sprite domain error. Clobbers A, DE.
+spr_parse_index:
+                call    skip_spaces
+                ld      a,(hl)
+                cp      '('
+                jp      nz,stmt_error       ; `SPRITE$0` -> ERR 2 (measured)
+                inc     hl
+                call    gfx_eval_int16      ; DE = n
+                ld      (GFX_SN),de
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ')'
+                jp      nz,stmt_error
+                inc     hl
+                ret
+
+; --- spr_tenant: run one sprite tenant op (A = GFX_OP) and raise its error --
+; The sprite ops carry no colour, so unlike the drawing statements this leaves
+; GFX_C alone (the tenant's ATRBYT stamp deliberately skips ops 7/8/9 -- sprites
+; measurably do not touch the shared graphics attribute). Clobbers A, IX.
+spr_tenant:
+                ld      (GFX_OP),a
+                xor     a
+                ld      (GFX_RES),a         ; 0 = no error; the tenant sets 5 on a domain miss
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
+                call    subrom_call         ; CF=1 iff the sub-ROM is absent (clobbers all --
+                                            ; every caller guards its own cursor)
+                jp      c,gfx_absent        ; defensive: merged ROM always ships it
+                ld      a,(GFX_RES)
+                or      a
+                ret     z
+                jp      raise_error         ; the tenant's ERR code (ERR 5, §6)
+
+; --- SCREEN's sprite-size argument (D-G7-2) --------------------------------
+; `SCREEN <mode>,<size>` selects 8x8 vs 16x16 (bit 1) and magnification (bit 0),
+; and the setting PERSISTS across later SCREEN statements that omit it -- both
+; measured. RG1SAV bits 1..0 ARE that state (the tenant reads them for the entry
+; size and the pattern scaling), so persistence is just "re-apply them after
+; CHGMOD", which is also where the attribute-x snapshot goes (D-G7-3).
+; Called from ex_screen (basic/screen.asm).
+spr_mode_save:
+                ld      a,(RG1SAV)
+                and     $03                 ; remember the size across CHGMOD, which
+                ld      (GFX_SSIZE),a       ; re-writes VDP register 1 from its own table
+                ld      a,10                ; tenant: snapshot the 32 attribute x bytes
+                jr      spr_tenant
+spr_mode_restore:
+                ld      a,11                ; tenant: put the x bytes back (CHGMOD zeroes
+                call    spr_tenant          ; them; the reference leaves them alone)
+spr_apply_size:
+                ld      a,(RG1SAV)
+                and     $FC
+                ld      c,a
+                ld      a,(GFX_SSIZE)
+                or      c
+                ld      b,a
+                ld      c,1                 ; VDP register 1
+                jp      WRTVDP              ; ... which updates RG1SAV too
+; spr_extra_arg: one evaluated trailing SCREEN argument (DE = its value). Only the
+; FIRST is the sprite size; the rest (key click, baud, printer) stay ignored.
+spr_extra_arg:
+                ld      a,(GFX_SARGN)
+                inc     a
+                ld      (GFX_SARGN),a
+                dec     a
+                ret     nz
+                ld      a,e
+                and     $03
+                ld      (GFX_SSIZE),a
+                jr      spr_apply_size
+
+; --- ex_put_sprite: PUT SPRITE p[,(x,y)|STEP(dx,dy)][,c][,n] ---------------
+; Reached from ex_put (basic/field.asm) with HL ON the SPRITE token. Parses into
+; the parameter block with a "given" flag per optional argument, then ONE tenant
+; call does the merge. Coordinates go over RAW (unwrapped, possibly negative) --
+; the tenant applies the mod-256 store and the early-clock rule, and the work area
+; measurably keeps the raw value.
+ex_put_sprite:
+                inc     hl                  ; past the SPRITE token
+                ld      a,(SCRMOD)
+                or      a
+                jp      z,gfx_err5          ; PUT SPRITE in SCREEN 0 -> ERR 5
+                xor     a
+                ld      (GFX_SFLAGS),a
+                call    gfx_eval_int16      ; DE = plane (domain checked by the tenant)
+                ld      (GFX_SN),de
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jp      nz,stmt_error       ; `PUT SPRITE 0` -> ERR 2 (measured)
+                inc     hl
+                call    skip_spaces
+                ld      a,(hl)
+                cp      '('
+                jr      z,pspr_coords
+                cp      STEP_TOKEN
+                jr      z,pspr_coords
+                cp      ','
+                jr      z,pspr_optional     ; `PUT SPRITE p,,c,n` keeps BOTH coordinates
+                jp      stmt_error          ; `PUT SPRITE 0,` -> ERR 2 (measured)
+pspr_coords:
+                call    parse_coord         ; BC = x, DE = y (int16, STEP resolved)
+                ld      (GXPOS),bc          ; the work area takes the RAW coordinate
+                ld      (GRPACX),bc
+                ld      (GYPOS),de
+                ld      (GRPACY),de         ; ... which is ALSO how the tenant reads them:
+                                            ; GXPOS/GYPOS are the arc's pinned coordinate
+                                            ; marshalling cells (no G7-private pair)
+                ld      a,1                 ; bit 0 = coordinates given
+                ld      (GFX_SFLAGS),a
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jr      nz,pspr_go
+pspr_optional:
+                inc     hl                  ; past the ',' before the colour
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jr      z,pspr_pattern      ; colour omitted -> keep the entry's colour
+                call    gfx_eval_int16      ; DE = colour (domain checked by the tenant)
+                ld      (GFX_SC),de
+                ld      a,(GFX_SFLAGS)
+                or      $02                 ; bit 1 = colour given
+                ld      (GFX_SFLAGS),a
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jr      nz,pspr_go
+pspr_pattern:
+                inc     hl                  ; past the ',' before the pattern number
+                call    gfx_eval_int16      ; DE = pattern number
+                ld      (GFX_SPATN),de
+                ld      a,(GFX_SFLAGS)
+                or      $04                 ; bit 2 = pattern given
+                ld      (GFX_SFLAGS),a
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ','
+                jp      z,stmt_error        ; a 5th argument -> ERR 2 (measured)
+pspr_go:
+                push    hl
+                ld      a,9                 ; GFX_OP = 9 -> tenant attribute merge
+                call    spr_tenant
+                pop     hl
+                jp      exec_stmt
+
+    ENDIF
+
     ENDIF

@@ -486,8 +486,29 @@ fat_rand_get:
 ; Select the channel (must be open RANDOM), then read/write the record. The text
 ; cursor (HL) is guarded across fch_select + the disk op (CALSLT clobbers all).
 ex_put:
+    IF ROM_BASE < $4000
+    IF G7_RESIDENT
+                ; `PUT SPRITE ...` is a graphics statement, not a record write --
+                ; two reserved words (PUT $B3 + SPRITE $C7), disambiguated at RUN
+                ; time on the token that follows (basic/graphics.asm ex_put_sprite).
+                push    hl
+                inc     hl
+                call    skip_spaces
+                ld      a,(hl)
+                cp      SPRITE_TOKEN
+                jp      z,pus_is_sprite
+                pop     hl
+    ENDIF
+    ENDIF
                 ld      a,1                 ; mode = PUT (write)
                 jr      gp_common
+    IF ROM_BASE < $4000
+    IF G7_RESIDENT
+pus_is_sprite:
+                pop     af                  ; drop the guarded PUT-token cursor
+                jp      ex_put_sprite       ; HL is ON the SPRITE token
+    ENDIF
+    ENDIF
 ex_get:
                 xor     a                   ; mode = GET (read)
 gp_common:

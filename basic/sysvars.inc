@@ -10,6 +10,7 @@
 ; --- Screen / console BIOS entry points ------------------------------------
 ; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook.
 CHGMOD          equ     $005F   ; switch screen mode; A = mode 0..3 (SCREEN n)
+WRTVDP          equ     $0047   ; write VDP register C with value B (and update RGnSAV)
 CHGCLR          equ     $0062   ; apply FORCLR/BAKCLR/BDRCLR; A = screen mode (COLOR)
 INITXT          equ     $006C   ; init SCREEN 0 (TEXT1) and enable the display
 CHSNS           equ     $009C   ; test the keyboard buffer -> Z if empty, NZ if a key waits
@@ -387,6 +388,14 @@ PAINT_TOKEN     equ     $BF     ; PAINT [STEP](x,y)[,[c][,[b]]] (statement)
 ; The TENANT half (sub/graphics.asm GFX_OP=6) is unconditional -- the sub-ROM has
 ; room -- so flipping this to 1 after the space lands is the whole switch-on.
 G6_RESIDENT     equ     1
+; Graphics G7 (docs/spec-basic-graphics-g7.md). SPRITE is a single-byte reserved
+; word ($C7) shared by ALL of the sprite surface -- `SPRITE$(n)` (the `$` is plain
+; ASCII after the token), `PUT SPRITE` (PUT $B3 + SPRITE) and the trap-arming
+; `SPRITE ON|OFF|STOP` -- black-box crunch-pinned (scratchpad/g7_sprite_notes.md).
+; G7_RESIDENT gates the RESIDENT half the way G6_RESIDENT gated DRAW's, so the
+; slice can be built with the tenant alone if the page-1 tail runs out again.
+G7_RESIDENT     equ     0
+SPRITE_TOKEN    equ     $C7     ; SPRITE (statement + string function + PUT SPRITE)
 DRAW_TOKEN      equ     $BE     ; DRAW <string> (statement; graphics G6) -- crunch of
                                 ; `DRAW"u10"` on the reference is BE 22 75 31 30 22,
                                 ; measured (scratchpad/g6_draw_notes.md §1)
@@ -518,6 +527,15 @@ GFX_ENEG        equ     $E155   ; resident: end angle was negative -> spoke pend
 ; they live in a separate repack-only RAM window below (GFX_PSTK).
 GFX_B           equ     $E156   ; border colour B (raw comparison value 0..255,
                                 ; NOT range-checked -- spec §3) (1) -> ends $E157
+; G7 sprites (docs/spec-basic-graphics-g7.md §8). Table bases + the VDP register
+; mirror the sprite size lives in; the parameter block itself is in the repack-only
+; window next to GFX_VBUF below (the LINEBUF region's last 9 B do not fit it).
+GFX_SPAT_BASE   equ     $3800   ; SCREEN 1/2 sprite PATTERN generator table base
+GFX_SATR_BASE   equ     $1B00   ; SCREEN 1/2 sprite ATTRIBUTE table base (4 B per plane)
+RG1SAV          equ     $F3E0   ; VDP register 1 mirror; bits 1..0 = SCREEN's sprite-size
+                                ; argument (bit1 = 16x16, bit0 = magnify), which measurably
+                                ; PERSISTS across later SCREEN statements (spec G7 §5)
+
 CURPTR          equ     $E020   ; current load pointer (2 bytes)
 ENDPTR          equ     $E022   ; final load address  (2 bytes)
 EXECPTR         equ     $E024   ; execution address   (2 bytes)
@@ -1031,6 +1049,32 @@ GFX_DSP         equ     GFX_DTMP + 2    ; $E54D: tenant entry SP -- an error dee
                                         ; just jump to the error tail instead of threading
                                         ; a CF through the whole call chain (2) -> ends $E54F
 GFX_DESC        equ     $01             ; (unused by D-G6-1b; kept out of the buffer grammar)
+; G7 sprites: the <=32 byte staging buffer for the tenant's VRAM block ops, and
+; the 4-byte attribute entry the resident read-modify-writes through them. It
+; ALIASES the PAINT span stack / DRAW frame buffer for exactly the reason those
+; two alias each other: one graphics statement is in flight at a time, and a
+; sprite statement neither paints nor draws. Sized 32 = the 16x16 pattern entry.
+GFX_VBUF        equ     GFX_PSTK        ; $E3F2: sprite pattern/attribute staging (32 B)
+; The sprite parameter block. The resident EVALUATES (that is what it is for --
+; `eval`, the string heap and the token cursor are all page-1 resident) and the
+; TENANT decides: entry size and address, the domain checks, the early-clock rule,
+; the x4 pattern scaling and the merge with the bytes already in the entry. That
+; split is what keeps the space-blocked resident half small (spec §7/§8).
+GFX_SN          equ     GFX_VBUF + 32   ; $E412: SPRITE$ entry index / PUT SPRITE plane (2)
+GFX_VLEN        equ     GFX_SN + 2      ; $E414: bytes supplied in GFX_VBUF (write), or the
+                                        ; entry size the tenant read back (read) (1)
+GFX_SC          equ     GFX_VLEN + 1    ; $E415: PUT SPRITE colour (2). x/y need no cells --
+                                        ; they ride the arc's pinned GXPOS/GYPOS pair, which
+                                        ; PUT SPRITE writes anyway (the work area keeps the
+                                        ; raw, unwrapped coordinate)
+GFX_SPATN       equ     GFX_SC + 2      ; $E41B: ...pattern number (2)
+GFX_SSIZE       equ     GFX_SPATN + 2   ; $E41D: SCREEN's sprite-size argument while a mode
+                                        ; set is in flight (RG1SAV bits 1..0 hold it after) (1)
+GFX_SARGN       equ     GFX_SSIZE + 1   ; $E41E: how many extra SCREEN arguments have been
+                                        ; seen -- only the FIRST is the sprite size (1)
+GFX_SFLAGS      equ     GFX_SARGN + 1   ; $E41F: which arguments were GIVEN --
+                                        ; bit0 = coordinates, bit1 = colour, bit2 = pattern;
+                                        ; an omitted one keeps the entry's own byte (1)
 ;
 ; The PERSISTENT pair (spec §4 -- the measured pin: S and A survive RUN, NEW,
 ; CLEAR, CLS, COLOR and SCREEN; ONLY a power-on resets them). They therefore may

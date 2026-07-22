@@ -38,6 +38,12 @@
 
 ; --- ex_screen: SCREEN <mode>[,<extra>]... ---------------------------------
 ex_screen:
+    IF ROM_BASE < $4000
+    IF G7_RESIDENT
+                xor     a                   ; graphics G7: the FIRST trailing argument is the
+                ld      (GFX_SARGN),a       ; sprite size, and it is no longer discarded
+    ENDIF
+    ENDIF
                 inc     hl                  ; past the SCREEN token
                 call    skip_spaces
                 ld      a,(hl)
@@ -55,7 +61,19 @@ ex_screen:
                 cp      4
                 jp      nc,stmt_error
                 push    hl                  ; A = mode -> switch the VDP mode
+    IF ROM_BASE < $4000
+    IF G7_RESIDENT
+                push    af
+                call    spr_mode_save       ; G7: keep the sprite size + the attribute x
+                pop     af                  ; bytes across CHGMOD (spec G7 §5)
                 call    CHGMOD
+                call    spr_mode_restore
+    ELSE
+                call    CHGMOD
+    ENDIF
+    ELSE
+                call    CHGMOD
+    ENDIF
                 pop     hl
 scr_extra:                                  ; evaluate + ignore any trailing args
                 call    skip_spaces
@@ -71,7 +89,14 @@ scr_extra:                                  ; evaluate + ignore any trailing arg
                 jp      z,exec_stmt
                 cp      ','                 ; an omitted argument (",,")
                 jr      z,scr_extra
-                call    eval                ; evaluate the argument, discard it
+                call    eval                ; DE = the argument
+    IF ROM_BASE < $4000
+    IF G7_RESIDENT
+                push    hl
+                call    spr_extra_arg       ; G7: the first one is the sprite size; the
+                pop     hl                  ; rest (click, baud, printer) stay ignored
+    ENDIF
+    ENDIF
                 jr      scr_extra
 
 ; --- ex_color: COLOR [<fg>][,<bg>][,<border>] ------------------------------

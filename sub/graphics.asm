@@ -62,6 +62,9 @@ graphics_tenant:
                 jr      z,gt_nostamp
                 cp      6
                 jr      z,gt_nostamp
+                cp      7                   ; G7: sprites carry a PER-SPRITE colour that
+                jr      nc,gt_nostamp       ; is measurably NOT ATRBYT (notes G1) -- ops
+                                            ; 7/8 must not stamp it
                 or      a
                 jr      z,gt_nostamp
                 push    af
@@ -81,6 +84,16 @@ gt_nostamp:
                 jp      z,gfx_paint_op      ; GFX_OP == 5 (PAINT -- G5)
                 dec     a
                 jp      z,gfx_draw_op       ; GFX_OP == 6 (DRAW -- G6)
+                dec     a
+                jp      z,gfx_spr_wpat      ; GFX_OP == 7 (SPRITE$(n)= pattern write -- G7)
+                dec     a
+                jp      z,gfx_spr_rpat      ; GFX_OP == 8 (SPRITE$(n) pattern read -- G7)
+                dec     a
+                jp      z,gfx_spr_attr      ; GFX_OP == 9 (PUT SPRITE attribute merge -- G7)
+                dec     a
+                jp      z,gfx_spr_xsave     ; GFX_OP == 10 (snapshot the attribute x bytes)
+                dec     a
+                jp      z,gfx_spr_xrest     ; GFX_OP == 11 (restore them after CHGMOD)
                 ; GFX_OP == 0 (or any other value) -> the G1 floor self-test
                 ; (falls through to graphics_selftest below).
 
@@ -2724,4 +2737,247 @@ gdrw_at_none:
                 or      a
                 jp      nz,gdrw_err5        ; a sign with no number -> ERR 5
                 or      a                   ; CF=0: there was no argument here
+                ret
+
+; ===========================================================================
+; G7 -- sprites (docs/spec-basic-graphics-g7.md). GFX_OP = 7 / 8 / 9.
+; ===========================================================================
+;   GFX_OP = 7  -> gfx_spr_wpat: write pattern entry GFX_SN from GFX_VBUF
+;          = 8  -> gfx_spr_rpat: read  pattern entry GFX_SN into GFX_VBUF
+;          = 9  -> gfx_spr_attr: merge the given PUT SPRITE arguments into the
+;                                attribute entry for plane GFX_SN
+;
+; THE SPLIT (spec §8): the resident half evaluates -- `eval`, the string heap and
+; the token cursor are page-1 resident -- and everything downstream of the values
+; is decided HERE, where there is sub-ROM room: the 8/32-byte entry size from
+; RG1SAV, the entry address and its `& $3FFF` wrap, the zero-pad, the domain
+; checks (which come back as GFX_RES = 5 for the resident to raise), the
+; early-clock rule for a negative x, the x4 pattern scaling in 16x16 mode, and
+; the merge that makes an omitted argument keep the byte already in the entry.
+; That is what keeps the space-blocked resident half small.
+;
+; VRAM access uses the di-guarded gfx_vram_wr / gfx_vram_rd (the G1 floor
+; primitives), so each byte's address latch is atomic against the ISR. At most 32
+; bytes move, so these never spin long enough for the EI-during-work question to
+; arise (spec §2); they run under the DI CALSLT entered with, like the G2 pixel
+; ops. Clean-room: own-design; table addresses + the VDP port contract are
+; published hardware documentation, every behavioural rule is our own black-box
+; measurement (scratchpad/g7_sprite_notes.md). No disassembly.
+
+; --- gvw_body / gvr_body: move B bytes between VRAM (HL) and RAM (DE) -------
+gvw_body:
+                ld      a,(de)
+                ld      c,a
+                call    gfx_vram_wr         ; di-guarded byte (HL/BC/DE preserved)
+                inc     hl
+                inc     de
+                djnz    gvw_body
+                ret
+gvr_body:
+                call    gfx_vram_rd         ; A = VRAM[HL], di-guarded
+                ld      (de),a
+                inc     hl
+                inc     de
+                djnz    gvr_body
+                ret
+
+; --- gfx_spr_addr: pattern entry GFX_SN -> HL = address, B = entry size -----
+; The address is deliberately NOT clamped: `SPRITE$(255)` in 16x16 mode wraps
+; inside the 16 KB of VRAM, which is what the reference measurably does (D-G7-5).
+; n outside 0..255 -> CF set, GFX_RES = 5.
+gfx_spr_addr:
+                ld      a,(RG1SAV)
+                and     $02                 ; bit 1 = 16x16 (bit 0 is magnification,
+                ld      b,8                 ; which does not change the entry size)
+                jr      z,gsa_size
+                ld      b,32
+gsa_size:
+                ld      de,(GFX_SN)
+                ld      a,d
+                or      a
+                jr      nz,gfx_spr_err5     ; n < 0 or n > 255 -> ERR 5
+                ld      hl,0
+                ld      a,b
+gsa_mul:
+                add     hl,de               ; HL = size * n
+                dec     a
+                jr      nz,gsa_mul
+                ld      de,GFX_SPAT_BASE
+                add     hl,de
+                ld      a,h
+                and     $3F                 ; AND $3FFF -- VRAM wraps, it does not clamp
+                ld      h,a
+                or      a                   ; CF = 0: address valid
+                ret
+gfx_spr_err5:
+                ld      a,5                 ; the resident raises this as ERR 5
+                ld      (GFX_RES),a
+                scf
+                ret
+
+; --- gfx_spr_wpat: GFX_OP = 7, SPRITE$(n) = <string> -----------------------
+; The resident supplies the first min(len,32) body bytes in GFX_VBUF and their
+; count in GFX_VLEN; the rest of the entry is zero-padded here (a short string
+; pads, a long one was already truncated by the copy).
+gfx_spr_wpat:
+                call    gfx_spr_addr
+                ret     c
+                push    hl
+                ld      hl,GFX_VBUF
+                ld      a,(GFX_VLEN)
+                ld      e,a
+                ld      d,0
+                add     hl,de               ; -> the first byte past the supplied text
+                ld      a,32
+                sub     e
+                jr      z,gsw_padded
+                jr      c,gsw_padded
+                ld      c,a
+gsw_pad:
+                ld      (hl),0
+                inc     hl
+                dec     c
+                jr      nz,gsw_pad
+gsw_padded:
+                pop     hl
+                ld      de,GFX_VBUF
+                jp      gvw_body            ; B = the entry size
+
+; --- gfx_spr_rpat: GFX_OP = 8, A$ = SPRITE$(n) -----------------------------
+; Always hands back EXACTLY the entry size (8 or 32) -- never the length that was
+; assigned. The resident allocates a temp string of GFX_VLEN and copies GFX_VBUF.
+gfx_spr_rpat:
+                call    gfx_spr_addr
+                ret     c
+                ld      a,b
+                ld      (GFX_VLEN),a
+                ld      de,GFX_VBUF
+                jp      gvr_body
+
+; --- gfx_spr_attr: GFX_OP = 9, PUT SPRITE ----------------------------------
+; A read-modify-write of the 4-byte entry [y][x][pattern][colour], because every
+; argument but the plane is optional and an omitted one keeps the byte that is
+; already there. Coordinates are stored MOD 256, with no clip and no error --
+; unlike every other graphics statement in the arc.
+gfx_spr_attr:
+                ld      hl,(GFX_SN)
+                ld      a,h
+                or      a
+                jr      nz,gfx_spr_err5
+                ld      a,l
+                cp      32
+                jr      nc,gfx_spr_err5     ; plane > 31 -> ERR 5
+                ld      h,0
+                add     hl,hl
+                add     hl,hl
+                ld      de,GFX_SATR_BASE
+                add     hl,de
+                push    hl                  ; [entry address]
+                ld      de,GFX_VBUF
+                ld      b,4
+                call    gvr_body            ; the merge base = the current entry
+                ld      a,(GFX_SFLAGS)
+                bit     0,a
+                jr      z,gsat_colour       ; coordinates omitted -> keep y AND x
+                ld      a,(GYPOS)
+                ld      (GFX_VBUF),a        ; y, mod 256
+                ld      a,(GFX_VBUF+3)
+                and     $7F                 ; x >= 0 clears the early-clock bit again
+                ld      c,a
+                ld      hl,(GXPOS)
+                ld      a,h
+                or      a
+                jp      p,gsat_xpos
+                ld      a,l                 ; negative x: attr_x = (x + 32) AND $FF ...
+                add     a,32
+                ld      l,a
+                ld      a,c
+                or      $80                 ; ... and the early-clock bit goes on
+                ld      c,a
+gsat_xpos:
+                ld      a,l
+                ld      (GFX_VBUF+1),a
+                ld      a,c
+                ld      (GFX_VBUF+3),a
+gsat_colour:
+                ld      a,(GFX_SFLAGS)
+                bit     1,a
+                jr      z,gsat_pattern
+                ld      hl,(GFX_SC)
+                ld      a,h
+                or      a
+                jr      nz,gsat_err5
+                ld      a,l
+                cp      16
+                jr      nc,gsat_err5        ; colour > 15 -> ERR 5
+                ld      c,a
+                ld      a,(GFX_VBUF+3)
+                and     $80                 ; keep the early-clock bit just computed
+                or      c
+                ld      (GFX_VBUF+3),a
+gsat_pattern:
+                ld      a,(GFX_SFLAGS)
+                bit     2,a
+                jr      z,gsat_store
+                ld      hl,(GFX_SPATN)
+                ld      a,h
+                or      a
+                jr      nz,gsat_err5        ; negative / > 255 -> ERR 5
+                ld      a,(RG1SAV)
+                and     $02
+                ld      a,l
+                jr      z,gsat_pat_ok       ; 8x8: stored as-is, domain 0..255
+                cp      64
+                jr      nc,gsat_err5        ; 16x16: domain 0..63 ...
+                add     a,a                 ; ... and the stored byte is 4n
+                add     a,a
+gsat_pat_ok:
+                ld      (GFX_VBUF+2),a
+gsat_store:
+                pop     hl                  ; [entry address]
+                ld      de,GFX_VBUF
+                ld      b,4
+                jp      gvw_body
+gsat_err5:
+                pop     hl                  ; drop the guarded entry address
+                jp      gfx_spr_err5
+
+; --- gfx_spr_xsave / gfx_spr_xrest: GFX_OP = 10 / 11 -----------------------
+; A mode set initialises the 32 attribute entries to y=209, pattern=plane and
+; colour=FORCLR -- and measurably LEAVES THE X BYTE ALONE, so a stale x survives
+; `SCREEN 2`. Our runtime's mode set is C-BIOS CHGMOD, which was measured doing
+; the same init EXCEPT that it also zeroes x (scratchpad/g7_chgmod_init.py). The
+; resident therefore brackets its CHGMOD with these two: snapshot the 32 x bytes
+; into GFX_VBUF, then put them back. Everything else about the init already
+; matches, so nothing is re-implemented here that the BIOS already gets right.
+gfx_spr_xsave:
+                ld      hl,GFX_SATR_BASE+1  ; the x byte of plane 0
+                ld      de,GFX_VBUF
+                ld      b,32
+gsxs_lp:
+                call    gfx_vram_rd
+                ld      (de),a
+                inc     de
+                jr      gsxs_step
+gfx_spr_xrest:
+                ld      hl,GFX_SATR_BASE+1
+                ld      de,GFX_VBUF
+                ld      b,32
+gsxr_lp:
+                ld      a,(de)
+                ld      c,a
+                call    gfx_vram_wr
+                inc     de
+                inc     hl                  ; 4 bytes per attribute entry
+                inc     hl
+                inc     hl
+                inc     hl
+                djnz    gsxr_lp
+                ret
+gsxs_step:
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl
+                djnz    gsxs_lp
                 ret

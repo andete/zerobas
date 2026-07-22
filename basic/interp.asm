@@ -298,6 +298,10 @@ exec_stmt:
                 cp      DRAW_TOKEN          ; DRAW <string>  (graphics G6)
                 jp      z,ex_draw
     ENDIF
+    IF G7_RESIDENT
+                cp      SPRITE_TOKEN        ; SPRITE$(n)=s$ / SPRITE ON|OFF|STOP  (G7)
+                jp      z,ex_sprite
+    ENDIF
     ENDIF
                 call    is_letter           ; bare letter -> assignment
                 jr      c,ex_let
