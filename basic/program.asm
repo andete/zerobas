@@ -624,6 +624,14 @@ ex_for:
                 inc     hl                  ; consume the letter
                 call    skip_spaces
                 ld      a,(hl)
+    IF ROM_BASE < $4000
+                cp      '$'                 ; `FOR A$=…` is ERR 13, not ERR 2 (measured
+                jp      z,type_mismatch_error ; VG-8020) -- the ONE lvalue shape in this
+                                            ; statement that is a type error rather than
+                                            ; a syntax error. Repack-only: the lean cart
+                                            ; has no error-code machinery (and stays
+                                            ; byte-identical).
+    ENDIF
                 cp      EQ_TOKEN            ; '=' -> $EF
                 jp      nz,stmt_error
                 inc     hl
@@ -685,11 +693,21 @@ ex_next:
                 call    skip_spaces
                 ld      a,(hl)
                 call    is_letter
-                jr      nc,nx_top           ; bare NEXT -> the top frame
+                jr      nc,nx_notletter     ; bare NEXT (or junk -> ERR 2 below)
                 call    upcase
                 ld      c,a                 ; C = named loop variable
                 inc     hl                  ; consume the letter
                 jr      nx_find
+nx_notletter:
+    IF ROM_BASE < $4000
+                ; `NEXT 1` is ERR 2 on the reference, not "next without for" --
+                ; only a genuine BARE next (statement terminator) takes the top
+                ; frame. Measured with the rest of the trap-class family.
+                or      a
+                jr      z,nx_top
+                cp      COLON
+                jp      nz,stmt_error
+    ENDIF
 nx_top:
                 ld      c,0                 ; 0 = match the top frame (no letter)
 nx_find:

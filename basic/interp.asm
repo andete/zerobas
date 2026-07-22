@@ -511,16 +511,25 @@ fre_abort_low   equ     print_string
     ENDIF
 
 ; --- stmt_error: unknown statement — report and return to the prompt -------
+; A statement-level syntax error is TRAPPABLE (repack build). Measured on the
+; VG-8020: every malformed statement -- `FOR 1=0 TO 1`, `FOR (I)=…`, bare `FOR`,
+; `SWAP 1,A`, `FOO 1,A`, `ZORK`, `A 1`, a dangling `GOTO` -- raises ERR 2 into an
+; armed `ON ERROR GOTO` handler rather than aborting the RUN. zerobas used to
+; abort every one of them, so an ON ERROR program could never see a syntax error
+; (the same trappable-vs-abort seam the graphics arc hit; docs/spec-basic-
+; graphics-g8.md §7 G8-trapclass logged it). Routing through raise_error fixes
+; the WHOLE class in one place: err_msgtab[2] is this very string, so the
+; untrapped output is unchanged, and ERRMARK/PRDEST keep their old meaning.
 stmt_error:
                 xor     a                   ; an error mid-PRINT# must reach the
                 ld      (PRDEST),a          ; screen, not the half-written file
                 ld      a,$DD               ; distinct from BLOAD's $EE tape error
                 ld      (ERRMARK),a
-                ld      hl,err_syntax
     IF ROM_BASE < $4000
-                jp      fre_abort_low       ; repack: abort the RUN (D-1) + fresh-line;
-                                            ; fre_abort_low re-zeroes PRDEST (harmless)
+                ld      a,2                 ; -> trap if armed, else the identical
+                jp      raise_error         ; message + abort (fre_abort_low tail)
     ELSE
+                ld      hl,err_syntax
                 call    print_string        ; lean: unchanged (byte-identical)
                 ret
     ENDIF

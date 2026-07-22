@@ -129,6 +129,61 @@ NUM_CASES = [
     Case("error_n_regression", ["ERROR 5"]),  # zerobas-only text check, below
 ]
 
+# --- Trap-CLASS cases: a statement-level syntax error must TRAP, not abort -----
+# Measured on the VG-8020 (2026-07-22, the G8-trapclass follow-up): every
+# malformed statement raises a TRAPPABLE ERR 2 into an armed handler -- a bad FOR
+# lvalue, a bad NEXT, an unknown statement, a dangling GOTO -- with exactly one
+# exception, `FOR A$=`, which is ERR 13. zerobas used to route all of them
+# through stmt_error, which PRINTS AND ABORTS, so an ON ERROR program could never
+# see them; the abort also made these cases invisible to any probe that reads a
+# printed tag, which is how the gap survived this long.
+TRAPCLASS_CASES = [
+    Case("tc_for_num",   ["10 ON ERROR GOTO 100", "20 FOR 1=0 TO 1:NEXT",
+                          '100 PRINT"R<";ERR;">"', "RUN"]),          # 2
+    Case("tc_for_str",   ["10 ON ERROR GOTO 100", "20 FOR A$=0 TO 1:NEXT",
+                          '100 PRINT"R<";ERR;">"', "RUN"]),          # 13
+    Case("tc_for_paren", ["10 ON ERROR GOTO 100", "20 FOR (I)=0 TO 1:NEXT",
+                          '100 PRINT"R<";ERR;">"', "RUN"]),          # 2
+    Case("tc_for_kw",    ["10 ON ERROR GOTO 100", "20 FOR PRINT=0 TO 1:NEXT",
+                          '100 PRINT"R<";ERR;">"', "RUN"]),          # 2
+    Case("tc_for_bare",  ["10 ON ERROR GOTO 100", "20 FOR",
+                          '100 PRINT"R<";ERR;">"', "RUN"]),          # 2
+    Case("tc_for_noeq",  ["10 ON ERROR GOTO 100", "20 FOR I 0 TO 1",
+                          '100 PRINT"R<";ERR;">"', "RUN"]),          # 2
+    Case("tc_for_noto",  ["10 ON ERROR GOTO 100", "20 FOR I=0 1",
+                          '100 PRINT"R<";ERR;">"', "RUN"]),          # 2
+    Case("tc_next_junk", ["10 ON ERROR GOTO 100", "20 NEXT 1",
+                          '100 PRINT"R<";ERR;">"', "RUN"]),          # 2 (NOT 1)
+    Case("tc_next_nofor",["10 ON ERROR GOTO 100", "20 NEXT",
+                          '100 PRINT"R<";ERR;">"', "RUN"]),          # 1 -- a BARE
+                                                                     # next still is
+                                                                     # "next without for"
+    Case("tc_swap",      ["10 ON ERROR GOTO 100", "20 SWAP 1,A",
+                          '100 PRINT"R<";ERR;">"', "RUN"]),          # 2
+    Case("tc_unknown",   ["10 ON ERROR GOTO 100", "20 FOO 1,A",
+                          '100 PRINT"R<";ERR;">"', "RUN"]),          # 2
+    Case("tc_bareword",  ["10 ON ERROR GOTO 100", "20 ZORK",
+                          '100 PRINT"R<";ERR;">"', "RUN"]),          # 2
+    Case("tc_juxt",      ["10 ON ERROR GOTO 100", "20 A 1",
+                          '100 PRINT"R<";ERR;">"', "RUN"]),          # 2
+    Case("tc_dangling",  ["10 ON ERROR GOTO 100", "20 PRINT:GOTO",
+                          '100 PRINT"R<";ERR;">"', "RUN"]),          # 2
+    # ...and the loop that is FINE must stay fine (a too-eager lvalue check would
+    # break every FOR in the corpus, and this is the case that would catch it).
+    Case("tc_for_ok",    ["10 ON ERROR GOTO 100", "20 FOR I=0 TO 1:NEXT",
+                          '30 PRINT"R<";42;">":END',
+                          '100 PRINT"R<";ERR;">"', "RUN"]),          # 42 -- END, or
+                                                                     # line 30 falls
+                                                                     # THROUGH into the
+                                                                     # handler and the
+                                                                     # last marker is a
+                                                                     # stale ERR
+    Case("tc_resume_next", ["10 ON ERROR GOTO 100", "20 FOO 1,A", "30 A=5",
+                            '40 PRINT"R<";A;">"',
+                            "100 RESUME NEXT", "RUN"]),              # 5 -- the trap
+                                                                     # is resumable
+]
+
 # --- Structural / message-text cases (screen-scrape; zerobas + differential) ---
 NESTED_ABORT = Case("nested_forced_abort", [
     "10 ON ERROR GOTO 100", "20 B=SQR(-1)",
@@ -198,8 +253,15 @@ def main() -> int:
         # -> " 5 , 30 " (read_R strips only the outer edges).
         "trap_erl": "5 , 30", "resume_bare": "2", "resume_zero": "2",
         "resume_next_sameline": "9", "resume_next_eol": "99",
+        # trap-class (a statement-level syntax error TRAPS, ERR 2 -- ERR 13 for
+        # the one string-lvalue shape, ERR 1 only for a genuine bare NEXT)
+        "tc_for_num": "2", "tc_for_str": "13", "tc_for_paren": "2",
+        "tc_for_kw": "2", "tc_for_bare": "2", "tc_for_noeq": "2",
+        "tc_for_noto": "2", "tc_next_junk": "2", "tc_next_nofor": "1",
+        "tc_swap": "2", "tc_unknown": "2", "tc_bareword": "2", "tc_juxt": "2",
+        "tc_dangling": "2", "tc_for_ok": "42", "tc_resume_next": "5",
     }
-    ncases = [c for c in sel(NUM_CASES) if c.label in want_num]
+    ncases = [c for c in sel(NUM_CASES + TRAPCLASS_CASES) if c.label in want_num]
     if ncases:
         specs = [("direct", c.lines) for c in ncases]
         ref = omsx_repl.run_cases(args.machine, specs, batch=batch, reset=("NEW", "CLS"))
