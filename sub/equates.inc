@@ -141,6 +141,14 @@ SUB_PING_P1             equ     $C1     ; written by the page-1 ping
 ; primitives + the interrupt-under-draw self-test), no statement/token yet.
 SUBROM_IDX_GRAPHICS     equ     8
 
+; --- G7 eviction (page-0 tenants; docs/spec-eviction-g7-space.md) ------------
+; index 9 = deftype_tenant (the G6 carve; full comment in basic/sysvars.inc).
+; index 10 = readdata_tenant (sub/readdata.asm): the READ/DATA value engine
+; (read_one_value + data_seek + data_parse_int), carved out of the resident to
+; fund G7's sprite statements. Page-0 CLEAN: tokenised program RAM + ASCII
+; parsing only -- no eval, no float pack, no BIOS.
+SUBROM_IDX_READVAL      equ     10
+
 ; GFX_UNGUARDED: the G1 "teeth check" toggle (spec §4). Default 0 = the DI guard
 ; around the 2-byte VDP address latch is present (shipped). Building the sub-ROM
 ; with `pasmo --equ GFX_UNGUARDED=1` strips the guard, so the floor gate can

@@ -42,14 +42,14 @@
 ; closure.py's --page1 walk (a page-1 tenant's callee must be sub-local page
 ; 1 or < $4000) confirms this is closure-clean.
 ;
-; skip_to_eol + tok_skip (+ tsk1/tsk2/tsk4/tsk8/tsk_str/tsk_rem/tsk_data) are
+; skip_to_eol + le_tok_skip (+ le_tsk1/le_tsk2/le_tsk4/le_tsk8/le_tsk_str/le_tsk_rem/le_tsk_data) are
 ; DUPLICATED sub-locally, verbatim from basic/interp.asm: skip_to_eol itself
-; calls tok_skip (a token-aware skip, needed so a stored line's own operand
+; calls le_tok_skip (a token-aware skip, needed so a stored line's own operand
 ; bytes -- e.g. a float literal's $00 mantissa byte -- are never mistaken for
-; the line/statement terminator), and tok_skip is a pure leaf (reads only the
+; the line/statement terminator), and le_tok_skip is a pure leaf (reads only the
 ; tokenised program-text bytes at HL, calls nothing else) -- safe to
 ; duplicate, no straddle. (Bigger than the spec's own "~10 B" estimate, which
-; only accounted for skip_to_eol itself and missed its tok_skip dependency;
+; only accounted for skip_to_eol itself and missed its le_tok_skip dependency;
 ; flagged here rather than silently eating the difference out of the G4
 ; budget.)
 ;
@@ -285,90 +285,90 @@ rlb_more:
                 ex      de,hl                   ; HL = next-line address
                 jr      rlb_lp
 
-; --- tok_skip: advance HL past one token, including its operand bytes ------
-; Sub-local duplicate of basic/interp.asm tok_skip (own header: skip_to_eol's
+; --- le_tok_skip: advance HL past one token, including its operand bytes ------
+; Sub-local duplicate of basic/interp.asm le_tok_skip (own header: skip_to_eol's
 ; own dependency, a pure leaf, safe to duplicate). Verbatim (ROM_BASE is
 ; $2812 here too, so the repack-only SNG/DBL float-literal cases are
 ; included, matching this sub-ROM's repack-only existence).
-tok_skip:
+le_tok_skip:
                 ld      a,(hl)
                 inc     hl
                 cp      HEX_TOKEN               ; $0C ,word
-                jr      z,tsk2
+                jr      z,le_tsk2
                 cp      INT2_TOKEN              ; $1C ,word
-                jr      z,tsk2
+                jr      z,le_tsk2
                 cp      LINENO_TOKEN            ; $0E ,word
-                jr      z,tsk2
+                jr      z,le_tsk2
                 cp      LINEADDR_TOKEN          ; $0D ,word
-                jr      z,tsk2
+                jr      z,le_tsk2
                 cp      OCT_TOKEN               ; $0B ,word
-                jr      z,tsk2
+                jr      z,le_tsk2
                 cp      INT1_TOKEN              ; $0F ,byte
-                jr      z,tsk1
+                jr      z,le_tsk1
                 cp      PEEK_PREFIX             ; $FF ,function-token byte
-                jr      z,tsk1
+                jr      z,le_tsk1
                 cp      SNG_TOKEN               ; $1D ,4 float value bytes. A mantissa
-                jr      z,tsk4                  ; byte can be $00 (e.g. .5 -> 1D 40 50 00
+                jr      z,le_tsk4                  ; byte can be $00 (e.g. .5 -> 1D 40 50 00
                 cp      DBL_TOKEN               ; 00), so without this stride skip_to_eol
-                jr      z,tsk8                  ; mistakes it for the line/stmt terminator
+                jr      z,le_tsk8                  ; mistakes it for the line/stmt terminator
                                                 ; -- a stored `10 A=1.5` would never RUN.
                 cp      '"'                     ; string literal
-                jr      z,tsk_str
+                jr      z,le_tsk_str
                 cp      REM_TOKEN               ; REM -> rest of line
-                jr      z,tsk_rem
+                jr      z,le_tsk_rem
                 cp      DATA_TOKEN              ; DATA -> verbatim body to ':' / EOL
-                jr      z,tsk_data
+                jr      z,le_tsk_data
                 ret                             ; 0-operand token / plain byte
-tsk1:
+le_tsk1:
                 inc     hl
                 ret
-tsk2:
-                inc     hl
-                inc     hl
-                ret
-tsk8:                                           ; DBL_TOKEN: 8 value bytes (4 here + 4 in tsk4)
-                inc     hl
-                inc     hl
-                inc     hl
-                inc     hl
-tsk4:                                           ; SNG_TOKEN: 4 value bytes
-                inc     hl
-                inc     hl
+le_tsk2:
                 inc     hl
                 inc     hl
                 ret
-tsk_str:
+le_tsk8:                                           ; DBL_TOKEN: 8 value bytes (4 here + 4 in le_tsk4)
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl
+le_tsk4:                                           ; SNG_TOKEN: 4 value bytes
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl
+                ret
+le_tsk_str:
                 ld      a,(hl)
                 or      a
                 ret     z
                 inc     hl
                 cp      '"'
-                jr      nz,tsk_str
+                jr      nz,le_tsk_str
                 ret
-tsk_rem:
+le_tsk_rem:
                 ld      a,(hl)
                 or      a
                 ret     z
                 inc     hl
-                jr      tsk_rem
-tsk_data:                                       ; DATA body: verbatim ASCII to ':' or EOL,
+                jr      le_tsk_rem
+le_tsk_data:                                       ; DATA body: verbatim ASCII to ':' or EOL,
                 ld      a,(hl)                  ; left un-consumed (the ':' / 00 is stepped
                 or      a                       ; by the caller's outer loop). Skipping the
                 ret     z                       ; body as a unit means a stray control byte
                 cp      COLON                   ; in it can never be misread as an operand-
                 ret     z                       ; bearing token -- same end position as the
                 inc     hl                      ; old byte-by-byte walk on valid DATA.
-                jr      tsk_data
+                jr      le_tsk_data
 
 ; --- skip_to_eol: HL at a token body -> HL just past the line's 00 ---------
-; terminator. Token-aware (steps whole tokens via tok_skip above), so an
+; terminator. Token-aware (steps whole tokens via le_tok_skip above), so an
 ; operand byte equal to 00 is not mistaken for the terminator. Sub-local
 ; duplicate of basic/interp.asm skip_to_eol (verbatim).
 skip_to_eol:
                 ld      a,(hl)
                 or      a
                 jr      z,ste_done
-                call    tok_skip
+                call    le_tok_skip
                 jr      skip_to_eol
 ste_done:
                 inc     hl                      ; advance past the 00 terminator

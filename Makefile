@@ -46,6 +46,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/randio-body.inc basic/fld-fill-body.inc \
          basic/lineedit-body.inc \
          basic/casmatch-body.inc basic/cal-refill-body.inc \
+         basic/readdata-body.inc basic/tokskip-body.inc \
          basic/sysvars.inc
 ROM   := $(BUILD)/basic.rom
 
@@ -138,6 +139,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub
              sub/dirverb.asm sub/randio.asm basic/randio-body.inc basic/fld-fill-body.inc \
              sub/lineedit.asm basic/lineedit-body.inc \
              sub/casmatch.asm basic/casmatch-body.inc basic/cal-refill-body.inc \
+             sub/readdata.asm basic/readdata-body.inc basic/tokskip-body.inc \
              sub/playparse.asm sub/graphics.asm \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
              basic/tokenise.inc basic/detok.inc \

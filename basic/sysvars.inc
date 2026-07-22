@@ -1094,6 +1094,14 @@ GFX_SFLAGS      equ     GFX_SARGN + 1   ; $E41F: which arguments were GIVEN --
 ; needs these addresses.
 DEFT_PTR        equ     GFX_DSP + 2     ; $E54F: token cursor in AND out (2)
 DEFT_STATUS     equ     DISKOP_STATUS   ; tenant -> main: 0 ok / 1 = stmt_error
+; --- READ/DATA tenant ABI (SUBROM_IDX_READVAL, docs/spec-eviction-g7-space.md) -
+; read_one_value's (CF, DE) contract cannot ride back through subrom_call, so the
+; tenant lands it here and basic/program.asm's stub rebuilds it. Same window and
+; the same one-statement-at-a-time aliasing argument as DEFT_PTR above (a READ and
+; a graphics statement are never in flight together), and clear of the PERSISTENT
+; GFX_DSCALE/GFX_DANGLE pair below.
+RDV_VAL         equ     DEFT_PTR + 2    ; $E551: the value read (int16 LE) (2)
+RDV_ST          equ     RDV_VAL + 2     ; $E553: 1 = value read, 0 = out of data (1)
 ;
 GFX_DSCALE      equ     GFX_PSTK_END    ; $E55A: persistent scale, quarter units (1)
 GFX_DANGLE      equ     GFX_DSCALE + 1  ; $E55B: persistent angle 0..3 (1)
@@ -2461,6 +2469,12 @@ SUBROM_IDX_LINEEDIT  equ 15     ; lineedit_tenant (sub/lineedit.asm): the number
                                 ; said "index 14" -- stale by the time of impl
                                 ; (SUBROM_IDX_PLAY_PARSE claimed 14 first); 15 is the
                                 ; actual next-free index.
+SUBROM_IDX_READVAL   equ 10     ; readdata_tenant (sub/readdata.asm): the READ/DATA
+                                ; value engine, carved out of the resident to fund
+                                ; graphics G7 (docs/spec-eviction-g7-space.md). Page-0
+                                ; (index 10 in the page-0 table -- the page-1 table's
+                                ; own index 10 is FORMAT; the two spaces are separate).
+                                ; Result rides back in RDV_ST/RDV_VAL.
 SUBROM_IDX_DEFTYPE   equ 9      ; deftype_tenant (sub/deftype.asm): DEFINT/DEFSNG/
                                 ; DEFDBL/DEFSTR, carved out of basic/usr.asm to fund
                                 ; G6 DRAW's resident half (docs/spec-eviction-g6-

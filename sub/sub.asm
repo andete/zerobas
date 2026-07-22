@@ -106,6 +106,11 @@ sub_p0_table:
                                                 ;   DEFSNG/DEFDBL/DEFSTR (sub/deftype.asm),
                                                 ;   carved out of the resident to fund G6
                                                 ;   DRAW. docs/spec-eviction-g6-space.md.
+                jp      readdata_tenant         ; index 10 (SUBROM_IDX_READVAL): the READ/DATA
+                                                ;   value engine (sub/readdata.asm) -- carved
+                                                ;   out to fund G7 sprites. Result rides back
+                                                ;   in RDV_ST/RDV_VAL (CF cannot).
+                                                ;   docs/spec-eviction-g7-space.md.
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $0010 mapped slot 3-2 into PAGE 0 and that page-3 RAM is
@@ -210,6 +215,11 @@ sis_spin:
 ; the VDP ports + page-3 RAM result cells, calls nothing else in this file.
                 include "graphics.asm"
                 include "deftype.asm"
+; --- READ/DATA value engine (G7 eviction, docs/spec-eviction-g7-space.md) ---
+; The largest of the three carves that fund G7's resident half. Shares its body
+; verbatim with the lean cart (basic/readdata-body.inc) and brings page 0 its own
+; tok_skip copy (basic/tokskip-body.inc).
+                include "readdata.asm"
 
 ; --- sub-local is_letter / is_ident_cont (byte-identical own-design clones) --
 ; Resident copies stay in the main ROM (basic/interp.asm is_letter, basic/vars.asm
