@@ -1,6 +1,7 @@
 # Spec — graphics Slice G7: sprites (`SPRITE$`, `PUT SPRITE`, `SCREEN`'s size arg)
 
-**Status: DRAFT — SIGN-OFF NEEDED (2026-07-22).** Slice G7 of the graphics arc
+**Status: SIGNED OFF (2026-07-22).** All of §9 approved as recommended, and
+D-G7-4 settled on (a): `SPRITE ON/OFF/STOP` parse as accepted no-ops in G7. Slice G7 of the graphics arc
 ([spec-basic-graphics.md](spec-basic-graphics.md)) and its **last slice**: the
 drawing statements G1–G6 have landed, and sprites are the remaining MSX1
 graphics surface (`SCREEN 3` stays deferred, graphics `GET`/`PUT` do not exist
@@ -30,9 +31,10 @@ disassembly.
 
 **Out (deferred, by charter, to the interrupt-trap TODO item):** `SPRITE ON` /
 `SPRITE OFF` / `SPRITE STOP` and `ON SPRITE GOSUB` — the collision-trap surface.
-G7 owns only the `SPRITE` **keyword** (which those forms share); whether the
-three statement forms parse as accepted no-ops in G7 or wait for the trap slice
-is decision **D-G7-4**.
+G7 owns the `SPRITE` **keyword** (which those forms share) and — per the
+signed-off **D-G7-4** — parses all three statement forms as **accepted no-ops**,
+so a program that arms a collision trap it never fires still runs. The trap
+semantics themselves belong to the interrupt-trap slice.
 
 ## 2. Placement — DECISION D-G7-1
 
@@ -187,7 +189,7 @@ The resident half does: `eval` for every argument, the int16/`ERR 6` domain, the
 EC computation, the `GRPAC`/`GXPOS` work-area writes, and the string
 descriptor/temp-pool handling for `SPRITE$` (both directions).
 
-## 9. Decisions — SIGN-OFF NEEDED
+## 9. Decisions — SIGNED OFF 2026-07-22
 
 - **D-G7-1 placement.** Join the graphics tenant as `GFX_OP = 7/8`
   (**recommended**, §2) vs. a resident BIOS-`WRTVRM` implementation (cheaper VRAM
@@ -199,10 +201,9 @@ descriptor/temp-pool handling for `SPRITE$` (both directions).
 - **D-G7-3 attribute init on mode set.** Measure C-BIOS `CHGMOD` first (§5); if
   it does not match, do the 32-entry init ourselves in `ex_screen`
   (`y=209`, `pattern=plane`, `colour=FORCLR`, **x untouched**). Faithful, ~25 B.
-- **D-G7-4 `SPRITE ON/OFF/STOP`.** (a) parse as accepted no-ops in G7 so the
-  keyword surface is complete and programs that arm a trap they never use still
-  run (**recommended**, ~10–15 B), or (b) leave them to the interrupt-trap slice
-  and let them raise a syntax error until then.
+- **D-G7-4 `SPRITE ON/OFF/STOP` — settled on (a):** parse as accepted no-ops in
+  G7 (~10–15 B) so the keyword surface is complete and programs that arm a trap
+  they never fire still run. Trap semantics stay with the interrupt-trap slice.
 - **D-G7-5 the `n`-wrap quirk.** `SPRITE$(255)` in 16×16 mode wraps within VRAM
   (`& $3FFF`). Reproduce the wrap (**recommended** — it is one `AND`) rather than
   raising an error, i.e. match the reference including its overrun.
