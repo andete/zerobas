@@ -668,10 +668,22 @@ DRAW_BEHAV = [
 
 
 def _outcome(raw: str | None) -> str | None:
-    """"ZK" (accepted) or "ZE <n>" (raised), whichever the case produced."""
+    """"ZK" (accepted), "ZE <n>" (raised), or "ZABORT" (the RUN died).
+
+    The abort check is NOT optional. Every case's reporting line starts with
+    SCREEN0, which CLEARS the screen -- so a case that completes leaves only its
+    own tag. A case that ABORTS never reaches that line, leaving the program
+    echo up, and the echoed source of `…PRINT"ZK"…` matches the tag regex just
+    fine. Without this guard an aborting case reads as a clean "ZK", which is
+    exactly how a whole class of non-trappable syntax errors was first reported
+    as "silently accepted" (fixed 2026-07-22; see error-trap-acceptance's
+    trap-class cases)."""
     if not raw:
         return None
     txt = " ".join("".join(raw).split())
+    if re.search(r"(?i)\berror\b", txt):
+        m = re.search(r"(?i)[a-z ]*error[a-z ]*(?: in \d+)?", txt)
+        return "ZABORT " + re.sub(r"\s+", " ", m.group(0)).strip() if m else "ZABORT"
     m = re.search(r"Z[KE][ \d]*", txt)
     return re.sub(r"\s+", " ", m.group(0)).strip() if m else None
 
@@ -1089,12 +1101,12 @@ G8_BEHAV = [
         ("g_str_val",   'SCREEN2:VDP(0)="A"'),
         ("g_str_idx",   'SCREEN2:VDP("A")=1'),
         ("g_str_base",  'SCREEN2:BASE(0)="A"'),
-        # `FOR VDP(0)=0 TO 1` and `SWAP VDP(0),A` are ERR 2 on the reference and
-        # are silently ACCEPTED here -- but that is NOT a G8 property: `FOR 1=0 TO
-        # 1` and `SWAP 1,A` behave the same way, so it is a general FOR/SWAP
-        # lvalue-validation gap (spec §7, G8-trapclass). Asserting it in this
-        # phase would only lock in the wrong behaviour, so it is documented, not
-        # gated.
+        # These two were the G8-trapclass residual: ERR 2 on the reference,
+        # a non-trappable RUN abort here. Fixed 2026-07-22 (stmt_error now
+        # raises a trappable ERR 2 for the whole malformed-statement class, see
+        # error-trap-acceptance), so they are gated again.
+        ("g_for_lhs",   'SCREEN2:FOR VDP(0)=0 TO 1:NEXT'),
+        ("g_swap_lhs",  'SCREEN2:SWAP VDP(0),A'),
         ("g_mid_stmt",  'SCREEN2:A=1:VDP(0)=2:B=3:A=VDP(0)'),
         ("g_if_stmt",   'SCREEN2:IF 1 THEN VDP(0)=2:A=VDP(0)'),
     ]

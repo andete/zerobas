@@ -70,7 +70,7 @@ assignment, alongside the existing variable-assignment path.
 | **`LET VDP(0)=2`**, `LET BASE(0)=…` | **ERR 2** — the `LET` form is rejected |
 | `VDP(0)` as a statement, `VDP=1`, `BASE=1`, `VDP 0=1`, `A=VDP`, `A=VDP 0` | ERR 2 |
 | `VDP(0,1)=2`, `VDP(0)=1,2` | ERR 2 |
-| `FOR VDP(0)=0 TO 1`, `SWAP VDP(0),A` | ERR 2 (**not reproduced** -- `G8-trapclass`, §7) |
+| `FOR VDP(0)=0 TO 1`, `SWAP VDP(0),A` | ERR 2 (reproduced since the trap-class fix, §7) |
 | `VDP(0)=` | **ERR 24** (Missing operand) |
 | `VDP(0)="A"`, `VDP("A")=1`, `BASE(0)="A"` | ERR 13 |
 
@@ -274,11 +274,17 @@ host harness cannot model -- Q1/Q3 are where the teeth are.
   (there all seven are written from the identical table, so they DO match
   exactly) and the table alone elsewhere. (An earlier draft of this spec claimed
   SCREEN 2 agreed exactly; it does not -- `R7` differs there too.)
-* **`G8-trapclass`** -- `FOR VDP(0)=0 TO 1` and `SWAP VDP(0),A` are a trappable
-  ERR 2 on the reference and are silently ACCEPTED here. NOT a G8 property:
-  `FOR 1=0 TO 1` and `SWAP 1,A` behave the same way, so it is a general
-  FOR/SWAP lvalue-validation gap, and gating it would only lock in the wrong
-  behaviour.
+* ~~**`G8-trapclass`**~~ -- **FIXED 2026-07-22, and it was bigger than it
+  looked.** `FOR VDP(0)=0 TO 1` and `SWAP VDP(0),A` are a trappable ERR 2 on the
+  reference; the first reading of this residual said zerobas "silently accepted"
+  them, which was a probe artifact (an aborting case never clears the screen, so
+  the tag regex matched the ECHOED `PRINT"ZK"` source line -- `_outcome` now
+  detects that, see the probe). What zerobas really did was raise a
+  NON-TRAPPABLE `stmt_error`, and not just here: EVERY malformed statement did.
+  `stmt_error` now routes through `raise_error` with code 2, so the whole class
+  traps as the reference does, with `FOR A$=` (ERR 13) and `NEXT 1` (ERR 2, was
+  ERR 1) handled as their own measured exceptions. Gated by 16 trap-class cases
+  in `error-trap-acceptance`; the two cases above are back in Phase Q2.
 
 **Bug the differential caught** (the arc's recurring lesson, again): the first
 cut parked the function's index limit in `C` across the argument evaluation.

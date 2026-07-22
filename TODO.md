@@ -1088,10 +1088,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       work-area writes folded into the tenant (~144 B), no outside eviction.
       **Still open:** `SCREEN 3` (multicolor, deferred) and the sprite COLLISION
       trap (`ON SPRITE GOSUB`), which belongs to the interrupt-trap item.
-      **Residual found in passing (NOT graphics):** `FOR 1=0 TO 1` and
-      `SWAP 1,A` are silently accepted where the reference raises a trappable
-      ERR 2 — a general FOR/SWAP lvalue-validation gap, logged under
-      Editor/program management below.
+      **Residual found in passing (NOT graphics), since FIXED:** malformed
+      statements raised a non-trappable abort instead of the reference's
+      trappable ERR 2 — see the trap-class entry under Error handling below.
 - [x] **Sound** (AY-3-8910) — `SOUND`✅, `PLAY` (MML)✅, `BEEP`✅ — **ARC CONCLUDED
       2026-07-21** (all repack-only, page-1 resident, direct-PSG, VG-8020-byte-faithful).
       `SOUND`/`PLAY`+live servicer landed earlier that day (commits baf…→f6bfe76); the
@@ -1116,6 +1115,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       [`docs/spec-basic-error-handling.md`](docs/spec-basic-error-handling.md) +
       the S2 packets. Known boundary: `ERROR 32768` → zerobas ERR 5 vs ref ERR 6
       (the D-F2-2 int-arg seam, documented).
+      **Follow-up landed 2026-07-22 — statement syntax errors are TRAPPABLE.**
+      `stmt_error` printed and aborted the RUN, so an `ON ERROR GOTO` program
+      never saw a malformed statement; it now raises ERR 2 through
+      `raise_error`, matching the VG-8020 for the whole class (bad `FOR` lvalue,
+      bad `NEXT`, `SWAP`, unknown statement, bare word, juxtaposition, dangling
+      `GOTO`), with the measured exceptions `FOR A$=` → ERR 13 and `NEXT 1` →
+      ERR 2 (was ERR 1). 16 gated cases in `error-trap-acceptance`. The gap had
+      been mis-reported as "silently accepted" — a probe artifact, since an
+      aborting case never clears the screen and the tag regex then matched the
+      echoed source line; `_outcome` in the graphics probe now detects aborts.
 - [ ] **Interrupt traps** — `ON INTERVAL/KEY/SPRITE/STOP GOSUB`
 - [ ] **Screen-editor REPL** — real MSX BASIC does not use a sequential prompt
       loop; Enter reads the *current cursor line from VRAM* (not a dedicated
@@ -1125,10 +1134,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] **Editor / program management** — full `LIST`, `DELETE`, `RENUM`, `AUTO`,
       `TRON`/`TROFF`, `SWAP`, `WAIT`, `FRE`, full `CLEAR` semantics (`ERASE`
       shipped 2026-07-15 with the arrays arc, slice 2).
-      **Known gap (measured 2026-07-22, graphics G8 §7 `G8-trapclass`):** an
-      invalid `FOR`/`SWAP` lvalue is silently ACCEPTED — `FOR 1=0 TO 1` and
-      `SWAP 1,A` run on, and `FOR A$=0 TO 1` too, where the VG-8020 raises a
-      trappable ERR 2 / ERR 13. Both statements need lvalue validation.
+      (`SWAP` itself is still unimplemented — `SWAP A,B` is a syntax error here,
+      where the reference swaps. Its MALFORMED forms already match, via the
+      trap-class fix below.)
 
 ## Beyond — post-MSX1 axes (out of charter, far future)
 
