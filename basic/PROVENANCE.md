@@ -560,13 +560,18 @@ the numeric address differs from a real MSX. If the variable does not yet exist
 it is allocated (value 0) so the returned address is always valid. Verified by
 `basic_probe_vdpio.py` (`b=&h1234:a=varptr(b)` → PEEK(a),PEEK(a+1) = `34 12`).
 
-**BASE descope (quarantined).** `BASE(n)` is parsed and its argument evaluated,
-but it returns 0 and sets ERRMARK (`$DD` at `$E010`) rather than a VDP table base
-address. zerobas drives the screen entirely through the C-BIOS CHGMOD path and
-keeps no per-mode VDP table-base map of its own; reproducing the reference's exact
-BASE() value table would require a forbidden source, so BASE is descoped (the line
-still continues — only the BASE *value* is unavailable). Loader stubs needing real
-VDP table bases are out of scope for now.
+**BASE descope — RETIRED 2026-07-22 (graphics slice G8).** For most of the
+project's life `BASE(n)` was parsed and its argument evaluated, but returned 0 and
+set ERRMARK (`$DD` at `$E010`) rather than a table base address: zerobas drives the
+screen through the C-BIOS CHGMOD path, kept no per-mode VDP table-base map of its
+own, and fabricating one was not allowed. The G8 characterization removed the
+premise rather than the rule — the per-mode map is **not** ours to invent, it is the
+published MSX work-area table at `$F3B3`, which our own C-BIOS runtime maintains
+byte-identically to the reference in every mode (measured on both machines,
+docs/spec-basic-graphics-g8.md §4.1). `BASE(n)` is therefore now a plain work-area
+word fetch, and `BASE(n)=v` validates + stores + reprograms, with no reference value
+table anywhere in the source. The LEAN cart, which has no graphics at all, keeps the
+descoped stub (`IF !G8_RESIDENT`).
 
 Validated: `make` builds a clean 16384-byte `basic.rom`, no warnings. The crunch
 probe stays byte-identical (full ALL PASS, plus the 6 new keywords PASS in a
@@ -589,13 +594,17 @@ runs; OUT completes + line runs; VARPTR cell = `34 12`; BASE returns 0 + ERRMARK
 | `VPOKE`/`VPEEK`/`OUT`/`INP` semantics (write/read VRAM; write/read a Z80 port; low byte; 0..255 read) | — | public MSX-BASIC language reference + Z80 `out (c),a` / `in a,(c)` (hardware) | sourced |
 | VPOKE/OUT handlers + `ev_f_ff` $FF-prefix dispatcher (PEEK/VPEEK/INP) + INP `in a,(c)` | — | **own code** (mirrors `do_poke` / `ev_f_peek`); not derived from any disassembly | sourced |
 | `VARPTR(var)` returns the address of the value cell in **zerobas's own** VARTAB (not the reference's variable-area map); allocates the variable if new | — | **own design** — zerobas's table layout is its own; valid+writable cell, sufficient for loader pokes; numeric address diverges from a real MSX | quarantined |
-| `BASE(n)` descoped: argument parsed+evaluated, returns 0 + sets ERRMARK (no fabricated VDP table-base map) | — | **own design** — reproducing the reference's per-mode VDP table-base values would need a forbidden source; descoped, not fabricated | quarantined |
+| `BASE(n)` real value: the work-area word at `$F3B3 + 2n` (G8, 2026-07-22; the descope above is retired — LEAN build still stubs it) | — | published MSX work-area table (`TXTNAM..` at `$F3B3`), maintained by the BIOS; black-box-confirmed identical on the reference and on our runtime | sourced |
+| `VDP(n)` = the register mirrors at `$F3DF + n`, `VDP(8)` = `STATFL` `$F3E7`; `VDP(n)=` writes mirror + port | — | published MSX work-area + TMS9918A register-write contract; black-box-confirmed | sourced |
+| `BASE(n)=` reprogram rule incl. the SCREEN-1/2 off-by-one (source group `[0,2,3,3][SCRMOD]`) | — | **own code from black-box measurement** (poison-tested, spec G8 §4.4) — behaviour observed, never disassembled | sourced |
+| `VDP` function token | `$C8` (single-byte) | MSX2 TH Table 2.20; oracle-confirmed byte-identical via the crunch capture | sourced |
 | `VPOKE_TOKEN`/`OUT_TOKEN`/`VPEEK_TOKEN`/`INP_TOKEN`/`VARPTR_TOKEN`/`BASE_TOKEN` constants | — | own naming over the oracle-/Table-2.20-sourced token bytes | sourced |
 
-The VARPTR own-address-map and the BASE descope are the two **quarantined**
-items: both are deliberate own-design simplifications (loader-stub scope), not
-values lifted from any reference ROM or disassembly. A future oracle probe could
-pin BASE's real per-mode table-base values if a stub ever needs them.
+The VARPTR own-address-map is now the only **quarantined** item here: a deliberate
+own-design simplification, not a value lifted from any reference ROM or
+disassembly. (The BASE descope that used to sit beside it was retired in G8, as
+described above — by reading the published work-area table, not by fabricating
+one.)
 
 ## Phase 1: cassette program load — CLOAD / LOAD"CAS:" (basic/cload.asm, basic/interp.asm, basic/sysvars.inc)
 

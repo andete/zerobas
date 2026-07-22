@@ -1075,8 +1075,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the mode-set init and the size's persistence across a later bare `SCREEN`.
       Gate: Phases N/O/P. Funded by the two-carve eviction
       [`docs/spec-eviction-g7-space.md`](docs/spec-eviction-g7-space.md).
-      **Still open:** `SCREEN 3` (multicolor, deferred), `VDP`, and the sprite
-      COLLISION trap (`ON SPRITE GOSUB`) which belongs to the interrupt-trap item.
+      ✅ **G8 `VDP(n)` / `BASE(n)`** (2026-07-22, [`docs/spec-basic-graphics-g8.md`](docs/spec-basic-graphics-g8.md)):
+      the VDP-register pseudo-array read AND write (`VDP(0..7)` = the RAM
+      mirrors, `VDP(8)` = STATFL, the write reaching the chip), plus `BASE(n)=`
+      with its per-slot value grain — **including the reference's SCREEN-1/2
+      off-by-one**, where a BASE write reprograms R0..R6 from the NEXT group's
+      table (signed-off D8-1, poison-tested). Also **retires the descoped
+      `BASE(n)` stub**: our runtime's `$F3B3` table matches the reference byte
+      for byte, so the read is an honest word fetch and a documented divergence
+      goes away. Gate: Phase Q (state / grammar / the JIFFY-freeze teeth check).
+      Funded from inside the arc — `circ_draw`'s spokes and `elg_draw`'s
+      work-area writes folded into the tenant (~144 B), no outside eviction.
+      **Still open:** `SCREEN 3` (multicolor, deferred) and the sprite COLLISION
+      trap (`ON SPRITE GOSUB`), which belongs to the interrupt-trap item.
+      **Residual found in passing (NOT graphics):** `FOR 1=0 TO 1` and
+      `SWAP 1,A` are silently accepted where the reference raises a trappable
+      ERR 2 — a general FOR/SWAP lvalue-validation gap, logged under
+      Editor/program management below.
 - [x] **Sound** (AY-3-8910) — `SOUND`✅, `PLAY` (MML)✅, `BEEP`✅ — **ARC CONCLUDED
       2026-07-21** (all repack-only, page-1 resident, direct-PSG, VG-8020-byte-faithful).
       `SOUND`/`PLAY`+live servicer landed earlier that day (commits baf…→f6bfe76); the
@@ -1109,7 +1124,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Our `repl.asm` is a deliberate simplification; full replacement is Phase 3.
 - [ ] **Editor / program management** — full `LIST`, `DELETE`, `RENUM`, `AUTO`,
       `TRON`/`TROFF`, `SWAP`, `WAIT`, `FRE`, full `CLEAR` semantics (`ERASE`
-      shipped 2026-07-15 with the arrays arc, slice 2)
+      shipped 2026-07-15 with the arrays arc, slice 2).
+      **Known gap (measured 2026-07-22, graphics G8 §7 `G8-trapclass`):** an
+      invalid `FOR`/`SWAP` lvalue is silently ACCEPTED — `FOR 1=0 TO 1` and
+      `SWAP 1,A` run on, and `FOR A$=0 TO 1` too, where the VG-8020 raises a
+      trappable ERR 2 / ERR 13. Both statements need lvalue validation.
 
 ## Beyond — post-MSX1 axes (out of charter, far future)
 

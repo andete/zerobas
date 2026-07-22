@@ -264,10 +264,11 @@ own-design-packet note.
 | **D1** | Placement + interrupt discipline | **Page-0 EI-trampoline tenant, direct ports, brief-DI latch** (§2) |
 | **D2** | VRAM access method | **Direct VDP port I/O** (§3), not BIOS CALSLT |
 | **D3** | Color-clash / attribute rule | RESOLVED — pinned (§4/§11.3): compare `c` vs the byte's own low nibble; set→hi-nibble, preserve lo |
-| **D4** | SCREEN 3 (multicolor) | **Defer** to a post-arc slice; SCREEN 2 only now (§1) |
+| **D4** | SCREEN 3 (multicolor) | **Defer** to a post-arc slice; SCREEN 2 only now (§1). NOTE: G8 nevertheless had to model SCREEN 3's *register* layout, because the reference's `BASE(n)=` in SCREEN 2 programs the chip from the multicolor group (spec-basic-graphics-g8.md §4.4) |
 | **D5** | Engine granularity | **One selector-dispatched page-0 tenant** for G2–G6 (§6) |
 | **D6** | Sprites (G7) placement | SETTLED 2026-07-22 — join the graphics tenant (`GFX_OP` 7–12), spec-basic-graphics-g7.md §2 |
 | **D7** | Slice ordering / first cut | G1→G2→G3 as the de-risking core, then G4–G7 |
+| **D8** | `VDP(n)` / `BASE(n)` (G8) | SETTLED 2026-07-22 — tenant ops 13/14 for the writes, resident work-area fetches for the reads, the SCREEN-1/2 off-by-one REPRODUCED, and the old `BASE` descope retired: spec-basic-graphics-g8.md |
 
 ---
 
