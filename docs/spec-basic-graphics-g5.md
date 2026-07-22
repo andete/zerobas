@@ -74,6 +74,21 @@ load-bearing). Order only matters for a Ctrl-STOP-interrupted fill (impl-defined
 like an interrupted LINE) and for pathological *partial* `C!=B` fills (excluded
 from the differential gate).
 
+**DOCUMENTED DEVIATION — G5-align (`C!=B` flooding of byte-aligned enclosures).**
+The `C!=B` flood works via the clash: the fill escapes an enclosure because a
+border pixel *shares a VRAM 8-pixel colour-group* with a to-be-painted interior
+pixel, so painting recolours (eats) the border. When an enclosure's walls are
+**byte-aligned to the 8-pixel colour groups in BOTH axes** (e.g. a `,B` box at
+exactly `(16,16)-(40,40)`, or the 8-px arena used in characterization), the
+interior shares NO group with anything outside → clash-escape is topologically
+impossible under our (or *any* apparent) pixel-accurate model. **Yet the VG-8020
+still escapes such enclosures by some other mechanism we could not identify
+without disassembly** (barred by the no-reference-ROM-disasm principle). So for
+this narrow case our PAINT stays BOUNDED where the reference floods. Programs
+essentially never draw walls at exact multiples of 8, so real fills match; the
+differential gate uses deliberately non-aligned coordinates. (Same
+documented-deviation class as G4-rneg; [bug-for-bug-compat-over-accuracy].)
+
 **Off-screen seed (DISTINCT from PSET/LINE):** a seed that is in-int16 but
 `x∉0..255` or `y∉0..191` (incl. negative) → **ERR 5** (NOT a silent no-op / clip).
 `|coord|>int16` still → ERR 6 first (in `parse_coord`).
