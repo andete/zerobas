@@ -302,6 +302,17 @@ exec_stmt:
                 cp      SPRITE_TOKEN        ; SPRITE$(n)=s$ / SPRITE ON|OFF|STOP  (G7)
                 jp      z,ex_sprite
     ENDIF
+    IF G8_RESIDENT
+                ; G8: the pseudo-array assignments have NO statement token of
+                ; their own -- a statement that STARTS with the function token is
+                ; the assignment (docs/spec-basic-graphics-g8.md §2). `LET` in
+                ; front is ERR 2 on the reference, which falls out for free:
+                ; ex_letkw only accepts a variable name.
+                cp      VDP_TOKEN           ; VDP(n) = v   (graphics G8)
+                jp      z,ex_vdp_assign
+                cp      BASE_TOKEN          ; BASE(n) = v  (graphics G8)
+                jp      z,ex_base_assign
+    ENDIF
     ENDIF
                 call    is_letter           ; bare letter -> assignment
                 jr      c,ex_let
@@ -1052,6 +1063,17 @@ cepb_abort_fp:
 ex_letkw:
                 inc     hl                  ; past the LET token
                 call    skip_spaces
+    IF G8_RESIDENT
+                ; `LET VDP(0)=2` / `LET BASE(0)=…` are ERR 2 on the reference
+                ; (measured, docs/spec-basic-graphics-g8.md §3). Without this they
+                ; fall into ex_let, which takes the token for a variable name and
+                ; silently performs an assignment to nothing.
+                ld      a,(hl)
+                cp      VDP_TOKEN
+                jp      z,gfx_syntax
+                cp      BASE_TOKEN
+                jp      z,gfx_syntax
+    ENDIF
                 jp      ex_let              ; reuse <letter> = <expr>
 
 ; --- ex_goto: GOTO <line> --------------------------------------------------

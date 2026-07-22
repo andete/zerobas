@@ -1,6 +1,7 @@
 # zerobas BASIC — graphics slice G8: `VDP(n)` and `BASE(n)`
 
-Status: **SPEC — SIGN-OFF NEEDED** (2026-07-22). Arc spec:
+Status: **LANDED 2026-07-22.** Signed off the same day (D8-1 reproduce the quirk;
+D8-2..D8-5 as recommended); §6 and §7 are as-built. Arc spec:
 [`spec-basic-graphics.md`](spec-basic-graphics.md). Predecessor slices G1–G7 all
 landed; this is the VDP-register / table-base access pair, the last non-deferred
 graphics item in [`../TODO.md`](../TODO.md).
@@ -8,7 +9,7 @@ graphics item in [`../TODO.md`](../TODO.md).
 Every `[PIN]` below is a measured black-box fact from the Philips VG-8020, with
 the raw record and the probe scripts in
 [`../scratchpad/g8_vdp_notes.md`](../scratchpad/g8_vdp_notes.md)
-(`g8_vdp_char1.py` … `g8_vdp_char7.py`). No ROM disassembly
+(`g8_vdp_char1.py` … `g8_vdp_char8.py`). No ROM disassembly
 ([memory: no-reference-rom-disasm]).
 
 ---
@@ -18,12 +19,12 @@ the raw record and the probe scripts in
 **In:** the `VDP(n)` pseudo-array (read and write) and the `BASE(n)` pseudo-array
 (read and write). Four surfaces:
 
-| surface | today |
+| surface | before this slice |
 |---|---|
-| `A=VDP(n)` | does not exist (`VDP` is not a keyword) |
-| `VDP(n)=v` | does not exist |
+| `A=VDP(n)` | did not exist (`VDP` was not a keyword) |
+| `VDP(n)=v` | did not exist |
 | `A=BASE(n)` | **descoped stub** — [`basic/expr.asm:1721`](../basic/expr.asm:1721) parses the argument, returns 0 and sets ERRMARK |
-| `BASE(n)=v` | does not exist |
+| `BASE(n)=v` | did not exist |
 
 So G8 both adds three surfaces and **retires a documented divergence**: the
 `BASE` stub was written when zerobas had no per-mode VDP table map. The graphics
@@ -69,7 +70,7 @@ assignment, alongside the existing variable-assignment path.
 | **`LET VDP(0)=2`**, `LET BASE(0)=…` | **ERR 2** — the `LET` form is rejected |
 | `VDP(0)` as a statement, `VDP=1`, `BASE=1`, `VDP 0=1`, `A=VDP`, `A=VDP 0` | ERR 2 |
 | `VDP(0,1)=2`, `VDP(0)=1,2` | ERR 2 |
-| `FOR VDP(0)=0 TO 1`, `SWAP VDP(0),A` | ERR 2 |
+| `FOR VDP(0)=0 TO 1`, `SWAP VDP(0),A` | ERR 2 (**not reproduced** -- `G8-trapclass`, §7) |
 | `VDP(0)=` | **ERR 24** (Missing operand) |
 | `VDP(0)="A"`, `VDP("A")=1`, `BASE(0)="A"` | ERR 13 |
 
@@ -115,7 +116,8 @@ BASE(15..19)  0800 0000 0000 1B00 3800     group 3 -> SCREEN 3
 * `n` ∈ 0..7 (**`VDP(8)=` is ERR 5** — the status register is read-only),
   `v` ∈ 0..255 after truncation, else ERR 5.
 * Updates the shadow **and the chip**: proven by clearing R1's interrupt-enable
-  bit and watching `TIME` freeze (delta 0 against a control that advanced 62).
+  bit and watching the frame counter freeze (delta 0 against a control that
+  advanced 62). This is the gate's teeth check -- see §7.
 * Nothing else moves — no mode variable, no table.
 
 ### 4.4 `BASE(n)=v` write `[PIN]` — including the reference's off-by-one
@@ -157,8 +159,37 @@ BASE(15..19)  0800 0000 0000 1B00 3800     group 3 -> SCREEN 3
    value, not `$3E` from the value just written. Same shape for SCREEN 2 reading
    group 3.
 
-   Mode bits needed to reproduce it (measured): mode 2 → `R0=$02, R1=$E0`;
-   mode 3 → `R0=$00, R1=$E8`.
+4. **How wide is the reprogram? All of R0..R6** `[PIN]` — not just the written
+   slot's register. Rounds 4/7 could not tell, because every other register
+   already held the value its table word implies. Round 8 desyncs first
+   (`VDP(2)=5:VDP(6)=5`) and then writes an unrelated slot: both poked registers
+   **snap back to their table values**, in SCREEN 0 as much as in SCREEN 1/2. So
+   there is ONE uniform code path, and the mode's only role is choosing the
+   source group:
+
+   ```
+   group_used = [0, 2, 3, 3] [SCRMOD]      ; the off-by-one lives entirely here
+   ```
+
+   `R7` is untouched, and `R0`/`R1`'s non-mode bits are **preserved** — a
+   `SCREEN 2,1` sprite size survives (`R1 $e1 -> $e9`: only M2 changes), as does a
+   poked `R1=$a0` (`-> $a8`) and a poked `R7=$4f`.
+
+   With `g = group_used` and `b(k) = BASE(g*5 + k)`:
+
+   ```
+   R0 = (R0 & $FD) | ($02 if g==2 else $00)          ; M3
+   R1 = (R1 & $E7) | ($10 if g==0 else $08 if g==3 else $00)   ; M1 / M2
+   R2 = b(0) / $400
+   R3 = b(1) / $40      | $7F  if g==2                ; GRAPHIC-2 mask
+   R4 = b(2) / $800     | $03  if g==2                ; GRAPHIC-2 mask
+   R5 = b(3) / $80
+   R6 = b(4) / $800
+   ```
+
+   Every value in §4.4's tables and in rounds 4/7/8 falls out of this: `g=2`
+   colour `$2000` → `$80|$7F = $ff`, `g=0` colour `$2000` → `$80`, `g=2` pattern
+   `$0000` → `$03`, `g=3` name `$0800` → `$02`, satr `$1F00` → `$3E`.
 
 ## 5. Placement
 
@@ -181,46 +212,82 @@ Rationale: the resident page-1 tail has **9 bytes** free
 (`__MEAS_PAGE1_END = $7FF7`), so every byte kept out of page 1 is a byte the
 eviction does not have to find.
 
-## 6. Space
+## 6. Space — as built
 
-Estimate (to be **measured, not assumed** — the arc's standing lesson — by
-assembling the resident half before the tenant is wired):
+The resident half measured **112 B over** the ceiling on first assembly, and
+**85 B over** after a DRY pass (one shared paren parser for `VDP(n)`/`BASE(n)`/
+`SPRITE$(n)`, one body for both function reads). The `BASE` stub's retirement
+paid for the rest.
 
-| part | est. |
+The deficit was NOT funded by evicting an unrelated feature. The carve scout's
+shortlist did not survive a human read -- its top single-entry candidate,
+`psv_fetch` (130 B), is the PLAY servicer that runs from the frame ISR, and a
+`subrom_call` per VBLANK is exactly the wrong thing to add there. So the bytes
+came from inside the graphics arc instead, by moving two pieces of PURE
+MARSHALLING out of page 1 and into the tenant that was already doing the work:
+
+| moved | freed |
 |---|---|
-| `ev_f_vdp` + rewritten `ev_f_base` | +60 B, −55 B reclaimed from the descoped stub |
-| assignment dispatch arm (two tokens) | +25 B |
-| `ex_vdpassign` / `ex_baseassign` parse + marshal | +110 B |
-| `VDP` keyword-table row | +6 B |
-| **resident net** | **≈ +145 B** |
-| tenant `GFX_OP` 13/14 | ≈ +180 B (sub-ROM, not scarce) |
+| `circ_draw`'s tail -- the deferred start/end spokes and the work-area writes. Each spoke was a resident `subrom_call` back into the SAME island; inside the tenant it is a plain `call gfx_line_op`. | ~120 B |
+| `elg_draw`'s work-area writes (`GXPOS`/`GYPOS`/`GRPACX`/`GRPACY` = p2) -- the tenant already holds those coordinates in `GFX_X2`/`GFX_Y2`. | 24 B |
 
-Against 9 B free that needs a carve of ~140 B. The
-[`g7_carve_scout.py`](../scratchpad/g7_carve_scout.py) shortlist (the automated
-tenancy rule from G6 §8) currently offers, page-0 tenant CLEAN and single-entry:
-`psv_fetch` 130 B, `ev_ff_lof` 151 B, `ev_ff_eof` 162 B, `exec` 362 B — the
-first three all being small, self-contained leaves. Pick at implementation time
-against the freshly measured deficit; if the measured resident half lands under
-~100 B after DRY, a single leaf carve covers it.
+Final: `__MEAS_PAGE1_END = $7FEE`, i.e. **18 B of page-1 tail still free**, with
+the lean cart byte-identical (`9e723a02…`, unchanged).
 
-## 7. Gate
+Order is load-bearing after the move: `gfx_line_op` now stamps the work area
+with its own endpoint, and the CIRCLE op calls it for spokes -- so `gco_done`
+draws the spokes FIRST and writes the circle's own work-area values AFTER, or a
+spoke endpoint would survive as the last-referenced point.
 
-Extend `make graphics-acceptance` with **Phase Q** (`VDP`/`BASE`), a VG-8020
-differential over: the `BASE(n)` table in each mode; `VDP(n)` reads;
-`VDP(n)=` shadow + chip effect (the `TIME`-freeze probe is the chip half, and it
-is the teeth check — a shadow-only implementation passes every read assertion and
-fails this one); the `BASE(n)=` value domain per slot kind; the cross-group
-store-only rule; and the errors of §3. Host unit tests in
-[`../tests/test_graphics.py`](../tests/test_graphics.py) for the pure leaves
-(grain lookup, validation, register/divisor mapping).
+## 7. Gate — as built
 
-**Known-divergent, excluded from assertion (`G8-regdelta`, documented):** C-BIOS
-programs R3/R5 differently in SCREEN 0 and R7 differently in SCREEN 1, so
-`VDP(3)`, `VDP(5)`, `VDP(7)` read back different values there. This is a
-BIOS-level difference below the BASIC statement; SCREEN 2 agrees exactly. The
-gate asserts the registers G8 itself writes, plus all of SCREEN 2.
+`make graphics-acceptance` gained **Phase Q**, three parts, all differential
+against the VG-8020 and all green:
 
-## 8. Open decisions — SIGN-OFF NEEDED
+* **Q1 (20 cases)** -- state: the 20-word table AND `R0..R6`, read from memory
+  with the case holding its screen mode in a `GOTO`-self loop. Covers the plain
+  reprogram, the SCREEN-1/2 off-by-one, the poison cases that prove the source
+  group, the desync cases that prove the reprogram is wide, `R1`'s surviving
+  sprite-size bits, and the cross-group store-only rule.
+* **Q2 (55 cases)** -- reads, domains, value grain per slot kind, and the whole
+  grammar table of §3, each case reporting both outcomes behind one tag so an
+  accepted↔raised flip cannot pass.
+* **Q3 (4 cases)** -- **the teeth**: everything else passes on an implementation
+  that only updates the RAM mirrors, since the reads come back from the very
+  cells the write filled. So clear `R1`'s interrupt-enable bit and watch the
+  frame counter: frozen means the chip saw it. Measured `JIFFY` delta 0 for
+  `ie_off` against 206 for the control on our machine (62 on the reference).
+  Note it reads `JIFFY` directly, not BASIC's `TIME` -- zerobas has no `TIME`,
+  so the first cut of this check sat at 0 for BOTH cases and proved nothing on
+  the machine it most needs to bite.
+
+Host unit tests were not extended: unlike G3/G4's rasterisers, every G8 leaf is
+a table lookup or a shift whose only interesting behaviour is the VDP write the
+host harness cannot model -- Q1/Q3 are where the teeth are.
+
+**Excluded from assertion, documented:**
+
+* **`G8-regdelta`** -- C-BIOS programs `R7` differently from the reference BIOS
+  (`$f4` vs `$04` in SCREEN 1/2), and `R3`/`R5`/`R6` differently in SCREEN 0, so
+  `VDP(3)`/`VDP(5)`/`VDP(7)` read back different values there. This sits BELOW
+  the BASIC statement. Q1 therefore asserts `R0..R6` only where G8 reprograms
+  (there all seven are written from the identical table, so they DO match
+  exactly) and the table alone elsewhere. (An earlier draft of this spec claimed
+  SCREEN 2 agreed exactly; it does not -- `R7` differs there too.)
+* **`G8-trapclass`** -- `FOR VDP(0)=0 TO 1` and `SWAP VDP(0),A` are a trappable
+  ERR 2 on the reference and are silently ACCEPTED here. NOT a G8 property:
+  `FOR 1=0 TO 1` and `SWAP 1,A` behave the same way, so it is a general
+  FOR/SWAP lvalue-validation gap, and gating it would only lock in the wrong
+  behaviour.
+
+**Bug the differential caught** (the arc's recurring lesson, again): the first
+cut parked the function's index limit in `C` across the argument evaluation.
+`eval` clobbers `BC` on its FLOAT path only -- so every integer index worked and
+every fractional one (`VDP(1.7)`, and even `VDP(1.0)`) became a bogus ERR 5.
+Static reading said the register was fine; Q2 said otherwise. The limit now
+lives in RAM.
+
+## 8. Decisions — SIGNED OFF 2026-07-22
 
 | # | Decision | Recommendation |
 |---|---|---|

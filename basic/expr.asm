@@ -555,6 +555,10 @@ ev_f:
                 jp      z,ev_f_erlfn
                 cp      POINT_TOKEN         ; $ED -> POINT(x,y) (graphics G2, graphics.asm)
                 jp      z,ev_f_point
+    IF G8_RESIDENT
+                cp      VDP_TOKEN           ; $C8 -> VDP(n) (graphics G8, graphics.asm)
+                jp      z,ev_f_vdp
+    ENDIF
     ENDIF
                 cp      HEX_TOKEN           ; $0C -> 2-byte LE value (&H)
                 jp      z,ev_f_word
@@ -1708,16 +1712,16 @@ vptr_none:
                 ret
     ENDIF
 
-; --- ev_f_base: BASE(<n>) -> a VDP table base address ----------------------
-; BASE(n) returns the base address of a VDP table for the current screen mode
-; (name / colour / pattern-generator / sprite-attribute / sprite-pattern, per
-; group of 5 starting at n=0). zerobas drives the screen entirely through the
-; C-BIOS CHGMOD path and keeps no per-mode VDP table-base map of its own, and
-; reproducing the reference's exact BASE() value table would require a forbidden
-; source. So BASE is **descoped**: the argument is parsed and evaluated, and the
-; function returns 0 with an expression-error marker (ERRMARK), rather than
-; fabricating an address. This is a documented divergence (PROVENANCE.md);
-; loader stubs that need real VDP table bases are out of scope for now.
+; --- ev_f_base ------------------------------------------------------------
+; BASE(n) was descoped here for most of the project's life -- it parsed its
+; argument, returned 0 and set ERRMARK, because zerobas kept no per-mode VDP
+; table-base map and inventing one was not allowed. Graphics slice G8 retired
+; that divergence: our runtime's work-area table matches the reference byte for
+; byte (docs/spec-basic-graphics-g8.md §4.1, measured on both), so the real
+; implementation is a word fetch and lives with its VDP(n) sibling in
+; basic/graphics.asm. The LEAN build has no graphics at all, so it keeps the
+; stub.
+    IF !G8_RESIDENT
 ev_f_base:
                 inc     ix                  ; skip the BASE token
                 call    ev_sp
@@ -1731,13 +1735,11 @@ ev_f_base:
                 cp      ')'
                 jp      nz,ev_f_err
                 inc     ix
-    IF ROM_BASE < $4000
-                call    flt_int_result      ; BASE yields an int (0) even over a float arg
-    ENDIF
                 ld      a,$DD               ; BASE is descoped -> expression-error marker
                 ld      (ERRMARK),a
                 ld      de,0                ; ...and a 0 result (no fabricated address)
                 ret
+    ENDIF
 
 ; --- mul16: HL = (HL * DE) low 16 bits -------------------------------------
 ; Shift-add, MSB-first over 16 iterations. Clobbers A, BC, DE, HL.

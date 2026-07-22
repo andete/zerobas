@@ -395,6 +395,22 @@ G6_RESIDENT     equ     1
 ; G7_RESIDENT gates the RESIDENT half the way G6_RESIDENT gated DRAW's, so the
 ; slice can be built with the tenant alone if the page-1 tail runs out again.
 G7_RESIDENT     equ     1
+; Graphics G8 (docs/spec-basic-graphics-g8.md). VDP(n) and BASE(n) are single-byte
+; FUNCTION tokens, and their assignment form has no statement token of its own: a
+; statement whose first token is $C8/$C9 IS the assignment (crunch-pinned,
+; scratchpad/g8_vdp_notes.md C1). Gated like G6/G7 so the slice can build with the
+; tenant alone if the page-1 tail runs out; the reads are resident either way
+; (they are plain work-area fetches -- cheaper than marshalling a subrom_call).
+; The gate is ROM_BASE-conditional as well, because unlike G6/G7 this slice
+; REPLACES an existing lean-build routine (expr.asm's descoped ev_f_base stub):
+; the lean cart has no graphics at all, so it must keep the stub, and
+; `IF !G8_RESIDENT` is what selects it.
+    IF ROM_BASE < $4000
+G8_RESIDENT     equ     1
+    ELSE
+G8_RESIDENT     equ     0
+    ENDIF
+VDP_TOKEN       equ     $C8     ; VDP(n)      (single-byte function token)
 SPRITE_TOKEN    equ     $C7     ; SPRITE (statement + string function + PUT SPRITE)
 DRAW_TOKEN      equ     $BE     ; DRAW <string> (statement; graphics G6) -- crunch of
                                 ; `DRAW"u10"` on the reference is BE 22 75 31 30 22,
@@ -535,6 +551,18 @@ GFX_SATR_BASE   equ     $1B00   ; SCREEN 1/2 sprite ATTRIBUTE table base (4 B pe
 RG1SAV          equ     $F3E0   ; VDP register 1 mirror; bits 1..0 = SCREEN's sprite-size
                                 ; argument (bit1 = 16x16, bit0 = magnify), which measurably
                                 ; PERSISTS across later SCREEN statements (spec G7 §5)
+; G8 VDP(n) / BASE(n) (docs/spec-basic-graphics-g8.md). The TMS9918's registers are
+; write-only, so every MSX reads them back through the RAM mirrors: RG0SAV..RG7SAV
+; are what `VDP(0..7)` returns, and STATFL (the frame ISR's status copy) is what
+; `VDP(8)` returns -- measured, NOT a live port read (spec §4.2). BASETAB is the
+; 20-word per-mode table-base map `BASE(n)` reads and `BASE(n)=` writes; our C-BIOS
+; runtime maintains it identically to the reference in every mode (spec §4.1), which
+; is what let the descoped BASE stub be retired.
+RG0SAV          equ     $F3DF   ; VDP register 0..7 mirrors ($F3DF..$F3E6); RG1SAV = +1
+STATFL          equ     $F3E7   ; VDP status-register copy kept by the frame ISR
+BASETAB         equ     $F3B3   ; BASE(0..19): 20 LE words, 4 groups of 5 (name, colour,
+                                ; pattern generator, sprite attribute, sprite pattern),
+                                ; group g describing SCREEN g
 
 CURPTR          equ     $E020   ; current load pointer (2 bytes)
 ENDPTR          equ     $E022   ; final load address  (2 bytes)
@@ -1106,11 +1134,17 @@ RDV_ST          equ     RDV_VAL + 2     ; $E553: 1 = value read, 0 = out of data
 ;
 GFX_DSCALE      equ     GFX_PSTK_END    ; $E55A: persistent scale, quarter units (1)
 GFX_DANGLE      equ     GFX_DSCALE + 1  ; $E55B: persistent angle 0..3 (1)
+; G8 marshalling (docs/spec-basic-graphics-g8.md §5): the index and the value of a
+; `VDP(n)=v` / `BASE(n)=v` write, handed to the tenant, which owns the domain checks
+; and the register programming. Dead outside such a statement -- the last 4 B before
+; the $E560 disk-WBUF wall, which the guard below still enforces.
+GFX_G8N         equ     GFX_DANGLE + 1  ; $E55C: written index n (int16 LE) (2)
+GFX_G8V         equ     GFX_G8N + 2     ; $E55E: written value (int16 LE) (2)
     IF GFX_DSP + 2 > GFX_PSTK_END
                 db      DRAW_SCRATCH_OVERRAN_THE_PERSISTENT_STATE_CELLS
     ENDIF
-    IF GFX_DANGLE + 1 > $E560
-                db      DRAW_STATE_OVERRAN_E560_DISK_WBUF_WALL
+    IF GFX_G8V + 2 > $E560
+                db      G8_MARSHALLING_OVERRAN_E560_DISK_WBUF_WALL
     ENDIF
     ELSE
 STRSCR          equ     $E360   ; [len][bytes:STRMAX] = 33 bytes ($E360..$E380)

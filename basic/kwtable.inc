@@ -363,5 +363,13 @@ kwtable:
     IF G7_RESIDENT
                 db      6,"SPRITE",1,SPRITE_TOKEN                ; $C7
     ENDIF
+                ; --- graphics slice G8 (repack build only) --------------------
+                ; docs/spec-basic-graphics-g8.md §2. VDP joins BASE (already
+                ; above, since Phase 1) as a single-byte FUNCTION token; the
+                ; assignment form `VDP(n)=v` needs no keyword of its own -- it is
+                ; the same token, dispatched as a statement (§2).
+    IF G8_RESIDENT
+                db      3,"VDP",1,VDP_TOKEN                      ; $C8
+    ENDIF
     ENDIF
                 db      0

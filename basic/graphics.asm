@@ -197,13 +197,10 @@ elg_box_set:
                 ld      a,c
                 ld      (GFX_MODE),a
 elg_draw:
-                ; --- work area: GXPOS/GYPOS + GRPACX/GRPACY = p2 (endpoint, §11.5) ---
-                ld      bc,(GFX_X2)
-                ld      (GXPOS),bc
-                ld      (GRPACX),bc
-                ld      bc,(GFX_Y2)
-                ld      (GYPOS),bc
-                ld      (GRPACY),bc
+                ; The work-area writes (GXPOS/GYPOS + GRPACX/GRPACY = p2, §11.5)
+                ; moved INTO the tenant with G8's space carve -- it already has
+                ; GFX_X2/GFX_Y2 in RAM, so they cost nothing there and freed 24
+                ; resident bytes (docs/spec-basic-graphics-g8.md §6).
                 ld      a,3                 ; GFX_OP = 3 -> tenant LINE/box
                 ld      (GFX_OP),a
                 push    hl                  ; guard the token cursor -- CALSLT clobbers HL
@@ -591,70 +588,14 @@ circ_draw:
                 call    subrom_call         ; CF=1 iff the sub-ROM is absent
                 pop     hl
                 jp      c,gfx_absent
-                ; --- deferred spokes (spoke-AFTER-arc default, §9 G4-spoke) ---
-                ld      a,(GFX_SNEG)
-                or      a
-                jr      z,circ_no_sspoke
-                push    hl
-                ld      hl,GFX_SVX
-                call    gfx_circ_spoke
-                pop     hl
-circ_no_sspoke:
-                ld      a,(GFX_ENEG)
-                or      a
-                jr      z,circ_no_espoke
-                push    hl
-                ld      hl,GFX_EVX
-                call    gfx_circ_spoke
-                pop     hl
-circ_no_espoke:
-                ; --- work area (resident writes; §6, §9 G4-work signed-off quirk) ---
-                ; BC, NOT HL -- HL is the live token cursor here (the G3 elg_draw
-                ; lesson: work-area scratch must not clobber it before exec_stmt).
-                ld      bc,(GFX_CXC)
-                ld      (GRPACX),bc
-                ld      bc,(GFX_CYC)
-                ld      (GRPACY),bc
-                ld      bc,(GFX_R)
-                ld      (GXPOS),bc          ; quirk: GXPOS = r
-                ld      bc,(GFX_CYC)
-                ld      (GYPOS),bc          ; quirk: GYPOS = cy
                 jp      exec_stmt
-
-; --- gfx_circ_spoke: IN HL=vector base (GFX_SVX or GFX_EVX; Y=base+2). ------
-; Marshals a GFX_OP=3 segment centre->(centre+vector), the shared body of the
-; two former gfx_circ_spoke_s/_e (DRY per the G4 slice byte-budget pass, spec
-; §5.3). Clobbers everything.
-gfx_circ_spoke:
-                push    hl                  ; stash the vector base
-                ld      hl,(GFX_CXC)
-                ld      (GFX_X1),hl
-                ld      hl,(GFX_CYC)
-                ld      (GFX_Y1),hl
-                pop     hl
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)              ; DE = vector X
-                inc     hl
-                push    hl                  ; stash the Y-cell address
-                ld      hl,(GFX_CXC)
-                add     hl,de
-                ld      (GFX_X2),hl
-                pop     hl
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)              ; DE = vector Y
-                ld      hl,(GFX_CYC)
-                add     hl,de
-                ld      (GFX_Y2),hl
-                xor     a
-                ld      (GFX_MODE),a        ; segment
-                ld      a,3                 ; GFX_OP = 3 -> tenant LINE
-                ld      (GFX_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
-                call    subrom_call
-                jp      c,gfx_absent
-                ret
+                ; The deferred spokes and the work-area writes that used to sit
+                ; here now run INSIDE the tenant (sub/graphics.asm gco_done): they
+                ; were pure marshalling whose real work was two more subrom_calls
+                ; back into that same island, so folding them in cost nothing and
+                ; freed ~120 resident bytes to fund G8 (spec-basic-graphics-g8.md
+                ; §6). Behaviour is unchanged -- same order (spokes after the arc),
+                ; same GXPOS=r / GYPOS=cy residue quirk.
 
 ; --- circ_parse_given_angle: the shared body of circ_start/circ_end's -------
 ; GIVEN-value path (DRY per the G4 slice byte-budget pass). IN: HL=cursor at
@@ -1166,19 +1107,9 @@ spr_rd_done:
 ; its 0..255 domain is the tenant's check, so the ERR 5 comes back through
 ; spr_tenant like every other sprite domain error. Clobbers A, DE.
 spr_parse_index:
-                call    skip_spaces
-                ld      a,(hl)
-                cp      '('
-                jp      nz,gfx_syntax       ; `SPRITE$0` -> ERR 2 (measured)
-                inc     hl
-                call    gfx_eval_int16      ; DE = n
-                ld      (GFX_SN),de
-                call    skip_spaces
-                ld      a,(hl)
-                cp      ')'
-                jp      nz,gfx_syntax
-                inc     hl
-                ret
+                call    g8_open_paren       ; DE = n, HL past ')' (shared with G8's
+                ld      (GFX_SN),de         ; VDP(n)/BASE(n) -- same grammar, and
+                ret                         ; `SPRITE$0` -> ERR 2 either way)
 
 ; --- spr_tenant: run one sprite tenant op (A = GFX_OP) and raise its error --
 ; The sprite ops carry no colour, so unlike the drawing statements this leaves
@@ -1304,6 +1235,146 @@ pspr_go:
                 pop     hl
                 jp      exec_stmt
 
+    ENDIF
+
+
+    IF G8_RESIDENT
+; =============================================================================
+; G8 -- VDP(n) / BASE(n): the VDP-register and table-base pseudo-arrays.
+; docs/spec-basic-graphics-g8.md. The READS are wholly resident: both are plain
+; work-area fetches (RG0SAV.. and BASETAB), so marshalling them into the tenant
+; would cost more page-1 bytes than it saves. The WRITES marshal to the tenant
+; (GFX_OP 13/14), which owns the ports, the domain checks and the register
+; programming.
+;
+; `BASE(n)` USED TO BE DESCOPED here -- it parsed its argument, returned 0 and
+; set ERRMARK, because zerobas had no per-mode table map of its own. It now has
+; one for free: our C-BIOS runtime maintains BASETAB identically to the
+; reference in every mode (spec §4.1, measured both sides), so the divergence is
+; retired rather than reimplemented.
+
+; --- ev_f_vdp / ev_f_base: the function forms (expr.asm dispatch, IX cursor) --
+; One body for both: they differ only in the index limit and in whether the
+; result is a byte from the register mirrors or a word from the table. Returns
+; DE = value with FACTYP int, the ERR/ERL single-token pattern. The expression
+; evaluator runs on HL, so this switches cursors the way ev_f_point does.
+ev_f_vdp:
+                ld      a,9                 ; VDP(n): n in 0..8
+                jr      g8_fn
+ev_f_base:
+                ld      a,20                ; BASE(n): n in 0..19
+g8_fn:
+                ld      (GFX_G8V),a         ; park the limit in RAM, NOT in a register:
+                                            ; eval clobbers BC on its float path, which
+                                            ; is how a first cut turned every fractional
+                                            ; index (VDP(1.7), even VDP(1.0)) into a
+                                            ; bogus ERR 5 while integer ones passed
+                inc     ix                  ; past the VDP / BASE token
+                push    ix
+                pop     hl
+                call    g8_open_paren       ; DE = n, HL past ')'
+                push    hl
+                pop     ix
+                ld      a,d
+                or      a
+                jp      nz,gfx_err5
+                ld      a,(GFX_G8V)
+                ld      c,a
+                ld      a,e
+                cp      c
+                jp      nc,gfx_err5         ; index outside its domain -> ERR 5
+                ld      a,c
+                cp      20
+                ld      hl,RG0SAV           ; ..+7 = the register mirrors, +8 = STATFL,
+                jr      nz,g8_fn_byte       ; which is exactly what VDP(8) returns
+                ex      de,hl
+                add     hl,hl               ; BASE: the word at BASETAB + 2n
+                ld      de,BASETAB
+                add     hl,de
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)
+                jr      g8_int_result
+g8_fn_byte:
+                add     hl,de
+                ld      e,(hl)
+                ld      d,0
+g8_int_result:
+                ld      a,2
+                ld      (FACTYP),a          ; the result is an int16
+                ret
+
+; --- g8_open_paren: HL at "(<expr>)" -> DE = value, HL past the ')' --------
+; Shared by the function forms above and the assignment forms below.
+g8_open_paren:
+                call    skip_spaces
+                ld      a,(hl)
+                cp      '('
+                jp      nz,gfx_syntax
+                inc     hl
+                call    g8_num_operand      ; DE = n (ERR 13 on a string, ERR 6 > int16)
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ')'
+                jp      nz,gfx_syntax
+                inc     hl
+                ret
+
+; --- g8_num_operand: eval a NUMERIC operand, ERR 13 on a string -----------
+; `VDP("A")=1` / `VDP(0)="A"` / `BASE(0)="A"` are all Type mismatch on the
+; reference; gfx_eval_int16 alone would silently take the string's numeric
+; residue. str_eval_one is the same detector ex_paint uses for its tile$ form
+; (CF=1 = string operand, HL past it; CF=0 leaves HL for eval).
+g8_num_operand:
+                call    str_eval_one
+                jp      c,gfx_typeerr
+                jp      gfx_eval_int16      ; tail call: its ret serves ours
+
+; --- ex_vdp_assign / ex_base_assign: the STATEMENT forms -------------------
+; There is no statement token: a statement whose first token is VDP/BASE IS the
+; assignment (spec §2), which is why these hang off interp.asm's dispatch rather
+; than off ex_let. `LET VDP(0)=2` is ERR 2 on the reference -- and falls out
+; here for free, since ex_letkw only accepts a variable name.
+ex_vdp_assign:
+                ld      a,13                ; GFX_OP = 13 -> tenant VDP register write
+                jr      g8_assign
+ex_base_assign:
+                ld      a,14                ; GFX_OP = 14 -> tenant BASE write + reprogram
+g8_assign:
+                ld      (GFX_OP),a          ; parked in the selector cell itself rather
+                                            ; than on the stack: the parse below can exit
+                                            ; through raise_error, which unwinds SP
+                inc     hl                  ; past the VDP / BASE token
+                call    g8_open_paren       ; DE = n, HL past ')'
+                ld      (GFX_G8N),de
+                call    skip_spaces
+                ld      a,(hl)
+                cp      EQ_TOKEN
+                jp      nz,gfx_syntax       ; `VDP(0)` alone / `VDP(0),1` -> ERR 2
+                inc     hl
+                call    skip_spaces
+                ld      a,(hl)
+                or      a
+                jr      z,g8_missing        ; `VDP(0)=` at end of line -> ERR 24
+                cp      ':'
+                jr      z,g8_missing
+                call    g8_num_operand      ; DE = value (ERR 13 on a string)
+                ld      (GFX_G8V),de
+                call    skip_spaces
+                ld      a,(hl)
+                or      a
+                jr      z,g8_run
+                cp      ':'
+                jp      nz,gfx_syntax       ; `VDP(0)=1,2` -> a TRAPPABLE ERR 2, not the
+g8_run:                                     ; run-aborting stmt_error exec_stmt would give
+                push    hl                  ; keep the cursor across the tenant call
+                ld      a,(GFX_OP)
+                call    spr_tenant          ; runs GFX_OP=A, raises the tenant's ERR code
+                pop     hl
+                jp      exec_stmt
+g8_missing:
+                ld      a,24                ; Missing operand (measured, spec §3)
+                jp      raise_error
     ENDIF
 
     ENDIF

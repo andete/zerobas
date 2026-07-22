@@ -938,12 +938,222 @@ def phase_p() -> int:
     return fails
 
 
+# ===========================================================================
+# PHASE Q -- G8: VDP(n) / BASE(n) (docs/spec-basic-graphics-g8.md §7)
+# ===========================================================================
+BASETAB, RGSAV, SCRMOD_ADDR, G8_RES = 0xF3B3, 0xF3DF, 0xFCAF, 0xD100
+G8_CAP = ("mem_abs", [(BASETAB, 40), (RGSAV, 9), (SCRMOD_ADDR, 1), (G8_RES, 1)])
+
+# R7 is DELIBERATELY excluded from every register assertion: C-BIOS programs it
+# (and, in SCREEN 0, R3/R5/R6) differently from the reference BIOS, a difference
+# that sits BELOW the BASIC statement -- documented as G8-regdelta (spec §7).
+# Wherever G8 reprograms, it writes ALL of R0..R6 from the (identical) table, so
+# those seven ARE comparable; where it does not reprogram, only the table is.
+def _g8_state(raw: str | None):
+    if not raw:
+        return None
+    b = bytes.fromhex(raw)
+    if b[50] != 7:                      # the case never reached its hold loop
+        return None
+    return ([b[2 * i] | (b[2 * i + 1] << 8) for i in range(20)], list(b[40:47]))
+
+
+def _g8_prog(lines: list[str]):
+    body = list(lines) + [f"POKE&H{G8_RES:04X},7"]
+    return ("stored", body + [f"GOTO {(len(body) + 1) * 10}"])
+
+
+# label, program lines, assert-registers-too?
+G8_STATE = [
+    # the plain single-mode reprogram (SCREEN 0 writes its own group)
+    ("s0_name",    ["SCREEN0", "BASE(0)=&H0400"], True),
+    ("s0_satr",    ["SCREEN0", "BASE(3)=&H1F00"], True),
+    ("s0_spat",    ["SCREEN0", "BASE(4)=&H3000"], True),
+    # THE off-by-one: SCREEN 1 programs from group 2, SCREEN 2 from group 3
+    ("s1_name",    ["SCREEN1", "BASE(5)=&H0400"], True),
+    ("s1_satr",    ["SCREEN1", "BASE(8)=&H1F00"], True),
+    ("s2_name",    ["SCREEN2", "BASE(10)=&H1C00"], True),
+    ("s2_satr",    ["SCREEN2", "BASE(13)=&H1F00"], True),
+    ("s2_spat",    ["SCREEN2", "BASE(14)=&H3000"], True),
+    # ...and it reads the OTHER group's words, not the written slot's
+    ("s1_poison",  ["SCREEN0", "BASE(13)=&H0400", "SCREEN1", "BASE(8)=&H1F00"], True),
+    ("s2_poison",  ["SCREEN0", "BASE(18)=&H0400", "SCREEN2", "BASE(13)=&H1F00"], True),
+    ("s2_poison2", ["SCREEN0", "BASE(19)=&H1000", "SCREEN2", "BASE(14)=&H3000"], True),
+    # the reprogram is WIDE: a register poked out of sync snaps back to the table
+    ("s0_desync",  ["SCREEN0", "VDP(2)=5", "VDP(6)=5", "BASE(3)=&H1F00"], True),
+    ("s2_desync",  ["SCREEN2", "VDP(2)=5", "VDP(6)=5", "BASE(13)=&H1F00"], True),
+    # R1's non-mode bits survive (a SCREEN 2,1 sprite size in particular)
+    ("s2_size",    ["SCREEN2,1", "BASE(13)=&H1F00"], True),
+    ("s2_r1poke",  ["SCREEN2", "VDP(1)=&HE2", "BASE(13)=&H1F00"], True),
+    # cross-group: the word is stored and NOTHING is programmed. Registers are
+    # NOT compared here -- they still hold each BIOS's own mode-set values.
+    ("x_s0_g2",    ["SCREEN0", "BASE(10)=&H1C00"], False),
+    ("x_s2_g1",    ["SCREEN2", "BASE(5)=&H1C00"], False),
+    ("x_s2_g3",    ["SCREEN2", "BASE(15)=&H0C00"], False),
+    # a plain VDP register write reaches the mirror (the chip half is Q4)
+    ("vdp_r7",     ["SCREEN2", "VDP(7)=&H4F"], True),
+    ("vdp_r2",     ["SCREEN2", "VDP(2)=7"], True),
+]
+
+
+def phase_q_state() -> int:
+    """Boot-per-case: each case holds its screen mode in a GOTO-self loop (a
+    BASE write moves the name table, so the SCREEN-0 text scrape is useless
+    here and the state is read from memory instead)."""
+    fails = 0
+    print("=== PHASE Q1: VDP/BASE state differential (table + R0..R6) ===")
+    for label, lines, with_regs in G8_STATE:
+        specs = [_g8_prog(lines)]
+        r = _g8_state(omsx_repl.run_cases(REF, specs, batch=False,
+                                          capture=G8_CAP, step=6.0)[0])
+        z = _g8_state(omsx_repl.run_cases(ZB, specs, batch=False,
+                                          capture=G8_CAP, step=6.0)[0])
+        if r is None or z is None:
+            ok, detail = False, f"ref={r is not None} zb={z is not None} (no capture)"
+        elif with_regs:
+            ok = r == z
+            detail = f"regs ref={['%02x' % v for v in r[1]]} zb={['%02x' % v for v in z[1]]}"
+        else:
+            ok = r[0] == z[0]
+            detail = "table-only (cross-group: no reprogram)"
+        fails += not ok
+        print(f"  {'PASS' if ok else 'FAIL'} {label:11} {detail}")
+    return fails
+
+
+# Behavioural cases, both outcomes behind one tag (the Phase-L/O pattern), so an
+# accepted<->raised flip cannot pass. Grammar + domains from spec §3/§4.
+#
+# Every case that SUCCEEDS in writing a BASE word puts the default back before it
+# prints: this phase batches, and a moved name table wrecks the SCREEN-0 scrape
+# for every case AFTER it (which is exactly how the first run of this phase read
+# as 34 spurious failures, on both machines at once).
+G8_BEHAV = [
+    (l, ['ON ERROR GOTO 40', body, 'SCREEN0:PRINT"ZK";A:END',
+         'SCREEN0:PRINT"ZE";ERR:END'])
+    for l, body in [
+        # reads
+        ("rd_vdp1",     'SCREEN2:VDP(1)=&HE2:A=VDP(1)'),
+        ("rd_vdp8",     'SCREEN2:VDP(0)=2:A=VDP(8)-VDP(8)'),
+        ("rd_vdp9",     'SCREEN2:A=VDP(9)'),
+        ("rd_vdpneg",   'SCREEN2:A=VDP(-1)'),
+        ("rd_vdp256",   'SCREEN2:A=VDP(256)'),
+        ("rd_vdpfrac",  'SCREEN2:VDP(1)=&HE2:A=VDP(1.7)'),
+        ("rd_vdpnegfr", 'SCREEN2:VDP(0)=3:A=VDP(-0.4)'),
+        ("rd_base0",    'SCREEN2:A=BASE(0)'),
+        ("rd_base10",   'SCREEN2:A=BASE(10)'),
+        ("rd_base19",   'SCREEN2:A=BASE(19)'),
+        ("rd_base20",   'SCREEN2:A=BASE(20)'),
+        ("rd_baseneg",  'SCREEN2:A=BASE(-1)'),
+        ("rd_base_s0",  'SCREEN0:A=BASE(10)'),
+        ("rd_bare",     'SCREEN2:A=VDP'),
+        ("rd_nopar",    'SCREEN2:A=VDP 0'),
+        # write domains
+        ("wr_vdp8",     'SCREEN2:VDP(8)=1'),
+        ("wr_vdpneg",   'SCREEN2:VDP(-1)=1'),
+        ("wr_vdp9",     'SCREEN2:VDP(9)=1'),
+        ("wr_v256",     'SCREEN2:VDP(1)=256'),
+        ("wr_vneg",     'SCREEN2:VDP(1)=-1'),
+        ("wr_vfrac",    'SCREEN2:VDP(0)=2.7:A=VDP(0)'),
+        ("wr_vnegfrac", 'SCREEN2:VDP(0)=-0.4:A=VDP(0)'),
+        ("wr_v255fr",   'SCREEN2:VDP(0)=255.6:A=VDP(0)'),
+        # BASE value grain, per slot kind, incl. the group-2 exception
+        ("b_name_ok",   'SCREEN0:BASE(0)=&H0400:A=BASE(0):BASE(0)=0'),
+        ("b_name_odd",  'SCREEN0:BASE(0)=&H0401'),
+        ("b_name_80",   'SCREEN0:BASE(0)=&H0080'),
+        ("b_colr_80",   'SCREEN0:BASE(1)=&H0080:A=BASE(1):BASE(1)=0'),
+        ("b_colr_g2",   'SCREEN0:BASE(11)=&H0400'),
+        ("b_colr_g2ok", 'SCREEN0:BASE(11)=&H2000:A=BASE(11):BASE(11)=&H2000'),
+        ("b_patt_g2",   'SCREEN0:BASE(12)=&H0800'),
+        ("b_patt_g1",   'SCREEN0:BASE(7)=&H0800:A=BASE(7):BASE(7)=0'),
+        ("b_satr_80",   'SCREEN0:BASE(13)=&H0080:A=BASE(13):BASE(13)=&H1B00'),
+        ("b_spat_400",  'SCREEN0:BASE(14)=&H0400'),
+        ("b_spat_800",  'SCREEN0:BASE(14)=&H0800:A=BASE(14):BASE(14)=&H3800'),
+        ("b_big",       'SCREEN0:BASE(10)=&H4000'),
+        ("b_top",       'SCREEN0:BASE(10)=&H3800:A=BASE(10):BASE(10)=&H1800'),
+        ("b_neg",       'SCREEN0:BASE(10)=-1'),
+        ("b_n20",       'SCREEN0:BASE(20)=0'),
+        ("b_nneg",      'SCREEN0:BASE(-1)=0'),
+        # grammar
+        ("g_let_vdp",   'SCREEN2:LET VDP(0)=2'),
+        ("g_let_base",  'SCREEN2:LET BASE(0)=&H0400'),
+        ("g_bare_stmt", 'SCREEN2:VDP(0)'),
+        ("g_name_eq",   'SCREEN2:VDP=1'),
+        ("g_base_eq",   'SCREEN2:BASE=1'),
+        ("g_no_rhs",    'SCREEN2:VDP(0)='),
+        ("g_no_paren",  'SCREEN2:VDP 0=1'),
+        ("g_two_args",  'SCREEN2:VDP(0,1)=2'),
+        ("g_list_rhs",  'SCREEN2:VDP(0)=1,2'),
+        ("g_self",      'SCREEN2:VDP(0)=2:VDP(0)=VDP(0):A=VDP(0)'),
+        ("g_base_self", 'SCREEN2:BASE(0)=BASE(0):A=BASE(0)'),
+        ("g_str_val",   'SCREEN2:VDP(0)="A"'),
+        ("g_str_idx",   'SCREEN2:VDP("A")=1'),
+        ("g_str_base",  'SCREEN2:BASE(0)="A"'),
+        # `FOR VDP(0)=0 TO 1` and `SWAP VDP(0),A` are ERR 2 on the reference and
+        # are silently ACCEPTED here -- but that is NOT a G8 property: `FOR 1=0 TO
+        # 1` and `SWAP 1,A` behave the same way, so it is a general FOR/SWAP
+        # lvalue-validation gap (spec §7, G8-trapclass). Asserting it in this
+        # phase would only lock in the wrong behaviour, so it is documented, not
+        # gated.
+        ("g_mid_stmt",  'SCREEN2:A=1:VDP(0)=2:B=3:A=VDP(0)'),
+        ("g_if_stmt",   'SCREEN2:IF 1 THEN VDP(0)=2:A=VDP(0)'),
+    ]
+]
+
+
+def phase_q_behav() -> int:
+    fails = 0
+    print("=== PHASE Q2: VDP/BASE reads, domains, grammar ===")
+    specs = [("stored", body) for _, body in G8_BEHAV]
+    ref = omsx_repl.run_cases(REF, specs, batch=True, reset=("NEW", "CLS"))
+    zb = omsx_repl.run_cases(ZB, specs, batch=True, reset=("NEW", "CLS"))
+    for (label, _), r, z in zip(G8_BEHAV, ref, zb):
+        ra, za = _outcome(r), _outcome(z)
+        ok = ra is not None and ra == za
+        fails += not ok
+        print(f"  {'PASS' if ok else 'FAIL'} {label:12} ref={ra!r} zb={za!r}")
+    return fails
+
+
+def phase_q_teeth() -> int:
+    """THE TEETH. Everything above passes on an implementation that updates only
+    the RAM mirrors and never touches the chip -- reads come back from the very
+    cells the write filled. So: clear R1's interrupt-enable bit and watch TIME.
+    Frozen (delta 0) means the VDP itself saw the write; still ticking means the
+    write went nowhere. The control case must tick on the same machine, or a
+    hung/idle emulator would read as a pass."""
+    fails = 0
+    print("=== PHASE Q3: does VDP(n)= reach the CHIP? (TIME freeze) ===")
+    cases = [("ie_off", "VDP(1)=VDP(1)AND223"), ("control", "A=0")]
+    jiffy = "(PEEK(&HFC9E)+256*PEEK(&HFC9F))"
+    specs = [("stored", [
+        f"POKE&H{G8_RES:04X},255",
+        f"SCREEN0:{stmt}",
+        f"T={jiffy}:FORI=1TO800:NEXT:D={jiffy}-T",
+        "VDP(1)=VDP(1)OR32",
+        f"POKE&H{G8_RES+1:04X},D-INT(D/256)*256:POKE&H{G8_RES:04X},0:END",
+    ]) for _, stmt in cases]
+    for mach in (REF, ZB):
+        outs = omsx_repl.run_cases(mach, specs, batch=False,
+                                   capture=("mem_abs", [(G8_RES, 3)]), step=25.0)
+        for (label, stmt), o in zip(cases, outs):
+            b = bytes.fromhex(o) if o else None
+            delta = None if b is None or b[0] != 0 else b[1]
+            want_zero = label == "ie_off"
+            ok = delta is not None and ((delta == 0) if want_zero else (delta > 0))
+            fails += not ok
+            print(f"  {'PASS' if ok else 'FAIL'} {mach.split('_')[0]:8} {label:8} "
+                  f"JIFFY delta={delta}")
+    return fails
+
+
 def main() -> int:
     fails = (phase_a() + phase_b() + phase_c() + phase_d()
               + phase_e() + phase_f() + phase_g_rneg()
               + phase_h() + phase_i_aliasing() + phase_j()
               + phase_k() + phase_l() + phase_m()
-              + phase_n() + phase_o() + phase_p())
+              + phase_n() + phase_o() + phase_p()
+              + phase_q_state() + phase_q_behav() + phase_q_teeth())
     print("-------------------")
     print("graphics-acceptance:", "PASS" if fails == 0 else f"FAIL ({fails})")
     return 1 if fails else 0

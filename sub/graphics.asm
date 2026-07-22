@@ -96,6 +96,10 @@ gt_nostamp:
                 jp      z,gfx_spr_xrest     ; GFX_OP == 11 (restore them after CHGMOD)
                 dec     a
                 jp      z,gfx_spr_size_apply ; GFX_OP == 12 (apply SCREEN's sprite size)
+                dec     a
+                jp      z,gfx_vdp_wr        ; GFX_OP == 13 (VDP(n) = v -- G8)
+                dec     a
+                jp      z,gfx_base_wr       ; GFX_OP == 14 (BASE(n) = v -- G8)
                 ; GFX_OP == 0 (or any other value) -> the G1 floor self-test
                 ; (falls through to graphics_selftest below).
 
@@ -451,6 +455,18 @@ gpe_bg:
 ; race apply per pixel.
 ; ===========================================================================
 gfx_line_op:
+                ; --- work area: GXPOS/GYPOS + GRPACX/GRPACY = p2, the segment's
+                ; endpoint (spec G3 §11.5). Moved here from the resident elg_draw
+                ; by G8's space carve. Order matters for the CIRCLE spokes, which
+                ; call this op internally: gco_done draws the spokes FIRST and
+                ; writes the circle's own work-area values AFTER, so a spoke's
+                ; endpoint never survives as the last-referenced point.
+                ld      hl,(GFX_X2)
+                ld      (GXPOS),hl
+                ld      (GRPACX),hl
+                ld      hl,(GFX_Y2)
+                ld      (GYPOS),hl
+                ld      (GRPACY),hl
                 ei                          ; interrupts LIVE for the (possibly long) draw
                 ld      a,(GFX_MODE)
                 or      a
@@ -913,8 +929,66 @@ gco_loop:
                 call    gfx_circ_next
                 jr      gco_loop
 gco_done:
+                ; --- deferred spokes + work area (G8 space carve, 2026-07-22) ---
+                ; These used to be the resident circ_draw's tail: ~120 B of pure
+                ; marshalling whose only real work was two more subrom_calls back
+                ; into THIS island. Folding them in makes each of those a plain
+                ; internal `call gfx_line_op` and funds G8's resident half without
+                ; evicting anything outside the graphics arc
+                ; (docs/spec-basic-graphics-g8.md §6). Order is load-bearing: the
+                ; spokes are drawn AFTER the arc (§9 G4-spoke), and the work-area
+                ; writes keep G4's signed-off GXPOS=r / GYPOS=cy residue quirk.
+                ld      a,(GFX_SNEG)
+                or      a
+                call    nz,gco_spoke_s
+                ld      a,(GFX_ENEG)
+                or      a
+                call    nz,gco_spoke_e
+                ld      hl,(GFX_CXC)
+                ld      (GRPACX),hl
+                ld      hl,(GFX_CYC)
+                ld      (GRPACY),hl
+                ld      hl,(GFX_R)
+                ld      (GXPOS),hl          ; quirk: GXPOS = r
+                ld      hl,(GFX_CYC)
+                ld      (GYPOS),hl          ; quirk: GYPOS = cy
                 di                          ; leave the EI region before returning via CALSLT
                 ret
+
+; --- gco_spoke_s / gco_spoke_e / gco_spoke: a radius spoke ------------------
+; A negative start/end angle asks for a radius line from the centre out along
+; that boundary vector (spec G4 §5.3). IN (gco_spoke): HL = the vector's base
+; cell (X at +0, Y at +2). Runs the island's own line op directly -- no CALSLT.
+gco_spoke_s:
+                ld      hl,GFX_SVX
+                jr      gco_spoke
+gco_spoke_e:
+                ld      hl,GFX_EVX
+gco_spoke:
+                push    hl
+                ld      hl,(GFX_CXC)
+                ld      (GFX_X1),hl
+                ld      hl,(GFX_CYC)
+                ld      (GFX_Y1),hl
+                pop     hl
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = vector X
+                inc     hl
+                push    hl                  ; stash the Y-cell address
+                ld      hl,(GFX_CXC)
+                add     hl,de
+                ld      (GFX_X2),hl
+                pop     hl
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = vector Y
+                ld      hl,(GFX_CYC)
+                add     hl,de
+                ld      (GFX_Y2),hl
+                xor     a
+                ld      (GFX_MODE),a        ; segment, not a box
+                jp      gfx_line_op         ; tail call: its ret serves ours
 
 ; ===========================================================================
 ; G4 arc boundary -- TRIG-FREE (spec §5.2.1 REVISED 2026-07-21). Own-design,
@@ -3034,3 +3108,258 @@ gfx_spr_size_apply:
                 out     (VDP_ADDR),a
                 ei
                 ret
+
+; ===========================================================================
+; G8 -- VDP(n)= and BASE(n)= (docs/spec-basic-graphics-g8.md).
+; The READ halves are resident (plain work-area fetches, expr.asm); only the
+; WRITES land here, because only this island owns the VDP ports. Both ops take
+; the index in GFX_G8N and the value in GFX_G8V, and report a domain miss the
+; way every other graphics tenant op does: GFX_RES = the ERR code, 0 = ok.
+; ===========================================================================
+
+; --- gfx_vdp_wr: GFX_OP = 13 -- VDP(n) = v ---------------------------------
+; n in 0..7 (VDP(8) is the read-only status copy -> ERR 5), v in 0..255 after
+; the resident's truncating coercion (spec §4.3). The write updates the RAM
+; mirror AND the chip -- a mirror-only write would pass every read-back
+; assertion while doing nothing, which is what the gate's TIME-freeze teeth
+; check exists to catch.
+gfx_vdp_wr:
+                ld      hl,(GFX_G8N)
+                ld      de,(GFX_G8V)
+                ld      a,h
+                or      a
+                jr      nz,g8_err5          ; index outside 0..255 -> ERR 5
+                ld      a,l
+                cp      8
+                jr      nc,g8_err5          ; 8 (read-only) and beyond -> ERR 5
+                ld      a,d
+                or      a
+                jr      nz,g8_err5          ; value outside 0..255 -> ERR 5
+                ld      c,l                 ; C = register number
+                ld      a,e                 ; A = value
+                jp      g8_wrvdp
+
+g8_err5:
+                ld      a,5                 ; Illegal function call
+                ld      (GFX_RES),a
+                ret
+
+; --- g8_wrvdp: A -> VDP register C, RAM mirror included --------------------
+; The published WRTVDP contract, reimplemented for a page-0 island (there is no
+; BIOS to call here). The two port writes are ONE latch unit, so an ISR status
+; read cannot land between them -- the arc-wide D2 race. Clobbers HL, B.
+g8_wrvdp:
+                ld      hl,RG0SAV
+                ld      b,0
+                add     hl,bc
+                ld      (hl),a              ; mirror first: readers see the new value
+                di
+                out     (VDP_ADDR),a
+                ld      a,c
+                or      $80                 ; $80 | n = "write VDP register n"
+                out     (VDP_ADDR),a
+                ei
+                ret
+
+; --- gfx_base_wr: GFX_OP = 14 -- BASE(n) = v -------------------------------
+; Validate (spec §4.4 step 1), store the word, and -- only when the slot's group
+; is the current screen mode -- reprogram R0..R6 (step 4).
+gfx_base_wr:
+                ld      hl,(GFX_G8N)
+                ld      a,h
+                or      a
+                jr      nz,g8_err5
+                ld      a,l
+                cp      20
+                jr      nc,g8_err5          ; n outside 0..19 -> ERR 5
+                call    g8_group            ; A = n mod 5 (slot kind), B = group
+                ld      c,a                 ; C = slot kind
+                ld      de,(GFX_G8V)
+                ld      a,d
+                and     $C0
+                jr      nz,g8_err5          ; negative or >= $4000 -> ERR 5
+                call    g8_grain            ; HL = grain-1, the alignment mask
+                ld      a,e
+                and     l
+                jr      nz,g8_err5
+                ld      a,d
+                and     h
+                jr      nz,g8_err5          ; not a multiple of the grain -> ERR 5
+                ; --- store the word at BASETAB + 2n
+                ld      hl,(GFX_G8N)
+                add     hl,hl
+                ld      bc,BASETAB
+                add     hl,bc
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
+                ; --- reprogram only when the slot's group IS the current mode
+                ld      a,(GFX_G8N)
+                call    g8_group            ; B = the slot's group
+                ld      a,(SCRMOD)
+                cp      b
+                ret     nz                  ; cross-group write: stored, nothing programmed
+                ; fall through with A = SCRMOD
+
+; --- g8_reprogram: program R0..R6 from a group's five table words ----------
+; IN: A = the current screen mode. THE SOURCE GROUP IS g8_gmap[mode], not the
+; mode itself: SCREEN 1 programs from group 2 and SCREEN 2 from group 3,
+; ignoring the register the written slot owns. That is the reference's own
+; behaviour -- measured and poison-tested (spec §4.4) -- and reproducing it is
+; signed-off decision D8-1. R7 is untouched, and R0/R1 keep every non-mode bit,
+; so a `SCREEN 2,1` sprite size survives a BASE write (measured).
+g8_reprogram:
+                ld      hl,g8_gmap
+                ld      e,a
+                ld      d,0
+                add     hl,de
+                ld      a,(hl)              ; A = source group g
+                ld      (GFX_G8N),a         ; stash it: the mask + mode-bit decisions
+                                            ; below need it, and the marshalled index
+                                            ; has done its job by now
+                ; IX = BASETAB + 10g (the group's five words)
+                ld      l,a
+                ld      h,0
+                ld      d,h
+                ld      e,l
+                add     hl,hl               ; 2g
+                add     hl,hl               ; 4g
+                add     hl,de               ; 5g
+                add     hl,hl               ; 10g
+                ld      de,BASETAB
+                add     hl,de
+                push    hl
+                pop     ix
+                ; --- R2..R6, each the group's word divided by its granularity.
+                ; Unrolled: five rows of a table-driven loop cost more here than
+                ; they save, and this reads as the spec's own table.
+                ld      l,(ix+0)
+                ld      h,(ix+1)
+                ld      b,10
+                ld      c,2                 ; R2 = name / $400
+                call    g8_wrshifted
+                ld      l,(ix+2)
+                ld      h,(ix+3)
+                ld      b,6
+                ld      c,3                 ; R3 = colour / $40
+                call    g8_wrshifted
+                ld      l,(ix+4)
+                ld      h,(ix+5)
+                ld      b,11
+                ld      c,4                 ; R4 = pattern generator / $800
+                call    g8_wrshifted
+                ld      l,(ix+6)
+                ld      h,(ix+7)
+                ld      b,7
+                ld      c,5                 ; R5 = sprite attribute / $80
+                call    g8_wrshifted
+                ld      l,(ix+8)
+                ld      h,(ix+9)
+                ld      b,11
+                ld      c,6                 ; R6 = sprite pattern generator / $800
+                call    g8_wrshifted
+                ; --- R0/R1: mode bits only, everything else preserved
+                ld      a,(RG0SAV)
+                and     $FD                 ; clear M3
+                ld      e,a
+                ld      a,(GFX_G8N)
+                cp      2
+                ld      a,e
+                jr      nz,g8_rp_r0
+                or      $02                 ; GRAPHIC 2 -> M3
+g8_rp_r0:
+                ld      c,0
+                call    g8_wrvdp
+                ld      a,(RG1SAV)
+                and     $E7                 ; clear M1 (bit 4) and M2 (bit 3)
+                ld      e,a
+                ld      a,(GFX_G8N)
+                or      a
+                jr      nz,g8_rp_notext
+                ld      a,e
+                or      $10                 ; group 0 (text) -> M1
+                jr      g8_rp_r1
+g8_rp_notext:
+                cp      3
+                ld      a,e
+                jr      nz,g8_rp_r1
+                or      $08                 ; group 3 (multicolor) -> M2
+g8_rp_r1:
+                ld      c,1
+                jp      g8_wrvdp
+
+; --- g8_wrshifted: HL >> B -> VDP register C (with GRAPHIC 2's low bits) ---
+; In GRAPHIC 2 the colour register's low 7 bits and the pattern-generator
+; register's low 2 bits must all be 1 (published TMS9918A contract, and
+; measured: colour $2000 -> $FF, pattern $0000 -> $03). Only a group-2
+; reprogram sees that; every other group divides plainly. Clobbers A, B, HL.
+g8_wrshifted:
+                srl     h
+                rr      l
+                djnz    g8_wrshifted
+                ld      a,l
+                push    af
+                ld      a,(GFX_G8N)         ; the source group
+                cp      2
+                jr      nz,g8_ws_plain
+                ld      a,c
+                cp      3
+                jr      z,g8_ws_colour
+                cp      4
+                jr      nz,g8_ws_plain
+                pop     af
+                or      $03                 ; pattern generator
+                jp      g8_wrvdp
+g8_ws_colour:
+                pop     af
+                or      $7F                 ; colour table
+                jp      g8_wrvdp
+g8_ws_plain:
+                pop     af
+                jp      g8_wrvdp
+
+; --- g8_group: A = n (0..19) -> A = n mod 5, B = n / 5 ---------------------
+; A compare ladder over a bounded index: smaller and faster than a divide.
+g8_group:
+                ld      b,0
+g8_grp_lp:
+                cp      5
+                ret     c
+                sub     5
+                inc     b
+                jr      g8_grp_lp
+
+; --- g8_grain: B = group, C = slot kind -> HL = grain-1 (alignment mask) ---
+; name $400, colour $80, pattern $800, sprite attribute $80, sprite pattern
+; $800 -- except that in GROUP 2 the colour and pattern bases are $2000-granular,
+; the one place the table is not uniform (measured, spec §4.4). Preserves BC/DE.
+g8_grain:
+                push    de
+                ld      hl,g8_graintab
+                ld      d,0
+                ld      e,c
+                add     hl,de
+                add     hl,de
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)
+                ex      de,hl               ; HL = the plain grain mask
+                ld      a,b
+                cp      2
+                jr      nz,g8_gr_done
+                ld      a,c
+                cp      1
+                jr      z,g8_gr_g2
+                cp      2
+                jr      nz,g8_gr_done
+g8_gr_g2:
+                ld      hl,$1FFF            ; group 2 colour/pattern: $2000-granular
+g8_gr_done:
+                pop     de
+                ret
+
+; The screen mode -> the group the reprogram actually READS. Modes 0 and 3 read
+; their own; SCREEN 1 reads group 2 and SCREEN 2 reads group 3. The reference's
+; whole off-by-one is this one table (spec §4.4, poison-tested).
+g8_gmap:        db      0, 2, 3, 3
+g8_graintab:    dw      $03FF, $007F, $07FF, $007F, $07FF
