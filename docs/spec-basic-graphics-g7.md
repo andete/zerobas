@@ -146,6 +146,16 @@ entry at `$1B00 + 4*plane`.
 
 ## 7. Space — the arc's standing wall
 
+**MEASURED 2026-07-22 (both halves written, commit 444b24b):** the resident half
+is **390 B** against **45 B** of free tail — a **388 B overrun**
+(`__MEAS_PAGE1_END` $7FD3 → $8184). That is *after* the tenant-heavy split of §8
+(the first cut, with the table arithmetic and the merge resident, measured 483 B).
+The scout finds **no single clean carve** that size: on the clean build the
+largest single-entry page-0-CLEAN carves are `read_one_value` 168 B (the
+READ/DATA value scanner, 2 shared-utility entries), `fia_walked` 146 B (the ASCII
+file-append tail, single entry), `ex_kill`/`do_kill` 124 B, `ds_lp` 125 B. So G7's
+eviction is a **combination**, which is what D-G7-6 now has to decide.
+
 G6 landed with **45 B free** on the page-1 tail
 ([spec-eviction-g6-space.md](spec-eviction-g6-space.md)). G7's resident half is
 a parser + marshaller for two statements and one factor, plus the `SCREEN`
