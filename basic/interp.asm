@@ -36,6 +36,21 @@ init:
                                             ; ld (nn),hl between don't touch A) -- the
                                             ; ERR-reset-on-RESUME follow-up reclaimed
                                             ; this once-redundant xor a
+    IF G6_RESIDENT
+                ; G6 DRAW's PERSISTENT state (docs/spec-basic-graphics-g6.md §4).
+                ; MEASURED: S and A survive RUN, NEW, CLEAR, CLS, COLOR and SCREEN --
+                ; ONLY a power-on resets them -- so this cold-only hook is the sole
+                ; place they may be initialised (a reset anywhere warmer would be
+                ; measurably wrong). Same power-on-RAM-is-garbage argument as ERR/ERL
+                ; above: openMSX zero-fills RAM and would hide the omission. ATRBYT
+                ; joins them -- it is the shared graphics attribute a colourless DRAW
+                ; reads (§6), so it must start at FORCLR, not at RAM garbage.
+                ld      (GFX_DANGLE),a      ; A still 0: angle 0
+                ld      a,4
+                ld      (GFX_DSCALE),a      ; scale 4 = 1:1
+                ld      a,(FORCLR)
+                ld      (ATRBYT),a
+    ENDIF
     ENDIF
                 call    clear_usrtab        ; zero the DEF USR vectors
                 call    init_filechan       ; no open channel; PRINT dest = screen
@@ -279,6 +294,10 @@ exec_stmt:
                 jp      z,ex_circle
                 cp      PAINT_TOKEN         ; PAINT [STEP](x,y)[,[c][,[b]]]  (graphics G5)
                 jp      z,ex_paint
+    IF G6_RESIDENT
+                cp      DRAW_TOKEN          ; DRAW <string>  (graphics G6)
+                jp      z,ex_draw
+    ENDIF
     ENDIF
                 call    is_letter           ; bare letter -> assignment
                 jr      c,ex_let

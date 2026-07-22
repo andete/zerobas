@@ -57,6 +57,13 @@ GRPACX          equ     $FCB7   ; last-referenced point X (int16 LE)
 GRPACY          equ     $FCB9   ; last-referenced point Y (int16 LE)
 CLOC            equ     $F92A   ; computed VRAM byte address of the current pixel (2)
 CMASK           equ     $F92C   ; MSB-first bit mask of the current pixel (1)
+; ATRBYT -- the SHARED graphics attribute (published MSX work area). Introduced
+; in G6 (docs/spec-basic-graphics-g6.md §6, D-G6-3) because DRAW's colour is
+; measurably this cell, not a DRAW-private one: every graphics statement given an
+; explicit colour stamps it, every colourless one stamps FORCLR, and DRAW READS it
+; (writing only on `C n`). That is what makes `LINE ..,4 : DRAW"BM..R8"` draw in 4
+; while `DRAW"C6.." : LINE ..` (colourless) draws in FORCLR -- both measured.
+ATRBYT          equ     $F3F2   ; current graphics attribute / plot colour (1)
 ; G1 floor self-test results (PROBE-ONLY; docs/spec-basic-graphics-g1.md §5). The
 ; graphics self-test tenant (SUBROM_IDX_GRAPHICS, GFX_OP=0) is never invoked by real
 ; BASIC -- only by basic_probe_graphics_floor.py -- so its two result bytes live in
@@ -368,6 +375,21 @@ CIRCLE_TOKEN    equ     $BC     ; CIRCLE (x,y),r[,c[,start[,end[,aspect]]]] (sta
 ; (scratchpad/g5_paint_notes.md C1: PAINT=$BF, matches no other keyword's
 ; prefix). Repack-only kwtable entry (lean cart ships no graphics).
 PAINT_TOKEN     equ     $BF     ; PAINT [STEP](x,y)[,[c][,[b]]] (statement)
+; G6_RESIDENT -- the DRAW statement's RESIDENT half (ex_draw + the pre-pass, and
+; with it the kwtable row and the interp dispatch arm) is gated OFF until the
+; space for it exists. MEASURED 2026-07-22: with it in, the page-1 image ends at
+; $80EF, i.e. it overruns the $8000 ceiling by 239 B (ex_draw ~261 B against the
+; 22 B of tail that were free). The scouted runway -- do_tape_prog/ctp_*, 224 B --
+; turned out NOT to be a clean carve: 6 of its callees (load_error, cas_open_match,
+; cas_put, verify_error, cas_ascii_load, new_prog, relink) are page-1 RESIDENT, so
+; it straddles as a page-1 tenant, and it calls BIOS TAPION/TAPIN/TAPIOF, so it
+; cannot be a page-0 tenant either. See docs/spec-basic-graphics-g6.md §8.
+; The TENANT half (sub/graphics.asm GFX_OP=6) is unconditional -- the sub-ROM has
+; room -- so flipping this to 1 after the space lands is the whole switch-on.
+G6_RESIDENT     equ     0
+DRAW_TOKEN      equ     $BE     ; DRAW <string> (statement; graphics G6) -- crunch of
+                                ; `DRAW"u10"` on the reference is BE 22 75 31 30 22,
+                                ; measured (scratchpad/g6_draw_notes.md §1)
 ; ASCII bytes the tokeniser / evaluator treat specially (all public ASCII).
 COLON           equ     $3A     ; ':' statement separator
 QUOTE_REM       equ     $27     ; "'" — apostrophe comment, treated as REM
@@ -951,6 +973,66 @@ GFX_PSTK_CAP    equ     120     ; capacity (360 B); window is 376 B ($E3E8..$E56
 GFX_PSTK_END    equ     GFX_PSTK + GFX_PSTK_CAP*GFX_PSTK_ENTSZ
     IF GFX_PSTK_END > $E560
                 db      PAINT_SPAN_STACK_OVERRAN_E560_DISK_WBUF_WALL
+    ENDIF
+
+; --- G6 DRAW (docs/spec-basic-graphics-g6.md §7) ---------------------------
+; DRAW's command buffer + parse scratch ALIAS the PAINT span stack above: both
+; are graphics statements and only one graphics tenant is ever in flight, the
+; same one-tenant-at-a-time aliasing the disk/line-editor status cells already
+; use. The window's whole aliasing-safety argument (see GFX_PSTK's header) is
+; inherited unchanged -- and DRAW is strictly LESS exposed than PAINT, because
+; the resident pre-pass finishes ALL of its string-engine work (str_eval, the
+; =var;/X lookups) BEFORE the buffer is handed to the tenant.
+;
+; The buffer holds the pre-passed command string (§7): the source bytes verbatim
+; except `=var;` -> a 3-byte binary literal escape (GFX_DESC, int16 LE) and
+; `X strvar;` -> the variable's body spliced inline and re-scanned. 256 B caps
+; the splice (D-G6-4: overrun -> ERR 5).
+GFX_DBUF        equ     GFX_PSTK        ; $E3F2: pre-passed command buffer (256 B)
+GFX_DBUF_CAP    equ     256
+GFX_DESC        equ     $01             ; buffer-only escape: next 2 bytes = int16 LE
+GFX_DPTR        equ     GFX_DBUF + GFX_DBUF_CAP   ; $E4F2: tenant parse cursor (2)
+GFX_DEND        equ     GFX_DPTR + 2    ; $E4F4: one past the last buffer byte (2)
+GFX_DFB         equ     GFX_DEND + 2    ; $E4F6: 1 = B (blank move) prefix pending (1)
+GFX_DFN         equ     GFX_DFB + 1     ; $E4F7: 1 = N (no-update) prefix pending (1)
+GFX_DSVX        equ     GFX_DFN + 1     ; $E4F8: N prefix: cursor X to restore (2)
+GFX_DSVY        equ     GFX_DSVX + 2    ; $E4FA: N prefix: cursor Y to restore (2)
+GFX_DARG        equ     GFX_DSVY + 2    ; $E4FC: last parsed argument (int16 LE) (2)
+GFX_DDX         equ     GFX_DARG + 2    ; $E4FE: this command's dx (int16) (2)
+GFX_DDY         equ     GFX_DDX + 2     ; $E500: ...dy (2)
+GFX_DTX         equ     GFX_DDY + 2     ; $E502: move target X (2)
+GFX_DTY         equ     GFX_DTX + 2     ; $E504: move target Y (2)
+GFX_DTMP        equ     GFX_DTY + 2     ; $E506: mul/div scratch (2)
+GFX_DSP         equ     GFX_DTMP + 2    ; $E508: tenant entry SP -- an error deep in the
+                                        ; parse restores it and exits, so every helper
+                                        ; can just jump to the error tail instead of
+                                        ; threading a CF through the whole call chain (2)
+; --- the RESIDENT pre-pass's own scratch (spec §7) -------------------------
+; Same window, same one-graphics-statement-at-a-time argument; used only before
+; the tenant is entered.
+GFX_DVAL        equ     GFX_DSP + 2     ; $E50A: a resolved `=var;` value, across the
+                                        ; register-clobbering eval call (2)
+GFX_DDEPTH      equ     GFX_DVAL + 2    ; $E50C: X-splice recursion depth (D-G6-4 cap) (1)
+GFX_DEXP        equ     GFX_DDEPTH + 1  ; $E50D: NUL-terminated copy of the text between
+                                        ; `=`/`X` and its `;`, so eval/str_eval run on a
+                                        ; BOUNDED buffer and can never walk off the end
+                                        ; of the string body into the heap (24 B)
+GFX_DEXP_CAP    equ     24              ; -> ends $E525
+;
+; The PERSISTENT pair (spec §4 -- the measured pin: S and A survive RUN, NEW,
+; CLEAR, CLS, COLOR and SCREEN; ONLY a power-on resets them). They therefore
+; may NOT live in the LINEBUF region G3/G4/G5 use for marshalling (the keyboard
+; line editor overwrites that between statements) nor in the heavily-aliased
+; $E0xx block -- they need a private home that nothing else touches, which is
+; why they sit in the 6 B this window deliberately kept spare above the span
+; stack ($E55A..$E55F, GFX_PSTK_END = $E55A). Cold-boot init only (gfx_draw_init).
+GFX_DSCALE      equ     GFX_PSTK_END    ; $E55A: persistent scale, quarter units (1)
+GFX_DANGLE      equ     GFX_DSCALE + 1  ; $E55B: persistent angle 0..3 (1)
+    IF GFX_DEXP + GFX_DEXP_CAP > GFX_PSTK_END
+                db      DRAW_SCRATCH_OVERRAN_THE_PERSISTENT_STATE_CELLS
+    ENDIF
+    IF GFX_DANGLE + 1 > $E560
+                db      DRAW_STATE_OVERRAN_E560_DISK_WBUF_WALL
     ENDIF
     ELSE
 STRSCR          equ     $E360   ; [len][bytes:STRMAX] = 33 bytes ($E360..$E380)

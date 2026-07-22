@@ -157,21 +157,37 @@ resident bytes (§8) and a buffer. Buffer home: the LINEBUF scratch region alrea
 used by G3/G5 (dead during any graphics statement, below the `PLAY` ISR), 256 B.
 A splice that overruns the buffer is an own-design cap — D-G6-4.
 
-## 8. Space — G6 hits the same wall as G4/G5
+## 8. Space — G6 hits the same wall as G4/G5 (now MEASURED)
 
-Measured now: `__MEAS_PAGE1_END = $7FEA` ⇒ **22 B** of page-1 tail, and 19 B of
-page-0 low. Estimated resident cost of G6: statement plumbing + string eval +
-the §7 pre-pass ≈ **200–260 B**. So, as with G4 and G5, the slice is **blocked on
-an eviction** before its resident half can land.
+Page-1 tail free: `__MEAS_PAGE1_END = $7FEA` ⇒ **22 B** (plus 19 B of page-0 low).
 
-Runway already scouted in [spec-eviction-g5-space.md](spec-eviction-g5-space.md)
-(the runner-up to the landed cassette carve): the `do_tape_prog` `ctp_*` core,
-≈ **+190 B**. That may not fully cover the estimate — the impl must **measure the
-real `ex_draw` before choosing**, per the standing "measure byte budgets
-empirically before declaring a wall" lesson, and a second candidate may be needed.
-The tenant half has ample sub-ROM room and is not at issue.
+**Measured 2026-07-22, both halves written:** with `ex_draw` + the §7 pre-pass in,
+the page-1 image ends at **`$80EF` — a 239 B overrun** (so `ex_draw` ≈ **261 B**,
+at the top of this spec's own 200–260 estimate). The resident half therefore ships
+gated behind `G6_RESIDENT equ 0` (sysvars.inc) until the space exists; the tenant
+half (`GFX_OP = 6`) is unconditional, since the sub-ROM has room. Flipping that one
+equate to 1 is the whole switch-on.
 
-## 9. Decisions — SIGN-OFF NEEDED
+⚠️ **The scouted runway is NOT usable.** `do_tape_prog`/`ctp_*` measures 224 B, but
+scouting it properly (rather than trusting the estimate) shows it is a **straddle**:
+six of its callees — `load_error`, `cas_open_match`, `cas_put`, `verify_error`,
+`cas_ascii_load`, `new_prog`, `relink` — are **page-1 resident**, which a page-1
+sub tenant cannot call; and it calls BIOS `TAPION`/`TAPIN`/`TAPIOF`, which a
+**page-0** tenant cannot reach (page 0 is the sub-ROM during the call). So it fits
+neither tenancy. This is the same wall that stopped [the disk/file eviction at
+Phase 2](spec-eviction-g5-space.md).
+
+**Useful structural finding for future carves:** the two tenancies have
+*complementary* reach. A **page-1** tenant sees BIOS + the page-0 low region (float
+pack) but not page-1 residents; a **page-0** tenant sees page-1 residents (CALSLT
+switches only page 0) but neither the BIOS nor the float pack. A carve is clean if
+its whole callee closure lands on one side. Anything reached through `eval` is
+effectively barred from page-0 tenancy, because `eval` bottoms out in the float
+pack.
+
+**Two ways forward (§9 D-G6-6).**
+
+## 9. Decisions
 
 - **D-G6-1 substitution mechanism.** (a) resident pre-pass into a scratch buffer
   with a binary literal escape + inline `X` splice — **recommended** (§7);
@@ -193,6 +209,18 @@ The tenant half has ample sub-ROM room and is not at issue.
   otherwise ship as a documented deviation like G4-rneg / G5-align.
 - **D-G6-5 scale arithmetic.** Implement §3's model literally (16-bit product,
   arithmetic ÷4 truncating toward zero). Cheap on Z80 and exactly measured.
+- **D-G6-6 how to close the measured 239 B — NEEDS SIGN-OFF (new, §8).**
+  (a) **Shrink first, then a smaller carve — recommended.** Switch D-G6-1 to its
+  already-listed alternative (b): the tenant scans and keeps an X-substring stack,
+  and calls back to the resident once per substitution to resolve it. That deletes
+  the resident splice/recursion machinery (≈115 B), and applying the two DRY levers
+  G5 wrote but had to revert (`gfx_eval_int16` / `gfx_store_colour_checked` at the
+  PSET/LINE/CIRCLE sites, ≈28 B) takes the deficit to ≈100 B — a much smaller
+  eviction to find, with headroom left for G7. It also **removes** the D-G6-4
+  splice cap and the 256 B buffer, so it is *more* faithful, not less.
+  (b) **Keep the pre-pass, find a ~260 B clean carve.** Needs fresh scouting
+  against the §8 tenancy rule; no candidate of that size is currently known to be
+  non-straddle.
 
 ## 10. Gates (Definition of Done)
 
@@ -214,6 +242,11 @@ all invisible to host tests). A green build that was never run against the
 reference is not evidence.
 
 ## 11. Impl order
+
+**Progress 2026-07-22:** steps 2 and 3 are written (tenant unconditional, resident
+gated off) and step 1 is re-scoped by the §8 measurement — see D-G6-6. Nothing has
+been run against the reference yet: the resident half cannot link until the space
+lands, so the gates below are all still outstanding.
 
 1. eviction (measure first, then carve) → re-gate → 2. tenant `GFX_OP = 6` parser
 + movement over the G3 primitive (host-unit-tested leaves) → 3. resident

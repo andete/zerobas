@@ -1,0 +1,105 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 probes/basic/basic_probe_graphics.py
+=== PHASE A: pixel + colour plane differential (VG-8020 vs zerobas) ===
+  PASS pset_single    ref=80/f4 zb=80/f4
+  PASS pset_clash     ref=c0/64 zb=c0/64
+  PASS pset_clear_bg  ref=80/f4 zb=80/f4
+  PASS preset_erase   ref=00/f4 zb=00/f4
+  PASS preset_color   ref=80/64 zb=80/64
+  PASS pset_step      ref=c0/94 zb=c0/94
+  PASS pset_mid       ref=08/94 zb=08/94
+  PASS pset_default   ref=80/f4 zb=80/f4
+  PASS clip_noop      ref=00/04 zb=00/04
+=== PHASE B: behavioural differential (clip / errors / POINT / STEP) ===
+  PASS pset_scr0_err    ref='E 5' zb='E 5'
+  PASS pset_ovf_err     ref='E 6' zb='E 6'
+  PASS pset_offscr_ok   ref='OK' zb='OK'
+  PASS point_vals       ref='P 9 4 -1' zb='P 9 4 -1'
+  PASS point_step       ref='S 9' zb='S 9'
+=== PHASE C: LINE pixel/colour plane differential (VG-8020 vs zerobas) ===
+  PASS shallow       pattern band 24B
+  PASS steep         pattern band 24B
+  PASS diag45        pattern band 32B
+  PASS negslope      pattern band 32B
+  PASS rev_shallow   pattern band 24B
+  PASS horiz         pattern band 24B
+  PASS vert          pattern band 24B
+  PASS degenerate    pattern band 32B
+  PASS continuation  pattern band 32B
+  PASS step_chain    pattern band 32B
+  PASS box_b         pattern band 32B
+  PASS box_bf        pattern band 32B
+  PASS box_rev       pattern band 32B
+  PASS clash_line    colour band 16B
+  PASS clip_negTL    pattern band 128B
+  PASS clip_frac     pattern band 64B
+  PASS clip_alloff   pattern band 128B
+=== PHASE D: LINE behaviour (errors / GRPAC / clip-ok) ===
+  PASS ovf_end      ref='E 6' zb='E 6'
+  PASS ovf_ok_min   ref='K' zb='K'
+  PASS scr0_err     ref='E 5' zb='E 5'
+  PASS bf_scr0      ref='E 5' zb='E 5'
+  PASS nodash       ref='E 2' zb='E 2'
+  PASS badsuffix    ref='E 2' zb='E 2'
+  PASS grpac_line   ref='G 30 40' zb='G 30 40'
+  PASS grpac_box    ref='B 30 20' zb='B 30 20'
+  PASS off_ok       ref='K' zb='K'
+=== PHASE E: CIRCLE pixel/colour plane differential (VG-8020 vs zerobas) ===
+  PASS circ_r4        pattern band 32B
+  PASS circ_r7        pattern band 128B
+  PASS circ_r8        pattern band 128B
+  PASS circ_r12       pattern band 200B
+  PASS circ_r15       pattern band 200B
+  PASS circ_r20       pattern band 288B
+  PASS ell_a025       pattern band 288B
+  PASS ell_a05        pattern band 288B
+  PASS ell_a2         pattern band 288B
+  PASS ell_a3         pattern band 288B
+  PASS ell_a05r15     pattern band 200B
+  PASS arc_0_hpi      pattern band 200B
+  PASS arc_hpi_pi     pattern band 200B
+  PASS arc_wrap       pattern band 200B
+  PASS arc_full628    pattern band 200B
+  PASS spoke_270      pattern band 200B
+  PASS spoke_wedge2   pattern band 200B
+  PASS clash_circle   colour band 128B
+  PASS r_zero         pattern band 8B
+=== PHASE F: CIRCLE behaviour (errors / GRPAC / work-area quirk) ===
+  PASS ovf_centre       ref='E 6' zb='E 6'
+  PASS ovf_radius       ref='E 6' zb='E 6'
+  PASS scr0_err         ref='E 5' zb='E 5'
+  PASS colour16_err     ref='E 5' zb='E 5'
+  PASS aspect_neg_err   ref='E 5' zb='E 5'
+  PASS clip_offscr_ok   ref='K' zb='K'
+  PASS clip_neg_ok      ref='K' zb='K'
+  PASS grpac_step       ref='G 15 15' zb='G 15 15'
+  PASS work_quirk       ref='W 10 40' zb='W 10 40'
+=== PHASE G: CIRCLE negative radius (zerobas-only; reference hangs) ===
+  PASS rneg_err zb='E 5' (want 'E 5')
+=== PHASE H: PAINT fill differential (VG-8020 POINT vs zerobas, step=90.0s) ===
+  PASS box_bounded_c15b15     ref=[15, 15, 15, 1] zb=[15, 15, 15, 1]
+  PASS box_flood_c4b15        ref=[4, 4, 4, 4] zb=[4, 4, 4, 4]
+  PASS box_bounded_c9b9       ref=[9, 9, 9, 1] zb=[9, 9, 9, 1]
+  PASS step_form              ref=[15, 15, 15, 1] zb=[15, 15, 15, 1]
+  PASS defaults_c_and_b       ref=[15, 15, 15, 1] zb=[15, 15, 15, 1]
+  PASS comma_empty_c          ref=[15, 15, 15, 1] zb=[15, 15, 15, 1]
+  PASS border16_flood_ok      ref=[1, 1, 1, 1] zb=[1, 1, 1, 1]
+  PASS seed_on_border_still_floods ref=[7, 7] zb=[7, 7]
+  PASS seed_on_wall_pixel     ref=[7, 7, 7] zb=[7, 7, 7]
+=== PHASE I: PAINT-after-string-heavy-work aliasing stress ===
+  PASS paint_after_string_heavy ref=[40, 20, 15, 15, 1] zb=[40, 20, 15, 15, 1] (L,M,P,Q,W = LEN(A$),LEN(B$),3x POINT)
+=== PHASE J: PAINT errors (all pre-tenant, fast/default-step) ===
+  PASS scr0_err           ref='E 5' zb='E 5'
+  PASS scr1_err           ref='E 5' zb='E 5'
+  PASS colour16_err       ref='E 5' zb='E 5'
+  PASS colour_neg_err     ref='E 5' zb='E 5'
+  PASS offscreen_pos_err  ref='E 5' zb='E 5'
+  PASS offscreen_neg_err  ref='E 5' zb='E 5'
+  PASS ovf_err            ref='E 6' zb='E 6'
+  PASS tile_str_err       ref='E 13' zb='E 13'
+  PASS fourth_arg_err     ref='E 2' zb='E 2'
+-------------------
+graphics-acceptance: PASS

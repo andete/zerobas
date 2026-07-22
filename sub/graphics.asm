@@ -52,6 +52,23 @@ GFX_ST_END      equ     $4000       ; one past the last cell (8 KB pass)
 ; ===========================================================================
 graphics_tenant:
                 ld      a,(GFX_OP)
+                ; --- G6/D-G6-3: stamp the SHARED graphics attribute. Every graphics
+                ; statement that resolves a colour leaves it in GFX_C, so stamping
+                ; here covers PSET/PRESET/LINE/CIRCLE/PAINT in ONE place and costs the
+                ; space-blocked resident nothing. Excluded: POINT (op 2) never sets a
+                ; colour, so GFX_C is stale there; DRAW (op 6) owns ATRBYT itself (it
+                ; READS it and writes only on `C n`, spec §6); op 0 is the floor probe.
+                cp      2
+                jr      z,gt_nostamp
+                cp      6
+                jr      z,gt_nostamp
+                or      a
+                jr      z,gt_nostamp
+                push    af
+                ld      a,(GFX_C)
+                ld      (ATRBYT),a
+                pop     af
+gt_nostamp:
                 dec     a
                 jp      z,gfx_plot          ; GFX_OP == 1
                 dec     a
@@ -62,6 +79,8 @@ graphics_tenant:
                 jp      z,gfx_circle_op     ; GFX_OP == 4 (CIRCLE -- G4)
                 dec     a
                 jp      z,gfx_paint_op      ; GFX_OP == 5 (PAINT -- G5)
+                dec     a
+                jp      z,gfx_draw_op       ; GFX_OP == 6 (DRAW -- G6)
                 ; GFX_OP == 0 (or any other value) -> the G1 floor self-test
                 ; (falls through to graphics_selftest below).
 
@@ -1948,4 +1967,551 @@ gpsr_advance:
                 ld      (GFX_PSCX),a
                 jr      gpsr_loop
 gpsr_ret:
+                ret
+
+; ===========================================================================
+; G6 -- DRAW (the MML-style macro language). GFX_OP=6.
+; docs/spec-basic-graphics-g6.md. The LAST drawing statement before sprites.
+;
+; The tenant interprets a command string that the resident has already
+; PRE-PASSED (spec §7): the buffer at GFX_DBUF holds the source bytes verbatim
+; except that `=var;` has become a 3-byte binary literal escape (GFX_DESC + int16
+; LE) and `X strvar;` has been spliced inline. So the tenant never touches a BASIC
+; variable -- which it could not do safely anyway: a page-0 tenant has the float
+; pack (page-0 low) switched out from under it, so the int coercion behind `=var;`
+; is unreachable here. Everything below is pure buffer walking + integer maths.
+;
+; Movement renders through the LANDED G3 segment primitive (gfx_draw_seg over
+; GFX_X1/Y1/X2/Y2), so DRAW inherits G3's rasteriser, its per-pixel clip-by-
+; masking, and its EI-between-pixels/DI-per-pixel-RMW discipline for free. That
+; identity is MEASURED, not assumed: `PSET(20,20):DRAW"M53,37"` and the same LINE
+; produce byte-identical bitmaps (spec §2, scratchpad/g6_draw_notes.md §9).
+;
+; Own-design; the DRAW *language* is the public MSX-BASIC language reference and
+; every numeric rule below (the scale arithmetic, the angle's relative-only
+; rotation, the persistent state, the GXPOS residue) is this project's own
+; black-box measurement -- no disassembly. See sub/PROVENANCE.md.
+; ===========================================================================
+gfx_draw_op:
+                ld      (GFX_DSP),sp        ; error tail restores this (§ helpers below)
+                ei                          ; interrupts LIVE for the whole draw (arc D1)
+                xor     a
+                ld      (GFX_RES),a         ; 0 = ok until something raises
+                ld      hl,GFX_DBUF
+                ld      (GFX_DPTR),hl       ; parse cursor <- start of the pre-passed buffer
+gdo_loop:
+                call    gdrw_skipws
+                jp      c,gdo_done          ; end of buffer -> the string is finished
+                xor     a
+                ld      (GFX_DFB),a         ; a fresh command: no prefixes pending
+                ld      (GFX_DFN),a
+gdo_pfx:
+                call    gdrw_getc           ; A = next char, upcased
+                cp      'B'
+                jr      nz,gdo_notb
+                ld      a,1
+                ld      (GFX_DFB),a         ; B = move without drawing
+                jr      gdo_pfx_next
+gdo_notb:
+                cp      'N'
+                jr      nz,gdo_dispatch
+                ld      a,1
+                ld      (GFX_DFN),a         ; N = draw, then restore the position
+gdo_pfx_next:
+                call    gdrw_skipws
+                jp      c,gdo_done          ; a bare trailing B / N is accepted (measured)
+                jr      gdo_pfx
+                ; --- command letter dispatch ---
+gdo_dispatch:
+                ld      hl,gdrw_dirtab      ; the eight direction letters first
+                ld      b,8
+                ld      c,0                 ; C = index into gdrw_dirvec
+gdo_dscan:
+                cp      (hl)
+                jr      z,gdo_dir
+                inc     hl
+                inc     c
+                djnz    gdo_dscan
+                cp      'M'
+                jp      z,gdo_m
+                cp      'C'
+                jr      z,gdo_c
+                cp      'S'
+                jr      z,gdo_s
+                cp      'A'
+                jr      z,gdo_a
+                jp      gdrw_err5           ; unknown letter (incl. a stray X) -> ERR 5
+
+; --- C n: colour. It is the SHARED graphics attribute (spec §6): DRAW READS
+; ATRBYT and writes it only here, which is what makes `LINE ..,4 : DRAW"BM..R8"`
+; draw in 4 and `DRAW"C6.." : SCREEN2 : DRAW".."` still draw in 6 (both measured).
+gdo_c:
+                call    gdrw_arg_req
+                ld      hl,(GFX_DARG)
+                ld      a,h
+                or      a
+                jp      nz,gdrw_err5        ; >255 or negative -> ERR 5
+                ld      a,l
+                cp      16
+                jp      nc,gdrw_err5        ; C > 15 -> ERR 5 (measured)
+                ld      (GFX_C),a           ; the colour this DRAW plots with
+                ld      (ATRBYT),a          ; ...and the shared attribute, so it sticks
+                jr      gdo_next
+
+; --- S n: scale, quarter units; S0 means 4 (measured against a pre-set S8 AND
+; S2, so it is a real reset to 4, not "leave unchanged").
+gdo_s:
+                call    gdrw_arg_req
+                ld      hl,(GFX_DARG)
+                ld      a,h
+                or      a
+                jp      nz,gdrw_err5        ; S > 255 -> ERR 5 (measured: S255 ok, S256 not)
+                ld      a,l
+                or      a
+                jr      nz,gdo_s_set
+                ld      a,4                 ; S0 == S4
+gdo_s_set:
+                ld      (GFX_DSCALE),a
+                jr      gdo_next
+
+; --- A n: angle 0..3 = 0/90/180/270 degrees.
+gdo_a:
+                call    gdrw_arg_req
+                ld      hl,(GFX_DARG)
+                ld      a,h
+                or      a
+                jp      nz,gdrw_err5
+                ld      a,l
+                cp      4
+                jp      nc,gdrw_err5        ; A > 3 -> ERR 5 (measured)
+                ld      (GFX_DANGLE),a
+                jr      gdo_next
+
+; --- U D L R E F G H: move `n` (default 1) in the letter's direction; E F G H
+; move n in BOTH axes. C = the letter's index into gdrw_dirvec.
+gdo_dir:
+                ld      hl,gdrw_dirvec
+                ld      b,0
+                sla     c                   ; 2 bytes per entry: [sx][sy]
+                add     hl,bc
+                push    hl                  ; -> the (sx,sy) pair
+                call    gdrw_arg_opt        ; count; absent -> 1 (measured: bare `U` = 1)
+                call    gdrw_scale          ; GFX_DARG = the scaled, signed distance
+                pop     hl
+                ld      a,(hl)
+                inc     hl
+                ld      b,(hl)              ; A = sx, B = sy  (each -1 / 0 / +1)
+                push    bc
+                call    gdrw_axis           ; HL = sx * distance
+                ld      (GFX_DDX),hl
+                pop     bc
+                ld      a,b
+                call    gdrw_axis           ; HL = sy * distance
+                ld      (GFX_DDY),hl
+                call    gdrw_rotate         ; the angle applies to RELATIVE motion (§4)
+                call    gdrw_move_rel
+                jr      gdo_next
+
+; --- end of one command: an optional single ';' terminates it. A LEADING ';', a
+; doubled ';;' or a ',' between commands is ERR 5 (measured) -- which falls out
+; of consuming at most one here and letting the next dispatch reject the rest.
+gdo_next:
+                call    gdrw_skipws
+                jr      c,gdo_done
+                call    gdrw_peek
+                cp      ';'
+                jp      nz,gdo_loop
+                call    gdrw_getc           ; consume the terminator
+                jp      gdo_loop
+gdo_done:
+                di                          ; leave the EI region before returning via CALSLT
+                ret
+
+; --- M: absolute when the FIRST operand has no sign prefix, relative when it is
+; '+'/'-' prefixed -- and then the SECOND operand's prefix is optional (measured:
+; `M+20,10` is relative in both axes, `M20,+10` is absolute in both).
+gdo_m:
+                call    gdrw_arg_signed     ; -> GFX_DARG, A = 1 iff a sign was present
+                ld      hl,(GFX_DARG)
+                ld      (GFX_DTX),hl        ; provisional: absolute target X
+                push    af
+                call    gdrw_skipws
+                jr      c,gdo_m_syn
+                call    gdrw_getc
+                cp      ','
+                jr      nz,gdo_m_syn        ; `M100` (no 2nd operand) -> ERR 5 (measured)
+                call    gdrw_arg_signed
+                ld      hl,(GFX_DARG)
+                ld      (GFX_DTY),hl
+                pop     af
+                or      a
+                jp      z,gdo_m_abs         ; no sign on operand 1 -> absolute move
+                ; --- relative: both operands are scaled AND rotated ---
+                ld      hl,(GFX_DTX)
+                ld      (GFX_DARG),hl
+                call    gdrw_scale
+                ld      hl,(GFX_DARG)
+                ld      (GFX_DDX),hl
+                ld      hl,(GFX_DTY)
+                ld      (GFX_DARG),hl
+                call    gdrw_scale
+                ld      hl,(GFX_DARG)
+                ld      (GFX_DDY),hl
+                call    gdrw_rotate
+                call    gdrw_move_rel
+                jp      gdo_next
+gdo_m_syn:
+                jr      gdrw_err5
+gdo_m_abs:
+                ; absolute: neither the scale nor the angle applies (both measured)
+                call    gdrw_move_abs
+                jp      gdo_next
+
+; ---------------------------------------------------------------------------
+; gdrw_err5 -- every parse/range rejection lands here. The tenant's entry SP is
+; restored so a helper nested any number of calls deep can just jump here.
+; ---------------------------------------------------------------------------
+gdrw_err5:
+                ld      sp,(GFX_DSP)
+                ld      a,5                 ; Illegal function call (the whole §5 table
+                ld      (GFX_RES),a         ; is ERR 5 bar the resident's Type mismatch)
+                jr      gdo_done
+
+; --- direction letters, and their unit vectors (E F G H move in BOTH axes) ---
+gdrw_dirtab:    db      'U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'
+gdrw_dirvec:    db      0,-1                ; U
+                db      0,1                 ; D
+                db      -1,0                ; L
+                db      1,0                 ; R
+                db      1,-1                ; E
+                db      1,1                 ; F
+                db      -1,1                ; G
+                db      -1,-1               ; H
+
+; ---------------------------------------------------------------------------
+; gdrw_axis -- in: A = a unit sign (-1/0/+1), GFX_DARG = distance.
+; out: HL = sign * distance. Clobbers A/DE.
+; ---------------------------------------------------------------------------
+gdrw_axis:
+                ld      hl,0
+                or      a
+                ret     z                   ; sign 0 -> no motion on this axis
+                ld      hl,(GFX_DARG)
+                inc     a
+                ret     nz                  ; sign was +1 (A was $FF+1=0 only for -1)
+                jp      gdrw_negate_hl      ; sign -1 -> HL = -distance
+
+; ---------------------------------------------------------------------------
+; gdrw_rotate -- apply the persistent angle to (GFX_DDX,GFX_DDY). One 90-degree
+; step is (dx,dy) -> (dy,-dx): measured, A1 turns U into L and E into H.
+; ---------------------------------------------------------------------------
+gdrw_rotate:
+                ld      a,(GFX_DANGLE)
+                or      a
+                ret     z
+                ld      b,a
+gdrw_rot_step:
+                push    bc
+                ld      hl,(GFX_DDX)
+                ld      (GFX_DTMP),hl       ; stash the old dx
+                ld      hl,(GFX_DDY)
+                ld      (GFX_DDX),hl        ; dx' = dy
+                ld      hl,(GFX_DTMP)
+                call    gdrw_negate_hl
+                ld      (GFX_DDY),hl        ; dy' = -dx
+                pop     bc
+                djnz    gdrw_rot_step
+                ret
+
+; ---------------------------------------------------------------------------
+; gdrw_negate_hl -- HL = -HL.
+; ---------------------------------------------------------------------------
+gdrw_negate_hl:
+                ld      a,h
+                cpl
+                ld      h,a
+                ld      a,l
+                cpl
+                ld      l,a
+                inc     hl
+                ret
+
+; ---------------------------------------------------------------------------
+; gdrw_scale -- the measured scale arithmetic (spec §3, the pin that reproduces
+; every large-count wrap AND the negative rounding):
+;
+;     distance = signed16( (n * S) mod 65536 ) / 4, truncating TOWARD ZERO
+;
+; in/out: GFX_DARG. The product is taken mod 65536 deliberately -- that wrap is
+; exactly what makes `U32767` move DOWN one pixel on the reference.
+; ---------------------------------------------------------------------------
+gdrw_scale:
+                ld      de,(GFX_DARG)
+                ld      a,(GFX_DSCALE)
+                ld      hl,0
+                or      a
+                jr      z,gdrw_sc_div       ; S=0 cannot reach here (gdo_s maps it to 4)
+                ld      b,a
+gdrw_sc_mul:
+                add     hl,de               ; HL = n * S, mod 65536 by construction
+                djnz    gdrw_sc_mul
+gdrw_sc_div:
+                bit     7,h
+                jr      nz,gdrw_sc_neg
+                srl     h                   ; non-negative: a plain logical >>2
+                rr      l
+                srl     h
+                rr      l
+                jr      gdrw_sc_store
+gdrw_sc_neg:
+                call    gdrw_negate_hl      ; negative: divide the MAGNITUDE, then negate
+                srl     h                   ; -> truncation toward zero (measured:
+                rr      l                   ;    S3U-10 gives 7, not floor's 8)
+                srl     h
+                rr      l
+                call    gdrw_negate_hl
+gdrw_sc_store:
+                ld      (GFX_DARG),hl
+                ret
+
+; ---------------------------------------------------------------------------
+; gdrw_move_rel -- target = cursor + (GFX_DDX,GFX_DDY), then draw/move.
+; ---------------------------------------------------------------------------
+gdrw_move_rel:
+                ld      hl,(GRPACX)
+                ld      de,(GFX_DDX)
+                add     hl,de
+                ld      (GFX_DTX),hl
+                ld      hl,(GRPACY)
+                ld      de,(GFX_DDY)
+                add     hl,de
+                ld      (GFX_DTY),hl
+                ; fall through
+
+; ---------------------------------------------------------------------------
+; gdrw_move_abs -- draw (unless B) from the cursor to (GFX_DTX,GFX_DTY), then
+; advance the cursor (unless N). Off-screen parts clip by masking, inherited
+; from the G3 primitive; GRPAC follows the UNCLIPPED coordinate (measured).
+; ---------------------------------------------------------------------------
+gdrw_move_abs:
+                ld      a,(GFX_DFB)
+                or      a
+                jr      nz,gdrw_mv_cursor   ; B prefix: move only, and GXPOS is NOT
+                                            ; touched by a blank move (measured)
+                ld      hl,(GRPACX)
+                ld      (GFX_X1),hl
+                ld      hl,(GRPACY)
+                ld      (GFX_Y1),hl
+                ld      hl,(GFX_DTX)
+                ld      (GFX_X2),hl
+                ld      hl,(GFX_DTY)
+                ld      (GFX_Y2),hl
+                call    gfx_draw_seg        ; the landed G3 rasteriser (EI already on)
+                call    gdrw_gxpos
+gdrw_mv_cursor:
+                ld      a,(GFX_DFN)
+                or      a
+                ret     nz                  ; N prefix: the position does not advance
+                ld      hl,(GFX_DTX)
+                ld      (GRPACX),hl
+                ld      hl,(GFX_DTY)
+                ld      (GRPACY),hl
+                ret
+
+; ---------------------------------------------------------------------------
+; gdrw_gxpos -- the GXPOS/GYPOS residue after a drawn segment. MEASURED rule
+; (notes §5): the pending-target cells end at whichever endpoint has the GREATER
+; y, ties going to the target -- so a downward or horizontal move leaves the
+; target there, while an upward move leaves the START there. Same class of
+; observable-but-odd residue as G4's `GXPOS=r` quirk; matched because GXPOS is
+; PEEKable and it costs a comparison.
+; ---------------------------------------------------------------------------
+gdrw_gxpos:
+                ld      hl,(GFX_DTY)
+                ld      de,(GFX_Y1)         ; Y1 = the start y (gfx_draw_seg preserves
+                                            ; the marshalled endpoint cells)
+                or      a
+                sbc     hl,de               ; target.y - start.y
+                jp      m,gdrw_gx_start     ; target is HIGHER up -> the start wins
+                ld      hl,(GFX_DTX)
+                ld      (GXPOS),hl
+                ld      hl,(GFX_DTY)
+                ld      (GYPOS),hl
+                ret
+gdrw_gx_start:
+                ld      hl,(GFX_X1)
+                ld      (GXPOS),hl
+                ld      hl,(GFX_Y1)
+                ld      (GYPOS),hl
+                ret
+
+; ---------------------------------------------------------------------------
+; Buffer walking. GFX_DPTR is the cursor, GFX_DEND one past the last byte.
+;   gdrw_peek  -- A = the next char (upcased), cursor unmoved; CF=1 at the end
+;   gdrw_getc  -- the same, and consumes it (a fetch past the end is ERR 5, not
+;                 a silent stop: the only way to reach it is a command whose
+;                 required argument ran off the end)
+;   gdrw_skipws-- skip spaces and TABs (both measured to be ignorable anywhere);
+;                 CF=1 if the buffer is exhausted
+; Both preserve BC/DE/HL -- the decimal accumulator in gdrw_arg_try runs in DE
+; ACROSS these calls, so a helper that clobbered it would corrupt every
+; multi-digit count.
+; ---------------------------------------------------------------------------
+gdrw_peek:
+                push    hl
+                push    de
+                ld      hl,(GFX_DPTR)
+                ld      de,(GFX_DEND)
+                or      a
+                sbc     hl,de               ; CF=1 iff cursor < end
+                ccf                         ; -> CF=1 iff cursor >= end (exhausted)
+                jr      c,gdrw_pk_out
+                ld      hl,(GFX_DPTR)
+                ld      a,(hl)
+                cp      'a'
+                jr      c,gdrw_pk_ok
+                cp      'z'+1
+                jr      nc,gdrw_pk_ok
+                sub     32                  ; lowercase command letters are accepted
+gdrw_pk_ok:
+                or      a                   ; CF=0: a character was returned
+gdrw_pk_out:
+                pop     de                  ; (pop does not disturb the flags)
+                pop     hl
+                ret
+gdrw_getc:
+                call    gdrw_peek
+                jp      c,gdrw_err5         ; ran off the end mid-command -> ERR 5
+                push    af
+                push    hl
+                ld      hl,(GFX_DPTR)
+                inc     hl
+                ld      (GFX_DPTR),hl
+                pop     hl
+                pop     af
+                ret
+gdrw_skipws:
+                call    gdrw_peek
+                ret     c
+                cp      ' '
+                jr      z,gdrw_skip_one
+                cp      9                   ; TAB
+                ret     nz
+gdrw_skip_one:
+                call    gdrw_getc
+                jr      gdrw_skipws
+
+; ---------------------------------------------------------------------------
+; Argument parsing.
+;   gdrw_arg_opt    -- optional: a missing argument means 1 (bare `U` = 1)
+;   gdrw_arg_req    -- required: a missing argument is ERR 5 (bare `S`/`A`/`C`)
+;   gdrw_arg_signed -- required, and returns A=1 iff a '+'/'-' sign was present
+;                      (that presence is what makes `M` relative, spec §3)
+; All three leave the value in GFX_DARG. A value is either decimal digits or the
+; resident pre-pass's GFX_DESC escape (a resolved `=var;`), optionally signed.
+; A decimal value above 65535 is ERR 5 (measured: `U99999`).
+; ---------------------------------------------------------------------------
+gdrw_arg_opt:
+                call    gdrw_arg_try
+                ret     c                   ; got one
+                ld      hl,1
+                ld      (GFX_DARG),hl       ; absent -> 1
+                ret
+gdrw_arg_req:
+                call    gdrw_arg_try
+                ret     c
+                jp      gdrw_err5           ; required argument missing
+gdrw_arg_signed:
+                call    gdrw_arg_try
+                jp      nc,gdrw_err5
+                ld      a,(GFX_DTMP)        ; gdrw_arg_try stashed the sign-seen flag
+                ret
+
+; gdrw_arg_try -- CF=1 if an argument was parsed (into GFX_DARG), CF=0 if the
+; next token is not one. GFX_DTMP = 1 iff a sign prefix was present.
+gdrw_arg_try:
+                xor     a
+                ld      (GFX_DTMP),a        ; no sign seen yet
+                ld      (GFX_DTMP+1),a      ; ...and not negative
+                call    gdrw_peek
+                jp      c,gdrw_at_none      ; end of buffer -> there is no argument
+                cp      '+'
+                jr      z,gdrw_at_sign
+                cp      '-'
+                jr      nz,gdrw_at_body
+                ld      a,1
+                ld      (GFX_DTMP+1),a      ; negate at the end
+gdrw_at_sign:
+                call    gdrw_getc           ; consume the sign
+                ld      a,1
+                ld      (GFX_DTMP),a        ; a sign WAS present (M's abs/rel switch)
+gdrw_at_body:
+                call    gdrw_peek
+                jp      c,gdrw_err5         ; a lone sign with no value -> ERR 5
+                cp      GFX_DESC
+                jr      z,gdrw_at_esc
+                cp      '0'
+                jr      c,gdrw_at_none
+                cp      '9'+1
+                jr      nc,gdrw_at_none
+                ; --- decimal digits ---
+                ld      de,0
+gdrw_at_digit:
+                call    gdrw_peek
+                jr      c,gdrw_at_end
+                cp      '0'
+                jr      c,gdrw_at_end
+                cp      '9'+1
+                jr      nc,gdrw_at_end
+                call    gdrw_getc
+                sub     '0'
+                ld      c,a
+                push    bc
+                ld      h,d
+                ld      l,e
+                add     hl,hl               ; *2
+                jp      c,gdrw_err5         ; > 65535 -> ERR 5 (measured: U99999)
+                ld      b,h
+                ld      c,l
+                add     hl,hl               ; *4
+                jp      c,gdrw_err5
+                add     hl,hl               ; *8
+                jp      c,gdrw_err5
+                add     hl,bc               ; *10
+                jp      c,gdrw_err5
+                pop     bc
+                ld      b,0
+                add     hl,bc               ; + the digit
+                jp      c,gdrw_err5
+                ex      de,hl
+                jr      gdrw_at_digit
+gdrw_at_end:
+                ld      (GFX_DARG),de
+                jr      gdrw_at_sign_apply
+gdrw_at_esc:
+                ; The escape's two payload bytes are DATA, so they are read RAW --
+                ; gdrw_getc upcases, which would corrupt any payload byte in $61..$7A.
+                call    gdrw_getc           ; the escape marker itself
+                ld      hl,(GFX_DPTR)
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)
+                inc     hl
+                ld      (GFX_DPTR),hl       ; the pre-pass always emits all 3 bytes
+                ld      (GFX_DARG),de       ; the resident's already-coerced int16
+gdrw_at_sign_apply:
+                ld      a,(GFX_DTMP+1)
+                or      a
+                jr      z,gdrw_at_ok
+                ld      hl,(GFX_DARG)
+                call    gdrw_negate_hl
+                ld      (GFX_DARG),hl
+gdrw_at_ok:
+                scf                         ; CF=1: an argument was parsed
+                ret
+gdrw_at_none:
+                ld      a,(GFX_DTMP)
+                or      a
+                jp      nz,gdrw_err5        ; a sign with no number -> ERR 5
+                or      a                   ; CF=0: there was no argument here
                 ret

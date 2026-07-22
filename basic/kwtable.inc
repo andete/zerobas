@@ -346,5 +346,14 @@ kwtable:
                 ; collision: match_kw compares the FULL keyword, and no other
                 ; keyword shares "PAINT".
                 db      5,"PAINT",1,PAINT_TOKEN                  ; $BF
+                ; --- graphics slice G6 (repack build only) --------------------
+                ; docs/spec-basic-graphics-g6.md §3. DRAW is a NEW single-byte
+                ; STATEMENT token (sysvars.inc DRAW_TOKEN=$BE), black-box
+                ; crunch-pinned (scratchpad/g6_draw_notes.md §1). No prefix
+                ; collision: match_kw compares the FULL keyword, and no other
+                ; keyword shares "DRAW".
+    IF G6_RESIDENT
+                db      4,"DRAW",1,DRAW_TOKEN                    ; $BE
+    ENDIF
     ENDIF
                 db      0

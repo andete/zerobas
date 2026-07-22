@@ -1,0 +1,23 @@
+=== fit pure circles (aspect=1) ===
+  circ_r4    r= 4 n_ref= 24 -> MATCH
+  circ_r8    r= 8 n_ref= 44 -> MATCH
+  circ_r12   r=12 n_ref= 68 -> MATCH
+  circ_r20   r=20 n_ref=112 -> MATCH
+  circ_r7    r= 7 n_ref= 40 -> MATCH
+  circ_r15   r=15 n_ref= 84 -> MATCH
+  ALL CIRCLES MATCH
+
+=== fit ellipses (per-point minor scaling, trunc) ===
+  ell_a025     a= 0.25 r=20 -> MATCH (round)
+  ell_a05      a=  0.5 r=20 -> MATCH (round)
+  ell_a2       a=    2 r=20 -> MATCH (round)
+  ell_a3       a=    3 r=20 -> MATCH (round)
+  ell_a05r15   a=  0.5 r=15 -> MATCH (round)
+
+=== fit arcs (angle-mask, no spokes) ===
+  arc_0_hpi      s=0 e=1.57 n_ref= 21 got= 21 -> MATCH
+  arc_hpi_pi     s=1.57 e=3.14 n_ref= 22 got= 21 -> DIFF +0 -1
+       extra[] miss[(61, 45)]
+  arc_wrap       s=3 e=1 n_ref= 58 got= 57 -> DIFF +0 -1
+       extra[] miss[(68, 47)]
+  arc_full628    s=0 e=6.28 n_ref= 84 got= 84 -> MATCH

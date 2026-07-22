@@ -1,0 +1,36 @@
+=== dump point-sets for host fitter ===
+  circ_r4      n= 24  x36..44(w9) y36..44(h9)
+  circ_r8      n= 44  x32..48(w17) y32..48(h17)
+  circ_r12     n= 68  x48..72(w25) y48..72(h25)
+  circ_r20     n=112  x60..100(w41) y60..100(h41)
+  circ_r7      n= 40  x33..47(w15) y33..47(h15)
+  circ_r15     n= 84  x45..75(w31) y45..75(h31)
+  ell_a025     n= 88  x60..100(w41) y75..85(h11)
+  ell_a05      n=100  x60..100(w41) y70..90(h21)
+  ell_a2       n=100  x70..90(w21) y60..100(h41)
+  ell_a3       n= 88  x73..87(w15) y60..100(h41)
+  ell_a05r15   n= 72  x45..75(w31) y52..68(h17)
+  arc_0_hpi    n= 21  x61..75(w15) y45..60(h16)
+  arc_hpi_pi   n= 22  x45..61(w17) y45..59(h15)
+  arc_wrap     n= 58  x45..75(w31) y47..75(h29)
+  arc_full628  n= 84  x45..75(w31) y45..75(h31)
+  -> wrote /Users/joost/projects/zerobas/scratchpad/g4_pointsets.json
+
+=== colour clash on a circle (CIRCLE(40,40),8,6) ===
+   colour bytes present: 01 61
+
+=== negative radius (isolated; may be slow) ===
+  r=-1   -> raw=''
+
+=== GXPOS/GYPOS residue pattern (vary r, centre) ===
+  centre=(30,40) r= 10 -> GXPOS/GYPOS=(10, 40)   (r=10, cy=40)
+  centre=(100,50) r= 25 -> GXPOS/GYPOS=(25, 50)   (r=25, cy=50)
+  centre=(60,60) r=  5 -> GXPOS/GYPOS=(5, 60)   (r=5, cy=60)
+
+=== aspect rounding (measure minor extent) ===
+  aspect=.3     (20*a=6.0) -> height=13 => y-radius=6
+  aspect=.35    (20*a=7.0) -> height=15 => y-radius=7
+  aspect=.175   (20*a=3.5) -> height=7 => y-radius=3
+  aspect=.075   (20*a=1.5) -> height=3 => y-radius=1
+
+(done round 3)
