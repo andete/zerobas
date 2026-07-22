@@ -67,13 +67,21 @@ def run_typed(cart: str, cas_path: str, type_cmds: list[tuple[float, str]],
               cap_addr: int, cap_len: int,
               cap_time: float, timeout: float = 120.0,
               poison_witness: bool = False,
-              inject: tuple[int, bytes] | None = None):
+              inject: tuple[int, bytes] | None = None,
+              machine: str | None = None):
     """Mount cas_path, type the timed commands, capture cap_len bytes at cap_addr.
 
     inject=(addr, bytes) writes a tokenised program image into RAM before typing
     (so a long OPEN/LINE INPUT#/POKE program is set up without typing a 90-char line
     at emulator keyboard speed; the test then just types RUN). Returns
     (hex_at_cap_addr, witness_byte_or_None).
+
+    machine (default MACHINE_TAPE, the lean "-cart" tape rig) may be overridden
+    to a REPACK machine (e.g. C-BIOS_MSX1_EU_REPACK_DISK, installed by `make
+    repack-machine`) to exercise a repack-only feature (e.g. a sub-ROM page-1
+    tenant) over the cassette port -- that machine already bakes in the merged
+    ROM as its slot-0 primary AND ships a <CassettePort/>, so `cart` is simply
+    unused (no `-cart` flag) in that case; only `-cassetteplayer` is passed.
     """
     out = tempfile.mktemp(suffix=".txt", prefix="casverb_")
     lines = [
@@ -104,8 +112,11 @@ def run_typed(cart: str, cas_path: str, type_cmds: list[tuple[float, str]],
     open(tcl_path, "w").write(tcl)
     if os.path.exists(out):
         os.unlink(out)
-    cmd = [OMSX, "-machine", MACHINE_TAPE, "-cart", cart,
-           "-cassetteplayer", cas_path, "-script", tcl_path]
+    zb_machine = machine or MACHINE_TAPE
+    cmd = [OMSX, "-machine", zb_machine]
+    if zb_machine == MACHINE_TAPE:
+        cmd += ["-cart", cart]          # lean: the ROM IS the cartridge
+    cmd += ["-cassetteplayer", cas_path, "-script", tcl_path]
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                             start_new_session=True)
     deadline = time.time() + timeout

@@ -1399,6 +1399,17 @@ LE_STATUS       equ     DISKOP_STATUS   ; tenant -> main: 0 ok / 1 out of memory
 LE_OP_STORE             equ 0   ; lineedit: process SL_NUM/SL_TOK (store or delete)
 LE_OP_RELINK            equ 1   ; lineedit: relink-only (cload.asm's own call sites)
 
+; --- Cassette name-match/skip tenant ABI (SUBROM_IDX_CASMATCH, docs/spec-
+; eviction-g5-space.md): reuses the SAME DISKOP_STATUS RAM cell, ANOTHER
+; separate value namespace (fatprim/dirverb/audio/lineedit/casmatch are never
+; in flight at once -- one subrom_call reaches exactly one tenant). No OP
+; selector cell needed (unlike LE_OP) -- casmatch_tenant has exactly one
+; entry point (cas_open_match), no selector to marshal.
+CM_STATUS       equ     DISKOP_STATUS   ; tenant -> main: 0 = matched (-> CF
+                                        ; clear) / 1 = not found or tape error
+                                        ; (-> CF set); converted back to CF by
+                                        ; the resident cas_open_match shim.
+
 ; --- Audio: PLAY work area + queue packet format (audio Slice 2a) -----------
 ; docs/spec-basic-audio-play-slice2a.md. The program-visible cells are the
 ; STANDARD MSX music work area at their MSX2-Technical-Handbook addresses (a
@@ -2209,6 +2220,18 @@ SUBROM_IDX_LINEEDIT  equ 15     ; lineedit_tenant (sub/lineedit.asm): the number
                                 ; said "index 14" -- stale by the time of impl
                                 ; (SUBROM_IDX_PLAY_PARSE claimed 14 first); 15 is the
                                 ; actual next-free index.
+SUBROM_IDX_CASMATCH  equ 16     ; casmatch_tenant (sub/casmatch.asm): the
+                                ; cassette Tier-3 name-match/data-skip engine
+                                ; (docs/spec-eviction-g5-space.md) -- cas_open_match
+                                ; + cas_skip_data (basic/cload.asm), evicted whole
+                                ; to free page-1 tail space for the G5 PAINT slice.
+                                ; A pure RAM+BIOS leaf (TAPION/TAPIN + CAS_WANT*/
+                                ; CAS_HDRNAME/CAS_HDRID/CAL_BUF/CAL_CNT) -- no
+                                ; register marshalling, only the CM_STATUS byte
+                                ; (CF cannot ride back through subrom_call
+                                ; directly). Only basic/cload.asm `cas_open_match`
+                                ; computes IX = SUBROM_ENTRY_BASE_P1 +
+                                ; 3*SUBROM_IDX_CASMATCH.
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

@@ -247,150 +247,30 @@ ccn_set:
                 ld      (CAS_WANT_ON),a
                 ret
 
-; --- cas_open_match: open the next MATCHING cassette file's header ------------
-; Loops over the tape's files: TAPION each header block, read the file-type id
-; (into CAS_HDRID) + the 6-char name (into CAS_HDRNAME). If CAS_WANT_ON = 0 the
-; first file matches (bare CLOAD / load-next); else the name is compared BYTE-
-; EXACT against CAS_WANT (case-sensitive — CF-3300-confirmed, spec §A.5). A non-
-; matching file's DATA is consumed (cas_skip_data) and the next header is tried.
-; Running out of tape -> the read stalls on silence and TAPIN/TAPION returns CF
-; (the whole reader's end condition) -> caller reports load_error / "not found".
-; On a match the header is FULLY consumed and the tape sits at the START of the
-; matched file's DATA; the caller dispatches on CAS_HDRID ($D3 tokenised / $EA
-; ASCII) and reads the data block(s).
-;   out: CF clear = matched (CAS_HDRID set); CF set = not found / tape error.
-; STATE-IN-RAM discipline (TAPIN clobbers every register): only loop COUNTERS are
-; pushed across TAPIN (proven safe by ctp_skip_hdr), never a pointer.
+    IF ROM_BASE < $4000
+; --- cas_open_match: resident marshalling shim ------------------------------
+; docs/spec-eviction-g5-space.md. The full name-match loop + cas_skip_data
+; (com_next/com_hdr/com_cmp/csd_tok/csd_ascii/... -- basic/casmatch-body.inc)
+; moved whole to sub/casmatch.asm (SUBROM_IDX_CASMATCH) to free page-1 tail
+; space for the G5 PAINT slice. No register inputs to marshal -- the body
+; already reads/writes only RAM (CAS_WANT*/CAS_HDRNAME/CAS_HDRID) and BIOS
+; (TAPION/TAPIN), both visible from a page-1 tenant. This stub just
+; subrom_calls the tenant and converts its CM_STATUS byte back to the
+; existing CF-return convention (out: CF clear = matched, CAS_HDRID set / CF
+; set = not found or tape error) -- all 3 call sites (do_tape_prog below,
+; files.asm merge_cas/oo_dev_cas) are unchanged, they already just test CF.
 cas_open_match:
-com_next:
-                call    TAPION              ; header block leader
-                ret     c                   ; tape end / no file -> not found
-                call    TAPIN               ; header byte 0 = file-type id
-                ret     c
-                ld      (CAS_HDRID),a       ; keep id for dispatch / skip
-                ; read header bytes 1..15 (9 more id bytes + the 6-char name); store
-                ; the LAST 6 (B = 6..1) into CAS_HDRNAME[0..5], skip the id bytes.
-                ld      b,15
-com_hdr:
-                push    bc
-                call    TAPIN
-                pop     bc
-                ret     c
-                ld      c,a                 ; C = the header byte
-                ld      a,b
-                cp      7
-                jr      nc,com_hdr_next     ; B >= 7 -> still an id byte -> skip store
-                ld      a,6
-                sub     b                   ; index = 6 - B (B = 6..1 -> 0..5)
-                ld      e,a
-                ld      d,0
-                ld      hl,CAS_HDRNAME
-                add     hl,de
-                ld      (hl),c              ; store name[index]
-com_hdr_next:
-                djnz    com_hdr
-                ld      a,(CAS_WANT_ON)
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_CASMATCH
+                call    subrom_call
+                jp      c,subrom_absent_error
+                ld      a,(CM_STATUS)
                 or      a
-                jr      z,com_match         ; bare form -> this file matches
-                ld      hl,CAS_HDRNAME
-                ld      de,CAS_WANT
-                ld      b,6
-com_cmp:
-                ld      a,(de)
-                cp      (hl)                ; byte-exact, case-sensitive
-                jr      nz,com_miss
-                inc     hl
-                inc     de
-                djnz    com_cmp
-com_match:
-                or      a                   ; CF clear = matched
+                ret     z                   ; matched -> CF clear
+                scf
                 ret
-com_miss:
-                call    cas_skip_data       ; consume the non-matching file's data
-                ret     c                   ; tape error while skipping -> fail
-                jr      com_next            ; ...and try the next file
-
-; --- cas_skip_data: consume the DATA of the current (non-matching) file so the
-; next TAPION locks onto the next file's header. Format-aware on CAS_HDRID:
-;   $D3 tokenised -> ONE data block: TAPION, then walk the line-link chain
-;        discarding until the $0000 end-link (length-driven, exactly like
-;        ctp_line, but storing NOTHING — CLINK is scratch here, the matched load
-;        re-inits it).
-;   $EA ASCII    -> N 256-byte blocks: cal_refill each, scan CAL_BUF for Ctrl-Z
-;        ($1A); stop after the block that contains it (the ASCII soft-EOF every
-;        producer puts in the last block, spec-cas-ascii-saveload §0.1).
-;   else -> CF (an unknown file mid-tape is corruption; do not spin).
-;   out: CF clear = data consumed; CF set = tape read error.
-cas_skip_data:
-                ld      a,(CAS_HDRID)
-                cp      BASIC_ID
-                jr      z,csd_tok
-                cp      ASCII_ID
-                jr      z,csd_ascii
-                scf                         ; unknown id -> error
-                ret
-csd_ascii:
-                call    cal_refill          ; TAPION + slurp 256 into CAL_BUF; CF = EOF/err
-                ret     c
-                ld      hl,CAL_BUF
-                ld      b,0                 ; 256-byte scan (djnz with b=0 -> 256)
-csd_asc_scan:
-                ld      a,(hl)
-                cp      $1A                 ; Ctrl-Z -> file complete
-                jr      z,csd_ok
-                inc     hl
-                djnz    csd_asc_scan
-                jr      csd_ascii           ; no Ctrl-Z in this block -> next block
-csd_tok:
-                ; NB: assumes the tokenised data block ENDS at the $0000 end-link
-                ; (our CSAVE writes payload then TAPOOF — no trailing in-block pad),
-                ; so after $0000 the next TAPION relocks on the following header.
-                ; (cas_encode's single-file 16-byte pad would leave slack; the
-                ; name-match gate builds skip fixtures CSAVE-faithfully.)
-                call    TAPION              ; data block leader
-                ret     c
-                ld      hl,TXTBASE
-                ld      (CLINK),hl          ; A_0 = saving machine text base (as ctp)
-csd_tok_line:
-                call    TAPIN               ; link low
-                ret     c
-                push    af                  ; preserve link-low (TAPIN clobbers C)
-                call    TAPIN               ; link high
-                jr      c,csd_tok_perr      ; must pop before leaving
-                ld      b,a
-                pop     af
-                ld      c,a                 ; BC = saved link word L_n
-                ld      a,b
-                or      c
-                jr      z,csd_ok            ; $0000 link -> file complete
-                ld      hl,(CLINK)          ; A_n
-                ld      (CLINK),bc          ; advance CLINK = L_n
-                ld      a,c
-                sub     l
-                ld      e,a
-                ld      a,b
-                sbc     a,h
-                ld      d,a                 ; DE = L_n - A_n = full line length
-                dec     de
-                dec     de                  ; DE = bytes still to discard (lineno + body)
-csd_tok_disc:
-                ld      a,d
-                or      e
-                jr      z,csd_tok_line      ; whole line discarded -> next line
-                push    de                  ; guard count across TAPIN (as ctp_body)
-                call    TAPIN
-                pop     de
-                jr      c,csd_tok_err
-                dec     de
-                jr      csd_tok_disc
-csd_ok:
-                or      a                   ; CF clear = data consumed
-                ret
-csd_tok_perr:
-                pop     af                  ; rebalance the pushed link-low
-csd_tok_err:
-                scf                         ; tape read error while skipping
-                ret
+    ELSE
+                include "basic/casmatch-body.inc"   ; lean: inline, byte-identical
+    ENDIF
 
 ; --- do_tape_prog: the shared cassette BASIC-program load path ----------------
 ; Finds the requested tape file (cas_open_match: name-matching per Tier-3, or the
@@ -764,33 +644,11 @@ cig_eof:
                 scf
                 ret
 
-; --- cal_refill: TAPION-relock + slurp one 256-byte tape block into CAL_BUF --
-; TAPION then a tight TAPIN*256 loop that keeps its position in CAL_CNT (RAM) —
-; NOTHING on the stack across TAPIN (requirement 1 in the cas_ascii_load header),
-; and no gap between the lock and the first read (requirement 2). Leaves CAL_CNT
-; = 0 (wrapped after 256) so the caller/cal_getbyte serves from position 0.
-; TAPION failure (no such block) or a TAPIN short-read (corrupt/truncated tape)
-; -> CF set = EOF.
-cal_refill:
-                call    TAPION              ; (re-)lock onto the block's leader
-                ret     c                   ; no block -> EOF
-                xor     a
-                ld      (CAL_CNT),a         ; fill from position 0
-cal_fill_lp:
-                call    TAPIN               ; clobbers all; position is in CAL_CNT (RAM)
-                jr      c,cal_fill_fail     ; short block / read fail -> EOF
-                ld      c,a                 ; C = the byte
-                ld      a,(CAL_CNT)
-                ld      l,a
-                ld      h,CAL_BUF >> 8      ; HL = CAL_BUF + pos (page-aligned)
-                ld      (hl),c
-                inc     a
-                ld      (CAL_CNT),a         ; pos++ (255 -> 0 ends the 256-byte block)
-                jr      nz,cal_fill_lp
-                ret                         ; CF clear; buffer full, CAL_CNT = 0
-cal_fill_fail:
-                scf                         ; truncated block -> EOF
-                ret
+; cal_refill: shared verbatim via basic/cal-refill-body.inc so the sub-ROM
+; casmatch tenant's own duplicate (needed because cas_skip_data's csd_ascii
+; arm moved sub-side, docs/spec-eviction-g5-space.md) can never drift from
+; this resident copy (still used here by cal_getbyte/ascii_read_lines).
+                include "basic/cal-refill-body.inc"
 
 ; --- disk_prog_load: load a TOKENISED BASIC program from disk ----------------
 ; The disk analogue of do_tape_prog. The FCB at DISK_FCB is fully built (drive

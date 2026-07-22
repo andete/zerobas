@@ -23,6 +23,16 @@ cassette-probe method — --cart reads build/basic.rom directly, so a plain
 our own cas codec / tokeniser; the reference ROM is never read. NB fixture .cas
 files are named by test id (not by the tape-internal name) so macOS's case-
 insensitive FS can't merge an "abc"/"ABC" pair (see the tape memory note).
+
+$ZEROBAS_BASIC_MACHINE override (docs/spec-eviction-g5-space.md): cas_open_match
++ cas_skip_data are a sub-ROM page-1 tenant (SUBROM_IDX_CASMATCH) on the repack
+build, unlike the lean cart where they stay inline -- so the lean run above never
+exercises the tenant. Setting ZEROBAS_BASIC_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK
+(the shared constant/mechanism, basic_probe_cas_verbs.py; installed by `make
+repack-machine`) switches the harness to that machine instead: it already bakes
+in the merged ROM (+ the sub-ROM in slot 3-2) as its own slot-0 primary AND ships
+a <CassettePort/>, so `--cart` is simply unused there (run_typed's own machine
+branch). `--cart` still defaults to build/basic.rom for the lean run.
 """
 from __future__ import annotations
 
@@ -46,6 +56,7 @@ from basic_probe_cas_verbs import (                     # noqa: E402
 
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 DEFAULT_CART = os.path.join(os.path.dirname(_PROBES), "build", "basic.rom")
+ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", MACHINE_TAPE)
 
 WA = 0xA1   # witness for file "AAA" / first file
 WB = 0xB2   # witness for file "BBB" / second file
@@ -88,7 +99,8 @@ def two_asc_tape(tmp: str, tag: str) -> str:
 def run_cmd(cart, cas, cmd, cap_time=40.0):
     """Type `cmd` + Enter, return the witness byte (poisoned to POISON first)."""
     _, wit = run_typed(cart, cas, [(6.0, cmd), (8.0, "\r")],
-                       TXTBASE, 6, cap_time=cap_time, poison_witness=True)
+                       TXTBASE, 6, cap_time=cap_time, poison_witness=True,
+                       machine=ZB_MACHINE)
     return wit
 
 
@@ -119,7 +131,7 @@ def test_bare_no_regression(cart, tmp):
     print('bare CLOAD + RUN on [AAA,BBB] -> loads the FIRST file (unchanged):')
     cas = two_tok_tape(tmp, "a4")
     _, wit = run_typed(cart, cas, [(6.0, "CLOAD"), (8.0, "\r"), (20.0, "RUN"), (21.0, "\r")],
-                       TXTBASE, 6, cap_time=34.0, poison_witness=True)
+                       TXTBASE, 6, cap_time=34.0, poison_witness=True, machine=ZB_MACHINE)
     return check(f'  witness=${wit if wit else 0:02X} (expect ${WA:02X})', wit == WA)
 
 
@@ -147,6 +159,7 @@ def main() -> int:
     if not os.path.exists(args.cart):
         print(f"cart not found: {args.cart} (run: make build/basic.rom)")
         return 2
+    print(f"(machine={ZB_MACHINE})")
     tmp = tempfile.mkdtemp(prefix="cas_match_")
     tests = [test_skip_match_tok, test_skip_match_asc, test_mixed_skip,
              test_bare_no_regression, test_not_found, test_case_sensitive]

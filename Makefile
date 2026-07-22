@@ -45,6 +45,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/fat-prim-body.inc basic/fat-delete-body.inc \
          basic/randio-body.inc basic/fld-fill-body.inc \
          basic/lineedit-body.inc \
+         basic/casmatch-body.inc basic/cal-refill-body.inc \
          basic/sysvars.inc
 ROM   := $(BUILD)/basic.rom
 
@@ -122,6 +123,11 @@ SUB_SRC   := sub/sub.asm
 # memmove engine, docs/spec-eviction-g4-space.md §4, carve #2 of the
 # G4-space eviction slice): the tenant body + its shared .inc file (the lean
 # cart's inline copy, basic/program.asm) -- same staleness hazard, same fix.
+# sub/casmatch.asm + basic/casmatch-body.inc + basic/cal-refill-body.inc
+# (cassette Tier-3 name-match/data-skip engine, docs/spec-eviction-g5-
+# space.md, the G5-space eviction slice): the tenant body + its two shared
+# .inc files (the lean cart's inline copies, basic/cload.asm) -- same
+# staleness hazard, same fix ([[makefile-subparts-stale-tenant]]).
 SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
              sub/fp_exp.asm sub/fp_log.asm sub/fp_pow.asm sub/fp_sin.asm \
              sub/fp_rnd.asm sub/arrays.asm sub/strheap.asm sub/detok.asm \
@@ -131,6 +137,7 @@ SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
              sub/fatprim.asm basic/fat-prim-body.inc basic/fat-delete-body.inc \
              sub/dirverb.asm sub/randio.asm basic/randio-body.inc basic/fld-fill-body.inc \
              sub/lineedit.asm basic/lineedit-body.inc \
+             sub/casmatch.asm basic/casmatch-body.inc basic/cal-refill-body.inc \
              sub/playparse.asm sub/graphics.asm \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
              basic/tokenise.inc basic/detok.inc \

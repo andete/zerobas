@@ -389,6 +389,18 @@ sub_p1_table:
                                                 ;   import). Main-ROM stubs are
                                                 ;   basic/program.asm `store_line`/
                                                 ;   `relink`.
+                jp      casmatch_tenant         ; index 16 (SUBROM_IDX_CASMATCH):
+                                                ;   the cassette Tier-3 name-match/
+                                                ;   data-skip engine (docs/spec-
+                                                ;   eviction-g5-space.md) -- a pure
+                                                ;   RAM+BIOS leaf (TAPION/TAPIN +
+                                                ;   CAS_WANT*/CAS_HDRNAME/CAS_HDRID/
+                                                ;   CAL_BUF/CAL_CNT), no resident-ABI
+                                                ;   import. Reports back via
+                                                ;   CM_STATUS (subrom_call clears CF
+                                                ;   on return, so it can't ride
+                                                ;   back directly). Main-ROM stub is
+                                                ;   basic/cload.asm `cas_open_match`.
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -518,6 +530,11 @@ sub_p1_ping:
 ; vars_reset directly, page-0 low-region resident -- own header has the
 ; full closure rationale for why this is not a straddle).
                 include "lineedit.asm"
+
+; casmatch_tenant (cassette Tier-3 name-match/data-skip engine, index 16,
+; sub/casmatch.asm): docs/spec-eviction-g5-space.md. No resident-ABI import
+; (a pure RAM+BIOS leaf, own header has the full closure rationale).
+                include "casmatch.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF

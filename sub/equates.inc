@@ -106,6 +106,20 @@ SUBROM_IDX_DIRVERB      equ     13
 ; label (sub_p1_table `jp play_parse_tenant`); only ex_play (basic/play.asm)
 ; computes IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PLAY_PARSE.
 SUBROM_IDX_PLAY_PARSE   equ     14
+; index 15 = lineedit_tenant (sub/lineedit.asm) -- see basic/sysvars.inc for
+; the full comment (kept in sync there, spec sync note pattern).
+SUBROM_IDX_LINEEDIT     equ     15
+; index 16 = casmatch_tenant (sub/casmatch.asm): the cassette Tier-3 name-
+; match / data-skip engine (docs/spec-eviction-g5-space.md) -- cas_open_match
+; + cas_skip_data (basic/cload.asm), evicted whole to free page-1 tail space
+; for the G5 PAINT slice. A pure RAM+BIOS leaf (TAPION/TAPIN + CAS_WANT*/
+; CAS_HDRNAME/CAS_HDRID/CAL_BUF/CAL_CNT, all visible sub-side) -- no
+; marshalling beyond a CM_STATUS byte (CF cannot ride back through
+; subrom_call directly). Its main-ROM stub is basic/cload.asm
+; `cas_open_match`. NOTE: 16 is the actual next-free index (15/LINEEDIT was
+; the last taken at the time this spec was written -- the index-drift lesson
+; from commit 136aee8, heeded here).
+SUBROM_IDX_CASMATCH     equ     16
 
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can
