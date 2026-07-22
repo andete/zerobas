@@ -1995,14 +1995,56 @@ gpsr_ret:
 gfx_draw_op:
                 ld      (GFX_DSP),sp        ; error tail restores this (§ helpers below)
                 ei                          ; interrupts LIVE for the whole draw (arc D1)
+                ld      a,(GFX_DRESUME)
+                or      a
+                jp      nz,gdo_resume
+                ; --- fresh entry: frame 0 = a COPY of the DRAW string ---
                 xor     a
                 ld      (GFX_RES),a         ; 0 = ok until something raises
+                ld      (GFX_DREQ),a
+                ld      (GFX_DFTOP),a
+                ld      (GFX_DSUBN),a
                 ld      hl,GFX_DBUF
-                ld      (GFX_DPTR),hl       ; parse cursor <- start of the pre-passed buffer
-gdo_loop:
-                call    gdrw_skipws
-                jp      c,gdo_done          ; end of buffer -> the string is finished
+                ld      (GFX_DFREE),hl
+                call    gdrw_pushframe      ; (GFX_DVAL,GFX_DVLEN) -> a new frame
+                jp      gdo_loop
+
+                ; --- re-entry after the resident resolved one substitution ---
+                ; The cursor was rewound to this command's start, so banking the
+                ; value and falling into the loop simply re-parses the command --
+                ; which now finds the value ready in a GFX_DSUB slot.
+gdo_resume:
                 xor     a
+                ld      (GFX_DREQ),a
+                ld      a,(GFX_DSUBN)
+                add     a,a                 ; slot index -> byte offset
+                ld      e,a
+                ld      d,0
+                ld      hl,GFX_DSUB
+                add     hl,de
+                ld      de,(GFX_DVAL)
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
+                ld      a,(GFX_DVLEN)
+                ld      (GFX_DSUBLEN),a     ; only X uses the length half
+                ld      a,(GFX_DSUBN)
+                inc     a
+                ld      (GFX_DSUBN),a
+                jp      gdo_loop_cmd        ; cursor is already at the command start
+
+gdo_loop:
+                xor     a
+                ld      (GFX_DSUBN),a       ; a NEW command: no banked values carry over
+                                            ; (a resume enters at gdo_loop_cmd instead, so
+                                            ; M's two substitutions do accumulate)
+                call    gdrw_skipws
+                jp      c,gdo_frame_end     ; end of this frame
+gdo_loop_cmd:
+                ld      hl,(GFX_DPTR)
+                ld      (GFX_DCMD),hl       ; the rewind point for a substitution
+                xor     a
+                ld      (GFX_DSUBI),a       ; no substitution consumed yet this pass
                 ld      (GFX_DFB),a         ; a fresh command: no prefixes pending
                 ld      (GFX_DFN),a
 gdo_pfx:
@@ -2019,7 +2061,7 @@ gdo_notb:
                 ld      (GFX_DFN),a         ; N = draw, then restore the position
 gdo_pfx_next:
                 call    gdrw_skipws
-                jp      c,gdo_done          ; a bare trailing B / N is accepted (measured)
+                jp      c,gdo_frame_end     ; a bare trailing B / N is accepted (measured)
                 jr      gdo_pfx
                 ; --- command letter dispatch ---
 gdo_dispatch:
@@ -2040,7 +2082,9 @@ gdo_dscan:
                 jr      z,gdo_s
                 cp      'A'
                 jr      z,gdo_a
-                jp      gdrw_err5           ; unknown letter (incl. a stray X) -> ERR 5
+                cp      'X'
+                jp      z,gdo_x
+                jp      gdrw_err5           ; unknown letter -> ERR 5
 
 ; --- C n: colour. It is the SHARED graphics attribute (spec §6): DRAW READS
 ; ATRBYT and writes it only here, which is what makes `LINE ..,4 : DRAW"BM..R8"`
@@ -2117,14 +2161,175 @@ gdo_dir:
 ; of consuming at most one here and letting the next dispatch reject the rest.
 gdo_next:
                 call    gdrw_skipws
-                jr      c,gdo_done
+                jp      c,gdo_frame_end
                 call    gdrw_peek
                 cp      ';'
                 jp      nz,gdo_loop
                 call    gdrw_getc           ; consume the terminator
                 jp      gdo_loop
+
+; --- a frame ran out: pop back to the X that pushed it, or finish -----------
+gdo_frame_end:
+                ld      a,(GFX_DFTOP)
+                dec     a
+                jr      z,gdo_done          ; frame 0 exhausted -> the statement is done
+                ld      (GFX_DFTOP),a
+                dec     a
+                add     a,a
+                add     a,a                 ; 4 B per saved frame
+                ld      e,a
+                ld      d,0
+                ld      hl,GFX_DFSTK
+                add     hl,de
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)
+                ld      (GFX_DPTR),de       ; the outer frame's cursor (past its ';')
+                inc     hl
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)
+                ld      (GFX_DEND),de
+                jp      gdo_loop
 gdo_done:
+                xor     a
+                ld      (GFX_DREQ),a        ; nothing left to resolve -> the resident stops
                 di                          ; leave the EI region before returning via CALSLT
+                ret
+
+; --- exit to the resident to have ONE substitution resolved -----------------
+; in: A = the request kind (1 = int, 2 = string). The name text is already in
+; GFX_DEXP. The cursor rewinds to the command start, so the re-entry simply
+; re-parses this command with the value banked (spec §7 / D-G6-1b).
+gdo_want:
+                ld      (GFX_DREQ),a
+                ld      hl,(GFX_DCMD)
+                ld      (GFX_DPTR),hl
+                ld      sp,(GFX_DSP)        ; reached from deep inside the parser
+                di
+                ret
+
+; --- X expr$; -- execute a substring -----------------------------------------
+; Measured: it executes, continues after the ';', nests, state set inside it
+; PERSISTS on return, and an empty string is a no-op. Pushing a frame gives all
+; five for free -- the persistent S/A/colour cells are simply never saved.
+gdo_x:
+                call    gdrw_sub_scan       ; text -> GFX_DEXP; cursor past the ';';
+                                            ; CF=1 iff a resolved value is waiting
+                jr      c,gdo_x_have
+                ld      a,2                 ; ask the resident for a STRING
+                jr      gdo_want
+gdo_x_have:
+                ld      (GFX_DVAL),hl       ; the string's body address
+                ld      a,(GFX_DSUBLEN)
+                ld      (GFX_DVLEN),a
+                or      a
+                jp      z,gdo_next          ; empty string -> nothing to execute
+                call    gdrw_pushframe
+                jp      gdo_loop
+
+; ---------------------------------------------------------------------------
+; gdrw_pushframe -- copy the string at (GFX_DVAL, GFX_DVLEN bytes) onto the end
+; of GFX_DBUF and make it the current frame, saving the outer frame's cursor.
+; Copying is what makes the co-routine safe: the resident's eval between round
+; trips can reuse the temp-string pool a DRAW argument may live in, so reading a
+; body in place across a round trip would be a use-after-free.
+; ---------------------------------------------------------------------------
+gdrw_pushframe:
+                ld      a,(GFX_DFTOP)
+                or      a
+                jr      z,gpf_no_save       ; frame 0 has no outer frame to save
+                cp      GFX_DFCAP
+                jp      nc,gdrw_err5        ; X nested too deep (own-design cap, D-G6-4)
+                dec     a
+                add     a,a
+                add     a,a
+                ld      e,a
+                ld      d,0
+                ld      hl,GFX_DFSTK
+                add     hl,de
+                ld      de,(GFX_DPTR)
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
+                inc     hl
+                ld      de,(GFX_DEND)
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
+gpf_no_save:
+                ld      a,(GFX_DFTOP)
+                inc     a
+                ld      (GFX_DFTOP),a
+                ; --- append the body at GFX_DFREE ---
+                ld      de,(GFX_DFREE)
+                ld      (GFX_DPTR),de       ; the new frame starts here
+                ld      hl,(GFX_DVAL)
+                ld      a,(GFX_DVLEN)
+                or      a
+                jr      z,gpf_empty
+                ld      b,a
+gpf_copy:
+                ld      a,(hl)
+                ld      (de),a
+                inc     hl
+                inc     de
+                push    hl
+                ld      hl,GFX_DBUF + GFX_DBUF_CAP
+                or      a
+                sbc     hl,de
+                pop     hl
+                jp      c,gdrw_err5         ; the frames outgrew the buffer (D-G6-4)
+                djnz    gpf_copy
+gpf_empty:
+                ld      (GFX_DEND),de
+                ld      (GFX_DFREE),de
+                ret
+
+; ---------------------------------------------------------------------------
+; gdrw_sub_scan -- at a `=`/`X` argument: copy the text up to the next ';' into
+; GFX_DEXP (NUL-terminated) and advance the cursor past that ';'. No ';' before
+; the frame ends -> ERR 5, exactly the measured `DRAW"U=V"` / `DRAW"XA$"`.
+; out: CF=1 and HL = the value the resident already resolved for this position;
+;      CF=0 if it has not been resolved yet (the caller must request it).
+; ---------------------------------------------------------------------------
+gdrw_sub_scan:
+                ld      de,GFX_DEXP
+                ld      b,GFX_DEXP_CAP
+gss_lp:
+                call    gdrw_peek_raw       ; the name is DATA: no upcasing
+                jp      c,gdrw_err5         ; frame ended with no ';'
+                cp      ';'
+                jr      z,gss_end
+                ld      (de),a
+                inc     de
+                call    gdrw_bump
+                djnz    gss_lp
+                jp      gdrw_err5           ; longer than the expression scratch
+gss_end:
+                call    gdrw_bump           ; consume the ';'
+                xor     a
+                ld      (de),a              ; NUL-terminate for the resident's eval
+                ; --- is this position's value already resolved? ---
+                ld      a,(GFX_DSUBI)
+                ld      c,a
+                ld      a,(GFX_DSUBN)
+                cp      c
+                ret     z                   ; CF=0: not yet -- the caller requests it
+                ld      a,c
+                add     a,a
+                ld      e,a
+                ld      d,0
+                ld      hl,GFX_DSUB
+                add     hl,de
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)
+                ld      a,c
+                inc     a
+                ld      (GFX_DSUBI),a       ; this slot is now consumed
+                ex      de,hl               ; HL = the banked value
+                scf
                 ret
 
 ; --- M: absolute when the FIRST operand has no sign prefix, relative when it is
@@ -2175,7 +2380,7 @@ gdrw_err5:
                 ld      sp,(GFX_DSP)
                 ld      a,5                 ; Illegal function call (the whole §5 table
                 ld      (GFX_RES),a         ; is ERR 5 bar the resident's Type mismatch)
-                jr      gdo_done
+                jp      gdo_done
 
 ; --- direction letters, and their unit vectors (E F G H move in BOTH axes) ---
 gdrw_dirtab:    db      'U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'
@@ -2357,7 +2562,7 @@ gdrw_gx_start:
 ; ACROSS these calls, so a helper that clobbered it would corrupt every
 ; multi-digit count.
 ; ---------------------------------------------------------------------------
-gdrw_peek:
+gdrw_peek_raw:
                 push    hl
                 push    de
                 ld      hl,(GFX_DPTR)
@@ -2368,26 +2573,34 @@ gdrw_peek:
                 jr      c,gdrw_pk_out
                 ld      hl,(GFX_DPTR)
                 ld      a,(hl)
+                or      a                   ; CF=0: a character was returned
+gdrw_pk_out:
+                pop     de                  ; (pop does not disturb the flags)
+                pop     hl
+                ret
+gdrw_peek:
+                call    gdrw_peek_raw
+                ret     c
                 cp      'a'
                 jr      c,gdrw_pk_ok
                 cp      'z'+1
                 jr      nc,gdrw_pk_ok
                 sub     32                  ; lowercase command letters are accepted
 gdrw_pk_ok:
-                or      a                   ; CF=0: a character was returned
-gdrw_pk_out:
-                pop     de                  ; (pop does not disturb the flags)
+                or      a                   ; CF=0
+                ret
+gdrw_bump:
+                push    hl
+                ld      hl,(GFX_DPTR)
+                inc     hl
+                ld      (GFX_DPTR),hl
                 pop     hl
                 ret
 gdrw_getc:
                 call    gdrw_peek
                 jp      c,gdrw_err5         ; ran off the end mid-command -> ERR 5
                 push    af
-                push    hl
-                ld      hl,(GFX_DPTR)
-                inc     hl
-                ld      (GFX_DPTR),hl
-                pop     hl
+                call    gdrw_bump
                 pop     af
                 ret
 gdrw_skipws:
@@ -2448,8 +2661,8 @@ gdrw_at_sign:
 gdrw_at_body:
                 call    gdrw_peek
                 jp      c,gdrw_err5         ; a lone sign with no value -> ERR 5
-                cp      GFX_DESC
-                jr      z,gdrw_at_esc
+                cp      '='
+                jr      z,gdrw_at_sub
                 cp      '0'
                 jr      c,gdrw_at_none
                 cp      '9'+1
@@ -2488,17 +2701,14 @@ gdrw_at_digit:
 gdrw_at_end:
                 ld      (GFX_DARG),de
                 jr      gdrw_at_sign_apply
-gdrw_at_esc:
-                ; The escape's two payload bytes are DATA, so they are read RAW --
-                ; gdrw_getc upcases, which would corrupt any payload byte in $61..$7A.
-                call    gdrw_getc           ; the escape marker itself
-                ld      hl,(GFX_DPTR)
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)
-                inc     hl
-                ld      (GFX_DPTR),hl       ; the pre-pass always emits all 3 bytes
-                ld      (GFX_DARG),de       ; the resident's already-coerced int16
+gdrw_at_sub:
+                call    gdrw_getc           ; consume the '='
+                call    gdrw_sub_scan       ; text -> GFX_DEXP; cursor past the ';'
+                jr      c,gdrw_at_sub_have
+                ld      a,1                 ; not resolved yet: ask the resident for an
+                jp      gdo_want            ; int16 and re-parse this command on re-entry
+gdrw_at_sub_have:
+                ld      (GFX_DARG),hl       ; the banked, already-coerced int16
 gdrw_at_sign_apply:
                 ld      a,(GFX_DTMP+1)
                 or      a

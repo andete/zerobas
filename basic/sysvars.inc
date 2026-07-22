@@ -386,7 +386,7 @@ PAINT_TOKEN     equ     $BF     ; PAINT [STEP](x,y)[,[c][,[b]]] (statement)
 ; cannot be a page-0 tenant either. See docs/spec-basic-graphics-g6.md §8.
 ; The TENANT half (sub/graphics.asm GFX_OP=6) is unconditional -- the sub-ROM has
 ; room -- so flipping this to 1 after the space lands is the whole switch-on.
-G6_RESIDENT     equ     0
+G6_RESIDENT     equ     1
 DRAW_TOKEN      equ     $BE     ; DRAW <string> (statement; graphics G6) -- crunch of
                                 ; `DRAW"u10"` on the reference is BE 22 75 31 30 22,
                                 ; measured (scratchpad/g6_draw_notes.md §1)
@@ -975,60 +975,85 @@ GFX_PSTK_END    equ     GFX_PSTK + GFX_PSTK_CAP*GFX_PSTK_ENTSZ
                 db      PAINT_SPAN_STACK_OVERRAN_E560_DISK_WBUF_WALL
     ENDIF
 
-; --- G6 DRAW (docs/spec-basic-graphics-g6.md §7) ---------------------------
-; DRAW's command buffer + parse scratch ALIAS the PAINT span stack above: both
-; are graphics statements and only one graphics tenant is ever in flight, the
-; same one-tenant-at-a-time aliasing the disk/line-editor status cells already
-; use. The window's whole aliasing-safety argument (see GFX_PSTK's header) is
-; inherited unchanged -- and DRAW is strictly LESS exposed than PAINT, because
-; the resident pre-pass finishes ALL of its string-engine work (str_eval, the
-; =var;/X lookups) BEFORE the buffer is handed to the tenant.
+; --- G6 DRAW (docs/spec-basic-graphics-g6.md §7, D-G6-1b) -----------------
+; DRAW's frame buffer + parse state ALIAS the PAINT span stack above: both are
+; graphics statements and only one graphics tenant is ever in flight, the same
+; one-tenant-at-a-time aliasing the disk/line-editor status cells already use.
+; The window's whole aliasing-safety argument (see GFX_PSTK's header) is
+; inherited unchanged.
 ;
-; The buffer holds the pre-passed command string (§7): the source bytes verbatim
-; except `=var;` -> a 3-byte binary literal escape (GFX_DESC, int16 LE) and
-; `X strvar;` -> the variable's body spliced inline and re-scanned. 256 B caps
-; the splice (D-G6-4: overrun -> ERR 5).
-GFX_DBUF        equ     GFX_PSTK        ; $E3F2: pre-passed command buffer (256 B)
+; THE CO-ROUTINE SPLIT (D-G6-1b). The tenant parses; when it meets `=expr;` or
+; `X expr$;` it cannot resolve it itself (a page-0 tenant has the float pack
+; switched out, so the int coercion behind `=var;` is unreachable), so it copies
+; the text to GFX_DEXP, sets GFX_DREQ, REWINDS to the command start and returns.
+; The resident resolves that one substitution into GFX_DVAL/GFX_DVLEN and re-enters
+; with GFX_DRESUME=1; the tenant banks the value in the next GFX_DSUB slot and
+; re-parses the same command, now finding the value ready. Re-parsing is free of
+; side effects (nothing is drawn before a command's arguments are complete).
+;
+; Strings are COPIED into GFX_DBUF frame by frame, because the resident's eval
+; between round trips can reuse the temp-string pool a DRAW argument may live in
+; -- reading the body in place across an eval would be a use-after-free.
+GFX_DBUF        equ     GFX_PSTK        ; $E3F2: frame text (concatenated), 256 B
 GFX_DBUF_CAP    equ     256
-GFX_DESC        equ     $01             ; buffer-only escape: next 2 bytes = int16 LE
-GFX_DPTR        equ     GFX_DBUF + GFX_DBUF_CAP   ; $E4F2: tenant parse cursor (2)
-GFX_DEND        equ     GFX_DPTR + 2    ; $E4F4: one past the last buffer byte (2)
-GFX_DFB         equ     GFX_DEND + 2    ; $E4F6: 1 = B (blank move) prefix pending (1)
-GFX_DFN         equ     GFX_DFB + 1     ; $E4F7: 1 = N (no-update) prefix pending (1)
-GFX_DSVX        equ     GFX_DFN + 1     ; $E4F8: N prefix: cursor X to restore (2)
-GFX_DSVY        equ     GFX_DSVX + 2    ; $E4FA: N prefix: cursor Y to restore (2)
-GFX_DARG        equ     GFX_DSVY + 2    ; $E4FC: last parsed argument (int16 LE) (2)
-GFX_DDX         equ     GFX_DARG + 2    ; $E4FE: this command's dx (int16) (2)
-GFX_DDY         equ     GFX_DDX + 2     ; $E500: ...dy (2)
-GFX_DTX         equ     GFX_DDY + 2     ; $E502: move target X (2)
-GFX_DTY         equ     GFX_DTX + 2     ; $E504: move target Y (2)
-GFX_DTMP        equ     GFX_DTY + 2     ; $E506: mul/div scratch (2)
-GFX_DSP         equ     GFX_DTMP + 2    ; $E508: tenant entry SP -- an error deep in the
-                                        ; parse restores it and exits, so every helper
-                                        ; can just jump to the error tail instead of
-                                        ; threading a CF through the whole call chain (2)
-; --- the RESIDENT pre-pass's own scratch (spec §7) -------------------------
-; Same window, same one-graphics-statement-at-a-time argument; used only before
-; the tenant is entered.
-GFX_DVAL        equ     GFX_DSP + 2     ; $E50A: a resolved `=var;` value, across the
-                                        ; register-clobbering eval call (2)
-GFX_DDEPTH      equ     GFX_DVAL + 2    ; $E50C: X-splice recursion depth (D-G6-4 cap) (1)
-GFX_DEXP        equ     GFX_DDEPTH + 1  ; $E50D: NUL-terminated copy of the text between
-                                        ; `=`/`X` and its `;`, so eval/str_eval run on a
-                                        ; BOUNDED buffer and can never walk off the end
-                                        ; of the string body into the heap (24 B)
-GFX_DEXP_CAP    equ     24              ; -> ends $E525
+GFX_DPTR        equ     GFX_DBUF + GFX_DBUF_CAP   ; $E4F2: parse cursor in the current frame (2)
+GFX_DEND        equ     GFX_DPTR + 2    ; $E4F4: one past the current frame's last byte (2)
+GFX_DFREE       equ     GFX_DEND + 2    ; $E4F6: next free byte in GFX_DBUF (2)
+GFX_DFTOP       equ     GFX_DFREE + 2   ; $E4F8: X-frame stack depth (1)
+GFX_DFCAP       equ     8               ; max X nesting (own-design cap, D-G6-4)
+GFX_DFSTK       equ     GFX_DFTOP + 1   ; $E4F9: saved [ptr][end] per outer frame (4 B each)
+GFX_DCMD        equ     GFX_DFSTK + 4*GFX_DFCAP   ; $E519: current command's start cursor,
+                                        ; the rewind point for a substitution (2)
+GFX_DSUBN       equ     GFX_DCMD + 2    ; $E51B: substitutions RESOLVED for this command (1)
+GFX_DSUBI       equ     GFX_DSUBN + 1   ; $E51C: substitutions SEEN so far this re-parse (1)
+GFX_DSUB        equ     GFX_DSUBI + 1   ; $E51D: the resolved values, 2 slots (M takes two) (4)
+GFX_DSUBLEN     equ     GFX_DSUB + 4    ; $E521: slot 0's string length (X only) (1)
+GFX_DREQ        equ     GFX_DSUBLEN + 1 ; $E522: tenant->resident: 0 = done, 1 = resolve an
+                                        ; int, 2 = resolve a string (1)
+GFX_DRESUME     equ     GFX_DREQ + 1    ; $E523: resident->tenant: 1 = resuming (1)
+GFX_DVAL        equ     GFX_DRESUME + 1 ; $E524: the resolved int16, or a string body ptr (2)
+GFX_DVLEN       equ     GFX_DVAL + 2    ; $E526: that string's length (1)
+GFX_DEXP        equ     GFX_DVLEN + 1   ; $E527: NUL-terminated copy of the text between
+                                        ; `=`/`X` and its `;`, so the resident's eval runs
+                                        ; on a BOUNDED buffer and can never walk off the
+                                        ; end of a string body into the heap (24 B)
+GFX_DEXP_CAP    equ     24
+GFX_DFB         equ     GFX_DEXP + GFX_DEXP_CAP   ; $E53F: 1 = B (blank move) prefix pending (1)
+GFX_DFN         equ     GFX_DFB + 1     ; $E540: 1 = N (no-update) prefix pending (1)
+GFX_DARG        equ     GFX_DFN + 1     ; $E541: last parsed argument (int16 LE) (2)
+GFX_DDX         equ     GFX_DARG + 2    ; $E543: this command's dx (int16) (2)
+GFX_DDY         equ     GFX_DDX + 2     ; $E545: ...dy (2)
+GFX_DTX         equ     GFX_DDY + 2     ; $E547: move target X (2)
+GFX_DTY         equ     GFX_DTX + 2     ; $E549: ...Y (2)
+GFX_DTMP        equ     GFX_DTY + 2     ; $E54B: mul/rotate/sign scratch (2)
+GFX_DSP         equ     GFX_DTMP + 2    ; $E54D: tenant entry SP -- an error deep in the
+                                        ; parse restores it and exits, so every helper can
+                                        ; just jump to the error tail instead of threading
+                                        ; a CF through the whole call chain (2) -> ends $E54F
+GFX_DESC        equ     $01             ; (unused by D-G6-1b; kept out of the buffer grammar)
 ;
 ; The PERSISTENT pair (spec §4 -- the measured pin: S and A survive RUN, NEW,
-; CLEAR, CLS, COLOR and SCREEN; ONLY a power-on resets them). They therefore
-; may NOT live in the LINEBUF region G3/G4/G5 use for marshalling (the keyboard
-; line editor overwrites that between statements) nor in the heavily-aliased
-; $E0xx block -- they need a private home that nothing else touches, which is
-; why they sit in the 6 B this window deliberately kept spare above the span
-; stack ($E55A..$E55F, GFX_PSTK_END = $E55A). Cold-boot init only (gfx_draw_init).
+; CLEAR, CLS, COLOR and SCREEN; ONLY a power-on resets them). They therefore may
+; NOT live in the LINEBUF region G3/G4/G5 use for marshalling (the keyboard line
+; editor overwrites that between statements) nor in the heavily-aliased $E0xx
+; block -- they need a private home that nothing else touches, which is why they
+; sit in the bytes this window deliberately kept spare above the span stack
+; (GFX_PSTK_END = $E55A). Cold-boot init only (interp.asm `init`).
+; --- DEFtype tenant ABI (SUBROM_IDX_DEFTYPE, docs/spec-eviction-g6-space.md) --
+; The token cursor travels through RAM because CALSLT clobbers the registers.
+; DEFT_PTR sits in this same repack-only graphics window, above DRAW's own cells:
+; a DEFtype statement and a graphics statement can never be in flight at once
+; (one statement runs at a time and neither leaves state behind) -- the same
+; one-tenant-at-a-time aliasing LE_*/CM_* already use against DISKOP_*. Defined
+; HERE rather than beside SUBROM_IDX_DEFTYPE because that block sits inside
+; `IFNDEF SUBROM_ENTRY_BASE_P0`, which the sub-ROM build skips -- and the tenant
+; needs these addresses.
+DEFT_PTR        equ     GFX_DSP + 2     ; $E54F: token cursor in AND out (2)
+DEFT_STATUS     equ     DISKOP_STATUS   ; tenant -> main: 0 ok / 1 = stmt_error
+;
 GFX_DSCALE      equ     GFX_PSTK_END    ; $E55A: persistent scale, quarter units (1)
 GFX_DANGLE      equ     GFX_DSCALE + 1  ; $E55B: persistent angle 0..3 (1)
-    IF GFX_DEXP + GFX_DEXP_CAP > GFX_PSTK_END
+    IF GFX_DSP + 2 > GFX_PSTK_END
                 db      DRAW_SCRATCH_OVERRAN_THE_PERSISTENT_STATE_CELLS
     ENDIF
     IF GFX_DANGLE + 1 > $E560
@@ -2392,6 +2417,12 @@ SUBROM_IDX_LINEEDIT  equ 15     ; lineedit_tenant (sub/lineedit.asm): the number
                                 ; said "index 14" -- stale by the time of impl
                                 ; (SUBROM_IDX_PLAY_PARSE claimed 14 first); 15 is the
                                 ; actual next-free index.
+SUBROM_IDX_DEFTYPE   equ 9      ; deftype_tenant (sub/deftype.asm): DEFINT/DEFSNG/
+                                ; DEFDBL/DEFSTR, carved out of basic/usr.asm to fund
+                                ; G6 DRAW's resident half (docs/spec-eviction-g6-
+                                ; space.md). PAGE-0 table index 9 (the P0 and P1
+                                ; tables number independently) -- IX =
+                                ; SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DEFTYPE.
 SUBROM_IDX_CASMATCH  equ 16     ; casmatch_tenant (sub/casmatch.asm): the
                                 ; cassette Tier-3 name-match/data-skip engine
                                 ; (docs/spec-eviction-g5-space.md) -- cas_open_match

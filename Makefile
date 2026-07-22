@@ -128,7 +128,7 @@ SUB_SRC   := sub/sub.asm
 # space.md, the G5-space eviction slice): the tenant body + its two shared
 # .inc files (the lean cart's inline copies, basic/cload.asm) -- same
 # staleness hazard, same fix ([[makefile-subparts-stale-tenant]]).
-SUB_PARTS := sub/equates.inc sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
+SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
              sub/fp_exp.asm sub/fp_log.asm sub/fp_pow.asm sub/fp_sin.asm \
              sub/fp_rnd.asm sub/arrays.asm sub/strheap.asm sub/detok.asm \
              sub/printusing.asm basic/pu-render.inc \

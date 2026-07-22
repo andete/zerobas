@@ -55,8 +55,7 @@ gfx_plot_stmt:
                 inc     hl                  ; consume the ','
                 push    bc                  ; save x across the colour eval (eval clobbers all)
                 push    de                  ; save y
-                call    eval                ; DE = colour (silent int16)
-                call    get_int16_checked   ; DE = colour, ERR 6 if > int16
+                call    gfx_eval_int16   ; DE = colour, ERR 6 if > int16
                 ld      a,e
                 and     $0F                 ; use the low nibble (0..15); see G2 gate note
                 ld      (GFX_C),a
@@ -172,8 +171,7 @@ elg_second:
                 call    is_box_kw           ; single-comma box (",B"/",BF") ?
                 jr      z,elg_box_read
                 ; --- colour expression ---
-                call    eval                ; DE = colour (silent int16)
-                call    get_int16_checked   ; ERR 6 if > int16
+                call    gfx_eval_int16   ; ERR 6 if > int16
                 ld      a,e
                 and     $0F
                 ld      (GFX_C),a
@@ -263,16 +261,14 @@ pc_flag:
                 cp      '('
                 jr      nz,pc_syntax
                 inc     hl
-                call    eval                ; DE = x (silent int16)
-                call    get_int16_checked   ; DE = x, ERR 6 if > int16 (HL guarded)
+                call    gfx_eval_int16   ; DE = x, ERR 6 if > int16 (HL guarded)
                 push    de                  ; save x across the y eval
                 call    skip_spaces
                 ld      a,(hl)
                 cp      ','
                 jr      nz,pc_syntax
                 inc     hl
-                call    eval                ; DE = y
-                call    get_int16_checked
+                call    gfx_eval_int16   ; DE = value; ERR 6 if > int16
                 call    skip_spaces
                 ld      a,(hl)
                 cp      ')'
@@ -414,8 +410,7 @@ ex_circle:
                 cp      ','                 ; the ",r" comma is mandatory
                 jp      nz,elg_syntax
                 inc     hl
-                call    eval                ; DE = radius (silent int16)
-                call    get_int16_checked   ; ERR 6 if > int16
+                call    gfx_eval_int16   ; ERR 6 if > int16
                 ld      a,d
                 or      a
                 jp      m,gfx_err5          ; r<0 -> ERR 5 (signed-off G4-rneg deviation)
@@ -447,17 +442,10 @@ circ_c:
                 jp      z,circ_draw
                 cp      COLON
                 jp      z,circ_draw
-                call    eval
-                call    get_int16_checked   ; ERR 6 if > int16
-                ld      a,d
-                or      a
-                jp      nz,gfx_err5         ; negative -> ERR 5 (jp: jr went out of
-                                            ; range once this slice's new G5 code
-                                            ; earlier in the file lengthened it)
-                ld      a,e
-                cp      16
-                jp      nc,gfx_err5         ; > 15 -> ERR 5
-                ld      (GFX_C),a
+                call    gfx_eval_int16   ; ERR 6 if > int16
+                call    gfx_store_colour_checked   ; 0..15 or ERR 5 (G5 D4 DRY lever,
+                                            ; now re-applied -- the G6 gate re-verifies
+                                            ; this site, which is why G5 reverted it)
                 call    skip_spaces
                 ld      a,(hl)
                 cp      ','
@@ -988,22 +976,20 @@ ep_syntax:
 ; ===========================================================================
 ; G6 -- DRAW <string>. docs/spec-basic-graphics-g6.md.
 ;
-; The resident half is deliberately thin: evaluate the string, PRE-PASS it into
-; GFX_DBUF, marshal, one subrom_call. All the language lives in the tenant
-; (sub/graphics.asm gfx_draw_op), because resident page-1 space is the binding
-; constraint of this whole arc and the sub-ROM has room.
+; The resident half is deliberately thin (D-G6-1b): evaluate the string, hand its
+; body to the tenant, then serve the tenant's substitution requests until it says
+; it is finished. All the language lives in the tenant (sub/graphics.asm
+; gfx_draw_op), because resident page-1 space is the binding constraint of this
+; whole arc and the sub-ROM has room.
 ;
-; THE PRE-PASS (spec §7) is why the tenant can stay variable-free. A page-0
-; tenant runs with the float pack (page-0 low) switched out, so the int coercion
-; behind `=var;` is simply unreachable from there. So the resident resolves both
-; substitution forms first:
-;   `=expr;`   -> a 3-byte binary literal escape (GFX_DESC + the coerced int16),
-;                 which costs no int->decimal formatting;
-;   `X expr$;` -> the string's body spliced inline and RE-SCANNED, so nesting
-;                 falls out for free (measured to nest on the reference).
-; Each substitution's text is first copied into the bounded GFX_DEXP scratch, so
-; eval/str_eval can never walk past the end of the string body into the heap --
-; and a missing `;` is then exactly the measured ERR 5 rather than a wild read.
+; THE CO-ROUTINE. `=expr;` and `X expr$;` need eval/str_eval, which a page-0
+; tenant cannot reach (eval bottoms out in the float pack, which lives in the
+; page-0 low region that the sub-ROM has replaced). So the tenant parses until it
+; meets one, copies the text to GFX_DEXP, sets GFX_DREQ and returns; we resolve
+; that ONE substitution into GFX_DVAL/GFX_DVLEN and re-enter with GFX_DRESUME=1.
+; The tenant banks the value and re-parses the same command, which now finds it
+; ready. Round trips only happen per substitution, so an ordinary DRAW string
+; costs exactly one subrom_call.
 ;
 ; Clean-room: own-design; the DRAW language is the public MSX-BASIC language
 ; reference and every behavioural rule is our own black-box measurement
@@ -1018,158 +1004,59 @@ ex_draw:
                 jp      nc,gfx_typeerr      ; DRAW 5 -> Type mismatch (measured)
                 call    check_expr_errors   ; surface a deferred string error
                 push    hl                  ; guard the statement cursor
-                ld      hl,(STRPTR)
-                ld      a,(hl)              ; A = length
-                call    pu_deref_body       ; HL = body address (A preserved)
-                ld      b,a
-                ld      de,GFX_DBUF
-                xor     a
-                ld      (GFX_DDEPTH),a
-                call    gdw_prepass         ; DE = one past the last emitted byte
-                ld      (GFX_DEND),de
+                call    gdw_hand_string     ; GFX_DVAL/GFX_DVLEN = the body + length
                 ld      a,(ATRBYT)
                 and     $0F
                 ld      (GFX_C),a           ; a colourless DRAW plots in the shared
                                             ; attribute, NOT in FORCLR (spec §6)
                 ld      a,6                 ; GFX_OP = 6 -> tenant DRAW
                 ld      (GFX_OP),a
+                xor     a
+                ld      (GFX_DRESUME),a     ; the first entry is a fresh parse
+gdw_call:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
                 call    subrom_call         ; CF=1 iff the sub-ROM is absent
+                jp      c,gdw_absent
+                ld      a,(GFX_DREQ)
+                or      a
+                jr      z,gdw_finish        ; the tenant is done
+                dec     a
+                jr      z,gdw_want_int
+                ; --- the tenant wants a STRING (the X command) ---
+                ld      hl,GFX_DEXP
+                call    str_eval
+                jp      nc,gfx_typeerr      ; X of a numeric expression -> Type mismatch
+                call    gdw_hand_string
+                jr      gdw_resume
+gdw_want_int:
+                ld      hl,GFX_DEXP
+                call    gfx_eval_int16      ; DE = the coerced int16 (ERR 6 if > int16)
+                ld      (GFX_DVAL),de
+gdw_resume:
+                ld      a,1
+                ld      (GFX_DRESUME),a
+                jr      gdw_call
+gdw_finish:
                 pop     hl
-                jp      c,gfx_absent
                 ld      a,(GFX_RES)
                 or      a
                 jp      nz,raise_error      ; the tenant's ERR code (the §5 table)
                 jp      exec_stmt
+gdw_absent:
+                pop     hl                  ; defensive: merged ROM always ships the tenant
+                jp      gfx_absent
 
-; ---------------------------------------------------------------------------
-; gdw_prepass -- copy [HL,+B) into the buffer at DE, resolving `=` and `X`.
-; Recursive (one level per X splice), depth-capped by GFX_DDEPTH so a
-; self-referential `A$="XA$;"` cannot run the Z80 stack into the ground.
-; ---------------------------------------------------------------------------
-gdw_prepass:
-                ld      a,b
-                or      a
-                ret     z                   ; empty string draws nothing (measured)
-gdw_pp_loop:
+; --- gdw_hand_string: the just-evaluated string (STRPTR) -> GFX_DVAL/GFX_DVLEN.
+; The tenant COPIES that body into its own frame buffer immediately, which is what
+; makes the round trip safe: a later eval here may reuse the temp-string pool the
+; body lives in.
+gdw_hand_string:
+                ld      hl,(STRPTR)         ; the [len][ptr] descriptor
                 ld      a,(hl)
-                cp      '='
-                jr      z,gdw_pp_sub
-                cp      'X'
-                jr      z,gdw_pp_splice
-                cp      'x'
-                jr      z,gdw_pp_splice
-                ld      (de),a              ; an ordinary byte: copy it through
-                inc     hl
-                inc     de
-                call    gdw_pp_room
-                djnz    gdw_pp_loop
+                ld      (GFX_DVLEN),a
+                call    pu_deref_body       ; HL = body address (A preserved)
+                ld      (GFX_DVAL),hl
                 ret
-
-; --- `=expr;` -> the GFX_DESC binary literal escape ---
-gdw_pp_sub:
-                inc     hl
-                dec     b                   ; past the '='
-                call    gdw_grab_expr       ; text -> GFX_DEXP; HL/B past the ';'
-                push    bc
-                push    hl
-                push    de
-                ld      hl,GFX_DEXP
-                call    gfx_eval_int16      ; DE = the coerced int16 (ERR 6 if > int16)
-                ld      (GFX_DVAL),de
-                pop     de
-                pop     hl
-                pop     bc
-                ld      a,GFX_DESC
-                ld      (de),a
-                inc     de
-                ld      a,(GFX_DVAL)
-                ld      (de),a
-                inc     de
-                ld      a,(GFX_DVAL+1)
-                ld      (de),a
-                inc     de
-                call    gdw_pp_room
-                ld      a,b
-                or      a
-                jr      nz,gdw_pp_loop
-                ret
-
-; --- `X expr$;` -> splice the string body in and re-scan it ---
-gdw_pp_splice:
-                inc     hl
-                dec     b                   ; past the 'X'
-                call    gdw_grab_expr       ; text -> GFX_DEXP; HL/B past the ';'
-                ld      a,(GFX_DDEPTH)
-                inc     a
-                cp      9                   ; D-G6-4: own-design splice depth cap
-                jp      nc,gfx_err5
-                ld      (GFX_DDEPTH),a
-                push    bc
-                push    hl
-                push    de
-                ld      hl,GFX_DEXP
-                call    str_eval
-                jp      nc,gfx_typeerr      ; X of a numeric expression -> Type mismatch
-                ld      hl,(STRPTR)
-                ld      a,(hl)
-                call    pu_deref_body       ; HL = body, A = length
-                ld      b,a
-                pop     de
-                call    gdw_prepass         ; recurse: emit the substring's own commands
-                pop     hl
-                pop     bc
-                ld      a,(GFX_DDEPTH)
-                dec     a
-                ld      (GFX_DDEPTH),a
-                ld      a,b
-                or      a
-                jr      nz,gdw_pp_loop
-                ret
-
-; ---------------------------------------------------------------------------
-; gdw_grab_expr -- copy the source bytes up to the next ';' into GFX_DEXP,
-; NUL-terminated, and advance HL/B past that ';'. No ';' in what remains (or a
-; longer run than the scratch holds) -> ERR 5, which is exactly the measured
-; behaviour of `DRAW"U=V"` and `DRAW"XA$"`. Clobbers A/C.
-; ---------------------------------------------------------------------------
-gdw_grab_expr:
-                push    de
-                ld      de,GFX_DEXP
-                ld      c,GFX_DEXP_CAP
-gdw_ge_lp:
-                ld      a,b
-                or      a
-                jp      z,gfx_err5          ; ran out of source with no ';'
-                ld      a,(hl)
-                cp      ';'
-                jr      z,gdw_ge_end
-                ld      (de),a
-                inc     de
-                inc     hl
-                dec     b
-                dec     c
-                jp      z,gfx_err5          ; expression longer than the scratch
-                jr      gdw_ge_lp
-gdw_ge_end:
-                inc     hl
-                dec     b                   ; consume the ';'
-                xor     a
-                ld      (de),a              ; NUL-terminate for eval/str_eval
-                pop     de
-                ret
-
-; ---------------------------------------------------------------------------
-; gdw_pp_room -- DE has just advanced; ERR 5 if it has left the buffer.
-; ---------------------------------------------------------------------------
-gdw_pp_room:
-                push    hl
-                ld      hl,GFX_DBUF + GFX_DBUF_CAP
-                or      a
-                sbc     hl,de
-                pop     hl
-                ret     nc
-                jp      gfx_err5            ; splice/expansion overran the buffer (D-G6-4)
     ENDIF
 
     ENDIF
