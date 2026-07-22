@@ -531,6 +531,7 @@ sub_p1_ping:
 ; locally. Placed AFTER fatprim (+ dirverb) so its sub-local calls resolve
 ; within the same page-1 region -- own header has the full rationale.
                 include "randio.asm"
+                include "fiawalk.asm"
 
 ; play_parse_tenant (audio Slice 2a MML parser, docs/spec-basic-audio-play-
 ; slice2a.md). A pure RAM leaf: reads the marshalled per-voice MML (ptr,len) from

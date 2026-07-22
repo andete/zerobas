@@ -1091,10 +1091,18 @@ ex_sprite:
                 cp      OFF_TOKEN
                 jr      z,spr_noop
                 cp      STOP_TOKEN
-                jp      nz,stmt_error       ; bare SPRITE -> ERR 2 (measured)
+                jp      nz,gfx_syntax       ; bare SPRITE -> ERR 2 (measured)
 spr_noop:
                 inc     hl
                 jp      exec_stmt
+
+; --- gfx_syntax: a TRAPPABLE Syntax error (ERR 2) --------------------------
+; NOT `jp stmt_error`: that prints and aborts the RUN, so an `ON ERROR GOTO`
+; program never sees it -- the reference raises a trappable ERR 2 for every
+; malformed sprite statement (Phase O caught exactly this on the first run).
+gfx_syntax:
+                ld      a,2
+                jp      raise_error
 
 ; --- SPRITE$(n) = <string$> ------------------------------------------------
 ; WRITING needs a graphics mode (SCREEN 0 -> ERR 5) even though READING does not
@@ -1109,28 +1117,16 @@ spr_assign:
                 call    skip_spaces
                 ld      a,(hl)
                 cp      EQ_TOKEN
-                jp      nz,stmt_error       ; `SPRITE$(0)` with no `=` -> ERR 2
+                jp      nz,gfx_syntax       ; `SPRITE$(0)` with no `=` -> ERR 2
                 inc     hl
                 call    str_eval            ; STRPTR -> [len][ptr]; CF=1 iff a string
                 jp      nc,gfx_typeerr      ; SPRITE$(0)=5 -> ERR 13 (measured)
                 call    check_expr_errors
                 push    hl                  ; guard the statement cursor
-                ld      hl,(STRPTR)
-                ld      a,(hl)
-                cp      33
-                jr      c,spa_len_ok
-                ld      a,32                ; longer than any entry -> truncate here
-spa_len_ok:
-                ld      (GFX_VLEN),a
-                ld      c,a
-                ld      b,0
-                call    pu_deref_body       ; HL = body address (A preserved)
-                ld      de,GFX_VBUF
-                ld      a,c
-                or      a
-                jr      z,spa_empty
-                ldir                        ; the supplied bytes; the tenant pads
-spa_empty:
+                ld      hl,(STRPTR)         ; the [len][ptr] descriptor -- the tenant
+                ld      (GFX_SDESC),hl      ; dereferences it and does the copy, the
+                                            ; truncate and the pad (string bodies live
+                                            ; in page-3 RAM, which it can read)
                 ld      a,7                 ; GFX_OP = 7 -> tenant pattern write
                 call    spr_tenant
                 pop     hl
@@ -1173,14 +1169,14 @@ spr_parse_index:
                 call    skip_spaces
                 ld      a,(hl)
                 cp      '('
-                jp      nz,stmt_error       ; `SPRITE$0` -> ERR 2 (measured)
+                jp      nz,gfx_syntax       ; `SPRITE$0` -> ERR 2 (measured)
                 inc     hl
                 call    gfx_eval_int16      ; DE = n
                 ld      (GFX_SN),de
                 call    skip_spaces
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,stmt_error
+                jp      nz,gfx_syntax
                 inc     hl
                 ret
 
@@ -1216,16 +1212,8 @@ spr_mode_save:
                 jr      spr_tenant
 spr_mode_restore:
                 ld      a,11                ; tenant: put the x bytes back (CHGMOD zeroes
-                call    spr_tenant          ; them; the reference leaves them alone)
-spr_apply_size:
-                ld      a,(RG1SAV)
-                and     $FC
-                ld      c,a
-                ld      a,(GFX_SSIZE)
-                or      c
-                ld      b,a
-                ld      c,1                 ; VDP register 1
-                jp      WRTVDP              ; ... which updates RG1SAV too
+                jr      spr_tenant          ; them; the reference leaves them alone) AND
+                                            ; re-apply the size bits to VDP register 1
 ; spr_extra_arg: one evaluated trailing SCREEN argument (DE = its value). Only the
 ; FIRST is the sprite size; the rest (key click, baud, printer) stay ignored.
 spr_extra_arg:
@@ -1237,7 +1225,8 @@ spr_extra_arg:
                 ld      a,e
                 and     $03
                 ld      (GFX_SSIZE),a
-                jr      spr_apply_size
+                ld      a,12                ; tenant: apply the size bits to register 1
+                jr      spr_tenant
 
 ; --- ex_put_sprite: PUT SPRITE p[,(x,y)|STEP(dx,dy)][,c][,n] ---------------
 ; Reached from ex_put (basic/field.asm) with HL ON the SPRITE token. Parses into
@@ -1257,7 +1246,7 @@ ex_put_sprite:
                 call    skip_spaces
                 ld      a,(hl)
                 cp      ','
-                jp      nz,stmt_error       ; `PUT SPRITE 0` -> ERR 2 (measured)
+                jp      nz,gfx_syntax       ; `PUT SPRITE 0` -> ERR 2 (measured)
                 inc     hl
                 call    skip_spaces
                 ld      a,(hl)
@@ -1267,7 +1256,7 @@ ex_put_sprite:
                 jr      z,pspr_coords
                 cp      ','
                 jr      z,pspr_optional     ; `PUT SPRITE p,,c,n` keeps BOTH coordinates
-                jp      stmt_error          ; `PUT SPRITE 0,` -> ERR 2 (measured)
+                jp      gfx_syntax          ; `PUT SPRITE 0,` -> ERR 2 (measured)
 pspr_coords:
                 call    parse_coord         ; BC = x, DE = y (int16, STEP resolved)
                 ld      (GXPOS),bc          ; the work area takes the RAW coordinate
@@ -1307,7 +1296,7 @@ pspr_pattern:
                 call    skip_spaces
                 ld      a,(hl)
                 cp      ','
-                jp      z,stmt_error        ; a 5th argument -> ERR 2 (measured)
+                jp      z,gfx_syntax        ; a 5th argument -> ERR 2 (measured)
 pspr_go:
                 push    hl
                 ld      a,9                 ; GFX_OP = 9 -> tenant attribute merge

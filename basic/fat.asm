@@ -524,89 +524,21 @@ fia_walk:
                 dec     hl
                 ld      (FAT_WRTMP),hl
                 jr      fia_walk
+    IF ROM_BASE >= $4000
+                include "basic/fiawalked-body.inc"     ; lean: inline, byte-identical
+    ELSE
+; fia_walked -- resident shim (docs/spec-eviction-g7-space.md, carve 2). The body
+; is a page-1 fatprim-tenant row; every path in it returns Cy = 0, so the shim
+; only has to make the call and clear carry.
 fia_walked:
-                ld      hl,(FAT_CURCLUS)
-                ld      (FWR_CLUS),hl       ; resume in the file's last cluster
-                ; rem = size & 0x1FF (bytes in the last sector; 0 = it is full).
-                ld      hl,(FAT_FILESIZE)
-                ld      a,h
-                and     1
-                ld      h,a                 ; HL = rem (0..511)
-                ld      (FAT_WRTMP2),hl
-                ld      a,h
-                or      l
-                jr      z,fia_full          ; rem == 0 -> last sector is full
-                ; partial last sector: rewrite it. SECIDX = CLUSSEC-1; the partial
-                ; sector content is already in FSECTOR_BUF. Check its last byte.
-                ld      a,(FAT_CLUSSEC)
-                dec     a
-                ld      (FWR_SECIDX),a
-                ld      hl,FSECTOR_BUF
-                ld      de,(FAT_WRTMP2)
-                dec     de                  ; offset rem-1 = last data byte
-                add     hl,de
-                ld      a,(hl)
-                cp      $1A
-                jr      z,fia_part_ctrlz
-                ld      hl,(FAT_WRTMP2)     ; no Ctrl-Z: BUFLEN = rem, bytes = size
-                ld      (FWR_BUFLEN),hl
-                jp      fia_bytes_size
-fia_part_ctrlz:
-                ld      hl,(FAT_WRTMP2)     ; Ctrl-Z: overwrite it. BUFLEN = rem-1,
-                dec     hl                  ; bytes = size-1
-                ld      (FWR_BUFLEN),hl
-                jp      fia_bytes_m1
-fia_full:
-                ; last sector full: check its final byte ([511]) for the Ctrl-Z.
-                ld      a,(FSECTOR_BUF+511)
-                cp      $1A
-                jr      z,fia_full_ctrlz
-                ; no Ctrl-Z: resume on a FRESH next sector (SECIDX = CLUSSEC; if that
-                ; equals SECPERCLUS the next flush allocates a new cluster). bytes=size.
-                ld      a,(FAT_CLUSSEC)
-                ld      (FWR_SECIDX),a
-                ld      hl,0
-                ld      (FWR_BUFLEN),hl
-                jp      fia_bytes_size
-fia_full_ctrlz:
-                ; overwrite the Ctrl-Z at offset 511 by rewriting the full last
-                ; sector: SECIDX = CLUSSEC-1, BUFLEN = 511, bytes = size-1.
-                ld      a,(FAT_CLUSSEC)
-                dec     a
-                ld      (FWR_SECIDX),a
-                ld      hl,511
-                ld      (FWR_BUFLEN),hl
-                jp      fia_bytes_m1
-fia_bytes_size:
-                ld      hl,FAT_FILESIZE     ; FWR_BYTES = size (4-byte LE)
-                ld      de,FWR_BYTES
-                ld      bc,4
-                ldir
-                or      a                   ; Cy = 0 success
+                ld      a,DISKOP_SEL_FIA_WALKED
+                ld      (DISKOP_OP),a
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
+                call    subrom_call         ; CF=1 iff the sub-ROM is absent
+                ret     c
+                or      a                   ; success: Cy = 0, like the body
                 ret
-fia_bytes_m1:
-                ld      hl,FAT_FILESIZE     ; FWR_BYTES = size, then -1
-                ld      de,FWR_BYTES
-                ld      bc,4
-                ldir
-                ld      hl,FWR_BYTES
-                ld      a,(hl)
-                sub     1
-                ld      (hl),a
-                inc     hl
-                ld      a,(hl)
-                sbc     a,0
-                ld      (hl),a
-                inc     hl
-                ld      a,(hl)
-                sbc     a,0
-                ld      (hl),a
-                inc     hl
-                ld      a,(hl)
-                sbc     a,0
-                ld      (hl),a
-                or      a                   ; Cy = 0 success
-                ret
+    ENDIF
 fia_empty:
                 ; existing but EMPTY file: write from offset 0, reusing the dir entry
                 ; (FWR_DIRSEC/OFF from fat_find; FWR_FIRST = FAT_FIRSTCLUS = 0). Same

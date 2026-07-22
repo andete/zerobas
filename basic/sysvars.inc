@@ -394,7 +394,7 @@ G6_RESIDENT     equ     1
 ; `SPRITE ON|OFF|STOP` -- black-box crunch-pinned (scratchpad/g7_sprite_notes.md).
 ; G7_RESIDENT gates the RESIDENT half the way G6_RESIDENT gated DRAW's, so the
 ; slice can be built with the tenant alone if the page-1 tail runs out again.
-G7_RESIDENT     equ     0
+G7_RESIDENT     equ     1
 SPRITE_TOKEN    equ     $C7     ; SPRITE (statement + string function + PUT SPRITE)
 DRAW_TOKEN      equ     $BE     ; DRAW <string> (statement; graphics G6) -- crunch of
                                 ; `DRAW"u10"` on the reference is BE 22 75 31 30 22,
@@ -1061,9 +1061,10 @@ GFX_VBUF        equ     GFX_PSTK        ; $E3F2: sprite pattern/attribute stagin
 ; the x4 pattern scaling and the merge with the bytes already in the entry. That
 ; split is what keeps the space-blocked resident half small (spec §7/§8).
 GFX_SN          equ     GFX_VBUF + 32   ; $E412: SPRITE$ entry index / PUT SPRITE plane (2)
-GFX_VLEN        equ     GFX_SN + 2      ; $E414: bytes supplied in GFX_VBUF (write), or the
-                                        ; entry size the tenant read back (read) (1)
-GFX_SC          equ     GFX_VLEN + 1    ; $E415: PUT SPRITE colour (2). x/y need no cells --
+GFX_VLEN        equ     GFX_SN + 2      ; $E414: the entry size the tenant read back (1)
+GFX_SDESC       equ     GFX_VLEN + 1    ; $E415: SPRITE$(n)= RHS string descriptor
+                                        ; ([len][ptr]); the tenant dereferences it (2)
+GFX_SC          equ     GFX_SDESC + 2   ; $E417: PUT SPRITE colour (2). x/y need no cells --
                                         ; they ride the arc's pinned GXPOS/GYPOS pair, which
                                         ; PUT SPRITE writes anyway (the work area keeps the
                                         ; raw, unwrapped coordinate)
@@ -1628,6 +1629,10 @@ DISKOP_SEL_FAT_DELETE           equ 14
 DISKOP_SEL_RAND_OPEN            equ 15
 DISKOP_SEL_RAND_GET             equ 16
 DISKOP_SEL_RAND_PUT             equ 17
+; DISKOP_SEL_FIA_WALKED (docs/spec-eviction-g7-space.md, carve 2): fat_io_append's
+; "chain already walked" tail -- pure FAT_*/FWR_*/FSECTOR_BUF arithmetic, evicted
+; whole to free page-1 tail for G7's sprite statements.
+DISKOP_SEL_FIA_WALKED           equ 18
 ; DISKOP_OP selector values for the dirverb_tenant (SUBROM_IDX_DIRVERB, Phase 2,
 ; spec §12). A SEPARATE value namespace on the SAME DISKOP_OP cell: fatprim
 ; (index 12) and dirverb (index 13) are never in flight at once (one subrom_call

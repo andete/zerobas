@@ -730,11 +730,220 @@ def phase_m() -> int:
     return fails
 
 
+# ===========================================================================
+# G7 sprites (docs/spec-basic-graphics-g7.md §10): Phases N / O / P.
+# ===========================================================================
+# Sprites are pure VRAM TABLE state, so the differential reads the attribute and
+# pattern tables straight back out with VPEEK (no POINT sampling needed) -- the
+# strongest form this arc has had: every byte the statement is supposed to write
+# is compared, not a sampled consequence of it.
+SPR_ATTR = 0x1B00
+SPR_PAT = 0x3800
+
+
+def spr_dump(base: str, n: int, extra="0") -> list[str]:
+    """Stash n VRAM bytes AND the work-area values (still in the graphics mode)
+    into one string, then print it in SCREEN 0. The work-area part must be read
+    BEFORE the mode switch: C-BIOS's CHGMOD zeroes GXPOS/GYPOS where the
+    reference's leaves them, which is a BIOS difference, not a statement one.
+    CLEAR 2000 because the dump string plus the case's own strings must fit."""
+    exprs = extra if isinstance(extra, (list, tuple)) else [extra]
+    return ([f'A$="":FOR I=0 TO {n-1}:A$=A$+STR$(VPEEK({base}+I)):NEXT',
+             'A$=A$+"|"']
+            + [f'A$=A$+STR$({e})' for e in exprs]     # one per line: a stored line
+            + ['SCREEN0:PRINT"R";A$'])                # longer than LINEMAX is truncated
+
+
+def _spr_bytes(raw: str | None) -> str | None:
+    """The dumped byte stream, with ALL whitespace removed: a 34-byte dump wraps
+    the 40-column screen, and the two machines wrap at different columns, so a
+    space-preserving compare would report a formatting difference as a data one.
+    Every number carries STR$'s leading space, so the concatenated digit stream is
+    still a faithful comparison of the same case on the two machines."""
+    if not raw:
+        return None
+    txt = " ".join("".join(raw).split())
+    m = re.search(r"R((?:\s*-?\d+)+\s*\|(?:\s*-?\d+)*)", txt)
+    return re.sub(r"\s+", "", m.group(1)) if m else None
+
+
+# label, program head, dump base, count, extra-print
+SPRITE_CASES = [
+    # --- SPRITE$ pattern writes: size, pad, truncate, index, wrap -----------
+    ("pat_8_full",   "SCREEN2:SPRITE$(0)=STRING$(8,170)",      f"&H{SPR_PAT:04X}", 10, "0"),
+    ("pat_8_short",  "SCREEN2:SPRITE$(1)=CHR$(255)",           f"&H{SPR_PAT+8:04X}", 10, "0"),
+    ("pat_8_long",   "SCREEN2:SPRITE$(2)=STRING$(20,204)",     f"&H{SPR_PAT+16:04X}", 12, "0"),
+    ("pat_8_empty",  "SCREEN2:SPRITE$(3)=STRING$(8,170):SPRITE$(3)=\"\"",
+     f"&H{SPR_PAT+24:04X}", 8, "0"),
+    ("pat_8_n255",   "SCREEN2:SPRITE$(255)=STRING$(8,204)",    f"&H{SPR_PAT+255*8:04X}", 8, "0"),
+    ("pat_16_full",  "SCREEN2,2:SPRITE$(0)=STRING$(32,170)",   f"&H{SPR_PAT:04X}", 34, "0"),
+    ("pat_16_short", "SCREEN2,2:SPRITE$(1)=STRING$(8,204)",    f"&H{SPR_PAT+32:04X}", 34, "0"),
+    # n=255 in 16x16 addresses past 16 KB -> the reference WRAPS (D-G7-5)
+    ("pat_16_wrap",  "SCREEN2,2:SPRITE$(255)=STRING$(32,170)", "&H17E0", 8, "0"),
+    # --- SPRITE$ read-back: always the ENTRY size, never the assigned length -
+    ("read_8",       "SCREEN2:SPRITE$(0)=CHR$(9):B$=SPRITE$(0)",
+     f"&H{SPR_PAT:04X}", 2, ("LEN(B$)", "ASC(B$)", "ASC(MID$(B$,8,1))")),
+    ("read_16",      "SCREEN2,2:SPRITE$(2)=STRING$(32,204):B$=SPRITE$(2)",
+     f"&H{SPR_PAT+64:04X}", 2, ("LEN(B$)", "ASC(B$)", "ASC(MID$(B$,32,1))")),
+    ("read_scr0",    "SCREEN2:SPRITE$(0)=CHR$(7):SCREEN0:B$=SPRITE$(0)",
+     f"&H{SPR_PAT:04X}", 2, ("LEN(B$)", "ASC(B$)")),
+    # --- PUT SPRITE attribute writes ---------------------------------------
+    ("attr_full",    "SCREEN2:PUT SPRITE 0,(10,20),4,1",       f"&H{SPR_ATTR:04X}", 4, "0"),
+    ("attr_plane5",  "SCREEN2:PUT SPRITE 5,(10,20),4,1",       f"&H{SPR_ATTR+20:04X}", 4, "0"),
+    ("attr_neg_x",   "SCREEN2:PUT SPRITE 0,(-5,20),4,1",       f"&H{SPR_ATTR:04X}", 4, "0"),
+    ("attr_neg_x32", "SCREEN2:PUT SPRITE 0,(-32,20),4,1",      f"&H{SPR_ATTR:04X}", 4, "0"),
+    ("attr_ec_clear","SCREEN2:PUT SPRITE 0,(-5,20),4,1:PUT SPRITE 0,(60,20)",
+     f"&H{SPR_ATTR:04X}", 4, "0"),
+    ("attr_wrap_x",  "SCREEN2:PUT SPRITE 0,(300,20),4,1",      f"&H{SPR_ATTR:04X}", 4, "0"),
+    ("attr_wrap_y",  "SCREEN2:PUT SPRITE 0,(10,300),4,1",      f"&H{SPR_ATTR:04X}", 4, "0"),
+    ("attr_y209",    "SCREEN2:PUT SPRITE 0,(10,209),4,1",      f"&H{SPR_ATTR:04X}", 4, "0"),
+    ("attr_omit_c",  "SCREEN2:PUT SPRITE 0,(70,80),9,1:PUT SPRITE 0,(30,40),,2",
+     f"&H{SPR_ATTR:04X}", 4, "0"),
+    ("attr_omit_p",  "SCREEN2:PUT SPRITE 0,(70,80),9,3:PUT SPRITE 0,(30,40),6",
+     f"&H{SPR_ATTR:04X}", 4, "0"),
+    ("attr_omit_xy", "SCREEN2:PUT SPRITE 0,(70,80),4,1:PUT SPRITE 0,,9",
+     f"&H{SPR_ATTR:04X}", 4, "0"),
+    ("attr_omit_all","SCREEN2:PUT SPRITE 2,(70,80),4,1:PUT SPRITE 2,,,7",
+     f"&H{SPR_ATTR+8:04X}", 4, "0"),
+    ("attr_step",    "SCREEN2:PSET(50,60):PUT SPRITE 0,STEP(10,20),4,1",
+     f"&H{SPR_ATTR:04X}", 4, ("PEEK(&HFCB7)", "PEEK(&HFCB8)", "PEEK(&HFCB9)", "PEEK(&HFCBA)")),
+    ("attr_float",   "SCREEN2:PUT SPRITE 0,(10.7,20.2),4.9,1.9", f"&H{SPR_ATTR:04X}", 4, "0"),
+    ("attr_work",    "SCREEN2:PUT SPRITE 0,(-5,300),4,1", f"&H{SPR_ATTR:04X}", 4,
+     # per-BYTE peeks: `PEEK+256*PEEK` of a negative coordinate exceeds int16, and
+     # the two machines' expression arithmetic differs there (65531 vs -5) -- a
+     # pre-existing arithmetic seam, nothing to do with the sprite statement.
+     ("PEEK(&HFCB7)", "PEEK(&HFCB8)", "PEEK(&HFCB9)", "PEEK(&HFCBA)",
+      "PEEK(&HFCB3)", "PEEK(&HFCB4)")),
+    # 16x16: the pattern NUMBER is stored x4
+    ("attr_16_pat1", "SCREEN2,2:PUT SPRITE 0,(10,20),4,1",     f"&H{SPR_ATTR:04X}", 4, "0"),
+    ("attr_16_pat63","SCREEN2,2:PUT SPRITE 0,(10,20),4,63",    f"&H{SPR_ATTR:04X}", 4, "0"),
+    ("attr_scr1",    "SCREEN1:PUT SPRITE 0,(10,20),4,1",       f"&H{SPR_ATTR:04X}", 4, "0"),
+]
+
+
+def phase_n() -> int:
+    """Sprite table differential. BOOT-PER-CASE: the sprite tables live in VRAM
+    and survive NEW, so a batched case would inherit the previous case's bytes --
+    the exact confound that made round 2 of the characterization misread the
+    omitted-argument rule (scratchpad/g7_sprite_notes.md)."""
+    fails = 0
+    print("=== PHASE N: sprite tables (attribute + pattern) differential ===")
+    for label, head, base, n, extra in SPRITE_CASES:
+        specs = [("stored", [f"CLEAR 2000:COLOR15,4,7:{head}"] + spr_dump(base, n, extra))]
+        ref = omsx_repl.run_cases(REF, specs, batch=False)[0]
+        zb = omsx_repl.run_cases(ZB, specs, batch=False)[0]
+        ra, za = _spr_bytes(ref), _spr_bytes(zb)
+        ok = ra is not None and ra == za
+        fails += not ok
+        print(f"  {'PASS' if ok else 'FAIL'} {label:15} ref={ra!r} zb={za!r}")
+    return fails
+
+
+# Both outcomes behind ONE tag (the Phase-L pattern), so an accepted<->raised
+# flip cannot pass.
+SPRITE_BEHAV = [
+    (l, ['ON ERROR GOTO 40', body, 'SCREEN0:PRINT"ZK":END',
+         'SCREEN0:PRINT"ZE";ERR:END'])
+    for l, body in [
+        ("spr_n256",    'SCREEN2:SPRITE$(256)=CHR$(1)'),
+        ("spr_n_neg",   'SCREEN2:SPRITE$(-1)=CHR$(1)'),
+        ("spr_n255",    'SCREEN2:SPRITE$(255)=CHR$(1)'),
+        ("spr_numeric", 'SCREEN2:SPRITE$(0)=5'),
+        ("spr_scr0_wr", 'SCREEN0:SPRITE$(0)=CHR$(1)'),
+        ("spr_scr1_wr", 'SCREEN1:SPRITE$(0)=CHR$(1)'),
+        ("spr_read_s0", 'SCREEN0:B$=SPRITE$(0)'),
+        ("spr_read256", 'SCREEN2:B$=SPRITE$(256)'),
+        ("spr_noparen", 'SCREEN2:SPRITE$0=CHR$(1)'),
+        ("spr_noeq",    'SCREEN2:SPRITE$(0)'),
+        ("spr_bare",    'SCREEN2:SPRITE'),
+        ("spr_on",      'SCREEN2:SPRITE ON'),
+        ("spr_off",     'SCREEN2:SPRITE OFF'),
+        ("spr_stop",    'SCREEN2:SPRITE STOP'),
+        ("spr_on_s0",   'SCREEN0:SPRITE ON'),
+        ("put_plane32", 'SCREEN2:PUT SPRITE 32,(10,20),4,1'),
+        ("put_plane31", 'SCREEN2:PUT SPRITE 31,(10,20),4,1'),
+        ("put_planeneg",'SCREEN2:PUT SPRITE -1,(10,20),4,1'),
+        ("put_col16",   'SCREEN2:PUT SPRITE 0,(10,20),16,1'),
+        ("put_colneg",  'SCREEN2:PUT SPRITE 0,(10,20),-1,1'),
+        ("put_pat255",  'SCREEN2:PUT SPRITE 0,(10,20),4,255'),
+        ("put_pat256",  'SCREEN2:PUT SPRITE 0,(10,20),4,256'),
+        ("put_pat64_16",'SCREEN2,2:PUT SPRITE 0,(10,20),4,64'),
+        ("put_pat63_16",'SCREEN2,2:PUT SPRITE 0,(10,20),4,63'),
+        ("put_patneg",  'SCREEN2:PUT SPRITE 0,(10,20),4,-1'),
+        ("put_x40000",  'SCREEN2:PUT SPRITE 0,(40000,20),4,1'),
+        ("put_x300",    'SCREEN2:PUT SPRITE 0,(300,20),4,1'),
+        ("put_scr0",    'SCREEN0:PUT SPRITE 0,(10,20),4,1'),
+        ("put_scr1",    'SCREEN1:PUT SPRITE 0,(10,20),4,1'),
+        ("put_bare",    'SCREEN2:PUT SPRITE 0'),
+        ("put_comma",   'SCREEN2:PUT SPRITE 0,'),
+        ("put_5args",   'SCREEN2:PUT SPRITE 0,(10,20),4,1,9'),
+        ("put_trailing",'SCREEN2:PUT SPRITE 0,(10,20),4,1,'),
+        ("put_steponly",'SCREEN2:PUT SPRITE 0,STEP(10,20)'),
+        ("put_halfxy",  'SCREEN2:PUT SPRITE 0,(,20),4,1'),
+    ]
+]
+
+
+def phase_o() -> int:
+    fails = 0
+    print("=== PHASE O: sprite errors + accepted edges ===")
+    specs = [("stored", body) for _, body in SPRITE_BEHAV]
+    ref = omsx_repl.run_cases(REF, specs, batch=True, reset=("NEW", "CLS"))
+    zb = omsx_repl.run_cases(ZB, specs, batch=True, reset=("NEW", "CLS"))
+    for (label, _), r, z in zip(SPRITE_BEHAV, ref, zb):
+        ra, za = _outcome(r), _outcome(z)
+        ok = ra is not None and ra == za
+        fails += not ok
+        print(f"  {'PASS' if ok else 'FAIL'} {label:14} ref={ra!r} zb={za!r}")
+    return fails
+
+
+# label, program head, dump base, count, extra
+SPRITE_STATE = [
+    # mode-set init: y=209, pattern=plane, colour=FORCLR -- and x UNTOUCHED
+    ("init_planes",  "COLOR15,1,1:SCREEN2:PUT SPRITE 0,(60,20),4,1:SCREEN2",
+     f"&H{SPR_ATTR:04X}", 12, "PEEK(&HF3E0)"),
+    ("init_forclr",  "COLOR4,1,1:SCREEN2", f"&H{SPR_ATTR:04X}", 8, "PEEK(&HF3E0)"),
+    ("init_p31",     "COLOR15,1,1:SCREEN2", f"&H{SPR_ATTR+124:04X}", 4, "0"),
+    ("cls_keeps",    "SCREEN2:PUT SPRITE 0,(60,20),4,1:SPRITE$(0)=CHR$(170):CLS",
+     f"&H{SPR_ATTR:04X}", 4, "VPEEK(&H3800)"),
+    ("pat_survives", "SCREEN2:SPRITE$(0)=CHR$(170):SCREEN2", f"&H{SPR_PAT:04X}", 4, "0"),
+    # the sprite-size argument persists across a later bare SCREEN
+    ("size_persist", "SCREEN2,2:SCREEN2:SPRITE$(0)=CHR$(9):B$=SPRITE$(0)",
+     f"&H{SPR_PAT:04X}", 2, ("LEN(B$)", "PEEK(&HF3E0)")),
+    ("size_persist0","SCREEN2,2:SCREEN0:SCREEN2:B$=SPRITE$(0)",
+     f"&H{SPR_PAT:04X}", 2, ("LEN(B$)", "PEEK(&HF3E0)")),
+    ("size_back",    "SCREEN2,2:SCREEN2,0:B$=SPRITE$(0)",
+     f"&H{SPR_PAT:04X}", 2, ("LEN(B$)", "PEEK(&HF3E0)")),
+    ("size_mag",     "SCREEN2,1:B$=SPRITE$(0)", f"&H{SPR_PAT:04X}", 2,
+     ("LEN(B$)", "PEEK(&HF3E0)")),
+    ("size_mag3",    "SCREEN2,3:B$=SPRITE$(0)", f"&H{SPR_PAT:04X}", 2,
+     ("LEN(B$)", "PEEK(&HF3E0)")),
+]
+
+
+def phase_p() -> int:
+    """Mode-set init + persistence -- the parts no single statement can show.
+    Boot-per-case for the same VRAM-carry-over reason as Phase N."""
+    fails = 0
+    print("=== PHASE P: sprite table init, CLS, and the persistent size ===")
+    for label, head, base, n, extra in SPRITE_STATE:
+        specs = [("stored", [f"CLEAR 2000:{head}"] + spr_dump(base, n, extra))]
+        ref = omsx_repl.run_cases(REF, specs, batch=False)[0]
+        zb = omsx_repl.run_cases(ZB, specs, batch=False)[0]
+        ra, za = _spr_bytes(ref), _spr_bytes(zb)
+        ok = ra is not None and ra == za
+        fails += not ok
+        print(f"  {'PASS' if ok else 'FAIL'} {label:14} ref={ra!r} zb={za!r}")
+    return fails
+
+
 def main() -> int:
     fails = (phase_a() + phase_b() + phase_c() + phase_d()
               + phase_e() + phase_f() + phase_g_rneg()
               + phase_h() + phase_i_aliasing() + phase_j()
-              + phase_k() + phase_l() + phase_m())
+              + phase_k() + phase_l() + phase_m()
+              + phase_n() + phase_o() + phase_p())
     print("-------------------")
     print("graphics-acceptance:", "PASS" if fails == 0 else f"FAIL ({fails})")
     return 1 if fails else 0

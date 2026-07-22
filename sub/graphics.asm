@@ -94,6 +94,8 @@ gt_nostamp:
                 jp      z,gfx_spr_xsave     ; GFX_OP == 10 (snapshot the attribute x bytes)
                 dec     a
                 jp      z,gfx_spr_xrest     ; GFX_OP == 11 (restore them after CHGMOD)
+                dec     a
+                jp      z,gfx_spr_size_apply ; GFX_OP == 12 (apply SCREEN's sprite size)
                 ; GFX_OP == 0 (or any other value) -> the G1 floor self-test
                 ; (falls through to graphics_selftest below).
 
@@ -197,6 +199,21 @@ gfx_vram_rd:
                 out     (VDP_ADDR),a        ; address low
                 ld      a,h
                 out     (VDP_ADDR),a        ; address high (NO $40 -> read mode)
+    IF GFX_UNGUARDED = 0
+                nop                         ; THE VDP FETCH WINDOW (see gfx_rd_raw's
+                nop                         ; header): $98 is only valid once the VDP has
+                nop                         ; fetched VRAM[addr] into its read-ahead latch,
+                nop                         ; ~30 T after the address write. Without these
+                nop                         ; the read returns the STALE previous byte --
+                nop                         ; which G7's sprite block reads hit at once (a
+                nop                         ; 4-byte attribute read came back ROTATED).
+                nop                         ; Part of "the guard", so the teeth check
+                nop                         ; (GFX_UNGUARDED=1) strips it too -- measured:
+    ENDIF                                   ; with the settle present and only the DI
+                                            ; stripped, the floor gate no longer fails, i.e.
+                                            ; what it was really detecting all along was the
+                                            ; MISSING FETCH WINDOW, not the latch race.
+                                            ; [[vdp-direct-port-read-fetch-window]]
                 in      a,(VDP_DATA)        ; fetch (auto-increments)
     IF GFX_UNGUARDED = 0
                 ei
@@ -2822,24 +2839,37 @@ gfx_spr_err5:
 gfx_spr_wpat:
                 call    gfx_spr_addr
                 ret     c
-                push    hl
-                ld      hl,GFX_VBUF
-                ld      a,(GFX_VLEN)
-                ld      e,a
-                ld      d,0
-                add     hl,de               ; -> the first byte past the supplied text
-                ld      a,32
-                sub     e
-                jr      z,gsw_padded
-                jr      c,gsw_padded
-                ld      c,a
-gsw_pad:
-                ld      (hl),0
+                push    hl                  ; [entry address]
+                push    bc                  ; [entry size]
+                ; stage the entry: the resident hands over the string DESCRIPTOR
+                ; ([len][ptr] in page-3 RAM, which this page can read), so the copy,
+                ; the truncate and the zero-pad all happen here.
+                ld      hl,(GFX_SDESC)
+                ld      a,(hl)
                 inc     hl
+                ld      c,a                 ; C = the assigned length
+                ld      a,(hl)
+                inc     hl
+                ld      h,(hl)
+                ld      l,a                 ; HL = body address
+                ld      de,GFX_VBUF
+                ld      b,32
+gsw_lp:
+                ld      a,c
+                or      a
+                jr      z,gsw_zero          ; body exhausted -> zero-pad the rest
                 dec     c
-                jr      nz,gsw_pad
-gsw_padded:
-                pop     hl
+                ld      a,(hl)
+                inc     hl
+                jr      gsw_put
+gsw_zero:
+                xor     a
+gsw_put:
+                ld      (de),a
+                inc     de
+                djnz    gsw_lp              ; a longer string is simply never read
+                pop     bc                  ; [entry size]
+                pop     hl                  ; [entry address]
                 ld      de,GFX_VBUF
                 jp      gvw_body            ; B = the entry size
 
@@ -2960,6 +2990,8 @@ gsxs_lp:
                 inc     de
                 jr      gsxs_step
 gfx_spr_xrest:
+                call    gfx_spr_size_apply  ; re-apply SCREEN's sprite-size bits, which
+                                            ; CHGMOD has just overwritten in register 1
                 ld      hl,GFX_SATR_BASE+1
                 ld      de,GFX_VBUF
                 ld      b,32
@@ -2980,4 +3012,25 @@ gsxs_step:
                 inc     hl
                 inc     hl
                 djnz    gsxs_lp
+                ret
+
+; --- gfx_spr_size_apply: GFX_OP = 12 -- SCREEN's sprite size -> VDP register 1
+; The size bits live in RG1SAV 1..0 and must survive CHGMOD, which rewrites the
+; register from its own table (spec G7 §5). The write is a direct port pair here
+; rather than BIOS WRTVDP: a page-0 tenant has no BIOS, and this island exists
+; precisely to own the VDP ports. RG1SAV is updated to match, so anything that
+; reads the mirror (the entry-size and pattern-scaling paths above) agrees.
+gfx_spr_size_apply:
+                ld      a,(RG1SAV)
+                and     $FC
+                ld      c,a
+                ld      a,(GFX_SSIZE)
+                and     $03
+                or      c
+                ld      (RG1SAV),a
+                di                          ; the 2-byte register write is one latch unit
+                out     (VDP_ADDR),a
+                ld      a,$81               ; $80 | 1 = "write VDP register 1"
+                out     (VDP_ADDR),a
+                ei
                 ret

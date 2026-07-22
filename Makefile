@@ -136,7 +136,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub
              sub/format.asm basic/format-body.inc \
              sub/errtrap.asm \
              sub/fatprim.asm basic/fat-prim-body.inc basic/fat-delete-body.inc \
-             sub/dirverb.asm sub/randio.asm basic/randio-body.inc basic/fld-fill-body.inc \
+             sub/dirverb.asm sub/randio.asm sub/fiawalk.asm basic/fiawalked-body.inc basic/randio-body.inc basic/fld-fill-body.inc \
              sub/lineedit.asm basic/lineedit-body.inc \
              sub/casmatch.asm basic/casmatch-body.inc basic/cal-refill-body.inc \
              sub/readdata.asm basic/readdata-body.inc basic/tokskip-body.inc \
@@ -424,8 +424,18 @@ subrom-inttest: repack-machine
 graphics-floor-acceptance: repack-machine
 	python3 probes/basic/basic_probe_graphics_floor.py
 
-graphics-floor-teeth:
-	ZB_GFX_UNGUARDED=1 python3 probes/basic/basic_probe_graphics_floor.py --expect-fail
+# WIRING FIX (G7, 2026-07-22): this rule used to export ZB_GFX_UNGUARDED=1 and
+# run the probe -- but NOTHING read that variable, so it ran the ordinary GUARDED
+# sub-ROM and could only ever report FAIL. The teeth check now actually builds an
+# unguarded sub.rom, installs it, runs the probe, and puts the real machine back
+# whatever the outcome.
+graphics-floor-teeth: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM)
+	$(PASMO) -I sub --equ GFX_UNGUARDED=1 --bin $(SUB_SRC) $(BUILD)/sub-unguarded.rom
+	python3 tools/pad_rom.py $(BUILD)/sub-unguarded.rom 32768
+	python3 tools/install-repack-machine.py --merged $(MAIN_ROM) --disk-rom $(DISK_ROM) \
+	  --sub-rom $(BUILD)/sub-unguarded.rom
+	python3 probes/basic/basic_probe_graphics_floor.py --expect-fail; st=$$?; \
+	  $(MAKE) --no-print-directory repack-machine >/dev/null; exit $$st
 
 # --- Graphics G2 acceptance (PSET/PRESET/POINT VG-8020 differential) ----------
 # The load-bearing gate for the pixel op (docs/spec-basic-graphics-g2.md §8): draws

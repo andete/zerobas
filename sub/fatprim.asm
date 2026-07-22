@@ -99,6 +99,9 @@ fp_table:
                 jp      t_fat_rand_open         ; 15 DISKOP_SEL_RAND_OPEN
                 jp      t_fat_rand_get          ; 16 DISKOP_SEL_RAND_GET
                 jp      t_fat_rand_put          ; 17 DISKOP_SEL_RAND_PUT
+; --- row 18: fat_io_append's resume-point tail (docs/spec-eviction-g7-space.md,
+; carve 2). Body in sub/fiawalk.asm, included alongside randio.asm in sub/sub.asm.
+                jp      t_fia_walked            ; 18 DISKOP_SEL_FIA_WALKED
 
 ; --- uniform result-stash tails --------------------------------------------
 ; Persist {HL, A, STATUS} into the DISKOP block; STATUS=0 (ok) from
