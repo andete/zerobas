@@ -222,6 +222,66 @@ method is sound it must recover that. Measured (R14 & `$3F`):
    That is the concrete next step for the `PAD` half, and it is a real piece of
    work rather than a tweak.
 
+### 4.6 The Z80-speed round — terminal 2 identified as `EOC`, quantitatively
+
+Probe `scratchpad/i2_frame.py`, the harness §4.5 said was needed: a ~40-byte Z80
+routine poked into `$C000` (behind a `CLEAR 200,&HBFFF` so nothing BASIC does can
+land on it), fired with `DEFUSR`/`USR`, logging R14 into `$C100` and read back
+with `debug read_block`. Sample period is `in a,(n)` 11 + `ld (hl),a` 7 +
+`inc hl` 6 + `djnz` 13 = **37 T ≈ 10.34 µs** at 3.579545 MHz — ~50× what BASIC
+managed. The paddle is again the known-answer control, and again lands on
+terminal 1; nothing-plugged is `3F` throughout in every experiment.
+
+**Speed alone changed the answer, exactly where §4.5 predicted it would.** The
+touchpad, square-waved at Z80 speed:
+
+```
+toggle    3B 3D 39 3D 39 3D 39 ...     (3F=idle · 3B=t3 low · 3D=t2 low · 39=both)
+```
+
+so **terminal 3 follows the driven line** (low in our low phase, high in our high
+phase) while **terminal 2 latches low from the first full cycle onward**. The
+BASIC-speed probe saw only terminal 3 — residual 1 of §4.5 is resolved, and it
+was a sampling-rate artifact, not a second device state.
+
+**Which of the two is `EOC` is then settled by a prediction the datasheet makes
+and we can check.** `EOC` is specified low *only during conversion*, with
+`t_CONV = 14 × 4 / f_CK` (typ. 140 µs at f_CK = 400 kHz). So clock a burst, stop,
+leave the line idle high, and keep sampling: `EOC` must rise again after a
+**bounded** interval that does **not** depend on how long we clocked. A data line
+would not behave that way.
+
+| experiment | result |
+|---|---|
+| clock ×8, then sample 64 | terminal 2 low for **12 samples**, then high |
+| clock ×32, then sample 64 | terminal 2 low for **12 samples**, then high |
+| same, paddle / nothing plugged | terminal 2 never low (controls clean) |
+
+12 × 10.34 µs ≈ **124 µs**, against the datasheet's 140 µs typ — and **identical
+for 8 and 32 clocks**, i.e. fixed-duration and clock-count-independent, which is
+the signature asked for. (Inverting `t_CONV` on the measurement gives
+f_CK ≈ 56/124 µs ≈ 450 kHz, comfortably around the 400 kHz nominal.)
+
+**⇒ terminal 2 = `EOC`, terminal 3 = `SO`.** The first is a quantitative match to
+an independently published number, not an argument from elimination.
+
+Recovered mapping, then:
+
+| joyport terminal | R14/R15 bit | µPD7001 signal | how established |
+|---|---|---|---|
+| 8th | R15 b4 (out) | the driven line — `CS`/`SCK` | the only output the port has (TH fig. 5.22 B) |
+| 3 | R14 b2 | **`SO`** | follows the driven line; the non-`EOC` of the pair |
+| 2 | R14 b1 | **`EOC`** | fixed ~124 µs low, clock-count-independent ≈ `t_CONV` |
+
+**A hard limit to state before this reads as a finished protocol.** The untouched
+touchpad converts to **0**, so every `SO` bit is 0 and the line is
+indistinguishable from an echo of the clock *by bit value*; §1 establishes we
+cannot produce a non-zero coordinate. So this method can recover the **handshake
+and its timing** — which it now has — but **cannot validate the data path's bit
+values** end to end. Also still open: how the two address bits (`SI`, latched by
+`DL`) are delivered at all, given the port offers exactly **one** output line;
+the encoding has to be temporal, and nothing measured so far pins it.
+
 ## 5. Harness gap this implies
 
 `omsx_repl` has no hook for **per-batch Tcl prologue**, which is what a `plug`
