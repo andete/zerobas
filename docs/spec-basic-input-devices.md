@@ -501,6 +501,39 @@ implementation session rediscovers it.
 same order, so the `g6_carve_scout.py` tenancy rule should find a candidate — but
 this is now a known cost to plan against, not a surprise to hit mid-slice.
 
+#### Carve candidates (scouted, not yet chosen)
+
+`python3 scratchpad/g6_carve_scout.py` over the current build. Only two carves
+come back both tenancy-clean *and* single-entry, and one of those is excluded on
+sight:
+
+| carve | size | verdict |
+|---|---|---|
+| `psv_loop` | 60 B | **EXCLUDED** — PLAY servicer, runs from `H.TIMI`. §7 already ruled that a `CALSLT` inside the VBLANK handler is not a trade worth making. |
+| `banner_text` | 61 B | data only; see below |
+| `do_kill` (KILL) | 120 B | page-0 clean, but **3 extra entries** — its closure contains `parse_disk_fcb`, which has 11 call sites across `bload`/`cload`/`files`/`save`, so that leaf must stay resident. True yield is well under 120 B and needs a human read. |
+
+**Recommended: `show_title` + `banner_text` as a PAGE-1 tenant.** The scout scores
+`banner_text` alone (61 B of pure ASCII, one reference), but the right unit is the
+routine *with* its data:
+
+* `show_title`'s only outward edges are `INITXT` and `CHPUT` — **BIOS only**. That
+  makes it page-**1**-tenancy clean (a page-1 tenant sees BIOS; a page-0 tenant
+  would not, so the scout's "page-0 CLEAN" label on the bare data is the wrong
+  frame for the routine).
+* ~13 B of code + 61 B of text = **~74 B moved, ~62 B net** after a stub — which
+  covers the 55 B deficit with a little room.
+* It is the **coldest code in the ROM**: one call, at boot, before the prompt
+  (`interp.asm:61`, after `init_ext_roms`). A `CALSLT` there is unmeasurable.
+* Graceful degradation is free: `subrom_call` returns CF=1 when the sub-ROM is
+  absent, and a missing *cosmetic header* needs no error path at all — unlike
+  every previous tenant, which needed one.
+
+Two things to check before committing to it: the stub must live in the **page-0
+low region** (a page-1 tenant cannot be called from page-1 resident code — the
+resident ABI closure must be page-0), which has **19 B free**, and `SUBSLOT_OK`
+must already be set by the time `show_title` runs.
+
 ### 9.6 Implementation order (after sign-off)
 
 1. ~~`omsx_repl` prologue hook~~ — **✅ DONE (1bce384)**, validated by reproducing
