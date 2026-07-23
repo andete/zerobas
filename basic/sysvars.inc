@@ -38,6 +38,8 @@ BREAKX          equ     $00B7   ; check Ctrl-STOP via keyboard matrix; CF set = 
 ; resident context (page 0 = BIOS), like CHSNS/CHGET for INKEY$.
 GTSTCK          equ     $00D5   ; A = device (0 cursors, 1/2 joystick port) -> A = 0..8
 GTTRIG          equ     $00D8   ; A = trigger (0 space, 1..4 buttons) -> A = $00 or $FF
+GTPAD           equ     $00DB   ; A = 4*device+sub -> A = touch-panel read (zerobas-tape)
+GTPDL           equ     $00DE   ; A = paddle 1..12 -> A = 0..255 dial (zerobas-tape)
 
 ; --- VDP VRAM access BIOS entry points (VPOKE / VPEEK) ---------------------
 ; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook, VDP I/O.
@@ -433,8 +435,18 @@ I1_RESIDENT     equ     1
     ELSE
 I1_RESIDENT     equ     0
     ENDIF
+; I2 (PDL/PAD) rides the same repack-only gate as I1: the two functions are thin
+; wrappers over the zerobas-tape GTPDL/GTPAD BIOS completions (spec §9). Split
+; from I1_RESIDENT only so the flags read where each slice's code is gated.
+    IF ROM_BASE < $4000
+I2_RESIDENT     equ     1
+    ELSE
+I2_RESIDENT     equ     0
+    ENDIF
 STICK_TOKEN     equ     $A2     ; STICK(n) -> 0..8 direction (0 = centred)
 STRIG_TOKEN     equ     $A3     ; STRIG(n) -> 0 / -1 trigger state
+PDL_TOKEN       equ     $A4     ; PDL(n)   -> 0..255 paddle dial (input devices, I2)
+PAD_TOKEN       equ     $A5     ; PAD(n)   -> touch-panel read (input devices, I2)
 VDP_TOKEN       equ     $C8     ; VDP(n)      (single-byte function token)
 SPRITE_TOKEN    equ     $C7     ; SPRITE (statement + string function + PUT SPRITE)
 DRAW_TOKEN      equ     $BE     ; DRAW <string> (statement; graphics G6) -- crunch of

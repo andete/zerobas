@@ -112,12 +112,28 @@ GRAMMAR = [
     # nesting / expression arguments
     ("nested",       'PRINT"U";STICK(STRIG(0)+1)', "U"),
     ("expr_arg",     'A=1:PRINT"V";STICK(A*2)', "V"),
+    # --- PDL / PAD error surface (spec §9.4: the ERR 5 / ERR 6 edges) ---------
+    ("pdl_0",        'PRINT"a";PDL(0)', "a"),               # ERR 5 (domain starts at 1)
+    ("pdl_13",       'PRINT"b";PDL(13)', "b"),              # ERR 5
+    ("pdl_32768",    'PRINT"c";PDL(32768)', "c"),           # ERR 6 overflow
+    ("pdl_str",      'PRINT"d";PDL("X")', "d"),             # ERR 13 type mismatch
+    ("bare_pdl",     'PRINT"e";PDL', "e"),                  # ERR 2
+    ("pdl_trunc",    'PRINT"f";PDL(1.9)', "f"),             # trunc 1 -> legal
+    ("pad_8",        'PRINT"g";PAD(8)', "g"),               # ERR 5 (BASIC subset ends at 7)
+    ("pad_neg",      'PRINT"h";PAD(-1)', "h"),              # ERR 5
+    ("pad_32768",    'PRINT"i";PAD(32768)', "i"),           # ERR 6
+    ("bare_pad",     'PRINT"j";PAD', "j"),                  # ERR 2
+    ("pad_trunc",    'PRINT"k";PAD(7.9)', "k"),             # trunc 7 -> legal
 ]
 
 # --- PHASE B: idle values (nothing plugged) -------------------------------
 IDLE = [
     ("stick_all", 'PRINT"A";STICK(0);STICK(1);STICK(2)', "A"),
     ("strig_all", 'PRINT"B";STRIG(0);STRIG(1);STRIG(2);STRIG(3);STRIG(4)', "B"),
+    # PDL idle = 255 (count cap), PAD idle = 0 (nothing to convert / not touched).
+    # Short representative slices per index kind, kept under the 40-col wrap.
+    ("pdl_idle",  'PRINT"C":FORI=1TO12:PRINTPDL(I):NEXT', "C"),
+    ("pad_idle",  'PRINT"D":FORI=0TO7:PRINTPAD(I):NEXT', "D"),
 ]
 
 # --- PHASE C: live key matrix (the teeth) ---------------------------------
@@ -141,6 +157,72 @@ MATRIX = [   # label, (row, mask) or None, expected "Z stick strig"
     ("right",    (8, 0x80),  "Z 3 0"),
     ("up_down",  (8, 0x60),  "Z 0 0"),   # opposing pair cancels
 ]
+
+
+# --- PHASE D: PDL values with devices plugged (THE TEETH) -----------------
+# spec §9.4. The whole 1..12 matrix under four plug configurations, differential
+# against the VG-8020. A constant PDL cannot fake this: a plugged openMSX paddle
+# reads 128 (which also pins the count RATE, not just the polarity), a touchpad
+# pulls two indices to 0, and everything else idles at 255. The documented table
+# (char record §2) is carried as a NOTE, checked separately from ref==zb.
+# A FOR loop, NOT one long PRINT with 12 PDL(): omsx_repl injects each line through
+# the 40-byte KEYBUF type-ahead buffer, and a ~90+ char line overflows it and
+# corrupts unpredictably (confirmed to bite STICK and PEEK too, so it is a harness
+# limit, not an interpreter bug -- a real user typing that line is fine). The loop
+# keeps the injected line short while still reading the whole 1..12 matrix.
+# ONE value per line (no trailing `;`): 12 packed values overflow the 40-column
+# screen and a number straddling the wrap ("255" -> "25\n5") reads back as two
+# tokens, and the wrap column differs by machine -- a false diff. A value per line
+# never straddles.
+PDL_BODY = 'PRINT"P":FORI=1TO12:PRINTPDL(I):NEXT'
+PDL_CONFIGS = [   # cfg label, plug prologue, documented flattened line (char §2)
+    ("paddleA",   ("plug joyporta paddle",),
+     "P 128 255 255 255 255 255 255 255 255 255 255 255"),
+    ("paddleB",   ("plug joyportb paddle",),
+     "P 255 128 255 255 255 255 255 255 255 255 255 255"),
+    ("touchpadA", ("plug joyporta touchpad",),
+     "P 255 255 0 255 0 255 255 255 255 255 255 255"),
+    ("touchpadB", ("plug joyportb touchpad",),
+     "P 255 255 255 0 255 0 255 255 255 255 255 255"),
+]
+
+# --- PHASE E: PAD values with arkanoidpad plugged (ALSO TEETH) -------------
+# spec §9.4. The 0..7 matrix under arkanoidpad in port A and B, differential
+# against the VG-8020. Distinct outcomes -- sense -1, X/Y 255, button 0 -- so a
+# constant-0 PAD fails immediately. Two non-clean reference behaviours the
+# differential still holds us to (both reproduced bug-for-bug, tape.asm GTPAD): X
+# and Y read the SAME frame (address phase unvalidatable, D-I-7), and device 1's
+# X/Y (PAD 5,6) are ungated so they read 255 even with port 2 empty -- which is
+# why arkanoidA below is NOT a clean 0..3 / 4..7 mirror.
+PAD_BODY = 'PRINT"Q":FORI=0TO7:PRINTPAD(I):NEXT'
+PAD_CONFIGS = [   # cfg label, plug prologue, measured VG-8020 flattened line
+    ("arkanoidA", ("plug joyporta arkanoidpad",), "Q -1 255 255 0 0 255 255 0"),
+    ("arkanoidB", ("plug joyportb arkanoidpad",), "Q 0 0 0 0 -1 255 255 0"),
+]
+
+
+def run_plug_phase(name: str, blurb: str, body: str, tag: str, configs) -> int:
+    """One config per boot (prologue = a `plug` line), the same single value-
+    matrix case on both machines, differential compared. The documented line is a
+    NOTE only -- ref==zb is the gate."""
+    fails = 0
+    print(f"=== PHASE {name}: {blurb} ===")
+    for cfg, prologue, doc in configs:
+        specs = [("stored", trapped(body, tag))]
+        ref = omsx_repl.run_cases(REF, specs, reset=("NEW", "CLS"),
+                                  prologue=prologue)
+        zb = omsx_repl.run_cases(ZB, specs, reset=("NEW", "CLS"),
+                                 prologue=prologue)
+        ra, za = answer(ref[0], tag), answer(zb[0], tag)
+        ok = ra is not None and ra == za
+        note = ""
+        if ok and doc is not None and ra is not None:
+            docn = " ".join(doc.split())
+            if ra != docn:
+                note = f"  (NOTE: both differ from documented {docn!r})"
+        fails += not ok
+        print(f"  {'PASS' if ok else 'FAIL'} {cfg:11} ref={ra!r} zb={za!r}{note}")
+    return fails
 
 
 def run_phase(name: str, cases, blurb: str) -> int:
@@ -194,15 +276,33 @@ def phase_c() -> int:
 
 
 def main() -> int:
-    fails = run_phase("A", GRAMMAR, "grammar + error surface + coercion")
-    fails += run_phase("B", IDLE, "idle values, nothing plugged")
-    fails += phase_c()
-    total = len(GRAMMAR) + len(IDLE) + len(MATRIX)
+    only = None
+    if "--only" in sys.argv:
+        only = sys.argv[sys.argv.index("--only") + 1].upper()
+    fails = 0
+    total = 0
+    if only in (None, "A"):
+        fails += run_phase("A", GRAMMAR, "grammar + error surface + coercion")
+        total += len(GRAMMAR)
+    if only in (None, "B"):
+        fails += run_phase("B", IDLE, "idle values, nothing plugged")
+        total += len(IDLE)
+    if only in (None, "C"):
+        fails += phase_c()
+        total += len(MATRIX)
+    if only in (None, "D"):
+        fails += run_plug_phase("D", "PDL values, devices plugged (teeth)",
+                                PDL_BODY, "P", PDL_CONFIGS)
+        total += len(PDL_CONFIGS)
+    if only in (None, "E"):
+        fails += run_plug_phase("E", "PAD values, arkanoidpad plugged (teeth)",
+                                PAD_BODY, "Q", PAD_CONFIGS)
+        total += len(PAD_CONFIGS)
     print()
     if fails:
         print(f"FAIL: {fails}/{total} input-device cases diverge from the VG-8020")
         return 1
-    print(f"ALL PASS ({total} cases) — STICK/STRIG match the VG-8020")
+    print(f"ALL PASS ({total} cases) — STICK/STRIG/PDL/PAD match the VG-8020")
     return 0
 
 

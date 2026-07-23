@@ -4,8 +4,9 @@ A **clean-room reimplementation of the page-0 MSX BIOS routines C-BIOS leaves
 unimplemented**, shipped as a tiny **patch** against a stock C-BIOS v0.29 ROM. Its
 core is the **seven cassette entry points** (`$00E1`–`$00F3`) and the work-area
 state they touch — the read and write signal paths C-BIOS ships as stubs — plus a
-small set of **select BIOS completions** beyond cassette (see **Scope** below),
-currently **`LPTOUT` (`$00A5`)**, the printer-output routine.
+small set of **select BIOS completions** beyond cassette (see **Scope** below):
+**`LPTOUT` (`$00A5`)**, the printer-output routine, and **`GTPAD` (`$00DB`)** /
+**`GTPDL` (`$00DE`)**, the touch-panel and paddle readers (input-devices arc I2).
 
 ## Scope — what belongs in this patch
 
@@ -20,8 +21,9 @@ via one IPS overlay."* A routine is admitted here only if **all** hold:
    installer wiring);
 3. it fits the **spare page-0 fill** the patch already owns.
 
-Cassette and `LPTOUT` qualify; `AUXIN`/`AUXOUT` (`$00A3`/`$00A6`) are the obvious
-future candidates. Interpreter/cartridge features do **not** — those stay in
+Cassette, `LPTOUT`, and `GTPAD`/`GTPDL` qualify (C-BIOS ships the latter two as
+debug-print stubs); `AUXIN`/`AUXOUT` (`$00A3`/`$00A6`) are the obvious future
+candidates. Interpreter/cartridge features do **not** — those stay in
 `basic.rom` / `disk.rom`. (This deliberately supersedes the earlier "tape = cassette
 only" scoping; a separate component for a ~20-byte routine was rejected as overhead.)
 

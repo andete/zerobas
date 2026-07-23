@@ -12,8 +12,9 @@ splices the three source components into that combined image:
      $2812-$3FFF is free, contiguous below page 1) -- the base,
   2. the relocated BASIC ($2812-$7FFF, basic/main-reloc.asm; "AB" header pinned at
      $4000, reclaimed low region $2812-$3FFF reserved $00 for now), and
-  3. the zerobas-tape page-0 completions (LPTOUT vector $00A5, cassette vectors
-     $00E2-$00F6, routine bodies $09EE-tape_end -- D5 as revised 2026-07-11:
+  3. the zerobas-tape page-0 completions (LPTOUT vector $00A5, GTPAD/GTPDL vectors
+     $00DB/$00DE, cassette vectors $00E2-$00F6, routine bodies $09EE-tape_end --
+     the $00DB/$00DE vectors repoint C-BIOS's GTPAD/GTPDL debug stubs; D5 rev 2026-07-11:
      moved from $3A72 into the all-variant gap-1 fill when float F2 grew BASIC
      over the old block; see tape/tape.asm FREE_ORG).
 
@@ -47,6 +48,8 @@ BASIC_BASE = 0x2812   # relocated BASIC low boundary (ROM_BASE in main-reloc.asm
 TOP = 0x8000
 TAPE_BIN_BASE = 0x00A5
 LPTOUT_VEC = (0x00A5, 0x00A8)      # C3 JP vector, target repointed to LPTOUT body
+PAD_PDL_VECS = (0x00DB, 0x00E1)    # GTPAD ($00DB) + GTPDL ($00DE) JP vectors,
+                                   # repointed off the C-BIOS debug stubs to our bodies
 CASSETTE_VECS = (0x00E2, 0x00F6)   # seven cassette vector targets
 TAPE_BODY_LO = 0x09EE              # routine bodies; hi = tape_end (arg); must
                                    # equal tape/tape.asm FREE_ORG (D5 rev 2026-07-11)
@@ -91,7 +94,7 @@ def build(repacked: bytes, basic: bytes, tape: bytes, tape_end: int) -> bytes:
         bad = TAPE_BODY_LO + next(i for i, x in enumerate(body) if x)
         sys.exit(f"error: tape body region ${TAPE_BODY_LO:04X}-${tape_end:04X} not free "
                  f"(non-zero at ${bad:04X}) in the merged base")
-    for lo, hi in (LPTOUT_VEC, CASSETTE_VECS, (TAPE_BODY_LO, tape_end)):
+    for lo, hi in (LPTOUT_VEC, PAD_PDL_VECS, CASSETTE_VECS, (TAPE_BODY_LO, tape_end)):
         merged[lo:hi] = tape[lo - TAPE_BIN_BASE:hi - TAPE_BIN_BASE]
 
     print(f"OK: merged main ROM -- repacked C-BIOS + BASIC(${BASIC_BASE:04X}-$7FFF) "

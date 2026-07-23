@@ -33,6 +33,7 @@
 ; A different C-BIOS build would re-derive only FREE_ORG.
 ;--------------------------------------------------------------------------------
 PSG_REGS:       equ     $A0             ; PSG register-select write port
+PSG_WRITE:      equ     $A1             ; PSG value write port (R15 = general-output port B)
 PSG_STAT:       equ     $A2             ; PSG value read port (CAS-in on R14 bit 7)
 PPI_REGS:       equ     $AB             ; i8255 PPI control (BSR) register
 PPI_PORTC:      equ     $AA             ; i8255 PPI Port C (motor bit 4, CASW bit 5)
@@ -62,6 +63,12 @@ LOWLIM:         equ     $FCA4           ; read discrimination threshold work byt
 ; write-timing tables, so it never collides. It is a derived cache, not a baud
 ; selector: the system's choice still lives in the active table, read each TAPOON.
 CASBAUD:        equ     $FCA5           ; = WINWID (resolved-baud cache; see above)
+; Touch-panel coordinate latches -- the real MSX work bytes GTPAD writes on a
+; contacted sense and the X/Y sub-calls read back (C-BIOS systemvars.asm, an
+; allowed source: "FC9C last read Y-position of a touchpad", "FC9D last read X").
+; Zeroed by cold-init, so an untouched panel reads 0. See gtpad below.
+PADY:           equ     $FC9C           ; touch-panel latched Y (C-BIOS PADY)
+PADX:           equ     $FC9D           ; touch-panel latched X (C-BIOS PADX)
 ; FREE_ORG history: $3A72 until 2026-07-11 (D5, spec-cbios-repack-tooling.md §6);
 ; retargeted to $09EE when the float pack (F2) grew the merged-ROM BASIC window
 ; over the old block (D5 revision, same spec). $09EE-$0D00 is 0x00 fill in ALL
@@ -131,6 +138,20 @@ CASIN_R14:      equ     14              ; PSG register holding CAS-in on bit 7
 ;================================================================================
                 org     $00A5
                 jp      lptout          ; $00A5 LPTOUT
+
+;================================================================================
+; GTPAD ($00DB) / GTPDL ($00DE) jump vectors, repointed into our code. C-BIOS
+; ships both as debug stubs that CHPUT the literal text "GTPAD"/"GTPDL" onto the
+; user's screen (they were never implemented), so on the C-BIOS target BASIC's
+; PAD()/PDL() -- and any other caller -- get garbage. We supply real routines
+; below (decision D-I-6: complete a stubbed $00xx vector in the BIOS, not in
+; basic.rom). Both are standard C3-xx-xx JP entries in every C-BIOS main ROM
+; (build-time asserted, tools/build_patches.py), so repointing their targets is
+; byte-safe. $00DB..$00E0 are the two JPs, contiguous with the cassette block.
+;================================================================================
+                org     $00DB
+                jp      gtpad           ; $00DB GTPAD
+                jp      gtpdl           ; $00DE GTPDL
 
 ;================================================================================
 ; All seven cassette jump vectors ($00E1-$00F3), repointed into our code --
@@ -643,6 +664,253 @@ lptout_wait:
                 ld      a,b             ; restore the character to A
                 pop     bc
                 or      a               ; CY = 0 (success)
+                ret
+
+;================================================================================
+; General-purpose joystick-port I/O for the analog input devices, shared by
+; GTPDL and GTPAD. Source for the port wiring: MSX2 Technical Handbook ch.5
+; (figs. 5.21/5.22), corroborated by our own black-box oracle characterisation
+; (scratchpad/i2_input_notes.md). The PSG's second 8-bit port (register 15,
+; output) drives the two joystick connectors; register 14 (input) reads the one
+; the select bit points at:
+;
+;   R15 b6 = 0  -> R14 b0..b5 read joystick port 1 terminals 1,2,3,4,6,7
+;   R15 b6 = 1  -> ... port 2
+;   R15 b4      -> port-1 8th terminal (the pulse/clock output line)
+;   R15 b5      -> port-2 8th terminal
+;   R15 b7      -> keep 1 (kana lamp off); R15 b0..b3 = terminals 6/7 outputs
+;
+; No reference ROM was read: the bit meanings are the published PSG-port map and
+; the pin identities were recovered from openMSX as a black box (i2_pinmap.py /
+; i2_frame.py), the same footing as the cassette FSK derivation above.
+;================================================================================
+
+;--------------------------------
+; psg_r15: write A to PSG register 15 (the output port).  Changes: AF
+psg_r15:
+                push    af
+                ld      a,15
+                out     (PSG_REGS),a    ; select R15
+                pop     af
+                out     (PSG_WRITE),a   ; R15 <- A
+                ret
+
+;--------------------------------
+; $00DE GTPDL -- read one paddle (a dial that turns a variable resistor). The
+; paddle is a retriggerable one-shot (TH fig. 5.24): pulse the port's 8th
+; terminal and the dial answers on its data terminal, held for 10 us..3 ms in
+; proportion to the angle. GTPDL times that pulse -- ~11.8 us per count (3 ms/255)
+; -- capping at 255, which is also the idle reading when no paddle pulls the line.
+;
+; PDL index -> terminal was settled two ways (TH's published circuit AND our
+; black-box mirror test, i2_input_notes.md §2): odd index = port 1, even = port 2,
+; and paddle k (1..6) of that port answers on R14 bit (k-1).
+;
+; In:  A = paddle number 1..12
+; Out: A = 0..255   (255 = at rest / no device)
+; Changes: AF, BC, HL   (IX/IY/DE preserved; the BASIC wrapper guards IX anyway)
+gtpdl:
+                dec     a               ; 0..11
+                ld      l,a             ; L = index-1
+                srl     a               ; A = terminal bit position 0..5 = (n-1)>>1
+                ld      b,a
+                ld      a,1
+                inc     b               ; shift (bit+1) times, leaving 1<<bit
+gtpdl_mk:
+                dec     b
+                jr      z,gtpdl_mkd
+                add     a,a
+                jr      gtpdl_mk
+gtpdl_mkd:
+                ld      h,a             ; H = R14 mask for this paddle's terminal
+                bit     0,l             ; index-1 bit0: 0 -> port 1 (odd n), 1 -> port 2
+                ld      a,$BF           ; port 1 8th-terminal HIGH: b7=1 b6=0(if1) b5=1 b4=1
+                ld      c,$AF           ; port 1 8th-terminal LOW : b4=0
+                jr      z,gtpdl_go
+                ld      a,$FF           ; port 2 8th-terminal HIGH: b7=1 b6=1(if2) b5=1 b4=1
+                ld      c,$DF           ; port 2 8th-terminal LOW : b5=0
+gtpdl_go:
+                ; A = 8th-terminal-high value, C = 8th-terminal-low value, H = mask.
+                ; The one-shot triggers on the 8th terminal's HIGH->LOW edge and
+                ; then holds its data terminal high for the dial-proportional time
+                ; while the 8th terminal stays low; GTPDL counts that window. (Edge
+                ; and levels recovered from the openMSX device as a black box,
+                ; scratchpad/i2_input_notes.md; nothing-plugged idles high -> 255.)
+                di                      ; the count is a real-time measurement
+                ld      b,a             ; B = 8th-terminal-high value
+                ld      a,15
+                out     (PSG_REGS),a    ; select R15 (once, for all three writes)
+                ld      a,c
+                out     (PSG_WRITE),a   ; 8th terminal low  (defined start level so the
+                                        ;  next write is always a real rising edge)
+                ld      a,b
+                out     (PSG_WRITE),a   ; 8th terminal high -> RISING edge. A touch panel
+                                        ;  starts its conversion here, so its EOC line
+                                        ;  reads low through the count (-> PDL 0), while a
+                                        ;  paddle ignores it. All three writes precede the
+                                        ;  paddle's trigger below, so its window is unmoved.
+                ld      a,c
+                out     (PSG_WRITE),a   ; 8th terminal low -> FALLING edge (paddle trigger);
+                                        ;  hold low across the count
+                ld      a,14
+                out     (PSG_REGS),a    ; select R14 for the read loop
+                ; The loop is timed, not incidental: openMSX holds the dial's data
+                ; terminal high for a fixed window (~4.7 ms-equivalent for a centred
+                ; paddle) and the count = window / loop-time, so the loop-time SETS
+                ; the 0..255 scale. This body is 36 T/iteration (in 11 + and 4 +
+                ; jr-nt 7 + dec 4 + jp 10), which lands the centred paddle on 128 and
+                ; caps at 255 -- both pinned by the Phase D gate, not asserted here.
+                ; jp (a flat 10 T) rather than jr keeps the period at exactly 36.
+                ld      c,255           ; count DOWN so 255 iterations = the cap
+gtpdl_loop:
+                in      a,(PSG_STAT)    ; read R14                          (11)
+                and     h               ; isolate this paddle's terminal    (4)
+                jr      z,gtpdl_done    ; low -> one-shot expired -> stop    (7/12)
+                dec     c               ; one more count                    (4)
+                jp      nz,gtpdl_loop   ; until the window caps at 255       (10)
+gtpdl_done:                             ; count = 255 - c (c=0 on the cap path)
+                ld      a,255
+                sub     c
+                ei
+                ret
+
+;--------------------------------
+; $00DB GTPAD -- read the touch panel (a NEC uPD7001 4-channel serial ADC). The
+; TH publishes the caller contract (List 5.8: sense with A&3 = 0, then read the
+; X / Y) and the uPD7001's own datasheet (1982 NEC Microcomputer Catalog
+; pp.479-482, A/Clean) publishes the serial protocol; the joyport pin mapping was
+; recovered from our black-box oracle (i2_input_notes.md §4.5/4.6): the port's one
+; output line R15 b4 (port 1) / b5 (port 2) carries CS/SCK, SO comes back on
+; R14 b2 (terminal 3), the pen-contact / device-present line on R14 b0
+; (terminal 1, active low). No reference ROM was read.
+;
+; A = device*4 + sub:  device 0/1 = touch panel 1/2; sub 0 sense (report whether
+; the panel is contacted, $FF/$00), 1 = X (channel 0), 2 = Y (channel 3), 3 =
+; button ($FF pressed else $00). BASIC passes 0..7 only; ids 8..19 (light pen,
+; mouse) are real BIOS surface but out of this arc's scope -> 0.
+;
+; DELIBERATE DEVIATION (decision D-I-7, signed off): the uPD7001 address phase --
+; two channel-select bits clocked in through the port's single output line -- was
+; never pinned by the oracle (i2_input_notes.md §4.6: the data path's values are
+; not validatable, and an untouched panel converts to 0 so SO carries no
+; distinguishing bits). So X and Y run the SAME 8-clock read frame; on real
+; hardware they would carry different coordinates, here they read the same
+; converted byte. This is documented, not hidden.
+;
+; The X/Y LATCH (TH List 5.8, matched to the VG-8020): a `sense` (sub 0) that
+; finds the panel contacted runs the conversion and stores the coordinates in
+; PADX/PADY; a sense that finds it NOT contacted leaves them untouched. The X/Y
+; sub-calls just read PADX/PADY. So X/Y report the last CONTACTED reading -- which
+; is why, in a `FOR i=0 TO 7` sweep, an empty port 2's X/Y still read the value a
+; contacted port 1 latched two calls earlier, and why nothing-plugged reads 0
+; (the latch is never written). This reproduces the reference bit-for-bit; the
+; latch is the mechanism, not a workaround (user's call: bug-for-bug where
+; achievable, 2026-07-23).
+;
+; In:  A = 0..19    Out: A = $00/$FF (sense/button) or 0..255 (X/Y)
+; Changes: AF, BC, DE, HL
+gtpad:
+                cp      8
+                jr      c,gtpad_tp      ; 0..7 -> touch panel
+                xor     a               ; 8..19: light pen / mouse -> not supported
+                ret
+gtpad_tp:
+                ld      c,a
+                and     3               ; sub-function 0..3
+                ld      e,a
+                ld      a,c
+                rrca
+                rrca
+                and     1               ; device 0/1 -> selects the port
+                ; Per port: B = R15 with the 8th terminal HIGH and the port selected
+                ; for reading (b6), C = same with the 8th terminal LOW (the SCK/CS
+                ; drive line).  device 0 -> port 1 (b6=0, drive b4); device 1 ->
+                ; port 2 (b6=1, drive b5).
+                ld      b,$BF           ; port 1: b7=1 b6=0(if1) b5=1 b4=1
+                ld      c,$AF           ; port 1: b4=0
+                jr      z,gtpad_dev
+                ld      b,$FF           ; port 2: b7=1 b6=1(if2) b5=1 b4=1
+                ld      c,$DF           ; port 2: b5=0
+gtpad_dev:
+                ; X (sub 1) and Y (sub 2) are pure latch reads -- no port I/O, no di.
+                ld      a,e
+                cp      1
+                jr      z,gtpad_getx
+                cp      2
+                jr      z,gtpad_gety
+                di                      ; sense / button touch the port
+                or      a
+                jr      z,gtpad_sense   ; sub 0
+                ; sub 3: button (trigger terminal, R14 b4, active low)
+                call    gtpad_selread   ; select the port, read R14
+                and     %00010000
+                ei
+                ld      a,0
+                ret     nz              ; high = not pressed -> $00
+                dec     a               ; low  = pressed     -> $FF
+                ret
+gtpad_getx:
+                ld      a,(PADX)        ; last contacted X (0 if never contacted)
+                ret
+gtpad_gety:
+                ld      a,(PADY)        ; last contacted Y
+                ret
+gtpad_sense:
+                call    gtpad_contact
+                jr      nz,gtpad_sense_no
+                call    gtpad_convert   ; contacted -> convert and latch X and Y
+                ld      (PADX),a        ; X and Y read the same frame (address phase
+                ld      (PADY),a        ;  omitted, D-I-7): latch the byte to both
+                ei
+                ld      a,$FF           ; contacted -> $FF
+                ret
+gtpad_sense_no:
+                ei
+                xor     a               ; not contacted -> $00, latch left as-is
+                ret
+
+;--------------------------------
+; gtpad_selread: select the port (B) and read R14 into A.  Changes: AF
+gtpad_selread:
+                ld      a,b
+                call    psg_r15         ; R15 = B (select port, 8th terminal high)
+                ld      a,14
+                out     (PSG_REGS),a
+                in      a,(PSG_STAT)
+                ret
+
+;--------------------------------
+; gtpad_contact: Z set iff the selected panel is contacted (R14 b0 low). Changes: AF
+gtpad_contact:
+                call    gtpad_selread
+                and     %00000001       ; terminal 1, active low
+                ret                     ; Z = contacted
+
+;--------------------------------
+; gtpad_convert: clock 8 bits MSB-first off the uPD7001's SO line (R14 b2) for the
+; port whose 8th-terminal-high value is B and low value is C. Returns A = the byte.
+; The address (channel) phase is omitted -- see the DELIBERATE DEVIATION above.
+; Changes: AF, C, DE, HL   (B preserved)
+gtpad_convert:
+                ld      d,0             ; D = accumulated byte
+                ld      l,8             ; 8 result bits
+gtpad_cbit:
+                ld      a,c
+                call    psg_r15         ; SCK low
+                ld      a,14
+                out     (PSG_REGS),a
+                in      a,(PSG_STAT)
+                and     %00000100       ; SO = R14 b2 (terminal 3)
+                sla     d               ; make room (MSB first); clobbers flags...
+                or      a               ; ...so re-test the SO bit still in A
+                jr      z,gtpad_cnext
+                inc     d               ; SO high -> set this bit
+gtpad_cnext:
+                ld      a,b
+                call    psg_r15         ; SCK high
+                dec     l
+                jr      nz,gtpad_cbit
+                ld      a,d
                 ret
 
 tape_end:       ; marks the end of the routine block (the patch slices to here)

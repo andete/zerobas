@@ -838,6 +838,10 @@ ev_ff_argtab:
                 db      STICK_TOKEN         ; $A2  (input devices, slice I1)
                 db      STRIG_TOKEN         ; $A3
     ENDIF
+    IF I2_RESIDENT
+                db      PDL_TOKEN           ; $A4  (input devices, slice I2)
+                db      PAD_TOKEN           ; $A5
+    ENDIF
 ev_ff_argtab_len equ    $ - ev_ff_argtab
     ENDIF
 ev_ff_arg:
@@ -891,21 +895,51 @@ ev_ff_arg:
                 cp      PEEK_TOKEN
                 jr      z,ev_ff_ckaddr
     IF I1_RESIDENT
-                ; STICK/STRIG (spec §4): the device index is a small non-negative
-                ; byte, so get_byte_arg is exactly the right checked coercion --
-                ; truncate toward zero, ERR 6 outside int16, ERR 5 in-int16 but
-                ; negative or >255 -- and only the per-function upper bound is left
-                ; to test. Measured domains: STICK 0..2, STRIG 0..4.
+                ; STICK/STRIG/PDL/PAD (spec §4): the device index is a small
+                ; non-negative byte, so get_byte_arg is exactly the right checked
+                ; coercion -- truncate toward zero, ERR 6 outside int16, ERR 5
+                ; in-int16 but negative or >255 -- and only the per-function bound
+                ; is left to test. Measured domains: STICK 0..2, STRIG 0..4,
+                ; PDL 1..12 (starts at 1), PAD 0..7.
                 cp      STICK_TOKEN
                 jr      z,ev_ff_ckstick
                 cp      STRIG_TOKEN
-                jr      nz,ev_ff_ckdone
+                jr      z,ev_ff_ckstrig
+    IF I2_RESIDENT
+                cp      PDL_TOKEN
+                jr      z,ev_ff_ckpdl
+                cp      PAD_TOKEN
+                jr      z,ev_ff_ckpad
+    ENDIF
+                jr      ev_ff_ckdone        ; PEEK/VPEEK/INP/EOF/LOF/DSKF: no byte domain
+ev_ff_ckstrig:
                 call    get_byte_arg        ; A = E = index (D = 0)
                 cp      5                   ; STRIG: 0..4
                 jr      ev_ff_ckdom
 ev_ff_ckstick:
                 call    get_byte_arg
                 cp      3                   ; STICK: 0..2
+                jr      ev_ff_ckdom
+    IF I2_RESIDENT
+ev_ff_ckpad:
+                call    get_byte_arg
+                cp      8                   ; PAD: 0..7
+                jr      ev_ff_ckdom
+ev_ff_ckpdl:
+                call    get_byte_arg
+                ; PDL's domain excludes 0, but a string arg coerces to 0 with a
+                ; DEFERRED type mismatch pending (error-handling arc: TMISMATCH set,
+                ; surfaced at the statement boundary). The reference reports THAT
+                ; (ERR 13), so don't let PDL's ERR-5 domain check preempt it --
+                ; STICK/STRIG/PAD need no such guard because 0 is legal for them, so
+                ; their deferred TMISMATCH already surfaces on its own.
+                ld      a,(TMISMATCH)
+                or      a
+                jr      nz,ev_ff_ckdone
+                ld      a,e                 ; the byte get_byte_arg left in E
+                dec     a                   ; PDL 1..12 -> 0..11 (0 -> $FF -> illegal)
+                cp      12
+    ENDIF
 ev_ff_ckdom:
                 jp      nc,gb_illegal       ; -> ERR 5 illegal function call
                 jr      ev_ff_ckdone
@@ -933,12 +967,27 @@ ev_ff_ckdone:
                 cp      LOF_TOKEN
                 jr      z,ev_ff_lof
                 cp      DSKF_TOKEN
+    IF ROM_BASE < $4000
+                ; Landmine (spec §9.5, recurred from I1): the I2 dispatch rows just
+                ; below push ev_ff_dskf out of jr range in the repack build, so it
+                ; takes a jp here. The lean 16 KB basic.rom has no I1/I2 rows and is
+                ; byte-frozen, so it keeps the original jr.
+                jp      z,ev_ff_dskf
+    ELSE
                 jr      z,ev_ff_dskf
+    ENDIF
     IF I1_RESIDENT
                 cp      STICK_TOKEN
                 jr      z,ev_ff_stick
                 cp      STRIG_TOKEN
                 jr      z,ev_ff_strig
+    ENDIF
+    IF I2_RESIDENT
+                ; PDL/PAD bodies live at the ev_f_ff tail (after CVI), reached by jp.
+                cp      PDL_TOKEN
+                jp      z,ev_ff_pdl
+                cp      PAD_TOKEN
+                jp      z,ev_ff_pad
     ENDIF
                 ; PEEK: read one byte of RAM at the address in DE.
                 ex      de,hl               ; HL = address
@@ -1113,6 +1162,52 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                 ld      e,(hl)              ; low byte
                 inc     hl
                 ld      d,(hl)              ; high byte  -> DE = int (LE)
+                ret
+    ENDIF
+
+    IF I2_RESIDENT
+; --- PDL(n) / PAD(n): analog input devices, slice I2 -----------------------
+; docs/spec-basic-input-devices.md §9. Thin wrappers over GTPDL ($00DE) / GTPAD
+; ($00DB), which the zerobas-tape page-0 patch supplies (C-BIOS ships both as
+; debug stubs; decision D-I-6). Placed here at the ev_f_ff tail because inserting
+; them among the other bodies would split forward jr's -- the I1 landmine (spec
+; §9.5). Entered with E = the range-checked index. Both BIOS entries are
+; documented "Registers: All", so IX (the evaluator's token cursor) is guarded
+; across the call, exactly as STICK/STRIG do; and because that contract does not
+; promise E either, PAD saves the sub-function on the stack rather than re-reading
+; E after the call (keeps the wrapper BIOS-agnostic).
+ev_ff_pdl:                                  ; PDL(n): 0..255 paddle dial position
+                ld      a,e                 ; A = paddle 1..12
+                push    ix
+                call    GTPDL
+                pop     ix
+                ld      e,a
+                ld      d,0                 ; 0..255, never negative
+                ret
+ev_ff_pad:                                  ; PAD(n): touch panel read
+                ld      a,e
+                and     3                   ; sub-function (before the call may clobber E)
+                ld      c,a                 ; C = sub 0..3
+                ld      a,e                 ; A = 4*device + sub (0..7)
+                push    ix
+                push    bc
+                call    GTPAD
+                pop     bc
+                pop     ix
+                ; The boolean sub-functions -- sense (0/4) and button (3/7) -- return
+                ; $00/$FF, which BASIC widens to 0/-1 like STRIG (copy the byte into
+                ; both halves). The coordinate sub-functions -- X (1/5), Y (2/6) --
+                ; return 0..255 and zero-extend. So the widening is per sub-index.
+                ld      e,a
+                ld      d,a                 ; boolean widen: $FF -> -1, $00 -> 0
+                ld      a,c
+                cp      1
+                jr      z,ev_ff_pad_coord   ; sub 1 = X
+                cp      2
+                jr      z,ev_ff_pad_coord   ; sub 2 = Y
+                ret                         ; sub 0/3 boolean -> DE = $FFFF / $0000
+ev_ff_pad_coord:
+                ld      d,0                 ; zero-extend a coordinate (0..255)
                 ret
     ENDIF
 

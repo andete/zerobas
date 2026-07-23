@@ -1,9 +1,10 @@
 # zerobas BASIC — input devices: `STICK` / `STRIG` / `PAD` / `PDL`
 
-Status: **I1 LANDED 2026-07-23** (commit b8a6a5b). **I2 CHARACTERIZED, SPECIFIED
-(§9) and SIGNED OFF** (D-I-7..D-I-10 accepted as recommended, 2026-07-23; D-I-8
-closed by measurement). Its harness hook, byte measurement and funding carve have
-landed (§9.5–§9.6); the two BIOS routines and the BASIC wrappers are next.
+Status: **I1 LANDED 2026-07-23** (commit b8a6a5b). **I2 (`PDL`/`PAD`) LANDED
+2026-07-23** — real GTPDL/GTPAD in the zerobas-tape patch + two `ev_f_ff`
+wrappers, gate `make input-devices-acceptance` **50/50** against the VG-8020.
+§9 is rewritten as-built (see §9.6 as-built notes); D-I-7's residual was decided
+bug-for-bug (user's call). D-I-8 closed by measurement.
 Opened 2026-07-23, the first slice after the graphics arc concluded. Decisions in
 §10 were taken as recommended, with **D-I-6** (complete the stubbed BIOS entries
 rather than working around them) added on the user's call; §7 and §8 below are
@@ -554,13 +555,45 @@ to page-**0** tenants. The other precondition held: `init_ext_roms`, which sets
 2. ~~Measure the real BASIC-side cost~~ — **✅ DONE: 72 B, 55 B deficit (§9.5).**
 3. ~~Scout and land the carve~~ — **✅ DONE (cdb6130): +71 B, page-1 free now
    88 B.** The byte budget is in hand; I2 fits with 33 B to spare.
-4. The two `tape/` routines + `tape/PROVENANCE.md` rows + `tape/DESIGN.md` scope
-   entry; re-forge the IPS/BPS with the `$00DB`/`$00DE` vector rewrites; verify
-   across all four C-BIOS MSX1 main ROMs (`tools/build_patches.py`).
-5. The BASIC-side wrappers; host unit tests.
-6. Phases D and E; then the full standing-gate battery (lean `basic.rom` must
-   stay byte-identical).
-7. Provenance, TODO, and this section rewritten as-built.
+4. ~~The two `tape/` routines + provenance/scope + IPS/BPS re-forge~~ — **✅ DONE.**
+   GTPDL/GTPAD in `tape.asm`; `$00DB`/`$00DE` added to `build_patches.py` forge,
+   `build_mainrom.py` overlay, and both `verify_all_variants` assertions
+   (`b[0xDB]==b[0xDE]==$C3` confirmed across all **12** C-BIOS main ROMs).
+5. ~~The BASIC-side wrappers; host unit tests~~ — **✅ DONE.** Two `ev_f_ff`
+   rows (`$FF $A4`/`$FF $A5`), domain checks, tail-placed bodies (the I1
+   forward-`jr` landmine recurred exactly as §9.5 predicted — cured with a
+   `ROM_BASE`-conditional `jp` for DSKF). `unit-test` 51/51.
+6. ~~Phases D and E; full standing-gate battery~~ — **✅ DONE.**
+   `input-devices-acceptance` **50/50**; lean `basic.rom` byte-identical;
+   `error`/`string`/`subrom` acceptance green.
+7. ~~Provenance, TODO, this section as-built~~ — **✅ DONE** (this commit).
+
+**As-built notes worth keeping:**
+
+* **GTPDL is a timed count, and the rate is load-bearing.** The centred openMSX
+  paddle holds its data terminal high for a fixed window (~4.7 ms-equivalent);
+  count = window / loop-period, so a **36 T** inner loop (built from `dec`/`jp nz`,
+  `jp` being a flat 10 T unlike `jr`) is what lands it on exactly 128. 45 T gave
+  102, 35 T gave 131 — the gate's 128 pins the period to the T-state.
+* **The trigger is the 8th-terminal HIGH→LOW edge**, and GTPDL drives low→high→low
+  so the intermediate rising edge also starts a touch panel's conversion (that is
+  what makes the touchpad's PDL(3)/PDL(5) read 0). Recovered by instrumenting the
+  openMSX device (`paddle_probe`/`win_probe`), not asserted.
+* **GTPAD is the sticky-latch model (§9.2), and it had to be** — a stateless read
+  cannot reproduce that an empty port 2's X/Y report the value a contacted port 1
+  latched two calls earlier. sense latches X/Y to `PADX`/`PADY` (the real MSX
+  work bytes, C-BIOS `systemvars.asm`) only when contacted. **D-I-7's residual
+  narrowed and was decided bug-for-bug** (user, 2026-07-23): the device is
+  provably symmetric under our oracle (SO idles high on both ports), so the
+  reference's port-2-idle behaviour is a quirk with no device basis; reproduced
+  anyway (the latch is the mechanism, so it comes for free) since Phase E is a
+  pure differential and reproducing IS achievable.
+* **`build_mainrom.py` overlaid the wrong vector set** — it copied LPTOUT +
+  cassette + bodies but not the new `$00DB`/`$00DE`, so the merged ROM kept
+  C-BIOS's debug stubs and PDL returned the argument index. The Makefile
+  `MAIN_ROM` rule also didn't depend on the build tools, so editing them didn't
+  rebuild. Both fixed; a green suite would have hidden the first
+  ([[gate-during-implementation]]).
 
 ## 10. Decisions
 

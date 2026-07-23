@@ -1105,8 +1105,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Adversarial pass caught a `beep_delay`-clobbers-`C` bug the differential was
       blind to (spec §5.2). Lean byte-identical; page-1 landmine (a downstream `jr`
       out of range) fixed with a ROM_BASE-conditional `jp` in `interp.asm`.
-- [~] **Input devices** — arc live since 2026-07-23, spec
-      [`docs/spec-basic-input-devices.md`](docs/spec-basic-input-devices.md).
+- [x] **Input devices** — the four device readers DONE 2026-07-23 (I1 + I2); the
+      `KEY(n)` / `STRIG(n) ON/OFF/STOP` interrupt-trap surfaces stay with the item
+      below. Spec [`docs/spec-basic-input-devices.md`](docs/spec-basic-input-devices.md).
       ✅ **I1 `STICK(n)` / `STRIG(n)`** (2026-07-23, commit b8a6a5b): the
       eight-way direction reader (0 = centred, 1..8 clockwise, an opposing pair
       cancelling to 0) and the 0/−1 trigger, as thin wrappers over the published
@@ -1131,13 +1132,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `VPEEK`/`INP`/`EOF`/`LOF`) evaluated silently to 0 where the reference
       raises `ERR 2` — a pre-existing divergence across the whole `ev_ff_arg`
       family, now deferred through `ev_f_empty`.
-      **Still open:** **I2 `PDL(n)` / `PAD(n)`**, which need the BIOS fixed
-      rather than worked around — C-BIOS ships `GTPAD` `$00DB` / `GTPDL` `$00DE`
-      as debug-*printing* stubs, so they get real implementations in the
-      **zerobas-tape page-0 patch** (decision D-I-6; 322 B of spare fill
-      measured, and on a real MSX these *are* BIOS routines BASIC calls). Needs
-      its own characterization against the openMSX `paddle`/`touchpad`
-      pluggables first. Also open: `KEY(n)` and `STRIG(n) ON/OFF/STOP`, which
+      ✅ **I2 `PDL(n)` / `PAD(n)`** (2026-07-23): real `GTPDL` `$00DE` (paddle)
+      and `GTPAD` `$00DB` (touch panel) in the **zerobas-tape page-0 patch**
+      (decision D-I-6 — C-BIOS shipped both as debug-*printing* stubs), plus two
+      thin `ev_f_ff` wrappers (`$FF $A4` / `$FF $A5`; `PDL` 1..12, `PAD` 0..7).
+      GTPDL times the paddle one-shot at exactly 36 T/iteration so a centred
+      openMSX paddle lands on **128** (the rate itself is pinned, not just the
+      polarity); GTPAD clocks the touch panel's NEC µPD7001 serial ADC and
+      latches X/Y in the standard `PADX`/`PADY` work bytes. Two documented
+      quirks reproduced **bug-for-bug** (user's call): X and Y read the same
+      frame (the µPD7001 address phase is unrecoverable under our oracle, D-I-7),
+      and the sticky contact-latch means an empty port 2's X/Y still report the
+      last contacted reading. Funded by evicting the startup header
+      (`show_title`) to a sub-ROM page-1 tenant (+71 B). Gate
+      `make input-devices-acceptance` now **50 cases** (Phase D = the PDL matrix
+      under paddle/touchpad in each port; Phase E = the PAD matrix under
+      `arkanoidpad` — found only after trying every pluggable, since `touchpad`
+      reads idle headless). Residual fixed in passing: `PDL("X")` reports the
+      deferred type mismatch (ERR 13) rather than its ERR-5 domain check
+      preempting it. **Still open:** `KEY(n)` and `STRIG(n) ON/OFF/STOP`, which
       are interrupt-trap surfaces and belong to the item below — the reference
       *accepts* `STRIG(1)ON`, so until that arc lands zerobas raises `ERR 2`
       there (documented divergence, decision D-I-5).

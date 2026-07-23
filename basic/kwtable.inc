@@ -381,5 +381,9 @@ kwtable:
                 db      5,"STICK",2,PEEK_PREFIX,STICK_TOKEN      ; $FF $A2
                 db      5,"STRIG",2,PEEK_PREFIX,STRIG_TOKEN      ; $FF $A3
     ENDIF
+    IF I2_RESIDENT
+                db      3,"PDL",2,PEEK_PREFIX,PDL_TOKEN          ; $FF $A4
+                db      3,"PAD",2,PEEK_PREFIX,PAD_TOKEN          ; $FF $A5
+    ENDIF
     ENDIF
                 db      0

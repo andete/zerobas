@@ -40,6 +40,15 @@ openMSX as a black box.
 | LPTOUT entry point | `$00A5` | MSX Assembly Page BIOS call list; MSX2 Tech Handbook | sourced |
 | LPTOUT input / output | A = char in; CF set = fail | MSX Assembly Page BIOS call list ("Sends one character to printer"; Input A; Output CF on fail) | sourced |
 | LPTOUT register clobber | "Changes: F" (A + others preserved) | MSX Assembly Page BIOS call list ("Affected: F") | sourced |
+| GTPAD entry point | `$00DB` | MSX Assembly Page BIOS call list; MSX2 Tech Handbook | sourced |
+| GTPAD input / output | A = 4·device + sub-function (0..19); out A = `$00`/`$FF` (sense/button) or 0..255 (X/Y) | MSX2 Tech Handbook ch.5 (device-ID table; List 5.8 calling sequence) | sourced |
+| GTPDL entry point | `$00DE` | MSX Assembly Page BIOS call list; MSX2 Tech Handbook | sourced |
+| GTPDL input / output | A = paddle 1..12; out A = 0..255 dial position | MSX2 Tech Handbook ch.5 §5.3 | sourced |
+
+C-BIOS ships `$00DB`/`$00DE` as debug **stubs** (they `CHPUT` the literal text
+"GTPAD"/"GTPDL"), so BASIC `PAD()`/`PDL()` return garbage on the C-BIOS target
+until this fills them in — the same "complete a stubbed page-0 vector in the BIOS,
+not in `basic.rom`" placement as LPTOUT (decision D-I-6, spec §6.2).
 
 ## Printer (Centronics) interface — hardware ports
 
@@ -60,6 +69,7 @@ nothing on the C-BIOS target until this fills it in.
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
 | PSG register-select write port | `$A0` (PSG_REGS) | MSX Assembly Page I/O map; AY-3-8910 datasheet | sourced |
+| PSG value write port | `$A1` (PSG_WRITE) | MSX Assembly Page I/O map; AY-3-8910 datasheet | sourced |
 | PSG value read port | `$A2` (PSG_STAT) | MSX Assembly Page I/O map; AY-3-8910 datasheet | sourced |
 | i8255 PPI control (BSR) register | `$AB` (PPI_REGS) | MSX Assembly Page i8255 map; Intel i8255 datasheet | sourced |
 | CAS-in line | PSG register 14, bit 7 | MSX2 Tech Handbook (PSG R14/port A); confirmed by oracle (`bios_probe_casin`) | sourced |
@@ -68,6 +78,28 @@ nothing on the C-BIOS target until this fills it in.
 | Motor relay (our own STMOTR) | PPI Port C bit 4 | MSX Assembly Page i8255 map; confirmed by oracle (STMOTR probe) | sourced |
 | PPI BSR command: Port C bit 4 := 0 / := 1 (motor on / off) | `$08` / `$09` (MOTOR_ON/MOTOR_OFF) | Intel i8255 BSR encoding (bit-set/reset for bit 4) | sourced |
 | i8255 PPI Port C read port (motor toggle read-back) | `$AA` (PPI_PORTC) | MSX Assembly Page i8255 map; Intel i8255 datasheet | sourced |
+
+## Joystick-port analog inputs — GTPDL (paddle) and GTPAD (touch panel)
+
+The two general-I/O ports (PSG registers 14 read / 15 write) carry the joystick
+connectors' terminals. GTPDL times a paddle's one-shot; GTPAD clocks a touch
+panel's NEC µPD7001 serial ADC. The full characterization record is
+[`../scratchpad/i2_input_notes.md`](../scratchpad/i2_input_notes.md); the probes
+are `i2_char.py` / `i2_pinmap.py` / `i2_frame.py`.
+
+| Item | Value | Source (allowed) | Status |
+|------|-------|------------------|--------|
+| R15 b6 selects the connector read on R14 b0..b5 | 0 = interface 1, 1 = interface 2 | MSX2 Tech Handbook ch.5 figs. 5.21/5.22 | sourced |
+| R15 b4 / b5 = 8th terminal (pulse/clock out) of interface 1 / 2 | — | MSX2 Tech Handbook ch.5 fig. 5.22 B | sourced |
+| R14 b0..b5 = terminals 1,2,3,4,6,7 of the selected interface | — | MSX2 Tech Handbook ch.5 | sourced |
+| Paddle = a one-shot on terminal 1, pulsed via the 8th terminal, ~10 µs..3 ms | ⇒ ~11.8 µs/count (3 ms/255), cap 255 | MSX2 Tech Handbook ch.5 §5.3 fig. 5.24 | sourced |
+| PDL index → interface / terminal | odd `n` = if 1, even = if 2; paddle `(n+1)>>1` = R14 bit `((n+1)>>1)−1` | MSX2 TH published circuit **and** our black-box mirror test (i2_input_notes.md §2, settled twice) | sourced |
+| Paddle trigger edge / count polarity / 36 T loop period | 8th-terminal HIGH→LOW edge triggers; data terminal held high for the dial-proportional window; count while high, 36 T/iter lands centred paddle on 128 | project black-box oracle (openMSX device, `paddle_probe`/`win_probe`); **pinned by the Phase D differential** (idle 255, centred 128) | quarantined |
+| Touch panel interface chip | NEC µPD7001 4-channel 8-bit serial ADC | 1982 NEC Microcomputer Catalog pp.479–482 (`7001DS-REV 2-1-82-CAT`), bitsavers scan; a **manufacturer** data book | sourced |
+| µPD7001 serial protocol | 2 addr bits on SI latched by DL; conversion at CS rise; 8 result bits MSB-first on open-drain SO clocked by SCK; EOC low during conversion | µPD7001 datasheet (above) | sourced |
+| Touch-panel terminal mapping | 8th terminal (R15 b4/b5) = CS/SCK; terminal 3 (R14 b2) = SO; terminal 1 (R14 b0) = contact line, active low | project black-box oracle (i2_input_notes.md §4.5/4.6; paddle run first as a known-answer control) | quarantined |
+| µPD7001 channel address (X = ch 0, Y = ch 3) — the ADDRESS PHASE | **omitted (documented deviation, D-I-7):** the two channel bits through the port's single output line were never pinnable by the oracle, so X and Y run the same read frame | µPD7001 datasheet gives the channels; the joyport encoding is unrecoverable under our oracle (i2_input_notes.md §4.6) | quarantined |
+| GTPAD X/Y contact-gating / latch behaviour | sense latches X/Y only when contacted; empty port 2 X/Y still read the last contacted value in an in-order sweep | **pinned by the Phase E differential** (arkanoidpad in port A / B); reproduced bit-for-bit (user's call: bug-for-bug where achievable) | quarantined |
 
 ## Cassette format (the signal)
 
@@ -85,6 +117,7 @@ nothing on the C-BIOS target until this fills it in.
 |------|-------|------------------|--------|
 | LOWLIM (read discrimination threshold) | `$FCA4` | MSX Assembly Page sysvar map; MSX2 Tech Handbook | sourced |
 | WINWID (read window width) | `$FCA5` | MSX Assembly Page sysvar map; MSX2 Tech Handbook; C-BIOS `systemvars.asm` | sourced |
+| PADY / PADX (touch-panel latched Y / X, written by GTPAD sense, read by its X/Y sub-calls) | `$FC9C` / `$FC9D` | C-BIOS `systemvars.asm` ("FC9C last read Y-position of a touchpad", "FC9D last read X"); the standard MSX GTPAD work bytes | sourced |
 | CS120 (1200-baud reference signal lengths) | `$F3FC` | C-BIOS `systemvars.asm`; corroborated by boot-state oracle dump | sourced |
 | CS240 (2400-baud reference signal lengths) | `$F401` | C-BIOS `systemvars.asm`; corroborated by boot-state oracle dump | sourced |
 | Active LOW signal length (the live baud) | `$F406` | C-BIOS `systemvars.asm`; oracle confirmed `SCREEN ,,,baud` copies CS120/CS240 here | sourced |

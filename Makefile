@@ -275,7 +275,8 @@ MAIN_PATCHES := zerobas-main-eu.ips zerobas-main-eu.bps
 # after a basic/*.asm edit and gates tested STALE BASIC ([[ips-rebuild-after-basic-change]]).
 # $(DEPS) already lists float-arith.asm/expr.asm/sysvars.inc, so float/math slices
 # now retrigger correctly. `repack-main` stays a phony alias for existing callers.
-$(MAIN_ROM): basic/main-reloc.asm basic/main.asm $(DEPS) tape/tape.asm | $(BUILD)
+$(MAIN_ROM): basic/main-reloc.asm basic/main.asm $(DEPS) tape/tape.asm \
+             tools/build_patches.py tools/build_mainrom.py tools/build_repacked_cbios.py | $(BUILD)
 	python3 tools/build_patches.py --main --cbios $(CBIOS)
 repack-main: $(MAIN_ROM)
 repack-boot: repack-main
@@ -489,7 +490,7 @@ input-acceptance: $(DISK_ROM) repack-machine
 # runs boot-per-case. Repack-only; HEAVY + oracle-dependent (needs your VG-8020
 # reference ROM); NOT part of the emulator-free `unit-test`.
 input-devices-acceptance: $(DISK_ROM) repack-machine
-	python3 probes/basic/basic_probe_input_devices.py
+	python3 probes/basic/basic_probe_input_devices.py $(if $(ONLY),--only $(ONLY),)
 
 # --- Error-handling acceptance gate (error-handling arc, S1) -------------------
 # Two differential families against the VG-8020 reference (docs/
