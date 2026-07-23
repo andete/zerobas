@@ -467,24 +467,47 @@ gate can `plug` a device. The characterization probes monkey-patched `_tcl`, whi
 is fine for scratch and not for a standing gate. The interrupt-trap arc will want
 the same seam.
 
-### 9.5 Space
+### 9.5 Space — MEASURED, not estimated
 
-Measured on the current build (`tools/check_reloc.py`): **page-1 free = 17 B**,
-low region free = 19 B. I1's two functions cost **56 B** of page 1 for dispatch
-rows + domain check + bodies; I2's are the same shape plus `PAD`'s per-index
-widening, so **estimate ~60 B ⇒ a ~43 B deficit** needing one carve — with the
-BIOS bodies themselves costing *nothing* here, since they live in the tape
+Baseline (`tools/check_reloc.py`): **page-1 free = 17 B**, low region free = 19 B.
+
+The draft of this section estimated the BASIC-side cost at ~60 B ⇒ a ~43 B
+deficit. **That estimate was low.** The wrappers were written, built and measured,
+then reverted (nothing is implemented — the measurement is the deliverable):
+
+```
+__MEAS_PAGE1_END   $7FEF  baseline        (17 B free under the $8000 ceiling)
+                   $8037  with I2         (overran the ceiling by $37)
+                   -----
+I2 resident cost    $48 = 72 B      ⇒ DEFICIT = 55 B
+```
+
+So **72 B, and a 55 B deficit** — the estimate was ~12 B light, which is exactly
+why the arc's standing lesson is to measure a byte budget rather than reason about
+one. The BIOS bodies themselves still cost nothing here; they live in the tape
 patch's 322 B of free fill.
 
-That is an **estimate, and the arc's own standing lesson is to measure a byte
-budget before declaring a wall**. The implementation order below therefore
-measures first and scouts a carve second, exactly as I1 did.
+Three of those bytes are landmine tax, and the landmine is the one I1 already
+recorded: **a mid-file insert splits page-1 forward `jr`s**. Adding I2's dispatch
+and domain rows pushed `ev_ff_dskf` out of its `jr`'s reach, and moving the two
+new bodies to the dispatch *tail* (the documented cure) then put them out of reach
+of their own `jr`s. The shape that assembles is: bodies at the tail, `jp` to
+reach them, and a `ROM_BASE`-conditional `jp` for `DSKF` so the frozen lean
+`basic.rom` keeps its `jr` and stays byte-identical. Worth knowing before the
+implementation session rediscovers it.
+
+**A carve is therefore required, and it is a bigger one than I1's.** I1 funded
+56 B from a dispatch golf (+8 B) plus evicting `BEEP` (~59 B net). 55 B is the
+same order, so the `g6_carve_scout.py` tenancy rule should find a candidate — but
+this is now a known cost to plan against, not a surprise to hit mid-slice.
 
 ### 9.6 Implementation order (after sign-off)
 
-1. `omsx_repl` prologue hook (needed by every later step's gate).
-2. Measure the real BASIC-side cost; scout a carve only if the measurement
-   demands one (`g6_carve_scout.py`).
+1. ~~`omsx_repl` prologue hook~~ — **✅ DONE (1bce384)**, validated by reproducing
+   three known results through it (including a nothing-plugged negative control,
+   which is what proves the prologue takes effect rather than being ignored).
+2. ~~Measure the real BASIC-side cost~~ — **✅ DONE: 72 B, 55 B deficit (§9.5).**
+   Next actual step: **scout the carve** (`g6_carve_scout.py`).
 3. The two `tape/` routines + `tape/PROVENANCE.md` rows + `tape/DESIGN.md` scope
    entry; re-forge the IPS/BPS with the `$00DB`/`$00DE` vector rewrites; verify
    across all four C-BIOS MSX1 main ROMs (`tools/build_patches.py`).
