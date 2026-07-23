@@ -1105,7 +1105,42 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Adversarial pass caught a `beep_delay`-clobbers-`C` bug the differential was
       blind to (spec §5.2). Lean byte-identical; page-1 landmine (a downstream `jr`
       out of range) fixed with a ROM_BASE-conditional `jp` in `interp.asm`.
-- [ ] **Input devices** — `STICK STRIG PAD PDL`, `KEY(n)`, `STRIG(n) ON/OFF/STOP`
+- [~] **Input devices** — arc live since 2026-07-23, spec
+      [`docs/spec-basic-input-devices.md`](docs/spec-basic-input-devices.md).
+      ✅ **I1 `STICK(n)` / `STRIG(n)`** (2026-07-23, commit b8a6a5b): the
+      eight-way direction reader (0 = centred, 1..8 clockwise, an opposing pair
+      cancelling to 0) and the 0/−1 trigger, as thin wrappers over the published
+      BIOS entries `GTSTCK` `$00D5` / `GTTRIG` `$00D8` — which C-BIOS implements
+      for real, keyboard row-8 scan *and* PSG joystick-port path, verified to
+      match the VG-8020. Two-byte `$FF`-prefixed function tokens (`$FF $A2` /
+      `$FF $A3`) on the existing `ev_f_ff` dispatch, so no statement token. The
+      argument rule is truncate-toward-zero → int16 (`ERR 6` outside) then the
+      device-domain check (`ERR 5` outside), reusing the D-F2-2 `get_byte_arg`
+      machinery. Gate `make input-devices-acceptance` (31 cases) — whose
+      load-bearing phase drives openMSX's `keymatrixdown`, since the REPL
+      driver's KEYBUF injection bypasses the very matrix these functions scan
+      and every other phase would pass equally well against a stubbed 0. That
+      required a reusable harness addition (`omsx_repl` per-case matrix holds)
+      the interrupt-trap arc will want for `ON KEY`/`ON STRIG`.
+      Funded by an `ev_f_ff` dispatch golf (`cpir` set test, repack-only so the
+      lean ROM stays byte-frozen) plus evicting **`BEEP`** to a page-0 sub-ROM
+      tenant — chosen over two larger clean carves that are PLAY-servicer halves
+      running from `H.TIMI`, since a `CALSLT` in the VBLANK handler is not worth
+      50 B. Page-1 free 6 B → 17 B. **Residual fixed in passing:** a missing
+      argument list (`PRINT PEEK`, `PEEK 100`, and the same for
+      `VPEEK`/`INP`/`EOF`/`LOF`) evaluated silently to 0 where the reference
+      raises `ERR 2` — a pre-existing divergence across the whole `ev_ff_arg`
+      family, now deferred through `ev_f_empty`.
+      **Still open:** **I2 `PDL(n)` / `PAD(n)`**, which need the BIOS fixed
+      rather than worked around — C-BIOS ships `GTPAD` `$00DB` / `GTPDL` `$00DE`
+      as debug-*printing* stubs, so they get real implementations in the
+      **zerobas-tape page-0 patch** (decision D-I-6; 322 B of spare fill
+      measured, and on a real MSX these *are* BIOS routines BASIC calls). Needs
+      its own characterization against the openMSX `paddle`/`touchpad`
+      pluggables first. Also open: `KEY(n)` and `STRIG(n) ON/OFF/STOP`, which
+      are interrupt-trap surfaces and belong to the item below — the reference
+      *accepts* `STRIG(1)ON`, so until that arc lands zerobas raises `ERR 2`
+      there (documented divergence, decision D-I-5).
 - [x] **Error handling** — `ON ERROR GOTO`, `RESUME`, `ERR`/`ERL`, `ERROR n`,
       numbered error messages — **ARC CLOSED 2026-07-19** (S1→S2a→S2b + `ERROR n`
       domain 1..255 + `ERR`-reset-on-`RESUME`, all landed on main; commits
