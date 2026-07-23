@@ -429,7 +429,10 @@ One asymmetry: **`PDL` always zero-extends** its 0..255 result, but **`PAD`'s
 result width depends on the index** — ids 0 and 3 (and their port-2 mirrors 4 and
 7) are booleans that the BIOS returns as `$00`/`$FF`, so BASIC widens them to
 `0`/`-1` exactly as `STRIG` does (§5.2), while ids 1/2/5/6 are coordinates that
-zero-extend. **This is an inference, not a measurement** — see D-I-8.
+zero-extend. **Measured `[PIN]`**, with `arkanoidpad` plugged: `PAD(0)` = **−1**
+while `PAD(1)`/`PAD(2)` = **255** (record §3.2). An earlier draft carried this as
+an inference needing a doc lookup; it is now a reference measurement, and D-I-8
+is closed.
 
 ### 9.4 Gate
 
@@ -441,17 +444,23 @@ against the VG-8020:
   asserting the §9.1 table: `128` for the plugged paddle's index, `0` for the two
   touchpad-shadowed indices, `255` elsewhere. A constant cannot fake this, and
   the `128` additionally pins the count *rate*.
-* **Phase E — `PAD` idle + the error surface.** Every legal index in every
-  configuration, plus the ERR 5/ERR 6 edges.
+* **Phase E — `PAD` values, with devices plugged. ALSO TEETH.** The 0..7 matrix
+  under `arkanoidpad` in port A and in port B, asserting the record's §3.2 table:
+  sense = **−1** on the populated port's index, X/Y = **255**, button = 0, and the
+  whole thing mirroring between indices 0..3 and 4..7. A constant-0 `PAD` fails
+  this immediately. Plus the ERR 5 / ERR 6 edges.
 
-**Phase E has no teeth and the spec says so rather than letting the case count
-imply coverage.** openMSX's entire input-injection surface is
-`keymatrixdown`/`keymatrixup`; there is no mouse, both devices are mouse-driven,
-and `touchpad_transform_matrix` and `debug write joystickports` were both tried
-and do nothing (record §1). An untouched panel converts to 0, so a `PAD` that
-returned constant 0 would pass every reachable case. This is the same limitation
-I1 accepted for `STICK(1..2)`/`STRIG(1..4)`, and the user's standing call
-(2026-07-23) is to keep `PAD` in I2 with the limit documented.
+  *Corrects an earlier draft of this spec*, which said Phase E could only ever be
+  gated idle. That was measured against `touchpad` alone — the device the TH's
+  table names for ids 0..3 — and the other joyport pluggables were never tried
+  against `PAD`. `arkanoidpad` drives the surface without needing any host input,
+  so no `PAD` limitation on the user's decision to keep it in I2 survives.
+
+**What Phase E still cannot do** is tell the X channel from the Y channel:
+`PAD(1)` and `PAD(2)` both read 255, so the µPD7001 **address phase** is
+undiscriminated. The teeth bite on the sub-function dispatch and on the
+`$FF`→`-1` widening, not on channel selection — which is what keeps D-I-7 open,
+in a narrower form than before.
 
 Harness prerequisite: `omsx_repl` needs a **per-batch Tcl prologue** hook so a
 gate can `plug` a device. The characterization probes monkey-patched `_tcl`, which
@@ -493,28 +502,29 @@ measures first and scouts a carve second, exactly as I1 did.
   how the two channel-address bits (`SI`, latched by `DL`) reach the chip through
   a port that offers exactly **one** output line. The encoding must be temporal,
   and nothing measured so far constrains it. Three ways forward:
-  1. **Another characterization round** aimed specifically at the address phase —
-     vary the pulse widths and inter-pulse gaps on the 8th terminal and look for
-     the pattern that makes `EOC` fire on a *different* channel.
-  2. **Implement channel 0 (X) only** — i.e. whatever the chip converts when no
-     address is deliberately shifted in — and return the Y sub-function as 0,
+  1. **Another characterization round** aimed at the address phase — vary the
+     pulse widths and inter-pulse gaps on the 8th terminal and look for the
+     pattern that selects a different channel.
+  2. **Implement channel 0 (X) only** and return the Y sub-function as 0,
      documented.
-  3. **Implement the handshake and accept an unvalidated address phase**, since
-     no reachable test can tell the difference (§9.4).
-  *Recommend: (1), time-boxed, falling back to (3).* The address phase is the
-  last genuinely unknown piece, the harness that would answer it already exists
-  (`i2_frame.py`), and finding it would complete an honestly-sourced protocol
-  rather than a plausible one. But it should not be allowed to become a grind —
-  see [memory: harness-first-investigation-mo].
-* **D-I-8 — `PAD`'s boolean widening is currently an INFERENCE.** §9.3 has ids
-  0/3/4/7 widening `$FF` → `-1` like `STRIG`. The basis is the TH's device table
-  (`$FF` when touched) plus the `STRIG` precedent — **not** a measurement, because
-  an untouched panel reads 0 on every index and we cannot touch it. The cheap fix
-  is one more source: the **MSX-BASIC reference** (`docs/allowed-sources.md`:
-  B / Scoped / gen 1) documents the language-level return of `PAD(0)`.
-  *Recommend: check that source before implementing* — it is a single lookup, and
-  shipping a guessed sign on a boolean is exactly the kind of thing the
-  differential cannot catch here.
+  3. **Implement the handshake and accept an unvalidated address phase.**
+
+  *Recommend: (3), with (1) only if it falls out cheaply.* **This reverses an
+  earlier recommendation of (1)**, on two grounds that emerged after it was
+  written. First, (1) has no observable to work with: distinguishing channels
+  requires the channels to *differ*, and every reachable channel reads the same —
+  0 on an untouched panel, 255 on both `PAD(1)` and `PAD(2)` with `arkanoidpad`.
+  `EOC` firing tells us a conversion happened, never which channel it converted.
+  So the experiment cannot answer the question, and pursuing it would be exactly
+  the probe-loop grind [memory: harness-first-investigation-mo] warns against.
+  Second, the risk (3) carries is now much smaller than it was: Phase E gives the
+  whole `GTPAD` surface a real differential (§9.4), so any divergence outside the
+  channel address is caught. The residual is narrow and should be **recorded as a
+  documented deviation** rather than chased.
+* **D-I-8 — `PAD`'s boolean widening. ✅ CLOSED 2026-07-23, no decision needed.**
+  It was raised as an inference the differential could not check. Plugging
+  `arkanoidpad` measures it directly: `PAD(0)` = **−1**, `PAD(1)`/`PAD(2)` =
+  **255** (record §3.2). The widening is a `[PIN]` and the doc lookup is moot.
 * **D-I-9 — `PDL`'s count loop is specified by its GATE, not by prose.** §9.2
   gives the algorithm structurally and pins the timing with two measured numbers
   (idle → 255, plugged paddle → 128) rather than asserting an active polarity or
@@ -522,11 +532,14 @@ measures first and scouts a carve second, exactly as I1 did.
   the prose would be, they came from the reference, and a pacing error fails them
   loudly. The cost is that the implementer must iterate against the gate rather
   than code straight from the spec.
-* **D-I-10 — ship `GTPAD` even though its gate has no teeth.** Confirmed by the
-  user 2026-07-23 (over descoping `PAD` to a later slice). The limitation is
-  recorded in §9.4 and must be repeated in `tape/PROVENANCE.md`, so that a future
-  reader does not mistake a green gate for validated behaviour. *Recommend:
-  accept, with the documentation obligation treated as part of the slice.*
+* **D-I-10 — keep `PAD` in I2. ✅ Its objection has evaporated.** The decision was
+  taken (user, 2026-07-23) when `PAD` looked un-gateable, and was then re-examined
+  on the question of whether openMSX supports the pad well enough to bother. The
+  answer is that it does — via `arkanoidpad`, not `touchpad` — so `PAD` ships with
+  a differential that has teeth, and the "green gate ≠ validated behaviour"
+  caveat now applies only to the channel address (D-I-7), not to the verb.
+  *Recommend: accept, with the narrow D-I-7 deviation documented in
+  `tape/PROVENANCE.md`.*
 
 ### 10b. I1 decisions (settled, 2026-07-23)
 

@@ -63,19 +63,52 @@ instead of the floating-high **255**.
 
 ## 3. Measured values — `PAD`
 
-`PAD(0..7)` is **0 in every configuration measured**, including touchpad plugged
-in either port, with and without the transform offset. `PAD(8)` → ERR 5.
+### 3.1 With `touchpad` — all zero (and why that misled me)
 
-That is the honest state: `PAD(0)` is the *touched?* status, being touched needs
-a host mouse button, and §1 establishes there is no way to deliver one. The BIOS
-therefore never latches x/y, so `PAD(1)`/`PAD(2)` cannot be moved off 0 either.
+`PAD(0..7)` is **0** with `touchpad` plugged in either port, with and without the
+transform offset. `PAD(8)` → ERR 5. `PAD(0)` is the *touched?* status, being
+touched needs a host mouse button, and §1 says there is no way to deliver one, so
+the BIOS never latches x/y and `PAD(1)`/`PAD(2)` stay 0 too.
 
-**Consequence for the gate — state it plainly rather than let it read as
-coverage:** `PAD` can only ever be gated in its idle state, exactly as
-`STICK(1..2)`/`STRIG(1..4)` were in I1. An implementation that returned a
-constant 0 for `PAD` would pass every available case. `PDL` does *not* share this
-limitation — the `128` and the two `0`s in §2 are genuine teeth that a constant
-cannot fake, and they are reachable with nothing but a `plug` line.
+**I concluded from this that `PAD` could never be gated above idle. That was
+wrong, and the error was in the sampling, not the reasoning:** I tested only
+`touchpad`, because that is the device the TH's table names for ids 0..3, and
+never ran the *other* joyport pluggables against `PAD`. See §3.2.
+
+### 3.2 With `arkanoidpad` — `PAD` HAS TEETH
+
+| index | arkanoidpad in port A | arkanoidpad in port B | nothing plugged |
+|---:|---:|---:|---:|
+| `PAD(0)` sense 1 | **−1** | 0 | 0 |
+| `PAD(1)` X 1 | **255** | 0 | 0 |
+| `PAD(2)` Y 1 | **255** | 0 | 0 |
+| `PAD(3)` button 1 | 0 | 0 | 0 |
+| `PAD(4)` sense 2 | 0 | **−1** | 0 |
+| `PAD(5)` X 2 | 255 | **255** | 0 |
+| `PAD(6)` Y 2 | 255 | **255** | 0 |
+| `PAD(7)` button 2 | 0 | 0 | 0 |
+
+Reproduced across two runs. **Four distinct outcomes (−1, 255, 0, and the
+port-mirroring of the sense index) — a constant-0 `PAD` fails this immediately.**
+The sense index tracks which port holds the device, the same port-mirror proof
+structure that settled `PDL`'s mapping in §2.
+
+Two consequences beyond "the gate works":
+
+* **The `$FF` → `-1` widening is now MEASURED, not inferred.** `PAD(0)` = **−1**
+  while `PAD(1)`/`PAD(2)` = **255**. So the boolean sub-functions widen like
+  `STRIG` and the coordinate sub-functions zero-extend — exactly the per-index
+  asymmetry that was only an inference before, now pinned from the reference.
+* **`mouse` and `trackball`** also plug, and drive `PDL(1,3,5)` to 0, but their
+  `PAD` cases failed to capture cleanly and were not pursued (they are BIOS ids
+  12..15, outside BASIC's 0..7 anyway).
+
+**What this still does NOT give:** `PAD(1)` and `PAD(2)` both read **255**, so the
+gate cannot tell the X channel from the Y channel — the µPD7001 *address phase*
+(§4.6) remains undiscriminated. The teeth are real but they bite on the
+sub-function dispatch and the widening, not on the channel selection.
+
+`PDL` likewise gains a case: with `arkanoidpad` in port A, `PDL(1)` = **0**.
 
 ## 4. The protocol — published, and where it stops
 
