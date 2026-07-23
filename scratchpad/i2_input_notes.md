@@ -146,6 +146,82 @@ touchpad, which is a black-box characterization of the device, not of any ROM.
 §1's finding that values can't be driven does not block this: the *handshake*
 runs regardless of what coordinate comes back.
 
+### 4.4 The µPD7001 datasheet — obtained, and what it says
+
+Sourced from the **1982 NEC Microcomputer Catalog** (`µPD7001`, "8-BIT SERIAL
+OUTPUT A/D CONVERTER", pp. 479–482, doc id `7001DS-REV 2-1-82-CAT`), via the
+bitsavers scan on archive.org. A **manufacturer** data book ⇒ **A / Clean**, the
+same footing as the AY-3-8910. Raw cached at `~/Documents/msx/docs-cache/`
+(`nec1982.txt` sha256 `cb58ef72…b4be72d0`; the extracted chip section
+`upd7001-extract.txt` sha256 `0d9ff383…303d9598`). The aggregator sites
+(alldatasheet / datasheet4u / datasheetspdf) are all JS-gated or 403 and yielded
+nothing — bitsavers is the route that works, and it is the better-provenance one
+anyway.
+
+Pin names, verbatim: `EOC` End of Conversion (open drain) · `DL` Analog Channel
+Data Load · `SI` Serial Data Input · `SCK` Serial Data Clock · `SO` Serial Data
+Output (open drain) · `CS` Chip Select · `CL0`/`CL1` Successive Approximation
+Clock · `A0..A3` Analog Inputs · `VREF`, `AG`, `VSS`, `VDD`. 16-pin.
+
+Protocol, verbatim in substance:
+
+* the 4 analog inputs are selected by a **2-bit** address applied to `SI` and
+  **latched with `DL`**; channel address (D0, D1) = A0 `L,L` · A1 `H,L` ·
+  A2 `L,H` · A3 `H,H`;
+* the internal sequence controller **initiates a conversion cycle at a RISE of
+  `CS`**; at the final step the result is transferred to an 8-bit shift register
+  and the next conversion begins immediately;
+* **with `CS` low the data is exchanged** with the external circuit; **with `CS`
+  high the chip converts and accepts no external digital signal**; 5 internal
+  clock pulses are needed before data output;
+* the 8 result bits leave on open-drain `SO`, **MSB first**, synchronised to an
+  external clock on `SCK`;
+* `EOC` is low during conversion; `t_CONV = 14 × 4 × 1/f_CK`, typ. 140 µs at
+  f_CK = 400 kHz.
+
+So the serial protocol is fully and admissibly specified. Only the **terminal
+mapping** was left, which §4.5 now settles.
+
+### 4.5 The pin mapping — recovered from our own oracle, method validated first
+
+Probe `scratchpad/i2_pinmap.py`. We drive the one output line the port gives us
+(R15 b4 = the 8th terminal of interface 1) from BASIC and sample R14 b0..b5 after
+every edge. This characterizes the **device**, not any ROM.
+
+**The paddle is the control, and it is a known-answer control** — its circuit
+*is* published (§4.2, TH fig. 5.24: the one-shot answers on terminal 1). If the
+method is sound it must recover that. Measured (R14 & `$3F`):
+
+| config | toggle the 8th terminal ×16 | held low ×8 | held high ×8 |
+|---|---|---|---|
+| **nothing plugged** (control) | `3F` ×16 | `3F` ×8 | `3F` ×8 |
+| **paddle in A** | `3E 3E 3F 3E 3E 3E …` | `3E 3E 3E 3E 3F 3F 3F 3F` | same |
+| **touchpad in A** | `3B 3F 3B 3F 3B 3F …` | `3B 3B 3B 3B 3F 3F 3F 3F` | `3F` ×8 |
+
+* Control is clean — all six terminals idle high, nothing moves. Any bit that
+  moves below is the device answering.
+* **Paddle ⇒ bit 0 = terminal 1.** Exactly where the published circuit puts the
+  one-shot. **Method validated on a known answer**, so its verdict on the
+  touchpad is evidence and not a guess.
+* **Touchpad ⇒ bit 2 = terminal 3**, and it responds to the 8th terminal going
+  **low**, not high (held high: nothing). That is the new, previously
+  unpublished-to-us fact, recovered admissibly.
+
+**Two things this round did NOT settle, stated so they don't read as done:**
+
+1. §2 has the touchpad pulling *both* `PDL(3)` and `PDL(5)` (terminals 2 **and**
+   3) to 0 under `GTPDL`'s own pulsing, whereas this slow toggle moves only
+   terminal 3. So **terminal 2 carries a second signal** that is only asserted
+   transiently or at speed — the obvious candidates being the `SO`/`EOC` pair.
+   Unresolved.
+2. **BASIC is far too slow to clock a µPD7001 frame.** `SCK` wants a ~400 kHz
+   clock; an `OUT`-in-a-`FOR`-loop manages ~kHz, so we see the envelope of the
+   response, never the 8 MSB-first bits. Recovering an actual frame needs a
+   **Z80-speed harness** — a small routine injected into RAM that bit-bangs the
+   line and logs R14 into a buffer we then read out with `debug read_block`.
+   That is the concrete next step for the `PAD` half, and it is a real piece of
+   work rather than a tweak.
+
 ## 5. Harness gap this implies
 
 `omsx_repl` has no hook for **per-batch Tcl prologue**, which is what a `plug`
