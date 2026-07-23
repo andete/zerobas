@@ -1,7 +1,10 @@
 # zerobas BASIC — input devices: `STICK` / `STRIG` / `PAD` / `PDL`
 
-Status: **DRAFT — awaiting sign-off.** Opened 2026-07-23, the first slice after the
-graphics arc concluded. Corresponds to the `Input devices` checkbox in
+Status: **I1 LANDED 2026-07-23** (commit b8a6a5b); I2 still to be characterized.
+Opened 2026-07-23, the first slice after the graphics arc concluded. Decisions in
+§10 were taken as recommended, with **D-I-6** (complete the stubbed BIOS entries
+rather than working around them) added on the user's call; §7 and §8 below are
+rewritten **as built**. Corresponds to the `Input devices` checkbox in
 [`../TODO.md`](../TODO.md) (Phase 3+).
 
 Every `[PIN]` below is a measured black-box fact from the Philips VG-8020, with the
@@ -248,74 +251,92 @@ page-0 low region free = 19 B   ($2812-$3FFF, __MEAS_LOW_END @ $3FED)
 page-1 free            =  6 B   ($4000-$7FFF, __MEAS_PAGE1_END @ $7FFA)
 ```
 
-Estimated I1 cost:
+As-built I1 cost and the funding, measured:
 
-| item | region | est. |
+| item | region | as built |
 |---|---|---|
-| `kwtable` rows `STICK` + `STRIG` (`[len][chars][tlen][$FF][tok]`) | low region | 18 B |
-| 2 × `cp TOK / jr z,ev_ff_arg` dispatch rows | page 1 | 8 B |
-| domain check (selector → max, then the existing `gb_illegal`) | page 1 | ~15 B |
-| `STICK` body (`ld a,e` / `call GTSTCK` / `ld e,a` / `ld d,0` / `ret`) | page 1 | ~9 B |
-| `STRIG` body (A into both halves) | page 1 | ~7 B |
-| read-dispatch rows | page 1 | ~8 B |
-| **total** | | **~18 B low + ~47 B page 1** |
+| `kwtable` rows `STICK` + `STRIG` | — | **0 B resident**: the repack build's keyword table is wholly SUB-side since the wave-3 detokeniser eviction, so keyword rows cost sub-ROM bytes, not page-1 or low-region ones. (The draft budgeted 18 B of low region for these; that was wrong, and the low region is untouched at 19 B free.) |
+| dispatch rows, domain check, the two bodies | page 1 | **56 B** |
+| **deficit against the 6 B free** | page 1 | **50 B** (58 B before the golf) |
 
-The low-region rows fit in the 19 B available with 1 B to spare; the **page-1 side
-needs ≈45 B of relief it does not have**. This is a small deficit by this project's
-standards (G6 closed 239 B, G7 closed 388 B), and the coercion machinery it leans
-on already exists — `get_int16_checked` / `get_byte_arg` / `gb_illegal`
-([`../basic/interp.asm:1248`](../basic/interp.asm:1248)), shipped by the D-F2-2
-int-arg arc — so the estimate above is mostly dispatch rows, not new logic.
+Funding, in the order §7 predicted:
 
-Funding options, in the order I would try them (decision **D-I-4**):
+1. **The `ev_f_ff` dispatch golf paid first, as expected** — the per-token
+   `cp`/`jr z` chain became a `cpir` set test over a selector table, taking a
+   function's dispatch cost from 4 B to 1 B. Measured yield **+8 B** with I1's own
+   two rows already in it (`__MEAS_PAGE1_END` $803A → $802C). It had to be gated
+   repack-only: the first cut changed the **lean** `basic.rom`, which is
+   byte-frozen, and `check_reloc.py` caught that immediately.
+2. **A scouted carve closed the rest** — `ex_beep` + `beep_delay` (71 B) →
+   `sub/beep.asm`, a new page-0 tenant (`SUBROM_IDX_BEEP` = 11), stub cost ~12 B.
+   Taken over the two 130 B candidates (`psv_fetch`/`psv_env`) exactly as §7
+   argued: those are PLAY-servicer halves running from `H.TIMI`, and a CALSLT
+   inside the VBLANK handler is not a trade worth making for a 50 B need.
+   BEEP qualifies on every count — cold (one CALSLT against a ~33 ms tone),
+   transitively page-0 clean (PSG ports + a busy-wait; the automated closure
+   checker now verifies this), and its reference-faithful `ei` across the delay is
+   safe *because* the sub-ROM owns its own page-0 `$0038` trampoline.
 
-1. **Golf / DRY inside the `ev_f_ff` block.** The dispatch is nine sequential
-   `cp`/`jr z` pairs plus a second nine-way read dispatch on the same selector;
-   collapsing the two into one table-driven walk plausibly *frees* more than I1
-   spends. This is the self-funding path and it is the one the arc should try
-   first — G8 funded itself the same way.
-2. **A scouted carve.** `scratchpad/g7_carve_scout.py 120` shortlists two clean
-   single-entry page-0-tenant carves at 130 B: `psv_fetch` and `psv_env` (the PLAY
-   servicer's fetch/envelope halves). Both are **interrupt-context** code — the
-   servicer runs from `H.TIMI` — so evicting them puts a `CALSLT` inside the
-   VBLANK handler. That is a real risk to the audio arc's timing and should not be
-   taken for a 47 B need if option 1 works.
-3. **A page-1 sub-ROM tenant for the two bodies.** Reach is correct — a *page-1*
-   tenant sees the BIOS, so it may call `GTSTCK` — but a `subrom_call` stub costs
-   about as much as the ~16 B of body it would move. Not worth it for I1 alone;
-   revisit for I2, whose direct-PSG bodies are genuinely larger.
+One structural consequence: with index 11 the page-0 entry table reached the
+`$0038` interrupt vector, so `sub_p0_ping`'s body moved below it (it is reached
+only through its own `jp` row, so its address is immaterial). **The page-0 table
+is now within 4 bytes of that ceiling — the next page-0 tenant will have to
+restructure the $0010..$0037 window, and that is a real constraint on the next
+eviction, not a detail.**
 
-**Measure before committing** ([memory: dont-prematurely-wall]) — option 1's actual
-yield gets measured empirically as step 1 of implementation, before any carve is
-cut.
+Final: **page-1 free 6 B → 17 B**, low region unchanged at 19 B, lean
+`basic.rom` byte-identical.
 
-## 8. Gate
+## 8. Gate — as built
 
-New standing gate `make input-devices-acceptance`
-(`probes/basic/basic_probe_input_devices.py`), differential VG-8020 vs
-`C-BIOS_MSX1_EU_REPACK_DISK`, in four phases:
+`make input-devices-acceptance`
+([`../probes/basic/basic_probe_input_devices.py`](../probes/basic/basic_probe_input_devices.py)),
+differential VG-8020 vs `C-BIOS_MSX1_EU_REPACK_DISK`, **31/31 PASS**:
 
-* **Phase A — grammar and errors.** The §3 table plus the §4 coercion
-  discriminators, each as a trapped `ON ERROR` case comparing the error number.
-  ~25 cases, batched.
-* **Phase B — idle values.** Every legal index of both functions with nothing
-  plugged; asserts the exact idle values of §4 (this is where `PDL`'s 255 and
-  domain-from-1 land in I2).
-* **Phase C — LIVE key matrix (the teeth).** The load-bearing phase. Holds each
-  row-8 bit down across a sampling RUN and compares `STICK(0)` / `STRIG(0)`
-  between the machines — the only phase that proves anything is actually being
-  *read*. Proven feasible: openMSX `keymatrixdown` / `keymatrixup` reach the
-  matrix, which KEYBUF injection does not. Requires a **harness addition** —
-  `omsx_repl` gains scheduled key-matrix hold/release actions (decision
-  **D-I-3**); that capability is reusable by the interrupt-trap arc's `ON KEY`.
-* **Phase D — plugged devices (I2).** `plug joyporta paddle` / `touchpad`. Both
-  pluggables exist in this openMSX build; there is **no** headless joystick
-  pluggable, so `STICK(1..2)` / `STRIG(1..4)` are gated idle-only and device 0
-  carries the live teeth. This limit is a documented gate boundary, not a silent
-  gap.
+* **Phase A — grammar, errors, coercion (22 cases).** The §3 table plus the §4
+  discriminators, each trapped by `ON ERROR` and compared on the error NUMBER.
+  The discriminator rows are the ones with teeth: `STRIG(4.9)` is legal only
+  under truncation, so a regression to round-half-up fails the phase.
+* **Phase B — idle values (2 cases).**
+* **Phase C — LIVE key matrix (7 cases): the teeth.** Phases A and B pass just as
+  well against a function returning a constant 0, because with nothing plugged
+  idle *is* 0. Phase C holds a row-8 bit down across a sampling RUN and compares
+  what the functions actually read; both machines reproduce the §5.1 mapping
+  (space → −1, left 7, up 1, down 5, right 3, up+down 0).
 
-Plus a host unit test (`tests/test_input_devices.py`) for the domain/coercion
-decision table, per the usual two-layer discipline.
+**Harness addition (D-I-3), as built:** `omsx_repl` gained per-case
+`holds=[(row, mask) | None]` + `hold_secs`, scheduling `keymatrixdown` at the RUN
+slot and `keymatrixup` before the capture. Reusable by the interrupt-trap arc's
+`ON KEY`/`ON STRIG`.
+
+**Two false-green probe bugs were found and fixed while building this gate**, both
+of the arc's recurring class:
+
+1. The outcome regex matched the tag inside the **echoed source line**, so all 31
+   cases "passed" while extracting no output at all. The extractor now anchors
+   after the last `RUN` and takes the last non-bare match (an aborting case prints
+   its tag twice — once from the failing statement, once from the handler).
+2. Phase C's first timing let the sampling loop finish **before** the key went
+   down. Sizing that loop is genuinely two-sided: it must still be running 0.3 s
+   after RUN on the fast machine and must finish before the capture on the slow
+   one, and a STICK/STRIG iteration is expensive (~10 iterations per emulated
+   second, two matrix-scanning BIOS calls each), so 60 iterations is the window
+   that holds on both. Phase C also runs boot-per-case: a held matrix bit is
+   exactly the state that could leak into the next case's line entry, and this is
+   the one phase whose result must not be explainable by contamination.
+
+The **crunch corpus** gained `STICK`/`STRIG` rows plus `STEP`/`STOP`/`STR$` rows
+that would catch a keyword-prefix collision (all byte-identical to the reference).
+Host layer: `tests/test_beep.py` retargeted at `beep_tenant`, and `tests/z80.py`
+gained `CPI`/`CPIR` — the golf's `cpir` was an unimplemented opcode, which the
+host core reported loudly with the exact PC and byte, as it is designed to.
+
+**Residual fixed in passing (not input-devices).** The Phase-A differential caught
+that a **missing argument list** evaluated silently to 0 where the reference
+raises ERR 2 — `PRINT PEEK`, `PEEK 100`, and likewise `VPEEK`/`INP`/`EOF`/`LOF`.
+A pre-existing divergence across the whole `ev_ff_arg` family, not something the
+new functions introduced; both paren checks now defer through `ev_f_empty` (the
+cure `CVI` already carried). Byte-neutral, repack-only.
 
 ## 9. I2 sketch (not yet specified)
 

@@ -3383,3 +3383,63 @@ Our own code, relocated verbatim bar the tenant ABI (cursor through `DEFT_PTR`,
 unchanged, and the routine was already repack-only, so the lean cart is
 byte-identical by construction. Clean-room: no disassembly — this is a move of
 code we wrote.
+
+## Phase 3: input devices, I1 — `STICK(n)` / `STRIG(n)` (basic/expr.asm, basic/kwtable.inc, basic/sysvars.inc)
+
+The joystick/cursor direction reader and the trigger reader, as the first slice
+of the input-devices arc
+([docs/spec-basic-input-devices.md](../docs/spec-basic-input-devices.md)).
+
+**Sourced — published contracts.** The two BIOS entry points and their
+signatures come from the MSX Assembly Page BIOS call list / MSX Technical Data
+Book (allowed sources): `GTSTCK` `$00D5` (A = device 0..2 in, A = direction 0..8
+out) and `GTTRIG` `$00D8` (A = trigger 0..4 in, A = `$00`/`$FF` out). Both are
+documented "Registers: All", which is why the token cursor `IX` is guarded
+across the calls even though our C-BIOS target does not in fact touch it.
+
+**Sourced — this project's own black-box oracle** (Philips VG-8020; raw record
+[scratchpad/i1_input_notes.md](../scratchpad/i1_input_notes.md), scripts
+`i1_input_char1.py` / `i1_input_char2.py`). No reference-ROM disassembly. The
+measured facts the implementation reproduces:
+
+- the crunch tokens `STICK` = `$FF $A2`, `STRIG` = `$FF $A3` — two-byte
+  `$FF`-prefixed FUNCTION tokens, the `PEEK` shape, so no statement token;
+- the domains (`STICK` 0..2, `STRIG` 0..4) and the errors outside them
+  (`ERR 5`), including that an in-int16 but out-of-domain index such as
+  `STICK(32767)` is `ERR 5` while `STICK(32768)` is `ERR 6`;
+- the argument coercion: **truncate toward zero** on both signs, pinned with
+  discriminators where rounding and truncating disagree (`STRIG(4.9)` → 0,
+  `STICK(-0.6)` → 0);
+- the grammar surface (`ERR 2` for a missing/unclosed/extra argument list, for
+  statement position, and for a bare name; `ERR 13` for a string argument);
+- the eight-way direction encoding and its cancellation rule, measured live
+  against the key matrix: row 8 bit 4/5/6/7 → 7/1/5/3, an opposing pair → 0;
+- that `STRIG` yields the BASIC truth values 0 / **−1**, not the BIOS byte.
+
+**Runtime note (not a language fact).** C-BIOS's own `GTSTCK`/`GTTRIG` were read
+from the C-BIOS **source** (BSD 2-clause; our runtime target, not the artifact
+zerobas reimplements) only to confirm they are implemented rather than stubbed —
+and that their keyboard direction table reproduces the measurement above. That
+check is what makes the thin-wrapper implementation legitimate; the behaviour
+asserted by the gate is the VG-8020's, never C-BIOS's.
+
+**Own-design.** The dispatch-table `cpir` set test that replaced the per-token
+compare chain, the domain check layered on the D-F2-2 `get_byte_arg`/`gb_illegal`
+coercion already shipped, and the `A`-into-both-halves widening that turns
+`GTTRIG`'s `$00`/`$FF` into 0/−1.
+
+**Gate.** `make input-devices-acceptance` (31 cases): grammar/error surface,
+idle values, and a live key-matrix phase that holds a matrix bit down across the
+RUN — the only phase that can distinguish a real read from a constant 0, since
+with nothing plugged the idle value *is* 0. Plus the crunch corpus (new
+`STICK`/`STRIG` rows and `STEP`/`STOP`/`STR$` anti-collision rows).
+
+## Space: `BEEP` → page-0 sub tenant (basic/sound.asm, sub/beep.asm, sub/sub.asm, sub/equates.inc, basic/sysvars.inc)
+
+`BEEP`'s body moved to the sub-ROM to fund input-devices slice I1 — see
+[docs/spec-basic-input-devices.md](../docs/spec-basic-input-devices.md) §7. Our
+own code, relocated verbatim bar the tenant ABI (the leading cursor step and the
+`exec_stmt` tail stay resident; the tenant just returns). The routine was already
+repack-only, so the lean cart is byte-identical by construction. Clean-room: no
+disassembly — this is a move of code we wrote. The `BEEP` language contract is
+unchanged and still pinned by `make beep-acceptance` against the VG-8020.
