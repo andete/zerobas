@@ -44,8 +44,12 @@ the runtime and the byte budget:
 
 | slice | surface | carrier | why separate |
 |---|---|---|---|
-| **I1** | `STICK(n)`, `STRIG(n)` | C-BIOS `GTSTCK` / `GTTRIG` | both BIOS entries are **real** in C-BIOS and their behaviour already matches the reference (§6) — small, cheap, gate-able live |
-| **I2** | `PDL(n)`, `PAD(n)` | our own direct PSG I/O | C-BIOS `GTPAD`/`GTPDL` are **debug-printing stubs** (§6) — unusable; these need a hardware read written from the datasheet, and their own characterization against the openMSX `paddle` / `touchpad` pluggables |
+| **I1** | `STICK(n)`, `STRIG(n)` | C-BIOS `GTSTCK` / `GTTRIG`, as shipped | both BIOS entries are **real** in C-BIOS and their behaviour already matches the reference (§6) — small, cheap, gate-able live |
+| **I2** | `PDL(n)`, `PAD(n)` | `GTPDL` / `GTPAD`, **which we supply** as new BIOS completions in the zerobas-tape page-0 patch (§6.2) | C-BIOS ships these two as debug-printing stubs, so the *BIOS* is what has to be fixed; and the fix needs its own hardware characterization against the openMSX `paddle` / `touchpad` pluggables |
+
+Both slices therefore end up with the **same** BASIC-side shape — a thin
+`call <BIOS entry>` — and the split is about *where the missing work is*, not
+about two different implementation strategies.
 
 I1 is specified in full below. I2 is scoped in §9 and gets its own spec addendum
 after its characterization round — writing it now would be speculation about
@@ -156,7 +160,9 @@ The `$FF`→`-1` widening is free in the implementation: `GTTRIG` returns `$00`/
 in A, and copying A into **both** halves of the int16 result yields exactly
 `$0000` / `$FFFF`.
 
-## 6. Runtime carrier — why I1 uses the BIOS and I2 cannot
+## 6. Runtime carrier — the BIOS, for all four
+
+### 6.1 What C-BIOS actually ships
 
 Read from the C-BIOS **source** (`~/projects/cbios/src/main.asm`):
 
@@ -168,19 +174,70 @@ Read from the C-BIOS **source** (`~/projects/cbios/src/main.asm`):
 | `GTPDL` `$00DE` | **STUB** — prints the debug string `"GTPDL"`, returns its own input |
 
 C-BIOS's keyboard direction table reproduces the reference mapping measured in
-§5.1 *exactly* (left→7, up→1, down→5, right→3, opposing pair→0), so `GTSTCK` /
-`GTTRIG` are faithful carriers and I1 is a thin wrapper — the cheapest possible
-implementation, which matters given §7.
+§5.1 *exactly* (left→7, up→1, down→5, right→3, opposing pair→0), and its
+joystick-port path is fully implemented too (PSG R15 port select → R14 read →
+table map). So `GTSTCK`/`GTTRIG` are faithful carriers and I1 is a thin wrapper.
 
-`GTPAD` / `GTPDL` are not merely inaccurate, they are **actively harmful**: they
-`CHPUT` debug text onto the user's screen. I2 must therefore read the hardware
-itself (PSG registers 14/15 through ports `$A0`/`$A1`/`$A2`, per the AY-3-8910
-datasheet + the MSX Technical Data Book — both allowed sources), exactly as the
-graphics arc chose direct VDP port I/O over BIOS calls.
+`GTPAD`/`GTPDL` are not merely inaccurate, they are **actively harmful**: they
+`CHPUT` debug text onto the user's screen.
 
-Unlike the graphics tenant, I1 runs in **ordinary resident context** with page 0 =
-BIOS, so a plain `call GTSTCK` is available (the same footing as `INKEY$`'s
-`CHSNS`/`CHGET`). No trampoline, no direct-port workaround.
+Unlike the graphics tenant, this code runs in **ordinary resident context** with
+page 0 = BIOS, so a plain `call GTSTCK` is available (the same footing as
+`INKEY$`'s `CHSNS`/`CHGET`). No trampoline, no direct-port workaround.
+
+### 6.2 `GTPAD`/`GTPDL` — fix them in the BIOS, not in BASIC
+
+The first draft of this spec had `PAD`/`PDL` read the PSG *from inside
+`basic.rom`*, working around the stubs. That is the wrong placement. The right
+fix is to **complete the two stubbed BIOS entries** in the zerobas-tape page-0
+patch, which is exactly the component that exists for this
+([`../tape/DESIGN.md`](../tape/DESIGN.md) "Scope"). All three admission criteria
+hold, and not marginally:
+
+| criterion | `GTPAD` `$00DB` / `GTPDL` `$00DE` |
+|---|---|
+| 1. a missing/stubbed C-BIOS page-0 BIOS entry, so filling it in serves *any* caller | ✅ literal stubs at standard `$00xx` jump-table vectors — a real MSX BASIC or a DOS program on our runtime is just as broken by them as we are |
+| 2. small — too small for its own component | ✅ ~50–70 B each: a PSG register select plus a read/count loop |
+| 3. fits the spare page-0 fill the patch already owns | ✅ **322 B free**, measured (below) |
+
+Measured spare fill, all four C-BIOS MSX1 main variants (`msx1`, `_br`, `_eu`,
+`_jp`) identically:
+
+```
+zero-fill region   $09EE .. $0D00   = 787 B
+used by zerobas-tape ($09EE..tape_end $0BBF) = 465 B
+FREE                                          = 322 B
+```
+
+Three further arguments for this placement, beyond it being the documented home:
+
+1. **Faithfulness.** On a real MSX, `PDL`/`PAD` *are* BIOS routines that BASIC
+   calls; the platform split puts the device read in the BIOS. Reading the PSG
+   from inside `basic.rom` would reproduce the *behaviour* while diverging on the
+   *placement* — the same mistake Phase 1.5 was written to correct on the disk
+   side, where zerobas had copied the placement but swapped the protocol.
+2. **Provenance fit.** zerobas-tape already reads the PSG through ports
+   `$A0`/`$A2` from the AY-3-8910 datasheet (`; CAS-in is PSG R14 bit 7`), so the
+   paddle read lands in a component whose allowed-source set and provenance log
+   already cover exactly this hardware.
+3. **Space.** 322 B of patch fill against 6 B of page-1 `basic.rom` — the whole I2
+   body cost moves off the constrained budget onto an unconstrained one.
+
+This was in fact anticipated by the project's own space strategy:
+[`decision-phase3-space-strategy.md:107`](decision-phase3-space-strategy.md:107)
+sizes input devices as "thin wrappers **(+ possible tape-component BIOS
+completions)**". This spec now takes that option.
+
+The cost of the choice, stated plainly: I2 becomes a **two-component** slice
+(`tape/` for the routines + their provenance rows and scope entry, `basic/` for
+the wrapper), so it carries the tape component's build/verify wiring — the IPS
+must be re-forged and the `$00DB`/`$00DE` vector rewrites added to the three
+patched regions, which `tools/build_patches.py` verifies across all C-BIOS main
+ROMs. That is real extra work; it is worth it for a fix that is correct rather
+than merely local. *(Offering the routines upstream to C-BIOS is a separate,
+later question — the patch stays the shipping mechanism either way, since
+[`../tape/DESIGN.md`](../tape/DESIGN.md) keeps our code out of the C-BIOS source
+tree deliberately, as a legal firewall.)*
 
 ## 7. Space — the binding constraint
 
@@ -262,20 +319,39 @@ decision table, per the usual two-layer discipline.
 
 ## 9. I2 sketch (not yet specified)
 
-To be characterized before it is written: the `paddle`/`touchpad` pluggables'
-behaviour, whether a paddle value can be *driven* headlessly (or only plugged),
-the PSG R14/R15 pulse-and-count protocol from the datasheet, and the `PAD(n)`
-sub-function meaning per index (0 = connected status, 1/2 = x/y, 3 = touch, for
-port 1; 4..7 the port-2 mirror). Placement decided then, with option 3 of §7 the
-likely answer.
+Placement is now settled (§6.2): the routines go in the zerobas-tape page-0 patch
+behind the real `$00DB`/`$00DE` vectors, and `basic.rom` gains only two more
+dispatch rows plus two `kwtable` rows (~14 B low region + ~20 B page 1 — the
+low-region rows are the tighter half and may need a few bytes of relief there).
+
+To be characterized before I2 is written: the `paddle`/`touchpad` pluggables'
+behaviour, whether a paddle value can be *driven* headlessly or only plugged, the
+PSG R14/R15 pulse-and-count protocol from the AY-3-8910 datasheet + MSX Technical
+Data Book, and the `PAD(n)` sub-function meaning per index (0 = connected status,
+1/2 = x/y, 3 = touch, for port 1; 4..7 the port-2 mirror). The differential then
+has a second axis the other slices lack: the routine under test is in the *BIOS*,
+so it can also be exercised without BASIC at all.
 
 ## 10. Decisions — FOR SIGN-OFF
 
-* **D-I-1 — slice split.** I1 = `STICK`/`STRIG` (BIOS-backed); I2 = `PDL`/`PAD`
-  (direct PSG), separately characterized and specified. *Recommend: accept* — the
-  runtime forces it (§6) and the byte budget agrees (§7).
-* **D-I-2 — BIOS carrier for I1.** Use `GTSTCK`/`GTTRIG` rather than reading the
-  matrix/PSG ourselves. *Recommend: accept* — measured faithful (§6), and ~10× cheaper
+* **D-I-6 — complete the stubbed BIOS entries rather than working around them.**
+  `GTPAD` `$00DB` / `GTPDL` `$00DE` get real implementations in the zerobas-tape
+  page-0 patch; `PDL`/`PAD` in BASIC then become thin `call` wrappers like
+  `STICK`/`STRIG`. *Recommend: accept* — it meets all three of the component's
+  admission criteria with 322 B of measured room, it is the faithful placement
+  (on a real MSX these *are* BIOS routines), it serves every caller on our runtime
+  rather than only our interpreter, and it moves I2's body cost off the 6-byte
+  page-1 budget entirely. Cost: I2 becomes a two-component slice with the tape
+  patch's re-forge/verify wiring (§6.2). **This supersedes the first draft's
+  direct-PSG-inside-basic.rom plan** (user's call, 2026-07-23).
+* **D-I-1 — slice split.** I1 = `STICK`/`STRIG`; I2 = `PDL`/`PAD`, separately
+  characterized and specified. *Recommend: accept* — note that under D-I-6 the
+  split is no longer *forced* by the runtime (both slices are BIOS-backed now); it
+  survives on the two remaining grounds: I2 needs its own hardware
+  characterization round, and it spans a second component.
+* **D-I-2 — BIOS carrier for I1.** Use `GTSTCK`/`GTTRIG` as C-BIOS ships them,
+  rather than reading the matrix/PSG ourselves. *Recommend: accept* — measured
+  faithful (§6.1), including the joystick-port path, and ~10× cheaper
   in bytes than an own-design read at a moment when page 1 has 6 B free. The
   counter-argument is the project's usual preference for not depending on BIOS
   behaviour; it is weaker here because the entries are published MSX contracts and
@@ -308,3 +384,8 @@ likely answer.
    battery (lean `basic.rom` must stay byte-identical).
 5. Provenance (`basic/PROVENANCE.md` → "Phase 3: input devices"), TODO, and this
    spec's §7 rewritten as-built.
+
+I2 additionally: characterize the pluggables → write the `tape/` routines with
+their `tape/PROVENANCE.md` rows and `tape/DESIGN.md` scope entry → re-forge the
+IPS/BPS with the two new vector regions → verify across all C-BIOS main ROMs →
+then the BASIC-side wrapper.
