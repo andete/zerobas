@@ -59,10 +59,17 @@ BASIC_DISK_ID = 0xFF  # basic/sysvars.inc: on-disk tokenised-BASIC marker byte
 
 
 def build_rom(src: str | None = None) -> None:
-    """Assemble basic/main.asm (pasmo) so `Tokeniser` below has a fresh ROM."""
+    """Assemble basic/main.asm (pasmo) so `Tokeniser` below has a fresh ROM.
+
+    pasmo resolves `include` paths (e.g. main.asm's `include "basic/sysvars.inc"`)
+    relative to the process CWD, not to the source file -- so the assemble only
+    succeeds when CWD is the repo root. Callers invoked from elsewhere (notably
+    `make -C tape test`, which runs the regression with CWD=tape/) would otherwise
+    get `File 'basic/sysvars.inc' not found` and a non-zero pasmo exit. Pin the
+    build's CWD to `_ROOT` so this helper is CWD-independent for every probe."""
     src = src or os.path.join(_ROOT, "basic", "main.asm")
     subprocess.run(["pasmo", "--bin", src, ROM_PATH, SYM_PATH], check=True,
-                   capture_output=True)
+                   capture_output=True, cwd=_ROOT)
 
 
 class Tokeniser:
