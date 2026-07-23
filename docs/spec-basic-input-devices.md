@@ -1,6 +1,7 @@
 # zerobas BASIC — input devices: `STICK` / `STRIG` / `PAD` / `PDL`
 
-Status: **I1 LANDED 2026-07-23** (commit b8a6a5b); I2 still to be characterized.
+Status: **I1 LANDED 2026-07-23** (commit b8a6a5b). **I2 CHARACTERIZED and
+SPECIFIED (§9), awaiting sign-off on D-I-7..D-I-10 (§10a); not implemented.**
 Opened 2026-07-23, the first slice after the graphics arc concluded. Decisions in
 §10 were taken as recommended, with **D-I-6** (complete the stubbed BIOS entries
 rather than working around them) added on the user's call; §7 and §8 below are
@@ -54,9 +55,8 @@ Both slices therefore end up with the **same** BASIC-side shape — a thin
 `call <BIOS entry>` — and the split is about *where the missing work is*, not
 about two different implementation strategies.
 
-I1 is specified in full below. I2 is scoped in §9 and gets its own spec addendum
-after its characterization round — writing it now would be speculation about
-hardware behaviour we have not yet measured.
+I1 is specified in full below; **I2 in §9**, written after its characterization
+round (2026-07-23) rather than ahead of it.
 
 ## 3. Tokens and grammar `[PIN]`
 
@@ -338,22 +338,197 @@ A pre-existing divergence across the whole `ev_ff_arg` family, not something the
 new functions introduced; both paren checks now defer through `ev_f_empty` (the
 cure `CVI` already carried). Byte-neutral, repack-only.
 
-## 9. I2 sketch (not yet specified)
+## 9. I2 — `PDL(n)` / `PAD(n)`, specified
 
-Placement is now settled (§6.2): the routines go in the zerobas-tape page-0 patch
-behind the real `$00DB`/`$00DE` vectors, and `basic.rom` gains only two more
-dispatch rows plus two `kwtable` rows (~14 B low region + ~20 B page 1 — the
-low-region rows are the tighter half and may need a few bytes of relief there).
+**Status: characterization round COMPLETE (2026-07-23, commits 1fe02d2 → 559e15d);
+this section is the spec, FOR SIGN-OFF. Nothing is implemented.** The raw record
+is [`../scratchpad/i2_input_notes.md`](../scratchpad/i2_input_notes.md), with
+probes [`i2_char.py`](../scratchpad/i2_char.py) (the value matrix),
+[`i2_pinmap.py`](../scratchpad/i2_pinmap.py) (BASIC-speed terminal identity) and
+[`i2_frame.py`](../scratchpad/i2_frame.py) (the Z80-speed bit-bang harness).
 
-To be characterized before I2 is written: the `paddle`/`touchpad` pluggables'
-behaviour, whether a paddle value can be *driven* headlessly or only plugged, the
-PSG R14/R15 pulse-and-count protocol from the AY-3-8910 datasheet + MSX Technical
-Data Book, and the `PAD(n)` sub-function meaning per index (0 = connected status,
-1/2 = x/y, 3 = touch, for port 1; 4..7 the port-2 mirror). The differential then
-has a second axis the other slices lack: the routine under test is in the *BIOS*,
-so it can also be exercised without BASIC at all.
+Grammar (§3), coercion (§4) and the domains/idle values (§4, `PDL` 1..12 idle
+255; `PAD` 0..7 idle 0) were already pinned during I1 and are **unchanged** — I2
+adds no new BASIC-visible surface beyond the two functions themselves.
+
+### 9.1 What the characterization established
+
+1. **`PDL`'s index→port mapping**, settled twice and independently: black-box
+   (the port-A and port-B value columns mirror exactly under `n ↔ n+1`) and from
+   the TH's published circuit (R14 b0..b5 = terminals 1,2,3,4,6,7 of the port
+   selected by R15 b6 ⇒ six paddles per port). ⇒ **odd `n` = joystick port 1,
+   even `n` = port 2; the paddle within the port is `(n+1) >> 1`, read on
+   R14 bit `((n+1) >> 1) − 1`.**
+2. **The paddle protocol** (TH §5.3, fig. 5.24): pulse the 8th terminal, an
+   LS123-compatible one-shot answers on the data terminal for **10 µs..3 ms**;
+   measure the length. 3 ms ÷ 255 ≈ **11.8 µs per count**, capping at 255.
+3. **The touch-panel protocol** is the **NEC µPD7001** serial ADC's, from the
+   manufacturer data book (§4.4 of the record): 2 address bits in on `SI` latched
+   by `DL`, conversion starts on the **rise of `CS`**, data exchanged while `CS`
+   is **low**, 8 result bits out MSB-first on open-drain `SO` clocked by `SCK`,
+   `EOC` low during conversion, `t_CONV = 14 × 4 / f_CK`.
+4. **The terminal mapping**, recovered from our own oracle with the paddle run
+   first as a known-answer control:
+
+   | terminal | bit | µPD7001 signal | basis |
+   |---|---|---|---|
+   | 8th | R15 b4 (port 1) / b5 (port 2), **output** | `CS`/`SCK` | the only output the port has |
+   | 3 | R14 b2 | `SO` | follows the driven line |
+   | 2 | R14 b1 | `EOC` | low for a fixed ~124 µs after clocking stops, independent of clock count, against `t_CONV` 140 µs typ |
+
+### 9.2 BIOS side — the two routines, in the zerobas-tape page-0 patch
+
+Per **D-I-6** (already signed off). Both are ordinary page-0 code; the patch has
+**322 B free** and these are ~60–80 B each.
+
+**`GTPDL` `$00DE`** — in A = 1..12, out A = 0..255:
+
+```
+    port   = 1 + ((n - 1) & 1)          ; odd n -> port 1, even n -> port 2
+    paddle = (n + 1) >> 1               ; 1..6
+    mask   = 1 << (paddle - 1)          ; the R14 bit to watch
+    select port via R15 b6; pulse that port's 8th terminal (R15 b4 / b5)
+    count = 0
+    repeat: if (R14 & mask) is inactive -> return count
+            count += 1; if count = 255 -> return 255
+```
+
+The **count loop must be paced at ≈11.8 µs per iteration** (~42 T at 3.58 MHz) so
+that the 10 µs..3 ms one-shot maps onto 0..255. Polarity and the exact pacing are
+*pinned by the gate*, not asserted here: nothing-plugged must yield **255** and a
+plugged openMSX paddle must yield **128** (§9.4). That is deliberate — those two
+numbers are a sharper specification of the loop than prose about which edge is
+active, and a timing error fails them.
+
+**`GTPAD` `$00DB`** — in A = 0..19, out A = the TH's table. MSX1 BASIC only ever
+passes 0..7 (§4); the wider BIOS surface is real but out of this arc's scope, and
+ids 8..19 (light pen, mouse/trackball) return 0.
+
+```
+    device = A >> 2                     ; 0 = touch panel 1, 1 = touch panel 2
+    sub    = A & 3                      ; 0 sense, 1 X, 2 Y, 3 button
+    sub 0: run a conversion; latch X and Y; return $FF if touched else $00
+    sub 1: return the latched X    (uPD7001 channel 0)
+    sub 2: return the latched Y    (uPD7001 channel 3)
+    sub 3: return $FF if the button is pressed else $00
+```
+
+The sense call is the one that talks to the chip; 1/2/3 read what it latched.
+That is the TH's own published calling sequence (List 5.8: sense with A=0, and
+the coordinates are meaningful only once it returned `$FF`), so the latch is
+required behaviour, not an optimisation.
+
+### 9.3 BASIC side — two thin wrappers
+
+Same shape as I1: two `ev_f_ff` dispatch rows, the shared `get_byte_arg` coercion
+(§4), the domain check (`PDL` 1..12, `PAD` 0..7 ⇒ ERR 5), then `call $00DE` /
+`call $00DB`. Keyword rows cost **sub-ROM** bytes, not resident ones (the §7
+as-built correction).
+
+One asymmetry: **`PDL` always zero-extends** its 0..255 result, but **`PAD`'s
+result width depends on the index** — ids 0 and 3 (and their port-2 mirrors 4 and
+7) are booleans that the BIOS returns as `$00`/`$FF`, so BASIC widens them to
+`0`/`-1` exactly as `STRIG` does (§5.2), while ids 1/2/5/6 are coordinates that
+zero-extend. **This is an inference, not a measurement** — see D-I-8.
+
+### 9.4 Gate
+
+Extends `make input-devices-acceptance` with two phases, both differential
+against the VG-8020:
+
+* **Phase D — `PDL` values, with devices plugged. THE TEETH.** The whole 1..12
+  matrix under four configurations (paddle in A / in B, touchpad in A / in B),
+  asserting the §9.1 table: `128` for the plugged paddle's index, `0` for the two
+  touchpad-shadowed indices, `255` elsewhere. A constant cannot fake this, and
+  the `128` additionally pins the count *rate*.
+* **Phase E — `PAD` idle + the error surface.** Every legal index in every
+  configuration, plus the ERR 5/ERR 6 edges.
+
+**Phase E has no teeth and the spec says so rather than letting the case count
+imply coverage.** openMSX's entire input-injection surface is
+`keymatrixdown`/`keymatrixup`; there is no mouse, both devices are mouse-driven,
+and `touchpad_transform_matrix` and `debug write joystickports` were both tried
+and do nothing (record §1). An untouched panel converts to 0, so a `PAD` that
+returned constant 0 would pass every reachable case. This is the same limitation
+I1 accepted for `STICK(1..2)`/`STRIG(1..4)`, and the user's standing call
+(2026-07-23) is to keep `PAD` in I2 with the limit documented.
+
+Harness prerequisite: `omsx_repl` needs a **per-batch Tcl prologue** hook so a
+gate can `plug` a device. The characterization probes monkey-patched `_tcl`, which
+is fine for scratch and not for a standing gate. The interrupt-trap arc will want
+the same seam.
+
+### 9.5 Space
+
+Measured on the current build (`tools/check_reloc.py`): **page-1 free = 17 B**,
+low region free = 19 B. I1's two functions cost **56 B** of page 1 for dispatch
+rows + domain check + bodies; I2's are the same shape plus `PAD`'s per-index
+widening, so **estimate ~60 B ⇒ a ~43 B deficit** needing one carve — with the
+BIOS bodies themselves costing *nothing* here, since they live in the tape
+patch's 322 B of free fill.
+
+That is an **estimate, and the arc's own standing lesson is to measure a byte
+budget before declaring a wall**. The implementation order below therefore
+measures first and scouts a carve second, exactly as I1 did.
+
+### 9.6 Implementation order (after sign-off)
+
+1. `omsx_repl` prologue hook (needed by every later step's gate).
+2. Measure the real BASIC-side cost; scout a carve only if the measurement
+   demands one (`g6_carve_scout.py`).
+3. The two `tape/` routines + `tape/PROVENANCE.md` rows + `tape/DESIGN.md` scope
+   entry; re-forge the IPS/BPS with the `$00DB`/`$00DE` vector rewrites; verify
+   across all four C-BIOS MSX1 main ROMs (`tools/build_patches.py`).
+4. The BASIC-side wrappers; host unit tests.
+5. Phases D and E; then the full standing-gate battery (lean `basic.rom` must
+   stay byte-identical).
+6. Provenance, TODO, and this section rewritten as-built.
 
 ## 10. Decisions — FOR SIGN-OFF
+
+### 10a. I2 decisions (new, 2026-07-23)
+
+* **D-I-7 — how far to reconstruct `GTPAD`.** The µPD7001 datasheet plus the
+  recovered terminal mapping specify the *handshake*; what is **not** pinned is
+  how the two channel-address bits (`SI`, latched by `DL`) reach the chip through
+  a port that offers exactly **one** output line. The encoding must be temporal,
+  and nothing measured so far constrains it. Three ways forward:
+  1. **Another characterization round** aimed specifically at the address phase —
+     vary the pulse widths and inter-pulse gaps on the 8th terminal and look for
+     the pattern that makes `EOC` fire on a *different* channel.
+  2. **Implement channel 0 (X) only** — i.e. whatever the chip converts when no
+     address is deliberately shifted in — and return the Y sub-function as 0,
+     documented.
+  3. **Implement the handshake and accept an unvalidated address phase**, since
+     no reachable test can tell the difference (§9.4).
+  *Recommend: (1), time-boxed, falling back to (3).* The address phase is the
+  last genuinely unknown piece, the harness that would answer it already exists
+  (`i2_frame.py`), and finding it would complete an honestly-sourced protocol
+  rather than a plausible one. But it should not be allowed to become a grind —
+  see [memory: harness-first-investigation-mo].
+* **D-I-8 — `PAD`'s boolean widening is currently an INFERENCE.** §9.3 has ids
+  0/3/4/7 widening `$FF` → `-1` like `STRIG`. The basis is the TH's device table
+  (`$FF` when touched) plus the `STRIG` precedent — **not** a measurement, because
+  an untouched panel reads 0 on every index and we cannot touch it. The cheap fix
+  is one more source: the **MSX-BASIC reference** (`docs/allowed-sources.md`:
+  B / Scoped / gen 1) documents the language-level return of `PAD(0)`.
+  *Recommend: check that source before implementing* — it is a single lookup, and
+  shipping a guessed sign on a boolean is exactly the kind of thing the
+  differential cannot catch here.
+* **D-I-9 — `PDL`'s count loop is specified by its GATE, not by prose.** §9.2
+  gives the algorithm structurally and pins the timing with two measured numbers
+  (idle → 255, plugged paddle → 128) rather than asserting an active polarity or
+  a T-state count. *Recommend: accept* — the numbers are strictly stronger than
+  the prose would be, they came from the reference, and a pacing error fails them
+  loudly. The cost is that the implementer must iterate against the gate rather
+  than code straight from the spec.
+* **D-I-10 — ship `GTPAD` even though its gate has no teeth.** Confirmed by the
+  user 2026-07-23 (over descoping `PAD` to a later slice). The limitation is
+  recorded in §9.4 and must be repeated in `tape/PROVENANCE.md`, so that a future
+  reader does not mistake a green gate for validated behaviour. *Recommend:
+  accept, with the documentation obligation treated as part of the slice.*
+
+### 10b. I1 decisions (settled, 2026-07-23)
 
 * **D-I-6 — complete the stubbed BIOS entries rather than working around them.**
   `GTPAD` `$00DB` / `GTPDL` `$00DE` get real implementations in the zerobas-tape
