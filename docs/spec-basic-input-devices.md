@@ -1,7 +1,9 @@
 # zerobas BASIC — input devices: `STICK` / `STRIG` / `PAD` / `PDL`
 
-Status: **I1 LANDED 2026-07-23** (commit b8a6a5b). **I2 CHARACTERIZED and
-SPECIFIED (§9), awaiting sign-off on D-I-7..D-I-10 (§10a); not implemented.**
+Status: **I1 LANDED 2026-07-23** (commit b8a6a5b). **I2 CHARACTERIZED, SPECIFIED
+(§9) and SIGNED OFF** (D-I-7..D-I-10 accepted as recommended, 2026-07-23; D-I-8
+closed by measurement). Its harness hook, byte measurement and funding carve have
+landed (§9.5–§9.6); the two BIOS routines and the BASIC wrappers are next.
 Opened 2026-07-23, the first slice after the graphics arc concluded. Decisions in
 §10 were taken as recommended, with **D-I-6** (complete the stubbed BIOS entries
 rather than working around them) added on the user's call; §7 and §8 below are
@@ -501,57 +503,68 @@ implementation session rediscovers it.
 same order, so the `g6_carve_scout.py` tenancy rule should find a candidate — but
 this is now a known cost to plan against, not a surprise to hit mid-slice.
 
-#### Carve candidates (scouted, not yet chosen)
+#### The carve — LANDED (cdb6130)
 
-`python3 scratchpad/g6_carve_scout.py` over the current build. Only two carves
-come back both tenancy-clean *and* single-entry, and one of those is excluded on
-sight:
+`show_title` + `banner_text` evicted whole to a sub-ROM **page-1** tenant
+(`SUBROM_IDX_TITLE`, `sub/title.asm`), body shared through
+`basic/title-body.inc` so the lean cart keeps it inline and byte-identical.
+
+**Measured: page-1 free 17 B → 88 B, i.e. +71 B against the 55 B need** (33 B
+spare after I2). Verified by booting the merged machine — both banner lines still
+print and the interpreter answers — not merely by building. Gates green:
+`unit-test` 51/51, `subrom-acceptance`, `input-devices-acceptance` 31/31,
+`string-acceptance`, `error-acceptance`.
+
+Why this one, over the alternatives the scout ranked:
 
 | carve | size | verdict |
 |---|---|---|
-| `psv_loop` | 60 B | **EXCLUDED** — PLAY servicer, runs from `H.TIMI`. §7 already ruled that a `CALSLT` inside the VBLANK handler is not a trade worth making. |
-| `banner_text` | 61 B | data only; see below |
-| `do_kill` (KILL) | 120 B | page-0 clean, but **3 extra entries** — its closure contains `parse_disk_fcb`, which has 11 call sites across `bload`/`cload`/`files`/`save`, so that leaf must stay resident. True yield is well under 120 B and needs a human read. |
+| `psv_loop` | 60 B | **EXCLUDED** — PLAY servicer, runs from `H.TIMI`; §7 already ruled a `CALSLT` in the VBLANK handler out. |
+| `do_kill` (KILL) | 120 B | page-0 clean, but its closure holds `parse_disk_fcb`, which has 11 call sites across four files and must stay resident — true yield far below the headline. |
+| **`show_title` + `banner_text`** | **~74 B** | **taken.** |
 
-**Recommended: `show_title` + `banner_text` as a PAGE-1 tenant.** The scout scores
-`banner_text` alone (61 B of pure ASCII, one reference), but the right unit is the
-routine *with* its data:
+Three properties made it the right pick, and two of them are firsts:
 
-* `show_title`'s only outward edges are `INITXT` and `CHPUT` — **BIOS only**. That
-  makes it page-**1**-tenancy clean (a page-1 tenant sees BIOS; a page-0 tenant
-  would not, so the scout's "page-0 CLEAN" label on the bare data is the wrong
-  frame for the routine).
-* ~13 B of code + 61 B of text = **~74 B moved, ~62 B net** after a stub — which
-  covers the 55 B deficit with a little room.
-* It is the **coldest code in the ROM**: one call, at boot, before the prompt
-  (`interp.asm:61`, after `init_ext_roms`). A `CALSLT` there is unmeasurable.
-* Graceful degradation is free: `subrom_call` returns CF=1 when the sub-ROM is
-  absent, and a missing *cosmetic header* needs no error path at all — unlike
-  every previous tenant, which needed one.
+* **Page 1, not page 0** — its only outward edges are `INITXT`/`CHPUT`, page-0
+  BIOS. A page-1 tenant keeps page 0 mapped; a page-0 one would have the BIOS
+  switched out from under it. (The scout labels the bare `banner_text` "page-0
+  CLEAN" because data has no edges — the right unit is the routine *with* its
+  data, which is a judgement the tool cannot make.)
+* **No marshalling at all** — no arguments, no return value, no RAM state. The
+  simplest tenant in the tree; the resident side is a bare stub.
+* **No absent-sub-ROM error path, deliberately** — a first. `subrom_call` returns
+  CF=1 when the sub-ROM is missing, and printing no header is a fine degradation.
+  Every other tenant guards a statement whose silent failure would be a bug.
 
-Two things to check before committing to it: the stub must live in the **page-0
-low region** (a page-1 tenant cannot be called from page-1 resident code — the
-resident ABI closure must be page-0), which has **19 B free**, and `SUBSLOT_OK`
-must already be set by the time `show_title` runs.
+It is also the coldest code in the ROM: one call, at boot, so the `CALSLT` is
+unmeasurable.
 
-### 9.6 Implementation order (after sign-off)
+**A precondition I had recorded turned out to be wrong**, and the correction is
+worth keeping: a page-1 tenant does *not* need a page-0 stub. `CALSLT`'s glue is
+page-0 BIOS, which stays mapped, and the shipped `cas_open_match` stub already
+calls a page-1 tenant from page-1 resident code. The page-0-closure rule applies
+to page-**0** tenants. The other precondition held: `init_ext_roms`, which sets
+`SUBSLOT_OK`, runs at `interp.asm:60` — the line immediately before `show_title`.
+
+### 9.6 Implementation order (signed off 2026-07-23)
 
 1. ~~`omsx_repl` prologue hook~~ — **✅ DONE (1bce384)**, validated by reproducing
    three known results through it (including a nothing-plugged negative control,
    which is what proves the prologue takes effect rather than being ignored).
 2. ~~Measure the real BASIC-side cost~~ — **✅ DONE: 72 B, 55 B deficit (§9.5).**
-   Next actual step: **scout the carve** (`g6_carve_scout.py`).
-3. The two `tape/` routines + `tape/PROVENANCE.md` rows + `tape/DESIGN.md` scope
+3. ~~Scout and land the carve~~ — **✅ DONE (cdb6130): +71 B, page-1 free now
+   88 B.** The byte budget is in hand; I2 fits with 33 B to spare.
+4. The two `tape/` routines + `tape/PROVENANCE.md` rows + `tape/DESIGN.md` scope
    entry; re-forge the IPS/BPS with the `$00DB`/`$00DE` vector rewrites; verify
    across all four C-BIOS MSX1 main ROMs (`tools/build_patches.py`).
-4. The BASIC-side wrappers; host unit tests.
-5. Phases D and E; then the full standing-gate battery (lean `basic.rom` must
+5. The BASIC-side wrappers; host unit tests.
+6. Phases D and E; then the full standing-gate battery (lean `basic.rom` must
    stay byte-identical).
-6. Provenance, TODO, and this section rewritten as-built.
+7. Provenance, TODO, and this section rewritten as-built.
 
-## 10. Decisions — FOR SIGN-OFF
+## 10. Decisions
 
-### 10a. I2 decisions (new, 2026-07-23)
+### 10a. I2 decisions — ✅ ALL ACCEPTED 2026-07-23
 
 * **D-I-7 — how far to reconstruct `GTPAD`.** The µPD7001 datasheet plus the
   recovered terminal mapping specify the *handshake*; what is **not** pinned is
