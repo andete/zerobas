@@ -140,7 +140,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub
              sub/lineedit.asm basic/lineedit-body.inc \
              sub/casmatch.asm basic/casmatch-body.inc basic/cal-refill-body.inc \
              sub/readdata.asm basic/readdata-body.inc basic/tokskip-body.inc \
-             sub/beep.asm \
+             sub/beep.asm sub/title.asm basic/title-body.inc \
              sub/playparse.asm sub/graphics.asm \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
              basic/tokenise.inc basic/detok.inc \

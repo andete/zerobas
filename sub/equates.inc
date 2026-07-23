@@ -121,6 +121,13 @@ SUBROM_IDX_LINEEDIT     equ     15
 ; from commit 136aee8, heeded here).
 SUBROM_IDX_CASMATCH     equ     16
 
+; show_title + banner_text (basic/title.asm), evicted to PAGE 1 to fund the
+; input-devices I2 slice's measured 55 B page-1 deficit (docs/spec-basic-input-
+; devices.md §9.5). Page 1 because its only edges are INITXT/CHPUT (page-0 BIOS,
+; invisible to a page-0 tenant). No marshalling of any kind. Its main-ROM stub is
+; basic/title.asm `show_title`. 17 is the next-free index (16/CASMATCH was last).
+SUBROM_IDX_TITLE        equ     17
+
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can
 ; confirm a CALSLT to each entry round-tripped through the correct page. This is

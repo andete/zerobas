@@ -2563,6 +2563,20 @@ SUBROM_IDX_CASMATCH  equ 16     ; casmatch_tenant (sub/casmatch.asm): the
                                 ; directly). Only basic/cload.asm `cas_open_match`
                                 ; computes IX = SUBROM_ENTRY_BASE_P1 +
                                 ; 3*SUBROM_IDX_CASMATCH.
+SUBROM_IDX_TITLE     equ 17     ; title_tenant (sub/title.asm): the startup header
+                                ; (show_title + banner_text, basic/title.asm),
+                                ; evicted whole to fund the input-devices I2 slice
+                                ; (docs/spec-basic-input-devices.md §9.5 -- a
+                                ; measured 55 B page-1 deficit). PAGE 1, because
+                                ; its only edges are INITXT/CHPUT, which are page-0
+                                ; BIOS and so invisible to a page-0 tenant. No
+                                ; arguments, no result, no RAM state: nothing to
+                                ; marshal at all. Only basic/title.asm `show_title`
+                                ; computes IX = SUBROM_ENTRY_BASE_P1 +
+                                ; 3*SUBROM_IDX_TITLE, and it needs no absent-sub-ROM
+                                ; error path -- printing no header is a fine
+                                ; degradation, unlike every other tenant's silent
+                                ; failure.
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

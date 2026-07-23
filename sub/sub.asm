@@ -431,6 +431,17 @@ sub_p1_table:
                                                 ;   on return, so it can't ride
                                                 ;   back directly). Main-ROM stub is
                                                 ;   basic/cload.asm `cas_open_match`.
+                jp      title_tenant            ; index 17 (SUBROM_IDX_TITLE): the
+                                                ;   startup header (show_title +
+                                                ;   banner_text). Page-1 because it
+                                                ;   calls INITXT/CHPUT. No args, no
+                                                ;   result, no RAM state -- the
+                                                ;   simplest tenant here. Main-ROM
+                                                ;   stub is basic/title.asm
+                                                ;   `show_title`, which needs no
+                                                ;   absent-sub-ROM error path (no
+                                                ;   header printed is a fine
+                                                ;   degradation).
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -566,6 +577,9 @@ sub_p1_ping:
 ; sub/casmatch.asm): docs/spec-eviction-g5-space.md. No resident-ABI import
 ; (a pure RAM+BIOS leaf, own header has the full closure rationale).
                 include "casmatch.asm"
+; Startup header (index 17 = title_tenant, sub/title.asm): a pure BIOS leaf
+; (INITXT/CHPUT), no resident-ABI import, no marshalling.
+                include "title.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF
