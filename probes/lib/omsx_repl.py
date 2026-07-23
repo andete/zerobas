@@ -169,7 +169,7 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
          boot: float, step: float, cap_gap: float,
          reset: tuple[str, ...], capture="screen",
          holds: list[tuple[int, int] | None] | None = None,
-         hold_secs: float = 12.0) -> str:
+         hold_secs: float = 12.0, prologue: tuple[str, ...] = ()) -> str:
     """Build the whole-batch Tcl timeline. Each scheduled action gets its own
     emulated-time slot spaced by `step`, so the previous chunk is fully consumed
     (CHGET drains KEYBUF into the line editor) before the next write resets it.
@@ -186,7 +186,16 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
     The key goes down AFTER the case's last line (which is `RUN` in stored mode)
     and comes up `hold_secs` emulated seconds later, just before the capture -- so
     the sampling loop inside the program sees it held for its whole span. Cases
-    with a None hold are unaffected and cost no extra time."""
+    with a None hold are unaffected and cost no extra time.
+
+    `prologue` (input-devices arc I2) is raw Tcl run ONCE, immediately, before the
+    timeline is scheduled -- the seam for `plug joyporta paddle` and friends. It
+    exists because a device that is merely PLUGGED already changes what the
+    reference reports (PDL reads 128 for a paddle, PAD(0) reads -1 for an
+    arkanoidpad) with no host input at all, which is the only source of teeth the
+    PDL/PAD gate has: openMSX offers no mouse, so a value cannot be DRIVEN. The
+    connectors exist at script start, so plugging here needs no scheduling. Cheap
+    and machine-agnostic; the interrupt-trap arc will want the same seam."""
     body: list[str] = []
     cap = _cap_expr(capture)
 
@@ -239,7 +248,8 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
     body.append(f"after time {t:.1f} {{ close $__f; exit }}")
     return (
         "set throttle off\n"
-        f"set __f [open {{{out_path}}} w]\n"
+        + "".join(f"{p}\n" for p in prologue)
+        + f"set __f [open {{{out_path}}} w]\n"
         "proc __hex_v {a l} { binary scan [debug read_block VRAM $a $l] H* h;"
         " return $h }\n"
         "proc __hex_m {a l} { binary scan [debug read_block memory $a $l] H* h;"
@@ -296,7 +306,7 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
               boot: float = 8.0, step: float = 2.5, cap_gap: float = 2.5,
               reset: tuple[str, ...] = (), capture="screen",
               holds: list[tuple[int, int] | None] | None = None,
-              hold_secs: float = 12.0,
+              hold_secs: float = 12.0, prologue: tuple[str, ...] = (),
               timeout: float = 240.0, omsx: str | None = None,
               cart: str | None = None, diska: str | None = None) -> list[str | None]:
     """Boot `machine` once and drive `cases` (each `(mode, lines)`), returning one
@@ -322,7 +332,7 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     tcl = out + ".tcl"
     with open(tcl, "w") as f:
         f.write(_tcl(out, cases, boot, step, cap_gap, reset, capture,
-                     holds, hold_secs))
+                     holds, hold_secs, prologue))
     if os.path.exists(out):
         os.unlink(out)
 
@@ -364,7 +374,7 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
               batch: bool = True, reset: tuple[str, ...] = ("CLS",),
               capture="screen",
               holds: list[tuple[int, int] | None] | None = None,
-              hold_secs: float = 12.0,
+              hold_secs: float = 12.0, prologue: tuple[str, ...] = (),
               boot: float = 8.0, step: float = 2.5, cap_gap: float = 2.5,
               timeout: float | None = None, omsx: str | None = None,
               cart: str | None = None, diska: str | None = None) -> list[str | None]:
@@ -389,9 +399,15 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
     `timeout` defaults to a generous cap that scales with the matrix size so a
     long batched timeline (throttle-off but still many emulated seconds) has room
     to finish; the batch self-terminates via `exit`, so this is only a safety net.
+
+    `prologue` is raw Tcl run once before the timeline (see `_tcl`) -- the
+    `plug joyporta <device>` seam. It applies to the WHOLE batch, so a matrix that
+    needs several device configurations runs one `run_cases` call per
+    configuration rather than mixing them in one boot.
     """
     kw = dict(boot=boot, step=step, cap_gap=cap_gap, capture=capture,
-              hold_secs=hold_secs, omsx=omsx, cart=cart, diska=diska)
+              hold_secs=hold_secs, prologue=prologue,
+              omsx=omsx, cart=cart, diska=diska)
     if batch:
         # scale the safety-net timeout with the emulated timeline length
         to = timeout if timeout is not None else max(240.0, 1.5 * len(cases) + 120.0)
