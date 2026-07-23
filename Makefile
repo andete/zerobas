@@ -140,6 +140,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub
              sub/lineedit.asm basic/lineedit-body.inc \
              sub/casmatch.asm basic/casmatch-body.inc basic/cal-refill-body.inc \
              sub/readdata.asm basic/readdata-body.inc basic/tokskip-body.inc \
+             sub/beep.asm \
              sub/playparse.asm sub/graphics.asm \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
              basic/tokenise.inc basic/detok.inc \
@@ -477,6 +478,18 @@ string-acceptance: $(DISK_ROM) repack-machine
 # ONLY=numeric`.
 input-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_input.py $(if $(ONLY),--only $(ONLY),)
+
+# --- Input-devices acceptance gate (input devices, slice I1) ------------------
+# STICK/STRIG differential vs the VG-8020 (docs/spec-basic-input-devices.md §8):
+# PHASE A grammar + error surface + the truncate-vs-round coercion
+# discriminators, PHASE B idle values, PHASE C the LIVE key matrix -- the only
+# phase with teeth, since with nothing plugged an idle read and a stubbed
+# constant 0 are indistinguishable. Phase C drives openMSX's keymatrixdown (the
+# REPL driver's KEYBUF injection bypasses the matrix that STICK/STRIG scan) and
+# runs boot-per-case. Repack-only; HEAVY + oracle-dependent (needs your VG-8020
+# reference ROM); NOT part of the emulator-free `unit-test`.
+input-devices-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_input_devices.py
 
 # --- Error-handling acceptance gate (error-handling arc, S1) -------------------
 # Two differential families against the VG-8020 reference (docs/

@@ -788,6 +788,26 @@ ev_f_paren:
 ev_f_ff:
                 inc     ix                  ; skip the $FF prefix
                 ld      a,(ix+0)            ; the function selector byte
+    IF ROM_BASE < $4000
+                ; REPACK ONLY. Every $FF function here except CVI takes one
+                ; parenthesised NUMERIC argument, so membership is a set test, not a
+                ; decision tree: scan the selector table with cpir (input-devices
+                ; slice I1 golf). The old per-token `cp`/`jr z` chain -- which the
+                ; lean build below still uses byte-for-byte -- costs 4 B per
+                ; function; a table row costs 1, and that difference is what funds
+                ; STICK/STRIG joining the group. cpir preserves A, and neither HL
+                ; nor BC is live here (ev_ff_arg's first act is `ld c,a`).
+                cp      CVI_TOKEN           ; $A8 -> CVI (STRING arg: not in the set)
+                jp      z,ev_ff_cvi
+                ld      hl,ev_ff_argtab
+                ld      bc,ev_ff_argtab_len
+                cpir
+                jr      z,ev_ff_arg
+                jp      ev_ff_mathconv      ; ABS/SGN/INT/FIX/CINT/CSNG/CDBL, else
+                                            ; LEN/ASC/VAL (string->number), else ev_f_err
+    ELSE
+                ; LEAN 16 KB build: the original chain, unchanged. basic.rom is
+                ; byte-frozen, so the golf above must not reach it.
                 cp      PEEK_TOKEN          ; $97 -> PEEK
                 jr      z,ev_ff_arg
                 cp      VPEEK_TOKEN         ; $98 -> VPEEK
@@ -802,11 +822,23 @@ ev_f_ff:
                 jr      z,ev_ff_arg
                 cp      CVI_TOKEN           ; $A8 -> CVI (takes a STRING arg)
                 jp      z,ev_ff_cvi
-    IF ROM_BASE < $4000
-                jp      ev_ff_mathconv      ; repack: ABS/SGN/INT/FIX/CINT/CSNG/CDBL, else
-                                            ; LEN/ASC/VAL (string->number), else ev_f_err
-    ELSE
                 jp      ev_f_err            ; unknown $FF function
+    ENDIF
+; The single-numeric-argument $FF selectors, for the cpir set test above. Order is
+; free. Repack-only, like the scan that reads it.
+    IF ROM_BASE < $4000
+ev_ff_argtab:
+                db      PEEK_TOKEN          ; $97
+                db      VPEEK_TOKEN         ; $98
+                db      INP_TOKEN           ; $90
+                db      EOF_TOKEN           ; $AB
+                db      LOF_TOKEN           ; $AD
+                db      DSKF_TOKEN          ; $A6
+    IF I1_RESIDENT
+                db      STICK_TOKEN         ; $A2  (input devices, slice I1)
+                db      STRIG_TOKEN         ; $A3
+    ENDIF
+ev_ff_argtab_len equ    $ - ev_ff_argtab
     ENDIF
 ev_ff_arg:
                 ld      c,a                 ; C = selector (survives the parse)
@@ -814,7 +846,19 @@ ev_ff_arg:
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      '('
+    IF ROM_BASE < $4000
+                ; Residual found by the I1 differential (spec §3): a MISSING
+                ; argument list -- `PRINT PEEK`, `PRINT STICK`, `PEEK 100` --
+                ; silently evaluated to 0 here, where the reference raises a
+                ; Syntax error (ERR 2, measured on the VG-8020 for PEEK / VPEEK /
+                ; INP / EOF / LOF alike). Same BUG C class, and same cure, as the
+                ; CVI missing-'(' fix below: defer the syntax error via ev_f_empty
+                ; so the statement's check_expr_errors aborts. Repack-only -- the
+                ; lean 16 KB basic.rom is byte-frozen and keeps the old ev_f_err.
+                jp      nz,ev_f_empty
+    ELSE
                 jp      nz,ev_f_err
+    ENDIF
                 inc     ix
                 push    bc                  ; guard the selector across the eval
                 call    ev_xor              ; DE = argument (full expression)
@@ -822,7 +866,11 @@ ev_ff_arg:
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      ')'
+    IF ROM_BASE < $4000
+                jp      nz,ev_f_empty       ; unclosed / extra arg -> ERR 2 (as above)
+    ELSE
                 jp      nz,ev_f_err
+    ENDIF
                 inc     ix
     IF ROM_BASE < $4000
                 ; D-F2-2 A2: CHECKED int coercion for PEEK/INP (address domain) and
@@ -841,8 +889,30 @@ ev_ff_arg:
                 cp      INP_TOKEN
                 jr      z,ev_ff_ckaddr
                 cp      PEEK_TOKEN
+                jr      z,ev_ff_ckaddr
+    IF I1_RESIDENT
+                ; STICK/STRIG (spec §4): the device index is a small non-negative
+                ; byte, so get_byte_arg is exactly the right checked coercion --
+                ; truncate toward zero, ERR 6 outside int16, ERR 5 in-int16 but
+                ; negative or >255 -- and only the per-function upper bound is left
+                ; to test. Measured domains: STICK 0..2, STRIG 0..4.
+                cp      STICK_TOKEN
+                jr      z,ev_ff_ckstick
+                cp      STRIG_TOKEN
                 jr      nz,ev_ff_ckdone
-ev_ff_ckaddr:                               ; PEEK/INP: address domain, Overflow beyond
+                call    get_byte_arg        ; A = E = index (D = 0)
+                cp      5                   ; STRIG: 0..4
+                jr      ev_ff_ckdom
+ev_ff_ckstick:
+                call    get_byte_arg
+                cp      3                   ; STICK: 0..2
+ev_ff_ckdom:
+                jp      nc,gb_illegal       ; -> ERR 5 illegal function call
+                jr      ev_ff_ckdone
+    ELSE
+                jr      ev_ff_ckdone
+    ENDIF
+ev_ff_ckaddr:                             ; PEEK/INP: address domain, Overflow beyond
                 call    fac_to_int_addr     ; DE=checked addr; FPERR=1 outside 0..65535 wrap
                 call    check_fperr_only    ; -> ERR 6 (aborts; else returns clean)
                 jr      ev_ff_ckdone
@@ -864,6 +934,12 @@ ev_ff_ckdone:
                 jr      z,ev_ff_lof
                 cp      DSKF_TOKEN
                 jr      z,ev_ff_dskf
+    IF I1_RESIDENT
+                cp      STICK_TOKEN
+                jr      z,ev_ff_stick
+                cp      STRIG_TOKEN
+                jr      z,ev_ff_strig
+    ENDIF
                 ; PEEK: read one byte of RAM at the address in DE.
                 ex      de,hl               ; HL = address
                 ld      e,(hl)              ; read one byte
@@ -875,6 +951,34 @@ ev_ff_vpeek:                                ; VPEEK: read one byte of VRAM (DE =
                 ld      e,a
                 ld      d,0                 ; VPEEK yields 0..255
                 ret
+    IF I1_RESIDENT
+; --- STICK(n) / STRIG(n): input devices, slice I1 --------------------------
+; docs/spec-basic-input-devices.md §5/§6. Thin wrappers over the published BIOS
+; entries, which C-BIOS implements for real (keyboard matrix row 8 for device 0,
+; PSG joystick ports for 1/2) and whose behaviour matches the VG-8020 measurement
+; exactly. Entered with E = the already-range-checked device index.
+;
+; Both entries are documented "Registers: All", so the token cursor IX is guarded
+; across the call. (On our C-BIOS target neither routine touches IX -- they are
+; plain page-0 code, no CALSLT -- but the guard keeps this BIOS-AGNOSTIC, which is
+; the standing rule for anything reached through a published BIOS contract.)
+ev_ff_stick:                                ; STICK(n): 0 = centred, else 1..8 clockwise
+                ld      a,e                 ; A = device (0 cursor keys, 1/2 ports)
+                push    ix
+                call    GTSTCK
+                pop     ix
+                ld      e,a
+                ld      d,0                 ; direction is 0..8, never negative
+                ret
+ev_ff_strig:                                ; STRIG(n): 0 not pressed, -1 pressed
+                ld      a,e                 ; A = trigger (0 space, 1..4 buttons)
+                push    ix
+                call    GTTRIG
+                pop     ix
+                ld      e,a                 ; BIOS returns $00 / $FF, and copying it
+                ld      d,a                 ; into BOTH halves yields 0 / -1 ($FFFF)
+                ret                         ; -- the BASIC truth convention, free
+    ENDIF
 ev_ff_inp:                                  ; INP: read one Z80 port (DE = port)
                 ld      b,d
                 ld      c,e                 ; BC = port (in (a),(c) reads from BC)

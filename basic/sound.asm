@@ -44,10 +44,9 @@
 PSG_ADDR        equ     $A0                 ; PSG register-latch port (write reg number)
 PSG_DATW        equ     $A1                 ; PSG data-write port
 PSG_DATR        equ     $A2                 ; PSG data-read port
-; BEEP delay length (busy-wait iterations). Loop body ~26 T; ~33 ms (2 VBLANK
-; frames, the VG-8020 beep duration) at 3.579545 MHz is ~4540 iters. Tuned by the
-; psgtrace gate (duration +-1 frame tolerant); see beep_delay / spec §2.
-BEEP_DELAY_ITERS equ    $1200               ; 4608 -> ~33 ms nominal
+; (BEEP_DELAY_ITERS and beep_delay moved to sub/beep.asm with the BEEP body --
+; the I1 funding carve, docs/spec-basic-input-devices.md §7. Defined THERE only,
+; so the calibrated constant cannot drift between two copies.)
 
 ex_sound:
                 inc     hl                  ; past the SOUND token
@@ -119,64 +118,20 @@ snd_illegal:
 ; HL (the statement cursor) is preserved throughout (beep_delay touches only AF/BC),
 ; so `jp exec_stmt` chains the next `:`-separated statement.
 ex_beep:
+                ; The body is a PAGE-0 sub-ROM tenant (sub/beep.asm,
+                ; docs/spec-basic-input-devices.md §7): the 71 B it occupied here
+                ; is what funds input-devices slice I1. The carve is clean because
+                ; the body is direct PSG port I/O plus a busy-wait -- no BIOS, no
+                ; page-0 low region -- and BEEP is cold enough that a CALSLT round
+                ; trip is far below the ~33 ms tone it produces. Nothing marshals:
+                ; BEEP takes no argument, returns no result, and cannot fail.
+                ; HL (the statement cursor) is guarded across the CALSLT.
                 inc     hl                  ; past the BEEP token
-                di                          ; --- program the beep (atomic vs play_service) ---
-                ld      a,7
-                out     (PSG_ADDR),a        ; latch R7
-                in      a,(PSG_DATR)        ; A = current R7 -- ONLY the two I/O-direction bits
-                                            ; (6-7) read back reliably; the low 6 mixer bits
-                                            ; read as 0 (same as SOUND's R7 handling), so the
-                                            ; mixer is RECONSTRUCTED below, not saved/restored.
-                and     $C0                 ; keep only the two I/O-direction bits
-                ld      e,a                 ; E = preserved I/O bits (survives beep_delay,
-                                            ; which clobbers BC -- used to reconstruct the
-                                            ; restore mixer in the tail)
-                or      $3E                 ; + tone A on, tones B/C off, all noise off
-                ld      b,a                 ; B = beep mixer byte = ioBits | $3E  ($be)
-                xor     a
-                out     (PSG_ADDR),a        ; latch R0 (tone A fine)
-                ld      a,$55
-                out     (PSG_DATW),a        ; R0 = $55  (period low)
-                ld      a,1
-                out     (PSG_ADDR),a        ; latch R1 (tone A coarse)
-                xor     a
-                out     (PSG_DATW),a        ; R1 = $00  (period high) -> period $0055
-                ld      a,7
-                out     (PSG_ADDR),a        ; latch R7 (mixer)
-                ld      a,b
-                out     (PSG_DATW),a        ; R7 = (curR7 & $C0) | $3E
-                ld      a,8
-                out     (PSG_ADDR),a        ; latch R8 (channel A amplitude)
-                ld      a,7
-                out     (PSG_DATW),a        ; R8 = 7  (fixed volume, no envelope)
-                ei                          ; delay with interrupts live (reference-faithful)
-                call    beep_delay          ; ~2 VBLANK frames
-                di                          ; --- silence + restore (atomic vs play_service) ---
-                ld      a,8
-                out     (PSG_ADDR),a        ; latch R8
-                xor     a
-                out     (PSG_DATW),a        ; R8 = 0  (silence channel A)
-                ld      a,7
-                out     (PSG_ADDR),a        ; latch R7
-                ld      a,e                 ; E = preserved I/O bits (beep_delay kept it)
-                or      $38                 ; + all tones on, all noise off (the default mixer)
-                out     (PSG_DATW),a        ; R7 = ioBits | $38  ($b8) -- BEEP wipes the mixer
-                                            ; back to default; it does NOT restore a prior SOUND 7
-                                            ; value (VG-8020: `sound 7,190:beep` leaves R7=$b8).
-                ei
+                push    hl
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_BEEP
+                call    subrom_call
+                pop     hl
+                jp      c,subrom_absent_error
                 jp      exec_stmt           ; chain the next statement (HL preserved)
 
-; beep_delay -- a plain counted busy-wait, ~2 VBLANK frames (~33 ms) at 3.58 MHz.
-; A software delay, exactly as the reference BEEP times its tone (not a JIFFY read --
-; self-contained, no dependence on the timer hook). BC-only; AF clobbered; HL kept.
-; BC calibrated so the psgtrace gate sees the beep span >=1 sampled frame (duration
-; is not black-box-pinnable finer than ~1 frame, so the gate is +-1 frame tolerant).
-beep_delay:
-                ld      bc,BEEP_DELAY_ITERS
-bd_loop:
-                dec     bc
-                ld      a,b
-                or      c
-                jr      nz,bd_loop
-                ret
     ENDIF

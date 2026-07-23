@@ -371,5 +371,15 @@ kwtable:
     IF G8_RESIDENT
                 db      3,"VDP",1,VDP_TOKEN                      ; $C8
     ENDIF
+                ; --- input devices, slice I1 (repack build only) --------------
+                ; docs/spec-basic-input-devices.md §3. Two-byte $FF-prefixed
+                ; FUNCTION tokens, same row shape as EOF/LOF/DSKF above. Neither
+                ; shares a prefix with an existing keyword (STICK/STRIG share only
+                ; "ST" with each other and with STEP/STOP/STR$, and match_kw
+                ; compares the FULL keyword, so table order is free).
+    IF I1_RESIDENT
+                db      5,"STICK",2,PEEK_PREFIX,STICK_TOKEN      ; $FF $A2
+                db      5,"STRIG",2,PEEK_PREFIX,STRIG_TOKEN      ; $FF $A3
+    ENDIF
     ENDIF
                 db      0

@@ -204,6 +204,18 @@ STR_KEYWORDS_1B = [
     # -> C0 3A C0 00). Lean keeps "BEEP" verbatim ASCII, so proven repack-only.
     ('beep',             0xC0),   # BEEP (no args)
     ('beep:beep',        0xC0),   # BEEP chained -> C0 3A C0
+    # Input devices, slice I1: STICK/STRIG are TWO-byte $FF-prefixed FUNCTION
+    # tokens (docs/spec-basic-input-devices.md §3; VG-8020 capture
+    # `10 A=STICK(0)` -> ... EF FF A2 28 11 29 00). The corpus's marker is the
+    # first token byte, which is the $FF prefix for both -- the selector byte is
+    # asserted by the full byte-for-byte comparison against the reference. Also
+    # covers the one real collision risk the table has: STICK/STRIG share their
+    # first two letters with STEP/STOP/STR$, and match_kw is full-keyword.
+    ('a=stick(0)',       0x41),   # STICK -> FF A2
+    ('a=strig(0)',       0x41),   # STRIG -> FF A3
+    ('a=stick(0)+strig(1)', 0x41),
+    ('for i=1 to 2 step 1:next', 0x82),   # STEP still crunches (no prefix theft)
+    ('a$=str$(1):stop',  0x41),   # STR$ + STOP likewise
 ]
 
 

@@ -149,6 +149,13 @@ SUBROM_IDX_GRAPHICS     equ     8
 ; parsing only -- no eval, no float pack, no BIOS.
 SUBROM_IDX_READVAL      equ     10
 
+; --- I1 funding carve (page-0 tenant; docs/spec-basic-input-devices.md §7) ---
+; index 11 = beep_tenant (sub/beep.asm): the BEEP body (direct PSG blip + the
+; busy-wait), carved out of the resident to fund the STICK/STRIG slice. Page-0
+; CLEAN: port I/O and a counted delay only -- no BIOS, no low region. Its `ei`
+; across the delay relies on the sub-ROM's own page-0 $0038 trampoline.
+SUBROM_IDX_BEEP         equ     11
+
 ; GFX_UNGUARDED: the G1 "teeth check" toggle (spec §4). Default 0 = the DI guard
 ; around the 2-byte VDP address latch is present (shipped). Building the sub-ROM
 ; with `pasmo --equ GFX_UNGUARDED=1` strips the guard, so the floor gate can

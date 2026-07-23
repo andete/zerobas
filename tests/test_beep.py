@@ -1,10 +1,15 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-"""Unit test: BASIC-ROM `ex_beep` (BEEP statement), no emulator.
+"""Unit test: the BEEP body (`beep_tenant`), no emulator.
 
-BEEP is a repack-only feature (ROM_BASE < $4000), so this builds
-basic/main-reloc.asm (ROM_BASE=$2812) and loads it at that base — the same as
-test_sound.py / the string-engine tests.
+BEEP's body moved OUT of the main ROM into the page-0 sub-ROM tenant
+sub/beep.asm when it was carved to fund input-devices slice I1
+(docs/spec-basic-input-devices.md §7). The resident `ex_beep` is now just a
+CALSLT stub, which this flat host harness cannot follow -- so the test assembles
+the sub image and calls `beep_tenant` directly, the same way test_play_parse.py
+tests the MML parser tenant. What is asserted is unchanged: the exact PSG write
+sequence. (The resident stub's own contract -- cursor past the token, chain the
+next statement -- is covered by the crunch corpus and the VG-8020 gate.)
 
 This is the fast regression layer under the load-bearing VG-8020 PSG-trace
 differential (probes/basic/basic_probe_beep.py). It locks the direct-PSG write
@@ -32,15 +37,13 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine  # noqa: E402
 
-ROM = "/tmp/zb_beep.rom"
-SYM = "/tmp/zb_beep.sym"
-RELOC_BASE = 0x2812
-BUF = 0xC000   # scratch token buffer (free RAM)
+ROM = "/tmp/zb_beep_sub.rom"
+SYM = "/tmp/zb_beep_sub.sym"
 
 
 def build():
-    src = os.path.join(ROOT, "basic", "main-reloc.asm")
-    subprocess.run(["pasmo", "--bin", src, ROM, SYM], check=True, capture_output=True)
+    subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", ROM, SYM],
+                   cwd=ROOT, check=True, capture_output=True)
 
 
 def run():
@@ -57,13 +60,10 @@ def run():
     def beep_outs(cur_r7=0xB8):
         """Run ex_beep for `BEEP`; return the PSG-port ($A0/$A1) OUT log. io_in
         returns cur_r7 for the register-7 read-back."""
-        m = Machine(ROM, SYM, rom_base=RELOC_BASE)
-        BEEP_TOKEN = m.sym["BEEP_TOKEN"] if "BEEP_TOKEN" in m.sym else 0xC0
-        m.poke(BUF, bytes([BEEP_TOKEN, 0x00]))     # no args; 0x00 line terminator
+        m = Machine(ROM, SYM, rom_base=0x0000)      # the sub image, page-0 tenant
         m.cpu.io_in = lambda port: cur_r7          # only IN in the path is $A2 (R7 read)
         log = m.record_out()
-        m.cpu.hl = BUF
-        m.call("ex_beep")
+        m.call("beep_tenant")                      # no arguments to marshal
         return [(p & 0xFF, v & 0xFF) for p, v in log if (p & 0xFF) in (0xA0, 0xA1)]
 
     def expect(cur_r7):
@@ -90,7 +90,7 @@ def run():
     report("BEEP curR7=c0 -> fe then f8",  beep_outs(0xC0), expect(0xC0))
 
     print("\n" + (f"{fails} FAILED" if fails else
-                  "ALL PASS — ex_beep writes the PSG (tone 85, vol 7, mixer reconstruct) correctly"))
+                  "ALL PASS — beep_tenant writes the PSG (tone 85, vol 7, mixer reconstruct) correctly"))
     return 1 if fails else 0
 
 

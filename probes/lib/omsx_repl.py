@@ -167,10 +167,26 @@ def _cap_expr(capture) -> str:
 
 def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
          boot: float, step: float, cap_gap: float,
-         reset: tuple[str, ...], capture="screen") -> str:
+         reset: tuple[str, ...], capture="screen",
+         holds: list[tuple[int, int] | None] | None = None,
+         hold_secs: float = 12.0) -> str:
     """Build the whole-batch Tcl timeline. Each scheduled action gets its own
     emulated-time slot spaced by `step`, so the previous chunk is fully consumed
-    (CHGET drains KEYBUF into the line editor) before the next write resets it."""
+    (CHGET drains KEYBUF into the line editor) before the next write resets it.
+
+    `holds` (input-devices arc I1, docs/spec-basic-input-devices.md §8 phase C)
+    optionally holds a KEY-MATRIX bit down while a case RUNs: one `(row, mask)`
+    or None per case, aligned with `cases`. This exists because KEYBUF injection
+    -- what every other phase here uses -- writes the decoded characters straight
+    into the ROM's buffer and so BYPASSES the matrix entirely; a routine that
+    SCANS the matrix (STICK/STRIG via GTSTCK/GTTRIG, and later ON KEY / ON STRIG)
+    therefore reads idle no matter what the driver "types". openMSX's
+    `keymatrixdown`/`keymatrixup` drive the matrix directly and do reach them.
+
+    The key goes down AFTER the case's last line (which is `RUN` in stored mode)
+    and comes up `hold_secs` emulated seconds later, just before the capture -- so
+    the sampling loop inside the program sees it held for its whole span. Cases
+    with a None hold are unaffected and cost no extra time."""
     body: list[str] = []
     cap = _cap_expr(capture)
 
@@ -204,6 +220,19 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
             seq = list(lines)
         for ln in seq:
             t = emit(t, ln)
+        hold = holds[idx] if holds else None
+        if hold:
+            # Press at the RUN slot itself (t - step), not after it: the program
+            # starts executing as soon as the line is consumed, so a press one
+            # full `step` later can land after a short sampling loop has already
+            # finished -- which reads as an idle-vs-held divergence between two
+            # machines of different speed rather than as the timing bug it is.
+            row, mask = hold
+            body.append(f'after time {max(boot, t - step) + 0.3:.1f} '
+                        f'{{ keymatrixdown {row} {mask} }}')
+            t += hold_secs
+            body.append(f'after time {t:.1f} {{ keymatrixup {row} {mask} }}')
+            t += 1.0
         body.append(f'after time {t:.1f} {{ puts $__f "case.{idx}='
                     f'{cap}"; flush $__f }}')
         t += cap_gap
@@ -266,6 +295,8 @@ def run_case(machine: str, mode: str, lines: list[str], **kw) -> str | None:
 def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
               boot: float = 8.0, step: float = 2.5, cap_gap: float = 2.5,
               reset: tuple[str, ...] = (), capture="screen",
+              holds: list[tuple[int, int] | None] | None = None,
+              hold_secs: float = 12.0,
               timeout: float = 240.0, omsx: str | None = None,
               cart: str | None = None, diska: str | None = None) -> list[str | None]:
     """Boot `machine` once and drive `cases` (each `(mode, lines)`), returning one
@@ -290,7 +321,8 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     out = tempfile.NamedTemporaryFile(suffix=".txt", prefix="repl_", delete=False).name
     tcl = out + ".tcl"
     with open(tcl, "w") as f:
-        f.write(_tcl(out, cases, boot, step, cap_gap, reset, capture))
+        f.write(_tcl(out, cases, boot, step, cap_gap, reset, capture,
+                     holds, hold_secs))
     if os.path.exists(out):
         os.unlink(out)
 
@@ -331,6 +363,8 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
 def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
               batch: bool = True, reset: tuple[str, ...] = ("CLS",),
               capture="screen",
+              holds: list[tuple[int, int] | None] | None = None,
+              hold_secs: float = 12.0,
               boot: float = 8.0, step: float = 2.5, cap_gap: float = 2.5,
               timeout: float | None = None, omsx: str | None = None,
               cart: str | None = None, diska: str | None = None) -> list[str | None]:
@@ -357,13 +391,17 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], *,
     to finish; the batch self-terminates via `exit`, so this is only a safety net.
     """
     kw = dict(boot=boot, step=step, cap_gap=cap_gap, capture=capture,
-              omsx=omsx, cart=cart, diska=diska)
+              hold_secs=hold_secs, omsx=omsx, cart=cart, diska=diska)
     if batch:
         # scale the safety-net timeout with the emulated timeline length
         to = timeout if timeout is not None else max(240.0, 1.5 * len(cases) + 120.0)
-        return run_batch(machine, cases, reset=reset, timeout=to, **kw)
+        if holds:                       # a held case adds hold_secs+1 to the timeline
+            to += (hold_secs + 1.0) * sum(1 for h in holds if h)
+        return run_batch(machine, cases, reset=reset, holds=holds, timeout=to, **kw)
     to = timeout if timeout is not None else 240.0
-    return [run_batch(machine, [c], reset=(), timeout=to, **kw)[0] for c in cases]
+    return [run_batch(machine, [c], reset=(), timeout=to,
+                      holds=[holds[i]] if holds else None, **kw)[0]
+            for i, c in enumerate(cases)]
 
 
 def run_differential(ref_machine: str, zb_machine: str,

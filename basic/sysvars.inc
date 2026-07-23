@@ -29,6 +29,16 @@ CSRX            equ     $F3DD   ; cursor column (1-based); C-BIOS sysvars / PRIN
 ; clear when no key pressed, identical to the reference VG-8020).
 BREAKX          equ     $00B7   ; check Ctrl-STOP via keyboard matrix; CF set = pressed
 
+; --- input-device BIOS entry points (STICK / STRIG) ------------------------
+; docs/spec-basic-input-devices.md §6. Published BIOS jump-table entries (MSX
+; Assembly Page BIOS call list / MSX Technical Data Book). Both are REAL in
+; C-BIOS -- keyboard row-8 scan + PSG joystick-port read -- and their behaviour
+; matches the VG-8020 measurement in the spec's §5 (scratchpad/i1_input_notes.md
+; round 4), so STICK/STRIG are thin wrappers over them. Called from ordinary
+; resident context (page 0 = BIOS), like CHSNS/CHGET for INKEY$.
+GTSTCK          equ     $00D5   ; A = device (0 cursors, 1/2 joystick port) -> A = 0..8
+GTTRIG          equ     $00D8   ; A = trigger (0 space, 1..4 buttons) -> A = $00 or $FF
+
 ; --- VDP VRAM access BIOS entry points (VPOKE / VPEEK) ---------------------
 ; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook, VDP I/O.
 WRTVRM          equ     $004D   ; write A to VRAM address HL (VPOKE)
@@ -410,6 +420,21 @@ G8_RESIDENT     equ     1
     ELSE
 G8_RESIDENT     equ     0
     ENDIF
+; Input devices, slice I1 (docs/spec-basic-input-devices.md §3). STICK/STRIG are
+; $FF-prefixed FUNCTION tokens (selector byte after PEEK_PREFIX), crunch-pinned on
+; the VG-8020 (scratchpad/i1_input_notes.md round 1) -- the same shape as PEEK, so
+; they dispatch through expr.asm's ev_f_ff and need no statement token. PDL ($A4)
+; and PAD ($A5) are slice I2 and are NOT defined yet: they wait on the zerobas-tape
+; GTPAD/GTPDL BIOS completions (spec §6.2, decision D-I-6).
+; Gated like G6/G7/G8 so the slice can be dropped if the page-1 tail runs out; the
+; lean 16 KB cart has no input devices at all.
+    IF ROM_BASE < $4000
+I1_RESIDENT     equ     1
+    ELSE
+I1_RESIDENT     equ     0
+    ENDIF
+STICK_TOKEN     equ     $A2     ; STICK(n) -> 0..8 direction (0 = centred)
+STRIG_TOKEN     equ     $A3     ; STRIG(n) -> 0 / -1 trigger state
 VDP_TOKEN       equ     $C8     ; VDP(n)      (single-byte function token)
 SPRITE_TOKEN    equ     $C7     ; SPRITE (statement + string function + PUT SPRITE)
 DRAW_TOKEN      equ     $BE     ; DRAW <string> (statement; graphics G6) -- crunch of
@@ -2514,6 +2539,12 @@ SUBROM_IDX_READVAL   equ 10     ; readdata_tenant (sub/readdata.asm): the READ/D
                                 ; (index 10 in the page-0 table -- the page-1 table's
                                 ; own index 10 is FORMAT; the two spaces are separate).
                                 ; Result rides back in RDV_ST/RDV_VAL.
+SUBROM_IDX_BEEP      equ 11     ; beep_tenant (sub/beep.asm): the BEEP body (direct
+                                ; PSG blip + busy-wait), carved out of basic/sound.asm
+                                ; to fund input-devices slice I1 (docs/spec-basic-
+                                ; input-devices.md §7). PAGE-0 table index 11 -- IX =
+                                ; SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_BEEP. No args,
+                                ; no result, cannot fail, so nothing marshals.
 SUBROM_IDX_DEFTYPE   equ 9      ; deftype_tenant (sub/deftype.asm): DEFINT/DEFSNG/
                                 ; DEFDBL/DEFSTR, carved out of basic/usr.asm to fund
                                 ; G6 DRAW's resident half (docs/spec-eviction-g6-

@@ -111,17 +111,11 @@ sub_p0_table:
                                                 ;   out to fund G7 sprites. Result rides back
                                                 ;   in RDV_ST/RDV_VAL (CF cannot).
                                                 ;   docs/spec-eviction-g7-space.md.
-
-; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
-; Proves a CALSLT to $0010 mapped slot 3-2 into PAGE 0 and that page-3 RAM is
-; reachable from there: stamp SUB_PING with the page-0 tag and return. The
-; distinct tag ($C0 vs the page-1 $C1) is what proves page-correct mapping — the
-; two pings live in different pages of the same subslot, so only a page-selective
-; CALSLT reaches each.
-sub_p0_ping:
-                ld      a,SUB_PING_P0
-                ld      (SUB_PING),a
-                ret
+                jp      beep_tenant             ; index 11 (SUBROM_IDX_BEEP): the BEEP
+                                                ;   body (sub/beep.asm) -- carved out to
+                                                ;   fund input-devices slice I1. No args,
+                                                ;   no result, cannot fail.
+                                                ;   docs/spec-basic-input-devices.md §7.
 
 ; --- $0038 interrupt trampoline entry (subrom trampoline slice) ------------
 ; The maskable-interrupt vector for the page-0 island. While a page-0 tenant runs
@@ -136,6 +130,23 @@ sub_p0_ping:
     ENDIF
                 ds      $0038 - $, $FF          ; pad the $001x tenants gap up to the vector
                 jp      SUB_INT_RAM             ; $0038: -> the RAM trampoline
+
+; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
+; Proves a CALSLT to $0010 mapped slot 3-2 into PAGE 0 and that page-3 RAM is
+; reachable from there: stamp SUB_PING with the page-0 tag and return. The
+; distinct tag ($C0 vs the page-1 $C1) is what proves page-correct mapping — the
+; two pings live in different pages of the same subslot, so only a page-selective
+; CALSLT reaches each.
+;
+; PLACED AFTER the $0038 vector since the I1 funding carve (beep_tenant, index 11)
+; filled the $0010..$0037 gap: 12 entry rows = 36 B leave only 4 B before the
+; vector, and this body needs 6. Its address is immaterial -- it is reached only
+; through its own `jp` row in the table above.
+sub_p0_ping:
+                ld      a,SUB_PING_P0
+                ld      (SUB_PING),a
+                ret
+
 
 ; --- Interrupt self-test tenant (index 3; the subrom-inttest gate) ---------
 ; A standing self-check that this page-0 island is interrupt-live. Entered under DI
@@ -220,6 +231,10 @@ sis_spin:
 ; verbatim with the lean cart (basic/readdata-body.inc) and brings page 0 its own
 ; tok_skip copy (basic/tokskip-body.inc).
                 include "readdata.asm"
+; --- BEEP body (I1 funding carve, docs/spec-basic-input-devices.md §7) -------
+; Direct PSG blip + busy-wait; no shared .inc, since BEEP is repack-only (the lean
+; 16 KB cart has no sound at all) and so has no resident copy to stay in step with.
+                include "beep.asm"
 
 ; --- sub-local is_letter / is_ident_cont (byte-identical own-design clones) --
 ; Resident copies stay in the main ROM (basic/interp.asm is_letter, basic/vars.asm

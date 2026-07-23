@@ -412,6 +412,23 @@ class Z80:
             if op in (0xB0, 0xB8) and self.bc:
                 self.pc = (self.pc - 2) & 0xFFFF       # repeat
             return
+        if op in (0xB1, 0xB9, 0xA1, 0xA9):     # CPIR/CPDR/CPI/CPD
+            # A is COMPARED, never written; only the flags and HL/BC move. CPIR
+            # repeats while BC != 0 AND the compare missed, so it exits with Z set
+            # on a hit and Z clear on exhaustion -- which is what makes it a set
+            # test (basic/expr.asm ev_f_ff scans its selector table with it).
+            # Carry is preserved by the real instruction; S/Z come from the
+            # comparison and P/V from BC-1 != 0.
+            step = 1 if op in (0xB1, 0xA1) else -1
+            v = self.rb(self.hl)
+            self.hl = (self.hl + step) & 0xFFFF
+            self.bc = (self.bc - 1) & 0xFFFF
+            r = (self.a - v) & 0xFF
+            self.f = (self.f & C) | N | self._szyx(r) | (PV if self.bc else 0)
+            self.f = (self.f & ~Z) | (Z if r == 0 else 0)
+            if op in (0xB1, 0xB9) and self.bc and r != 0:
+                self.pc = (self.pc - 2) & 0xFFFF       # repeat
+            return
         if op in (0x46, 0x56, 0x5E, 0x4E, 0x66, 0x6E, 0x76, 0x7E):  # IM n
             return
         if op in (0x47, 0x4F, 0x57, 0x5F):     # LD I/R,A and back (no I/R modelled)
