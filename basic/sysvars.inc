@@ -763,6 +763,52 @@ SAVTXT          equ     $E1CF   ; 2 B: the CURRENT statement's text pointer,
                                 ; call depth, not at the statement head). No
                                 ; cold-init needed (written before any raise_
                                 ; error can read it via ERRRESUME capture).
+; Interrupt-traps arc (docs/spec-basic-interrupt-traps.md §3): the own-design
+; event-trap table ZTRAP + its bookkeeping, homed in the freed VARTAB window
+; directly after the error-trap state (SAVTXT ends at $E1D1). NOT the reference
+; TRPTBL address or bit layout — behaviour-faithful, layout own-design (quarantined
+; in PROVENANCE.md alongside CONTLINE). MUST be zeroed at cold boot (garbage RAM =
+; phantom armed traps) — trap_init does this; RUN re-arms via the same reset.
+; Repack-only (the whole arc is IF ROM_BASE < $4000).
+ZTRAP           equ     $E1D1   ; 18 entries * 3 B = 54 B ($E1D1..$E207). Each
+                                ; entry = [state:1][handler_line_link:2].
+                                ; state bits: 1-0 = 00 OFF / 01 ON / 10 STOP(user)
+                                ; / 11 SERVICING(auto-suspend in handler);
+                                ; bit 7 = PENDING (event latched, awaiting dispatch).
+                                ; handler_line_link = the find_line_bc/GOTOTGT-shaped
+                                ; LINK address (0 = no handler armed). Entry order:
+                                ;   0      INTERVAL   1      STOP       2      SPRITE
+                                ;   3..7   STRIG 0..4  8..17  KEY 1..10
+ZTRAP_ENTSZ     equ     3       ; bytes per entry
+ZTI_INTERVAL    equ     0       ; entry index: INTERVAL
+ZTI_STOP        equ     1       ; entry index: STOP
+ZTI_SPRITE      equ     2       ; entry index: SPRITE
+ZTI_STRIG0      equ     3       ; entry index: STRIG 0 (STRIG n -> 3+n, n=0..4)
+ZTI_KEY1        equ     8       ; entry index: KEY 1 (KEY n -> 7+n, n=1..10)
+ZTRAP_NENT      equ     18      ; total entries
+; trap state field bit values
+ZTS_OFF         equ     0       ; disabled (OFF clears PENDING too)
+ZTS_ON          equ     1       ; enabled — the only state the dispatcher fires
+ZTS_STOP        equ     2       ; user-suspended (event latches, does not fire)
+ZTS_SERVICING   equ     3       ; auto-suspended while its handler runs
+ZTS_STATE_MASK  equ     3       ; bits 1-0 = tri/quad-state
+ZTS_PENDING     equ     $80     ; bit 7 = an event occurred, awaiting dispatch
+ZINTVAL         equ     $E207   ; 2 B: INTERVAL reload period in frames (0 = disarmed)
+ZINTCNT         equ     $E209   ; 2 B: INTERVAL live down-counter (frames to next fire)
+TRAPENA         equ     $E20B   ; 1 B: count of traps currently in state ON. Gates the
+                                ; H.TIMI event_poll and the run-loop check_traps (both
+                                ; fast-out when 0 — the common no-trap program's cost).
+TRAPSVC         equ     $E20C   ; 1 B: count of live SERVICING entries == depth of the
+                                ; service stack. Gates ex_return's re-enable hook (0 =
+                                ; no added cost on a normal RETURN).
+TRAPSTK         equ     $E20D   ; service stack, TRAPSVC entries of [gsp:2][idx:1]
+                                ; (LIFO, grows up). On trap dispatch push {GSP-after-
+                                ; frame-push, trap index}; ex_return re-enables the
+                                ; entry whose gsp matches the pre-pop GSP. Depth of
+                                ; SIMULTANEOUSLY-servicing traps is tiny; size 6.
+TRAPSTK_MAX     equ     6       ; max nested in-service traps (6 * 3 = 18 B)
+TRAPSTK_END     equ     TRAPSTK + TRAPSTK_MAX*3   ; $E21F — still < $E240, clear of
+                                ; the retired STRTAB span ($E240..$E268 also freed)
     ENDIF
 
 ; --- Phase 1: minimal string-variable store (own-design; see PROVENANCE.md) --
