@@ -375,8 +375,12 @@ D-T-2a estimate omitted. Tenant-dispatch is still the right call (a *resident* d
 would need ~132 B eviction, per §10.1's 145–185 B), but the eviction is real and
 moderate, not negligible.
 
-**Eviction target (D-T-8, needs a call):** a cold, self-contained ~80 B page-1 cluster
-to a tenant. Candidates from the gap map, cheapest-risk first:
+**Eviction target (D-T-8 — ✅ SIGNED OFF 2026-07-24: PAINT + CIRCLE → the graphics
+tenant).** Evict *both* `ex_paint` (~75 B) and the `ex_circle`/`circ_aspect` cluster
+(~160 B) to `graphics_tenant` — freeing ~235 B, well past T1's ~80 B need, buying
+headroom for T2–T4 and consolidating the graphics page-1 residents in one lift. Scout
+each closure first; land them as separate verifiable steps behind `make graphics-
+acceptance` + the reloc/lean byte-identity gate. Original candidate list (for record):
 - **`ex_paint` (75 B)** → the existing `graphics_tenant` (page-0). Precedent: the G5
   slice already evicted `casmatch` *to fund PAINT*; moving PAINT itself onward is the
   mirror. Risk: PAINT's flood-fill closure may drag helpers.
