@@ -331,10 +331,14 @@ scale: its carves were 55–71 B; tractable with one eviction, not a monster).
 
 **Funding plan (cheapest first):**
 1. **Golf — factor `gosub_push`.** `ex_gosub` (`program.asm:519-542`) and `eon_gosub`
-   (`939-966`) each inline the identical 4-byte frame-push. Extract one shared
-   `gosub_push` helper; the trap GOSUB-branch becomes its third caller. Net-saves ~30–40 B
-   across three users — partial self-funding, and it's a clean refactor with no behaviour
-   change (byte-identity guard on the lean ROM confirms).
+   (`939-966`) each inline the identical 4-byte frame-push (`IN: HL=resume ptr, CURLINE;
+   OUT: CF clear=pushed / CF set=stack-full; preserves BC=target`). Extract one shared
+   `gosub_push`; the trap GOSUB-branch becomes its third caller, and the two identical
+   overflow tails (`ERRMARK $CE` + ERR 7) merge to one. Net ~20 B. **Must be repack-only
+   branched** (`IF ROM_BASE < $4000` golfed / `ELSE` the original inline) — `ex_gosub`/
+   `eon_gosub` are in the lean ROM too, so the lean bytes must stay frozen; the repack
+   build carries only the golfed branch (same pattern as the input-devices `ev_f_ff`
+   golf). Verify with the reloc/lean byte-identity gate + `tests/test_control_flow.py`.
 2. **Evict the INTERVAL parsers** to a new page-0 sub-ROM tenant (statement executors are
    the standard tenant shape — cf. `graphics_tenant`/`readdata_tenant`); ~80 B off page 1.
 3. **Remaining resident (~50 B after golf)** lands in the freed page-1 headroom + the 19 B
