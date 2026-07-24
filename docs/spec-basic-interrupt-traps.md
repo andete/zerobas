@@ -438,6 +438,45 @@ The ~45 B floor needs `eval`-free cold page-1 code, which PAINT/CIRCLE are not. 
 *Recommendation: option 1 (targeted pure-code scout) — cheapest and lowest-risk if it
 finds ~45–80 B; fall back to option 2 (or 5) only if the scout comes up dry.*
 
+### 10.4 Space RESOLVED (2026-07-24) — evict `build_83_name` (D-T-8c)
+
+The option-1 scout found the cheap path exists. **Chosen: evict `build_83_name`** (the
+disk 8.3-FCB-name builder, `basic/bload.asm:301-411`, ~139 B) to a new **page-0 sub-ROM
+tenant** — substituted for the non-viable PAINT+CIRCLE. Why it's the pick:
+- **Closure is clean:** its only external callee is `upcase`, **already sub-resident**
+  (`sub/tkfloat.asm:648`); everything else (`bn_*`) is private. No `eval`/`fp_*`, no
+  page-0-low escape, no BIOS — passes `--page0`.
+- **Cold:** one caller (`parse_disk_fcb:200`), on the disk LOAD/SAVE/FILES/NAME path;
+  never per-statement/per-loop.
+- **Over-delivers:** ~139 B freed (net ~122 B after the ~17 B resident marshal stub) —
+  well past T1's ~45 B floor, enough headroom to keep the trap **dispatch RESIDENT**
+  (`check_traps` + `ex_return` reenable call `gosub_push` directly) — **no dispatch
+  tenant, no `subrom_call` stubs** — materially simpler than D-T-2a assumed. T2–T4 get
+  headroom too.
+- **Lower-risk than PAINT/CIRCLE:** a self-contained RAM name-builder, not a flood-fill.
+
+**PAGE-1 tenant, not page-0 (D-T-8d — sub-obstacle resolved).** The page-0 dispatch
+table is **FULL**: 12 entry rows (indices 0–11) fill `$0010..$0037` right up to the
+`$0038` interrupt vector (`sub/sub.asm` `sub_p0_ping` comment — the ping already had to
+move *below* the vector to fit index 11). No room for a 13th page-0 entry. So `build_83_
+name` becomes a **page-1** tenant at **`SUBROM_IDX_FCBNAME = 18`** (P1 space; base `$4010`
++ 3·18 = `$4046`, table has room; page-1 tenants have no `$0038` cap). A page-1 tenant
+can't reach the sub `upcase` (it's page-0), so **inline `upcase`** into the moved body
+(~8 B, trivial) — then the tenant is a pure RAM leaf (reads the filename via `HL` from
+`BN_PTR`, writes `DISK_FCB_NAME`, all RAM/always-mapped), passing `--page1`.
+
+**Marshalling (SPLIT, cf. `fatprim_tenant`/`casmatch`):** resident stub at
+`parse_disk_fcb:200` stores `HL`→`BN_PTR` (new sysvar), computes `IX = SUBROM_ENTRY_
+BASE_P1 + 3*SUBROM_IDX_FCBNAME`, `subrom_call`; the tenant reads `BN_PTR`, runs the moved
+body (inlined `upcase`, writes `DISK_FCB_NAME`), writes back `BN_PTR`=advanced ptr and
+`BN_STAT`=CF; the stub reloads `HL`←`BN_PTR`, `rra` `BN_STAT`→CF, `jp c,load_error`.
+Verify: `make diskbasic-acceptance` + disk LOAD/SAVE/FILES/NAME probes + reloc/lean
+byte-identity + `check_tenant_closure.py --page1`. Files: new `sub/fcbname.asm` (+
+`Makefile` `SUB_PARTS` — the stale-tenant landmine), `sub/equates.inc` idx 18 (P1),
+`sub/sub.asm` `sub_p1_table` `jp fcbname_tenant`, `basic/bload.asm` (remove body 290-411
++ stub the call at 200), `basic/sysvars.inc` (`BN_PTR`/`BN_STAT` + tenant ABI note +
+`SUBROM_IDX_FCBNAME` sync). **This is pure, well-scoped implementation — the next span.**
+
 ---
 
 ## 11. Open decisions for sign-off
