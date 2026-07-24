@@ -501,7 +501,77 @@ relink:
                 include "basic/lineedit-body.inc"   ; lean: inline, byte-identical
     ENDIF
 
-; --- ex_gosub: GOSUB <line> --------------------------------------------------
+    IF ROM_BASE < $4000
+; --- gosub_push: push a bounds-checked GOSUB return frame (repack golf) -------
+; The 4-byte frame is [CURLINE:2][resume-ptr:2]; resume = the token position to
+; run when RETURN pops it. Factored out of ex_gosub / eon_gosub (which each used
+; to inline this) so the interrupt-trap dispatcher can reuse it as its GOSUB-into-
+; handler branch (docs/spec-basic-interrupt-traps.md §2.1/§10.1). Repack-only: the
+; lean ROM keeps the original inline push below (byte-frozen), same discipline as
+; the input-devices ev_f_ff golf.
+;   IN:  HL = resume token pointer; CURLINE = the line to resume in.
+;   OUT: CF clear = pushed, GSP advanced by 4.  CF set = stack full (nothing pushed).
+;        Preserves BC (the target line number). Clobbers A, DE, HL.
+gosub_push:
+                push    bc                  ; guard the caller's target line number
+                push    hl                  ; save resume ptr
+                ld      hl,(GSP)
+                ld      de,GOSUB_STK_END
+                or      a
+                sbc     hl,de
+                jr      nc,gp_full          ; GSP >= end -> too many GOSUBs
+                ld      de,(GSP)            ; write frame at GSP
+                ld      hl,(CURLINE)
+                ld      a,l
+                ld      (de),a
+                inc     de
+                ld      a,h
+                ld      (de),a
+                inc     de
+                pop     hl                  ; HL = resume ptr
+                ld      a,l
+                ld      (de),a
+                inc     de
+                ld      a,h
+                ld      (de),a
+                inc     de
+                ld      (GSP),de            ; advance (push complete)
+                pop     bc                  ; restore target line number
+                or      a                   ; CF = 0 -> success
+                ret
+gp_full:
+                pop     hl                  ; discard resume ptr
+                pop     bc                  ; discard target
+                scf                         ; CF = 1 -> stack full
+                ret
+; gosub_stk_over: shared control-stack-overflow tail (ex_gosub + eon_gosub).
+gosub_stk_over:
+                ld      a,$CE               ; control-stack overflow landmark
+                ld      (ERRMARK),a
+                ld      a,7                 ; ERR 7: out of memory (error-handling S2a)
+                jp      raise_error
+; --- ex_gosub: GOSUB <line> (repack: via gosub_push) -------------------------
+ex_gosub:
+                inc     hl                  ; past the GOSUB token
+                call    skip_spaces
+                ld      a,(hl)
+                cp      LINENO_TOKEN        ; $0E,<lineno LE> expected
+                jp      nz,stmt_error
+                inc     hl
+                ld      c,(hl)              ; target line number, LE
+                inc     hl
+                ld      b,(hl)
+                inc     hl                  ; HL = resume point (after the statement)
+                call    gosub_push          ; push frame; BC=target kept; CF set = full
+                jr      c,gosub_stk_over
+                call    find_line_bc        ; CF set + HL = line addr if found
+                jp      nc,ex_goto_undef
+                ld      (GOTOTGT),hl
+                ld      a,1
+                ld      (GOTOFLAG),a
+                ret
+    ELSE
+; --- ex_gosub: GOSUB <line> (lean: inline push, byte-frozen) -----------------
 ; Push a return frame [CURLINE:2][resume-ptr:2] (resume = the token position
 ; right after this GOSUB statement), then branch to the target line exactly like
 ; GOTO. RETURN pops the frame and resumes there. (HL enters on the GOSUB token.)
@@ -552,10 +622,6 @@ egs_over:
                 pop     bc                  ; discard saved target
                 ld      a,$CE               ; control-stack overflow landmark
                 ld      (ERRMARK),a
-    IF ROM_BASE < $4000
-                ld      a,7                 ; ERR 7: out of memory (error-handling S2a)
-                jp      raise_error
-    ELSE
                 ld      hl,err_stack
                 jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
     ENDIF
@@ -936,6 +1002,22 @@ eon_goto:
                 ld      (GOTOFLAG),a
                 ret
 
+    IF ROM_BASE < $4000
+; eon_gosub (repack: via gosub_push, sharing gosub_stk_over)
+eon_gosub:
+                inc     hl                  ; past GOSUB token
+                call    eon_seek_nth        ; BC = line number, HL past list; CF set if found
+                jp      nc,exec_stmt        ; N=0 or N > count -> fall through
+                call    gosub_push          ; push [CURLINE][resume=HL]; BC kept; CF=full
+                jp      c,gosub_stk_over    ; jp (not jr): gosub_stk_over is far back
+                call    find_line_bc
+                jp      nc,ex_goto_undef
+                ld      (GOTOTGT),hl
+                ld      a,1
+                ld      (GOTOFLAG),a
+                ret
+    ELSE
+; eon_gosub (lean: original inline push, byte-frozen)
 eon_gosub:
                 inc     hl                  ; past GOSUB token
                 call    eon_seek_nth        ; BC = line number, HL past list; CF set if found
@@ -976,10 +1058,6 @@ eon_over:
                 pop     bc                  ; discard target
                 ld      a,$CE
                 ld      (ERRMARK),a
-    IF ROM_BASE < $4000
-                ld      a,7                 ; ERR 7: out of memory (error-handling S2a)
-                jp      raise_error
-    ELSE
                 ld      hl,err_stack
                 jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
     ENDIF
