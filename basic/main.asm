@@ -173,13 +173,16 @@ __MEAS_LOW_END:
                 include "basic/playsvc.asm"
 
 ; Interrupt traps slice T1 (docs/spec-basic-interrupt-traps.md): basic/traps.asm holds
-; the RESIDENT half (event_poll + htimi_service + trap_init). NOT yet wired — wiring the
-; seam is proven safe, but trap_init's ZTRAP zero-fill ($E1D1..$E21F, spec §3 "freed
-; VARTAB window") crashes the merged C-BIOS machine at boot (diskbasic 34/34 -> 3/34,
-; string garbage). Root cause is a RAM-placement collision under investigation: the
-; region is NOT actually free on the C-BIOS target. ZTRAP must be relocated to a
-; verified-free window before wiring. Include + wire once the RAM home is re-sited.
-;                include "basic/traps.asm"
+; the RESIDENT half — event_poll (per-frame trap detection at the H.TIMI seam),
+; htimi_service (chains event_poll -> play_service), and trap_init (ZTRAP zero-fill
+; $E1D1..$E21F at cold boot + RUN). WIRED 2026-07-24: play_install points H.TIMI at
+; htimi_guard (subromcall.asm), which now falls through to htimi_service instead of
+; straight to play_service, and `call trap_init` runs in ier_done + run_prog. The
+; earlier "wiring crashes the boot" blocker was the H.TIMI/page-1 seam hazard, now fixed
+; by htimi_guard (docs/traps-t1-wiring-blocker.md, spec-traps-t1-htimi-page1-safety.md);
+; the ZTRAP RAM home at $E1D1 was never the problem. Inert until the arming statements
+; (INTERVAL ON etc.) land — TRAPENA stays 0 so event_poll fast-outs every frame.
+                include "basic/traps.asm"
 
 ; Graphics Slice G2 (docs/spec-basic-graphics-g2.md): the resident PSET/PRESET/POINT
 ; stubs (defines `ex_pset`, `ex_preset`, `ev_f_point`, `parse_coord`, `gfx_in_range`).

@@ -91,8 +91,11 @@ ier_done:
                                             ; sub-ROM was recorded (subrom trampoline)
                 call    play_install        ; install the PLAY servicer H.TIMI seam
                                             ; (audio Slice 3; H.TIMI is C9-free here)
-                ; interrupt-traps T1: `call trap_init` goes here once the page-1 layout
-                ; bug is fixed (see docs/traps-t1-wiring-blocker.md).
+                call    trap_init           ; interrupt-traps T1: zero the ZTRAP table so
+                                            ; garbage boot RAM can't look like an armed
+                                            ; trap. Under the boot DI (below); the H.TIMI
+                                            ; poll installed just above fast-outs anyway
+                                            ; until TRAPENA is set. (traps.asm)
     ENDIF
                 ei
                 ret

@@ -115,10 +115,13 @@ htimi_guard:
                 and     %00001100           ; isolate the page-1 primary field
                 jr      nz,htg_skip         ; nonzero -> a sub-ROM tenant owns page 1
                 pop     af
-                jp      play_service        ; main page 1 mapped -> safe; its ret -> ISR
+                jp      htimi_service       ; main page 1 mapped -> safe: poll traps then
+                                            ; fall into play_service; its ret -> ISR.
+                                            ; (htimi_service is basic/traps.asm; before it
+                                            ; was wired this jumped straight to play_service.)
 htg_skip:
                 pop     af
-                ret                         ; skip PLAY this frame; return to the ISR
+                ret                         ; skip PLAY (+ trap poll) this frame; -> ISR
 
 ; ===========================================================================
 ; Interrupt trampoline — install + template (docs/spec-basic-subrom-trampoline.md)
