@@ -375,12 +375,32 @@ D-T-2a estimate omitted. Tenant-dispatch is still the right call (a *resident* d
 would need ~132 B eviction, per §10.1's 145–185 B), but the eviction is real and
 moderate, not negligible.
 
-**Eviction target (D-T-8 — ✅ SIGNED OFF 2026-07-24: PAINT + CIRCLE → the graphics
-tenant).** Evict *both* `ex_paint` (~75 B) and the `ex_circle`/`circ_aspect` cluster
-(~160 B) to `graphics_tenant` — freeing ~235 B, well past T1's ~80 B need, buying
-headroom for T2–T4 and consolidating the graphics page-1 residents in one lift. Scout
-each closure first; land them as separate verifiable steps behind `make graphics-
-acceptance` + the reloc/lean byte-identity gate. Original candidate list (for record):
+**Eviction target (D-T-8 — ⛔ PAINT+CIRCLE WHOLESALE EVICTION NON-VIABLE, scouted
+2026-07-24; the sign-off was on a false premise).** The closure scout found the killer:
+`ex_paint` (171 B private) and `ex_circle`/`circ_aspect` (661 B private) are **~90–100 %
+`eval`/float-pack-bound**, and the float pack (`fp_*`, and `eval` itself bottoms out in
+it) lives in the **page-0 low region `$2812–$3FFF` that the sub-ROM overlays** — a page-0
+tenant *cannot* call it (confirmed: `basic/graphics.asm:928-930` says so verbatim for
+DRAW; `tools/check_tenant_closure.py --page0` fails the build on exactly this escape).
+This is precisely why the current split exists (resident stub does all eval/float **while
+page 0 is mapped**, then marshals an *integer* param block to the tenant). So neither can
+move wholesale; the `--page0` gate would reject the cut. The **only** mechanism that
+reclaims eval-heavy parse bytes is the **DRAW-style co-routine** (`gfx_draw_op`,
+`basic/graphics.asm:916-1001`): the tenant walks tokens and bounces each sub-expression
+back to the resident via `GFX_DEXP`/`GFX_DREQ`/`GFX_DVAL`/`GFX_DRESUME`. Re-authoring
+CIRCLE's ~218 B grammar walk as such a co-routine is a substantial, risky sub-arc — out
+of proportion to T1.
+
+**Revised floor (D-T-8a).** Even a *maximally* tenant-ised T1 (dispatch + reenable +
+`trap_init` all behind one selector-dispatched sub-ROM entry, one shared `subrom_call`
+stub) still needs **~80 B resident** and cannot go below **~45 B**: `event_poll` ~48 B is
+DI-pinned to page 1, plus the run-loop `TRAPPEND` gate + `ex_return` `TRAPSVC` gate + the
+shared stub (~30 B, must live in the resident routines they hook). Against **37 B** free,
+the floor is a **~45 B page-1 carve of genuinely `eval`-free, cold, self-contained code**
+(the only kind a tenant can take). **This is a real STOP-and-confirm fork** — the byte
+budget the spec flagged as the dominant risk from day one. Options in §10.3.
+
+Original candidate list (for record):
 - **`ex_paint` (75 B)** → the existing `graphics_tenant` (page-0). Precedent: the G5
   slice already evicted `casmatch` *to fund PAINT*; moving PAINT itself onward is the
   mirror. Risk: PAINT's flood-fill closure may drag helpers.
@@ -390,6 +410,33 @@ acceptance` + the reloc/lean byte-identity gate. Original candidate list (for re
   closures can be tangled.
 - **`event_poll` golf** first (shave the 48 B — e.g. `and 3`/`dec a` for the state test,
   fold the reload) — worth ~4–6 B, reduces but does not remove the eviction.
+
+### 10.3 The space fork — options (D-T-8b, needs a call)
+
+The ~45 B floor needs `eval`-free cold page-1 code, which PAINT/CIRCLE are not. Paths:
+
+1. **Targeted scout for pure (non-`eval`) cold clusters.** Find ~45–80 B of page-1 code
+   that bottoms out only in page-1/RAM/BIOS (no `eval`/`fp_*`/`parse_coord`/`str_*`) —
+   the only kind a page-0 tenant can take. Candidates to check: VDP/screen helpers, the
+   line-editor tail, cassette/tape byte plumbing, `list.asm` residue, disk sector glue
+   not already in `fatprim_tenant`. *May or may not exist in sufficient size — a scout
+   answers it. Lowest-risk if it lands.*
+2. **CIRCLE grammar-walk → DRAW-style co-routine** (~150 B reclaimed). The proven
+   mechanism, but a substantial, risky sub-arc (re-author CIRCLE's parser tenant-side
+   with the eval-bounce protocol; keep the CIRCLE differential green). Overkill for T1's
+   ~45 B but would fund the whole trap arc T1–T4. *High effort, high risk.*
+3. **A page-1 tenant for the dispatch** (opposite visibility): reaches the float pack but
+   **not** `eval`/`parse_coord`/`skip_spaces` (main page-1, switched out) — so it doesn't
+   help the parse either, and the dispatch itself needs no float. Doesn't move the needle.
+4. **Reclaim page-0 low-region space** to host `event_poll` there (it's reachable during
+   H.TIMI while page 0 is mapped) — but the low region is also nearly full (19 B), so this
+   just relocates the same eviction problem.
+5. **Pause the interrupt-traps arc as blocked-on-space**; do a dedicated page-1 space
+   program (option 2, or a broader eviction sweep) as its own arc first, or pick a
+   different, space-cheap TODO item now.
+
+*Recommendation: option 1 (targeted pure-code scout) — cheapest and lowest-risk if it
+finds ~45–80 B; fall back to option 2 (or 5) only if the scout comes up dry.*
 
 ---
 
