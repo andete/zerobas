@@ -351,11 +351,41 @@ So resident T1 ≈ **80 B** against **37 B** free (post-golf) → a **~43 B carv
    **Freed page-1 2 B → 37 B (35 B, better than the ~20 B estimate).**
 2. **Move dispatch + parsers to tenants** (D-T-2a above) — keeps ~100 B of the machinery
    *off* the 37 B page-1 budget entirely.
-3. **Remaining ~43 B resident** vs 37 B page-1 + 19 B page-0-low = 56 B → **fits without a
-   further eviction** (6 B page-1 spare + the 19 B low region cover the `ex_return`/gate
-   bytes that can't be page-0). Re-measure empirically once written; only if it overspills
-   does a small cold-routine eviction trigger (candidates unchanged: `ex_paint`, disk
-   `lrset_common`). The STOP-and-confirm fork is now unlikely.
+3. A cold-cluster eviction — see §10.2 for the **measured** requirement (~80 B; the
+   D-T-2a ~43 B projection under-counted the per-site `subrom_call` stub boilerplate).
+
+### 10.2 T1 resident — MEASURED (2026-07-24, `basic/traps.asm` written + wired, then backed out)
+
+Wiring the resident poll (`event_poll` + `htimi_service` trampoline + `trap_init`) and
+building `basic-reloc` overran the `$8000` page-1 ceiling by **34 B** (`__MEAS_PAGE1_END
+= $8022`). Measured routine sizes:
+
+| Piece | Bytes | Placement |
+|---|---|---|
+| `event_poll` (INTERVAL tick, DI) | **48** | resident page-1 (hard) |
+| `htimi_service` trampoline | 6 | resident page-1 |
+| `trap_init` (ZTRAP zero-fill) | 14 | movable → dispatch tenant |
+| run-loop gate + dispatch `subrom_call` stub (est.) | ~34 | resident page-1 (in `rp_exec`) |
+| `ex_return` gate + reenable `subrom_call` stub (est.) | ~30 | resident page-1 (in `ex_return`) |
+
+So resident T1 ≈ **48 + 6 + 34 + 30 = ~118 B** (with `trap_init` in the tenant) against
+**37 B** free → **a ~80 B eviction is required** — bigger than §10.1's ~43 B, because
+each `subrom_call` site carries ~15–20 B of IX-setup/marshalling boilerplate that the
+D-T-2a estimate omitted. Tenant-dispatch is still the right call (a *resident* dispatcher
+would need ~132 B eviction, per §10.1's 145–185 B), but the eviction is real and
+moderate, not negligible.
+
+**Eviction target (D-T-8, needs a call):** a cold, self-contained ~80 B page-1 cluster
+to a tenant. Candidates from the gap map, cheapest-risk first:
+- **`ex_paint` (75 B)** → the existing `graphics_tenant` (page-0). Precedent: the G5
+  slice already evicted `casmatch` *to fund PAINT*; moving PAINT itself onward is the
+  mirror. Risk: PAINT's flood-fill closure may drag helpers.
+- **`ex_circle` + `circ_aspect` (~160 B, take one)** → `graphics_tenant`. More than
+  needed; a clean CIRCLE-cluster lift.
+- **disk `lrset_common` (82 B) / `do_name` (98 B)** → `dirverb_tenant`. Cold, but disk
+  closures can be tangled.
+- **`event_poll` golf** first (shave the 48 B — e.g. `and 3`/`dec a` for the state test,
+  fold the reload) — worth ~4–6 B, reduces but does not remove the eviction.
 
 ---
 

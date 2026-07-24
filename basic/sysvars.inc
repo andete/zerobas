@@ -796,8 +796,15 @@ ZTS_PENDING     equ     $80     ; bit 7 = an event occurred, awaiting dispatch
 ZINTVAL         equ     $E207   ; 2 B: INTERVAL reload period in frames (0 = disarmed)
 ZINTCNT         equ     $E209   ; 2 B: INTERVAL live down-counter (frames to next fire)
 TRAPENA         equ     $E20B   ; 1 B: count of traps currently in state ON. Gates the
-                                ; H.TIMI event_poll and the run-loop check_traps (both
-                                ; fast-out when 0 — the common no-trap program's cost).
+                                ; H.TIMI event_poll (fast-out when 0 — the common no-trap
+                                ; program's cost). Bumped by set_state on OFF/STOP->ON,
+                                ; dropped on ON->anything (incl. the auto ON->SERVICING).
+TRAPPEND        equ     $E21F   ; 1 B (== TRAPSTK_END, just past the service stack): 1 =
+                                ; event_poll has latched a PENDING on some ON
+                                ; trap since the last dispatch. Gates the run-loop
+                                ; check_traps subrom_call — set (resident) by event_poll,
+                                ; cleared by the dispatch tenant once it drains the
+                                ; pending set. Keeps the per-statement cost a RAM load.
 TRAPSVC         equ     $E20C   ; 1 B: count of live SERVICING entries == depth of the
                                 ; service stack. Gates ex_return's re-enable hook (0 =
                                 ; no added cost on a normal RETURN).
