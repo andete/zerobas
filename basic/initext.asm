@@ -91,6 +91,8 @@ ier_done:
                                             ; sub-ROM was recorded (subrom trampoline)
                 call    play_install        ; install the PLAY servicer H.TIMI seam
                                             ; (audio Slice 3; H.TIMI is C9-free here)
+                ; interrupt-traps T1: `call trap_init` goes here once the page-1 layout
+                ; bug is fixed (see docs/traps-t1-wiring-blocker.md).
     ENDIF
                 ei
                 ret

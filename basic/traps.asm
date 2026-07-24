@@ -47,10 +47,13 @@ htimi_service:
 ; For each armed event source, set the entry's PENDING bit + raise TRAPPEND so the
 ; run-loop dispatcher wakes. T1: INTERVAL only.
 event_poll:
+                push    af                  ; register-transparent on ALL paths (the
+                                            ; H.TIMI contract) — the fast-out MUST NOT
+                                            ; leak the TRAPENA test into A/flags, or it
+                                            ; corrupts the timer ISR that called us.
                 ld      a,(TRAPENA)
                 or      a
-                ret     z                   ; no ON traps -> fast out (common path)
-                push    af
+                jr      z,ep_out            ; no ON traps -> fast out (common path)
                 push    hl
                 push    de
                 ; --- INTERVAL (entry 0): tick only while its state is exactly ON ---
@@ -73,6 +76,7 @@ event_poll:
 ep_done:
                 pop     de
                 pop     hl
+ep_out:
                 pop     af
                 ret
 

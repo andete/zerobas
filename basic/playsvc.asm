@@ -45,6 +45,8 @@
 ; (verified: $FD9F = C9 C9 C9 C9 C9 after boot -- neither C-BIOS nor the disk ROM
 ; hooks it), so a bare JP with no chain; play_service's own MUSICF==0 fast-out makes
 ; the always-installed seam cheap. Clobbers A, HL.
+; (Interrupt-traps T1 will re-point this at htimi_service once ZTRAP is re-sited off
+; the C-BIOS work-area collision — see basic/traps.asm / main.asm.)
 play_install:
                 ld      a,$C3               ; JP opcode
                 ld      (H_TIMI),a

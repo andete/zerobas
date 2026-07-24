@@ -173,11 +173,13 @@ __MEAS_LOW_END:
                 include "basic/playsvc.asm"
 
 ; Interrupt traps slice T1 (docs/spec-basic-interrupt-traps.md): basic/traps.asm holds
-; the RESIDENT half (event_poll + htimi_service + trap_init). NOT yet included — the
-; next step wires it in + play_install/initext. The FUNDING CARVE has now LANDED
-; (spec §10.4, D-T-8c/d): build_83_name evicted to the page-1 tenant fcbname_tenant
-; (SUBROM_IDX_FCBNAME=18), freeing page-1 to 155 B (was 37 B) — ample for the ~80 B
-; resident poll + the RESIDENT dispatch (§10.4 headroom keeps check_traps resident).
+; the RESIDENT half (event_poll + htimi_service + trap_init). NOT yet wired — wiring the
+; seam is proven safe, but trap_init's ZTRAP zero-fill ($E1D1..$E21F, spec §3 "freed
+; VARTAB window") crashes the merged C-BIOS machine at boot (diskbasic 34/34 -> 3/34,
+; string garbage). Root cause is a RAM-placement collision under investigation: the
+; region is NOT actually free on the C-BIOS target. ZTRAP must be relocated to a
+; verified-free window before wiring. Include + wire once the RAM home is re-sited.
+;                include "basic/traps.asm"
 
 ; Graphics Slice G2 (docs/spec-basic-graphics-g2.md): the resident PSET/PRESET/POINT
 ; stubs (defines `ex_pset`, `ex_preset`, `ev_f_point`, `parse_coord`, `gfx_in_range`).

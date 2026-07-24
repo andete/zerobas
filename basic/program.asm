@@ -227,6 +227,8 @@ run_prog:
                                             ; still 0 from the xor a above -- nothing
                                             ; since touches it: the ERR-reset-on-RESUME
                                             ; follow-up reclaimed the redundant xor a)
+                ; interrupt-traps T1: `call trap_init` (RUN re-arm) goes here once the
+                ; crash is root-caused (see basic/traps.asm / main.asm).
     ENDIF
                 ld      hl,GOSUB_STK        ; empty return stack
                 ld      (GSP),hl
