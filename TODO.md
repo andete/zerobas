@@ -1173,7 +1173,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       been mis-reported as "silently accepted" — a probe artifact, since an
       aborting case never clears the screen and the tag regex then matched the
       echoed source line; `_outcome` in the graphics probe now detects aborts.
-- [ ] **Interrupt traps** — `ON INTERVAL/KEY/SPRITE/STOP GOSUB`
+- [ ] **Interrupt traps** — `ON INTERVAL/KEY/SPRITE/STOP/STRIG GOSUB` + the arming
+      statements (`INTERVAL/SPRITE/STOP ON/OFF/STOP`, `KEY(n)/STRIG(n) ON/OFF/STOP`).
+      Closes the input-devices **D-I-5** handoff (`STRIG(n)/KEY(n) ON/OFF/STOP` → real,
+      was documented-divergence ERR 2) and the graphics **D-G7-4** handoff (`SPRITE
+      ON/OFF/STOP` no-op → real + `ON SPRITE GOSUB`). **Arc spec SIGNED OFF 2026-07-24**
+      ([`docs/spec-basic-interrupt-traps.md`](docs/spec-basic-interrupt-traps.md)):
+      slicing **T1→T2→T3→T4** by event-source mechanism (T1 core+INTERVAL → T2 STOP+STRIG
+      → T3 KEY → T4 SPRITE). Reuse story: the `ON ERROR` trap-branch is the
+      GOSUB-into-handler model, the PLAY servicer's H.TIMI hook is the per-frame poll
+      seam, the input-devices matrix-hold harness is the gate. Own-design `ZTRAP` table
+      in free VARTAB RAM (`$E1D1`, 18×3 B + interval counter); tri-state OFF/ON/STOP + a
+      4th SERVICING state, re-enable-on-RETURN via a GSP-match service stack. **Byte
+      budget is the dominant risk** — measured 2 B page-1 + 19 B page-0 low free; T1
+      needs a ~70 B carve (funded by a `gosub_push` golf + evicting the INTERVAL parsers
+      to a page-0 sub-ROM tenant). **T1 in progress.**
 - [ ] **Screen-editor REPL** — real MSX BASIC does not use a sequential prompt
       loop; Enter reads the *current cursor line from VRAM* (not a dedicated
       input buffer), so the user can cursor-up to any visible output, edit it

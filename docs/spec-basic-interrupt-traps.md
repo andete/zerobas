@@ -1,0 +1,394 @@
+# spec — interrupt traps (`ON INTERVAL/KEY/SPRITE/STOP/STRIG GOSUB` + the arming statements)
+
+Status: **SIGNED OFF 2026-07-24** — slicing **T1→T2→T3→T4** approved (D-T-6), and go
+straight into T1 from this arc spec (no separate T1 packet). This is the arc-level
+spec; T2–T4 still get their own signed-off packets before implementation, in the
+graphics-arc style (g1…g8).
+
+Repository: all paths under `/Users/joost/projects/zerobas`. The whole arc is
+**repack-only** (`IF ROM_BASE < $4000`) — the trap table, the poll servicer, and the
+input readers it leans on are all repack-gated; the lean `basic.rom` stays byte-frozen.
+
+Provenance: the *behaviour* (trap types, `ON X GOSUB` syntax, the ON/OFF/STOP
+tri-state, auto-suspend-while-servicing) is a **published contract** (MSX Technical
+Handbook §2 the interrupt/trap model; A-tier — see [`allowed-sources.md`](allowed-sources.md)).
+The **RAM layout is own-design**, like `CONTLINE`/`CONTVALID` before it: zerobas does
+**not** reuse the reference `TRPTBL` address or its exact status-bit encoding — it
+places its own table in the freed VARTAB window and matches only *observable*
+behaviour. No ROM disassembly; the reference is a black-box + the published model.
+
+---
+
+## 1. Scope — the surface this arc closes
+
+The last unchecked interpreter item ([`TODO.md`](../TODO.md) "Interrupt traps"), plus
+the two explicit handoffs into it:
+
+- input-devices **D-I-5** left `STRIG(n) ON/OFF/STOP` and `KEY(n) ON/OFF/STOP` raising
+  a (documented-divergence) `ERR 2`; this arc makes them real.
+- graphics **D-G7-4** left `SPRITE ON/OFF/STOP` as accepted **no-ops** and `ON SPRITE
+  GOSUB` unimplemented; this arc wires them to a real collision trap.
+
+**In scope — the five trap families, each: arm + tri-state + dispatch:**
+
+| Family | Arm (define handler) | Enable/disable/suspend | Event source |
+|---|---|---|---|
+| **INTERVAL** | `ON INTERVAL=n GOSUB <line>` | `INTERVAL ON/OFF/STOP` | a per-frame down-counter (pure arithmetic) |
+| **STOP** | `ON STOP GOSUB <line>` | `STOP ON/OFF/STOP` | Ctrl-STOP (intercept the break path) |
+| **STRIG** | `ON STRIG GOSUB <l0>,…,<l4>` | `STRIG(n) ON/OFF/STOP`, n=0..4 | `GTTRIG(n)` edge, once per frame |
+| **KEY** | `ON KEY GOSUB <l1>,…,<l10>` | `KEY(n) ON/OFF/STOP`, n=1..10 | function-key press edge |
+| **SPRITE** | `ON SPRITE GOSUB <line>` | `SPRITE ON/OFF/STOP` | VDP sprite-collision status bit |
+
+`ON KEY` and `ON STRIG` take a **comma-list** of handler lines, one per key/trigger
+(a blank slot = keep/leave that key untrapped). The other three take a single line.
+
+**Explicitly out (deferred / not in this arc):**
+
+- `KEY <n>,"str"` (function-key string assignment) and `KEY LIST` — a display feature,
+  not a trap; still `stmt_error` (unchanged, tracked under the editor TODO item).
+- Any MSX2 trap surface (`ON INTERVAL` sub-second granularity beyond the 1/frame model
+  is already MSX1-faithful; no MSX2-only traps exist to defer).
+
+---
+
+## 2. The reuse story — almost everything already exists
+
+This arc is mostly **wiring**, not new mechanism. Three landed subsystems supply the
+parts (map anchors from the infra survey):
+
+### 2.1 The `ON ERROR` trap-branch = the GOSUB-into-handler model
+[`basic/interp.asm:752-767`](../basic/interp.asm) is the exact branch to copy for
+dispatch: `ld sp,(SAVSTK)` (unwind to run-loop-clean depth) → save resume context →
+`ld (CURLINE),de` (setting `CURLINE` **is** the branch, reusing `rp_lp`) → set the
+in-handler flag → `jp rp_lp`. The error trap does a **GOTO**-flavoured branch (no
+return frame — `RESUME` is its return). An **event trap does a GOSUB**: it must push a
+4-byte GOSUB frame first, so the handler's `RETURN` resumes the interrupted line —
+frame shape from [`ex_gosub`](../basic/program.asm) `504-561` / `eon_gosub` `939-973`
+(`[CURLINE:2][resume-ptr:2]` at `(GSP)`, bounds-checked vs `GOSUB_STK_END`).
+
+### 2.2 The H.TIMI PLAY servicer = the per-frame poll seam
+[`basic/playsvc.asm:48-93`](../basic/playsvc.asm). `play_install` writes a bare `JP
+play_service` into `H_TIMI` ($FD9F). `play_service` is **main page-1 resident, reached
+by a near JP** (never a sub-ROM tenant: every page-1 tenant runs under DI so a VBLANK
+never fires mid-tenant), entered DI, register-transparent, touches only PSG + its
+queues + `MUSICF` — **never `JIFFY`, never the keyboard**. Its `MUSICF`-zero fast-out
+(`57-62`) is the exact insertion point: the event poll runs first, then falls into the
+existing `MUSICF` check. **A `CALSLT` in the VBLANK path is ruled out** (input-devices
+§, D-I-2 precedent): the poll must be resident code doing direct port / RAM work.
+
+### 2.3 The matrix-hold acceptance harness = the gate mechanism
+[`probes/lib/omsx_repl.py:232-244`](../probes/lib/omsx_repl.py) (`holds` →
+`keymatrixdown/up` scheduling) and the `prologue` seam (`191-198`) were built by the
+input-devices arc **explicitly for this arc** ("the interrupt-trap arc needs the same
+capability for `ON KEY`", D-I-3). `basic_probe_input_devices.py`'s `MATRIX` table
+(`140-151`) is the pattern each slice's gate extends to press keys/triggers *while a
+trap-armed program runs* and count the fires.
+
+### 2.4 The run-loop dispatch point
+[`basic/program.asm:262-269`](../basic/program.asm) — the `BREAKX` poll between
+statements. The event-trap dispatch check lives **right here**: after `BREAKX`, before
+`call exec`, test "any trap enabled AND pending?" and if so branch into its handler.
+
+### 2.5 The input readers
+`ev_ff_strig` ([`basic/expr.asm:1022`](../basic/expr.asm)) / `GTTRIG $00D8`,
+`GTSTCK $00D5`, function-key matrix rows — the STRIG/KEY event sources. `ex_sprite` /
+`spr_noop` ([`basic/graphics.asm:1023-1038`](../basic/graphics.asm)) — the no-ops to
+promote. `ex_key` ([`basic/screen.asm:196-217`](../basic/screen.asm)) — the `KEY
+ON/OFF` display statement to disambiguate from the new `KEY(n)` trap form.
+
+---
+
+## 3. Own-design RAM: the trap table `ZTRAP`
+
+Reference `TRPTBL` is not reused (address or bit layout). zerobas defines **`ZTRAP`**
+in the freed VARTAB window: `$E1D1..$E240` (~111 B) is free repack RAM **adjacent to
+the existing error-trap state** (`SAVSTK`…`SAVTXT` end at `$E1D1`) — the natural home.
+
+**Layout (proposed, own-design — sign-off item D-T-1):** 18 entries × 3 B = 54 B, plus
+the interval counter pair. Entry order chosen so the poll can index by a small enum:
+
+```
+ZTRAP        equ $E1D1     ; 18 * 3 = 54 B
+  ; index 0        : INTERVAL   (1 entry)
+  ; index 1        : STOP       (1 entry)
+  ; index 2        : SPRITE     (1 entry)
+  ; index 3..7     : STRIG 0..4 (5 entries)
+  ; index 8..17    : KEY   1..10(10 entries)
+  ; each entry = db state ; dw handler_line_link   (3 B)
+ZINTVAL      equ $E207     ; 2 B: INTERVAL reload period (frames); 0 = disarmed
+ZINTCNT      equ $E209     ; 2 B: INTERVAL live down-counter
+  ; -> $E20B, still < $E240; ~53 B headroom left in the VARTAB window
+```
+
+**State byte encoding (own-design — sign-off item D-T-1):**
+```
+bit 1-0 : tri-state  00=OFF  01=ON  10=STOP(suspended)
+bit 7   : PENDING    an event occurred and is latched, awaiting dispatch
+```
+- `ON X GOSUB` sets the entry's `handler_line_link` (and, per the reference, implies
+  the trap starts **OFF** until an explicit `X ON`). A zero link = "no handler" → the
+  arming statement is a no-op / the trap can never fire.
+- The dispatcher fires an entry iff **state==ON AND PENDING AND handler!=0**. On fire it
+  clears PENDING, **sets state=SERVICING** (a distinct 4th state, auto-suspend while the
+  handler runs — see the re-enable mechanism below), pushes the GOSUB frame, and branches.
+  `RETURN` from the handler restores state to **ON** (the classic auto-resume).
+
+**Re-enable-on-RETURN — the GSP-match service stack (own-design, D-T-1a).** A repeating
+`ON INTERVAL=n GOSUB … : RETURN` must re-fire every period, so `RETURN` from a trap
+handler has to put the trap back to ON — and it must nest (a trap firing inside another
+handler). The 4-byte GOSUB frame (`[CURLINE][resume-ptr]`) has no spare bit to tag, and
+widening it would touch all of RETURN/GOSUB. Instead: on dispatch, after pushing the
+normal GOSUB frame, record a service entry `{gsp: <GSP after the push>, idx: <trap>}` on
+a small LIFO (`TRAPSTK`, a few entries — nesting depth of *simultaneously-servicing*
+traps is tiny). `ex_return`, gated by a `TRAPSVC` count byte (zero for the common case →
+no added cost), compares `GSP` (before its pop) against the top service entry's `gsp`;
+on a match this RETURN is the trap's own return, so it pops the service entry and, iff
+that trap is still in SERVICING (a handler `X OFF`/`X STOP`/`X ON` overrides), sets it
+back to ON. Nested normal GOSUBs push `GSP` higher and their RETURNs pop back down first;
+only when `GSP` returns to the recorded value is the trap frame on top — so the match is
+exact and nests. **Four states, not three:** `00=OFF 01=ON 10=STOP(user) 11=SERVICING`;
+only ON fires, so SERVICING is the auto-suspend. A recurrence during the handler re-sets
+PENDING but cannot fire (state≠ON) — it fires once after RETURN, matching the reference.
+- `X STOP` = state→STOP but PENDING still latches (a suspended trap *remembers* one
+  event); a later `X ON` with PENDING already set fires at the next statement boundary.
+- `X OFF` = state→OFF **and** clears PENDING (a disabled trap forgets).
+
+This bit layout and the auto-STOP/auto-resume are the observable reference semantics;
+the encoding itself is quarantined in [`basic/PROVENANCE.md`](../basic/PROVENANCE.md)
+as own-design (same treatment as `CONTVALID`).
+
+---
+
+## 4. The per-frame poll (H.TIMI extension)
+
+Insert an `event_poll` ahead of the `MUSICF` fast-out in the `H_TIMI` seam (D-T-2 is
+*how* to insert — extend `play_install`'s target, or a 2-entry micro-dispatcher).
+`event_poll` is resident, DI, register-transparent, and for each **armed** trap sets
+PENDING on an event **edge**:
+
+- **INTERVAL** — if `ZINTVAL!=0`: `dec ZINTCNT`; on reaching 0, reload from `ZINTVAL`,
+  set INTERVAL PENDING. Pure arithmetic, zero I/O — this is why INTERVAL is slice T1.
+- **STRIG(n)** — read the trigger (direct PSG/PPI, the `GTTRIG` logic inlined — a
+  `CALSLT` is banned in VBLANK), edge-detect vs a 5-bit "last frame" shadow, set PENDING
+  on a 0→1 press.
+- **KEY(n)** — scan the function-key matrix rows directly, edge-detect vs a shadow, set
+  PENDING per newly-pressed function key.
+- **SPRITE** — sample the VDP sprite-collision status (D-T-4, the source fork), set
+  PENDING on a 0→1 collision edge.
+- **STOP** — Ctrl-STOP: **not** polled here (it is caught on the break path, §6), so the
+  poll only touches INTERVAL/STRIG/KEY/SPRITE.
+
+Register-transparency and the "no `JIFFY`/no BIOS-buffer read" contract are inherited
+verbatim from `play_service`.
+
+---
+
+## 5. The dispatcher (run-loop)
+
+At [`program.asm:262-269`](../basic/program.asm), after `BREAKX`, add a
+**`check_traps`** step (only when at least one trap is armed — a single "any trap live"
+byte gates the whole cost, so the common no-trap program pays ~one load+or). It scans
+`ZTRAP` in priority order and, for the first entry with state==ON && PENDING &&
+handler!=0, performs the §2.1 GOSUB-branch: clear PENDING, auto-STOP that entry, push
+the GOSUB frame, `ld (CURLINE)` the handler link, `jp rp_lp`. `RETURN` unwinds normally
+(`ex_return`) and restores the entry to ON.
+
+**Priority (D-T-3):** the reference services in a fixed order. Proposed: the enum order
+of §3 (INTERVAL, STOP, SPRITE, STRIG 0..4, KEY 1..10). One trap dispatched per statement
+boundary (a second pending trap fires at the next boundary) — matches the reference's
+"one trap per inter-statement gap."
+
+---
+
+## 6. STOP trap — intercepting the break path
+
+Ctrl-STOP has an existing owner: the `BREAKX`→`do_break` path
+([`program.asm:262-269, 307-336`](../basic/program.asm)) prints `break in <line>` and
+ends the RUN. When the STOP trap is **ON**, a Ctrl-STOP must instead **fire the trap**
+(GOSUB the handler) and *not* break. When OFF/STOP, the normal break happens. So
+`do_break`'s entry gets a guard: if STOP-trap state==ON, set its PENDING and let
+`check_traps` dispatch it (do **not** break). A held Ctrl-STOP inside the handler still
+breaks (reference behaviour: a second Ctrl-STOP while servicing the STOP trap aborts) —
+covered because the trap auto-STOPs itself on dispatch.
+
+---
+
+## 7. Parsing — statements + `ON X GOSUB`
+
+**`ON X GOSUB` family** — `ex_on` ([`program.asm:907-913`](../basic/program.asm))
+already peeks the token after `ON` (`jp z,ex_on_error` for `ERROR`). Add sibling peeks:
+`INTERVAL`/`KEY`/`SPRITE`/`STOP`/`STRIG` → a shared `ex_on_trap` that (a) for
+`INTERVAL`, consumes `=n` and stores `ZINTVAL`; (b) reads the handler line(s) —
+single line for INTERVAL/STOP/SPRITE, a comma-list for KEY/STRIG — via the existing
+`find_line_bc`; (c) writes the `handler_line_link` field(s) of the matching `ZTRAP`
+entries; leaves state OFF (arm ≠ enable).
+
+**Arming statements** — five `<kw> ON|OFF|STOP` forms:
+- `INTERVAL ON/OFF/STOP` — new keyword+token (§8), new `ex_interval`.
+- `STOP ON/OFF/STOP` — `ex_stop` ([`program.asm:383`](../basic/program.asm)) currently
+  takes no argument; add the `ON/OFF/STOP` sub-parse (bare `STOP` stays the break).
+- `SPRITE ON/OFF/STOP` — promote `spr_noop` ([`graphics.asm:1023-1038`](../basic/graphics.asm))
+  to set the SPRITE entry's state (from D-G7-4 no-op → real).
+- `STRIG(n) ON/OFF/STOP` — new `ex_strig_stmt`, replaces the D-I-5 `ERR 2`; parse
+  `(n)` (0..4), set entry n's state.
+- `KEY(n) ON/OFF/STOP` — extend `ex_key` ([`screen.asm:196`](../basic/screen.asm)) to
+  branch on `(` (trap form, n=1..10) vs `ON/OFF` (the existing display form). Replaces
+  the D-I-5 `ERR 2` for `KEY(n)`.
+
+Malformed forms follow the **trappable** `ld a,2 / jp raise_error` convention
+(`gfx_syntax`, [`graphics.asm:1044`](../basic/graphics.asm)), not `stmt_error`, so a
+program can `ON ERROR`-trap its own bad trap statement — consistent with the
+error-handling follow-up (statement syntax errors are trappable).
+
+---
+
+## 8. Tokens
+
+No new *trap* tokens — the `ON X GOSUB` statements are built from existing tokens (`ON
+$95` + event keyword + `GOSUB $8D` + `$0E` line-refs), and `KEY $CC`/`SPRITE
+$C7`/`STOP $90`/`STRIG $FF$A3`/`OFF $EB` already exist. **`INTERVAL` is the one new
+keyword** — needs a `kwtable.inc` row and a token equate (D-T-5: pick the byte;
+oracle-confirm via `basic_probe_crunch.py` against the VG-8020, the standing token
+discipline). `ON` is `$95` and the reference token for `INTERVAL` is a known published
+value to match byte-identically.
+
+---
+
+## 9. Slicing (the primary sign-off decision, D-T-6)
+
+The arc is naturally cut by **event-source mechanism**, simplest first so the
+machinery (table + poll seam + dispatcher + GOSUB-branch + RETURN-resume) is proven on
+the zero-I/O case before any device scanning:
+
+- **T1 — trap core + INTERVAL.** `ZTRAP` table, the H.TIMI `event_poll` seam, the
+  run-loop `check_traps` dispatcher, the GOSUB-branch + auto-STOP + RETURN-resume, and
+  INTERVAL as the first event (pure counter). `ON INTERVAL=n GOSUB` + `INTERVAL
+  ON/OFF/STOP` + the new keyword/token. **Proves the whole skeleton with no device
+  complexity.** Gate: a new `interval-trap-acceptance` probe — a program that counts
+  fires over a known frame span; plus a host unit test of the counter + state machine.
+- **T2 — STOP + STRIG traps.** `ON STOP GOSUB` / `STOP ON/OFF/STOP` (the break-path
+  intercept, §6) and `ON STRIG GOSUB` / `STRIG(n) ON/OFF/STOP` (GTTRIG edge). Both are
+  "sample an input, edge-detect." Gate extends the matrix-hold harness (press the
+  trigger / Ctrl-STOP while a trap program runs). Closes the D-I-5 STRIG divergence.
+- **T3 — KEY trap.** `ON KEY GOSUB` / `KEY(n) ON/OFF/STOP` (10 function keys, matrix
+  decode, `KEY(`-vs-`KEY ON` disambiguation). The fiddliest scan → last of the input
+  traps. Gate presses function keys via the matrix harness. Closes the D-I-5 KEY
+  divergence.
+- **T4 — SPRITE collision trap.** Promote `SPRITE ON/OFF/STOP` from no-op + `ON SPRITE
+  GOSUB`; resolve the VDP collision-source fork (D-T-4). Gate: a graphics program that
+  collides two sprites and counts trap fires. Closes the graphics D-G7-4 handoff.
+
+Alternative cuts to weigh at sign-off: **(a)** fold T2+T3 into one "input traps" slice
+(STOP+STRIG+KEY together) — fewer slices but a bigger byte step and a fatter gate;
+**(b)** put SPRITE (T4) second, right after the core, since it's a single-entry trap
+like INTERVAL and defers the multi-entry list parsing. Recommend the four-slice order
+above (**T1→T2→T3→T4**): monotone in mechanism complexity, and it lands the two
+divergence-closing input traps (D-I-5) before the graphics handoff.
+
+---
+
+## 10. Byte budget — the dominant risk
+
+**Measured now: page-1 free = 2 B, page-0 low region = 19 B** (`make basic-reloc`).
+The arc is byte-starved before it starts. Every slice will need a carve or eviction,
+exactly as input-devices did. This is the #1 execution risk and it shapes the order:
+
+- Do the standard **measure-first** step per slice (per the recurring arc lesson: never
+  declare a wall before measuring the real number).
+- Candidate funding levers, cheapest first (to be scouted per slice, not pre-committed):
+  a dispatch-golf on `ex_on`'s sibling peeks; the `ev_f_ff` / trap-statement parsers
+  sharing one range-check helper; and, only if a real carve is needed, an eviction to a
+  page-0 sub-ROM tenant of something **not** in the interrupt path (the poll/dispatch
+  code itself must stay resident — never evict interrupt-context code, D-I-4 precedent).
+- The poll (`event_poll`) and dispatcher (`check_traps`) are small; the table is RAM
+  (free). The bulk is the **parsers** (five arming statements + the `ON X GOSUB` list
+  walker) — these are the eviction candidates if page 1 can't hold them.
+
+**Because page-1 is at 2 B, the first real work of T1 is a measured carve, and the T1
+packet must land that carve before the feature.** If measurement shows the core doesn't
+fit even after the cheap golf levers, that is a genuine STOP-and-confirm fork (a larger
+eviction changes scope) — surfaced at the T1 packet, not decided here.
+
+### 10.1 T1 carve — sizing (measured 2026-07-24)
+
+Free ROM in the merged main = **2 B page-1 + 19 B page-0 low region = 21 B** (the run
+loop can `call` page-0 low-region code directly — same slot, both pages mapped — so both
+pools are usable for the EI-context dispatcher; only `event_poll` is hard-pinned to
+page 1 by the DI/H.TIMI contract).
+
+**Split the T1 resident need:**
+- **Hard page-1 (DI):** `event_poll`'s INTERVAL tick — dec 16-bit `ZINTCNT`, reload,
+  set PENDING. ~22 B. This is the only truly page-1-pinned code.
+- **EI-context resident (page-1 *or* page-0 low):** the run-loop `check_traps` gate +
+  dispatch (~25 B INTERVAL-specific for T1), the trap GOSUB-branch (~15 B if it reuses a
+  factored `gosub_push`), the `ex_return` re-enable hook (~18 B), the two hot-path gate
+  bytes' tests (~12 B). ~70 B.
+- **Evictable (page-0 sub-ROM tenant — statement parsers, cold, EI):** `ON INTERVAL=n
+  GOSUB` arm + `INTERVAL ON/OFF/STOP` (~80 B) + the `INTERVAL` keyword row (low region).
+
+So minimal T1 resident ≈ **90 B** against 21 B free → a **~70 B carve** (input-devices
+scale: its carves were 55–71 B; tractable with one eviction, not a monster).
+
+**Funding plan (cheapest first):**
+1. **Golf — factor `gosub_push`.** `ex_gosub` (`program.asm:519-542`) and `eon_gosub`
+   (`939-966`) each inline the identical 4-byte frame-push. Extract one shared
+   `gosub_push` helper; the trap GOSUB-branch becomes its third caller. Net-saves ~30–40 B
+   across three users — partial self-funding, and it's a clean refactor with no behaviour
+   change (byte-identity guard on the lean ROM confirms).
+2. **Evict the INTERVAL parsers** to a new page-0 sub-ROM tenant (statement executors are
+   the standard tenant shape — cf. `graphics_tenant`/`readdata_tenant`); ~80 B off page 1.
+3. **Remaining resident (~50 B after golf)** lands in the freed page-1 headroom + the 19 B
+   page-0 low region. If it still won't fit, scout one cold cluster to evict (candidates
+   from the gap map: `ex_paint`/`ex_circle` graphics or `do_open`/`lrset_common` disk) —
+   the STOP-and-confirm only triggers if even that under-delivers.
+
+---
+
+## 11. Open decisions for sign-off
+
+- **D-T-1 — `ZTRAP` layout + state-bit encoding (§3).** Own-design table at `$E1D1`,
+  18×3 B + the interval pair; tri-state in bits 1-0, PENDING in bit 7. *Recommend as
+  written.* Alternative: separate parallel arrays (states / links) instead of
+  interleaved entries — marginally simpler poll indexing, same byte cost.
+- **D-T-2 — poll insertion (§4).** Extend the `H_TIMI` seam so `event_poll` runs ahead
+  of `play_service`'s `MUSICF` fast-out. *Recommend:* a tiny resident dispatcher at the
+  seam target (`event_poll` then fall into `play_service`), so both share one `H_TIMI`
+  hook. Alternative: chain two `JP`s.
+- **D-T-3 — dispatch priority + one-per-boundary (§5).** Fixed enum order, one trap per
+  inter-statement gap. *Recommend as written* (matches the reference).
+- **D-T-4 — SPRITE collision source (§4, T4).** The VDP collision flag (status reg S#0
+  bit 5) is **read-to-clear** and C-BIOS's own $0038 ISR already samples S#0 each frame
+  (latching into its status sysvar) — so a second direct-port read in `event_poll`
+  races the BIOS and one of the two loses the flag. Options: **(a)** read the C-BIOS
+  status latch (depends on a BIOS internal — weak provenance, but the graphics arc's
+  [`vdp-direct-port-read-fetch-window`] lesson shows direct reads are workable); **(b)**
+  direct-port sample in `event_poll` and accept the race characteristics; **(c)** defer
+  T4 and ship T1–T3, leaving `SPRITE ON/OFF/STOP` as the current no-op + `ON SPRITE
+  GOSUB` a documented not-yet. *Recommend deciding this at the T4 packet after an
+  empirical read of how C-BIOS handles S#0* — it is the one fork with a real oracle
+  question, and it does not block T1–T3.
+- **D-T-5 — `INTERVAL` token (§8).** Add the keyword; match the reference token byte
+  byte-identically, oracle-confirmed via the crunch probe. *Recommend as written.*
+- **D-T-6 — slicing + order (§9). ✅ SIGNED OFF 2026-07-24: T1→T2→T3→T4** by mechanism
+  complexity, and start T1 directly from this arc spec (no separate T1 packet).
+- **D-T-7 — byte strategy (§10).** Measure-first each slice; cheap golf before any
+  carve; never evict interrupt-path code. *Recommend as written*; the one that could
+  bite is T1 not fitting in 2 B even after golf — a STOP-and-confirm at that packet.
+
+---
+
+## 12. Implementation order (T1, after sign-off)
+
+1. **Measure** the T1 core's byte cost against the 2 B page-1 budget; scout the cheapest
+   funding lever; land the carve **before** the feature (STOP-and-confirm if it doesn't
+   fit after golf).
+2. `ZTRAP` sysvars + the state-machine helpers (arm / set-state / fire) — host
+   unit-tested first (`tests/test_traps.py`, emulator-free), since the tri-state +
+   auto-STOP + PENDING-latch logic is where the subtle bugs live.
+3. `event_poll` INTERVAL counter at the `H_TIMI` seam; `check_traps` dispatcher at the
+   run-loop point; the GOSUB-branch + RETURN-resume.
+4. Parse `ON INTERVAL=n GOSUB` + `INTERVAL ON/OFF/STOP` + the new keyword/token;
+   crunch-corpus oracle-confirm the token.
+5. The `interval-trap-acceptance` gate (fire-count over a frame span, VG-8020
+   differential) — and **run it** (the standing "builds green but never run" trap).
+6. Full standing-gate sweep + the reloc/lean byte-identity gate; commit.
