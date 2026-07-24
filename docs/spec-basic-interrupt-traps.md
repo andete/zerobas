@@ -316,35 +316,46 @@ loop can `call` page-0 low-region code directly — same slot, both pages mapped
 pools are usable for the EI-context dispatcher; only `event_poll` is hard-pinned to
 page 1 by the DI/H.TIMI contract).
 
-**Split the T1 resident need:**
-- **Hard page-1 (DI):** `event_poll`'s INTERVAL tick — dec 16-bit `ZINTCNT`, reload,
-  set PENDING. ~22 B. This is the only truly page-1-pinned code.
-- **EI-context resident (page-1 *or* page-0 low):** the run-loop `check_traps` gate +
-  dispatch (~25 B INTERVAL-specific for T1), the trap GOSUB-branch (~15 B if it reuses a
-  factored `gosub_push`), the `ex_return` re-enable hook (~18 B), the two hot-path gate
-  bytes' tests (~12 B). ~70 B.
-- **Evictable (page-0 sub-ROM tenant — statement parsers, cold, EI):** `ON INTERVAL=n
-  GOSUB` arm + `INTERVAL ON/OFF/STOP` (~80 B) + the `INTERVAL` keyword row (low region).
+**Refined architecture (D-T-2a, decided 2026-07-24 during T1 — supersedes the
+"resident dispatcher" assumption of §5).** Detailing the actual Z80 showed a *resident*
+general dispatcher + service stack + RETURN hook runs **~145–185 B**, not ~90 B — a
+~110 B carve. But only `event_poll` is genuinely interrupt-path (DI, in H.TIMI); the
+dispatcher (`check_traps`), the service-stack push, and the RETURN re-enable all run in
+the **EI run loop**, touch only **RAM** (`ZTRAP`, `GSP`, `TRAPSTK`, `GOTOTGT`/`GOTOFLAG`/
+`CURLINE` — all always-mapped), and can therefore live in a **page-1 sub-ROM tenant**
+(sub.rom has its own budget, off the 37 B). They are invoked by `subrom_call` **only when
+a resident `TRAPPEND` byte is set** — `event_poll` (resident) raises `TRAPPEND` when it
+latches a PENDING, so the per-statement run-loop cost is just `ld a,(TRAPPEND) / or a /
+jr z` (a RAM load), and the expensive `subrom_call` fires ~once per trap *event* (e.g.
+once/second for `INTERVAL=60`), never per statement — no perf regression even for a
+trap-armed tight loop. `gosub_push` (main page-1) is unreachable from the tenant (page 1
+is switched out), so the tenant **inlines** its own frame-push — that's fine, it's the
+one place that doesn't reuse the golfed helper.
 
-So minimal T1 resident ≈ **90 B** against 21 B free → a **~70 B carve** (input-devices
-scale: its carves were 55–71 B; tractable with one eviction, not a monster).
+**Split the T1 resident need (measured, refined):**
+- **Resident page-1 (unavoidable):** `event_poll` INTERVAL tick + `TRAPPEND` raise
+  (~47 B, DI); the run-loop `TRAPPEND` gate + `subrom_call` (~15 B); the `ex_return`
+  `TRAPSVC` gate + `subrom_call` (~12 B); `trap_install` htimi seam (~6 B, extends
+  `play_install`). ≈ **80 B**.
+- **Sub-ROM page-1 tenant (off the 37 B budget):** `check_traps` dispatch + service-push
+  + RETURN re-enable + `trap_init` (zero `ZTRAP` at boot).
+- **Sub-ROM page-0 tenant (off-budget):** the statement parsers — `ON INTERVAL=n GOSUB`
+  arm + `INTERVAL ON/OFF/STOP` + the `set_state` helper (adjusts `TRAPENA`). Plus the
+  `INTERVAL` keyword row (low region).
+
+So resident T1 ≈ **80 B** against **37 B** free (post-golf) → a **~43 B carve** (was ~70).
 
 **Funding plan (cheapest first):**
-1. **Golf — factor `gosub_push`.** `ex_gosub` (`program.asm:519-542`) and `eon_gosub`
-   (`939-966`) each inline the identical 4-byte frame-push (`IN: HL=resume ptr, CURLINE;
-   OUT: CF clear=pushed / CF set=stack-full; preserves BC=target`). Extract one shared
-   `gosub_push`; the trap GOSUB-branch becomes its third caller, and the two identical
-   overflow tails (`ERRMARK $CE` + ERR 7) merge to one. Net ~20 B. **Must be repack-only
-   branched** (`IF ROM_BASE < $4000` golfed / `ELSE` the original inline) — `ex_gosub`/
-   `eon_gosub` are in the lean ROM too, so the lean bytes must stay frozen; the repack
-   build carries only the golfed branch (same pattern as the input-devices `ev_f_ff`
-   golf). Verify with the reloc/lean byte-identity gate + `tests/test_control_flow.py`.
-2. **Evict the INTERVAL parsers** to a new page-0 sub-ROM tenant (statement executors are
-   the standard tenant shape — cf. `graphics_tenant`/`readdata_tenant`); ~80 B off page 1.
-3. **Remaining resident (~50 B after golf)** lands in the freed page-1 headroom + the 19 B
-   page-0 low region. If it still won't fit, scout one cold cluster to evict (candidates
-   from the gap map: `ex_paint`/`ex_circle` graphics or `do_open`/`lrset_common` disk) —
-   the STOP-and-confirm only triggers if even that under-delivers.
+1. **Golf — factor `gosub_push`.** ✅ **DONE 2026-07-24** (commit after 3284a6e): repack-
+   only branch, lean byte-identical, `test_control_flow` + `unit-test` 51/51 green.
+   **Freed page-1 2 B → 37 B (35 B, better than the ~20 B estimate).**
+2. **Move dispatch + parsers to tenants** (D-T-2a above) — keeps ~100 B of the machinery
+   *off* the 37 B page-1 budget entirely.
+3. **Remaining ~43 B resident** vs 37 B page-1 + 19 B page-0-low = 56 B → **fits without a
+   further eviction** (6 B page-1 spare + the 19 B low region cover the `ex_return`/gate
+   bytes that can't be page-0). Re-measure empirically once written; only if it overspills
+   does a small cold-routine eviction trigger (candidates unchanged: `ex_paint`, disk
+   `lrset_common`). The STOP-and-confirm fork is now unlikely.
 
 ---
 
