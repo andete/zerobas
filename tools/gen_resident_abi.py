@@ -33,8 +33,9 @@ import sys
 
 # The resident-ABI surface the sub-ROM's page-1 tenants need — compute-only
 # leaves, all page-0-resident. The first 9 are fp_sqrt's own list (docs/spec-
-# basic-subrom-mathpack.md §4; flt_to_int16 is DELIBERATELY excluded, it
-# moved main-side, called by evmc_sqr instead — spec §3); fp_atan/fp_exp/
+# basic-subrom-mathpack.md §4; flt_to_int16 was excluded for the math pack, but
+# the CIRCLE-parse tenant (sub/circleparse.asm) needs it for its 8.8/brad rounds
+# — cpt_round's abs+0.5+trunc, page-0-resident at $3280, re-added here); fp_atan/fp_exp/
 # fp_log/fp_pow/fp_sin/fp_cos/fp_tan/fp_rnd reuse a SUBSET, no new symbols.
 # vars_reset (docs/spec-eviction-g4-space.md §4, carve #2) is sub/
 # lineedit.asm's relink-tail call — arrays slice-1/4b's re-anchor + string-
@@ -51,6 +52,7 @@ REQUIRED = [
     "arga_pack_fac",
     "widen_fac_to",
     "widen_uint_to",
+    "flt_to_int16",
     "vars_reset",
 ]
 

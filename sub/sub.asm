@@ -453,6 +453,15 @@ sub_p1_table:
                                                 ;   Marshals HL/CF via BN_PTR/BN_STAT.
                                                 ;   Main-ROM stub is basic/bload.asm
                                                 ;   `build_83_name` (repack branch).
+                jp      circleparse_tenant      ; index 19 (SUBROM_IDX_CIRCLEPARSE):
+                                                ;   CIRCLE's grammar walk + angle/aspect
+                                                ;   float math, evicted as an eval-bounce
+                                                ;   co-routine (docs/spec-circle-
+                                                ;   coroutine-space.md) to reclaim ~542 B
+                                                ;   of resident page-1 for the interrupt-
+                                                ;   trap arc. Reaches the low-region float
+                                                ;   pack (fp_sqrt pattern); bounces
+                                                ;   eval/parse_coord to ex_circle.
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -597,6 +606,14 @@ sub_p1_ping:
 ; A pure RAM leaf with an inlined upcase clone, no resident-ABI import; marshals
 ; HL/CF through BN_PTR/BN_STAT. Its own header has the full rationale.
                 include "fcbname.asm"
+
+; CIRCLE-parse co-routine (index 19 = circleparse_tenant, sub/circleparse.asm):
+; CIRCLE's whole grammar walk + angle/aspect float math, evicted as an eval-bounce
+; co-routine to reclaim ~542 B of resident page-1 for the interrupt-trap arc
+; (docs/spec-circle-coroutine-space.md). Needs the resident-ABI float imports
+; (fp_add/sub/mul/div/cmp, dig15_iszero, widen_uint_to, flt_to_int16 -- all
+; low-region, the fp_sqrt pattern). Bounces eval/parse_coord back to ex_circle.
+                include "circleparse.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF

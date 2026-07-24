@@ -26,7 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
-from msxtest import Machine, carry  # noqa: E402
+from msxtest import Machine, carry, load_symbols  # noqa: E402
 
 decimal.getcontext().prec = 40
 D = decimal.Decimal
@@ -314,18 +314,32 @@ def zbvec_prep(m, sbrad, ssgnc, ssgns, ebrad, esgnc, esgns, r, aspmaj=0, asps=25
     return S, E, big
 
 
-def zboundary_prep_resident(mr, theta_abs, dest="GFX_SBRAD"):
-    """Drive the REAL RESIDENT gfx_circ_boundary_prep (basic/graphics.asm,
-    rom_base=$2812): pokes a canonical FPNUM into ARGA (poke_fpnum), points
-    GFX_CS_AY at `dest`, calls it, returns (brad_raw, sign_c, sign_s) read
-    back from the 4-byte record it wrote."""
-    poke_fpnum(mr, mr.addr("ARGA"), theta_abs)
-    mr.poke_w(mr.addr("GFX_CS_AY"), mr.addr(dest))
-    mr.call("gfx_circ_boundary_prep")
-    b = mr.peek(mr.addr(dest), 2)
+def make_p1_tenant_machine():
+    """A machine in the PAGE-1-TENANT memory map: main low-region float pack +
+    main page-0 (from the reloc image at $2812) with the sub-ROM's page 1
+    ($4000-$7FFF, the CIRCLE-parse tenant + its moved float glue) overlaid on top
+    of main page 1. This is exactly what a page-1 CALSLT sees -- so the tenant's
+    cpt_boundary_prep can call fp_cmp/fp_mul/... (low region, present) and read its
+    own GFX_*_PI constants (sub page 1). Returns (machine, sub_symbols)."""
+    m = Machine(RES_ROM, RES_SYM, rom_base=RELOC_BASE)
+    sub_bytes = open(SUB_ROM, "rb").read()
+    m.mem[0x4000:0x8000] = sub_bytes[0x4000:0x8000]   # overlay the sub tenant page 1
+    return m, load_symbols(SUB_SYM)
+
+
+def zboundary_prep_resident(mt, cpt_addr, theta_abs, dest="GFX_SBRAD"):
+    """Drive cpt_boundary_prep (the CIRCLE-parse tenant's moved brad/sign math,
+    sub/circleparse.asm -- was resident gfx_circ_boundary_prep) on the page-1
+    tenant machine `mt`: poke a canonical FPNUM into ARGA, point GFX_CS_AY at
+    `dest`, call, return (brad_raw, sign_c, sign_s) from the record it wrote.
+    RAM cells (ARGA/GFX_*) are addressed via RES_SYM (identical either side)."""
+    poke_fpnum(mt, mt.addr("ARGA"), theta_abs)
+    mt.poke_w(mt.addr("GFX_CS_AY"), mt.addr(dest))
+    mt.call(cpt_addr)
+    b = mt.peek(mt.addr(dest), 2)
     brad = b[0] | (b[1] << 8)
-    signc = mr.peek(mr.addr(dest) + 2)[0]
-    signs = mr.peek(mr.addr(dest) + 3)[0]
+    signc = mt.peek(mt.addr(dest) + 2)[0]
+    signs = mt.peek(mt.addr(dest) + 3)[0]
     to_signed = lambda v: v - 256 if v >= 128 else v
     return brad, to_signed(signc), to_signed(signs)
 
@@ -1147,29 +1161,32 @@ def run():
               f"gfx_in_range x={x:>5} y={y:>5} -> {'in' if got else 'off':>3} "
               f"(want {'in' if want else 'off'})")
 
-    # --- resident gfx_circ_boundary_prep (§5.2.1 REVISED): the brad + ---
-    # continuous quadrant-sign marshal. Battery incl. the 1.57-vs-1.58 pair
-    # (the whole point of the continuous-not-brad-derived sign, spec §5.4) and
-    # every cardinal/near-cardinal edge (0, pi/2, pi, 3pi/2, 2pi-ish).
+    # --- cpt_boundary_prep (§5.2.1 REVISED, now the CIRCLE-parse TENANT's ---
+    # moved brad + continuous quadrant-sign marshal, sub/circleparse.asm): driven
+    # in the page-1-tenant memory map (main low-region float pack + sub page 1).
+    # Battery incl. the 1.57-vs-1.58 pair (the whole point of the continuous-
+    # not-brad-derived sign, spec §5.4) and every cardinal/near-cardinal edge.
+    mt, subsym = make_p1_tenant_machine()
+    cpt_bp = subsym["cpt_boundary_prep"]
     BOUNDARY_PREP_CASES = [
         0.0, 0.01, 1.0, 1.50, 1.504, 1.51, 1.55, 1.57, 1.58, 1.60,
         math.pi / 2, 3.0, 3.14, math.pi, 4.71238898038469, 6.28,
     ]
     for theta in BOUNDARY_PREP_CASES:
-        brad, sc, ss = zboundary_prep_resident(mr, theta)
+        brad, sc, ss = zboundary_prep_resident(mt, cpt_bp, theta)
         want_brad = py_raw_brad(theta)
         want_sc, want_ss = py_resident_signs(theta)
         check(brad == want_brad and sc == want_sc and ss == want_ss,
-              f"gfx_circ_boundary_prep theta={theta} -> brad={brad} "
+              f"cpt_boundary_prep theta={theta} -> brad={brad} "
               f"(want {want_brad}) signc={sc} (want {want_sc}) "
               f"signs={ss} (want {want_ss})")
 
     # teeth: 1.57 and 1.58 MUST resolve to different sign_c despite an
     # (almost certainly) identical brad -- the whole reason the sign comes
     # from a continuous compare, not brad>>6.
-    b57, sc57, _ = zboundary_prep_resident(mr, 1.57)
-    b58, sc58, _ = zboundary_prep_resident(mr, 1.58)
-    check(sc57 != sc58, f"teeth: gfx_circ_boundary_prep distinguishes theta=1.57 "
+    b57, sc57, _ = zboundary_prep_resident(mt, cpt_bp, 1.57)
+    b58, sc58, _ = zboundary_prep_resident(mt, cpt_bp, 1.58)
+    check(sc57 != sc58, f"teeth: cpt_boundary_prep distinguishes theta=1.57 "
           f"(brad={b57} signc={sc57}) from 1.58 (brad={b58} signc={sc58})")
 
     # --- G6 DRAW leaves (same sub-ROM machine) ---

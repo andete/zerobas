@@ -580,6 +580,10 @@ GFX_ENEG        equ     $E155   ; resident: end angle was negative -> spoke pend
 ; they live in a separate repack-only RAM window below (GFX_PSTK).
 GFX_B           equ     $E156   ; border colour B (raw comparison value 0..255,
                                 ; NOT range-checked -- spec §3) (1) -> ends $E157
+GFX_CPHASE      equ     $E157   ; CIRCLE-parse co-routine phase (sub/circleparse.asm):
+                                ; which arg the tenant last requested, so it resumes at
+                                ; the right point after each resident eval-bounce
+                                ; (0=centre 1=r 2=c 3=start 4=end 5=aspect). (1)
 ; G7 sprites (docs/spec-basic-graphics-g7.md §8). Table bases + the VDP register
 ; mirror the sprite size lives in; the parameter block itself is in the repack-only
 ; window next to GFX_VBUF below (the LINEBUF region's last 9 B do not fit it).
@@ -2666,6 +2670,15 @@ SUBROM_IDX_FCBNAME   equ 18     ; fcbname_tenant (sub/fcbname.asm): the disk
                                 ; via BN_PTR/BN_STAT (above). Only basic/bload.asm
                                 ; `build_83_name` (repack branch) computes
                                 ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FCBNAME.
+SUBROM_IDX_CIRCLEPARSE equ 19  ; circleparse_tenant (sub/circleparse.asm): CIRCLE's
+                                ; whole grammar walk + angle/aspect float math, evicted
+                                ; as an eval-bounce co-routine to reclaim ~350-500 B of
+                                ; resident page-1 for the interrupt-trap arc (docs/spec-
+                                ; circle-coroutine-space.md). PAGE 1 (reaches the
+                                ; low-region float pack, the fp_sqrt pattern); bounces
+                                ; eval/parse_coord back to the resident ex_circle servicer
+                                ; via GFX_DREQ/GFX_DPTR. IX = SUBROM_ENTRY_BASE_P1 +
+                                ; 3*SUBROM_IDX_CIRCLEPARSE.
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

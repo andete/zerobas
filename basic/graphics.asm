@@ -395,414 +395,68 @@ gfx_store_colour_checked:
 ; "small integers"; the combined ellipse+arc+spoke case is untested).
 ; =============================================================================
 ex_circle:
+                ; CIRCLE re-hosted as an eval-bounce co-routine (docs/spec-circle-
+                ; coroutine-space.md). The grammar walk AND the angle/aspect float
+                ; math now live in the page-1 tenant gfx_circle_parse (sub/circleparse.
+                ; asm), which reclaims ~350-500 B of resident page-1 to fund the
+                ; interrupt-trap arc. The tenant can't call eval/parse_coord (main
+                ; page-1, switched out under it), so it walks the grammar over the RAM
+                ; token stream and REQUESTS each value via GFX_DREQ; this thin resident
+                ; servicer resolves the request (parse_coord / gfx_eval_int16 / eval),
+                ; advances the shared cursor GFX_DPTR, and re-enters. On "done" it does
+                ; the resident GFX_OP=4 geometry call (page-0 tenant -- the parse tenant
+                ; can't nest-call it). HL enters just past the CIRCLE token.
                 inc     hl                  ; past the CIRCLE token
                 ld      a,(SCRMOD)
                 cp      2                   ; SCREEN 2 only (arc D4)
-                jr      nz,gfx_err5
-                call    parse_coord         ; BC=cx, DE=cy (int16, STEP resolved)
+                jp      nz,gfx_err5
+                ld      (GFX_DPTR),hl       ; seed the shared token cursor
+                xor     a
+                ld      (GFX_DRESUME),a     ; first entry is a fresh parse
+                ld      (GFX_RES),a         ; clear the tenant error slot
+cp_loop:
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_CIRCLEPARSE
+                call    subrom_call         ; run the page-1 parse tenant; CF=1 if absent
+                jp      c,gfx_absent
+                ld      a,(GFX_DREQ)
+                or      a
+                jr      z,cp_done           ; 0 = the tenant finished parsing
+                ld      hl,(GFX_DPTR)       ; resolve the request from the cursor
+                dec     a
+                jr      z,cp_req_coord      ; DREQ=1: parse centre (x,y)
+                dec     a
+                jr      z,cp_req_int        ; DREQ=2: eval int16 (r / c)
+                ; DREQ=3: eval a float expression (angle / aspect) -> ARGA canonical
+                call    eval                ; HL advanced; value in FAC
+                ld      (GFX_DPTR),hl
+                ld      hl,ARGA
+                call    widen_rhs_operand   ; ARGA := canonical(value); tenant reads it
+                jr      cp_resume
+cp_req_coord:
+                call    parse_coord         ; BC=cx, DE=cy (STEP resolved), HL advanced
                 ld      (GFX_CXC),bc
                 ld      (GFX_CYC),de
-                call    skip_spaces
-                ld      a,(hl)
-                cp      ','                 ; the ",r" comma is mandatory
-                jp      nz,elg_syntax
-                inc     hl
-                call    gfx_eval_int16   ; ERR 6 if > int16
-                ld      a,d
-                or      a
-                jp      m,gfx_err5          ; r<0 -> ERR 5 (signed-off G4-rneg deviation)
-                ld      (GFX_R),de
-                ; --- defaults before the optional fields ---
-                ld      a,(FORCLR)
-                and     $0F
-                ld      (GFX_C),a
-                xor     a
-                ld      (GFX_ASPMAJ),a
-                ld      bc,256              ; NOT hl -- hl is the live token cursor here
-                ld      (GFX_ASPS),bc
-                xor     a
-                ld      (GFX_ARCF),a
-                ld      (GFX_SNEG),a
-                ld      (GFX_ENEG),a
-                ; --- optional ",c" ---
-                call    skip_spaces
-                ld      a,(hl)
-                cp      ','
-                jp      nz,circ_draw
-                inc     hl
-circ_c:
-                call    skip_spaces
-                ld      a,(hl)
-                cp      ','
-                jr      z,circ_start_intro  ; c omitted; this comma also intros "start"
-                or      a
-                jp      z,circ_draw
-                cp      COLON
-                jp      z,circ_draw
-                call    gfx_eval_int16   ; ERR 6 if > int16
-                call    gfx_store_colour_checked   ; 0..15 or ERR 5 (G5 D4 DRY lever,
-                                            ; now re-applied -- the G6 gate re-verifies
-                                            ; this site, which is why G5 reverted it)
-                call    skip_spaces
-                ld      a,(hl)
-                cp      ','
-                jp      nz,circ_draw
-circ_start_intro:
-                inc     hl                  ; consume the comma introducing "start"
-                ; --- eager defaults: brad=0, sign_c=+1, sign_s=0 (angle 0 -- the
-                ; SAME vector an omitted end (2*pi) yields by periodicity, spec
-                ; §5.2.1 REVISED trig-free design). Matches the OLD gfx_circ_
-                ; default_vec's (r,0) result exactly (verified: gfx_circ_bvec at
-                ; brad=0/signc=1/signs=0 folds to cos=+max/sin=0 -> (r,0)), now
-                ; expressed as the record the tenant's gfx_circ_bvec reads. No
-                ; math-pack call, no float, no HL clobber -- the push/pop guard
-                ; the old code needed is gone too.
-                xor     a
-                ld      (GFX_SBRAD),a
-                ld      (GFX_SBRAD+1),a
-                ld      (GFX_EBRAD),a
-                ld      (GFX_EBRAD+1),a
-                ld      (GFX_SSGNS),a
-                ld      (GFX_ESGNS),a
+                ld      (GFX_DPTR),hl
+                jr      cp_resume
+cp_req_int:
+                call    gfx_eval_int16      ; DE=value, HL advanced (ERR 6 if > int16)
+                ld      (GFX_DPTR),hl
+                ld      (GFX_DVAL),de
+cp_resume:
                 ld      a,1
-                ld      (GFX_SSGNC),a
-                ld      (GFX_ESGNC),a
-circ_start:
-                call    skip_spaces
-                ld      a,(hl)
-                cp      ','
-                jr      z,circ_start_empty  ; empty; this comma also intros "end"
+                ld      (GFX_DRESUME),a
+                jr      cp_loop
+cp_done:
+                ld      a,(GFX_RES)
                 or      a
-                jp      z,circ_draw
-                cp      COLON
-                jp      z,circ_draw
-                ld      bc,GFX_SNEG
-                ld      de,GFX_SBRAD
-                call    circ_parse_given_angle ; HL := cursor advanced past the expr
-                call    skip_spaces
-                ld      a,(hl)
-                cp      ','
-                jp      nz,circ_draw
-                inc     hl
-                jr      circ_end
-circ_start_empty:
-                inc     hl                  ; consume the comma, move into "end"
-circ_end:
-                call    skip_spaces
-                ld      a,(hl)
-                cp      ','
-                jr      z,circ_end_empty    ; empty; this comma also intros "aspect"
-                or      a
-                jp      z,circ_draw
-                cp      COLON
-                jp      z,circ_draw
-                ld      bc,GFX_ENEG
-                ld      de,GFX_EBRAD
-                call    circ_parse_given_angle ; HL := cursor advanced past the expr
-                call    skip_spaces
-                ld      a,(hl)
-                cp      ','
-                jp      nz,circ_draw
-                inc     hl
-                jr      circ_aspect
-circ_end_empty:
-                inc     hl                  ; consume the comma, move into "aspect"
-circ_aspect:
-                call    skip_spaces
-                ld      a,(hl)
-                cp      ','
-                jp      z,elg_syntax        ; too many args -> Syntax error
-                or      a
-                jp      z,circ_draw
-                cp      COLON
-                jp      z,circ_draw
-                call    eval                ; HL := cursor advanced past the expr
-                push    hl                  ; guard it -- everything below clobbers HL
-                ld      hl,ARGA
-                call    widen_rhs_operand   ; ARGA := canonical(aspect)
-                ld      a,(ARGA+FPNUM_SIGN)
-                or      a
-                jp      nz,gfx_err5         ; aspect < 0 -> ERR 5
-                ; --- major axis + minor scale S (spec §4.2) ---
-                ld      hl,(ARGA+FPNUM_DEXP)
-                ld      a,h
-                or      a
-                jp      m,circ_asp_le1      ; dexp<0 -> aspect<1
-                ld      a,l
-                or      a
-                jp      z,circ_asp_le1      ; dexp==0 -> aspect<1
-                ; --- aspect>=1 (dexp>=1): y-major; minor_ratio = 1/aspect ---
-                ld      a,1
-                ld      (GFX_ASPMAJ),a
-                ld      hl,ARGA
-                ld      de,ARGB
-                ld      bc,18
-                ldir                        ; ARGB := aspect
-                ld      hl,ARGA
-                xor     a
-                ld      de,1
-                call    widen_uint_to       ; ARGA := 1.0
-                call    fp_div              ; ARGA/FAC := 1/aspect
-                call    circ_asp_scale256
-                jr      circ_asp_done
-circ_asp_le1:
-                xor     a
-                ld      (GFX_ASPMAJ),a
-                call    circ_asp_scale256   ; ARGA still = aspect
-circ_asp_done:
-                pop     hl
-                call    skip_spaces
-                ld      a,(hl)
-                cp      ','
-                jp      z,elg_syntax        ; too many args -> Syntax error
-                jp      circ_draw           ; NORMAL exit -- MUST jump, else fall
-                                            ; through into circ_asp_scale256 and
-                                            ; scale ARGA by 256 a SECOND time
-                                            ; (round leaves ARGA=|v|+0.5, so the
-                                            ; 2nd fp_mul gives 64.5*256=16512 for
-                                            ; aspect .25 -- the ellipse bug)
-
-; --- circ_asp_scale256: ARGA already = the desired minor_ratio (canonical). --
-; S := round(minor_ratio*256) -> GFX_ASPS (spec §4.2). Shared tail of the
-; aspect<=1 / aspect>1 branches (DRY per the G4 slice byte-budget pass).
-; Clobbers everything.
-circ_asp_scale256:
-                ld      hl,ARGB
-                xor     a
-                ld      de,256
-                call    widen_uint_to       ; ARGB := 256.0
-                call    fp_mul              ; ARGA/FAC := minor_ratio*256
-                call    gfx_round_arga_de
-                ld      (GFX_ASPS),de
-                ret
-
-; --- circ_draw: draw (GFX_OP=4), deferred spokes, work area -----------------
-; ARCBIG (and S/E themselves) are now TENANT-computed from GFX_SBRAD/EBRAD
-; (spec §5.2.1 REVISED, gfx_circ_bvec_prep/gfx_circ_arcbig_calc, sub/graphics.
-; asm) -- no resident call needed here any more.
-circ_draw:
-                ld      a,4                 ; GFX_OP = 4 -> tenant CIRCLE
+                jp      nz,raise_error      ; the tenant's ERR code (ERR 2/5/6 sites)
+                ld      a,4                 ; GFX_OP = 4 -> tenant CIRCLE geometry
                 ld      (GFX_OP),a
-                push    hl                  ; guard the token cursor -- CALSLT clobbers HL
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
-                call    subrom_call         ; CF=1 iff the sub-ROM is absent
-                pop     hl
+                call    subrom_call
                 jp      c,gfx_absent
+                ld      hl,(GFX_DPTR)       ; continue the statement stream after CIRCLE
                 jp      exec_stmt
-                ; The deferred spokes and the work-area writes that used to sit
-                ; here now run INSIDE the tenant (sub/graphics.asm gco_done): they
-                ; were pure marshalling whose real work was two more subrom_calls
-                ; back into that same island, so folding them in cost nothing and
-                ; freed ~120 resident bytes to fund G8 (spec-basic-graphics-g8.md
-                ; §6). Behaviour is unchanged -- same order (spokes after the arc),
-                ; same GXPOS=r / GYPOS=cy residue quirk.
-
-; --- circ_parse_given_angle: the shared body of circ_start/circ_end's -------
-; GIVEN-value path (DRY per the G4 slice byte-budget pass). IN: HL=cursor at
-; the angle expression (caller already confirmed non-empty/non-terminator).
-; BC = address of the neg-flag cell (GFX_SNEG or GFX_ENEG); DE = dest
-; boundary-RECORD base (GFX_SBRAD or GFX_EBRAD -- §5.2.1 REVISED trig-free
-; design; NOT a vector any more). OUT: HL = cursor advanced past the
-; expression; the neg-flag cell and the 4-byte record (brad/signc/signs) at
-; (dest) are set; GFX_ARCF := 1. Stashes BC/DE in the tenant's own (not-yet-
-; live) GFX_CS_AX/AY cells -- safe, the tenant only reads them after the
-; LATER GFX_OP=4 call. Clobbers everything + ARGA/ARGB/FAC.
-circ_parse_given_angle:
-                ld      (GFX_CS_AX),bc      ; stash the neg-flag cell address
-                ld      (GFX_CS_AY),de      ; stash the dest record base
-                call    eval                ; HL := cursor advanced past the expr
-                push    hl                  ; guard it -- everything below clobbers HL
-                ld      hl,ARGA
-                call    widen_rhs_operand   ; ARGA := canonical(angle)
-                ld      a,(ARGA+FPNUM_SIGN)
-                ld      hl,(GFX_CS_AX)
-                ld      (hl),a              ; negative -> a spoke is drawn later
-                xor     a
-                ld      (ARGA+FPNUM_SIGN),a ; ARGA := |angle| = a0/a1
-                call    gfx_circ_boundary_prep ; reads GFX_CS_AY for the dest base
-                ld      a,1
-                ld      (GFX_ARCF),a        ; actually GIVEN -> arc mode
-                pop     hl                  ; HL := the advanced cursor (see above)
-                ret
-
-; =============================================================================
-; gfx_circ_boundary_prep -- REVISED 2026-07-21 (spec §5.2.1): TRIG-FREE
-; replacement for the old float SIN/COS pipeline (gfx_circ_default_vec/
-; gfx_circ_endpoint_vec/gfx_circ_axis_val/gfx_round_nonzero, all removed).
-; The original design fed |angle| through the sub-ROM math-pack SIN/COS,
-; whose series fp_mul INFINITE-LOOPED in the CIRCLE call context (root-caused
-; via scratchpad/g4_hang_probe.py: PC stuck in the sub-ROM's own fp_mul inner
-; loop, tenant never entered). This resident half now does only TWO kinds of
-; bounded, non-iterative float op -- neither is the series that hung:
-;   * THREE fp_cmp compares (theta vs HALF_PI/THREE_HALF_PI/PI_CONST) to
-;     pin the quadrant SIGN of the cos/sin components. This must be a
-;     CONTINUOUS float compare, not derived from the rounded brad below: at
-;     a0=1.57 and a0=1.58 BOTH round to the identical brad=64 (the exact
-;     quadrant boundary), so a brad-derived sign would collapse the very
-;     near-cardinal distinction the reference is shown to preserve (spec
-;     §5.4) -- found by host-fit validation against every captured arc +
-;     boundary re-capture BEFORE writing this code
-;     (scratchpad/g4_trigfree_final_model.py: ALL MATCH only with the
-;     continuous compare; a brad>>6-derived sign regresses arc_0_hpi/
-;     arc_hpi_pi). fp_cmp is a pure digit compare (float-arith.asm) -- reads
-;     ARGA/ARGB, never mutates ARGA, so all three compares run BEFORE the
-;     angle-scaling fp_mul below touches ARGA.
-;   * ONE fp_mul (theta * 128/pi, the K_128_PI constant) + gfx_round_arga_de
-;     (itself just fp_add-half + flt_to_int16 -- no series) for the
-;     magnitude table INDEX (brad), left UNMASKED/un-reduced (mod 2*pi is
-;     the tenant's job, done together with the ARCBIG wrap fix -- see
-;     sub/graphics.asm gfx_circ_arcbig_calc).
-; The tenant (sub/graphics.asm gfx_circ_bvec) turns (brad, sign_c, sign_s)
-; into the actual boundary vector via an integer quarter-wave table --
-; genuinely no float in the tenant, per the arc's own rule (spec §5.2/§9
-; G4-e). IN: ARGA = |angle| (canonical, sign already forced 0); GFX_CS_AY =
-; dest record base (GFX_SBRAD or GFX_EBRAD; +2=signc, +3=signs). OUT: the
-; 4-byte record at (GFX_CS_AY) is filled. Clobbers everything + ARGA/ARGB/FAC.
-; =============================================================================
-gfx_circ_boundary_prep:
-                ; --- sign_c: +1 if theta<HALF_PI or theta>THREE_HALF_PI; -1 if
-                ; strictly between; 0 at either exact boundary (never hit by a
-                ; literal user angle in practice; matters only for byte-exact
-                ; parity with the continuous reference model, harmless either
-                ; way since the paired magnitude is 0 there too) ---
-                ld      hl,GFX_HALF_PI
-                ld      de,ARGB
-                ld      bc,18
-                ldir
-                call    fp_cmp              ; A = 1(theta<half_pi) / 2(==) / 4(>)
-                ld      (GFX_CS_T1),a       ; stash cmp-vs-HALF_PI -- NOT a register:
-                                            ; the second ldir's `ld bc,18` clobbers B
-                                            ; (found live: this is what flipped every
-                                            ; sign_c below THREE_HALF_PI).
-                ld      hl,GFX_THREE_HALF_PI
-                ld      de,ARGB
-                ld      bc,18
-                ldir
-                call    fp_cmp              ; A = cmp vs THREE_HALF_PI
-                ld      c,a                 ; C = cmp vs THREE_HALF_PI
-                ld      a,(GFX_CS_T1)
-                ld      b,a                 ; B = cmp vs HALF_PI (reloaded AFTER
-                                            ; both ldir's are done)
-                cp      2
-                jr      z,gcbp_signc_zero
-                ld      a,c
-                cp      2
-                jr      z,gcbp_signc_zero
-                ld      a,b
-                cp      1
-                jr      z,gcbp_signc_pos
-                ld      a,c
-                cp      4
-                jr      z,gcbp_signc_pos
-                ld      a,$FF               ; HALF_PI < theta < THREE_HALF_PI
-                jr      gcbp_signc_store
-gcbp_signc_pos:
-                ld      a,1
-                jr      gcbp_signc_store
-gcbp_signc_zero:
-                xor     a
-gcbp_signc_store:
-                ld      hl,(GFX_CS_AY)
-                inc     hl
-                inc     hl                  ; dest+2 = signc cell
-                ld      (hl),a
-                ; --- sign_s: +1 if 0<theta<PI; -1 if theta>PI; 0 if theta==0 or PI ---
-                ld      hl,ARGA+FPNUM_DIG
-                call    dig15_iszero        ; Z=1 iff theta is an exact 0
-                jr      z,gcbp_signs_zero
-                ld      hl,GFX_PI_CONST
-                ld      de,ARGB
-                ld      bc,18
-                ldir
-                call    fp_cmp              ; A = theta vs PI
-                cp      2
-                jr      z,gcbp_signs_zero
-                cp      1
-                jr      z,gcbp_signs_pos
-                ld      a,$FF               ; theta > PI
-                jr      gcbp_signs_store
-gcbp_signs_pos:
-                ld      a,1
-                jr      gcbp_signs_store
-gcbp_signs_zero:
-                xor     a
-gcbp_signs_store:
-                ld      hl,(GFX_CS_AY)
-                inc     hl
-                inc     hl
-                inc     hl                  ; dest+3 = signs cell
-                ld      (hl),a
-                ; --- brad = round(theta * 128/pi) -- ONE bounded fp_mul (not a
-                ; series -- safe), left UNMASKED (the tenant reduces mod 256 for
-                ; the table lookup and handles the wrap specially for ARCBIG) ---
-                ld      hl,GFX_K_128_PI
-                ld      de,ARGB
-                ld      bc,18
-                ldir
-                call    fp_mul              ; ARGA/FAC := theta * (128/pi)
-                call    gfx_round_arga_de   ; DE := round(...)
-                ld      hl,(GFX_CS_AY)
-                ld      (hl),e
-                inc     hl
-                ld      (hl),d
-                ret
-
-; --- FPNUM constants (18-byte records: sign/dexp(2)/dig[15], sysvars.inc's ---
-; FPNUM_SIGN/DEXP/DIG layout) for gfx_circ_boundary_prep's bounded compares +
-; the brad scale. Own-design decimal digits of pi/2, pi, 3*pi/2, 128/pi (15
-; significant digits each -- see the G4 slice report for the derivation).
-GFX_HALF_PI:
-                db      0, 1,0, 1,5,7,0,7,9,6,3,2,6,7,9,4,8,9
-GFX_PI_CONST:
-                db      0, 1,0, 3,1,4,1,5,9,2,6,5,3,5,8,9,7,9
-GFX_THREE_HALF_PI:
-                db      0, 1,0, 4,7,1,2,3,8,8,9,8,0,3,8,4,6,8
-GFX_K_128_PI:
-                db      0, 2,0, 4,0,7,4,3,6,6,5,4,3,1,5,2,5,2
-
-; --- gfx_round_arga_de: IN ARGA/FAC = value (canonical, sign meaningful). ---
-; OUT: DE = round-half-away-from-zero(value) as int16. Own-design (the same
-; "abs, +0.5, truncate, reapply sign" shape as the tenant's 8.8 scale).
-; Clobbers A, ARGA/ARGB/FAC (via fp_add/flt_to_int16), HL.
-gfx_round_arga_de:
-                ld      a,(ARGA+FPNUM_SIGN)
-                push    af
-                xor     a
-                ld      (ARGA+FPNUM_SIGN),a ; ARGA := |value|
-                ld      hl,ARGB
-                call    gfx_build_half      ; ARGB := 0.5
-                call    fp_add              ; ARGA/FAC := |value| + 0.5
-                call    flt_to_int16        ; DE := trunc(|value|+0.5) = round(|value|)
-                pop     af
-                or      a
-                ret     z                   ; was non-negative -> DE already correct
-                xor     a                   ; negate DE
-                sub     e
-                ld      e,a
-                ld      a,0
-                sbc     a,d
-                ld      d,a
-                ret
-
-; --- gfx_build_half: IN HL=dest -> writes the 18-byte 0.5 FPNUM record -------
-; (sign=0, dexp=0, dig[0]=5, dig[1..13]+guard=0; the sincos_kernel idiom).
-; Clobbers A, B, HL.
-gfx_build_half:
-                xor     a
-                ld      (hl),a              ; sign
-                inc     hl
-                ld      (hl),a              ; dexp lo
-                inc     hl
-                ld      (hl),a              ; dexp hi
-                inc     hl
-                ld      (hl),5              ; dig[0] = 5  (0.5 * 10^0)
-                inc     hl
-                ld      b,14                ; dig[1..13] + guard
-gbh_lp:
-                ld      (hl),0
-                inc     hl
-                djnz    gbh_lp
-                ret
 
 ; =============================================================================
 ; G5 -- PAINT (SCREEN-2 flood fill). docs/spec-basic-graphics-g5.md. Entry: HL
