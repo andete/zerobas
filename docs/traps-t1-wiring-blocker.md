@@ -1,5 +1,16 @@
 # Interrupt-traps T1 — resident-poll wiring BLOCKED (2026-07-24)
 
+## ✅✅ RESOLVED (2026-07-24, commit c355c1d) — H.TIMI page-1-safety guard landed
+
+The blocker is **fixed and committed**. `play_install` now routes H.TIMI through a PAGE-0-resident
+`htimi_guard` (basic/subromcall.asm, 13 B) that only falls through to `play_service` when main-ROM
+owns page 1, and skips PLAY one frame when a sub-ROM page-1 tenant owns it. Spec (signed off):
+[spec-traps-t1-htimi-page1-safety.md](spec-traps-t1-htimi-page1-safety.md). Verified: the whole
+crash band (repack-only shift N=0..135) now PASSES; diskbasic 34/34 + string PASS at N=0 and mid-band
+N=74; unit-test 51/51; play-trace-acceptance PASS (incl. its di_safety page-1-tenant case). The
+sections below are the diagnosis that led here (kept for the trail). **Next: wire `basic/traps.asm`**
+(spec §6 follow-on) — the seam is now safe.
+
 ## ✅ ROOT CAUSE FOUND (2026-07-24, second span) — it is the H.TIMI→play_service seam, NOT a layout construct
 
 **Everything below the horizontal rule is the original investigation and is now SUPERSEDED**
