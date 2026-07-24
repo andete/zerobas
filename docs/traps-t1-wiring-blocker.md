@@ -1,5 +1,95 @@
 # Interrupt-traps T1 — resident-poll wiring BLOCKED (2026-07-24)
 
+## ✅ ROOT CAUSE FOUND (2026-07-24, second span) — it is the H.TIMI→play_service seam, NOT a layout construct
+
+**Everything below the horizontal rule is the original investigation and is now SUPERSEDED**
+(the "page-1 layout construct" / "crossing symbols" / ZTRAP theories were all dead ends —
+see "Why the earlier framing was wrong" below).
+
+### The mechanism (empirically pinned, decisively proven)
+
+The crash is a genuine **pre-existing architecture flaw** in the PLAY-servicer H.TIMI seam
+vs the page-1 sub-ROM tenant model. It has nothing to do with traps and nothing to do with
+a byte-alignment-sensitive construct. Chain:
+
+1. Boot: `init` → `show_title` → **`autoexec_run`** (cload.asm) probes for AUTOEXEC.BAS.
+2. `autoexec_run` → `fat_mount`/`fat_find` → `subrom_call` **FATPRIM** (`SUBROM_IDX_FATPRIM=12`,
+   a **page-1** sub-ROM tenant). While it runs, CALSLT has switched page-1 to the **sub-ROM**;
+   main-ROM page-1 is **paged out**.
+3. Inside the FATPRIM tenant, `dskio_calslt` (fat-prim-body.inc) does `call CALSLT` to the disk
+   ROM's **DSKIO** ($4010) with **no DI guard**. DSKIO enables interrupts.
+4. An interrupt fires. The BIOS ISR ($0038, page-0, still mapped) runs the **H.TIMI** hook,
+   which `play_install` set to **`jp play_service`** — and `play_service` lives in main-ROM
+   **page-1, which is paged out**. The CPU executes whatever sub-ROM bytes sit at
+   `play_service`'s address → wild jump → boot crash (garbage screen, then a downstream
+   infinite RESUME loop at `res_setptr`/`ev_f`/a DSKIO loop with garbage return addresses —
+   all the "landing points" the first span chased are this downstream chaos).
+5. `play_service`'s address **shifts with any page-1 growth**. At the shipping size it lands
+   on *survivable* sub-ROM bytes (boot is green); a carve/insert that shifts it onto *fatal*
+   bytes trips the crash. Hence the **bounded** failure band — see the sweep below.
+
+The design comment at `main.asm:171` ("page-1 tenants run DI so the ISR never fires with
+page 1 switched out") states the intended invariant. **FATPRIM violates it** by CALSLTing an
+interrupt-enabling DSKIO.
+
+### Proof (all on the clean, guarded repro — see "Clean repro" below)
+
+- **Disable the H.TIMI hook** (comment out `call play_install` in `ier_done`) at the failing
+  size → **PASS**. The seam is the cause.
+- **Skip `show_title`** (the title tenant, also page-1) at the failing size, seam ON → still
+  **FAIL**. So the culprit tenant is **FATPRIM in `autoexec_run`**, not the title banner.
+- **CALSLT trace divergence** (bp at $001C, log IX/IYh/ret): both boots make the disk-INIT and
+  title-tenant (idx17) CALSLTs identically; then the healthy build calls **FATPRIM (idx12,
+  ix=4034 iyh=8B)** and the crash build **skips it** and falls into a DSKIO loop with a garbage
+  return ($5926 = mid-instruction, not a real call site). The wild jump is at/just after the
+  first FATPRIM tenant call.
+
+### Clean repro (use THIS, not the contaminated one below)
+
+Instrument with a **repack-only** page-1 shift and a bas_tokenise-free oracle:
+- In `basic/initext.asm` at `ier_done`, inside the `IF ROM_BASE < $4000` block, add
+  `defs N,0` (N bytes of page-1 shift). **It MUST be inside the guard** — an unguarded `defs`
+  also grows the byte-full **lean** cart, overflowing $8000, which makes `probes/disk/
+  bas_tokenise.py`'s `pasmo --bin basic/main.asm` exit 1 and fails ~5 acceptance cases as a
+  pure **build artifact** unrelated to the runtime crash (this artifact is what inflated the
+  first span's "34/34 → 3/34").
+- Oracle: `make diskbasic-acceptance-repack ONLY=FILES` (a live case, no `bas_tokenise`).
+  Exit 0 / "1/1 verbs converged" = clean boot; "0/1" + garbage VRAM = the crash.
+- Result: **N=0 → PASS. Band N∈[4,135] → FAIL (garbage boot). N≥136 → PASS again.**
+  A ~132-byte-wide bounded window (single-byte edges are fuzzy — downstream landing chaos);
+  it recovers because `play_service` clears the fatal sub-ROM byte-range. NOT overflow (guarded,
+  page-1 ends at $7FED with room), NOT a RAM collision (no RAM symbol moves with N).
+
+### The fix (design, not yet implemented)
+
+`play_service` must be reachable **whenever the ISR can fire**, including while page-1 is a
+sub-ROM tenant. The only home that is *always mapped* is **RAM** (page-0 low region is paged
+out during page-0 tenants; page-1 during page-1 tenants). Mirror the existing `sub_int_template`
+RAM trampoline (subromcall.asm): make `play_install` point H.TIMI at a **RAM-resident stub** that
+either (a) **guards** — read the page-1 primary-slot field, and if it is *not* main-ROM, `ret`
+without draining PLAY (a one-frame music skip during a rare tenant window is inaudible); or
+(b) **swaps** — map main-ROM page-1 in, `call play_service`, restore the tenant's page-1 mapping,
+then RETI. (a) is far simpler and sufficient. Either way it is the same class of fix as the
+$0038 trampoline already in the tree. This also makes the future traps `event_poll`/`htimi_service`
+seam safe for free (same H.TIMI path). **Spec + sign-off before implementing** (per workflow).
+
+### Why the earlier framing was wrong
+
+- "**Page-1 layout construct straddling a $xx00 boundary**": no such construct exists. Static
+  audit found no self-modifying code (impossible in ROM), no unrelocated page-1 literals (reloc
+  gate + grep clean), no low-byte-only address arithmetic (every `add a,l`/`ld l,a` site carries
+  correctly and indexes RAM), no `inc l` table-walks. The "4 crossing symbols" (and this span's
+  2/1) are **innocent labels** that merely happen to sit at $xxFF — every ±1 shift crosses a few;
+  they are not the cause.
+- "**ZTRAP RAM collision**": irrelevant — the crash reproduces with `traps.asm` fully absent,
+  purely from page-1 growth + the (baseline) play seam.
+- The "**34/34 → 3/34**" magnitude was **inflated by the lean-cart `bas_tokenise` build artifact**
+  above; the genuine repack-only crash is real but was measured through a contaminated oracle.
+
+---
+
+## Original investigation (SUPERSEDED — kept for the audit trail)
+
 Status: the T1 **funding carve landed** (build_83_name → fcbname_tenant, committed
 f33cae7). Wiring the resident poll (basic/traps.asm) then hit a **consistent, not-yet-
 root-caused crash** and was reverted to green. This logs the investigation so the next
