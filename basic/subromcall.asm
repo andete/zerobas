@@ -86,6 +86,40 @@ err_subrom_absent equ   err_illegal_fn      ; share interp.asm's identical "ille
                                             ; fre_abort_low (arrays.asm). Direct print,
                                             ; no suffix (unchanged behaviour).
 
+; htimi_guard: page-1-safety gate for the H.TIMI PLAY servicer seam
+; (docs/spec-traps-t1-htimi-page1-safety.md). play_install points H.TIMI here
+; instead of straight at play_service. WHY: play_service is main-ROM PAGE-1
+; resident, but a VBLANK can land while page 1 is switched out to a sub-ROM
+; page-1 tenant — the FATPRIM tenant's dskio_calslt CALSLTs DSKIO, which EIs,
+; so the "page-1 tenants always run DI" invariant (playsvc.asm) does NOT hold.
+; Jumping into play_service's address then executes sub-ROM garbage (a wild
+; boot crash whose severity tracks play_service's shifted address — a bounded
+; failure band; see docs/traps-t1-wiring-blocker.md). This guard is PAGE-0
+; resident (always mapped when H.TIMI runs: page 0 is untouched during a page-1
+; tenant, and the $0038 sub-ROM trampoline has mapped main page 0 back before
+; its `call $0038` during a page-1... page-0 tenant). It reads the page-1
+; primary-slot field and only falls through to play_service when main-ROM is
+; mapped there; otherwise it skips PLAY this frame (an inaudible <=1-frame drain
+; deferral during the rare tenant window). Register-transparent (only AF), DI.
+;
+; MAIN-ROM = PRIMARY SLOT 0 (page-1 field bits 3-2 == 00) is a standing merged-
+; machine invariant (C-BIOS boots our 32 KB ROM from slot 0; same assumption
+; init_ext_roms already relies on) — so a zero page-1 primary field means main
+; ROM is mapped, and any nonzero value means a sub-ROM (slot 3-x) tenant owns
+; page 1. Primary-only test (D-2 sign-off): sufficient for the slot-0-main /
+; slot-3-2-sub layout. SOURCES: port $A8 primary-slot field (MSX2 TH slot
+; architecture); own-design gate. No reference-ROM disassembly.
+htimi_guard:
+                push    af
+                in      a,(PSLTREG)         ; current slot config (page-1 = bits 3-2)
+                and     %00001100           ; isolate the page-1 primary field
+                jr      nz,htg_skip         ; nonzero -> a sub-ROM tenant owns page 1
+                pop     af
+                jp      play_service        ; main page 1 mapped -> safe; its ret -> ISR
+htg_skip:
+                pop     af
+                ret                         ; skip PLAY this frame; return to the ISR
+
 ; ===========================================================================
 ; Interrupt trampoline — install + template (docs/spec-basic-subrom-trampoline.md)
 ; ===========================================================================

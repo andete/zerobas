@@ -12,15 +12,22 @@
 ; R7 never touched; MUSICF bit cleared at OP_END) was pinned by a per-VBLANK PSG
 ; register trace of the real VG-8020, black-box, no disassembly.
 ;
-; PLACEMENT (docs §4a, a grounded deviation from spec §3.B). This is main-ROM
-; PAGE-1 resident, reached from H.TIMI by a NEAR JP -- not a page-0 window resident
-; and not a sub-ROM tenant. The spec required page-0 residence to survive a VBLANK
-; landing mid page-1-tenant CALSLT; but subrom_call runs every page-1 tenant under
-; DI (basic/subromcall.asm) and no page-1 tenant opts into EI, so a VBLANK NEVER
-; fires while main page 1 is switched out. In every case where H.TIMI actually runs
-; (EI main-ROM code; or a page-0 tenant's EI, which leaves page 1 mapped), main
-; page 1 is present -- so a page-1-resident servicer is always mapped, and the
-; §4.3 reentrancy hazard is void. Page 0 has only 19 B free; page 1 has ~930 B.
+; PLACEMENT (docs §4a). This is main-ROM PAGE-1 resident, reached from H.TIMI --
+; not page-0 window resident, not a sub-ROM tenant. The spec required page-0
+; residence to survive a VBLANK landing mid page-1-tenant CALSLT (spec §4.3
+; reentrancy hazard: main page 1 switched out to a sub-ROM tenant when the ISR
+; fires -> the H.TIMI JP lands in sub-ROM bytes). The original §4a rationale for
+; keeping page-1 residence claimed that invariant could never be reached because
+; "every page-1 tenant runs DI and none opts into EI" -- this was WRONG: the
+; FATPRIM tenant's dskio_calslt CALSLTs the disk ROM's DSKIO, which EIs, so a
+; VBLANK CAN fire while main page 1 is switched out (this crashed the boot for a
+; band of page-1 sizes -- docs/traps-t1-wiring-blocker.md). FIX: H.TIMI no longer
+; points here directly; play_install routes it through htimi_guard (PAGE-0
+; resident, always mapped when the ISR runs), which only falls through to
+; play_service when main-ROM owns page 1, and skips PLAY one frame otherwise.
+; So the servicer STAYS page-1 resident (page 0 has ~6 B free, page 1 ~860 B) and
+; the reentrancy hazard is closed by the guard, not by an untrue DI invariant.
+; See docs/spec-traps-t1-htimi-page1-safety.md.
 ;
 ; INTERRUPT DISCIPLINE. Entered with interrupts already disabled (the ISR); it must
 ; stay DI (never EI) and is therefore inherently non-reentrant -- no busy flag
@@ -40,19 +47,22 @@
 
     IF ROM_BASE < $4000
 
-; play_install: point H.TIMI at play_service. Called once at boot from init_ext_roms
-; (basic/initext.asm), after the extension-ROM scan. H.TIMI is C9-free on our target
-; (verified: $FD9F = C9 C9 C9 C9 C9 after boot -- neither C-BIOS nor the disk ROM
-; hooks it), so a bare JP with no chain; play_service's own MUSICF==0 fast-out makes
-; the always-installed seam cheap. Clobbers A, HL.
-; (Interrupt-traps T1 will re-point this at htimi_service once ZTRAP is re-sited off
-; the C-BIOS work-area collision — see basic/traps.asm / main.asm.)
+; play_install: point H.TIMI at htimi_guard (which gates play_service). Called once
+; at boot from init_ext_roms (basic/initext.asm), after the extension-ROM scan. H.TIMI
+; is C9-free on our target (verified: $FD9F = C9 C9 C9 C9 C9 after boot -- neither
+; C-BIOS nor the disk ROM hooks it), so a bare JP with no chain; play_service's own
+; MUSICF==0 fast-out makes the always-installed seam cheap. Clobbers A, HL.
+; (Interrupt-traps T1 will re-point this at htimi_service, which htimi_guard will gate
+; the same way -- the guard sits in front of whatever the H.TIMI target is.)
 play_install:
                 ld      a,$C3               ; JP opcode
                 ld      (H_TIMI),a
-                ld      hl,play_service
-                ld      (H_TIMI+1),hl
-                ret
+                ld      hl,htimi_guard      ; page-1-safety gate (subromcall.asm), NOT
+                ld      (H_TIMI+1),hl       ; play_service directly: a VBLANK can land
+                ret                         ; while page 1 is a sub-ROM tenant (FATPRIM's
+                                            ; DSKIO EIs) -> play_service would be paged
+                                            ; out. See docs/spec-traps-t1-htimi-page1-
+                                            ; safety.md + traps-t1-wiring-blocker.md.
 
 ; play_service: H.TIMI seam target. One frame of drain across the 3 voice queues.
 play_service:

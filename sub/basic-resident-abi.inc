@@ -15,4 +15,4 @@ dig15_iszero equ 032D7H
 arga_pack_fac equ 033D7H
 widen_fac_to equ 0387DH
 widen_uint_to equ 03BE6H
-vars_reset equ 03D92H
+vars_reset equ 03D9FH
