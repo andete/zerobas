@@ -1788,6 +1788,21 @@ CM_STATUS       equ     DISKOP_STATUS   ; tenant -> main: 0 = matched (-> CF
                                         ; (-> CF set); converted back to CF by
                                         ; the resident cas_open_match shim.
 
+; --- 8.3-FCB-name builder tenant ABI (SUBROM_IDX_FCBNAME, docs/spec-basic-
+; interrupt-traps.md §10.4): the build_83_name eviction (basic/bload.asm ->
+; sub/fcbname.asm). build_83_name takes HL in and returns HL (advanced) + CF;
+; subrom_call clobbers every register and forces CF=0 on return, so both outputs
+; ride through RAM. BN_PTR carries the source pointer to the tenant AND the
+; advanced pointer back; BN_STAT carries the reject flag back (0 = ok / 1 =
+; reject, `rra`'d to CF by the resident shim). Both ALIAS the fatprim
+; DISKOP_HL/DISKOP_STATUS cells: the FCB-name build runs entirely in the disk-verb
+; PARSE phase, strictly before any fat_io_* primitive, so the fatprim marshalling
+; cells are provably dead here -- the CM_STATUS/LE_STATUS "never in flight at
+; once, one subrom_call reaches one tenant" precedent.
+BN_PTR          equ     DISKOP_HL       ; main <-> tenant: filename ptr (in) /
+                                        ; advanced ptr = closing '"' (out) (2)
+BN_STAT         equ     DISKOP_STATUS   ; tenant -> main: 0 ok / 1 reject (-> CF) (1)
+
 ; --- Audio: PLAY work area + queue packet format (audio Slice 2a) -----------
 ; docs/spec-basic-audio-play-slice2a.md. The program-visible cells are the
 ; STANDARD MSX music work area at their MSX2-Technical-Handbook addresses (a
@@ -2642,6 +2657,15 @@ SUBROM_IDX_TITLE     equ 17     ; title_tenant (sub/title.asm): the startup head
                                 ; error path -- printing no header is a fine
                                 ; degradation, unlike every other tenant's silent
                                 ; failure.
+SUBROM_IDX_FCBNAME   equ 18     ; fcbname_tenant (sub/fcbname.asm): the disk
+                                ; 8.3-FCB-name builder build_83_name, evicted to
+                                ; fund interrupt-traps T1 (docs/spec-basic-
+                                ; interrupt-traps.md §10.4). PAGE 1 (the page-0
+                                ; table is full to the $0038 vector); a pure RAM
+                                ; leaf with an inlined upcase clone. Marshals HL/CF
+                                ; via BN_PTR/BN_STAT (above). Only basic/bload.asm
+                                ; `build_83_name` (repack branch) computes
+                                ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FCBNAME.
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

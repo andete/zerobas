@@ -440,6 +440,20 @@ finds ~45–80 B; fall back to option 2 (or 5) only if the scout comes up dry.*
 
 ### 10.4 Space RESOLVED (2026-07-24) — evict `build_83_name` (D-T-8c)
 
+**✅ LANDED 2026-07-24.** The carve is implemented and gated green: `build_83_name`
+now lives in the page-1 tenant `fcbname_tenant` (`SUBROM_IDX_FCBNAME=18`,
+`sub/fcbname.asm`), body shared byte-identically via `basic/fcbname-body.inc`, the
+resident stub is `basic/bload.asm`'s repack branch. **Measured page-1 free rose
+37 B → 155 B** (~118 B net freed, matching the projection) — enough to keep the trap
+dispatch RESIDENT (no dispatch tenant). Gates: `make basic-reloc` (lean byte-identity
++ `--page1` closure with 19 tenants), `unit-test` 51/51, `diskbasic-acceptance-repack`
+34/34 (NAME / FILES(wild) / KILL(wild) / LOAD / SAVE / BLOAD exercise the tenant +
+the `bn_star_*` wildcard path on the live merged machine). One implementation note vs
+the plan below: the body calls `fcb_upcase` (not `upcase`) — a zero-byte EQU onto the
+resident `upcase` in the lean cart, a co-located page-1 clone in the tenant — because
+the sub image already owns the name `upcase` in its (unmapped-here) page-0 island.
+**Next span: wire `basic/traps.asm` in + `check_traps`/`ex_return` dispatch + parsers.**
+
 The option-1 scout found the cheap path exists. **Chosen: evict `build_83_name`** (the
 disk 8.3-FCB-name builder, `basic/bload.asm:301-411`, ~139 B) to a new **page-0 sub-ROM
 tenant** — substituted for the non-viable PAINT+CIRCLE. Why it's the pick:

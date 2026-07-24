@@ -442,6 +442,17 @@ sub_p1_table:
                                                 ;   absent-sub-ROM error path (no
                                                 ;   header printed is a fine
                                                 ;   degradation).
+                jp      fcbname_tenant          ; index 18 (SUBROM_IDX_FCBNAME): the
+                                                ;   disk 8.3-FCB-name builder
+                                                ;   (build_83_name), evicted to fund
+                                                ;   interrupt-traps T1 (docs/spec-
+                                                ;   basic-interrupt-traps.md §10.4).
+                                                ;   Page-1 (the page-0 table is full
+                                                ;   to the $0038 vector); a pure RAM
+                                                ;   leaf with an inlined upcase.
+                                                ;   Marshals HL/CF via BN_PTR/BN_STAT.
+                                                ;   Main-ROM stub is basic/bload.asm
+                                                ;   `build_83_name` (repack branch).
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -580,6 +591,12 @@ sub_p1_ping:
 ; Startup header (index 17 = title_tenant, sub/title.asm): a pure BIOS leaf
 ; (INITXT/CHPUT), no resident-ABI import, no marshalling.
                 include "title.asm"
+
+; 8.3-FCB-name builder (index 18 = fcbname_tenant, sub/fcbname.asm): the
+; interrupt-traps T1 funding carve (docs/spec-basic-interrupt-traps.md §10.4).
+; A pure RAM leaf with an inlined upcase clone, no resident-ABI import; marshals
+; HL/CF through BN_PTR/BN_STAT. Its own header has the full rationale.
+                include "fcbname.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF

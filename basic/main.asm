@@ -172,6 +172,13 @@ __MEAS_LOW_END:
 ; out). Repack-only like ex_sound/ex_play; lean stays byte-identical.
                 include "basic/playsvc.asm"
 
+; Interrupt traps slice T1 (docs/spec-basic-interrupt-traps.md): basic/traps.asm holds
+; the RESIDENT half (event_poll + htimi_service + trap_init). NOT yet included — the
+; next step wires it in + play_install/initext. The FUNDING CARVE has now LANDED
+; (spec §10.4, D-T-8c/d): build_83_name evicted to the page-1 tenant fcbname_tenant
+; (SUBROM_IDX_FCBNAME=18), freeing page-1 to 155 B (was 37 B) — ample for the ~80 B
+; resident poll + the RESIDENT dispatch (§10.4 headroom keeps check_traps resident).
+
 ; Graphics Slice G2 (docs/spec-basic-graphics-g2.md): the resident PSET/PRESET/POINT
 ; stubs (defines `ex_pset`, `ex_preset`, `ev_f_point`, `parse_coord`, `gfx_in_range`).
 ; Eval the coordinate/colour expressions + STEP/clip/SCREEN policy, then marshal a

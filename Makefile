@@ -46,6 +46,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/randio-body.inc basic/fld-fill-body.inc \
          basic/lineedit-body.inc \
          basic/casmatch-body.inc basic/cal-refill-body.inc \
+         basic/fcbname-body.inc \
          basic/readdata-body.inc basic/tokskip-body.inc \
          basic/sysvars.inc
 ROM   := $(BUILD)/basic.rom
@@ -129,6 +130,10 @@ SUB_SRC   := sub/sub.asm
 # space.md, the G5-space eviction slice): the tenant body + its two shared
 # .inc files (the lean cart's inline copies, basic/cload.asm) -- same
 # staleness hazard, same fix ([[makefile-subparts-stale-tenant]]).
+# sub/fcbname.asm + basic/fcbname-body.inc (disk 8.3-FCB-name builder
+# build_83_name, docs/spec-basic-interrupt-traps.md §10.4, the interrupt-traps
+# T1 funding carve): the tenant body + its shared .inc file (the lean cart's
+# inline copy, basic/bload.asm) -- same staleness hazard, same fix.
 SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
              sub/fp_exp.asm sub/fp_log.asm sub/fp_pow.asm sub/fp_sin.asm \
              sub/fp_rnd.asm sub/arrays.asm sub/strheap.asm sub/detok.asm \
@@ -139,6 +144,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub
              sub/dirverb.asm sub/randio.asm sub/fiawalk.asm basic/fiawalked-body.inc basic/randio-body.inc basic/fld-fill-body.inc \
              sub/lineedit.asm basic/lineedit-body.inc \
              sub/casmatch.asm basic/casmatch-body.inc basic/cal-refill-body.inc \
+             sub/fcbname.asm basic/fcbname-body.inc \
              sub/readdata.asm basic/readdata-body.inc basic/tokskip-body.inc \
              sub/beep.asm sub/title.asm basic/title-body.inc \
              sub/playparse.asm sub/graphics.asm \

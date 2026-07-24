@@ -128,6 +128,16 @@ SUBROM_IDX_CASMATCH     equ     16
 ; basic/title.asm `show_title`. 17 is the next-free index (16/CASMATCH was last).
 SUBROM_IDX_TITLE        equ     17
 
+; build_83_name (basic/bload.asm), evicted to PAGE 1 to fund interrupt-traps T1
+; (docs/spec-basic-interrupt-traps.md §10.4, D-T-8c/D-T-8d). Page 1 because the
+; page-0 dispatch table is full to the $0038 vector; a page-1 tenant can't reach
+; the resident upcase, so sub/fcbname.asm inlines a clone. Marshals HL/CF via
+; BN_PTR/BN_STAT. Its main-ROM stub is basic/bload.asm `build_83_name` (repack
+; branch). 18 is the next-free index (17/TITLE was last). Reached sub-side by
+; label (sub_p1_table `jp fcbname_tenant`); only the stub computes
+; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FCBNAME.
+SUBROM_IDX_FCBNAME      equ     18
+
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can
 ; confirm a CALSLT to each entry round-tripped through the correct page. This is
