@@ -211,14 +211,43 @@ the VG-8020's constants), and the diversion race. It also lands the empty-expans
 (§1.1 R8/R9) for free: the hook fires at `put_key_fnk` *entry*, before the loop that
 would have inserted nothing. See §7 for what this does to the budget.
 
-**⚠️ New finding, needs a call — C-BIOS implements only F1–F5.** The branch above
-`put_key_fnk` maps rows `$05`/`$04` to indices 0–4 and indexes `FNKSTR` by `A*16`;
-there is **no SHIFT fold, so F6–F10 do not exist on the target**. The reference
-discriminates them (§1.3 K7/R11). Options: fold SHIFT **in our hook handler** by reading
-`NEWKEY` row 6 bit 0 — which is *current* there, because the hook runs inside the scan
-(cheap, ~8 B, and keeps the patch semantics-free); or extend the patch. *Rec: fold in
-the handler.* **Must be verified empirically** that SHIFT+F1 still reaches
-`key_chk_fnk1` rather than diverting into the shifted scancode table — see D-T3-7.
+### 4.2 F6–F10 on the target (D-T3-7) — MEASURED 2026-07-25
+
+C-BIOS's branch above `put_key_fnk` maps rows `$05`/`$04` to indices 0–4 and indexes
+`FNKSTR` by `A*16`, with **no SHIFT fold**. Whether SHIFT+F1 nevertheless *reaches* that
+path decided between "fold SHIFT in our handler" and "extend the patch", so it was
+measured rather than reasoned about.
+
+`shift_fkey_probe.py`: C-BIOS never initialises `FNKSTR`, so seed slots 0/1/5 by `POKE`
+with the distinct one-char expansions `"1"`/`"2"`/`"6"`, then idle in a loop that
+consumes nothing and let the BIOS's own insertions pile up in `KEYBUF`; the debugger
+reads the pending bytes from `GETPNT` to `PUTPNT`. **The inserted character is the index
+the BIOS chose.** Press F1, F2, SHIFT+F1:
+
+| machine | pending | reading |
+|---|---|---|
+| Philips VG-8020 (reference control) | **`126`** | folds SHIFT itself → slot 5 (F6) — confirms §1.3 K7 at the buffer level |
+| C-BIOS repack (target) | **`121`** | **reaches `put_key_fnk` with index 0**; SHIFT ignored |
+
+**✅ D-T3-7 resolved: fold SHIFT in our handler.** SHIFT+F1 *does* arrive at the hook, so
+reading `NEWKEY` row 6 bit 0 there (current, because the hook runs inside the scan) and
+mapping index 0–4 → key 1–10 costs ~8 B and keeps the patch semantics-free. No patch
+extension is needed.
+
+> **Apparatus note — the §1.0 discipline bit again.** The first control run returned an
+> *empty* buffer: that version of the program **ended**, and the returning REPL's `CHGET`
+> ate the buffered characters before the capture. The target had only kept them because
+> its loop happened never to terminate. **A control that returns "nothing" must be fixed,
+> not interpreted.** The idle loop is now infinite by construction, and `$D004=7`
+> positively asserts "program started and is idling".
+
+**Adjacent free win — needs a call.** Because C-BIOS passes index 0 for SHIFT+F1, an
+*untrapped* SHIFT+F1 on the target expands F1's string where the reference expands F6's
+— a **pre-existing C-BIOS divergence, not one T3 introduces**. Since the handler computes
+the folded index anyway, widening the hook contract to **A in/out** (the BIOS expands
+whichever index the hook returns) fixes it for ~0 extra bytes on our side plus one `ld`
+in the patch, and stays semantics-free. *Rec: adopt — it makes trapped and untrapped
+function keys agree with the reference in one stroke.*
 
 **D-T3-2 — auto-repeat.** (a) Replicate it with our own delay/rate constants sized from
 §1.1 (≈38 frames then every ~3), ~25–30 B; or (b) fire once per physical press, ~0 B, a
@@ -382,9 +411,21 @@ the §1.0 discipline as a **hard requirement**:
   **failure, not a zero**;
 - the untrapped delivery baseline (T1) is itself an assertion — if it reads 0, the
   apparatus is broken and the run is void;
-- no string building in probe programs; `TIME`-bounded windows;
+- no string building in probe programs; `TIME`-bounded windows — **but see the risk
+  below before relying on `TIME` on the zerobas side**;
 - handler-timing cases size their handler from the measured loop rate, and the window
   is sized for **zerobas**, which runs an empty `FOR` loop ~7× slower than the VG-8020.
+
+> **⚠️ Open risk, observed in passing during §4.2 — verify before building the gate.**
+> An `IF TIME-T<400 GOTO` loop terminated normally on the VG-8020 (`done=1`) but was
+> **still running on the repack target ~16 s later**, in a run that was otherwise healthy
+> (the program had started, and keys were accumulating exactly as intended). The obvious
+> explanation is that `TIME` does not advance on zerobas, but that is a *hypothesis, not
+> a measurement* — it was never the object of that experiment. It does not affect any
+> §1 finding (all `TIME`-bounded windows there ran on the **reference**), but the gate
+> runs on **zerobas**, so a one-line `TIME` check comes first; if it does not advance,
+> the gate's windows must be bounded some other way (iteration counts sized from the
+> measured ~7× slowdown, or debugger-side timing).
 
 Coverage: the §1.1 delivery/repeat table, the §1.2 diversion table including T5 and the
 T6 control, §1.3 (W1 servicing, U2 blocking-`INPUT`, K7/R11 SHIFT discrimination, V2
@@ -402,10 +443,11 @@ for the matrix→key-number fold and the repeat counter.
   host BIOS's own decode, which is more faithful than replicating VG-8020 constants.
   Record the residual in `PROVENANCE.md`: cadence follows the running BIOS, not the
   VG-8020's ≈0.7–0.8 s / ≈17 Hz.
-- **D-T3-7** — ⚠️ **NEW: F6–F10.** C-BIOS implements only F1–F5 (no SHIFT fold). Fold
-  SHIFT in our hook handler (`NEWKEY` row 6 bit 0 is current there) vs extending the
-  patch. *Rec: fold in the handler* — but first verify empirically that SHIFT+F1 still
-  reaches `key_chk_fnk1` instead of diverting into the shifted scancode table.
+- **D-T3-7** — ✅ **ANSWERED 2026-07-25** (§4.2): SHIFT+F1 *does* reach `put_key_fnk`, as
+  index 0, so **fold SHIFT in our handler** (~8 B); no patch extension. **Still to
+  confirm:** whether to widen the hook contract to *A in/out* so an *untrapped* SHIFT+F1
+  also expands the right `FNKSTR` slot — a pre-existing C-BIOS divergence T3 can close
+  for ~free. *Rec: adopt.*
 - **D-T3-3** — ✅ **ANSWERED 2026-07-25**: both published hooks run *before* the keyboard
   scan on C-BIOS *and* on the VG-8020, so diversion cannot be a same-frame removal.
   Nothing left to decide here; it now constrains D-T3-1.
