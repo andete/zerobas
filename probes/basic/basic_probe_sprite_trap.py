@@ -167,9 +167,14 @@ HIT = ["30 PUTSPRITE0,(100,100),15,0", "40 PUTSPRITE1,(104,100),15,0"]
 MISS = ["30 PUTSPRITE0,(40,40),15,0", "40 PUTSPRITE1,(160,140),15,0"]
 
 
-def prog(body, *, hit=True, handler=True):
+def prog(body, *, hit=True, handler=True, subs=()):
+    """`subs` are SUBROUTINES and must sort AFTER the END line -- if execution can
+    fall into them, their RETURN raises ERR 3 (RETURN without GOSUB). That is not
+    hypothetical: the first WAIT30 did exactly that on every case that used it.
+    Note it is the LINE NUMBER that decides, not the order lines are typed in --
+    moving the text after END changed nothing, because 600 < 790. Hence 950+."""
     p = [ONERR] + CLR + SETUP + (HIT if hit else MISS) + body + [END]
-    return p + (HANDLER if handler else []) + [ERRH]
+    return p + list(subs) + (HANDLER if handler else []) + [ERRH]
 
 
 def esyn(stmt):
@@ -179,6 +184,33 @@ def esyn(stmt):
 
 ARM = ["50 ONSPRITEGOSUB800"]
 
+# WAIT30: let 30 FRAMES pass, machine-independently. Counting JIFFY *changes* in a
+# single byte needs no 16-bit compose, so it cannot tear and needs no float; and
+# unlike `FOR I=1 TO n` it means the same thing on two machines that run BASIC ~7x
+# apart. That difference is not cosmetic -- every fixed-iteration window in the
+# first version of this probe SATURATED all three saturating counters at 250 on
+# zerobas, which reads as "no information", not as a failure.
+#
+# It waits on the JIFFY DELTA, not on 30 iterations of a change-detector. The
+# iteration version looked equivalent and was not: on zerobas each iteration spans
+# several frames (the handler runs between every statement, ~7x slower), so "30
+# iterations" was ~387 FRAMES there against ~30 on the reference -- which
+# saturated every counter at 250 and read as a dispatcher firing many times per
+# frame. Breakpoints said otherwise: 387 latches over that span, i.e. exactly one
+# per frame, with every fire paid for by a latch. The apparatus was the anomaly.
+#
+# It also ZEROES the fire counter once its window has opened, so every caller's
+# reading means "fires during THIS 30 frames" rather than "fires since SPRITE ON".
+# Without that, the count carries the run-up before the window -- which is a
+# couple of statements on the reference and ~60 frames on zerobas, where the first
+# float/tenant path through a line is expensive. That turned a 30-frame window
+# into a 96-fire reading and looked like a 3x cadence divergence.
+WAIT30 = ["950 H=PEEK(&HFC9F):W=PEEK(&HFC9E)+256*H:IFH<>PEEK(&HFC9F)THEN950",
+          "951 POKE&HD000,0",
+          "952 H=PEEK(&HFC9F):V=PEEK(&HFC9E)+256*H:IFH<>PEEK(&HFC9F)THEN952",
+          "954 IFV-W<30THEN952",
+          "956 RETURN"]
+
 CASES = {
     # --- §1.1 the event: does an overlap fire, and how often -----------------
     # A_hit/A2_miss are THE discriminating pair. If they ever agree, the run is
@@ -186,14 +218,49 @@ CASES = {
     "A_hit": prog(ARM + ["60 SPRITEON", "70 FORI=1TO400:NEXT"], hit=True),
     "A2_miss": prog(ARM + ["60 SPRITEON", "70 FORI=1TO400:NEXT"], hit=False),
 
-    # F: the cadence, read as a RATIO. AUX is the JIFFY delta across exactly the
-    # window the fires are counted over, so "one fire per frame" is measured, not
-    # inferred from wall-clock time.
+    # F: the cadence, read as a RATIO -- CNT fires against AUX frames over exactly
+    # the same window, so "one fire per frame" is measured rather than inferred
+    # from wall-clock time.
+    #
+    # THE WINDOW IS BOUNDED BY FRAMES, NOT BY AN ITERATION COUNT, and that is not a
+    # detail. A fixed `FOR I=1 TO 200` cannot serve both machines: zerobas runs it
+    # ~7x slower, so the same loop spans ~30 frames on the VG-8020 and ~210 on the
+    # repack build, which SATURATES both saturating counters at 250 and reports the
+    # ratio as 1.00 for a reason that has nothing to do with the trap. Measured
+    # exactly that on the first run. Polling JIFFY instead makes the window 40
+    # frames on BOTH machines by construction -- no calibration, no per-machine
+    # constant to drift. (JIFFY does tick on zerobas; only `TIME` is unimplemented.)
+    #
+    # JIFFY IS READ WITH A RE-READ GUARD, and that is not paranoia -- it is the
+    # apparatus bug this case actually had. Reading lo-then-hi TEARS whenever the
+    # low byte wraps between the two PEEKs (~once per 256 frames): the composed
+    # value comes out 256 LOW, so K-J goes negative. The first version "handled"
+    # that by restarting the window (J=K) -- which resets the FRAME count while the
+    # fire counter, cleared only once at line 5, keeps accumulating across every
+    # restart. Result: zerobas read cnt=156 against aux=65, i.e. an apparent 2.4
+    # fires per frame, and it looked exactly like a dispatcher bug. It was not:
+    # breakpoint counts at htimi_guard and the latch site were 200/200 against 200
+    # frames -- a perfect once-per-frame source. Re-reading the high byte and
+    # retrying makes the tear impossible, so the ratio means what it says.
+    #
+    # AND THE TWO COUNTERS MUST COVER THE SAME SPAN, which is what actually made
+    # zerobas read ~2 fires per frame after the tear was fixed. The fire counter is
+    # cleared once at line 5 and the trap is armed from line 60, so it accrues over
+    # `SPRITE ON` -> capture, INCLUDING the frames after END while the capture poll
+    # (1 emulated second of granularity) has not yet fired; the JIFFY delta covers
+    # only lines 62->72. On the reference the loop dominates and the skew hides; on
+    # zerobas, ~7x slower, it was most of the reading. Breakpoint counts settled it:
+    # over the armed span, 237 latches against ~212 dispatched fires -- one per
+    # frame, exactly right. So line 68 re-zeroes the counter at the window's start
+    # and line 74 disarms at its end, and only then is D recorded.
     "F_cadence": prog(ARM + ["60 SPRITEON",
-                             f"62 J=PEEK(&H{JIFFY:X})+256*PEEK(&H{JIFFY + 1:X})",
-                             "70 FORI=1TO200:NEXT",
-                             f"72 K=PEEK(&H{JIFFY:X})+256*PEEK(&H{JIFFY + 1:X})",
-                             "74 D=K-J:IFD>250THEND=250",
+                             f"62 H=PEEK(&H{JIFFY + 1:X}):J=PEEK(&H{JIFFY:X})+256*H"
+                             f":IFH<>PEEK(&H{JIFFY + 1:X})THEN62",
+                             "68 POKE&HD000,0",
+                             f"70 H=PEEK(&H{JIFFY + 1:X}):K=PEEK(&H{JIFFY:X})+256*H"
+                             f":IFH<>PEEK(&H{JIFFY + 1:X})THEN70",
+                             "72 D=K-J:IFD<150THEN70",
+                             "74 SPRITEOFF",
                              "76 POKE&HD004,D"], hit=True),
 
     # --- §1.3 arm vs enable vs suspend --------------------------------------
@@ -224,26 +291,36 @@ CASES = {
     # R: a BARE `ON SPRITE GOSUB` clears the handler slot (count freezes).
     # S: re-arming resumes firing WITHOUT re-issuing `SPRITE ON` -- the state
     #    byte and the handler link are independent, exactly as ZTRAP models them.
-    "R_bare_disarms": prog(ARM + ["60 SPRITEON", "70 FORI=1TO150:NEXT",
+    # AUX = the count at the moment of the bare disarm, AUX2 = the count 30 frames
+    # later. Frozen (aux2 == aux) proves the slot was cleared; S_rearm's AUX3 then
+    # proves firing resumes after re-arming ALONE, with no second `SPRITE ON`.
+    # Each phase is its own 30-frame window with its own count, so the readings are
+    # machine-independent: AUX = fires while armed (>0), AUX2 = fires in the window
+    # AFTER the bare disarm (must be 0), AUX3 = fires after re-arming (>0 again,
+    # with no second `SPRITE ON`).
+    "R_bare_disarms": prog(ARM + ["60 SPRITEON",
+                                  "70 GOSUB950",
                                   "72 POKE&HD004,PEEK(&HD000)",
                                   "74 ONSPRITEGOSUB",
-                                  "76 FORI=1TO150:NEXT",
-                                  "78 POKE&HD005,PEEK(&HD000)"], hit=True),
-    "S_rearm": prog(ARM + ["60 SPRITEON", "70 FORI=1TO150:NEXT",
+                                  "76 GOSUB950",
+                                  "78 POKE&HD005,PEEK(&HD000)"], hit=True, subs=WAIT30),
+    "S_rearm": prog(ARM + ["60 SPRITEON",
+                           "70 GOSUB950",
                            "72 POKE&HD004,PEEK(&HD000)",
                            "74 ONSPRITEGOSUB",
-                           "76 FORI=1TO150:NEXT",
+                           "76 GOSUB950",
                            "78 POKE&HD005,PEEK(&HD000)",
                            "80 ONSPRITEGOSUB800",
-                           "82 FORI=1TO150:NEXT"], hit=True),
+                           "82 GOSUB950",
+                           "84 POKE&HD006,PEEK(&HD000)"], hit=True, subs=WAIT30),
 
     # --- §1.6 the trap must NOT consume S#0 bit 5 ---------------------------
-    "N_statfl_on": prog(ARM + ["60 SPRITEON", "70 FORI=1TO100:NEXT",
+    "N_statfl_on": prog(ARM + ["60 SPRITEON", "70 GOSUB950",
                                "72 POKE&HD004,VDP(8)",
-                               f"74 POKE&HD005,PEEK(&H{STATFL:X})"], hit=True),
-    "N2_statfl_off": prog(ARM + ["60 SPRITEOFF", "70 FORI=1TO100:NEXT",
+                               f"74 POKE&HD005,PEEK(&H{STATFL:X})"], hit=True, subs=WAIT30),
+    "N2_statfl_off": prog(ARM + ["60 SPRITEOFF", "70 GOSUB950",
                                  "72 POKE&HD004,VDP(8)",
-                                 f"74 POKE&HD005,PEEK(&H{STATFL:X})"], hit=True),
+                                 f"74 POKE&HD005,PEEK(&H{STATFL:X})"], hit=True, subs=WAIT30),
 
     # --- §1.5 the parse surface ---------------------------------------------
     "J_syn_on_goto": esyn("ONSPRITEGOTO800"),
@@ -269,12 +346,20 @@ CASES = {
     # T_tenant is the case that exists because §3 REASONS rather than measures.
     # SIN runs the fp_sin sub-ROM PAGE-1 tenant, so on zerobas htimi_guard is
     # skipping event_poll for most of this loop. The trap must still fire.
+    # Same frame-bounded window as F_cadence, with SIN in the loop. On zerobas
+    # nearly every frame of this window lands inside a page-1 tenant, i.e. exactly
+    # the frames htimi_guard skips -- so had the poll been left in page-1
+    # event_poll this would collapse, and with the low-region stanza it must not.
     "T_tenant": prog(ARM + ["60 SPRITEON",
-                            f"62 J=PEEK(&H{JIFFY:X})+256*PEEK(&H{JIFFY + 1:X})",
-                            "70 FORI=1TO60:X=SIN(I):NEXT",
-                            f"72 K=PEEK(&H{JIFFY:X})+256*PEEK(&H{JIFFY + 1:X})",
-                            "74 D=K-J:IFD>250THEND=250",
-                            "76 POKE&HD004,D"], hit=True),
+                            f"62 H=PEEK(&H{JIFFY + 1:X}):J=PEEK(&H{JIFFY:X})+256*H"
+                            f":IFH<>PEEK(&H{JIFFY + 1:X})THEN62",
+                            "68 POKE&HD000,0",
+                            "70 X=SIN(1)",
+                            f"72 H=PEEK(&H{JIFFY + 1:X}):K=PEEK(&H{JIFFY:X})+256*H"
+                            f":IFH<>PEEK(&H{JIFFY + 1:X})THEN72",
+                            "74 D=K-J:IFD<150THEN70",
+                            "76 SPRITEOFF",
+                            "78 POKE&HD004,D"], hit=True),
 }
 
 # --- D-T-4: the event SOURCE, measured directly (spec §2) -------------------
@@ -297,7 +382,65 @@ def fmt(r):
     if not r["done"]:
         return f"VOID done=0 {r}"          # never read as a zero -- see docstring
     return (f"cnt={r['cnt']:>3} err={r['err']} aux={r['aux']:>3} "
-            f"aux2={r['aux2']:>3} t={r['t']}")
+            f"aux2={r['aux2']:>3} aux3={r['aux3']:>3} t={r['t']}")
+
+
+# --- what each case ASSERTS -------------------------------------------------
+# `eq`  : fields that must match the reference EXACTLY. The bulk of the surface --
+#         error codes, no-fire cases, the STATFL readings -- is an equality
+#         differential, because none of it depends on how fast the machine runs.
+# `per` : predicates checked on EACH machine independently. Anything counting
+#         fires lives here: a fire count is a function of how many frames fit in
+#         the window, and the two machines run BASIC ~7x apart, so asserting
+#         equality would gate the wrong thing and fail a correct implementation
+#         (the same conclusion T3 reached for auto-repeat).
+# Every case additionally requires done==1; a reading from a program that errored
+# out or never finished is a FAILURE, never a zero.
+EQ, PER = "eq", "per"
+EXPECT = {
+    "A_hit":              {PER: [("fires", lambda r: r["cnt"] > 0)]},
+    "A2_miss":            {EQ: ["cnt", "err"]},          # the discriminating control
+    "F_cadence":          {PER: [("fires/frame ~= 1",
+                                  lambda r: r["aux"] > 0 and 0.75 <= r["cnt"] / r["aux"] <= 1.35)]},
+    "B_armed_not_on":     {EQ: ["cnt", "err"]},
+    "C_off":              {EQ: ["cnt", "err"]},
+    "E_no_handler":       {EQ: ["cnt", "err"]},
+    "G_stop_latch":       {EQ: ["cnt", "err"]},
+    "H_off_latch":        {EQ: ["cnt", "err"]},
+    # shape, not magnitude: armed fires, bare-disarm freezes, re-arm resumes
+    "R_bare_disarms":     {EQ: ["err"],
+                           PER: [("armed fires", lambda r: r["aux"] > 0),
+                                 ("disarmed is silent", lambda r: r["aux2"] == 0)]},
+    "S_rearm":            {EQ: ["err"],
+                           PER: [("armed fires", lambda r: r["aux"] > 0),
+                                 ("disarmed is silent", lambda r: r["aux2"] == 0),
+                                 ("re-arm resumes", lambda r: r["aux3"] > 0)]},
+    "N_statfl_on":        {EQ: ["err", "aux", "aux2"],   # VDP(8)/STATFL unchanged...
+                           PER: [("fires", lambda r: r["cnt"] > 0)]},
+    "N2_statfl_off":      {EQ: ["cnt", "err", "aux", "aux2"]},   # ...by an enabled trap
+    "J_syn_on_goto":      {EQ: ["cnt", "err"]},
+    "K_syn_bare":         {EQ: ["cnt", "err"]},
+    "P_syn_junk":         {EQ: ["cnt", "err"]},
+    "M_undef_line":       {EQ: ["cnt", "err"]},
+    "L_syn_noline":       {EQ: ["cnt", "err"]},
+    "Q1_stop_noline":     {EQ: ["cnt", "err"]},
+    "Q2_strig_noline":    {EQ: ["cnt", "err"]},
+    "Q3_key_noline":      {EQ: ["cnt", "err"]},
+    "Q5_sprite_then":     {EQ: ["cnt", "err", "aux"]},   # aux==77 -> parser stopped clean
+    "Q6_stop_then":       {EQ: ["cnt", "err", "aux"]},
+    "I_screen0":          {EQ: ["cnt", "err"]},
+    # the D-T4-2 argument, measured: the low-region poll must keep firing through
+    # page-1 tenant windows. Per-machine -- on the reference SIN is slow enough
+    # that the loop is boundary-limited, so the RATIO is not comparable.
+    "T_tenant":           {PER: [("still fires inside a tenant window",
+                                  lambda r: r["cnt"] > 0)]},
+    # D-T-4's source, on both machines, with its own discriminating control
+    "V_statfl_src_hit":   {PER: [("STATFL bit5 set on nearly every frame",
+                                  lambda r: r["aux"] >= 150 and r["aux2"] & COLLISION)]},
+    "V2_statfl_src_miss": {EQ: ["aux", "aux2"],
+                           PER: [("no collision -> bit5 clear",
+                                  lambda r: r["aux"] == 0 and not r["aux2"] & COLLISION)]},
+}
 
 
 def main() -> int:
@@ -305,8 +448,9 @@ def main() -> int:
     ap.add_argument("--only", action="append", default=None,
                     help="substring filter on case names (repeatable)")
     ap.add_argument("--ref-only", action="store_true")
-    ap.add_argument("--zb-only", action="store_true")
     ap.add_argument("--list", action="store_true")
+    ap.add_argument("--report", action="store_true",
+                    help="print readings without asserting (characterization mode)")
     a = ap.parse_args()
 
     names = [n for n in CASES if not a.only or any(o in n for o in a.only)]
@@ -317,18 +461,39 @@ def main() -> int:
                 print("   ", ln)
         return 0
 
-    print(f"ref = {REF_MACHINE}\nzb  = {ZB_MACHINE}\n"
-          f"(characterization/differential — reporting only; the asserting gate "
-          f"arrives with the T4 implementation)\n")
+    print(f"ref = {REF_MACHINE}\nzb  = {ZB_MACHINE}\n")
+    ok = True
+
+    def check(label, cond, detail=""):
+        nonlocal ok
+        print(f"{'PASS' if cond else 'FAIL':5} {label}" + (f"  {detail}" if detail else ""))
+        ok = ok and cond
+
     for n in names:
-        ref = None if a.zb_only else run(REF_MACHINE, CASES[n])
+        ref = run(REF_MACHINE, CASES[n])
         zb = None if a.ref_only else run(ZB_MACHINE, CASES[n])
-        print(f"{n}", flush=True)
-        if not a.zb_only:
-            print(f"    ref  {fmt(ref)}")
-        if not a.ref_only:
-            print(f"    zb   {fmt(zb)}")
-    return 0
+        if a.report:
+            print(f"{n}\n    ref  {fmt(ref)}" + ("" if a.ref_only else f"\n    zb   {fmt(zb)}"),
+                  flush=True)
+            continue
+        spec = EXPECT.get(n, {})
+        # `done` first: without it no other field means anything.
+        check(f"[ref] {n:20} {fmt(ref)}", bool(ref) and ref["done"] == 1)
+        for lbl, pred in spec.get(PER, []):
+            check(f"[ref] {n:20} {lbl}", bool(ref) and ref["done"] == 1 and pred(ref))
+        if a.ref_only:
+            continue
+        check(f"[zb ] {n:20} {fmt(zb)}", bool(zb) and zb["done"] == 1)
+        for lbl, pred in spec.get(PER, []):
+            check(f"[zb ] {n:20} {lbl}", bool(zb) and zb["done"] == 1 and pred(zb))
+        fields = spec.get(EQ, [])
+        if fields and ref and zb:
+            same = all(ref[f] == zb[f] for f in fields)
+            check(f"[zb ] {n:20} == ref on {','.join(fields)}", same,
+                  "" if same else f"ref={ {f: ref[f] for f in fields} } zb={ {f: zb[f] for f in fields} }")
+
+    print("\n" + ("ALL PASS" if ok else "SOME FAILED"))
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

@@ -1,6 +1,10 @@
 # spec — interrupt-traps T4: the SPRITE collision trap (`ON SPRITE GOSUB` + `SPRITE ON/OFF/STOP`)
 
-Status: **SIGNED OFF 2026-07-25.** D-T4-2 decided **against** the recommendation —
+Status: **✅ LANDED + VERIFIED 2026-07-25** — `make sprite-trap-acceptance` 96/96,
+lean ROM byte-identical, walls low 5 B / page 1 22 B free. **The interrupt-trap arc
+is COMPLETE (T1–T4), and graphics D-G7-4 is closed.**
+
+Signed off 2026-07-25. D-T4-2 decided **against** the recommendation —
 the poll goes in the **low region off `htimi_guard`**, not page-1 `event_poll`
 (§3), so T4 needs a small promotion after all. D-T4-3 as recommended: the T1
 divergence is fixed **first, in its own commit**. D-T4-1/4/5 as written.
@@ -346,6 +350,38 @@ looks comfortable; the **low-region half is ~9 B short and needs a promotion**
 an eighth of the size. Note the walls are **coupled**: page 1 pays exactly what low
 is relieved of, so the promotion spends part of the page-1 headroom above.
 
+### 5.1 ✅ AS BUILT — measured, and the estimate held
+
+**Measured with the low-region tripwire lifted: low 27 B, page 1 34 B — 61 B total**,
+against a 57–72 B estimate. **This is the first slice in the arc whose estimate was
+not a serious underestimate** (T2 ran 70 B low, T3 ran 106 B / 1.8× low). The
+difference is not virtue: T4 reuses `ZTRAP`, `set_state`, `check_traps`,
+`trap_line_link` and `ztrap_entry` wholesale and invents nothing.
+
+⚠️ **Reading a wall while the other one overruns needs care.** Low and page 1 are one
+contiguous image in the relocated build, so a low-region overrun of K bytes shifts
+every page-1 address up by K, and `__MEAS_PAGE1_END` reads K too high. Page-1 free is
+`$8000 - (__MEAS_PAGE1_END - K)`, not `$8000 - __MEAS_PAGE1_END`. Taking the raw
+number made page 1 look 13 B tighter than it was.
+
+**Golfed to 21 B of low region before spending any funding**, which is most of what
+the promotion had to cover:
+- **inlined the stanza into `htimi_guard`** instead of `call`/`ret` — 4 B, and there
+  can only ever be one call site (§3.1), so the routine boundary bought nothing;
+- **dropped `ld a,1` before `ld (TRAPPEND),a`** — 2 B. `A` still holds the `$20` the
+  collision mask left, and every reader of `TRAPPEND` tests it with `or a` / `jr nz`.
+
+**Funded by promoting `zkey_install` (12 B) to `basic/subrom-boot.asm`** — T3's own
+boot-time-half file, on identical grounds: it runs once, from `init_ext_roms`, under
+the boot DI, before any tenant exists, so neither pinning caller can reach it *by
+construction*. It writes only RAM and touches no `$A8`/`CALSLT`, so
+`promote_scout.py`'s known blind spot does not apply. `zkey_hook` stays low — it *is*
+the `$0038` keyboard-scan path.
+
+**Final walls: low 5 B free, page 1 22 B free.** Lean 16 KB ROM **verified
+byte-identical** (`e22d8c5f80ca1df8d20cf35d812de112` with T4 in and out of the tree),
+not merely argued from the `IF ROM_BASE < $4000` guards.
+
 🔴 **It should not be believed.** The standing arc rule is that **every byte estimate
 here is a LOWER BOUND**: T3's §7 estimate ran 106 B low (1.8×) *while describing
 itself as deliberately pessimistic*, and T2's ran 70 B low. A 1.8× multiple on 70 B
@@ -428,6 +464,47 @@ gate is written against measured values, not expectations:
 `T_tenant` is the case that exists because §3 reasons rather than measures. It is
 the one most likely to fail, and it is the reason §3's recommendation is safe to
 make.
+
+### 8.1 ✅ AS BUILT — `make sprite-trap-acceptance`, **96 assertions, ALL PASS**
+
+24 cases, one boot per case, both machines. `T_tenant` on zerobas reads **174 fires
+over 173 frames — a ratio of 1.006 while the loop sits inside `fp_sin` page-1 tenants
+for most of every frame.** That is D-T4-2 paying off directly: with the poll in
+page-1 `event_poll`, `htimi_guard` would have skipped exactly those frames.
+`F_cadence` reads 1.007 (ref) and 1.043 (zb).
+
+🔴 **THE APPARATUS WAS WRONG FOUR TIMES BEFORE THE IMPLEMENTATION WAS WRONG ONCE —
+and every one of them looked like a dispatcher firing several times per frame.**
+The implementation was correct from the first run; all four were in the measurement:
+
+1. **A torn JIFFY read.** Composing lo-then-hi tears when the low byte wraps
+   (~1 frame in 256), giving a value 256 low; the "restart the window" guard then
+   reset the FRAME count while the fire counter kept accumulating. Fixed by
+   re-reading the high byte and retrying.
+2. **The two counters covered different spans.** The fire counter ran from
+   `SPRITE ON` to capture — including frames after `END`, since the capture polls at
+   1-emulated-second granularity — while the JIFFY delta covered only the loop. On
+   the reference the loop dominates and this hides; on zerobas, ~7× slower, it *was*
+   the reading.
+3. **`RETURN` without `GOSUB` (ERR 3).** A subroutine placed after the `END` line in
+   the *text* still sorts before it by LINE NUMBER, so execution fell straight into
+   it. Renumbering the text achieved nothing; the line numbers had to move.
+4. **A wait that counted iterations, not frames.** "30 iterations of a
+   change-detector" is ~30 frames on the reference and **~387 on zerobas**, which
+   saturated every counter at 250.
+
+**What ended it was measuring at the emulator level rather than reasoning harder**:
+breakpoints on `htimi_guard`, on the `set 7,(hl)` latch site and on `check_traps`
+gave **htimi = latch-path = JIFFY delta = 200/200/200**, and 387 latches across the
+armed span — a clean once-per-frame source with every fire paid for by a latch. Two
+of the four bugs had already produced *self-consistent* wrong answers across repeated
+runs before that. **The apparatus is part of the measurement** —
+[[traps-t3-key-slice]] recorded the same lesson for the capture window; here it was
+the window's *definition*.
+
+Design consequence now baked into the gate: fire counts are asserted **per machine**
+(`EXPECT[...][PER]`), and only the error surface and the STATFL readings are
+cross-machine equalities (`EXPECT[...][EQ]`).
 
 ---
 

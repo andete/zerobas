@@ -447,6 +447,19 @@ TRAPS_T3        equ     1
 TRAPS_T3        equ     0
     ENDIF
 
+; --- TRAPS_T4: the SPRITE-trap build gate (docs/spec-traps-t4-sprite.md §7) --
+; The arc's last slice. ROM_BASE-conditional for exactly T3's reason and NOT a
+; bare `equ`: the poll stanza is low-region (repack-only) while its call sites --
+; ex_on's sibling peek and ex_sprite in graphics.asm -- are always-assembled
+; page-1 code, so a bare gate leaves the lean build referencing symbols it never
+; assembles. T3 lost a round to precisely that. The lean 16 KB ROM stays
+; byte-identical either way.
+    IF ROM_BASE < $4000
+TRAPS_T4        equ     1
+    ELSE
+TRAPS_T4        equ     0
+    ENDIF
+
     IF ROM_BASE < $4000
 I1_RESIDENT     equ     1
     ELSE

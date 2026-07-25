@@ -1114,6 +1114,10 @@ ex_on:
                 jp      z,ex_on_error       ; -- NOT an <expr> ON...GOTO/GOSUB list
                 cp      STOP_TOKEN          ; ON STOP GOSUB <line> (interrupt-traps T1)
                 jp      z,ex_on_stop        ; -- arm the STOP trap handler
+    IF TRAPS_T4
+                cp      SPRITE_TOKEN        ; ON SPRITE GOSUB <line> (traps T4) -- also
+                jp      z,ex_on_sprite      ; a SINGLE-byte token ($C7), like KEY
+    ENDIF
     IF TRAPS_T3
                 cp      KEY_TOKEN           ; ON KEY GOSUB <list> (interrupt-traps T3)
                 jp      z,ex_on_key         ; -- a SINGLE-byte token, so cheaper than the
@@ -1351,11 +1355,27 @@ oe_disable:
 ; `STOP ON` enables). Undefined line -> Undefined line number, like GOSUB. Does
 ; not redirect flow (continues the same line, as ON ERROR GOTO does).
 ; spec-traps-t1-stop-reslice.md §5.1.
+; T4 shares this whole body: `ON SPRITE GOSUB <line>` is `ON STOP GOSUB <line>`
+; with a different entry index, and after the no-line fix below they are otherwise
+; identical token for token. The two heads load the ADDRESS of the entry's handler
+; field and fall into one parser (measured cheaper than duplicate-and-specialise
+; here -- unlike T3, where the duplicate won by 11 B; the difference is that T3 was
+; generalising a five-slot LIST parser with a live second caller, while this is a
+; single-line parser whose second caller is new. Both variants were built).
 ex_on_stop:
-                inc     hl                  ; past STOP_TOKEN
+                ld      de,ZTRAP+ZTI_STOP*ZTRAP_ENTSZ+1
+                jr      eos_common
+    IF TRAPS_T4
+ex_on_sprite:                               ; ON SPRITE GOSUB <line> (traps T4)
+                ld      de,ZTRAP+ZTI_SPRITE*ZTRAP_ENTSZ+1
+    ENDIF
+eos_common:                                 ; DE = &entry.handler; HL on the event token
+                push    de                  ; ...guarded: trap_line_link RETURNS in DE
+                inc     hl                  ; past STOP_TOKEN / SPRITE_TOKEN
                 call    skip_spaces
-                cp      GOSUB_TOKEN         ; syntax: ON STOP *GOSUB* <line>
-                jp      nz,trap_syntax
+                cp      GOSUB_TOKEN         ; syntax: ON <event> *GOSUB* <line>
+                jp      nz,trap_syntax      ; (abandons the pushed DE -- trap_syntax
+                                            ; raises, and raise_error resets SP)
                 inc     hl
                 call    skip_spaces
                 call    trap_line_link      ; CF=1 -> DE = handler LINK
@@ -1373,7 +1393,13 @@ ex_on_stop:
                 ; it takes a single line and so never went through the list loop.
                 ld      de,0
 eos_store:
-                ld      (ZTRAP+ZTI_STOP*ZTRAP_ENTSZ+1),de
+                pop     bc                  ; BC = &entry.handler (trap_line_link
+                                            ; clobbers BC, so it is popped only now)
+                ld      a,e
+                ld      (bc),a
+                inc     bc
+                ld      a,d
+                ld      (bc),a
                 jp      exec_stmt           ; continue the same line (as ON ERROR GOTO)
 
 ; --- trap_syntax: a TRAPPABLE Syntax error (ERR 2) for the trap statements ----

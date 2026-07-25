@@ -95,4 +95,31 @@ sub_int_install:
                 ld      (INT_SUB_SUBSL),a
                 ret
 
+    IF TRAPS_T3
+; zkey_install: point the C-BIOS fn-key hook at zkey_hook. Called once at boot
+; from init_ext_roms, beside play_install. The slot is $C9-filled ($C9 = ret,
+; CF undisturbed) by C-BIOS's own hook-area init, so an unpatched or non-BASIC
+; boot behaves exactly as before. Clobbers A, HL.
+;
+; PROMOTED here from basic/keytrap.asm by interrupt-traps T4, on exactly the same
+; grounds as the two routines above and funded the same way: it runs ONCE, from
+; init_ext_roms, under the boot DI, before any sub-ROM tenant has ever been
+; dispatched — so neither pinning caller (a page-1 tenant, or the $0038 ISR
+; landing inside a tenant window) can reach it, by construction rather than by
+; audit. It writes only RAM ($FFCF) and touches no $A8/CALSLT, so the
+; promote_scout blind spot (a call-graph walk cannot see that the pin is on the
+; code PERFORMING the slot switch) does not apply.
+;
+; WHAT DID NOT MOVE WITH IT: zkey_hook, which stays in the low region because it
+; IS the $0038 keyboard-scan path — the whole reason keytrap.asm is down there.
+; The 3-byte `ld hl,zkey_hook` below takes its address as plain DATA, which is
+; page-agnostic; nothing here ever calls into the low region.
+zkey_install:
+                ld      a,$C3               ; JP opcode
+                ld      (H_ZKEY),a
+                ld      hl,zkey_hook
+                ld      (H_ZKEY+1),hl
+                ret
+    ENDIF
+
     ENDIF

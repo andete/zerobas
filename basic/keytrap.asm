@@ -49,16 +49,11 @@
     IF ROM_BASE < $4000
     IF TRAPS_T3
 
-; zkey_install: point the C-BIOS fn-key hook at zkey_hook. Called once at boot
-; from init_ext_roms, beside play_install. The slot is $C9-filled ($C9 = ret,
-; CF undisturbed) by C-BIOS's own hook-area init, so an unpatched or non-BASIC
-; boot behaves exactly as before. Clobbers A, HL.
-zkey_install:
-                ld      a,$C3               ; JP opcode
-                ld      (H_ZKEY),a
-                ld      hl,zkey_hook
-                ld      (H_ZKEY+1),hl
-                ret
+; (zkey_install has been PROMOTED to basic/subrom-boot.asm — page 1. It is
+; boot-time-only, so it was never pinned here; T4's SPRITE stanza needs the low
+; region for the one thing that genuinely cannot leave it. zkey_hook below stays,
+; and the promoted installer still takes its address as plain data.
+; docs/spec-traps-t4-sprite.md §5.)
 
 ; zkey_hook: the C-BIOS put_key_fnk hook target — one function-key DELIVERY.
 ;   IN:  A  = the BIOS's fn-key index 0..4 (F1..F5; SHIFT is NOT folded in by

@@ -72,6 +72,9 @@ SUB_BUILD       equ     0
 ; while a sub-ROM page-1 tenant owns page 1 — and a skipped frame would LEAK an
 ; undiverted keystroke. Page 0 is always mapped. See basic/keytrap.asm.
                 include "basic/keytrap.asm"
+; (Interrupt-traps T4's SPRITE event source is NOT included here: it is inlined
+; into htimi_guard by subromcall.asm above, via basic/sprtrap-body.inc — it must
+; run ahead of that guard's page-1 slot test. D-T4-2, spec-traps-t4-sprite.md §3.1.)
 ; Arrays slice-1 (docs/spec-basic-arrays.md §10, SPLIT design): the main-ROM
 ; glue half — DIM/subscript parsing (needs `eval`) and the FAC<->element
 ; copy/coercion (needs var_store_fac's value-field codec). The engine itself

@@ -561,6 +561,21 @@ key-trap-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_key_trap.py $(if $(ONLY),--only $(ONLY),) \
 	  $(if $(CALIBRATE),--calibrate,)
 
+# --- SPRITE interrupt-trap gate, slice T4 (docs/spec-traps-t4-sprite.md §8) ---
+# VG-8020 differential for `ON SPRITE GOSUB` / `SPRITE ON|OFF|STOP`, the last slice
+# of the trap arc. THE ONLY GATE IN THE ARC THAT DRIVES NO INPUT DEVICE: the event
+# is a VDP sprite collision the BASIC program causes itself, so every case is just
+# `-machine <name>` plus a program -- no key matrix (T1/T3), no PSG injection (T2),
+# no C-BIOS hook (T3). Repack-only (the poll is low-region repack code).
+# Fire COUNTS are asserted per machine, never across the two: a count is a function
+# of how many frames fit in the window and the machines run BASIC ~7x apart. The
+# cross-machine assertions are the error surface and the STATFL readings.
+# Scope with `make sprite-trap-acceptance ONLY=F_`; `REPORT=1` prints the raw
+# readings without asserting (characterization mode).
+sprite-trap-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_sprite_trap.py $(if $(ONLY),--only $(ONLY),) \
+	  $(if $(REPORT),--report,)
+
 # --- D-F2-2 int-argument coercion gate (docs/spec-basic-df2-2-intarg-coercion.md)
 # VG-8020 differential: out-of-domain int args must raise the reference's Overflow
 # (ERR 6) / Illegal function call (ERR 5), not silently coerce. ASSERTED cases gate
@@ -698,6 +713,6 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance \
-        input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance intarg-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
+        input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
         graphics-floor-acceptance graphics-floor-teeth graphics-acceptance clean

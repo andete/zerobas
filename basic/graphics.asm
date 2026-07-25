@@ -682,14 +682,39 @@ ex_sprite:
                 call    skip_spaces
                 ld      a,(hl)
                 cp      ON_TOKEN
-                jr      z,spr_noop
+                jr      z,spr_on
                 cp      OFF_TOKEN
-                jr      z,spr_noop
+                jr      z,spr_off
                 cp      STOP_TOKEN
                 jp      nz,gfx_syntax       ; bare SPRITE -> ERR 2 (measured)
-spr_noop:
-                inc     hl
+    IF TRAPS_T4
+                ld      a,ZTS_STOP          ; SPRITE STOP -> suspend
+                jr      spr_set
+spr_on:         ld      a,ZTS_ON            ; SPRITE ON   -> enable
+                jr      spr_set
+spr_off:        ld      a,ZTS_OFF           ; SPRITE OFF  -> disable (+clear PENDING)
+spr_set:
+                ; DELIBERATELY NO EDGE-SHADOW SEED -- and unlike ex_stop's, this is not
+                ; even a judgement call: SPRITE is a LEVEL sampled per frame, with no
+                ; shadow to seed (sprtrap.asm). A collision already present when
+                ; `SPRITE ON` runs FIRES, measured (spec-traps-t4-sprite.md §1.3), so
+                ; there is nothing to suppress. `SPRITE STOP` is a plain suspend: it
+                ; does NOT latch, and a collision that happened while suspended is
+                ; forgotten -- also measured, built decisive by moving the sprites
+                ; APART before re-enabling.
+                inc     hl                  ; consume the ON/OFF/STOP sub-keyword
+                push    hl                  ; guard the exec-continue ptr across set_state
+                ld      hl,ZTRAP+ZTI_SPRITE*ZTRAP_ENTSZ
+                call    set_state
+                pop     hl
+                jp      exec_stmt           ; continue the line (a bare `ret` would
+                                            ; SWALLOW the rest of it -- the T1 lesson)
+    ELSE
+spr_on:
+spr_off:
+                inc     hl                  ; D-G7-4: accepted no-op (trap not built)
                 jp      exec_stmt
+    ENDIF
 
 ; --- gfx_syntax: a TRAPPABLE Syntax error (ERR 2) --------------------------
 ; NOT `jp stmt_error`: that prints and aborts the RUN, so an `ON ERROR GOTO`

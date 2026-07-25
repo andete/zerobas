@@ -95,6 +95,15 @@ err_subrom_absent equ   err_illegal_fn      ; share interp.asm's identical "ille
 ; architecture); own-design gate. No reference-ROM disassembly.
 htimi_guard:
                 push    af
+    IF TRAPS_T4
+                ; SPRITE trap (T4): sampled HERE, ahead of the slot test, because it
+                ; must run on EVERY frame -- including the ones this guard is about to
+                ; skip. That is the whole point of D-T4-2 (spec-traps-t4-sprite.md
+                ; §3.1): the source is low-region so no page-1 tenant window can hide
+                ; a collision from it. INLINED (not called) because the low region is
+                ; T4's binding wall and a call+ret is 4 B of it; see the file header.
+                include "basic/sprtrap-body.inc"
+    ENDIF
                 in      a,(PSLTREG)         ; current slot config (page-1 = bits 3-2)
                 and     %00001100           ; isolate the page-1 primary field
                 jr      nz,htg_skip         ; nonzero -> a sub-ROM tenant owns page 1
