@@ -1,6 +1,11 @@
 # spec — interrupt-traps T4: the SPRITE collision trap (`ON SPRITE GOSUB` + `SPRITE ON/OFF/STOP`)
 
-Status: **DRAFT — awaiting sign-off.** Fourth and last slice of the interrupt-trap
+Status: **SIGNED OFF 2026-07-25.** D-T4-2 decided **against** the recommendation —
+the poll goes in the **low region off `htimi_guard`**, not page-1 `event_poll`
+(§3), so T4 needs a small promotion after all. D-T4-3 as recommended: the T1
+divergence is fixed **first, in its own commit**. D-T4-1/4/5 as written.
+
+Fourth and last slice of the interrupt-trap
 arc ([`spec-basic-interrupt-traps.md`](spec-basic-interrupt-traps.md), D-T-6 order
 T1→T2→T3→T4). Follows [`spec-traps-t3-key.md`](spec-traps-t3-key.md). Closes the
 graphics arc's **D-G7-4** handoff, which left `SPRITE ON/OFF/STOP` as an accepted
@@ -220,10 +225,30 @@ was nothing to lose. What is lost is only *repeat* fires — and repeats are alr
 collapsed by the single PENDING latch (§1.2) and are already not an
 equality-differential across machines.
 
-⇒ **Recommend: put the SPRITE stanza in `event_poll` (page 1). No low-region byte,
-no promotion.** This is a **stated argument, not a measurement**, so it gets a gate
-case that measures it directly (§8, case `T_tenant`): collide while the loop runs a
-float transcendental — a `fp_sin` page-1 tenant — and assert the trap still fires.
+*Recommended: put the SPRITE stanza in `event_poll` (page 1), costing no low-region
+byte and no promotion, with §8's `T_tenant` gating the argument.*
+
+### 3.1 ✅ D-T4-2 DECIDED (2026-07-25) — **LOW REGION, off `htimi_guard`**
+
+**Signed off against that recommendation.** The stanza goes in the low region,
+called from `htimi_guard` **ahead of its slot test**, so it is always mapped and no
+frame is ever skipped. Cost: ~23 B of low region against **14 B free** ⇒ **T4 needs
+a promotion** (low → freed page 1), the T3 technique, but a far smaller one than
+T3's 74 B.
+
+**Why this is the better call, and my §3 argument was the weaker case:** it rests on
+"sprites cannot move during a tenant window", which is an *argument about the rest
+of the system* — and §3 already had to carve out `bload_tenant`/`title_tenant` as
+VRAM writers. That premise is exactly the kind that a later slice quietly
+invalidates: every new page-1 tenant becomes a fresh obligation to re-audit, with
+nothing in the build to catch it. The low-region stanza needs no premise at all —
+page 0 is untouched during a page-1 tenant, so it is correct *by construction*, the
+same reasoning that put `htimi_guard` itself and `keytrap.asm` in page 0. Paying ~23
+B once beats carrying a standing audit obligation.
+
+`T_tenant` **stays in the gate** regardless: it now asserts that the low-region poll
+really does keep firing through a tenant window, rather than excusing a design that
+does not.
 
 ⚠️ **The one caveat, recorded honestly:** the argument assumes no page-1 tenant
 itself rewrites sprite VRAM. `bload_tenant` and `title_tenant` do write VRAM, so a
@@ -248,10 +273,13 @@ Nothing new. T4 uses the arc's existing `ZTRAP` machinery unchanged:
 
 ### 4.1 The poll stanza
 
-Placed inside `event_poll`'s `ep_live` block (HL/DE are already saved there; no
-BIOS call, so the `push bc/ix/iy` the STRIG loop needs is not required):
+Per §3.1 this is **low-region** code, reached from `htimi_guard` **before** its
+page-1 slot test — so it must save its own registers (`htimi_guard`'s contract is
+AF-only transparency, and this stanza needs HL too). It touches only RAM, so it has
+no page-1 dependency to give up:
 
 ```
+                push    hl
                 ld      hl,ZTRAP+ZTI_SPRITE*ZTRAP_ENTSZ
                 bit     0,(hl)              ; ON (01) or SERVICING (11) — as T2
                 jr      z,ep_spr_done
@@ -262,11 +290,18 @@ BIOS call, so the `push bc/ix/iy` the STRIG loop needs is not required):
                 ld      a,1
                 ld      (TRAPPEND),a        ; wake the run-loop dispatcher
 ep_spr_done:
+                pop     hl
 ```
 
 `bit 0` covers ON *and* SERVICING for the same reason T2 documents: a collision
 during the handler must latch and fire after `RETURN`. Reading `STATFL` is a plain
 RAM load — it does not clear the bit, satisfying §1.6.
+
+⚠️ **`htimi_guard` currently saves only AF and is entered DI from the `$0038` ISR.**
+Inserting the stanza ahead of its slot test must not disturb that contract: the
+`push hl`/`pop hl` above is not optional, and the whole stanza must stay
+register-transparent on **every** path, including the not-armed fast-out — the same
+discipline `event_poll`'s own `push af` fast-out documents.
 
 ### 4.2 Parse
 
@@ -298,14 +333,18 @@ RAM load — it does not clear the bit, satisfying §1.6.
 
 | item | region | estimate |
 |---|---|---|
-| `event_poll` SPRITE stanza (§4.1) | page 1 | ~21 B |
+| SPRITE poll stanza + the `htimi_guard` call (§3.1, §4.1) | **low** | **~23 B** |
 | `SPRITE ON/OFF/STOP` promotion (§4.2) | page 1 | ~22 B |
 | `ex_on` peek + `ex_on_sprite` (shared with `ex_on_stop`) | page 1 | ~10–25 B |
 | §1.5 `ON STOP GOSUB` divergence fix | page 1 | ~+2 B |
-| **total** | **page 1** | **~55–70 B** |
-| | low region | **0 B** |
+| **total** | **page 1** | **~34–49 B** (78 free) |
+| | **low region** | **~23 B** (14 free ⇒ **~9 B short**) |
 
-**T4 would be the first slice in the arc to need no carve** — if the estimate holds.
+Under D-T4-2 the slice is **split across both walls**, as T3 was. The page-1 half
+looks comfortable; the **low-region half is ~9 B short and needs a promotion**
+(low → page 1, [[promotion-funds-low-region]]) — the same lever T3 used, at roughly
+an eighth of the size. Note the walls are **coupled**: page 1 pays exactly what low
+is relieved of, so the promotion spends part of the page-1 headroom above.
 
 🔴 **It should not be believed.** The standing arc rule is that **every byte estimate
 here is a LOWER BOUND**: T3's §7 estimate ran 106 B low (1.8×) *while describing
@@ -339,10 +378,14 @@ byte — unlike T1's stillborn `INTERVAL` (MSX2, out of charter,
    bare `equ`** — T3 lost a round to exactly that (its parse surface is repack-only
    while its call sites are always-assembled, so the lean build died on an undefined
    symbol).
-3. **Measure** against the walls with the tripwire lifted, per §5. Decide funding
-   before going further.
-4. Poll stanza + `set_state` wiring; `ex_on_sprite` (both variants, measured);
-   `spr_noop` promotion.
+3. **Measure** against **both** walls with the tripwire lifted, per §5. The
+   low-region half is expected ~9 B short ⇒ fund it by **promotion**
+   (`tools/promote_scout.py`), remembering that tool's known blind spot: it calls
+   `subrom_call` promotable because a call-graph walk cannot see that the pin is on
+   the code *performing* the slot switch. Never promote anything touching
+   `$A8`/`CALSLT` on a bare verdict.
+4. Low-region poll stanza + the `htimi_guard` insertion (§4.1); `set_state` wiring;
+   `ex_on_sprite` (both variants, measured); `spr_noop` promotion.
 5. `make sprite-trap-acceptance` — and **run it**. The standing trap in this arc is
    "builds green but was NEVER RUN".
 6. Full standing-gate sweep, including `graphics-acceptance` (T4 edits
@@ -393,15 +436,13 @@ make.
 - **D-T4-1 — the collision source (§2).** Read `STATFL` bit 5 (option (a)). Option
   (b) is impossible by construction; `STATFL` is a published work-area address, so
   the arc spec's provenance worry does not apply. *Recommend as written.*
-- **D-T4-2 — where the poll lives (§3).** Page-1 `event_poll`, accepting
-  `htimi_guard`'s skipped frames, on the argument that sprites cannot move while the
-  program is blocked in a tenant. Costs no low-region byte and no promotion.
-  *Recommend as written, gated by `T_tenant`.* Alternative: a low-region stanza
-  called from `htimi_guard` ahead of its slot test (~23 B low against 14 free ⇒ a
-  small promotion).
-- **D-T4-3 — the T1 `ON STOP GOSUB` divergence (§1.5).** Fix it, in its own commit
-  ahead of T4. *Recommend as written.* Alternative: split it out as its own
-  follow-up ticket and leave T4 to land alone.
+- **D-T4-2 — where the poll lives (§3). ✅ DECIDED: LOW REGION, off `htimi_guard`
+  (§3.1)** — correct by construction rather than by an argument about which page-1
+  tenants touch sprite VRAM. Costs ~23 B low against 14 free ⇒ a small promotion.
+  *(Decided against the original page-1 recommendation.)*
+- **D-T4-3 — the T1 `ON STOP GOSUB` divergence (§1.5). ✅ DECIDED as recommended:**
+  fixed **first, in its own commit**, with a `stop-trap-acceptance` case, so its
+  ~2 B stay out of T4's measurement.
 - **D-T4-4 — share or duplicate `ex_on_stop`/`ex_on_sprite` (§4.2).** Build both,
   measure, keep the smaller — and prefer the variant that costs nothing when
   `TRAPS_T4` is off. *Recommend measuring rather than deciding here.*

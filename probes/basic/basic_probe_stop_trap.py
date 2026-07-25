@@ -315,6 +315,33 @@ ASSERTED = [
                      RANOK, DELAY, POLL, OVERRUN, HEND], TAP, 0),
     ("C_handler_baseline", CPROG, TAP, 1),
     ("C2_press_in_handler_latches", CPROG, TAP + [(2.0, 2.10)], 2),
+    # F: `ON STOP GOSUB` with NO LINE REFERENCE is ACCEPTED and CLEARS the handler.
+    # This gates a MEASURED DIVERGENCE that zerobas shipped and that the T4 SPRITE
+    # characterization round's family sweep caught (spec-traps-t4-sprite.md §1.5):
+    # ex_on_stop used to raise a trappable ERR 2 here, where the reference accepts
+    # the form for all four events and zeroes that entry's handler link.
+    #
+    # Line 40 writes flag=5 rather than just `done`, so the case discriminates all
+    # THREE outcomes instead of lumping two of them into "0":
+    #     flag 1 -> the trap FIRED  => the bare form did not clear the handler
+    #     flag 5 -> the program ran to completion => Ctrl-STOP was swallowed
+    #     flag 0 -> Ctrl-STOP broke the program mid-delay
+    # and against the PRE-FIX build it fails for a fourth reason that is not a flag
+    # value at all: the untrapped ERR 2 aborts the RUN before line 25, so `ran`
+    # carries the failure. Both machines must agree on the same outcome -- that is
+    # what makes this an equality differential rather than a restatement of the fix.
+    #
+    # MEASURED on the VG-8020: flag = 0, twice. So `STOP ON` with a CLEARED handler
+    # does NOT swallow Ctrl-STOP -- the break happens normally. Worth stating because
+    # it is the OPPOSITE of the KEY trap, where `KEY(1) ON` with an empty handler
+    # slot still swallows the key and fires nothing (spec-traps-t3-key.md §1.2, and
+    # diversion there follows the STATE ALONE). For STOP the break suppression tracks
+    # handler!=0, not the state bit -- consistent with check_traps' fire condition
+    # (state==ON && PENDING && handler!=0) but NOT derivable from the T3 analogue,
+    # which is exactly why it is measured here instead of assumed.
+    ("F_bare_gosub_disarms",
+     [CLR, "10 ON STOP GOSUB 100", "20 STOP ON", "22 ON STOP GOSUB", RANOK, DELAY,
+      "40 POKE&HD000,5:POKE&HD003,1:END", HEND], TAP, 0),
 ]
 
 # E: NOT an equality differential -- the PROPERTY only (cf. the T3 KEY gate's REPEAT

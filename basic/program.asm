@@ -343,6 +343,25 @@ rp_break:
                 ld      hl,ZTRAP+ZTI_STOP*ZTRAP_ENTSZ
                 bit     0,(hl)              ; ON or SERVICING -> sampled, never breaks
                 jr      z,rp_real_break     ; OFF / suspended -> the classic break
+                ; ...AND ONLY IF THE ENTRY ACTUALLY HAS A HANDLER. Suppressing the
+                ; break on the STATE ALONE is a MEASURED DIVERGENCE (VG-8020 flag 0
+                ; vs zerobas flag 5, basic_probe_stop_trap.py case F): with `STOP ON`
+                ; but a CLEARED handler the reference breaks the program normally.
+                ; Note this is the OPPOSITE of the KEY trap, where `KEY(n) ON` with an
+                ; empty handler slot still swallows the key (spec-traps-t3-key.md §1.2
+                ; -- diversion there follows the state alone). The two traps genuinely
+                ; differ, so do not "harmonise" them; STOP tracks handler != 0, which
+                ; is also what check_traps' fire condition requires.
+                ; Reachable only now that `ON STOP GOSUB` with no line CLEARS the slot
+                ; instead of raising ERR 2 -- before that fix a live entry with a zero
+                ; handler could not be built, which is why this hid for so long.
+                inc     hl
+                ld      a,(hl)              ; handler LINK, lo
+                inc     hl
+                or      (hl)                ; ..or hi -> ZF iff the link is 0
+                dec     hl
+                dec     hl                  ; HL back to the state byte
+                jr      z,rp_real_break     ; no handler -> the break happens normally
                 bit     6,(hl)              ; shadow: still down since the last sample?
                 jr      nz,rp_brk_run       ; no edge -> ignore the key, run the statement
                 set     6,(hl)              ; 0->1 edge: latch the level...
@@ -1340,7 +1359,20 @@ ex_on_stop:
                 inc     hl
                 call    skip_spaces
                 call    trap_line_link      ; CF=1 -> DE = handler LINK
-                jp      nc,trap_syntax      ; `ON STOP GOSUB` with no line -> ERR 2
+                jr      c,eos_store
+                ; NO LINE REFERENCE -> CLEAR THE HANDLER. This used to be
+                ; `jp nc,trap_syntax` (ERR 2) and that was a MEASURED DIVERGENCE,
+                ; caught by the T4 characterization round's family sweep
+                ; (spec-traps-t4-sprite.md §1.5): the reference ACCEPTS a bare
+                ; `ON <event> GOSUB` for all four events and clears that entry's
+                ; handler -- VG-8020 err=0 vs zerobas err=2, and `ON STOP GOSUB:
+                ; POKE&HD004,77` still writes 77 there, so the reference's parser
+                ; stops cleanly rather than swallowing the rest of the statement.
+                ; ex_on_strig and ex_on_key have always had this shape (an empty
+                ; list slot writes 0); STOP was the only one that did not, because
+                ; it takes a single line and so never went through the list loop.
+                ld      de,0
+eos_store:
                 ld      (ZTRAP+ZTI_STOP*ZTRAP_ENTSZ+1),de
                 jp      exec_stmt           ; continue the same line (as ON ERROR GOTO)
 
