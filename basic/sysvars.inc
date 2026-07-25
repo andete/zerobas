@@ -430,6 +430,14 @@ G8_RESIDENT     equ     0
 ; GTPAD/GTPDL BIOS completions (spec §6.2, decision D-I-6).
 ; Gated like G6/G7/G8 so the slice can be dropped if the page-1 tail runs out; the
 ; lean 16 KB cart has no input devices at all.
+; --- TRAPS_T3: the KEY-trap build gate (docs/spec-traps-t3-key.md §7.2) ------
+; T3 is WRITTEN but NOT FUNDED: it needs 236 B (60 low-region + 176 page-1) and
+; both walls are full, so enabling it overruns the build. It is gated OFF rather
+; than reverted so the repack target keeps building while D-T3-5 (the carve) is
+; re-decided; flip to 1 once the space exists. Everything the gate covers is
+; repack-only anyway, so the lean 16 KB ROM is byte-identical either way.
+TRAPS_T3        equ     0
+
     IF ROM_BASE < $4000
 I1_RESIDENT     equ     1
     ELSE

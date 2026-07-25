@@ -90,8 +90,11 @@ ier_done:
                 call    sub_int_install     ; install the page-0 EI trampoline if a
                                             ; sub-ROM was recorded (subrom trampoline)
                 call    play_install        ; install the PLAY servicer H.TIMI seam
-                call    zkey_install        ; install the KEY-trap fn-key hook (traps T3)
                                             ; (audio Slice 3; H.TIMI is C9-free here)
+    IF TRAPS_T3
+                call    zkey_install        ; install the KEY-trap fn-key hook (traps T3;
+                                            ; H_ZKEY is C9-filled by C-BIOS's hook init)
+    ENDIF
                 call    trap_init           ; interrupt-traps T1: zero the ZTRAP table so
                                             ; garbage boot RAM can't look like an armed
                                             ; trap. Under the boot DI (below); the H.TIMI

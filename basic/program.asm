@@ -1064,9 +1064,6 @@ ex_on:
                 jp      z,ex_on_error       ; -- NOT an <expr> ON...GOTO/GOSUB list
                 cp      STOP_TOKEN          ; ON STOP GOSUB <line> (interrupt-traps T1)
                 jp      z,ex_on_stop        ; -- arm the STOP trap handler
-                cp      KEY_TOKEN           ; ON KEY GOSUB <list> (interrupt-traps T3)
-                jp      z,ex_on_key         ; -- a SINGLE-byte token, cheaper than STRIG's
-                                            ; two-byte $FF $A3 peek below
                 cp      PEEK_PREFIX         ; $FF -> a two-byte function token. STRIG
                 jr      nz,ex_on_expr       ; ($FF $A3) is the ONE trap event spelled that
                 inc     hl                  ; way; every other $FF function is an ordinary
@@ -1381,44 +1378,11 @@ ex_ff_stmt:
 ; Flow continues on the same line.
 ex_on_strig:
                 inc     hl                  ; past the STRIG selector byte
-                ld      a,5                 ; 5 slots, band base ZTI_STRIG0, ascending
-                ld      (TRAPNSLOT),a
-                xor     a
-                ld      (TRAPREV),a
-                ld      a,ZTI_STRIG0
-                jr      ex_on_trap_list
-
-; --- ex_on_key: ON KEY GOSUB <l1>[,<l2>...[,<l10>]] -------------------------
-; Arm up to TEN function-key handlers (traps T3, docs/spec-traps-t3-key.md §5).
-; Reached from ex_on's peek with HL on the KEY token -- a SINGLE-byte token
-; ($CC), so unlike STRIG's `$FF $A3` there is no prefix to put back.
-; The list is positional and slot k is KEY k+1 (§1.4 K8); an empty slot clears
-; that key's handler and absent trailing slots are untouched, exactly as T2.
-; An 11th slot is ERR 2 -- and here NO deviation is needed: the reference raises
-; a clean ERR 2 itself, unlike T2's 6th STRIG slot which takes the machine down.
-ex_on_key:
-                inc     hl                  ; past the KEY token (single-byte $CC)
-                ld      a,10                ; KEY 1..10
-                ld      (TRAPNSLOT),a
-                ld      (TRAPREV),a         ; non-zero: the KEY band is REVERSED (D-T3-4)
-                ld      a,ZTI_KEY1
-                ; fall through
-
-; --- ex_on_trap_list: the shared `ON <event> GOSUB <list>` body --------------
-; T2 pre-paid for this; T3 turns the two hard-coded constants into parameters
-; rather than duplicating the loop (spec §5 -- sharing is what makes T3 fit).
-;   IN: HL = cursor on the token AFTER the event keyword; A = the band's base
-;       ZTRAP index; (TRAPNSLOT) = the slot count.
-; The KEY band is laid out REVERSED (key_entry_index, keytrap.asm) so that
-; ct_find's ascending scan services the family high-numbered-first as the
-; reference does (D-T3-4); TRAPREV says whether this band is reversed.
-ex_on_trap_list:
-                ld      (TRAPBASE),a
                 call    skip_spaces
-                cp      GOSUB_TOKEN         ; syntax: ON <event> *GOSUB* <list>
+                cp      GOSUB_TOKEN         ; syntax: ON STRIG *GOSUB* <list>
                 jp      nz,trap_syntax
                 inc     hl
-                ld      c,0                 ; C = slot index
+                ld      c,0                 ; C = slot index 0..4
 eostr_lp:
                 call    skip_spaces
                 push    bc                  ; trap_line_link clobbers BC (find_line_bc)
@@ -1429,8 +1393,9 @@ eostr_lp:
 eostr_store:
                 push    hl                  ; guard the cursor
                 push    de                  ; guard the LINK across ztrap_entry (clobbers DE)
-                call    trap_slot_index     ; A = the ZTRAP index for slot C
-                call    ztrap_entry         ; HL = &ZTRAP[A] (the state byte)
+                ld      a,c
+                add     a,ZTI_STRIG0
+                call    ztrap_entry         ; HL = &ZTRAP[3+C] (the state byte)
                 pop     de
                 inc     hl                  ; -> the handler field
                 ld      (hl),e
@@ -1442,36 +1407,10 @@ eostr_store:
                 cp      ','                 ; another slot?
                 jp      nz,exec_stmt        ; no -> statement done, continue the line
                 inc     hl                  ; consume the comma
-                ld      a,(TRAPNSLOT)
-                dec     a
-                cp      c                   ; one slot past the last?
-                jp      c,trap_syntax       ; STRIG: a 6th slot -> a DELIBERATE DEVIATION,
-                                            ; a trappable ERR 2 where the reference runs off
-                                            ; its handler table and dies (D-T2-4). KEY: an
-                                            ; 11th slot -> ERR 2, which is what the reference
-                                            ; raises ITSELF, so no deviation there (§1.4 K15).
-                jr      eostr_lp
-
-; --- trap_slot_index: list slot -> ZTRAP entry index ------------------------
-;   IN: C = slot index; (TRAPBASE) = the band's slot-0 index; (TRAPNSLOT) = slot
-;       count; (TRAPREV) != 0 for a band laid out REVERSED.
-;   OUT: A = the ZTRAP entry index.  Clobbers B. Preserves C, DE, HL.
-; The KEY band is reversed so that ct_find's ascending scan services the family
-; high-numbered-first, matching the reference (spec §6, D-T3-4) without changing
-; the scan direction the already-landed STRIG band relies on.
-trap_slot_index:
-                ld      a,(TRAPREV)
-                or      a
                 ld      a,c
-                jr      z,tsi_add           ; ascending band -> base + slot
-                ld      a,(TRAPNSLOT)
-                dec     a
-                sub     c                   ; reversed -> base + (last - slot)
-tsi_add:
-                ld      b,a
-                ld      a,(TRAPBASE)
-                add     a,b
-                ret
+                cp      5                   ; slots 0..4 only
+                jp      nc,trap_syntax      ; a 6th slot -> trappable ERR 2 (D-T2-4)
+                jr      eostr_lp
 
 ; --- ex_strig_stmt: STRIG(n) ON | OFF | STOP ---------------------------------
 ; The D-I-5 handoff: this replaces input-devices' blanket ERR 2 for `STRIG(n)`
@@ -1483,62 +1422,15 @@ tsi_add:
 ; crunched form has no space to skip.
 ex_strig_stmt:
                 inc     hl                  ; past the STRIG selector byte
-                xor     a
-                ld      (TRAPARGLO),a       ; STRIG: n = 0..4, ascending band, SEED the
-                ld      (TRAPREV),a         ; edge shadow on an OFF->ON transition
-                inc     a
-                ld      (TRAPSEED),a
-                ld      a,5
-                ld      (TRAPNSLOT),a
-                ld      a,ZTI_STRIG0
-                jr      ex_trap_stmt
-
-; --- ex_key_stmt: KEY(n) ON | OFF | STOP ------------------------------------
-; Traps T3 (docs/spec-traps-t3-key.md §5). Reached from ex_key's `(` peek, with
-; HL on the `(`. n is 1..10 (§1.4 K11/K12: KEY(0) and KEY(11) are both ERR 5 --
-; the same shape as T2's STRIG(5)), and NO edge shadow is seeded: KEY is a
-; DELIVERY trap, so a key already held when the trap is enabled just produces
-; its next repeat delivery. There is no spurious edge to suppress (spec §2).
-ex_key_stmt:
-                ld      a,1
-                ld      (TRAPARGLO),a       ; KEY: n = 1..10
-                ld      (TRAPREV),a         ; the KEY band is REVERSED (D-T3-4)
-                xor     a
-                ld      (TRAPSEED),a        ; no shadow seeding for a delivery trap
-                ld      a,10
-                ld      (TRAPNSLOT),a
-                ld      a,ZTI_KEY1
-                ; fall through
-
-; --- ex_trap_stmt: the shared `<event>(n) ON|OFF|STOP` body ------------------
-; T3 turns T2's three hard-coded constants (band base, range, seeding) into
-; parameters instead of duplicating the parser (spec §5).
-;   IN: HL = cursor on the `(`; A = band slot-0 ZTRAP index; (TRAPARGLO) = the
-;       lowest legal n; (TRAPNSLOT) = slot count; (TRAPREV)/(TRAPSEED) as above.
-; n is a normal numeric expression truncated to a byte (`STRIG(.4) ON` == 0, S8);
-; out of range is ERR 5; a bare `<event>(n)` with no sub-keyword is a trappable
-; ERR 2. The unspaced form (`STRIG(0)ON`) is free -- the crunched token stream
-; has no space to skip.
-ex_trap_stmt:
-                ld      (TRAPBASE),a
                 call    skip_spaces
                 cp      '('
                 jp      nz,trap_syntax
                 inc     hl
                 call    eval                ; DE = n; HL past the expression
                 call    get_byte_arg        ; A = E = n (ERR 6 > int16, ERR 5 > 255/neg)
-                ld      b,a
-                ld      a,(TRAPARGLO)
-                ld      c,a                 ; C = the lowest legal n
-                ld      a,b
-                sub     c                   ; A = the 0-based slot
-                jp      c,strig_illegal     ; below the range (KEY(0)) -> ERR 5
-                ld      c,a
-                ld      a,(TRAPNSLOT)
-                cp      c
-                jp      c,strig_illegal     ; above it (STRIG(5), KEY(11)) -> ERR 5
-                jr      z,strig_illegal
-                call    trap_slot_index     ; A = the ZTRAP index (honours TRAPREV)
+                cp      5                   ; triggers 0..4
+                jp      nc,strig_illegal    ; STRIG(5..255) -> ERR 5
+                add     a,ZTI_STRIG0
                 push    hl                  ; guard the cursor across ztrap_entry
                 call    ztrap_entry         ; HL = &ZTRAP[3+n]
                 ex      de,hl               ; DE = the entry pointer, kept until the end
@@ -1568,9 +1460,6 @@ strig_set:
                 ; The old != ON half matters: re-issuing `STRIG(n) ON` while already ON
                 ; must be a no-op, or a program that re-enables on every statement
                 ; would hold the shadow set forever and never see a real press.
-                ld      a,(TRAPSEED)
-                or      a
-                jr      z,strig_noseed      ; a DELIVERY trap (KEY) has no edge to suppress
                 ld      a,b
                 cp      ZTS_ON
                 jr      nz,strig_noseed     ; not enabling

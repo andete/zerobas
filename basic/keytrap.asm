@@ -34,12 +34,20 @@
 ; guard at all. The handler touches only RAM, so it has no page-1 dependency to
 ; give up. This is the same reasoning that put htimi_guard itself in page 0.
 ;
+; ⚠️ GATED OFF (TRAPS_T3 = 0, basic/sysvars.inc). T3 needs 236 B — 66 of them
+; here in the low region, which has 6 free — so the slice is written but NOT
+; FUNDED, pending the re-decision of D-T3-5 (the carve; spec §7.1/§7.2). This
+; file assembles clean but HAS NEVER BEEN RUN. Under the arc's standing lesson
+; that says nothing whatsoever about its correctness: treat every line below as
+; unverified until `make key-trap-acceptance` exists and passes.
+;
 ; CLEAN-ROOM: own-design. The hook CONTRACT is ours; NEWKEY/$FBE5 and the
 ; row-6-bit-0 SHIFT position are the published MSX key-matrix work area, and the
 ; 5-byte JP hook-vector idiom is the standard MSX H.* hook convention (H.TIMI is
 ; already installed this way by play_install). No reference-ROM bytes.
 
     IF ROM_BASE < $4000
+    IF TRAPS_T3
 
 ; zkey_install: point the C-BIOS fn-key hook at zkey_hook. Called once at boot
 ; from init_ext_roms, beside play_install. The slot is $C9-filled ($C9 = ret,
@@ -129,4 +137,5 @@ key_entry_index:
                 sub     b
                 ret
 
+    ENDIF
     ENDIF

@@ -197,12 +197,6 @@ ex_key:
                 inc     hl                  ; past the KEY token
                 call    skip_spaces
                 ld      a,(hl)
-    IF ROM_BASE < $4000
-                cp      '('                 ; KEY(n) ON|OFF|STOP -- the T3 arming form.
-                jp      z,ex_key_stmt       ; Tested AHEAD of ON/OFF so the display form
-                                            ; (`KEY ON`/`KEY OFF`) keeps working unchanged
-                                            ; -- oracle case K10 requires both to coexist.
-    ENDIF
                 cp      OFF_TOKEN
                 jr      z,key_off
                 cp      ON_TOKEN

@@ -497,12 +497,42 @@ low region directly. It can fund it *indirectly* — free page 1, then promote ~
 existing low-region content into the freed page-1 space — but that is a second lift with
 its own eligibility question, not a step anyone had costed.
 
-**What did come in on budget:** the C-BIOS hook did its job. The parser generalisation
-(§5) also held up — `ON KEY GOSUB` and `KEY(n) ON|OFF|STOP` reuse T2's parsers with five
-constants lifted into parameters (band base, slot count, argument origin, reversal,
-shadow-seeding) rather than duplicating them, and **D-T3-4 cost zero bytes in `ct_find`**:
-laying the KEY band out reversed gets the reference's high-to-low service order without
-touching the scan direction T2's STRIG band depends on.
+**Where the 236 B actually goes** — measured by re-reading the walls with the KEY-specific
+code gated out, which isolates the refactor from the feature:
+
+| part | cost | vs. §7's estimate |
+|---|---|---|
+| KEY event source — hook handler + install (**low region**) | **66 B** | est. 55 B |
+| **parser generalisation alone** (§5), before any KEY code | **76 B** | est. **0 — assumed free** |
+| KEY-specific parse (`ON KEY GOSUB`, `KEY(n) ON/OFF/STOP`, the peeks) | **100 B** | est. 65 B |
+| intra-family order (D-T3-4) | **0 B** | est. 10 B |
+
+🔴 **§5's central premise is backwards at this scale.** It argued *"sharing rather than
+duplicating is what makes T3 affordable"* — but parameterising T2's two parsers costs
+**76 B on its own**, before a single byte of KEY behaviour. Five constants became five
+RAM parameters plus `trap_slot_index` plus generalised range arithmetic, and that
+plumbing is bigger than the immediate constants it replaced. Generalisation pays off
+across *many* callers; with two it is a net loss. **A duplicate-and-specialise T3 parser
+would very likely be smaller** — worth measuring before the next attempt.
+
+**What did land as designed:** the C-BIOS hook, and **D-T3-4 for zero bytes** — laying
+the KEY band out reversed gets the reference's high-to-low service order without touching
+`ct_find` at all, and so without disturbing the scan direction T2's STRIG band depends on.
+
+### 7.3 Tree state — main stays green, T3 is gated off
+
+The slice does not fit, so it must not break the build for everyone else:
+
+- **`TRAPS_T3`** ([`basic/sysvars.inc`](../basic/sysvars.inc)) is a build gate, default
+  **0**. It covers [`basic/keytrap.asm`](../basic/keytrap.asm) in full and the
+  `zkey_install` boot call. Flip it to 1 once the space exists.
+- The **parser generalisation was reverted**, not gated: it costs 76 B *even with T3
+  off*, which alone overran page 1 by 67 B. Keeping it behind an `IF/ELSE` would have
+  meant two parser bodies in the tree for a design §7.2 now recommends reconsidering.
+  It is preserved in commit `a4e4bd4` and can be restored with
+  `git show a4e4bd4 -- basic/program.asm basic/screen.asm | git apply`.
+- `make basic-reloc` is green: low region 6 B free, page 1 9 B free, lean `basic.rom`
+  byte-identical, all four closure gates passing.
 
 **Landed and verified regardless of funding:** the C-BIOS side is complete and
 reproducible — [`cbios-repack/key-trap-hook.patch`](../cbios-repack/key-trap-hook.patch)
