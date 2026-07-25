@@ -859,6 +859,8 @@ sfm_reject2:
 ; already-owned heap body (its length never changes, so no realloc is ever needed).
 ex_mid_stmt:
                 inc     hl                  ; -> the function selector
+ex_mid_sel:                                 ; (traps T2) entry with HL already on the
+                                            ; selector byte, from program.asm's ex_ff_stmt
                 ld      a,(hl)
                 cp      MIDD_TOKEN          ; must be MID$ ($83); any other $FF here is
                 jp      nz,stmt_error       ; not a statement

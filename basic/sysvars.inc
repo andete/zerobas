@@ -797,6 +797,20 @@ ZTS_STOP        equ     2       ; user-suspended (event latches, does not fire)
 ZTS_SERVICING   equ     3       ; auto-suspended while its handler runs
 ZTS_STATE_MASK  equ     3       ; bits 1-0 = tri/quad-state
 ZTS_PENDING     equ     $80     ; bit 7 = an event occurred, awaiting dispatch
+ZTS_SHADOW      equ     $40     ; bit 6 = the DEVICE EDGE SHADOW (traps T2,
+                                ; spec-traps-t2-strig.md §3): "this entry's device read
+                                ; PRESSED at the last sample". event_poll fires only on a
+                                ; 0->1 transition of it, and samples an entry ONLY while
+                                ; its state is exactly ON. The arming statement SETS it on
+                                ; an OFF/STOP->ON transition ("assume pressed"), so a
+                                ; trigger already held when the trap is enabled cannot
+                                ; manufacture a spurious edge (VG-8020-measured, §1.2).
+                                ; Lives in the entry byte rather than a separate bitmap so
+                                ; every access is a 2-byte bit op on the pointer the poll
+                                ; already holds. check_traps must PRESERVE it across the
+                                ; ON->SERVICING write, or a trigger still held when the
+                                ; handler RETURNs would re-fire (oracle Q2 says it must
+                                ; not); trap_return_check's SERVICING->ON already does.
 ZINTVAL         equ     $E207   ; 2 B: INTERVAL reload period in frames (0 = disarmed)
 ZINTCNT         equ     $E209   ; 2 B: INTERVAL live down-counter (frames to next fire)
 TRAPENA         equ     $E20B   ; 1 B: count of traps currently in state ON. Gates the

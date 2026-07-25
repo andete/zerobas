@@ -538,6 +538,15 @@ stop-trap-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_stop_trap.py $(if $(ONLY),--only $(ONLY),) \
 	  $(if $(TRIALS),--trials $(TRIALS),)
 
+# --- STRIG interrupt-trap gate, slice T2 (docs/spec-traps-t2-strig.md) --------
+# VG-8020 differential for `ON STRIG GOSUB` / `STRIG(n) ON|OFF|STOP`. Trigger 0 is
+# pressed through the keyboard matrix (row 8 bit 0 IS trigger 0); triggers 1..4 are
+# driven by the PSG port-A-output + R14-latch injection (spec §7.3), which needs the
+# repack machine's <ignorePortDirections>false</> (D-T2-6) -- so this target depends
+# on repack-machine like the rest. Scope with `make strig-trap-acceptance ONLY=B_`.
+strig-trap-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_strig_trap.py $(if $(ONLY),--only $(ONLY),)
+
 # --- D-F2-2 int-argument coercion gate (docs/spec-basic-df2-2-intarg-coercion.md)
 # VG-8020 differential: out-of-domain int args must raise the reference's Overflow
 # (ERR 6) / Illegal function call (ERR 5), not silently coerce. ASSERTED cases gate

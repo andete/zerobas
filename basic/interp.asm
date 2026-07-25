@@ -270,8 +270,8 @@ exec_stmt:
                 cp      LET_TOKEN
                 jp      z,ex_letkw
     IF ROM_BASE < $4000
-                cp      PEEK_PREFIX         ; $FF -> a function token starting a statement;
-                jp      z,ex_mid_stmt       ; only MID$ ($FF $83) is valid here (str-engine.asm)
+                cp      PEEK_PREFIX         ; $FF -> a function token starting a statement:
+                jp      z,ex_ff_stmt        ; MID$ ($FF $83) or STRIG ($FF $A3) (program.asm)
                 cp      DIM_TOKEN           ; DIM A(n)[,...]  (arrays slice-1, arrays.asm)
                 jp      z,ex_dim
                 cp      ERASE_TOKEN         ; ERASE name[,...]  (arrays slice-2, arrays.asm)

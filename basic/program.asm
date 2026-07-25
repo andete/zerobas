@@ -1064,7 +1064,15 @@ ex_on:
                 jp      z,ex_on_error       ; -- NOT an <expr> ON...GOTO/GOSUB list
                 cp      STOP_TOKEN          ; ON STOP GOSUB <line> (interrupt-traps T1)
                 jp      z,ex_on_stop        ; -- arm the STOP trap handler
+                cp      PEEK_PREFIX         ; $FF -> a two-byte function token. STRIG
+                jr      nz,ex_on_expr       ; ($FF $A3) is the ONE trap event spelled that
+                inc     hl                  ; way; every other $FF function is an ordinary
+                ld      a,(hl)              ; selector expression (`ON VAL(x$) GOTO ...`),
+                cp      STRIG_TOKEN         ; so put the cursor back and fall through.
+                jp      z,ex_on_strig       ; (entered with HL on the selector byte)
+                dec     hl
     ENDIF
+ex_on_expr:                                 ; ON <expr> GOTO/GOSUB -- the ordinary form
                 call    eval                ; DE = N (1-based index), HL past expression
     IF ROM_BASE < $4000
                 call    get_byte_arg        ; D-F2-2 stage B: ON's selector is a byte 0..255
@@ -1292,11 +1300,41 @@ ex_on_stop:
                 inc     hl                  ; past STOP_TOKEN
                 call    skip_spaces
                 cp      GOSUB_TOKEN         ; syntax: ON STOP *GOSUB* <line>
-                jp      nz,stmt_error
+                jp      nz,trap_syntax
                 inc     hl
                 call    skip_spaces
-                cp      LINENO_TOKEN        ; $0E,lo,hi expected
-                jp      nz,stmt_error
+                call    trap_line_link      ; CF=1 -> DE = handler LINK
+                jp      nc,trap_syntax      ; `ON STOP GOSUB` with no line -> ERR 2
+                ld      (ZTRAP+ZTI_STOP*ZTRAP_ENTSZ+1),de
+                jp      exec_stmt           ; continue the same line (as ON ERROR GOTO)
+
+; --- trap_syntax: a TRAPPABLE Syntax error (ERR 2) for the trap statements ----
+; NOT `jp stmt_error`: that prints and aborts the RUN, so an `ON ERROR GOTO`
+; program would never see it. The reference raises a trappable ERR 2 for every
+; malformed trap statement -- VG-8020-measured for `ON STRIG` and `ON STRIG GOTO`
+; (spec-traps-t2-strig.md §1.3, cases S6/S7), which is also what arc spec §7
+; specified. Same convention as graphics' gfx_syntax.
+trap_syntax:
+                ld      a,2
+                jp      raise_error
+
+; --- trap_line_link: resolve an OPTIONAL `$0E,lo,hi` line reference ----------
+; The shared handler-line resolver for the whole `ON <event> GOSUB` family: one
+; line for STOP, a comma-list with possibly-empty slots for STRIG (and, later,
+; KEY). Factoring it out of ex_on_stop pays for ex_on_strig and pre-pays T3.
+;   IN:  HL = token cursor.
+;   OUT: CF=1 -> DE = the handler LINK, HL past the 3-byte operand.
+;        CF=0 -> the token is not a line reference (an empty list slot / end of
+;                list); HL unmoved, DE undefined.
+; A reference to a line that does not exist aborts with Undefined line number
+; (ERR 8, VG-8020-measured case S5), exactly as GOTO does. Clobbers A, BC.
+trap_line_link:
+                ld      a,(hl)
+                cp      LINENO_TOKEN        ; $0E,lo,hi
+                jr      z,tll_have
+                or      a                   ; not a line ref -> CF = 0
+                ret
+tll_have:
                 inc     hl
                 ld      c,(hl)              ; handler line number, LE
                 inc     hl
@@ -1304,15 +1342,143 @@ ex_on_stop:
                 inc     hl                  ; HL -> cursor past the $0E operand
                 push    hl                  ; guard cursor across find_line_bc
                 call    find_line_bc        ; CF set + HL = link addr if found
-                jr      nc,eos_undef
+                jr      nc,tll_undef
                 ex      de,hl               ; DE = handler LINK
-                ld      hl,ZTRAP+ZTI_STOP*ZTRAP_ENTSZ+1
-                ld      (hl),e              ; store handler field (2 B)
+                pop     hl                  ; HL = cursor
+                scf
+                ret
+tll_undef:
+                pop     hl                  ; balance the stack (aborting)
+                jp      ex_goto_undef       ; undefined line -> ERR 8
+
+; --- ex_ff_stmt: the `$FF <selector>` STATEMENT fork -------------------------
+; A statement that starts with a two-byte function token. MID$ ($FF $83) is the
+; string-assignment form; STRIG ($FF $A3) is the T2 arming statement (this is the
+; site that used to be the blanket ERR 2 of the input-devices D-I-5 handoff).
+; Anything else falls into ex_mid_stmt's Syntax error, entered at ex_mid_sel --
+; its post-`inc hl` label, so the selector byte is not re-fetched.
+ex_ff_stmt:
+                inc     hl                  ; -> the selector byte
+                ld      a,(hl)
+                cp      STRIG_TOKEN         ; STRIG(n) ON|OFF|STOP  (traps T2)
+                jp      z,ex_strig_stmt     ; (entered with HL on the selector)
+                jp      ex_mid_sel
+
+; --- ex_on_strig: ON STRIG GOSUB [<l0>][,<l1>[,<l2>[,<l3>[,<l4>]]]] ----------
+; Arm up to five trigger handlers. Reached from ex_on's sibling peek with HL on
+; the STRIG selector byte ($A3; ex_on consumed the $FF prefix).
+; VG-8020-measured semantics (spec-traps-t2-strig.md §1.3):
+;   * the list is POSITIONAL -- slot n is trigger n (R5);
+;   * an EMPTY slot writes 0, i.e. it CLEARS that trigger's handler (S3);
+;   * absent trailing slots are left untouched (D-T2-5);
+;   * state is NOT touched -- arm != enable, `STRIG(n) ON` enables (Q5);
+;   * a 6th slot is a DELIBERATE DEVIATION: the reference runs off the end of its
+;     handler table and takes the machine down (case S2, reproducible x3); we
+;     raise a trappable ERR 2 instead (D-T2-4).
+; Flow continues on the same line.
+ex_on_strig:
+                inc     hl                  ; past the STRIG selector byte
+                call    skip_spaces
+                cp      GOSUB_TOKEN         ; syntax: ON STRIG *GOSUB* <list>
+                jp      nz,trap_syntax
+                inc     hl
+                ld      c,0                 ; C = slot index 0..4
+eostr_lp:
+                call    skip_spaces
+                push    bc                  ; trap_line_link clobbers BC (find_line_bc)
+                call    trap_line_link
+                pop     bc                  ; pop does not disturb CF
+                jr      c,eostr_store
+                ld      de,0                ; empty slot -> CLEAR this trigger's handler
+eostr_store:
+                push    hl                  ; guard the cursor
+                push    de                  ; guard the LINK across ztrap_entry (clobbers DE)
+                ld      a,c
+                add     a,ZTI_STRIG0
+                call    ztrap_entry         ; HL = &ZTRAP[3+C] (the state byte)
+                pop     de
+                inc     hl                  ; -> the handler field
+                ld      (hl),e
                 inc     hl
                 ld      (hl),d
-                pop     hl                  ; HL = cursor (continue the same line)
-                jp      exec_stmt
-eos_undef:
-                pop     hl                  ; balance the stack (aborting)
-                jp      ex_goto_undef       ; undefined line -> Undefined line number
+                pop     hl                  ; HL = cursor
+                inc     c
+                call    skip_spaces
+                cp      ','                 ; another slot?
+                jp      nz,exec_stmt        ; no -> statement done, continue the line
+                inc     hl                  ; consume the comma
+                ld      a,c
+                cp      5                   ; slots 0..4 only
+                jp      nc,trap_syntax      ; a 6th slot -> trappable ERR 2 (D-T2-4)
+                jr      eostr_lp
+
+; --- ex_strig_stmt: STRIG(n) ON | OFF | STOP ---------------------------------
+; The D-I-5 handoff: this replaces input-devices' blanket ERR 2 for `STRIG(n)`
+; used as a statement. Reached from the interpreter's $FF statement dispatch with
+; HL on the STRIG selector byte. VG-8020-measured (spec-traps-t2-strig.md §1.3):
+; n is a normal numeric expression truncated to a byte (`STRIG(.4) ON` == trigger
+; 0, S8), n > 4 is ERR 5 (Q11), and a bare `STRIG(0)` with no ON/OFF/STOP is a
+; trappable ERR 2 (Q10). `STRIG(0)ON` unspaced is legal (S4) -- free, since the
+; crunched form has no space to skip.
+ex_strig_stmt:
+                inc     hl                  ; past the STRIG selector byte
+                call    skip_spaces
+                cp      '('
+                jp      nz,trap_syntax
+                inc     hl
+                call    eval                ; DE = n; HL past the expression
+                call    get_byte_arg        ; A = E = n (ERR 6 > int16, ERR 5 > 255/neg)
+                cp      5                   ; triggers 0..4
+                jp      nc,strig_illegal    ; STRIG(5..255) -> ERR 5
+                add     a,ZTI_STRIG0
+                push    hl                  ; guard the cursor across ztrap_entry
+                call    ztrap_entry         ; HL = &ZTRAP[3+n]
+                ex      de,hl               ; DE = the entry pointer, kept until the end
+                pop     hl                  ; HL = cursor
+                call    skip_spaces
+                cp      ')'
+                jp      nz,trap_syntax
+                inc     hl
+                call    skip_spaces
+                ld      b,ZTS_ON
+                cp      ON_TOKEN            ; STRIG(n) ON   -> enable
+                jr      z,strig_set
+                ld      b,ZTS_OFF
+                cp      OFF_TOKEN           ; STRIG(n) OFF  -> disable (+clear PENDING)
+                jr      z,strig_set
+                ld      b,ZTS_STOP
+                cp      STOP_TOKEN          ; STRIG(n) STOP -> suspend
+                jp      nz,trap_syntax      ; bare `STRIG(n)` / junk -> trappable ERR 2
+strig_set:
+                inc     hl                  ; consume the ON/OFF/STOP sub-keyword
+                push    hl                  ; guard the exec-continue cursor
+                ex      de,hl               ; HL = the entry pointer
+                ; Decide "seed the edge shadow?" == (new == ON && old != ON) BEFORE
+                ; set_state, which clobbers A/B/C and rewrites the state bits. Seeding
+                ; means "assume pressed", so a trigger already held when the trap is
+                ; enabled cannot manufacture a spurious 0->1 edge (VG-8020 R1/R2/R3).
+                ; The old != ON half matters: re-issuing `STRIG(n) ON` while already ON
+                ; must be a no-op, or a program that re-enables on every statement
+                ; would hold the shadow set forever and never see a real press.
+                ld      a,b
+                cp      ZTS_ON
+                jr      nz,strig_noseed     ; not enabling
+                ld      a,(hl)
+                and     ZTS_STATE_MASK
+                cp      ZTS_ON              ; ZF=1 iff already ON -> not a transition
+                jr      strig_flag
+strig_noseed:   xor     a                   ; ZF = 1 -> do not seed
+strig_flag:     push    af                  ; carry the decision across set_state
+                ld      a,b                 ; A = the new state
+                call    set_state           ; maintains the TRAPENA "# ON" count
+                pop     af
+                jr      z,strig_done
+                set     6,(hl)              ; seed the edge shadow (ZTS_SHADOW)
+strig_done:
+                pop     hl                  ; HL = cursor past the sub-keyword
+                jp      exec_stmt           ; continue the line -- a bare `ret` here would
+                                            ; SWALLOW the rest of it (the T1 es_set lesson)
+strig_illegal:
+                ld      a,5
+                jp      raise_error         ; ERR 5 Illegal function call (n out of 0..4)
     ENDIF

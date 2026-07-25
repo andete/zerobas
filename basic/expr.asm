@@ -1011,10 +1011,19 @@ ev_ff_vpeek:                                ; VPEEK: read one byte of VRAM (DE =
 ; across the call. (On our C-BIOS target neither routine touches IX -- they are
 ; plain page-0 code, no CALSLT -- but the guard keeps this BIOS-AGNOSTIC, which is
 ; the standing rule for anything reached through a published BIOS contract.)
+;
+; DI/EI (traps T2, spec-traps-t2-strig.md §4): reading triggers 1..4 latches PSG
+; register 15 and then reads 14, and since T2 the VBLANK ISR calls GTTRIG too (the
+; STRIG event_poll stanza). A frame interrupt landing between this call's latch and
+; its read would be answered by the ISR's own selection -- the same shared-latch
+; hazard ex_sound already guards (basic/sound.asm, the audio-slice-3 fix). Cheap:
+; the BIOS read itself is short, so the interrupt-off window is tiny.
 ev_ff_stick:                                ; STICK(n): 0 = centred, else 1..8 clockwise
                 ld      a,e                 ; A = device (0 cursor keys, 1/2 ports)
                 push    ix
+                di
                 call    GTSTCK
+                ei
                 pop     ix
                 ld      e,a
                 ld      d,0                 ; direction is 0..8, never negative
@@ -1022,7 +1031,9 @@ ev_ff_stick:                                ; STICK(n): 0 = centred, else 1..8 c
 ev_ff_strig:                                ; STRIG(n): 0 not pressed, -1 pressed
                 ld      a,e                 ; A = trigger (0 space, 1..4 buttons)
                 push    ix
+                di
                 call    GTTRIG
+                ei
                 pop     ix
                 ld      e,a                 ; BIOS returns $00 / $FF, and copying it
                 ld      d,a                 ; into BOTH halves yields 0 / -1 ($FFFF)

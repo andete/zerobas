@@ -1187,7 +1187,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       4th SERVICING state, re-enable-on-RETURN via a GSP-match service stack. **Byte
       budget is the dominant risk** — measured 2 B page-1 + 19 B page-0 low free; T1
       needs a ~70 B carve (funded by a `gosub_push` golf + evicting the INTERVAL parsers
-      to a page-0 sub-ROM tenant). **T1 in progress.**
+      to a page-0 sub-ROM tenant).
+      ✅ **T1 STOP LANDED** 2026-07-25 (4fef347): `ON STOP GOSUB` / `STOP ON|OFF|STOP`,
+      the whole reusable skeleton (`ZTRAP`, the H.TIMI `event_poll` seam, `check_traps`,
+      `set_state`, the RETURN re-enable), `make stop-trap-acceptance`. Spec
+      [`docs/spec-traps-t1-stop-reslice.md`](docs/spec-traps-t1-stop-reslice.md).
+      ✅ **T2 STRIG LANDED** 2026-07-25: `ON STRIG GOSUB <list>` (5 positional slots) +
+      `STRIG(n) ON|OFF|STOP`, the first real **device** event source (`GTTRIG` edge
+      detection in the VBLANK poll). **Closes half of D-I-5.** `make
+      strig-trap-acceptance` — 25 cases / 51 assertions vs the VG-8020, including
+      triggers 1..4 (a PSG-latch injection; openMSX has no joystick-button command).
+      One deliberate deviation: a 6th handler slot raises a trappable ERR 2 where the
+      reference crashes. Spec [`docs/spec-traps-t2-strig.md`](docs/spec-traps-t2-strig.md).
+      **Note:** `INTERVAL` is MSX2 and out of charter, so it is NOT part of this arc —
+      T3 = KEY, T4 = SPRITE remain. Page-1 free is down to 9 B, so **T3 needs a carve.**
 - [ ] **Screen-editor REPL** — real MSX BASIC does not use a sequential prompt
       loop; Enter reads the *current cursor line from VRAM* (not a dedicated
       input buffer), so the user can cursor-up to any visible output, edit it

@@ -310,3 +310,83 @@ scout it at the T3 packet, not now.
 3. `ex_strig_stmt` + `ex_on_strig` + the two dispatch peeks; host unit tests **first**.
 4. The `event_poll` stanza + the `di`/`ei` guards on the mainline readers.
 5. `basic_probe_strig_trap.py` and **run it** — then the standing sweep, then commit.
+
+---
+
+## 10. AS-BUILT (2026-07-25) — what the live gate changed
+
+T2 is implemented and gated: `make strig-trap-acceptance`, **25 cases / 51 assertions,
+all PASS** against the VG-8020. Four things differ from the §1–§4 design above; the
+first is a genuine correction to the measured semantics, and it is the reason the
+"never commit an ungated slice" rule exists.
+
+### 10.1 CORRECTION — a press during SERVICING is LATCHED, not lost
+
+**§1.1 case R7 / §1.2 were WRONG.** The characterization run that produced "a press
+during the handler is lost" closed its capture window **before the slow handler
+returned**; with a long enough window the reference reports **two** fires. The press is
+latched as PENDING while the trap is SERVICING, cannot fire then (state ≠ ON), and
+fires exactly once when `RETURN` restores ON — which is precisely what arc-spec §3
+always said, and what `trap_return_check` already implemented.
+
+**Consequences for the model:** a trigger is sampled while its entry is **ON *or*
+SERVICING**, never while OFF or STOP. Conveniently both sampled states have bit 0 set
+(`ON`=01, `SERVICING`=11) and neither unsampled one does (`OFF`=00, `STOP`=10), so the
+whole test is a single `bit 0,(hl)` — cheaper than the original `and`/`cp` pair.
+
+*Method note worth keeping:* a capture window is part of the measurement. Two
+characterization rounds agreed on the wrong answer because they shared the same too-short
+window; only the differential — where the reference and zerobas disagreed — exposed it.
+
+### 10.2 The shadow lives in the entry byte, not a RAM byte
+
+`ZSTRIGSH` was dropped. The shadow is **bit 6 of the entry state byte** (`ZTS_SHADOW`),
+so every access is a 2-byte bit op on the pointer the poll already holds, no mask
+arithmetic and no new sysvar — and `trap_init`'s existing fill clears it. Two write
+paths had to learn to preserve it, both now covered by host tests:
+
+- `check_traps`' `ON → SERVICING` write (was `ld (hl),ZTS_SERVICING`, which dropped it —
+  a trigger still held when the handler returned would have re-fired);
+- `set_state`'s `ss_write` (was `and ZTS_PENDING`). The load-bearing case is `ON → ON`:
+  a redundant `STRIG(n) ON` deliberately does **not** re-seed, so clearing the shadow
+  there would let a trigger held across it fake an edge on the next frame.
+
+`OFF` still clears the whole byte — the single "forget everything" reset — which is safe
+because the next enable re-seeds.
+
+### 10.3 `event_poll`'s fast-out needed `TRAPSVC` too
+
+`TRAPENA` counts only ON traps and `check_traps` **decrements it on fire**, so with a
+single armed trap it is 0 for the entire time that trap's handler runs. Gating the poll
+on it alone switched device sampling off exactly during SERVICING, dropping the §10.1
+press. The gate is now `TRAPENA != 0 || TRAPSVC != 0` — still two RAM loads on the
+common no-trap path. (Found by RAM-tracing the entry byte across the handler, not by
+reading the code: the trace showed the press latching correctly and the service record
+never being popped.)
+
+### 10.4 Budget — funded by deleting dead code
+
+Measured, not estimated: the §8 guess of ~165 B was **low**. The first assembly overran
+the $8000 ceiling by 70 B; the §10.2 refactor recovered ~41 B and two dispatch golfs a
+few more, leaving 29 B over. That was funded by **deleting the T1 INTERVAL counter
+stanza from `event_poll`** — provably dead code (INTERVAL is MSX2, out of charter, so
+nothing writes `ZINTVAL` and nothing can set entry 0 to ON; it predates the oracle
+finding that re-sliced T1 to STOP). This is exactly the lever T1 spec §10.3 listed.
+The `ZTRAP` entry itself stays allocated so the index enum and priority order are
+undisturbed. **Page-1 free after T2: 9 B** — T3 (KEY) needs a real carve, as expected.
+
+### 10.5 Also landed
+
+- `ex_on_stop`'s malformed-syntax exits moved from `stmt_error` (prints and aborts) to
+  the **trappable** ERR 2 the reference raises — arc-spec §7's stated convention, now
+  oracle-confirmed for `ON STRIG` / `ON STRIG GOTO` (gate cases T/U).
+- `trap_line_link` — the shared `$0E,lo,hi` → LINK resolver — replaces the open-coded
+  copy in `ex_on_stop` and pre-pays T3's `ON KEY` comma-list.
+- `di`/`ei` around the mainline `GTSTCK`/`GTTRIG` calls (§4), since the ISR now reads
+  the same PSG latch.
+
+### 10.6 Harness fact worth remembering
+
+zerobas runs an empty `FOR` loop roughly **7× slower** than the VG-8020, so any gate
+case that times a handler needs a window sized for zerobas, not for the reference. The
+`I_press_in_handler` case takes its delay on the first invocation only for that reason.

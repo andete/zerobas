@@ -14,14 +14,18 @@
 ; expensive tenant call fires ~once per trap event, never per statement.
 ;
 ; INTERRUPT DISCIPLINE (inherited from play_service, playsvc.asm §): event_poll
-; is entered DI (it's the ISR), stays DI, is register-transparent (saves every
-; register it touches), and reads/writes only its own RAM (ZTRAP/ZINTCNT/ZINTVAL/
-; TRAPPEND) — never JIFFY, never the keyboard, no PSG. It runs BEFORE the PLAY
-; drain each frame, so it must leave AF/DE/HL exactly as found.
+; is entered DI (it's the ISR), stays DI, and is register-transparent — it saves
+; every register it touches, and since T2's GTTRIG call is documented "Registers:
+; All", that set is AF/BC/DE/HL/IX/IY (play_service's exact list). It never reads
+; JIFFY and never touches the BIOS key buffer. It runs BEFORE the PLAY drain each
+; frame, so it must leave every register exactly as found.
 ;
-; T1 scope: only the INTERVAL trap (entry 0) has an event source — a pure frame
-; down-counter, zero device I/O. STOP/STRIG/KEY/SPRITE sources are added by
-; T2..T4; event_poll grows a stanza per slice.
+; Event sources so far: STOP (T1) is NOT polled here — it rides the run loop's
+; existing BREAKX detection (spec-traps-t1-stop-reslice.md §6); STRIG 0..4 (T2)
+; IS polled, via the published page-0 BIOS GTTRIG (a plain call, never CALSLT —
+; the VBLANK ban stands). KEY/SPRITE sources arrive with T3/T4; event_poll grows
+; one stanza per slice. INTERVAL's counter stanza is retained but inert on MSX1
+; (INTERVAL is an MSX2 statement — out of charter, so nothing ever arms entry 0).
 ;
 ; Repack-only (IF ROM_BASE < $4000), like playsvc.asm: the H.TIMI seam and the
 ; trap table only exist in the repacked page-1 window. The lean 16 KB ROM is
@@ -45,7 +49,7 @@ htimi_service:
 ; event_poll: one frame of trap event detection. Called from htimi_service every
 ; VBLANK, DI, register-transparent. Fast-out when no trap is ON (the common case).
 ; For each armed event source, set the entry's PENDING bit + raise TRAPPEND so the
-; run-loop dispatcher wakes. T1: INTERVAL only.
+; run-loop dispatcher wakes. T2: STRIG 0..4 (the only polled source on MSX1).
 event_poll:
                 push    af                  ; register-transparent on ALL paths (the
                                             ; H.TIMI contract) — the fast-out MUST NOT
@@ -60,27 +64,80 @@ event_poll:
                 ld      (STOPGRACE),a
                 ld      a,(TRAPENA)
                 or      a
-                jr      z,ep_out            ; no ON traps -> fast out (common path)
+                jr      nz,ep_live
+                ; TRAPENA counts only ON traps, and check_traps DECREMENTS it on fire --
+                ; so with a single armed trap it is 0 for the whole time that trap's
+                ; handler runs. Gating on it alone would switch the device poll off
+                ; exactly during SERVICING, and a press inside the handler (which must
+                ; latch and fire after RETURN -- oracle case I) would be dropped. So a
+                ; live service stack keeps the poll running too. The gate stays two RAM
+                ; loads on the common no-trap path.
+                ld      a,(TRAPSVC)
+                or      a
+                jr      z,ep_out            ; nothing ON and nothing servicing -> fast out
+ep_live:
                 push    hl
                 push    de
-                ; --- INTERVAL (entry 0): tick only while its state is exactly ON ---
-                ld      a,(ZTRAP)           ; ZTRAP+0 = INTERVAL entry state byte
-                and     ZTS_STATE_MASK
-                cp      ZTS_ON
-                jr      nz,ep_done          ; OFF / STOP / SERVICING -> do not tick
-                ld      hl,(ZINTCNT)
-                dec     hl
-                ld      (ZINTCNT),hl
-                ld      a,h
-                or      l
-                jr      nz,ep_done          ; period not elapsed yet
-                ld      hl,(ZINTVAL)        ; reload the period
-                ld      (ZINTCNT),hl
-                ld      hl,ZTRAP            ; latch PENDING on the INTERVAL entry
-                set     7,(hl)
+                ; (The T1 INTERVAL counter stanza that used to sit here is GONE. It was
+                ; provably dead: INTERVAL is an MSX2 statement, out of charter
+                ; [[interval-is-msx2-not-msx1]], so no code path can ever arm entry 0 --
+                ; nothing writes ZINTVAL and nothing sets ZTI_INTERVAL's state to ON. It
+                ; was written before that oracle finding re-sliced T1 to STOP. Deleting it
+                ; funded T2's page-1 cost, which is exactly the lever the T1 spec §10.3
+                ; listed. The entry itself stays allocated in ZTRAP so the index enum and
+                ; the priority order are undisturbed.)
+                ; --- STRIG 0..4 (entries ZTI_STRIG0..+4): joystick trigger edges ---
+                ; docs/spec-traps-t2-strig.md §4. A trigger is sampled while its entry
+                ; is ON *or* SERVICING, and not while it is OFF or STOP. Both sampled
+                ; states have bit 0 set (ON=01, SERVICING=11) and neither unsampled one
+                ; does (OFF=00, STOP=10), so the whole test is one `bit 0`.
+                ; WHY SERVICING COUNTS (VG-8020-measured, §1.1 case I): a press while
+                ; the handler runs is LATCHED -- it cannot fire then (state != ON), but
+                ; trap_return_check re-raises TRAPPEND when RETURN restores ON, so it
+                ; fires exactly once afterwards. Sampling only ON would silently drop it.
+                ; Not sampling while OFF/STOP is what makes a press during those windows
+                ; forgotten (§1.2, G/H); a press predating an ENABLE is handled instead
+                ; by the arming statement seeding the shadow.
+                ; GTTRIG is a PUBLISHED page-0 BIOS entry, so this is a plain `call`,
+                ; NOT a CALSLT -- the VBLANK CALSLT ban stands. It is documented
+                ; "Registers: All", so BC/IX/IY join the saved set (AF/DE/HL are
+                ; already guarded above); the H.TIMI contract is total transparency.
+                push    bc
+                push    ix
+                push    iy
+                ld      hl,ZTRAP+ZTI_STRIG0*ZTRAP_ENTSZ
+                ld      e,0                 ; E = trigger number 0..4
+ep_strig_lp:
+                bit     0,(hl)              ; state bit 0 = ON or SERVICING (see above)
+                jr      z,ep_strig_next     ; OFF / STOP -> not sampled at all
+                push    hl
+                push    de
+                ld      a,e                 ; A = trigger number for GTTRIG
+                call    GTTRIG              ; A = $00 released / $FF pressed
+                pop     de
+                pop     hl
+                or      a
+                jr      nz,ep_strig_down
+                res     6,(hl)              ; released -> the shadow follows the level
+                jr      ep_strig_next       ; down, so the NEXT press is an edge
+ep_strig_down:
+                bit     6,(hl)
+                jr      nz,ep_strig_next    ; still held since last frame -> no edge
+                set     6,(hl)              ; 0->1 edge: latch the level...
+                set     7,(hl)              ; ...and the entry's PENDING
                 ld      a,1
                 ld      (TRAPPEND),a        ; wake the run-loop dispatcher
-ep_done:
+ep_strig_next:
+                inc     hl
+                inc     hl
+                inc     hl                  ; next entry (3 B)
+                inc     e
+                ld      a,e
+                cp      5                   ; STRIG 0..4
+                jr      c,ep_strig_lp
+                pop     iy
+                pop     ix
+                pop     bc
                 pop     de
                 pop     hl
 ep_out:
@@ -90,8 +147,9 @@ ep_out:
 ; trap_init: reset the whole ZTRAP table + all bookkeeping to zero — every trap
 ; OFF, no handler, no pending, counters/gates clear. Called at cold boot (before
 ; any statement runs) and at RUN (re-arm), so garbage RAM can never look like a
-; phantom armed trap. Zeroes ZTRAP..TRAPPEND ($E1D1..$E21F) in one fill.
-; Clobbers A, BC, DE, HL.
+; phantom armed trap. Zeroes ZTRAP..STOPGRACE ($E1D1..$E220) in one fill. The T2
+; STRIG edge shadow needs no byte of its own -- it is bit 6 of each entry, so this
+; same fill clears it. Clobbers A, BC, DE, HL.
 trap_init:
                 ld      hl,ZTRAP
                 ld      (hl),0
@@ -155,7 +213,12 @@ ss_write:
                 or      a                   ; new == OFF?
                 jr      z,ss_off
                 ld      a,b
-                and     ZTS_PENDING         ; keep the latched PENDING bit
+                and     ZTS_PENDING+ZTS_SHADOW  ; keep the latched PENDING bit AND the T2
+                                            ; device edge shadow. Preserving bit 6 here is
+                                            ; load-bearing: `STRIG(n) ON` on an ALREADY-ON
+                                            ; trap takes this path and does not re-seed, so
+                                            ; clearing the shadow would let a trigger held
+                                            ; across it fake a 0->1 edge on the next frame.
                 or      c                   ; | new state
                 ld      (hl),a
                 ret
@@ -212,7 +275,11 @@ check_traps:
                 cp      TRAPSTK_MAX
                 jr      nc,ct_svc_full
                 ; --- fire: HL=&state, C=idx, DE=handler ---
-                ld      (hl),ZTS_SERVICING  ; clear PENDING + auto-suspend (bit7=0, state=11)
+                ld      a,(hl)
+                and     ZTS_SHADOW          ; KEEP the T2 device edge shadow (bit 6) --
+                or      ZTS_SERVICING       ; dropping it would let a trigger still held
+                ld      (hl),a               ; when the handler RETURNs re-fire (oracle Q2).
+                                            ; PENDING (bit 7) is cleared, state = SERVICING.
                 ld      a,(TRAPENA)
                 dec     a
                 ld      (TRAPENA),a          ; one fewer ON trap while servicing

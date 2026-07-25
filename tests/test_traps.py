@@ -33,7 +33,9 @@ RELOC_BASE = 0x2812
 # trap state-byte encoding (basic/sysvars.inc)
 ZTS_OFF, ZTS_ON, ZTS_STOP, ZTS_SERVICING = 0, 1, 2, 3
 ZTS_PENDING = 0x80
+ZTS_SHADOW = 0x40         # traps T2: the per-entry device edge shadow
 ZTI_STOP = 1
+ZTI_STRIG0 = 3            # STRIG n -> entry 3 + n
 ENTSZ = 3
 
 
@@ -215,6 +217,74 @@ def t_trap_return_check(fails):
     return fails
 
 
+def t_strig_shadow(fails):
+    """Slice T2 (docs/spec-traps-t2-strig.md §3): the device EDGE SHADOW, bit 6 of
+    the entry byte. It must survive every state write that is not an explicit
+    re-seed, because it is what stops a trigger HELD across a fire/RETURN (or across
+    a redundant `STRIG(n) ON`) from faking a fresh 0->1 press. The VG-8020 says a
+    3 s hold fires exactly once (oracle Q2); each assertion below is one way that
+    could silently become "fires every frame"."""
+    m = Machine(RES_ROM, RES_SYM, rom_base=RELOC_BASE)
+    e0 = m.addr("ZTRAP") + ZTI_STRIG0 * ENTSZ
+    HANDLER = 0x5AA5
+
+    # 1. check_traps' ON -> SERVICING write must PRESERVE bit 6 (and still clear
+    #    PENDING). A plain `ld (hl),ZTS_SERVICING` -- the T1 code -- fails this.
+    reset_traps(m)
+    m.poke(e0, bytes([ZTS_ON | ZTS_PENDING | ZTS_SHADOW]))
+    m.poke_w(e0 + 1, HANDLER)
+    m.poke(m.addr("TRAPENA"), b"\x01")
+    m.poke(m.addr("TRAPPEND"), b"\x01")
+    m.poke(m.addr("TRAPSVC"), b"\x00")
+    m.poke_w(m.addr("GSP"), m.addr("GOSUB_STK"))
+    m.poke_w(m.addr("CURLINE"), 0x8000)
+    r = m.call("check_traps", hl=0x9C40)
+    fails = check(fails, "STRIG fire: CF=1", carry(r), True)
+    fails = check(fails, "STRIG fire: state SERVICING", m.peek(e0)[0] & 3, ZTS_SERVICING)
+    fails = check(fails, "STRIG fire: PENDING cleared", m.peek(e0)[0] & 0x80, 0)
+    fails = check(fails, "STRIG fire: SHADOW PRESERVED", m.peek(e0)[0] & ZTS_SHADOW,
+                  ZTS_SHADOW)
+
+    # 2. trap_return_check's SERVICING -> ON must also keep bit 6, so a trigger
+    #    still held when the handler RETURNs does not immediately re-fire.
+    reset_traps(m)
+    GSPV = 0x7B34
+    m.poke(e0, bytes([ZTS_SERVICING | ZTS_SHADOW]))
+    m.poke(m.addr("TRAPSVC"), b"\x01")
+    rec = m.addr("TRAPSTK")
+    m.poke_w(rec, GSPV)
+    m.poke(rec + 2, bytes([ZTI_STRIG0]))
+    m.poke_w(m.addr("GSP"), GSPV)
+    m.call("trap_return_check")
+    fails = check(fails, "STRIG return: SERVICING->ON", m.peek(e0)[0] & 3, ZTS_ON)
+    fails = check(fails, "STRIG return: SHADOW PRESERVED", m.peek(e0)[0] & ZTS_SHADOW,
+                  ZTS_SHADOW)
+
+    # 3. set_state must carry bit 6 through a state change. The load-bearing case is
+    #    ON -> ON (a redundant `STRIG(n) ON`, which deliberately does NOT re-seed):
+    #    if that dropped the shadow, a held trigger would fire on the next frame.
+    for label, old, new in (("ON->ON", ZTS_ON, ZTS_ON),
+                            ("ON->STOP", ZTS_ON, ZTS_STOP),
+                            ("STOP->ON", ZTS_STOP, ZTS_ON)):
+        reset_traps(m)
+        m.poke(e0, bytes([old | ZTS_SHADOW]))
+        m.poke(m.addr("TRAPENA"), bytes([1 if old == ZTS_ON else 0]))
+        m.call("set_state", hl=e0, a=new)
+        fails = check(fails, f"set_state {label}: state", m.peek(e0)[0] & 3, new)
+        fails = check(fails, f"set_state {label}: SHADOW kept",
+                      m.peek(e0)[0] & ZTS_SHADOW, ZTS_SHADOW)
+
+    # 4. OFF is the one state that forgets everything -- PENDING *and* the shadow.
+    #    Safe because the next enable re-seeds (spec §3), and it keeps `X OFF` the
+    #    single "forget it all" reset.
+    reset_traps(m)
+    m.poke(e0, bytes([ZTS_ON | ZTS_PENDING | ZTS_SHADOW]))
+    m.poke(m.addr("TRAPENA"), b"\x01")
+    m.call("set_state", hl=e0, a=ZTS_OFF)
+    fails = check(fails, "set_state ON->OFF: whole byte cleared", m.peek(e0)[0], 0)
+    return fails
+
+
 def main():
     build()
     fails = 0
@@ -222,6 +292,7 @@ def main():
     fails = t_check_traps_fire(fails)
     fails = t_check_traps_nofire(fails)
     fails = t_trap_return_check(fails)
+    fails = t_strig_shadow(fails)
     print()
     print("ALL PASS" if fails == 0 else f"{fails} FAILURE(S)")
     return 1 if fails else 0
