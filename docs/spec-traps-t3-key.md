@@ -346,9 +346,11 @@ change — the KEY entries are already in the table and already scanned.
 in one frame it would service KEY 1 → 2 → 3; the reference services **3 → 2 → 1** (V2).
 The observable difference is only the *order* of handler execution when two function
 keys are struck within the same frame — rare, but cheap to match (scan the KEY band
-descending, or lay the band out reversed). *Recommendation: match the reference*; it
-costs a few bytes and removes a gratuitous divergence. If it proves more than ~10 B,
-accept ascending and document it.
+descending, or lay the band out reversed).
+
+✅ **DECIDED at sign-off (§9): match the reference, unconditionally.** The
+"accept ascending if it costs more than ~10 B" escape hatch was struck — any overrun
+comes out of the carve surplus, not out of faithfulness. Gate case V2 enforces it.
 
 ---
 
@@ -392,11 +394,15 @@ candidate:
 | `do_name`, `lrset_common`, `ex_paint`, `do_open`, `oo_num` | — | **eval-bound — not evictable** (624-node closures into the float pack) |
 
 The cassette verbs are cold by construction and the cassette band has been tenant-ised
-before (`casmatch_tenant`, `cal_refill`), so the pattern is established. **~130 B is
-under a seventh of the available cluster** — a partial lift suffices, and it leaves
-headroom for T4. *Recommendation: lift a `cload.asm` slice into a page-0 tenant per the
-[`subrom-tenant-playbook`](subrom-tenant-playbook.md), measuring the real T3 cost first
-(the playbook's "measure + classify BEFORE implementing" rule).*
+before (`casmatch_tenant`, `cal_refill`), so the pattern is established.
+
+✅ **DECIDED at sign-off (§9): lift BOTH the `cload.asm` cluster AND `do_disk_bload`,
+UP FRONT** — ~906 + ~253 = **~1159 B** reclaimed, before any T3 code is written. This is
+deliberately ~9× the T3 need; the surplus is headroom for T4/T5. The recommendation had
+been the narrower "build first, carve to fit"; sign-off widened the *scope* and reversed
+the *sequencing*. The playbook's **"measure + classify BEFORE implementing"** rule still
+governs *how* each lift is done ([`subrom-tenant-playbook`](subrom-tenant-playbook.md))
+— what was overridden is only the order relative to T3, not the discipline.
 
 ---
 
@@ -456,6 +462,26 @@ for the matrix→key-number fold and the repeat counter.
 
 ## 9. Sign-off items
 
+> ## ✅ SPEC SIGNED OFF — 2026-07-25. Implementation authorised.
+> All six decisions are closed. The three that were still open resolved as follows,
+> and **two of them went further than the recommendation**:
+>
+> | | decision | vs. rec. |
+> |---|---|---|
+> | **D-T3-5** | Carve **both** the `cload.asm` cluster **and** `do_disk_bload` **up front**, before T3 code is written. ~906 + ~253 = **~1159 B** of page-1 reclaim. | **wider** — rec. was build-then-carve-to-fit |
+> | **D-T3-4** | Match the reference's high-to-low intra-family order **unconditionally** — no byte-count escape hatch, no documented divergence. | **stricter** — rec. had a ≤10 B condition |
+> | **D-T3-7** (2nd half) | **Adopt** the *A in/out* hook contract. | as rec. |
+>
+> **Consequence of the wider D-T3-5:** the carve is now a *prerequisite* task, not a
+> fit-up afterthought, and it is sized well beyond T3 — the surplus is deliberate
+> headroom for T4/T5. The playbook's "measure + classify before implementing" rule
+> still governs *how* the lift is done ([`subrom-tenant-playbook`](subrom-tenant-playbook.md));
+> what the sign-off overrode is only the *sequencing*.
+>
+> **Consequence of the stricter D-T3-4:** high-to-low is now a hard requirement of the
+> gate, not a nice-to-have. If it costs more than the ~10 B budgeted, the extra comes
+> out of the carve surplus — it does not become a deviation.
+
 - **D-T3-1** — ✅ **DECIDED 2026-07-25: patch C-BIOS**, as a *thin 5-byte hook* at
   `put_key_fnk` with all policy in zerobas (§4). Confirm the hook contract (A = index,
   `CF=1` ⇒ swallow) and the new RAM vector's address.
@@ -463,16 +489,31 @@ for the matrix→key-number fold and the repeat counter.
   host BIOS's own decode, which is more faithful than replicating VG-8020 constants.
   Record the residual in `PROVENANCE.md`: cadence follows the running BIOS, not the
   VG-8020's ≈0.7–0.8 s / ≈17 Hz.
-- **D-T3-7** — ✅ **ANSWERED 2026-07-25** (§4.2): SHIFT+F1 *does* reach `put_key_fnk`, as
-  index 0, so **fold SHIFT in our handler** (~8 B); no patch extension. **Still to
-  confirm:** whether to widen the hook contract to *A in/out* so an *untrapped* SHIFT+F1
-  also expands the right `FNKSTR` slot — a pre-existing C-BIOS divergence T3 can close
-  for ~free. *Rec: adopt.*
+- **D-T3-7** — ✅ **CLOSED 2026-07-25** (§4.2): SHIFT+F1 *does* reach `put_key_fnk`, as
+  index 0, so **fold SHIFT in our handler** (~8 B); no patch extension. Second half
+  **DECIDED: adopt the *A in/out* contract** — our handler already folds SHIFT to compute
+  the trap index, so writing the corrected index back to `A` costs one `ld` and also
+  fixes *untrapped* SHIFT+F1..F5 expanding the wrong `FNKSTR` slot. That divergence is
+  C-BIOS's, pre-dating T3; T3 closes it in passing. **Full contract:**
+  `A` in = BIOS's fn-key index 0..4; `A` out = SHIFT-folded index 0..9;
+  `CF=1` out ⇒ swallow the delivery, `CF=0` ⇒ expand `FNKSTR[A]`.
 - **D-T3-3** — ✅ **ANSWERED 2026-07-25**: both published hooks run *before* the keyboard
   scan on C-BIOS *and* on the VG-8020, so diversion cannot be a same-frame removal.
   Nothing left to decide here; it now constrains D-T3-1.
-- **D-T3-4** — intra-family priority: match the reference's high-to-low, or accept
-  ascending as a documented divergence. *Rec: match if ≤ ~10 B.*
-- **D-T3-5** — the carve: confirm the `cload.asm` page-0-tenant lift as T3's funding.
-- **D-T3-6** — confirm `STOP` ≡ `OFF` for KEY (§1.2 T3/T4), the same narrowing of the
-  arc spec §3 wording that T2 took for STRIG (D-T2-3).
+- **D-T3-4** — ✅ **DECIDED 2026-07-25: match the reference's high-to-low order,
+  unconditionally.** The ≤10 B condition in the recommendation was struck; ascending is
+  not an acceptable fallback. Implement by scanning the KEY band descending in `ct_find`
+  ([`basic/traps.asm:229`](../basic/traps.asm)) or by laying the band out reversed —
+  whichever measures smaller. Gate-enforced (§8, case V2).
+- **D-T3-5** — ✅ **DECIDED 2026-07-25: carve BOTH clusters, UP FRONT.** The `cload.asm`
+  program-load cluster (`do_cload`/`do_tape_prog`/`ctp_line`/`dpl_line`, ~906 B) **and**
+  `do_disk_bload` (~253 B) both lift to page-0 tenants *before* T3 code is written —
+  ~1159 B reclaimed against a ~130 B need. Both were classified evictable by the same
+  closure scout (§7): their only page-0-low escapes are the tenant plumbing itself
+  (`subrom_call`, `subrom_absent_error`, `vars_reset`). The surplus is intentional
+  headroom for T4/T5.
+- **D-T3-6** — ✅ **CONFIRMED 2026-07-25: `STOP` ≡ `OFF` for KEY.** Measured in §1.2
+  (T3/T4): both deliver the key normally and neither latches. Same narrowing of the arc
+  spec §3 wording that T2 took for STRIG (D-T2-3), now on a second family — the arc
+  spec's "STOP latches, OFF discards" wording is the outlier and should be reworded to
+  match the two measurements, not the other way round.
