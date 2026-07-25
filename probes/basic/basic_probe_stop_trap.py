@@ -84,30 +84,33 @@ zerobas==reference. A fourth case (D, interruptible) runs a tap-then-hold and is
 reported as a straight differential -- its two-press timing is not robust enough to
 assert its FLAG, though `ran`/`done` are asserted on both machines.
 
-*** D_interruptible IS CURRENTLY RED, AND THAT IS A REAL FINDING (2026-07-25). ***
-Enforcing `done` here exposed that D's old green was an artifact of a too-short
-capture window, exactly the failure mode this arc keeps re-learning. The old gate
-captured 9 s after the last key-up and read flag==1 on BOTH machines, which it
-called agreement. The screen at that instant shows the program STILL RUNNING: the
-handler's own `105 FORK=1TO9000:NEXT` delay takes ~15 s on the reference, so flag==1
-did not mean "the handler was aborted", it meant "the handler has not reached line
-108 yet". Both sides were being read mid-loop.
+WHAT THE `done` GATE FOUND, AND THE SEMANTICS FIX IT FORCED (2026-07-25, spec §12.3).
+D's old green was an artifact of a too-short capture window -- exactly the failure
+mode this arc keeps re-learning. The old gate captured 9 s after the last key-up and
+read flag==1 on BOTH machines, and called that agreement. The screen at that instant
+shows the program STILL RUNNING: the handler's own `105 FORK=1TO9000:NEXT` takes
+~15 s on the reference, so flag==1 did not mean "the handler was aborted", it meant
+"the handler has not reached line 108 yet". Both sides were being read mid-loop.
 
-Gated on `done` -- i.e. read only once the machine is actually back at command
-level -- the two sides DISAGREE, reproducibly (2 trials x 5 press patterns, incl. a
-40-edge tap train and an 11 s hold spanning nearly the whole handler delay):
+Read once the machine is actually back at command level, the sides disagreed
+(reproducibly, 2 trials x 5 press patterns incl. a 40-edge tap train and an 11 s
+hold): the reference COMPLETED the handler, zerobas ABORTED it. `ON STOP GOSUB` +
+`STOP ON` makes a program unbreakable from the keyboard -- that is what the statement
+is FOR -- and zerobas's STOPGRACE, a one-VBLANK timer, aborted the handler the moment
+it expired. Ctrl-STOP is instead EDGE-latched into PENDING while the entry is ON *or*
+SERVICING and fires once after RETURN, which is the T2 STRIG model. That is now what
+basic/program.asm rp_break does; STOPGRACE is gone (and page 1 gained 16 B).
 
-    reference VG-8020   flag 2, screen "Ok"            handler RUNS TO COMPLETION
-    zerobas             flag 1, screen "break in 105"  handler is ABORTED
+The oracle also KILLED the obvious other half of that move. `STRIG(n) ON` seeds the
+edge shadow so a trigger already held cannot manufacture a press, and ex_stop was
+first written to mirror it. Case E says no: a handler that re-arms itself under a
+held key fires again and keeps firing on the reference (122 fires vs the seeded
+build's 1), so ex_stop carries no seed. Cases C/C2/E exist to pin all three rules.
 
-So a Ctrl-STOP arriving while an ON STOP handler is SERVICING does not abort the
-handler on the reference, and does on zerobas. This also removes the support for
-the claim this docstring used to carry, that "the handler being Ctrl-STOP-abortable
-is oracle-confirmed": the confirmation was this same case read through the same
-short window. tests/test_traps.py trap_return_check pins zerobas's own behaviour
-and is unaffected -- it is the ORACLE half that was never really measured. Fixing
-the divergence is a zerobas semantics change and is deliberately NOT bundled with
-this harness retrofit; the gate is left RED rather than retuned green.
+This also withdrew the claim this docstring used to carry, that "the handler being
+Ctrl-STOP-abortable is oracle-confirmed": that came from this same case through the
+same short window. tests/test_traps.py pins zerobas's own state machine and was
+green throughout -- it was the ORACLE half that had never really been measured.
 
 Clean-room: observed I/O only.
 """
@@ -285,6 +288,24 @@ HEND = "100 POKE&HD000,1:END"
 # nothing about what is asserted; it just stops the gate depending on luck.
 TAP = [(0.3, 0.40)]
 
+# C/C2 gate the SERVICING semantics (spec §12.3, oracle-measured 2026-07-25): a
+# Ctrl-STOP arriving while the handler runs must NOT abort it -- it is edge-latched
+# and fires exactly once more after RETURN. The handler here COUNTS its fires and
+# RETURNs (A/B/B2's handler ENDs, so they can never see a second one), and takes its
+# long delay on the FIRST invocation only, so the second fire does not spend another
+# full delay before the program finishes. The program sets `done` itself at line 40.
+#
+# C IS THE BASELINE AND IT IS PART OF THE MEASUREMENT: same program, same first tap,
+# no press inside the handler -> the count MUST read exactly 1. Without it, "C2 reads
+# 2" would not distinguish a latched second fire from a handler that fires twice on
+# its own, and this arc has been burned by baselines that could not produce the
+# discriminating answer.
+CNTH = ["100 POKE&HD000,PEEK(&HD000)+1",
+        "105 IFPEEK(&HD000)=1THENFORK=1TO4000:NEXT",   # long delay on the FIRST fire
+        "108 RETURN"]
+CPROG = [CLR, "10 ON STOP GOSUB 100", "20 STOP ON", RANOK,
+         "30 FORI=1TO6000:NEXT", "40 POKE&HD003,1:END", *CNTH]
+
 ASSERTED = [
     ("A_on_fires", [CLR, "10 ON STOP GOSUB 100", "20 STOP ON",
                     RANOK, DELAY, POLL, OVERRUN, HEND], TAP, 1),
@@ -292,14 +313,40 @@ ASSERTED = [
                      RANOK, DELAY, POLL, OVERRUN, HEND], TAP, 0),
     ("B2_stop_off", [CLR, "10 ON STOP GOSUB 100", "20 STOP ON:STOP OFF",
                      RANOK, DELAY, POLL, OVERRUN, HEND], TAP, 0),
+    ("C_handler_baseline", CPROG, TAP, 1),
+    ("C2_press_in_handler_latches", CPROG, TAP + [(2.0, 2.10)], 2),
+]
+
+# E: NOT an equality differential -- the PROPERTY only (cf. the T3 KEY gate's REPEAT
+# group). A handler that RE-ARMS ITSELF under a held Ctrl-STOP fires again, and keeps
+# firing; the COUNT is a per-machine artifact of how many line boundaries fit in the
+# run (the reference is ~7x faster on this loop), so asserting equality would gate the
+# wrong thing. `102 STOP OFF:STOP ON` is deliberately ONE line: the run loop polls
+# BREAKX per LINE, so there is no boundary inside the OFF window where the held key
+# could break the program instead.
+#
+# This is the case that DELETED the arming seed. `STRIG(n) ON` seeds the edge shadow
+# so a trigger already held cannot manufacture a press (T2 oracle); the obvious move
+# was to mirror that in ex_stop, and it was written that way first. The reference says
+# otherwise -- 122 fires against the seeded build's 1 -- so ex_stop carries no seed and
+# says why. Without this case nothing would ever catch a well-meaning "harmonisation".
+REARM = [
+    ("E_rearm_under_held_key_refires",
+     [CLR, "10 ON STOP GOSUB 100", "20 STOP ON", RANOK,
+      "30 FORI=1TO6000:NEXT", "40 POKE&HD003,1:END",
+      "100 POKE&HD000,PEEK(&HD000)+1",
+      "102 STOP OFF:STOP ON",           # re-arm INSIDE the handler, key still down
+      "106 RETURN"],
+     [(0.3, 200.0)], 2),                # want flag >= 2, i.e. "it re-fires at all"
 ]
 
 # D: fire (tap), then HOLD during the handler's own delay. flag 1 = the handler was
 # aborted mid-delay; flag 2 = it ran to completion. Straight differential (the flag
 # itself is not asserted -- two-press timing), but `ran`/`done` ARE asserted: a
-# reading taken while the program is still spinning is not a datum. That gate is
-# what turned this case red and exposed the divergence written up in the header
-# (reference completes, zerobas aborts). Do not "fix" it by shortening the capture.
+# reading taken while the program is still spinning is not a datum. That gate is what
+# exposed the STOPGRACE divergence written up in the header; both sides now read 2.
+# Do not "fix" a future disagreement here by shortening the capture -- that is
+# precisely how this case spent months agreeing on two mid-loop readings.
 # No OVERRUN line: here the poll loop IS line 30 (`...:GOTO30`), so there is no
 # fall-through slot to guard.
 D_CASE = ("D_interruptible",
@@ -367,6 +414,19 @@ def main() -> int:
         zb_ok = gated(zb, want) and flags(zb) == flags(ref)
         check(f"[zb ] {label:16} {brief(zb)} (want all flag={want}, ran=1, done=1, "
               f"== ref {flags(ref)})", zb_ok)
+
+    print("\n--- the RE-ARM property (per-machine, NOT an equality differential) ---")
+    for label, prog, presses, atleast in REARM:
+        if args.only and args.only not in label:
+            continue
+        for tag, mach in (("ref", args.machine), ("zb ", args.zb_machine)):
+            if tag == "zb " and args.ref_only:
+                continue
+            rs = sample(mach, tag, label, prog, presses)
+            good = all(r is not None and r.get("ran") == 1 and r.get("done") == 1
+                       and r.get("flag", 0) >= atleast for r in rs)
+            check(f"[{tag}] {label:16} {brief(rs)} (want all flag>={atleast}, "
+                  f"ran=1, done=1) -- per-machine", good)
 
     # D: straight differential (best-effort; the FLAG is not asserted -- two-press
     # timing -- but `ran`/`done` are: an aborted or wedged program is never a datum)

@@ -285,6 +285,69 @@ def t_strig_shadow(fails):
     return fails
 
 
+def t_stop_shadow(fails):
+    """Slice T1, RE-SLICED 2026-07-25 (spec §12.3): the STOP entry now rides the SAME
+    edge shadow as STRIG/KEY, and that is load-bearing in a way the STRIG cases do not
+    cover, because Ctrl-STOP is the ONE event source whose key is still held when its
+    own handler is entered.
+
+    This replaced STOPGRACE, a one-VBLANK timer that let rp_break abort a SERVICING
+    handler once it expired. The VG-8020 never aborts a handler: while the entry is ON
+    or SERVICING, Ctrl-STOP is edge-latched into PENDING and fires once after RETURN
+    (oracle 2026-07-25 -- a 100 ms tap and a 3 s hold each give exactly ONE extra
+    fire). The shadow is what makes the still-held triggering key not-an-edge, so if
+    any of these three writes drops bit 6 on the STOP entry, zerobas goes straight back
+    to spurious re-fires -- and this time with no grace timer to mask it.
+
+    The helpers are shared with STRIG, so this is a fence, not new logic: it pins that
+    ZTI_STOP is not special-cased out of the discipline by a later edit."""
+    m = Machine(RES_ROM, RES_SYM, rom_base=RELOC_BASE)
+    e = m.addr("ZTRAP") + ZTI_STOP * ENTSZ
+    HANDLER = 0x4C2A
+
+    # 1. the fire itself: ON -> SERVICING must keep bit 6, so the Ctrl-STOP that is
+    #    STILL DOWN as the handler starts cannot look like a fresh press.
+    reset_traps(m)
+    m.poke(e, bytes([ZTS_ON | ZTS_PENDING | ZTS_SHADOW]))
+    m.poke_w(e + 1, HANDLER)
+    m.poke(m.addr("TRAPENA"), b"\x01")
+    m.poke(m.addr("TRAPPEND"), b"\x01")
+    m.poke(m.addr("TRAPSVC"), b"\x00")
+    m.poke_w(m.addr("GSP"), m.addr("GOSUB_STK"))
+    m.poke_w(m.addr("CURLINE"), 0x8000)
+    r = m.call("check_traps", hl=0x9C40)
+    fails = check(fails, "STOP fire: CF=1", carry(r), True)
+    fails = check(fails, "STOP fire: state SERVICING", m.peek(e)[0] & 3, ZTS_SERVICING)
+    fails = check(fails, "STOP fire: SHADOW PRESERVED (was STOPGRACE's job)",
+                  m.peek(e)[0] & ZTS_SHADOW, ZTS_SHADOW)
+
+    # 2. RETURN: SERVICING -> ON must keep bit 6 too, or a key held across the whole
+    #    handler re-fires the instant it returns -- an infinite handler loop.
+    reset_traps(m)
+    GSPV = 0x7B34
+    m.poke(e, bytes([ZTS_SERVICING | ZTS_SHADOW]))
+    m.poke(m.addr("TRAPSVC"), b"\x01")
+    rec = m.addr("TRAPSTK")
+    m.poke_w(rec, GSPV)
+    m.poke(rec + 2, bytes([ZTI_STOP]))
+    m.poke_w(m.addr("GSP"), GSPV)
+    m.call("trap_return_check")
+    fails = check(fails, "STOP return: SERVICING->ON", m.peek(e)[0] & 3, ZTS_ON)
+    fails = check(fails, "STOP return: SHADOW PRESERVED",
+                  m.peek(e)[0] & ZTS_SHADOW, ZTS_SHADOW)
+
+    # 3. `STOP ON` must not DROP the shadow through set_state. Note ex_stop deliberately
+    #    does not SEED it either (unlike ex_strig_set) -- the VG-8020 re-fires a
+    #    self-re-arming handler under a held key, so a seed there is a divergence.
+    reset_traps(m)
+    m.poke(e, bytes([ZTS_ON | ZTS_SHADOW]))
+    m.poke(m.addr("TRAPENA"), b"\x01")
+    m.call("set_state", hl=e, a=ZTS_ON)
+    fails = check(fails, "STOP set_state ON->ON: SHADOW kept",
+                  m.peek(e)[0] & ZTS_SHADOW, ZTS_SHADOW)
+    return fails
+
+
 def main():
     build()
     fails = 0
@@ -293,6 +356,7 @@ def main():
     fails = t_check_traps_nofire(fails)
     fails = t_trap_return_check(fails)
     fails = t_strig_shadow(fails)
+    fails = t_stop_shadow(fails)
     print()
     print("ALL PASS" if fails == 0 else f"{fails} FAILURE(S)")
     return 1 if fails else 0

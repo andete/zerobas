@@ -851,14 +851,12 @@ TRAPSTK         equ     $E20D   ; service stack, TRAPSVC entries of [gsp:2][idx:
 TRAPSTK_MAX     equ     6       ; max nested in-service traps (6 * 3 = 18 B)
 TRAPSTK_END     equ     TRAPSTK + TRAPSTK_MAX*3   ; $E21F — still < $E240, clear of
                                 ; the retired STRTAB span ($E240..$E268 also freed)
-STOPGRACE       equ     $E220   ; 1 B: STOP-trap handler grace (R1, spec §12.2). Set by
-                                ; check_traps when the STOP trap fires; cleared by
-                                ; event_poll every VBLANK. While nonzero, rp_break does
-                                ; NOT break a SERVICING STOP handler — this mirrors the
-                                ; reference's INTFLG "cleared on fire, re-set next frame"
-                                ; window so the triggering Ctrl-STOP can't re-break the
-                                ; freshly-entered handler, yet a key still held one frame
-                                ; later DOES abort it (VG-8020: handlers are interruptible).
+; ($E220 is FREE again. It held STOPGRACE, the STOP-trap handler grace: a byte set by
+; check_traps on fire and cleared by event_poll each VBLANK, during which rp_break
+; would not break a SERVICING STOP handler. Retired 2026-07-25, spec §12.3 — the
+; entry's own edge shadow (ZTS_SHADOW, bit 6, preserved across a fire) does that job
+; without a timing window, and the grace's one-frame expiry made zerobas abort
+; handlers the VG-8020 never aborts. Do NOT reintroduce a timing proxy here.)
 ; --- BLOAD tenant marshalling (docs/spec-traps-t3-key.md §7.6) ---------------
 ; The BLOAD verb body lives in a sub-ROM PAGE-1 tenant (sub/bload.asm). subrom_call
 ; clobbers every register and forces CF=0 on return, so the one input and the one

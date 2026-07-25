@@ -272,6 +272,15 @@ rp_exec:
                 pop     hl
                 jr      c,rp_break
     IF ROM_BASE < $4000
+                ; Ctrl-STOP is NOT down: RELEASE the STOP entry's edge shadow, so the
+                ; next press reads as a fresh 0->1 edge. This is the release observation
+                ; the run-loop seam needs — rp_break is only reached when the key IS
+                ; down, so without it the shadow would latch on forever after the first
+                ; press and every later press would be ignored. (ep_strig gets the same
+                ; observation for free: it polls GTTRIG every frame, pressed or not.)
+                ld      a,(ZTRAP+ZTI_STOP*ZTRAP_ENTSZ)
+                res     6,a                 ; ZTS_SHADOW — the level follows the key
+                ld      (ZTRAP+ZTI_STOP*ZTRAP_ENTSZ),a
 rp_trapchk:                                 ; interrupt-trap dispatch point (T1); also
                                             ; re-entered by rp_break after latching STOP.
                                             ; Gate is one RAM load in the no-trap case.
@@ -305,39 +314,46 @@ rp_goto:
                 jr      rp_lp
 rp_break:
     IF ROM_BASE < $4000
-                ; STOP trap (T1, R1 -- spec-traps-t1-stop-reslice.md §6/§12.2). A
-                ; Ctrl-STOP with the STOP trap armed:
-                ;   ON        -> fire the trap (latch PENDING, dispatch), do NOT break.
-                ;   SERVICING -> we are INSIDE the handler. Within the one-VBLANK grace
-                ;                (STOPGRACE, set at fire, cleared by event_poll) ignore
-                ;                the key so the triggering Ctrl-STOP cannot re-break the
-                ;                freshly-entered handler; once the grace has expired a key
-                ;                still held DOES abort it (VG-8020: handlers are Ctrl-STOP
-                ;                interruptible -- oracle-confirmed 2026-07-25).
-                ;   OFF/STOP  -> the classic break.
-                ; The reference detects Ctrl-STOP via an interrupt latch (INTFLG) cleared
-                ; on fire; C-BIOS populates no INTFLG, so STOPGRACE mirrors just the
-                ; "fresh handler is protected for one frame" window that matters here --
-                ; the live BREAKX already catches the press itself (R3 experiment).
-                ld      a,(ZTRAP+ZTI_STOP*ZTRAP_ENTSZ)
-                and     ZTS_STATE_MASK
-                cp      ZTS_ON
-                jr      z,rp_stop_fire
-                cp      ZTS_SERVICING       ; inside the STOP handler?
-                jr      nz,rp_real_break    ; OFF / suspended -> the classic break
-                ld      a,(STOPGRACE)       ; SERVICING: still within the fire-frame grace?
-                or      a
-                jr      nz,rp_trapchk       ; grace live -> ignore key, run the handler stmt
-                jr      rp_real_break       ; grace expired -> held key aborts the handler
-rp_stop_fire:
-                push    hl                  ; HL = resume stmt ptr (guard across the set)
+                ; STOP trap (T1, spec-traps-t1-stop-reslice.md §6/§12.3). `ON STOP GOSUB`
+                ; + `STOP ON` makes the program UNBREAKABLE from the keyboard — that is
+                ; what the statement is FOR. VG-8020-measured (2026-07-25): while the STOP
+                ; entry is ON *or* SERVICING the key NEVER breaks; it is EDGE-latched into
+                ; PENDING against the entry's shadow bit and fires the handler once.
+                ;   ON / SERVICING -> latch on a 0->1 edge, never break
+                ;   OFF / STOP     -> the classic break
+                ; Both sampled states have bit 0 set (ON=01, SERVICING=11) and neither
+                ; unsampled one does (OFF=00, STOP=10), so the state test is one `bit 0` —
+                ; the same test ep_strig_lp uses. This IS the T2 STRIG model (spec-traps-
+                ; t2-strig.md §4) applied to Ctrl-STOP, and it is deliberately shaped to
+                ; read the same.
+                ; WHY SERVICING LATCHES RATHER THAN BREAKS: a press while the handler runs
+                ; cannot fire then (state != ON), but trap_return_check re-raises TRAPPEND
+                ; when RETURN restores ON, so it fires exactly ONCE afterwards. The oracle
+                ; gives one extra fire for a 100 ms tap AND for a 3 s hold — edge, not
+                ; level — and never breaks out of the handler in either case.
+                ; THIS REPLACES STOPGRACE, the one-VBLANK window this seam used to carry.
+                ; That was a timing proxy for exactly what the shadow does properly: the
+                ; triggering key is usually still down when the handler is entered, and
+                ; check_traps PRESERVES ZTS_SHADOW across a fire, so it cannot re-latch —
+                ; with no timing window at all. The old grace expired after one frame and
+                ; a key still held then aborted the handler, which the reference does not
+                ; do (found by basic_probe_stop_trap.py's D case once it was gated on
+                ; `done`; its old green was two mid-loop readings, not an agreement).
+                push    hl                  ; guard the resume stmt ptr across the entry test
                 ld      hl,ZTRAP+ZTI_STOP*ZTRAP_ENTSZ
-                set     7,(hl)              ; latch STOP PENDING
+                bit     0,(hl)              ; ON or SERVICING -> sampled, never breaks
+                jr      z,rp_real_break     ; OFF / suspended -> the classic break
+                bit     6,(hl)              ; shadow: still down since the last sample?
+                jr      nz,rp_brk_run       ; no edge -> ignore the key, run the statement
+                set     6,(hl)              ; 0->1 edge: latch the level...
+                set     7,(hl)              ; ...and the entry's PENDING
                 ld      a,1
                 ld      (TRAPPEND),a        ; wake the run-loop dispatcher
-                pop     hl
-                jr      rp_trapchk          ; dispatch now, HL intact (do NOT break)
+rp_brk_run:
+                pop     hl                  ; HL = resume stmt ptr, intact
+                jr      rp_trapchk          ; dispatch now (do NOT break)
 rp_real_break:
+                pop     hl                  ; HL = resume stmt ptr
     ENDIF
                 ; Ctrl-STOP pressed between lines/statements. HL = the statement
                 ; that was about to run -> the CONT resume point. do_break records
@@ -454,6 +470,21 @@ es_set:
                 inc     hl                  ; consume the ON/OFF/STOP sub-keyword
                 push    hl                  ; guard the exec-continue ptr across set_state
                 ld      hl,ZTRAP+ZTI_STOP*ZTRAP_ENTSZ
+                ; DELIBERATELY NO EDGE-SHADOW SEED HERE — and that is a MEASURED
+                ; difference from `STRIG(n) ON`/`KEY(n) ON`, not an omission. Do not
+                ; "harmonise" this with ex_strig_set.
+                ; STRIG seeds because a trigger already held when its trap is enabled
+                ; must not manufacture a press (T2 oracle, E/F). Ctrl-STOP does NOT
+                ; behave that way: with the key held, a handler that re-arms itself
+                ; (`102 STOP OFF:STOP ON` — one line, so the run loop's per-LINE BREAKX
+                ; poll never sees the OFF window) fires AGAIN on the reference, over and
+                ; over. VG-8020, key held for the whole run: 122 fires, reproducible;
+                ; with a seed here zerobas gave exactly 1. The seed was written first and
+                ; the oracle removed it.
+                ; The "held key predates the enable" case that STRIG needs a seed for is
+                ; UNREACHABLE for STOP anyway: OFF (00) and STOP (10) both clear bit 0, so
+                ; a Ctrl-STOP held while the trap is not ON hits rp_real_break and stops
+                ; the program at the line boundary BEFORE `STOP ON` can run.
                 call    set_state
                 pop     hl                  ; HL = cursor past the sub-keyword (':'/EOL)
                 jp      exec_stmt           ; continue the line -- a bare `ret` here would

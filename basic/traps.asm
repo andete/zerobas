@@ -55,13 +55,11 @@ event_poll:
                                             ; H.TIMI contract) — the fast-out MUST NOT
                                             ; leak the TRAPENA test into A/flags, or it
                                             ; corrupts the timer ISR that called us.
-                ; STOP-handler grace (R1, spec §12.2): the grace lasts one VBLANK. Clear
-                ; it here, UNCONDITIONALLY and BEFORE the TRAPENA fast-out — a SERVICING
-                ; STOP handler has TRAPENA==0, so gating this on TRAPENA would leave the
-                ; grace stuck set and make the handler un-abortable. check_traps re-sets
-                ; it each time the STOP trap fires, so the live window is [fire, next VBLANK].
-                xor     a
-                ld      (STOPGRACE),a
+                ; (The STOPGRACE clear that used to sit here is GONE, spec §12.3. The
+                ; STOP entry's edge shadow subsumed it: check_traps preserves ZTS_SHADOW
+                ; across a fire, so the still-held triggering key cannot re-latch, which
+                ; is what the one-VBLANK grace was approximating. Nothing here samples
+                ; Ctrl-STOP — STOP still rides the run loop's BREAKX seam, rp_break.)
                 ld      a,(TRAPENA)
                 or      a
                 jr      nz,ep_live
@@ -147,14 +145,14 @@ ep_out:
 ; trap_init: reset the whole ZTRAP table + all bookkeeping to zero — every trap
 ; OFF, no handler, no pending, counters/gates clear. Called at cold boot (before
 ; any statement runs) and at RUN (re-arm), so garbage RAM can never look like a
-; phantom armed trap. Zeroes ZTRAP..STOPGRACE ($E1D1..$E220) in one fill. The T2
-; STRIG edge shadow needs no byte of its own -- it is bit 6 of each entry, so this
-; same fill clears it. Clobbers A, BC, DE, HL.
+; phantom armed trap. Zeroes ZTRAP..TRAPPEND ($E1D1..$E21F) in one fill. The edge
+; shadow needs no byte of its own -- it is bit 6 of each entry (T2 STRIG, T3 KEY and
+; now T1 STOP), so this same fill clears it. Clobbers A, BC, DE, HL.
 trap_init:
                 ld      hl,ZTRAP
                 ld      (hl),0
                 ld      de,ZTRAP+1
-                ld      bc,STOPGRACE-ZTRAP  ; bytes after the first = fill through STOPGRACE
+                ld      bc,TRAPPEND-ZTRAP   ; bytes after the first = fill through TRAPPEND
                 ldir
                 ret
 
@@ -305,18 +303,12 @@ check_traps:
                 ld      (hl),c              ; idx
                 ld      hl,TRAPSVC
                 inc     (hl)
-                ; STOP-trap grace (R1, spec §12.2): the STOP handler is entered while the
-                ; triggering Ctrl-STOP may still be held. Grant it a one-VBLANK grace so
-                ; rp_break does not immediately re-break it at its own first boundary
-                ; (event_poll clears the grace next frame -> a key still held then aborts).
-                ; Only the STOP entry cares: the STRIG/KEY/SPRITE handlers are not entered
-                ; via Ctrl-STOP, so a Ctrl-STOP during them is a genuine break, ungraced.
-                ld      a,c
-                cp      ZTI_STOP
-                jr      nz,ct_fired
-                ld      a,1
-                ld      (STOPGRACE),a
-ct_fired:
+                ; (The STOP-trap STOPGRACE set that used to sit here is GONE, spec §12.3.
+                ; The `and ZTS_SHADOW` above already carries the entry's edge shadow into
+                ; SERVICING, so the triggering Ctrl-STOP — still held when the handler is
+                ; entered — is not a fresh edge and cannot re-latch. That is the whole job
+                ; the grace was doing, without its one-frame expiry, which was aborting
+                ; handlers the reference never aborts.)
                 pop     de                  ; DE = handler link
                 ld      (CURLINE),de        ; branch: rp_lp runs the handler line fresh
                 scf                         ; (leave TRAPPEND set: a 2nd pending trap

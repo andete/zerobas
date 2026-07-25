@@ -429,7 +429,11 @@ is reused verbatim; only the detection seam moves from `rp_break` to `event_poll
 delay must make the handler run on BOTH machines — is what `stop-trap-acceptance` must
 assert (not the non-discriminating held-key case, where both correctly break).
 
-### 12.2 AS-BUILT (2026-07-25) — R1-lite: the grace window, not a NEWKEY latch
+### 12.2 AS-BUILT (2026-07-25) — R1-lite: the grace window [SUPERSEDED BY §12.3]
+
+> ⚠️ **This section is HISTORICAL.** Its oracle claims ("a key still held one frame later
+> aborts the handler", and the faithfulness boundary derived from it) came from a capture
+> window that closed while the program was still running. STOPGRACE is retired. See §12.3.
 
 Building §12.1 turned up a simpler, smaller fix than the proposed "event_poll latches
 Ctrl-STOP → PENDING" scheme. A one-line experiment (rp_break: while `SERVICING`, IGNORE the
@@ -474,3 +478,64 @@ no-fire) ASSERTED zerobas==VG-8020 (robust across trials); D (interruptible) a s
 differential. Green. Byte budget after R1-lite: page-1 free **232 B**. Standing sweep
 (`unit-test` 52/52 incl. `test_traps`, `basic-reloc` lean-identical, `diskbasic-acceptance-
 repack` 34/34, `string`, `play-trace`) all green. **D-T1S-2 is superseded by this section.**
+
+### 12.3 AS-BUILT (2026-07-25, supersedes §12.2) — the edge shadow, and STOPGRACE retired
+
+§12.2 is **withdrawn as a description of the reference**. Its two oracle claims — that a key
+still held one frame later "aborts the handler — VG-8020 does this, oracle-confirmed
+robustly", and the "faithfulness boundary" it derived from that — both came from the `D`
+acceptance case read through a **capture window that closed while the program was still
+running**. `D`'s handler carries a `FORK=1TO9000:NEXT` delay that takes ~15 s on the
+reference; the gate captured 9 s after the last key-up and read `flag==1` on both machines,
+which is not "the handler was aborted", it is "the handler has not reached line 108 yet".
+Both sides were being read mid-loop, and the agreement was an artifact. Retrofitting the
+`done` sentinel to `basic_probe_stop_trap.py` (so every reading is taken only once the
+machine is back at command level) made the disagreement visible immediately.
+
+**What the reference actually does** (VG-8020, 2026-07-25, each result 2 trials):
+
+| stimulus | reference | rule |
+|---|---|---|
+| Ctrl-STOP while entry `ON` | fires, never breaks | `ON STOP GOSUB` + `STOP ON` makes the program **unbreakable from the keyboard** — the point of the statement |
+| 100 ms tap during the handler | handler **completes**, +1 fire after `RETURN` | latched, not obeyed |
+| 3 s hold during the handler | handler **completes**, +1 fire | **edge**, not level — one hold, one extra fire |
+| 11 s hold spanning the handler | handler **completes** | never aborts, at any duration |
+| 40-edge tap train during the handler | handler **completes** | ditto |
+| handler re-arms itself (`STOP OFF:STOP ON`, one line) under a held key | **122 fires** | a transition into `ON` does **not** seed the shadow |
+
+That is the T2 STRIG model (`spec-traps-t2-strig.md` §4) applied to Ctrl-STOP — with one
+measured exception, the last row.
+
+**As-built mechanism:**
+- `rp_break` (`basic/program.asm`): `bit 0,(hl)` on the STOP entry — `ON` (01) and
+  `SERVICING` (11) are both **sampled and never break**; `OFF` (00) / suspended (10) fall to
+  `rp_real_break`. When sampled, a 0→1 edge against `ZTS_SHADOW` (bit 6) sets `PENDING` +
+  `TRAPPEND`; shadow already set → ignore the key and run the statement.
+- `rp_exec`: the `CF=0` arm of the existing `BREAKX` poll clears the shadow. This is the
+  release observation the run-loop seam needs — `rp_break` is only reached when the key IS
+  down, so without it the shadow latches forever. (`ep_strig` gets this for free: it polls
+  `GTTRIG` every frame regardless of level.)
+- `ex_stop`/`es_set`: **deliberately no seed**, unlike `ex_strig_set`, with the reason in a
+  comment. The seed was written first and the last table row deleted it. The case a seed
+  would protect (key held across the enable) is unreachable for STOP anyway: with the entry
+  `OFF` or suspended, a held Ctrl-STOP breaks the program at the line boundary *before*
+  `STOP ON` runs.
+- `STOPGRACE` is **retired** — the byte ($E220), `check_traps`'s set, `event_poll`'s
+  unconditional clear, and the `trap_init` fill length (now `TRAPPEND-ZTRAP`). It was a
+  timing proxy for what `check_traps`'s existing `and ZTS_SHADOW` already does: carry the
+  shadow into `SERVICING`, so the still-held triggering key is not a fresh edge — with no
+  window to expire. **Do not reintroduce a timing proxy here.**
+
+**Byte budget:** page-1 free **62 B → 78 B** (the retired grace machinery outweighs the edge
+logic by 16 B); low region unchanged at 14 B.
+
+**Gate:** `make stop-trap-acceptance` — A/B/B2 plus new **C** (handler baseline: exactly one
+fire), **C2** (press during the handler → latched → exactly two), and **E** (re-arm under a
+held key → re-fires; asserted as a per-machine PROPERTY `flag>=2`, since the count is an
+artifact of how many line boundaries fit the run — ref 122, zerobas 6). D now reads `flag=2`
+on both. `tests/test_traps.py` grows `t_stop_shadow`, a fence pinning that `ZTI_STOP` is not
+special-cased out of the shadow discipline.
+
+**Arc lesson, again:** the host suite was green through all of this and stayed green — it
+pins zerobas's own state machine, not the oracle. What was never really measured was the
+reference, because the apparatus could not hold still long enough to read it.
