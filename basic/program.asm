@@ -1064,6 +1064,11 @@ ex_on:
                 jp      z,ex_on_error       ; -- NOT an <expr> ON...GOTO/GOSUB list
                 cp      STOP_TOKEN          ; ON STOP GOSUB <line> (interrupt-traps T1)
                 jp      z,ex_on_stop        ; -- arm the STOP trap handler
+    IF TRAPS_T3
+                cp      KEY_TOKEN           ; ON KEY GOSUB <list> (interrupt-traps T3)
+                jp      z,ex_on_key         ; -- a SINGLE-byte token, so cheaper than the
+                                            ; two-byte $FF $A3 STRIG peek below
+    ENDIF
                 cp      PEEK_PREFIX         ; $FF -> a two-byte function token. STRIG
                 jr      nz,ex_on_expr       ; ($FF $A3) is the ONE trap event spelled that
                 inc     hl                  ; way; every other $FF function is an ordinary
@@ -1481,4 +1486,112 @@ strig_done:
 strig_illegal:
                 ld      a,5
                 jp      raise_error         ; ERR 5 Illegal function call (n out of 0..4)
+
+    IF TRAPS_T3
+; ===========================================================================
+; Interrupt-traps T3 (KEY) — the parse surface, DUPLICATED AND SPECIALISED.
+; ===========================================================================
+; docs/spec-traps-t3-key.md §5/§7.5. These are deliberately NOT a generalisation
+; of the STRIG parsers above, even though they are visibly the same shape. That
+; was tried and MEASURED (§7.2): turning the five differing constants into RAM
+; parameters cost **76 B on its own**, before a single byte of KEY behaviour --
+; more than the constants it replaced, because an immediate operand inside an
+; instruction is free while a parameter costs a RAM byte, a store per setter, a
+; load per use and a helper call. Generalisation pays across MANY callers; with
+; two it is a net loss. So: duplicate, specialise, and let each copy be small.
+;
+; The KEY band is laid out REVERSED -- KEY 10 at ZTI_KEY1, KEY 1 at ZTI_KEY1+9 --
+; so ct_find's ASCENDING scan services the family high-numbered-first as the
+; reference does (§1.3 V2: F1+F2+F3 in one frame -> 3, 2, 1). That costs zero
+; bytes in ct_find and leaves T2's STRIG scan order untouched (D-T3-4).
+
+; --- ex_on_key: ON KEY GOSUB <l1>[,<l2>...[,<l10>]] -------------------------
+; Reached from ex_on's peek with HL on the KEY token -- a SINGLE-byte token
+; ($CC), so unlike STRIG's `$FF $A3` there is no prefix to put back. Positional,
+; slot k = KEY k+1 (§1.4 K8); an empty slot clears that key's handler; absent
+; trailing slots are untouched -- all exactly as T2. An 11th slot is ERR 2, and
+; here NO deviation is needed: the reference raises a clean ERR 2 itself, unlike
+; T2's 6th STRIG slot which takes the machine down.
+ex_on_key:
+                inc     hl                  ; past the KEY token
+                call    skip_spaces
+                cp      GOSUB_TOKEN         ; syntax: ON KEY *GOSUB* <list>
+                jp      nz,trap_syntax
+                inc     hl
+                ld      c,0                 ; C = slot index 0..9
+eokey_lp:
+                call    skip_spaces
+                push    bc                  ; trap_line_link clobbers BC (find_line_bc)
+                call    trap_line_link
+                pop     bc                  ; pop does not disturb CF
+                jr      c,eokey_store
+                ld      de,0                ; empty slot -> CLEAR this key's handler
+eokey_store:
+                push    hl                  ; guard the cursor
+                push    de                  ; guard the LINK across ztrap_entry
+                ld      a,ZTI_KEY1+9
+                sub     c                   ; REVERSED band (see above)
+                call    ztrap_entry         ; HL = &ZTRAP[...] (the state byte)
+                pop     de
+                inc     hl                  ; -> the handler field
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
+                pop     hl                  ; HL = cursor
+                inc     c
+                call    skip_spaces
+                cp      ','                 ; another slot?
+                jp      nz,exec_stmt        ; no -> statement done, continue the line
+                inc     hl                  ; consume the comma
+                ld      a,c
+                cp      10                  ; slots 0..9 only
+                jp      nc,trap_syntax      ; an 11th slot -> ERR 2 (§1.4 K15)
+                jr      eokey_lp
+
+; --- ex_key_stmt: KEY(n) ON | OFF | STOP ------------------------------------
+; Reached from ex_key's `(` peek (basic/screen.asm) with HL on the `(`, tested
+; AHEAD of ON/OFF so the display form `KEY ON`/`KEY OFF` keeps working (K10).
+; n is a normal numeric expression truncated to a byte; KEY(0) and KEY(11) are
+; both ERR 5 (§1.4 K11/K12), the same shape as T2's STRIG(5).
+; SHORTER than ex_strig_stmt despite the duplication, because KEY needs NO edge
+; shadow: it is a DELIVERY trap, so a key already held when the trap is enabled
+; simply produces its next repeat delivery -- there is no spurious edge to
+; suppress, and T2's whole seed-decision block disappears (§2).
+ex_key_stmt:
+                inc     hl                  ; past the '('
+                call    eval                ; DE = n; HL past the expression
+                call    get_byte_arg        ; A = E = n (ERR 6 > int16, ERR 5 > 255/neg)
+                dec     a                   ; 1..10 -> slot 0..9; KEY(0) wraps to 255
+                cp      10
+                jp      nc,strig_illegal    ; KEY(0) and KEY(11..255) -> ERR 5
+                ld      c,a
+                ld      a,ZTI_KEY1+9
+                sub     c                   ; REVERSED band
+                push    hl                  ; guard the cursor across ztrap_entry
+                call    ztrap_entry
+                ex      de,hl               ; DE = the entry pointer, kept to the end
+                pop     hl                  ; HL = cursor
+                call    skip_spaces
+                cp      ')'
+                jp      nz,trap_syntax
+                inc     hl
+                call    skip_spaces
+                ld      b,ZTS_ON
+                cp      ON_TOKEN            ; KEY(n) ON   -> enable
+                jr      z,key_set
+                ld      b,ZTS_OFF
+                cp      OFF_TOKEN           ; KEY(n) OFF  -> disable (+clear PENDING)
+                jr      z,key_set
+                ld      b,ZTS_STOP
+                cp      STOP_TOKEN          ; KEY(n) STOP -> suspend (== OFF, D-T3-6)
+                jp      nz,trap_syntax      ; bare `KEY(n)` / junk -> trappable ERR 2
+key_set:
+                inc     hl                  ; consume the ON/OFF/STOP sub-keyword
+                push    hl                  ; guard the exec-continue cursor
+                ex      de,hl               ; HL = the entry pointer
+                ld      a,b
+                call    set_state           ; maintains the TRAPENA "# ON" count
+                pop     hl
+                jp      exec_stmt           ; continue the line (the T1 es_set lesson)
+    ENDIF
     ENDIF

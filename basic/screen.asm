@@ -197,6 +197,11 @@ ex_key:
                 inc     hl                  ; past the KEY token
                 call    skip_spaces
                 ld      a,(hl)
+    IF TRAPS_T3
+                cp      '('                 ; KEY(n) ON|OFF|STOP -- the T3 arming form.
+                jp      z,ex_key_stmt       ; Tested AHEAD of ON/OFF so the display form
+                                            ; keeps working unchanged (oracle case K10).
+    ENDIF
                 cp      OFF_TOKEN
                 jr      z,key_off
                 cp      ON_TOKEN

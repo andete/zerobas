@@ -507,17 +507,47 @@ code gated out, which isolates the refactor from the feature:
 | KEY-specific parse (`ON KEY GOSUB`, `KEY(n) ON/OFF/STOP`, the peeks) | **100 B** | est. 65 B |
 | intra-family order (D-T3-4) | **0 B** | est. 10 B |
 
-🔴 **§5's central premise is backwards at this scale.** It argued *"sharing rather than
-duplicating is what makes T3 affordable"* — but parameterising T2's two parsers costs
-**76 B on its own**, before a single byte of KEY behaviour. Five constants became five
-RAM parameters plus `trap_slot_index` plus generalised range arithmetic, and that
-plumbing is bigger than the immediate constants it replaced. Generalisation pays off
-across *many* callers; with two it is a net loss. **A duplicate-and-specialise T3 parser
-would very likely be smaller** — worth measuring before the next attempt.
+**The generalisation's plumbing costs 76 B** — five constants became five RAM parameters
+plus `trap_slot_index` plus generalised range arithmetic, and *in isolation* that is more
+than the immediate operands it replaced. That reading suggested §5's premise (*"sharing
+rather than duplicating is what makes T3 affordable"*) was backwards, and that
+duplicate-and-specialise would be smaller. **It was measured. It is not** — see §7.5.
 
 **What did land as designed:** the C-BIOS hook, and **D-T3-4 for zero bytes** — laying
 the KEY band out reversed gets the reference's high-to-low service order without touching
 `ct_find` at all, and so without disturbing the scan direction T2's STRIG band depends on.
+
+### 7.5 Duplicate-and-specialise, measured — the 76 B reading was MISLEADING
+
+§7.2's "the generalisation costs 76 B" invited an obvious conclusion: duplicate T2's two
+parsers, specialise each copy, skip the plumbing. That was written up as the likely win.
+**Both variants have now been built and measured on the same wall. The prediction was
+wrong.**
+
+| variant | new page-1 code | T2 parsers |
+|---|---|---|
+| **generalise + share** (commit `a4e4bd4`) | **185 B** | rewritten (parameterised) |
+| **duplicate + specialise** | **196 B** | untouched |
+
+**Generalisation wins by 11 B (~6%)** — far less than §5 assumed, but it wins.
+
+**Why the 76 B figure misled.** It is a real number measured correctly (build the refactor
+with the KEY code gated out) — but it is only the *investment* half. The plumbing costs
+76 B and then makes the KEY side cost **109 B instead of 196 B**, an 87 B return. Reading
+the cost without the return inverted the conclusion. *A shared-code cost measured with its
+beneficiaries gated out is not the cost of sharing; it is the down-payment.* To compare
+two designs, build **both** and read the same wall — which is cheap here, and was not done
+before writing the recommendation.
+
+**Neither variant closes the gap**: T3's page-1 need is 176–187 B either way, against
+~110 B from the `bload` carve (§7.4).
+
+**What is in the tree is the DUPLICATED variant**, despite being 11 B larger, because it
+is **strictly better for tree health**: every byte of it is inside `IF TRAPS_T3`, so with
+the gate off it costs *nothing* and T2's shipped, gate-covered parsers are untouched. The
+generalised variant rewrites those parsers unconditionally — it overran page 1 by 67 B
+even with T3 gated out, which is why it had to be reverted at all. Reclaim the 11 B when
+the slice is funded: `git show a4e4bd4 -- basic/program.asm basic/screen.asm | git apply`.
 
 ### 7.4 Is `bload`'s `subrom_call` dependency avoidable? YES — but it does not close
 
@@ -583,10 +613,11 @@ The slice does not fit, so it must not break the build for everyone else:
 - **`TRAPS_T3`** ([`basic/sysvars.inc`](../basic/sysvars.inc)) is a build gate, default
   **0**. It covers [`basic/keytrap.asm`](../basic/keytrap.asm) in full and the
   `zkey_install` boot call. Flip it to 1 once the space exists.
-- The **parser generalisation was reverted**, not gated: it costs 76 B *even with T3
-  off*, which alone overran page 1 by 67 B. Keeping it behind an `IF/ELSE` would have
-  meant two parser bodies in the tree for a design §7.2 now recommends reconsidering.
-  It is preserved in commit `a4e4bd4` and can be restored with
+- The **T3 parse surface in the tree is the DUPLICATED variant** (§7.5), entirely inside
+  `IF TRAPS_T3`, so it costs nothing with the gate off and leaves T2's shipped parsers
+  untouched. The **generalised variant is 11 B smaller when enabled** but rewrites those
+  parsers *unconditionally* — it overran page 1 by 67 B even with T3 gated out, which is
+  why it could not stay. Reclaim those 11 B at funding time:
   `git show a4e4bd4 -- basic/program.asm basic/screen.asm | git apply`.
 - `make basic-reloc` is green: low region 6 B free, page 1 9 B free, lean `basic.rom`
   byte-identical, all four closure gates passing.
