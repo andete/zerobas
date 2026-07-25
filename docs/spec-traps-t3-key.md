@@ -404,6 +404,65 @@ the *sequencing*. The playbook's **"measure + classify BEFORE implementing"** ru
 governs *how* each lift is done ([`subrom-tenant-playbook`](subrom-tenant-playbook.md))
 — what was overridden is only the order relative to T3, not the discipline.
 
+### 7.1 🔴 THE TABLE ABOVE IS WRONG — the carve does not exist as scoped (2026-07-25)
+
+Acting on the sign-off, the very first step was the playbook's measure-and-classify
+pass. It **falsified the classification the decision was based on.** The scout has been
+rebuilt and committed as [`tools/carve_scout.py`](../tools/carve_scout.py) so this is
+reproducible and does not have to be re-derived again.
+
+**The methodological error.** The original scout measured each cluster's **direct**
+low-region callees and *stopped at the main-page-1 boundary* — main page 1 stays mapped
+during a page-0 tenant, so a call into it looks legal. But **the slot configuration
+persists across that call.** When main-page-1 code called by a tenant itself calls
+`$2812–$3FFF`, it hits the *sub-ROM* mapped there, not the low region. **The walk must
+continue through main page 1.** Rebuilt that way:
+
+| cluster | page-1 bytes | direct escapes | **reached THROUGH resident page-1** | verdict |
+|---|---|---|---|---|
+| `cload.asm` (`do_cload`/`do_tape_prog`/`ctp_line`/`dpl_line`) | **890 B** (not 906) | 3, all plumbing | **385** | 🔴 **NOT evictable** |
+| `bload.asm` (`do_disk_bload`) | **470 B** (not ~253) | 0 | **1** — `subrom_call` | 🟠 one blocker |
+| `bsv_cas_id` (cassette save) | — | 0 | **1** — `subrom_call` | 🟠 one blocker |
+
+The reproduction of the old numbers is exact: `carve_scout` reports **`subrom_call`,
+`subrom_absent_error`, `vars_reset` and nothing else** as `cload`'s *direct* escapes.
+That column was never wrong — it was the wrong column.
+
+**Why `cload` is structurally, not marginally, blocked.** ASCII `LOAD` tokenises each
+line through the ordinary typed-line path:
+
+```
+do_tape_prog → cas_ascii_load → … → mrg_storeline → dispatch_line → tokenise → subrom_call
+```
+
+`dispatch_line` ([`basic/program.asm:30`](../basic/program.asm)) reaches the whole
+interpreter and, through it, **385 low-region routines** including the float pack. This
+is not a dependency that can be re-expressed sub-side: `dispatch_line` and `tokenise`
+stay resident, so their calls cannot be rewritten from the sub ROM. Note the irony —
+`tokenise` is *itself* a sub-ROM tenant, so the path is also a **nested sub-ROM call**,
+independently unsupported.
+
+**`bload`/`bsv_cas_id` are near-misses, one dependency each**, both the same shape
+(`do_disk_bload → fat_io_open → fat_open → subrom_call`;
+`bsv_cas_id → load_error → print_string → … → subrom_call`). `bsv_cas_id`'s runs through
+an error path that is statically reachable but not taken at run time (`PRDEST` is zeroed
+first) — a conservative walk cannot tell the difference.
+
+**And there is no third option waiting.** A sweep of every `ex_*`/`do_*`/`cas_*`/`fat_*`
+page-1 entry point for *exclusive* closure size found **nothing above 49 B** — page 1 has
+no large self-contained cluster left. The remaining bulk (`expr.asm` 2077 B,
+`files.asm` 1877 B, `program.asm` 1797 B) is thoroughly shared.
+
+**One piece of good news.** The same audit was run against the **12 page-0 tenants
+already shipping**, walking through their main-page-1 callees into the main graph:
+**none reaches the low region.** There is no latent bug in shipped code. But
+[`tools/check_tenant_closure.py`](../tools/check_tenant_closure.py) `--page0` has the
+same blind spot by construction — it walks only sub sources, so it *would not catch*
+this class. It passes today because no tenant triggers it, which is luck plus taste,
+not a gate. **Closing that hole is a separate task; raised, not actioned here.**
+
+⛔ **D-T3-5 is reopened. T3 is blocked on funding.** See §9.
+
 ---
 
 ## 8. Gate
@@ -505,7 +564,13 @@ for the matrix→key-number fold and the repeat counter.
   not an acceptable fallback. Implement by scanning the KEY band descending in `ct_find`
   ([`basic/traps.asm:229`](../basic/traps.asm)) or by laying the band out reversed —
   whichever measures smaller. Gate-enforced (§8, case V2).
-- **D-T3-5** — ✅ **DECIDED 2026-07-25: carve BOTH clusters, UP FRONT.** The `cload.asm`
+- **D-T3-5** — ⛔ **REOPENED 2026-07-25, same day** — the decision below was taken on a
+  classification that the first measure-and-classify pass **falsified**. `cload.asm` is
+  **not page-0-evictable at all** (385 low-region routines reached through resident main
+  page-1 code, via `dispatch_line`), and no other large clean cluster exists in page 1.
+  `bload.asm` (470 B) and `bsv_cas_id` are one blocker each. Full analysis and the
+  rebuilt scout: **§7.1**. **T3 is blocked on funding until this is re-decided.**
+  <br>~~Superseded decision:~~ ✅ **DECIDED 2026-07-25: carve BOTH clusters, UP FRONT.** The `cload.asm`
   program-load cluster (`do_cload`/`do_tape_prog`/`ctp_line`/`dpl_line`, ~906 B) **and**
   `do_disk_bload` (~253 B) both lift to page-0 tenants *before* T3 code is written —
   ~1159 B reclaimed against a ~130 B need. Both were classified evictable by the same
