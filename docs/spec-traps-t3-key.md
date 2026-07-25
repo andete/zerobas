@@ -519,6 +519,63 @@ would very likely be smaller** — worth measuring before the next attempt.
 the KEY band out reversed gets the reference's high-to-low service order without touching
 `ct_find` at all, and so without disturbing the scan direction T2's STRIG band depends on.
 
+### 7.4 Is `bload`'s `subrom_call` dependency avoidable? YES — but it does not close
+
+§7.1 left `bload` as a near-miss with one blocker,
+`do_disk_bload → fat_io_open → fat_find → subrom_call`. Investigated.
+
+**The dependency is avoidable — by moving the tenant to the OTHER page, not by
+removing a call.** Every `fat_*` routine `do_disk_bload` reaches is a *stub* whose entire
+body is "set `DISKOP_OP`, load `IX`, `call subrom_call`" — dispatching into
+**`fatprim_tenant`, which is already a sub-ROM PAGE-1 tenant**
+([`sub/fatprim.asm:69`](../sub/fatprim.asm)) with a selector for each one
+(`t_fat_mount`, `t_fat_find`, `t_fat_open`, `t_fat_read_file_sector`, …). A BLOAD tenant
+placed in **sub page 1, co-resident with `fatprim`**, calls those **directly and
+sub-locally**: no `subrom_call`, no `CALSLT`, no low-region touch. The blocker only
+exists because the caller is on the wrong side of the slot boundary.
+
+`do_disk_bload`'s external dependencies reduce to exactly two families, and both dissolve:
+
+| dependency | how it goes away |
+|---|---|
+| the `fat_*` stub layer (`fat_mount`/`find`/`open`/`io_open`/`io_getbyte`/`read_file_sector`) | sub-local calls to the `t_fat_*` selectors it already dispatches to |
+| `load_error → print_string` — which is what drags in `pchar` and its whole device fan-out (`pch_file`, `pch_disk`, `cas_wbyte`, `CHPUT`) | the playbook's standard shape: **the leaf tenant returns an error CODE; the resident glue raises the disposition** |
+
+Residual after both: `WRTVRM` (a BIOS call — main page 0 stays mapped for a page-1
+tenant ✓) and RAM state (`FREAD_*`, `FSECTOR_BUF` — always mapped ✓). `CALSLT` disappears
+with `subrom_call`. **That is a clean page-1 tenant.** Room exists: **sub-ROM page 1 has
+4667 B free.**
+
+🔴 **But the payoff is far smaller than §7.1's headline, and §7.1's number was the wrong
+unit.** 470 B is `bload.asm`'s *whole file*; `do_disk_bload`'s movable closure is only:
+
+| | bytes |
+|---|---|
+| `do_disk_bload` + `disk_load_loop` + `dll_adv` + `load_handoff` + … | **149 B** |
+| less `load_error`, which stays resident as the error-code dispatcher | −15 B |
+| less a resident `ex_bload` → tenant stub | ≈ −25 B |
+| **net page-1 gain** | **≈ 110 B** |
+
+against T3's **176 B** page-1 need. **It does not close on its own.** The other 321 B of
+`bload.asm` is the tape-BLOAD path plus `parse_disk_fcb`/`parse_close_run`, which
+`do_run` and `do_files` also call — movable by the same two transformations, but it
+spreads the stub surface into `files.asm`.
+
+**The low-region half, by contrast, is comfortably fundable.** Promotion (low region →
+freed page 1) needs only that a routine is not called by a **page-1** sub-ROM tenant
+(those see main `< $4000` only) and is not on the ISR path. Measured against the resident
+ABI closure and the `event_poll`/`htimi_guard` closure: of 6142 B of low region,
+**1591 B is pinned and 4551 B is not** — 75× T3's 60 B need. Promotion is also
+*monotonically safe* for page-0 tenants: it removes low-region reaches rather than
+creating them.
+
+> **Confidence.** This is static analysis, and static analysis in this same session
+> produced the §7.1 error. Two things differ: it applies the *corrected* walk rule, and
+> the `fat_*` claim is not an inference — those stubs' bodies were read, and the
+> selectors they name exist in `sub/fatprim.asm`. What is NOT verified: the sub-side
+> rewrite's real byte cost, and the resident stub's. Both are measurements to take
+> before committing, not estimates to trust — §7.2 is what estimates are worth here.
+
 ### 7.3 Tree state — main stays green, T3 is gated off
 
 The slice does not fit, so it must not break the build for everyone else:
