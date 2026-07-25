@@ -517,6 +517,66 @@ duplicate-and-specialise would be smaller. **It was measured. It is not** — se
 the KEY band out reversed gets the reference's high-to-low service order without touching
 `ct_find` at all, and so without disturbing the scan direction T2's STRIG band depends on.
 
+### 7.6 Sizing the rest of `bload.asm` — T3 CLOSES, and §7.4's unit was wrong again
+
+§7.4 sized the carve at `do_disk_bload`'s closure (149 B → ~110 B net) and called the
+remaining 321 B "the tape-BLOAD path plus shared parse helpers", warning it would spread
+stub surface into `files.asm`. Sizing it properly shows **both halves of that were wrong**.
+
+**`bload.asm` is not one unit — it is a verb plus three pieces of shared infrastructure
+that merely live in the same file.** Counting external callers per label:
+
+| | bytes | external callers |
+|---|---|---|
+| `load_error` | 15 B | **62** — the whole file/tape/disk error surface |
+| `parse_disk_fcb` | 28 B | 9 (`do_files`, `do_kill`, `do_name`, `do_open`, `do_run`, `ex_merge`, …) |
+| `parse_close_run` | 46 B | 6 (`do_run`, `dl_is_cas`, `dr_cas_close`, …) |
+| **shared subtotal — must stay resident** | **89 B** | |
+| **everything else — BLOAD-private** | **381 B** | none (only `ex_bload` → `do_bload`) |
+
+**The stub-spread worry was unfounded.** Those three stay exactly where they are,
+untouched, serving their 62/9/6 callers. The tenant gets its **own sub-local copies** —
+and a duplicate in the sub-ROM costs **zero main page-1 bytes**, with 4667 B free there.
+Nothing outside `bload.asm` changes except `ex_bload`, which becomes a stub.
+
+**External dependencies of the 381 B private unit, all already answered:**
+
+| dependency | resolution |
+|---|---|
+| `parse_close_run`, `parse_disk_fcb` | duplicate sub-side (74 B of free sub space) |
+| `load_error`, `print_string` (from `dev_cas`) | the leaf-returns-an-error-**code** shape (§7.4) |
+| `fat_io_open`, `fat_io_getbyte` | sub-local `t_fat_*` calls (§7.4) |
+| `upcase`, `skip_spaces` | duplicate sub-side (16 B) |
+| `TAPIN`, `TAPION`, `TAPIOF`, `WRTVRM` | BIOS — main page 0 stays mapped for a page-1 tenant ✓ |
+| `subrom_call`, `subrom_absent_error` | low region — **also mapped** for a page-1 tenant; made sub-local anyway |
+
+**Net: 381 B private − ~25 B resident `ex_bload` stub ≈ 356 B reclaimed from main page 1**
+— more than double T3's 176 B.
+
+**T3 closes.** Working the two walls through:
+
+| step | low region | page 1 |
+|---|---|---|
+| today | 6 B free | 9 B free |
+| after the BLOAD carve | 6 B | **365 B** |
+| promote ~60 B low → page 1 | **66 B** | 305 B |
+| T3 (60 B low + 176 B page 1) | **6 B left** | **129 B left** |
+
+Low region lands tight; promoting a little more than 60 B buys margin, and §7.4 measured
+4551 B as eligible.
+
+> **Third correction to this same number, so state the pattern plainly:** §7.1 said 470 B
+> (the file — right unit for "move the file", wrong for what is movable); §7.4 said 149 B
+> (`do_disk_bload`'s closure — but BLOAD is *one verb*, and the disk path is half of it);
+> the answer is **381 B** (the verb, minus shared infrastructure that stays). **Sizing a
+> carve means choosing the unit first — file, entry-point closure, or verb-minus-shared —
+> and they differ by 3×.** The scout reports the first two; the third needs the
+> external-caller census that finally separated them.
+>
+> **Confidence.** Static; the byte counts for the sub-side rewrite and the `ex_bload` stub
+> are estimates, and §7.2 is what estimates are worth here (1.8× low). What *is* solid is
+> the 381/89 split — that comes from an exact external-caller census, not a judgement.
+
 ### 7.5 Duplicate-and-specialise, measured — the 76 B reading was MISLEADING
 
 §7.2's "the generalisation costs 76 B" invited an obvious conclusion: duplicate T2's two
