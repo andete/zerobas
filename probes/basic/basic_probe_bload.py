@@ -79,11 +79,24 @@ def main() -> int:
                     "machine's built-in BASIC (oracle) or into the cart's REPL "
                     "prompt (zerobas).")
     ap.add_argument("--repl", action="store_true",
-                    help="target the zerobas REPL (separate-Enter typing). Implied "
-                    "by --cart; pass it for a machine with zerobas patched into "
-                    "page 1 (e.g. C-BIOS_MSX1_BASIC), where there is no cart.")
+                    help="force zerobas-REPL typing (separate Enter, longer waits). "
+                    "Implied by --cart AND by any --machine other than the oracle "
+                    "default, since every other machine we run boots zerobas.")
     args = ap.parse_args()
-    repl = args.repl or bool(args.cart)
+    # REPL typing is needed whenever the BASIC being driven is zerobas rather than
+    # the oracle's built-in BASIC: zerobas reaches its prompt later (boot scan +
+    # header) and drops keys sent before INIT runs EI.
+    #
+    # This used to be `args.repl or bool(args.cart)`, which silently mis-typed on
+    # any zerobas machine that carries BASIC in ROM instead of on a cart -- notably
+    # C-BIOS_MSX1_EU_REPACK_DISK. The run then TIMED OUT waiting for a breakpoint
+    # that could never fire, and the timeout was briefly mis-read as "this machine
+    # has no working cassette device" (it has: tools/build_mainrom.py overlays the
+    # zerobas-tape completions at $00E2-$00F6 + $09EE into the merged ROM). A
+    # control run reproducing the SAME failure on an older build made the wrong
+    # explanation look confirmed -- a control that fails must be FIXED, not
+    # interpreted. Default it off the machine id so the trap cannot recur.
+    repl = args.repl or bool(args.cart) or args.machine != MACHINE
 
     blob = build_blob()
     cas = build_cas("BLOAD", LOAD_ADDR, LOAD_ADDR, blob)

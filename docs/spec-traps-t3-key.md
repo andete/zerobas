@@ -624,22 +624,32 @@ cells. The shared routines are covered by the same run from their *other* caller
 `LOAD`, `RUN"file"`, `LOAD(ASCII)`, `FILES(wild)`, `KILL(wild)`, `OPEN(LEN=)` all
 exercise `parse_disk_fcb` / `parse_close_run` / `fat_io_*`.
 
-🔴 **Cassette BLOAD: NOT verified — a PRE-EXISTING coverage gap, not a regression.**
-`basic_probe_bload.py` (the `BLOAD"CAS:",R` landmark probe) **times out** on
-`C-BIOS_MSX1_EU_REPACK_DISK`. Before reading anything into that, the arc's control
-rule was applied: the identical probe was run against the **pre-carve** build
-(`35c7bb7`) on the same machine, and it **times out identically**. So the gap
-predates this work — the repack machine carries no cassette completions, and
-`bload.asm`'s own comment records that bare C-BIOS's `TAPION`/`TAPIN` are stubs
-that always set CF. No installed machine carries both the carved build and a
-working tape device.
+✅ **Cassette BLOAD: verified too** — `basic_probe_bload.py` on the repack machine:
+marker `JONG` at `$E000`, **PC at the landmark `$C064`**, i.e. the tape load AND the
+`,R` handoff both worked through the tenant. That exercises the new `ei`/`di` window
+in `bload_tenant`, the `SUB_BUILD` handoff stub, and the resident `,R` jump.
 
-> **This is exactly the arc's standing trap and it is NOT closed here.** The
-> cassette path through the tenant — including the new `ei`/`di` window in
-> `bload_tenant` and the `SUB_BUILD` handoff — **has never executed**. It builds,
-> its closure is gated, and that is all. **Open task: a repack machine variant
-> carrying the cassette completions, then re-run `basic_probe_bload.py`.** Until
-> then, treat tape BLOAD on the repack build as unverified.
+> 🔴 **This was very nearly recorded as an unverifiable gap, on a WRONG diagnosis.**
+> The probe first **timed out**, and it was written up as "no installed machine
+> carries both the carved build and a working tape device — bare C-BIOS's
+> `TAPION`/`TAPIN` are stubs." **That is false:**
+> [`tools/build_mainrom.py`](../tools/build_mainrom.py) overlays the zerobas-tape
+> completions (cassette vectors `$00E2–$00F6`, bodies at `$09EE`) into the merged
+> repack ROM — the machine has a working cassette device.
+>
+> The real cause was the **apparatus**: the probe set `repl = args.repl or
+> bool(args.cart)`, so on a machine where zerobas is the built-in ROM rather than a
+> cart it typed with *oracle* timing and lost the keys on zerobas's slower boot. It
+> then waited for a breakpoint that could never fire. Fixed at the root — `repl` now
+> defaults off the machine id, so any non-oracle machine gets REPL typing.
+>
+> **The control run made it worse, not better.** Re-running on the pre-carve build
+> reproduced the timeout exactly, which correctly proved "not a regression" — and
+> that was taken as licence to stop. **A control that fails must be FIXED, not
+> interpreted**: identical failure on both sides says the apparatus is broken, which
+> is a reason to dig in, not to write the finding up. This is the arc's apparatus
+> lesson recurring, in its subtlest form yet — the reasoning was valid, the
+> conclusion drawn from it was not.
 
 ---
 
