@@ -1,0 +1,46 @@
+diff --git a/src/hooks.asm b/src/hooks.asm
+index b972448..94cdf63 100644
+--- a/src/hooks.asm
++++ b/src/hooks.asm
+@@ -374,5 +374,16 @@ H_PLAY:         equ     $FFC5
+ ; allows for installation of expansion devices that contain extra OS subroutines
+ H_BEXT:         equ     $FFCA
+ 
++; zerobas repack (interrupt-traps T3): the function-key DELIVERY hook.
++; Standard MSX has no seam between the keyboard scan and the FNKSTR expansion,
++; so an external BASIC cannot see -- let alone divert -- a function key the way
++; MSX-BASIC's own KEY trap does (there BASIC *is* the BIOS, and the trap sits
++; inside the scan). H_ZKEY adds exactly that seam, and nothing else.
++; It sits just past H_BEXT, the highest hook defined here, and still inside the
++; span the hook-area init $C9-fills ($FD9A..$FFE7), so it defaults to `ret` with
++; CF undisturbed: an unpatched or non-BASIC boot is unaffected.
++; See zerobas docs/spec-traps-t3-key.md and basic/keytrap.asm.
++H_ZKEY:         equ     $FFCF
++
+ 
+ ; vim:ts=8:expandtab:filetype=z8a:syntax=z8a:
+diff --git a/src/main.asm b/src/main.asm
+index 434cd5b..861d7f7 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -2829,6 +2829,20 @@ key_chk_f5:
+                 ld      a,$04
+                 jr      put_key_fnk
+ put_key_fnk:
++; zerobas repack (interrupt-traps T3): the KEY-trap seam. Entered with A = the
++; function-key index 0..4, immediately before the FNKSTR expansion. Deliberately
++; THIN -- all policy lives in zerobas (basic/keytrap.asm). Teaching this ROM
++; about BASIC's trap table would force a repacked-ROM sha1 re-pin on every
++; semantic change, which is exactly what the hook exists to avoid. Contract:
++;   in   A = fn-key index 0..4
++;   out  A = the index to expand. The handler folds SHIFT, so SHIFT+F1 expands
++;            slot 5 (F6's string) as a real MSX does, rather than slot 0 -- a
++;            pre-existing divergence of this ROM that the hook closes in passing.
++;        CF=1 -> swallow this delivery entirely (the trap diverted the key, so
++;                nothing may reach KEYBUF);  CF=0 -> expand FNKSTR[A] as before.
++                call   H_ZKEY
++                jr     c,key_store_end2
++
+                 push   hl
+                 push   bc
+                 push   de

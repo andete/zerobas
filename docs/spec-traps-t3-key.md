@@ -463,6 +463,53 @@ not a gate. **Closing that hole is a separate task; raised, not actioned here.**
 
 ⛔ **D-T3-5 is reopened. T3 is blocked on funding.** See §9.
 
+### 7.2 T3's REAL cost, measured (2026-07-25) — 236 B, and it is split across TWO walls
+
+With the carve reopened, the estimate was the next thing worth replacing with a number.
+The whole slice was therefore **written** — C-BIOS patch, hook handler, both parser
+generalisations, the reversed KEY band — and the build's own wall tripwires were read.
+It assembles cleanly with the guards lifted (no undefined symbols, no syntax errors);
+it has **never been run**, and under the arc's standing lesson that means nothing about
+its correctness. What it does give is an exact size.
+
+| wall | before | after | **deficit** |
+|---|---|---|---|
+| page-0 low region (`$2812–$3FFF`) | 6 B free | ends `$403C` | **60 B over** |
+| page 1 (`$4000–$7FFF`) | 9 B free | ends `$80B0` | **176 B over** |
+| | | **total** | **236 B** |
+
+**The estimate was low by 106 B — 1.8×.** §7 predicted ~130 B *"deliberately pessimistic,
+because T2's estimate was low by 70 B."* It was not pessimistic enough. Treat every
+byte estimate in this arc as a lower bound.
+
+**The structural surprise is the split.** §7 costed T3 as one page-1 number, but the
+event source cannot live in page 1 at all. It fires from inside C-BIOS's keyboard scan —
+the `$0038` ISR — which can land while a sub-ROM page-1 tenant owns page 1. `htimi_guard`
+answers that for PLAY by skipping the frame, which is fine for an inaudible ≤1-frame
+drain deferral; for KEY a skipped frame **leaks an undiverted keystroke into `KEYBUF`**,
+a correctness divergence rather than a deferral. Page 0 is untouched during a page-1
+tenant, so the handler goes in the low region and needs no guard at all — the same
+reasoning that put `htimi_guard` itself there.
+
+So **~66 B of the need is low-region-only**, and *every* carve candidate in §7.1
+(`cload`, `bload`, `bsv_cas_id`) is a **page-1** cluster. A page-1 carve cannot fund the
+low region directly. It can fund it *indirectly* — free page 1, then promote ~60 B of
+existing low-region content into the freed page-1 space — but that is a second lift with
+its own eligibility question, not a step anyone had costed.
+
+**What did come in on budget:** the C-BIOS hook did its job. The parser generalisation
+(§5) also held up — `ON KEY GOSUB` and `KEY(n) ON|OFF|STOP` reuse T2's parsers with five
+constants lifted into parameters (band base, slot count, argument origin, reversal,
+shadow-seeding) rather than duplicating them, and **D-T3-4 cost zero bytes in `ct_find`**:
+laying the KEY band out reversed gets the reference's high-to-low service order without
+touching the scan direction T2's STRIG band depends on.
+
+**Landed and verified regardless of funding:** the C-BIOS side is complete and
+reproducible — [`cbios-repack/key-trap-hook.patch`](../cbios-repack/key-trap-hook.patch)
+applies to the pinned tag, assembles clean, and
+[`tools/build_repacked_cbios.py`](../tools/build_repacked_cbios.py) now applies both
+patches in order and verifies the new pin `557aed9352cf8367eabb9a3cc081c83252579ab9`.
+
 ---
 
 ## 8. Gate

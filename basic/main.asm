@@ -64,6 +64,11 @@ ROM_BASE:       equ     $4000
 ; zerobas-sub discovery recorder + dispatch helper (subrom S2b): lives in the
 ; page-0 low region freed by evicting the float PRINT formatter (page 1 is full).
                 include "basic/subromcall.asm"
+; Interrupt-traps T3: the KEY event source. Low-region (not page 1) because it
+; fires from inside C-BIOS's keyboard scan, i.e. the $0038 ISR, which can land
+; while a sub-ROM page-1 tenant owns page 1 — and a skipped frame would LEAK an
+; undiverted keystroke. Page 0 is always mapped. See basic/keytrap.asm.
+                include "basic/keytrap.asm"
 ; Arrays slice-1 (docs/spec-basic-arrays.md §10, SPLIT design): the main-ROM
 ; glue half — DIM/subscript parsing (needs `eval`) and the FAC<->element
 ; copy/coercion (needs var_store_fac's value-field codec). The engine itself

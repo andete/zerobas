@@ -842,6 +842,25 @@ STOPGRACE       equ     $E220   ; 1 B: STOP-trap handler grace (R1, spec §12.2)
                                 ; window so the triggering Ctrl-STOP can't re-break the
                                 ; freshly-entered handler, yet a key still held one frame
                                 ; later DOES abort it (VG-8020: handlers are interruptible).
+; --- shared trap-PARSER parameters (interrupt-traps T3, spec §5) -------------
+; T2's `ON STRIG GOSUB` list parser and `STRIG(n) ON|OFF|STOP` parser hard-coded
+; the band base, the slot count, the argument origin and the shadow-seeding rule.
+; T3 needs the same two parsers for a band with a different base, ten slots, a
+; 1-based argument, a reversed layout and no seeding -- so those five constants
+; became these parameters. Sharing rather than duplicating is what makes T3 fit.
+; PURE PARSER SCRATCH: written immediately before each use, never read across a
+; statement, so they need no init -- which is why they sit ABOVE STOPGRACE,
+; outside the span trap_init zeroes ($E1D1..$E220).
+TRAPBASE        equ     $E221   ; 1 B: the band's slot-0 ZTRAP entry index
+TRAPNSLOT       equ     $E222   ; 1 B: slots in the band (STRIG 5, KEY 10)
+TRAPREV         equ     $E223   ; 1 B: non-zero = the band is laid out REVERSED, so
+                                ; ct_find's ascending scan services it high-first
+                                ; (D-T3-4: the reference services KEY 3 -> 2 -> 1)
+TRAPSEED        equ     $E224   ; 1 B: non-zero = seed the ZTS_SHADOW edge shadow on an
+                                ; OFF->ON transition. Set for STRIG (a LEVEL trap: a
+                                ; trigger already held must not fake an edge), clear for
+                                ; KEY (a DELIVERY trap: no edge exists to suppress)
+TRAPARGLO       equ     $E225   ; 1 B: lowest legal n (STRIG 0, KEY 1); below it -> ERR 5
     ENDIF
 
 ; --- Phase 1: minimal string-variable store (own-design; see PROVENANCE.md) --
@@ -1880,6 +1899,23 @@ VCX_FRAMES      equ     20      ; frames remaining for this voice's current note
 ; $0038 ISR; play_service is main-ROM page-1 resident (reached by a near JP, mapped
 ; whenever the ISR fires -- page-1 tenants run DI, §4a) and does the MUSICF==0 fast-out.
 H_TIMI          equ     $FD9F   ; timer-interrupt hook, 5-byte inter-slot call area
+; --- the KEY-trap fn-key hook (interrupt-traps T3, docs/spec-traps-t3-key.md §4) ---
+; NOT a standard MSX hook: it is added by OUR C-BIOS patch
+; (cbios-repack/key-trap-hook.patch) because no published hook can see the current
+; frame's KEYBUF insertion -- both H.KEYI and H.TIMI run BEFORE the keyboard scan
+; (D-T3-3, measured on C-BIOS and on the VG-8020), and a sweep of all ~112 slots
+; found no post-scan seam with a program running (spec §4.1).
+; PLACEMENT: $FFCF sits just past H.BEXT ($FFCA..$FFCE), the highest hook C-BIOS
+; defines, and still INSIDE the span C-BIOS $C9-fills at boot ($FD9A..$FFE7, its
+; own hook-area init). So the slot needs no initialisation of ours and defaults to
+; `ret` with CF undisturbed -- an unpatched or non-BASIC boot is unaffected. The
+; span is C-BIOS-managed scratch with no standard hook meaning and nothing else in
+; zerobas claims it (checked against the whole RAM map).
+H_ZKEY          equ     $FFCF   ; fn-key delivery hook, 5-byte JP vector (zkey_install)
+; NEWKEY ($FBE5): the published MSX key-matrix work area, 11 rows, ACTIVE LOW
+; (0 = pressed; C-BIOS seeds it $FF at boot). zkey_hook reads row 6 bit 0 = SHIFT
+; to fold F1-F5 into F6-F10 -- C-BIOS does not fold it itself (D-T3-7, measured).
+NEWKEY          equ     $FBE5   ; key matrix snapshot, 11 B (row 6 bit 0 = SHIFT)
 ; PLAY parse defaults (cold-boot seed; TEMPOX==0 is the "not seeded" sentinel,
 ; reliable because C-BIOS zeroes $F380.. at boot):
 PLAY_DEF_OCTAVE equ     4

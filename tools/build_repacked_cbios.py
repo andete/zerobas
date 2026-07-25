@@ -4,7 +4,7 @@
 
 """Build the repacked C-BIOS main ROM reproducibly (cbios-repack arc, WS-3 / S4).
 
-Applies our tracked 0BSD patch (cbios-repack/eu-drop-statements.patch) to a PINNED
+Applies our tracked 0BSD patches (cbios-repack/*.patch, in PATCHES order) to a PINNED
 C-BIOS source tag in a throwaway git worktree, rebuilds, and verifies the result's
 sha1. No C-BIOS bytes live in the zerobas repo (decision D1) -- the patch is a
 description of edits to BSD source, applied to the user's own checkout at build time.
@@ -25,11 +25,20 @@ import sys
 import tempfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PATCH = os.path.join(REPO, "cbios-repack", "eu-drop-statements.patch")
+# Applied IN ORDER; each is a tracked 0BSD description of edits to BSD C-BIOS
+# source, never a copy of its bytes (decision D1). See cbios-repack/README.md.
+PATCHES = [
+    os.path.join(REPO, "cbios-repack", "eu-drop-statements.patch"),
+    # interrupt-traps T3: the function-key DELIVERY hook (H_ZKEY $FFCF + a
+    # 5-byte call at put_key_fnk). No published MSX hook can see -- let alone
+    # divert -- the current frame's KEYBUF insertion, so BASIC's KEY trap needs
+    # a seam that stock C-BIOS does not have. docs/spec-traps-t3-key.md SS4.
+    os.path.join(REPO, "cbios-repack", "key-trap-hook.patch"),
+]
 
 PINNED_TAG = "v0.29-3-gb5ad9cb"
 PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "edb0844053a3d428aaef95fcd9106972079bde34"
+REPACKED_SHA1 = "557aed9352cf8367eabb9a3cc081c83252579ab9"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 
@@ -51,7 +60,8 @@ def build(cbios: str, out: str, pristine: str | None = None) -> None:
     try:
         run(["git", "-C", cbios, "worktree", "add", "-q", "--detach", work, PINNED_TAG])
         try:
-            run(["git", "-C", work, "apply", PATCH])
+            for patch in PATCHES:
+                run(["git", "-C", work, "apply", patch])
             run(["make", "-s", "-C", work, ROM_REL])
             built = os.path.join(work, ROM_REL)
             got = sha1(built)
