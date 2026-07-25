@@ -172,18 +172,31 @@ calls. A `KEYBUF`-watching design is ruled out by R8/R9 (an empty expansion stil
 and both cost bytes; neither can be inherited from the host BIOS, because we detect the
 key from the raw matrix rather than from the BIOS's decode layer.
 
-**D-T3-1 — diversion fidelity.** Options, cheapest first:
+**D-T3-1 — diversion fidelity.** Rewritten after D-T3-3 was measured (below); the
+one-frame lag it establishes rules out the naive flush, so the options are:
+
 1. **No diversion** — the trapped key's expansion still reaches `INKEY$`/`INPUT`.
-   ~0 B, a clearly-visible documented deviation: the very common "menu driven by
-   `ON KEY` while the program also reads `INKEY$`" program would see junk.
-2. **Flush the type-ahead buffer on a trapped delivery** — set `GETPNT` := `PUTPNT`
-   when a trapped key is detected. ~15 B, needs no `FNKSTR` knowledge. Faithful
-   whenever the buffer holds only that expansion (the overwhelmingly common case);
-   discards genuinely-typed-ahead keys otherwise.
-3. **Remove exactly the expansion** — read the key's length from `FNKSTR` and rewind
-   `PUTPNT` by it. ~35–45 B and the most reference-like, but it assumes the expansion
-   is the *last* thing inserted.
-   *Recommendation: (2), with (3) as a stretch if the carve leaves room.*
+   ~0 B. Deterministic, and a clearly-visible documented deviation: the very common
+   "menu driven by `ON KEY` while the program also reads `INKEY$`" program sees junk.
+2. **~~Flush the buffer when a trapped delivery is detected~~** (`GETPNT` := `PUTPNT`,
+   ~15 B). **Not recommended — measurably racy**, see D-T3-3: the flush lands ~19 ms
+   after the character became readable, and roughly one press in four would leak.
+   "Usually diverts" is worse than a documented deviation, because it is not reproducible.
+3. **Deferred-publish flush** — make the poll always get first refusal. Snapshot
+   `PUTPNT` at each `H.TIMI` into a `KBSNAP` word; zerobas's own key readers treat
+   only bytes *up to `KBSNAP`* as available (their own `GETPNT` vs `KBSNAP` compare in
+   place of `CHSNS`, still consuming via `CHGET`); on a trapped delivery, rewind
+   `PUTPNT` to the previous snapshot before publishing the new one. **Exact and
+   deterministic**, at the cost of ≤1 frame (≤20 ms, imperceptible) of added input
+   latency. ~30–45 B plus touching the three reader call sites (`INKEY$`
+   [`str-engine.asm:1080`](../basic/str-engine.asm), `INPUT`/`LINE INPUT`, the REPL).
+4. **Patch the C-BIOS scan path** so the insert never happens — the mechanism a real
+   MSX uses (there BASIC *is* the BIOS), and one zerobas already owns for other
+   purposes (`zerobas-tape` is a C-BIOS page-0 patch; `LPTOUT` landed that way).
+   Exact, but C-BIOS-specific and a real scope expansion for this slice.
+
+*Recommendation: (3) if the carve leaves room — funding is available (§7) and it is the
+only option that is both exact and reproducible; otherwise (1). Explicitly not (2).*
 
 **D-T3-2 — auto-repeat.** (a) Replicate it with our own delay/rate constants sized from
 §1.1 (≈38 frames then every ~3), ~25–30 B; or (b) fire once per physical press, ~0 B, a
@@ -193,14 +206,34 @@ repeat cadence is **ours**, not the host BIOS's, so a trapped key and an untrapp
 on the same machine may repeat at slightly different rates; that residual is
 unavoidable given detection must be matrix-based, and belongs in `PROVENANCE.md`.
 
-**⚠️ D-T3-3 — the load-bearing unknown: ISR ordering. MEASURE BEFORE IMPLEMENTING.**
-Options (2) and (3) both assume `H.TIMI` runs **after** C-BIOS has scanned the keyboard
-and inserted this frame's expansion. If it runs **before**, the rewind lands a frame
-early and a tight `INKEY$` loop (~600 iterations/s measured, i.e. several per frame)
-can read the character first. **Do not design around a guess** — a ten-line probe that
-records `PUTPNT` at `H.TIMI` entry against a matrix-driven keypress settles it, and it
-must run **before** any T3 code is written. If the ordering is unfavourable, D-T3-1
-collapses to option (1).
+**✅ D-T3-3 — ISR ordering: MEASURED 2026-07-25, and the answer is the awkward one.**
+
+`htimi_order_probe.py` breakpoints the timer ISR entry (`$0038`) and both published
+interrupt hooks (`H.KEYI $FD9A`, `H.TIMI $FD9F`), watchpoints writes to `KEYBUF`
+(`$FBF0..$FC17`) and `PUTPNT` (`$F3F8`), presses SPACE at the prompt, and reads the
+interleaving within the ISR invocation that actually inserted. (Execution *order* of
+published addresses only — no ROM bytes read or decoded.) Both machines, identically:
+
+```
+ISR -> HKEYI -> HTIMI -> KEYBUF -> PUTPNT
+       C-BIOS repack (the target):  both hooks BEFORE the scan
+       Philips VG-8020 (reference): both hooks BEFORE the scan
+```
+
+**Neither published hook can see the current frame's insertion.** The reference MSX
+does not need one — there BASIC and the BIOS are the same ROM, so its KEY trap lives
+*inside* the scan routine. zerobas has no such seam.
+
+**Consequence.** At `H.TIMI` on frame *N*, both `NEWKEY` and the `KEYBUF` insertion
+reflect frame *N−1*'s scan. Detection being one frame late is harmless (the trap still
+fires once per delivery). Diversion is what suffers: the character is readable by
+mainline BASIC for the ~19 ms between the frame-*N−1* insert and our frame-*N* poll.
+
+**Exposure, measured rather than assumed:** a BASIC `INKEY$` polling loop runs
+**~80 polls/s on the VG-8020 — ~1.6 per 50 Hz frame**. zerobas is ~7× slower
+([[traps-t2-strig-slice]]), so ~0.25 polls/frame — i.e. a naive flush would still lose
+the race on **roughly one trapped press in four**. That is why D-T3-1 option (2) is
+struck out, and why option (3) inverts the problem instead of racing it.
 
 ---
 
@@ -257,11 +290,11 @@ Estimate — deliberately pessimistic, because **T2's estimate was low by 70 B**
 |---|---|
 | `event_poll` KEY detector (matrix decode + SHIFT fold + edge) | ~70 B |
 | auto-repeat (D-T3-2a) | ~30 B |
-| diversion (D-T3-1, option 2) | ~15 B |
+| diversion (D-T3-1, option 3 — deferred-publish) | ~45 B |
 | `ON KEY GOSUB` list (generalising `ex_on_strig` + the `ex_on` peek) | ~30 B |
 | `KEY(n) ON/OFF/STOP` (generalising `ex_strig_stmt` + the `ex_key` peek) | ~35 B |
 | intra-family order (D-T3-4) | ~10 B |
-| **total** | **~190 B** |
+| **total** | **~220 B** |
 
 **Funding — the carve is available, and this is the good news of the slice.** A closure
 scout over page-1 (`carve_scout.py`, static call-graph walk against
@@ -309,10 +342,12 @@ for the matrix→key-number fold and the repeat counter.
 
 ## 9. Sign-off items
 
-- **D-T3-1** — diversion fidelity: none / buffer flush / exact expansion removal. *Rec: flush.*
+- **D-T3-1** — diversion fidelity: none / ~~racy flush~~ / deferred-publish / C-BIOS
+  patch. *Rec: deferred-publish if the carve allows, else none. Not the racy flush.*
 - **D-T3-2** — auto-repeat: replicate with own constants / fire-once deviation. *Rec: replicate.*
-- **D-T3-3** — **ISR ordering must be measured before implementation**; an unfavourable
-  result forces D-T3-1 to "none". *No recommendation — it is an experiment, not a choice.*
+- **D-T3-3** — ✅ **ANSWERED 2026-07-25**: both published hooks run *before* the keyboard
+  scan on C-BIOS *and* on the VG-8020, so diversion cannot be a same-frame removal.
+  Nothing left to decide here; it now constrains D-T3-1.
 - **D-T3-4** — intra-family priority: match the reference's high-to-low, or accept
   ascending as a documented divergence. *Rec: match if ≤ ~10 B.*
 - **D-T3-5** — the carve: confirm the `cload.asm` page-0-tenant lift as T3's funding.
