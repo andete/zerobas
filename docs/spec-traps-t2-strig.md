@@ -217,9 +217,17 @@ line, which is exactly the green-hidden bug the T1 B2 differential caught.
 - **D-T2-4 — the 6-slot deviation** (§5.1): trappable ERR 2 instead of the reference's
   crash. *Recommend: yes, documented in PROVENANCE/TODO as a deliberate deviation.*
 - **D-T2-5 — trailing slots.** `ON STRIG GOSUB 100` after a 5-slot arm: are slots 1..4
-  cleared or kept? **Untestable** on the oracle (only trigger 0 is pressable, §7).
-  *Recommend: parse-as-you-go — write listed slots (empty ⇒ 0), leave absent trailing
-  slots untouched — and record the boundary as an untested deficit.*
+  cleared or kept? Now *testable* thanks to §7.3, so **measure it on the oracle at
+  implementation time** rather than deciding here. Provisional: parse-as-you-go (write
+  listed slots, empty ⇒ 0, leave absent trailing slots untouched).
+- **D-T2-6 — the acceptance machine now models PSG port directions like the oracle**
+  (§7.3). `tools/install-repack-machine.py` emits
+  `<ignorePortDirections>false</ignorePortDirections>`, matching `Philips_VG_8020.xml`;
+  openMSX's default is `true`. *Landed as a harness fix* — it removes an asymmetry that
+  had nothing to do with our ROM (which never writes R7's direction bits — the
+  `play-trace-acceptance` gate asserts R7 stays `$B8`), and it is what makes triggers
+  1..4 drivable. `input-devices-acceptance` 50/50 and `play-trace-acceptance` re-run
+  green afterwards.
 
 ---
 
@@ -236,15 +244,42 @@ boot-per-case, POKE-sentinel, zerobas-vs-VG-8020, with the §1 table as the case
 **Trigger 0 (SPACE, matrix row 8 bit 0) is fully drivable**, so Q1/Q2/Q3/Q5/Q6/Q7/R1/R2/
 R3/R4/R5/R6/R7/R8 and every §1.3 parse case are all real differential cases.
 
-**Known gate deficit — triggers 1..4.** openMSX has no scriptable way to press a
-joystick button (`msxjoystick1_config` maps *host* events; there is no Tcl injector), so
-triggers 1..4 can only be gated for *arming, range and non-fire*. Their **value** path is
-already oracle-proven by input-devices I1 (`make input-devices-acceptance`, 50/50, which
-proved `GTTRIG(1..4)` matches the VG-8020 under four plug configurations) — T2 adds only
-an edge detector on top of that same read. Record in
+### 7.3 Triggers 1..4 — the press mechanism (deficit CLOSED, measured 2026-07-25)
+
+openMSX has no joystick-button command, and the obvious routes are all dead ends
+(**measured**, so nobody re-derives them):
+
+- `debug write joystickports …` — accepted but inert; reads return the live pin state.
+- `msxjoystick1_config` maps **host** events, and there is no Tcl host-event injector.
+- **No pluggable presents a pressed trigger**: `magic-key`, `tetris2-protection`,
+  `circuit-designer-rd-dongle`, `joytap`, `ninjatap`, `arkanoidpad`, `trackball`,
+  `mouse` all read released, on *both* machines. (A free differential result.)
+
+**What works — the PSG-latch injection.** Put PSG port A into **output** mode
+(`debug write "PSG regs" 7 0xF8`, i.e. R7 bit 6) so the AY returns register 14's
+**latch** instead of the joystick pins, then write R14 (active low):
+
+| R14 | pressed |
+|-----|---------|
+| `0xEF` (bit 4 low) | `STRIG(1)` **and** `STRIG(2)` |
+| `0xDF` (bit 5 low) | `STRIG(3)` **and** `STRIG(4)` |
+| `0xCF` | all four |
+| `0xFF` | released |
+
+**Verified identical on the VG-8020 and the repack build** in all four configurations,
+and — the property the trap gate actually needs — a press/release/press sequence counts
+**exactly 2 rising edges on both machines**. This depends on D-T2-6 (the machine now
+carries `<ignorePortDirections>false</ignorePortDirections>`; without it openMSX
+silently drops the R7 write and the injection is inert).
+
+*Residual limitation, not a blocker:* the injection replaces the latch **behind** the
+port-A/port-B multiplexer, so triggers 1 and 2 cannot be distinguished from each other,
+nor 3 from 4. Every trigger can still be pressed, released and edge-detected, which is
+what the trap gate asserts. Distinguishing the two physical ports stays untested —
+record that single residual in
 [`disk/docs/tier2-review-queue.md`](../disk/docs/tier2-review-queue.md).
 
-### 7.3 Standing sweep
+### 7.4 Standing sweep
 `make unit-test`, `diskbasic-acceptance`, `string-acceptance`, `play-trace-acceptance`
 (the ISR seam changed — this one is load-bearing), `stop-trap-acceptance`,
 `input-devices-acceptance` (the `di`/`ei` guard touches its call sites), `basic-reloc`

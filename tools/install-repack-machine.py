@@ -140,7 +140,16 @@ def config(merged_abs: str, logo_abs: str, disk_rom_abs: str, sub_rom_abs: str =
     <VDP id="VDP"><io base="0x98" num="2" type="O"/><io base="0x98" num="2" type="I"/>
       <version>TMS9929A</version><vram>16</vram></VDP>
     <PSG id="PSG"><type>YM2149</type><io base="0xA0" num="4" type="IO"/>
-      <sound><volume>21000</volume></sound></PSG>
+      <sound><volume>21000</volume></sound>
+      <!-- Match the VG-8020 oracle's discrete-PSG model. openMSX DEFAULTS this to
+           true (silently ignore R7's port-direction bits); the Philips_VG_8020 config
+           sets it false. Leaving the default here made the two sides of every PSG
+           differential structurally different -- and specifically it blocked the only
+           scriptable way to press joystick triggers 1..4 (put port A in output mode,
+           then write the R14 latch), which the interrupt-trap STRIG gate needs.
+           zerobas's ROM never sets the direction bits, so shipping behaviour is
+           unaffected; this only removes a harness asymmetry. -->
+      <ignorePortDirections>false</ignorePortDirections></PSG>
     <PrinterPort id="Printer Port"><io base="0x90" num="2"/></PrinterPort>
   </devices>
 </msxconfig>

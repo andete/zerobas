@@ -83,6 +83,26 @@ byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
 
 ## Open (awaiting next sync)
 
+**[JUDGMENT CALL — traps T2 harness, 2026-07-25] The acceptance machine now models
+PSG port directions like the VG-8020, and joystick triggers 1..4 are driven by a
+PSG-latch injection with one residual blind spot.** `tools/install-repack-machine.py`
+now emits `<ignorePortDirections>false</ignorePortDirections>` (openMSX defaults it to
+`true`; `Philips_VG_8020.xml` sets it `false`). *Why:* the two sides of every PSG
+differential were structurally different for a reason unrelated to our ROM, and the
+default silently discarded the R7 write that the only scriptable joystick-button
+mechanism depends on. zerobas's ROM never writes R7's direction bits (`SOUND` merges
+`(curR7 & $C0) | (val & $3F)`, and `play-trace-acceptance` asserts R7 stays `$B8`), so
+shipping behaviour is unaffected; `input-devices-acceptance` 50/50 and
+`play-trace-acceptance` were re-run green after the change. *The mechanism* (spec
+[spec-traps-t2-strig.md](../../docs/spec-traps-t2-strig.md) §7.3): put PSG port A in
+output mode, then write R14 — verified byte-identical on both machines, and a
+press/release/press sequence counts exactly 2 rising edges on both. **Residual:** the
+injected latch sits *behind* the port-A/port-B multiplexer, so `STRIG(1)`/`STRIG(2)`
+cannot be told apart, nor `STRIG(3)`/`STRIG(4)`. Every trigger is pressable and
+edge-detectable; only "which physical port" stays untested. Flagged rather than solved —
+no openMSX facility for it was found (dead ends recorded in the spec so they are not
+re-derived).
+
 **[RESOLVED — malformed-call fix D-F2-4, 2026-07-14] The slice-2e RND Finding 1
 (malformed-call seed mutation) is FIXED as the family-wide slice it was deferred
 to.** `ev_mc_arg`'s two error exits now raise the deferred FPERR=4 syntax error,
