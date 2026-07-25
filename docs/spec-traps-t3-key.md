@@ -172,31 +172,53 @@ calls. A `KEYBUF`-watching design is ruled out by R8/R9 (an empty expansion stil
 and both cost bytes; neither can be inherited from the host BIOS, because we detect the
 key from the raw matrix rather than from the BIOS's decode layer.
 
-**D-T3-1 — diversion fidelity.** Rewritten after D-T3-3 was measured (below); the
-one-frame lag it establishes rules out the naive flush, so the options are:
+**D-T3-1 — diversion fidelity. ✅ DECIDED 2026-07-25: patch C-BIOS, with a THIN HOOK.**
 
-1. **No diversion** — the trapped key's expansion still reaches `INKEY$`/`INPUT`.
-   ~0 B. Deterministic, and a clearly-visible documented deviation: the very common
-   "menu driven by `ON KEY` while the program also reads `INKEY$`" program sees junk.
-2. **~~Flush the buffer when a trapped delivery is detected~~** (`GETPNT` := `PUTPNT`,
-   ~15 B). **Not recommended — measurably racy**, see D-T3-3: the flush lands ~19 ms
-   after the character became readable, and roughly one press in four would leak.
-   "Usually diverts" is worse than a documented deviation, because it is not reproducible.
-3. **Deferred-publish flush** — make the poll always get first refusal. Snapshot
-   `PUTPNT` at each `H.TIMI` into a `KBSNAP` word; zerobas's own key readers treat
-   only bytes *up to `KBSNAP`* as available (their own `GETPNT` vs `KBSNAP` compare in
-   place of `CHSNS`, still consuming via `CHGET`); on a trapped delivery, rewind
-   `PUTPNT` to the previous snapshot before publishing the new one. **Exact and
-   deterministic**, at the cost of ≤1 frame (≤20 ms, imperceptible) of added input
-   latency. ~30–45 B plus touching the three reader call sites (`INKEY$`
-   [`str-engine.asm:1080`](../basic/str-engine.asm), `INPUT`/`LINE INPUT`, the REPL).
-4. **Patch the C-BIOS scan path** so the insert never happens — the mechanism a real
-   MSX uses (there BASIC *is* the BIOS), and one zerobas already owns for other
-   purposes (`zerobas-tape` is a C-BIOS page-0 patch; `LPTOUT` landed that way).
-   Exact, but C-BIOS-specific and a real scope expansion for this slice.
+D-T3-3 (below) showed no published hook can see the current frame's insertion, and a
+sweep of **all ~112 hook slots** confirmed no post-scan seam exists while a program runs
+(§4.1). The alternatives were "no diversion" (a visible deviation), a measurably racy
+flush (~1 press in 4 leaks), or a deferred-publish scheme that inverts the race at the
+cost of rewiring zerobas's readers. **The decision is to patch C-BIOS** — which is what
+a real MSX does, since there BASIC *is* the BIOS and its KEY trap sits inside the scan.
 
-*Recommendation: (3) if the carve leaves room — funding is available (§7) and it is the
-only option that is both exact and reproducible; otherwise (1). Explicitly not (2).*
+**This is an established, audited mechanism, not a new one.** zerobas already ships
+[`cbios-repack/eu-drop-statements.patch`](../cbios-repack/eu-drop-statements.patch): a
+tracked 0BSD patch describing edits to BSD-licensed C-BIOS **source**, applied to a
+**pinned tag** in a throwaway worktree at build time and **sha1-verified**
+([`tools/build_repacked_cbios.py`](../tools/build_repacked_cbios.py)); **no C-BIOS bytes
+live in the zerobas repo** (decision D1). C-BIOS source is a *build input*, not a stock
+reference ROM, so reading it does not touch the no-disassembly rule
+([[no-reference-rom-disasm]]).
+
+**Thin hook, not fat logic.** The patch must NOT teach C-BIOS about `ZTRAP` — that would
+put BASIC policy inside the BIOS and force a re-pin on every semantic change. Instead it
+adds **one 5-byte RAM hook**, exactly like `H.TIMI`, and all policy stays in zerobas:
+
+- **Insertion point:** `put_key_fnk` (`cbios/src/main.asm:2830`), reached with
+  **A = the function-key index 0–4**, immediately *before* the `FNKSTR` expansion loop.
+- **Contract:** call the hook with A = index; **CF=1 ⇒ swallow this delivery entirely**
+  (skip the expansion), CF=0 ⇒ expand as now. Default vector = `ret` with CF clear, so
+  an unpatched/non-BASIC boot is unaffected.
+- **zerobas side:** install the handler at boot beside `play_install`. The handler folds
+  SHIFT, indexes `ZTRAP`, and if the entry is ON/SERVICING sets PENDING + `TRAPPEND` and
+  returns CF=1.
+
+**Why this is the *better* engineering answer, not merely the acceptable one:** hooking
+where the BIOS has *already decoded the key* deletes three of T3's hardest parts at once
+— the `NEWKEY` matrix scan and SHIFT fold, the hand-rolled auto-repeat (D-T3-2 becomes
+moot: repeat is inherited from the host BIOS, which is *more* faithful than replicating
+the VG-8020's constants), and the diversion race. It also lands the empty-expansion case
+(§1.1 R8/R9) for free: the hook fires at `put_key_fnk` *entry*, before the loop that
+would have inserted nothing. See §7 for what this does to the budget.
+
+**⚠️ New finding, needs a call — C-BIOS implements only F1–F5.** The branch above
+`put_key_fnk` maps rows `$05`/`$04` to indices 0–4 and indexes `FNKSTR` by `A*16`;
+there is **no SHIFT fold, so F6–F10 do not exist on the target**. The reference
+discriminates them (§1.3 K7/R11). Options: fold SHIFT **in our hook handler** by reading
+`NEWKEY` row 6 bit 0 — which is *current* there, because the hook runs inside the scan
+(cheap, ~8 B, and keeps the patch semantics-free); or extend the patch. *Rec: fold in
+the handler.* **Must be verified empirically** that SHIFT+F1 still reaches
+`key_chk_fnk1` rather than diverting into the shifted scancode table — see D-T3-7.
 
 **D-T3-2 — auto-repeat.** (a) Replicate it with our own delay/rate constants sized from
 §1.1 (≈38 frames then every ~3), ~25–30 B; or (b) fire once per physical press, ~0 B, a
@@ -231,9 +253,31 @@ mainline BASIC for the ~19 ms between the frame-*N−1* insert and our frame-*N*
 
 **Exposure, measured rather than assumed:** a BASIC `INKEY$` polling loop runs
 **~80 polls/s on the VG-8020 — ~1.6 per 50 Hz frame**. zerobas is ~7× slower
-([[traps-t2-strig-slice]]), so ~0.25 polls/frame — i.e. a naive flush would still lose
-the race on **roughly one trapped press in four**. That is why D-T3-1 option (2) is
-struck out, and why option (3) inverts the problem instead of racing it.
+([[traps-t2-strig-slice]]), so ~0.25 polls/frame — i.e. a flush at the next `H.TIMI`
+would still lose the race on **roughly one trapped press in four**. Nondeterministic
+diversion is worse than an honest deviation, which is what drove D-T3-1 to the patch.
+
+### 4.1 Falsifying the cheap way out — the full hook sweep
+
+Before accepting a C-BIOS patch, the cheap possibility was tested rather than assumed
+([[dont-prematurely-wall]]): the MSX hook area is ~112 five-byte slots
+(`$FD9A`–`$FFC9`), and *any* of them firing between the insertion and the end of the ISR
+would be an exact, **BIOS-agnostic** seam — strictly better than a patch.
+`hook_sweep_probe.py` breakpoints every slot plus a `KEYBUF` watchpoint.
+
+At the **BASIC prompt** four slots fire and two (`$FDA4`, `$FDC2`) do land after the
+insert — but that is an artefact: the REPL is sitting in `CHGET`, so those are *mainline*
+calls, not ISR ones. Re-run with a **BASIC program executing** (the only state in which
+traps dispatch at all) and they vanish:
+
+```
+prompt:          ISR -> HFD9A -> HFD9F -> KEYBUF -> HFDA4 -> HFDC2
+program running: ISR -> HFD9A -> HFD9F -> KEYBUF          <- nothing after
+```
+
+**No post-scan hook exists in the case that matters.** The negative result is what
+justifies the patch; without the program-running control the sweep would have produced a
+false positive and a seam that evaporates the moment a trap could actually fire.
 
 ---
 
@@ -286,15 +330,24 @@ T3 does not fit; a carve is required, exactly as T1 and T2 needed one.
 
 Estimate — deliberately pessimistic, because **T2's estimate was low by 70 B**:
 
-| part | est. |
-|---|---|
-| `event_poll` KEY detector (matrix decode + SHIFT fold + edge) | ~70 B |
-| auto-repeat (D-T3-2a) | ~30 B |
-| diversion (D-T3-1, option 3 — deferred-publish) | ~45 B |
-| `ON KEY GOSUB` list (generalising `ex_on_strig` + the `ex_on` peek) | ~30 B |
-| `KEY(n) ON/OFF/STOP` (generalising `ex_strig_stmt` + the `ex_key` peek) | ~35 B |
-| intra-family order (D-T3-4) | ~10 B |
-| **total** | **~220 B** |
+**The C-BIOS hook (D-T3-1) roughly halves this slice.** Hooking where the BIOS has
+already decoded the key deletes the matrix scan, the auto-repeat replication and the
+diversion machinery outright:
+
+| part | pre-hook est. | **with the hook** |
+|---|---|---|
+| `event_poll` KEY detector (matrix decode + SHIFT fold + edge) | ~70 B | **0** — the BIOS decoded it |
+| auto-repeat (D-T3-2) | ~30 B | **0** — inherited from the host BIOS |
+| diversion (D-T3-1) | ~45 B | **0** — `CF=1` on return |
+| hook handler (SHIFT fold + `ZTRAP` index + PENDING/`TRAPPEND` + CF) | — | ~45 B |
+| hook install at boot (beside `play_install`) | — | ~10 B |
+| `ON KEY GOSUB` list (generalising `ex_on_strig` + the `ex_on` peek) | ~30 B | ~30 B |
+| `KEY(n) ON/OFF/STOP` (generalising `ex_strig_stmt` + the `ex_key` peek) | ~35 B | ~35 B |
+| intra-family order (D-T3-4) | ~10 B | ~10 B |
+| **total** | **~220 B** | **~130 B** |
+
+Plus, outside the BASIC ROM: ~10 lines of C-BIOS source patch, a re-pinned
+`REPACKED_SHA1`, and an IPS/BPS rebuild ([[ips-rebuild-after-basic-change]]).
 
 **Funding — the carve is available, and this is the good news of the slice.** A closure
 scout over page-1 (`carve_scout.py`, static call-graph walk against
@@ -310,9 +363,9 @@ candidate:
 | `do_name`, `lrset_common`, `ex_paint`, `do_open`, `oo_num` | — | **eval-bound — not evictable** (624-node closures into the float pack) |
 
 The cassette verbs are cold by construction and the cassette band has been tenant-ised
-before (`casmatch_tenant`, `cal_refill`), so the pattern is established. **~190 B is a
-fifth of the available cluster** — a partial lift suffices, and it leaves headroom for
-T4. *Recommendation: lift a `cload.asm` slice into a page-0 tenant per the
+before (`casmatch_tenant`, `cal_refill`), so the pattern is established. **~130 B is
+under a seventh of the available cluster** — a partial lift suffices, and it leaves
+headroom for T4. *Recommendation: lift a `cload.asm` slice into a page-0 tenant per the
 [`subrom-tenant-playbook`](subrom-tenant-playbook.md), measuring the real T3 cost first
 (the playbook's "measure + classify BEFORE implementing" rule).*
 
@@ -342,9 +395,17 @@ for the matrix→key-number fold and the repeat counter.
 
 ## 9. Sign-off items
 
-- **D-T3-1** — diversion fidelity: none / ~~racy flush~~ / deferred-publish / C-BIOS
-  patch. *Rec: deferred-publish if the carve allows, else none. Not the racy flush.*
-- **D-T3-2** — auto-repeat: replicate with own constants / fire-once deviation. *Rec: replicate.*
+- **D-T3-1** — ✅ **DECIDED 2026-07-25: patch C-BIOS**, as a *thin 5-byte hook* at
+  `put_key_fnk` with all policy in zerobas (§4). Confirm the hook contract (A = index,
+  `CF=1` ⇒ swallow) and the new RAM vector's address.
+- **D-T3-2** — auto-repeat: ✅ **moot under D-T3-1** — repeat is now inherited from the
+  host BIOS's own decode, which is more faithful than replicating VG-8020 constants.
+  Record the residual in `PROVENANCE.md`: cadence follows the running BIOS, not the
+  VG-8020's ≈0.7–0.8 s / ≈17 Hz.
+- **D-T3-7** — ⚠️ **NEW: F6–F10.** C-BIOS implements only F1–F5 (no SHIFT fold). Fold
+  SHIFT in our hook handler (`NEWKEY` row 6 bit 0 is current there) vs extending the
+  patch. *Rec: fold in the handler* — but first verify empirically that SHIFT+F1 still
+  reaches `key_chk_fnk1` instead of diverting into the shifted scancode table.
 - **D-T3-3** — ✅ **ANSWERED 2026-07-25**: both published hooks run *before* the keyboard
   scan on C-BIOS *and* on the VG-8020, so diversion cannot be a same-frame removal.
   Nothing left to decide here; it now constrains D-T3-1.
