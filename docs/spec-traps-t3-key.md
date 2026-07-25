@@ -1,0 +1,320 @@
+# spec — interrupt-traps T3: the KEY trap (`ON KEY GOSUB` + `KEY(n) ON/OFF/STOP`)
+
+Status: **DRAFT — awaiting sign-off.** Slice packet for T3 of the interrupt-traps arc
+([`docs/spec-basic-interrupt-traps.md`](spec-basic-interrupt-traps.md), signed off
+2026-07-24, slicing T1→T2→T3→T4). T1 (STOP) landed 2026-07-25 (`4fef347`,
+[`spec-traps-t1-stop-reslice.md`](spec-traps-t1-stop-reslice.md)) with the reusable
+skeleton; T2 (STRIG) landed 2026-07-25 (`00a593a`,
+[`spec-traps-t2-strig.md`](spec-traps-t2-strig.md)) with the first device event source.
+**T3 closes the other half of the input-devices `D-I-5` handoff** — `KEY(n) ON/OFF/STOP`
+currently aborts with a divergence `ERR 2`.
+
+Clean-room: every semantic below is **measured black-box on the Philips VG-8020** (§1);
+the RAM layout, the detection mechanism and the divert mechanism are own-design. No
+reference ROM bytes were read or decoded. The keyboard matrix rows, `NEWKEY`, and
+`KEYBUF`/`GETPNT`/`PUTPNT` are **published contracts** (MSX Technical Handbook; the
+buffer trio is already relied on and black-box-verified against C-BIOS — see
+[`basic/PROVENANCE.md:2815`](../basic/PROVENANCE.md)).
+
+> **T3 is NOT "T2 with ten entries."** T2's STRIG source samples a *level* and
+> edge-detects it. The oracle says the KEY trap is a **delivery** trap: it fires on the
+> BIOS key-delivery event — initial make **and every auto-repeat** — and it **removes
+> that delivery from the input stream**. That difference is the whole slice.
+
+---
+
+## 1. Oracle characterization (VG-8020, 2026-07-25)
+
+Six rounds of boot-per-case openMSX runs on `Philips_VG_8020`, driving the function
+keys through the keyboard matrix (row 6: bit 0 SHIFT, bits 5/6/7 F1/F2/F3; row 7:
+bits 0/1 F4/F5; F6–F10 = SHIFT + F1–F5) and reading RAM sentinels via `POKE`/`PEEK`.
+Scripts `key_trap_char{,2,3,4,5,6}.py` (to be promoted into `probes/basic/` as the
+gate, §8).
+
+### 1.0 Apparatus — two rounds were VOID, and why that matters
+
+Rounds 1–2 measured "did the key still reach the program?" with
+`FOR I=1 TO 4000: A$=A$+INKEY$: NEXT`. **4000 string concatenations never reach the
+sentinel `POKE` inside the capture window**, so that column read 0 unconditionally —
+including for the *untrapped baseline*, which cannot be 0. Every `aux` reading in
+rounds 1–2 is therefore void, and round 1's apparent finding "the trapped key's string
+is suppressed" was **not evidence**; it is re-established properly in round 3 (T1/T2).
+
+Round 5 then repeated the mistake in a second shape: its calibration `POKE`d
+`(TIME-T)` straight into a byte, which is `ERR 5` for any loop over 255 jiffies, and
+its "slow handler" (`FOR J=1 TO 30000`) had **not returned** by the end of the capture
+window — so its `cnt==1` said nothing about latching.
+
+**Method adopted from round 3 on, and required of the gate:** no string building; a
+`TIME`-bounded observation window (`T=TIME` … `IF TIME-T<400 GOTO`), and a **`done`
+sentinel that every reading is gated on** — a program that errored out or is still
+running is discarded, never read as a measurement. Handler-timing cases size the
+handler from a *measured* loop rate, and the handler itself records entry (`1`) and
+exit (`2`) so "was it still running?" is observed rather than assumed.
+
+> This is the **T2 lesson recurring for the third time in this arc**
+> ([[traps-t2-strig-slice]]): the measurement apparatus is part of the measurement,
+> and a baseline that cannot produce a non-zero answer proves nothing. **Calibrated
+> constant:** `FOR J=1 TO 3000` takes **~4.8 s** on the VG-8020 (~625 iterations/s).
+
+### 1.1 The event: delivery, not level
+
+| # | case | result | conclusion |
+|---|------|--------|------------|
+| K1 | `ON KEY GOSUB 100` + `KEY(1) ON`, tap F1 | fires once | a single-line list arms F1 |
+| K3 | two taps | fires twice | `RETURN` re-arms |
+| K5 | arm, no `KEY(1) ON`, tap | never fires | arm ≠ enable (as T1/T2) |
+| K2 | F1 **held 3 s** | fires **39×** | **not edge-per-press — it repeats** |
+| T1 | *untrapped* baseline, `KEY 1,"X"`, held 3 s | **38 deliveries** | … |
+| T2 | *trapped*, same hold, same loop | **39 fires**, 0 leaked | **the trap event IS the BIOS key-delivery event** |
+
+`KEY 1,"X"` makes the F1 expansion one character, so an `INKEY$` drain counts
+deliveries exactly. Trapped fires (39) ≍ untrapped deliveries (38) for the identical
+hold: the trap fires once per delivery — the initial make plus each auto-repeat.
+
+**Repeat timing** (hold length → fires): 0.6 s → 1, 0.7 s → 1, 0.8 s → 2, 0.9 s → 4,
+1.2 s → 9, 3.0 s → 39, 4.0 s → 56. So an **initial delay of ≈0.7–0.8 s** (≈35–40
+frames at 50 Hz) then a steady **≈17 Hz** (one per ~3 frames).
+
+**`KEY 1,""` still fires** — once on a tap (R8) and 39× on a 3 s hold (R9). An empty
+expansion puts *nothing* in the buffer, so **the event is upstream of string expansion**.
+This falsifies any implementation that watches `KEYBUF` for insertions; the key must be
+detected from the matrix itself (§4).
+
+### 1.2 Diversion: a trapped key is removed from the input stream
+
+Baseline (T1) is 38 delivered characters. All rows below hold F1 for the same 3 s with
+`KEY 1,"X"`, and every row has `done==1`.
+
+| # | state of entry KEY 1 | fires | chars reaching `INKEY$` | conclusion |
+|---|---|---|---|---|
+| T1 | (no trap at all) | 0 | **38** | baseline |
+| T2 | **ON**, handler armed | 39 | **0** | trapped ⇒ **diverted** |
+| T5 | **ON**, handler slot **empty** | 0 | **0** | **diversion follows the STATE alone** — an enabled-but-unarmed key is silently swallowed |
+| T3 | **OFF** | 0 | **38** | delivered normally |
+| T4 | **STOP** | 0 | **38** | delivered normally — **`STOP` does not eat the key and does not latch** |
+| T6 | control: F2 held, only F1 trapped | 0 | **190** | untrapped keys unaffected (190 = 38 × F2's 5-char default) |
+
+T5 is the easy-to-miss one: diversion is a property of the entry **state**, not of
+having a handler. T3/T4 give the same `STOP` ≡ `OFF` narrowing T2 found for STRIG.
+
+### 1.3 Servicing, blocking input, priority
+
+| # | case | result | conclusion |
+|---|------|--------|------------|
+| W1 | press again inside a **measured** handler that provably returns (`done==2`) | fires **twice** | a press during **SERVICING is diverted and latched**, firing once after `RETURN` — the T2 rule |
+| U2 | F1 tapped while blocked in `INPUT` (`INPUT` provably reached) | **does not fire** | **no dispatch from inside blocking input** — a statement-boundary dispatcher is faithful |
+| K7 | SHIFT+F1 with both `KEY(1)` and `KEY(6)` ON | fires **KEY 6** | F6–F10 = SHIFT+F1–F5, and SHIFT is **discriminated** |
+| R11 | SHIFT+F1 with only `KEY(1)` ON | never fires | ditto, from the other side |
+| U3 | F1+F2 pressed in one frame | both fire; last serviced = **KEY 1** | … |
+| V2 | F1+F2+F3 in one frame | all three fire; last serviced = **KEY 1** | within the family the reference services **high-numbered first** (`ct_find` scans ascending — §6) |
+
+### 1.4 Parse surface
+
+| # | case | result |
+|---|------|--------|
+| K16 | `ON KEY GOSUB` with **10** slots | accepted |
+| K15 | an **11th** slot | **ERR 2** |
+| K11/K12 | `KEY(11) ON` / `KEY(0) ON` | **ERR 5** |
+| K8 | `ON KEY GOSUB 100,200` + `KEY(2) ON`, tap F2 | fires the *second* line — the list is positional |
+| K10 | `KEY OFF` (display form) then the trap form | accepted, still fires |
+
+**No deviation is needed for the over-long list**: unlike T2's 6th STRIG slot (which
+takes the reference machine down, and where zerobas ships a deliberate trappable
+`ERR 2`), the reference raises a clean `ERR 2` here by itself. `ERR 5` for an
+out-of-range `n` matches T2's `STRIG(5)` precedent exactly.
+
+---
+
+## 2. The model (own-design, observationally equivalent)
+
+> A function key **n** whose `ZTRAP` entry state is **ON or SERVICING** is **diverted**:
+> every key-delivery event for it — the initial make and each auto-repeat — is removed
+> from the input stream, and sets that entry's PENDING bit. While the state is **OFF or
+> STOP** the key is not diverted, not sampled, and never latched: it is delivered to the
+> input stream exactly as an untrapped key. Diversion depends only on the state, so an
+> enabled entry with no handler swallows its key and fires nothing.
+
+Sampling while ON *or* SERVICING is the identical rule T2 arrived at, and both states
+already have state bit 0 set (`ON=01`, `SERVICING=11`) while neither unsampled state
+does (`OFF=00`, `STOP=10`) — so the per-entry test stays one `bit 0,(hl)`, and
+`trap_return_check`'s existing re-raise of `TRAPPEND` on `RETURN` delivers §1.3/W1 for
+free. **No shadow-seeding rule is needed** (T2's subtlest mechanism): because the event
+is a delivery rather than a level, a key already held when the trap is enabled simply
+produces its next repeat delivery — there is no spurious edge to suppress.
+
+---
+
+## 3. RAM
+
+No new allocation: `ZTRAP` entries 8..17 (`ZTI_KEY1` = 8, `KEY n` → `7+n`) are already
+reserved and already zeroed by `trap_init` ([`basic/sysvars.inc:791`](../basic/sysvars.inc),
+[`basic/traps.asm:147`](../basic/traps.asm)). T3 adds only the detector's own scratch:
+a 2-byte previous-matrix snapshot (rows 6 and 7), a 1-byte "which key is repeating"
+and a 1-byte repeat countdown — 4 B, inside the ~53 B of headroom the arc spec §3 left
+in the VARTAB window.
+
+---
+
+## 4. The event source — and the one real design fork
+
+`event_poll` ([`basic/traps.asm:53`](../basic/traps.asm)) runs from `H.TIMI`, DI,
+register-transparent, and is **pinned to resident page-1 code** (the VBLANK `CALSLT`
+ban). The KEY source must live there too.
+
+**Detection** is settled by §1.1: read the raw matrix rows from **`NEWKEY`** (published
+work area, rows 6 and 7 carry SHIFT and F1–F5), fold SHIFT into the key number
+(1–5 / 6–10), and compare against the previous frame's snapshot. This is two RAM loads
+per frame plus a bit walk — no port I/O, no BIOS call, cheaper than T2's five `GTTRIG`
+calls. A `KEYBUF`-watching design is ruled out by R8/R9 (an empty expansion still fires).
+
+**Auto-repeat and diversion are the fork.** Both are genuinely observable (§1.1, §1.2)
+and both cost bytes; neither can be inherited from the host BIOS, because we detect the
+key from the raw matrix rather than from the BIOS's decode layer.
+
+**D-T3-1 — diversion fidelity.** Options, cheapest first:
+1. **No diversion** — the trapped key's expansion still reaches `INKEY$`/`INPUT`.
+   ~0 B, a clearly-visible documented deviation: the very common "menu driven by
+   `ON KEY` while the program also reads `INKEY$`" program would see junk.
+2. **Flush the type-ahead buffer on a trapped delivery** — set `GETPNT` := `PUTPNT`
+   when a trapped key is detected. ~15 B, needs no `FNKSTR` knowledge. Faithful
+   whenever the buffer holds only that expansion (the overwhelmingly common case);
+   discards genuinely-typed-ahead keys otherwise.
+3. **Remove exactly the expansion** — read the key's length from `FNKSTR` and rewind
+   `PUTPNT` by it. ~35–45 B and the most reference-like, but it assumes the expansion
+   is the *last* thing inserted.
+   *Recommendation: (2), with (3) as a stretch if the carve leaves room.*
+
+**D-T3-2 — auto-repeat.** (a) Replicate it with our own delay/rate constants sized from
+§1.1 (≈38 frames then every ~3), ~25–30 B; or (b) fire once per physical press, ~0 B, a
+documented deviation (a 3 s hold fires 1× instead of 39×). *Recommendation: (a)* — the
+count difference is large and easy for a program to depend on. Note that under (a) our
+repeat cadence is **ours**, not the host BIOS's, so a trapped key and an untrapped key
+on the same machine may repeat at slightly different rates; that residual is
+unavoidable given detection must be matrix-based, and belongs in `PROVENANCE.md`.
+
+**⚠️ D-T3-3 — the load-bearing unknown: ISR ordering. MEASURE BEFORE IMPLEMENTING.**
+Options (2) and (3) both assume `H.TIMI` runs **after** C-BIOS has scanned the keyboard
+and inserted this frame's expansion. If it runs **before**, the rewind lands a frame
+early and a tight `INKEY$` loop (~600 iterations/s measured, i.e. several per frame)
+can read the character first. **Do not design around a guess** — a ten-line probe that
+records `PUTPNT` at `H.TIMI` entry against a matrix-driven keypress settles it, and it
+must run **before** any T3 code is written. If the ordering is unfavourable, D-T3-1
+collapses to option (1).
+
+---
+
+## 5. Parsing — T3 is mostly a generalisation of T2, not new code
+
+T2 deliberately pre-paid for this: `trap_line_link`
+([`basic/program.asm:1331`](../basic/program.asm)) already factors the optional
+`$0E,lo,hi` handler-line resolver "for T3's `ON KEY` list."
+
+- **`ON KEY GOSUB <l1>,…,<l10>`** — `ex_on_strig`
+  ([`program.asm:1379`](../basic/program.asm)) is already exactly this loop with a base
+  index and a slot limit hard-coded (`ZTI_STRIG0`, 5). Generalise those two into
+  registers and `ON KEY` is a handful of bytes plus a `cp KEY_TOKEN` peek in `ex_on`
+  ([`program.asm:1063`](../basic/program.asm)). `KEY` is the single-byte token `$CC`
+  ([`sysvars.inc:1453`](../basic/sysvars.inc)), so the peek is cheaper than T2's
+  two-byte `$FF $A3`.
+- **`KEY(n) ON|OFF|STOP`** — `ex_strig_stmt`
+  ([`program.asm:1423`](../basic/program.asm)) is likewise the same parser with
+  `ZTI_STRIG0`/limit 5/`ERR 5` baked in. Generalise to (base, lo, hi) and the KEY form
+  is the `(`-peek in `ex_key` plus a parameter load. The T2 shadow-seeding tail (§2:
+  not needed for KEY) is skipped via the same parameter.
+- **`KEY ON` / `KEY OFF` disambiguation** — `ex_key`
+  ([`basic/screen.asm:196`](../basic/screen.asm)) currently accepts only `ON`/`OFF` and
+  falls through to `stmt_error`. Add a `(` test ahead of them (K10 confirms the display
+  form must keep working unchanged).
+
+Sharing rather than duplicating is what makes T3 affordable; see §7.
+
+---
+
+## 6. Dispatch and priority
+
+`check_traps`/`ct_find` ([`basic/traps.asm:229`](../basic/traps.asm)) need no structural
+change — the KEY entries are already in the table and already scanned.
+
+**D-T3-4 — intra-family order.** `ct_find` scans **ascending**, so with F1+F2+F3 pending
+in one frame it would service KEY 1 → 2 → 3; the reference services **3 → 2 → 1** (V2).
+The observable difference is only the *order* of handler execution when two function
+keys are struck within the same frame — rare, but cheap to match (scan the KEY band
+descending, or lay the band out reversed). *Recommendation: match the reference*; it
+costs a few bytes and removes a gratuitous divergence. If it proves more than ~10 B,
+accept ascending and document it.
+
+---
+
+## 7. Byte budget and funding
+
+**Measured now: page-1 free = 9 B, page-0 low region = 6 B** (`make basic-reloc`).
+T3 does not fit; a carve is required, exactly as T1 and T2 needed one.
+
+Estimate — deliberately pessimistic, because **T2's estimate was low by 70 B**:
+
+| part | est. |
+|---|---|
+| `event_poll` KEY detector (matrix decode + SHIFT fold + edge) | ~70 B |
+| auto-repeat (D-T3-2a) | ~30 B |
+| diversion (D-T3-1, option 2) | ~15 B |
+| `ON KEY GOSUB` list (generalising `ex_on_strig` + the `ex_on` peek) | ~30 B |
+| `KEY(n) ON/OFF/STOP` (generalising `ex_strig_stmt` + the `ex_key` peek) | ~35 B |
+| intra-family order (D-T3-4) | ~10 B |
+| **total** | **~190 B** |
+
+**Funding — the carve is available, and this is the good news of the slice.** A closure
+scout over page-1 (`carve_scout.py`, static call-graph walk against
+[[page0-tenant-eval-eviction-constraint]]: a page-0 tenant may call main page-1, RAM and
+BIOS, but nothing in `$2812–$3FFF`) found the cassette program-load cluster is a clean
+candidate:
+
+| cluster | page-1 size | page-0-low escapes |
+|---|---|---|
+| `do_cload` / `do_tape_prog` / `ctp_line` / `dpl_line` (`cload.asm`) | **906 B** | only `subrom_call`, `subrom_absent_error`, `vars_reset` — the tenant plumbing itself |
+| `bsv_cas_id` (`save.asm` cassette-save band) | ~847 B | only `subrom_call` |
+| `do_disk_bload` | ~253 B | only `subrom_call` |
+| `do_name`, `lrset_common`, `ex_paint`, `do_open`, `oo_num` | — | **eval-bound — not evictable** (624-node closures into the float pack) |
+
+The cassette verbs are cold by construction and the cassette band has been tenant-ised
+before (`casmatch_tenant`, `cal_refill`), so the pattern is established. **~190 B is a
+fifth of the available cluster** — a partial lift suffices, and it leaves headroom for
+T4. *Recommendation: lift a `cload.asm` slice into a page-0 tenant per the
+[`subrom-tenant-playbook`](subrom-tenant-playbook.md), measuring the real T3 cost first
+(the playbook's "measure + classify BEFORE implementing" rule).*
+
+---
+
+## 8. Gate
+
+`make key-trap-acceptance`, a new `probes/basic/basic_probe_key_trap.py` built on the
+matrix-hold harness (`probes/lib/omsx_repl.py` `holds`), differential against the
+VG-8020 like `basic_probe_strig_trap.py`. It promotes the round-3+ cases and inherits
+the §1.0 discipline as a **hard requirement**:
+
+- every case carries a `done` sentinel, and a case whose program did not finish is a
+  **failure, not a zero**;
+- the untrapped delivery baseline (T1) is itself an assertion — if it reads 0, the
+  apparatus is broken and the run is void;
+- no string building in probe programs; `TIME`-bounded windows;
+- handler-timing cases size their handler from the measured loop rate, and the window
+  is sized for **zerobas**, which runs an empty `FOR` loop ~7× slower than the VG-8020.
+
+Coverage: the §1.1 delivery/repeat table, the §1.2 diversion table including T5 and the
+T6 control, §1.3 (W1 servicing, U2 blocking-`INPUT`, K7/R11 SHIFT discrimination, V2
+priority), and the §1.4 parse/error surface. Plus host unit tests in `tests/test_traps.py`
+for the matrix→key-number fold and the repeat counter.
+
+---
+
+## 9. Sign-off items
+
+- **D-T3-1** — diversion fidelity: none / buffer flush / exact expansion removal. *Rec: flush.*
+- **D-T3-2** — auto-repeat: replicate with own constants / fire-once deviation. *Rec: replicate.*
+- **D-T3-3** — **ISR ordering must be measured before implementation**; an unfavourable
+  result forces D-T3-1 to "none". *No recommendation — it is an experiment, not a choice.*
+- **D-T3-4** — intra-family priority: match the reference's high-to-low, or accept
+  ascending as a documented divergence. *Rec: match if ≤ ~10 B.*
+- **D-T3-5** — the carve: confirm the `cload.asm` page-0-tenant lift as T3's funding.
+- **D-T3-6** — confirm `STOP` ≡ `OFF` for KEY (§1.2 T3/T4), the same narrowing of the
+  arc spec §3 wording that T2 took for STRIG (D-T2-3).
