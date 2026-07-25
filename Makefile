@@ -46,7 +46,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/randio-body.inc basic/fld-fill-body.inc \
          basic/lineedit-body.inc \
          basic/casmatch-body.inc basic/cal-refill-body.inc \
-         basic/fcbname-body.inc \
+         basic/fcbname-body.inc basic/bload-body.inc \
          basic/readdata-body.inc basic/tokskip-body.inc \
          basic/sysvars.inc
 ROM   := $(BUILD)/basic.rom
