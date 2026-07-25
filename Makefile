@@ -525,6 +525,19 @@ error-acceptance: $(DISK_ROM) repack-machine
 error-trap-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_error_trap.py $(if $(ONLY),--only $(ONLY),)
 
+# --- STOP interrupt-trap gate (interrupt-traps T1 -- docs/spec-traps-t1-stop-
+# reslice.md §9.2/§12). VG-8020 differential of ON STOP GOSUB / STOP ON|OFF|STOP:
+# a Ctrl-STOP TAP during a FOR delay must FIRE the handler (A), an armed-but-not-
+# enabled or STOP-OFF trap must NOT (B/B2), all matching the reference bit-for-bit.
+# The discriminating regime is a released TAP during a delay, not a held key in a
+# tight loop (both break there). Repack-only; HEAVY + oracle-dependent (boots
+# openMSX per case; needs the VG-8020 reference machine). The emulator-free fast
+# layer is tests/test_traps.py under `unit-test`. Scope with `make stop-trap-
+# acceptance ONLY=B2_stop_off`; `TRIALS=n` sets the robustness repeat count.
+stop-trap-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_stop_trap.py $(if $(ONLY),--only $(ONLY),) \
+	  $(if $(TRIALS),--trials $(TRIALS),)
+
 # --- D-F2-2 int-argument coercion gate (docs/spec-basic-df2-2-intarg-coercion.md)
 # VG-8020 differential: out-of-domain int args must raise the reference's Overflow
 # (ERR 6) / Illegal function call (ERR 5), not silently coerce. ASSERTED cases gate
@@ -662,6 +675,6 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance \
-        input-acceptance error-acceptance error-trap-acceptance intarg-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
+        input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance intarg-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
         graphics-floor-acceptance graphics-floor-teeth graphics-acceptance clean

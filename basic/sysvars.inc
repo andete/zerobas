@@ -820,6 +820,14 @@ TRAPSTK         equ     $E20D   ; service stack, TRAPSVC entries of [gsp:2][idx:
 TRAPSTK_MAX     equ     6       ; max nested in-service traps (6 * 3 = 18 B)
 TRAPSTK_END     equ     TRAPSTK + TRAPSTK_MAX*3   ; $E21F — still < $E240, clear of
                                 ; the retired STRTAB span ($E240..$E268 also freed)
+STOPGRACE       equ     $E220   ; 1 B: STOP-trap handler grace (R1, spec §12.2). Set by
+                                ; check_traps when the STOP trap fires; cleared by
+                                ; event_poll every VBLANK. While nonzero, rp_break does
+                                ; NOT break a SERVICING STOP handler — this mirrors the
+                                ; reference's INTFLG "cleared on fire, re-set next frame"
+                                ; window so the triggering Ctrl-STOP can't re-break the
+                                ; freshly-entered handler, yet a key still held one frame
+                                ; later DOES abort it (VG-8020: handlers are interruptible).
     ENDIF
 
 ; --- Phase 1: minimal string-variable store (own-design; see PROVENANCE.md) --

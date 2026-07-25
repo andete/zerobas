@@ -271,6 +271,15 @@ rp_exec:
                 call    BREAKX
                 pop     hl
                 jr      c,rp_break
+    IF ROM_BASE < $4000
+rp_trapchk:                                 ; interrupt-trap dispatch point (T1); also
+                                            ; re-entered by rp_break after latching STOP.
+                                            ; Gate is one RAM load in the no-trap case.
+                ld      a,(TRAPPEND)
+                or      a
+                call    nz,check_traps      ; HL = stmt ptr; CF=1 -> fired, CURLINE=handler
+                jr      c,rp_lp             ; fired: run the handler line fresh (RESUMEFLAG=0)
+    ENDIF
                 call    exec                ; run line (may set flags or hand off)
                 ld      a,(ENDFLAG)
                 or      a
@@ -295,6 +304,41 @@ rp_goto:
                 ld      (CURLINE),hl
                 jr      rp_lp
 rp_break:
+    IF ROM_BASE < $4000
+                ; STOP trap (T1, R1 -- spec-traps-t1-stop-reslice.md §6/§12.2). A
+                ; Ctrl-STOP with the STOP trap armed:
+                ;   ON        -> fire the trap (latch PENDING, dispatch), do NOT break.
+                ;   SERVICING -> we are INSIDE the handler. Within the one-VBLANK grace
+                ;                (STOPGRACE, set at fire, cleared by event_poll) ignore
+                ;                the key so the triggering Ctrl-STOP cannot re-break the
+                ;                freshly-entered handler; once the grace has expired a key
+                ;                still held DOES abort it (VG-8020: handlers are Ctrl-STOP
+                ;                interruptible -- oracle-confirmed 2026-07-25).
+                ;   OFF/STOP  -> the classic break.
+                ; The reference detects Ctrl-STOP via an interrupt latch (INTFLG) cleared
+                ; on fire; C-BIOS populates no INTFLG, so STOPGRACE mirrors just the
+                ; "fresh handler is protected for one frame" window that matters here --
+                ; the live BREAKX already catches the press itself (R3 experiment).
+                ld      a,(ZTRAP+ZTI_STOP*ZTRAP_ENTSZ)
+                and     ZTS_STATE_MASK
+                cp      ZTS_ON
+                jr      z,rp_stop_fire
+                cp      ZTS_SERVICING       ; inside the STOP handler?
+                jr      nz,rp_real_break    ; OFF / suspended -> the classic break
+                ld      a,(STOPGRACE)       ; SERVICING: still within the fire-frame grace?
+                or      a
+                jr      nz,rp_trapchk       ; grace live -> ignore key, run the handler stmt
+                jr      rp_real_break       ; grace expired -> held key aborts the handler
+rp_stop_fire:
+                push    hl                  ; HL = resume stmt ptr (guard across the set)
+                ld      hl,ZTRAP+ZTI_STOP*ZTRAP_ENTSZ
+                set     7,(hl)              ; latch STOP PENDING
+                ld      a,1
+                ld      (TRAPPEND),a        ; wake the run-loop dispatcher
+                pop     hl
+                jr      rp_trapchk          ; dispatch now, HL intact (do NOT break)
+rp_real_break:
+    ENDIF
                 ; Ctrl-STOP pressed between lines/statements. HL = the statement
                 ; that was about to run -> the CONT resume point. do_break records
                 ; it, prints "Break in <line>", and sets ENDFLAG; we then return
@@ -383,10 +427,39 @@ print_string_stopcr:
 ; STOP halts the program exactly like END, but ALSO records where to continue so
 ; a following CONT resumes at the statement after STOP. (END does not: it ends
 ; the run with no resume point, so CONT after END is "Can't CONTINUE".)
-; HL enters on the STOP token.
+; HL enters on the STOP token. Repack (T1): `STOP ON|OFF|STOP` instead arms the
+; STOP interrupt trap's tri-state (spec-traps-t1-stop-reslice.md §5.2); a bare STOP
+; (EOL / ':' / anything else) still halts. Lean stays `inc hl / jp do_break`
+; byte-identically (both IF blocks vanish).
 ex_stop:
-                inc     hl                  ; HL = resume point (statement after STOP)
-                jp      do_break            ; record + "Break in <line>", set ENDFLAG
+                inc     hl                  ; past STOP token
+    IF ROM_BASE < $4000
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ON_TOKEN            ; STOP ON   -> enable
+                jr      z,es_on
+                cp      OFF_TOKEN           ; STOP OFF  -> disable (+clear PENDING)
+                jr      z,es_off
+                cp      STOP_TOKEN          ; STOP STOP -> suspend
+                jr      z,es_stop
+    ENDIF
+                jp      do_break            ; bare STOP -> record + "Break in <line>"
+    IF ROM_BASE < $4000
+es_on:          ld      a,ZTS_ON
+                jr      es_set
+es_off:         ld      a,ZTS_OFF
+                jr      es_set
+es_stop:        ld      a,ZTS_STOP
+es_set:
+                inc     hl                  ; consume the ON/OFF/STOP sub-keyword
+                push    hl                  ; guard the exec-continue ptr across set_state
+                ld      hl,ZTRAP+ZTI_STOP*ZTRAP_ENTSZ
+                call    set_state
+                pop     hl                  ; HL = cursor past the sub-keyword (':'/EOL)
+                jp      exec_stmt           ; continue the line -- a bare `ret` here would
+                                            ; SWALLOW the rest of the line (STOP ON:STOP OFF
+                                            ; left OFF a no-op; VG-8020 differential caught it)
+    ENDIF
 
 ; --- ex_cont: CONT statement — resume a STOPped / broken program -------------
 ; If a CONT resume point is live (set by STOP or Ctrl-STOP and not invalidated by
@@ -634,6 +707,15 @@ egs_over:
 ; Pop the top GOSUB frame and resume at its saved (CURLINE, resume-ptr) via the
 ; RUN loop's mid-line resume path. (HL enters on the RETURN token.)
 ex_return:
+    IF ROM_BASE < $4000
+                ; interrupt-trap re-enable (T1): if any trap is servicing and THIS
+                ; RETURN's frame is the trap's own (GSP match), auto-resume it to ON
+                ; before the normal pop (spec-traps-t1-stop-reslice.md §8). The gate
+                ; is one RAM load on every RETURN in the common (no-trap) case.
+                ld      a,(TRAPSVC)
+                or      a
+                call    nz,trap_return_check
+    ENDIF
                 ld      hl,(GSP)            ; empty stack -> RETURN without GOSUB
                 ld      de,GOSUB_STK
                 or      a
@@ -980,6 +1062,8 @@ ex_on:
                 call    skip_spaces         ; A = (hl)
                 cp      ERROR_TOKEN         ; ON ERROR GOTO / GOTO 0 (error-handling S2b)
                 jp      z,ex_on_error       ; -- NOT an <expr> ON...GOTO/GOSUB list
+                cp      STOP_TOKEN          ; ON STOP GOSUB <line> (interrupt-traps T1)
+                jp      z,ex_on_stop        ; -- arm the STOP trap handler
     ENDIF
                 call    eval                ; DE = N (1-based index), HL past expression
     IF ROM_BASE < $4000
@@ -1197,4 +1281,38 @@ oe_disable:
                                             ; touch A) -- ERR-reset-on-RESUME follow-up
                                             ; reclaimed the redundant xor a
                 jp      exec_stmt
+
+; --- ex_on_stop: ON STOP GOSUB <line> -- arm the STOP interrupt trap ----------
+; Reached from ex_on's sibling peek (HL on the STOP token). Stores the resolved
+; handler LINK into the ZTRAP STOP entry; state is left as-is (arm != enable --
+; `STOP ON` enables). Undefined line -> Undefined line number, like GOSUB. Does
+; not redirect flow (continues the same line, as ON ERROR GOTO does).
+; spec-traps-t1-stop-reslice.md §5.1.
+ex_on_stop:
+                inc     hl                  ; past STOP_TOKEN
+                call    skip_spaces
+                cp      GOSUB_TOKEN         ; syntax: ON STOP *GOSUB* <line>
+                jp      nz,stmt_error
+                inc     hl
+                call    skip_spaces
+                cp      LINENO_TOKEN        ; $0E,lo,hi expected
+                jp      nz,stmt_error
+                inc     hl
+                ld      c,(hl)              ; handler line number, LE
+                inc     hl
+                ld      b,(hl)
+                inc     hl                  ; HL -> cursor past the $0E operand
+                push    hl                  ; guard cursor across find_line_bc
+                call    find_line_bc        ; CF set + HL = link addr if found
+                jr      nc,eos_undef
+                ex      de,hl               ; DE = handler LINK
+                ld      hl,ZTRAP+ZTI_STOP*ZTRAP_ENTSZ+1
+                ld      (hl),e              ; store handler field (2 B)
+                inc     hl
+                ld      (hl),d
+                pop     hl                  ; HL = cursor (continue the same line)
+                jp      exec_stmt
+eos_undef:
+                pop     hl                  ; balance the stack (aborting)
+                jp      ex_goto_undef       ; undefined line -> Undefined line number
     ENDIF
