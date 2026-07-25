@@ -40,6 +40,7 @@
 ; main ROM uses, so a sub-ROM tenant's RAM scratch is byte-address-identical to
 ; the main ROM's — no marshalling translation. sysvars.inc is pure equates
 ; (emits no bytes), so it does not perturb this ROM's $0000-based layout.
+SUB_BUILD       equ     1   ; shared body .inc files that differ by side test this
 ROM_BASE        equ     $2812
                 include "basic/sysvars.inc"
 
@@ -462,6 +463,19 @@ sub_p1_table:
                                                 ;   trap arc. Reaches the low-region float
                                                 ;   pack (fp_sqrt pattern); bounces
                                                 ;   eval/parse_coord to ex_circle.
+                jp      bload_tenant            ; index 20 (SUBROM_IDX_BLOAD): the whole
+                                                ;   BLOAD verb body -- device dispatch,
+                                                ;   the cassette load loop and the disk
+                                                ;   load loop (docs/spec-traps-t3-key.md
+                                                ;   §7.6), evicted from main page 1 to
+                                                ;   fund interrupt-traps T3. PAGE 1 on
+                                                ;   purpose: it sits beside fatprim and
+                                                ;   calls fat_mount/fat_find/fat_open/
+                                                ;   fat_read_file_sector SUB-LOCALLY,
+                                                ;   which is what makes the carve
+                                                ;   possible. Main-ROM stub is
+                                                ;   basic/bload.asm `do_bload`; the ,R
+                                                ;   handoff stays resident there.
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -614,6 +628,13 @@ sub_p1_ping:
 ; (fp_add/sub/mul/div/cmp, dig15_iszero, widen_uint_to, flt_to_int16 -- all
 ; low-region, the fp_sqrt pattern). Bounces eval/parse_coord back to ex_circle.
                 include "circleparse.asm"
+
+; BLOAD verb body (index 20 = bload_tenant, sub/bload.asm): the whole verb --
+; device dispatch, the cassette load loop, the disk load loop -- evicted from
+; main page 1 to fund interrupt-traps T3 (docs/spec-traps-t3-key.md §7.6). PAGE 1
+; so it can call fatprim's fat_mount/fat_find/fat_open/fat_read_file_sector
+; sub-locally; must therefore follow fatprim.asm and fcbname.asm here.
+                include "bload.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF

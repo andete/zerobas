@@ -12,7 +12,7 @@
 ;
 ; WHY THE BODY PORTS UNCHANGED. Every name it calls resolves correctly on BOTH
 ; sides without editing a single line:
-;   parse_disk_fcb / parse_close_run / skip_spaces / upcase — resident routines
+;   parse_disk_fcb / parse_close_run / bl_skip_spaces / bl_upcase — resident routines
 ;     in the lean cart; sub-local clones co-located in sub/bload.asm for the
 ;     tenant (the resident originals must STAY resident regardless: they have
 ;     61/9/6 external callers between them, so they are not evicted, only copied).
@@ -20,7 +20,7 @@
 ;     lean cart; in the sub-ROM they bind to sub-local bodies whose fat_mount /
 ;     fat_find / fat_open / fat_read_file_sector are the REAL implementations
 ;     (sub/fatprim.asm), so the marshalling round-trip disappears entirely.
-;   load_error — the resident reporter (TAPIOF + ERRMARK + print + ret) in the
+;   bl_load_error — the resident reporter (TAPIOF + ERRMARK + print + ret) in the
 ;     lean cart; sub-local in the tenant it does TAPIOF + ERRMARK + sets BL_STAT
 ;     and rets, with the SAME stack behaviour, so control flow is unchanged and
 ;     the resident stub does the reporting once on the way out.
@@ -38,10 +38,10 @@
 
 do_bload:
                 ; --- parse: "<device>" [ ,R ] ------------------------------
-                call    skip_spaces
+                call    bl_skip_spaces
                 ld      a,(hl)
                 cp      '"'                 ; opening quote required
-                jp      nz,load_error
+                jp      nz,bl_load_error
                 inc     hl
                 ; --- device dispatch: "CAS:" -> tape, else -> disk ----------
                 ; Peek for the literal "CAS:" prefix. Match it verbatim and
@@ -56,7 +56,7 @@ parse_dev:
                 jr      z,is_tape           ; matched all of "CAS:" -> tape
                 ld      c,a                 ; expected (uppercase) char
                 ld      a,(hl)              ; typed char
-                call    upcase              ; case-insensitive (typed may be lower)
+                call    bl_upcase              ; case-insensitive (typed may be lower)
                 cp      c
                 jp      nz,is_disk          ; prefix mismatch -> disk path (out of jr range)
                 inc     hl
@@ -66,32 +66,32 @@ is_tape:
                 pop     af                  ; discard saved filename start
                 ; HL now points just past "CAS:"; tape path continues verbatim.
                 call    parse_close_run     ; closing quote + optional ,R / ,S
-                jp      c,load_error
+                jp      c,bl_load_error
                 ld      a,(VRAM_FLAG)
                 or      a
-                jp      nz,load_error       ; ,S VRAM-from-tape not supported here
+                jp      nz,bl_load_error       ; ,S VRAM-from-tape not supported here
                 ; --- open the tape and skip the file-header block's tone ---
                 call    TAPION              ; sync block 1 (file header)
-                jp      c,load_error
+                jp      c,bl_load_error
 
                 ; --- file-header block: 10x BINARY_ID + 6-char filename ---
                 ; spec-bload-r.md §1: header block is 16 bytes; byte 0 is the
                 ; binary-file id. We verify the id and discard the rest.
                 call    TAPIN
-                jp      c,load_error
+                jp      c,bl_load_error
                 cp      BINARY_ID           ; must be a binary (BSAVE) file
-                jp      nz,load_error
+                jp      nz,bl_load_error
                 ld      b,15                ; remaining header bytes
 skip_hdr:
                 push    bc                  ; TAPIN trashes all regs
                 call    TAPIN
                 pop     bc
-                jp      c,load_error
+                jp      c,bl_load_error
                 djnz    skip_hdr
 
                 ; --- data block: skip its tone, then read the 6-byte header --
                 call    TAPION              ; sync block 2 (data)
-                jp      c,load_error
+                jp      c,bl_load_error
 
                 ; spec-bload-r.md §1: start(LE), end(LE), exec(LE).
                 ; TAPIN trashes every register, so store each byte immediately.
@@ -113,7 +113,7 @@ skip_hdr:
                 ; all registers on every call.
 load_loop:
                 call    TAPIN
-                jp      c,load_error
+                jp      c,bl_load_error
                 ld      hl,(CURPTR)
                 ld      (hl),a              ; store the byte
                 ld      de,(ENDPTR)
@@ -136,16 +136,25 @@ load_done:
 ; §3 / disk BLOAD: plain BLOAD returns; ,R jumps to the exec address (RUNFLAG was
 ; set by the parser; CURPTR/ENDPTR/EXECPTR are filled by whichever load ran).
 load_handoff:
+    IF SUB_BUILD
+                ; TENANT: do nothing. This tail ends in `jp (hl)` INTO THE LOADED
+                ; PROGRAM and never returns -- inside the tenant's CALSLT that would
+                ; leave main page 1 switched out forever. Return normally instead and
+                ; let the resident stub (basic/bload.asm) perform the handoff; RUNFLAG
+                ; and EXECPTR are already in RAM for it.
+                ret
+    ELSE
                 ld      a,(RUNFLAG)
                 or      a
                 ret     z                   ; plain BLOAD: return to caller
                 ld      hl,(EXECPTR)
                 jp      (hl)
+    ENDIF
 
 ; ===========================================================================
 ; Disk path: parse a disk filename into the scratch FCB, then route to the
 ; placeholder. This item is PARSE-ONLY — do_disk_bload deliberately falls
-; through to load_error; the NEXT TODO item ("Disk BLOAD execute") fills it in.
+; through to bl_load_error; the NEXT TODO item ("Disk BLOAD execute") fills it in.
 ;
 ; On entry to is_disk: the top of the stack holds the filename start (the
 ; char after the opening quote), and HL points partway through the prefix
@@ -160,59 +169,12 @@ is_disk:
                 call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
                 ; --- shared closing-quote + ,R parse -----------------------
                 call    parse_close_run
-                jp      c,load_error
+                jp      c,bl_load_error
                 ; FCB is fully built (DISK_FCB_DRV + DISK_FCB_NAME) and RUNFLAG
                 ; is set. Hand off to the disk loader.
                 jp      do_disk_bload
 
-; parse_disk_fcb — parse a disk filename into the scratch FCB at DISK_FCB.
-; Shared by BOTH do_bload's disk path (is_disk) and do_load's disk path so the
-; drive-letter + 8.3-name logic lives in one place.
-;   in:  HL -> first char of the quoted name (the byte after the opening '"'),
-;             possibly an "A:"/"B:" drive prefix.
-;   out: DISK_FCB_DRV = drive code (1=A, 2=B; default A when no prefix);
-;        DISK_FCB_NAME = the 11-byte space-padded upper-case 8.3 field;
-;        HL -> the closing '"' (so parse_close_run resumes there).
-; On a malformed drive spec or a name that doesn't fit 8.3, jumps to load_error
-; (does not return). Clobbers A, B, C, DE, HL.
-parse_disk_fcb:
-                ; --- detect an optional drive letter "X:" -------------------
-                ; "A:" / "B:" (case-insensitive). Default drive = A when absent.
-                ; Look at name[0] and name[1]: a letter followed by ':' is a
-                ; drive spec; anything else is a bare filename on drive A.
-                ld      a,1                 ; default drive code = A
-                ld      (DISK_FCB_DRV),a
-                ld      a,(hl)
-                call    upcase
-                ld      c,a                 ; C = candidate drive letter (upper)
-                inc     hl
-                ld      a,(hl)              ; second char
-                cp      ':'
-                jr      nz,no_drive         ; not "X:" -> bare name, drive A
-                ; second char is ':' -> first char must be A or B
-                ld      a,c
-                cp      'A'
-                jr      z,drive_a
-                cp      'B'
-                jr      z,drive_b
-                jp      load_error          ; "X:" with X not A/B -> reject
-drive_a:
-                ld      a,1
-                jr      set_drive
-drive_b:
-                ld      a,2
-set_drive:
-                ld      (DISK_FCB_DRV),a
-                inc     hl                  ; HL -> char after the ':'
-                jr      build_name
-no_drive:
-                dec     hl                  ; undo the second-char peek; HL = name[0]
-build_name:
-                ; HL -> first char of the bare filename (after any "X:").
-                ; --- convert to the 11-byte 8.3 field at DISK_FCB_NAME ------
-                call    build_83_name       ; HL advanced to the closing quote
-                jp      c,load_error        ; name didn't fit 8.3 / malformed
-                ret
+                include "basic/pdfcb-body.inc"
 
 ; do_disk_bload — real disk load via the loader-side FAT12 engine over DSKIO.
 ;
@@ -237,34 +199,34 @@ do_disk_bload:
                 ; (1) disk ROM slot must have been recorded by the INIT scan.
                 ld      a,(DISKSLOT_OK)
                 or      a
-                jp      z,load_error
+                jp      z,bl_load_error
                 ; (2) open the file via the FAT12 engine (mount + find + prime).
                 call    fat_io_open
-                jp      c,load_error        ; not found / mount / I-O error
+                jp      c,bl_load_error        ; not found / mount / I-O error
                 ; (3a) header byte 0 must be the BSAVE disk marker $FE.
                 call    fat_io_getbyte
-                jp      c,load_error
+                jp      c,bl_load_error
                 cp      BSAVE_DISK_ID
-                jp      nz,load_error
+                jp      nz,bl_load_error
                 ; header bytes 1..6: start(LE), end(LE), exec(LE) into the same
                 ; CURPTR/ENDPTR/EXECPTR vars the tape path uses.
                 call    fat_io_getbyte
-                jp      c,load_error
+                jp      c,bl_load_error
                 ld      (CURPTR),a          ; start low
                 call    fat_io_getbyte
-                jp      c,load_error
+                jp      c,bl_load_error
                 ld      (CURPTR+1),a        ; start high
                 call    fat_io_getbyte
-                jp      c,load_error
+                jp      c,bl_load_error
                 ld      (ENDPTR),a          ; end low
                 call    fat_io_getbyte
-                jp      c,load_error
+                jp      c,bl_load_error
                 ld      (ENDPTR+1),a        ; end high
                 call    fat_io_getbyte
-                jp      c,load_error
+                jp      c,bl_load_error
                 ld      (EXECPTR),a         ; exec low
                 call    fat_io_getbyte
-                jp      c,load_error
+                jp      c,bl_load_error
                 ld      (EXECPTR+1),a       ; exec high
                 ; (3b) stream data bytes into [start..end] inclusive. With ",S"
                 ; (VRAM_FLAG) the start/end/exec header words are VRAM addresses
@@ -272,7 +234,7 @@ do_disk_bload:
                 ; write; the loop shape is otherwise identical.
 disk_load_loop:
                 call    fat_io_getbyte
-                jp      c,load_error        ; ran out before reaching end -> error
+                jp      c,bl_load_error        ; ran out before reaching end -> error
                 ld      hl,(CURPTR)
                 ld      b,a                 ; save the byte across the flag test
                 ld      a,(VRAM_FLAG)

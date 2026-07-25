@@ -36,6 +36,9 @@
 ROM_BASE:       equ     $4000
     ENDIF
 
+; SUB_BUILD distinguishes this main-ROM assembly from sub/sub.asm, which shares
+; several body .inc files with it (bload-body.inc's ,R handoff differs by side).
+SUB_BUILD       equ     0
                 include "basic/sysvars.inc"
 
                 org     ROM_BASE

@@ -850,25 +850,16 @@ STOPGRACE       equ     $E220   ; 1 B: STOP-trap handler grace (R1, spec §12.2)
                                 ; window so the triggering Ctrl-STOP can't re-break the
                                 ; freshly-entered handler, yet a key still held one frame
                                 ; later DOES abort it (VG-8020: handlers are interruptible).
-; --- shared trap-PARSER parameters (interrupt-traps T3, spec §5) -------------
-; T2's `ON STRIG GOSUB` list parser and `STRIG(n) ON|OFF|STOP` parser hard-coded
-; the band base, the slot count, the argument origin and the shadow-seeding rule.
-; T3 needs the same two parsers for a band with a different base, ten slots, a
-; 1-based argument, a reversed layout and no seeding -- so those five constants
-; became these parameters. Sharing rather than duplicating is what makes T3 fit.
-; PURE PARSER SCRATCH: written immediately before each use, never read across a
-; statement, so they need no init -- which is why they sit ABOVE STOPGRACE,
-; outside the span trap_init zeroes ($E1D1..$E220).
-TRAPBASE        equ     $E221   ; 1 B: the band's slot-0 ZTRAP entry index
-TRAPNSLOT       equ     $E222   ; 1 B: slots in the band (STRIG 5, KEY 10)
-TRAPREV         equ     $E223   ; 1 B: non-zero = the band is laid out REVERSED, so
-                                ; ct_find's ascending scan services it high-first
-                                ; (D-T3-4: the reference services KEY 3 -> 2 -> 1)
-TRAPSEED        equ     $E224   ; 1 B: non-zero = seed the ZTS_SHADOW edge shadow on an
-                                ; OFF->ON transition. Set for STRIG (a LEVEL trap: a
-                                ; trigger already held must not fake an edge), clear for
-                                ; KEY (a DELIVERY trap: no edge exists to suppress)
-TRAPARGLO       equ     $E225   ; 1 B: lowest legal n (STRIG 0, KEY 1); below it -> ERR 5
+; --- BLOAD tenant marshalling (docs/spec-traps-t3-key.md §7.6) ---------------
+; The BLOAD verb body lives in a sub-ROM PAGE-1 tenant (sub/bload.asm). subrom_call
+; clobbers every register and forces CF=0 on return, so the one input and the one
+; output ride through RAM -- the fatprim/fcbname pattern. These need their OWN
+; cells rather than aliasing DISKOP_HL/DISKOP_STATUS: unlike fcbname (which runs
+; strictly in the PARSE phase, before any fat_io_* primitive), the BLOAD tenant
+; holds its status ACROSS the whole load, during which the fatprim cells are live
+; on every getbyte.
+BL_PTR          equ     $E221   ; 2 B: main -> tenant, the token cursor after BLOAD
+BL_STAT         equ     $E223   ; 1 B: tenant -> main, 0 = loaded, 1 = load_error
     ENDIF
 
 ; --- Phase 1: minimal string-variable store (own-design; see PROVENANCE.md) --
@@ -2745,6 +2736,16 @@ SUBROM_IDX_CIRCLEPARSE equ 19  ; circleparse_tenant (sub/circleparse.asm): CIRCL
                                 ; eval/parse_coord back to the resident ex_circle servicer
                                 ; via GFX_DREQ/GFX_DPTR. IX = SUBROM_ENTRY_BASE_P1 +
                                 ; 3*SUBROM_IDX_CIRCLEPARSE.
+SUBROM_IDX_BLOAD     equ 20     ; bload_tenant (sub/bload.asm): the whole BLOAD verb
+                                ; body -- device dispatch, the cassette load loop and
+                                ; the disk load loop -- evicted from main page 1 to fund
+                                ; interrupt-traps T3 (docs/spec-traps-t3-key.md §7.6).
+                                ; A PAGE-1 tenant specifically so it sits beside
+                                ; fatprim_tenant and calls fat_mount/fat_find/fat_open/
+                                ; fat_read_file_sector SUB-LOCALLY -- which is what makes
+                                ; the carve possible at all. Input BL_PTR, output BL_STAT;
+                                ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BLOAD. The ,R
+                                ; handoff stays RESIDENT (basic/bload-body.inc).
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

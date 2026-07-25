@@ -23,7 +23,50 @@
 ; A disk filename needs NO new token: BLOAD arguments are kept verbatim ASCII in
 ; the crunch stream (spec-tokenise.md), so the tokeniser is untouched.
 
+; The shared bodies (bload-body.inc, pdfcb-body.inc) call the interpreter's
+; helpers under bl_-prefixed names so each side can bind them: resident these are
+; zero-byte EQUs onto the real routines, so the lean cart stays byte-identical;
+; in the tenant they bind to page-1-local clones (sub/bload.asm).
+bl_skip_spaces  equ     skip_spaces
+bl_upcase       equ     upcase
+bl_load_error   equ     load_error
+
+    IF ROM_BASE < $4000
+; --- do_bload: resident marshalling stub (repack build) ---------------------
+; The whole verb body (do_bload..disk_load_fin) moved to sub/bload.asm, a PAGE-1
+; tenant co-resident with fatprim (docs/spec-traps-t3-key.md §7.6). Marshal the
+; one input (HL = token cursor) and the one output (BL_STAT) through RAM:
+; subrom_call clobbers every register and forces CF=0 on return.
+;
+; The `,R` handoff CANNOT move: it ends in `jp (hl)` into the loaded program and
+; never returns, so running it inside the tenant's CALSLT would leave main page 1
+; switched out forever. The tenant returns normally and we do the handoff here.
+do_bload:
+                ld      (BL_PTR),hl         ; token cursor -> tenant
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BLOAD
+                call    subrom_call
+                jp      c,subrom_absent_error
+                ld      a,(BL_STAT)
+                or      a
+                jp      nz,load_error       ; the tenant hit load_error; report once here
+                jp      load_handoff        ; plain BLOAD returns; ,R jumps to EXECPTR
+
+; parse_disk_fcb stays RESIDENT even though the verb around it left: nine callers
+; outside bload.asm use it (do_files, do_kill, do_name, do_open, do_run, ex_merge,
+; bsv_is_disk, sav_is_disk, dl_is_disk). The tenant gets its own copy via
+; bload-body.inc; a sub-ROM duplicate costs no main page-1 bytes.
+                include "basic/pdfcb-body.inc"
+
+; load_handoff — shared ,R exec handoff, RESIDENT in both builds (see above).
+load_handoff:
+                ld      a,(RUNFLAG)
+                or      a
+                ret     z                   ; plain BLOAD: return to caller
+                ld      hl,(EXECPTR)
+                jp      (hl)
+    ELSE
                 include "basic/bload-body.inc"
+    ENDIF
 
 ; build_83_name — convert the filename at HL into the 11-byte 8.3 field at
 ; DISK_FCB_NAME. EVICTED to a sub-ROM PAGE-1 tenant (SUBROM_IDX_FCBNAME) in the
