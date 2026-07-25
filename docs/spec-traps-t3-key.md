@@ -577,6 +577,72 @@ Low region lands tight; promoting a little more than 60 B buys margin, and §7.4
 > are estimates, and §7.2 is what estimates are worth here (1.8× low). What *is* solid is
 > the 381/89 split — that comes from an exact external-caller census, not a judgement.
 
+### 7.7 AS BUILT — the carve landed, page 1 9 B → 271 B
+
+Executed (`35c7bb7`, `b9a3003`). `sub/bload.asm` is `SUBROM_IDX_BLOAD`, a page-1
+tenant beside `fatprim`, and the projected mechanism held: it calls `fat_mount` /
+`fat_find` / `fat_open` / `fat_read_file_sector` **sub-locally**, so the
+`subrom_call` that made the cluster look un-evictable is simply gone.
+
+| | before | after |
+|---|---|---|
+| main page-1 free | 9 B | **271 B** (+262) |
+| low region free | 6 B | 6 B (untouched) |
+| lean `basic.rom` | — | **byte-identical** (`9e723a02…`) |
+| closure gates | 20 page-1 tenants | **21**, no main-page-1 escape |
+
+**+262 B, not the projected ~356 B** — the estimate ran 26% optimistic again
+(§7.2's standing lesson). The difference is the resident residue the projection
+under-counted: `parse_disk_fcb`, `parse_close_run`, `load_error`+`err_io`,
+`dev_cas` and a ~30 B stub all stay.
+
+**It funds T3's page-1 half with room to spare.** Flipping `TRAPS_T3` to 1 now
+measures **page 1: 75 B FREE** (was 176 B over). The low-region half is untouched
+at 60 B over — that is the promotion step (§7.4: 4551 B eligible), not this carve.
+
+Three shared `.inc` files carry the split, the `fcbname-body.inc` precedent one
+level larger: `bload-body.inc` (the verb), `pdfcb-body.inc` (`parse_disk_fcb`,
+split out because nine external callers keep it resident) and `fatio-body.inc`
+(`fat_io_open`/`fat_io_getbyte` — identical source that is a cross-slot round trip
+resident and four plain in-page calls in the tenant).
+
+`load_handoff` is `SUB_BUILD`-conditional: its `,R` tail ends in `jp (hl)` into the
+loaded program and never returns, so inside the tenant's `CALSLT` it would leave
+main page 1 switched out forever. The tenant returns; the resident stub jumps.
+
+**Two things the build caught that the static analysis had not:** `fatio-body.inc`
+first swept in `fia_walk`/`fia_walked`/`fia_empty`, which already exist sub-side;
+and `check_tenant_closure --page1` rejected `bl_upcase equ fcb_upcase`, because it
+tells sub-local from switched-out-main **by name** and an alias reads as an escape
+— answered with a real 6-byte label rather than by weakening a standing gate.
+
+#### 7.7.1 Verification — what is proven, and what is NOT
+
+✅ **Disk BLOAD: verified.** `make diskbasic-acceptance-repack` → **34/34 verbs
+converged**, with the tenant live, including the `BLOAD` and `BSAVE/BLOAD(VRAM)`
+cells. The shared routines are covered by the same run from their *other* callers:
+`LOAD`, `RUN"file"`, `LOAD(ASCII)`, `FILES(wild)`, `KILL(wild)`, `OPEN(LEN=)` all
+exercise `parse_disk_fcb` / `parse_close_run` / `fat_io_*`.
+
+🔴 **Cassette BLOAD: NOT verified — a PRE-EXISTING coverage gap, not a regression.**
+`basic_probe_bload.py` (the `BLOAD"CAS:",R` landmark probe) **times out** on
+`C-BIOS_MSX1_EU_REPACK_DISK`. Before reading anything into that, the arc's control
+rule was applied: the identical probe was run against the **pre-carve** build
+(`35c7bb7`) on the same machine, and it **times out identically**. So the gap
+predates this work — the repack machine carries no cassette completions, and
+`bload.asm`'s own comment records that bare C-BIOS's `TAPION`/`TAPIN` are stubs
+that always set CF. No installed machine carries both the carved build and a
+working tape device.
+
+> **This is exactly the arc's standing trap and it is NOT closed here.** The
+> cassette path through the tenant — including the new `ei`/`di` window in
+> `bload_tenant` and the `SUB_BUILD` handoff — **has never executed**. It builds,
+> its closure is gated, and that is all. **Open task: a repack machine variant
+> carrying the cassette completions, then re-run `basic_probe_bload.py`.** Until
+> then, treat tape BLOAD on the repack build as unverified.
+
+---
+
 ### 7.5 Duplicate-and-specialise, measured — the 76 B reading was MISLEADING
 
 §7.2's "the generalisation costs 76 B" invited an obvious conclusion: duplicate T2's two
