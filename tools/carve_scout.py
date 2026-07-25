@@ -113,6 +113,10 @@ def main() -> int:
     ap.add_argument("--sources", default="basic/*.asm", help="main call-graph glob")
     ap.add_argument("--plumbing", default=",".join(DEFAULT_PLUMBING))
     ap.add_argument("--members", action="store_true", help="list moved labels, largest first")
+    ap.add_argument("--census", action="store_true",
+                    help="with --files: split the file into SHARED service routines "
+                         "(called from outside it, so they must stay resident) and the "
+                         "PRIVATE verb (the actually-movable part)")
     args = ap.parse_args()
 
     syms = load_syms(args.sym)
@@ -132,6 +136,31 @@ def main() -> int:
         if args.members:
             for n in sorted(in_p1, key=lambda x: -span.get(x, 0))[:25]:
                 print(f"      {span.get(n,0):5} B  {n} @ ${syms[n]:04X}")
+        if args.census:
+            # A file usually hosts BOTH a verb and shared service routines. Only the
+            # verb moves: anything called from OUTSIDE the file must stay resident for
+            # those callers. Sizing without this split is how the same carve measured
+            # 470 B and 381 B -- see docs/spec-traps-t3-key.md §7.6.
+            callers = {}
+            for src, tgts in graph.items():
+                if src in moved:
+                    continue
+                for t in tgts:
+                    if t in in_p1:
+                        callers.setdefault(t, set()).add(src)
+            shared = sorted(callers, key=lambda n: -len(callers[n]))
+            priv = in_p1 - set(shared)
+            print(f"\n    SHARED (called from outside -- must stay resident): "
+                  f"{sum(span.get(n,0) for n in shared)} B")
+            for n in shared:
+                cs = sorted(callers[n])
+                print(f"      {span.get(n,0):5} B  {n:22} {len(cs):3} ext callers"
+                      f"  e.g. {', '.join(cs[:3])}")
+            print(f"    PRIVATE (the movable verb): "
+                  f"**{sum(span.get(n,0) for n in priv)} B** in {len(priv)} labels")
+            print("      note: an entry point with exactly one external caller is the "
+                  "verb's own\n            entry -- that caller becomes the tenant stub, "
+                  "so it moves WITH the verb.")
         print()
 
     if not args.entries:
