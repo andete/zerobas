@@ -411,21 +411,41 @@ the §1.0 discipline as a **hard requirement**:
   **failure, not a zero**;
 - the untrapped delivery baseline (T1) is itself an assertion — if it reads 0, the
   apparatus is broken and the run is void;
-- no string building in probe programs; `TIME`-bounded windows — **but see the risk
-  below before relying on `TIME` on the zerobas side**;
+- no string building in probe programs; observation windows bounded by **iteration
+  count, never by `TIME`** — `TIME` does not exist on zerobas (resolved below), so a
+  `TIME`-bounded loop there never terminates;
 - handler-timing cases size their handler from the measured loop rate, and the window
   is sized for **zerobas**, which runs an empty `FOR` loop ~7× slower than the VG-8020.
 
-> **⚠️ Open risk, observed in passing during §4.2 — verify before building the gate.**
-> An `IF TIME-T<400 GOTO` loop terminated normally on the VG-8020 (`done=1`) but was
-> **still running on the repack target ~16 s later**, in a run that was otherwise healthy
-> (the program had started, and keys were accumulating exactly as intended). The obvious
-> explanation is that `TIME` does not advance on zerobas, but that is a *hypothesis, not
-> a measurement* — it was never the object of that experiment. It does not affect any
-> §1 finding (all `TIME`-bounded windows there ran on the **reference**), but the gate
-> runs on **zerobas**, so a one-line `TIME` check comes first; if it does not advance,
-> the gate's windows must be bounded some other way (iteration counts sized from the
-> measured ~7× slowdown, or debugger-side timing).
+> **✅ RESOLVED 2026-07-25 — and the hypothesis was wrong in a way that matters.**
+> The §4.2 observation was an `IF TIME-T<400 GOTO` loop that terminated normally on the
+> VG-8020 (`done=1`) but was **still running on the repack target ~16 s later**, in an
+> otherwise-healthy run. The recorded hypothesis was "`TIME` does not advance on
+> zerobas." It is **not** that. Measured, both machines' `done` sentinel = 1 so both
+> readings are valid:
+>
+> | | reached post-delay | `TIME` unchanged across the delay | `JIFFY` ($FC9E) |
+> |---|---|---|---|
+> | VG-8020 | 1 | **0** — `TIME` advances | 3101 |
+> | repack target | 1 | **1** — `TIME` frozen | **3149 — the clock IS live** |
+>
+> `JIFFY` advances on zerobas exactly as on the reference; the ISR clock is fine.
+> **`TIME` is simply not implemented** — it is absent from
+> [`basic/kwtable.inc`](../basic/kwtable.inc), so it never crunches to a token and is
+> parsed as the *variable* `TI` (2 significant chars), which reads 0 forever. Hence
+> `TIME-T` ≡ `0-0` ≡ 0 `< 400` **always**, and the loop is infinite. This is a **silent**
+> divergence: no error, no `Syntax error`, just a wrong answer.
+>
+> **Consequence for the gate:** the fix is not "bound the windows some other way in
+> general" — it is that **no probe program may use `TIME` on the zerobas side at all**
+> until `TIME` lands. Gate windows are sized by **iteration count** from the measured
+> loop rate (§1.0: `FOR J=1 TO 3000` ≈ 4.8 s on the VG-8020, ~625 iter/s; zerobas ~7×
+> slower). §1's `TIME`-bounded windows are unaffected — they all ran on the reference.
+>
+> **Out-of-slice gap raised, NOT actioned here.** `TIME` (both the function and the
+> `TIME=n` assignment statement) is standard MSX1 BASIC and is in charter
+> ([[charter-faithful-full-msx1-basic]]), but it is tracked in no doc. It is not T3's
+> job; recorded here so it is not lost.
 
 Coverage: the §1.1 delivery/repeat table, the §1.2 diversion table including T5 and the
 T6 control, §1.3 (W1 servicing, U2 blocking-`INPUT`, K7/R11 SHIFT discrimination, V2
