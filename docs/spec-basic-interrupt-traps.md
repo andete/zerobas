@@ -1,6 +1,13 @@
 # spec — interrupt traps (`ON INTERVAL/KEY/SPRITE/STOP/STRIG GOSUB` + the arming statements)
 
-Status: **SIGNED OFF 2026-07-24** — slicing **T1→T2→T3→T4** approved (D-T-6), and go
+Status: **✅ ARC COMPLETE 2026-07-25 — T1 STOP, T2 STRIG, T3 KEY, T4 SPRITE all
+landed and gated** (`stop-`/`strig-`/`key-`/`sprite-trap-acceptance`). Closes the
+input-devices **D-I-5** divergence and the graphics **D-G7-4** handoff. `INTERVAL`
+is deliberately absent: it is MSX2, out of charter. Per-slice packets:
+[T1](spec-traps-t1-stop-reslice.md) · [T2](spec-traps-t2-strig.md) ·
+[T3](spec-traps-t3-key.md) · [T4](spec-traps-t4-sprite.md).
+
+Originally signed off **2026-07-24** — slicing **T1→T2→T3→T4** approved (D-T-6), and go
 straight into T1 from this arc spec (no separate T1 packet). This is the arc-level
 spec; T2–T4 still get their own signed-off packets before implementation, in the
 graphics-arc style (g1…g8).
@@ -505,7 +512,14 @@ byte-identity + `check_tenant_closure.py --page1`. Files: new `sub/fcbname.asm` 
   hook. Alternative: chain two `JP`s.
 - **D-T-3 — dispatch priority + one-per-boundary (§5).** Fixed enum order, one trap per
   inter-statement gap. *Recommend as written* (matches the reference).
-- **D-T-4 — SPRITE collision source (§4, T4).** The VDP collision flag (status reg S#0
+- **D-T-4 — SPRITE collision source (§4, T4). ✅ RESOLVED at the T4 packet
+  ([`spec-traps-t4-sprite.md`](spec-traps-t4-sprite.md) §2): option (a), read
+  `STATFL`.** Option (b) is impossible by construction, not merely worse — C-BIOS
+  latches S#0 *before* calling `H_TIMI` and S#0 is read-to-clear, so nothing at that
+  seam can ever see the bit; the same ordering makes (a) exact, with no one-frame
+  lag. The "weak provenance" worry below does not survive: `$F3E7` is a published
+  work-area address, already what `VDP(8)` returns. *Original text:*
+  The VDP collision flag (status reg S#0
   bit 5) is **read-to-clear** and C-BIOS's own $0038 ISR already samples S#0 each frame
   (latching into its status sysvar) — so a second direct-port read in `event_poll`
   races the BIOS and one of the two loses the flag. Options: **(a)** read the C-BIOS
