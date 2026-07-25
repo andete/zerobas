@@ -1201,6 +1201,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reference crashes. Spec [`docs/spec-traps-t2-strig.md`](docs/spec-traps-t2-strig.md).
       **Note:** `INTERVAL` is MSX2 and out of charter, so it is NOT part of this arc —
       T3 = KEY, T4 = SPRITE remain. Page-1 free is down to 9 B, so **T3 needs a carve.**
+
+      ✅ **T3 KEY LANDED** 2026-07-25: `ON KEY GOSUB <list>` (10 positional slots) +
+      `KEY(n) ON|OFF|STOP`. **Closes the OTHER half of D-I-5, so D-I-5 is now fully
+      closed.** KEY is a **delivery** trap, not an edge trap: it fires once per BIOS
+      key-delivery — the initial make and every auto-repeat — and a trapped key is
+      **diverted**, removed from the input stream before anything can read it. Neither
+      published ISR hook can do that (both run *before* the keyboard scan), so the event
+      source is a thin 5-byte C-BIOS seam, `H_ZKEY`
+      ([`cbios-repack/key-trap-hook.patch`](cbios-repack/key-trap-hook.patch)), with all
+      policy in [`basic/keytrap.asm`](basic/keytrap.asm). Auto-repeat is inherited from
+      the host BIOS rather than replicated. `make key-trap-acceptance` — 28 cases /
+      54 assertions vs the VG-8020. Spec
+      [`docs/spec-traps-t3-key.md`](docs/spec-traps-t3-key.md).
+      **Funding:** the BLOAD carve (page 1 9 B → 271 B) paid the page-1 half; the
+      low-region half was paid by **promotion** — 74 B of boot-time-only sub-ROM
+      plumbing moved up into the freed page 1
+      ([`basic/subrom-boot.asm`](basic/subrom-boot.asm)), gated by the new
+      [`tools/promote_scout.py`](tools/promote_scout.py). Walls now: low region 14 B
+      free, page 1 62 B free.
+      **The gate found a real, older, SHARED bug:** the ON…GOTO/GOSUB crunch in
+      [`basic/tokenise.inc`](basic/tokenise.inc) abandoned the list at an EMPTY slot, so
+      `ON KEY GOSUB 100,,600` (and T2's `ON STRIG GOSUB ,300`) died with a syntax error.
+      Fixed repack-only — the 4 bytes overrun the byte-full lean cart, which keeps it.
+      **T4 = SPRITE is the only slice left in this arc.**
 - [ ] **Screen-editor REPL** — real MSX BASIC does not use a sequential prompt
       loop; Enter reads the *current cursor line from VRAM* (not a dedicated
       input buffer), so the user can cursor-up to any visible output, edit it

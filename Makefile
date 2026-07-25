@@ -548,6 +548,19 @@ stop-trap-acceptance: $(DISK_ROM) repack-machine
 strig-trap-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_strig_trap.py $(if $(ONLY),--only $(ONLY),)
 
+# --- KEY interrupt-trap gate, slice T3 (docs/spec-traps-t3-key.md §8) ---------
+# VG-8020 differential for `ON KEY GOSUB` / `KEY(n) ON|OFF|STOP`. Function keys are
+# pressed straight through the matrix (row 6 bits 5/6/7 = F1..F3, row 7 bits 0/1 =
+# F4/F5, + row 6 bit 0 SHIFT for F6..F10). Needs the repack machine because the
+# event source is a C-BIOS hook (H_ZKEY, cbios-repack/key-trap-hook.patch), so an
+# unrepacked ROM cannot fire it at all. Scope with `make key-trap-acceptance ONLY=A_`.
+# `make key-trap-acceptance CALIBRATE=1` re-measures the two machines' loop rates,
+# which is what the iteration-count observation windows are sized from -- the spec
+# requires calibrating them rather than assuming (§1.0).
+key-trap-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_key_trap.py $(if $(ONLY),--only $(ONLY),) \
+	  $(if $(CALIBRATE),--calibrate,)
+
 # --- D-F2-2 int-argument coercion gate (docs/spec-basic-df2-2-intarg-coercion.md)
 # VG-8020 differential: out-of-domain int args must raise the reference's Overflow
 # (ERR 6) / Illegal function call (ERR 5), not silently coerce. ASSERTED cases gate
@@ -685,6 +698,6 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance \
-        input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance intarg-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
+        input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance intarg-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
         graphics-floor-acceptance graphics-floor-teeth graphics-acceptance clean

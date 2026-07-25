@@ -500,8 +500,9 @@ mk_none:
 ; keyword), DE = dest cursor. If the keyword was GOTO/GOSUB/THEN/RESTORE/RUN, copy
 ; any spaces verbatim then, if a decimal number follows, emit it as the
 ; line-number identification code $0E,<value LE> (Figure 2.12) instead of the
-; ordinary integer encoding. Otherwise returns unchanged. (ON…GOTO lists and
-; ELSE <line> are not specially handled yet — single target only.)
+; ordinary integer encoding. Otherwise returns unchanged. (ELSE <line> is not
+; specially handled yet.) ON…GOTO/GOSUB comma-separated lists ARE handled, empty
+; slots included — see bl_num.
 branch_lineno:
                 cp      GOTO_TOKEN
                 jr      z,bl_yes
@@ -530,6 +531,36 @@ bl_yes:
                 inc     hl
                 jr      bl_yes
 bl_num:
+                ; AN EMPTY LIST SLOT MUST NOT END THE LIST. `ON KEY GOSUB 100,,600`
+                ; and `ON STRIG GOSUB ,300` are legal on the reference: an omitted
+                ; entry CLEARS that slot's handler and the list continues. Without
+                ; this test the list-extension loop below reached a `,` here, found
+                ; no digit and RETURNED, so every later target was crunched as an
+                ; ordinary numeric literal instead of $0E,<line> -- and the trap
+                ; parsers, which look for $0E, then ran off the end of their list
+                ; and left the executor on a bare literal: `syntax error in 10`.
+                ; Found by the T3 gate's K7 case (`ON KEY GOSUB 100,,,,,600`), but
+                ; the bug is OLDER than T3 and is NOT KEY-specific -- it is in this
+                ; SHARED crunch path, so T2's shipped `ON STRIG GOSUB ,300` had it
+                ; too. That case passes in the T2 gate only because a syntax error
+                ; and a correctly-cleared slot both leave the fire count at 0; the
+                ; T2 gate has no `done` sentinel to tell them apart, which is
+                ; exactly the "a baseline that cannot produce a non-zero answer
+                ; proves nothing" trap this arc keeps re-learning.
+                ; Placed at bl_num rather than in the loop tail so it also covers a
+                ; list whose FIRST slot is empty (`GOSUB ,600`), where the comma
+                ; follows the keyword directly and the loop has not started yet.
+                ; REPACK-ONLY, like the RESUME crunch above and for the same reason:
+                ; these 4 bytes overran the lean 16 KB cart's $8000 ceiling, which
+                ; is byte-full. The lean build therefore KEEPS this bug. That is the
+                ; documented response to a lean overflow (basic/main.asm's ceiling
+                ; guard: "gate the feature on ROM_BASE or trim it"), and it costs
+                ; the lean cart nothing it has: the interrupt traps whose parsers
+                ; this unblocks are themselves repack-only.
+    IF ROM_BASE < $4000
+                cp      ','
+                jr      z,bl_list
+    ENDIF
                 cp      '0'                 ; a decimal number must follow
                 ret     c
                 cp      '9'+1
@@ -575,7 +606,10 @@ bl_done:
                 ld      a,(hl)
                 cp      ','
                 ret     nz                  ; no comma -> single target, done
+bl_list:
                 ld      (de),a              ; emit the comma verbatim
                 inc     de
                 inc     hl                  ; past the comma
-                jr      bl_yes              ; loop: spaces then next number
+                jr      bl_yes              ; loop: spaces then next slot (a number,
+                                            ; another comma = an empty slot, or
+                                            ; anything else = end of the list)

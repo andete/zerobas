@@ -1,6 +1,13 @@
 # spec — interrupt-traps T3: the KEY trap (`ON KEY GOSUB` + `KEY(n) ON/OFF/STOP`)
 
-Status: **DRAFT — awaiting sign-off.** Slice packet for T3 of the interrupt-traps arc
+Status: ✅ **LANDED AND VERIFIED 2026-07-25.** `TRAPS_T3 = 1`; the low-region half is
+funded by promotion (§7.8) on top of the BLOAD carve (§7.7); `make key-trap-acceptance`
+is **28 cases, 54/54 ALL PASS** against the VG-8020 (§8.1). The gate found one real bug
+in shared tokeniser code, older than T3 and shared with T2 (§8.2). **`D-I-5` is now
+fully closed.** Everything below the status line is the slice's working record, in the
+order it was learned; §7.3 and the "gated off" language it carries are superseded.
+
+Slice packet for T3 of the interrupt-traps arc
 ([`docs/spec-basic-interrupt-traps.md`](spec-basic-interrupt-traps.md), signed off
 2026-07-24, slicing T1→T2→T3→T4). T1 (STOP) landed 2026-07-25 (`4fef347`,
 [`spec-traps-t1-stop-reslice.md`](spec-traps-t1-stop-reslice.md)) with the reusable
@@ -742,7 +749,51 @@ creating them.
 > rewrite's real byte cost, and the resident stub's. Both are measurements to take
 > before committing, not estimates to trust — §7.2 is what estimates are worth here.
 
-### 7.3 Tree state — main stays green, T3 is gated off
+### 7.8 ✅ AS BUILT — the low-region half funded by PROMOTION; **T3 IS ON**
+
+`TRAPS_T3 = 1`. `make basic-reloc` green with **low region 14 B free** and
+**page 1 62 B free**, all four closure gates passing, lean `basic.rom`
+byte-identical. §7.3 below is the superseded gated-off state.
+
+**The gate could not be flipped at all, independent of space.** `TRAPS_T3` was a
+bare `equ`, but the T3 parse surface is repack-only while its two call sites
+(`ex_on`'s peek in `program.asm`, `ex_key`'s peek in `basic/screen.asm`) sit in
+always-assembled page-1 code — so flipping it left the LEAN build referencing
+symbols the lean build does not assemble, and it died on
+`Symbol 'ex_key_stmt' is undefined` before reaching any wall. The gate is now
+`ROM_BASE`-conditional like `G8_RESIDENT`/`I1_RESIDENT`.
+
+**Measured before choosing, with the tripwire lifted: low region 60 B over,
+page 1 136 B free.** So the promoted cluster had to be **60–136 B** — the two
+walls are coupled, because page 1 pays exactly what the low region is relieved of.
+
+**Promoted: `try_sub_slot` (33 B) + `sub_int_install` (41 B) = 74 B**, out of the
+low-region [`basic/subromcall.asm`](../basic/subromcall.asm) into a new page-1
+[`basic/subrom-boot.asm`](../basic/subrom-boot.asm). This is the best-justified
+74 B in the region because `subromcall.asm`'s own header already recorded why they
+were low — *"init_ext_roms is in page 1, whose tail is nearly full; these ~90 B of
+bodies would overrun the $8000 ceiling there"* — a **space** reason, never a
+correctness one, and the BLOAD carve deleted the premise. Both are **boot-time
+only**, called once from `init_ext_roms` under the boot DI *before any tenant has
+been dispatched*, so neither of the two callers that cannot see main page 1 (a
+page-1 sub-ROM tenant; the `$0038` ISR) can reach them **by construction rather
+than by audit**. What stays below `$4000` is what must: `subrom_call` (the runtime
+dispatcher — the one routine that issues the CALSLT into a tenant), `htimi_guard`
+(literally the ISR path), and `sub_int_template` (the RAM trampoline body).
+
+**New standing tool: [`tools/promote_scout.py`](../tools/promote_scout.py)**, the
+mirror of `carve_scout.py`. It walks the main call graph from the page-1-tenant
+resident ABI and the ISR seeds and reports which low-region routines are pinned and
+which may move up. Inventory: **4561 B promotable, 1550 B pinned** — confirming
+§7.4's static 4551/1591 from a second direction.
+
+> ⚠️ **It has one deliberate blind spot, documented in the tool and in
+> `subrom-boot.asm`:** it calls `subrom_call` *promotable*, because a call-graph
+> walk cannot see that the pin is on the code **performing the slot switch**, not
+> on code called from the far side. Never promote on a bare promotable verdict for
+> anything that touches `$A8`/`CALSLT`.
+
+### 7.3 Tree state — main stays green, T3 is gated off *(SUPERSEDED by §7.8)*
 
 The slice does not fit, so it must not break the build for everyone else:
 
@@ -782,6 +833,81 @@ the §1.0 discipline as a **hard requirement**:
   `TIME`-bounded loop there never terminates;
 - handler-timing cases size their handler from the measured loop rate, and the window
   is sized for **zerobas**, which runs an empty `FOR` loop ~7× slower than the VG-8020.
+
+### 8.1 ✅ AS BUILT — `make key-trap-acceptance`, **28 cases, 54/54 ALL PASS**
+
+[`probes/basic/basic_probe_key_trap.py`](../probes/basic/basic_probe_key_trap.py),
+boot-per-case differential against the VG-8020. Every requirement above is met, plus
+two design points the list above did not anticipate:
+
+- **The repeat cases are NOT equality-differentials.** The repeat *constants* belong to
+  the host BIOS and zerobas deliberately inherits C-BIOS's rather than replicating the
+  VG-8020's (§4, D-T3-2), so a 2 s hold measures **ref 22 fires vs zerobas 30** — both
+  correct. What is gated is the **property** (`cnt >= 2`: a delivery trap repeats, an
+  edge trap cannot), asserted per machine. Asserting the exact count across two BIOSes
+  would gate the wrong thing and fail a correct implementation.
+- **`KEY 1,"X"` is unavailable, so the delivery count is seeded by `POKE`.** zerobas
+  does not implement `KEY n,"str"`, and C-BIOS never initialises `FNKSTR` — so an
+  untrapped F1 on the zerobas side would deliver *nothing* and the baseline would read
+  0 for a reason having nothing to do with the trap. The programs `POKE` a
+  one-character expansion straight into `FNKSTR` (`$F87F`, 16 B/slot) instead, which is
+  machine-agnostic and is what the §4.2 oracle round already did. The baseline then
+  reads **ref 21–22 / zerobas 29–30 delivered characters** — non-zero on both, so the
+  apparatus check the §1.0 rounds lacked is live.
+
+Diversion is confirmed end to end on the target: trapped → `aux == 0` with `cnt >= 1`;
+`ON` with an **empty handler slot** → swallowed (`cnt 0`, `aux 0`) — diversion follows
+the **state alone**; `OFF` and `STOP` both deliver normally (`aux > 0`, `cnt 0`);
+an untrapped key is unaffected while another is trapped. `SHIFT+F1` fires **KEY 6** and
+never KEY 1, in both directions.
+
+> 🔴 **THE HARNESS WAS WRONG THREE TIMES BEFORE THE IMPLEMENTATION WAS WRONG ONCE, and
+> every harness failure LOOKED like a semantic failure.** A mangled program line means
+> the program never runs, so the sentinels read power-on garbage — indistinguishable
+> from a trap that did not fire. In order: a swallowed Enter concatenated two lines
+> (`5 POKE&HD000,0:POKE&HD001,06 POKE&HD002,0:...` → `Syntax error in 5`); overlapping
+> `type` streams dropped every second character (`60 FORI=1TO6000:NEXT` → `6 OI1O0NX`);
+> and widening the schedule then **doubled** a keystroke, turning the error handler
+> `900 ...` into `9900 ...` → `undefined line in 1`. Trading one direction of flake for
+> the other is the signal that **timing was the wrong knob**: program entry now goes
+> through [`probes/lib/omsx_repl.py`](../probes/lib/omsx_repl.py)'s KEYBUF injection,
+> which lands each line atomically with no per-character schedule to race. (The
+> function-key presses still go through the real matrix — injecting those would bypass
+> the very mechanism under test.) **What made this tractable was reading the SCREEN**;
+> the probe carries a `--screen` flag for exactly that, and it is what turned each of
+> these from a mystery into a one-line diagnosis.
+
+### 8.2 🔴 The gate found a REAL bug — and it is OLDER than T3, and SHARED with T2
+
+The K7 case (`ON KEY GOSUB 100,,,,,600`) failed on the target with `syntax error in 10`
+while the reference accepted it. Bisecting the list forms showed the rule: **any empty
+slot followed by a further slot** broke — `100,,600`, `,600`, `100,,,600` all failed,
+while `100,600` and a lone trailing empty were fine.
+
+The cause is in the **shared crunch path**, [`basic/tokenise.inc`](../basic/tokenise.inc)
+`branch_lineno`: the ON…GOTO/GOSUB list-extension loop only continued *after a
+successfully emitted number*. An empty slot reached `bl_num`, found a `,` instead of a
+digit and **returned**, abandoning the list — so every later target was crunched as an
+ordinary numeric literal instead of `$0E,<line>`. The trap parsers look for `$0E`, so
+they read the slot as empty, fell out of their loop and left the executor sitting on a
+bare literal. Fixed by testing for `,` at `bl_num` (which also covers a list whose
+FIRST slot is empty, where the comma follows the keyword directly).
+
+Two things about this finding matter beyond the fix:
+
+- **It is not KEY-specific.** T2's shipped `ON STRIG GOSUB ,300` had the same bug. Its
+  gate case passes anyway — because a syntax error and a correctly-cleared slot **both
+  leave the fire count at 0**, and the T2 gate has no `done` sentinel to tell them
+  apart. That is precisely the *"a baseline that cannot produce a non-zero answer proves
+  nothing"* trap this arc keeps re-learning, caught here only because T3's gate was
+  required to carry `done`.
+- **The lean 16 KB cart keeps the bug.** The 4 bytes overran its `$8000` ceiling, so the
+  fix is `IF ROM_BASE < $4000`, the documented response to a lean overflow and the same
+  treatment the `RESUME` crunch beside it already has. It costs the lean cart nothing it
+  has: the interrupt traps whose parsers this unblocks are themselves repack-only.
+
+Regression after the fix: `key-trap` 54/54, `strig-trap`, `stop-trap`, `error-trap` and
+all five halves of `string-acceptance` **ALL PASS**.
 
 > **✅ RESOLVED 2026-07-25 — and the hypothesis was wrong in a way that matters.**
 > The §4.2 observation was an `IF TIME-T<400 GOTO` loop that terminated normally on the
