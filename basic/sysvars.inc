@@ -431,12 +431,21 @@ G8_RESIDENT     equ     0
 ; Gated like G6/G7/G8 so the slice can be dropped if the page-1 tail runs out; the
 ; lean 16 KB cart has no input devices at all.
 ; --- TRAPS_T3: the KEY-trap build gate (docs/spec-traps-t3-key.md §7.2) ------
-; T3 is WRITTEN but NOT FUNDED: it needs 236 B (60 low-region + 176 page-1) and
-; both walls are full, so enabling it overruns the build. It is gated OFF rather
-; than reverted so the repack target keeps building while D-T3-5 (the carve) is
-; re-decided; flip to 1 once the space exists. Everything the gate covers is
-; repack-only anyway, so the lean 16 KB ROM is byte-identical either way.
+; T3 needs 236 B (60 low-region + 176 page-1). The BLOAD carve funded the page-1
+; half (main page 1 9 B -> 271 B free), so the flip below is now 1; the low-region
+; half is funded by promotion (spec §7.4).
+; The gate is ROM_BASE-conditional like G8_RESIDENT/I1_RESIDENT, and MUST be: the
+; T3 parse surface (ex_on_key/ex_key_stmt) lives in the low region, so it exists
+; only in the repack build, while its two call sites (ex_on's peek in program.asm
+; and ex_key's peek in basic/screen.asm) sit in always-assembled page-1 code. A
+; bare `IF TRAPS_T3` there left the lean build referencing symbols that the lean
+; build does not assemble -- i.e. the gate could not be flipped at all without
+; this ELSE. The lean 16 KB ROM stays byte-identical either way.
+    IF ROM_BASE < $4000
+TRAPS_T3        equ     1
+    ELSE
 TRAPS_T3        equ     0
+    ENDIF
 
     IF ROM_BASE < $4000
 I1_RESIDENT     equ     1

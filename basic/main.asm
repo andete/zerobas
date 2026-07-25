@@ -119,6 +119,12 @@ __MEAS_LOW_END:
 ; slots for "AB" ROMs (e.g. zerobas-disk) and CALSLTs their INIT before the REPL.
                 include "basic/initext.asm"
 
+; The BOOT-TIME half of the zerobas-sub plumbing (defines `try_sub_slot`,
+; `sub_int_install`) — PROMOTED here out of the page-0 low region to fund the KEY
+; trap's $0038-path hook, which cannot leave it. Repack-only (the whole file is
+; inside `IF ROM_BASE < $4000`), so the lean 16 KB ROM stays byte-identical.
+                include "basic/subrom-boot.asm"
+
 ; Startup header (defines `show_title`).
                 include "basic/title.asm"
 

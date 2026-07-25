@@ -24,27 +24,11 @@
 ; bytes; the CD signature / EXBRSA / CALSLT contracts are public MSX2 Technical
 ; Handbook ABIs, and the dispatch glue is own-design. See basic/PROVENANCE.md.
 
-; try_sub_slot: if the slot just scanned by try_init_slot (SCAN_SLOT) carries the
-; MSX2 sub-ROM signature "CD" at $0000 (page 0), record it. Called right after
-; try_init_slot in ier_sloop, so SCAN_SLOT already holds this subslot's id and
-; RDSLT can reuse it via rdslt_scan. Unlike the disk case there is NO INIT CALSLT
-; — the sub-ROM is a passive callee (D-7); recording the slot is the whole job.
-try_sub_slot:
-                ld      hl,$0000
-                call    rdslt_scan
-                cp      'C'
-                ret     nz
-                ld      hl,$0001
-                call    rdslt_scan
-                cp      'D'
-                ret     nz
-                ; found: record the slot in the private path AND the MSX2 work area
-                ld      a,(SCAN_SLOT)
-                ld      (SUBSLOT),a
-                ld      (EXBRSA),a          ; convention-compat (D-6); dispatch uses SUBSLOT
-                ld      a,1
-                ld      (SUBSLOT_OK),a
-                ret
+; try_sub_slot and sub_int_install were PROMOTED out of this file and into main
+; page 1 (basic/subrom-boot.asm) to fund the KEY trap's low-region hook — see that
+; file's header for the rule that permits it. Both are boot-time-only, so neither
+; a page-1 tenant nor the $0038 ISR can reach them. What is left here is what must
+; stay below $4000: the runtime dispatcher, the ISR guard, and the trampoline body.
 
 ; subrom_call: dispatch to a sub-ROM page-0 tenant. IX = entry address
 ; (SUBROM_ENTRY_BASE_P0 + 3*index); args/results marshalled in page-2/3 RAM by
@@ -154,34 +138,6 @@ htg_skip:
 ; mirrors our own disk/init.asm page0_ram_in. No C-BIOS code is read or relocated
 ; (firewall §3g / cbios-repack-provenance.md). Own-design divergence (the DI-guarded
 ; adaptation) logged in sub/PROVENANCE.md.
-
-; sub_int_install: copy the trampoline template into RAM and record the two slot
-; configs. Called from init_ext_roms (basic/initext.asm) after the CD scan, under
-; the boot DI, only when a sub-ROM was found. Clobbers AF/BC/DE/HL.
-sub_int_install:
-                ld      a,(SUBSLOT_OK)
-                or      a
-                ret     z                   ; no sub-ROM -> no trampoline to install
-                ld      hl,sub_int_template
-                ld      de,SUB_INT_RAM
-                ld      bc,sub_int_template_end - sub_int_template
-                ldir                        ; copy the stub into page-3 RAM
-                ; MAIN page-0 primary field (page 0 is the BIOS right now).
-                in      a,(PSLTREG)
-                and     %00000011
-                ld      (INT_MAIN_PRIM),a
-                ; SUB page-0 primary + subslot fields, from the recorded slot id
-                ; (bit7 exp | %ss bits3-2 | %pp bits1-0).
-                ld      a,(SUBSLOT)
-                ld      c,a
-                and     %00000011           ; sub primary  -> page-0 primary field (3)
-                ld      (INT_SUB_PRIM),a
-                ld      a,c
-                rrca
-                rrca
-                and     %00000011           ; sub secondary -> page-0 subslot field (2)
-                ld      (INT_SUB_SUBSL),a
-                ret
 
 ; sub_int_template: the RAM trampoline, copied verbatim to SUB_INT_RAM. Entered
 ; from the sub-ROM $0038 with IFF already cleared by the CPU. POSITION-INDEPENDENT
