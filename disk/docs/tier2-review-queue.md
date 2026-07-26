@@ -211,12 +211,12 @@ number.** The gate now pads with statements instead (`A=1:` ×2k, cost measured:
 ~5 per jiffy on zerobas, ~11 on the VG-8020) and is green 105/105 both sides.
 
 **[FINDING — PRE-EXISTING, surfaced by the SAVE carve's gate, 2026-07-26]
-Multi-block cassette ASCII `LOAD"CAS:"` truncates on the REPACK build (and only
-there).** `basic_probe_tape_save.py`'s `multi-block round-trip (>256 B,
-injected)` case recovers ~30 of 40 lines and then a clean `00 00` program
-terminator; the WAV it read back is a correct 528 bytes, so the **write** side is
-right and the **read** side stops early. The lean 16 KB cart passes the identical
-case.
+Multi-block cassette ASCII `LOAD"CAS:"` truncates on the REPACK build (and, at a
+larger program size, on the lean build too).** `basic_probe_tape_save.py`'s
+`multi-block round-trip (>256 B, injected)` case recovers 29 of 40 lines and then
+a clean `00 00` program terminator; the WAV it read back is a correct 528 bytes,
+so the **write** side is right and the **read** side stops early. The lean 16 KB
+cart passes *this* case — but only by 32 % of margin (see below).
 
 *Not a regression, and that was established rather than assumed.* The probe grew
 a `--machine` option so the corpus can run on `C-BIOS_MSX1_EU_REPACK_DISK` at
@@ -226,18 +226,72 @@ from the parent commit in a throwaway worktree, installed under the same machine
 name, reproduces the failure with a **byte-identical** `got` buffer
 (md5 `a4a703a7…` both sides). Everything else in the corpus passes on both.
 
-*Why it is being logged rather than fixed here:* it is out of the carve's scope
+*Why it was logged rather than fixed at the time:* it is out of the carve's scope
 and touches the cassette READ path, which the carve does not move. But per
 [[control-that-fails-must-be-fixed]] a failing control is not something to
-interpret away — **the mechanism is a hypothesis, not a finding**, so it is
-written down as one: cassette read is real-time, and on the repack build every
-loaded ASCII line is tokenised through a sub-ROM `CALSLT`
-(`dispatch_line → tokenise → subrom_call`) rather than resident, so the loader
-may not get back to `TAPIN` in time across a block boundary. That would predict
-the failure point moving with tape speed (`CSAVE"n",1` vs `,2`) — **untested.**
-Note the reading does *not* obviously fit: it recovers all of block 1 **and part
-of block 2**, which a lost-resync story does not explain. Next step is that
-speed sweep, not a patch.
+interpret away — so the mechanism was written down as an explicit hypothesis
+(real-time read vs a sub-ROM-`CALSLT` tokenise), with a tape-speed sweep as the
+proposed next step.
+
+### CHARACTERIZED 2026-07-26 — the real-time story is RIGHT, and it is NOT repack-only
+
+Measured directly instead of swept, by slot-qualified breakpoints on the BIOS
+tape entries (`TAPION $00E1` / `TAPIN $00E4`) plus a byte-level timeline decoded
+from the recorded WAV itself. Both sides run the SAME cached WAV, so the read
+side is the only variable.
+
+**The tape's own geometry (ground truth from the WAV).** Every 256-byte data
+block is preceded by a short leader: block data 2.396 s, **inter-block leader
+0.861 s**. That leader is the *entire* CPU budget for tokenising the block just
+read — during a block's data the CPU is pinned inside `cal_refill`'s tight
+`TAPIN`×256 loop.
+
+**What actually happens (repack, 40-line program).** Block 1 fills normally.
+`ascii_read_lines` then spends **0.952 s** tokenising and storing it — 0.091 s
+past the leader — so `cal_refill` for block 2 is entered *after* block 2's data
+has already started. `TAPION` then returns **CF=0**: it false-locks on
+high-frequency cycles inside the data stream, so there is no error at that
+point; the first `TAPIN` grinds on to the end of block 2's data and only then
+fails, and `cal_getbyte` reports EOF. Block 2 is discarded whole.
+
+*The earlier reading "recovers all of block 1 and part of block 2" was wrong* —
+that was the thing that did not fit, and it did not fit because it was not true.
+It stores **exactly 29 lines** (10..290), which is precisely the set of lines
+lying wholly inside block 1: the listing is 351 B, and bytes 252..255 are
+`"300 "`, so line 300 straddles the boundary. Nothing from block 2 survives.
+A lost-resync story explains the data completely.
+
+**It is a size threshold, not a repack property.** Same harness, same WAV, lean
+16 KB cart — and the gap grows with the program already stored, because
+`store_line`'s insert walk is O(lines) per line (~34 T-states per already-stored
+line; `relink` is *not* called per line — measured 0 hits):
+
+| build | per-line cost | block-1 window | block-2 | block-3 | block-4 |
+|---|---|---|---|---|---|
+| lean cart | 20.1 → 36.7 ms | 0.584 s ✅ | 0.845 s ✅ (16 ms spare) | 1.064 s ❌ | — |
+| repack | 32.8 ms at line 1 | 0.952 s ❌ | — | — | — |
+
+So the **lean build fails too** — measured, not extrapolated: a 90-line ASCII
+program truncates on the lean cart at block 4 (86 of 90 lines). Lean's "pass" on
+the 40-line case is a 32 % margin, not a healthy one. Repack's per-line cost is
+roughly double lean's (per line: **23.58 ms** in the tokenise `CALSLT`, dead
+constant, plus ~10 ms in `store_line`'s `CALSLT`, against ~20 ms for lean's
+whole line), which just moves the threshold from ~86 lines down to ~29.
+
+**Consequence for a fix.** Making the repack tokenise cheaper only buys back the
+0.37 s/block the sub-ROM detour costs — it moves the cliff, it does not remove
+it. Removing it means breaking the coupling between the leader window and the
+per-line work (e.g. staging the ASCII text in RAM and tokenising after the tape
+stops, or making `store_line` append rather than search when lines arrive in
+ascending order, which kills the O(n²) term). **Not implemented — needs a spec
+and sign-off** per [[spec-before-implementation]].
+
+*Harness note worth keeping:* openMSX breakpoints are **address-only**, and the
+sub-ROM shares page-1 addresses with resident BASIC — the first cut of this
+instrumentation had `le_tok_skip` (sub-ROM `$68E6`) masquerading as
+`cal_fill_fail` (resident `$68E6`), producing a confident and entirely fictional
+"TAPIN short read" trace. Every bp on a page-1 address must carry
+`[pc_in_slot 0]`.
 
 **[JUDGMENT CALL — traps T2 harness, 2026-07-25] The acceptance machine now models
 PSG port directions like the VG-8020, and joystick triggers 1..4 are driven by a
