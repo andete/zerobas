@@ -1225,6 +1225,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `ON KEY GOSUB 100,,600` (and T2's `ON STRIG GOSUB ,300`) died with a syntax error.
       Fixed repack-only — the 4 bytes overrun the byte-full lean cart, which keeps it.
       **T4 = SPRITE is the only slice left in this arc.**
+- [ ] **`TIME` / `TIME=n`** — the software-clock pseudo-variable, standard MSX1
+      BASIC and **absent from zerobas entirely**: it is not in
+      [`basic/kwtable.inc`](basic/kwtable.inc), so `TIME` parses as the *variable*
+      `TI` and reads 0 forever, which makes `IF TIME-T<400 GOTO` an infinite loop —
+      a **silent** divergence. Found as collateral during the T3 KEY slice
+      (`20e04b4`); it is also why the acceptance harness still bans `TIME` on the
+      zerobas side and sizes every observation window by iteration count.
+      **Characterized 2026-07-26** against the VG-8020 — 45/45 assertions,
+      [`probes/basic/basic_probe_time.py`](probes/basic/basic_probe_time.py):
+      single-byte token `$CB`; the read is the **unsigned** word at `JIFFY`
+      (`$FC9E`) promoted to a float (`A%=TIME` at 40000 → Overflow); the write uses
+      the **house address-domain conversion zerobas already has** (`fac_to_int_addr`
+      — wrap by −65536 above 32767, then truncate toward zero, ERR 6 outside
+      −32768..65535); errors are ERR 13 / 24 / 6 / 2; the clock wraps mod 65536 with
+      no error and its *rate* belongs to the host BIOS/VDP.
+      Spec [`docs/spec-basic-time.md`](docs/spec-basic-time.md) — **awaiting
+      sign-off**; the one open decision is funding (~52–75 B, pure page 1, and page
+      1 has 22 B free).
 - [ ] **Screen-editor REPL** — real MSX BASIC does not use a sequential prompt
       loop; Enter reads the *current cursor line from VRAM* (not a dedicated
       input buffer), so the user can cursor-up to any visible output, edit it
