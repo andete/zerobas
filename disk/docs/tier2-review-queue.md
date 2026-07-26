@@ -286,6 +286,21 @@ stops, or making `store_line` append rather than search when lines arrive in
 ascending order, which kills the O(n²) term). **Not implemented — needs a spec
 and sign-off** per [[spec-before-implementation]].
 
+**The instrument is landed**, so none of the above has to be re-derived:
+[basic_probe_cas_leader_budget.py](../../probes/basic/basic_probe_cas_leader_budget.py).
+It decodes the budget out of the recorded WAV and the spend out of the BIOS tape
+entries (`$00E1`/`$00E4` — same addresses on both machines, so one harness serves
+lean and repack), and prints each block's window as a percentage of budget:
+
+```bash
+python3 probes/basic/basic_probe_cas_leader_budget.py --lines 90
+```
+
+`--lines` is the threshold knob; `--symbols` adds slot-qualified page-1
+attribution. It is a **characterisation** probe, not a gate — exit status is
+about whether a reading could be taken, and `basic_probe_tape_save.py` keeps
+ownership of the assertion.
+
 *Harness note worth keeping:* openMSX breakpoints are **address-only**, and the
 sub-ROM shares page-1 addresses with resident BASIC — the first cut of this
 instrumentation had `le_tok_skip` (sub-ROM `$68E6`) masquerading as
