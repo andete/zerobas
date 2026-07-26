@@ -469,6 +469,24 @@ graphics-floor-teeth: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM)
 graphics-acceptance: repack-machine
 	python3 probes/basic/basic_probe_graphics.py
 
+# --- Keyword-completeness SWEEP (the coverage denominator, NOT a pass/fail gate) ---
+# Sweeps the whole MSX1 reserved-word set in two layers and reports which words are
+# absent and what a program actually observes -- docs/kwsweep-msx1-coverage.md.
+# Deliberately NOT wired into any acceptance gate: its expected state is "34 words
+# absent", so it exits 0 with findings rather than failing. What it IS good for is
+# re-running after a keyword lands, to confirm the word moved out of the gap list on
+# its own (TIME did exactly that between the 2026-07-26 runs).
+# Two layers because neither is sufficient alone, and this repo owns both counter-
+# examples: crunch-only would call INTERVAL missing (it is the compound INT+"ER"+VAL,
+# and it works), while a carelessly written execute-only case called TAB( present --
+# `PRINT TAB(99999)` raises ERR 6 on BOTH sides, for structurally different reasons.
+# Non-zero exit means the APPARATUS failed (control group, or the ROMs changed
+# mid-run), not that coverage regressed. Repack-only + oracle-dependent (boots
+# openMSX; needs your VG-8020 reference ROM); NOT part of `unit-test`.
+kwsweep: repack-machine
+	python3 probes/basic/basic_probe_kwsweep.py \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
+
 # --- Standing string-engine acceptance gate (string-engine arc S5; compare S3) -----
 # The three-part proof of the Phase-3 string engine on the merged repack build. CRUNCH:
 # the 8 string keywords (LEN/LEFT$/RIGHT$/MID$/CHR$/ASC/STR$/VAL) tokenise byte-for-byte
@@ -765,4 +783,4 @@ clean:
         interval-trap-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
-        graphics-floor-acceptance graphics-floor-teeth graphics-acceptance clean
+        graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep clean

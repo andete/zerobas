@@ -1269,6 +1269,60 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (`SWAP` itself is still unimplemented — `SWAP A,B` is a syntax error here,
       where the reference swaps. Its MALFORMED forms already match, via the
       trap-class fix below.)
+      **All of these are now measured, not estimated** — see the keyword sweep
+      item directly below.
+
+- [ ] **Keyword-completeness gaps — the measured remainder of MSX1 BASIC.**
+      **The coverage denominator now exists** (2026-07-26,
+      [`docs/kwsweep-msx1-coverage.md`](docs/kwsweep-msx1-coverage.md), probe
+      [`probes/basic/basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py),
+      `make kwsweep`): of **162** MSX1 reserved words, **124 tokenise** and
+      **34 are genuinely absent** (38 lack a `kwtable.inc` entry; 3 of those —
+      `DEFSNG`/`DEFDBL`/`DEFSTR` — work anyway via `DEF_TOKEN` + literal ASCII,
+      and 1 is `INTERVAL`, which needs no token).
+      **Why a sweep existed at all:** `TIME` and `TAB(` were both found *by
+      accident*, six days apart, with the same silent shape — the word parses as
+      an ordinary variable, nothing errors, the program computes the wrong
+      answer. `TAB(` was worse: it had been written down as *"Already faithful
+      (NO work)"* in
+      [`docs/spec-basic-df2-2-intarg-coercion.md`](docs/spec-basic-df2-2-intarg-coercion.md)
+      §1.2 because `PRINT TAB(99999)` raises ERR 6 on **both** sides — for
+      structurally different reasons (absent `TAB(` ⇒ `TAB` is an *array*, and
+      the subscript bound-check yields the same code). **The differential passed
+      and the feature did not exist.** That §1.2 claim is doc debt and is
+      corrected in this commit.
+      - **SILENT-GAP (8) — wrong answer, NO error.** The worst class; each is a
+        live landmine in a user program today.
+        `TAB(` · `SPC(` · `CSRLIN` · `POS` · `FRE` · `EQV` · `IMP` · `BIN$`.
+        (`PRINT 5 EQV 3` prints **three separate values** — the operator is read
+        as a variable between two literals.) `TIME` was the ninth and **landed
+        2026-07-26**; the sweep picked that up with no edit to the probe.
+      - **MISSING (6) — honest syntax error.** `LOCATE` · `SWAP` · `TRON` ·
+        `TROFF` · `MOTOR` · `DEF FN`/`FN`.
+      - **NO-ORACLE (5).** `MKI$` `MKS$` `MKD$` `CVS` `CVD` — the MK/CV family
+        lives in Disk BASIC, so a **diskless** VG-8020 reference measures the
+        absence of a disk ROM, not of a language feature. The probe routes these
+        to `National_CF-3300`, which does not yet give a readable SCREEN-0
+        capture under `omsx_repl`; until it does they report `NO-ORACLE` rather
+        than answering from the wrong machine. Blocks nothing —
+        `MKS$`/`MKD$`/`CVS`/`CVD` are already deferred under the float pack.
+      - **18 crunch-only** — destructive (`DSKO$`, `IPL`), interactive (`AUTO`,
+        `INPUT$(n)`), non-terminating (`WAIT`), printer-bound with the known
+        unplugged-`LSTOUT` hang hazard (`LPRINT`, `LLIST`, `LPOS`, `LFILES`),
+        disk-fixture-dependent (`COPY`, `SET`, `ATTR$`, `DSKI$`, `LOC`), or
+        covered elsewhere (`INTERVAL` → the T5 slice probe). These are coverage
+        holes **in the probe**, listed in its output with reasons rather than
+        silently dropped.
+      - ⚠️ **`INPUT$` is the one to watch:** it crunches *identically* to the
+        reference (`INPUT` is a keyword and `$` follows), so layer 1 says
+        "present" while support is untested — the exact `INTERVAL` shape. Open
+        under the **I/O** item above; the sweep has **not** settled it.
+      **Scope boundary:** reserved words only. Statement *option* surfaces
+      (`SCREEN 3`, `KEY LIST`, argument forms of words that *are* present) are
+      not covered — a word can be present and still wrong in its third argument.
+      **Not yet sliced or costed.** Page 1 is currently 14 B *over* the ceiling
+      (see the T5 line above), so every one of these needs funding before it
+      needs a spec.
 
 ## Beyond — post-MSX1 axes (out of charter, far future)
 

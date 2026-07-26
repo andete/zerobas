@@ -5,16 +5,25 @@ SPDX-License-Identifier: 0BSD
 
 # MSX1 BASIC keyword-completeness sweep — the coverage denominator
 
-**Status:** measured 2026-07-26 · probe
+**Status:** re-measured 2026-07-26 after the TIME + T5 landings · probe
 [`probes/basic/basic_probe_kwsweep.py`](../probes/basic/basic_probe_kwsweep.py) ·
-reference Philips VG-8020 · zerobas `C-BIOS_MSX1_EU_REPACK_DISK` at
-`zerobas-main-eu.rom=664f4898977d` (`sub.rom=e7bf1c86f40c`), `git=8d9bca1`
+gate `make kwsweep` · reference Philips VG-8020 · zerobas
+`C-BIOS_MSX1_EU_REPACK_DISK` at `zerobas-main-eu.rom=05f43b425e5b`
+(`sub.rom=77c6ac54b405`), `git=b531c49`
 
-> The **ROM hash is the pin, not the git rev.** A parallel session was committing
-> to this tree during the sweep (HEAD moved `f59a5c7`→`8d9bca1`), but the built
-> ROMs were byte-identical before and after the run — the probe's own
-> before/after fingerprint check confirms it, and aborts the report if they ever
-> differ.
+> **The ROM hash is the pin, not the git rev**, and here the two disagree on
+> purpose: the tree is 14 B over the page-1 ceiling
+> ([`spec-traps-t5-interval.md`](spec-traps-t5-interval.md) §4.3), so
+> `make basic-reloc` fails and `build/zerobas-main-eu.rom` is the **last
+> successful build**, not HEAD. The probe fingerprints the ROMs before and after
+> every run and aborts the report if they change mid-flight — the machine XML
+> points straight at the project tree, so a concurrent `make` in another session
+> silently changes the measurement target.
+
+**The sweep already earned its keep as a regression detector.** The first run
+(`664f4898`) flagged `TIME` as a SILENT-GAP; this run picks up `TIME` as
+tokenised and SUPPORTED with no edit to the probe — the `time`/`timetick` rows
+moved on their own when the feature landed.
 
 ## Why this exists
 
@@ -59,12 +68,12 @@ tally.
 
 ## Headline
 
-Of **162** MSX1 reserved words swept: **123 tokenise**, **39 do not**. Of those 39,
+Of **162** MSX1 reserved words swept: **124 tokenise**, **38 do not**. Of those 38,
 **3 work anyway** (`DEFSNG`/`DEFDBL`/`DEFSTR` — no `kwtable.inc` entry by design,
 they reach `ex_def_type` as `DEF_TOKEN` + literal ASCII) and **1 is `INTERVAL`**
-(needs no token). **35 words are genuinely absent.**
+(needs no token). **34 words are genuinely absent.**
 
-### SILENT-GAP — zerobas answers, and the answer is wrong (9)
+### SILENT-GAP — zerobas answers, and the answer is wrong (8)
 
 The worst class: no error, no diagnostic, just a wrong number. Every one of these
 is a live `TIME`-shaped landmine in a user program today.
@@ -76,7 +85,6 @@ is a live `TIME`-shaped landmine in a user program today.
 | `CSRLIN` | `[ 4 ]` | `[ 0 ]` | numeric var |
 | `POS` | `[ 5 ]` | `[ 0 ]` | array element |
 | `FRE` | `[-1 ]` | `[ 0 ]` | array element |
-| `TIME` | `[-1 ]` | `[ 0 ]` | var `TI` (advances vs doesn't) |
 | `EQV` | `[-7 ]` | `[ 5  0  3 ]` | var → three PRINT items |
 | `IMP` | `[-5 ]` | `[ 5  0  3 ]` | var → three PRINT items |
 | `BIN$` | `[101]` | `[]` | string array element |
@@ -84,6 +92,10 @@ is a live `TIME`-shaped landmine in a user program today.
 `EQV`/`IMP` deserve a note: `PRINT 5 EQV 3` prints **three separate values**
 because the operator is read as a variable between two literals. Nothing in the
 language flags it.
+
+`TIME` was the ninth entry in this table on the first run and is now **SUPPORTED**
+(token `$CB`, `timetick` confirms the clock advances across a delay loop) — see
+[`spec-basic-time.md`](spec-basic-time.md).
 
 ### MISSING — zerobas raises a syntax error (6)
 

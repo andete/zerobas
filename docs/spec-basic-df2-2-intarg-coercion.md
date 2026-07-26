@@ -112,9 +112,26 @@ pre-existing domain behaviour-equivalent (still too wide); the fix belongs to st
 ### 1.2 Already faithful (NO work — regression-guard only)
 
 POKE addr/val, HEX$, PRINT (F2-wired, full address domain — POKE `40000`/`-1`/`65535` all
-cont, `99999`→ERR 6, confirmed); `DIM A(n)`, array subscripts, `TAB(n)`, `SPC(n)` (raise
-ERR 6 on 99999). These prove the fix templates already ship. (**VPOKE was mistakenly here
-in the draft — it is a Group-B site, see above.**)
+cont, `99999`→ERR 6, confirmed); `DIM A(n)`, array subscripts. These prove the fix
+templates already ship. (**VPOKE was mistakenly here in the draft — it is a Group-B site,
+see above.**)
+
+> 🔴 **CORRECTION 2026-07-26 — `TAB(n)` and `SPC(n)` were listed here and DO NOT
+> EXIST.** They were certified "already faithful" on the observation that
+> `PRINT TAB(99999)` raises ERR 6 on both sides. It does — **for structurally
+> different reasons.** zerobas has no `TAB(`/`SPC(` (neither is in
+> [`basic/kwtable.inc`](../basic/kwtable.inc)), so `TAB` is an ordinary **array**
+> and the *subscript* bound-check produces the same error code. The visible
+> difference is in the ordinary case, not the error case: `PRINT "[";TAB(5);"X]"`
+> gives `[    X]` on the VG-8020 and `[ 0 X]` here — the array element, printed.
+> Both are now tracked as SILENT-GAPs in
+> [`kwsweep-msx1-coverage.md`](kwsweep-msx1-coverage.md) and in `TODO.md`.
+>
+> **The reusable lesson: a differential case that AGREES proves nothing unless the
+> absent-feature parse would have answered DIFFERENTLY.** Before trusting a
+> passing case, ask what a machine *without* the feature would print; if that is
+> the same value, the case is worthless. `make kwsweep` keeps a deliberately weak
+> row in-tree as a standing demonstration.
 
 ### 1.3 Out of scope
 
