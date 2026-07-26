@@ -11,11 +11,18 @@ gate `make kwsweep` · reference Philips VG-8020 · zerobas
 `C-BIOS_MSX1_EU_REPACK_DISK` at `zerobas-main-eu.rom=05f43b425e5b`
 (`sub.rom=77c6ac54b405`), `git=b531c49`
 
-> **The ROM hash is the pin, not the git rev**, and here the two disagree on
-> purpose: the tree is 14 B over the page-1 ceiling
+> **The ROM hash is the pin, not the git rev**, and at the time of this sweep the
+> two disagreed on purpose: the tree was then 14 B over the page-1 ceiling
 > ([`spec-traps-t5-interval.md`](spec-traps-t5-interval.md) §4.3), so
-> `make basic-reloc` fails and `build/zerobas-main-eu.rom` is the **last
-> successful build**, not HEAD. The probe fingerprints the ROMs before and after
+> `make basic-reloc` failed and `build/zerobas-main-eu.rom` was the **last
+> successful build**, not HEAD.
+>
+> ✅ **That overrun is resolved as of `a5a3af2`** — page-1 free is 8 B and
+> `make basic-reloc` succeeds
+> ([`spec-basic-direct-ctrl.md`](spec-basic-direct-ctrl.md) §Cost). The hashes
+> above are left exactly as recorded: they pin the ROM this sweep actually ran
+> against, which is the point of pinning. **Re-run `make kwsweep` to re-pin
+> against a current build** before treating the numbers as fresh. The probe fingerprints the ROMs before and after
 > every run and aborts the report if they change mid-flight — the machine XML
 > points straight at the project tree, so a concurrent `make` in another session
 > silently changes the measurement target.

@@ -143,6 +143,11 @@ byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
   the merged tree is 14 B over the page-1 ceiling, so `make basic-reloc` and hence
   `make repack-machine` cannot build and the gate cannot be re-run yet. **Re-run
   `make sprite-trap-acceptance` as soon as those 14 B are reclaimed.**
+  → ✅ **DONE 2026-07-26, `a5a3af2`.** The 14 B were reclaimed by
+  [`docs/spec-basic-direct-ctrl.md`](../../docs/spec-basic-direct-ctrl.md), the
+  tree builds clean (page-1 8 B free), and `make sprite-trap-acceptance` was
+  re-run on the merged tree: **ALL PASS**. The deferral is closed — the reading
+  is no longer inherited from `1addfbc`, it was measured here.
 
 **[FINDING — GATE FRAGILITY, 2026-07-26] `error-trap-acceptance` `tc_next_nofor`
 fails ONLY in the full batch.** It reads `zb='";ERR;"'` — the inner text of the

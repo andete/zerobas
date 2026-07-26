@@ -1173,7 +1173,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       been mis-reported as "silently accepted" — a probe artifact, since an
       aborting case never clears the screen and the tag regex then matched the
       echoed source line; `_outcome` in the graphics probe now detects aborts.
-- [ ] **Interrupt traps** — `ON INTERVAL/KEY/SPRITE/STOP/STRIG GOSUB` + the arming
+- [x] **Interrupt traps — ✅ ARC CONCLUDED 2026-07-26, all FIVE families landed and
+      gated** (T1 `STOP`, T2 `STRIG`, T3 `KEY`, T4 `SPRITE`, T5 `INTERVAL`). Detail
+      per slice below; the two later ones are recorded at the end of this item.
+      ⚠️ It was declared concluded once at T4 and wasn't — `INTERVAL` turned out to
+      be a fifth MSX1 family dropped on a false premise (see the reopening note
+      below). `ON INTERVAL/KEY/SPRITE/STOP/STRIG GOSUB` + the arming
       statements (`INTERVAL/SPRITE/STOP ON/OFF/STOP`, `KEY(n)/STRIG(n) ON/OFF/STOP`).
       Closes the input-devices **D-I-5** handoff (`STRIG(n)/KEY(n) ON/OFF/STOP` → real,
       was documented-divergence ERR 2) and the graphics **D-G7-4** handoff (`SPRITE
@@ -1239,9 +1244,44 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (it has `INT` and `VAL`), so **T5 needs no token and no `kwtable` row** — only
       the parse + the `event_poll` counter stanza, both already specified in
       [`docs/spec-basic-interrupt-traps.md`](docs/spec-basic-interrupt-traps.md)
-      §5/§6 (written for INTERVAL first, then orphaned). **T5 is owed a packet.**
-- [ ] **`TIME` / `TIME=n`** — the software-clock pseudo-variable, standard MSX1
-      BASIC and **absent from zerobas entirely**: it is not in
+      §5/§6 (written for INTERVAL first, then orphaned). ~~**T5 is owed a packet.**~~
+
+      ✅ **T4 SPRITE LANDED** 2026-07-26 (`85ac5f4`, cadence gate rebuilt `47f4999`):
+      `ON SPRITE GOSUB` + `SPRITE ON|OFF|STOP`. **Closes the graphics D-G7-4
+      handoff.** SPRITE is a **LEVEL** trap, one fire per frame — confirmed at the
+      emulator level (300 latches over 300 frames) — and D-T-4 is to read `STATFL`.
+      `make sprite-trap-acceptance` **123/123**. Spec
+      [`docs/spec-traps-t4-sprite.md`](docs/spec-traps-t4-sprite.md).
+      **The gate was wrong four times before the implementation was wrong once.**
+      The original `F_cadence` measured the MAIN LOOP, not the trap: its "1.5
+      jiffies/fire divergence" was the HANDLER'S OWN COST, and a handler taking
+      >1 frame starves the main program completely — so the main program cannot be
+      the instrument for a feature that can starve it. Rebuilt on emulator-counted
+      fires. **A gate's DENOMINATOR must be measured, never computed by the thing
+      under load.**
+
+      ✅ **T5 INTERVAL LANDED** 2026-07-26 (`26f9251`): `ON INTERVAL=n GOSUB` +
+      `INTERVAL ON|OFF|STOP`, **no token and no `kwtable` row needed** (the
+      reserved-word compound above). `make interval-trap-acceptance` **149/149**.
+      Spec [`docs/spec-traps-t5-interval.md`](docs/spec-traps-t5-interval.md).
+      ⚠️ **It landed 14 B OVER the page-1 ceiling** (`f973e1c` corrected the
+      as-built figure to 265 B): the SAVE-engine carve funded `TIME` *and* T5 —
+      two of three, not three. The tree stayed red until the direct-mode
+      control-flow slice reclaimed the bytes (`a5a3af2`; page-1 free now **8 B**).
+      The overrun had hidden behind **warm-tree** builds reporting 55 B free —
+      only `rm -rf build && make basic-reloc` measures the wall.
+- [x] **`TIME` / `TIME=n` — ✅ LANDED 2026-07-26** (`1addfbc`), 81 B, gate
+      `make time-acceptance` **105/105 both sides**. Retires the T3-era rule that
+      banned `TIME` on the zerobas side of the acceptance harness.
+      **Its gate surfaced the direct-mode `FOR` defect** that became
+      [`docs/spec-basic-direct-ctrl.md`](docs/spec-basic-direct-ctrl.md): the write
+      group shifted phase with a `FOR` pad, seven of eight phases errored, and the
+      reduction **collapsed to one sample** while still printing a number — worse
+      than no reduction. It now pads with statements instead.
+
+      *Original entry, kept for the characterization record:* the software-clock
+      pseudo-variable, standard MSX1
+      BASIC and **was absent from zerobas entirely**: it is not in
       [`basic/kwtable.inc`](basic/kwtable.inc), so `TIME` parses as the *variable*
       `TI` and reads 0 forever, which makes `IF TIME-T<400 GOTO` an infinite loop —
       a **silent** divergence. Found as collateral during the T3 KEY slice
@@ -1255,9 +1295,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       — wrap by −65536 above 32767, then truncate toward zero, ERR 6 outside
       −32768..65535); errors are ERR 13 / 24 / 6 / 2; the clock wraps mod 65536 with
       no error and its *rate* belongs to the host BIOS/VDP.
-      Spec [`docs/spec-basic-time.md`](docs/spec-basic-time.md) — **awaiting
-      sign-off**; the one open decision is funding (~52–75 B, pure page 1, and page
-      1 has 22 B free).
+      Spec [`docs/spec-basic-time.md`](docs/spec-basic-time.md) — ~~awaiting
+      sign-off; the one open decision is funding (~52–75 B, pure page 1, and page
+      1 has 22 B free)~~ **signed off and implemented; funded by the SAVE
+      write-engine carve** (+310 B page 1).
 - [x] **Direct-mode control flow — ✅ DONE 2026-07-26**, spec + as-built
       [`docs/spec-basic-direct-ctrl.md`](docs/spec-basic-direct-ctrl.md), gate
       [`make direct-ctrl-acceptance`](Makefile) **40/40** vs the VG-8020

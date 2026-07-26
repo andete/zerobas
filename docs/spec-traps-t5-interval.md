@@ -4,12 +4,23 @@ SPDX-License-Identifier: 0BSD
 -->
 # Spec — interrupt traps **T5: `ON INTERVAL=n GOSUB` + `INTERVAL ON|OFF|STOP`**
 
-Status: **⚠️ IMPLEMENTED AND GATED 149/149, BUT THE TREE IS 14 B OVER THE PAGE-1
-CEILING — `make basic-reloc` FAILS.** See §4.3. The slice is behaviourally
-complete and its gate is green on both machines; it does not yet FIT beside
-`TIME`. Reclaiming 14 B is the open item. D-T5-2 signed off; D-T5-1/3/4/6 adopted as
-recommended; D-T5-5 answered by the structure (§6). As-built in §4.3, §5.1
-and §6.1.
+Status: **✅ LANDED + GATED 149/149, and it FITS as of `a5a3af2`.** D-T5-2 signed
+off; D-T5-1/3/4/6 adopted as recommended; D-T5-5 answered by the structure (§6).
+As-built in §4.3, §5.1 and §6.1.
+
+⚠️ **It did not fit when it landed, and that history is the point of §4.3.** For
+several commits this spec read "IMPLEMENTED AND GATED 149/149, BUT THE TREE IS
+14 B OVER THE PAGE-1 CEILING — `make basic-reloc` FAILS": the slice was
+behaviourally complete with a green gate on both machines while **not fitting
+beside `TIME`**, because the SAVE-family carve funded two of three needs, not
+three. The 14 B were reclaimed not by §4.3's recommended `ON|OFF|STOP` decode
+share — **that carve is still available and unspent** — but by the direct-mode
+control-flow slice ([`spec-basic-direct-ctrl.md`](spec-basic-direct-ctrl.md)
+§Cost). Page-1 free is now **8 B**, low region 5 B, from a clean build.
+
+Two things worth carrying forward: **a green gate says nothing about whether the
+bytes fit**, and the overrun hid for several commits behind **warm-tree** builds
+reporting 55 B free — only `rm -rf build && make basic-reloc` measures the wall.
 **With T5 landed the interrupt-trap arc closes for the second time — honestly.**
 The fifth and last slice of
 the interrupt-trap arc, after [T1 STOP](spec-traps-t1-stop-reslice.md) ·
@@ -306,7 +317,14 @@ a lower bound and budget ~170 B**.
 
 ### 4.3 ✅ AS BUILT — 196 B, and the lower-bound rule held for the sixth time
 
-🔴 **CORRECTED, and the correction is the point: 265 B, and the tree is 14 B OVER
+> ✅ **RESOLVED `a5a3af2`** — the 14 B were reclaimed by the direct-mode
+> control-flow slice ([`spec-basic-direct-ctrl.md`](spec-basic-direct-ctrl.md)
+> §Cost), **not** by §4.4's recommended `ON|OFF|STOP` decode share, which remains
+> available and unspent. Page-1 free is now 8 B from a clean build. The 265 B
+> as-built figure below is unchanged and still correct — what follows is the
+> record of how it was mis-measured, which is the durable lesson.
+
+🔴 **CORRECTED, and the correction is the point: 265 B, and the tree WAS 14 B OVER
 the ceiling.** `check_reloc` on a CLEAN build: reloc size **22524** against the
 22510 B that `$2812–$7FFF` holds. A clean build at the parent commit (`1addfbc`,
 `TIME` landed, T5 not) measures **251 B free**, so T5 costs **265 B** — **2.8×**

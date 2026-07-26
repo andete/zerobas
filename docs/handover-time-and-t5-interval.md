@@ -4,6 +4,29 @@ SPDX-License-Identifier: 0BSD
 -->
 # Handover — `TIME`/`TIME=n` **and** interrupt-traps **T5 `INTERVAL`**
 
+Status: **✅ SUPERSEDED — both features have LANDED.** Kept as the historical
+brief; **do not read its numbers as current.**
+
+* `TIME` / `TIME=n` — landed `1addfbc`, 81 B, `make time-acceptance` 105/105.
+* T5 `INTERVAL` — landed `26f9251`, `make interval-trap-acceptance` 149/149,
+  spec [`spec-traps-t5-interval.md`](spec-traps-t5-interval.md).
+* The funding decision this brief asked for — the **SAVE write-engine carve**,
+  +310 B page 1 — is recorded in
+  [`decision-fund-time-and-t5.md`](decision-fund-time-and-t5.md).
+
+⚠️ **How the funding call actually turned out, because §4 below gets it wrong.**
+The carve funded `TIME` **and** T5 — *two of three*, not three: T5 landed 14 B
+**over** the page-1 ceiling and the tree stayed red until the direct-mode
+control-flow slice reclaimed the bytes (`a5a3af2`, page-1 free now **8 B**). The
+"22 B free" in §4 is a stale reading of a wall that has moved several times since,
+and the overrun itself hid behind a **warm-tree** build reporting 55 B free —
+only `rm -rf build && make basic-reloc` measures it.
+
+---
+
+<details>
+<summary>Original brief, 2026-07-26 (historical)</summary>
+
 Status: **HANDOVER BRIEF, 2026-07-26.** Two features are ready to be specced
 into implementation, and they **compete for the same wall**. Deliverable of the
 next session = a **funding decision** (a carve, measured and costed) plus a
@@ -152,3 +175,5 @@ And the one from `60e0ab6`, which is the reason Thread B exists:
 **"absent from the keyword table" ≠ "absent from the language."** A crunch probe
 answers a *tokenisation* question; only running the feature answers a *support*
 question.
+
+</details>
