@@ -4,8 +4,10 @@ SPDX-License-Identifier: 0BSD
 -->
 # Spec — interrupt traps **T5: `ON INTERVAL=n GOSUB` + `INTERVAL ON|OFF|STOP`**
 
-Status: **✅ LANDED + GATED 2026-07-26. `make interval-trap-acceptance` = 149/149,
-BOTH sides, zero failures.** D-T5-2 signed off; D-T5-1/3/4/6 adopted as
+Status: **⚠️ IMPLEMENTED AND GATED 149/149, BUT THE TREE IS 14 B OVER THE PAGE-1
+CEILING — `make basic-reloc` FAILS.** See §4.3. The slice is behaviourally
+complete and its gate is green on both machines; it does not yet FIT beside
+`TIME`. Reclaiming 14 B is the open item. D-T5-2 signed off; D-T5-1/3/4/6 adopted as
 recommended; D-T5-5 answered by the structure (§6). As-built in §4.3, §5.1
 and §6.1.
 **With T5 landed the interrupt-trap arc closes for the second time — honestly.**
@@ -304,10 +306,32 @@ a lower bound and budget ~170 B**.
 
 ### 4.3 ✅ AS BUILT — 196 B, and the lower-bound rule held for the sixth time
 
-`make basic-reloc`: page-1 free **251 B → 55 B = 196 B**, low region untouched at
-5 B (§3's page-1 argument held — unlike T3 and T4, T5 needed nothing in the low
-region). Against the 95 B estimate that is **2.06×**, and against the 170 B
-planned figure it is still 26 B over. Lean cart byte-identical.
+🔴 **CORRECTED, and the correction is the point: 265 B, and the tree is 14 B OVER
+the ceiling.** `check_reloc` on a CLEAN build: reloc size **22524** against the
+22510 B that `$2812–$7FFF` holds. A clean build at the parent commit (`1addfbc`,
+`TIME` landed, T5 not) measures **251 B free**, so T5 costs **265 B** — **2.8×**
+the 95 B estimate, and 95 B more than the 170 B "budget on the lower bound"
+figure. Low region untouched at 5 B (§3's page-1 argument held).
+
+⚠️ **AND THE INCREMENTAL BUILDS LIED ABOUT IT ALL THE WAY.** `make basic-reloc`
+reported 64 B free, then 55 B, while the same sources built from scratch overrun.
+Every intermediate figure in this section's first draft (196 B, "55 B left") came
+from a stale `build/` tree. **Only `rm -rf build && make basic-reloc` measures the
+wall** — an incremental one can report headroom that a clean build does not have,
+which is precisely the failure mode a byte-budget gate exists to prevent.
+The arc's standing rule "MEASURE byte budgets before declaring a wall" needs the
+corollary: *measure them from clean.*
+
+Open: reclaim ≥14 B. The identified candidates, cheapest first —
+**(a)** share the `ON|OFF|STOP` token decode and the `ld a,ZTS_*` triple between
+`ex_interval` and `ex_stop` (they are token-for-token identical; ~14 B net, no
+behaviour change, needs a `stop-trap-acceptance` re-run);
+**(b)** route `ex_time_assign`'s ERR 2 to the existing `trap_syntax` (~3 B);
+**(c)** D-TIME-2's `di`/`ei` guards (8 B) — pre-authorised by
+[spec-basic-time.md](spec-basic-time.md) §5 as the first thing to drop if funding
+lands tight, at the cost of a real (if unobservable) torn-access guard;
+**(d)** a second carve. (a)+(b) is the recommendation: it gives the margin back
+without giving up anything measured.
 
 Where the 101 B over the estimate went, honestly:
 
