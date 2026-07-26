@@ -85,6 +85,26 @@ import subprocess
 import omsx_repl  # typing-free KEYBUF-injection REPL driver
 
 MACHINE = "Philips_VG_8020"
+# A DISK-EQUIPPED reference, for the rows whose verbs live in Disk BASIC.
+#
+# This exists because the first full run tripped its own control group: `mki`
+# (MKI$, which zerobas implements correctly) came back as the reference raising
+# `Illegal function call` while zerobas printed the right answer. The language was
+# never the asymmetry — the MACHINES were. The default reference is a DISKLESS
+# VG-8020, while the zerobas side is C-BIOS_MSX1_EU_REPACK_**DISK**, so every
+# MK$/CV/Disk-BASIC row was comparing "no disk ROM" against "disk ROM" and
+# attributing the difference to zerobas. Rows tagged NEEDS-DISK: get their
+# reference capture from this machine instead.
+#
+# STATUS 2026-07-26: this machine does NOT yet yield a readable SCREEN-0 capture
+# under omsx_repl — a trivial `PRINT 1+1` comes back as VRAM pattern garbage, so
+# it is presumably still in the boot/logo video mode when the capture fires, or
+# needs a longer boot than the shared default. Until that is chased down, the
+# NEEDS-DISK rows report NO-ORACLE rather than a verdict: the probe declines to
+# answer instead of answering from the wrong machine. Chasing it is cheap and
+# worthwhile, but the MK/CV family it gates is ALREADY tracked as deferred in
+# TODO.md, so it blocks no finding in this sweep.
+DISK_MACHINE = "National_CF-3300"
 TXTTAB = 0xF676   # sysvar: 2-byte LE pointer to the BASIC text base (both machines)
 
 # Widest direct-mode exec line whose prompt echo still fits ONE SCREEN-0 row, so
@@ -132,9 +152,15 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # Console / cursor. All three fail the same way if absent: the word parses as
     # a numeric variable (0) or an array, so the probe must make 0 the WRONG
     # answer rather than a plausible one.
+    # COLUMN ONLY, not `LOCATE 10,0`. The first design used row 0 — and on the
+    # reference the feature under test then MOVED THE CURSOR ONTO THE ECHOED
+    # COMMAND and overprinted it, so screen_tail could not find the echo and the
+    # reference row came back ?noecho/UNREADABLE. The probe was destroying its own
+    # anchor. `LOCATE 10` keeps output on the current row, just indented.
     ("locate",  "locate 10,0",
-     'LOCATE 10,0:PRINT"[X]"',                       "direct",
-     "absent => `LOCATE 10,0` is a bare word + juxtaposition => syntax error"),
+     'LOCATE 10:PRINT"[X]"',                         "direct",
+     "absent => `LOCATE 10` is a bare word + juxtaposition => syntax error; "
+     "real => `[X]` indented to column 10"),
     ("csrlin",  "a=csrlin",
      'PRINT:PRINT:PRINT"[";CSRLIN;"]"',              "direct",
      "absent => variable CSRLIN reads 0; real => the (non-zero) cursor row"),
@@ -175,9 +201,24 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      None,                                           "direct",
      "INTERACTIVE: enters auto-line-number mode and swallows all following input"),
 
+    # DEFSNG/DEFDBL/DEFSTR have NO kwtable.inc entry of their own by design (only
+    # DEFINT does — see the collision note there); they reach ex_def_type as
+    # DEF_TOKEN + literal ASCII. So they are the one family where "absent from the
+    # keyword table" is expected AND support is expected — the INTERVAL shape,
+    # in-tree. Flagged by this probe's own coverage audit as a blind spot.
+    ("defsng",  "defsng a",
+     'DEFSNG A:A=1.5:PRINT"[";A;"]"',                "direct", "control"),
+    ("defdbl",  "defdbl a",
+     'DEFDBL A:A=1.5:PRINT"[";A;"]"',                "direct", "control"),
+    ("defstr",  "defstr a",
+     'DEFSTR A:A="x":PRINT"[";A;"]"',                "direct", "control"),
+
     # User-defined functions.
+    # STORED, not direct: the reference answers `Illegal direct` to a direct-mode
+    # DEF FN — measured, first run of this sweep. So the direct form tests the
+    # direct-mode restriction, not the feature.
     ("deffn",   "def fna(x)=x+1",
-     'DEF FNA(X)=X+1:PRINT"[";FNA(2);"]"',           "direct",
+     'DEF FNA(X)=X+1:PRINT"[";FNA(2);"]"',           "stored",
      "absent => syntax error; real => 3"),
 
     # The two missing logical operators.
@@ -228,26 +269,32 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "probes/basic/basic_probe_interval_trap.py (T5 slice), not duplicated here"),
 
     # Random-access float conversions (the MKI$/CVI integer pair ships).
+    # MKI$ is the FAMILY CONTROL: the first run had the reference answering
+    # `Illegal function call` to `LEN(MKS$(1))`, which could mean either "MKS$
+    # needs Disk BASIC on this diskless VG-8020" or "my expression is wrong".
+    # MKI$ is implemented on BOTH sides, so it separates those two readings.
+    ("mki",     'a$=mki$(1)',   'PRINT"[";LEN(MKI$(1));"]"',  "direct",
+     "NEEDS-DISK: " "control for the MK/CV family — MKI$ ships in zerobas"),
     ("mks",     'a$=mks$(1)',   'PRINT"[";LEN(MKS$(1));"]"',  "direct",
-     "absent => syntax error; real => 4"),
+     "NEEDS-DISK: " "absent => syntax error; real => 4"),
     ("mkd",     'a$=mkd$(1)',   'PRINT"[";LEN(MKD$(1));"]"',  "direct",
-     "absent => syntax error; real => 8"),
+     "NEEDS-DISK: " "absent => syntax error; real => 8"),
     ("cvs",     'a=cvs("abcd")', 'PRINT"[";CVS(MKS$(1));"]"', "direct",
-     "absent => syntax error; real => 1"),
+     "NEEDS-DISK: " "absent => syntax error; real => 1"),
     ("cvd",     'a=cvd("abcdefgh")', 'PRINT"[";CVD(MKD$(1));"]"', "direct",
-     "absent => syntax error; real => 1"),
+     "NEEDS-DISK: " "absent => syntax error; real => 1"),
 
     # Disk-BASIC surface. Sector I/O and the destructive/interactive ones are
     # crunch-only ON PURPOSE — see SKIP_EXEC.
-    ("dski",    'a$=dski$(0,0)', None, "direct", "raw sector READ — needs a disk, out of scope here"),
-    ("dsko",    "dsko$0,0",      None, "direct", "raw sector WRITE — DESTRUCTIVE, never executed"),
-    ("copy",    'copy"a:x"to"a:y"', None, "direct", "file copy — needs a disk fixture"),
-    ("set",     'set password',  None, "direct", "Disk-BASIC SET — needs a disk fixture"),
-    ("attr",    'a$=attr$(0)',   None, "direct", "MSX-DOS2-era; measured for the record"),
-    ("ipl",     "ipl",           None, "direct", "boot-sector write — DESTRUCTIVE, never executed"),
+    ("dski",    'a$=dski$(0,0)', None, "direct", "NEEDS-DISK: " "raw sector READ — needs a disk, out of scope here"),
+    ("dsko",    "dsko$0,0",      None, "direct", "NEEDS-DISK: " "raw sector WRITE — DESTRUCTIVE, never executed"),
+    ("copy",    'copy"a:x"to"a:y"', None, "direct", "NEEDS-DISK: " "file copy — needs a disk fixture"),
+    ("set",     'set password',  None, "direct", "NEEDS-DISK: " "Disk-BASIC SET — needs a disk fixture"),
+    ("attr",    'a$=attr$(0)',   None, "direct", "NEEDS-DISK: " "MSX-DOS2-era; measured for the record"),
+    ("ipl",     "ipl",           None, "direct", "NEEDS-DISK: " "boot-sector write — DESTRUCTIVE, never executed"),
     ("cmd",     'cmd"x"',        None, "direct", "vendor hook; unknown side effects"),
-    ("lfiles",  "lfiles",        None, "direct", "printer-bound (LSTOUT hazard); tracked in TODO"),
-    ("loc",     "a=loc(1)",      None, "direct", "needs an open channel; tracked in TODO §File-position"),
+    ("lfiles",  "lfiles",        None, "direct", "NEEDS-DISK: " "printer-bound (LSTOUT hazard); tracked in TODO"),
+    ("loc",     "a=loc(1)",      None, "direct", "NEEDS-DISK: " "needs an open channel; tracked in TODO §File-position"),
     ("bin",     "a$=bin$(5)",
      'PRINT"[";BIN$(5);"]"',                         "direct",
      "absent => syntax error; real => 101"),
@@ -318,6 +365,24 @@ def verdict(ref_cls: str, ref_txt: str, zb_cls: str, zb_txt: str,
         return "UNREADABLE"
     ref_err = ref_cls.startswith("error")
     zb_err = zb_cls.startswith("error")
+    # A DIFF crunch is a DEFINITIVE fact: zerobas did not tokenise the word, so
+    # whatever it did instead was a variable/array parse. When it then declines to
+    # error, that is a silent wrong answer NO MATTER what the reference did —
+    # including when the reference itself refused the case (MKS$/MKD$ on a
+    # diskless VG-8020). Checking this before the ref-vs-zb comparison stops such
+    # rows being labelled "EXTRA", which would read as zerobas having a feature it
+    # provably lacks.
+    # AGREEMENT WINS FIRST. An earlier revision tested the DIFF-crunch rule before
+    # comparing the outputs, and promptly called DEFSNG/DEFDBL/DEFSTR "SILENT-GAP"
+    # while printing two IDENTICAL answers — those three have no kwtable entry by
+    # design (they reach ex_def_type as DEF_TOKEN + literal ASCII) and work fine.
+    # A no-entry word that produces the right answer is the INTERVAL shape, not a
+    # gap, so identical observable behaviour must be decided before tokenisation
+    # is allowed to weigh in at all.
+    if not ref_err and not zb_err and ref_txt.strip() == zb_txt.strip():
+        return "SUPPORTED"
+    if crunch_state == "DIFF" and not zb_err:
+        return "SILENT-GAP"
     if not ref_err and zb_err:
         return "MISSING"
     if ref_err and not zb_err:
@@ -325,9 +390,6 @@ def verdict(ref_cls: str, ref_txt: str, zb_cls: str, zb_txt: str,
     if ref_err and zb_err:
         # both refuse it — same class = faithful refusal, different = divergent
         return "SUPPORTED" if ref_cls == zb_cls else "DIVERGENT"
-    # both ran it
-    if ref_txt.strip() == zb_txt.strip():
-        return "SUPPORTED"
     return "SILENT-GAP" if crunch_state == "DIFF" else "DIVERGENT"
 
 
@@ -359,6 +421,10 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--machine", default=MACHINE,
                     help="reference machine (built-in BASIC oracle; default VG-8020)")
+    ap.add_argument("--disk-machine", dest="disk_machine", default=DISK_MACHINE,
+                    help="disk-equipped reference for NEEDS-DISK rows (default "
+                         f"{DISK_MACHINE}); the default VG-8020 has no disk ROM, "
+                         "so Disk-BASIC verbs would compare machines, not languages")
     ap.add_argument("--zb-machine", dest="zb_machine", required=True,
                     help="repack machine with BASIC baked into slot 0")
     ap.add_argument("--only", help="comma-separated word keys to run")
@@ -396,12 +462,28 @@ def main() -> int:
 
     results: dict[str, dict] = {k: {} for k, *_ in rows}
 
+    # Route each row's REFERENCE capture to a machine that can actually run it.
+    # A Disk-BASIC verb on a diskless reference measures the absence of a disk
+    # ROM, not the absence of a language feature — see DISK_MACHINE.
+    def ref_machine_for(note: str) -> str:
+        return args.disk_machine if note.startswith("NEEDS-DISK:") else args.machine
+
+    def ref_capture(specs, sel_rows, **kw):
+        """Capture `specs` on the reference, splitting the batch by which
+        reference machine each row needs, then re-interleaving in row order."""
+        out: list[str | None] = [None] * len(specs)
+        for mach in sorted({ref_machine_for(r[4]) for r in sel_rows}):
+            idx = [i for i, r in enumerate(sel_rows) if ref_machine_for(r[4]) == mach]
+            got = omsx_repl.run_cases(mach, [specs[i] for i in idx], batch=batch, **kw)
+            for i, g in zip(idx, got):
+                out[i] = g
+        return out
+
     # ---- Layer 1: CRUNCH ---------------------------------------------------
     if args.layer in ("crunch", "both"):
         specs = [("direct", [f"1 {body}"]) for _, body, _, _, _ in rows]
-        ref_raws = omsx_repl.run_cases(args.machine, specs, batch=batch,
-                                       reset=("NEW",),
-                                       capture=("stored_line", TXTTAB))
+        ref_raws = ref_capture(specs, rows, reset=("NEW",),
+                               capture=("stored_line", TXTTAB))
         zb_raws = omsx_repl.run_cases(args.zb_machine, specs, batch=batch,
                                       reset=("NEW",),
                                       capture=("stored_line", TXTTAB))
@@ -422,8 +504,8 @@ def main() -> int:
             for _, _, line, mode, _ in ex_rows:
                 specs.append((mode, omsx_repl.as_stored(line) if mode == "stored"
                               else [line]))
-            ref_raws = omsx_repl.run_cases(args.machine, specs, batch=batch,
-                                           reset=("NEW", "CLS"), capture="screen")
+            ref_raws = ref_capture(specs, ex_rows,
+                                   reset=("NEW", "CLS"), capture="screen")
             zb_raws = omsx_repl.run_cases(args.zb_machine, specs, batch=batch,
                                           reset=("NEW", "CLS"), capture="screen")
             for (key, _, line, mode, _), rr, zr in zip(ex_rows, ref_raws, zb_raws):
@@ -431,7 +513,15 @@ def main() -> int:
                 rc, rt = classify(rr, cmd)
                 zc, zt = classify(zr, cmd)
                 cs = results[key].get("crunch", (None,))[0]
-                v = verdict(rc, rt, zc, zt, cs)
+                note = next(n for k, _, _, _, n in rows if k == key)
+                if note.startswith("NEEDS-DISK:") and rc.startswith("?"):
+                    # The oracle for this row is the disk-equipped reference, and
+                    # it produced nothing readable. Refuse to compare rather than
+                    # silently fall back to the diskless default and call the
+                    # resulting machine difference a language difference.
+                    v = "NO-ORACLE"
+                else:
+                    v = verdict(rc, rt, zc, zt, cs)
                 results[key]["support"] = (v, rc, rt, zc, zt, line)
 
     fp_after = _rom_fingerprint()
@@ -455,7 +545,7 @@ def main() -> int:
     print("LAYER 2 — SUPPORT (the load-bearing layer)")
     print("=" * 78)
     order = {"SILENT-GAP": 0, "MISSING": 1, "DIVERGENT": 2, "EXTRA": 3,
-             "UNREADABLE": 4, "SUPPORTED": 5}
+             "UNREADABLE": 4, "NO-ORACLE": 5, "SUPPORTED": 6}
     executed = [(key, results[key]["support"]) for key, *_ in rows
                 if "support" in results[key]]
     notes = {k: n for k, _, _, _, n in rows}
@@ -468,6 +558,29 @@ def main() -> int:
             print(f"            zb   [{zc}] {zt!r}")
         if weak:
             print(f"            {notes[key]}")
+
+    # ---- the combined view: absence (layer 1) + consequence (layer 2) --------
+    # Neither layer is readable alone. Layer 1 says whether zerobas TOKENISES the
+    # word; layer 2 says what a program actually observes. INTERVAL is why: SAME
+    # crunch, no support. TAB( is why: value on both sides, no support.
+    if args.layer == "both":
+        print()
+        print("=" * 78)
+        print("COMBINED — tokenised? x observable consequence")
+        print("=" * 78)
+        print(f"{'word':10} {'crunch':7} {'support':11} consequence")
+        print("-" * 78)
+        for key, *_ in rows:
+            c = results[key].get("crunch")
+            s = results[key].get("support")
+            cs = c[0] if c else "-"
+            tok = {"SAME": "present", "DIFF": "ABSENT", "-": "-"}[cs]
+            if s:
+                sv = s[0]
+                cons = f"ref {s[2]!r} vs zb {s[4]!r}" if sv != "SUPPORTED" else "match"
+            else:
+                sv, cons = "not-run", "crunch-only — support UNKNOWN"
+            print(f"{key:10} {tok:7} {sv:11} {cons}")
 
     skipped = [(k, n) for k, _, ex, _, n in rows if ex is None]
     if skipped:
@@ -502,7 +615,10 @@ def main() -> int:
         print("    Another session rebuilt the tree. DISCARD this report and re-run.")
         return 3
 
-    controls = [k for k, _, ex, _, n in rows if ex is not None and n.startswith("control")]
+    # NEEDS-DISK rows cannot be controls: their oracle is the disk-equipped
+    # reference, which is not yet readable (see DISK_MACHINE).
+    controls = [k for k, _, ex, _, n in rows
+                if ex is not None and n.startswith("control")]
     bad = [k for k in controls
            if results[k].get("support", ("?",))[0] != "SUPPORTED"]
     if bad:
