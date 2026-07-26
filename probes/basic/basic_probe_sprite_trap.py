@@ -36,11 +36,16 @@ from the T3 gate -- these are what three void characterization rounds cost):
     there so a run where both sides agree is recognised as a broken apparatus
     rather than banked as a pass.
 
-THE CADENCE IS A RATIO, NOT A COUNT (§1.2). The fire count is a function of how
-many frames elapse in a window whose duration differs ~7x between the two
-machines, so it is NOT an equality-differential. The machine-independent
-invariant is fires/frames ~= 1 in a tight loop, asserted per machine -- the same
-shape as T3's auto-repeat finding.
+THE CADENCE IS COUNTED BY THE EMULATOR, NOT BY THE PROGRAM (§1.2.1, rebuilt
+2026-07-26). A fire count is a function of how many frames elapse in a window
+whose duration differs ~7x between the two machines, so it is not an
+equality-differential -- but "assert the RATIO per machine" was not enough
+either, and the case built that way passed at T4 by luck and went red on a commit
+that does not touch the trap. A ratio whose denominator the main program computes
+is measuring the main loop, because the handler competes with it for the
+interpreter. run_emu counts both the fires and the frames with watchpoints, and
+measures the handler's own cost in the same boot, so the assertion is a law with
+no free parameters. The long block above CADENCE_LEAN is the whole account.
 
 Clean-room: observed I/O only.
 """
@@ -70,58 +75,59 @@ REF_MACHINE = "Philips_VG_8020"
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
 
 BASE = 0xD000          # $D000 cnt, D001 who, D002 err, D003 done, D004..6 aux
+NBYTES = 16            # D008/9 J1, D00A/B J2 (the F2_period stamp pair),
+                       # D00C fire tick, D00D/E phase markers, D00F phase control
 JIFFY = 0xFC9E         # published work area: the frame counter
 STATFL = 0xF3E7        # published work area: the ISR's S#0 copy (spec §2)
 COLLISION = 0x20       # S#0 bit 5
 
+# The emulator-level cadence apparatus (F_cadence / F2_period / F0_cadence_off).
+FIRE_TICK = 0xD00C     # the handler writes it ONCE per entry -> the fire anchor
+PH1 = 0xD00D           # written by BASIC at `SPRITE ON`  -> phase 1 opens
+PH2 = 0xD00E           # written by BASIC after `SPRITE OFF` -> phase 2 opens
+PHCTL = 0xD00F         # written by the EMULATOR, polled by BASIC: 1 = end phase 1,
+                       # 2 = end phase 2. The window boundaries are the emulator's,
+                       # so the main program's progress cannot define them.
 
-def run(machine, prog, *, boot=8.0, step=3.0, poll_from=2.0,
-        deadline=600.0, timeout=900):
-    """Boot `machine`, inject `prog` + RUN through KEYBUF, and capture the
-    sentinels the moment $D003 is set -- or at `deadline` emulated seconds,
-    which captures done==0 and fails the case. One boot per call = power-on
-    fresh. Times are EMULATED seconds (throttle off)."""
-    out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="sprtrap_")
-    os.close(out_fd)
-    lines = [
-        "set throttle off",
-        f'proc __cap {{}} {{ set f [open {{{out_path}}} w];'
-        f' binary scan [debug read_block memory {BASE} 8] H* m;'
-        f' puts $f "m=$m t=[expr {{int([machine_info time])}}]"; close $f; exit }}',
-        # Poll for `done` rather than waiting a fixed span: the two machines run
-        # the same program ~7x apart, so a fixed window either truncates the slow
-        # side or wastes the fast one.
-        f'proc __poll {{}} {{ if {{[debug read memory {BASE + 3}] != 0}} {{ __cap }}'
-        f' else {{ after time 1 __poll }} }}',
-        # KEYBUF injection (probes/lib/omsx_repl.py, docs/spec-acceptance-harness-
-        # rework.md): write the bytes into the 40-byte type-ahead buffer and point
-        # GETPNT/PUTPNT at them, so CHGET delivers the line with no matrix scan and
-        # no per-character typing schedule to race. openMSX `type` cost the T3 gate
-        # three rounds to flake -- and every flake looked like a semantic failure.
-        "proc __key {s} {\n"
-        "  set n [string length $s]\n"
-        "  for {set i 0} {$i < $n} {incr i} {\n"
-        f"    debug write memory [expr {{{KEYBUF} + $i}}] "
-        "[scan [string index $s $i] %c]\n"
-        "  }\n"
-        f"  debug write memory {GETPNT} [expr {{{KEYBUF} & 0xFF}}]\n"
-        f"  debug write memory [expr {{{GETPNT}+1}}] [expr {{({KEYBUF} >> 8) & 0xFF}}]\n"
-        f"  set p [expr {{{KEYBUF} + $n}}]\n"
-        f"  debug write memory {PUTPNT} [expr {{$p & 0xFF}}]\n"
-        f"  debug write memory [expr {{{PUTPNT}+1}}] [expr {{($p >> 8) & 0xFF}}]\n"
-        "}",
-        "proc __inj {s} { append s \"\\r\"; __key $s }",
-    ]
-    t = boot
+# The KEYBUF line driver, shared by both runners (probes/lib/omsx_repl.py,
+# docs/spec-acceptance-harness-rework.md): write the bytes into the 40-byte
+# type-ahead buffer and point GETPNT/PUTPNT at them, so CHGET delivers the line
+# with no matrix scan and no per-character typing schedule to race. openMSX
+# `type` cost the T3 gate three rounds to flake -- and every flake looked like a
+# semantic failure.
+_INJECT_TCL = [
+    "proc __key {s} {\n"
+    "  set n [string length $s]\n"
+    "  for {set i 0} {$i < $n} {incr i} {\n"
+    f"    debug write memory [expr {{{KEYBUF} + $i}}] "
+    "[scan [string index $s $i] %c]\n"
+    "  }\n"
+    f"  debug write memory {GETPNT} [expr {{{KEYBUF} & 0xFF}}]\n"
+    f"  debug write memory [expr {{{GETPNT}+1}}] [expr {{({KEYBUF} >> 8) & 0xFF}}]\n"
+    f"  set p [expr {{{KEYBUF} + $n}}]\n"
+    f"  debug write memory {PUTPNT} [expr {{$p & 0xFF}}]\n"
+    f"  debug write memory [expr {{{PUTPNT}+1}}] [expr {{($p >> 8) & 0xFF}}]\n"
+    "}",
+    "proc __inj {s} { append s \"\\r\"; __key $s }",
+]
+
+
+def _schedule(prog, boot, step):
+    """The typing schedule: every line chunked to <=MAX_DIRECT with CR only on the
+    last piece. Returns (tcl lines, time just after RUN was typed)."""
+    lines, t = [], boot
     for text in list(prog) + ["RUN"]:
         chunks = [text[i:i + MAX_DIRECT] for i in range(0, len(text), MAX_DIRECT)] or [text]
         for k, c in enumerate(chunks):
             proc = "__inj" if k == len(chunks) - 1 else "__key"   # CR only on last
             lines.append(f'after time {t:g} {{ {proc} {{{c}}} }}')
             t += step
-    lines.append(f"after time {t + poll_from:g} {{ __poll }}")
-    lines.append(f"after time {t + deadline:g} {{ __cap }}")
+    return lines, t
 
+
+def _launch(machine, lines, timeout, out_path):
+    """Write the script, boot one fresh machine, wait for it to exit, return the
+    capture file's contents (or None)."""
     fd, tcl_path = tempfile.mkstemp(suffix=".tcl", prefix="sprtrap_")
     os.write(fd, ("\n".join(lines) + "\n").encode())
     os.close(fd)
@@ -140,24 +146,169 @@ def run(machine, prog, *, boot=8.0, step=3.0, poll_from=2.0,
         return None
     txt = open(out_path).read().strip()
     os.unlink(out_path)
+    return txt or None
+
+
+def _sentinels(res, hexbytes):
+    b = bytes.fromhex(hexbytes)
+    res.update(cnt=b[0], who=b[1], err=b[2], done=b[3],
+               aux=b[4], aux2=b[5], aux3=b[6],
+               j1=b[8] + 256 * b[9], j2=b[10] + 256 * b[11])
+
+
+def run(machine, prog, *, boot=8.0, step=3.0, poll_from=2.0,
+        deadline=600.0, timeout=900):
+    """Boot `machine`, inject `prog` + RUN through KEYBUF, and capture the
+    sentinels the moment $D003 is set -- or at `deadline` emulated seconds,
+    which captures done==0 and fails the case. One boot per call = power-on
+    fresh. Times are EMULATED seconds (throttle off)."""
+    out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="sprtrap_")
+    os.close(out_fd)
+    lines = [
+        "set throttle off",
+        f'proc __cap {{}} {{ set f [open {{{out_path}}} w];'
+        f' binary scan [debug read_block memory {BASE} {NBYTES}] H* m;'
+        f' puts $f "m=$m t=[expr {{int([machine_info time])}}]"; close $f; exit }}',
+        # Poll for `done` rather than waiting a fixed span: the two machines run
+        # the same program ~7x apart, so a fixed window either truncates the slow
+        # side or wastes the fast one.
+        f'proc __poll {{}} {{ if {{[debug read memory {BASE + 3}] != 0}} {{ __cap }}'
+        f' else {{ after time 1 __poll }} }}',
+    ] + _INJECT_TCL
+    sched, t = _schedule(prog, boot, step)
+    lines += sched
+    lines.append(f"after time {t + poll_from:g} {{ __poll }}")
+    lines.append(f"after time {t + deadline:g} {{ __cap }}")
+    txt = _launch(machine, lines, timeout, out_path)
     if not txt:
         return None
     res = {}
     for kv in txt.split():
         k, _, v = kv.partition("=")
         if k == "m":
-            b = bytes.fromhex(v)
-            res.update(cnt=b[0], who=b[1], err=b[2], done=b[3],
-                       aux=b[4], aux2=b[5], aux3=b[6])
+            _sentinels(res, v)
         else:
             res[k] = int(v)
     return res
 
 
+def run_emu(machine, prog, *, frames=300, boot=8.0, step=3.0,
+            deadline=400.0, timeout=900):
+    """THE CADENCE RUNNER: the fires and the frames are counted BY THE EMULATOR,
+    and the window boundaries are the emulator's too. See the §1.2 block above
+    CADENCE_LEAN for why the BASIC-counted form could not measure a cadence.
+
+      frames  = write-watchpoint hits on JIFFY lo ($FC9E), which the ISR ticks
+                once per frame
+      fires   = write-watchpoint hits on $D00C, which the handler writes once per
+                entry -- no saturation, no `POKE 256`, no BASIC arithmetic
+      SYNC    = the handler called synchronously by GOSUB with the trap not yet
+                enabled (opened by BASIC's write to $D00E) -- the handler's own
+                cost, i.e. the denominator the trap-driven rate is compared to
+      TRAP    = trap-driven (opened by BASIC's write to $D00D at `SPRITE ON`)
+
+    Each window runs exactly `frames` ISR ticks and the emulator closes it by
+    writing $D00F, so nothing about a window's extent depends on the main
+    program's progress.
+
+    THE SYNC WINDOW RUNS FIRST, AND THAT ORDER IS LOAD-BEARING. A handler that
+    costs more than a frame STARVES THE MAIN PROGRAM COMPLETELY on the repack
+    build: a fresh collision has always latched again by the time the handler
+    RETURNs, so the pending trap fires at the same statement boundary forever and
+    the interrupted statement never runs. Measured, with the T4 handler: the
+    program sat at its poll line for 400 emulated seconds and never reached the
+    next line -- $D00F=1 written by the emulator, $D00E still 0. Trap-first
+    therefore cannot work: the main program would have to survive the trap window
+    to open the sync window. Sync-first needs nothing of it after the switch (its
+    last line is a bare `GOTO` and the capture is the emulator's), and during the
+    sync window there is no trap to starve it. This is the T5 rule --  when the
+    feature can starve the main program, the main program cannot be the
+    instrument -- applied to the window boundaries as well as to the readings.
+
+    Both anchors are plain RAM on BOTH machines, so this needs no symbol table and
+    runs identically on the VG-8020 and the repack build."""
+    out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="spremu_")
+    os.close(out_fd)
+    lines = [
+        "set throttle off",
+        "set ::ph 0",                     # 0 = between windows, 1 = TRAP, 2 = SYNC
+        "set ::f1 0; set ::n1 0; set ::f2 0; set ::n2 0",
+        f'proc __cap {{}} {{ set f [open {{{out_path}}} w];'
+        f' binary scan [debug read_block memory {BASE} {NBYTES}] H* m;'
+        f' puts $f "m=$m fires1=$::f1 frames1=$::n1 fires2=$::f2 frames2=$::n2'
+        f' t=[expr {{int([machine_info time])}}]"; close $f; exit }}',
+        # THE PHASE MARKERS MUST BE TIME-GATED, and this is the apparatus bug this
+        # runner actually had: the VG-8020's boot writes $D00D while clearing RAM,
+        # long before the program is injected. Ungated, phase 1 opened at boot,
+        # closed 300 frames later at t=7 emulated seconds and reported 2 fires --
+        # a self-consistent reading of nothing at all. A gate that is too LATE is
+        # just as blind: opened after RUN was typed, it missed the program's own
+        # marker write (line 60 runs a fraction of a second after RUN) and every
+        # counter read zero. So it opens after the boot clear and before injection,
+        # and zeroes the marker cells itself rather than trusting either boot.
+        f"proc __open {{}} {{ set ::ph 0;"
+        f" foreach a {{{FIRE_TICK} {PH1} {PH2} {PHCTL}}} {{ debug write memory $a 0 }};"
+        f" debug set_watchpoint write_mem {PH1} {{}} {{ set ::ph 1 }};"
+        f" debug set_watchpoint write_mem {PH2} {{}} {{ set ::ph 2 }};"
+        f" debug set_watchpoint write_mem {FIRE_TICK} {{}} {{ __fire }};"
+        f" debug set_watchpoint write_mem {JIFFY} {{}} {{ __tick }} }}",
+        "proc __fire {} { if {$::ph == 1} { incr ::f1 } elseif {$::ph == 2} { incr ::f2 } }",
+        # Closing a window parks ::ph at 0, so the frames and fires between the
+        # emulator's write to $D00F and the main program getting around to opening
+        # the next one belong to neither -- the two windows cannot overlap. SYNC
+        # closes by handing control back to the program ($D00F=1); TRAP closes by
+        # capturing on the spot, because by then the program may well be starved.
+        "proc __tick {} {\n"
+        "  if {$::ph == 2} {\n"
+        f"    incr ::n2; if {{$::n2 >= {frames}}} {{ set ::ph 0;"
+        f" debug write memory {PHCTL} 1 }}\n"
+        "  } elseif {$::ph == 1} {\n"
+        f"    incr ::n1; if {{$::n1 >= {frames}}} {{ set ::ph 0;"
+        f" debug write memory {PHCTL} 2; __cap }}\n"
+        "  }\n"
+        "}",
+    ] + _INJECT_TCL
+    sched, t = _schedule(prog, boot, step)
+    lines.insert(1, f"after time {boot - 2.0:g} {{ __open }}")
+    lines += sched
+    lines.append(f"after time {t + deadline:g} {{ __cap }}")
+    txt = _launch(machine, lines, timeout, out_path)
+    if not txt:
+        return None
+    res = {}
+    for kv in txt.split():
+        k, _, v = kv.partition("=")
+        if k == "m":
+            _sentinels(res, v)
+        else:
+            res[k] = int(v)
+    res["want_frames"] = frames
+    # rate1 = fires per frame with the trap driving; rate2 = the same handler's
+    # SYNCHRONOUS call rate, i.e. 1/its cost in frames. `period` is the T5
+    # inter-fire measurement from the handler's own JIFFY stamps.
+    res["rate1"] = round(res["fires1"] / res["frames1"], 3) if res["frames1"] else 0
+    res["rate2"] = round(res["fires2"] / res["frames2"], 3) if res["frames2"] else 0
+    d = res["j2"] - res["j1"]
+    res["period"] = round(d / STAMP_SPAN, 3) if (res["j1"] and res["j2"] and d > 0) else 0
+    return res
+
+
+def cost_ceiling(r):
+    """The longest the trap's period may legitimately be: one frame, or -- when
+    the handler does not fit inside a frame -- the handler's own measured cost.
+    This is the denominator the T4 gate lacked, and it is measured on the SAME
+    machine in the SAME boot, so it carries no per-machine constant."""
+    return max(1.0, 1.0 / r["rate2"]) if r["rate2"] else 0.0
+
+
 # --- program fragments ------------------------------------------------------
 # Every line stays under MAX_DIRECT so it lands in one KEYBUF write.
 ONERR = "1 ONERRORGOTO900"
-CLR = ["5 FORZ=0TO6:POKE&HD000+Z,0:NEXT"]
+# Clears $D000..$D00B only. The three cadence marker cells $D00D/E/F are
+# DELIBERATELY not cleared here: a write to $D00D is what opens phase 1, so
+# clearing it would open the window at line 5 -- before `SPRITE ON`. run_emu
+# zeroes them itself, from the emulator side, before the program is injected.
+CLR = ["5 FORZ=0TO11:POKE&HD000+Z,0:NEXT"]
 ERRH = "900 POKE&HD002,ERR:POKE&HD003,1:END"
 END = "790 POKE&HD003,1:END"
 # The counter SATURATES -- see the module docstring.
@@ -218,50 +369,9 @@ CASES = {
     "A_hit": prog(ARM + ["60 SPRITEON", "70 FORI=1TO400:NEXT"], hit=True),
     "A2_miss": prog(ARM + ["60 SPRITEON", "70 FORI=1TO400:NEXT"], hit=False),
 
-    # F: the cadence, read as a RATIO -- CNT fires against AUX frames over exactly
-    # the same window, so "one fire per frame" is measured rather than inferred
-    # from wall-clock time.
-    #
-    # THE WINDOW IS BOUNDED BY FRAMES, NOT BY AN ITERATION COUNT, and that is not a
-    # detail. A fixed `FOR I=1 TO 200` cannot serve both machines: zerobas runs it
-    # ~7x slower, so the same loop spans ~30 frames on the VG-8020 and ~210 on the
-    # repack build, which SATURATES both saturating counters at 250 and reports the
-    # ratio as 1.00 for a reason that has nothing to do with the trap. Measured
-    # exactly that on the first run. Polling JIFFY instead makes the window 40
-    # frames on BOTH machines by construction -- no calibration, no per-machine
-    # constant to drift. (JIFFY does tick on zerobas; only `TIME` is unimplemented.)
-    #
-    # JIFFY IS READ WITH A RE-READ GUARD, and that is not paranoia -- it is the
-    # apparatus bug this case actually had. Reading lo-then-hi TEARS whenever the
-    # low byte wraps between the two PEEKs (~once per 256 frames): the composed
-    # value comes out 256 LOW, so K-J goes negative. The first version "handled"
-    # that by restarting the window (J=K) -- which resets the FRAME count while the
-    # fire counter, cleared only once at line 5, keeps accumulating across every
-    # restart. Result: zerobas read cnt=156 against aux=65, i.e. an apparent 2.4
-    # fires per frame, and it looked exactly like a dispatcher bug. It was not:
-    # breakpoint counts at htimi_guard and the latch site were 200/200 against 200
-    # frames -- a perfect once-per-frame source. Re-reading the high byte and
-    # retrying makes the tear impossible, so the ratio means what it says.
-    #
-    # AND THE TWO COUNTERS MUST COVER THE SAME SPAN, which is what actually made
-    # zerobas read ~2 fires per frame after the tear was fixed. The fire counter is
-    # cleared once at line 5 and the trap is armed from line 60, so it accrues over
-    # `SPRITE ON` -> capture, INCLUDING the frames after END while the capture poll
-    # (1 emulated second of granularity) has not yet fired; the JIFFY delta covers
-    # only lines 62->72. On the reference the loop dominates and the skew hides; on
-    # zerobas, ~7x slower, it was most of the reading. Breakpoint counts settled it:
-    # over the armed span, 237 latches against ~212 dispatched fires -- one per
-    # frame, exactly right. So line 68 re-zeroes the counter at the window's start
-    # and line 74 disarms at its end, and only then is D recorded.
-    "F_cadence": prog(ARM + ["60 SPRITEON",
-                             f"62 H=PEEK(&H{JIFFY + 1:X}):J=PEEK(&H{JIFFY:X})+256*H"
-                             f":IFH<>PEEK(&H{JIFFY + 1:X})THEN62",
-                             "68 POKE&HD000,0",
-                             f"70 H=PEEK(&H{JIFFY + 1:X}):K=PEEK(&H{JIFFY:X})+256*H"
-                             f":IFH<>PEEK(&H{JIFFY + 1:X})THEN70",
-                             "72 D=K-J:IFD<150THEN70",
-                             "74 SPRITEOFF",
-                             "76 POKE&HD004,D"], hit=True),
+    # (§1.2, the cadence, is NOT here: it needs the emulator-level runner and lives
+    # in EMU_CASES below. What used to be in this slot could not measure a cadence
+    # at all -- see the block above CADENCE_LEAN.)
 
     # --- §1.3 arm vs enable vs suspend --------------------------------------
     "B_armed_not_on": prog(ARM + ["70 FORI=1TO400:NEXT"], hit=True),
@@ -346,10 +456,12 @@ CASES = {
     # T_tenant is the case that exists because §3 REASONS rather than measures.
     # SIN runs the fp_sin sub-ROM PAGE-1 tenant, so on zerobas htimi_guard is
     # skipping event_poll for most of this loop. The trap must still fire.
-    # Same frame-bounded window as F_cadence, with SIN in the loop. On zerobas
-    # nearly every frame of this window lands inside a page-1 tenant, i.e. exactly
-    # the frames htimi_guard skips -- so had the poll been left in page-1
-    # event_poll this would collapse, and with the low-region stanza it must not.
+    # A frame-bounded window with SIN in the loop. On zerobas nearly every frame of
+    # this window lands inside a page-1 tenant, i.e. exactly the frames htimi_guard
+    # skips -- so had the poll been left in page-1 event_poll this would collapse,
+    # and with the low-region stanza it must not. It asserts cnt>0 and NOT a ratio,
+    # which is why the JIFFY-polled window is still fine here: the main program's
+    # progress bounds the window, and the reading does not divide by it.
     "T_tenant": prog(ARM + ["60 SPRITEON",
                             f"62 H=PEEK(&H{JIFFY + 1:X}):J=PEEK(&H{JIFFY:X})+256*H"
                             f":IFH<>PEEK(&H{JIFFY + 1:X})THEN62",
@@ -376,6 +488,114 @@ CASES["V_statfl_src_hit"] = [ONERR] + CLR + SETUP + HIT + _SRC_TAIL
 CASES["V2_statfl_src_miss"] = [ONERR] + CLR + SETUP + MISS + _SRC_TAIL
 
 
+# --- §1.2 THE CADENCE, measured at the emulator level -----------------------
+# WHAT THE OLD ASSERTION IN THIS SLOT ACTUALLY MEASURED (2026-07-26, and it went
+# RED on a build change that did not touch the trap). It read `cnt / aux`, a fire
+# counter that SATURATES AT 250 over a JIFFY delta the MAIN PROGRAM computed by
+# polling. Neither half survives inspection:
+#
+#   * The numerator saturates. Post-TIME it read cnt=250 aux=172 -- a ratio of
+#     1.45 asserted as though 250 were a number, when the counter had simply run
+#     out of range. Pre-TIME the same program read cnt=170 aux=163 = 1.04 and
+#     PASSED. TIME's only contribution was a small interpreter slowdown that
+#     pushed a saturating counter over its cliff.
+#   * The ratio tracks the MAIN LOOP, not the trap. Three measurements of the
+#     same quantity returned 1.00, >=1.43 and 0.67 fires/jiffy, differing only in
+#     how long the HANDLER was -- because the frame delta is computed by main-loop
+#     statements that the handler is competing with for the interpreter. It passed
+#     at T4 by luck.
+#
+# AND THE UNDERLYING QUANTITY IS NOT 1.0 ON ZEROBAS, so no amount of fixing the
+# counters rescues the old form. Measured between fires (the T5 technique -- the
+# handler stamps JIFFY itself, so the main loop is out of the measurement): the
+# period is 1.500 jiffies/fire on the repack build against 1.000 on the VG-8020,
+# identically on a control built from the pre-TIME commit e3a2135.
+#
+# WHAT 1.5 IS: THE HANDLER'S OWN COST, NOT A LOST FIRE. Emulator-level counting
+# (watchpoints on JIFFY and on the handler's own POKE, plus breakpoints on
+# htimi_guard, sprtrap-body's `set 7,(hl)` latch and check_traps' fire exit)
+# settled it in one run, exactly as it settled T4's four apparatus failures:
+#
+#     handler                     ref fires/frame   zb fires/frame   zb latch/isr
+#     POKE + RETURN (lean)              0.997            0.997         300/300
+#     the T4 counting+stamping          0.997            0.62          300/300
+#     one extra float statement         0.24             0.727         251/300
+#
+# The source OFFERS a fire on every frame (latch 300 of 300 ISR entries) and the
+# dispatcher DELIVERS every one it can (disp 299). With a lean handler zerobas
+# fires on 299 of 300 frames -- the same as the reference, to the frame. What
+# differs is that the T4-era handler costs 1.6 frames of zerobas interpreter time
+# and 0.7 of the VG-8020's.
+#
+# So the invariant this case asserts is the general law, verified on both machines
+# across a 30x range of handler lengths:
+#
+#     trap-driven rate == min(1 fire/frame, the same handler's synchronous rate)
+#
+# Both sides of it are measured in ONE boot by run_emu's two phases, so there is
+# no per-machine constant, no tolerance band standing in for a denominator, and no
+# way for a future interpreter slowdown to turn a correct implementation red: if
+# the handler stops fitting in a frame, the ceiling moves with it. The reference
+# is subject to the same law and fails it the same way if broken (its own float
+# handler costs 4 frames, and its rate drops to 0.24 accordingly).
+STAMP_SPAN = 100          # fires between the two JIFFY stamps (see F2_period)
+
+# The leanest handler that can still be counted: one POKE, then RETURN. On both
+# machines it costs well under a frame (synchronous rate 7.5 ref / 4.8 zb), so
+# `min(1, rate2)` is 1 and the law reduces to "one fire per frame".
+CADENCE_LEAN = [f"800 POKE&H{FIRE_TICK:X},0:RETURN"]
+
+# The T4-era counting + JIFFY-stamping handler -- the one whose cost produced the
+# 1.5. Fires #1 and #1+STAMP_SPAN stamp JIFFY into $D008/9 and $D00A/B, so the
+# period is measured BETWEEN FIRES by the handler itself and the main program is
+# out of it entirely. The high byte is re-read: a lo-then-hi read TEARS when the
+# low byte wraps (~once per 256 frames) and composes 256 low, which is the bug
+# that made the T4 cadence case read 2.4 fires/frame.
+CADENCE_STAMP = [
+    f"800 POKE&H{FIRE_TICK:X},0:A=PEEK(&HD000):IFA<250THENPOKE&HD000,A+1",
+    f"801 IFA<>0ANDA<>{STAMP_SPAN}THENRETURN",
+    f"802 H=PEEK(&H{JIFFY + 1:X}):L=PEEK(&H{JIFFY:X})"
+    f":IFH<>PEEK(&H{JIFFY + 1:X})THEN802",
+    "803 IFA=0THENPOKE&HD008,L:POKE&HD009,H:RETURN",
+    "804 POKE&HD00A,L:POKE&HD00B,H:RETURN",
+]
+
+
+def cadence(handler, *, enable=True):
+    """SYNC window first: the MAIN program calls the handler in a tight loop with
+    the trap armed but not yet enabled -- the same code on the same machine in the
+    same boot, so its cost is measured under the conditions it will be judged
+    against. Then `SPRITE ON` opens the TRAP window and the program's remaining
+    job is nothing at all (a bare GOTO): the counters and the capture are the
+    emulator's, which is what makes the case survive a handler that starves the
+    interpreter (run_emu). Line 80 re-zeroes the fire counter and the stamp cells
+    so F2_period's stamps are the TRAP window's, not the sync window's."""
+    return ([ONERR] + CLR + SETUP + HIT + ARM +     # always ARMED; `enable` is ON
+            [f"60 POKE&H{PH2:X},1",
+             f"70 GOSUB800:IFPEEK(&H{PHCTL:X})=0THEN70",
+             "80 FORZ=0TO11:POKE&HD000+Z,0:NEXT",
+             ("82 SPRITEON:" if enable else "82 ") + f"POKE&H{PH1:X},1",
+             "84 GOTO84"] +
+            [END] + handler + [ERRH])
+
+
+EMU_CASES = {
+    # The cadence itself: with a handler that fits in a frame, every frame fires.
+    "F_cadence": cadence(CADENCE_LEAN),
+    # The same law with the handler that does NOT fit on zerobas -- the case that
+    # turns the T4 gate's handler-sensitivity from a mystery into a measurement.
+    # It also carries the between-fires `period`, which must equal that handler's
+    # own cost: no fire is lost beyond what the handler itself pays for.
+    "F2_period": cadence(CADENCE_STAMP),
+    # THE DISCRIMINATING CONTROL, and it discriminates inside a single boot: the
+    # trap is armed but never enabled, so phase 1 must count ZERO fires while
+    # phase 2 -- the same handler, the same counter, called by the main program --
+    # counts plenty. A run where phase 1 is silent because the apparatus is broken
+    # cannot pass that pair.
+    "F0_cadence_off": cadence(CADENCE_LEAN, enable=False),
+}
+
+
 def fmt(r):
     if not r:
         return "NO CAPTURE (apparatus failure)"
@@ -383,6 +603,15 @@ def fmt(r):
         return f"VOID done=0 {r}"          # never read as a zero -- see docstring
     return (f"cnt={r['cnt']:>3} err={r['err']} aux={r['aux']:>3} "
             f"aux2={r['aux2']:>3} aux3={r['aux3']:>3} t={r['t']}")
+
+
+def fmt_emu(r):
+    if not r:
+        return "NO CAPTURE (apparatus failure)"
+    return (f"trap {r['fires1']:>4}/{r['frames1']:<4} = {r['rate1']:<6} "
+            f"sync {r['fires2']:>4}/{r['frames2']:<4} = {r['rate2']:<6} "
+            f"ceiling={cost_ceiling(r):.2f} period={r['period']:<6} "
+            f"err={r['err']} t={r['t']}")
 
 
 # --- what each case ASSERTS -------------------------------------------------
@@ -400,8 +629,6 @@ EQ, PER = "eq", "per"
 EXPECT = {
     "A_hit":              {PER: [("fires", lambda r: r["cnt"] > 0)]},
     "A2_miss":            {EQ: ["cnt", "err"]},          # the discriminating control
-    "F_cadence":          {PER: [("fires/frame ~= 1",
-                                  lambda r: r["aux"] > 0 and 0.75 <= r["cnt"] / r["aux"] <= 1.35)]},
     "B_armed_not_on":     {EQ: ["cnt", "err"]},
     "C_off":              {EQ: ["cnt", "err"]},
     "E_no_handler":       {EQ: ["cnt", "err"]},
@@ -442,6 +669,68 @@ EXPECT = {
                                   lambda r: r["aux"] == 0 and not r["aux2"] & COLLISION)]},
 }
 
+# The emulator-counted cadence cases (run_emu). `done` does not gate these: the
+# capture is triggered by the emulator's own frame counter, not by the program
+# reaching an END, precisely so a starved main program cannot void the reading --
+# with the T4 handler on zerobas the main program gets so little of the
+# interpreter that the direct form captured done==0, which is a FAILURE and not a
+# zero. What gates them instead is the APPARATUS check: both windows must have run
+# their full length, and the program must not have errored.
+#
+# EPS is one frame of endpoint quantisation over a 300-frame window, not a
+# tolerance band standing in for an unknown: the measured readings are exact
+# (fires == frames-1 at 120, 300 and 600 frames, on both machines).
+EPS = 0.05
+EXPECT_EMU = {
+    "F_cadence": {
+        EQ: ["frames1", "frames2"],
+        PER: [("apparatus: both windows ran their full length",
+               lambda r: r["frames1"] == r["want_frames"] == r["frames2"]
+               and r["err"] == 0),
+              # A PRECONDITION, asserted rather than assumed: this case can only
+              # claim "one fire per frame" while the handler fits inside a frame.
+              # If a future slowdown breaks that, THIS is the line that goes red
+              # and says why, instead of the cadence silently meaning something
+              # else. Measured headroom: 4.8x on zerobas, 7.5x on the reference.
+              ("the handler fits inside a frame (rate2 > 1)",
+               lambda r: r["rate2"] >= 1.2),
+              ("fires ONCE PER FRAME, and never twice",
+               lambda r: 1.0 - 2 * EPS <= r["rate1"] <= 1.0 + EPS)],
+    },
+    "F2_period": {
+        EQ: ["frames1", "frames2"],
+        PER: [("apparatus: both windows ran their full length",
+               lambda r: r["frames1"] == r["want_frames"] == r["frames2"]
+               and r["err"] == 0),
+              # The stamp pair must come from phase 1. The handler stamps at fire
+              # #1 and #1+STAMP_SPAN and A only ever increases, so phase 2 cannot
+              # re-stamp -- PROVIDED phase 1 got past STAMP_SPAN fires. Assert it.
+              ("apparatus: the stamp pair is phase 1's",
+               lambda r: r["period"] > 0 and r["fires1"] >= STAMP_SPAN + 5),
+              # The law, both directions. Slower than the handler's own cost would
+              # mean a fire was LOST; faster than one per frame would mean the
+              # level was sampled more than once per frame.
+              ("no fire lost: the period is at most the handler's own cost",
+               lambda r: r["period"] <= cost_ceiling(r) + 0.15),
+              ("and never faster than one fire per frame",
+               lambda r: r["period"] >= 1.0 - EPS),
+              ("rate == min(1/frame, the handler's own rate)",
+               lambda r: (1.0 - EPS) * min(1.0, r["rate2"]) <= r["rate1"]
+               <= 1.0 + EPS)],
+    },
+    "F0_cadence_off": {
+        EQ: ["fires1", "frames1", "frames2"],
+        PER: [("apparatus: both windows ran their full length",
+               lambda r: r["frames1"] == r["want_frames"] == r["frames2"]
+               and r["err"] == 0),
+              ("armed but never enabled: ZERO fires",
+               lambda r: r["fires1"] == 0),
+              # ...and the counter was working all along, in the same boot.
+              ("the same handler, called by the program, IS counted",
+               lambda r: r["fires2"] > r["want_frames"])],
+    },
+}
+
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -451,13 +740,16 @@ def main() -> int:
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--report", action="store_true",
                     help="print readings without asserting (characterization mode)")
+    ap.add_argument("--frames", type=int, default=300,
+                    help="ISR ticks per phase for the emulator-counted cadence cases")
     a = ap.parse_args()
 
-    names = [n for n in CASES if not a.only or any(o in n for o in a.only)]
+    allcases = dict(CASES, **EMU_CASES)
+    names = [n for n in allcases if not a.only or any(o in n for o in a.only)]
     if a.list:
         for n in names:
             print(f"--- {n}")
-            for ln in CASES[n]:
+            for ln in allcases[n]:
                 print("   ", ln)
         return 0
 
@@ -470,22 +762,32 @@ def main() -> int:
         ok = ok and cond
 
     for n in names:
-        ref = run(REF_MACHINE, CASES[n])
-        zb = None if a.ref_only else run(ZB_MACHINE, CASES[n])
+        # The cadence cases run under the emulator-counted apparatus and are gated
+        # on the apparatus check rather than on `done` -- see EXPECT_EMU.
+        emu = n in EMU_CASES
+        show, spec, gate = (
+            (fmt_emu, EXPECT_EMU.get(n, {}), lambda r: bool(r)) if emu else
+            (fmt, EXPECT.get(n, {}), lambda r: bool(r) and r["done"] == 1))
+        if emu:
+            ref = run_emu(REF_MACHINE, allcases[n], frames=a.frames)
+            zb = None if a.ref_only else run_emu(ZB_MACHINE, allcases[n], frames=a.frames)
+        else:
+            ref = run(REF_MACHINE, allcases[n])
+            zb = None if a.ref_only else run(ZB_MACHINE, allcases[n])
         if a.report:
-            print(f"{n}\n    ref  {fmt(ref)}" + ("" if a.ref_only else f"\n    zb   {fmt(zb)}"),
-                  flush=True)
+            print(f"{n}\n    ref  {show(ref)}"
+                  + ("" if a.ref_only else f"\n    zb   {show(zb)}"), flush=True)
             continue
-        spec = EXPECT.get(n, {})
-        # `done` first: without it no other field means anything.
-        check(f"[ref] {n:20} {fmt(ref)}", bool(ref) and ref["done"] == 1)
+        # `done` (or, for the emulator cases, a capture at all) first: without it no
+        # other field means anything.
+        check(f"[ref] {n:20} {show(ref)}", gate(ref))
         for lbl, pred in spec.get(PER, []):
-            check(f"[ref] {n:20} {lbl}", bool(ref) and ref["done"] == 1 and pred(ref))
+            check(f"[ref] {n:20} {lbl}", gate(ref) and pred(ref))
         if a.ref_only:
             continue
-        check(f"[zb ] {n:20} {fmt(zb)}", bool(zb) and zb["done"] == 1)
+        check(f"[zb ] {n:20} {show(zb)}", gate(zb))
         for lbl, pred in spec.get(PER, []):
-            check(f"[zb ] {n:20} {lbl}", bool(zb) and zb["done"] == 1 and pred(zb))
+            check(f"[zb ] {n:20} {lbl}", gate(zb) and pred(zb))
         fields = spec.get(EQ, [])
         if fields and ref and zb:
             same = all(ref[f] == zb[f] for f in fields)

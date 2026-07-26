@@ -41,11 +41,12 @@ at `(40,40)` and `(160,140)`.
 |---|---|---|
 | `A_hit` — overlapping, armed + `SPRITE ON`, 400-iteration loop | **56** | fires repeatedly, not once |
 | `A2_miss` — same program, sprites apart | **0** | the discriminating control |
-| `F_cadence` — as `A_hit`, with the `JIFFY` delta measured over the same window | **cnt 31 / 30 frames** | **exactly one fire per frame** |
+| `F_cadence` — as `A_hit`, fires and frames counted **by the emulator** | **299 fires / 300 frames, on BOTH machines** | **exactly one fire per frame** |
 
-`F_cadence` is the load-bearing measurement: it reads the fire count *and* the
-`JIFFY` (`$FC9E`) delta across the same window, so "one per frame" is a direct
-reading rather than an inference from wall-clock time. **The SPRITE trap is not an
+`F_cadence` is the load-bearing measurement. ⚠️ **Its 2026-07-25 form — the fire
+count over a `JIFFY` delta the BASIC program computed itself — measured the main
+loop's progress rather than the trap's rate, and was rebuilt on 2026-07-26; see
+§1.2.** The reading above is the rebuilt one. **The SPRITE trap is not an
 edge trap.** While two sprites overlap it fires every frame, indefinitely. This is
 the opposite of T2's STRIG (a level that is edge-detected against a shadow) and
 unlike T3's KEY (a delivery event) — and it makes T4 *cheaper* than both, because
@@ -67,9 +68,74 @@ tracks the boundary rate.
 
 **Gate consequence (the same shape as T3's repeat-count finding, §8):** the raw fire
 COUNT is *not* an equality-differential — it is a function of how many frames elapse
-in a window whose duration differs ~7× between the two machines. The
-machine-independent invariant is the **ratio**: `fires/frames ≈ 1` in a tight loop,
-asserted per machine. Gate on that, never on a count.
+in a window whose duration differs ~7× between the two machines.
+
+#### 1.2.1 🔴 REBUILT 2026-07-26 — the ratio measured the MAIN LOOP, and the handler is part of the boundary rate
+
+The 2026-07-25 gate turned the paragraph above into `0.75 <= cnt/aux <= 1.35`, where
+`cnt` is the fire counter (which **saturates at 250**) and `aux` a `JIFFY` delta the
+**main program** computed by polling. It went RED at 95/96 when `TIME` landed —
+a commit that does not touch the trap. Both halves were unsound:
+
+* **the numerator saturates.** Post-`TIME`: `cnt=250 aux=172`, asserted as 1.45 when
+  the counter had simply run out of range. Pre-`TIME`, the same program: `cnt=170
+  aux=163` = 1.04, PASS. `TIME`'s only contribution was a small interpreter
+  slowdown that pushed a saturating counter over its cliff.
+* **the ratio tracks the main loop, not the trap.** Three measurements of the same
+  quantity returned **1.00, ≥1.43 and 0.67** fires/jiffy, differing only in how long
+  the *handler* was — because §1.2's own insight cuts deeper than it was applied:
+  the handler runs at a statement boundary, so **the handler is itself part of the
+  boundary rate.** A denominator computed by main-loop statements is competing with
+  the numerator for the interpreter.
+
+**And the underlying quantity is not 1.0 on zerobas.** Measured between fires (the
+T5 technique: the handler stamps `JIFFY` at fire #1 and fire #1+100, so the main
+loop is out of the measurement) the period is **1.500 jiffies/fire on the repack
+build against 1.000 on the VG-8020** — identically on a control built from the
+pre-`TIME` commit `e3a2135`, which is what cleared `TIME`.
+
+**1.5 IS THE HANDLER'S OWN COST, NOT A LOST FIRE.** Emulator-level counting settled
+it in one run — watchpoints on `JIFFY` and on the handler's own `POKE`, plus
+breakpoints on `htimi_guard`, `sprtrap-body.inc`'s `set 7,(hl)` latch and
+`check_traps`' fire exit (`$5C32`):
+
+| handler in the loop | ref fires/frame | zb fires/frame | zb latch / ISR entries |
+|---|---|---|---|
+| `POKE` + `RETURN` (lean) | 0.997 | **0.997** | **300 / 300** |
+| the T4-era counting + stamping | 0.997 | 0.62 | 300 / 300 |
+| one extra float statement | 0.24 | 0.727 | 251 / 300 |
+
+The source **offers** a fire on every frame (300 latches in 300 ISR entries) and the
+dispatcher **delivers** every one it can (299 dispatches). With a lean handler
+zerobas fires on 299 of 300 frames — the reference's figure, to the frame. What
+differs is only that the T4-era handler costs ~1.6 frames of zerobas interpreter
+time and ~0.7 of the VG-8020's. **No divergence, and nothing to fix in
+`event_poll` / `check_traps` / the `htimi_guard` seam.**
+
+So the invariant to gate is the general law, verified on both machines across a 30×
+range of handler lengths (all six cells above):
+
+> **trap-driven rate == min(1 fire/frame, the same handler's synchronous rate)**
+
+Both sides are measured in **one boot**, so there is no per-machine constant and no
+tolerance band standing in for a denominator: if a future slowdown stops the
+handler fitting in a frame, the ceiling moves with it and a correct implementation
+stays green. Gate on that, never on a count and never on a ratio whose denominator
+the interpreter can starve.
+
+#### 1.2.2 A handler that outlasts a frame STARVES THE MAIN PROGRAM COMPLETELY
+
+Measured while rebuilding the case, and it is a property of the design rather than a
+bug: a fresh collision has always re-latched by the time a >1-frame handler
+`RETURN`s, so the pending trap fires at the *same* statement boundary again and the
+interrupted statement never runs. With the T4-era handler on the repack build the
+program sat at one poll line for **400 emulated seconds** without advancing (the
+emulator's window-close cell written, the program's acknowledgement never). Hence
+the rebuilt case's window boundaries are the emulator's too, and its synchronous
+window runs **first** — the T5 rule (*when the feature can starve the main program,
+the main program cannot be the instrument*) extended from the readings to the
+window boundaries. The reference is subject to the same starvation; its own float
+handler costs ~4 frames.
 
 ### 1.3 Arm, enable, suspend
 
@@ -444,13 +510,28 @@ string building; **no `TIME`** (not implemented on zerobas — it parses as the
 variable `TI` and reads 0 forever, so a `TIME`-bounded loop never terminates);
 windows sized by iteration count; the fire counter **saturates** below 256.
 
+⚠️ **The three cadence cases (§1.2.1) deliberately step outside two of those, and
+the reasons matter.** Their fires and frames are counted by **openMSX watchpoints**
+(on `JIFFY` and on the handler's own `POKE`), so nothing saturates and no BASIC
+arithmetic is in the reading; and they are gated on an **apparatus check** — both
+windows ran their full length, the program did not error — rather than on `done`,
+because a handler that outlasts a frame starves the program so completely that it
+can never reach an `END` (§1.2.2). `done==0` remains a failure everywhere it is the
+gate; these cases replace it with a stronger one rather than dropping it. Both
+watchpoint anchors are plain RAM on **both** machines, so the apparatus needs no
+symbol table and stays a true differential. Note also that `TIME` **has** landed
+(`docs/spec-basic-time.md`, 2026-07-26), so the "no `TIME`" rule is now a matter of
+not rewriting green cases rather than a limitation.
+
 Cases, from §1 — every one already has its reference reading recorded above, so the
 gate is written against measured values, not expectations:
 
 | case | asserts |
 |---|---|
 | `A_hit` / `A2_miss` | the discriminating pair — fires vs the control. **If these agree the run is void.** |
-| `F_cadence` | `fires/frames ≈ 1` **per machine** (§1.2) — a ratio, never a count |
+| `F_cadence` | **one fire per frame**, fires and frames counted by the emulator, plus the precondition that the handler fits in a frame (§1.2.1) |
+| `F2_period` | the same law with a handler that does *not* fit: the between-fires period equals that handler's own measured cost — no fire lost beyond what the handler pays for |
+| `F0_cadence_off` | the cadence apparatus' own discriminating control, **inside one boot**: armed-but-not-enabled counts ZERO while the same handler, called by the program, counts thousands |
 | `B_armed_not_on`, `C_off` | arm ≠ enable |
 | `G_stop_latch`, `H_off_latch` | `SPRITE STOP` ≡ `SPRITE OFF`, no latch |
 | `E_no_handler` | enabled with no handler is harmless |
@@ -465,13 +546,30 @@ gate is written against measured values, not expectations:
 the one most likely to fail, and it is the reason §3's recommendation is safe to
 make.
 
-### 8.1 ✅ AS BUILT — `make sprite-trap-acceptance`, **96 assertions, ALL PASS**
+### 8.1 ✅ AS BUILT — `make sprite-trap-acceptance`, **123 assertions, ALL PASS**
 
-24 cases, one boot per case, both machines. `T_tenant` on zerobas reads **174 fires
+26 cases, one boot per case per machine. `T_tenant` on zerobas reads **174 fires
 over 173 frames — a ratio of 1.006 while the loop sits inside `fp_sin` page-1 tenants
 for most of every frame.** That is D-T4-2 paying off directly: with the poll in
 page-1 `event_poll`, `htimi_guard` would have skipped exactly those frames.
-`F_cadence` reads 1.007 (ref) and 1.043 (zb).
+(`T_tenant` keeps its `JIFFY`-polled window because it asserts `cnt>0` and **does not
+divide by it** — §1.2.1's defect is in the ratio, not in the window.)
+
+**2026-07-26 — the cadence trio (§1.2.1), 96 → 123 assertions.** The old
+`F_cadence` (1.007 ref / 1.043 zb, and 95/96 RED once `TIME` landed) is replaced by
+`F_cadence` + `F2_period` + `F0_cadence_off`, all three emulator-counted:
+
+| | ref | zb |
+|---|---|---|
+| `F_cadence` trap / sync | 299/300 = 0.997 · 4.53 | **299/300 = 0.997** · 2.95 |
+| `F2_period` trap / sync / period | 300/300 = 1.0 · 1.20 · 1.00 | 186/300 = 0.62 · 0.573 · **1.60** |
+| `F0_cadence_off` trap / sync | **0**/300 · 4.53 | **0**/300 · 2.95 |
+
+The predicates were additionally checked against synthetic readings for teeth: every
+one of *every other frame*, *twice per frame*, *two frames in three (the 1.5)*, a
+*truncated window* and an *errored program* is caught, and a handler too fat for the
+claim fails the **precondition** line first, so the diagnosis is legible instead of
+being a mystery ratio.
 
 🔴 **THE APPARATUS WAS WRONG FOUR TIMES BEFORE THE IMPLEMENTATION WAS WRONG ONCE —
 and every one of them looked like a dispatcher firing several times per frame.**
@@ -525,7 +623,12 @@ cross-machine equalities (`EXPECT[...][EQ]`).
   `TRAPS_T4` is off. *Recommend measuring rather than deciding here.*
 - **D-T4-5 — scope of the fire-cadence assertion (§1.2/§8).** Gate the
   `fires/frames` ratio per machine, never a cross-machine count. *Recommend as
-  written.*
+  written.* → ⚠️ **SUPERSEDED 2026-07-26 by §1.2.1.** "Per machine, never a count"
+  was right and not enough: the ratio's *denominator* was computed by the main
+  program, which the handler competes with, so the ratio moved with the handler's
+  length and passed at T4 by luck. The replacement gates
+  `rate == min(1/frame, the same handler's synchronous rate)` with **both** sides
+  counted by the emulator in one boot.
 
 ---
 

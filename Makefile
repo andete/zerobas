@@ -580,12 +580,17 @@ key-trap-acceptance: $(DISK_ROM) repack-machine
 # no C-BIOS hook (T3). Repack-only (the poll is low-region repack code).
 # Fire COUNTS are asserted per machine, never across the two: a count is a function
 # of how many frames fit in the window and the machines run BASIC ~7x apart. The
-# cross-machine assertions are the error surface and the STATFL readings.
+# cross-machine assertions are the error surface, the STATFL readings, and the
+# emulator-counted cadence windows (spec 1.2.1: those windows are exactly as long on
+# both machines BY CONSTRUCTION -- the emulator closes them after N ISR ticks -- so
+# there the counts ARE comparable, and F0_cadence_off's zero is asserted as an
+# equality).
 # Scope with `make sprite-trap-acceptance ONLY=F_`; `REPORT=1` prints the raw
-# readings without asserting (characterization mode).
+# readings without asserting (characterization mode). FRAMES=n sets the ISR ticks
+# per cadence window (default 300; measured identical at 120/300/600).
 sprite-trap-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_sprite_trap.py $(if $(ONLY),--only $(ONLY),) \
-	  $(if $(REPORT),--report,)
+	  $(if $(REPORT),--report,) $(if $(FRAMES),--frames $(FRAMES),)
 
 # --- TIME / TIME=n acceptance gate (docs/spec-basic-time.md) -------------------
 # VG-8020 differential, BOTH sides asserted against the SAME pinned reference

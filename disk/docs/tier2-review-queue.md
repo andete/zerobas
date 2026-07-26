@@ -83,6 +83,61 @@ byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
 
 ## Open (awaiting next sync)
 
+**✅ RESOLUTION 2026-07-26 — the `F_cadence` finding below is CLOSED on both counts.
+`make sprite-trap-acceptance` is **123/123** (was 96 assertions, 95 passing).**
+
+- **(b) first, because it decides what (a) may assert: 1.5 jiffies/fire is NOT a
+  defect.** Emulator-level counting — watchpoints on `JIFFY` and on the handler's
+  own `POKE`, breakpoints on `htimi_guard`, `sprtrap-body.inc`'s `set 7,(hl)` latch
+  and `check_traps`' fire exit — says the source **offers** a fire on every frame
+  (**300 latches in 300 ISR entries**) and the dispatcher **delivers** every one it
+  can (299). With a *lean* handler zerobas fires on **299 of 300 frames, the
+  reference's figure to the frame**. Across three handler lengths spanning 30×, on
+  both machines, all six cells fit one law: **rate == min(1 fire/frame, the same
+  handler's synchronous rate)**. The T4-era handler costs ~1.6 frames of zerobas
+  interpreter time and ~0.7 of the VG-8020's — that, and only that, is the 1.5.
+  Nothing to fix in `event_poll` / `check_traps` / the `htimi_guard` seam.
+- **(a) `F_cadence` rebuilt, plus two new cases.** `F_cadence` (lean handler: one
+  fire per frame, with *the handler fits in a frame* asserted as an explicit
+  precondition rather than assumed), `F2_period` (the T4 stamping handler: the
+  between-fires period equals that handler's own measured cost — no fire lost
+  beyond what the handler pays for), `F0_cadence_off` (the apparatus' own
+  discriminating control **inside one boot**: armed-but-not-enabled counts zero
+  while the same handler, called by the program, counts thousands). No tolerance
+  band was widened: the denominator is now *measured in the same boot* instead of
+  being a constant, so a future interpreter slowdown moves the ceiling with it
+  rather than turning a correct implementation red.
+- **JUDGMENT CALL (logged, differs from the brief).** The brief asked for the
+  inter-fire measurement with the handler setting `done`. It is in the gate
+  (`F2_period`'s stamps are the handler's own) but the *capture* is the emulator's,
+  not a handler-set `done` — because measuring further found something stronger:
+  **a handler that outlasts a frame starves the main program COMPLETELY.** A fresh
+  collision has re-latched by the time the handler `RETURN`s, so the pending trap
+  fires at the same statement boundary forever and the interrupted statement never
+  runs — the program sat at one line for **400 emulated seconds** without
+  advancing. So the main program cannot define the window boundaries either, not
+  just the readings; the synchronous window therefore runs FIRST and the trap
+  window closes by capturing on the spot. T5's rule extended one level out.
+- **Apparatus bugs found and fixed while building it, both of the standing kind:**
+  the phase gate opened at boot (the VG-8020's boot RAM-clear writes the marker
+  cell) → a window that closed at t=7 emulated seconds and reported "2 fires", a
+  self-consistent reading of nothing; then, gated too late, it missed the program's
+  own marker write and every counter read zero. **A gate that is too late is as
+  blind as no gate at all.** Predicates were then checked against synthetic
+  readings for teeth: *every other frame*, *twice per frame*, *two frames in
+  three*, *truncated window*, *errored program* are all caught, and a too-fat
+  handler fails the precondition line first, so the diagnosis is legible.
+- **Written up in [`docs/spec-traps-t4-sprite.md`](../../docs/spec-traps-t4-sprite.md)
+  §1.1 / §1.2.1 / §1.2.2 / §8 / §8.1; D-T4-5 marked SUPERSEDED (its "per machine,
+  never a count" was right and not enough).**
+- ⚠️ **Environment hazard hit mid-session, worth knowing:**
+  `~/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml` is a **global shared by
+  every checkout** and it holds absolute ROM paths. A `make repack-machine` in
+  another worktree re-pointed it at a `build/` whose merged ROM had since been
+  cleaned, and every zerobas-side reading became `NO CAPTURE` (loudly, at least,
+  not silently wrong). Re-running `make repack-machine` locally fixes it — and any
+  gate target that depends on `repack-machine` self-heals.
+
 **🔴 [FINDING — GATE DEFECT, surfaced by landing TIME, 2026-07-26]
 `sprite-trap-acceptance` `F_cadence` is RED (95/96), and the assertion it fails
 DOES NOT MEASURE WHAT IT CLAIMS.** It asserts `0.75 <= cnt/aux <= 1.35` where
@@ -114,6 +169,8 @@ Two consequences, neither of which should be papered over:
 main loop and captured `done=0`), then decide whether 1.5 is a defect. That is
 sprite-gate work, not TIME's, and T4's own history says the tool that ends this
 class of argument is **emulator-level breakpoints**, not another BASIC probe.
+→ **DONE 2026-07-26, see the RESOLUTION above. The prediction held: emulator-level
+counting ended it in one run, and 1.5 turned out to be the handler's own cost.**
 
 **[FINDING — PRE-EXISTING, surfaced by the TIME gate, 2026-07-26] A DIRECT-MODE
 `FOR … NEXT` raises "out of memory" on zerobas.** Measured on the repack build:
