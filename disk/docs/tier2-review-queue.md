@@ -83,6 +83,19 @@ byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
 
 ## Open (awaiting next sync)
 
+**[FINDING — GATE FRAGILITY, 2026-07-26] `error-trap-acceptance` `tc_next_nofor`
+fails ONLY in the full batch.** It reads `zb='";ERR;"'` — the inner text of the
+ECHOED source line `100 PRINT"R<";ERR;">"` — instead of the program's output.
+**The behaviour is correct and was verified directly:** the screen plainly shows
+`R< 1 >`, and the case PASSES both with `--only tc_next` and with
+`--boot-per-case`. So the scrape is picking up the echo at one particular batch
+position, presumably a 40-column wrap landing differently; its sibling
+`tc_next_junk`, one character longer on line 20, passes in the same batch.
+
+*Fix is a sentinel, not a wider regex* — the probe's own docstring already carries
+the rule ("screen-scrape only where the packet needs the message TEXT"), and this
+case needs a number, not text.
+
 **🔴 [FINDING — GATE DEFECT, surfaced by landing TIME, 2026-07-26]
 `sprite-trap-acceptance` `F_cadence` is RED (95/96), and the assertion it fails
 DOES NOT MEASURE WHAT IT CLAIMS.** It asserts `0.75 <= cnt/aux <= 1.35` where

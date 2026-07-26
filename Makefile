@@ -587,6 +587,18 @@ sprite-trap-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_sprite_trap.py $(if $(ONLY),--only $(ONLY),) \
 	  $(if $(REPORT),--report,)
 
+# --- INTERVAL trap acceptance gate (traps T5, docs/spec-traps-t5-interval.md) --
+# VG-8020 differential. The arc's fifth and last trap slice, and the one whose
+# every observable is a JIFFY COUNT -- so the PERIOD is measured BETWEEN TWO
+# FIRES (the handler stamps JIFFY at fire #1 and fire #1+span) rather than counted
+# over a window, which would carry +-1 frame of pure phase noise. Error codes,
+# no-fire cases and latch-release counts are equality differentials; anything that
+# is a period is a per-machine predicate with the span's own jitter as tolerance.
+# `REPORT=1` prints readings without asserting; scope with ONLY=<substring>.
+interval-trap-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_interval_trap.py \
+	  $(if $(ONLY),--only $(ONLY),) $(if $(REPORT),--report,)
+
 # --- TIME / TIME=n acceptance gate (docs/spec-basic-time.md) -------------------
 # VG-8020 differential, BOTH sides asserted against the SAME pinned reference
 # values (spec §1 is all measurement, so those values ARE the comparison and the
@@ -744,6 +756,7 @@ clean:
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
+        interval-trap-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
         graphics-floor-acceptance graphics-floor-teeth graphics-acceptance clean

@@ -24,8 +24,15 @@
 ; existing BREAKX detection (spec-traps-t1-stop-reslice.md §6); STRIG 0..4 (T2)
 ; IS polled, via the published page-0 BIOS GTTRIG (a plain call, never CALSLT —
 ; the VBLANK ban stands). KEY/SPRITE sources arrive with T3/T4; event_poll grows
-; one stanza per slice. INTERVAL's counter stanza is retained but inert on MSX1
-; (INTERVAL is an MSX2 statement — out of charter, so nothing ever arms entry 0).
+; one stanza per slice. INTERVAL (T5) is polled here too — a pure frame
+; down-counter, no I/O at all.
+;
+; ⚠️ This header used to say "INTERVAL's counter stanza is retained but inert on
+; MSX1 (INTERVAL is an MSX2 statement — out of charter)". That was RETRACTED on
+; 2026-07-26: INTERVAL is MSX1, it works on the VG-8020, and it is simply not a
+; keyword — a reserved-word compound INT+"ER"+VAL, which is why a crunch-table
+; probe could not see it. "Absent from the keyword table" ≠ "absent from the
+; language" (docs/spec-basic-interrupt-traps.md §0).
 ;
 ; Repack-only (IF ROM_BASE < $4000), like playsvc.asm: the H.TIMI seam and the
 ; trap table only exist in the repacked page-1 window. The lean 16 KB ROM is
@@ -72,18 +79,81 @@ event_poll:
                 ; loads on the common no-trap path.
                 ld      a,(TRAPSVC)
                 or      a
-                jr      z,ep_out            ; nothing ON and nothing servicing -> fast out
+                jr      nz,ep_live
+    IF TRAPS_T5
+                ; ...AND a third term, because TRAPENA counts only ON traps.
+                ; MEASURED (docs/spec-traps-t5-interval.md §1.4, P_on_reloads):
+                ; with INTERVAL the sole trap and it STOPped, TRAPENA and TRAPSVC
+                ; are both 0 -- so without this the poll fast-outs, the counter
+                ; FREEZES while suspended, and the case reads 1 fire where the
+                ; reference gives 2. D-T5-2, signed off: the suspend semantics are
+                ; worth one more test per frame on the common no-trap path.
+                ;
+                ; ⚠️ A-ONLY, DELIBERATELY. The obvious `ld hl,(ZINTVAL) / ld a,h /
+                ; or l` is three bytes shorter and BREAKS THE H.TIMI CONTRACT: this
+                ; is ahead of ep_live's `push hl`, so it would clobber HL on both
+                ; paths -- including the fast-out, which restores only AF. That is
+                ; the exact register-transparency hazard the entry comment above
+                ; warns about, one instruction after the warning. A is already
+                ; saved by the entry `push af`, so testing the two bytes through it
+                ; costs a few T-states and cannot leak.
+                ld      a,(ZINTVAL)         ; armed at all? (0 = disarmed; ON INTERVAL=0
+                or      a                   ; is ERR 5, so an armed ZINTVAL is never 0)
+                jr      nz,ep_live
+                ld      a,(ZINTVAL+1)
+                or      a
+                jr      nz,ep_live
+    ENDIF
+                jr      ep_out              ; nothing ON, nothing servicing, no INTERVAL
 ep_live:
                 push    hl
                 push    de
-                ; (The T1 INTERVAL counter stanza that used to sit here is GONE. It was
-                ; provably dead: INTERVAL is an MSX2 statement, out of charter
-                ; [[interval-is-msx2-not-msx1]], so no code path can ever arm entry 0 --
-                ; nothing writes ZINTVAL and nothing sets ZTI_INTERVAL's state to ON. It
-                ; was written before that oracle finding re-sliced T1 to STOP. Deleting it
-                ; funded T2's page-1 cost, which is exactly the lever the T1 spec §10.3
-                ; listed. The entry itself stays allocated in ZTRAP so the index enum and
-                ; the priority order are undisturbed.)
+    IF TRAPS_T5
+                ; --- INTERVAL (entry 0): the per-frame down-counter -------------
+                ; docs/spec-traps-t5-interval.md §2.1. This stanza was written for
+                ; INTERVAL as the ORIGINAL slice T1 (7a91fd1), then deleted in
+                ; 00a593a as "provably dead" on the strength of the
+                ; "INTERVAL is MSX2" finding -- which was RETRACTED (arc spec §0).
+                ; It is restored here, and it is NOT the same code: running it
+                ; against the VG-8020 falsified BOTH of its state tests.
+                ;
+                ; ⚠️ CORRECTION 1 -- the original gated on `cp ZTS_ON` and that is
+                ; WRONG. The counter must keep ticking while the trap is STOPped
+                ; (P_on_reloads: n=300 over ON 200 fr / STOP 200 fr / ON 200 fr
+                ; reads 2 fires; tick-only-while-ON predicts 1) AND while its
+                ; handler runs (S3: with a 47-frame handler and n=100 the gap is
+                ; exactly 100, not 147 -- the period is counted from the FIRE, not
+                ; from RETURN). So: tick whenever armed, and latch PENDING unless
+                ; the state is OFF. ZTS_OFF is 0, so the latch guard is one `and`.
+                ; That is also one comparison CHEAPER than the version it replaces.
+                ;
+                ; Latching-but-not-firing while STOPped is what makes STOP remember
+                ; exactly ONE elapsed period (G2_stop_release: three periods pass
+                ; suspended, one fires on re-enable) while OFF forgets (H2: zero) --
+                ; the same family answer as T1-T4, reached with no INTERVAL-specific
+                ; state. There is no edge shadow: the event is GENERATED, not
+                ; sampled, so there is no level to de-bounce.
+                ld      hl,(ZINTVAL)
+                ld      a,h
+                or      l
+                jr      z,ep_ivl_done       ; not armed -> nothing to tick
+                ld      hl,(ZINTCNT)
+                dec     hl
+                ld      (ZINTCNT),hl
+                ld      a,h
+                or      l
+                jr      nz,ep_ivl_done      ; period not elapsed yet
+                ld      hl,(ZINTVAL)        ; reload AT THE FIRE (not at RETURN)
+                ld      (ZINTCNT),hl
+                ld      a,(ZTRAP)           ; ZTRAP+0 = the INTERVAL state byte
+                and     ZTS_STATE_MASK
+                jr      z,ep_ivl_done       ; OFF (00) -> elapse silently, do not latch
+                ld      hl,ZTRAP
+                set     7,(hl)              ; PENDING
+                ld      a,1
+                ld      (TRAPPEND),a        ; wake the run-loop dispatcher
+ep_ivl_done:
+    ENDIF
                 ; --- STRIG 0..4 (entries ZTI_STRIG0..+4): joystick trigger edges ---
                 ; docs/spec-traps-t2-strig.md §4. A trigger is sampled while its entry
                 ; is ON *or* SERVICING, and not while it is OFF or STOP. Both sampled

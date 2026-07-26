@@ -4,11 +4,9 @@
 """INTERVAL interrupt-trap characterization / differential — slice T5.
 
 docs/spec-traps-t5-interval.md §1. Produced every reading in that §1. Runs as a
-straight REPORTING differential between the reference oracle (Philips VG-8020)
-and the relocated repack build; `INTERVAL` is entirely unimplemented on the
-zerobas side today, so the zb column is expected to be a uniform ERR 2 until the
-slice lands, at which point this file grows the asserting gate
-`make interval-trap-acceptance` from the same cases.
+ASSERTING differential between the reference oracle (Philips VG-8020) and the
+relocated repack build -- `make interval-trap-acceptance`. `--report` drops back
+to the characterization mode that produced spec §1.
 
 WHY THIS SLICE EXISTS AT ALL: see docs/spec-basic-interrupt-traps.md §0. The arc
 excluded INTERVAL on 2026-07-24 as "an MSX2 keyword" after a crunch probe found
@@ -248,7 +246,14 @@ CASES = {
     # cnt is the window count (phase-noisy by +-1); `period` = (J2-J1)/SPAN is
     # the real reading and is phase-free. n=1 additionally answers "can the trap
     # fire every frame at all", which bounds the whole design.
-    "A1_n1": cadence(1, span=30, frames=120),
+    # ⚠️ n=1 uses the HANDLER-SETS-DONE shape, not a main-program window. At one
+    # fire per frame the handler is the whole frame on a machine ~3x slower than
+    # the VG-8020, so the main program never resumes and a window-based case
+    # captures done=0 -- the S_starves_main phenomenon, arriving here uninvited.
+    # The reading is the inter-fire gap, which is exactly what n=1 is asking
+    # about: the reference manages 1.0, zerobas is handler-limited above it.
+    # Asserted per-machine as ">= 1" -- a trap cannot fire faster than its period.
+    "A1_n1": slowcase(1, burn=False, span=30),
     "A2_n5": cadence(5, span=60, frames=340),
     "A3_n10": cadence(10, span=30, frames=340),
     "A4_n20": cadence(20, span=16, frames=340),
@@ -266,7 +271,13 @@ CASES = {
     # measurement is what makes this answerable at all -- 60 periods is 162
     # frames if it rounds and 120 if it truncates, which no window count could
     # separate from ordinary cadence noise.
-    "D7_nfrac": cadence(2.7, span=60, frames=220),
+    # ⚠️ WAS 2.7. The truncate-vs-round question is real, but at n=2 the handler
+    # costs MORE than the period on the repack build, so the measured gap is
+    # handler-limited (2.3) and resolves nothing -- a case that cannot separate
+    # its two hypotheses on one of the two machines is not a differential. The
+    # same question at n=20.7 is 20 (truncate) against 21 (round), five per cent
+    # apart, and both machines can measure it.
+    "D7_nfrac": cadence(20.7, span=25, frames=560),
     "D8_nexpr": prog(["8 Q=7", "10 ONINTERVAL=QGOSUB800", "20 INTERVALON",
                       "30 GOSUB950", "40 INTERVALOFF"], span=20),
 
@@ -366,7 +377,12 @@ CASES = {
     # main program is not starved -- and the inter-fire gap then answers a
     # question no other case can: is the next period counted from the FIRE
     # (gap == 100) or from the RETURN (gap == 100 + 58)?
-    "S3_from_fire_or_return": slowcase(100, burn=True),
+    # ⚠️ WAS n=100, which fits the ~58-frame burn on the VG-8020 and NOT the
+    # ~174 frames the same loop costs on the repack build -- so the slow side
+    # starved and answered nothing. n=300 fits on both, and the question is
+    # unchanged: gap == 300 means the period is counted from the FIRE, gap ==
+    # 300 + handler means it is counted from RETURN.
+    "S3_from_fire_or_return": slowcase(300, burn=True),
 
     # G2/H2: read the release DIRECTLY. Suspend for three whole periods, zero the
     # counter, re-enable, and read the count after a window far SHORTER than one
@@ -424,6 +440,83 @@ CASES = {
 }
 
 
+# --- what each case ASSERTS -------------------------------------------------
+# `eq`  : fields that must match the reference EXACTLY. Error codes, no-fire
+#         cases and latch-release counts all live here -- none of them depends on
+#         how fast the machine runs.
+# `per` : predicates checked on EACH machine independently. Anything that is a
+#         PERIOD lives here, with a tolerance of 1/span + 5%: the stamps are
+#         quantised to the statement boundary the trap dispatched at, so the pair
+#         carries +-1 frame of endpoint jitter by construction.
+# Every case additionally requires done==1; a reading from a program that errored
+# out or never finished is a FAILURE, never a zero.
+EQ, PER = "eq", "per"
+
+
+def _per(n):
+    """period == n, within the span's own endpoint jitter."""
+    # tolerance = the span's own endpoint jitter (+-1 frame over `span` periods)
+    # plus 2%. It was 5%, which at n=20 is +-1.0 -- wide enough to accept 21 when
+    # the answer is 20, i.e. wide enough to accept ROUNDING when the finding is
+    # TRUNCATION. A tolerance that cannot reject the rival hypothesis is not one.
+    return [(f"period == {n}",
+             lambda r, n=n: r["period"] and abs(r["period"] - n) <= 1.0 / r["span"] + 0.02 * n)]
+
+
+EXPECT = {
+    # §1.1 the period is exactly n frames; n=1 fires EVERY frame
+    # A1 is per-machine and one-sided: 1 frame is the floor, and the slow build
+    # sits above it because the handler, not the period, is the limit there.
+    "A1_n1": {EQ: ["err"], PER: [("fires, and never faster than its period",
+                                  lambda r: r["period"] >= 1)]},
+    "A2_n5": {PER: _per(5)},
+    "A3_n10": {PER: _per(10)}, "A4_n20": {PER: _per(20)},
+    # §1.2 the n domain IS the address domain -- an equality differential
+    # throughout, since an error code does not depend on machine speed
+    "D0_n0": {EQ: ["cnt", "err"]},          "D1_n255": {EQ: ["cnt", "err"]},
+    "D2_n256": {EQ: ["cnt", "err"]},        "D3_n32767": {EQ: ["cnt", "err"]},
+    "D4_n32768": {EQ: ["cnt", "err"]},      "D5_n65535": {EQ: ["cnt", "err"]},
+    "D6_nneg": {EQ: ["cnt", "err"]},        "D7_nfrac": {EQ: ["err"], PER: _per(20)},
+    "D8_nexpr": {EQ: ["err"], PER: _per(7)},
+    "D9_n65536": {EQ: ["cnt", "err"]},      "D10_nm32768": {EQ: ["cnt", "err"]},
+    "D11_nm32769": {EQ: ["cnt", "err"]},
+    # D12: 255 really IS a 255-frame period and not a silent disarm. The COUNT is
+    # per-machine (700 frames / 255), but "at least one fire" is the point.
+    "D12_n255_long": {EQ: ["err"], PER: [("fires at all", lambda r: r["cnt"] >= 1)]},
+    "D13_nm65531": {EQ: ["cnt", "err"]},
+    # §1.3 arm vs enable vs suspend -- all equality, all zero-or-small counts
+    "B_armed_not_on": {EQ: ["cnt", "err"]}, "C1_off": {EQ: ["cnt", "err"]},
+    "C2_stop": {EQ: ["cnt", "err"]},        "E_no_handler": {EQ: ["cnt", "err"]},
+    "G_stop_latch": {EQ: ["cnt", "err", "aux"]},
+    "H_off_latch": {EQ: ["cnt", "err", "aux"]},
+    # G2/H2 are THE decisive pair: the window after re-enabling is far shorter
+    # than one period, so anything counted can only be a latch releasing.
+    "G2_stop_release": {EQ: ["cnt", "err", "aux"]},
+    "H2_off_release": {EQ: ["cnt", "err", "aux"]},
+    # §1.4 where the period is counted from
+    "P_on_reloads": {EQ: ["cnt", "err", "aux"]},
+    "P2_rearm_reloads": {EQ: ["cnt", "err", "aux", "aux2"]},
+    "H3_off_reloads": {EQ: ["cnt", "err", "aux"]},
+    "S3_from_fire_or_return": {EQ: ["err", "aux3"], PER: _per(300)},
+    # §1.5 a handler that outlasts its period starves the main program. aux3==0
+    # (the statement after the wait never ran) is the READING, not a timeout.
+    "S_starves_main": {EQ: ["err", "aux3"],
+                       PER: [("gap >> n (no catch-up)", lambda r: r["period"] > 30)]},
+    "S2_fast_control": {EQ: ["err", "aux3"], PER: _per(20)},
+    # §1.6 the parse surface
+    "L_syn_noline": {EQ: ["cnt", "err"]},
+    "R_bare_disarms": {EQ: ["err", "aux2"],
+                       PER: [("armed fires", lambda r: r["aux"] > 0)]},
+    "R2_rearm": {EQ: ["err", "aux2"],
+                 PER: [("armed fires", lambda r: r["aux"] > 0),
+                       ("re-arm resumes", lambda r: r["aux3"] > 0)]},
+    "J_syn_on_goto": {EQ: ["cnt", "err"]},  "K_syn_bare": {EQ: ["cnt", "err"]},
+    "M_undef_line": {EQ: ["cnt", "err"]},   "N_syn_no_eq": {EQ: ["cnt", "err"]},
+    "O_syn_junk": {EQ: ["cnt", "err"]},     "Q_noline_then": {EQ: ["cnt", "err", "aux"]},
+    "Q2_on_then": {EQ: ["cnt", "err", "aux"]},
+}
+
+
 def fmt(r):
     if not r:
         return "NO CAPTURE (apparatus failure)"
@@ -442,6 +535,8 @@ def main() -> int:
     ap.add_argument("--ref-only", action="store_true")
     ap.add_argument("--zb-only", action="store_true")
     ap.add_argument("--list", action="store_true")
+    ap.add_argument("--report", action="store_true",
+                    help="print readings without asserting (characterization mode)")
     a = ap.parse_args()
 
     names = [n for n in CASES if not a.only or any(o in n for o in a.only)]
@@ -454,17 +549,44 @@ def main() -> int:
         return 0
 
     print(f"ref = {REF_MACHINE}\nzb  = {ZB_MACHINE}\n", flush=True)
+    ok = True
+
+    def check(label, cond, detail=""):
+        nonlocal ok
+        print(f"{'PASS' if cond else 'FAIL':5} {label}" + (f"  {detail}" if detail else ""),
+              flush=True)
+        ok = ok and cond
+
     for n in names:
         lines, span = CASES[n]
         ref = None if a.zb_only else run(REF_MACHINE, lines, span=span)
         zb = None if a.ref_only else run(ZB_MACHINE, lines, span=span)
-        out = [f"{n}"]
-        if not a.zb_only:
-            out.append(f"    ref  {fmt(ref)}")
-        if not a.ref_only:
-            out.append(f"    zb   {fmt(zb)}")
-        print("\n".join(out), flush=True)
-    return 0
+        if a.report:
+            out = [f"{n}"]
+            if not a.zb_only:
+                out.append(f"    ref  {fmt(ref)}")
+            if not a.ref_only:
+                out.append(f"    zb   {fmt(zb)}")
+            print("\n".join(out), flush=True)
+            continue
+        spec = EXPECT.get(n, {})
+        for side, r in (("ref", ref), ("zb ", zb)):
+            if r is None and ((side == "ref" and a.zb_only) or (side == "zb " and a.ref_only)):
+                continue
+            # `done` FIRST: without it no other field means anything.
+            check(f"[{side}] {n:24} {fmt(r)}", bool(r) and r["done"] == 1)
+            for lbl, pred in spec.get(PER, []):
+                check(f"[{side}] {n:24} {lbl}",
+                      bool(r) and r["done"] == 1 and bool(pred(r)))
+        fields = spec.get(EQ, [])
+        if fields and ref and zb:
+            same = all(ref[f] == zb[f] for f in fields)
+            check(f"[zb ] {n:24} == ref on {','.join(fields)}", same,
+                  "" if same else f"ref={ {f: ref[f] for f in fields} } "
+                                  f"zb={ {f: zb[f] for f in fields} }")
+
+    print("\n" + ("ALL PASS" if ok else "SOME FAILED"))
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

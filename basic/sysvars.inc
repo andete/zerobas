@@ -460,6 +460,18 @@ TRAPS_T4        equ     1
 TRAPS_T4        equ     0
     ENDIF
 
+; --- TRAPS_T5: the INTERVAL-trap build gate (docs/spec-traps-t5-interval.md) --
+; The arc's FIFTH slice -- reopened after "INTERVAL is MSX2" was retracted (arc
+; spec §0: it is a reserved-word COMPOUND, INT + "ER" + VAL, so it never needed a
+; keyword-table entry to exist). ROM_BASE-conditional for T3/T4's reason: the
+; call sites (ex_on's peek, ex_ff_stmt's) are always-assembled page-1 code, so a
+; bare gate leaves the lean build referencing symbols it never assembles.
+    IF ROM_BASE < $4000
+TRAPS_T5        equ     1
+    ELSE
+TRAPS_T5        equ     0
+    ENDIF
+
     IF ROM_BASE < $4000
 I1_RESIDENT     equ     1
     ELSE
@@ -897,6 +909,25 @@ SV_OP_BSV_DISK  equ     0       ; BSAVE to disk   (bsv_open ..  bsv_fin)
 SV_OP_BSV_CAS   equ     1       ; BSAVE to tape   (bsv_cas_open .. bsv_cas_fin)
 SV_OP_SAV_DISK  equ     2       ; SAVE to disk, tokenised (sav_disk_write .. sav_fin)
 SV_OP_SAV_CAS   equ     3       ; SAVE"CAS:" / CSAVE, tokenised (tape_save_basic ..)
+; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §3): the VIRTUAL LINE
+; HEADER that makes a typed line a first-class line for the run loop, so the
+; deferred-transfer protocols (GOTOFLAG / RESUMEFLAG+RESUMEPTR / ENDFLAG) work
+; at the prompt exactly as they do inside a program. Layout is a real line's:
+;   [link:2] -> dir_endlink, a permanent `dw 0` in ROM. Falling off the end of a
+;               direct line therefore reads a $0000 link == "end of program" and
+;               unwinds to the REPL -- without depending on where the STORED
+;               program's own end marker happens to sit (a direct `NEW`/`LOAD`
+;               moves PRGEND mid-line, so snapshotting it would go stale).
+;   [lineno:2] = 0, never printed: DIRECTF is 1 whenever CURLINE == DIRLINE, and
+;               every " in <line>" suffix is gated on it (MEASURED -- a direct
+;               STOP reports a bare "Break", a direct error carries no suffix).
+; CURLINE == DIRLINE is the SOLE definition of direct mode from this slice on:
+; rp_exec DERIVES DIRECTF from that comparison at every line/resume, so a GOSUB
+; into the program is run mode ("Syntax error in 10") and the RETURN back into
+; the typed line is direct mode again ("Syntax error") -- both measured on the
+; VG-8020. Homed in the free $E226..$E23F window (below the lean-only STRTAB at
+; $E240). Repack-only, like the slice.
+DIRLINE         equ     $E226   ; 4 B: the direct line's [link:2][lineno:2] header
     ENDIF
 
 ; --- Phase 1: minimal string-variable store (own-design; see PROVENANCE.md) --
