@@ -63,11 +63,33 @@ entry, so its position in `kwtable.inc` is free (`match_kw` is full-keyword).
 | `TIME=1000:TIME=TIME+5:PRINT TIME` | `1005`/`1006` — readable in its own RHS |
 | `TIME=5:PRINT FRE(0)` | unchanged vs. no assignment (`TI=5` costs 11 B) — `TIME` is **not** a variable |
 
-**Single vs. double is not observable** and is therefore a free implementation
-choice: every `TIME` value is an integer ≤ 5 digits (identical in both
-renderings), and MSX BASIC performs *all* float arithmetic in double
-([[float-pack-arc]]), so no operator can discriminate the operand's own type.
-Measured directly: `A!*B!`, `A!*B#` and `TIME*A!` all print identically.
+**`TIME` is NOT an MSX integer, and this is measured, not inferred.** The natural
+assumption is that a jiffy counter is integer-typed — but MSX BASIC's integer type
+is a **signed** 16-bit `%`, which simply cannot represent 32768..65535, and `TIME`
+demonstrably reaches that range. Two independent lenses agree:
+
+* `TIME=40000:PRINT TIME` → `40000`. An int16 holding that word would print
+  `-25536`.
+* `AND` coerces its operands **strictly** to int16, so it discriminates *"holds
+  the value 40000 as a float"* from *"holds the bit pattern `$9C40` as an int16"*:
+
+  | | `… AND 255` |
+  |---|---|
+  | `TIME=40000` | **ERR 6 (Overflow)** |
+  | `B=40000` — a genuine float | **ERR 6** ← identical |
+  | `B%=-25536` — a genuine int16, same bit pattern | **64** ← different |
+  | `TIME=100` | ok (≤32767 works either way) |
+
+Below 32768 the distinction is **unobservable**, by the same argument that makes
+single vs. double unobservable: every value is an integer ≤ 5 digits (identical in
+every rendering), MSX BASIC performs *all* float arithmetic in double
+([[float-pack-arc]]) — measured: `A!*B!`, `A!*B#` and `TIME*A!` print identically
+— and every int-domain consumer coerces anyway. So "float everywhere" is faithful
+at every observable point, and a magnitude-dependent type would buy nothing for
+extra bytes.
+
+`ERL` sits in exactly this position already (a genuinely unsigned word, whose
+direct-mode sentinel *is* 65535) and zerobas resolved it the same way.
 
 ### 1.3 `TIME=<expr>` as a statement (the write) `[PIN]`
 
@@ -222,10 +244,14 @@ so plan on **52–75 B**.
 
 ## 5. Decisions for sign-off
 
-* **D-TIME-1 — the numeric type of the read.** Unobservable (§1.2). *Rec:*
-  **double**, because `ev_f_erlfn`'s existing `widen_uint_to` +
-  `round_and_finalize` pair produces one and costs nothing extra. No deviation is
-  being taken; there is simply nothing to be faithful *to*.
+* **D-TIME-1 — the numeric type of the read.** **Integer is ruled out by
+  measurement** above 32767 (§1.2: `TIME AND 255` at 40000 overflows exactly as a
+  float does, where a real int16 of the same bit pattern returns 64) — MSX's `%`
+  is signed 16-bit and cannot hold 32768..65535 at all. Below 32768 int-vs-float,
+  and single-vs-double at any magnitude, are **unobservable**. *Rec:* **float
+  (double) everywhere**, because `ev_f_erlfn`'s existing `widen_uint_to` +
+  `round_and_finalize` pair produces one and costs nothing extra, and a
+  magnitude-dependent type would buy no observable fidelity for extra bytes.
 * **D-TIME-2 — `ei` after the guarded access.** *Rec:* **adopt** (§3.4), 4 B, and
   drop it first if §7's funding lands tight.
 * **D-TIME-3 — ERR 24 for `TIME=` (missing operand).** The reference raises it,

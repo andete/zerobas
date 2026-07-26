@@ -101,6 +101,15 @@ ERRORS = [
     ("dim",       "DIM TIME(3)",          "ERR2"),
     ("subscript", "TIME(1)=5",            "ERR2"),
     ("defint",    "DEFINT T-Z:TIME=70000","ERR6"),
+    # --- D-TIME-1: TIME is NOT integer-typed above 32767 -------------------
+    # `AND` coerces its operands STRICTLY to int16, so it discriminates "holds
+    # the value 40000 as a float" (ERR 6) from "holds the bit pattern $9C40 as
+    # an int16" (= -25536, AND 255 -> 64). TIME overflows; the int16 control
+    # succeeds; the float control overflows identically. Decisive.
+    ("t1_time",   "TIME=40000:A=TIME AND 255",  "ERR6"),
+    ("t1_flt",    "B=40000:A=B AND 255",        "ERR6"),   # genuine float -> same
+    ("t1_int",    "B%=-25536:A=B% AND 255",     "cont"),   # genuine int16 -> 64, ok
+    ("t1_small",  "TIME=100:A=TIME AND 255",    "cont"),   # <=32767: works either way
 ]
 
 
@@ -109,8 +118,13 @@ def _spans(raw: str | None) -> list[str]:
 
 
 def _last(raw: str | None) -> str:
-    s = _spans(raw)
-    return s[-1].strip() if s else "??" + re.sub(r"\s+", " ", raw or "").strip()[-36:]
+    """Last NON-EMPTY marker span. The non-empty part is load-bearing: when a case
+    errors mid-`PRINT`, line 20's leading CHR$(35) is already on screen and the
+    handler's own pair follows, giving `## 6 #` -- a naive "last span" match then
+    returns the EMPTY first pair and the real ERR 6 vanishes into a blank column.
+    That is how the D-TIME-1 `TIME AND 255` reading nearly got lost."""
+    s = [x.strip() for x in _spans(raw) if x.strip()]
+    return s[-1] if s else "??" + re.sub(r"\s+", " ", raw or "").strip()[-36:]
 
 
 # --------------------------------------------------------------------------
