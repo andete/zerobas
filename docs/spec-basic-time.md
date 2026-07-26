@@ -80,6 +80,21 @@ demonstrably reaches that range. Two independent lenses agree:
   | `B%=-25536` — a genuine int16, same bit pattern | **64** ← different |
   | `TIME=100` | ok (≤32767 works either way) |
 
+**What that test does and does not prove.** It separates *"holds the value 40000"*
+from *"holds the bit pattern `$9C40` as a signed int16"*. It does **not** separate
+a float from a hypothetical *unsigned* 16-bit carrier — both overflow a strict
+signed coercion. That hypothesis is answered structurally instead: MSX BASIC's
+numeric VALTYPs are **2 = integer, 4 = single, 8 = double** (plus 3 = string), all
+signed, so there is no unsigned type to put a 0..65535 value in — the reference
+must widen it as well. Read the other way, the same row is mild evidence *against*
+an unsigned carrier: `TIME AND 255` goes through the identical strict signed gate a
+float does and dies there, where an `AND` that understood an unsigned operand would
+have returned 64.
+
+The **value** is of course unsigned, and that is exactly where it lives in §3.2:
+`widen_uint_to` — "widen unsigned int to" — is the read's first instruction. The
+unsignedness belongs to the *conversion*, not to a type.
+
 Below 32768 the distinction is **unobservable**, by the same argument that makes
 single vs. double unobservable: every value is an integer ≤ 5 digits (identical in
 every rendering), MSX BASIC performs *all* float arithmetic in double
@@ -252,6 +267,12 @@ so plan on **52–75 B**.
   (double) everywhere**, because `ev_f_erlfn`'s existing `widen_uint_to` +
   `round_and_finalize` pair produces one and costs nothing extra, and a
   magnitude-dependent type would buy no observable fidelity for extra bytes.
+  *The cheap alternative was costed and rejected:* `FACTYP=2` hands back a plain
+  `DE` (~6 B, saving 11 on a slice where funding is the blocker) but is **signed**,
+  so `PRINT TIME` would render 40000 as −25536 — the very reason `ev_f_erlfn`
+  exists. A fourth, unsigned VALTYP would fix that but costs a new `exp_num` print
+  path plus every binary-op combine site, far more than the 11 B, and would diverge
+  from the reference's own type system.
 * **D-TIME-2 — `ei` after the guarded access.** *Rec:* **adopt** (§3.4), 4 B, and
   drop it first if §7's funding lands tight.
 * **D-TIME-3 — ERR 24 for `TIME=` (missing operand).** The reference raises it,
