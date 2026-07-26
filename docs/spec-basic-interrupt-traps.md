@@ -1,11 +1,53 @@
 # spec — interrupt traps (`ON INTERVAL/KEY/SPRITE/STOP/STRIG GOSUB` + the arming statements)
 
-Status: **✅ ARC COMPLETE 2026-07-25 — T1 STOP, T2 STRIG, T3 KEY, T4 SPRITE all
-landed and gated** (`stop-`/`strig-`/`key-`/`sprite-trap-acceptance`). Closes the
-input-devices **D-I-5** divergence and the graphics **D-G7-4** handoff. `INTERVAL`
-is deliberately absent: it is MSX2, out of charter. Per-slice packets:
-[T1](spec-traps-t1-stop-reslice.md) · [T2](spec-traps-t2-strig.md) ·
-[T3](spec-traps-t3-key.md) · [T4](spec-traps-t4-sprite.md).
+Status: **🔴 ARC REOPENED 2026-07-26 — T1 STOP, T2 STRIG, T3 KEY, T4 SPRITE landed
+and gated** (`stop-`/`strig-`/`key-`/`sprite-trap-acceptance`), closing the
+input-devices **D-I-5** divergence and the graphics **D-G7-4** handoff — **but
+`INTERVAL` is a fifth MSX1 trap family and it was excluded on a FALSE PREMISE.**
+See §0. Per-slice packets: [T1](spec-traps-t1-stop-reslice.md) ·
+[T2](spec-traps-t2-strig.md) · [T3](spec-traps-t3-key.md) ·
+[T4](spec-traps-t4-sprite.md); **T5 INTERVAL is owed a packet.**
+
+## 0. RETRACTION — `INTERVAL` is MSX1 after all (2026-07-26)
+
+On 2026-07-24 this arc recorded `INTERVAL` as "an MSX2 keyword, absent from MSX1"
+and re-sliced around it. **That conclusion was wrong**, and the way it was wrong is
+worth keeping: **the measurement was right and the inference was wrong.**
+
+What was measured (and reproduces exactly today, on the VG-8020 *and* the
+CF-3300): `INTERVAL ON` crunches to `FF 85 45 52 FF 94 20 95` — `INT` + the literal
+bytes `"ER"` + `VAL` + `ON`. From "there is no `INTERVAL` entry in the MSX1 crunch
+table" the arc concluded "`INTERVAL` is not an MSX1 feature". It does not follow,
+and the functional test says so plainly:
+
+| program | VG-8020 fires in ~160 jiffies |
+|---|---|
+| `ON INTERVAL=10 GOSUB … : INTERVAL ON` | **16** |
+| `ON INTERVAL=5  GOSUB … : INTERVAL ON` | **33** |
+| `ON INTERVAL=20 GOSUB … : INTERVAL ON` | **8** |
+| … `: INTERVAL OFF` / `: INTERVAL STOP` / never enabled | **0** / **0** / **0** |
+
+Exact 1/n scaling — it is a real jiffy-period trap, fully working, no error. And
+`LIST` **round-trips to `INTERVAL ON`**, because detokenising `INT`+`"ER"`+`VAL`
+concatenates back to the source spelling.
+
+`INTERVAL` is simply **not a keyword** on MSX1 — it is a *reserved-word compound*,
+the same shape `kwtable.inc` already documents for `MAXFILES` = `MAX`+`FILES` and
+`OUTPUT` = `OUT`+`PUT`, with a literal `"ER"` in the middle. The first-match-wins
+crunch finds `INT` before it can consider a longer word, and the statement layer
+matches the resulting byte sequence.
+
+**This inverts §8 and D-T-5 completely.** Adding an `INTERVAL` keyword would have
+*broken* the byte-identical crunch discipline, not preserved it. And the happy
+consequence: **zerobas already crunches `INTERVAL ON` and `ON INTERVAL=10 GOSUB 100`
+byte-identically to the VG-8020 today**, because it already has `INT` and `VAL` —
+verified 2026-07-26. T5 therefore needs **no token, no `kwtable` row, and no crunch
+work at all** — only the parse + `event_poll` stanza, which §5/§6 already specify
+(they were written for INTERVAL first and were never wrong, only orphaned).
+
+*Reusable lesson:* "absent from the keyword table" ≠ "absent from the language".
+A crunch probe answers a **tokenisation** question; only running the feature
+answers a **support** question. See [[interval-is-msx1-after-all]].
 
 Originally signed off **2026-07-24** — slicing **T1→T2→T3→T4** approved (D-T-6), and go
 straight into T1 from this arc spec (no separate T1 packet). This is the arc-level
@@ -251,13 +293,19 @@ error-handling follow-up (statement syntax errors are trappable).
 
 ## 8. Tokens
 
-No new *trap* tokens — the `ON X GOSUB` statements are built from existing tokens (`ON
-$95` + event keyword + `GOSUB $8D` + `$0E` line-refs), and `KEY $CC`/`SPRITE
-$C7`/`STOP $90`/`STRIG $FF$A3`/`OFF $EB` already exist. **`INTERVAL` is the one new
-keyword** — needs a `kwtable.inc` row and a token equate (D-T-5: pick the byte;
-oracle-confirm via `basic_probe_crunch.py` against the VG-8020, the standing token
-discipline). `ON` is `$95` and the reference token for `INTERVAL` is a known published
-value to match byte-identically.
+No new tokens **at all** — including for `INTERVAL`. The `ON X GOSUB` statements are
+built from existing tokens (`ON $95` + event keyword + `GOSUB $8D` + `$0E`
+line-refs), and `KEY $CC`/`SPRITE $C7`/`STOP $90`/`STRIG $FF$A3`/`OFF $EB` already
+exist.
+
+⚠️ **This section previously said "`INTERVAL` is the one new keyword" and D-T-5 told
+us to pick a token byte for it. Both are RETRACTED — see §0.** `INTERVAL` is not a
+keyword on MSX1; it is a reserved-word compound `INT` + literal `"ER"` + `VAL`
+(`FF 85 45 52 FF 94`), like `MAXFILES` = `MAX`+`FILES`. **Adding a token would have
+broken byte-identical crunch, which is what this section exists to protect.**
+zerobas already emits the reference bytes for `INTERVAL ON` and
+`ON INTERVAL=n GOSUB` with no change whatsoever (verified 2026-07-26), so T5's token
+work is **zero** and its `kwtable`/low-region row is **zero bytes**.
 
 ---
 
@@ -530,8 +578,13 @@ byte-identity + `check_tenant_closure.py --page1`. Files: new `sub/fcbname.asm` 
   GOSUB` a documented not-yet. *Recommend deciding this at the T4 packet after an
   empirical read of how C-BIOS handles S#0* — it is the one fork with a real oracle
   question, and it does not block T1–T3.
-- **D-T-5 — `INTERVAL` token (§8).** Add the keyword; match the reference token byte
-  byte-identically, oracle-confirmed via the crunch probe. *Recommend as written.*
+- **D-T-5 — `INTERVAL` token (§8). 🔴 RETRACTED 2026-07-26 — the decision as written
+  would have SHIPPED A BUG.** There is no `INTERVAL` token to pick: it is a
+  reserved-word compound (§0), and adding a keyword row would have made zerobas
+  crunch it differently from every real MSX1 — the exact failure this decision was
+  meant to prevent. **Nothing to do:** zerobas already emits the reference bytes.
+  The 2026-07-24 "oracle-confirm via the crunch probe" step *did* run and *did*
+  return the truth; what failed was reading "no keyword entry" as "no feature".
 - **D-T-6 — slicing + order (§9). ✅ SIGNED OFF 2026-07-24: T1→T2→T3→T4** by mechanism
   complexity, and start T1 directly from this arc spec (no separate T1 packet).
 - **D-T-7 — byte strategy (§10).** Measure-first each slice; cheap golf before any

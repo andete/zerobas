@@ -1224,7 +1224,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       [`basic/tokenise.inc`](basic/tokenise.inc) abandoned the list at an EMPTY slot, so
       `ON KEY GOSUB 100,,600` (and T2's `ON STRIG GOSUB ,300`) died with a syntax error.
       Fixed repack-only — the 4 bytes overrun the byte-full lean cart, which keeps it.
-      **T4 = SPRITE is the only slice left in this arc.**
+      ~~**T4 = SPRITE is the only slice left in this arc.**~~
+      🔴 **ARC REOPENED 2026-07-26 — `INTERVAL` is a FIFTH MSX1 trap family, and it
+      was dropped on a FALSE PREMISE.** The 2026-07-24 finding "`INTERVAL` is MSX2,
+      absent from MSX1" measured the right thing and drew the wrong conclusion:
+      `INTERVAL ON` crunches to `FF 85 45 52 FF 94` (`INT` + literal `"ER"` + `VAL`)
+      on both vendor ROMs because it is **not a keyword** — it is a reserved-word
+      compound, the same shape as `MAXFILES` = `MAX`+`FILES`. It *works*: on the
+      VG-8020 `ON INTERVAL=n GOSUB` + `INTERVAL ON` fires 16 / 33 / 8 times for
+      n = 10 / 5 / 20 over ~160 jiffies (exact 1/n), `OFF`/`STOP` give 0, and `LIST`
+      round-trips to `INTERVAL ON`. **"Absent from the keyword table" ≠ "absent from
+      the language" — a crunch probe answers a tokenisation question, not a support
+      question.** Happy consequence: **zerobas already crunches it byte-identically**
+      (it has `INT` and `VAL`), so **T5 needs no token and no `kwtable` row** — only
+      the parse + the `event_poll` counter stanza, both already specified in
+      [`docs/spec-basic-interrupt-traps.md`](docs/spec-basic-interrupt-traps.md)
+      §5/§6 (written for INTERVAL first, then orphaned). **T5 is owed a packet.**
 - [ ] **`TIME` / `TIME=n`** — the software-clock pseudo-variable, standard MSX1
       BASIC and **absent from zerobas entirely**: it is not in
       [`basic/kwtable.inc`](basic/kwtable.inc), so `TIME` parses as the *variable*
