@@ -99,9 +99,9 @@ byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
   Nothing to fix in `event_poll` / `check_traps` / the `htimi_guard` seam.
 - **(a) `F_cadence` rebuilt, plus two new cases.** `F_cadence` (lean handler: one
   fire per frame, with *the handler fits in a frame* asserted as an explicit
-  precondition rather than assumed), `F2_period` (the T4 stamping handler: the
+  precondition rather than assumed), `F_cadence_period` (the T4 stamping handler: the
   between-fires period equals that handler's own measured cost — no fire lost
-  beyond what the handler pays for), `F0_cadence_off` (the apparatus' own
+  beyond what the handler pays for), `F_cadence_off` (the apparatus' own
   discriminating control **inside one boot**: armed-but-not-enabled counts zero
   while the same handler, called by the program, counts thousands). No tolerance
   band was widened: the denominator is now *measured in the same boot* instead of
@@ -109,7 +109,7 @@ byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
   rather than turning a correct implementation red.
 - **JUDGMENT CALL (logged, differs from the brief).** The brief asked for the
   inter-fire measurement with the handler setting `done`. It is in the gate
-  (`F2_period`'s stamps are the handler's own) but the *capture* is the emulator's,
+  (`F_cadence_period`'s stamps are the handler's own) but the *capture* is the emulator's,
   not a handler-set `done` — because measuring further found something stronger:
   **a handler that outlasts a frame starves the main program COMPLETELY.** A fresh
   collision has re-latched by the time the handler `RETURN`s, so the pending trap

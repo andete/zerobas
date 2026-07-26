@@ -1,8 +1,12 @@
 # spec — interrupt-traps T4: the SPRITE collision trap (`ON SPRITE GOSUB` + `SPRITE ON/OFF/STOP`)
 
-Status: **✅ LANDED + VERIFIED 2026-07-25** — `make sprite-trap-acceptance` 96/96,
-lean ROM byte-identical, walls low 5 B / page 1 22 B free. **The interrupt-trap arc
-is COMPLETE (T1–T4), and graphics D-G7-4 is closed.**
+Status: **✅ LANDED + VERIFIED 2026-07-25** — lean ROM byte-identical, walls low 5 B /
+page 1 22 B free. Graphics D-G7-4 is closed. **The gate is `make
+sprite-trap-acceptance` — 26 cases, 123/123** after the 2026-07-26 **cadence
+rebuild** (§1.2.1: the old `F_cadence` measured the main loop, and the 1.5
+jiffies/fire it exposed turned out to be the *handler's* cost, not a divergence —
+no ROM change). The arc was declared complete at T4 and was not: T5 INTERVAL
+followed, see [`spec-basic-interrupt-traps.md`](spec-basic-interrupt-traps.md).
 
 Signed off 2026-07-25. D-T4-2 decided **against** the recommendation —
 the poll goes in the **low region off `htimi_guard`**, not page-1 `event_poll`
@@ -530,8 +534,8 @@ gate is written against measured values, not expectations:
 |---|---|
 | `A_hit` / `A2_miss` | the discriminating pair — fires vs the control. **If these agree the run is void.** |
 | `F_cadence` | **one fire per frame**, fires and frames counted by the emulator, plus the precondition that the handler fits in a frame (§1.2.1) |
-| `F2_period` | the same law with a handler that does *not* fit: the between-fires period equals that handler's own measured cost — no fire lost beyond what the handler pays for |
-| `F0_cadence_off` | the cadence apparatus' own discriminating control, **inside one boot**: armed-but-not-enabled counts ZERO while the same handler, called by the program, counts thousands |
+| `F_cadence_period` | the same law with a handler that does *not* fit: the between-fires period equals that handler's own measured cost — no fire lost beyond what the handler pays for |
+| `F_cadence_off` | the cadence apparatus' own discriminating control, **inside one boot**: armed-but-not-enabled counts ZERO while the same handler, called by the program, counts thousands |
 | `B_armed_not_on`, `C_off` | arm ≠ enable |
 | `G_stop_latch`, `H_off_latch` | `SPRITE STOP` ≡ `SPRITE OFF`, no latch |
 | `E_no_handler` | enabled with no handler is harmless |
@@ -557,13 +561,13 @@ divide by it** — §1.2.1's defect is in the ratio, not in the window.)
 
 **2026-07-26 — the cadence trio (§1.2.1), 96 → 123 assertions.** The old
 `F_cadence` (1.007 ref / 1.043 zb, and 95/96 RED once `TIME` landed) is replaced by
-`F_cadence` + `F2_period` + `F0_cadence_off`, all three emulator-counted:
+`F_cadence` + `F_cadence_period` + `F_cadence_off`, all three emulator-counted:
 
 | | ref | zb |
 |---|---|---|
 | `F_cadence` trap / sync | 299/300 = 0.997 · 4.53 | **299/300 = 0.997** · 2.95 |
-| `F2_period` trap / sync / period | 300/300 = 1.0 · 1.20 · 1.00 | 186/300 = 0.62 · 0.573 · **1.60** |
-| `F0_cadence_off` trap / sync | **0**/300 · 4.53 | **0**/300 · 2.95 |
+| `F_cadence_period` trap / sync / period | 300/300 = 1.0 · 1.20 · 1.00 | 186/300 = 0.62 · 0.573 · **1.60** |
+| `F_cadence_off` trap / sync | **0**/300 · 4.53 | **0**/300 · 2.95 |
 
 The predicates were additionally checked against synthetic readings for teeth: every
 one of *every other frame*, *twice per frame*, *two frames in three (the 1.5)*, a

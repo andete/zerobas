@@ -75,13 +75,13 @@ REF_MACHINE = "Philips_VG_8020"
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
 
 BASE = 0xD000          # $D000 cnt, D001 who, D002 err, D003 done, D004..6 aux
-NBYTES = 16            # D008/9 J1, D00A/B J2 (the F2_period stamp pair),
+NBYTES = 16            # D008/9 J1, D00A/B J2 (the F_cadence_period stamp pair),
                        # D00C fire tick, D00D/E phase markers, D00F phase control
 JIFFY = 0xFC9E         # published work area: the frame counter
 STATFL = 0xF3E7        # published work area: the ISR's S#0 copy (spec §2)
 COLLISION = 0x20       # S#0 bit 5
 
-# The emulator-level cadence apparatus (F_cadence / F2_period / F0_cadence_off).
+# The emulator-level cadence apparatus (F_cadence / F_cadence_period / F_cadence_off).
 FIRE_TICK = 0xD00C     # the handler writes it ONCE per entry -> the fire anchor
 PH1 = 0xD00D           # written by BASIC at `SPRITE ON`  -> phase 1 opens
 PH2 = 0xD00E           # written by BASIC after `SPRITE OFF` -> phase 2 opens
@@ -538,7 +538,7 @@ CASES["V2_statfl_src_miss"] = [ONERR] + CLR + SETUP + MISS + _SRC_TAIL
 # the handler stops fitting in a frame, the ceiling moves with it. The reference
 # is subject to the same law and fails it the same way if broken (its own float
 # handler costs 4 frames, and its rate drops to 0.24 accordingly).
-STAMP_SPAN = 100          # fires between the two JIFFY stamps (see F2_period)
+STAMP_SPAN = 100          # fires between the two JIFFY stamps (see F_cadence_period)
 
 # The leanest handler that can still be counted: one POKE, then RETURN. On both
 # machines it costs well under a frame (synchronous rate 7.5 ref / 4.8 zb), so
@@ -569,7 +569,7 @@ def cadence(handler, *, enable=True):
     job is nothing at all (a bare GOTO): the counters and the capture are the
     emulator's, which is what makes the case survive a handler that starves the
     interpreter (run_emu). Line 80 re-zeroes the fire counter and the stamp cells
-    so F2_period's stamps are the TRAP window's, not the sync window's."""
+    so F_cadence_period's stamps are the TRAP window's, not the sync window's."""
     return ([ONERR] + CLR + SETUP + HIT + ARM +     # always ARMED; `enable` is ON
             [f"60 POKE&H{PH2:X},1",
              f"70 GOSUB800:IFPEEK(&H{PHCTL:X})=0THEN70",
@@ -586,13 +586,13 @@ EMU_CASES = {
     # turns the T4 gate's handler-sensitivity from a mystery into a measurement.
     # It also carries the between-fires `period`, which must equal that handler's
     # own cost: no fire is lost beyond what the handler itself pays for.
-    "F2_period": cadence(CADENCE_STAMP),
+    "F_cadence_period": cadence(CADENCE_STAMP),
     # THE DISCRIMINATING CONTROL, and it discriminates inside a single boot: the
     # trap is armed but never enabled, so phase 1 must count ZERO fires while
     # phase 2 -- the same handler, the same counter, called by the main program --
     # counts plenty. A run where phase 1 is silent because the apparatus is broken
     # cannot pass that pair.
-    "F0_cadence_off": cadence(CADENCE_LEAN, enable=False),
+    "F_cadence_off": cadence(CADENCE_LEAN, enable=False),
 }
 
 
@@ -697,7 +697,7 @@ EXPECT_EMU = {
               ("fires ONCE PER FRAME, and never twice",
                lambda r: 1.0 - 2 * EPS <= r["rate1"] <= 1.0 + EPS)],
     },
-    "F2_period": {
+    "F_cadence_period": {
         EQ: ["frames1", "frames2"],
         PER: [("apparatus: both windows ran their full length",
                lambda r: r["frames1"] == r["want_frames"] == r["frames2"]
@@ -718,7 +718,7 @@ EXPECT_EMU = {
                lambda r: (1.0 - EPS) * min(1.0, r["rate2"]) <= r["rate1"]
                <= 1.0 + EPS)],
     },
-    "F0_cadence_off": {
+    "F_cadence_off": {
         EQ: ["fires1", "frames1", "frames2"],
         PER: [("apparatus: both windows ran their full length",
                lambda r: r["frames1"] == r["want_frames"] == r["frames2"]

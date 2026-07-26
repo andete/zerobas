@@ -583,7 +583,7 @@ key-trap-acceptance: $(DISK_ROM) repack-machine
 # cross-machine assertions are the error surface, the STATFL readings, and the
 # emulator-counted cadence windows (spec 1.2.1: those windows are exactly as long on
 # both machines BY CONSTRUCTION -- the emulator closes them after N ISR ticks -- so
-# there the counts ARE comparable, and F0_cadence_off's zero is asserted as an
+# there the counts ARE comparable, and F_cadence_off's zero is asserted as an
 # equality).
 # Scope with `make sprite-trap-acceptance ONLY=F_`; `REPORT=1` prints the raw
 # readings without asserting (characterization mode). FRAMES=n sets the ISR ticks
