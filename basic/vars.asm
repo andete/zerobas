@@ -934,22 +934,6 @@ ssk_len_ok:
 ; Clobbers A, BC, HL.
 clear_vars:
     IF ROM_BASE < $4000
-                ; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §4,
-                ; D-DIR-2): empty the FOR and GOSUB frame stacks. This MOVED here
-                ; from run_prog, which was the only place that ever set them --
-                ; so before the first RUN both pointers held power-on RAM garbage
-                ; ($FFFF under openMSX, above both *_STK_END), and the very first
-                ; direct-mode FOR or GOSUB took the depth-overflow arm and raised
-                ; ERR 7 "out of memory". clear_vars has EXACTLY the four call
-                ; sites the reset belongs at -- cold boot (interp.asm init), RUN,
-                ; NEW and CLEAR -- and the VG-8020 resets on all four (measured:
-                ; a live direct-mode FOR frame does NOT survive NEW or CLEAR, but
-                ; DOES survive the end of the typed line that made it). Same
-                ; "single hook covering all four" argument as the RND seed below.
-                ld      hl,GOSUB_STK
-                ld      (GSP),hl
-                ld      hl,FOR_STK
-                ld      (FSP),hl
                 ld      hl,DEFTBL           ; F3 S3b: reset every letter's default type
                 ld      b,26                ; to DOUBLE (8) -- DEFINT/SNG/DBL/STR are
                 ld      a,8                 ; re-established by re-running their statements
