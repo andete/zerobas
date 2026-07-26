@@ -6,7 +6,10 @@ input-devices **D-I-5** divergence and the graphics **D-G7-4** handoff — **but
 `INTERVAL` is a fifth MSX1 trap family and it was excluded on a FALSE PREMISE.**
 See §0. Per-slice packets: [T1](spec-traps-t1-stop-reslice.md) ·
 [T2](spec-traps-t2-strig.md) · [T3](spec-traps-t3-key.md) ·
-[T4](spec-traps-t4-sprite.md); **T5 INTERVAL is owed a packet.**
+[T4](spec-traps-t4-sprite.md) · **[T5 INTERVAL](spec-traps-t5-interval.md) —
+characterized 2026-07-26, PACKET AWAITING SIGN-OFF.** T5's §1 also corrects §4's
+INTERVAL bullet below: the counter must tick while the trap is STOPped and while
+its handler runs, not only while it is ON.
 
 ## 0. RETRACTION — `INTERVAL` is MSX1 after all (2026-07-26)
 
