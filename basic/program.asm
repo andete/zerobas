@@ -52,9 +52,11 @@ dl_cmd:
                 ld      a,(TKOVF)           ; float-literal crunch-time overflow (F1,
                 or      a                   ; basic/float.asm) -> reject the whole line,
                 jp      nz,dl_overflow      ; own wording (D-F1-1); never execute/store
-                ld      a,1
-                ld      (DIRECTF),a         ; D-2: direct-mode exec -> error carries NO
-                                            ; " in <line>" suffix (there is no line)
+                                            ; (D-2's explicit `DIRECTF := 1` used to sit
+                                            ; here; it is now DERIVED in rp_exec, which
+                                            ; this path always reaches before any
+                                            ; statement runs -- and nothing between here
+                                            ; and there can raise an error to read it)
                 ld      (SAVSTK),sp         ; error-handling S2b §6: direct-mode anchor
                                             ; (a direct ERROR n/error WITH a handler
                                             ; resets cleanly; without one, S1's REPL
@@ -69,12 +71,8 @@ dl_cmd:
                 ; SILENTLY (measured: direct `GOTO 10`, `IF 1 THEN 10`, `ON 1 GOTO 10`
                 ; all no-ops; a direct FOR/NEXT looped zero times and left RESUMEFLAG
                 ; raised for the next RUN to trip over).
-                ld      hl,dir_endlink      ; [link] -> a permanent ROM $0000 word, so
-                ld      (DIRLINE),hl        ; running off the end of the typed line
-                ld      hl,0                ; reads "end of program" -> back to the REPL
-                ld      (DIRLINE+2),hl      ; [lineno] = 0 (never printed; see sysvars)
-                ld      hl,DIRLINE
-                ld      (CURLINE),hl        ; ...and CURLINE == DIRLINE IS direct mode
+                ld      hl,dir_line         ; CURLINE := the ROM line header -- which IS
+                ld      (CURLINE),hl        ; the definition of direct mode (see rp_exec)
                 xor     a                   ; the loop's own flags must start clean:
                 ld      (ENDFLAG),a         ; a leftover ENDFLAG from the last STOP
                 ld      (RESUMEFLAG),a      ; would abort this line before statement 1,
@@ -106,12 +104,27 @@ dl_overflow:
                 ld      hl,err_overflow
                 jp      print_string        ; reports and returns to the REPL
 err_overflow:   db      "overflow",13,10,0
-; The direct line's "next line" link (docs/spec-basic-direct-ctrl.md §3): a
-; permanent $0000 word, i.e. an end-of-program marker that no program edit can
-; move. DIRLINE's link points here, so the run loop's ordinary fall-through
-; ("CURLINE := link, then a $0000 link ends the run") unwinds a finished direct
-; line back to the REPL with no special case anywhere in the loop.
-dir_endlink:    dw      0
+; --- dir_line: the VIRTUAL LINE a typed line executes under -----------------
+; docs/spec-basic-direct-ctrl.md §3. Laid out exactly like a stored line's
+; header -- [link:2][lineno:2] -- so the run loop needs no direct-mode special
+; case anywhere: CURLINE := dir_line and every existing path just works.
+;
+; It lives in ROM, not RAM, for three reasons: it is entirely constant, so a
+; per-line write would be pure cost; nothing can corrupt it; and it claims no
+; RAM. The two words OVERLAP by design -- the link points at the lineno field,
+; whose value 0 is simultaneously the $0000 end-of-program marker. So running
+; off the end of a typed line takes the loop's ordinary fall-through (CURLINE
+; := link) and then its ordinary "$0000 link -> end of program" exit, back to
+; the REPL. Deliberately NOT the stored program's own end marker at (PRGEND):
+; a typed `NEW` / `LOAD` / line edit moves that MID-LINE, and the snapshot
+; would already be stale by the time the line ended.
+;
+; The lineno field is never printed: print_in_lineno and record_errline are the
+; only two readers of CURLINE+2 in this build and both take their DIRECTF branch
+; first. Its value is 0 regardless, so even a missed gate could only print
+; "in 0" rather than garbage.
+dir_line:       dw      dir_line + 2        ; [link] -> the word below
+                dw      0                   ; [lineno] = 0 == the $0000 end marker
     ENDIF
 dl_run:
                 jp      run_prog
@@ -313,12 +326,16 @@ rp_exec:
                 ; and both were MEASURED on the VG-8020: a direct `GOSUB 10` into a
                 ; broken line 10 reports "Syntax error IN 10" (run mode), and the
                 ; RETURN back into the rest of the typed line reports a bare
-                ; "Syntax error" (direct mode again). DE is dead on every entry
-                ; path here (rp_lp leaves the consumed link in it).
-                ld      hl,(CURLINE)
-                ld      de,DIRLINE
-                or      a
-                sbc     hl,de               ; ZF iff this line IS the direct line
+                ; "Syntax error" (direct mode again).
+                ; The HIGH BYTE alone decides it. CURLINE's value set is small and
+                ; enumerable: a stored line's link address, always in [TXTBASE
+                ; $8001, TXTMAX $BE00); dir_line; and dir_line+2 (what the loop's
+                ; fall-through leaves behind after a typed line ends). ROM and the
+                ; text area are disjoint, so the only address sharing dir_line's
+                ; page is dir_line+2 -- and rp_lp returns to the REPL on that one
+                ; before ever reaching here.
+                ld      a,(CURLINE+1)
+                cp      dir_line >> 8
                 ld      a,0                 ; (xor a would clobber the flags)
                 jr      nz,rpe_mode
                 inc     a
@@ -489,15 +506,10 @@ do_break:
                 ; print_in_lineno routine (below) — the same one fre_abort_low uses
                 ; for a runtime error's " in <line>" suffix. Output in run mode is
                 ; byte-for-byte the old inline tail ("break" + " in " + <N> + CRLF).
-                ; NO LONGER unconditional: direct mode reaches do_break too now
-                ; (a typed `STOP`, or Ctrl-STOP during a typed FOR loop), and the
-                ; reference prints a bare "Break" there -- same D-2 gate the error
-                ; suffix already uses, and the line number at DIRLINE+2 is 0 so a
-                ; missed gate would have printed "break in 0".
-                ld      a,(DIRECTF)
-                or      a
-                jp      z,print_in_lineno
-                jp      print_crlf
+                ; in DIRECT mode print_in_lineno now suppresses the suffix itself
+                ; (the reference prints a bare "Break" for a typed STOP -- measured),
+                ; so this tail stays a single unconditional jump.
+                jp      print_in_lineno
     ELSE
                 ld      hl,(CURLINE)
                 inc     hl
@@ -522,6 +534,17 @@ brk_msg:        db      "break in ",0
 ; number is the 2-byte field at CURLINE+2. ln_div_entry prints HL as a bare unsigned
 ; decimal. Clobbers A, BC, DE, HL. See docs/spec-basic-error-handling.md §5.4.
 print_in_lineno:
+                ; DIRECT mode names no line (docs/spec-basic-direct-ctrl.md §5):
+                ; a typed `STOP` reports a bare "Break" and a typed error carries no
+                ; suffix -- both MEASURED on the VG-8020. The gate lives HERE, at the
+                ; single place that reads CURLINE+2 for output, so do_break's tail
+                ; stays one unconditional jump and the direct line's [lineno] field
+                ; never has to be initialised. (fre_abort_low keeps its own DIRECTF
+                ; test: it picks print_string vs print_string_stopcr, so it must
+                ; branch before it prints, not after.)
+                ld      a,(DIRECTF)
+                or      a
+                jp      nz,print_crlf
                 ld      hl,in_msg
                 call    print_string        ; " in "
                 ld      hl,(CURLINE)
@@ -621,9 +644,19 @@ ex_cont:
                 xor     a
                 ld      (ENDFLAG),a
                 ld      (GOTOFLAG),a
-    IF ROM_BASE < $4000
-                ld      (DIRECTF),a         ; D-2: CONT resumes the RUN -> run mode (0)
-    ENDIF
+                                            ; (an explicit `DIRECTF := 0` used to sit
+                                            ; here. It is DEAD since the direct-mode
+                                            ; slice: DIRECTF is DERIVED at rp_exec from
+                                            ; CURLINE (docs/spec-basic-direct-ctrl.md
+                                            ; §5), and the `jp rp_lp` below reaches it
+                                            ; -- via rp_resume, RESUMEFLAG being set --
+                                            ; before any statement runs, with nothing on
+                                            ; the way able to read the flag or raise an
+                                            ; error. It derives the SAME 0: CONTLINE is
+                                            ; always a stored line's link address, since
+                                            ; do_break gates CONTVALID on DIRECTF and a
+                                            ; direct-mode break leaves no resume point
+                                            ; at all. 3 B of page 1 reclaimed.)
                 ld      hl,(CONTLINE)
                 ld      (CURLINE),hl
                 ld      hl,(CONTPTR)

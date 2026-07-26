@@ -117,8 +117,13 @@ fre_abort_low:
                                             ; funnel's ENDFLAG cost.
                 ; D-2 (docs/spec-basic-error-handling.md §5.4): a RUN-mode error
                 ; appends " in <line>"; a DIRECT-mode error prints unchanged (no line
-                ; to name). DIRECTF is set 0/1 by run_prog/ex_cont/dispatch_line before
-                ; any statement runs, so it is valid here.
+                ; to name). DIRECTF is DERIVED at rp_exec from CURLINE (program.asm,
+                ; docs/spec-basic-direct-ctrl.md §5) -- the single point every line
+                ; entry and every mid-line resume passes through -- so it is valid
+                ; here and, unlike a carried flag, cannot be stale.
+                ; This test stays even though print_in_lineno now gates on DIRECTF
+                ; too: it picks print_string vs print_string_stopcr, so it must
+                ; branch BEFORE it prints, not after.
                 ld      a,(DIRECTF)
                 or      a
                 jp      nz,print_string     ; direct: message + its own baked CRLF (as before)

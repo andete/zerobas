@@ -797,8 +797,9 @@ raise_error_forced:                          ; reached ONLY via ex_resume_noerr,
 
 ; --- record_errline: ERRLINE := run mode? CURLINE+2 : 65535 (direct) -------
 ; docs/spec-basic-error-handling-s2a-packet.md §3/(e). DIRECTF (D-2, D-1) is
-; always valid here (set by run_prog/ex_cont/dispatch_line before any
-; statement runs). The run-mode read mirrors print_in_lineno's own CURLINE+2
+; always valid here: it is DERIVED at rp_exec from CURLINE (program.asm,
+; docs/spec-basic-direct-ctrl.md §5), which every line entry and every mid-line
+; resume passes through. The run-mode read mirrors print_in_lineno's own CURLINE+2
 ; fetch (program.asm) byte-for-byte. 65535 is the ERL-in-direct-mode
 ; sentinel (spec-basic-error-handling-s2.md §9 Q2, black-box-pinned GW/MSX
 ; convention). Clobbers A, DE, HL.

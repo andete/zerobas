@@ -652,6 +652,22 @@ time-acceptance: $(DISK_ROM) repack-machine
 intarg-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_intarg.py $(if $(ONLY),--only $(ONLY),)
 
+# --- DIRECT-MODE control-flow gate (docs/spec-basic-direct-ctrl.md §8) --------
+# VG-8020 differential for FOR/NEXT, GOSUB/RETURN, GOTO, IF-THEN-<line> and
+# ON-GOTO typed AT THE PROMPT -- an execution mode that had zero coverage until
+# 2026-07-26 (every earlier loop/trap/graphics gate runs its BASIC as a stored
+# program + RUN). Six groups, 40 cases: direct / cross / stored / xfer / break /
+# reset. Scope with `make direct-ctrl-acceptance ONLY=xfer,break`.
+#
+# THE PROBE IS BOOT-PER-CASE AND MUST STAY THAT WAY: half the defect it gates is
+# COLD-BOOT STATE (FSP/GSP were initialised only by run_prog), so in a batched
+# run the first case that RUNs a stored program initialises them for the whole
+# boot and every later direct-mode case passes -- a green gate over a live bug.
+# Consequently this target is SLOW (80 openMSX boots). Repack-only;
+# oracle-dependent (needs the VG-8020 reference machine).
+direct-ctrl-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_direct_ctrl.py $(if $(ONLY),--groups $(ONLY),)
+
 # --- SOUND acceptance gate (audio arc, Slice 1 — docs/spec-basic-audio-play.md)
 # VG-8020 differential, two halves: (1) the ERROR SURFACE — SOUND's register 0..13
 # range + the D-F2-2 byte coercion (14..255 -> ERR 5, >int16 -> ERR 6); (2) the PSG
@@ -781,6 +797,6 @@ clean:
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
         interval-trap-acceptance \
-        input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
+        input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
         graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep clean

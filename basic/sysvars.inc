@@ -909,25 +909,11 @@ SV_OP_BSV_DISK  equ     0       ; BSAVE to disk   (bsv_open ..  bsv_fin)
 SV_OP_BSV_CAS   equ     1       ; BSAVE to tape   (bsv_cas_open .. bsv_cas_fin)
 SV_OP_SAV_DISK  equ     2       ; SAVE to disk, tokenised (sav_disk_write .. sav_fin)
 SV_OP_SAV_CAS   equ     3       ; SAVE"CAS:" / CSAVE, tokenised (tape_save_basic ..)
-; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §3): the VIRTUAL LINE
-; HEADER that makes a typed line a first-class line for the run loop, so the
-; deferred-transfer protocols (GOTOFLAG / RESUMEFLAG+RESUMEPTR / ENDFLAG) work
-; at the prompt exactly as they do inside a program. Layout is a real line's:
-;   [link:2] -> dir_endlink, a permanent `dw 0` in ROM. Falling off the end of a
-;               direct line therefore reads a $0000 link == "end of program" and
-;               unwinds to the REPL -- without depending on where the STORED
-;               program's own end marker happens to sit (a direct `NEW`/`LOAD`
-;               moves PRGEND mid-line, so snapshotting it would go stale).
-;   [lineno:2] = 0, never printed: DIRECTF is 1 whenever CURLINE == DIRLINE, and
-;               every " in <line>" suffix is gated on it (MEASURED -- a direct
-;               STOP reports a bare "Break", a direct error carries no suffix).
-; CURLINE == DIRLINE is the SOLE definition of direct mode from this slice on:
-; rp_exec DERIVES DIRECTF from that comparison at every line/resume, so a GOSUB
-; into the program is run mode ("Syntax error in 10") and the RETURN back into
-; the typed line is direct mode again ("Syntax error") -- both measured on the
-; VG-8020. Homed in the free $E226..$E23F window (below the lean-only STRTAB at
-; $E240). Repack-only, like the slice.
-DIRLINE         equ     $E226   ; 4 B: the direct line's [link:2][lineno:2] header
+; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §3) claims NO new RAM:
+; the virtual line header a typed line executes under (`dir_line`, program.asm) is
+; a 4-byte ROM constant, and CURLINE == dir_line is the sole definition of direct
+; mode from that slice on. Recorded here because CURLINE is a sysvar and this is
+; the one value it takes that is NOT an address in the program text.
     ENDIF
 
 ; --- Phase 1: minimal string-variable store (own-design; see PROVENANCE.md) --

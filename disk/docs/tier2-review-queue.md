@@ -157,6 +157,15 @@ position, presumably a 40-column wrap landing differently; its sibling
 the rule ("screen-scrape only where the packet needs the message TEXT"), and this
 case needs a number, not text.
 
+→ **RECONFIRMED 2026-07-26 on the direct-mode-control-flow build**, which is not
+a redundant check: that slice changed the ` in <line>` error suffix machinery
+(`DIRECTF` became derived, and the suffix gate moved into `print_in_lineno`), so
+this suite is exactly the one that would show a regression there. Signature is
+byte-for-byte the record above — one FAIL, `zb='";ERR;"' ref='1'`. Isolated it
+passes (`--only tc_next` → `zb='1' ref='1'`), and the **full suite is ALL PASS
+`--boot-per-case`**. So the artifact is the batch position, the underlying
+behaviour is right, and the suffix path is green.
+
 **🔴 [FINDING — GATE DEFECT, surfaced by landing TIME, 2026-07-26]
 `sprite-trap-acceptance` `F_cadence` is RED (95/96), and the assertion it fails
 DOES NOT MEASURE WHAT IT CLAIMS.** It asserts `0.75 <= cnt/aux <= 1.35` where
@@ -209,6 +218,30 @@ cases read `+1` and looked like semantic failures. **A reduction that degrades
 to a single sample is worse than no reduction, because it still prints a
 number.** The gate now pads with statements instead (`A=1:` ×2k, cost measured:
 ~5 per jiffy on zerobas, ~11 on the VG-8020) and is green 105/105 both sides.
+
+→ **RESOLVED 2026-07-26 — `docs/spec-basic-direct-ctrl.md`, gate
+`make direct-ctrl-acceptance` 40/40 boot-per-case.** Characterizing it turned up
+**two** defects on the same path, and the reported one was the less serious:
+`GSP`/`FSP` were initialised only by `run_program`, so before the first `RUN`
+they held power-on garbage above both stack ends (D-DIR-1, the ERR 7) — *and*
+`dispatch_line` ran a typed line with a bare `jp exec`, which walks statements
+but does not service the deferred-transfer flags, so a direct `GOTO` / `IF..THEN
+<line>` / `ON..GOTO` was a **silent no-op** (D-DIR-2). Fixing D-DIR-1 alone would
+have been worse than the bug: the loud ERR 7 becomes a `FOR` body that silently
+runs zero times. A typed line is now a **virtual line** through the real run
+loop, and the whole direct-mode execution path — which had *zero* gate coverage,
+in verbs marked 100% — is under a differential.
+
+*Two judgment calls logged here rather than escalated:* (1) interrupt traps are
+**not** dispatched in direct mode. Routing direct mode through the run loop would
+have started firing `ON KEY`/`ON SPRITE`/`ON INTERVAL` handlers at the prompt as
+a *side effect* of a `FOR`/`NEXT` fix, and whether the reference does that is
+UNMEASURED — so the conservative reading (preserve today's behaviour) is gated in
+at one RAM load, with the characterization to close it written up in the spec §6.
+(2) Two `cross`/`reset` cases resume into a line buffer the next typed line has
+already overwritten; that aftermath is a buffer-layout artifact, so they are
+judged on the semantic claim only (spec §7) — including one where **both sides
+agree exactly**, since an agreement reached for the wrong reason is not evidence.
 
 **[FINDING — PRE-EXISTING, surfaced by the SAVE carve's gate, 2026-07-26]
 Multi-block cassette ASCII `LOAD"CAS:"` truncates on the REPACK build (and, at a
