@@ -137,6 +137,25 @@ byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
   cleaned, and every zerobas-side reading became `NO CAPTURE` (loudly, at least,
   not silently wrong). Re-running `make repack-machine` locally fixes it — and any
   gate target that depends on `repack-machine` self-heals.
+- ⚠️ **VERIFIED AGAINST `1addfbc` (pre-T5), NOT against this merge.** The rebuild
+  carries **no ROM change**, and T5's `+265 B` cannot plausibly move the readings
+  (the lean handler has ~4.8× of headroom and the law is self-calibrating) — but
+  the merged tree is 14 B over the page-1 ceiling, so `make basic-reloc` and hence
+  `make repack-machine` cannot build and the gate cannot be re-run yet. **Re-run
+  `make sprite-trap-acceptance` as soon as those 14 B are reclaimed.**
+
+**[FINDING — GATE FRAGILITY, 2026-07-26] `error-trap-acceptance` `tc_next_nofor`
+fails ONLY in the full batch.** It reads `zb='";ERR;"'` — the inner text of the
+ECHOED source line `100 PRINT"R<";ERR;">"` — instead of the program's output.
+**The behaviour is correct and was verified directly:** the screen plainly shows
+`R< 1 >`, and the case PASSES both with `--only tc_next` and with
+`--boot-per-case`. So the scrape is picking up the echo at one particular batch
+position, presumably a 40-column wrap landing differently; its sibling
+`tc_next_junk`, one character longer on line 20, passes in the same batch.
+
+*Fix is a sentinel, not a wider regex* — the probe's own docstring already carries
+the rule ("screen-scrape only where the packet needs the message TEXT"), and this
+case needs a number, not text.
 
 **🔴 [FINDING — GATE DEFECT, surfaced by landing TIME, 2026-07-26]
 `sprite-trap-acceptance` `F_cadence` is RED (95/96), and the assertion it fails

@@ -4,16 +4,23 @@ SPDX-License-Identifier: 0BSD
 -->
 # Spec — interrupt traps **T5: `ON INTERVAL=n GOSUB` + `INTERVAL ON|OFF|STOP`**
 
-Status: **PACKET — ✅ D-T5-2 SIGNED OFF 2026-07-26 (pay the fast-out term);
-D-T5-1/3/4/5/6 stand as recommended.** The fifth and last slice of
+Status: **⚠️ IMPLEMENTED AND GATED 149/149, BUT THE TREE IS 14 B OVER THE PAGE-1
+CEILING — `make basic-reloc` FAILS.** See §4.3. The slice is behaviourally
+complete and its gate is green on both machines; it does not yet FIT beside
+`TIME`. Reclaiming 14 B is the open item. D-T5-2 signed off; D-T5-1/3/4/6 adopted as
+recommended; D-T5-5 answered by the structure (§6). As-built in §4.3, §5.1
+and §6.1.
+**With T5 landed the interrupt-trap arc closes for the second time — honestly.**
+The fifth and last slice of
 the interrupt-trap arc, after [T1 STOP](spec-traps-t1-stop-reslice.md) ·
 [T2 STRIG](spec-traps-t2-strig.md) · [T3 KEY](spec-traps-t3-key.md) ·
 [T4 SPRITE](spec-traps-t4-sprite.md). Arc spec:
 [spec-basic-interrupt-traps.md](spec-basic-interrupt-traps.md) — **read its §0
 first**, it is the retraction that reopened the arc.
 
-Nothing here is implemented. Funding is a separate, *shared* decision — see
-[decision-fund-time-and-t5.md](decision-fund-time-and-t5.md) and §6.
+Funded by the D-FUND-1 SAVE carve —
+[decision-fund-time-and-t5.md](decision-fund-time-and-t5.md), which sized ONE
+carve against this slice and `TIME` together and delivered +310 B for the two.
 
 ---
 
@@ -297,6 +304,53 @@ the whole slice. Every estimate in this arc has come in low — T2 by 70 B, T3 b
 106 B (1.8×) *while calling itself deliberately pessimistic* — so **treat 95 B as
 a lower bound and budget ~170 B**.
 
+### 4.3 ✅ AS BUILT — 196 B, and the lower-bound rule held for the sixth time
+
+🔴 **CORRECTED, and the correction is the point: 265 B, and the tree is 14 B OVER
+the ceiling.** `check_reloc` on a CLEAN build: reloc size **22524** against the
+22510 B that `$2812–$7FFF` holds. A clean build at the parent commit (`1addfbc`,
+`TIME` landed, T5 not) measures **251 B free**, so T5 costs **265 B** — **2.8×**
+the 95 B estimate, and 95 B more than the 170 B "budget on the lower bound"
+figure. Low region untouched at 5 B (§3's page-1 argument held).
+
+⚠️ **AND THE INCREMENTAL BUILDS LIED ABOUT IT ALL THE WAY.** `make basic-reloc`
+reported 64 B free, then 55 B, while the same sources built from scratch overrun.
+Every intermediate figure in this section's first draft (196 B, "55 B left") came
+from a stale `build/` tree. **Only `rm -rf build && make basic-reloc` measures the
+wall** — an incremental one can report headroom that a clean build does not have,
+which is precisely the failure mode a byte-budget gate exists to prevent.
+The arc's standing rule "MEASURE byte budgets before declaring a wall" needs the
+corollary: *measure them from clean.*
+
+Open: reclaim ≥14 B. The identified candidates, cheapest first —
+**(a)** share the `ON|OFF|STOP` token decode and the `ld a,ZTS_*` triple between
+`ex_interval` and `ex_stop` (they are token-for-token identical; ~14 B net, no
+behaviour change, needs a `stop-trap-acceptance` re-run);
+**(b)** route `ex_time_assign`'s ERR 2 to the existing `trap_syntax` (~3 B);
+**(c)** D-TIME-2's `di`/`ei` guards (8 B) — pre-authorised by
+[spec-basic-time.md](spec-basic-time.md) §5 as the first thing to drop if funding
+lands tight, at the cost of a real (if unobservable) torn-access guard;
+**(d)** a second carve. (a)+(b) is the recommendation: it gives the margin back
+without giving up anything measured.
+
+Where the 101 B over the estimate went, honestly:
+
+| item | est | as built |
+|---|---|---|
+| poll stanza + fast-out term | 33 | ~44 — the fast-out had to be A-ONLY (§2.1) |
+| `ex_interval` | 24 | ~46 — including the TRAPPEND re-raise (§4.2) |
+| `ex_on` peek + `iv_match` + the 5-byte table | 20 | ~34 |
+| `ON INTERVAL=` argument | 18 | ~30 |
+| the second call site (`ex_ff_stmt`) | **0 — forgotten** | ~8 |
+
+The last row is the honest one: the estimate costed *one* compound peek and there
+are **two**, because `INTERVAL ON` is a statement and `ON INTERVAL` is a clause.
+That is the shape of every underestimate in this arc — not a mis-priced item, a
+missing one.
+
+**Funding held comfortably**: the D-FUND-1 carve delivered +310 B, `TIME` took 81
+and T5 took 196, leaving **55 B**. One carve did fund both, as §4 argued.
+
 Both threads of this session are page-1 needs against **22 B free**. Funding is
 the shared carve in [decision-fund-time-and-t5.md](decision-fund-time-and-t5.md),
 sized against `TIME` **and** T5 together.
@@ -331,9 +385,43 @@ JIFFY delta and not by an iteration count. Once `TIME` lands (Thread A) the
 "no `TIME` on the zerobas side" rule retires and these windows can be written the
 natural way.
 
+### 5.1 ✅ AS BUILT — `make interval-trap-acceptance`, 149 assertions, ALL PASS
+
+Both machines, 42 cases. Beyond §4.2's defect, three cases had to be **re-sized
+for the slow side**, and the reason is the same in each: the case's premise was
+"the handler is cheap relative to the period", which is true on the VG-8020 and
+false on a build that runs BASIC ~3× slower.
+
+* **`A1_n1`** — at one fire per frame the handler *is* the frame, so the main
+  program never resumes and a window-based case captures `done=0`. Rebuilt on
+  the handler-sets-`done` shape (§1.5's own lesson, arriving uninvited) and
+  asserted per-machine as "never faster than its period": reference 1.0,
+  zerobas handler-limited above it.
+* **`D7_nfrac`** — the truncate-vs-round question at n=2.7 is unanswerable on the
+  slow side, where the measured gap is handler-limited (2.3). Moved to **20.7**:
+  20 against 21, five per cent apart, measurable on both.
+* **`S3_from_fire_or_return`** — its ~58-frame burn costs ~174 frames on the
+  repack build, so n=100 did not fit and the slow side starved. n=**300** fits on
+  both and the question is unchanged.
+
+And the tolerance was tightened from `1/span + 5%` to `1/span + 2%`: at n=20 the
+5 % term is ±1.0, **wide enough to accept 21 when the answer is 20** — i.e. wide
+enough to accept rounding when the finding is truncation. *A tolerance that
+cannot reject the rival hypothesis is not a tolerance.*
+
+⚠️ **One apparatus fault cost a whole round and is worth naming: a STALE
+MACHINE.** A mass of 32 cases came back `ERR 2` — the exact signature of
+`INTERVAL` not existing — after an unrelated detour had repointed
+`C-BIOS_MSX1_EU_REPACK_DISK` at a worktree ROM that was then deleted. The probe
+names its machine by NAME and cannot see which ROM that name resolves to, so a
+correct implementation read as completely unimplemented. **After any
+`install-*-machine.py` detour, reinstall before trusting a reading** — this is
+[[ips-rebuild-after-basic-change]]'s hazard in the other direction: not a stale
+ROM behind a fresh machine, but a stale machine in front of a fresh ROM.
+
 ---
 
-## 6. Decisions for sign-off
+## 6. Decisions — all resolved
 
 **D-T5-1 — the tick gate.** Adopt correction 1 (§2.1): tick whenever
 `ZINTVAL ≠ 0`; latch PENDING unless the state is OFF. *Recommended* — it is what
@@ -354,11 +442,44 @@ it argues for landing **`TIME` first** so T5 inherits a proven path.
 `event_poll` (§3) and record the tenant-window stretch as a **documented
 deviation**, measured by a `T_tenant` gate case rather than asserted to be small.
 
-**D-T5-5 — parse sharing.** Build the `ON INTERVAL` body both shared with
-`ex_on_stop` and duplicated, and **measure** before choosing (§2.2).
+**D-T5-5 — parse sharing. ✅ ANSWERED BY THE STRUCTURE, not by a bake-off.**
+`ON INTERVAL=n GOSUB` shares `ex_on_stop`'s tail from the line-reference onward
+(a new `eos_line` label — **zero bytes**, since the store and the clear-the-slot
+path are identical), and shares nothing before it, because everything before it
+*is* the `=n` argument that STOP does not have. There was no fork to measure:
+the shared part had no per-caller cost and the unshared part had no counterpart.
+Both variants were built for D-T4's version of this question; here the answer
+fell out of where the two grammars actually diverge.
 
 **D-T5-6 — order.** `TIME` first (it is fully specced, its steps are small and
 independent, and D-T5-3 rides on it), then T5. Both after the §4 carve.
+
+---
+
+### 6.1 🔴 THE ONE REAL DEFECT THE GATE FOUND — a latch that could never release
+
+Three cases failed on the first honest run, all the same shape and all in the
+STOP family: `G_stop_latch` (ref 2, zb 1), `P_on_reloads` (2/1),
+`G2_stop_release` (1/0). zerobas latched the elapsed period correctly and then
+**never released it**.
+
+The bug is not in the latch and not in the state machine — both were right. It is
+that **`check_traps` CLEARS `TRAPPEND` whenever it finds nothing firable**, and a
+STOPped entry is not firable. So `event_poll` latches PENDING, raises TRAPPEND,
+the dispatcher looks, finds nothing, and switches itself off; `INTERVAL ON` then
+restores the state but the dispatcher has already been told to stop asking.
+
+**T1–T4 never hit this because their event sources re-latch every frame while
+ON**, which re-raises TRAPPEND on its own. INTERVAL's latch is a **one-shot** —
+§1.3 `G2` measures three elapsed periods releasing exactly one — so it is the
+first trap in the arc that has to re-raise TRAPPEND at the arming statement.
+Ten bytes in `ex_interval`, guarded on `bit 7` so OFF (which clears PENDING) does
+nothing. Counted in §4.3's `ex_interval` row.
+
+*Generalise:* a one-shot latch and a level-sampled one need different wake-up
+plumbing, and the difference is invisible until a case suspends the trap for
+longer than one period and then re-enables it. That case existed only because §1.3
+was written to distinguish "STOP remembers" from "OFF forgets".
 
 ---
 

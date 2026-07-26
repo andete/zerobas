@@ -59,9 +59,32 @@ dl_cmd:
                                             ; (a direct ERROR n/error WITH a handler
                                             ; resets cleanly; without one, S1's REPL
                                             ; return already worked)
-    ENDIF
+                ; --- direct-mode control flow (docs/spec-basic-direct-ctrl.md §3) ---
+                ; The typed line is executed as a VIRTUAL LINE through the ordinary
+                ; run loop, NOT by a bare `jp exec`. `exec` only walks statements; the
+                ; three CONTROL-TRANSFER protocols are all serviced by the loop AROUND
+                ; it (GOTOFLAG, RESUMEFLAG+RESUMEPTR, ENDFLAG), so a plain `jp exec`
+                ; ran a GOTO / GOSUB / RETURN / continuing NEXT for its side effects
+                ; and then returned to the prompt with the transfer still pending --
+                ; SILENTLY (measured: direct `GOTO 10`, `IF 1 THEN 10`, `ON 1 GOTO 10`
+                ; all no-ops; a direct FOR/NEXT looped zero times and left RESUMEFLAG
+                ; raised for the next RUN to trip over).
+                ld      hl,dir_endlink      ; [link] -> a permanent ROM $0000 word, so
+                ld      (DIRLINE),hl        ; running off the end of the typed line
+                ld      hl,0                ; reads "end of program" -> back to the REPL
+                ld      (DIRLINE+2),hl      ; [lineno] = 0 (never printed; see sysvars)
+                ld      hl,DIRLINE
+                ld      (CURLINE),hl        ; ...and CURLINE == DIRLINE IS direct mode
+                xor     a                   ; the loop's own flags must start clean:
+                ld      (ENDFLAG),a         ; a leftover ENDFLAG from the last STOP
+                ld      (RESUMEFLAG),a      ; would abort this line before statement 1,
+                ld      (GOTOFLAG),a        ; and a stale RESUMEFLAG would divert it
                 ld      hl,TOKBUF
-                jp      exec                ; returns to the REPL
+                jp      rp_exec             ; unwinds to the REPL at end of line
+    ELSE
+                ld      hl,TOKBUF
+                jp      exec                ; lean: statement walk only (byte-frozen)
+    ENDIF
 dl_store:
                 call    parse_lineno        ; HL -> first digit; BC = number, HL past
                 push    bc                  ; guard line number across tokenise
@@ -83,6 +106,12 @@ dl_overflow:
                 ld      hl,err_overflow
                 jp      print_string        ; reports and returns to the REPL
 err_overflow:   db      "overflow",13,10,0
+; The direct line's "next line" link (docs/spec-basic-direct-ctrl.md §3): a
+; permanent $0000 word, i.e. an end-of-program marker that no program edit can
+; move. DIRLINE's link points here, so the run loop's ordinary fall-through
+; ("CURLINE := link, then a $0000 link ends the run") unwinds a finished direct
+; line back to the REPL with no special case anywhere in the loop.
+dir_endlink:    dw      0
     ENDIF
 dl_run:
                 jp      run_prog
@@ -232,10 +261,17 @@ run_prog:
                                             ; leak into this one (traps.asm). Inert until
                                             ; the arming statements land (TRAPENA==0).
     ENDIF
+    IF ROM_BASE >= $4000
                 ld      hl,GOSUB_STK        ; empty return stack
                 ld      (GSP),hl
                 ld      hl,FOR_STK          ; empty FOR stack
                 ld      (FSP),hl
+    ENDIF                                   ; repack: MOVED into clear_vars (called
+                                            ; three lines up) so cold boot / NEW /
+                                            ; CLEAR reset the control stacks too --
+                                            ; docs/spec-basic-direct-ctrl.md §4.
+                                            ; Net zero bytes; the lean cart keeps the
+                                            ; inline copy and stays byte-identical.
                 xor     a                   ; DATA pointer unpositioned (read seeks
                 ld      (DATASTATE),a       ;  from the program start on first READ)
                 ld      hl,TXTBASE
@@ -268,6 +304,27 @@ rp_exec:
                 ; Ctrl-STOP held). If pressed, break here — resume point is HL
                 ; (the statement about to run), CURLINE already correct.
                 push    hl                  ; guard the resume pointer across BREAKX
+    IF ROM_BASE < $4000
+                ; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §5):
+                ; DIRECTF is DERIVED here, not carried. It is exactly "the line I
+                ; am about to run is the typed one", and this is the single point
+                ; every line entry AND every mid-line resume passes through, so it
+                ; cannot go stale. A sticky flag would be wrong in both directions
+                ; and both were MEASURED on the VG-8020: a direct `GOSUB 10` into a
+                ; broken line 10 reports "Syntax error IN 10" (run mode), and the
+                ; RETURN back into the rest of the typed line reports a bare
+                ; "Syntax error" (direct mode again). DE is dead on every entry
+                ; path here (rp_lp leaves the consumed link in it).
+                ld      hl,(CURLINE)
+                ld      de,DIRLINE
+                or      a
+                sbc     hl,de               ; ZF iff this line IS the direct line
+                ld      a,0                 ; (xor a would clobber the flags)
+                jr      nz,rpe_mode
+                inc     a
+rpe_mode:
+                ld      (DIRECTF),a
+    ENDIF
                 call    BREAKX
                 pop     hl
                 jr      c,rp_break
@@ -284,10 +341,23 @@ rp_exec:
 rp_trapchk:                                 ; interrupt-trap dispatch point (T1); also
                                             ; re-entered by rp_break after latching STOP.
                                             ; Gate is one RAM load in the no-trap case.
+                ; DIRECT MODE DOES NOT DISPATCH TRAPS (docs/spec-basic-direct-
+                ; ctrl.md §6, DEFERRED). Before this slice a typed line never
+                ; reached this loop at all, so no trap could ever fire at the
+                ; prompt; routing direct mode through the loop would have made
+                ; that happen as a SIDE EFFECT of a FOR/NEXT fix. Whether the
+                ; reference fires traps at command level is UNMEASURED, so the
+                ; conservative reading -- preserve today's behaviour -- wins
+                ; until it is characterized. Same reason rp_break skips the STOP
+                ; trap's latch arm in direct mode.
+                ld      a,(DIRECTF)
+                or      a
+                jr      nz,rp_run
                 ld      a,(TRAPPEND)
                 or      a
                 call    nz,check_traps      ; HL = stmt ptr; CF=1 -> fired, CURLINE=handler
                 jr      c,rp_lp             ; fired: run the handler line fresh (RESUMEFLAG=0)
+rp_run:
     ENDIF
                 call    exec                ; run line (may set flags or hand off)
                 ld      a,(ENDFLAG)
@@ -314,6 +384,9 @@ rp_goto:
                 jr      rp_lp
 rp_break:
     IF ROM_BASE < $4000
+                ld      a,(DIRECTF)         ; direct mode: no trap machinery (see
+                or      a                   ; rp_trapchk) -> always the classic break,
+                jr      nz,rp_do_break      ; reported as a bare "break" by do_break
                 ; STOP trap (T1, spec-traps-t1-stop-reslice.md §6/§12.3). `ON STOP GOSUB`
                 ; + `STOP ON` makes the program UNBREAKABLE from the keyboard — that is
                 ; what the statement is FOR. VG-8020-measured (2026-07-25): while the STOP
@@ -374,6 +447,7 @@ rp_brk_run:
 rp_real_break:
                 pop     hl                  ; HL = resume stmt ptr
     ENDIF
+rp_do_break:
                 ; Ctrl-STOP pressed between lines/statements. HL = the statement
                 ; that was about to run -> the CONT resume point. do_break records
                 ; it, prints "Break in <line>", and sets ENDFLAG; we then return
@@ -391,7 +465,18 @@ do_break:
                 ld      (CONTPTR),hl        ; resume token pointer
                 ld      hl,(CURLINE)
                 ld      (CONTLINE),hl       ; line to resume in (link-field addr)
+    IF ROM_BASE < $4000
+                ; ...but a DIRECT-mode break leaves NO resume point (docs/spec-
+                ; basic-direct-ctrl.md §5). MEASURED on the VG-8020: `PRINT 1:STOP:
+                ; PRINT 2` typed at the prompt reports "Break", and the CONT that
+                ; follows reports "Can't CONTINUE" -- there is nothing to go back
+                ; to, the typed line's buffer is about to be overwritten. DIRECTF
+                ; is 0/1, so `xor 1` is the whole gate.
+                ld      a,(DIRECTF)
+                xor     1
+    ELSE
                 ld      a,1
+    ENDIF
                 ld      (CONTVALID),a       ; a CONT resume point is now live
                 ld      a,1
                 ld      (ENDFLAG),a         ; stop the run, fall back to the REPL
@@ -402,10 +487,17 @@ do_break:
     IF ROM_BASE < $4000
                 ; repack (D-2): the " in <lineno>" + CRLF tail is the SHARED
                 ; print_in_lineno routine (below) — the same one fre_abort_low uses
-                ; for a runtime error's " in <line>" suffix. do_break is always
-                ; reached in run mode, so the suffix is unconditional here; output is
+                ; for a runtime error's " in <line>" suffix. Output in run mode is
                 ; byte-for-byte the old inline tail ("break" + " in " + <N> + CRLF).
-                jp      print_in_lineno
+                ; NO LONGER unconditional: direct mode reaches do_break too now
+                ; (a typed `STOP`, or Ctrl-STOP during a typed FOR loop), and the
+                ; reference prints a bare "Break" there -- same D-2 gate the error
+                ; suffix already uses, and the line number at DIRLINE+2 is 0 so a
+                ; missed gate would have printed "break in 0".
+                ld      a,(DIRECTF)
+                or      a
+                jp      z,print_in_lineno
+                jp      print_crlf
     ELSE
                 ld      hl,(CURLINE)
                 inc     hl
@@ -1129,6 +1221,13 @@ ex_on:
                 ld      a,(hl)              ; selector expression (`ON VAL(x$) GOTO ...`),
                 cp      STRIG_TOKEN         ; so put the cursor back and fall through.
                 jp      z,ex_on_strig       ; (entered with HL on the selector byte)
+    IF TRAPS_T5
+                call    iv_match            ; ON INTERVAL=n GOSUB <line> (traps T5) --
+                jp      c,ex_on_interval    ; a reserved-word COMPOUND, not a token, so
+                                            ; this is a 6-byte literal compare rather
+                                            ; than a `cp` (arc spec §0). CF=0 leaves HL
+                                            ; on the selector for the dec below.
+    ENDIF
                 dec     hl
     ENDIF
 ex_on_expr:                                 ; ON <expr> GOTO/GOSUB -- the ordinary form
@@ -1378,6 +1477,11 @@ eos_common:                                 ; DE = &entry.handler; HL on the eve
                                             ; raises, and raise_error resets SP)
                 inc     hl
                 call    skip_spaces
+eos_line:                                   ; T5 enters HERE: `ON INTERVAL=n GOSUB` has
+                                            ; already consumed its own `=n` and GOSUB, so
+                                            ; it pushes &entry.handler itself and joins
+                                            ; the shared store below. Costs nothing -- a
+                                            ; label is zero bytes.
                 call    trap_line_link      ; CF=1 -> DE = handler LINK
                 jr      c,eos_store
                 ; NO LINE REFERENCE -> CLEAR THE HANDLER. This used to be
@@ -1445,6 +1549,144 @@ tll_undef:
                 pop     hl                  ; balance the stack (aborting)
                 jp      ex_goto_undef       ; undefined line -> ERR 8
 
+    IF TRAPS_T5
+; ===========================================================================
+; INTERVAL -- interrupt-traps T5 (docs/spec-traps-t5-interval.md).
+;
+; INTERVAL IS NOT A KEYWORD. It is a reserved-word COMPOUND -- `INT` + the
+; literal bytes "ER" + `VAL`, i.e. FF 85 45 52 FF 94 -- the same shape
+; kwtable.inc already documents for MAXFILES = MAX+FILES. The first-match-wins
+; crunch finds INT before it can consider a longer word, and the statement layer
+; matches the resulting byte sequence. So zerobas ALREADY crunched
+; `INTERVAL ON` and `ON INTERVAL=10 GOSUB 100` byte-identically to the VG-8020
+; before this slice: T5 needs no token, no kwtable row and no crunch work, and
+; adding a keyword would have BROKEN the byte-identical crunch (arc spec §0 --
+; that retraction is why this slice exists at all).
+;
+; The price is that both entry points need a literal compare instead of a `cp`.
+; It is the one place T5 costs more than T1-T4, all four of which peek a one- or
+; two-byte token.
+
+; --- iv_match: does the cursor spell INTERVAL's compound? --------------------
+;   IN:  HL -> the selector byte AFTER the $FF prefix (the caller consumed it).
+;   OUT: CF=1 -> HL is past the whole compound (on the `=` or the ON/OFF/STOP).
+;        CF=0 -> HL UNMOVED, so the caller's fall-through is undisturbed.
+;   Clobbers A, B, DE.
+iv_match:
+                push    hl
+                ld      de,iv_seq
+                ld      b,5
+iv_m_lp:
+                ld      a,(de)
+                cp      (hl)
+                jr      nz,iv_m_no
+                inc     hl
+                inc     de
+                djnz    iv_m_lp
+                pop     de                  ; discard the saved cursor; HL is past
+                scf
+                ret
+iv_m_no:
+                pop     hl                  ; restore -- the caller still needs it
+                or      a                   ; CF = 0
+                ret
+iv_seq:
+                db      INT_TOKEN,"ER",PEEK_PREFIX,VAL_TOKEN
+
+; --- ex_interval: INTERVAL ON | OFF | STOP -----------------------------------
+; Entry: HL past the compound. Pure state, exactly like `STOP ON/OFF/STOP`.
+; NO EDGE-SHADOW SEED, and no counter reload -- both MEASURED, not inherited:
+;   * no shadow because the event is GENERATED, not sampled, so there is no
+;     level to de-bounce (contrast STRIG/KEY, which must seed);
+;   * no reload because `OFF` then `ON` does NOT restart the period on the
+;     reference (§1.4 H3_off_reloads: the next fire lands inside a 60-frame
+;     window after re-enabling, where a reload would have put it 100 frames out).
+;     Only the ARMING statement reloads. set_state touches the state byte alone,
+;     so this falls out for free -- it is recorded here because it is a fact that
+;     was checked, not an omission.
+ex_interval:
+                call    skip_spaces
+                cp      ON_TOKEN
+                jr      z,ei_on
+                cp      OFF_TOKEN
+                jr      z,ei_off
+                cp      STOP_TOKEN
+                jr      z,ei_stop
+                jp      trap_syntax         ; bare `INTERVAL` / `INTERVAL FOO` -> ERR 2
+ei_on:          ld      a,ZTS_ON
+                jr      ei_set
+ei_off:         ld      a,ZTS_OFF
+                jr      ei_set
+ei_stop:        ld      a,ZTS_STOP
+ei_set:
+                inc     hl                  ; consume the ON/OFF/STOP sub-keyword
+                push    hl                  ; guard the cursor across set_state
+                ld      hl,ZTRAP+ZTI_INTERVAL*ZTRAP_ENTSZ
+                call    set_state           ; (preserves HL)
+                ; --- RELEASE A LATCH THAT SURVIVED THE STATE CHANGE -----------
+                ; ⚠️ Not optional, and NOT something the shared machinery does for
+                ; us -- three gate cases failed on exactly this (G_stop_latch 2/1,
+                ; P_on_reloads 2/1, G2_stop_release 1/0, reference/zerobas).
+                ; event_poll raises TRAPPEND when it latches, but check_traps
+                ; CLEARS TRAPPEND whenever it finds nothing FIRABLE -- and a
+                ; STOPped entry is not firable. So the PENDING bit survives the
+                ; suspension exactly as the reference requires, and then nothing
+                ; ever looks at it again: `INTERVAL ON` restored the state but the
+                ; dispatcher had already been told to stop asking.
+                ; T2/T3/T4 never hit this because their sources re-latch every
+                ; frame while ON, which re-raises TRAPPEND on its own; INTERVAL's
+                ; latch is a ONE-SHOT (§1.3 G2: three elapsed periods release
+                ; exactly one), so it has to re-raise here.
+                ; OFF needs no guard: set_state clears PENDING, so bit 7 is 0.
+                bit     7,(hl)
+                jr      z,ei_done
+                ld      a,1
+                ld      (TRAPPEND),a        ; make check_traps look once more
+ei_done:
+                pop     hl
+                jp      exec_stmt           ; continue the line (`INTERVAL ON:...`)
+
+; --- ex_on_interval: ON INTERVAL = <expr> GOSUB [<line>] ---------------------
+; Entry: HL past the compound, on the `=`.
+;
+; THE PERIOD ARGUMENT IS THE ADDRESS DOMAIN, and that is a measurement, not a
+; convenience: §1.2 puts 255/256/32767/32768/65535/-1/-32768 all inside it,
+; 2.7 -> 2 (truncate), and 65536 / -32769 / **-65531** outside it with ERR 6.
+; -65531 is the decisive one -- under a raw mod-65536 reading it would be a
+; perfectly legal 5-frame period. So this is `eval_addr`, the same conversion
+; POKE and `TIME=n` use, which is why the TIME slice landed first.
+; n = 0 is the one addition: ERR 5, not ERR 6.
+ex_on_interval:
+                call    skip_spaces
+                cp      EQ_TOKEN
+                jp      nz,trap_syntax      ; `ON INTERVAL GOSUB 800` -> ERR 2
+                inc     hl
+                call    eval_addr           ; DE = n (checked address domain)
+                ld      a,(FPERR)
+                or      a
+                jp      nz,fp_runtime_error ; outside -32768..65535 -> Overflow (ERR 6)
+                ld      a,d
+                or      e
+                jr      z,eoi_err5          ; ON INTERVAL=0 -> Illegal function call
+                ld      (ZINTVAL),de        ; the period...
+                ld      (ZINTCNT),de        ; ...and RELOAD the live counter: arming
+                                            ; restarts the period (§1.4 P2, measured --
+                                            ; re-arming mid-run moves the next fire)
+                call    skip_spaces
+                cp      GOSUB_TOKEN
+                jp      nz,trap_syntax      ; `ON INTERVAL=10 GOTO 800` -> ERR 2
+                inc     hl
+                call    skip_spaces
+                ld      de,ZTRAP+ZTI_INTERVAL*ZTRAP_ENTSZ+1
+                push    de                  ; eos_line pops it as the store target
+                jp      eos_line            ; shared tail: optional line ref, else CLEAR
+                                            ; the slot (§1.6 -- the reference accepts a
+                                            ; bare `ON INTERVAL=n GOSUB` and disarms)
+eoi_err5:
+                ld      a,5
+                jp      raise_error
+    ENDIF
+
 ; --- ex_ff_stmt: the `$FF <selector>` STATEMENT fork -------------------------
 ; A statement that starts with a two-byte function token. MID$ ($FF $83) is the
 ; string-assignment form; STRIG ($FF $A3) is the T2 arming statement (this is the
@@ -1456,6 +1698,10 @@ ex_ff_stmt:
                 ld      a,(hl)
                 cp      STRIG_TOKEN         ; STRIG(n) ON|OFF|STOP  (traps T2)
                 jp      z,ex_strig_stmt     ; (entered with HL on the selector)
+    IF TRAPS_T5
+                call    iv_match            ; INTERVAL ON|OFF|STOP  (traps T5)
+                jp      c,ex_interval       ; CF=0 leaves HL on the selector, so
+    ENDIF                                   ; ex_mid_sel's Syntax error is unchanged
                 jp      ex_mid_sel
 
 ; --- ex_on_strig: ON STRIG GOSUB [<l0>][,<l1>[,<l2>[,<l3>[,<l4>]]]] ----------
