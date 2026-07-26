@@ -2,10 +2,11 @@
 
 Status: **🏁 ARC CONCLUDED 2026-07-26 (for the second time, and this time with all
 five families) — T1 STOP, T2 STRIG, T3 KEY, T4 SPRITE, T5 INTERVAL all landed
-and gated** (`stop-`/`strig-`/`key-`/`sprite-trap-acceptance`), closing the
-input-devices **D-I-5** divergence and the graphics **D-G7-4** handoff — **but
-`INTERVAL` is a fifth MSX1 trap family and it was excluded on a FALSE PREMISE.**
-See §0. Per-slice packets: [T1](spec-traps-t1-stop-reslice.md) ·
+and gated** (`stop-`/`strig-`/`key-`/`sprite-`/`interval-trap-acceptance`),
+closing the input-devices **D-I-5** divergence and the graphics **D-G7-4**
+handoff. The arc was declared finished once before at T4 and it was not: INTERVAL
+is a fifth MSX1 trap family, excluded on a FALSE PREMISE — see §0, which is kept
+in place as the retraction rather than tidied away. Per-slice packets: [T1](spec-traps-t1-stop-reslice.md) ·
 [T2](spec-traps-t2-strig.md) · [T3](spec-traps-t3-key.md) ·
 [T4](spec-traps-t4-sprite.md) · **[T5 INTERVAL](spec-traps-t5-interval.md) —
 ✅ LANDED, `make interval-trap-acceptance` 149/149.** T5's §1 also corrects §4's
@@ -59,7 +60,7 @@ answers a **support** question. See [[interval-is-msx1-after-all]].
 
 Originally signed off **2026-07-24** — slicing **T1→T2→T3→T4** approved (D-T-6), and go
 straight into T1 from this arc spec (no separate T1 packet). This is the arc-level
-spec; T2–T4 still get their own signed-off packets before implementation, in the
+spec; T2–T5 each got their own signed-off packet before implementation, in the
 graphics-arc style (g1…g8).
 
 Repository: all paths under `/Users/joost/projects/zerobas`. The whole arc is
