@@ -113,6 +113,44 @@ ERRORS = [
 ]
 
 
+# --- the phase-shift apparatus (spec §1.3), REBUILT for the zerobas side ----
+# A batched harness makes the JIFFY-tick confound REPRODUCIBLE, so a single
+# reading of TIME after an assignment is not a measurement -- the fix is to
+# shift the phase deliberately and reduce.
+#
+# ⚠️ THE ORIGINAL PAD WAS `FORI=1TO{6k+1}:NEXT:` AND IT DOES NOT RUN ON ZEROBAS.
+# A DIRECT-MODE `FOR ... NEXT` raises "out of memory" there -- measured
+# 2026-07-26, and PRE-EXISTING (a direct FOR with no TIME in it fails
+# identically, so it is neither this slice's nor the carve's; logged in
+# disk/docs/tier2-review-queue.md). With every phase but k=0 erroring out, the
+# min-over-phases reduction silently collapsed to ONE reading and re-imported
+# the exact confound the protocol exists to defeat: nine cases read +1.
+# A gate whose reduction quietly degrades to a single sample is worse than no
+# reduction, because it still prints a number.
+#
+# The replacement is a statement pad, which needs no FOR. Cost MEASURED rather
+# than assumed: ~5 `A=1:` per jiffy on zerobas, ~11 on the VG-8020, so k=0..7 at
+# two statements per step spans ~2.8 jiffies on the slow side and ~1.3 on the
+# fast one -- more than one full tick either way, which is what makes at least
+# one phase tick-free.
+def _pad(k: int) -> str:
+    return "A=1:" * (2 * k)
+
+
+def _earliest(nums: list[int]) -> int | None:
+    """Reduce phase-shifted readings to the tick-free one.
+
+    Plain MIN is what the spec wrote and it is WRONG AT THE WRAP: the `max` row
+    stores 65535, so an extra tick reads 0 and min(65535, 0) picks the corrupted
+    sample. Ticks only ever advance, and only by a few counts within a batch, so
+    the tick-free reading is the one every other sample is FORWARD of on the
+    mod-65536 circle. Pick the candidate minimising the largest forward distance
+    -- identical to MIN when no wrap is involved."""
+    if not nums:
+        return None
+    return min(nums, key=lambda v: max((w - v) % 65536 for w in nums))
+
+
 def _spans(raw: str | None) -> list[str]:
     return re.findall(r"#([^#]*)#", raw or "")
 
@@ -141,10 +179,28 @@ def run_crunch(machine: str, **kw) -> list[str]:
     return out
 
 
-def run_read(machine: str, **kw) -> list[str]:
-    specs = [("direct", [b]) for _, b, _ in READ]
-    return [_last(r) for r in omsx_repl.run_cases(machine, specs, batch=True,
-                                                  reset=("NEW", "CLS"), **kw)]
+def run_read(machine: str, phases: int = 8, **kw) -> list[tuple[str, list[str]]]:
+    """Phase-shifted like the write group, and for the same reason: every row but
+    `is_jiffy` sets TIME and reads it straight back, so a tick between the two is
+    indistinguishable from a wrong value. The first differential run read
+    `unsigned` as 40001 and `max` as 0 for exactly that -- and `max`'s 0 is why
+    the reduction has to be wrap-aware (_earliest, not min)."""
+    specs, keys = [], []
+    for i, (_, body, _) in enumerate(READ):
+        for k in range(phases):
+            specs.append(("direct", [_pad(k) + body]))
+            keys.append(i)
+    caps = omsx_repl.run_cases(machine, specs, batch=True, reset=("NEW", "CLS"), **kw)
+    acc: dict[int, list[str]] = {}
+    for i, raw in zip(keys, caps):
+        acc.setdefault(i, []).append(_last(raw))
+    out = []
+    for i in range(len(READ)):
+        obs = acc.get(i, [])
+        nums = [int(x) for x in obs if x.lstrip("-").isdigit()]
+        e = _earliest(nums)
+        out.append((str(e) if e is not None else (obs[0] if obs else "??"), obs))
+    return out
 
 
 def run_write(machine: str, phases: int, **kw) -> list[tuple[int | None, list[str]]]:
@@ -153,8 +209,7 @@ def run_write(machine: str, phases: int, **kw) -> list[tuple[int | None, list[st
     specs, keys = [], []
     for i, (_, val, _) in enumerate(WRITE):
         for k in range(phases):
-            delay = f"FORI=1TO{6*k+1}:NEXT:" if k else ""
-            specs.append(("direct", [f"{delay}TIME={val}:PRINT{M};TIME;{M}"]))
+            specs.append(("direct", [f"{_pad(k)}TIME={val}:PRINT{M};TIME;{M}"]))
             keys.append(i)
     caps = omsx_repl.run_cases(machine, specs, batch=True, reset=("NEW", "CLS"), **kw)
     acc: dict[int, list[str]] = {}
@@ -164,7 +219,7 @@ def run_write(machine: str, phases: int, **kw) -> list[tuple[int | None, list[st
     for i in range(len(WRITE)):
         obs = acc.get(i, [])
         nums = [int(x) for x in obs if x.lstrip("-").isdigit()]
-        res.append((min(nums) if nums else None, obs))
+        res.append((_earliest(nums), obs))
     return res
 
 
@@ -191,10 +246,18 @@ def run_clock(machine: str, **kw) -> dict[str, str]:
     these three ([[paint-slow-emulated-budget-trap]]); it reported an unfinished
     program rather than a zero, which is exactly the contract."""
     kw.setdefault("step", 40.0)
+    # ⚠️ STORED PROGRAMS, not direct lines: a DIRECT-MODE `FOR ... NEXT` raises
+    # "out of memory" on zerobas (pre-existing, see _pad above), so the direct
+    # form returned an error string for all three of these on the zerobas side.
+    # In a stored program FOR works on both machines -- the same shape every
+    # other trap/graphics gate in this tree uses.
     specs = [
-        ("direct", [f"TIME=0:FORI=1TO3000:NEXT:PRINT{M};TIME;{M}"]),          # advances
-        ("direct", [f"TIME=0:A=TIME:FORI=1TO500:NEXT:PRINT{M};TIME>=A;{M}"]), # monotonic
-        ("direct", [f"TIME=65500:FORI=1TO3000:NEXT:PRINT{M};TIME<1000;{M}"]), # wraps
+        ("direct", ["10 TIME=0", "20 FORI=1TO3000:NEXT",
+                    f"30 PRINT{M};TIME;{M}", "RUN"]),                    # advances
+        ("direct", ["10 TIME=0:A=TIME", "20 FORI=1TO500:NEXT",
+                    f"30 PRINT{M};TIME>=A;{M}", "RUN"]),                 # monotonic
+        ("direct", ["10 TIME=65500", "20 FORI=1TO3000:NEXT",
+                    f"30 PRINT{M};TIME<1000;{M}", "RUN"]),               # wraps
     ]
     caps = omsx_repl.run_cases(machine, specs, batch=True, reset=("NEW", "CLS"), **kw)
     return dict(zip(("advance_jiffies", "monotonic", "wrapped"),
@@ -202,11 +265,77 @@ def run_clock(machine: str, **kw) -> dict[str, str]:
 
 
 # --------------------------------------------------------------------------
+def run_side(machine: str, label: str, g: str, phases: int) -> bool:
+    """Run the selected groups on ONE machine against the SAME pinned wants.
+
+    That is what makes this a differential rather than two characterizations:
+    every `want` in CRUNCH/READ/WRITE/ERRORS is a value MEASURED on the VG-8020
+    (spec §1), so asserting zerobas against them IS the comparison, and re-running
+    the reference against them re-validates the oracle in the same pass. The clock
+    group is the exception and is deliberately NOT an equality differential -- the
+    tick rate belongs to the host BIOS/VDP, so it is asserted as a per-machine
+    PROPERTY (spec §1.5).
+    """
+    ok = True
+    print(f"\n########## {label}: {machine}")
+
+    if "c" in g:
+        print("=== crunch (spec §1.1) ===")
+        for (lbl, body, want), have in zip(CRUNCH, run_crunch(machine)):
+            good = have == want
+            ok &= good
+            print(f"  {'PASS' if good else 'FAIL':4} {lbl:9} {body:12} "
+                  f"{have:16} want={want}")
+
+    if "r" in g:
+        print(f"\n=== read (spec §1.2, earliest over {phases} phases) ===")
+        for (lbl, body, want), (have, obs) in zip(READ, run_read(machine, phases)):
+            good = have == want
+            ok &= good
+            print(f"  {'PASS' if good else 'FAIL':4} {lbl:9} {have:10} want={want:8} "
+                  f"obs={sorted(set(obs))}")
+
+    if "w" in g:
+        print(f"\n=== write (spec §1.3, earliest over {phases} phases) ===")
+        for (lbl, val, want), (lo, obs) in zip(WRITE, run_write(machine, phases)):
+            good = lo == want
+            ok &= good
+            print(f"  {'PASS' if good else 'FAIL':4} {lbl:11} TIME={val:9} "
+                  f"stored={lo!s:6} want={want:<6} obs={sorted(set(obs))}")
+
+    if "e" in g:
+        print("\n=== errors (spec §1.4) ===")
+        for (lbl, stmt, want), have in zip(ERRORS, run_errors(machine)):
+            good = have == want
+            ok &= good
+            print(f"  {'PASS' if good else 'FAIL':4} {lbl:10} {stmt:22} "
+                  f"{have:8} want={want}")
+
+    if "k" in g:
+        # PROPERTY, not equality: the two machines run BASIC ~7x apart, so the
+        # jiffy count over a fixed FOR loop is NOT comparable. `-1` is MSX BASIC's
+        # TRUE -- monotonic and wrapped must both be true on each machine.
+        print("\n=== clock — per-machine property (spec §1.5) ===")
+        clk = run_clock(machine)
+        checks = [("advances", clk["advance_jiffies"].lstrip("-").isdigit()
+                   and int(clk["advance_jiffies"]) > 0),
+                  ("monotonic", clk["monotonic"] == "-1"),
+                  ("wraps at 65536", clk["wrapped"] == "-1")]
+        for k, v in clk.items():
+            print(f"       {k:16} {v}")
+        for name, good in checks:
+            ok &= good
+            print(f"  {'PASS' if good else 'FAIL':4} clock: {name}")
+
+    return ok
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=("characterize", "differential"),
                     default="characterize",
-                    help="characterize = reference only (zerobas has no TIME yet)")
+                    help="characterize = reference only; differential = both sides "
+                         "against the same pinned reference values")
     ap.add_argument("--machine", default=REF_MACHINE)
     ap.add_argument("--zb-machine", dest="zb_machine", default=ZB_MACHINE)
     ap.add_argument("--groups", default="crwek",
@@ -214,55 +343,14 @@ def main() -> int:
     ap.add_argument("--phases", type=int, default=8,
                     help="write-group phase shifts to reduce by MIN (spec §1.3)")
     args = ap.parse_args()
-    g, ok = args.groups, True
 
-    if "c" in g:
-        print("=== crunch (spec §1.1) ===")
-        got = run_crunch(args.machine)
-        for (label, body, want), have in zip(CRUNCH, got):
-            good = have == want
-            ok &= good
-            print(f"  {'PASS' if good else 'FAIL':4} {label:9} {body:12} "
-                  f"{have:16} want={want}")
-
-    if "r" in g:
-        print("\n=== read (spec §1.2) ===")
-        for (label, body, want), have in zip(READ, run_read(args.machine)):
-            good = have == want
-            ok &= good
-            print(f"  {'PASS' if good else 'FAIL':4} {label:9} {have:10} want={want}")
-
-    if "w" in g:
-        print(f"\n=== write (spec §1.3, min over {args.phases} phases) ===")
-        for (label, val, want), (lo, obs) in zip(WRITE,
-                                                 run_write(args.machine, args.phases)):
-            good = lo == want
-            ok &= good
-            print(f"  {'PASS' if good else 'FAIL':4} {label:11} TIME={val:9} "
-                  f"stored={lo!s:6} want={want:<6} obs={sorted(set(obs))}")
-
-    if "e" in g:
-        print("\n=== errors (spec §1.4) ===")
-        for (label, stmt, want), have in zip(ERRORS, run_errors(args.machine)):
-            good = have == want
-            ok &= good
-            print(f"  {'PASS' if good else 'FAIL':4} {label:10} {stmt:22} "
-                  f"{have:8} want={want}")
-
-    if "k" in g:
-        print("\n=== clock — per-machine property (spec §1.5) ===")
-        for k, v in run_clock(args.machine).items():
-            print(f"       {k:16} {v}")
-
+    ok = run_side(args.machine, "reference", args.groups, args.phases)
     if args.mode == "differential":
-        print("\nzerobas side: NOT YET IMPLEMENTED — `TIME` is absent from "
-              "basic/kwtable.inc (spec §7 is blocked on D-TIME-4 funding).")
-        return 2
+        ok &= run_side(args.zb_machine, "zerobas", args.groups, args.phases)
 
-    print("\n" + ("ALL PASS" if ok else "SOME FAIL") +
-          f" — reference characterization ({args.machine})")
+    print("\n" + ("ALL PASS" if ok else "SOME FAIL"))
     return 0 if ok else 1
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

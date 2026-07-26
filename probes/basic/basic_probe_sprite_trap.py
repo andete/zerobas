@@ -28,10 +28,10 @@ from the T3 gate -- these are what three void characterization rounds cost):
   * THE COUNTER SATURATES at 250. SPRITE fires once per frame while two sprites
     overlap (§1.1), so an uncapped counter would reach 256, and `POKE 256` raises
     ERR 5 -- turning the correct "fires every frame" answer into an error case.
-  * NO STRING BUILDING, and NO `TIME`: it is not implemented on zerobas (absent
-    from basic/kwtable.inc, so it parses as the variable `TI` and reads 0
-    forever) and a TIME-bounded loop there never terminates. Windows are sized by
-    iteration count.
+  * NO STRING BUILDING. (The companion rule "no `TIME` on the zerobas side" is
+    RETIRED as of 2026-07-26 -- `TIME` has landed, docs/spec-basic-time.md. This
+    probe keeps its iteration-count windows because they work and rewriting a
+    green gate buys nothing; new cases may use `TIME`, per-machine only.)
   * CONTROLS MUST DISCRIMINATE. A_hit/A2_miss and the STATFL hit/miss pair are
     there so a run where both sides agree is recognised as a broken apparatus
     rather than banked as a pass.

@@ -313,6 +313,11 @@ exec_stmt:
                 cp      BASE_TOKEN          ; BASE(n) = v  (graphics G8)
                 jp      z,ex_base_assign
     ENDIF
+                ; TIME = v: no statement token of its own either -- a statement
+                ; that STARTS with the TIME factor token IS the assignment
+                ; (docs/spec-basic-time.md §2, the same shape as G8 above).
+                cp      TIME_TOKEN
+                jp      z,ex_time_assign
     ENDIF
                 call    is_letter           ; bare letter -> assignment
                 jr      c,ex_let
@@ -1082,6 +1087,18 @@ ex_letkw:
                 jp      z,gfx_syntax
                 cp      BASE_TOKEN
                 jp      z,gfx_syntax
+    ENDIF
+    IF ROM_BASE < $4000
+                ; `LET TIME=5` is ERR 2 on the reference (spec-basic-time.md
+                ; §1.4) and needs the same explicit guard as VDP/BASE above, for
+                ; the same reason: ex_let would take the token for a variable
+                ; name and silently assign to nothing. It must raise DIRECTLY —
+                ; routing it to ex_time_assign would PERFORM the assignment,
+                ; since HL sits on the TIME token exactly as it does when
+                ; exec_stmt dispatches the legal bare form.
+                ld      a,(hl)
+                cp      TIME_TOKEN
+                jp      z,tm_err2
     ENDIF
                 jp      ex_let              ; reuse <letter> = <expr>
 

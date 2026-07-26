@@ -83,6 +83,57 @@ byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
 
 ## Open (awaiting next sync)
 
+**🔴 [FINDING — GATE DEFECT, surfaced by landing TIME, 2026-07-26]
+`sprite-trap-acceptance` `F_cadence` is RED (95/96), and the assertion it fails
+DOES NOT MEASURE WHAT IT CLAIMS.** It asserts `0.75 <= cnt/aux <= 1.35` where
+`cnt` is a fire counter that **saturates at 250** and `aux` is a JIFFY delta
+computed by the main program's own polling loop. Post-TIME it reads
+`cnt=250 aux=172` (ratio ≥1.45, FAIL); pre-TIME `cnt=170 aux=163` (1.04, PASS).
+
+**A matched-pair control proves TIME did not change the trap.** The inter-fire
+period measured *directly* — the handler stamps JIFFY at fire #1 and fire #101,
+so the main loop is out of the measurement entirely (the T5 technique) — is
+**1.500 jiffies/fire on the carve-only build AND 1.500 on the build with TIME**,
+byte-for-byte the same. The reference is **1.000**. TIME's only effect was a
+small slowdown that pushed the saturating counter over its cliff.
+
+Two consequences, neither of which should be papered over:
+
+1. **`cnt/aux` is not the cadence.** Three attempts at the same quantity on
+   zerobas returned **1.00, ≥1.43 and 0.67 fires/jiffy** depending only on how
+   long the *handler* was. A ratio that moves with the handler's length is
+   measuring the main loop's progress, not the trap's rate. It passed at T4 by
+   luck, and a saturated counter is asserted on as though it were a number.
+2. **The real cadence may be a genuine divergence.** 1.5 jiffies/fire against the
+   reference's 1.0 — i.e. zerobas fires on **two frames in three** — is what the
+   progress-independent measurement says, and T4's recorded "fires/frame ≈ 1 on
+   zerobas" does not survive it.
+
+*Not fixed here:* the fix is to rebuild F_cadence on the inter-fire measurement
+(and, per T5, have the handler set `done` itself — the direct form starves the
+main loop and captured `done=0`), then decide whether 1.5 is a defect. That is
+sprite-gate work, not TIME's, and T4's own history says the tool that ends this
+class of argument is **emulator-level breakpoints**, not another BASIC probe.
+
+**[FINDING — PRE-EXISTING, surfaced by the TIME gate, 2026-07-26] A DIRECT-MODE
+`FOR … NEXT` raises "out of memory" on zerobas.** Measured on the repack build:
+`FORI=1TO7:NEXT` typed at the prompt → `out of memory`, as does every variant
+(`FORI=1TO7:NEXT:PRINT1`, `FORI=1TO7:PRINT1:NEXT`). The same loop inside a
+**stored program** works, and other multi-statement direct lines
+(`A=1:A=2:PRINT A`) work. The VG-8020 accepts all of them.
+
+*Not TIME's and not the carve's, and that was tested rather than assumed:* a
+direct `FOR` with **no `TIME` in it** fails identically.
+
+*Why it matters beyond the divergence itself:* it silently broke a gate. The
+`TIME` write group shifts its phase with a `FOR` pad and reduces over eight
+phases; with seven of the eight erroring out, the reduction **collapsed to one
+sample** and re-imported the very JIFFY-tick confound it exists to defeat — nine
+cases read `+1` and looked like semantic failures. **A reduction that degrades
+to a single sample is worse than no reduction, because it still prints a
+number.** The gate now pads with statements instead (`A=1:` ×2k, cost measured:
+~5 per jiffy on zerobas, ~11 on the VG-8020) and is green 105/105 both sides.
+
 **[FINDING — PRE-EXISTING, surfaced by the SAVE carve's gate, 2026-07-26]
 Multi-block cassette ASCII `LOAD"CAS:"` truncates on the REPACK build (and only
 there).** `basic_probe_tape_save.py`'s `multi-block round-trip (>256 B,

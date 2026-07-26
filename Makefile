@@ -36,7 +36,7 @@ SRC   := basic/main.asm
 # file could silently ship a stale basic.rom/sub.rom.
 DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/vars.asm basic/strvar.asm basic/str-engine.asm basic/expr.asm basic/poke.asm basic/vdpio.asm \
-         basic/clear.asm basic/usr.asm basic/print.asm basic/screen.asm basic/list.asm \
+         basic/clear.asm basic/usr.asm basic/time.asm basic/print.asm basic/screen.asm basic/list.asm \
          basic/fat.asm basic/bload.asm basic/cload.asm basic/save.asm basic/files.asm \
          basic/field.asm basic/format.asm basic/printusing.asm basic/program.asm basic/float.asm \
          basic/float-arith.asm basic/subromcall.asm basic/input.asm \
@@ -587,6 +587,26 @@ sprite-trap-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_sprite_trap.py $(if $(ONLY),--only $(ONLY),) \
 	  $(if $(REPORT),--report,)
 
+# --- TIME / TIME=n acceptance gate (docs/spec-basic-time.md) -------------------
+# VG-8020 differential, BOTH sides asserted against the SAME pinned reference
+# values (spec §1 is all measurement, so those values ARE the comparison and the
+# reference run re-validates the oracle in the same pass). Five groups: crunch
+# ($CB + the TIMES/TIME$/ATIME/TI shadow cases), read, write (the address-domain
+# conversion table), the error surface, and the clock.
+#
+# THE CLOCK GROUP IS A PER-MACHINE PROPERTY, NEVER AN EQUALITY: the tick rate
+# belongs to the host BIOS/VDP and BASIC runs ~3x apart on the two machines
+# (measured: 789 jiffies per 3000 iterations on the repack build vs 240 on the
+# VG-8020). It asserts advances / monotonic / wraps, per machine.
+#
+# EVERY TIME-READING CASE IS PHASE-SHIFTED AND REDUCED. A single reading of TIME
+# after an assignment is not a measurement: JIFFY ticks in between, and in a
+# BATCHED run that phase is DETERMINISTIC, so repetition does not average it out.
+# Scope with `make time-acceptance ONLY=w` (crwek groups); PHASES=n to widen.
+time-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_time.py --mode differential \
+	  $(if $(ONLY),--groups $(ONLY),) $(if $(PHASES),--phases $(PHASES),)
+
 # --- D-F2-2 int-argument coercion gate (docs/spec-basic-df2-2-intarg-coercion.md)
 # VG-8020 differential: out-of-domain int args must raise the reference's Overflow
 # (ERR 6) / Illegal function call (ERR 5), not silently coerce. ASSERTED cases gate
@@ -723,7 +743,7 @@ clean:
 .PHONY: all disk sub patches tape-patches machines machines-oracle install \
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
-        repack-machine diskbasic-acceptance-repack string-acceptance \
+        repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
         graphics-floor-acceptance graphics-floor-teeth graphics-acceptance clean

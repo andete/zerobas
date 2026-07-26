@@ -934,6 +934,16 @@ all five halves of `string-acceptance` **ALL PASS**.
 > loop rate (§1.0: `FOR J=1 TO 3000` ≈ 4.8 s on the VG-8020, ~625 iter/s; zerobas ~7×
 > slower). §1's `TIME`-bounded windows are unaffected — they all ran on the reference.
 >
+> ✅ **RULE RETIRED 2026-07-26 — `TIME` HAS LANDED** ([`spec-basic-time.md`](spec-basic-time.md),
+> `make time-acceptance` 105/105 both sides). Probe programs may use `TIME` on the
+> zerobas side again, and windows may be `TIME`-bounded rather than sized by iteration
+> count. Two caveats carry forward, both measured while landing it:
+> **(a)** a `TIME`-bounded window is still a *per-machine* quantity — the repack build
+> ticks 789 jiffies per 3000 iterations against the VG-8020's 240, so a jiffy count is
+> never an equality differential; and **(b)** any case that assigns `TIME` and reads it
+> back must be **phase-shifted and reduced**, because JIFFY ticks in between and in a
+> batched run that phase is deterministic.
+>
 > **Out-of-slice gap raised, NOT actioned here.** `TIME` (both the function and the
 > `TIME=n` assignment statement) is standard MSX1 BASIC and is in charter
 > ([[charter-faithful-full-msx1-basic]]), but it is tracked in no doc. It is not T3's

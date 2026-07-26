@@ -296,6 +296,16 @@ kwtable:
                 db      5,"ERROR",1,ERROR_TOKEN                 ; $A6 (statement)
                 db      3,"ERR",1,ERR_TOKEN                     ; $E2 (value token)
                 db      3,"ERL",1,ERL_TOKEN                     ; $E1 (value token)
+                ; --- TIME (repack build only) ---------------------------------
+                ; docs/spec-basic-time.md §1.1. Single-byte token, black-box
+                ; VG-8020 crunch capture (probes/basic/basic_probe_time.py) +
+                ; MSX2 TH Table 2.20 cross-check. No prefix collision in either
+                ; direction: no keyword is a prefix of "TIME" and "TIME" is a
+                ; prefix of none, so order is free -- and the greedy match is
+                ; WHAT THE ORACLE DOES: `A=TIMES` crunches to TIME + verbatim
+                ; "S", `A=TIME$` to TIME + "$", `A=ATIME` to "A" + TIME. Only a
+                ; plain `TI` survives as a variable.
+                db      4,"TIME",1,TIME_TOKEN                   ; $CB (factor AND lvalue)
                 ; --- error-handling S2b (repack build only) -------------------
                 ; docs/spec-basic-error-handling-s2b-packet.md §2. RESUME:
                 ; single-byte STATEMENT token ($A7), black-box VG-8020 crunch

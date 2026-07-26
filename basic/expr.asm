@@ -553,6 +553,8 @@ ev_f:
                 jp      z,ev_f_errfn
                 cp      ERL_TOKEN           ; $E1 -> ERL (last error's line, 65535=direct)
                 jp      z,ev_f_erlfn
+                cp      TIME_TOKEN          ; $CB -> TIME (JIFFY as an UNSIGNED word)
+                jp      z,ev_f_time
                 cp      POINT_TOKEN         ; $ED -> POINT(x,y) (graphics G2, graphics.asm)
                 jp      z,ev_f_point
     IF G8_RESIDENT
@@ -685,9 +687,23 @@ ev_f_erlfn:                                 ; ERL -> ERRLINE (word), widened to 
                                             ; exp_num take the float path (flt_out reads
                                             ; FAC), rendering the true unsigned value.
                 ld      hl,(ERRLINE)
-                ex      de,hl               ; DE = ERRLINE (unsigned magnitude)
+                jr      ev_f_uword
+; ev_f_time -- TIME (docs/spec-basic-time.md §3.2). The SAME unsigned-word-to-FAC
+; problem ERL already solves, over JIFFY instead of ERRLINE, so it shares the tail
+; below: 7 B here against 19 duplicated, with no restructuring on ERL's side
+; (cf. [[generalisation-not-free-at-two-callers]] -- the case for sharing has to be
+; this trivial to be free).
+;
+; `ld hl,(JIFFY)` is TWO byte reads and the timer ISR ticks between them, so an
+; unguarded read can be torn ($00FF seen as $01FF). Guarded (D-TIME-2).
+ev_f_time:
+                di
+                ld      hl,(JIFFY)
+                ei
+ev_f_uword:                                 ; HL = an unsigned 0..65535 -> FAC (double)
+                ex      de,hl               ; DE = the unsigned magnitude
                 ld      hl,ARGA
-                xor     a                   ; sign = positive (ERRLINE is never negative)
+                xor     a                   ; sign = positive (neither source is negative)
                 call    widen_uint_to
                 call    round_and_finalize
                 inc     ix

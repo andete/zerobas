@@ -148,6 +148,11 @@ __MEAS_LOW_END:
 ; The POKE statement handler (defines `do_poke`).
                 include "basic/poke.asm"
 
+; The TIME pseudo-variable's WRITE half (defines `ex_time_assign`); the READ
+; half is a factor and lives in expr.asm beside ERL, whose unsigned-word-to-FAC
+; tail it shares. Repack-only. docs/spec-basic-time.md.
+                include "basic/time.asm"
+
 ; The VPOKE / OUT statement handlers (defines `do_vpoke`, `do_out`).
                 include "basic/vdpio.asm"
 

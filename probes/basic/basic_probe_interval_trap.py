@@ -38,11 +38,12 @@ confound of. Two consequences are designed in:
 Other standing arc requirements, inherited verbatim from the T3/T4 gates:
 RAM sentinels, never screen text (the REPL echoes every typed program line);
 the fire counter SATURATES at 250 (`POKE 256` would raise ERR 5 and turn a
-correct "fires often" answer into an error case); no string building; and NO
-`TIME` on the zerobas side -- it is not implemented (parses as the variable
-`TI`, reads 0 forever) so a TIME-bounded loop there never terminates. Windows
-are bounded by a JIFFY DELTA, which means the same thing on two machines that
-run BASIC ~7x apart, unlike an iteration count.
+correct "fires often" answer into an error case); no string building; and
+windows bounded by a JIFFY DELTA rather than an iteration count, which means
+the same thing on two machines that run BASIC ~3-7x apart. (The T3-era rule "no
+`TIME` on the zerobas side" is RETIRED as of 2026-07-26 -- `TIME` has landed,
+docs/spec-basic-time.md -- but a JIFFY delta read by PEEK needs no keyword and
+is what these windows already use.)
 
 Clean-room: observed I/O only.
 """

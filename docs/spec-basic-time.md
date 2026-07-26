@@ -4,8 +4,11 @@ SPDX-License-Identifier: 0BSD
 -->
 # zerobas BASIC — `TIME` and `TIME=n` (the software clock pseudo-variable)
 
-Status: **DRAFT — awaiting sign-off.** Characterization complete
-(VG-8020, 2026-07-26); §7 funding is the one open decision.
+Status: **✅ LANDED + GATED 2026-07-26. `make time-acceptance` = 105/105, BOTH
+sides.** Funded by the D-FUND-1 SAVE carve
+([decision-fund-time-and-t5.md](decision-fund-time-and-t5.md)); D-TIME-1 settled
+by measurement, D-TIME-2 and D-TIME-3 adopted as recommended. As-built notes in
+§4.1 and §6.1.
 
 `TIME` is standard MSX1 BASIC and is currently **absent from zerobas entirely** —
 it is not in the keyword table, so a program writing `TIME` gets the *variable*
@@ -255,6 +258,24 @@ so plan on **52–75 B**.
 **Page 1 has 22 B free** (low region 5 B), measured on the current tree by
 `make basic-reloc`. ⇒ **short by roughly 30–55 B.**
 
+### 4.1 ✅ AS BUILT — 81 B, and the arc's "estimate low" rule held once more
+
+`make basic-reloc`: page-1 free **332 B → 251 B = 81 B**, low region unchanged at
+5 B (pure page 1, as §3.5 predicted). Against the 52–75 B plan that is **6 B over
+the pessimistic top of the range** — the sixth consecutive slice in this line of
+work to come in above its estimate, and the reason §4 says LOWER BOUND.
+
+Where the extra went: the three error raisers (§1.4 needs ERR 2 / 13 / 24 as
+distinct trappable codes) plus the `ex_letkw` guard, none of which §4's
+`g8_assign`-shaped estimate carried. `ev_f_time` came in **under**: sharing the
+unsigned-word-to-FAC tail with `ev_f_erlfn` cost 7 B instead of 19 duplicated,
+and unlike [[generalisation-not-free-at-two-callers]]'s case the sharing needed
+no restructuring on ERL's side at all — one label, one `jr`.
+
+The sub-ROM `kwtable` grew **906 → 913 B** for the `TIME` row: **zero main-ROM
+bytes**, exactly as §3.1 claimed, because since wave 3 the sub copy is the sole
+source and drives both crunch and `LIST`.
+
 ---
 
 ## 5. Decisions for sign-off
@@ -273,8 +294,8 @@ so plan on **52–75 B**.
   exists. A fourth, unsigned VALTYP would fix that but costs a new `exp_num` print
   path plus every binary-op combine site, far more than the 11 B, and would diverge
   from the reference's own type system.
-* **D-TIME-2 — `ei` after the guarded access.** *Rec:* **adopt** (§3.4), 4 B, and
-  drop it first if §7's funding lands tight.
+* **D-TIME-2 — `ei` after the guarded access. ✅ ADOPTED** (§3.4), 4 B; funding
+  landed with room, so it was never at risk.
 * **D-TIME-3 — ERR 24 for `TIME=` (missing operand).** The reference raises it,
   and so does zerobas's G8 path — but zerobas **silently accepts** bare `A=` and
   `POKE 100,` today (measured this round on the repack build; the reference gives
@@ -283,8 +304,10 @@ so plan on **52–75 B**.
   the ~6 B to make `TIME=` correct **at its own site** (G8 already does exactly
   this), and raise the general `A=` / `POKE 100,` gap as a separate item rather
   than widening this slice. Flagging it rather than silently matching the local
-  bug is the point.
-* **D-TIME-4 — funding the ~52–75 B.** The need is **pure page 1**, so a
+  bug is the point. **✅ ADOPTED** — `TIME=` and `TIME=:PRINT 1` both raise ERR 24
+  and are gated; the general gap is untouched and still open.
+* **D-TIME-4 — funding the ~52–75 B. ✅ CLOSED** by the SAVE carve
+  ([decision-fund-time-and-t5.md](decision-fund-time-and-t5.md), +310 B). The need is **pure page 1**, so a
   promotion cannot help (it moves low → page 1, and low is the emptier wall at
   5 B). The established answer is a **carve**: move a page-1 cluster into the
   sub-ROM as a tenant ([[subrom-tenant-playbook]]). This is the smallest funding
@@ -321,6 +344,47 @@ so plan on **52–75 B**.
 Standing regression: `make basic-acceptance` + `string-acceptance` (the crunch
 corpus gains a reserved word, so anything using a variable literally named `TIME`
 changes meaning — a *faithful* change, but it must be seen).
+
+### 6.1 ✅ AS BUILT — 105/105, after the apparatus was rebuilt twice
+
+`make time-acceptance` runs **both machines against the same pinned reference
+values** (spec §1 is all measurement, so those values ARE the comparison, and the
+reference pass re-validates the oracle). 105 assertions, zero failures.
+
+⚠️ **The first differential run reported NINE failures and every one of them was
+the apparatus.** Both faults are worth carrying:
+
+* **The phase-shift pad did not run on zerobas.** §1.3's protocol pads with
+  `FORI=1TO{6k+1}:NEXT:` — and a **direct-mode `FOR … NEXT` raises "out of
+  memory" on zerobas** (pre-existing, unrelated to `TIME`: a direct `FOR` with no
+  `TIME` in it fails identically; logged in
+  [`disk/docs/tier2-review-queue.md`](../disk/docs/tier2-review-queue.md)). With
+  seven of eight phases erroring out, **the min-over-phases reduction silently
+  collapsed to a single sample** and re-imported the exact confound it exists to
+  defeat — nine cases read `+1` and looked like semantic failures. *A reduction
+  that degrades to one sample is worse than no reduction, because it still prints
+  a number.* The pad is now statements (`A=1:` ×2k), cost **measured** rather than
+  assumed: ~5 per jiffy on zerobas, ~11 on the VG-8020.
+* **MIN is wrong at the wrap.** The `max` row stores 65535, so one extra tick
+  reads 0 and `min(65535, 0)` picks the corrupted sample. Ticks only advance, so
+  the tick-free reading is the one every other sample is FORWARD of on the
+  mod-65536 circle — `_earliest()`, identical to MIN when no wrap is involved.
+
+Also rebuilt: the **read** group is now phase-shifted too (every row but
+`is_jiffy` sets `TIME` and reads it straight back, so it has the same exposure),
+and the **clock** group runs as a stored program rather than direct lines,
+because of the same direct-`FOR` gap.
+
+**The clock group is a per-machine property, never an equality:** zerobas ticks
+**789 jiffies per 3000 iterations** against the VG-8020's **240** — ~3.3× — so
+only *advances / monotonic / wraps* are asserted, per machine.
+
+**One out-of-slice casualty, proved not to be TIME's:** `sprite-trap-acceptance`
+`F_cadence` went red. A matched-pair control (carve-only vs carve+TIME) measures
+the inter-fire period at **1.500 jiffies/fire on both**, so the trap is unchanged;
+what moved is a gate assertion that reads a **saturating** counter against a
+main-loop-derived window and does not measure cadence at all. Tracked in the
+review queue.
 
 ---
 

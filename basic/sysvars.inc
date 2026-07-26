@@ -1484,6 +1484,13 @@ ON_TOKEN        equ     $95
 ERROR_TOKEN     equ     $A6     ; ERROR n  (also ON ERROR GOTO)
 ERR_TOKEN       equ     $E2     ; ERR function (last error's MSX code)
 ERL_TOKEN       equ     $E1     ; ERL function (last error's line, 65535=direct)
+TIME_TOKEN      equ     $CB     ; TIME — the software-clock pseudo-variable, a SINGLE-byte
+                                ; reserved word that is BOTH a factor and an lvalue
+                                ; (docs/spec-basic-time.md §1.1, oracle-pinned on the
+                                ; VG-8020). $CB sits between CALL ($CA) and KEY ($CC),
+                                ; consistent with the rest of the pinned table, and was
+                                ; unused in zerobas. TIME shares no prefix with another
+                                ; entry, so its kwtable position is free.
 ; Error-handling S2b (docs/spec-basic-error-handling-s2b-packet.md §2): RESUME.
 ; Black-box-pinned ([[s2-error-token-pins]]): `resume next` -> A7 20 83,
 ; `resume 0` -> A7 20 0E 00 00. No prefix hazard (unlike ERR/ERROR).
