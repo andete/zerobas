@@ -476,6 +476,19 @@ sub_p1_table:
                                                 ;   possible. Main-ROM stub is
                                                 ;   basic/bload.asm `do_bload`; the ,R
                                                 ;   handoff stays resident there.
+                jp      save_tenant             ; index 21 (SUBROM_IDX_SAVE): BLOAD's
+                                                ;   MIRROR -- the four SAVE-family WRITE
+                                                ;   engines (BSAVE/disk, BSAVE/tape,
+                                                ;   SAVE/disk, and the shared cassette
+                                                ;   tokenised writer), evicted from main
+                                                ;   page 1 to fund `TIME` + interrupt-
+                                                ;   traps T5 from one carve (docs/
+                                                ;   decision-fund-time-and-t5.md).
+                                                ;   PAGE 1 beside fatprim, whose WRITE
+                                                ;   primitives it calls sub-locally.
+                                                ;   The PARSE stays resident (it uses
+                                                ;   `eval`), so nothing rides but the
+                                                ;   SV_OP selector and SV_STAT.
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -635,6 +648,16 @@ sub_p1_ping:
 ; so it can call fatprim's fat_mount/fat_find/fat_open/fat_read_file_sector
 ; sub-locally; must therefore follow fatprim.asm and fcbname.asm here.
                 include "bload.asm"
+
+; SAVE-family write engines (index 21 = save_tenant, sub/save.asm): BLOAD's
+; mirror -- BSAVE/disk, BSAVE/tape, SAVE/disk and the shared cassette tokenised
+; writer, evicted from main page 1 to fund `TIME` and interrupt-traps T5 from
+; one carve (docs/decision-fund-time-and-t5.md, D-FUND-1). PAGE 1 for the same
+; reason BLOAD is: it calls fatprim's fat_mount/fat_dir_create/
+; fat_flush_data_sector/fat_dir_update sub-locally, so it must follow
+; fatprim.asm here. Unlike BLOAD the PARSE stays resident (it uses `eval`), so
+; nothing rides but SV_OP/SV_STAT.
+                include "save.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
                 ds      $8000 - $, $FF

@@ -54,6 +54,30 @@ if not (os.path.sep in OMSX and os.path.isfile(OMSX)):
 MACHINE_TAPE = "C-BIOS_MSX1_EU_TAPE"
 MACHINE_REF  = "Philips_VG_8020"
 
+# THE ZEROBAS SIDE IS SELECTABLE, and that is not a convenience. The default is
+# the lean 16 KB cart on the tape machine; `--machine <name>` (or
+# $ZEROBAS_BASIC_MACHINE) instead runs the same corpus on a machine whose BUILT-IN
+# ROM is zerobas -- e.g. C-BIOS_MSX1_EU_REPACK_DISK, which carries the merged
+# repack ROM (tape completions overlaid by tools/build_mainrom.py) and the sub-ROM
+# in 3-2, and whose <CassettePort/> is right there in the generated XML.
+# Without this the SAVE-family carve (docs/decision-fund-time-and-t5.md) would be
+# unverifiable on the side it actually changes: the lean cart is byte-frozen, so
+# the default run is a REGRESSION CONTROL, not a test of the tenant.
+# ⚠️ A machine whose ROM is built in takes NO `-cart`; deriving that from the
+# machine name rather than from a flag is the fix basic_probe_bload.py needed
+# after `repl = args.repl or bool(args.cart)` typed with the wrong machine's
+# timing and produced a wrong "unverifiable" verdict ([[control-that-fails-must-
+# be-fixed]]).
+ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE") or MACHINE_TAPE
+
+
+def zb_args(cart):
+    """openMSX args selecting the zerobas-under-test: the cart on the lean tape
+    machine, nothing extra when zerobas IS the machine's built-in ROM."""
+    if ZB_MACHINE == MACHINE_TAPE:
+        return ["-machine", MACHINE_TAPE, "-cart", cart]
+    return ["-machine", ZB_MACHINE]
+
 # Program-area sysvars (zerobas + MSX shared).
 TXTBASE = 0x8001   # stored-program text base (oracle: TXTTAB value after boot)
 
@@ -167,7 +191,7 @@ def run_save(cart: str, type_cmds: list[tuple[float, str]],
     os.write(fd, tcl.encode())
     os.close(fd)
 
-    cmd = [OMSX, "-machine", MACHINE_TAPE, "-cart", cart,
+    cmd = [OMSX] + zb_args(cart) + [
            "-command", "set renderer none", "-script", tcl_path]
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
@@ -226,7 +250,7 @@ def run_load_zerobas(cart: str, cas_path: str, verb: str,
     os.write(fd, tcl.encode())
     os.close(fd)
 
-    cmd = [OMSX, "-machine", MACHINE_TAPE, "-cart", cart,
+    cmd = [OMSX] + zb_args(cart) + [
            "-cassetteplayer", cas_path,
            "-command", "set renderer none", "-script", tcl_path]
     try:
@@ -780,8 +804,19 @@ def test_roundtrip_ascii_multiblock(cart: str) -> bool:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cart", required=True, help="zerobas basic.rom path")
+    ap.add_argument("--cart", default="build/basic.rom",
+                    help="zerobas basic.rom path (ignored when --machine names a "
+                         "machine whose built-in ROM is already zerobas)")
+    ap.add_argument("--machine", default=None,
+                    help="run the zerobas side on this machine instead of the lean "
+                         "cart (e.g. C-BIOS_MSX1_EU_REPACK_DISK). Also settable via "
+                         "$ZEROBAS_BASIC_MACHINE.")
     args = ap.parse_args()
+    global ZB_MACHINE
+    if args.machine:
+        ZB_MACHINE = args.machine
+    print(f"zerobas side: {ZB_MACHINE}"
+          + (f"  -cart {args.cart}" if ZB_MACHINE == MACHINE_TAPE else "  (built-in ROM)"))
 
     program = build_program()
     ok = True

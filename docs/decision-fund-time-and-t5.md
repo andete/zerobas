@@ -182,6 +182,53 @@ pass rather than paying that cost twice.
 that gets reported is the one read off `make basic-reloc` **after** the carve
 lands, with the tripwires lifted.
 
+### 3.6 ✅ AS BUILT — measured, and for once the estimate did NOT run optimistic
+
+**`make basic-reloc`: page-1 free 22 B → 332 B. +310 B**
+(`__MEAS_PAGE1_END` `$7FEA` → `$7EB4`). Low region unchanged at 5 B — the carve
+is entirely page-1, as designed, so the two walls stay uncoupled here. Lean
+`basic.rom` **byte-identical**; `save_tenant` is the 22nd page-1 tenant and
+`check_tenant_closure.py --page1` reports **no main-page-1 escape**.
+
+Against §3.5's ~296 B projection that is **+14 B better**, and it is the first
+estimate in this line of work that did not come in low (T2 −70 B, T3 −106 B,
+BLOAD −94 B). The reason is not virtue: the projection was computed by applying
+BLOAD's 0.74 optimism factor to a *census that had already been narrowed by an
+external-caller grep* — `disk_write_*`, `tape_name_emit`, `cas_wbyte` and
+`cas_flush_block` were moved to the "stays resident" column **before** the
+estimate, not discovered there afterwards. Correcting a number twice for the
+same error is how an estimate ends up pessimistic.
+
+**What actually moved** (five contiguous blocks, extracted verbatim into
+`basic/sv-*.inc`): BSAVE's disk engine, BSAVE's tape engine, SAVE's tokenised
+disk engine, the shared cassette tokenised writer, and `tape_putword`. Each
+repack stub re-declares the **same entry label** the resident parse already
+reaches by `jr`/fall-through, so not one parse instruction changed — which is
+what kept the lean cart byte-frozen through a five-way split.
+
+**Gated, not just built** ([[gate-during-implementation]]):
+
+| gate | result |
+|---|---|
+| `make basic-reloc` (5 closure/identity checks) | green |
+| `make diskbasic-acceptance-repack` vs the CF-3300 oracle | **34/34**, incl. SAVE/BSAVE, SAVE(ASCII), BSAVE(.bas), BSAVE/BLOAD(VRAM) |
+| `basic_probe_tape_save.py` — lean cart (regression control) | 16/16 |
+| `basic_probe_tape_save.py --machine …REPACK_DISK` | 15/16 |
+| `make unit-test` | 52/52 |
+
+The tape probe needed a `--machine` option to exist at all: it was hard-wired to
+the lean cart, and **the lean cart is byte-frozen**, so without it the default
+run is a regression control and nothing more — the carve would have been
+unverifiable on the only side it changes. That is the same gap that produced a
+wrong "unverifiable" verdict during T3 ([[control-that-fails-must-be-fixed]]).
+
+The one failing case — multi-block cassette ASCII `LOAD"CAS:"` — is
+**pre-existing and was proved so rather than assumed**: a control built from the
+parent commit in a throwaway worktree, installed under the same machine name,
+reproduces it with a **byte-identical** buffer. It touches the cassette READ
+path, which this carve does not move. Tracked, with its hypothesis explicitly
+marked untested, in [`disk/docs/tier2-review-queue.md`](../disk/docs/tier2-review-queue.md).
+
 ## 4. Open decision
 
 **D-FUND-1 — carve the SAVE-family write engine as a sub-ROM page-1 tenant?**

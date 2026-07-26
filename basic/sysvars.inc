@@ -880,6 +880,23 @@ TRAPSTK_END     equ     TRAPSTK + TRAPSTK_MAX*3   ; $E21F — still < $E240, cle
 ; on every getbyte.
 BL_PTR          equ     $E221   ; 2 B: main -> tenant, the token cursor after BLOAD
 BL_STAT         equ     $E223   ; 1 B: tenant -> main, 0 = loaded, 1 = load_error
+; --- SAVE-family tenant marshalling (docs/decision-fund-time-and-t5.md) ------
+; BLOAD's mirror: the SAVE / BSAVE / CSAVE WRITE ENGINES live in a sub-ROM PAGE-1
+; tenant (sub/save.asm) beside fatprim, so the fat_io_* write cursor they drive
+; is an in-page call instead of a cross-slot round trip. Unlike BLOAD, the parse
+; stays RESIDENT -- it calls `eval`, which is main page 1 and switched out while
+; a page-1 tenant runs -- so the tenant needs no cursor: by the time it is called
+; every argument is already in its RAM home (DISK_FCB_NAME / TSV_NAME / CURPTR /
+; DSV_END / TSV_END / EXECPTR / VRAM_FLAG). Only the op selector and the status
+; ride. Own cells rather than DISKOP_OP/DISKOP_STATUS for BL_STAT's reason: the
+; status is held ACROSS the whole write, during which the fatprim cells are live
+; on every putbyte.
+SV_OP           equ     $E224   ; 1 B: main -> tenant, SV_OP_* engine selector
+SV_STAT         equ     $E225   ; 1 B: tenant -> main, 0 = written, 1 = load_error
+SV_OP_BSV_DISK  equ     0       ; BSAVE to disk   (bsv_open ..  bsv_fin)
+SV_OP_BSV_CAS   equ     1       ; BSAVE to tape   (bsv_cas_open .. bsv_cas_fin)
+SV_OP_SAV_DISK  equ     2       ; SAVE to disk, tokenised (sav_disk_write .. sav_fin)
+SV_OP_SAV_CAS   equ     3       ; SAVE"CAS:" / CSAVE, tokenised (tape_save_basic ..)
     ENDIF
 
 ; --- Phase 1: minimal string-variable store (own-design; see PROVENANCE.md) --
@@ -2766,6 +2783,16 @@ SUBROM_IDX_BLOAD     equ 20     ; bload_tenant (sub/bload.asm): the whole BLOAD 
                                 ; the carve possible at all. Input BL_PTR, output BL_STAT;
                                 ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BLOAD. The ,R
                                 ; handoff stays RESIDENT (basic/bload-body.inc).
+SUBROM_IDX_SAVE      equ 21     ; save_tenant (sub/save.asm): BLOAD's mirror -- the
+                                ; SAVE / BSAVE / CSAVE WRITE ENGINES (four SV_OP_*
+                                ; selectors), evicted from main page 1 to fund `TIME`
+                                ; and interrupt-traps T5 together (docs/decision-fund-
+                                ; time-and-t5.md, D-FUND-1). PAGE 1 beside fatprim for
+                                ; the same reason BLOAD is: the fat_io_* WRITE cursor
+                                ; it drives reaches fat_dir_create/fat_flush_data_sector/
+                                ; fat_dir_update sub-locally. The PARSE stays resident
+                                ; (it calls `eval`), so nothing but SV_OP/SV_STAT rides;
+                                ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SAVE.
     ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch

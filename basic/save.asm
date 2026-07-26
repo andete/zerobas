@@ -43,6 +43,33 @@
 ; tape/tape.asm (our own code). No disassembly. See basic/PROVENANCE.md.
 
 ; ===========================================================================
+; THE CARVE (docs/decision-fund-time-and-t5.md, D-FUND-1). The four WRITE
+; ENGINES below — BSAVE/disk, BSAVE/tape, SAVE/disk and the shared cassette
+; tokenised writer — live in a sub-ROM PAGE-1 tenant (sub/save.asm,
+; SUBROM_IDX_SAVE) in the repack build, freeing main page 1 to fund `TIME` and
+; interrupt-traps T5. BLOAD's mirror, and the same reason it is affordable:
+; beside fatprim_tenant the FAT12 write primitives are ordinary in-page calls.
+;
+; WHAT DOES **NOT** MOVE, and why the split is where it is: every one of these
+; verbs PARSES with `eval`, which is main page 1 and therefore switched OUT
+; while a page-1 tenant runs. So the parse stays resident — and because it does,
+; the tenant needs no cursor and no argument marshalling at all: by the time it
+; is called every value already sits in its RAM home (DISK_FCB_NAME, TSV_NAME,
+; CURPTR, DSV_END, TSV_END, EXECPTR, VRAM_FLAG). Only SV_OP and SV_STAT ride.
+; The `,A` ASCII paths also stay: they drive list_walk/pchar, i.e. the PAGE-0
+; detokeniser tenant, which a page-1 tenant cannot reach.
+;
+; Each engine's `IF ROM_BASE < $4000` stub re-declares the SAME entry label the
+; resident parse already reaches by `jr`/fall-through, so not one parse
+; instruction changes; the ELSE arm includes the verbatim body at its original
+; position, keeping the lean 16 KB cart byte-frozen.
+sv_load_error   equ     load_error          ; resident: a zero-byte EQU, so every
+                                            ; `jp sv_load_error` in the shared bodies
+                                            ; assembles to the frozen cart's bytes.
+                                            ; In the tenant it is the sub-local
+                                            ; reporter that sets SV_STAT.
+
+; ===========================================================================
 ; do_bsave — BSAVE "device:name",start,end[,exec]
 ; Entry: HL -> the bytes after the BSAVE token (verbatim ASCII filename, then the
 ; crunched address args: comma + &H/decimal expression each).
@@ -99,52 +126,13 @@ bsv_is_disk:
                 jr      bsv_open
 bsv_set_exec:
                 ld      (EXECPTR),de
+    IF ROM_BASE < $4000
 bsv_open:
-                ; --- create the file and set the DTA -----------------------
-                call    disk_write_begin    ; require DISKSLOT_OK; Set-DTA; Create
-                ; --- 7-byte header: $FE start(LE) end(LE) exec(LE) ----------
-                ; disk_putbyte clobbers ALL registers (its CALSLT may flush a
-                ; record), so each 16-bit field is emitted via disk_putword, which
-                ; reloads the word from its RAM home for the high byte rather than
-                ; trusting a register across the call.
-                ld      a,BSAVE_DISK_ID     ; $FE
-                call    disk_putbyte
-                ld      hl,CURPTR           ; start (LE)
-                call    disk_putword
-                ld      hl,DSV_END          ; end (LE)
-                call    disk_putword
-                ld      hl,EXECPTR          ; exec (LE)
-                call    disk_putword
-                ; --- data bytes [start..end] inclusive, RAM or VRAM --------
-                ; With ",S" (VRAM_FLAG) the start/end are VRAM addresses and each
-                ; byte is fetched via RDVRM ($004A) instead of a RAM read; the
-                ; loop shape is otherwise identical.
-bsv_data:
-                ld      hl,(CURPTR)
-                ld      a,(VRAM_FLAG)
-                or      a
-                jr      z,bsv_data_ram
-                call    RDVRM               ; HL=CURPTR (VRAM addr) -> A
-                jr      bsv_data_put
-bsv_data_ram:
-                ld      a,(hl)              ; HL=CURPTR (RAM addr) -> A
-bsv_data_put:
-                call    disk_putbyte
-                ld      hl,(CURPTR)
-                ld      de,(DSV_END)
-                ld      a,h
-                cp      d
-                jr      nz,bsv_next         ; high bytes differ -> more to do
-                ld      a,l
-                cp      e
-                jr      z,bsv_fin           ; cur == end -> last byte written
-bsv_next:
-                ld      hl,(CURPTR)
-                inc     hl
-                ld      (CURPTR),hl
-                jr      bsv_data
-bsv_fin:
-                jp      disk_write_end      ; flush + Close + back to the prompt
+                ld      a,SV_OP_BSV_DISK
+                jp      sv_tenant           ; BSAVE -> disk: the write engine is a tenant
+    ELSE
+                include "basic/sv-bsvdisk.inc"    ; lean: inline, byte-identical
+    ENDIF
 
 ; --- tape BSAVE path ---
 bsv_is_cas:
@@ -173,64 +161,13 @@ bsv_is_cas:
                 jp      load_error          ; A=1: ",S" VRAM-to-tape not supported
 bsv_cas_exec:
                 ld      (EXECPTR),de
+    IF ROM_BASE < $4000
 bsv_cas_open:
-                ; --- tape header block: TAPOON(long) + 10x$D0 + 6-char name + TAPOOF ---
-                ld      a,$FF               ; non-zero -> long header
-                call    TAPOON
-                jp      c,load_error
-                ; emit 10x BINARY_ID ($D0)
-                ld      a,10
-                ld      (TSV_CNT),a
-bsv_cas_id:
-                ld      a,BINARY_ID         ; $D0
-                call    TAPOUT
-                jp      c,load_error
-                ld      a,(TSV_CNT)
-                dec     a
-                ld      (TSV_CNT),a
-                jr      nz,bsv_cas_id
-                ; emit 6-char name from TSV_NAME
-                call    tape_name_emit
-                jp      c,load_error
-                call    TAPOOF              ; end of header block
-                ; --- tape data block: TAPOON(short) + start/end/exec + data + TAPOOF ---
-                xor     a                   ; zero -> short header
-                call    TAPOON
-                jp      c,load_error
-                ; start (LE): low byte then high byte, each from CURPTR
-                ld      hl,CURPTR
-                call    tape_putword        ; emits (HL) then (HL+1)
-                jp      c,load_error
-                ; end (LE)
-                ld      hl,TSV_END
-                call    tape_putword
-                jp      c,load_error
-                ; exec (LE)
-                ld      hl,EXECPTR
-                call    tape_putword
-                jp      c,load_error
-                ; data bytes RAM[start..end] inclusive; CURPTR = start
-bsv_cas_data:
-                ld      hl,(CURPTR)
-                ld      a,(hl)
-                call    TAPOUT
-                jp      c,load_error
-                ld      hl,(CURPTR)
-                ld      de,(TSV_END)
-                ld      a,h
-                cp      d
-                jr      nz,bsv_cas_next
-                ld      a,l
-                cp      e
-                jr      z,bsv_cas_fin       ; cur == end -> done
-bsv_cas_next:
-                ld      hl,(CURPTR)
-                inc     hl
-                ld      (CURPTR),hl
-                jr      bsv_cas_data
-bsv_cas_fin:
-                call    TAPOOF              ; end of data block; motor off
-                ret                         ; back to the REPL
+                ld      a,SV_OP_BSV_CAS
+                jp      sv_tenant           ; BSAVE -> tape
+    ELSE
+                include "basic/sv-bsvcas.inc"    ; lean: inline, byte-identical
+    ENDIF
 
 ; ===========================================================================
 ; do_save — SAVE "device:name"   (tokenised-BASIC save; ,A out of scope)
@@ -270,38 +207,12 @@ sav_is_disk:
                 jp      z,sav_ascii_flag    ; SAVE"name",<flag> -> check for ,A
                 or      a
                 jp      nz,load_error       ; trailing junk after the name
-                ; --- (no flag) tokenised save: create + $FF marker + image --
-                call    disk_write_begin
-                ; --- $FF tokenised-BASIC disk marker -----------------------
-                ld      a,BASIC_DISK_ID     ; $FF
-                call    disk_putbyte
-                ; --- program image: TXTBASE .. PRGEND+1 inclusive ----------
-                ; PRGEND points at the $0000 end-of-program marker (program.asm),
-                ; so the last image byte is PRGEND+1. Walk inclusive.
-                ld      hl,TXTBASE
-                ld      (DSV_PTR),hl
-                ld      hl,(PRGEND)
-                inc     hl                  ; last image byte = PRGEND+1
-                ld      (DSV_END),hl
-sav_data:
-                ld      hl,(DSV_PTR)
-                ld      a,(hl)
-                call    disk_putbyte
-                ld      hl,(DSV_PTR)
-                ld      de,(DSV_END)
-                ld      a,h
-                cp      d
-                jr      nz,sav_next
-                ld      a,l
-                cp      e
-                jr      z,sav_fin
-sav_next:
-                ld      hl,(DSV_PTR)
-                inc     hl
-                ld      (DSV_PTR),hl
-                jr      sav_data
-sav_fin:
-                jp      disk_write_end
+    IF ROM_BASE < $4000
+                ld      a,SV_OP_SAV_DISK
+                jp      sv_tenant           ; SAVE -> disk, tokenised (fall-through entry)
+    ELSE
+                include "basic/sv-savdisk.inc"    ; lean: inline, byte-identical
+    ENDIF
 
 ; --- SAVE"name",A -> ASCII listing save --------------------------------------
 ; sav_ascii_flag: HL is at the ',' after the filename. Accept only ",A" (any
@@ -588,64 +499,13 @@ csav_sp:
                 ; fall into tape_save_basic
 
 ; ===========================================================================
-; tape_save_basic — shared cassette tokenised-BASIC save path.
-; Writes a two-block cassette file: header block ($D3 ×10 + 6-char name in
-; TSV_NAME) then data block (program image TXTBASE..PRGEND+1 inclusive).
-; Reaches here with TSV_NAME already filled and HL past the opening quote.
-; Clobbers everything (TAPOUT does); no return value (jumps to load_error on
-; TAPOON/TAPOUT failure, else returns to the REPL).
-; Format source: MSX2 TH cassette chapter; cas_encode.py build_cas_basic().
+    IF ROM_BASE < $4000
 tape_save_basic:
-                ; --- header block: TAPOON(long) + 10x$D3 + 6-char name + TAPOOF ---
-                ld      a,$FF               ; non-zero -> long leader
-                call    TAPOON
-                jp      c,load_error
-                ; emit 10x BASIC_ID ($D3)
-                ld      a,10
-                ld      (TSV_CNT),a
-tsb_id:
-                ld      a,BASIC_ID          ; $D3
-                call    TAPOUT
-                jp      c,load_error
-                ld      a,(TSV_CNT)
-                dec     a
-                ld      (TSV_CNT),a
-                jr      nz,tsb_id
-                ; emit 6-char name
-                call    tape_name_emit
-                jp      c,load_error
-                call    TAPOOF              ; end of header block
-                ; --- data block: TAPOON(short) + program image + TAPOOF ------
-                xor     a                   ; zero -> short leader
-                call    TAPOON
-                jp      c,load_error
-                ; Set up the image walk: TSV_PTR = TXTBASE, TSV_END = PRGEND+1
-                ld      hl,TXTBASE
-                ld      (TSV_PTR),hl
-                ld      hl,(PRGEND)
-                inc     hl
-                ld      (TSV_END),hl
-tsb_data:
-                ld      hl,(TSV_PTR)
-                ld      a,(hl)
-                call    TAPOUT
-                jp      c,load_error
-                ld      hl,(TSV_PTR)
-                ld      de,(TSV_END)
-                ld      a,h
-                cp      d
-                jr      nz,tsb_next
-                ld      a,l
-                cp      e
-                jr      z,tsb_fin           ; cur == end -> done
-tsb_next:
-                ld      hl,(TSV_PTR)
-                inc     hl
-                ld      (TSV_PTR),hl
-                jr      tsb_data
-tsb_fin:
-                call    TAPOOF              ; end of data block; motor off
-                ret                         ; back to the REPL
+                ld      a,SV_OP_SAV_CAS
+                jp      sv_tenant           ; SAVE"CAS:" / CSAVE -> tape, tokenised
+    ELSE
+                include "basic/sv-tsb.inc"    ; lean: inline, byte-identical
+    ENDIF
 
 ; ===========================================================================
 ; tape_parse_name — extract up to 6 filename chars from the token stream.
@@ -688,46 +548,15 @@ tpn_fill:
                 ret
 
 ; ===========================================================================
-; tape_name_emit — emit the 6 bytes of TSV_NAME via TAPOUT.
-; in:  TSV_NAME[0..5] = the name to emit.
-; out: CF = set if TAPOUT reported an error; else CF = clear.
-; TAPOUT clobbers every register; the loop counter is kept in TSV_CNT.
-tape_name_emit:
-                ld      a,6
-                ld      (TSV_CNT),a
-                ld      hl,TSV_NAME
-                ld      (TSV_PTR),hl        ; reuse TSV_PTR as walk pointer
-tne_loop:
-                ld      hl,(TSV_PTR)
-                ld      a,(hl)
-                call    TAPOUT
-                ret     c                   ; propagate error
-                ld      hl,(TSV_PTR)
-                inc     hl
-                ld      (TSV_PTR),hl
-                ld      a,(TSV_CNT)
-                dec     a
-                ld      (TSV_CNT),a
-                jr      nz,tne_loop
-                or      a                   ; CF = 0 (success)
-                ret
+                include "basic/sv-tne.inc"          ; tape_name_emit (copied into the tenant)
 
 ; ===========================================================================
-; tape_putword — emit a 16-bit little-endian word stored at address HL via
-; TAPOUT (low byte then high byte). TAPOUT clobbers every register, so the
-; source address is held in TSV_PTR and reloaded for the high byte.
-;   in:  HL = address of a 2-byte LE word in page-3 RAM.
-;   out: CF set = error; both bytes emitted on success.
-tape_putword:
-                ld      (TSV_PTR),hl        ; save the word's address
-                ld      a,(hl)              ; low byte
-                call    TAPOUT
-                ret     c
-                ld      hl,(TSV_PTR)        ; reload (TAPOUT clobbered HL)
-                inc     hl
-                ld      a,(hl)              ; high byte
-                call    TAPOUT
-                ret                         ; CF from TAPOUT
+    IF ROM_BASE >= $4000
+                include "basic/sv-tputw.inc"    ; lean: inline, byte-identical
+    ENDIF
+; (repack: tape_putword has NO resident caller once the BSAVE tape engine leaves
+;  — its only callers were bsv_cas_open's three header words — so it does not get
+;  a stub, it simply moves. The tenant's copy arrives with sv-tputw.inc.)
 
 ; ===========================================================================
 ; bsave_opt4 — classify the optional 4th BSAVE slot (,exec or ,S).
@@ -802,65 +631,23 @@ expect_comma_eval:
                 ret
 
 ; ===========================================================================
-; Shared disk-write helper (the WRITE analogue of the read side's fat_io_open /
-; fat_io_getbyte). Built on the loader-side FAT12 engine over the STANDARD $4010
-; DSKIO entry (basic/fat.asm) — disk-ROM-independent, NOT the private bdos_entry.
-; disk_write_begin creates a fresh file; disk_putbyte appends one byte (the engine
-; buffers it into a 512-byte sector and flushes whole sectors as they fill);
-; disk_write_end flushes the partial final sector and stamps the directory size.
-; The engine tracks exact byte counts, so the on-disk file size is its true length
-; (no 128-byte record zero-padding) — SAVE/BSAVE produce byte-exact images.
+                include "basic/sv-diskwr.inc"       ; disk_write_* (copied into the tenant)
 
-; disk_write_begin — require a recorded disk-ROM slot, then Create (truncate-or-
-; make) the file named in DISK_FCB_NAME and arm the sequential-write iterator.
-; On any failure jumps to load_error (does not return).
-;
-; DOCUMENTED DIVERGENCE (no write rollback): fat_io_create stamps the directory
-; entry up front. If a later disk_putbyte/disk_write_end fails mid-stream (disk
-; full / write error), the error path jumps to load_error WITHOUT fat_io_close, so
-; the entry is left with an un-stamped size/first-cluster (a zero-length or partial
-; file). Acceptable for a game loader — a failed SAVE simply needs re-issuing — and
-; no caller depends on atomic write; surfaced here so it is not mistaken for a bug.
-disk_write_begin:
-                ld      a,(DISKSLOT_OK)
+; ===========================================================================
+    IF ROM_BASE < $4000
+; sv_tenant — the one marshalling stub every carved engine jumps to (repack).
+; Entered by `jp`, never `call`, so the stack top is do_bsave/do_save/do_csave's
+; OWN return address: exactly what the un-carved `bsv_fin: jp disk_write_end` /
+; `jp load_error` tails had, so success and failure both return where they used
+; to (the statement dispatcher) with the stack at the same depth.
+;   in: A = SV_OP_* engine selector. Everything else is already in RAM.
+sv_tenant:
+                ld      (SV_OP),a
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SAVE
+                call    subrom_call
+                jp      c,subrom_absent_error
+                ld      a,(SV_STAT)
                 or      a
-                jp      z,load_error
-                call    fat_io_create       ; mount + dir-create + reset write state
-                jp      c,load_error        ; disk full / dir full / write protect / I-O
+                jp      nz,load_error       ; the tenant hit sv_load_error: report ONCE
                 ret
-
-; disk_putword — write the 16-bit little-endian word stored at RAM address HL out
-; through disk_putbyte (low byte then high byte). disk_putbyte clobbers HL (and
-; everything else), so the source address is kept in a RAM slot (DSV_PTR, which is
-; otherwise only used by do_save's own loop and is free during the BSAVE header)
-; and reloaded for the high byte rather than trusted in a register.
-;   in:  HL = address of a 2-byte LE word in page-3 RAM.
-;   out: both bytes appended to the write stream. Clobbers all (via disk_putbyte).
-disk_putword:
-                ld      (DSV_PTR),hl        ; remember the word's address
-                ld      a,(hl)              ; low byte
-                call    disk_putbyte
-                ld      hl,(DSV_PTR)        ; reload (disk_putbyte clobbered HL)
-                inc     hl
-                ld      a,(hl)              ; high byte
-                call    disk_putbyte
-                ret
-
-; disk_putbyte — append the byte in A to the open-for-write file via the FAT12
-; engine (which buffers into a 512-byte sector and flushes whole sectors as they
-; fill). On a write error jumps to load_error.
-;   in:  A = byte to write.
-;   out: byte appended. Clobbers all (CALSLT clobbers everything across a sector
-;        flush's DSKIO; the engine keeps its state in RAM).
-disk_putbyte:
-                call    fat_io_putbyte
-                jp      c,load_error        ; disk full / write error
-                ret
-
-; disk_write_end — flush the buffered partial final sector and stamp the directory
-; entry with the true byte count + first cluster (fat_io_close). On a write error
-; jumps to load_error. Returns to the caller's caller (the REPL) on success.
-disk_write_end:
-                call    fat_io_close
-                jp      c,load_error
-                ret                         ; back to the prompt
+    ENDIF

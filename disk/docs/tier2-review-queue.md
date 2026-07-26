@@ -83,6 +83,35 @@ byte-identity" + "fold BDOSX4 into the gate").** Signed-off spec
 
 ## Open (awaiting next sync)
 
+**[FINDING — PRE-EXISTING, surfaced by the SAVE carve's gate, 2026-07-26]
+Multi-block cassette ASCII `LOAD"CAS:"` truncates on the REPACK build (and only
+there).** `basic_probe_tape_save.py`'s `multi-block round-trip (>256 B,
+injected)` case recovers ~30 of 40 lines and then a clean `00 00` program
+terminator; the WAV it read back is a correct 528 bytes, so the **write** side is
+right and the **read** side stops early. The lean 16 KB cart passes the identical
+case.
+
+*Not a regression, and that was established rather than assumed.* The probe grew
+a `--machine` option so the corpus can run on `C-BIOS_MSX1_EU_REPACK_DISK` at
+all (before this, the SAVE-family carve would have been unverifiable on the only
+side it changes — the lean cart is byte-frozen). A **pre-carve control** built
+from the parent commit in a throwaway worktree, installed under the same machine
+name, reproduces the failure with a **byte-identical** `got` buffer
+(md5 `a4a703a7…` both sides). Everything else in the corpus passes on both.
+
+*Why it is being logged rather than fixed here:* it is out of the carve's scope
+and touches the cassette READ path, which the carve does not move. But per
+[[control-that-fails-must-be-fixed]] a failing control is not something to
+interpret away — **the mechanism is a hypothesis, not a finding**, so it is
+written down as one: cassette read is real-time, and on the repack build every
+loaded ASCII line is tokenised through a sub-ROM `CALSLT`
+(`dispatch_line → tokenise → subrom_call`) rather than resident, so the loader
+may not get back to `TAPIN` in time across a block boundary. That would predict
+the failure point moving with tape speed (`CSAVE"n",1` vs `,2`) — **untested.**
+Note the reading does *not* obviously fit: it recovers all of block 1 **and part
+of block 2**, which a lost-resync story does not explain. Next step is that
+speed sweep, not a patch.
+
 **[JUDGMENT CALL — traps T2 harness, 2026-07-25] The acceptance machine now models
 PSG port directions like the VG-8020, and joystick triggers 1..4 are driven by a
 PSG-latch injection with one residual blind spot.** `tools/install-repack-machine.py`

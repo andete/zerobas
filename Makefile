@@ -47,6 +47,9 @@ DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/lineedit-body.inc \
          basic/casmatch-body.inc basic/cal-refill-body.inc \
          basic/fcbname-body.inc basic/bload-body.inc basic/fatio-body.inc \
+         basic/sv-bsvdisk.inc basic/sv-bsvcas.inc basic/sv-savdisk.inc basic/sv-tsb.inc \
+         basic/sv-tputw.inc basic/sv-tne.inc basic/sv-diskwr.inc \
+         basic/fatiocreate-body.inc basic/fatiow-body.inc \
          basic/readdata-body.inc basic/tokskip-body.inc \
          basic/sysvars.inc
 ROM   := $(BUILD)/basic.rom
@@ -130,6 +133,11 @@ SUB_SRC   := sub/sub.asm
 # space.md, the G5-space eviction slice): the tenant body + its two shared
 # .inc files (the lean cart's inline copies, basic/cload.asm) -- same
 # staleness hazard, same fix ([[makefile-subparts-stale-tenant]]).
+# sub/save.asm + basic/sv-*.inc + basic/fatiocreate-body.inc + basic/fatiow-body.inc
+# (the SAVE/BSAVE/CSAVE WRITE engines, docs/decision-fund-time-and-t5.md
+# D-FUND-1, the TIME+T5 funding carve): the tenant body, its five carved engine
+# bodies (the lean cart's inline copies, basic/save.asm) and the two shared
+# copies the tenant needs sub-locally -- same staleness hazard, same fix.
 # sub/fcbname.asm + basic/fcbname-body.inc (disk 8.3-FCB-name builder
 # build_83_name, docs/spec-basic-interrupt-traps.md §10.4, the interrupt-traps
 # T1 funding carve): the tenant body + its shared .inc file (the lean cart's
@@ -146,6 +154,9 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub
              sub/casmatch.asm basic/casmatch-body.inc basic/cal-refill-body.inc \
              sub/fcbname.asm basic/fcbname-body.inc \
              sub/bload.asm basic/bload-body.inc basic/fatio-body.inc \
+             sub/save.asm basic/sv-bsvdisk.inc basic/sv-bsvcas.inc basic/sv-savdisk.inc \
+             basic/sv-tsb.inc basic/sv-tputw.inc basic/sv-tne.inc basic/sv-diskwr.inc \
+             basic/fatiocreate-body.inc basic/fatiow-body.inc \
              sub/circleparse.asm \
              sub/readdata.asm basic/readdata-body.inc basic/tokskip-body.inc \
              sub/beep.asm sub/title.asm basic/title-body.inc \

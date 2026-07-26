@@ -374,28 +374,7 @@ fdup_err:
                 include "basic/fatio-body.inc"
 
 
-; fat_io_create — create (truncate-or-make) the file named in DISK_FCB_NAME for
-; sequential WRITE from offset 0.
-;   out: Cy = 0 created (stream ready); Cy = 1 = mount / dir-full / I/O error.
-; Mounts, makes/reuses a root-dir slot (fat_dir_create), and resets the write
-; iterator: no cluster yet, empty buffer, zero bytes. The first cluster is
-; allocated lazily on the first flush.
-fat_io_create:
-                call    fat_mount
-                ret     c
-                ld      hl, DISK_FCB_NAME
-                call    fat_dir_create
-                ret     c
-                xor     a
-                ld      (FWR_SECIDX), a
-                ld      hl, 0
-                ld      (FWR_CLUS), hl
-                ld      (FWR_FIRST), hl
-                ld      (FWR_BUFLEN), hl
-                ld      (FWR_BYTES), hl
-                ld      (FWR_BYTES + 2), hl
-                or      a                   ; Cy = 0 success
-                ret
+                include "basic/fatiocreate-body.inc"   ; fat_io_create (shared with sub/save.asm)
 
 ; fat_io_append — open the file named in DISK_FCB_NAME for sequential WRITE,
 ; positioned at end-of-file (text APPEND). New bytes extend the file instead of
@@ -474,72 +453,7 @@ fia_empty:
                 ret
 
 
-; fat_io_putbyte — append the byte in A to the open-for-write file.
-;   in:  A = byte to write.
-;   out: Cy = 0 ok; Cy = 1 = disk full / write error.
-; Buffers the byte into FSECTOR_BUF at offset FWR_BUFLEN; when the buffer fills
-; (512 bytes) it is flushed to the file's current data sector (allocating/extending
-; the cluster chain as needed) and the buffer resets. FWR_BYTES accumulates the
-; true byte count for fat_io_close to stamp into the directory entry. The flush's
-; DSKIO clobbers all registers, so state is kept in RAM.
-fat_io_putbyte:
-                ld      c, a                ; C = byte to store (survives the math)
-                ld      hl, (FWR_BUFLEN)
-                ld      de, FSECTOR_BUF
-                add     hl, de              ; HL = FSECTOR_BUF + FWR_BUFLEN
-                ld      (hl), c             ; store the byte
-                ; advance buffered length and total byte count by 1.
-                ld      hl, (FWR_BUFLEN)
-                inc     hl
-                ld      (FWR_BUFLEN), hl
-                call    fwr_bytes_inc       ; FWR_BYTES += 1 (4-byte LE)
-                ; if the 512-byte buffer is now full, flush it.
-                ld      hl, (FWR_BUFLEN)
-                ld      de, 512
-                or      a
-                sbc     hl, de
-                jr      c, fip_ok           ; buffer not full yet
-                call    fat_flush_data_sector
-                ret     c                   ; disk full / write error
-                ld      hl, 0
-                ld      (FWR_BUFLEN), hl    ; buffer drained
-fip_ok:
-                or      a                   ; Cy = 0 success
-                ret
-
-; fwr_bytes_inc — FWR_BYTES += 1, 4-byte little-endian increment.
-fwr_bytes_inc:
-                ld      hl, FWR_BYTES
-                ld      a, (hl)
-                add     a, 1
-                ld      (hl), a
-                inc     hl
-                ld      a, (hl)
-                adc     a, 0
-                ld      (hl), a
-                inc     hl
-                ld      a, (hl)
-                adc     a, 0
-                ld      (hl), a
-                inc     hl
-                ld      a, (hl)
-                adc     a, 0
-                ld      (hl), a
-                ret
-
-; fat_io_close — finish a sequential-write file durably.
-;   out: Cy = 0 ok; Cy = 1 = I/O error.
-; Flushes a buffered partial final sector (FWR_BUFLEN > 0), then rewrites the
-; directory entry with the true byte count and first cluster.
-fat_io_close:
-                ld      hl, (FWR_BUFLEN)
-                ld      a, h
-                or      l
-                jr      z, fic_dir          ; nothing buffered
-                call    fat_flush_data_sector
-                ret     c
-fic_dir:
-                jp      fat_dir_update      ; tail: write true size + first cluster
+                include "basic/fatiow-body.inc"        ; fat_io_putbyte/fwr_bytes_inc/fat_io_close
 
     IF ROM_BASE >= $4000
                 include "basic/fat-delete-body.inc"    ; lean: inline, byte-identical
