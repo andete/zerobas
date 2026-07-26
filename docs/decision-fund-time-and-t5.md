@@ -4,7 +4,8 @@ SPDX-License-Identifier: 0BSD
 -->
 # Decision — funding `TIME`/`TIME=n` **and** trap slice T5 `INTERVAL` with ONE carve
 
-Status: **PROPOSAL, awaiting sign-off (2026-07-26).** Measured on `82a5ebc`,
+Status: **✅ SIGNED OFF 2026-07-26 — D-FUND-1 option (a), the full SAVE-family
+write engine.** Measured on `82a5ebc`,
 tree clean, `main`. This answers §4 of
 [`handover-time-and-t5-interval.md`](handover-time-and-t5-interval.md) — *"the
 coupling — this is the actual first task"* — and nothing here is implemented
@@ -184,8 +185,9 @@ lands, with the tripwires lifted.
 ## 4. Open decision
 
 **D-FUND-1 — carve the SAVE-family write engine as a sub-ROM page-1 tenant?**
+**✅ DECIDED 2026-07-26: (a).**
 
-* (a) **Yes, as scoped above** — one tenant covering BSAVE + SAVE + CSAVE write
+* (a) **Yes, as scoped above** ← **CHOSEN** — one tenant covering BSAVE + SAVE + CSAVE write
   engines. *Recommended.* Largest measured movable set with a 4-item frontier,
   every item of which has a landed precedent.
 * (b) Yes, but **BSAVE only** first (528 B closure, 8 deps incl. the parse

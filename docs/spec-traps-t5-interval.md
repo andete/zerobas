@@ -4,7 +4,8 @@ SPDX-License-Identifier: 0BSD
 -->
 # Spec — interrupt traps **T5: `ON INTERVAL=n GOSUB` + `INTERVAL ON|OFF|STOP`**
 
-Status: **PACKET — awaiting sign-off (2026-07-26).** The fifth and last slice of
+Status: **PACKET — ✅ D-T5-2 SIGNED OFF 2026-07-26 (pay the fast-out term);
+D-T5-1/3/4/5/6 stand as recommended.** The fifth and last slice of
 the interrupt-trap arc, after [T1 STOP](spec-traps-t1-stop-reslice.md) ·
 [T2 STRIG](spec-traps-t2-strig.md) · [T3 KEY](spec-traps-t3-key.md) ·
 [T4 SPRITE](spec-traps-t4-sprite.md). Arc spec:
@@ -339,10 +340,10 @@ natural way.
 `P_on_reloads`, `H3_off_reloads` and `S_starves_main` measure, and it is one
 comparison cheaper than the deleted original.
 
-**D-T5-2 — the fast-out third term.** Accept ~7 B and one 16-bit RAM read per
-frame on the common no-trap path so the counter runs while STOPped (§2.1
-correction 2). The alternative — freezing the counter while suspended — is a
-measurable divergence for ~7 B. *Recommend: pay it.*
+**D-T5-2 — the fast-out third term. ✅ DECIDED 2026-07-26: PAY IT.** ~7 B and one
+16-bit RAM read per frame on the common no-trap path, so the counter runs while
+STOPped (§2.1 correction 2). The alternative — freezing the counter while
+suspended — would have been a measurable divergence for ~7 B.
 
 **D-T5-3 — `n` conversion.** Share `fac_to_int_addr` → `domain_convert_core`
 (address mode) with `TIME=n` (§1.2), plus a zero test for ERR 5. *Recommended;*
