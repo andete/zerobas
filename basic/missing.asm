@@ -67,6 +67,73 @@ mot_go:
                 jp      exec_stmt           ; continue the line (a bare `ret` would
                                             ; swallow the rest of it -- the T1 lesson)
 
+; --- els_typecheck: D-MISS-1, the string-lvalue RHS type check --------------
+; `A$=A` said `syntax error` where the reference says `Type mismatch`. The cause
+; was localised and unglamorous: ex_let_str's only question was "is the RHS a
+; string operand?", and everything else fell out of the parser. The numeric
+; mirror (`A=A$`) was already right, because ex_let evaluates and then checks.
+;
+; ⚠️ THE FIX IS NOT "str_eval FAILED -> Type mismatch", AND THE MEASUREMENT SAYS
+; SO. Four rows, taken before writing this (VG-8020 / zerobas-before):
+;
+;   A$=)     Syntax error      / syntax error
+;   A$=      Missing operand   / syntax error
+;   A$=+     Missing operand   / syntax error
+;   A$=1/0   Division by zero  / syntax error      <-- the decisive one
+;
+; `A$=1/0` reports DIVISION BY ZERO, not Type mismatch. So the reference
+; EVALUATES the right-hand side first and type-checks only a value it actually
+; got -- the RHS's own error wins. Blanket Type-mismatch-on-failure would have
+; matched the six d1 rows and been wrong on all four of these.
+;
+; So: evaluate as a numeric expression, let check_expr_errors abort on the RHS's
+; own deferred error (FPERR div0/overflow/illegal/syntax, TMISMATCH), and only
+; then call it a type mismatch.
+;
+; The last discriminator is "did the RHS parse as anything WELL-FORMED": `A$=`
+; and `A$=+` have no operand at all, and must keep today's syntax error rather
+; than acquire an invented Type mismatch. (The reference's `Missing operand` for
+; those is a THIRD wording zerobas does not produce here -- not this slice's
+; business, and unchanged by it.)
+;
+; ⚠️ "DID eval CONSUME ANY BYTES" IS THE WRONG TEST, and it was the first one
+; written. `A$=+` reports Type mismatch under it: ev_f rejects the leading `+`
+; without moving (a bare ERRMARK landmark, no FPERR), and then the BINARY-
+; operator loop happily eats the `+` and asks for another factor -- so the
+; cursor HAS advanced while nothing was parsed. Measured, not reasoned about
+; after the fact: the row went from `syntax error` to `type mismatch`.
+;
+; What ev_f_err actually leaves is the $DD landmark in ERRMARK. That byte is
+; normally set-only -- never cleared per statement -- so it cannot just be
+; read. It CAN be cleared right here first: every path out of this routine
+; raises an error, so no reader can observe the cleared value before the error
+; that follows stamps its own landmark.
+;
+; ⚠️ Stack order is why check_expr_errors_popbc is NOT used: it pops the caller's
+; saved word from UNDER its own return address. The saved word is dropped up
+; front instead -- every path out of here errors, so it is dead either way --
+; leaving the plain check_expr_errors with an ordinary frame.
+;
+; TWO ENTRIES, because the two string-lvalue forms carry DIFFERENT stack frames:
+; the scalar path holds its saved dest key, the array-element path holds
+; ary_snapshot_offset's [OFFSET] (which is why it uses its own elas_err /
+; elas_abort_fp rather than the shared cepb_* routines -- vars.asm:647). Each
+; entry discards its own one word and falls into the common tail.
+elas_typecheck:                             ; Q$(0) = <non-string>
+                pop     de                  ; discard [OFFSET], exactly as elas_err does
+                jr      els_tc_common
+els_typecheck:                              ; A$ = <non-string>
+                pop     bc                  ; drop the dest key: every exit here errors
+els_tc_common:
+                xor     a
+                ld      (ERRMARK),a         ; clear the landmark so it can be READ below
+                call    eval                ; parse it as a NUMERIC expression
+                call    check_expr_errors   ; the RHS's OWN error wins, and aborts
+                ld      a,(ERRMARK)         ; ev_f_err's $DD -> no operand was parsed
+                or      a
+                jp      nz,stmt_error       ; -> syntax error, exactly as before
+                jp      type_mismatch_error ; a real numeric RHS -> ERR 13
+
 ; --- ex_tron / ex_troff: TRON | TROFF ---------------------------------------
 ; A one-byte flag and one hook. Neither statement takes an argument -- `TRON 1`
 ; and `TROFF 1` are Syntax errors (measured), which falls out for free: the

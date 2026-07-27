@@ -517,12 +517,13 @@ ex_let_str:
                 call    skip_spaces
                 call    str_eval            ; STRPTR -> RHS descriptor, HL advanced
     IF ROM_BASE < $4000
-                jr      nc,ex_let_err       ; not a string operand -> syntax error;
-                                            ; shares ex_let's own identical "pop bc;
-                                            ; jp stmt_error" tail (repack only, to
-                                            ; free page-1 bytes, slice-3 space audit
-                                            ; -- lean keeps its own separate els_err,
-                                            ; below, so its bytes stay untouched)
+                jp      nc,els_typecheck    ; not a string operand -> D-MISS-1: is it a
+                                            ; valid NUMERIC one (Type mismatch) or junk
+                                            ; (syntax error)? basic/missing.asm.
+                                            ; (Was `jr nc,ex_let_err`, sharing ex_let's
+                                            ; "pop bc; jp stmt_error" tail; lean keeps
+                                            ; its own separate els_err below, so its
+                                            ; bytes stay untouched either way.)
     ELSE
                 jr      nc,els_err          ; not a string operand -> syntax error
     ENDIF

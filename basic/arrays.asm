@@ -843,9 +843,11 @@ ex_let_arr_str:
                 inc     hl
                 call    skip_spaces
                 call    str_eval            ; STRPTR -> RHS descriptor, HL advanced
-                jp      nc,elas_err         ; not a string operand -> syntax error
+                jp      nc,elas_typecheck   ; not a string operand -> D-MISS-1: a valid
+                                            ; NUMERIC RHS is Type mismatch, junk stays
+                                            ; syntax error (basic/missing.asm)
                                             ; ([OFFSET] still on the stack --
-                                            ; elas_err pops it)
+                                            ; elas_typecheck pops it, as elas_err did)
                 ld      a,(FPERR)           ; D-F2-1: a deferred error inside the RHS
                 or      a                   ; (HEX$ overflow, or a nested array
                 jp      nz,elas_abort_fp    ; subscript/bound error, §5.2) aborts
