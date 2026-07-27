@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — `BIN$` and `FRE`, the last two SILENT-GAP words
 
-**Status:** SPEC, 2026-07-27 — **D-BF-A..D-BF-D all signed off** (§5). Step 4 of
+**Status:** ✅ **LANDED** `2facfc0`, `make binfre-acceptance` **83/83**. D-BF-A..D-BF-D
+all signed off (§5); as-built in §8. Step 4 of
 [`decision-kwgaps-slicing.md`](decision-kwgaps-slicing.md) §4.3. The behavioural
 contract below is taken **entirely** from the committed measurement,
 [`binfre-vg8020-characterization.md`](binfre-vg8020-characterization.md)
@@ -59,7 +60,10 @@ today   str_fn_hex 43 + str_fn_oct 38                        = 81 B
 after   shared body ~43 + 3 stubs (op byte + jp) ~6 each     ≈ 61 B
 ```
 
-**≈ 20 B returned to the low region, and `BIN$` lands inside it.** The
+**≈ 20 B returned to the low region, and `BIN$` lands inside it.**
+*(As built: 9 B returned, not 20 — the two argument checks D-BF-1/D-BF-2 cost
+~17 B that the sketch above did not price. Still net positive, and still the
+only way `BIN$` fits: §8.)* The
 generalisation warning ([[generalisation-not-free-at-two-callers]]) says measure
 the refactor *with* its beneficiaries: there are three here, not two, and the
 third is the feature being paid for.
@@ -82,7 +86,8 @@ The answer is not a bigger buffer. `sh_temp_push_alloc` already takes the digit
 count in `A` and hands back the body pointer, so `sh_bin_build` can **count the
 significant bits first** (shift until zero, minimum 1), allocate, then fill the
 body MSB-first from the known top bit — **no intermediate buffer at all**. It
-lives in `sub/strheap.asm` beside `sh_oct_build` as op = 8; sub.rom has ~3.5 KB
+lives in `sub/strheap.asm` beside `sh_oct_build` as **op = 14** (op 8 is
+already `sh_fill`); sub.rom has ~3.5 KB
 free on page 1 and ~4.5 KB on page 0, so the leaf compute is free.
 
 `kwtable.inc` gains one entry (`db 4,"BIN$",2,PEEK_PREFIX,BIND_TOKEN`) — also
@@ -274,3 +279,67 @@ reported 55 B free while the same sources overran by 14
 ([[measure-the-wall-from-clean]]). If the collapse does not return what §3
 predicts, the fallback is to evict the whole family to a sub-ROM tenant, which
 the playbook already covers.
+
+## 8. As built (`2facfc0`)
+
+| region | before | after | note |
+|---|---|---|---|
+| low region | 7 B free | **11 B free** | the collapse returned 9 B; `BIN$`'s `str_func_ff` arm spent 5 |
+| page 1 | 389 B free | **311 B free** | `FRE` cost **78 B** against an estimated 35–45 |
+| sub.rom | — | +`sh_bin_build`, +`sh_free_gap` | ops 14 and 15; free space, as predicted |
+| lean cart | frozen | **byte-identical** | the whole family is repack-only |
+
+**The estimate ran optimistic for the third slice running** — 78 B where 35–45
+was predicted, ~75 % over, after the cursor cluster's 38 %. The low-region line
+(the one that mattered) was the accurate one, because it was the one derived
+from *measured* symbol sizes rather than reasoned about.
+
+### 8.1 What the gate caught that the implementation forgot
+
+`FRE` compacting the heap was **measured and written down** in the
+characterization (§3 there) and then simply not carried into the code. The gate
+found it as a 306-vs-6+100 divergence: `A$=STRING$(100,"A")` leaves the live
+body *plus two dead temps* that only a collision would have collected.
+`sh_free_gap` now compacts first.
+
+Two further red rows were **not** bugs, and separating those two cases was the
+substance of the fix rather than an afterthought — see §6's pool-separation
+note. Every deviation that stayed red had been listed in §6 *before* the
+implementation existed, so none of them was discovered by a red gate.
+
+### 8.2 Falsification
+
+Each clause was broken in turn and the gate re-run. All six are guarded, none by
+a single row:
+
+| broken clause | gate |
+|---|---|
+| `BIN$` leading-zero suppression | 72/83 — 11 rows |
+| `BIN$` 16-digit width | 64/83 — 19 rows |
+| the domain check (D-BF-2) | 78/83 — 5 rows |
+| the type check (D-BF-1) | 81/83 — 2 rows |
+| `FRE` string-form selection | 77/83 — 6 rows |
+| `FRE` compaction | 81/83 — 2 rows |
+
+**The last line is the one that justifies replacing a row rather than trusting
+it.** `fre-gc-stable` reads `FRE` twice and agrees whether or not anything is
+collected — **green while measuring nothing**. Both rows that catch a broken
+compaction are the ones added to replace it (`fre-gc-teeth`, which pre-creates
+the variable and allocates/drops the string *between* the two readings). Had the
+original row been left to stand, breaking compaction would have moved the gate by
+**zero**.
+
+Two of the six were also a lesson in falsifying *properly*: the first attempt at
+the type check inserted an instruction and merely broke the build, and the first
+attempt at compaction patched the wrong `strheap_gc` call site. **A falsification
+that fails to build, or fails to apply, has proved nothing** — both were redone
+size-neutrally against the right line.
+
+### 8.3 Follow-on opened by this slice
+
+**The `CLEAR` string-pool partition** (D-BF-A(a), deferred as (c)). Give the
+heap a floor at `C − n`, make `heap_alloc` collide against it instead of
+`ARYEND+2`, and make variable/array growth collide against the pool top. That
+would move six rows out of recorded-not-gated and back into the gate:
+`FRE(0)=FRE("")`, the five `CLEAR n` absolutes, and the three pool-separation
+rows. It is a string-engine change and wants its own spec and gate.

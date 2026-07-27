@@ -161,9 +161,26 @@ if it lands, the remaining 12 words stop competing for a 13-byte budget.
 2. **`CSRLIN` + `POS` + `SPC(` + `TAB(`** — the cursor/PRINT cluster, ~79 B main,
    4 SILENT-GAPs, one coherent spec, one gate. Needs funding *or* L1 first.
 3. **L1** — the dispatch table, if (2) shows the budget is binding.
-4. **`BIN$` + `FRE`** — the last 2 SILENT-GAPs. After this the SILENT-GAP class
-   is **empty**, which is the milestone worth naming: no MSX1 reserved word
-   silently computes a wrong answer.
+4. ✅ **`BIN$` + `FRE` — LANDED `2facfc0`, 83/83.** **THE SILENT-GAP CLASS IS
+   EMPTY.** No MSX1 reserved word silently computes a wrong answer any more —
+   D-KW-3's exit criterion, met. See
+   [`spec-basic-binfre.md`](spec-basic-binfre.md) and
+   [`binfre-vg8020-characterization.md`](binfre-vg8020-characterization.md).
+
+   `BIN$` was funded by collapsing its **own family**: `str_fn_hex` (43 B) and
+   `str_fn_oct` (38 B) were near-identical low-region clones, and the 5-byte
+   difference between them *was* a bug (§5a's shape, found by measurement).
+   Low region **7 → 11 B free** with `BIN$` inside it. Two more silent
+   divergences fell out of the calibration battery — the **third consecutive
+   slice** in which it has paid for itself:
+   **D-BF-1** `HEX$`/`OCT$` accepted a string argument and printed `0`;
+   **D-BF-2** `OCT$` had no domain check, so `OCT$(65536)` printed `OCT$(0)`.
+   Both died in the collapse rather than being fixed three times.
+
+   `FRE` took the **one-gap** model (D-BF-A(c)): zerobas has a single free span
+   where the reference has two independent pools, and `CLEAR`'s string-space
+   argument is discarded. **Follow-on opened: the `CLEAR` string-pool
+   partition**, which would move six recorded-not-gated rows back into the gate.
 5. **`LOCATE`, `SWAP`, `TRON`/`TROFF`, `MOTOR`** — the honest-error class.
 6. **`DEF FN`** — its own arc, its own spec.
 

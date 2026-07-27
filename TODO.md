@@ -1363,12 +1363,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the subscript bound-check yields the same code). **The differential passed
       and the feature did not exist.** That §1.2 claim is doc debt and is
       corrected in this commit.
-      - **SILENT-GAP (8) — wrong answer, NO error.** The worst class; each is a
-        live landmine in a user program today.
-        `TAB(` · `SPC(` · `CSRLIN` · `POS` · `FRE` · `EQV` · `IMP` · `BIN$`.
-        (`PRINT 5 EQV 3` prints **three separate values** — the operator is read
-        as a variable between two literals.) `TIME` was the ninth and **landed
-        2026-07-26**; the sweep picked that up with no edit to the probe.
+      - ✅ **SILENT-GAP (was 8) — THE CLASS IS EMPTY (2026-07-27).** The worst
+        class: a wrong answer with no error, a live landmine in a user program.
+        All eight are now implemented and gated —
+        `EQV`/`IMP` (`ef098e9`, 156/156), `TAB(`/`SPC(`/`CSRLIN`/`POS`
+        (`99c0f6d`, 67/67), `FRE`/`BIN$` (`2facfc0`, 83/83) — plus `TIME`
+        (`2026-07-26`), which was the ninth and which the sweep picked up with
+        no edit to the probe. **No MSX1 reserved word silently computes a wrong
+        answer.** That was the keyword arc's exit criterion (D-KW-3).
       - **MISSING (6) — honest syntax error.** `LOCATE` · `SWAP` · `TRON` ·
         `TROFF` · `MOTOR` · `DEF FN`/`FN`.
       - **NO-ORACLE (5).** `MKI$` `MKS$` `MKD$` `CVS` `CVD` — the MK/CV family
@@ -1411,8 +1413,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       statement token before it does anything**. Recommended first slice:
       **`EQV`/`IMP` via a table-driven logical layer** — `ev_xor`/`ev_or`/`ev_and`
       are uniform at 34 B each (measured), so one generic 5-entry layer lands both
-      words for **≈ 0 net bytes**. Exit criterion proposed: **the SILENT-GAP class
-      empty** (`DEF FN` is an arc, not a slice — 200–400 B).
+      words for **≈ 0 net bytes**.
+
+      ✅ **Steps 1, 2 and 4 are DONE and the exit criterion is MET** — the
+      SILENT-GAP class is empty (see above). Each slice was funded by collapsing
+      a clone group it was itself a member of, and each one's calibration battery
+      turned up pre-existing silent divergences nobody was looking for (two per
+      slice, three slices running).
+
+      **What remains of this arc, in order:**
+      - **The MISSING class (6)** — `LOCATE` · `SWAP` · `TRON`/`TROFF` ·
+        `MOTOR`. Honest syntax errors, so diagnosable rather than dangerous.
+        Step 3's `exec_stmt` dispatch table (D-KW-2, deferred) is the lever that
+        makes these affordable: 5 B → 3 B per statement token, est. −114 B.
+      - **`DEF FN`/`FN`** — an arc, not a slice (200–400 B): a definition table,
+        argument binding, re-entrant evaluation.
+      - **The `CLEAR` string-pool partition** — opened by the `BIN$`/`FRE` slice
+        (D-BF-A(c)). zerobas has ONE free gap where the reference has TWO pools,
+        and `CLEAR`'s string-space argument is evaluated and discarded. Landing
+        it would move six recorded-not-gated `FRE` rows back into the gate. A
+        string-engine change: its own spec, its own gate.
 
 ## Beyond — post-MSX1 axes (out of charter, far future)
 
