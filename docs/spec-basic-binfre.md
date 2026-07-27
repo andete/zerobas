@@ -5,8 +5,7 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — `BIN$` and `FRE`, the last two SILENT-GAP words
 
-**Status:** SPEC, 2026-07-27 — **awaiting sign-off on D-BF-A..D-BF-D.** No
-implementation until they are answered. Step 4 of
+**Status:** SPEC, 2026-07-27 — **D-BF-A..D-BF-D all signed off** (§5). Step 4 of
 [`decision-kwgaps-slicing.md`](decision-kwgaps-slicing.md) §4.3. The behavioural
 contract below is taken **entirely** from the committed measurement,
 [`binfre-vg8020-characterization.md`](binfre-vg8020-characterization.md)
@@ -143,6 +142,9 @@ detail of `FRE`; it is a change to the memory architecture.
 
 ### D-BF-A — how faithful should `FRE` be? *(the scoping question)*
 
+> ✅ **ANSWERED: (c).** One-gap model in this slice; the `CLEAR` string-pool
+> partition becomes its own named follow-on with its own spec and gate.
+
 **(a) Two real pools.** Implement `CLEAR <n>` as a genuine string-pool
 boundary: give the heap a floor at `C − n`, make `heap_alloc` collide against
 *that* instead of `ARYEND+2`, and make variable/array growth collide against the
@@ -177,25 +179,45 @@ Reference, at equal depth: `DIM A(100)` = **816** (101 × 8 + 8), `DIM A(10)` =
 string.
 
 These encode zerobas's **variable and array table layout**, not `FRE`. Gating
-them asserts that layout matches the VG-8020 byte for byte — which this project
-has never claimed. But they are also the only *absolute* teeth the numeric form
-would have under D-BF-A(b).
+them asserts that layout matches the VG-8020 byte for byte.
 
-**Recommendation: gate the string-pool delta (100, which is exact by
-construction and layout-independent) and `fre-dim-drops`; measure the other four
-during the spike and gate them only if they already agree.** Do not implement
-*toward* them.
+> ✅ **ANSWERED: gate ALL of them** — my recommendation (gate only the
+> layout-independent pair) was overruled, and the evidence says the stronger
+> call was right.
+
+**The claim was checkable before a line of `FRE` was written, and it checks
+out.** `VARPTR` is implemented on both sides, and the stride between two
+consecutive entries *is* the entry size those deltas are made of. The `layout`
+battery (`make binfre-characterize ONLY=layout`) is **10/10**:
+
+| what | ref | zerobas |
+|---|---|---|
+| scalar stride `VARPTR(Y)-VARPTR(X)` | 11 | **11** |
+| two scalars apart | 22 | **22** |
+| string descriptor stride | 6 | **6** |
+| scalar → string entry | 11 | **11** |
+| array element size | 8 | **8** |
+| five elements | 40 | **40** |
+| `DIM A(0)` stride (1 elem + header) | 16 | **16** |
+| `DIM A(10)` stride | 96 | **96** |
+| `DIM A(100)` stride | 816 | **816** |
+
+Element size 8, array header 8, scalar entry 11, string entry 6 — identical on
+both machines. So gating the `FRE` deltas asserts something that is **already
+true**, and it will hold for the right reason rather than by luck. The layout
+battery stays in the probe permanently: it is what will say *why* a `FRE` delta
+row went red, distinguishing an `FRE` bug from a layout change.
 
 ### D-BF-C — fix D-BF-1 and D-BF-2 in this slice?
 
-**Recommendation: yes.** §3 shows the collapse puts both checks in the one place
+> ✅ **ANSWERED: yes.** §3 shows the collapse puts both checks in the one place
 `BIN$` needs them anyway, so the marginal cost is close to zero and the
 alternative is writing the same check a third time. Both are silent wrong
 answers in the very class this slice exists to empty.
 
 ### D-BF-D — is `BIN$`'s implementation the counted-bits builder (§3.1)?
 
-**Recommendation: yes** — it avoids the `NUMBUF` problem outright rather than
+> ✅ **ANSWERED: yes** — it avoids the `NUMBUF` problem outright rather than
 enlarging a shared scratch buffer that `MID$`-statement aliasing already
 constrains ([`basic/sysvars.inc:697`](../basic/sysvars.inc:697)).
 
@@ -217,7 +239,12 @@ Under D-BF-A(b) two more move to reported-not-gated, and the spec must say so
 Everything else is gated: all `BIN$` values and lengths, all `BIN$`/`FRE` error
 rows, the `HEX$`/`OCT$` calibration (including the two D-BF fixes), the
 equal-depth dummy-argument rows, the string-form purity and content-independence
-rows, `fre-dim-drops`, and the GC rows.
+rows, `fre-dim-drops`, the GC rows, the **ten `layout` rows**, and — per
+D-BF-B — **all four allocation-cost deltas** (816 / 96 / 11 / 6 + 100).
+
+The `layout` battery is the diagnostic that makes the delta rows readable: if a
+delta goes red, `layout` says whether `FRE` broke or the variable/array table
+moved. Gating both means the answer is never a guess.
 
 **Falsification is part of Definition of Done**, not a nicety: the cursor slice
 found two clauses each resting on a *single* row, which review had not noticed.

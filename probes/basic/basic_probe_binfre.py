@@ -46,7 +46,7 @@ code. See CONTRIBUTING.md.
 USAGE
     python3 probes/basic/basic_probe_binfre.py
     ... --gate              # treat BIN$/FRE as implemented -> every row two-sided
-    ... --only bin          # one battery: cal | bin | binerr | fre | depth | freabs
+    ... --only bin          # one battery: cal | bin | binerr | layout | fre | depth | freabs
     ... --boot-per-case
 """
 from __future__ import annotations
@@ -156,6 +156,33 @@ ERRS = [
     ("hexc-empty",   'PRINT HEX$()'),
     ("hexc-str",     'PRINT HEX$("A")'),
     ("octc-65536",   'PRINT OCT$(65536)'),
+]
+
+# --- battery 4b: THE VARIABLE / ARRAY TABLE LAYOUT, via VARPTR --------------
+# D-BF-B was signed off as "gate all the allocation-cost deltas", which asserts
+# zerobas's variable and array table layout matches the VG-8020 byte for byte.
+# That is a real claim, and it can be CHECKED BEFORE A LINE OF FRE IS WRITTEN:
+# VARPTR is implemented on both sides, and the stride between two consecutive
+# entries IS the entry size the deltas are made of. If these agree, the FRE
+# deltas will agree for the right reason; if they disagree, the FRE slice has
+# discovered a layout divergence and D-BF-B needs re-asking with evidence
+# instead of being implemented toward blindly.
+#
+# Strides, not addresses -- an absolute VARPTR is a memory-map fact and no more
+# comparable than an absolute FRE.
+LAYOUT = [
+    ("lay-scalar",   'X=0:Y=0:PRINT "[";VARPTR(Y)-VARPTR(X);"]"'),
+    ("lay-scalar2",  'A=0:B=0:PRINT "[";VARPTR(B)-VARPTR(A);"]"'),
+    ("lay-scalar3",  'X=0:Y=0:Z=0:PRINT "[";VARPTR(Z)-VARPTR(X);"]"'),
+    ("lay-str",      'A$="":B$="":PRINT "[";VARPTR(B$)-VARPTR(A$);"]"'),
+    ("lay-mixed",    'X=0:A$="":PRINT "[";VARPTR(A$)-VARPTR(X);"]"'),
+    # array stride = elements*elemsize + header; two identical DIMs isolate it
+    ("lay-ary10",    'DIM A(10),B(10):PRINT "[";VARPTR(B(0))-VARPTR(A(0));"]"'),
+    ("lay-ary100",   'DIM A(100),B(10):PRINT "[";VARPTR(B(0))-VARPTR(A(0));"]"'),
+    ("lay-ary0",     'DIM A(0),B(10):PRINT "[";VARPTR(B(0))-VARPTR(A(0));"]"'),
+    # element size on its own -- no header term at all
+    ("lay-elem",     'DIM A(10):PRINT "[";VARPTR(A(1))-VARPTR(A(0));"]"'),
+    ("lay-elem2",    'DIM A(10):PRINT "[";VARPTR(A(5))-VARPTR(A(0));"]"'),
 ]
 
 # --- battery 5: IS THE NUMERIC ARGUMENT A DUMMY, OR NOT? --------------------
@@ -350,7 +377,7 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--machine", default=REF_MACHINE)
     ap.add_argument("--zb-machine", dest="zb_machine", default=ZB_MACHINE)
-    ap.add_argument("--only", help="cal | bin | binerr | fre | depth | freabs")
+    ap.add_argument("--only", help="cal | bin | binerr | layout | fre | depth | freabs")
     ap.add_argument("--gate", action="store_true",
                     help="treat BIN$/FRE as implemented -> every row becomes a "
                          "two-sided differential (the acceptance gate)")
@@ -364,6 +391,7 @@ def main() -> int:
         "bin": [Case("bin", lb, ln, "value") for lb, ln in BIN],
         "binerr": [Case("err", lb, ln, "tail") for lb, ln in ERRS],
         "fre": [Case("fre", lb, ln, "value") for lb, ln in FRE],
+        "layout": [Case("lay", lb, ln, "value") for lb, ln in LAYOUT],
         "depth": [Case("dep", lb, ln, "value") for lb, ln in DEPTH],
         "freabs": [Case("abs", lb, ln, "value") for lb, ln in FREABS],
     }
@@ -413,6 +441,7 @@ def main() -> int:
     for name, title in (("cal", "HEX$/OCT$ — the family's argument domain"),
                         ("bin", "BIN$ VALUES — the ROM dictates"),
                         ("binerr", "ERRORS / SCOPE"),
+                        ("layout", "VARIABLE / ARRAY LAYOUT via VARPTR (D-BF-B)"),
                         ("fre", "FRE — relations, not addresses"),
                         ("depth", "FRE — argument, or evaluation DEPTH?")):
         if name not in bat:
