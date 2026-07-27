@@ -254,6 +254,12 @@ __MEAS_LOW_END:
 ; Stored numbered-line program: storage, NEW, RUN (defines `dispatch_line`).
                 include "basic/program.asm"
 
+; LOCATE / SWAP / TRON / TROFF / MOTOR -- the MISSING class. Calls onoff_decode
+; and trap_syntax (program.asm) and ln_div_entry (program.asm), so it follows
+; program.asm in the include order. The whole file is repack-only: the lean cart
+; assembles nothing from it and stays byte-identical.
+                include "basic/missing.asm"
+
 ; --- overflow guard: the image must not overrun the $8000 ceiling ----------
 ; $8000 is the top of slot-0 page 1 in BOTH builds — the lean 16 KB $4000-$7FFF
 ; image and the repacked ~21.5 KB $2812-$7FFF image (basic/main-reloc.asm). If a

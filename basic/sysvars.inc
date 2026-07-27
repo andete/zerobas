@@ -1511,6 +1511,29 @@ TIME_TOKEN      equ     $CB     ; TIME — the software-clock pseudo-variable, a
                                 ; consistent with the rest of the pinned table, and was
                                 ; unused in zerobas. TIME shares no prefix with another
                                 ; entry, so its kwtable position is free.
+; --- the MISSING class (docs/spec-basic-missing-class.md §3.1) ---------------
+; All five tokens PINNED from the reference's own crunch, read back through
+; ("stored_line", TXTTAB) -- the VG-8020 tokeniser's output, never ROM code.
+; `10 LOCATE 5,3` -> d8 20 16 2c 14 00 ; `10 SWAP A,B` -> a4 20 41 2c 42 00 ;
+; `10 TRON` -> a2 00 ; `10 TROFF` -> a3 00 ; `10 MOTOR` -> ce 00. All five are
+; SINGLE-byte statement tokens. MOTOR ON/OFF crunch to the existing ON_TOKEN
+; ($95) / OFF_TOKEN ($EB), so they need no token of their own.
+;
+; ⚠️ $A2/$A3/$A4 ARE ALREADY SPOKEN FOR -- as STICK/STRIG/PDL, which are
+; $FF-PREFIXED *FUNCTION* tokens (see above). Same byte value, different
+; namespace; this is exactly the existing ASC_TOKEN $95 / ON_TOKEN $95
+; situation. The tokeniser is safe by construction (match_kw is full-keyword),
+; but the DETOKENISER has to keep the two apart in both directions, which is why
+; the slice carries LIST round-trip cases like `10 TRON:A=STICK(0)`.
+; $CE was free between MAX ($CD) and BLOAD ($CF); $D8 between KILL ($D4) and
+; TO ($D9). Neither shares a prefix with another kwtable entry.
+LOCATE_TOKEN    equ     $D8     ; LOCATE [col][,[row][,cursor]]
+SWAP_TOKEN      equ     $A4     ; SWAP a,b   (== PDL_TOKEN's byte, other namespace)
+TRON_TOKEN      equ     $A2     ; TRON       (== STICK_TOKEN's byte, other namespace)
+TROFF_TOKEN     equ     $A3     ; TROFF      (== STRIG_TOKEN's byte, other namespace)
+MOTOR_TOKEN     equ     $CE     ; MOTOR | MOTOR ON | MOTOR OFF
+STMOTR          equ     $00F3   ; BIOS: cassette motor. A=0 stop, $FF toggle,
+                                ; else start (tape/tape.asm implements it).
 ; Error-handling S2b (docs/spec-basic-error-handling-s2b-packet.md §2): RESUME.
 ; Black-box-pinned ([[s2-error-token-pins]]): `resume next` -> A7 20 83,
 ; `resume 0` -> A7 20 0E 00 00. No prefix hazard (unlike ERR/ERROR).

@@ -371,6 +371,16 @@ stmt_table:
                 ; (docs/spec-basic-time.md §2, the same shape as G8 above).
                 db      TIME_TOKEN
                 dw      ex_time_assign
+                ; --- the MISSING class (basic/missing.asm) --------------------
+                ; docs/spec-basic-missing-class.md. Repack-only with the rest of
+                ; the class, and at the TAIL: a linear search pays per entry
+                ; examined, and none of these five is a hot statement. LOCATE is
+                ; the warmest of them and still nowhere near PRINT/IF/FOR.
+                ; ⚠️ These entries are the FALSIFICATION HANDLE for this slice --
+                ; deleting one must fail exactly that word's gate rows and no
+                ; others (spec §7.4).
+                db      MOTOR_TOKEN
+                dw      ex_motor    ; MOTOR | MOTOR ON | MOTOR OFF
     ENDIF
                 db      0                   ; end of table
 

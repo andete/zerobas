@@ -382,12 +382,43 @@ Extend the emulator-free dispatch gate with the five new entries, keeping its
 independent-expectation discipline (the mapping is recovered from the source of
 truth and compared *by name*, never read out of the artifact under test).
 
-### 7.7 O-2 — close it, don't inherit it
+### 7.7 O-2 — ✅ CLOSED, and it did not need openMSX
 
-`MOTOR`'s effect is the cassette relay, invisible to a screen scrape. We own
-both sides now, so an **openMSX-level check of the motor line** settles whether
-the relay actually closes, instead of shipping "accepted" as if it meant
-"worked". Proposed as part of the acceptance work, not left open.
+`MOTOR`'s effect is the cassette relay, invisible to a screen scrape. The spec
+proposed an openMSX-level probe of the motor line; the cheaper instrument turned
+out to be **BASIC itself on both machines**. The motor line is i8255 PPI Port C
+bit 4 (0 = ON) and Port C's *output latch* reads back through port `$AA`, which
+`INP` can reach — so the relay is a **two-sided differential**, not a
+host-side inspection.
+
+Battery `motorline`, 10 rows, `--gate BOOTPC=1`: **10/10 agree**.
+
+| | reference | zerobas |
+|---|---|---|
+| boot state | 16 (off) | 16 |
+| `MOTOR ON` | 0 | 0 |
+| `MOTOR OFF` | 16 | 16 |
+| `MOTOR` (bare) | 0 | 0 |
+| `MOTOR:MOTOR` | 16 | 16 |
+| `MOTOR ON:MOTOR ON` | 0 | 0 |
+| `MOTOR ON:MOTOR OFF` | 16 | 16 |
+| `MOTOR ON:MOTOR` | 16 | 16 |
+
+This matters beyond closing an open item: **every row of the `motor` battery
+would pass against a `MOTOR` that did nothing at all.** `inc hl / jp exec_stmt`
+satisfies all five accept rows, because "accepted" reads as a blank screen. The
+`motorline` battery is what makes those rows mean something — it separates ON
+from OFF from toggle, and a no-op fails six of its eight `MOTOR` rows.
+
+⚠️ It carries **two control rows of its own** (`?255AND16` → 16, `?239AND16` →
+0), which use no port and no `MOTOR`. The port is written decimal (`170`) and
+the mask unspaced (`AND16`) purely to fit `MAX_ECHO` — and an echo-anchored row
+that fails to *parse* agrees on both machines. The controls fail loudly if
+`AND16` ever stops meaning the operator. (`MAX_ECHO` earned itself again here:
+the first draft of this battery wrapped six of its rows and the probe refused to
+run rather than report them.) The low nibble of Port C is the keyboard row
+select, so the mask is not optional — printing the raw byte would compare scan
+state, not the relay.
 
 ## 8. Deviations, stated up front
 

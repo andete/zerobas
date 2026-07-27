@@ -421,5 +421,28 @@ kwtable:
                 db      3,"PDL",2,PEEK_PREFIX,PDL_TOKEN          ; $FF $A4
                 db      3,"PAD",2,PEEK_PREFIX,PAD_TOKEN          ; $FF $A5
     ENDIF
+                ; --- the MISSING class (docs/spec-basic-missing-class.md §3.1) -
+                ; Repack-only, like the whole class: these rows sit inside the
+                ; enclosing `IF ROM_BASE < $4000`, so the lean cart -- which
+                ; includes kwtable INLINE in its byte-full page 1 -- is unchanged
+                ; and LEAN_SHA256 does not move. In the repack build the table is
+                ; a sub.rom tenant (wave 3) with ~8 KB free, so these ~39 B cost
+                ; nothing in either tight region.
+                ;
+                ; ⚠️ THREE OF THESE COLLIDE BY VALUE with the $FF-prefixed
+                ; STICK/STRIG/PDL rows directly above -- $A2/$A3/$A4 in a
+                ; different namespace. That is correct and it is measured. The
+                ; CRUNCH direction is safe by construction (match_kw compares the
+                ; full keyword and these five share no prefix with anything: MOTOR
+                ; vs MERGE/MID$/MKI$/MAX, SWAP vs nothing, LOCATE vs LOF/LSET/LINE,
+                ; TRON/TROFF vs each other only -- and match_kw returning the FIRST
+                ; FULL match makes even that pair order-free). It is the
+                ; DETOKENISER that has to keep the namespaces apart, so the slice
+                ; carries LIST round-trip cases.
+                db      6,"LOCATE",1,LOCATE_TOKEN                ; $D8
+                db      4,"SWAP",1,SWAP_TOKEN                    ; $A4
+                db      5,"TROFF",1,TROFF_TOKEN                  ; $A3
+                db      4,"TRON",1,TRON_TOKEN                    ; $A2
+                db      5,"MOTOR",1,MOTOR_TOKEN                  ; $CE
     ENDIF
                 db      0

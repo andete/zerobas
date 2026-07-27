@@ -71,7 +71,7 @@ USAGE
     python3 probes/basic/basic_probe_missing.py
     ... --gate              # treat the five as implemented -> every row two-sided
     ... --only locate       # cal | locate | locerr | locrow | xchk | swap
-    ...                     # | swaperr | trace | motor
+    ...                     # | swaperr | trace | motor | motorline
     ... --boot-per-case
 """
 from __future__ import annotations
@@ -571,6 +571,45 @@ MOTOR = [
     ("mo-trail",      'CLS:MOTOR ON,'),
 ]
 
+# --- battery 8b: THE RELAY ITSELF (O-2, closed) ------------------------------
+# Every row in MOTOR above reads <blank> for the accepted forms -- and would read
+# <blank> just as happily if MOTOR were a parse that did NOTHING. That is the
+# standing "a gate can be green while measuring nothing" trap, and for this word
+# it is not hypothetical: `inc hl / jp exec_stmt` passes all five accept rows.
+#
+# The relay is invisible to a SCREEN 0 scrape, but it is NOT invisible to BASIC.
+# The motor line is i8255 PPI Port C bit 4, 0 = motor ON, and Port C's OUTPUT
+# LATCH reads back through port $AA -- which `INP` can reach from BASIC on BOTH
+# machines. So this is a real two-sided differential (does the reference's relay
+# move, and does ours move the same way), not an "it was accepted" row.
+#
+# Boot state is part of the measurement: mo-l-bare toggles from whatever the
+# machine booted with, so it is only meaningful next to mo-l-boot, which reads
+# the line before any MOTOR statement runs.
+# ⚠️ PIN THE INSTRUMENT BEFORE READING IT. Port $AA is written decimal (170) and
+# masked `AND16` with no spaces, both purely to fit MAX_ECHO -- and an
+# echo-anchored row that fails to parse AGREES on both machines, which is the
+# wrong-reason agreement this file's header warns about. So the first two rows
+# are controls on the READOUT ITSELF: they use no port and no MOTOR, and they
+# fail loudly if `AND16` ever stopped meaning "the AND operator applied to 16".
+# The low nibble of Port C is the keyboard row select, so the mask is not
+# optional -- printing the raw byte would compare scan state, not the relay.
+MOTORLINE = [
+    ("mo-l-ctl-1",    '?255AND16'),
+    ("mo-l-ctl-0",    '?239AND16'),
+    ("mo-l-boot",     '?INP(170)AND16'),
+    ("mo-l-on",       'MOTOR ON:?INP(170)AND16'),
+    ("mo-l-off",      'MOTOR OFF:?INP(170)AND16'),
+    ("mo-l-bare",     'MOTOR:?INP(170)AND16'),
+    # the toggle is a TOGGLE, not a set: twice returns to where it started
+    ("mo-l-twice",    'MOTOR:MOTOR:?INP(170)AND16'),
+    # ON is idempotent, and OFF after ON actually releases
+    ("mo-l-on-on",    'MOTOR ON:MOTOR ON:?INP(170)AND16'),
+    ("mo-l-on-off",   'MOTOR ON:MOTOR OFF:?INP(170)AND16'),
+    # and the toggle form toggles relative to an explicit ON, not to boot state
+    ("mo-l-on-bare",  'MOTOR ON:MOTOR:?INP(170)AND16'),
+]
+
 
 # --- readouts ---------------------------------------------------------------
 
@@ -746,6 +785,11 @@ def build() -> dict[str, list[Case]]:
     bat["trace"] = trace
 
     bat["motor"] = [Case("motor", lb, ln, "screen") for lb, ln in MOTOR]
+    # O-2: the relay itself, read back through the PPI Port C output latch.
+    # "tail" (the echo-anchored readout) -- these PRINT a number, so the answer
+    # is the span after the echoed command line, exactly like the cal rows.
+    bat["motorline"] = [Case("motorline", lb, ln, "tail", mode="direct")
+                        for lb, ln in MOTORLINE]
     return bat
 
 
@@ -772,7 +816,7 @@ def main() -> int:
     ap.add_argument("--machine", default=REF_MACHINE)
     ap.add_argument("--zb-machine", dest="zb_machine", default=ZB_MACHINE)
     ap.add_argument("--only", help="cal | locate | locerr | locrow | xchk | "
-                                   "swap | swaperr | trace | motor")
+                                   "swap | swaperr | trace | motor | motorline")
     ap.add_argument("--gate", action="store_true",
                     help="treat LOCATE/SWAP/TRON/TROFF/MOTOR as implemented -> "
                          "every row becomes a two-sided differential")
@@ -841,6 +885,7 @@ def main() -> int:
         "swaperr": "SWAP -- REJECTS / TYPE RULE",
         "trace": "TRON / TROFF -- SCREEN",
         "motor": "MOTOR -- LANGUAGE SURFACE ONLY (never 'the relay closed')",
+        "motorline": "MOTOR -- THE RELAY ITSELF (PPI port C bit 4; 0 = motor ON)",
     }
     for name in ("locate", "locerr", "locrow", "xchk", "swap", "swaperr",
                  "trace", "motor"):
