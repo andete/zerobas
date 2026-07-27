@@ -5,7 +5,11 @@ SPDX-License-Identifier: 0BSD
 
 # The MISSING class — slicing, cost, and two scope forks
 
-**Status:** PROPOSAL, 2026-07-27. **Awaiting sign-off (D-MC-1 … D-MC-4).**
+**Status:** D-MC-1 ✅, D-MC-2 ✅, D-MC-3 ✅, D-MC-4 O-1 ✅ (O-3 proposed).
+2026-07-27. **Superseded for implementation by
+[`spec-basic-missing-class.md`](spec-basic-missing-class.md)** (S-MC-1 … S-MC-5),
+which carries four measurements this doc did not have — three of which changed
+the design.
 Measurement input:
 [`missing-vg8020-characterization.md`](missing-vg8020-characterization.md).
 Roadmap item: [`TODO.md`](../TODO.md) "Keyword-completeness gaps", the
@@ -210,7 +214,7 @@ that share is now slightly more attractive than when it was deferred.
 identified, the number is now measured twice, and it is the only option that
 leaves the tree with headroom rather than at the wall.
 
-### D-MC-2 — what to do about D-MISS-1 and D-MISS-2
+### D-MC-2 — ✅ SIGNED OFF: fold D-MISS-1 in, D-MISS-2 gets its own slice
 
 The calibration battery found two live defects in code that is not under test
 (the fourth slice running to do so). **Neither is in the MISSING class and
@@ -239,14 +243,24 @@ argument binding, re-entrant evaluation, 200–400 B), not part of this slice.
 
 ### D-MC-4 — the two open questions to close during implementation
 
-- **O-1**, `LOCATE`'s row clamp target, is genuinely unmeasured (§7 of the
-  characterization): printing near the bottom scrolls before the scrape runs, so
-  rows 22/23/24 all read as row 20. It must be settled with a scroll-free
-  readout **before** the clamp is written, not after.
+- **O-1**, `LOCATE`'s row clamp target — ✅ **CLOSED before any clamp was
+  written**, as required. Battery `locrow`, 18 rows, batched and boot-per-case
+  identical; see
+  [`missing-vg8020-characterization.md`](missing-vg8020-characterization.md)
+  §3.5. **The clamp target is the console's own bottom row**, which moves with
+  `KEY` (reference 22 at `KEY ON`, 23 at `KEY OFF`; zerobas 23 in both states,
+  having no function-key row). It is **not** a literal 23 and it is **not**
+  `CRTCNT`, which measures 24 on both machines under every `WIDTH` and both
+  `KEY` states. Consequence for the gate: `KEY OFF` pins the row axis the way
+  `WIDTH 40` pins the column axis, and the row-clamp cases must be pinned that
+  way or they compare 22 against 23 and go red for a console-chrome reason.
 - **O-3**, the `cursor` third argument's effect, is invisible to a name-table
   scrape. Acceptance is measured; behaviour is not. Propose implementing it as
   accepted-and-ignored, **documented as a deviation**, unless a VDP-level readout
-  turns out to be cheap.
+  turns out to be cheap. *(Checked while closing O-1: nothing in the tree reads
+  `CSRSW` (`$FCA9`) or any equivalent, so there is no existing mechanism for the
+  argument to drive and storing it would be a write nothing reads. The
+  accepted-and-ignored proposal stands, and the spec states it as a deviation.)*
 
 ## 6. What is already done
 

@@ -1431,6 +1431,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         175 cases, 8 batteries, every number boot-per-case. **SLICED + COSTED**,
         [`docs/decision-missing-class-slicing.md`](docs/decision-missing-class-slicing.md),
         **awaiting sign-off (D-MC-1..4)**.
+        ✅ **D-MC-2 SIGNED OFF 2026-07-27**: D-MISS-1 folds into this slice,
+        D-MISS-2 gets its own. ✅ **D-MC-4 O-1 CLOSED** before any clamp was
+        written (battery `locrow`, `make missing-characterize ONLY=locrow`,
+        18 rows, batched + boot-per-case identical): **`LOCATE`'s row clamps to
+        the console's own bottom row**, which moves with `KEY` (reference 22 at
+        `KEY ON`, 23 at `KEY OFF`; zerobas 23 in both) — **not** a literal 23 and
+        **not** `CRTCNT`, which measures 24 on both machines everywhere. Also
+        measured for the spec: the argument domain has **two** error stages
+        (`Overflow` past int16, `Illegal function call` outside `0..255`), and
+        the five tokens are pinned from the reference's own crunch
+        (`LOCATE $D8`, `SWAP $A4`, `TRON $A2`, `TROFF $A3`, `MOTOR $CE`).
+        📋 **SPEC WRITTEN, awaiting sign-off (S-MC-1..5)**:
+        [`docs/spec-basic-missing-class.md`](docs/spec-basic-missing-class.md)
+        — 300–420 B against 420 B free, proposed **repack-only** so the lean
+        cart stays byte-identical, ordered cheapest-first
+        (`MOTOR` → `TRON`/`TROFF` → D-MISS-1 → `LOCATE` → `SWAP`).
         ✅ **D-MC-1 SIGNED OFF + D-KW-2 LANDED 2026-07-27**: the `exec_stmt`
         dispatch table replaced the 69-entry `cp`/`jp z` chain, **page-1 free
         311 B → 420 B (+109 B)**, dispatch block 377 B → 268 B, and the
@@ -1506,7 +1522,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       **mirror is already correct** (`A=A$`, `A="x"`, `A=CHR$(65)`,
       `Q(0)="x"`), which localises it: the string-lvalue assignment path never
       type-checks its right-hand side and fails in the parser instead. Small and
-      well-characterised; proposed to fold into the MISSING-class slice (D-MC-2).
+      well-characterised. ✅ **D-MC-2 SIGNED OFF: folded into the MISSING-class
+      slice** — see [`docs/spec-basic-missing-class.md`](docs/spec-basic-missing-class.md)
+      §3.6 (surface) and §6.5 (the two paths to fix, `ex_let_str` and
+      `ex_let_arr_str`).
 
 ## Beyond — post-MSX1 axes (out of charter, far future)
 

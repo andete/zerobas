@@ -70,8 +70,8 @@ code. See CONTRIBUTING.md.
 USAGE
     python3 probes/basic/basic_probe_missing.py
     ... --gate              # treat the five as implemented -> every row two-sided
-    ... --only locate       # cal | locate | locerr | xchk | swap | swaperr
-    ...                     # | trace | motor
+    ... --only locate       # cal | locate | locerr | locrow | xchk | swap
+    ...                     # | swaperr | trace | motor
     ... --boot-per-case
 """
 from __future__ import annotations
@@ -295,6 +295,19 @@ LOCERR = [
     ("le-cur-255",    'CLS:LOCATE 5,3,255'),
     ("le-cur-256",    'CLS:LOCATE 5,3,256'),
     ("le-cur-neg",    'CLS:LOCATE 5,3,-1'),
+    # BEYOND int16 -- is the domain rule ONE error or TWO? D-MISS-2 found that
+    # CHR$'s is two (`Illegal function call` inside the byte range, **Overflow**
+    # past int16, raised by the coercion before the domain check runs), and the
+    # first revision of this battery stopped at 256 -- so "LOCATE's rule is byte
+    # domain -> Illegal function call" was measured only on the half of the
+    # domain where the two hypotheses agree. `get_byte_arg` in the tree already
+    # implements the two-stage rule, which makes reusing it either exactly right
+    # or confidently wrong, with nothing measured in between.
+    ("le-col-32768",  'CLS:LOCATE 32768,0'),
+    ("le-col-99999",  'CLS:LOCATE 99999,0'),
+    ("le-row-32768",  'CLS:LOCATE 0,32768'),
+    ("le-cur-32768",  'CLS:LOCATE 5,3,32768'),
+    ("le-col-neg32k", 'CLS:LOCATE -32769,0'),
     ("le-str",        'CLS:LOCATE "5",3'),
     ("le-trail",      'CLS:LOCATE 5,3,'),
     # SCREEN dependence: SCREEN 2 has no text cursor. Whether the reference
@@ -320,6 +333,65 @@ LOCACC = [
     ("la-w32-32",     'WIDTH 32:CLS:LOCATE 32,3:PRINT CHR$(35)'),
     ("la-w32-39",     'WIDTH 32:CLS:LOCATE 39,3:PRINT CHR$(35)'),
     ("la-cur-2",      'WIDTH 40:CLS:LOCATE 5,3,2:PRINT CHR$(35)'),
+]
+
+# --- battery 3c: O-1 -- WHERE an accepted out-of-range LOCATE actually LANDS --
+# The grid readout CANNOT answer this and the characterization says so: printing
+# a marker on rows 22/23/24 scrolls the screen (the statement's own output, then
+# the `Ok` prompt) before the scrape runs, so all three report row 20. That is a
+# measurement the instrument destroyed, not a result.
+#
+# The scroll-free readout is to capture the cursor into VARIABLES on the line
+# that moves it, and print them from a SEPARATE later line. Scrolling after the
+# capture cannot change a number already in a variable, and the printing line
+# starts from wherever the prompt left the cursor -- nowhere near the bottom.
+#
+# CSRLIN/POS are the READ side of the state LOCATE WRITES, which is exactly why
+# §2 refused them as the gate's instrument for the POSITION battery. Here they
+# are legitimate: this battery is REFERENCE-ONLY -- it asks what the reference
+# does, using the reference's own gated instrument, and every in-range row it
+# reads is corroborated independently by the grid battery above (loc-*). The
+# cancellation risk it was refused for needs TWO implementations to cancel.
+#
+# `X=POS(0)` is captured on the setup line, BEFORE anything prints, so it is not
+# the confounded reading of §3.4 -- there POS was evaluated mid-PRINT, 4 columns
+# to the right of where LOCATE left it.
+#
+# KEY ON/OFF is in here because it may BE the answer. The reference boots with
+# the function-key labels painted on the bottom row, and MSX reserves that row
+# from the text area (CRTCNT). So "clamp to 23" and "clamp to CRTCNT-1" are two
+# different implementations that agree at KEY ON and disagree at KEY OFF -- and
+# only the second is `WIDTH`-relative's row-axis twin. KEY ON is restored ON THE
+# SAME LINE, for the same reason le-scr1/le-scr2 restore SCREEN 0: a case that
+# leaves the console reconfigured poisons every following case in a shared boot.
+LOCROW_PROBE = 'PRINT "[";Y;X;"]"'
+LOCROW = [
+    # in-range controls -- these must reproduce the grid battery's answers, or
+    # the instrument is not measuring what it claims to
+    ("lr-in-5-3",     'WIDTH 40:CLS:LOCATE 5,3:Y=CSRLIN:X=POS(0)'),
+    ("lr-in-21",      'WIDTH 40:CLS:LOCATE 5,21:Y=CSRLIN:X=POS(0)'),
+    ("lr-in-22",      'WIDTH 40:CLS:LOCATE 5,22:Y=CSRLIN:X=POS(0)'),
+    # THE OPEN QUESTION: accepted, out of range, where does it land?
+    ("lr-row-23",     'WIDTH 40:CLS:LOCATE 5,23:Y=CSRLIN:X=POS(0)'),
+    ("lr-row-24",     'WIDTH 40:CLS:LOCATE 5,24:Y=CSRLIN:X=POS(0)'),
+    ("lr-row-25",     'WIDTH 40:CLS:LOCATE 5,25:Y=CSRLIN:X=POS(0)'),
+    ("lr-row-255",    'WIDTH 40:CLS:LOCATE 5,255:Y=CSRLIN:X=POS(0)'),
+    # is the clamp target the fixed bottom row, or CRTCNT-1?
+    ("lr-key-off-22", 'WIDTH 40:CLS:KEY OFF:LOCATE 5,22:Y=CSRLIN:X=POS(0):KEY ON'),
+    ("lr-key-off-23", 'WIDTH 40:CLS:KEY OFF:LOCATE 5,23:Y=CSRLIN:X=POS(0):KEY ON'),
+    ("lr-key-off-24", 'WIDTH 40:CLS:KEY OFF:LOCATE 5,24:Y=CSRLIN:X=POS(0):KEY ON'),
+    ("lr-key-off-255", 'WIDTH 40:CLS:KEY OFF:LOCATE 5,255:Y=CSRLIN:X=POS(0):KEY ON'),
+    # the COLUMN axis through the same instrument -- the grid already settled
+    # this (clamps to WIDTH-1), so agreement here is what says the instrument is
+    # sound before its row answers are believed
+    ("lr-col-39",     'WIDTH 40:CLS:LOCATE 39,3:Y=CSRLIN:X=POS(0)'),
+    ("lr-col-40",     'WIDTH 40:CLS:LOCATE 40,3:Y=CSRLIN:X=POS(0)'),
+    ("lr-col-255",    'WIDTH 40:CLS:LOCATE 255,3:Y=CSRLIN:X=POS(0)'),
+    ("lr-w32-31",     'WIDTH 32:CLS:LOCATE 31,3:Y=CSRLIN:X=POS(0):WIDTH 40'),
+    ("lr-w32-32",     'WIDTH 32:CLS:LOCATE 32,3:Y=CSRLIN:X=POS(0):WIDTH 40'),
+    ("lr-w32-255",    'WIDTH 32:CLS:LOCATE 255,3:Y=CSRLIN:X=POS(0):WIDTH 40'),
+    # BOTH axes out of range at once -- one clamp or two?
+    ("lr-both-255",   'WIDTH 40:CLS:LOCATE 255,255:Y=CSRLIN:X=POS(0)'),
 ]
 
 # --- battery 4: the DECLARED cross-check -- LOCATE read back by CSRLIN/POS ---
@@ -599,14 +671,24 @@ def agree(a: str, b: str) -> bool:
 
 class Case:
     def __init__(self, battery, label, line, readout, mode="direct",
-                 lines=None):
+                 lines=None, display=None):
         self.battery = battery
         self.label = label
-        self.line = line                # display + echo anchor
+        self.line = line                # echo anchor
+        # what the REPORT shows. Normally the anchor is the case, but a
+        # multi-line case's anchor is only its readout line -- printing that for
+        # every LOCROW row would show `PRINT "[";Y;X;"]"` 18 times and hide the
+        # LOCATE that is the actual subject.
+        self.display = display if display is not None else line
         self.readout = readout          # value | marker | tail | screen
         self.mode = mode
         self.lines = lines if lines is not None else [line]
-        words = set(re.findall(r"[A-Z]+", line))
+        # classify from ALL the case's lines, not just the echo anchor. For every
+        # single-line case these are the same string; for a multi-line case the
+        # anchor is the LAST line, and the LOCROW battery puts the word under
+        # test on the FIRST one -- reading only the anchor would call it
+        # calibration and run it two-sided against a zerobas that has no LOCATE.
+        words = set(re.findall(r"[A-Z]+", " ".join(self.lines)))
         self.calib = not (words & (set(UNDER_TEST) - set(IMPLEMENTED)))
         self.ref = None
         self.zb = None
@@ -637,6 +719,9 @@ def build() -> dict[str, list[Case]]:
     bat["locate"] = [Case("locate", lb, ln, "marker") for lb, ln in LOCATE]
     bat["locerr"] = ([Case("locerr", lb, ln, "screen") for lb, ln in LOCERR]
                      + [Case("locerr", lb, ln, "marker") for lb, ln in LOCACC])
+    bat["locrow"] = [Case("locrow", lb, LOCROW_PROBE, "value", mode="direct",
+                          lines=[ln, LOCROW_PROBE], display=ln)
+                     for lb, ln in LOCROW]
     bat["xchk"] = [Case("xchk", lb, ln, "value") for lb, ln in XCHK]
     bat["swap"] = [Case("swap", lb, ln, "value") for lb, ln in SWAP]
     bat["swaperr"] = ([Case("swaperr", lb, ln, "screen") for lb, ln in SWAPERR]
@@ -686,8 +771,8 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--machine", default=REF_MACHINE)
     ap.add_argument("--zb-machine", dest="zb_machine", default=ZB_MACHINE)
-    ap.add_argument("--only", help="cal | locate | locerr | xchk | swap | "
-                                   "swaperr | trace | motor")
+    ap.add_argument("--only", help="cal | locate | locerr | locrow | xchk | "
+                                   "swap | swaperr | trace | motor")
     ap.add_argument("--gate", action="store_true",
                     help="treat LOCATE/SWAP/TRON/TROFF/MOTOR as implemented -> "
                          "every row becomes a two-sided differential")
@@ -742,7 +827,7 @@ def main() -> int:
             bad += not good
             ok = ok and good
             print(f"{'PASS' if good else 'FAIL':5} {c.battery:8} {c.label:14} "
-                  f"{c.line[:34]:34} ref={c.ref[:22]:>22}  zb={c.zb[:22]:>22}")
+                  f"{c.display[:34]:34} ref={c.ref[:22]:>22}  zb={c.zb[:22]:>22}")
         print(f"--- {len(both) - bad}/{len(both)} agree"
               + ("" if not bad else "   <-- red"))
 
@@ -750,20 +835,21 @@ def main() -> int:
         "cal": "CALIBRATION (shown above)",
         "locate": "LOCATE -- POSITIONS (row,col of the marker)",
         "locerr": "LOCATE -- ERRORS / BOUNDS",
+        "locrow": "LOCATE -- O-1: WHERE an out-of-range arg LANDS (scroll-free)",
         "xchk": "LOCATE read back by CSRLIN/POS (declared cross-check)",
         "swap": "SWAP -- VALUES",
         "swaperr": "SWAP -- REJECTS / TYPE RULE",
         "trace": "TRON / TROFF -- SCREEN",
         "motor": "MOTOR -- LANGUAGE SURFACE ONLY (never 'the relay closed')",
     }
-    for name in ("locate", "locerr", "xchk", "swap", "swaperr", "trace",
-                 "motor"):
+    for name in ("locate", "locerr", "locrow", "xchk", "swap", "swaperr",
+                 "trace", "motor"):
         if name not in bat:
             continue
         print(f"\n=== {titles[name]} — the ROM dictates ===")
         for c in bat[name]:
             twin = f"\n      {'':14} zb={c.zb}" if c.zb is not None else ""
-            print(f"  {c.label:14} {c.line[:44]:44} -> {c.ref}{twin}")
+            print(f"  {c.label:14} {c.display[:44]:44} -> {c.ref}{twin}")
 
     print("\n" + ("OK" if ok else "ATTENTION: see FAIL rows above"))
     return 0 if ok else 1

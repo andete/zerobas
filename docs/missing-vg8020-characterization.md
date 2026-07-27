@@ -148,8 +148,23 @@ must raise that one.
 ### 3.3 Bounds — a BYTE domain check, then a CLAMP
 
 The two are separate, and the distinction is the whole of the bound behaviour.
-**The rule is uniform across all three arguments**: `0..255` is accepted and
-then clamped, anything outside is `Illegal function call`.
+**The rule is uniform across all three arguments**, and it has **two** error
+stages, not one: `0..255` is accepted and then clamped, outside that but within
+int16 is `Illegal function call`, and beyond int16 it is **`Overflow`** —
+raised by the argument coercion before the domain check ever runs.
+
+| case | ROM |
+|---|---|
+| `LOCATE 32768,0` / `99999,0` / `-32769,0` | **`Overflow`** |
+| `LOCATE 0,32768` | **`Overflow`** |
+| `LOCATE 5,3,32768` | **`Overflow`** |
+
+⚠️ This half of the domain was **not** in the first revision of the battery,
+which stopped at ±256 — i.e. exactly the half where "one error" and "two errors"
+agree. It was added (2026-07-27) because D-MISS-2 found the same two-stage shape
+in `CHR$`, and because the tree's `get_byte_arg` already implements two stages,
+which would have made reusing it either exactly right or confidently wrong with
+nothing measured in between. It is exactly right.
 
 | case | ROM |
 |---|---|
@@ -203,6 +218,67 @@ scroll-free readout rather than by assumption.
 
 `LOCATE` in a graphics mode is accepted: `SCREEN 2:LOCATE 5,3` and
 `SCREEN 1:LOCATE 5,3` both raise nothing.
+
+### 3.5 O-1 CLOSED — the row clamps to the CONSOLE'S OWN BOTTOM ROW, not to 23
+
+Added 2026-07-27, battery `locrow`
+(`make missing-characterize ONLY=locrow`), 18 rows, batched **and**
+boot-per-case, identical both times.
+
+The grid could not answer this because printing near the bottom scrolls before
+the scrape runs (§3.3). The scroll-free readout is to capture the cursor into
+**variables** on the line that moves it and print them from a *separate later
+line*: scrolling after the capture cannot change a number already in a variable,
+and the printing line starts from wherever the prompt left the cursor. `CSRLIN`/
+`POS` are legitimate here where §2 refused them — this battery is
+**reference-only**, so it asks what the reference does with the reference's own
+gated instrument, and the cancellation risk §2 refused them for needs *two*
+implementations to cancel. Every in-range row reproduces the grid battery's
+answer, which is what earns the out-of-range ones.
+
+| case | `CSRLIN` `POS(0)` |
+|---|---|
+| `LOCATE 5,3` / `5,21` / `5,22` | `3 5` / `21 5` / `22 5` — in-range controls |
+| `LOCATE 5,23` / `5,24` / `5,25` / `5,255` | **all `22 5`** |
+| `KEY OFF` · `LOCATE 5,22` | `22 5` |
+| `KEY OFF` · `LOCATE 5,23` / `5,24` / `5,255` | **all `23 5`** |
+| `LOCATE 39,3` / `40,3` / `255,3` | all `3 39` |
+| `WIDTH 32` · `LOCATE 31,3` / `32,3` / `255,3` | all `3 31` |
+| `LOCATE 255,255` | `22 39` — **both axes clamp, independently** |
+
+So it **is** a clamp (the cursor is at row 0 after `CLS`; an ignored argument
+would have left it there, not at 22), and **the target moves with `KEY`**.
+
+**And the obvious mechanism is the wrong one.** `CRTCNT` (`$F3B1`) is the
+sysvar that looks like the answer, and it reads **24 on both machines, under
+every `WIDTH` and under both `KEY` states** — so it is the panel height and not
+the clamp source. What the clamp actually tracks is the console's own last
+usable text row, measured directly as where ordinary scrolling stops
+(`CLS:FOR I=1 TO 30:PRINT:NEXT:Y=CSRLIN`):
+
+| | reference | zerobas |
+|---|---|---|
+| `KEY ON` (boot default) | **22** | **23** |
+| `KEY OFF` | **23** | **23** |
+| `KEY OFF` · `WIDTH 32` | 23 | 23 |
+
+The reference reserves the bottom row for the function-key labels and C-BIOS
+paints none — the *same* console divergence §2 already drops as chrome, showing
+up on the row axis. The clamp target equals that bottom row in every state
+measured.
+
+**Two consequences the spec turns on:**
+
+1. **The implementation must clamp to its own console's bottom row, not to a
+   literal.** Hard-coding the reference's 22 would make zerobas's last row
+   unreachable by `LOCATE` while `PRINT` still scrolls onto it.
+2. **`KEY OFF` pins the row axis exactly as `WIDTH 40` pins the column axis.**
+   Under `KEY OFF` both consoles bottom out at row 23, so a differential
+   row-clamp case is comparable; under the boot default it would read 22 vs 23
+   and go red for a reason that has nothing to do with `LOCATE`. That pinning is
+   measured above, not assumed — zerobas ignores `KEY ON`/`OFF` for the row
+   count (it has no function-key row to reclaim), which is *why* the two agree
+   there.
 
 ### 3.4 The declared `CSRLIN`/`POS` cross-check
 
@@ -360,12 +436,11 @@ The surface is exactly `MOTOR` | `MOTOR ON` | `MOTOR OFF`.
 
 Listed rather than silently dropped.
 
-- **O-1 — `LOCATE`'s ROW clamp target.** Rows 22/23/24 all report the marker at
-  row 20 because printing near the bottom scrolls before the scrape (§3.3). That
-  none of them errors IS measured, and the byte-domain boundary is measured
-  exactly (`0,255` accepted, `0,256` rejected); where an accepted out-of-range
-  row *lands* is not. Needs a scroll-free readout (read the cursor with `CSRLIN`
-  before printing, on a row that does not itself print at the bottom).
+- ~~**O-1 — `LOCATE`'s ROW clamp target.**~~ ✅ **CLOSED, see §3.5.** The clamp
+  target is the console's own bottom row (reference 22 at `KEY ON`, 23 at
+  `KEY OFF`; zerobas 23 always), **not** a literal 23 and **not** `CRTCNT`,
+  which is 24 everywhere. Settled by capturing the cursor into variables and
+  printing them from a later line, so scrolling cannot destroy the reading.
 - **O-2 — whether `MOTOR` closes the relay.** Out of reach of a screen scrape
   (§6). This is a tape-component question; an openMSX-level readout of the
   cassette motor line would settle it.
@@ -470,6 +545,18 @@ reading before they were caught. Recorded because each is reusable.
 4. **Removing the `result_span` fallback** to stop it reporting echo garbage
    silently killed the whole `xchk` battery (§2.3). The fix was to classify the
    fallback's output, not to delete it.
+5. **A machine whose ROM is missing reads as a machine that answers nothing.**
+   The §3.5 follow-up measurement returned `<no capture>` on *every* zerobas
+   row, which spells "zerobas does not keep `CRTCNT`" convincingly and was
+   actually `build/` having been cleaned: the installed machine config embeds
+   **absolute paths** into `build/`, so a `rm -rf build` leaves a config that
+   still resolves, still boots, and produces nothing. The tell is that the
+   failure was *total* — a trivial `PRINT 1+1` failed too. `make repack-machine`
+   (not `make install`, which does not build the merged repack ROM) restores it.
+   Same family as [`stale-machine-reads-as-unimplemented`](../MEMORY.md), one
+   step worse: there the machine answered from stale code, here it did not
+   answer at all. **A baseline that cannot produce a known-good answer is not a
+   baseline** — check the control before reading the subject.
 
 Standing guards:
 
