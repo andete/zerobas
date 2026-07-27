@@ -177,6 +177,16 @@ kwtable:
                 ; existing keyword, so table order is free.
                 db      3,"EQV",1,EQV_TOKEN
                 db      3,"IMP",1,IMP_TOKEN
+                ; Cursor / PRINT cluster (repack only, like everything above).
+                ; "TAB(" and "SPC(" carry the '(' INSIDE the keyword — that is what
+                ; the reference tokenises, and it is why a variable named TAB stays
+                ; a variable. match_kw is full-keyword, so no prefix hazard: "POS"
+                ; shares no 3-char prefix with an existing entry, and CSRLIN's "CS"
+                ; lead is not a keyword.
+                db      6,"CSRLIN",1,CSRLIN_TOKEN
+                db      3,"POS",2,PEEK_PREFIX,POS_TOKEN
+                db      4,"TAB(",1,TAB_TOKEN
+                db      4,"SPC(",1,SPC_TOKEN
     ENDIF
     IF ROM_BASE < $4000
                 ; --- string engine (repack build only) — string-engine arc S3 -----

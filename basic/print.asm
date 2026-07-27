@@ -132,6 +132,16 @@ exp_loop:
                 cp      '"'
                 jp      z,exp_str
     IF ROM_BASE < $4000
+                ; TAB( and SPC( are PRINT-ITEM dispatch, NOT $FF factors. Placing
+                ; them here and NOWHERE in ev_f is what makes `X=TAB(5)` and
+                ; `IF TAB(5)=0` a SYNTAX error (MEASURED) with no code at all: the
+                ; token simply falls off the end of ev_f's chain into ev_f_err. A
+                ; "PRINT mode" flag would have bought the same behaviour and a
+                ; hidden global with it.
+                cp      TAB_TOKEN           ; $DB -> TAB(n): absolute column
+                jp      z,exp_tab
+                cp      SPC_TOKEN           ; $DF -> SPC(n): n spaces
+                jp      z,exp_spc
                 cp      PEEK_PREFIX         ; $FF function token -> maybe a string function
                 jp      z,exp_maybe_strfn   ; (repack: CHR$/STR$/LEFT$/…; falls back to exp_num)
                 cp      STRING_TOKEN        ; $E3 STRING$(n,c) -> string (single-byte token,
@@ -462,15 +472,80 @@ pch_done:
                 pop     hl
                 ret
 
+    IF ROM_BASE < $4000
+; --- TAB( / SPC( : the two PRINT-positioning items ---------------------------
+; MEASURED (docs/cursor-vg8020-characterization.md §4), at a pinned WIDTH 40:
+;   TAB(n)  ABSOLUTE 0-based column. If the cursor is ALREADY AT OR PAST n, do
+;           NOTHING -- no move and NO NEWLINE. This is the clause a value-shaped
+;           test cannot see, and the obvious "pad to column n" implementation
+;           gets it wrong by wrapping.
+;   SPC(n)  RELATIVE -- emit n spaces.
+; Both wrap by ordinary line wrap once the padding runs past the width, which is
+; where TAB(45) -> column 5 of the next row comes from: it is pchar's doing, not
+; a special case here.
+exp_tab:
+                call    exp_pos_arg         ; A = n (0..255); HL past the ')'
+                ld      c,a
+                ld      a,(CSRX)
+                dec     a                   ; 0-based current column
+                ld      b,a
+                ld      a,c
+                sub     b                   ; n - column
+                jp      z,exp_loop          ; already exactly AT n -> nothing
+                jp      c,exp_loop          ; already PAST n -> nothing, NO newline
+                jr      exp_pad
+exp_spc:
+                call    exp_pos_arg
+                or      a
+                jp      z,exp_loop          ; SPC(0) -> nothing
+exp_pad:
+                ld      b,a
+                call    pcz_pad             ; emit B spaces (shared with comma zones)
+                jp      exp_loop
+
+; exp_pos_arg: parse the "(n)" of a TAB(/SPC( item -> A = n, HL past the ')'.
+; The token INCLUDES the '(' (it is part of the keyword), so the argument starts
+; immediately after it. get_byte_arg is exactly the measured coercion: truncate
+; toward zero, ERR 6 (Overflow) outside int16 -- which is why TAB(99999) is an
+; Overflow and not an Illegal function call -- and ERR 5 (Illegal function call)
+; in-int16 but negative or >255. Both abort; neither returns.
+exp_pos_arg:
+                inc     hl                  ; past the TAB(/SPC( token
+                call    eval                ; DE = argument, HL advanced
+                call    get_byte_arg        ; A = n, or abort (ERR 6 / ERR 5)
+                push    af
+                call    skip_spaces
+                ld      a,(hl)
+                cp      ')'
+                jr      nz,exp_pos_syn
+                inc     hl
+                pop     af
+                ret
+exp_pos_syn:
+                ld      a,2
+                jp      raise_error         ; ERR 2 syntax error
+    ENDIF
+
 ; --- print_comma_zone: pad with spaces to the next 14-column tab zone -------
 ; MSX PRINT comma zones are 14 characters (public language reference). Reads the
 ; current column from CSRX (1-based). Clobbers A, B.
-; Divergence (documented, out of loader-stub scope): real MSX wraps a comma tab
-; to a NEW LINE once the next zone would pass the screen width; this only pads on
-; the current line. See basic/PROVENANCE.md §PRINT + basic_probe_print.py.
+; D-CUR-1, MEASURED (docs/cursor-vg8020-characterization.md §5): the reference
+; wraps to a NEW LINE rather than advancing when the next zone would not fit
+; ENTIRELY -- the rule is `next_zone + 14 <= width`, not `next_zone < width`.
+; The boundary is confirmed at WIDTH 28 (advances) vs 27 (wraps). This used to
+; pad unconditionally and never wrap, which put the third item of
+; `PRINT "A","B","C"` at column 28 instead of on the next line at every width
+; from 30 to 40.
+;
+; NOTE a three-item row CANNOT tell the two candidate rules apart: zone 3 starts
+; at 28 and 28+14=42 exceeds every legal SCREEN 0 width, so both predict a wrap
+; everywhere. The two-item row is what settles it.
 print_comma_zone:
                 ld      a,(CSRX)
                 dec     a                   ; 0-based column
+    IF ROM_BASE < $4000
+                ld      c,a                 ; C = current column (for the fit test
+    ENDIF                                   ;  below; the lean cart is byte-frozen)
 pcz_mod:
                 cp      14
                 jr      c,pcz_have
@@ -481,6 +556,14 @@ pcz_have:
                 ld      a,14
                 sub     b                   ; spaces to the next zone (1..14)
                 ld      b,a
+    IF ROM_BASE < $4000
+                add     a,c                 ; A = the NEXT zone's absolute column
+                add     a,14                ; ... and the column just past that zone
+                ld      c,a
+                ld      a,(LINLEN)
+                cp      c                   ; width < zone end -> the zone does not fit
+                jp      c,print_crlf        ; -> newline instead of padding
+    ENDIF
 pcz_pad:
                 ld      a,' '
                 call    pchar               ; screen or file (PRDEST); preserves BC

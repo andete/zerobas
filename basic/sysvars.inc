@@ -22,6 +22,7 @@ CLS             equ     $00C3   ; clear the screen; zero flag must be set on ent
 ERAFNK          equ     $00CC   ; erase the function-key display line (KEY OFF)
 DSPFNK          equ     $00CF   ; display the function-key line (KEY ON)
 CSRX            equ     $F3DD   ; cursor column (1-based); C-BIOS sysvars / PRINT comma zones
+CSRY            equ     $F3DC   ; cursor row (1-based); the CSRLIN pseudo-variable reads it
 ; BREAKX: test the Ctrl-STOP key combination by directly scanning keyboard matrix
 ; row 6 (no side effects, no ISR dependency). CF set on return = Ctrl-STOP held,
 ; CF clear = not held. Source: MSX Assembly Page BIOS call list / MSX2 Technical
@@ -1556,6 +1557,13 @@ XOR_TOKEN       equ     $F8     ; XOR  (bitwise)
 EQV_TOKEN       equ     $F9     ; EQV  (bitwise equivalence, = NOT (a XOR b))
 IMP_TOKEN       equ     $FA     ; IMP  (bitwise implication, = (NOT a) OR b)
 NOT_TOKEN       equ     $E0     ; NOT  (bitwise complement, unary)
+; Cursor / PRINT-positioning cluster. Tokens oracle-measured from the VG-8020's
+; own crunch emission (docs/kwsweep-msx1-coverage.md). TAB( and SPC( include the
+; '(' IN THE KEYWORD, which is what keeps a variable named TAB a variable.
+CSRLIN_TOKEN    equ     $E8     ; CSRLIN — bare pseudo-variable, 0-based cursor ROW
+POS_TOKEN       equ     $91     ; POS(n) — $FF-prefixed; 0-based COLUMN, arg discarded
+TAB_TOKEN       equ     $DB     ; TAB(n) — PRINT item, ABSOLUTE column
+SPC_TOKEN       equ     $DF     ; SPC(n) — PRINT item, RELATIVE n spaces
 ; Runtime control-flow state (page $E0).
 CURLINE         equ     $E038   ; link-field addr of the line being executed (2)
 GOTOTGT         equ     $E03A   ; pending branch-target line addr (2)

@@ -698,6 +698,8 @@ ev_f:
                 jp      z,ev_f_erlfn
                 cp      TIME_TOKEN          ; $CB -> TIME (JIFFY as an UNSIGNED word)
                 jp      z,ev_f_time
+                cp      CSRLIN_TOKEN        ; $E8 -> CSRLIN (0-based cursor row)
+                jp      z,ev_f_csrlin
                 cp      POINT_TOKEN         ; $ED -> POINT(x,y) (graphics G2, graphics.asm)
                 jp      z,ev_f_point
     IF G8_RESIDENT
@@ -839,6 +841,20 @@ ev_f_erlfn:                                 ; ERL -> ERRLINE (word), widened to 
 ;
 ; `ld hl,(JIFFY)` is TWO byte reads and the timer ISR ticks between them, so an
 ; unguarded read can be torn ($00FF seen as $01FF). Guarded (D-TIME-2).
+; CSRLIN: the cursor ROW, 0-based. MEASURED (docs/cursor-vg8020-characterization
+; .md §2): a BARE pseudo-variable -- no parentheses and no argument, so
+; `CSRLIN(0)` is CSRLIN followed by a separate parenthesised item and prints BOTH.
+; That falls out of taking no argument here; nothing extra is needed for it.
+; CSRY is 1-based, the BASIC value 0-based. flt_int_result marks the result an
+; int: a factor that returns int16 in DE must ALSO set FACTYP, or a float left in
+; FAC by a previous operand leaks into this value's type (the VARPTR bug).
+ev_f_csrlin:
+                ld      a,(CSRY)
+                dec     a
+                ld      e,a
+                ld      d,0
+                inc     ix
+                jp      flt_int_result
 ev_f_time:
                 di
                 ld      hl,(JIFFY)
@@ -993,6 +1009,7 @@ ev_ff_argtab:
                 db      EOF_TOKEN           ; $AB
                 db      LOF_TOKEN           ; $AD
                 db      DSKF_TOKEN          ; $A6
+                db      POS_TOKEN           ; $91  (cursor cluster; arg DISCARDED)
     IF I1_RESIDENT
                 db      STICK_TOKEN         ; $A2  (input devices, slice I1)
                 db      STRIG_TOKEN         ; $A3
@@ -1135,6 +1152,10 @@ ev_ff_ckdone:
     ELSE
                 jr      z,ev_ff_dskf
     ENDIF
+    IF ROM_BASE < $4000
+                cp      POS_TOKEN           ; repack-only: the lean 16 KB cart is
+                jr      z,ev_ff_pos         ; byte-frozen and ships without POS
+    ENDIF
     IF I1_RESIDENT
                 cp      STICK_TOKEN
                 jr      z,ev_ff_stick
@@ -1153,6 +1174,21 @@ ev_ff_ckdone:
                 ld      e,(hl)              ; read one byte
                 ld      d,0                 ; PEEK yields 0..255
                 ret
+    IF ROM_BASE < $4000
+ev_ff_pos:                                  ; POS(n): the cursor COLUMN, 0-based.
+                ; MEASURED: the argument is parsed and then DISCARDED -- POS(0),
+                ; POS(1), POS(99), POS(-1) and POS(1+1) all give the same answer, so
+                ; it is a true dummy and NOT a selector. It therefore takes no domain
+                ; check (it is absent from the ev_ff_ck* chain above on purpose);
+                ; `POS(-1)` must not raise. The parentheses are still REQUIRED --
+                ; bare `POS` is a Syntax error, which ev_ff_arg's missing-'(' path
+                ; already produces.
+                ld      a,(CSRX)
+                dec     a                   ; CSRX is 1-based, POS 0-based
+                ld      e,a
+                ld      d,0
+                ret
+    ENDIF
 ev_ff_vpeek:                                ; VPEEK: read one byte of VRAM (DE = addr)
                 ex      de,hl               ; HL = VRAM address (RDVRM wants it here)
                 call    RDVRM               ; A = VRAM[HL]; makes no register guarantees

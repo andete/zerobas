@@ -5,8 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — the cursor / `PRINT` cluster: `CSRLIN`, `POS`, `TAB(`, `SPC(`
 
-**Status:** SPEC, 2026-07-27 — **awaiting sign-off** (D-CUR-A/B/C, §6). Nothing
-implemented. Step 2 of [`decision-kwgaps-slicing.md`](decision-kwgaps-slicing.md)
+**Status:** ✅ **LANDED 2026-07-27** — D-CUR-A/B/C all signed off (§6).
+`make cursor-acceptance` **67/67**. Step 2 of [`decision-kwgaps-slicing.md`](decision-kwgaps-slicing.md)
 §4.3. Behavioural contract comes entirely from
 [`cursor-vg8020-characterization.md`](cursor-vg8020-characterization.md) —
 `make cursor-characterize`.
@@ -65,14 +65,14 @@ hang off `exp_loop`, alongside the existing `cp '"'` / `cp PEEK_PREFIX` arms,
 *not* off the `$FF` function table. `POS` is an ordinary `$FF` function and
 `CSRLIN` a single-token factor, so both go through the existing factor paths.
 
-Estimated main-ROM cost (from the decision doc, **not yet spiked**):
-`CSRLIN` ~13 B, `POS` ~18 B, `SPC(` ~20 B, `TAB(` ~28 B ≈ **79 B**, plus ~12 B
-of kwtable in sub.rom. Comfortable against 498 B — this slice needs no funding,
-which is the first time that has been true in this arc.
+Estimated main-ROM cost (decision doc): `CSRLIN` ~13 B, `POS` ~18 B, `SPC(`
+~20 B, `TAB(` ~28 B ≈ **79 B**.
 
-⚠️ These are **estimates**, and this repo's estimates have run optimistic often
-enough that the decision doc requires each slice to open with a **measured
-spike**. That is the first implementation step, not an afterthought.
+⚠️ **Measured: 109 B.** The estimate was optimistic by 38%, which is exactly why
+the decision doc requires a spike. Page-1 free **498 B → 389 B** from clean; low
+region unchanged at 7 B; sub.rom kwtable 925 → 955 B; lean cart byte-identical.
+Still comfortable — this remains the first slice in the arc that needed no
+funding — but the estimate was not the number.
 
 ### 3.1 What the cursor position is read from
 
@@ -89,14 +89,52 @@ promotes all four to "implemented" and turns every row into a two-sided
 differential. The probe already exists and every row is already written and
 measured; today they run reference-only.
 
-**Falsification is required before the gate is believed** — for each of the four
-independently, per the standing lesson that a green gate can be measuring
-nothing. Clause 3 in particular gets its own falsification: break *only* the
-already-past case and confirm the gate reddens.
+**Falsified, five ways, each independently.** The first three rows were measured
+against the 63-row gate, the last two against the 67-row gate after it was
+strengthened — see below for why it needed strengthening.
 
-Regression suites to re-run, because `exp_loop` and the `$FF` factor path are
-shared: `string-acceptance`, `error-acceptance`, `printusing`, `direct-ctrl`,
-plus `logicops-acceptance` (its battery 6 lives in `exp_loop`).
+| break | gate | intact |
+|---|---|---|
+| `CSRLIN` loses its 1-based→0-based `dec` | 57 | /63 |
+| `POS` loses its `dec` | 55 | /63 |
+| comma-zone fit test removed (pad always) | 56 | /63 |
+| `TAB(` emits a newline when already past | 62 → **64** | /63 → /67 |
+| `SPC(` treated as absolute like `TAB(` | 62 → **64** | /63 → /67 |
+
+The last two are the point of doing this at all. At **62/63** they each moved
+exactly *one* row: both clauses only become visible when the cursor is somewhere
+other than column 0, and almost every row in the battery starts at column 0.
+Four rows were added that put the cursor elsewhere first, and each clause now has
+three guards. **A clause guarded by one row is one edit away from being
+unguarded** — and falsification is what surfaced that, not review.
+
+Regression suites, all green — chosen because `exp_loop` and the `$FF` factor
+path are shared: `logicops-acceptance` **193/193** (its battery 6 lives in
+`exp_loop`), `direct-ctrl-acceptance` **40/40**, `string-acceptance` PASS,
+`error-acceptance` ALL PASS, `intarg-acceptance` ALL PASS,
+`basic_probe_printusing` PASS.
+
+## 4.1 D-CUR-3 — found during the gate, pre-existing, NOT fixed here
+
+`PRINT TAB(-1)` gives the right error and then a spurious second one. The cause
+is not in this slice: **an error raised mid-statement does not abort the
+statement.** `fre_abort_low` sets `ENDFLAG` and *returns*; the unwind only
+happens at the next statement boundary, so the `PRINT` item loop carries on.
+
+The controls prove it is pre-existing — they use functions this slice never
+touched:
+
+| | reference | zerobas |
+|---|---|---|
+| `PRINT VPEEK(-1);"Z"` | `Illegal function call` | `Illegal function call` then ` 32 Z` |
+| `PRINT STICK(9);"Z"` | `Illegal function call` | `Illegal function call` then ` 0 Z` |
+| `PRINT TAB(-1);"Z"` | `Illegal function call` | `Illegal function call` then `syntax error` |
+
+One defect, three symptoms — they differ only in where the cursor is left. It
+belongs to the error-handling arc (the abort mechanism), not to a keyword slice,
+and it wants its own decision. The rows are **reported and never gated**, with
+the two `ctl-*` controls beside them so the record cannot be misread as a
+`TAB(`/`SPC(` problem.
 
 ## 5. Risks
 
@@ -112,22 +150,33 @@ plus `logicops-acceptance` (its battery 6 lives in `exp_loop`).
   comma-separated items at the third zone may shift. That is a feature — it is
   a faithfulness fix — but it is why it is a separate decision.
 
-## 6. Decisions — sign-off needed
+## 6. Decisions — all signed off 2026-07-27
 
-**D-CUR-A — implement all four in one slice?** Recommend **yes**. They share one
-probe, one gate and one measurement session, and together they take the
-SILENT-GAP class from 6 to 2. Splitting them multiplies the fixed cost (spec,
-gate, spike) without reducing risk.
+**D-CUR-A — implement all four in one slice?** ✅ **yes.** Done; the SILENT-GAP
+class is now **2** (`FRE`, `BIN$`).
 
-**D-CUR-B — fix D-CUR-1 (the comma-zone rule) in this slice?** Recommend **yes**.
-It is `print_comma_zone`, the routine `SPC(` shares `pcz_pad` with, so the code
-is open on the bench anyway; the rule is precisely measured
-(`zone_start + 14 <= width`, boundary confirmed at `WIDTH` 28 vs 27); and it is
-a handful of bytes. The argument against is blast radius — it changes existing
-`PRINT` output — which is why it is asked rather than assumed.
+**D-CUR-B — fix D-CUR-1 (the comma-zone rule) here?** ✅ **yes.** Done, repack-
+gated: `next_zone + 14 <= width` or wrap.
 
-**D-CUR-C — what about D-CUR-2 (boot width 37 vs 39)?** Recommend **separate,
-and not next**. It is console init, not a keyword or a `PRINT` routine, and
-changing the boot width shifts the expected output of *every* screen-scraping
-gate in the tree. It wants its own slice with its own re-pin of the affected
-corpora, and it should not ride along inside a keyword slice.
+**D-CUR-C — D-CUR-2 (boot width 37 vs 39)?** ✅ **separate, and not next.**
+
+**D-CUR-D (new) — D-CUR-3, the mid-statement abort?** Its own slice, in the
+error-handling arc. See §4.1; it is a general abort-mechanism defect that this
+slice merely surfaced, and its controls are already in the probe.
+
+## 7. Implementation notes worth keeping
+
+* **`TAB(`/`SPC(` are `PRINT`-item dispatch, and `ev_f` never learns about
+  them.** That is what makes `X=TAB(5)` and `IF TAB(5)=0` a `Syntax error` — the
+  token falls off the end of `ev_f`'s chain into `ev_f_err` — with *no code at
+  all*. The alternative (a "PRINT mode" flag consulted by a factor) buys the
+  same behaviour and a hidden global with it.
+* **`POS` cost one table byte.** The `$FF` one-numeric-argument set is already
+  `cpir`-driven, so joining it is `db POS_TOKEN`; and because the argument is
+  discarded, it deliberately stays *out* of the `ev_ff_ck*` domain-check chain —
+  `POS(-1)` must not raise.
+* **The overrun that stopped the first build was in the LEAN cart**, from a
+  single ungated `ld c,a` added above the repack gate in `print_comma_zone`.
+  Everything else was correctly gated; one byte in a byte-frozen image is still
+  a failure. `make build/basic.rom` on its own is the quickest way to tell which
+  of the two images overran.

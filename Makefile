@@ -541,6 +541,10 @@ cursor-characterize: repack-machine
 	python3 probes/basic/basic_probe_cursor.py \
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
 
+cursor-acceptance: repack-machine
+	python3 probes/basic/basic_probe_cursor.py --gate \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
+
 # --- Standing string-engine acceptance gate (string-engine arc S5; compare S3) -----
 # The three-part proof of the Phase-3 string engine on the merged repack build. CRUNCH:
 # the 8 string keywords (LEN/LEFT$/RIGHT$/MID$/CHR$/ASC/STR$/VAL) tokenise byte-for-byte
