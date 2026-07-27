@@ -177,6 +177,36 @@ trusting its output.**
 the silent class is the one that is a live landmine in a user program; an honest
 `Syntax error` is a diagnosable absence, not a wrong answer.
 
+## 5a. What funding remains of the same kind (measured 2026-07-27)
+
+Asked after the FAT carve: *are there more like that?* Answered by
+[`tools/clone_scout.py`](../tools/clone_scout.py) — a new scan for groups of
+label-blocks identical but for one or two operands — **calibrated by requiring it
+to rediscover the FAT group at `099c809`**, which its first version could not (it
+masked one operand; those shims differ in two).
+
+| est. | n × each | region | gating | group |
+|---|---|---|---|---|
+| ~100 B | 5 × 32 B | page 1 | **repack-only** | `evmc_atn/cos/rnd/sin/tan` — math-fn tenant call glue, identical but for `SUBROM_IDX_*` |
+| ~100 B | 5 × 31 B | page 1 | both | `ev_and_lp/ev_idiv_lp/ev_mod_lp/ev_or_lp/ev_xor_lp` |
+| ~28 B | 3 × 20 B | page 1 | repack-only | `fat_rand_get/open/put` |
+
+**The well is much shallower than the FAT carve suggested.** That group had
+accumulated *thirteen* copies; nothing else in the tree has more than five, and
+the whole remaining set of this shape is ~240 B against the 367 B that one carve
+returned. The **low region — still 5 B free and the real wall** — has nothing
+carveable this way at all: its largest clone group is 14 B.
+
+Recommended handling:
+
+* `evmc_*` is the clean one (repack-only, exact FAT shape, no lean-identity work)
+  — but page 1 is at **375 B free** and the whole SILENT-GAP class needs ~180 B,
+  so this is **banked funding, not a blocker**. Spend it only if a slice needs it.
+* `ev_*_lp` **must not be done standalone.** It is L2 from §4.1 under another
+  name; folding it into the `EQV`/`IMP` slice buys *seven* operator layers for
+  what five cost, instead of refactoring the same code twice.
+* `fat_rand_*` at 28 B is not worth a session.
+
 ## 6. Method notes worth keeping
 
 * **The sweep re-pin was worth running on its own.** The previous pin was taken
