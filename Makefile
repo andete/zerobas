@@ -503,6 +503,26 @@ kwsweep: repack-machine
 	python3 probes/basic/basic_probe_kwsweep.py \
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
 
+# --- Logical-operator characterization + gate (AND/OR/XOR/EQV/IMP/NOT) ------------
+# `logicops-characterize` is the MEASUREMENT run behind
+# docs/logicops-vg8020-characterization.md: semantics, precedence (every ordered
+# pair, three measured lines each), associativity, the int16 operand domain, and the
+# boundaries with the relational/arithmetic/NOT layers. Rows built only from the
+# operators zerobas already implements run on BOTH machines as a CALIBRATION battery
+# -- if that is red the apparatus is what is broken and no reading from the run is
+# trustworthy.
+#
+# `logicops-acceptance` adds --gate, which promotes EQV/IMP to "implemented" and so
+# turns EVERY row into a two-sided differential. That is the standing gate for the
+# slice. It is falsifiable by construction: deleting the `cpl` from lg_eqv takes it
+# from 156/156 to 115/156.
+#
+# Repack-only (the lean cart ships without EQV/IMP) + oracle-dependent (boots
+# openMSX; needs your VG-8020 reference ROM); NOT part of `unit-test`.
+logicops-characterize: repack-machine
+	python3 probes/basic/basic_probe_logicops.py \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
+
 # --- Standing string-engine acceptance gate (string-engine arc S5; compare S3) -----
 # The three-part proof of the Phase-3 string engine on the merged repack build. CRUNCH:
 # the 8 string keywords (LEN/LEFT$/RIGHT$/MID$/CHR$/ASC/STR$/VAL) tokenise byte-for-byte
