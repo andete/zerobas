@@ -145,6 +145,18 @@ if it lands, the remaining 12 words stop competing for a 13-byte budget.
 
 ### 4.3 Proposed order
 
+> ✅ **STEP 1 LANDED 2026-07-27** — [`spec-basic-logicops-eqv-imp.md`](spec-basic-logicops-eqv-imp.md),
+> gated 156/156. L2 came in at **−5 B for SIX levels** against the three it
+> replaced, beating the "≈ 0 net bytes" estimate, and it consumed the `ev_*_lp`
+> clone group as §5a required. Two SILENT-GAPs cleared: **6 remain**.
+>
+> It also turned up two silent divergences that were nobody's keyword gap —
+> chained relationals and operators after a string `PRINT` item — landed as
+> [`spec-basic-relational-chain.md`](spec-basic-relational-chain.md), 193/193.
+> **The precedence characterization was worth more than the feature**: it is what
+> made the calibration battery exist, and the calibration battery is what found
+> them. See [`logicops-vg8020-characterization.md`](logicops-vg8020-characterization.md).
+
 1. **L2 + `EQV`/`IMP`** — self-funding, clears 2 SILENT-GAPs, small blast radius.
 2. **`CSRLIN` + `POS` + `SPC(` + `TAB(`** — the cursor/PRINT cluster, ~79 B main,
    4 SILENT-GAPs, one coherent spec, one gate. Needs funding *or* L1 first.

@@ -15,7 +15,9 @@ attaches a condition to it:
      ENCODED, not asserted from the manual -- the spec owes a differential row
      per adjacent pair."
 
-That is this probe. It is spec INPUT: nothing here is implemented yet.
+That is this probe. It began as spec INPUT and is now also the standing GATE for
+what came out of it: the EQV/IMP slice itself, and the two `ev_rel`/`PRINT`
+divergences its calibration battery uncovered (batteries 6 and 7).
 
 THE METHOD -- MODEL AS GENERATOR, ROM AS ORACLE
 ===============================================
@@ -66,8 +68,9 @@ never read as code. See CONTRIBUTING.md.
 
 USAGE
     python3 probes/basic/basic_probe_logicops.py
-    ... --only prec           # one battery: sem | prec | assoc | domain | mixed
-    ... --ref-only            # skip the zerobas calibration side
+    ... --gate                # every row two-sided (the acceptance gate)
+    ... --only prec           # sem | prec | assoc | domain | mixed | relchain
+    ... --ref-only            # skip the zerobas side
     ... --boot-per-case       # isolation escape hatch
 """
 from __future__ import annotations
@@ -125,13 +128,17 @@ def model(op: str, a: int, b: int) -> int:
 class Case:
     """One typed direct-mode line and how to judge it."""
 
-    def __init__(self, battery, label, expr, want=None, kind="value"):
+    def __init__(self, battery, label, expr, want=None, kind="value", lines=None):
         self.battery = battery
         self.label = label
         self.expr = expr
         self.want = want            # model prediction (may be None: no model)
         self.kind = kind            # "value" | "error"
-        self.line = f'PRINT "[";{expr};"]"'
+        # `lines` carries a multi-line case (setup + probe) for the CONTEXT rows,
+        # where the value has to be read back out of a variable; everything else
+        # is the one-line bracket form.
+        self.lines = lines or [f'PRINT "[";{expr};"]"']
+        self.line = self.lines[-1]
         # calibration iff every operator token is already implemented AND the row
         # is not a recorded divergence (a known-red row must never be able to
         # make the apparatus gate read "suspect"). Intersect with ALL_OPS first:
@@ -298,18 +305,51 @@ RELCHAIN = [
     # dropped, and the AND/XOR rows are here so the record cannot be misread as
     # an EQV/IMP problem. Note the RIGHT operand is handled correctly
     # (`1 EQV "A"` -> type mismatch on both sides), which localises the defect.
-    ("str-lhs-and",  '"A" AND 1'),
-    ("str-lhs-xor",  '"A" XOR 1'),
-    ("str-lhs-eqv",  '"A" EQV 1'),
-    ("str-lhs-imp",  '"A" IMP 1'),
-    ("str-rhs-and",  '1 AND "A"'),        # the control: RHS is rejected correctly
+    # Every OPERATOR token, $F1 '+' .. $FC '\'. The reference rejects the lot;
+    # zerobas silently mis-printed eleven of them (only '+' was handled), so the
+    # original "the logical operators" framing understated it by a factor of two.
+    ("str-op-plus",  '"A" + 1'),
+    ("str-op-minus", '"A" - 1'),
+    ("str-op-star",  '"A" * 2'),
+    ("str-op-slash", '"A" / 2'),
+    ("str-op-pow",   '"A" ^ 2'),
+    ("str-op-and",   '"A" AND 1'),
+    ("str-op-or",    '"A" OR 1'),
+    ("str-op-xor",   '"A" XOR 1'),
+    ("str-op-eqv",   '"A" EQV 1'),
+    ("str-op-imp",   '"A" IMP 1'),
+    ("str-op-mod",   '"A" MOD 2'),
+    ("str-op-idiv",  '"A" \\ 2'),
+    # controls that must KEEP working -- the fix must not swallow these
+    ("str-juxt",     '"A" 1'),            # juxtaposed items are legal
+    ("str-relop",    '"A" = "A"'),        # a relational re-parses as a comparison
+    ("str-concat",   '"A" + "B"'),        # '+' between two strings is concat
+    ("str-rhs-and",  '1 AND "A"'),        # a string on the RIGHT was always rejected
     ("str-rhs-eqv",  '1 EQV "A"'),
 ]
-# Expressions exempt from the calibration gate (see above): they are MEASURED,
-# RECORDED divergences, not an apparatus fault. A known-red row must never be
-# able to make the apparatus gate read "suspect", or the gate stops meaning
-# anything -- but it must still be REPORTED, which battery 6 does.
-CALIB_EXEMPT = {expr for _, expr in RELCHAIN}
+
+# Battery 7 -- the same two defects in the OTHER execution contexts. A value read
+# back out of a variable cannot distinguish "the statement errored" from "the
+# statement assigned 0" unless the variable starts at a SENTINEL: the first
+# version of these rows had `X` at its power-on 0 and reported ` 0 ` on both
+# sides for a case where the reference errored and zerobas did not. 99 is the
+# sentinel; seeing it means the statement aborted.
+CONTEXT = [
+    ("assign-chain",   ["X=99", "X = 1 = 0 = 0", 'PRINT "[";X;"]"']),
+    ("assign-str-op",  ["X=99", 'X = "A" AND 1', 'PRINT "[";X;"]"']),
+    ("if-chain",       ["Y=99", "IF 1 = 0 = 0 THEN Y=1 ELSE Y=2", 'PRINT "[";Y;"]"']),
+    ("if-str-op",      ["Y=99", 'IF "A" AND 1 THEN Y=1 ELSE Y=2', 'PRINT "[";Y;"]"']),
+    ("strvar-op",      ['A$="Q"', 'PRINT "[";A$ AND 1;"]"']),
+    ("strvar-relop",   ['A$="Q"', 'PRINT "[";A$ = "Q";"]"']),   # control
+    ("strvar-print",   ['A$="Q"', 'PRINT "[";A$;"]"']),         # control
+    ("chain-in-prog",  ["10 X = 1 = 0 = 0", '20 PRINT "[";X;"]"', "RUN"]),
+]
+
+# Nothing is exempt from the calibration gate any more. This set USED to hold the
+# whole of RELCHAIN, when both families were open divergences and a permanently
+# red row would have pinned the "apparatus suspect" warning on forever. They are
+# fixed and gated now, so the exemption would only hide a regression.
+CALIB_EXEMPT: set[str] = set()
 
 
 # --- reading the screen ------------------------------------------------------
@@ -398,7 +438,7 @@ def main() -> int:
         mix.append(Case("mixed", f"chain-all {tag}", ex))
 
     rel = [Case("relchain", lb, ex) for lb, ex in RELCHAIN]
-    batteries_extra = rel
+    rel += [Case("relchain", lb, lines[-1], lines=lines) for lb, lines in CONTEXT]
 
     batteries = {"sem": sem, "prec": prec, "assoc": assoc,
                  "domain": dom, "mixed": mix, "relchain": rel}
@@ -429,19 +469,19 @@ def main() -> int:
     # divergence -- which is how `(-1 XOR 0) AND 0` first showed up here.
     if both:
         print(f"# {len(both)} two-sided -> {args.machine} + {args.zb_machine}")
-        specs = [("direct", [c.line]) for c in both]
+        specs = [("direct", c.lines) for c in both]
         _, rr, zz = omsx_repl.run_differential(
             args.machine, args.zb_machine, specs,
             lambda i, r, z: agree(read(r, both[i].line), read(z, both[i].line)),
-            batch=batch, reset=("CLS",))
+            batch=batch, reset=("NEW", "CLS"))
         for c, r, z in zip(both, rr, zz):
             c.ref, c.zb = read(r, c.line), read(z, c.line)
 
     if refonly:
         print(f"# {len(refonly)} reference-only -> {args.machine}")
         raws = omsx_repl.run_cases(args.machine,
-                                   [("direct", [c.line]) for c in refonly],
-                                   batch=batch, reset=("CLS",))
+                                   [("direct", c.lines) for c in refonly],
+                                   batch=batch, reset=("NEW", "CLS"))
         for c, raw in zip(refonly, raws):
             c.ref = read(raw, c.line)
 

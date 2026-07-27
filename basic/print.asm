@@ -179,9 +179,37 @@ exp_strvar:
                 call    skip_spaces
                 ld      a,(hl)
                 call    relop_peek          ; ZF=1 iff (HL) is a relop token
-                jr      nz,exps_print       ; no relop -> plain PRINT (below)
+                jr      nz,exps_notrel      ; no relop -> maybe an operator (below)
                 pop     hl                  ; relop follows -> restore the operand START
                 jp      exp_num             ; re-drive via eval -> ev_rel (-1/0, or D-2 abort)
+; --- an OPERATOR after a string value is a Type mismatch ---------------------
+; MEASURED (docs/logicops-vg8020-characterization.md §6): the reference rejects
+; EVERY operator here -- `"A" AND 1`, and equally `- * / ^ \ MOD` and the rest.
+; Twelve tokens; zerobas honoured only `+` (str_eval's own concat check) and
+; silently mis-printed the other eleven: the item printed, exp_loop re-entered on
+; the operator token, `eval` read it as a zero-valued factor, and the line emitted
+; a SECOND bogus value (`PRINT "A" AND 1` -> `A 0`).
+;
+; This sits AHEAD of print_strval, not after it, because the reference raises the
+; error BEFORE emitting the item -- `[|Type mismatch`, not `[A|Type mismatch`.
+; Putting it after was the first attempt and it produced exactly that one-character
+; divergence: the right error, one item too late.
+;
+; Relationals ($EE/$EF/$F0) never arrive here -- relop_peek above sent them back
+; through eval/ev_rel as unparenthesized comparisons. An operator at the START of
+; an item is still fine (`PRINT -1`): this is only the just-emitted-a-string path.
+exps_notrel:
+                ld      a,(hl)              ; relop_peek clobbers A -- re-read
+                call    op_after_str_q      ; ZF=1 iff an operator token follows
+                jr      nz,exps_print
+                pop     de                  ; BALANCE the operand-START push before we
+                                            ; abort. check_expr_errors pops only its OWN
+                                            ; resume address, so leaving the guard on the
+                                            ; stack strands one word per occurrence --
+                                            ; harmless on some paths and a hard crash into
+                                            ; garbage VRAM on others (`PRINT "A" IMP 1`).
+                call    type_mismatch_set   ; deferred mark (ERRMARK + TMISMATCH)
+                call    check_expr_errors   ; ... surfaced HERE; never returns
 exps_print:
                 pop     de                  ; drop the saved operand-start (balances the
                                              ;  push above; str_eval already clobbers DE,
@@ -267,15 +295,32 @@ slcq_lp:
                 jr      nz,slcq_lp          ; scan to the closing quote
                 call    skip_spaces         ; HL -> next non-space token
                 ld      a,(hl)
-                cp      PLUS_TOKEN          ; '+' ($F1) ? ZF=1 if so
-                jr      z,slcq_yes
-                call    relop_peek          ; else: a relop ($EE/$EF/$F0) follows? (str-engine.asm)
-slcq_yes:
-                pop     hl
-                ret
+                call    op_after_str_q      ; an OPERATOR ($F1..$FC) follows? ZF=1 if so.
+                jr      z,slcq_yes          ; (widened from a bare `cp PLUS_TOKEN`: every
+                ld      a,(hl)              ;  operator after a literal must leave the fast
+                call    relop_peek          ;  char-by-char path, so exps_notrel can reject
+slcq_yes:                                   ;  it BEFORE the literal is emitted. Only '+'
+                pop     hl                  ;  used to, which is why `PRINT "A" AND 1`
+                ret                         ;  printed the A and `PRINT "A" + 1` did not.)
 slcq_no:
                 pop     hl
                 or      1                   ; A nonzero -> ZF=0 (not concat/compare)
+                ret
+
+; --- op_after_str_q: is A one of the contiguous operator tokens? -------------
+; $F1 '+' .. $FC '\' -- '+' '-' '*' '/' '^' AND OR XOR EQV IMP MOD '\'. Same
+; shape and contract as relop_peek (str-engine.asm): A is the peeked token byte,
+; ZF=1 iff it is in range, only A and flags are touched. Relationals sit just
+; BELOW this range ($EE/$EF/$F0) and are deliberately excluded -- they are a
+; comparison to re-parse, not a type error.
+op_after_str_q:
+                sub     PLUS_TOKEN                  ; A -= $F1
+                cp      IDIV_TOKEN - PLUS_TOKEN + 1 ; in the 12-token block?
+                jr      c,oas_yes
+                or      1                   ; out of range -> A nonzero -> ZF=0
+                ret
+oas_yes:
+                cp      a                   ; in range -> force ZF=1
                 ret
     ENDIF
 exp_comma:

@@ -305,6 +305,14 @@ ev_rel:
                 pop     ix                  ; NC: restore the cursor str_eval trashed
     ENDIF
                 call    ev_e                ; DE = lhs (arithmetic)
+evr_scan:
+                ; MEASURED (docs/logicops-vg8020-characterization.md §6): MSX-BASIC
+                ; CHAINS relationals, left-associatively -- `1 = 0 = 0` is
+                ; `(1 = 0) = 0` = -1, NOT a syntax error and NOT two values. Every
+                ; comparison loops back here with its own -1/0 result as the next
+                ; LHS, which is always numeric, so the LHS string probe above is
+                ; correctly outside the loop while the RHS probe at evr_rhs is
+                ; inside it (`1 = 1 = "A"` -> Type mismatch, as the reference does).
                 call    ev_sp
                 ld      a,(ix+0)
                 call    relop_bit
@@ -362,6 +370,15 @@ evr_rhs:
                 pop     hl                  ; HL = lhs
                 call    cmp16_bits          ; A = actual relation bit (1/2/4)
     ENDIF
+    IF ROM_BASE < $4000
+                ld      de,0                ; false = 0
+                and     c                   ; intersect requested with actual
+                jr      z,evr_chain
+                dec     de                  ; true = -1 ($FFFF)
+evr_chain:
+                jp      evr_scan            ; and look for the NEXT relop (left-assoc)
+    ELSE
+                ; LEAN 16 KB build: byte-frozen, one comparison only (no chaining).
                 and     c                   ; intersect requested with actual
                 jr      z,evr_false
                 ld      de,$FFFF            ; true = -1
@@ -369,6 +386,7 @@ evr_rhs:
 evr_false:
                 ld      de,0                ; false = 0
                 ret
+    ENDIF
     IF ROM_BASE < $4000
 evr_lhs_str:
                 pop     af                  ; BUG C: drop the LHS-probe IX guard

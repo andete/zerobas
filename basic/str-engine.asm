@@ -1491,15 +1491,19 @@ ers_rhs:
                 push    ix                  ; [newcursor] (str_cmp_bits CALSLT clobbers IX)
                 call    str_cmp_bits        ; A = actual bit (1/2/4); preserves BC (C=reqbits)
                 pop     ix                  ; IX = newcursor (ev_rel's "advanced cursor")
+                ld      de,0                ; false = 0
                 and     c                   ; intersect requested with actual
-                jr      z,ers_false
-                ld      de,$FFFF            ; true = -1
-                jp      flt_int_result      ; the -1/0 result is an int even when a float
+                jr      z,ers_done
+                dec     de                  ; true = -1 ($FFFF)
+ers_done:
+                call    flt_int_result      ; the -1/0 result is an int even when a float
                                             ; rode in via a nested STR$ operand (float.asm
                                             ; F1; clobbers A only, preserves IX)
-ers_false:
-                ld      de,0                ; false = 0
-                jp      flt_int_result      ; (same)
+                ; A string comparison's result is a NUMBER, so a chain that starts
+                ; with strings continues in the numeric loop: `"A" = "A" = -1` is
+                ; `("A" = "A") = -1` = -1 (MEASURED). IX is the advanced cursor and
+                ; flt_int_result preserves it, which is exactly what evr_scan wants.
+                jp      evr_scan
 ers_rhs_mismatch:
                 pop     ix                  ; BUG C lesser: RESTORE the cursor (the RHS
                                             ; str_eval CALSLT trashed IX) instead of

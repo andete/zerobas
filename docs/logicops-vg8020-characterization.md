@@ -203,24 +203,44 @@ emits a **second value**.
 The parenthesised control agrees, which localises the defect to the **chaining**,
 not the comparison.
 
-### D-LOG-2 — a string as the LEFT operand of a logical operator is not rejected
+### D-LOG-2 — an operator after a string `PRINT` item is not rejected
 
-| expression | reference | zerobas |
+🔄 **Both the scope and the location of this one were wrong when first written**,
+and finding that out took two follow-up measurements. It was recorded as "a
+string as the LEFT operand of a **logical** operator, in `ev_rel`". It is neither.
+
+**Not `ev_rel`.** The first version of the context rows put `X` at its power-on
+`0`, so `X = "A" AND 1` printed ` 0 ` on both sides whether the statement errored
+or assigned zero — a row that cannot fail. Re-run with `X` seeded to a **sentinel
+99**, both sides show `99`: the assignment path was correct all along, and so is
+`IF`. The defect is **`PRINT`'s per-item string fast-path only**.
+
+**Not the logical operators.** Sweeping the whole operator block shows the
+reference rejects *every* operator after a string item. Zerobas honoured exactly
+one — `+`, and only because `str_eval`'s own concat check caught it.
+
+| after a string item | reference | zerobas (before) |
 |---|---|---|
-| `"A" AND 1` | `Type mismatch` | `A 0` |
-| `"A" XOR 1` | `Type mismatch` | `A 1` |
-| `"A" EQV 1` | `Type mismatch` | `A-2` |
-| `"A" IMP 1` | `Type mismatch` | `A-1` |
-| `1 AND "A"` | `Type mismatch` | `type mismatch` ✅ control |
-| `1 EQV "A"` | `Type mismatch` | `type mismatch` ✅ control |
+| `+` | `Type mismatch` | `Type mismatch` ✅ |
+| `-` `*` `/` `^` `\` `MOD` | `Type mismatch` | `A-1` `A 0` `A 0` `A 0` `A 0` `A 0` |
+| `AND` `OR` `XOR` `EQV` `IMP` | `Type mismatch` | `A 0` `A 1` `A 1` `A-2` `A-1` |
+| `"A" 1` (juxtaposition) | `A 1` | `A 1` ✅ control |
+| `"A" = "A"` (relational) | `-1` | `-1` ✅ control |
+| `1 AND "A"` (string on the RIGHT) | `Type mismatch` | `Type mismatch` ✅ control |
 
-`ev_rel`'s `str_eval` probe consumes the string operand and returns it as a
-string value; `PRINT` prints it and resumes on what is left. The **right** operand
-is rejected correctly, which localises the defect to the LHS probe path. (The
-lowercase error wording is a separate, documented divergence.)
+**Eleven operators**, not four. The item printed, `exp_loop` re-entered on the
+operator token, `eval` read it as a zero-valued factor, and the line emitted a
+second bogus value.
 
-Both are **out of scope for the `EQV`/`IMP` slice** and want their own decision.
-They sit in `ev_rel`, one layer below the one being restructured.
+**Both fixed** — see [`spec-basic-relational-chain.md`](spec-basic-relational-chain.md).
+
+### What the two corrections cost, and why they are the point
+
+Neither error would have been caught by re-reading the code; both took a second
+measurement designed to *discriminate*. The first was a row that could not fail
+(the sentinel), the second a sample too narrow to see its own boundary (four
+operators out of twelve). The same failure mode as §7's "a confirmation that
+cannot fail" — this time in the *follow-up*, not the original.
 
 ## 7. Method notes worth keeping
 
