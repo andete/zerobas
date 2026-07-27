@@ -1542,10 +1542,8 @@ evmc_cdbl:
 ; statement-boundary check (check_expr_errors/_popbc), same D-F2-1 pattern as
 ; Overflow/division-by-zero -- never a `jp` out of the evaluator itself.
 evmc_sqr:
-                call    ev_mc_arg_checked   ; D-F2-4 gate
-                ret     nz                  ; malformed/empty arg -> deferred syntax error
-                ld      hl,ARGA
-                call    widen_rhs_operand
+                call    evmc_prologue
+                ret     nz
                 ; Domain check (x<0 -> "illegal function call") is done HERE, not
                 ; in the tenant: CALSLT does NOT preserve A, so a tenant status
                 ; byte cannot ride back in A (existing tenants return via RAM
@@ -1556,30 +1554,62 @@ evmc_sqr:
                 ld      a,(ARGA+FPNUM_SIGN)
                 or      a
                 jr      nz,evmc_sqr_err
-                push    ix                  ; save the parser's text-position pointer --
-                                            ; subrom_call/CALSLT clobbers ALL registers
-                                            ; (subromcall.asm's own header: "the caller
-                                            ; guards anything live, e.g. the text
-                                            ; cursor"), and IX IS that text cursor here
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SQR
-                call    subrom_call         ; CF=1 iff sub-ROM absent (subrom_call's
-                                            ; own `or a` sets CF deterministically --
-                                            ; that flag IS reliable across the call;
-                                            ; A is NOT, which is why the domain check
-                                            ; ran main-side above). Result is in FAC.
-                pop     ix                  ; restore the text-position pointer (POP
-                                            ; does not touch flags -- CF survives)
-                jp      c,subrom_absent_error ; reduced build w/o sub-ROM (never on the
-                                            ; merged machine, which always ships it)
-                ld      a,8
-                ld      (FACTYP),a
-                jp      flt_to_int16        ; tail: DE := flt_to_int16(FAC) (moved out
-                                            ; of the tenant, now main-side per §3/§4)
+                ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SQR
+                jp      evmc_dispatch
 evmc_sqr_err:
                 ld      a,3
                 ld      (FPERR),a
                 ld      de,0
                 ret
+
+; --- evmc_prologue / evmc_dispatch: the body the math-function stubs shared ---
+; verbatim.  Until 2026-07-27 EIGHT stubs (SQR LOG EXP ATN SIN COS TAN RND) each
+; carried their own copy of the same arg-check-and-widen opening and the same
+; guard-IX-dispatch-to-tenant closing; five of them (ATN SIN COS TAN RND) were
+; identical end to end apart from the SUBROM_IDX_* constant.  Same shape, and the
+; same fix, as basic/fat.asm's thirteen FAT shims.
+;
+; evmc_prologue -- the opening.  Returns NZ exactly when ev_mc_arg_checked does,
+; leaving the SAME registers it left: nothing here executes before that `ret nz`,
+; so each stub's own `ret nz` behaves bit-for-bit as its inline copy did.  On the
+; good path `cp a` forces Z without disturbing A, and A is dead in every caller
+; (the next write is `ld a,8`, or a fresh `ld a,(ARGA+...)` domain load).
+; DELIBERATELY not folded into evmc_dispatch: SQR/LOG/EXP must run their domain
+; checks BETWEEN the two halves.
+;
+; EVERY stub reaches evmc_dispatch by `jp`, not `jr`, and that is deliberate
+; rather than lazy: the eight stubs are NOT contiguous -- SQR's, LOG's and EXP's
+; domain-check bodies and error tails are interleaved among them -- so a `jr`
+; reaches from some and not others, and which ones changes whenever anything in
+; between grows.  Two builds were spent discovering that.  Uniform `jp` costs
+; 5 bytes across the eight and makes the layout order irrelevant.
+evmc_prologue:
+                call    ev_mc_arg_checked   ; D-F2-4 gate
+                ret     nz                  ; malformed/empty arg -> deferred syntax
+                                            ; error (registers as the gate left them)
+                ld      hl,ARGA
+                call    widen_rhs_operand
+                cp      a                   ; force Z = "clean"; A untouched, and dead
+                ret
+
+; evmc_dispatch -- the closing.  in: HL = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_x.
+; IX is the parser's text cursor and subrom_call/CALSLT clobbers ALL registers
+; (subromcall.asm's header), so it is guarded across the call exactly as before;
+; POP does not touch flags, so CF survives to the subrom_absent_error test.  The
+; entry arrives in HL and reaches IX via the stack (IX cannot be loaded from HL
+; directly) -- and it MUST be loaded after the guard push, or the guard would
+; save the entry address instead of the cursor.
+evmc_dispatch:
+                push    ix                  ; guard the text cursor
+                push    hl
+                pop     ix                  ; IX = tenant entry
+                call    subrom_call         ; CF=1 iff sub-ROM absent. Result in FAC.
+                pop     ix                  ; restore the text cursor (flags survive)
+                jp      c,subrom_absent_error ; reduced build w/o sub-ROM (never on the
+                                            ; merged machine, which always ships it)
+                ld      a,8
+                ld      (FACTYP),a
+                jp      flt_to_int16        ; tail: DE := flt_to_int16(FAC)
 
 ; --- evmc_atn: ATN(x) -> arctangent, DOUBLE (math pack slice 2a, docs/spec- -
 ; basic-mathpack-slice2.md §11.5). Same arg-parse + widen shape as evmc_sqr
@@ -1594,23 +1624,10 @@ evmc_sqr_err:
 ; after a successful return; CF (not A) is the only reliable post-call
 ; signal, and CF=1 only means "sub-ROM absent" (never on the merged machine).
 evmc_atn:
-                call    ev_mc_arg_checked   ; D-F2-4 gate
-                ret     nz                  ; malformed/empty arg -> deferred syntax error
-                ld      hl,ARGA
-                call    widen_rhs_operand
-                push    ix                  ; save the parser's text-position pointer --
-                                            ; subrom_call/CALSLT clobbers ALL registers,
-                                            ; and IX IS that text cursor here (same
-                                            ; discipline as evmc_sqr)
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_ATN
-                call    subrom_call         ; CF=1 iff sub-ROM absent. Result in FAC.
-                pop     ix                  ; restore the text-position pointer (POP
-                                            ; does not touch flags -- CF survives)
-                jp      c,subrom_absent_error ; reduced build w/o sub-ROM (never on the
-                                            ; merged machine, which always ships it)
-                ld      a,8
-                ld      (FACTYP),a
-                jp      flt_to_int16        ; tail: DE := flt_to_int16(FAC)
+                call    evmc_prologue
+                ret     nz
+                ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_ATN
+                jp      evmc_dispatch
 
 ; --- evmc_log: LOG(x) -> natural logarithm, DOUBLE (math pack slice 2b, ----
 ; docs/spec-basic-mathpack-slice2.md §12.6). Same arg-parse + widen shape as
@@ -1627,24 +1644,16 @@ evmc_atn:
 ; correct, does not touch FACTYP/DE), so THIS stub sets FACTYP:=8 +
 ; refreshes DE via flt_to_int16 after a successful return.
 evmc_log:
-                call    ev_mc_arg_checked   ; D-F2-4 gate
-                ret     nz                  ; malformed/empty arg -> deferred syntax error
-                ld      hl,ARGA
-                call    widen_rhs_operand
+                call    evmc_prologue
+                ret     nz
                 ld      a,(ARGA+FPNUM_SIGN)
                 or      a
                 jr      nz,evmc_log_err
                 ld      hl,ARGA+FPNUM_DIG
                 call    dig15_iszero
                 jr      z,evmc_log_err
-                push    ix                  ; save the parser's text-position pointer
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LOG
-                call    subrom_call         ; CF=1 iff sub-ROM absent. Result in FAC.
-                pop     ix
-                jp      c,subrom_absent_error
-                ld      a,8
-                ld      (FACTYP),a
-                jp      flt_to_int16
+                ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LOG
+                jp      evmc_dispatch
 evmc_log_err:
                 ld      a,3
                 ld      (FPERR),a
@@ -1666,23 +1675,15 @@ evmc_log_err:
 ; EXP(-1000)) -- same "fall into the common successful tail" shape as any
 ; other non-error disposition. Otherwise dispatch to fp_exp (SUBROM_IDX_EXP).
 evmc_exp:
-                call    ev_mc_arg_checked   ; D-F2-4 gate
-                ret     nz                  ; malformed/empty arg -> deferred syntax error
-                ld      hl,ARGA
-                call    widen_rhs_operand
+                call    evmc_prologue
+                ret     nz
                 ld      a,(ARGA+FPNUM_DEXP) ; low byte -- signed, safe (see
                                             ; header above)
                 sub     4
                 jp      p,evmc_exp_huge     ; dexp-4 >= 0 (no overflow in
                                             ; this range) <=> dexp>=4
-                push    ix                  ; save the parser's text-position pointer
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_EXP
-                call    subrom_call         ; CF=1 iff sub-ROM absent. Result in FAC.
-                pop     ix
-                jp      c,subrom_absent_error
-                ld      a,8
-                ld      (FACTYP),a
-                jp      flt_to_int16
+                ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_EXP
+                jp      evmc_dispatch
 evmc_exp_huge:
                 ld      a,(ARGA+FPNUM_SIGN)
                 or      a
@@ -1709,44 +1710,20 @@ evmc_exp_overflow:
 ; successful return; CF (not A) is the only reliable post-call signal, and
 ; CF=1 only means "sub-ROM absent" (never on the merged machine).
 evmc_sin:
-                call    ev_mc_arg_checked   ; D-F2-4 gate
-                ret     nz                  ; malformed/empty arg -> deferred syntax error
-                ld      hl,ARGA
-                call    widen_rhs_operand
-                push    ix                  ; save the parser's text-position pointer
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SIN
-                call    subrom_call         ; CF=1 iff sub-ROM absent. Result in FAC.
-                pop     ix
-                jp      c,subrom_absent_error
-                ld      a,8
-                ld      (FACTYP),a
-                jp      flt_to_int16
+                call    evmc_prologue
+                ret     nz
+                ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SIN
+                jp      evmc_dispatch
 evmc_cos:
-                call    ev_mc_arg_checked   ; D-F2-4 gate
-                ret     nz                  ; malformed/empty arg -> deferred syntax error
-                ld      hl,ARGA
-                call    widen_rhs_operand
-                push    ix
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_COS
-                call    subrom_call
-                pop     ix
-                jp      c,subrom_absent_error
-                ld      a,8
-                ld      (FACTYP),a
-                jp      flt_to_int16
+                call    evmc_prologue
+                ret     nz
+                ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_COS
+                jp      evmc_dispatch
 evmc_tan:
-                call    ev_mc_arg_checked   ; D-F2-4 gate
-                ret     nz                  ; malformed/empty arg -> deferred syntax error
-                ld      hl,ARGA
-                call    widen_rhs_operand
-                push    ix
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_TAN
-                call    subrom_call
-                pop     ix
-                jp      c,subrom_absent_error
-                ld      a,8
-                ld      (FACTYP),a
-                jp      flt_to_int16
+                call    evmc_prologue
+                ret     nz
+                ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_TAN
+                jp      evmc_dispatch
 
 ; --- evmc_rnd: RND(x) -> pseudo-random value in [0,1), DOUBLE (math pack ---
 ; slice 2e, docs/spec-basic-mathpack-slice2.md §15.4/§15.5). evmc_atn's
@@ -1762,20 +1739,10 @@ evmc_tan:
 ; when positive, consumed as mant14 when negative, ignored when zero) --
 ; this stub does not interpret it at all, just widens+dispatches.
 evmc_rnd:
-                call    ev_mc_arg_checked   ; D-F2-4 gate: a malformed/empty RND call must
-                ret     nz                  ; NOT run fp_rnd (would mutate the seed on a
-                                            ; float stale operand -- RND(1.5,2) advances,
-                                            ; RND(-1.5 reseeds); reference leaves it untouched)
-                ld      hl,ARGA
-                call    widen_rhs_operand
-                push    ix                  ; save the parser's text-position pointer
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_RND
-                call    subrom_call         ; CF=1 iff sub-ROM absent. Result in FAC.
-                pop     ix
-                jp      c,subrom_absent_error
-                ld      a,8
-                ld      (FACTYP),a
-                jp      flt_to_int16
+                call    evmc_prologue
+                ret     nz
+                ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_RND
+                jp      evmc_dispatch
     ENDIF
 
 ; --- ev_f_varptr: VARPTR(<var>) -> address of the variable's value field -----
