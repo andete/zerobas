@@ -1401,8 +1401,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reference tokens are now **oracle-measured** from Layer 1's own crunch diff
       (table in the coverage doc) rather than read off Table 2.20.
       ⚠️ **The funding premise in the line this replaces was stale AND wrong.**
-      Page 1 is no longer 14 B over — it is **8 B free** (low region 5 B) since
-      `a5a3af2`. More importantly the item is not blocked on *funding* but on
+      Page 1 is no longer 14 B over — it is **375 B free** (low region 5 B) after
+      the FAT tenant-shim collapse (`6f8ac0f`, +367 B: thirteen byte-identical
+      34 B shims onto one shared body), which answered D-KW-1 "carve first". More importantly the item is not blocked on *funding* but on
       **placement**: `sub.rom` has **≈8 KB free** (4509 B page-0 + 3497 B page-1)
       and `kwtable.inc` entries + leaf compute already live there, so the only
       number that matters per keyword is its **main-ROM dispatch glue** —

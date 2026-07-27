@@ -29,9 +29,18 @@ every one of these needs funding before it needs a spec."* **The first clause is
 stale and the second is wrong.** Measured from clean (`rm -rf build && make
 basic-reloc`, `e9843c4`):
 
-| region | free | scarce? |
+> 🔄 **UPDATED 2026-07-27 (`6f8ac0f`): main page-1 free is now 375 B, not 8 B.**
+> D-KW-1 was answered "first make a few 100 bytes of space", and the
+> [FAT tenant-shim collapse](../basic/fat.asm) delivered **+367 B** — thirteen
+> byte-identical 34 B shims collapsed onto one shared body. The table below
+> records the state that *motivated* the carve; the "scarce?" column no longer
+> describes page 1. The **low region is still 5 B** and the per-keyword
+> dispatch-glue analysis below is unchanged — it is what made the carve the
+> right first move rather than a detour.
+
+| region | free (pre-carve) | scarce? |
 |---|---|---|
-| main page-1 `$4000–$7FFF` | **8 B** | **yes — this is the wall** |
+| main page-1 `$4000–$7FFF` | **8 B** → **375 B** after `6f8ac0f` | no longer |
 | main low region `$2812–$3FFF` | **5 B** | **yes** |
 | **sub.rom page-0** (`$0000–$2E63` used) | **4509 B** | no |
 | **sub.rom page-1** (`$4000–$7257` used) | **3497 B** | no |
@@ -146,24 +155,27 @@ if it lands, the remaining 12 words stop competing for a 13-byte budget.
 5. **`LOCATE`, `SWAP`, `TRON`/`TROFF`, `MOTOR`** — the honest-error class.
 6. **`DEF FN`** — its own arc, its own spec.
 
-## 5. Open decisions
+## 5. Decisions — all three answered 2026-07-27
 
-**D-KW-1 — take L2 (`EQV`/`IMP` via a table-driven logical layer) as the next
-slice?** *Recommended: yes.* Self-funding, 2 SILENT-GAPs, smallest blast radius
-of anything in the set.
+**D-KW-1 — take L2 (`EQV`/`IMP`) as the next slice?** **✅ ANSWERED: carve
+first.** The answer was *"first make a few 100 bytes of space"* — the arc opens
+with funding, not with a word. Delivered by `6f8ac0f`: the FAT tenant-shim
+collapse, **+367 B** (see §2's banner and §6). **`EQV`/`IMP` is now the next
+slice and needs a spec.** It no longer has to be self-funding to be affordable,
+but the table-driven layer is still the right shape — five operators for roughly
+what three cost — and the VG-8020 precedence characterization is still owed.
 
-**D-KW-2 — is L1 (the `exec_stmt` dispatch table) in or out of scope for this
-arc?** Options: (a) spike-and-measure now, commit only if it clears ≥100 B;
-(b) defer until step (2) actually runs out of budget; (c) reject — the hot-path
-risk is not worth it, fund the statement words from a carve instead
-(`carve_scout.py` / the page-1 frontier scout still to be promoted from
-`scratchpad/p1scout.py`). *Recommended: (b)* — do not refactor the hottest path
-until a slice is demonstrably blocked on it.
+**D-KW-2 — is L1 (the `exec_stmt` dispatch table) in or out of scope?**
+**✅ ANSWERED: defer** until a slice is demonstrably blocked on it. Do not
+refactor the hottest path in the interpreter on speculation; with 375 B free
+that is comfortable. The page-1 frontier scout it referenced is now promoted to
+[`tools/p1scout.py`](../tools/p1scout.py) — **but read §6's caveat before
+trusting its output.**
 
 **D-KW-3 — is "SILENT-GAP class empty" the arc's exit criterion**, with the
-6 MISSING words and `DEF FN` tracked as separate follow-on work? *Recommended:
-yes* — the silent class is the one that is a live landmine in a user program;
-an honest `Syntax error` is a diagnosable absence, not a wrong answer.
+6 MISSING words and `DEF FN` as separate follow-on work? **✅ ANSWERED: yes** —
+the silent class is the one that is a live landmine in a user program; an honest
+`Syntax error` is a diagnosable absence, not a wrong answer.
 
 ## 6. Method notes worth keeping
 
@@ -179,3 +191,17 @@ an honest `Syntax error` is a diagnosable absence, not a wrong answer.
   as blocked on funding. It is blocked on *placement*: 8 KB is free in `sub.rom`
   and 13 B in main, so the only number that matters per keyword is its
   **main-ROM dispatch glue**.
+* ⚠️ **A byte census cannot tell ENGINE from BOILERPLATE, and a ZERO frontier can
+  mean "already carved" rather than "free to carve."** `tools/p1scout.py` reported
+  `basic/fat.asm` as **811 B of page-1 content with a zero frontier** — which reads
+  like an 811 B carve waiting to happen. It was the opposite: the carve had already
+  happened years of commits ago, and the frontier was zero *precisely because* what
+  remained was glue. Glue calls `subrom_call`; it never calls main page 1. The real
+  find was that thirteen copies of that glue were byte-identical. **Read the code
+  before believing the scout** — the scout answers a legality question, not a value
+  question.
+* ⚠️ **`diskbasic-acceptance-repack` stays 34/34 green with the FAT error tail
+  deliberately broken.** All 34 oracle differentials exercise the success path only.
+  Found by falsification during the carve, not by inspection; closed with
+  `make fat-error-acceptance`. Whenever a change lands under a gate, ask what the
+  gate would still say if the change were wrong.
