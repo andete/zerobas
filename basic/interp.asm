@@ -381,6 +381,10 @@ stmt_table:
                 ; others (spec §7.4).
                 db      MOTOR_TOKEN
                 dw      ex_motor    ; MOTOR | MOTOR ON | MOTOR OFF
+                db      TRON_TOKEN
+                dw      ex_tron
+                db      TROFF_TOKEN
+                dw      ex_troff
     ENDIF
                 db      0                   ; end of table
 

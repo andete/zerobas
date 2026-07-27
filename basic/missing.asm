@@ -67,4 +67,50 @@ mot_go:
                 jp      exec_stmt           ; continue the line (a bare `ret` would
                                             ; swallow the rest of it -- the T1 lesson)
 
+; --- ex_tron / ex_troff: TRON | TROFF ---------------------------------------
+; A one-byte flag and one hook. Neither statement takes an argument -- `TRON 1`
+; and `TROFF 1` are Syntax errors (measured), which falls out for free: the
+; cursor is left ON the argument and exec_stmt's no-entry path rejects it.
+ex_tron:
+                ld      a,1
+                jr      tr_set
+ex_troff:
+                xor     a
+tr_set:
+                ld      (TRACEFLAG),a
+                inc     hl                  ; past the TRON/TROFF token
+                jp      exec_stmt
+
+; --- trace_line: emit `[<lineno>]` for the line about to run ----------------
+; Called from run_program's FRESH-LINE-ENTRY point only (program.asm rp_lp); see
+; the comment there for why a mid-line resume and a direct line never reach it.
+;
+; Format is measured (spec §3.4): '[' + the line number in DECIMAL, no padding,
+; + ']', and **no newline of its own** -- so it appears inline at the cursor,
+; which is what makes `PRINT "A";` followed by a traced line read as `A[30]`
+; rather than putting the decoration on a line of its own.
+;
+; CURLINE is the line's LINK-field address, so the number is the 2-byte field at
+; CURLINE+2 -- the same read print_in_lineno does for "break in <N>".
+; ln_div_entry (list.asm) prints HL as a bare unsigned decimal; it clobbers
+; A/BC/DE/HL and uses NUMBUF, which is safe here because NUMBUF is PRINT's
+; format scratch and this runs BETWEEN statements, before any PRINT is live.
+; pchar preserves every register, so only HL needs guarding.
+trace_line:
+                push    hl                  ; guard the token cursor
+                ld      a,'['
+                call    pchar
+                ld      hl,(CURLINE)
+                inc     hl
+                inc     hl
+                ld      e,(hl)              ; lineno LE -> DE
+                inc     hl
+                ld      d,(hl)
+                ex      de,hl               ; HL = the line number
+                call    ln_div_entry
+                ld      a,']'
+                call    pchar
+                pop     hl
+                ret
+
     ENDIF

@@ -912,6 +912,16 @@ SV_OP_BSV_DISK  equ     0       ; BSAVE to disk   (bsv_open ..  bsv_fin)
 SV_OP_BSV_CAS   equ     1       ; BSAVE to tape   (bsv_cas_open .. bsv_cas_fin)
 SV_OP_SAV_DISK  equ     2       ; SAVE to disk, tokenised (sav_disk_write .. sav_fin)
 SV_OP_SAV_CAS   equ     3       ; SAVE"CAS:" / CSAVE, tokenised (tape_save_basic ..)
+; --- TRON/TROFF (docs/spec-basic-missing-class.md §3.4) ---------------------
+; 1 B in the free $E226..$E23F window (between SV_STAT and the lean-only STRTAB,
+; which the repack build does not use at all). Nonzero = decorate each STORED
+; line with `[<lineno>]` before it runs.
+;
+; The measured scope rules are all "one byte, and almost nothing touches it":
+; RUN does NOT reset it, END does not clear it, a line carrying TROFF is itself
+; traced, and a TRON typed at the prompt DOES trace a subsequent RUN. Only NEW
+; clears it -- so new_prog is the single writer besides the two statements.
+TRACEFLAG       equ     $E226   ; 1 B: TRON state (0 = TROFF)
 ; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §3) claims NO new RAM:
 ; the virtual line header a typed line executes under (`dir_line`, program.asm) is
 ; a 4-byte ROM constant, and CURLINE == dir_line is the sole definition of direct

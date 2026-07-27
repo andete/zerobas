@@ -1330,6 +1330,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reference fires them there is UNMEASURED — so the conservative answer is
       gated in at one RAM load rather than changed as a side effect. Spec §6 names
       the characterization that closes it.
+- [ ] **The prompt does not open a fresh line** — MEASURED 2026-07-27, found
+      while gating `TRON`. **The reference emits a newline before its prompt
+      whenever the cursor is not at column 0; zerobas prints its prompt where
+      the cursor stands.** `CLS:PRINT "A";` is the whole reproducer: the
+      reference paints `A` and then `Ok` on the *next* row, zerobas paints
+      `Azb>` on one. No word under test is involved.
+      Latent until now because almost everything zerobas prints ends with a
+      newline — it took `TRON`, whose decoration deliberately emits no newline
+      of its own, to leave the cursor mid-row often enough to notice. The
+      `missing` probe's screen readout strips a trailing prompt on both sides
+      (it already claimed to drop the prompt; it only did so for a prompt alone
+      on a row), so this does not block that gate.
+      ⚠️ Fixing it changes the screen output of every gate whose expectations
+      were recorded against the current prompt, so it is its own slice, not a
+      drive-by. Related to the screen-editor REPL item below but independent of
+      it — this is one conditional CRLF, not a rewrite.
 - [ ] **Screen-editor REPL** — real MSX BASIC does not use a sequential prompt
       loop; Enter reads the *current cursor line from VRAM* (not a dedicated
       input buffer), so the user can cursor-up to any visible output, edit it

@@ -682,12 +682,34 @@ def value(raw: str | None, line: str) -> str:
 FKEY_ROW = ROWS - 1
 
 
+PROMPTS = ("Ok", "zb>")
+
+
 def screen(raw: str | None) -> str:
     """The screen, collapsed: every non-blank row joined by '/' with runs of
     spaces squeezed. For the trace battery, whose programs CLS first so this
     holds their output and nothing else. The trailing prompt is dropped (the
     reference closes with `Ok` and zerobas with `zb>`, a documented divergence
-    that is not what these rows measure) and so is the function-key row."""
+    that is not what these rows measure) and so is the function-key row.
+
+    ⚠️ THE PROMPT IS STRIPPED AT THE END OF A ROW, NOT ONLY ON A ROW OF ITS OWN.
+    That distinction is the whole point, and it took the TRON battery to expose
+    it. **The reference emits a newline before its prompt when the cursor is not
+    at column 0; zerobas prints its prompt where the cursor stands.** So after
+    output that ends mid-row the reference puts `Ok` on the NEXT row (dropped by
+    the whole-row test) while zerobas appends `zb>` to the output row (not
+    dropped) -- and the row read `[20][30][30][40]` against
+    `[20][30][30][40]zb>`.
+
+    TRON makes that common because its decoration deliberately emits no newline
+    of its own, so any program ending on a traced line stops mid-row. It is NOT
+    a TRON divergence: `CLS:PRINT "A";` alone reproduces it with no word under
+    test (reference `A` / `Ok` on two rows, zerobas `Azb>` on one). Recorded as
+    its own finding; suppressed here because the prompt is console chrome and
+    this readout already claimed to drop it.
+
+    Safe for these batteries: their output is `[nnn]` decorations and the short
+    literals A/B/C/D/SKIP, none of which can end in `Ok` or `zb>`."""
     if raw is None:
         return "<no capture>"
     out = []
@@ -695,7 +717,11 @@ def screen(raw: str | None) -> str:
         if r == FKEY_ROW:
             continue
         t = " ".join(row.split())
-        if not t or t in ("Ok", "zb>"):
+        for p in PROMPTS:
+            if t.endswith(p):
+                t = t[:-len(p)].rstrip()
+                break
+        if not t:
             continue
         out.append(t)
     return "/".join(out) if out else "<blank>"

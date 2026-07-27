@@ -213,6 +213,13 @@ pl_lp:
 new_prog:
                 xor     a
                 ld      (CONTVALID),a       ; NEW wipes the program -> no CONT resume
+    IF ROM_BASE < $4000
+                ld      (TRACEFLAG),a       ; NEW is the ONLY thing that clears TRON.
+                                            ; RUN does not reset it, END does not clear
+                                            ; it, and a line carrying TROFF is itself
+                                            ; traced -- all measured (spec §3.4). A is
+                                            ; still 0 from the xor above.
+    ENDIF
                 ld      hl,TXTBASE
                 ld      (TXTTAB),hl         ; keep the real sysvar consistent ($8001)
                 ld      (PRGEND),hl         ; end marker sits at the base
@@ -306,6 +313,32 @@ rp_lp:
                 inc     hl
                 inc     hl
                 inc     hl                  ; HL -> token body
+    IF ROM_BASE < $4000
+                ; TRON: decorate this line with `[<lineno>]` before it runs
+                ; (basic/missing.asm). THIS IS THE FRESH-LINE-ENTRY POINT, and it
+                ; is the ONLY one -- which is what makes the measured trace shapes
+                ; come out right without a single extra test:
+                ;   * rp_goto (GOTO/GOSUB/trap dispatch) and the fall-through to
+                ;     the next line both re-enter at rp_lp, so both are traced;
+                ;   * a MID-LINE RESUME (RETURN, a continuing NEXT) takes the
+                ;     rp_resume branch ABOVE this and reaches rp_exec without
+                ;     passing here, so it is silent.
+                ; That is exactly the measured FOR/NEXT trace [20][30][30][40]
+                ; (line 20 entered once, resumed silently) and GOSUB's [40][20].
+                ;
+                ; ⚠️ NO DIRECT-MODE TEST IS NEEDED HERE, and the reason is
+                ; structural rather than lucky: a typed line runs via `jp rp_exec`
+                ; (dispatch_line), which never enters rp_lp at all. The spec
+                ; expected to re-derive DIRECTF here from CURLINE+1 vs
+                ; dir_line >> 8, because DIRECTF is stale before rp_exec computes
+                ; it -- but the branch that would have needed the test is
+                ; unreachable. The one case that DOES come back through here after
+                ; a typed line, the fall-through off dir_line, returns to the REPL
+                ; on the $0000 link two instructions above.
+                ld      a,(TRACEFLAG)
+                or      a
+                call    nz,trace_line       ; preserves HL (the token cursor)
+    ENDIF
                 jr      rp_exec
 rp_resume:
                 xor     a
