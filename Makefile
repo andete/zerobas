@@ -545,6 +545,28 @@ cursor-acceptance: repack-machine
 	python3 probes/basic/basic_probe_cursor.py --gate \
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
 
+# --- BIN$ / FRE characterization (the last two SILENT-GAP words) ---------------
+# The measurement behind docs/binfre-vg8020-characterization.md. BIN$ is a pure
+# function, so it is calibrated against HEX$/OCT$ -- the family members already
+# implemented on BOTH sides, which pin its whole argument and error contract with
+# code that is not under test (and which turned up D-BF-1/D-BF-2 doing it).
+#
+# FRE reports MEMORY, and the two machines do not have the same memory. It is
+# measured through RELATIONS, plus the one absolute `CLEAR n` makes comparable by
+# PINNING the string pool -- the same move `WIDTH 40` is for the cursor cluster.
+# Rows that measure the reference evaluator's own 6-byte-per-level stack frame,
+# and absolute FRE values, are reported but NEVER gated.
+#
+# Repack-only + oracle-dependent (boots openMSX; needs your VG-8020 reference
+# ROM); NOT part of `unit-test`.
+binfre-characterize: repack-machine
+	python3 probes/basic/basic_probe_binfre.py \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
+
+binfre-acceptance: repack-machine
+	python3 probes/basic/basic_probe_binfre.py --gate \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
+
 # --- Standing string-engine acceptance gate (string-engine arc S5; compare S3) -----
 # The three-part proof of the Phase-3 string engine on the merged repack build. CRUNCH:
 # the 8 string keywords (LEN/LEFT$/RIGHT$/MID$/CHR$/ASC/STR$/VAL) tokenise byte-for-byte
