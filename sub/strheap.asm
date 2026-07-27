@@ -136,6 +136,10 @@ strheap_engine:
                 jr      z,she_instr_op
                 cp      12
                 jp      z,sh_var_store      ; sets SH_ERR itself (0 ok / 1 OOM)
+                cp      14
+                jp      z,sh_bin_build      ; BIN$ (op 8 is sh_fill, hence 14)
+                cp      15
+                jp      z,sh_free_gap       ; FRE
                 jp      sh_val_parse        ; op==13: the only other value the
                                             ; main-ROM glue ever writes
 she_instr_op:
@@ -1262,6 +1266,112 @@ sh_hex_digit:
                 ret
 shx_dec:
                 add     a,'0'
+                ret
+
+; --- sh_free_gap: op=15 handler, the FRE value (docs/spec-basic-binfre.md §4) -
+; -> SH_PTR = the number of bytes still allocatable; SH_ERR = 0 always.
+;
+; The reference has TWO independent pools (variable space, and a CLEAR-sized
+; string pool). zerobas has ONE free gap: heap_alloc above is a bump allocator
+; on the downward frontier FRETOP whose only floor is ARYEND+2, and CLEAR's
+; string-space argument is evaluated and discarded. So FRE(n) and FRE(s$) report
+; the same quantity, and this is it -- D-BF-A(c), with the string-pool partition
+; left to its own slice.
+;
+; The floor is `ARYEND+2` and not `ARYEND` because that is EXACTLY heap_alloc's
+; own collision test (the sentinel is a live 2-byte $0000 the heap must stay
+; above). Deriving the answer from the allocator's own rule rather than restating
+; the layout means FRE cannot drift away from what an allocation will actually
+; accept. This lives sub-side because the ARYEND walk (strheap_aryend) and its
+; ary_stride already do.
+sh_free_gap:
+                ; FRE COMPACTS FIRST -- measured, not assumed: on the reference a
+                ; string that has been dropped is fully recovered by the next
+                ; FRE(s$). zerobas's heap is a bump allocator that only collects on
+                ; a COLLISION (heap_alloc above), so FRETOP still counts every dead
+                ; temp; `A$=STRING$(100,"A")` leaves 200 bytes of garbage behind the
+                ; live body. Without this, FRE reports garbage as used and answers
+                ; 306 where the allocator would happily hand back 106.
+                call    strheap_gc
+                call    strheap_aryend      ; HL = ARYEND (the $0000 terminator)
+                inc     hl
+                inc     hl                  ; +2: heap_alloc's own floor
+                ex      de,hl
+                ld      hl,(FRETOP)
+                or      a
+                sbc     hl,de               ; HL = FRETOP - (ARYEND+2)
+                jr      nc,sfg_have
+                ld      hl,0                ; a full heap must read 0, never negative
+sfg_have:
+                ld      (SH_PTR),hl
+                xor     a
+                ld      (SH_ERR),a
+                ret
+
+; --- sh_bin_build: op=14 handler (docs/spec-basic-binfre.md §3.1) ------------
+; SH_NUM = n (unsigned 16-bit) -> push a temp-descriptor-stack entry holding n's
+; BINARY text: no leading zeros, always >=1 digit (BIN$(0)="0"), up to SIXTEEN.
+;
+; NO SCRATCH BUFFER, unlike its two siblings. sh_hex_build/sh_oct_build stage
+; digits in NUMBUF, which is 8 bytes — ample for their 4- and 6-digit worst
+; cases. BIN$ needs sixteen and does not fit, and enlarging NUMBUF is not free
+; (the MID$ statement aliases it, basic/sysvars.inc). But the staging step was
+; never load-bearing: sh_temp_push_alloc already takes the digit count in A, so
+; COUNT the significant bits first, allocate exactly that many, then emit
+; straight into the body MSB-first. The count loop leaves HL pre-shifted so the
+; most significant 1 is in bit 15, which is also exactly what the emit loop
+; wants — the two halves share the same normalisation for free.
+;
+; n=0 takes the count-1 path with HL=0, so the emit loop writes a single '0'
+; and the >=1-digit rule needs no special case of its own.
+; SH_ERR: 0 ok / 1 = heap OOM / 2 = temp-descriptor stack full.
+sh_bin_build:
+                ld      hl,(SH_NUM)
+                ld      c,1                 ; BIN$(0) is one digit
+                ld      a,h
+                or      l
+                jr      z,sbb_have
+                ld      c,16
+sbb_lead:
+                bit     7,h                 ; normalise: shift until the top bit is
+                jr      nz,sbb_have         ; the most significant 1, counting down
+                add     hl,hl
+                dec     c
+                jr      sbb_lead
+sbb_have:
+                ld      a,c                 ; A = ndigits (1..16)
+                push    bc                  ; guard the count             [CNT]
+                push    hl                  ; guard the normalised value  [CNT][VAL]
+                call    sh_temp_push_alloc  ; CF clear=overflow / CF set:B=err,DE=body
+                jr      nc,sbb_full
+                ld      (SH_PTR),hl
+                ld      a,b
+                ld      (SH_ERR),a          ; err (0 ok / 1 heap OOM) -- S7
+                or      a
+                jr      z,sbb_fill          ; ok -> fill (DE=body, count>=1)
+                pop     hl                  ; heap OOM -> discard the guards,
+                pop     bc                  ; leave SH_ERR=1
+                ret
+sbb_fill:
+                pop     hl                  ; HL = normalised value       [CNT]
+                pop     bc                  ; C  = ndigits                [ ]
+sbb_lp:
+                ld      a,'0'
+                bit     7,h
+                jr      z,sbb_emit
+                inc     a                   ; '1'
+sbb_emit:
+                ld      (de),a
+                inc     de
+                add     hl,hl
+                dec     c
+                jr      nz,sbb_lp
+                ret
+sbb_full:
+                pop     hl                  ; discard [VAL]
+                pop     bc                  ; discard [CNT]
+                ld      a,2
+                ld      (SH_ERR),a
                 ret
 
 sh_oct_build:

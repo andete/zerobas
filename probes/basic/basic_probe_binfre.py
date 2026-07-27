@@ -31,14 +31,22 @@ entirely through RELATIONS, which survive the difference:
     X=FRE(0):DIM..:X-FRE(0)   what did the allocation COST?  (a delta)
     CLEAR 500:FRE("")     <- the exception, and the important one
 
-CLEAR PINS THE INSTRUMENT (cf. WIDTH 40 in the cursor slice)
-============================================================
-String space is not a property of the machine -- it is set by the program, with
-CLEAR. After `CLEAR 500` both machines have been TOLD to have 500 bytes of
-string pool, so `FRE("")` becomes an absolute that IS legitimately comparable.
-That is the only absolute FRE row this probe gates, and it is the one that can
-tell a real off-by-one from a memory-map difference. Everything measured before
-a CLEAR is reference-only and recorded for the documentation, never compared.
+CLEAR WOULD PIN THE INSTRUMENT -- ON A MACHINE THAT HAD A STRING POOL
+=====================================================================
+String space is not a property of the reference machine: the program sets it,
+with CLEAR. After `CLEAR 500` the VG-8020 has been TOLD to hold 500 bytes, so
+`FRE("")` becomes an absolute that is legitimately comparable -- 500/200/100
+exactly. That was meant to be this probe's `WIDTH 40`.
+
+It is not, and the reason is worth stating rather than quietly dropping.
+zerobas has ONE free gap where the reference has TWO pools: heap_alloc is a
+bump allocator on the downward frontier FRETOP whose only floor is the array
+sentinel, and CLEAR's string-space argument is evaluated and DISCARDED. There is
+no pool to size. So the CLEAR rows -- and every row that separates a string's
+BODY from its variable ENTRY -- are recorded and never gated (see ONE_GAP);
+D-BF-A(c) took the one-gap model deliberately and left the partition to its own
+slice. The FRE gate's teeth are therefore the RELATIONS and the allocation
+deltas, not an absolute.
 
 Clean-room: types lines, reads the screen. The reference ROM is never read as
 code. See CONTRIBUTING.md.
@@ -267,12 +275,27 @@ FRE = [
     # and cross-checking the two modes is exactly how an inter-case leak is
     # supposed to be caught. A row that reads the same either way cannot lie
     # about which mode it was run in.
+    # GARBAGE COLLECTION. FRE compacts the heap before reporting -- measured.
+    #
+    # `fre-gc-stable` is kept for the record but note it is a WEAK row: two
+    # consecutive reads agree whether or not anything is collected, so it
+    # passes trivially. `fre-gc-teeth` is the one with teeth, and it is the
+    # only GC row that means anything under the one-gap model: A$ is created
+    # BEFORE the first reading, so the variable entry is not part of the delta,
+    # and the string is allocated and dropped BETWEEN the two readings. The
+    # reference answers 0 because the body lived in the other pool; zerobas
+    # answers 0 only if FRE actually collects -- without the collect it reports
+    # ~300 bytes of dead temps as used. Falsifiable by deleting one call.
+    ("fre-gc-stable",'CLEAR 500:A$=STRING$(100,"A"):A$="":PRINT "[";FRE("")=FRE("");"]"'),
+    ("fre-gc-teeth", 'CLEAR 500:A$="":X=0:Y=0:X=FRE(0):A$=STRING$(100,"A"):A$="":Y=FRE(0):PRINT "[";X-Y;"]"'),
+    ("fre-gc-teeth2",'CLEAR 500:A$="":X=0:Y=0:X=FRE(""):A$=STRING$(200,"A"):A$="":Y=FRE(""):PRINT "[";X-Y;"]"'),
+    # POOL-SEPARATION rows: inherently unmatchable under D-BF-A(c), and NOT a
+    # bug. The reference splits a string's BODY (string pool) from its variable
+    # ENTRY (numeric pool), so allocating one costs 6 there and 100 here; with
+    # one gap both come out of the same span. Recorded, never gated -- see
+    # ONE_GAP below.
     ("fre-str-num",  'CLEAR 500:X=0:Y=0:X=FRE(0):A$=STRING$(100,"A"):Y=FRE(0):PRINT "[";X-Y;"]"'),
     ("fre-str-str",  'CLEAR 500:X=0:Y=0:X=FRE(""):A$=STRING$(100,"A"):Y=FRE(""):PRINT "[";X-Y;"]"'),
-    # GARBAGE COLLECTION. FRE("") is documented to compact the string heap.
-    # Make garbage, then ask twice: if the first call collects, the second sees
-    # the same number, and the pool is back to where it started.
-    ("fre-gc-stable",'CLEAR 500:A$=STRING$(100,"A"):A$="":PRINT "[";FRE("")=FRE("");"]"'),
     ("fre-gc-recov", 'CLEAR 500:X=FRE(""):A$=STRING$(100,"A"):A$="":PRINT "[";FRE("")=X;"]"'),
     # CLEAR PINS THE POOL -> these absolutes ARE comparable. See the header.
     ("fre-clear500", 'CLEAR 500:PRINT "[";FRE("");"]"'),
@@ -307,9 +330,27 @@ FREABS = [
 # construction and do state real contracts (the argument is a dummy; the string
 # form is pure). A permanently red row also makes the failure banner permanent,
 # and a banner that is always on is one nobody reads.
+#   the ONE-GAP  -- D-BF-A(c), docs/spec-basic-binfre.md §4.1. The reference has
+#   rows            two independent pools (variable space, and a CLEAR-sized
+#                   string pool); zerobas has ONE free gap, and CLEAR's
+#                   string-space argument is evaluated and discarded. So
+#                   FRE(0)=FRE("") answers -1 here and 0 there, and the CLEAR
+#                   absolutes report the whole gap. This is a KNOWN, SPECIFIED
+#                   deviation, listed in the spec BEFORE the implementation
+#                   existed rather than discovered when the gate went red; the
+#                   string-pool partition is its own follow-on slice.
+ONE_GAP = ({'PRINT "[";FRE(0)=FRE("");"]"'}
+           | {ln for lb, ln in FRE if lb.startswith("fre-clear")}
+           # pool-separation rows: a string's BODY and its variable ENTRY live in
+           # DIFFERENT pools on the reference and the SAME gap here, so no
+           # implementation of FRE over one gap can match them.
+           | {ln for lb, ln in FRE
+              if lb in ("fre-str-num", "fre-str-str", "fre-gc-recov")})
+
 NEVER_GATED = ({ln for _, ln in FREABS}
                | {ln for lb, ln in DEPTH if lb.startswith("dep-")
-                  and lb != "dep-same-str"})
+                  and lb != "dep-same-str"}
+               | ONE_GAP)
 
 
 def rows_of(raw: str | None) -> list[str]:
@@ -458,6 +499,8 @@ def main() -> int:
               "FRE would assert the maps are identical.")
         print("  dep-*: the VG-8020 evaluator's own 6-byte-per-level stack "
               "frame -- a ROM internal, not a language contract.")
+        print("  fre-same / fre-clear*: D-BF-A(c) -- the reference has TWO "
+              "pools, zerobas has ONE gap and CLEAR's size arg is discarded.")
         for c in abs_rows:
             twin = f"  zb={c.zb}" if c.zb is not None else ""
             print(f"  {c.label:14} {c.line[:34]:34} ref={c.ref}{twin}")

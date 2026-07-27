@@ -27,13 +27,22 @@ absolute value is not comparable and never will be — a gate asserting one is
 asserting that zerobas's memory map equals a VG-8020's. So `FRE` is measured
 through **relations**: comparisons, and deltas between two readings.
 
-### 1.1 `CLEAR` pins the instrument
+### 1.1 `CLEAR` would pin the instrument — on a machine with a string pool
 
 The cursor slice needed `WIDTH 40` before a single column could be compared.
-`FRE` needs the same move, and it has one: **string space is not a property of
-the machine, it is set by the program.** After `CLEAR 500` both machines have
-been *told* to have a 500-byte string pool, so `FRE("")` becomes an absolute
-that is legitimately comparable — and it is the only absolute this probe gates.
+`FRE` looked like it had the same move available: **string space is not a
+property of the reference machine, the program sets it.** After `CLEAR 500` the
+VG-8020 has been *told* to hold 500 bytes, so `FRE("")` becomes an absolute that
+is legitimately comparable.
+
+> ⚠️ **It turned out not to be usable, and that is a finding, not a footnote.**
+> zerobas has **one free gap** where the reference has **two pools**, and
+> `CLEAR`'s string-space argument is evaluated and discarded — so there is no
+> pool to size. The rows below are still the right measurement of the
+> *reference*; they simply cannot be *asserted* until the string-pool partition
+> lands as its own slice (spec D-BF-A(c), §5 there). **The instrument-pinning
+> move was real; the instrument it would have pinned does not exist on this
+> side yet.**
 
 | row | reference |
 |---|---|
@@ -183,9 +192,19 @@ Both are recorded and reported by the probe in their own section, never
 asserted. The `eq-*` rows and `FRE("")-FRE("")` **are** gated: they are
 depth-neutral by construction and do state real contracts.
 
-The §3.2 deltas are a **third, open** case — they encode zerobas's *variable and
-array table layout*, not `FRE` itself. Whether to gate them is a scoping
-decision, not a measurement one; see the spec's D-BF questions.
+The §3.2 deltas were a **third, open** case — they encode zerobas's *variable and
+array table layout*, not `FRE` itself. **Resolved: gate them all** (spec D-BF-B).
+The `layout` battery settled it with `VARPTR` before any `FRE` code existed —
+scalar stride 11, string entry 6, array element 8, array header 8, **identical on
+both machines, 10/10** — so the deltas assert something already true.
+
+A **fourth** case emerged only once `FRE` ran, and it is the one-gap model's real
+price: any row that separates a string's **body** from its **variable entry**
+(`fre-str-num`, `fre-str-str`, `fre-gc-recov`) is a *pool-separation* row. The
+reference charges the body to the string pool and the entry to the numeric pool;
+with one gap both come out of the same span, so 6-and-100 there is 106 here. No
+implementation of `FRE` over one gap can match those, and they joined the
+recorded-not-gated set rather than being "fixed".
 
 ## 4. Errors — `FRE`
 

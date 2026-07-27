@@ -218,6 +218,13 @@ kwtable:
                 ; no shadow, order is free.
                 db      4,"HEX$",2,PEEK_PREFIX,HEXD_TOKEN    ; $FF $9B
                 db      4,"OCT$",2,PEEK_PREFIX,OCTD_TOKEN    ; $FF $9A
+                ; BIN$ / FRE (keyword-gaps arc step 4): tokens oracle-measured
+                ; off the VG-8020's own CRUNCH output (docs/kwsweep-msx1-
+                ; coverage.md), not read from a table. FRE takes an argument of
+                ; EITHER type, so unlike its $FF neighbours it is dispatched by
+                ; its own arm in ev_f_ff rather than via ev_ff_argtab.
+                db      4,"BIN$",2,PEEK_PREFIX,BIND_TOKEN    ; $FF $9D
+                db      3,"FRE",2,PEEK_PREFIX,FRE_TOKEN      ; $FF $8F
                 db      6,"SPACE$",2,PEEK_PREFIX,SPACED_TOKEN; $FF $99
                 db      7,"STRING$",1,STRING_TOKEN           ; $E3
                 db      5,"INSTR",1,INSTR_TOKEN               ; $E5

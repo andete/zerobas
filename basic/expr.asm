@@ -974,6 +974,8 @@ ev_f_ff:
                 ; nor BC is live here (ev_ff_arg's first act is `ld c,a`).
                 cp      CVI_TOKEN           ; $A8 -> CVI (STRING arg: not in the set)
                 jp      z,ev_ff_cvi
+                cp      FRE_TOKEN           ; $8F -> FRE (EITHER type: not in the set)
+                jp      z,ev_ff_fre
                 ld      hl,ev_ff_argtab
                 ld      bc,ev_ff_argtab_len
                 cpir
@@ -1368,6 +1370,60 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                 ld      e,(hl)              ; low byte
                 inc     hl
                 ld      d,(hl)              ; high byte  -> DE = int (LE)
+                ret
+    ENDIF
+
+    IF ROM_BASE < $4000
+; --- FRE(n) / FRE(s$): free memory (docs/spec-basic-binfre.md §4) -----------
+; MEASURED on the VG-8020: the numeric argument is a DUMMY -- FRE(0), FRE(1),
+; FRE(-1) and FRE(255) all agree once they are read at the SAME evaluation depth
+; -- and the string form is selected by the argument's TYPE, never its content
+; (FRE(""), FRE("ABCDE") and FRE(A$) agree). Parentheses are REQUIRED; bare FRE,
+; FRE() and FRE(0,0) are Syntax errors.
+;
+; So the argument is accepted in EITHER type and then DISCARDED, which is why
+; this cannot join ev_ff_argtab (numeric-only -- FRE("") would be a type
+; mismatch) and cannot be shaped like CVI (string-only -- FRE(0) would need a
+; string). It is a str_eval attempt with a numeric retry.
+;
+; D-BF-A(c): the reference reports TWO independent pools; zerobas has ONE free
+; gap and CLEAR's string-space argument is discarded, so BOTH forms answer with
+; that gap. Computed sub-side (op 15) because the array-region walk lives there.
+ev_ff_fre:
+                inc     ix                  ; skip the FRE selector
+                call    ev_sp
+                ld      a,(ix+0)
+                cp      '('
+                jp      nz,ev_f_empty       ; bare FRE -> deferred syntax error
+                inc     ix
+                call    ev_sp
+                push    ix                  ; guard the cursor for the numeric retry:
+                push    ix                  ; repack str_eval CALSLTs and can exit NC
+                pop     hl                  ; with GARBAGE IX -- the CVI landmine above
+                call    str_eval            ; a STRING argument?
+                jr      nc,ev_fre_num       ; no -> re-read the same text as numeric
+                pop     ix                  ; drop the guard; take str_eval's cursor
+                push    hl
+                pop     ix                  ; IX = past the string operand
+                jr      ev_fre_close
+ev_fre_num:
+                pop     ix                  ; restore the cursor str_eval consumed
+                call    ev_logic            ; the ordinary numeric argument, DISCARDED
+                                            ; (no domain check: FRE(-1) must not raise,
+                                            ;  exactly as POS(-1) must not)
+ev_fre_close:
+                call    ev_sp
+                ld      a,(ix+0)
+                cp      ')'
+                jp      nz,ev_f_empty       ; unclosed / second arg -> Syntax error
+                inc     ix
+                push    ix                  ; call_strheap clobbers IX (the cursor)
+                ld      a,15
+                ld      (SH_OP),a           ; op = 15 (FREE_GAP)
+                call    call_strheap
+                pop     ix
+                call    flt_int_result      ; an int result even when the argument
+                ld      de,(SH_PTR)         ;  was a float or a string (A only)
                 ret
     ENDIF
 

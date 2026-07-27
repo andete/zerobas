@@ -273,6 +273,8 @@ CHRD_TOKEN      equ     $96     ; CHR$(n)      -> $FF $96
 ; disassembly.
 HEXD_TOKEN      equ     $9B     ; HEX$(n)      -> $FF $9B
 OCTD_TOKEN      equ     $9A     ; OCT$(n)      -> $FF $9A
+BIND_TOKEN      equ     $9D     ; BIN$(n)      -> $FF $9D
+FRE_TOKEN       equ     $8F     ; FRE(n)/FRE(s$) -> $FF $8F
 SPACED_TOKEN    equ     $99     ; SPACE$(n)    -> $FF $99
 STRING_TOKEN    equ     $E3     ; STRING$(n,c) -> $E3   (single-byte, reserved word)
 INSTR_TOKEN     equ     $E5     ; INSTR([p,]a$,b$) -> $E5 (single-byte, reserved word)

@@ -575,6 +575,8 @@ str_func_ff:
                 jp      z,str_fn_hex
                 cp      OCTD_TOKEN          ; $9A -> OCT$
                 jp      z,str_fn_oct
+                cp      BIND_TOKEN          ; $9D -> BIN$
+                jp      z,str_fn_bin
                 cp      SPACED_TOKEN        ; $99 -> SPACE$
                 jp      z,str_fn_space
                 dec     hl                  ; restore HL to the $FF prefix
@@ -953,55 +955,71 @@ ems_err_pop1:
 ; own design, consistent with the rest of the engine. No disassembly.
 ; ===========================================================================
 
-; str_fn_hex: HEX$(n) -> uppercase hex text of n viewed as an UNSIGNED 16-bit
-; value, no leading zeros, always >=1 digit (D-2: HEX$(0)="0", HEX$(-1)="FFFF").
-; The nibble/leading-zero-suppression build (was inline here) moved to the
-; sub-ROM tenant (sub/strheap.asm sh_hex_build, op=6) — shape-C follow-up,
-; this low region ran out of room for it; only the argument PARSE (needs
-; `eval`) stays main-side. Thin glue mirrors str_heap_alloc.
+; --- str_fn_hex / str_fn_oct / str_fn_bin: the RADIX-TEXT family -------------
+; HEX$(n) / OCT$(n) / BIN$(n) -> text of n viewed as an UNSIGNED 16-bit value,
+; base 16 / 8 / 2, no leading zeros, always >=1 digit (D-2: HEX$(0)="0",
+; HEX$(-1)="FFFF"). The digit builds live in the sub-ROM tenant
+; (sub/strheap.asm sh_hex_build/sh_oct_build/sh_bin_build, ops 6/7/14) —
+; shape-C move, this low region ran out of room for them; only the argument
+; PARSE (which needs `eval`) stays main-side. Thin glue mirrors str_heap_alloc.
+;
+; ONE BODY, THREE ENTRY STUBS (docs/spec-basic-binfre.md §3). These were two
+; near-identical 43 B / 38 B copies, and the 5-byte difference between them WAS
+; D-BF-2 — str_fn_oct was str_fn_hex minus the checked conversion. A third copy
+; for BIN$ could not fit: they are low-region, and the low region had 7 B free.
+; Collapsing pays for BIN$ out of its own family AND writes the two argument
+; checks once for all three instead of three times (or, as before, once and not
+; at all).
+;
+; The op byte is the only parameter, carried in C across `eval` on the stack —
+; NOT in SH_OP, which a nested string operation inside the argument would
+; clobber (`HEX$(LEN(A$))`).
 str_fn_hex:
-                inc     hl                  ; past the selector
-                ld      a,(hl)
-                cp      '('
-                jp      nz,str_arg_empty
-                inc     hl
-                call    eval                ; DE = n (unsigned-16 view, D-2); HL advanced
-    IF ROM_BASE < $4000
-                push    hl                  ; guard cursor across the checked conversion
-                call    fac_to_int_addr     ; spec §10.3: HEX$'s int argument is the
-                pop     hl                  ; ADDRESS domain, checked (FPERR on overflow) --
-    ENDIF                                   ; overrides eval's silent DE when n was a float
-                ld      a,(hl)
-                cp      ')'
-                jp      nz,str_arg_empty
-                inc     hl                  ; HL past ')'
-                push    hl                  ; guard cursor
-                ld      (SH_NUM),de
-                ld      a,6
-                ld      (SH_OP),a           ; op = 6 (HEX_BUILD)
-                call    call_strheap
-                call    shx_finish
-                pop     hl                  ; restore cursor
-                jp      str_eval_ok
-
-; str_fn_oct: OCT$(n) -> octal text of n (unsigned 16-bit view), no leading
-; zeros, always >=1 digit. Same shape-C move (sub/strheap.asm sh_oct_build,
-; op=7); only the argument PARSE stays main-side.
+                ld      a,6                 ; op = 6 (HEX_BUILD)
+                jr      str_fn_radix
 str_fn_oct:
+                ld      a,7                 ; op = 7 (OCT_BUILD)
+                jr      str_fn_radix
+str_fn_bin:
+                ld      a,14                ; op = 14 (BIN_BUILD; 8 is sh_fill)
+str_fn_radix:
+                ld      c,a                 ; C = the build op
                 inc     hl                  ; past the selector
                 ld      a,(hl)
                 cp      '('
                 jp      nz,str_arg_empty
                 inc     hl
-                call    eval                ; DE = n (unsigned-16 view)
+                push    bc                  ; guard the op across eval
+                call    eval                ; DE = n (unsigned-16 view, D-2); HL advanced
+                push    hl                  ; guard cursor across the checked conversion
+                call    fac_to_int_addr     ; the int argument is the ADDRESS domain,
+                pop     hl                  ; CHECKED (FPERR on overflow) — overrides
+                pop     bc                  ; eval's silent DE when n was a float.
+                                            ; D-BF-2: OCT$ never had this, so
+                                            ; OCT$(65536) silently printed OCT$(0).
+                ; D-BF-1: adopt ev_mc_arg_checked's rule (basic/expr.asm) — an
+                ; argument error is EITHER flag, and a deferred TMISMATCH alone
+                ; is invisible to the PRINT item driver, which checks only FPERR.
+                ; That is why `PRINT HEX$("A")` printed a silent 0 while
+                ; `X=HEX$("A")` correctly said "type mismatch". Promote it, so
+                ; the ordinary FPERR path aborts the statement for both.
+                ld      a,(TMISMATCH)
+                or      a
+                jr      z,sfr_argok
+                ld      a,(FPERR)
+                or      a                   ; first-error-wins: an inner error keeps
+                jr      nz,sfr_argok        ; its own (more specific) message
+                ld      a,10                ; fre_msgtab 10 = type mismatch
+                ld      (FPERR),a
+sfr_argok:
                 ld      a,(hl)
                 cp      ')'
                 jp      nz,str_arg_empty
                 inc     hl                  ; HL past ')'
                 push    hl                  ; guard cursor
                 ld      (SH_NUM),de
-                ld      a,7
-                ld      (SH_OP),a           ; op = 7 (OCT_BUILD)
+                ld      a,c
+                ld      (SH_OP),a           ; op = 6 HEX / 7 OCT / 14 BIN
                 call    call_strheap
                 call    shx_finish
                 pop     hl                  ; restore cursor
