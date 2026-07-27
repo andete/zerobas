@@ -37,6 +37,15 @@ see near-duplicates with different instruction counts, the same logic expressed
 differently, or duplicated DATA.  A small total is a floor on THIS SHAPE, not a
 verdict on redundancy.
 
+FALSE POSITIVES, the other way round: a group here is not automatically a carve.
+An ALREADY-COLLAPSED family still reports as clones -- after 4bfafa2 the eight
+math stubs reduced to `call evmc_prologue / ret nz / ld hl,<entry> / jp
+evmc_dispatch`, and those five 10 B remnants are STILL structurally identical.
+They are irreducible: each exists precisely to supply one distinct constant, and
+squeezing them further would mean an index-to-entry mapping that costs more than
+it saves.  Read `each` -- once a group's per-member size approaches the cost of a
+stub (~5-10 B) there is nothing left to take.
+
 GATING: the lean cart is BYTE-FROZEN, so a group reported `both` assembles into
 both builds and can only be collapsed behind an `IF ROM_BASE < $4000` (which
 basic/fat.asm demonstrates).  A group reported `repack` is free to collapse

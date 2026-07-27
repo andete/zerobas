@@ -187,7 +187,7 @@ masked one operand; those shims differ in two).
 
 | est. | n × each | region | gating | group |
 |---|---|---|---|---|
-| ~100 B | 5 × 32 B | page 1 | **repack-only** | `evmc_atn/cos/rnd/sin/tan` — math-fn tenant call glue, identical but for `SUBROM_IDX_*` |
+| ~~~100 B~~ **✅ 143 B taken** | 5 × 32 B | page 1 | **repack-only** | `evmc_atn/cos/rnd/sin/tan` — math-fn tenant call glue. **Done `4bfafa2`**; extending to `SQR`/`LOG`/`EXP` (which share both halves, domain check in between) beat the estimate: 143 B, not 100 B. |
 | ~100 B | 5 × 31 B | page 1 | both | `ev_and_lp/ev_idiv_lp/ev_mod_lp/ev_or_lp/ev_xor_lp` |
 | ~28 B | 3 × 20 B | page 1 | repack-only | `fat_rand_get/open/put` |
 
@@ -199,9 +199,11 @@ carveable this way at all: its largest clone group is 14 B.
 
 Recommended handling:
 
-* `evmc_*` is the clean one (repack-only, exact FAT shape, no lean-identity work)
-  — but page 1 is at **375 B free** and the whole SILENT-GAP class needs ~180 B,
-  so this is **banked funding, not a blocker**. Spend it only if a slice needs it.
+* ~~`evmc_*` is the clean one…~~ **✅ TAKEN 2026-07-27 (`4bfafa2`), +143 B** —
+  banked deliberately rather than on demand, so slices stop opening with a hunt
+  for space. **Page 1 is now at 518 B free.** Its `ret nz` deferred-error path
+  *is* covered by `math-acceptance` (falsified: removing it turns the gate red
+  with 7 failures) — unlike the FAT carve, no new gate was needed.
 * `ev_*_lp` **must not be done standalone.** It is L2 from §4.1 under another
   name; folding it into the `EQV`/`IMP` slice buys *seven* operator layers for
   what five cost, instead of refactoring the same code twice.
