@@ -63,8 +63,17 @@ SIZE = TOP - LOW  # 22510
 # test_stmt_dispatch.py proves all 52 lean entries (and all 69 repack entries) still
 # dispatch to the handler the pre-refactor chain sent them to, comparing against an
 # expectation recovered from that chain rather than from the table under test.
+#
+# UPDATED 2026-07-27 for the PROMPT, deliberately and in shared code. Two changes,
+# both in basic/repl.asm: the prompt text is now "ZB" (was "zb>", 1 B smaller), and
+# it ALWAYS OPENS A FRESH LINE -- the reference emits a newline before its prompt
+# whenever the cursor is not at column 0, and zerobas used to print the prompt
+# wherever the cursor stood, so `PRINT "A";` read `Azb>` on one row against the
+# reference's `A` / `Ok` on two. A compatibility fix, +7 B net in the lean cart,
+# which still assembles with room (the $8000 ceiling assert is the real guard).
+# Previous: 337dda79464313dd32196d924a07ca30eb069795bde81c6c638cac8f69b7e0e8
 # Previous: e21f61fe9ecb855ce69a29831a5990070c215613479310da368c350bd4228005
-LEAN_SHA256 = "337dda79464313dd32196d924a07ca30eb069795bde81c6c638cac8f69b7e0e8"
+LEAN_SHA256 = "defd6201b78bc922e3ba4db66134d2527c76ad9d81105440a6d667f12511be90"
 
 
 def main() -> int:

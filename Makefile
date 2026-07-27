@@ -299,7 +299,7 @@ $(MAIN_ROM): basic/main-reloc.asm basic/main.asm $(DEPS) tape/tape.asm \
              tools/build_patches.py tools/build_mainrom.py tools/build_repacked_cbios.py | $(BUILD)
 	python3 tools/build_patches.py --main --cbios $(CBIOS)
 repack-main: $(MAIN_ROM)
-repack-boot: repack-main
+repack-boot: repack-main $(SUB_ROM)
 	python3 probes/basic/basic_probe_repack_boot.py
 
 # --- Slot-0 page-1 BASIC patch (build/basic.rom spliced into a stock C-BIOS) ---

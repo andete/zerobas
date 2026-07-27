@@ -214,7 +214,7 @@ in slot 3-1):
 
 ```sh
 make machines                      # -> C-BIOS_MSX1[_BR/_EU/_JP]_BASIC[_DISK]
-openmsx -machine C-BIOS_MSX1_BASIC               # boots straight to the zb> prompt
+openmsx -machine C-BIOS_MSX1_BASIC               # boots straight to the ZB prompt
 openmsx -machine C-BIOS_MSX1_BASIC_DISK -diska disk/test720.dsk   # + disk
 ```
 
@@ -253,7 +253,7 @@ for byte. (Decimal `≥ 32768` — which the reference stores as a float — plu
 0. **header** — `INITXT` brings up the text screen; `CHPUT` prints a couple of
    original left-aligned lines (the same role as MSX-BASIC's top-of-screen
    header before its prompt — no reference text copied)
-1. **prompt + line editor** — print `zb>` (deliberately *not* `Ok`, so zerobas
+1. **prompt + line editor** — print `ZB` (deliberately *not* `Ok`, so zerobas
    is never mistaken for stock MSX-BASIC) and read a line via `CHGET`, echoing
    with Backspace editing until Enter (both `$08` and `$7F`/DEL erase left, so
    the Mac Backspace key — which openMSX delivers as the MSX DEL key — works)
@@ -388,7 +388,7 @@ zerobas/
 │   ├── main.asm       # cartridge header + includes + page padding ($00 fill)
 │   ├── interp.asm     # tokeniser + statement-loop executor (INIT entry)
 │   ├── title.asm      # startup header lines (INITXT + CHPUT)
-│   ├── repl.asm       # keyboard line editor + read/eval loop (zb> prompt)
+│   ├── repl.asm       # keyboard line editor + read/eval loop (ZB prompt)
 │   ├── vars.asm       # integer variable store (A..Z, 16-bit)
 │   ├── expr.asm       # 16-bit integer expression evaluator (incl. PEEK)
 │   ├── poke.asm       # the POKE statement handler

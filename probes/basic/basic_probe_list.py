@@ -148,7 +148,7 @@ def main() -> int:
             idxs = [rows.index(exp) for exp in expected]
             order_ok = idxs == sorted(idxs)
         cond = all(present) and order_ok
-        detail = "" if cond else f"got rows={[r for r in rows if r and 'zb>' not in r][:8]}"
+        detail = "" if cond else f"got rows={[r for r in rows if r and 'ZB' != r.strip()][:8]}"
         check(label, cond, detail)
 
     print("\nALL PASS" if ok else "\nSOME FAILED")

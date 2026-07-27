@@ -106,7 +106,7 @@ CF3300_W29 = ["TEST    .BIN HI      .TXT",
 
 
 def _files_lines(rows):
-    """The FILES listing lines = the rows after the 'FILES' echo up to 'zb>'."""
+    """The FILES listing lines = the rows after the 'FILES' echo up to the prompt."""
     out, started = [], False
     for r in rows:
         s = r.strip()
@@ -114,7 +114,7 @@ def _files_lines(rows):
             if s.endswith("FILES"):
                 started = True
             continue
-        if s.startswith("zb>") or s == "Ok" or s == "":
+        if s == "ZB" or s == "Ok" or s == "":
             if out:
                 break
             continue

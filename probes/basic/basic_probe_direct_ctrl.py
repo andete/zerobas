@@ -44,6 +44,7 @@ import argparse, os, re, sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lib"))
 import omsx_repl  # noqa: E402
+from omsx_repl import PROMPTS  # both machines' prompt strings
 
 REF_MACHINE = "Philips_VG_8020"
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
@@ -173,10 +174,25 @@ def _spans(raw: str) -> list[str]:
 REPORT_ROW = re.compile(r"(break|syntax error|can't continue).*", re.I)
 
 
+def _strip_prompt(row: str) -> str:
+    """Drop a LEADING prompt from a row.
+
+    ⚠️ zerobas's prompt opens a fresh line (basic/repl.asm, 2026-07-27), but it is
+    still followed ON THAT ROW by the echo of whatever the user typed -- that is
+    what a prompt IS. "Always starts a line" is not "always alone on a line", and
+    conflating the two turned the `bare` case's reference `fori=1to7:next` into
+    zerobas's `ZBfori=1to7:next`. The reference's `Ok` is genuinely alone on its
+    row, so only zerobas's needs stripping, but both are handled for symmetry."""
+    for p in PROMPTS:
+        if row.startswith(p):
+            return row[len(p):]
+    return row
+
+
 def _reports(raw: str) -> list[str]:
     out = []
     for row in _rows(raw):
-        m = REPORT_ROW.search(row.replace("zb>", " "))
+        m = REPORT_ROW.search(_strip_prompt(row))
         if m:
             out.append(re.sub(r"\s+", " ", m.group(0)).strip().lower())
     return out
@@ -202,10 +218,13 @@ def _norm(raw: str | None, with_report: bool = False) -> str:
     FOR` vs `next without for`), a cosmetic divergence this probe is not about.
 
     A ROW, not a character window off the flattened screen: the first version cut
-    the last 40 chars, and since the two ROMs' prompts differ in width ("Ok" on
-    its own row vs a `zb>` PREFIX) the window started at a different point in the
-    echo on each side. That reported `err_after_ret` as a divergence when both
-    machines had in fact printed exactly "syntax error" with no line suffix."""
+    the last 40 chars, and since the two ROMs' prompts then differed in SHAPE
+    ("Ok" on its own row vs a `zb>` PREFIX glued to the echo) the window started
+    at a different point in the echo on each side. That reported `err_after_ret`
+    as a divergence when both machines had in fact printed exactly "syntax error"
+    with no line suffix. (Since 2026-07-27 zerobas's prompt is `ZB` and always
+    opens a fresh line, so the two shapes now match -- but the row-based read is
+    kept, because it is right for a reason that does not depend on that.)"""
     if raw is None:
         return "<no capture>"
     body = "".join(_rows(raw))
@@ -217,8 +236,8 @@ def _norm(raw: str | None, with_report: bool = False) -> str:
         return "|".join(hits)
     meaningful = []
     for row in _rows(raw):
-        row = row.replace("zb>", " ").strip()      # drop zerobas's prompt prefix
-        if row and row != "Ok":                    # ...and the reference's prompt
+        row = _strip_prompt(row.strip()).strip()
+        if row and row not in PROMPTS:             # drop either machine's prompt
             meaningful.append(row.lower())
     return "!" + (meaningful[-1] if meaningful else "<blank>")
 

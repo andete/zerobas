@@ -3,7 +3,7 @@
 **Status: SIGNED OFF (2026-07-09); WS-1 (S2) + WS-2 (S3) + WS-3 (S4) + S5 close-out DONE (2026-07-10) — ARC COMPLETE.**
 Decisions D1–D5 resolved (§6). The full merged main ROM — repacked C-BIOS + relocated
 BASIC (`$2812–$7FFF`) + tape — now **builds and boots end to end** (`make repack-boot`:
-title + `zb>` prompt + live `PRINT`), and ships as `zerobas-main-eu.ips`/`.bps` (verified
+title + `ZB` prompt + live `PRINT`), and ships as `zerobas-main-eu.ips`/`.bps` (verified
 byte-exact round-trip). WS-2 proved the relocation is safe (audit:
 [`cbios-repack-ws2-audit.md`](cbios-repack-ws2-audit.md) — only base-dependent site is
 `org`). S5 close-out done: provenance write-up
@@ -145,7 +145,7 @@ Reuse the standing harness — this arc must not regress it:
      BPS(pristine) both reconstruct the merged image **byte-for-byte**.
    - **Boot gate** [`basic_probe_repack_boot.py`](../probes/basic/basic_probe_repack_boot.py)
      (`make repack-boot`): boots the merged ROM as a real MSX main ROM, **no cartridge** —
-     reaches the zerobas title + `zb>` prompt (this is zerobas's ready prompt, the `Ok`
+     reaches the zerobas title + `ZB` prompt (this is zerobas's ready prompt, the `Ok`
      analogue) and runs a live `PRINT 12+34 → 46`. The deferred S3 end-to-end proof, met.
    - Shipping deliverables untouched: `basic.rom` byte-identical; page-1 + tape patch
      builds unchanged; unit-test 38/38. `repack-main`/`repack-boot` kept out of `all`

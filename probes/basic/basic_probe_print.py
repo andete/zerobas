@@ -116,7 +116,7 @@ def output_block(rows, typed):
             if typed in row:
                 started = True
             continue
-        if row.strip() in ("Ok", "zb>") or row.strip().endswith("zb>"):
+        if row.strip() in ("Ok", "ZB"):
             break
         out.append(row)
     # drop trailing blanks

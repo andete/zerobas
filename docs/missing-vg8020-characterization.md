@@ -58,7 +58,7 @@ divergence as the different boot `WIDTH`.
 Three rows in the first revision read `<no result>` on **both** machines and
 therefore PASSED, while one side raised `Illegal function call` and the other
 did not. The cause: `Z=99:PRINT "[";LEN(CHR$(256));"]":Z=1` is 37 source
-characters, which with zerobas's `zb>` echo prefix is exactly one column too
+characters, which with zerobas's then-3-character `zb>` echo prefix was exactly one column too
 wide for a 40-column row. `screen_tail` anchors **strictly** on the echo, so a
 wrapped echo kills the readout silently.
 

@@ -60,7 +60,7 @@ python3 probes/disk/disk_probe_bdos.py --help
 
 ### Driving the REPL — `lib/omsx_repl.py`
 
-A probe that types BASIC at the `Ok`/`zb>` prompt and scrapes the result from
+A probe that types BASIC at the `Ok`/`ZB` prompt and scrapes the result from
 VRAM should deliver its lines through **`omsx_repl.run_case(machine, mode,
 lines)`**, NOT openMSX `type`. `type` drives the keyboard *matrix* on a fixed
 emulated-time schedule, which is timing-fragile (a leading key can double, an
@@ -73,7 +73,8 @@ contract, no disasm) so the ROM tokenises it with no matrix scan — determinist
 - `run_case(machine, "stored", body_lines)` — run a program: the body statements
   are numbered `10`/`20`/… and `RUN`; use `as_stored(":"-joined line)` to split.
 - `result_span` / `screen_tail` / `result_span_after_echo` — the reusable
-  `[…]`-bracket value + error-tail extractors (machine-agnostic re `Ok` vs `zb>`).
+  `[…]`-bracket value + error-tail extractors (machine-agnostic re `Ok` vs `ZB`;
+  the prompt strings live in one place, `omsx_repl.PROMPTS`).
 
 **Batched delivery is now the default for a whole matrix** (since `5cde8a8` fixed
 `NEW`/`CLEAR` to reset variables + DEFtbl on the repack build — `omsx_repl.py

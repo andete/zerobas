@@ -156,6 +156,15 @@ EXPECTED = [
     ('VDP_TOKEN', 'ex_vdp_assign', 'ROM_BASE < $4000'),
     ('BASE_TOKEN', 'ex_base_assign', 'ROM_BASE < $4000'),
     ('TIME_TOKEN', 'ex_time_assign', 'ROM_BASE < $4000'),
+    # --- the MISSING class (docs/spec-basic-missing-class.md) ----------------
+    # These were NEVER in the pre-refactor cp/jp z chain -- they are new
+    # statements, not a re-expression of old ones, so unlike every entry above
+    # they cannot be recovered from it. Added here deliberately, which is what
+    # this test asked for when it flagged them as UNEXPECTED. Repack-only with
+    # the rest of the class: the lean cart's entry count must stay 52.
+    ('MOTOR_TOKEN', 'ex_motor', 'ROM_BASE < $4000'),
+    ('TRON_TOKEN', 'ex_tron', 'ROM_BASE < $4000'),
+    ('TROFF_TOKEN', 'ex_troff', 'ROM_BASE < $4000'),
 ]
 
 

@@ -8,7 +8,7 @@ Boots the merged 32 KB main ROM -- repacked C-BIOS (page-0 dead ROM-BASIC droppe
 + relocated BASIC ($2812-$7FFF, "AB" header pinned at $4000) + tape page-0
 completions -- as a real MSX main ROM, with NO cartridge inserted, and asserts:
 
-  1. cold boot reaches the zerobas title + `zb>` prompt (BASIC is found and INIT'd
+  1. cold boot reaches the zerobas title + `ZB` prompt (BASIC is found and INIT'd
      via C-BIOS's page-1 cartridge scan, exactly as the shipping stack), and
   2. the interpreter is live: typing `PRINT 12+34` prints `46`.
 
@@ -33,6 +33,15 @@ sys.path.insert(0, os.path.join(REPO, "tools"))
 import openmsx_paths  # noqa: E402
 
 MERGED = os.path.join(REPO, "build", "zerobas-main-eu.rom")
+# ⚠️ THE SUB-ROM IS NOT OPTIONAL SCENERY. The sub-ROM arc (wave 3) evicted the
+# TOKENISER and kwtable out of the main ROM into sub.rom, so a machine that boots
+# the merged main ROM with an empty slot 3-2 has a BASIC that cannot tokenise a
+# typed line -- it boots to a screen of garbage. This probe's machine had no
+# sub-ROM, so `make repack-boot` had been failing since that arc landed, on a
+# stale machine definition rather than on anything about the ROM under test
+# (the sibling of docs/... "a stale machine reads as unimplemented"). Slot map
+# matches tools/install-repack-machine.py: RAM 3-0, sub 3-2.
+SUB_ROM = os.path.join(REPO, "build", "sub.rom")
 OMSX_RUN = os.path.join(REPO, "probes", "lib", "omsx_run.py")
 MACHINE = "ZEROBAS_MAIN_EU_PROBE"
 COLS, ROWS = 40, 24
@@ -65,7 +74,19 @@ def install_machine() -> None:
     </primary>
     <primary external="true" slot="1"/>
     <primary external="true" slot="2"/>
-    <primary slot="3"><RAM id="Main RAM"><mem base="0x0000" size="0x10000"/></RAM></primary>
+    <primary slot="3">
+      <secondary slot="0">
+        <RAM id="Main RAM"><mem base="0x0000" size="0x10000"/></RAM>
+      </secondary>
+      <secondary slot="1"/>
+      <secondary slot="2">
+        <ROM id="zerobas-sub ROM">
+          <rom><filename>{SUB_ROM}</filename></rom>
+          <mem base="0x0000" size="0x8000"/>
+        </ROM>
+      </secondary>
+      <secondary slot="3"/>
+    </primary>
     <PPI id="ppi"><io base="0xA8" num="4"/><sound><volume>16000</volume></sound>
       <key_ghosting>false</key_ghosting><keyboard_type>int</keyboard_type>
       <has_keypad>false</has_keypad><code_kana_locks>false</code_kana_locks>
@@ -113,7 +134,7 @@ def main() -> int:
     if not boot:
         print("FAIL: no VRAM capture on cold boot"); return 1
     show("cold boot", boot)
-    boot_ok = "zerobas" in "\n".join(boot) and "zb>" in "\n".join(boot)
+    boot_ok = "zerobas" in "\n".join(boot) and "ZB" in "\n".join(boot)
 
     # zerobas drops a trailing CR sharing the text burst, so Enter is a separate,
     # later --type event (per basic_probe_print).
@@ -122,7 +143,7 @@ def main() -> int:
     print_ok = "46" in "\n".join(run or [])
 
     print("-------------------")
-    print("cold boot title + zb> prompt:", "PASS" if boot_ok else "FAIL")
+    print("cold boot title + ZB prompt:", "PASS" if boot_ok else "FAIL")
     print("live PRINT 12+34 -> 46      :", "PASS" if print_ok else "FAIL")
     ok = boot_ok and print_ok
     print("repack boot gate:", "PASS" if ok else "FAIL")

@@ -114,7 +114,7 @@ RAM. Fall back to Option B if page-0 is too tight.
 3. `make unit-test` GREEN (host Z80 layer).
 4. **PLAY still works:** an audio trace case (existing `play-trace-acceptance`) confirms byte-identical
    drain — the guard never skips when main page-1 is mapped.
-5. Boot the merged machine (no input): clean banner + `zb>` prompt, no garbage, at the mid-band N.
+5. Boot the merged machine (no input): clean banner + `ZB` prompt, no garbage, at the mid-band N.
 
 ## 6. Follow-on — wiring traps (the actual T1 goal), after this lands
 

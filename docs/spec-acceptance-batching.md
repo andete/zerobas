@@ -104,7 +104,7 @@ that lands on the re-prompt. Each case is `("direct", prog + ["RUN"] + responses
 
 Batched by default via `run_cases(reset=("NEW","CLS"))` — one boot per machine for
 the whole 8-case matrix (NEW clears the case's INPUT vars, CLS the screen). No case
-wedges the shared boot: console INPUT completes and returns to the `Ok`/`zb>` prompt
+wedges the shared boot: console INPUT completes and returns to the `Ok`/`ZB` prompt
 between cases, so the response never races the next case's `NEW` — **verified
 differential-inert**: `--boot-per-case` produces byte-identical captures and
 identical PASS verdicts for all 8 cases. `--boot-per-case` kept as the escape hatch.

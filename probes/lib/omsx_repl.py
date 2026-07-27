@@ -483,8 +483,22 @@ def run_differential(ref_machine: str, zb_machine: str,
 
 # --- reusable span/tail extraction (the `[...]` bracket convention) ----------
 # Machine-agnostic: the reference closes each command with 'Ok', zerobas with a
-# bare 'zb>' prompt, and prefixes its echo with 'zb>' -- so echo matching is
-# ends-with and both prompt shapes terminate a tail.
+# bare 'ZB' prompt on a LINE OF ITS OWN -- so echo matching is ends-with and
+# both prompt shapes terminate a tail.
+#
+# ⚠️ zerobas's prompt is 'ZB' and every probe that has to find the end of a
+# command's output goes through THIS tuple. It was 'zb>' until 2026-07-27.
+PROMPTS = ("Ok", "ZB")
+#
+# The prompt used to be 'zb>' and used to be printed wherever the cursor stood.
+# Since 2026-07-27 it is 'ZB' and always OPENS a fresh line (basic/repl.asm),
+# matching the reference.
+#
+# ⚠️ "Always starts a line" is NOT "always alone on a line": the prompt is still
+# followed on that row by the ECHO of whatever the user typed, which is what a
+# prompt is for. So a row equal to a prompt is a prompt with nothing typed after
+# it (what terminates a tail, below), while a row that STARTS with one is an
+# echo -- probes that read echo rows must still strip the leading prompt.
 
 def result_span(raw: str | None) -> str | None:
     """Text between the LAST '[' and the following ']' (the printed value).
@@ -518,7 +532,7 @@ def screen_tail(raw: str | None, cmdline: str) -> str | None:
         return None
     out: list[str] = []
     for r in rows[idx + 1:]:
-        if r == "Ok" or r == "zb>":
+        if r in PROMPTS:
             break
         out.append(r)
     while out and out[-1] == "":

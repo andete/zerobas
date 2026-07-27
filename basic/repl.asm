@@ -8,8 +8,22 @@
 ; (store a numbered line, RUN, NEW, or tokenise+execute a direct line), then
 ; loops.
 ;
-; The prompt is deliberately "zb>", NOT the original interpreter's "Ok": zerobas
+; The prompt is deliberately "ZB", NOT the original interpreter's "Ok": zerobas
 ; should never be mistaken for stock MSX-BASIC.
+;
+; It ALWAYS STARTS ON A FRESH LINE, which is a compatibility fix, not cosmetics.
+; The reference opens a line before its prompt whenever the cursor is not at
+; column 0; zerobas used to print the prompt wherever the cursor stood, so
+; `PRINT "A";` read `Azb>` on one row where the reference reads `A` then `Ok`
+; on two. Latent for a long time because nearly everything printed ends with a
+; newline -- TRON, whose decoration deliberately emits no newline of its own,
+; is what made it visible (docs/spec-basic-missing-class.md).
+;
+; ⚠️ CONDITIONAL, not unconditional. Emitting CRLF every time would put a BLANK
+; row between ordinary output and the prompt, which the reference does not do --
+; "always start on a fresh line" and "always emit a newline" are different
+; statements, and only the first one is the reference's behaviour. Being at
+; column 0 already IS being on a fresh line.
 ;
 ; Clean-room: this is an original line editor using only documented BIOS entry
 ; points (CHGET, CHPUT). No disassembly.
@@ -17,6 +31,9 @@
 repl:
                 xor     a                   ; the prompt + any output go to the
                 ld      (PRDEST),a          ; screen (defensive after a PRINT#)
+                ld      a,(CSRX)            ; CSRX is 1-BASED, so 1 == column 0 ==
+                dec     a                   ; already at the start of a line
+                call    nz,print_crlf       ; mid-row -> open a line first
                 ld      hl,prompt_text
                 call    print_string
                 call    read_line           ; LINEBUF <- typed line (ASCII, 0-term)
@@ -88,4 +105,4 @@ rl_enter:
                 ret
 
 prompt_text:
-                db      "zb>",0
+                db      "ZB",0

@@ -150,7 +150,7 @@ python3 probes/lib/omsx_repl.py --selftest C-BIOS_MSX1_EU_REPACK_DISK   # + Phil
   40-byte KEYBUF cap, so any length works); `"stored"` numbers `body_lines`
   10/20/… + `RUN` (split a `:`-line with `as_stored`).
 - Reuse `result_span` / `screen_tail` / `result_span_after_echo` for the
-  `[…]`-bracket value + error-tail (machine-agnostic re `Ok` vs `zb>`).
+  `[…]`-bracket value + error-tail (machine-agnostic re `Ok` vs `ZB`).
 - **Boot per case** (`run_case`) is the default — power-on-fresh state. Batching
   (`run_batch`) is UNSAFE on zerobas today: its `NEW`/`CLEAR` don't reset
   variables/DEFtbl (the reference does — a known divergence).

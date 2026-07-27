@@ -162,8 +162,8 @@ CAL = [
     ("d2-chr-round",  'PRINT "[";CHR$(64.5);"]"',                       "value"),
     # OUT-OF-DOMAIN rows carry NO sentinel and NO brackets, deliberately. The
     # first revision wrote them as `Z=99:PRINT "[";LEN(CHR$(256));"]":Z=1` --
-    # 37 source chars, which with zerobas's `zb>` prefix is exactly one column
-    # too wide to echo on one 40-column row. The wrapped echo broke the tail
+    # 37 source chars, which with zerobas's then-3-char `zb>` echo prefix was
+    # exactly one column too wide to echo on one 40-column row. The wrapped echo broke the tail
     # anchor and THREE rows read `<no result>` on BOTH machines, i.e. AGREED,
     # while one side errored and the other did not. See MAX_ECHO below, which
     # now makes that impossible rather than unlikely.
@@ -187,10 +187,15 @@ CAL = [
 
 # A direct line whose ECHO wraps breaks the `tail` readout SILENTLY: screen_tail
 # anchors STRICTLY on the echo, so both machines report `<no result>` and the row
-# AGREES while one side errored and the other did not. zerobas prefixes its echo
-# with `zb>`, so the budget is 40 - 3 = 37; 33 leaves margin for the reference's
-# own indent. Enforced at startup, so this class of dead row cannot reach a
-# conclusion again.
+# AGREES while one side errored and the other did not. 33 leaves margin for the
+# reference's own indent. Enforced at startup, so this class of dead row cannot
+# reach a conclusion again.
+#
+# The budget USED to be 40 - 3 = 37 because zerobas prefixed its echo with `zb>`.
+# Since 2026-07-27 the prompt is `ZB` on a line of its own, so the echo gets all
+# 40 columns and the limit could be raised -- deliberately NOT raised here. 33 is
+# not costing this probe a case, and a readout guard is the last place to trade
+# margin for room.
 #
 # ONLY `tail` is guarded, and the reason is worth stating: `value` rows survive a
 # wrapped echo because result_span FALLS BACK to the last `[...]` anywhere on
@@ -682,7 +687,7 @@ def value(raw: str | None, line: str) -> str:
 FKEY_ROW = ROWS - 1
 
 
-PROMPTS = ("Ok", "zb>")
+PROMPTS = ("Ok", "ZB")
 
 
 def screen(raw: str | None) -> str:
