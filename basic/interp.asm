@@ -385,6 +385,8 @@ stmt_table:
                 dw      ex_tron
                 db      TROFF_TOKEN
                 dw      ex_troff
+                db      LOCATE_TOKEN
+                dw      ex_locate    ; LOCATE [col][,[row][,cursor]]
     ENDIF
                 db      0                   ; end of table
 
@@ -796,7 +798,7 @@ raise_error:
                                            ; to $FF (>= 23, so it too falls to unprintable
                                            ; -- ERROR n now validates 1..255 upstream, so
                                            ; 0 no longer reaches here, but keep it safe)
-                cp      23                 ; index >= 23  <=>  code 0 (via $FF) or code >= 24
+                cp      24                 ; index >= 24  <=>  code 0 (via $FF) or code >= 25
                 jr      nc,rerr_unprintable ; -> "unprintable error" (rerr_unprintable
                                            ; ignores A, so the pre-decrement is harmless)
                 add     a,a                ; *2 (word table)
@@ -938,8 +940,26 @@ err_msgtab:
                                             ; raise_error_forced, below)
                 dw      err_unprintable     ; 23: unprintable error (self; ERROR n with
                                             ; an out-of-table code, or any hole above)
+                dw      err_missing_operand ; 24: missing operand. The table used to stop
+                                            ; at 23, so this code -- ALREADY raised by
+                                            ; graphics.asm g8_missing and time.asm
+                                            ; tm_err24 -- printed "unprintable error" on
+                                            ; every site that used it. Found by LOCATE,
+                                            ; which is the third: `LOCATE` bare reads
+                                            ; `Missing operand` on the reference and read
+                                            ; `unprintable error` here. Adding the entry
+                                            ; fixes all three at once. raise_error's own
+                                            ; range test moved from `cp 23` to `cp 24`
+                                            ; with it -- the table bound and that test are
+                                            ; one fact in two places.
 err_unprintable:
                 db      "unprintable error",13,10,0
+                ; err_missing_operand itself lives in basic/missing.asm. Sited
+                ; there rather than here because 17 bytes inserted at this point
+                ; land between page 1's dense forward `jr`s and their targets --
+                ; pasmo rejected it outright ("Relative jump out of range",
+                ; ex_resume). Same reason get_int16_checked sits at the end of
+                ; this file rather than beside check_fperr_only.
 
 ; --- ex_error: ERROR n statement (docs/spec-basic-error-handling-s2a-------
 ; packet.md §3/(g); arg-validation follow-up 2026-07-19). The argument's
@@ -989,7 +1009,11 @@ ee_raise:
 ex_resume:
                 ld      a,(ONEFLG)
                 or      a
-                jr      z,ex_resume_noerr
+                jp      z,ex_resume_noerr   ; `jp`, not `jr`: the err_msgtab entry for
+                                            ; ERR 24 pushed this forward span one byte
+                                            ; past `jr`'s reach. Same reason REM_TOKEN
+                                            ; needed an IF/ELSE in the old dispatch
+                                            ; chain; +1 B, repack-only, no behaviour.
                 xor     a                   ; RESUME resets ERR to 0 (ERL is KEPT --
                 ld      (ERRCODE),a         ; empirically pinned VG-8020, all four RESUME
                                             ; forms: `0 / 20`, not `0 / 0`). Placed on the

@@ -922,6 +922,41 @@ SV_OP_SAV_CAS   equ     3       ; SAVE"CAS:" / CSAVE, tokenised (tape_save_basic
 ; traced, and a TRON typed at the prompt DOES trace a subsequent RUN. Only NEW
 ; clears it -- so new_prog is the single writer besides the two statements.
 TRACEFLAG       equ     $E226   ; 1 B: TRON state (0 = TROFF)
+; --- CON_LASTROW: the console's last usable text row (LOCATE's row clamp) ----
+; S-MC-2. A NAMED constant rather than a bare 23, because the thing it names is
+; not obvious and was measured the hard way (missing-vg8020-characterization
+; §3.5, the 18-row `locrow` battery):
+;
+;   * LOCATE's row does NOT error out of range -- it CLAMPS, and it clamps to
+;     the console's OWN bottom row, which is not a language constant. On the
+;     reference that row MOVES WITH `KEY`: 22 with the function-key row painted
+;     (KEY ON, the boot default), 23 with it off. zerobas paints no function-key
+;     row, so it is 23 in both states -- which is why the gate's row-clamp cases
+;     are `KEY OFF`-pinned, exactly as the column cases are `WIDTH 40`-pinned.
+;   * ⚠️ `CRTCNT` ($F3B1) is the sysvar that LOOKS like the answer and IS NOT:
+;     it measures 24 on BOTH machines, under every WIDTH and both KEY states.
+;
+; So if a function-key row is ever added to this console, THIS is the definition
+; that has to move with it -- which is the entire reason it has a name.
+CON_LASTROW     equ     23      ; 0-based; CSRY is 1-based, so CSRY max = 24
+; --- LOC_RET: LOCATE's parked return address (basic/missing.asm loc_next) ----
+; Not scratch for convenience -- it is what keeps loc_next's error paths CORRECT.
+; The error-abort chain (raise_error -> fre_abort_low, and type_mismatch_error)
+; prints and then RETURNS, and it is built to return into the RUN LOOP, i.e. the
+; stack must look exactly as it did when exec_stmt jumped to the handler. A
+; helper that is `call`ed from the handler is one frame deeper, so every abort
+; inside it landed back in the middle of LOCATE, which then carried on parsing
+; and errored a SECOND time -- measured as `missing operand/missing operand` and
+; `type mismatch/missing operand` on the gate before this cell existed.
+; loc_next therefore parks its own return address here for the duration, so eval
+; / get_byte_arg / raise_error all run at the handler's own stack depth.
+LOC_RET         equ     $E227   ; 2 B: loc_next's parked return address
+; LOCATE parses all three arguments and applies them only when all three are
+; valid -- measured (basic/missing.asm ex_locate). Both cells are SEEDED from the
+; live cursor, so an omitted axis is re-applied unchanged and needs no
+; present-flag of its own.
+LOC_COL         equ     $E229   ; 1 B: LOCATE's parsed column, pre-clamp
+LOC_ROW         equ     $E22A   ; 1 B: LOCATE's parsed row, pre-clamp
 ; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §3) claims NO new RAM:
 ; the virtual line header a typed line executes under (`dir_line`, program.asm) is
 ; a 4-byte ROM constant, and CURLINE == dir_line is the sole definition of direct

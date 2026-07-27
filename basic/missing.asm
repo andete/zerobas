@@ -67,6 +67,213 @@ mot_go:
                 jp      exec_stmt           ; continue the line (a bare `ret` would
                                             ; swallow the rest of it -- the T1 lesson)
 
+; --- err_missing_operand: the ERR 24 message --------------------------------
+; The err_msgtab in interp.asm stopped at code 23, so ERR 24 printed
+; "unprintable error" -- on all THREE of its sites, two of which
+; (graphics.asm g8_missing, time.asm tm_err24) predate this slice and had been
+; raising a code with no message. LOCATE is what surfaced it: bare `LOCATE`
+; reads `Missing operand` on the reference. House-style lowercase, like
+; "syntax error" and "type mismatch" (D-2: reference wording is not copied).
+; The string is HERE, not next to its table, because 17 bytes inserted there
+; push page 1's dense forward `jr`s out of reach.
+err_missing_operand:
+                db      "missing operand",13,10,0
+
+; --- ex_locate: LOCATE [col][,[row][,cursor]] -------------------------------
+; Modelled on ex_color (basic/screen.asm), the tree's other three-optional-
+; comma-separated-argument statement, with four differences that are all
+; measured (spec §3.2, characterization §3.2/§3.3):
+;
+;   * an OMITTED argument KEEPS the current value, so there is nothing to write
+;     for one -- ex_color's bare form re-applies, LOCATE's simply does not move
+;     that axis. `LOCATE 0` is a VALUE, not an omission.
+;   * a bare `LOCATE` is **`Missing operand` (ERR 24)**, not a no-op and not a
+;     Syntax error. So are `LOCATE ,`, `LOCATE ,,` and the trailing-comma form
+;     `LOCATE 5,3,`. That is a distinct error and has to be raised as one.
+;   * each argument goes through eval + get_byte_arg, which is ALREADY the
+;     measured two-stage domain rule -- `Overflow` beyond int16, `Illegal
+;     function call` outside 0..255 within it -- on all three arguments.
+;   * ⚠️ PARSE ALL THREE, THEN APPLY -- which is the OPPOSITE of what the spec
+;     directed, and the spec was wrong. §4 said "apply as you parse, do not
+;     batch", inferring it from the one measured row `LOCATE 1,1,1,1`: that
+;     moves the cursor to (1,1) and prints `Syntax error` THERE, so a rejected
+;     argument plainly does not undo the accepted ones.
+;
+;     But that row only constrains a FOURTH argument, found after three valid
+;     ones. It says nothing about a DOMAIN error inside the first three, and the
+;     apply-as-you-parse build got that half wrong. Measured on the reference,
+;     screen-dumped, after the gate flagged it:
+;
+;       CLS:LOCATE -1,0   message at row 0  (cursor never moved)
+;       CLS:LOCATE 5,-1   message at row 0  <-- col 5 was NOT applied
+;       CLS:LOCATE 0,-1   message at row 0  <-- col 0 was NOT applied
+;
+;     Apply-as-you-parse put the cursor at column 5 first, so the abort printed
+;     from there and the gate read `ZB`-overwritten fragments. Both measurements
+;     fit one model and only one: parse and domain-check up to three arguments,
+;     APPLY them, and only then reject a fourth. Batching is the faithful one,
+;     and it is also what makes an omitted axis free (see the seeding below).
+;
+; O-3 DEVIATION: the third argument is accepted, domain-checked (0..255 -- it is
+; NOT restricted to 0/1, measured) and then IGNORED. Nothing in this tree reads
+; CSRSW or any equivalent, so there is no mechanism for it to drive and storing
+; it would be a write nobody reads. Recorded in the spec as a deviation.
+ex_locate:
+                inc     hl                  ; past the LOCATE token
+                ; SEED FROM THE CURRENT POSITION. An omitted axis KEEPS its value
+                ; (measured), and seeding makes that fall out with no present-flag
+                ; per argument: an omitted axis is simply re-applied unchanged.
+                ld      a,(CSRX)
+                dec     a                   ; CSRX/CSRY are 1-BASED
+                ld      (LOC_COL),a
+                ld      a,(CSRY)
+                dec     a
+                ld      (LOC_ROW),a
+                call    loc_next
+                jr      nc,loc_row          ; `LOCATE ,row` -- column omitted
+                ld      (LOC_COL),a
+                call    loc_more
+                jr      nc,loc_apply
+loc_row:
+                call    loc_next
+                jr      nc,loc_cur          ; `LOCATE col,,cursor` -- row omitted
+                ld      (LOC_ROW),a
+                call    loc_more
+                jr      nc,loc_apply
+loc_cur:
+                call    loc_next            ; the cursor argument: parsed and
+                                            ; domain-checked, then dropped (O-3)
+                call    loc_more
+                jr      nc,loc_apply
+                ; A FOURTH argument. Apply the first three FIRST, then reject --
+                ; measured: `LOCATE 1,1,1,1` moves the cursor to (1,1) and prints
+                ; `Syntax error` THERE.
+                call    loc_apply_pos
+                jp      stmt_error
+loc_apply:
+                call    loc_apply_pos
+                jp      exec_stmt
+
+; loc_apply_pos: write the parsed position, each axis clamped to the screen.
+; Clamping is SEPARATE from the domain check: 0..255 is accepted (loc_next), and
+; only then squeezed onto the console.
+loc_apply_pos:
+                ; column -> clamp to the CURRENT WIDTH, not a fixed 40. Measured:
+                ; WIDTH 40 -> 40/41/255 all land at col 39; WIDTH 32 -> 32/39 both
+                ; land at col 31. LINLEN is the live width.
+                ld      a,(LOC_COL)
+                ld      b,a
+                ld      a,(LINLEN)
+                dec     a                   ; A = the last usable column
+                cp      b
+                jr      nc,loc_col_set      ; wanted <= last -> keep it
+                ld      b,a                 ; else clamp to the last column
+loc_col_set:
+                ld      a,b
+                inc     a                   ; CSRX is 1-BASED
+                ld      (CSRX),a
+                ; row -> clamp to the console's bottom row (sysvars.inc
+                ; CON_LASTROW; NOT CRTCNT, which measures 24 on both machines)
+                ld      a,(LOC_ROW)
+                cp      CON_LASTROW+1
+                jr      c,loc_row_set
+                ld      a,CON_LASTROW
+loc_row_set:
+                inc     a                   ; CSRY is 1-BASED
+                ld      (CSRY),a
+                ret
+
+; loc_next: parse ONE argument position.
+;   out: CF=1 -> A = the argument's byte value
+;        CF=0 -> the argument was OMITTED and its comma has been consumed
+;   Aborts directly on `Missing operand`, `Type mismatch` and either domain
+;   error. HL advances.
+; ⚠️ IT PARKS ITS OWN RETURN ADDRESS, and that is not a trick -- it is what makes
+; the error paths correct. The abort chain (raise_error -> fre_abort_low, and
+; type_mismatch_error) PRINTS AND THEN RETURNS, and it is built to return into
+; the run loop: the stack has to look exactly as it did when exec_stmt jumped to
+; this handler. A helper `call`ed from the handler is one frame deeper, so every
+; abort inside it landed back INSIDE LOCATE, which carried on parsing and errored
+; a second time. That is not a theory -- it is what the gate printed:
+;
+;   LOCATE          zb: missing operand / missing operand
+;   LOCATE "5",3    zb: type mismatch / missing operand
+;   LOCATE 0,-1     zb: Illegal function call, then overwritten by the prompt
+;
+; So the return address goes to LOC_RET for the duration and eval /
+; get_byte_arg / raise_error all run at the handler's own depth, which is
+; exactly how ex_width calls the same get_byte_arg.
+loc_next:
+                pop     de
+                ld      (LOC_RET),de        ; park it: run at the HANDLER's stack depth
+                call    skip_spaces         ; returns A = (HL)
+                or      a
+                jr      z,loc_missing       ; end of line at an argument position
+                cp      COLON
+                jr      z,loc_missing       ; `LOCATE :` / `LOCATE 5,3,:`
+                cp      ','
+                jr      z,loc_omit
+                call    eval
+                ld      a,(TMISMATCH)       ; `LOCATE "5",3` -> Type mismatch (measured)
+                or      a
+                jp      nz,type_mismatch_error
+                ; --- the two-stage domain check, INLINE and not `call get_byte_arg` --
+                ; ⚠️ get_byte_arg implements exactly this rule and CANNOT BE CALLED
+                ; here, for a reason that turned out to be a live bug in the tree
+                ; rather than a nicety. Its reject is `jp raise_error`, and the
+                ; abort chain PRINTS AND RETURNS -- consuming the caller's own
+                ; `call get_byte_arg` frame and landing back INSIDE the caller,
+                ; just past the call, with A = the error code. Its existing
+                ; caller ex_width therefore does `ld (LINLEN),a` with A=5 and
+                ; re-inits the screen: `WIDTH 300` on this build prints nothing
+                ; and CORRUPTS THE DISPLAY. Measured as the control while
+                ; debugging LOCATE, recorded in TODO.md, not fixed here.
+                ;
+                ; Inline, at the handler's own depth (loc_next parked its frame),
+                ; the same two `jp`s abort correctly: they return to the run loop.
+                push    hl                  ; fac_to_int_strict clobbers HL
+                call    fac_to_int_strict   ; DE = int16; FPERR set if |x| > 32767
+                pop     hl
+                ld      a,(FPERR)
+                or      a
+                jp      nz,fp_runtime_error ; stage 1: beyond int16 -> Overflow (ERR 6)
+                ld      a,d
+                or      a
+                jr      nz,loc_illegal      ; stage 2: outside 0..255 -> ERR 5
+                ld      a,e                 ; A = the accepted byte
+                scf
+                jr      loc_ret
+loc_illegal:
+                ld      a,5
+                jp      raise_error         ; Illegal function call
+loc_omit:
+                inc     hl                  ; consume the comma
+                or      a                   ; A is ',' -> CF = 0
+loc_ret:
+                ; Return to the parked address, preserving BOTH the cursor in HL
+                ; and the CF/A the caller reads. push/ld/ex (sp),hl touch no
+                ; flags, so the `scf` above survives to the caller.
+                push    hl                  ; [cursor]
+                ld      hl,(LOC_RET)
+                ex      (sp),hl             ; stack = the parked address, HL = cursor
+                ret
+loc_missing:
+                ld      a,24
+                jp      raise_error         ; Missing operand -- a DISTINCT error from
+                                            ; Syntax error, and measured as such
+
+; loc_more: is another argument coming? CF=1 -> yes (its comma is consumed).
+loc_more:
+                call    skip_spaces
+                cp      ','
+                jr      z,loc_more_yes
+                or      a                   ; CF = 0: no more arguments
+                ret
+loc_more_yes:
+                inc     hl
+                scf
+                ret
+
 ; --- els_typecheck: D-MISS-1, the string-lvalue RHS type check --------------
 ; `A$=A` said `syntax error` where the reference says `Type mismatch`. The cause
 ; was localised and unglamorous: ex_let_str's only question was "is the RHS a

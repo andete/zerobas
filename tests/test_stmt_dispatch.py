@@ -165,6 +165,7 @@ EXPECTED = [
     ('MOTOR_TOKEN', 'ex_motor', 'ROM_BASE < $4000'),
     ('TRON_TOKEN', 'ex_tron', 'ROM_BASE < $4000'),
     ('TROFF_TOKEN', 'ex_troff', 'ROM_BASE < $4000'),
+    ('LOCATE_TOKEN', 'ex_locate', 'ROM_BASE < $4000'),
 ]
 
 

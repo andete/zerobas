@@ -213,39 +213,52 @@ MAX_ECHO = 33
 # Marker is CHR$(35): the literal '#' never appears in the typed line, so the
 # grid search cannot find it inside an echoed command and report a confident,
 # entirely wrong column (the cursor slice's scar).
+# ⚠️ EVERY ROW PINS **BOTH** AXES: `WIDTH 40` for the column, `KEY OFF` for the
+# row. The row pin is not decoration -- the two consoles have DIFFERENT ROW
+# COUNTS by default. The reference reserves a function-key row at `KEY ON` (the
+# boot state), so its bottom usable row is 22; zerobas paints no such row and
+# bottoms out at 23. Unpinned, every row-clamp case compared 22 against 23 and
+# went red for console chrome with nothing to do with LOCATE -- measured
+# (locrow: the four lr-key-off-* rows agree EXACTLY, 22/22 and 23/23, while
+# their unpinned twins do not). See docs/spec-basic-missing-class.md §7.2, which
+# also records why hard-coding 22 into zerobas would be the WRONG way green:
+# it would make zerobas's own last row unreachable by LOCATE while PRINT still
+# scrolls onto it.
+# The pin is set per row rather than once per battery, so no row depends on what
+# ran before it.
 LOCATE = [
-    ("loc-5-3",       'WIDTH 40:CLS:LOCATE 5,3:PRINT CHR$(35)'),
-    ("loc-0-0",       'WIDTH 40:CLS:LOCATE 0,0:PRINT CHR$(35)'),
-    ("loc-home-after", 'WIDTH 40:CLS:PRINT "AAA":LOCATE 0,0:PRINT CHR$(35)'),
+    ("loc-5-3",       'WIDTH 40:KEY OFF:CLS:LOCATE 5,3:PRINT CHR$(35)'),
+    ("loc-0-0",       'WIDTH 40:KEY OFF:CLS:LOCATE 0,0:PRINT CHR$(35)'),
+    ("loc-home-after", 'WIDTH 40:KEY OFF:CLS:PRINT "AAA":LOCATE 0,0:PRINT CHR$(35)'),
     # ARGUMENT OMISSION -- the surface that is easiest to get wrong. Each of
     # these needs the cursor to be somewhere OTHER than home to be visible at
     # all, so each is preceded by output that moves it.
-    ("loc-col-only",  'WIDTH 40:CLS:PRINT "AAA":LOCATE 7:PRINT CHR$(35)'),
-    ("loc-row-only",  'WIDTH 40:CLS:PRINT "AAA";:LOCATE ,4:PRINT CHR$(35)'),
-    ("loc-bare-semi", 'WIDTH 40:CLS:PRINT "AAA";:LOCATE :PRINT CHR$(35)'),
-    ("loc-col0-only", 'WIDTH 40:CLS:PRINT "AAA";:LOCATE 0:PRINT CHR$(35)'),
+    ("loc-col-only",  'WIDTH 40:KEY OFF:CLS:PRINT "AAA":LOCATE 7:PRINT CHR$(35)'),
+    ("loc-row-only",  'WIDTH 40:KEY OFF:CLS:PRINT "AAA";:LOCATE ,4:PRINT CHR$(35)'),
+    ("loc-bare-semi", 'WIDTH 40:KEY OFF:CLS:PRINT "AAA";:LOCATE :PRINT CHR$(35)'),
+    ("loc-col0-only", 'WIDTH 40:KEY OFF:CLS:PRINT "AAA";:LOCATE 0:PRINT CHR$(35)'),
     # ARGUMENT COERCION
-    ("loc-float",     'WIDTH 40:CLS:LOCATE 5.7,3.2:PRINT CHR$(35)'),
-    ("loc-float-up",  'WIDTH 40:CLS:LOCATE 4.5,2.5:PRINT CHR$(35)'),
-    ("loc-expr",      'WIDTH 40:CLS:LOCATE 2+3,1+2:PRINT CHR$(35)'),
-    ("loc-var",       'WIDTH 40:CLS:X=6:Y=2:LOCATE X,Y:PRINT CHR$(35)'),
+    ("loc-float",     'WIDTH 40:KEY OFF:CLS:LOCATE 5.7,3.2:PRINT CHR$(35)'),
+    ("loc-float-up",  'WIDTH 40:KEY OFF:CLS:LOCATE 4.5,2.5:PRINT CHR$(35)'),
+    ("loc-expr",      'WIDTH 40:KEY OFF:CLS:LOCATE 2+3,1+2:PRINT CHR$(35)'),
+    ("loc-var",       'WIDTH 40:KEY OFF:CLS:X=6:Y=2:LOCATE X,Y:PRINT CHR$(35)'),
     # THE THIRD ARGUMENT (cursor visibility). Its EFFECT is a blinking cursor,
     # which a name-table scrape cannot see; these rows measure only that the
     # form is accepted and does not disturb the position.
-    ("loc-cur-0",     'WIDTH 40:CLS:LOCATE 5,3,0:PRINT CHR$(35)'),
-    ("loc-cur-1",     'WIDTH 40:CLS:LOCATE 5,3,1:PRINT CHR$(35)'),
+    ("loc-cur-0",     'WIDTH 40:KEY OFF:CLS:LOCATE 5,3,0:PRINT CHR$(35)'),
+    ("loc-cur-1",     'WIDTH 40:KEY OFF:CLS:LOCATE 5,3,1:PRINT CHR$(35)'),
     # BOUNDS -- at the edge of the pinned 40x24 grid
-    ("loc-max-col",   'WIDTH 40:CLS:LOCATE 39,3:PRINT CHR$(35)'),
-    ("loc-max-row",   'WIDTH 40:CLS:LOCATE 5,22:PRINT CHR$(35)'),
+    ("loc-max-col",   'WIDTH 40:KEY OFF:CLS:LOCATE 39,3:PRINT CHR$(35)'),
+    ("loc-max-row",   'WIDTH 40:KEY OFF:CLS:LOCATE 5,22:PRINT CHR$(35)'),
     # WIDTH INTERACTION -- is the column limit WIDTH or the fixed 40? Only a
     # narrower width can tell the two apart, and the VRAM name table keeps its
     # 40-column stride at every WIDTH, so the scrape is unaffected.
-    ("loc-w32-31",    'WIDTH 32:CLS:LOCATE 31,3:PRINT CHR$(35)'),
-    ("loc-w32-0",     'WIDTH 32:CLS:LOCATE 0,3:PRINT CHR$(35)'),
+    ("loc-w32-31",    'WIDTH 32:KEY OFF:CLS:LOCATE 31,3:PRINT CHR$(35)'),
+    ("loc-w32-0",     'WIDTH 32:KEY OFF:CLS:LOCATE 0,3:PRINT CHR$(35)'),
     # SEQUENCING -- LOCATE is not one-shot state
-    ("loc-twice",     'WIDTH 40:CLS:LOCATE 20,5:LOCATE 3,1:PRINT CHR$(35)'),
-    ("loc-then-print", 'WIDTH 40:CLS:LOCATE 5,3:PRINT "AB";CHR$(35)'),
-    ("loc-wrap",      'WIDTH 40:CLS:LOCATE 38,3:PRINT "AB";CHR$(35)'),
+    ("loc-twice",     'WIDTH 40:KEY OFF:CLS:LOCATE 20,5:LOCATE 3,1:PRINT CHR$(35)'),
+    ("loc-then-print", 'WIDTH 40:KEY OFF:CLS:LOCATE 5,3:PRINT "AB";CHR$(35)'),
+    ("loc-wrap",      'WIDTH 40:KEY OFF:CLS:LOCATE 38,3:PRINT "AB";CHR$(35)'),
 ]
 
 # --- battery 3: LOCATE -- ERROR / scope rows (tail readout) -----------------
@@ -330,14 +343,14 @@ LOCERR = [
 # straight through. A reject/accept verdict alone cannot tell those apart, and
 # the implementation has to reproduce whichever one it is.
 LOCACC = [
-    ("la-col-40",     'WIDTH 40:CLS:LOCATE 40,3:PRINT CHR$(35)'),
-    ("la-col-41",     'WIDTH 40:CLS:LOCATE 41,3:PRINT CHR$(35)'),
-    ("la-col-255",    'WIDTH 40:CLS:LOCATE 255,3:PRINT CHR$(35)'),
-    ("la-row-23",     'WIDTH 40:CLS:LOCATE 5,23:PRINT CHR$(35)'),
-    ("la-row-24",     'WIDTH 40:CLS:LOCATE 5,24:PRINT CHR$(35)'),
-    ("la-w32-32",     'WIDTH 32:CLS:LOCATE 32,3:PRINT CHR$(35)'),
-    ("la-w32-39",     'WIDTH 32:CLS:LOCATE 39,3:PRINT CHR$(35)'),
-    ("la-cur-2",      'WIDTH 40:CLS:LOCATE 5,3,2:PRINT CHR$(35)'),
+    ("la-col-40",     'WIDTH 40:KEY OFF:CLS:LOCATE 40,3:PRINT CHR$(35)'),
+    ("la-col-41",     'WIDTH 40:KEY OFF:CLS:LOCATE 41,3:PRINT CHR$(35)'),
+    ("la-col-255",    'WIDTH 40:KEY OFF:CLS:LOCATE 255,3:PRINT CHR$(35)'),
+    ("la-row-23",     'WIDTH 40:KEY OFF:CLS:LOCATE 5,23:PRINT CHR$(35)'),
+    ("la-row-24",     'WIDTH 40:KEY OFF:CLS:LOCATE 5,24:PRINT CHR$(35)'),
+    ("la-w32-32",     'WIDTH 32:KEY OFF:CLS:LOCATE 32,3:PRINT CHR$(35)'),
+    ("la-w32-39",     'WIDTH 32:KEY OFF:CLS:LOCATE 39,3:PRINT CHR$(35)'),
+    ("la-cur-2",      'WIDTH 40:KEY OFF:CLS:LOCATE 5,3,2:PRINT CHR$(35)'),
 ]
 
 # --- battery 3c: O-1 -- WHERE an accepted out-of-range LOCATE actually LANDS --

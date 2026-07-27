@@ -1330,6 +1330,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reference fires them there is UNMEASURED — so the conservative answer is
       gated in at one RAM load rather than changed as a side effect. Spec §6 names
       the characterization that closes it.
+- [ ] **`get_byte_arg`'s reject RETURNS INTO ITS CALLER — `WIDTH 300` corrupts
+      the screen.** MEASURED 2026-07-27, found as the control while debugging
+      LOCATE's error rows. `get_byte_arg` rejects with `jp raise_error`, and the
+      abort chain PRINTS AND RETURNS — consuming the caller's own `call
+      get_byte_arg` frame and landing back inside the caller just past the call,
+      with **A = the error code**. So `ex_width` does `ld (LINLEN),a` with A=5
+      and re-inits the screen: on the current build `CLS:WIDTH 300` prints **no
+      error at all** and leaves the display unusable (measured against the
+      reference's clean `Illegal function call`). `WIDTH 99999` (ERR 6, via
+      `check_fperr_only`) does the same.
+      ⚠️ Scope is wider than WIDTH: `get_byte_arg`'s other callers are
+      `STRING$`, `SPACE$` and `ON n`, and each needs checking for the same
+      shape — the bug is in the CALL CONVENTION, not in WIDTH.
+      LOCATE does not use it for exactly this reason (basic/missing.asm
+      `loc_next` inlines the two-stage check at the handler's own stack depth,
+      where the same two `jp`s abort correctly). Not fixed here: the fix is
+      per-caller frame discipline across four statements, each with its own
+      gate, which is a slice rather than a drive-by.
 - [ ] **The prompt does not open a fresh line** — MEASURED 2026-07-27, found
       while gating `TRON`. **The reference emits a newline before its prompt
       whenever the cursor is not at column 0; zerobas prints its prompt where
