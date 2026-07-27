@@ -1392,9 +1392,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       **Scope boundary:** reserved words only. Statement *option* surfaces
       (`SCREEN 3`, `KEY LIST`, argument forms of words that *are* present) are
       not covered — a word can be present and still wrong in its third argument.
-      **Not yet sliced or costed.** Page 1 is currently 14 B *over* the ceiling
-      (see the T5 line above), so every one of these needs funding before it
-      needs a spec.
+      **✅ SLICED + COSTED 2026-07-27** —
+      [`docs/decision-kwgaps-slicing.md`](docs/decision-kwgaps-slicing.md),
+      **awaiting sign-off** (D-KW-1..3). The sweep was **re-pinned** against a
+      clean-built HEAD first (`git=e9843c4`,
+      `zerobas-main-eu.rom=05f43b…`→`4ea7a2…`): **every tally unchanged**, so the
+      8/6/5 finding was not an artifact of the stale over-ceiling build. All 14
+      reference tokens are now **oracle-measured** from Layer 1's own crunch diff
+      (table in the coverage doc) rather than read off Table 2.20.
+      ⚠️ **The funding premise in the line this replaces was stale AND wrong.**
+      Page 1 is no longer 14 B over — it is **8 B free** (low region 5 B) since
+      `a5a3af2`. More importantly the item is not blocked on *funding* but on
+      **placement**: `sub.rom` has **≈8 KB free** (4509 B page-0 + 3497 B page-1)
+      and `kwtable.inc` entries + leaf compute already live there, so the only
+      number that matters per keyword is its **main-ROM dispatch glue** —
+      and `exec_stmt` is a 67-entry linear `cp`/`jp z` chain charging **5 B per
+      statement token before it does anything**. Recommended first slice:
+      **`EQV`/`IMP` via a table-driven logical layer** — `ev_xor`/`ev_or`/`ev_and`
+      are uniform at 34 B each (measured), so one generic 5-entry layer lands both
+      words for **≈ 0 net bytes**. Exit criterion proposed: **the SILENT-GAP class
+      empty** (`DEF FN` is an arc, not a slice — 200–400 B).
 
 ## Beyond — post-MSX1 axes (out of charter, far future)
 

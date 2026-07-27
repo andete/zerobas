@@ -5,27 +5,30 @@ SPDX-License-Identifier: 0BSD
 
 # MSX1 BASIC keyword-completeness sweep — the coverage denominator
 
-**Status:** re-measured 2026-07-26 after the TIME + T5 landings · probe
+**Status:** **RE-PINNED 2026-07-27** against a clean-built HEAD · probe
 [`probes/basic/basic_probe_kwsweep.py`](../probes/basic/basic_probe_kwsweep.py) ·
 gate `make kwsweep` · reference Philips VG-8020 · zerobas
-`C-BIOS_MSX1_EU_REPACK_DISK` at `zerobas-main-eu.rom=05f43b425e5b`
-(`sub.rom=77c6ac54b405`), `git=b531c49`
+`C-BIOS_MSX1_EU_REPACK_DISK` at `zerobas-main-eu.rom=4ea7a29918df`
+(`sub.rom=77c6ac54b405`, `disk.rom=2c630d3dfeec`), `git=e9843c4`
 
-> **The ROM hash is the pin, not the git rev**, and at the time of this sweep the
-> two disagreed on purpose: the tree was then 14 B over the page-1 ceiling
+> **The ROM hash is the pin, not the git rev** — and the previous pin is the
+> reason that sentence is in this document. The 2026-07-26 sweep ran at
+> `git=b531c49` / `zerobas-main-eu.rom=05f43b425e5b`, and the two disagreed **on
+> purpose**: the tree was then 14 B over the page-1 ceiling
 > ([`spec-traps-t5-interval.md`](spec-traps-t5-interval.md) §4.3), so
 > `make basic-reloc` failed and `build/zerobas-main-eu.rom` was the **last
 > successful build**, not HEAD.
 >
-> ✅ **That overrun is resolved as of `a5a3af2`** — page-1 free is 8 B and
-> `make basic-reloc` succeeds
-> ([`spec-basic-direct-ctrl.md`](spec-basic-direct-ctrl.md) §Cost). The hashes
-> above are left exactly as recorded: they pin the ROM this sweep actually ran
-> against, which is the point of pinning. **Re-run `make kwsweep` to re-pin
-> against a current build** before treating the numbers as fresh. The probe fingerprints the ROMs before and after
-> every run and aborts the report if they change mid-flight — the machine XML
-> points straight at the project tree, so a concurrent `make` in another session
-> silently changes the measurement target.
+> ✅ **Re-pinned.** The overrun was cleared by `a5a3af2`
+> ([`spec-basic-direct-ctrl.md`](spec-basic-direct-ctrl.md) §Cost); this run is
+> against a `rm -rf build && make basic-reloc` of `e9843c4` (page-1 free 8 B, low
+> region 5 B), so the ROM hash and the git rev now agree. **The main-ROM hash
+> moved (`05f43b…` → `4ea7a2…`) and every tally below is unchanged** —
+> SILENT-GAP=8, MISSING=6, NO-ORACLE=5. The findings were not an artifact of the
+> stale build. The probe fingerprints the ROMs before and after every run and
+> aborts the report if they change mid-flight — the machine XML points straight
+> at the project tree, so a concurrent `make` in another session silently changes
+> the measurement target.
 
 **The sweep already earned its keep as a regression detector.** The first run
 (`664f4898`) flagged `TIME` as a SILENT-GAP; this run picks up `TIME` as
@@ -108,6 +111,44 @@ language flags it.
 
 Honest failures. Visible, diagnosable, not silent: `LOCATE`, `SWAP`, `TRON`,
 `TROFF`, `MOTOR`, `DEF FN`/`FN`.
+
+### The reference token bytes — measured, for all 14 (2026-07-27)
+
+Every absent word's token is now **oracle-measured black-box** rather than read
+off a table, harvested from the Layer-1 CRUNCH diff (`--layer crunch --only …`)
+on the same run that produced the pin above. Layer 1 stores `1 <body>` and dumps
+the reference's own tokenised line, so these bytes are what the VG-8020 *emitted*,
+not what a book says it should have. They agree with the MSX2 Technical Handbook
+Table 2.20 assignments the existing `kwtable.inc` locks cite; where a future
+`kwtable.inc` entry lands, **this table is the lock**.
+
+| word | reference token | shape | zerobas emits today |
+|---|---|---|---|
+| `LOCATE` | `$D8` | statement | `4C 4F 43 41 54 45` (verbatim) |
+| `CSRLIN` | `$E8` | single-byte function | verbatim |
+| `POS` | `$FF $91` | `$FF`-prefixed function | verbatim |
+| `TAB(` | `$DB` | PRINT item — **token swallows the `(`** | verbatim |
+| `SPC(` | `$DF` | PRINT item — **token swallows the `(`** | verbatim |
+| `SWAP` | `$A4` | statement | verbatim |
+| `FRE` | `$FF $8F` | `$FF`-prefixed function | verbatim |
+| `TRON` | `$A2` | statement | `54 52 95` = `"TR"` + **`ON`** |
+| `TROFF` | `$A3` | statement | `54 52 EB` = `"TR"` + **`OFF`** |
+| `DEF FN` | `$97` `$DE` | `DEF` (have) + `FN` (absent) | `97 20 46 4E` — `DEF` + verbatim `FN` |
+| `EQV` | `$F9` | binary operator | verbatim |
+| `IMP` | `$FA` | binary operator | verbatim |
+| `MOTOR` | `$CE` | statement | `4D 4F D9 52` = `"MO"` + **`TO`** + `"R"` |
+| `BIN$` | `$FF $9D` | `$FF`-prefixed function | verbatim |
+
+Note `TAB(`/`SPC(`: the reference emits `91 20 DB 16 29` for `PRINT TAB(5)` — one
+token, then the argument, then a bare `)`. The opening paren is **part of the
+keyword**, exactly as `kwtable.inc` would have to spell it.
+
+Three rows show the tokeniser's substring behaviour on a word it does not know
+(`TRON`→`TR`+`ON`, `TROFF`→`TR`+`OFF`, `MOTOR`→`MO`+`TO`+`R`). That is
+**correct** — `match_kw` is attempted at every position, so this is what the
+reference itself does for any non-keyword containing a keyword. It round-trips
+through `LIST` unchanged. It is recorded because it looks alarming in a hex dump
+and is not a defect.
 
 ### NO-ORACLE — not answered by this run (5)
 
