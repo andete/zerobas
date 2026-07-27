@@ -274,6 +274,151 @@ loc_more_yes:
                 scf
                 ret
 
+    IF SWAP_RESIDENT
+; --- ex_swap: SWAP a,b -----------------------------------------------------
+; The only statement in the language that writes TWO lvalues, and the measured
+; surface is almost entirely about the ASYMMETRY between them (spec §3.3):
+;
+;   B=1:SWAP A,B   creates A            -- the FIRST operand may be created
+;   A=1:SWAP A,B   Illegal function call -- the SECOND must already exist
+;   SWAP A,Q(0)    accepted on an UNDIMENSIONED Q -- so the rule is specifically
+;                  about SCALAR creation order, not about creation as such
+;
+; That falls out of choosing the right routine per side -- var_alloc_or_find for
+; the first, var_find_typed (which never allocates) for the second -- rather
+; than being coded as a rule. It is bug-for-bug behaviour to reproduce, not to
+; fix: the reference's own cause is almost certainly that allocating the second
+; can shift the variable table and invalidate the pointer already taken for the
+; first. We reproduce the BEHAVIOUR, not the mechanism.
+;
+; TYPE RULE: EXACT EQUALITY, not numeric-vs-string. `%` != `!` != `#` all raise
+; Type mismatch, as does `A%` against a bare (`!`) name. DEFINT participates by
+; changing what a bare name MEANS, and then the same rule applies.
+;
+; ⚠️ STRINGS MOVE DESCRIPTORS, NOT BODIES -- measured: LEN follows the value
+; across the swap and survives a later allocation, and an aliased body (B$=A$)
+; is undisturbed. So the exchange is a fixed-width byte swap of the value field
+; and THE STRING HEAP IS NEVER TOUCHED. The width is the type for 2/4/8 and 3
+; for a string descriptor, which is the whole of the type-to-width mapping.
+ex_swap:
+                inc     hl                  ; past the SWAP token
+                call    skip_spaces
+                xor     a
+                ld      (SW_MODE),a         ; operand 1: MAY be created
+                call    sw_operand
+                ld      de,(SW_ADDR)        ; park operand 1 -- operand 2's parse runs a
+                ld      (SW_ADDR1),de       ; nested eval() and keeps nothing in registers
+                ld      a,(SW_TYPE)
+                ld      (SW_TYPE1),a
+                call    skip_spaces
+                cp      ','
+                jp      nz,stmt_error       ; `SWAP` / `SWAP A` -> Syntax error
+                inc     hl
+                call    skip_spaces
+                ld      a,1
+                ld      (SW_MODE),a         ; operand 2: must already EXIST
+                call    sw_operand
+                ; a third operand: `SWAP A,B,C` is Illegal function call, but a bare
+                ; trailing comma `SWAP A,B,` is Syntax error -- both measured, and they
+                ; differ, so the comma alone cannot decide it.
+                call    skip_spaces
+                cp      ','
+                jr      nz,sw_types
+                inc     hl
+                call    skip_spaces
+                or      a
+                jp      z,stmt_error        ; `SWAP A,B,` -> Syntax error
+                cp      COLON
+                jp      z,stmt_error
+                jp      sw_illegal          ; `SWAP A,B,C` -> Illegal function call
+sw_types:
+                ld      a,(SW_TYPE)
+                ld      b,a
+                ld      a,(SW_TYPE1)
+                cp      b
+                jp      nz,type_mismatch_error  ; EXACT type equality
+                ; width: for 2/4/8 the width IS the type; only a string differs
+                cp      1
+                jr      nz,sw_width
+                ld      a,3                 ; string: [len][ptr] descriptor
+sw_width:
+                ld      b,a
+                push    hl                  ; guard the cursor across the exchange
+                ld      hl,(SW_ADDR1)
+                ld      de,(SW_ADDR)
+sw_xloop:
+                ld      a,(de)
+                ld      c,(hl)
+                ld      (hl),a
+                ld      a,c
+                ld      (de),a
+                inc     hl
+                inc     de
+                djnz    sw_xloop
+                pop     hl
+                jp      exec_stmt
+
+; sw_operand: resolve ONE operand at HL -> SW_ADDR (its VALUE address) and
+; SW_TYPE. SW_MODE picks the scalar routine: 0 = var_alloc_or_find (may create),
+; 1 = var_find_typed (never allocates -> Illegal function call when absent).
+; An ARRAY element goes through ary_op0_resolve either way -- it auto-dims, which
+; is exactly the measured `SWAP A,Q(0)` acceptance on an undimensioned Q, and it
+; already maps subscript-out-of-range / illegal-function-call / syntax onto FPERR
+; (measured: `SWAP A,Q(9)` on `DIM Q(2)` is Subscript out of range).
+sw_operand:
+                call    var_str_type        ; A = 1 iff the name has a `$` suffix
+                ld      d,a                 ; (HL unmoved; D survives var_name_key --
+                                            ; deftbl_lookup preserves BC/DE/HL)
+                call    var_name_key        ; BC = key, HL past the name; (VARTYPE) =
+                                            ; the resolved NUMERIC type
+                ld      a,d
+                or      a
+                jr      nz,sw_typed         ; a `$` name is type 1, whatever VARTYPE says
+                ld      a,(VARTYPE)
+sw_typed:
+                ld      (SW_TYPE),a
+                ld      e,a                 ; E = type across the '(' peek
+                ld      a,(hl)
+                cp      '('
+                jr      z,sw_array
+                ; --- scalar: the entry's value field is entry+3 --------------
+                push    hl
+                pop     ix                  ; IX = the cursor; BOTH routines below
+                                            ; GUARD IX across ary_engine_call
+                ld      a,(SW_MODE)
+                or      a
+                ld      a,e                 ; A = type (both routines want it there)
+                jr      nz,sw_must_exist
+                call    var_alloc_or_find
+                jp      nc,fp_runtime_error ; OOM -- FPERR already set by the engine
+                jr      sw_value
+sw_must_exist:
+                call    var_find_typed
+                jr      nc,sw_absent
+sw_value:
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL = the value field (entry+3)
+                ld      (SW_ADDR),hl
+                push    ix
+                pop     hl                  ; HL = the cursor again
+                ret
+sw_array:
+                ld      a,e                 ; ary_op0_resolve wants the type in A,
+                call    ary_op0_resolve     ; BC = key, HL = cursor at '('
+                jp      nz,fp_runtime_error ; NZ: FPERR already mapped+set
+                ld      (SW_ADDR),de        ; Z: DE = element addr, HL past ')'
+                ret
+sw_absent:
+                ; the SECOND operand names a scalar that does not exist. Measured:
+                ; `A=1:SWAP A,B` is Illegal function call, NOT an auto-created B.
+                push    ix
+                pop     hl                  ; restore the cursor for the abort
+sw_illegal:
+                ld      a,5
+                jp      raise_error         ; Illegal function call
+    ENDIF
+
 ; --- els_typecheck: D-MISS-1, the string-lvalue RHS type check --------------
 ; `A$=A` said `syntax error` where the reference says `Type mismatch`. The cause
 ; was localised and unglamorous: ex_let_str's only question was "is the RHS a

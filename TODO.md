@@ -1405,8 +1405,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         (`2026-07-26`), which was the ninth and which the sweep picked up with
         no edit to the probe. **No MSX1 reserved word silently computes a wrong
         answer.** That was the keyword arc's exit criterion (D-KW-3).
-      - **MISSING (6) — honest syntax error.** `LOCATE` · `SWAP` · `TRON` ·
-        `TROFF` · `MOTOR` · `DEF FN`/`FN`.
+      - **MISSING (6) — honest syntax error.** ✅ **FOUR LANDED 2026-07-27**:
+        `LOCATE` · `TRON` · `TROFF` · `MOTOR`, plus D-MISS-1, gated by
+        `make missing-acceptance` at **163/163 as recorded**. `SWAP` is
+        implemented but **gated off** (`SWAP_RESIDENT = 0`): it measured 186 B
+        against 156 B free, and the spec pre-decided that overrun as a split.
+        `DEF FN`/`FN` stays out — it is an arc, not a slice (D-MC-3).
       - **NO-ORACLE (5).** `MKI$` `MKS$` `MKD$` `CVS` `CVD` — the MK/CV family
         lives in Disk BASIC, so a **diskless** VG-8020 reference measures the
         absence of a disk ROM, not of a language feature. The probe routes these
@@ -1456,8 +1460,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       slice, three slices running).
 
       **What remains of this arc, in order:**
-      - **The MISSING class (6)** — `LOCATE` · `SWAP` · `TRON`/`TROFF` ·
-        `MOTOR`. Honest syntax errors, so diagnosable rather than dangerous.
+      - **The MISSING class (6)** — ✅ **LANDED 2026-07-27 except `SWAP`.**
+        `LOCATE` · `TRON`/`TROFF` · `MOTOR` + D-MISS-1 are in and gated
+        (163/163 as recorded, 20 expected-divergent, every marker carrying a
+        reason). Spec, as-built costs and the two places the spec turned out to
+        be WRONG:
+        [`docs/spec-basic-missing-class.md`](docs/spec-basic-missing-class.md).
+        **`SWAP` is the remaining item and needs ~186 B of page 1** — a real
+        carve, not the ~28 B `fat_rand_*` reserve. Its implementation is written
+        and gated at `SWAP_RESIDENT = 0`; flipping that flag plus removing
+        `SWAP` from the probe's one `IMPLEMENTED` line is the whole of the
+        wiring. Honest syntax errors, so diagnosable rather than dangerous.
         ✅ **CHARACTERISED 2026-07-27**,
         [`docs/missing-vg8020-characterization.md`](docs/missing-vg8020-characterization.md),
         probe [`probes/basic/basic_probe_missing.py`](probes/basic/basic_probe_missing.py),

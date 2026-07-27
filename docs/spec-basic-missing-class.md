@@ -5,7 +5,26 @@ SPDX-License-Identifier: 0BSD
 
 # `LOCATE` / `SWAP` / `TRON` / `TROFF` / `MOTOR` (+ D-MISS-1) — implementation spec
 
-**Status:** ✅ **SIGNED OFF 2026-07-27** — S-MC-1 … S-MC-6 all answered (§9,
+**Status:** ✅ **LANDED 2026-07-27** — four of the five words plus D-MISS-1.
+`SWAP` is **split out** (§10): its implementation is complete and gated off at
+`SWAP_RESIDENT = 0`, because it measured **186 B against 156 B free** and §9
+pre-decided that case. `make missing-acceptance` is **163/163 as recorded**
+(20 expected-divergent, none of them in the MISSING class itself).
+
+**As built**, measured from clean after each step:
+
+| step | page-1 free | gate |
+|---|---|---|
+| baseline | 420 B | — |
+| `ON`/`OFF`/`STOP` decode share (S-MC-4) | **473 B** (+53) | 5 trap suites, falsified |
+| `MOTOR` | 435 B (−38) | `motor` 12/12, `motorline` 10/10 |
+| `TRON`/`TROFF` | 382 B (−53) | `trace` 18/18 |
+| prompt fix (out of scope, requested) | 376 B (−6) | 7 suites |
+| D-MISS-1 | 351 B (−25) | cal 22/41 → 30/41 |
+| `LOCATE` + the ERR-24 message | 156 B (−195) | locerr/locate/locacc/locrow |
+| `SWAP` | *(186 B — did not fit)* | gated off |
+
+**Sign-off history follows.** ✅ **SIGNED OFF 2026-07-27** — S-MC-1 … S-MC-6 all answered (§9,
 "Sign-off"). **S-MC-4 was overridden**: the `ON`/`OFF`/`STOP` decode share is
 taken **now, as funding, first**, not left deferred. Implementation follows this
 document; where it deviates, this document is wrong and gets corrected.
@@ -156,6 +175,36 @@ Numeric → string assignment must raise **`Type mismatch`**, in every form:
 `DIM Q$(3):Q$(0)=1`. The numeric-lvalue mirror is already correct and must stay
 correct. Cause is localised: **the string-lvalue assignment path never
 type-checks its RHS and fails in the parser instead.**
+
+## 3.7 ⚠️ WHERE THIS SPEC WAS WRONG
+
+Recorded at the top rather than buried, because both errors were of the same
+kind — **a rule inferred from the one row that had been measured**, in a
+document whose whole claim was that it inferred nothing.
+
+1. **§4's "apply as you parse, do not batch" is FALSIFIED.** It was inferred
+   from `LOCATE 1,1,1,1`, which moves the cursor to (1,1) and prints `Syntax
+   error` there. That row only constrains a *fourth* argument found after three
+   valid ones; it says nothing about a domain error *inside* the first three.
+   Measured afterwards, by screen-dumping the reference:
+
+   | case | reference |
+   |---|---|
+   | `CLS:LOCATE -1,0` | message at row 0 — cursor never moved |
+   | `CLS:LOCATE 5,-1` | message at row 0 — **column 5 was NOT applied** |
+   | `CLS:LOCATE 0,-1` | message at row 0 — **column 0 was NOT applied** |
+
+   One model fits both measurements: **parse and domain-check up to three
+   arguments, apply them, and only then reject a fourth.** Batching is the
+   faithful one — and it also made an omitted axis free, by seeding both cells
+   from the live cursor so an omitted axis is re-applied unchanged.
+
+2. **§9's `SWAP` estimate of 90–130 B was 56 B light.** It measured **186 B**.
+   The estimate assumed the `ary_op0_resolve` reuse route, which was taken; what
+   it did not price was that `SWAP` needs the first operand's address *and* type
+   held across the second operand's parse (which runs a nested `eval`), the
+   two-routine asymmetry, the exact-type compare, and three distinct reject
+   shapes.
 
 ## 4. Design — `LOCATE`
 
@@ -359,7 +408,41 @@ to prevent). The marker is **bidirectional** — a marked row that starts
 *passing* fails the gate, because that means D-MISS-2 landed and the marker is
 now a lie about the tree.
 
-### 7.4 Falsification — the standing rule
+### 7.4 Falsification — ✅ DONE, all four words
+
+A green gate proves nothing until it has been shown to go red for the right
+reason. Each word's `stmt_table` entry was deleted in turn, the ROM rebuilt and
+installed, and the gate re-run.
+
+**Isolation, from the full-gate pass** (every failing row, across all 169):
+
+| deleted | FAIL rows | batteries touched |
+|---|---|---|
+| `MOTOR` | 12 | `motor`, `motorline` — nothing else |
+| `TRON` | 14 | `trace` — nothing else |
+| `TROFF` | 9 | `trace` — nothing else |
+
+**Own-battery-red / other-battery-green**, run per word (the full gate per word
+costs hours, because ~150 deliberately-broken rows each self-heal
+boot-per-case — so the isolation half was re-run against one unrelated battery
+instead):
+
+| deleted | its own battery | an unrelated battery |
+|---|---|---|
+| `MOTOR` | `motorline` **3/10 red** | `trace` 18/18 green |
+| `TRON` | `trace` **4/18 red** | `motor` 12/12 green |
+| `TROFF` | `trace` **9/18 red** | `motor` 12/12 green |
+| `LOCATE` | `locerr` **5/39 red** | `motor` 12/12 green |
+
+`TRON` and `TROFF` both land in `trace` and break *different* subsets of it (14
+rows vs 9), which is the shape you want: the battery distinguishes the two
+statements rather than treating them as one feature.
+
+The earlier `MOTOR` falsification (swapping `ZTS_ON`/`ZTS_OFF` inside
+`onoff_decode`, turning `stop-trap-acceptance` from ALL PASS to 6 FAIL) covers
+the funding step by the same rule.
+
+### 7.4a The rule as originally stated
 
 A green gate proves nothing until it has been shown to go red for the right
 reason. Before landing, **delete each word's `stmt_table` entry in turn** and
@@ -459,6 +542,28 @@ part of the measured budget the five words are then implemented against. That
 leaves exactly one reserve lever: the `fat_rand_*` clone collapse (~28 B, the
 last of that well). If `SWAP` overruns a measured budget with only that left,
 the answer is to split `SWAP` out rather than to spend the last reserve on it.
+
+## 10. `SWAP` — split out, implementation gated off
+
+**Measured 186 B against 156 B free.** §9 pre-decided this exact case, and the
+decision was confirmed: split it out rather than spend the last page-1 reserve
+(the ~28 B `fat_rand_*` collapse, which would not have covered the overrun
+anyway).
+
+The implementation is **not discarded** — it is complete, reviewed, and behind
+`SWAP_RESIDENT = 0` (`sysvars.inc`), the same pattern `G7_RESIDENT` /
+`I1_RESIDENT` / `TRAPS_T4` use. The flag guards three places that must move
+together: the `kwtable` crunch row, the `stmt_table` dispatch row, and the code
+in `basic/missing.asm`. So `SWAP A,B` is still a syntax error, exactly as before
+the slice, and the probe's `--gate` deliberately excludes `SWAP` from
+`IMPLEMENTED` so its ~40 characterization rows stay reference-only rather than
+being marked expected-divergent one by one.
+
+**What the next slice needs:** ~186 B of page 1, i.e. a real carve. The
+`fat_rand_*` reserve is not enough on its own. Nothing else is outstanding — the
+surface is characterised (§3.3), the design is settled (§5, S-MC-3), the rows
+are written, and flipping the flag plus deleting `SWAP` from that one probe line
+is the whole of the wiring.
 
 ### Sign-off — ✅ all six answered, 2026-07-27
 

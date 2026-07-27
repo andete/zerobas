@@ -71,7 +71,7 @@ USAGE
     python3 probes/basic/basic_probe_missing.py
     ... --gate              # treat the five as implemented -> every row two-sided
     ... --only locate       # cal | locate | locerr | locrow | xchk | swap
-    ...                     # | swaperr | trace | motor | motorline
+    ...                     # | swaperr | trace | motor | motorline | detok
     ... --boot-per-case
 """
 from __future__ import annotations
@@ -383,17 +383,25 @@ LOCACC = [
 # SAME LINE, for the same reason le-scr1/le-scr2 restore SCREEN 0: a case that
 # leaves the console reconfigured poisons every following case in a shared boot.
 LOCROW_PROBE = 'PRINT "[";Y;X;"]"'
+# ⚠️ THESE ROWS PIN `KEY ON` EXPLICITLY, and that is not redundant with the boot
+# default. The LOCATE/LOCACC batteries pin `KEY OFF`, which LEAKS: nothing
+# restores it, so whichever battery runs first decides the console for the rest
+# of the run. That is exactly what happened -- these rows silently became
+# KEY-OFF-pinned, started agreeing, and the S-MC-6 stale-marker check caught it
+# by reporting four markers as STALE. A row must state the state it measures in
+# rather than inherit it. `lr-key-off-*` below say the opposite thing for the
+# same reason.
 LOCROW = [
     # in-range controls -- these must reproduce the grid battery's answers, or
     # the instrument is not measuring what it claims to
-    ("lr-in-5-3",     'WIDTH 40:CLS:LOCATE 5,3:Y=CSRLIN:X=POS(0)'),
-    ("lr-in-21",      'WIDTH 40:CLS:LOCATE 5,21:Y=CSRLIN:X=POS(0)'),
-    ("lr-in-22",      'WIDTH 40:CLS:LOCATE 5,22:Y=CSRLIN:X=POS(0)'),
+    ("lr-in-5-3",     'WIDTH 40:KEY ON:CLS:LOCATE 5,3:Y=CSRLIN:X=POS(0)'),
+    ("lr-in-21",      'WIDTH 40:KEY ON:CLS:LOCATE 5,21:Y=CSRLIN:X=POS(0)'),
+    ("lr-in-22",      'WIDTH 40:KEY ON:CLS:LOCATE 5,22:Y=CSRLIN:X=POS(0)'),
     # THE OPEN QUESTION: accepted, out of range, where does it land?
-    ("lr-row-23",     'WIDTH 40:CLS:LOCATE 5,23:Y=CSRLIN:X=POS(0)'),
-    ("lr-row-24",     'WIDTH 40:CLS:LOCATE 5,24:Y=CSRLIN:X=POS(0)'),
-    ("lr-row-25",     'WIDTH 40:CLS:LOCATE 5,25:Y=CSRLIN:X=POS(0)'),
-    ("lr-row-255",    'WIDTH 40:CLS:LOCATE 5,255:Y=CSRLIN:X=POS(0)'),
+    ("lr-row-23",     'WIDTH 40:KEY ON:CLS:LOCATE 5,23:Y=CSRLIN:X=POS(0)'),
+    ("lr-row-24",     'WIDTH 40:KEY ON:CLS:LOCATE 5,24:Y=CSRLIN:X=POS(0)'),
+    ("lr-row-25",     'WIDTH 40:KEY ON:CLS:LOCATE 5,25:Y=CSRLIN:X=POS(0)'),
+    ("lr-row-255",    'WIDTH 40:KEY ON:CLS:LOCATE 5,255:Y=CSRLIN:X=POS(0)'),
     # is the clamp target the fixed bottom row, or CRTCNT-1?
     ("lr-key-off-22", 'WIDTH 40:CLS:KEY OFF:LOCATE 5,22:Y=CSRLIN:X=POS(0):KEY ON'),
     ("lr-key-off-23", 'WIDTH 40:CLS:KEY OFF:LOCATE 5,23:Y=CSRLIN:X=POS(0):KEY ON'),
@@ -402,14 +410,14 @@ LOCROW = [
     # the COLUMN axis through the same instrument -- the grid already settled
     # this (clamps to WIDTH-1), so agreement here is what says the instrument is
     # sound before its row answers are believed
-    ("lr-col-39",     'WIDTH 40:CLS:LOCATE 39,3:Y=CSRLIN:X=POS(0)'),
-    ("lr-col-40",     'WIDTH 40:CLS:LOCATE 40,3:Y=CSRLIN:X=POS(0)'),
-    ("lr-col-255",    'WIDTH 40:CLS:LOCATE 255,3:Y=CSRLIN:X=POS(0)'),
-    ("lr-w32-31",     'WIDTH 32:CLS:LOCATE 31,3:Y=CSRLIN:X=POS(0):WIDTH 40'),
-    ("lr-w32-32",     'WIDTH 32:CLS:LOCATE 32,3:Y=CSRLIN:X=POS(0):WIDTH 40'),
-    ("lr-w32-255",    'WIDTH 32:CLS:LOCATE 255,3:Y=CSRLIN:X=POS(0):WIDTH 40'),
+    ("lr-col-39",     'WIDTH 40:KEY ON:CLS:LOCATE 39,3:Y=CSRLIN:X=POS(0)'),
+    ("lr-col-40",     'WIDTH 40:KEY ON:CLS:LOCATE 40,3:Y=CSRLIN:X=POS(0)'),
+    ("lr-col-255",    'WIDTH 40:KEY ON:CLS:LOCATE 255,3:Y=CSRLIN:X=POS(0)'),
+    ("lr-w32-31",     'WIDTH 32:KEY ON:CLS:LOCATE 31,3:Y=CSRLIN:X=POS(0):WIDTH 40'),
+    ("lr-w32-32",     'WIDTH 32:KEY ON:CLS:LOCATE 32,3:Y=CSRLIN:X=POS(0):WIDTH 40'),
+    ("lr-w32-255",    'WIDTH 32:KEY ON:CLS:LOCATE 255,3:Y=CSRLIN:X=POS(0):WIDTH 40'),
     # BOTH axes out of range at once -- one clamp or two?
-    ("lr-both-255",   'WIDTH 40:CLS:LOCATE 255,255:Y=CSRLIN:X=POS(0)'),
+    ("lr-both-255",   'WIDTH 40:KEY ON:CLS:LOCATE 255,255:Y=CSRLIN:X=POS(0)'),
 ]
 
 # --- battery 4: the DECLARED cross-check -- LOCATE read back by CSRLIN/POS ---
@@ -418,11 +426,11 @@ LOCROW = [
 # as a consistency check between two independently-measured instruments, and the
 # grid battery above is what the gate's teeth are in.
 XCHK = [
-    ("xc-5-3",        'WIDTH 40:CLS:LOCATE 5,3:PRINT "[";CSRLIN;POS(0);"]"'),
-    ("xc-0-0",        'WIDTH 40:CLS:LOCATE 0,0:PRINT "[";CSRLIN;POS(0);"]"'),
-    ("xc-col-only",   'WIDTH 40:CLS:PRINT "AAA":LOCATE 7:PRINT "[";CSRLIN;POS(0);"]"'),
-    ("xc-row-only",   'WIDTH 40:CLS:PRINT "AAA";:LOCATE ,4:PRINT "[";CSRLIN;POS(0);"]"'),
-    ("xc-max",        'WIDTH 40:CLS:LOCATE 39,22:PRINT "[";CSRLIN;POS(0);"]"'),
+    ("xc-5-3",        'WIDTH 40:KEY ON:CLS:LOCATE 5,3:PRINT "[";CSRLIN;POS(0);"]"'),
+    ("xc-0-0",        'WIDTH 40:KEY ON:CLS:LOCATE 0,0:PRINT "[";CSRLIN;POS(0);"]"'),
+    ("xc-col-only",   'WIDTH 40:KEY ON:CLS:PRINT "AAA":LOCATE 7:PRINT "[";CSRLIN;POS(0);"]"'),
+    ("xc-row-only",   'WIDTH 40:KEY ON:CLS:PRINT "AAA";:LOCATE ,4:PRINT "[";CSRLIN;POS(0);"]"'),
+    ("xc-max",        'WIDTH 40:KEY ON:CLS:LOCATE 39,22:PRINT "[";CSRLIN;POS(0);"]"'),
 ]
 
 # --- battery 5: SWAP -- value rows -----------------------------------------
@@ -629,6 +637,30 @@ MOTORLINE = [
 ]
 
 
+# --- battery 9: LIST ROUND-TRIP -- the $A2/$A3 DUAL NAMESPACE ---------------
+# ⚠️ THE ONE PLACE A SILENT WRONG ANSWER COULD HIDE IN THIS SLICE. TRON and
+# TROFF take the byte values $A2/$A3 that STICK/STRIG already use as
+# **$FF-prefixed FUNCTION** tokens -- same byte, different namespace. The CRUNCH
+# direction is covered byte-for-byte by basic_probe_crunch.py (which now puts
+# both senses of $A2 on one line and compares the whole stored line against the
+# reference). This battery covers the direction crunch cannot: the
+# DETOKENISER, which has to look at a $A2 in the program text and decide from
+# CONTEXT whether it is `TRON` or the tail of `STICK`.
+#
+# Each case stores a program, CLSes away the echoes, and LISTs it. A
+# detokeniser that confused the namespaces would print `STICK` where the source
+# said `TRON`, or a bare `TRON` inside the expression -- either way the LIST
+# output diverges from the reference's, which is the whole test.
+DETOK = {
+    "dt-tron-stick":  ['10 TRON:A=STICK(0)', 'CLS', 'LIST'],
+    "dt-troff-strig": ['10 TROFF:A=STRIG(0)', 'CLS', 'LIST'],
+    "dt-both":        ['10 A=STICK(0)+STRIG(1):TRON:TROFF', 'CLS', 'LIST'],
+    "dt-locate":      ['10 LOCATE 5,3', 'CLS', 'LIST'],
+    "dt-locate-omit": ['10 LOCATE ,4', 'CLS', 'LIST'],
+    "dt-motor":       ['10 MOTOR:MOTOR ON:MOTOR OFF', 'CLS', 'LIST'],
+}
+
+
 # --- readouts ---------------------------------------------------------------
 
 def rows_of(raw: str | None) -> list[str]:
@@ -736,6 +768,10 @@ def screen(raw: str | None) -> str:
             continue
         t = " ".join(row.split())
         for p in PROMPTS:
+            if t.startswith(p):        # prompt + the echo of what was typed
+                t = t[len(p):].lstrip()
+                break
+        for p in PROMPTS:
             if t.endswith(p):
                 t = t[:-len(p)].rstrip()
                 break
@@ -743,6 +779,71 @@ def screen(raw: str | None) -> str:
             continue
         out.append(t)
     return "/".join(out) if out else "<blank>"
+
+
+# --- S-MC-6: EXPECTED DIVERGENCES -------------------------------------------
+# A gate that cannot reach green is not a gate -- it degrades into "read the
+# output and use your judgement", which is exactly what these gates exist to
+# replace. But the alternatives are worse: dropping a divergent row loses the
+# measurement, and hard-coding zerobas to match would be fixing the instrument
+# instead of the tree.
+#
+# So each row below is recorded as KNOWN-DIVERGENT WITH A REASON, and the check
+# is BIDIRECTIONAL: a marked row that still disagrees is green, and a marked row
+# that starts AGREEING is **red**, because then the marker is a lie about the
+# tree and someone must come here and delete it.
+#
+# Nothing in the MISSING class itself is marked. Every entry is either a
+# deliberately deferred slice or a console-chrome difference that no
+# implementation of these five words could remove.
+XDIVERGENT = {
+    # -- D-MISS-2, deliberately deferred to its own slice (D-MC-2) -----------
+    # The absent string-function argument-domain checks. zerobas accepts the
+    # whole domain silently where the reference raises Illegal function call /
+    # Overflow. Roadmap: TODO.md, "Keyword-completeness gaps".
+    "d2-chr-256":   "D-MISS-2 deferred: CHR$ has no argument-domain check",
+    "d2-chr-neg":   "D-MISS-2 deferred: CHR$ has no argument-domain check",
+    "d2-chr-huge":  "D-MISS-2 deferred: CHR$ has no argument-domain check",
+    "d2-chr-32768": "D-MISS-2 deferred: CHR$ has no argument-domain check",
+    "d2-string-neg":  "D-MISS-2 deferred: STRING$ domain/abort shape",
+    "d2-string-256":  "D-MISS-2 deferred: STRING$ domain/abort shape",
+    "d2-left-neg":  "D-MISS-2 deferred: LEFT$ has no argument-domain check",
+    "d2-right-neg": "D-MISS-2 deferred: RIGHT$ has no argument-domain check",
+    "d2-mid-neg":   "D-MISS-2 deferred: MID$ has no argument-domain check",
+    "d2-mid-zero":  "D-MISS-2 deferred: MID$ has no argument-domain check",
+    "d2-space-neg": "D-MISS-2 deferred: SPACE$ domain/abort shape",
+
+    # -- console chrome: the two machines have different ROW COUNTS ----------
+    # The reference reserves a function-key row at KEY ON (bottom usable row
+    # 22); zerobas paints none (23). These rows are deliberately UNPINNED --
+    # they are the ones that MEASURE that the clamp moves with KEY, and their
+    # `lr-key-off-*` twins pin it and agree EXACTLY (22/22 at KEY OFF 22,
+    # 23/23 at 23/24/255). Pinning these too would delete the measurement.
+    # Hard-coding 22 into zerobas would be the wrong way green: it would make
+    # zerobas's own last row unreachable by LOCATE while PRINT still scrolls
+    # onto it. See docs/spec-basic-missing-class.md §7.2.
+    "lr-row-23":  "console chrome: ref reserves a function-key row (22) vs 23",
+    "lr-row-24":  "console chrome: ref reserves a function-key row (22) vs 23",
+    "lr-row-25":  "console chrome: ref reserves a function-key row (22) vs 23",
+    "lr-row-255": "console chrome: ref reserves a function-key row (22) vs 23",
+    "lr-both-255": "console chrome: ref reserves a function-key row (22) vs 23",
+
+    # -- bottom-row MARKER rows: the instrument cannot see the clamp ---------
+    # These read where a CHARACTER ends up after printing AND scrolling, so they
+    # fold in prompt and scroll behaviour rather than where LOCATE put the
+    # cursor. KEY OFF narrows the gap (20 -> 21 against 22) but cannot close it.
+    # The scroll-free CSRLIN/POS instrument measures the clamp directly and
+    # agrees exactly, which is why these are marked rather than chased.
+    # xc-max reads CSRLIN AFTER a PRINT at the LAST COLUMN of the bottom row, so
+    # what it captures is where the WRAP went, not where LOCATE went. The
+    # reference has no row 23 at KEY ON, so its wrap scrolls and CSRLIN reads 22;
+    # zerobas wraps onto 23. LOCATE itself agrees -- lr-in-22 (same row, same
+    # KEY state, scroll-free readout) is 22/22 on both.
+    "xc-max":      "wrap at the last column of the bottom row: ref has no row 23",
+    "loc-max-row": "marker row at the screen bottom: measures scroll, not the clamp",
+    "la-row-23":   "marker row at the screen bottom: measures scroll, not the clamp",
+    "la-row-24":   "marker row at the screen bottom: measures scroll, not the clamp",
+}
 
 
 def agree(a: str, b: str) -> bool:
@@ -829,6 +930,9 @@ def build() -> dict[str, list[Case]]:
     bat["trace"] = trace
 
     bat["motor"] = [Case("motor", lb, ln, "screen") for lb, ln in MOTOR]
+    bat["detok"] = [Case("detok", lb, " : ".join(lines), "screen",
+                         mode="direct", lines=lines)
+                    for lb, lines in DETOK.items()]
     # O-2: the relay itself, read back through the PPI Port C output latch.
     # "tail" (the echo-anchored readout) -- these PRINT a number, so the answer
     # is the span after the echoed command line, exactly like the cal rows.
@@ -860,7 +964,7 @@ def main() -> int:
     ap.add_argument("--machine", default=REF_MACHINE)
     ap.add_argument("--zb-machine", dest="zb_machine", default=ZB_MACHINE)
     ap.add_argument("--only", help="cal | locate | locerr | locrow | xchk | "
-                                   "swap | swaperr | trace | motor | motorline")
+                                   "swap | swaperr | trace | motor | motorline | detok")
     ap.add_argument("--gate", action="store_true",
                     help="treat LOCATE/SWAP/TRON/TROFF/MOTOR as implemented -> "
                          "every row becomes a two-sided differential")
@@ -868,7 +972,15 @@ def main() -> int:
                     action="store_true")
     args = ap.parse_args()
     if args.gate:
-        IMPLEMENTED = set(UNDER_TEST)
+        # ⚠️ SWAP IS DELIBERATELY EXCLUDED. Its implementation is complete but
+        # gated OFF (basic/sysvars.inc SWAP_RESIDENT = 0): it measured 186 B
+        # against the 156 B the slice had left, and spec-basic-missing-class.md
+        # §9 pre-decided that case -- split it out rather than spend the last
+        # page-1 reserve on it. So `SWAP A,B` is still a syntax error here, and
+        # its 40-odd rows stay REFERENCE-ONLY characterization instead of being
+        # marked expected-divergent one by one. Delete SWAP from this line when
+        # SWAP_RESIDENT flips to 1; the rows are already written and waiting.
+        IMPLEMENTED = set(UNDER_TEST) - {"SWAP"}
 
     bat = build()
     if args.only:
@@ -910,14 +1022,35 @@ def main() -> int:
     if both:
         bad = 0
         print("\n=== CALIBRATION / GATE (must AGREE) ===")
+        stale = 0
         for c in both:
-            good = agree(c.ref, c.zb)
+            agreed = agree(c.ref, c.zb)
+            why = XDIVERGENT.get(c.label)
+            if why is None:
+                good, tag = agreed, ("PASS" if agreed else "FAIL")
+            else:
+                # bidirectional: a marked row must STILL disagree. One that has
+                # started agreeing means the marker is stale -- go delete it.
+                good = not agreed
+                tag = "XDIV" if good else "STALE"
+                stale += not good
             bad += not good
             ok = ok and good
-            print(f"{'PASS' if good else 'FAIL':5} {c.battery:8} {c.label:14} "
+            print(f"{tag:5} {c.battery:8} {c.label:14} "
                   f"{c.display[:34]:34} ref={c.ref[:22]:>22}  zb={c.zb[:22]:>22}")
-        print(f"--- {len(both) - bad}/{len(both)} agree"
+        nx = sum(1 for c in both if c.label in XDIVERGENT)
+        print(f"--- {len(both) - bad}/{len(both)} as recorded"
+              f"   ({nx} expected-divergent, see XDIVERGENT)"
               + ("" if not bad else "   <-- red"))
+        if stale:
+            print(f"!!! {stale} STALE marker(s): a row recorded as divergent now "
+                  f"AGREES. That is good news about the tree and bad news about "
+                  f"this file -- remove it from XDIVERGENT.")
+        for lb in sorted(set(XDIVERGENT) - {c.label for c in both}):
+            print(f"!!! XDIVERGENT names {lb!r}, which no row in this run "
+                  f"produced -- a renamed or deleted case leaves a marker that "
+                  f"can never fire.")
+            ok = False
 
     titles = {
         "cal": "CALIBRATION (shown above)",
@@ -930,6 +1063,7 @@ def main() -> int:
         "trace": "TRON / TROFF -- SCREEN",
         "motor": "MOTOR -- LANGUAGE SURFACE ONLY (never 'the relay closed')",
         "motorline": "MOTOR -- THE RELAY ITSELF (PPI port C bit 4; 0 = motor ON)",
+        "detok": "LIST ROUND-TRIP -- the $A2/$A3 dual namespace",
     }
     for name in ("locate", "locerr", "locrow", "xchk", "swap", "swaperr",
                  "trace", "motor"):

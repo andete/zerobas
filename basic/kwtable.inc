@@ -440,7 +440,9 @@ kwtable:
                 ; DETOKENISER that has to keep the namespaces apart, so the slice
                 ; carries LIST round-trip cases.
                 db      6,"LOCATE",1,LOCATE_TOKEN                ; $D8
+    IF SWAP_RESIDENT
                 db      4,"SWAP",1,SWAP_TOKEN                    ; $A4
+    ENDIF
                 db      5,"TROFF",1,TROFF_TOKEN                  ; $A3
                 db      4,"TRON",1,TRON_TOKEN                    ; $A2
                 db      5,"MOTOR",1,MOTOR_TOKEN                  ; $CE

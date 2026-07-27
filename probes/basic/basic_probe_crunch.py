@@ -216,6 +216,27 @@ STR_KEYWORDS_1B = [
     ('a=stick(0)+strig(1)', 0x41),
     ('for i=1 to 2 step 1:next', 0x82),   # STEP still crunches (no prefix theft)
     ('a$=str$(1):stop',  0x41),   # STR$ + STOP likewise
+    # --- the MISSING class (docs/spec-basic-missing-class.md §3.1/§7.5) ------
+    # Single-byte STATEMENT tokens, all repack-only: LOCATE $D8, TRON $A2,
+    # TROFF $A3, MOTOR $CE, with MOTOR ON/OFF reusing ON $95 / OFF $EB.
+    ('locate 5,3',       0xD8),
+    ('tron',             0xA2),
+    ('troff',            0xA3),
+    ('motor',            0xCE),
+    ('motor on',         0xCE),   # -> CE 20 95
+    ('motor off',        0xCE),   # -> CE 20 EB
+    ('tron:troff:motor', 0xA2),   # -> A2 3A A3 3A CE
+    # ⚠️ THE DUAL-NAMESPACE ROWS. TRON/TROFF take the byte values $A2/$A3 that
+    # STICK/STRIG already use as $FF-PREFIXED FUNCTION tokens -- same byte,
+    # different namespace. The crunch direction is safe by construction
+    # (match_kw is full-keyword), but "by construction" is what this corpus
+    # exists to stop anyone from having to trust: these lines put BOTH senses of
+    # $A2 and $A3 on ONE line and compare the whole byte string against the
+    # reference, so a tokeniser that confused them cannot come out equal.
+    # (The DETOKENISER direction is basic_probe_list.py's own round-trip.)
+    ('tron:a=stick(0)',      0xA2),   # -> A2 3A 41 EF FF A2 ...
+    ('troff:a=strig(0)',     0xA3),   # -> A3 3A 41 EF FF A3 ...
+    ('a=stick(0):tron:troff', 0x41),
 ]
 
 

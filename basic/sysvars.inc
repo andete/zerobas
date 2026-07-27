@@ -957,6 +957,31 @@ LOC_RET         equ     $E227   ; 2 B: loc_next's parked return address
 ; present-flag of its own.
 LOC_COL         equ     $E229   ; 1 B: LOCATE's parsed column, pre-clamp
 LOC_ROW         equ     $E22A   ; 1 B: LOCATE's parsed row, pre-clamp
+; --- SWAP_RESIDENT: the SWAP build gate -------------------------------------
+; 0 = SWAP is NOT built. The implementation is complete, reviewed and gated off
+; rather than deleted, exactly as G7_RESIDENT / I1_RESIDENT / TRAPS_T4 do for
+; their features.
+;
+; ⚠️ MEASURED, not estimated: SWAP costs **186 B** of page 1, against the 156 B
+; the MISSING slice had left after its other four words. The spec estimated
+; 90-130 B and pre-decided this exact case (spec-basic-missing-class.md §9): "If
+; SWAP overruns a measured budget with only that [the ~28 B fat_rand_* reserve]
+; left, the answer is to split SWAP out rather than to spend the last reserve on
+; it." Confirmed by the user 2026-07-27. Flipping this to 1 needs a real carve,
+; not the last reserve -- and needs the kwtable and stmt_table rows flipped with
+; it (both are guarded by this same flag).
+SWAP_RESIDENT   equ     0
+
+; --- SWAP (basic/missing.asm ex_swap) ---------------------------------------
+; SWAP is the one statement in the language that writes TWO lvalues, so it must
+; hold the FIRST operand's resolved address and type across the parse of the
+; second -- and that parse runs a nested eval() for any subscript list. Nothing
+; in a register survives that, so both live here.
+SW_ADDR         equ     $E22B   ; 2 B: the operand just resolved
+SW_TYPE         equ     $E22D   ; 1 B: its type (1 = string, 2/4/8 numeric)
+SW_ADDR1        equ     $E22E   ; 2 B: operand 1, held across operand 2's parse
+SW_TYPE1        equ     $E230   ; 1 B: operand 1's type
+SW_MODE         equ     $E231   ; 1 B: 0 = this operand MAY be created, 1 = must exist
 ; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §3) claims NO new RAM:
 ; the virtual line header a typed line executes under (`dir_line`, program.asm) is
 ; a 4-byte ROM constant, and CURLINE == dir_line is the sole definition of direct
