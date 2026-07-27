@@ -7,9 +7,16 @@ SPDX-License-Identifier: 0BSD
 
 **Status:** D-MC-1 ✅, D-MC-2 ✅, D-MC-3 ✅, D-MC-4 O-1 ✅ (O-3 proposed).
 2026-07-27. **Superseded for implementation by
-[`spec-basic-missing-class.md`](spec-basic-missing-class.md)** (S-MC-1 … S-MC-5),
-which carries four measurements this doc did not have — three of which changed
-the design.
+[`spec-basic-missing-class.md`](spec-basic-missing-class.md)**, which carries
+four measurements this doc did not have — three of which changed the design —
+and whose **S-MC-1 … S-MC-6 are all signed off (2026-07-27)**. Read the spec,
+not this doc, for what is being built. Two places where the spec **supersedes**
+what is written below:
+
+- **The `ON`/`OFF`/`STOP` decode share is taken, first, as funding** (spec §6.3,
+  S-MC-4 overridden). Anywhere below that treats it as deferred is stale.
+- **The row clamp is the console's own bottom row via a named constant**, not
+  `CRTCNT` and not a bare literal (spec §4, S-MC-2).
 Measurement input:
 [`missing-vg8020-characterization.md`](missing-vg8020-characterization.md).
 Roadmap item: [`TODO.md`](../TODO.md) "Keyword-completeness gaps", the

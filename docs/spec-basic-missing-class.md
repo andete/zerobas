@@ -5,8 +5,10 @@ SPDX-License-Identifier: 0BSD
 
 # `LOCATE` / `SWAP` / `TRON` / `TROFF` / `MOTOR` (+ D-MISS-1) — implementation spec
 
-**Status:** PROPOSAL, 2026-07-27. **Awaiting sign-off (S-MC-1 … S-MC-6, §9).**
-No code has been written.
+**Status:** ✅ **SIGNED OFF 2026-07-27** — S-MC-1 … S-MC-6 all answered (§9,
+"Sign-off"). **S-MC-4 was overridden**: the `ON`/`OFF`/`STOP` decode share is
+taken **now, as funding, first**, not left deferred. Implementation follows this
+document; where it deviates, this document is wrong and gets corrected.
 
 Inputs, all measured, none assumed:
 
@@ -181,8 +183,11 @@ tree.** `CRTCNT` is 24 and is not it. zerobas's console bottoms out at row 23 in
 every state measured, so the row clamp is `23` *for zerobas* — but it must be
 written as "the console's last usable row" with the measurement cited, so that
 if a function-key row is ever added the clamp moves with it instead of silently
-becoming wrong. **S-MC-2 asks whether to introduce a named constant/sysvar for
-this** rather than an unexplained `23`.
+becoming wrong. **S-MC-2 — DECIDED: a named constant**, defined once with the
+characterization §3.5 measurement (and the explicit "`CRTCNT` is 24 and is not
+this") in its comment. It costs nothing and it is the only artefact in the tree
+that would make a future console change collide with this clamp instead of
+silently invalidating it.
 
 ## 5. Design — `SWAP`
 
@@ -209,11 +214,24 @@ touched.
 Array elements resolve through the existing array engine, which auto-`DIM`s —
 matching the measured `SWAP A,Q(0)` acceptance.
 
-Open design point, **S-MC-3**: whether to resolve an array-element lvalue via
-the `VARPTR` array-element path already in the tree
-([`varptr-array-element`](spec-basic-varptr-array-element.md)) or via a new
-address-returning entry into the array engine. The first is reuse; the second
-may be cheaper. Estimate range 90–130 B assumes the reuse route.
+**S-MC-3 — DECIDED: reuse `ary_op0_resolve`.** It is already the shared
+address-returning entry into the array engine — `ev_f_varptr` calls it at
+[`expr.asm:2098`](../basic/expr.asm:2098) with `A` = type, `BC` = name key, `HL`
+= cursor at `'('`, and gets back `Z` with `DE` = the element address and `HL`
+past the `')'`; on `NZ` it has already mapped subscript-out-of-range /
+illegal-function-call / syntax onto `FPERR`, which is exactly the error surface
+§3.3 measured for `SWAP A,Q(9)`. It auto-dims on resolve, matching the measured
+`SWAP A,Q(0)` acceptance on an undimensioned array. The 90–130 B estimate
+assumes this route.
+
+⚠️ One inherited trap, visible in `ev_f_varptr`'s own comment: the resolve runs a
+**nested `eval`** for the subscript list, which leaves `FACTYP` as the
+*subscript's* type. `VARPTR` has to re-assert int afterwards. `SWAP` does not
+return a value through `FAC` at all, so it is not exposed the same way — but it
+does resolve **two** operands, and the second resolve's nested `eval` must not be
+allowed to disturb the address already taken for the first. Whatever `SWAP`
+holds across the second resolve has to survive a full `eval`, i.e. live in
+memory, not in a register pair.
 
 ## 6. Design — `TRON`/`TROFF`, `MOTOR`, glue, D-MISS-1
 
@@ -246,9 +264,22 @@ because the other `ON`/`OFF` statements in this tree do take it.
 
 `MOTOR` would be the **7th** `ON`/`OFF`/`STOP` decode site (`program.asm` ×4,
 `graphics.asm`, `screen.asm`), and the share was already flagged as deferred in
-`spec-traps-t5-interval` §4.3. **S-MC-4** asks whether to take it in this slice
-(it is a funding lever, but `MOTOR` needs a *2-way* decode where the others are
-3-way) or leave it deferred.
+`spec-traps-t5-interval` §4.3.
+
+**S-MC-4 — DECIDED: take it, and take it FIRST.** The spec proposed deferring it
+because `MOTOR` needs a *2-way* decode (it rejects `MOTOR STOP` — measured §3.5)
+where the other six are 3-way, so folding it in means generalising the share on
+its hardest case. The decision went the other way, and the reason is a good one:
+as a *reserve lever* the share only ever gets pulled mid-overrun, when the budget
+is already spent and the only acceptable outcome is "it fits" — which is the
+worst possible condition under which to restructure six existing call sites.
+Taken first, it is measured on its own and gated on its own, and if it costs more
+than it saves that is discovered while there is still a budget to absorb it.
+
+The 2-way/3-way split is the design constraint: the shared decoder must return
+"which of `ON`/`OFF`/`STOP` was it" (or "none"), leaving the *acceptance* policy
+to the caller — `MOTOR` rejecting `STOP` is then `MOTOR`'s own one-line check,
+not a variant of the share.
 
 ### 6.4 The `TRON` hook — one line, and the tree is already shaped for it
 
@@ -321,9 +352,12 @@ moment anything *else* moves — including a D-MISS-2 row that starts *passing*
 D-MISS-1 rows get no such marker: this slice fixes them, and they must go from
 red to green as its proof.
 
-**S-MC-6** asks to confirm that shape (an expected-divergence marker carrying a
-reason) rather than the alternatives — dropping the rows, which loses the
-measurement, or leaving the gate permanently red.
+**S-MC-6 — DECIDED: the expected-divergence marker**, carrying a reason and a
+roadmap reference, over the alternatives (dropping the rows, which loses the
+measurement; or leaving the gate permanently red, which is what a marker exists
+to prevent). The marker is **bidirectional** — a marked row that starts
+*passing* fails the gate, because that means D-MISS-2 landed and the marker is
+now a lie about the tree.
 
 ### 7.4 Falsification — the standing rule
 
@@ -382,25 +416,48 @@ Measured from clean (`rm -rf build && make basic-reloc`): **page-1 420 B, low
 region 11 B.** The low region is untouched by this slice.
 
 **So the optimistic end lands with ~120 B to spare and the pessimistic end
-consumes the budget exactly.** That is not a comfortable margin, so the proposed
-order is **cheapest and most certain first, measuring free space after each**:
+consumes the budget exactly.** That is not a comfortable margin, so the order is
+**cheapest and most certain first, measuring free space after each**:
 `MOTOR` → `TRON`/`TROFF` → D-MISS-1 → `LOCATE` → `SWAP`. `SWAP` is both the most
 expensive and the most uncertain, so it goes last, where an overrun is
 discovered against a *measured* remaining budget rather than an estimated one.
-Reserve levers, in order of preference: the `ON`/`OFF`/`STOP` decode share
-(§6.3), and the `fat_rand_*` clone collapse (~28 B, the last of that well).
 
-### Sign-off
+Per S-MC-4 the `ON`/`OFF`/`STOP` decode share (§6.3) is **no longer a reserve
+lever** — it is taken first, ahead of `MOTOR`, and whatever it yields becomes
+part of the measured budget the five words are then implemented against. That
+leaves exactly one reserve lever: the `fat_rand_*` clone collapse (~28 B, the
+last of that well). If `SWAP` overruns a measured budget with only that left,
+the answer is to split `SWAP` out rather than to spend the last reserve on it.
 
-- **S-MC-1** — the slice as scoped in §2 and ordered in §9. Go / re-order / cut.
-- **S-MC-2** — the row clamp: a named constant for "the console's last usable
-  row" with the §3.5 measurement cited, or a bare `23` with a comment?
-- **S-MC-3** — `SWAP`'s array-element lvalue: reuse the `VARPTR` array-element
-  path, or a new address-returning entry into the array engine?
-- **S-MC-4** — take the 7-site `ON`/`OFF`/`STOP` decode share now as funding, or
-  leave it deferred?
-- **S-MC-5** — repack-only (§6.1), keeping the lean cart byte-identical?
-  Confirming, since it means these five words do not exist on the lean cart.
-- **S-MC-6** — the deferred-D-MISS-2 gate shape (§7.3): an expected-divergence
-  marker carrying a reason, so the gate can be green and still fail if anything
-  moves?
+### Sign-off — ✅ all six answered, 2026-07-27
+
+- **S-MC-1** ✅ **Go as scoped (§2) and ordered (§9)** — all five words plus
+  D-MISS-1, cheapest-and-most-certain first, measuring free space after each.
+- **S-MC-2** ✅ **A named constant** for "the console's last usable row", with
+  the §3.5 measurement cited at its definition. Zero bytes, and it is the one
+  artefact that would flag the clamp if a function-key row is ever added.
+- **S-MC-3** ✅ **Reuse `ary_op0_resolve`** — the shared op=0 RESOLVE entry
+  `ev_f_varptr` itself calls ([`expr.asm:2098`](../basic/expr.asm:2098)): `Z`,
+  `DE` = element address, `HL` = cursor past `')'`, with subscript-out-of-range /
+  illegal-function-call / syntax already mapped onto `FPERR`. It auto-dims,
+  which is exactly the measured `SWAP A,Q(0)` acceptance. The 90–130 B estimate
+  assumes this route.
+- **S-MC-4** 🔄 **OVERRIDDEN — take the share NOW, as funding, and take it
+  first.** The spec proposed deferring it (`MOTOR` needs a 2-way decode where the
+  other six are 3-way, so folding it in generalises the share on its hardest
+  case). The decision is to collapse all seven sites up front and bank the bytes
+  *before* `LOCATE`/`SWAP` — which also means the share is measured on its own,
+  against its own gate run, instead of being reached for mid-overrun when the
+  budget is already gone and the pressure is to make it fit.
+- **S-MC-5** ✅ **Repack-only (§6.1)**, `IF ROM_BASE < $4000`. The lean 16 KB
+  cart stays **byte-identical** and `LEAN_SHA256` does **not** move — these five
+  words do not exist on the lean cart, accepted knowingly.
+- **S-MC-6** ✅ **Expected-divergence marker carrying a reason** (§7.3), so the
+  gate is green when the world matches the recorded expectation and red the
+  moment anything else moves — **including a marked row that starts passing**,
+  which means D-MISS-2 landed and the marker is stale. The seven D-MISS-1 rows
+  get **no** marker: red→green is this slice's proof.
+
+**Implementation order, as amended by S-MC-4:** `ON`/`OFF`/`STOP` decode share
+→ `MOTOR` → `TRON`/`TROFF` → D-MISS-1 → `LOCATE` → `SWAP`. Measured page-1 free
+at sign-off, from clean: **420 B** (low region 11 B, untouched by this slice).
