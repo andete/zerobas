@@ -1,0 +1,368 @@
+# Copyright (c) 2026 Joost Yervante Damad
+# SPDX-License-Identifier: 0BSD
+"""Unit test: the exec_stmt statement dispatch (D-KW-2), no emulator.
+
+WHY THIS EXISTS
+===============
+`exec_stmt` used to be a 69-entry linear `cp`/`jp z` chain; D-KW-2 replaced it
+with a `db token, dw handler` table and a search loop, to buy back ~109 B of
+page 1 for the MISSING-class slice (docs/decision-missing-class-slicing.md §4).
+
+**A dispatch refactor that drops one statement is catastrophic and SILENT.** The
+dropped statement does not crash — it falls through to `is_letter`, and a
+statement token is not a letter, so it becomes `syntax error` on a program that
+used to work. Nothing else in the tree would notice: the acceptance suites cover
+most statements but not all, and `tests/README.md` recorded the dispatch as
+`exec_stmt 4/79` — **the switch itself had never been executed by a test**,
+because every other test calls the handlers directly.
+
+So this test asserts the one property the refactor must preserve, for **every**
+entry rather than a sample: *the token that used to reach handler X still
+reaches handler X, and nothing else does.*
+
+METHOD — and the version of it that did not work
+=================================================
+The first version of this test read its expectations out of the assembled table
+and asserted that every entry present dispatched to the address written beside
+it. It passed. It also passed with the PRINT entry DELETED and with CLS pointed
+at `ex_color`, because both statements are true of a corrupt table: **the
+expectation was a copy of the subject.** That is the standing trap in this tree
+(a gate can be green while measuring nothing), and it was caught only by
+deliberately breaking the code under test.
+
+So the test has two halves, and it needs both:
+
+  * **`EXPECTED` (below) is an INDEPENDENT expectation**, recovered mechanically
+    from the pre-refactor `cp`/`jp z` chain in git rather than from the table.
+    Comparing the ROM's table against it catches a dropped statement, an added
+    one, and a re-pointed one — the three failure modes that matter and that the
+    table cannot testify about itself.
+  * **Every entry is then EXECUTED**: `exec_stmt` runs the real Z80 code with
+    that token in the statement buffer and the handler is trapped, so arrival is
+    the assertion. This catches what a byte comparison cannot — a search loop
+    with the wrong stride, a misplaced $00 terminator — where the table bytes
+    are perfect but unreachable.
+
+`dw` targets are additionally resolved against the symbol file, so an address
+that is not any `ex_*` label is reported rather than silently accepted.
+
+Both builds are covered, and that is deliberate: D-KW-2 changes SHARED code, so
+it moves the lean 16 KB cart too (`tools/check_reloc.py` LEAN_SHA256 was updated
+in the same commit, which that file's comment requires to be deliberate). The
+lean build is the frozen shipping artifact, so it gets the same per-entry proof
+as the repack build rather than an argument that the change "is just a refactor".
+
+Oracle: the dispatch contract itself — a handler's `in:` is HL = the statement
+cursor, and control arrives by jump, not call. No reference ROM is involved.
+
+Run:  python3 tests/test_stmt_dispatch.py     (or `make unit-test`)
+"""
+
+import os
+import subprocess
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+sys.path.insert(0, HERE)
+
+from msxtest import Machine  # noqa: E402
+
+# --- THE INDEPENDENT EXPECTATION ------------------------------------------
+# Recovered MECHANICALLY from the pre-refactor `cp`/`jp z` chain (git HEAD at
+# the time of the D-KW-2 commit), not retyped: the extraction walked the chain,
+# paired each `cp <token>` with the `j[pr] z,<handler>` that followed it, and
+# tracked the enclosing IF-guard.
+#
+# THIS LIST IS THE WHOLE POINT OF THE TEST, and the first version did not have
+# it. Reading the expectation out of the assembled table -- the artifact under
+# test -- made the gate green for a table with the PRINT entry DELETED and for
+# a table with CLS pointed at ex_color, because "every entry present dispatches
+# to the address written next to it" is true of a corrupt table too. Both
+# mutations were caught only by deliberately making them (the standing rule:
+# falsify by breaking the code under test). The gate now compares the ROM's
+# table against this list, so a dropped, added or re-pointed statement fails.
+#
+# MAINTENANCE: adding a statement means adding a row here. That is deliberate --
+# a new statement should not be able to appear in the dispatch without the gate
+# being told about it.
+EXPECTED = [
+    ('COLON', 'ex_sep', ''),
+    ('BLOAD_TOKEN', 'ex_bload', ''),
+    ('CLOAD_TOKEN', 'ex_cload', ''),
+    ('LOAD_TOKEN', 'ex_load', ''),
+    ('RUN_TOKEN', 'ex_run', ''),
+    ('BSAVE_TOKEN', 'ex_bsave', ''),
+    ('SAVE_TOKEN', 'ex_save', ''),
+    ('FILES_TOKEN', 'ex_files', ''),
+    ('MERGE_TOKEN', 'ex_merge', ''),
+    ('OPEN_TOKEN', 'ex_open', ''),
+    ('INPUT_TOKEN', 'ex_input', ''),
+    ('LINE_TOKEN', 'ex_line', ''),
+    ('CLOSE_TOKEN', 'ex_close', ''),
+    ('KILL_TOKEN', 'ex_kill', ''),
+    ('NAME_TOKEN', 'ex_name', ''),
+    ('MAX_TOKEN', 'ex_maxfiles', ''),
+    ('FIELD_TOKEN', 'ex_field', ''),
+    ('LSET_TOKEN', 'ex_lset', ''),
+    ('RSET_TOKEN', 'ex_rset', ''),
+    ('GET_TOKEN', 'ex_get', ''),
+    ('PUT_TOKEN', 'ex_put', ''),
+    ('CALL_TOKEN', 'ex_call', ''),
+    ("'_'", 'ex_call_us', ''),
+    ('CSAVE_TOKEN', 'ex_csave', ''),
+    ('POKE_TOKEN', 'ex_poke', ''),
+    ('VPOKE_TOKEN', 'ex_vpoke', ''),
+    ('OUT_TOKEN', 'ex_out', ''),
+    ('CLEAR_TOKEN', 'ex_clear', ''),
+    ('DEF_TOKEN', 'ex_def', ''),
+    ('PRINT_TOKEN', 'ex_print', ''),
+    ('CLS_TOKEN', 'ex_cls', ''),
+    ('SCREEN_TOKEN', 'ex_screen', ''),
+    ('COLOR_TOKEN', 'ex_color', ''),
+    ('WIDTH_TOKEN', 'ex_width', ''),
+    ('KEY_TOKEN', 'ex_key', ''),
+    ('LIST_TOKEN', 'ex_list', ''),
+    ('REM_TOKEN', 'ex_rem', ''),
+    ('DATA_TOKEN', 'ex_data', ''),
+    ('READ_TOKEN', 'ex_read', ''),
+    ('RESTORE_TOKEN', 'ex_restore', ''),
+    ('GOTO_TOKEN', 'ex_goto', ''),
+    ('GOSUB_TOKEN', 'ex_gosub', ''),
+    ('ON_TOKEN', 'ex_on', ''),
+    ('RETURN_TOKEN', 'ex_return', ''),
+    ('FOR_TOKEN', 'ex_for', ''),
+    ('NEXT_TOKEN', 'ex_next', ''),
+    ('IF_TOKEN', 'ex_if', ''),
+    ('END_TOKEN', 'ex_end', ''),
+    ('STOP_TOKEN', 'ex_stop', ''),
+    ('CONT_TOKEN', 'ex_cont', ''),
+    ('ELSE_TOKEN', 'ex_rem', ''),
+    ('LET_TOKEN', 'ex_letkw', ''),
+    ('PEEK_PREFIX', 'ex_ff_stmt', 'ROM_BASE < $4000'),
+    ('DIM_TOKEN', 'ex_dim', 'ROM_BASE < $4000'),
+    ('ERASE_TOKEN', 'ex_erase', 'ROM_BASE < $4000'),
+    ('ERROR_TOKEN', 'ex_error', 'ROM_BASE < $4000'),
+    ('RESUME_TOKEN', 'ex_resume', 'ROM_BASE < $4000'),
+    ('SOUND_TOKEN', 'ex_sound', 'ROM_BASE < $4000'),
+    ('PLAY_TOKEN', 'ex_play', 'ROM_BASE < $4000'),
+    ('BEEP_TOKEN', 'ex_beep', 'ROM_BASE < $4000'),
+    ('PSET_TOKEN', 'ex_pset', 'ROM_BASE < $4000'),
+    ('PRESET_TOKEN', 'ex_preset', 'ROM_BASE < $4000'),
+    ('CIRCLE_TOKEN', 'ex_circle', 'ROM_BASE < $4000'),
+    ('PAINT_TOKEN', 'ex_paint', 'ROM_BASE < $4000'),
+    ('DRAW_TOKEN', 'ex_draw', 'ROM_BASE < $4000'),
+    ('SPRITE_TOKEN', 'ex_sprite', 'ROM_BASE < $4000'),
+    ('VDP_TOKEN', 'ex_vdp_assign', 'ROM_BASE < $4000'),
+    ('BASE_TOKEN', 'ex_base_assign', 'ROM_BASE < $4000'),
+    ('TIME_TOKEN', 'ex_time_assign', 'ROM_BASE < $4000'),
+]
+
+
+BUF = 0xC000            # the statement buffer exec_stmt is pointed at
+RELOC_BASE = 0x2812
+
+
+def build(src_name, rom, sym):
+    src = os.path.join(ROOT, "basic", src_name)
+    subprocess.run(["pasmo", "--bin", src, rom, sym], check=True,
+                   capture_output=True)
+
+
+def read_table(m):
+    """Decode stmt_table out of the assembled image: [(token, handler_addr)].
+
+    Stops at the $00 terminator. Refuses to run away if the terminator is
+    missing -- a table that never ends would otherwise be 'read' as thousands
+    of junk entries and the per-entry assertions below would drown."""
+    a = m.addr("stmt_table")
+    out = []
+    while True:
+        tok = m.peek(a)[0]
+        if tok == 0:
+            break
+        lo, hi = m.peek(a + 1, 2)
+        out.append((tok, lo | (hi << 8)))
+        a += 3
+        if len(out) > 256:
+            raise AssertionError("stmt_table has no $00 terminator within 256 "
+                                 "entries -- the search loop would run off the "
+                                 "end of the table into whatever follows it")
+    return out
+
+
+def handler_names(m):
+    """address -> the ex_* label(s) at it, from the symbol file. An address with
+    no label means the table points somewhere that is not a statement handler."""
+    byaddr = {}
+    for name, addr in m.sym.items():
+        if name.startswith("ex_"):
+            byaddr.setdefault(addr, []).append(name)
+    return byaddr
+
+
+def check_build(src_name, tag, rom_base):
+    rom, sym = f"/tmp/zb_disp_{tag}.rom", f"/tmp/zb_disp_{tag}.sym"
+    build(src_name, rom, sym)
+    m = Machine(rom, sym, rom_base=rom_base)
+    table = read_table(m)
+    names = handler_names(m)
+    fails = []
+
+    # --- the INDEPENDENT comparison: table vs the pre-refactor chain ------
+    # Resolved by NAME through the symbol file, so this compares meanings
+    # ("PRINT_TOKEN dispatches to ex_print") rather than two copies of the same
+    # bytes. `'_'` is a character literal in the source and has no symbol.
+    def tokval(name):
+        if name.startswith("'") and len(name) == 3:
+            return ord(name[1])
+        return m.sym[name]
+
+    # Every conditional entry in the chain sat under `IF ROM_BASE < $4000`
+    # (the G6/G7/G8_RESIDENT guards are NESTED inside it), so "has a condition"
+    # == "repack-only" and rom_base distinguishes the builds. Asserted rather
+    # than assumed: a future entry under a different guard would otherwise be
+    # silently mis-assigned to one build.
+    for _, _, cond in EXPECTED:
+        assert cond in ("", "ROM_BASE < $4000"), (
+            f"EXPECTED has an entry guarded by {cond!r}; this test only knows "
+            f"how to split entries on ROM_BASE. Teach it the new guard.")
+    want = {}
+    for tname, hname, cond in EXPECTED:
+        if cond and rom_base >= 0x4000:
+            continue                      # repack-only entry, absent from lean
+        want[tokval(tname)] = (tname, hname)
+    got = {t: a for t, a in table}
+
+    for tok, (tname, hname) in sorted(want.items()):
+        if tok not in got:
+            fails.append(f"MISSING from stmt_table: {tname} (${tok:02X}) -> "
+                         f"{hname}. The statement is gone: it now falls through "
+                         f"to is_letter and a program using it gets `syntax "
+                         f"error`.")
+        elif got[tok] != m.sym.get(hname):
+            at = names.get(got[tok], [f"${got[tok]:04X}"])[0]
+            fails.append(f"RE-POINTED: {tname} (${tok:02X}) should dispatch to "
+                         f"{hname} but the table says {at}")
+    for tok in sorted(set(got) - set(want)):
+        at = names.get(got[tok], [f"${got[tok]:04X}"])[0]
+        fails.append(f"UNEXPECTED entry ${tok:02X} -> {at}: not in the "
+                     f"pre-refactor chain. If a statement was added on purpose, "
+                     f"add it to EXPECTED in this file.")
+
+    # --- structural: the table itself ------------------------------------
+    toks = [t for t, _ in table]
+    dupes = sorted({t for t in toks if toks.count(t) > 1})
+    if dupes:
+        fails.append(f"duplicate token(s) in stmt_table: "
+                     f"{', '.join(f'${d:02X}' for d in dupes)} -- the second "
+                     f"entry is unreachable (linear search takes the first)")
+    if 0 in toks:
+        fails.append("a $00 token is in the table; $00 is the terminator")
+    unresolved = [(t, a) for t, a in table if a not in names]
+    for t, a in unresolved:
+        fails.append(f"token ${t:02X} -> ${a:04X}, which is not any ex_* label "
+                     f"(stale or corrupt table entry)")
+
+    # --- behavioural: every entry actually dispatches ---------------------
+    for tok, addr in table:
+        arrived, regs = [], []
+        mm = Machine(rom, sym, rom_base=rom_base)
+
+        def _at(_m, a=addr, _arr=arrived, _rg=regs):
+            _arr.append(a)
+            _rg.append({"a": _m.cpu.a, "hl": _m.cpu.hl, "f": _m.cpu.f})
+
+        mm.trap(addr, _at)
+        # A handler must never be entered by CALL: the dispatch jumps, so the
+        # handler returns to exec_stmt's OWN caller. Any RET the handler would
+        # do lands on the sentinel and ends the run -- which is what the trap
+        # models. Fill the buffer with token + end-of-line.
+        mm.poke(BUF, bytes([tok, 0x00]))
+        try:
+            mm.call("exec_stmt", hl=BUF)
+        except RuntimeError as e:
+            fails.append(f"token ${tok:02X} -> {names[addr][0] if addr in names else addr:}: {e}")
+            continue
+        if arrived != [addr]:
+            got = "nothing" if not arrived else ", ".join(f"${x:04X}" for x in arrived)
+            want = names.get(addr, [f"${addr:04X}"])[0]
+            fails.append(f"token ${tok:02X} should reach {want} (${addr:04X}) "
+                         f"but reached {got}")
+        elif regs:
+            # THE ENTRY REGISTER CONTRACT, which arrival alone cannot see.
+            # The `cp`/`jp z` chain left A = the statement token, HL = the
+            # cursor and Z set; a handler that reads A on entry would break
+            # silently under a dispatch that clobbers it, and no test that stops
+            # AT the handler would notice. This is the standing
+            # clobber-contract trap, so the contract is asserted rather than
+            # argued from a static scan of the handlers.
+            r = regs[0]
+            if r["a"] != tok:
+                fails.append(f"token ${tok:02X} -> {names.get(addr,['?'])[0]}: "
+                             f"entered with A=${r['a']:02X}, but the chain "
+                             f"entered handlers with A = the statement token")
+            if r["hl"] != BUF:
+                fails.append(f"token ${tok:02X} -> {names.get(addr,['?'])[0]}: "
+                             f"entered with HL=${r['hl']:04X}, want the cursor "
+                             f"${BUF:04X}")
+            if not (r["f"] & 0x40):
+                fails.append(f"token ${tok:02X} -> {names.get(addr,['?'])[0]}: "
+                             f"entered with Z clear; the chain arrived via "
+                             f"`jp z` so Z was always set")
+
+    # --- the two tails: not-a-token letter, and not-a-token non-letter ----
+    # `A` (a bare letter) must reach ex_let; a non-letter, non-token byte must
+    # reach stmt_error. These are the paths the table search falls THROUGH to,
+    # and a search loop that never terminates would break them without
+    # breaking any row above.
+    for byte_, want in ((ord('A'), "ex_let"), (ord('+'), "stmt_error")):
+        if byte_ in toks:
+            fails.append(f"test bug: ${byte_:02X} is itself a table token")
+            continue
+        arrived = []
+        mm = Machine(rom, sym, rom_base=rom_base)
+        mm.trap(mm.addr(want), lambda _m: arrived.append(1))
+        mm.poke(BUF, bytes([byte_, 0x00]))
+        mm.call("exec_stmt", hl=BUF)
+        if not arrived:
+            fails.append(f"a non-token ${byte_:02X} ('{chr(byte_)}') did not "
+                         f"reach {want} -- the table-search fallthrough is broken")
+
+    # --- end of line must return without dispatching anything -------------
+    mm = Machine(rom, sym, rom_base=rom_base)
+    hit = []
+    for _, addr in table:
+        mm.trap(addr, lambda _m, a=addr: hit.append(a))
+    mm.poke(BUF, bytes([0x00]))
+    mm.call("exec_stmt", hl=BUF)
+    if hit:
+        fails.append(f"an empty statement dispatched to ${hit[0]:04X} instead "
+                     f"of returning to the prompt")
+
+    return table, fails
+
+
+def main():
+    total_fail = []
+    for src_name, tag, base, label in (
+            ("main.asm", "lean", 0x4000, "lean 16 KB cart (the frozen artifact)"),
+            ("main-reloc.asm", "reloc", RELOC_BASE, "repack build")):
+        table, fails = check_build(src_name, tag, base)
+        print(f"{label}: {len(table)} table entries, "
+              f"{len(table) - len([f for f in fails if 'token $' in f])} dispatch OK")
+        for f in fails:
+            print(f"  FAIL {f}")
+        total_fail += fails
+
+    if total_fail:
+        print(f"\nFAILED: {len(total_fail)} problem(s)")
+        return 1
+    print("\nOK: every stmt_table entry dispatches to its handler, on both "
+          "builds; non-token letter -> ex_let, non-token symbol -> stmt_error, "
+          "empty statement returns.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

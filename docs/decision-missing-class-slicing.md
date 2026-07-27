@@ -81,7 +81,80 @@ from the characterization ("does the relay actually close?"): we own both sides,
 so the PPI port-C bit-4 write is checkable at the emulator level rather than
 being an article of faith about a screen scrape.
 
-## 4. D-KW-2, the `exec_stmt` dispatch table — now the funding lever
+## 4. D-KW-2, the `exec_stmt` dispatch table — ✅ LANDED
+
+**Signed off and implemented 2026-07-27. Measured: page-1 free 311 B → 420 B
+(+109 B).** The dispatch block went **377 B → 268 B**, inside the 104–122 B the
+estimate below predicted. Per-token cost is now 3 B instead of 5 B, so the
+MISSING slice's own glue falls 25 B → 15 B.
+
+As-built notes, where they differ from the plan:
+
+- **Both non-token entries stayed trivial.** `'_'` (the `CALL` abbreviation, a
+  character) and `PEEK_PREFIX` (`$FF`) were plain `cp` compares in the chain and
+  are plain table entries now — the "needs a home in the table design" caveat
+  below turned out to cost nothing.
+- **The `REM`/`ELSE` `IF`/`ELSE` pair collapsed.** It existed only because the
+  chain's forward span outgrew `jr`'s reach in the repack build. A table has no
+  reach, so it is one unconditional entry.
+- **`$00` is the terminator**, which is safe rather than lucky: a `$00`
+  statement byte is end-of-line and returns two instructions earlier, so it can
+  never reach the search.
+- **The ordering optimisation is preserved.** A linear search still pays per
+  entry examined, so the table keeps the chain's order exactly.
+- ⚠️ **The register contract is the chain's, exactly — and the first version's
+  was not.** That version held the statement token in `B` and let `A` fall out
+  holding the *handler's low address byte*, because `ld l,a` needs `A` as
+  scratch. The chain entered every handler with `A` = the statement token. A
+  handler reading `A` on entry would have broken **silently**, and the gate as
+  written could not have seen it: it stops *at* the handler and never runs the
+  body. A static scan of all 69 handlers said none reads `A` first — which is
+  exactly the kind of argument this tree does not accept
+  ([`refactor-inherits-clobber-contracts`](../MEMORY.md)). Comparing against
+  `(hl)` **in place** needs no register at all, so `B` and `C` stay untouched
+  too and `ld a,(hl)` restores `A` from the cursor. **Net cost: 0 bytes** — same
+  268 B block, same 420 B free — and the contract is now asserted by the gate
+  (`A` = token, `HL` = cursor, `Z` set) rather than argued.
+- ⚠️ **It moves the LEAN cart too**, because `exec_stmt` is shared code.
+  `tools/check_reloc.py`'s `LEAN_SHA256` was updated in the same commit, which
+  that file's own comment requires to be a deliberate act. Lean is byte-full, so
+  the change is in its favour — and lean is gated per-entry exactly like repack
+  (below), not waved through as "just a refactor".
+
+### 4.1 The gate — and the version of it that measured nothing
+
+`tests/test_stmt_dispatch.py` (in `make unit-test`, emulator-free) proves **all
+121 entries** — 52 lean + 69 repack — dispatch to the handler the pre-refactor
+chain sent them to, plus the three fallthrough paths per build (a non-token
+letter → `ex_let`, a non-token symbol → `stmt_error`, an empty statement
+returns).
+
+**The first version of that gate was green and worthless.** It read its
+expectations out of the assembled table and asserted every entry present
+dispatched to the address written beside it — which is true of a corrupt table
+too. It passed with the `PRINT` entry **deleted** and with `CLS` **pointed at
+`ex_color`**. Only two of four deliberate mutations were caught.
+
+The fix was an **independent expectation**: the (token → handler) mapping
+recovered mechanically from the pre-refactor `cp`/`jp z` chain in git, compared
+by name through the symbol file. All four mutations now fail:
+
+| mutation | first gate | gate as landed |
+|---|---|---|
+| delete the `PRINT` entry | 🟢 passed | 🔴 `MISSING from stmt_table: PRINT_TOKEN` |
+| point `CLS` at `ex_color` | 🟢 passed | 🔴 `RE-POINTED: CLS_TOKEN … says ex_color` |
+| swap `GOTO`→`ex_gosub` | (untried) | 🔴 `RE-POINTED: GOTO_TOKEN` |
+| break the search stride | 🔴 caught | 🔴 caught |
+| clobber `A` (the near-miss above) | n/a | 🔴 `entered with A=$A7, … want the token` |
+| leave `HL` one byte past the cursor | n/a | 🔴 `entered with HL=$C001, want $C000` |
+
+This is the standing "a gate can be green while measuring nothing" trap, and the
+only reason it was caught is the standing rule that follows it: **falsify by
+breaking the code under test.** `tests/README.md` had recorded the dispatch as
+`exec_stmt 4/79` — the switch had never been executed by any test, because every
+other test calls handlers directly.
+
+### 4.2 The original estimate, for the record
 
 Measured independently on the current tree, confirming the roadmap's estimate:
 
@@ -117,13 +190,14 @@ that share is now slightly more attractive than when it was deferred.
 
 ## 5. The forks that need your call
 
-### D-MC-1 — fund with D-KW-2 first, or slice smaller?
+### D-MC-1 — ✅ SIGNED OFF: (a), D-KW-2 first. **Done — +109 B, see §4.**
 
-- **(a) D-KW-2 first, then all five as one slice.** Lands the dispatch table as
-  its own change (with its own gate: every existing statement still dispatches),
-  then the five words in one go. Highest total work, but ends with ~425 B free
-  *before* the slice and real breathing room after — which matches the standing
-  preference for bank headroom over per-iteration scouting.
+- **(a) D-KW-2 first, then all five as one slice.** ← **CHOSEN.** Lands the
+  dispatch table as its own change (with its own gate: every existing statement
+  still dispatches), then the five words in one go. Highest total work, but ends
+  with real breathing room — which matches the standing preference for bank
+  headroom over per-iteration scouting. **Delivered 420 B, vs the ~425 B
+  predicted.**
 - **(b) Slice the words and take the space as it comes.** `MOTOR` + `TRON`/
   `TROFF` (~75–115 B) fit today. `LOCATE` alone (~110–135 B) fits today. `SWAP`
   would then be the one that blocks, and D-KW-2 happens anyway — later, under

@@ -34,8 +34,15 @@ and reports **two** metrics:
    the logged executed addresses; the denominator comes from a small Z80
    instruction-length decoder in `coverage.py` (re-synced at every label, so a
    data byte can't desync it). This also lists **partially-covered** blocks —
-   the untaken branch/error paths that block entry can't see (e.g. `exec_stmt
-   4/79`: the statement-dispatch switch, since tests call handlers directly).
+   the untaken branch/error paths that block entry can't see.
+
+   `exec_stmt` used to be this section's example, at `4/79`: every test called
+   handlers directly, so the statement-dispatch switch itself was never
+   executed. D-KW-2 replaced that switch with a table, and
+   [`test_stmt_dispatch.py`](test_stmt_dispatch.py) now drives **every** entry
+   through it on both builds — so a hole that had been sitting in plain sight in
+   this paragraph is closed. Worth reading as a reminder that a partially-covered
+   block in this report is a real gap, not report noise.
 
 Constants (UPPERCASE) and named data tables are excluded so they don't
 masquerade as un-executed code. Routines behind real disk/FDC/cassette I/O show

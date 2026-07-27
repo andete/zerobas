@@ -55,7 +55,16 @@ SIZE = TOP - LOW  # 22510
 # Frozen baseline of the lean 16 KB basic.rom (default ROM_BASE=$4000). The string
 # engine is entirely gated to the repack build, so this must never change unless a
 # lean-affecting change is made DELIBERATELY (then update this hash in the same commit).
-LEAN_SHA256 = "e21f61fe9ecb855ce69a29831a5990070c215613479310da368c350bd4228005"
+#
+# UPDATED 2026-07-27 for D-KW-2, deliberately. The exec_stmt dispatch table replaced
+# the linear cp/jp z chain in SHARED code, so it moves the lean cart too -- and in
+# lean's favour: lean is byte-full, and the table is smaller than the chain it
+# replaces. Behaviour-preservation is not asserted, it is GATED: tests/
+# test_stmt_dispatch.py proves all 52 lean entries (and all 69 repack entries) still
+# dispatch to the handler the pre-refactor chain sent them to, comparing against an
+# expectation recovered from that chain rather than from the table under test.
+# Previous: e21f61fe9ecb855ce69a29831a5990070c215613479310da368c350bd4228005
+LEAN_SHA256 = "337dda79464313dd32196d924a07ca30eb069795bde81c6c638cac8f69b7e0e8"
 
 
 def main() -> int:

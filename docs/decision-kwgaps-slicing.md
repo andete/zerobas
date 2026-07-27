@@ -60,8 +60,15 @@ components already live where the space is:
 
 ### 2.1 The dispatch tax, measured
 
-`exec_stmt` ([`basic/interp.asm:133`](../basic/interp.asm:133)) is a **linear
-`cp TOKEN` / `jp z,handler` chain of 67 entries** — 5 B per statement token, 335 B
+> 🏁 **SUPERSEDED 2026-07-27 — D-KW-2 LANDED.** `exec_stmt` is now a
+> `db token, dw handler` table, so the marginal price of a statement keyword is
+> **3 B, not 5 B**, and page-1 free went 311 B → **420 B (+109 B)**. The section
+> below is kept as the measurement that justified it. See
+> [`decision-missing-class-slicing.md`](decision-missing-class-slicing.md) §4 for
+> the as-built, including the two near-misses in its gate.
+
+`exec_stmt` ([`basic/interp.asm:133`](../basic/interp.asm:133)) **was** a linear
+`cp TOKEN` / `jp z,handler` chain of 67 entries — 5 B per statement token, 335 B
 total. `exp_loop` ([`basic/print.asm:107`](../basic/print.asm:107)) and the `$FF`
 function dispatch have the same shape. So the marginal main-ROM price of a new
 statement keyword is **5 B before it does anything**, against a 13 B budget.
@@ -126,7 +133,12 @@ This is the **highest-value slice in the set**: it clears 2 of the 8
 SILENT-GAPs, it is the only one that pays for itself, and `PRINT 5 EQV 3`
 printing *three separate values* is the most alarming failure in the table.
 
-### 4.2 Lever L1 — table-drive `exec_stmt` (drops the per-keyword tax 5 B → 3 B)
+### 4.2 Lever L1 — table-drive `exec_stmt` — ✅ **LANDED 2026-07-27**
+
+**As built: −109 B measured** (chain 377 B → table 268 B, page-1 311 → 420 B),
+against the −114 B predicted here. The estimate below stands up; the shortfall is
+the search loop coming out slightly larger than the ~20 B guessed. The
+per-keyword tax did drop 5 B → 3 B as designed.
 
 67 entries × 5 B = 335 B of chain. A `(token, handler)` table is 67 × 3 = 201 B
 + a ~20 B search ≈ 221 B → **net ≈ −114 B**, and it is *faster* per entry
@@ -195,7 +207,12 @@ but the table-driven layer is still the right shape — five operators for rough
 what three cost — and the VG-8020 precedence characterization is still owed.
 
 **D-KW-2 — is L1 (the `exec_stmt` dispatch table) in or out of scope?**
-**✅ ANSWERED: defer** until a slice is demonstrably blocked on it. Do not
+**✅ ANSWERED: defer** until a slice is demonstrably blocked on it.
+🏁 **That condition was met on 2026-07-27 and L1 LANDED**: the MISSING class
+(300–405 B of bodies against 311 B free) is the slice that blocked on it, exactly
+as predicted. "Do not refactor the hottest path on speculation" held — it was
+refactored on a measurement instead.
+The original deferral reasoning: Do not
 refactor the hottest path in the interpreter on speculation; with 375 B free
 that is comfortable. The page-1 frontier scout it referenced is now promoted to
 [`tools/p1scout.py`](../tools/p1scout.py) — **but read §6's caveat before

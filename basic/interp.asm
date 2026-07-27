@@ -159,148 +159,201 @@ exec_stmt:
                 ld      a,(hl)
                 or      a
                 ret     z                   ; end of line -> back to the prompt
-                cp      COLON               ; ':' separator / empty statement
-                jp      z,ex_sep
-                cp      BLOAD_TOKEN
-                jp      z,ex_bload
-                cp      CLOAD_TOKEN
-                jp      z,ex_cload
-                cp      LOAD_TOKEN
-                jp      z,ex_load
-                cp      RUN_TOKEN
-                jp      z,ex_run
-                cp      BSAVE_TOKEN
-                jp      z,ex_bsave
-                cp      SAVE_TOKEN
-                jp      z,ex_save
-                cp      FILES_TOKEN
-                jp      z,ex_files
-                cp      MERGE_TOKEN
-                jp      z,ex_merge
-                cp      OPEN_TOKEN
-                jp      z,ex_open
-                cp      INPUT_TOKEN
-                jp      z,ex_input
-                cp      LINE_TOKEN
-                jp      z,ex_line
-                cp      CLOSE_TOKEN
-                jp      z,ex_close
-                cp      KILL_TOKEN
-                jp      z,ex_kill
-                cp      NAME_TOKEN
-                jp      z,ex_name
-                cp      MAX_TOKEN           ; MAX FILES = n  (MAXFILES config)
-                jp      z,ex_maxfiles
-                cp      FIELD_TOKEN         ; FIELD #f, w AS v$[,...]  (random access)
-                jp      z,ex_field
-                cp      LSET_TOKEN          ; LSET v$ = s$
-                jp      z,ex_lset
-                cp      RSET_TOKEN          ; RSET v$ = s$
-                jp      z,ex_rset
-                cp      GET_TOKEN           ; GET [#]f[,rec]  (read a record)
-                jp      z,ex_get
-                cp      PUT_TOKEN           ; PUT [#]f[,rec]  (write a record)
-                jp      z,ex_put
-                cp      CALL_TOKEN          ; CALL <name>  (only CALL FORMAT)
-                jp      z,ex_call
-                cp      '_'                 ; _<name>  (CALL abbreviation)
-                jp      z,ex_call_us
-                cp      CSAVE_TOKEN
-                jp      z,ex_csave
-                cp      POKE_TOKEN
-                jp      z,ex_poke
-                cp      VPOKE_TOKEN
-                jp      z,ex_vpoke
-                cp      OUT_TOKEN
-                jp      z,ex_out
-                cp      CLEAR_TOKEN
-                jp      z,ex_clear
-                cp      DEF_TOKEN
-                jp      z,ex_def
-                cp      PRINT_TOKEN
-                jp      z,ex_print
-                cp      CLS_TOKEN
-                jp      z,ex_cls
-                cp      SCREEN_TOKEN
-                jp      z,ex_screen
-                cp      COLOR_TOKEN
-                jp      z,ex_color
-                cp      WIDTH_TOKEN
-                jp      z,ex_width
-                cp      KEY_TOKEN
-                jp      z,ex_key
-                cp      LIST_TOKEN
-                jp      z,ex_list
-                cp      REM_TOKEN
+                ; The dispatch is a TABLE SEARCH (D-KW-2). The 69-entry `cp`/`jp z`
+                ; chain this replaces charged 5 B per statement token before it did
+                ; anything, and the MISSING-class slice does not fit behind it
+                ; (docs/decision-missing-class-slicing.md §4). Now 3 B per token.
+                ;
+                ; THE REGISTER CONTRACT IS THE CHAIN'S, EXACTLY. A handler is entered
+                ; with A = the statement token, HL = the cursor, Z set -- the same
+                ; state the `cp`/`jp z` chain left. That is deliberate and it is free:
+                ; an earlier revision held the token in B and let A fall out holding
+                ; the handler's low address byte -- a silent clobber-contract change
+                ; of the kind that is green on every static check, and invisible to a
+                ; gate that stops AT the handler without running its body. Comparing
+                ; against `(hl)` in place needs no register at all, so B and C stay
+                ; untouched too, and `ld a,(hl)` restores A from the cursor for
+                ; nothing. tests/test_stmt_dispatch.py asserts all three.
+                ld      de,stmt_table
+es_scan:
+                ld      a,(de)
+                inc     de
+                or      a                   ; $00 terminates the table -- safe as a
+                                            ; sentinel because a $00 statement byte is
+                                            ; end-of-line and returned two lines above,
+                                            ; so it can never reach the search.
+                jr      z,es_noentry
+                cp      (hl)                ; compare against the statement byte IN PLACE
+                jr      z,es_hit
+                inc     de                  ; step over this entry's address
+                inc     de
+                jr      es_scan
+es_hit:
+                ex      de,hl               ; HL = &handler, DE = the live cursor
+                ld      a,(hl)
+                inc     hl
+                ld      h,(hl)
+                ld      l,a                 ; HL = the handler's address
+                ex      de,hl               ; HL = cursor again -- every handler's `in:`
+                ld      a,(hl)              ; contract is HL = cursor, A = the token
+                push    de                  ; ... and the address goes via the stack,
+                ret                         ; since HL is spoken for.
+es_noentry:
+                ld      a,(hl)              ; the search left A = 0 (the terminator)
+                call    is_letter           ; bare letter -> assignment
+                jp      c,ex_let
+                jp      stmt_error
+
+; --- stmt_table: statement token -> handler (D-KW-2) -------------------------
+; `db <token>, dw <handler>`, $00-terminated. ORDER IS PRESERVED from the chain
+; this replaces: a linear search still pays per entry examined, so the hot
+; statements stay near the front exactly as they were.
+;
+; Two entries are not keyword tokens and never were: `'_'` is the CALL
+; abbreviation (a literal character) and PEEK_PREFIX is $FF, the prefix of a
+; two-byte function token that can START a statement (MID$/STRIG). Both were
+; plain `cp` compares in the chain and are plain table entries here.
+;
+; REM_TOKEN needed an IF/ELSE in the chain purely because the forward span
+; outgrew `jr`'s reach in the repack build; a table has no reach, so the pair
+; collapses to one unconditional entry.
+stmt_table:
+                db      COLON
+                dw      ex_sep    ; ':' separator / empty statement
+                db      BLOAD_TOKEN
+                dw      ex_bload
+                db      CLOAD_TOKEN
+                dw      ex_cload
+                db      LOAD_TOKEN
+                dw      ex_load
+                db      RUN_TOKEN
+                dw      ex_run
+                db      BSAVE_TOKEN
+                dw      ex_bsave
+                db      SAVE_TOKEN
+                dw      ex_save
+                db      FILES_TOKEN
+                dw      ex_files
+                db      MERGE_TOKEN
+                dw      ex_merge
+                db      OPEN_TOKEN
+                dw      ex_open
+                db      INPUT_TOKEN
+                dw      ex_input
+                db      LINE_TOKEN
+                dw      ex_line
+                db      CLOSE_TOKEN
+                dw      ex_close
+                db      KILL_TOKEN
+                dw      ex_kill
+                db      NAME_TOKEN
+                dw      ex_name
+                db      MAX_TOKEN
+                dw      ex_maxfiles    ; MAX FILES = n
+                db      FIELD_TOKEN
+                dw      ex_field    ; FIELD #f, w AS v$[,...]
+                db      LSET_TOKEN
+                dw      ex_lset
+                db      RSET_TOKEN
+                dw      ex_rset
+                db      GET_TOKEN
+                dw      ex_get
+                db      PUT_TOKEN
+                dw      ex_put
+                db      CALL_TOKEN
+                dw      ex_call    ; CALL <name>
+                db      '_'
+                dw      ex_call_us    ; _<name> -- the CALL abbreviation, a CHARACTER
+                db      CSAVE_TOKEN
+                dw      ex_csave
+                db      POKE_TOKEN
+                dw      ex_poke
+                db      VPOKE_TOKEN
+                dw      ex_vpoke
+                db      OUT_TOKEN
+                dw      ex_out
+                db      CLEAR_TOKEN
+                dw      ex_clear
+                db      DEF_TOKEN
+                dw      ex_def
+                db      PRINT_TOKEN
+                dw      ex_print
+                db      CLS_TOKEN
+                dw      ex_cls
+                db      SCREEN_TOKEN
+                dw      ex_screen
+                db      COLOR_TOKEN
+                dw      ex_color
+                db      WIDTH_TOKEN
+                dw      ex_width
+                db      KEY_TOKEN
+                dw      ex_key
+                db      LIST_TOKEN
+                dw      ex_list
+                db      REM_TOKEN
+                dw      ex_rem    ; rest of line is a comment
+                db      DATA_TOKEN
+                dw      ex_data    ; skipped at run time
+                db      READ_TOKEN
+                dw      ex_read
+                db      RESTORE_TOKEN
+                dw      ex_restore
+                db      GOTO_TOKEN
+                dw      ex_goto
+                db      GOSUB_TOKEN
+                dw      ex_gosub
+                db      ON_TOKEN
+                dw      ex_on
+                db      RETURN_TOKEN
+                dw      ex_return
+                db      FOR_TOKEN
+                dw      ex_for
+                db      NEXT_TOKEN
+                dw      ex_next
+                db      IF_TOKEN
+                dw      ex_if
+                db      END_TOKEN
+                dw      ex_end
+                db      STOP_TOKEN
+                dw      ex_stop
+                db      CONT_TOKEN
+                dw      ex_cont
+                db      ELSE_TOKEN
+                dw      ex_rem    ; reached after a true THEN clause -> done
+                db      LET_TOKEN
+                dw      ex_letkw
     IF ROM_BASE < $4000
-                jp      z,ex_rem            ; repack: the IF-ROM_BASE dispatch block below
-                                            ; widens this forward span past jr's +-127 reach
-                                            ; (audio-beep insert tipped it); lean keeps jr.
-    ELSE
-                jr      z,ex_rem
-    ENDIF
-                cp      DATA_TOKEN          ; DATA: skip this statement at run time
-                jp      z,ex_data
-                cp      READ_TOKEN
-                jp      z,ex_read
-                cp      RESTORE_TOKEN
-                jp      z,ex_restore
-                cp      GOTO_TOKEN
-                jp      z,ex_goto
-                cp      GOSUB_TOKEN
-                jp      z,ex_gosub
-                cp      ON_TOKEN
-                jp      z,ex_on
-                cp      RETURN_TOKEN
-                jp      z,ex_return
-                cp      FOR_TOKEN
-                jp      z,ex_for
-                cp      NEXT_TOKEN
-                jp      z,ex_next
-                cp      IF_TOKEN
-                jp      z,ex_if
-                cp      END_TOKEN
-                jr      z,ex_end
-                cp      STOP_TOKEN
-                jp      z,ex_stop
-                cp      CONT_TOKEN
-                jp      z,ex_cont
-                cp      ELSE_TOKEN          ; reached after a true THEN clause -> done
-                jr      z,ex_rem
-                cp      LET_TOKEN
-                jp      z,ex_letkw
-    IF ROM_BASE < $4000
-                cp      PEEK_PREFIX         ; $FF -> a function token starting a statement:
-                jp      z,ex_ff_stmt        ; MID$ ($FF $83) or STRIG ($FF $A3) (program.asm)
-                cp      DIM_TOKEN           ; DIM A(n)[,...]  (arrays slice-1, arrays.asm)
-                jp      z,ex_dim
-                cp      ERASE_TOKEN         ; ERASE name[,...]  (arrays slice-2, arrays.asm)
-                jp      z,ex_erase
-                cp      ERROR_TOKEN         ; ERROR n  (error-handling S2a, below)
-                jp      z,ex_error
-                cp      RESUME_TOKEN        ; RESUME family (error-handling S2b, below)
-                jp      z,ex_resume
-                cp      SOUND_TOKEN         ; SOUND reg,value  (audio slice 1, sound.asm)
-                jp      z,ex_sound
-                cp      PLAY_TOKEN          ; PLAY "mml"[,..]  (audio slice 2a, play.asm)
-                jp      z,ex_play
-                cp      BEEP_TOKEN          ; BEEP  (no args; audio close-out, sound.asm)
-                jp      z,ex_beep
-                cp      PSET_TOKEN          ; PSET (x,y)[,c]  (graphics G2, graphics.asm)
-                jp      z,ex_pset
-                cp      PRESET_TOKEN        ; PRESET (x,y)[,c]  (graphics G2)
-                jp      z,ex_preset
-                cp      CIRCLE_TOKEN        ; CIRCLE (x,y),r[,c[,s[,e[,a]]]]  (graphics G4)
-                jp      z,ex_circle
-                cp      PAINT_TOKEN         ; PAINT [STEP](x,y)[,[c][,[b]]]  (graphics G5)
-                jp      z,ex_paint
+                db      PEEK_PREFIX
+                dw      ex_ff_stmt    ; $FF -> MID$ / STRIG starting a statement
+                db      DIM_TOKEN
+                dw      ex_dim    ; DIM A(n)[,...]
+                db      ERASE_TOKEN
+                dw      ex_erase    ; ERASE name[,...]
+                db      ERROR_TOKEN
+                dw      ex_error    ; ERROR n
+                db      RESUME_TOKEN
+                dw      ex_resume    ; RESUME family
+                db      SOUND_TOKEN
+                dw      ex_sound    ; SOUND reg,value
+                db      PLAY_TOKEN
+                dw      ex_play    ; PLAY "mml"[,..]
+                db      BEEP_TOKEN
+                dw      ex_beep    ; BEEP (no args)
+                db      PSET_TOKEN
+                dw      ex_pset    ; PSET (x,y)[,c]
+                db      PRESET_TOKEN
+                dw      ex_preset    ; PRESET (x,y)[,c]
+                db      CIRCLE_TOKEN
+                dw      ex_circle    ; CIRCLE (x,y),r[,...]
+                db      PAINT_TOKEN
+                dw      ex_paint    ; PAINT [STEP](x,y)[,...]
     IF G6_RESIDENT
-                cp      DRAW_TOKEN          ; DRAW <string>  (graphics G6)
-                jp      z,ex_draw
+                db      DRAW_TOKEN
+                dw      ex_draw    ; DRAW <string>
     ENDIF
     IF G7_RESIDENT
-                cp      SPRITE_TOKEN        ; SPRITE$(n)=s$ / SPRITE ON|OFF|STOP  (G7)
-                jp      z,ex_sprite
+                db      SPRITE_TOKEN
+                dw      ex_sprite    ; SPRITE$(n)=s$ / SPRITE ON|OFF|STOP
     ENDIF
     IF G8_RESIDENT
                 ; G8: the pseudo-array assignments have NO statement token of
@@ -308,20 +361,19 @@ exec_stmt:
                 ; the assignment (docs/spec-basic-graphics-g8.md §2). `LET` in
                 ; front is ERR 2 on the reference, which falls out for free:
                 ; ex_letkw only accepts a variable name.
-                cp      VDP_TOKEN           ; VDP(n) = v   (graphics G8)
-                jp      z,ex_vdp_assign
-                cp      BASE_TOKEN          ; BASE(n) = v  (graphics G8)
-                jp      z,ex_base_assign
+                db      VDP_TOKEN
+                dw      ex_vdp_assign    ; VDP(n) = v
+                db      BASE_TOKEN
+                dw      ex_base_assign    ; BASE(n) = v
     ENDIF
                 ; TIME = v: no statement token of its own either -- a statement
                 ; that STARTS with the TIME factor token IS the assignment
                 ; (docs/spec-basic-time.md §2, the same shape as G8 above).
-                cp      TIME_TOKEN
-                jp      z,ex_time_assign
+                db      TIME_TOKEN
+                dw      ex_time_assign
     ENDIF
-                call    is_letter           ; bare letter -> assignment
-                jr      c,ex_let
-                jp      stmt_error
+                db      0                   ; end of table
+
 ex_sep:
                 inc     hl
                 jp      exec_stmt

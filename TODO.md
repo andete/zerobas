@@ -1431,6 +1431,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         175 cases, 8 batteries, every number boot-per-case. **SLICED + COSTED**,
         [`docs/decision-missing-class-slicing.md`](docs/decision-missing-class-slicing.md),
         **awaiting sign-off (D-MC-1..4)**.
+        ✅ **D-MC-1 SIGNED OFF + D-KW-2 LANDED 2026-07-27**: the `exec_stmt`
+        dispatch table replaced the 69-entry `cp`/`jp z` chain, **page-1 free
+        311 B → 420 B (+109 B)**, dispatch block 377 B → 268 B, and the
+        per-token cost is now 3 B instead of 5 B. Gated by
+        [`tests/test_stmt_dispatch.py`](tests/test_stmt_dispatch.py) in
+        `make unit-test`: **all 121 entries** (52 lean + 69 repack) reach the
+        handler the pre-refactor chain sent them to, plus the fallthrough paths.
+        ⚠️ It moves the **LEAN** cart too (shared code) — `LEAN_SHA256` updated
+        deliberately in the same commit, as `tools/check_reloc.py` requires, and
+        lean is gated per-entry exactly like repack. **The first version of that
+        gate was green and worthless** — it read its expectations from the table
+        under test, and passed with `PRINT` deleted and `CLS` re-pointed; the
+        fix was an expectation recovered from the pre-refactor chain in git.
         **The measurement changed the plan: the class does NOT fit.** The
         roadmap costed it as dispatch glue only, on the premise that bodies live
         in `sub.rom`; but four of the five touch interpreter-core state (cursor,
