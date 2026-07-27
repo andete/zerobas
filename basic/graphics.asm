@@ -681,18 +681,16 @@ ex_sprite:
                 jr      z,spr_assign
                 call    skip_spaces
                 ld      a,(hl)
-                cp      ON_TOKEN
-                jr      z,spr_on
-                cp      OFF_TOKEN
-                jr      z,spr_off
-                cp      STOP_TOKEN
-                jp      nz,gfx_syntax       ; bare SPRITE -> ERR 2 (measured)
     IF TRAPS_T4
-                ld      a,ZTS_STOP          ; SPRITE STOP -> suspend
-                jr      spr_set
-spr_on:         ld      a,ZTS_ON            ; SPRITE ON   -> enable
-                jr      spr_set
-spr_off:        ld      a,ZTS_OFF           ; SPRITE OFF  -> disable (+clear PENDING)
+                ; The shared decode (program.asm onoff_decode). ⚠️ It lives behind
+                ; `IF ROM_BASE < $4000`, and this routine is always-assembled
+                ; page-1 code, so the split here is NOT cosmetic: TRAPS_T4 is
+                ; itself `ROM_BASE < $4000` (sysvars.inc), which makes the ELSE
+                ; below the lean build -- and the lean 16 KB cart must stay
+                ; BYTE-IDENTICAL (spec-basic-missing-class S-MC-5). The ELSE arm
+                ; is therefore the original instruction sequence, unchanged.
+                call    onoff_decode        ; A = ZTS_OFF / ZTS_ON / ZTS_STOP
+                jp      nc,gfx_syntax       ; bare SPRITE -> ERR 2 (measured)
 spr_set:
                 ; DELIBERATELY NO EDGE-SHADOW SEED -- and unlike ex_stop's, this is not
                 ; even a judgement call: SPRITE is a LEVEL sampled per frame, with no
@@ -710,6 +708,12 @@ spr_set:
                 jp      exec_stmt           ; continue the line (a bare `ret` would
                                             ; SWALLOW the rest of it -- the T1 lesson)
     ELSE
+                cp      ON_TOKEN
+                jr      z,spr_on
+                cp      OFF_TOKEN
+                jr      z,spr_off
+                cp      STOP_TOKEN
+                jp      nz,gfx_syntax       ; bare SPRITE -> ERR 2 (measured)
 spr_on:
 spr_off:
                 inc     hl                  ; D-G7-4: accepted no-op (trap not built)

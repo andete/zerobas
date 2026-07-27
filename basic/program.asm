@@ -586,20 +586,11 @@ ex_stop:
     IF ROM_BASE < $4000
                 call    skip_spaces
                 ld      a,(hl)
-                cp      ON_TOKEN            ; STOP ON   -> enable
-                jr      z,es_on
-                cp      OFF_TOKEN           ; STOP OFF  -> disable (+clear PENDING)
-                jr      z,es_off
-                cp      STOP_TOKEN          ; STOP STOP -> suspend
-                jr      z,es_stop
+                call    onoff_decode        ; STOP ON|OFF|STOP -> A = the ZTS_ state
+                jr      c,es_set
     ENDIF
                 jp      do_break            ; bare STOP -> record + "Break in <line>"
     IF ROM_BASE < $4000
-es_on:          ld      a,ZTS_ON
-                jr      es_set
-es_off:         ld      a,ZTS_OFF
-                jr      es_set
-es_stop:        ld      a,ZTS_STOP
 es_set:
                 inc     hl                  ; consume the ON/OFF/STOP sub-keyword
                 push    hl                  ; guard the exec-continue ptr across set_state
@@ -1549,6 +1540,57 @@ trap_syntax:
                 ld      a,2
                 jp      raise_error
 
+; --- onoff_decode: the shared ON | OFF | STOP sub-keyword decode -------------
+; Six statements in this tree decode the same three sub-keywords into the same
+; three ZTRAP states, and each one had spelled it out: `STOP ON|OFF|STOP`,
+; `INTERVAL ...`, `STRIG(n) ...`, `KEY(n) ...`, `SPRITE ...`, and now `MOTOR`.
+; ~19-23 B apiece for a decode that is character-for-character the same.
+;
+; The share was proposed as a DEFERRED funding lever (spec-traps-t5-interval
+; §4.3, and again as spec-basic-missing-class §6.3) and taken instead as the
+; FIRST step of the MISSING slice (S-MC-4, overridden). The reason is worth
+; keeping: a reserve lever only ever gets pulled mid-overrun, when the budget is
+; already spent and the only acceptable outcome is "it fits" -- which is the
+; worst condition under which to restructure six live call sites.
+;
+;   IN:  A  = the token byte under the cursor (callers have already skipped
+;             spaces; HL is left pointing AT the token, not past it -- every
+;             caller consumes it itself, because each has its own guard-the-
+;             cursor dance around set_state).
+;   OUT: CF=1 -> matched; A = ZTS_OFF(0) / ZTS_ON(1) / ZTS_STOP(2), which is the
+;                set_state argument directly (sysvars.inc: the ZTS_ values ARE
+;                0/1/2, so there is no second mapping step at any call site).
+;        CF=0 -> not one of the three; A = the original token, so a caller can
+;                still test it (ex_stop's bare-`STOP` path needs exactly that).
+;   Clobbers A, B, F. **Preserves HL and DE** -- non-negotiable: HL is the token
+;   cursor at every site, and ex_strig_stmt/ex_key_stmt hold the ZTRAP entry
+;   pointer in DE across this call.
+;
+; ⚠️ It returns "which one", NOT "is this allowed". Acceptance stays with the
+; caller, which is what lets a 2-way site share a 3-way decoder: `MOTOR STOP` is
+; a Syntax error (measured, spec §3.5) and that is MOTOR's own one-line `cp
+; ZTS_STOP` -- not a variant of this routine. `SCF` preserves Z on the Z80, which
+; is what lets each arm be cp/scf/ld/ret-z with no branch.
+onoff_decode:
+                ld      b,a                 ; keep the token: A is about to be the answer
+                cp      OFF_TOKEN
+                ld      a,ZTS_OFF
+                scf
+                ret     z
+                ld      a,b
+                cp      ON_TOKEN
+                ld      a,ZTS_ON
+                scf
+                ret     z
+                ld      a,b
+                cp      STOP_TOKEN
+                ld      a,ZTS_STOP
+                scf
+                ret     z
+                ld      a,b                 ; no match: hand the token back...
+                or      a                   ; ...with CF=0
+                ret
+
 ; --- trap_line_link: resolve an OPTIONAL `$0E,lo,hi` line reference ----------
 ; The shared handler-line resolver for the whole `ON <event> GOSUB` family: one
 ; line for STOP, a comma-list with possibly-empty slots for STRIG (and, later,
@@ -1638,19 +1680,9 @@ iv_seq:
 ;     so this falls out for free -- it is recorded here because it is a fact that
 ;     was checked, not an omission.
 ex_interval:
-                call    skip_spaces
-                cp      ON_TOKEN
-                jr      z,ei_on
-                cp      OFF_TOKEN
-                jr      z,ei_off
-                cp      STOP_TOKEN
-                jr      z,ei_stop
-                jp      trap_syntax         ; bare `INTERVAL` / `INTERVAL FOO` -> ERR 2
-ei_on:          ld      a,ZTS_ON
-                jr      ei_set
-ei_off:         ld      a,ZTS_OFF
-                jr      ei_set
-ei_stop:        ld      a,ZTS_STOP
+                call    skip_spaces         ; returns A = (HL)
+                call    onoff_decode        ; A = the ZTS_ state
+                jp      nc,trap_syntax      ; bare `INTERVAL` / `INTERVAL FOO` -> ERR 2
 ei_set:
                 inc     hl                  ; consume the ON/OFF/STOP sub-keyword
                 push    hl                  ; guard the cursor across set_state
@@ -1813,15 +1845,10 @@ ex_strig_stmt:
                 jp      nz,trap_syntax
                 inc     hl
                 call    skip_spaces
-                ld      b,ZTS_ON
-                cp      ON_TOKEN            ; STRIG(n) ON   -> enable
-                jr      z,strig_set
-                ld      b,ZTS_OFF
-                cp      OFF_TOKEN           ; STRIG(n) OFF  -> disable (+clear PENDING)
-                jr      z,strig_set
-                ld      b,ZTS_STOP
-                cp      STOP_TOKEN          ; STRIG(n) STOP -> suspend
-                jp      nz,trap_syntax      ; bare `STRIG(n)` / junk -> trappable ERR 2
+                call    onoff_decode        ; STRIG(n) ON|OFF|STOP; DE (the entry
+                                            ; pointer) survives -- see its header
+                jp      nc,trap_syntax      ; bare `STRIG(n)` / junk -> trappable ERR 2
+                ld      b,a                 ; B = the state, as the seed logic below wants
 strig_set:
                 inc     hl                  ; consume the ON/OFF/STOP sub-keyword
                 push    hl                  ; guard the exec-continue cursor
@@ -1944,15 +1971,10 @@ ex_key_stmt:
                 jp      nz,trap_syntax
                 inc     hl
                 call    skip_spaces
-                ld      b,ZTS_ON
-                cp      ON_TOKEN            ; KEY(n) ON   -> enable
-                jr      z,key_set
-                ld      b,ZTS_OFF
-                cp      OFF_TOKEN           ; KEY(n) OFF  -> disable (+clear PENDING)
-                jr      z,key_set
-                ld      b,ZTS_STOP
-                cp      STOP_TOKEN          ; KEY(n) STOP -> suspend (== OFF, D-T3-6)
-                jp      nz,trap_syntax      ; bare `KEY(n)` / junk -> trappable ERR 2
+                call    onoff_decode        ; KEY(n) ON|OFF|STOP (STOP == OFF, D-T3-6);
+                                            ; DE (the entry pointer) survives
+                jp      nc,trap_syntax      ; bare `KEY(n)` / junk -> trappable ERR 2
+                ld      b,a
 key_set:
                 inc     hl                  ; consume the ON/OFF/STOP sub-keyword
                 push    hl                  ; guard the exec-continue cursor
