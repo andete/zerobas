@@ -1550,6 +1550,11 @@ MOD_TOKEN       equ     $FB     ; MOD  remainder
 AND_TOKEN       equ     $F6     ; AND  (bitwise)
 OR_TOKEN        equ     $F7     ; OR   (bitwise)
 XOR_TOKEN       equ     $F8     ; XOR  (bitwise)
+; EQV/IMP: oracle-measured from the VG-8020's own CRUNCH emission (the kwsweep
+; token table, docs/kwsweep-msx1-coverage.md) -- bytes the REFERENCE emitted,
+; not a table lookup. They fill the $F9/$FA hole between XOR and MOD.
+EQV_TOKEN       equ     $F9     ; EQV  (bitwise equivalence, = NOT (a XOR b))
+IMP_TOKEN       equ     $FA     ; IMP  (bitwise implication, = (NOT a) OR b)
 NOT_TOKEN       equ     $E0     ; NOT  (bitwise complement, unary)
 ; Runtime control-flow state (page $E0).
 CURLINE         equ     $E038   ; link-field addr of the line being executed (2)

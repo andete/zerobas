@@ -40,16 +40,140 @@ eval:
                 ld      a,2
                 ld      (FACTYP),a          ; §9.4: eval() sets FACTYP=2 (int) on entry
     ENDIF
-                call    ev_xor              ; lowest precedence layer
+                call    ev_logic            ; lowest precedence layer
                 push    ix
                 pop     hl                  ; HL = cursor (advanced)
                 pop     ix
                 ret
 
 ; --- logical / bitwise layers (lowest precedence, left-assoc) --------------
-; MSX-BASIC precedence below the relationals: NOT (unary) > AND > OR > XOR.
-; All are 16-bit bitwise; they also implement logical tests on the -1/0 results
-; the relationals produce. Tokens: AND $F6, OR $F7, XOR $F8, NOT $E0 (Table 2.20).
+; MSX-BASIC precedence below the relationals, MEASURED against the VG-8020 by
+; probes/basic/basic_probe_logicops.py (every ordered pair, three lines each --
+; the bare form plus BOTH explicit parenthesisations, verdict from which control
+; the bare form matched):
+;
+;     NOT (unary)  >  AND  >  OR  >  XOR == EQV  >  IMP
+;
+; XOR and EQV are UNOBSERVABLE against each other -- they are mutually
+; associative, so no operand triple can order them and the implementation is
+; free to pick. All six are 16-bit bitwise; they also implement logical tests on
+; the -1/0 results the relationals produce. Tokens: AND $F6, OR $F7, XOR $F8,
+; EQV $F9, IMP $FA, NOT $E0.
+;
+; TWO IMPLEMENTATIONS, gated. The lean 16 KB cart keeps the original hand-rolled
+; chain below (basic.rom is byte-frozen, and it ships without EQV/IMP); the
+; repack build uses the table-driven layer, which fits SIX levels into less space
+; than the old THREE.
+    IF ROM_BASE < $4000
+; --- table-driven logical layer (repack build) -----------------------------
+; `ev_and_lp`/`ev_or_lp`/`ev_xor_lp` were byte-for-byte uniform at 31 B each and
+; differed only in a token compare and a 6-byte apply block (clone_scout: 5 x 31 B).
+; Adding EQV and IMP as two more copies would have cost +68 B; one generic layer
+; walking a precedence table costs LESS than the three copies it replaces.
+;
+; The level is a POINTER into logtab, carried in HL and pushed across recursion,
+; so no index arithmetic is needed: the next-tighter level is simply the next
+; 3-byte entry, and the $00 terminator is what drops through to unary NOT.
+ev_logic:
+                ld      hl,logtab           ; loosest level (IMP)
+ev_lg:
+                ld      a,(hl)
+                or      a
+                jp      z,ev_not            ; past the tightest layer -> NOT / relational
+                push    hl
+                call    ev_lg_next          ; DE = lhs, from the tighter level
+                pop     hl
+ev_lg_lp:
+                call    ev_sp
+                ld      a,(ix+0)
+                cp      (hl)                ; this level's operator token?
+                ret     nz
+                ; The level pointer must be SAVED BEFORE the conversion call:
+                ; fac_to_int_strict_reset clobbers HL ("clobbers as
+                ; fac_to_int_strict, +A", float-arith.asm). The hand-rolled
+                ; layers got away without this because their level was implicit
+                ; in the code position and HL was dead here -- carrying it in a
+                ; register is exactly what makes the table-driven form need the
+                ; guard. Missing it derails the interpreter into garbage on
+                ; EVERY float operand (`2.7 AND 0`), while every integer operand
+                ; keeps working: a green build that crashes the moment it runs.
+                push    hl                  ; [level] -- MUST outlive the call
+                ; spec §10.3 "strict int16 domain", exactly as the hand-rolled
+                ; layers did it: convert the operand NOW and reset FACTYP=2 so a
+                ; float does not leak into the rhs eval. No FAC save is needed --
+                ; the conversion happens before the rhs eval can clobber FAC.
+                call    fac_to_int_strict_reset
+                inc     ix
+                push    de                  ; [lhs]
+                call    ev_lg_next          ; DE = rhs
+                call    fac_to_int_strict_reset
+                pop     hl                  ; HL = lhs
+                ex      (sp),hl             ; HL = level, (sp) = lhs
+                push    hl                  ; [level]
+                inc     hl
+                ld      c,(hl)
+                inc     hl
+                ld      b,(hl)              ; BC = this level's apply leaf
+                pop     hl                  ; HL = level
+                ex      (sp),hl             ; (sp) = level, HL = lhs
+                call    lg_apply            ; DE = lhs OP rhs
+                pop     hl                  ; HL = level
+                jr      ev_lg_lp            ; left-assoc (MEASURED: IMP is the
+                                            ; only level where that is observable)
+ev_lg_next:
+                inc     hl
+                inc     hl
+                inc     hl                  ; -> the next-tighter entry
+                jr      ev_lg
+
+; lg_apply: HL = lhs, DE = rhs, BC = apply leaf -> DE = result.
+; The byte loop is shared; each leaf is the 2-3 byte ALU core that actually
+; distinguishes the six operators. `ld e,d` slides the rhs high byte into E so
+; every leaf can name its operand as `e` in both passes.
+lg_apply:
+                ld      a,l
+                call    lg_go
+                ld      l,a
+                ld      a,h
+                ld      e,d
+                call    lg_go
+                ld      h,a
+                ex      de,hl               ; DE = result
+                ret
+lg_go:          push    bc
+                ret                         ; jump to (BC); the leaf rets to us
+
+lg_and:         and     e
+                ret
+lg_or:          or      e
+                ret
+lg_xor:         xor     e
+                ret
+lg_eqv:         xor     e
+                cpl                         ; EQV = NOT (a XOR b)   [MEASURED]
+                ret
+lg_imp:         cpl
+                or      e                   ; IMP = (NOT a) OR b    [MEASURED]
+                ret
+
+; The precedence table: LOOSEST first, `db token, dw leaf`, $00-terminated.
+; EQV sits looser than XOR only because something had to; the two are measurably
+; indistinguishable (see the header), so this is a free choice, not a claim.
+logtab:
+                db      IMP_TOKEN
+                dw      lg_imp
+                db      EQV_TOKEN
+                dw      lg_eqv
+                db      XOR_TOKEN
+                dw      lg_xor
+                db      OR_TOKEN
+                dw      lg_or
+                db      AND_TOKEN
+                dw      lg_and
+                db      0                   ; terminator -> drop to ev_not
+    ELSE
+; --- the original hand-rolled chain (LEAN 16 KB build, byte-frozen) ---------
+ev_logic:
 ev_xor:
                 call    ev_or               ; DE = lhs
 ev_xor_lp:
@@ -132,6 +256,7 @@ ev_and_lp:
                 ld      h,a
                 ex      de,hl               ; DE = lhs AND rhs
                 jr      ev_and_lp
+    ENDIF
 ev_not:
                 call    ev_sp
                 ld      a,(ix+0)
@@ -789,7 +914,7 @@ evfn_ret:
 
 ev_f_paren:
                 inc     ix                  ; '('
-                call    ev_xor              ; DE = inner value (full expression)
+                call    ev_logic            ; DE = inner value (full expression)
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      ')'
@@ -881,7 +1006,7 @@ ev_ff_arg:
     ENDIF
                 inc     ix
                 push    bc                  ; guard the selector across the eval
-                call    ev_xor              ; DE = argument (full expression)
+                call    ev_logic            ; DE = argument (full expression)
                 pop     bc
                 call    ev_sp
                 ld      a,(ix+0)
@@ -1300,7 +1425,7 @@ ev_mc_arg:
                                             ; error", NOT the silent ev_f_err. Same chokepoint
                                             ; the empty-parens gate (D-F2-3) uses.
                 inc     ix
-                call    ev_xor              ; DE = argument; FAC/FACTYP = its type
+                call    ev_logic            ; DE = argument; FAC/FACTYP = its type
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      ')'
@@ -1922,7 +2047,7 @@ ev_f_base:
                 cp      '('
                 jp      nz,ev_f_err
                 inc     ix
-                call    ev_xor              ; evaluate + discard the index argument
+                call    ev_logic            ; evaluate + discard the index argument
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      ')'

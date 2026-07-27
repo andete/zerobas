@@ -170,6 +170,15 @@ kwtable:
                 db      3,"NOT",1,NOT_TOKEN
                 db      3,"MOD",1,MOD_TOKEN
     IF ROM_BASE < $4000
+                ; EQV/IMP -- repack only: the lean 16 KB basic.rom is byte-frozen
+                ; and ships without them (its hand-rolled ev_xor/ev_or/ev_and
+                ; chain has no level for either). Tokens oracle-measured from the
+                ; VG-8020's own crunch emission. Neither shares a prefix with an
+                ; existing keyword, so table order is free.
+                db      3,"EQV",1,EQV_TOKEN
+                db      3,"IMP",1,IMP_TOKEN
+    ENDIF
+    IF ROM_BASE < $4000
                 ; --- string engine (repack build only) — string-engine arc S3 -----
                 ; The core string-function keywords, all $FF-prefixed 2-byte function
                 ; tokens. Selector bytes were black-box-captured from the VG-8020 crunch

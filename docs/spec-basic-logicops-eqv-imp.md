@@ -5,8 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — `EQV` / `IMP` via a table-driven logical layer
 
-**Status:** SPEC, 2026-07-27 — **awaiting sign-off**. A measured spike exists in
-the working tree (see §4/§5); nothing is committed. Implements
+**Status:** ✅ **LANDED 2026-07-27** — D-LOG-A/B/C all signed off (see §7).
+`make logicops-acceptance` 156/156. Implements
 [`decision-kwgaps-slicing.md`](decision-kwgaps-slicing.md) §4.1 lever **L2**,
 the slice D-KW-1 named as next. Behavioural contract comes entirely from
 [`logicops-vg8020-characterization.md`](logicops-vg8020-characterization.md).
@@ -131,24 +131,23 @@ ignore.**
 | [`probes/basic/basic_probe_logicops.py`](../probes/basic/basic_probe_logicops.py) | new — characterization + gate |
 | [`Makefile`](../Makefile) | `logicops-characterize`, `logicops-acceptance` |
 
-## 7. Decisions — sign-off needed
+## 7. Decisions — all signed off 2026-07-27
 
-**D-LOG-A — land the slice as spiked?** The implementation exists, is gated
-156/156, is falsified, and is net **+5 B**. Recommend **yes**.
+**D-LOG-A — land the slice as spiked?** ✅ **ANSWERED: yes.** The implementation
+is gated 156/156, falsified, and net **+5 B**.
 
-**D-LOG-B — `EQV` looser than `XOR`, or the same level?** They are measurably
-indistinguishable, so this is free either way. The spike puts `EQV` on its own
-looser level (1 extra table entry = 3 B) to keep the table reading in manual
-order. Collapsing them onto one level would save 3 B and be equally faithful.
-Recommend **keep them separate** — the 3 B buys a table that matches the
-documented order, which is worth more than 3 B of a 523 B budget.
+**D-LOG-B — `EQV` looser than `XOR`, or the same level?** ✅ **ANSWERED: keep
+them separate.** They are measurably indistinguishable, so this is free either
+way; the extra table entry (3 B) buys a table that reads in the documented order,
+which is worth more than 3 B of a 523 B budget.
 
 **D-LOG-C — what happens to D-LOG-1 (chained relationals) and D-LOG-2 (string
-LHS)?** Both are SILENT-GAP class — wrong answers, no error — and D-KW-3 already
-named that class the arc's exit criterion, but neither is a *keyword* gap, so
-neither is on the §4.3 list. Recommend a **joint follow-on slice**: they are the
-same routine (`ev_rel`), one gate, and the probe rows already exist and are
-already red. Not this slice.
+LHS)?** ✅ **ANSWERED: joint follow-on slice**, spec'd separately in
+[`spec-basic-relational-chain.md`](spec-basic-relational-chain.md). Both are
+SILENT-GAP class — wrong answers, no error — and D-KW-3 already named that class
+the arc's exit criterion, but neither is a *keyword* gap, so neither is on the
+§4.3 list. They are the same routine (`ev_rel`), one gate, and the probe rows
+already exist and are already red.
 
 **D-LOG-D — is the `ev_*_lp` clone group now closed?** Yes. `clone_scout`
 listed it at ~104 B as the last page-1 group of any size; this slice consumes it

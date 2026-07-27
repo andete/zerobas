@@ -124,7 +124,7 @@ ev_usr:
                 cp      '('
                 jr      nz,ev_usr_err
                 inc     ix
-                call    ev_xor              ; DE = argument (full expression)
+                call    ev_logic            ; DE = argument (full expression)
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      ')'
