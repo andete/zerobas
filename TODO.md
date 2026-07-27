@@ -1424,8 +1424,33 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       **What remains of this arc, in order:**
       - **The MISSING class (6)** — `LOCATE` · `SWAP` · `TRON`/`TROFF` ·
         `MOTOR`. Honest syntax errors, so diagnosable rather than dangerous.
-        Step 3's `exec_stmt` dispatch table (D-KW-2, deferred) is the lever that
-        makes these affordable: 5 B → 3 B per statement token, est. −114 B.
+        ✅ **CHARACTERISED 2026-07-27**,
+        [`docs/missing-vg8020-characterization.md`](docs/missing-vg8020-characterization.md),
+        probe [`probes/basic/basic_probe_missing.py`](probes/basic/basic_probe_missing.py),
+        `make missing-characterize` (`BOOTPC=1` for the confirmation run) —
+        175 cases, 8 batteries, every number boot-per-case. **SLICED + COSTED**,
+        [`docs/decision-missing-class-slicing.md`](docs/decision-missing-class-slicing.md),
+        **awaiting sign-off (D-MC-1..4)**.
+        **The measurement changed the plan: the class does NOT fit.** The
+        roadmap costed it as dispatch glue only, on the premise that bodies live
+        in `sub.rom`; but four of the five touch interpreter-core state (cursor,
+        variable table, line executor) and are real statements. Measured against
+        whole-statement spans already in the tree (`ex_color` = **100 B** for the
+        same 3-optional-argument parse shape, with no bound check and no clamp),
+        the five come to **300–405 B + 25 B glue against 311 B free**. So
+        **D-KW-2 is now a prerequisite, not an option** — exactly as this item
+        predicted. Its saving is re-measured on the current tree and confirms the
+        estimate: 69 entries, 345 B of chain → 223–231 B of table, **−114…−122 B**.
+        Surface highlights the spec turns on: `LOCATE`'s bound is
+        **`WIDTH`-relative** and all three arguments are byte-domain-then-clamped
+        (`0,255` accepted, `0,256` → `Illegal function call`); `SWAP` requires
+        **exact type equality** (`%`≠`!`≠`#`), and its **second** operand must
+        already exist while the first may be created; `TRON` traces per **LINE**,
+        never in direct mode, survives `RUN` but not `NEW`; `MOTOR` is three
+        forms and everything else is `Syntax error` — and
+        [`tape/tape.asm:175`](tape/tape.asm:175) **already implements `STMOTR`
+        (`$00F3`)** with the matching convention, so its body is a parse and a
+        `call`.
       - **`DEF FN`/`FN`** — an arc, not a slice (200–400 B): a definition table,
         argument binding, re-entrant evaluation.
       - **The `CLEAR` string-pool partition** — opened by the `BIN$`/`FRE` slice
@@ -1433,6 +1458,42 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         and `CLEAR`'s string-space argument is evaluated and discarded. Landing
         it would move six recorded-not-gated `FRE` rows back into the gate. A
         string-engine change: its own spec, its own gate.
+
+- [ ] 🔴 **String-function ARGUMENT-DOMAIN checks are missing — SILENT wrong
+      answers shipping today.** Found by the MISSING-class calibration battery
+      (D-MISS-2,
+      [`docs/missing-vg8020-characterization.md`](docs/missing-vg8020-characterization.md)
+      §8), which was not looking for it — the fourth slice running whose
+      calibration turned up live defects in code that is not under test.
+      `CHR$` / `LEFT$` / `RIGHT$` / `MID$` accept out-of-range arguments
+      **silently and compute a wrong answer**:
+      `LEN(CHR$(-1))`→`1`, `LEN(CHR$(256))`→`1`, `LEN(LEFT$("abc",-1))`→`3`,
+      `LEN(MID$("abc",0))`→`3`, where the reference raises.
+      Three things make this a slice rather than a one-liner:
+      (a) **the family is inconsistent with itself** — `STRING$`/`SPACE$`/`ASC`
+      DO check and are correct, so the mechanism exists and is reachable (the
+      probe proves that with a control row before reading any other row as
+      "zerobas cannot raise it"); (b) there are **TWO reference errors, not
+      one** — `Illegal function call` inside byte range, but **`Overflow`**
+      beyond int16 (`CHR$(32768)`, `CHR$(99999)`), raised by the argument
+      coercion before the domain check runs, so an implementation that raises
+      `Illegal function call` everywhere is wrong on half the domain;
+      (c) **in-domain behaviour already agrees**, coercion included
+      (`CHR$(65.7)`→`A`, `CHR$(64.5)`→`@`, i.e. truncation), so this is a domain
+      check bolted onto correct code.
+      **This is a different animal from the now-empty SILENT-GAP class** (absent
+      reserved words), which is exactly why it survived it. Recommended as its
+      own string-engine slice — see D-MC-2 in
+      [`docs/decision-missing-class-slicing.md`](docs/decision-missing-class-slicing.md).
+
+- [ ] **Numeric → string assignment raises the wrong error** (D-MISS-1, same
+      battery). `A$=1`, `A$=A`, `A$=1+1`, `A$=LEN("x")`, `LET A$=A`, `A$=A%` and
+      `Q$(0)=1` all raise **`syntax error`** where the reference raises
+      **`Type mismatch`** — so `ON ERROR` sees the wrong code. The numeric-lvalue
+      **mirror is already correct** (`A=A$`, `A="x"`, `A=CHR$(65)`,
+      `Q(0)="x"`), which localises it: the string-lvalue assignment path never
+      type-checks its right-hand side and fails in the parser instead. Small and
+      well-characterised; proposed to fold into the MISSING-class slice (D-MC-2).
 
 ## Beyond — post-MSX1 axes (out of charter, far future)
 

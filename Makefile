@@ -567,6 +567,44 @@ binfre-acceptance: repack-machine
 	python3 probes/basic/basic_probe_binfre.py --gate \
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
 
+# --- MISSING class: LOCATE / SWAP / TRON / TROFF / MOTOR ----------------------
+# The measurement behind docs/missing-vg8020-characterization.md. With the
+# SILENT-GAP class empty (2facfc0), these five statements are the whole of what
+# remains of the keyword arc that is a SLICE rather than an arc -- `DEF FN`/`FN`
+# is deliberately out of scope.
+#
+# The risk here is the INVERSE of the SILENT-GAP slices: zerobas raises an honest
+# `syntax error`, so nothing is silently wrong; what is unknown is what the
+# REFERENCE does. Four of the five have surfaces that are easy to guess wrong --
+# LOCATE's omittable arguments and WIDTH-relative bound, SWAP's type-equality
+# granularity, TRON's decoration format and scope, and MOTOR's accepted forms.
+#
+# TWO readouts are deliberately NOT the usual bracket span: trace rows read the
+# WHOLE SCREEN (the reference's own TRON decoration is bracketed, so result_span
+# would return a slice of the trace and call it the answer), and LOCATE rows read
+# the screen GRID (CSRLIN/POS are the READ side of the state LOCATE WRITES, so a
+# wrong pair could cancel -- they appear only in the declared `xchk` battery).
+#
+# MOTOR's effect is the cassette RELAY, which a name-table scrape cannot see: the
+# `motor` battery measures the LANGUAGE SURFACE only and says so on every row.
+#
+# Repack-only + oracle-dependent (boots openMSX; needs your VG-8020 reference
+# ROM); NOT part of `unit-test`.
+# BOOTPC=1 forces boot-per-case. The reference-only rows are the ones that need
+# it: run_differential SELF-HEALS a disagreeing two-sided row by re-running it
+# boot-per-case, so calibration verdicts already equal a boot-per-case run -- but
+# a reference-only row is delivered BATCHED and nothing re-checks it. Every
+# number the spec is built on was confirmed with BOOTPC=1.
+missing-characterize: repack-machine
+	python3 probes/basic/basic_probe_missing.py \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),) \
+	        $(if $(BOOTPC),--boot-per-case,)
+
+missing-acceptance: repack-machine
+	python3 probes/basic/basic_probe_missing.py --gate \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),) \
+	        $(if $(BOOTPC),--boot-per-case,)
+
 # --- Standing string-engine acceptance gate (string-engine arc S5; compare S3) -----
 # The three-part proof of the Phase-3 string engine on the merged repack build. CRUNCH:
 # the 8 string keywords (LEN/LEFT$/RIGHT$/MID$/CHR$/ASC/STR$/VAL) tokenise byte-for-byte
@@ -879,4 +917,7 @@ clean:
         interval-trap-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
-        graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep fat-error-acceptance clean
+        graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep fat-error-acceptance \
+        logicops-characterize cursor-characterize cursor-acceptance \
+        binfre-characterize binfre-acceptance \
+        missing-characterize missing-acceptance clean
