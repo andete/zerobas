@@ -527,6 +527,20 @@ logicops-acceptance: repack-machine
 	python3 probes/basic/basic_probe_logicops.py --gate \
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
 
+# --- Cursor / PRINT-positioning characterization (CSRLIN, POS, TAB(, SPC() -------
+# The measurement behind docs/cursor-vg8020-characterization.md. Values via the
+# bracket convention, POSITIONS via the SCREEN 0 grid (whitespace is invisible to
+# a value readout), errors via the text after the echo. Every positional row pins
+# `WIDTH 40` first: the two machines BOOT AT DIFFERENT WIDTHS (reference 37,
+# zerobas 39, D-CUR-2), and comparing absolute columns across two text widths
+# measures that instead of TAB(/SPC(.
+#
+# Repack-only + oracle-dependent (boots openMSX; needs your VG-8020 reference
+# ROM); NOT part of `unit-test`.
+cursor-characterize: repack-machine
+	python3 probes/basic/basic_probe_cursor.py \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
+
 # --- Standing string-engine acceptance gate (string-engine arc S5; compare S3) -----
 # The three-part proof of the Phase-3 string engine on the merged repack build. CRUNCH:
 # the 8 string keywords (LEN/LEFT$/RIGHT$/MID$/CHR$/ASC/STR$/VAL) tokenise byte-for-byte
