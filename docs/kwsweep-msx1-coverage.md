@@ -83,7 +83,24 @@ Of **162** MSX1 reserved words swept: **124 tokenise**, **38 do not**. Of those 
 they reach `ex_def_type` as `DEF_TOKEN` + literal ASCII) and **1 is `INTERVAL`**
 (needs no token). **34 words are genuinely absent.**
 
-### SILENT-GAP — zerobas answers, and the answer is wrong (8)
+> 🏁 **THE SILENT-GAP CLASS IS EMPTY (2026-07-27).** All eight below have
+> landed and are gated: `EQV`/`IMP` (`ef098e9`), `TAB(`/`SPC(`/`CSRLIN`/`POS`
+> (`99c0f6d`), `FRE`/`BIN$` (`2facfc0`). A re-run of `make kwsweep` confirms it
+> independently of those slices' own gates — the summary line no longer has a
+> SILENT category, and `bin` and `fre` both read `SUPPORTED match`. The table
+> below is kept as the record of what the gap WAS.
+>
+> ⚠️ The re-run's one `DIVERGENT` is **`csrlin`, and it is a probe artifact**.
+> That row (`PRINT:PRINT:PRINT"[";CSRLIN;"]"`) has no `CLS`, so it reports where
+> the boot banner and the batch's own scrolling left the cursor: it read ref 4
+> vs zb 3 in one batch and **ref 9 vs zb 7 in another** — the reference
+> disagreeing with itself is the proof. With `CLS:` both machines answer 2.
+> It cannot be pinned in place: this probe's readout anchors on the typed echo,
+> which `CLS` erases, so the row would classify UNREADABLE instead (tried).
+> `CSRLIN` is correct and gated at a pinned `WIDTH 40` by `cursor-acceptance`
+> 67/67. **Read that row as evidence CSRLIN is PRESENT, never about its value.**
+
+### SILENT-GAP — zerobas answers, and the answer is wrong (was 8, now 0)
 
 The worst class: no error, no diagnostic, just a wrong number. Every one of these
 is a live `TIME`-shaped landmine in a user program today.

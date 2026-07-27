@@ -162,6 +162,25 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "absent => `LOCATE 10` is a bare word + juxtaposition => syntax error; "
      "real => `[X]` indented to column 10"),
     ("csrlin",  "a=csrlin",
+     # ⚠️ THIS ROW'S "DIVERGENT" IS A PROBE ARTIFACT, NOT A FAITHFULNESS BUG,
+     # and it cannot be pinned here. CSRLIN is a POSITION, so with no leading
+     # CLS the row reports wherever the boot banner and the batch's own
+     # scrolling left the cursor. Measured: unpinned it reads ref 4 vs zb 3 in
+     # this batch and ref 9 vs zb 7 in a differently scrolled one -- the
+     # REFERENCE disagreeing with itself is the proof that the row is reading
+     # ambient state. Prefix `CLS:` and both machines answer 2, with or without
+     # a WIDTH pin.
+     #
+     # But CLS cannot be used HERE: this probe's readout anchors on the typed
+     # ECHO, and CLS erases it -- the row then reads '' on both sides and
+     # classifies UNREADABLE, which is strictly worse than a divergence you can
+     # explain (tried, 2026-07-27). The two requirements are incompatible for
+     # this one row, so it stays unpinned and stays explained.
+     #
+     # CSRLIN itself is CORRECT and properly gated elsewhere: cursor-acceptance
+     # 67/67 covers it at a pinned WIDTH 40 + CLS across six cases
+     # (docs/cursor-vg8020-characterization.md §2). Treat this row as evidence
+     # that CSRLIN is PRESENT, never as evidence about its value.
      'PRINT:PRINT:PRINT"[";CSRLIN;"]"',              "direct",
      "absent => variable CSRLIN reads 0; real => the (non-zero) cursor row"),
     ("pos",     "a=pos(0)",
