@@ -9,7 +9,7 @@ So the only fatal escapes are calls to MAIN routines >= $4000 outside the moved
 set.  Reports the FRONTIER -- the direct dependencies you must dissolve -- not
 the whole transitive tail, which is unreadable and misleading.
 
-  p1scout.py SYM --files a.asm,b.asm [--entries e1,e2] [--extra lbl,lbl]
+  tools/p1scout.py SYM --files a.asm,b.asm [--entries e1,e2] [--extra lbl,lbl]
 """
 import sys, os, glob, re, argparse
 from collections import deque

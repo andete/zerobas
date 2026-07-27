@@ -88,81 +88,118 @@ write_sector    equ     fatprim_write_sector
 ; fat_count_free (DE, not Cy -- rides back over FAT_WRTMP2 instead of a new
 ; RAM cell, see that cell's sysvars.inc comment).
 
-; read_sector — see basic/fat-prim-body.inc for the full contract.
+; --- the twelve UNIFORM shims -------------------------------------------
+; Every one of these was, until 2026-07-27, an independent 34-byte copy of the
+; SAME body: load a selector, bounce to the tenant, marshal Cy+HL+A back. Only
+; the DISKOP_SEL_* immediate differed. Thirteen copies (these twelve plus
+; fat_delete further down) cost 442 B of main page 1 to say one thing thirteen
+; times, on a build with 8 B free.
+;
+; Collapsed to `ld a,<selector>` + a jump into ONE shared body (fatprim_bounce),
+; which is what a shim layer should have looked like from the start. The
+; register/flag contract is UNCHANGED and this is a pure dedup — see
+; fatprim_bounce for the one substantive difference (a branchless tail that is
+; flag-equivalent, not merely similar). Cost per shim: 4 B, was 34 B.
+;
+; ORDER MATTERS ONLY FOR REACH: the twelve stubs are contiguous so every `jr`
+; lands within range of fatprim_bounce directly below them. fat_delete sits
+; after the resident fat_io_* cursor (~324 B away) and therefore uses `jp`.
+; Repack-only: the lean cart takes the `IF ROM_BASE >= $4000` include above and
+; is byte-frozen either way.
+
+; read_sector — see basic/fat-prim-body.inc for the full contract. (Cy=1 on a
+; missing sub-ROM is the same disposition class as a real I/O error — the
+; do_format-style contract; fatprim_bounce's `ret c` preserves that.)
 read_sector:
                 ld      a,DISKOP_SEL_READ_SECTOR
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
-                ret     c                   ; sub-ROM absent -> Cy=1 (same
-                                            ; disposition class as a real I/O
-                                            ; error, do_format-style contract)
-                ld      a,(DISKOP_STATUS)
-                or      a
-                jr      nz,rdsec_err
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                ret
-rdsec_err:
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                scf
-                ret
+                jr      fatprim_bounce
 
 ; write_sector — see basic/fat-prim-body.inc for the full contract.
 write_sector:
                 ld      a,DISKOP_SEL_WRITE_SECTOR
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
-                ret     c
-                ld      a,(DISKOP_STATUS)
-                or      a
-                jr      nz,wrsec_err
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                ret
-wrsec_err:
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                scf
-                ret
+                jr      fatprim_bounce
 
 ; fat_mount — see basic/fat-prim-body.inc for the full contract.
 fat_mount:
                 ld      a,DISKOP_SEL_FAT_MOUNT
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
-                ret     c
-                ld      a,(DISKOP_STATUS)
-                or      a
-                jr      nz,ftmnt_err
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                ret
-ftmnt_err:
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                scf
-                ret
+                jr      fatprim_bounce
 
 ; fat_find — see basic/fat-prim-body.inc for the full contract.
 fat_find:
                 ld      a,DISKOP_SEL_FAT_FIND
+                jr      fatprim_bounce
+
+; fat_open — see basic/fat-prim-body.inc for the full contract.
+fat_open:
+                ld      a,DISKOP_SEL_FAT_OPEN
+                jr      fatprim_bounce
+
+; fat_read_fat_sector — see basic/fat-prim-body.inc for the full contract.
+fat_read_fat_sector:
+                ld      a,DISKOP_SEL_FAT_READ_FAT_SECTOR
+                jr      fatprim_bounce
+
+; fat_read_file_sector — see basic/fat-prim-body.inc for the full contract.
+fat_read_file_sector:
+                ld      a,DISKOP_SEL_FAT_READ_FILE_SECTOR
+                jr      fatprim_bounce
+
+; fat_alloc_cluster — see basic/fat-prim-body.inc for the full contract. HL is
+; a REAL caller-read output (field.asm:576/599) -- covered by the uniform
+; DISKOP_HL reload in fatprim_bounce, no bespoke handling needed.
+fat_alloc_cluster:
+                ld      a,DISKOP_SEL_FAT_ALLOC_CLUSTER
+                jr      fatprim_bounce
+
+; fat_write_fat_entry — see basic/fat-prim-body.inc for the full contract.
+fat_write_fat_entry:
+                ld      a,DISKOP_SEL_FAT_WRITE_FAT_ENTRY
+                jr      fatprim_bounce
+
+; fat_flush_data_sector — see basic/fat-prim-body.inc for the full contract.
+fat_flush_data_sector:
+                ld      a,DISKOP_SEL_FAT_FLUSH_DATA_SECTOR
+                jr      fatprim_bounce
+
+; fat_dir_create — see basic/fat-prim-body.inc for the full contract.
+fat_dir_create:
+                ld      a,DISKOP_SEL_FAT_DIR_CREATE
+                jr      fatprim_bounce
+
+; fat_dir_update — see basic/fat-prim-body.inc for the full contract. Two call
+; sites tail-call this via `jp` (field.asm frp_overlay, fat_io_close below) --
+; transparent to a shim entered by `call` OR `jp`, since it still ends in `ret`
+; either way.
+fat_dir_update:
+                ld      a,DISKOP_SEL_FAT_DIR_UPDATE
+                ; fall through
+
+; fatprim_bounce — the ONE body the thirteen uniform shims share.
+;   in:  A = DISKOP_SEL_* selector; the primitive's own register inputs are
+;        already marshalled in the DISKOP block by the caller's contract.
+;   out: exactly the pre-collapse contract — Cy=1 + HL/A reloaded on a tenant
+;        error OR a missing sub-ROM, Cy=0 + HL/A reloaded on success.
+;
+; The tail is branchless where the originals branched, and that is the only
+; instruction-level change. It is flag-equivalent, not approximately so:
+;   * `or a` clears Cy and sets Z iff DISKOP_STATUS == 0 (success);
+;   * `ld hl,(nn)` and `ld a,(nn)` DO NOT AFFECT FLAGS, so Z/Cy survive both
+;     reloads — which is what lets the reload be shared by both dispositions
+;     instead of duplicated into an error tail;
+;   * `ret z` therefore returns success with Cy already clear (exactly what the
+;     old `jr nz,<err>` fallthrough did), and the error path falls into `scf`.
+; Reloading HL/A on BOTH paths is not new behaviour: every old shim's error tail
+; did the same two loads before its `scf`.
+fatprim_bounce:
                 ld      (DISKOP_OP),a
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
                 call    subrom_call
-                ret     c
+                ret     c                   ; sub-ROM absent -> Cy=1
                 ld      a,(DISKOP_STATUS)
-                or      a
-                jr      nz,ftfnd_err
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                ret
-ftfnd_err:
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
+                or      a                   ; Z iff success; ALSO clears Cy
+                ld      hl,(DISKOP_HL)      ; flag-transparent
+                ld      a,(DISKOP_A)        ; flag-transparent
+                ret     z                   ; success: Cy clear from `or a`
                 scf
                 ret
 
@@ -184,102 +221,10 @@ ncm_absent:
                 or      1                   ; force NZ regardless of A's value
                 ret
 
-; fat_open — see basic/fat-prim-body.inc for the full contract.
-fat_open:
-                ld      a,DISKOP_SEL_FAT_OPEN
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
-                ret     c
-                ld      a,(DISKOP_STATUS)
-                or      a
-                jr      nz,ftopn_err
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                ret
-ftopn_err:
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                scf
-                ret
 
-; fat_read_fat_sector — see basic/fat-prim-body.inc for the full contract.
-fat_read_fat_sector:
-                ld      a,DISKOP_SEL_FAT_READ_FAT_SECTOR
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
-                ret     c
-                ld      a,(DISKOP_STATUS)
-                or      a
-                jr      nz,frfat_err
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                ret
-frfat_err:
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                scf
-                ret
 
-; fat_read_file_sector — see basic/fat-prim-body.inc for the full contract.
-fat_read_file_sector:
-                ld      a,DISKOP_SEL_FAT_READ_FILE_SECTOR
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
-                ret     c
-                ld      a,(DISKOP_STATUS)
-                or      a
-                jr      nz,frfil_err
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                ret
-frfil_err:
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                scf
-                ret
 
-; fat_alloc_cluster — see basic/fat-prim-body.inc for the full contract. HL is
-; a REAL caller-read output (field.asm:576/599) -- covered by the uniform
-; DISKOP_HL reload below, no bespoke handling needed.
-fat_alloc_cluster:
-                ld      a,DISKOP_SEL_FAT_ALLOC_CLUSTER
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
-                ret     c
-                ld      a,(DISKOP_STATUS)
-                or      a
-                jr      nz,falcl_err
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                ret
-falcl_err:
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                scf
-                ret
 
-; fat_write_fat_entry — see basic/fat-prim-body.inc for the full contract.
-fat_write_fat_entry:
-                ld      a,DISKOP_SEL_FAT_WRITE_FAT_ENTRY
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
-                ret     c
-                ld      a,(DISKOP_STATUS)
-                or      a
-                jr      nz,fwfe_err
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                ret
-fwfe_err:
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                scf
-                ret
 
 ; fat_count_free — DE-based (not Cy/HL), so it gets its own tail: see basic/
 ; fat-prim-body.inc for the full contract ("DE = free cluster count"). No
@@ -301,65 +246,8 @@ fcfs_absent:
                 ld      de,0
                 ret
 
-; fat_flush_data_sector — see basic/fat-prim-body.inc for the full contract.
-fat_flush_data_sector:
-                ld      a,DISKOP_SEL_FAT_FLUSH_DATA_SECTOR
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
-                ret     c
-                ld      a,(DISKOP_STATUS)
-                or      a
-                jr      nz,ffds_err
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                ret
-ffds_err:
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                scf
-                ret
 
-; fat_dir_create — see basic/fat-prim-body.inc for the full contract.
-fat_dir_create:
-                ld      a,DISKOP_SEL_FAT_DIR_CREATE
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
-                ret     c
-                ld      a,(DISKOP_STATUS)
-                or      a
-                jr      nz,fdcr_err
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                ret
-fdcr_err:
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                scf
-                ret
 
-; fat_dir_update — see basic/fat-prim-body.inc for the full contract. Two
-; call sites tail-call this via `jp` (field.asm frp_overlay, fat_io_close
-; below) -- transparent to a shim entered by `call` OR `jp`, since it simply
-; ends in `ret` either way.
-fat_dir_update:
-                ld      a,DISKOP_SEL_FAT_DIR_UPDATE
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
-                ret     c
-                ld      a,(DISKOP_STATUS)
-                or      a
-                jr      nz,fdup_err
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                ret
-fdup_err:
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                scf
-                ret
     ENDIF
 
 ; ===========================================================================
@@ -461,21 +349,9 @@ fia_empty:
 ; fat_delete — resident shim (docs/spec-evict-diskfile-cluster.md §11). See
 ; basic/fat-delete-body.inc for the full contract; same uniform Cy+HL+A
 ; marshalling convention as the other primitive shims above.
+; `jp`, not `jr`: this is the thirteenth uniform shim but it sits AFTER the
+; resident fat_io_* cursor, ~324 B below fatprim_bounce — out of `jr` reach.
 fat_delete:
                 ld      a,DISKOP_SEL_FAT_DELETE
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
-                ret     c
-                ld      a,(DISKOP_STATUS)
-                or      a
-                jr      nz,fdel_err
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                ret
-fdel_err:
-                ld      hl,(DISKOP_HL)
-                ld      a,(DISKOP_A)
-                scf
-                ret
+                jp      fatprim_bounce
     ENDIF

@@ -413,6 +413,22 @@ diskbasic-acceptance-repack: $(DISK_ROM) $(DISK_TEST_DSK) repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) \
 	  python3 probes/disk/diskbasic_acceptance.py $(if $(ONLY),--only $(ONLY),)
 
+# --- FAT-primitive ERROR-disposition gate (the half diskbasic-acceptance misses) --
+# The 34 verbs above are oracle differentials over the SUCCESS path. They stay
+# 34/34 GREEN with the repack shim layer's error tail deliberately neutered
+# (`scf` -> `or a` in fatprim_bounce, basic/fat.asm) -- proved by experiment on
+# 2026-07-27 during the shim collapse. This gate measures the other disposition:
+# seven verbs at a nonexistent filename, each of which must reach STATUS != 0 in
+# the tenant and come back Cy=1. With the tail neutered, FOUR of the seven report
+# NOTHING AT ALL, which is what makes them a real instrument rather than a
+# restatement of the success path. Self-check against zerobas's own lowercase
+# `load error` on purpose: that wording is a DOCUMENTED divergence from the
+# reference's "File not found", so an oracle differential here would fail on the
+# divergence instead of on the disposition under test.
+fat-error-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/disk/disk_probe_fat_error_disposition.py \
+	        --machine $(REPACK_MACHINE)
+
 # --- Standing sub-ROM boot gate (zerobas-sub arc, S2a) -------------------------
 # Proves the built-in sub-ROM's discovery + two-page CALSLT ABI end-to-end with
 # NO main-ROM change (the main-ROM boot-scan + dispatch land in the eviction
@@ -799,4 +815,4 @@ clean:
         interval-trap-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
-        graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep clean
+        graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep fat-error-acceptance clean
