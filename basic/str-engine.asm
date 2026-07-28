@@ -101,14 +101,15 @@ err_out_of_str:
 ; --- heap_reset: reset the string heap + temp-descriptor stack to EMPTY -----
 ; FRETOP := C = min(HIMEM,TXTMAX); TEMPTOP := TEMPBASE. Called by clear_vars
 ; (vars.asm) at init/NEW/RUN/CLEAR — the single "variables wiped" hook (§2/§6).
-; D-CLP: also derives POOLBASE := C - POOLSIZE, the boundary that partitions the
-; string pool from the variable area. Doing it HERE rather than in ex_clear is
-; what makes `CLEAR ,himem` keep its pool size (characterization §2.8): that form
-; moves the ceiling C and never touches POOLSIZE, and the boundary is re-derived
-; from C and the RECORDED size on the way through.
-; Clobbers A,B,C,D,E,H,L.  ⚠️ D/E are new — checked against both callers
-; (basic/arrays.asm vars_reset, basic/vars.asm clear_vars); neither holds
-; anything in DE across the call.
+; D-CLP: this routine deliberately does NOT derive the pool boundary. S-CLP-2
+; first had it store POOLBASE here, on the reasoning "RAM is not the scarce
+; resource, ROM is" -- but the ROM that is scarce is THIS one (the low region,
+; 30 B free), while the sub-ROM has ~3.4 KB. So the boundary is computed
+; SUB-SIDE instead, as min(HIMEM,TXTMAX) - POOLSIZE, from two published sysvars
+; plus the size CLEAR recorded. That costs the low region ZERO bytes, and it
+; still makes `CLEAR ,himem` keep its size (characterization §2.8): that form
+; moves the ceiling and never touches POOLSIZE, so re-deriving picks the change
+; up for free. Clobbers A,B,C,H,L (unchanged).
 heap_reset:
                 ld      hl,(HIMEM)
                 ld      a,h
@@ -124,12 +125,6 @@ hr_txtmax:
                 ld      hl,TXTMAX
 hr_have:
                 ld      (FRETOP),hl         ; HL = C, the ceiling
-    IF CLEARPOOL
-                ld      de,(POOLSIZE)       ; D-CLP: POOLBASE = C - POOLSIZE
-                or      a
-                sbc     hl,de
-                ld      (POOLBASE),hl
-    ENDIF
                 ld      hl,TEMPBASE
                 ld      (TEMPTOP),hl
                 ret

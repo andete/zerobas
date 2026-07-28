@@ -411,20 +411,26 @@ G6_RESIDENT     equ     1
 ; slice can be built with the tenant alone if the page-1 tail runs out again.
 G7_RESIDENT     equ     1
 ; --- D-CLP: the CLEAR string-pool partition (docs/spec-basic-clearpool.md) ---
-; ⚠️ OFF, AND BLOCKED ON A CARVE, NOT ON THE CODE. The main-ROM side below is
-; written and reviewed; with CLEARPOOL=1 it MEASURES (2026-07-28, from clean,
-; SWAP_RESIDENT=0 used as the measurement lever so both configurations fit):
-;     main page 1  27 B -> 25 B after the `bit 7,d` shave, against 3 B free
-;     low region   10 B (heap_reset) + 22 B (the ERR 14 string), against 30 B
-; i.e. **22 B short on page 1 and 2 B short in the low region.** That is far
-; less than the ~40 B docs/spec-basic-clearpool.md §5 estimated, which is why
-; S-CLP-1 said measure before sizing the carve.
+; ⚠️ OFF, AND BLOCKED ON A CARVE, NOT ON THE CODE. The main-ROM side is written
+; and reviewed; with CLEARPOOL=1 it MEASURES (2026-07-28, from clean, with
+; SWAP_RESIDENT=0 as the lever so both configurations fit and the deltas are exact):
+;     main page 1  25 B against 3 B free   -> **22 B SHORT**
+;     low region   22 B (the ERR 14 string) against 30 B free -> fits, 8 B spare
+; That is far less than the ~40 B docs/spec-basic-clearpool.md §5 first estimated,
+; which is why S-CLP-1 said measure before sizing the carve.
 ; ⚠️ `clone_scout.py` now reports ZERO candidate groups — the clone frontier is
-; exhausted and the old `ev_*_lp` note is stale. Funding has to come from a
-; PROMOTION to the sub-ROM (~3.4 KB free); the largest page-1 spans are
-; do_name (98 B), do_open (94 B), dpl_line (89 B), lrset_common (82 B), all
-; disk verbs of the kind already hosted as tenants. Which one leaves main
-; page 1 is an architectural call, so it is not made here.
+; exhausted and the old `ev_*_lp` note is stale. Funding must come from a
+; PROMOTION to the sub-ROM (~3.4 KB free). `carve_scout.py` says the four disk
+; verbs first proposed (do_name/do_open/lrset_common/dpl_line) are all NOT
+; page-0-evictable — they reach exec_stmt/eval, so each would need splitting into
+; a resident parse stub plus a tenant body, which is a redesign, not a move.
+; A sweep of all 419 page-1 spans >= 14 B found **130 that ARE page-0-tenant
+; CLEAN, totalling 2973 B**; the useful ones combine size with FEW call sites
+; (each site becomes a stub): init_filechan 27 B/1 caller (boot-time, closure of
+; 4 — the lowest-risk in the list), psv_fetch 48 B/1, tok_skip 51 B/2.
+; ⚠️ NOT trap_return_check (66 B/1 caller, the largest single win): it sits on the
+; RETURN-from-trap path, and the T4/T5 gates measure handler cost in JIFFIES, so
+; sub-ROM call overhead there lands exactly where those gates look.
 ; Flip to 1 in the same commit as the carve; nothing else needs to change.
     IF ROM_BASE < $4000
 CLEARPOOL       equ     0       ; <- the real switch; flip with the carve
@@ -1021,13 +1027,11 @@ POOLSIZE        equ     $E232   ; 2 B: the size CLEAR recorded. Written ONLY by
                                 ; deliberately NOT reset by NEW / RUN / bare CLEAR /
                                 ; `CLEAR ,himem` -- all four keep the current size
                                 ; (measured, characterization §2.4).
-POOLBASE        equ     $E234   ; 2 B: the derived boundary, C - POOLSIZE, recomputed
-                                ; by heap_reset. Stored rather than derived per use
-                                ; (S-CLP-2): RAM is not the scarce resource, ROM is.
-                                ; Keeping POOLSIZE as well as POOLBASE is what makes
-                                ; `CLEAR ,himem` keep its size -- the ceiling moves and
-                                ; the boundary is re-derived from the RECORDED size.
-; ($E236..$E23F still free; STRTAB/VAREND begin at $E240.)
+; ⚠️ There is deliberately NO POOLBASE cell. S-CLP-2 originally stored the
+; derived boundary here; it is computed sub-side instead (see heap_reset's
+; comment in basic/str-engine.asm) because the low region is the scarce ROM and
+; the sub-ROM is not. $E234 stays free.
+; ($E234..$E23F still free; STRTAB/VAREND begin at $E240.)
 ; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §3) claims NO new RAM:
 ; the virtual line header a typed line executes under (`dir_line`, program.asm) is
 ; a 4-byte ROM constant, and CURLINE == dir_line is the sole definition of direct

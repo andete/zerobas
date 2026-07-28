@@ -18,7 +18,7 @@ init:
                 ei                          ; keyboard ISR must run for CHGET
     IF CLEARPOOL
                 ; D-CLP: the string pool's default size, set BEFORE the first
-                ; heap_reset (which clear_vars below reaches) so POOLBASE is never
+                ; heap_reset (which clear_vars below reaches) so the floor is never
                 ; derived from power-on RAM garbage. Cold-boot ONLY: NEW, RUN and a
                 ; bare CLEAR all keep the current size (characterization §2.4), so
                 ; this must NOT move into clear_vars.

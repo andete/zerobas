@@ -76,7 +76,7 @@ ex_clear:
                 bit     7,d                 ; the sign bit, tested in place: 2 B
                 jp      nz,gb_illegal       ; against `ld a,d`/`rla`/`jr c` + a
                                             ; local `jp` (7 B). Negative -> ERR 5.
-                ld      (POOLSIZE),de       ; heap_reset (below) derives POOLBASE
+                ld      (POOLSIZE),de       ; the pool floor is derived sub-side
     ENDIF
                 call    skip_spaces
                 ld      a,(hl)

@@ -9,12 +9,10 @@ Gate (characterize mode today): `make clearpool-characterize` —
 Opened by the `BIN$`/`FRE` slice as D-BF-A(c). Landing it moves that slice's six
 recorded-not-gated rows back into a gate.
 
-⚠️ **§5's numbers are ESTIMATES, and this project's estimates have been wrong by
-up to 100% in both directions** (`SWAP` 90–130 → 183; `FRE` 35–45 → 78; the
-str-domain funding premise inverted entirely). **Step 1 of implementation is to
-build the main-ROM side and measure it**, before any carve is sized — exactly
-what [`docs/spec-basic-str-domain.md`](spec-basic-str-domain.md) §5 and
-[`docs/spec-basic-width-domain.md`](spec-basic-width-domain.md) §4 did.
+✅ **§5 is now MEASURED, not estimated** — the main-ROM side is built and gated
+behind `CLEARPOOL`. The first estimate said ~40 B of page 1; the measurement
+says **22 B, and nothing in the low region**. Both corrections came from
+building it, which is what S-CLP-1 asked for.
 
 ---
 
@@ -59,35 +57,37 @@ From characterization §2, all measured:
 A **single moving boundary**, not a second allocator — §2.1 of the
 characterization (the exact 3800 difference) is what licenses this.
 
-**New RAM: 4 bytes.**
-- `POOLSIZE` (2 B) — the recorded `CLEAR n`. Initialised to 200 at cold boot;
-  written only by `CLEAR <n>`. Needed as well as `POOLBASE` because §2.8
-  requires the size to survive a change of ceiling.
-- `POOLBASE` (2 B) — the derived boundary, `C − POOLSIZE`.
+**New RAM: 2 bytes.**
+- `POOLSIZE` (2 B, `$E232`) — the recorded `CLEAR n`. Initialised to 200 at cold
+  boot; written only by `CLEAR <n>`, and deliberately not reset by `NEW`, `RUN`,
+  a bare `CLEAR` or `CLEAR ,himem` (§2.4).
+- **No `POOLBASE` cell** — the boundary is derived where it is used, sub-side
+  (S-CLP-2, reversed; see §7).
 
 **`basic/clear.asm`** — evaluate the argument as today, then: `TMISMATCH` check
 → `type_mismatch_error`; `get_int16_checked` (already gives Overflow beyond
 int16); reject negative → ERR 5; store `POOLSIZE`. The existing `clear_vars` /
 `vars_reset` tail already reaches `heap_reset`, so nothing else changes here.
 
-**`basic/str-engine.asm` `heap_reset`** — already computes
-`C = min(HIMEM,TXTMAX)` and stores `FRETOP := C`. Add `POOLBASE := C − POOLSIZE`
-immediately after, from the `C` it already has in `HL`. This is also what makes
-§2.8 fall out for free: `,himem` moves `C`, and `POOLBASE` is re-derived from
-`C` and the *recorded* size, so the pool keeps its size.
+**`basic/str-engine.asm` `heap_reset`** — **unchanged.** It was going to derive
+the boundary here, but that spends the scarce low region on something the
+sub-ROM can compute for itself (S-CLP-2, reversed). §2.8 still falls out for
+free: `,himem` moves the ceiling and never touches `POOLSIZE`, so a boundary
+re-derived at each use picks the change up automatically.
 
 **`sub/strheap.asm`**
-- `heap_alloc`'s collision floor changes from `ARYEND+2` to `POOLBASE`, and its
+- a small sub-local helper yields the floor: `min(HIMEM,TXTMAX) − POOLSIZE`,
+  from two published sysvars plus the recorded size.
+- `heap_alloc`'s collision floor changes from `ARYEND+2` to that, and its
   failure raises **ERR 14** instead of ERR 7.
-- `sh_free_gap` (i.e. `FRE("")`) becomes `FRETOP − POOLBASE`. The `strheap_gc`
+- `sh_free_gap` (i.e. `FRE("")`) becomes `FRETOP − floor`. The `strheap_gc`
   call stays — §2.5 shows reclamation is real on the reference too.
 - ⚠️ The `strheap_aryend` walk disappears from both, since neither needs
   `ARYEND` any more. That walk is not free, so this direction **should return
   sub-ROM bytes**.
 
 **`sub/arrays.asm`** — the two allocation ceilings (`scv_ceil_try` line 522,
-`aal_ceil_try` line 948) change from `ld hl,(FRETOP)` to `ld hl,(POOLBASE)`, a
-zero-byte swap. Their failure stays ERR 7.
+`aal_ceil_try` line 948) change from `ld hl,(FRETOP)` to the derived floor. Their failure stays ERR 7.
 - ⚠️ **Their GC-retry arms become dead code.** They retry once via `strheap_gc`
   because `FRETOP` can move; `POOLBASE` cannot. Removing both retries should
   return sub-ROM bytes and simplify two frames (the `RETRIED` slot in each IY
@@ -127,15 +127,16 @@ the deltas are exact:
 | piece | region | measured | available | short |
 |---|---|---|---|---|
 | `clear.asm` domain check + `POOLSIZE` store, cold-boot default | main **page 1** | **25 B** | 3 B | **22 B** |
-| `heap_reset` — derive `POOLBASE` | main low region | **10 B** | 30 B | — |
-| ERR 14 message string | main low region | **22 B** | (same 30 B) | **2 B** |
-| `strheap.asm` floor + `sh_free_gap` | sub-ROM | not yet built | ~3.4 KB | — |
-| `arrays.asm` ceilings + dead retries | sub-ROM | not yet built | ~3.4 KB | — |
+| ERR 14 message string | main low region | **22 B** | 30 B | — (8 B spare) |
+| `heap_alloc` floor + `sh_free_gap` + the array ceilings | sub-ROM | not yet built | ~3.4 KB | — |
 
-**So the carve is 22 B of main page 1 and 2 B of low region — not the ~40 B
-this section previously estimated.** S-CLP-1 said measure before sizing it, and
-that was worth doing. (Cross-check on the lever: `SWAP` off is worth
-201 − 3 = 198 B of page 1, exactly the figure recorded when it landed.)
+**So the carve is 22 B of main page 1, and nothing in the low region** — not the
+~40 B this section first estimated, and not the "22 B + 2 B" of the first
+measurement either. S-CLP-1 said measure before sizing it, and it was worth
+doing twice. (Cross-check on the lever: `SWAP` off is worth 201 − 3 = 198 B of
+page 1, exactly the figure recorded when it landed.)
+
+**The low-region requirement disappeared by reversing S-CLP-2** — see §7.
 
 The `clear.asm` block came down 27 B → 25 B by testing the sign in place
 (`bit 7,d` + `jp nz,gb_illegal`, 5 B) instead of `ld a,d`/`rla`/`jr c` plus a
@@ -145,10 +146,27 @@ local `jp` (7 B).
 exhausted and this document's earlier `ev_*_lp` note was stale. Funding must
 come from a **promotion to the sub-ROM**. Largest main-page-1 label spans (a
 scouting signal, *not* routine sizes — [[promotion-funds-low-region]]):
-`do_name` 98 B, `do_open` 94 B, `dpl_line` 89 B, `lrset_common` 82 B — all disk
-verbs, of the kind the sub-ROM already hosts (`fatprim_tenant`, `dirverb_tenant`,
-`fcbname_tenant`). Which one leaves main page 1 is an architectural call and is
-S-CLP-1.
+⚠️ **and all four of those disk verbs are NOT page-0-evictable** —
+`carve_scout.py` reports 298–299 fatal escapes each, because they reach
+`exec_stmt`/`eval`/`str_eval` and the walk continues through main page 1 into
+the low region. Each would need splitting into a resident parse stub plus a
+tenant body: a redesign, not a move.
+
+A sweep of all 419 page-1 spans ≥ 14 B found **130 that ARE page-0-tenant
+clean, totalling 2973 B**. The useful ones pair size with FEW call sites, since
+each site becomes a stub:
+
+| candidate | size | callers | note |
+|---|---|---|---|
+| `init_filechan` | 27 B | 1 | boot-time, closure of 4 — **the lowest-risk in the list** |
+| `psv_fetch` | 48 B | 1 | `PLAY` string-variable fetch, parse-time |
+| `tok_skip` | 51 B | 2 | tokeniser, line-entry not inner-loop |
+| `trap_return_check` | 66 B | 1 | ⚠️ **NO** — see below |
+
+⚠️ **Not `trap_return_check`, despite being the largest single win.** It sits on
+the `RETURN`-from-trap path, and the T4/T5 gates measure handler cost in
+*jiffies* — sub-ROM call overhead there lands exactly where those gates look
+([[traps-t4-sprite-slice]]: "the divergence was the handler's own cost").
 
 ## 6. The gate
 
@@ -182,9 +200,18 @@ Three properties are load-bearing and are documented in the probe:
   continue THROUGH main page-1 callees, not up to them) and returns far more
   than 22 B, so it also restores headroom for `DEF FN`.
   **This is yours to call — it decides what leaves main page 1.**
-- **S-CLP-2 — `POOLBASE` as stored state vs derived.** Stored costs 2 B of RAM
-  and saves recomputing `C − POOLSIZE` at every allocation and every `FRE`.
-  RAM is not the scarce resource here; ROM is. **Recommended: store it.**
+- **S-CLP-2 — `POOLBASE` stored vs derived. ✅ REVERSED, and the reversal is
+  what removed the low-region blocker.** The original recommendation was to
+  store it, reasoning "RAM is not the scarce resource, ROM is". That was right
+  about RAM and wrong about *which* ROM: the scarce one is the **low region**
+  (30 B), where `heap_reset` lives — while the sub-ROM, which is the only
+  consumer of the boundary, has ~3.4 KB. Deriving it sub-side as
+  `min(HIMEM,TXTMAX) − POOLSIZE` from two published sysvars plus the recorded
+  size costs the low region **zero** bytes and still makes `CLEAR ,himem` keep
+  its size (§2.8) — that form moves the ceiling and never touches `POOLSIZE`,
+  so re-deriving picks the change up for free. There is now **no `POOLBASE`
+  cell**; `$E234..$E23F` stays free.
+
 - **S-CLP-3 — the default 200 at cold boot.** This changes behaviour for every
   existing program: today any string workload has ~15 KB, after this it has
   200 bytes unless it says otherwise. That is *correct* (it is what the
