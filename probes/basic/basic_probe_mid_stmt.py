@@ -20,13 +20,15 @@ Each overwrite is `A$="...":MID$(...)=B$:PRINT"[";A$;"]"`, so the mutated A$ pri
 bracket-wrapped; the result is the LAST `[..]` pair (the echoed source has its own
 `[`/`]`, printed earlier -- same disambiguation as basic_probe_str_fn.extract).
 
-The RANGE-ERROR case (`n > LEN(A$)`) is a documented **divergence**, asserted
-per-machine rather than as equality: the reference raises `Illegal function call`,
-zerobas raises `syntax error` (it has no "illegal function call" in its vocabulary,
-spec D-3) -- but BOTH abort the line (the trailing PRINT never runs, A$ unchanged),
-so the behaviour matches; only the wording differs. Asserting each machine's own
-error string proves "both error" while documenting the wording gap, the same
-convention the string-compare/functions slices used for their divergences.
+The RANGE-ERROR case (`n > LEN(A$)`) used to be a documented **divergence** --
+the reference raising `Illegal function call` and zerobas `syntax error`, on the
+premise that zerobas had no "illegal function call" in its vocabulary (spec D-3).
+That premise had been false for a long time, and it was the reason this path
+funnelled seven distinct reference errors into one wrong one. D-MISS-2
+(docs/spec-basic-str-domain.md §3) closed it; the row is now asserted as
+AGREEMENT, and it earns its place by proving A$ is not mutated by the rejected
+assignment. The rest of the domain (n<1, n>255, m<0, m>255, past int16 ->
+`Overflow`) is gated by `make str-domain-acceptance`.
 
 Clean-room: this only *observes* black-box behaviour (type a line, read the screen).
 The reference ROM is never read as code. See CONTRIBUTING.md.
@@ -160,8 +162,17 @@ def main() -> int:
 
     # --- range-error divergence: per-machine error string (D-3) ---
     if want_err:
-        print("\n--- range error n>LEN(A$) [divergence: reference 'Illegal function "
-              "call' vs zerobas 'syntax error'; both abort the line] ---")
+        # ⚠️ This block used to assert the DIVERGENCE -- reference 'Illegal
+        # function call' vs zerobas 'syntax error' -- as the expected result.
+        # D-MISS-2 (docs/spec-basic-str-domain.md §3) closed it: `ems_range` now
+        # raises ERR 5 like the reference, so the assertion is AGREEMENT. The
+        # gate went red the moment the divergence was fixed, which is a recorded
+        # divergence doing its job; see the same event in basic_probe_missing.py.
+        # The wider domain surface (n<1, n>255, m<0, m>255, past int16) is gated
+        # by `make str-domain-acceptance`; this row stays because it is the one
+        # that also proves A$ is NOT mutated by the rejected assignment.
+        print("\n--- range error n>LEN(A$) [reference and zerobas both "
+              "'Illegal function call'; A$ must be unmutated] ---")
         ref_raw = ref_raws[len(cases)]
         ref_err = ref_raw is not None and "illegal function call" in ref_raw.lower()
         # the PRINT line still runs (direct mode), but A$ is unchanged -> [HI], never
@@ -173,15 +184,15 @@ def main() -> int:
               f"={ref_err}, A$ unchanged={ref_noresult}")
         if not args.ref_only:
             zb_raw = zb_raws[len(cases)]
-            zb_err = zb_raw is not None and "syntax error" in zb_raw.lower()
+            zb_err = zb_raw is not None and "illegal function call" in zb_raw.lower()
             zb_noresult = result(zb_raw) != "XI"
             good = zb_err and zb_noresult
             ok = ok and good
-            print(f"{'PASS' if good else 'FAIL':5} range-err zb:  'syntax error'"
+            print(f"{'PASS' if good else 'FAIL':5} range-err zb:  'Illegal function call'"
                   f"={zb_err}, A$ unchanged={zb_noresult}")
 
     print("\nALL PASS -- reference matches §2, zerobas matches reference "
-          "(range error: both abort, documented wording divergence)" if ok
+          "(range error included: same message, both abort, A$ unmutated)" if ok
           else "\nSOME FAILED")
     return 0 if ok else 1
 

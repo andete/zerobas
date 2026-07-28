@@ -797,28 +797,23 @@ def screen(raw: str | None) -> str:
 # deliberately deferred slice or a console-chrome difference that no
 # implementation of these five words could remove.
 XDIVERGENT = {
-    # -- D-MISS-2, deliberately deferred to its own slice (D-MC-2) -----------
-    # The absent string-function argument-domain checks. zerobas accepts the
-    # whole domain silently where the reference raises Illegal function call /
-    # Overflow. Roadmap: TODO.md, "Keyword-completeness gaps".
-    "d2-chr-256":   "D-MISS-2 deferred: CHR$ has no argument-domain check",
-    "d2-chr-neg":   "D-MISS-2 deferred: CHR$ has no argument-domain check",
-    "d2-chr-huge":  "D-MISS-2 deferred: CHR$ has no argument-domain check",
-    "d2-chr-32768": "D-MISS-2 deferred: CHR$ has no argument-domain check",
-    "d2-left-neg":  "D-MISS-2 deferred: LEFT$ has no argument-domain check",
-    "d2-right-neg": "D-MISS-2 deferred: RIGHT$ has no argument-domain check",
-    "d2-mid-neg":   "D-MISS-2 deferred: MID$ has no argument-domain check",
-    "d2-mid-zero":  "D-MISS-2 deferred: MID$ has no argument-domain check",
-    # d2-string-neg / d2-string-256 / d2-space-neg were marked here too, and
-    # the D-CUR-D abort-depth fix (2026-07-28, docs/spec-basic-abort-depth.md)
-    # RETIRED all three -- this file's own stale-marker check is what caught it,
-    # turning the gate red for the right reason. STRING$ and SPACE$ always HAD
-    # their domain check (get_byte_arg); what diverged was the abort SHAPE --
-    # the reject returned into its caller, so the statement printed the correct
-    # error and then carried on (`Illegal function call` + `syntax error` x2,
-    # `overflow` twice). Those three rows now agree with the reference and are
-    # GATED. The four `d2-chr-*` and four LEFT$/RIGHT$/MID$ rows above stay
-    # marked: those words have no domain check at all, which is D-MISS-2 proper.
+    # -- D-MISS-2 is CLOSED; ALL ELEVEN d2-* MARKERS ARE GONE ----------------
+    # Every `d2-*` row in this file is now GATED, in two steps, and this
+    # dictionary's own stale-marker check turned the gate red for the right
+    # reason both times.
+    #
+    #   * d2-string-neg / d2-string-256 / d2-space-neg retired 2026-07-28 by the
+    #     D-CUR-D abort-depth fix (docs/spec-basic-abort-depth.md). STRING$ and
+    #     SPACE$ always HAD their domain check (get_byte_arg); what diverged was
+    #     the abort SHAPE -- the reject returned into its caller, so the
+    #     statement printed the correct error and then carried on
+    #     (`Illegal function call` + `syntax error` x2, `overflow` twice).
+    #   * the four d2-chr-* and the four LEFT$/RIGHT$/MID$ rows retired by
+    #     D-MISS-2 proper (docs/spec-basic-str-domain.md): those words had no
+    #     domain check AT ALL and silently computed a wrong answer. They are now
+    #     covered end-to-end by `make str-domain-acceptance` (89 rows), which is
+    #     a far wider instrument than these eight -- it also found the MID$
+    #     STATEMENT and INSTR, neither of which this file ever looked at.
 
     # -- console chrome: the two machines have different ROW COUNTS ----------
     # The reference reserves a function-key row at KEY ON (bottom usable row

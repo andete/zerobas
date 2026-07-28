@@ -1,8 +1,10 @@
 # D-MISS-2 — the string functions' argument-domain checks
 
-Status: **DRAFT, awaiting sign-off.** Roadmap item: the last 🔴 in
-[`TODO.md`](../TODO.md). Predecessor: [`spec-basic-abort-depth.md`](spec-basic-abort-depth.md)
-(`4d35b6d`), which this slice is deliberately ordered behind.
+Status: ✅ **LANDED 2026-07-28** — signed off on S-SD-1..4, `make
+str-domain-acceptance` **89/89**, falsified **51/89**, low region **7 B → 30 B
+free**. Roadmap item: the last 🔴 in [`TODO.md`](../TODO.md). Predecessor:
+[`spec-basic-abort-depth.md`](spec-basic-abort-depth.md) (`4d35b6d`), which this
+slice is deliberately ordered behind.
 
 Probe: `probes/basic/basic_probe_str_domain.py`, 89 rows, six batteries.
 Measured against `Philips_VG_8020` on a clean-built `4d35b6d`, batched with
@@ -281,11 +283,13 @@ byte-identical"), so `LEAN_SHA256` does not move.
   are the family members that already check and are the working reference
   implementation of the two-stage rule. **If a control diverges the probe exits
   non-zero and says no other row in the run is readable as a D-MISS-2 finding.**
-- **`in` (22) — the anti-over-rejection half.** A domain check's failure mode is
+- **`in` (23) — the anti-over-rejection half.** A domain check's failure mode is
   rejecting what it should accept, and a matrix of only out-of-range rows goes
   green on an implementation that raises `Illegal function call` for
-  everything. These rows are not padding.
-- **`out` (26)** — the rejected domain, both error kinds, on all four functions.
+  everything. These rows are not padding — and §6.2 shows all 23 survive
+  falsification, which is precisely why they cannot be the gate's evidence and
+  precisely why they have to be in it.
+- **`out` (24)** — the rejected domain, both error kinds, on all four functions.
 - **`bnd` (7)** — the int16 boundary (§2.1), four of them on the callers that
   already check, as calibration.
 - **`ord` (4)** — evaluation order and precedence vs `Type mismatch` and vs the
@@ -304,26 +308,49 @@ two machines boot at different widths, and a wrapped echo breaks the
 `screen_tail` readout silently); **message case is folded** (the documented
 two-spelling divergence at `basic/arrays.asm:44`).
 
-### 6.1 Prototype result
+### 6.1 Results
 
-The §4 design was built and run in an isolated worktree before this spec was
-written, so none of §5's numbers is an estimate:
+The §4 design was built and run in an isolated worktree **before** this spec was
+written, so none of §5's numbers was ever an estimate; the landed tree then
+reproduced them exactly (low region `__MEAS_LOW_END` $3FE2 both times).
 
-- `make str-domain-*` — **89/89**, every battery, including all 34 in-domain
-  rows.
+- `make str-domain-acceptance` — **89/89**, every battery, including all 23
+  in-domain rows.
 - pre-fix baseline on `4d35b6d` — **48/89**, `--boot-per-case`, matching the
   batched+self-healed run row for row.
-- `string-acceptance` — `crunch`/`execute`/`compare`/`functions`/`inkey` all
-  PASS (the `functions` battery covers `INSTR`, so the §3a rewrite is
-  regression-clean).
+- falsified — **51/89** (§6.2).
 
-### 6.2 Falsification is REQUIRED before this is called green
+### 6.2 Falsification — ✅ RUN, 89/89 → 51/89
 
-Per [`gate-can-be-green-while-measuring-nothing`](../MEMORY.md): reverting the
-two helper call-site changes must take the gate red, rebuilt from clean, and the
-survivors must be exactly the `ctl` + `in` rows. A gate that stays green with
-the checks removed is measuring nothing. **This has not been run yet** — the
-77/77 above is the fix present, not the fix falsified.
+Per [`gate-can-be-green-while-measuring-nothing`](../MEMORY.md). All eight call
+sites reverted to plain `call eval`, rebuilt **from clean**: the gate drops to
+**51/89**, so 38 rows are held up by the eight call sites alone.
+
+⚠️ **The wall does NOT move under this falsification** (30 B / 30 B either way),
+unlike the abort-depth one. `call eval` and `call eval_byte_arg` are both 3 B
+and the helpers stay assembled, so "the low region went back" is *not* available
+here as proof the code left the image. The evidence is the asserted count of
+reverted sites plus the red gate — worth knowing before anyone tries to
+falsify this the way the previous slice was falsified.
+
+**Every survivor is explainable, and that is the real check:**
+
+| battery | survives | why it must |
+|---|---|---|
+| `ctl` | 7/7 | exercises `STRING$`/`SPACE$`/`ASC`, which this slice never touches |
+| `in` | 23/23 | **in-domain rows pass with and without the checks** — which is exactly why they can never be the gate's evidence, and exactly why they must be there |
+| `bnd` | 4/7 | the 4 survivors are all `STRING$`/`SPACE$` (pre-existing `get_byte_arg` callers); the 3 that die are the new `LEFT$`/`MID$` ones |
+| `ord` | 1/4 | `ord-type` only — `Type mismatch` is checked before the domain and is untouched |
+| `ext` | 8/12 | the 4 that die are all four `INSTR` rows |
+| `stmt` | 8/12 | the 4 that die need the reverted sites; the other 5 non-in-domain survivors pass through `ems_range`, which this falsification deliberately leaves in |
+
+Two of those rows are worth calling out. **`ext-instr-0` and `ext-instr-neg`
+PASSED in the true pre-fix baseline and FAIL under falsification** — because the
+hand-rolled `p<1` tests are deleted in the landed tree, so reverting the call
+site leaves `INSTR` with no check at all. That asymmetry is the proof that the
+call site, not the deletion, is doing the work. And the surviving `stmt-p-*`
+rows show `ems_range` contributing independently of the call sites, which is why
+§4 lists it as its own edit rather than as a consequence.
 
 ### 6.3 Regressions — and the three that are EXPECTED to go red
 

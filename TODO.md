@@ -1604,8 +1604,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         it would move six recorded-not-gated `FRE` rows back into the gate. A
         string-engine change: its own spec, its own gate.
 
-- [ ] 🔴 **String-function ARGUMENT-DOMAIN checks are missing — SILENT wrong
-      answers shipping today.** Found by the MISSING-class calibration battery
+- [x] ✅ **String-function ARGUMENT-DOMAIN checks — LANDED 2026-07-28, 89/89,
+      falsified 51/89.** Was 🔴 SILENT wrong answers shipping today.
+      Found by the MISSING-class calibration battery
       (D-MISS-2,
       [`docs/missing-vg8020-characterization.md`](docs/missing-vg8020-characterization.md)
       §8), which was not looking for it — the fourth slice running whose
@@ -1667,11 +1668,33 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (1..255); the int16 gate is the RANGE −32768..32767, not `|x| ≤ 32767`
       (`CHR$(-32768)`→IFC, `CHR$(-32769)`→Overflow), and `get_byte_arg` already
       implements exactly that, proven via `STRING$(-32768,65)`.
-      ⚠️ Three standing gates go red BECAUSE this closes a divergence they
-      record (`missing-acceptance` 8 stale `d2-*` markers, `mid_stmt`'s asserted
-      divergence, and `test_str_fn.py`'s `INSTR(0,…)` which the host harness
-      structurally cannot model once it raises) — spec §6.3 has the edits.
-      **AWAITING SIGN-OFF** on S-SD-1..4 before implementation.
+      ⚠️ Three standing gates went red BECAUSE this closes a divergence they
+      record, and all three were EDITED, not silenced: `missing-acceptance`'s 8
+      stale `d2-*` markers (**XDIVERGENT's D-MISS-2 section is now EMPTY** —
+      every `d2-*` row is gated), `basic_probe_mid_stmt.py`'s asserted
+      divergence (now an asserted AGREEMENT, and it keeps earning its place by
+      proving `A$` is unmutated by the rejected assignment), and
+      `tests/test_str_fn.py`'s `INSTR(0,…)` — which the host harness
+      structurally cannot model once the reject raises, exactly as D-F2-2 found
+      for `SPACE$`/`STRING$`. **No host unit test can cover any row of this
+      slice**; the openMSX differential is the only instrument, which is why the
+      falsification below is load-bearing.
+      ✅ **LANDED**: `make str-domain-acceptance` **89/89**; low region
+      **7 B → 30 B free**, page 1 **44 → 30 B**, lean cart byte-identical
+      (`LEAN_SHA256` unmoved); `unit-test` 53/53, `abort-acceptance` 23/23,
+      `intarg-acceptance`/`string-acceptance`/`missing-acceptance` green.
+      **FALSIFIED 89/89 → 51/89**: all eight call sites reverted to plain
+      `call eval`, rebuilt from clean. ⚠️ **The wall does NOT move under this
+      falsification** (30/30 either way) — `call eval` and `call eval_byte_arg`
+      are both 3 B and the helpers stay assembled, so unlike D-CUR-D the
+      "low region went back" check is NOT available as proof the code left the
+      image. Every survivor is explainable: `ctl` 7/7 and `in` 23/23 survive by
+      construction (in-domain rows pass with and without the checks, which is
+      why they can never be the evidence and why they must be there), the
+      surviving `bnd` rows are all `STRING$`/`SPACE$`, and **`ext-instr-0`/`-neg`
+      PASSED in the true baseline but FAIL falsified** — the hand-rolled tests
+      are deleted, so that asymmetry is what proves the call site rather than
+      the deletion is doing the work.
 
 - [ ] **Numeric → string assignment raises the wrong error** (D-MISS-1, same
       battery). `A$=1`, `A$=A`, `A$=1+1`, `A$=LEN("x")`, `LET A$=A`, `A$=A%` and

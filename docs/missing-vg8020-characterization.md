@@ -477,6 +477,17 @@ already correct, including for array elements. Diagnosable rather than dangerous
 
 ### D-MISS-2 — the string engine's argument-domain checks are largely absent
 
+> ✅ **CLOSED 2026-07-28** — [`spec-basic-str-domain.md`](spec-basic-str-domain.md),
+> `make str-domain-acceptance` 89/89, falsified 51/89. The twelve rows below were
+> enough to prove the defect and nowhere near enough to state the rule: the full
+> battery found that **`MID$`'s position is 1-based (1..255)** where every other
+> argument is 0..255, that the int16 gate is the **range** −32768..32767 rather
+> than `|x| ≤ 32767`, and two whole surfaces this table never looked at — the
+> **`MID$` STATEMENT** (`MID$(A$,1,256)="X"` silently performed the assignment)
+> and **`INSTR`** (`INSTR(256,a$,b$)` → `0`). Finding #1 below — "the family is
+> inconsistent with itself" — was righter than it knew: `INSTR` had *half* the
+> rule.
+
 | case | reference | zerobas |
 |---|---|---|
 | `LEN(CHR$(-1))` | `Illegal function call` | **`1`** |

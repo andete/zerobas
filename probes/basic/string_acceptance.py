@@ -28,7 +28,8 @@ engine) and reports one PASS/FAIL:
   6. MID$-STMT (basic_probe_mid_stmt.py) -- the assignment statement MID$(A$,n,m)=B$
      overwrites a substring in place (LEN(A$) invariant, truncate-to-fit); reference-
      lock + zerobas==reference, plus a range-error divergence asserted per-machine
-     (reference "Illegal function call" vs zerobas "syntax error"; spec-basic-mid-statement.md).
+     (n > LEN(A$) raises "Illegal function call" on BOTH sides since D-MISS-2 closed
+     the wording divergence; spec-basic-mid-statement.md + spec-basic-str-domain.md).
 
 Together: the keywords crunch like a real MSX ROM *and* execute correctly on the
 build we actually ship. Heavy + oracle-dependent (boots openMSX, needs the repack

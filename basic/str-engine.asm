@@ -582,15 +582,20 @@ str_func_ff:
                 dec     hl                  ; restore HL to the $FF prefix
                 jp      str_eval_no         ; unknown $FF function -> not a string operand
 
-; CHR$(n): a 1-byte string of the low 8 bits of n (own-design leniency — MSX errors
-; on n>255; zerobas is integer-only-lenient and takes E, like its other verbs).
+; CHR$(n): a 1-byte string of the character code n, which is 0..255 (D-MISS-2).
+; This used to be documented as an own-design leniency that "takes E" — it was
+; not lenient, it was a SILENT WRONG ANSWER: CHR$(-1)/CHR$(256) both built a
+; 1-byte string where the reference raises Illegal function call, and
+; CHR$(32768) where it raises Overflow. eval_byte_arg is both stages.
+; In-domain behaviour is unchanged, coercion included: the reference truncates
+; toward zero BEFORE checking, so CHR$(255.9) and CHR$(-0.5) are legal.
 str_fn_chr:
                 inc     hl                  ; past the selector
                 ld      a,(hl)
                 cp      '('
                 jp      nz,str_arg_empty
                 inc     hl
-                call    eval                ; DE = n; HL advanced (IX preserved)
+                call    eval_byte_arg       ; DE = n, 0..255 (or aborts); HL advanced
                 ld      a,(hl)
                 cp      ')'
                 jp      nz,str_arg_empty
@@ -690,7 +695,7 @@ str_fn_left:
                 inc     hl
                 ld      bc,(STRPTR)         ; BC = temp addr
                 push    bc                  ; save it across the numeric eval
-                call    eval                ; DE = n
+                call    eval_byte_arg       ; DE = n, 0..255 (D-MISS-2; or aborts)
                 pop     bc                  ; BC = temp addr
                 ld      a,(hl)
                 cp      ')'
@@ -735,7 +740,7 @@ str_fn_right:
                 inc     hl
                 ld      bc,(STRPTR)
                 push    bc
-                call    eval                ; DE = n
+                call    eval_byte_arg       ; DE = n, 0..255 (D-MISS-2; or aborts)
                 pop     bc
                 ld      a,(hl)
                 cp      ')'
@@ -783,7 +788,9 @@ str_fn_mid:
                 inc     hl
                 ld      bc,(STRPTR)
                 push    bc                  ; [temp]
-                call    eval                ; DE = p (1-based)
+                call    eval_pos_arg        ; DE = p, 1..255 (D-MISS-2; or aborts).
+                                            ; p is the family's one 1-BASED argument:
+                                            ; MID$("abc",0) raises where 255 does not.
                 push    de                  ; [temp][p]
                 ld      a,(hl)
                 cp      ','
@@ -791,8 +798,13 @@ str_fn_mid:
                 ld      de,$FFFF            ; n omitted -> "to end" (clamps to avail)
                 jr      sfm_close
 sfm_haveN:
+                ; ⚠️ the count is checked HERE and not at sfm_close: the 2-arg
+                ; form synthesises DE=$FFFF ("to end") below, and $FFFF is not a
+                ; legal count — checking it would reject every MID$(a$,p).
+                ; (eval_byte_arg reads FAC, not DE, so it cannot see a synthetic
+                ; value anyway.)
                 inc     hl
-                call    eval                ; DE = n (count)
+                call    eval_byte_arg       ; DE = n, 0..255 (D-MISS-2; or aborts)
 sfm_close:
                 ld      a,(hl)
                 cp      ')'
@@ -845,8 +857,16 @@ sfm_reject2:
 ;
 ; Contract (§2, oracle-locked black-box on the VG-8020): LEN(A$) NEVER changes; the
 ; replaced count k = min(m|Lb, Lb, La-n+1); bytes outside [n, n+k) are untouched.
-; n<1 / n>La / m<0 are range errors -> stmt_error ("syntax error"; zerobas has no
-; "Illegal function call", D-3). Target is a plain $-suffixed string var (FIELDed /
+; n<1 / n>255 / n>La / m<0 / m>255 all raise Illegal function call, and anything
+; past int16 raises Overflow (D-MISS-2, docs/spec-basic-str-domain.md §3).
+;
+; ⚠️ This header used to say those were `stmt_error` ("syntax error") because
+; "zerobas has no Illegal function call, D-3". That stopped being true long ago
+; -- ASC("") raises it, and it is reachable from evaluator depth -- and the stale
+; note is precisely why this path funnelled SEVEN distinct reference errors into
+; one wrong one. Two of them were not even errors: MID$(A$,1,256)="X" performed
+; the assignment and MID$(A$,1,99999)="X" silently did nothing.
+; Target is a plain $-suffixed string var (FIELDed /
 ; array lvalues deferred). Reuses var_str_type/var_name_key (LHS), str_get_key (the
 ; in-place STRTAB descriptor), eval (n/m), str_eval (RHS). Clean-room: original code;
 ; SEMANTICS from the public MSX-BASIC ref. No disassembly.
@@ -883,7 +903,7 @@ ex_mid_sel:                                 ; (traps T2) entry with HL already o
                 cp      ','
                 jp      nz,stmt_error
                 inc     hl
-                call    eval                ; DE = n (1-based); HL advanced
+                call    eval_pos_arg        ; DE = n, 1..255 (D-MISS-2; or aborts)
                 push    de                  ; [n]
                 ld      a,(hl)
                 cp      ','
@@ -892,10 +912,13 @@ ex_mid_sel:                                 ; (traps T2) entry with HL already o
                 jr      ems_close
 ems_have_m:
                 inc     hl
-                call    eval                ; DE = m
+                call    eval_byte_arg       ; DE = m, 0..255 (D-MISS-2; or aborts).
+                                            ; Replaces a hand-rolled `bit 7,d` that
+                                            ; caught m<0 only, reported it as
+                                            ; `syntax error`, and let m=256 through
+                                            ; -- MID$(A$,1,256)="X" SILENTLY performed
+                                            ; the assignment.
 ems_close:
-                bit     7,d                 ; m<0 (bit15 set) -> range error
-                jp      nz,ems_err_pop1     ; stack still [n]
                 push    de                  ; [n][m]
                 ld      a,(hl)
                 cp      ')'
@@ -933,8 +956,14 @@ ems_close:
                 pop     hl                  ; HL = continue cursor
                 jp      exec_stmt
 ems_range:
+                ; The only range error the tenant still reports is n > LEN(A$)
+                ; (n<1 / n>255 are now rejected by eval_pos_arg before the tenant
+                ; is called). The reference raises Illegal function call for it --
+                ; measured, MID$(A$,4)="X" and MID$(A$,255)="X" on a 3-char A$ --
+                ; not the `syntax error` the D-3 note above assumed was forced.
                 pop     hl                  ; discard the guarded cursor -> stack balanced
-                jp      stmt_error
+                ld      a,5
+                jp      raise_error         ; Illegal function call
 ems_err_pop2:
                 pop     de                  ; discard m
 ems_err_pop1:
@@ -1237,7 +1266,7 @@ ev_f_instr:
                 call    str_eval            ; CF set -> a$ (2-arg form); STRPTR->desc
                 jr      c,efi_have_a
                 ; --- not a string: the leading numeric p (3-arg form) ---
-                call    eval                ; DE = p; HL advanced past it (HL-based entry)
+                call    eval_pos_arg        ; DE = p, 1..255 (D-MISS-2; or aborts)
                 push    de                  ; guard p                             [p]
                 call    skip_spaces
                 ld      a,(hl)
@@ -1278,20 +1307,15 @@ efi_dup_a:
                 pop     ix                  ; IX = aT                             [p]
                 pop     bc                  ; BC = p                              [ ]
                 ; HL still = the real final cursor (untouched by the pops above)
-                bit     7,b
-                jr      z,efi_p_nonneg
-                push    hl
-                pop     ix                  ; restore IX = real cursor before erroring
-                jp      ev_f_ifc            ; p negative -> illegal function call (D-5/§2
-                                            ; p<1; deferred FPERR=3, was silent ev_f_err)
-efi_p_nonneg:
-                ld      a,b
-                or      c
-                jr      nz,efi_p_ok
-                push    hl
-                pop     ix                  ; restore IX = real cursor before erroring
-                jp      ev_f_ifc            ; p == 0 -> illegal function call (p<1;
-                                            ; deferred FPERR=3, was silent ev_f_err)
+                ; D-MISS-2: the two hand-rolled p<1 tests that stood here (a
+                ; `bit 7,b` and an `or c`, each with its own IX-restore dance and
+                ; `jp ev_f_ifc`) are GONE -- eval_pos_arg above subsumes both and
+                ; adds the two stages they never had. They were half a rule:
+                ; INSTR(256,a$,b$) sailed past them and returned 0, a silent
+                ; "not found" where the reference raises, and INSTR(99999,...)
+                ; reported Illegal function call where it raises Overflow.
+                ; Deleting them is why folding INSTR into this slice made it 20 B
+                ; CHEAPER rather than more expensive.
 efi_p_ok:
                 ; Thin main-ROM glue for the string-heap tenant's
                 ; INSTR_SEARCH op (mirrors str_heap_alloc) — the search body

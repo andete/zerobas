@@ -1375,10 +1375,58 @@ get_vram_arg:
                 and     $C0                 ; 0..16383 iff $0000..$3FFF (top 2 bits clear)
                 ret     z
                 jr      gb_illegal
+; --- D-MISS-2: the string engine's argument-domain leaves -------------------
+; (docs/spec-basic-str-domain.md §4.) CHR$/LEFT$/RIGHT$/MID$/INSTR accepted
+; out-of-range arguments SILENTLY and computed a wrong answer where the
+; reference raises; these two are what they call instead of `eval`.
+;
+; They FOLD `eval` INTO the check, and that is the whole reason this slice
+; needed no funding. Every one of the eight sites already did `call eval`, so
+; switching it to `call eval_byte_arg` costs ZERO bytes at the site and the
+; check is paid for once, here, on the OTHER wall — page 1, while every caller
+; is in the page-0 low region. Bolting a separate `call get_byte_arg` after
+; each `eval` instead was built and measured: +26 B, all of it low-region, a
+; 19 B overrun (spec §5). The usual "a shared helper is not free at two
+; callers" result inverts when the helper ABSORBS a call that was already there.
+;
+; No register guards are needed at any site: get_int16_checked guards HL (the
+; token cursor) across the conversion, and get_byte_arg returns D=0/E=byte with
+; only A clobbered.
+;
+; ⚠️ Both leaves abort via raise_error from deep inside the EXPRESSION
+; EVALUATOR, far below statement-handler depth. That is only correct because
+; fre_abort_low resets SP from SAVSTK (4d35b6d, docs/spec-basic-abort-depth.md);
+; before that fix these would have printed and `ret`ed into their own caller.
+; It is also why no HOST unit test can cover them — tests/msxtest.py calls
+; `eval` directly, so SAVSTK is never set (same reason D-F2-2 dropped
+; SPACE$/STRING$'s out-of-domain rows from tests/test_str_fn.py). The openMSX
+; differential `make str-domain-acceptance` is the only instrument.
+;
+; eval_pos_arg: eval + a 1..255 POSITION. MID$'s p and INSTR's p are the
+; family's only 1-based arguments (measured: MID$("abc",0) raises where
+; MID$("abc",255) does not), so 0 is rejected on top of get_byte_arg's rule.
+eval_pos_arg:
+                call    eval_byte_arg       ; A = E = 0..255 (or aborts)
+                or      a
+                ret     nz
+                jp      gb_illegal          ; p = 0 -> Illegal function call
+; eval_byte_arg: eval + get_byte_arg's plain 0..255. CHR$'s code, LEFT$/RIGHT$'s
+; n, MID$'s count (function and statement).
+eval_byte_arg:
+                call    eval
+                jp      get_byte_arg
 ; get_byte_arg: FAC -> A = E = a byte 0..255, else abort (ERR 6 if >int16, ERR 5
 ; if in-int16 but >255 or negative — high byte non-zero). Serves STRING$ (count
-; and char code), SPACE$, ON n, WIDTH n. DE preserved (D=0, E=byte) for ON's
-; eon_seek_nth. Clobbers A.
+; and char code), SPACE$, ON n, WIDTH n, and — via the two leaves above — the
+; whole string engine. DE preserved (D=0, E=byte) for ON's eon_seek_nth.
+; Clobbers A.
+;
+; ⚠️ Its int16 stage accepts the RANGE -32768..32767, not the magnitude
+; |x| <= 32767 that fac_to_int_strict's own header suggests. That is exactly
+; the reference rule and it was verified at the boundary, not assumed:
+; CHR$(-32768) raises Illegal function call and CHR$(-32769) raises Overflow on
+; the VG-8020, and STRING$(-32768,65)/SPACE$(-32768) already agreed through
+; THIS routine before D-MISS-2 was written (probe battery `bnd`).
 get_byte_arg:
                 call    get_int16_checked
                 ld      a,d

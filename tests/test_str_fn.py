@@ -280,19 +280,21 @@ def run():
     ck_num('INSTR(3,"AAAA","AA")  overlap from p=3', num_expr('INSTR(3,"AAAA","AA")'), 3)
     ck_num('INSTR(4,"AAAA","AA")  no room left', num_expr('INSTR(4,"AAAA","AA")'), 0)
 
-    print("# --- Group C: INSTR p<1 -> function error (ERRMARK) ---")
-    clear_markers()
-    got = num_expr('INSTR(0,"HELLO","L")')
-    ok = got == 0 and m.mem[ERRMARK] == 0xDD
-    fails += not ok
-    print(f"{'PASS' if ok else 'FAIL'}  INSTR(0,...) p=0 -> DE=0, ERRMARK=$DD "
-          f"(got DE={got}, ERRMARK={m.mem[ERRMARK]:#04x})")
-    clear_markers()
-    got = num_expr('INSTR(-1,"HELLO","L")')
-    ok = got == 0 and m.mem[ERRMARK] == 0xDD
-    fails += not ok
-    print(f"{'PASS' if ok else 'FAIL'}  INSTR(-1,...) p<0 -> DE=0, ERRMARK=$DD "
-          f"(got DE={got}, ERRMARK={m.mem[ERRMARK]:#04x})")
+    # D-MISS-2: INSTR's start position is no longer checked by two hand-rolled
+    # tests that caught p<1 only (deferred ev_f_ifc, ERRMARK=$DD, DE=0). It goes
+    # through eval_pos_arg, which enforces the FULL reference rule -- 1..255 ->
+    # ERR 5, past int16 -> ERR 6 -- because the old tests had no upper bound and
+    # no int16 stage: INSTR(256,a$,b$) returned a silent 0 where the reference
+    # raises, and INSTR(99999,...) reported the wrong error.
+    #
+    # That means the rejects now end in raise_error, whose error-abort unwind
+    # (`ld sp,(SAVSTK)`) this graceful-return host harness does not model -- it
+    # calls `eval` directly, bypassing exec_stmt, so SAVSTK is never set and the
+    # old rows here now run away rather than return. SAME TREATMENT AS D-F2-2's
+    # SPACE$/STRING$ rows above (see the notes at Group A/B): the in-domain
+    # mechanics stay here, the domain rejects are verified end-to-end against
+    # the VG-8020 by `make str-domain-acceptance` (battery `ext`, rows
+    # ext-instr-0 / -neg / -256 / -ovf).
 
     print("# --- Group C: INSTR with variable / concat operands ---")
     reset_strtab()

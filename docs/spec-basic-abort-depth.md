@@ -212,10 +212,20 @@ the funnel and the existing tail-jumps (`jp print_string` / `jp
 print_in_lineno`) `ret` straight to the anchored address. Four bytes, one
 instruction, no control-flow change.
 
-No carve or promotion was needed for this slice. (D-MISS-2, which follows, does
-need one: `str-engine.asm` is low-region with 11 B free, and `promote_scout`
-shows 1711 B promotable out of that same file — `str_fn_left` 77 B,
-`str_fn_right` 78 B — so its call-site glue is a page-1 cost of ≈45–50 B.)
+No carve or promotion was needed for this slice.
+
+⚠️ **This paragraph used to predict that D-MISS-2 would need one, at "a page-1
+cost of ≈45–50 B". That was wrong and is left here corrected rather than
+deleted, because it is the second budget on this page to name the wrong
+number.** D-MISS-2 landed the same day
+([`spec-basic-str-domain.md`](spec-basic-str-domain.md)) at **−14 B on page 1
+and +23 B BACK into the low region** — no promotion, no carve. The estimate
+assumed register-guard bytes that `get_int16_checked` already provides, and it
+costed *added* calls, missing that `call eval` was already at every site: a
+shared `eval_byte_arg`/`eval_pos_arg` pair costs **zero bytes at the call site**
+and can therefore be paid for on the other wall. The naive shape this estimate
+was actually costing was built and measured too — +26 B, all low-region — so
+the number was not absurd, it was costing a design nobody had to take.
 
 ## 6. The gate
 
