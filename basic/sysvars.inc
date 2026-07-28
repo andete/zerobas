@@ -410,6 +410,29 @@ G6_RESIDENT     equ     1
 ; G7_RESIDENT gates the RESIDENT half the way G6_RESIDENT gated DRAW's, so the
 ; slice can be built with the tenant alone if the page-1 tail runs out again.
 G7_RESIDENT     equ     1
+; --- D-CLP: the CLEAR string-pool partition (docs/spec-basic-clearpool.md) ---
+; ⚠️ OFF, AND BLOCKED ON A CARVE, NOT ON THE CODE. The main-ROM side below is
+; written and reviewed; with CLEARPOOL=1 it MEASURES (2026-07-28, from clean,
+; SWAP_RESIDENT=0 used as the measurement lever so both configurations fit):
+;     main page 1  27 B -> 25 B after the `bit 7,d` shave, against 3 B free
+;     low region   10 B (heap_reset) + 22 B (the ERR 14 string), against 30 B
+; i.e. **22 B short on page 1 and 2 B short in the low region.** That is far
+; less than the ~40 B docs/spec-basic-clearpool.md §5 estimated, which is why
+; S-CLP-1 said measure before sizing the carve.
+; ⚠️ `clone_scout.py` now reports ZERO candidate groups — the clone frontier is
+; exhausted and the old `ev_*_lp` note is stale. Funding has to come from a
+; PROMOTION to the sub-ROM (~3.4 KB free); the largest page-1 spans are
+; do_name (98 B), do_open (94 B), dpl_line (89 B), lrset_common (82 B), all
+; disk verbs of the kind already hosted as tenants. Which one leaves main
+; page 1 is an architectural call, so it is not made here.
+; Flip to 1 in the same commit as the carve; nothing else needs to change.
+    IF ROM_BASE < $4000
+CLEARPOOL       equ     0       ; <- the real switch; flip with the carve
+    ELSE
+CLEARPOOL       equ     0       ; lean cart: ALWAYS off. The 16 KB image is byte-full
+                                ; and must stay byte-identical, so the guard is
+                                ; structural here rather than a promise.
+    ENDIF
 ; Graphics G8 (docs/spec-basic-graphics-g8.md). VDP(n) and BASE(n) are single-byte
 ; FUNCTION tokens, and their assignment form has no statement token of its own: a
 ; statement whose first token is $C8/$C9 IS the assignment (crunch-pinned,
@@ -987,6 +1010,24 @@ SW_TYPE         equ     $E22D   ; 1 B: its type (1 = string, 2/4/8 numeric)
 SW_ADDR1        equ     $E22E   ; 2 B: operand 1, held across operand 2's parse
 SW_TYPE1        equ     $E230   ; 1 B: operand 1's type
 SW_MODE         equ     $E231   ; 1 B: 0 = this operand MAY be created, 1 = must exist
+; --- D-CLP: the CLEAR string-pool partition RAM (docs/spec-basic-clearpool.md)
+; zerobas used to have ONE free gap between the variable area (up to ARYEND) and
+; the string heap (down from the ceiling C); the reference has TWO POOLS split by
+; a boundary CLEAR moves. Measured: CLEAR 200 -> FRE(0)=28815 and CLEAR 4000 ->
+; 25015, a difference of EXACTLY 3800, so the pool is carved from the same RAM --
+; a moving boundary, not a second allocator (characterization §2.1).
+POOLSIZE        equ     $E232   ; 2 B: the size CLEAR recorded. Written ONLY by
+                                ; `CLEAR <n>`; initialised to 200 at cold boot and
+                                ; deliberately NOT reset by NEW / RUN / bare CLEAR /
+                                ; `CLEAR ,himem` -- all four keep the current size
+                                ; (measured, characterization §2.4).
+POOLBASE        equ     $E234   ; 2 B: the derived boundary, C - POOLSIZE, recomputed
+                                ; by heap_reset. Stored rather than derived per use
+                                ; (S-CLP-2): RAM is not the scarce resource, ROM is.
+                                ; Keeping POOLSIZE as well as POOLBASE is what makes
+                                ; `CLEAR ,himem` keep its size -- the ceiling moves and
+                                ; the boundary is re-derived from the RECORDED size.
+; ($E236..$E23F still free; STRTAB/VAREND begin at $E240.)
 ; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §3) claims NO new RAM:
 ; the virtual line header a typed line executes under (`dir_line`, program.asm) is
 ; a 4-byte ROM constant, and CURLINE == dir_line is the sole definition of direct

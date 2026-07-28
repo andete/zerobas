@@ -58,7 +58,26 @@ ex_clear:
                 jr      z,clr_done          ; bare CLEAR before ':'
                 cp      ','                 ; "CLEAR ,himem" — string-space omitted
                 jr      z,clr_himem
-                call    eval                ; <string-space> (evaluated, ignored)
+                call    eval                ; <string-space>
+    IF CLEARPOOL
+                ; --- D-CLP: the argument is RECORDED, and checked first ---------
+                ; It used to be evaluated and thrown away, so `CLEAR -1`,
+                ; `CLEAR 32768` and `CLEAR "200"` were all silently accepted where
+                ; the reference raises (characterization §2.7). The rule is the
+                ; two-stage int16 one every other numeric argument already uses --
+                ; Overflow beyond int16 (raised by get_int16_checked itself),
+                ; Illegal function call inside it -- plus a type check. Both
+                ; rejects run at ex_clear's OWN depth (exec_stmt `jp`s here), so
+                ; neither needs return-address parking.
+                ld      a,(TMISMATCH)       ; `CLEAR "200"` -> Type mismatch
+                or      a
+                jp      nz,type_mismatch_error
+                call    get_int16_checked   ; DE = int16, or aborts with Overflow
+                bit     7,d                 ; the sign bit, tested in place: 2 B
+                jp      nz,gb_illegal       ; against `ld a,d`/`rla`/`jr c` + a
+                                            ; local `jp` (7 B). Negative -> ERR 5.
+                ld      (POOLSIZE),de       ; heap_reset (below) derives POOLBASE
+    ENDIF
                 call    skip_spaces
                 ld      a,(hl)
                 cp      ','                 ; a second (memory-top) arg?

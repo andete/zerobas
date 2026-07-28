@@ -117,24 +117,38 @@ records that inserting bytes beside `err_msgtab` pushes page 1's dense forward
   (`TEMPTOP`/`TEMPBASE`) is a separate structure with its own overflow; whether
   the reference reports ERR 14 or ERR 16 there is not measured.
 
-## 5. Cost — ESTIMATED, not measured
+## 5. Cost — MEASURED (main-ROM side), 2026-07-28
 
-| piece | region | estimate |
-|---|---|---|
-| `clear.asm` domain check + `POOLSIZE` store | main **page 1** | ~20 B |
-| ERR 14 message string + table entry | main **page 1** | ~22 B |
-| `heap_reset` — derive `POOLBASE` | main low region | ~12 B |
-| `strheap.asm` floor + `sh_free_gap` | sub-ROM | ~0, likely **negative** |
-| `arrays.asm` ceilings + dead retries | sub-ROM | likely **negative** |
+The main-ROM side is **written and gated behind `CLEARPOOL`** (`basic/sysvars.inc`,
+default 0, forced 0 in the lean build so byte-identity is structural). Measured
+from clean, with `SWAP_RESIDENT=0` as the lever so both configurations fit and
+the deltas are exact:
 
-Against a clean `a6323b9`: **main page 1 has 3 B free**, the low region 30 B,
-the sub-ROM ~3.4 KB.
+| piece | region | measured | available | short |
+|---|---|---|---|---|
+| `clear.asm` domain check + `POOLSIZE` store, cold-boot default | main **page 1** | **25 B** | 3 B | **22 B** |
+| `heap_reset` — derive `POOLBASE` | main low region | **10 B** | 30 B | — |
+| ERR 14 message string | main low region | **22 B** | (same 30 B) | **2 B** |
+| `strheap.asm` floor + `sh_free_gap` | sub-ROM | not yet built | ~3.4 KB | — |
+| `arrays.asm` ceilings + dead retries | sub-ROM | not yet built | ~3.4 KB | — |
 
-So the low-region and sub-ROM pieces are covered, and **the slice is blocked on
-roughly 40 B of main page 1 that does not exist.** This is the carve
-[`docs/spec-basic-width-domain.md`](spec-basic-width-domain.md) S-WID-2
-predicted would be needed. `clone_scout.py` still lists `ev_*_lp` (~21 B) and
-small groups in `list.asm` / `files.asm`.
+**So the carve is 22 B of main page 1 and 2 B of low region — not the ~40 B
+this section previously estimated.** S-CLP-1 said measure before sizing it, and
+that was worth doing. (Cross-check on the lever: `SWAP` off is worth
+201 − 3 = 198 B of page 1, exactly the figure recorded when it landed.)
+
+The `clear.asm` block came down 27 B → 25 B by testing the sign in place
+(`bit 7,d` + `jp nz,gb_illegal`, 5 B) instead of `ld a,d`/`rla`/`jr c` plus a
+local `jp` (7 B).
+
+⚠️ **`clone_scout.py` now reports ZERO candidate groups** — the clone frontier is
+exhausted and this document's earlier `ev_*_lp` note was stale. Funding must
+come from a **promotion to the sub-ROM**. Largest main-page-1 label spans (a
+scouting signal, *not* routine sizes — [[promotion-funds-low-region]]):
+`do_name` 98 B, `do_open` 94 B, `dpl_line` 89 B, `lrset_common` 82 B — all disk
+verbs, of the kind the sub-ROM already hosts (`fatprim_tenant`, `dirverb_tenant`,
+`fcbname_tenant`). Which one leaves main page 1 is an architectural call and is
+S-CLP-1.
 
 ## 6. The gate
 
@@ -156,14 +170,18 @@ Three properties are load-bearing and are documented in the probe:
 
 ## 7. Sign-off questions
 
-- **S-CLP-1 — the carve.** ~40 B of main page 1 must be found before any of
-  this lands. Options: (a) collapse `ev_*_lp` (~21 B by `clone_scout`, but it
-  has LEAN members, so the lean cart's byte-identity must be re-proven);
-  (b) the `list.asm`/`files.asm` groups; (c) promote something to the sub-ROM.
-  **Recommended: measure first.** Build the main-ROM side against the current
-  tree and read the actual overrun — the estimate above could be 20 B or 60 B,
-  and sizing a carve against a guess is how the `SWAP` and `FRE` estimates went
-  wrong.
+- **S-CLP-1 — the carve. ✅ MEASURED, now a choice of WHICH routine to promote.**
+  The requirement is **22 B of main page 1 + 2 B of low region** (§5), and the
+  clone frontier is dry, so it has to be a promotion to the sub-ROM. The
+  candidates are disk verbs whose siblings are already tenants:
+  **`do_name` (~98 B, the `NAME` rename statement)** — recommended, since it is
+  the most self-contained and least-used of the four; `do_open` (~94 B) and
+  `lrset_common` (~82 B) are on the hot file-channel path and their closures
+  reach further; `dpl_line` (~89 B) belongs to `LIST`, which is console-coupled.
+  A promotion needs its own closure walk ([[carve-scout-walk-through-page1]]:
+  continue THROUGH main page-1 callees, not up to them) and returns far more
+  than 22 B, so it also restores headroom for `DEF FN`.
+  **This is yours to call — it decides what leaves main page 1.**
 - **S-CLP-2 — `POOLBASE` as stored state vs derived.** Stored costs 2 B of RAM
   and saves recomputing `C − POOLSIZE` at every allocation and every `FRE`.
   RAM is not the scarce resource here; ROM is. **Recommended: store it.**

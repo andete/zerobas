@@ -79,6 +79,17 @@ str_heap_oom_error:
 err_too_complex:
                 db      "String formula too complex",13,10,0
 
+; --- err_out_of_str: the ERR 14 message (D-CLP) -----------------------------
+; err_msgtab listed 14 as a HOLE pointing at "unprintable error", exactly as it
+; listed 24 before LOCATE needed it. Homed HERE (low region) and not beside the
+; table for the same reason err_too_complex and LOCATE's err_missing_operand are:
+; bytes inserted next to err_msgtab push page 1's dense forward `jr`s out of
+; reach (basic/missing.asm:70).
+    IF CLEARPOOL
+err_out_of_str:
+                db      "out of string space",13,10,0
+    ENDIF
+
 ; ===========================================================================
 ; Shared low-region helpers (arrays slice-4a). Homed HERE (the reclaimed low
 ; region) rather than in their page-1 callers because page 1 is byte-full;
@@ -90,7 +101,14 @@ err_too_complex:
 ; --- heap_reset: reset the string heap + temp-descriptor stack to EMPTY -----
 ; FRETOP := C = min(HIMEM,TXTMAX); TEMPTOP := TEMPBASE. Called by clear_vars
 ; (vars.asm) at init/NEW/RUN/CLEAR — the single "variables wiped" hook (§2/§6).
-; Clobbers A,B,C,H,L.
+; D-CLP: also derives POOLBASE := C - POOLSIZE, the boundary that partitions the
+; string pool from the variable area. Doing it HERE rather than in ex_clear is
+; what makes `CLEAR ,himem` keep its pool size (characterization §2.8): that form
+; moves the ceiling C and never touches POOLSIZE, and the boundary is re-derived
+; from C and the RECORDED size on the way through.
+; Clobbers A,B,C,D,E,H,L.  ⚠️ D/E are new — checked against both callers
+; (basic/arrays.asm vars_reset, basic/vars.asm clear_vars); neither holds
+; anything in DE across the call.
 heap_reset:
                 ld      hl,(HIMEM)
                 ld      a,h
@@ -105,7 +123,13 @@ heap_reset:
 hr_txtmax:
                 ld      hl,TXTMAX
 hr_have:
-                ld      (FRETOP),hl
+                ld      (FRETOP),hl         ; HL = C, the ceiling
+    IF CLEARPOOL
+                ld      de,(POOLSIZE)       ; D-CLP: POOLBASE = C - POOLSIZE
+                or      a
+                sbc     hl,de
+                ld      (POOLBASE),hl
+    ENDIF
                 ld      hl,TEMPBASE
                 ld      (TEMPTOP),hl
                 ret

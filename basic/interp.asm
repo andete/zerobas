@@ -16,6 +16,15 @@
 ; --- INIT entry (cartridge header points here) -----------------------------
 init:
                 ei                          ; keyboard ISR must run for CHGET
+    IF CLEARPOOL
+                ; D-CLP: the string pool's default size, set BEFORE the first
+                ; heap_reset (which clear_vars below reaches) so POOLBASE is never
+                ; derived from power-on RAM garbage. Cold-boot ONLY: NEW, RUN and a
+                ; bare CLEAR all keep the current size (characterization §2.4), so
+                ; this must NOT move into clear_vars.
+                ld      hl,200
+                ld      (POOLSIZE),hl
+    ENDIF
                 call    clear_vars          ; deterministic variable table
     IF ROM_BASE < $4000
                 ; Error-handling S2a: ERR/ERL are zeroed at COLD BOOT ONLY (this is
@@ -936,7 +945,12 @@ err_msgtab:
                 dw      err_fp_divzero      ; 11: division by zero
                 dw      err_unprintable     ; 12: illegal direct (hole -- not yet raised)
                 dw      err_type_mismatch   ; 13: type mismatch
+    IF CLEARPOOL
+                dw      err_out_of_str      ; 14: out of string space (D-CLP; was a
+    ELSE                                    ; hole until the pool could raise it)
                 dw      err_unprintable     ; 14: out of string space (hole)
+    ENDIF
+                                            ; hole until the pool could raise it)
                 dw      err_unprintable     ; 15: string too long (hole)
                 dw      err_too_complex     ; 16: string formula too complex
                 dw      err_cont            ; 17: can't continue
