@@ -188,7 +188,8 @@ Three properties are load-bearing and are documented in the probe:
 
 ## 7. Sign-off questions
 
-- **S-CLP-1 — the carve. ✅ MEASURED, now a choice of WHICH routine to promote.**
+- **S-CLP-1 — the carve. ✅ MEASURED AND SCOUTED — see
+  [`docs/decision-clearpool-funding.md`](decision-clearpool-funding.md).**
   The requirement is **22 B of main page 1 + 2 B of low region** (§5), and the
   clone frontier is dry, so it has to be a promotion to the sub-ROM. The
   candidates are disk verbs whose siblings are already tenants:
@@ -199,7 +200,12 @@ Three properties are load-bearing and are documented in the probe:
   A promotion needs its own closure walk ([[carve-scout-walk-through-page1]]:
   continue THROUGH main page-1 callees, not up to them) and returns far more
   than 22 B, so it also restores headroom for `DEF FN`.
-  **This is yours to call — it decides what leaves main page 1.**
+  Requirement **22 B of main page 1**. The clone frontier is exhausted, so it
+  must be a promotion; the viable set is `format.asm` (132 B), `do_bload`
+  (~99 B), `tok_skip` (51 B), `fld_lookup` (40 B) and `init_filechan` (27 B),
+  ≈350 B gross. **`init_filechan` alone funds D-CLP** and is the lowest-risk
+  change available; the rest are for `DEF FN`'s headroom.
+
 - **S-CLP-2 — `POOLBASE` stored vs derived. ✅ REVERSED, and the reversal is
   what removed the low-region blocker.** The original recommendation was to
   store it, reasoning "RAM is not the scarce resource, ROM is". That was right
