@@ -166,6 +166,14 @@ EXPECTED = [
     ('TRON_TOKEN', 'ex_tron', 'ROM_BASE < $4000'),
     ('TROFF_TOKEN', 'ex_troff', 'ROM_BASE < $4000'),
     ('LOCATE_TOKEN', 'ex_locate', 'ROM_BASE < $4000'),
+    # SWAP, 2026-07-28. It was split out of the class and gated at
+    # SWAP_RESIDENT = 0, so it is the one MISSING word this list never carried.
+    # ⚠️ THIS TEST WOULD HAVE CAUGHT THE MISSING DISPATCH ARM. The spec claimed
+    # SWAP_RESIDENT already guarded a stmt_table row; it did not, and the arm had
+    # to be written when the flag was flipped. Had the arm existed all along, this
+    # list's absence of SWAP would have flagged it as UNEXPECTED on the first
+    # repack build -- the inverse of the real failure, and the same alarm.
+    ('SWAP_TOKEN', 'ex_swap', 'ROM_BASE < $4000'),
 ]
 
 

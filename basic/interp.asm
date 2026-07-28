@@ -387,6 +387,21 @@ stmt_table:
                 dw      ex_troff
                 db      LOCATE_TOKEN
                 dw      ex_locate    ; LOCATE [col][,[row][,cursor]]
+    IF SWAP_RESIDENT
+                ; ⚠️ THIS ENTRY DID NOT EXIST when SWAP was gated off, and neither
+                ; sysvars.inc's SWAP_RESIDENT block nor spec §10 noticed: both said
+                ; the flag guarded "the kwtable row, the stmt_table dispatch row and
+                ; the code", and listed flipping the flag as the whole of the wiring.
+                ; Only two of the three were real. With the flag on and no arm here,
+                ; SWAP crunched to $A4 and then fell off the end of this table into
+                ; stmt_error, so EVERY row of the swap battery reported
+                ; `syntax error` -- indistinguishable from SWAP still being absent.
+                ; SWAP_TOKEN is $A4, the same byte as PDL_TOKEN in the $FF-prefixed
+                ; FUNCTION namespace; statement tokens are unprefixed, so they do not
+                ; collide (basic/sysvars.inc:1606 records the shared byte).
+                db      SWAP_TOKEN
+                dw      ex_swap    ; SWAP a,b
+    ENDIF
     ENDIF
                 db      0                   ; end of table
 

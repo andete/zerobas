@@ -958,19 +958,24 @@ LOC_RET         equ     $E227   ; 2 B: loc_next's parked return address
 LOC_COL         equ     $E229   ; 1 B: LOCATE's parsed column, pre-clamp
 LOC_ROW         equ     $E22A   ; 1 B: LOCATE's parsed row, pre-clamp
 ; --- SWAP_RESIDENT: the SWAP build gate -------------------------------------
-; 0 = SWAP is NOT built. The implementation is complete, reviewed and gated off
-; rather than deleted, exactly as G7_RESIDENT / I1_RESIDENT / TRAPS_T4 do for
-; their features.
+; 1 = SWAP is BUILT (2026-07-28). The flag is kept rather than removed because it
+; is the seam the MISSING class was split on, and because it still guards three
+; places that must move together: this file's SW_* cells, the `kwtable.inc` crunch
+; row, and the code in `basic/missing.asm`.
 ;
-; ⚠️ MEASURED, not estimated: SWAP costs **186 B** of page 1, against the 156 B
-; the MISSING slice had left after its other four words. The spec estimated
-; 90-130 B and pre-decided this exact case (spec-basic-missing-class.md §9): "If
-; SWAP overruns a measured budget with only that [the ~28 B fat_rand_* reserve]
-; left, the answer is to split SWAP out rather than to spend the last reserve on
-; it." Confirmed by the user 2026-07-27. Flipping this to 1 needs a real carve,
-; not the last reserve -- and needs the kwtable and stmt_table rows flipped with
-; it (both are guarded by this same flag).
-SWAP_RESIDENT   equ     0
+; ⚠️ RE-MEASURED FROM CLEAN, and the split's own number was 3 B off: SWAP costs
+; **183 B** of page 1, not the 186 B recorded when it was gated off (measured by
+; building with the flag on and reading __MEAS_PAGE1_END past the $8000 ceiling --
+; 27 B over against the 156 B then free). The spec estimated 90-130 B, i.e. it was
+; ~53 B light, for the reasons spec-basic-missing-class.md §10 records.
+;
+; FUNDED BY TWO CLONE COLLAPSES, both repack-only, neither touching SWAP:
+;   * fat_rand_open/put/get onto the shared `fatprim_bounce`  +45 B  (1b8d5e7)
+;   * the five TOTAL math calls onto one table               +41 B  (5f35a1e)
+; 156 -> 242 B free, so SWAP lands with 59 B still banked. This deliberately did
+; NOT spend the ~28 B fat_rand_* estimate as "the last reserve": collapsing that
+; group onto a body the FAT carve had already built yielded 45 B, not 28.
+SWAP_RESIDENT   equ     1
 
 ; --- SWAP (basic/missing.asm ex_swap) ---------------------------------------
 ; SWAP is the one statement in the language that writes TWO lvalues, so it must

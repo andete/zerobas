@@ -5,11 +5,9 @@ SPDX-License-Identifier: 0BSD
 
 # `LOCATE` / `SWAP` / `TRON` / `TROFF` / `MOTOR` (+ D-MISS-1) — implementation spec
 
-**Status:** ✅ **LANDED 2026-07-27** — four of the five words plus D-MISS-1.
-`SWAP` is **split out** (§10): its implementation is complete and gated off at
-`SWAP_RESIDENT = 0`, because it measured **186 B against 156 B free** and §9
-pre-decided that case. `make missing-acceptance` is **163/163 as recorded**
-(20 expected-divergent, none of them in the MISSING class itself).
+**Status:** ✅ **CLASS COMPLETE 2026-07-28.** All five words plus D-MISS-1.
+`SWAP` was split out on 2026-07-27 and landed on 2026-07-28 once two clone
+collapses funded it (§10) — `SWAP_RESIDENT = 1`.
 
 **As built**, measured from clean after each step:
 
@@ -22,7 +20,11 @@ pre-decided that case. `make missing-acceptance` is **163/163 as recorded**
 | prompt fix (out of scope, requested) | 376 B (−6) | 7 suites |
 | D-MISS-1 | 351 B (−25) | cal 22/41 → 30/41 |
 | `LOCATE` + the ERR-24 message | 156 B (−195) | locerr/locate/locacc/locrow |
-| `SWAP` | *(186 B — did not fit)* | gated off |
+| *(split — `SWAP` measured 183 B against 156 B free)* | 156 B | gated off |
+| `fat_rand_*` → `fatprim_bounce` (funding) | **201 B** (+45) | diskbasic-repack 3/3, falsified |
+| five TOTAL math calls → one table (funding) | **242 B** (+41) | math ALL PASS, falsified (57 rows) |
+| `SWAP` + its missing dispatch arm | 56 B (−186) | `swap` 20/20 |
+| the two operand name guards (gate finding) | **44 B** (−12) | **`make missing-acceptance` 214/214** |
 
 **Sign-off history follows.** ✅ **SIGNED OFF 2026-07-27** — S-MC-1 … S-MC-6 all answered (§9,
 "Sign-off"). **S-MC-4 was overridden**: the `ON`/`OFF`/`STOP` decode share is
@@ -543,27 +545,51 @@ leaves exactly one reserve lever: the `fat_rand_*` clone collapse (~28 B, the
 last of that well). If `SWAP` overruns a measured budget with only that left,
 the answer is to split `SWAP` out rather than to spend the last reserve on it.
 
-## 10. `SWAP` — split out, implementation gated off
+## 10. `SWAP` — split out 2026-07-27, ✅ LANDED 2026-07-28
 
-**Measured 186 B against 156 B free.** §9 pre-decided this exact case, and the
-decision was confirmed: split it out rather than spend the last page-1 reserve
-(the ~28 B `fat_rand_*` collapse, which would not have covered the overrun
-anyway).
+**Split (2026-07-27).** §9 pre-decided this exact case and the decision was
+confirmed: split rather than spend the last page-1 reserve (the ~28 B
+`fat_rand_*` collapse, which would not have covered the overrun anyway). The
+implementation stayed complete and reviewed behind `SWAP_RESIDENT = 0`, the same
+pattern `G7_RESIDENT` / `I1_RESIDENT` / `TRAPS_T4` use.
 
-The implementation is **not discarded** — it is complete, reviewed, and behind
-`SWAP_RESIDENT = 0` (`sysvars.inc`), the same pattern `G7_RESIDENT` /
-`I1_RESIDENT` / `TRAPS_T4` use. The flag guards three places that must move
-together: the `kwtable` crunch row, the `stmt_table` dispatch row, and the code
-in `basic/missing.asm`. So `SWAP A,B` is still a syntax error, exactly as before
-the slice, and the probe's `--gate` deliberately excludes `SWAP` from
-`IMPLEMENTED` so its ~40 characterization rows stay reference-only rather than
-being marked expected-divergent one by one.
+**Landed (2026-07-28).** Re-measured from clean: **183 B, not 186** — the split's
+own figure was 3 B off. Funded by two clone collapses, *neither of them SWAP's own
+code*, both repack-only so the lean cart stayed byte-identical:
 
-**What the next slice needs:** ~186 B of page 1, i.e. a real carve. The
-`fat_rand_*` reserve is not enough on its own. Nothing else is outstanding — the
-surface is characterised (§3.3), the design is settled (§5, S-MC-3), the rows
-are written, and flipping the flag plus deleting `SWAP` from that one probe line
-is the whole of the wiring.
+| carve | est. | measured | commit |
+|---|---|---|---|
+| `fat_rand_open/put/get` → the existing `fatprim_bounce` | 28 B | **+45 B** | `1b8d5e7` |
+| `evmc_atn/sin/cos/tan/rnd` → one (token, entry) table | 20 B | **+41 B** | `5f35a1e` |
+
+156 → 242 B free; `SWAP` + its dispatch arm + the two operand guards the gate
+forced took 198 B, leaving **44 B banked**.
+Note the first carve is the one this section had written off as "the ~28 B reserve,
+not enough on its own": collapsing it onto a body the FAT carve had *already built*
+yielded 45 B. **A reserve sized by a scout's estimate is not the same as a reserve
+sized by looking at what is already in the tree.**
+
+### ⚠️ THE SPEC WAS WRONG A THIRD TIME — and about its own wiring
+
+§10 said: *"The flag guards three places that must move together: the `kwtable`
+crunch row, the `stmt_table` dispatch row, and the code in `basic/missing.asm`"*,
+and *"flipping the flag plus deleting `SWAP` from that one probe line is the whole
+of the wiring."*
+
+**There was no dispatch row.** `SWAP_RESIDENT` guarded exactly two sites —
+`kwtable.inc` and `missing.asm` — and `grep SWAP_TOKEN` found no entry in
+`interp.asm`'s statement table at all. With the flag flipped, `SWAP` crunched to
+`$A4`, fell off the end of that table into `stmt_error`, and **all 20 rows of the
+`swap` battery reported `syntax error` — a result indistinguishable from `SWAP`
+still being absent.** Fixed by adding the 3 B arm (`db SWAP_TOKEN / dw ex_swap`)
+beside `LOCATE`'s, under the same flag; the battery then went 20/20 unchanged.
+
+This is the same failure mode as the other two (§4, §9), one level more embarrassing:
+the first two generalised a rule from the one row they had measured, and this one
+**asserted a fact about its own three-site wiring without checking that the third
+site existed.** The lesson generalises past specs: *a "the whole of the wiring is
+X" claim is a claim, and the cheapest possible check — one `grep` for the token —
+would have falsified it.* It was caught only because the gate was run.
 
 ### Sign-off — ✅ all six answered, 2026-07-27
 

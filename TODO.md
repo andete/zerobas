@@ -1405,11 +1405,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         (`2026-07-26`), which was the ninth and which the sweep picked up with
         no edit to the probe. **No MSX1 reserved word silently computes a wrong
         answer.** That was the keyword arc's exit criterion (D-KW-3).
-      - **MISSING (6) — honest syntax error.** ✅ **FOUR LANDED 2026-07-27**:
-        `LOCATE` · `TRON` · `TROFF` · `MOTOR`, plus D-MISS-1, gated by
-        `make missing-acceptance` at **163/163 as recorded**. `SWAP` is
-        implemented but **gated off** (`SWAP_RESIDENT = 0`): it measured 186 B
-        against 156 B free, and the spec pre-decided that overrun as a split.
+      - ✅ **MISSING (6) — THE CLASS IS EMPTY (2026-07-28).** All five words plus
+        D-MISS-1: `LOCATE` · `TRON` · `TROFF` · `MOTOR` landed 2026-07-27, and
+        **`SWAP` landed 2026-07-28** once two clone collapses funded it (+45 B
+        `fat_rand_*` onto the existing `fatprim_bounce`, +41 B the five TOTAL math
+        calls onto one table — neither of them SWAP's own code). Gated by
+        `make missing-acceptance` at **214/214 as recorded**.
         `DEF FN`/`FN` stays out — it is an arc, not a slice (D-MC-3).
       - **NO-ORACLE (5).** `MKI$` `MKS$` `MKD$` `CVS` `CVD` — the MK/CV family
         lives in Disk BASIC, so a **diskless** VG-8020 reference measures the
@@ -1466,11 +1467,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         reason). Spec, as-built costs and the two places the spec turned out to
         be WRONG:
         [`docs/spec-basic-missing-class.md`](docs/spec-basic-missing-class.md).
-        **`SWAP` is the remaining item and needs ~186 B of page 1** — a real
-        carve, not the ~28 B `fat_rand_*` reserve. Its implementation is written
-        and gated at `SWAP_RESIDENT = 0`; flipping that flag plus removing
-        `SWAP` from the probe's one `IMPLEMENTED` line is the whole of the
-        wiring. Honest syntax errors, so diagnosable rather than dangerous.
+        ✅ **`SWAP` LANDED 2026-07-28** — 183 B (re-measured from clean; the
+        split had recorded 186 B), funded by two repack-only clone collapses and
+        leaving 44 B banked (SWAP + its dispatch arm + the two operand guards =
+        198 B against the 242 B the carves freed). **"Flipping the flag plus one probe line is the whole
+        of the wiring" was WRONG**: `SWAP_RESIDENT` guarded only two of the three
+        sites the spec claimed — there was no `stmt_table` dispatch arm at all, so
+        the first run had all 20 `swap` rows reporting `syntax error`,
+        indistinguishable from SWAP being absent. The gate also found that SWAP
+        accepted non-name operands (`SWAP A,1` → `Illegal function call` plus
+        trailing output, where the reference says `Syntax error`) — fixed with an
+        `is_letter` guard at the *handler's own depth*, because sw_operand is
+        `call`ed and the abort chain returns into its caller (D-CUR-D).
         ✅ **CHARACTERISED 2026-07-27**,
         [`docs/missing-vg8020-characterization.md`](docs/missing-vg8020-characterization.md),
         probe [`probes/basic/basic_probe_missing.py`](probes/basic/basic_probe_missing.py),

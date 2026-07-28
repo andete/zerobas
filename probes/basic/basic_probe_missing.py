@@ -972,15 +972,12 @@ def main() -> int:
                     action="store_true")
     args = ap.parse_args()
     if args.gate:
-        # ⚠️ SWAP IS DELIBERATELY EXCLUDED. Its implementation is complete but
-        # gated OFF (basic/sysvars.inc SWAP_RESIDENT = 0): it measured 186 B
-        # against the 156 B the slice had left, and spec-basic-missing-class.md
-        # §9 pre-decided that case -- split it out rather than spend the last
-        # page-1 reserve on it. So `SWAP A,B` is still a syntax error here, and
-        # its 40-odd rows stay REFERENCE-ONLY characterization instead of being
-        # marked expected-divergent one by one. Delete SWAP from this line when
-        # SWAP_RESIDENT flips to 1; the rows are already written and waiting.
-        IMPLEMENTED = set(UNDER_TEST) - {"SWAP"}
+        # SWAP is now IN (2026-07-28, SWAP_RESIDENT = 1 -- funded by two clone
+        # collapses, +86 B, neither of them SWAP's own code). It used to be
+        # subtracted here while it was gated off, which kept its 40-odd rows
+        # reference-only; the whole MISSING class is now under test with no
+        # exclusion, so this is the plain set.
+        IMPLEMENTED = set(UNDER_TEST)
 
     bat = build()
     if args.only:

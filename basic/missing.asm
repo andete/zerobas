@@ -300,9 +300,33 @@ loc_more_yes:
 ; is undisturbed. So the exchange is a fixed-width byte swap of the value field
 ; and THE STRING HEAP IS NEVER TOUCHED. The width is the type for 2/4/8 and 3
 ; for a string descriptor, which is the whole of the type-to-width mapping.
+; ⚠️ BOTH OPERANDS MUST START WITH A LETTER, and the check lives HERE rather than
+; in sw_operand, for two independent reasons (both measured 2026-07-28, when the
+; first full `swaperr` run came back 211/214):
+;
+;   ref                     zb before this check
+;   SWAP A,1    Syntax error   Illegal function call, PLUS trailing output
+;   SWAP 1,A    Syntax error   type mismatch
+;   SWAP A,LEN("x")  Syntax error   Illegal function call, PLUS trailing output
+;
+; (1) sw_operand fed a literal or a function token straight into var_name_key,
+;     which happily manufactured a key from it -- so the operand "existed" or did
+;     not by accident, and the error came out of whichever later test tripped
+;     first instead of out of "that is not a variable".
+; (2) THE DEPTH IS THE OTHER HALF. sw_operand is `call`ed, and the abort chain
+;     PRINTS AND RETURNS without resetting SP (docs/spec-basic-cursor-cluster.md
+;     §4.1, D-CUR-D) -- so an abort raised inside it consumes sw_operand's own
+;     frame and lands back HERE, in ex_swap, which swaps on and prints more. That
+;     is the trailing output in rows 1 and 3, and it is exactly why loc_next parks
+;     its return address in LOC_RET. Testing at the handler's own depth costs 6 B
+;     per operand and needs no parking at all: `jp stmt_error` unwinds correctly
+;     from here, the same way this routine's existing missing-comma reject does.
+; skip_spaces leaves A = the current character, so the guard is two instructions.
 ex_swap:
                 inc     hl                  ; past the SWAP token
                 call    skip_spaces
+                call    is_letter
+                jp      nc,stmt_error       ; operand 1 is not a name -> Syntax error
                 xor     a
                 ld      (SW_MODE),a         ; operand 1: MAY be created
                 call    sw_operand
@@ -315,6 +339,10 @@ ex_swap:
                 jp      nz,stmt_error       ; `SWAP` / `SWAP A` -> Syntax error
                 inc     hl
                 call    skip_spaces
+                call    is_letter
+                jp      nc,stmt_error       ; operand 2 is not a name -> Syntax error
+                                            ; (see the header: this must be tested at
+                                            ; THIS depth, not inside sw_operand)
                 ld      a,1
                 ld      (SW_MODE),a         ; operand 2: must already EXIST
                 call    sw_operand
