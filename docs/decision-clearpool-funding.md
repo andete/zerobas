@@ -102,19 +102,40 @@ simply not applied to `init_filechan`.
 - **`gosub_push`** (40 B, 3 callers) — hot control flow.
 - **`parse_disk_fcb`** (28 B, 10 callers) — the stubs cost more than the move.
 
-## 5. The near-misses, for later
+## 5. The near-misses — re-measured, and there is no cheap structural carve
 
-Worth a targeted restructure rather than a move, and each is its own slice:
+⚠️ **§5 previously claimed `do_save` was "5 escapes from clean" and that
+duplicating `div10` sub-side would unlock `save.asm`'s 572 B. That was the
+BIOS-blind tool talking, and it is wrong.** With BIOS counted `do_save` has
+**12** escapes:
 
-- **`do_save` / `ex_save` — 5 escapes.** Three are `div10`/`d10_lp`/`d10_skip`
-  reached via `sav_ascii_flag`→`list_walk`→`list_num` (ASCII SAVE detokenising
-  a line number); the other two are cluster-local plumbing. Duplicating `div10`
-  sub-side, or moving `list_walk` with it, unlocks **`save.asm`'s 572 B**.
-- **`str_get_key` — 2 escapes**, both via `ary_engine_call`: a tenant calling
-  another tenant.
-- The four disk verbs of §2 return **567–1814 B** each *if* split into a
-  resident parse stub plus a tenant body. That is the structural carve, and it
-  is where the real headroom is.
+| escape | why it is not a detail |
+|---|---|
+| `TAPOON` / `TAPOUT` / `TAPOOF` | `SAVE"CAS:"` writes tape **in real time** through the BIOS |
+| `CHPUT` / `LPTOUT` / `CALSLT` | console + printer output |
+| `div10` / `d10_lp` / `d10_skip` | via `list_walk`→`list_num`, ASCII SAVE detokenising a line number |
+| `subrom_call` / `subrom_absent_error` | cluster-local plumbing, re-expressible |
+
+The tape entries are the core of what `SAVE` *is*, and tape I/O is timing-
+critical ([[tape-realtime-read-buffering]]) — reaching them through `CALSLT`
+from a tenant is a hazard, not a cost. **`do_save` is not a near-miss.**
+
+**And a page-1 tenant does not rescue it either.** A page-1 tenant sees the BIOS
+and the low region but *not* main page 1 — which would suit `do_save`'s BIOS and
+`div10` escapes exactly. But its closure also runs through `list_walk`/`list_num`
+(`list.asm`), `pchar`/`pch_file` (`print.asm`) and `load_error` (`bload.asm`,
+**52 callers**) — all main page 1. Blocked on the other axis.
+
+Re-running the whole verb sweep with BIOS counted: of 209 `do_*`/`ex_*`/`ev_*`
+entries, the genuinely clean ones are **26 small evaluator leaves totalling
+293 B** (average 11 B) — `ev_f_*` deferred-error factors, `ev_ff_*` file and
+input-device functions, `ex_end`, `ex_rem`. Bundling them behind one
+index-dispatched tenant (the `evmc_*` pattern) would net **≈163 B after ~5 B of
+stub per site**, spread over 26 routines that touch the input-devices, file,
+cursor and error gates. **Poor value for the gate surface.**
+
+`str_get_key` remains 2 escapes, both `ary_engine_call` — a tenant calling a
+tenant, which is a nesting question, not a byte question.
 
 ## 6. Recommendation, corrected
 
@@ -124,11 +145,12 @@ Worth a targeted restructure rather than a move, and each is its own slice:
 2. **`DEF FN`'s 200–400 B is reachable by leaf bundling only just, and at poor
    value** — five to eight separate promotions for ≈180–270 B gross, each a new
    tenant index, ABI entry, stub and closure re-check, each adding gate surface.
-3. **The efficient path to `DEF FN` headroom is the structural carve of §5,
-   not a bundle.** `do_save` is 5 escapes from clean and three of them are one
-   helper (`div10`); clearing it unlocks **`save.asm`'s 572 B in a single
-   move**, and the four disk verbs return 567–1814 B each if split into a
-   resident parse stub plus a tenant body. One restructure beats eight moves.
+3. **There is no cheap carve for `DEF FN`, in either direction.** §5 shows the
+   structural near-misses are not near, and §4a shows the leaf bundle is poor
+   value. The 567–1814 B prizes are real but each requires genuinely splitting
+   an eval-bound verb into a resident parse stub plus a tenant body — design
+   work with its own spec and gate, not a move. **`DEF FN`'s funding should be
+   scoped as part of the `DEF FN` arc, not bolted onto D-CLP.**
 
 ⚠️ **Each promotion is a new tenant index, an ABI entry, a resident stub and a
 closure re-check, and every one of them changes the DISK path.** The corpus
