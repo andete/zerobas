@@ -1348,6 +1348,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       where the same two `jp`s abort correctly). Not fixed here: the fix is
       per-caller frame discipline across four statements, each with its own
       gate, which is a slice rather than a drive-by.
+      📋 **RE-MEASURED + SPEC WRITTEN 2026-07-28, awaiting sign-off (S-AD-1..5)**:
+      [`docs/spec-basic-abort-depth.md`](docs/spec-basic-abort-depth.md). Two
+      things in the paragraph above are now known to be wrong.
+      **(a) The scope is nine sites, not four** — `ev_ff_arg`
+      (basic/expr.asm) calls the same leaf for `STICK`/`STRIG`/`PDL`/`PAD`, and
+      `get_vram_arg`/`fac_to_int_addr` reach the same abort for
+      `VPEEK`/`PEEK`/`INP`. Measured untrapped: `PRINT STICK(9)` prints the
+      error **and ` 0`**, `PRINT VPEEK(-1)` **and ` 32`**,
+      `PRINT "[";SPACE$(99999);"]"` prints **`overflow` twice**,
+      `PRINT "[";STRING$(-1,65);"]"` the error **plus `syntax error` twice**.
+      **(b) Per-caller frame discipline is the expensive fix.** The TRAP branch
+      of the same routine already solves the general case in four bytes
+      (`ld sp,(SAVSTK)`, interp.asm) and the abort branch simply does not do
+      it; §4 of the spec takes that instead, at +7…+14 B, repack-only.
+      ⚠️ **The standing D-F2-2 gate is structurally blind to all of it** —
+      `basic_probe_intarg.py`'s 36 asserted rows each arm `ON ERROR GOTO` and
+      read `ERR`, which selects the trap path, i.e. the one path that unwinds
+      correctly. It is green and would stay green with every defect above
+      present. ⚠️ So is a right-stripped screen scrape: `SPACE$(-1)`'s junk is
+      a run of *spaces*, and read as "clean" until the row was re-run
+      bracket-delimited. **This slice is ordered BEFORE D-MISS-2**, whose fix
+      is four more calls into this same convention.
 - [ ] **The prompt does not open a fresh line** — MEASURED 2026-07-27, found
       while gating `TRON`. **The reference emits a newline before its prompt
       whenever the cursor is not at column 0; zerobas prints its prompt where
@@ -1569,6 +1591,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reserved words), which is exactly why it survived it. Recommended as its
       own string-engine slice — see D-MC-2 in
       [`docs/decision-missing-class-slicing.md`](docs/decision-missing-class-slicing.md).
+      ✅ **RE-MEASURED 2026-07-28 on a clean-built `73b4842`: all seven rows
+      still reproduce**, boot-per-case, untrapped (`LEN(CHR$(-1))`→`1`,
+      `LEN(CHR$(32768))`→`1` where the reference raises `Overflow`,
+      `LEN(LEFT$("abc",-1))`→`3`, `LEN(MID$("abc",0))`→`3`).
+      ⚠️ **ORDERED SECOND, behind D-CUR-D** (the abort-depth item above,
+      signed off 2026-07-28): the natural implementation is four to five new
+      `call get_byte_arg`s from inside the evaluator, i.e. four to five new
+      members of a call convention that is measurably broken when untrapped.
+      Landing that first would give the right ERR code under `ON ERROR` and
+      trailing junk without it.
+      **Funding is measured, and it is not free**: `basic/str-engine.asm` is
+      LOW-REGION (11 B free from clean), so the call-site glue needs a
+      promotion — `tools/promote_scout.py` reports 1711 B promotable out of
+      that same file (`str_fn_left` 77 B, `str_fn_right` 78 B,
+      `str_fn_mid` 56 B), which converts the need into a page-1 cost of
+      ≈45–50 B against 44 B free. One small carve, per
+      [[promotion-funds-low-region]].
 
 - [ ] **Numeric → string assignment raises the wrong error** (D-MISS-1, same
       battery). `A$=1`, `A$=A`, `A$=1+1`, `A$=LEN("x")`, `LET A$=A`, `A$=A%` and
