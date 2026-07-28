@@ -443,39 +443,38 @@ fll_done:
 ; reads HL/A back from any of the three) so files.asm's `call fat_rand_open`
 ; and gp_common's `call fat_rand_put`/`call fat_rand_get` call sites are
 ; unchanged.
+;
+; SWAP-funding carve (2026-07-28): these three were three byte-identical 20 B
+; copies of one body differing only in the selector immediate — 60 B saying one
+; thing three times, and tools/clone_scout.py's top row. They now bounce off
+; `fatprim_bounce` (basic/fat.asm), the shared body the FAT tenant-shim collapse
+; (6f8ac0f) already built for exactly this shape, so the whole carve is three
+; two-instruction heads: 60 B -> 15 B.
+;
+; ⚠️ WHY THE SHARED BODY IS SAFE HERE, and it is NOT the same contract.
+; `fatprim_bounce` ends with two extra FLAG-TRANSPARENT reloads the old bodies
+; did not have — `ld hl,(DISKOP_HL)` and `ld a,(DISKOP_A)` — so it CLOBBERS HL
+; (which the old bodies preserved) and returns a DIFFERENT A (DISKOP_A, stale
+; for a randio op, where the old bodies left DISKOP_STATUS). Cy/Z are unchanged,
+; which is the whole contract these three callers use. Both call sites were
+; re-read before this carve, not assumed from the header line above:
+;   * gp_common (below) `push hl` … `pop hl` around the call and then tests
+;     `jp c,load_error` only;
+;   * files.asm oo_random_setup falls into `oo_done`, which `pop de`/`pop hl`
+;     and tests Cy, then RELOADS A from E — and that same `oo_done` tail is
+;     already shared with fat_io_create/fat_io_append, which route through
+;     `fatprim_bounce` themselves. So HL/A clobber is already the norm there.
+; If a future caller of these three ever needs HL or A back, it needs its own
+; tail (the `name_cmp`/`fat_count_free` pattern in fat.asm), not this bounce.
 fat_rand_open:
                 ld      a,DISKOP_SEL_RAND_OPEN
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
-                ret     c                   ; sub-ROM absent -> Cy=1
-                ld      a,(DISKOP_STATUS)
-                or      a                   ; 0 -> Cy=0 ok
-                ret     z
-                scf                         ; nonzero -> Cy=1 error
-                ret
+                jp      fatprim_bounce
 fat_rand_put:
                 ld      a,DISKOP_SEL_RAND_PUT
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
-                ret     c
-                ld      a,(DISKOP_STATUS)
-                or      a
-                ret     z
-                scf
-                ret
+                jp      fatprim_bounce
 fat_rand_get:
                 ld      a,DISKOP_SEL_RAND_GET
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
-                ret     c
-                ld      a,(DISKOP_STATUS)
-                or      a
-                ret     z
-                scf
-                ret
+                jp      fatprim_bounce
     ELSE
                 include "basic/randio-body.inc"     ; lean: inline, byte-identical
     ENDIF

@@ -379,7 +379,7 @@ probe: $(ROM) $(DISK_ROM) $(DISK_TEST_DSK)
 # ROMs); NOT part of the emulator-free `unit-test`. `make bdos-acceptance ONLY=BDOSX3`
 # scopes it to one exerciser.
 bdos-acceptance: $(DISK_ROM)
-	python3 probes/disk/disk_bdos_acceptance.py $(if $(ONLY),--only $(ONLY),)
+	python3 probes/disk/disk_bdos_acceptance.py $(if $(ONLY),--only '$(ONLY)',)
 
 # Standing Disk-BASIC acceptance gate: the BASIC-side counterpart of bdos-acceptance.
 # Replays the self-asserting disk_probe_* differentials over the Disk-BASIC verb
@@ -388,7 +388,7 @@ bdos-acceptance: $(DISK_ROM)
 # + your CF-3300 reference ROMs); NOT part of the emulator-free `unit-test`. Scope with
 # `make diskbasic-acceptance ONLY=FIELD`. See disk/docs/diskbasic-acceptance-spec.md.
 diskbasic-acceptance: $(DISK_ROM) $(DISK_TEST_DSK)
-	python3 probes/disk/diskbasic_acceptance.py $(if $(ONLY),--only $(ONLY),)
+	python3 probes/disk/diskbasic_acceptance.py $(if $(ONLY),--only '$(ONLY)',)
 
 # --- REPACK acceptance: the SAME Disk-BASIC corpus on the relocated BASIC build ----
 # (string-engine arc.) The lean gate above proves the 16 KB basic.rom; this proves the
@@ -412,7 +412,7 @@ repack-machine: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM)
 
 diskbasic-acceptance-repack: $(DISK_ROM) $(DISK_TEST_DSK) repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) \
-	  python3 probes/disk/diskbasic_acceptance.py $(if $(ONLY),--only $(ONLY),)
+	  python3 probes/disk/diskbasic_acceptance.py $(if $(ONLY),--only '$(ONLY)',)
 
 # --- FAT-primitive ERROR-disposition gate (the half diskbasic-acceptance misses) --
 # The 34 verbs above are oracle differentials over the SUCCESS path. They stay
@@ -502,7 +502,7 @@ graphics-acceptance: repack-machine
 # openMSX; needs your VG-8020 reference ROM); NOT part of `unit-test`.
 kwsweep: repack-machine
 	python3 probes/basic/basic_probe_kwsweep.py \
-	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
 
 # --- Logical-operator characterization + gate (AND/OR/XOR/EQV/IMP/NOT) ------------
 # `logicops-characterize` is the MEASUREMENT run behind
@@ -522,11 +522,11 @@ kwsweep: repack-machine
 # openMSX; needs your VG-8020 reference ROM); NOT part of `unit-test`.
 logicops-characterize: repack-machine
 	python3 probes/basic/basic_probe_logicops.py \
-	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
 
 logicops-acceptance: repack-machine
 	python3 probes/basic/basic_probe_logicops.py --gate \
-	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
 
 # --- Cursor / PRINT-positioning characterization (CSRLIN, POS, TAB(, SPC() -------
 # The measurement behind docs/cursor-vg8020-characterization.md. Values via the
@@ -540,11 +540,11 @@ logicops-acceptance: repack-machine
 # ROM); NOT part of `unit-test`.
 cursor-characterize: repack-machine
 	python3 probes/basic/basic_probe_cursor.py \
-	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
 
 cursor-acceptance: repack-machine
 	python3 probes/basic/basic_probe_cursor.py --gate \
-	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
 
 # --- BIN$ / FRE characterization (the last two SILENT-GAP words) ---------------
 # The measurement behind docs/binfre-vg8020-characterization.md. BIN$ is a pure
@@ -562,11 +562,11 @@ cursor-acceptance: repack-machine
 # ROM); NOT part of `unit-test`.
 binfre-characterize: repack-machine
 	python3 probes/basic/basic_probe_binfre.py \
-	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
 
 binfre-acceptance: repack-machine
 	python3 probes/basic/basic_probe_binfre.py --gate \
-	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),)
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
 
 # --- MISSING class: LOCATE / SWAP / TRON / TROFF / MOTOR ----------------------
 # The measurement behind docs/missing-vg8020-characterization.md. With the
@@ -598,12 +598,12 @@ binfre-acceptance: repack-machine
 # number the spec is built on was confirmed with BOOTPC=1.
 missing-characterize: repack-machine
 	python3 probes/basic/basic_probe_missing.py \
-	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),) \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
 	        $(if $(BOOTPC),--boot-per-case,)
 
 missing-acceptance: repack-machine
 	python3 probes/basic/basic_probe_missing.py --gate \
-	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only $(ONLY),) \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
 	        $(if $(BOOTPC),--boot-per-case,)
 
 # --- Standing string-engine acceptance gate (string-engine arc S5; compare S3) -----
@@ -634,7 +634,7 @@ string-acceptance: $(DISK_ROM) repack-machine
 # ROM); NOT part of the emulator-free `unit-test`. Scope with `make input-acceptance
 # ONLY=numeric`.
 input-acceptance: $(DISK_ROM) repack-machine
-	python3 probes/basic/basic_probe_input.py $(if $(ONLY),--only $(ONLY),)
+	python3 probes/basic/basic_probe_input.py $(if $(ONLY),--only '$(ONLY)',)
 
 # --- Input-devices acceptance gate (input devices, slice I1) ------------------
 # STICK/STRIG differential vs the VG-8020 (docs/spec-basic-input-devices.md §8):
@@ -646,7 +646,7 @@ input-acceptance: $(DISK_ROM) repack-machine
 # runs boot-per-case. Repack-only; HEAVY + oracle-dependent (needs your VG-8020
 # reference ROM); NOT part of the emulator-free `unit-test`.
 input-devices-acceptance: $(DISK_ROM) repack-machine
-	python3 probes/basic/basic_probe_input_devices.py $(if $(ONLY),--only $(ONLY),)
+	python3 probes/basic/basic_probe_input_devices.py $(if $(ONLY),--only '$(ONLY)',)
 
 # --- Error-handling acceptance gate (error-handling arc, S1) -------------------
 # Two differential families against the VG-8020 reference (docs/
@@ -659,7 +659,7 @@ input-devices-acceptance: $(DISK_ROM) repack-machine
 # openMSX per case; needs your VG-8020 reference ROM); NOT part of the
 # emulator-free `unit-test`. Scope one case with `make error-acceptance ONLY=divzero`.
 error-acceptance: $(DISK_ROM) repack-machine
-	python3 probes/basic/error_acceptance.py $(if $(ONLY),--only $(ONLY),)
+	python3 probes/basic/error_acceptance.py $(if $(ONLY),--only '$(ONLY)',)
 
 # --- Error-handling trap/RESUME acceptance gate (error-handling arc, S2b) -----
 # The RESUME-family DoD gate (docs/spec-basic-error-handling-s2b-packet.md §10):
@@ -672,7 +672,7 @@ error-acceptance: $(DISK_ROM) repack-machine
 # error-acceptance above. Scope one case with `make error-trap-acceptance
 # ONLY=resume_next`.
 error-trap-acceptance: $(DISK_ROM) repack-machine
-	python3 probes/basic/basic_probe_error_trap.py $(if $(ONLY),--only $(ONLY),)
+	python3 probes/basic/basic_probe_error_trap.py $(if $(ONLY),--only '$(ONLY)',)
 
 # --- STOP interrupt-trap gate (interrupt-traps T1 -- docs/spec-traps-t1-stop-
 # reslice.md §9.2/§12). VG-8020 differential of ON STOP GOSUB / STOP ON|OFF|STOP:
@@ -684,7 +684,7 @@ error-trap-acceptance: $(DISK_ROM) repack-machine
 # layer is tests/test_traps.py under `unit-test`. Scope with `make stop-trap-
 # acceptance ONLY=B2_stop_off`; `TRIALS=n` sets the robustness repeat count.
 stop-trap-acceptance: $(DISK_ROM) repack-machine
-	python3 probes/basic/basic_probe_stop_trap.py $(if $(ONLY),--only $(ONLY),) \
+	python3 probes/basic/basic_probe_stop_trap.py $(if $(ONLY),--only '$(ONLY)',) \
 	  $(if $(TRIALS),--trials $(TRIALS),)
 
 # --- STRIG interrupt-trap gate, slice T2 (docs/spec-traps-t2-strig.md) --------
@@ -694,7 +694,7 @@ stop-trap-acceptance: $(DISK_ROM) repack-machine
 # repack machine's <ignorePortDirections>false</> (D-T2-6) -- so this target depends
 # on repack-machine like the rest. Scope with `make strig-trap-acceptance ONLY=B_`.
 strig-trap-acceptance: $(DISK_ROM) repack-machine
-	python3 probes/basic/basic_probe_strig_trap.py $(if $(ONLY),--only $(ONLY),)
+	python3 probes/basic/basic_probe_strig_trap.py $(if $(ONLY),--only '$(ONLY)',)
 
 # --- KEY interrupt-trap gate, slice T3 (docs/spec-traps-t3-key.md §8) ---------
 # VG-8020 differential for `ON KEY GOSUB` / `KEY(n) ON|OFF|STOP`. Function keys are
@@ -706,7 +706,7 @@ strig-trap-acceptance: $(DISK_ROM) repack-machine
 # which is what the iteration-count observation windows are sized from -- the spec
 # requires calibrating them rather than assuming (§1.0).
 key-trap-acceptance: $(DISK_ROM) repack-machine
-	python3 probes/basic/basic_probe_key_trap.py $(if $(ONLY),--only $(ONLY),) \
+	python3 probes/basic/basic_probe_key_trap.py $(if $(ONLY),--only '$(ONLY)',) \
 	  $(if $(CALIBRATE),--calibrate,)
 
 # --- SPRITE interrupt-trap gate, slice T4 (docs/spec-traps-t4-sprite.md §8) ---
@@ -727,7 +727,7 @@ key-trap-acceptance: $(DISK_ROM) repack-machine
 # readings without asserting (characterization mode). FRAMES=n sets the ISR ticks
 # per cadence window (default 300; measured identical at 120/300/600).
 sprite-trap-acceptance: $(DISK_ROM) repack-machine
-	python3 probes/basic/basic_probe_sprite_trap.py $(if $(ONLY),--only $(ONLY),) \
+	python3 probes/basic/basic_probe_sprite_trap.py $(if $(ONLY),--only '$(ONLY)',) \
 	  $(if $(REPORT),--report,) $(if $(FRAMES),--frames $(FRAMES),)
 
 # --- INTERVAL trap acceptance gate (traps T5, docs/spec-traps-t5-interval.md) --
@@ -740,7 +740,7 @@ sprite-trap-acceptance: $(DISK_ROM) repack-machine
 # `REPORT=1` prints readings without asserting; scope with ONLY=<substring>.
 interval-trap-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_interval_trap.py \
-	  $(if $(ONLY),--only $(ONLY),) $(if $(REPORT),--report,)
+	  $(if $(ONLY),--only '$(ONLY)',) $(if $(REPORT),--report,)
 
 # --- TIME / TIME=n acceptance gate (docs/spec-basic-time.md) -------------------
 # VG-8020 differential, BOTH sides asserted against the SAME pinned reference
@@ -769,7 +769,7 @@ time-acceptance: $(DISK_ROM) repack-machine
 # reported as a straight differential until their stage (A2 PEEK/INP, B STRING$/
 # SPACE$/ON/WIDTH/VPOKE-VRAM) lands. Repack-only; oracle-dependent.
 intarg-acceptance: $(DISK_ROM) repack-machine
-	python3 probes/basic/basic_probe_intarg.py $(if $(ONLY),--only $(ONLY),)
+	python3 probes/basic/basic_probe_intarg.py $(if $(ONLY),--only '$(ONLY)',)
 
 # --- DIRECT-MODE control-flow gate (docs/spec-basic-direct-ctrl.md §8) --------
 # VG-8020 differential for FOR/NEXT, GOSUB/RETURN, GOTO, IF-THEN-<line> and
@@ -796,7 +796,7 @@ direct-ctrl-acceptance: $(DISK_ROM) repack-machine
 # reference ROM). The emulator-free fast layer is tests/test_sound.py under
 # `unit-test`. Scope one case with `make sound-acceptance ONLY=r7_ff`.
 sound-acceptance: $(DISK_ROM) repack-machine
-	python3 probes/basic/basic_probe_sound.py $(if $(ONLY),--only $(ONLY),)
+	python3 probes/basic/basic_probe_sound.py $(if $(ONLY),--only '$(ONLY)',)
 
 # --- Standing PLAY acceptance gate (audio arc, Slice 2a) ----------------------
 # docs/spec-basic-audio-play-slice2a.md §8. Two halves: ERROR SURFACE (differential
@@ -809,7 +809,7 @@ sound-acceptance: $(DISK_ROM) repack-machine
 # tests/test_play_parse.py under `unit-test`. Scope one case with `make play-acceptance
 # ONLY=badcmd`; pass `--no-ref` (edit the recipe) for the zerobas-only self-check.
 play-acceptance: $(DISK_ROM) repack-machine
-	python3 probes/basic/basic_probe_play.py $(if $(ONLY),--only $(ONLY),)
+	python3 probes/basic/basic_probe_play.py $(if $(ONLY),--only '$(ONLY)',)
 
 # --- Standing PLAY live-servicer trace gate (audio arc, Slice 3) ---------------
 # docs/audio-slice3-characterization.md. Per-VBLANK PSG register trace differential
@@ -822,7 +822,7 @@ play-acceptance: $(DISK_ROM) repack-machine
 # The emulator-free fast layer is tests/test_play_frame_sim.py under `unit-test`.
 # Scope one case with `make play-trace-acceptance ONLY=env`.
 play-trace-acceptance: $(DISK_ROM) repack-machine
-	python3 probes/basic/basic_probe_playtrace.py $(if $(ONLY),--only $(ONLY),)
+	python3 probes/basic/basic_probe_playtrace.py $(if $(ONLY),--only '$(ONLY)',)
 
 # --- Standing BEEP acceptance gate (audio arc, close-out) ---------------------
 # docs/spec-basic-audio-beep.md §5. Per-VBLANK PSG-register trace differential vs the
@@ -834,7 +834,7 @@ play-trace-acceptance: $(DISK_ROM) repack-machine
 # VG-8020 reference ROM). The emulator-free fast layer is tests/test_beep.py under
 # `unit-test`. Scope one case with `make beep-acceptance ONLY=r7dyn`.
 beep-acceptance: $(DISK_ROM) repack-machine
-	python3 probes/basic/basic_probe_beep.py $(if $(ONLY),--only $(ONLY),)
+	python3 probes/basic/basic_probe_beep.py $(if $(ONLY),--only '$(ONLY)',)
 
 # --- Standing float-pack acceptance gate (float arc, F1 S3 + F2 S2) -----------
 # Three differential halves against the VG-8020 reference (docs/
@@ -850,11 +850,11 @@ beep-acceptance: $(DISK_ROM) repack-machine
 # NOT part of the emulator-free `unit-test` (tests/test_float.py is the fast
 # layer under it). Scope one case with `make float-acceptance ONLY=9999995`.
 float-acceptance: $(DISK_ROM) repack-machine
-	python3 probes/basic/basic_probe_floatlit.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
-	python3 probes/basic/basic_probe_float_fmt.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
-	python3 probes/basic/basic_probe_float_arith.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
-	python3 probes/basic/basic_probe_float_vars.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
-	python3 probes/basic/basic_probe_var_reset.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
+	python3 probes/basic/basic_probe_floatlit.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only '$(ONLY)',)
+	python3 probes/basic/basic_probe_float_fmt.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only '$(ONLY)',)
+	python3 probes/basic/basic_probe_float_arith.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only '$(ONLY)',)
+	python3 probes/basic/basic_probe_float_vars.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only '$(ONLY)',)
+	python3 probes/basic/basic_probe_var_reset.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only '$(ONLY)',)
 
 # --- Standing math-pack acceptance gate (math pack slice 1a + SQR/1b) ----------
 # ABS/SGN/INT/FIX/CINT/CSNG/CDBL/SQR (docs/spec-basic-math-pack.md §9.4/§10.4):
@@ -870,7 +870,7 @@ float-acceptance: $(DISK_ROM) repack-machine
 # your VG-8020 reference ROM); NOT part of the emulator-free `unit-test`. Scope
 # with `make math-acceptance ONLY=cint`.
 math-acceptance: $(DISK_ROM) repack-machine subrom-abi-check
-	python3 probes/basic/basic_probe_math_conv.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only $(ONLY),)
+	python3 probes/basic/basic_probe_math_conv.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK $(if $(ONLY),--only '$(ONLY)',)
 
 # --- Standing arrays acceptance gate (arrays arc, slice 1 -- numeric arrays) ---
 # DIM + subscript rvalue/lvalue for numeric arrays (docs/spec-basic-arrays.md
@@ -895,7 +895,7 @@ array-acceptance: $(DISK_ROM) $(SUB_ROM) repack-machine
 # machine). Scope with `make bdos-cbios-selfcheck ONLY=BDOSX3`. Spec:
 # disk/docs/tier2-cbios-bdos-selfcheck-spec.md.
 bdos-cbios-selfcheck: $(DISK_ROM)
-	python3 probes/disk/disk_bdos_cbios_selfcheck.py $(if $(ONLY),--only $(ONLY),)
+	python3 probes/disk/disk_bdos_cbios_selfcheck.py $(if $(ONLY),--only '$(ONLY)',)
 
 # The mechanical half of the clean-room paper-trail audit: forbidden-source scan
 # + per-file attestation (gating) and disk section-citation presence (advisory).

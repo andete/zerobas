@@ -202,14 +202,22 @@ def main() -> int:
         print(f"WARNING: seed image {TEST_DSK} missing (run `make test-dsk`) — "
               f"artifact probes may fail", file=sys.stderr)
 
-    wanted = {w.upper() for w in args.only} if args.only else None
+    # --only is repeatable AND comma-splittable. It used to be append-only, so
+    # `--only 'GET(RDBLK),PUT(WRBLK)'` matched no label at all and the run went
+    # green on an EMPTY selection (see the vacuity guard below, which is what
+    # caught it). Splitting here also lets the Makefile's ONLY= pass a list.
+    wanted = ({w.strip().upper() for spec in args.only for w in spec.split(",")
+               if w.strip()} if args.only else None)
     passed = failed = 0
     failures = []
+    selected = []
 
     for label, script, extra, style in REGISTRY:
         stem = script[:-3]
         if wanted and label.upper() not in wanted and stem.upper() not in wanted:
             continue
+        selected.append(label.upper())
+        selected.append(stem.upper())
         rc, out = run_probe(script, extra, env, args.timeout)
         ok, why = gate(style, rc, out)
         print(f"  {'PASS' if ok else 'FAIL'}  [{style:8}] {label:16} {why}")
@@ -222,6 +230,26 @@ def main() -> int:
                   "\n".join("    " + l for l in out.splitlines()[-12:]))
 
     total = passed + failed
+
+    # --- VACUITY GUARD: a gate's DENOMINATOR must be measured, never assumed ---
+    # This runner used to print "ALL CONVERGED" on a 0/0 tally, so a mistyped or
+    # comma-joined --only produced a GREEN gate that ran nothing. That is the
+    # zero-denominator trap the trap-arc slices kept hitting; found for real on
+    # 2026-07-28 while regression-testing the fat_rand_* carve.
+    if total == 0:
+        print("\nVACUOUS RUN — no probe was selected, so this run proves NOTHING.")
+        if wanted:
+            unmatched = sorted(w for w in wanted if w not in set(selected))
+            print(f"  --only matched no registry entry: {', '.join(unmatched)}")
+            print("  run with --list to see the valid labels and probe stems.")
+        return 2
+    if wanted:
+        unmatched = sorted(w for w in wanted if w not in set(selected))
+        if unmatched:
+            print(f"\nUNMATCHED --only selector(s): {', '.join(unmatched)} — "
+                  f"refusing to report a partial selection as a result.")
+            return 2
+
     # disk-mutation guard: the committed seed must be untouched (test-disk-mutation-gotcha).
     dirty = subprocess.run(["git", "status", "--porcelain", "disk/test720.dsk"],
                            cwd=ROOT, capture_output=True, text=True).stdout.strip()
