@@ -1330,8 +1330,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reference fires them there is UNMEASURED — so the conservative answer is
       gated in at one RAM load rather than changed as a side effect. Spec §6 names
       the characterization that closes it.
-- [ ] **`get_byte_arg`'s reject RETURNS INTO ITS CALLER — `WIDTH 300` corrupts
-      the screen.** MEASURED 2026-07-27, found as the control while debugging
+- [x] **`get_byte_arg`'s reject RETURNS INTO ITS CALLER — `WIDTH 300` corrupts
+      the screen.** ✅ **FIXED 2026-07-28** (see the LANDED block at the end of
+      this item). MEASURED 2026-07-27, found as the control while debugging
       LOCATE's error rows. `get_byte_arg` rejects with `jp raise_error`, and the
       abort chain PRINTS AND RETURNS — consuming the caller's own `call
       get_byte_arg` frame and landing back inside the caller just past the call,
@@ -1370,6 +1371,44 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       a run of *spaces*, and read as "clean" until the row was re-run
       bracket-delimited. **This slice is ordered BEFORE D-MISS-2**, whose fix
       is four more calls into this same convention.
+      ✅ **LANDED 2026-07-28 — `make abort-acceptance` 23/23, falsified 6/23.**
+      **Four bytes**, one instruction: `ld sp,(SAVSTK)` at the top of
+      `fre_abort_low` ([`basic/arrays.asm`](basic/arrays.asm)). The estimate of
+      +7…+14 B assumed the message tail had to be restructured so the reset
+      could follow the print; it does not — the printing routines push and pop
+      *below* the new `SP` and never touch the word *at* it, so the existing
+      tail-jumps `ret` straight to the anchored address, which in **both** modes
+      IS the run loop's own normal exit (`run_prog` and `dl_cmd` each store
+      `SAVSTK` immediately before entering the loop). ⚠️ **The budget named the
+      wrong wall**: `arrays.asm` is LOW REGION, so the 4 B came out of the low
+      region's 11 B (→ **7 B free**), not page 1 (unchanged at 44 B) —
+      **D-MISS-2 must budget from 7 B.** Repack-only; lean `basic.rom`
+      byte-identical, `LEAN_SHA256` unmoved.
+      Both open sign-off questions were answered by MEASUREMENT, not argument:
+      **S-AD-2** — the `boot_first` row (an error as the very first statement
+      after a cold boot) passes, so `SAVSTK` needs no boot init and the 5 B held
+      in reserve were not spent. **S-AD-3** — the page-0 sub-ROM tenant rows
+      pass, but the falsification shows they pass **with and without** the fix:
+      `ary_engine` raises `Subscript out of range` at handler depth and was
+      never part of this defect, so those rows are CONTROLS (the reset does not
+      BREAK the tenant path), not evidence it repaired one.
+      **The falsification is the load-bearing number**: comment the instruction
+      out, rebuild from clean (low region goes back to 11 B, so it really is out
+      of the image) and the gate reads **6/23** — and the six survivors are
+      exactly the handler-depth rows, where the abort was already correct.
+      Regressions: `make intarg-acceptance` ALL PASS, `make unit-test` 53/53,
+      `make missing-acceptance` **214/214**.
+      ⚠️ **`missing-acceptance` went RED first, for the right reason** — its own
+      stale-marker check fired: three rows recorded as expected-divergent
+      (`d2-string-neg`, `d2-string-256`, `d2-space-neg`) now AGREE with the
+      reference, so the expected-divergent count drops **20 → 17**. Note what
+      that does and does not mean: `STRING$`/`SPACE$` always HAD their domain
+      check (`get_byte_arg`); what diverged was the abort SHAPE. **No part of
+      D-MISS-2 is implemented by this slice** — the four `d2-chr-*` and the
+      `LEFT$`/`RIGHT$`/`MID$` rows stay marked.
+      Also newly visible in the falsified run, worse than anything in the
+      original table: `PRINT "[";STRIG(9);"]"` printed **`-21821`** — the
+      statement carried on with uninitialised memory as its value.
 - [ ] **The prompt does not open a fresh line** — MEASURED 2026-07-27, found
       while gating `TRON`. **The reference emits a newline before its prompt
       whenever the cursor is not at column 0; zerobas prints its prompt where

@@ -805,13 +805,20 @@ XDIVERGENT = {
     "d2-chr-neg":   "D-MISS-2 deferred: CHR$ has no argument-domain check",
     "d2-chr-huge":  "D-MISS-2 deferred: CHR$ has no argument-domain check",
     "d2-chr-32768": "D-MISS-2 deferred: CHR$ has no argument-domain check",
-    "d2-string-neg":  "D-MISS-2 deferred: STRING$ domain/abort shape",
-    "d2-string-256":  "D-MISS-2 deferred: STRING$ domain/abort shape",
     "d2-left-neg":  "D-MISS-2 deferred: LEFT$ has no argument-domain check",
     "d2-right-neg": "D-MISS-2 deferred: RIGHT$ has no argument-domain check",
     "d2-mid-neg":   "D-MISS-2 deferred: MID$ has no argument-domain check",
     "d2-mid-zero":  "D-MISS-2 deferred: MID$ has no argument-domain check",
-    "d2-space-neg": "D-MISS-2 deferred: SPACE$ domain/abort shape",
+    # d2-string-neg / d2-string-256 / d2-space-neg were marked here too, and
+    # the D-CUR-D abort-depth fix (2026-07-28, docs/spec-basic-abort-depth.md)
+    # RETIRED all three -- this file's own stale-marker check is what caught it,
+    # turning the gate red for the right reason. STRING$ and SPACE$ always HAD
+    # their domain check (get_byte_arg); what diverged was the abort SHAPE --
+    # the reject returned into its caller, so the statement printed the correct
+    # error and then carried on (`Illegal function call` + `syntax error` x2,
+    # `overflow` twice). Those three rows now agree with the reference and are
+    # GATED. The four `d2-chr-*` and four LEFT$/RIGHT$/MID$ rows above stay
+    # marked: those words have no domain check at all, which is D-MISS-2 proper.
 
     # -- console chrome: the two machines have different ROW COUNTS ----------
     # The reference reserves a function-key row at KEY ON (bottom usable row

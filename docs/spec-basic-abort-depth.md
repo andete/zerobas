@@ -5,10 +5,25 @@ SPDX-License-Identifier: 0BSD
 
 # The untrapped abort returns into its caller (D-CUR-D) — implementation spec
 
-**Status:** 📋 **WRITTEN 2026-07-28, awaiting sign-off (S-AD-1 … S-AD-5, §8).**
-Ordering signed off 2026-07-28: this slice runs **before** D-MISS-2 (the 🔴
+**Status:** ✅ **LANDED 2026-07-28 — `make abort-acceptance` 23/23, falsified
+6/23.** Ordering
+signed off first: this slice runs **before** D-MISS-2 (the 🔴
 string-argument-domain checks), because D-MISS-2's fix is four to five new
-calls into the very convention this document repairs.
+calls into the very convention this document repairs. S-AD-1 … S-AD-5 taken at
+their recommended answers.
+
+**As built:**
+
+| step | low-region free | page-1 free | gate |
+|---|---|---|---|
+| baseline (`73b4842`, from clean) | 11 B | 44 B | — |
+| `ld sp,(SAVSTK)` at the abort funnel | **7 B** (−4) | 44 B (unchanged) | **`make abort-acceptance` 23/23** |
+
+`make unit-test` 53/53; lean `basic.rom` byte-identical (`LEAN_SHA256`
+unmoved — the whole change is inside `IF ROM_BASE < $4000`).
+**Falsified 23/23 → 6/23** (§6). All nine measured sites in §2 now match the
+reference; both open sign-off questions were answered by measurement rather
+than argument (S-AD-2 needs no boot init, S-AD-3 needs no tenant handling).
 
 Implementation follows this document; where it deviates, this document is wrong
 and gets corrected.
@@ -175,15 +190,29 @@ falsified — not in the same step.
 
 ## 5. Byte budget
 
-| item | estimate |
-|---|---|
-| `ld sp,(SAVSTK)` + `ret` at the funnel | +5 B |
-| restructuring the two message tails from `jp` to `call` + shared exit | +2…+4 B |
-| boot-time `SAVSTK` init, **if** S-AD-2 shows a gap | +5 B |
-| **total** | **+7…+14 B against 44 B free** |
-| §4.3 carve, if taken later | −4…−8 B |
+| item | estimate | **as built** |
+|---|---|---|
+| `ld sp,(SAVSTK)` + `ret` at the funnel | +5 B | **+4 B** |
+| restructuring the two message tails from `jp` to `call` + shared exit | +2…+4 B | **0 B — not needed** |
+| boot-time `SAVSTK` init, **if** S-AD-2 shows a gap | +5 B | **0 B — no gap** |
+| **total** | +7…+14 B | **+4 B** |
+| §4.3 carve, if taken later | −4…−8 B | deferred |
 
-No carve or promotion is needed for this slice. (D-MISS-2, which follows, does
+⚠️ **The budget named the wrong wall.** It costed this against page 1's 44 B,
+but `fre_abort_low` lives in `basic/arrays.asm`, which is **low region** — so
+the 4 B came out of the low region's 11 B, leaving **7 B**. Page-1 free is
+unchanged at 44 B. The estimate was right about the size and wrong about which
+ceiling it pressed on; the low region is the tighter of the two and the next
+low-region slice (D-MISS-2) must budget from 7 B, not 11 B.
+
+The restructuring line came to nothing because the reset does **not** have to
+go after the message: the printing routines push and pop *below* the new `SP`
+and never touch the word *at* it, so `ld sp,(SAVSTK)` goes at the **top** of
+the funnel and the existing tail-jumps (`jp print_string` / `jp
+print_in_lineno`) `ret` straight to the anchored address. Four bytes, one
+instruction, no control-flow change.
+
+No carve or promotion was needed for this slice. (D-MISS-2, which follows, does
 need one: `str-engine.asm` is low-region with 11 B free, and `promote_scout`
 shows 1711 B promotable out of that same file — `str_fn_left` 77 B,
 `str_fn_right` 78 B — so its call-site glue is a page-1 cost of ≈45–50 B.)
@@ -211,10 +240,30 @@ cannot cover this (§3a).
   a finding.
 - **Falsification, recorded in the commit:** reverting the `ld sp,(SAVSTK)` must
   take the gate red. A gate that stays green with the fix removed is measuring
-  nothing.
+  nothing. ✅ **RUN 2026-07-28: 23/23 → 6/23**, rebuilt from clean (the low
+  region went back to 11 B free, so the instruction really was out of the
+  image). And the **six survivors are the right six** — `ctl_value`,
+  `ctl_abort`, `boot_first`, `tenant_ary`, `tenant_after` and `run_suffix` all
+  raise at the statement handler's own depth, which is exactly where the abort
+  was already correct. A falsification that had killed those too would have
+  meant the gate was measuring the abort chain in general rather than its
+  *depth*.
+  ⚠️ **So `tenant_ary`/`tenant_after` (S-AD-3) are CONTROLS, not
+  discriminators.** They pass with and without the fix: the page-0 sub-ROM
+  tenant path raises `Subscript out of range` at handler depth and was never
+  part of this defect. What those rows prove is that the SP reset does not
+  BREAK the tenant path — not that it repaired it. Recorded because the green
+  run alone reads like the latter.
 - **Regression:** `make intarg-acceptance` (36/36) and `make
   missing-acceptance` (214/214) must both still pass — the trapped ERR codes
-  are not allowed to change.
+  are not allowed to change. ✅ Both green (`unit-test` 53/53 too).
+  ⚠️ **`missing-acceptance` went RED first, and it was right to.** Its own
+  stale-marker check fired: `d2-string-neg`, `d2-string-256` and `d2-space-neg`
+  were recorded as expected-divergent and now AGREE, so its expected-divergent
+  count drops **20 → 17**. Those three are D-CUR-3 rows —
+  `STRING$`/`SPACE$` always HAD their `get_byte_arg` domain check; only the
+  abort SHAPE diverged. **This slice implements no part of D-MISS-2**; the four
+  `d2-chr-*` and the `LEFT$`/`RIGHT$`/`MID$` rows stay marked.
 
 ## 7. Out of scope
 

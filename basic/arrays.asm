@@ -88,6 +88,30 @@ err_syntax:                                 ; interp.asm's own stmt_error + fre_
 ; 1-based cursor column (C-BIOS sysvar, same source print_comma_zone uses).
 ; HL = message string; pchar preserves all registers.
 fre_abort_low:
+                ; D-CUR-D (docs/spec-basic-abort-depth.md §4): the abort is
+                ; DEPTH-INDEPENDENT, exactly like the trap branch four
+                ; instructions away in raise_error_hl. Without this the chain
+                ; printed and `ret`ed, which only unwinds correctly when the
+                ; error was raised at the STATEMENT HANDLER's own depth; one
+                ; `call` deeper (get_byte_arg, get_vram_arg, fac_to_int_addr,
+                ; the ev_ff_arg leaves) the `ret` consumed THAT frame and
+                ; landed back inside the helper's caller with A = the error
+                ; code -- `ex_width` then did `ld (LINLEN),a` with A=5 and
+                ; re-inited the screen, so `WIDTH 300` printed NO error and
+                ; left the display unusable.
+                ;
+                ; The `ret` at the end of the print tail below is exactly right
+                ; rather than merely safe, in BOTH modes: run_prog and dl_cmd
+                ; each do `ld (SAVSTK),sp` immediately before entering the run
+                ; loop, and the loop's own normal exit is a `ret` at that same
+                ; depth (rp_lp's `ret z` on the $0000 link). So this reset plus
+                ; the tail's `ret` IS the ordinary end-of-RUN / end-of-line
+                ; exit, reached early.
+                ;
+                ; Reset FIRST, before the message is printed: the printing
+                ; routines push and pop BELOW the new SP, and never touch the
+                ; word AT it -- which is the return address the tail consumes.
+                ld      sp,(SAVSTK)
                 ld      a,1
                 ld      (ENDFLAG),a         ; D-1 (docs/spec-basic-error-handling.md
                                             ; S1): an untrapped runtime error ABORTS the

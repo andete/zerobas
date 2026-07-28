@@ -771,6 +771,30 @@ time-acceptance: $(DISK_ROM) repack-machine
 intarg-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_intarg.py $(if $(ONLY),--only '$(ONLY)',)
 
+# --- D-CUR-D UNTRAPPED-abort gate (docs/spec-basic-abort-depth.md §6) ---------
+# The half `intarg-acceptance` above structurally cannot measure. raise_error has
+# two branches: the TRAP branch resets SP and jumps to the handler, the ABORT
+# branch prints and returns. All 36 asserted intarg rows arm `ON ERROR GOTO` and
+# read ERR -- which selects the TRAP branch, i.e. the one that was always
+# correct. They were ALL PASS on the build where `WIDTH 99999` typed at the
+# prompt printed NO error at all and left the screen unusable.
+#
+# So: not one row here may arm a handler, every value row is bracket-delimited
+# (the junk an aborted statement leaves can be WHITESPACE -- SPACE$(-1) built a
+# five-space string and a right-stripped scrape read it as clean), and the whole
+# matrix runs boot-per-case (the WIDTH rows leave the machine unusable). The
+# probe's own docstring carries these rules; they are not style.
+#
+# FALSIFIED 2026-07-28, not asserted: commenting out `ld sp,(SAVSTK)` in
+# fre_abort_low (basic/arrays.asm), rebuilding from clean and re-running takes it
+# from 23/23 to 6/23. The 6 survivors are the right ones -- ctl_value, ctl_abort,
+# boot_first, tenant_ary, tenant_after and run_suffix all raise at the STATEMENT
+# HANDLER's own depth, where the abort was always correct. Repack-only;
+# oracle-dependent.
+abort-acceptance: $(DISK_ROM) repack-machine
+	python3 probes/basic/basic_probe_abort_depth.py --gate \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
+
 # --- DIRECT-MODE control-flow gate (docs/spec-basic-direct-ctrl.md §8) --------
 # VG-8020 differential for FOR/NEXT, GOSUB/RETURN, GOTO, IF-THEN-<line> and
 # ON-GOTO typed AT THE PROMPT -- an execution mode that had zero coverage until
@@ -916,7 +940,7 @@ clean:
         bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
         interval-trap-acceptance \
-        input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
+        input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance abort-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
         graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep fat-error-acceptance \
         logicops-characterize cursor-characterize cursor-acceptance \
