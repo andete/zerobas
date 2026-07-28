@@ -39,37 +39,68 @@ Almost every *statement* verb is blocked by the same two things: `jp exec_stmt`
 (the statement-continuation tail) and `eval`/`str_eval`. Sweeping all 209
 `do_*` / `ex_*` / `ev_*` entries: **172 sit at 298–299 escapes**, 37 under 25.
 
-## 4. The viable set
+## 4. ⚠️ The scout's verdict was unsound — and the first bundle was built on it
 
-⚠️ `--entries` vets **one entry's** closure and does not know which routines are
-moving with it. Where an escape's path runs through a routine *in the same
-cluster*, it is re-expressible: a tenant does not need `subrom_call` because it
-**is** the sub-ROM. Those are marked below.
+`carve_scout.py --entries` computed the BIOS closure, **printed it, and left it
+out of the verdict**, which came from low-region escapes alone. A page-0 tenant
+has the BIOS switched out just as surely as the low region — the tool's own
+docstring says so. Fixed in `d685857`; direct BIOS escapes are now tagged
+`CALSLT` (re-expressible the way `sub/format.asm`'s sub-local CALSLT write path
+already does it — a **price**, not a free pass) and indirect ones are fatal.
 
-| cluster | movable | verdict |
+It was not academic. With BIOS counted:
+
+| candidate | before | after |
 |---|---|---|
-| [`basic/format.asm`](../basic/format.asm) (`CALL FORMAT`) | **132 B**, 0 shared | `do_format`'s single escape is `subrom_call` via `fmt_menu`→`fmt_sel_720`, **both in the file** → re-expressible. **Clean.** |
-| [`basic/bload.asm`](../basic/bload.asm) `do_bload` | **~99 B** (76 private + 23) | **0 escapes.** Its two direct callees are `subrom_call`/`subrom_absent_error`, plumbing. **Clean.** ⚠️ `parse_close_run` (46 B, 6 callers) and `load_error` (52 callers) must stay resident. |
-| `tok_skip` | 51 B, 2 callers | clean; tokeniser, line-entry not inner-loop |
-| `fld_lookup` | 40 B, 1 caller | clean; `field.asm`, called from `str_eval_one` |
-| `init_filechan` | 27 B, 1 caller | clean; boot-time, closure of 4 — **lowest risk in the set** |
+| `do_bload` | CLEAN | **NOT evictable** — 7 BIOS callees |
+| `try_init_slot` | CLEAN | **NOT evictable** — 2 |
+| `format.asm` / `do_format` | NOT | NOT, now for the right reason (7) |
 
-**≈ 350 B gross**, less ~3–6 B per re-pointed call site. That funds D-CLP's
-22 B and leaves `DEF FN` a real budget.
+**`do_bload` and `format.asm` were the two largest items in the ≈350 B bundle
+this document first proposed; both leave it.** They would have built — because
+`check_tenant_closure.py`, the invariant the *build* enforces, is the strict one
+and always checked both regions. **The scout that decided what to attempt was
+looser than the check that decides what may ship**, which is the wrong way round.
 
-### Excluded on purpose
+The clean set drops from 130 labels / 2973 B to **99 labels / 2303 B**.
 
-- **`trap_return_check`** (66 B, 1 caller) — the largest single clean win, and
-  the wrong one. It is on the `RETURN`-from-trap path and the **T4/T5 gates
-  measure handler cost in jiffies**, so sub-ROM call overhead lands exactly
-  where those gates look ([[traps-t4-sprite-slice]]). Same reason for
-  `event_poll` and `ep_live`. **A candidate's risk is which gate it sits under,
-  not its size.**
-- **`sub_int_install` / `try_sub_slot`** (`subrom-boot.asm`) — these are what
-  make sub-ROM calls work at all. Chicken-and-egg.
-- **`psv_*`** (`playsvc.asm`) — serviced from the ISR; page-1 tenants run under
-  `DI` precisely so the ISR cannot fire mid-tenant.
-- **`parse_disk_fcb`** (28 B) — 10 callers; the stubs cost more than the move.
+## 4a. The viable set, corrected
+
+Filtering the 99 for real entry points (not internal loop labels), few callers,
+and gate exposure:
+
+| candidate | size | callers | note |
+|---|---|---|---|
+| `tok_skip` | 51 B | 2 | tokeniser, line-entry not inner-loop |
+| `fld_lookup` | 40 B | 1 | `field.asm`, from `str_eval_one` |
+| `ev_ff_eof` | 33 B | 1 | `EOF(#n)` |
+| `fadd_free` | 31 B | 1 | `field.asm` |
+| `vst_suffix` | 29 B | 1 | `vars.asm` |
+| `init_filechan` | 27 B | 1 | ⚠️ **boot-ordering blocked — see below** |
+| `basic/fat.asm` `fat_io_*` cluster | ~92 B | many | only worth it as one cluster |
+
+≈**180 B** of low-risk singles, ≈**270 B** with the FAT cluster — before stub
+costs of 3–6 B per re-pointed call site.
+
+### ⚠️ `init_filechan` is boot-ordering blocked
+
+It was recommended as "the lowest-risk item in the set". It is not usable at
+all: [`basic/interp.asm`](../basic/interp.asm) `init` calls it at line 65, but
+`init_ext_roms` — which discovers the sub-ROM slot and installs the trampoline —
+runs at line 67. **`init_filechan` runs before the sub-ROM is callable.**
+Promoting it needs a boot reorder, which is far more than 27 B is worth. Same
+class of hazard already flagged for `sub_int_install`/`try_sub_slot`; it was
+simply not applied to `init_filechan`.
+
+### Still excluded on purpose
+
+- **`trap_return_check`** (66 B, 1 caller) — the largest clean win and the wrong
+  one: on the `RETURN`-from-trap path, and the T4/T5 gates measure handler cost
+  in *jiffies* ([[traps-t4-sprite-slice]]). Same for `event_poll` / `ep_live`.
+- **`psv_*`** (`playsvc.asm`, 48+35+28 B) — serviced from the ISR.
+- **`sub_int_install` / `try_sub_slot`** — they are what make sub-ROM calls work.
+- **`gosub_push`** (40 B, 3 callers) — hot control flow.
+- **`parse_disk_fcb`** (28 B, 10 callers) — the stubs cost more than the move.
 
 ## 5. The near-misses, for later
 
@@ -85,16 +116,19 @@ Worth a targeted restructure rather than a move, and each is its own slice:
   resident parse stub plus a tenant body. That is the structural carve, and it
   is where the real headroom is.
 
-## 6. Recommendation
+## 6. Recommendation, corrected
 
-1. **`init_filechan` alone (27 B, 1 caller, boot-time) funds D-CLP** and is the
-   safest change in this document. If the goal is just to unblock the partition,
-   stop there.
-2. For `DEF FN` headroom, add **`format.asm` (132 B)** and **`do_bload`
-   (~99 B)** — both self-contained, both with existing disk gates
-   (`diskbasic-acceptance`, `fat-error-acceptance`, `bdos-acceptance`) that must
-   be re-run because they are disk-path changes.
-3. Leave the near-misses of §5 to their own slice.
+1. **To unblock D-CLP (22 B): `tok_skip` (51 B, 2 callers) or `fld_lookup`
+   (40 B, 1 caller).** Either alone funds the partition with margin, and neither
+   is near a timing gate, the ISR, or the boot ordering.
+2. **`DEF FN`'s 200–400 B is reachable by leaf bundling only just, and at poor
+   value** — five to eight separate promotions for ≈180–270 B gross, each a new
+   tenant index, ABI entry, stub and closure re-check, each adding gate surface.
+3. **The efficient path to `DEF FN` headroom is the structural carve of §5,
+   not a bundle.** `do_save` is 5 escapes from clean and three of them are one
+   helper (`div10`); clearing it unlocks **`save.asm`'s 572 B in a single
+   move**, and the four disk verbs return 567–1814 B each if split into a
+   resident parse stub plus a tenant body. One restructure beats eight moves.
 
 ⚠️ **Each promotion is a new tenant index, an ABI entry, a resident stub and a
 closure re-check, and every one of them changes the DISK path.** The corpus
