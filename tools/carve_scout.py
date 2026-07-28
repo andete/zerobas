@@ -168,13 +168,23 @@ def main() -> int:
 
     entries = args.entries.split(",")
     closure = reachable(graph, entries)
-    escapes = sorted(n for n in closure
-                     if n in syms and LOWREGION <= syms[n] < PAGE1)
+    # ⚠️ BOTH regions are absent while a page-0 tenant runs, so BOTH are escapes.
+    # This used to compute `bios` separately, PRINT it, and then leave it out of
+    # the verdict -- so a routine with BIOS callees and no low-region ones was
+    # graded "page-0-tenant CLEAN". `do_bload` (7 BIOS callees) and
+    # try_init_slot (2) both passed that way, and promoting either on that
+    # verdict would have shipped a tenant that jumps into a BIOS that is not
+    # mapped. check_tenant_closure.py -- the invariant the BUILD enforces --
+    # always checked both ("No low-region/BIOS escape"); the scout that decides
+    # what to attempt was the looser of the two, which is the wrong way round.
+    escapes = sorted(n for n in closure if n in syms and syms[n] < PAGE1)
     bios = sorted(n for n in closure if n in syms and syms[n] < LOWREGION)
 
     # Direct = reachable without leaving the code being moved. Those calls can be
-    # rewritten sub-side. Indirect = only reachable THROUGH main page-1 code that
-    # stays resident -- unrewritable from the sub side, hence fatal.
+    # rewritten sub-side -- a low-region call by re-expressing it, a BIOS call by
+    # going through CALSLT the way sub/format.asm already does (at a cost, so a
+    # direct BIOS escape is a PRICE, not a free pass). Indirect = only reachable
+    # THROUGH main page-1 code that stays resident -- unrewritable, hence fatal.
     inner = reachable({k: v for k, v in graph.items() if k in moved or k in entries},
                       entries) if moved else set(entries)
     direct = [n for n in escapes if any(n in graph.get(m, ()) for m in inner)]
@@ -182,11 +192,11 @@ def main() -> int:
 
     print(f"=== page-0-tenant legality: {', '.join(entries)}")
     print(f"    closure {len(closure)} labels; "
-          f"{len(escapes)} low-region + {len(bios)} BIOS callees")
+          f"{len(escapes)} absent-region callees ({len(bios)} of them BIOS)")
     print(f"    directly called by the moved code : {len(direct)}"
           f" ({sum(1 for n in direct if n in plumbing)} plumbing, re-expressible)")
     for n in sorted(direct):
-        tag = "plumbing" if n in plumbing else "BLOCKER"
+        tag = "plumbing" if n in plumbing else ("CALSLT" if n in bios else "BLOCKER")
         print(f"        {tag:9} {n} @ ${syms[n]:04X}")
     print(f"    reached THROUGH resident main page-1 : {len(indirect)}  <- FATAL if > 0")
     for n in sorted(indirect)[:12]:
