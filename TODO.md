@@ -1604,6 +1604,55 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         it would move six recorded-not-gated `FRE` rows back into the gate. A
         string-engine change: its own spec, its own gate.
 
+- [x] ✅ **`WIDTH n`'s VALID DOMAIN — LANDED 2026-07-28, 76/76, falsified.**
+      Was 🔴 FIVE silent screen-destroyers shipping today. The last residue of
+      the abort-depth slice: [`docs/spec-basic-abort-depth.md`](docs/spec-basic-abort-depth.md)
+      §7 deferred it in as many words — `4d35b6d` fixed how `WIDTH 300` *fails*
+      and left open which `n` `WIDTH` should *accept*.
+      Spec [`docs/spec-basic-width-domain.md`](docs/spec-basic-width-domain.md),
+      characterization [`docs/width-vg8020-characterization.md`](docs/width-vg8020-characterization.md),
+      gate `make width-acceptance` (76 rows, eight batteries). Baseline 36/62.
+      **`ex_width` had no bound at all** — it ran the argument through
+      `get_byte_arg` (domain 0..255) and then wrote `LINLEN` + a per-mode
+      default + `CHGMOD` unconditionally. Measured on the VG-8020:
+      **`SCREEN 1` accepts 1..32 and records `LINL32`; every other mode,
+      GRAPHICS INCLUDED, accepts 1..40 and records `LINL40`** — so the old
+      "any non-zero `SCRMOD` → `LINL32`" was wrong for `SCREEN 2`/`3`, visibly
+      (`SCREEN 2:WIDTH 29:SCREEN 0` leaves the reference at 29 and zerobas at
+      40). A reject writes NOTHING. Coercion truncates toward zero BEFORE the
+      bound (`40.9` ok, `41.9` not), and **the domain check beats the deferred
+      syntax error** (`WIDTH 41,` → ERR 5, not ERR 2) — the same ordering
+      `MID$(A$,0,)` settled in D-MISS-2.
+      🔴 **Two surfaces nobody had listed**, found by batteries written to cover
+      the argument surface rather than to confirm the known defect — the fifth
+      consecutive slice whose calibration turned up live defects in untested
+      code: **`WIDTH "40"`/`WIDTH A$` must be `Type mismatch` (ERR 13)** and
+      **bare `WIDTH` / `WIDTH :` / `X=1:WIDTH` must be `Missing operand`
+      (ERR 24)** — zerobas silently took both as **width 0**.
+      ⚠️ **THE SUBJECT UNDER TEST MOVES THE INSTRUMENT.** Every other probe
+      reads the name table at a fixed 40-byte stride and `WIDTH`'s whole job is
+      to change that stride, so the readout is numeric instead: capture
+      `ERR` + `LINLEN`/`LINL40`/`LINL32` into variables, RESTORE
+      `SCREEN 0`+`WIDTH 40`, and only then print. And **the instrument is pinned
+      on every row** — unpinned, three controls that execute no `WIDTH` at all
+      diverged on the boot width (37 vs 39) while their `ERR` codes agreed.
+      ⚠️ These batteries **arm `ON ERROR` on purpose**, the opposite of
+      `abort-acceptance`/`str-domain-acceptance`: those measure the unwind,
+      which a handler hides; this measures the domain, and a trapped `ERR` read
+      is the only readout that survives a statement that just destroyed the
+      screen. The `unt` battery is the seam between the two gates.
+      **Cost: 27 B, all page 1 (30 B → 3 B free)**, low region untouched at
+      30 B, lean cart byte-identical. Cheap because `LINL40`/`LINL32` are
+      ADJACENT (one `ld de` + a conditional `inc de` picks the slot and the
+      bound rides the same test) and all three raisers already existed in
+      page 1 — including `loc_missing`, the ERR 24 raiser `LOCATE` built.
+      ⚠️ **3 B is not headroom — the next page-1 slice must open with a carve.**
+      Falsified: neutering the bound reddens the two ordering rows while six
+      unrelated `sx` rows survive; neutering the one-byte `inc de` reddens all
+      11 `s1` rows. Standing gates re-run green: `unit-test` 53/53,
+      `abort-acceptance` 23/23, `intarg-acceptance` ALL PASS,
+      `str-domain-acceptance` 89/89.
+
 - [x] ✅ **String-function ARGUMENT-DOMAIN checks — LANDED 2026-07-28, 89/89,
       falsified 51/89.** Was 🔴 SILENT wrong answers shipping today.
       Found by the MISSING-class calibration battery

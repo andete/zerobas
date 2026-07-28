@@ -168,13 +168,44 @@ ex_cls:
 ; width is programmed into the VDP.
 ex_width:
                 inc     hl                  ; past the WIDTH token
-                call    skip_spaces
+                call    skip_spaces         ; returns A = (HL)
+    IF ROM_BASE < $4000
+                or      a
+                jr      z,wid_missing       ; bare `WIDTH` -> Missing operand (ERR 24)
+                cp      COLON
+                jr      z,wid_missing       ; `WIDTH :` likewise -- both measured
+    ENDIF
                 call    eval                ; DE = column count
     IF ROM_BASE < $4000
+                ld      a,(TMISMATCH)       ; `WIDTH "40"` -> Type mismatch (measured)
+                or      a
+                jp      nz,type_mismatch_error
                 call    get_byte_arg        ; D-F2-2 stage B: WIDTH n is a byte 0..255
-    ELSE                                    ; (>int16 ERR 6, 256.. ERR 5); A = width
+                ld      b,a                 ; (>int16 ERR 6, 256.. ERR 5); A = width
+                ; --- the MODE-DEPENDENT bound, and the slot that goes with it ---
+                ; Measured on the VG-8020: the legal width is 1..32 in SCREEN 1
+                ; and 1..40 in EVERY other mode, and the per-mode default written
+                ; is LINL32 for SCREEN 1 and LINL40 otherwise -- graphics modes
+                ; included, which is where the old `or a` (any non-zero SCRMOD ->
+                ; LINL32) was wrong. LINL40/LINL32 are ADJACENT, so one `ld de`
+                ; plus an `inc de` picks the slot; the bound rides the same test.
+                ld      de,LINL40
+                ld      a,(SCRMOD)
+                dec     a                   ; SCRMOD 1 = text-2
+                ld      a,40                ; (no flags -- the `dec a` Z survives)
+                jr      nz,wid_bound
+                inc     de                  ; -> LINL32
+                ld      a,32
+wid_bound:
+                cp      b
+                jr      c,wid_illegal       ; wanted > the mode's maximum
+                ld      a,b
+                or      a
+                jr      z,wid_illegal       ; `WIDTH 0` -> Illegal function call
+                ld      (LINLEN),a
+                ld      (de),a              ; the mode's per-mode default
+    ELSE
                 ld      a,e                 ; (lean: silent low byte)
-    ENDIF
                 ld      (LINLEN),a
                 ld      b,a                 ; keep the width across the SCRMOD read
                 ld      a,(SCRMOD)
@@ -185,12 +216,22 @@ ex_width:
                 jr      wid_apply
 wid_t32:
                 ld      (LINL32),a          ; mode 1 -> text-2 (LINL32)
+    ENDIF
 wid_apply:
                 ld      a,(SCRMOD)
                 push    hl
                 call    CHGMOD              ; re-init the screen at the new width
                 pop     hl
                 jp      exec_stmt
+    IF ROM_BASE < $4000
+                ; Both rejects run at ex_width's OWN depth (exec_stmt `jp`s here),
+                ; so they need no return-address parking -- the same reason
+                ; ex_swap tests its operands at the handler's depth.
+wid_illegal:
+                jp      gb_illegal          ; ERR 5
+wid_missing:
+                jp      loc_missing         ; ERR 24
+    ENDIF
 
 ; --- ex_key: KEY OFF | KEY ON ----------------------------------------------
 ex_key:
