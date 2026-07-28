@@ -827,6 +827,52 @@ str-domain-acceptance: repack-machine
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
 	        $(if $(BOOTPC),--boot-per-case,)
 
+# --- WIDTH valid-domain gate (docs/spec-basic-width-domain.md, D-WID) ---------
+# VG-8020 differential over `WIDTH n`'s DOMAIN: which n each screen mode accepts,
+# which of four errors it raises otherwise, and which per-mode default it records.
+# The last residue of the abort-depth slice -- 4d35b6d fixed how `WIDTH 300`
+# FAILS and left open what `WIDTH` should ACCEPT (spec-basic-abort-depth.md §7).
+# Five divergences, every one of them a SILENT screen-destroyer: no bound at all
+# (`WIDTH 0` and `WIDTH 41..255` accepted in every mode), the wrong per-mode slot
+# in graphics modes, and no Type-mismatch / Missing-operand check.
+#
+# ⚠️ THE SUBJECT UNDER TEST MOVES THE INSTRUMENT. Every other probe here reads
+# the SCREEN-0 name table at a fixed 40-byte stride; `WIDTH`'s whole job is to
+# change that stride, after which the scrape shears and every readout -- echo
+# anchor included -- silently stops meaning anything. So the subject runs inside
+# a stored program, the outcome is captured into NUMERIC variables (trapped ERR
+# plus LINLEN/LINL40/LINL32) while the screen is still wrong, the program then
+# RESTORES SCREEN 0 + WIDTH 40, and only then prints. Readout is
+# `[ ERR LINLEN LINL40 LINL32 ]`, width-independent by construction.
+#
+# ⚠️ THE INSTRUMENT IS PINNED ON EVERY ROW (lines 10-20 of the program). The two
+# machines boot at different text widths (reference 37, zerobas 39); unpinned,
+# three control rows that execute no WIDTH at all diverged on width alone while
+# their ERR codes agreed. The pin also gives every reject row a KNOWN prior
+# LINLEN, which is what makes "did the reject write anything anyway?" answerable.
+#
+# ⚠️ THESE BATTERIES ARM `ON ERROR` ON PURPOSE -- the opposite of the rule in
+# abort-acceptance / str-domain-acceptance. Those measure the UNWIND, which a
+# handler hides; this measures the DOMAIN, and a trapped ERR read is the only
+# readout that survives a statement which has just destroyed the screen. The
+# unwind stays gated by abort-acceptance; the `unt` battery is the seam.
+#
+# ⚠️ The in-domain rows are NOT padding, for the same reason str-domain's are not.
+#
+# Repack-only; oracle-dependent. `make width-acceptance ONLY=s1-` to scope one
+# battery. Boot-per-case by default (a WIDTH row leaves the machine unusable by
+# construction); BATCH=1 shares one boot, which is sound only because every
+# trapped row restores SCREEN 0/WIDTH 40 itself.
+width-characterize: repack-machine
+	python3 probes/basic/basic_probe_width.py \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
+	        $(if $(BATCH),--batch,)
+
+width-acceptance: repack-machine
+	python3 probes/basic/basic_probe_width.py --gate \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
+	        $(if $(BATCH),--batch,)
+
 # --- DIRECT-MODE control-flow gate (docs/spec-basic-direct-ctrl.md §8) --------
 # VG-8020 differential for FOR/NEXT, GOSUB/RETURN, GOTO, IF-THEN-<line> and
 # ON-GOTO typed AT THE PROMPT -- an execution mode that had zero coverage until
