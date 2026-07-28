@@ -873,6 +873,45 @@ width-acceptance: repack-machine
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
 	        $(if $(BATCH),--batch,)
 
+# --- CLEAR string-pool partition (docs/spec-basic-clearpool.md, D-CLP) --------
+# VG-8020 differential over the two-pool model. zerobas has ONE free gap where
+# the reference has TWO POOLS, and CLEAR's <string-space> argument is evaluated
+# and DISCARDED, so `CLEAR 500:PRINT FRE("")` answers ~15867 instead of 500.
+# 6/51 gated rows agree. NOT YET AN ACCEPTANCE GATE -- the slice is specced and
+# blocked on ~40 B of main page 1 (spec §5), so this stays in characterize mode
+# until it lands; `clearpool-acceptance` is the same probe with --gate.
+#
+# ⚠️ `FRE("")` IS THE ONE MACHINE-INDEPENDENT MEMORY READOUT, which is what makes
+# absolute rows legitimate here and nowhere else in this tree: FRE(0) answers
+# with free VARIABLE space (a property of each machine's memory map, gateable
+# only as a relation), but a pool sized by `CLEAR n` answers with a number the
+# USER chose. The two `rep` rows are FRE(0) readings and are never gated.
+#
+# ⚠️ THE ORACLE IS CHECKED AGAINST ITS OWN RECORDED ANSWERS FIRST. Four rows are
+# verbatim from docs/binfre-vg8020-characterization.md §1; REPRO_EXPECT asserts
+# them against the REFERENCE COLUMN ALONE, before any verdict is read as a
+# finding. They are deliberately not controls: a control must be a row both
+# machines are expected to pass today, and these are what zerobas must FAIL.
+#
+# ⚠️ NO LINE MAY REACH 40 CHARACTERS, and the probe enforces it BEFORE booting an
+# emulator. Both readouts are echo-anchored and a longer echo WRAPS, after which
+# it can never be matched -- the first run of this matrix had ELEVEN rows read
+# <none> ON THE REFERENCE, several then scoring PASS against a zerobas <none>.
+# Every case is a list of short lines with the PRINT last.
+#
+# Repack-only; oracle-dependent. Boot-per-case by default: a case's CLEAR
+# resizes the pool PERSISTENTLY, so it leaks into every follower, and the reset
+# that would undo it is the very thing under measurement.
+clearpool-characterize: repack-machine
+	python3 probes/basic/basic_probe_clearpool.py \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
+	        $(if $(BATCH),--batch,)
+
+clearpool-acceptance: repack-machine
+	python3 probes/basic/basic_probe_clearpool.py --gate \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
+	        $(if $(BATCH),--batch,)
+
 # --- DIRECT-MODE control-flow gate (docs/spec-basic-direct-ctrl.md §8) --------
 # VG-8020 differential for FOR/NEXT, GOSUB/RETURN, GOTO, IF-THEN-<line> and
 # ON-GOTO typed AT THE PROMPT -- an execution mode that had zero coverage until

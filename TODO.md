@@ -1603,6 +1603,47 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         and `CLEAR`'s string-space argument is evaluated and discarded. Landing
         it would move six recorded-not-gated `FRE` rows back into the gate. A
         string-engine change: its own spec, its own gate.
+        📋 **CHARACTERIZED + SPECCED 2026-07-28, awaiting sign-off (S-CLP-1..5)**:
+        [`docs/spec-basic-clearpool.md`](docs/spec-basic-clearpool.md),
+        [`docs/clearpool-vg8020-characterization.md`](docs/clearpool-vg8020-characterization.md),
+        `make clearpool-characterize` (53 rows, ten batteries). **6/51 gated
+        rows agree.** The model is a **single moving boundary, not a second
+        allocator** — `CLEAR 200`→`FRE(0)`=28815 and `CLEAR 4000`→25015, a
+        difference of **exactly 3800**, so the pool is carved from the same RAM.
+        The pools are independent: the equal-depth `FRE(0)` delta across
+        `A$=STRING$(100,"A")` is **6 on the reference at both 100 and 200
+        chars** (the entry only) against zerobas's 106 and 206.
+        `CLEAR n` sizes the pool to exactly n; the default is 200 but a **bare
+        `CLEAR` KEEPS the current size** (`CLEAR 500:CLEAR` → 500, and so do
+        `NEW`/`RUN`/`CLEAR ,himem`); **`B$=A$` COPIES** the body; a dead body is
+        reclaimed and a pure temp fully given back; **`Out of string space`
+        (ERR 14) is real and the failed allocation is ROLLED BACK**; and
+        `CLEAR -1`/`32768`/`"200"` raise IFC/Overflow/Type mismatch where
+        zerobas raises **nothing**. ERR 14 is currently a **hole** in
+        `err_msgtab` pointing at `err_unprintable`, exactly as ERR 24 was.
+        ⚠️ **BLOCKED ON A CARVE.** Most of the work is sub-ROM tenant code
+        (~3.4 KB free) and the low region covers `heap_reset`, but
+        `clear.asm`'s domain check and the ERR 14 message are **main page 1,
+        which has 3 B free** — an estimated ~40 B short. This is the carve
+        `spec-basic-width-domain.md` S-WID-2 predicted. **Step 1 is to build the
+        main-ROM side and MEASURE the overrun**, not to size a carve against the
+        estimate (S-CLP-1).
+        ⚠️ **S-CLP-3 is the user-visible one**: a 200-byte default means
+        programs that today have ~15 KB of string space will start raising
+        `Out of string space`. Correct per the charter, and it means the full
+        acceptance corpus must be re-run, not just this slice's gate.
+
+- [ ] 🔴 **`DIM Q(20000)` → `Out of memory`, reference says `Subscript out of
+      range`.** Found 2026-07-28 as a calibration row in the D-CLP matrix
+      (`oos-vs-oom`), aimed at proving `Out of string space` was distinct — the
+      **sixth consecutive slice** whose calibration turned up a live defect in
+      code already marked implemented. The reference bounds a dimension
+      **before** it tries to allocate; zerobas allocates until it runs out, so
+      the error is right only by accident of size. An ARRAYS-arc divergence,
+      NOT in D-CLP's scope. Recorded in
+      [`docs/clearpool-vg8020-characterization.md`](docs/clearpool-vg8020-characterization.md)
+      §3 so it is not "discovered" later by a red gate. Unmeasured: where the
+      reference's dimension bound actually sits.
 
 - [x] ✅ **`WIDTH n`'s VALID DOMAIN — LANDED 2026-07-28, 76/76, falsified.**
       Was 🔴 FIVE silent screen-destroyers shipping today. The last residue of
