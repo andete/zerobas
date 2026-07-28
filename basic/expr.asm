@@ -1502,21 +1502,79 @@ ev_ff_mathconv:
                 jp      z,evmc_cdbl
                 cp      SQR_TOKEN
                 jp      z,evmc_sqr
-                cp      ATN_TOKEN
-                jp      z,evmc_atn
                 cp      EXP_TOKEN
                 jp      z,evmc_exp
                 cp      LOG_TOKEN
                 jp      z,evmc_log
-                cp      SIN_TOKEN
-                jp      z,evmc_sin
-                cp      COS_TOKEN
-                jp      z,evmc_cos
-                cp      TAN_TOKEN
-                jp      z,evmc_tan
-                cp      RND_TOKEN
-                jp      z,evmc_rnd
+                ; ATN/SIN/COS/TAN/RND -- the five TOTAL sub-ROM math calls -- have no
+                ; arm of their own: they fall into the table scan below. SQR/EXP/LOG
+                ; keep theirs because each has its own domain check or magnitude
+                ; disposition; these five are the ones that are byte-identical.
+
+; --- evmc_total_scan: the five TOTAL sub-ROM math calls, table-driven -------
+; SWAP-funding carve (2026-07-28), tools/clone_scout.py's third row (estimated
+; 20 B, measured 41 B). evmc_atn/sin/cos/tan/rnd were FIVE identical 10 B stubs
+; -- `call evmc_prologue` / `ret nz` / `ld hl,<entry>` / `jp evmc_dispatch` --
+; differing ONLY in the sub-ROM entry address, each reached by its own 5 B arm of
+; the chain above. That is 78 B saying one thing five times; this is 37 B.
+;
+; Each of the five is total over all x (no domain check, no error tail -- see the
+; per-function commentary that used to sit on each stub, preserved at the table
+; rows below), which is EXACTLY what makes them collapsible: SQR/EXP/LOG are not.
+;
+; in: A = the $FF-selector byte, as ev_ff_mathconv was entered with.
+; The table stores only the entry's LOW byte; the high byte is a constant, which
+; the assembly-time guard below pins rather than assumes.
+EVMC_TOTAL_N    equ     5                   ; rows in evmc_total_tab (declared ahead
+                                            ; of use rather than forward-referenced)
+evmc_total_scan:
+                ld      hl,evmc_total_tab
+                ld      b,EVMC_TOTAL_N
+evmc_ts_lp:
+                cp      (hl)                ; selector == this row's token?
+                inc     hl                  ; HL -> the row's entry-low byte
+                jr      z,evmc_ts_hit
+                inc     hl                  ; HL -> the next row's token
+                djnz    evmc_ts_lp
                 jp      ev_ff_strnum        ; not ours -> LEN/ASC/VAL, else ev_f_err
+evmc_ts_hit:
+                ld      l,(hl)              ; HL = SUBROM_ENTRY_BASE_P1 + 3*idx
+                ld      h,SUBROM_ENTRY_BASE_P1 >> 8
+                ; evmc_prologue runs ev_mc_arg -> the whole expression evaluator, so
+                ; NOTHING in a register survives it -- guard the entry on the stack.
+                ; PUSH/POP do not touch flags, so the prologue's Z ("clean") still
+                ; decides the `ret nz` below, exactly as in the five stubs this
+                ; replaces. The pop MUST precede the `ret nz`, or the error exit
+                ; would return INTO the guarded entry address.
+                push    hl
+                call    evmc_prologue
+                pop     hl
+                ret     nz                  ; malformed/empty arg -> deferred syntax
+                jp      evmc_dispatch
+
+; --- evmc_total_tab: <selector token>, <low byte of the sub-ROM entry> ------
+; The five rows carry what used to be five stub headers. All are COMPUTE-ONLY
+; tenants (they leave FAC correct but touch neither FACTYP nor DE), so
+; evmc_dispatch does the shared FACTYP:=8 + flt_to_int16 refresh for all of them.
+evmc_total_tab:
+                db      ATN_TOKEN, (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_ATN) & $FF
+                db      SIN_TOKEN, (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SIN) & $FF
+                db      COS_TOKEN, (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_COS) & $FF
+                db      TAN_TOKEN, (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_TAN) & $FF
+                ; RND's argument VALUE is read by fp_rnd itself (ignored when
+                ; positive, consumed as mant14 when negative) -- nothing here
+                ; interprets it, so RND collapses with the other four.
+                db      RND_TOKEN, (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_RND) & $FF
+
+; Assembly-time guard: the table stores ONE byte per entry, so every one of the
+; five must share SUBROM_ENTRY_BASE_P1's 256 B page. RND has the largest index of
+; the five (9), so checking it bounds all of them. On violation this references an
+; undefined symbol, forcing a named ERROR rather than a silently wrong dispatch
+; address -- the same technique as main.asm's $8000 ceiling assert. Emits nothing
+; when it holds.
+    IF ((SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_RND) >> 8) - (SUBROM_ENTRY_BASE_P1 >> 8)
+                db      EVMC_TOTAL_TAB_ENTRIES_CROSS_A_256B_PAGE__STORE_FULL_ADDRESSES
+    ENDIF
 
 ; --- ev_mc_arg: parse "( <numeric expr> )" from IX (positioned on the -------
 ; selector byte, per this group's entry contract). Leaves DE = the argument's
@@ -1846,24 +1904,6 @@ evmc_dispatch:
                 ld      (FACTYP),a
                 jp      flt_to_int16        ; tail: DE := flt_to_int16(FAC)
 
-; --- evmc_atn: ATN(x) -> arctangent, DOUBLE (math pack slice 2a, docs/spec- -
-; basic-mathpack-slice2.md §11.5). Same arg-parse + widen shape as evmc_sqr
-; (ev_mc_arg then widen_rhs_operand into ARGA), then DISPATCHES to fp_atan in
-; the sub-ROM PAGE-1 island (sub/sub.asm) via subrom_call/
-; SUBROM_ENTRY_BASE_P1+SUBROM_IDX_ATN. This is evmc_sqr's shape MINUS the
-; domain check: ATN is total over all x (§6 "no error"), so there is no
-; ARGA+FPNUM_SIGN branch and no error tail -- every call falls straight
-; through to the dispatch. Same CALSLT-A-not-preserved discipline as
-; evmc_sqr: fp_atan is COMPUTE-ONLY (leaves FAC correct but does not touch
-; FACTYP/DE), so THIS stub sets FACTYP:=8 + refreshes DE via flt_to_int16
-; after a successful return; CF (not A) is the only reliable post-call
-; signal, and CF=1 only means "sub-ROM absent" (never on the merged machine).
-evmc_atn:
-                call    evmc_prologue
-                ret     nz
-                ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_ATN
-                jp      evmc_dispatch
-
 ; --- evmc_log: LOG(x) -> natural logarithm, DOUBLE (math pack slice 2b, ----
 ; docs/spec-basic-mathpack-slice2.md §12.6). Same arg-parse + widen shape as
 ; evmc_sqr (ev_mc_arg then widen_rhs_operand into ARGA), then a domain check
@@ -1934,50 +1974,14 @@ evmc_exp_overflow:
                 ld      de,0
                 ret
 
-; --- evmc_sin / evmc_cos / evmc_tan: SIN(x)/COS(x)/TAN(x), DOUBLE (math -----
-; pack slice 2d, docs/spec-basic-mathpack-slice2.md §14.7). evmc_atn's shape
-; VERBATIM (SIN/COS/TAN are total over all x, §6/§14.1 "no domain check" --
-; no ARGA+FPNUM_SIGN branch, no coarse magnitude check like evmc_exp's, no
-; error tail): every call falls straight through to the dispatch. Same
-; CALSLT-A-not-preserved discipline as every prior evmc_*: fp_sin/fp_cos/
-; fp_tan are COMPUTE-ONLY (leave FAC correct but do not touch FACTYP/DE), so
-; each of these stubs sets FACTYP:=8 + refreshes DE via flt_to_int16 after a
-; successful return; CF (not A) is the only reliable post-call signal, and
-; CF=1 only means "sub-ROM absent" (never on the merged machine).
-evmc_sin:
-                call    evmc_prologue
-                ret     nz
-                ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SIN
-                jp      evmc_dispatch
-evmc_cos:
-                call    evmc_prologue
-                ret     nz
-                ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_COS
-                jp      evmc_dispatch
-evmc_tan:
-                call    evmc_prologue
-                ret     nz
-                ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_TAN
-                jp      evmc_dispatch
-
-; --- evmc_rnd: RND(x) -> pseudo-random value in [0,1), DOUBLE (math pack ---
-; slice 2e, docs/spec-basic-mathpack-slice2.md §15.4/§15.5). evmc_atn's
-; shape VERBATIM (RND is total over all x -- no domain check, no error
-; tail): ev_mc_arg then widen_rhs_operand into ARGA, dispatch to fp_rnd in
-; the sub-ROM PAGE-1 island via subrom_call/SUBROM_ENTRY_BASE_P1+
-; 3*SUBROM_IDX_RND, same CALSLT-A-not-preserved discipline as every prior
-; evmc_*: fp_rnd is COMPUTE-ONLY (leaves FAC correct but does not touch
-; FACTYP/DE), so THIS stub sets FACTYP:=8 + refreshes DE via flt_to_int16
-; after a successful return; CF (not A) is the only reliable post-call
-; signal, and CF=1 only means "sub-ROM absent" (never on the merged
-; machine). Note: the argument's VALUE is read by fp_rnd itself (ignored
-; when positive, consumed as mant14 when negative, ignored when zero) --
-; this stub does not interpret it at all, just widens+dispatches.
-evmc_rnd:
-                call    evmc_prologue
-                ret     nz
-                ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_RND
-                jp      evmc_dispatch
+; ATN / SIN / COS / TAN / RND have no stubs of their own any more -- see
+; `evmc_total_scan` and `evmc_total_tab` above (the SWAP-funding carve,
+; 2026-07-28). They were five VERBATIM copies of one shape, which is precisely
+; the property the table encodes: total over all x (docs/spec-basic-mathpack-
+; slice2.md §6/§11.5/§14.1/§14.7/§15.4 -- no domain check, no ARGA+FPNUM_SIGN
+; branch, no coarse magnitude check like evmc_exp's, no error tail), and every
+; tenant COMPUTE-ONLY, so one shared `evmc_dispatch` does the FACTYP:=8 +
+; flt_to_int16 refresh and the CALSLT-A-not-preserved discipline for all five.
     ENDIF
 
 ; --- ev_f_varptr: VARPTR(<var>) -> address of the variable's value field -----
