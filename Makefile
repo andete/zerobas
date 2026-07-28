@@ -795,6 +795,38 @@ abort-acceptance: $(DISK_ROM) repack-machine
 	python3 probes/basic/basic_probe_abort_depth.py --gate \
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
 
+# --- D-MISS-2 string-ARGUMENT-DOMAIN gate (docs/spec-basic-str-domain.md §6) --
+# CHR$/LEFT$/RIGHT$/MID$/INSTR accept out-of-range arguments silently and compute
+# a wrong answer where the reference raises. 89 rows, six batteries.
+#
+# `ctl` is read FIRST and separately: LEN(A$) proves the readout, ASC("") proves
+# an abort is reachable at EVALUATOR depth (far below statement-handler depth),
+# and STRING$/SPACE$ are the family members that already check -- the working
+# reference implementation of the two-stage rule. If a control diverges the probe
+# exits non-zero and says so, because no other row is then readable as a finding.
+#
+# ⚠️ The 34 `in` rows are NOT padding. A domain check's failure mode is rejecting
+# what it should ACCEPT, and a matrix of only out-of-range rows goes green on an
+# implementation that raises `Illegal function call` for everything.
+#
+# ⚠️ NO ROW MAY ARM `ON ERROR` (same reason as abort-acceptance above), every
+# value row is bracket-delimited, and `WIDTH 40` is pinned with the subject
+# carried in A$ -- the two machines boot at different widths and a wrapped echo
+# breaks the screen_tail readout SILENTLY. The probe's docstring carries these.
+#
+# Repack-only; oracle-dependent. `make str-domain-acceptance ONLY=mid` to scope;
+# BOOTPC=1 forces boot-per-case (the default already self-heals any disagreeing
+# row boot-per-case, so the verdicts already equal a boot-per-case run).
+str-domain-characterize: repack-machine
+	python3 probes/basic/basic_probe_str_domain.py \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
+	        $(if $(BOOTPC),--boot-per-case,)
+
+str-domain-acceptance: repack-machine
+	python3 probes/basic/basic_probe_str_domain.py --gate \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
+	        $(if $(BOOTPC),--boot-per-case,)
+
 # --- DIRECT-MODE control-flow gate (docs/spec-basic-direct-ctrl.md §8) --------
 # VG-8020 differential for FOR/NEXT, GOSUB/RETURN, GOTO, IF-THEN-<line> and
 # ON-GOTO typed AT THE PROMPT -- an execution mode that had zero coverage until
@@ -945,4 +977,5 @@ clean:
         graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep fat-error-acceptance \
         logicops-characterize cursor-characterize cursor-acceptance \
         binfre-characterize binfre-acceptance \
-        missing-characterize missing-acceptance clean
+        missing-characterize missing-acceptance \
+        str-domain-characterize str-domain-acceptance clean

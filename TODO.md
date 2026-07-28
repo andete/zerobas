@@ -1640,13 +1640,38 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       members of a call convention that is measurably broken when untrapped.
       Landing that first would give the right ERR code under `ON ERROR` and
       trailing junk without it.
-      **Funding is measured, and it is not free**: `basic/str-engine.asm` is
-      LOW-REGION (11 B free from clean), so the call-site glue needs a
-      promotion — `tools/promote_scout.py` reports 1711 B promotable out of
-      that same file (`str_fn_left` 77 B, `str_fn_right` 78 B,
-      `str_fn_mid` 56 B), which converts the need into a page-1 cost of
-      ≈45–50 B against 44 B free. One small carve, per
-      [[promotion-funds-low-region]].
+      ✅ **SPECCED + GATED 2026-07-28**, spec
+      [`docs/spec-basic-str-domain.md`](docs/spec-basic-str-domain.md), gate
+      `make str-domain-acceptance` (89 rows, six batteries). **41/89 diverge.**
+      The measurement corrected this item on three counts:
+      🔴 **THE FUNDING PREMISE BELOW WAS WRONG — there is nothing to fund.**
+      Prototyped from clean: the low region goes **7 B → 30 B free (+23 B)** and
+      page 1 **44 B → 30 B (−14 B)**. No promotion, no carve; lean cart
+      byte-identical so `LEAN_SHA256` does not move. Two reasons the ≈45–50 B
+      estimate missed: `get_int16_checked` already GUARDS HL so none of the
+      assumed register-guard bytes exist, and `call eval` was ALREADY at every
+      site — so a shared `eval_byte_arg`/`eval_pos_arg` pair in page 1 costs
+      **zero bytes at the call site** and REPLACES rather than adds. The naive
+      shape the estimate was costing was also built: +26 B, all low-region, a
+      19 B overrun — 49 B worse on the wall that binds.
+      🔴 **The `MID$` STATEMENT is a second broken surface**, not in this item:
+      `MID$(A$,0)="X"` etc. give `syntax error` for seven reference errors, and
+      **`MID$(A$,1,256)="X"` silently PERFORMS the assignment** while
+      `MID$(A$,1,99999)="X"` silently does nothing.
+      🔴 **`INSTR` is silently wrong too, and was on no list** —
+      `INSTR(256,A$,"b")`→`0` where the reference raises; it hand-rolls half the
+      rule (`p<1` only, no upper bound, no int16 stage). Found because S-SD-3
+      was answered by RUNNING the probe instead of by argument. **Folding it in
+      makes the slice 20 B CHEAPER** — its hand-rolled checks are deleted.
+      Also measured: `MID$`'s position is the family's one **1-based** argument
+      (1..255); the int16 gate is the RANGE −32768..32767, not `|x| ≤ 32767`
+      (`CHR$(-32768)`→IFC, `CHR$(-32769)`→Overflow), and `get_byte_arg` already
+      implements exactly that, proven via `STRING$(-32768,65)`.
+      ⚠️ Three standing gates go red BECAUSE this closes a divergence they
+      record (`missing-acceptance` 8 stale `d2-*` markers, `mid_stmt`'s asserted
+      divergence, and `test_str_fn.py`'s `INSTR(0,…)` which the host harness
+      structurally cannot model once it raises) — spec §6.3 has the edits.
+      **AWAITING SIGN-OFF** on S-SD-1..4 before implementation.
 
 - [ ] **Numeric → string assignment raises the wrong error** (D-MISS-1, same
       battery). `A$=1`, `A$=A`, `A$=1+1`, `A$=LEN("x")`, `LET A$=A`, `A$=A%` and
