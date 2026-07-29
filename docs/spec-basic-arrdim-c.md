@@ -267,7 +267,7 @@ deleted:
 
 - **`LINEMAX = 96`** (§5) — a real divergence, its own item.
 - **The `Out of memory` threshold** — a property of each machine's memory map.
-- A dimension count past what a 255-character line can express (~123) is
+- A dimension count past what a 254-character line can express (~122) is
   unreachable on either machine and is not a target.
 
 ## 10. Sign-off

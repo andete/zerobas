@@ -237,7 +237,7 @@ properly — the long `DIM` moves into a **stored program line** (never anchored
 | reference `ERR` | 0 | 0 | 0 | 0 | 0 | 0 |
 | zerobas `ERR` | 0 | **9** | **9** | **9** | **9** | **9** |
 
-**The reference takes a hundred dimensions.** Past that it is the 255-character
+**The reference takes a hundred dimensions.** Past that it is the 254-character
 input line that stops the probe, not the language. `cap-4` is the battery's
 two-sided control: four subscripts are legal on both machines, and a run where
 even that reads 9 is measuring the apparatus.
@@ -245,7 +245,7 @@ even that reads 9 is measuring the apparatus.
 ⚠️ **The readout had to move off the subject to measure this**, which is the
 generalisable part: an echo-anchored readout cannot measure a statement longer
 than the echo. Anchoring on a *later, shorter* line — with the subject stored and
-its error trapped — buys the whole 255-character input line. Compare
+its error trapped — buys the whole 254-character input line. Compare
 [[missing-class-slice]] (a statement that MOVES THE CURSOR) and
 [[width-domain-slice]] (one that MOVES THE INSTRUMENT); this is the third shape:
 a statement **too long for the instrument**.

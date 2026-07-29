@@ -215,7 +215,9 @@ the trapped code.
 | zerobas `ERR` | 0 | **9** | **9** | **9** | **9** | **9** |
 
 **There is no cap to match.** The reference accepts a hundred dimensions, and what
-stops the probe past that is the 255-character input line, not the language. So
+stops the probe past that is the 254-character input line (measured 2026-07-29,
+linemax-vg8020-characterization.md §1; this said 255, which nothing had
+measured), not the language. So
 D-ARR-C is not the constant bump both the recommendation and the sign-off assumed
 — see §7a for what it actually is.
 

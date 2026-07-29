@@ -329,7 +329,7 @@ def _use_case(n):
 
 
 # ⚠️ ZEROBAS HAS ITS OWN, MUCH SHORTER INPUT LINE, AND IT LANDS INSIDE THIS
-# BATTERY. `LINEMAX = 96` (basic/sysvars.inc:760) against the reference's 255 --
+# BATTERY. `LINEMAX = 96` (basic/sysvars.inc:760) against the reference's 254 --
 # a documented divergence of its own (docs/spec-basic-arrays-slice4a-string-heap.md
 # "Input-length caveat"), and `20 DIM A(0,...)` is 2n+9 characters, so it bites at
 # n = 44. That makes `cap-64` and `cap-100` UNREACHABLE ON ZEROBAS WHATEVER
@@ -338,7 +338,7 @@ def _use_case(n):
 # and calling them "MAXDIM=4" rows -- as the D-ARR-B commit did -- names the wrong
 # cause. 40/42/44 bracket the truncation point so the ceiling is MEASURED rather
 # than computed from the equate, and 120 (249 characters) runs the reference right
-# up to its own 255-character line.
+# up to its own 254-character line.
 CASES += [_cap_case(n) for n in (4, 8, 16, 32, 40, 42, 44, 64, 100, 120)]
 CASES += [_use_case(n) for n in (4, 8, 32)]
 
@@ -393,7 +393,7 @@ REPRO_EXPECT = {
 # gateable row the day the cap is raised.
 # ⚠️ The `cap` measurement moved D-ARR-C's shape: there is no cap to match. The
 # reference accepts ONE HUNDRED dimensions, and what stops the probe past that is
-# the 255-character input line, not the language -- so "raise MAXDIM to the
+# the 254-character input line, not the language -- so "raise MAXDIM to the
 # reference's value" has no value to raise it to. It is not a constant bump: the
 # subscripts are already collected on the HARDWARE STACK by ary_parse_subs, and
 # the cap exists only to bound the copy into ARY_IDX, a fixed 8-byte buffer in a
@@ -440,10 +440,10 @@ NEVER_GATED = {
     "cap-100":   "LINEMAX=96 (line is 209 ch): truncated -> syntax error",
     "cap-120":   "LINEMAX=96 (line is 249 ch): truncated -> syntax error",
     # --- the `line` battery itself: the measurement, kept as a record. --------
-    "line-96":   "LINEMAX=96: zerobas truncates at 96, the reference at 256",
-    "line-97":   "LINEMAX=96: zerobas truncates at 96, the reference at 256",
-    "line-100":  "LINEMAX=96: zerobas truncates at 96, the reference at 256",
-    "line-250":  "LINEMAX=96: zerobas truncates at 96, the reference at 256",
+    "line-96":   "LINEMAX=96: zerobas's line ends at 95, the reference's at 254 (D-LINEMAX)",
+    "line-97":   "LINEMAX=96: zerobas's line ends at 95, the reference's at 254 (D-LINEMAX)",
+    "line-100":  "LINEMAX=96: zerobas's line ends at 95, the reference's at 254 (D-LINEMAX)",
+    "line-250":  "LINEMAX=96: zerobas's line ends at 95, the reference's at 254 (D-LINEMAX)",
 }
 
 
@@ -481,16 +481,16 @@ def main():
     # Only the LAST line is anchored on (see read()), so only the last line has to
     # survive the echo. A non-anchor line may be longer -- its echo wrapping just
     # scrolls the screen, which screen_tail/result_span_after_echo do not care
-    # about -- but it still may not exceed the 255-character MSX input line, and
+    # about -- but it still may not exceed the 254-character MSX input line, and
     # the `cap` battery deliberately runs right up to that.
     toolong = [(lbl, ln) for lbl, _b, lines in sel for ln in (lines[-1],)
                if len(ln) >= ECHO_MAX]
     toolong += [(lbl, ln) for lbl, _b, lines in sel for ln in lines[:-1]
-                if len(ln) > 255]
+                if len(ln) > 254]
     if toolong:
         print(f"APPARATUS FAILURE: an ANCHOR line is >= the reference's boot "
               f"LINLEN ({ECHO_MAX}) so its echo wraps and the readout cannot "
-              f"anchor on it, or a non-anchor line is past the 255-char input "
+              f"anchor on it, or a non-anchor line is past the 254-char input "
               f"line:")
         for lbl, ln in toolong:
             print(f"     {lbl}: {len(ln)} chars {ln!r}")

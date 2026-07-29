@@ -31,8 +31,10 @@ direct `PRINT ERR`, so the subject is not limited by the 37-character echo:
 | reference `ERR` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | **0** |
 | zerobas `ERR` | 0 | 9 | 9 | 9 | 9 | 9 | 9 | 9 | 9 | 9 |
 
-`cap-120`'s line 20 is **249 characters**, three short of the reference's own
-input line. So the reference has no dimension cap anywhere a program can reach it,
+`cap-120`'s line 20 is **249 characters**, five short of the reference's own input
+line (254 — measured later, see the §4 correction; this sentence originally said
+"three short", against an input line nothing here had measured). So the reference
+has no dimension cap anywhere a program can reach it,
 and "raise `MAXDIM` to the reference's value" still has no value to raise it to.
 `cap-4` is the battery's two-sided control.
 
@@ -85,9 +87,26 @@ not a passing row, it is an unexploded one.**
 
 ## 4. 🔴 Four rows were ungated for the wrong cause — zerobas's line ends at 95
 
+> ⚠️ **CORRECTION, 2026-07-29 (D-LINEMAX).** Everything below about *zerobas* holds
+> — 95 characters, re-measured byte-exact. **Everything below about the
+> REFERENCE's ceiling does not.** This section quoted it three different ways —
+> "three short of" 249 in §1, "255" in the next paragraph, and "**the reference
+> takes 250**" under the table — and **none of the three was measured.** The
+> `line` battery stopped at 250 because `omsx_repl.MAX_BUF` was 250, a guess
+> commented "holds ~255 chars incl CR" that *refused to inject a longer line*. So
+> the top row of that table is the **harness's ceiling reported as the machine's**:
+> every length past it was unreachable, not accepted-and-tested.
+>
+> **The reference's real ceiling is 254 characters**, and past it the tail is
+> dropped and the line kept — flat at 254 from 255 through 300.
+> [`linemax-vg8020-characterization.md`](linemax-vg8020-characterization.md) §1;
+> `MAX_BUF` is now 254, measured. Nothing here was measured *wrong*; something
+> unmeasured was written down as measured — the same shape as the arrays arc's §4
+> target #9.
+
 The D-ARR-B commit filed `cap-64`/`cap-100` under "MAXDIM=4". They are not.
 `LINEMAX = 96` ([`basic/sysvars.inc:760`](../basic/sysvars.inc:760)) against the
-reference's 255 is a divergence of its own, already documented as an
+reference's 254 is a divergence of its own, already documented as an
 *Input-length caveat* in
 [`spec-basic-arrays-slice4a-string-heap.md`](spec-basic-arrays-slice4a-string-heap.md),
 and it lands **inside this battery**.
@@ -96,12 +115,14 @@ The `line` battery measures it directly, with no array involved — `20` + paddi
 `A=7`, so an intact line assigns 7 and a truncated one leaves A at its
 `RUN`-cleared 0, whatever error the mangled tail produces:
 
-| line length | 40 | 90 | 94 | 95 | 96 | 97 | 100 | 250 |
+| line length | 40 | 90 | 94 | 95 | 96 | 97 | 100 | 250† |
 |---|---|---|---|---|---|---|---|---|
 | reference | 7 | 7 | 7 | 7 | 7 | 7 | 7 | **7** |
 | zerobas | 7 | 7 | 7 | **7** | **0** | 0 | 0 | 0 |
 
-**zerobas's last intact line is 95 characters; the reference takes 250.**
+† 250 is where the HARNESS stopped, not the machine — see the correction above.
+
+**zerobas's last intact line is 95 characters; the reference takes 254.**
 `20 DIM A(0,...)` is `2n+9` characters, so **43 subscripts is zerobas's real
 ceiling** and `cap-44` (97 ch) is already past it.
 
