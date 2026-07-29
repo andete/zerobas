@@ -145,6 +145,8 @@ strheap_engine:
                 jp      z,she_snap_keep     ; SNAPSHOT-UNLESS-ALREADY-A-TEMP (D-CLP)
                 cp      17
                 jp      z,sh_free_vars      ; FRE(n) -- free VARIABLE space (D-CLP)
+                cp      18
+                jp      z,sh_chan_addr      ; file-channel block address (D-FCH §3.2)
     ENDIF
                 jp      sh_val_parse        ; op==13: the only other value the
                                             ; main-ROM glue ever writes
@@ -350,6 +352,42 @@ strheap_floor:
                 sbc     hl,de
                 ret     nc
                 ld      hl,0                ; pool larger than the whole map
+                ret
+
+; --- strheap_varceil: -> HL = the VARIABLE/ARRAY region's ceiling (D-FCH §3.2)
+; `strheap_floor() - MAXF*FCH_CTXSZ`. The file-channel table is carved out of
+; the pool immediately BELOW the string pool's floor, so the map is
+;
+;   [PRGEND+2 .. varceil) variables+arrays | [varceil .. floor) CHANNEL TABLE
+;   | [floor .. C) string pool
+;
+; and `MAXFILES=n` costs n*FCH_CTXSZ of FRE(0) while leaving FRE("") alone —
+; which is exactly what the CF-3300 does (characterization §2 the 267 B/channel
+; ladder, §5 the string pool reading 200 at MAXFILES 0 and 8 alike).
+;
+; ⚠️ DERIVED, NEVER STORED, for the same reason strheap_floor is: the inputs
+; (MAXF, POOLSIZE, HIMEM) all live in RAM, so every derivation is current and no
+; hook is needed at `CLEAR`/`MAXFILES`/boot. Storing it would cost main-ROM
+; bytes AND open a staleness hole; this costs the main ROM nothing.
+;
+; ⚠️ The clamp mirrors strheap_floor's: `MAXFILES=15` with a small `CLEAR`
+; ceiling is expressible, and answering 0 makes every allocation fail honestly
+; rather than wrapping the ceiling above the pool.
+; Clobbers A,B,C,D,E,H,L. Preserves IX/IY (both array callers rely on IY).
+strheap_varceil:
+                call    strheap_floor       ; HL = the string pool's floor
+                ld      a,(MAXF)
+                or      a
+                ret     z                   ; MAXFILES=0 -> no table at all
+                ld      b,a
+                ld      de,-FCH_CTXSZ
+svc_sub_lp:
+                add     hl,de               ; CF set iff no borrow (HL >= block)
+                jr      nc,svc_under
+                djnz    svc_sub_lp
+                ret
+svc_under:
+                ld      hl,0                ; the table does not fit under the pool
                 ret
 
 ; --- heap_alloc: A=len(0..255) -> CF set+HL=body ptr / CF clear=OOM --------
@@ -1452,18 +1490,51 @@ sfg_have:
 ; The `+2` is heap_alloc's old sentinel rule, kept HERE where it still belongs:
 ; ARYEND addresses the LIVE 2-byte $0000 array terminator, so the first byte the
 ; region does not already own is ARYEND+2.
+;
+; ⚠️ D-FCH §3.2: the ceiling here is now strheap_varceil, NOT strheap_floor —
+; the file-channel table sits between them, so `MAXFILES=n` shows up in FRE(0)
+; and not in FRE(""), which is the measured reference split (characterization
+; §2 vs §5). This is the routine that makes the ladder visible.
 sh_free_vars:
                 call    strheap_aryend      ; HL = ARYEND (the $0000 terminator)
                 inc     hl
                 inc     hl                  ; HL = ARYEND+2 (past the live sentinel)
                 push    hl
-                call    strheap_floor       ; HL = the pool floor (clobbers D,E)
+                call    strheap_varceil     ; HL = the variable ceiling (clobbers D,E)
                 pop     de                  ; DE = ARYEND+2
                 or      a
                 sbc     hl,de               ; HL = floor - (ARYEND+2)
                 jr      nc,sfv_have
                 ld      hl,0                ; region already at/over the floor -> 0
 sfv_have:
+                ld      (SH_PTR),hl
+                xor     a
+                ld      (SH_ERR),a
+                ret
+
+; --- sh_chan_addr: op=18 handler -- the DYNAMIC file-channel block address ---
+; SH_LEN = channel 1..MAXF -> SH_PTR = strheap_varceil() + (ch-1)*FCH_CTXSZ,
+; i.e. the base of that channel's context block inside the carved table.
+; SH_ERR = 0 always (the caller has already range-checked the channel through
+; fch_valid; an out-of-range one would simply address past the table).
+;
+; This is the whole main-ROM-visible surface of §3.2: basic/files.asm's
+; fch_ctx_addr used to be `ld hl,FCH_CTX` + a stride loop over a table at a
+; FIXED address, and is now this call. Siting the arithmetic here rather than
+; resident is the S-FCH-1 lesson applied a second time — its callee
+; (strheap_varceil, via strheap_floor/strheap_ceiling) was already sub-ROM, so
+; keeping the caller resident would have bought nothing and cost real bytes.
+sh_chan_addr:
+                call    strheap_varceil     ; HL = the table base (= var ceiling)
+                ld      a,(SH_LEN)          ; A = channel number (1-based)
+                dec     a
+                jr      z,sca_have          ; channel 1 -> the first block
+                ld      b,a
+                ld      de,FCH_CTXSZ
+sca_lp:
+                add     hl,de
+                djnz    sca_lp
+sca_have:
                 ld      (SH_PTR),hl
                 xor     a
                 ld      (SH_ERR),a

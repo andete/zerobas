@@ -139,13 +139,19 @@ assumed.
 
 ## 6. zerobas, measured the same way
 
-| | reference (CF-3300) | zerobas |
-|---|---|---|
-| per channel | **267 B**, from the `FRE(0)` pool | **562 B** (`FCH_CTXSZ` = 50 B state + a private 512 B sector-buffer **save copy**) |
-| when charged | dynamically, at `MAXFILES` time | **statically, always** — `FCH_CTX $EA00..$EE63`, reserved whether or not any channel is open |
-| `FRE(0)` response to `MAXFILES` | −267 per channel | **0 — does not move at all** (13875 at `MAXFILES` 0, 1 and 2) |
-| ceiling | **15** | **2** (`FCH_CEIL`) |
-| over-ceiling error | `Illegal function call` (ERR 5) | **`syntax error` (ERR 2)** |
+| | reference (CF-3300) | zerobas, as measured | zerobas, after D-FCH ✅ |
+|---|---|---|---|
+| per channel | **267 B**, from the `FRE(0)` pool | **562 B** (`FCH_CTXSZ` = 50 B state + a private 512 B sector-buffer **save copy**) | **50 B**, from the `FRE(0)` pool |
+| when charged | dynamically, at `MAXFILES` time | **statically, always** — `FCH_CTX $EA00..$EE63`, reserved whether or not any channel is open | **dynamically, at `MAXFILES` time** |
+| `FRE(0)` response to `MAXFILES` | −267 per channel | **0 — does not move at all** (13875 at `MAXFILES` 0, 1 and 2) | **−50 per channel** (14899 at 0 → 14149 at 15) |
+| ceiling | **15** | **2** (`FCH_CEIL`) | **15** |
+| over-ceiling error | `Illegal function call` (ERR 5) | **`syntax error` (ERR 2)** | `syntax error` — still S-FCH-2 |
+
+The MECHANISMS now match; the CONSTANTS deliberately do not. A zerobas block
+genuinely IS 50 B — its sector staging is the shared `FSECTOR_BUF` write-back
+cache (S-FCH-1) — so it charges what it uses. Padding to 267 for numeric parity
+would reserve 217 B per channel that nothing reads; see
+[`spec-basic-filechan-alloc.md` §6](spec-basic-filechan-alloc.md).
 
 Note zerobas's private 512 B per channel is **purely a save area**: a single
 global `FSECTOR_BUF` (`$E5C0..$E7BF`) is the working buffer, and the context

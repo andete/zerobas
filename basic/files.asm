@@ -218,10 +218,14 @@ de_ext:
 ; fat.asm. No disassembly. See basic/PROVENANCE.md §file channel.
 ;
 ; Divergences (own design, quarantined; documented in PROVENANCE.md):
-;   * up to FCH_CEIL (=2) channels open at once — a real multi-channel table
+;   * up to FCH_CEIL channels open at once — a real multi-channel table
 ;     (MAXFILES) over fat.asm's single global state, via the write-back context
-;     cache in the channel-manager section below. The ceiling is RAM-bounded
-;     (real MSX MAXFILES reaches 15); channel numbers are range-checked to MAXF.
+;     cache in the channel-manager section below. Channel numbers are
+;     range-checked to MAXF. ⚠️ FCH_CEIL is 15 in the repack build (the MEASURED
+;     reference ceiling — D-FCH §3.2 made the table dynamic, so unused channels
+;     cost nothing) and 2 in the byte-full lean cart, which keeps the old static
+;     [state][512-byte buffer] table. The per-channel CHARGE (50 B out of FRE(0),
+;     vs the reference's 267) is the remaining deliberate divergence.
 ;   * INPUT#/LINE INPUT# fill STRING variables only (numeric INPUT# is Phase 3);
 ;     a value longer than STRMAX is truncated (the string layer's own limit).
 ;   * console INPUT (no '#') and graphics LINE are NOT implemented — they error.
@@ -978,10 +982,34 @@ ifc_zero:
 ; ===========================================================================
 
 ; fch_ctx_addr — HL = base of channel A's context block (A = 1..FCH_CEIL).
-;   HL = FCH_CTX + (A-1)*FCH_CTXSZ. Clobbers A, B, DE.
+;
+; D-FCH §3.2 (repack): the table is no longer AT a fixed address. It is carved
+; out of the pool at MAXFILES time, immediately below the string pool's floor
+; (basic/sysvars.inc §D-FCH), so the base is
+;   min(HIMEM,TXTMAX) - POOLSIZE - MAXF*FCH_CTXSZ
+; and this routine asks the string-heap tenant for it (op 18, sh_chan_addr).
+;
+; ⚠️ SITED SUB-SIDE FOR THE S-FCH-1 REASON, MEASURED NOT GUESSED: the callee
+; chain it needs (strheap_varceil -> strheap_floor -> strheap_ceiling) was
+; ALREADY sub-ROM, so a resident copy of the arithmetic would have bought
+; nothing and cost real page-1 bytes. Resident, this is the same three stores
+; and a call the old stride loop was.
+; ⚠️ IX: call_strheap is a CALSLT. Both callers (fch_save_active/fch_load_ctx)
+; already contain CALSLTs on the repack path and are covered by the ONE IX guard
+; hoisted into fch_select; fch_claim's caller keeps its cursor in HL. No new
+; hazard — but any NEW caller must be checked against that contract.
+; Clobbers A, BC, DE, IX.
 fch_ctx_addr:
+    IF ROM_BASE < $4000
+                ld      (SH_LEN),a          ; the channel number (1-based)
+                ld      a,18
+                ld      (SH_OP),a           ; op 18 = channel block address
+                call    call_strheap
+                ld      hl,(SH_PTR)
+                ret
+    ELSE
                 dec     a                   ; 0-based block index
-                ld      hl,FCH_CTX
+                ld      hl,FCH_CTX          ; lean: the STATIC table
                 or      a
                 ret     z                   ; index 0 -> FCH_CTX
                 ld      b,a
@@ -990,6 +1018,7 @@ fca_lp:
                 add     hl,de
                 djnz    fca_lp
                 ret
+    ENDIF
 
 ; D-FCH S-FCH-1 (docs/spec-basic-filechan-alloc.md §3.1): the two halves of the
 ; write-back cache that REPLACED the per-channel 512-byte save copy both live in
@@ -1352,10 +1381,14 @@ nm_fail2:
 ; bounds every OPEN/INPUT#/PRINT#/CLOSE channel number, via fch_valid). Tokenised
 ; as MAX ($CD) + FILES ($B7) — two reserved words, oracle-locked like OUTPUT. Like
 ; the reference, changing MAXFILES reinitialises the file system: every open channel
-; is closed first (OUTPUT ones flushed + Ctrl-Z-stamped). zerobas accepts 0..FCH_CEIL
-; (the RAM-bounded ceiling, =2); a larger value is a syntax error — real MSX allows
-; up to 15, a documented divergence (we have RAM for only FCH_CEIL 512-byte channel
-; buffers). Entry: HL on the MAX token. See basic/PROVENANCE.md §MAXFILES.
+; is closed first (OUTPUT ones flushed + Ctrl-Z-stamped) and every variable is
+; CLEARed. zerobas accepts 0..FCH_CEIL, which the repack build sets to the MEASURED
+; reference ceiling of 15 (D-FCH §3.2: the blocks are carved out of the FRE(0) pool
+; at MAXFILES time, so an unused channel costs nothing and the ceiling was free);
+; the lean cart keeps 2. ⚠️ A larger value is still a `syntax error` where the
+; reference raises ERR 5 Illegal function call — the CLASS is wrong, and is
+; S-FCH-2's, not this statement's. Entry: HL on the MAX token.
+; See basic/PROVENANCE.md §MAXFILES.
 ex_maxfiles:
                 inc     hl                  ; past MAX ($CD)
                 ld      a,(hl)
@@ -1381,7 +1414,30 @@ ex_maxfiles:
                 pop     de
                 ld      a,e
                 ld      (MAXF),a            ; commit the new ceiling (0..FCH_CEIL)
+    IF ROM_BASE < $4000
+                ; D-FCH §3.2 / characterization §9: MAXFILES CLEARs variables
+                ; UNCONDITIONALLY -- even when the value does not change (the
+                ; `sem_same` row is what pins that; "clears only when it
+                ; reallocates" is the natural reading and it is WRONG). It is
+                ; also load-bearing here rather than merely faithful: the new
+                ; ceiling MOVES the variable region's top boundary (the table is
+                ; carved below the pool floor), so any surviving array would now
+                ; overlap the channel table. The CLEAR is that invalidation.
+                ; It runs AFTER the MAXF store so the wipe sees the new ceiling.
+                ; The string-pool SIZE survives -- POOLSIZE is untouched here,
+                ; which is exactly the measured `CLEAR 500 : MAXFILES=2` row.
+                ;
+                ; ⚠️ AND IT IS FREE, because `CLEAR`'s own tail IS this sequence:
+                ; clr_done (basic/clear.asm) is `push hl / call clear_vars /
+                ; call vars_reset / pop hl / jp exec_stmt` with HL = the statement
+                ; cursor -- exactly our state here. Jumping to it costs the same
+                ; 3 bytes the `jp exec_stmt` it replaces did. Written out inline
+                ; it was 8 bytes, and page 1 had 1. (S-FCH-1's lesson a third
+                ; time: the cost was SITING.)
+                jp      clr_done
+    ELSE
                 jp      exec_stmt
+    ENDIF
 
 ; --- MERGE "name" — merge an ASCII program from disk ------------------------
 ; Reads a SAVE",A"-style ASCII (line-numbered text) program file and stores each

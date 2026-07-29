@@ -1932,10 +1932,47 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ✅ The ~12 KB string workload D-LINEMAX cost the suite is affordable again
       (the array rows' shrunken payloads were deliberately LEFT — restoring them
       is a separate call, not a silent side effect of a RAM change).
-      **NEXT, both unbuilt:** the dynamic allocation of §3.2 (the faithful
-      mechanism proper — `FRE(0)` moving with `MAXFILES`, ceiling 15) and
-      S-FCH-2's ERR 5/52/59. ⚠️ **S-FCH-2's premise MOVED**: it was costed at
-      ~100 B against 6 B free page 1, and page 1 is now at **1 B**.
+      **§3.2 ✅ BUILT + GATED 2026-07-29 — `MAXFILES` IS NOW FAITHFUL IN
+      MECHANISM.** The channel table is CARVED OUT OF THE POOL at `MAXFILES`
+      time, immediately below the string-pool floor
+      (`min(HIMEM,TXTMAX) − POOLSIZE − MAXF×50`), so **`FRE(0)` moves −50 per
+      channel** (14899 at `MAXFILES=0` → 14149 at 15), `FRE("")` stays 200,
+      `OPEN` costs zero further, and **`FCH_CEIL` is 15** — the measured
+      reference ceiling. `MAXFILES` now also **CLEARs variables
+      unconditionally**, the `sem_same` behaviour.
+      **Cost: 1 B of main page 1, 0 B of low region, NO CARVE** (measured by
+      relaxing the `$8000` guard and reading `__MEAS_PAGE1_END`, then
+      restoring). ⚠️ **Page 1 is now at 0 B free** (`$8000` exactly).
+      🔴 **THE COST WAS SITING, A THIRD TIME.** The first build overran by 8 B
+      and all 8 were `MAXFILES`' `CLEAR` — which is verbatim `ex_clear`'s own
+      tail. `jp clr_done` costs the 3 bytes the `jp exec_stmt` it replaced
+      already spent, so the `CLEAR` came free. The allocation itself was ~free
+      because its whole arithmetic chain (`strheap_varceil` →
+      `strheap_floor` → `strheap_ceiling`) was ALREADY sub-ROM.
+      **DECISION (user, 2026-07-29): charge 50 B/channel, not the reference's
+      267.** A zerobas block genuinely IS 50 B (shared `FSECTOR_BUF` cache), so
+      it charges what it uses; padding to 267 would reserve 217 B/channel that
+      nothing reads and cost a user 4005 B at `MAXFILES=15` instead of 750.
+      ⚠️ **This CORRECTS spec §6**, which asked the gate to assert 267 on both
+      sides — the gate asserts the MECHANISM (linear per-channel, ceiling 15,
+      both sides) and reports each machine's own constant.
+      ⚠️ **THE SLOPE ALONE IS A GATE THAT CAN MEASURE NOTHING, AND THIS WAS
+      FALSIFIED, NOT REASONED.** With the array ceilings reverted to
+      `strheap_floor` — i.e. the carve REPORTED but not RESERVED — `mf0`/`mf2`/
+      `mf15` still read a flawless 14899/14799/14149 while arrays grew straight
+      through the channel table. The new two-sided `dim_fits`/`dim_over` rows
+      catch it (`dim_over` returned 7777 instead of `Out of memory`); its +400 B
+      overshoot is sized against the 750 B of slack the bug creates.
+      ⚠️ **AND ONE EXISTING ROW WAS UNMEASURABLE**: `sem_str` typed
+      `PRINT A$`, and a cleared A$ (empty line) and an uncleared one (`XY`) BOTH
+      score `<none>` in this probe's readout — equal on both sides, PASS
+      forever. Now `PRINT LEN(A$)` (0 vs 2) with a `REM` control.
+      `make chancost-characterize` is now a real GATE (non-zero on unfiled
+      divergence / oracle drift / a flat ladder), 31 cases, 9 filed divergences.
+      **NEXT: S-FCH-2's ERR 5/52/59 — and ⚠️ ITS PREMISE HAS MOVED TWICE.** It
+      was costed at ~100 B against 6 B free page 1; page 1 is now at **0 B**.
+      Nine of the gate's filed divergences are its. It needs a carve, scouted
+      against a requirement that has itself been BUILT and measured.
 
 - [ ] **`LOF(#n)` reads −1 on a freshly-created OUTPUT channel** (reference: 0).
       Found 2026-07-29 by a CONTROL row in the channel-cost pass, not aimed at.
@@ -1950,9 +1987,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] **Over-ceiling `MAXFILES` raises the wrong error class.** `MAXFILES=16` →
       reference **`Illegal function call`** (ERR 5); zerobas raises **`syntax
-      error`** (ERR 2), and does so from `MAXFILES=3` up. The class is wrong
-      independently of where the ceiling sits, so it is fixable without
-      changing `FCH_CEIL`. (Message *wording* is NOT the issue — zerobas's
+      error`** (ERR 2). ⚠️ Updated 2026-07-29: D-FCH §3.2 raised `FCH_CEIL` to
+      the measured reference ceiling of **15**, so the two machines now REJECT
+      the same values — only the class still differs. Owned by **S-FCH-2**
+      (spec §7), together with ERR 52/59. (Message *wording* is NOT the issue — zerobas's
       lowercase strings are deliberate provenance policy, PROVENANCE §851.)
       Case `mf16`/`mf255` in the same probe.
 

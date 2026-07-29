@@ -2,11 +2,20 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 
-"""Characterize what ONE FILE CHANNEL COSTS on a real disk-capable MSX1.
+"""Characterize -- and now GATE -- what ONE FILE CHANNEL COSTS on an MSX1.
 
-The question this answers: zerobas spends 562 B per channel (50 B state + a
-private 512-byte sector buffer, basic/sysvars.inc FCH_CTXSZ) and caps at
-FCH_CEIL=2. What does the reference actually spend, and what is its ceiling?
+Originally the question was: zerobas spends 562 B per channel and caps at
+FCH_CEIL=2; what does the reference actually spend, and what is its ceiling?
+Answer: 267 B/channel, dynamically, ceiling exactly 15. D-FCH then made zerobas
+use the SAME MECHANISM -- carved out of the FRE(0) pool at MAXFILES time,
+ceiling 15 -- at its own honest 50 B/channel (a zerobas block IS 50 B; its
+sector staging is the shared FSECTOR_BUF write-back cache, so it charges what it
+uses rather than padding to match a number).
+
+So this is now an ACCEPTANCE GATE. It returns non-zero on oracle drift, on any
+divergence not in the explicit KNOWN_DIVERGE allowlist (each entry naming the
+item that owns it), and on the mechanism assertions: per-channel, LINEAR, with a
+ceiling of 15, on BOTH machines.
 
 ⚠️ WHY THIS PROBE EXISTS RATHER THAN AN `omsx_repl` BATTERY. The earlier attempt
 read `<none>` on every row and was mis-read as "the CF-3300 won't answer". It is
@@ -97,13 +106,40 @@ CASES = [
     # assumed -- the spec's behaviour section is written from these rows.
     ("sem_var",     ["A=5", "MAXFILES=2", "PRINT A"]),            # vars survive?
     ("sem_var_ctl", ["A=5", "REM MAXFILES=2", "PRINT A"]),        # ...control
-    ("sem_str",     ['A$="XY"', "MAXFILES=2", "PRINT A$"]),       # strings survive?
+    # ⚠️ `PRINT A$` was the original form and it is UNMEASURABLE: a cleared A$
+    # prints an empty line, which this probe's readout scores as `<none>` -- and
+    # `<none>` on BOTH sides compares EQUAL and reports PASS whether or not
+    # either machine ran the statement (the clearpool-slice trap). LEN(A$) puts
+    # a NUMBER on the screen, so the row can actually fail.
+    ("sem_str",     ['A$="XY"', "MAXFILES=2", "PRINT LEN(A$)"]),  # strings survive?
+    ("sem_str_ctl", ['A$="XY"', "REM MAXFILES=2", "PRINT LEN(A$)"]),  # ...control
     ("sem_same",    ["A=5", "MAXFILES=1", "PRINT A"]),            # no-change reallocs?
     ("sem_reopen",  ["MAXFILES=2", 'OPEN "HI.TXT" FOR INPUT AS #1',
                      "MAXFILES=2", "PRINT LOF(1)"]),              # open chan survives?
     ("sem_zero",    ["MAXFILES=0", 'OPEN "HI.TXT" FOR INPUT AS #1']),   # 0 = no I/O?
     ("sem_hinum",   ["MAXFILES=1", 'OPEN "HI.TXT" FOR INPUT AS #2']),   # #n > MAXFILES
     ("sem_clear",   ["CLEAR 500", "MAXFILES=2", 'PRINT FRE("")']),      # pool kept?
+
+    # --- RESERVATION battery (D-FCH §3.2). ⚠️ THE LADDER ABOVE CAN BE GREEN
+    # WHILE MEASURING NOTHING: it reads FRE(0), which is what the interpreter
+    # SAYS is left, and a build that subtracted the channel table from the
+    # REPORT but not from the ALLOCATOR'S CEILING would produce a perfect
+    # 50 B/channel slope while reserving nothing at all — the arrays would grow
+    # straight through the table and be shredded by the next channel switch.
+    # These two rows close that hole, and they are TWO-SIDED on purpose:
+    #   dim_fits — ask for FRE(0) MINUS 800 B: must succeed on both machines.
+    #              (Guards the other direction: a build that reported the floor
+    #              while allocating against the lower ceiling would OOM here.)
+    #   dim_over — ask for FRE(0) PLUS 400 B: must raise Out of memory.
+    # The overshoot is chosen against the FAILURE it must catch, not for round
+    # numbers: at MAXFILES=15 an unreserved zerobas table is 750 B of slack, so
+    # 400 B of overshoot lands INSIDE it and would silently succeed. Both rows
+    # size themselves from the machine's OWN FRE(0), so they are a real
+    # differential rather than a zerobas-only constant.
+    ("dim_fits", ["10 MAXFILES=15", "20 N=INT(FRE(0)/2)-400", "30 DIM A%(N)",
+                  "40 PRINT 7777", "RUN"]),
+    ("dim_over", ["10 MAXFILES=15", "20 N=INT(FRE(0)/2)+200", "30 DIM A%(N)",
+                  "40 PRINT 7777", "RUN"]),
 
     # --- ERR CODES. The spec needs the NUMBERS, and they are disk-range codes
     # well above zerobas's err_msgtab (which stops at 25). Trapped with
@@ -142,10 +178,15 @@ REF_EXPECT = {
     "sem_var":     0,        # MAXFILES CLEARS variables
     "sem_var_ctl": 5,        # ...and the control proves the statement did it
     "sem_same":    0,        # ...even when the value does not change
+    "sem_str":     0,        # ...strings too (LEN, not PRINT A$ -- see the case)
+    "sem_str_ctl": 2,        # ...and its two-sided control keeps "XY"
     "sem_reopen":  "FNO",    # ...and CLOSES open channels
     "sem_zero":    "BFN",    # MAXFILES=0 -> OPEN is Bad file number
     "sem_hinum":   "BFN",    # #n above MAXFILES -> Bad file number
     "sem_clear":   500,      # ...but the CLEAR-set string pool size SURVIVES
+    # reservation battery (D-FCH §3.2) -- FRE(0) is HONEST about the allocator
+    "dim_fits":    7777,     # FRE(0)-800 B of array fits
+    "dim_over":    "OOM",    # FRE(0)+400 B of array does not
     # error CODES, trapped via ON ERROR/ERR (§10 of the characterization)
     "err_over":    5,        # MAXFILES=16 -> ERR 5 Illegal function call
     "err_badchan": "BFN",    # ...NOT trappable: prints `Bad file number in 30`
@@ -163,6 +204,7 @@ ERR_CLASSES = {
     "FNF":    ("file not found",),
     "BFN":    ("bad file number",),
     "FNO":    ("file not open",),
+    "OOM":    ("out of memory",),
 }
 
 # How each case is compared between the two machines:
@@ -174,6 +216,33 @@ COMPARE = {
     "boot": "absfre", "ctl_noop": "absfre", "open_after": "absfre",
     "mf0": "absfre", "mf1": "absfre", "mf2": "absfre", "mf3": "absfre",
     "mf4": "absfre", "mf8": "absfre", "mf15": "absfre",
+}
+
+# --- GATE: divergences that are FILED AND EXPECTED, with the item that owns
+# each. Everything NOT listed here is a regression and fails the run. The list
+# is the honest statement of what D-FCH has not built yet; it shrinks as those
+# items land, and it must never grow silently. ⚠️ A row is allowlisted with the
+# value it is EXPECTED to diverge to, so a row that starts failing DIFFERENTLY
+# still trips the gate.
+KNOWN_DIVERGE = {
+    # S-FCH-2 (unbuilt): the disk-range error codes. err_msgtab stops at 25, so
+    # ERR 5 / 52 / 59 all surface as zerobas's own `syntax error` or a value.
+    "mf16":        ("IFC", "SYNTAX"),
+    "mf255":       ("IFC", "SYNTAX"),
+    "sem_zero":    ("BFN", "SYNTAX"),
+    "sem_hinum":   ("BFN", "SYNTAX"),
+    "sem_reopen":  ("FNO", -1),
+    # ⚠️ these two TRAP on zerobas, so its side prints the trapped ERR NUMBER
+    # (2 = syntax error), not a message. err_badchan also records a real
+    # behavioural difference worth keeping visible: the reference does NOT trap
+    # it at all (`Bad file number in 30` prints past the installed handler).
+    "err_over":    (5, 2),
+    "err_badchan": ("BFN", 2),
+    "err_notopen": (59, -1),
+    # Filed separately in TODO.md: LOF on a freshly-created OUTPUT channel reads
+    # -1 where the reference reads 0. A LOF bug, not an allocation one -- its
+    # two-sided control `lof_existing` agrees at 26 on both machines.
+    "lof_new":     (0, -1),
 }
 
 
@@ -326,6 +395,8 @@ def main() -> int:
                 note = "informational (slope below)"
             elif rv == zv:
                 note = "agree"
+            elif KNOWN_DIVERGE.get(label) == (rv, zv):
+                note = "diverges (FILED — S-FCH-2 / TODO)"
             else:
                 note = "DIVERGES"
                 diverge.append((label, rv, zv))
@@ -371,23 +442,46 @@ def main() -> int:
         print(f"\nORACLE DRIFT on {oracle_bad} — the reference no longer reproduces "
               f"its own recorded answers; fix the apparatus before trusting anything.")
         return 1
-    if args.side == "both" and len(cases) == len(CASES):
+    full_run = args.side == "both" and len(cases) == len(CASES)
+    if full_run:
         rs, rc = summary.get("ref", ([], None))
         zs, zc = summary.get("zb", ([], None))
         print()
         print("HEADLINE:")
         print(f"  reference charges {rs[0]:g} B per channel, dynamically, up to {rc};")
-        print(f"  zerobas reserves its channel contexts statically "
-              f"(slope {zs}), ceiling {zc}.")
+        print(f"  zerobas   charges {zs[0]:g} B per channel, dynamically, up to {zc}.")
+        print("  (D-FCH §3.2: both MECHANISMS are now the same -- carved out of the")
+        print("   FRE(0) pool at MAXFILES time, ceiling 15. The per-channel CONSTANTS")
+        print("   differ because a zerobas block IS 50 B: its sector staging is the")
+        print("   shared FSECTOR_BUF cache, so it charges what it uses.)")
 
     if oracle_bad:
         print(f"\nORACLE DRIFT on {oracle_bad} — the reference no longer reproduces "
               f"its own recorded answers; fix the apparatus before trusting anything.")
         return 1
     if diverge:
-        print(f"\n{len(diverge)} divergence(s) vs the reference:")
+        print(f"\n{len(diverge)} UNFILED divergence(s) vs the reference:")
         for label, rv, zv in diverge:
             print(f"  {label}: reference {rv!r}, zerobas {zv!r}")
+        return 1
+    # --- the GATE proper: the mechanism assertions, only on a full run --------
+    if full_run:
+        bad = []
+        for s in ("ref", "zb"):
+            slopes, ceiling = summary.get(s, ([], None))
+            if slopes == [0.0]:
+                bad.append(f"{s}: MAXFILES does not move FRE(0) (statically reserved)")
+            elif len(slopes) != 1:
+                bad.append(f"{s}: per-channel charge is NOT LINEAR: {slopes}")
+            if ceiling != 15:
+                bad.append(f"{s}: highest accepted MAXFILES is {ceiling}, want 15")
+        if bad:
+            print("\nGATE FAILED:")
+            for b in bad:
+                print(f"  {b}")
+            return 1
+        print("\nGATE: both machines charge per-channel, linearly, ceiling 15 — "
+              f"{len(cases)} cases, {len(KNOWN_DIVERGE)} filed divergences.")
     return 0
 
 

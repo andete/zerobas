@@ -10,12 +10,15 @@ probe [`probes/disk/diskbasic_probe_chancost.py`](../probes/disk/diskbasic_probe
 (`make chancost-characterize`). Every number below is measured on the real
 National CF-3300 unless it says otherwise.
 
-⚠️ **Status: SPEC, awaiting sign-off. No code written.** §5 (cost) is the part
-that is *not* measured, and §7 is the fork it opens.
+✅ **Status 2026-07-29: SIGNED OFF; S-FCH-1 (§3.1), §3.3 and §3.2 are BUILT
+AND GATED.** What remains is **S-FCH-2** — the ERR 5 / 52 / 59 codes — whose
+premise has since moved adversely (§7). §5b records §3.2's measured cost, §5a
+S-FCH-1's, and §5 the rest.
 
 ## 1. What is wrong
 
-zerobas reserves its channel contexts **statically and permanently**:
+✅ **FIXED by §3.2** — kept here as the statement of what was wrong.
+zerobas reserved its channel contexts **statically and permanently**:
 `FCH_CTX $EA00..$EE63` = `FCH_CEIL`(2) × `FCH_CTXSZ`(562) = **1124 B**, held
 whether or not a channel is ever opened. Of each 562 B, **512 B is nothing but a
 save copy** of the single global `FSECTOR_BUF` — `fch_save_active` /
@@ -24,12 +27,12 @@ save copy** of the single global `FSECTOR_BUF` — `fch_save_active` /
 
 Measured consequences:
 
-| | reference | zerobas |
-|---|---|---|
-| per channel | **267 B** | 562 B |
-| ceiling | **15** | 2 |
-| `FRE(0)` vs `MAXFILES` | −267/channel | **does not move** (13875 at 0, 1 and 2) |
-| charged when | at `MAXFILES` time | always |
+| | reference | zerobas (before) | zerobas (now, ✅) |
+|---|---|---|---|
+| per channel | **267 B** | 562 B | **50 B** |
+| ceiling | **15** | 2 | **15** |
+| `FRE(0)` vs `MAXFILES` | −267/channel | **does not move** (13875 at 0, 1 and 2) | **−50/channel** (14899 → 14149) |
+| charged when | at `MAXFILES` time | always | **at `MAXFILES` time** |
 
 The reference's 267 is **less than 512**, so its sector staging is not in it: it
 keeps **one shared sector buffer** and a small per-channel block. zerobas
@@ -52,14 +55,19 @@ already *has* that shared buffer; it just also pays for N private copies of it.
 
 ### 2.2 Side effects — all measured, all currently absent in zerobas
 
-| row | reference | zerobas today |
-|---|---|---|
-| `A=5 : MAXFILES=2 : PRINT A` | **0** — variables are CLEARed | `5` |
-| `A=5 : REM MAXFILES=2 : PRINT A` — *control* | `5` | `5` ✅ |
-| `A=5 : MAXFILES=1 : PRINT A` (**value unchanged**) | **0** — clears anyway | `5` |
-| `A$="XY" : MAXFILES=2 : PRINT A$` | empty | empty ✅ |
-| `CLEAR 500 : MAXFILES=2 : PRINT FRE("")` | **500** — pool size SURVIVES | `500` ✅ |
-| `OPEN…AS #1 : MAXFILES=2 : PRINT LOF(1)` | **`File not OPEN`** | `-1` |
+| row | reference | zerobas before | zerobas now |
+|---|---|---|---|
+| `A=5 : MAXFILES=2 : PRINT A` | **0** — variables are CLEARed | `5` | **0** ✅ |
+| `A=5 : REM MAXFILES=2 : PRINT A` — *control* | `5` | `5` | `5` ✅ |
+| `A=5 : MAXFILES=1 : PRINT A` (**value unchanged**) | **0** — clears anyway | `5` | **0** ✅ |
+| `A$="XY" : MAXFILES=2 : PRINT LEN(A$)` | **0** | `2` | **0** ✅ |
+| `A$="XY" : REM MAXFILES=2 : PRINT LEN(A$)` — *control* | `2` | `2` | `2` ✅ |
+| `CLEAR 500 : MAXFILES=2 : PRINT FRE("")` | **500** — pool size SURVIVES | `500` | `500` ✅ |
+| `OPEN…AS #1 : MAXFILES=2 : PRINT LOF(1)` | **`File not OPEN`** | `-1` | `-1` (S-FCH-2) |
+
+⚠️ The `A$` row was `PRINT A$` when this spec was written, and in that form it
+was **unmeasurable on either machine** — see §6. `LEN(A$)` is the measured
+replacement, and the reference answers **0**, confirming the string clear.
 
 ⚠️ **`MAXFILES` clears unconditionally — even when the value does not change.**
 The `sem_same` row is the one that pins this; without it the natural reading is
@@ -124,7 +132,7 @@ sentence.
 
 This is what the reference does, and it is why its block is 267 rather than 779.
 
-### 3.2 Carve the table out of the pool
+### 3.2 Carve the table out of the pool — ✅ BUILT + GATED 2026-07-29
 
 Today the ceiling for program text is `min(HIMEM,TXTMAX)`, and D-CLP already
 established the single-moving-boundary model with the string pool below it
@@ -137,6 +145,42 @@ channel table base = min(HIMEM,TXTMAX) − POOLSIZE − MAXF × FCH_BLKSZ
 
 so `MAXFILES=n` moves a boundary that `FRE(0)` already reports, and the
 statement's measured `CLEAR` (§2.2) is exactly the invalidation that move needs.
+
+#### What was built
+
+The map, repack build only (the lean cart keeps the static `FCH_CTX` table and
+stays byte-identical):
+
+```
+[PRGEND+2 .. varceil)   variables + arrays        FRE(0) reports this gap
+[varceil  .. floor)     THE CHANNEL TABLE          = MAXF x FCH_CTXSZ (50 B)
+[floor    .. C)         string pool                FRE("") reports this gap
+                                       C = min(HIMEM,TXTMAX), floor = C - POOLSIZE
+```
+
+* **`strheap_varceil`** ([`sub/strheap.asm`](../sub/strheap.asm)) — the new
+  boundary, `strheap_floor() - MAXF*FCH_CTXSZ`, clamped at 0. **Derived, never
+  stored**, exactly as S-CLP-2 derives the pool floor and for the same reason:
+  the inputs (`MAXF`, `POOLSIZE`, `HIMEM`) are all RAM cells, so `CLEAR n`,
+  `CLEAR ,himem` and `MAXFILES=n` are picked up for free by the next
+  derivation — no cell to keep fresh, no hook at three sites, no staleness hole.
+* Its **three consumers**: `sh_free_vars` (so `FRE(0)` moves), and
+  `scv_ceil_try` + `aal_ceil_try` in [`sub/arrays.asm`](../sub/arrays.asm) (so
+  the space is actually *reserved*). The string pool's own floor and
+  `heap_alloc` are deliberately **unchanged** — that is what keeps `FRE("")`
+  at 200 across the ladder.
+* **op 18 `sh_chan_addr`** — `SH_LEN` = channel → `SH_PTR` = block base.
+  `fch_ctx_addr` ([`basic/files.asm`](../basic/files.asm)) is now that call.
+* **`FCH_CEIL` 2 → 15** (repack), which forces `FCH_MODES` (16 B) and
+  `FCH_RECLENS` (32 B) out of their old cramped slots into the `$EA00..$EAFF`
+  page-3 window S-FCH-1 freed. `$EA30..$EAFF` (208 B) is still free.
+* **`MAXFILES` now `CLEAR`s**, unconditionally (§2.2's `sem_same` row).
+
+⚠️ **Boot order was checked, not assumed.** `strheap_varceil` reads `MAXF`,
+which `init_filechan` seeds — and `init` calls `clear_vars` *before* it, so on
+power-on hardware `MAXF` is RAM garbage for that window. Nothing in it derives
+the ceiling: `clear_vars` → `vars_reset` → `heap_reset` writes `FRETOP`/`ARYTAB`
+and the array sentinel without ever allocating. No seed hoist was needed.
 
 ### 3.3 What the freed RAM buys
 
@@ -242,6 +286,33 @@ Switching channels could never fail under the memcpy design and now can (disk
 full while flushing). Propagating it means a disposition at every `fch_select`
 caller — filed rather than smuggled in.
 
+## 5b. §3.2 cost — ✅ MEASURED AND BUILT, 2026-07-29
+
+**1 B of main page 1, 0 B of low region, NO CARVE.** Page 1 now stands at
+**0 B free** (`__MEAS_PAGE1_END` = `$8000` exactly); the low region is unchanged
+at 9 B. Measured by relaxing the `$8000` guard, reading the symbol, and
+restoring it — not estimated.
+
+| what | page 1 |
+|---|---|
+| `fch_ctx_addr` → op 18 (`ld hl,FCH_CTX` → three stores + a call) | **+1 B** |
+| `MAXFILES`'s `CLEAR`, written out inline | +8 B |
+| …the same `CLEAR`, as `jp clr_done` | **0 B** |
+| **total** | **+1 B** |
+
+⚠️ **THE COST WAS SITING AGAIN — the third time in this slice.** The first
+build overran by 8 B, and every one of those 8 was the `CLEAR`:
+`push hl / call clear_vars / call vars_reset / pop hl`. But that sequence *is*
+`ex_clear`'s own tail (`clr_done`, [`basic/clear.asm`](../basic/clear.asm)),
+entered with `HL` = the statement cursor — exactly `ex_maxfiles`' state. Jumping
+to it costs the 3 bytes the `jp exec_stmt` it replaced already spent. Same
+lesson as S-FCH-1's 43 → 5: **check whether the code you are about to write
+already exists somewhere its callee lives.**
+
+The dynamic allocation was near-free for the reason §3.2 predicted: the whole
+arithmetic chain (`strheap_varceil` → `strheap_floor` → `strheap_ceiling`) was
+**already sub-ROM**, so nothing resident had to learn it.
+
 ## 5. Cost of the REST — ⚠️ STILL NOT MEASURED
 
 **This is the section that decides whether the slice is affordable, and it
@@ -262,13 +333,41 @@ hypothesis: §7a's "rewrites the column-major address math" was wrong, and so wa
 its cost. **The cost must be built to be known**, on a branch, before the ceiling
 and error-code decisions are final.
 
-## 6. The gate
+## 6. The gate — ✅ BUILT 2026-07-29
 
-`make chancost-characterize` already carries the batteries and self-checks the
-reference's recorded answers for drift. To become an acceptance gate it needs:
+`make chancost-characterize` is now an acceptance **gate**: it returns non-zero
+on oracle drift, on any divergence not in an explicit `KNOWN_DIVERGE` allowlist
+(9 rows, each naming the item that owns it — S-FCH-2 and the filed `LOF` bug),
+and on the mechanism assertions below. 31 cases, boot-per-case, both machines.
 
-* the ladder asserted as a **slope**, both sides — reference 267, zerobas 267
-  after the change (today: 0, statically reserved);
+🔴 **THIS SECTION'S FIRST BULLET WAS WRONG, AND THE CORRECTION IS THE
+INTERESTING PART.** It asked the gate to assert **267 on both sides**. But §3.1
+left the block size "to be pinned by the implementation", and S-FCH-1 pinned it
+at **50 B** — because a zerobas block genuinely *is* 50 B of state, its sector
+staging being the shared `FSECTOR_BUF` cache. Asserting 267 would have meant
+padding every block with 217 B of reserved-and-unused RAM purely to make a
+number match: `MAXFILES=1` would have cost 267 B of a user's program space
+instead of 50, and `MAXFILES=15` 4005 B instead of 750 — *less* faithful in
+effect, since the charter is a working BASIC and zerobas's pool is already
+9 KB smaller than the reference's. **User decision 2026-07-29: charge what we
+use.** What the gate asserts instead:
+
+* the ladder asserted as a **linear per-channel slope with a ceiling of 15, on
+  both sides**, with each machine's own constant reported (**reference 267,
+  zerobas 50**) — the *mechanism* is what must match, and it now does. Before
+  the change zerobas's line read `statically reserved (MAXFILES does not move
+  FRE(0))`, which the gate now rejects outright;
+* ⚠️ **the RESERVATION asserted separately from the REPORT** — `dim_fits` /
+  `dim_over`, added by this slice. The slope alone **can be perfectly green
+  while nothing is reserved**: a build that subtracts the table from
+  `sh_free_vars` but not from the array ceilings produces the identical
+  50 B/channel ladder and lets arrays grow straight through the channel table.
+  **Falsified, not assumed** — with the array ceilings reverted to
+  `strheap_floor`, `mf0`/`mf2`/`mf15` still read 14899 / 14799 / 14149 (a
+  flawless slope) while `dim_over` returned `7777` instead of `Out of memory`.
+  Both rows size themselves from the machine's *own* `FRE(0)`, so they are a
+  real differential; the +400 B overshoot is chosen against the 750 B of slack
+  the failure would create, not for roundness;
 * `FRE(0)` **at identical expression depth on every row** — it counts to `SP`,
   and a row that nests differently is measuring a different thing;
 * boot-per-case retained: `MAXFILES` clears state by design, so a shared boot
@@ -282,6 +381,15 @@ reference's recorded answers for drift. To become an acceptance gate it needs:
   are deliberate provenance policy (PROVENANCE §851), and a raw-text gate emitted
   15 false divergences on the first run and buried both real findings.
 
+⚠️ **One row was UNMEASURABLE and had to be rewritten.** `sem_str` typed
+`A$="XY" : MAXFILES=2 : PRINT A$`. A *cleared* `A$` prints an empty line, which
+this probe's readout scores `<none>` — and an *uncleared* `A$` prints `XY`,
+which is not a bare integer and also scores `<none>`. The row compared equal and
+passed **whatever either machine did**, on both sides, forever. It now reads
+`PRINT LEN(A$)` (0 vs 2) and has a two-sided `REM` control. Falsified with the
+rest: removing `MAXFILES`' `CLEAR` flips `sem_var`/`sem_str`/`sem_same` to
+5 / 2 / 5, and in its old form `sem_str` would have stayed green through it.
+
 ## 7. Sign-off questions
 
 * **S-FCH-1 — the carve.** The slice needs an unknown number of ROM bytes
@@ -292,6 +400,30 @@ reference's recorded answers for drift. To become an acceptance gate it needs:
   input every remaining decision needs. Do not scout a carve for a requirement
   that is still a guess.
 
+* **S-FCH-3 — `FCH_CEIL` 15 vs the free-RAM trade. ✅ RESOLVED: 15.** The blocks
+  are dynamic, so unused channels cost nothing and the ceiling was free. Built,
+  and the gate measures it on both sides (a full ladder plus a rejected `mf16`,
+  never "the largest n we asked about").
+
+* **S-FCH-4 — the extra disk I/O on channel switch. ✅ NO RE-TIMING NEEDED.**
+  The predicted flake did not appear: `diskbasic-acceptance` 34/34 and the
+  interleaved-write fixture converge unchanged at the existing capture windows.
+
+* **S-FCH-5 — `MAXFILES` now clears variables. ✅ TAKEN, corpus re-run.** No
+  fixture set a variable and then called `MAXFILES`: unit 53/53, linemax 60/60
+  + 3/3 `--cas`, arrdim 73/73, clearpool 52/52, diskbasic 34/34, bdos 12/12,
+  fat-error 7/7, array 149/151 (the standing `ifc.instr.*` baseline).
+
+* ⚠️ **S-FCH-2 — ERR 5 / 52 / 59. ITS PREMISE HAS MOVED, AND THE MOVE IS
+  ADVERSE.** It was costed at ~100 B against **6 B** free in page 1. Page 1 now
+  stands at **0 B free** — S-FCH-1 spent 5 and §3.2 spent the last 1. Option
+  (b)'s sparse side-table costing is stale for the same reason. This is a
+  sign-off premise that changed *after* the sign-off, and it is reported rather
+  than absorbed: **S-FCH-2 needs a carve, and the carve must be scouted against
+  a requirement that has itself been built and measured** — the one thing this
+  whole slice has now demonstrated three times. Nine of the gate's ten filed
+  divergences are S-FCH-2's.
+
 * **S-FCH-2 — ERR 52 / 59 vs a dense `err_msgtab`.** Reaching code 59 densely
   costs ~100 B for two messages. Options: (a) extend the table (simple, dear);
   (b) a small **sparse** side-table for the disk block, which the file verbs are
@@ -301,24 +433,3 @@ reference's recorded answers for drift. To become an acceptance gate it needs:
   does not raise, at six sites. **Recommended: (b)**, but only after S-FCH-1
   gives a real budget.
 
-* **S-FCH-3 — `FCH_CEIL` 15 vs the free-RAM trade.** 15 is the measured
-  reference ceiling and the charter is faithfulness, so 15 is the answer *if*
-  the blocks are dynamic — because unused channels then cost nothing and the
-  ceiling is free. This question only reappears if S-FCH-1 shows dynamic
-  allocation is unaffordable and the slice falls back to a static table, where
-  15 costs the entire +1024 B (see the decision table in `TODO.md`).
-
-* **S-FCH-4 — the extra disk I/O on channel switch.** Flush-and-re-read makes a
-  channel switch cost real sector traffic where today it is a `memcpy`. The
-  reference accepts exactly this. Interleaved-write fixtures
-  (`disk_probe_maxfiles.py`) will get slower and, per D-CLP's experience with
-  O(n) collections, **a slower row can outrun the capture window and read back
-  as its own echo**. Budget for re-timing that probe rather than discovering it
-  as a flake.
-
-* **S-FCH-5 — `MAXFILES` now clears variables.** This is measured-faithful
-  (§2.2) but it is a real behaviour change: any fixture that sets a variable and
-  then calls `MAXFILES` will see it reset. Same class of change as D-CLP's
-  200-byte default. **Recommended: take it, and re-run the full corpus** —
-  `diskbasic-acceptance`, `array-acceptance`, `clearpool-acceptance` — rather
-  than trusting that no fixture does this.

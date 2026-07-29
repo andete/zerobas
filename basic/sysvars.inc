@@ -712,8 +712,17 @@ ERRMARK         equ     $E010   ; error landmark marker byte
 ; divergence. See basic/files.asm §channel manager + PROVENANCE.md §MAXFILES.
 MAXF            equ     $E011   ; current MAXFILES ceiling (0..FCH_CEIL); default 1 (1)
 FCH_ACTIVE      equ     $E012   ; channel live in the engine globals, 0 = none (1)
-FCH_MODES       equ     $E013   ; per-channel mode array [0..FCH_CEIL]; [0] unused,
-                                ; [ch] = 0 closed / 1 INPUT / 2 OUTPUT (FCH_CEIL+1 bytes)
+; FCH_MODES — per-channel mode array [0..FCH_CEIL]; [0] unused, [ch] = 0 closed /
+; 1 INPUT / 2 OUTPUT / 5-6 LPT-CRT / 7-8 CAS (FCH_CEIL+1 bytes).
+; ⚠️ D-FCH §3.2: the repack build's FCH_CEIL is 15, so this array is 16 B and no
+; longer fits the 3-byte $E013 slot (INDLR_N sits at $E016). It moves into the
+; page-3 window S-FCH-1 freed by retiring the static FCH_CTX table ($EA00..$EAFF,
+; below LINEBUF $EB00). The lean cart keeps $E013 — its ceiling is still 2.
+    IF ROM_BASE < $4000
+FCH_MODES       equ     $EA00   ; repack: 16 B ($EA00..$EA0F)
+    ELSE
+FCH_MODES       equ     $E013   ; lean: 3 B ($E013..$E015)
+    ENDIF
 INDLR_N         equ     $E016   ; INPUT$(n,#f): remaining bytes to read (transient, 1)
 MRG_PTR         equ     $E017   ; MERGE: write cursor into LINEBUF for the current line (2)
 ; Random-access (FIELD/LSET/RSET) transient parse/store scratch (Phase 2c slice 1).
@@ -2339,21 +2348,31 @@ PLAY_OP_END     equ     $FF     ; end of this voice's queue
 ; at $E9C0..$E9C8) sits BELOW the span and stays SHARED — correct for a single
 ; drive (every fat_mount re-derives it identically).
 ;
-; The blocks live in clean high RAM ($EA00..), clear of all basic-core +
-; zerobas-disk scratch (disk tops out at WBUF $E75F; C-BIOS sysvars start
-; ~$F380). At 50 B each the whole table is FCH_CEIL*50 -- the 1124 B this used
-; to cost is what funds the rest of D-FCH.
-FCH_CEIL        equ     2       ; max simultaneously-open channels (RAM-bounded)
+; D-FCH §3.2 (repack): the table is no longer AT a fixed address at all. It is
+; CARVED OUT OF THE POOL at MAXFILES time, immediately below the string pool's
+; floor, so `MAXFILES=n` costs n*FCH_CTXSZ of FRE(0) exactly as the reference
+; charges 267 B/channel out of its own FRE(0) pool (characterization §2/§4/§5):
+;
+;   channel table base = min(HIMEM,TXTMAX) - POOLSIZE - MAXF*FCH_CTXSZ
+;
+; DERIVED, NEVER STORED — the same S-CLP-2 discipline strheap_floor uses, and
+; for the same reason: the arithmetic lives sub-side (sub/strheap.asm
+; strheap_varceil / op 18) where ROM is not scarce, so `CLEAR n`, `CLEAR ,himem`
+; and `MAXFILES=n` are all picked up for free by the next derivation. The lean
+; cart keeps the STATIC table at FCH_CTX below (byte-identity gate).
 FCH_STATE0      equ     FAT_CURCLUS         ; $E9C9 — base of the per-channel state span
 FCH_STATESZ     equ     FWR_DIROFF+2-FCH_STATE0     ; $E9C9..$E9FA inclusive = 50 bytes
     IF ROM_BASE < $4000
+FCH_CEIL        equ     15      ; repack: the MEASURED reference ceiling (§3, exactly
+                                ; 15) — free now that unused channels cost nothing
 FCH_CTXSZ       equ     FCH_STATESZ         ; repack: block = state ONLY (no buffer)
     ELSE
+FCH_CEIL        equ     2       ; lean: static table, RAM-bounded
 FCH_CTXSZ       equ     FCH_STATESZ + 512   ; lean: the old [state][buffer] block --
                                             ; the 16 KB cart is byte-full and keeps
                                             ; the memcpy path (basic/files.asm)
+FCH_CTX         equ     $EA00   ; lean: FCH_CEIL static [state][buffer] blocks
     ENDIF
-FCH_CTX         equ     $EA00   ; FCH_CEIL context blocks, each [state] (+buf, lean)
 ; --- Phase 2c slice 1: random-access FIELD table + fielded-read scratch -----
 ; zerobas stores string vars INLINE in STRTAB ([name0][name1][len][bytes:32]); a
 ; MS-BASIC-style descriptor pointing into a record buffer does not exist. So a
@@ -2415,7 +2434,14 @@ FLD_DESC        equ     $EF00   ; transient fielded-read descriptor [len][bytes:
 ; is the active channel's value, loaded from FCH_RECLENS[FCH_ACTIVE] at the start
 ; of each GET/PUT record calc. Clean high RAM above FLD_DESC ($EF00..$EFFF), well
 ; below the C-BIOS sysvars (~$F380). See basic/field.asm §GET/PUT + files.asm OPEN.
-FCH_RECLENS     equ     $F000   ; per-channel record length words [0..FCH_CEIL] (6 B)
+; ⚠️ D-FCH §3.2: with FCH_CEIL=15 the repack array is 32 B and would run over
+; GP_RECLEN/OO_RECLEN_CHAN/FILES_HASPAT/CAS_WANT at $F006..; it moves into the
+; same freed $EA00 page-3 window as FCH_MODES. The lean cart keeps $F000 (6 B).
+    IF ROM_BASE < $4000
+FCH_RECLENS     equ     $EA10   ; repack: 32 B ($EA10..$EA2F); $EA30..$EAFF free
+    ELSE
+FCH_RECLENS     equ     $F000   ; lean: per-channel record length words [0..2] (6 B)
+    ENDIF
 GP_RECLEN       equ     $F006   ; active channel's record length (word), loaded per calc
 OO_RECLEN_CHAN  equ     $F008   ; OPEN scratch: channel # stashed across the LEN= eval (1)
 FILES_HASPAT    equ     $F009   ; FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1)

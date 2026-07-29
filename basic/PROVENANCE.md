@@ -2061,22 +2061,46 @@ write state. The mount geometry proper (`$E9C0..$E9C8`) stays **shared** below t
 span — correct for a single drive (every `fat_mount` re-derives it identically).
 `fat.asm` is byte-for-byte untouched; all its differential validation still holds.
 
-**RAM-bounded ceiling (documented divergence).** Each context block is 562 bytes
-(50 + 512); they live in clean high RAM (`FCH_CTX = $EA00`, clear of all basic-core
-and zerobas-disk scratch — disk tops out at WBUF `$E75F`, C-BIOS sysvars start
-`~$F380`). `FCH_CEIL = 2` fits cleanly (`2*562 = $0464` → `$EA00..$EE63`). Real MSX
-MAXFILES reaches 15; zerobas accepts `0..FCH_CEIL` and makes a larger value a
-syntax error — we have RAM for only `FCH_CEIL` 512-byte channel buffers. Growing
-the ceiling is a one-constant change once more RAM is found. The DEFAULT is
+**Dynamic allocation, ceiling 15 (D-FCH, repack build).** ⚠️ The paragraph this
+replaces described a **562-byte static block and a RAM-bounded ceiling of 2**;
+both are gone. `docs/spec-basic-filechan-alloc.md`:
+
+* **§3.1 (S-FCH-1)** retired the 512-byte half — it was purely a *save copy* of
+  the one global `FSECTOR_BUF`, which is now a real write-back cache
+  (`fat_detach_channel` flushes the dirty partial sector in place,
+  `fat_restage_channel` reads it back). A block is the 50-byte state span alone.
+* **§3.2** made the table **dynamic**: it is carved out of the pool at
+  `MAXFILES` time, immediately below the string-pool floor, at
+  `min(HIMEM,TXTMAX) − POOLSIZE − MAXF×FCH_CTXSZ` — derived, never stored
+  (`strheap_varceil`, `sub/strheap.asm`; `fch_ctx_addr` asks for a block through
+  op 18). So `MAXFILES=n` costs **50 B per channel out of `FRE(0)`** and nothing
+  is charged for channels a program never asks for, which is the mechanism the
+  **reference** uses (measured: it charges 267 B/channel out of its own `FRE(0)`
+  pool, `docs/chancost-cf3300-characterization.md`). `FRE("")` is untouched.
+  `FCH_CEIL` is now **15**, the measured reference ceiling.
+* `MAXFILES` also **CLEARs variables unconditionally**, even when the value does
+  not change — measured on the CF-3300, and required for safety here anyway
+  since the statement moves the variable region's ceiling.
+* ⚠️ **The lean 16 KB cart keeps the old static `[state][buffer]` table at
+  `FCH_CTX = $EA00` with `FCH_CEIL = 2`** — it is byte-full, and byte-identity
+  is a build gate. Everything above is `IF ROM_BASE < $4000`.
+
+The DEFAULT is
 `MAXFILES = 1` (observed: `OPEN #1` works with no MAXFILES on the CF-3300). Like
 the reference, `MAXFILES` reinitialises the file system — every open channel is
 closed first (OUTPUT ones flushed + Ctrl-Z-stamped, via `fch_close_all`). Bare
 `CLOSE` now closes **all** open channels (faithful), not just one.
 
-**Register discipline.** The manager moves state with `LDIR` (no CALSLT), so it
-clobbers `A/BC/DE/HL` but NOT `IX/IY`. Statement callers guard their `HL` text
-cursor across `fch_select`; the `EOF`/`LOF` function callers rely on the evaluator's
-`IX` token cursor surviving (it does — no CALSLT). The first cut of OPEN's success
+**Register discipline.** Statement callers guard their `HL` text cursor across
+`fch_select`; the `EOF`/`LOF` function callers, and `INPUT$`, rely on the
+evaluator's `IX` token cursor surviving. ⚠️ **In the repack build the manager
+now CONTAINS CALSLTs** (the D-FCH cache flush/re-stage, and the block-address
+op), where it originally moved state with `LDIR` alone and needed no guard at
+all. That contract is honoured by **one** `push ix` hoisted into `fch_select` —
+the single door every `IX`-critical caller enters through; `fch_claim`'s only
+caller (`do_open`) keeps its cursor in `HL` and already guards for CALSLT. Any
+NEW caller of `fch_ctx_addr`/`fch_save_active`/`fch_load_ctx` must be checked
+against this. The first cut of OPEN's success
 path computed the `FCH_MODES[ch]` address into `HL`, clobbering the text cursor
 before `jp exec_stmt` — so OPEN opened the file yet then executed from garbage
 (a spurious "syntax error"); the fix guards `HL` across the table write.
@@ -2090,10 +2114,15 @@ given the identical program. The crunch suite (incl. `maxfiles=2`), the 16 host
 unit-test files, and every single-channel file probe (read / write / EOF·LOF /
 DSKF) still pass.
 
-**Divergences (own design, quarantined):** the RAM-bounded `FCH_CEIL = 2` ceiling
-(vs the reference's 15); the resume-state RAM layout (`FCH_CTX`/`FCH_MODES`/
-`FCH_ACTIVE`) is zerobas's own, not the reference's FCB/buffer map; out-of-range or
-too-large channel/`MAXFILES` values reuse the `syntax error`/`load error` wording.
+**Divergences (own design, quarantined):** the per-channel CHARGE is **50 B**
+where the reference's is 267 — deliberate, and in the user's favour: a zerobas
+block genuinely is 50 B of state (its sector staging is the shared cache), so it
+charges what it uses rather than reserving 217 B/channel that nothing reads. The
+*mechanism* and the *ceiling* now match. The resume-state RAM layout
+(`FCH_MODES`/`FCH_ACTIVE` and the carved block itself) is zerobas's own, not the
+reference's FCB/buffer map. Out-of-range channel/`MAXFILES` values still reuse
+the `syntax error`/`load error` wording where the reference raises ERR 5 / 52 /
+59 — open, owned by S-FCH-2.
 
 ## OPEN … FOR APPEND — extend an existing sequential file (basic/files.asm, basic/fat.asm)
 

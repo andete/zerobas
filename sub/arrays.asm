@@ -565,7 +565,11 @@ scv_ceil_try:
                 ; slot, is deliberately left ALLOCATED but unused: every later
                 ; frame offset is absolute, and renumbering six of them to
                 ; reclaim one byte of STACK is a poor trade.
-                call    strheap_floor       ; HL = the pool floor
+                ; ⚠️ D-FCH §3.2: strheap_VARCEIL, not strheap_floor -- the
+                ; file-channel table is carved between them, and an array that
+                ; grew into it would be silently overwritten by the next channel
+                ; switch. Same clobber set, and it touches neither IX nor IY.
+                call    strheap_varceil     ; HL = the variable-region ceiling
     ELSE
                 ld      hl,(FRETOP)         ; ceiling
     ENDIF
@@ -1020,7 +1024,9 @@ aal_ceil_try:
                 ; not out of string space. Removing the retry also removes the
                 ; push ix/pop ix that guarded strheap_gc's IX clobber.
                 ; strheap_floor touches neither IX nor IY.
-                call    strheap_floor       ; HL = the pool floor
+                ; ⚠️ D-FCH §3.2: strheap_VARCEIL now, not strheap_floor -- see
+                ; scv_ceil_try above; the channel table sits between the two.
+                call    strheap_varceil     ; HL = the variable-region ceiling
     ELSE
                 ld      hl,(FRETOP)         ; ceiling
     ENDIF
