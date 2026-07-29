@@ -129,7 +129,15 @@ def as_stored(line: str) -> list[str]:
     return bodies
 
 
-MAX_BUF = 250  # MSX line-input buffer (BUF/LINBUF) holds ~255 chars incl CR
+# The longest line a machine will take. 254 characters is MEASURED, not assumed:
+# the VG-8020 stores a 254-character line intact and SATURATES there (255, 256,
+# 257, 260 and 300 all store exactly 254 -- the tail is dropped, the line is
+# kept). See docs/linemax-vg8020-characterization.md §1, probes/basic/
+# basic_probe_linemax.py `rem` battery. This was 250 with the comment "holds ~255
+# chars incl CR" -- a guess that REFUSED to inject anything longer, so every
+# length past it was unreachable rather than tested. A probe that needs to drive
+# a machine PAST its ceiling raises this deliberately (that probe does).
+MAX_BUF = 254
 
 
 def _cap_expr(capture) -> str:
@@ -356,7 +364,14 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
     if os.path.exists(out):
         for ln in open(out):
             m = re.match(r"case\.(\d+)=([0-9a-f]*)", ln.strip())
-            if m and m.group(2):
+            # An EMPTY capture is DATA, not a missing one. `__hex_line` returns ""
+            # for an empty program -- i.e. "the line was REFUSED on entry", which
+            # is a behaviour a probe has to be able to read. Dropping it here
+            # collapsed that into the None a probe also gets when the machine
+            # never reached the capture at all (a wedge), so the two were
+            # indistinguishable; D-LINEMAX needs them apart. Callers that folded
+            # both together (`if not raw`) are unaffected.
+            if m:
                 if capture == "screen":
                     data = bytes.fromhex(m.group(2))
                     caps[int(m.group(1))] = "".join(
