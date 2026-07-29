@@ -205,6 +205,22 @@ fre_abort_low:
 ; relink), but post-4c those descriptors are wiped by THIS SAME call's
 ; ARYTAB re-anchor, so nothing is lost by also freeing their bodies.
 vars_reset:
+                ; D-ONELIN (docs/spec-basic-onelin-reset-scope.md §3/§4): clearing
+                ; the variable world DISARMS `ON ERROR`. MEASURED on the VG-8020,
+                ; 14 cases, each trigger unconfounded by an edit: RUN, NEW, CLEAR
+                ; (direct-mode AND in-run, so MAXFILES too -- it ends `jp clr_done`)
+                ; and EVERY program EDIT disarm; DIM, string traffic, a plain direct
+                ; statement and a STOP/CONT suspension do NOT. That set is EXACTLY
+                ; this routine's five callers (new_prog, run_prog, clr_done, relink
+                ; here and in the sub-ROM lineedit tenant), which is why the zero
+                ; lives here and not in clear_vars -- a program edit never reaches
+                ; clear_vars. ⚠️ NOT an invalidation of a stale link address: the
+                ; reference disarms on an APPEND that moves nothing (`edit_append`),
+                ; which is what falsified that reading. Siting it at vars_reset's
+                ; HEAD (not ary_reset's) keeps it off any path DIM/string traffic
+                ; can reach on its own.
+                ld      hl,0
+                ld      (ONELIN),hl
                 call    heap_reset
                 ld      hl,(PRGEND)
                 inc     hl

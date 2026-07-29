@@ -293,12 +293,19 @@ run_prog:
                                             ; trap resets SP here before jumping to
                                             ; the handler (a trap fires from
                                             ; arbitrary call depth)
-                ld      hl,0
-                ld      (ONELIN),hl         ; error-handling S2b §7 hypothesis: RUN
-                                            ; re-arms, so a fresh RUN starts with no
-                                            ; ON ERROR handler armed. UNVERIFIED,
-                                            ; flagged for the lead's VG-8020 pin
-                                            ; (packet §7).
+                                            ; D-ONELIN (docs/spec-basic-onelin-reset-
+                                            ; scope.md §4): the `ld hl,0 / ld (ONELIN),hl`
+                                            ; that used to sit HERE moved down into
+                                            ; vars_reset (basic/arrays.asm), called six
+                                            ; lines up. RUN really does disarm -- that
+                                            ; half of the §7 hypothesis MEASURED true
+                                            ; (`run_after_arm`) -- but it is not RUN's
+                                            ; OWN rule: the reference disarms whenever
+                                            ; the variable world is reset, which is RUN,
+                                            ; NEW, CLEAR/MAXFILES *and every program
+                                            ; EDIT*. vars_reset is the one routine all
+                                            ; five reach. Net zero bytes: this site
+                                            ; funded that one.
                 ld      (ONEFLG),a          ; not inside a handler at RUN start (A is
                                             ; still 0 from the xor a above -- nothing
                                             ; since touches it: the ERR-reset-on-RESUME

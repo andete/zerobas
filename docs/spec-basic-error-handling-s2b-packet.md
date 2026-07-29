@@ -390,10 +390,21 @@ This is strictly additive to the proven S1/S2a paths — a key safety property f
 > on the way OUT** — not on an abort, not at the end of a run. The reference
 > clears on any abort and any run TERMINATION, and deliberately keeps it across a
 > `STOP`/Ctrl-STOP SUSPENSION so `CONT` can resume inside the handler.
-> The **`ONELIN` half is still open** and is a different mechanism (`ONELIN`
-> invalidation at relink, not `clear_vars`) — see TODO.md's `CLEAR`/`MAXFILES`
-> item. The working hypothesis at the bottom of this section is now known to be
-> INCOMPLETE for `ONEFLG`, not merely unverified.
+> **STATUS 2026-07-29 — the `ONELIN` half is now ANSWERED and FIXED too**, in
+> [`docs/spec-basic-onelin-reset-scope.md`](spec-basic-onelin-reset-scope.md)
+> (14-case VG-8020 battery, 5 divergent rows, net **0 B**, 17 standing gate
+> rows). **§7 IS CLOSED.** The measured rule: `ON ERROR` is disarmed exactly
+> when the VARIABLE TABLE IS CLEARED — RUN, NEW, CLEAR (direct-mode *and*
+> in-run, so `MAXFILES`) and **every program EDIT**. So the zero lives in
+> `vars_reset`, the one routine all five reach.
+> The bullets below are answered as: RUN **yes** (measured unconfounded, not
+> merely "likely"); NEW yes; CLEAR **yes** — and the list's real omission was
+> that it never asked about a program EDIT, which is half the rule.
+> 🔴 The intermediate hypothesis this note itself carried — "`ONELIN`
+> invalidation at relink, not `clear_vars`" — is ALSO wrong: the reference
+> disarms on an append that moves nothing. And §10's own `reset_scope_*` rows
+> were **vacuous** (a literal marker matching its own source echo), which is
+> where that wrong lead came from — see the new slice's §2.1.
 
 The S2 spec §4 says *"Cold boot + clear_vars zero ONELIN/ONEFLG/ERRCODE/ERRLINE (so
 ON ERROR state does not survive NEW/RUN)."* **That §4 claim is already partly

@@ -2039,45 +2039,58 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Gate rows `bfn_trap`/`bfn_zero`/`fno_eof` + the `bfn_ctl` two-sided
       control now measure the CODE instead of its neighbours.
 
-- [ ] **`CLEAR`/`MAXFILES` inside a run do not suppress an armed `ON ERROR`
-      handler** (reference: they do). Found 2026-07-29 while measuring S-FCH-2,
-      as the real owner of the `err_badchan` divergence. `10 ON ERROR GOTO 100 :
-      20 CLEAR : 30 B=SQR(-1)` → the CF-3300 prints `Illegal function call in 30`
-      (handler never runs); zerobas traps and prints 7777. Two-sided: with the
-      `CLEAR` REMmed out **both** machines trap. `MAXFILES=1` behaves identically
-      (it CLEARs, D-FCH §3.2). Gated as `clr_disarm`/`clr_ctl` and
-      `mf_disarm`/`mf_ctl` in `diskbasic_probe_chancost.py`; contradicts the
-      standing hypothesis at `basic/sysvars.inc`'s `ONELIN` (*"NOT clear_vars, so
-      NEW/CLEAR alone do not disarm a handler"*).
-      🔴 **DO NOT FIX THIS AS A ONE-LINE `clear_vars` DISARM — the contract is
-      not that**, and `error-trap-acceptance`'s `reset_scope_clear` (green today,
-      both sides) would have gone red proving it. **CHARACTERIZED 2026-07-29,
-      each row two-sided** (`7777` = the handler ran):
+- [x] **`CLEAR`/`MAXFILES` inside a run do not suppress an armed `ON ERROR`
+      handler** (reference: they do). Found 2026-07-29 while measuring S-FCH-2;
+      **✅ FIXED the same day —
+      [`docs/spec-basic-onelin-reset-scope.md`](docs/spec-basic-onelin-reset-scope.md).
+      Net 0 BYTES** (the disarm MOVED out of `run_prog` into `vars_reset`);
+      walls rebalanced low 6 → **0** B free, page 1 5 → **11** B free; lean
+      byte-identical. 17 standing gate rows; three rejected builds assembled.
+      **THE RULE, MEASURED (14 rows, each trigger unconfounded by an edit):** a
+      handler is disarmed **exactly when the variable table is cleared** — `RUN`,
+      `NEW`, `CLEAR` (direct-mode *and* in-run, so `MAXFILES`) and **every
+      program EDIT**. `DIM`, string traffic, a plain direct statement, a
+      `STOP`+`CONT` suspension and a `CLEAR` *before* the arm all keep it. That
+      set is `vars_reset`'s five callers, 1:1 — which is why the zero lives
+      there and not in `clear_vars` (a program edit never reaches `clear_vars`).
+      🔴 **EVERY PREVIOUSLY-FILED ROW WAS CONFOUNDED FOR PLACEMENT** — each typed
+      a program line BETWEEN the arm and the trigger, so "the EDIT disarmed it"
+      and "`RUN`/`CLEAR` disarmed it" were indistinguishable. Armed LAST, with no
+      edit in between: **`RUN` DOES disarm**, so this item's own warning that
+      "`RUN` must not disarm" was false.
+      🔴 **THE `ONELIN`-INVALIDATION-AT-RELINK MECHANISM THIS ITEM RECORDED IS
+      WRONG.** It predicts that only an edit which MOVES the handler line
+      disarms; the reference disarms on an **append that moves nothing**
+      (`onelin_edit_append`), and on a same-length retype. The trigger is the
+      EDIT, not the MOVE.
+      🔴 **AND THE THREE `reset_scope_*` GATE ROWS WERE VACUOUS.** Their marker
+      was the literal `R<LEAKED>`, which appears in each case's **own source
+      echo**: the test read TRUE on every machine, in every build, since the day
+      it landed. That is where the false "the reference DOES fire" claim in
+      spec-basic-filechan-alloc.md §5d.5 came from — and that claim is what
+      steered this item away from the variable-clear rule for a whole arc.
+      **A wrong measurement is worse than none: it does not merely fail to
+      inform, it actively STEERS.** All three now use the numeric marker and are
+      oracle-locked. ⚠️ `NEW` still cannot be isolated (the retype it forces has
+      already disarmed the handler) — unchanged, and now moot: `NEW` reaches
+      `vars_reset` like everything else.
+      Also closed: a **stale-pointer WILD BRANCH** — inserting a line before the
+      erroring line moved the handler line, and zerobas followed its stale
+      `ONELIN` into the moved text, reporting `syntax error in 4850`, a line that
+      does not exist. Marker-wise that row AGREED with the reference while doing
+      something far worse; it is now gated on the **abort line number**.
+      `chancost-characterize`: 4 filed divergences → **1** (`err_badchan`,
+      `mf_disarm`, `clr_disarm` all agree now).
 
-      | typed | reference | zerobas |
-      |---|---|---|
-      | `20 CLEAR` **inside the run**, arm at line 10 | **no trap** | traps |
-      | …same, `REM CLEAR` (control) | traps | traps |
-      | `CLEAR` in **direct mode** between the arm and `RUN` | traps | traps |
-      | in-run `CLEAR` then **re-arm** at line 25 | **traps** | traps |
-      | arm, then **retype a program line**, then `GOTO` | **no trap** | traps |
-      | …same, no retype (control) | traps | traps |
-      | arm, `NEW`, retype, `GOTO` | no trap | traps |
-
-      **What that says.** The re-arm row is the decisive one: an in-run `CLEAR`
-      **zeroes the ARM**, it does not enter a "trapping suppressed" mode — put
-      `ON ERROR GOTO` back and the trap fires again. And a plain program **EDIT**
-      disarms too. Both fit one mechanism: `ONELIN` holds a resolved LINK
-      ADDRESS, so the reference invalidates it whenever the thing it points into
-      moves. A direct-mode `CLEAR` before `RUN` does not, and neither does `RUN`
-      itself (`reset_scope_run`).
-      ⚠️ **`NEW` CANNOT BE ISOLATED THIS WAY AND THE ANSWER IS NOT "NEW DISARMS":
-      the retype `NEW` forces has ALREADY disarmed it, so `new_` and its control
-      read the same.** Any future measurement of `NEW` needs a shape that does
-      not edit the program afterwards. So the fix is **not** in `clear_vars`
-      (shared by NEW/CLEAR/RUN, and `RUN` must not disarm) — it is `ONELIN`
-      invalidation at relink plus the in-run `CLEAR`, and zerobas is wrong on
-      the **edit** half as well as the `CLEAR` half.
+- [ ] **`CONT` that runs off the end of the program aborts with a nonexistent
+      line number.** `10 STOP : 20 B=1 : 30 PRINT"…"` then `RUN`, `CONT` — the
+      reference resumes, prints, and returns to `Ok`; zerobas prints, then
+      reports `Illegal function call in 3346`. Found 2026-07-29 by D-ONELIN's
+      `stop_cont` CONTROL (no `ON ERROR` anywhere — `ONELIN` is 0 throughout),
+      and **verified PRE-EXISTING at `6ac2285`** against a parked pre-fix build,
+      not assumed. Third of a cluster with the two below (`CONT` after a plain
+      `END`; ERR 21 `No RESUME`) — all three are about what the run loop leaves
+      behind at its exit, and are probably one fix.
 
 - [x] **A stale `ONEFLG` survives the return to the REPL, so the NEXT error
       force-aborts instead of trapping.** Raised as S-FCH-2's open question by

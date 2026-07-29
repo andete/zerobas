@@ -516,23 +516,26 @@ Both are error-handling defects, both pre-date S-FCH-2, both are filed in
 [`TODO.md`](../TODO.md) rather than absorbed here.
 
 1. **`CLEAR`/`MAXFILES` do not suppress an armed `ON ERROR` handler in zerobas;
-   on the reference they do** — and this contradicts the standing hypothesis
-   recorded at `basic/sysvars.inc`'s `ONELIN` ("*NOT clear_vars, so NEW/CLEAR
-   alone do not disarm a handler*"). ⚠️ **It is NOT simply "clear_vars should
-   disarm": `error-trap-acceptance`'s `reset_scope_clear` measures a DIRECT-mode
-   `CLEAR` between the arm and the `RUN` and the reference DOES fire the handler
-   there.** In-run and direct-mode `CLEAR` behave differently, so the contract
-   has to be characterized before it is coded — a one-line `clear_vars` fix would
-   have turned `reset_scope_clear` red. This is the row `err_badchan` now belongs
-   to. **Characterized in [`TODO.md`](../TODO.md) rather than fixed here:** an
-   in-run `CLEAR` zeroes the *arm* (re-arming at a later line restores the trap,
-   so it is not a suppression mode), a plain program **edit** disarms as well,
-   and `NEW` cannot be isolated at all — the retype it forces has already
-   disarmed the handler, so its case and its control read the same. One
-   mechanism fits: `ONELIN` holds a resolved LINK address and the reference
-   invalidates it when what it points into moves. **So the fix is `ONELIN`
-   invalidation at relink, NOT `clear_vars`** — which `RUN` also runs through,
-   and `RUN` must not disarm.
+   on the reference they do.** ✅ **FIXED 2026-07-29 —
+   [`docs/spec-basic-onelin-reset-scope.md`](spec-basic-onelin-reset-scope.md)**
+   (14-row VG-8020 battery, net **0 B**, three rejected builds). The measured
+   rule: a handler is disarmed exactly when the VARIABLE TABLE IS CLEARED — RUN,
+   NEW, `CLEAR` (direct-mode *and* in-run, so `MAXFILES`) and **every program
+   EDIT**. The zero moved from `run_prog` into `vars_reset`, the one routine all
+   five reach. `err_badchan`, `mf_disarm` and `clr_disarm` all left this probe's
+   `KNOWN_DIVERGE` the same day (4 filed divergences → 1).
+   🔴 **TWO CLAIMS THIS SECTION MADE WERE FALSE, AND BOTH COST A WHOLE ARC.**
+   (a) *"`reset_scope_clear` … the reference DOES fire the handler there"* — it
+   does not. That row's marker was the literal `R<LEAKED>`, which appears in the
+   case's **own source echo**, so the row read TRUE on every machine in every
+   build and had never measured anything (new slice §2.1; now repaired and
+   oracle-locked). (b) The conclusion drawn from it — *"the fix is `ONELIN`
+   invalidation at relink, NOT `clear_vars`"* — is wrong too: the reference
+   disarms on an **append that moves nothing**, so the trigger is the edit, not
+   the move. `clear_vars` was indeed the wrong site, but for the opposite
+   reason: not because `RUN` must not disarm (**`RUN` does disarm** — measured
+   unconfounded), but because a program edit never reaches `clear_vars`.
+   **A vacuous gate row does not merely fail to inform — it actively steers.**
 
 2. **A stale `ONEFLG` survives the return to the REPL.** ✅ **FIXED 2026-07-29 —
    [`docs/spec-basic-oneflg-reset-scope.md`](spec-basic-oneflg-reset-scope.md)**

@@ -279,18 +279,14 @@ KNOWN_DIVERGE = {
     # to live on this list -- sem_zero, sem_hinum, sem_reopen and err_notopen --
     # and is why they are gone rather than updated.
     #
-    # ⚠️ `err_badchan` SURVIVES, AND ITS OWNER CHANGED. It is NOT an S-FCH-2 row
-    # any more: bfn_trap/bfn_zero prove ERR 52 traps, and mf_disarm/clr_disarm
-    # (each two-sided) prove why this one does not -- line 20's `MAXFILES=1`
-    # DISARMS the handler on the reference, and does not on zerobas. So the
-    # reference reports past the handler while zerobas traps and prints 52. The
-    # divergence that remains is "CLEAR/MAXFILES do not disarm ON ERROR", an
-    # ERROR-HANDLING defect measured 2026-07-29 and filed in TODO.md -- and it
-    # contradicts the standing hypothesis recorded at basic/sysvars.inc's ONELIN
-    # ("NOT clear_vars, so NEW/CLEAR alone do not disarm a handler").
-    "err_badchan": ("BFN", 52),
-    "mf_disarm":   ("IFC", 7777),
-    "clr_disarm":  ("IFC", 7777),
+    # ✅ D-ONELIN LANDED 2026-07-29 (docs/spec-basic-onelin-reset-scope.md):
+    # THREE MORE rows left this list the same day -- err_badchan, mf_disarm and
+    # clr_disarm. `MAXFILES`/`CLEAR` now DISARM an armed `ON ERROR` handler, as
+    # the reference does, because the disarm moved to `vars_reset` -- the one
+    # routine RUN, NEW, CLEAR/MAXFILES and every program EDIT all funnel through.
+    # err_badchan was never an ERR 52 fact at all: line 20's `MAXFILES=1`
+    # suppressed its handler on the reference and not on zerobas, so the
+    # reference reported past the handler while zerobas trapped and printed 52.
     # Filed separately in TODO.md: LOF on a freshly-created OUTPUT channel reads
     # -1 where the reference reads 0. A LOF bug, not an allocation one -- its
     # two-sided control `lof_existing` agrees at 26 on both machines.

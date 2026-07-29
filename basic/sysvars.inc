@@ -891,12 +891,26 @@ ONELIN          equ     $E1C8   ; 2 B: ON ERROR handler line's LINK address (the
                                 ; find_line_bc / GOTOTGT-shaped value, NOT the
                                 ; token body) — 0 = no handler armed. Written by
                                 ; ex_on_error; read by raise_error's trap
-                                ; decision. Reset scope (packet §7, UNVERIFIED --
-                                ; flagged for the lead's VG-8020 adversarial
-                                ; pin): zeroed at run_prog (RUN re-arms) and
-                                ; init (cold boot); NOT clear_vars, so NEW/CLEAR
-                                ; alone do not disarm a handler under this
-                                ; hypothesis.
+                                ; decision.
+                                ; ✅ Reset scope MEASURED 2026-07-29 (14 rows on
+                                ; the VG-8020, docs/spec-basic-onelin-reset-
+                                ; scope.md): a handler is disarmed EXACTLY when
+                                ; the variable table is cleared — RUN, NEW,
+                                ; CLEAR (direct-mode AND in-run, so MAXFILES
+                                ; too) and EVERY program EDIT. So the zero lives
+                                ; in vars_reset (basic/arrays.asm), the one
+                                ; routine all of those funnel through, plus init
+                                ; for cold boot. NOT clear_vars — a program edit
+                                ; never reaches it.
+                                ; ⚠️ The old note here read "NOT clear_vars, so
+                                ; NEW/CLEAR alone do not disarm a handler" and
+                                ; was WRONG IN BOTH HALVES: CLEAR does disarm,
+                                ; and the reason is not the one that sentence
+                                ; implies. ⚠️ It is also NOT "invalidate a stale
+                                ; link when what it points into MOVES": the
+                                ; reference disarms on an APPEND that moves
+                                ; nothing (the `onelin_edit_append` gate row is
+                                ; what falsified that reading).
 ONEFLG          equ     $E1CA   ; 1 B: 1 = currently inside a handler (no RESUME
                                 ; yet) — a second error while set is a forced
                                 ; abort with the INNER message (real-MSX nested-

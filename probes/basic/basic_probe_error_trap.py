@@ -48,14 +48,21 @@ structure, never as the sole signal for a numeric fact):
     that just zeroes ONEFLG at the prompt passes the first three and fails these),
     plus the no-prior-error control and a direct-RESUME readout that reads the flag
     head-on ("RESUME without error" == ONEFLG is already 0).
-  * RESET_SCOPE_RUN / RESET_SCOPE_NEW / RESET_SCOPE_CLEAR — the §7 load-bearing
-    faithfulness pin: a handler armed via a DIRECT-MODE `ON ERROR GOTO` (so the
+  * ONELIN_* — the D-ONELIN reset scope (docs/spec-basic-onelin-reset-scope.md),
+    i.e. §7's OTHER half. `ON ERROR` is disarmed exactly when the VARIABLE TABLE
+    IS CLEARED: RUN, NEW, CLEAR (direct-mode and in-run, so MAXFILES too) and
+    EVERY program EDIT — measured, 13 oracle-locked rows of which FIVE require the
+    handler to SURVIVE, plus a fourteenth judged on the abort LINE NUMBER because
+    a stale handler pointer branches wild rather than simply not firing.
+  * RESET_SCOPE_RUN / RESET_SCOPE_NEW / RESET_SCOPE_CLEAR — the §7 pin as
+    originally written: a handler armed via a DIRECT-MODE `ON ERROR GOTO` (so the
     PROGRAM ITSELF never re-arms it), then RUN/NEW/CLEAR, then an error in a fresh
-    minimal program — does the (old) handler still fire, or does the run/edit hook
-    clear it first? Straight DIFFERENTIAL (no hardcoded expectation): the packet's
-    own working hypothesis (ONELIN/ONEFLG:=0 at run_prog + NEW; CLEAR left alone) is
-    UNVERIFIED — this is the empirical pin, per the session's explicit reminder that
-    the lead still owns it.
+    minimal program. Straight DIFFERENTIAL, no hardcoded expectation. ⚠️ KEPT, BUT
+    CONFOUNDED FOR PLACEMENT and no longer the primary evidence: every one of the
+    three types a program line BETWEEN the arm and the trigger, so it cannot tell
+    an EDIT's disarm from RUN's or CLEAR's. All three read "no fire" on both
+    machines both before and after D-ONELIN — for DIFFERENT reasons on each side
+    before it. The ONELIN_* rows above are the unconfounded measurement.
 """
 from __future__ import annotations
 
@@ -275,33 +282,123 @@ ONEFLG_RESUME_ZB = Case("oneflg_falloff", [
     # docs/spec-basic-oneflg-reset-scope.md §7). So the row gates the RESUME
     # RESPONSE, which is the ONEFLG fact, and not the text before it.
 
-# --- §7 reset-scope cases (packet §7 -- the load-bearing, UNVERIFIED pin) ------
+# --- D-ONELIN: WHAT DISARMS `ON ERROR` (spec-basic-onelin-reset-scope.md) ------
+# The §7 reset-scope cases below are CONFOUNDED FOR PLACEMENT: each of them types
+# a program line BETWEEN the direct-mode arm and the trigger, so "the EDIT
+# disarmed it" and "RUN/CLEAR disarmed it" are indistinguishable there -- which is
+# how the packet's `ONELIN` half stayed open for a whole arc while all three rows
+# read green. These rows type the WHOLE program FIRST and arm LAST, so every
+# trigger is measured ALONE.
+#
+# MEASURED RULE (VG-8020, 2026-07-29): `ON ERROR` is disarmed exactly when the
+# VARIABLE TABLE IS CLEARED -- RUN, NEW, CLEAR (direct-mode and in-run, so
+# MAXFILES too) and EVERY program EDIT. Nothing else disarms it.
+#
+# ⚠️ The `edit_append` row is the one that falsified the filed "ONELIN holds a
+# resolved link address, invalidated when what it points into MOVES" reading:
+# appending line 200 moves nothing at all and the reference disarms anyway.
+# Same marker discipline as ONEFLG above -- `PRINT"R<";1;">"`, never a literal.
+ONELIN_H = '100 PRINT"R<";1;">"'      # the handler line
+ONELIN_E = "10 B=SQR(-1)"             # the erroring line
+ONELIN_CASES = [
+    # -- direct-mode triggers, NO edit between the arm and the trigger ---------
+    Case("onelin_ctl_goto", [ONELIN_H, ONELIN_E, "ON ERROR GOTO 100", "GOTO 10"]),
+    Case("onelin_run_arm", [ONELIN_H, ONELIN_E, "ON ERROR GOTO 100", "RUN"]),
+    Case("onelin_clear_direct",
+         [ONELIN_H, ONELIN_E, "ON ERROR GOTO 100", "CLEAR", "GOTO 10"]),
+    Case("onelin_print_direct",
+         [ONELIN_H, ONELIN_E, "ON ERROR GOTO 100", "PRINT 0", "GOTO 10"]),
+    # -- program EDITS, arm already in place -----------------------------------
+    Case("onelin_edit_retype",
+         [ONELIN_H, ONELIN_E, "ON ERROR GOTO 100", ONELIN_E, "GOTO 10"]),
+    Case("onelin_edit_append",
+         [ONELIN_H, ONELIN_E, "ON ERROR GOTO 100", "200 REM", "GOTO 10"]),
+    # -- in-run triggers -------------------------------------------------------
+    Case("onelin_inrun_clear", ["10 ON ERROR GOTO 100", "20 CLEAR",
+                                "30 B=SQR(-1)", "40 END", ONELIN_H, "RUN"]),
+    Case("onelin_inrun_ctl", ["10 ON ERROR GOTO 100", "20 REM CLEAR",
+                              "30 B=SQR(-1)", "40 END", ONELIN_H, "RUN"]),
+    Case("onelin_inrun_rearm", ["10 ON ERROR GOTO 100", "20 CLEAR",
+                                "25 ON ERROR GOTO 100", "30 B=SQR(-1)",
+                                "40 END", ONELIN_H, "RUN"]),
+    Case("onelin_inrun_dim", ["10 ON ERROR GOTO 100", "20 DIM Q(50)",
+                              "30 B=SQR(-1)", "40 END", ONELIN_H, "RUN"]),
+    Case("onelin_inrun_str", ["10 ON ERROR GOTO 100", '20 A$="X"+"Y"',
+                              "30 B=SQR(-1)", "40 END", ONELIN_H, "RUN"]),
+    Case("onelin_stop_cont", ["10 ON ERROR GOTO 100", "20 STOP",
+                              "30 B=SQR(-1)", "40 END", ONELIN_H, "RUN", "CONT"]),
+    Case("onelin_clear_before_arm", ["10 ON ERROR GOTO 100", "20 B=SQR(-1)",
+                                     "30 END", ONELIN_H, "CLEAR", "RUN"]),
+]
+# The reference's own recorded answers -- oracle-locked, so a row that starts
+# reading differently trips the gate instead of quietly redefining the target.
+# False = the handler was DISARMED. FOUR rows require the disarm and FIVE require
+# its ABSENCE: the "must NOT" half is what makes the PLACEMENT load-bearing (the
+# D-ONEFLG lesson -- its cheap-but-wrong placement passed every "must" row).
+ONELIN_FIRES = {
+    "onelin_ctl_goto": True,            # control: the shape itself works
+    "onelin_run_arm": False,            # RUN disarms -- MEASURED, not assumed
+    "onelin_clear_direct": False,       # must disarm
+    "onelin_print_direct": True,        # must NOT
+    "onelin_edit_retype": False,        # must disarm
+    "onelin_edit_append": False,        # must disarm (and kills the "it MOVED" theory)
+    "onelin_inrun_clear": False,        # must disarm -- the filed defect
+    "onelin_inrun_ctl": True,           # must NOT (REMmed-out control)
+    "onelin_inrun_rearm": True,         # must NOT: a re-arm restores the trap, so
+                                        # the CLEAR zeroed the ARM, not a "mode"
+    "onelin_inrun_dim": True,           # must NOT: keeps the zero out of ary_reset
+    "onelin_inrun_str": True,           # must NOT: ...and out of heap_reset
+    "onelin_stop_cont": True,           # must NOT: a suspension is not a reset
+    "onelin_clear_before_arm": True,    # must NOT: a CLEAR before the arm
+}
+# ⚠️ ONE ROW CANNOT BE JUDGED ON THE MARKER AT ALL. Inserting a line BEFORE the
+# erroring line MOVES the handler line, and pre-fix zerobas followed its stale
+# ONELIN link into the moved text: it neither fired the handler nor aborted
+# cleanly -- it branched WILD and reported `syntax error in 4850`, a line that
+# does not exist. Marker-wise that is "did not fire", i.e. it AGREED with the
+# reference while doing something far worse. So this row is judged on the ABORT
+# LINE NUMBER: both machines must report the error at line 10.
+ONELIN_INSERT = Case("onelin_edit_insert",
+                     [ONELIN_H, ONELIN_E, "ON ERROR GOTO 100", "5 REM", "GOTO 10"])
+
+# --- §7 reset-scope cases (packet §7 -- ANSWERED; see D-ONELIN above) ---------
 # A handler armed via DIRECT MODE (never touched by the program body), then a
 # reset hook, then a FRESH minimal erroring program. Straight differential --
 # NO hardcoded expectation (the working hypothesis is unverified; this probe
 # exists to PIN it, not assume it).
 RESET_SCOPE_CASES = [
     Case("reset_scope_run", [
-        '100 PRINT"R<LEAKED>"',
+        ONELIN_H,
         "ON ERROR GOTO 100",
         "10 B=SQR(-1)",
         "RUN",
     ]),
     Case("reset_scope_new", [
-        '100 PRINT"R<LEAKED>"',
+        ONELIN_H,
         "ON ERROR GOTO 100",
         "NEW",
         "10 B=SQR(-1)",
         "RUN",
     ]),
     Case("reset_scope_clear", [
-        '100 PRINT"R<LEAKED>"',
+        ONELIN_H,
         "ON ERROR GOTO 100",
         "10 B=SQR(-1)",
         "CLEAR",
         "RUN",
     ]),
 ]
+# The reference's recorded answers -- ADDED 2026-07-29 (D-ONELIN §2.1). These
+# three used to be judged on `"R<LEAKED>" in raw` with a LITERAL marker line
+# `100 PRINT"R<LEAKED>"`, whose OWN SOURCE ECHO contains that exact string: the
+# test was TRUE on every machine, every build, forever. Vacuous since the day it
+# landed -- and not harmlessly so, because the "reference DOES fire the handler
+# on reset_scope_clear" claim in spec-basic-filechan-alloc.md §5d.5 was read off
+# it, and that false claim is what steered the filed defect away from the
+# variable-clear rule for a whole arc. Now on the numeric marker, like every
+# other row in this file, and oracle-locked so it can never go quiet again.
+RESET_SCOPE_FIRES = {"reset_scope_run": False, "reset_scope_new": False,
+                     "reset_scope_clear": False}
 
 
 def main() -> int:
@@ -577,24 +674,75 @@ def main() -> int:
                   f"'resume without error'={said} (want True -- running off the end "
                   f"of the program ends the run, so the handler context dies)")
 
+    # ---------------- D-ONELIN: what disarms ON ERROR --------------------------
+    olcases = sel(ONELIN_CASES)
+    if olcases:
+        print(f"\n--- D-ONELIN: the variable-clear disarm (spec §3, oracle-locked) ---")
+        specs = [("direct", c.lines) for c in olcases]
+        # ⚠️ run_differential, NOT two run_cases calls: `onelin_stop_cont` FLAKED
+        # exactly once in a shared boot (zb scored "did not fire"; boot-per-case it
+        # fires on both machines, as does the whole matrix). A row whose case
+        # SUSPENDS a run and resumes it from the prompt has two extra REPL round
+        # trips to be raced on a batched timeline. The self-heal re-runs any row
+        # that misses the oracle-lock boot-per-case, so the verdicts equal a full
+        # boot-per-case run and a flake costs one pair of boots, not a red gate.
+        def ol_ok(i, r, z):
+            want = ONELIN_FIRES[olcases[i].label]
+            return (read_R(r) == "1") == want and (read_R(z) == "1") == want
+        if args.ref_only:                       # oracle-lock only
+            ref = omsx_repl.run_cases(args.machine, specs, batch=batch,
+                                      reset=("NEW", "CLS"))
+            zb, verdicts = [None] * len(ref), [
+                (read_R(r) == "1") == ONELIN_FIRES[c.label]
+                for c, r in zip(olcases, ref)]
+        else:
+            verdicts, ref, zb = omsx_repl.run_differential(
+                args.machine, args.zb_machine, specs, ol_ok,
+                batch=batch, reset=("NEW", "CLS"))
+        for c, r, z, v in zip(olcases, ref, zb, verdicts):
+            want = ONELIN_FIRES[c.label]
+            ok = ok and v
+            zbs = "n/a" if args.ref_only else str(read_R(z) == "1")
+            print(f"{'PASS' if v else 'FAIL':5} {c.label:26} "
+                  f"ref={read_R(r) == '1'} zb={zbs} (want {want})")
+
+    # ---------------- D-ONELIN: the stale-pointer row, judged on the LINE ------
+    if not args.only or "onelin" in (args.only or ""):
+        print(f"\n--- D-ONELIN edit_insert: judged on the ABORT LINE, not the marker ---")
+        for machine, tag in ([(args.machine, "ref")] +
+                             ([(args.zb_machine, "zb")] if not args.ref_only else [])):
+            raw = omsx_repl.run_case(machine, "direct", ONELIN_INSERT.lines)
+            fired = read_R(raw) == "1"
+            line = in_line_number(raw)
+            good = (not fired) and line == "10"
+            ok = ok and good
+            print(f"{'PASS' if good else 'FAIL':5} [{tag}] onelin_edit_insert "
+                  f"fired={fired} (want False) abort-line={line!r} (want '10' -- a "
+                  f"stale ONELIN branches WILD into the moved text and reports a "
+                  f"line that does not exist)")
+
     # ---------------- §7 reset-scope: RAW differential, no hardcoded want ------
     rscases = sel(RESET_SCOPE_CASES)
     if rscases:
-        print(f"\n--- §7 reset-scope (UNVERIFIED pin -- straight differential) ---")
+        print(f"\n--- §7 reset-scope (ANSWERED by D-ONELIN; oracle-locked) ---")
         specs = [("direct", c.lines) for c in rscases]
         ref = omsx_repl.run_cases(args.machine, specs, batch=batch, reset=("NEW", "CLS"))
         for c, r in zip(rscases, ref):
-            leaked = "R<LEAKED>" in (r or "")
-            print(f"  [ref] {c.label:20} handler-fired={leaked}")
+            got = read_R(r) == "1"
+            want = RESET_SCOPE_FIRES[c.label]
+            good = got == want
+            ok = ok and good
+            print(f"{'PASS' if good else 'FAIL':5} [ref] {c.label:20} "
+                  f"handler-fired={got} (want {want})")
         if not args.ref_only:
             zb = omsx_repl.run_cases(args.zb_machine, specs, batch=batch, reset=("NEW", "CLS"))
             for c, r, rr in zip(rscases, zb, ref):
-                zb_leaked = "R<LEAKED>" in (r or "")
-                ref_leaked = "R<LEAKED>" in (rr or "")
-                good = zb_leaked == ref_leaked
+                got = read_R(r) == "1"
+                want = RESET_SCOPE_FIRES[c.label]
+                good = got == (read_R(rr) == "1") and got == want
                 ok = ok and good
                 print(f"{'PASS' if good else 'FAIL':5} [zb]  {c.label:20} "
-                      f"handler-fired={zb_leaked} (ref={ref_leaked})")
+                      f"handler-fired={got} (ref={read_R(rr) == '1'}, want {want})")
 
     print("\nALL PASS" if ok else "\nSOME FAILED")
     return 0 if ok else 1
