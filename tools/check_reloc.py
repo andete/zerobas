@@ -12,27 +12,35 @@ The original WS-2/S3 gate asserted the reloc page-1 body was byte-identical to t
 shipping basic.rom — a pure-RELOCATION property that only held while the low region
 was empty $00 pad. Once the string engine grows into the low region and widens
 STRMAX (repack build), the reloc page-1 body legitimately DIFFERS from lean, so that
-assertion is superseded (spec §5b). The durable guarantees this gate now enforces:
+assertion is superseded (spec §5b). The durable guarantees this gate enforces:
 
   1. the relocated image spans $2812-$7FFF exactly (22510 bytes),
   2. the "AB" cartridge header is pinned at $4000 (C-BIOS boots via the page-1
-     cartridge scan; page 0 is never scanned),
+     cartridge scan; page 0 is never scanned), and
   3. the reclaimed low region $2812-$3FFF is OCCUPIED (not all $00) — i.e. the
-     string engine actually landed there, the point of the re-layout, and
-  4. the lean shipping basic.rom is BYTE-IDENTICAL to its frozen baseline (the whole
-     string engine is gated behind IF ROM_BASE < $4000, so the lean 16 KB build must
-     not change by construction; this pins that as a hard regression gate).
+     string engine actually landed there, the point of the re-layout.
 
-    python3 tools/check_reloc.py build/basic-reloc.rom build/basic.rom [build/basic-reloc.sym]
+    python3 tools/check_reloc.py build/basic-reloc.rom build/basic-reloc.sym
 
-With the optional reloc symbol file, it also REPORTS the page-0 low-region and
-page-1 free space from the __MEAS_LOW_END / __MEAS_PAGE1_END labels (subrom
-wave-2 measurement pre-gate, spec §7.1) — the eviction relief must be positive
-and recorded.
+It also REPORTS the page-0 low-region and page-1 free space from the
+__MEAS_LOW_END / __MEAS_PAGE1_END labels (subrom wave-2 measurement pre-gate,
+spec §7.1). ⚠️ THIS READOUT IS WHAT EVERY SLICE IS COSTED AGAINST — it is the
+project's wall measurement, not a convenience print. The symbol file is a
+REQUIRED argument for exactly that reason: it used to be optional, and an
+optional sym is precisely the shape in which a wall readout silently stops
+printing while the gate still exits 0 ([[gate-can-be-green-while-measuring-nothing]]).
+
+REMOVED 2026-07-29 (RETIRE THE LEAN 16 KB CART, S2 --
+docs/spec-lean-retire-s2-switch.md): a 4th check pinned the lean 16 KB basic.rom
+to a frozen LEAN_SHA256 baseline, proving the co-maintained lean build never
+drifted. zerobas no longer builds or ships lean; a build that would be CHERRY-
+PICKED on demand from the finished tree needs no anti-drift proof, because it is
+cut from a tree that is already gated. Checks 1-3 and the readout above are
+untouched by that removal -- check 4 was the ONLY reader of the basic.rom
+argument, which is why this became a deletion rather than a redesign.
 """
 from __future__ import annotations
 
-import hashlib
 import re
 import sys
 
@@ -52,35 +60,11 @@ HDR = 0x4000
 TOP = 0x8000
 SIZE = TOP - LOW  # 22510
 
-# Frozen baseline of the lean 16 KB basic.rom (default ROM_BASE=$4000). The string
-# engine is entirely gated to the repack build, so this must never change unless a
-# lean-affecting change is made DELIBERATELY (then update this hash in the same commit).
-#
-# UPDATED 2026-07-27 for D-KW-2, deliberately. The exec_stmt dispatch table replaced
-# the linear cp/jp z chain in SHARED code, so it moves the lean cart too -- and in
-# lean's favour: lean is byte-full, and the table is smaller than the chain it
-# replaces. Behaviour-preservation is not asserted, it is GATED: tests/
-# test_stmt_dispatch.py proves all 52 lean entries (and all 69 repack entries) still
-# dispatch to the handler the pre-refactor chain sent them to, comparing against an
-# expectation recovered from that chain rather than from the table under test.
-#
-# UPDATED 2026-07-27 for the PROMPT, deliberately and in shared code. Two changes,
-# both in basic/repl.asm: the prompt text is now "ZB" (was "zb>", 1 B smaller), and
-# it ALWAYS OPENS A FRESH LINE -- the reference emits a newline before its prompt
-# whenever the cursor is not at column 0, and zerobas used to print the prompt
-# wherever the cursor stood, so `PRINT "A";` read `Azb>` on one row against the
-# reference's `A` / `Ok` on two. A compatibility fix, +7 B net in the lean cart,
-# which still assembles with room (the $8000 ceiling assert is the real guard).
-# Previous: 337dda79464313dd32196d924a07ca30eb069795bde81c6c638cac8f69b7e0e8
-# Previous: e21f61fe9ecb855ce69a29831a5990070c215613479310da368c350bd4228005
-LEAN_SHA256 = "defd6201b78bc922e3ba4db66134d2527c76ad9d81105440a6d667f12511be90"
-
 
 def main() -> int:
-    if len(sys.argv) not in (3, 4):
+    if len(sys.argv) != 3:
         sys.exit(__doc__)
     reloc = open(sys.argv[1], "rb").read()
-    ship = open(sys.argv[2], "rb").read()
     off = HDR - LOW  # header offset within the relocated image
     errs = []
     if len(reloc) != SIZE:
@@ -90,34 +74,31 @@ def main() -> int:
     if set(reloc[:off]) in ({0}, set()):
         errs.append("reclaimed low region $2812-$3FFF is empty ($00) — the string "
                     "engine did not land there (expected occupied per spec §5b)")
-    if len(ship) != HDR:
-        errs.append(f"shipping basic.rom size {len(ship)} != 16384")
-    else:
-        got = hashlib.sha256(ship).hexdigest()
-        if got != LEAN_SHA256:
-            errs.append("lean basic.rom NOT byte-identical to baseline\n"
-                        f"       expected {LEAN_SHA256}\n"
-                        f"       got      {got}\n"
-                        "       (the string engine must be gated to the repack build; "
-                        "if a lean change was intended, update LEAN_SHA256)")
     if errs:
         for e in errs:
             print("FAIL:", e, file=sys.stderr)
         return 1
     used = max((i for i, b in enumerate(reloc[:off]) if b != 0), default=-1) + 1
     print(f"OK: relocated image {len(reloc)} B, header @ $4000, low region "
-          f"$2812-$3FFF holds {used} B of string engine, lean basic.rom byte-identical")
-    if len(sys.argv) == 4:
-        syms = load_syms(sys.argv[3])
-        low_end = syms.get("__MEAS_LOW_END")
-        p1_end = syms.get("__MEAS_PAGE1_END")
-        if low_end is not None:
-            print(f"    measure: page-0 low region free = {HDR - low_end} B "
-                  f"($2812-$3FFF, __MEAS_LOW_END @ {low_end:#06x})")
-        if p1_end is not None:
-            print(f"    measure: page-1 free            = {TOP - p1_end} B "
-                  f"($4000-$7FFF, __MEAS_PAGE1_END @ {p1_end:#06x}) "
-                  f"<- subrom wave-2 tokeniser-eviction relief")
+          f"$2812-$3FFF holds {used} B of string engine")
+
+    # The wall readout. Both labels are REQUIRED to be present: a missing one used
+    # to print nothing and still exit 0, which is a wall measurement that silently
+    # became a 0-denominator. Every slice is costed against these two numbers.
+    syms = load_syms(sys.argv[2])
+    missing = [n for n in ("__MEAS_LOW_END", "__MEAS_PAGE1_END") if n not in syms]
+    if missing:
+        print(f"FAIL: {sys.argv[2]} defines no {', '.join(missing)} — the WALL "
+              f"READOUT every slice is costed against would print nothing",
+              file=sys.stderr)
+        return 1
+    low_end = syms["__MEAS_LOW_END"]
+    p1_end = syms["__MEAS_PAGE1_END"]
+    print(f"    measure: page-0 low region free = {HDR - low_end} B "
+          f"($2812-$3FFF, __MEAS_LOW_END @ {low_end:#06x})")
+    print(f"    measure: page-1 free            = {TOP - p1_end} B "
+          f"($4000-$7FFF, __MEAS_PAGE1_END @ {p1_end:#06x}) "
+          f"<- subrom wave-2 tokeniser-eviction relief")
     return 0
 
 

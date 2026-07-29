@@ -4,26 +4,40 @@
 
 """Install zerobas-equipped C-BIOS machines into your openMSX user folder.
 
-For each MSX1 C-BIOS machine openMSX ships this writes a "<name>_BASIC" machine
-that is byte-for-byte the stock machine with two load-time patches on its main ROM:
-zerobas in slot-0 page 1 (BASIC next to the BIOS, the way a real MSX is laid out),
-and the zerobas-tape cassette patch in page 0. C-BIOS's cold-boot cartridge scan
-finds zerobas's "AB" header in page 1 and calls it, so the machine boots straight
-to the zerobas prompt with no cartridge inserted -- and because the tape patch fills
-in C-BIOS's failing cassette stubs, zerobas's `BLOAD"CAS:",R` actually completes.
-The two patches touch disjoint regions (page 0 vs page 1), so they compose cleanly;
-both are always applied.
+This writes a "C-BIOS_MSX1_EU_BASIC" machine that is byte-for-byte the stock EU
+machine with ONE load-time patch on its main ROM: zerobas-main-eu.ips, the merged
+repack main ROM (repacked C-BIOS + the relocated BASIC spanning $2812-$7FFF + the
+cassette patch, all in one image). C-BIOS's cold-boot cartridge scan finds zerobas's
+"AB" header at $4000 and calls it, so the machine boots straight to the zerobas
+prompt with no cartridge inserted, and the baked-in tape code fills in C-BIOS's
+failing cassette stubs so `BLOAD"CAS:",R` completes.
 
-It also writes a "<name>_TAPE" machine for each stock machine: the same stock C-BIOS
-with ONLY the zerobas-tape cassette patch applied (no zerobas-BASIC patch), leaving the
-external cartridge slots free. C-BIOS boots to its no-cart screen; insert zerobas as a
-cartridge (`-cart build/basic.rom`) to drive the open cassette stack against a stock
-BIOS. This is the machine the tape regression's open-stack and round-trip tiers run on
-(probes/basic/basic_probe_bload_openstack.py, tape/tools/run_tape_regression.py). Stock
+Slot 3 is expanded so that 3-2 holds zerobas-sub (--sub-rom): the relocated BASIC
+calls sub-ROM tenants for floats, CALL FORMAT, detokenising, arrays, the string
+heap and PRINT USING. ⚠️ It is NOT optional and NOT merely a per-verb dependency --
+a machine with an empty 3-2 never reaches the prompt at all (measured,
+docs/spec-lean-retire-s2-switch.md §2.1), so --sub-rom defaults ON.
+
+⚠️ EU ONLY. The repack rewrites C-BIOS's page-0 layout and is built for the EU ROM
+(tools/build_repacked_cbios.py). Until 2026-07-29 this installed a region-universal
+page-1 splice (zerobas-msx1.ips) carrying the LEAN 16 KB build, giving _BASIC machines
+for all four MSX1 C-BIOS regions; lean is retired (RETIRE THE LEAN 16 KB CART,
+docs/spec-lean-retire-s2-switch.md) and regionalising the repack is its own TODO
+entry. The _TAPE machines below carry no BASIC and stay region-universal.
+
+It also writes a "<name>_TAPE" machine for EVERY stock MSX1 C-BIOS machine (all four
+regions): the same stock C-BIOS with ONLY the zerobas-tape cassette patch applied (no
+zerobas-BASIC patch), leaving the external cartridge slots free. C-BIOS boots to its
+no-cart screen; insert a zerobas cartridge to drive the open cassette stack against a
+stock BIOS. This is the machine the tape regression's open-stack and round-trip tiers run
+on (probes/basic/basic_probe_bload_openstack.py, tape/tools/run_tape_regression.py). Stock
 C-BIOS already ships a <CassettePort/>, so the _TAPE machine needs nothing but the patch.
+⚠️ The cartridge those tiers insert is `build/basic.rom`, the RETIRED lean build. It still
+assembles (`make build/basic.rom`) but nothing gates it; porting that corpus to the repack
+machine -- which has its own <CassettePort/> -- is S3 of the lean retirement.
 
-With `--disk-rom`, it ALSO writes a "<name>_BASIC_DISK" variant for each machine:
-the same two patches, plus slot 3 expanded so that slot 3-1 holds the standalone
+With `--disk-rom`, it ALSO writes a "C-BIOS_MSX1_EU_BASIC_DISK" variant:
+the same patch, plus slot 3 expanded so that slot 3-1 holds the standalone
 zerobas-disk ROM behind a National-style memory-mapped WD2793 FDC (the CF-3300
 connection style), with slot 3-0 keeping the 64 KB RAM. C-BIOS's boot scan finds
 the disk ROM's "AB" header in slot 3-1 page 1 and calls its INIT, installing the
@@ -64,9 +78,19 @@ import argparse, glob, os, re, sys
 import openmsx_paths  # shared cross-platform share/user dir discovery
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-IPS = os.path.join(REPO, "zerobas-msx1.ips")
+# The shipped BASIC patch: the merged repack main ROM, diffed against a pristine
+# C-BIOS EU built from the pinned tag -- which is byte-identical to openMSX's own
+# bundled cbios_main_msx1_eu.rom, so this applies with no C-BIOS checkout
+# (measured, docs/spec-lean-retire-s2-switch.md §2).
+MAIN_IPS = os.path.join(REPO, "zerobas-main-eu.ips")
 TAPE_IPS = os.path.join(REPO, "tape", "zerobas-tape-msx1.ips")
 DISK_ROM = os.path.join(REPO, "build", "disk.rom")
+SUB_ROM = os.path.join(REPO, "build", "sub.rom")
+# The repack is EU-only by construction: tools/build_repacked_cbios.py applies
+# cbios-repack/eu-drop-statements.patch and reads derived/bin/cbios_main_msx1_eu.rom.
+# The retired lean splice was region-universal; regionalising the repack is its own
+# TODO entry. _TAPE machines are unaffected and stay region-universal.
+MAIN_REGION = "C-BIOS_MSX1_EU"
 
 
 def patch_config(text: str, share_machines: str, ips_list) -> str:
@@ -96,11 +120,20 @@ def patch_config(text: str, share_machines: str, ips_list) -> str:
     return text
 
 
-def expand_slot3(text: str, disk_rom_abs: str) -> str:
+def expand_slot3(text: str, disk_rom_abs: str = "", sub_rom_abs: str = "") -> str:
     """Expand the (unexpanded) slot-3 RAM block of a stock C-BIOS MSX1 machine
     into subslots: 3-0 keeps the 64 KB RAM, 3-1 holds the zerobas-disk ROM behind
     a National-style memory-mapped WD2793 (CF-3300 connection style; the register
-    map our driver targets at $7FB8). Slots 3-2 / 3-3 are left empty.
+    map our driver targets at $7FB8), 3-2 holds zerobas-sub (the built-in MSX2-style
+    sub-ROM, a plain 32 KB ROM mapped linearly across BOTH pages). Slot 3-3 is left
+    empty. Either ROM may be omitted, leaving its subslot empty.
+
+    ⚠️ The SUB-ROM is not optional for a working repack BASIC. It hosts the page-0
+    and page-1 tenants (fp_sqrt..fp_rnd, format_tenant, detok/arrays/strheap/
+    printusing), and BASIC reaches into them during startup: with 3-2 empty the machine
+    does not reach a prompt at all -- the screen fills with garbage (measured,
+    docs/spec-lean-retire-s2-switch.md §2.1). It is placed in 3-2 per the
+    2026-07-11 slot-map amendment, matching tools/install-repack-machine.py.
 
     The stock block is:
         <primary slot="3">
@@ -110,6 +143,34 @@ def expand_slot3(text: str, disk_rom_abs: str) -> str:
         </primary>
     """
     pat = re.compile(r'[ \t]*<primary slot="3">.*?</primary>\s*', re.DOTALL)
+    if disk_rom_abs:
+        disk_block = (
+            '      <secondary slot="1">\n'
+            '        <WD2793 id="zerobas-disk FDC">\n'
+            '          <connectionstyle>National</connectionstyle>\n'
+            '          <drives>1</drives>\n'
+            '          <rom>\n'
+            f'            <filename>{disk_rom_abs}</filename>\n'
+            '          </rom>\n'
+            '          <mem base="0x4000" size="0x8000"/>\n'
+            '        </WD2793>\n'
+            '      </secondary>\n\n'
+        )
+    else:
+        disk_block = '      <secondary slot="1"/>\n\n'
+    if sub_rom_abs:
+        sub_block = (
+            '      <secondary slot="2">\n'
+            '        <ROM id="zerobas-sub ROM">\n'
+            '          <rom>\n'
+            f'            <filename>{sub_rom_abs}</filename>\n'
+            '          </rom>\n'
+            '          <mem base="0x0000" size="0x8000"/>\n'
+            '        </ROM>\n'
+            '      </secondary>\n\n'
+        )
+    else:
+        sub_block = '      <secondary slot="2"/>\n\n'
     block = (
         '    <primary slot="3">\n\n'
         '      <secondary slot="0">\n'
@@ -117,17 +178,8 @@ def expand_slot3(text: str, disk_rom_abs: str) -> str:
         '          <mem base="0x0000" size="0x10000"/>\n'
         '        </RAM>\n'
         '      </secondary>\n\n'
-        '      <secondary slot="1">\n'
-        '        <WD2793 id="zerobas-disk FDC">\n'
-        '          <connectionstyle>National</connectionstyle>\n'
-        '          <drives>1</drives>\n'
-        '          <rom>\n'
-        f'            <filename>{disk_rom_abs}</filename>\n'
-        '          </rom>\n'
-        '          <mem base="0x4000" size="0x8000"/>\n'
-        '        </WD2793>\n'
-        '      </secondary>\n\n'
-        '      <secondary slot="2"/>\n\n'
+        + disk_block
+        + sub_block +
         '      <secondary slot="3"/>\n\n'
         '    </primary>\n\n'
     )
@@ -242,16 +294,32 @@ def main():
                          "swaps its built-in disk ROM to zerobas-disk "
                          "(default MACHINE: National_CF-3300). Uses --disk-rom's "
                          "ROM, or build/disk.rom if --disk-rom is absent.")
+    # NOT opt-in, unlike --disk-rom: a _BASIC machine with an empty slot 3-2 does not
+    # boot at all -- measured, docs/spec-lean-retire-s2-switch.md §2.1. Defaulting it ON
+    # means the installer cannot quietly write an unbootable release machine.
+    ap.add_argument("--sub-rom", default=SUB_ROM, metavar="ROM",
+                    help=f"zerobas-sub ROM for slot 3-2 (default: {SUB_ROM}). The "
+                         "relocated BASIC calls its tenants during startup; a machine "
+                         "without it does not reach a prompt.")
     ap.add_argument("--dry-run", action="store_true", help="print, don't write")
     args = ap.parse_args()
 
-    if not os.path.isfile(IPS):
-        sys.exit(f"error: patch not found: {IPS} "
-                 f"(run `python3 tools/build_patches.py` first)")
+    if not os.path.isfile(MAIN_IPS):
+        sys.exit(f"error: shipped BASIC patch not found: {MAIN_IPS}\n"
+                 f"       it is a TRACKED deliverable; regenerate it with "
+                 f"`make release` (needs CBIOS=<c-bios checkout>).")
     if not os.path.isfile(TAPE_IPS):
         sys.exit(f"error: tape patch not found: {TAPE_IPS} (run `make -C tape` first)")
-    # Tape patch first (page 0), then zerobas (page 1) -- order is immaterial.
-    ips_list = [TAPE_IPS, IPS]
+    # ONE patch for the BASIC machines: the merged repack main ROM already bakes in
+    # tape/tape.asm, so applying the tape patch on top would double-patch page 0.
+    # (The retired lean splice touched page 1 only and needed the tape patch beside it.)
+    ips_list = [MAIN_IPS]
+
+    sub_rom = os.path.abspath(args.sub_rom)
+    if not os.path.isfile(sub_rom):
+        sys.exit(f"error: sub ROM not found: {sub_rom} (run `make sub` first)\n"
+                 f"       it is not optional -- the relocated BASIC calls its slot-3-2 "
+                 f"tenants during startup, and a machine without it does not boot.")
 
     disk_rom = None
     if args.disk_rom is not None:
@@ -284,23 +352,20 @@ def main():
 
     print(f"source machines : {share_machines}")
     print(f"install into    : {user_machines}")
-    print(f"zerobas patch   : {IPS}")
-    print(f"tape patch      : {TAPE_IPS}")
+    print(f"zerobas patch   : {MAIN_IPS}  ({MAIN_REGION} only)")
+    print(f"tape patch      : {TAPE_IPS}  (all regions, _TAPE machines)")
+    if sub_rom:
+        print(f"sub ROM         : {sub_rom}")
     if disk_rom:
         print(f"disk ROM        : {disk_rom}")
     print()
+    seen_region = False
     for src in stock:
         base = os.path.splitext(os.path.basename(src))[0]      # C-BIOS_MSX1_EU
         stock_text = open(src).read()
-        out = os.path.join(user_machines, f"{base}_BASIC.xml")
-        out_text = patch_config(stock_text, share_machines, ips_list)
-        if args.dry_run:
-            print(f"would write {os.path.basename(out)}")
-        else:
-            open(out, "w").write(out_text)
-            print(f"wrote {base}_BASIC   (-> machine \"{base}_BASIC\")")
         # _TAPE: stock C-BIOS + ONLY the tape patch (no zerobas patch), cart slots
-        # free -- the open-stack / round-trip tape regression runs on this.
+        # free -- the open-stack / round-trip tape regression runs on this. Region-
+        # universal: it carries no BASIC, so the repack's EU-only-ness does not apply.
         tout = os.path.join(user_machines, f"{base}_TAPE.xml")
         ttext = patch_config(stock_text, share_machines, [TAPE_IPS])
         if args.dry_run:
@@ -308,14 +373,57 @@ def main():
         else:
             open(tout, "w").write(ttext)
             print(f"wrote {base}_TAPE   (-> machine \"{base}_TAPE\")")
+        # The BASIC machines exist for the ONE region the repack is built for.
+        if base != MAIN_REGION:
+            continue
+        seen_region = True
+        out = os.path.join(user_machines, f"{base}_BASIC.xml")
+        # Slot 3 is expanded even with no disk, because the sub-ROM lives in 3-2.
+        out_text = expand_slot3(patch_config(stock_text, share_machines, ips_list),
+                                "", sub_rom)
+        if args.dry_run:
+            print(f"would write {os.path.basename(out)}")
+        else:
+            open(out, "w").write(out_text)
+            print(f"wrote {base}_BASIC   (-> machine \"{base}_BASIC\")")
         if disk_rom:
             dout = os.path.join(user_machines, f"{base}_BASIC_DISK.xml")
-            dtext = expand_slot3(out_text, disk_rom)
+            dtext = expand_slot3(patch_config(stock_text, share_machines, ips_list),
+                                 disk_rom, sub_rom)
             if args.dry_run:
                 print(f"would write {os.path.basename(dout)}")
             else:
                 open(dout, "w").write(dtext)
                 print(f"wrote {base}_BASIC_DISK  (-> machine \"{base}_BASIC_DISK\")")
+    # A silent zero-BASIC-machine run is the vacuity failure here: openMSX renaming or
+    # dropping its EU C-BIOS machine would leave _TAPE machines written and no BASIC at
+    # all, which reads as "installed fine" (S1's §3.1.3-§3.1.6 lesson, one layer up).
+    if not seen_region:
+        sys.exit(f"error: no {MAIN_REGION} machine among the C-BIOS MSX1 configs in "
+                 f"{share_machines}\n       the repack BASIC is built for that region "
+                 f"only, so NO BASIC machine was written.\n"
+                 f"       found: {', '.join(os.path.splitext(os.path.basename(p))[0] for p in stock)}")
+
+    # --- stale LEAN machines from a pre-2026-07-29 install ---------------------
+    # This used to write a _BASIC/_BASIC_DISK per region from zerobas-msx1.ips. That
+    # patch is deleted from the tree, so any config still naming it now points at a
+    # missing file -- and it sits in the user's openMSX dir under a name that reads
+    # like a current machine. Report, never delete: removing files from someone's
+    # openMSX folder is not this tool's call.
+    stale = []
+    for p in sorted(glob.glob(os.path.join(user_machines, "C-BIOS_MSX1*_BASIC*.xml"))):
+        try:
+            if "zerobas-msx1.ips" in open(p, encoding="utf-8", errors="replace").read():
+                stale.append(os.path.splitext(os.path.basename(p))[0])
+        except OSError:
+            pass
+    if stale:
+        print()
+        print("warning: these installed machines still reference the RETIRED lean build")
+        print("         (zerobas-msx1.ips, deleted from the tree) and will not boot:")
+        for name in stale:
+            print(f"           {name}")
+        print(f"         remove them from {user_machines} when convenient.")
     # --- pluggable zerobas-disk extension (cross-host BIOS-independence) ------
     if disk_rom:
         user_ext = os.path.join(user, "share", "extensions")

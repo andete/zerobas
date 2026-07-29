@@ -6,12 +6,27 @@
 # Requires pasmo (the assembler C-BIOS uses) and python3. Build from the repo
 # root so the `include` paths in basic/main.asm resolve.
 #
-# `make` (the default `all` goal) builds every PORTABLE deliverable:
-#   - build/basic.rom, build/disk.rom              (the ROMs)
-#   - zerobas-msx1.ips/.bps                         (slot-0 page-1 BASIC patch)
+# `make` (the default `all` goal) builds everything that needs NO EXTERNAL CHECKOUT:
+#   - build/disk.rom, build/sub.rom                (the disk-interface and sub ROMs)
 #   - tape/zerobas-tape-msx1.ips/.bps              (page-0 cassette patch)
 # The .ips/.bps patches need a stock C-BIOS main ROM to stamp/verify against;
 # tools/build_patches.py auto-detects openMSX's bundled copy or takes STOCK=<path>.
+#
+# THE SHIPPED BASIC IS zerobas-main-eu.ips/.bps -- the merged repack main ROM
+# (repacked C-BIOS EU + relocated BASIC $2812-$7FFF + tape), tracked at the repo root.
+# It is NOT in `all` because REGENERATING it needs a C-BIOS source checkout
+# (CBIOS=<path>); `make release` does that, and is the maintainer's step before
+# committing the pair. APPLYING it needs no checkout at all -- the pristine ROM the
+# patch is diffed against is byte-identical to openMSX's own bundled
+# cbios_main_msx1_eu.rom (measured, docs/spec-lean-retire-s2-switch.md §2), so a user
+# with openMSX can install straight from the tracked patch.
+#
+# Until 2026-07-29 the shipped BASIC was zerobas-msx1.ips/.bps, a page-1 splice
+# carrying the LEAN 16 KB build. That build is retired (RETIRE THE LEAN 16 KB CART,
+# docs/spec-lean-retire-s2-switch.md): it was not a smaller build of the same BASIC but
+# one missing seven source files -- no strings, no INPUT, no floats, no arrays, no error
+# codes, no KEY traps. Cost of the switch: the repack rewrites C-BIOS's page-0 layout and
+# is EU-ONLY, where the lean splice was region-universal (see TODO: regionalise).
 #
 # `make machines` is separate because openMSX machine configs are not portable
 # files — they embed absolute paths to your openMSX ROMs and this repo — so they
@@ -20,7 +35,7 @@
 
 # Build artifacts (ROMs) go under build/ -- a gitignored scratch dir -- so a
 # stale copy never lingers in the repo root where tools/probes pick it up. The
-# tracked patch deliverables (zerobas-msx1.ips/.bps) stay at the root.
+# tracked patch deliverables (zerobas-main-eu.ips/.bps) stay at the root.
 BUILD := build
 
 PASMO ?= pasmo
@@ -173,11 +188,15 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub
 SUB_ROM   := $(BUILD)/sub.rom
 
 # Tracked patch deliverables (regenerable; live at their committed paths).
-PATCHES      := zerobas-msx1.ips zerobas-msx1.bps
+# The BASIC pair is $(MAIN_PATCHES) further down -- it needs a C-BIOS checkout to
+# regenerate, so it is in `release`, not `all` (see the header).
 TAPE_PATCHES := tape/zerobas-tape-msx1.ips tape/zerobas-tape-msx1.bps
 
-# Default goal: every portable deliverable (ROMs + both patch pairs).
-all: $(ROM) $(DISK_ROM) $(SUB_ROM) $(PATCHES) $(TAPE_PATCHES)
+# Default goal: everything buildable with pasmo + python3 + openMSX's bundled ROMs.
+# NOT $(ROM): the lean 16 KB basic.rom is retired (docs/spec-lean-retire-s2-switch.md).
+# Its file rule below still works (`make build/basic.rom`) for the historical cart
+# probes, but nothing builds, ships, or gates it any more.
+all: $(DISK_ROM) $(SUB_ROM) $(TAPE_PATCHES)
 
 $(BUILD):
 	mkdir -p $(BUILD)
@@ -219,7 +238,7 @@ $(RELOC_SYM): basic/main-reloc.asm basic/main.asm $(DEPS) | $(BUILD)
 	$(PASMO) --bin basic/main-reloc.asm $(RELOC_ROM) $(RELOC_SYM)
 # Grouped-target workaround (GNU make 3.81 has no `&:`): $(RELOC_SYM)'s recipe
 # above produces BOTH files; this is a no-op follower, same pattern as the
-# zerobas-msx1.ips/.bps pair below.
+# zerobas-main-eu.ips/.bps pair below.
 $(RELOC_ROM): $(RELOC_SYM)
 	@: # produced by the pasmo run above
 
@@ -278,8 +297,12 @@ subrom-closure-check: sub/basic-resident-abi.inc $(RELOC_SYM) $(SUB_ROM)
 # "AB" header at $4000 and matches the shipping page-1 body byte-for-byte. This is
 # a proof/staging target only -- deliberately NOT in `all`; the merged main-ROM
 # splice that ships it is WS-3 (S4). See docs/cbios-repack-ws2-audit.md.
-basic-reloc: $(ROM) $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM)
-	python3 tools/check_reloc.py $(RELOC_ROM) $(ROM) $(RELOC_SYM)
+# NOTE: no $(ROM) prerequisite since 2026-07-29 (RETIRE THE LEAN 16 KB CART, S2).
+# check_reloc.py's 4th check pinned the lean basic.rom to a frozen baseline and was
+# the ONLY reader of that argument; checks 1-3 read only $(RELOC_ROM) and the wall
+# readout reads only $(RELOC_SYM), so this target no longer builds lean at all.
+basic-reloc: $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM)
+	python3 tools/check_reloc.py $(RELOC_ROM) $(RELOC_SYM)
 	python3 tools/check_kwtable_identity.py $(RELOC_ROM) $(RELOC_SYM) $(SUB_ROM) $(SUB_SYM)
 	python3 tools/check_resident_abi.py $(RELOC_SYM) sub/basic-resident-abi.inc
 	python3 tools/check_tenant_closure.py $(RELOC_SYM) sub/basic-resident-abi.inc
@@ -307,17 +330,29 @@ repack-main: $(MAIN_ROM)
 repack-boot: repack-main $(SUB_ROM)
 	python3 probes/basic/basic_probe_repack_boot.py
 
-# --- Slot-0 page-1 BASIC patch (build/basic.rom spliced into a stock C-BIOS) ---
-# build_patches.py emits BOTH .ips and .bps in one run; express that with a
-# single-recipe target plus a no-op follower (GNU make 3.81 has no grouped
-# targets). Pass STOCK=<rom> or let the tool auto-detect openMSX's copy.
-zerobas-msx1.ips: $(ROM) tools/build_patches.py tools/openmsx_paths.py \
-                  tools/rom_patch.py tools/overlay_page1.py
-	python3 tools/build_patches.py $(STOCK)
-zerobas-msx1.bps: zerobas-msx1.ips
-	@: # produced by the build_patches.py run above
+# --- RETIRED: the slot-0 page-1 BASIC patch (lean build/basic.rom into stock C-BIOS) ---
+# zerobas-msx1.ips/.bps were the shipped BASIC deliverable until 2026-07-29. They carried
+# the LEAN 16 KB build, which is retired (RETIRE THE LEAN 16 KB CART, S2 --
+# docs/spec-lean-retire-s2-switch.md); the shipped pair is now $(MAIN_PATCHES), the merged
+# repack main ROM. Both files are deleted from the tree. If a lean build is ever wanted
+# again it gets CHERRY-PICKED from the finished zerobas build rather than co-maintained
+# here (user direction, 2026-07-29), so there is nothing to keep alive.
 
-patches: $(PATCHES)
+# --- The shipped BASIC patch pair (merged repack main ROM) ---------------------
+# build_patches.py --main emits BOTH .ips and .bps in one run, as a side effect of the
+# $(MAIN_ROM) rule above; express that with no-op followers (GNU make 3.81 has no grouped
+# targets), same pattern as $(RELOC_ROM). Regenerating needs CBIOS=<checkout>.
+zerobas-main-eu.ips: $(MAIN_ROM)
+	@: # produced by the build_patches.py --main run above
+zerobas-main-eu.bps: $(MAIN_ROM)
+	@: # produced by the build_patches.py --main run above
+
+# Regenerate the tracked shipped pair from source. The maintainer's step before
+# committing a basic/ change -- NOT a prerequisite of `machines`, which must stay
+# usable without a C-BIOS checkout (docs/spec-lean-retire-s2-switch.md §4.4).
+release: all $(MAIN_PATCHES)
+
+patches: $(MAIN_PATCHES)
 
 # --- Page-0 cassette patch (assembled from tape/tape.asm; its own sub-make) ----
 tape/zerobas-tape-msx1.ips: tape/tape.asm tools/build_patches.py tools/openmsx_paths.py \
@@ -329,17 +364,29 @@ tape/zerobas-tape-msx1.bps: tape/zerobas-tape-msx1.ips
 tape-patches: $(TAPE_PATCHES)
 
 # --- openMSX machine configs (INSTALL, not a portable build output) ------------
-# Generate the release machines into your openMSX user dir: per C-BIOS MSX1
-# region, a _BASIC (zerobas+tape) and a _BASIC_DISK (+ zerobas-disk in slot 3-1).
+# Generate the release machines into your openMSX user dir: an EU _BASIC (the merged
+# repack main ROM as an IPS on openMSX's own stock C-BIOS) and _BASIC_DISK (+ zerobas-disk
+# in slot 3-1), each with zerobas-sub in slot 3-2. Plus a region-universal _TAPE per C-BIOS
+# MSX1 region (stock C-BIOS + the cassette patch only; no zerobas BASIC).
 # The _ZEROBASDISK provider-oracle is a TEST machine, kept out of the release set
 # (see machines-oracle). Configs embed absolute paths, so this is install-local.
-machines: $(PATCHES) $(TAPE_PATCHES) $(DISK_ROM)
-	python3 tools/install-openmsx-machine.py --disk-rom $(DISK_ROM)
+#
+# ⚠️ DELIBERATELY NOT a prerequisite on $(MAIN_PATCHES): that would drag in $(MAIN_ROM),
+# and with it CBIOS=<checkout> -- destroying the property that makes the repack pair
+# shippable at all, that APPLYING it needs no C-BIOS checkout
+# (docs/spec-lean-retire-s2-switch.md §2, §4.4 refinement 2). The installer instead dies
+# loudly if the tracked patch is absent. Regenerating it is `make release`.
+# The gates' freshness is covered separately, by $(MAIN_ROM)'s real file rule via
+# `repack-machine` ([[ips-rebuild-after-basic-change]]) -- `machines` is the
+# RELEASE-INSTALL path, not a gate path.
+machines: $(TAPE_PATCHES) $(DISK_ROM) $(SUB_ROM)
+	python3 tools/install-openmsx-machine.py --disk-rom $(DISK_ROM) --sub-rom $(SUB_ROM)
 
 # Test-only: also write the Tier-1 provider-oracle machine (real CF-3300 BIOS +
 # zerobas-disk swapped into slot 3-1). Not a user-facing release config.
-machines-oracle: $(PATCHES) $(TAPE_PATCHES) $(DISK_ROM)
-	python3 tools/install-openmsx-machine.py --disk-rom $(DISK_ROM) --real-bios-disk
+machines-oracle: $(TAPE_PATCHES) $(DISK_ROM) $(SUB_ROM)
+	python3 tools/install-openmsx-machine.py --disk-rom $(DISK_ROM) --sub-rom $(SUB_ROM) \
+	  --real-bios-disk
 
 # Build everything portable, then install the openMSX machine configs.
 install: all machines
@@ -370,13 +417,21 @@ coverage:
 # probes/README.md). Unlike unit-test these BOOT openMSX and need the installed
 # machines (`make machines-oracle`) plus YOUR own reference ROMs (VG-8020,
 # CF-3300) — those are never shipped. `probe` smoke-runs one probe per component.
-# disk_probe_dskio.py names its machine here rather than defaulting to one: no probe
+# Both zerobas-side probes name their machine here rather than defaulting to one: no probe
 # picks the build under test any more (docs/spec-lean-retire-s1-explicit-machine.md).
-probe: $(ROM) $(DISK_ROM) $(DISK_TEST_DSK)
+#
+# ⚠️ basic_probe_print.py used to run zerobas as `--cart build/basic.rom` on the SAME
+# Philips VG-8020 as the reference, so the two sides differed only in the inserted
+# cartridge. The repack build is a slot-0 32 KB main ROM, not a cartridge, so retiring
+# lean (S2, docs/spec-lean-retire-s2-switch.md) makes this a machine-to-machine
+# comparison -- C-BIOS + TMS9929A vs the VG-8020 -- which is the same footing the other
+# 61 probes in probes/basic/ already stand on, but IS a real reduction in control. This
+# is a smoke target; the verb's locked coverage lives in tests/ and the acceptance gates.
+probe: $(DISK_ROM) $(DISK_TEST_DSK) repack-machine
 	cp $(DISK_TEST_DSK) /tmp/zerobas-probe.dsk
 	python3 probes/disk/disk_probe_dskio.py --dsk /tmp/zerobas-probe.dsk \
-	        --our-machine $(LEAN_MACHINE)
-	python3 probes/basic/basic_probe_print.py --cart $(ROM)
+	        --our-machine $(REPACK_MACHINE)
+	python3 probes/basic/basic_probe_print.py --zb-machine $(REPACK_MACHINE)
 	python3 probes/tape/bios_probe_tapwrite.py --out /tmp/zerobas-tapwrite.rom
 	@echo "probe smoke OK (disk + basic + tape)"
 
@@ -399,43 +454,50 @@ bdos-acceptance: $(DISK_ROM)
 # ⚠️ THE MACHINE IS NAMED HERE, NOT IN THE PROBES (S1 of RETIRE THE LEAN 16 KB CART,
 # docs/spec-lean-retire-s1-explicit-machine.md). This target used to set NO env var and
 # ride 33 probes' hardcoded lean literals — so what it measured was decided by 33 files
-# rather than by the caller. Now both gates state their subject, and --expect-build makes
-# the runner REFUSE to run if the named machine is not that build: point them both at one
-# machine and one dies, instead of both printing 34/34 with the lean gate silently gone.
-# EU (not the region-less C-BIOS_MSX1_BASIC_DISK) so lean and repack differ ONLY in the
-# BASIC build — the one thing the two gates exist to isolate.
-# `machines` is a prerequisite so a basic/ edit regenerates zerobas-msx1.ips and
-# reinstalls the config first; the lean gate previously had no dependency on the artifact
-# it tests, which is the trap `$(MAIN_ROM)`'s real rule closed on the repack side.
-LEAN_MACHINE    := C-BIOS_MSX1_EU_BASIC_DISK
-diskbasic-acceptance: $(DISK_ROM) $(DISK_TEST_DSK) machines
-	python3 probes/disk/diskbasic_acceptance.py \
-	        --machine $(LEAN_MACHINE) --expect-build lean $(if $(ONLY),--only '$(ONLY)',)
-
-# --- REPACK acceptance: the SAME Disk-BASIC corpus on the relocated BASIC build ----
-# (string-engine arc.) The lean gate above proves the 16 KB basic.rom; this proves the
-# merged repack ROM (build/zerobas-main-eu.rom — relocated BASIC $2812-$7FFF, STRMAX=64,
-# concat-aware str_eval, relocated kwtable) against the SAME CF-3300 oracle. The disk
-# verbs flow through the changed str_eval / newly-tokenised keywords, so lean-converges
-# does NOT imply repack-converges. Mechanism: an EXTRA machine file (repack-machine) plus
-# the probes' MANDATORY machine name — every probe's zerobas-BASIC machine reads
-# $ZEROBAS_BASIC_MACHINE and has no fallback, so naming it here points the whole corpus at
-# the repack machine while the CF-3300 oracle side is untouched. The runner refuses to
-# start (vacuity guards §3.1.3-§3.1.6) if the machine does not resolve, is not a zerobas
-# machine, is not the --expect-build named here, or if any registry probe fails to honour
-# the env var. Same deps as the lean gate (machines-oracle + seed + CF-3300).
+# rather than by the caller. Now the gate states its subject, and --expect-build makes
+# the runner REFUSE to run if the named machine is not that build.
+#
+# ⚠️ THIS GATE MEASURES THE REPACK BUILD since 2026-07-29 (S2 of RETIRE THE LEAN 16 KB
+# CART, docs/spec-lean-retire-s2-switch.md). It used to run the SAME 34-probe corpus on
+# the lean 16 KB basic.rom, with `diskbasic-acceptance-repack` as its repack twin; zerobas
+# no longer builds or ships lean, so the twin IS the gate now and the lean column is gone.
+# No coverage was lost -- all 34 already passed on repack (S1 §5). The alias below keeps
+# the old target name working for one arc.
+#
+# The merged repack ROM (build/zerobas-main-eu.rom — relocated BASIC $2812-$7FFF,
+# STRMAX=64, concat-aware str_eval, relocated kwtable) runs against the SAME CF-3300
+# oracle. Mechanism: an EXTRA machine file (repack-machine) plus the probes' MANDATORY
+# machine name — every probe's zerobas-BASIC machine reads $ZEROBAS_BASIC_MACHINE and has
+# no fallback, so naming it here points the whole corpus at the repack machine while the
+# CF-3300 oracle side is untouched. The runner refuses to start (vacuity guards
+# §3.1.3-§3.1.6) if the machine does not resolve, is not a zerobas machine, is not the
+# --expect-build named here, or if any registry probe fails to honour the env var.
+#
+# ⚠️ `--expect-build lean` and the runner's `lean` classification are DELIBERATELY KEPT
+# (probes/disk/diskbasic_acceptance.py §3.1.4/§3.1.5) even though nothing passes them any
+# more. They are what makes "this gate got pointed back at a lean machine" a loud death.
+# Deleting the classification because lean retired would delete the guard that PROVES it
+# retired -- and a machine named *_BASIC_DISK still resolves on any dev box that ran
+# `make machines` before this change.
+#
+# `repack-machine` is a prerequisite so a basic/ edit rebuilds the merged ROM and
+# reinstalls the config first ([[ips-rebuild-after-basic-change]]).
 #
 # There is deliberately NO bdos-acceptance-repack: the BDOS gate exercises the disk ROM
 # (build/disk.rom) under the real CF-3300 BIOS — the string-engine arc does not touch the
-# disk ROM, so BDOS behaviour is identical across the lean and repack BASIC builds.
+# disk ROM, so BDOS behaviour was identical across the lean and repack BASIC builds.
 REPACK_MACHINE  := C-BIOS_MSX1_EU_REPACK_DISK
 repack-machine: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM)
 	python3 tools/install-repack-machine.py --merged $(MAIN_ROM) --disk-rom $(DISK_ROM) \
 	  --sub-rom $(SUB_ROM)
 
-diskbasic-acceptance-repack: $(DISK_ROM) $(DISK_TEST_DSK) repack-machine
+diskbasic-acceptance: $(DISK_ROM) $(DISK_TEST_DSK) repack-machine
 	python3 probes/disk/diskbasic_acceptance.py \
 	        --machine $(REPACK_MACHINE) --expect-build repack $(if $(ONLY),--only '$(ONLY)',)
+
+# Deprecated alias, kept for one arc so existing docs/muscle memory keep working.
+# The lean column it used to be distinguished from no longer exists.
+diskbasic-acceptance-repack: diskbasic-acceptance
 
 # --- FAT-primitive ERROR-disposition gate (the half diskbasic-acceptance misses) --
 # The 34 verbs above are oracle differentials over the SUCCESS path. They stay

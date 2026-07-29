@@ -17,7 +17,8 @@ Method (true differential, no hand-coded oracle for the visible bytes). For each
 test line we type the IDENTICAL direct-mode line into the REPL of:
 
   * the reference Philips VG-8020 (built-in MSX-BASIC, no cartridge), and
-  * zerobas (the same VG-8020 with --cart basic.rom),
+  * zerobas -- either `--zb-machine <name>` (a zerobas openMSX machine of its own)
+    or `--cart <rom>` (the LEAN 16 KB cartridge inserted into that same VG-8020),
 
 then read each machine's SCREEN 0 name table from VRAM (offset 0x0000, the 40x24
 text grid — same technique as basic_probe_strvar / _list / _screen), locate the
@@ -58,14 +59,23 @@ ROWS = 24
 NAMETBL_LEN = COLS * ROWS
 
 
-def run_line(cart, line, base=6.0, tail=8.0):
-    """Type one direct-mode line (+ a separately-timed Enter) on MACHINE, with or
-    without `cart`, then capture the SCREEN 0 name table once output settles."""
+def run_line(zb, line, base=6.0, tail=8.0):
+    """Type one direct-mode line (+ a separately-timed Enter) and capture the SCREEN 0
+    name table once output settles.
+
+    `zb` selects the zerobas side: None runs the bare reference MACHINE; a ("cart", path)
+    pair inserts a zerobas cartridge into that same reference machine; a ("machine", name)
+    pair boots a zerobas machine of its own instead. The cart form is the more controlled
+    comparison -- both sides are then the identical VG-8020 and differ only in the
+    cartridge -- but it only exists for the LEAN 16 KB build, which is a cartridge. The
+    repack build is a slot-0 32 KB main ROM, so it can only be compared machine-to-machine
+    (S2 of RETIRE THE LEAN 16 KB CART, docs/spec-lean-retire-s2-switch.md)."""
     out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="print_cap_")
     os.close(out_fd)
-    cmd = [sys.executable, OMSX_RUN, "--machine", MACHINE]
-    if cart:
-        cmd += ["--cart", cart]
+    machine = zb[1] if zb and zb[0] == "machine" else MACHINE
+    cmd = [sys.executable, OMSX_RUN, "--machine", machine]
+    if zb and zb[0] == "cart":
+        cmd += ["--cart", zb[1]]
     # zerobas (and the reference) drop a trailing CR that shares a burst with
     # text, so Enter is a SEPARATE, later --type event.
     cmd += ["--type", line, "--type-delay", str(base),
@@ -96,29 +106,56 @@ def screen_rows(cap):
     return rows
 
 
+def _margin(row):
+    """The screen's LEFT MARGIN, in columns, read off a row we know starts at it.
+
+    ⚠️ PIN THE INSTRUMENT. The two sides of this differential are no longer the same
+    machine (see run_line), and MACHINES DISAGREE ABOUT COLUMN 0: measured, a Philips
+    VG-8020 lays SCREEN 0 text out at column 2 and a C-BIOS machine at column 1. That
+    is a property of the BIOS's screen setup, not of BASIC -- the identical lean build
+    prints ' 1  2  3' at margin 2 on the VG-8020 and at margin 1 on C-BIOS. Comparing
+    raw name-table rows across machines therefore diffs the MARGIN and reports it as a
+    PRINT defect: every row differs by exactly one leading space while the output is
+    byte-identical. Both sides are made margin-relative before comparison, each against
+    its OWN capture, so a machine with a third margin cannot shift the result either."""
+    return len(row) - len(row.lstrip(" "))
+
+
+def _strip_margin(row, margin):
+    """Drop exactly `margin` leading columns -- never more, so the sign space in ` 1`
+    (which IS in scope) survives."""
+    return row[margin:] if row[:margin].strip() == "" else row
+
+
 def output_row(rows, typed):
-    """The PRINT output is the row immediately after the echoed command line.
-    The command echoes verbatim (`typed` appears as a substring of its row), so
-    find that row and return the next one."""
+    """The PRINT output is the row immediately after the echoed command line, with the
+    screen's left margin removed. The command echoes verbatim (`typed` appears as a
+    substring of its row), and that echo row starts AT the margin -- so it is both the
+    locator and the instrument pin."""
     for i, row in enumerate(rows):
         if typed in row:
-            return rows[i + 1] if i + 1 < len(rows) else ""
+            if i + 1 >= len(rows):
+                return ""
+            return _strip_margin(rows[i + 1], _margin(row))
     return None
 
 
 def output_block(rows, typed):
     """All output rows after the echoed command, up to the next prompt line
-    (`Ok` / `zb>`). Used for the multi-line comma-wrap divergence case."""
+    (`Ok` / `zb>`), margin-stripped as in output_row. Used for the multi-line
+    comma-wrap divergence case."""
     out = []
+    margin = 0
     started = False
     for row in rows:
         if not started:
             if typed in row:
                 started = True
+                margin = _margin(row)
             continue
         if row.strip() in ("Ok", "ZB"):
             break
-        out.append(row)
+        out.append(_strip_margin(row, margin))
     # drop trailing blanks
     while out and not out[-1].strip():
         out.pop()
@@ -128,8 +165,18 @@ def output_block(rows, typed):
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cart", required=True, help="zerobas basic.rom")
+    # Exactly one of the two zerobas-side forms. NO DEFAULT on either: a hardcoded
+    # default is what silently decides which BUILD a gate measures (S1, S2).
+    side = ap.add_mutually_exclusive_group(required=True)
+    side.add_argument("--zb-machine", metavar="NAME",
+                      help="zerobas openMSX machine (e.g. C-BIOS_MSX1_EU_REPACK_DISK)")
+    side.add_argument("--cart", metavar="ROM",
+                      help="zerobas cartridge inserted into the reference machine "
+                           "(LEAN 16 KB build only -- the repack build is a slot-0 "
+                           "main ROM, not a cartridge)")
     args = ap.parse_args()
+    zb = ("machine", args.zb_machine) if args.zb_machine else ("cart", args.cart)
+    print(f"[probe] reference: {MACHINE}   zerobas: {zb[0]}={zb[1]}")
 
     ok = True
 
@@ -154,27 +201,34 @@ def main() -> int:
 
     for line in match_lines:
         ref_out = output_row(screen_rows(run_line(None, line)), line)
-        zb_out = output_row(screen_rows(run_line(args.cart, line)), line)
+        zb_out = output_row(screen_rows(run_line(zb, line)), line)
         located = ref_out is not None and zb_out is not None
         cond = located and ref_out == zb_out
         detail = (f"ref={ref_out!r} zb={zb_out!r}" if not cond else f"out={zb_out!r}")
         check(f"{line!r}  ref==zerobas", cond, detail)
 
-    # DOCUMENTED DIVERGENCE (observed, reported, NOT failed) — comma tab-zone
-    # line-wrap. Real MSX-BASIC moves a `,` tab to a NEW LINE once the next 14-col
-    # zone would run past the screen width; zerobas's print_comma_zone keeps
-    # tabbing on the same line (it tracks the zone width but not the width-wrap).
-    # Out of loader-stub scope (a stub never PRINTs enough comma items to wrap);
-    # measured here so the divergence is on record, mirroring the disk-probe
-    # FCB-field divergences. PASS/FAIL above does not hinge on it.
+    # Comma tab-zone WIDTH-WRAP. Real MSX-BASIC moves a `,` tab to a NEW LINE once the
+    # next 14-col zone would run past the screen width.
+    #
+    # This was a REPORTED-ONLY "documented divergence" for the lean 16 KB build, whose
+    # print_comma_zone tracked the zone width but not the width-wrap and so kept tabbing
+    # on one line. ⚠️ IT IS NO LONGER A DIVERGENCE: measured 2026-07-29 on the repack
+    # build, zerobas wraps the third zone exactly as the reference does, and the stale
+    # note printed "divergence present as documented: NO (re-check)" -- a readout still
+    # describing a build the project had stopped shipping. Promoted to a real assertion
+    # here (S2, docs/spec-lean-retire-s2-switch.md): a converged row should be GATED,
+    # not narrated. Running the retired lean cart via --cart will now go red on this
+    # row, correctly -- that build really does diverge.
     wrap_line = "print 1,2,3"
     ref_blk = output_block(screen_rows(run_line(None, wrap_line)), wrap_line)
-    zb_blk = output_block(screen_rows(run_line(args.cart, wrap_line)), wrap_line)
-    print(f"\n--- documented divergence (reported, not failed): {wrap_line!r} ---")
-    print(f"    reference (wraps 3rd zone to a new line): {ref_blk}")
-    print(f"    zerobas   (no width-wrap, one line):      {zb_blk}")
-    wrapped = len(ref_blk) > len(zb_blk)
-    print(f"    => divergence present as documented: {'yes' if wrapped else 'NO (re-check)'}")
+    zb_blk = output_block(screen_rows(run_line(zb, wrap_line)), wrap_line)
+    print(f"\n--- comma tab-zone WIDTH-WRAP: {wrap_line!r} ---")
+    print(f"    reference: {ref_blk}")
+    print(f"    zerobas  : {zb_blk}")
+    check(f"{wrap_line!r}  ref==zerobas (comma width-wrap)", ref_blk == zb_blk,
+          "" if ref_blk == zb_blk else
+          "— the RETIRED lean build does not width-wrap; on the repack build this "
+          "converges")
 
     print("\nALL PASS" if ok else "\nSOME FAILED")
     return 0 if ok else 1

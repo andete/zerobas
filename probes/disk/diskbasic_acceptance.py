@@ -164,11 +164,23 @@ def _check_machine_wiring() -> None:
 
 # --- zerobas-side machine provenance (vacuity guards 3-5) ---------------------
 # The artifacts that IDENTIFY a zerobas machine config. A lean machine boots stock
-# C-BIOS with build/basic.rom spliced in as a page-1 IPS patch; the repack machine
-# points slot 0 straight at the merged main ROM. Nothing else in the tree writes
-# either reference, so the config alone says which BUILD the machine runs.
-LEAN_MARK   = os.path.join(ROOT, "zerobas-msx1.ips")            # <ips> patch entry
-REPACK_MARK = os.path.join(ROOT, "build", "zerobas-main-eu.rom")  # slot-0 <filename>
+# C-BIOS with build/basic.rom spliced in as a page-1 IPS patch; a repack machine either
+# points slot 0 straight at the merged main ROM (the dev machine that
+# tools/install-repack-machine.py writes) or applies the merged ROM as an IPS to
+# openMSX's own stock C-BIOS EU (the RELEASE machine that
+# tools/install-openmsx-machine.py writes). Nothing else in the tree writes any of these
+# references, so the config alone says which BUILD the machine runs.
+#
+# ⚠️ LEAN_MARK IS DELIBERATELY KEPT after the lean build's retirement (S2,
+# docs/spec-lean-retire-s2-switch.md). Nothing passes --expect-build lean any more, and
+# zerobas-msx1.ips is deleted from the tree -- but any dev box that ran `make machines`
+# before 2026-07-29 still has *_BASIC_DISK configs naming it. Dropping the lean branch
+# would reclassify those as "unknown" and lose the one thing worth saying about them:
+# that they are the RETIRED build. This is the guard that PROVES lean retired; deleting
+# it because lean retired is the mistake.
+LEAN_MARK    = os.path.join(ROOT, "zerobas-msx1.ips")              # <ips> patch entry
+REPACK_MARKS = (os.path.join(ROOT, "build", "zerobas-main-eu.rom"),  # slot-0 <filename>
+                os.path.join(ROOT, "zerobas-main-eu.ips"))          # <ips> patch entry
 
 
 def _machine_xml(machine: str) -> str:
@@ -195,27 +207,32 @@ def _check_machine_provenance(machine: str, expect: str) -> None:
 
     §3.1.4 catches "pointed at stock C-BIOS": every probe then reports nothing and the
     run reads as a mass functional failure rather than as a wiring error.
-    §3.1.5 catches the coupling this whole slice exists to prevent — repointing the
-    corpus so `diskbasic-acceptance` and `diskbasic-acceptance-repack` become the SAME
-    test, both still printing 34/34 with the lean gate silently gone.
+    §3.1.5 catches a gate measuring a build its caller did not name. It was written for
+    the lean/repack pair, where repointing one gate would have made both the SAME test,
+    both still printing 34/34 with the lean column silently gone. Lean is now retired and
+    only the repack gate remains — so what §3.1.5 catches today is a STALE lean machine
+    left on a dev box by a pre-2026-07-29 `make machines`, which would otherwise boot a
+    build the project no longer ships.
 
-    Deliberately NOT a timestamp check: `zerobas-msx1.ips` is legitimately older than
-    build/basic.rom (the lean image is pinned to check_reloc.py's frozen baseline, so
-    it does not drift), and an mtime guard would fire on a byte-correct machine.
-    Freshness is Make's job — both targets depend on the machine-install rule."""
+    Deliberately NOT a timestamp check: an mtime guard would fire on byte-correct
+    machines (measured for the lean pair in S1 §1.3(b)). Freshness is Make's job — the
+    gate depends on `repack-machine`, which rebuilds the merged ROM from source."""
     xml = _machine_xml(machine)
     text = open(xml, encoding="utf-8", errors="replace").read()
 
     refs = re.findall(r"<(?:filename|ips|bps)>([^<]+)</(?:filename|ips|bps)>", text)
-    kind = ("lean"   if any(os.path.abspath(r) == LEAN_MARK   for r in refs) else
-            "repack" if any(os.path.abspath(r) == REPACK_MARK for r in refs) else
+    abs_refs = {os.path.abspath(r) for r in refs}
+    kind = ("lean"   if LEAN_MARK in abs_refs else
+            "repack" if abs_refs & set(REPACK_MARKS) else
             "unknown")
 
     if kind == "unknown":
         sys.exit(f"machine error: {machine!r} ({xml}) references NO zerobas artifact "
                  f"— it is not a zerobas machine, so every probe would boot a BASIC "
-                 f"we did not build.\nExpected a <ips> naming {LEAN_MARK} (lean) or a "
-                 f"<filename> naming {REPACK_MARK} (repack) (vacuity guard §3.1.4).")
+                 f"we did not build.\nExpected one of:\n  - "
+                 + "\n  - ".join([f"{LEAN_MARK} (lean, RETIRED)"]
+                                 + [f"{m} (repack)" for m in REPACK_MARKS])
+                 + "\n(vacuity guard §3.1.4).")
 
     # A config naming a deleted build/ artifact boots into an unrelated-looking failure.
     missing = [r for r in refs
@@ -226,10 +243,13 @@ def _check_machine_provenance(machine: str, expect: str) -> None:
                  + "\nRebuild them (`make all` / `make repack-machine`) (guard §3.1.4).")
 
     if kind != expect:
+        extra = ("\nThe LEAN build is RETIRED (docs/spec-lean-retire-s2-switch.md) — this "
+                 "is a stale machine from a `make machines` run before 2026-07-29. "
+                 "Re-run `make machines`." if kind == "lean" else
+                 "\nThe lean and repack gates must not collapse into the same test — one "
+                 "of them would vanish while both still printed N/N.")
         sys.exit(f"machine error: --expect-build {expect}, but {machine!r} ({xml}) is a "
-                 f"{kind.upper()} machine.\nThe lean and repack gates must not collapse "
-                 f"into the same test — one of them would vanish while both still "
-                 f"printed N/N (vacuity guard §3.1.5).")
+                 f"{kind.upper()} machine." + extra + " (vacuity guard §3.1.5).")
 
     print(f"[runner] zerobas machine: {machine}  build={kind}  ({xml})")
 

@@ -176,41 +176,48 @@ Prerequisites:
 | **Windows** | `python3` from python.org, plus `pasmo` + `make` (via [MSYS2](https://www.msys2.org/), Git Bash, or WSL — the build needs a Unix-style `make`) |
 
 ```sh
-make            # all portable deliverables: build/basic.rom, build/disk.rom,
-                #   zerobas-msx1.ips/.bps, tape/zerobas-tape-msx1.ips/.bps
+make            # everything needing no C-BIOS checkout: build/disk.rom,
+                #   build/sub.rom, tape/zerobas-tape-msx1.ips/.bps
+make release    # + regenerate the shipped BASIC patch (needs CBIOS=<checkout>)
 make unit-test  # emulator-free Z80 unit tests (no openMSX, no reference ROMs)
 make machines   # install the openMSX machine configs (see below)
 make install    # make + make machines
 ```
 
-The patch deliverables need a stock C-BIOS main ROM to stamp/verify against;
+The tape patch needs a stock C-BIOS main ROM to stamp/verify against;
 `tools/build_patches.py` auto-detects openMSX's bundled copy (Linux / macOS /
 Windows install locations), or pass `STOCK=<path>`. ROMs land in the gitignored
 `build/`; the `.ips/.bps` patches are tracked at the repo root.
 
-## Two ways to run it: cartridge, or patched in next to the BIOS
+## How it runs: patched in next to the BIOS
 
-`build/basic.rom` is an "AB" cartridge: drop it into any MSX slot and the BIOS finds
-the header at `$4000` and calls INIT. That works, but it isn't where BASIC lives
-on a real machine — there it sits in **slot 0 page 1 (`$4000-$7FFF`), right next
-to the BIOS in page 0**, as one ROM. C-BIOS has no BASIC, so it leaves that page
-almost empty — exactly the space zerobas is built for.
+On a real machine BASIC sits in **slot 0 page 1 (`$4000-$7FFF`), right next to the
+BIOS in page 0**, as one ROM. C-BIOS has no BASIC, so it leaves that space free —
+which is exactly the space zerobas is built for, and then some: zerobas also
+reclaims `$2812-$3FFF` from C-BIOS's page 0, so the shipped image spans
+`$2812-$7FFF`.
 
-So zerobas can also ship as a **patch** that drops it into a stock C-BIOS main
-ROM — the same legal firewall: C-BIOS and zerobas stay separate trees and are
-combined only at apply-time. C-BIOS's cold-boot cartridge scan reaches its own
-slot-0 page 1, finds zerobas's "AB" header, and calls INIT — so **no
+zerobas therefore ships as a **patch** against a stock C-BIOS main ROM — the same
+legal firewall as everything else here: C-BIOS and zerobas stay separate trees and
+are combined only at apply-time. C-BIOS's cold-boot cartridge scan reaches its own
+slot-0 page 1, finds zerobas's "AB" header at `$4000`, and calls INIT — so **no
 boot-vector patch is needed**; the cartridge header does double duty.
 
-`make patches` (a subset of `make`) does this: `tools/build_patches.py` splices
-`build/basic.rom` into page 1, checks that the only stock bytes it overwrites are
-C-BIOS's unimplemented-call `unknown@` stubs (none reachable by a direct
-`CALL`/`JP`), and emits both patch formats.
+`make release` builds that pair (`zerobas-main-eu.ips/.bps`) by diffing the merged
+image against a pristine C-BIOS built from a pinned tag, so **regenerating** it needs
+a C-BIOS checkout (`CBIOS=<path>`). **Applying** it does not: that pristine ROM is
+byte-identical to openMSX's own bundled `cbios_main_msx1_eu.rom`.
+
+⚠️ **EU only.** The repack rewrites C-BIOS's page-0 layout, so the shipped patch
+targets the EU ROM. Until 2026-07-29 zerobas also shipped `zerobas-msx1.ips/.bps`, a
+region-universal page-1 splice carrying a **lean 16 KB build** — but that build was
+not a smaller zerobas, it was one missing seven source files (no strings, no `INPUT`,
+no floats, no arrays, no error codes, no KEY traps), so it is retired.
 
 To run it in openMSX without touching any ROM, `make machines` installs ready
-machine configs into your openMSX user dir — per C-BIOS MSX1 region
-(intl/BR/EU/JP), a `*_BASIC` (zerobas + tape) and a `*_BASIC_DISK` (+ zerobas-disk
-in slot 3-1):
+machine configs into your openMSX user dir — a `C-BIOS_MSX1_EU_BASIC` and a
+`C-BIOS_MSX1_EU_BASIC_DISK` (+ zerobas-disk in slot 3-1), each with zerobas-sub in
+slot 3-2, plus a region-universal `*_TAPE` per C-BIOS region:
 
 ```sh
 make machines                      # -> C-BIOS_MSX1[_BR/_EU/_JP]_BASIC[_DISK]
@@ -318,6 +325,12 @@ cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`.
 
 Run the oracle probes ([`probes/`](probes)) against this ROM:
 
+⚠️ The probes below take `--cart build/basic.rom` — the **retired lean 16 KB build**.
+It still assembles (`make build/basic.rom`), but nothing builds, ships, or gates it any
+more; porting this corpus to the repack machine is S3 of the lean retirement
+([`docs/spec-lean-retire-s2-switch.md`](docs/spec-lean-retire-s2-switch.md) §4.5). The
+standing gates all run on the repack build — `make diskbasic-acceptance` and friends.
+
 ```sh
 # BLOAD pipeline (tokenise → execute → cassette load → ,R handoff)
 python3 probes/basic/basic_probe_bload.py \
@@ -381,9 +394,9 @@ zerobas/
 ├── README.md
 ├── PROVENANCE.md      # provenance index -> per-component logs below
 ├── Makefile           # `make` -> all deliverables; `make machines` -> openMSX configs
-├── build/             # gitignored build artifacts (basic.rom, disk.rom)
-├── zerobas-msx1.ips   # slot-0 page-1 patch, IPS (universal; used by installer)
-├── zerobas-msx1.bps   # slot-0 page-1 patch, BPS (CRC-locked, checksummed)
+├── build/             # gitignored build artifacts (disk.rom, sub.rom, ...)
+├── zerobas-main-eu.ips  # shipped BASIC: merged repack main ROM, IPS (EU; used by installer)
+├── zerobas-main-eu.bps  # shipped BASIC: merged repack main ROM, BPS (CRC-locked)
 ├── basic/
 │   ├── main.asm       # cartridge header + includes + page padding ($00 fill)
 │   ├── interp.asm     # tokeniser + statement-loop executor (INIT entry)

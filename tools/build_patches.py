@@ -11,9 +11,10 @@ and hardcoded a macOS C-BIOS path). All host-specific path discovery lives in
 
 Two patch sets, selected by mode:
 
-  page1 (default)  zerobas BASIC spliced into a stock C-BIOS main ROM's slot-0
-                   page 1 ($4000-$7FFF) -> zerobas-msx1.ips / .bps. On a real MSX,
-                   BASIC sits there next to the BIOS; C-BIOS leaves it almost empty.
+  page1 (default)  RETIRED 2026-07-29. Spliced the LEAN 16 KB BASIC into a stock
+                   C-BIOS main ROM's page 1 -> zerobas-msx1.ips / .bps. That build and
+                   both files are gone (docs/spec-lean-retire-s2-switch.md); the mode
+                   now exits with a message rather than recreating them.
 
   tape (--tape)    the cassette-BIOS patch assembled from tape/tape.asm alone (no
                    C-BIOS compiled) -> tape/zerobas-tape-msx1.ips / .bps.
@@ -127,6 +128,22 @@ def resolve_stock(explicit, names) -> str | None:
 
 
 def build_page1(explicit_stock):
+    # RETIRED 2026-07-29 (RETIRE THE LEAN 16 KB CART, S2 --
+    # docs/spec-lean-retire-s2-switch.md). This mode splices the LEAN 16 KB basic.rom
+    # into a stock C-BIOS page 1 and writes zerobas-msx1.ips/.bps, which are DELETED
+    # from the tree. Running it would silently resurrect a retired deliverable at its
+    # old tracked path, where `git status` makes it look like a legitimate rebuild --
+    # so it refuses rather than defaulting to the retired build.
+    sys.exit(
+        "error: the page-1 (lean) patch mode is RETIRED.\n"
+        "       It writes zerobas-msx1.ips/.bps from the lean 16 KB build, which zerobas\n"
+        "       no longer builds or ships (docs/spec-lean-retire-s2-switch.md).\n"
+        "       The shipped BASIC patch is zerobas-main-eu.ips/.bps:\n"
+        "           make release            # or: build_patches.py --main --cbios <checkout>\n"
+        "       The cassette patch is unaffected:  build_patches.py --tape")
+
+
+def _build_page1_retired(explicit_stock):
     rom = ensure_basic_rom()
     stock = resolve_stock(explicit_stock, "cbios_main_msx1.rom")
     if not stock:

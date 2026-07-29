@@ -1810,6 +1810,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       alternative (dropping `MAXFILES` to 1) moves AWAY from a reference that
       supports 15. Message-string placement deferred to implementation.
 
+- [ ] **REGIONALISE THE REPACK BUILD** (filed 2026-07-29, S2 of the lean
+      retirement — user answer B: "note it, revisit later"). The shipped BASIC
+      patch `zerobas-main-eu.ips/.bps` is **EU-only by construction**:
+      [`tools/build_repacked_cbios.py`](tools/build_repacked_cbios.py) applies
+      `cbios-repack/eu-drop-statements.patch` and reads
+      `derived/bin/cbios_main_msx1_eu.rom`. The retired lean splice was a page-1
+      overlay and so was region-universal — `make machines` used to write a
+      `_BASIC`/`_BASIC_DISK` pair for all four MSX1 C-BIOS regions (intl / BR /
+      EU / JP) and now writes one EU pair. **This is a real coverage loss, on
+      record rather than silently absorbed.** The `_TAPE` machines carry no BASIC
+      and stay region-universal, so the tape corpus is unaffected. Judged nominal
+      for now: these are C-BIOS *region* variants, not hardware the project
+      targets, and the CF-3300 oracle plus every standing gate already run
+      EU-only. Revisit if a BR/JP user turns up, or when the repack tooling is
+      next opened. Measured: [`docs/spec-lean-retire-s2-switch.md`](docs/spec-lean-retire-s2-switch.md) §2.1.
+
 - [ ] **RETIRE THE LEAN 16 KB CART** (decided 2026-07-29). It cannot be the
       charter target and has not been one for a long time: it excludes SEVEN
       whole source files (`str-engine`, `input`, `float`, `float-arith`,
@@ -1819,6 +1835,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       has drifted up by 35), and has **~68 free bytes** of its 16384. In an
       emulator both forms are equally easy to run and the repack build is
       strictly better.
+      ✅ **S2 DONE 2026-07-29** — [`docs/spec-lean-retire-s2-switch.md`](docs/spec-lean-retire-s2-switch.md).
+      **Lean is no longer built, shipped, or measured.** `zerobas-msx1.ips/.bps`
+      are DELETED; the shipped BASIC is `zerobas-main-eu.ips/.bps` (user decision
+      A1). `diskbasic-acceptance` IS the repack gate now (34/34) and
+      `-repack` is an alias; `check_reloc.py`'s frozen-baseline check #4 and
+      `LEAN_SHA256` are gone, **checks 1–3 and the `__MEAS_LOW_END`/
+      `__MEAS_PAGE1_END` wall readout survive untouched** (falsified by
+      corrupting `basic-reloc.rom` three ways, and the sym argument is now
+      REQUIRED — an optional sym is how a wall readout silently stops printing).
+      `make probe` runs `basic_probe_print.py --zb-machine` instead of the lean
+      cart. `make all` no longer needs a C-BIOS checkout; `make release`
+      regenerates the shipped pair.
+      🔴 **MEASURED, and the source said otherwise:** a release machine with slot
+      3-2 empty does not boot AT ALL (garbage screen, no prompt) — BASIC reaches
+      its sub-ROM tenants during startup, so `--sub-rom` now defaults ON and a
+      missing file is a hard error. The tenant map had read as "loses those verbs".
+      ⚠️ **The lean build is now UNGATED** — `make build/basic.rom` still
+      assembles for the ~20 historical `--cart` probes, but nothing asserts it.
+      **S3 (next): delete the 311 `IF ROM_BASE` gates + the `ROM_BASE` machinery,
+      collapse `main-reloc.asm` into `main.asm`, and port/retire that probe
+      corpus.** Gate for it: `build/zerobas-main-eu.rom` byte-identical across the
+      change.
       ✅ **S1 DONE 2026-07-29** — [`docs/spec-lean-retire-s1-explicit-machine.md`](docs/spec-lean-retire-s1-explicit-machine.md).
       Both gates now NAME their machine (`LEAN_MACHINE` / `REPACK_MACHINE`) and
       assert it with `--expect-build`, so the two can no longer collapse into one

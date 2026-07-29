@@ -31,11 +31,12 @@ to its own path, so it runs from anywhere with no `PYTHONPATH` set-up.
 ## Prerequisites
 
 1. **openMSX** on your `PATH` (or `$OPENMSX`, or `--omsx <path>`).
-2. **Build artifacts** — `make all` (produces `build/basic.rom`, `build/disk.rom`)
+2. **Build artifacts** — `make all` (produces `build/disk.rom`, `build/sub.rom`)
    and `make test-dsk` (produces `disk/test720.dsk`, a reproducible FAT12 image).
 3. **openMSX machines** — `make machines-oracle` installs the zerobas machines
-   (`C-BIOS_MSX1[_EU/_BR/_JP]_BASIC`, `…_BASIC_DISK`) plus the CF-3300 provider
-   oracle. (`make machines` omits the oracle test machine.)
+   (`C-BIOS_MSX1_EU_BASIC`, `…_BASIC_DISK`, and a region-universal `…_TAPE`) plus the
+   CF-3300 provider oracle. (`make machines` omits the oracle test machine.)
+   The acceptance gates use `C-BIOS_MSX1_EU_REPACK_DISK` from `make repack-machine`.
 4. **Reference ROMs — you supply them.** The differential probes compare against
    proprietary reference machines (`Philips_VG_8020`, `National_CF-3300`) and, for
    the BDOS probes, a real MSX-DOS 1 disk. These ROMs/disks are **never shipped
@@ -48,7 +49,8 @@ to its own path, so it runs from anywhere with no `PYTHONPATH` set-up.
 ```sh
 # headline differential oracles
 python3 probes/disk/disk_probe_dskio.py  --dsk disk/test720.dsk      # DSKIO == CF-3300
-python3 probes/basic/basic_probe_print.py --cart build/basic.rom      # PRINT == VG-8020
+python3 probes/basic/basic_probe_print.py \
+        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK                      # PRINT == VG-8020
 python3 probes/tape/bios_probe_tapwrite.py --out /tmp/tapwrite.rom    # build a cassette-write cart
 
 # end-to-end BDOS $05 LSTOUT on the C-BIOS target (through the tape LPTOUT $00A5)
