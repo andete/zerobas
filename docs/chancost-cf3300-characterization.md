@@ -184,6 +184,45 @@ own documented behaviour — the directory entry is not updated until `CLOSE`.)
 error *class* is wrong independently of where the ceiling sits, so it is fixable
 without changing the ceiling.
 
+## 9. `MAXFILES` semantics — measured
+
+| row | reference | zerobas |
+|---|---|---|
+| `A=5 : MAXFILES=2 : PRINT A` | **0** — variables CLEARed | `5` |
+| `A=5 : REM MAXFILES=2 : PRINT A` — *control* | `5` | `5` |
+| `A=5 : MAXFILES=1 : PRINT A` (value **unchanged**) | **0** — clears anyway | `5` |
+| `A$="XY" : MAXFILES=2 : PRINT A$` | empty | empty |
+| `CLEAR 500 : MAXFILES=2 : PRINT FRE("")` | **500** — pool size survives | `500` |
+| `OPEN…AS #1 : MAXFILES=2 : PRINT LOF(1)` | **`File not OPEN`** | `-1` |
+| `MAXFILES=0 : OPEN…AS #1` | **`Bad file number`** | `syntax error` |
+| `MAXFILES=1 : OPEN…AS #2` | **`Bad file number`** | `syntax error` |
+
+⚠️ **`MAXFILES` clears UNCONDITIONALLY — even when the value does not change.**
+`sem_same` is the row that pins it; without it the natural reading is "clears
+only when it reallocates", which is wrong.
+
+## 10. The disk error block — code → message, measured
+
+`ERROR n` prints its own message, which maps the block black-box:
+
+| code | message | code | message |
+|---|---|---|---|
+| 50 | FIELD overflow | 58 | Sequential I/O only |
+| 51 | Internal error | **59** | **File not OPEN** |
+| **52** | **Bad file number** | 60 | Bad FAT |
+| 53 | File not found | 61 | Bad file mode |
+| 54 | File already open | 62 | Bad drive name |
+| 55 | Input past end | 63 | Bad sector number |
+| 56 | Bad file name | 64 | File still open |
+| 57 | Direct statement in file | 65 | File already exists |
+
+Trapped with `ON ERROR`/`ERR`: `MAXFILES=16` → **5**, `LOF` on a closed channel
+→ **59**.
+
+⚠️ **`Bad file number` is NOT trappable.** With a handler installed the other two
+trap cleanly, but the bad-channel `OPEN` prints `Bad file number in 30` and never
+reaches it — which is why 52 comes from the `ERROR n` map rather than from `ERR`.
+
 ## 8. What this licenses
 
 * **267 B is a valid target** — it is what a channel doing real FAT12 I/O costs

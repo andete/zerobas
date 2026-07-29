@@ -1873,11 +1873,31 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (576 B @ `$B700`) and the input line buffer are movable; `DETOKBUF`
       (1280 B @ `$BB00`) does not fit in 1024 B. So the D-LINEMAX refund is
       **partial at best**, not the full 1792 B.
-      **OPEN FORK for the spec:** maximum RAM recovery (keep `FCH_CEIL=2`,
-      free 1024 B) vs reference parity on the ceiling (`FCH_CEIL=15`, free
-      374 B). Note parity on the *ceiling* still leaves `MAXFILES` unfaithful in
-      *mechanism* — the reference charges dynamically out of `FRE(0)` and
-      zerobas would still reserve statically.
+      **FORK RESOLVED (user, 2026-07-29): the fully faithful DYNAMIC mechanism**
+      — carve channel blocks out of the pool at `MAXFILES` time, ceiling 15,
+      nothing charged for channels a program never asks for, `FRE(0)` moves.
+      Spec written: [`docs/spec-basic-filechan-alloc.md`](docs/spec-basic-filechan-alloc.md)
+      (**D-FCH**), ⚠️ **awaiting sign-off — no code written.**
+      Semantics + error codes now MEASURED too (characterization §9/§10):
+      `MAXFILES` **CLEARs variables UNCONDITIONALLY**, even when the value does
+      not change (the `sem_same` row is what pins that — the natural reading
+      "clears only when it reallocates" is wrong), **closes all channels**, and
+      **keeps** the `CLEAR`-set string-pool size. Codes: `MAXFILES=16` → **ERR
+      5**, bad channel number → **ERR 52 `Bad file number`**, touching a closed
+      channel → **ERR 59 `File not OPEN`**; zerobas raises **ERR 2** for the
+      first two and returns **−1** for the third. The whole disk error block
+      50–65 is mapped black-box via `ERROR n`.
+      ⚠️ **`Bad file number` is NOT trappable on the reference** — with a
+      handler installed the other two trap cleanly but this one prints
+      `Bad file number in 30` and never reaches it. Pin it, don't "fix" it.
+      ⚠️ [`basic/files.asm:332`](basic/files.asm:332) **already comments
+      `bad file number`** and jumps to `stmt_error`; six sites do the same.
+      ⚠️ **`err_msgtab` stops at 25** — reaching 59 densely is ~100 B against
+      9 B/6 B free. S-FCH-2 offers a sparse side-table instead.
+      **Recommended first step (S-FCH-1): build the shared-cache change ALONE
+      on a branch and MEASURE it** — it is common to every version of the slice
+      and frees the 1124 B, and its size is the input every other decision
+      needs. Do not scout a carve for a requirement that is still a guess.
 
 - [ ] **`LOF(#n)` reads −1 on a freshly-created OUTPUT channel** (reference: 0).
       Found 2026-07-29 by a CONTROL row in the channel-cost pass, not aimed at.

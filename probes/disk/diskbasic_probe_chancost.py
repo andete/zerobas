@@ -90,6 +90,31 @@ CASES = [
     # channel. `lof_existing` is its two-sided control -- it MUST agree (26).
     ("lof_new",      ['OPEN "ZQ.DAT" FOR OUTPUT AS #1', "PRINT LOF(1)"]),
     ("lof_existing", ['OPEN "HI.TXT" FOR INPUT AS #1', "PRINT LOF(1)"]),
+
+    # --- SEMANTICS battery: what MAXFILES must DO, for the dynamic-allocation
+    # spec. Reallocating the channel table moves the top of the pool, so these
+    # ask what the reference does to everything living under it. Measured, not
+    # assumed -- the spec's behaviour section is written from these rows.
+    ("sem_var",     ["A=5", "MAXFILES=2", "PRINT A"]),            # vars survive?
+    ("sem_var_ctl", ["A=5", "REM MAXFILES=2", "PRINT A"]),        # ...control
+    ("sem_str",     ['A$="XY"', "MAXFILES=2", "PRINT A$"]),       # strings survive?
+    ("sem_same",    ["A=5", "MAXFILES=1", "PRINT A"]),            # no-change reallocs?
+    ("sem_reopen",  ["MAXFILES=2", 'OPEN "HI.TXT" FOR INPUT AS #1',
+                     "MAXFILES=2", "PRINT LOF(1)"]),              # open chan survives?
+    ("sem_zero",    ["MAXFILES=0", 'OPEN "HI.TXT" FOR INPUT AS #1']),   # 0 = no I/O?
+    ("sem_hinum",   ["MAXFILES=1", 'OPEN "HI.TXT" FOR INPUT AS #2']),   # #n > MAXFILES
+    ("sem_clear",   ["CLEAR 500", "MAXFILES=2", 'PRINT FRE("")']),      # pool kept?
+
+    # --- ERR CODES. The spec needs the NUMBERS, and they are disk-range codes
+    # well above zerobas's err_msgtab (which stops at 25). Trapped with
+    # ON ERROR/ERR so the code is read, not inferred from the message wording.
+    ("err_over",    ["10 ON ERROR GOTO 100", "20 MAXFILES=16", "30 END",
+                     "100 PRINT ERR", "RUN"]),
+    ("err_badchan", ["10 ON ERROR GOTO 100", "20 MAXFILES=1",
+                     '30 OPEN "HI.TXT" FOR INPUT AS #2', "40 END",
+                     "100 PRINT ERR", "RUN"]),
+    ("err_notopen", ["10 ON ERROR GOTO 100", "20 PRINT LOF(1)", "30 END",
+                     "100 PRINT ERR", "RUN"]),
 ]
 
 # The reference's own recorded answers. Re-checking that the oracle still
@@ -113,6 +138,18 @@ REF_EXPECT = {
     "str8":       200,
     "lof_new":    0,
     "lof_existing": 26,
+    # semantics battery (§9 of the characterization)
+    "sem_var":     0,        # MAXFILES CLEARS variables
+    "sem_var_ctl": 5,        # ...and the control proves the statement did it
+    "sem_same":    0,        # ...even when the value does not change
+    "sem_reopen":  "FNO",    # ...and CLOSES open channels
+    "sem_zero":    "BFN",    # MAXFILES=0 -> OPEN is Bad file number
+    "sem_hinum":   "BFN",    # #n above MAXFILES -> Bad file number
+    "sem_clear":   500,      # ...but the CLEAR-set string pool size SURVIVES
+    # error CODES, trapped via ON ERROR/ERR (§10 of the characterization)
+    "err_over":    5,        # MAXFILES=16 -> ERR 5 Illegal function call
+    "err_badchan": "BFN",    # ...NOT trappable: prints `Bad file number in 30`
+    "err_notopen": 59,       # LOF on a closed channel -> ERR 59 File not OPEN
 }
 
 # Error CLASSES, not wordings. zerobas prints its OWN lowercase messages by
@@ -124,6 +161,8 @@ ERR_CLASSES = {
     "SYNTAX": ("syntax error",),
     "IFC":    ("illegal function call",),
     "FNF":    ("file not found",),
+    "BFN":    ("bad file number",),
+    "FNO":    ("file not open",),
 }
 
 # How each case is compared between the two machines:
