@@ -2003,6 +2003,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       pad is what puts the cartridge header at `$4000`. Without it page 1 slides
       down with the low region and `__MEAS_PAGE1_END` measures BOTH walls. Pin
       the header with an explicit `org $4000`. Corrected: 45 B, not 77.
+      ✅ **THE CARVE IS DONE: D-MSGENC LANDED 2026-07-29 (`9a0300d`,
+      docs/spec-basic-msgenc-carve.md).** Phrase-encoding the 25 resident error
+      messages took page 1 from **0 → 24 B free** and the low region from
+      **9 → 68 B free**. S-FCH-2's evicted form needs 20 + 15: **funded, with
+      4 B and 53 B spare.**
+      ⚠️ **BUT TRY ALL-RESIDENT FIRST (spec §9/Q1).** All-resident needs
+      45 B page 1 + 32 B low: low fits with 36 B spare and page 1 is **21 B
+      short** — a DEMOTION problem now, not a carve problem (page-1 content
+      moved down into the low region's slack; only page-0 tenants constrain it,
+      and they cannot see the low region anyway). If that lands there is no
+      tenant op 19, no `ERRMSG_BUF` staging and no ten repointed `jp` sites —
+      **which dissolves blocker (2) above entirely.** Blocker (1), the stale
+      `ONEFLG`, is independent of funding and still open.
 
 - [ ] **`LOF(#n)` reads −1 on a freshly-created OUTPUT channel** (reference: 0).
       Found 2026-07-29 by a CONTROL row in the channel-cost pass, not aimed at.
