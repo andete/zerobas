@@ -1520,7 +1520,7 @@ PRGEND          equ     $E026   ; addr of the $0000 end-of-program marker (2 byt
 ; (SUBROM_IDX_ARY, sub/equates.inc) -- §10's split fix for a ~284 B repack
 ; ROM overrun in the monolithic design. Main and the tenant marshal through
 ; this RAM param block instead of registers (subrom_call/CALSLT clobbers
-; everything): main fills ARY_OP..ARY_IDX, `subrom_call`s, then reads
+; everything): main fills ARY_OP..ARY_IDXP, `subrom_call`s, then reads
 ; ARY_ADDR/ARY_ERR. This REPLACES the monolithic WIP's own ARY_NIDX/ARY_IDX-
 ; only scratch (basic/arrays.asm on branch arrays-slice1-wip) with the wider
 ; ~16-byte block below, at the SAME address range and under the SAME
@@ -1541,8 +1541,21 @@ PRGEND          equ     $E026   ; addr of the $0000 end-of-program marker (2 byt
 ; there is no slack for anything more — see sub/arrays.asm's own header for
 ; where the split engine's ADDITIONAL transient bookkeeping went instead, a
 ; per-call hardware-stack frame, since no further RAM byte was available).
-MAXDIM          equ     4       ; slice-1 subscript-count cap (§9.1 Q-9b;
-                                ; >MAXDIM subscripts -> Subscript out of range)
+; D-ARR-C (docs/spec-basic-arrdim-c.md): `MAXDIM equ 4` STOOD HERE and is gone.
+; It was a slice-1 subscript-count cap, recorded in docs/spec-basic-arrays.md
+; §9.1 Q-9b with the disposition ">MAXDIM subscripts -> Subscript out of range"
+; -- CHOSEN, WRITTEN DOWN AND NEVER MEASURED. The reference has no cap anywhere a
+; program can reach it: ERR=0 at 4, 8, 16, 32, 64, 100 and 120 subscripts, the
+; last on a 249-character line (docs/arrdim-c-vg8020-characterization.md §1), and
+; it stores and reads an element back through 32 of them (§2). There was no
+; number to raise the cap TO.
+; The cap existed only to bound a copy into a fixed 8-byte ARY_IDX buffer that had
+; nowhere to grow (CURLINE sits immediately above this span, see below).
+; ary_parse_subs ALREADY collects every subscript on the hardware stack -- the
+; 2026-07-15 re-entrancy fix, since X(X(0)) needs a per-nesting-level region --
+; so the fix deletes the copy and hands the tenant a POINTER instead of a buffer.
+; The block's ceiling is then the input line (43 subscripts, LINEMAX=96) against
+; 1024 B of measured stack headroom, not a constant anyone had to pick.
 ARY_OP          equ     $E028   ; 0=RESOLVE (read/write element, auto-dim on
                                 ; read) / 1=DIM (explicit declare) / 2=ERASE
                                 ; (free, slice-2, docs/spec-basic-arrays-
@@ -1560,8 +1573,35 @@ ARY_KEY         equ     $E029   ; name0/name1 key (BC round-trip: written via
 ARY_TYPE        equ     $E02B   ; 2/4/8 (int/single/double) (1)
 ARY_NIDX        equ     $E02C   ; parsed subscript/bound count for the CURRENT
                                 ; reference (1)
-ARY_IDX         equ     $E02D   ; parsed subscripts (RESOLVE) or bounds (DIM),
-                                ; int16 LE x MAXDIM (8)
+ARY_IDXP        equ     $E02D   ; [D-ARR-C] POINTER to the parsed subscripts
+                                ; (RESOLVE) or bounds (DIM) -- int16 LE, ndim of
+                                ; them, living in the CALLER's own hardware-stack
+                                ; block, not here (2). ⚠️ IT ADDRESSES SUBSCRIPT
+                                ; **0**, THE HIGH END, and every tenant walk runs
+                                ; DOWNWARD from it. That is not a quirk to tidy
+                                ; away: ary_parse_subs pushes subscript 0 FIRST,
+                                ; so subscript 0 lands at the highest address, and
+                                ; addressing that end is exactly what lets all
+                                ; four tenant walks keep visiting k = 0..ndim-1 in
+                                ; the order they always did -- the element-offset
+                                ; math in ary_resolve is untouched. Turning the
+                                ; pointer round without turning the walks round is
+                                ; SILENT MEMORY CORRUPTION (the resolve still
+                                ; succeeds, on the wrong element), and it is
+                                ; invisible on equal bounds; tests/test_arrays.py
+                                ; case 2b is the asymmetric witness.
+ARY_CUR         equ     $E02F   ; [D-ARR-C] the text cursor, parked across the
+                                ; engine call (2). subrom_call/CALSLT clobbers HL,
+                                ; and the fused ary_parse_call has no caller left
+                                ; to hold a [CURSOR] push for it. Safe against the
+                                ; same re-entrancy ARY_NIDX/the old ARY_IDX already
+                                ; survived: written at the close paren AFTER every
+                                ; eval has returned and consumed by the engine call
+                                ; immediately after, so no nested parse can
+                                ; interleave with it.
+                                ; $E031..$E034 (4 B) FREED by the above -- the old
+                                ; ARY_IDX was 8 bytes. Unassigned on purpose: this
+                                ; span has CURLINE immediately above it at $E038.
 ARY_ADDR        equ     $E035   ; [tenant return, RESOLVE] element address (2)
                                 ; -- also SCALAR_FIND/SCALAR_ALLOC's own
                                 ; return (§4b): the scalar entry address, or

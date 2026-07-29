@@ -4,13 +4,15 @@ SPDX-License-Identifier: 0BSD
 -->
 # D-ARR-C — the dimension count (`MAXDIM = 4` is a divergence, not a cap)
 
-**Status: SIGNED OFF 2026-07-29, in implementation.** S-ARR-C-1 = **B, pointer not
+**Status: ✅ LANDED 2026-07-29 — `make arrdim-acceptance` 65/65 gated, ALL PASS,
+−28 B in the low region.** S-ARR-C-1 = **B, pointer not
 buffer**; S-ARR-C-3 = **delete `MAXDIM` entirely**; S-ARR-C-2/-4/-5 as
 recommended. Split out of D-ARR-B by
 [`spec-basic-arrdim.md`](spec-basic-arrdim.md) §7a. Measurement:
 [`arrdim-c-vg8020-characterization.md`](arrdim-c-vg8020-characterization.md),
-`make arrdim-characterize`, 73 rows / 55 gated / 18 never-gated, all 55 green
-today. Baseline for this slice: **10 divergent rows** (`dim-5dim`/`-8dim`/`-12dim`,
+`make arrdim-characterize`, 73 rows. At sign-off: 55 gated / 18 never-gated;
+as landed: **65 gated / 8 never-gated**. Baseline for this slice: **10 divergent
+rows** (`dim-5dim`/`-8dim`/`-12dim`,
 `cap-8`/`-16`/`-32`/`-40`/`-42`, `use-8`/`use-32`).
 
 ---
@@ -203,6 +205,27 @@ promotion to the sub-ROM (~3.4 KB free), the D-CLP precedent; the clone frontier
 dry.
 
 RAM: **−4 B** (the param block gives back four of `ARY_IDX`'s eight).
+
+### 6.1 As built — measured from a clean build
+
+| | before (`33b6446`) | after | |
+|---|---|---|---|
+| page-0 low region free | **4 B** | **32 B** | **28 B GIVEN BACK** |
+| page-1 free | 10 B | 10 B | unchanged |
+| sub-ROM | — | +~20 B | the tenant's downward walks + the auto-dim guard |
+
+**The estimate held (−30 est. / −28 measured), and no funding was needed.** The
+slice pays for itself out of the machinery the cap required: deleting a *check*
+also deleted its unwind path, its skip-to-`)` recovery, the `_kt` shim and two
+callers' publish/pop tails. `rm -rf build` first, per
+[[measure-the-wall-from-clean]] — a warm tree has reported 55 B free where the
+same sources overran by 14.
+
+⚠️ Note the direction of the surprise: §7a's estimate of **−10…−15 B** was
+*too pessimistic*, for the same reason its risk assessment was (§3). Removing a
+constraint removes more than the line that states it: the cap's unwind path, its
+skip-to-`)` recovery, the `_kt` shim and two callers' publish/pop tails all went
+with the `cp MAXDIM`.
 
 ## 7. Gate
 

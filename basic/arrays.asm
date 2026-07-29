@@ -21,11 +21,12 @@
 ;     arrays" sentinel at the (now current) ARYTAB, whenever the program
 ;     area is rebased (§9.6) — pure RAM, trivial, kept main-side rather than
 ;     round-tripping through the sub-ROM for a two-byte write.
-;   - ary_parse_subs(_kt): the shared "eval a comma-separated int-expr list
-;     in parens into the ARY_NIDX/ARY_IDX param-block fields" front end,
-;     used by both ex_dim (bound list) and ex_let_arr/ev_f_arr (subscript
-;     list) — unchanged in shape from the WIP, just addressed at the new
-;     param-block field locations (basic/sysvars.inc §10.2).
+;   - ary_parse_call: the shared "eval a comma-separated int-expr list in
+;     parens, publish the param block and CALL THE ENGINE" front end, used by
+;     both ex_dim (bound list) and ex_let_arr/ev_f_arr (subscript list, via
+;     ary_op0_resolve). D-ARR-C fused the parse and the call — the subscripts
+;     now stay on that routine's own stack frame instead of being copied into
+;     a fixed buffer, and a stack block cannot outlive its frame's `ret`.
 ;
 ; Clean-room: array *semantics* are oracle-locked to the public MSX-BASIC
 ; language reference + the VG-8020 black-box capture (spec §4.1/§5); the
@@ -203,33 +204,52 @@ ary_reset:
                 ld      (hl),a
                 ret
 
-; --- ary_parse_subs: HL=cursor at '(' -> HL advanced past ')'; -------------
-; (ARY_NIDX)/(ARY_IDX) filled with the parsed subscript/bound count/values
-; (int16, strict domain via fac_to_int_strict — same rule as \, MOD, AND/OR/
-; XOR/NOT operands and a variable store, §9.3). On a malformed list (missing
-; ','/')') raises the deferred FPERR=4 "syntax error" via ev_f_empty (the
-; SAME D-F2-4 malformed-call idiom expr.asm's ev_mc_arg family uses). More
-; than MAXDIM subscripts -> FPERR=5 "Subscript out of range" (§9.1 Q-9b).
+; --- ary_parse_call: BC=key, D=type, E=op, HL=cursor at '(' ----------------
+; -> Z (engine ok) / NZ (FPERR set, already mapped); HL = cursor past ')'.
+; Parses the comma-separated int-expr list (int16, strict domain via
+; fac_to_int_strict — same rule as \, MOD, AND/OR/XOR/NOT operands and a
+; variable store, §9.3), publishes the whole ARY_OP..ARY_IDXP param block, and
+; makes the engine call, as ONE routine. On a malformed list (missing ','/')')
+; raises the deferred FPERR=4 "syntax error" via ev_f_empty (the SAME D-F2-4
+; malformed-call idiom expr.asm's ev_mc_arg family uses) and skips the call.
 ; Any operand error inside a subscript expression itself (overflow/div0/
 ; illegal/...) leaves FPERR already set by eval()/fac_to_int_strict — not
 ; re-checked mid-parse here (first-error-wins, deferred to the statement
 ; boundary, same discipline as D-F2-1/D-F2-4 elsewhere).
 ;
-; RE-ENTRANCY (slice-1 fix 2026-07-15): a subscript expression can itself
-; contain an array rvalue — X(X(0)) — whose inner ev_f_arr runs THIS parse
-; again, on the same global ARY_NIDX/ARY_IDX block. The WIP wrote the block
+; ⚠️ D-ARR-C — WHY THE PARSE AND THE ENGINE CALL ARE FUSED. This was three
+; routines (ary_parse_subs + ary_parse_subs_kt + each caller's publish/call/
+; pop tail) and the subscripts were COPIED out of the stack into ARY_IDX, a
+; fixed 8-byte buffer with `CURLINE` immediately above it and no room to grow.
+; `MAXDIM = 4` existed ONLY to bound that copy — and the reference has no cap
+; at all (docs/spec-basic-arrdim-c.md). Deleting the copy deletes the cap, but
+; it means the subscripts stay where they already are, ON THIS ROUTINE'S OWN
+; STACK FRAME, and a block on the stack cannot survive its own `ret`. So the
+; engine call has to happen while the frame is still live, i.e. in here.
+; The tenant is handed `ARY_IDXP` = &subscript 0 and walks DOWNWARD; see
+; basic/sysvars.inc's ARY_IDXP note for why that end and not the other.
+; Lifetime across the call: subrom_call/CALSLT pushes strictly BELOW SP and
+; the block sits above it, so it survives untouched; ary_engine_call's own
+; pushes are balanced, so SP at apc_release equals SP at the close paren,
+; which is what makes the `2n+4` release arithmetic correct.
+;
+; RE-ENTRANCY (slice-1 fix 2026-07-15, unchanged): a subscript expression can
+; itself contain an array rvalue — X(X(0)) — whose inner ev_f_arr runs THIS
+; parse again, on the same global param block. The WIP wrote the block
 ; incrementally per subscript, so the inner parse clobbered the outer's
 ; partial count/values ("Subscript out of range" on every nested subscript).
-; Now the values are collected on the CPU STACK during the loop — each
-; nesting level gets its own stack region for free — and the block is
-; written ATOMICALLY only at the close paren, after the last eval() has
-; returned: any inner parse's whole write+resolve+read sequence completes
-; strictly before (never interleaved with) the outer's single block write.
-; Loop stack shape between evals: [COUNT(B), v_{n-1} .. v_0, RET] — the
-; count word rides ON TOP so eval's own balanced pushes never disturb it.
-; Clobbers A,B,C,D,E,H,L + IX (IX is free here: every caller's next step is
-; ary_engine_call, which clobbers IX anyway).
-ary_parse_subs:
+; The values are collected on the CPU STACK during the loop — each nesting
+; level gets its own stack region for free — and the block is written
+; ATOMICALLY only at the close paren, after the last eval() has returned: any
+; inner parse's whole publish+call+read sequence completes strictly before
+; (never interleaved with) the outer's. ARY_CUR rides on that same argument.
+; Loop stack shape between evals: [COUNT(B), v_{n-1} .. v_0, KEY, TYPE:OP,
+; RET] — the count word rides ON TOP so eval's own balanced pushes never
+; disturb it.
+; Clobbers A,B,C,D,E,H,L,IX.
+ary_parse_call:
+                push    de                  ; [TYPE:OP] guarded across eval
+                push    bc                  ; [KEY]
                 inc     hl                  ; past '('
                 ld      b,0
                 push    bc                  ; [COUNT] = 0 (C = don't-care)
@@ -250,11 +270,11 @@ apsub_lp:
                 call    fac_to_int_strict   ; DE=strict int16 (FPERR=1 on overflow)
                 pop     hl                  ; cursor restored
                 pop     bc                  ; B = count so far
-                ld      a,b
-                cp      MAXDIM
-                jr      nc,apsub_toomany
                 push    de                  ; [VALUE] collected on the stack
-                inc     b
+                inc     b                   ; (no cap: D-ARR-C. B cannot wrap —
+                                            ; `DIM A(0,...)` is 2n+9 characters and
+                                            ; LINEMAX is 96, so n <= 43; even a
+                                            ; 255-char line only reaches 123)
                 push    bc                  ; [COUNT] back on top
                 call    skip_spaces
                 ld      a,(hl)
@@ -263,82 +283,84 @@ apsub_lp:
                 cp      ')'
                 jr      z,apsub_close
                 pop     bc                  ; malformed list: unwind [COUNT]+values
+                ld      (ARY_CUR),hl        ; the cursor at the offending char. Every
+                                            ; caller abandons it (fp_runtime_error)
+                                            ; because FPERR is set below, but
+                                            ; apc_release RETURNS (ARY_CUR) in HL, so
+                                            ; leaving it stale here would hand back a
+                                            ; cursor from a PREVIOUS parse rather than
+                                            ; an obviously-dead one
 apsub_mf_drop:
                 pop     de                  ; (B>=1 here — a value was just pushed)
                 djnz    apsub_mf_drop
-                jp      ev_f_empty          ; -> deferred syntax error
+                xor     a
+                ld      (ARY_NIDX),a        ; ⚠️ the values are ALREADY unwound here, so
+                                            ; apc_release must not release them again —
+                                            ; and (ARY_NIDX) still holds whatever the
+                                            ; PREVIOUS parse left, which would corrupt
+                                            ; SP by exactly that much. Zero = release
+                                            ; the two guard words and nothing else
+                call    ev_f_empty          ; -> deferred syntax error (FPERR=4)
+                jr      apc_release
 apsub_comma:
                 inc     hl
                 jr      apsub_lp
 apsub_close:
                 inc     hl                  ; past ')'
-                push    hl
-                pop     ix                  ; IX = cursor (parked across the pops)
-                pop     bc                  ; B = n (1..MAXDIM)
+                ld      (ARY_CUR),hl        ; park the cursor: CALSLT clobbers HL and
+                                            ; there is no caller left holding a
+                                            ; [CURSOR] push for us
+                pop     bc                  ; B = n
                 ld      a,b
                 ld      (ARY_NIDX),a        ; the block write happens ONLY here,
                 add     a,a                 ; after every subscript eval is done
-                ld      hl,ARY_IDX
-                add     a,l
+                dec     a
+                dec     a                   ; A = 2n-2
                 ld      l,a
-                adc     a,h
-                sub     l
-                ld      h,a                 ; HL = ARY_IDX + 2n (values pop in
-                                            ; reverse: last subscript first)
-apsub_wr_lp:
-                pop     de
-                dec     hl
-                ld      (hl),d
-                dec     hl
-                ld      (hl),e
-                djnz    apsub_wr_lp
-                push    ix
-                pop     hl                  ; HL = cursor (past ')')
-                ret
-apsub_toomany:                              ; B = MAXDIM values already on the stack
-                ld      a,5
-                ld      (FPERR),a
-apsub_tm_drop:
-                pop     de                  ; unwind the collected values (B=MAXDIM
-                djnz    apsub_tm_drop       ; here, never 0)
-apsub_skip_lp:
-                ld      a,(hl)              ; best-effort: skip to ')' or end of line so
-                or      a                   ; the cursor lands somewhere sane (the
-                ret     z                   ; statement aborts via FPERR either way)
-                cp      ')'
-                jr      z,apsub_skip_done
-                inc     hl
-                jr      apsub_skip_lp
-apsub_skip_done:
-                inc     hl                  ; past ')'
-                ret
-
-; --- ary_parse_subs_kt: BC=key, A=type, HL=cursor at '(' -> BC=key, A=type --
-; (both RESTORED, surviving ary_parse_subs's own eval()-clobbering calls),
-; the cursor advanced past ')' left PUSHED on the stack UNDER the return (the
-; caller pops it back whenever its own tail is ready for it; HL itself comes
-; back holding the return address, i.e. clobbered — no caller reads HL before
-; popping [CURSOR]). Shared front-end for every array-reference site (ex_dim's
-; own bound-list parse, ex_let_arr/ev_f_arr's own subscript-list parse).
-; NOTE the tail: after the two pops the return address is back on top, so the
-; cursor must be slid UNDER it — `ex (sp),hl` + `jp (hl)`, NOT `push hl` +
-; `ret` (that sequence *returns to the cursor address* and executes the
-; tokenised line as code — the slice-1 integration bug, fixed 2026-07-15).
-; Clobbers D,E,H,L (+ ary_parse_subs's own A,B,C clobbers, absorbed by the
-; restore below).
-ary_parse_subs_kt:
-                push    bc                  ; [KEY]
-                push    af                  ; [TYPE]
-                call    ary_parse_subs      ; HL(cursor@'(') -> ARY_NIDX/ARY_IDX, HL past ')'
-                pop     af                  ; TYPE restored (ary_parse_subs's own pushes
-                pop     bc                  ; are already balanced by its own return, so
-                                            ; KEY/TYPE sit exactly where we left them)
-                ex      (sp),hl             ; TOS <- [CURSOR]; HL <- the return address
-                jp      (hl)                ; return, leaving [CURSOR] on the stack
+                ld      h,0
+                add     hl,sp               ; HL = &subscript 0 — the HIGH end, since
+                                            ; subscript 0 was pushed FIRST
+                ld      (ARY_IDXP),hl
+                push    hl
+                pop     ix                  ; IX = the same, to reach OVER the value
+                                            ; block at constant displacements: the
+                                            ; guards are above it (pushed before eval,
+                                            ; which is unavoidable)
+                ld      l,(ix+2)
+                ld      h,(ix+3)
+                ld      (ARY_KEY),hl        ; [KEY] — L=C,H=B reproduces exactly what
+                                            ; `ld (ARY_KEY),bc` would have stored
+                ld      a,(ix+4)
+                ld      (ARY_OP),a          ; [TYPE:OP] low  = E = op
+                ld      a,(ix+5)
+                ld      (ARY_TYPE),a        ; [TYPE:OP] high = D = type
+                ld      a,(FPERR)
+                or      a
+                jr      nz,apc_release      ; a subscript expression already failed —
+                                            ; first-error-wins, no engine call
+                call    ary_engine_call     ; -> Z ok / NZ: FPERR already mapped+set
+apc_release:
+                ; Release the whole frame: 2n value words + [KEY] + [TYPE:OP].
+                ; (ARY_NIDX) is the ONLY surviving record of n — SP is unchanged
+                ; across ary_engine_call, so it still points at subscript n-1.
+                ld      a,(ARY_NIDX)
+                add     a,a
+                add     a,4
+                ld      l,a
+                ld      h,0
+                add     hl,sp
+                ld      sp,hl               ; SP -> the return address
+                ld      hl,(ARY_CUR)        ; HL = cursor past ')'
+                ld      a,(FPERR)           ; re-derive Z/NZ rather than preserving
+                or      a                   ; flags across the release: FPERR is
+                ret                         ; provably 0 at the engine call, so it is
+                                            ; non-zero here exactly when something
+                                            ; failed — same verdict, no shadow
+                                            ; registers, 4 bytes
 
 ; --- ary_engine_call: subrom_call to the array tenant (SUBROM_IDX_ARY). ----
 ; The caller has already filled ARY_OP/ARY_KEY/ARY_TYPE (and ARY_NIDX/
-; ARY_IDX, via ary_parse_subs_kt) in the param block. On return: reads
+; ARY_IDXP, via ary_parse_call) in the param block. On return: reads
 ; ARY_ERR; if nonzero, maps it to the matching FPERR code (ary_errmap below)
 ; and returns NZ; if zero (ok), returns Z. CF from subrom_call itself (the
 ; sub-ROM absent — never on the merged machine, which always ships it) jumps
@@ -388,10 +410,10 @@ ary_errmap:                                 ; ARY_ERR 1..4 -> FPERR (§4.1 dispo
 ; --- ex_dim: DIM statement. HL enters on the DIM token. ---------------------
 ; For each comma-separated NAME(b0[,b1...]): parse the name (a `$` string
 ; name is now LIVE, arrays slice 3, docs/spec-basic-arrays-slice3-strings.md
-; §5.2 -- the old Q-9a reject is gone), then the bound list via ary_parse_subs
+; §5.2 -- the old Q-9a reject is gone), then the bound list via ary_parse_call
 ; (reused — a DIM bound list is the identical "comma-separated int expr list
-; in parens" shape as a subscript list, §9.4), then dispatch to the tenant
-; (op=DIM) for the redim-check + allocation. Loops on ','.
+; in parens" shape as a subscript list, §9.4), which also dispatches to the
+; tenant (op=DIM) for the redim-check + allocation. Loops on ','.
 ;
 ; String-ness detection mirrors ex_erase's own var_str_type-first idiom
 ; (docs/spec-basic-arrays-slice2-erase.md §4.1, the F1 lesson): var_name_key's
@@ -435,26 +457,18 @@ ed_haveparen:
                                             ; (sub/arrays.asm §4), not as an
                                             ; 8-byte-element double
 ed_settype:
-                call    ary_parse_subs_kt   ; BC,A,HL(@'(') -> BC,A restored (key,type);
-                                            ; fills ARY_NIDX/ARY_IDX; [CURSOR] pushed
-                ld      d,a                 ; stash TYPE across the FPERR peek
-                ld      a,(FPERR)
-                or      a
-                jp      nz,ela_parse_abort  ; the bound-list parse already aborted --
-                                            ; shares ex_let_arr's own identical
-                                            ; "pop [CURSOR];jp fp_runtime_error" stub
-                                            ; (below in this file; a plain `jr` can't
-                                            ; reach that far, hence `jp` here, still a
-                                            ; net win over a THIRD local copy of the
-                                            ; 4-byte body, slice-3 space audit)
-                ld      (ARY_KEY),bc
-                ld      a,d                 ; TYPE restored
-                ld      (ARY_TYPE),a
-                ld      a,1
-                ld      (ARY_OP),a          ; op = DIM
-                call    ary_engine_call     ; -> Z ok / NZ: FPERR already mapped+set
-                jp      nz,ela_parse_abort
-                pop     hl                  ; [CURSOR] restored
+                ld      d,a                 ; TYPE
+                ld      e,1                 ; op = DIM
+                call    ary_parse_call      ; parses the bound list, publishes the
+                                            ; block and calls the engine, all inside
+                                            ; the frame the subscripts live in
+                                            ; (D-ARR-C) -> Z ok / NZ: FPERR set;
+                                            ; HL = cursor past ')'
+                jp      nz,fp_runtime_error ; the bound-list parse OR the engine
+                                            ; aborted. No [CURSOR] to discard any
+                                            ; more -- ary_parse_call owns the whole
+                                            ; frame and has already released it, so
+                                            ; the old ela_parse_abort stub is gone
                 call    skip_spaces
                 ld      a,(hl)
                 cp      ','
@@ -494,14 +508,15 @@ ed_done:
 ; oracle's own `erase.partial.A.first`/`erase.badname.first` captures).
 ;
 ; Simpler than ex_dim in one way (no bound list to parse, so no
-; ary_parse_subs_kt call) but the SAME in another: ary_engine_call still needs
+; ary_parse_call) but the SAME in another: ary_engine_call still needs
 ; the cursor parked on the stack across it, NOT left in HL. subrom_call's own
 ; "HL/DE pass through" note (basic/subromcall.asm) means the caller's HL rides
 ; INTO the sub-ROM tenant and comes back holding whatever the tenant (which
 ; clobbers everything, tenant convention) last left there -- never restored.
-; ex_dim/ex_let_arr/ev_f_arr all already park the cursor on the stack for
-; exactly this reason (via ary_parse_subs_kt's own [CURSOR] push); ex_erase has
-; no subscript parse to piggyback that push on, so it pushes explicitly right
+; ex_dim/ex_let_arr/ev_f_arr all already park the cursor for exactly this
+; reason (D-ARR-C: in ARY_CUR, inside ary_parse_call, where it used to be a
+; [CURSOR] stack push); ex_erase has no subscript parse to piggyback that on,
+; so it pushes explicitly right
 ; around this call instead (adversarial-differential catch, 2026-07-15: a
 ; literal `ERASE A` on a previously-DIM'd array corrupted the cursor and threw
 ; a phantom "syntax error" on the FOLLOWING statement -- the not-found/Tier-B
@@ -641,7 +656,7 @@ asw_wb_int:
 ; ary_op0_resolve (the sub-ROM tenant op=RESOLVE, wrapped) BEFORE evaluating
 ; the RHS (so a self-referencing RHS like A(1)=B(2), or even A(1)=A(1)+1, can
 ; freely reuse the shared param-block subscript scratch without disturbing an
-; already-resolved LHS target — ary_parse_subs's own ARY_NIDX/ARY_IDX are
+; already-resolved LHS target — ary_parse_call's own ARY_NIDX/ARY_IDXP are
 ; transient, reused by every array reference), then coerces+stores exactly
 ; like the scalar path (var_store_fac's own D-F2-1 contract, mirrored by
 ; ary_store_write above). ary_op0_resolve was originally this routine's own
@@ -703,9 +718,10 @@ ex_let_arr:
                 or      a
                 jp      nz,fp_runtime_error ; coercion-time overflow (D-F2-1 pattern)
                 jp      exec_stmt
-ela_parse_abort:
-                pop     hl                  ; discard [CURSOR]
-                jp      fp_runtime_error
+; (`ela_parse_abort` — `pop [CURSOR]; jp fp_runtime_error` — stood here and is
+; GONE with D-ARR-C: ary_parse_call owns its whole frame and has already
+; released it by the time it returns NZ, so ex_dim's two abort sites are a plain
+; `jp nz,fp_runtime_error` and there is no cursor word left to discard.)
 ; ela_err/ela_abort_tm/ela_abort_fp themselves RELOCATED to basic/vars.asm
 ; (page-1, §13a space fix) — reached via the `jp` (not `jr`, now out of
 ; branch range) above. Each still discards exactly TWO stack words
@@ -725,9 +741,9 @@ ela_parse_abort:
 ; convention: FPERR set, DE=0, checked at the statement boundary) — never an
 ; immediate `jp` out of the evaluator, the same D-F2-1 discipline the WIP's
 ; ary_load already followed. ary_op0_resolve's own error return (NZ, HL=
-; cursor already popped, whether from a parse-time deferred FPERR — ev_f_
-; empty/apsub_toomany — or a resolve-time one) lands exactly on eva_deferred
-; below with nothing further to unwind.
+; cursor, whether from a parse-time deferred FPERR — ev_f_empty — or a
+; resolve-time one) lands exactly on eva_deferred below with nothing further to
+; unwind (D-ARR-C: there is no [CURSOR] stack word left to unwind).
 ev_f_arr:
                 ld      a,(VARTYPE)
                 call    ary_op0_resolve     ; Z: HL=cursor,DE=elem_addr / NZ:
@@ -788,39 +804,19 @@ eva_deferred:
 ; pressure making the dedup worth it. Out: Z (ok) — HL=cursor (POPPED, i.e.
 ; [CURSOR] is consumed by this call, not left on the stack), DE=element
 ; address (== ARY_ADDR). NZ (error, already FPERR-mapped by ary_engine_call)
-; — HL=cursor (POPPED), DE undefined. Either way [CURSOR] is popped EXACTLY
-; ONCE by this routine; callers must not pop it again (a caller that used to
-; land on a "pop hl;jp fp_runtime_error" abort stub after a NZ from the OLD
-; inlined prologue must now `jp` straight to fp_runtime_error/its own deferred
-; tail instead — the pop already happened in here). Clobbers A,B,C,D,E,H,
-; L,IX (ary_parse_subs_kt/ary_engine_call's own clobbers).
+; — HL=cursor, DE undefined. D-ARR-C: there is NO [CURSOR] stack word any
+; more — ary_parse_call owns its whole frame and releases it before returning,
+; so the cursor simply comes back in HL on both exits and no caller pops
+; anything. Clobbers A,B,C,D,E,H,L,IX (ary_parse_call's own clobbers).
 ary_op0_resolve:
-                call    ary_parse_subs_kt   ; BC,A restored (key,type);
-                                            ; ARY_NIDX/ARY_IDX filled; [CURSOR]
-                                            ; pushed
-                ld      (ARY_KEY),bc
-                ld      (ARY_TYPE),a
-                ld      a,(FPERR)
-                or      a
-                jr      nz,aor_err          ; malformed subscript list / overflow
-                xor     a
-                ld      (ARY_OP),a          ; op = 0 (RESOLVE, auto-dim)
-                call    ary_engine_call     ; -> Z ok / NZ: FPERR already mapped+set
-                jr      nz,aor_err
-                pop     hl                  ; [CURSOR] restored
-                ld      de,(ARY_ADDR)       ; Z still holds from ary_engine_call's
-                                            ; own success return (`or a`/`ret z`) --
-                                            ; neither POP nor LD (nn) touches flags,
-                                            ; so no separate flag-set instruction is
-                                            ; needed here either (mirrors aor_err's
-                                            ; own reasoning just below)
-                ret
-aor_err:
-                pop     hl                  ; [CURSOR] restored -- NZ already
-                                            ; holds from the `jr nz` that landed
-                                            ; us here (POP touches no flag), so
-                                            ; no separate flag-set instruction
-                                            ; is needed
+                ld      d,a                 ; TYPE
+                ld      e,0                 ; op = 0 (RESOLVE, auto-dim)
+                call    ary_parse_call      ; -> Z ok / NZ: FPERR already mapped+set;
+                                            ; HL = cursor past ')'
+                ret     nz
+                ld      de,(ARY_ADDR)       ; Z still holds from ary_parse_call's own
+                                            ; success return -- LD (nn) touches no
+                                            ; flag, so no separate flag-set is needed
                 ret
 
 ; --- ex_let_arr_str: string array-element assignment  S$(i[,j...])=<expr$> -
@@ -831,7 +827,7 @@ aor_err:
 ; evaluating the RHS: this mirrors ex_let_arr's own self-reference discipline
 ; (S$(1)=S$(2), or even S$(1)=S$(1)+"X" once concat lands) — the RHS's own
 ; str_eval may itself resolve a NESTED array element via str_eval_arr
-; (below), which clobbers the SAME shared ARY_KEY/ARY_TYPE/ARY_NIDX/ARY_IDX/
+; (below), which clobbers the SAME shared ARY_KEY/ARY_TYPE/ARY_NIDX/ARY_IDXP/
 ; ARY_ADDR param block ary_op0_resolve just wrote. So the LHS's resolved
 ; element address is kept on the STACK (not left in RAM) across str_eval —
 ; the identical hazard (and fix) ex_let_arr's own [ADDR] push documents for

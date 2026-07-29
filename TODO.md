@@ -1702,36 +1702,55 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       two sites catch **disjoint** row sets (site A = `dim-3d` alone, site B =
       the other 18).
 
-- [ ] 🔴 **`MAXDIM = 4` is a divergence, not a cap** (D-ARR-C) — **NEXT SLICE**,
-      measured and spec'd, [`docs/spec-basic-arrdim.md`](docs/spec-basic-arrdim.md)
-      §7a. Found 2026-07-29 as a calibration row in the D-ARR-B matrix — **the
-      seventh consecutive slice** whose calibration turns up a live defect nobody
-      was looking for. [`basic/sysvars.inc:1544`](basic/sysvars.inc:1544) caps at
-      4 and [`docs/spec-basic-arrays.md`](docs/spec-basic-arrays.md) §9.1 Q-9b
-      records the disposition `>MAXDIM subscripts → Subscript out of range` —
-      **chosen, written down, and never measured against the reference**, in the
-      same arc whose §4 target #9 was asked and never answered.
-      ⚠️ **THERE IS NO CAP TO MATCH.** The `cap` battery (a stored `DIM` line +
-      `ON ERROR` + a short anchored `PRINT ERR`, so the readout is not limited by
-      the 37-char echo) measures the reference at **`ERR`=0 for 4, 8, 16, 32, 64
-      and 100 subscripts** against zerobas's 9 from five on. Past 100 it is the
-      **255-character input line** that stops the probe, not the language — so
-      "raise `MAXDIM` to the reference's value" has no value to raise it to.
-      ⚠️ **It is NOT a constant bump.** `ary_parse_subs` already collects every
-      subscript on the **hardware stack**; the cap exists only to bound the copy
-      into `ARY_IDX`, an 8-byte buffer inside the 16-byte `ARY_OP..ARY_ERR` span
-      whose own header records `CURLINE` immediately above it and **no slack**.
-      The real fix hands the tenant a **pointer instead of a buffer** (−6 B RAM,
-      est. −10…−15 B main ROM as the copy loop goes away) — but the subscripts sit
-      in **reverse order** on the stack, so it rewrites `ary_resolve`'s
-      column-major **element-address math**, where a mistake is *silent memory
-      corruption, not an error message*. Its own spec + gate + falsification.
-      Carried meanwhile as **eight reported-never-gated rows** in
-      `basic_probe_arrdim.py` (`dim-5dim`/`-8dim`/`-12dim` + `cap-8`…`cap-100`),
-      each printing its own reason; `cap-4` stays gated as the battery's control.
-      ⚠️ The two items interact: at a hundred dimensions the auto-dim product is
-      11¹⁰⁰, so a raised cap makes D-ARR-B's byte-count overflow trivially
-      reachable — which is the other reason the size rule went in first.
+- [x] ✅ **`MAXDIM = 4` was a divergence, not a cap — D-ARR-C LANDED 2026-07-29,
+      65/65 gated, and it GAVE BACK 31 B.** Spec
+      [`docs/spec-basic-arrdim-c.md`](docs/spec-basic-arrdim-c.md), measurement
+      [`docs/arrdim-c-vg8020-characterization.md`](docs/arrdim-c-vg8020-characterization.md),
+      gate `make arrdim-acceptance` (73 rows; 65 gated, 8 never-gated). Found as
+      a calibration row in the D-ARR-B matrix — the seventh consecutive slice
+      whose calibration turns up a live defect nobody was looking for.
+      **There was no cap to match**: the reference answers `ERR`=0 at 4, 8, 16,
+      32, 40, 42, 44, 64, 100 and **120** subscripts (a 249-character line), and
+      it stores and reads an element back through 32 of them.
+      ⚠️ **`ERR`=0 IS NOT ENOUGH** — a machine that accepts the line and drops
+      every subscript past its own cap reads 0 too. The `use` battery is the
+      round trip the dropped dimensions cannot forge.
+      ⚠️ **THE PREMISE THE SLICE WAS SPLIT ON WAS WRONG.**
+      [`spec-basic-arrdim.md`](docs/spec-basic-arrdim.md) §7a split it out
+      because a pointer design "rewrites `ary_resolve`'s column-major
+      element-address math, where a mistake is silent memory corruption". It
+      does not: `ary_parse_subs` pushes subscript 0 FIRST, so it sits at the
+      HIGH address — point the tenant there and walk DOWNWARD and every consumer
+      keeps visiting k=0..n-1 in today's order. `inc ix` → `dec ix`, same size,
+      offset math untouched. Same correction ran through the cost: §7a estimated
+      −10…−15 B and it measured **−28 B** (low region 4 B → 32 B free).
+      **Removing a constraint removes more than the line that states it** — the
+      cap's unwind path, its skip-to-`)` recovery, the `_kt` shim and two
+      callers' publish/pop tails all went with it.
+      `MAXDIM` is gone; `ARY_IDX`'s 8-byte buffer is now `ARY_IDXP` (a pointer)
+      + `ARY_CUR`, freeing 4 B of RAM in a span whose own header records "no
+      slack for anything more".
+
+- [ ] 🔴 **`LINEMAX = 96` — zerobas's input line is 95 characters, the
+      reference's is 250.** Split out of D-ARR-C, which measured it
+      ([`docs/arrdim-c-vg8020-characterization.md`](docs/arrdim-c-vg8020-characterization.md)
+      §4) and cannot reach it. Already documented as an *Input-length caveat* in
+      [`docs/spec-basic-arrays-slice4a-string-heap.md`](docs/spec-basic-arrays-slice4a-string-heap.md);
+      this is the item to actually close it.
+      ⚠️ **IT WAS FILED UNDER THE WRONG CAUSE FOR A WHOLE SLICE.** `cap-64` and
+      `cap-100` were carried as "MAXDIM=4" rows by the D-ARR-B commit. They are
+      not: their line 20 is 137 and 209 characters, so the interpreter never saw
+      those subscript lists at all and raising `MAXDIM` could not have turned
+      them green. **The cap is what hid it** — the parse aborted at the fifth
+      subscript long before the truncated tail was reached, so they read a tidy
+      ` 9 ` indistinguishable from a genuine cap row. The moment D-ARR-C removed
+      the cap they flipped to ` 2 ` (syntax error), which is the truncation
+      finally becoming legible. Carried as four never-gated `cap` rows +
+      `line-96`/`-97`/`-100`/`-250`, each printing its reason.
+      Raising it touches the REPL's own line reader, `ascii_read_lines`
+      ([`basic/files.asm`](basic/files.asm)) and a page-`$E1` buffer that
+      G3/G4/G5 already share as marshalling scratch — `LINEBUF` is one page
+      (`$E100..$E15F`) and 255 bytes does not fit where 96 does.
 
 - [x] ✅ **`WIDTH n`'s VALID DOMAIN — LANDED 2026-07-28, 76/76, falsified.**
       Was 🔴 FIVE silent screen-destroyers shipping today. The last residue of

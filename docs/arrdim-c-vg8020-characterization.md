@@ -133,11 +133,19 @@ of `eval`'s own nesting. Measured, not assumed.
 
 ## 6. The matrix as it stands
 
-73 rows, 55 gated, 18 reported-never-gated. All 55 gated rows pass today,
-including the eight this measurement added (`auto-5d`, `auto-5d-int`, `auto-8d`,
-`use-4`, `line-40`/`-90`/`-94`/`-95`) — three of which pass for the wrong reason
-(§3). The 10 rows added to the never-gated set are D-ARR-C's own targets
-(`cap-40`, `cap-42`, `use-8`, `use-32`) and the `LINEMAX` residue (§4).
+**73 rows. At measurement time: 55 gated, 18 never-gated. After D-ARR-C landed:
+65 gated (ALL PASS), 8 never-gated** — the `LINEMAX` residue of §4 and nothing
+else. The eight rows this measurement added (`auto-5d`, `auto-5d-int`, `auto-8d`,
+`use-4`, `line-40`/`-90`/`-94`/`-95`) were green from the start, three of them for
+the wrong reason (§3); the ten it moved into the never-gated set were D-ARR-C's
+own targets plus that residue.
+
+⚠️ **§4's claim was confirmed by the landing, not just argued.** Before D-ARR-C,
+`cap-44`/`-64`/`-100`/`-120` read ` 9 ` (Subscript out of range — the cap firing at
+the fifth subscript). After it, the same four read ` 2 ` (Syntax error — the
+truncated line). Same rows, same disagreement with the reference, a cause that
+only became legible once the one standing in front of it was removed. That is what
+"the cap is what hid it" looks like from the outside.
 
 ---
 

@@ -18,7 +18,7 @@
 ;   +1  name1  : 1
 ;   +2  type   : 1    2/4/8 (int/single/double) or 1 (string, slice-3), from
 ;                     suffix/DEFtbl
-;   +3  ndim   : 1    dimension count (1..MAXDIM)
+;   +3  ndim   : 1    dimension count (>=1; no cap -- D-ARR-C)
 ;   +4  stride : 2    CACHED total descriptor size in bytes (6+2*ndim+elsize*
 ;                     count) -- own-design redundancy, see the WIP's own
 ;                     header for the rationale (ary_find's skip-walk reads
@@ -127,7 +127,7 @@ aeng_resolve:
                 ret
 
 ; --- aeng_dim: ARY_OP=1 (explicit DIM). BC/A resolved from ARY_KEY/ARY_TYPE;
-; (ARY_NIDX)/(ARY_IDX) hold the caller-parsed bound list (§9.4). ary_find
+; (ARY_NIDX)/(ARY_IDXP) locate the caller-parsed bound list (§9.4). ary_find
 ; first: if the array already exists (a previous DIM OR an auto-dim already
 ; touched it) -> ARY_ERR=3 (Redimensioned array, §4.1 #4); else ary_alloc
 ; with the parsed bounds.
@@ -148,13 +148,16 @@ aeng_dim:
                 ld      a,(ARY_NIDX)
                 ld      b,a                 ; B = ndim (>=1: the parser aborts an
                                             ; empty list before the engine call)
-                ld      ix,ARY_IDX
+                ld      ix,(ARY_IDXP)       ; D-ARR-C: the bound list is the CALLER's
+                                            ; on-stack block, addressed at its HIGH
+                                            ; end (bound 0) and walked DOWNWARD --
+                                            ; see the file header
 aeng_dim_neglp:
                 ld      a,(ix+1)            ; bound_k high byte
                 and     $80
                 jr      nz,aeng_dim_neg
-                inc     ix
-                inc     ix
+                dec     ix
+                dec     ix
                 djnz    aeng_dim_neglp
                 ld      bc,(ARY_KEY)
                 ld      a,(ARY_TYPE)
@@ -168,7 +171,7 @@ aeng_dim_neglp:
                                             ; elsize 0).
                 jr      c,aeng_dim_redim
                 ld      a,(ARY_TYPE)        ; TYPE reloaded (see above)
-                ld      ix,ARY_IDX          ; bounds source = the caller-parsed list
+                ld      ix,(ARY_IDXP)       ; bounds source = the caller-parsed list
                 call    ary_alloc           ; BC,A,IX -> HL=new desc+CF; else A=err(4)
                 jr      nc,aeng_dim_err     ; A already holds the OOM err code (4)
                 xor     a
@@ -711,10 +714,15 @@ scv_oom:
                 or      a                   ; CF clear
                 ret
 
-; --- ARY_AUTODIM_BOUNDS: MAXDIM words, each = 10 (§4.1 #1). Read-only tenant
-; data; ary_resolve's auto-dim path points IX here (vs. aeng_dim's IX, which
-; points at the caller-parsed ARY_IDX for an explicit DIM) -- same ary_alloc,
-; two different bounds sources, unchanged from the WIP.
+; --- ARY_AUTODIM_BOUNDS: FOUR words, each = 10 (§4.1 #1). Read-only tenant ---
+; data; ary_resolve's auto-dim path points IX at its LAST word (vs. aeng_dim's
+; IX, which points at the caller-parsed on-stack block for an explicit DIM) --
+; same ary_alloc, two different bounds sources.
+; D-ARR-C: this used to be MAXDIM words and stays FOUR now that MAXDIM is gone,
+; because auto-dim past four subscripts can never allocate -- 11^5 elements is
+; 322102 B at the narrowest element width, so ary_resolve answers `Subscript out
+; of range` before it gets here (aryr_autodim_soor). Every entry is identical, so
+; the downward walk may start at any word with ndim words below it.
 ARY_AUTODIM_BOUNDS:
                 dw      10,10,10,10
 
@@ -729,7 +737,7 @@ ARY_AUTODIM_BOUNDS:
 ; IX is borrowed as scratch for the remaining-multiplier value (shifted via
 ; `add ix,ix`, a standard documented Z80 op -- ADD ix,rr sets CF from the
 ; bit shifted out of bit 15, exactly like ADD HL,HL) and is saved/restored
-; (push/pop) so the CALLER's own IX -- e.g. ary_resolve's ARY_IDX subscript-
+; (push/pop) so the CALLER's own IX -- e.g. ary_resolve's subscript-block
 ; walk pointer, still live across this call inside its loop -- survives
 ; unchanged, the same discipline evmc_sqr uses for the text cursor across
 ; subrom_call. Clobbers A,B,C,H,L (+DE, the output).
@@ -775,9 +783,12 @@ amc_next:
                 ret
 
 ; --- ary_count_elems: HL=bounds ptr (LE words), B=ndim(>=1) -> DE=count ----
-; (Pi(bound_k+1)), HL advanced past the 2*ndim bytes. CF set = overflow (DE
-; not meaningful; early return). Unchanged from the WIP other than calling
-; the LOCAL ary_mul16_checked above instead of the resident mul16x16_32.
+; (Pi(bound_k+1)). CF set = overflow (DE not meaningful; early return).
+; D-ARR-C: HL addresses bound **0** at the HIGH end of the list and the walk
+; runs DOWNWARD (see the file header). The product is order-independent, so
+; nothing about the arithmetic changes; only the cursor step does. The WIP's
+; "HL advanced past the 2*ndim bytes" postcondition is DROPPED -- ary_alloc,
+; the only caller, `ex de,hl`s the count out and never reads the cursor back.
 ; Clobbers A,B,C,D,E,H,L.
 ary_count_elems:
                 ld      de,1
@@ -790,8 +801,10 @@ ace_lp:
                 push    hl                  ; [old bounds cursor]
                 ld      c,(hl)
                 inc     hl
-                ld      b,(hl)
-                inc     hl                  ; BC=bound_k(raw); HL=advanced cursor
+                ld      b,(hl)              ; BC=bound_k(raw); HL=&bound_k high byte
+                dec     hl
+                dec     hl
+                dec     hl                  ; HL=&bound_{k+1} (DOWNWARD, D-ARR-C)
                 inc     bc                  ; BC=bound_k+1
                 ex      (sp),hl             ; TOS<-advanced cursor; HL<-old (discard)
                 ex      de,hl               ; HL=running count; DE=old cursor (discard)
@@ -1027,7 +1040,7 @@ aal_ceil_try:
                 ld      (iy+9),a
                 push    ix                  ; S3: strheap_gc clobbers IX (its own GC
                 call    strheap_gc          ; frame base, never restored); IX is our
-                pop     ix                  ; ARY_IDX bounds-source pointer, read by
+                pop     ix                  ; bounds-source pointer, read by
                                             ; aal_bounds_lp below -- guard it
                 jr      aal_ceil_try
     ENDIF
@@ -1064,14 +1077,17 @@ aal_ceil_fits:
                 or      a
                 jr      z,aal_bounds_done
 aal_bounds_lp:
+                ; D-ARR-C: the SOURCE walks downward (bound 0 is at the high end
+                ; of the caller's block); the DESTINATION still fills ascending
+                ; k, so the descriptor layout is byte-for-byte what it was.
                 ld      a,(ix+0)
                 ld      (hl),a
                 inc     hl
-                inc     ix
-                ld      a,(ix+0)
+                ld      a,(ix+1)
                 ld      (hl),a
                 inc     hl
-                inc     ix
+                dec     ix
+                dec     ix
                 djnz    aal_bounds_lp
 aal_bounds_done:
                 ; HL = data start (the header+bounds walk landed exactly here)
@@ -1166,7 +1182,7 @@ aal_unframe:
                 or      a                   ; CF clear
                 ret
 
-; --- ary_resolve: BC=key, A=type; (ARY_NIDX)/(ARY_IDX) prefilled by --------
+; --- ary_resolve: BC=key, A=type; (ARY_NIDX)/(ARY_IDXP) prefilled by -------
 ; the caller (basic/arrays.asm's ary_parse_subs, main-ROM side). Out:
 ; HL=element address, A=0 (ok). On error, A = the ARY_ERR code and HL is a
 ; harmless dummy:
@@ -1193,7 +1209,30 @@ ary_resolve:
                 jr      c,aryr_found
                 pop     af
                 pop     bc
-                ld      ix,ARY_AUTODIM_BOUNDS ; auto-dim (§4.1 #1): every bound=10
+                ; D-ARR-C: auto-dim past FOUR subscripts is always the size rule,
+                ; so it is answered here instead of walking a longer bound table.
+                ; Auto-dim takes every bound to 10, so five subscripts ask for
+                ; 11^5 = 161051 elements -- 322102 B at the NARROWEST element
+                ; width (int, 2 B) -- and no element width can bring that back
+                ; under $FFFF. MEASURED on the reference, not reasoned:
+                ; Q(1,1,1,1,1)=1, Q%(1,1,1,1,1)=1 and the 8-subscript form all
+                ; answer `Subscript out of range` where the 4-subscript int
+                ; control answers `Out of memory` (docs/arrdim-c-vg8020-
+                ; characterization.md §3). This is what keeps
+                ; ARY_AUTODIM_BOUNDS four words long.
+                ld      e,a                 ; stash TYPE across the count check
+                ld      a,(ARY_NIDX)
+                cp      5
+                ld      a,e                 ; TYPE back -- LD r,r' touches no flag,
+                                            ; so the CP above still decides below
+                jp      nc,aryr_autodim_soor ; `jp`, not `jr`: the shared exit sits
+                                            ; past the whole resolve loop
+                ld      ix,ARY_AUTODIM_BOUNDS+6 ; auto-dim (§4.1 #1): every bound=10.
+                                            ; Addresses the LAST of the four words,
+                                            ; since the walk now runs downward --
+                                            ; every entry is 10, so any start with
+                                            ; ndim words below it reads the same
+                                            ; list, and ndim<=4 is guaranteed above.
                 call    ary_alloc           ; BC,A,IX -> HL=new desc+CF; else A=err(4)
                 jp      nc,aryr_alloc_fail
                 jr      aryr_have_desc
@@ -1237,7 +1276,7 @@ aryr_have_desc:
                 ld      (iy+2),a
                 xor     a
                 ld      (iy+3),a            ; MULT = 1
-                ld      ix,ARY_IDX
+                ld      ix,(ARY_IDXP)       ; D-ARR-C: subscript 0 at the HIGH end
 aryr_lp:
                 ld      a,(iy+5)
                 or      a
@@ -1246,8 +1285,9 @@ aryr_lp:
                 ld      (iy+5),a
                 ld      e,(ix+0)
                 ld      d,(ix+1)
-                inc     ix
-                inc     ix
+                dec     ix
+                dec     ix                  ; DOWNWARD (D-ARR-C); the OFFSET/MULT
+                                            ; math below is untouched
                 ld      a,d
                 and     $80
                 jp      nz,aryr_neg         ; no outstanding push here
@@ -1343,6 +1383,13 @@ aryr_oob:
                 ld      a,1                 ; ARY_ERR: Subscript out of range
                 ld      hl,0
                 ret
+aryr_autodim_soor:
+                ld      a,1                 ; D-ARR-C: auto-dim past four subscripts
+                                            ; -- ARY_ERR: Subscript out of range,
+                                            ; the same code aal_soor returns for the
+                                            ; same reason (the byte count cannot fit
+                                            ; $FFFF), reached without an allocation
+                                            ; attempt. Falls into the shared exit.
 aryr_alloc_fail:
                 ; A already holds the ARY_ERR OOM code (4) from ary_alloc; no frame
                 ; was reserved yet (aryr_have_desc's own reservation never ran)

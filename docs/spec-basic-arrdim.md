@@ -221,6 +221,29 @@ D-ARR-C is not the constant bump both the recommendation and the sign-off assume
 
 ### 7a. D-ARR-C after the measurement — what it actually is
 
+> ✅ **D-ARR-C LANDED 2026-07-29** — [`spec-basic-arrdim-c.md`](spec-basic-arrdim-c.md),
+> 65/65 gated, **−31 B in the low region**.
+>
+> ⚠️ **AND TWO OF THIS SECTION'S CLAIMS DID NOT SURVIVE IT. Read them as the
+> record of a wrong call, not as guidance.**
+>
+> 1. **"the subscripts sit in reverse order … so it rewrites `ary_resolve`'s
+>    column-major element-offset math"** (below) — **wrong, and it was the whole
+>    case for splitting.** `ary_parse_subs` pushes subscript 0 *first*, so
+>    subscript 0 lands at the **highest** address; hand the tenant that end and
+>    walk **downward** and every consumer visits `k = 0 … n-1` in exactly the
+>    order it already did. The change is `inc ix` → `dec ix` at four sites, same
+>    size, and the offset math is never touched.
+> 2. **Approach B's "est. −10…−15 B main ROM"** — too pessimistic by half; it
+>    measured **−31 B**. Removing a constraint removes more than the line that
+>    states it: the cap's unwind path, its skip-to-`)` recovery, the `_kt` shim
+>    and two callers' publish/pop tails all went with the `cp MAXDIM`.
+>
+> The split itself was still right, but for the reason in row **C** of the table
+> (it is a separate divergence with its own gate), not for the danger in row B.
+> A risk assessment written from reading code is a hypothesis; this one was
+> stated as a fact and cost the slice a cycle.
+
 **Decision: its own slice.** Not because it is unimportant, but because the
 measurement changed what it is.
 

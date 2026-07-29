@@ -138,26 +138,36 @@ SUBS_BUF = 0x9280   # scratch block for a caller-owned subscript/bound list
 
 
 def put_list(m, addr, vals):
-    """Write `vals` as int16 LE at `addr`, ascending k. Returns the pointer the
-    TENANT is handed for that list -- which is not necessarily `addr`."""
+    """Lay `vals` out EXACTLY the way ary_parse_subs's on-stack block does, which
+    is the point of this helper: subscript 0 is pushed FIRST, so it lands at the
+    HIGHEST address and subscript n-1 at `addr`. Returns the pointer the tenant
+    is handed -- `&subscript 0`, the high end, which it walks DOWNWARD from.
+
+    ⚠️ Writing these ascending and pointing at the high end would hand the tenant
+    a reversed list that still resolves successfully, on the wrong element. Case
+    2b's asymmetric bounds are what catch that."""
+    n = len(vals)
     for k, v in enumerate(vals):
-        m.poke_w(addr + 2 * k, v & 0xFFFF)
-    return addr
+        m.poke_w(addr + 2 * (n - 1 - k), v & 0xFFFF)
+    return addr + 2 * (n - 1)
 
 
 def set_subs(m, s, *vals):
     """Publish a subscript list (ary_resolve / ary_engine's input) the way the
-    main ROM's parse does: the count in ARY_NIDX, the values where the tenant
-    reads them."""
+    main ROM's parse does: the count in ARY_NIDX, the pointer in ARY_IDXP, the
+    values in a block the CALLER owns."""
     m.poke(s["ARY_NIDX"], len(vals))
-    put_list(m, s["ARY_IDX"], vals)
+    m.poke_w(s["ARY_IDXP"], put_list(m, SUBS_BUF, vals))
 
 
 def alloc_bounds(m, s, *vals):
-    """Publish a BOUND list for a direct `ary_alloc` call and return the value
-    to pass in IX (ary_alloc's bounds-source register)."""
+    """Publish a BOUND list for a direct `ary_alloc` call and return the value to
+    pass in IX (ary_alloc's bounds-source register). ARY_IDXP is set too, so the
+    same list also serves an `ary_engine` op=DIM."""
     m.poke(s["ARY_NIDX"], len(vals))
-    return put_list(m, SUBS_BUF, vals)
+    ptr = put_list(m, SUBS_BUF, vals)
+    m.poke_w(s["ARY_IDXP"], ptr)
+    return ptr
 
 
 def run():
@@ -327,6 +337,92 @@ def run():
         fails += not ok
         print(f"{'PASS' if ok else 'FAIL'} K({i},{j},{k}) over its bound -> "
               f"A=1 (got {cpu.a})")
+
+    # ==================================================================
+    # Case 2c: SIX dimensions -- the cap is gone (D-ARR-C). Bounds
+    # (1,1,1,1,1,2) -> multipliers 1,2,4,8,16,32 and 96 elements. Five of
+    # the six are equal on purpose: the ASYMMETRY that matters here is the
+    # dimension COUNT being past the old MAXDIM=4, and the last bound
+    # differing keeps the top multiplier honest.
+    #
+    # This is the tenant-side counterpart of the probe's `cap-8`/`use-8`
+    # rows: it proves the engine allocates, addresses and bounds an array of
+    # more than four dimensions, emulator-free and in milliseconds.
+    # ==================================================================
+    ix = alloc_bounds(m, s, 1, 1, 1, 1, 1, 2)
+    cpu = m.call("ary_alloc", b=ord("M"), c=0, a=2, ix=ix)
+    ok_alloc6 = carry(cpu)
+    fails += not ok_alloc6
+    m_base = cpu.hl
+    print(f"{'PASS' if ok_alloc6 else 'FAIL'} ary_alloc creates a SIX-dimension "
+          f"M(1,1,1,1,1,2) (CF={carry(cpu)}, desc={m_base:#06x})")
+
+    m_data = m_base + 6 + 2 * 6
+    mult = [1, 2, 4, 8, 16, 32]
+    for subs in [(1, 0, 1, 0, 0, 2), (0, 0, 0, 0, 0, 1), (1, 1, 1, 1, 1, 2)]:
+        set_subs(m, s, *subs)
+        cpu = m.call("ary_resolve", b=ord("M"), c=0, a=2)
+        off = sum(v * mult[k] for k, v in enumerate(subs))
+        want = m_data + off * 2
+        ok = (cpu.hl == want) and (cpu.a == 0)
+        fails += not ok
+        print(f"{'PASS' if ok else 'FAIL'} M{subs} -> {cpu.hl:#06x} "
+              f"(want {want:#06x}, off={off})")
+
+    # ...and the SIXTH dimension is still bounded (bound5 = 2).
+    set_subs(m, s, 0, 0, 0, 0, 0, 3)
+    cpu = m.call("ary_resolve", b=ord("M"), c=0, a=2)
+    ok = cpu.a == 1
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'} M(0,0,0,0,0,3) over bound5 -> A=1 "
+          f"(got {cpu.a})")
+
+    # ...and the wrong-ndim check still fires at six (5 subscripts on a 6-D
+    # array), which the old MAXDIM cap made unreachable.
+    set_subs(m, s, 0, 0, 0, 0, 0)
+    cpu = m.call("ary_resolve", b=ord("M"), c=0, a=2)
+    ok = cpu.a == 1
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'} M(0,0,0,0,0) wrong ndim (5 on a 6-D) -> "
+          f"A=1 (got {cpu.a})")
+
+    # ==================================================================
+    # Case 2d: AUTO-DIM past four subscripts is the SIZE rule (D-ARR-C,
+    # spec §4.3). An undeclared array touched with 5 subscripts auto-dims
+    # every bound to 10 -> 11^5 = 161051 elements = 322102 B even at the
+    # narrowest element width, which cannot fit a 16-bit byte count. The
+    # reference answers `Subscript out of range` (characterization §3), so
+    # the tenant answers ARY_ERR=1 without walking a bound table.
+    #
+    # ⚠️ The equivalent probe rows (`auto-5d` and friends) PASSED BEFORE
+    # THIS SLICE TOO -- through the MAXDIM cap, never through the
+    # allocator. This case is what pins the new route.
+    # ==================================================================
+    for n in (5, 6, 8):
+        set_subs(m, s, *([1] * n))
+        cpu = m.call("ary_resolve", b=ord("N"), c=0, a=2)
+        ok = cpu.a == 1
+        fails += not ok
+        print(f"{'PASS' if ok else 'FAIL'} auto-dim N() at {n} subscripts -> "
+              f"A=1 (subscript oor, not OOM) (got {cpu.a})")
+
+    # ...and its two-sided control: FOUR subscripts on an undeclared array is
+    # 11^4 * 2 = 29282 B, which is UNDER $FFFF -- so the size rule must NOT
+    # fire and the request must reach the allocator, where it dies of RAM
+    # instead (A=4). A shortcut written `>= 4` rather than `> 4` reads A=1 here.
+    #
+    # That A=4 is not a harness artefact to be tolerated: it is the answer the
+    # REFERENCE gives to exactly this program. `Q%(1,1,1,1)=1` is the probe's
+    # `auto-4d-int` row and measures `Out of memory` on the VG-8020, against
+    # `Subscript out of range` for the 5-subscript form. Same discriminator,
+    # same two answers, one emulator-free.
+    set_subs(m, s, 1, 1, 1, 1)
+    cpu = m.call("ary_resolve", b=ord("P"), c=0, a=2)
+    ok = cpu.a == 4
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'} auto-dim P() at FOUR subscripts reaches "
+          f"the ALLOCATOR -> A=4 (out of memory), not the size rule "
+          f"(got {cpu.a})")
 
     # ==================================================================
     # Case 3: bound / negative / wrong-ndim dispositions (§4.1 #3/#8/#9).

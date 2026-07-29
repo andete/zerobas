@@ -419,27 +419,26 @@ REPRO_EXPECT = {
 # ceiling today** and it is a LINE-LENGTH divergence, tracked separately
 # (docs/spec-basic-arrays-slice4a-string-heap.md, "Input-length caveat").
 # Two causes, two dispositions, and the boundary between them is measured.
+#
+# ✅ CAUSE 1 (MAXDIM=4) IS CLOSED. D-ARR-C landed 2026-07-29 and `dim-5dim`/
+# `-8dim`/`-12dim`, `cap-8`…`cap-42` and `use-8`/`use-32` are GATED rows now.
+# Only the line-length cause survives below.
 NEVER_GATED = {
-    # --- cause 1: MAXDIM=4. D-ARR-C turns every one of these green. -----------
-    "dim-5dim":  "D-ARR-C: MAXDIM=4; the reference takes >=120",
-    "dim-8dim":  "D-ARR-C: MAXDIM=4; the reference takes >=120",
-    "dim-12dim": "D-ARR-C: MAXDIM=4; the reference takes >=120",
-    "cap-8":     "D-ARR-C: MAXDIM=4; the reference takes >=120",
-    "cap-16":    "D-ARR-C: MAXDIM=4; the reference takes >=120",
-    "cap-32":    "D-ARR-C: MAXDIM=4; the reference takes >=120",
-    "cap-40":    "D-ARR-C: MAXDIM=4; the reference takes >=120",
-    "cap-42":    "D-ARR-C: MAXDIM=4; the reference takes >=120",
-    "use-8":     "D-ARR-C: MAXDIM=4; the reference stores+reads back through all",
-    "use-32":    "D-ARR-C: MAXDIM=4; the reference stores+reads back through all",
     # --- cause 2: LINEMAX=96. D-ARR-C CANNOT turn these green. ----------------
     # Measured, not computed: the `line` battery puts zerobas's last intact line
     # at 95 characters. `20 DIM A(0,...)` is 2n+9, so 44 subscripts (97) is
-    # already past it. These stay ungated after D-ARR-C lands, under a cause that
-    # is now named correctly.
-    "cap-44":    "LINEMAX=96 (line is 97 ch): truncated before MAXDIM matters",
-    "cap-64":    "LINEMAX=96 (line is 137 ch): truncated before MAXDIM matters",
-    "cap-100":   "LINEMAX=96 (line is 209 ch): truncated before MAXDIM matters",
-    "cap-120":   "LINEMAX=96 (line is 249 ch): truncated before MAXDIM matters",
+    # already past it.
+    #
+    # ⚠️ AND THE READING CHANGED WHEN THE CAP WENT, WHICH IS THE PROOF. Before
+    # D-ARR-C these four answered ` 9 ` (Subscript out of range) -- the cap
+    # firing at the fifth subscript, indistinguishable from a genuine cap row.
+    # They now answer ` 2 ` (Syntax error): the truncated line, finally visible.
+    # Same rows, same divergence from the reference, a cause that only became
+    # legible once the one in front of it was removed.
+    "cap-44":    "LINEMAX=96 (line is 97 ch): truncated -> syntax error",
+    "cap-64":    "LINEMAX=96 (line is 137 ch): truncated -> syntax error",
+    "cap-100":   "LINEMAX=96 (line is 209 ch): truncated -> syntax error",
+    "cap-120":   "LINEMAX=96 (line is 249 ch): truncated -> syntax error",
     # --- the `line` battery itself: the measurement, kept as a record. --------
     "line-96":   "LINEMAX=96: zerobas truncates at 96, the reference at 256",
     "line-97":   "LINEMAX=96: zerobas truncates at 96, the reference at 256",
