@@ -243,7 +243,35 @@ CASES = [
     # the rollback rather than the auto-dim. (`PRINT Q(10)` -- the first draft --
     # reads 0 either way and measures nothing, the same fault as `ord-list`.)
     ("post-auto",    "post", ['DIM Q(20000)', 'Q(11)=1']),
+
+    # --- D-ARR-C: HOW MANY DIMENSIONS DOES THE REFERENCE ACTUALLY TAKE? -------
+    # The `dim-5dim`/`-8dim`/`-12dim` rows above prove "at least twelve" and stop
+    # there, because a DIM line with more subscripts than that is past the 37-char
+    # anchor limit. Folding D-ARR-C into the slice turns the cap into a NUMBER
+    # THAT HAS TO BE CHOSEN, so it has to be measured rather than bracketed.
+    #
+    # The readout moves off the DIM line to do it: the long `DIM` is a STORED
+    # program line (never anchored on), `ON ERROR` catches whatever it raises, and
+    # the anchor is a short direct `PRINT` of the trapped code afterwards. `RUN`
+    # clears variables, so E reads 0 when nothing was raised and 9 (`Subscript out
+    # of range`) when the cap bites. ⚠️ These rows arm `ON ERROR` on purpose --
+    # they measure WHICH code, not the unwind ([[width-domain-slice]]).
 ]
+
+
+# The `cap` DIM lines are GENERATED, not written out, so the subscript count is
+# unmistakable and a miscount cannot masquerade as a finding. `cap-4` is the
+# battery's control: four subscripts are legal on both machines today, so it must
+# read 0 on both, and a `cap` run in which even that reads 9 is measuring the
+# apparatus rather than the cap.
+def _cap_case(n):
+    return (f"cap-{n}", "cap",
+            ['10 ON ERROR GOTO 100',
+             '20 DIM A(' + ",".join(["0"] * n) + ')',
+             '30 END', '100 E=ERR', 'RUN', 'PRINT "[";E;"]"'])
+
+
+CASES += [_cap_case(n) for n in (4, 8, 16, 32, 64, 100)]
 
 
 # The `repro` battery's expected REFERENCE answers. Checked against the oracle
@@ -305,12 +333,20 @@ def main():
     # ⚠️ APPARATUS GUARD -- see the docstring. A row that cannot be read is a
     # silent hole, so this is an error, not a warning, and it fires before a
     # single emulator is booted.
-    toolong = [(lbl, ln) for lbl, _b, lines in sel for ln in lines
+    # Only the LAST line is anchored on (see read()), so only the last line has to
+    # survive the echo. A non-anchor line may be longer -- its echo wrapping just
+    # scrolls the screen, which screen_tail/result_span_after_echo do not care
+    # about -- but it still may not exceed the 255-character MSX input line, and
+    # the `cap` battery deliberately runs right up to that.
+    toolong = [(lbl, ln) for lbl, _b, lines in sel for ln in (lines[-1],)
                if len(ln) >= ECHO_MAX]
+    toolong += [(lbl, ln) for lbl, _b, lines in sel for ln in lines[:-1]
+                if len(ln) > 255]
     if toolong:
-        print(f"APPARATUS FAILURE: these lines are >= the reference's boot LINLEN "
-              f"({ECHO_MAX}), so their echo wraps and the readout cannot anchor "
-              f"on it:")
+        print(f"APPARATUS FAILURE: an ANCHOR line is >= the reference's boot "
+              f"LINLEN ({ECHO_MAX}) so its echo wraps and the readout cannot "
+              f"anchor on it, or a non-anchor line is past the 255-char input "
+              f"line:")
         for lbl, ln in toolong:
             print(f"     {lbl}: {len(ln)} chars {ln!r}")
         return 1

@@ -4,7 +4,13 @@ SPDX-License-Identifier: 0BSD
 -->
 # D-ARR-B — the array size bound (`Subscript out of range` before allocation)
 
-**Status: SPEC, awaiting sign-off (S-ARR-B-1..4).**
+**Status: ✅ LANDED 2026-07-29, +4 B measured, falsified surgically at both
+sites.** `make arrdim-acceptance` **47/52** — every one of the 19 divergences
+green; the 5 remaining failures are the `cap` battery, i.e. **D-ARR-C**, folded
+into this slice by S-ARR-B-2 and still open (§7). D-CLP's gate went **51/51 → 52/52**
+with 5 never-gated as `oos-dim-huge` graduated.
+Sign-off recorded: **S-ARR-B-1 = route** (as recommended), **S-ARR-B-2 = FOLD
+D-ARR-C IN** (against the recommendation).
 Measurement: [`arrdim-vg8020-characterization.md`](arrdim-vg8020-characterization.md),
 `make arrdim-characterize`, baseline **27/46 gated rows** (3 reported-never-gated).
 Reopens one divergence in the concluded arrays/`DIM` arc
@@ -117,8 +123,12 @@ Three details that make this safe rather than merely short:
 
 ## 4. Cost and funding
 
-**Estimated +4 bytes** (`ld a,1` + `jr`), entirely inside the `sub/arrays.asm`
-page-0 tenant. **No carve, no promotion, no main-ROM byte.**
+**Measured +4 bytes** — estimated +4, and confirmed from a clean build by
+diffing `build/sub.sym` across the change: `ary_resolve` `$0D44 → $0D48`, with
+`ary_count_elems` and `elsize_from_type` (everything ahead of `ary_alloc`)
+unmoved at `$0BDE`/`$0BFD`. Entirely inside the `sub/arrays.asm` page-0 tenant:
+**no carve, no promotion, no main-ROM byte**, and the walls read **4 B low region
+/ 10 B page 1 from clean both before and after**.
 
 ⚠️ This is the one place the walls do not bite. The tree stands at **4 B free in
 the low region and 10 B in page 1**, and the clone frontier is dry — but the sub-ROM
@@ -135,14 +145,20 @@ from clean after the build** ([[measure-the-wall-from-clean]]).
 The surgical falsification is unusually clean here, because the two sites catch
 **different rows**:
 
-| falsification | rows that must go red | rows that must survive |
-|---|---|---|
-| site **A** back to `aal_oom` | `dim-3d` alone (68921 elements — the only gated row whose *element* product overflows) | the other 18 |
-| site **B** back to `aal_oom` | the other 18 | `dim-3d` |
-| both | all 19 | the 27 |
+✅ **RUN, and disjoint as predicted.** The unit layer carries the two witnesses so
+the falsification runs in seconds rather than emulator-minutes
+([`tests/test_arrays.py`](../tests/test_arrays.py) case 5c):
 
-A blunt falsification proves the file matters; this one proves each row measures
-the site it is supposed to
+| falsification | reddens | survives |
+|---|---|---|
+| site **A** → `aal_oom` | `41³ elements → A=1` **only** | `bound0=32767` (byte product), `bound0=32766` |
+| site **B** → `aal_oom` | `bound0=32767 → A=1` **only** | `41³` (element product), `bound0=32766` |
+| neither (as shipped) | — | all three |
+
+**`bound0=32766` survives every falsification**, which is the point of having it:
+65534 data bytes is one element under the limit, so it is the row that goes red if
+the rule is ever applied one element too early. A blunt falsification proves the
+file matters; this one proves each witness measures the site it names
 ([[gate-can-be-green-while-measuring-nothing]]).
 
 The 27 rows that already pass are the standing survivor set — in particular
@@ -182,12 +198,28 @@ reads as a *check*, and this implements it as an error-code choice on an existin
 failure path. §3's block comment is where that has to be said in the source.
 
 **S-ARR-B-2 — does D-ARR-C (`MAXDIM = 4`) fold into this slice?**
-*Recommendation: no.* The reference accepts **at least twelve** dimensions where
-zerobas raises `Subscript out of range` at five (§4a.1) — a live divergence found
-by this matrix's calibration, but on a different cost axis entirely (RAM in the
-`ARY_IDX` block, plus every descriptor widening) and with no relation to the
-byte-count rule. It is recorded as three reported-never-gated rows carrying their
-reason, exactly as D-CLP recorded this slice.
+*Recommendation was: no* — a different cost axis (RAM in the `ARY_IDX` block,
+plus every descriptor widening) and no relation to the byte-count rule.
+**SIGNED OFF THE OTHER WAY: FOLD IT IN.**
+
+⚠️ **The premise both the recommendation and the decision rested on has since
+moved, and that has to be said plainly.** Both were argued against "the reference
+accepts *at least twelve* dimensions" — a bracket, not a number, because a `DIM`
+line with more subscripts than that runs past the 37-char anchor limit. Folding
+the item in makes the cap **a number that has to be chosen**, so it was measured
+properly: the `cap` battery moves the long `DIM` into a stored program line (never
+anchored on), catches it with `ON ERROR`, and anchors on a short direct `PRINT` of
+the trapped code.
+
+| subscripts | 4 | 8 | 16 | 32 | 64 | 100 |
+|---|---|---|---|---|---|---|
+| reference `ERR` | 0 | 0 | 0 | 0 | 0 | 0 |
+| zerobas `ERR` | 0 | **9** | **9** | **9** | **9** | **9** |
+
+**There is no cap to match.** The reference accepts a hundred dimensions, and what
+stops the probe past that is the 255-character input line, not the language. So
+D-ARR-C is not the constant bump both the recommendation and the sign-off assumed
+— see §7a for what it actually is.
 
 **S-ARR-B-3 — confirm the three address-space wrap checks stay `Out of memory`.**
 *Recommendation: yes* (§3, point 3). No row can currently distinguish them —

@@ -53,10 +53,11 @@ Error rows are read UNTRAPPED, through the echo-anchored screen tail, because
 has to tell them apart -- an `ERR`-code readout would work too, but the message
 is what a user sees and the tail shows an abort's trailing junk as well.
 
-⚠️ EVERY LINE IS KEPT UNDER 40 CHARACTERS, AND THE READOUT ALWAYS ANCHORS ON A
-SHORT ONE. Both readouts here are echo-anchored, and the echo of a line longer
-than the 40-column screen WRAPS onto a second row -- after which `_echo_idx`
-can never match it, because it compares whole rows. The first draft of this
+⚠️ EVERY LINE IS KEPT UNDER 37 CHARACTERS (see ECHO_MAX below -- it was 40, and
+that was three too many), AND THE READOUT ALWAYS ANCHORS ON A SHORT ONE. Both
+readouts here are echo-anchored, and the echo of a line longer than the screen's
+`LINLEN` WRAPS onto a second row -- after which `_echo_idx` can never match it,
+because it compares whole rows. The first draft of this
 probe put each case on one `:`-joined line, and eleven of them came back
 `<none>` **on the reference**, several of which then read as PASS because
 zerobas answered `<none>` too. Agreeing on nothing is the failure mode this
@@ -86,6 +87,13 @@ ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK
 # clearpool measurement changes; the guard was simply not checking what it said.
 ECHO_MAX = 37
 
+# Batteries reported but never gated. ⚠️ `arr` IS GONE (2026-07-29): its one
+# row, `oos-dim-huge`, graduated into the gated `oos` battery when D-ARR-B
+# implemented the array size rule, which is exactly what its own comment said
+# would happen. A never-gated bucket that outlives its reason is a gate that
+# has quietly stopped measuring what it claims to.
+UNGATED = ("rep", "share")
+
 # (label, battery, [lines]). The LAST line carries the readout and is always
 # short enough not to wrap (see the docstring). Batteries:
 #   ctl   -- the apparatus. READ FIRST; nothing else is readable if one fails.
@@ -98,9 +106,6 @@ ECHO_MAX = 37
 #   dflt  -- the boot default, and what a BARE `CLEAR` does to the size.
 #   dom   -- `CLEAR n`'s own argument domain.
 #   hmem  -- the `,himem` argument's interaction with the pool.
-#   arr   -- REPORTED, NEVER GATED: an ARRAYS-arc divergence this probe found
-#            in passing (the reference bounds a dimension before allocating).
-#            Out of D-CLP's scope; kept as the record, not gated.
 #   share -- REPORTED, NEVER GATED: the body-OWNERSHIP divergence (S-CLP-5,
 #            signed off out of scope). zerobas owns a body per variable; the
 #            reference decides ownership per source, which shows up in BOTH
@@ -231,18 +236,24 @@ CASES = [
     ("hmem-tight",   "hmem", ['CLEAR 500,&H9000', 'PRINT "[";FRE("");"]"']),
     ("hmem-only",    "hmem", ['CLEAR ,&HD000', 'PRINT "[";FRE("");"]"']),
 
-    # --- ARRAYS-ARC divergence: reported, never gated -------------------------
+    # --- ✅ GRADUATED 2026-07-29: the ARRAYS-arc divergence this probe found ---
     # ⚠️ This row USED to be the oos-vs-oom row above, with `DIM Q(20000)`, and
     # it was gated. It was measuring two things at once: "the two errors are
     # distinct" (a D-CLP claim, and true) and "which non-string error a huge DIM
     # gives" (an ARRAYS-arc claim, and divergent). The reference answers
-    # `Subscript out of range` because it BOUNDS A DIMENSION BEFORE ALLOCATING;
-    # zerobas allocates until it fails and so answers `Out of memory`. That is a
-    # pre-existing divergence found in passing by this probe's calibration
-    # (characterization §3) and explicitly OUT of D-CLP's scope (spec §4) -- so
-    # the two claims are now separate rows, the gateable one is gated, and this
-    # one is kept as the record rather than deleted or silenced.
-    ("oos-dim-huge", "arr", ['CLEAR 100', 'DIM Q(20000)']),
+    # `Subscript out of range` because it BOUNDS THE ARRAY SIZE BEFORE
+    # ALLOCATING; zerobas allocated until it failed and so answered `Out of
+    # memory`. The two claims were split into separate rows, the gateable one
+    # gated, and this one kept in an `arr` battery as the standing record --
+    # "it will turn from `----` to a gateable row the day the ARRAYS arc fixes
+    # it."
+    #
+    # That day is D-ARR-B (docs/spec-basic-arrdim.md): the rule is
+    # `elsize * PI(bound_k+1) > $FFFF` and it is now implemented, so the row
+    # moves into the gated `oos` battery where it always belonged. Keeping a
+    # never-gated row after its reason expires is how a gate quietly stops
+    # measuring what it says it measures.
+    ("oos-dim-huge", "oos", ['CLEAR 100', 'DIM Q(20000)']),
 
     # --- BODY SHARING: reported, never gated (S-CLP-5, signed off OUT) --------
     # zerobas OWNS a body per variable (sh_var_store heap-copies whatever the
@@ -373,7 +384,7 @@ def main():
     for i, (label, battery, lines) in enumerate(sel):
         rt, zt = read(i, ref_raws[i]), read(i, zb_raws[i])
         ok = verdicts[i]
-        gated = battery not in ("rep", "share", "arr")
+        gated = battery not in UNGATED
         npass += 1 if (ok and gated) else 0
         mark = "----" if not gated else ("PASS" if ok else "FAIL")
         print(f"{mark:5} {battery:5} {label:14} {':'.join(lines)[:44]:44}")
@@ -382,7 +393,7 @@ def main():
             print(f"        zb : {zt!r}")
         sys.stdout.flush()
 
-    ntot = sum(1 for c in sel if c[1] not in ("rep", "share", "arr"))
+    ntot = sum(1 for c in sel if c[1] not in UNGATED)
     nrep = len(sel) - ntot
     print(f"\n{npass}/{ntot} gated rows agree with the reference"
           + (f"  ({nrep} reported, never gated)" if nrep else ""))

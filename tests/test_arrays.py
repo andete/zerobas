@@ -350,6 +350,50 @@ def run():
               f"(CF={carry(cpu)}, A={cpu.a})")
 
     # ==================================================================
+    # Case 5c: the SIZE RULE (D-ARR-B, docs/spec-basic-arrdim.md §3). An array
+    # whose ELEMENT DATA would not fit a 16-bit byte count is `Subscript out of
+    # range` (A=1), NOT `Out of memory` -- the reference bounds it before it
+    # allocates, and it does so on the BYTE product, excluding the header
+    # (docs/arrdim-vg8020-characterization.md §1.1-§1.3).
+    #
+    # ⚠️ THIS IS THE PAIR THAT MATTERS, NOT EITHER ROW ALONE. Both rows below
+    # have a ceiling far above them (HIMEM untouched), so neither can reach the
+    # OOM path by accident; they straddle $FFFF by ONE ELEMENT. If the rule were
+    # dropped, or applied one element too early/late, exactly one of them flips.
+    #   bound0=32766 -> 32767 elements * 2 = 65534 B  -- fits, so NOT the rule
+    #   bound0=32767 -> 32768 elements * 2 = 65536 B  -- overflows -> A=1
+    # The `%`-width (2 B) form is used because it puts the boundary at the
+    # largest representable bound, so the accepted row cannot be confused with
+    # a small allocation that merely succeeded.
+    # ==================================================================
+    for bound, want, why in ((32766, 4, "65534 B fits -> falls through to OOM"),
+                             (32767, 1, "65536 B overflows -> the size rule")):
+        m = make_machine()
+        BOUNDS_BUF = 0x9200
+        m.poke_w(BOUNDS_BUF, bound)
+        m.poke(s["ARY_NIDX"], 1)
+        cpu = m.call("ary_alloc", b=ord("S"), c=0, a=2, ix=BOUNDS_BUF)
+        ok_sz = (not carry(cpu)) and (cpu.a == want)
+        fails += not ok_sz
+        print(f"{'PASS' if ok_sz else 'FAIL'} ary_alloc bound0={bound} -> A={want} "
+              f"({why}; CF={carry(cpu)}, A={cpu.a})")
+
+    # ...and the same rule on the ELEMENT product rather than the byte product:
+    # ary_count_elems overflows on its own here (3 dims of 41 -> 68921 > $FFFF),
+    # which is the OTHER of the two sites and reddens independently of the one
+    # above. Two sites, two disjoint witnesses (spec §5).
+    m = make_machine()
+    BOUNDS_BUF = 0x9200
+    for i in range(3):
+        m.poke_w(BOUNDS_BUF + 2 * i, 40)   # 41^3 = 68921 elements
+    m.poke(s["ARY_NIDX"], 3)
+    cpu = m.call("ary_alloc", b=ord("T"), c=0, a=2, ix=BOUNDS_BUF)
+    ok_cnt = (not carry(cpu)) and (cpu.a == 1)
+    fails += not ok_cnt
+    print(f"{'PASS' if ok_cnt else 'FAIL'} ary_alloc 41^3 elements -> A=1 "
+          f"(the element-product site; CF={carry(cpu)}, A={cpu.a})")
+
+    # ==================================================================
     # Case 6: ary_engine, the tenant's ACTUAL dispatch entry (SUBROM_IDX_ARY)
     # -- the ABI surface basic/arrays.asm's ary_engine_call drives via
     # subrom_call, exercised here through the ARY_OP..ARY_ERR param block

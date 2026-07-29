@@ -898,12 +898,14 @@ af_notfound:
 ; (ARY_NIDX)=ndim) -> appends a new descriptor at the current tail (found by
 ; a fresh terminator walk from ARYBASE), writes [name0][name1][type][ndim]
 ; [stride][bounds...][zero-filled data], writes a fresh 2-byte $0000
-; terminator right after. Out: HL=new descriptor base, CF set. On OOM
-; (bound-product overflow, or the descriptor+terminator would cross the
-; ceiling), returns CF clear + A=4 (the ARY_ERR "Out of memory" code; nothing
-; written) -- this differs from the WIP's own ary_alloc, which set FPERR
-; (a main-ROM-only concept this tenant has no access to); every other detail
-; (the terminator walk, the ceiling formula, the zero-fill) is unchanged.
+; terminator right after. Out: HL=new descriptor base, CF set. On failure,
+; returns CF clear and nothing written, with A = the ARY_ERR code -- which is
+; A=1 "Subscript out of range" when the ELEMENT DATA would not fit a 16-bit
+; byte count (D-ARR-B, see aal_soor below) and A=4 "Out of memory" when the
+; descriptor+terminator would cross the ceiling or wrap the address space.
+; Both differ from the WIP's own ary_alloc, which set FPERR (a main-ROM-only
+; concept this tenant has no access to); every other detail (the terminator
+; walk, the ceiling formula, the zero-fill) is unchanged.
 ; Own scratch frame on the STACK (IY-addressed, 10 bytes: KEY(2)/TYPE(1)/
 ; TAIL(2)/DATA_BYTES(2)/CEND(2)/RETRIED(1) -- see the file header for why
 ; this moved off ARY_SCR. CEND/RETRIED are arrays slice-4a additions (docs/
@@ -943,7 +945,7 @@ aal_tail:
                 push    ix
                 pop     hl                  ; HL = bounds source ptr
                 call    ary_count_elems     ; -> DE=count, CF=overflow
-                jp      c,aal_oom
+                jp      c,aal_soor          ; D-ARR-B site A -- see aal_soor
                 ex      de,hl               ; HL = count
                 ld      a,(iy+2)            ; TYPE
                 call    elsize_from_type    ; A = elsize (2/4/8, or 1+STRMAX for
@@ -951,7 +953,7 @@ aal_tail:
                 ld      d,0
                 ld      e,a
                 call    ary_mul16_checked   ; DE = data bytes; CF=overflow
-                jp      c,aal_oom
+                jp      c,aal_soor          ; D-ARR-B site B -- see aal_soor
                 ld      (iy+5),e
                 ld      (iy+6),d            ; DATA_BYTES
                 ld      a,(ARY_NIDX)
@@ -1109,9 +1111,48 @@ aal_zero_done:
                                             ; register/flag effect other than SP)
                 scf
                 ret
+; --- aal_soor: the SIZE-RULE exit (D-ARR-B, docs/spec-basic-arrdim.md §3) ---
+; The reference rejects an array whose ELEMENT DATA would not fit a 16-bit byte
+; count -- `elsize * PI(bound_k+1) > $FFFF` -- with `Subscript out of range`,
+; BEFORE it attempts any allocation, and zerobas answered `Out of memory`
+; (docs/arrdim-vg8020-characterization.md, 19 divergent rows, one cause).
+;
+; This is deliberately NOT a new check: ary_count_elems and ary_mul16_checked
+; between them ALREADY compute that exact product and already return CF on
+; overflow. Sites A and B above are that pair of carries, and the measured rule
+; is that they -- and only they -- are the size rule. The two sets are provably
+; identical: the byte product exceeds $FFFF exactly when the ELEMENT product
+; overflows (site A; the byte product then certainly does too, elsize being >= 2)
+; or when the `elsize *` step does (site B). So the whole fix is which code the
+; existing failure reports, which is why it costs 4 bytes and no arithmetic.
+;
+; ⚠️ The three carry checks BELOW sites A/B (tail+header, +data bytes, and the
+; +2 terminator reservation) stay `Out of memory`. They are ADDRESS-SPACE wraps,
+; not size-rule violations: anything reaching them has a byte count <= $FFFF,
+; which the reference accepts and then fails on its own ceiling.
+;
+; ⚠️ The AUTO-DIM path gets this for free and MUST: ary_resolve auto-dims through
+; this same ary_alloc, and `Q(1,1,1,1)=1` on an undeclared array asks for
+; 11^4 * 8 = 117128 bytes -- the reference raises the size rule there too, with
+; neither `DIM` nor a large number anywhere in the line (characterization §1.5).
+; A check written into ex_dim would have satisfied every other measured row and
+; left that one silently wrong.
+;
+; Reached only from sites A and B, both of which are BEFORE the `push hl` that
+; aal_oom_pop1 exists to undo -- so the 10-byte scratch frame is the whole of the
+; unwind here, exactly as for aal_oom.
+aal_soor:
+                ld      a,1                 ; ARY_ERR: Subscript out of range
+                jr      aal_unframe         ; (-> FPERR=5 via ary_errmap)
 aal_oom_pop1:
                 pop     hl                  ; discard [DEND]
 aal_oom:
+                ld      a,4                 ; ARY_ERR: Out of memory
+aal_unframe:
+                                            ; A is the ARY_ERR code and survives:
+                                            ; INC SP touches neither A nor any
+                                            ; flag, so the `or a` below still
+                                            ; clears CY for both entries.
                 inc     sp
                 inc     sp
                 inc     sp
@@ -1122,7 +1163,6 @@ aal_oom:
                 inc     sp
                 inc     sp
                 inc     sp                  ; deallocate the 10-byte frame
-                ld      a,4                 ; ARY_ERR: Out of memory
                 or      a                   ; CF clear
                 ret
 
@@ -1133,7 +1173,11 @@ aal_oom:
 ;   A=2 (Illegal function call) -- a negative subscript, §4.1 #9 (caught
 ;     BEFORE the bound compare, same disposition SQR(x<0) uses main-side).
 ;   A=1 (Subscript out of range) -- wrong dimension count vs the
-;     descriptor's own ndim, or an in-range-but-over-bound index, §4.1 #8.
+;     descriptor's own ndim, or an in-range-but-over-bound index, §4.1 #8;
+;     ALSO an auto-dim allocation whose element data would not fit a 16-bit
+;     byte count, which arrives here from ary_alloc's aal_soor (D-ARR-B).
+;     `Q(1,1,1,1)=1` on an undeclared array is the reachable case: auto-dim
+;     takes every dimension to 10, so it asks for 11^4 * 8 = 117128 bytes.
 ;   A=4 (Out of memory) -- an auto-dim allocation that would cross the
 ;     ceiling.
 ; Own scratch frame on the STACK (IY-addressed, 6 bytes: OFFSET(2)/MULT(2)/
