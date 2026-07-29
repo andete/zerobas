@@ -524,7 +524,15 @@ Both are error-handling defects, both pre-date S-FCH-2, both are filed in
    there.** In-run and direct-mode `CLEAR` behave differently, so the contract
    has to be characterized before it is coded — a one-line `clear_vars` fix would
    have turned `reset_scope_clear` red. This is the row `err_badchan` now belongs
-   to.
+   to. **Characterized in [`TODO.md`](../TODO.md) rather than fixed here:** an
+   in-run `CLEAR` zeroes the *arm* (re-arming at a later line restores the trap,
+   so it is not a suppression mode), a plain program **edit** disarms as well,
+   and `NEW` cannot be isolated at all — the retype it forces has already
+   disarmed the handler, so its case and its control read the same. One
+   mechanism fits: `ONELIN` holds a resolved LINK address and the reference
+   invalidates it when what it points into moves. **So the fix is `ONELIN`
+   invalidation at relink, NOT `clear_vars`** — which `RUN` also runs through,
+   and `RUN` must not disarm.
 
 2. **A stale `ONEFLG` survives the return to the REPL.** After a nested forced
    abort, zerobas force-aborts the *next* error instead of trapping it; the

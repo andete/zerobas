@@ -2050,15 +2050,34 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       standing hypothesis at `basic/sysvars.inc`'s `ONELIN` (*"NOT clear_vars, so
       NEW/CLEAR alone do not disarm a handler"*).
       🔴 **DO NOT FIX THIS AS A ONE-LINE `clear_vars` DISARM — the contract is
-      not that.** `error-trap-acceptance`'s `reset_scope_clear` measures a
-      DIRECT-MODE `CLEAR` between the arm and the `RUN` and the reference **DOES**
-      fire the handler there (that row passes today, both sides). So an in-run
-      `CLEAR` and a direct-mode `CLEAR` differ, and zeroing `ONELIN` in
-      `clear_vars` would turn `reset_scope_clear` red while looking correct.
-      **Characterize which of the two it is before coding**, including whether
-      `NEW` belongs with them (the placement question: `clear_vars` is shared by
-      NEW/CLEAR/RUN). A plausible mechanism worth testing: an in-run `CLEAR`
-      resets the run-time stack, and the trap's active state rides on it.
+      not that**, and `error-trap-acceptance`'s `reset_scope_clear` (green today,
+      both sides) would have gone red proving it. **CHARACTERIZED 2026-07-29,
+      each row two-sided** (`7777` = the handler ran):
+
+      | typed | reference | zerobas |
+      |---|---|---|
+      | `20 CLEAR` **inside the run**, arm at line 10 | **no trap** | traps |
+      | …same, `REM CLEAR` (control) | traps | traps |
+      | `CLEAR` in **direct mode** between the arm and `RUN` | traps | traps |
+      | in-run `CLEAR` then **re-arm** at line 25 | **traps** | traps |
+      | arm, then **retype a program line**, then `GOTO` | **no trap** | traps |
+      | …same, no retype (control) | traps | traps |
+      | arm, `NEW`, retype, `GOTO` | no trap | traps |
+
+      **What that says.** The re-arm row is the decisive one: an in-run `CLEAR`
+      **zeroes the ARM**, it does not enter a "trapping suppressed" mode — put
+      `ON ERROR GOTO` back and the trap fires again. And a plain program **EDIT**
+      disarms too. Both fit one mechanism: `ONELIN` holds a resolved LINK
+      ADDRESS, so the reference invalidates it whenever the thing it points into
+      moves. A direct-mode `CLEAR` before `RUN` does not, and neither does `RUN`
+      itself (`reset_scope_run`).
+      ⚠️ **`NEW` CANNOT BE ISOLATED THIS WAY AND THE ANSWER IS NOT "NEW DISARMS":
+      the retype `NEW` forces has ALREADY disarmed it, so `new_` and its control
+      read the same.** Any future measurement of `NEW` needs a shape that does
+      not edit the program afterwards. So the fix is **not** in `clear_vars`
+      (shared by NEW/CLEAR/RUN, and `RUN` must not disarm) — it is `ONELIN`
+      invalidation at relink plus the in-run `CLEAR`, and zerobas is wrong on
+      the **edit** half as well as the `CLEAR` half.
 
 - [ ] **A stale `ONEFLG` survives the return to the REPL, so the NEXT error
       force-aborts instead of trapping.** Raised as S-FCH-2's open question by
