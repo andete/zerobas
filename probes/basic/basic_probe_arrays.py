@@ -580,6 +580,15 @@ GC_STRESS = [
     # four poked sentinels), never from a capacity reading, so no assertion here
     # depends on the pool size. All five now reserve 11500.
     #
+    # ⚠️ UPDATE 2026-07-29 (D-FCH §3.3): the premise above has MOVED AGAIN, in the
+    # other direction. TOKBUF and LINEBUF left page 2 for the window S-FCH-1 freed
+    # in page 3, so TXTMAX rose $B700 -> $BB00 and boot FRE(0) is now **14899**
+    # (measured, not computed). The 11500 reservations still fit with room to
+    # spare, so nothing here needed re-sizing and the payload shrinks above were
+    # deliberately LEFT as they are -- restoring them is a separate call, not a
+    # silent side effect of a RAM change. Note the capacity D-LINEMAX cost the
+    # suite (a ~12 KB string workload) is affordable again.
+    #
     # ⚠️ THE ROOT COUNT IS THE SUBJECT IN EVERY ROW; THE STRING LENGTH NEVER WAS.
     # 270 (> 256 -> gc_slow), 200 (< 256 -> the DETOKBUF fast path + sort), and the
     # 256/257 PAIR (the exact path switch, 2N=512 B filling DETOKBUF exactly) are

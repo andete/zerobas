@@ -161,6 +161,30 @@ Net program space, default `MAXFILES=1`: **13875 + 1024 − ~52 ≈ 14847**, aga
 15667 before D-LINEMAX. `MAXFILES=15` would then cost ~780 B **visibly, out of
 `FRE(0)`** — which is the point.
 
+### 3.3a — ✅ BUILT 2026-07-29
+
+`LINEBUF` `$BA00` → **`$EB00`** (page-aligned, so the single-low-byte cursor idiom
+is untouched), `TOKBUF` `$B700` → **`$EC00`**, `TXTMAX` `$B700` → **`$BB00`**.
+
+**`FRE(0)` 13875 → 14899**, measured on the built machine — exactly the predicted
++1024. **Zero ROM cost**: these are address constants, so page 1 stayed at 1 B
+free and the lean cart stayed byte-identical.
+
+Usability was checked rather than assumed: `CLEAR 200 : DIM A%(7000)` needs
+14002 B — impossible against the old 13875, and it now succeeds with **both ends
+of the array written and read back** (11 / 22) and 889 B still free. A `DIM` that
+merely *succeeds* would not have witnessed real storage.
+
+⚠️ **The ceiling is now bounded by `DETOKBUF`, not by free RAM.** At 1280 B it
+does not fit in the 1024 B window, so `$BB00` is where `TXTMAX` stops until
+`DETOKBUF` is dealt with. Of D-LINEMAX's 1792 B, **1024 B is recovered and 768 B
+is still charged** to page 2.
+
+⚠️ Page 3 is always-mapped RAM and is **not** paged out by a sub-ROM `CALSLT`
+(the tokenise tenant takes page 0; fatprim/detok take page 1), so both moved
+buffers stay addressable from the tenants that fill them. No code referenced
+`$B700`/`$BA00` literally — every use goes through the equates, verified by grep.
+
 ## 4. Scope boundary
 
 **In:** the shared-cache switch, the dynamic table, `FCH_CEIL` 2 → 15, the

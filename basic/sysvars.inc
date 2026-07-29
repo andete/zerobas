@@ -770,11 +770,19 @@ INP_CURSOR      equ     NUMBUF   ; console INPUT LINEBUF read cursor (1 B, alias
 ;
 ; The single-low-byte idiom in BOTH readers (repl.asm read_line, files.asm
 ; ascii_read_lines) and in console INPUT (input.asm `ld h,high LINEBUF`) needs a
-; PAGE-ALIGNED base and <= 256 bytes — NOT <= 96. $BA00+254 = $BAFE is one page, so
+; PAGE-ALIGNED base and <= 256 bytes — NOT <= 96. $EB00+254 = $EBFE is one page, so
 ; no reader logic changes and the item's feared "one-page trick blocks this" does not
 ; hold.
+;
+; ⚠️ D-FCH §3.3: MOVED $BA00 -> $EB00 (page 2 -> page 3). It sat in page 2 only
+; because D-LINEMAX had to put it somewhere, and it cost 1792 B of TXTMAX to do
+; so. S-FCH-1 freed $EA64..$EE63 by retiring the per-channel sector save copies,
+; and this buffer + TOKBUF move into that window so TXTMAX can climb back.
+; Page 3 is always-mapped RAM and is NOT paged out by a sub-ROM CALSLT (the
+; tokenise tenant takes page 0, the fatprim/detok tenants page 1), so both
+; buffers stay addressable from the tenants that fill them.
     IF ROM_BASE < $4000
-LINEBUF         equ     $BA00   ; repack: ASCII input line from the keyboard (LINEMAX B)
+LINEBUF         equ     $EB00   ; repack: ASCII input line from the keyboard (LINEMAX B)
 LINEMAX         equ     255     ; 254 chars + the 0 terminator (measured reference ceiling)
 ; TOKBUF — the crunch destination. Sized 576 B for a 314-byte LOGICAL body limit, and
 ; the gap between those two numbers is deliberate.
@@ -796,7 +804,10 @@ LINEMAX         equ     255     ; 254 chars + the 0 terminator (measured referen
 ; adjudicate: 314 (accepted body) + 258 (the widest one-character step — tk_apos's 3
 ; bytes plus a 253-byte verbatim tail) + 1 (terminator) = 573, rounded to 576. The
 ; bound is then PROVABLE from LINEMAX rather than audited emit site by emit site.
-TOKBUF          equ     $B700   ; repack: crunch buffer, 576 B ($B700..$B93F)
+; ⚠️ D-FCH §3.3: MOVED $B700 -> $EC00, into the window S-FCH-1 freed. This is the
+; buffer that BLOCKED TXTMAX: it sat immediately above the text ceiling, so
+; nothing above it could be reclaimed until it moved. See LINEBUF above.
+TOKBUF          equ     $EC00   ; repack: crunch buffer, 576 B ($EC00..$EE3F)
 TOKBUFSZ        equ     576     ; physical size (absorbs one over-long pass, above)
 TOKMAX_BODY     equ     314     ; logical ceiling: a longer body is REFUSED (ERR 25)
     ELSE
@@ -1564,8 +1575,15 @@ TXTBASE         equ     $8001   ; text base (oracle: TXTTAB value after boot)
 ; this slice exists to fix, newly CREATED by fixing it. 1280 = $BB00..$BFFF covers
 ; the 1271-byte ceiling (254x5 + terminator) and still tops out just under the $C000
 ; BLOAD region, so the "free during both sinks, below the stack" argument is intact.
-TXTMAX          equ     $B700   ; repack: text ceiling, 2304 B below the $C000 BLOAD
-                                ; region — the whole buffer window above is reserved.
+; ⚠️ D-FCH §3.3: RAISED $B700 -> $BB00, giving back 1024 B of program space.
+; D-LINEMAX had to drop this ceiling 1792 B ($BE00 -> $B700) to house three
+; buffers; TOKBUF and LINEBUF have now moved to page 3 (into the window S-FCH-1
+; freed by retiring the per-channel sector save copies), so only DETOKBUF is
+; still charged to page 2 and the ceiling rises to meet it.
+; ⚠️ The rise is BOUNDED BY DETOKBUF, not by the freed RAM: at 1280 B it does not
+; fit in the 1024 B window, so $BB00 is the ceiling until it is dealt with.
+TXTMAX          equ     $BB00   ; repack: text ceiling, 1280 B below the $C000 BLOAD
+                                ; region — DETOKBUF alone now reserves that window.
 DETOKBUF        equ     $BB00   ; repack: 1280 B one-shot detok output buffer.
     ELSE
 TXTMAX          equ     $C000   ; lean: text must stay below the $C000 BLOAD region

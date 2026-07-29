@@ -1918,10 +1918,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ **Left open:** `fch_save_active` ignores the detach's `Cy`. A channel
       switch could never fail before and now can (disk full mid-flush);
       propagating it needs a disposition at every `fch_select` caller.
-      **NEXT: the 1024 B is FREED BUT NOT SPENT** — `TXTMAX` has not moved, so
-      `FRE(0)` is still 13875. Turning it into program space is the
-      `TOKBUF`+`LINEBUF` relocation of spec §3.3, and the dynamic allocation of
-      §3.2 is still unbuilt.
+      **§3.3 ✅ BUILT 2026-07-29 — THE 1024 B IS NOW SPENT, AND IT IS PROGRAM
+      SPACE: `FRE(0)` 13875 → 14899** (measured). `LINEBUF` `$BA00`→`$EB00`
+      (page-aligned, cursor idiom untouched), `TOKBUF` `$B700`→`$EC00`,
+      `TXTMAX` `$B700`→`$BB00`. **Zero ROM cost** — address constants only, so
+      page 1 stayed at 1 B free and the lean cart stayed byte-identical.
+      Usability CHECKED, not assumed: `CLEAR 200 : DIM A%(7000)` (14002 B, over
+      the old 13875) now succeeds with **both ends written and read back**
+      (11/22), 889 B still free. A `DIM` that merely succeeds witnesses nothing.
+      ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
+      it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
+      is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.
+      ✅ The ~12 KB string workload D-LINEMAX cost the suite is affordable again
+      (the array rows' shrunken payloads were deliberately LEFT — restoring them
+      is a separate call, not a silent side effect of a RAM change).
+      **NEXT, both unbuilt:** the dynamic allocation of §3.2 (the faithful
+      mechanism proper — `FRE(0)` moving with `MAXFILES`, ceiling 15) and
+      S-FCH-2's ERR 5/52/59. ⚠️ **S-FCH-2's premise MOVED**: it was costed at
+      ~100 B against 6 B free page 1, and page 1 is now at **1 B**.
 
 - [ ] **`LOF(#n)` reads −1 on a freshly-created OUTPUT channel** (reference: 0).
       Found 2026-07-29 by a CONTROL row in the channel-cost pass, not aimed at.
