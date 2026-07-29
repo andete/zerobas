@@ -345,8 +345,37 @@ If that holds, the main-ROM requirement drops from 86 B to roughly ERR 59's 8 +
 ERR 52's 14 + a shim ≈ **35–40 B**. **Measure that before scouting a carve** —
 this arc has now three times found the cost was siting.
 
-The reverted build is kept as a patch (not committed): it applies cleanly to
-`d197f9b` and is the starting point for the eviction measurement.
+### The sub-ROM eviction — ✅ ALSO MEASURED: the carve drops 77 B → 26 B
+
+Built and measured rather than argued. The message table, both strings and the
+table walk move to the **existing** string-heap tenant as **op 19** (no new
+dispatch index, no new tenant file); it stages the chosen message into
+`ERRMSG_BUF` in the page-3 RAM `FCH_CEIL=15` left free at `$EA30`, because a
+pointer into the sub-ROM would be unreadable from the resident abort path.
+The two raisers move to the low region, reached by an ordinary in-slot `jp`.
+
+| | page 1 over | low over | **carve needed** |
+|---|---|---|---|
+| S-FCH-2 all-resident | 45 | 32 | **77 B** |
+| S-FCH-2 with the message block evicted | **20** | **6** | **26 B** |
+
+What is left resident is irreducible-looking: the 16 B tenant-call shim in
+`rerr_unprintable`, 4 B of closed-channel test in the shared `EOF`/`LOF` helper,
+and 15 B of low-region raisers. Moving the shim down as well only trades page 1
+for low region — **the total stays 26 B over**, so only a carve closes it.
+
+⚠️ **Both S-FCH-2 builds are COST PROBES: measured, never RUN.** ERR 5 is the
+only part that has been executed and gated. Two things must be settled before
+any of the rest lands:
+* `err_bad_filenum` forces `ONEFLG=1` to reach `raise_error`'s abort arm (the
+  measured non-trappability) and **leaves it set**. Whether the return to the
+  REPL clears it is unestablished — a stale `ONEFLG` would force-abort the *next*
+  error instead of trapping it.
+* the ten repointed `jp` sites are unconditional in the probe, so the **lean cart
+  would not assemble**; landing needs them gated per-site, or the lean cart
+  retired.
+
+Both probes are kept as patches (not committed) and apply to `d197f9b`.
 
 ### ⚠️ The measurement apparatus was wrong first, and read plausibly
 

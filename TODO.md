@@ -1985,6 +1985,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the message into the **208 B still free at `$EA30..$EAFF`**, leaving a
       shim; that would cut the resident need to ~35-40 B. **MEASURE THAT BEFORE
       SCOUTING A CARVE** — this arc has three times found the cost was siting.
+      ✅ **THE EVICTION IS MEASURED TOO: the carve drops 77 B -> 26 B.** The
+      table, both strings and the walk move to the EXISTING string-heap tenant
+      as op 19 (no new dispatch index), staging the message into page-3 RAM at
+      `$EA30`; the two raisers move to the low region. Result: page 1 20 over,
+      low 6 over. Moving the shim down too only trades one wall for the other --
+      the total stays 26 B, so ONLY A CARVE closes it.
+      ⚠️ **BOTH S-FCH-2 BUILDS ARE COST PROBES: MEASURED, NEVER RUN.** ERR 5 is
+      the only part executed and gated. Before any of the rest lands: (1)
+      `err_bad_filenum` forces `ONEFLG=1` to reach the abort arm and LEAVES IT
+      SET -- if the REPL return does not clear it, the NEXT error force-aborts
+      instead of trapping; (2) the ten repointed `jp` sites are unconditional in
+      the probe, so the LEAN CART WOULD NOT ASSEMBLE -- landing needs per-site
+      gating, or the lean cart retired.
       ⚠️ **THE MEASUREMENT APPARATUS WAS WRONG FIRST AND READ PLAUSIBLY (77 B).**
       Relaxing the low region's guard removes its `ds $4000 - $` pad — and that
       pad is what puts the cartridge header at `$4000`. Without it page 1 slides
