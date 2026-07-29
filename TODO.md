@@ -2087,10 +2087,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reference resumes, prints, and returns to `Ok`; zerobas prints, then
       reports `Illegal function call in 3346`. Found 2026-07-29 by D-ONELIN's
       `stop_cont` CONTROL (no `ON ERROR` anywhere — `ONELIN` is 0 throughout),
-      and **verified PRE-EXISTING at `6ac2285`** against a parked pre-fix build,
-      not assumed. Third of a cluster with the two below (`CONT` after a plain
-      `END`; ERR 21 `No RESUME`) — all three are about what the run loop leaves
-      behind at its exit, and are probably one fix.
+      and **verified PRE-EXISTING at `6ac2285`** against a parked pre-fix build.
+      **✅ MECHANISM CHARACTERIZED 2026-07-29** (17-case battery, both machines,
+      boot-per-case) — and it is the [[abort-chain-returns-into-caller]] class,
+      a `ret` that only unwinds correctly at ONE depth:
+      **`ex_cont` re-enters the run loop with a bare `jp rp_lp` from STATEMENT
+      depth**, i.e. from inside the loop's own `call exec`, leaving a stale
+      return frame beneath it. `dl_cmd` (the clean template) instead `jp rp_exec`s
+      at REPL depth after `ld (SAVSTK),sp`, so ITS exit `ret` unwinds to the
+      prompt. From `ex_cont`'s depth the exit `ret` lands back INSIDE the loop
+      body, which then reads `ENDFLAG`:
+      * exit via `END` -> `ENDFLAG`=1 -> the re-entry `ret`s again immediately.
+        **Clean BY LUCK** (`x_cont_end` measured clean on both machines).
+      * exit via the `$0000` link -> `ENDFLAG`=0 -> falls through to the
+        next-line advance with `HL` still on the end marker -> parses garbage ->
+        `Illegal function call in <the word after the marker>`.
+      Controls that pin it: `x_run_tail` (plain `RUN`, clean) and `x_cont_goto`
+      (a direct `GOTO` into the program, clean — dl_cmd's path is the one that
+      works). ⚠️ A hypothesis that the `END` exit derails too, onto a benign
+      byte, was **REFUTED by measurement**: `40 END:PRINT…` does NOT run its
+      second statement after a `CONT` (`d_cont_after_end` agrees on both).
+      Likely fix: `ld sp,(SAVSTK)` before the `jp rp_lp` (4 B, page 1) —
+      `dl_cmd` sets `SAVSTK` for the CONT line itself, so it is fresh and is
+      exactly the depth the loop's exit `ret` needs. **Not built; needs a spec
+      + sign-off, and the two siblings below probably share it.**
 
 - [x] **A stale `ONEFLG` survives the return to the REPL, so the NEXT error
       force-aborts instead of trapping.** Raised as S-FCH-2's open question by
@@ -2133,6 +2153,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       site C (`basic/program.asm` `rp_lp`) becomes redundant with site A and its
       5 B can be reclaimed, and `oneflg_falloff` can be upgraded from a zb-only
       row to a full text differential.
+      **✅ CHARACTERIZED 2026-07-29, with its controls.** The raise condition is
+      exactly "the `$0000`-link exit is reached while `ONEFLG` is set": the two
+      controls `e21_handler_end` (the handler `END`s deliberately) and
+      `e21_handler_resume` (the handler `RESUME`s) are silent on BOTH machines,
+      and so is `e21_nohandler` (falling off the end with nothing armed). So it
+      is NOT "falling off the end is an error" — it is "falling off the end
+      still owing a `RESUME`". **ERR/ERL after the abort read `21 , 100`** on the
+      reference (the code, and the HANDLER's line) against zerobas's `5 , 20`
+      (still the ORIGINAL error) — so the raiser must set both, not just print.
 
 - [ ] **`CONT` after a plain `END` must continue.** Found 2026-07-29 by the
       D-ONEFLG battery's c7 row, not aimed at. `10 A=1 : 20 END : 30 PRINT…` then
@@ -2143,6 +2172,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       that claim is unmeasured. ⚠️ Fixing this would have silently regressed the
       `CONTVALID`-gated version of D-ONEFLG, which is exactly why that version
       was rejected.
+      **✅ CHARACTERIZED 2026-07-29 — and it is WIDER than "END".** The reference
+      answers a `CONT` with a resume point after *every* run stop, not just
+      `STOP`: after a plain `END` it resumes (`c_end`), and after a run that
+      merely FELL OFF THE END (`c_falloff`) — and after a second `CONT` with
+      nothing left to do (`c_twice`) — it returns **silently to `Ok`**, i.e. it
+      resumes past the end and runs nothing. zerobas says `can't continue` to
+      all three. So the rule to build is "the run loop records where it stopped,
+      always", not "`END` also records a resume point".
 
 - [ ] **`LOF(#n)` reads −1 on a freshly-created OUTPUT channel** (reference: 0).
       Found 2026-07-29 by a CONTROL row in the channel-cost pass, not aimed at.
