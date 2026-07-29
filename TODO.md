@@ -1731,26 +1731,105 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       + `ARY_CUR`, freeing 4 B of RAM in a span whose own header records "no
       slack for anything more".
 
-- [ ] 🔴 **`LINEMAX = 96` — zerobas's input line is 95 characters, the
-      reference's is 250.** Split out of D-ARR-C, which measured it
+- [ ] 🔴 **D-LINEMAX — the input line AND the crunched line. SPEC WRITTEN,
+      MEASURED, AWAITING SIGN-OFF.** Spec
+      [`docs/spec-basic-linemax.md`](docs/spec-basic-linemax.md), measurement
+      [`docs/linemax-vg8020-characterization.md`](docs/linemax-vg8020-characterization.md),
+      probe [`probes/basic/basic_probe_linemax.py`](probes/basic/basic_probe_linemax.py)
+      (seven batteries, 61 rows + 3 cassette rows; baseline **22/53** typed).
+      Split out of D-ARR-C, which measured the input-line half
       ([`docs/arrdim-c-vg8020-characterization.md`](docs/arrdim-c-vg8020-characterization.md)
-      §4) and cannot reach it. Already documented as an *Input-length caveat* in
-      [`docs/spec-basic-arrays-slice4a-string-heap.md`](docs/spec-basic-arrays-slice4a-string-heap.md);
-      this is the item to actually close it.
-      ⚠️ **IT WAS FILED UNDER THE WRONG CAUSE FOR A WHOLE SLICE.** `cap-64` and
-      `cap-100` were carried as "MAXDIM=4" rows by the D-ARR-B commit. They are
-      not: their line 20 is 137 and 209 characters, so the interpreter never saw
-      those subscript lists at all and raising `MAXDIM` could not have turned
-      them green. **The cap is what hid it** — the parse aborted at the fifth
-      subscript long before the truncated tail was reached, so they read a tidy
-      ` 9 ` indistinguishable from a genuine cap row. The moment D-ARR-C removed
-      the cap they flipped to ` 2 ` (syntax error), which is the truncation
-      finally becoming legible. Carried as four never-gated `cap` rows +
-      `line-96`/`-97`/`-100`/`-250`, each printing its reason.
-      Raising it touches the REPL's own line reader, `ascii_read_lines`
-      ([`basic/files.asm`](basic/files.asm)) and a page-`$E1` buffer that
-      G3/G4/G5 already share as marshalling scratch — `LINEBUF` is one page
-      (`$E100..$E15F`) and 255 bytes does not fit where 96 does.
+      §4) and could not reach it.
+      ⚠️ **IT WAS FILED UNDER THE WRONG CAUSE FOR A WHOLE SLICE**, and then
+      filed at the WRONG SIZE. `cap-64`/`cap-100` were carried as "MAXDIM=4"
+      rows by the D-ARR-B commit; the cap is what hid the truncation. But the
+      input line turns out to be the *smaller* half:
+      * **Input line — one constant.** Reference **254** characters, zerobas
+        **95**, and both already agree on what truncation MEANS (drop the tail,
+        keep and store the line, raise nothing). `LINEMAX` 96 → **255**.
+        The one-page low-byte idiom in both readers SURVIVES — it needs a
+        page-aligned base and ≤ 256 bytes, not ≤ 96 — so no reader logic
+        changes, and the G3/G4/G5 aliasing argument is RETIRED rather than
+        re-proved.
+      * 🔴 **Crunched line — a LIVE memory-corruption defect, today, at
+        `LINEMAX=96`.** The crunch expands (`0#` = 2 chars → 9 bytes) and
+        `TOKBUF` (96 B) is bounded NOWHERE. A **27-character** line overruns it;
+        the worst case writes **407 bytes into 96** — over `ARYTAB`, the
+        error-trap block, `ZTRAP`, `POOLSIZE`, into `STRTAB` — silently, and
+        after it zerobas cannot execute `B=7`. The reference refuses at 315
+        body bytes with **`Line buffer overflow`, ERR 25**. This is what
+        actually sizes the slice.
+      ⚠️ **THE APPARATUS HAD THE ANSWER HARD-CODED, AND IT WAS A GUESS.**
+      `omsx_repl.MAX_BUF` was 250 and *refused to inject anything longer*, which
+      is why §4 read the reference's ceiling as 250 — the harness's cap reported
+      as the machine's. Fixed to 254, measured. Also fixed: an EMPTY capture was
+      being discarded, collapsing "line refused" into "the machine never got
+      there".
+      ⚠️ **A BYTE-COMPARISON GATE CANNOT SEE THIS.** Every `lnum` row PASSES —
+      both machines crunch identical bytes and only the one with a 96-byte
+      buffer is harmed. **Agreement on what was produced is not agreement on
+      whether it fit**; the `corrupt` rows, which read the damage, are the ones
+      with teeth.
+      Decisions taken (2026-07-29): **repack-only**, because the lean cart is
+      retired (below); RAM funded by lowering `TXTMAX` 768 B, chosen **by
+      measuring** — the reference funds its own buffers out of the same `FRE(0)`
+      pool programs live in, so that is the faithful mechanism, and the
+      alternative (dropping `MAXFILES` to 1) moves AWAY from a reference that
+      supports 15. Message-string placement deferred to implementation.
+
+- [ ] **RETIRE THE LEAN 16 KB CART** (decided 2026-07-29). It cannot be the
+      charter target and has not been one for a long time: it excludes SEVEN
+      whole source files (`str-engine`, `input`, `float`, `float-arith`,
+      `arrays`, `keytrap`, `subromcall`) — so no strings, no `INPUT`, no floats,
+      no arrays, no error codes, no KEY traps — costs **276 `IF ROM_BASE`
+      gates**, and has **~68 free bytes** of its 16384. In an emulator both
+      forms are equally easy to run and the repack build is strictly better.
+      ⚠️ **BLOCKING FIRST STEP:** [`tools/check_reloc.py`](tools/check_reloc.py)
+      proves the relocated image is a PURE RELOCATION by comparing the lean ROM
+      against a frozen baseline. That property needs a REPLACEMENT before the
+      lean build stops being built.
+      Carry forward, do not fix: the lean crunch overruns `TOKBUF` via
+      line-number references (`20 ONAGOTO1,1,1,…` — **57 characters** → 98 bytes
+      into 96; 95 characters → 174, over the LIVE `VARTAB`; a variable set
+      before it reads back 0). Measured, D-LINEMAX §2.2.
+
+- [ ] **SLIM THE FILE-CHANNEL CONTEXT toward the reference** (direction,
+      2026-07-29). Measured: the VG-8020 supports **at least 15** channels at a
+      flat **267 B** each, charged out of the same `FRE(0)` pool programs live
+      in; zerobas caps at `FCH_CEIL=2` ([`basic/sysvars.inc:2224`](basic/sysvars.inc:2224))
+      and spends **562 B** per context (50 B state + a full 512 B sector
+      buffer, [`basic/sysvars.inc:2227`](basic/sysvars.inc:2227)).
+      ⚠️ **START BY MEASURING — 267 IS NOT YET A VALID TARGET.** The VG-8020 has
+      NO disk hardware, so 267 is the cost of a channel needing no sector
+      buffer and cannot be the goal for one doing FAT12 I/O. The right oracle is
+      the disk-capable **CF-3300**. An attempt to read it with `omsx_repl`
+      FAILED as APPARATUS, not finding: its readout scrapes the SCREEN 0 name
+      table and the CF-3300 boots to a VRAM state that returns garbage through
+      it, so all six rows read `<none>`. Use the `probes/disk/` harness.
+      Likely shape: a shared sector buffer with per-channel state — the channel
+      manager's write-back cache discipline is already half of it.
+      Payoff beyond `MAXFILES`: ~590 B freed in page 3 would retroactively fund
+      D-LINEMAX's buffers and make its `TXTMAX` cut unnecessary. **Noted, not a
+      dependency** — D-LINEMAX must not wait on a number that does not exist.
+
+- [ ] **Line-number scan does not skip embedded blanks.** Found 2026-07-29 as a
+      FAILING TWO-SIDED CONTROL in D-LINEMAX's `tok` battery — a confound there,
+      a real divergence of its own. Byte-exact via the
+      `("stored_line", TXTTAB)` capture:
+      ```
+      typed:      20 0#0#0#0#0#
+      VG-8020 ->  line 200, body = 0x23 ('#') + four double literals
+      zerobas ->  line 20,  body = five double literals
+      ```
+      The reference's line-number scan **skips the blank and keeps accumulating
+      digits** (`20` + ` ` + `0` = 200); zerobas stops at the space. Same source
+      text, different line number AND different body. Sites:
+      `dispatch_line`/`parse_lineno` ([`basic/program.asm:31`](basic/program.asm:31))
+      and `mrg_storeline` ([`basic/files.asm:1496`](basic/files.asm:1496)), which
+      reaches the same path for ASCII LOAD/MERGE. Check with it whether a
+      line-number REFERENCE inside a statement (`GOTO 1 0`) behaves the same —
+      that goes through `branch_lineno` in
+      [`basic/tokenise.inc`](basic/tokenise.inc), a different path.
 
 - [x] ✅ **`WIDTH n`'s VALID DOMAIN — LANDED 2026-07-28, 76/76, falsified.**
       Was 🔴 FIVE silent screen-destroyers shipping today. The last residue of
