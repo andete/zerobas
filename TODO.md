@@ -1838,13 +1838,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       region rather than page 1 (page 1 is otherwise full to $7FFF)" — that is
       packing pressure, not a contract, and the two classes have never been
       separated systematically;
-      (2) rank sub-ROM eviction candidates by **bytes freed in the constrained
-      region per resident byte spent**. ⚠️ **7411 B of headroom is NOT 7411 B of
-      relief** — every eviction leaves a resident trampoline, and the arc history
-      shows cost is dominated by SITING, not substance (`docs/`… D-FCH S-FCH-1:
-      43 -> 9 -> 5 B for the same fix). Every eviction so far was costed ONE AT A
-      TIME (CIRCLE 542 B, FAT shim +367 B, D-MSGENC, D-FCH); none against a known
-      budget;
+      (2) rank candidates by **bytes freed in the constrained region per resident
+      byte spent**. ⚠️ **7411 B of headroom is NOT 7411 B of relief** — every
+      eviction leaves a resident trampoline, and the arc history shows cost is
+      dominated by SITING, not substance (`docs/`… D-FCH S-FCH-1: 43 -> 9 -> 5 B
+      for the same fix). Every eviction so far was costed ONE AT A TIME (CIRCLE
+      542 B, FAT shim +367 B, D-MSGENC, D-FCH); none against a known budget;
+      ⚠️ **WEIGH DE-EVICTION EQUALLY (user, 2026-07-29).** The review must run in
+      BOTH directions, and the reason is not symmetry-for-its-own-sake: a small
+      tenant can cost MORE resident bytes than it saves. Its resident footprint is
+      trampoline + dispatch-table entry + argument marshalling, which for a small
+      routine can exceed the routine itself — so **the cost curve is not monotonic
+      in size, and some existing tenants may be on the WRONG SIDE of it.**
+      De-evicting those FREES main-ROM bytes (the trampoline goes) while shrinking
+      the tenant count, the resident-ABI import list and the closure-gate surface —
+      i.e. it is the one move that buys space and simplification together.
+      Treat "should this be resident?" as the question for every routine on BOTH
+      sides of the slot boundary, never as a one-way eviction hunt;
       (3) interrogate the split itself — whether the sub-ROM's page-0/page-1 tenant
       partition, the resident-ABI import (`tools/gen_resident_abi.py` ->
       `sub/basic-resident-abi.inc`) and the three closure gates could be unified or
