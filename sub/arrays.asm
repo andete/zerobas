@@ -519,13 +519,34 @@ scv_alloc:
                 xor     a
                 ld      (iy+12),a           ; RETRIED = 0
 scv_ceil_try:
+    IF CLEARPOOL
+                ; D-CLP: the ceiling is the STRING POOL FLOOR, not FRETOP -- the
+                ; variable/array region grows up to where `CLEAR n` put the
+                ; boundary, and the pool above it is not available to it at any
+                ; price. A failure here stays ERR 7 (`Out of memory`): it is
+                ; variable space that ran out, not string space.
+                ; ⚠️ AND THE GC RETRY BELOW IS GONE, because it is now DEAD CODE,
+                ; not because it is expendable. It retried once after strheap_gc
+                ; on the reasoning that FRETOP can MOVE; the floor cannot -- GC
+                ; compacts string bodies upward toward the ceiling and never
+                ; touches the boundary. Retrying would re-run the identical
+                ; comparison and reach the identical answer. (iy+12), the RETRIED
+                ; slot, is deliberately left ALLOCATED but unused: every later
+                ; frame offset is absolute, and renumbering six of them to
+                ; reclaim one byte of STACK is a poor trade.
+                call    strheap_floor       ; HL = the pool floor
+    ELSE
                 ld      hl,(FRETOP)         ; ceiling
+    ENDIF
                 ld      e,(iy+10)
                 ld      d,(iy+11)           ; DE = CEND
                 ex      de,hl               ; HL = CEND, DE = ceiling
                 or      a
                 sbc     hl,de               ; HL = CEND - ceiling
                 jr      c,scv_ceil_fits     ; CEND < ceiling -> fits
+    IF CLEARPOOL
+                jp      scv_oom
+    ELSE
                 ld      a,(iy+12)
                 or      a
                 jp      nz,scv_oom          ; already retried once -> genuine OOM
@@ -537,6 +558,7 @@ scv_ceil_try:
                                             ; survives, exactly like
                                             ; ary_alloc's own retry)
                 jr      scv_ceil_try
+    ENDIF
 scv_ceil_fits:
                 ; SRC_LAST = OLDEND+1 ; DST_LAST = SRC_LAST+STRIDE ;
                 ; COUNT = SRC_LAST-OLDBASE+1  (the block to shift is
@@ -945,13 +967,29 @@ aal_tail:
                 xor     a
                 ld      (iy+9),a            ; RETRIED = 0
 aal_ceil_try:
+    IF CLEARPOOL
+                ; D-CLP: the ceiling is the STRING POOL FLOOR, not FRETOP -- see
+                ; scv_ceil_try above for the full reasoning, including why the
+                ; GC retry that stood here is DEAD CODE rather than a dropped
+                ; safety net (GC moves FRETOP; it cannot move the boundary), and
+                ; why (iy+9)'s RETRIED slot is left allocated. A failure here
+                ; stays ERR 7 -- an array that will not fit is out of MEMORY,
+                ; not out of string space. Removing the retry also removes the
+                ; push ix/pop ix that guarded strheap_gc's IX clobber.
+                ; strheap_floor touches neither IX nor IY.
+                call    strheap_floor       ; HL = the pool floor
+    ELSE
                 ld      hl,(FRETOP)         ; ceiling
+    ENDIF
                 ld      e,(iy+7)
                 ld      d,(iy+8)            ; DE = CEND
                 ex      de,hl               ; HL = candidate end, DE = ceiling
                 or      a
                 sbc     hl,de               ; HL = candidate_end - ceiling
                 jr      c,aal_ceil_fits     ; candidate_end < ceiling -> fits
+    IF CLEARPOOL
+                jp      aal_oom_pop1
+    ELSE
                 ld      a,(iy+9)
                 or      a
                 jp      nz,aal_oom_pop1     ; already retried once -> genuine OOM
@@ -962,6 +1000,7 @@ aal_ceil_try:
                 pop     ix                  ; ARY_IDX bounds-source pointer, read by
                                             ; aal_bounds_lp below -- guard it
                 jr      aal_ceil_try
+    ENDIF
 aal_ceil_fits:
                 ; --- fits: write the descriptor header (incl. cached stride) ---
                 pop     hl                  ; [DEND] -> HL = data end (= new tail)

@@ -774,6 +774,19 @@ fperr_to_err:
                                             ; given a NON-string arg (LEN(5)/ASC(5)/VAL(5));
                                             ; ev_f_tmm (expr.asm) defers this via FPERR=10.
                                             ; Same ERR-13 table entry type_mismatch_error uses.
+    IF CLEARPOOL
+                db      14                  ; FPERR 11 (= FPERR_STROOM, sysvars.inc):
+                                            ; OUT OF STRING SPACE -- the string heap could
+                                            ; not allocate, which with the D-CLP partition
+                                            ; ON means the pool `CLEAR n` sized ran out.
+                                            ; ⚠️ Deliberately NOT FPERR=6/ERR 7: an ARRAY
+                                            ; that will not fit is out of MEMORY, and the
+                                            ; probe's oos-vs-oom row pins the two apart.
+                                            ; Unlike 3 and 6 this needs no special case in
+                                            ; fp_runtime_error -- ERR 14 has exactly one
+                                            ; message (err_out_of_str, str-engine.asm) and
+                                            ; flows through the generic err_msgtab lookup.
+    ENDIF
 err_fp_divzero:
                 db      "division by zero",13,10,0
 err_illegal_fn:

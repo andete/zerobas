@@ -67,7 +67,7 @@ sha_oom:
 ; --- str_heap_oom_error: raise "Out of memory" (FPERR=6 — the SAME code ----
 ; arrays' own OOM uses; the shared fre_msgtab entry, no new message).
 str_heap_oom_error:
-                ld      a,6
+                ld      a,FPERR_STROOM
                 ld      (FPERR),a
                 jp      fp_runtime_error
 
@@ -252,10 +252,11 @@ str_temp_alloc:
                 jr      z,sta_ok
                 cp      2
                 jr      z,sta_overflow
-                ld      a,6
-                ld      (FPERR),a           ; "Out of memory" — the tenant still
-                                            ; hands back a valid (neutralised)
-                                            ; slot on this path
+                ld      a,FPERR_STROOM
+                ld      (FPERR),a           ; the heap-OOM code (sysvars.inc):
+                                            ; ERR 14 with the partition on, ERR 7
+                                            ; without. The tenant still hands back
+                                            ; a valid (neutralised) slot here.
                 ld      hl,(SH_PTR)
                 ld      de,0
                 ret
@@ -281,19 +282,35 @@ sta_overflow:
 ; main-ROM glue for the tenant's SNAPSHOT op (same shape-C move as
 ; str_temp_alloc above; the copy itself happens tenant-side, she_snapshot).
 ; Clobbers A, DE, IX.
+    IF CLEARPOOL
+; --- str_snapshot_keep (D-CLP): the same primitive, but a source that is -----
+; ALREADY a temp-stack entry is returned AS-IS instead of being copied. Only
+; basic/vars.asm str_set_key uses it, and only because the pool made the
+; difference visible: str_set_key's H1 snapshot exists to keep an ARRAY-ELEMENT
+; or RVDESC descriptor from going stale across the target alloc's region shift +
+; collision GC, and a temp entry was never exposed to either hazard (fixed
+; address, enumerated GC root) -- its own header already said so. Before the
+; partition the redundant copy landed in a ~15 KB gap and cost nothing visible;
+; with `CLEAR n` it was a second full charge against the user's pool.
+; 4 bytes of low region, all of it this entry head: the tail is shared.
+str_snapshot_keep:
+                ld      a,16                ; op = 16 (SNAPSHOT-UNLESS-TEMP)
+                jr      sst_op
+    ENDIF
 str_snapshot_to_temp:
+                ld      a,4                 ; op = 4 (SNAPSHOT)
+sst_op:
+                ld      (SH_OP),a
                 ld      hl,(STRPTR)
                 ld      (SH_SRC),hl         ; source descriptor address (stable)
-                ld      a,4
-                ld      (SH_OP),a           ; op = 4 (SNAPSHOT)
                 call    call_strheap
                 ld      a,(SH_ERR)
                 or      a
                 jr      z,sst_ok
                 cp      2
                 jr      z,sst_overflow
-                ld      a,6
-                ld      (FPERR),a           ; "Out of memory"
+                ld      a,FPERR_STROOM
+                ld      (FPERR),a           ; heap OOM (sysvars.inc)
                 ld      hl,(SH_PTR)
                 ld      (STRPTR),hl
                 ret
@@ -404,7 +421,7 @@ sct_append_err:
                 ld      (STRPTR),de         ; STRPTR = R (partial)
                 ld      a,(SH_ERR)
                 cp      2
-                ld      a,6                 ; SH_ERR=1 -> "Out of memory"
+                ld      a,FPERR_STROOM      ; SH_ERR=1 -> heap OOM (sysvars.inc)
                 jr      nz,sct_ae_set
                 ld      a,9                 ; SH_ERR=2 -> "String formula too complex"
 sct_ae_set:
@@ -1084,8 +1101,8 @@ shx_finish:
                 jr      z,shxf_ok
                 cp      2
                 jr      z,shxf_overflow
-                ld      a,6
-                ld      (FPERR),a           ; "Out of memory"
+                ld      a,FPERR_STROOM
+                ld      (FPERR),a           ; heap OOM (sysvars.inc)
                 ld      hl,(SH_PTR)
                 ld      (STRPTR),hl
                 ret

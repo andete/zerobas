@@ -1,10 +1,14 @@
 # D-CLP — the `CLEAR` string-pool partition
 
-Status: **specced, awaiting sign-off. Not implemented.**
+Status: ✅ **LANDED.** `make clearpool-acceptance` — **50/50 gated rows**,
+6 reported-never-gated (see §6). Funded by promoting `fld_lookup` to a page-0
+sub-ROM tenant ([`decision-clearpool-funding.md`](decision-clearpool-funding.md) §6.1).
 Characterization: [`docs/clearpool-vg8020-characterization.md`](clearpool-vg8020-characterization.md).
-Gate (characterize mode today): `make clearpool-characterize` —
+Gate: `make clearpool-acceptance` (`--gate`) —
 [`probes/basic/basic_probe_clearpool.py`](../probes/basic/basic_probe_clearpool.py),
-53 rows, ten batteries. **6/51 gated rows agree**, plus 2 reported-never-gated.
+56 rows, twelve batteries. **50/50 gated rows agree**, plus 6 reported-never-gated
+for three distinct reasons (§6). `make clearpool-characterize` is the same probe
+without `--gate`. It read **6/51** before this slice.
 
 Opened by the `BIN$`/`FRE` slice as D-BF-A(c). Landing it moves that slice's six
 recorded-not-gated rows back into a gate.
@@ -75,23 +79,57 @@ sub-ROM can compute for itself (S-CLP-2, reversed). §2.8 still falls out for
 free: `,himem` moves the ceiling and never touches `POOLSIZE`, so a boundary
 re-derived at each use picks the change up automatically.
 
-**`sub/strheap.asm`**
-- a small sub-local helper yields the floor: `min(HIMEM,TXTMAX) − POOLSIZE`,
-  from two published sysvars plus the recorded size.
-- `heap_alloc`'s collision floor changes from `ARYEND+2` to that, and its
-  failure raises **ERR 14** instead of ERR 7.
+**`sub/strheap.asm`** — ✅ built.
+- `strheap_floor` yields `min(HIMEM,TXTMAX) − POOLSIZE`, from two published
+  sysvars plus the recorded size, clamped at 0 (a user-set `HIMEM` can express
+  a ceiling below the requested pool; letting the subtraction wrap would put the
+  floor ABOVE the ceiling and hand out bodies over the top of RAM).
+- `heap_alloc`'s collision floor changes from `ARYEND+2` to that — **no `+2`**:
+  the old one cleared the live 2-byte `$0000` array sentinel, whereas the pool
+  OWNS its floor address, and `CLEAR 100` then a 100-byte string must land
+  exactly on it and read `FRE("")` = 0.
+- Its failure raises **ERR 14** instead of ERR 7. ⚠️ The main-ROM glue does that
+  by routing `SH_ERR=1` through a **different FPERR code** (`FPERR_STROOM`,
+  `basic/sysvars.inc`) rather than a different code path — the five sites were
+  already `ld a,<code>`, so the whole change costs **one byte**, the 11th entry
+  in `fperr_to_err`. Array allocation failures keep FPERR=6/ERR 7 on purpose.
 - `sh_free_gap` (i.e. `FRE("")`) becomes `FRETOP − floor`. The `strheap_gc`
   call stays — §2.5 shows reclamation is real on the reference too.
-- ⚠️ The `strheap_aryend` walk disappears from both, since neither needs
-  `ARYEND` any more. That walk is not free, so this direction **should return
-  sub-ROM bytes**.
+- ⚠️ **`FRE(n)` needed a second handler, which this section did not anticipate.**
+  Both forms used to share op 15 because zerobas had one gap. With the pool real
+  they answer different questions, so `FRE(n)` is a new op 17 `sh_free_vars` =
+  `floor − (ARYEND+2)` — and that one takes **no** GC, deliberately: GC moves
+  string bodies and cannot move either `ARYEND` or the floor, so it could not
+  change the answer by a byte. Left on op 15, `FRE(0)` reads 200 at boot and the
+  probe's `ctl-fre0` control catches it.
+- ⚠️ **The PEAK, not the steady state, is what a sized pool measures — and
+  zerobas's peak was 3×.** `A$=STRING$(100,"A")` charged 300 bytes at its high
+  water mark (the `STRING$` temp, `str_set_key`'s H1 snapshot of it, and the
+  variable's own body) where the reference charges 100. `FRE("")` hid it because
+  FRE GCs first, so the resting number looked right while `CLEAR 100 :
+  A$=STRING$(100,"A")` — which the reference accepts exactly — raised ERR 14.
+  Two changes bring it to 1×, and each is falsifiable on its own row:
+  op 16 `she_snap_keep` returns a source that is ALREADY a temp unchanged
+  (str_set_key's own header always said temp sources were never exposed to the
+  staleness hazard the snapshot exists for), and `sh_var_store` **adopts** a
+  temp's body instead of allocating a second one, zeroing the temp's descriptor
+  so one body never has two GC roots.
+- The `strheap_aryend` walk leaves `heap_alloc` and `sh_free_gap`; it stays in
+  the file for `sh_free_vars` and `scv_alloc`.
 
-**`sub/arrays.asm`** — the two allocation ceilings (`scv_ceil_try` line 522,
-`aal_ceil_try` line 948) change from `ld hl,(FRETOP)` to the derived floor. Their failure stays ERR 7.
-- ⚠️ **Their GC-retry arms become dead code.** They retry once via `strheap_gc`
-  because `FRETOP` can move; `POOLBASE` cannot. Removing both retries should
-  return sub-ROM bytes and simplify two frames (the `RETRIED` slot in each IY
-  frame goes with them).
+**`sub/arrays.asm`** — ✅ built. The two allocation ceilings (`scv_ceil_try`,
+`aal_ceil_try`) change from `ld hl,(FRETOP)` to the derived floor. Their failure
+stays ERR 7 — an array that will not fit ran out of VARIABLE space.
+- ⚠️ **Their GC-retry arms are dead code and are gone.** They retried once via
+  `strheap_gc` because `FRETOP` can move; the floor cannot. `aal_ceil_try`'s
+  `push ix`/`pop ix` (which existed only to guard `strheap_gc`'s IX clobber)
+  goes with it. The `RETRIED` slot in each IY frame is left ALLOCATED but
+  unused: every later frame offset is absolute, and renumbering six of them to
+  reclaim one byte of stack is a poor trade.
+- `tests/test_arrays.py` case 8d asserted the retry (a tight FRETOP collides,
+  GC recomputes it, the retry succeeds). It now asserts the opposite — a tight
+  FRETOP is IRRELEVANT and provokes no GC — plus a new 8d2 proving the FLOOR is
+  what bounds the region. Restoring `ld hl,(FRETOP)` turns both red.
 
 **`basic/interp.asm`** — `err_msgtab` entry 14 currently points at
 `err_unprintable` ([`basic/interp.asm:939`](../basic/interp.asm:939)). Point it
@@ -171,12 +209,25 @@ the `RETURN`-from-trap path, and the T4/T5 gates measure handler cost in
 *jiffies* — sub-ROM call overhead there lands exactly where those gates look
 ([[traps-t4-sprite-slice]]: "the divergence was the handler's own cost").
 
-## 6. The gate
+## 6. The gate — ✅ 50/50
 
-`make clearpool-characterize` today; `make clearpool-acceptance` (with
-`--gate`) once the slice lands. Ten batteries: `ctl` (6), `repro` (4),
-`size` (9), `hold` (7), `indep` (4), `oos` (7), `dflt` (6), `dom` (5),
-`hmem` (3), `rep` (2, never gated).
+`make clearpool-acceptance`. Twelve batteries: `ctl` (6), `repro` (4),
+`size` (9), `hold` (6), `indep` (4), `oos` (7), `dflt` (6), `dom` (5),
+`hmem` (3), and three that are REPORTED, NEVER GATED — for three *different*
+reasons, which the battery names carry:
+
+| battery | rows | why it can never be gated |
+|---|---|---|
+| `rep` | 2 | `FRE(0)` absolutes — a property of each machine's memory map |
+| `share` | 3 | body OWNERSHIP (S-CLP-5, out of scope): zerobas owns a body per variable, the reference decides per source |
+| `arr` | 1 | the ARRAYS-arc `DIM Q(20000)` divergence, found in passing (§4) |
+
+⚠️ **`oos-vs-oom` was measuring two claims at once and has been SPLIT.** As
+written it asserted both "out of string space is distinct from out of memory"
+(a D-CLP claim, and true) and "which non-string error a huge DIM gives" (an
+ARRAYS-arc claim, and divergent). The first is now gated on `DIM Q(5000)`,
+which overruns free variable space on *both* machines; the second is the `arr`
+row. Neither was silenced.
 
 Three properties are load-bearing and are documented in the probe:
 

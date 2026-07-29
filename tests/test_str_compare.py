@@ -92,6 +92,16 @@ def run():
     # seeds FRETOP (empty heap) + TEMPTOP (empty temp stack) as a real cold boot
     # does, so str_eval's operand snapshots have somewhere to allocate -- without
     # it same-length operands' bodies deref to garbage and every == misfires.
+    # D-CLP (docs/spec-basic-clearpool.md): the string heap's floor is now the
+    # POOL FLOOR, `min(HIMEM,TXTMAX) - POOLSIZE`, so an unseeded POOLSIZE of 0
+    # is a ZERO-BYTE POOL and every allocation below fails with `Out of string
+    # space`. heap_reset does NOT seed it -- the real cold boot sets it in
+    # basic/interp.asm `init`, ahead of clear_vars, and NEW/RUN/a bare CLEAR all
+    # deliberately keep whatever size is current. This poke is this harness's
+    # stand-in for that boot step, sized like a `CLEAR 4096` rather than the
+    # faithful 200 because these cases allocate freely and the subject under
+    # test is the string engine, not the pool.
+    m.poke_w(s["POOLSIZE"], 4096)
     m.call("heap_reset")
     STRPTR = s["STRPTR"]
     VALTYP = s["VALTYP"]
@@ -252,6 +262,13 @@ def run():
     def run_prog_cap(lines):
         """Store + RUN a small program, capturing CHPUT; screen BIOS stubbed out."""
         mm = Machine(ROM, SYM, rom_base=RELOC_BASE)
+        # D-CLP: same cold-boot stand-in as the main machine above -- this helper
+        # builds its OWN Machine and reaches heap_reset through run_prog's
+        # clear_vars, which does not (and must not) touch POOLSIZE. Left at 0 the
+        # pool is zero bytes wide and even `A$="HI"` on line 10 dies with
+        # `out of string space in 10`, which is a true report about an unbooted
+        # machine and tells you nothing about string COMPARISON.
+        mm.poke_w(mm.sym["POOLSIZE"], 4096)
         mm.trap("BREAKX", lambda x: setattr(x.cpu, "f", x.cpu.f & ~0x01))
         for b in ("CHGMOD", "CHGCLR", "CLS", "ERAFNK", "DSPFNK"):
             mm.trap(b, lambda x: None)

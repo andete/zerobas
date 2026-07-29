@@ -66,6 +66,16 @@ def run():
     m.poke(0x9000, b"\x00\x00")
     m.poke_w(s["ARYTAB"], 0x9002)
     m.poke(0x9002, b"\x00\x00")
+    # D-CLP (docs/spec-basic-clearpool.md): the string heap's floor is now the
+    # POOL FLOOR, `min(HIMEM,TXTMAX) - POOLSIZE`, so an unseeded POOLSIZE of 0
+    # is a ZERO-BYTE POOL and every allocation below fails with `Out of string
+    # space`. heap_reset does NOT seed it -- the real cold boot sets it in
+    # basic/interp.asm `init`, ahead of clear_vars, and NEW/RUN/a bare CLEAR all
+    # deliberately keep whatever size is current. This poke is this harness's
+    # stand-in for that boot step, sized like a `CLEAR 4096` rather than the
+    # faithful 200 because these cases allocate freely and the subject under
+    # test is the string engine, not the pool.
+    m.poke_w(s["POOLSIZE"], 4096)
     m.call("heap_reset")
 
     STRMAX = s["STRMAX"]        # 255 in the repack build (slice-4a widened 64->255)

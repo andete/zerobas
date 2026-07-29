@@ -140,6 +140,12 @@ strheap_engine:
                 jp      z,sh_bin_build      ; BIN$ (op 8 is sh_fill, hence 14)
                 cp      15
                 jp      z,sh_free_gap       ; FRE
+    IF CLEARPOOL
+                cp      16
+                jp      z,she_snap_keep     ; SNAPSHOT-UNLESS-ALREADY-A-TEMP (D-CLP)
+                cp      17
+                jp      z,sh_free_vars      ; FRE(n) -- free VARIABLE space (D-CLP)
+    ENDIF
                 jp      sh_val_parse        ; op==13: the only other value the
                                             ; main-ROM glue ever writes
 she_instr_op:
@@ -202,6 +208,54 @@ she_ta_full:
                 ld      (SH_ERR),a
                 ret
 
+    IF CLEARPOOL
+; --- sh_src_is_temp: CF set iff (SH_SRC) is a TEMP-DESCRIPTOR-STACK entry ---
+; i.e. lies in [TEMPPOOL, TEMPBASE). D-CLP uses this twice, and both uses rest
+; on the same property: a temp entry is UNIQUELY OWNED (nothing else holds its
+; body) and FIXED-ADDRESS (the array-region shift only touches [ARYTAB,ARYEND)),
+; and it is an enumerated GC root (sg_walk_temps). Clobbers A,D,E,H,L.
+sh_src_is_temp:
+                ld      hl,(SH_SRC)
+                ld      de,TEMPPOOL
+                or      a
+                sbc     hl,de
+                jr      c,sit_no            ; below the pool -> not a temp
+                ld      hl,(SH_SRC)
+                ld      de,TEMPBASE
+                or      a
+                sbc     hl,de
+                ret     c                   ; in [TEMPPOOL,TEMPBASE) -> CF set
+sit_no:
+                or      a                   ; CF clear
+                ret
+
+; --- she_snap_keep: op=16 -- SNAPSHOT UNLESS THE SOURCE IS ALREADY A TEMP ---
+; D-CLP. basic/vars.asm str_set_key snapshots its source before the target
+; alloc (the H1 fix, spec-basic-arrays-slice4c §6/Q1) because an array-element
+; or RVDESC descriptor goes STALE across the region shift + collision GC. That
+; reasoning has always excluded temp-stack sources -- str_set_key's own header
+; says so ("existing string-scalar / temp-stack sources were already safe") --
+; but it snapshotted them anyway, because before the partition the extra copy
+; was free: it landed in a ~15 KB gap and the next GC took it back.
+;
+; It is not free any more. With `CLEAR n` sizing the pool, what matters is the
+; PEAK, not the steady state, and `A$=STRING$(100,"A")` was measured costing
+; 300 bytes of pool at its peak against the reference's 100 -- the STRING$ temp,
+; this redundant snapshot of it, and the variable's own body. FRE("") hid it
+; because FRE GCs first, so the resting number looked right while `CLEAR 100 :
+; A$=STRING$(100,"A")` (which the reference accepts exactly) raised ERR 14.
+; Dropping the redundant copy takes the peak to 200; sh_var_store's adoption of
+; a temp body (below) takes it to 100, which is the reference's own figure.
+she_snap_keep:
+                call    sh_src_is_temp
+                jp      nc,she_snapshot     ; not a temp -> the real snapshot
+                ld      hl,(SH_SRC)
+                ld      (SH_PTR),hl         ; the source IS the owned temp
+                xor     a
+                ld      (SH_ERR),a
+                ret
+    ENDIF
+
 she_snapshot:
                 ld      hl,(SH_SRC)
                 ld      a,(hl)              ; source length
@@ -263,13 +317,56 @@ she_slice:
                                             ; start>0, so a forward LDIR is safe
                 ret
 
+; --- strheap_floor: -> HL = the STRING POOL's low boundary (D-CLP) ----------
+; docs/spec-basic-clearpool.md §3. `min(HIMEM,TXTMAX) - POOLSIZE`, i.e. the
+; ceiling the heap compacts against minus the size CLEAR recorded. The pool is
+; [floor, C); everything below the floor belongs to variables and arrays.
+;
+; DERIVED, NEVER STORED — S-CLP-2 reversed. The first design put a POOLBASE
+; cell in RAM and had basic/str-engine.asm heap_reset write it. RAM was never
+; the scarce resource; the LOW REGION is (30 B free at the time, and heap_reset
+; lives there), while this ROM has ~3.4 KB. Deriving it here costs the main ROM
+; zero bytes and makes `CLEAR ,himem` fall out for free: that form moves the
+; ceiling and never touches POOLSIZE, so every re-derivation picks the new
+; ceiling up on its own (characterization §2.8).
+;
+; The clamp is not decoration. POOLSIZE is bounded to int16 by CLEAR's own
+; domain check, but HIMEM is user-settable (`CLEAR 500,&H9000`), so a ceiling
+; below the requested pool is expressible. Answering 0 there makes every
+; allocation fail with ERR 14, which is the honest reading of "the pool does
+; not fit"; letting the subtraction wrap would put the floor ABOVE the ceiling
+; and hand out bodies over the top of RAM. Clobbers A,B,C,D,E,H,L.
+strheap_floor:
+                call    strheap_ceiling     ; HL = C = min(HIMEM,TXTMAX)
+                ld      de,(POOLSIZE)
+                or      a
+                sbc     hl,de
+                ret     nc
+                ld      hl,0                ; pool larger than the whole map
+                ret
+
 ; --- heap_alloc: A=len(0..255) -> CF set+HL=body ptr / CF clear=OOM --------
-; (spec §4). A bump allocator on the downward frontier FRETOP. On a collision
-; with the array region (candidate < ARYEND) triggers GC once, then retries;
-; a still-failing retry is a genuine OOM. Own scratch frame on the STACK
-; (IY-addressed, 4 bytes: LEN(1)/ARYEND(2)/RETRIED(1) — the sub/arrays.asm
-; convention, since no fixed RAM byte is spare here either). Clobbers
-; A,B,C,D,E,H,L,IY.
+; (spec §4). A bump allocator on the downward frontier FRETOP.
+;
+; D-CLP: the collision floor is the POOL FLOOR (strheap_floor above), not
+; ARYEND+2 — that is the whole partition. Before, the string area and the
+; variable area were the same piece of memory and the allocator failed only
+; when the two MET; now the boundary is where `CLEAR n` put it, and a failure
+; here is `Out of string space` (ERR 14) rather than `Out of memory` (ERR 7).
+; The main-ROM glue maps SH_ERR=1 to FPERR_STROOM for exactly that reason.
+;
+; ⚠️ THE GC RETRY STAYS LIVE HERE, unlike the two array ceilings (sub/arrays.asm
+; scv_ceil_try/aal_ceil_try), whose retries this same change turns into dead
+; code. The asymmetry is real and worth stating: an array's ceiling was FRETOP,
+; which GC MOVES, and is now the floor, which GC cannot move — so retrying buys
+; nothing there. The heap's own frontier is FRETOP, which GC still moves UP by
+; reclaiming dead bodies, so a retry here still converts an apparent overflow
+; into a successful allocation. That is what makes `CLEAR 500 : A$=STRING$
+; (100,"A") : A$="B"` read 499 rather than 399.
+;
+; Own scratch frame on the STACK (IY-addressed, 4 bytes: LEN(1)/FLOOR(2)/
+; RETRIED(1) — the sub/arrays.asm convention, since no fixed RAM byte is spare
+; here either). Clobbers A,B,C,D,E,H,L,IY.
 heap_alloc:
                 or      a                   ; len 0 -> a 0-length body needs no storage;
                 jr      nz,ha_real          ; return ptr 0 (honours the len-0 => ptr==0
@@ -286,7 +383,11 @@ ha_real:
                 ld      (iy+0),a            ; LEN
                 xor     a
                 ld      (iy+3),a            ; RETRIED = 0
+    IF CLEARPOOL
+                call    strheap_floor       ; -> HL = the pool floor (D-CLP)
+    ELSE
                 call    strheap_aryend      ; -> HL = ARYEND
+    ENDIF
                 ld      (iy+1),l
                 ld      (iy+2),h
 ha_attempt:
@@ -296,16 +397,27 @@ ha_attempt:
                 or      a
                 sbc     hl,de               ; HL = candidate = FRETOP - LEN
                 ld      e,(iy+1)
-                ld      d,(iy+2)            ; DE = ARYEND
+                ld      d,(iy+2)            ; DE = the floor
+    IF CLEARPOOL
+                                            ; D-CLP: the pool floor is an ADDRESS THE
+                                            ; POOL OWNS, not a sentinel to stay above,
+                                            ; so there is no +2 here. `CLEAR 100` then
+                                            ; a 100-byte string must land exactly ON it
+                                            ; and leave FRE("") = 0 (characterization
+                                            ; §2.6, the oos-exact row); an off-by-two
+                                            ; would make the pool two bytes short of
+                                            ; the size the user asked for.
+    ELSE
                 inc     de
                 inc     de                  ; DE = ARYEND+2 (S4: ARYEND is the address
                                             ; of the LIVE 2-byte $0000 array sentinel;
                                             ; the heap body must start ABOVE it)
+    ENDIF
                 push    hl                  ; guard candidate
                 or      a
-                sbc     hl,de               ; HL = candidate - (ARYEND+2)
+                sbc     hl,de               ; HL = candidate - floor
                 pop     hl                  ; HL = candidate (restored)
-                jr      nc,ha_ok            ; candidate >= ARYEND+2 -> fits
+                jr      nc,ha_ok            ; candidate >= floor -> fits
                 ; collision: already retried once?
                 ld      a,(iy+3)
                 or      a
@@ -1271,19 +1383,21 @@ shx_dec:
 ; --- sh_free_gap: op=15 handler, the FRE value (docs/spec-basic-binfre.md §4) -
 ; -> SH_PTR = the number of bytes still allocatable; SH_ERR = 0 always.
 ;
-; The reference has TWO independent pools (variable space, and a CLEAR-sized
-; string pool). zerobas has ONE free gap: heap_alloc above is a bump allocator
-; on the downward frontier FRETOP whose only floor is ARYEND+2, and CLEAR's
-; string-space argument is evaluated and discarded. So FRE(n) and FRE(s$) report
-; the same quantity, and this is it -- D-BF-A(c), with the string-pool partition
-; left to its own slice.
+; ✅ D-CLP: the two pools are now REAL on this side too, so this is
+; `FRETOP - strheap_floor()` -- the bytes still allocatable from the pool
+; `CLEAR n` sized, which is what `FRE("")` means on the reference. Before the
+; partition, zerobas had ONE free gap (heap_alloc's floor was ARYEND+2 and
+; CLEAR's argument was discarded), so FRE(n) and FRE(s$) reported the SAME
+; quantity -- D-BF-A(c), the six rows the BIN$/FRE slice recorded and could not
+; gate. They gate now.
 ;
-; The floor is `ARYEND+2` and not `ARYEND` because that is EXACTLY heap_alloc's
-; own collision test (the sentinel is a live 2-byte $0000 the heap must stay
-; above). Deriving the answer from the allocator's own rule rather than restating
-; the layout means FRE cannot drift away from what an allocation will actually
-; accept. This lives sub-side because the ARYEND walk (strheap_aryend) and its
-; ary_stride already do.
+; The floor still comes from heap_alloc's OWN rule (strheap_floor, the same call
+; the allocator makes) rather than a restatement of the layout, which is what
+; keeps FRE from drifting away from what an allocation will actually accept --
+; the same discipline the ARYEND+2 version had, pointed at the new boundary.
+; Note there is no +2 any more: the pool OWNS its floor address (the old +2 was
+; for the live 2-byte $0000 array sentinel the heap had to stay above), and
+; `CLEAR 100` then a 100-byte string must read exactly 0.
 sh_free_gap:
                 ; FRE COMPACTS FIRST -- measured, not assumed: on the reference a
                 ; string that has been dropped is fully recovered by the next
@@ -1293,13 +1407,17 @@ sh_free_gap:
                 ; live body. Without this, FRE reports garbage as used and answers
                 ; 306 where the allocator would happily hand back 106.
                 call    strheap_gc
+    IF CLEARPOOL
+                call    strheap_floor       ; HL = the pool floor
+    ELSE
                 call    strheap_aryend      ; HL = ARYEND (the $0000 terminator)
                 inc     hl
                 inc     hl                  ; +2: heap_alloc's own floor
+    ENDIF
                 ex      de,hl
                 ld      hl,(FRETOP)
                 or      a
-                sbc     hl,de               ; HL = FRETOP - (ARYEND+2)
+                sbc     hl,de               ; HL = FRETOP - floor
                 jr      nc,sfg_have
                 ld      hl,0                ; a full heap must read 0, never negative
 sfg_have:
@@ -1307,6 +1425,43 @@ sfg_have:
                 xor     a
                 ld      (SH_ERR),a
                 ret
+
+    IF CLEARPOOL
+; --- sh_free_vars: op=17 handler -- FRE(n), free VARIABLE space (D-CLP) -----
+; -> SH_PTR = `floor - (ARYEND+2)`, the room the variable/array region still has
+; before it reaches the string pool; SH_ERR = 0 always.
+;
+; sh_free_gap above answers the OTHER pool. Splitting them is the partition's
+; most visible consequence for a user: before D-CLP zerobas had one free gap and
+; FRE(0) and FRE("") reported the SAME number (D-BF-A(c)); now FRE(0) is what is
+; left for variables and FRE("") is what is left of `CLEAR n`.
+;
+; ⚠️ NO GC HERE, deliberately, and that is not an oversight copied from
+; sh_free_gap. GC compacts STRING BODIES; it cannot move ARYEND and it cannot
+; move the floor, so it could not change this answer by a byte -- calling it
+; would only make FRE(0) slow. sh_free_gap needs it because its answer is
+; FRETOP, which garbage does move.
+;
+; The `+2` is heap_alloc's old sentinel rule, kept HERE where it still belongs:
+; ARYEND addresses the LIVE 2-byte $0000 array terminator, so the first byte the
+; region does not already own is ARYEND+2.
+sh_free_vars:
+                call    strheap_aryend      ; HL = ARYEND (the $0000 terminator)
+                inc     hl
+                inc     hl                  ; HL = ARYEND+2 (past the live sentinel)
+                push    hl
+                call    strheap_floor       ; HL = the pool floor (clobbers D,E)
+                pop     de                  ; DE = ARYEND+2
+                or      a
+                sbc     hl,de               ; HL = floor - (ARYEND+2)
+                jr      nc,sfv_have
+                ld      hl,0                ; region already at/over the floor -> 0
+sfv_have:
+                ld      (SH_PTR),hl
+                xor     a
+                ld      (SH_ERR),a
+                ret
+    ENDIF
 
 ; --- sh_bin_build: op=14 handler (docs/spec-basic-binfre.md §3.1) ------------
 ; SH_NUM = n (unsigned 16-bit) -> push a temp-descriptor-stack entry holding n's
@@ -1766,6 +1921,40 @@ sis_zero:
 ; the array-element case — value-copy semantics (a fresh body per store, no
 ; aliasing). SH_ERR: 0 ok / 1 Out of memory. Clobbers A, B, C, D, E, H, L.
 sh_var_store:
+    IF CLEARPOOL
+                ; --- D-CLP: ADOPT a temp's body instead of copying it -------
+                ; A temp-descriptor-stack entry uniquely owns its body and is
+                ; discarded at the statement boundary, so allocating a second
+                ; body and copying into it charges the pool TWICE for one
+                ; string. The reference charges once -- measured: `CLEAR 100 :
+                ; A$=STRING$(100,"A")` is ACCEPTED there and leaves FRE("") at
+                ; exactly 0 (characterization §2.6, the oos-exact row). This is
+                ; the last of the three charges that made zerobas's peak 3x.
+                ;
+                ; Value-copy semantics are preserved, not weakened: the body had
+                ; exactly ONE owner before (the temp) and has exactly one after
+                ; (the variable). The temp's descriptor is then ZEROED so it
+                ; stops being a GC root -- without that, one body would have two
+                ; roots and the compaction sweep would relocate it twice.
+                ; A non-temp source (a var slot, an array element, RVDESC) still
+                ; takes the copy path below: those are not ours to take.
+                call    sh_src_is_temp
+                jr      nc,svs_copy
+                ld      hl,(SH_SRC)
+                ld      de,(SH_DEST)
+                ld      bc,3
+                ldir                        ; dest := [len][ptr] verbatim
+                ld      hl,(SH_SRC)
+                ld      (hl),0              ; temp.len = 0
+                inc     hl
+                ld      (hl),0
+                inc     hl
+                ld      (hl),0              ; temp.ptr = 0 -> no longer a root
+                xor     a
+                ld      (SH_ERR),a
+                ret
+svs_copy:
+    ENDIF
                 ld      hl,(SH_SRC)
                 ld      a,(hl)              ; source length
                 call    heap_alloc          ; -> CF+HL=new body / CF clear=OOM

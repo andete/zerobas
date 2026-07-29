@@ -69,6 +69,16 @@ def run():
     # holds a [len:1][ptr:2] descriptor. heap_reset seeds FRETOP (empty heap) +
     # TEMPTOP (empty temp stack) as a real cold boot does, so str_set_key's
     # heap_alloc has somewhere to put A$'s body.
+    # D-CLP (docs/spec-basic-clearpool.md): the string heap's floor is now the
+    # POOL FLOOR, `min(HIMEM,TXTMAX) - POOLSIZE`, so an unseeded POOLSIZE of 0
+    # is a ZERO-BYTE POOL and every allocation below fails with `Out of string
+    # space`. heap_reset does NOT seed it -- the real cold boot sets it in
+    # basic/interp.asm `init`, ahead of clear_vars, and NEW/RUN/a bare CLEAR all
+    # deliberately keep whatever size is current. This poke is this harness's
+    # stand-in for that boot step, sized like a `CLEAR 4096` rather than the
+    # faithful 200 because these cases allocate freely and the subject under
+    # test is the string engine, not the pool.
+    m.poke_w(s["POOLSIZE"], 4096)
     m.call("heap_reset")
 
     fails = 0

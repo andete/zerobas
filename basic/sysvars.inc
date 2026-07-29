@@ -431,6 +431,22 @@ CLEARPOOL       equ     0       ; lean cart: ALWAYS off. The 16 KB image is byte
                                 ; and must stay byte-identical, so the guard is
                                 ; structural here rather than a promise.
     ENDIF
+; FPERR code a STRING-HEAP allocation failure defers through (basic/str-engine.asm
+; str_temp_alloc / str_snapshot_to_temp / sct_append_err / shx_finish /
+; str_heap_oom_error, all reached from SH_ERR=1). With the partition ON, a heap
+; failure means the pool `CLEAR n` sized ran out, which is `Out of string space`
+; (ERR 14) and NOT `Out of memory` (ERR 7) -- telling those two apart is what the
+; probe's whole `oos` battery is about. Routing it through a DIFFERENT FPERR code
+; rather than a different code path costs zero bytes at the five sites (they were
+; already `ld a,<code>`); the only new byte is fperr_to_err's 11th entry
+; (basic/interp.asm). ⚠️ ARRAY allocation failures keep FPERR=6 / ERR 7 on
+; purpose -- an array that will not fit ran out of VARIABLE space, and the
+; oos-vs-oom row exists to pin exactly that distinction.
+    IF CLEARPOOL
+FPERR_STROOM    equ     11      ; -> ERR 14 "out of string space"
+    ELSE
+FPERR_STROOM    equ     6       ; -> ERR 7 "Out of memory" (pre-partition)
+    ENDIF
 ; Graphics G8 (docs/spec-basic-graphics-g8.md). VDP(n) and BASE(n) are single-byte
 ; FUNCTION tokens, and their assignment form has no statement token of its own: a
 ; statement whose first token is $C8/$C9 IS the assignment (crunch-pinned,

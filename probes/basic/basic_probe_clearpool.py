@@ -88,6 +88,9 @@ ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK
 #   dflt  -- the boot default, and what a BARE `CLEAR` does to the size.
 #   dom   -- `CLEAR n`'s own argument domain.
 #   hmem  -- the `,himem` argument's interaction with the pool.
+#   arr   -- REPORTED, NEVER GATED: an ARRAYS-arc divergence this probe found
+#            in passing (the reference bounds a dimension before allocating).
+#            Out of D-CLP's scope; kept as the record, not gated.
 #   share -- REPORTED, NEVER GATED: the body-OWNERSHIP divergence (S-CLP-5,
 #            signed off out of scope). zerobas owns a body per variable; the
 #            reference decides ownership per source, which shows up in BOTH
@@ -173,8 +176,13 @@ CASES = [
     ("oos-zero",     "oos", ['CLEAR 0', 'A$="X"']),
     ("oos-cumul",    "oos", ['CLEAR 100', 'A$=STRING$(60,"A")',
                              'B$=STRING$(60,"B")']),
-    # Is it distinct from `Out of memory`? A huge DIM must give the OTHER error.
-    ("oos-vs-oom",   "oos", ['CLEAR 100', 'DIM Q(20000)']),
+    # Is it distinct from `Out of memory`? An over-large DIM must give the OTHER
+    # error -- the numeric pool's exhaustion, not the string pool's. `DIM Q(5000)`
+    # asks for 5001*8 = 40008 bytes, which overruns the free VARIABLE space on
+    # BOTH machines (the reference had 28815 at CLEAR 200, zerobas 15667), so
+    # both must answer `Out of memory` and neither may answer `Out of string
+    # space`. That is the claim this battery makes, and it is gateable.
+    ("oos-vs-oom",   "oos", ['CLEAR 100', 'DIM Q(5000)']),
     # An over-large alloc followed by a READ of the pool: the reference aborts
     # so the PRINT never runs and the span reads <none>; a machine that does NOT
     # raise prints a number instead. The asymmetry is the finding.
@@ -204,6 +212,19 @@ CASES = [
     ("hmem-both",    "hmem", ['CLEAR 500,&HD000', 'PRINT "[";FRE("");"]"']),
     ("hmem-tight",   "hmem", ['CLEAR 500,&H9000', 'PRINT "[";FRE("");"]"']),
     ("hmem-only",    "hmem", ['CLEAR ,&HD000', 'PRINT "[";FRE("");"]"']),
+
+    # --- ARRAYS-ARC divergence: reported, never gated -------------------------
+    # ⚠️ This row USED to be the oos-vs-oom row above, with `DIM Q(20000)`, and
+    # it was gated. It was measuring two things at once: "the two errors are
+    # distinct" (a D-CLP claim, and true) and "which non-string error a huge DIM
+    # gives" (an ARRAYS-arc claim, and divergent). The reference answers
+    # `Subscript out of range` because it BOUNDS A DIMENSION BEFORE ALLOCATING;
+    # zerobas allocates until it fails and so answers `Out of memory`. That is a
+    # pre-existing divergence found in passing by this probe's calibration
+    # (characterization §3) and explicitly OUT of D-CLP's scope (spec §4) -- so
+    # the two claims are now separate rows, the gateable one is gated, and this
+    # one is kept as the record rather than deleted or silenced.
+    ("oos-dim-huge", "arr", ['CLEAR 100', 'DIM Q(20000)']),
 
     # --- BODY SHARING: reported, never gated (S-CLP-5, signed off OUT) --------
     # zerobas OWNS a body per variable (sh_var_store heap-copies whatever the
@@ -333,7 +354,7 @@ def main():
     for i, (label, battery, lines) in enumerate(sel):
         rt, zt = read(i, ref_raws[i]), read(i, zb_raws[i])
         ok = verdicts[i]
-        gated = battery not in ("rep", "share")
+        gated = battery not in ("rep", "share", "arr")
         npass += 1 if (ok and gated) else 0
         mark = "----" if not gated else ("PASS" if ok else "FAIL")
         print(f"{mark:5} {battery:5} {label:14} {':'.join(lines)[:44]:44}")
@@ -342,7 +363,7 @@ def main():
             print(f"        zb : {zt!r}")
         sys.stdout.flush()
 
-    ntot = sum(1 for c in sel if c[1] not in ("rep", "share"))
+    ntot = sum(1 for c in sel if c[1] not in ("rep", "share", "arr"))
     nrep = len(sel) - ntot
     print(f"\n{npass}/{ntot} gated rows agree with the reference"
           + (f"  ({nrep} reported, never gated)" if nrep else ""))

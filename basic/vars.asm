@@ -781,9 +781,19 @@ str_set_key:
                                             ; across the snapshot (CALSLT
                                             ; clobbers everything)
                 ld      (STRPTR),de         ; STRPTR := source descriptor addr
+    IF CLEARPOOL
+                call    str_snapshot_keep   ; D-CLP: as below, EXCEPT that a
+                                            ; source that is already a temp is
+                                            ; returned as-is -- it was never
+                                            ; exposed to either hazard (fixed
+                                            ; address, GC root), and with a
+                                            ; CLEAR-sized pool the redundant
+                                            ; copy is a second full charge
+    ELSE
                 call    str_snapshot_to_temp ; HL = temp desc (fixed addr, GC
                                             ; root) / STR_EMPTY on overflow --
                                             ; FPERR already set either way
+    ENDIF
                 ld      (SH_SRC),hl         ; stash now -- a plain RAM cell,
                                             ; survives the target alloc below
                                             ; untouched (no CPU-stack relay

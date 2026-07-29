@@ -629,21 +629,59 @@ def run():
     print(f"{'PASS' if ok_find else 'FAIL'} ary_find locates shifted 'A' at "
           f"{cpu.hl:#06x} (want {new_base:#06x})")
 
-    # -- 8d: FRETOP collision -> GC-once -> success (§3a steps 3-4) --------
-    # A tight FRETOP collides with the FIRST attempt; strheap_gc recomputes
-    # it from the (loose) ceiling min(HIMEM,TXTMAX) and the retry succeeds.
+    # -- 8d: D-CLP -- FRETOP NO LONGER BOUNDS THE SCALAR REGION -------------
+    # This case used to read: "a tight FRETOP collides with the first attempt;
+    # strheap_gc recomputes it from the loose ceiling and the retry succeeds",
+    # and it asserted FRETOP == TXTMAX afterwards as proof the GC had run.
+    #
+    # The CLEAR string-pool partition (docs/spec-basic-clearpool.md §3) replaced
+    # scv_ceil_try's ceiling with the POOL FLOOR, `min(HIMEM,TXTMAX)-POOLSIZE`,
+    # and deleted the GC retry as DEAD CODE -- GC compacts string bodies upward
+    # and moves FRETOP; it cannot move the boundary, so a retry would re-run the
+    # identical comparison. So this now asserts the OPPOSITE, which is the real
+    # new contract: a tight FRETOP is IRRELEVANT to a scalar allocation, and no
+    # GC is provoked (FRETOP is left exactly where it was poked).
+    #
+    # ⚠️ Restoring `ld hl,(FRETOP)` in scv_ceil_try turns this red -- the alloc
+    # would collide and the GC would move FRETOP to TXTMAX. That is what makes
+    # this a test of the change and not just a re-recording of it.
     m = make_machine()
-    m.poke_w(s["HIMEM"], 0)                # ceiling after GC = TXTMAX
-    m.poke_w(s["FRETOP"], ARYBASE + 8)      # tight: collides with 'Y#' (11 B)
+    m.poke_w(s["HIMEM"], 0)                 # ceiling = TXTMAX
+    m.poke_w(s["FRETOP"], ARYBASE + 8)      # would have collided with 'Y#' (11 B)
     addr_y, err_y = scalar_alloc(ord("Y"), 8)
     ok_gc = (addr_y == ARYBASE) and (err_y == 0)
     fails += not ok_gc
-    print(f"{'PASS' if ok_gc else 'FAIL'} SCALAR_ALLOC 'Y#' collides once, "
-          f"GCs, retries, succeeds (addr={addr_y:#06x}, err={err_y})")
-    ok_fretop = peek_w(m, s["FRETOP"]) == s["TXTMAX"]
+    print(f"{'PASS' if ok_gc else 'FAIL'} SCALAR_ALLOC 'Y#' ignores a tight "
+          f"FRETOP (addr={addr_y:#06x}, err={err_y})")
+    ok_fretop = peek_w(m, s["FRETOP"]) == ARYBASE + 8
     fails += not ok_fretop
-    print(f"{'PASS' if ok_fretop else 'FAIL'} FRETOP recomputed to TXTMAX "
-          f"by the retry GC ({peek_w(m, s['FRETOP']):#06x})")
+    print(f"{'PASS' if ok_fretop else 'FAIL'} ...and provoked NO GC -- FRETOP "
+          f"untouched at {peek_w(m, s['FRETOP']):#06x} "
+          f"(want {ARYBASE + 8:#06x})")
+
+    # -- 8d2: D-CLP -- the POOL FLOOR is what bounds it now ----------------
+    # The converse of 8d, and the row that would stay green if the ceiling had
+    # simply been deleted rather than moved. FRETOP is left LOOSE (TXTMAX, no
+    # collision there at all) and POOLSIZE is set so the derived floor
+    # `min(HIMEM,TXTMAX)-POOLSIZE` lands just above ARYBASE: the allocation must
+    # now fail, and with ARY_ERR=4 (ERR 7 "Out of memory" main-side), NOT the
+    # string-space error -- a variable that will not fit ran out of variable
+    # space. HIMEM=0 -> ceiling = TXTMAX, so POOLSIZE = TXTMAX-(ARYBASE+4).
+    m = make_machine()
+    m.poke_w(s["HIMEM"], 0)
+    m.poke_w(s["FRETOP"], s["TXTMAX"])      # loose: FRETOP cannot be the blocker
+    m.poke_w(s["POOLSIZE"], s["TXTMAX"] - (ARYBASE + 4))
+    before_pool = peek_w(m, s["ARYTAB"])
+    addr_p, err_p = scalar_alloc(ord("P"), 8)
+    ok_pool = (addr_p == 0) and (err_p == 4)
+    fails += not ok_pool
+    print(f"{'PASS' if ok_pool else 'FAIL'} SCALAR_ALLOC 'P#' blocked by the "
+          f"POOL FLOOR with FRETOP loose -> ARY_ERR=4 "
+          f"(addr={addr_p:#06x}, err={err_p})")
+    ok_pool_notouch = peek_w(m, s["ARYTAB"]) == before_pool
+    fails += not ok_pool_notouch
+    print(f"{'PASS' if ok_pool_notouch else 'FAIL'} ...and left ARYTAB "
+          f"UNTOUCHED ({peek_w(m, s['ARYTAB']):#06x})")
 
     # -- 8e: genuine OOM -- even after the GC-retry, still no room. --------
     # NON-VACUOUS proof: asserts CF clear + ARY_ERR=4 AND that ARYTAB did

@@ -879,12 +879,22 @@ width-acceptance: repack-machine
 	        $(if $(BATCH),--batch,)
 
 # --- CLEAR string-pool partition (docs/spec-basic-clearpool.md, D-CLP) --------
-# VG-8020 differential over the two-pool model. zerobas has ONE free gap where
-# the reference has TWO POOLS, and CLEAR's <string-space> argument is evaluated
-# and DISCARDED, so `CLEAR 500:PRINT FRE("")` answers ~15867 instead of 500.
-# 6/51 gated rows agree. NOT YET AN ACCEPTANCE GATE -- the slice is specced and
-# blocked on ~40 B of main page 1 (spec §5), so this stays in characterize mode
-# until it lands; `clearpool-acceptance` is the same probe with --gate.
+# VG-8020 differential over the two-pool model. ✅ LANDED: `clearpool-acceptance`
+# is the standing gate (50/50 gated rows, 6 reported-never-gated);
+# `clearpool-characterize` is the same probe without --gate, for re-measuring.
+# Before the slice this read 6/51 -- zerobas had ONE free gap where the reference
+# has TWO POOLS, and CLEAR's <string-space> argument was evaluated and DISCARDED,
+# so `CLEAR 500:PRINT FRE("")` answered ~15867 instead of 500.
+#
+# ⚠️ THE SIX UNGATED ROWS ARE UNGATED FOR THREE DIFFERENT REASONS, and the
+# batteries say which: `rep` (2) are FRE(0) absolutes, a property of each
+# machine's memory map; `share` (3) are the body-OWNERSHIP divergence
+# (S-CLP-5, signed off out of scope -- zerobas owns a body per variable, the
+# reference decides per source); `arr` (1) is the ARRAYS-arc `DIM Q(20000)`
+# divergence this probe found in passing. None of them is a silenced failure:
+# oos-vs-oom, which used to carry the `arr` case as well, was SPLIT so the
+# claim it makes ("out of string space is distinct from out of memory") is
+# gated on a DIM both machines call an OOM.
 #
 # ⚠️ `FRE("")` IS THE ONE MACHINE-INDEPENDENT MEMORY READOUT, which is what makes
 # absolute rows legitimate here and nowhere else in this tree: FRE(0) answers

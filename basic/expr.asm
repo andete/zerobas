@@ -1405,12 +1405,29 @@ ev_ff_fre:
                 pop     ix                  ; drop the guard; take str_eval's cursor
                 push    hl
                 pop     ix                  ; IX = past the string operand
+    IF CLEARPOOL
+                ld      a,15                ; op 15 = the STRING POOL's free bytes
+                ld      (SH_OP),a           ; (stored NOW: ev_fre_close's own ev_sp
+                                            ;  and (ix+0) read clobber A)
+    ENDIF
                 jr      ev_fre_close
 ev_fre_num:
                 pop     ix                  ; restore the cursor str_eval consumed
                 call    ev_logic            ; the ordinary numeric argument, DISCARDED
                                             ; (no domain check: FRE(-1) must not raise,
                                             ;  exactly as POS(-1) must not)
+    IF CLEARPOOL
+                ; ⚠️ D-CLP: THE TWO FORMS NOW ANSWER DIFFERENT QUESTIONS, and that
+                ; is the whole point of the partition. Before it, zerobas had ONE
+                ; free gap and BOTH forms reported it -- D-BF-A(c). With the pool
+                ; real, FRE(s$) is the pool's free bytes and FRE(n) is the
+                ; VARIABLE space below the pool floor, exactly as the reference
+                ; has always split them. Leaving both on op 15 makes FRE(0)
+                ; answer 200 at boot, which the probe's ctl-fre0 control catches
+                ; immediately (FRE(0)>1000 reads false).
+                ld      a,17                ; op 17 = free VARIABLE space
+                ld      (SH_OP),a
+    ENDIF
 ev_fre_close:
                 call    ev_sp
                 ld      a,(ix+0)
@@ -1418,8 +1435,14 @@ ev_fre_close:
                 jp      nz,ev_f_empty       ; unclosed / second arg -> Syntax error
                 inc     ix
                 push    ix                  ; call_strheap clobbers IX (the cursor)
+    IF CLEARPOOL
+                                            ; SH_OP already selected above -- which
+                                            ; POOL to report is decided by the
+                                            ; ARGUMENT'S TYPE, not here
+    ELSE
                 ld      a,15
                 ld      (SH_OP),a           ; op = 15 (FREE_GAP)
+    ENDIF
                 call    call_strheap
                 pop     ix
                 call    flt_int_result      ; an int result even when the argument
