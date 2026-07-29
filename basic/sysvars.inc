@@ -411,29 +411,21 @@ G6_RESIDENT     equ     1
 ; slice can be built with the tenant alone if the page-1 tail runs out again.
 G7_RESIDENT     equ     1
 ; --- D-CLP: the CLEAR string-pool partition (docs/spec-basic-clearpool.md) ---
-; ⚠️ OFF, AND BLOCKED ON A CARVE, NOT ON THE CODE. The main-ROM side is written
-; and reviewed; with CLEARPOOL=1 it MEASURES (2026-07-28, from clean, with
-; SWAP_RESIDENT=0 as the lever so both configurations fit and the deltas are exact):
-;     main page 1  25 B against 3 B free   -> **22 B SHORT**
-;     low region   22 B (the ERR 14 string) against 30 B free -> fits, 8 B spare
-; That is far less than the ~40 B docs/spec-basic-clearpool.md §5 first estimated,
-; which is why S-CLP-1 said measure before sizing the carve.
-; ⚠️ `clone_scout.py` now reports ZERO candidate groups — the clone frontier is
-; exhausted and the old `ev_*_lp` note is stale. Funding must come from a
-; PROMOTION to the sub-ROM (~3.4 KB free). `carve_scout.py` says the four disk
-; verbs first proposed (do_name/do_open/lrset_common/dpl_line) are all NOT
-; page-0-evictable — they reach exec_stmt/eval, so each would need splitting into
-; a resident parse stub plus a tenant body, which is a redesign, not a move.
-; A sweep of all 419 page-1 spans >= 14 B found **130 that ARE page-0-tenant
-; CLEAN, totalling 2973 B**; the useful ones combine size with FEW call sites
-; (each site becomes a stub): init_filechan 27 B/1 caller (boot-time, closure of
-; 4 — the lowest-risk in the list), psv_fetch 48 B/1, tok_skip 51 B/2.
-; ⚠️ NOT trap_return_check (66 B/1 caller, the largest single win): it sits on the
-; RETURN-from-trap path, and the T4/T5 gates measure handler cost in JIFFIES, so
-; sub-ROM call overhead there lands exactly where those gates look.
-; Flip to 1 in the same commit as the carve; nothing else needs to change.
+; ✅ ON. Funded by promoting fld_lookup to a page-0 sub-ROM tenant (sub/fldlook.asm,
+; docs/decision-clearpool-funding.md §6.1), which returned 38 B of main page 1
+; (3 B free -> 41 B) against this slice's measured 22 B requirement.
+; What the flag gates, main-ROM side:
+;     basic/clear.asm   the CLEAR <n> domain check + the POOLSIZE store
+;     basic/interp.asm  the cold-boot default of 200, and err_msgtab entry 14
+;     basic/str-engine.asm  the ERR 14 message string + str_heap_oom_error's code
+; The pool FLOOR itself is nowhere in this ROM: it is derived sub-side as
+; min(HIMEM,TXTMAX) - POOLSIZE (S-CLP-2, reversed), so the scarce low region
+; spends nothing on it and `CLEAR ,himem` keeps its size for free.
+; ⚠️ The lean cart's ELSE branch below is NOT a promise to keep it off -- it is
+; structural. The 16 KB image is byte-full and must stay byte-identical, and the
+; sub-ROM the floor derivation lives in does not exist on that machine at all.
     IF ROM_BASE < $4000
-CLEARPOOL       equ     0       ; <- the real switch; flip with the carve
+CLEARPOOL       equ     1
     ELSE
 CLEARPOOL       equ     0       ; lean cart: ALWAYS off. The 16 KB image is byte-full
                                 ; and must stay byte-identical, so the guard is
