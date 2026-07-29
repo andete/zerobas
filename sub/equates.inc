@@ -173,6 +173,20 @@ SUBROM_IDX_READVAL      equ     10
 ; across the delay relies on the sub-ROM's own page-0 $0038 trampoline.
 SUBROM_IDX_BEEP         equ     11
 
+; --- D-CLP funding carve (page-0 tenant; docs/decision-clearpool-funding.md) --
+; index 12 = fld_lookup_tenant (sub/fldlook.asm): the FIELDed-variable READ
+; hook's pure-RAM half -- copy the record slice out of FSECTOR_BUF into FLD_DESC
+; and wrap it as an RVDESC rvalue descriptor. Carved out of basic/field.asm to
+; fund the CLEAR string-pool partition's 22 B of main page 1. The resident stub
+; keeps fld_find + fch_select (shared services that could not move anyway) and
+; passes the located entry pointer in HL. Page-0 CLEAN: RAM only -- mk_rvdesc,
+; the one low-region callee of the original body, is inlined sub-side.
+; ⚠️ THIS IS THE LAST PAGE-0 INDEX THAT FITS. The table starts at $0010 and the
+; $0038 interrupt-trampoline vector is fixed, so 13 rows x 3 B = $0010..$0036
+; leaves exactly ONE spare byte. Index 13 needs the table relocated (or the
+; vector reached by a `jp` from a row), not just another line.
+SUBROM_IDX_FLDLOOK      equ     12
+
 ; GFX_UNGUARDED: the G1 "teeth check" toggle (spec §4). Default 0 = the DI guard
 ; around the 2-byte VDP address latch is present (shipped). Building the sub-ROM
 ; with `pasmo --equ GFX_UNGUARDED=1` strips the guard, so the floor gate can

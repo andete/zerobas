@@ -381,10 +381,49 @@ lrs_cp:
 ; ===========================================================================
 ; fld_lookup — READ hook for str_eval's variable path.
 ; in:  BC = variable key.
-; out: CF set  -> BC is fielded; STRPTR -> FLD_DESC holds the slice [len][bytes].
+; out: CF set  -> BC is fielded; STRPTR -> the slice descriptor.
 ;      CF clear -> not fielded (caller falls back to str_get_key). BC may be clobbered.
-; Clobbers A,BC,DE,HL; preserves IX (fch_select is LDIR-only for a RANDOM channel).
+; Clobbers A,BC,DE,HL.
 ; ===========================================================================
+    IF ROM_BASE < $4000
+; --- repack: a resident stub over the SUBROM_IDX_FLDLOOK page-0 tenant ------
+; docs/decision-clearpool-funding.md §6.1 — the D-CLP funding carve. The body
+; (60 B of main page 1) moved whole to sub/fldlook.asm; this stub is 22 B, so
+; the carve returns 38 B, against D-CLP's measured 22 B requirement.
+;
+; THE SEAM IS THE TABLE LOOKUP, not the routine boundary, and that is what makes
+; the tenant legal: `fld_find` and `fch_select` are main PAGE-1 routines (fine to
+; call from a page-0 tenant in principle, but the sub-ROM has no import mechanism
+; for main page-1 addresses — sub/basic-resident-abi.inc is ceiling-checked to
+; < $4000 because it exists for the opposite direction), and the old body's third
+; callee `mk_rvdesc` is main LOW REGION, which a page-0 CALSLT switches out
+; outright. Keeping the two lookups resident costs the carve nothing: both are
+; shared services with other callers (fld_find for LSET/RSET, fch_select for the
+; whole file-channel surface), so neither could have moved anyway. What crosses
+; is the pure RAM leaf — slice copy + descriptor build — and mk_rvdesc's three
+; instructions are inlined sub-side.
+;
+; The located entry pointer rides in HL, which subrom_call passes straight
+; through CALSLT (the same path `tokenise`'s HL=src uses); nothing marshals
+; through RAM. subrom_call's CF means "sub-ROM absent", never "found", so the
+; stub asserts the found-CF itself — it is the side that ran fld_find.
+;
+; IX is clobbered here where the old body preserved it. That is safe at the one
+; call site: str_eval_one's OTHER branch on the same variable path is
+; `call str_get_key`, which reaches `ary_engine_call` and clobbers IX already.
+fld_lookup:
+                call    fld_find            ; CF set -> HL -> entry
+                ret     nc                  ; not fielded -> caller's str_get_key
+                ld      a,(hl)              ; chan
+                push    hl                  ; guard the entry across the select
+                call    fch_select          ; FSECTOR_BUF = this channel's record buffer
+                pop     hl                  ; HL = entry (the tenant's only arg)
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_FLDLOOK
+                call    subrom_call         ; fills FLD_DESC/RVDESC, sets STRPTR
+                jp      c,subrom_absent_error
+                scf                         ; fielded
+                ret
+    ELSE
 fld_lookup:
                 call    fld_find            ; CF set -> HL -> entry
                 ret     nc
@@ -418,21 +457,11 @@ fll_cp:
                 inc     de
                 djnz    fll_cp
 fll_done:
-    IF ROM_BASE < $4000
-                ; arrays slice-4a: FLD_DESC stays a fixed inline [len][bytes:255]
-                ; buffer (never in the heap, spec §5.2) — wrap it as a [len][ptr]
-                ; rvalue descriptor in the shared RVDESC (via the low-region
-                ; mk_rvdesc; safe because fld_lookup's result is consumed
-                ; immediately, RVDESC's standing single-shared-cell property).
-                ld      a,(FLD_DESC)
-                ld      hl,FLD_DESC+1
-                call    mk_rvdesc           ; RVDESC := [len][ptr]; HL = RVDESC
-    ELSE
                 ld      hl,FLD_DESC
-    ENDIF
                 ld      (STRPTR),hl
                 scf
                 ret
+    ENDIF
 
     IF ROM_BASE < $4000
 ; --- repack: resident shims replacing the fat_rand_* engine ----------------

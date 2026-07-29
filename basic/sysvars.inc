@@ -2905,6 +2905,17 @@ SUBROM_IDX_BEEP      equ 11     ; beep_tenant (sub/beep.asm): the BEEP body (dir
                                 ; input-devices.md §7). PAGE-0 table index 11 -- IX =
                                 ; SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_BEEP. No args,
                                 ; no result, cannot fail, so nothing marshals.
+SUBROM_IDX_FLDLOOK   equ 12     ; fld_lookup_tenant (sub/fldlook.asm): the FIELDed-
+                                ; variable READ hook's pure-RAM half (record-slice
+                                ; copy out of FSECTOR_BUF into FLD_DESC + the RVDESC
+                                ; wrap), carved out of basic/field.asm to fund D-CLP's
+                                ; 22 B of main page 1 (docs/decision-clearpool-
+                                ; funding.md). PAGE-0 table index 12 -- IX =
+                                ; SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_FLDLOOK. The
+                                ; located field-table entry rides in HL (subrom_call
+                                ; passes it through CALSLT); the result is STRPTR, so
+                                ; nothing marshals through a param block.
+                                ; ⚠️ LAST index that fits before the $0038 vector.
 SUBROM_IDX_DEFTYPE   equ 9      ; deftype_tenant (sub/deftype.asm): DEFINT/DEFSNG/
                                 ; DEFDBL/DEFSTR, carved out of basic/usr.asm to fund
                                 ; G6 DRAW's resident half (docs/spec-eviction-g6-

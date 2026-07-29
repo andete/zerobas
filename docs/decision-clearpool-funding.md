@@ -156,3 +156,64 @@ tenant, which is a nesting question, not a byte question.
 closure re-check, and every one of them changes the DISK path.** The corpus
 re-run is part of the work, not a follow-up — "builds green but was never run"
 is this project's standing trap.
+
+---
+
+## 6.1 ✅ LANDED — `fld_lookup`, and the seam is not where §4a said it was
+
+`fld_lookup` was taken over `tok_skip`, and the reason is one §4a's table does
+not show: **`tok_skip`'s two callers are per-token LOOPS** (`if_skip_to_else`
+and `skip_to_eol`, [`basic/interp.asm:1335`](../basic/interp.asm:1335)), so a
+CALSLT at either site is paid once per token of every line walked — the whole
+program-relink path. "2 callers" reads cheap in a caller count and is not.
+`fld_lookup`'s single caller runs once per read of a FIELDed variable, already
+downstream of a 512-byte `fch_select` LDIR pair.
+
+⚠️ **The scout's CLEAN verdict was necessary, not sufficient, and re-reading its
+own output is what showed why.** `--entries fld_lookup` prints
+
+    directly called by the moved code : 1 (0 plumbing, re-expressible)
+        BLOCKER   mk_rvdesc @ $287F
+    reached THROUGH resident main page-1 : 0  <- FATAL if > 0
+    VERDICT: page-0-tenant CLEAN
+
+The verdict comes from the *indirect* count alone, by design (§4's fix made
+BIOS callees fatal when indirect and a priced `CALSLT` when direct). So CLEAN
+means "no unrewritable escape", **not** "move it and it works": `mk_rvdesc` is
+main LOW REGION and is switched out under a page-0 CALSLT, and the other two
+callees (`fld_find`, `fch_select`) are main PAGE 1 — legal in principle, but
+the sub-ROM has **no import mechanism for main page-1 addresses**.
+[`sub/basic-resident-abi.inc`](../sub/basic-resident-abi.inc) is generated with
+a `< $3FE5` ceiling check because it exists for the opposite direction (page-1
+tenants calling the low region). No page-0 tenant has ever called main page 1.
+
+So the carve was **split at the table lookup, not at the routine boundary**:
+
+| piece | side | why |
+|---|---|---|
+| `fld_find` + `fch_select` | resident stub | shared services with other callers (`fld_find` for LSET/RSET, `fch_select` for the whole file-channel surface) — neither could have moved, so keeping them costs the carve nothing |
+| slice copy + descriptor build | tenant (`sub/fldlook.asm`, index 12) | a pure RAM leaf |
+| `mk_rvdesc` | inlined sub-side (10 B) | cheaper and less fragile than a second generated address-import file |
+
+The located entry pointer rides in **HL**, which `subrom_call` passes straight
+through CALSLT — nothing marshals through a param block. `subrom_call`'s CF
+means "sub-ROM absent" and never "found", so the stub asserts the found-CF
+itself; it is the side that ran `fld_find`.
+
+**Measured, from clean: page-1 free 3 B → 41 B. The carve returned 38 B**
+(60 B of body out, 22 B of stub back), against D-CLP's 22 B requirement.
+Lean `basic.rom` byte-identical; all three closure gates green; `unit-test`
+53/53; `diskbasic-acceptance-repack` **32/34, the same two failures the HEAD
+baseline has** (`GET(RDBLK)`, `CALL FORMAT` — both reproduced on `2a29b66`
+with the carve stashed, so neither is this change; `CALL FORMAT` reads its BPB
+as all-`$E5` on both the 720K and 360K menus, which is its own item).
+
+**Falsified before believed:** a `ret` inserted at `fld_lookup_tenant`'s first
+instruction turns `FIELD/LSET/RSET` RED (`differential: FAIL — CF-3300 differs`)
+and restoring it turns it green again — so the gate is measuring the tenant, not
+agreeing by luck.
+
+⚠️ **Index 12 is the LAST page-0 index that fits.** The entry table starts at
+`$0010` and the `$0038` interrupt-trampoline vector is fixed: 13 rows × 3 B ends
+at `$0036`, leaving **one** spare byte. A fourteenth page-0 tenant needs the
+table moved (or a row that `jp`s onward), not just another line.

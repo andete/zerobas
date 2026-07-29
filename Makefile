@@ -139,6 +139,10 @@ SUB_SRC   := sub/sub.asm
 # D-FUND-1, the TIME+T5 funding carve): the tenant body, its five carved engine
 # bodies (the lean cart's inline copies, basic/save.asm) and the two shared
 # copies the tenant needs sub-locally -- same staleness hazard, same fix.
+# sub/fldlook.asm (the FIELDed-variable READ hook's pure-RAM half, docs/
+# decision-clearpool-funding.md -- the D-CLP funding carve): a self-contained
+# tenant (no shared .inc; the lean cart keeps its own differently-shaped inline
+# copy in basic/field.asm) -- same staleness hazard, same fix.
 # sub/fcbname.asm + basic/fcbname-body.inc (disk 8.3-FCB-name builder
 # build_83_name, docs/spec-basic-interrupt-traps.md §10.4, the interrupt-traps
 # T1 funding carve): the tenant body + its shared .inc file (the lean cart's
@@ -154,6 +158,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub
              sub/lineedit.asm basic/lineedit-body.inc \
              sub/casmatch.asm basic/casmatch-body.inc basic/cal-refill-body.inc \
              sub/fcbname.asm basic/fcbname-body.inc \
+             sub/fldlook.asm \
              sub/bload.asm basic/bload-body.inc basic/fatio-body.inc \
              sub/save.asm basic/sv-bsvdisk.inc basic/sv-bsvcas.inc basic/sv-savdisk.inc \
              basic/sv-tsb.inc basic/sv-tputw.inc basic/sv-tne.inc basic/sv-diskwr.inc \

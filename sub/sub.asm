@@ -117,6 +117,14 @@ sub_p0_table:
                                                 ;   fund input-devices slice I1. No args,
                                                 ;   no result, cannot fail.
                                                 ;   docs/spec-basic-input-devices.md §7.
+                jp      fld_lookup_tenant       ; index 12 (SUBROM_IDX_FLDLOOK): the
+                                                ;   FIELDed-variable READ hook's pure-RAM
+                                                ;   half (sub/fldlook.asm) -- carved out
+                                                ;   of basic/field.asm to fund D-CLP.
+                                                ;   HL = the located field-table entry.
+                                                ; ⚠️ 13 rows = $0010..$0036: this is the
+                                                ;   LAST row that fits before the fixed
+                                                ;   $0038 vector (ONE spare byte left).
 
 ; --- $0038 interrupt trampoline entry (subrom trampoline slice) ------------
 ; The maskable-interrupt vector for the page-0 island. While a page-0 tenant runs
@@ -236,6 +244,13 @@ sis_spin:
 ; Direct PSG blip + busy-wait; no shared .inc, since BEEP is repack-only (the lean
 ; 16 KB cart has no sound at all) and so has no resident copy to stay in step with.
                 include "beep.asm"
+; --- FIELDed-variable READ hook (D-CLP funding carve, docs/decision-clearpool-
+; funding.md). A pure RAM leaf: the resident stub (basic/field.asm) has already
+; located the field-table entry and selected its channel, so this side only
+; copies the record slice into FLD_DESC and builds the RVDESC descriptor. No
+; shared .inc -- the lean cart keeps the whole routine inline, and the two shapes
+; differ (the lean one has no RVDESC indirection at all).
+                include "fldlook.asm"
 
 ; --- sub-local is_letter / is_ident_cont (byte-identical own-design clones) --
 ; Resident copies stay in the main ROM (basic/interp.asm is_letter, basic/vars.asm
