@@ -5,7 +5,7 @@ boot-per-case, reference `Philips_VG_8020` against
 `C-BIOS_MSX1_EU_REPACK_DISK`, measured on a clean-built `a6323b9`.
 **6/51 gated rows agreed, 45 diverged**, plus 2 reported-never-gated.
 
-✅ **The slice LANDED 2026-07-29 at 50/50 gated** (6 reported-never-gated) —
+✅ **The slice LANDED 2026-07-29 at 51/51 gated** (6 reported-never-gated) —
 [`spec-basic-clearpool.md`](spec-basic-clearpool.md). The figures below are the
 pre-slice measurement and are left as the record; §2.5's stored-literal rows and
 §3a were added by the implementation.

@@ -1598,7 +1598,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         `call`.
       - **`DEF FN`/`FN`** — an arc, not a slice (200–400 B): a definition table,
         argument binding, re-entrant evaluation.
-      - **The `CLEAR` string-pool partition** — ✅ **LANDED 2026-07-29, 50/50
+      - **The `CLEAR` string-pool partition** — ✅ **LANDED 2026-07-29, 51/51
         gated, falsified.** Opened by the `BIN$`/`FRE` slice (D-BF-A(c)):
         zerobas had ONE free gap where the reference has TWO pools, and
         `CLEAR`'s string-space argument was evaluated and discarded. The six
@@ -1606,7 +1606,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         [`docs/spec-basic-clearpool.md`](docs/spec-basic-clearpool.md),
         [`docs/clearpool-vg8020-characterization.md`](docs/clearpool-vg8020-characterization.md),
         [`docs/decision-clearpool-funding.md`](docs/decision-clearpool-funding.md),
-        `make clearpool-acceptance` (56 rows, twelve batteries). Baseline 6/51.
+        `make clearpool-acceptance` (57 rows, twelve batteries). Baseline 6/51.
         FUNDED by promoting `fld_lookup` to a page-0 sub-ROM tenant
         (`sub/fldlook.asm`, index 12 — **the last page-0 index that fits before
         the fixed `$0038` vector**): page 1 3 B → 41 B free.

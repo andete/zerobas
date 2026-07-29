@@ -1,12 +1,12 @@
 # D-CLP — the `CLEAR` string-pool partition
 
-Status: ✅ **LANDED.** `make clearpool-acceptance` — **50/50 gated rows**,
+Status: ✅ **LANDED.** `make clearpool-acceptance` — **51/51 gated rows**,
 6 reported-never-gated (see §6). Funded by promoting `fld_lookup` to a page-0
 sub-ROM tenant ([`decision-clearpool-funding.md`](decision-clearpool-funding.md) §6.1).
 Characterization: [`docs/clearpool-vg8020-characterization.md`](clearpool-vg8020-characterization.md).
 Gate: `make clearpool-acceptance` (`--gate`) —
 [`probes/basic/basic_probe_clearpool.py`](../probes/basic/basic_probe_clearpool.py),
-56 rows, twelve batteries. **50/50 gated rows agree**, plus 6 reported-never-gated
+57 rows, twelve batteries. **51/51 gated rows agree**, plus 6 reported-never-gated
 for three distinct reasons (§6). `make clearpool-characterize` is the same probe
 without `--gate`. It read **6/51** before this slice.
 
@@ -171,6 +171,21 @@ the deltas are exact:
 | ERR 14 message string | main low region | **22 B** | 30 B | — (8 B spare) |
 | `heap_alloc` floor + `sh_free_gap` + the array ceilings | sub-ROM | not yet built | ~3.4 KB | — |
 
+✅ **AS BUILT, from clean.** The carve (`fld_lookup` → a page-0 tenant) returned
+38 B of page 1, and the finished slice spends 31 B of it plus 26 B of low region:
+
+| wall | pre-carve | post-carve | as shipped |
+|---|---|---|---|
+| main page 1 free | 3 B | **41 B** | **10 B** |
+| main low region free | 30 B | 30 B | **4 B** |
+
+The 25 B page-1 figure above was the flag alone; the finished slice added 5 B for
+`FRE`'s two-op split (§3) and 1 B for `fperr_to_err`'s 11th entry. The low
+region's 22 B is the ERR 14 string plus 4 B for `str_snapshot_keep`'s entry head.
+Both walls are now very tight — the next slice needs its own carve, and
+[`decision-clearpool-funding.md`](decision-clearpool-funding.md) §6.1 records
+that **page-0 tenant index 12 was the last one that fits**.
+
 **So the carve is 22 B of main page 1, and nothing in the low region** — not the
 ~40 B this section first estimated, and not the "22 B + 2 B" of the first
 measurement either. S-CLP-1 said measure before sizing it, and it was worth
@@ -209,10 +224,10 @@ the `RETURN`-from-trap path, and the T4/T5 gates measure handler cost in
 *jiffies* — sub-ROM call overhead there lands exactly where those gates look
 ([[traps-t4-sprite-slice]]: "the divergence was the handler's own cost").
 
-## 6. The gate — ✅ 50/50
+## 6. The gate — ✅ 51/51
 
 `make clearpool-acceptance`. Twelve batteries: `ctl` (6), `repro` (4),
-`size` (9), `hold` (6), `indep` (4), `oos` (7), `dflt` (6), `dom` (5),
+`size` (9), `hold` (7), `indep` (4), `oos` (7), `dflt` (6), `dom` (5),
 `hmem` (3), and three that are REPORTED, NEVER GATED — for three *different*
 reasons, which the battery names carry:
 

@@ -880,7 +880,7 @@ width-acceptance: repack-machine
 
 # --- CLEAR string-pool partition (docs/spec-basic-clearpool.md, D-CLP) --------
 # VG-8020 differential over the two-pool model. ✅ LANDED: `clearpool-acceptance`
-# is the standing gate (50/50 gated rows, 6 reported-never-gated);
+# is the standing gate (51/51 gated rows, 6 reported-never-gated);
 # `clearpool-characterize` is the same probe without --gate, for re-measuring.
 # Before the slice this read 6/51 -- zerobas had ONE free gap where the reference
 # has TWO POOLS, and CLEAR's <string-space> argument was evaluated and DISCARDED,
