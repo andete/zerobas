@@ -256,22 +256,118 @@ CASES = [
     # clears variables, so E reads 0 when nothing was raised and 9 (`Subscript out
     # of range`) when the cap bites. ⚠️ These rows arm `ON ERROR` on purpose --
     # they measure WHICH code, not the unwind ([[width-domain-slice]]).
+
+    # --- D-ARR-C: THE AUTO-DIM PATH AT MORE THAN FOUR SUBSCRIPTS --------------
+    # The `auto-4d` row above proved the auto-dim path is a SECOND allocator
+    # entry that no `DIM` row reaches. D-ARR-C makes that path reachable at any
+    # subscript count, and every one of them overflows by construction: auto-dim
+    # takes each bound to 10, so five subscripts ask for 11^5 = 161051 elements,
+    # and even the NARROWEST element (int, 2 B) is 322102 B -- past $FFFF with no
+    # element width able to rescue it. So the prediction is that the reference
+    # answers the SIZE rule here, not a cap and not `Out of memory`, and that it
+    # keeps answering it as the count grows. If it does, the tenant never needs
+    # an auto-dim bound table longer than four entries: >4 subscripts on an
+    # undeclared array is the size error, full stop. THIS ROW DECIDES WHETHER
+    # THAT SHORTCUT IS FAITHFUL OR A GUESS.
+    ("auto-5d",      "auto", ['Q(1,1,1,1,1)=1']),
+    ("auto-5d-int",  "auto", ['Q%(1,1,1,1,1)=1']),   # narrowest element: 322102 B
+    ("auto-8d",      "auto", ['Q(1,1,1,1,1,1,1,1)=1']),
+    # (`auto-4d-int` in the `dim` battery above is this battery's two-sided
+    # control and needs no copy here: FOUR subscripts on an int array is 29282 B,
+    # under $FFFF, so it must NOT be the size error on either machine. It
+    # distinguishes "the size rule fires for every auto-dim" from "past four".)
+    #
+    # ⚠️ MEASURED 2026-07-29: all three answer `Subscript out of range` on the
+    # reference -- and all three ALREADY PASS on zerobas, FOR A REASON THAT IS
+    # ABOUT TO BE DELETED. zerobas reaches the same message through the MAXDIM
+    # cap in `ary_parse_subs`, never through the allocator, so these rows are
+    # green today over an implementation D-ARR-C removes. They are therefore the
+    # slice's own falsification witnesses: after the cap goes, they must stay
+    # green THROUGH `aal_soor`, and if the auto-dim disposition is wrong they are
+    # what turns red. A row that agrees for the wrong reason is not a passing row,
+    # it is an unexploded one.
+
+    # --- D-ARR-C: DOES A MANY-DIMENSION ARRAY ACTUALLY WORK? ------------------
+    # ⚠️ THE `cap` ROWS CANNOT ANSWER THIS AND WOULD AGREE FOR THE WRONG REASON.
+    # They read `ERR` after the `DIM` and nothing else, so a machine that ACCEPTS
+    # the line and silently ignores every subscript past its own cap reads 0 --
+    # exactly like a machine that honoured all of them. (`PRINT TAB(99999)`
+    # matching while `TAB(` did not exist; an auto-dimmed array reading 0 like a
+    # surviving one -- twice already inside this very probe.) The discriminator
+    # is a round trip the ignored dimensions cannot forge: store through the FULL
+    # subscript list and read it back.
+    #
+    # `use-4` is the two-sided control -- four subscripts work on both machines
+    # today, so a run where even it reads back junk is measuring the apparatus.
 ]
 
 
-# The `cap` DIM lines are GENERATED, not written out, so the subscript count is
-# unmistakable and a miscount cannot masquerade as a finding. `cap-4` is the
+# The `cap`/`use` DIM lines are GENERATED, not written out, so the subscript count
+# is unmistakable and a miscount cannot masquerade as a finding. `cap-4` is the
 # battery's control: four subscripts are legal on both machines today, so it must
 # read 0 on both, and a `cap` run in which even that reads 9 is measuring the
 # apparatus rather than the cap.
+def _subs(n):
+    return ",".join(["0"] * n)
+
+
 def _cap_case(n):
     return (f"cap-{n}", "cap",
             ['10 ON ERROR GOTO 100',
-             '20 DIM A(' + ",".join(["0"] * n) + ')',
+             '20 DIM A(' + _subs(n) + ')',
              '30 END', '100 E=ERR', 'RUN', 'PRINT "[";E;"]"'])
 
 
-CASES += [_cap_case(n) for n in (4, 8, 16, 32, 64, 100)]
+def _use_case(n):
+    """DIM at n subscripts, then STORE and READ BACK through all n of them."""
+    return (f"use-{n}", "use",
+            ['10 ON ERROR GOTO 100',
+             '20 DIM A(' + _subs(n) + ')',
+             '30 A(' + _subs(n) + ')=7',
+             '40 V=A(' + _subs(n) + ')',
+             '50 END', '100 E=ERR', 'RUN', 'PRINT "[";E;V;"]"'])
+
+
+# ⚠️ ZEROBAS HAS ITS OWN, MUCH SHORTER INPUT LINE, AND IT LANDS INSIDE THIS
+# BATTERY. `LINEMAX = 96` (basic/sysvars.inc:760) against the reference's 255 --
+# a documented divergence of its own (docs/spec-basic-arrays-slice4a-string-heap.md
+# "Input-length caveat"), and `20 DIM A(0,...)` is 2n+9 characters, so it bites at
+# n = 44. That makes `cap-64` and `cap-100` UNREACHABLE ON ZEROBAS WHATEVER
+# `MAXDIM` IS: the line is truncated mid-list before the interpreter ever sees a
+# subscript count. Those two rows can therefore never be turned green by D-ARR-C,
+# and calling them "MAXDIM=4" rows -- as the D-ARR-B commit did -- names the wrong
+# cause. 40/42/44 bracket the truncation point so the ceiling is MEASURED rather
+# than computed from the equate, and 120 (249 characters) runs the reference right
+# up to its own 255-character line.
+CASES += [_cap_case(n) for n in (4, 8, 16, 32, 40, 42, 44, 64, 100, 120)]
+CASES += [_use_case(n) for n in (4, 8, 32)]
+
+
+# --- the `line` battery: WHERE EACH MACHINE'S INPUT LINE ACTUALLY ENDS --------
+# ⚠️ THE `cap` ROWS CANNOT MEASURE THIS, AND THE CAP IS WHAT HIDES IT. Every
+# `cap-N` row past 43 subscripts has a line 20 longer than zerobas's LINEMAX, so
+# the interpreter sees a TRUNCATED bound list -- but `MAXDIM = 4` aborts the parse
+# at the fifth subscript with `Subscript out of range` long before the truncated
+# tail is ever reached, so all of cap-44/64/100/120 read a tidy ` 9 ` that says
+# nothing whatsoever about line length. Remove the cap and that mask goes with it.
+# Measuring it AFTER the implementation would mean diagnosing four freshly-red
+# rows; measuring it here means knowing in advance which rows D-ARR-C can and
+# cannot turn green.
+#
+# The subject is the LINE, so the payload is not an array at all: `20` + padding +
+# `A=7`. A line that survives intact assigns 7; a line truncated anywhere in its
+# tail loses part of `A=7` and leaves A at its `RUN`-cleared 0, so the readout
+# separates the two without depending on which error a mangled tail produces.
+# `line-40` is the two-sided control -- 40 characters is comfortably inside both
+# machines, so a run where even it reads 0 is measuring the apparatus.
+def _line_case(total):
+    return (f"line-{total}", "line",
+            ['10 A=0',
+             '20' + ' ' * (total - 5) + 'A=7',
+             '30 END', 'RUN', 'PRINT "[";A;"]"'])
+
+
+CASES += [_line_case(n) for n in (40, 90, 94, 95, 96, 97, 100, 250)]
 
 
 # The `repro` battery's expected REFERENCE answers. Checked against the oracle
@@ -310,15 +406,45 @@ REPRO_EXPECT = {
 # `cap-4` stays GATED: four subscripts are legal on both machines today, so it is
 # the battery's two-sided control, and a `cap` run in which even that reads 9 is
 # measuring the apparatus rather than the cap.
+#
+# ⚠️ AND FOUR OF THESE ROWS WERE UNGATED FOR THE WRONG CAUSE. `cap-64`/`cap-100`
+# were filed under "MAXDIM=4" by the D-ARR-B commit. They are not: their line 20
+# is 137 and 209 characters, and the `line` battery measures zerobas accepting
+# **95** characters and truncating at 96 (`LINEMAX = 96`, basic/sysvars.inc:760)
+# against the reference's 250. So the interpreter never sees those subscript lists
+# at all -- and RAISING `MAXDIM` CANNOT TURN THEM GREEN. The cap is what hides it:
+# the parse aborts at the fifth subscript long before the truncated tail is
+# reached, so both rows read a tidy ` 9 ` that looks exactly like a cap row.
+# `20 DIM A(0,...)` is 2n+9 characters, so **43 subscripts is zerobas's real
+# ceiling today** and it is a LINE-LENGTH divergence, tracked separately
+# (docs/spec-basic-arrays-slice4a-string-heap.md, "Input-length caveat").
+# Two causes, two dispositions, and the boundary between them is measured.
 NEVER_GATED = {
-    "dim-5dim":  "D-ARR-C: MAXDIM=4; the reference takes >=100",
-    "dim-8dim":  "D-ARR-C: MAXDIM=4; the reference takes >=100",
-    "dim-12dim": "D-ARR-C: MAXDIM=4; the reference takes >=100",
-    "cap-8":     "D-ARR-C: MAXDIM=4; the reference takes >=100",
-    "cap-16":    "D-ARR-C: MAXDIM=4; the reference takes >=100",
-    "cap-32":    "D-ARR-C: MAXDIM=4; the reference takes >=100",
-    "cap-64":    "D-ARR-C: MAXDIM=4; the reference takes >=100",
-    "cap-100":   "D-ARR-C: MAXDIM=4; the reference takes >=100",
+    # --- cause 1: MAXDIM=4. D-ARR-C turns every one of these green. -----------
+    "dim-5dim":  "D-ARR-C: MAXDIM=4; the reference takes >=120",
+    "dim-8dim":  "D-ARR-C: MAXDIM=4; the reference takes >=120",
+    "dim-12dim": "D-ARR-C: MAXDIM=4; the reference takes >=120",
+    "cap-8":     "D-ARR-C: MAXDIM=4; the reference takes >=120",
+    "cap-16":    "D-ARR-C: MAXDIM=4; the reference takes >=120",
+    "cap-32":    "D-ARR-C: MAXDIM=4; the reference takes >=120",
+    "cap-40":    "D-ARR-C: MAXDIM=4; the reference takes >=120",
+    "cap-42":    "D-ARR-C: MAXDIM=4; the reference takes >=120",
+    "use-8":     "D-ARR-C: MAXDIM=4; the reference stores+reads back through all",
+    "use-32":    "D-ARR-C: MAXDIM=4; the reference stores+reads back through all",
+    # --- cause 2: LINEMAX=96. D-ARR-C CANNOT turn these green. ----------------
+    # Measured, not computed: the `line` battery puts zerobas's last intact line
+    # at 95 characters. `20 DIM A(0,...)` is 2n+9, so 44 subscripts (97) is
+    # already past it. These stay ungated after D-ARR-C lands, under a cause that
+    # is now named correctly.
+    "cap-44":    "LINEMAX=96 (line is 97 ch): truncated before MAXDIM matters",
+    "cap-64":    "LINEMAX=96 (line is 137 ch): truncated before MAXDIM matters",
+    "cap-100":   "LINEMAX=96 (line is 209 ch): truncated before MAXDIM matters",
+    "cap-120":   "LINEMAX=96 (line is 249 ch): truncated before MAXDIM matters",
+    # --- the `line` battery itself: the measurement, kept as a record. --------
+    "line-96":   "LINEMAX=96: zerobas truncates at 96, the reference at 256",
+    "line-97":   "LINEMAX=96: zerobas truncates at 96, the reference at 256",
+    "line-100":  "LINEMAX=96: zerobas truncates at 96, the reference at 256",
+    "line-250":  "LINEMAX=96: zerobas truncates at 96, the reference at 256",
 }
 
 
