@@ -1673,6 +1673,52 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       battery — reported, never gated.** It was not silenced to make D-CLP
       green: it is the standing record, and it will turn from `----` to a
       gateable row the day the ARRAYS arc fixes it.
+      ✅ **CHARACTERISED 2026-07-29** —
+      [`docs/arrdim-vg8020-characterization.md`](docs/arrdim-vg8020-characterization.md),
+      probe [`probes/basic/basic_probe_arrdim.py`](probes/basic/basic_probe_arrdim.py),
+      `make arrdim-characterize` — 49 rows, eight batteries, boot-per-case.
+      **Baseline 27/46 gated** (3 reported-never-gated); **all 19 divergences are
+      one root cause.** The rule: **`elsize × Π(boundₖ+1) > $FFFF` ⇒ `Subscript
+      out of range`, raised before any allocation.** It is a **byte** count
+      (the flip moves with element width — `%` 32766/32767, `!` 16382/16383,
+      `#` 8190/8191, all at 65536 B; `Q%(32767)` has 32768 elements, which fit a
+      word, and still raises), it **excludes the header** (`Q%(32766)` = 65534 B
+      → `Out of memory`), it is strictly **`>`** (`Q$(21844)` = 21845×3 =
+      `$FFFF` exactly is ACCEPTED — the only element width in the language that
+      can land on the boundary, which also pins `elsize($) = 3`), and it is on
+      the **product**, position-independent (`DIM Q%(200,200)` raises with no
+      dimension near a ceiling). ⚠️ **It lives in the ALLOCATOR, not in `DIM`**:
+      `Q(1,1,1,1)=1` on an *undeclared* array auto-dims to 10 per dimension =
+      117128 B and raises, with neither `DIM` nor a large number in the line —
+      so a check written into `ex_dim` would have satisfied every other row and
+      left that one silently wrong.
+      📋 **SPEC WRITTEN, awaiting sign-off (S-ARR-B-1..4)**:
+      [`docs/spec-basic-arrdim.md`](docs/spec-basic-arrdim.md) — **est. +4 B,
+      sub-ROM only, NO CARVE**: `sub/arrays.asm` already computes the quantity
+      and already detects both overflows (`ary_count_elems`,
+      `ary_mul16_checked`); the two carry paths just report `ARY_ERR=4` where
+      the measurement says `1`. The other three carry checks are address-space
+      wraps and stay `Out of memory`. Falsification is unusually surgical: the
+      two sites catch **disjoint** row sets (site A = `dim-3d` alone, site B =
+      the other 18).
+
+- [ ] 🔴 **`MAXDIM = 4` is a divergence, not a cap** (D-ARR-C). Found 2026-07-29
+      as a calibration row in the D-ARR-B matrix — **the seventh consecutive
+      slice** whose calibration turns up a live defect nobody was looking for.
+      `DIM Q%(1,1,1,1,1)` is **accepted by the reference** and raises `Subscript
+      out of range` here; the reference takes **at least twelve** dimensions
+      (`dim-5dim`/`dim-8dim`/`dim-12dim`, all tiny — 32/256/1 elements, so
+      nothing about size). [`basic/sysvars.inc:1544`](basic/sysvars.inc:1544)
+      caps at 4 and [`docs/spec-basic-arrays.md`](docs/spec-basic-arrays.md)
+      §9.1 Q-9b records the disposition `>MAXDIM subscripts → Subscript out of
+      range` — **chosen, written down, and never measured against the
+      reference**, in the same arc whose §4 target #9 was asked and never
+      answered. Out of D-ARR-B's scope: a different cost axis (RAM in the
+      `ARY_IDX` subscript block, plus every descriptor widening). Carried as
+      three reported-never-gated rows in `basic_probe_arrdim.py`, each printing
+      its own reason. ⚠️ The two interact: at twelve dimensions the auto-dim
+      product is 11¹², so a raised cap makes D-ARR-B's overflow far easier to
+      reach.
 
 - [x] ✅ **`WIDTH n`'s VALID DOMAIN — LANDED 2026-07-28, 76/76, falsified.**
       Was 🔴 FIVE silent screen-destroyers shipping today. The last residue of

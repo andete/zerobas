@@ -927,6 +927,39 @@ clearpool-acceptance: repack-machine
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
 	        $(if $(BATCH),--batch,)
 
+# --- D-ARR-B: where the reference BOUNDS A DIMENSION (arrays arc, reopened) ----
+# `CLEAR 100 : DIM Q(20000)` answers `Subscript out of range` on the reference and
+# `Out of memory` here: the reference bounds a dimension BEFORE allocating,
+# zerobas allocates until it runs out, so its error is right only by accident of
+# size. Found as a D-CLP calibration row aimed at something else and kept there as
+# `oos-dim-huge` (reported, never gated) so it could not be "discovered" later by
+# a red gate.
+#
+# ⚠️ THE ARRAYS ARC ASKED THIS AND NEVER ANSWERED IT: spec-basic-arrays.md §4
+# target #9 ("`Out of memory` onset") has no row in the §4.1 results table, while
+# the other nine targets were all measured and pinned.
+#
+# ⚠️ EVERY ROW IS AN ERROR-CLASS ROW, NEVER A THRESHOLD. The two machines have
+# different memory maps (~28.8 KB free vs ~15.7 KB) so the RAM-exhaustion point
+# can never agree; each row is sized past BOTH machines' free space, and the only
+# thing measured is WHICH error the machine picks.
+#
+# ⚠️ NO LINE MAY REACH 40 CHARACTERS (the wrapped-echo fault); the probe enforces
+# it before an emulator boots.
+#
+# Repack-only; oracle-dependent. Boot-per-case by default: a case that succeeds in
+# dimensioning leaves the array behind, and a follower's own DIM then reports
+# `Redimensioned array` instead of what it measures.
+arrdim-characterize: repack-machine
+	python3 probes/basic/basic_probe_arrdim.py \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
+	        $(if $(BATCH),--batch,)
+
+arrdim-acceptance: repack-machine
+	python3 probes/basic/basic_probe_arrdim.py --gate \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
+	        $(if $(BATCH),--batch,)
+
 # --- DIRECT-MODE control-flow gate (docs/spec-basic-direct-ctrl.md §8) --------
 # VG-8020 differential for FOR/NEXT, GOSUB/RETURN, GOTO, IF-THEN-<line> and
 # ON-GOTO typed AT THE PROMPT -- an execution mode that had zero coverage until
@@ -1078,4 +1111,7 @@ clean:
         logicops-characterize cursor-characterize cursor-acceptance \
         binfre-characterize binfre-acceptance \
         missing-characterize missing-acceptance \
-        str-domain-characterize str-domain-acceptance clean
+        str-domain-characterize str-domain-acceptance \
+        clearpool-characterize clearpool-acceptance \
+        width-characterize width-acceptance \
+        arrdim-characterize arrdim-acceptance clean

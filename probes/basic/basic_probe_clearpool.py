@@ -76,6 +76,16 @@ import omsx_repl  # noqa: E402
 REF_MACHINE = "Philips_VG_8020"
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
 
+# ⚠️ THIS GUARD WAS THREE CHARACTERS TOO LOOSE (corrected 2026-07-29, D-ARR-B).
+# It tested `omsx_repl.COLS` (40, the screen width), but a line wraps at
+# `LINLEN`, and the two machines do not boot at the same one: D-WID measured the
+# reference at 37 and zerobas at 39 (docs/width-vg8020-characterization.md). The
+# D-ARR-B matrix hit it for real -- a 39-character row read `<no echo>` on BOTH
+# machines and scored PASS, the same agreeing-on-nothing this guard exists to
+# prevent. No row in THIS file was ever over 37 (the longest is 35), so no
+# clearpool measurement changes; the guard was simply not checking what it said.
+ECHO_MAX = 37
+
 # (label, battery, [lines]). The LAST line carries the readout and is always
 # short enough not to wrap (see the docstring). Batteries:
 #   ctl   -- the apparatus. READ FIRST; nothing else is readable if one fails.
@@ -326,10 +336,11 @@ def main():
     # A row that cannot be read is a silent hole, so this is an error, not a
     # warning, and it fires before a single emulator is booted.
     toolong = [(lbl, ln) for lbl, _b, lines in sel for ln in lines
-               if len(ln) >= omsx_repl.COLS]
+               if len(ln) >= ECHO_MAX]
     if toolong:
-        print("APPARATUS FAILURE: these lines are >= the 40-column screen width, "
-              "so their echo wraps and the readout cannot anchor on it:")
+        print(f"APPARATUS FAILURE: these lines are >= the reference's boot LINLEN "
+              f"({ECHO_MAX}), so their echo wraps and the readout cannot anchor "
+              f"on it:")
         for lbl, ln in toolong:
             print(f"     {lbl}: {len(ln)} chars {ln!r}")
         return 1
