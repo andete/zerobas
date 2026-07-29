@@ -2082,8 +2082,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `chancost-characterize`: 4 filed divergences → **1** (`err_badchan`,
       `mf_disarm`, `clr_disarm` all agree now).
 
-- [ ] **`CONT` that runs off the end of the program aborts with a nonexistent
-      line number.** `10 STOP : 20 B=1 : 30 PRINT"…"` then `RUN`, `CONT` — the
+- [x] **`CONT` that runs off the end of the program aborts with a nonexistent
+      line number.** ✅ **FIXED 2026-07-29 —
+      [`docs/spec-basic-cont-depth.md`](docs/spec-basic-cont-depth.md), 4 B
+      (`ld sp,(SAVSTK)` at `ex_cont`), page 1 11 → 7 B free, lean
+      byte-identical.** 8 standing `cont_*` rows in `abort-acceptance` (now
+      31/31), **six of them "must not change"** — the fix DISCARDS a stack
+      frame, so its risk is what else lived there, not whether the symptom
+      goes away. Falsified twice: without the instruction `cont_falloff` is red,
+      and with the one-character-different `ld (SAVSTK),sp` (anchor here rather
+      than restore) it is **still** red. `10 STOP : 20 B=1 : 30 PRINT"…"` then `RUN`, `CONT` — the
       reference resumes, prints, and returns to `Ok`; zerobas prints, then
       reports `Illegal function call in 3346`. Found 2026-07-29 by D-ONELIN's
       `stop_cont` CONTROL (no `ON ERROR` anywhere — `ONELIN` is 0 throughout),

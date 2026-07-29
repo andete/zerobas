@@ -783,6 +783,32 @@ ex_cont:
                 ld      (RESUMEPTR),hl
                 ld      a,1
                 ld      (RESUMEFLAG),a      ; resume mid-line at CONTPTR
+    IF ROM_BASE < $4000
+                ; D-CONTD (docs/spec-basic-cont-depth.md §2/§3): re-enter the
+                ; loop at the depth its exit `ret` unwinds FROM. Without this,
+                ; CONT starts a fresh loop iteration from STATEMENT depth -- it
+                ; is reached from inside the loop's own `call exec` -- so a
+                ; stale return frame sits underneath, and the loop's exit `ret`
+                ; lands back INSIDE the loop body instead of at the REPL. That
+                ; re-entry reads ENDFLAG: after an END it is 1 and the `ret nz`
+                ; fires again (clean BY LUCK, which is why only ONE of the two
+                ; exits ever showed a symptom); after the $0000-link exit it is
+                ; 0, so the loop advances to a "next line" with HL still on the
+                ; end marker and executes whatever follows the program --
+                ; measured as `Illegal function call in 3346`, a line that does
+                ; not exist. Same class as D-CUR-D's abort chain: a `ret` that
+                ; only unwinds correctly at one depth.
+                ; SAVSTK is dl_cmd's anchor for THE CONT LINE ITSELF (written
+                ; immediately before its own `jp rp_exec`), so it is fresh here
+                ; -- the same anchor raise_error's trap branch already restores.
+                ; ⚠️ This DISCARDS exec's frame, so anything after CONT on the
+                ; typed line is dropped. That is REFERENCE BEHAVIOUR, measured:
+                ; `CONT:PRINT…` prints nothing extra on the VG-8020 either
+                ; (spec §3, `cont_rest_of_line`). GOSUB/FOR frames are untouched
+                ; -- they live in their own RAM stacks (GSP/FSP), gated by the
+                ; cont_gosub_live / cont_for_live rows.
+                ld      sp,(SAVSTK)
+    ENDIF
                 jp      rp_lp               ; re-enter the run loop
 ex_cont_no:
                 ld      a,$C9               ; "can't continue" landmark (distinct byte)

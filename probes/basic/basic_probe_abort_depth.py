@@ -90,6 +90,56 @@ CASES = [
     # --- run mode: the " in <line>" suffix must survive the unwind -----------
     ("run_suffix",   ['CLS', '10 PRINT "[";ASC("");"]"', 'RUN']),
     ("run_below",    ['CLS', '10 PRINT "[";SPACE$(-1);"]"', 'RUN']),
+    # --- D-CONTD: CONT re-enters the run loop (docs/spec-basic-cont-depth.md) -
+    # Same class as everything above -- a `ret` that only unwinds correctly at
+    # ONE depth -- which is why these live here and not in the error-trap probe.
+    # `ex_cont` used to re-enter with a bare `jp rp_lp` from STATEMENT depth
+    # (it is reached from inside the loop's own `call exec`), leaving a stale
+    # frame underneath; the loop's exit `ret` then landed back inside the loop
+    # body. After an END that re-entry hit ENDFLAG=1 and ret'd again -- CLEAN BY
+    # LUCK -- but off the $0000 link it advanced to a "next line" from an HL
+    # still on the end marker: `[R1] | illegal function call in 3346`.
+    #
+    # ⚠️ THE READOUT IS WHY THIS IS GATEABLE AT ALL. The defect prints the RIGHT
+    # ANSWER and derails AFTER it, so a marker-only comparison scores it as
+    # agreement (it was found by a CONTROL row of the D-ONELIN battery, not by
+    # anything aimed at CONT). The echo-anchored TAIL sees both the value and
+    # the junk after it. Bracket-delimited like every other row here.
+    #
+    # ⚠️ Six of the eight are MUST-NOT-CHANGE rows, and that is deliberate: the
+    # fix DISCARDS A STACK FRAME, so its risk is not "does the symptom go away"
+    # but "what else was living on that frame".
+    ("cont_falloff", ['CLS', '10 STOP', '20 B=1', '30 PRINT "[";1;"]"',
+                      'RUN', 'CONT']),
+    ("cont_end",     ['CLS', '10 STOP', '20 B=1', '30 PRINT "[";1;"]"',
+                      '40 END', 'RUN', 'CONT']),
+    # must NOT: END swallows the rest of its own line, before AND after the fix.
+    # If the stray re-entry had resumed statement parsing at HL (the hypothesis
+    # this row REFUTED), this would print [9] too.
+    ("cont_after_end_stmt",
+                     ['CLS', '10 STOP', '20 B=1', '30 PRINT "[";1;"]"',
+                      '40 END:PRINT "[";9;"]"', 'RUN', 'CONT']),
+    # must NOT break: GOSUB/FOR frames live in their own RAM stacks (GSP/FSP),
+    # not the Z80 stack -- so resetting SP must leave them intact. Measured, not
+    # assumed.
+    ("cont_gosub_live",
+                     ['CLS', '10 GOSUB 100', '20 PRINT "[";1;"]"', '30 END',
+                      '100 STOP', '110 RETURN', 'RUN', 'CONT']),
+    ("cont_for_live",
+                     ['CLS', '10 FOR I=1 TO 2', '20 STOP', '30 NEXT',
+                      '40 PRINT "[";1;"]"', 'RUN', 'CONT']),
+    # must NOT: the fix discards exec's frame, so the rest of the typed line is
+    # dropped -- which is what the REFERENCE does. Had the reference run it, the
+    # fix would have been wrong.
+    ("cont_rest_of_line",
+                     ['CLS', '10 STOP', '20 B=1', '30 PRINT "[";1;"]"',
+                      '40 END', 'RUN', 'CONT:PRINT "[";9;"]"']),
+    # CONTROLS: the SAME exit reached by the two entries that were always at the
+    # right depth. Without these the rows above could be measuring the $0000
+    # link itself rather than how CONT enters.
+    ("cont_ctl_run", ['CLS', '10 B=1', '20 PRINT "[";1;"]"', 'RUN']),
+    ("cont_ctl_goto", ['CLS', '10 STOP', '20 B=1', '30 PRINT "[";1;"]"',
+                       'RUN', 'GOTO 20']),
 ]
 
 
@@ -144,7 +194,7 @@ def main():
         same = ref_t is not None and zb_t is not None and norm(ref_t) == norm(zb_t)
         ntot += 1
         npass += 1 if same else 0
-        print(f"{'PASS' if same else 'FAIL':5} {label:13} {lines[-1][:32]:32} "
+        print(f"{'PASS' if same else 'FAIL':5} {label:19} {lines[-1][:32]:32} "
               f"{'SAME' if same else 'DIFF'}")
         if not same:
             print(f"        ref tail: {ref_t!r}")
