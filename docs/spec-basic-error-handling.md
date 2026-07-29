@@ -414,6 +414,15 @@ like the arrays/float/string engines — see §8).
   = n, e.g. `ERROR 200`). `ex_error` rejects the full evaluated value (`D<>0` or `E==0`),
   not just the low byte (arg-validation landed 2026-07-19). *Boundary:* `|n|` overflowing
   int16 hits the separate D-F2-2 int-coercion seam (ref ERR 6 Overflow vs zb ERR 5).
+  ⚠️ **`err_msgtab`'s length and `raise_error`'s `cp` bound are ONE FACT IN TWO PLACES**
+  — currently **25** (`cp 25`, entries 1..25). They drifted once: D-LINEMAX added the
+  ERR 25 entry and left `cp 24`, so `ERROR 25` printed `unprintable error` against the
+  reference's `Line buffer overflow` while the entry sat unreachable. Nothing caught it
+  because 25's only raiser (`program.asm` `dl_overflow`) bypasses the table by design.
+  Fixed 2026-07-29, zero bytes; the standing guard is `error-trap-acceptance`'s
+  `msgtab_bound` rows, which gate **both** directions (25 in-table, 26 out).
+  *Still divergent:* the disk codes **50..69** (`ERROR 52` → ref `Bad file number`,
+  zb `unprintable error`) — S-FCH-2's open item, not a bound problem.
 
 S2 oracle = §3's `ON ERROR` transcript, extended per statement.
 

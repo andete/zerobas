@@ -832,10 +832,10 @@ raise_error:
                 ; low directly, so SQR(-1)/LOG/OOM errors NEVER trapped).
                 ld      a,(ERRCODE)
                 dec     a                  ; 1-based code -> 0-based index; code 0 wraps
-                                           ; to $FF (>= 23, so it too falls to unprintable
+                                           ; to $FF (>= 25, so it too falls to unprintable
                                            ; -- ERROR n now validates 1..255 upstream, so
                                            ; 0 no longer reaches here, but keep it safe)
-                cp      24                 ; index >= 24  <=>  code 0 (via $FF) or code >= 25
+                cp      25                 ; index >= 25  <=>  code 0 (via $FF) or code >= 26
                 jr      nc,rerr_unprintable ; -> "unprintable error" (rerr_unprintable
                                            ; ignores A, so the pre-decrement is harmless)
                 add     a,a                ; *2 (word table)
@@ -927,7 +927,7 @@ rel_direct:
                 ld      (ERRLINE),hl
                 ret
 
-; --- err_msgtab: MSX ERR code (1..23) -> message string (docs/spec-basic- --
+; --- err_msgtab: MSX ERR code (1..25) -> message string (docs/spec-basic- --
 ; error-handling-s2a-packet.md §2/(a)). Every code's message is stored ONCE
 ; (this table replaces the old FPERR-indexed fre_msgtab AND every direct
 ; site's own `ld hl,msg`); holes (12/14/15/18/19/20/21/22 -- not yet raised by
@@ -996,8 +996,20 @@ err_msgtab:
                                             ; one fact in two places.
                 dw      err_linebuf_overflow ; 25: line buffer overflow (D-LINEMAX R-2 --
                                             ; the crunched body exceeded TOKMAX_BODY=314).
-                                            ; Same two-places-one-fact pair: `cp 24` ->
-                                            ; `cp 25` below moved with this entry.
+                                            ; Same two-places-one-fact pair -- and the
+                                            ; SECOND place did NOT move when this entry
+                                            ; landed: `cp 24` stayed, so this entry was
+                                            ; two bytes of DEAD TABLE and `ERROR 25` read
+                                            ; `unprintable error` for the whole of
+                                            ; D-LINEMAX. Fixed 2026-07-29 (`cp 24` ->
+                                            ; `cp 25`, zero bytes). It went unnoticed
+                                            ; because the ONLY raiser of 25 -- program.asm
+                                            ; dl_overflow -- deliberately bypasses this
+                                            ; table (see its header), so linemax-acceptance
+                                            ; was green throughout. MEASURED on the
+                                            ; VG-8020 before landing: `ERROR 25` ->
+                                            ; `Line buffer overflow`, `ERROR 26` ->
+                                            ; `Unprintable error` (so 25 IS the bound).
 err_unprintable:
                 db      "unprintable error",13,10,0
                 ; err_missing_operand itself lives in basic/missing.asm. Sited
@@ -1015,8 +1027,10 @@ err_unprintable:
 ; code, still ERR 200). So we reject the FULL evaluated value (not just its low
 ; byte): D<>0 (>= 256 or negative) OR E==0 (value 0) -> A=5 (same disposition as
 ; a plain `ERROR 5`, via raise_error/err_msgtab entry 5). In range -> A=E. An
-; out-of-table but in-range code (24..255) still prints "unprintable error" via
-; err_msgtab's hole handling. HL enters on the ERROR token. Clobbers A, DE, HL.
+; out-of-table but in-range code (26..255) still prints "unprintable error" via
+; err_msgtab's hole handling -- matching the reference for 26..49 but NOT for the
+; disk codes 50..69 (`ERROR 52` -> `Bad file number` there), which is S-FCH-2's
+; open item, not this one. HL enters on the ERROR token. Clobbers A, DE, HL.
 ex_error:
                 inc     hl                  ; past the ERROR token
                 call    eval                ; DE = code, HL advanced (unused past here)

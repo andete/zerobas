@@ -32,6 +32,11 @@ structure, never as the sole signal for a numeric fact):
     error").
   * ERROR_N_REGRESSION — ERROR 5 still prints the right message (S2a regression,
     matches error_acceptance.py's own C_ERROR5_DIRECT case).
+  * MSGTAB_BOUND — `ERROR 23..26` message text: err_msgtab's last entry (25, "Line
+    buffer overflow") is LIVE and 26 falls to "unprintable error". raise_error's
+    `cp` bound and the table's length are one fact in two places; they drifted once
+    (2026-07-29) and nothing noticed, because the sole raiser of 25 bypasses the
+    table. Gates BOTH directions — 25 in, 26 out.
   * RESET_SCOPE_RUN / RESET_SCOPE_NEW / RESET_SCOPE_CLEAR — the §7 load-bearing
     faithfulness pin: a handler armed via a DIRECT-MODE `ON ERROR GOTO` (so the
     PROGRAM ITSELF never re-arms it), then RUN/NEW/CLEAR, then an error in a fresh
@@ -406,6 +411,48 @@ def main() -> int:
             ok = ok and good
             print(f"{'PASS' if good else 'FAIL':5} ERROR {n:>6} -> zb ERR {zv!r} "
                   f"ref ERR {rv!r}")
+
+    # ---------------- err_msgtab BOUND: the last in-table code, and the first out
+    # `raise_error`'s range test and the table's length are ONE FACT IN TWO PLACES,
+    # and they DRIFTED: the ERR 25 entry landed with D-LINEMAX while the test stayed
+    # `cp 24`, so the entry was two bytes of dead table and `ERROR 25` printed
+    # `unprintable error` for the whole arc. Nothing caught it, because the only
+    # raiser of 25 (program.asm dl_overflow) deliberately BYPASSES the table -- so
+    # linemax-acceptance stayed 60/60 while the table was wrong. Fixed 2026-07-29;
+    # THIS is the row that keeps the two places in step, and it must gate BOTH
+    # directions: 25 in-table AND 26 out of it (a test that only checked 25 would
+    # pass just as happily on `cp 99`).
+    #
+    # Message TEXT differential, compared case-insensitively -- zerobas's messages
+    # are deliberately house-style lowercase (D-2), so only the WORDING is the
+    # claim, never the capitalisation. (ERR 25 is the one exception: its text is the
+    # reference's verbatim, see basic/missing.asm's header.) Both sides must READ
+    # something: a row where both scrape None would otherwise score PASS while
+    # measuring nothing.
+    #
+    # NOT gated here: the disk codes 50..69 (`ERROR 52` -> ref `Bad file number`,
+    # zb `unprintable error`). Measured divergent 2026-07-29 and UNCHANGED by this
+    # fix -- it is S-FCH-2's open item (the raisers cost 26 B over a full page 1),
+    # not a bound problem.
+    if not args.only or "msgtab_bound" in (args.only or ""):
+        print(f"\n--- msgtab_bound: ERROR 23..26 message text (the table's last entry) ---")
+        bound_cases = ["ERROR 23", "ERROR 24", "ERROR 25", "ERROR 26"]
+        specs = [("direct", [c]) for c in bound_cases]
+        ref = omsx_repl.run_cases(args.machine, specs, batch=batch, reset=("NEW", "CLS"))
+        if args.ref_only:
+            for c, r in zip(bound_cases, ref):
+                print(f"  [ref] {c:<9} -> {omsx_repl.screen_tail(r, c)!r}")
+        else:
+            zb = omsx_repl.run_cases(args.zb_machine, specs, batch=batch,
+                                     reset=("NEW", "CLS"))
+            for c, r, z in zip(bound_cases, ref, zb):
+                rt = omsx_repl.screen_tail(r, c)
+                zt = omsx_repl.screen_tail(z, c)
+                read = rt is not None and zt is not None   # neither side may be blind
+                good = read and rt.lower() == zt.lower()
+                ok = ok and good
+                print(f"{'PASS' if good else 'FAIL':5} {c:<9} zb {zt!r} ref {rt!r}"
+                      f"{'' if read else '  <- UNREADABLE on one side, not a measurement'}")
 
     # ---------------- §7 reset-scope: RAW differential, no hardcoded want ------
     rscases = sel(RESET_SCOPE_CASES)
