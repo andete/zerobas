@@ -1969,10 +1969,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       forever. Now `PRINT LEN(A$)` (0 vs 2) with a `REM` control.
       `make chancost-characterize` is now a real GATE (non-zero on unfiled
       divergence / oracle drift / a flat ladder), 31 cases, 9 filed divergences.
-      **NEXT: S-FCH-2's ERR 5/52/59 — and ⚠️ ITS PREMISE HAS MOVED TWICE.** It
-      was costed at ~100 B against 6 B free page 1; page 1 is now at **0 B**.
-      Nine of the gate's filed divergences are its. It needs a carve, scouted
-      against a requirement that has itself been BUILT and measured.
+      **S-FCH-2 ✅ MEASURED 2026-07-29 (built all four parts, measured each,
+      kept the free one).** Full cost **45 B page 1 + 41 B low region = 86 B**
+      against **0 B / 9 B free** — the ~100 B estimate was close this time.
+      ✅ **ERR 5 IS LANDED AND COST EXACTLY ZERO**: `gb_illegal` is already the
+      ERR 5 raiser and already in page 1, so `jp cc,gb_illegal` spends the same
+      3 bytes `jp cc,stmt_error` did. `MAXFILES=16`/`255` now raise **Illegal
+      function call** and `err_over` traps **ERR 5** — the gate's filed
+      divergences drop **9 → 6**.
+      **Breakdown (spec §5c):** ERR 5 = 0 B · ERR 59 (closed-channel EOF/LOF)
+      = 8 B page 1 · ERR 52 raiser + 2 message strings + sparse table = 14 B
+      page 1 + 41 B low · the sparse lookup in `raise_error` = 23 B page 1.
+      ⚠️ **64 of the 86 bytes are MESSAGE DATA + A TABLE WALK** — the most
+      evictable shape there is. A page-0 sub-ROM tenant could own it and stage
+      the message into the **208 B still free at `$EA30..$EAFF`**, leaving a
+      shim; that would cut the resident need to ~35-40 B. **MEASURE THAT BEFORE
+      SCOUTING A CARVE** — this arc has three times found the cost was siting.
+      ⚠️ **THE MEASUREMENT APPARATUS WAS WRONG FIRST AND READ PLAUSIBLY (77 B).**
+      Relaxing the low region's guard removes its `ds $4000 - $` pad — and that
+      pad is what puts the cartridge header at `$4000`. Without it page 1 slides
+      down with the low region and `__MEAS_PAGE1_END` measures BOTH walls. Pin
+      the header with an explicit `org $4000`. Corrected: 45 B, not 77.
 
 - [ ] **`LOF(#n)` reads −1 on a freshly-created OUTPUT channel** (reference: 0).
       Found 2026-07-29 by a CONTROL row in the channel-cost pass, not aimed at.

@@ -225,18 +225,19 @@ COMPARE = {
 # value it is EXPECTED to diverge to, so a row that starts failing DIFFERENTLY
 # still trips the gate.
 KNOWN_DIVERGE = {
-    # S-FCH-2 (unbuilt): the disk-range error codes. err_msgtab stops at 25, so
-    # ERR 5 / 52 / 59 all surface as zerobas's own `syntax error` or a value.
-    "mf16":        ("IFC", "SYNTAX"),
-    "mf255":       ("IFC", "SYNTAX"),
+    # S-FCH-2 REMAINDER (unbuilt): ERR 52 `Bad file number` and ERR 59 `File not
+    # OPEN`. err_msgtab is a DENSE table bounded at 24, so both codes fall to
+    # zerobas's own `syntax error` or a return value. ⚠️ MEASURED 2026-07-29:
+    # the rest of S-FCH-2 is 45 B of page 1 + 41 B of low region against 0 + 9
+    # free -- it needs a carve (spec §5c). ERR 5 came free and is LANDED, which
+    # is why mf16/mf255/err_over are no longer on this list.
     "sem_zero":    ("BFN", "SYNTAX"),
     "sem_hinum":   ("BFN", "SYNTAX"),
     "sem_reopen":  ("FNO", -1),
-    # ⚠️ these two TRAP on zerobas, so its side prints the trapped ERR NUMBER
-    # (2 = syntax error), not a message. err_badchan also records a real
-    # behavioural difference worth keeping visible: the reference does NOT trap
-    # it at all (`Bad file number in 30` prints past the installed handler).
-    "err_over":    (5, 2),
+    # ⚠️ zerobas TRAPS this one, so its side prints the trapped ERR NUMBER
+    # (2 = syntax error), not a message. It also records a real behavioural
+    # difference worth keeping visible: the reference does NOT trap it at all
+    # (`Bad file number in 30` prints past the installed handler).
     "err_badchan": ("BFN", 2),
     "err_notopen": (59, -1),
     # Filed separately in TODO.md: LOF on a freshly-created OUTPUT channel reads

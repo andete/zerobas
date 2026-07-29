@@ -313,6 +313,52 @@ The dynamic allocation was near-free for the reason §3.2 predicted: the whole
 arithmetic chain (`strheap_varceil` → `strheap_floor` → `strheap_ceiling`) was
 **already sub-ROM**, so nothing resident had to learn it.
 
+## 5c. S-FCH-2 cost — ✅ MEASURED 2026-07-29 (built, measured, then reverted
+except the free part)
+
+**Built all four parts, measured each, kept the one that costs nothing.** Full
+S-FCH-2 is **45 B of page 1 + 41 B of low region = 86 B**, against **0 B and
+9 B free**. §5's ~100 B estimate was close — worth stating plainly, because the
+two preceding estimates in this arc were off by 8× and by everything.
+
+| part | page 1 | low region | gate rows it closes |
+|---|---|---|---|
+| **ERR 5** — `MAXFILES=16`/`255` → Illegal function call | **0** | 0 | `mf16`, `mf255`, `err_over` |
+| **ERR 59** — `EOF`/`LOF` on a channel that is not open | +8 | 0 | `err_notopen` |
+| **ERR 52** raiser + both message strings + the sparse table | +14 | +41 | `sem_zero`, `sem_hinum`, `err_badchan` |
+| the sparse lookup in `raise_error` | +23 | 0 | makes 52/59 *print* (`sem_reopen`) |
+| **total** | **45** | **41** | all 9 |
+
+✅ **ERR 5 IS LANDED — it costs exactly ZERO bytes.** `gb_illegal`
+([`basic/interp.asm`](../basic/interp.asm)) is already the ERR 5 raiser the
+byte-argument domain checks use, and it is already in page 1, so each reject
+site spends the same 3 bytes on `jp cc,gb_illegal` that `jp cc,stmt_error` spent.
+Three of the gate's nine filed divergences closed for nothing. The remaining six
+are the ERR 52/59 half plus the filed `LOF` bug.
+
+⚠️ **THE REMAINDER IS 64/86 BYTES OF MESSAGE DATA AND A DATA-DRIVEN WALK** —
+34 B of string text, a 7 B sparse table, and 23 B of table walk. That is the most
+evictable shape there is. A page-0 sub-ROM tenant could own all of it and stage
+the chosen message into the **208 B of page-3 RAM still free at `$EA30..$EAFF`**
+(the window `FCH_CEIL=15` did not consume), leaving the resident side a shim.
+If that holds, the main-ROM requirement drops from 86 B to roughly ERR 59's 8 +
+ERR 52's 14 + a shim ≈ **35–40 B**. **Measure that before scouting a carve** —
+this arc has now three times found the cost was siting.
+
+The reverted build is kept as a patch (not committed): it applies cleanly to
+`d197f9b` and is the starting point for the eviction measurement.
+
+### ⚠️ The measurement apparatus was wrong first, and read plausibly
+
+The first reading said **77 B** of page 1. Relaxing the low region's overflow
+guard means removing its `ds $4000 - $` pad — **and that pad is what puts the
+cartridge header at `$4000`.** Without it the header, and every page-1 address
+above it, slides down with the low region, so `__MEAS_PAGE1_END` was measuring
+page 1 *plus* the low region's own size. The two walls are not independent
+unless the header is pinned. **Pin it with an explicit `org $4000`** when
+relaxing the low guard. The corrected page-1 figure is 45 B, not 77 —
+[[measure-the-wall-from-clean]]'s sibling: *measure the wall from a FIXED datum.*
+
 ## 5. Cost of the REST — ⚠️ STILL NOT MEASURED
 
 **This is the section that decides whether the slice is affordable, and it
@@ -414,9 +460,10 @@ rest: removing `MAXFILES`' `CLEAR` flips `sem_var`/`sem_str`/`sem_same` to
   + 3/3 `--cas`, arrdim 73/73, clearpool 52/52, diskbasic 34/34, bdos 12/12,
   fat-error 7/7, array 149/151 (the standing `ifc.instr.*` baseline).
 
-* ⚠️ **S-FCH-2 — ERR 5 / 52 / 59. ITS PREMISE HAS MOVED, AND THE MOVE IS
-  ADVERSE.** It was costed at ~100 B against **6 B** free in page 1. Page 1 now
-  stands at **0 B free** — S-FCH-1 spent 5 and §3.2 spent the last 1. Option
+* ⚠️ **S-FCH-2 — ERR 5 / 52 / 59. NOW MEASURED (§5c): ERR 5 is FREE and is
+  LANDED; the remainder is 86 B.** Its premise had moved adversely — it was
+  costed at ~100 B against **6 B** free in page 1, and page 1 now stands at
+  **0 B free** — S-FCH-1 spent 5 and §3.2 spent the last 1. Option
   (b)'s sparse side-table costing is stale for the same reason. This is a
   sign-off premise that changed *after* the sign-off, and it is reported rather
   than absorbed: **S-FCH-2 needs a carve, and the carve must be scouted against

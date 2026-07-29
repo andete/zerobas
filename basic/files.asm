@@ -1403,10 +1403,31 @@ ex_maxfiles:
                 call    eval                ; DE = requested ceiling
                 ld      a,d
                 or      a
+    IF ROM_BASE < $4000
+                ; S-FCH-2 (first piece): the out-of-domain reject is ERR 5
+                ; `Illegal function call`, as MEASURED — `MAXFILES=16` and
+                ; `MAXFILES=255` both raise it on the CF-3300, read via
+                ; ON ERROR/ERR rather than inferred from the wording
+                ; (docs/chancost-cf3300-characterization.md §3). It used to be
+                ; `syntax error` (ERR 2): the wrong CLASS, independently of where
+                ; the ceiling sat.
+                ;
+                ; ⚠️ AND IT COSTS ZERO BYTES, which is why it lands alone ahead of
+                ; the rest of S-FCH-2. gb_illegal (interp.asm) is the ERR 5 raiser
+                ; the byte-arg domain checks already use, so each site spends the
+                ; same 3 bytes on `jp cc,gb_illegal` that `jp cc,stmt_error` spent.
+                ; The REST of S-FCH-2 — ERR 52/59 and their messages — is 86 B
+                ; against 9 B free and needs a carve; measured, see spec §5c.
+                jp      nz,gb_illegal       ; > 255 -> ERR 5
+                ld      a,e
+                cp      FCH_CEIL+1
+                jp      nc,gb_illegal       ; > FCH_CEIL -> ERR 5
+    ELSE
                 jp      nz,stmt_error       ; > 255 -> out of range
                 ld      a,e
                 cp      FCH_CEIL+1
                 jp      nc,stmt_error       ; > FCH_CEIL -> beyond our RAM ceiling
+    ENDIF
                 push    de                  ; guard the requested value
                 push    hl                  ; guard the text cursor across CALSLT
                 call    fch_close_all       ; MAXFILES reinitialises: close everything
