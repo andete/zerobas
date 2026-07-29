@@ -5,9 +5,10 @@ SPDX-License-Identifier: 0BSD
 # D-ARR-B — the array size bound (`Subscript out of range` before allocation)
 
 **Status: ✅ LANDED 2026-07-29, +4 B measured, falsified surgically at both
-sites.** `make arrdim-acceptance` **47/52** — every one of the 19 divergences
-green; the 5 remaining failures are the `cap` battery, i.e. **D-ARR-C**, folded
-into this slice by S-ARR-B-2 and still open (§7). D-CLP's gate went **51/51 → 52/52**
+sites.** `make arrdim-acceptance` **47/47 gated, ALL PASS** (8 reported-never-gated) — every
+one of the 19 divergences green. The 8 ungated rows are **D-ARR-C**, which
+S-ARR-B-2 folded in and the `cap` measurement then reshaped into its own slice
+(§7a); each prints its own reason. D-CLP's gate went **51/51 → 52/52**
 with 5 never-gated as `oos-dim-huge` graduated.
 Sign-off recorded: **S-ARR-B-1 = route** (as recommended), **S-ARR-B-2 = FOLD
 D-ARR-C IN** (against the recommendation).
@@ -140,10 +141,7 @@ from clean after the build** ([[measure-the-wall-from-clean]]).
 
 ---
 
-## 5. Falsification plan — two sites, two disjoint row sets
-
-The surgical falsification is unusually clean here, because the two sites catch
-**different rows**:
+## 5. Falsification — two sites, two disjoint witnesses
 
 ✅ **RUN, and disjoint as predicted.** The unit layer carries the two witnesses so
 the falsification runs in seconds rather than emulator-minutes
@@ -221,14 +219,51 @@ stops the probe past that is the 255-character input line, not the language. So
 D-ARR-C is not the constant bump both the recommendation and the sign-off assumed
 — see §7a for what it actually is.
 
+### 7a. D-ARR-C after the measurement — what it actually is
+
+**Decision: its own slice.** Not because it is unimportant, but because the
+measurement changed what it is.
+
+`MAXDIM` is not a size limit that needs a bigger number. `ary_parse_subs`
+([`basic/arrays.asm`](../basic/arrays.asm)) **already collects every subscript on
+the hardware stack** and only copies them into `ARY_IDX` once the list closes; the
+cap exists purely to bound that copy. `ARY_IDX` is 8 bytes at `$E02D`, inside the
+16-byte `ARY_OP..ARY_ERR` span whose own header records that `CURLINE` sits
+immediately above at `$E038` and there is **no slack for anything more** — which is
+why the tenant's other scratch went to a stack frame rather than to RAM.
+
+Three ways out, costed:
+
+| | approach | cost | leaves |
+|---|---|---|---|
+| **A** | raise `MAXDIM` to a finite N | 2N bytes of RAM, so `ARY_IDX` must be rehomed with its own dead-window aliasing proof | a **permanent divergence past N** — the `cap` rows never go green, they become accepted-divergence markers |
+| **B** | hand the tenant a **pointer**, not a buffer | replaces the 8-byte buffer with a 2-byte field (**−6 B RAM**) and deletes the main-side address computation + copy loop (est. **−10…−15 B main ROM**, unmeasured) | nothing — faithful to 100+ dimensions |
+| **C** | split it out | — | the 8 rows carrying their reason |
+
+**B is the right answer and is the reason to split.** Its cost is not the RAM or
+the ROM — both of which it *gives back* — but that the subscripts sit in
+**reverse order** on the stack, so `ary_alloc`'s bound write and, critically,
+`ary_resolve`'s **column-major element-offset math** have to walk backwards. That
+routine decides where every array element physically lives; a mistake in it is
+**silent memory corruption, not an error message**, and it is exactly the shape of
+change [[refactor-inherits-clobber-contracts]] records going green statically and
+crashing on every operand. It also needs an explicit lifetime argument: the block
+must stay live across `subrom_call`'s `DI` + `CALSLT` (which pushes *below* `SP`,
+so data above it survives — but the caller must not pop it before the tenant
+returns).
+
+That is a spec, a gate and a falsification of its own, not a tail on this commit.
+The eight `cap`/`dim-Ndim` rows carry it in the meantime, each printing its own
+reason.
+
 **S-ARR-B-3 — confirm the three address-space wrap checks stay `Out of memory`.**
 *Recommendation: yes* (§3, point 3). No row can currently distinguish them —
 reaching one requires a byte count ≤ `$FFFF` *and* a tail high enough to wrap
 `$FFFF`, which needs a memory map neither machine has. **This is a reasoned
 choice, not a measured one, and is flagged as such.**
 
-**S-ARR-B-4 — is `arrdim-acceptance` a standing gate?**
-*Recommendation: yes*, and `oos-dim-huge` graduates out of D-CLP's `arr` battery
+**S-ARR-B-4 — is `arrdim-acceptance` a standing gate?** ✅ **YES, and it is one:**
+47/47, exit 0, `make arrdim-acceptance`, and `oos-dim-huge` graduates out of D-CLP's `arr` battery
 in the same commit (§6).
 
 ---

@@ -11,8 +11,9 @@ KEYBUF REPL driver, boot-per-case, against
 `make arrdim-characterize`. Observed outputs only — no ROM disassembly
 ([`PROVENANCE.md`](../PROVENANCE.md)).
 
-**Baseline: 27/46 gated rows agree, 3 reported-never-gated** (49 rows). All **19**
-divergent gated rows are one root cause.
+**Baseline: 27/46 gated rows agree, 3 reported-never-gated.** All **19** divergent
+gated rows are one root cause — and D-ARR-B closed every one of them (`47/47 ALL
+PASS`, 8 never-gated, once the `cap` battery below was added).
 
 ---
 
@@ -221,7 +222,33 @@ nobody was looking for. Two of them here, and neither is in this slice's scope.
 | `DIM Q%(0,0,0,0,0,0,0,0,0,0,0,0)` | *(accepted)* | `Subscript out of range` |
 
 Every one of these is tiny — 32, 256 and 1 element — so nothing here is about
-size. **The reference accepts at least twelve dimensions.**
+size. **The reference accepts at least twelve dimensions**, which is where the
+echo-anchored form runs out: a `DIM` line with more subscripts is past the 37-char
+limit of §4a.2.
+
+**And there is no cap at all.** Once folding D-ARR-C in made the number something
+that had to be *chosen* rather than bracketed, the `cap` battery measured it
+properly — the long `DIM` moves into a **stored program line** (never anchored on),
+`ON ERROR` catches whatever it raises, and the anchor becomes a short direct
+`PRINT` of the trapped code:
+
+| subscripts | 4 | 8 | 16 | 32 | 64 | 100 |
+|---|---|---|---|---|---|---|
+| reference `ERR` | 0 | 0 | 0 | 0 | 0 | 0 |
+| zerobas `ERR` | 0 | **9** | **9** | **9** | **9** | **9** |
+
+**The reference takes a hundred dimensions.** Past that it is the 255-character
+input line that stops the probe, not the language. `cap-4` is the battery's
+two-sided control: four subscripts are legal on both machines, and a run where
+even that reads 9 is measuring the apparatus.
+
+⚠️ **The readout had to move off the subject to measure this**, which is the
+generalisable part: an echo-anchored readout cannot measure a statement longer
+than the echo. Anchoring on a *later, shorter* line — with the subject stored and
+its error trapped — buys the whole 255-character input line. Compare
+[[missing-class-slice]] (a statement that MOVES THE CURSOR) and
+[[width-domain-slice]] (one that MOVES THE INSTRUMENT); this is the third shape:
+a statement **too long for the instrument**.
 [`basic/sysvars.inc:1544`](../basic/sysvars.inc:1544) caps subscripts at
 `MAXDIM = 4` and [`spec-basic-arrays.md`](spec-basic-arrays.md) §9.1 Q-9b records
 that as a "slice-1 subscript-count cap" with the disposition `>MAXDIM subscripts
@@ -262,9 +289,13 @@ the same machine as the thing it guards.
 
 ## 5. The matrix
 
-49 rows, eight batteries, boot-per-case. `ctl` 6, `repro` 2, `bnd` 9, `typ` 11,
-`dim` 10, `dom` 6, `ord` 3, `post` 2 — of which 46 are gateable and **3 (`dim-5dim`,
-`dim-8dim`, `dim-12dim`) are the D-ARR-C record** described in §4a.1.
+55 rows, nine batteries, boot-per-case. `ctl` 6, `repro` 2, `bnd` 9, `typ` 11,
+`dim` 10, `dom` 6, `ord` 3, `post` 2, `cap` 6 — of which **47 are gated and 8 are
+the D-ARR-C record** (`dim-5dim`/`-8dim`/`-12dim` + `cap-8`…`cap-100`), each row
+printing its own reason. `cap-4` stays gated as that battery's control.
+
+**Baseline 27/46 gated** before the `cap` battery existed; **47/47 ALL PASS**
+after D-ARR-B landed.
 
 - **`ctl` (6/6)** — two-sided apparatus rows, all green: a value read, an
   out-of-bounds subscript, a negative subscript, a re-`DIM`, plus a multi-line

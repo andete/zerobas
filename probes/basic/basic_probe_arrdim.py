@@ -295,10 +295,30 @@ REPRO_EXPECT = {
 # implements. Recorded here, exactly as D-CLP recorded `oos-dim-huge`, so it
 # cannot be "discovered" later by a red gate. It turns from `----` into a
 # gateable row the day the cap is raised.
+# ⚠️ The `cap` measurement moved D-ARR-C's shape: there is no cap to match. The
+# reference accepts ONE HUNDRED dimensions, and what stops the probe past that is
+# the 255-character input line, not the language -- so "raise MAXDIM to the
+# reference's value" has no value to raise it to. It is not a constant bump: the
+# subscripts are already collected on the HARDWARE STACK by ary_parse_subs, and
+# the cap exists only to bound the copy into ARY_IDX, a fixed 8-byte buffer in a
+# 16-byte span with CURLINE immediately above and no slack. Closing it means
+# handing the tenant a POINTER instead of a buffer, which reverses the order the
+# subscripts are read in and so rewrites ary_resolve's column-major
+# element-address math -- where a mistake is silent memory corruption, not an
+# error message. That earns its own spec, gate and falsification.
+#
+# `cap-4` stays GATED: four subscripts are legal on both machines today, so it is
+# the battery's two-sided control, and a `cap` run in which even that reads 9 is
+# measuring the apparatus rather than the cap.
 NEVER_GATED = {
-    "dim-5dim":  "D-ARR-C: MAXDIM=4 vs the reference's >=12",
-    "dim-8dim":  "D-ARR-C: MAXDIM=4 vs the reference's >=12",
-    "dim-12dim": "D-ARR-C: MAXDIM=4 vs the reference's >=12",
+    "dim-5dim":  "D-ARR-C: MAXDIM=4; the reference takes >=100",
+    "dim-8dim":  "D-ARR-C: MAXDIM=4; the reference takes >=100",
+    "dim-12dim": "D-ARR-C: MAXDIM=4; the reference takes >=100",
+    "cap-8":     "D-ARR-C: MAXDIM=4; the reference takes >=100",
+    "cap-16":    "D-ARR-C: MAXDIM=4; the reference takes >=100",
+    "cap-32":    "D-ARR-C: MAXDIM=4; the reference takes >=100",
+    "cap-64":    "D-ARR-C: MAXDIM=4; the reference takes >=100",
+    "cap-100":   "D-ARR-C: MAXDIM=4; the reference takes >=100",
 }
 
 

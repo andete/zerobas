@@ -1702,23 +1702,36 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       two sites catch **disjoint** row sets (site A = `dim-3d` alone, site B =
       the other 18).
 
-- [ ] 🔴 **`MAXDIM = 4` is a divergence, not a cap** (D-ARR-C). Found 2026-07-29
-      as a calibration row in the D-ARR-B matrix — **the seventh consecutive
-      slice** whose calibration turns up a live defect nobody was looking for.
-      `DIM Q%(1,1,1,1,1)` is **accepted by the reference** and raises `Subscript
-      out of range` here; the reference takes **at least twelve** dimensions
-      (`dim-5dim`/`dim-8dim`/`dim-12dim`, all tiny — 32/256/1 elements, so
-      nothing about size). [`basic/sysvars.inc:1544`](basic/sysvars.inc:1544)
-      caps at 4 and [`docs/spec-basic-arrays.md`](docs/spec-basic-arrays.md)
-      §9.1 Q-9b records the disposition `>MAXDIM subscripts → Subscript out of
-      range` — **chosen, written down, and never measured against the
-      reference**, in the same arc whose §4 target #9 was asked and never
-      answered. Out of D-ARR-B's scope: a different cost axis (RAM in the
-      `ARY_IDX` subscript block, plus every descriptor widening). Carried as
-      three reported-never-gated rows in `basic_probe_arrdim.py`, each printing
-      its own reason. ⚠️ The two interact: at twelve dimensions the auto-dim
-      product is 11¹², so a raised cap makes D-ARR-B's overflow far easier to
-      reach.
+- [ ] 🔴 **`MAXDIM = 4` is a divergence, not a cap** (D-ARR-C) — **NEXT SLICE**,
+      measured and spec'd, [`docs/spec-basic-arrdim.md`](docs/spec-basic-arrdim.md)
+      §7a. Found 2026-07-29 as a calibration row in the D-ARR-B matrix — **the
+      seventh consecutive slice** whose calibration turns up a live defect nobody
+      was looking for. [`basic/sysvars.inc:1544`](basic/sysvars.inc:1544) caps at
+      4 and [`docs/spec-basic-arrays.md`](docs/spec-basic-arrays.md) §9.1 Q-9b
+      records the disposition `>MAXDIM subscripts → Subscript out of range` —
+      **chosen, written down, and never measured against the reference**, in the
+      same arc whose §4 target #9 was asked and never answered.
+      ⚠️ **THERE IS NO CAP TO MATCH.** The `cap` battery (a stored `DIM` line +
+      `ON ERROR` + a short anchored `PRINT ERR`, so the readout is not limited by
+      the 37-char echo) measures the reference at **`ERR`=0 for 4, 8, 16, 32, 64
+      and 100 subscripts** against zerobas's 9 from five on. Past 100 it is the
+      **255-character input line** that stops the probe, not the language — so
+      "raise `MAXDIM` to the reference's value" has no value to raise it to.
+      ⚠️ **It is NOT a constant bump.** `ary_parse_subs` already collects every
+      subscript on the **hardware stack**; the cap exists only to bound the copy
+      into `ARY_IDX`, an 8-byte buffer inside the 16-byte `ARY_OP..ARY_ERR` span
+      whose own header records `CURLINE` immediately above it and **no slack**.
+      The real fix hands the tenant a **pointer instead of a buffer** (−6 B RAM,
+      est. −10…−15 B main ROM as the copy loop goes away) — but the subscripts sit
+      in **reverse order** on the stack, so it rewrites `ary_resolve`'s
+      column-major **element-address math**, where a mistake is *silent memory
+      corruption, not an error message*. Its own spec + gate + falsification.
+      Carried meanwhile as **eight reported-never-gated rows** in
+      `basic_probe_arrdim.py` (`dim-5dim`/`-8dim`/`-12dim` + `cap-8`…`cap-100`),
+      each printing its own reason; `cap-4` stays gated as the battery's control.
+      ⚠️ The two items interact: at a hundred dimensions the auto-dim product is
+      11¹⁰⁰, so a raised cap makes D-ARR-B's byte-count overflow trivially
+      reachable — which is the other reason the size rule went in first.
 
 - [x] ✅ **`WIDTH n`'s VALID DOMAIN — LANDED 2026-07-28, 76/76, falsified.**
       Was 🔴 FIVE silent screen-destroyers shipping today. The last residue of
