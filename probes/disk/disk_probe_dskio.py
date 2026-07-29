@@ -121,9 +121,13 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dsk", required=True, help="FAT12 test image (.dsk)")
-    ap.add_argument("--our-machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_BASIC_DISK"))
+    ap.add_argument("--our-machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE"))
     ap.add_argument("--ref-machine", default="National_CF-3300")
     args = ap.parse_args()
+    if not args.our_machine:
+        sys.exit("no zerobas machine: pass --our-machine or set $ZEROBAS_BASIC_MACHINE; there is no default,\n"
+                 "one would silently pick the BUILD under test "
+                 "(docs/spec-lean-retire-s1-explicit-machine.md).")
 
     host = open(args.dsk, "rb").read()
     ours = run_machine(args.our_machine, args.dsk, "/tmp/disk_probe_ours.txt")

@@ -138,8 +138,12 @@ after time 30 {{ cap }}
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_BASIC_DISK"))
+    ap.add_argument("--machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE"))
     args = ap.parse_args()
+    if not args.machine:
+        sys.exit("no zerobas machine: pass --machine or set $ZEROBAS_BASIC_MACHINE; there is no default,\n"
+                 "one would silently pick the BUILD under test "
+                 "(docs/spec-lean-retire-s1-explicit-machine.md).")
 
     if not os.path.exists(DSK):
         sys.exit(f"missing test image {DSK} (run tools/make_test_dsk.py)")

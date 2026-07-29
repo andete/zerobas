@@ -370,9 +370,12 @@ coverage:
 # probes/README.md). Unlike unit-test these BOOT openMSX and need the installed
 # machines (`make machines-oracle`) plus YOUR own reference ROMs (VG-8020,
 # CF-3300) — those are never shipped. `probe` smoke-runs one probe per component.
+# disk_probe_dskio.py names its machine here rather than defaulting to one: no probe
+# picks the build under test any more (docs/spec-lean-retire-s1-explicit-machine.md).
 probe: $(ROM) $(DISK_ROM) $(DISK_TEST_DSK)
 	cp $(DISK_TEST_DSK) /tmp/zerobas-probe.dsk
-	python3 probes/disk/disk_probe_dskio.py --dsk /tmp/zerobas-probe.dsk
+	python3 probes/disk/disk_probe_dskio.py --dsk /tmp/zerobas-probe.dsk \
+	        --our-machine $(LEAN_MACHINE)
 	python3 probes/basic/basic_probe_print.py --cart $(ROM)
 	python3 probes/tape/bios_probe_tapwrite.py --out /tmp/zerobas-tapwrite.rom
 	@echo "probe smoke OK (disk + basic + tape)"
@@ -392,8 +395,22 @@ bdos-acceptance: $(DISK_ROM)
 # the oracle. HEAVY + oracle-dependent (needs `make machines-oracle` + the seed image
 # + your CF-3300 reference ROMs); NOT part of the emulator-free `unit-test`. Scope with
 # `make diskbasic-acceptance ONLY=FIELD`. See disk/docs/diskbasic-acceptance-spec.md.
-diskbasic-acceptance: $(DISK_ROM) $(DISK_TEST_DSK)
-	python3 probes/disk/diskbasic_acceptance.py $(if $(ONLY),--only '$(ONLY)',)
+#
+# ⚠️ THE MACHINE IS NAMED HERE, NOT IN THE PROBES (S1 of RETIRE THE LEAN 16 KB CART,
+# docs/spec-lean-retire-s1-explicit-machine.md). This target used to set NO env var and
+# ride 33 probes' hardcoded lean literals — so what it measured was decided by 33 files
+# rather than by the caller. Now both gates state their subject, and --expect-build makes
+# the runner REFUSE to run if the named machine is not that build: point them both at one
+# machine and one dies, instead of both printing 34/34 with the lean gate silently gone.
+# EU (not the region-less C-BIOS_MSX1_BASIC_DISK) so lean and repack differ ONLY in the
+# BASIC build — the one thing the two gates exist to isolate.
+# `machines` is a prerequisite so a basic/ edit regenerates zerobas-msx1.ips and
+# reinstalls the config first; the lean gate previously had no dependency on the artifact
+# it tests, which is the trap `$(MAIN_ROM)`'s real rule closed on the repack side.
+LEAN_MACHINE    := C-BIOS_MSX1_EU_BASIC_DISK
+diskbasic-acceptance: $(DISK_ROM) $(DISK_TEST_DSK) machines
+	python3 probes/disk/diskbasic_acceptance.py \
+	        --machine $(LEAN_MACHINE) --expect-build lean $(if $(ONLY),--only '$(ONLY)',)
 
 # --- REPACK acceptance: the SAME Disk-BASIC corpus on the relocated BASIC build ----
 # (string-engine arc.) The lean gate above proves the 16 KB basic.rom; this proves the
@@ -401,11 +418,12 @@ diskbasic-acceptance: $(DISK_ROM) $(DISK_TEST_DSK)
 # concat-aware str_eval, relocated kwtable) against the SAME CF-3300 oracle. The disk
 # verbs flow through the changed str_eval / newly-tokenised keywords, so lean-converges
 # does NOT imply repack-converges. Mechanism: an EXTRA machine file (repack-machine) plus
-# the probes' now-optional machine name — each probe's zerobas-BASIC machine default reads
-# $ZEROBAS_BASIC_MACHINE (falling back to its lean literal), so setting it here points the
-# whole corpus at the repack machine while the CF-3300 oracle side is untouched. The runner
-# refuses to start (vacuity guard) if any registry probe fails to honour the env var. Same
-# deps as the lean gate (machines-oracle + seed + CF-3300).
+# the probes' MANDATORY machine name — every probe's zerobas-BASIC machine reads
+# $ZEROBAS_BASIC_MACHINE and has no fallback, so naming it here points the whole corpus at
+# the repack machine while the CF-3300 oracle side is untouched. The runner refuses to
+# start (vacuity guards §3.1.3-§3.1.6) if the machine does not resolve, is not a zerobas
+# machine, is not the --expect-build named here, or if any registry probe fails to honour
+# the env var. Same deps as the lean gate (machines-oracle + seed + CF-3300).
 #
 # There is deliberately NO bdos-acceptance-repack: the BDOS gate exercises the disk ROM
 # (build/disk.rom) under the real CF-3300 BIOS — the string-engine arc does not touch the
@@ -416,8 +434,8 @@ repack-machine: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM)
 	  --sub-rom $(SUB_ROM)
 
 diskbasic-acceptance-repack: $(DISK_ROM) $(DISK_TEST_DSK) repack-machine
-	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) \
-	  python3 probes/disk/diskbasic_acceptance.py $(if $(ONLY),--only '$(ONLY)',)
+	python3 probes/disk/diskbasic_acceptance.py \
+	        --machine $(REPACK_MACHINE) --expect-build repack $(if $(ONLY),--only '$(ONLY)',)
 
 # --- FAT-primitive ERROR-disposition gate (the half diskbasic-acceptance misses) --
 # The 34 verbs above are oracle differentials over the SUCCESS path. They stay

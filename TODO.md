@@ -1814,20 +1814,34 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       charter target and has not been one for a long time: it excludes SEVEN
       whole source files (`str-engine`, `input`, `float`, `float-arith`,
       `arrays`, `keytrap`, `subromcall`) — so no strings, no `INPUT`, no floats,
-      no arrays, no error codes, no KEY traps — costs **276 `IF ROM_BASE`
-      gates**, and has **~68 free bytes** of its 16384. In an emulator both
-      forms are equally easy to run and the repack build is strictly better.
-      ⚠️ **BLOCKING FIRST STEP:** [`tools/check_reloc.py`](tools/check_reloc.py)
-      proves the relocated image is a PURE RELOCATION by comparing the lean ROM
-      against a frozen baseline. That property needs a REPLACEMENT before the
-      lean build stops being built.
+      no arrays, no error codes, no KEY traps — costs **311 `IF ROM_BASE`
+      gates** (`grep -rn 'IF ROM_BASE' basic/ | wc -l`; this entry said 276, it
+      has drifted up by 35), and has **~68 free bytes** of its 16384. In an
+      emulator both forms are equally easy to run and the repack build is
+      strictly better.
+      ✅ **S1 DONE 2026-07-29** — [`docs/spec-lean-retire-s1-explicit-machine.md`](docs/spec-lean-retire-s1-explicit-machine.md).
+      Both gates now NAME their machine (`LEAN_MACHINE` / `REPACK_MACHINE`) and
+      assert it with `--expect-build`, so the two can no longer collapse into one
+      test; all 38 probe fallbacks are GONE (the machine is mandatory); the runner
+      gained zerobas-side vacuity guards §3.1.3–§3.1.6. Retiring lean is now a
+      two-line Makefile edit, not a hunt through 38 files. **It also found a live
+      defect: [`disk_probe_format.py`](probes/disk/disk_probe_format.py) parsed
+      `--machine` and threw it away, so CALL FORMAT had NEVER run on the repack
+      build** — and the wiring guard passed it because the env-var name appeared
+      in its source.
+      ⚠️ **NOT A BLOCKER (dissolved by the DIRECTION below):**
+      [`tools/check_reloc.py`](tools/check_reloc.py) proves the relocated image is
+      a PURE RELOCATION by comparing the lean ROM against a frozen baseline. A
+      DERIVED build needs no anti-drift proof, so this needs no replacement — but
+      its other three checks and the `__MEAS_LOW_END`/`__MEAS_PAGE1_END` wall
+      readout must survive, since every slice is costed against them.
       **DIRECTION (user, 2026-07-29): if a lean build is ever wanted again, CHERRY-
       PICK AND ASSEMBLE IT FROM THE FINISHED zerobas BUILD** rather than keeping a
       second build alive in parallel. This inverts the blocker above rather than
       solving it: the byte-identity baseline exists to prove a build that is
       CO-MAINTAINED never drifts, and a build that is DERIVED on demand does not
       need that proof at all — it is cut from the tree that is already gated. It
-      also retires the 276 `IF ROM_BASE` gates as a *maintenance* cost rather than
+      also retires the 311 `IF ROM_BASE` gates as a *maintenance* cost rather than
       a *correctness* one, and it means findings like D-LINEMAX's lean `TOKBUF`
       overrun stop being defects-carried-forward: the derived build would inherit
       the fixed crunch, not the 96-byte one.

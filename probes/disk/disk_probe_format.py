@@ -130,12 +130,17 @@ def run(machine, choice):
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_BASIC_DISK"))
-    ap.parse_args()
+    # ⚠️ This used to `ap.parse_args()` and DISCARD the result, then boot a hardcoded
+    # "C-BIOS_MSX1_EU_BASIC_DISK" below — so CALL FORMAT ran on the LEAN build under
+    # `make diskbasic-acceptance-repack` too, and the runner's wiring guard passed it
+    # anyway because the env-var NAME appears in this source. Found 2026-07-29 by S1's
+    # fallback sweep (docs/spec-lean-retire-s1-explicit-machine.md §1.4).
+    ap.add_argument("--machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE"))
+    args = ap.parse_args()
     rc = 0
 
     for name, choice, exp_bpb, exp_fat in GEOMS:
-        img = run("C-BIOS_MSX1_EU_BASIC_DISK", choice)
+        img = run(args.machine, choice)
         bpb = img[11:28]
         fathead = img[512:515]
         oks = bpb == exp_bpb and fathead == exp_fat

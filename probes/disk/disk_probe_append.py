@@ -130,12 +130,16 @@ def run(machine, lines, out, cf3300=False, timeout=140.0):
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_BASIC_DISK"))
+    ap.add_argument("--machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE"))
     ap.add_argument("--ref-machine", default="National_CF-3300")
     ap.add_argument("--no-ref", action="store_true")
     ap.add_argument("--show-ref", action="store_true",
                     help="run ONLY the CF-3300 and print its AP.TXT bytes (to pin EXPECT)")
     args = ap.parse_args()
+    if not args.machine:
+        sys.exit("no zerobas machine: pass --machine or set $ZEROBAS_BASIC_MACHINE; there is no default,\n"
+                 "one would silently pick the BUILD under test "
+                 "(docs/spec-lean-retire-s1-explicit-machine.md).")
 
     if args.show_ref:
         refimg = run(args.ref_machine, PROGRAM, "/tmp/zapp_ref.txt", cf3300=True)

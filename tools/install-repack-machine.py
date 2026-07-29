@@ -17,13 +17,17 @@ This writes a sibling machine "C-BIOS_MSX1_EU_REPACK_DISK" that is the same disk
 slot-0 main ROM is the MERGED repack ROM directly — no IPS patch, BASIC is baked in. With
 --sub-rom it also places zerobas-sub (the built-in MSX2-style sub-ROM) in the previously-empty
 slot 3-2, per the 2026-07-11 slot-map amendment (RAM stays 3-0, disk stays 3-1, sub takes 3-2).
-Point the acceptance runner at it with the omsx_run remap:
+Point the acceptance runner at it by NAMING it — the runner then puts it in each probe's
+environment, and no probe has a default of its own to fall back to:
 
-    ZEROBAS_MACHINE_MAP=C-BIOS_MSX1_EU_BASIC_DISK=C-BIOS_MSX1_EU_REPACK_DISK \
-        python3 probes/disk/diskbasic_acceptance.py
+    python3 probes/disk/diskbasic_acceptance.py \
+        --machine C-BIOS_MSX1_EU_REPACK_DISK --expect-build repack
 
 so every probe's zerobas side boots the repack build while its CF-3300 oracle side is
-unchanged. See the Makefile `diskbasic-acceptance-repack` / `bdos-acceptance-repack` targets.
+unchanged, and the runner refuses to start if that machine is not in fact the repack
+build. See the Makefile `diskbasic-acceptance-repack` target.
+(This used to document a `ZEROBAS_MACHINE_MAP=old=new` remap. That name existed nowhere
+in the tree but this docstring — the real variable has always been ZEROBAS_BASIC_MACHINE.)
 
 The config is self-contained (like probes/basic/basic_probe_repack_boot.py's machine): it
 does NOT patch a stock C-BIOS config, it points slot 0 straight at the merged ROM. Slot 3 is

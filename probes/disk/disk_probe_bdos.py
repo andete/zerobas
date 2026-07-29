@@ -439,9 +439,13 @@ def main() -> int:
     ap.add_argument("--dos-disk", required=True,
                     help="a plain MSX-DOS 1 system disk that boots to A> "
                          "(MSXDOS.SYS + COMMAND.COM; not a game/menu disk)")
-    ap.add_argument("--our-machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_BASIC_DISK"))
+    ap.add_argument("--our-machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE"))
     ap.add_argument("--ref-machine", default="National_CF-3300")
     args = ap.parse_args()
+    if not args.our_machine:
+        sys.exit("no zerobas machine: pass --our-machine or set $ZEROBAS_BASIC_MACHINE; there is no default,\n"
+                 "one would silently pick the BUILD under test "
+                 "(docs/spec-lean-retire-s1-explicit-machine.md).")
 
     work = "/tmp/zerobas_bdos_dos.dsk"
     build_dos_disk(args.dos_disk, work)

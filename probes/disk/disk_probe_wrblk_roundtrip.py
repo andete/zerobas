@@ -38,7 +38,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ASM = os.path.join(HERE, "wrblk_rt.asm")
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 DEFAULT_DOS = os.path.expanduser("~/Documents/msx/msx/disks/test.dsk")
-OUR_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_BASIC_DISK")
+OUR_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE")
 REF_MACHINE = "National_CF-3300"
 TARGET = ("WRTEST", "BIN")
 
@@ -232,6 +232,10 @@ def summarise(tag: str, fp: str, recnum: int, rs: int):
 
 
 def main():
+    if not OUR_MACHINE:
+        sys.exit("no zerobas machine: set $ZEROBAS_BASIC_MACHINE; there is no default,\n"
+                 "one would silently pick the BUILD under test "
+                 "(docs/spec-lean-retire-s1-explicit-machine.md).")
     ap = argparse.ArgumentParser()
     ap.add_argument("--dos-disk", default=DEFAULT_DOS)
     ap.add_argument("--case", choices=list(CASES) + ["all"], default="all")

@@ -84,7 +84,7 @@ from bas_tokenise import make_basic_file  # noqa: E402  (our-ROM tokeniser helpe
 
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 
-OURS_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_BASIC_DISK")
+OURS_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE")
 
 TXTBASE = 0x8001
 
@@ -196,6 +196,10 @@ def main() -> int:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--ours-machine", default=OURS_MACHINE)
     args = ap.parse_args()
+    if not args.ours_machine:
+        sys.exit("no zerobas machine: pass --ours-machine or set $ZEROBAS_BASIC_MACHINE; there is no\n"
+                 "default, one would silently pick the BUILD under test "
+                 "(docs/spec-lean-retire-s1-explicit-machine.md).")
 
     print("BSAVE/BLOAD option-parse hygiene: a malformed flag must be rejected "
           "(our `load error`), never silently perform the op. OURS-ONLY behavioural.")

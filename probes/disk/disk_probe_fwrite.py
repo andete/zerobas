@@ -523,9 +523,13 @@ def main() -> int:
                     help="a plain MSX-DOS 1 system disk that boots to A> "
                          "(the FAT12 seed for the cross-machine + structural parts); "
                          "copied to /tmp, never written")
-    ap.add_argument("--our-machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_BASIC_DISK"))
+    ap.add_argument("--our-machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE"))
     ap.add_argument("--ref-machine", default="National_CF-3300")
     args = ap.parse_args()
+    if not args.our_machine:
+        sys.exit("no zerobas machine: pass --our-machine or set $ZEROBAS_BASIC_MACHINE; there is no default,\n"
+                 "one would silently pick the BUILD under test "
+                 "(docs/spec-lean-retire-s1-explicit-machine.md).")
 
     # On our `*_BASIC_DISK` machine a bootable DOS disk would auto-load MSXDOS.SYS
     # into $C000+ (overwriting the injected stub) because our disk ROM services the

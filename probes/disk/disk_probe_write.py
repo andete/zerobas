@@ -152,10 +152,14 @@ def main() -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dsk", required=True, help="FAT12 seed image (.dsk); copied to /tmp, never written")
-    ap.add_argument("--our-machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_BASIC_DISK"))
+    ap.add_argument("--our-machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE"))
     ap.add_argument("--ref-machine", default="National_CF-3300")
     ap.add_argument("--sector", type=int, default=TARGET_SEC)
     args = ap.parse_args()
+    if not args.our_machine:
+        sys.exit("no zerobas machine: pass --our-machine or set $ZEROBAS_BASIC_MACHINE; there is no default,\n"
+                 "one would silently pick the BUILD under test "
+                 "(docs/spec-lean-retire-s1-explicit-machine.md).")
 
     pattern = make_pattern()
     pat_hex = pattern.hex()

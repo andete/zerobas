@@ -16,8 +16,8 @@ returning 0 on convergence / non-zero on divergence. So this runner is a thin
 registry-driven subprocess dispatcher — no harvesting, no allowlist, no verdict
 parsing. It runs each probe, gates on exit code, and prints an N/N scoreboard.
 
-Two oracle styles, both dispatched identically (they differ only in the machine
-each probe defaults to, which the runner leaves untouched):
+Two oracle styles, both dispatched identically (they differ only in what they compare
+the zerobas side AGAINST; the zerobas machine itself is one --machine for the whole run):
   * live     — differential vs a running National_CF-3300 black box.
   * artifact — round-tripped against a real stock FAT12 image, read per public spec.
 
@@ -27,6 +27,12 @@ VACUITY GUARDS (the BDOS-gate lesson — a gate that can't go red is not a gate)
   2. For a `live` probe, the run output MUST show the CF-3300 differential actually
      ran (the reference machine name appears in the probe's report); if it doesn't,
      the cell FAILS as VACUOUS even on exit 0.
+  Guards 1+2 protect the ORACLE side. Guards 3-5 are the ZEROBAS-side analogue
+  (docs/spec-lean-retire-s1-explicit-machine.md): the machine must RESOLVE, must be
+  a zerobas machine at all, and must be the BUILD THE CALLER INTENDED (--expect-build).
+  Guard 5 is what keeps `diskbasic-acceptance` and `-repack` from silently becoming
+  the same test: point both at one machine and one of them dies instead of both
+  printing 34/34.
 
 HEAVY / oracle-dependent: boots openMSX (one or both machines) per probe, so it
 needs the installed oracle machines (`make machines-oracle`), the seed FAT12 image
@@ -35,19 +41,24 @@ probes under probes/README.md. NOT part of the emulator-free `make unit-test`.
 Clean-room: stock is a black box; the probes + this runner are our own code.
 
 Usage:
-  python3 probes/disk/diskbasic_acceptance.py [--only FIELD] [--list] [--timeout S]
+  python3 probes/disk/diskbasic_acceptance.py --machine M --expect-build lean|repack
+                                              [--only FIELD] [--list] [--timeout S]
 Exit: 0 = every gated probe converged; 1 = a divergence / probe error / vacuity.
 """
 from __future__ import annotations
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+import openmsx_paths  # noqa: E402  (shared share/user dir discovery)
+
 TEST_DSK = os.path.join(ROOT, "disk", "test720.dsk")
 DSK_COPY = "/tmp/zerobas_dbacc.dsk"          # /tmp copy so the committed image can't mutate
 # live-oracle vacuity markers: a `live` probe MUST print evidence its CF-3300
@@ -56,7 +67,8 @@ DSK_COPY = "/tmp/zerobas_dbacc.dsk"          # /tmp copy so the committed image 
 REF_MARKERS = ("cf-3300", "stock")
 
 # label -> (probe script, extra args, style). Extra args are almost always empty;
-# each probe's own defaults pick the right machine. The set is the ✅ rows of
+# the zerobas machine comes from --machine via the child env, never from a probe
+# default (no probe has one any more). The set is the ✅ rows of
 # disk/docs/diskbasic-verb-coverage.md §2 (kept in sync with that scoreboard).
 REGISTRY = [
     # --- live CF-3300 differentials ---------------------------------------------
@@ -122,17 +134,17 @@ def _check_registry() -> None:
             sys.exit(f"registry error: {label}: missing probe {script}")
 
 
-def _check_repack_wiring() -> None:
-    """Vacuity guard 3 (repack): when ZEROBAS_BASIC_MACHINE is set we are running the
-    corpus on the RELOCATED BASIC build. Every probe that boots a zerobas-BASIC machine
-    must honour that env var (its --machine/OURS_MACHINE default reads it), or it would
-    silently boot the LEAN machine and 'converge' as FALSE repack coverage — the exact
-    trap this gate exists to prevent. So refuse to run unless each registry probe either
+def _check_machine_wiring() -> None:
+    """Vacuity guard §3.1.6: every probe that boots a zerobas-BASIC machine must honour
+    ZEROBAS_BASIC_MACHINE (its --machine/OURS_MACHINE default reads it), or it would pick
+    its OWN build regardless of what this run was told to test — false coverage for
+    whichever gate it lands in. So refuse to run unless each registry probe either
     references ZEROBAS_BASIC_MACHINE, or delegates to disk_probe_diff / omsx_session (those
     boot the National_CF-3300 disk-ROM machine — build-invariant w.r.t. the BASIC build,
-    correctly NOT overridden). A newly-added probe that forgets the env wrap fails here."""
-    if not os.environ.get("ZEROBAS_BASIC_MACHINE"):
-        return
+    correctly NOT overridden). A newly-added probe that forgets the env wrap fails here.
+
+    Used to run only when the env var was set, i.e. only on the repack gate; both gates
+    now name their machine, so it runs on BOTH."""
     ENV = "ZEROBAS_BASIC_MACHINE"
     DISK_ROM_DELEGATORS = ("disk_probe_diff", "omsx_session")
     offenders = []
@@ -142,10 +154,84 @@ def _check_repack_wiring() -> None:
             continue
         offenders.append(f"{label} ({script})")
     if offenders:
-        sys.exit("repack wiring error: ZEROBAS_BASIC_MACHINE is set, but these probes do "
-                 "not read it and would run the LEAN build (false coverage):\n  - "
+        sys.exit("machine wiring error: these probes do not read ZEROBAS_BASIC_MACHINE, "
+                 "so they would pick their own build instead of the one under test "
+                 "(false coverage):\n  - "
                  + "\n  - ".join(offenders)
-                 + f"\nWrap their zerobas machine default in os.environ.get('{ENV}', ...).")
+                 + f"\nRead their zerobas machine from os.environ.get('{ENV}') "
+                   f"(vacuity guard §3.1.6).")
+
+
+# --- zerobas-side machine provenance (vacuity guards 3-5) ---------------------
+# The artifacts that IDENTIFY a zerobas machine config. A lean machine boots stock
+# C-BIOS with build/basic.rom spliced in as a page-1 IPS patch; the repack machine
+# points slot 0 straight at the merged main ROM. Nothing else in the tree writes
+# either reference, so the config alone says which BUILD the machine runs.
+LEAN_MARK   = os.path.join(ROOT, "zerobas-msx1.ips")            # <ips> patch entry
+REPACK_MARK = os.path.join(ROOT, "build", "zerobas-main-eu.rom")  # slot-0 <filename>
+
+
+def _machine_xml(machine: str) -> str:
+    """Resolve <machine>.xml the way openMSX itself does: user dir first, then share.
+    Guard §3.1.3 — a machine that does not resolve is a ~2h TIMEOUT cascade otherwise
+    (openMSX dies instantly, but each probe only learns via its own --timeout)."""
+    searched = []
+    for base in (os.path.join(openmsx_paths.find_user(), "share"),
+                 openmsx_paths.find_share()):
+        d = os.path.join(base, "machines")
+        searched.append(d)
+        cand = os.path.join(d, f"{machine}.xml")
+        if os.path.isfile(cand):
+            return cand
+    sys.exit(f"machine error: openMSX machine {machine!r} does not resolve — no "
+             f"{machine}.xml in any of:\n  - " + "\n  - ".join(searched)
+             + "\nInstall it (`make machines` / `make repack-machine`) or fix "
+               "$ZEROBAS_BASIC_MACHINE (vacuity guard §3.1.3).")
+
+
+def _check_machine_provenance(machine: str, expect: str) -> None:
+    """Guards §3.1.4 + §3.1.5: the machine must BE a zerobas machine, and must be the
+    BUILD the caller asked for.
+
+    §3.1.4 catches "pointed at stock C-BIOS": every probe then reports nothing and the
+    run reads as a mass functional failure rather than as a wiring error.
+    §3.1.5 catches the coupling this whole slice exists to prevent — repointing the
+    corpus so `diskbasic-acceptance` and `diskbasic-acceptance-repack` become the SAME
+    test, both still printing 34/34 with the lean gate silently gone.
+
+    Deliberately NOT a timestamp check: `zerobas-msx1.ips` is legitimately older than
+    build/basic.rom (the lean image is pinned to check_reloc.py's frozen baseline, so
+    it does not drift), and an mtime guard would fire on a byte-correct machine.
+    Freshness is Make's job — both targets depend on the machine-install rule."""
+    xml = _machine_xml(machine)
+    text = open(xml, encoding="utf-8", errors="replace").read()
+
+    refs = re.findall(r"<(?:filename|ips|bps)>([^<]+)</(?:filename|ips|bps)>", text)
+    kind = ("lean"   if any(os.path.abspath(r) == LEAN_MARK   for r in refs) else
+            "repack" if any(os.path.abspath(r) == REPACK_MARK for r in refs) else
+            "unknown")
+
+    if kind == "unknown":
+        sys.exit(f"machine error: {machine!r} ({xml}) references NO zerobas artifact "
+                 f"— it is not a zerobas machine, so every probe would boot a BASIC "
+                 f"we did not build.\nExpected a <ips> naming {LEAN_MARK} (lean) or a "
+                 f"<filename> naming {REPACK_MARK} (repack) (vacuity guard §3.1.4).")
+
+    # A config naming a deleted build/ artifact boots into an unrelated-looking failure.
+    missing = [r for r in refs
+               if os.path.abspath(r).startswith(ROOT + os.sep) and not os.path.isfile(r)]
+    if missing:
+        sys.exit(f"machine error: {machine!r} ({xml}) references repo artifacts that do "
+                 f"not exist:\n  - " + "\n  - ".join(missing)
+                 + "\nRebuild them (`make all` / `make repack-machine`) (guard §3.1.4).")
+
+    if kind != expect:
+        sys.exit(f"machine error: --expect-build {expect}, but {machine!r} ({xml}) is a "
+                 f"{kind.upper()} machine.\nThe lean and repack gates must not collapse "
+                 f"into the same test — one of them would vanish while both still "
+                 f"printed N/N (vacuity guard §3.1.5).")
+
+    print(f"[runner] zerobas machine: {machine}  build={kind}  ({xml})")
 
 
 def run_probe(script: str, extra: list[str], env: dict, timeout: float) -> tuple[int, str]:
@@ -181,10 +267,16 @@ def main() -> int:
                     help="print the registry/plan without running any probe")
     ap.add_argument("--timeout", type=float, default=240.0,
                     help="per-probe timeout in seconds (default 240)")
+    ap.add_argument("--machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE"),
+                    help="zerobas machine the whole corpus boots (default "
+                         "$ZEROBAS_BASIC_MACHINE). There is NO built-in default: the "
+                         "caller states which build is under test.")
+    ap.add_argument("--expect-build", choices=("lean", "repack"),
+                    help="assert --machine really IS this build (vacuity guard §3.1.5)")
     args = ap.parse_args()
 
     _check_registry()
-    _check_repack_wiring()
+    _check_machine_wiring()
 
     if args.list:
         print("Disk-BASIC acceptance registry:")
@@ -193,8 +285,21 @@ def main() -> int:
         print(f"\n{len(REGISTRY)} probes (plan only — nothing run)")
         return 0
 
+    if not args.machine:
+        sys.exit("no zerobas machine selected: pass --machine or set "
+                 "$ZEROBAS_BASIC_MACHINE. There is deliberately no default — a "
+                 "hardcoded one silently decides which BUILD this gate measures "
+                 "(docs/spec-lean-retire-s1-explicit-machine.md).")
+    if not args.expect_build:
+        sys.exit(f"--expect-build is required: state whether {args.machine!r} is the "
+                 f"'lean' or the 'repack' build, so the two gates cannot silently "
+                 f"collapse into the same test (vacuity guard §3.1.5).")
+    _check_machine_provenance(args.machine, args.expect_build)
+
     # /tmp copy so the artifact probes can't mutate the committed seed image.
+    # The machine goes into the CHILD env: every probe reads it, none defaults.
     env = dict(os.environ)
+    env["ZEROBAS_BASIC_MACHINE"] = args.machine
     if os.path.isfile(TEST_DSK):
         shutil.copyfile(TEST_DSK, DSK_COPY)
         env["DISK_DSK"] = DSK_COPY

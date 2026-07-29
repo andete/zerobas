@@ -124,8 +124,12 @@ def _files_lines(rows):
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_BASIC_DISK"))
+    ap.add_argument("--machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE"))
     args = ap.parse_args()
+    if not args.machine:
+        sys.exit("no zerobas machine: pass --machine or set $ZEROBAS_BASIC_MACHINE; there is no default,\n"
+                 "one would silently pick the BUILD under test "
+                 "(docs/spec-lean-retire-s1-explicit-machine.md).")
     rc = 0
 
     # Case 1 — native width: content + directory order.

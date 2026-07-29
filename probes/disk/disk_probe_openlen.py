@@ -54,10 +54,14 @@ EXPECT = ["rec01|   AA", "rec02|   BB", "rec03|   CC", "rec04|   DD"]
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--machine", default=_os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_BASIC_DISK"))
+    ap.add_argument("--machine", default=_os.environ.get("ZEROBAS_BASIC_MACHINE"))
     ap.add_argument("--ref-machine", default="National_CF-3300")
     ap.add_argument("--no-ref", action="store_true")
     args = ap.parse_args()
+    if not args.machine:
+        _sys.exit("no zerobas machine: pass --machine or set $ZEROBAS_BASIC_MACHINE; there is no default,\n"
+                  "one would silently pick the BUILD under test "
+                  "(docs/spec-lean-retire-s1-explicit-machine.md).")
     rc = 0
 
     got = run(args.machine, PROGRAM, "/tmp/zol.txt")

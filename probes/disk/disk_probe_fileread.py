@@ -101,11 +101,15 @@ def run(machine, line, out, cf3300=False, timeout=90.0):
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_BASIC_DISK"))
+    ap.add_argument("--machine", default=os.environ.get("ZEROBAS_BASIC_MACHINE"))
     ap.add_argument("--ref-machine", default="National_CF-3300",
                     help="real Disk BASIC reference for the differential")
     ap.add_argument("--no-ref", action="store_true", help="skip the CF-3300 run")
     args = ap.parse_args()
+    if not args.machine:
+        sys.exit("no zerobas machine: pass --machine or set $ZEROBAS_BASIC_MACHINE; there is no default,\n"
+                 "one would silently pick the BUILD under test "
+                 "(docs/spec-lean-retire-s1-explicit-machine.md).")
     rc = 0
     cases = [
         ('LINE INPUT#', 'open"hi.txt" for input as #1:line input#1,a$:close#1:print a$'),
