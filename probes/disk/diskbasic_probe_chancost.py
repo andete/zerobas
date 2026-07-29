@@ -1,0 +1,356 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 Joost Yervante Damad
+# SPDX-License-Identifier: 0BSD
+
+"""Characterize what ONE FILE CHANNEL COSTS on a real disk-capable MSX1.
+
+The question this answers: zerobas spends 562 B per channel (50 B state + a
+private 512-byte sector buffer, basic/sysvars.inc FCH_CTXSZ) and caps at
+FCH_CEIL=2. What does the reference actually spend, and what is its ceiling?
+
+⚠️ WHY THIS PROBE EXISTS RATHER THAN AN `omsx_repl` BATTERY. The earlier attempt
+read `<none>` on every row and was mis-read as "the CF-3300 won't answer". It is
+an APPARATUS failure: `omsx_repl` scrapes the SCREEN 0 name table at VRAM $0000
+at 40 columns (probes/lib/omsx_repl.py SCR_ADDR/COLS, whose comment already
+flags this), but **CF-3300 Disk BASIC boots to SCREEN 1** — measured here, not
+assumed: `scrmod=$01`, `linlen=$1d` (29), name table **$1800 at 32 columns**.
+This probe reads the geometry out of RAM and picks the name table from it, so it
+works on both machines.
+
+⚠️ `FRE(0)` IS IMPURE — it counts down to the STACK POINTER, and every extra
+expression-nesting level costs 6 bytes (docs/binfre-vg8020-characterization.md
+§3.1). Every reading below is therefore the byte-identical expression
+`PRINT FRE(0)` at identical depth. Do not "simplify" one row's expression.
+
+CONTROLS (a ladder this clean is exactly when to try hardest to falsify it):
+  * `ctl_syntax` types a misspelled keyword and MUST show `Syntax error` — if it
+    comes back clean the harness is not typing and every number here is worthless;
+  * `ctl_noop` types `REM MAXFILES=8`: echoed, parsed, and MUST NOT move FRE(0)
+    — so the ladder's movement is attributable to the statement, not the typing;
+  * note `MAXFILES=1` reads the SAME as an untouched boot because 1 IS the Disk
+    BASIC default — that row CANNOT distinguish "the statement ran" from "the
+    line was never typed", and is not load-bearing. The rows that carry the
+    result are 0/2/3/4/8/15, which all move.
+
+CLEAN-ROOM: black-box only — typed BASIC in, screen + documented sysvars out.
+No reference ROM is read or disassembled.
+
+DISK SAFETY: every case runs on a /tmp COPY of the test image; the committed
+.dsk is never mounted (OPEN FOR OUTPUT would mutate it).
+"""
+from __future__ import annotations
+
+import os as _os
+import sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+_sys.path.insert(0, _os.path.join(
+    _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib"))
+
+import argparse
+import concurrent.futures as cf
+import os
+import re
+import shutil
+import signal
+import subprocess
+import tempfile
+import time
+
+OMSX = shutil.which("openmsx") or "/Applications/openMSX.app/Contents/MacOS/openmsx"
+SRC_DSK = os.path.join(os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__)))), "disk", "test720.dsk")
+
+# side -> (machine, has-date-prompt, boot instant in emulated seconds)
+MACHINES = {
+    "ref": ("National_CF-3300", True, 12.0),
+    "zb":  (os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK"),
+            False, 8.0),
+}
+
+# label -> typed lines. Keep <= 6 lines: the 24-row screen scrolls.
+CASES = [
+    ("ctl_syntax", ["MAXFILEZ=2", "PRINT FRE(0)"]),
+    ("ctl_noop",   ["REM MAXFILES=8", "PRINT FRE(0)"]),
+    ("boot",  ["PRINT FRE(0)"]),
+    ("mf0",   ["MAXFILES=0", "PRINT FRE(0)"]),
+    ("mf1",   ["MAXFILES=1", "PRINT FRE(0)"]),
+    ("mf2",   ["MAXFILES=2", "PRINT FRE(0)"]),
+    ("mf3",   ["MAXFILES=3", "PRINT FRE(0)"]),
+    ("mf4",   ["MAXFILES=4", "PRINT FRE(0)"]),
+    ("mf8",   ["MAXFILES=8", "PRINT FRE(0)"]),
+    ("mf15",  ["MAXFILES=15", "PRINT FRE(0)"]),
+    ("mf16",  ["MAXFILES=16", "PRINT FRE(0)"]),
+    ("mf255", ["MAXFILES=255", "PRINT FRE(0)"]),
+    # is the buffer charged when the channel is DECLARED or when it is OPENED?
+    ("open_after", ["MAXFILES=2", 'OPEN "ZQ.DAT" FOR OUTPUT AS #1', "PRINT FRE(0)"]),
+    # which pool pays? (FRE("") is the string pool -- a separate allocator)
+    ("str0",  ["MAXFILES=0", 'PRINT FRE("")']),
+    ("str8",  ["MAXFILES=8", 'PRINT FRE("")']),
+    # incidental, kept because the cost pass found it: LOF on a fresh OUTPUT
+    # channel. `lof_existing` is its two-sided control -- it MUST agree (26).
+    ("lof_new",      ['OPEN "ZQ.DAT" FOR OUTPUT AS #1', "PRINT LOF(1)"]),
+    ("lof_existing", ['OPEN "HI.TXT" FOR INPUT AS #1', "PRINT LOF(1)"]),
+]
+
+# The reference's own recorded answers. Re-checking that the oracle still
+# reproduces these is what makes it an oracle (memory: validate-oracle-artifacts).
+# value = the last integer printed, or an error string seen on screen.
+REF_EXPECT = {
+    "ctl_syntax": "SYNTAX",
+    "ctl_noop":   23430,
+    "boot":       23430,
+    "mf0":        23697,
+    "mf1":        23430,
+    "mf2":        23163,
+    "mf3":        22896,
+    "mf4":        22629,
+    "mf8":        21561,
+    "mf15":       19692,
+    "mf16":       "IFC",
+    "mf255":      "IFC",
+    "open_after": 23163,
+    "str0":       200,
+    "str8":       200,
+    "lof_new":    0,
+    "lof_existing": 26,
+}
+
+# Error CLASSES, not wordings. zerobas prints its OWN lowercase messages by
+# deliberate provenance policy (basic/PROVENANCE.md §851: own wording, never the
+# reference's verbatim strings), so `Syntax error` vs `syntax error` is the
+# firewall working as designed -- NOT a divergence. Comparing the raw text would
+# emit a false divergence on every error row and bury the real findings.
+ERR_CLASSES = {
+    "SYNTAX": ("syntax error",),
+    "IFC":    ("illegal function call",),
+    "FNF":    ("file not found",),
+}
+
+# How each case is compared between the two machines:
+#   "class"  — compare the error class / integer verbatim (a real differential)
+#   "absfre" — INFORMATIONAL ONLY. Absolute FRE(0) differs between machines by
+#              design (different RAM maps); only the SLOPE across the ladder is
+#              meaningful, and that is derived separately below.
+COMPARE = {
+    "boot": "absfre", "ctl_noop": "absfre", "open_after": "absfre",
+    "mf0": "absfre", "mf1": "absfre", "mf2": "absfre", "mf3": "absfre",
+    "mf4": "absfre", "mf8": "absfre", "mf15": "absfre",
+}
+
+
+def err_class(text: str):
+    """Map a screen line to an error class, or None if it is not an error."""
+    low = text.lower()
+    for cls, needles in ERR_CLASSES.items():
+        for n in needles:
+            if n in low:
+                return cls
+    return None
+
+
+def tcl_quote(s: str) -> str:
+    # CR must be the ESCAPE \r; a raw 0x0d breaks Tcl's line parsing and the
+    # Enter event is silently dropped.
+    out = []
+    for ch in s:
+        if ch == "\r":
+            out.append("\\r")
+        elif ch in '"\\[]$':
+            out.append("\\" + ch)
+        else:
+            out.append(ch)
+    return '"' + "".join(out) + '"'
+
+
+def build_tcl(out_path: str, lines, date_prompt: bool, boot_t: float) -> str:
+    L = ["set throttle off",
+         f"set __f [open {{{out_path}}} w]",
+         "proc __hex {a l} { binary scan [debug read_block memory $a $l] H* h; return $h }",
+         "proc __hex_v {a l} { binary scan [debug read_block VRAM $a $l] H* h; return $h }",
+         "proc __dump {} {",
+         "  global __f",
+         '  puts $__f "meta scrmod=[__hex 0xFCAF 1] linlen=[__hex 0xF3B0 1]'
+         ' himem=[__hex 0xFC4A 2] txttab=[__hex 0xF676 2]"',
+         '  puts $__f "scr0=[__hex_v 0x0000 960]"',
+         '  puts $__f "scr1=[__hex_v 0x1800 768]"',
+         "  flush $__f",
+         "}"]
+    t = boot_t
+    if date_prompt:
+        L.append(f'after time {t} {{ type "\\r" }}')   # clear "Enter date"
+        t += 4.0
+    for ln in lines:
+        # openMSX drops a CR that shares a burst with text under `throttle off`,
+        # so each Enter is its own event ~3s after its command.
+        L.append(f"after time {t} {{ type {tcl_quote(ln)} }}")
+        L.append(f'after time {t + 3.0} {{ type "\\r" }}')
+        t += 4.5
+    L.append(f"after time {t + 2.0} {{ __dump }}")
+    L.append(f"after time {t + 4.0} {{ close $__f; exit }}")
+    return "\n".join(L) + "\n"
+
+
+def decode(hexv: str, cols: int):
+    data = bytes.fromhex(hexv)
+    return [("".join(chr(c) if 32 <= c < 127 else " "
+                     for c in data[r * cols:(r + 1) * cols])).strip()
+            for r in range(len(data) // cols)]
+
+
+def run_case(side: str, label: str, lines):
+    machine, date_prompt, boot_t = MACHINES[side]
+    dsk = tempfile.NamedTemporaryFile(suffix=".dsk", prefix=f"cc_{side}_{label}_",
+                                      delete=False).name
+    shutil.copy(SRC_DSK, dsk)              # /tmp copy -- never the committed image
+    out = f"/tmp/chancost_{side}_{label}.txt"
+    tcl = out + ".tcl"
+    with open(tcl, "w") as fh:
+        fh.write(build_tcl(out, lines, date_prompt, boot_t))
+    if os.path.exists(out):
+        os.unlink(out)
+    proc = subprocess.Popen(
+        [OMSX, "-machine", machine, "-diska", dsk,
+         "-command", "set renderer none", "-script", tcl],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    deadline = time.time() + 200
+    while proc.poll() is None and time.time() < deadline:
+        time.sleep(0.1)
+    if proc.poll() is None:
+        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        os.unlink(dsk)
+        return side, label, None, ["TIMEOUT"], ""
+    os.unlink(dsk)
+    if not os.path.exists(out):
+        return side, label, None, ["NO CAPTURE (machine/ROMs missing?)"], ""
+    s0, s1, meta, scrmod = [], [], "", 0
+    for line in open(out):
+        line = line.rstrip("\n")
+        if line.startswith("scr0="):
+            s0 = decode(line.partition("=")[2], 40)
+        elif line.startswith("scr1="):
+            s1 = decode(line.partition("=")[2], 32)
+        else:
+            meta = line
+            for tok in line.split():
+                if tok.startswith("scrmod="):
+                    scrmod = int(tok.split("=")[1], 16)
+    # geometry MEASURED, not assumed
+    rows = [r for r in (s1 if scrmod == 1 else s0) if r]
+    value = None
+    for r in rows:                                   # an error outranks a number
+        cls = err_class(r)
+        if cls:
+            value = cls
+    if value is None:
+        nums = [int(r) for r in rows if re.fullmatch(r"-?\d+", r)]
+        value = nums[-1] if nums else None
+    return side, label, value, rows, meta
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--only", help="comma-separated case labels")
+    ap.add_argument("--side", choices=("ref", "zb", "both"), default="both")
+    ap.add_argument("-v", "--verbose", action="store_true", help="print screens")
+    args = ap.parse_args()
+    if not os.path.isfile(SRC_DSK):
+        print(f"missing test image: {SRC_DSK}")
+        return 2
+    cases = CASES
+    if args.only:
+        want = {s.strip() for s in args.only.split(",") if s.strip()}
+        cases = [c for c in CASES if c[0] in want]
+        if not cases:
+            print(f"--only matched no cases: {sorted(want)}")
+            return 2
+    sides = ("ref", "zb") if args.side == "both" else (args.side,)
+    jobs = [(s, lbl, lines) for lbl, lines in cases for s in sides]
+    with cf.ThreadPoolExecutor(max_workers=4) as ex:
+        results = list(ex.map(lambda j: run_case(*j), jobs))
+    by = {(s, l): (v, rows, meta) for s, l, v, rows, meta in results}
+
+    print(f"{'case':<14} {'reference':>14} {'zerobas':>14}   verdict")
+    print("-" * 70)
+    oracle_bad, diverge = [], []
+    for label, _ in cases:
+        rv = by.get(("ref", label), (None, [], ""))[0] if "ref" in sides else "-"
+        zv = by.get(("zb", label), (None, [], ""))[0] if "zb" in sides else "-"
+        mode = COMPARE.get(label, "class")
+        note = ""
+        if "ref" in sides and label in REF_EXPECT and rv != REF_EXPECT[label]:
+            note = f"ORACLE DRIFT (recorded {REF_EXPECT[label]!r})"
+            oracle_bad.append(label)
+        elif args.side == "both":
+            if mode == "absfre":
+                # absolute pool sizes are not comparable between machines --
+                # only the ladder's SLOPE is, and that is derived below.
+                note = "informational (slope below)"
+            elif rv == zv:
+                note = "agree"
+            else:
+                note = "DIVERGES"
+                diverge.append((label, rv, zv))
+        print(f"{label:<14} {str(rv):>14} {str(zv):>14}   {note}")
+        if args.verbose:
+            for s in sides:
+                for r in by.get((s, label), (None, [], ""))[1]:
+                    print(f"      {s} | {r}")
+
+    print()
+    if "ref" in sides:
+        print("meta(ref):", by.get(("ref", cases[0][0]), (None, [], ""))[2])
+    if "zb" in sides:
+        print("meta(zb) :", by.get(("zb", cases[0][0]), (None, [], ""))[2])
+
+    # --- THE DERIVED ANSWER: per-channel slope + ceiling, both machines ---
+    ladder = [("mf0", 0), ("mf1", 1), ("mf2", 2), ("mf3", 3),
+              ("mf4", 4), ("mf8", 8), ("mf15", 15)]
+    print()
+    summary = {}
+    for s in sides:
+        pts = [(n, by[(s, l)][0]) for l, n in ladder
+               if (s, l) in by and isinstance(by[(s, l)][0], int)]
+        slopes = {(pts[i - 1][1] - pts[i][1]) / (pts[i][0] - pts[i - 1][0])
+                  for i in range(1, len(pts))} if len(pts) >= 2 else set()
+        # The ceiling is only a CEILING if the rows above it actually ran and
+        # were rejected. On a subsetted run the largest surviving n is just the
+        # largest n we asked about -- reporting that as "the ceiling" would be a
+        # number the run never measured.
+        ran = {l for l, _ in cases}
+        full_ladder = all(l in ran for l, _ in ladder) and {"mf16"} <= ran
+        ceiling = max((n for n, _ in pts), default=None)
+        summary[s] = (sorted(slopes), ceiling if full_ladder else None)
+        shape = ("statically reserved (MAXFILES does not move FRE(0))"
+                 if slopes == {0.0} else
+                 f"{sorted(slopes)[0]:g} B/channel, charged from the FRE(0) pool"
+                 if len(slopes) == 1 else "NOT LINEAR — investigate")
+        ceil_txt = (f"highest accepted MAXFILES = {ceiling}" if full_ladder
+                    else f"ceiling NOT MEASURED (partial ladder; largest tried {ceiling})")
+        print(f"{s:>4}: per-channel = {shape}; {ceil_txt}")
+
+    if oracle_bad:
+        print(f"\nORACLE DRIFT on {oracle_bad} — the reference no longer reproduces "
+              f"its own recorded answers; fix the apparatus before trusting anything.")
+        return 1
+    if args.side == "both" and len(cases) == len(CASES):
+        rs, rc = summary.get("ref", ([], None))
+        zs, zc = summary.get("zb", ([], None))
+        print()
+        print("HEADLINE:")
+        print(f"  reference charges {rs[0]:g} B per channel, dynamically, up to {rc};")
+        print(f"  zerobas reserves its channel contexts statically "
+              f"(slope {zs}), ceiling {zc}.")
+
+    if oracle_bad:
+        print(f"\nORACLE DRIFT on {oracle_bad} — the reference no longer reproduces "
+              f"its own recorded answers; fix the apparatus before trusting anything.")
+        return 1
+    if diverge:
+        print(f"\n{len(diverge)} divergence(s) vs the reference:")
+        for label, rv, zv in diverge:
+            print(f"  {label}: reference {rv!r}, zerobas {zv!r}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

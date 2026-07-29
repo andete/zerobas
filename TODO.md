@@ -1836,24 +1836,67 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       into 96; 95 characters → 174, over the LIVE `VARTAB`; a variable set
       before it reads back 0). Measured, D-LINEMAX §2.2.
 
-- [ ] **SLIM THE FILE-CHANNEL CONTEXT toward the reference** (direction,
-      2026-07-29). Measured: the VG-8020 supports **at least 15** channels at a
-      flat **267 B** each, charged out of the same `FRE(0)` pool programs live
-      in; zerobas caps at `FCH_CEIL=2` ([`basic/sysvars.inc:2224`](basic/sysvars.inc:2224))
-      and spends **562 B** per context (50 B state + a full 512 B sector
-      buffer, [`basic/sysvars.inc:2227`](basic/sysvars.inc:2227)).
-      ⚠️ **START BY MEASURING — 267 IS NOT YET A VALID TARGET.** The VG-8020 has
-      NO disk hardware, so 267 is the cost of a channel needing no sector
-      buffer and cannot be the goal for one doing FAT12 I/O. The right oracle is
-      the disk-capable **CF-3300**. An attempt to read it with `omsx_repl`
-      FAILED as APPARATUS, not finding: its readout scrapes the SCREEN 0 name
-      table and the CF-3300 boots to a VRAM state that returns garbage through
-      it, so all six rows read `<none>`. Use the `probes/disk/` harness.
-      Likely shape: a shared sector buffer with per-channel state — the channel
-      manager's write-back cache discipline is already half of it.
-      Payoff beyond `MAXFILES`: ~590 B freed in page 3 would retroactively fund
-      D-LINEMAX's buffers and make its `TXTMAX` cut unnecessary. **Noted, not a
-      dependency** — D-LINEMAX must not wait on a number that does not exist.
+- [ ] **SLIM THE FILE-CHANNEL CONTEXT toward the reference** — ✅ **MEASURED
+      2026-07-29; awaiting spec sign-off.**
+      [`docs/chancost-cf3300-characterization.md`](docs/chancost-cf3300-characterization.md),
+      probe [`probes/disk/diskbasic_probe_chancost.py`](probes/disk/diskbasic_probe_chancost.py)
+      (boot-per-case, both machines, reference answers self-checked for drift).
+      🔴 **THE ITEM'S OWN CAVEAT IS REFUTED.** It said 267 "cannot be the goal
+      for a channel doing FAT12 I/O" because it came from a diskless VG-8020.
+      The disk-capable **CF-3300 charges exactly the same 267 B** — linear with
+      no intercept across `MAXFILES` 0/1/2/3/4/8/15, non-adjacent points on the
+      same slope. **267 IS a valid target.**
+      Also measured: the ceiling is **exactly 15** (not "at least"), `16`/`255`
+      raise **`Illegal function call`**; the buffers are charged at **`MAXFILES`
+      time, not `OPEN` time**; the **string pool is untouched** (`FRE("")`=200
+      either side); and `TXTTAB`/`HIMEM` are **constant**, so the carve is
+      downward from the top — `FRE(0)` counts to **SP**, which is what moves.
+      **267 < 512, so the sector buffer is NOT in it** — the reference shape is
+      one *shared* sector buffer plus a small per-channel block, exactly as
+      hypothesized.
+      **zerobas, measured the same way:** `FRE(0)` = 13875 at `MAXFILES` 0, 1
+      AND 2 — **it does not move at all**, because `FCH_CTX $EA00..$EE63` is
+      reserved statically whether or not a channel is open. Its 512 B per
+      channel is **purely a save copy** of the single global `FSECTOR_BUF`
+      (`fch_save_active`/`fch_load_ctx`, [`basic/files.asm:994`](basic/files.asm:994));
+      the reference gets the same effect by treating the shared buffer as a
+      **cache** — flush on switch away, re-read on switch back.
+      **Sizing:** drop the save copy → at `FCH_CEIL=2` the table falls 1124 B →
+      100 B (**frees 1024 B**); at `FCH_CEIL=15` (full reference parity) it is
+      750 B, still **374 B less than today**.
+      ⚠️ **THE ROM COST IS NOT MEASURED** — flush-and-re-read instead of memcpy
+      is an unknown-size change to `files.asm` against **9 B** free low / **6 B**
+      free page 1. Estimating it from reading code would be a hypothesis, not a
+      measurement (D-ARR-C §7a).
+      ⚠️ **FREEING PAGE 3 DOES NOT BY ITSELF RETURN PROGRAM SPACE.** `TXTMAX`
+      rises only if a page-2 buffer MOVES into the freed window: `TOKBUF`
+      (576 B @ `$B700`) and the input line buffer are movable; `DETOKBUF`
+      (1280 B @ `$BB00`) does not fit in 1024 B. So the D-LINEMAX refund is
+      **partial at best**, not the full 1792 B.
+      **OPEN FORK for the spec:** maximum RAM recovery (keep `FCH_CEIL=2`,
+      free 1024 B) vs reference parity on the ceiling (`FCH_CEIL=15`, free
+      374 B). Note parity on the *ceiling* still leaves `MAXFILES` unfaithful in
+      *mechanism* — the reference charges dynamically out of `FRE(0)` and
+      zerobas would still reserve statically.
+
+- [ ] **`LOF(#n)` reads −1 on a freshly-created OUTPUT channel** (reference: 0).
+      Found 2026-07-29 by a CONTROL row in the channel-cost pass, not aimed at.
+      `OPEN "ZQ.DAT" FOR OUTPUT AS #1 : PRINT LOF(1)` → **0** on the CF-3300,
+      **−1** on zerobas; still −1 after `PRINT #1,"ABCDE"`. The two-sided
+      control agrees on both machines (`OPEN "HI.TXT" FOR INPUT` → **26**), so
+      this is neither apparatus nor a broken `LOF` — it is specific to a
+      channel opened FOR OUTPUT on a file that did not previously exist.
+      −1 = `$FFFF` smells like an uninitialized size field being reported.
+      Gated by `diskbasic_probe_chancost.py` case `lof_new`; see
+      [`docs/chancost-cf3300-characterization.md`](docs/chancost-cf3300-characterization.md) §7.1.
+
+- [ ] **Over-ceiling `MAXFILES` raises the wrong error class.** `MAXFILES=16` →
+      reference **`Illegal function call`** (ERR 5); zerobas raises **`syntax
+      error`** (ERR 2), and does so from `MAXFILES=3` up. The class is wrong
+      independently of where the ceiling sits, so it is fixable without
+      changing `FCH_CEIL`. (Message *wording* is NOT the issue — zerobas's
+      lowercase strings are deliberate provenance policy, PROVENANCE §851.)
+      Case `mf16`/`mf255` in the same probe.
 
 - [ ] **Line-number scan does not skip embedded blanks.** Found 2026-07-29 as a
       FAILING TWO-SIDED CONTROL in D-LINEMAX's `tok` battery — a confound there,

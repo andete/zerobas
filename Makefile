@@ -992,6 +992,24 @@ linemax-acceptance: repack-machine
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
 	        $(if $(CAS),--cas,)
 
+# --- FILE-CHANNEL COST characterization (docs/chancost-cf3300-characterization.md)
+#
+# What one open channel costs on a real disk-capable MSX1, measured out of the same
+# FRE(0) pool programs live in. Oracle-dependent: needs your CF-3300 reference ROMs.
+#
+# ⚠️ This probe does NOT use omsx_repl, on purpose. omsx_repl scrapes the SCREEN 0
+# name table ($0000/40col) and CF-3300 Disk BASIC boots to SCREEN 1 ($1800/32col) --
+# that mismatch, not the machine, is why an earlier attempt read `<none>` on every
+# row. This probe MEASURES scrmod out of RAM and picks the name table from it.
+#
+# ⚠️ FRE(0) is impure (counts down to SP, +6 per nesting level), so every row asks
+# the byte-identical `PRINT FRE(0)` at identical depth. Boot-per-case both sides.
+chancost-characterize: repack-machine
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) \
+	  python3 probes/disk/diskbasic_probe_chancost.py \
+	        $(if $(ONLY),--only '$(ONLY)',) $(if $(SIDE),--side $(SIDE),) \
+	        $(if $(V),-v,)
+
 # --- DIRECT-MODE control-flow gate (docs/spec-basic-direct-ctrl.md §8) --------
 # VG-8020 differential for FOR/NEXT, GOSUB/RETURN, GOTO, IF-THEN-<line> and
 # ON-GOTO typed AT THE PROMPT -- an execution mode that had zero coverage until
@@ -1147,4 +1165,4 @@ clean:
         clearpool-characterize clearpool-acceptance \
         width-characterize width-acceptance \
         arrdim-characterize arrdim-acceptance \
-        linemax-characterize linemax-acceptance clean
+        linemax-characterize linemax-acceptance chancost-characterize clean
