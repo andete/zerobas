@@ -382,6 +382,19 @@ This is strictly additive to the proven S1/S2a paths — a key safety property f
 
 ## 7. `ONELIN`/`ONEFLG` reset scope — **MUST black-box-pin (do not assume)**
 
+> **STATUS 2026-07-29 — the `ONEFLG` half is ANSWERED and FIXED**, in
+> [`docs/spec-basic-oneflg-reset-scope.md`](spec-basic-oneflg-reset-scope.md)
+> (10-case VG-8020 battery, 6 divergent rows, 11 B, 7 standing gate rows). The
+> question this section actually needed asking was not in its own list: the hooks
+> below are all *re-entry* hooks, and the bug was that **nothing cleared `ONEFLG`
+> on the way OUT** — not on an abort, not at the end of a run. The reference
+> clears on any abort and any run TERMINATION, and deliberately keeps it across a
+> `STOP`/Ctrl-STOP SUSPENSION so `CONT` can resume inside the handler.
+> The **`ONELIN` half is still open** and is a different mechanism (`ONELIN`
+> invalidation at relink, not `clear_vars`) — see TODO.md's `CLEAR`/`MAXFILES`
+> item. The working hypothesis at the bottom of this section is now known to be
+> INCOMPLETE for `ONEFLG`, not merely unverified.
+
 The S2 spec §4 says *"Cold boot + clear_vars zero ONELIN/ONEFLG/ERRCODE/ERRLINE (so
 ON ERROR state does not survive NEW/RUN)."* **That §4 claim is already partly
 falsified:** the S2a adversarial pass (commit 5967659) proved `ERRCODE`/`ERRLINE`

@@ -37,6 +37,17 @@ structure, never as the sole signal for a numeric fact):
     `cp` bound and the table's length are one fact in two places; they drifted once
     (2026-07-29) and nothing noticed, because the sole raiser of 25 bypasses the
     table. Gates BOTH directions — 25 in, 26 out.
+  * ONEFLG_* — the D-ONEFLG reset scope (docs/spec-basic-oneflg-reset-scope.md).
+    `ONEFLG` ("inside a handler, no RESUME yet") used to survive the return to the
+    REPL, so after a nested forced abort the NEXT error force-aborted instead of
+    trapping. The reference clears it on ANY abort and on any RUN TERMINATION, but
+    NOT on a STOP/Break — a suspended run must keep its handler context so CONT can
+    resume inside it. Seven rows, each naming the site it holds down: three that
+    require the clear (stale/end/falloff), TWO THAT REQUIRE ITS ABSENCE
+    (keep/suspend_resume — these are what make the PLACEMENT load-bearing; a fix
+    that just zeroes ONEFLG at the prompt passes the first three and fails these),
+    plus the no-prior-error control and a direct-RESUME readout that reads the flag
+    head-on ("RESUME without error" == ONEFLG is already 0).
   * RESET_SCOPE_RUN / RESET_SCOPE_NEW / RESET_SCOPE_CLEAR — the §7 load-bearing
     faithfulness pin: a handler armed via a DIRECT-MODE `ON ERROR GOTO` (so the
     PROGRAM ITSELF never re-arms it), then RUN/NEW/CLEAR, then an error in a fresh
@@ -206,6 +217,63 @@ RESUME_NOERR = Case("resume_noerr", ["RESUME"])
 # want "resume without error" (zerobas house-style D-2 wording, ERR 22) --
 # zerobas-only text check (not diffed: house style, same policy as error_
 # acceptance.py's family B/C message-text cases)
+
+# --- D-ONEFLG: the stale in-handler flag (spec-basic-oneflg-reset-scope.md) ----
+# Every row re-enters with `GOTO 200` into a program tail that RE-ARMS its own
+# handler at 200, so ONELIN is fresh and the ONLY thing that can decide
+# trap-vs-force-abort is ONEFLG. Marker printed -> trapped; `illegal function
+# call in 210` -> force-aborted.
+#
+# ⚠️ THE MARKER IS `PRINT"R<";1;">"`, NOT `PRINT"R<TRAP>"`, AND THAT IS THE
+# MEASUREMENT. Round 1 of the characterization used the literal form -- whose own
+# SOURCE ECHO contains `R<TRAP>` -- so a force-aborted case scraped the marker off
+# the TYPED LINE and scored as a trap. The numeric form's echo yields the artifact
+# '";1;"' and its output yields '1'; the two can never collide. Same class as
+# clearpool-slice's wrapping echo: the readout is part of the measurement.
+ONEFLG_TAIL = ["200 ON ERROR GOTO 300", "210 B=SQR(-1)",
+               '300 PRINT"R<";1;">":END']
+ONEFLG_CASES = [
+    # the filed defect: a nested forced abort left ONEFLG=1 behind
+    Case("oneflg_stale", ["10 ON ERROR GOTO 100", "20 B=SQR(-1)", "30 END",
+                          "100 C=1/0"] + ONEFLG_TAIL + ["RUN", "GOTO 200"]),
+    # two-sided control: identical shape, line 20 does NOT error, so nothing ever
+    # set ONEFLG -- both machines must trap here whether the fix exists or not
+    Case("oneflg_ctl", ["10 ON ERROR GOTO 100", "20 B=1", "30 END",
+                        "100 C=1/0"] + ONEFLG_TAIL + ["RUN", "GOTO 200"]),
+    # site B: the handler ENDs the run -- no abort anywhere, so site A alone
+    # leaves this red
+    Case("oneflg_end", ["10 ON ERROR GOTO 100", "20 B=SQR(-1)", "30 END",
+                        "100 END"] + ONEFLG_TAIL + ["RUN", "GOTO 200"]),
+    # OVER-CLEAR GUARD: a STOP SUSPENDS the run, it does not end it. The handler
+    # context must SURVIVE to the prompt, so this re-entry force-aborts on BOTH
+    # machines. Any placement that clears at the prompt / at the run-loop exit
+    # (shared by END and STOP) turns this row red.
+    Case("oneflg_keep", ["10 ON ERROR GOTO 100", "20 B=SQR(-1)", "30 END",
+                         "100 STOP"] + ONEFLG_TAIL + ["RUN", "GOTO 200"]),
+    # OVER-CLEAR GUARD from the CONT side: after CONT the handler's own RESUME
+    # still has to work, which needs ONEFLG intact across the whole suspension.
+    Case("oneflg_suspend_resume",
+         ["10 ON ERROR GOTO 100", "20 B=SQR(-1)", "30 END", "100 STOP",
+          "110 RESUME 120", '120 PRINT"R<";1;">":END', "RUN", "CONT"]),
+]
+ONEFLG_TRAPS = {"oneflg_stale": True, "oneflg_ctl": True, "oneflg_end": True,
+                "oneflg_keep": False, "oneflg_suspend_resume": True}
+
+# Direct `RESUME` readouts -- these read ONEFLG head-on rather than through a
+# trap decision: with ONEFLG==0 the RESUME family reports ERR 22 "without error".
+ONEFLG_RESUME_DIFF = Case("oneflg_direct_resume", [
+    "10 ON ERROR GOTO 100", "20 B=SQR(-1)", "30 END", "100 C=1/0",
+    "RUN", "RESUME",
+])  # both machines: "RESUME without error". Pre-fix zerobas instead RESUMED into
+    # line 20 with the stale flag and re-raised ("division by zero in 100" twice).
+ONEFLG_RESUME_ZB = Case("oneflg_falloff", [
+    "10 ON ERROR GOTO 100", "20 B=SQR(-1)", "30 END", "100 A=1",
+    "RUN", "RESUME",
+])  # site C: the handler runs off the END OF THE PROGRAM. zerobas-ONLY on
+    # purpose -- the reference does not end silently here at all, it raises ERR 21
+    # "No RESUME in 100" first (a raiser zerobas lacks, filed separately in
+    # docs/spec-basic-oneflg-reset-scope.md §7). So the row gates the RESUME
+    # RESPONSE, which is the ONEFLG fact, and not the text before it.
 
 # --- §7 reset-scope cases (packet §7 -- the load-bearing, UNVERIFIED pin) ------
 # A handler armed via DIRECT MODE (never touched by the program body), then a
@@ -453,6 +521,61 @@ def main() -> int:
                 ok = ok and good
                 print(f"{'PASS' if good else 'FAIL':5} {c:<9} zb {zt!r} ref {rt!r}"
                       f"{'' if read else '  <- UNREADABLE on one side, not a measurement'}")
+
+    # ---------------- D-ONEFLG: the stale in-handler flag ----------------------
+    # Oracle-lock against the MEASURED want (spec §2's table) AND a differential,
+    # the same shape the numeric-fact family uses. `oneflg_keep` /
+    # `oneflg_suspend_resume` want the OPPOSITE of the others: they fail if the
+    # clear is placed anywhere that also catches a STOP.
+    ofcases = sel(ONEFLG_CASES)
+    if ofcases:
+        print(f"\n--- D-ONEFLG reset scope: abort/END clear it, a STOP must NOT ---")
+        specs = [("direct", c.lines) for c in ofcases]
+        ref = omsx_repl.run_cases(args.machine, specs, batch=batch, reset=("NEW", "CLS"))
+        ref_trap = {}
+        for c, r in zip(ofcases, ref):
+            got = read_R(r) == "1"            # "1" only from the PRINTed marker
+            ref_trap[c.label] = got
+            want = ONEFLG_TRAPS[c.label]
+            good = got == want
+            ok = ok and good
+            print(f"{'PASS' if good else 'FAIL':5} [ref] {c.label:22} trapped={got} "
+                  f"(want {want})")
+        if not args.ref_only:
+            zb = omsx_repl.run_cases(args.zb_machine, specs, batch=batch,
+                                     reset=("NEW", "CLS"))
+            for c, r in zip(ofcases, zb):
+                got = read_R(r) == "1"
+                good = got == ref_trap[c.label] and got == ONEFLG_TRAPS[c.label]
+                ok = ok and good
+                print(f"{'PASS' if good else 'FAIL':5} [zb]  {c.label:22} trapped={got} "
+                      f"(ref={ref_trap[c.label]}, want {ONEFLG_TRAPS[c.label]})")
+
+    # ---------------- D-ONEFLG: the direct-RESUME readouts ---------------------
+    if not args.only or "oneflg" in (args.only or ""):
+        print(f"\n--- D-ONEFLG direct RESUME: ERR 22 == the flag is already 0 ---")
+        # differential: after a nested forced abort BOTH machines must answer a
+        # typed RESUME with "resume without error" (class, not wording -- zerobas
+        # is house-style lowercase, D-2). Both sides must READ something: a row
+        # where both scrape nothing would otherwise score PASS while measuring
+        # nothing.
+        for machine, tag in ([(args.machine, "ref")] +
+                             ([(args.zb_machine, "zb")] if not args.ref_only else [])):
+            raw = omsx_repl.run_case(machine, "direct", ONEFLG_RESUME_DIFF.lines)
+            said = "resume without error" in (raw or "").lower()
+            ok = ok and said
+            print(f"{'PASS' if said else 'FAIL':5} [{tag}] oneflg_direct_resume "
+                  f"'resume without error'={said} (want True)")
+        # site C, zerobas-only (see ONEFLG_RESUME_ZB's note: the reference reports
+        # the ERR 21 "No RESUME" that zerobas does not raise, so the text before
+        # the RESUME differs for a SECOND reason and is deliberately not compared)
+        if not args.ref_only:
+            raw = omsx_repl.run_case(args.zb_machine, "direct", ONEFLG_RESUME_ZB.lines)
+            said = "resume without error" in (raw or "").lower()
+            ok = ok and said
+            print(f"{'PASS' if said else 'FAIL':5} [zb]  oneflg_falloff "
+                  f"'resume without error'={said} (want True -- running off the end "
+                  f"of the program ends the run, so the handler context dies)")
 
     # ---------------- §7 reset-scope: RAW differential, no hardcoded want ------
     rscases = sel(RESET_SCOPE_CASES)

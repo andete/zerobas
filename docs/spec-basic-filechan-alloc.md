@@ -534,8 +534,15 @@ Both are error-handling defects, both pre-date S-FCH-2, both are filed in
    invalidation at relink, NOT `clear_vars`** — which `RUN` also runs through,
    and `RUN` must not disarm.
 
-2. **A stale `ONEFLG` survives the return to the REPL.** After a nested forced
-   abort, zerobas force-aborts the *next* error instead of trapping it; the
+2. **A stale `ONEFLG` survives the return to the REPL.** ✅ **FIXED 2026-07-29 —
+   [`docs/spec-basic-oneflg-reset-scope.md`](spec-basic-oneflg-reset-scope.md)**
+   (11 B, three sites, seven standing gate rows). The row filed here turned out
+   to be **one of six** divergent rows: the reference clears `ONEFLG` on any
+   abort *and* on any run termination, but keeps it across a `STOP` suspension.
+   The battery also filed two unrelated defects it walked into (ERR 21
+   `No RESUME` is never raised; `CONT` after `END` must continue).
+   After a nested forced
+   abort, zerobas force-aborted the *next* error instead of trapping it; the
    reference traps it. Two-sided (measured through the KEYBUF driver, which the
    `openMSX type` harness could not do — its first attempt doubled a keystroke
    into line `3300` and the resulting `undefined line` read exactly like a

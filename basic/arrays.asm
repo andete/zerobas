@@ -133,6 +133,17 @@ fre_abort_low:
                                             ; error sites `jp fre_abort_low` too (lean:
                                             ; aliased to print_string -> byte-identical).
                 xor     a
+                ; D-ONEFLG site A (docs/spec-basic-oneflg-reset-scope.md §4): an
+                ; ABORT ends the handler context. Without this, ONEFLG stayed 1
+                ; all the way back to the prompt and the NEXT error force-aborted
+                ; instead of trapping -- measured against the VG-8020 six ways
+                ; (spec §2). UNCONDITIONAL, and the missing DIRECTF gate is the
+                ; measurement, not an oversight: c10 pinned that a DIRECT-mode
+                ; error kills the handler context of a merely SUSPENDED run too
+                ; (the reference then reports "RESUME without error in <line>"
+                ; from inside the CONTinued handler). The raisers that never set
+                ; the flag store an already-0 value here, which is a no-op.
+                ld      (ONEFLG),a
                 ld      (PRDEST),a          ; error text always goes to the screen
                 ld      a,(CSRX)
                 cp      2                   ; CSRX is 1-BASED: 1 = column 0. CF for

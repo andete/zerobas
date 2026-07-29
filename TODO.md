@@ -2079,22 +2079,57 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       invalidation at relink plus the in-run `CLEAR`, and zerobas is wrong on
       the **edit** half as well as the `CLEAR` half.
 
-- [ ] **A stale `ONEFLG` survives the return to the REPL, so the NEXT error
+- [x] **A stale `ONEFLG` survives the return to the REPL, so the NEXT error
       force-aborts instead of trapping.** Raised as S-FCH-2's open question by
-      spec §5c; **answered empirically 2026-07-29, and answered against zerobas.**
-      After a nested forced abort (`10 ON ERROR GOTO 100 : 20 B=SQR(-1) :
-      100 C=1/0`), re-entering with `GOTO 200` where `200 ON ERROR GOTO 300 :
-      210 B=SQR(-1)`: the VG-8020 **traps** (prints the marker), zerobas
-      **force-aborts** (`illegal function call in 210`). Two-sided — with no
-      prior abort both machines trap. `ONEFLG` is written back to 0 only at
-      `run_prog` (RUN) and cold `init` (`basic/program.asm`, `basic/interp.asm`),
-      never on the abort path, so the window is any re-entry that is not a fresh
-      `RUN`. Not created by S-FCH-2 (its raisers never touch `ONEFLG`); reachable
-      today through the ordinary nested-abort path.
-      ⚠️ **Measure this one through `probes/lib/omsx_repl.py` (KEYBUF), not the
-      chancost `type` harness** — the latter doubled a keystroke into line `3300`
-      and the resulting `undefined line` read exactly like a semantic failure,
-      *deterministically*, across two runs.
+      spec §5c; answered empirically 2026-07-29 **and ✅ FIXED the same day** —
+      [`docs/spec-basic-oneflg-reset-scope.md`](docs/spec-basic-oneflg-reset-scope.md).
+      **11 B (page 1 13 → 5 B free, low 9 → 6 B free), no carve, lean
+      byte-identical.** The filed row was ONE of **six** divergent rows in a
+      10-case battery; the fix closes all six.
+      **The rule, measured both ways:** the reference clears `ONEFLG` on **any
+      abort** — run-mode *and* direct-mode, even while a run is merely suspended
+      — and on **any run TERMINATION** (`END`, running off the end); it does
+      **NOT** clear on a `STOP`/Ctrl-STOP **SUSPENSION**, because `CONT` has to
+      be able to resume *inside* the handler. Three sites: `fre_abort_low`
+      (+3 B low), `ex_end` (+3 B), `rp_lp`'s `$0000`-link exit (+5 B — free,
+      because `A` already holds 0 on that arm).
+      🔴 **THE CHEAP FIX WAS 8 B AT ONE SITE AND IS THE WRONG FIX.** Clearing at
+      the run-loop exit gated on `CONTVALID` reproduces every measured row — but
+      only because zerobas's `END` leaves no CONT resume point, which is *itself*
+      a divergence (see the new item below). A fix resting on a known bug
+      regresses silently the day that bug is fixed. **Ask what the reference's
+      RULE is, not which cheap predicate happens to fit today's rows.**
+      🔴 **The over-clear guards are the load-bearing half of the gate.** Seven
+      standing rows in `basic_probe_error_trap.py`; five say "must clear" and
+      **two say "must NOT clear"** (`oneflg_keep`, `oneflg_suspend_resume`). A
+      build with the rejected prompt-placement was assembled ON PURPOSE and
+      passed all five and failed exactly those two. Each of the three sites was
+      also deleted individually: **the site→row map is 1:1.**
+      ⚠️ Round 1 of the battery scored a force-abort as a TRAP: the marker
+      `PRINT"R<TRAP>"` matched its own **SOURCE ECHO**. Round 2's `PRINT"R<";1;">"`
+      cannot collide (echo → `";1;"`, output → `1`).
+      ⚠️ The first over-clear build **failed to assemble** (a 5 B insert pushed
+      an unrelated `jr` out of range) **and the probe ran anyway, on the stale
+      machine** — five red rows of pure noise. Chain build and probe with `&&`.
+
+- [ ] **ERR 21 `No RESUME` is never raised.** Found 2026-07-29 by the D-ONEFLG
+      battery's c3b row, not aimed at. A program that runs off the END OF THE
+      PROGRAM while still inside an `ON ERROR` handler must abort with
+      `No RESUME in <line>` (VG-8020, measured); zerobas ends the run silently.
+      The code has a table entry; nothing raises it. When it lands, D-ONEFLG's
+      site C (`basic/program.asm` `rp_lp`) becomes redundant with site A and its
+      5 B can be reclaimed, and `oneflg_falloff` can be upgraded from a zb-only
+      row to a full text differential.
+
+- [ ] **`CONT` after a plain `END` must continue.** Found 2026-07-29 by the
+      D-ONEFLG battery's c7 row, not aimed at. `10 A=1 : 20 END : 30 PRINT…` then
+      `RUN` + `CONT`: the VG-8020 **resumes at line 30**; zerobas reports
+      `can't continue`. The comment at `basic/program.asm`'s `ex_stop` header
+      asserts the opposite *as fact* (*"END does not: it ends the run with no
+      resume point, so CONT after END is Can't CONTINUE"*) and is **wrong** —
+      that claim is unmeasured. ⚠️ Fixing this would have silently regressed the
+      `CONTVALID`-gated version of D-ONEFLG, which is exactly why that version
+      was rejected.
 
 - [ ] **`LOF(#n)` reads −1 on a freshly-created OUTPUT channel** (reference: 0).
       Found 2026-07-29 by a CONTROL row in the channel-cost pass, not aimed at.

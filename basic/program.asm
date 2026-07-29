@@ -335,7 +335,24 @@ rp_lp:
                 dec     hl
                 ld      a,d
                 or      e
+    IF ROM_BASE < $4000
+                ; D-ONEFLG site C (docs/spec-basic-oneflg-reset-scope.md §4):
+                ; running off the end of the program TERMINATES the run, so the
+                ; handler context dies here too -- and A is ALREADY 0 on this
+                ; arm (it is d|e, and the branch is taken exactly when that is
+                ; zero), so the clear costs no `xor a`. 5 B over the `ret z` it
+                ; replaces. ⚠️ The reference does not reach a silent end here at
+                ; all: falling off the end while INSIDE a handler raises ERR 21
+                ; "No RESUME" (spec §2 c3b), which zerobas does not raise --
+                ; filed separately (spec §7). When that lands, this site becomes
+                ; redundant with site A and can be reclaimed.
+                jr      nz,rp_notend
+                ld      (ONEFLG),a
+                ret
+rp_notend:
+    ELSE
                 ret     z                   ; $0000 link -> end of program
+    ENDIF
                 inc     hl                  ; skip link (2) + lineno (2)
                 inc     hl
                 inc     hl

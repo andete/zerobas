@@ -418,7 +418,22 @@ ex_sep:
                 inc     hl
                 jp      exec_stmt
 ex_end:
+    IF ROM_BASE < $4000
+                ; D-ONEFLG site B (docs/spec-basic-oneflg-reset-scope.md §4): END
+                ; TERMINATES the run, so the handler context dies with it (spec
+                ; §2 c3/c3c: after a handler ENDs the run, the reference traps the
+                ; next error and answers a direct RESUME with "RESUME without
+                ; error"). STOP does NOT come through here -- the token table
+                ; dispatches it to ex_stop -- which is what keeps the measured
+                ; TERMINATE-vs-SUSPEND asymmetry structural rather than a test:
+                ; a Break must KEEP the flag so CONT can resume inside the
+                ; handler (spec §2 c4b/c6).
+                xor     a
+                ld      (ONEFLG),a
+                inc     a                   ; -> 1
+    ELSE
                 ld      a,1                 ; END / STOP -> stop the run
+    ENDIF
                 ld      (ENDFLAG),a
                 ret
 ex_rem:

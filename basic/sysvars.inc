@@ -901,7 +901,26 @@ ONEFLG          equ     $E1CA   ; 1 B: 1 = currently inside a handler (no RESUME
                                 ; yet) — a second error while set is a forced
                                 ; abort with the INNER message (real-MSX nested-
                                 ; error semantics, via raise_error_forced/rerr_
-                                ; report). Same reset scope as ONELIN.
+                                ; report).
+                                ; ⚠️ Reset scope: NOT "same as ONELIN" (it said
+                                ; so for a whole arc, and that was the bug —
+                                ; docs/spec-basic-oneflg-reset-scope.md, MEASURED
+                                ; on the VG-8020, six divergent rows). ONELIN's
+                                ; hypothesis above is about RE-ENTRY hooks; this
+                                ; flag also has to be cleared on the way OUT:
+                                ;   * ANY abort — run-mode AND direct-mode, even
+                                ;     while a run is only SUSPENDED (site A,
+                                ;     fre_abort_low, basic/arrays.asm);
+                                ;   * ANY run TERMINATION — END (site B, ex_end)
+                                ;     and running off the end of the program
+                                ;     (site C, rp_lp's $0000-link exit).
+                                ; It is DELIBERATELY kept across a STOP/Ctrl-STOP
+                                ; SUSPENSION: CONT has to be able to resume
+                                ; INSIDE the handler, and its RESUME must still
+                                ; work there. Gated by the oneflg_* rows of
+                                ; probes/basic/basic_probe_error_trap.py, two of
+                                ; which fail if the clear is placed anywhere that
+                                ; also catches a STOP.
 ERRRESUME       equ     $E1CB   ; 4 B: resume context captured at trap time —
                                 ; [0..1] the erroring statement's CURLINE (link
                                 ; addr), [2..3] the erroring statement's text
