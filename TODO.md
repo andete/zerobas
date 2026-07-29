@@ -1810,6 +1810,48 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       alternative (dropping `MAXFILES` to 1) moves AWAY from a reference that
       supports 15. Message-string placement deferred to implementation.
 
+- [ ] **ROM REGION STRUCTURE REVIEW** — full review, **AFTER S3** (user, 2026-07-29).
+      🔴 **THE FRAMING MEASUREMENT: the main ROM is jammed shut next to 7411 B of
+      unused sub-ROM.** Measured at `4cdb69b`:
+      | region | free |
+      |---|---|
+      | main low `$2812-$3FFF` | **0 B** (hard wall) |
+      | main page 1 `$4000-$7FFF` | **7 B** |
+      | sub-ROM page 0 `$0000-$3FFF` | **4054 B** |
+      | sub-ROM page 1 `$4000-$7FFF` | **3357 B** |
+      (⚠️ the sub-ROM pads with **`$FF`**, not `$00` — `ds $4000-$,$FF` /
+      `ds $8000-$,$FF` in [`sub/sub.asm`](sub/sub.asm); a trailing-**zero** scan
+      reports 0 B free and is WRONG.) **The structure is not full, it is
+      UNBALANCED** — 22.6% of the sub image is unused while every main-ROM slice
+      is costed against a 0 B wall.
+      **What is NOT on the table: merging the two main regions.** The `$4000`
+      boundary is a hardware contract, not an artifact — `CALSLT` switches only the
+      called page, so a sub-ROM page-1 tenant runs with main page 1 switched OUT
+      (callees must be `< $4000`) and a page-0 tenant runs with main page 0 switched
+      OUT (callees must be `>= $4000`); `keytrap.asm` is low-region because the
+      `$0038` ISR can fire while a page-1 tenant owns page 1. All three are already
+      encoded in [`tools/check_tenant_closure.py`](tools/check_tenant_closure.py)'s
+      walks, which are the FEASIBILITY ORACLE for this review — not the comments.
+      **What IS on the table**, in scope order:
+      (1) separate **CONTRACT-FORCED** placements from **PRESSURE-PLACED** ones.
+      `main.asm`'s own comments repeatedly say a file "lands in the reclaimed low
+      region rather than page 1 (page 1 is otherwise full to $7FFF)" — that is
+      packing pressure, not a contract, and the two classes have never been
+      separated systematically;
+      (2) rank sub-ROM eviction candidates by **bytes freed in the constrained
+      region per resident byte spent**. ⚠️ **7411 B of headroom is NOT 7411 B of
+      relief** — every eviction leaves a resident trampoline, and the arc history
+      shows cost is dominated by SITING, not substance (`docs/`… D-FCH S-FCH-1:
+      43 -> 9 -> 5 B for the same fix). Every eviction so far was costed ONE AT A
+      TIME (CIRCLE 542 B, FAT shim +367 B, D-MSGENC, D-FCH); none against a known
+      budget;
+      (3) interrogate the split itself — whether the sub-ROM's page-0/page-1 tenant
+      partition, the resident-ABI import (`tools/gen_resident_abi.py` ->
+      `sub/basic-resident-abi.inc`) and the three closure gates could be unified or
+      simplified.
+      Output: a spec-ready candidate table with evidence per row. **No code changes
+      in the review itself.**
+
 - [ ] **REGIONALISE THE REPACK BUILD** (filed 2026-07-29, S2 of the lean
       retirement — user answer B: "note it, revisit later"). The shipped BASIC
       patch `zerobas-main-eu.ips/.bps` is **EU-only by construction**:
@@ -1857,6 +1899,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       collapse `main-reloc.asm` into `main.asm`, and port/retire that probe
       corpus.** Gate for it: `build/zerobas-main-eu.rom` byte-identical across the
       change.
+      ⚠️ **S3 MUST STAY BYTE-IDENTICAL — do NOT fold any placement change into
+      it.** Byte-identity is the strongest gate available for a 311-site mechanical
+      edit, and moving even one routine destroys it. The structural rebalance is a
+      SEPARATE item (see ROM REGION STRUCTURE REVIEW below), deliberately sequenced
+      after S3 so it reads source with no `IF ROM_BASE` wrappers obscuring which
+      region things are in.
       ✅ **S1 DONE 2026-07-29** — [`docs/spec-lean-retire-s1-explicit-machine.md`](docs/spec-lean-retire-s1-explicit-machine.md).
       Both gates now NAME their machine (`LEAN_MACHINE` / `REPACK_MACHINE`) and
       assert it with `--expect-build`, so the two can no longer collapse into one
