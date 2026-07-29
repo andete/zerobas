@@ -125,6 +125,41 @@ def descriptor_bytes(name0, name1, dtype, bounds):
     return bytes(body), stride
 
 
+# --- how a subscript/bound list reaches the tenant --------------------------
+# ⚠️ THIS LAYOUT IS THE SUBJECT OF D-ARR-C, so every poke site in this file goes
+# through these two helpers rather than touching the param block directly.
+# Through slice-1 it was a fixed 8-byte `ARY_IDX` buffer walked FORWARD;
+# docs/spec-basic-arrdim-c.md §4 replaces it with `ARY_IDXP`, a POINTER at
+# subscript 0 -- the HIGH end of a caller-owned block the tenant walks
+# DOWNWARD. Funnelling it here means the change is one edit and cannot be
+# applied to seven sites and quietly missed at the eighth.
+SUBS_BUF = 0x9280   # scratch block for a caller-owned subscript/bound list
+                    # (clear of BOUNDS_BUF at 0x9200 and of ARYBASE at 0x9002)
+
+
+def put_list(m, addr, vals):
+    """Write `vals` as int16 LE at `addr`, ascending k. Returns the pointer the
+    TENANT is handed for that list -- which is not necessarily `addr`."""
+    for k, v in enumerate(vals):
+        m.poke_w(addr + 2 * k, v & 0xFFFF)
+    return addr
+
+
+def set_subs(m, s, *vals):
+    """Publish a subscript list (ary_resolve / ary_engine's input) the way the
+    main ROM's parse does: the count in ARY_NIDX, the values where the tenant
+    reads them."""
+    m.poke(s["ARY_NIDX"], len(vals))
+    put_list(m, s["ARY_IDX"], vals)
+
+
+def alloc_bounds(m, s, *vals):
+    """Publish a BOUND list for a direct `ary_alloc` call and return the value
+    to pass in IX (ary_alloc's bounds-source register)."""
+    m.poke(s["ARY_NIDX"], len(vals))
+    return put_list(m, SUBS_BUF, vals)
+
+
 def run():
     build()
     m = Machine(ROM, SYM, rom_base=0)  # just to read symbols cheaply
@@ -181,11 +216,8 @@ def run():
     # desc_base + 6 + 2*ndim (the cached-stride header, own design).
     # ==================================================================
     m = make_machine()
-    BOUNDS_BUF = 0x9200  # scratch: ndim int16 LE bounds for ary_alloc's IX input
-    m.poke_w(BOUNDS_BUF + 0, 2)   # bound0 = 2
-    m.poke_w(BOUNDS_BUF + 2, 3)   # bound1 = 3
-    m.poke(s["ARY_NIDX"], 2)
-    cpu = m.call("ary_alloc", b=ord("C"), c=0, a=2, ix=BOUNDS_BUF)
+    ix = alloc_bounds(m, s, 2, 3)   # bound0 = 2, bound1 = 3
+    cpu = m.call("ary_alloc", b=ord("C"), c=0, a=2, ix=ix)
     ok_alloc = carry(cpu)
     fails += not ok_alloc
     desc_base = cpu.hl
@@ -195,9 +227,7 @@ def run():
     data_start = desc_base + 6 + 2 * 2  # header(6) + ndim(2)*2 bounds bytes
 
     def resolve(i, j):
-        m.poke(s["ARY_NIDX"], 2)
-        m.poke_w(s["ARY_IDX"] + 0, i & 0xFFFF)
-        m.poke_w(s["ARY_IDX"] + 2, j & 0xFFFF)
+        set_subs(m, s, i, j)
         return m.call("ary_resolve", b=ord("C"), c=0, a=2)
 
     # (0,0) -> off=0
@@ -231,6 +261,74 @@ def run():
           f"(want {want:#06x})")
 
     # ==================================================================
+    # Case 2b: 🔴 THE WALK-DIRECTION WITNESS (D-ARR-C, docs/spec-basic-
+    # arrdim-c.md §8 witness 3). A 3-D array with THREE DIFFERENT BOUNDS.
+    #
+    # ⚠️ EVERY OTHER MULTI-DIMENSIONAL CASE IN THIS FILE IS BLIND TO IT.
+    # D-ARR-C hands the tenant a pointer at subscript 0 -- the HIGH end of
+    # the block -- and turns four `inc ix` walks into `dec ix`. Get the end
+    # or the direction wrong and the tenant reads the subscripts (or the
+    # bounds) in reverse, which is SILENT MEMORY CORRUPTION, not an error
+    # message: the resolve still succeeds and still lands inside the array,
+    # just on the wrong element. On EQUAL bounds a reversed walk is
+    # arithmetically invisible -- and equal bounds are exactly what the
+    # MAXDIM-era 41^3 and auto-dim (10,10,...) cases use. Case 2's (2,3) is
+    # asymmetric but only 2-D, so it cannot separate a reversed walk from a
+    # rotated one.
+    #
+    # Bounds (1,2,3) -> multipliers 1, 2, 6 and 2*3*4 = 24 elements:
+    #   off(i,j,k) = i + 2*j + 6*k        (column-major, spec §9.2)
+    # A reversed SUBSCRIPT walk computes k + 2*j + 6*i; a reversed BOUNDS
+    # walk computes i + 4*j + 12*k. The probe points below tell all three
+    # apart -- (1,0,2) reads 13, 8 and 25 respectively.
+    #
+    # Deliberately NOT on a fresh machine: `K` is allocated alongside case 2's
+    # `C`, which case 3 below still resolves against. (Resetting here made case
+    # 3 auto-dim `C` to bound 10, so its two over-bound rows read A=0 -- caught
+    # on the first run of this case, and a standing reminder that an array
+    # these tests share is state, not scenery.)
+    # ==================================================================
+    ix = alloc_bounds(m, s, 1, 2, 3)
+    cpu = m.call("ary_alloc", b=ord("K"), c=0, a=2, ix=ix)
+    ok_alloc3 = carry(cpu)
+    fails += not ok_alloc3
+    k_base = cpu.hl
+    print(f"{'PASS' if ok_alloc3 else 'FAIL'} ary_alloc creates DIM K(1,2,3) "
+          f"(CF={carry(cpu)}, desc={k_base:#06x})")
+
+    k_data = k_base + 6 + 2 * 3          # header(6) + 3 bounds
+
+    for (i, j, k) in [(1, 0, 2), (0, 1, 0), (0, 0, 1), (1, 2, 3), (0, 0, 0)]:
+        set_subs(m, s, i, j, k)
+        cpu = m.call("ary_resolve", b=ord("K"), c=0, a=2)
+        off = i + 2 * j + 6 * k          # the column-major oracle, in Python
+        want = k_data + off * 2
+        ok = (cpu.hl == want) and (cpu.a == 0)
+        fails += not ok
+        print(f"{'PASS' if ok else 'FAIL'} K({i},{j},{k}) -> {cpu.hl:#06x} "
+              f"(want {want:#06x}, off={off})")
+
+    # ...and the LAST element must be the last one INSIDE the array: 24
+    # elements * 2 B = 48, so K(1,2,3) sits at data+46 and nothing may resolve
+    # past it. This is the bound a reversed BOUNDS walk breaks first (it would
+    # size the array 2*5*13 and read bounds 3,2,1 back).
+    set_subs(m, s, 1, 2, 3)
+    cpu = m.call("ary_resolve", b=ord("K"), c=0, a=2)
+    ok_last = cpu.hl == k_data + 46
+    fails += not ok_last
+    print(f"{'PASS' if ok_last else 'FAIL'} K(1,2,3) is the LAST element "
+          f"(data+46) -> {cpu.hl:#06x} (want {k_data + 46:#06x})")
+
+    # ...and one past each bound is still rejected at THREE dimensions.
+    for (i, j, k) in [(2, 0, 0), (0, 3, 0), (0, 0, 4)]:
+        set_subs(m, s, i, j, k)
+        cpu = m.call("ary_resolve", b=ord("K"), c=0, a=2)
+        ok = cpu.a == 1
+        fails += not ok
+        print(f"{'PASS' if ok else 'FAIL'} K({i},{j},{k}) over its bound -> "
+              f"A=1 (got {cpu.a})")
+
+    # ==================================================================
     # Case 3: bound / negative / wrong-ndim dispositions (§4.1 #3/#8/#9).
     # ARY_ERR codes (§10.2): 1 Subscript-oor, 2 Illegal-fn (negative).
     # ==================================================================
@@ -252,8 +350,7 @@ def run():
           f"(got {cpu.a})")
 
     # wrong dimension count (1 subscript on a 2-D array) -> Subscript o.o.r.
-    m.poke(s["ARY_NIDX"], 1)
-    m.poke_w(s["ARY_IDX"] + 0, 0)
+    set_subs(m, s, 0)
     cpu = m.call("ary_resolve", b=ord("C"), c=0, a=2)
     ok = cpu.a == 1
     fails += not ok
@@ -266,16 +363,14 @@ def run():
     m = make_machine()
     # Auto-dim: reference D(5) with no prior DIM -- ary_resolve creates it
     # with ndim=1, bound0=10.
-    m.poke(s["ARY_NIDX"], 1)
-    m.poke_w(s["ARY_IDX"] + 0, 5)
+    set_subs(m, s, 5)
     cpu = m.call("ary_resolve", b=ord("D"), c=0, a=2)
     ok_auto = cpu.a == 0
     fails += not ok_auto
     print(f"{'PASS' if ok_auto else 'FAIL'} D(5) auto-dims cleanly (A={cpu.a})")
 
     # D(11) on the SAME (now-autodimmed-to-10) array -> Subscript o.o.r.
-    m.poke(s["ARY_NIDX"], 1)
-    m.poke_w(s["ARY_IDX"] + 0, 11)
+    set_subs(m, s, 11)
     cpu = m.call("ary_resolve", b=ord("D"), c=0, a=2)
     ok_autobound = cpu.a == 1
     fails += not ok_autobound
@@ -283,10 +378,8 @@ def run():
           f"10 -> A=1 (got {cpu.a})")
 
     # DIM E(3) as type 4 (single); confirm ary_find now sees it as existing.
-    BOUNDS_BUF = 0x9200
-    m.poke_w(BOUNDS_BUF, 3)
-    m.poke(s["ARY_NIDX"], 1)
-    cpu = m.call("ary_alloc", b=ord("E"), c=0, a=4, ix=BOUNDS_BUF)
+    ix = alloc_bounds(m, s, 3)
+    cpu = m.call("ary_alloc", b=ord("E"), c=0, a=4, ix=ix)
     ok_alloc_e = carry(cpu)
     fails += not ok_alloc_e
     print(f"{'PASS' if ok_alloc_e else 'FAIL'} ary_alloc DIM E(3) single "
@@ -307,10 +400,9 @@ def run():
     m = make_machine()
     # Lower HIMEM to just above ARYBASE so even a modest array overflows.
     m.poke_w(s["HIMEM"], ARYBASE + 8)
-    BOUNDS_BUF = 0x9200
-    m.poke_w(BOUNDS_BUF, 1000)   # bound0=1000 -> 1001 elements * 8B (double) way over
-    m.poke(s["ARY_NIDX"], 1)
-    cpu = m.call("ary_alloc", b=ord("F"), c=0, a=8, ix=BOUNDS_BUF)
+    # bound0=1000 -> 1001 elements * 8B (double) way over
+    ix = alloc_bounds(m, s, 1000)
+    cpu = m.call("ary_alloc", b=ord("F"), c=0, a=8, ix=ix)
     ok_oom = (not carry(cpu)) and (cpu.a == 4)
     fails += not ok_oom
     print(f"{'PASS' if ok_oom else 'FAIL'} ary_alloc OOM under a tight "
@@ -339,10 +431,8 @@ def run():
         m.poke_w(s["ARYTAB"], arybase)  # re-anchor ARYTAB with PRGEND (§Q3)
         m.poke_w(s["HIMEM"], 0)        # ceiling = TXTMAX (wrapped candidate slips it)
         m.poke_w(arybase, 0)           # empty array region: $0000 terminator at TAIL
-        BOUNDS_BUF = 0x9200
-        m.poke_w(BOUNDS_BUF, 0)        # bound0=0 -> 1 element
-        m.poke(s["ARY_NIDX"], 1)
-        cpu = m.call("ary_alloc", b=ord("W"), c=0, a=2, ix=BOUNDS_BUF)
+        ix = alloc_bounds(m, s, 0)     # bound0=0 -> 1 element
+        cpu = m.call("ary_alloc", b=ord("W"), c=0, a=2, ix=ix)
         ok_wrap = (not carry(cpu)) and (cpu.a == 4)
         fails += not ok_wrap
         print(f"{'PASS' if ok_wrap else 'FAIL'} ary_alloc terminator-wrap "
@@ -369,10 +459,8 @@ def run():
     for bound, want, why in ((32766, 4, "65534 B fits -> falls through to OOM"),
                              (32767, 1, "65536 B overflows -> the size rule")):
         m = make_machine()
-        BOUNDS_BUF = 0x9200
-        m.poke_w(BOUNDS_BUF, bound)
-        m.poke(s["ARY_NIDX"], 1)
-        cpu = m.call("ary_alloc", b=ord("S"), c=0, a=2, ix=BOUNDS_BUF)
+        ix = alloc_bounds(m, s, bound)
+        cpu = m.call("ary_alloc", b=ord("S"), c=0, a=2, ix=ix)
         ok_sz = (not carry(cpu)) and (cpu.a == want)
         fails += not ok_sz
         print(f"{'PASS' if ok_sz else 'FAIL'} ary_alloc bound0={bound} -> A={want} "
@@ -383,11 +471,8 @@ def run():
     # which is the OTHER of the two sites and reddens independently of the one
     # above. Two sites, two disjoint witnesses (spec §5).
     m = make_machine()
-    BOUNDS_BUF = 0x9200
-    for i in range(3):
-        m.poke_w(BOUNDS_BUF + 2 * i, 40)   # 41^3 = 68921 elements
-    m.poke(s["ARY_NIDX"], 3)
-    cpu = m.call("ary_alloc", b=ord("T"), c=0, a=2, ix=BOUNDS_BUF)
+    ix = alloc_bounds(m, s, 40, 40, 40)   # 41^3 = 68921 elements
+    cpu = m.call("ary_alloc", b=ord("T"), c=0, a=2, ix=ix)
     ok_cnt = (not carry(cpu)) and (cpu.a == 1)
     fails += not ok_cnt
     print(f"{'PASS' if ok_cnt else 'FAIL'} ary_alloc 41^3 elements -> A=1 "
@@ -415,8 +500,7 @@ def run():
     # DIM G(4) as type 2 (int).
     set_key(ord("G"))
     m.poke(s["ARY_TYPE"], 2)
-    m.poke(s["ARY_NIDX"], 1)
-    m.poke_w(s["ARY_IDX"] + 0, 4)
+    set_subs(m, s, 4)
     m.poke(s["ARY_OP"], 1)         # op = DIM
     m.call("ary_engine")
     ok_dim = m.peek(s["ARY_ERR"])[0] == 0
@@ -434,8 +518,7 @@ def run():
 
     # RESOLVE G(2): should hit the already-DIM'd descriptor (no auto-dim),
     # returning a real ARY_ADDR and ARY_ERR=0.
-    m.poke(s["ARY_NIDX"], 1)
-    m.poke_w(s["ARY_IDX"] + 0, 2)
+    set_subs(m, s, 2)
     m.poke(s["ARY_OP"], 0)         # op = RESOLVE
     m.call("ary_engine")
     err = m.peek(s["ARY_ERR"])[0]
@@ -446,8 +529,7 @@ def run():
           f"-> ARY_ERR=0, ARY_ADDR={addr:#06x} (err={err})")
 
     # RESOLVE G(9): out of range (bound0=4) -> ARY_ERR=1.
-    m.poke(s["ARY_NIDX"], 1)
-    m.poke_w(s["ARY_IDX"] + 0, 9)
+    set_subs(m, s, 9)
     m.poke(s["ARY_OP"], 0)
     m.call("ary_engine")
     err2 = m.peek(s["ARY_ERR"])[0]
@@ -459,8 +541,7 @@ def run():
     # A DIFFERENT undeclared array via op=RESOLVE auto-dims (bound 10).
     set_key(ord("H"))
     m.poke(s["ARY_TYPE"], 2)
-    m.poke(s["ARY_NIDX"], 1)
-    m.poke_w(s["ARY_IDX"] + 0, 7)
+    set_subs(m, s, 7)
     m.poke(s["ARY_OP"], 0)
     m.call("ary_engine")
     err3 = m.peek(s["ARY_ERR"])[0]

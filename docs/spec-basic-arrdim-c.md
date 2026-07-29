@@ -4,7 +4,9 @@ SPDX-License-Identifier: 0BSD
 -->
 # D-ARR-C — the dimension count (`MAXDIM = 4` is a divergence, not a cap)
 
-**Status: SPEC, awaiting sign-off (§10).** Split out of D-ARR-B by
+**Status: SIGNED OFF 2026-07-29, in implementation.** S-ARR-C-1 = **B, pointer not
+buffer**; S-ARR-C-3 = **delete `MAXDIM` entirely**; S-ARR-C-2/-4/-5 as
+recommended. Split out of D-ARR-B by
 [`spec-basic-arrdim.md`](spec-basic-arrdim.md) §7a. Measurement:
 [`arrdim-c-vg8020-characterization.md`](arrdim-c-vg8020-characterization.md),
 `make arrdim-characterize`, 73 rows / 55 gated / 18 never-gated, all 55 green
