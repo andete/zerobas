@@ -50,14 +50,20 @@
 ; division by zero / the shared FPERR=3 illegal-function-call that SQR/LOG
 ; still raise); the negative-subscript case therefore gets its OWN FPERR
 ; code (8) + capitalised string below instead of reusing FPERR=3.
+; D-MSGENC (docs/spec-basic-msgenc-carve.md §4.4): phrase-encoded. This whole
+; file is already repack-only (the IF above), so these need no lean twin. The
+; §9.5 capitalisation is UNCHANGED and still spelled out per message -- the
+; escapes deliberately exclude the leading letter, so "Illegal"/"illegal" and
+; "Out of"/"out of" share a phrase while each message keeps its own case. The
+; §9.7 differential compares the DECODED screen tail, which is byte-identical.
 err_subscript:
-                db      "Subscript out of range",13,10,0
+                db      "Subscript o",MSGESC_UTOF,"range",0     ; 25 B -> 18 B
 err_redim:
-                db      "Redimensioned array",13,10,0
+                db      "Redimensioned array",0                 ; 22 B -> 20 B
 err_illegal_fn_arr:
-                db      "Illegal function call",13,10,0
+                db      "I",MSGESC_ILLFN,0                      ; 24 B -> 3 B
 err_mem_arr:                                ; FPERR=6 (fre_msgtab entry 6) is set ONLY
-                db      "Out of memory",13,10,0
+                db      "O",MSGESC_UTOF,"memory",0              ; 16 B -> 9 B
                                             ; by ary_errmap (DIM/auto-dim OOM), so the
                                             ; whole FPERR=6 surface takes the reference-
                                             ; verbatim capitalised text (§9.5, same rule
@@ -68,7 +74,7 @@ err_mem_arr:                                ; FPERR=6 (fre_msgtab entry 6) is se
                                             ; printed directly, never via FPERR) is
                                             ; untouched.
 err_syntax:                                 ; interp.asm's own stmt_error + fre_msgtab
-                db      "syntax error",13,10,0
+                db      "syntax",MSGESC_ERROR,0     ; D-MSGENC: 15 B -> 8 B
                                             ; entry 4 (D-F2-3) both reference this by
                                             ; absolute address; relocated here (repack
                                             ; only -- interp.asm keeps its own copy for
@@ -149,10 +155,15 @@ fre_abort_low:
                 ; This test stays even though print_in_lineno now gates on DIRECTF
                 ; too: it picks print_string vs print_string_stopcr, so it must
                 ; branch BEFORE it prints, not after.
+                ; D-MSGENC (docs/spec-basic-msgenc-carve.md §4.2/§4.3): the CRLF is
+                ; no longer baked into the message, so print_msg IS "body + CRLF" and
+                ; print_msg_stopcr IS the body alone -- the same two-way split, but
+                ; the stop condition is now the string's own terminator instead of a
+                ; sentinel CR that had to be scanned for.
                 ld      a,(DIRECTF)
                 or      a
-                jp      nz,print_string     ; direct: message + its own baked CRLF (as before)
-                call    print_string_stopcr ; run: print the body, stop at the baked CR
+                jp      nz,print_msg        ; direct: message + the emitted CRLF
+                call    print_msg_stopcr    ; run: the body alone
                 jp      print_in_lineno     ; run: " in <line>" + CRLF (program.asm)
 
 ; --- vars_reset: re-anchor ARYTAB = PRGEND+2 (empty scalar region), then ---

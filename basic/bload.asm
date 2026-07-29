@@ -176,7 +176,14 @@ load_error:
                 ld      a,$EE
                 ld      (ERRMARK),a
                 ld      hl,err_io
+    IF ROM_BASE < $4000
+                call    print_msg                   ; D-MSGENC
+                ret
+err_io:
+                db      "load",MSGESC_ERROR,0       ; 13 B -> 6 B
+    ELSE
                 call    print_string
                 ret
 err_io:
                 db      "load error",13,10,0
+    ENDIF

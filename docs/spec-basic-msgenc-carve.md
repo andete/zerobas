@@ -4,12 +4,19 @@ SPDX-License-Identifier: 0BSD
 -->
 # D-MSGENC — phrase-escape message encoding, as the S-FCH-2 funding carve
 
-Status: **SPEC, NOT BUILT.** Every byte count below §3 is ARITHMETIC over the
-measured corpus, not a measurement of a build. This arc has now been wrong about
-a cost three times (8× too big, then "the cost was SITING", then 77 B → 45 B on
-an apparatus bug), so nothing here is final until §6's cost probe is built.
+Status: ✅ **BUILT, MEASURED AND RUN, 2026-07-29.** Scouted against `860d1bc`;
+§6's probe is now the shipping implementation. §10 records the measurement.
 
-Scouted 2026-07-29 against `860d1bc`, tree clean and green.
+**The carve delivers, and it landed on the arithmetic's nose:** page 1
+**0 → 24 B free**, low region **9 → 68 B free**, lean cart byte-identical. §5's
+option-C row predicted 24 and 68 exactly. S-FCH-2 needs 20 and 15 — **both walls
+close**, and this arc's fourth cost estimate is the first one that was right.
+
+⚠️ That is a coincidence worth NOT generalising from. The three prior estimates
+in this arc were wrong by 8×, by "the cost was siting", and by an apparatus bug;
+what made this one land was that the corpus was *measured from the sym file*
+first and only the decoder was estimated. **Measure the data, estimate the code —
+and still build it.**
 
 ## 1. What this is for
 
@@ -281,3 +288,71 @@ funding and must still be settled before any of S-FCH-2 lands:
   (`subrom_absent_error` prints `err_subrom_absent`, itself an alias of
   `err_illegal_fn`). A sub-ROM phrase table would make the "sub-ROM is missing"
   message depend on the missing sub-ROM. **Resolved: main ROM.**
+
+## 10. The measurement — ✅ 2026-07-29, clean `rm -rf build && make basic-reloc`
+
+| wall | before (`860d1bc`) | after | S-FCH-2 needs | spare |
+|---|---|---|---|---|
+| page 1 `$4000-$7FFF` | 0 B free | **24 B free** | 20 B | 4 B |
+| low region `$2812-$3FFF` | 9 B free | **68 B free** | 15 B | 53 B |
+
+Placement taken: **option C** — phrase table AND decoder both in page 1
+(`basic/program.asm`), which is why the low region gains the full 59 B. Option B
+was not needed and was therefore not risked: it would have put message printing
+in the low region, where `check_tenant_closure --page0` is the arbiter. That
+check passes as built (709 routines, no low-region/BIOS escape).
+
+Q2 resolved as recommended: **four phrases**. Q3 resolved as recommended: two
+entries (`print_msg` / `print_msg_stopcr`), replacing `print_string_stopcr`.
+
+### What was RUN, not just built
+
+⚠️ The recurring trap in this project is "builds green but was NEVER RUN". Every
+gate below was executed against a freshly installed `make repack-machine`:
+
+| gate | result |
+|---|---|
+| `make unit-test` | **54/54** (53 + the new `test_msgenc.py`) |
+| `make error-trap-acceptance` | **ALL PASS** — incl. `msgtab_bound` decoding `ERROR 23/24/25/26` against the reference |
+| `make linemax-acceptance` | **60/60** |
+| `make arrdim-acceptance` | **73/73** |
+| `make clearpool-acceptance` | **52/52** |
+| `make diskbasic-acceptance` | **34/34** |
+| `make bdos-acceptance` | **12/12** |
+| `make fat-error-acceptance` | **7/7** — `MERGE"A:NOSUCH.BAS"` decodes `load error` |
+| `make chancost-characterize` | 31 cases, **6 filed divergences** (unchanged baseline) |
+| `make array-acceptance` | **149/151** — the standing `ifc.instr.*` baseline, same two rows |
+
+🔴 **The two standing `ifc.instr.*` failures turned out to be the best available
+proof of §4.1's case-sharing trick.** They compare `illegal function call`
+against `Illegal function call` — the two messages that share `MSGESC_ILLFN` and
+differ only in the leading letter each spells for itself. Both decode correctly;
+the rows still fail for their own pre-existing reason (INSTR's domain check
+routes to the arrays' capitalised string), which is not this slice's.
+
+### The new gate, and its falsification
+
+`tests/test_msgenc.py` decodes all 25 messages **out of the assembled ROM image**
+and compares against independently typed literals; it also asserts the three
+`equ` aliases still collapse and that the `err_linebuf_overflow`→`err_overflow`
+overlap survives. Falsified two ways, both of which must turn it red:
+
+* corrupt one phrase (`" error"` → `" errer"`) → **5 messages fail**;
+* **permute two phrases** — identical bytes, wrong escape order → **5 messages
+  fail**, e.g. `err_illegal_fn` decodes as `i without`.
+
+The second is the one that matters: a table with the right *contents* in the
+wrong *order* is exactly the failure a byte-count check cannot see. The test also
+refuses to run if the phrase table reads back empty, so it cannot pass by
+measuring nothing.
+
+### Q1 — can S-FCH-2 now land ALL-RESIDENT? ⚠️ ALMOST
+
+All-resident costs 45 B page 1 + 32 B low (filechan §5c). Against 24/68: **low
+fits with 36 B to spare, page 1 is 21 B short.** So it is not free, but it is
+now a *demotion* problem rather than a carve problem — 21 B of page-1 content
+moved down into the low region's slack closes it, and demotion is constrained
+only by page-0 tenants (which cannot see the low region). If that lands, the
+tenant op 19, the `ERRMSG_BUF` staging and the ten repointed `jp` sites all
+disappear, taking §8's second correctness question with them. **Recommended:
+attempt the demotion before implementing the eviction.**

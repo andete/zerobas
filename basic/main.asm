@@ -114,10 +114,15 @@ SUB_BUILD       equ     0
 ; -- and err_overflow has TWO readers (err_msgtab entry 6 and program.asm's
 ; dl_overflow float arm), neither of which is near this line. Split them back into
 ; two independent `db`s before changing either, and re-measure both walls.
+; ⚠️ D-MSGENC (docs/spec-basic-msgenc-carve.md §4.4) DELIBERATELY LEFT THE OVERLAP
+; ALONE. Phrase-encoding these as two independent strings costs 21 + 9 = 30 B
+; against the 23 B they already share -- a 7 B LOSS sitting inside a column that
+; still reads as a saving. All the slice takes here is §4.2's baked CRLF, which
+; the overlap does not depend on: 23 B -> 21 B, and ERR 25 still falls through.
 err_linebuf_overflow:
                 db      "Line buffer "      ; ERR 25 (D-LINEMAX R-2) -- falls through
 err_overflow:                               ; ERR 6 -- the shared tail, read on its own
-                db      "overflow",13,10,0
+                db      "overflow",0
 
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent

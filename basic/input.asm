@@ -157,7 +157,8 @@ inpc_after:
                 jp      exec_stmt
 inpc_extra:
                 ld      hl,msg_extra
-                call    print_string        ; "?extra ignored" — warn, keep what matched
+                call    print_msg           ; "?extra ignored" — warn, keep what matched
+                                            ; (D-MSGENC: print_msg emits the CRLF)
                 pop     hl                  ; textcur
                 pop     bc                  ; drop varstart
                 jp      exec_stmt
@@ -170,7 +171,7 @@ inpc_morevars:
                 ; the list wants another variable but the line ran out -> too few.
 inpc_redo0:
                 ld      hl,msg_redo
-                call    print_string        ; "?redo from start"
+                call    print_msg           ; "?redo from start" (D-MSGENC: CRLF emitted)
                 call    inpc_print_q
                 jp      inpc_reread         ; re-read the whole line (stack: varstart)
 inpc_redo3:
@@ -362,5 +363,7 @@ inf_bad:
                 scf
                 ret
 
-msg_redo:       db      "?redo from start",13,10,0
-msg_extra:      db      "?extra ignored",13,10,0
+; D-MSGENC (§4.2): no phrase hit in either, but both shed the baked CRLF, which
+; print_msg now emits. Their two print sites below move to print_msg with them.
+msg_redo:       db      "?redo from start",0    ; 19 B -> 17 B
+msg_extra:      db      "?extra ignored",0      ; 17 B -> 15 B

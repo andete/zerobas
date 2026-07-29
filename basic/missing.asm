@@ -76,8 +76,13 @@ mot_go:
 ; "syntax error" and "type mismatch" (D-2: reference wording is not copied).
 ; The string is HERE, not next to its table, because 17 bytes inserted there
 ; push page 1's dense forward `jr`s out of reach.
+    IF ROM_BASE < $4000
+err_missing_operand:                        ; D-MSGENC: no phrase hit, 18 B -> 16 B.
+                db      "missing operand",0 ; Shrinking here only IMPROVES the `jr`
+    ELSE                                    ; reach the note above is about.
 err_missing_operand:
                 db      "missing operand",13,10,0
+    ENDIF
 
 ; err_linebuf_overflow (the ERR 25 message, D-LINEMAX R-2) is NOT here, despite
 ; this file being the precedent for exactly this constraint. It did not fit: page

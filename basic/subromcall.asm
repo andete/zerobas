@@ -62,7 +62,8 @@ subrom_absent_error:
                 xor     a
                 ld      (PRDEST),a
                 ld      hl,err_subrom_absent
-                jp      print_string
+                jp      print_msg           ; D-MSGENC: err_subrom_absent aliases
+                                            ; err_illegal_fn, which is now encoded
 err_subrom_absent equ   err_illegal_fn      ; share interp.asm's identical "illegal
                                             ; function call" string (both repack-only) —
                                             ; reclaims 24 B in this LOW region to fund

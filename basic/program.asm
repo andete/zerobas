@@ -125,7 +125,9 @@ dl_overflow:
                 ld      (ERRCODE),a         ; A = 25: PRINT ERR reads it, as measured
                 ld      hl,err_linebuf_overflow ; low-region string pool (basic/main.asm)
 dl_ovf_report:
-                jp      print_string        ; reports and returns to the REPL
+                jp      print_msg           ; reports and returns to the REPL (D-MSGENC:
+                                            ; this arm is repack-only, and both its
+                                            ; messages are now encoded)
 ; err_overflow moved to the LOW-REGION STRING POOL (basic/main.asm), where it is the
 ; shared TAIL of `Line buffer overflow` -- 11 bytes of page 1 reclaimed to pay for
 ; the arm above. Read its header before editing either message.
@@ -616,19 +618,63 @@ print_in_lineno:
                 jp      print_crlf
 in_msg:         db      " in ",0
 
-; --- print_string_stopcr: print (HL) up to (not including) the first CR (13) -----
-; Runtime-error message strings end 13,10,0. In run mode fre_abort_low prints the
-; body with this, then appends print_in_lineno; so it must halt at the baked CR.
-; Returns HL pointing AT the CR, letting the DIRECT-mode path resume print_string
-; there to emit the string's own 13,10 (= CRLF). Clobbers A. (No NUL check — every
-; caller's string carries a CR before its terminator.)
-print_string_stopcr:
-                ld      a,(hl)
-                cp      13
-                ret     z
-                call    pchar               ; PRDEST sink (fre_abort_low zeroed it)
+; --- print_msg_stopcr / print_msg: the D-MSGENC message decoder ----------------
+; docs/spec-basic-msgenc-carve.md §4.3. Error message strings are PHRASE-ENCODED
+; in the repack build: bytes MSGESC_LO..MSGESC_HI index msg_phrase_tab, everything
+; >= $20 is a literal, and the CRLF is emitted HERE instead of being baked into
+; every message (§4.2 — 2 B x 25 messages).
+;
+; 🔴 THIS CANNOT GO INTO print_string. print_string also carries USER DATA --
+; DETOKBUF (LIST output), NUMBUF, FOUTBUF -- so an escape check there would expand
+; a phrase into a user's own program text the moment a string literal contained a
+; CHR$(1). Messages get their own entry; print_string is untouched and is what
+; emits the phrases themselves.
+;
+; This REPLACES print_string_stopcr (10 B), whose whole job was to halt at the
+; baked CR so print_in_lineno could append " in <line>". With the CRLF no longer
+; baked, the body-only routine is the primitive and the CRLF is the wrapper --
+; fre_abort_low's DIRECTF test now picks print_msg vs print_msg_stopcr.
+; Clobbers A (+ the HL walk), exactly as print_string/print_string_stopcr did:
+; pchar preserves every register, so the abort path's depth-independence
+; (D-CUR-D, basic/arrays.asm) is unchanged.
+print_msg_stopcr:                           ; run mode: body only, no CRLF
+pm_lp:          ld      a,(hl)
                 inc     hl
-                jr      print_string_stopcr
+                or      a
+                ret     z
+                cp      MSGESC_HI + 1       ; MSGESC_LO..MSGESC_HI -> phrase escape;
+                jr      nc,pm_lit           ; every literal is >= $20 (the baked
+                                            ; 13,10 are gone), so this is exact
+                push    hl
+                ld      hl,msg_phrase_tab
+                dec     a                   ; escape 1 -> phrase 0 (no skip)
+                jr      z,pm_emit
+                ld      b,a                 ; skip B whole NUL-terminated phrases
+pm_skip:        ld      a,(hl)
+                inc     hl
+                or      a
+                jr      nz,pm_skip
+                djnz    pm_skip
+pm_emit:        call    print_string        ; phrases are plain NUL-terminated text
+                pop     hl
+                jr      pm_lp
+pm_lit:         call    pchar               ; PRDEST sink (fre_abort_low zeroed it)
+                jr      pm_lp
+
+print_msg:      call    print_msg_stopcr    ; direct mode: body + CRLF
+                jp      print_crlf
+
+; --- msg_phrase_tab: §4.1's four phrases, NUL-terminated, in escape order ------
+; ⚠️ MSGESC_UTOF and MSGESC_ILLFN DELIBERATELY DROP THE LEADING LETTER so that
+; "Out of"/"out of" and "Illegal"/"illegal" share ONE entry with no case-fold flag
+; in the decoder above. The arrays arc's §9.5 capitalisation split and PROVENANCE
+; §851's lowercase-strings policy are therefore untouched: each message still
+; spells its own first letter.
+msg_phrase_tab:
+                db      " error",0          ; MSGESC_ERROR
+                db      "ut of ",0          ; MSGESC_UTOF
+                db      "llegal function call",0 ; MSGESC_ILLFN
+                db      " without",0        ; MSGESC_WITHOUT
     ENDIF
 
 ; --- ex_stop: STOP statement — break and record a CONT resume point ----------
@@ -717,8 +763,13 @@ ex_cont_no:
                 ld      a,$C9               ; "can't continue" landmark (distinct byte)
                 ld      (ERRMARK),a
                 ld      hl,err_cont
+    IF ROM_BASE < $4000
+                jp      print_msg           ; D-MSGENC: encoded body + emitted CRLF
+err_cont:       db      "can't continue",0  ; (no phrase hit; the 2 B is §4.2's CRLF)
+    ELSE
                 jp      print_string
 err_cont:       db      "can't continue",13,10,0
+    ENDIF
 
 ; --- find_line_bc: locate a stored line by number ----------------------------
 ; in: BC = line number. out: CF set + HL = the line's link-field address if
@@ -789,7 +840,11 @@ store_line:
 ; its ADDRESS directly (`dw err_mem`), which must resolve to a main-ROM
 ; address, never a sub-ROM one. err_stack (further down this file) and
 ; cload.asm's err_prog_mem both `equ err_mem` unchanged.
+    IF ROM_BASE < $4000
+err_mem:        db      "o",MSGESC_UTOF,"memory",0      ; D-MSGENC: 16 B -> 9 B
+    ELSE
 err_mem:        db      "out of memory",13,10,0
+    ENDIF
 
 relink:
                 ld      a,1                 ; LE_OP_RELINK
@@ -1176,8 +1231,13 @@ err_stack       equ     err_mem             ; repack: share sl_oom's "out of mem
     ELSE
 err_stack:      db      "out of memory",13,10,0
     ENDIF
+    IF ROM_BASE < $4000
+err_noret:      db      "return",MSGESC_WITHOUT," gosub",0  ; D-MSGENC: 23 B -> 14 B
+err_nofor:      db      "next",MSGESC_WITHOUT," for",0      ; D-MSGENC: 19 B -> 10 B
+    ELSE
 err_noret:      db      "return without gosub",13,10,0
 err_nofor:      db      "next without for",13,10,0
+    ENDIF
 
 ; --- ex_read: READ <var> [, <var> ...] ---------------------------------------
 ; Fill each variable from the next DATA item. DATA items are stored as verbatim
@@ -1217,7 +1277,11 @@ exr_nodata:
                 ld      hl,err_data
                 jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
     ENDIF
+    IF ROM_BASE < $4000
+err_data:       db      "o",MSGESC_UTOF,"data",0        ; D-MSGENC: 14 B -> 7 B
+    ELSE
 err_data:       db      "out of data",13,10,0
+    ENDIF
 
 ; --- ex_restore: RESTORE [<line>] --------------------------------------------
 ; Reset the DATA cursor to the program start, or to a given line. The optional

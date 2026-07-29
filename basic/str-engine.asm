@@ -76,8 +76,8 @@ str_heap_oom_error:
 ; stack fills, §6/§11) — homed here (low region), not interp.asm's page 1
 ; (no slack there), same placement discipline as err_subscript et al
 ; (basic/arrays.asm).
-err_too_complex:
-                db      "String formula too complex",13,10,0
+err_too_complex:                            ; D-MSGENC: no phrase hit here (the corpus
+                db      "String formula too complex",0  ; has one "String"); 29 B -> 27 B
 
 ; --- err_out_of_str: the ERR 14 message (D-CLP) -----------------------------
 ; err_msgtab listed 14 as a HOLE pointing at "unprintable error", exactly as it
@@ -87,7 +87,7 @@ err_too_complex:
 ; reach (basic/missing.asm:70).
     IF CLEARPOOL
 err_out_of_str:
-                db      "out of string space",13,10,0
+                db      "o",MSGESC_UTOF,"string space",0    ; D-MSGENC: 22 B -> 15 B
     ENDIF
 
 ; ===========================================================================

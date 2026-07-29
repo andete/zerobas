@@ -461,7 +461,11 @@ ctp_oom:
                 ld      a,$CC               ; out-of-memory landmark (as store_line)
                 ld      (ERRMARK),a
                 ld      hl,err_prog_mem
+    IF ROM_BASE < $4000
+                jp      print_msg           ; D-MSGENC: err_prog_mem aliases err_mem,
+    ELSE                                    ; which is now phrase-encoded
                 jp      print_string
+    ENDIF
     IF ROM_BASE < $4000
 err_prog_mem    equ     err_mem             ; repack: share sl_oom's "out of memory"
                                             ; (program.asm) — identical bytes; lean keeps
@@ -503,8 +507,13 @@ cput_adv:
 ; --- verify_error: report a CLOAD? mismatch (memory left untouched) -----------
 verify_error:
                 ld      hl,err_verify
+    IF ROM_BASE < $4000
+                jp      print_msg                       ; D-MSGENC
+err_verify:     db      "Verify",MSGESC_ERROR,0         ; 15 B -> 8 B
+    ELSE
                 jp      print_string
 err_verify:     db      "Verify error",13,10,0
+    ENDIF
 
 ; --- cas_ascii_load: LOAD of an ASCII (SAVE"CAS:",A) cassette program --------
 ; Reached from do_tape_prog's header dispatch when byte 0 is $EA (ASCII)
@@ -828,7 +837,11 @@ dpl_oom:
                 ld      a,$CC               ; out-of-memory landmark (as store_line)
                 ld      (ERRMARK),a
                 ld      hl,err_prog_mem
+    IF ROM_BASE < $4000
+                jp      print_msg           ; D-MSGENC (as ctp_oom above)
+    ELSE
                 jp      print_string
+    ENDIF
 
 ; --- ascii_load — LOAD of an ASCII (SAVE",A") program ------------------------
 ; Reached from disk_prog_load when the first byte is NOT the $FF tokenised marker.

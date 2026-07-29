@@ -3194,3 +3194,16 @@ SUBROM_IDX_SAVE      equ 21     ; save_tenant (sub/save.asm): BLOAD's mirror -- 
 ; reads SUBSLOT, not EXBRSA (R4). Source: MSX2 Technical Handbook work-area map.
 EXBRSA          equ     $FAF8
     ENDIF
+
+; --- D-MSGENC: error-message phrase escapes (repack build only) ---------------
+; docs/spec-basic-msgenc-carve.md §4.1. These are the BYTE VALUES that appear
+; inside an encoded message string; print_msg_stopcr (basic/program.asm) expands
+; them from msg_phrase_tab, which must list the phrases in exactly this order.
+; Values stay below $20 so no printable literal can collide, and the decoder's
+; single `cp MSGESC_HI + 1` is an exact test (the baked 13,10 are gone, §4.2).
+MSGESC_ERROR    equ     1       ; " error"
+MSGESC_UTOF     equ     2       ; "ut of "              (leading letter dropped:
+MSGESC_ILLFN    equ     3       ; "llegal function call"  "Out of"/"out of" and
+MSGESC_WITHOUT  equ     4       ; " without"              "Illegal"/"illegal"
+MSGESC_LO       equ     MSGESC_ERROR                    ; share one entry, so the
+MSGESC_HI       equ     MSGESC_WITHOUT                  ; decoder needs NO case flag

@@ -659,8 +659,8 @@ type_mismatch_error:
                 jp      raise_error         ; S2a §2/(d), below) -- was ld hl,err_
                                             ; type_mismatch + jr fre_abort (byte-
                                             ; neutral: 2+3 vs 3+2)
-err_type_mismatch:
-                db      "type mismatch",13,10,0
+err_type_mismatch:                          ; D-MSGENC: repack-only already, so no
+                db      "type mismatch",0   ; lean twin; 16 B -> 14 B (§4.2's CRLF)
     ENDIF
 
 ; --- fp_runtime_error: F2's statement-level abort for runtime numeric ------
@@ -787,12 +787,21 @@ fperr_to_err:
                                             ; message (err_out_of_str, str-engine.asm) and
                                             ; flows through the generic err_msgtab lookup.
     ENDIF
+    IF ROM_BASE < $4000
+err_fp_divzero:                             ; D-MSGENC (§4.4): no phrase hit, -2 for
+                db      "division by zero",0    ; the CRLF.  19 B -> 17 B
+err_illegal_fn:                             ; the single biggest win in the corpus:
+                db      "i",MSGESC_ILLFN,0      ; 24 B -> 3 B
+err_resume_noerr:                           ; error-handling S2b (docs/spec-basic-error-
+                db      "resume",MSGESC_WITHOUT,MSGESC_ERROR,0  ; 23 B -> 9 B
+    ELSE
 err_fp_divzero:
                 db      "division by zero",13,10,0
 err_illegal_fn:
                 db      "illegal function call",13,10,0
 err_resume_noerr:                          ; error-handling S2b (docs/spec-basic-error-
                 db      "resume without error",13,10,0
+    ENDIF
                                             ; handling-s2b-packet.md §5.4, ERR 22): a
                                             ; bare RESUME with ONEFLG=0 (no active trap).
                                             ; House-style lowercase wording (D-2 policy,
@@ -1010,8 +1019,13 @@ err_msgtab:
                                             ; VG-8020 before landing: `ERROR 25` ->
                                             ; `Line buffer overflow`, `ERROR 26` ->
                                             ; `Unprintable error` (so 25 IS the bound).
-err_unprintable:
+    IF ROM_BASE < $4000
+err_unprintable:                            ; D-MSGENC (§4.4): 20 B -> 13 B. Note this
+                db      "unprintable",MSGESC_ERROR,0    ; SHRINKS at the very spot the
+    ELSE                                    ; note below says growth was fatal, so the
+err_unprintable:                            ; `jr` reach here only improves
                 db      "unprintable error",13,10,0
+    ENDIF
                 ; err_missing_operand itself lives in basic/missing.asm. Sited
                 ; there rather than here because 17 bytes inserted at this point
                 ; land between page 1's dense forward `jr`s and their targets --
@@ -1294,8 +1308,13 @@ ex_goto_undef:
                 ld      hl,err_line
                 jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
     ENDIF
+    IF ROM_BASE < $4000
+err_line:
+                db      "undefined line",0  ; D-MSGENC: no phrase hit, 17 B -> 15 B
+    ELSE
 err_line:
                 db      "undefined line",13,10,0
+    ENDIF
 
 ; --- ex_if: IF <expr> THEN <clause> [ELSE <clause>] ------------------------
 ; A clause is either a line number (implicit GOTO) or statements. Condition is
