@@ -279,6 +279,34 @@ aer_notfound:
 ; stored into an array) is picked up correctly by str_body_copy's own re-read
 ; contract. Clobbers A,B,C,D,E,H,L.
 aeng_copy_str:
+    IF CLEARPOOL
+                ; --- D-CLP: ADOPT a temp's body, exactly as sh_var_store does -
+                ; The scalar store (str_set_key -> op 12) and this array-element
+                ; store are the SAME operation on two different destinations, so
+                ; they must charge the pool the same. `CLEAR 500 : DIM A$(2) :
+                ; A$(1)=STRING$(100,"A")` reads 400 on the reference, and reading
+                ; 400 while PEAKING at 200 is only invisible while the pool is
+                ; huge -- which `CLEAR n` is precisely what stops being true.
+                ; A temp uniquely owns its body and is discarded at the statement
+                ; boundary, so take it and zero the temp's descriptor (one body,
+                ; one GC root). A non-temp source still copies below.
+                ld      hl,(STRPTR)
+                call    sh_hl_is_temp       ; HL preserved
+                jr      nc,acs_copy
+                ld      de,(ARY_ADDR)       ; DE = dest element slot
+                ld      bc,3
+                ldir                        ; dest := [len][ptr] verbatim
+                ld      hl,(STRPTR)
+                ld      (hl),0              ; temp.len = 0
+                inc     hl
+                ld      (hl),0
+                inc     hl
+                ld      (hl),0              ; temp.ptr = 0 -> no longer a GC root
+                xor     a
+                ld      (ARY_ERR),a         ; 0 ok
+                ret
+acs_copy:
+    ENDIF
                 ld      hl,(STRPTR)         ; HL = source descriptor (stable address)
                 ld      a,(hl)              ; source length (already 0..255 --
                                             ; STRMAX=255 is the length field's own

@@ -213,6 +213,19 @@ instruction turns `FIELD/LSET/RSET` RED (`differential: FAIL — CF-3300 differs
 and restoring it turns it green again — so the gate is measuring the tenant, not
 agreeing by luck.
 
+### What the carve returned, and what it cost
+
+| | before | after |
+|---|---|---|
+| main page 1 free | 3 B | **41 B** (carve) → **10 B** (D-CLP built in) |
+| main low region free | 30 B | **4 B** |
+
+Both walls are now very tight, and `clone_scout.py` still reports zero groups —
+**the next slice needs its own promotion, and page-0 index 12 was the last row
+that fits** (see below). The remaining viable singles from §4a are `ev_ff_eof`
+(33 B), `fadd_free` (31 B), `vst_suffix` (29 B) and the `fat_io_*` cluster
+(~92 B); each now costs a page-1 tenant index or a table relocation.
+
 ⚠️ **Index 12 is the LAST page-0 index that fits.** The entry table starts at
 `$0010` and the `$0038` interrupt-trampoline vector is fixed: 13 rows × 3 B ends
 at `$0036`, leaving **one** spare byte. A fourteenth page-0 tenant needs the

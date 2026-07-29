@@ -1598,16 +1598,35 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         `call`.
       - **`DEF FN`/`FN`** — an arc, not a slice (200–400 B): a definition table,
         argument binding, re-entrant evaluation.
-      - **The `CLEAR` string-pool partition** — opened by the `BIN$`/`FRE` slice
-        (D-BF-A(c)). zerobas has ONE free gap where the reference has TWO pools,
-        and `CLEAR`'s string-space argument is evaluated and discarded. Landing
-        it would move six recorded-not-gated `FRE` rows back into the gate. A
-        string-engine change: its own spec, its own gate.
-        📋 **CHARACTERIZED + SPECCED 2026-07-28, awaiting sign-off (S-CLP-1..5)**:
+      - **The `CLEAR` string-pool partition** — ✅ **LANDED 2026-07-29, 50/50
+        gated, falsified.** Opened by the `BIN$`/`FRE` slice (D-BF-A(c)):
+        zerobas had ONE free gap where the reference has TWO pools, and
+        `CLEAR`'s string-space argument was evaluated and discarded. The six
+        recorded-not-gated `FRE` rows are back in a gate.
         [`docs/spec-basic-clearpool.md`](docs/spec-basic-clearpool.md),
         [`docs/clearpool-vg8020-characterization.md`](docs/clearpool-vg8020-characterization.md),
-        `make clearpool-characterize` (53 rows, ten batteries). **6/51 gated
-        rows agree.** The model is a **single moving boundary, not a second
+        [`docs/decision-clearpool-funding.md`](docs/decision-clearpool-funding.md),
+        `make clearpool-acceptance` (56 rows, twelve batteries). Baseline 6/51.
+        FUNDED by promoting `fld_lookup` to a page-0 sub-ROM tenant
+        (`sub/fldlook.asm`, index 12 — **the last page-0 index that fits before
+        the fixed `$0038` vector**): page 1 3 B → 41 B free.
+        ⚠️ **THREE THINGS THE SPEC DID NOT ANTICIPATE, all found by measuring.**
+        (1) `FRE(n)` needed its own handler — both forms shared op 15 because
+        there was one gap, and left alone `FRE(0)` reads 200 at boot (the
+        probe's `ctl-fre0` CONTROL catches it). (2) **A sized pool measures the
+        PEAK, and zerobas's peak was 3×**: `A$=STRING$(100,"A")` charged 300
+        (the `STRING$` temp, `str_set_key`'s H1 snapshot *of that temp*, and the
+        variable's body) where the reference charges 100 — and **`FRE("")` HID
+        it**, because FRE GCs first, so the resting number looked right while
+        `CLEAR 100 : A$=STRING$(100,"A")` raised ERR 14. Fixed by skipping the
+        redundant snapshot for a source that is already a temp, and by having
+        `sh_var_store` **adopt** a temp's body instead of copying it.
+        (3) ERR 14 cost **one byte** — a different FPERR code, not a different
+        code path. Also: **`oos-vs-oom` was measuring two claims at once** and
+        was SPLIT rather than silenced; the six ungated rows are ungated for
+        three different reasons and the battery names (`rep`/`share`/`arr`)
+        carry which.
+        The model is a **single moving boundary, not a second
         allocator** — `CLEAR 200`→`FRE(0)`=28815 and `CLEAR 4000`→25015, a
         difference of **exactly 3800**, so the pool is carved from the same RAM.
         The pools are independent: the equal-depth `FRE(0)` delta across
@@ -1621,17 +1640,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         `CLEAR -1`/`32768`/`"200"` raise IFC/Overflow/Type mismatch where
         zerobas raises **nothing**. ERR 14 is currently a **hole** in
         `err_msgtab` pointing at `err_unprintable`, exactly as ERR 24 was.
-        ⚠️ **BLOCKED ON A CARVE.** Most of the work is sub-ROM tenant code
-        (~3.4 KB free) and the low region covers `heap_reset`, but
-        `clear.asm`'s domain check and the ERR 14 message are **main page 1,
-        which has 3 B free** — an estimated ~40 B short. This is the carve
-        `spec-basic-width-domain.md` S-WID-2 predicted. **Step 1 is to build the
-        main-ROM side and MEASURE the overrun**, not to size a carve against the
-        estimate (S-CLP-1).
-        ⚠️ **S-CLP-3 is the user-visible one**: a 200-byte default means
-        programs that today have ~15 KB of string space will start raising
-        `Out of string space`. Correct per the charter, and it means the full
-        acceptance corpus must be re-run, not just this slice's gate.
+        ✅ **S-CLP-1 the carve, S-CLP-2 derive-don't-store, S-CLP-3 the 200-byte
+        default, S-CLP-4 the stored literal and S-CLP-5 body sharing are all
+        answered — see the spec's §7.** S-CLP-4 is the one whose ANSWER moved
+        it: a stored-program literal costs the pool **nothing** (measured, and a
+        25-char literal still costs nothing, so it is zero and not slack),
+        because the reference points the descriptor at the program text — but
+        matching that needs storing by REFERENCE, which is S-CLP-5's scope, not
+        a `heap_alloc` change as the question assumed.
+        ⚠️ **S-CLP-3 was the user-visible one**: the 200-byte default means
+        programs that used to have ~15 KB of string space now get 200 unless
+        they say otherwise. The full acceptance corpus was re-run, not just this
+        slice's gate.
 
 - [ ] 🔴 **`DIM Q(20000)` → `Out of memory`, reference says `Subscript out of
       range`.** Found 2026-07-28 as a calibration row in the D-CLP matrix
@@ -1644,6 +1664,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       [`docs/clearpool-vg8020-characterization.md`](docs/clearpool-vg8020-characterization.md)
       §3 so it is not "discovered" later by a red gate. Unmeasured: where the
       reference's dimension bound actually sits.
+      ⚠️ **The row that found it was carrying TWO claims and has been SPLIT**
+      (D-CLP landing, 2026-07-29). `oos-vs-oom` asserted both "out of string
+      space is distinct from out of memory" (D-CLP's, and true) and "which
+      non-string error a huge DIM gives" (this item, and divergent). The first
+      is now gated on `DIM Q(5000)`, which overruns free variable space on BOTH
+      machines; **this one lives on as `oos-dim-huge` in the probe's `arr`
+      battery — reported, never gated.** It was not silenced to make D-CLP
+      green: it is the standing record, and it will turn from `----` to a
+      gateable row the day the ARRAYS arc fixes it.
 
 - [x] ✅ **`WIDTH n`'s VALID DOMAIN — LANDED 2026-07-28, 76/76, falsified.**
       Was 🔴 FIVE silent screen-destroyers shipping today. The last residue of

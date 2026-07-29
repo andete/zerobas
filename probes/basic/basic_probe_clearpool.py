@@ -148,6 +148,14 @@ CASES = [
     # a string ARRAY element: same pool as a scalar's body?
     ("hold-array",   "hold", ['CLEAR 500', 'DIM A$(2)', 'A$(1)=STRING$(100,"A")',
                               'PRINT "[";FRE("");"]"']),
+    # ...and at the SAME COST. hold-array above is a RESTING reading in a pool
+    # with 400 bytes of slack, so it agrees whether the element store peaks at
+    # 100 or at 200 -- `FRE` GCs first and the transient is gone before the
+    # readout. This row removes the slack: an EXACT-fit pool can only be
+    # satisfied by a store that peaks at 100, and it is the array-element
+    # counterpart of oos-exact.
+    ("hold-arr-fit", "hold", ['CLEAR 100', 'DIM A$(2)', 'A$(1)=STRING$(100,"A")',
+                              'PRINT "[";FRE("");"]"']),
     # a temp that is never stored: does an expression temp come out of the pool
     # and go straight back?
     ("hold-temp",    "hold", ['CLEAR 500', 'X=LEN(STRING$(100,"A"))',

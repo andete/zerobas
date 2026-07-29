@@ -216,14 +216,21 @@ she_ta_full:
 ; and it is an enumerated GC root (sg_walk_temps). Clobbers A,D,E,H,L.
 sh_src_is_temp:
                 ld      hl,(SH_SRC)
+                ; fall through
+; --- sh_hl_is_temp: the same test on an arbitrary HL, HL PRESERVED. ---------
+; sub/arrays.asm aeng_copy_str needs it for (STRPTR) rather than (SH_SRC).
+sh_hl_is_temp:
+                push    hl
                 ld      de,TEMPPOOL
                 or      a
                 sbc     hl,de
+                pop     hl                  ; (pop does not touch flags)
                 jr      c,sit_no            ; below the pool -> not a temp
-                ld      hl,(SH_SRC)
+                push    hl
                 ld      de,TEMPBASE
                 or      a
                 sbc     hl,de
+                pop     hl
                 ret     c                   ; in [TEMPPOOL,TEMPBASE) -> CF set
 sit_no:
                 or      a                   ; CF clear

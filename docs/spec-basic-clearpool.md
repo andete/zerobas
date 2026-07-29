@@ -240,6 +240,37 @@ Three properties are load-bearing and are documented in the probe:
   first run read `<none>` *on the reference*, several of which then scored PASS
   against a zerobas `<none>` (characterization §1.3).
 
+## 6a. The corpus is part of the work (S-CLP-3)
+
+The 200-byte default is the most user-visible change in the slice, and it moved
+fixtures in three different ways. All of these are the gate working, not the
+gate being wrong:
+
+| gate | what moved |
+|---|---|
+| `unit-test` (5 string files) | they emulate a cold boot by calling `heap_reset`, which does **not** set `POOLSIZE` — a real boot does that in `init`, ahead of `clear_vars`, and NEW/RUN/bare-CLEAR all deliberately keep the current size. Left at 0 the pool is **zero bytes wide**; they now seed it, as the harness's stand-in for the boot step |
+| `unit-test` `test_arrays.py` | case 8d asserted the GC retry this slice deletes; re-pointed at the new contract, plus a new 8d2 proving the FLOOR is the bound |
+| `array-acceptance` (12 rows) | the GC-stress and H1 churn cases were sized against zerobas's **old ~15.8 KB single gap** and now say `CLEAR 4000` / `CLEAR 14000` / `CLEAR 15000` explicitly. The heap they wanted is the heap they now ask for |
+| `array-acceptance` `gc.bugB.phantom` | ⚠️ its window no longer exists — see below |
+
+⚠️ **`gc.bugB.phantom` needed re-targeting, not re-sizing.** It required an
+allocation to FAIL between the scalar insert and the store. After this slice,
+`str_set_key`'s `SH_SRC` is always either a temp (adopted — cannot fail) or
+`STR_EMPTY` (length 0 — trivially succeeds), so **`sh_var_store`'s OOM branch is
+unreachable from the scalar LET path**; and `scv_ceil_try`'s GC-retry is gone, so
+no GC runs in that window either. Those two facts were exactly what made a stale
+slot observable as a live phantom root, so **BUG B's hazard is structurally
+absent rather than merely untriggered**. The zero-fill itself is asserted
+directly — and more strongly — by `tests/test_arrays.py`, which reads the slot
+immediately after `scv_alloc` with no store in between. The probe case now pins
+the surviving observable half: a fresh slot must be OWNED by the store, never
+left holding whatever bytes were there.
+
+Green after the fix-ups: `unit-test` 53/53, `array-acceptance` **149/151 — the
+same two `ifc.instr.*` message-case rows that fail on the pre-slice baseline**,
+`string-acceptance`, `str-domain-acceptance` 89/89, `abort-acceptance` 23/23,
+`intarg-acceptance`, `missing-acceptance`, `width-acceptance` 76/76.
+
 ## 7. Sign-off questions
 
 - **S-CLP-1 — the carve. ✅ MEASURED AND SCOUTED — see

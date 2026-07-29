@@ -3,7 +3,12 @@
 Instrument: [`probes/basic/basic_probe_clearpool.py`](../probes/basic/basic_probe_clearpool.py),
 boot-per-case, reference `Philips_VG_8020` against
 `C-BIOS_MSX1_EU_REPACK_DISK`, measured on a clean-built `a6323b9`.
-**6/51 gated rows agree, 45 diverge**, plus 2 reported-never-gated.
+**6/51 gated rows agreed, 45 diverged**, plus 2 reported-never-gated.
+
+✅ **The slice LANDED 2026-07-29 at 50/50 gated** (6 reported-never-gated) —
+[`spec-basic-clearpool.md`](spec-basic-clearpool.md). The figures below are the
+pre-slice measurement and are left as the record; §2.5's stored-literal rows and
+§3a were added by the implementation.
 
 Opened by the `BIN$`/`FRE` slice as D-BF-A(c): zerobas has **one free gap**
 where the reference has **two pools**, and `CLEAR`'s `<string-space>` argument
@@ -208,6 +213,28 @@ calibration row aimed at something else. It is **not** in this slice's scope;
 recorded here and in TODO.md so it is not "discovered" later by a red gate.
 
 ---
+
+## 3a. What the FIX itself measured — the peak, which nothing here had probed
+
+Everything in §2 is a RESTING measurement: `FRE("")` read after the statement
+finished. That is what the reference reports, and it is what this document set
+out to characterise. It is not what an allocator has to satisfy.
+
+Implementing §2 exposed the gap. `A$=STRING$(100,"A")` charged zerobas's pool
+**300 bytes at its high water mark** — the `STRING$` temp, `str_set_key`'s H1
+snapshot *of that temp*, and the variable's own body — against the reference's
+100. **`FRE("")` hid it perfectly**, because `FRE` GCs first: the resting number
+matched §2.5 row for row while `CLEAR 100 : A$=STRING$(100,"A")` — which the
+reference accepts exactly, leaving `FRE("")` at 0 — raised `Out of string space`.
+
+Binary search in a 200-byte pool put the break at **n=66 accepted, n=67 dead**:
+3n to the byte. Two changes bring it to 1n (spec §3), and each is falsifiable on
+its own gate row.
+
+The general lesson is the one worth keeping: **with ~15 KB of slack, a resting
+measurement and a peak measurement agree; the moment the user sizes the pool,
+only the peak matters.** A characterisation that reads a number after the fact
+cannot see a transient that a garbage collector erases before the readout.
 
 ## 4. Where a fix would land, and against which walls
 

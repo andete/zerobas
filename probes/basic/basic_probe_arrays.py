@@ -189,7 +189,7 @@ CASES = [
     # is not an oracle for zb's whole-free-RAM heap under this churn. The
     # result is derivable-correct.
     ("strarr.dim.aftergc",      "stored",
-        ['FORI=1TO70:A$=STRING$(250,65):NEXT', 'DIM B(500):B(250)=99',
+        ['CLEAR 4000:FORI=1TO70:A$=STRING$(250,65):NEXT', 'DIM B(500):B(250)=99',
          'PRINT"[";LEN(A$);"/";B(250);"]"'], "zbval"),
     # Arrays slice-4a GC INTEGRITY (Fable gate): keep only a FEW live string-
     # array elements (5) but CHURN them hard (15 rounds x 5 reassigns = 75
@@ -200,7 +200,7 @@ CASES = [
     # the differential (a 50-element churn timed the reference out). Both
     # machines end with S$(3) = 250 'B's, GC or not (GC is unobservable).
     ("strarr.gc.churn",         "stored",
-        ['DIM S$(5):FORI=1TO5:S$(I)=STRING$(250,65):NEXT',
+        ['CLEAR 4000:DIM S$(5):FORI=1TO5:S$(I)=STRING$(250,65):NEXT',
          'FORJ=1TO15:FORI=1TO5:S$(I)=STRING$(250,66):NEXT:NEXT',
          'PRINT"[";LEN(S$(3));LEFT$(S$(3),1);"]"'], "zbval"),
 
@@ -288,7 +288,7 @@ CASES = [
     # succeeds (§3a steps 3-4) -- the SAME mechanism arrays' own OOM-retry
     # uses, now reachable from scalar creation too.
     ("scalar.collision.gc.ok",  "stored",
-        ['FORI=1TO70:A$=STRING$(250,65):NEXT', 'ZZ=12345',
+        ['CLEAR 4000:FORI=1TO70:A$=STRING$(250,65):NEXT', 'ZZ=12345',
          'PRINT"[";LEN(A$);"/";ZZ;"]"'], "zbval"),
 
     # --- §13a: STALE ARRAY-ELEMENT ADDRESS (docs/spec-basic-arrays-slice4b-
@@ -371,7 +371,7 @@ CASES = [
     # (the same "zb-only heap-pressure" class as scalar.collision.gc.ok /
     # strarr.gc.churn above).
     ("h1.srcarrelem",  "stored",
-        ['DIM S$(1):S$(0)="hello":FORI=1TO70:Z$=STRING$(250,65):NEXT:A$=S$(0)',
+        ['CLEAR 4000:DIM S$(1):S$(0)="hello":FORI=1TO70:Z$=STRING$(250,65):NEXT:A$=S$(0)',
          'PRINT"[";A$;"]"'], "zbval"),
     # h1.srcconcat: source = a `+` concat result. Empirically, str_eval's own
     # concat spine (str_concat_tail) ALREADY snapshots operand 1 into an
@@ -381,12 +381,12 @@ CASES = [
     # battery anyway per the contract's explicit case list (§9) as a
     # standing regression guard, not because it isolates the bug alone.
     ("h1.srcconcat",   "stored",
-        ['B$="foo":C$="bar":FORI=1TO70:Z$=STRING$(250,65):NEXT:A$=B$+C$',
+        ['CLEAR 4000:B$="foo":C$="bar":FORI=1TO70:Z$=STRING$(250,65):NEXT:A$=B$+C$',
          'PRINT"[";A$;"]"'], "zbval"),
     # h1.self: A$=A$ with A$ fresh (reads STR_EMPTY, then allocates). A
     # degenerate/edge member of the battery per the contract's own listing.
     ("h1.self",        "stored",
-        ['FORI=1TO70:Z$=STRING$(250,65):NEXT:A$=A$',
+        ['CLEAR 4000:FORI=1TO70:Z$=STRING$(250,65):NEXT:A$=A$',
          'PRINT"[";A$;"]"'], "zbval"),
     # NON-VACUOUS proof for h1.srcarrelem (recorded here, verified by hand
     # during implementation): reverting the H1 snapshot (str_set_key using
@@ -433,7 +433,7 @@ CASES = [
     # see tests/test_arrays.py Case 9c for the isolated non-emulator proof
     # of the same offset). zb-only (heap-pressure churn).
     ("gcroot.scalars.survive", "stored",
-        ['A$="alpha":B$="beta":C$="gamma":DIM S$(1):S$(0)="delta"',
+        ['CLEAR 4000:A$="alpha":B$="beta":C$="gamma":DIM S$(1):S$(0)="delta"',
          'FORI=1TO70:Z$=STRING$(250,65):NEXT',
          'PRINT"[";A$;B$;C$;S$(0);"]"'], "zbval"),
 
@@ -567,7 +567,7 @@ GC_STRESS = [
     # of allocating a STRING$ temp per element -- else 270 allocs in a near-full
     # heap balloon the run past the capture window.
     ("gc.n270.slow",
-     ['DIM S$(270):FORI=1TO270:S$(I)=STRING$(35,65):NEXT',
+     ['CLEAR 14000:DIM S$(270):FORI=1TO270:S$(I)=STRING$(35,65):NEXT',
       'FORI=1TO270:S$(I)=STRING$(35,66):NEXT',
       'R$=STRING$(35,66):F=0:T=0:FORI=1TO270:T=T+LEN(S$(I)):IFS$(I)<>R$THENF=F+1',
       'NEXT:PRINT"[";F;T;LEFT$(S$(1),1);LEFT$(S$(270),1);"]"'],
@@ -575,7 +575,7 @@ GC_STRESS = [
     # (b)+(c-low) DETOKBUF fast path, ~200 roots (under the 256 cap) -> the
     # switch's UNDER-256 side + the DETOKBUF sort. Per-element CONTENT check.
     ("gc.n200.detok",
-     ['DIM S$(200):FORI=1TO200:S$(I)=STRING$(60,65):NEXT',
+     ['CLEAR 15000:DIM S$(200):FORI=1TO200:S$(I)=STRING$(60,65):NEXT',
       'FORI=1TO200:S$(I)=STRING$(60,66):NEXT',
       'R$=STRING$(60,66):F=0:T=0:FORI=1TO200:T=T+LEN(S$(I)):IFS$(I)<>R$THENF=F+1',
       'NEXT:PRINT"[";F;T;LEFT$(S$(100),1);"]"'],
@@ -584,13 +584,13 @@ GC_STRESS = [
     # 2N=512 B fills the buffer exactly) and n=257 (first gc_slow) must BOTH keep
     # every body intact through a forced GC. One case per side; content-checked.
     ("gc.n256.edge",
-     ['DIM S$(256):FORI=1TO256:S$(I)=STRING$(40,65):NEXT',
+     ['CLEAR 14000:DIM S$(256):FORI=1TO256:S$(I)=STRING$(40,65):NEXT',
       'FORI=1TO256:S$(I)=STRING$(40,66):NEXT',
       'R$=STRING$(40,66):F=0:FORI=1TO256:IFS$(I)<>R$THENF=F+1',
       'NEXT:PRINT"[";F;LEN(S$(256));LEFT$(S$(256),1);"]"'],
      " 0  40 B"),
     ("gc.n257.edge",
-     ['DIM S$(257):FORI=1TO257:S$(I)=STRING$(40,65):NEXT',
+     ['CLEAR 14000:DIM S$(257):FORI=1TO257:S$(I)=STRING$(40,65):NEXT',
       'FORI=1TO257:S$(I)=STRING$(40,66):NEXT',
       'R$=STRING$(40,66):F=0:FORI=1TO257:IFS$(I)<>R$THENF=F+1',
       'NEXT:PRINT"[";F;LEN(S$(257));LEFT$(S$(257),1);"]"'],
@@ -603,7 +603,7 @@ GC_STRESS = [
     # stack. FAILS on the old $F240 code (NON-VACUOUS). Leaving the sentinels is
     # harmless -- gc_stress runs last, then the next suite reboots.
     ("gc.diskcells",
-     ['POKE&HF242,111:POKE&HF247,122:POKE&HF24E,133:POKE&HF348,144',
+     ['CLEAR 14000:POKE&HF242,111:POKE&HF247,122:POKE&HF24E,133:POKE&HF348,144',
       'DIM S$(100):FORI=1TO100:S$(I)=STRING$(100,65):NEXT',
       'FORI=1TO100:S$(I)=STRING$(100,66):NEXT',
       'PRINT"[";PEEK(&HF242);PEEK(&HF247);PEEK(&HF24E);PEEK(&HF348);"]"'],
@@ -625,30 +625,47 @@ GC_STRESS = [
     #     it: each direct line survives the previous line's abort, and
     #     CLEAR,&H82C0 pins the heap ceiling (C=min(HIMEM,TXTMAX), FRETOP
     #     reset to C) so no fill loop is needed at all.
-    # Sizing (boundary ~$8016 with V+A$; empirical 2026-07-18, ~120 B margin
-    # each way): P$=STRING$(250,67) must (a) build its temp (needs 250 free:
-    # C-LA-boundary>=250), (b) SUCCEED at str_set_key's H1 snapshot (another
-    # 250-byte body copy -- if the snapshot OOM'd, str_set_key would proceed
-    # to store "" via SH_SRC=STR_EMPTY and OVERWRITE the descriptor: vacuous),
-    # then (c) FAIL op=12 sh_var_store's own heap_alloc(250) (svs_oom never
-    # touches SH_DEST) -> the freshly inserted P$ entry keeps its scv_alloc
-    # zero-fill. NON-VACUITY (all mis-fires fail loudly): W folds all 3
-    # descriptor bytes. Genuine path: LEN=0, W=0. Zero-fill broken (BUG B):
-    # descriptor = seed [200][$8200] (in [FRETOP,C) -> a live phantom root)
-    # -> LEN=200, W=330. P$ never inserted (temp OOM'd): seed intact -> W=330
-    # (verified: without the P$ line the PEEKs read 330). Snapshot-OOM
-    # empty-store path: op=12 writes a real (nonzero, ~$80xx) body ptr ->
-    # W>=128. Heap too big: LEN=250 (verified at CLEAR,&H8400). Only
-    # "insert ran AND zero-filled AND store OOM'd untouched" prints ' 0  0 '.
+    # ⚠️ RE-TARGETED A THIRD TIME (D-CLP, 2026-07-29) -- THE ORIGINAL WINDOW NO
+    # LONGER EXISTS, so the old construction was asserting an unreachable state.
+    # It required, in order: (a) build a 250-byte temp, (b) SUCCEED at
+    # str_set_key's H1 snapshot, (c) FAIL op=12 sh_var_store's own
+    # heap_alloc(250), leaving the freshly inserted P$ entry at its scv_alloc
+    # zero-fill. The CLEAR string-pool partition removed BOTH halves of that:
+    #   * str_snapshot_keep returns a source that is ALREADY a temp unchanged
+    #     and sh_var_store ADOPTS a temp's body -- so from str_set_key, SH_SRC
+    #     is always either a temp (adopted, cannot fail) or STR_EMPTY (len 0,
+    #     trivially succeeds). **op=12's OOM branch is unreachable from the
+    #     scalar LET path.**
+    #   * scv_ceil_try's GC-retry arm was deleted as dead code (its ceiling is
+    #     now the fixed pool floor, which GC cannot move), so no GC runs between
+    #     the insert and the store either.
+    # Those were exactly the two things that made a stale slot observable as a
+    # LIVE PHANTOM ROOT, so BUG B's hazard is now structurally absent rather
+    # than merely untriggered. The zero-fill ITSELF is still asserted directly,
+    # and more strongly, by tests/test_arrays.py ("'S$' entry = [name0][name1]
+    # [type=1][len=0][ptr=0] fully zero-filled 3 B") -- which reads the slot
+    # right after scv_alloc with no store in between, i.e. exactly the moment
+    # this black-box case could only ever approximate.
+    #
+    # What this case pins NOW is the surviving observable half: a fresh scalar
+    # slot must be OWNED by the store, never left holding whatever bytes were
+    # there. The seed is unchanged in spirit -- [200][$82A0], with the ptr inside
+    # [FRETOP,C) so it would be a live root if it survived -- and the readout is
+    # the descriptor's own length byte. Genuine path: LEN(P$)=250 and W=250.
+    # Seed survived (slot never written): W=200, and LEN would read 200 over a
+    # garbage body. Store OOM'd: LEN=0. NON-VACUOUS in every direction.
+    # Sizing: CLEAR 400,&H82C0 -> C=$82C0, pool [$8130,$82C0). A$ costs 60
+    # (FRETOP=$8284), P$'s temp 250 -> 310 of 400, and the seed ptr $82A0 sits
+    # inside [FRETOP,C) as the original's $8200 did at the original ceiling.
     ("gc.bugB.phantom",
-     ['CLEAR,&H82C0',
+     ['CLEAR 400,&H82C0',
       'V=0:A$=STRING$(60,66)',
       'V=VARPTR(A$):POKEV+6,200',
-      'POKEV+7,0:POKEV+8,&H82',
+      'POKEV+7,&HA0:POKEV+8,&H82',
       'P$=STRING$(250,67)',
-      'W=PEEK(V+6)+PEEK(V+7)+PEEK(V+8)',
+      'W=PEEK(V+6)',
       'PRINT"[";LEN(P$);W;"]"'],
-     " 0  0 ", "direct"),
+     " 250  250 ", "direct"),
 ]
 
 # BUG A + BUG C regression cases (Fable 2026-07-17), DIRECT mode (fast; the
