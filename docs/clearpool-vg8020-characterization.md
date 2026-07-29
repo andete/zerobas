@@ -127,10 +127,35 @@ Two of these constrain the implementation more than they look. `B$=A$`
 And reclamation is real, not merely on collision — consistent with the
 `BIN$`/`FRE` slice's finding that `FRE` compacts.
 
-⚠️ **`hold-literal` was measured in DIRECT mode only.** In a stored program the
-reference may point the descriptor into the program text instead of copying, in
-which case a 5-byte literal would cost the pool nothing. That distinction is
-unmeasured and is an open question for the spec, not a settled fact.
+✅ **The stored-program literal is now MEASURED (2026-07-29) — it costs the
+pool NOTHING.** §2.5's table was direct mode only, and the guess written here
+was that a stored line's permanent tokens might let the reference point the
+descriptor at the program text. It does:
+
+| row | reference | reading |
+|---|---|---|
+| `A$="ABCDE"` (direct) | 495 | copied — the line buffer is transient, so it must be |
+| `10 A$="ABCDE"` : `RUN` | **500** | **not copied at all** |
+| `10 A$=` a 25-char literal : `RUN` | **500** | still nothing — so this is zero, not slack |
+
+The 25-char row is the discriminator: 5 vs 0 is arguable as accounting noise,
+25 vs 0 is not.
+
+⚠️ **The finding does not land where S-CLP-4 expected.** That question was
+phrased as "it changes what `heap_alloc` must do for a literal" — it does not.
+Charging zero requires **storing by reference**, i.e. the same body-ownership
+machinery `hold-alias` is about, so it belongs to **S-CLP-5**, which is signed
+off out of D-CLP's scope. Both rows are therefore in the probe's `share`
+battery: reported, never gated.
+
+That is one difference showing up in two directions, which is why it cannot be
+patched away with pool arithmetic. zerobas **owns a body per variable**
+(`sh_var_store` heap-copies whatever the rvalue descriptor points at); the
+reference decides ownership **per source**. So an alias charges twice there and
+once here, and a stored literal charges nothing there and once here.
+
+⚠️ Worth writing down before anyone implements it: a variable whose body points
+into program text means `MID$(A$,1,1)="X"` writes into the **program**.
 
 ### 2.6 `Out of string space` is a real, distinct error
 

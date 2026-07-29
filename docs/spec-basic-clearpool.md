@@ -109,10 +109,13 @@ records that inserting bytes beside `err_msgtab` pushes page 1's dense forward
   (characterization §3); the reference bounds a dimension before allocating and
   zerobas allocates until it fails. An ARRAYS-arc divergence, unrelated to the
   pool. Recorded, not fixed here.
-- **`hold-literal` in a STORED program.** §2.5 measured the direct-mode cost of
-  `A$="ABCDE"` as 5 bytes of pool. A stored program may point the descriptor
-  into the program text instead of copying, costing nothing. **Unmeasured** —
-  see S-CLP-4.
+- **`hold-literal` in a STORED program — ✅ MEASURED, and it stays OUT.**
+  Direct `A$="ABCDE"` costs 5; `10 A$="ABCDE" : RUN` costs **0**, and so does a
+  25-char literal, so it is zero rather than slack (characterization §2.5).
+  The reference points a stored literal's descriptor straight at the program
+  text. S-CLP-4 expected this to change `heap_alloc`; it does not — charging
+  zero requires **storing by reference**, which is S-CLP-5's body-ownership
+  question, not a pool question. Reported by the probe's `share` battery.
 - **`Out of string space` from the temp-descriptor stack.** The temp pool
   (`TEMPTOP`/`TEMPBASE`) is a separate structure with its own overflow; whether
   the reference reports ERR 14 or ERR 16 there is not measured.
@@ -226,14 +229,27 @@ Three properties are load-bearing and are documented in the probe:
   test programs raise `Out of string space`. **Recommended: take it, and
   re-run the full acceptance corpus** — `string-acceptance`, `diskbasic-*`, the
   arrays gates — because several fixtures allocate strings freely.
-- **S-CLP-4 — the stored-program literal.** §2.5 measured `A$="ABCDE"` costing
-  5 bytes of pool in DIRECT mode. If a stored program instead points into the
-  program text, the pool accounting differs and a `hold` row would be wrong for
-  stored programs. **Recommended: measure it before implementing** — it is two
-  more probe rows and it changes what `heap_alloc` must do for a literal.
-- **S-CLP-5 — `B$=A$` copies.** §2.5 measured the pool charged twice. zerobas's
-  descriptor model shares bodies. Making assignment copy is a string-engine
-  semantic change beyond the partition itself. Is it in scope, or does the
-  slice land the partition and leave sharing as a documented deviation with its
-  `hold-alias` row reported-not-gated? **Recommended: leave it out and report
-  the row**, so the partition lands on its own; sharing is a second slice.
+- **S-CLP-4 — the stored-program literal. ✅ MEASURED 2026-07-29, and the
+  answer moved it into S-CLP-5.** Direct `A$="ABCDE"` costs 5 bytes of pool;
+  `10 A$="ABCDE" : RUN` costs **nothing**, and a 25-char stored literal also
+  costs nothing — so the answer is zero, not accounting slack. The reference
+  points a stored literal's descriptor at the program text, whose bytes are
+  permanent; a direct line's buffer is transient, so there it must copy.
+  The question was phrased as "it changes what `heap_alloc` must do for a
+  literal" — **it does not**. Charging zero requires storing by REFERENCE,
+  which is S-CLP-5's machinery, so both rows are `share`-battery (reported,
+  never gated) rather than something this slice implements.
+  ⚠️ Worth recording before anyone builds it: a variable body that points into
+  program text means `MID$(A$,1,1)="X"` writes into the **program**.
+- **S-CLP-5 — `B$=A$` copies. ✅ SIGNED OFF: out of scope, report the row.**
+  §2.5 measured the pool charged twice. zerobas's descriptor model shares
+  bodies. Making assignment copy is a string-engine semantic change beyond the
+  partition itself, so the slice lands the partition and leaves sharing as a
+  documented deviation.
+  ⚠️ S-CLP-4's result shows this is **one difference in two directions**, which
+  is why no pool arithmetic reconciles either row: zerobas **owns a body per
+  variable** (`sh_var_store` heap-copies whatever the rvalue descriptor points
+  at), while the reference decides ownership **per source**. So an alias
+  charges twice there and once here, and a stored literal charges nothing there
+  and once here. The three rows (`hold-alias`, `hold-lit-prog`, `hold-lit-p25`)
+  sit together in the probe's `share` battery for that reason.

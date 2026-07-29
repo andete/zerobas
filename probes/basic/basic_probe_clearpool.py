@@ -88,6 +88,12 @@ ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK
 #   dflt  -- the boot default, and what a BARE `CLEAR` does to the size.
 #   dom   -- `CLEAR n`'s own argument domain.
 #   hmem  -- the `,himem` argument's interaction with the pool.
+#   share -- REPORTED, NEVER GATED: the body-OWNERSHIP divergence (S-CLP-5,
+#            signed off out of scope). zerobas owns a body per variable; the
+#            reference decides ownership per source, which shows up in BOTH
+#            directions (an alias charges twice there, a stored literal
+#            charges nothing). Reconciling them changes WHO OWNS A BODY, not
+#            how big the pool is, so no pool arithmetic can make them agree.
 #   rep   -- REPORTED, NEVER GATED: rows whose answer is a property of each
 #            machine's memory map, so they can never be made to agree.
 CASES = [
@@ -132,9 +138,6 @@ CASES = [
     # collection) or does it stay charged? This decides whether the pool needs
     # its own GC or shares strheap_gc.
     ("hold-reassign","hold", ['CLEAR 500', 'A$=STRING$(100,"A")', 'A$="B"',
-                              'PRINT "[";FRE("");"]"']),
-    # the SAME body assigned twice: does a second reference double-charge?
-    ("hold-alias",   "hold", ['CLEAR 500', 'A$=STRING$(100,"A")', 'B$=A$',
                               'PRINT "[";FRE("");"]"']),
     # a literal from the token stream -- is it copied into the pool at all?
     ("hold-literal", "hold", ['CLEAR 500', 'A$="ABCDE"',
@@ -201,6 +204,38 @@ CASES = [
     ("hmem-both",    "hmem", ['CLEAR 500,&HD000', 'PRINT "[";FRE("");"]"']),
     ("hmem-tight",   "hmem", ['CLEAR 500,&H9000', 'PRINT "[";FRE("");"]"']),
     ("hmem-only",    "hmem", ['CLEAR ,&HD000', 'PRINT "[";FRE("");"]"']),
+
+    # --- BODY SHARING: reported, never gated (S-CLP-5, signed off OUT) --------
+    # zerobas OWNS a body per variable (sh_var_store heap-copies whatever the
+    # rvalue descriptor points at); the reference decides ownership per SOURCE.
+    # That single difference shows up in BOTH directions, which is why these
+    # three sit together and why no amount of pool arithmetic reconciles them:
+    # making them agree means changing who owns a string body, not how big the
+    # pool is. S-CLP-5 puts that out of D-CLP's scope; it is its own slice.
+    ("hold-alias",   "share", ['CLEAR 500', 'A$=STRING$(100,"A")', 'B$=A$',
+                               'PRINT "[";FRE("");"]"']),
+    # ⚠️ S-CLP-4, MEASURED 2026-07-29 (it was the open question the spec §4 and
+    # the slice brief both said to settle BEFORE writing literal handling):
+    #   direct  `A$="ABCDE"`            -> 495  (hold-literal, above: charges 5)
+    #   stored  `10 A$="ABCDE" : RUN`   -> 500  (charges NOTHING)
+    #   stored  a 25-char literal       -> 500  (still nothing -- so it is not
+    #                                            5-bytes-of-noise, it is zero)
+    # The reference points a stored literal's descriptor straight AT THE PROGRAM
+    # TEXT, whose bytes are permanent; a direct line's buffer is transient, so
+    # there it is forced to copy. The 25-char row is the discriminator: 5 vs 0
+    # is arguable as slack, 25 vs 0 is not.
+    # ⚠️ The finding does NOT change heap_alloc, which is what S-CLP-4 expected.
+    # Charging zero requires STORING BY REFERENCE, i.e. exactly the body-sharing
+    # machinery hold-alias is about -- so it lands in S-CLP-5's scope, not this
+    # slice's, and it is reported here rather than gated. It also carries a real
+    # hazard worth writing down before anyone implements it: a variable pointing
+    # into program text means `MID$(A$,1,1)="X"` writes into the PROGRAM.
+    # RUN keeps POOLSIZE (dflt-run pins that separately), so `CLEAR 500` still
+    # holds when the readout is taken.
+    ("hold-lit-prog","share", ['CLEAR 500', '10 A$="ABCDE"', 'RUN',
+                               'PRINT "[";FRE("");"]"']),
+    ("hold-lit-p25", "share", ['CLEAR 500', '10 A$="AAAAAAAAAAAAAAAAAAAAAAAAA"',
+                               'RUN', 'PRINT "[";FRE("");"]"']),
 
     # --- REPORTED, NEVER GATED ------------------------------------------------
     # Does the pool come OUT of the variable space? If it does, FRE(0) after
@@ -298,7 +333,7 @@ def main():
     for i, (label, battery, lines) in enumerate(sel):
         rt, zt = read(i, ref_raws[i]), read(i, zb_raws[i])
         ok = verdicts[i]
-        gated = battery != "rep"
+        gated = battery not in ("rep", "share")
         npass += 1 if (ok and gated) else 0
         mark = "----" if not gated else ("PASS" if ok else "FAIL")
         print(f"{mark:5} {battery:5} {label:14} {':'.join(lines)[:44]:44}")
@@ -307,7 +342,7 @@ def main():
             print(f"        zb : {zt!r}")
         sys.stdout.flush()
 
-    ntot = sum(1 for c in sel if c[1] != "rep")
+    ntot = sum(1 for c in sel if c[1] not in ("rep", "share"))
     nrep = len(sel) - ntot
     print(f"\n{npass}/{ntot} gated rows agree with the reference"
           + (f"  ({nrep} reported, never gated)" if nrep else ""))
