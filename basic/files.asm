@@ -991,35 +991,65 @@ fca_lp:
                 djnz    fca_lp
                 ret
 
+; D-FCH S-FCH-1 (docs/spec-basic-filechan-alloc.md §3.1): the two halves of the
+; write-back cache that REPLACED the per-channel 512-byte save copy both live in
+; the sub-ROM — fat_detach_channel (flush the dirty partial sector in place) and
+; fat_restage_channel (read it back), in basic/fat-prim-body.inc, reached through
+; the fch_flush_active / fch_restage shims in basic/fat.asm.
+;
+; ⚠️ Sited there for space, and the number is MEASURED not guessed: as resident
+; code the detach half alone cost 43 B of main page 1 against 6 B free. That is
+; precisely why S-FCH-1 said build it before scouting a carve.
+;
 ; fch_save_active — save the engine globals to the active channel's context block.
 ; No-op when no channel is active. Clobbers A/BC/DE/HL.
+;
+; ⚠️ The flush comes FIRST, while the globals still hold the live state: it
+; updates FWR_SECIDX (and FWR_CLUS/FWR_FIRST if it allocates), all of which live
+; INSIDE the saved span. Flushing after the LDIR would persist a stale iterator.
+; ⚠️ IX: the flush is a CALSLT, which this routine never used to contain. Its
+; header contract says IX/IY survive because the EOF/LOF function callers rely on
+; the token cursor — so guard it here rather than at nine call sites.
 fch_save_active:
                 ld      a,(FCH_ACTIVE)
                 or      a
                 ret     z                   ; nothing live -> nothing to save
+    IF ROM_BASE < $4000
+                call    fch_flush_active
+                ld      a,(FCH_ACTIVE)      ; the CALSLT inside clobbered it
+    ENDIF
                 call    fch_ctx_addr        ; HL = ctx[active]
                 ex      de,hl               ; DE = ctx dest
                 ld      hl,FCH_STATE0       ; copy the 50-byte engine-state span
                 ld      bc,FCH_STATESZ
                 ldir                        ; DE -> ctx + FCH_STATESZ
-                ld      hl,FSECTOR_BUF      ; then the 512-byte data buffer
+    IF ROM_BASE >= $4000
+                ld      hl,FSECTOR_BUF      ; lean: then the 512-byte data buffer
                 ld      bc,512
                 ldir
+    ENDIF
                 ret
 
 ; fch_load_ctx — load channel A's context block into the engine globals and make
 ; it the active channel (FCH_ACTIVE = A). Clobbers A/BC/DE/HL.
+;
+; ⚠️ IX guarded for the same reason as fch_save_active: fch_restage is a CALSLT.
 fch_load_ctx:
                 push    af                  ; keep the channel number
                 call    fch_ctx_addr        ; HL = ctx[A]
                 ld      de,FCH_STATE0
                 ld      bc,FCH_STATESZ
-                ldir                        ; ctx state -> globals; HL -> ctx + 50
-                ld      de,FSECTOR_BUF
+                ldir                        ; ctx state -> globals
+    IF ROM_BASE >= $4000
+                ld      de,FSECTOR_BUF      ; lean: ctx buffer -> FSECTOR_BUF
                 ld      bc,512
-                ldir                        ; ctx buffer -> FSECTOR_BUF
+                ldir
+    ENDIF
                 pop     af
                 ld      (FCH_ACTIVE),a
+    IF ROM_BASE < $4000
+                call    fch_restage         ; re-read this channel's staged sector
+    ENDIF
                 ret
 
 ; fch_sync_mirror — FCH_NUM = FCH_ACTIVE, FCH_MODE = FCH_MODES[FCH_ACTIVE].
@@ -1042,11 +1072,17 @@ fch_select:
                 ld      a,(FCH_ACTIVE)
                 cp      b
                 jr      z,fsel_sync         ; already live -> just refresh the mirror
-                push    bc
-                call    fch_save_active     ; flush the previously-active channel
-                pop     bc
-                ld      a,b
-                call    fch_load_ctx        ; ctx[A] -> globals, FCH_ACTIVE = A
+    IF ROM_BASE < $4000
+                push    ix                  ; ⚠️ ONE guard covering BOTH CALSLTs
+    ENDIF                                   ; below (detach + re-stage). Hoisted
+                push    bc                  ; here rather than duplicated inside
+                call    fch_save_active     ; save/load because every IX-critical
+                pop     bc                  ; caller -- expr.asm's EOF/LOF and
+                ld      a,b                 ; strvar.asm's INPUT$, whose token
+                call    fch_load_ctx        ; cursor IS IX -- enters through HERE.
+    IF ROM_BASE < $4000                     ; fch_claim's caller (do_open) holds
+                pop     ix                  ; its cursor in HL and already guards
+    ENDIF                                   ; for CALSLT, so it needs no guard.
 fsel_sync:
                 jp      fch_sync_mirror
 

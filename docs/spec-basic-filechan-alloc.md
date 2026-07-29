@@ -172,7 +172,53 @@ relocation that turns the freed RAM into program space.
 an allocation one, and its fix should not ride on this slice's carve. Also out:
 raising `FCH_CEIL` beyond 15, and any change to `DETOKBUF`.
 
-## 5. Cost — ⚠️ NOT MEASURED
+## 5a. S-FCH-1 cost — ✅ MEASURED AND BUILT, 2026-07-29
+
+**§3.1 alone costs 5 B of main page 1 and 0 B of low region. It NEEDS NO CARVE** —
+it fits the existing 6 B with 1 B to spare — and it frees **1024 B** of page 3
+(`FCH_CTX` 1124 B → 100 B at `FCH_CEIL=2`).
+
+The number moved twice, and only building it showed that:
+
+| siting | page-1 end | cost | verdict |
+|---|---|---|---|
+| detach half RESIDENT | `$8025` | **43 B** | 37 B over — would have forced a carve |
+| detach half in the SUB-ROM | `$8003` | 9 B | 3 B over |
+| + the IX guard hoisted into `fch_select` | **`$7FFF`** | **5 B** | **fits, 1 B spare** |
+
+⚠️ **A carve scouted from the first row would have been scouted for a
+requirement that was 8× too big.** The whole cost was siting, not substance:
+`fat_detach_channel` calls `fat_flush_data_sector`, which is *already* a sub-ROM
+primitive, so keeping the caller resident bought nothing and cost 34 B.
+
+⚠️ **The IX contract was a live hazard, not a formality.** `fch_save_active` /
+`fch_load_ctx` had no CALSLT before this change and their header promises IX/IY
+survive, because the `EOF`/`LOF` factors and `INPUT$` hold their token cursor
+there. Guarding inside both routines cost 8 B; hoisting a single guard into
+`fch_select` — which every IX-critical caller enters through, while `fch_claim`'s
+only caller keeps its cursor in HL and already guards for CALSLT — cost 4 B and
+saved the slice.
+
+**Gated, and the gate was falsified.** `disk_probe_maxfiles.py`'s interleaved
+two-channel write is the one row that exercises a mid-stream switch on an OUTPUT
+channel; it is byte-identical to the CF-3300. Stubbing `fat_restage_channel` to
+`ret` makes `A.TXT` come back holding **B's** bytes and the row FAILS both
+functionally and against the oracle — so the row has teeth
+([[gate-can-be-green-while-measuring-nothing]]). Full corpus green: unit 53/53,
+`diskbasic-acceptance` 34/34, linemax 60/60, arrdim 73/73, clearpool 52/52, bdos
+12/12, fat-error 7/7, array 149/151 (the standing `ifc.instr.*` baseline).
+
+⚠️ **Repack-only.** The lean 16 KB cart is byte-full — ungated,
+`fat_restage_channel` overran its `$8000` ceiling outright — so it keeps the
+memcpy path and stays byte-identical. Exactly the co-maintenance cost RETIRE THE
+LEAN CART exists to remove.
+
+⚠️ **Known gap, deliberately left:** `fch_save_active` ignores the detach's `Cy`.
+Switching channels could never fail under the memcpy design and now can (disk
+full while flushing). Propagating it means a disposition at every `fch_select`
+caller — filed rather than smuggled in.
+
+## 5. Cost of the REST — ⚠️ STILL NOT MEASURED
 
 **This is the section that decides whether the slice is affordable, and it
 cannot be written from reading code.** The tree stands at **9 B free in the low

@@ -1894,10 +1894,34 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `bad file number`** and jumps to `stmt_error`; six sites do the same.
       ⚠️ **`err_msgtab` stops at 25** — reaching 59 densely is ~100 B against
       9 B/6 B free. S-FCH-2 offers a sparse side-table instead.
-      **Recommended first step (S-FCH-1): build the shared-cache change ALONE
-      on a branch and MEASURE it** — it is common to every version of the slice
-      and frees the 1124 B, and its size is the input every other decision
-      needs. Do not scout a carve for a requirement that is still a guess.
+      **S-FCH-1 ✅ BUILT + GATED 2026-07-29.** The shared-cache change costs
+      **5 B of main page 1, 0 B of low region — NO CARVE** (fits the existing
+      6 B with 1 B spare) and frees **1024 B** of page 3 (`FCH_CTX` 1124 → 100).
+      The per-channel 512 B save copy is gone: `fat_detach_channel` flushes the
+      dirty partial sector in place and `fat_restage_channel` reads it back
+      (both sub-ROM, rows 19/20), so `FSECTOR_BUF` is a real write-back cache.
+      🔴 **THE COST WAS SITING, NOT SUBSTANCE, AND ONLY BUILDING IT SHOWED
+      THAT: 43 B → 9 B → 5 B.** Resident, the detach half cost 43 B (37 over) —
+      a carve scouted from that number would have been scouted for a
+      requirement **8× too big**. It calls `fat_flush_data_sector`, which was
+      ALREADY a sub-ROM primitive, so keeping its caller resident bought
+      nothing. The last 4 B came from hoisting ONE IX guard into `fch_select`
+      instead of two inside save/load.
+      ⚠️ **The IX contract was a live hazard**: those routines had no CALSLT
+      before and promise IX/IY survive because `EOF`/`LOF`/`INPUT$` hold their
+      token cursor there.
+      ⚠️ **The gate was FALSIFIED**: stubbing `fat_restage_channel` to `ret`
+      makes `disk_probe_maxfiles`'s interleaved two-channel write return **B's
+      bytes in A.TXT** and fail both functionally and vs the CF-3300.
+      ⚠️ **Repack-only** — ungated it overran the byte-full lean cart's `$8000`
+      ceiling outright; the cart keeps the memcpy path, byte-identical.
+      ⚠️ **Left open:** `fch_save_active` ignores the detach's `Cy`. A channel
+      switch could never fail before and now can (disk full mid-flush);
+      propagating it needs a disposition at every `fch_select` caller.
+      **NEXT: the 1024 B is FREED BUT NOT SPENT** — `TXTMAX` has not moved, so
+      `FRE(0)` is still 13875. Turning it into program space is the
+      `TOKBUF`+`LINEBUF` relocation of spec §3.3, and the dynamic allocation of
+      §3.2 is still unbuilt.
 
 - [ ] **`LOF(#n)` reads −1 on a freshly-created OUTPUT channel** (reference: 0).
       Found 2026-07-29 by a CONTROL row in the channel-cost pass, not aimed at.

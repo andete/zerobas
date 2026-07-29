@@ -2140,6 +2140,16 @@ DISKOP_SEL_RAND_PUT             equ 17
 ; "chain already walked" tail -- pure FAT_*/FWR_*/FSECTOR_BUF arithmetic, evicted
 ; whole to free page-1 tail for G7's sprite statements.
 DISKOP_SEL_FIA_WALKED           equ 18
+; DISKOP_SEL_FCH_RESTAGE (D-FCH S-FCH-1, docs/spec-basic-filechan-alloc.md §3.1):
+; re-read into FSECTOR_BUF whatever the just-loaded channel had staged there, so
+; the per-channel 512-byte save copy can go away. Sited in the SUB-ROM because
+; the cluster->absolute-sector arithmetic it needs already lives there twice
+; (fat_read_file_sector's frs_incluster, fat_flush_data_sector's ffds_haveclus)
+; and main page 1 has 6 B free.
+DISKOP_SEL_FCH_RESTAGE          equ 19
+DISKOP_SEL_FCH_DETACH           equ 20  ; the inverse: flush the dirty partial
+                                        ; sector in place before handing the
+                                        ; shared buffer to another channel
 ; DISKOP_OP selector values for the dirverb_tenant (SUBROM_IDX_DIRVERB, Phase 2,
 ; spec §12). A SEPARATE value namespace on the SAME DISKOP_OP cell: fatprim
 ; (index 12) and dirverb (index 13) are never in flight at once (one subrom_call
@@ -2289,15 +2299,43 @@ PLAY_OP_END     equ     $FF     ; end of this voice's queue
 ; channels on one drive, or dead between statements). The mount geometry proper
 ; (FAT_SECPERCLUS..FAT_FIRSTDATA at $E9C0..$E9C8) sits BELOW the span and stays
 ; SHARED — correct for a single drive (every fat_mount re-derives it identically).
-; Each context block = [state:FCH_STATESZ][buffer:512]; FCH_CEIL of them live in
-; clean high RAM ($EA00..), clear of all basic-core + zerobas-disk scratch (disk
-; tops out at WBUF $E75F; C-BIOS sysvars start ~$F380). FCH_CEIL=2 fits cleanly
-; (2*562 = $0464 -> $EA00..$EE63). Growing it = bump FCH_CEIL once RAM is found.
+; D-FCH S-FCH-1 (docs/spec-basic-filechan-alloc.md §3.1): a context block is now
+; JUST THE STATE — [state:FCH_STATESZ], no data buffer. It used to be
+; [state][buffer:512], i.e. 562 B per channel, of which the 512 was nothing but a
+; SAVE COPY of the one global FSECTOR_BUF that the switch memcpy'd in and out.
+;
+; ⚠️ MEASURED (docs/chancost-cf3300-characterization.md): the reference charges
+; **267 B** per channel -- LESS than one sector -- so its sector staging is not
+; per-channel at all. It treats the shared buffer as a CACHE: flush on switch
+; away, re-read on switch back. That is what fch_save_active/fch_load_ctx now do
+; (basic/files.asm), via fch_restage / DISKOP_SEL_FCH_RESTAGE.
+;
+; A channel's live streaming state spans the contiguous engine-state span
+; FCH_STATE0..(+FCH_STATESZ). That span ($E9C9..$E9FA) covers every per-channel
+; value — the read iterator (FAT_CURCLUS/FAT_CLUSSEC), file meta
+; (FAT_FIRSTCLUS/FAT_FILESIZE for LOF), the read stream (FREAD_OFF/FREAD_LEFT)
+; and the whole write state (FWR_*). It also spans a few shared/transient bytes
+; (FAT_NUMFATS/FAT_SECPERFAT geometry, the FAT_B0/FAT_BYTEIDX/... scratch) —
+; harmless to save/restore (identical across channels on one drive, or dead
+; between statements). The mount geometry proper (FAT_SECPERCLUS..FAT_FIRSTDATA
+; at $E9C0..$E9C8) sits BELOW the span and stays SHARED — correct for a single
+; drive (every fat_mount re-derives it identically).
+;
+; The blocks live in clean high RAM ($EA00..), clear of all basic-core +
+; zerobas-disk scratch (disk tops out at WBUF $E75F; C-BIOS sysvars start
+; ~$F380). At 50 B each the whole table is FCH_CEIL*50 -- the 1124 B this used
+; to cost is what funds the rest of D-FCH.
 FCH_CEIL        equ     2       ; max simultaneously-open channels (RAM-bounded)
 FCH_STATE0      equ     FAT_CURCLUS         ; $E9C9 — base of the per-channel state span
 FCH_STATESZ     equ     FWR_DIROFF+2-FCH_STATE0     ; $E9C9..$E9FA inclusive = 50 bytes
-FCH_CTXSZ       equ     FCH_STATESZ + 512   ; one context block = state + data buffer
-FCH_CTX         equ     $EA00   ; FCH_CEIL context blocks, each [state][512-byte buf]
+    IF ROM_BASE < $4000
+FCH_CTXSZ       equ     FCH_STATESZ         ; repack: block = state ONLY (no buffer)
+    ELSE
+FCH_CTXSZ       equ     FCH_STATESZ + 512   ; lean: the old [state][buffer] block --
+                                            ; the 16 KB cart is byte-full and keeps
+                                            ; the memcpy path (basic/files.asm)
+    ENDIF
+FCH_CTX         equ     $EA00   ; FCH_CEIL context blocks, each [state] (+buf, lean)
 ; --- Phase 2c slice 1: random-access FIELD table + fielded-read scratch -----
 ; zerobas stores string vars INLINE in STRTAB ([name0][name1][len][bytes:32]); a
 ; MS-BASIC-style descriptor pointing into a record buffer does not exist. So a

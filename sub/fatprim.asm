@@ -102,6 +102,13 @@ fp_table:
 ; --- row 18: fat_io_append's resume-point tail (docs/spec-eviction-g7-space.md,
 ; carve 2). Body in sub/fiawalk.asm, included alongside randio.asm in sub/sub.asm.
                 jp      t_fia_walked            ; 18 DISKOP_SEL_FIA_WALKED
+; --- row 19: the file-channel re-stage (D-FCH S-FCH-1, docs/spec-basic-
+; filechan-alloc.md §3.1). Body is fat_restage_channel in basic/fat-prim-body.inc,
+; already included below. Sited here rather than resident because the
+; cluster->absolute-sector arithmetic it needs lives in this file twice over and
+; main page 1 has 6 B free.
+                jp      t_fch_restage           ; 19 DISKOP_SEL_FCH_RESTAGE
+                jp      t_fch_detach            ; 20 DISKOP_SEL_FCH_DETACH
 
 ; --- uniform result-stash tails --------------------------------------------
 ; Persist {HL, A, STATUS} into the DISKOP block; STATUS=0 (ok) from
@@ -196,6 +203,20 @@ t_fat_dir_update:
                 jp      fp_stash_ok
 t_fat_delete:
                 call    fat_delete
+                jp      c,fp_stash_err
+                jp      fp_stash_ok
+
+; t_fch_restage (D-FCH S-FCH-1): re-read the live channel's staged sector back
+; into the shared FSECTOR_BUF. Takes no register inputs -- fat_restage_channel
+; reads FCH_ACTIVE/FCH_MODES and the engine state straight out of RAM -- so the
+; resident shim marshals nothing.
+t_fch_restage:
+                call    fat_restage_channel
+                jp      c,fp_stash_err
+                jp      fp_stash_ok
+
+t_fch_detach:
+                call    fat_detach_channel
                 jp      c,fp_stash_err
                 jp      fp_stash_ok
 

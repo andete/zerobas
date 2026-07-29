@@ -161,6 +161,20 @@ fat_flush_data_sector:
                 ld      a,DISKOP_SEL_FAT_FLUSH_DATA_SECTOR
                 jr      fatprim_bounce
 
+; fch_restage — see fat_restage_channel in basic/fat-prim-body.inc (D-FCH
+; S-FCH-1). No inputs to marshal; reads FCH_ACTIVE/FCH_MODES + the engine state
+; from RAM. ⚠️ Goes through subrom_call, so it CLOBBERS IX — every caller in
+; basic/files.asm guards it (the EOF/LOF function callers need IX to survive).
+fch_restage:
+                ld      a,DISKOP_SEL_FCH_RESTAGE
+                jr      fatprim_bounce
+
+; fch_flush_active — see fat_detach_channel in basic/fat-prim-body.inc. Same IX
+; caveat as fch_restage.
+fch_flush_active:
+                ld      a,DISKOP_SEL_FCH_DETACH
+                jr      fatprim_bounce
+
 ; fat_dir_create — see basic/fat-prim-body.inc for the full contract.
 fat_dir_create:
                 ld      a,DISKOP_SEL_FAT_DIR_CREATE

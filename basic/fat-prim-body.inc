@@ -445,6 +445,128 @@ frs_eof:
                 scf
                 ret
 
+; ⚠️ REPACK/SUB-ROM ONLY. This file is included INLINE into the lean 16 KB cart
+; (basic/fat.asm's `IF ROM_BASE >= $4000` branch) and that image is byte-full --
+; ungated, this primitive overruns its $8000 ceiling outright. ROM_BASE is $2812
+; in sub/sub.asm and in main-reloc.asm, and $4000 in the lean main.asm, so the
+; gate keeps it in the sub-ROM (its only real home) and out of the cart.
+    IF ROM_BASE < $4000
+; fat_restage_channel — re-read into FSECTOR_BUF whatever the LIVE channel had
+; staged there before it was switched away (D-FCH S-FCH-1,
+; docs/spec-basic-filechan-alloc.md §3.1).
+;   in:  the engine globals already hold the channel's state (fch_load_ctx has
+;        just LDIR'd it in); FCH_ACTIVE names the channel.
+;   out: Cy = 0 ok — INCLUDING "nothing was staged", which is the common case;
+;        Cy = 1 read error.
+;
+; This is what replaces the per-channel 512-byte save copy. The reference charges
+; 267 B per channel — less than one sector — so it cannot be keeping a private
+; sector per channel either; it treats the shared buffer as a CACHE
+; (docs/chancost-cf3300-characterization.md §5.1).
+;
+; ⚠️ Reads the mode from FCH_MODES[FCH_ACTIVE], NOT from the FCH_MODE mirror:
+; fch_sync_mirror runs AFTER fch_load_ctx, so at re-stage time FCH_MODE still
+; holds the mode of the channel we switched AWAY from.
+fat_restage_channel:
+                ld      a, (FCH_ACTIVE)
+                or      a
+                ret     z                   ; no channel live -> nothing staged
+                ld      e, a
+                ld      d, 0
+                ld      hl, FCH_MODES
+                add     hl, de
+                ld      a, (hl)             ; A = the live channel's own mode
+                dec     a
+                jr      z, frst_read        ; 1 = INPUT
+                dec     a
+                jr      z, frst_write       ; 2 = OUTPUT
+                or      a                   ; device channels own no sector; Cy=0
+                ret
+; fat_detach_channel — write the LIVE channel's dirty partial sector out, IN
+; PLACE, so the shared FSECTOR_BUF can be handed to another channel. The inverse
+; of fat_restage_channel; together they are the whole write-back cache.
+;   out: Cy = 1 on a write error (disk full), Cy = 0 otherwise (including the
+;        common "nothing dirty" case).
+;
+; ⚠️ Sited HERE, not resident, purely for space: as resident code this cost 43 B
+; of main page 1 against 6 B free (measured). Everything it touches
+; (fat_flush_data_sector, FWR_*) is already sub-local.
+; ⚠️ Reads FCH_MODES[FCH_ACTIVE], not the FCH_MODE mirror — same reason as
+; fat_restage_channel.
+; ⚠️ fat_flush_data_sector STEPS PAST the sector it writes. Mid-stream we are NOT
+; finishing this sector, so step back onto it: the re-stage then reads exactly
+; what we wrote and appending resumes at FWR_BUFLEN over the zero padding the
+; flush laid down. Stepping back is also right when the flush ALLOCATED a cluster
+; — it sets FWR_SECIDX=0, writes, then increments to 1, so the decrement lands on
+; sector 0 of the NEW FWR_CLUS.
+fat_detach_channel:
+                ld      a, (FCH_ACTIVE)
+                or      a
+                ret     z                   ; nothing live
+                ld      e, a
+                ld      d, 0
+                ld      hl, FCH_MODES
+                add     hl, de
+                ld      a, (hl)
+                cp      2                   ; only an OUTPUT channel can be dirty
+                jr      z, fdet_maybe
+                or      a                   ; Cy = 0 — `cp` LEAVES IT SET for A<2
+                ret
+fdet_maybe:
+                ld      hl, (FWR_BUFLEN)
+                ld      a, h
+                or      l
+                ret     z                   ; nothing buffered -> already clean
+                call    fat_flush_data_sector
+                ret     c                   ; disk full / write error
+                ld      a, (FWR_SECIDX)
+                dec     a
+                ld      (FWR_SECIDX), a
+                or      a                   ; Cy = 0 success
+                ret
+
+frst_read:
+                ; the read iterator leaves FAT_CLUSSEC one PAST the staged sector
+                ; (fat_read_file_sector increments after the read), so step back
+                ; onto it and let the normal reader re-read + re-increment.
+                ld      a, (FAT_CLUSSEC)
+                or      a
+                ret     z                   ; nothing read yet -> buffer is empty
+                dec     a
+                ld      (FAT_CLUSSEC), a
+                jp      fat_read_file_sector
+frst_write:
+                ; fch_flush_active wrote this partial sector out IN PLACE and
+                ; stepped FWR_SECIDX back onto it, so (FWR_CLUS, FWR_SECIDX)
+                ; names it. FWR_BUFLEN survives in the saved state, so appending
+                ; resumes at the right offset over the zero padding the flush laid.
+                ld      hl, (FWR_BUFLEN)
+                ld      a, h
+                or      l
+                ret     z                   ; nothing buffered -> nothing to restore
+                ; absolute sector = firstData + (cluster-2)*secPerClus + WRSECIDX
+                ld      hl, (FWR_CLUS)
+                ld      de, 2
+                or      a
+                sbc     hl, de
+                ex      de, hl              ; DE = cluster - 2
+                ld      hl, 0
+                ld      a, (FAT_SECPERCLUS)
+                ld      b, a
+frst_mul:
+                add     hl, de
+                djnz    frst_mul            ; HL = (cluster-2) * secPerClus
+                ld      de, (FAT_FIRSTDATA)
+                add     hl, de
+                ld      a, (FWR_SECIDX)
+                ld      e, a
+                ld      d, 0
+                add     hl, de              ; HL = absolute logical sector
+                ex      de, hl
+                ld      hl, FSECTOR_BUF
+                jp      read_sector
+    ENDIF
+
 ; ===========================================================================
 ; FAT12 WRITE-BACK substrate (ported verbatim from disk.asm §FAT12 write-back).
 ; All structures (free-cluster scan, 12-bit entry pack, multi-FAT sync, directory
