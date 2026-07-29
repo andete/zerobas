@@ -3205,5 +3205,13 @@ MSGESC_ERROR    equ     1       ; " error"
 MSGESC_UTOF     equ     2       ; "ut of "              (leading letter dropped:
 MSGESC_ILLFN    equ     3       ; "llegal function call"  "Out of"/"out of" and
 MSGESC_WITHOUT  equ     4       ; " without"              "Illegal"/"illegal"
+MSGESC_FILE     equ     5       ; "file "   -- S-FCH-2's two disk-range messages
+                                ; ("bad file number" / "file not open") are the only
+                                ; pair in the corpus that shares a substring neither
+                                ; of the four above covers. Added rather than spelled
+                                ; out because the phrase table is PAGE 1 and the two
+                                ; messages are LOW REGION: it spends 6 bytes of the
+                                ; roomy wall to save 8 of the scarce one. The decoder
+                                ; needs no change -- it is bounded by MSGESC_HI.
 MSGESC_LO       equ     MSGESC_ERROR                    ; share one entry, so the
-MSGESC_HI       equ     MSGESC_WITHOUT                  ; decoder needs NO case flag
+MSGESC_HI       equ     MSGESC_FILE                     ; decoder needs NO case flag

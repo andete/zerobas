@@ -124,6 +124,72 @@ err_linebuf_overflow:
 err_overflow:                               ; ERR 6 -- the shared tail, read on its own
                 db      "overflow",0
 
+; --- S-FCH-2: the SPARSE disk-range error codes (docs/spec-basic-filechan- ---
+; alloc.md §5c, redesigned 2026-07-29). err_msgtab is DENSE and stops at 25;
+; reaching 52/59 densely would cost 34 more words. These two codes are the only
+; disk-range codes any zerobas verb raises, so raise_error's out-of-table arm
+; comes here instead of straight to `rerr_unprintable`, and a two-entry
+; straight-line compare beats both a dense extension and a walked side-table.
+;
+; Sited in the low region, whole: page 1 pays exactly ONE byte for this (the
+; `jr` -> `jp` at raise_error's range test). Both raisers live here too, so the
+; six OPEN reject sites in files.asm keep their existing 3-byte `jp cc,<label>`
+; and the lean 16 KB cart stays byte-identical via an `equ` alias (files.asm).
+;
+; ⚠️ BOTH CODES ARE ORDINARY TRAPPABLE ERRORS, and that is a MEASURED CORRECTION
+; to §5c, which read the gate's `err_badchan` row as "ERR 52 is not trappable"
+; and specced a raiser that forced ONEFLG=1 to reach raise_error's abort arm.
+; Measured on the CF-3300 2026-07-29, two unconfounded ways:
+;   `10 ON ERROR GOTO 100 : 20 OPEN"HI.TXT" FOR INPUT AS #2` -> handler runs, ERR 52
+;   ...AS #0                                                 -> handler runs, ERR 52
+;   `20 B=EOF(1)` on a never-opened channel                  -> handler runs, ERR 59
+; The err_badchan row's non-trap is a CONFOUND: it types `MAXFILES=1` between the
+; arm and the error, and MAXFILES (like a plain CLEAR) DISARMS the handler on the
+; reference. So there is no forced abort here, no ONEFLG store, and §5c's open
+; ONEFLG question does not arise on this path at all.
+rerr_sparse:                                ; A = ERRCODE-1, CF set. Re-read the code
+                ld      a,(ERRCODE)         ; rather than compare 51/58: the table
+                                            ; bound and this arm are already "one fact
+                                            ; in two places" once (err_msgtab's own
+                                            ; comment, and it DRIFTED) -- 3 bytes buys
+                                            ; a test that reads as the code it names.
+                ld      hl,err_bad_filenum
+                cp      52
+                jr      z,rsp_go
+                ld      hl,err_file_notopen
+                cp      59
+                jr      z,rsp_go
+                jp      rerr_unprintable    ; any other out-of-table code, unchanged
+rsp_go:
+                jp      raise_error_hl      ; the SHARED trap decision -- so 52/59 trap
+                                            ; into an armed handler like every other
+                                            ; code, which is what the reference does
+
+; The two raisers. Sited here (not in files.asm/expr.asm) so page 1 pays nothing
+; for them; reached by ordinary in-slot `jp` from page 1, both regions mapped.
+oo_fail_bfn:                                ; OPEN's bad-file-number reject (ERR 52)
+                xor     a                   ; -- same FCH_MODE clear oo_fail_syn does
+                ld      (FCH_MODE),a        ; (the provisional mode must not survive
+                                            ; a failed OPEN)
+                ld      a,52
+                jp      raise_error
+err_notopen_raise:                          ; EOF()/LOF() on a closed channel (ERR 59)
+                ld      a,59
+                jp      raise_error
+
+; D-MSGENC: new messages are phrase-encoded too. Neither of these can use any of
+; the four ORIGINAL escapes, so this slice adds the fifth, MSGESC_FILE ("file "),
+; which both of them share -- 30 B of literal text becomes 22 B plus a 6 B table
+; entry. ⚠️ THE DIRECTION OF THAT TRADE WAS DECIDED BY THE MEASUREMENT, NOT BY
+; THE ARITHMETIC: the phrase table is PAGE 1 and these strings are LOW REGION, so
+; on the FIRST clean build (page 1 19 B free, low 1 B free) it spends the roomy
+; wall to relieve the scarce one. Costed the other way round from an estimate it
+; would have read as a 2-byte loss and been declined.
+err_bad_filenum:
+                db      "bad ",MSGESC_FILE,"number",0   ; ERR 52 -- 16 B -> 12 B
+err_file_notopen:
+                db      MSGESC_FILE,"not open",0        ; ERR 59 -- 14 B -> 10 B
+
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean

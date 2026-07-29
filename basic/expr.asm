@@ -1295,6 +1295,17 @@ ev_chan_hasfile:
                 adc     a,0
                 ld      h,a
                 ld      a,(hl)              ; A = FCH_MODES[E]
+    IF ROM_BASE < $4000
+                or      a                   ; S-FCH-2: 0 = the channel is NOT OPEN.
+                jp      z,err_notopen_raise ; -> ERR 59 "file not open" (main.asm low
+                                            ; region). MEASURED on the CF-3300: EOF(1)
+                                            ; on a never-opened channel raises 59 and
+                                            ; TRAPS into an armed handler; zerobas used
+                                            ; to fch_select the closed slot and return
+                                            ; whatever FREAD_LEFT/FAT_FILESIZE held.
+                                            ; Both callers (EOF, LOF) want this — and
+                                            ; they are the ONLY two callers.
+    ENDIF
                 cp      LPT_MODE
                 ret                         ; CF set (A<LPT_MODE) = disk file channel
 ev_ff_dskf:                                 ; DSKF(d): free clusters on the drive

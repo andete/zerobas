@@ -2008,14 +2008,74 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       messages took page 1 from **0 → 24 B free** and the low region from
       **9 → 68 B free**. S-FCH-2's evicted form needs 20 + 15: **funded, with
       4 B and 53 B spare.**
-      ⚠️ **BUT TRY ALL-RESIDENT FIRST (spec §9/Q1).** All-resident needs
-      45 B page 1 + 32 B low: low fits with 36 B spare and page 1 is **21 B
-      short** — a DEMOTION problem now, not a carve problem (page-1 content
-      moved down into the low region's slack; only page-0 tenants constrain it,
-      and they cannot see the low region anyway). If that lands there is no
-      tenant op 19, no `ERRMSG_BUF` staging and no ten repointed `jp` sites —
-      **which dissolves blocker (2) above entirely.** Blocker (1), the stale
-      `ONEFLG`, is independent of funding and still open.
+      ✅ **S-FCH-2 LANDED ALL-RESIDENT 2026-07-29 (spec §5d).** ERR 52 `bad file
+      number` and ERR 59 `file not open` are raised and printed by the resident
+      ROM. It cost **11 B of page 1 + 59 B of low**, not the 45 + 32 estimated:
+      page 1 **24 → 13 B free**, low **68 → 9 B free**, lean cart byte-identical.
+      No eviction, no tenant op 19, no `ERRMSG_BUF` staging, no repointed `jp`
+      sites — **both §5c blockers dissolved rather than gated.** The gate goes
+      31 cases / 6 filed divergences → **39 / 4**, closing `sem_zero`,
+      `sem_hinum`, `sem_reopen` and `err_notopen`.
+      ⚠️ **AND IT WAS NEVER A DEMOTION.** The scout ran first and returned
+      **zero**: page-0 tenants reach *no* main routine at all (709 routines,
+      every one sub-local — the only main-side import list in the sub-ROM is
+      `sub/basic-resident-abi.inc`, eleven page-1-tenant seeds already below
+      `$4000`). Nothing in page 1 is pinned there by tenancy, so the cheap move
+      was to site S-FCH-2's OWN new content low and leave existing code alone.
+      **A shortfall stated as "N bytes short" invites relocating N bytes; ask
+      first whether the NEW content has to be where the estimate put it.**
+      🔴 **BLOCKER (2) — the lean cart — was dissolved by aliasing the LABEL,
+      not by gating the SITES:** `IF ROM_BASE >= $4000 : oo_fail_bfn equ
+      oo_fail_syn`. All six rejects keep their existing 3-byte `jp cc,`, which in
+      the lean build assembles to the exact bytes it did before. Zero sites
+      gated.
+      🔴 **BLOCKER (1) — "ERR 52 is not trappable" — WAS A CONFOUND, and so was
+      the ONEFLG forcing built on it.** The `err_badchan` row types `MAXFILES=1`
+      BETWEEN the arm and the error, and that statement suppresses the handler
+      on the reference. Measured three unconfounded ways on the CF-3300:
+      `OPEN…AS #2`, `OPEN…AS #0` and `EOF(1)` on a closed channel ALL trap
+      (ERR 52, 52, 59). So both codes go through the shared `raise_error_hl`
+      trap decision like every other code and **write `ONEFLG` nowhere**.
+      Gate rows `bfn_trap`/`bfn_zero`/`fno_eof` + the `bfn_ctl` two-sided
+      control now measure the CODE instead of its neighbours.
+
+- [ ] **`CLEAR`/`MAXFILES` inside a run do not suppress an armed `ON ERROR`
+      handler** (reference: they do). Found 2026-07-29 while measuring S-FCH-2,
+      as the real owner of the `err_badchan` divergence. `10 ON ERROR GOTO 100 :
+      20 CLEAR : 30 B=SQR(-1)` → the CF-3300 prints `Illegal function call in 30`
+      (handler never runs); zerobas traps and prints 7777. Two-sided: with the
+      `CLEAR` REMmed out **both** machines trap. `MAXFILES=1` behaves identically
+      (it CLEARs, D-FCH §3.2). Gated as `clr_disarm`/`clr_ctl` and
+      `mf_disarm`/`mf_ctl` in `diskbasic_probe_chancost.py`; contradicts the
+      standing hypothesis at `basic/sysvars.inc`'s `ONELIN` (*"NOT clear_vars, so
+      NEW/CLEAR alone do not disarm a handler"*).
+      🔴 **DO NOT FIX THIS AS A ONE-LINE `clear_vars` DISARM — the contract is
+      not that.** `error-trap-acceptance`'s `reset_scope_clear` measures a
+      DIRECT-MODE `CLEAR` between the arm and the `RUN` and the reference **DOES**
+      fire the handler there (that row passes today, both sides). So an in-run
+      `CLEAR` and a direct-mode `CLEAR` differ, and zeroing `ONELIN` in
+      `clear_vars` would turn `reset_scope_clear` red while looking correct.
+      **Characterize which of the two it is before coding**, including whether
+      `NEW` belongs with them (the placement question: `clear_vars` is shared by
+      NEW/CLEAR/RUN). A plausible mechanism worth testing: an in-run `CLEAR`
+      resets the run-time stack, and the trap's active state rides on it.
+
+- [ ] **A stale `ONEFLG` survives the return to the REPL, so the NEXT error
+      force-aborts instead of trapping.** Raised as S-FCH-2's open question by
+      spec §5c; **answered empirically 2026-07-29, and answered against zerobas.**
+      After a nested forced abort (`10 ON ERROR GOTO 100 : 20 B=SQR(-1) :
+      100 C=1/0`), re-entering with `GOTO 200` where `200 ON ERROR GOTO 300 :
+      210 B=SQR(-1)`: the VG-8020 **traps** (prints the marker), zerobas
+      **force-aborts** (`illegal function call in 210`). Two-sided — with no
+      prior abort both machines trap. `ONEFLG` is written back to 0 only at
+      `run_prog` (RUN) and cold `init` (`basic/program.asm`, `basic/interp.asm`),
+      never on the abort path, so the window is any re-entry that is not a fresh
+      `RUN`. Not created by S-FCH-2 (its raisers never touch `ONEFLG`); reachable
+      today through the ordinary nested-abort path.
+      ⚠️ **Measure this one through `probes/lib/omsx_repl.py` (KEYBUF), not the
+      chancost `type` harness** — the latter doubled a keystroke into line `3300`
+      and the resulting `undefined line` read exactly like a semantic failure,
+      *deterministically*, across two runs.
 
 - [ ] **`LOF(#n)` reads −1 on a freshly-created OUTPUT channel** (reference: 0).
       Found 2026-07-29 by a CONTROL row in the channel-cost pass, not aimed at.

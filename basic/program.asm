@@ -675,6 +675,7 @@ msg_phrase_tab:
                 db      "ut of ",0          ; MSGESC_UTOF
                 db      "llegal function call",0 ; MSGESC_ILLFN
                 db      " without",0        ; MSGESC_WITHOUT
+                db      "file ",0           ; MSGESC_FILE (S-FCH-2)
     ENDIF
 
 ; --- ex_stop: STOP statement — break and record a CONT resume point ----------

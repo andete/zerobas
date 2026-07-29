@@ -388,6 +388,160 @@ unless the header is pinned. **Pin it with an explicit `org $4000`** when
 relaxing the low guard. The corrected page-1 figure is 45 B, not 77 —
 [[measure-the-wall-from-clean]]'s sibling: *measure the wall from a FIXED datum.*
 
+## 5d. S-FCH-2 ALL-RESIDENT — ✅ BUILT, MEASURED, RUN AND LANDED 2026-07-29
+
+**The eviction in §5c was not needed and was not built.** D-MSGENC (`9a0300d`)
+freed page 1 `0 → 24 B` and the low region `9 → 68 B`; against that, all-resident
+S-FCH-2 costs **11 B of page 1 and 59 B of the low region** — not §5c's estimated
+45 + 41. So there is no tenant op 19, no `ERRMSG_BUF` page-3 staging, no repointed
+`jp` sites, and both of §5c's open correctness questions are gone rather than
+gated.
+
+| wall | before (`5a3e6f1`) | after | spent |
+|---|---|---|---|
+| page 1 `$4000-$7FFF` | 24 B free | **13 B free** | 11 B |
+| low region `$2812-$3FFF` | 68 B free | **9 B free** | 59 B |
+
+Clean `rm -rf build && make basic-reloc`, lean 16 KB `basic.rom` **byte-identical**.
+
+### 5d.1 Why it was a placement problem, not a demotion one
+
+§10/Q1 of [the msgenc carve](spec-basic-msgenc-carve.md) framed the 21 B page-1
+shortfall as a demotion: move existing page-1 content down. **It never came to
+that, and the scout is the reason.** Demotion is constrained only by **page-0
+sub-ROM tenants**, which cannot see the low region — and walking the page-0
+closure through to its main-side callees returns:
+
+```
+page-0 tenants reach 0 MAIN page-1 entry points
+0 non-sub-local names in the page-0 closure (709 total)
+```
+
+Every one of the 709 routines a page-0 tenant reaches is **sub-local**. The
+tenants rebind their own `pchar`/`print_string`/`div10` (`sub/detok.asm`), and
+the only main-side import list in the whole sub-ROM is
+`sub/basic-resident-abi.inc` — eleven page-1-*tenant* seeds, all already below
+`$4000`. So **nothing in main page 1 is pinned there by tenancy at all**, and the
+21 B could have come from anywhere.
+
+⚠️ Worth recording because it also bounds `check_tenant_closure --page0`: that
+gate walks the SUB call graph and stops at the boundary, accepting a main page-1
+callee without following it into the main graph. It is sound **only while that
+set is empty** — which it is today, and this is the measurement that says so.
+A future page-0 tenant that calls main page 1 would need the gate extended to
+walk *through* it, per [[carve-scout-walk-through-page1]].
+
+Since nothing was pinned, the cheaper move was to site **S-FCH-2's own new
+content** low rather than relocate existing code: same lever, no code motion, no
+gate to re-argue. Page 1 keeps only what cannot leave it.
+
+### 5d.2 What is where
+
+| piece | region | bytes |
+|---|---|---|
+| `raise_error`'s range test `jr nc` → `jp nc,rerr_sparse` | page 1, `interp.asm` | **1** |
+| closed-channel test in `ev_chan_hasfile` (EOF/LOF) | page 1, `expr.asm` | **4** |
+| `MSGESC_FILE` phrase-table entry | page 1, `program.asm` | **6** |
+| `rerr_sparse` + both raisers + both messages | low, `main.asm` | **59** |
+
+The two raisers (`oo_fail_bfn`, `err_notopen_raise`) live in the low region, so
+files.asm's six bad-file-number rejects keep the same 3-byte `jp cc,<label>` they
+already spent — the ERR 5 trick from §5c, applied again.
+
+🔴 **The lean cart's `jp`-site blocker is dissolved by aliasing the LABEL, not by
+gating the SITES.** §5c's probe repointed each site unconditionally at a symbol
+the 16 KB build does not define, so the lean cart would not assemble. One `equ`
+in files.asm fixes it for all six at once:
+
+```
+    IF ROM_BASE >= $4000
+oo_fail_bfn     equ     oo_fail_syn
+    ENDIF
+```
+
+In the lean build every `jp cc,oo_fail_bfn` assembles to the exact bytes
+`jp cc,oo_fail_syn` did. Zero sites gated, zero bytes moved, `check_reloc.py`
+byte-identity intact.
+
+### 5d.3 🔴 §5c's "MEASURED non-trappability" WAS A CONFOUND
+
+§5c read the gate's `err_badchan` row as *ERR 52 is not trappable* and specced a
+raiser that forces `ONEFLG=1` to reach `raise_error`'s abort arm — which is what
+raised the ONEFLG question. **Both halves of that were wrong.** Measured on the
+CF-3300, 2026-07-29, three unconfounded ways:
+
+| typed | reference |
+|---|---|
+| `10 ON ERROR GOTO 100 : 20 OPEN"HI.TXT" FOR INPUT AS #2` | handler runs, **ERR 52** |
+| …`AS #0` (out of range for every `MAXFILES`) | handler runs, **ERR 52** |
+| `20 B=EOF(1)` on a never-opened channel | handler runs, **ERR 59** |
+
+`err_badchan` types **`MAXFILES=1` between the arm and the error**, and that
+statement suppresses the handler on the reference. The row was never measuring
+trappability; it was measuring the thing in the middle. So S-FCH-2 raises 52 and
+59 as **ordinary trappable codes through the shared `raise_error_hl` decision**,
+touches `ONEFLG` nowhere, and §5c's open ONEFLG question does not arise on this
+path.
+
+⚠️ **The lesson is [[chancost-slice]]'s own, one turn further: compare error
+CLASSES, never wording — and then check what else the row typed.** A row with a
+statement between the arm and the error measures the statement.
+
+### 5d.4 The gate
+
+`make chancost-characterize`: **39 cases** (was 31), **4 filed divergences**
+(was 6). Four rows closed outright — `sem_zero`, `sem_hinum`, `sem_reopen`,
+`err_notopen` — and eight rows were added:
+
+* `bfn_trap` / `bfn_zero` / `fno_eof` — ERR 52 and 59 with **nothing** between
+  the arm and the error, so they measure the code and not its neighbours;
+* `bfn_ctl` — the two-sided control. A build where **no** handler ever fires
+  would score the other three "agree" on the abort text alone; this row must
+  read 7005 on both machines for them to mean anything;
+* `mf_disarm`/`mf_ctl`, `clr_disarm`/`clr_ctl` — the disarm finding itself,
+  each with its statement REMmed out in the twin.
+
+Of the 4 that remain, `lof_new` is the pre-existing LOF bug and the other three
+are **one** newly-measured error-handling defect (§5d.5), not this slice's.
+
+`tests/test_msgenc.py` gained both messages, and its phrase count is now read
+from the ROM's own `MSGESC_HI` instead of a hardcoded 4 — otherwise the fifth
+phrase could have landed with the decoder bound un-bumped, which is exactly the
+"one fact in two places" drift that left `err_msgtab`'s ERR 25 entry dead for a
+whole arc ([[msgtab-bound-drift]]).
+
+### 5d.5 What this slice FOUND and did NOT fix
+
+Both are error-handling defects, both pre-date S-FCH-2, both are filed in
+[`TODO.md`](../TODO.md) rather than absorbed here.
+
+1. **`CLEAR`/`MAXFILES` do not suppress an armed `ON ERROR` handler in zerobas;
+   on the reference they do** — and this contradicts the standing hypothesis
+   recorded at `basic/sysvars.inc`'s `ONELIN` ("*NOT clear_vars, so NEW/CLEAR
+   alone do not disarm a handler*"). ⚠️ **It is NOT simply "clear_vars should
+   disarm": `error-trap-acceptance`'s `reset_scope_clear` measures a DIRECT-mode
+   `CLEAR` between the arm and the `RUN` and the reference DOES fire the handler
+   there.** In-run and direct-mode `CLEAR` behave differently, so the contract
+   has to be characterized before it is coded — a one-line `clear_vars` fix would
+   have turned `reset_scope_clear` red. This is the row `err_badchan` now belongs
+   to.
+
+2. **A stale `ONEFLG` survives the return to the REPL.** After a nested forced
+   abort, zerobas force-aborts the *next* error instead of trapping it; the
+   reference traps it. Two-sided (measured through the KEYBUF driver, which the
+   `openMSX type` harness could not do — its first attempt doubled a keystroke
+   into line `3300` and the resulting `undefined line` read exactly like a
+   semantic failure, [[read-the-screen-when-a-probe-fails]]):
+
+   | | reference | zerobas |
+   |---|---|---|
+   | after a nested forced abort, re-arm and re-raise | **traps** | **force-aborts** |
+   | control: same, no prior abort | traps | traps |
+
+   This is §5c's open question, answered — and answered *against* zerobas. It is
+   reachable today through the ordinary nested-abort path; S-FCH-2 neither
+   creates nor widens it, because the new raisers never write `ONEFLG`.
+
 ## 5. Cost of the REST — ⚠️ STILL NOT MEASURED
 
 **This is the section that decides whether the slice is affordable, and it

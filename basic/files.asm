@@ -330,10 +330,10 @@ oo_num:
                 ; validate the channel against the MAXFILES ceiling (1..MAXF).
                 ld      a,d
                 or      a
-                jp      nz,oo_fail_syn      ; > 255 -> bad file number
+                jp      nz,oo_fail_bfn       ; > 255 -> bad file number
                 ld      a,e
                 call    fch_valid
-                jp      nc,oo_fail_syn      ; 0 or > MAXF -> bad file number
+                jp      nc,oo_fail_bfn       ; 0 or > MAXF -> bad file number
                 ; --- optional "LEN=r" record-size clause (Phase 2c; disk-BASIC
                 ; option-closure Item 3). Parsed for every mode; only RANDOM GET/PUT
                 ; reads it. A channel without LEN= defaults to 256. r must be a power
@@ -438,6 +438,20 @@ oo_fail_syn:
                 ld      (FCH_MODE),a
                 jp      stmt_error
 
+; --- oo_fail_bfn: OPEN's BAD FILE NUMBER reject (S-FCH-2, ERR 52) ------------
+; The body lives in main.asm's low region (page 1 is the scarce wall); this is
+; only the LEAN-CART alias. ⚠️ THIS `equ` IS WHAT DISSOLVES §5c's SECOND OPEN
+; QUESTION. The old cost probe repointed each reject site unconditionally to a
+; label the 16 KB cart does not define, so the lean build would not assemble and
+; landing "needed them gated per-site, or the lean cart retired". Aliasing the
+; LABEL instead of gating the SITES means every `jp cc,oo_fail_bfn` above
+; assembles to the exact bytes `jp cc,oo_fail_syn` did in the lean build — zero
+; sites gated, zero bytes moved, check_reloc.py's byte-identity intact.
+    IF ROM_BASE >= $4000
+oo_fail_bfn     equ     oo_fail_syn         ; lean 16 KB cart: no ERR 52, no disk-range
+    ENDIF                                   ; message pool -- reject as Syntax error,
+                                            ; exactly as before this slice
+
 ; --- OPEN "LPT:"/"CRT:" device channel --------------------------------------
 ; A character-device channel: PRINT#n streams to the printer (LPTOUT) or the
 ; screen (CHPUT) via pchar's PRDEV dispatch. It owns NO fat.asm context (no
@@ -497,10 +511,10 @@ oodv_num:
                 call    eval                ; DE = channel number, HL past it
                 ld      a,d
                 or      a
-                jp      nz,oo_fail_syn      ; > 255 -> bad file number
+                jp      nz,oo_fail_bfn       ; > 255 -> bad file number
                 ld      a,e
                 call    fch_valid
-                jp      nc,oo_fail_syn      ; 0 or > MAXF -> bad file number
+                jp      nc,oo_fail_bfn       ; 0 or > MAXF -> bad file number
                 call    skip_spaces         ; only a terminator may follow (no LEN=)
                 ld      a,(hl)
                 or      a
@@ -585,10 +599,10 @@ oocas_num:
                 call    eval                ; DE = channel number, HL past it
                 ld      a,d
                 or      a
-                jp      nz,oo_fail_syn      ; > 255 -> bad file number
+                jp      nz,oo_fail_bfn       ; > 255 -> bad file number
                 ld      a,e
                 call    fch_valid
-                jp      nc,oo_fail_syn      ; 0 or > MAXF -> bad file number
+                jp      nc,oo_fail_bfn       ; 0 or > MAXF -> bad file number
                 call    skip_spaces         ; only a terminator may follow (no LEN=)
                 ld      a,(hl)
                 or      a

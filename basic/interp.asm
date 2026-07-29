@@ -845,8 +845,16 @@ raise_error:
                                            ; -- ERROR n now validates 1..255 upstream, so
                                            ; 0 no longer reaches here, but keep it safe)
                 cp      25                 ; index >= 25  <=>  code 0 (via $FF) or code >= 26
+    IF ROM_BASE < $4000
+                jp      nc,rerr_sparse     ; S-FCH-2: past the dense table -> the SPARSE
+                                           ; disk-range arm (main.asm's low region:
+                                           ; 52 / 59, else err_unprintable). Costs one
+                                           ; byte of page 1 over the `jr` -- the low
+                                           ; region is out of `jr` reach.
+    ELSE
                 jr      nc,rerr_unprintable ; -> "unprintable error" (rerr_unprintable
                                            ; ignores A, so the pre-decrement is harmless)
+    ENDIF
                 add     a,a                ; *2 (word table)
                 ld      e,a
                 ld      d,0

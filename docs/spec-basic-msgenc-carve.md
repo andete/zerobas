@@ -346,7 +346,39 @@ wrong *order* is exactly the failure a byte-count check cannot see. The test als
 refuses to run if the phrase table reads back empty, so it cannot pass by
 measuring nothing.
 
-### Q1 — can S-FCH-2 now land ALL-RESIDENT? ⚠️ ALMOST
+### Q1 — can S-FCH-2 now land ALL-RESIDENT? ✅ YES, AND IT DID (2026-07-29)
+
+**Landed all-resident. It did not need the demotion this section proposed, and
+it did not need the 21 B.** All-resident cost **11 B of page 1 + 59 B of low**,
+not the 45 + 32 filechan §5c estimated — page 1 `24 → 13 B free`, low
+`68 → 9 B free`, lean cart byte-identical. Details in
+[filechan §5d](spec-basic-filechan-alloc.md#5d-s-fch-2-all-resident--built-measured-run-and-landed-2026-07-29).
+
+Two things this section got right and one it got wrong, all worth keeping:
+
+* ✅ **Right: "attempt the demotion before implementing the eviction."** The
+  eviction was never built. The tenant op 19, the `ERRMSG_BUF` staging and the
+  repointed `jp` sites all disappeared, exactly as predicted.
+* ✅ **Right: demotion is constrained only by page-0 tenants.** Scouted before
+  proposing — and the scout returned **zero**: page-0 tenants reach *no* main
+  routine at all (709 routines, every one sub-local). Nothing in page 1 is
+  pinned there by tenancy.
+* ⚠️ **Wrong: it framed the gap as a quantity of BYTES TO MOVE.** With nothing
+  pinned, the cheaper answer was to site S-FCH-2's *own* new content low and
+  leave existing code alone — the same lever, minus the code motion. **A
+  shortfall stated as "N bytes short" invites relocating N bytes; ask first
+  whether the NEW content has to be where the estimate put it.**
+
+A fifth phrase, `MSGESC_FILE` (`"file "`), landed with it — the two new messages
+are the only pair in the corpus sharing a substring none of the original four
+cover. ⚠️ **Its direction was decided by the measurement, not the arithmetic:**
+the table is page 1 and the strings are low, so on the first clean build (page 1
+19 B free, low 1 B free) it spent the roomy wall to relieve the scarce one.
+Costed from an estimate of the split it reads as a 2-byte loss and gets declined.
+
+<details><summary>The original Q1 text, as written before the slice was built</summary>
+
+### Q1 (superseded) — can S-FCH-2 now land ALL-RESIDENT? ⚠️ ALMOST
 
 All-resident costs 45 B page 1 + 32 B low (filechan §5c). Against 24/68: **low
 fits with 36 B to spare, page 1 is 21 B short.** So it is not free, but it is
@@ -356,3 +388,5 @@ only by page-0 tenants (which cannot see the low region). If that lands, the
 tenant op 19, the `ERRMSG_BUF` staging and the ten repointed `jp` sites all
 disappear, taking §8's second correctness question with them. **Recommended:
 attempt the demotion before implementing the eviction.**
+
+</details>

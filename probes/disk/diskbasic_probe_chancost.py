@@ -151,6 +151,41 @@ CASES = [
                      "100 PRINT ERR", "RUN"]),
     ("err_notopen", ["10 ON ERROR GOTO 100", "20 PRINT LOF(1)", "30 END",
                      "100 PRINT ERR", "RUN"]),
+
+    # --- S-FCH-2 ERR 52/59, UNCONFOUNDED. ⚠️ `err_badchan` above was read by
+    # spec §5c as "ERR 52 is not trappable" and a forced-abort raiser (ONEFLG:=1,
+    # left set) was specced on that reading. IT IS A CONFOUND: the row types
+    # `MAXFILES=1` BETWEEN the ON ERROR and the failing OPEN, and MAXFILES --
+    # like a plain CLEAR -- DISARMS the handler on the reference (mf_disarm /
+    # clr_disarm below, each with a two-sided control). With nothing in between,
+    # ERR 52 traps like any other code. These rows raise 52 two ways that touch
+    # no MAXFILES at all, and 59 likewise, so what they measure is the CODE.
+    ("bfn_trap",  ["10 ON ERROR GOTO 100", '20 OPEN "HI.TXT" FOR INPUT AS #2',
+                   "30 END", "100 PRINT 7000+ERR", "RUN"]),   # #2 > default MAXFILES=1
+    ("bfn_zero",  ["10 ON ERROR GOTO 100", '20 OPEN "HI.TXT" FOR INPUT AS #0',
+                   "30 END", "100 PRINT 7000+ERR", "RUN"]),   # #0 is out of range always
+    ("fno_eof",   ["10 ON ERROR GOTO 100", "20 B=EOF(1)",
+                   "30 END", "100 PRINT 7000+ERR", "RUN"]),   # EOF, not just LOF
+    # ...and the two-sided control that makes those three mean anything: the SAME
+    # shape with a known-trappable code must read 7005 on both machines. Without
+    # it, a build where NO handler ever fires would score all three "agree" on
+    # the abort text. (gate-can-be-green-while-measuring-nothing)
+    ("bfn_ctl",   ["10 ON ERROR GOTO 100", "20 B=SQR(-1)",
+                   "30 END", "100 PRINT 7000+ERR", "RUN"]),
+
+    # --- the DISARM finding itself, filed as a gate row so it cannot be lost.
+    # Reference: MAXFILES (and CLEAR) disarm an armed ON ERROR handler; zerobas
+    # does not. Each has its own two-sided control with the statement REMmed out,
+    # which must trap on both machines -- otherwise the disarm row is measuring
+    # "this program never traps at all".
+    ("mf_disarm", ["10 ON ERROR GOTO 100", "20 MAXFILES=1", "30 B=SQR(-1)",
+                   "40 END", "100 PRINT 7777", "RUN"]),
+    ("mf_ctl",    ["10 ON ERROR GOTO 100", "20 REM MAXFILES=1", "30 B=SQR(-1)",
+                   "40 END", "100 PRINT 7777", "RUN"]),
+    ("clr_disarm", ["10 ON ERROR GOTO 100", "20 CLEAR", "30 B=SQR(-1)",
+                    "40 END", "100 PRINT 7777", "RUN"]),
+    ("clr_ctl",    ["10 ON ERROR GOTO 100", "20 REM CLEAR", "30 B=SQR(-1)",
+                    "40 END", "100 PRINT 7777", "RUN"]),
 ]
 
 # The reference's own recorded answers. Re-checking that the oracle still
@@ -189,8 +224,20 @@ REF_EXPECT = {
     "dim_over":    "OOM",    # FRE(0)+400 B of array does not
     # error CODES, trapped via ON ERROR/ERR (§10 of the characterization)
     "err_over":    5,        # MAXFILES=16 -> ERR 5 Illegal function call
-    "err_badchan": "BFN",    # ...NOT trappable: prints `Bad file number in 30`
+    "err_badchan": "BFN",    # ...prints `Bad file number in 30` PAST the handler --
+                             # because line 20's MAXFILES DISARMED it (mf_disarm),
+                             # NOT because ERR 52 is untrappable (bfn_trap)
     "err_notopen": 59,       # LOF on a closed channel -> ERR 59 File not OPEN
+    # S-FCH-2 unconfounded (recorded 2026-07-29): ERR 52 and ERR 59 both TRAP.
+    "bfn_trap":    7052,
+    "bfn_zero":    7052,
+    "fno_eof":     7059,
+    "bfn_ctl":     7005,     # the two-sided control: a known-trappable code
+    # the disarm finding: MAXFILES and CLEAR both disarm; the controls both trap.
+    "mf_disarm":   "IFC",    # handler did NOT run -> the S1 abort text instead
+    "mf_ctl":      7777,     # ...and with MAXFILES REMmed out it DOES run
+    "clr_disarm":  "IFC",
+    "clr_ctl":     7777,
 }
 
 # Error CLASSES, not wordings. zerobas prints its OWN lowercase messages by
@@ -225,21 +272,25 @@ COMPARE = {
 # value it is EXPECTED to diverge to, so a row that starts failing DIFFERENTLY
 # still trips the gate.
 KNOWN_DIVERGE = {
-    # S-FCH-2 REMAINDER (unbuilt): ERR 52 `Bad file number` and ERR 59 `File not
-    # OPEN`. err_msgtab is a DENSE table bounded at 24, so both codes fall to
-    # zerobas's own `syntax error` or a return value. ⚠️ MEASURED 2026-07-29:
-    # the rest of S-FCH-2 is 45 B of page 1 + 41 B of low region against 0 + 9
-    # free -- it needs a carve (spec §5c). ERR 5 came free and is LANDED, which
-    # is why mf16/mf255/err_over are no longer on this list.
-    "sem_zero":    ("BFN", "SYNTAX"),
-    "sem_hinum":   ("BFN", "SYNTAX"),
-    "sem_reopen":  ("FNO", -1),
-    # ⚠️ zerobas TRAPS this one, so its side prints the trapped ERR NUMBER
-    # (2 = syntax error), not a message. It also records a real behavioural
-    # difference worth keeping visible: the reference does NOT trap it at all
-    # (`Bad file number in 30` prints past the installed handler).
-    "err_badchan": ("BFN", 2),
-    "err_notopen": (59, -1),
+    # ✅ S-FCH-2 ALL-RESIDENT LANDED 2026-07-29 (docs/spec-basic-filechan-alloc.md
+    # §5d): ERR 52 `bad file number` and ERR 59 `file not open` are raised and
+    # printed by the resident ROM, as ORDINARY TRAPPABLE codes through a sparse
+    # arm off raise_error's out-of-table branch. That closed FOUR rows that used
+    # to live on this list -- sem_zero, sem_hinum, sem_reopen and err_notopen --
+    # and is why they are gone rather than updated.
+    #
+    # ⚠️ `err_badchan` SURVIVES, AND ITS OWNER CHANGED. It is NOT an S-FCH-2 row
+    # any more: bfn_trap/bfn_zero prove ERR 52 traps, and mf_disarm/clr_disarm
+    # (each two-sided) prove why this one does not -- line 20's `MAXFILES=1`
+    # DISARMS the handler on the reference, and does not on zerobas. So the
+    # reference reports past the handler while zerobas traps and prints 52. The
+    # divergence that remains is "CLEAR/MAXFILES do not disarm ON ERROR", an
+    # ERROR-HANDLING defect measured 2026-07-29 and filed in TODO.md -- and it
+    # contradicts the standing hypothesis recorded at basic/sysvars.inc's ONELIN
+    # ("NOT clear_vars, so NEW/CLEAR alone do not disarm a handler").
+    "err_badchan": ("BFN", 52),
+    "mf_disarm":   ("IFC", 7777),
+    "clr_disarm":  ("IFC", 7777),
     # Filed separately in TODO.md: LOF on a freshly-created OUTPUT channel reads
     # -1 where the reference reads 0. A LOF bug, not an allocation one -- its
     # two-sided control `lof_existing` agrees at 26 on both machines.
@@ -397,7 +448,7 @@ def main() -> int:
             elif rv == zv:
                 note = "agree"
             elif KNOWN_DIVERGE.get(label) == (rv, zv):
-                note = "diverges (FILED — S-FCH-2 / TODO)"
+                note = "diverges (FILED — ON ERROR disarm / LOF, TODO)"
             else:
                 note = "DIVERGES"
                 diverge.append((label, rv, zv))

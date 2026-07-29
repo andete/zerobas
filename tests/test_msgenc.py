@@ -64,6 +64,11 @@ EXPECT = {
     "err_syntax":           "syntax error",
     "err_linebuf_overflow": "Line buffer overflow",
     "err_overflow":         "overflow",
+    # S-FCH-2's two disk-range codes (52 / 59). They are the reason MSGESC_FILE
+    # exists, and they are the only two messages that share it -- so if the fifth
+    # phrase is wrong, ONLY these two rows fail, which is exactly the signal.
+    "err_bad_filenum":      "bad file number",
+    "err_file_notopen":     "file not open",
 }
 
 # The aliases must still resolve to the SAME address as their target -- the D-2
@@ -99,10 +104,18 @@ def load_syms(path):
 
 
 def read_phrases(rom, syms):
-    """The phrase table as the DECODER sees it: NUL-terminated, in escape order."""
+    """The phrase table as the DECODER sees it: NUL-terminated, in escape order.
+
+    ⚠️ The COUNT is taken from the ROM's own MSGESC_HI, not hardcoded. The
+    decoder is bounded by that constant (`cp MSGESC_HI + 1`), so reading a fixed
+    four entries would have let S-FCH-2's fifth phrase land with the bound
+    un-bumped -- the exact "one fact in two places" drift that left err_msgtab's
+    ERR 25 entry dead for a whole arc (basic/interp.asm, msgtab-bound-drift).
+    Now the table and the bound are read from the same build and must agree.
+    """
     at = syms["msg_phrase_tab"] - LOW
     phrases = []
-    for _ in range(4):
+    for _ in range(syms["MSGESC_HI"] - syms["MSGESC_LO"] + 1):
         end = rom.index(b"\0", at)
         phrases.append(rom[at:end].decode("latin-1"))
         at = end + 1
