@@ -566,35 +566,70 @@ GC_STRESS = [
     # A pre-built reference R$ (one heap body) drives the CONTENT compare instead
     # of allocating a STRING$ temp per element -- else 270 allocs in a near-full
     # heap balloon the run past the capture window.
+    # ⚠️ EVERY `CLEAR` IN THIS GROUP WAS RE-SIZED 2026-07-29 (D-LINEMAX), and the
+    # reason matters more than the numbers. D-LINEMAX re-homed three line buffers
+    # into page 2 and lowered TXTMAX $BE00 -> $B700 to fund them, so the program
+    # area shrank by 1792 B: boot FRE(0) is 15667 -> 13875, MEASURED on the built
+    # machine, not computed. `CLEAR 14000` now leaves 75 free bytes and `CLEAR
+    # 15000` cannot be satisfied at all, so all five rows below died on their
+    # FIRST line -- the readout came back as the typed echo, which is what a
+    # statement that never ran looks like through an echo-anchored reader.
+    #
+    # These reservations were always generous, never load-bearing: each row's
+    # expected value is derived from its OWN data (root count x string length, or
+    # four poked sentinels), never from a capacity reading, so no assertion here
+    # depends on the pool size. All five now reserve 11500.
+    #
+    # ⚠️ THE ROOT COUNT IS THE SUBJECT IN EVERY ROW; THE STRING LENGTH NEVER WAS.
+    # 270 (> 256 -> gc_slow), 200 (< 256 -> the DETOKBUF fast path + sort), and the
+    # 256/257 PAIR (the exact path switch, 2N=512 B filling DETOKBUF exactly) are
+    # what these cases pin. So where a pool had to shrink, the PAYLOAD shrank and
+    # the roots did not: 270x35 -> 270x20 (T 9450 -> 5400), 200x60 -> 200x40
+    # (T 12000 -> 8000), and both edge rows 40 -> 20 chars (LEN 40 -> 20). Every
+    # path under test is unchanged, and the per-element CONTENT compare that makes
+    # this group non-vacuous (F=0 over every element, not a LEN() sum) is untouched.
+    #
+    # ⚠️ SHRINKING THE PAYLOAD IS ALSO WHAT KEPT THEM FAST ENOUGH TO READ. Forcing
+    # GC is the point -- each row writes its live set TWICE -- but GC fires once per
+    # pool-full, so a live set near the pool ceiling means O(n) collections of O(n)
+    # work each. At 11500 with the ORIGINAL payloads, gc.n270.slow and gc.n257.edge
+    # ran past the capture window and read back as their own typed echo, which is
+    # indistinguishable from a wedge. The header on gc.n270.slow already warned
+    # about exactly this; a tighter pool is what made it bite two rows.
+    #
+    # ⚠️ REAL COVERAGE WAS LOST, AND IT IS NOT HIDDEN: this group no longer proves
+    # that a ~12 KB string workload runs at all -- 12000 bytes live no longer fits
+    # in 13875 with working room for GC. That capability is what the RAM cut spent.
+    # It is a capacity loss, not a test weakened to fit.
     ("gc.n270.slow",
-     ['CLEAR 14000:DIM S$(270):FORI=1TO270:S$(I)=STRING$(35,65):NEXT',
-      'FORI=1TO270:S$(I)=STRING$(35,66):NEXT',
-      'R$=STRING$(35,66):F=0:T=0:FORI=1TO270:T=T+LEN(S$(I)):IFS$(I)<>R$THENF=F+1',
+     ['CLEAR 11500:DIM S$(270):FORI=1TO270:S$(I)=STRING$(20,65):NEXT',
+      'FORI=1TO270:S$(I)=STRING$(20,66):NEXT',
+      'R$=STRING$(20,66):F=0:T=0:FORI=1TO270:T=T+LEN(S$(I)):IFS$(I)<>R$THENF=F+1',
       'NEXT:PRINT"[";F;T;LEFT$(S$(1),1);LEFT$(S$(270),1);"]"'],
-     " 0  9450 BB"),
+     " 0  5400 BB"),
     # (b)+(c-low) DETOKBUF fast path, ~200 roots (under the 256 cap) -> the
     # switch's UNDER-256 side + the DETOKBUF sort. Per-element CONTENT check.
     ("gc.n200.detok",
-     ['CLEAR 15000:DIM S$(200):FORI=1TO200:S$(I)=STRING$(60,65):NEXT',
-      'FORI=1TO200:S$(I)=STRING$(60,66):NEXT',
-      'R$=STRING$(60,66):F=0:T=0:FORI=1TO200:T=T+LEN(S$(I)):IFS$(I)<>R$THENF=F+1',
+     ['CLEAR 11500:DIM S$(200):FORI=1TO200:S$(I)=STRING$(40,65):NEXT',
+      'FORI=1TO200:S$(I)=STRING$(40,66):NEXT',
+      'R$=STRING$(40,66):F=0:T=0:FORI=1TO200:T=T+LEN(S$(I)):IFS$(I)<>R$THENF=F+1',
       'NEXT:PRINT"[";F;T;LEFT$(S$(100),1);"]"'],
-     " 0  12000 B"),
+     " 0  8000 B"),
     # (c-boundary) pin the EXACT 256/257 path switch. n=256 (last DETOKBUF slot,
     # 2N=512 B fills the buffer exactly) and n=257 (first gc_slow) must BOTH keep
     # every body intact through a forced GC. One case per side; content-checked.
     ("gc.n256.edge",
-     ['CLEAR 14000:DIM S$(256):FORI=1TO256:S$(I)=STRING$(40,65):NEXT',
-      'FORI=1TO256:S$(I)=STRING$(40,66):NEXT',
-      'R$=STRING$(40,66):F=0:FORI=1TO256:IFS$(I)<>R$THENF=F+1',
+     ['CLEAR 11500:DIM S$(256):FORI=1TO256:S$(I)=STRING$(20,65):NEXT',
+      'FORI=1TO256:S$(I)=STRING$(20,66):NEXT',
+      'R$=STRING$(20,66):F=0:FORI=1TO256:IFS$(I)<>R$THENF=F+1',
       'NEXT:PRINT"[";F;LEN(S$(256));LEFT$(S$(256),1);"]"'],
-     " 0  40 B"),
+     " 0  20 B"),
     ("gc.n257.edge",
-     ['CLEAR 14000:DIM S$(257):FORI=1TO257:S$(I)=STRING$(40,65):NEXT',
-      'FORI=1TO257:S$(I)=STRING$(40,66):NEXT',
-      'R$=STRING$(40,66):F=0:FORI=1TO257:IFS$(I)<>R$THENF=F+1',
+     ['CLEAR 11500:DIM S$(257):FORI=1TO257:S$(I)=STRING$(20,65):NEXT',
+      'FORI=1TO257:S$(I)=STRING$(20,66):NEXT',
+      'R$=STRING$(20,66):F=0:FORI=1TO257:IFS$(I)<>R$THENF=F+1',
       'NEXT:PRINT"[";F;LEN(S$(257));LEFT$(S$(257),1);"]"'],
-     " 0  40 B"),
+     " 0  20 B"),
     # (e) DISK-INTERLEAVED GC -- the exact $F240 bug class. Stamp sentinels into
     # the disk resident work-area cells the old high-RAM stack buffer would
     # trample (W50A9_WRKB $F242 / CURDRV $F247 / RES_STUBS $F24E / DRVTBL $F348),
@@ -603,7 +638,7 @@ GC_STRESS = [
     # stack. FAILS on the old $F240 code (NON-VACUOUS). Leaving the sentinels is
     # harmless -- gc_stress runs last, then the next suite reboots.
     ("gc.diskcells",
-     ['CLEAR 14000:POKE&HF242,111:POKE&HF247,122:POKE&HF24E,133:POKE&HF348,144',
+     ['CLEAR 11500:POKE&HF242,111:POKE&HF247,122:POKE&HF24E,133:POKE&HF348,144',
       'DIM S$(100):FORI=1TO100:S$(I)=STRING$(100,65):NEXT',
       'FORI=1TO100:S$(I)=STRING$(100,66):NEXT',
       'PRINT"[";PEEK(&HF242);PEEK(&HF247);PEEK(&HF24E);PEEK(&HF348);"]"'],

@@ -570,14 +570,19 @@ GFX_REL         equ     $E033   ; parse_coord: 1 = STEP (relative) coordinate, 0
 ; Graphics G3 (LINE) marshalling + Bresenham state. G3 needs ~40 B that persist for
 ; the WHOLE draw (the tenant loops while EI). The $E034+ gap is NOT usable: CURLINE /
 ; the FOR/GOSUB stacks / GOTOTGT live there and must be preserved across the
-; subrom_call (the main interpreter is frozen mid-`LINE`, not dead). TOKBUF ($E160) is
-; the EXECUTING token stream in direct mode (`SCREEN2:LINE...` typed live) -> unsafe.
-; Home = the LINEBUF region ($E100..$E15F, docs/spec-basic-graphics-g3.md §6): the raw
-; keyboard-input line is consumed by the crunch (execution runs from TOKBUF / the
-; program text, never re-reads LINEBUF), so it is dead during ANY graphics statement,
-; is not the token stream, holds no preserved interpreter state, and is below the PLAY
-; ISR region ($F959+) so a live PLAY drain can't race it (arc D1). Dead outside a
-; GFX_OP=3 call. GFX_OP/GFX_C stay at $E030 (G1/G2 dispatch + colour, unchanged).
+; subrom_call (the main interpreter is frozen mid-`LINE`, not dead).
+; Home = $E100..$E157 (docs/spec-basic-graphics-g3.md §6), below the PLAY ISR region
+; ($F959+) so a live PLAY drain can't race it (arc D1). Dead outside a GFX_OP=3 call.
+; GFX_OP/GFX_C stay at $E030 (G1/G2 dispatch + colour, unchanged).
+;
+; ⚠️ THE ALIASING ARGUMENT THIS BLOCK USED TO CARRY IS RETIRED, NOT WEAKENED
+; (D-LINEMAX §3.1). These cells were homed on the documented claim that they overlay
+; the LINEBUF region and that LINEBUF is dead during any graphics statement — a claim
+; that had to be true for the layout to be safe. D-LINEMAX moved LINEBUF ($E100) and
+; TOKBUF ($E160) out of page 3 to $BA00/$B700, so in the repack build these cells
+; overlay NOTHING and simply own free RAM; the precondition is no longer load-bearing
+; and must not be re-derived by a later reader as a live constraint. It still holds
+; unchanged in the lean build, where both buffers stay where they were.
 GFX_X1          equ     $E100   ; LINE endpoint 1 X (int16 LE) -- resident marshals, tenant reads
 GFX_Y1          equ     $E102   ; LINE endpoint 1 Y (int16 LE)
 GFX_X2          equ     $E104   ; LINE endpoint 2 X (int16 LE)
@@ -600,8 +605,9 @@ GFX_TY2         equ     $E120   ; box: stashed corner 2 Y (2)
 GFX_FILLCNT     equ     $E122   ; box fill: scanlines remaining (2)
 GFX_YSTEP       equ     $E124   ; box fill: row step, $0001/$FFFF (2)   -> ends $E126
 ; Graphics G4 (CIRCLE, docs/spec-basic-graphics-g4.md §6). Append-only after G3's
-; $E126, same LINEBUF-region discipline (dead during any graphics statement, below
-; the PLAY ISR region). GFX_OP=4 selects the tenant arm; GFX_OP/GFX_C ($E030/$E031)
+; $E126, same discipline (dead during any graphics statement, below the PLAY ISR
+; region; the LINEBUF overlay it was originally argued from is retired — G3 header
+; above). GFX_OP=4 selects the tenant arm; GFX_OP/GFX_C ($E030/$E031)
 ; stay shared with G1/G2/G3 (op selector + resolved colour). Spoke lines (§5.3) are
 ; marshalled through the EXISTING G3 GFX_X1/Y1/X2/Y2/GFX_MODE cells with GFX_OP=3 --
 ; no new cells needed for that reuse.
@@ -651,15 +657,16 @@ GFX_ESGNC       equ     $E152   ; end: cos-component quadrant sign (1)
 GFX_ESGNS       equ     $E153   ; end: sin-component quadrant sign (1)
 GFX_SNEG        equ     $E154   ; resident: start angle was negative -> spoke pending (1)
 GFX_ENEG        equ     $E155   ; resident: end angle was negative -> spoke pending (1)
-                                ; -> ends $E156 (LINEBUF region ends $E15F inclusive;
-                                ; well within the G3 header's own budget note)
-; G5 PAINT (docs/spec-basic-graphics-g5.md §6). ONE new LINEBUF-region cell:
+                                ; -> ends $E156 (the G3/G4/G5 window ends $E15F
+                                ; inclusive; well within the G3 header's budget note)
+; G5 PAINT (docs/spec-basic-graphics-g5.md §6). ONE new cell in the same window:
 ; the resident-marshalled border colour (the raw, NOT range-checked comparison
-; value -- spec §3/§5). Same LINEBUF-region discipline as G3/G4 (dead during
-; any graphics statement, below the PLAY ISR region). GFX_OP=5 selects the
-; tenant arm; GFX_OP/GFX_C stay shared with G1-G4. The much bigger span-stack
-; + its own working scratch do NOT fit here (only 9 B remain, $E157-$E15F) --
-; they live in a separate repack-only RAM window below (GFX_PSTK).
+; value -- spec §3/§5). Same discipline as G3/G4 (dead during any graphics
+; statement, below the PLAY ISR region; the LINEBUF overlay is retired -- G3
+; header). GFX_OP=5 selects the tenant arm; GFX_OP/GFX_C stay shared with G1-G4.
+; The much bigger span-stack + its own working scratch do NOT fit here (only 9 B
+; remain, $E157-$E15F) -- they live in a separate repack-only RAM window below
+; (GFX_PSTK).
 GFX_B           equ     $E156   ; border colour B (raw comparison value 0..255,
                                 ; NOT range-checked -- spec §3) (1) -> ends $E157
 GFX_CPHASE      equ     $E157   ; CIRCLE-parse co-routine phase (sub/circleparse.asm):
@@ -668,7 +675,7 @@ GFX_CPHASE      equ     $E157   ; CIRCLE-parse co-routine phase (sub/circleparse
                                 ; (0=centre 1=r 2=c 3=start 4=end 5=aspect). (1)
 ; G7 sprites (docs/spec-basic-graphics-g7.md §8). Table bases + the VDP register
 ; mirror the sprite size lives in; the parameter block itself is in the repack-only
-; window next to GFX_VBUF below (the LINEBUF region's last 9 B do not fit it).
+; window next to GFX_VBUF below (the G3/G4/G5 window's last 9 B do not fit it).
 GFX_SPAT_BASE   equ     $3800   ; SCREEN 1/2 sprite PATTERN generator table base
 GFX_SATR_BASE   equ     $1B00   ; SCREEN 1/2 sprite ATTRIBUTE table base (4 B per plane)
 RG1SAV          equ     $F3E0   ; VDP register 1 mirror; bits 1..0 = SCREEN's sprite-size
@@ -751,14 +758,57 @@ MIDS_DEST       equ     TMISMATCH + 1
 MIDS_DEST       equ     NUMBUF
     ENDIF
 ; Console INPUT (repack build only): the LINEBUF read cursor for linebuf_getbyte
-; (basic/input.asm). LINEBUF is one page ($E1xx), so a single low byte suffices.
-; Aliases NUMBUF like MIDS_DEST — dead during INPUT, which formats no numbers; the
-; MID$ statement and console INPUT never execute simultaneously.
+; (basic/input.asm). LINEBUF is one PAGE (page-aligned, <= 256 B), so a single low
+; byte suffices. Aliases NUMBUF like MIDS_DEST — dead during INPUT, which formats no
+; numbers; the MID$ statement and console INPUT never execute simultaneously.
 INP_CURSOR      equ     NUMBUF   ; console INPUT LINEBUF read cursor (1 B, aliases NUMBUF)
-; Buffers and the variable table live in page $E1, clear of $E000.
-LINEBUF         equ     $E100   ; ASCII input line from the keyboard (LINEMAX bytes)
-LINEMAX         equ     96      ; LINEBUF capacity; $E100..$E15F stays in page $E1
-TOKBUF          equ     $E160   ; crunch buffer: the tokenised line (0-terminated)
+; --- The line buffers (D-LINEMAX, docs/spec-basic-linemax.md) ---------------
+; MEASURED (docs/linemax-vg8020-characterization.md §1): the reference's last intact
+; input line is 254 characters; both machines then DROP the tail, keep and store the
+; line, and raise nothing — the disposition already agreed, only the ceiling differed.
+; So LINEMAX is one constant, and in the repack build it is the reference's.
+;
+; The single-low-byte idiom in BOTH readers (repl.asm read_line, files.asm
+; ascii_read_lines) and in console INPUT (input.asm `ld h,high LINEBUF`) needs a
+; PAGE-ALIGNED base and <= 256 bytes — NOT <= 96. $BA00+254 = $BAFE is one page, so
+; no reader logic changes and the item's feared "one-page trick blocks this" does not
+; hold.
+    IF ROM_BASE < $4000
+LINEBUF         equ     $BA00   ; repack: ASCII input line from the keyboard (LINEMAX B)
+LINEMAX         equ     255     ; 254 chars + the 0 terminator (measured reference ceiling)
+; TOKBUF — the crunch destination. Sized 576 B for a 314-byte LOGICAL body limit, and
+; the gap between those two numbers is deliberate.
+;
+; 🔴 The crunch EXPANDS and was BOUNDED NOWHERE (§2): `0#` is two source characters
+; and NINE bytes (DBL_TOKEN + 8), so a 27-CHARACTER line already overran the old
+; 96-byte buffer, and the worst case wrote 407 bytes into it — over ARYTAB, the whole
+; error-trap block, ZTRAP, POOLSIZE, into STRTAB — silently, and stored the line.
+; After it zerobas could not execute `B=7`. The reference refuses at 315 body bytes
+; with `Line buffer overflow` (ERR 25), measured; TOKMAX_BODY is that ceiling.
+;
+; WHY 576 AND NOT 315. The overflow test is ONE site (tk_end, tokenise.inc) rather
+; than one per emit site — the spec warned that bounding every emit site is "easy to
+; miss one", and it was right for a reason it did not name: tk_str_loop, tk_rem_rest
+; and tk_data_rest are INNER COPY LOOPS that never re-enter tk_loop, so a per-
+; character test at the loop head would not have covered them either. Those loops are
+; strictly 1:1 (one source byte -> one dest byte) and their input is bounded by
+; LINEMAX, so the buffer only has to ABSORB the worst single pass and let tk_end
+; adjudicate: 314 (accepted body) + 258 (the widest one-character step — tk_apos's 3
+; bytes plus a 253-byte verbatim tail) + 1 (terminator) = 573, rounded to 576. The
+; bound is then PROVABLE from LINEMAX rather than audited emit site by emit site.
+TOKBUF          equ     $B700   ; repack: crunch buffer, 576 B ($B700..$B93F)
+TOKBUFSZ        equ     576     ; physical size (absorbs one over-long pass, above)
+TOKMAX_BODY     equ     314     ; logical ceiling: a longer body is REFUSED (ERR 25)
+    ELSE
+LINEBUF         equ     $E100   ; lean: ASCII input line from the keyboard (LINEMAX bytes)
+LINEMAX         equ     96      ; lean: LINEBUF capacity; $E100..$E15F stays in page $E1
+TOKBUF          equ     $E160   ; lean: crunch buffer: the tokenised line (0-terminated)
+    ENDIF
+; ⚠️ The lean cart keeps the OLD, UNBOUNDED crunch and the old 96-byte TOKBUF. That is
+; a KNOWN DEFECT OF A RETIRED BUILD, carried forward deliberately (TODO.md, spec §4
+; Q1): lean's own overrun route is line-number references, not floats — `20 ONAGOTO1`
+; + `,1`x42 is 95 characters and 174 bytes, over the LIVE VARTAB, and a variable set
+; before it reads back 0 (§2.2, measured). Not fixed here; the build is going away.
 ; Variable table: dynamically-allocated 4-byte entries [name0][name1][value:2].
 ; Names are significant to 2 characters (public MSX-BASIC language reference);
 ; name1 = 0 for a 1-char name. A name0 of 0 marks the first free slot. Phase 1
@@ -1482,19 +1532,41 @@ STRSCR          equ     $E360   ; [len][bytes:STRMAX] = 33 bytes ($E360..$E380)
 TXTTAB          equ     $F676   ; sysvar: pointer to the BASIC text base
 TXTBASE         equ     $8001   ; text base (oracle: TXTTAB value after boot)
 ; TXTMAX — the program-text ceiling (OUT OF MEMORY threshold). The lean cart keeps
-; the full $C000 BLOAD ceiling; the repack build lowers it 512 B to reserve
-; $BE00-$BFFF as DETOKBUF, the sub-ROM detokeniser's one-shot output buffer (subrom
-; wave 3, docs/spec-basic-subrom-wave3-detok.md §5/Q3-a). This is a documented repack
-; divergence: repack program capacity is 512 B smaller. It is per-build because
+; the full $C000 BLOAD ceiling; the repack build lowers it 2304 B to reserve
+; $B700-$BFFF for the three line buffers (map below): DETOKBUF (subrom wave 3,
+; docs/spec-basic-subrom-wave3-detok.md §5/Q3-a) plus TOKBUF and LINEBUF, which
+; D-LINEMAX re-homes out of page 3 because neither fits there at its true size.
+;
+; This 1792 B of the cut is D-LINEMAX's, and it is CHOSEN BY MEASUREMENT rather than
+; preference (spec §4 Q3): the reference charges its own file-channel buffers 267 B
+; each out of the very FRE(0) pool programs live in, so funding buffers from program
+; space is the mechanism the REFERENCE uses — while the alternative (dropping
+; MAXFILES to 1) moves AWAY from a reference that supports at least 15. Repack
+; program capacity is 15871 -> 14079 B. It is per-build because
 ; TXTMAX is emitted as an immediate (`ld de,TXTMAX` in program.asm / cload.asm), so a
 ; single value would change lean bytes (byte-identity gate 6).
     IF ROM_BASE < $4000
-TXTMAX          equ     $BE00   ; repack: text ceiling, 512 B below DETOKBUF's home
-DETOKBUF        equ     $BE00   ; repack: 512 B one-shot detok output buffer ($BE00-$BFFF).
-                                ; Sized for the worst-case LIST/ASCII-SAVE line (<=475 B;
-                                ; source lines cap at LINEMAX=96 and only `?`->PRINT
-                                ; expands, spec §0.2). Free during both sinks (neither
-                                ; program text nor a disk buffer); below the stack.
+; --- The page-2 buffer window, $B700..$BFFF (D-LINEMAX §3) ------------------
+;   TOKBUF   $B700..$B93F   576 B  (crunch destination; 314-byte logical body limit)
+;   (spare)  $B940..$B9FF   192 B
+;   LINEBUF  $BA00..$BAFE   255 B  (page-aligned — the readers' low-byte idiom)
+;   (spare)  $BAFF            1 B
+;   DETOKBUF $BB00..$BFFF  1280 B  (LIST/ASCII-SAVE render target)
+;
+; ⚠️ DETOKBUF'S SIZE IS A CONSEQUENCE OF LINEMAX, AND D-LINEMAX'S SPEC MISSED IT.
+; The 512 B figure was DERIVED from the old ceiling — docs/spec-basic-subrom-wave3-
+; detok.md §0.2: "every char a `?`->PRINT (5x per char) = 95x5 = 475" — and that
+; spec's §5 sketch considered the 255-char case explicitly and dismissed it because
+; "the source line is capped at 96 bytes, not 255". Raising LINEMAX REMOVES that
+; premise, and sub/detok.asm's pchar says in as many words "No overflow check (the
+; buffer is sized for the worst case)". So LIST of a line of 254 `?` would have
+; written 254x5 = 1270 bytes into 512 — the SAME defect class as the TOKBUF overrun
+; this slice exists to fix, newly CREATED by fixing it. 1280 = $BB00..$BFFF covers
+; the 1271-byte ceiling (254x5 + terminator) and still tops out just under the $C000
+; BLOAD region, so the "free during both sinks, below the stack" argument is intact.
+TXTMAX          equ     $B700   ; repack: text ceiling, 2304 B below the $C000 BLOAD
+                                ; region — the whole buffer window above is reserved.
+DETOKBUF        equ     $BB00   ; repack: 1280 B one-shot detok output buffer.
     ELSE
 TXTMAX          equ     $C000   ; lean: text must stay below the $C000 BLOAD region
     ENDIF

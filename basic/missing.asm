@@ -79,6 +79,16 @@ mot_go:
 err_missing_operand:
                 db      "missing operand",13,10,0
 
+; err_linebuf_overflow (the ERR 25 message, D-LINEMAX R-2) is NOT here, despite
+; this file being the precedent for exactly this constraint. It did not fit: page
+; 1 had 10 free bytes against a 42-byte need, so it lives in the LOW-REGION STRING
+; POOL (basic/main.asm, before __MEAS_LOW_END) instead.
+;
+; ⚠️ ITS WORDING IS THE REFERENCE'S, not house-style lowercase. Every other message
+; in this tree is deliberately our own (D-2), but `Line buffer overflow` was read
+; VERBATIM off the reference's screen by the `tokx` battery and the gate compares
+; the two machines' screens row for row -- so the measured string IS the spec.
+
 ; --- ex_locate: LOCATE [col][,[row][,cursor]] -------------------------------
 ; Modelled on ex_color (basic/screen.asm), the tree's other three-optional-
 ; comma-separated-argument statement, with four differences that are all

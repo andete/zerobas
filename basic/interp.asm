@@ -994,6 +994,10 @@ err_msgtab:
                                             ; range test moved from `cp 23` to `cp 24`
                                             ; with it -- the table bound and that test are
                                             ; one fact in two places.
+                dw      err_linebuf_overflow ; 25: line buffer overflow (D-LINEMAX R-2 --
+                                            ; the crunched body exceeded TOKMAX_BODY=314).
+                                            ; Same two-places-one-fact pair: `cp 24` ->
+                                            ; `cp 25` below moved with this entry.
 err_unprintable:
                 db      "unprintable error",13,10,0
                 ; err_missing_operand itself lives in basic/missing.asm. Sited

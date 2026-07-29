@@ -89,6 +89,36 @@ SUB_BUILD       equ     0
 ; forward references across `include`s are fine for a whole-file multi-pass
 ; assembler like pasmo; only ORG-based layout needs include order.
                 include "basic/arrays.asm"
+
+; --- Low-region string pool (D-LINEMAX, spec §4 Q2) -------------------------
+; Message text that page-1 code points at but does not execute. A string is pure
+; data with no call graph, so the only question placement has to answer is "is
+; page 0 mapped when it is READ?" — and for a REPL-time report it always is: the
+; reader is resident dispatch_line, never a sub-ROM tenant (a page-0 tenant runs
+; with this whole region switched OUT, which is what pins code here, not data).
+;
+; Sited here because page 1 could not hold it. Q2 deferred placement to
+; implementation with "measure the walls before choosing"; measured from clean at
+; implementation time, page 1 had 10 B free and the low region 32 B, against a
+; 42-byte need — so the choice was not between homes, it was a split across both.
+;
+; ⚠️ THE TWO STRINGS OVERLAP, AND THAT IS LOAD-BEARING, NOT A FLOURISH. ERR 25's
+; text ENDS with ERR 6's text, so `err_overflow` is simply a pointer 12 bytes into
+; `err_linebuf_overflow`: 23 bytes total instead of 34. That 11 bytes is not spare
+; change here -- the split above needed 42 bytes against 10 free in page 1 and 32
+; in the low region, and the overlap is what closed the gap and left both walls
+; with margin instead of landing at exactly zero.
+;
+; ⚠️ CONSEQUENCE FOR ANY LATER EDIT: these are ONE string with two entry points.
+; Re-wording ERR 25's tail, or ERR 6 at all, silently corrupts the other message
+; -- and err_overflow has TWO readers (err_msgtab entry 6 and program.asm's
+; dl_overflow float arm), neither of which is near this line. Split them back into
+; two independent `db`s before changing either, and re-measure both walls.
+err_linebuf_overflow:
+                db      "Line buffer "      ; ERR 25 (D-LINEMAX R-2) -- falls through
+err_overflow:                               ; ERR 6 -- the shared tail, read on its own
+                db      "overflow",13,10,0
+
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean

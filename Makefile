@@ -960,6 +960,38 @@ arrdim-acceptance: repack-machine
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
 	        $(if $(BATCH),--batch,)
 
+# --- D-LINEMAX: the input line AND the crunched line -------------------------
+# docs/spec-basic-linemax.md, measurement docs/linemax-vg8020-characterization.md.
+# Seven batteries: rem (input-line ceiling, byte-counted from the stored line),
+# tok / lnum (crunch expansion, byte-for-byte), tokx / bnd (the refusal boundary,
+# read off the screen and walked a byte at a time), corrupt + code (the DAMAGE).
+# Scope with ONLY=rem,tok,...; --cas adds the 3 cassette rows (R-3, one tape and
+# one boot each).
+#
+# ⚠️ THE tok AND lnum BATTERIES CANNOT GATE THIS ALONE, and a green run of them
+# means less than it looks. Their verdict is "the two machines produced the same
+# bytes", and every lnum row PASSED even when the defect was live -- both machines
+# crunch an identical 174 bytes and only the one with a 96-byte buffer is harmed
+# (characterization §2.2). AGREEMENT ON WHAT WAS PRODUCED IS NOT AGREEMENT ON
+# WHETHER IT FIT. The `corrupt` rows, which read the damage rather than the output,
+# are the ones with teeth; the byte batteries pin WHERE the boundary is.
+#
+# ⚠️ NO LINE MAY REACH THE MACHINE'S OWN LINLEN (37), not the screen's 40 -- an
+# echo at or past it WRAPS and can never be matched, and both sides then read
+# `<none>` and score PASS. The probe enforces this before an emulator boots.
+#
+# Repack-only; oracle-dependent. Boot-per-case: the `corrupt` battery deliberately
+# damages RAM, so a shared boot would carry that damage into every later row.
+linemax-characterize: repack-machine
+	python3 probes/basic/basic_probe_linemax.py \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
+	        $(if $(CAS),--cas,)
+
+linemax-acceptance: repack-machine
+	python3 probes/basic/basic_probe_linemax.py --gate \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',) \
+	        $(if $(CAS),--cas,)
+
 # --- DIRECT-MODE control-flow gate (docs/spec-basic-direct-ctrl.md §8) --------
 # VG-8020 differential for FOR/NEXT, GOSUB/RETURN, GOTO, IF-THEN-<line> and
 # ON-GOTO typed AT THE PROMPT -- an execution mode that had zero coverage until
@@ -1114,4 +1146,5 @@ clean:
         str-domain-characterize str-domain-acceptance \
         clearpool-characterize clearpool-acceptance \
         width-characterize width-acceptance \
-        arrdim-characterize arrdim-acceptance clean
+        arrdim-characterize arrdim-acceptance \
+        linemax-characterize linemax-acceptance clean

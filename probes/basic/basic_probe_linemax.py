@@ -51,8 +51,9 @@ Finding out what happens PAST that cap is half the point, so the `rem` battery
 deliberately runs to 300. That means a `rem` row past ~255 cannot distinguish
 "the machine refused it" from "the harness could not deliver it": the KEYBUF
 injection path is itself under test there. `rem-40` is the two-sided control (a
-length no machine truncates), and `rem-100` is the CALIBRATION row -- zerobas is
-predicted to store exactly 89 filler bytes there (95 characters minus `20 REM`).
+length no machine truncates), and `rem-254`/`rem-255` are the CALIBRATION PAIR --
+zerobas must store exactly 248 filler bytes at BOTH (254 characters minus `20 REM`,
+then saturated), which admits LINEMAX=255 and no other value.
 A run where that row reads anything else is measuring the apparatus, not the
 machine, and no other row in it may be read as a finding.
 
@@ -107,9 +108,11 @@ def _rem_case(n):
     return (f"rem-{n}", "rem", ["20 REM" + FILLER * (n - 6)])
 
 
-# 40 = the two-sided control. 90..100 brackets zerobas's predicted 95 (with
-# rem-100 as the calibration row). 248..300 brackets the reference's, and runs
-# PAST the 255 that arrdim's apparatus assumes -- the point being to find out.
+# 40 = the two-sided control. 90..100 brackets zerobas's ORIGINAL 95 ceiling and is
+# kept as regression cover now that R-1 has raised it. 248..300 brackets the
+# reference's, runs PAST the 255 that arrdim's apparatus assumed -- the point being
+# to find out -- and carries the calibration pair (rem-254 / rem-255), which is where
+# BOTH machines' ceilings now sit.
 CASES = [_rem_case(n) for n in
          (40, 90, 94, 95, 96, 97, 100, 200, 248, 250, 252, 253, 254, 255,
           256, 257, 260, 300)]
@@ -269,12 +272,64 @@ CASES += [
 # Every `tok`/`tokx` row is a SUSPECTED WEDGER on zerobas: the overrun lands on
 # ARYTAB, the error-trap state and the trap table, so a shared boot would carry one
 # row's wreckage into every row after it. They run boot-per-case.
-ISOLATED = {lbl for lbl, bat, _ in CASES if bat in ("tok", "tokx")}
+#
+# ⚠️ THE `corrupt` BATTERY MUST BE ISOLATED TOO, AND LEAVING IT OUT MADE ITS OWN
+# CONTROL AGREE FOR THE WRONG REASON. These rows exist to leave state behind --
+# that IS the measurement -- and `reset=("NEW",)` clears the PROGRAM, not ERRCODE
+# and not the RAM an overrun wrecked. Batched, `code-ctl` ran in the same boot as
+# `code-over` and read back the ` 25 ` that row had just raised, on BOTH machines:
+#
+#     code-ctl, batched after code-over : ref ` 25 `  zb ` 25 `  -> PASS
+#     code-ctl, alone on a fresh boot   : ref `  0 `  zb `  0 `  -> the real value
+#
+# So the control PASSED while measuring nothing -- it was pinned to the value it
+# was supposed to be a contrast WITH, and any implementation that raises 25 for
+# every line, or none, would have satisfied it identically. A row whose whole job
+# is to leave damage behind cannot share a boot with the row that reads damage.
+ISOLATED = {lbl for lbl, bat, _ in CASES if bat in ("tok", "tokx", "corrupt", "list")}
 
 # Which capture each battery reads. Two batteries read the stored line's bytes;
 # `tokx` reads the screen. They cannot share a run.
+# --- the `list` battery: THE THIRD BUFFER LINEMAX SIZES ----------------------
+# ⚠️ FOUND WHILE IMPLEMENTING R-1, NOT WHILE SPECIFYING IT, AND THE SPEC COUNTED
+# TWO BUFFERS WHERE THERE ARE THREE. DETOKBUF (LIST/ASCII-SAVE's render target) is
+# sized FROM LINEMAX: docs/spec-basic-subrom-wave3-detok.md §0.2 derives its 512
+# bytes as "every char a `?`->PRINT (5x per char) = 95x5 = 475", and that spec's §5
+# considered the 255-character case explicitly and dismissed it because "the source
+# line is capped at 96 bytes, not 255". R-1 REMOVES THAT PREMISE, and sub/detok.asm's
+# pchar says in as many words "No overflow check (the buffer is sized for the worst
+# case)". So raising LINEMAX turned a second, previously-safe unbounded buffer into
+# a 1270-byte write into 512 -- the same defect class this slice exists to fix,
+# newly CREATED by fixing it. DETOKBUF is now 1280 B.
+#
+# ⚠️ AND A SIZE ARRIVED AT BY ARITHMETIC IS NOT A MEASUREMENT. 254x5+1 is reasoning;
+# these rows RUN it. They read the DAMAGE rather than the output, for the same
+# reason the `corrupt` battery does -- and here there is a second reason: LIST of a
+# maximal line prints ~1250 characters, which scrolls the screen and cannot be
+# compared row for row at all.
+#
+# The probe is POKE/PEEK at $C100 -- 256 bytes past where the OLD 512-byte DETOKBUF
+# ended ($BE00+512 = $C000), and inside the region a BLOADed binary occupies, so it
+# is damage that MATTERS and not merely damage that happens. The reference streams
+# LIST to the sink with no buffer at all, so it must read the poked value back
+# unchanged; zerobas must now agree.
+#
+# `?`x N is the worst case on purpose: `?`->PRINT is the ONLY source-expanding
+# token (5 output chars from 1 source char), so N=250 is as hard as LIST gets at
+# LINEMAX=255. list-ctl is the two-sided control -- the same shape at a length whose
+# render fits even the OLD buffer, so a red list-max is the render length and not
+# the POKE, the PEEK, the stored line or LIST itself.
+CASES += [
+    ("list-max", "list",
+     ["CLS", "10 " + "?" * 250, "POKE&HC100,7", "LIST", 'PRINT"[";PEEK(&HC100);"]"']),
+    ("list-ctl", "list",
+     ["CLS", "10 " + "?" * 40, "POKE&HC100,7", "LIST", 'PRINT"[";PEEK(&HC100);"]"']),
+]
+
+
 CAPTURE = {"rem": "line", "tok": "line",
-           "tokx": "screen", "bnd": "screen", "corrupt": "screen"}
+           "tokx": "screen", "bnd": "screen", "corrupt": "screen",
+           "list": "screen"}
 
 
 def decode(hexstr):
@@ -376,7 +431,7 @@ def reader(case):
     label, battery, lines = case
     if CAPTURE[battery] == "line":
         return decode
-    if battery != "corrupt":
+    if battery not in ("corrupt", "list"):
         return lambda raw: say(raw, lines)
     anchor = lines[-1]
     return lambda raw: (None if raw is None else
@@ -407,7 +462,13 @@ def main():
         print(f"\n{npass}/{len(CAS_CASES)} rows agree with the reference")
         return 1 if (args.gate and npass != len(CAS_CASES)) else 0
 
-    sel = [c for c in CASES if not args.only or args.only in c[0]]
+    # --only takes a COMMA-SEPARATED list of substrings (`corrupt,code`), matching
+    # the ONLY= convention the Makefile documents and the other probes use. It was a
+    # single substring, so `ONLY=corrupt,code` selected nothing and the run died as
+    # "no rows selected" -- a scoped run that silently measures nothing is the same
+    # failure as a gate that scores 0/0 and prints ALL CONVERGED.
+    _want = [t.strip() for t in (args.only or "").split(",") if t.strip()]
+    sel = [c for c in CASES if not _want or any(t in c[0] for t in _want)]
     if not sel:
         print("APPARATUS FAILURE: no rows selected")
         return 1
@@ -455,20 +516,41 @@ def main():
     print(f"\n{npass}/{len(sel)} rows agree with the reference")
 
     # --- the CALIBRATION check, before any verdict is read as a finding -------
-    # rem-40 must agree (a length neither machine truncates) and rem-100 must read
-    # exactly 89 surviving filler bytes on zerobas -- 95 characters minus `20 REM`,
-    # the prediction LINEMAX=96 makes. Either one wrong and the apparatus, not the
-    # machine, is what this run measured.
+    # rem-40 must agree (a length neither machine truncates), and the pair below
+    # must pin zerobas's OWN ceiling to the byte. Either one wrong and the
+    # apparatus, not the machine, is what this run measured.
+    #
+    # ⚠️ THE CALIBRATION IS TWO-SIDED ON PURPOSE, and it did not used to be. It was
+    # one row (rem-100 must read +89, the prediction LINEMAX=96 makes), which pinned
+    # the ceiling only FROM BELOW: any larger LINEMAX passes a +89 assertion at 100
+    # characters just as well as the right one. Landing R-1 retargeted it, and a
+    # retargeted one-sided row would have certified LINEMAX=256, or 300, or no
+    # ceiling at all. The two rows together admit exactly one value:
+    #
+    #   rem-254 -> +248 filler  (254 source chars minus `20 REM`) -- the LAST
+    #              INTACT line; reads short if LINEMAX is too small.
+    #   rem-255 -> +248 filler  (SATURATED, not +249) -- the first truncated one;
+    #              reads long if LINEMAX is too large.
+    CALIB = {"rem-254": ("line 20 REM +248 filler", "the last intact line"),
+             "rem-255": ("line 20 REM +248 filler", "saturation one past it")}
     bad = []
+    seen_calib = set()
     for i, (label, _b, _l) in enumerate(sel):
         if (label in ("rem-40", "tok-5", "tokx-5", "corrupt-ctl")
                 and not verdicts[i]):
             bad.append(f"{label} (a two-sided control) does not agree")
-        if label == "rem-100":
+        if label in CALIB:
+            want, why = CALIB[label]
+            seen_calib.add(label)
             got = decode(zb_raws[i])
-            if got != "line 20 REM +89 filler":
-                bad.append(f"rem-100 zerobas reads {got!r}, not the +89 filler "
-                           f"LINEMAX=96 predicts")
+            if got != want:
+                bad.append(f"{label} zerobas reads {got!r}, not {want!r} "
+                           f"({why}) -- LINEMAX=255 predicts it")
+    # A calibration row that never RAN cannot certify anything; only complain when
+    # the selection actually contained the rem battery (ONLY=tok is a legitimate run).
+    if any(l.startswith("rem-") for l, _b, _l in sel) and seen_calib != set(CALIB):
+        bad.append(f"the rem battery ran without its calibration rows "
+                   f"{sorted(set(CALIB) - seen_calib)} -- nothing pins the ceiling")
     if bad:
         print("\nAPPARATUS FAILURE -- no row in this run is a finding:")
         for m in bad:

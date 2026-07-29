@@ -423,28 +423,29 @@ REPRO_EXPECT = {
 # ✅ CAUSE 1 (MAXDIM=4) IS CLOSED. D-ARR-C landed 2026-07-29 and `dim-5dim`/
 # `-8dim`/`-12dim`, `cap-8`…`cap-42` and `use-8`/`use-32` are GATED rows now.
 # Only the line-length cause survives below.
-NEVER_GATED = {
-    # --- cause 2: LINEMAX=96. D-ARR-C CANNOT turn these green. ----------------
-    # Measured, not computed: the `line` battery puts zerobas's last intact line
-    # at 95 characters. `20 DIM A(0,...)` is 2n+9, so 44 subscripts (97) is
-    # already past it.
-    #
-    # ⚠️ AND THE READING CHANGED WHEN THE CAP WENT, WHICH IS THE PROOF. Before
-    # D-ARR-C these four answered ` 9 ` (Subscript out of range) -- the cap
-    # firing at the fifth subscript, indistinguishable from a genuine cap row.
-    # They now answer ` 2 ` (Syntax error): the truncated line, finally visible.
-    # Same rows, same divergence from the reference, a cause that only became
-    # legible once the one in front of it was removed.
-    "cap-44":    "LINEMAX=96 (line is 97 ch): truncated -> syntax error",
-    "cap-64":    "LINEMAX=96 (line is 137 ch): truncated -> syntax error",
-    "cap-100":   "LINEMAX=96 (line is 209 ch): truncated -> syntax error",
-    "cap-120":   "LINEMAX=96 (line is 249 ch): truncated -> syntax error",
-    # --- the `line` battery itself: the measurement, kept as a record. --------
-    "line-96":   "LINEMAX=96: zerobas's line ends at 95, the reference's at 254 (D-LINEMAX)",
-    "line-97":   "LINEMAX=96: zerobas's line ends at 95, the reference's at 254 (D-LINEMAX)",
-    "line-100":  "LINEMAX=96: zerobas's line ends at 95, the reference's at 254 (D-LINEMAX)",
-    "line-250":  "LINEMAX=96: zerobas's line ends at 95, the reference's at 254 (D-LINEMAX)",
-}
+# ✅ CAUSE 2 (LINEMAX=96) IS CLOSED TOO. D-LINEMAX landed 2026-07-29 (R-1: the
+# input line takes 254 characters, matching the measured reference ceiling), and
+# the last eight ungated rows went green with it. THE SET IS NOW EMPTY.
+#
+# The eight are worth naming, because between them they are the whole history of
+# this battery being wrong about its own subject:
+#
+#   cap-44/-64/-100/-120  -- lines of 97/137/209/249 characters. Under the OLD
+#     ceiling the interpreter never saw their subscript lists at all. They were
+#     filed under "MAXDIM=4" by the D-ARR-B commit and answered ` 9 ` (Subscript
+#     out of range), which looks exactly like a genuine cap row; removing the cap
+#     in D-ARR-C changed the answer to ` 2 ` (Syntax error) and exposed the real
+#     cause; raising the ceiling here changed it to ` 0 `, agreeing. TWO masks in
+#     front of one divergence, each of which had to come off in order.
+#   line-96/-97/-100/-250 -- the `line` battery's own measurement, the rows that
+#     put zerobas at 95 characters and started D-LINEMAX. All four now read ` 7 `
+#     on both machines: the assignment at the end of the line survives.
+#
+# ⚠️ DO NOT RE-ADD A ROW HERE TO MAKE A RUN GREEN. An entry in this dict means
+# "measured, divergent, and the cause is tracked elsewhere" -- it is a claim about
+# a DIFFERENT slice, not a way to silence a row. Every entry this dict ever held
+# was eventually closed by the slice it named.
+NEVER_GATED = {}
 
 
 def norm(s):

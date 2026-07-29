@@ -9,7 +9,9 @@ Behavioural spec. Measurement:
 Split out of D-ARR-C ([`spec-basic-arrdim-c.md`](spec-basic-arrdim-c.md)), which
 measured the input-line divergence and could not reach it.
 
-**Status: awaiting sign-off. No code written.**
+**Status: ✅ SIGNED OFF AND LANDED, 2026-07-29.** Gate `make linemax-acceptance`
+**60/60** typed + **3/3** `--cas`. See §6 for what implementation changed about
+this spec — two things, and both were the spec being wrong rather than the code.
 
 ---
 
@@ -247,3 +249,95 @@ byte-identical crunch probe.
   (`if not raw`) are unaffected.
 * [`arrdim-c-vg8020-characterization.md`](arrdim-c-vg8020-characterization.md) §4
   needs a correction note: "the reference's is 250" was the harness's cap.
+
+---
+
+## 6. What implementation changed about this spec
+
+Both corrections are the spec being wrong, not the code deviating from it. Recorded
+here rather than silently fixed above, because the *shape* of each mistake is the
+reusable part.
+
+### 6.1 🔴 §3 counted TWO buffers. There are THREE.
+
+`DETOKBUF` — LIST / ASCII-SAVE's render target — **is sized from `LINEMAX`**, and
+this spec never mentioned it. [`spec-basic-subrom-wave3-detok.md`](spec-basic-subrom-wave3-detok.md)
+§0.2 derives its 512 bytes as *"every char a `?`→PRINT (5× per char) = 95×5 = 475"*,
+and that spec's §5 **considered the 255-character case explicitly and dismissed it**
+because "the source line is capped at 96 bytes, not 255". R-1 removes that premise.
+[`sub/detok.asm:53`](../sub/detok.asm:53)'s `pchar` says in as many words: *"No
+overflow check (the buffer is sized for the worst case)"*.
+
+So R-1 would have turned a second, previously-safe unbounded buffer into a
+**1270-byte write into 512** — the same defect class this slice exists to fix,
+newly *created* by fixing it. `DETOKBUF` is now **1280 B** (254×5 + terminator).
+
+⚠️ **The lesson is not "we missed a buffer".** It is that §3 answered *"where do
+`LINEBUF` and `TOKBUF` go"* — the two buffers the item named — and never asked
+*"what else is sized from the constant I am changing?"*. One `grep` for `LINEMAX`
+would have found it. This is the arrays arc's §4 failure again: a target list is
+not a measurement, and the question you did not ask is the one that hides the
+divergence.
+
+⚠️ **And a size arrived at by arithmetic is not a measurement either.** 254×5+1 is
+reasoning. The `list` battery *runs* it, and it was **falsified before it was
+trusted**: reverting `DETOKBUF` to `$BE00` turns `list-max` red — it reads `78`,
+a byte of the rendered `PRINT` text written straight through `$C100` — while
+`list-ctl` stays green. A green row that has never been seen red is not evidence.
+
+### 6.2 The RAM cost is **1792 B**, not the 768 in §3
+
+Three buffers, not two, and `TOKBUF` is sized 576 rather than 315 (§6.3). Measured
+on the built machine: boot `FRE(0)` **15667 → 13875**.
+
+| | address | size |
+|---|---|---|
+| `TOKBUF` | `$B700..$B93F` | 576 |
+| *(spare)* | `$B940..$B9FF` | 192 |
+| `LINEBUF` | `$BA00..$BAFE` | 255, page-aligned |
+| `DETOKBUF` | `$BB00..$BFFF` | 1280 |
+
+`TXTMAX` `$BE00` → `$B700`. The funding *mechanism* is unchanged and still the one
+§4 Q3 measured — the reference charges its own buffers to the same `FRE(0)` pool —
+but the amount is 2.3× what was signed off, and it **cost real capability**: five
+`array-acceptance` rows reserved `CLEAR 14000`/`15000` and died on their first
+line. Four over-reserved harmlessly and were re-sized; `gc.n200.detok` held 12000
+bytes live, which no longer fits, and its payload had to shrink. **The suite no
+longer proves a ~12 KB string workload runs.** (Re-sized with sign-off; the root
+counts that are those rows' actual subject are untouched.)
+
+### 6.3 `TOKBUF` is 576 B, not 315 — the single `tk_loop` test was not enough
+
+§2 proposed "a single test at the top of `tk_loop` … with 9 bytes of headroom".
+That is insufficient, and for a reason §2 did not name: **`tk_str_loop`,
+`tk_rem_rest` and `tk_data_rest` are inner copy loops that never re-enter
+`tk_loop`**, so a per-character test at the loop head would not have covered them.
+
+Rather than bound every emit site — which §2 itself called "expensive and easy to
+miss one" — the buffer **absorbs** the worst single pass and `tk_end` adjudicates
+once, where the body length is final. Those loops are strictly 1:1 and their input
+is bounded by `LINEMAX`, so the bound is **provable from `LINEMAX`** instead of
+audited emit site by emit site: 314 (accepted) + 258 (widest one-character step) +
+1 = 573, rounded to 576.
+
+### 6.4 Corrections to the numbers quoted in §5
+
+* The gate is **58 typed rows**, not 61 — plus the 2 new `list` rows = **60**. The
+  "61" was never counted against the case list.
+* `make linemax-characterize` / `linemax-acceptance` **did not exist**; the
+  previous commit's message cited targets that were never landed. Both added.
+* `--only` took a single substring, so the `ONLY=a,b` form the Makefile documents
+  selected **nothing** and died as "no rows selected". Now comma-separated.
+* ⚠️ **The `corrupt` battery was not boot-isolated, and that made its own control
+  agree for the wrong reason.** `reset=("NEW",)` clears the *program*, not
+  `ERRCODE`. Batched, `code-ctl` ran in the same boot as `code-over` and read back
+  the ` 25 ` that row had just raised — **on both machines, so it PASSED** while
+  measuring nothing. Alone on a fresh boot it reads ` 0 `. A row whose whole job is
+  to leave state behind cannot share a boot with the row that reads state.
+* The `rem` calibration was **one-sided**: "rem-100 must read +89" pins the ceiling
+  only *from below*, and any larger `LINEMAX` satisfies it. Retargeted to the pair
+  `rem-254`/`rem-255` (both must read +248 — last intact, then saturated), which
+  admits `LINEMAX=255` and no other value.
+* The 8 never-gated rows in [`basic_probe_arrdim.py`](../probes/basic/basic_probe_arrdim.py)
+  are **promoted**: `arrdim-acceptance` is **73/73** and its `NEVER_GATED` set is
+  now empty.

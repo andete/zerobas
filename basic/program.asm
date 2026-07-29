@@ -101,9 +101,34 @@ dl_store:
 dl_overflow_pop:
                 pop     bc                  ; balance the stack (line number now unused)
 dl_overflow:
-                ld      hl,err_overflow
+                ; TKOVF carries the REASON the crunch rejected the line: 1 = a float
+                ; literal overflowed (F1, sub/tkfloat.asm), 25 = the crunched body
+                ; exceeded TOKMAX_BODY (D-LINEMAX R-2, tokenise.inc tk_end). Either
+                ; way the line is never executed and never stored -- only the report
+                ; differs.
+                ;
+                ; This reports rather than calling raise_error, and that is deliberate
+                ; (not an oversight inherited from the float path). The error happens at
+                ; line ENTRY, before anything executes, and raise_error's trap arm does
+                ; `ld sp,(SAVSTK)` + `jp rp_lp` whenever a handler is armed -- from the
+                ; REPL, with the SAVSTK anchor of whatever ran last, that would jump
+                ; INTO a finished program on a mistyped line. The reference cannot trap
+                ; this either: it is raised by the editor, not by a running program.
+                ; ERRCODE is still set so PRINT ERR reads 25, as measured.
+                ; TKOVF=25 CARRIES THE ERR CODE rather than a second constant
+                ; here -- page 1 had 10 free bytes when this landed, so the reason
+                ; code and the error code are deliberately the same byte.
+                ld      a,(TKOVF)
+                ld      hl,err_overflow     ; the float arm's message (the fallthrough)
+                cp      1
+                jr      z,dl_ovf_report
+                ld      (ERRCODE),a         ; A = 25: PRINT ERR reads it, as measured
+                ld      hl,err_linebuf_overflow ; low-region string pool (basic/main.asm)
+dl_ovf_report:
                 jp      print_string        ; reports and returns to the REPL
-err_overflow:   db      "overflow",13,10,0
+; err_overflow moved to the LOW-REGION STRING POOL (basic/main.asm), where it is the
+; shared TAIL of `Line buffer overflow` -- 11 bytes of page 1 reclaimed to pay for
+; the arm above. Read its header before editing either message.
 ; --- dir_line: the VIRTUAL LINE a typed line executes under -----------------
 ; docs/spec-basic-direct-ctrl.md §3. Laid out exactly like a stored line's
 ; header -- [link:2][lineno:2] -- so the run loop needs no direct-mode special

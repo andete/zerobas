@@ -222,6 +222,35 @@ tcn_name:
 tk_end:
                 xor     a
                 ld      (de),a              ; 0x00 terminator
+    IF ROM_BASE < $4000
+                ; D-LINEMAX R-2 (docs/spec-basic-linemax.md §2): the crunch is BOUNDED.
+                ; Refuse a body longer than TOKMAX_BODY (314) -- the reference's measured
+                ; ceiling, where it prints `Line buffer overflow` and stores nothing
+                ; (characterization §2: 314 accepted / 315 refused, walked a byte at a
+                ; time). TKOVF=2 is the reject reason; dispatch_line adjudicates it at
+                ; line ENTRY, exactly like the =1 float-literal reject, so an over-long
+                ; line is never executed and never stored.
+                ;
+                ; ONE site, at the true end of the crunch, and that is deliberate: the
+                ; verbatim inner loops (tk_str_loop / tk_rem_rest / tk_data_rest) never
+                ; re-enter tk_loop, so a per-character test at the loop head would MISS
+                ; them. They are 1:1 and LINEMAX-bounded, so TOKBUF absorbs the overshoot
+                ; (sysvars.inc) and the adjudication happens here, where the body length
+                ; is final and the bound is provable rather than audited.
+                push    hl                  ; HL = source cursor; callers don't read it,
+                                            ; but tokenise's contract doesn't promise it
+                ld      hl,-(TOKBUF+TOKMAX_BODY+1)
+                add     hl,de               ; CF <=> DE >= TOKBUF+315, i.e. body > 314
+                pop     hl                  ; (pop preserves flags)
+                jr      nc,tke_fits
+                ld      a,(TKOVF)           ; FIRST reject wins: sub/tkfloat.asm sets =1
+                or      a                   ; mid-line and jumps straight here, and that
+                jr      nz,tke_fits         ; overflow happened BEFORE the body ran long
+                ld      a,25                ; the reject reason IS the ERR code (=25), so
+                ld      (TKOVF),a           ; dispatch_line needs no second constant --
+                                            ; page-1 room, see program.asm dl_overflow
+tke_fits:
+    ENDIF
                 ret
 
 ; --- tk_op_*: emit an operator token (spec §4) -----------------------------

@@ -1731,6 +1731,39 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       + `ARY_CUR`, freeing 4 B of RAM in a span whose own header records "no
       slack for anything more".
 
+- [x] ✅ **D-LINEMAX — the input line AND the crunched line. LANDED 2026-07-29,
+      gate `make linemax-acceptance` 60/60 typed + 3/3 `--cas`.** `LINEMAX` 96 →
+      255, the crunch bounded at 314 body bytes with `Line buffer overflow`
+      (ERR 25), ASCII/tape path free. `arrdim-acceptance` **73/73** (its
+      `NEVER_GATED` set is now EMPTY — all 8 rows promoted), `array-acceptance`
+      149/151 (standing baseline), `clearpool-acceptance` 52/52, unit-test 53/53,
+      lean byte-identical. Low region **9 B free**, page 1 **6 B free**.
+      🔴 **THE SPEC COUNTED TWO BUFFERS AND THERE WERE THREE.** `DETOKBUF` (LIST's
+      render target) is SIZED FROM `LINEMAX` — the wave-3 detok spec derives its
+      512 B as `95×5=475` and explicitly dismissed the 255-char case because "the
+      source line is capped at 96 bytes" — so R-1 would have turned a second,
+      previously-safe unbounded buffer into a 1270-byte write into 512. Found
+      while implementing, not while specifying; **one `grep` for `LINEMAX` would
+      have found it.** Now 1280 B, and FALSIFIED before trusted (revert it and
+      `list-max` reads `78`, a byte of the rendered text, through `$C100`).
+      ⚠️ **COST 1792 B, NOT THE 768 SIGNED OFF** — measured `FRE(0)` 15667 →
+      13875. Five `array-acceptance` rows reserved `CLEAR 14000`/`15000` and died;
+      re-sized with sign-off (root counts, the actual subject, untouched).
+      **The suite no longer proves a ~12 KB string workload runs.**
+      ⚠️ **`TOKBUF` is 576 B, not 315:** the spec's single `tk_loop` test could not
+      work — `tk_str_loop`/`tk_rem_rest`/`tk_data_rest` never re-enter `tk_loop`.
+      The buffer ABSORBS the worst pass and `tk_end` adjudicates once, so the
+      bound is PROVABLE from `LINEMAX` rather than audited emit site by emit site.
+      ⚠️ **The `corrupt` battery was not boot-isolated and its own control agreed
+      for the WRONG REASON:** `reset=("NEW",)` clears the program, not `ERRCODE`,
+      so `code-ctl` read back the ` 25 ` `code-over` had just raised — on BOTH
+      machines, so it PASSED while measuring nothing. Alone on a fresh boot: ` 0 `.
+      Also fixed: a ONE-SIDED `rem` calibration (retargeted to the `rem-254`/`-255`
+      pair, which admits `LINEMAX=255` and no other value), `--only` ignoring
+      comma lists, and `make linemax-characterize`/`-acceptance` NOT EXISTING
+      despite the previous commit citing them.
+      Superseded detail below (kept for the route it records).
+
 - [ ] 🔴 **D-LINEMAX — the input line AND the crunched line. SPEC WRITTEN,
       MEASURED, AWAITING SIGN-OFF.** Spec
       [`docs/spec-basic-linemax.md`](docs/spec-basic-linemax.md), measurement
@@ -1788,6 +1821,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       proves the relocated image is a PURE RELOCATION by comparing the lean ROM
       against a frozen baseline. That property needs a REPLACEMENT before the
       lean build stops being built.
+      **DIRECTION (user, 2026-07-29): if a lean build is ever wanted again, CHERRY-
+      PICK AND ASSEMBLE IT FROM THE FINISHED zerobas BUILD** rather than keeping a
+      second build alive in parallel. This inverts the blocker above rather than
+      solving it: the byte-identity baseline exists to prove a build that is
+      CO-MAINTAINED never drifts, and a build that is DERIVED on demand does not
+      need that proof at all — it is cut from the tree that is already gated. It
+      also retires the 276 `IF ROM_BASE` gates as a *maintenance* cost rather than
+      a *correctness* one, and it means findings like D-LINEMAX's lean `TOKBUF`
+      overrun stop being defects-carried-forward: the derived build would inherit
+      the fixed crunch, not the 96-byte one.
       Carry forward, do not fix: the lean crunch overruns `TOKBUF` via
       line-number references (`20 ONAGOTO1,1,1,…` — **57 characters** → 98 bytes
       into 96; 95 characters → 174, over the LIVE `VARTAB`; a variable set
