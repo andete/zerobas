@@ -113,22 +113,38 @@ def run():
     # calls stmt_error, which writes ERRMARK=$DD and prints an error string.
     # We confirm ERRMARK is set (observable; no comma in the stream).
     m.mem[m.sym["ERRMARK"]] = 0x00          # clear first
-    # capture_chput so the error-string CHPUT calls do not infinite-loop
-    m.capture_chput()
-    # Trap print_string so we don't need a working CHPUT chain
-    # (stmt_error calls print_string which iterates via CHPUT).
-    # Just trap CHPUT to absorb the output.
+    m.capture_chput()                       # absorb any error-string output
+    # ⚠️ SAMPLE ERRMARK AT THE ABORT FUNNEL, NOT AFTER THE CALL RETURNS.
+    # This used to `try: m.call(...) except: pass` and read ERRMARK afterwards --
+    # but the funnel does `ld sp,(SAVSTK)`, and SAVSTK is 0 in this harness's
+    # zeroed RAM, so its tail `ret` popped from $0000 and the CPU ran away
+    # through memory until msxtest's 2,000,000-step guard fired. The assertion
+    # was therefore reading "whatever ERRMARK held after 2M steps of executing
+    # the ROM from an arbitrary entry point", which happened to still be $DD.
+    # D-CONTR (docs/spec-basic-cont-record.md) shifted page 1 by 19 bytes, the
+    # runaway landed on `ex_goto_undef` instead, and the row went red with
+    # ERRMARK=$DB -- a REAL failure of the apparatus, not of do_poke.
+    # 🔴 AND IT IS NOT EVEN A FUNCTION OF THE BUILD ALONE. Re-sampled the OLD way
+    # on ONE fixed build, this case reads $DB after the four POKE cases above and
+    # $3A on its own -- the runaway walks different memory. The assertion was
+    # never measuring stmt_error; it was measuring where 2M steps happened to
+    # land, and it agreed for the wrong reason for as long as it did.
+    # Trapping fre_abort_low samples the byte at the one moment the test is
+    # actually about, and removes the runaway entirely: poke_err reaches it via
+    # `jp stmt_error` -> `jp raise_error` -> ... -> `jp fre_abort_low` with no
+    # intervening frame, so the trap's RET goes straight back to m.call's
+    # sentinel. No except-guard: a genuine runaway must now be LOUD.
+    seen = []
+    m.trap("fre_abort_low", lambda mm: seen.append(mm.mem[mm.sym["ERRMARK"]]))
     bad_stream = hex_tok(0xC600) + b'\x00'  # addr token then EOL (no comma, no value)
     m.poke(BUF, bad_stream)
-    try:
-        m.call("do_poke", hl=BUF)
-    except Exception:
-        pass   # runaway guard if CHPUT/print chain runs long
-    errmark = m.mem[m.sym["ERRMARK"]]
+    m.call("do_poke", hl=BUF)
+    errmark = seen[0] if seen else None
     ok = errmark == 0xDD   # stmt_error always sets ERRMARK=$DD (interp.asm)
     fails += not ok
     print(f"{'PASS' if ok else 'FAIL'}  POKE missing comma -> ERRMARK="
-          f"{errmark:#04x} (want 0xdd = stmt_error sentinel)")
+          f"{'<funnel never reached>' if errmark is None else f'{errmark:#04x}'}"
+          f" (want 0xdd = stmt_error sentinel, sampled AT fre_abort_low)")
 
     print()
     print("ALL PASS — do_poke writes mem[addr]=val_lo for all cases"

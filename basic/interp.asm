@@ -401,6 +401,20 @@ ex_sep:
                 inc     hl
                 jp      exec_stmt
 ex_end:
+                ; D-CONTR (docs/spec-basic-cont-record.md §3.2): END IS A RUN STOP,
+                ; so it records a CONT resume point like every other one -- the
+                ; header on ex_stop used to assert the OPPOSITE as fact ("END does
+                ; not: it ends the run with no resume point"), which was never
+                ; measured and is wrong. The position is the token IMMEDIATELY
+                ; AFTER the END token, i.e. MID-LINE: `10 END:PRINT"[9]"` + RUN +
+                ; CONT prints [9] on the reference and then falls through to the
+                ; next line (spec §2.1, cont2_end_rest -- that row is the
+                ; discriminator against "resume at the next line"). HL is on the
+                ; END token here (the dispatcher's contract, es_hit above), so the
+                ; `inc hl` IS the measured resume position; HL is dead afterwards
+                ; and A is reloaded below, so cont_record's clobbers are free.
+                inc     hl
+                call    cont_record         ; (basic/program.asm; run mode only)
                 ; D-ONEFLG site B (docs/spec-basic-oneflg-reset-scope.md §4): END
                 ; TERMINATES the run, so the handler context dies with it (spec
                 ; §2 c3/c3c: after a handler ENDs the run, the reference traps the
@@ -829,6 +843,22 @@ raise_error_hl:
                 ld      (RESUMEFLAG),a       ; rp_lp runs CURLINE (the handler) fresh
                 jp      rp_lp
 ra_abort:                                    ; the S1/S2a abort body (HL = message)
+                ; D-CONTR (docs/spec-basic-cont-record.md §3.4): AN UNTRAPPED ABORT
+                ; IS A RUN STOP TOO, and its resume point is the FAILING STATEMENT'S
+                ; OWN START -- not the line start. Measured: `10 PRINT"[7]":B=ASC("")`
+                ; + RUN + CONT re-raises `Illegal function call in 10` and does NOT
+                ; reprint [7] (spec §2.1, cont2_err_mid is the discriminator).
+                ; SAVTXT is exactly that pointer and is already maintained by
+                ; exec_stmt at every statement entry -- see its own note there: the
+                ; ONLY clean source, since raise_error fires from arbitrary call
+                ; depth. No new sysvar, no new invariant.
+                ; The push/pop pair is BALANCED before the `jp`, so the abort chain's
+                ; depth-independence (D-CUR-D) is untouched; fre_abort_low resets SP
+                ; from SAVSTK as its own first act regardless.
+                push    hl                   ; guard the message across the record
+                ld      hl,(SAVTXT)
+                call    cont_record          ; (basic/program.asm; run mode only)
+                pop     hl
                 jp      fre_abort_low
 rerr_unprintable:
                 ld      hl,err_unprintable
@@ -851,7 +881,13 @@ raise_error_forced:                          ; reached ONLY via ex_resume_noerr,
                 ld      (ERRCODE),a
                 call    record_errline
                 ld      hl,err_resume_noerr  ; ERR 22's message directly (this routine is
-                jp      fre_abort_low        ; ERR-22-only) -> ALWAYS abort, never trap
+                jp      ra_abort             ; ERR-22-only) -> ALWAYS abort, never trap.
+                                             ; D-CONTR: via ra_abort, not straight to
+                                             ; fre_abort_low -- same 3 bytes, and the
+                                             ; FORCED abort arm records a resume point
+                                             ; too. Measured (spec §2.1, cont2_err22):
+                                             ; `10 RESUME` + RUN + CONT re-raises
+                                             ; `RESUME without error in 10`.
 
 ; --- record_errline: ERRLINE := run mode? CURLINE+2 : 65535 (direct) -------
 ; docs/spec-basic-error-handling-s2a-packet.md §3/(e). DIRECTF (D-2, D-1) is

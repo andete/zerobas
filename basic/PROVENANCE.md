@@ -874,6 +874,22 @@ breaks an *infinite* `goto` loop back to the REPL — proven by a direct POKE ty
 after the press executing (U=09), where the same loop without the press never
 yields (control: U stays cleared).
 
+⚠️ **CORRECTED AND RETIRED 2026-07-30 (D-CONTR,
+[`docs/spec-basic-cont-record.md`](../docs/spec-basic-cont-record.md)).** Two
+things above are no longer true. **(a)** The claim *"CONT after a STOP-less RUN
+… gives `can't continue`"* records a **DIVERGENCE**, not agreement: the
+reference records a resume point at *every* run stop, so a `CONT` there resumes
+past the end of the program and returns to `Ok` **silently**. That is now fixed
+and gated (`cont2_falloff`). **(b)** `basic_probe_cont.py` itself has been
+DELETED. It was wired into no make target, and the lean-cart retirement (S1–S3)
+removed the `cart` global its `run(cart, …)` calls referenced, so it had become
+unrunnable. Its coverage lives on in rows that actually run: `cont*` and
+`cont2_*` in `basic_probe_abort_depth.py` (`make abort-acceptance`) for every
+`CONT`/`STOP` behaviour it asserted, and `make stop-trap-acceptance` for the
+real Ctrl-STOP keyboard-matrix press. The historical result above is left as
+written because it *was* the measurement of the day; only its interpretation was
+wrong.
+
 | Item | Value | Source (allowed) | Status |
 |------|-------|------------------|--------|
 | `CONT` statement token | `$99` | oracle-confirmed byte-identical via `basic_probe_crunch.py`; cross-checks MSX2 TH Table 2.20 | sourced |

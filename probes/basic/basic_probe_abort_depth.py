@@ -3,6 +3,12 @@
 # SPDX-License-Identifier: 0BSD
 """D-CUR-D untrapped-abort acceptance (docs/spec-basic-abort-depth.md).
 
+Also home to the two RUN-LOOP-EXIT slices, which are the same class and share
+this file's readout: D-CONTD (`cont_*`, docs/spec-basic-cont-depth.md — CONT
+re-enters at the wrong stack depth) and D-CONTR (`cont2_*`,
+docs/spec-basic-cont-record.md — the run loop records a CONT resume point at
+EVERY run stop). 49 rows total.
+
 VG-8020 differential over the UNTRAPPED abort path: raise an error from BELOW
 statement-handler depth with NO handler armed, and compare what the user
 actually sees on screen.
@@ -140,6 +146,84 @@ CASES = [
     ("cont_ctl_run", ['CLS', '10 B=1', '20 PRINT "[";1;"]"', 'RUN']),
     ("cont_ctl_goto", ['CLS', '10 STOP', '20 B=1', '30 PRINT "[";1;"]"',
                        'RUN', 'GOTO 20']),
+    # --- D-CONTR: the run loop records a resume point at EVERY run stop -------
+    # docs/spec-basic-cont-record.md. The sibling of D-CONTD above, and it lives
+    # here for the same three reasons: the echo-anchored TAIL readout, boot-per-
+    # case, and untrapped aborts are what this file exists for. NOT ONE OF THESE
+    # ROWS MAY ARM `ON ERROR` either -- the cont2_err* rows raise UNTRAPPED.
+    #
+    # ⚠️ NINE OF THE EIGHTEEN ARE MUST-NOT-CHANGE ROWS, and they carry the risk:
+    # the slice makes FOUR stops record and stops CONT consuming, so what can go
+    # wrong is not "does END continue" but "what ELSE now leaves, keeps, or
+    # destroys a resume point". Six of the nine were SAME before the fix.
+    #
+    # ⚠️ Every value is bracket-delimited and every row is a two-machine
+    # differential; a row whose reference answer is a SILENT `Ok` compares as an
+    # EMPTY tail, which is exactly why the raw scrape is printed on failure.
+    #
+    # --- which stops record, and WHERE the resume point points ---------------
+    # END records, and CONT resumes at the next line.
+    ("cont2_end_next",
+                     ['CLS', '10 A=1', '20 END', '30 PRINT "[";3;"]"',
+                      'RUN', 'CONT']),
+    # THE DISCRIMINATOR for END's position: the point is MID-LINE, immediately
+    # after the END token -- so the rest of END's OWN line runs first ([9]) and
+    # only then the next line ([2]). "Resume at the next line" loses [9];
+    # "resume at the END token itself" runs nothing at all.
+    ("cont2_end_rest",
+                     ['CLS', '10 END:PRINT "[";9;"]"', '20 PRINT "[";2;"]"',
+                      'RUN', 'CONT']),
+    # Falling off the $0000 link records too: CONT resumes there, re-detects
+    # end-of-program and returns to Ok SILENTLY -- an EMPTY tail, not
+    # "can't continue".
+    ("cont2_falloff",
+                     ['CLS', '10 A=1', '20 PRINT "[";2;"]"', 'RUN', 'CONT']),
+    # ...and the point is never consumed, so the 2nd and 3rd CONT are silent too.
+    ("cont2_twice",  ['CLS', '10 A=1', '20 END', '30 PRINT "[";3;"]"',
+                      'RUN', 'CONT', 'CONT']),
+    ("cont2_thrice", ['CLS', '10 A=1', '20 END', '30 PRINT "[";3;"]"',
+                      'RUN', 'CONT', 'CONT', 'CONT']),
+    # An UNTRAPPED ABORT is a run stop as well: CONT re-raises the same error.
+    ("cont2_err",    ['CLS', '10 A=ASC("")', '20 PRINT "[";2;"]"',
+                      'RUN', 'CONT']),
+    # THE DISCRIMINATOR for the abort's position: SAVTXT, the FAILING STATEMENT'S
+    # own start -- NOT the line start. If it were the line start, [7] would print
+    # a SECOND time before the error. It must not.
+    ("cont2_err_mid",
+                     ['CLS', '10 PRINT "[";7;"]":B=ASC("")', '20 PRINT "[";2;"]"',
+                      'RUN', 'CONT']),
+    ("cont2_err_twice",
+                     ['CLS', '10 A=ASC("")', '20 PRINT "[";2;"]"',
+                      'RUN', 'CONT', 'CONT']),
+    # the FORCED abort arm (raise_error_forced, ERR 22) records too.
+    ("cont2_err22",  ['CLS', '10 RESUME', '20 PRINT "[";2;"]"', 'RUN', 'CONT']),
+    # --- must NOT: DIRECT mode records NOTHING and INVALIDATES NOTHING -------
+    # cont2_typed_stop is the one that was RED before the fix: do_break's old
+    # `xor 1` on DIRECTF INVALIDATED. The row that justified that gate was taken
+    # with nothing live, where invalidate and do-nothing are indistinguishable.
+    ("cont2_typed_stop",
+                     ['CLS', '10 STOP', '20 PRINT "[";2;"]"', 'RUN',
+                      'STOP', 'CONT']),
+    ("cont2_typed_end",
+                     ['CLS', '10 STOP', '20 PRINT "[";2;"]"', 'RUN',
+                      'END', 'CONT']),
+    ("cont2_typed_err",
+                     ['CLS', '10 STOP', '20 PRINT "[";2;"]"', 'RUN',
+                      'PRINT "[";ASC("");"]"', 'CONT']),
+    ("cont2_typed_keep",
+                     ['CLS', '10 STOP', '20 PRINT "[";2;"]"', 'RUN',
+                      'PRINT "[";8;"]"', 'CONT']),
+    # must NOT: the point MOVES to each new stop (Break in 10, then Break in 20).
+    ("cont2_restop", ['CLS', '10 STOP', '20 STOP', '30 PRINT "[";3;"]"',
+                      'RUN', 'CONT', 'CONT']),
+    # --- must NOT: the three negatives that must STAY negative ---------------
+    ("cont2_norun",  ['CLS', 'CONT']),
+    ("cont2_new",    ['CLS', '10 STOP', '20 PRINT "[";2;"]"', 'RUN',
+                      'NEW', 'CONT']),
+    ("cont2_end_only", ['CLS', 'END', 'CONT']),
+    # CONTROL: the ONE stop that already recorded before this slice, unchanged.
+    ("cont2_ctl_stop",
+                     ['CLS', '10 STOP', '20 PRINT "[";2;"]"', 'RUN', 'CONT']),
 ]
 
 

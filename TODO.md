@@ -2563,24 +2563,83 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       still owing a `RESUME`". **ERR/ERL after the abort read `21 , 100`** on the
       reference (the code, and the HANDLER's line) against zerobas's `5 , 20`
       (still the ORIGINAL error) — so the raiser must set both, not just print.
+      **✅ THE EXIT IT HOOKS HAS NOW MOVED, as planned — D-CONTR landed
+      2026-07-30 ([`docs/spec-basic-cont-record.md`](docs/spec-basic-cont-record.md)
+      §4).** The raiser goes in as a **PREFIX at the same `rp_lp` label**: test
+      `ONEFLG` BEFORE D-ONEFLG site C clears it, and `jp` to the raiser instead
+      of falling through to the new `ld hl,0 / jp cont_record`. It must NOT fall
+      through to that record — and it does not need to: an ERR 21 abort reaches
+      `ra_abort`, which now records `SAVTXT` like every other abort, so the
+      raiser gets the measured abort resume point for free. Nothing else in §3.3
+      changes. ⚠️ Add a `CONT`-after-ERR-21 row when it lands.
 
-- [ ] **`CONT` after a plain `END` must continue.** Found 2026-07-29 by the
-      D-ONEFLG battery's c7 row, not aimed at. `10 A=1 : 20 END : 30 PRINT…` then
-      `RUN` + `CONT`: the VG-8020 **resumes at line 30**; zerobas reports
-      `can't continue`. The comment at `basic/program.asm`'s `ex_stop` header
-      asserts the opposite *as fact* (*"END does not: it ends the run with no
-      resume point, so CONT after END is Can't CONTINUE"*) and is **wrong** —
-      that claim is unmeasured. ⚠️ Fixing this would have silently regressed the
-      `CONTVALID`-gated version of D-ONEFLG, which is exactly why that version
-      was rejected.
-      **✅ CHARACTERIZED 2026-07-29 — and it is WIDER than "END".** The reference
-      answers a `CONT` with a resume point after *every* run stop, not just
-      `STOP`: after a plain `END` it resumes (`c_end`), and after a run that
-      merely FELL OFF THE END (`c_falloff`) — and after a second `CONT` with
-      nothing left to do (`c_twice`) — it returns **silently to `Ok`**, i.e. it
-      resumes past the end and runs nothing. zerobas says `can't continue` to
-      all three. So the rule to build is "the run loop records where it stopped,
-      always", not "`END` also records a resume point".
+- [x] **`CONT` after a plain `END` must continue.** Found 2026-07-29 by the
+      D-ONEFLG battery's c7 row, not aimed at; characterized 2026-07-29;
+      **✅ FIXED 2026-07-30 as D-CONTR —
+      [`docs/spec-basic-cont-record.md`](docs/spec-basic-cont-record.md).**
+      **+19 B, page 1 only (49 → 30 B free); low region untouched at 80 B.**
+      Gate **49/49** (`make abort-acceptance`, 18 new rows, nine of them
+      must-NOT-change), six falsification builds.
+      **The rule, measured 34 boots deep both ways:** the run loop records a
+      resume point at **every** run stop while in RUN mode — `STOP`/Ctrl-STOP,
+      `END`, an untrapped abort, and running off the `$0000` link — and in
+      DIRECT mode it records **nothing and invalidates nothing**. `CONT` never
+      consumes the point; only `RUN`, `NEW` and an edit clear it. One shared
+      `cont_record`; only the POSITION differs per stop.
+      🔴 **THE FILED TITLE WAS THE SMALLEST PART OF IT.** Three things the item
+      did not know, each pinned by a discriminating row: **(a)** `END` resumes
+      **MID-LINE**, after its own token — `10 END:PRINT"[9]"` + `CONT` prints
+      `[9]` *then* falls through to the next line. **(b)** An **untrapped abort
+      records too**, at the FAILING STATEMENT (`SAVTXT`), not the line start —
+      `CONT` re-raises the identical error, and `10 PRINT"[7]":B=ASC("")` does
+      **not** reprint `[7]`. The forced (ERR 22) arm records as well.
+      **(c)** `do_break`'s existing direct-mode gate was **ALSO wrong**: it
+      *invalidated*. The reference KEEPS a live resume point across a typed
+      `STOP`/`END`/error/line. The row that justified the old gate
+      (`spec-basic-direct-ctrl.md` §5) was taken **with nothing live**, where
+      invalidate and do-nothing are indistinguishable — it agreed for the wrong
+      reason, and it stays green under the new rule.
+      🔴 **F4 REFUTED THE SPEC'S OWN PREDICTION: the per-stop re-record ABSORBS
+      the `CONT` consume.** Restoring the consume turned only `cont2_thrice`
+      red, not `cont2_twice`/`cont2_err_twice` — the resumed run stops again and
+      re-records, so a 2-deep battery would have scored dropping the consume as
+      unnecessary. **Only the 3-deep row can see it.** ([[cont-depth-slice]]'s
+      "what is ABSORBING the fault", one slice later.)
+      🔴 **`make unit-test` went RED and the defect was in the TEST.**
+      `test_poke.py`'s ERRMARK row read RAM *after* a call that reaches
+      `ld sp,(SAVSTK)` with `SAVSTK`=0 in the zeroed harness — the tail `ret`
+      popped `$0000` and the CPU ran away to msxtest's 2 M-step guard, which an
+      `except: pass` swallowed. Re-sampled BOTH ways on ONE build: the old point
+      reads `$DB` after the preceding cases and `$3A` alone; sampling AT
+      `fre_abort_low` reads `$DD` with no runaway. Now trapped there, guard
+      dropped. ⚠️ **Worth sweeping for siblings — see the new item below.**
+      ⚠️ The first build **failed to assemble**: the 5 B added inside the run
+      loop pushed `rp_goto`'s backward `jr rp_lp` past −128 (+1 B for a `jp`,
+      the byte the estimate lacked). Build and probe were chained with `&&`, so
+      unlike the D-ONEFLG incident nothing ran on a stale machine.
+      Also retired: `probes/basic/basic_probe_cont.py` (wired into no target,
+      `NameError` since the lean retirement, and one assertion now known wrong);
+      its provenance citation in `basic/PROVENANCE.md` is corrected in place.
+
+- [ ] **Sweep `tests/` for rows that read RAM AFTER a runaway.** Found
+      2026-07-30 by D-CONTR, not aimed at: `test_poke.py`'s ERRMARK row had been
+      asserting on *whatever a byte held after 2,000,000 steps of the CPU
+      executing the ROM from an arbitrary entry point*, and it agreed for its
+      whole life until an unrelated 19-byte page-1 shift moved where the runaway
+      landed (`$DD` → `$DB`; and `$3A` when the same case runs alone on the same
+      build). Fixed there by trapping the funnel and sampling at the moment the
+      row is about.
+      **The class:** any `msxtest` row that (a) calls a routine which can reach
+      `ld sp,(SAVSTK)` — i.e. anything reaching `fre_abort_low`, `raise_error`'s
+      abort arm, or the run loop — with `SAVSTK` unset in the zeroed harness,
+      and (b) reads state AFTER the call rather than at a trap, and especially
+      (c) wraps the call in `try/except: pass`. **The `except: pass` is the
+      smell**: it converts "the CPU ran away" into "the row passed".
+      Mechanical first pass: `grep -n "except" tests/*.py` for swallowed
+      guards, and `grep -n "max_steps\|RuntimeError" tests/msxtest.py` for the
+      guard itself. Each hit needs the same treatment: trap the routine the row
+      is really about, sample there, and drop the guard so a real runaway is
+      LOUD. See [`docs/spec-basic-cont-record.md`](docs/spec-basic-cont-record.md) §5.5.
 
 - [ ] **`LOF(#n)` reads −1 on a freshly-created OUTPUT channel** (reference: 0).
       Found 2026-07-29 by a CONTROL row in the channel-cost pass, not aimed at.

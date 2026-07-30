@@ -324,7 +324,24 @@ rp_lp:
                 ; redundant with site A and can be reclaimed.
                 jr      nz,rp_notend
                 ld      (ONEFLG),a
-                ret
+                ; D-CONTR (docs/spec-basic-cont-record.md §3.3): running off the
+                ; end IS a run stop, so it records a resume point like every other
+                ; one -- CONTPTR = 0, the "re-enter FRESH at CONTLINE" sentinel
+                ; (a real resume pointer is a text-area / TOKBUF address and is
+                ; never $0000). CONTLINE is CURLINE, i.e. the address of the $0000
+                ; end marker itself, so a CONT resumes here, immediately re-detects
+                ; end-of-program and returns to Ok SILENTLY -- for ever, which is
+                ; what the reference does (spec §2.1, cont2_falloff/_twice/_thrice).
+                ; ⚠️ THE RECORD IS IDEMPOTENT AT THIS EXIT, which is what makes the
+                ; second CONT safe rather than lucky: re-entering here writes the
+                ; same three values back. DIRECTF is stale-1 on that re-entry (the
+                ; typed CONT line's, never re-derived because rp_exec is not
+                ; reached), so cont_record skips -- and had it been 0 the values
+                ; written would have been byte-identical anyway. Spec §3.6.
+                ld      hl,0
+                jp      cont_record         ; tail call: ITS `ret` is the loop's own
+                                            ; exit `ret`, at the same depth (D-CUR-D /
+                                            ; D-CONTD both rest on that depth)
 rp_notend:
                 inc     hl                  ; skip link (2) + lineno (2)
                 inc     hl
@@ -442,7 +459,12 @@ rp_goto:
                 ld      (GOTOFLAG),a
                 ld      hl,(GOTOTGT)
                 ld      (CURLINE),hl
-                jr      rp_lp
+                jp      rp_lp               ; D-CONTR: `jp`, not `jr` -- the 5 B the
+                                            ; $0000-link exit gained pushed this
+                                            ; backward span past -128. +1 B, no
+                                            ; behaviour. (The assembler CAUGHT it and
+                                            ; the build failed, which is why the probe
+                                            ; never ran on a stale machine.)
 rp_break:
                 ld      a,(DIRECTF)         ; direct mode: no trap machinery (see
                 or      a                   ; rp_trapchk) -> always the classic break,
@@ -521,18 +543,11 @@ rp_do_break:
 ; Saves CONTLINE/CONTPTR, raises CONTVALID, prints the break message, and sets
 ; ENDFLAG so the run loop unwinds back to the REPL. Clobbers A, BC, DE, HL.
 do_break:
-                ld      (CONTPTR),hl        ; resume token pointer
-                ld      hl,(CURLINE)
-                ld      (CONTLINE),hl       ; line to resume in (link-field addr)
-                ; ...but a DIRECT-mode break leaves NO resume point (docs/spec-
-                ; basic-direct-ctrl.md §5). MEASURED on the VG-8020: `PRINT 1:STOP:
-                ; PRINT 2` typed at the prompt reports "Break", and the CONT that
-                ; follows reports "Can't CONTINUE" -- there is nothing to go back
-                ; to, the typed line's buffer is about to be overwritten. DIRECTF
-                ; is 0/1, so `xor 1` is the whole gate.
-                ld      a,(DIRECTF)
-                xor     1
-                ld      (CONTVALID),a       ; a CONT resume point is now live
+                call    cont_record         ; D-CONTR: the shared record (below). A
+                                            ; DIRECT-mode break records NOTHING and
+                                            ; INVALIDATES NOTHING -- see cont_record's
+                                            ; own header for why this stopped being an
+                                            ; `xor 1` on DIRECTF here.
                 ld      a,1
                 ld      (ENDFLAG),a         ; stop the run, fall back to the REPL
                 ; report: "break in <lineno>" + CR/LF. The line number is at
@@ -548,6 +563,40 @@ do_break:
                 ; so this tail stays a single unconditional jump.
                 jp      print_in_lineno
 brk_msg:        db      "break",0           ; repack: " in " moved into print_in_lineno
+
+; --- cont_record: record a CONT resume point (D-CONTR) -----------------------
+; docs/spec-basic-cont-record.md §3.0. THE RUN LOOP RECORDS WHERE IT STOPPED AT
+; EVERY RUN STOP, and the four stops differ only in the pointer they hand in:
+;   do_break (STOP / Ctrl-STOP)  HL = the next statement to run
+;   ex_end   (END, interp.asm)   HL = the position AFTER the END token -- mid-line
+;   ra_abort (interp.asm)        HL = SAVTXT, the FAILING statement's own start
+;   rp_lp's $0000-link exit      HL = 0, the "re-enter FRESH at CONTLINE" sentinel
+; in: HL = resume token position, or 0. CURLINE = the line to resume in.
+; Clobbers A, HL.
+;
+; 🔴 DIRECT MODE RECORDS NOTHING AND CHANGES NOTHING -- it does NOT invalidate.
+; This site used to do `ld a,(DIRECTF) / xor 1 / ld (CONTVALID),a` on the strength
+; of ONE measured row (docs/spec-basic-direct-ctrl.md §5: a typed
+; `PRINT 1:STOP:PRINT 2` reports "Break", and the CONT after it reports "Can't
+; CONTINUE"). That row was taken WITH NOTHING LIVE, where "invalidate" and "do
+; nothing" are indistinguishable -- it agreed for the wrong reason. With a live
+; resume point underneath, the reference KEEPS it across a typed STOP, a typed
+; END, a typed error and any ordinary typed line (spec §2.2, rows
+; cont2_typed_stop / _end / _err / _keep). The old row stays green because
+; CONTVALID is already 0 there and doing nothing leaves it 0.
+;
+; CONT does NOT consume what this records (spec §2.1, cont2_thrice /
+; cont2_err_twice): only RUN, NEW and a program edit clear CONTVALID.
+cont_record:
+                ld      a,(DIRECTF)
+                or      a
+                ret     nz                  ; direct mode: leave the resume point alone
+                ld      (CONTPTR),hl        ; resume token pointer (0 = fresh-line entry)
+                ld      hl,(CURLINE)
+                ld      (CONTLINE),hl       ; line to resume in (link-field addr)
+                inc     a                   ; A is still 0 -> 1
+                ld      (CONTVALID),a       ; a CONT resume point is now live
+                ret
 
 ; --- print_in_lineno: " in <CURLINE lineno>" + CRLF (repack, error-handling D-2) --
 ; Shared by do_break ("break in <N>") and fre_abort_low (a runtime error's run-mode
@@ -639,9 +688,15 @@ msg_phrase_tab:
                 db      "file ",0           ; MSGESC_FILE (S-FCH-2)
 
 ; --- ex_stop: STOP statement — break and record a CONT resume point ----------
-; STOP halts the program exactly like END, but ALSO records where to continue so
-; a following CONT resumes at the statement after STOP. (END does not: it ends
-; the run with no resume point, so CONT after END is "Can't CONTINUE".)
+; STOP halts the program and records where to continue, so a following CONT
+; resumes at the statement after STOP.
+; ⚠️ THIS HEADER USED TO SAY "(END does not: it ends the run with no resume
+; point, so CONT after END is Can't CONTINUE.)" THAT WAS NEVER MEASURED AND IS
+; WRONG. The rule is docs/spec-basic-cont-record.md §1: the run loop records a
+; resume point at EVERY run stop -- STOP, Ctrl-STOP, END, an untrapped abort,
+; and running off the end -- whenever it is in RUN mode; in DIRECT mode it
+; records nothing and invalidates nothing. STOP is not special here; only the
+; POSITION each stop hands to cont_record differs (see that routine's header).
 ; HL enters on the STOP token. Repack (T1): `STOP ON|OFF|STOP` instead arms the
 ; STOP interrupt trap's tri-state (spec-traps-t1-stop-reslice.md §5.2); a bare STOP
 ; (EOL / ':' / anything else) still halts.
@@ -678,17 +733,27 @@ es_set:
                                             ; left OFF a no-op; VG-8020 differential caught it)
 
 ; --- ex_cont: CONT statement — resume a STOPped / broken program -------------
-; If a CONT resume point is live (set by STOP or Ctrl-STOP and not invalidated by
-; a program edit), restore CURLINE + RESUMEPTR and re-enter the run loop via its
-; mid-line resume path. Otherwise report "Can't CONTINUE". CONT consumes the
-; resume point (CONTVALID -> 0) so a second bare CONT does not re-resume a run
-; that has since finished. Reached as a direct-mode statement from the REPL.
+; If a CONT resume point is live (recorded by cont_record at whichever run stop
+; happened last, and not invalidated by RUN / NEW / a program edit), restore
+; CURLINE + RESUMEPTR and re-enter the run loop. Otherwise report "Can't
+; CONTINUE". Reached as a direct-mode statement from the REPL.
+; ⚠️ D-CONTR: CONT does NOT CONSUME the resume point -- this header used to say
+; it did ("so a second bare CONT does not re-resume a run that has since
+; finished"), and BOTH halves were wrong. A second bare CONT re-resumes exactly
+; the same point; after a run that has since finished that point is the $0000
+; end marker, so it resumes past the end, runs nothing and returns SILENTLY to
+; Ok. Measured n-deep (docs/spec-basic-cont-record.md §2.1, cont2_thrice).
 ex_cont:
                 ld      a,(CONTVALID)
                 or      a
                 jr      z,ex_cont_no        ; nothing to continue
-                xor     a
-                ld      (CONTVALID),a       ; consume the resume point
+                ; D-CONTR (docs/spec-basic-cont-record.md §3.5): the `xor a /
+                ; ld (CONTVALID),a` that used to CONSUME the resume point here is
+                ; GONE. The reference never consumes it -- a second, third, n-th
+                ; bare CONT re-resumes the same point (cont2_thrice), and after a
+                ; run that has since finished that means "resume past the end and
+                ; run nothing", i.e. a silent Ok, not "Can't CONTINUE". Only RUN,
+                ; NEW and a program edit clear CONTVALID.
                 ; re-arm the run loop's flags and stacks are already intact from
                 ; the suspended run (we never cleared them on break); just point
                 ; the loop at the saved resume position and run.
@@ -712,8 +777,18 @@ ex_cont:
                 ld      (CURLINE),hl
                 ld      hl,(CONTPTR)
                 ld      (RESUMEPTR),hl
-                ld      a,1
-                ld      (RESUMEFLAG),a      ; resume mid-line at CONTPTR
+                ; D-CONTR §3.5: RESUMEFLAG is DERIVED from CONTPTR instead of being
+                ; a constant 1, and that is what makes the $0000-link exit's
+                ; "re-enter FRESH" sentinel cost ZERO bytes -- `ld a,h / or l` is
+                ; the same two bytes `ld a,1` was, and RESUMEFLAG only has to be
+                ; NON-ZERO. CONTPTR = 0 -> RESUMEFLAG = 0 -> rp_lp enters the line
+                ; FRESH (and CONTLINE is the $0000 marker, so it stops again,
+                ; silently). Any real pointer -> resume mid-line, as before.
+                ; ⚠️ `ld a,1` here instead is the whole difference between that and
+                ; a CONT that resumes MID-LINE AT ADDRESS 0 (falsification F6).
+                ld      a,h
+                or      l
+                ld      (RESUMEFLAG),a      ; resume mid-line at CONTPTR (0 = fresh)
                 ; D-CONTD (docs/spec-basic-cont-depth.md §2/§3): re-enter the
                 ; loop at the depth its exit `ret` unwinds FROM. Without this,
                 ; CONT starts a fresh loop iteration from STATEMENT depth -- it
