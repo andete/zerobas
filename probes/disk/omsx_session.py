@@ -45,6 +45,14 @@ DEFAULT_OPENMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
 OURS_MACHINE = os.environ.get("ZEROBAS_OURS_MACHINE", "National_CF-3300_ZEROBASDISK")
 STOCK_MACHINE = "National_CF-3300"
 
+# Liveness heartbeat (docs/spec-rdblk-anchor-flake.md §4.1). HB_INTERVAL is HOST
+# seconds between beats; STALL_TIMEOUT is how long the beat may stand still before we
+# call the emulator wedged. 20 s is ~2700x the measured host cost of one emulated
+# second on this machine (40 emulated s in ~0.3 s host), so it cannot fire on a merely
+# slow run — only on one that has stopped responding.
+HB_INTERVAL = 0.25
+STALL_TIMEOUT = 20.0
+
 # OWN_RAM_RANGES — every RAM block WE install code into (base, end-exclusive), sourced
 # from the equ's in init.asm/kernel.asm + build/disk.omsx.sym (checked 2026-07-01):
 #   P1_BLIT..WA_SEG_RAM+len  $E77A-$E7B0 (p1_blit_tmpl+wa_seg_*_tmpl, one contiguous LDIR)
@@ -67,8 +75,32 @@ OWN_RAM_RANGES = [
 ]
 _OWN_RAM_TCL = " || ".join(f"($pc >= {lo:#06x} && $pc < {hi:#06x})" for lo, hi in OWN_RAM_RANGES)
 
-# A reusable Tcl preamble: throttle off, reverse on, symbol load, and an `emit`/`ctx`
-# pair so every job reports state in one parseable line format.
+# A reusable Tcl preamble: throttle off, sound off, reverse on, symbol load, a liveness
+# heartbeat, and an `emit`/`ctx` pair so every job reports state in one parseable line
+# format.
+#
+# `sound_driver null` (docs/spec-rdblk-anchor-flake.md §2.3): openMSX defaults to the
+# `sdl` driver, so before this line EVERY headless probe boot opened a real CoreAudio
+# device and ACTIVELY STREAMED PSG/keyclick output it never reads a sample of — ~200
+# start/stop cycles per `make diskbasic-acceptance` run (6 boots x 34 probes), audible
+# on the dev machine. That churn is a candidate cause of the wedged-audio failure in
+# [[openmsx-coreaudio-wedge]] (openMSX blocked at 0% CPU after `AudioQueueStart` fails),
+# which presents as an intermittent probe timeout and is easy to misread as a probe bug.
+# MEASURED neutral before adoption: the RDBLK case-(a) anchor lands at the identical
+# emulated instant on BOTH machines (ours 24.137504, stock 24.450109) with a
+# byte-identical capture block, sdl vs null. Deliberately NOT `mute`/`master_volume 0` —
+# those silence the output while still running the driver, fixing the noise and leaving
+# the churn.
+#
+# `zb_beat` (spec §4.1) is a REALTIME heartbeat: it rewrites a one-line file with
+# "<beat> <emulated-time>" every `hbint` HOST seconds, so run_job_raw can wait on
+# PROGRESS instead of on elapsed seconds. Before this, a host-side deadline SIGKILLed
+# openMSX silently and the result was indistinguishable, to every caller, from "the
+# machine ran its whole emulated timeline and never reached the anchor" — an apparatus
+# event laundered into a subject-shaped verdict. It writes to its OWN file, never via
+# `emit`: an extra record would ripple through parse_ctx and every tag filter in the
+# ~60-probe corpus. `after realtime` callbacks are serviced while emulation free-runs
+# (verified: a beat fired at host t=0.251s with the machine already at emulated t=33.7).
 #
 # CLEAN-ROOM GUARD (`DISOK`): `ctx` only decodes a mnemonic (`dis={...}`) when DISOK is
 # set AND the PC is inside our own authored code. Decoding a REFERENCE ROM's or the
@@ -92,10 +124,23 @@ _OWN_RAM_TCL = " || ".join(f"($pc >= {lo:#06x} && $pc < {hi:#06x})" for lo, hi i
 _PREAMBLE = r"""
 set throttle off
 set renderer none
+set sound_driver null
 set ::DISOK {disok}
 catch {{ debug symbols load {symfile} generic }}
 reverse start
 proc emit {{line}} {{ set f [open {{{out}}} a]; puts $f $line; close $f }}
+proc zb_beat {{}} {{
+  incr ::ZBBEAT
+  if {{![catch {{machine_info time}} zbt]}} {{
+    if {{![catch {{open {{{hbfile}}} w}} zbf]}} {{
+      puts $zbf "$::ZBBEAT $zbt"
+      close $zbf
+    }}
+  }}
+  after realtime {hbint} zb_beat
+}}
+set ::ZBBEAT 0
+zb_beat
 proc own_code {{pc}} {{
   return [expr {{($pc >= 0x4000 && $pc < 0x8000) || """ + _OWN_RAM_TCL + r"""}}]
 }}
@@ -156,11 +201,20 @@ class OmsxRun:
         # the stock machine, on for ours; an explicit bool overrides. (The PC>=0x4000 gate
         # in the preamble still applies on top, so even ours never decodes main-BIOS/$0100.)
         self.allow_disasm = (machine != STOCK_MACHINE) if allow_disasm is None else allow_disasm
+        # How the LAST run ended (spec §4.1c) — set by _wait, read by callers that
+        # need to tell an APPARATUS event from a subject result.
+        self.last_killed = False
+        self.last_kill_reason: str | None = None
+        self.last_emul_t: float | None = None
+        self.last_wall = 0.0
+        self.last_rc: int | None = None
+        self.last_zombie = False
 
     def run_job_raw(self, body: str, settle: float, predicate: str = "0",
                     timeout: float = 200.0, safety: float = 30.0, arm: str = "",
                     keys: str = "", keys_at: float = 0.0,
-                    keys2: str = "", keys2_at: float = 0.0) -> list[str]:
+                    keys2: str = "", keys2_at: float = 0.0,
+                    stall_timeout: float | None = STALL_TIMEOUT) -> list[str]:
         """As `run_job`, but returns the RAW `emit` lines (unparsed). Use this when the
         job emits its own record format (e.g. the differential harness's `CALL`/`BLOCK`
         lines) that `parse_ctx` would mis-parse. `run_job` is this + `parse_ctx`.
@@ -176,12 +230,20 @@ class OmsxRun:
         burst must land later, after that phase's own disk activity is done (M22: ours
         was found to drop type-ahead typed during disk-heavy foreground work, so a
         console-input probe must stage its keys at an idle window, not alongside the
-        command-name burst — see tier2-bdos-remaining-spec.md §3)."""
+        command-name burst — see tier2-bdos-remaining-spec.md §3).
+
+        `stall_timeout` (host seconds) kills a run whose heartbeat has stopped — see
+        `_wait`. Pass None to disable and fall back to the bare `timeout` ceiling.
+        AFTER the call, these record HOW the run ended (spec §4.1c):
+        `last_killed`, `last_kill_reason` (None | "stall" | "ceiling"), `last_emul_t`
+        (emulated time at the last beat = the stall point), `last_wall`, `last_rc`,
+        `last_zombie` (the kill did NOT take — a survivor to chase)."""
         out = tempfile.mktemp(suffix=".rec")
         tcl_path = tempfile.mktemp(suffix=".tcl")
+        hbfile = tempfile.mktemp(suffix=".hb")
         disok = 1 if self.allow_disasm else 0
         preamble = _PREAMBLE.format(symfile=self.symfile, out=out, predicate=predicate,
-                                    disok=disok)
+                                    disok=disok, hbfile=hbfile, hbint=HB_INTERVAL)
         inject = ""
         if keys:
             inject = f'after time {keys_at:.4f} {{ type "{keys}" }}\n'
@@ -199,25 +261,96 @@ after time {settle + safety:.4f} {{ emit "TIMEOUT-SAFETY"; exit }}
             cmd += ["-diska", self.diska]
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL, start_new_session=True)
-        deadline = time.time() + timeout
-        while proc.poll() is None and time.time() < deadline:
-            time.sleep(0.2)
-        if proc.poll() is None:
-            try:
-                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-            except Exception:
-                pass
+        self._wait(proc, timeout, stall_timeout, hbfile)
         lines: list[str] = []
         if os.path.exists(out):
             lines = [l for l in open(out).read().splitlines() if l.strip()]
             os.unlink(out)
         os.unlink(tcl_path)
+        if os.path.exists(hbfile):
+            os.unlink(hbfile)
         return lines
+
+    # -- run bookkeeping ---------------------------------------------------
+    def _read_beat(self, hbfile: str) -> tuple[int, float] | None:
+        """Latest (beat, emulated-time) the emulator wrote, or None. Tolerates a
+        torn read: the file is rewritten in place, so a reader can catch it empty
+        or half-written — that is simply 'no new beat yet', never an error."""
+        try:
+            txt = open(hbfile).read().split()
+            return (int(txt[0]), float(txt[1]))
+        except Exception:
+            return None
+
+    def _wait(self, proc, timeout: float, stall_timeout: float | None,
+              hbfile: str) -> None:
+        """Wait on PROGRESS, not on elapsed seconds (spec §4.1b).
+
+        Liveness is the BEAT COUNTER, not the emulated clock: a beat proves the
+        openMSX reactor is still servicing callbacks. Keying the stall on emulated
+        time instead would fire on a legitimately time-static run — `reverse goto`
+        repositions the clock and can even move it BACKWARDS (bisect_locate does 26
+        of them), and a healthy run wrongly stall-killed is exactly the failure mode
+        the G4 control exists to catch.
+
+        `timeout` is retained UNCHANGED as an absolute ceiling, so no probe can run
+        longer than it did before this landed; the stall only makes a wedged one fail
+        sooner, with a reason."""
+        t0 = time.time()
+        ceiling = t0 + timeout
+        last_beat = None
+        last_progress = None
+        self.last_killed = False
+        self.last_kill_reason = None
+        self.last_emul_t = None
+        self.last_beat_n = None
+        self.last_zombie = False
+        while proc.poll() is None:
+            now = time.time()
+            beat = self._read_beat(hbfile)
+            if beat is not None:
+                self.last_beat_n, self.last_emul_t = beat
+                if beat[0] != last_beat:
+                    last_beat, last_progress = beat[0], now
+            if now >= ceiling:
+                self.last_kill_reason = "ceiling"
+                break
+            # ⚠️ The stall clock starts at the FIRST BEAT, never at t0. Process spawn +
+            # machine XML + ROM/symbol load measured 0.21-0.82 s before the first beat
+            # lands, and starting the clock at t0 charges that startup to the emulator:
+            # on a loaded host a perfectly healthy run gets stall-killed. That is a NEW
+            # intermittent failure of exactly the kind this whole slice exists to
+            # remove, and the G4 control caught it. "Stall" means "it was beating and
+            # STOPPED"; a run that never beats at all is the ceiling's business (and is
+            # still classified APPARATUS, correctly).
+            if (stall_timeout is not None and last_progress is not None
+                    and now - last_progress > stall_timeout):
+                self.last_kill_reason = "stall"
+                break
+            time.sleep(0.2)
+        if self.last_kill_reason is not None:
+            self.last_killed = True
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            except Exception:
+                pass
+            # [[openmsx-coreaudio-wedge]] records that stuck instances can survive a
+            # signal. VERIFY the kill instead of assuming it: a survivor would hold
+            # the disk image and accumulate across a 34-probe run, poisoning LATER
+            # rows — the same silent-apparatus bug one level down.
+            for _ in range(25):
+                if proc.poll() is not None:
+                    break
+                time.sleep(0.2)
+            self.last_zombie = proc.poll() is None
+        self.last_wall = time.time() - t0
+        self.last_rc = proc.poll()
 
     def run_job(self, body: str, settle: float, predicate: str = "0",
                 timeout: float = 200.0, safety: float = 30.0, arm: str = "",
                 keys: str = "", keys_at: float = 0.0,
-                keys2: str = "", keys2_at: float = 0.0) -> list[dict]:
+                keys2: str = "", keys2_at: float = 0.0,
+                stall_timeout: float | None = STALL_TIMEOUT) -> list[dict]:
         """Run one job. `body` is Tcl executed inside an `after time {settle}` callback
         (machine at emulated time `settle`, reverse timeline 0..settle ready). `body`
         is responsible for finishing with `exit` or installing a condition that exits.
@@ -227,7 +360,8 @@ after time {settle + safety:.4f} {{ emit "TIMEOUT-SAFETY"; exit }}
         records."""
         return [parse_ctx(l) for l in self.run_job_raw(
             body, settle, predicate=predicate, timeout=timeout, safety=safety, arm=arm,
-            keys=keys, keys_at=keys_at, keys2=keys2, keys2_at=keys2_at)]
+            keys=keys, keys_at=keys_at, keys2=keys2, keys2_at=keys2_at,
+            stall_timeout=stall_timeout)]
 
     # -- composed primitives ----------------------------------------------
     def bisect_locate(self, predicate: str, lo: float, settle: float,

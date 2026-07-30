@@ -17,6 +17,13 @@ It encodes two method guardrails as MECHANISM, not discipline you have to rememb
     looped / never reached occurrence N, the diff is flagged MISALIGNED and NOT
     presented as a real divergence — the exact mistake (mid-stream / mis-aligned-
     checkpoint snapshots) that funded ~half the Tier-2 reframes.
+    A misaligned `capture` further reports WHOSE fault the miss was, and says so in the
+    exit code (docs/spec-rdblk-anchor-flake.md §4.2): **2 = LOGICAL** (the machine ran
+    its full emulated timeline and genuinely never hit the anchor — fix --nth/keys/--at)
+    versus **3 = APPARATUS** (the emulator never finished: wedged and host-killed,
+    crashed, or never launched — says nothing about the subject, re-run it). Before this
+    split a host-side SIGKILL was laundered into a subject-shaped "never reached the
+    anchor" verdict, which is how GET(RDBLK) became an intermittent gate row.
 
   * FALSIFY-FIRST friendly (win #2). `capture --expect` lets you assert what the diff
     SHOULD be and get a PASS/FAIL — so the cheap disproving experiment is a one-liner.
@@ -47,7 +54,8 @@ import sys
 import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from omsx_session import OmsxRun, OURS_MACHINE, STOCK_MACHINE  # noqa: E402
+from omsx_session import (OmsxRun, OURS_MACHINE, STOCK_MACHINE,  # noqa: E402
+                          HB_INTERVAL)
 
 # MSX-DOS 1 BDOS function names (function number in C) — public ABI, no oracle bytes.
 BDOS = {
@@ -281,6 +289,53 @@ def _regs_from(recs) -> dict | None:
     return None
 
 
+# A run's own TERMINAL sentinels: it hit the anchor, or it reached --settle, or it
+# reached settle+safety, or its body raised. Reaching ANY of them proves the emulator
+# ran its whole emulated timeline under its own steam.
+_TERMINAL_TAGS = ("ANCHOR", "NO-ANCHOR", "TIMEOUT-SAFETY", "ERROR")
+
+
+def _miss_class(recs, run) -> tuple[str, str]:
+    """Classify a capture side as LOGICAL or APPARATUS (spec-rdblk-anchor-flake.md §4.2).
+
+    THE POINT OF THE SPLIT: a subject/anchor defect (program hangs, keys mistyped, wrong
+    --nth) still lets the emulated clock advance, so NO-ANCHOR or TIMEOUT-SAFETY ALWAYS
+    fires. Only the emulator failing to FINISH — wedged and host-killed, crashed, or
+    never launched — can leave no terminal sentinel at all. "No sentinel" is therefore
+    not a guess about the host; it is a state only the host can produce.
+
+    The heartbeat is the primary, MEASURED signal (it also locates the stall in emulated
+    time); the sentinel test is the cheap second check, and it covers the one case no
+    heartbeat can — an emulator that exited on its own without reaching anything."""
+    if getattr(run, "last_killed", False):
+        # The stall point is located to within ONE beat of HOST time. At ~134x realtime
+        # a 0.25 s beat spans ~30 emulated seconds, so this is a coarse HINT, not a
+        # precise instrument — the beat number is printed so that is visible.
+        where = ("emulated clock last observed at t=%.4f (beat %s; sampled every %.2fs "
+                 "host, so the machine may have run further before stopping)"
+                 % (run.last_emul_t, run.last_beat_n, HB_INTERVAL)
+                 if run.last_emul_t is not None
+                 else "NO heartbeat ever arrived — it never got as far as running")
+        extra = ("  ** AND THE KILL DID NOT TAKE — survivor process **"
+                 if getattr(run, "last_zombie", False) else "")
+        return "APPARATUS", (f"host-killed on {run.last_kill_reason} after "
+                             f"{run.last_wall:.1f}s host time; {where}{extra}")
+    if not any(r.get("tag") in _TERMINAL_TAGS for r in recs):
+        return "APPARATUS", (f"emulator exited on its own (rc={getattr(run, 'last_rc', None)}) "
+                             f"after {getattr(run, 'last_wall', 0.0):.1f}s without reaching "
+                             f"ANY terminal sentinel — it never ran its emulated timeline")
+    return "LOGICAL", ("ran its full emulated timeline and genuinely never hit the "
+                       "anchor — a real anchor/keys/--nth defect")
+
+
+def _replay_note(recs) -> str:
+    """The .omr `reverse savereplay` wrote on a logical miss, for the report."""
+    for r in recs:
+        if str(r.get("tag", "")) == "REPLAY":
+            return str(r.get("path", ""))
+    return ""
+
+
 def _block_from(recs, base) -> list[int] | None:
     tag = f"BLOCK_{base:04X}_"
     for r in recs:
@@ -295,16 +350,33 @@ def mode_capture(args) -> int:
     if args.mem:
         b, _, l = args.mem.partition(":")
         mem = (int(b, 0), int(l, 0))
-    body = 'emit "NO-ANCHOR"; exit'
     arm_cond = args.arm_cond
     if arm_cond is None and args.arm_check_val is not None:
         arm_cond = f"[debug read memory {args.arm_check_addr:#06x}] == {args.arm_check_val:#04x}"
     arm = _capture_arm(args.at, args.nth, mem, args.arm_addr, arm_cond)
 
+    def _body(replay_path: str) -> str:
+        """The --settle body. A side that reaches settle WITHOUT hitting the anchor is a
+        LOGICAL miss — and `reverse start` has been recording the whole run — so dump the
+        timeline as a replayable .omr before quitting. The flake then stops vanishing:
+        `reverse loadreplay` + `reverse goto` can interrogate where the run actually was
+        (did the keys land? was the prompt up?). Deliberately NOT attempted for the
+        APPARATUS class: a wedged emulator runs no Tcl callback at all, which is exactly
+        why the heartbeat — written from outside the failing moment — carries that case."""
+        return (f'emit "NO-ANCHOR"; '
+                f'if {{[catch {{reverse savereplay {replay_path}}} zbr]}} '
+                f'{{ emit "REPLAY-ERR $zbr" }} else {{ emit "REPLAY path=$zbr" }}; '
+                f'exit')
+
     def cap_for(machine):
-        return _runner(machine, args.diska, args.symfile).run_job(
-            body, settle=args.settle, timeout=args.timeout, arm=arm,
+        """Returns (records, run) — the run carries HOW it ended (omsx_session §4.1c)."""
+        run = _runner(machine, args.diska, args.symfile)
+        who = "ours" if machine == OURS_MACHINE else "stock"
+        recs = run.run_job(
+            _body(tempfile.mktemp(prefix=f"zb_replay_{who}_")),
+            settle=args.settle, timeout=args.timeout, arm=arm,
             keys=args.keys, keys_at=args.keys_at, keys2=args.keys2, keys2_at=args.keys2_at)
+        return recs, run
 
     print(f"=== capture: regs{'+mem' if mem else ''} at occurrence #{args.nth} of {args.at:#06x} ===")
 
@@ -314,13 +386,19 @@ def mode_capture(args) -> int:
     # reads registers + DATA memory (never decodes code), same allowed class as `both`.
     if getattr(args, "machine", "both") in ("ours", "stock"):
         m = OURS_MACHINE if args.machine == "ours" else STOCK_MACHINE
-        recs = cap_for(m)
+        recs, run = cap_for(m)
         regs = _regs_from(recs)
         who = "OURS" if args.machine == "ours" else "STOCK"
         if regs is None:
+            # Wording kept verbatim: disk_bdos_cbios_selfcheck.py matches on
+            # "never reached occurrence". The CLASS is new information after it.
             print(f"\n*** {who} never reached occurrence #{args.nth} of {args.at:#06x} "
                   f"(looped / wrong --nth). ***")
-            return 2
+            klass, why = _miss_class(recs, run)
+            print(f"  class: {klass} — {why}")
+            if rep := _replay_note(recs):
+                print(f"  replay saved: {rep}")
+            return 3 if klass == "APPARATUS" else 2
         print(f"  {who} reached anchor  t={regs['t']:.4f}\n")
         print(f"  reg   {who}")
         for k in ("PC", "SP", "AF", "BC", "DE", "HL", "IX", "IY"):
@@ -333,18 +411,38 @@ def mode_capture(args) -> int:
                       f"{' '.join('%02X' % x for x in b)}")
         return 0
 
-    o_recs, s_recs = cap_for(OURS_MACHINE), cap_for(STOCK_MACHINE)
+    (o_recs, o_run), (s_recs, s_run) = cap_for(OURS_MACHINE), cap_for(STOCK_MACHINE)
     o_regs, s_regs = _regs_from(o_recs), _regs_from(s_recs)
 
     # ALIGNMENT GUARD — refuse to diff captures that aren't at the same logical point.
+    # ⚠️ THE REFUSAL IS UNCONDITIONAL AND STAYS THAT WAY. Classifying the miss below
+    # adds information about WHY; it never softens the refusal, and no path here may
+    # reach the memory/reg diff. That guard is the only reason the 2026-07-30 GET(RDBLK)
+    # flake was legible instead of a fabricated 0-byte "converged" reading.
     if o_regs is None or s_regs is None:
         print("\n*** MISALIGNED — diff NOT meaningful ***")
         print(f"  stock reached anchor: {'YES t=%.4f' % s_regs['t'] if s_regs else 'NO (looped / never hit occurrence #%d)' % args.nth}")
         print(f"  ours  reached anchor: {'YES t=%.4f' % o_regs['t'] if o_regs else 'NO (looped / never hit occurrence #%d)' % args.nth}")
-        print("  A side that never reached the anchor means the comparison is between\n"
-              "  different logical points. Fix the anchor (lower --nth, pick an event\n"
-              "  both sides reach) before trusting any memory/reg diff. [win #1]")
-        return 2
+        klass = "LOGICAL"
+        for who, recs, run, regs in (("stock", s_recs, s_run, s_regs),
+                                     ("ours ", o_recs, o_run, o_regs)):
+            if regs is not None:
+                continue
+            k, why = _miss_class(recs, run)
+            print(f"  {who} miss class: {k} — {why}")
+            if rep := _replay_note(recs):
+                print(f"  {who} replay saved: {rep}")
+            if k == "APPARATUS":
+                klass = "APPARATUS"
+        if klass == "APPARATUS":
+            print("  -> APPARATUS: the emulator did not complete its own emulated\n"
+                  "     timeline, so this says NOTHING about the subject. Re-run; if it\n"
+                  "     recurs, suspect the host (see [[openmsx-coreaudio-wedge]]).")
+        else:
+            print("  A side that never reached the anchor means the comparison is between\n"
+                  "  different logical points. Fix the anchor (lower --nth, pick an event\n"
+                  "  both sides reach) before trusting any memory/reg diff. [win #1]")
+        return 3 if klass == "APPARATUS" else 2
 
     dt = abs(o_regs["t"] - s_regs["t"])
     print(f"  ALIGNED: both hit occurrence #{args.nth}  (stock t={s_regs['t']:.4f}, ours t={o_regs['t']:.4f}, dt={dt:.4f})\n")

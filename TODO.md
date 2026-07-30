@@ -1825,7 +1825,46 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       claim-by-claim. **Check the neighbouring prose too** — the same slice-era framing
       likely leaks into the sections around it.
 
-- [ ] **`GET(RDBLK)` IS AN INTERMITTENT GATE ROW — FIX THE ANCHOR** (observed
+- [x] **`GET(RDBLK)` IS AN INTERMITTENT GATE ROW — FIX THE ANCHOR — ✅ DONE 2026-07-30.**
+      [`docs/spec-rdblk-anchor-flake.md`](docs/spec-rdblk-anchor-flake.md).
+      Falsification battery **14/14** · repeatability `ONLY='GET(RDBLK)'` **10/10, 0
+      retries** · standing gates **54/54 · 34/34 · 12/12 · 7/7** · ROMs byte-identical
+      from clean, walls unchanged (low 80 B / page 1 49 B), dead-code sweep 0/0.
+      🔴 **THE FILED DIAGNOSIS WAS WRONG ABOUT WHICH CLOCK.** `--settle`/`--keys-at` are
+      openMSX **emulated** time, and the anchor is a breakpoint on `done` — so the
+      readout was **already sentinel-gated** and the emulated timeline is
+      bit-deterministic (ours 24.137504 / stock 24.450109, identical across every run
+      measured). The elapsed-seconds gate that actually remained was the **host-side
+      process deadline**: `run_job_raw` SIGKILLed openMSX **silently**, and to every
+      caller that is indistinguishable from "this machine ran its whole timeline and
+      never reached the anchor" — an APPARATUS event laundered into a SUBJECT-shaped
+      verdict. Fixed with a `after realtime` **liveness heartbeat** (wait on PROGRESS,
+      not elapsed seconds; kill on stall under the untouched ceiling; report the reason
+      and the stall point), a **LOGICAL (exit 2) vs APPARATUS (exit 3)** split in
+      `capture`, `reverse savereplay` on a logical miss, renested timeouts (they had
+      been INVERTED: 220 s per boot inside a 240 s cap for a 6-boot probe), and a
+      **bounded, PRINTED** retry on the apparatus class only — never on a logical miss.
+      🔴 **THE G4 CONTROL CAUGHT A DEFECT IN THE FIX ITSELF.** The stall clock started
+      at `t0`, i.e. before openMSX had launched, charging 0.21–0.82 s of spawn + XML +
+      ROM/symbol load to the emulator: under load a HEALTHY run was stall-killed, and it
+      did **not** reproduce standalone. Shipping it would have traded one intermittent
+      row for a **corpus-wide** one. The clock now starts at the FIRST BEAT.
+      🟢 **BIGGEST FIND, and it came from the user challenging a recorded belief:**
+      testing "is the wedge really pty exhaustion?" (it is not — 7 pty holders against a
+      511 limit, and openMSX allocates none) surfaced that the preamble left
+      `sound_driver sdl`, so **every headless probe boot opened a CoreAudio device and
+      ACTIVELY STREAMED** — ≈200 start/stop cycles per gate run, audible on the dev
+      machine, and a candidate cause of [[openmsx-coreaudio-wedge]]. `sound_driver null`
+      is **measured** neutral (zero drift on both machines, byte-identical captures) and
+      removes the whole class. ⚠️ Deliberately NOT `mute`/`master_volume 0` — those
+      silence the noise and leave the churn.
+      ⚠️ **NOT PROVEN: the original trigger.** The flake never reproduced on demand, so
+      nothing shows the 2026-07-30 event would now be caught as APPARATUS; and
+      `sound_driver null` removes a candidate cause, not a demonstrated one.
+      Left alone (noted §7): `WARNING: Var start is never used` in `rdblk_rt.asm` — a
+      documentary label for `$0100`, zero emitted bytes, probe-side.
+
+      **Original entry, for context.** (observed
       2026-07-30 during the dead-code-gate slice, which is NOT its cause).
       [`probes/disk/disk_probe_rdblk_roundtrip.py`](probes/disk/disk_probe_rdblk_roundtrip.py)
       failed once in a full `make diskbasic-acceptance` (33/34), then **passed

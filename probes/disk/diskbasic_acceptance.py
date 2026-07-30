@@ -275,6 +275,14 @@ def gate(style: str, rc: int, out: str) -> tuple[bool, str]:
     if style == "live" and not any(mk in out.lower() for mk in REF_MARKERS):
         return False, ("VACUOUS — exit 0 but no oracle evidence in output "
                        "(reference/stock differential never ran)")
+    # A probe that had to retry around a HOST-level event still converged, but the row
+    # must not read as a clean run: an invisible retry is how a flaky gate becomes a
+    # gate nobody trusts (docs/spec-rdblk-anchor-flake.md §4.4). Generic — any probe
+    # printing the marker gets it surfaced here.
+    m = re.search(r"APPARATUS-RETRY TOTAL:\s*(\d+)", out)
+    if m and int(m.group(1)) > 0:
+        return True, (f"converged  ⚠ after {m.group(1)} APPARATUS retry(ies) — the host "
+                      f"misbehaved, not the subject")
     return True, "converged"
 
 

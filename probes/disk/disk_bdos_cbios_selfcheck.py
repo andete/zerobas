@@ -133,7 +133,9 @@ def capture_buffer(argv: list[str], host_env: dict | None) -> tuple[list[int] | 
     proc = subprocess.run(["python3"] + argv, cwd=ROOT, capture_output=True, text=True,
                           env=env)
     raw = proc.stdout + proc.stderr
-    if "never reached occurrence" in raw or proc.returncode == 2:
+    # rc 2 = LOGICAL miss, rc 3 = APPARATUS miss (the emulator never finished); both
+    # mean "no reading", keyed on the codes as well as the text (spec §4.2).
+    if "never reached occurrence" in raw or proc.returncode in (2, 3):
         return None, raw
     m = MEMLINE_RE.search(raw)
     if not m:

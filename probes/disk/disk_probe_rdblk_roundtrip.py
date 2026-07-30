@@ -27,6 +27,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # sibling probes
 from disk_probe_bdos import fat12_add  # noqa: E402  (reuse, don't duplicate)
@@ -81,6 +82,31 @@ def patch_params(com: bytearray, recnum: int, rs: int, cnt: int) -> int:
     return com[off + 0]
 
 
+# --- APPARATUS-vs-SUBJECT retry policy (docs/spec-rdblk-anchor-flake.md §4.3) --------
+# This probe was an intermittent gate row: on 2026-07-30 it failed once inside a full
+# `make diskbasic-acceptance` (33/34) with stock never reaching the anchor, then
+# converged standalone AND on a full re-run of the byte-identical build. The subject was
+# innocent; a host-level event had been laundered into a subject-shaped verdict.
+#
+# capture now separates the two (disk_probe_diff.py §4.2), so retry EXACTLY the class
+# that is not about the subject:
+#   rc 3 APPARATUS -> the emulator never finished its emulated timeline. Retry, LOUDLY.
+#   rc 2 LOGICAL   -> a real anchor/keys defect. NEVER retried; retrying it would be the
+#                     forbidden "loosen the misalignment check", one level up.
+# ⚠️ Every retry PRINTS, and the summary prints a total, because a silent retry turns a
+# flaky gate into an invisible one [[gate-can-be-green-while-measuring-nothing]].
+APPARATUS_RC = 3
+MAX_ATTEMPTS = 3            # 1 try + 2 retries
+RETRY_BUDGET = 120.0        # probe-wide host seconds spent on retries
+# Sized from measurement, not arithmetic: one boot measured 0.4-1.2 s wall, so 45 s is
+# ~40x headroom. The budgets were INVERTED before this (220 s per boot inside a 240 s
+# per-probe cap for a 6-boot probe), so a single wedged boot blew the runner's cap and
+# the same event surfaced as MISALIGNED or as TIMEOUT depending on which boot wedged.
+CAPTURE_TIMEOUT = 45.0      # per boot, passed to capture --timeout
+CASE_TIMEOUT = 120.0        # per case (2 boots), the subprocess wall cap
+_RETRY = {"n": 0, "spent": 0.0}
+
+
 def run_case(key: str, dos_src: str, done: int, com_base: bytearray, tmp_dir: str) -> bool:
     recnum, rs, cnt, fsize, blurb = CASES[key]
     com = bytearray(com_base)
@@ -104,15 +130,49 @@ def run_case(key: str, dos_src: str, done: int, com_base: bytearray, tmp_dir: st
     cmd = ["python3", DIFF, "capture",
            "--at", f"{done:#06x}", "--arm-check-val", f"{sig:#04x}",
            "--keys", "\\rRDBLK\\r", "--keys-at", "20", "--settle", "40",
+           "--timeout", str(CAPTURE_TIMEOUT),
            "--machine", "both", "--mem", "0x0340:0x240", "--diska", out]
-    p = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=300)
-    txt = p.stdout + p.stderr
 
     print(f"\n===== case {key}: {blurb} "
           f"(RR={recnum} rs={rs} cnt={cnt} file={fsize}B) =====")
-    if "MISALIGNED" in txt:
-        print("  FAIL  MISALIGNED — a machine never reached RDBLK's `done` (diff "
-              "meaningless). Anchor/keys/timing problem, not a $27 result.")
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        t0 = time.time()
+        try:
+            p = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True,
+                               timeout=CASE_TIMEOUT)
+            rc, txt = p.returncode, p.stdout + p.stderr
+        except subprocess.TimeoutExpired as e:
+            # Previously this propagated and crashed the probe. A case that outruns its
+            # wall cap is the APPARATUS class by construction: 2 boots measured at ~1 s
+            # each cannot legitimately reach 120 s.
+            rc = APPARATUS_RC
+            txt = ((e.output or "") if isinstance(e.output, str) else "") + \
+                  f"\n[case] TIMEOUT after {CASE_TIMEOUT:.0f}s — no capture output"
+        wall = time.time() - t0
+        if rc != APPARATUS_RC:
+            break
+        if attempt == MAX_ATTEMPTS:
+            print(f"  APPARATUS-RETRY EXHAUSTED after {MAX_ATTEMPTS} attempts")
+            break
+        if _RETRY["spent"] + wall > RETRY_BUDGET:
+            print(f"  APPARATUS-RETRY BUDGET SPENT ({_RETRY['spent']:.0f}s of "
+                  f"{RETRY_BUDGET:.0f}s) — not retrying case {key} again")
+            break
+        _RETRY["n"] += 1
+        _RETRY["spent"] += wall
+        reason = next((l.strip() for l in txt.splitlines() if "miss class:" in l),
+                      "no capture output")
+        print(f"  APPARATUS-RETRY case {key} attempt {attempt + 1}/{MAX_ATTEMPTS} — "
+              f"{reason} (wall {wall:.1f}s)")
+
+    if "MISALIGNED" in txt or rc == APPARATUS_RC:
+        if rc == APPARATUS_RC:
+            print("  FAIL  APPARATUS — the emulator never completed its emulated "
+                  "timeline, so this says NOTHING about $27. The host is the suspect, "
+                  "not the ROM (see [[openmsx-coreaudio-wedge]]).")
+        else:
+            print("  FAIL  MISALIGNED — a machine never reached RDBLK's `done` (diff "
+                  "meaningless). Anchor/keys/timing problem, not a $27 result.")
         _tail(txt)
         return False
     m = re.search(r"memory 0x[0-9a-fA-F]+\+\d+:\s+(\d+) of (\d+) bytes differ", txt)
@@ -153,9 +213,17 @@ def main() -> int:
     print(f"RDBLK.COM assembled; done = {done:#06x}")
 
     keys = [args.only] if args.only else list(CASES)
-    ok = all(run_case(k, args.dos_disk, done, com_base, args.tmp_dir) for k in keys)
+    # NOT all(...): that short-circuits, so one failing case would skip the rest and the
+    # denominator would silently shrink. Run every case, then decide.
+    results = [run_case(k, args.dos_disk, done, com_base, args.tmp_dir) for k in keys]
+    ok = all(results)
     print("\n" + ("ALL RDBLK ROUND-TRIP CASES PASSED (ours == CF-3300)"
                   if ok else "RDBLK ROUND-TRIP: FAILURE(S) ABOVE"))
+    # Printed unconditionally so "0" is a MEASUREMENT, not the absence of a line — and
+    # so a green run that needed a retry cannot read as a clean one.
+    print(f"APPARATUS-RETRY TOTAL: {_RETRY['n']}"
+          + (f"  ⚠ the host misbehaved during this run ({_RETRY['spent']:.0f}s spent "
+             f"retrying); the RESULT is still ours-vs-stock" if _RETRY["n"] else ""))
     return 0 if ok else 1
 
 

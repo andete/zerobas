@@ -190,8 +190,13 @@ def gate(name: str, mode: str, rc: int, out: str, argv: list[str]) -> tuple[bool
     fired before the program was launched (--keys-at), and fail on ANY byte/register
     diff — never trust the exit code alone."""
     if mode == "capture":
-        if "MISALIGNED" in out or rc == 2:
-            return False, "MISALIGNED — a side never reached the anchor (fix --arm/--nth)"
+        # rc 2 = LOGICAL miss, rc 3 = APPARATUS miss (the emulator never finished) —
+        # both are MISALIGNED and neither may be read as a result. Keyed on the codes
+        # as well as the text so this does not rest on wording alone.
+        if "MISALIGNED" in out or rc in (2, 3):
+            klass = next((l.strip() for l in out.splitlines() if "miss class:" in l), "")
+            return False, ("MISALIGNED — a side never reached the anchor "
+                           "(fix --arm/--nth)" + (f"  [{klass}]" if klass else ""))
         keys_at = _flag_val(argv, "--keys-at", 0.0, float)
         m = re.search(r"ALIGNED:.*?stock t=([\d.]+), ours t=([\d.]+)", out)
         anchor_t = min(float(m.group(1)), float(m.group(2))) if m else None
