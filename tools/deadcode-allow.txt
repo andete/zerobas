@@ -1,0 +1,17 @@
+# Dead-span allowlist for tools/check_dead_code.py — docs/spec-deadcode-gate.md §4.
+#
+# Format:  <build>  <label>  <reason>
+#          build = main | sub.  A MISSING REASON IS A PARSE ERROR.
+#
+# 🔴 THIS FILE IS A CONTROL, NOT A SUPPRESSION LIST. The gate asserts that every
+# entry below is STILL DETECTED AS DEAD. If one stops being detected, either it
+# gained a caller (delete the line) or the sweep has gone BLIND and is reporting a
+# clean tree while measuring nothing (fix the sweep). That is the only warning you
+# get for the failure mode that matters here — an over-broad seed set or a broken
+# span model both look exactly like success.
+#
+# So: keep this list SHORT, and prefer deleting dead code to allowlisting it. An
+# entry earns its place only when the code is deliberately kept for a reason the
+# sweep cannot know.
+
+sub  fmt_menu_text  Deliberately kept at its ORIGINAL pre-eviction position between fmt_boot and fmt_geom_byte to preserve the byte layout of basic/format-body.inc (its own comment says so). The menu itself stays main-resident (docs/spec-evict-call-format.md §2), so the sub-side copy is unreachable by design. 16 B of a ROM with 7411 B free — worth more as this gate's vacuity canary than as recovered bytes.

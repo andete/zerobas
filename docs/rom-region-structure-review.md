@@ -246,6 +246,13 @@ but only from code that is itself dead — which is exactly `var_find`'s shape. 
 sweep models each label's linear span, marks a span live if it is a seed, mentioned
 by a live span, or fallthrough-entered from one, and iterates to a fixed point.
 
+✅ **This sweep is no longer a scratchpad script.** It landed as
+[`tools/check_dead_code.py`](../tools/check_dead_code.py), a hard gate inside
+`make basic-reloc` over **both** builds, carrying all four §0.1 fixes
+(`docs/spec-deadcode-gate.md`). Its first finding as a standing gate was 24 B in
+`sub/graphics.asm` — `gfx_border_read`, orphaned when the VG-8020 PAINT bug fix
+replaced it with `gfx_paint_read`.
+
 ⚠️ **Seeded on build consumers only** (`init` + `sub/` + `tools/`). A reference from
 `tests/` or `probes/` is *not* a reason to keep ROM bytes — seeding on those too
 hides the whole `vars.asm` block, because S3's ported tests still name it. That

@@ -307,6 +307,29 @@ basic-reloc: $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM)
 	python3 tools/check_tenant_closure.py $(RELOC_SYM) sub/basic-resident-abi.inc
 	python3 tools/check_tenant_closure.py --page0 $(SUB_SYM) sub/sub.asm
 	python3 tools/check_tenant_closure.py --page1 $(SUB_SYM) sub/sub.asm
+	python3 tools/check_dead_code.py $(RELOC_SYM) $(SUB_SYM)
+
+# Transitive dead-code sweep, BOTH builds (docs/spec-deadcode-gate.md). A step of
+# `basic-reloc` above, since unreachable code is exactly the finding that goes
+# unread when it is only advisory: the carve the ROM REGION STRUCTURE REVIEW took
+# had been printing in pasmo's warning noise for months (and pasmo could only see
+# two thirds of it -- `Var never used` is per-symbol, so it cannot see a routine
+# reached only from OTHER dead code).
+#
+# ⚠️ IT HANGS OFF THE `basic-reloc` PHONY TARGET, NEVER OFF THE $(RELOC_SYM) FILE
+# RULE. It needs BOTH .sym files, and $(SUB_ROM) already depends on $(RELOC_SYM)
+# through sub/basic-resident-abi.inc -- so making $(RELOC_SYM) depend back on
+# $(SUB_SYM) would close the build-graph cycle this Makefile is shaped to avoid
+# (see the $(RELOC_ROM) rule's note above).
+#
+# `make deadcode` is the same sweep in --report mode: it prints the allowlisted
+# spans too and always exits 0, for use while writing a routine ahead of its
+# caller. tools/deadcode-allow.txt is the escape valve -- and a CONTROL, not a
+# suppression list: the gate asserts every entry is still detected as dead, which
+# is the only warning available for this tool going blind and reporting a clean
+# tree while measuring nothing.
+deadcode: $(RELOC_SYM) $(SUB_ROM)
+	python3 tools/check_dead_code.py --report $(RELOC_SYM) $(SUB_SYM)
 
 # --- Merged repack main ROM (WS-3 / D4) ---------------------------------------
 # The 32 KB slot-0 "main ROM": repacked C-BIOS + relocated BASIC ($2812-$7FFF) +
@@ -1231,7 +1254,7 @@ clean:
 
 .PHONY: all disk sub patches tape-patches machines machines-oracle install \
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
-        bdos-cbios-selfcheck audit-citations basic-reloc repack-main repack-boot \
+        bdos-cbios-selfcheck audit-citations basic-reloc deadcode repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
         interval-trap-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance abort-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \

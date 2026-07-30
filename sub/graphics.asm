@@ -1589,7 +1589,7 @@ gfx_neg16_de:
 ; diverge from an untested reference edge case.
 ;
 ; EI/DI discipline (spec §2/§4): gfx_paint_op EIs once for the whole
-; (possibly long) fill; gfx_border_read (the border test) and gfx_paint_plot
+; (possibly long) fill; gfx_paint_read (the border test) and gfx_paint_plot
 ; (the paint) each bracket their OWN di/ei around their VDP access -- finer
 ; grain than "between spans" (spec's own words), matching G3/G4's per-pixel
 ; RMW discipline exactly, just applied to reads too (PAINT is the first op
@@ -1679,30 +1679,17 @@ gpop_empty:
                 or      a
                 ret
 
-; ---------------------------------------------------------------------------
-; gfx_border_read -- IN: D=y, E=x (both already known valid -- see
-; gfx_paint_flood/_process's own row/column bounds, never out of 0..191/
-; 0..255). OUT: A = effective pixel colour 0..15. di-guarded (mirrors
-; gfx_point's body, GFX_OP=2 above -- called freely while the PAINT tenant
-; runs EI, unlike gfx_point itself which runs wholly under CALSLT's ambient
-; DI). Clobbers BC/DE/HL.
-; ---------------------------------------------------------------------------
-gfx_border_read:
-                di
-                call    gfx_calc_addr       ; HL = pattern addr, C = mask
-                call    gfx_rd_raw          ; A = pattern byte
-                ld      d,a                 ; D = pattern byte
-                ld      e,c                 ; E = mask
-                ld      a,h                 ; colour addr = pattern addr + $2000
-                add     a,$20               ; pattern high <= $17 -> no carry out
-                ld      h,a
-                call    gfx_rd_raw          ; A = colour byte
-                ld      c,a                 ; C = colour byte
-                ld      a,d                 ; A = pattern byte
-                ld      b,e                 ; B = mask
-                call    gfx_point_extract   ; A = pixel colour nibble
-                ei
-                ret
+; --- (removed) gfx_border_read ----------------------------------------------
+; The original PAINT border test: read a pixel's effective colour 0..15,
+; di-guarded, for use inside gfx_paint_op's EI'd fill. It was SUPERSEDED by
+; gfx_paint_read below, which returns the same colour AND reports whether the
+; pixel's pattern bit is set -- the empirical VG-8020 PAINT bug fix
+; (docs/spec-basic-graphics-g5.md). Every caller moved to gfx_paint_read and
+; this one was left behind, unreferenced, for the whole G5..R1 span; pasmo had
+; been reporting it on every build inside the warning noise.
+; Deleted 2026-07-30 by docs/spec-deadcode-gate.md §3 (24 B of sub page 0), the
+; first finding of the standing gate this slice lands
+; (tools/check_dead_code.py).
 
 ; ---------------------------------------------------------------------------
 ; gfx_paint_plot -- paints the pixel at (GFX_PTESTY,GFX_PTESTX) with GFX_C.
@@ -1721,9 +1708,9 @@ gfx_paint_plot:
                 ret
 
 ; ---------------------------------------------------------------------------
-; gfx_paint_read -- like gfx_border_read (IN: D=y,E=x; di-guarded; clobbers
-; BC/DE/HL), but ALSO reports whether the pixel's PATTERN BIT is set (drawn)
-; vs clear (never-drawn background). OUT: A = effective colour nibble 0..15;
+; gfx_paint_read -- IN: D=y,E=x (di-guarded; clobbers BC/DE/HL). Reports the
+; pixel's effective colour AND whether its PATTERN BIT is set (drawn) vs clear
+; (never-drawn background). OUT: A = effective colour nibble 0..15;
 ; Zf=1 iff the bit is CLEAR (background).
 ;
 ; WHY THIS EXISTS (BUG FIX, empirically found via the VG-8020 PAINT
@@ -1839,7 +1826,7 @@ gpsb_ok:
 
 ; ---------------------------------------------------------------------------
 ; gfx_paint_op -- GFX_OP=5 entry. EI for the (possibly long) fill; DI only
-; around each pixel's VDP access (gfx_border_read/gfx_paint_plot each
+; around each pixel's VDP access (gfx_paint_read/gfx_paint_plot each
 ; bracket their own). Seed = (GXPOS,GYPOS) low bytes, already range-checked
 ; on-screen by the resident (off-screen seed is ERR 5 there -- the tenant
 ; never sees one). GFX_C/GFX_B = the resident-marshalled paint/border colours.

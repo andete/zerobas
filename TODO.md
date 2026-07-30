@@ -1825,7 +1825,75 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       claim-by-claim. **Check the neighbouring prose too** — the same slice-era framing
       likely leaks into the sections around it.
 
-- [ ] **LAND THE TRANSITIVE DEAD-CODE SWEEP AS A TOOL** (filed 2026-07-30 by the ROM
+- [ ] **`GET(RDBLK)` IS AN INTERMITTENT GATE ROW — FIX THE ANCHOR** (observed
+      2026-07-30 during the dead-code-gate slice, which is NOT its cause).
+      [`probes/disk/disk_probe_rdblk_roundtrip.py`](probes/disk/disk_probe_rdblk_roundtrip.py)
+      failed once in a full `make diskbasic-acceptance` (33/34), then **passed
+      standalone AND in a full re-run on the BYTE-IDENTICAL build** — so the subject
+      is innocent and the APPARATUS is the defect.
+      🟢 **THE PROBE DIAGNOSED ITSELF CORRECTLY, which is why this is a fix and not an
+      investigation**: it printed `*** MISALIGNED — diff NOT meaningful ***` with
+      `stock reached anchor: NO (looped / never hit occurrence #1)` /
+      `ours reached anchor: YES`, and its own source calls this class
+      "Anchor/keys/timing problem, not a `$27` result". **It refused to report a
+      memory diff between two different logical points** — exactly the discipline
+      [[width-domain-slice]] and [[traps-t2-strig-slice]] ask for. The bug is only
+      that it can get there at all.
+      **Cause to fix:** the capture uses FIXED WALL-CLOCK injection —
+      `--keys "\rRDBLK\r" --keys-at 20 --settle 40` — so whether the STOCK side
+      reaches `done` depends on host timing. ⚠️ **I speculated host contention from my
+      own overlapping runs and then WITHDREW it: the timestamps do not support it**
+      (diskbasic ran 12:44–13:15, after any overlap). Cause is unconfirmed; what is
+      certain is that the anchor is time-based and therefore not deterministic.
+      **Fix direction:** gate the readout on a `done` SENTINEL rather than elapsed
+      seconds — the standing lesson [[traps-t3-key-slice]] ("gate every reading on a
+      `done` sentinel"), which the rest of this corpus already follows. Failing that,
+      retry-on-MISALIGNED with a bounded count and REPORT the retry (a silent retry
+      turns a flaky gate into an invisible one).
+      ⚠️ **DO NOT "fix" this by loosening the misalignment check.** That check is the
+      only reason the flake was legible instead of a fabricated 0-byte diff.
+      Also noticed in passing: `WARNING: Var start is never used on line 33 of
+      probes/disk/rdblk_rt.asm` — probe-side, unrelated, and NOT covered by the new
+      dead-code gate (which sweeps `basic/` + `sub/`, not `probes/`).
+
+- [x] **LAND THE TRANSITIVE DEAD-CODE SWEEP AS A TOOL — ✅ DONE 2026-07-30.**
+      [`docs/spec-deadcode-gate.md`](docs/spec-deadcode-gate.md).
+      [`tools/check_dead_code.py`](tools/check_dead_code.py) +
+      [`tools/deadcode-allow.txt`](tools/deadcode-allow.txt), a **HARD GATE** inside
+      `make basic-reloc` over **BOTH** builds (user chose the hard gate over an
+      advisory report), plus `make deadcode` for the report while writing a routine
+      ahead of its caller. Standing state: **main 0 dead** (1544 spans, 264 seeds),
+      **sub 0 non-allowlisted** (1375 spans, 98 seeds, 1 allowlisted). R1's walls
+      UNCHANGED at low 80 B / page 1 49 B, `basic-reloc.rom` byte-identical.
+      🟢 **ITS FIRST FINDING AS A GATE: 24 B in `sub/graphics.asm`.**
+      `gfx_border_read` was orphaned when the empirical VG-8020 PAINT bug fix replaced
+      it with `gfx_paint_read`, and sat unreferenced from G5 all the way to R1 —
+      **with three comments still describing it as the live border reader** (lines
+      1592, 1724, 1842, all corrected). Deleted; sub page-0 content `$302A -> $3012`,
+      free 4054 -> 4078 B.
+      🔴 **THE ALLOWLIST IS A CONTROL, NOT A SUPPRESSION LIST — this is the design
+      point.** The gate asserts every allowlist entry is STILL DETECTED AS DEAD. The
+      dangerous failure for this tool is not a false red, it is **going blind and
+      reporting a clean tree forever** — an over-broad seed set, a broken span model
+      or a path change all look exactly like success. `fmt_menu_text` (16 B, a
+      DOCUMENTED deliberate keep preserving `format-body.inc`'s pre-eviction byte
+      layout) is therefore a permanent canary: if it stops reading as dead, either it
+      gained a caller or the sweep broke, and both must be looked at.
+      **FALSIFIED THREE WAYS**, the third being the one the review's own scratchpad
+      harness lacked: (A) inject a dead routine into EACH build -> both reported,
+      exit 1; (control) give each one live caller -> 0 dead, exit 0; (B) `--blind`
+      (seed every label) -> prints **"0 dead" for both builds**, which reads as
+      success, **and the canary fires**, exit 1. Allowlist guards each verified to
+      fire: missing reason, bad build name, entry that is not actually dead. Seed
+      vacuity guards: `init` must resolve, every sub entry-table seed must resolve,
+      and <20 parsed tenants is a hard error.
+      ⚠️ **THE GATE HANGS OFF THE `basic-reloc` PHONY TARGET, NEVER OFF THE
+      `$(RELOC_SYM)` FILE RULE** — it needs both `.sym` files, and `$(SUB_ROM)`
+      already depends on `$(RELOC_SYM)` through `sub/basic-resident-abi.inc`, so the
+      other wiring would close the build-graph cycle the Makefile is shaped to avoid.
+      Not swept: `disk/` (its own build, its own seed problem, not wall-constrained).
+
+      **Original entry, for context.** (filed 2026-07-30 by the ROM
       REGION STRUCTURE REVIEW, which built it in a scratchpad and threw it away).
       It found **122 B** where pasmo's per-symbol warnings showed 80, and it is the
       only instrument in the tree that can see a routine that IS referenced but only
