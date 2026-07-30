@@ -35,9 +35,7 @@
 init_ext_roms:
                 xor     a
                 ld      (DISKSLOT_OK),a     ; no disk-ROM slot recorded yet
-    IF ROM_BASE < $4000
                 ld      (SUBSLOT_OK),a      ; no zerobas-sub slot recorded yet (subrom S2b)
-    ENDIF
                 di                          ; slot switching must be uninterrupted
                 in      a,(PSLTREG)         ; primary slot select register
                 rrca
@@ -68,9 +66,7 @@ ier_sloop:
                 or      $80                 ; expanded-slot flag
                 push    bc                  ; try_init_slot / CALSLT clobber BC
                 call    try_init_slot
-    IF ROM_BASE < $4000
                 call    try_sub_slot        ; also record a CD sub-ROM here (3-2; subrom S2b)
-    ENDIF
                 pop     bc
                 inc     b
                 ld      a,b
@@ -86,7 +82,6 @@ ier_pnext:
                 ld      (SCAN_PRIM),a
                 jr      ier_ploop
 ier_done:
-    IF ROM_BASE < $4000
                 call    sub_int_install     ; install the page-0 EI trampoline if a
                                             ; sub-ROM was recorded (subrom trampoline)
                 call    play_install        ; install the PLAY servicer H.TIMI seam
@@ -100,7 +95,6 @@ ier_done:
                                             ; trap. Under the boot DI (below); the H.TIMI
                                             ; poll installed just above fast-outs anyway
                                             ; until TRAPENA is set. (traps.asm)
-    ENDIF
                 ei
                 ret
 

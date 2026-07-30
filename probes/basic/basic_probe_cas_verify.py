@@ -19,10 +19,12 @@ Cases (typed harness; the outcome is the ON-SCREEN message, read from VRAM):
                     witness) -> verify left memory untouched.
   B4 ASCII reject : CLOAD? an $EA ASCII tape -> "load error" (tokenised-only).
 
-C-BIOS_MSX1_EU_TAPE --cart build/basic.rom (the established cassette-probe
-method). Clean-room: our own programs + cas codec; the reference ROM is never
-read. IPS note: --cart reads build/basic.rom directly, so `make build/basic.rom`
-suffices (no IPS reinstall).
+Typed harness on the repack machine (C-BIOS_MSX1_EU_REPACK_DISK), which carries
+the merged main ROM in slot 0 and its own <CassettePort/>, so no cartridge is
+inserted. Until 2026-07-29 this ran the retired lean 16 KB cart as a `-cart` on
+C-BIOS_MSX1_EU_TAPE (docs/spec-lean-retire-s3-gates.md); that rig is still
+selectable with --machine C-BIOS_MSX1_EU_TAPE + --cart, and is the only mode
+in which --cart means anything.
 """
 from __future__ import annotations
 
@@ -48,7 +50,15 @@ from basic_probe_cas_ascii import build_ascii_cas
 from omsx_run import _tcl_dquote
 
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
-MACHINE = "C-BIOS_MSX1_EU_TAPE"
+MACHINE_TAPE = "C-BIOS_MSX1_EU_TAPE"
+# The zerobas side runs on the REPACK machine, which carries the merged main ROM
+# in slot 0 and ships its own <CassettePort/>. It used to be MACHINE_TAPE below --
+# stock C-BIOS plus the tape patch -- with the retired lean 16 KB cart inserted as
+# a cartridge (RETIRE THE LEAN 16 KB CART S3, docs/spec-lean-retire-s3-gates.md).
+# MACHINE_TAPE is kept because it is still a real rig: stock BIOS + open cassette
+# stack, selectable via --machine / ZEROBAS_BASIC_MACHINE, and the only mode in
+# which a `-cart` is passed at all.
+ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE") or "C-BIOS_MSX1_EU_REPACK_DISK"
 DEFAULT_CART = os.path.join(os.path.dirname(_PROBES), "build", "basic.rom")
 TXTBASE = 0x8001
 WITNESS = 0xD0FF
@@ -81,7 +91,7 @@ def run_typed_scr(cart, cas, type_cmds, cap_time=40.0, timeout=110.0):
     open(tcl, "w").write("\n".join(lines) + "\n")
     if os.path.exists(out):
         os.unlink(out)
-    cmd = [OMSX, "-machine", MACHINE, "-cart", cart, "-cassetteplayer", cas, "-script", tcl]
+    cmd = [OMSX, "-machine", ZB_MACHINE, "-cart", cart, "-cassetteplayer", cas, "-script", tcl]
     p = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                          start_new_session=True)
     dl = time.time() + timeout
@@ -157,10 +167,11 @@ def test_ascii_reject(cart, tmp):
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cart", default=DEFAULT_CART)
+    ap.add_argument("--cart", default=None,
+                    help="only used with the %s rig" % MACHINE_TAPE)
     args = ap.parse_args()
     if not os.path.exists(args.cart):
-        print(f"cart not found: {args.cart} (run: make build/basic.rom)")
+        print(f"cart not found: {args.cart}")
         return 2
     tmp = tempfile.mkdtemp(prefix="cas_verify_")
     ok = True

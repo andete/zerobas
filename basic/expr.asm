@@ -36,10 +36,8 @@ eval:
                 push    ix
                 push    hl
                 pop     ix                  ; IX = cursor
-    IF ROM_BASE < $4000
                 ld      a,2
                 ld      (FACTYP),a          ; §9.4: eval() sets FACTYP=2 (int) on entry
-    ENDIF
                 call    ev_logic            ; lowest precedence layer
                 push    ix
                 pop     hl                  ; HL = cursor (advanced)
@@ -60,11 +58,9 @@ eval:
 ; the -1/0 results the relationals produce. Tokens: AND $F6, OR $F7, XOR $F8,
 ; EQV $F9, IMP $FA, NOT $E0.
 ;
-; TWO IMPLEMENTATIONS, gated. The lean 16 KB cart keeps the original hand-rolled
-; chain below (basic.rom is byte-frozen, and it ships without EQV/IMP); the
-; repack build uses the table-driven layer, which fits SIX levels into less space
-; than the old THREE.
-    IF ROM_BASE < $4000
+; A TABLE-DRIVEN LAYER, which fits SIX levels into less space than the original
+; hand-rolled THREE-level chain it replaced (that chain survived until 2026-07-29
+; only because the retired lean 16 KB cart was byte-frozen and shipped no EQV/IMP).
 ; --- table-driven logical layer (repack build) -----------------------------
 ; `ev_and_lp`/`ev_or_lp`/`ev_xor_lp` were byte-for-byte uniform at 31 B each and
 ; differed only in a token compare and a 6-byte apply block (clone_scout: 5 x 31 B).
@@ -171,92 +167,6 @@ logtab:
                 db      AND_TOKEN
                 dw      lg_and
                 db      0                   ; terminator -> drop to ev_not
-    ELSE
-; --- the original hand-rolled chain (LEAN 16 KB build, byte-frozen) ---------
-ev_logic:
-ev_xor:
-                call    ev_or               ; DE = lhs
-ev_xor_lp:
-                call    ev_sp
-                ld      a,(ix+0)
-                cp      XOR_TOKEN
-                ret     nz
-    IF ROM_BASE < $4000
-                ; spec §10.3 "strict int16 domain": convert the operand NOW
-                ; (fac_to_int_strict re-derives it from FAC/FACTYP if it was
-                ; float, ignoring the already-address-domain-rounded DE), then
-                ; reset FACTYP=2 so it doesn't leak stale into the rhs eval —
-                ; no FAC save is needed here (unlike ev_e/ev_t's double-
-                ; widening sites) because the conversion to a plain int
-                ; happens immediately, before the rhs eval can clobber FAC.
-                call    fac_to_int_strict_reset
-    ENDIF
-                inc     ix
-                push    de
-                call    ev_or               ; DE = rhs
-    IF ROM_BASE < $4000
-                call    fac_to_int_strict_reset
-    ENDIF
-                pop     hl                  ; HL = lhs
-                ld      a,l
-                xor     e
-                ld      l,a
-                ld      a,h
-                xor     d
-                ld      h,a
-                ex      de,hl               ; DE = lhs XOR rhs
-                jr      ev_xor_lp
-ev_or:
-                call    ev_and
-ev_or_lp:
-                call    ev_sp
-                ld      a,(ix+0)
-                cp      OR_TOKEN
-                ret     nz
-    IF ROM_BASE < $4000
-                call    fac_to_int_strict_reset
-    ENDIF
-                inc     ix
-                push    de
-                call    ev_and
-    IF ROM_BASE < $4000
-                call    fac_to_int_strict_reset
-    ENDIF
-                pop     hl
-                ld      a,l
-                or      e
-                ld      l,a
-                ld      a,h
-                or      d
-                ld      h,a
-                ex      de,hl               ; DE = lhs OR rhs
-                jr      ev_or_lp
-ev_and:
-                call    ev_not
-ev_and_lp:
-                call    ev_sp
-                ld      a,(ix+0)
-                cp      AND_TOKEN
-                ret     nz
-    IF ROM_BASE < $4000
-                call    fac_to_int_strict_reset
-    ENDIF
-                inc     ix
-                push    de
-                call    ev_not
-    IF ROM_BASE < $4000
-                call    fac_to_int_strict_reset
-    ENDIF
-                pop     hl
-                ld      a,l
-                and     e
-                ld      l,a
-                ld      a,h
-                and     d
-                ld      h,a
-                ex      de,hl               ; DE = lhs AND rhs
-                jr      ev_and_lp
-    ENDIF
 ev_not:
                 call    ev_sp
                 ld      a,(ix+0)
@@ -266,9 +176,7 @@ ev_not:
 ev_not_do:
                 inc     ix
                 call    ev_not              ; unary, right-assoc (NOT NOT x)
-    IF ROM_BASE < $4000
                 call    fac_to_int_strict_reset
-    ENDIF
                 ld      a,e
                 cpl
                 ld      e,a
@@ -283,7 +191,6 @@ ev_not_do:
 ; 16-bit compare. Relop tokens: '<' $F0, '=' $EF, '>' $EE (Table 2.20); the
 ; compound forms (<=, >=, <>) arrive as two operator tokens and are merged.
 ev_rel:
-    IF ROM_BASE < $4000
                 ; string-compare S2 (repack build only): probe the LHS for a
                 ; string operand before committing to the numeric ev_e below.
                 ; BUG C (Fable, 2026-07-17): the old "NC => IX intact" invariant
@@ -303,7 +210,6 @@ ev_rel:
                 call    str_eval            ; CF set -> LHS is a string; STRPTR->desc
                 jr      c,evr_lhs_str       ; string LHS -> discard guard, str path
                 pop     ix                  ; NC: restore the cursor str_eval trashed
-    ENDIF
                 call    ev_e                ; DE = lhs (arithmetic)
 evr_scan:
                 ; MEASURED (docs/logicops-vg8020-characterization.md §6): MSX-BASIC
@@ -328,7 +234,6 @@ evr_scan:
                 ld      c,a                 ; merge the two relation bits
                 inc     ix
 evr_rhs:
-    IF ROM_BASE < $4000
                 ; D-2 symmetric case (`5 < A$`): the LHS was just confirmed numeric (we
                 ; only reach evr_rhs via the unchanged ev_e call above), so probe the RHS
                 ; cursor for a string operand BEFORE ev_e reads it as a number -- ev_f_var
@@ -348,9 +253,7 @@ evr_rhs:
                 pop     de
                 pop     bc
                 jp      c,evr_mismatch      ; RHS is a string, LHS was numeric -> D-2
-    ENDIF
                 push    de                  ; lhs
-    IF ROM_BASE < $4000
                 ; spec §10.1: relationals over any float operand compare AS
                 ; floats after widening (never int-converted, `40000=40000!`
                 ; -> -1, no Overflow). Save the LHS's FACTYP+FAC on the
@@ -359,42 +262,23 @@ evr_rhs:
                 ; FAC, then reset FACTYP=2 for the rhs eval.
                 call    push_lhs_frame
                 call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
-    ENDIF
                 push    bc                  ; relation bits (in C)
                 call    ev_e                ; DE = rhs
                 pop     bc                  ; C = bits
-    IF ROM_BASE < $4000
                 call    combine_cmp         ; pops the lhs frame + value; A =
                                             ; relation bit (1/2/4); FACTYP:=2
-    ELSE
-                pop     hl                  ; HL = lhs
-                call    cmp16_bits          ; A = actual relation bit (1/2/4)
-    ENDIF
-    IF ROM_BASE < $4000
                 ld      de,0                ; false = 0
                 and     c                   ; intersect requested with actual
                 jr      z,evr_chain
                 dec     de                  ; true = -1 ($FFFF)
 evr_chain:
                 jp      evr_scan            ; and look for the NEXT relop (left-assoc)
-    ELSE
-                ; LEAN 16 KB build: byte-frozen, one comparison only (no chaining).
-                and     c                   ; intersect requested with actual
-                jr      z,evr_false
-                ld      de,$FFFF            ; true = -1
-                ret
-evr_false:
-                ld      de,0                ; false = 0
-                ret
-    ENDIF
-    IF ROM_BASE < $4000
 evr_lhs_str:
                 pop     af                  ; BUG C: drop the LHS-probe IX guard
                                             ; (ev_rel_str re-derives IX from HL)
                 jp      ev_rel_str
 evr_mismatch:
                 jp      type_mismatch_set   ; sets ERRMARK+TMISMATCH, DE=0, ret (str-engine.asm)
-    ENDIF
 
 ; --- relop_bit: A = token -> CF set & B = relation bit, else CF clear -------
 ; '<' -> 1 (less), '=' -> 2 (equal), '>' -> 4 (greater).
@@ -423,40 +307,11 @@ rb_gt:
 ; --- cmp16_bits: signed compare HL(lhs) vs DE(rhs) -> A = 1/2/4 -------------
 ; 1 = lhs<rhs, 2 = equal, 4 = lhs>rhs. Clobbers A, HL, flags (DE preserved).
 ;
-; HOME depends on the build (subrom-mathpack migration, 2026-07-13):
-;   * lean 16 KB cart (ROM_BASE >= $4000): defined HERE (page 1), byte-identical
-;     to the pre-migration expr.asm.
-;   * repack build (ROM_BASE < $4000): defined in the page-0 low region
-;     (basic/float-arith.asm) instead, so the fp_sqrt PAGE-1 sub-ROM tenant's
+; HOME (subrom-mathpack migration, 2026-07-13): NOT here in page 1, but in the
+; page-0 low region (basic/float-arith.asm), so the fp_sqrt PAGE-1 sub-ROM tenant's
 ;     page-0-resident float core can still reach it while main-ROM page 1 is
 ;     switched out (see float-arith.asm's cmp16_bits header). All callers here
 ;     (ev_rel etc.) resolve to that page-0 copy by label, unchanged.
-    IF ROM_BASE >= $4000
-cmp16_bits:
-                ld      a,h
-                cp      d
-                jr      nz,c16_ne
-                ld      a,l
-                cp      e
-                jr      nz,c16_ne
-                ld      a,2                 ; equal
-                ret
-c16_ne:
-                or      a
-                sbc     hl,de               ; lhs - rhs; signed: less iff S xor V
-                jp      pe,c16_vset
-                jp      m,c16_lt            ; V clear -> less iff S set
-                jr      c16_gt
-c16_vset:
-                jp      p,c16_lt            ; V set  -> less iff S clear
-                jr      c16_gt
-c16_lt:
-                ld      a,1
-                ret
-c16_gt:
-                ld      a,4
-                ret
-    ENDIF
 
 ; --- ev_sp: skip spaces in the IX stream -----------------------------------
 ev_sp:
@@ -482,39 +337,22 @@ ev_e_lp:
 ev_e_add:
                 inc     ix
                 push    de                  ; lhs
-    IF ROM_BASE < $4000
                 ; spec §1 bullet 4: save the lhs's FACTYP+FAC on the machine
                 ; stack (fixed-size frame) before the rhs eval clobbers FAC,
                 ; reset FACTYP=2 for the rhs eval. combine_add decides int-
                 ; fast-path (with signed-overflow-promotion) vs BCD add.
                 call    push_lhs_frame
                 call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
-    ENDIF
                 call    ev_mod              ; DE = rhs
-    IF ROM_BASE < $4000
                 call    combine_add         ; pops the frame; DE = result
-    ELSE
-                pop     hl                  ; HL = lhs
-                add     hl,de
-                ex      de,hl               ; DE = sum
-    ENDIF
                 jr      ev_e_lp
 ev_e_sub:
                 inc     ix
                 push    de                  ; lhs
-    IF ROM_BASE < $4000
                 call    push_lhs_frame
                 call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
-    ENDIF
                 call    ev_mod              ; DE = rhs
-    IF ROM_BASE < $4000
                 call    combine_sub
-    ELSE
-                pop     hl                  ; HL = lhs
-                or      a                   ; clear carry
-                sbc     hl,de               ; HL = lhs - rhs
-                ex      de,hl
-    ENDIF
                 jr      ev_e_lp
 
 ; --- ev_mod: { MOD } over '\'-expressions (MSX precedence level 5) ----------
@@ -525,27 +363,19 @@ ev_mod_lp:
                 ld      a,(ix+0)
                 cp      MOD_TOKEN
                 ret     nz
-    IF ROM_BASE < $4000
                 ; spec §10.3: \ / MOD operands convert via the STRICT int16
                 ; domain (not the address domain) -- immediately, no FAC save
                 ; needed since the plain int value is captured before the
                 ; rhs eval can clobber FAC.
                 call    fac_to_int_strict_reset
-    ENDIF
                 inc     ix
                 push    de                  ; lhs (dividend)
                 call    ev_idiv             ; DE = rhs (divisor)
-    IF ROM_BASE < $4000
                 call    fac_to_int_strict_reset
-    ENDIF
                 ld      b,d
                 ld      c,e                 ; BC = divisor
                 pop     de                  ; DE = dividend
-    IF ROM_BASE < $4000
                 call    signed_mod_de_bc    ; D-C: MSX-signed MOD (spec §10.4)
-    ELSE
-                call    mod_de_bc           ; DE = remainder
-    ENDIF
                 jr      ev_mod_lp
 
 ; --- ev_idiv: { '\' } over terms (integer division, level 4) ---------------
@@ -556,34 +386,21 @@ ev_idiv_lp:
                 ld      a,(ix+0)
                 cp      IDIV_TOKEN          ; '\'
                 ret     nz
-    IF ROM_BASE < $4000
                 call    fac_to_int_strict_reset
-    ENDIF
                 inc     ix
                 push    de                  ; lhs (dividend)
                 call    ev_t                ; DE = rhs (divisor)
-    IF ROM_BASE < $4000
                 call    fac_to_int_strict_reset
-    ENDIF
                 ld      b,d
                 ld      c,e                 ; BC = divisor
                 pop     de                  ; DE = dividend
-    IF ROM_BASE < $4000
                 call    signed_div_de_bc    ; D-C: MSX-signed \ (spec §10.4)
-    ELSE
-                call    div_de_bc           ; DE = quotient
-    ENDIF
                 jr      ev_idiv_lp
 
 ; --- ev_t: term := factor { ('*' | '/') factor } ---------------------------
-; '/' is real division on MSX; the repack build makes it always float (spec
-; §10.1); the lean build keeps the integer-quotient divergence (unchanged).
+; '/' is real division on MSX, and always float here (spec §10.1).
 ev_t:
-    IF ROM_BASE < $4000
                 call    ev_pw               ; `^` binds above * / (§13.3)
-    ELSE
-                call    ev_f                ; DE = factor
-    ENDIF
 ev_t_lp:
                 call    ev_sp
                 ld      a,(ix+0)
@@ -595,37 +412,20 @@ ev_t_lp:
 ev_t_mul:
                 inc     ix
                 push    de                  ; lhs
-    IF ROM_BASE < $4000
                 call    push_lhs_frame
                 call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
                 call    ev_pw               ; DE = rhs
                 call    combine_mul
-    ELSE
-                call    ev_f                ; DE = rhs
-                pop     hl                  ; HL = lhs
-                call    mul16               ; HL = lhs * rhs (low 16 bits)
-                ex      de,hl               ; DE = product
-    ENDIF
                 jr      ev_t_lp
 ev_t_div:
                 inc     ix
-    IF ROM_BASE < $4000
                 push    de                  ; lhs
                 call    push_lhs_frame
                 call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
                 call    ev_pw               ; DE = rhs
                 call    combine_div_float   ; ALWAYS float (spec §10.1)
-    ELSE
-                push    de                  ; lhs (dividend)
-                call    ev_f                ; DE = rhs (divisor)
-                ld      b,d
-                ld      c,e                 ; BC = divisor
-                pop     de                  ; DE = dividend
-                call    div_de_bc           ; DE = quotient
-    ENDIF
                 jr      ev_t_lp
 
-    IF ROM_BASE < $4000
 ; --- ev_pw: `^` layer (power operator, math pack slice 2c, repack-only -----
 ; docs/spec-basic-mathpack-slice2.md §13.3). Sits between ev_t and ev_f:
 ; binds ABOVE `*`/`/` (ev_t's three operand sites above call ev_pw instead of
@@ -652,7 +452,6 @@ ev_pw_lp:
                                             ; pinned right-nesting for free)
                 call    combine_pow
                 jr      ev_pw_lp            ; loop = left-assoc
-    ENDIF
 
 ; --- ev_f: factor ----------------------------------------------------------
 ; Decodes the crunched tokens (spec §3): constant tokens carry their binary
@@ -661,7 +460,6 @@ ev_pw_lp:
 ev_f:
                 call    ev_sp
                 ld      a,(ix+0)
-    IF ROM_BASE < $4000
                 ; empty parenthesised/argument expression: a factor can never
                 ; begin with a closing ')' or a ',' (ev_f is reached only where a
                 ; factor is REQUIRED -- expression start, or right after '(' /
@@ -673,7 +471,6 @@ ev_f:
                 jp      z,ev_f_empty
                 cp      ','
                 jp      z,ev_f_empty
-    ENDIF
                 cp      MINUS_TOKEN         ; unary minus
                 jp      z,ev_f_neg
                 cp      '('
@@ -686,7 +483,6 @@ ev_f:
                 jp      z,ev_f_varptr
                 cp      BASE_TOKEN          ; $C9 -> BASE(n) function
                 jp      z,ev_f_base
-    IF ROM_BASE < $4000
                 cp      INSTR_TOKEN         ; $E5 -> INSTR([p,]a$,b$) (string-functions
                 jp      z,ev_f_instr        ; Group C; single-byte token, not $FF-prefixed)
                 ; error-handling S2a (docs/spec-basic-error-handling-s2a-packet.md
@@ -706,7 +502,6 @@ ev_f:
                 cp      VDP_TOKEN           ; $C8 -> VDP(n) (graphics G8, graphics.asm)
                 jp      z,ev_f_vdp
     ENDIF
-    ENDIF
                 cp      HEX_TOKEN           ; $0C -> 2-byte LE value (&H)
                 jp      z,ev_f_word
                 cp      OCT_TOKEN           ; $0B -> 2-byte LE value (&O)
@@ -715,12 +510,10 @@ ev_f:
                 jp      z,ev_f_word
                 cp      INT1_TOKEN          ; $0F -> 1-byte value
                 jp      z,ev_f_byte
-    IF ROM_BASE < $4000
                 cp      SNG_TOKEN           ; $1D -> single float literal (basic/float.asm)
                 jp      z,ev_f_float
                 cp      DBL_TOKEN           ; $1F -> double float literal
                 jp      z,ev_f_float
-    ENDIF
                 cp      INT_DIGIT_BASE      ; $11
                 jr      c,ev_f_var
                 cp      $1A+1               ; $11..$1A -> digit token
@@ -733,7 +526,6 @@ ev_f_var:
                 push    ix
                 pop     hl                  ; HL = cursor
                 call    var_name_key        ; BC = key, HL past the (multi-char) name
-    IF ROM_BASE < $4000
                 ld      a,(hl)
                 cp      '('
                 jp      z,ev_f_arr          ; array-element rvalue (arrays slice-1,
@@ -742,17 +534,10 @@ ev_f_var:
                                             ; never a function token, so a '(' right
                                             ; after a plain name is unambiguously a
                                             ; subscript, not a function call)
-    ENDIF
                 push    hl
                 pop     ix                  ; IX = advanced cursor
-    IF ROM_BASE < $4000
                 ld      a,(VARTYPE)         ; F3: resolved type from var_name_key
                 jp      var_load_fac        ; FAC/FACTYP=type, DE=int16 (tail call)
-    ELSE
-                call    var_get_key         ; BC = key -> DE = value
-                ret
-    ENDIF
-    IF ROM_BASE < $4000
 ev_f_tmm:                                   ; deferred FPERR=10 "type mismatch" for a string
                                             ; function given a NON-string arg (LEN(5)/ASC(5)/
                                             ; VAL(5)): str_eval returned NC with FPERR clean.
@@ -792,14 +577,12 @@ ev_f_defer:                                 ; shared tail: E = FPERR code to def
                 ld      a,e
                 ld      (FPERR),a
                 ; fall into ev_f_err for the $DD landmark.
-    ENDIF
 ev_f_err:
                 ld      a,$DD               ; expression error marker
                 ld      (ERRMARK),a
                 ld      de,0
                 ret
 
-    IF ROM_BASE < $4000
 ; --- ev_f_errfn / ev_f_erlfn: ERR / ERL -> DE (error-handling S2a, docs/ ---
 ; spec-basic-error-handling-s2a-packet.md §3/(f)). Single-byte value tokens,
 ; no operand bytes -- same "read a RAM cell, widen to DE, step one token"
@@ -867,7 +650,6 @@ ev_f_uword:                                 ; HL = an unsigned 0..65535 -> FAC (
                 call    round_and_finalize
                 inc     ix
                 ret
-    ENDIF
 
 ; constant decoders --------------------------------------------------------
 ev_f_digit:                                 ; $11..$1A -> value 0..9
@@ -894,7 +676,6 @@ ev_f_word:                                  ; $0C/$1C,<word LE>
                 inc     ix
                 ret
 
-    IF ROM_BASE < $4000
 ; --- ev_f_float: SNG_TOKEN/DBL_TOKEN factor -> FAC/FACTYP + DE (§9.4) ------
 ; Copies the token's 4 (single) / 8 (double) value bytes into FAC, sets
 ; FACTYP (4/8), and returns DE = the value rounded to int16 (flt_to_int16,
@@ -921,29 +702,22 @@ eff_cp:
                 inc     ix
                 djnz    eff_cp
                 jp      flt_to_int16        ; DE = rounded int16 (0 if out of range)
-    ENDIF
 
 ev_f_neg:
                 inc     ix
-    IF ROM_BASE < $4000
                 call    ev_pw               ; DE = operand (`^` binds tighter
                                             ; than unary minus, §13.1/13.3 --
                                             ; this is what makes -2^2=-4 AND
                                             ; 2^-3^2=2^-(3^2) fall out for free)
-    ELSE
-                call    ev_f                ; DE = operand
-    ENDIF
                 ld      hl,0
                 or      a
                 sbc     hl,de               ; HL = 0 - operand
                 ex      de,hl
-    IF ROM_BASE < $4000
                 ld      a,(FACTYP)
                 cp      2
                 jr      z,evfn_ret
                 call    flt_neg
 evfn_ret:
-    ENDIF
                 ret
 
 ev_f_paren:
@@ -963,12 +737,10 @@ ev_f_paren:
 ev_f_ff:
                 inc     ix                  ; skip the $FF prefix
                 ld      a,(ix+0)            ; the function selector byte
-    IF ROM_BASE < $4000
                 ; REPACK ONLY. Every $FF function here except CVI takes one
                 ; parenthesised NUMERIC argument, so membership is a set test, not a
                 ; decision tree: scan the selector table with cpir (input-devices
-                ; slice I1 golf). The old per-token `cp`/`jr z` chain -- which the
-                ; lean build below still uses byte-for-byte -- costs 4 B per
+                ; slice I1 golf). The old per-token `cp`/`jr z` chain cost 4 B per
                 ; function; a table row costs 1, and that difference is what funds
                 ; STICK/STRIG joining the group. cpir preserves A, and neither HL
                 ; nor BC is live here (ev_ff_arg's first act is `ld c,a`).
@@ -982,28 +754,8 @@ ev_f_ff:
                 jr      z,ev_ff_arg
                 jp      ev_ff_mathconv      ; ABS/SGN/INT/FIX/CINT/CSNG/CDBL, else
                                             ; LEN/ASC/VAL (string->number), else ev_f_err
-    ELSE
-                ; LEAN 16 KB build: the original chain, unchanged. basic.rom is
-                ; byte-frozen, so the golf above must not reach it.
-                cp      PEEK_TOKEN          ; $97 -> PEEK
-                jr      z,ev_ff_arg
-                cp      VPEEK_TOKEN         ; $98 -> VPEEK
-                jr      z,ev_ff_arg
-                cp      INP_TOKEN           ; $90 -> INP
-                jr      z,ev_ff_arg
-                cp      EOF_TOKEN           ; $AB -> EOF
-                jr      z,ev_ff_arg
-                cp      LOF_TOKEN           ; $AD -> LOF
-                jr      z,ev_ff_arg
-                cp      DSKF_TOKEN          ; $A6 -> DSKF
-                jr      z,ev_ff_arg
-                cp      CVI_TOKEN           ; $A8 -> CVI (takes a STRING arg)
-                jp      z,ev_ff_cvi
-                jp      ev_f_err            ; unknown $FF function
-    ENDIF
 ; The single-numeric-argument $FF selectors, for the cpir set test above. Order is
 ; free. Repack-only, like the scan that reads it.
-    IF ROM_BASE < $4000
 ev_ff_argtab:
                 db      PEEK_TOKEN          ; $97
                 db      VPEEK_TOKEN         ; $98
@@ -1021,26 +773,20 @@ ev_ff_argtab:
                 db      PAD_TOKEN           ; $A5
     ENDIF
 ev_ff_argtab_len equ    $ - ev_ff_argtab
-    ENDIF
 ev_ff_arg:
                 ld      c,a                 ; C = selector (survives the parse)
                 inc     ix                  ; skip the selector byte
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      '('
-    IF ROM_BASE < $4000
                 ; Residual found by the I1 differential (spec §3): a MISSING
                 ; argument list -- `PRINT PEEK`, `PRINT STICK`, `PEEK 100` --
                 ; silently evaluated to 0 here, where the reference raises a
                 ; Syntax error (ERR 2, measured on the VG-8020 for PEEK / VPEEK /
                 ; INP / EOF / LOF alike). Same BUG C class, and same cure, as the
                 ; CVI missing-'(' fix below: defer the syntax error via ev_f_empty
-                ; so the statement's check_expr_errors aborts. Repack-only -- the
-                ; lean 16 KB basic.rom is byte-frozen and keeps the old ev_f_err.
+                ; so the statement's check_expr_errors aborts.
                 jp      nz,ev_f_empty
-    ELSE
-                jp      nz,ev_f_err
-    ENDIF
                 inc     ix
                 push    bc                  ; guard the selector across the eval
                 call    ev_logic            ; DE = argument (full expression)
@@ -1048,13 +794,8 @@ ev_ff_arg:
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      ')'
-    IF ROM_BASE < $4000
                 jp      nz,ev_f_empty       ; unclosed / extra arg -> ERR 2 (as above)
-    ELSE
-                jp      nz,ev_f_err
-    ENDIF
                 inc     ix
-    IF ROM_BASE < $4000
                 ; D-F2-2 A2: CHECKED int coercion for PEEK/INP (address domain) and
                 ; VPEEK (VRAM 0..16383) — the arg's FAC/FACTYP is still its own type
                 ; here (flt_int_result below forces int), so re-coerce it CHECKED and
@@ -1134,7 +875,6 @@ ev_ff_ckvram:                               ; VPEEK: VRAM 0..16383 (the shared g
 ev_ff_ckdone:
                 pop     bc                  ; C = selector restored for the read dispatch
                 call    flt_int_result      ; the function returns an int even if its
-    ENDIF                                   ;  arg was a float (clobbers A only; C kept)
                 ld      a,c                 ; dispatch on the selector
                 cp      VPEEK_TOKEN
                 jr      z,ev_ff_vpeek
@@ -1145,19 +885,12 @@ ev_ff_ckdone:
                 cp      LOF_TOKEN
                 jr      z,ev_ff_lof
                 cp      DSKF_TOKEN
-    IF ROM_BASE < $4000
                 ; Landmine (spec §9.5, recurred from I1): the I2 dispatch rows just
-                ; below push ev_ff_dskf out of jr range in the repack build, so it
-                ; takes a jp here. The lean 16 KB basic.rom has no I1/I2 rows and is
-                ; byte-frozen, so it keeps the original jr.
+                ; below push ev_ff_dskf out of jr range, so it takes a jp here
+                ; rather than the jr it used before those rows existed.
                 jp      z,ev_ff_dskf
-    ELSE
-                jr      z,ev_ff_dskf
-    ENDIF
-    IF ROM_BASE < $4000
-                cp      POS_TOKEN           ; repack-only: the lean 16 KB cart is
-                jr      z,ev_ff_pos         ; byte-frozen and ships without POS
-    ENDIF
+                cp      POS_TOKEN
+                jr      z,ev_ff_pos
     IF I1_RESIDENT
                 cp      STICK_TOKEN
                 jr      z,ev_ff_stick
@@ -1176,7 +909,6 @@ ev_ff_ckdone:
                 ld      e,(hl)              ; read one byte
                 ld      d,0                 ; PEEK yields 0..255
                 ret
-    IF ROM_BASE < $4000
 ev_ff_pos:                                  ; POS(n): the cursor COLUMN, 0-based.
                 ; MEASURED: the argument is parsed and then DISCARDED -- POS(0),
                 ; POS(1), POS(99), POS(-1) and POS(1+1) all give the same answer, so
@@ -1190,7 +922,6 @@ ev_ff_pos:                                  ; POS(n): the cursor COLUMN, 0-based
                 ld      e,a
                 ld      d,0
                 ret
-    ENDIF
 ev_ff_vpeek:                                ; VPEEK: read one byte of VRAM (DE = addr)
                 ex      de,hl               ; HL = VRAM address (RDVRM wants it here)
                 call    RDVRM               ; A = VRAM[HL]; makes no register guarantees
@@ -1295,7 +1026,6 @@ ev_chan_hasfile:
                 adc     a,0
                 ld      h,a
                 ld      a,(hl)              ; A = FCH_MODES[E]
-    IF ROM_BASE < $4000
                 or      a                   ; S-FCH-2: 0 = the channel is NOT OPEN.
                 jp      z,err_notopen_raise ; -> ERR 59 "file not open" (main.asm low
                                             ; region). MEASURED on the CF-3300: EOF(1)
@@ -1305,7 +1035,6 @@ ev_chan_hasfile:
                                             ; whatever FREAD_LEFT/FAT_FILESIZE held.
                                             ; Both callers (EOF, LOF) want this — and
                                             ; they are the ONLY two callers.
-    ENDIF
                 cp      LPT_MODE
                 ret                         ; CF set (A<LPT_MODE) = disk file channel
 ev_ff_dskf:                                 ; DSKF(d): free clusters on the drive
@@ -1330,40 +1059,26 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      '('
-    IF ROM_BASE < $4000
                 jp      nz,ev_f_empty       ; BUG C class (Fable 2026-07-17): CVI missing
                                             ; '(' -> deferred syntax error (was silent
                                             ; ev_f_err -> " 0"); ref = Syntax error
-    ELSE
-                jp      nz,ev_f_err
-    ENDIF
                 inc     ix
                 call    ev_sp
                 push    ix
                 pop     hl
                 call    str_eval            ; STRPTR -> [len][bytes]; HL advanced; CF=ok
-    IF ROM_BASE < $4000
                 ; BUG C class (Fable 2026-07-17): repack str_eval CALSLTs and can
                 ; exit NC with garbage IX on a nested malformed string fn
                 ; (CVI(LEFT$("AB")) -> silent 0) or a non-string arg -- defer FPERR=4
-                ; via ev_f_empty so check_expr_errors aborts. Lean str_eval is local
-                ; (IX-safe), so it keeps the plain ev_f_err (ev_f_empty is repack-only).
+                ; via ev_f_empty so check_expr_errors aborts.
                 jp      nc,ev_f_empty
-    ELSE
-                jp      nc,ev_f_err         ; not a string operand
-    ENDIF
                 push    hl
                 pop     ix                  ; IX = cursor past the string operand
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      ')'
-    IF ROM_BASE < $4000
                 jp      nz,ev_f_empty       ; BUG C class: missing ')' -> deferred syntax err
-    ELSE
-                jp      nz,ev_f_err
-    ENDIF
                 inc     ix
-    IF ROM_BASE < $4000
                 call    flt_int_result      ; CVI returns an int; a float nested in
                                             ;  the string arg must not stick (A only)
                 ld      hl,(STRPTR)
@@ -1375,16 +1090,7 @@ ev_ff_cvi:                                  ; CVI(s$): integer from s$'s first 2
                 ld      a,(hl)              ; high byte
                 ld      d,a                 ; DE = int (LE)
                 ret
-    ELSE
-                ld      hl,(STRPTR)
-                inc     hl                  ; -> the value bytes
-                ld      e,(hl)              ; low byte
-                inc     hl
-                ld      d,(hl)              ; high byte  -> DE = int (LE)
-                ret
-    ENDIF
 
-    IF ROM_BASE < $4000
 ; --- FRE(n) / FRE(s$): free memory (docs/spec-basic-binfre.md §4) -----------
 ; MEASURED on the VG-8020: the numeric argument is a DUMMY -- FRE(0), FRE(1),
 ; FRE(-1) and FRE(255) all agree once they are read at the SAME evaluation depth
@@ -1459,7 +1165,6 @@ ev_fre_close:
                 call    flt_int_result      ; an int result even when the argument
                 ld      de,(SH_PTR)         ;  was a float or a string (A only)
                 ret
-    ENDIF
 
     IF I2_RESIDENT
 ; --- PDL(n) / PAD(n): analog input devices, slice I2 -----------------------
@@ -1507,7 +1212,6 @@ ev_ff_pad_coord:
                 ret
     ENDIF
 
-    IF ROM_BASE < $4000
 ; =============================================================================
 ; Math pack slice 1a: ABS/SGN/INT/FIX/CINT/CSNG/CDBL (docs/spec-basic-math-
 ; pack.md §9). Thin wrappers over the resident page-0 fp_*/widen_*/round_*
@@ -2016,7 +1720,6 @@ evmc_exp_overflow:
 ; branch, no coarse magnitude check like evmc_exp's, no error tail), and every
 ; tenant COMPUTE-ONLY, so one shared `evmc_dispatch` does the FACTYP:=8 +
 ; flt_to_int16 refresh and the CALSLT-A-not-preserved discipline for all five.
-    ENDIF
 
 ; --- ev_f_varptr: VARPTR(<var>) -> address of the variable's value field -----
 ; Returns the address of the 2-byte value cell in zerobas's own variable table
@@ -2038,7 +1741,6 @@ ev_f_varptr:
                 jp      nc,ev_f_err
                 push    ix
                 pop     hl                  ; HL = cursor at the name
-    IF ROM_BASE < $4000
                 ; Fix (arrays slice-4c follow-up): VARPTR(A$) must hand back
                 ; the STRING descriptor address ([len][ptr], entry+3 of the
                 ; stride-6 string-scalar layout -- sub/arrays.asm elsize_
@@ -2054,11 +1756,9 @@ ev_f_varptr:
                 ; so D survives untouched.
                 call    var_str_type        ; A = 1 iff the name has a '$' suffix
                 ld      d,a
-    ENDIF
                 call    var_name_key        ; BC = key, HL past the name
                 push    hl
                 pop     ix                  ; IX = advanced cursor
-    IF ROM_BASE < $4000
                 ; F3: ensure the variable exists AT ITS RESOLVED TYPE (var_alloc_or_
                 ; find allocates a zero-valued entry if none exists yet, leaving an
                 ; existing one untouched), then hand back the address of its value
@@ -2090,42 +1790,19 @@ vptr_gottype:
                 inc     hl
                 inc     hl                  ; HL = value field (entry+3)
                 ex      de,hl               ; DE = the value-field address
-    ELSE
-                ; ensure the variable exists: read its value, write it back. A new
-                ; variable is allocated with its current (0) value; an existing one
-                ; is left unchanged. Then var_find gives the entry address.
-                push    bc
-                call    var_get_key         ; DE = current value (0 if unset)
-                pop     bc
-                push    bc
-                call    var_set_key         ; allocate-if-new, value unchanged
-                pop     bc
-                call    var_find            ; CF set, HL = entry address
-                jr      nc,vptr_none        ; table full -> address 0 (defensive)
-                inc     hl
-                inc     hl                  ; HL = value field (entry+2)
-                ex      de,hl               ; DE = the value-field address
-    ENDIF
 vptr_close:
                 call    ev_sp
                 ld      a,(ix+0)
                 cp      ')'
-    IF ROM_BASE < $4000
                 jp      nz,ev_f_empty       ; malformed close (incl. a consumed
                                             ; array subscript with no outer ')') ->
                                             ; the CHECKED deferred FPERR=4 syntax
                                             ; error, not the bare ERRMARK ev_f_err
                                             ; (which PRINT/LET's check_expr_errors
                                             ; never reads -> a silent wrong 0). Byte-
-                                            ; neutral vs ev_f_err; repack-only, as
-                                            ; ev_f_empty itself is (lean keeps the
-                                            ; frozen ev_f_err below).
-    ELSE
-                jp      nz,ev_f_err
-    ENDIF
+                                            ; neutral vs ev_f_err.
                 inc     ix
                 ret
-    IF ROM_BASE < $4000
 vptr_arr:
                 ; HL is still the cursor at '(' (var_name_key left it here and
                 ; nothing since -- push hl/pop ix copies, the type select and
@@ -2151,7 +1828,7 @@ vptr_arr:
                 ; AFTER the resolve; LD touches no flag and CALL preserves them,
                 ; so the `jr z` below still reads ary_op0_resolve's own result,
                 ; and DE (the address) is untouched. Covers the vptr_none
-                ; fall-through too. Repack-only -- lean has no array path here.
+                ; fall-through too.
                 ; flt_int_result (NOT the byte-identical set_factyp_int_ret):
                 ; `grep flt_int_result` is the audit tool for "which factors
                 ; return an int" -- VARPTR must show up in it.
@@ -2160,23 +1837,13 @@ vptr_arr:
                                             ; NZ: fall into vptr_none -- deferred
                                             ; error (eva_deferred convention; the
                                             ; statement aborts at check_expr_errors)
-    ENDIF
 vptr_none:
                 ld      de,0                ; no address (OOM / deferred error -> 0)
-    IF ROM_BASE < $4000
                 ret                         ; repack: FPERR already set on every path
                                             ; that reaches here (var_alloc_or_find OOM
                                             ; or an ary_op0_resolve error), so return
                                             ; the deferred 0 -- no ')' check (it could
                                             ; only raise a masking second error)
-    ELSE
-                call    ev_sp               ; lean: original bytes (byte-frozen)
-                ld      a,(ix+0)
-                cp      ')'
-                jp      nz,ev_f_err
-                inc     ix
-                ret
-    ENDIF
 
 ; --- ev_f_base ------------------------------------------------------------
 ; BASE(n) was descoped here for most of the project's life -- it parsed its
@@ -2185,8 +1852,7 @@ vptr_none:
 ; that divergence: our runtime's work-area table matches the reference byte for
 ; byte (docs/spec-basic-graphics-g8.md §4.1, measured on both), so the real
 ; implementation is a word fetch and lives with its VDP(n) sibling in
-; basic/graphics.asm. The LEAN build has no graphics at all, so it keeps the
-; stub.
+; basic/graphics.asm; `IF !G8_RESIDENT` selects the stub below instead.
     IF !G8_RESIDENT
 ev_f_base:
                 inc     ix                  ; skip the BASE token

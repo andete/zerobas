@@ -13,8 +13,7 @@
 ; paged out. These resident stubs do only what must stay resident: evaluate the
 ; coordinate/colour expressions (eval is resident), the SCREEN-2 mode precheck, the
 ; STEP/clip policy, and the work-area updates, then marshal a tiny param block and
-; hand off with one subrom_call. Repack-only (the page-0 tenant is reachable only in
-; the merged build); the lean cart ships no graphics -> byte-identical.
+; hand off with one subrom_call.
 ;
 ; Coordinates are int16 (a coordinate may legally be off-screen, e.g. 300 or -1 —
 ; a SILENT no-op, NOT clipped; §11.4). Only a coordinate OUTSIDE int16 raises
@@ -28,7 +27,6 @@
 ; MSX-BASIC language reference; the colour-clash rule, the clip/last-point behaviour
 ; and the tokens are black-box VG-8020 pins (spec §11.3/§11.4/§11.8/§11.9); the
 ; parser + marshalling are zerobas's own. No disassembly. See basic/PROVENANCE.md.
-    IF ROM_BASE < $4000
 
 ; --- ex_pset / ex_preset: the pixel-plot statements -------------------------
 ; Entry: HL on the PSET/PRESET token. The two differ ONLY in the default colour
@@ -683,12 +681,10 @@ ex_sprite:
                 ld      a,(hl)
     IF TRAPS_T4
                 ; The shared decode (program.asm onoff_decode). ⚠️ It lives behind
-                ; `IF ROM_BASE < $4000`, and this routine is always-assembled
+                ; `IF the repack build`, and this routine is always-assembled
                 ; page-1 code, so the split here is NOT cosmetic: TRAPS_T4 is
-                ; itself `ROM_BASE < $4000` (sysvars.inc), which makes the ELSE
-                ; below the lean build -- and the lean 16 KB cart must stay
-                ; BYTE-IDENTICAL (spec-basic-missing-class S-MC-5). The ELSE arm
-                ; is therefore the original instruction sequence, unchanged.
+                ; (spec-basic-missing-class S-MC-5). The ELSE arm is the
+                ; original instruction sequence, unchanged.
                 call    onoff_decode        ; A = ZTS_OFF / ZTS_ON / ZTS_STOP
                 jp      nc,gfx_syntax       ; bare SPRITE -> ERR 2 (measured)
 spr_set:
@@ -1060,4 +1056,3 @@ g8_missing:
                 jp      raise_error
     ENDIF
 
-    ENDIF

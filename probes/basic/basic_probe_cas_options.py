@@ -56,6 +56,14 @@ from omsx_run import _tcl_dquote                  # noqa: E402  (proven type-str
 
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 MACHINE_TAPE = "C-BIOS_MSX1_EU_TAPE"
+# The zerobas side runs on the REPACK machine, which carries the merged main ROM
+# in slot 0 and ships its own <CassettePort/>. It used to be MACHINE_TAPE below --
+# stock C-BIOS plus the tape patch -- with the retired lean 16 KB cart inserted as
+# a cartridge (RETIRE THE LEAN 16 KB CART S3, docs/spec-lean-retire-s3-gates.md).
+# MACHINE_TAPE is kept because it is still a real rig: stock BIOS + open cassette
+# stack, selectable via --machine / ZEROBAS_BASIC_MACHINE, and the only mode in
+# which a `-cart` is passed at all.
+ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE") or "C-BIOS_MSX1_EU_REPACK_DISK"
 TXTBASE = 0x8001
 WITNESS = 0xD0FF
 POISON = 0x11
@@ -85,7 +93,9 @@ after time {cap_time} {{ __cap }}
     open(tcl_path, "w").write(tcl)
     if os.path.exists(out):
         os.unlink(out)
-    cmd = [OMSX, "-machine", MACHINE_TAPE, "-cart", cart,
+    cmd = [OMSX, "-machine", ZB_MACHINE]
+    cmd += (["-cart", cart] if ZB_MACHINE == MACHINE_TAPE else [])
+    cmd += [
            "-cassetteplayer", cas_path, "-script", tcl_path]
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                             start_new_session=True)
@@ -108,7 +118,8 @@ after time {cap_time} {{ __cap }}
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cart", default=os.path.join(_ROOT, "build", "basic.rom"))
+    ap.add_argument("--cart", default=None,
+                    help="only used with the %s rig" % MACHINE_TAPE)
     args = ap.parse_args()
 
     ok = True

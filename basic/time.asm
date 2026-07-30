@@ -34,15 +34,11 @@
 ; a raw mod-65536 reading would have accepted as a legal 5-frame period). This
 ; slice is therefore the first of two consumers, not a one-off.
 ;
-; Repack-only (`IF ROM_BASE < $4000`): the lean 16 KB cart is byte-frozen, and a
-; new keyword-table row would change its crunch.
-;
 ; CLEAN-ROOM: black-box VG-8020 characterization only (probes/basic/
 ; basic_probe_time.py, 45/45) + the public MSX-BASIC language reference for the
 ; JIFFY work-area address. No disassembly. See basic/PROVENANCE.md.
 ; ===========================================================================
 
-    IF ROM_BASE < $4000
 
 ; --- ex_time_assign: `TIME = <expr>` ---------------------------------------
 ; Entry: HL -> the TIME token (exec_stmt dispatched on it without consuming it,
@@ -96,4 +92,3 @@ tm_err24:
 tm_raise:
                 jp      raise_error
 
-    ENDIF

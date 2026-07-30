@@ -68,10 +68,9 @@ DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/fatiocreate-body.inc basic/fatiow-body.inc \
          basic/readdata-body.inc basic/tokskip-body.inc \
          basic/sysvars.inc
-ROM   := $(BUILD)/basic.rom
 
 # zerobas-disk: a standalone 16 KB disk-interface ROM (not an IPS patch). Lives
-# in internal slot 3-1; built with the same pasmo + pad_rom flow as basic.rom.
+# in internal slot 3-1; built with the same pasmo + pad_rom flow as the BASIC image.
 DISK_SRC := disk/disk.asm
 # disk.asm is an orchestrator that `include`s these parts (assembled with -I disk);
 # listed as prerequisites so a change to any part triggers a rebuild.
@@ -193,17 +192,17 @@ SUB_ROM   := $(BUILD)/sub.rom
 TAPE_PATCHES := tape/zerobas-tape-msx1.ips tape/zerobas-tape-msx1.bps
 
 # Default goal: everything buildable with pasmo + python3 + openMSX's bundled ROMs.
-# NOT $(ROM): the lean 16 KB basic.rom is retired (docs/spec-lean-retire-s2-switch.md).
-# Its file rule below still works (`make build/basic.rom`) for the historical cart
-# probes, but nothing builds, ships, or gates it any more.
+# The BASIC image itself is $(RELOC_ROM) (a proof/staging target) and $(MAIN_ROM)
+# (the shipped merge, needs a C-BIOS checkout), so neither is here.
 all: $(DISK_ROM) $(SUB_ROM) $(TAPE_PATCHES)
 
 $(BUILD):
 	mkdir -p $(BUILD)
 
-$(ROM): $(SRC) $(DEPS) | $(BUILD)
-	$(PASMO) --bin $(SRC) $(ROM)
-	python3 tools/pad_rom.py $(ROM) 16384
+# NOTE: there is no `build/basic.rom` rule any more. It built the lean 16 KB
+# page-1-only cartridge, retired in full on 2026-07-29 (RETIRE THE LEAN 16 KB
+# CART, docs/spec-lean-retire-s3-gates.md) together with the 284 `IF ROM_BASE`
+# gates that selected it. $(SRC) now assembles the one $2812-based image.
 
 $(DISK_ROM): $(DISK_SRC) $(DISK_PARTS) | $(BUILD)
 	$(PASMO) -I disk --bin $(DISK_SRC) $(DISK_ROM)
@@ -234,8 +233,8 @@ sub: $(SUB_ROM)
 # phony targets are never anyone else's prerequisite.
 RELOC_ROM := $(BUILD)/basic-reloc.rom
 RELOC_SYM := $(BUILD)/basic-reloc.sym
-$(RELOC_SYM): basic/main-reloc.asm basic/main.asm $(DEPS) | $(BUILD)
-	$(PASMO) --bin basic/main-reloc.asm $(RELOC_ROM) $(RELOC_SYM)
+$(RELOC_SYM): $(SRC) $(DEPS) | $(BUILD)
+	$(PASMO) --bin $(SRC) $(RELOC_ROM) $(RELOC_SYM)
 # Grouped-target workaround (GNU make 3.81 has no `&:`): $(RELOC_SYM)'s recipe
 # above produces BOTH files; this is a no-op follower, same pattern as the
 # zerobas-main-eu.ips/.bps pair below.
@@ -293,14 +292,14 @@ subrom-closure-check: sub/basic-resident-abi.inc $(RELOC_SYM) $(SUB_ROM)
 	python3 tools/check_tenant_closure.py --page0 $(SUB_SYM) sub/sub.asm
 	python3 tools/check_tenant_closure.py --page1 $(SUB_SYM) sub/sub.asm
 
-# Assemble the $2812-based variant (basic/main-reloc.asm) and prove it lands the
-# "AB" header at $4000 and matches the shipping page-1 body byte-for-byte. This is
-# a proof/staging target only -- deliberately NOT in `all`; the merged main-ROM
-# splice that ships it is WS-3 (S4). See docs/cbios-repack-ws2-audit.md.
-# NOTE: no $(ROM) prerequisite since 2026-07-29 (RETIRE THE LEAN 16 KB CART, S2).
-# check_reloc.py's 4th check pinned the lean basic.rom to a frozen baseline and was
-# the ONLY reader of that argument; checks 1-3 read only $(RELOC_ROM) and the wall
-# readout reads only $(RELOC_SYM), so this target no longer builds lean at all.
+# Assemble the $2812-based image ($(SRC)) and prove it lands the "AB" header at
+# $4000 and spans the region it claims. This is a proof/staging target only --
+# deliberately NOT in `all`; the merged main-ROM splice that ships it is WS-3 (S4).
+# See docs/cbios-repack-ws2-audit.md.
+# NOTE: this used to also build the lean basic.rom, for check_reloc.py's 4th check
+# (a frozen-baseline pin, the ONLY reader of that argument). S2 deleted the check;
+# S3 deleted the build. Checks 1-3 read only $(RELOC_ROM), the wall readout only
+# $(RELOC_SYM).
 basic-reloc: $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM)
 	python3 tools/check_reloc.py $(RELOC_ROM) $(RELOC_SYM)
 	python3 tools/check_kwtable_identity.py $(RELOC_ROM) $(RELOC_SYM) $(SUB_ROM) $(SUB_SYM)
@@ -323,7 +322,7 @@ MAIN_PATCHES := zerobas-main-eu.ips zerobas-main-eu.bps
 # after a basic/*.asm edit and gates tested STALE BASIC ([[ips-rebuild-after-basic-change]]).
 # $(DEPS) already lists float-arith.asm/expr.asm/sysvars.inc, so float/math slices
 # now retrigger correctly. `repack-main` stays a phony alias for existing callers.
-$(MAIN_ROM): basic/main-reloc.asm basic/main.asm $(DEPS) tape/tape.asm \
+$(MAIN_ROM): $(SRC) $(DEPS) tape/tape.asm \
              tools/build_patches.py tools/build_mainrom.py tools/build_repacked_cbios.py | $(BUILD)
 	python3 tools/build_patches.py --main --cbios $(CBIOS)
 repack-main: $(MAIN_ROM)

@@ -37,18 +37,22 @@ import tempfile
 
 
 OMSX_RUN = os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib", "omsx_run.py")
-MACHINE = "C-BIOS_MSX1"
+# ⚠️ zerobas now runs on the REPACK machine, which carries the merged main ROM in
+# slot 0 -- there is no cartridge to insert. It used to be C-BIOS_MSX1 (or the
+# VG-8020) with the retired lean 16 KB cart in a slot; that build is gone
+# (RETIRE THE LEAN 16 KB CART S3, docs/spec-lean-retire-s3-gates.md).
+MACHINE = "C-BIOS_MSX1_EU_REPACK_DISK"
 COLS = 40                 # SCREEN 0 (TEXT1) width
 ROWS = 24
 NAMETBL_LEN = COLS * ROWS
 
 
-def run_lines(cart, lines, base=6.0, step=3.0, tail=6.0):
+def run_lines(lines, base=6.0, step=3.0, tail=6.0):
     """Type each direct-mode line (each followed by a separate Enter), then
     capture the SCREEN 0 name table once the dust settles."""
     out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="strvar_cap_")
     os.close(out_fd)
-    cmd = [sys.executable, OMSX_RUN, "--machine", MACHINE, "--cart", cart]
+    cmd = [sys.executable, OMSX_RUN, "--machine", MACHINE]
     t = base
     for line in lines:
         cmd += ["--type", line, "--type-delay", str(t)]
@@ -83,7 +87,6 @@ def screen_lines(cap):
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cart", required=True, help="zerobas basic.rom")
     args = ap.parse_args()
 
     ok = True
@@ -122,7 +125,7 @@ def main() -> int:
     ]
 
     for label, lines, expected in cases:
-        rows = screen_lines(run_lines(args.cart, lines))
+        rows = screen_lines(run_lines(lines))
         cond = expected in rows
         detail = "" if cond else f"got rows={[r for r in rows if r and 'ZB' != r.strip()][:8]}"
         check(label, cond, detail)

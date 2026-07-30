@@ -15,8 +15,7 @@
 ; no float work and no BIOS. It is warm rather than hot -- one CALSLT per READ
 ; item, and a READ loop's cost is dominated by the variable store around it.
 ;
-; The body is basic/readdata-body.inc, shared VERBATIM with the lean cart (which
-; still has it inline, so the lean image stays byte-identical). Only the (CF, DE)
+; The body is basic/readdata-body.inc. Only the (CF, DE)
 ; return contract changes shape: CF cannot ride back through subrom_call, so the
 ; tenant lands it in RDV_ST/RDV_VAL and the resident stub rebuilds it.
 ;

@@ -34,11 +34,14 @@
 ; into the real-MSX contiguous chain (program text -> scalars -> arrays ->
 ; free -> string heap), where var_find_typed/var_alloc_or_find below become
 ; thin glue over the ARY sub-ROM tenant's new SCALAR_FIND/SCALAR_ALLOC ops
-; (sub/arrays.asm) — VARTAB/VAREND are now DEAD in the repack build (the 128
-; B they described is freed RAM), unchanged/still-live in the lean build.
-; `var_find`/`var_get_key`/`var_set_key` (this section, unmodified) remain
-; the LEAN build's int-only implementation; every new typed routine is gated
-; `IF ROM_BASE < $4000` so the lean 16 KB basic.rom stays byte-identical.
+; (sub/arrays.asm) — VARTAB/VAREND are DEAD (the 128 B they described is freed
+; RAM).
+;
+; ⚠️ `var_find` / `var_get_key` / `var_set_key` (this section) are the old int-only
+; fixed-pool implementation and have NO CALLERS LEFT. They belonged to the retired
+; lean 16 KB cart. Removing them is a carve, filed under the ROM REGION STRUCTURE
+; REVIEW (TODO.md) rather than taken with the gate deletion, which had to stay
+; byte-identical.
 
 ; --- is_ident_cont: CF set if A is an identifier continuation char ----------
 ; (a letter 'A'..'Z'/'a'..'z' or a digit '0'..'9'). A preserved.
@@ -85,10 +88,8 @@ vnk_more:
 vnk_dig2:
                 ld      a,(hl)              ; digit second char, verbatim
                 jr      vnk_set2
-    IF ROM_BASE < $4000
 ; F3 S3a: the suffix now additionally RESOLVES the variable's type into
-; (VARTYPE), sysvars.inc — replacing the lean build's "consume and ignore"
-; vnk_suffix below. Consuming behaviour (which chars advance HL) is UNCHANGED:
+; (VARTYPE), sysvars.inc — replacing an earlier "consume and ignore" vnk_suffix. Consuming behaviour (which chars advance HL) is UNCHANGED:
 ; `%`/`!`/`#`/`$` are all still eaten; no suffix leaves HL on the following
 ; char, exactly as before.
 vnk_suffix:
@@ -129,21 +130,6 @@ vnk_dollar:
 vnk_eat:
                 inc     hl
                 ret
-    ELSE
-vnk_suffix:
-                ld      a,(hl)              ; optional type suffix, consumed/ignored
-                cp      '%'
-                jr      z,vnk_eat
-                cp      '!'
-                jr      z,vnk_eat
-                cp      '#'
-                jr      z,vnk_eat
-                cp      '$'
-                ret     nz
-vnk_eat:
-                inc     hl
-                ret
-    ENDIF
 
 ; --- var_str_type: does the name at (HL) carry a `$` suffix? -----------------
 ; in:  HL = cursor at the first name char (a letter). HL is NOT advanced.
@@ -159,11 +145,9 @@ vnk_eat:
 ; layer to choose the string path before delegating the real advance to
 ; var_name_key.
 var_str_type:
-    IF ROM_BASE < $4000
                 ld      a,(hl)              ; F3 S3b: capture name0 for the DEFtbl
                 call    upcase              ; default lookup below (the walk preserves
                 ld      b,a                 ; B); repack-only scratch use of B/DE
-    ENDIF
                 push    hl
 vst_walk:
                 ld      a,(hl)
@@ -174,7 +158,6 @@ vst_walk:
 vst_suffix:
                 cp      '$'
                 jr      z,vst_yes
-    IF ROM_BASE < $4000
                 cp      '%'                 ; an EXPLICIT numeric suffix is never a string,
                 jr      z,vst_no            ; whatever DEFSTR may say for this letter
                 cp      '!'
@@ -190,7 +173,6 @@ vst_suffix:
                 call    deftbl_lookup       ; A = DEFtbl default for name0 (B)
                 cp      DEFTBL_STR          ; (DEFSTR makes an unsuffixed name a string)
                 jr      z,vst_yes
-    ENDIF
 vst_no:
                 pop     hl
                 xor     a                   ; not a string (A=0, CF clear)
@@ -283,11 +265,10 @@ vsk_store:
                 ld      (hl),d
                 ret
 
-    IF ROM_BASE < $4000
 ; =============================================================================
-; F3 S3a — typed variable store (repack build only, docs/spec-basic-float-
-; core.md §11). var_find above stays the LEAN build's int-only 4-byte-stride
-; walk; these are its variable-width counterparts, keyed on (name0,name1,type).
+; F3 S3a — the typed variable store (docs/spec-basic-float-core.md §11). These
+; are the live counterparts to the dead int-only var_find walk above, keyed on
+; (name0, name1, type) and variable-width.
 ;
 ; Arrays slice-4b (docs/spec-basic-arrays-slice4b-scalar-reloc.md §3/§4/§5):
 ; the fixed VARTAB pool walk/room-check that used to live here MOVED into the
@@ -650,7 +631,6 @@ elas_err:
 elas_abort_fp:
                 pop     de                  ; discard [OFFSET]
                 jp      fp_runtime_error
-    ENDIF
 
 ; --- var_get / var_set: single-letter compatibility shims ------------------
 ; A = name (one char). Map to key (upcased name, 0) — identical to the key a
@@ -671,17 +651,12 @@ var_get:
                 call    upcase
                 ld      b,a
                 ld      c,0
-    IF ROM_BASE < $4000
                 call    deftbl_lookup       ; A = the letter's resolved default type
                 jp      var_load_fac        ; FAC/FACTYP=type, DE=int16 fast path (tail)
-    ELSE
-                jp      var_get_key
-    ENDIF
 var_set:
                 call    upcase
                 ld      b,a
                 ld      c,0
-    IF ROM_BASE < $4000
                 ld      a,2
                 ld      (FACTYP),a          ; FOR/NEXT & READ always hand var_set a plain
                                             ; int16 value (D-D: the loop math itself stays
@@ -690,9 +665,6 @@ var_set:
                                             ; instead of misreading FAC
                 call    deftbl_lookup       ; A = the letter's resolved default type
                 jp      var_store_fac       ; tail call (DE preserved across the lookup)
-    ELSE
-                jp      var_set_key
-    ENDIF
 
 ; --- string-variable store (own-design; see PROVENANCE.md) -----------------
 ; Parallel to the numeric var_find/get/set, but over STRTAB, whose entries are
@@ -705,10 +677,8 @@ var_set:
 ; entries in the SAME unified chain numeric scalars (4b) and arrays (1-3)
 ; already share — str_get_key/str_set_key become thin glue over the ARY
 ; tenant's scalar ops (ARY_OP 4/5, type=1), mirroring var_find_typed/
-; var_alloc_or_find (above) exactly. str_find (the old STRTAB walk) is
-; DELETED on the repack path — the lean build keeps it unmodified below
-; (its STRTAB pool is untouched, per H4 byte-identity).
-    IF ROM_BASE < $4000
+; var_alloc_or_find (above) exactly. str_find (the old STRTAB pool walk) is
+; DELETED.
 
 ; --- str_get_key: BC = key -> HL = descriptor [len][ptr] ---------------------
 ; Read-only: op=4 (SCALAR_FIND) never inserts, so an unset variable is never
@@ -834,116 +804,12 @@ ssk_target_oom:
                                             ; snapshot push above still ran)
                 ret                         ; FPERR already mapped+set (OOM)
 
-    ELSE
-
-; --- str_find: locate the string entry for key BC --------------------------
-; out: CF set  -> found,     HL = entry address (name0 field).
-;      CF clear -> not found, HL = first free slot (or STREND if full).
-; Clobbers A, DE, HL (BC preserved).
-str_find:
-                ld      hl,STRTAB
-sf_lp:
-                ld      a,h                 ; end of the string table?
-                cp      high STREND
-                jr      nz,sf_test
-                ld      a,l
-                cp      low STREND
-                jr      z,sf_full
-sf_test:
-                ld      a,(hl)              ; name0
-                or      a
-                jr      z,sf_free           ; empty slot -> not found
-                cp      b
-                jr      nz,sf_next
-                inc     hl
-                ld      a,(hl)              ; name1
-                dec     hl
-                cp      c
-                jr      z,sf_hit
-sf_next:
-                ld      de,STRENTSZ
-                add     hl,de
-                jr      sf_lp
-sf_hit:
-                scf
-                ret
-sf_free:
-                or      a
-                ret
-sf_full:
-                or      a
-                ret
-
-; --- str_get_key: BC = key -> HL = descriptor [len][bytes...] ----------------
-; Returns HL pointing at the entry's len byte (a valid [len][bytes] descriptor).
-; If the variable is unset, returns HL -> STR_EMPTY (a len-0 descriptor), so the
-; caller always has a printable/copyable value. Clobbers A, DE, HL (BC kept).
-str_get_key:
-                call    str_find
-                jr      nc,sgk_empty
-                inc     hl
-                inc     hl                  ; HL -> len field (+2) = descriptor
-                ret
-sgk_empty:
-                ld      hl,STR_EMPTY        ; len-0 descriptor (uninitialised = "")
-                ret
-STR_EMPTY:      db      0                   ; a shared empty-string descriptor
-
-; --- str_set_key: BC = key, DE -> source descriptor [len][ptr-or-bytes] ------
-; Copy the source string into the key's slot, allocating a new slot if
-; needed. If the table is full the assignment is silently dropped.
-; Clobbers A, DE, HL (BC kept). DE may point into STRTAB itself (var-to-var
-; copy A$=B$).
-;
-; The lean build's slot is an inline [len][bytes:32] value (unlike the
-; repack build's heap descriptor, which is why the repack body above has
-; diverged into ARY_OP glue) — this body is UNCHANGED since S3.
-str_set_key:
-                push    de                  ; str_find clobbers DE — guard the source ptr
-                call    str_find
-                pop     de                  ; DE = source descriptor (restored)
-                jr      c,ssk_store         ; existing slot
-                ld      a,h                 ; not found: free slot or full?
-                cp      high STREND
-                jr      nz,ssk_new
-                ld      a,l
-                cp      low STREND
-                ret     z                   ; table full -> drop
-ssk_new:
-                ld      (hl),b              ; write the name into the free slot
-                inc     hl
-                ld      (hl),c
-                dec     hl
-ssk_store:
-                ; HL = entry name0 field; DE = source descriptor. LDIR copies
-                ; (HL)->(DE), so the COPY needs HL=source, DE=dest: we read the
-                ; length here, then swap the roles before the LDIR.
-                inc     hl
-                inc     hl                  ; HL -> dest len field
-                ld      a,(de)              ; source length (DE = source descriptor)
-                cp      STRMAX+1
-                jr      c,ssk_len_ok
-                ld      a,STRMAX            ; clamp to STRMAX
-ssk_len_ok:
-                ld      (hl),a              ; store the (clamped) length at the dest
-                inc     hl                  ; HL -> dest bytes
-                inc     de                  ; DE -> source bytes
-                or      a
-                ret     z                   ; zero-length -> done
-                ld      c,a
-                ld      b,0                 ; BC = byte count
-                ex      de,hl               ; LDIR copies (HL)->(DE): HL=source, DE=dest
-                ldir
-                ret
-
-    ENDIF
 
 ; --- clear_vars: empty the numeric AND string tables (called at INIT / RUN) --
 ; Zero name0 of every slot (a 0 name0 = empty). Clearing the whole numeric
 ; region keeps it tidy; for strings, zeroing each entry's name0 marks it free.
 ; Clobbers A, BC, HL.
 clear_vars:
-    IF ROM_BASE < $4000
                 ; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §4,
                 ; D-DIR-2): empty the FOR and GOSUB frame stacks. This MOVED here
                 ; from run_prog, which was the only place that ever set them --
@@ -1010,36 +876,12 @@ cv_deftbl:                                  ; (RUN clears here first, then the p
                 ; AFTER establishing PRGEND -- init -> new_prog (jp vars_reset),
                 ; NEW -> jp new_prog, run_prog / ex_clear -> explicit vars_reset.
                 ; So the numeric scalar region no longer needs a fixed-pool wipe
-                ; here (the lean ELSE branch below still owns its own 128-byte
-                ; VARTAB wipe, so the lean build stays byte-identical).
-    ELSE
-                ld      hl,VARTAB
-                ld      bc,VARSLOTS*VARENTSZ
-cv_loop:
-                ld      (hl),0
-                inc     hl
-                dec     bc
-                ld      a,b
-                or      c
-                jr      nz,cv_loop
-    ENDIF
-    IF ROM_BASE < $4000
+                ; here.
                 ; Arrays slice-4c (§3d): string scalars are chain-resident
                 ; now, cleared by vars_reset (which every clear_vars CALLER
                 ; invokes itself, AFTER establishing PRGEND -- the §13a-F1
                 ; invariant documented above). The STRTAB pool this loop
-                ; used to wipe no longer exists on the repack path --
-                ; nothing to do here. cv_str (the wipe loop) is LEAN-ONLY.
-    ELSE
-                ; clear the string store: name0 = 0 in every slot
-                ld      hl,STRTAB
-                ld      b,STRSLOTS
-cv_str:
-                ld      (hl),0              ; name0 = free
-                ld      de,STRENTSZ
-                add     hl,de
-                djnz    cv_str
-    ENDIF
+                ; used to wipe no longer exists -- nothing to do here.
                 jp      fld_init            ; also reset the random-access field table
 
 ; --- RND_S0_PACKED: math pack slice 2e (repack build only, docs/spec-basic- -
@@ -1050,6 +892,4 @@ cv_str:
 ; ONLY by clear_vars above (via `ld hl,RND_S0_PACKED`) -- not reached by
 ; fallthrough, since clear_vars's own tail `jp fld_init` ends the routine
 ; before this point.
-    IF ROM_BASE < $4000
 RND_S0_PACKED:  db      $40,$64,$96,$51,$37,$23,$58
-    ENDIF

@@ -4,22 +4,21 @@
 ; fcbname-body.inc — the build_83_name 8.3-FCB-name builder body.
 ; ===========================================================================
 ; Shared, byte-identical, between:
-;   * the LEAN 16 KB cart (basic/bload.asm ELSE branch, ROM_BASE >= $4000) —
-;     inline at its original position, keeping the frozen cart byte-identical;
+;   * (retired) the lean 16 KB cart, inline at its original position;
 ;   * the sub-ROM PAGE-1 tenant (sub/fcbname.asm, SUBROM_IDX_FCBNAME) — evicted
 ;     here to free repack-main page-1 space for the interrupt-traps T1 slice
 ;     (docs/spec-basic-interrupt-traps.md §10.4, D-T-8c/D-T-8d).
-; The repack main ROM (ROM_BASE < $4000) does NOT include this body: it carries
+; The repack main ROM (the repack build) does NOT include this body: it carries
 ; only the resident marshalling shim (basic/bload.asm IF branch), which stores
 ; the source pointer to BN_PTR, subrom_calls the tenant, and reloads BN_PTR /
 ; converts BN_STAT back to CF — the casmatch/cas_open_match precedent.
 ;
-; The one external callee is `fcb_upcase`. In the lean cart it is a zero-byte EQU
-; onto the resident basic/interp.asm `upcase` (so the body assembles byte-identical
+; The one external callee is `fcb_upcase`. Resident it is a zero-byte EQU
+; onto basic/interp.asm's `upcase` (so the body assembles byte-identical
 ; to the frozen cart); in the page-1 tenant (where main page 1 is switched OUT, and
 ; the sub's own `upcase` clone is in the unmapped page-0 island) it is a co-located
-; page-1 clone label. The indirection keeps the body byte-frozen for the lean cart
-; while giving the page-1 tenant a reachable upcaser without a name collision.
+; page-1 clone label. The indirection gives the page-1 tenant a reachable upcaser
+; without a name collision, and leaves the resident bytes untouched.
 ;
 ; CLEAN-ROOM: original code, extracted verbatim from our own basic/bload.asm.
 ; Rules quarantined in basic/PROVENANCE.md §disk-BLOAD scratch FCB. No

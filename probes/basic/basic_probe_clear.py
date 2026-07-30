@@ -22,7 +22,7 @@ line via `jp exec_stmt`.
 Three test groups:
 
  1. Differential — HIMEM ($FC4A, 2 bytes LE) after `CLEAR 200,&HD000`:
-      reference Philips VG-8020  vs  zerobas (C-BIOS_MSX1 + cart).
+      reference Philips VG-8020  vs  zerobas (the repack machine).
       Both must store 0x00D0 (LE: 00 D0).
 
  2. Functional (zerobas only) — all four CLEAR forms parse correctly and let
@@ -63,7 +63,11 @@ if not (os.path.sep in OMSX and os.path.isfile(OMSX)):
 
 # Machines
 REF_MACHINE  = "Philips_VG_8020"   # real built-in MSX-BASIC (no --cart)
-ZB_MACHINE   = "C-BIOS_MSX1"       # zerobas cartridge under test
+# ⚠️ zerobas now runs on the REPACK machine, which carries the merged main ROM in
+# slot 0 -- there is no cartridge to insert. It used to be C-BIOS_MSX1 (or the
+# VG-8020) with the retired lean 16 KB cart in a slot; that build is gone
+# (RETIRE THE LEAN 16 KB CART S3, docs/spec-lean-retire-s3-gates.md).
+ZB_MACHINE   = "C-BIOS_MSX1_EU_REPACK_DISK"
 
 # Sysvar addresses
 # HIMEM: $FC4A — C-BIOS system variables (BSD-2-Clause) / MSX2 Technical
@@ -203,9 +207,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cart", required=True, help="zerobas basic.rom")
     args = ap.parse_args()
-    cart = args.cart
 
     ok = [True]   # mutable so check() can write it
 
@@ -229,7 +231,7 @@ def main() -> int:
 
     # zerobas side
     zb_ev = lines_for("CLEAR 200,&HD000")
-    zb_v  = run(ZB_MACHINE, cart, zb_ev, [(HIMEM, 2)])
+    zb_v  = run(ZB_MACHINE, None, zb_ev, [(HIMEM, 2)])
     zb_himem_raw = get(zb_v, HIMEM)
     zb_himem_val = le16(zb_himem_raw)
     print(f"  zb  HIMEM ($FC4A): {zb_himem_raw!r}  -> 0x{zb_himem_val:04X}"
@@ -257,7 +259,7 @@ def main() -> int:
 
     # 2a: CLEAR 200,&HD000 : POKE &HD000,&H5A
     #     read SENT ($D000) == 5A (line continued); ERRMARK pre-zeroed, must stay 00
-    v = run(ZB_MACHINE, cart,
+    v = run(ZB_MACHINE, None,
             lines_for(f"POKE &H{ERRMARK:04X},0:CLEAR 200,&HD000:POKE &H{SENT:04X},&H5A"),
             [(SENT, 1), (ERRMARK, 1), (HIMEM, 2)])
     check(ok, "CLEAR n,himem: line continues (POKE fires, SENT=5A)",
@@ -273,7 +275,7 @@ def main() -> int:
     # 2b: bare CLEAR : POKE &HD001,&H7B
     #     line continues (SENT2=7B); ERRMARK pre-zeroed, must stay 00
     SENT2 = 0xD001
-    v = run(ZB_MACHINE, cart,
+    v = run(ZB_MACHINE, None,
             lines_for(f"POKE &H{ERRMARK:04X},0:CLEAR:POKE &H{SENT2:04X},&H7B"),
             [(SENT2, 1), (ERRMARK, 1)])
     check(ok, "bare CLEAR: line continues (POKE fires, SENT2=7B)",
@@ -285,7 +287,7 @@ def main() -> int:
 
     # 2c: CLEAR ,&HD000 (string-space omitted, himem present)
     SENT3 = 0xD002
-    v = run(ZB_MACHINE, cart,
+    v = run(ZB_MACHINE, None,
             lines_for(f"POKE &H{ERRMARK:04X},0:CLEAR ,&HD000:POKE &H{SENT3:04X},&H3C"),
             [(SENT3, 1), (HIMEM, 2), (ERRMARK, 1)])
     check(ok, "CLEAR ,himem: line continues (POKE fires, SENT3=3C)",
@@ -300,7 +302,7 @@ def main() -> int:
 
     # 2d: CLEAR 200 (himem omitted, string-space only)
     SENT4 = 0xD003
-    v = run(ZB_MACHINE, cart,
+    v = run(ZB_MACHINE, None,
             lines_for(f"POKE &H{ERRMARK:04X},0:CLEAR 200:POKE &H{SENT4:04X},&H11"),
             [(SENT4, 1), (ERRMARK, 1)])
     check(ok, "CLEAR n (himem omitted): line continues (POKE fires, SENT4=11)",
@@ -323,7 +325,7 @@ def main() -> int:
     ref_obs = run(REF_MACHINE, None,
                   lines_for("CLEAR 200,&HD000"),
                   obs_mems)
-    zb_obs  = run(ZB_MACHINE, cart,
+    zb_obs  = run(ZB_MACHINE, None,
                   lines_for("CLEAR 200,&HD000"),
                   obs_mems)
 

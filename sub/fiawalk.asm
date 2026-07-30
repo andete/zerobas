@@ -6,7 +6,7 @@
 ;
 ; No new tenant index: it joins the existing page-1 fatprim tenant's fp_table,
 ; exactly as the G4 eviction's fat_rand_* rows did. The body (basic/fiawalked-
-; body.inc, shared verbatim with the lean cart) touches only FAT_*/FWR_* RAM and
+; body.inc, shared with the resident side) touches only FAT_*/FWR_* RAM and
 ; FSECTOR_BUF and calls nothing, so there is no marshalling beyond the fp_stash
 ; convention -- and since every path returns Cy = 0, only the ok tail is reachable.
 ;

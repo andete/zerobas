@@ -3,8 +3,11 @@
 
 ; zerobas — main.asm
 ; ===========================================================================
-; A clean-room, game-loader-scoped MSX1 BASIC, built as a standalone 16 KB
-; cartridge ROM. See README.md and PROVENANCE.md.
+; A clean-room MSX1 BASIC, assembled as one contiguous slot-0 image spanning the
+; reclaimed page-0 low region ($2812-$3FFF) plus page 1 ($4000-$7FFF). This is the
+; ONLY entry point: `pasmo basic/main.asm` is the whole interpreter build, and the
+; merged main ROM (zerobas-main-eu.ips/.bps) is this image spliced into a repacked
+; C-BIOS. See README.md and PROVENANCE.md.
 ;
 ; CLEAN-ROOM DISCIPLINE: every constant, address, and algorithm in this repo
 ; is traceable to an allowed source (MSX2 Technical Handbook, MSX Assembly
@@ -12,40 +15,41 @@
 ; oracle observations). Nothing is derived from an MSX-BASIC / GW-BASIC
 ; disassembly or a reference ROM disassembly. See PROVENANCE.md.
 ;
-; Runtime model: this is an "AB" cartridge. The BIOS finds the header at $4000
-; during boot and calls INIT. INIT never returns — it tokenises a line, the
-; executor dispatches it, and the BLOAD handler hands off to the loaded binary.
-; C-BIOS's CALBAS ($0159) is therefore never touched.
+; Runtime model: the "AB" header stays pinned at $4000. The BIOS finds it during
+; boot and calls INIT. INIT never returns — it tokenises a line, the executor
+; dispatches it, and the BLOAD handler hands off to the loaded binary. C-BIOS's
+; CALBAS ($0159) is therefore never touched.
 ; ===========================================================================
 
-; --- ROM base (cbios-repack arc, WS-2) -------------------------------------
-; The shipping build is a 16 KB slot-0 page-1 image based at $4000 (the default
-; below). The C-BIOS repack (docs/spec-cbios-repack-tooling.md) reclaims
-; $2812-$3FFF of page 0 *contiguous below* page 1, letting BASIC grow into one
-; ~21.5 KB $2812-$7FFF image. That relocated variant is assembled by the thin
-; wrapper basic/main-reloc.asm, which pre-defines ROM_BASE=$2812 before including
-; this file. Nothing else in the build sets ROM_BASE, so the default keeps the
-; production basic.rom byte-identical. See docs/cbios-repack-ws2-audit.md — the
-; hardcoded-address audit proved the interpreter is 100% label-based, so the only
-; base-dependent site in the whole source is this org.
+; --- image base (cbios-repack arc, WS-2) -----------------------------------
+; The C-BIOS repack (docs/spec-cbios-repack-tooling.md) reclaims $2812-$3FFF of
+; page 0 *contiguous below* page 1, so BASIC is one ~21.5 KB $2812-$7FFF image.
+; See docs/cbios-repack-ws2-audit.md — the hardcoded-address audit proved the
+; interpreter is 100% label-based, so this org is the only base-dependent site in
+; the whole source.
 ;
-; Defined BEFORE sysvars.inc so the string-engine RAM layout there can gate on it
-; (STRMAX / STRSCR / the temp ring differ between the lean and repack builds — see
-; sysvars.inc "string-variable store" and docs/spec-basic-string-engine.md §5).
-    IFNDEF ROM_BASE
-ROM_BASE:       equ     $4000
-    ENDIF
+; ⚠️ THIS IS A CONSTANT, NOT A KNOB. Until 2026-07-29 it was `ROM_BASE`, an
+; IFNDEF-overridable symbol with a second setting ($4000) that selected a 16 KB
+; page-1-only "lean" cartridge — a BASIC missing seven source files. That build is
+; retired and its 284 `IF ROM_BASE` gates are gone (RETIRE THE LEAN 16 KB CART S3,
+; docs/spec-lean-retire-s3-gates.md). Renamed so no reader takes it for a variant
+; selector: there is one image, and this is where it starts.
+;
+; Defined BEFORE sysvars.inc, which sites the string-engine RAM layout (STRMAX /
+; STRSCR / the temp ring — see sysvars.inc "string-variable store" and
+; docs/spec-basic-string-engine.md §5).
+BASIC_ORG:      equ     $2812
 
 ; SUB_BUILD distinguishes this main-ROM assembly from sub/sub.asm, which shares
 ; several body .inc files with it (bload-body.inc's ,R handoff differs by side).
 SUB_BUILD       equ     0
                 include "basic/sysvars.inc"
 
-                org     ROM_BASE
+                org     BASIC_ORG
 
-; --- reclaimed low region ($2812-$3FFF), relocated variant only ------------
-; When based below $4000 we fill the reclaimed page-0 span up to the header. The
-; string-engine arc (S3) is its first tenant: the keyword crunch table (moved down
+; --- reclaimed low region ($2812-$3FFF) ------------------------------------
+; The reclaimed page-0 span is filled up to the header. The string-engine arc
+; (S3) is its first tenant: the keyword crunch table (moved down
 ; from page 1 — which is full to $7FFF — to free room for the engine's growth, spec
 ; §5b) and the string engine itself (concat spine now; the S4 functions later). The
 ; interpreter is 100% label-based (docs/cbios-repack-ws2-audit.md), so code here is
@@ -54,7 +58,6 @@ SUB_BUILD       equ     0
 ; org $09EE — C-BIOS gap-1 fill, below this region — and are spliced by the merged
 ; main-ROM build; D5 as revised 2026-07-11 when float F2 filled the whole window,
 ; retiring the old $3A72–$3C43 mid-region hole. This region is BASIC's to $4000.)
-    IF ROM_BASE < $4000
 ; kwtable is NO LONGER included resident (subrom arc WAVE 3): both of its code
 ; readers are now sub-side — match_kw (the wave-2 tokeniser) and detok_kw/detok_kw2
 ; (the wave-3 detokeniser) — so the sole copy lives in sub/sub.asm. Dropping the
@@ -80,9 +83,8 @@ SUB_BUILD       equ     0
 ; copy/coercion (needs var_store_fac's value-field codec). The engine itself
 ; (descriptor walk, offset arithmetic, alloc, bound checks) is a sub-ROM
 ; page-0 tenant (sub/arrays.asm, SUBROM_IDX_ARY) — moved there because the
-; monolithic design overran this low region by ~284 B. Wholly repack-only
-; (every byte inside `IF ROM_BASE < $4000`), so — like str-engine/input/
-; float/float-arith/subromcall above — it lands in the reclaimed low region
+; monolithic design overran this low region by ~284 B. Like str-engine/input/
+; float/float-arith/subromcall above it lands in the reclaimed low region
 ; rather than page 1 (page 1 is otherwise full to $7FFF). References
 ; vars.asm/expr.asm/float-arith.asm/float.asm/interp.asm labels defined
 ; LATER in this same assembly (var_name_key, eval, stmt_error, ...) —
@@ -133,8 +135,7 @@ err_overflow:                               ; ERR 6 -- the shared tail, read on 
 ;
 ; Sited in the low region, whole: page 1 pays exactly ONE byte for this (the
 ; `jr` -> `jp` at raise_error's range test). Both raisers live here too, so the
-; six OPEN reject sites in files.asm keep their existing 3-byte `jp cc,<label>`
-; and the lean 16 KB cart stays byte-identical via an `equ` alias (files.asm).
+; six OPEN reject sites in files.asm keep their existing 3-byte `jp cc,<label>`.
 ;
 ; ⚠️ BOTH CODES ARE ORDINARY TRAPPABLE ERRORS, and that is a MEASURED CORRECTION
 ; to §5c, which read the gate's `err_badchan` row as "ERR 52 is not trappable"
@@ -201,7 +202,6 @@ err_file_notopen:
 ; $4000 - __MEAS_LOW_END. Emits no bytes; read from the reloc sym by check_reloc.py.
 __MEAS_LOW_END:
                 ds      $4000 - $, $00
-    ENDIF
 
 ; --- MSX cartridge header (MSX2 Technical Handbook, cartridge ROM format) ---
 ; 16 bytes: ID, INIT, STATEMENT, DEVICE, TEXT, then 6 reserved bytes. INIT
@@ -225,8 +225,7 @@ __MEAS_LOW_END:
 
 ; The BOOT-TIME half of the zerobas-sub plumbing (defines `try_sub_slot`,
 ; `sub_int_install`) — PROMOTED here out of the page-0 low region to fund the KEY
-; trap's $0038-path hook, which cannot leave it. Repack-only (the whole file is
-; inside `IF ROM_BASE < $4000`), so the lean 16 KB ROM stays byte-identical.
+; trap's $0038-path hook, which cannot leave it.
                 include "basic/subrom-boot.asm"
 
 ; Startup header (defines `show_title`).
@@ -275,24 +274,22 @@ __MEAS_LOW_END:
 
 ; Audio slice 1 (docs/spec-basic-audio-play.md §3.D): the SOUND statement handler
 ; (defines `ex_sound`) — a small synchronous resident leaf that coerces/masks the
-; register+value and writes the PSG directly. Its whole body is inside
-; `IF ROM_BASE < $4000`, so it emits nothing in the byte-full lean build and lands
-; in page 1 (which the disk/file eviction freed to ~1.1 KB) only in the repack
-; build. Placed here in page 1 rather than the now-full reclaimed low region.
+; register+value and writes the PSG directly. Lands in page 1 (which the disk/file
+; eviction freed to ~1.1 KB) rather than the now-full reclaimed low region.
                 include "basic/sound.asm"
 
 ; Audio Slice 2a (docs/spec-basic-audio-play-slice2a.md): the PLAY statement's
 ; resident stub (defines `ex_play`) — evaluates up to three MML string arguments
 ; and marshals each into its VCB, then hands off to the page-1 MML-parser tenant
 ; (sub/playparse.asm) with one subrom_call. Repack-only like `ex_sound` (the tenant
-; it drives is page-1, reachable only in the repack build); lean stays byte-identical.
+; it drives is page-1, reachable only in the repack build);.
                 include "basic/play.asm"
 
 ; Audio Slice 3 (docs/audio-slice3-characterization.md): the live music servicer
 ; (defines `play_service` + `play_install`) — drained from C-BIOS's $0038 ISR via
 ; the H.TIMI seam. Main-ROM PAGE-1 resident, reached by a near JP (NOT page-0, NOT a
 ; tenant — §4a: page-1 tenants run DI so the ISR never fires with page 1 switched
-; out). Repack-only like ex_sound/ex_play; lean stays byte-identical.
+; out). Repack-only like ex_sound/ex_play;.
                 include "basic/playsvc.asm"
 
 ; Interrupt traps slice T1 (docs/spec-basic-interrupt-traps.md): basic/traps.asm holds
@@ -311,9 +308,9 @@ __MEAS_LOW_END:
 ; stubs (defines `ex_pset`, `ex_preset`, `ev_f_point`, `parse_coord`, `gfx_in_range`).
 ; Eval the coordinate/colour expressions + STEP/clip/SCREEN policy, then marshal a
 ; tiny param block and hand off the pixel RMW to the page-0 tenant (sub/graphics.asm)
-; via one subrom_call. Repack-only (every byte inside `IF ROM_BASE < $4000`), landing
+; via one subrom_call. Repack-only (repack-only in the old two-build tree), landing
 ; in the page-1 tail freed by the disk/file eviction (the reclaimed low region is full)
-; -- same placement rationale as sound/play above. Lean stays byte-identical.
+; -- same placement rationale as sound/play above.
                 include "basic/graphics.asm"
 
 ; The LIST statement + the detokeniser (defines `ex_list`, `detok`).
@@ -357,35 +354,36 @@ __MEAS_LOW_END:
 
 ; LOCATE / SWAP / TRON / TROFF / MOTOR -- the MISSING class. Calls onoff_decode
 ; and trap_syntax (program.asm) and ln_div_entry (program.asm), so it follows
-; program.asm in the include order. The whole file is repack-only: the lean cart
-; assembles nothing from it and stays byte-identical.
+; program.asm in the include order.
                 include "basic/missing.asm"
 
 ; --- overflow guard: the image must not overrun the $8000 ceiling ----------
-; $8000 is the top of slot-0 page 1 in BOTH builds — the lean 16 KB $4000-$7FFF
-; image and the repacked ~21.5 KB $2812-$7FFF image (basic/main-reloc.asm). If a
-; future feature pushes code past it, the pad below would be a *negative* `ds`,
-; which pasmo assembles as a WARNING with exit 0 (a truncated/empty ROM) — a
-; silent corruption the build would not catch. So assert first: on overflow this
-; references an undefined symbol, forcing a clean ERROR (exit 1) whose NAME is the
-; diagnostic. When it fits, the IF body emits nothing, so the shipping basic.rom
-; stays byte-identical. A lean-build overflow is the signal to move the feature
-; behind `IF ROM_BASE < $4000` (repack-only) or trim it.
+; $8000 is the top of slot-0 page 1. If a future feature pushes code past it, the
+; pad below would be a *negative* `ds`, which pasmo assembles as a WARNING with
+; exit 0 (a truncated/empty ROM) — a silent corruption the build would not catch.
+; So assert first: on overflow this references an undefined symbol, forcing a
+; clean ERROR (exit 1) whose NAME is the diagnostic. When it fits, the IF body
+; emits nothing.
+;
+; ⚠️ The escape this used to name — "gate the feature on ROM_BASE" — no longer
+; exists (S3, above): there is no second build to exclude a feature from. The
+; remaining moves are to TRIM it or to EVICT it to a sub-ROM tenant
+; (docs/subrom-tenant-playbook.md), which is what the diagnostic now says.
 ;
 ; Two checks: a moderate overrun leaves $ in $8001-$FFFF (caught by the first); a
 ; catastrophic one (>32 KB past the ceiling) wraps $ past 64 KB back below the org,
 ; where the location counter can never legitimately sit (caught by the second).
     IF $ > $8000
-                db      BASIC_IMAGE_OVERRAN_8000_CEILING__GATE_FEATURE_ON_ROM_BASE_OR_TRIM
+                db      BASIC_IMAGE_OVERRAN_8000_CEILING__TRIM_IT_OR_EVICT_TO_SUBROM
     ENDIF
-    IF $ < ROM_BASE
+    IF $ < BASIC_ORG
                 db      BASIC_IMAGE_WRAPPED_PAST_64K__FEATURE_FAR_TOO_LARGE__SPLIT_IT
     ENDIF
 
 ; Measurement label (subrom wave-2 pre-gate, spec §7.1): page-1 free =
-; $8000 - __MEAS_PAGE1_END. Emits no bytes; present in BOTH builds (the wave-2
-; win — evicting the whole tokeniser to sub-ROM — shows up here as the reloc build's
-; page-1 tail growing). Read from the reloc sym by check_reloc.py.
+; $8000 - __MEAS_PAGE1_END. Emits no bytes; the wave-2 win — evicting the whole
+; tokeniser to sub-ROM — shows up here as the page-1 tail growing. Read from the
+; sym by check_reloc.py.
 __MEAS_PAGE1_END:
 
 ; --- pad to the $8000 page ceiling -----------------------------------------

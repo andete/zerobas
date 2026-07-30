@@ -17,7 +17,7 @@
 ; which needs the BIOS but NOTHING from main page-1 — comes here, as a page-1
 ; tenant (mirrors the disk DSKIO / math-pack precedent, SUBROM_ENTRY_BASE_P1).
 ;
-; The shared body lives in basic/format-body.inc (byte-for-byte the lean cart's
+; The shared body lives in basic/format-body.inc (the shared
 ; inline copy — same file, same bytes, see that file's own header). Here it
 ; binds `write_sector` to a SUB-LOCAL CALSLT write path (below): main's
 ; basic/fat.asm write_sector/dskio_calslt are main-page-1-resident, invisible to
@@ -46,7 +46,7 @@
 ; Read FMT_GEOMSEL (0 = 360k, 1 = 720k; set by the resident menu before the
 ; call) and tail into the shared build/write body (format-body.inc) with
 ; HL = the chosen descriptor's base — exactly the argument fmt_selected
-; expects in the lean/pre-eviction shape. Every exit from that body returns
+; expects in the pre-eviction shape. Every exit from that body returns
 ; (via an early `ret c` or the final write_sector tail) straight back through
 ; here to subrom_call's caller; FMT_RESULT is already current by then (see the
 ; sub-local write_sector below), so this entry needs no wrap-up code of its own.

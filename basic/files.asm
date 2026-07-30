@@ -221,10 +221,9 @@ de_ext:
 ;   * up to FCH_CEIL channels open at once — a real multi-channel table
 ;     (MAXFILES) over fat.asm's single global state, via the write-back context
 ;     cache in the channel-manager section below. Channel numbers are
-;     range-checked to MAXF. ⚠️ FCH_CEIL is 15 in the repack build (the MEASURED
-;     reference ceiling — D-FCH §3.2 made the table dynamic, so unused channels
-;     cost nothing) and 2 in the byte-full lean cart, which keeps the old static
-;     [state][512-byte buffer] table. The per-channel CHARGE (50 B out of FRE(0),
+;     range-checked to MAXF. ⚠️ FCH_CEIL is 15 — the MEASURED reference ceiling
+;     (D-FCH §3.2 made the table dynamic, so unused channels cost nothing).
+;     The per-channel CHARGE (50 B out of FRE(0),
 ;     vs the reference's 267) is the remaining deliberate divergence.
 ;   * INPUT#/LINE INPUT# fill STRING variables only (numeric INPUT# is Phase 3);
 ;     a value longer than STRMAX is truncated (the string layer's own limit).
@@ -439,17 +438,11 @@ oo_fail_syn:
                 jp      stmt_error
 
 ; --- oo_fail_bfn: OPEN's BAD FILE NUMBER reject (S-FCH-2, ERR 52) ------------
-; The body lives in main.asm's low region (page 1 is the scarce wall); this is
-; only the LEAN-CART alias. ⚠️ THIS `equ` IS WHAT DISSOLVES §5c's SECOND OPEN
-; QUESTION. The old cost probe repointed each reject site unconditionally to a
-; label the 16 KB cart does not define, so the lean build would not assemble and
-; landing "needed them gated per-site, or the lean cart retired". Aliasing the
-; LABEL instead of gating the SITES means every `jp cc,oo_fail_bfn` above
-; assembles to the exact bytes `jp cc,oo_fail_syn` did in the lean build — zero
-; sites gated, zero bytes moved, check_reloc.py's byte-identity intact.
-    IF ROM_BASE >= $4000
-oo_fail_bfn     equ     oo_fail_syn         ; lean 16 KB cart: no ERR 52, no disk-range
-    ENDIF                                   ; message pool -- reject as Syntax error,
+; The body lives in main.asm's low region (page 1 is the scarce wall).
+; (§5c's second open question was dissolved by aliasing the LABEL rather than
+; gating the six reject SITES: every `jp cc,oo_fail_bfn` above then assembled to
+; the exact bytes `jp cc,oo_fail_syn` did, so no site needed a gate and no byte
+; moved. The retired lean cart, which defined neither body, rode on that alias.)
                                             ; exactly as before this slice
 
 ; --- OPEN "LPT:"/"CRT:" device channel --------------------------------------
@@ -739,19 +732,13 @@ opr_bad:
 ; --- LINE: disambiguate LINE INPUT (file/console) from graphics LINE (G3) ------
 ; Runtime disambiguation (docs/spec-basic-graphics-g3.md §7, measured §11.1): after
 ; the LINE token, an INPUT token ($85) means LINE INPUT; anything else — the graphics
-; forms all begin with '(' ($28), '-' ($F2) or STEP ($DC) — is a graphics LINE. On
-; the lean build there is no graphics tenant, so the non-INPUT branch stays a Syntax
-; error (byte-identical lean cart).
+; forms all begin with '(' ($28), '-' ($F2) or STEP ($DC) — is a graphics LINE.
 ex_line:
                 inc     hl                  ; HL -> bytes after the LINE token
                 call    skip_spaces
                 ld      a,(hl)
                 cp      INPUT_TOKEN         ; LINE must be followed by INPUT ...
-    IF ROM_BASE < $4000
                 jp      nz,ex_line_gfx      ; repack: else it's a graphics LINE (graphics.asm)
-    ELSE
-                jp      nz,stmt_error       ; lean: graphics LINE unsupported (byte-identical)
-    ENDIF
                 inc     hl                  ; HL -> after INPUT
                 ld      a,1                 ; read mode = LINE (stop at CR only)
                 jr      input_common
@@ -765,13 +752,8 @@ input_common:
                 call    skip_spaces
                 ld      a,(hl)
                 cp      '#'                 ; file form (#n) vs the console form
-    IF ROM_BASE < $4000
                 jp      nz,input_console    ; repack: console INPUT / LINE INPUT (basic/input.asm)
-    ELSE
-                jp      nz,stmt_error       ; lean: console INPUT = Phase 3
-    ENDIF
                 inc     hl
-    IF ROM_BASE < $4000
                 ; §5.7 gaps: a mid-statement FP error in the channel-number
                 ; expression must abort the RUN here, before the field is read,
                 ; matching the reference's abort-before-read ordering (was:
@@ -785,9 +767,6 @@ input_common:
                 ; still derails through fch_valid to "load error" (coercion skipped
                 ; on a hard-zeroed type mismatch) -- that ordering is untouched.
                 call    eval_chan
-    ELSE
-                call    eval                ; DE = channel number
-    ENDIF
                 ld      a,e
                 call    fch_valid
                 jp      nc,load_error       ; 0 or > MAXF -> bad file number
@@ -834,15 +813,10 @@ inp_readvar:
                 push    bc                  ; guard the variable key across the read
                 call    read_into_strscr    ; fill STRSCR [len][bytes] from the file
                 pop     bc
-    IF ROM_BASE < $4000
                 call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
                 ex      de,hl               ; DE = RVDESC (str_set_key's source arg)
-    ELSE
-                ld      de,STRSCR
-    ENDIF
                 call    str_set_key         ; store the line into the string variable
                 pop     hl
-    IF ROM_BASE < $4000
                 ; arrays slice-4c (§7.3) follow-up, same disposition as
                 ; console/LINE INPUT's own checks (basic/input.asm): a
                 ; scalar-CHAIN OOM here sets FPERR but does not itself abort.
@@ -856,7 +830,6 @@ inp_readvar:
                 ; practice: str_set_key's own D-2 path handles a bad source
                 ; descriptor before it would reach here).
                 call    check_expr_errors
-    ENDIF
                 jp      exec_stmt
 
 ; read_into_strscr — read bytes from the open channel into the STRSCR descriptor
@@ -1014,25 +987,12 @@ ifc_zero:
 ; hazard — but any NEW caller must be checked against that contract.
 ; Clobbers A, BC, DE, IX.
 fch_ctx_addr:
-    IF ROM_BASE < $4000
                 ld      (SH_LEN),a          ; the channel number (1-based)
                 ld      a,18
                 ld      (SH_OP),a           ; op 18 = channel block address
                 call    call_strheap
                 ld      hl,(SH_PTR)
                 ret
-    ELSE
-                dec     a                   ; 0-based block index
-                ld      hl,FCH_CTX          ; lean: the STATIC table
-                or      a
-                ret     z                   ; index 0 -> FCH_CTX
-                ld      b,a
-                ld      de,FCH_CTXSZ
-fca_lp:
-                add     hl,de
-                djnz    fca_lp
-                ret
-    ENDIF
 
 ; D-FCH S-FCH-1 (docs/spec-basic-filechan-alloc.md §3.1): the two halves of the
 ; write-back cache that REPLACED the per-channel 512-byte save copy both live in
@@ -1057,20 +1017,13 @@ fch_save_active:
                 ld      a,(FCH_ACTIVE)
                 or      a
                 ret     z                   ; nothing live -> nothing to save
-    IF ROM_BASE < $4000
                 call    fch_flush_active
                 ld      a,(FCH_ACTIVE)      ; the CALSLT inside clobbered it
-    ENDIF
                 call    fch_ctx_addr        ; HL = ctx[active]
                 ex      de,hl               ; DE = ctx dest
                 ld      hl,FCH_STATE0       ; copy the 50-byte engine-state span
                 ld      bc,FCH_STATESZ
                 ldir                        ; DE -> ctx + FCH_STATESZ
-    IF ROM_BASE >= $4000
-                ld      hl,FSECTOR_BUF      ; lean: then the 512-byte data buffer
-                ld      bc,512
-                ldir
-    ENDIF
                 ret
 
 ; fch_load_ctx — load channel A's context block into the engine globals and make
@@ -1083,16 +1036,9 @@ fch_load_ctx:
                 ld      de,FCH_STATE0
                 ld      bc,FCH_STATESZ
                 ldir                        ; ctx state -> globals
-    IF ROM_BASE >= $4000
-                ld      de,FSECTOR_BUF      ; lean: ctx buffer -> FSECTOR_BUF
-                ld      bc,512
-                ldir
-    ENDIF
                 pop     af
                 ld      (FCH_ACTIVE),a
-    IF ROM_BASE < $4000
                 call    fch_restage         ; re-read this channel's staged sector
-    ENDIF
                 ret
 
 ; fch_sync_mirror — FCH_NUM = FCH_ACTIVE, FCH_MODE = FCH_MODES[FCH_ACTIVE].
@@ -1115,17 +1061,13 @@ fch_select:
                 ld      a,(FCH_ACTIVE)
                 cp      b
                 jr      z,fsel_sync         ; already live -> just refresh the mirror
-    IF ROM_BASE < $4000
                 push    ix                  ; ⚠️ ONE guard covering BOTH CALSLTs
-    ENDIF                                   ; below (detach + re-stage). Hoisted
                 push    bc                  ; here rather than duplicated inside
                 call    fch_save_active     ; save/load because every IX-critical
                 pop     bc                  ; caller -- expr.asm's EOF/LOF and
                 ld      a,b                 ; strvar.asm's INPUT$, whose token
                 call    fch_load_ctx        ; cursor IS IX -- enters through HERE.
-    IF ROM_BASE < $4000                     ; fch_claim's caller (do_open) holds
                 pop     ix                  ; its cursor in HL and already guards
-    ENDIF                                   ; for CALSLT, so it needs no guard.
 fsel_sync:
                 jp      fch_sync_mirror
 
@@ -1265,23 +1207,6 @@ do_kill:
                 ; remains. C tracks whether anything was deleted -> File not found
                 ; (load_error) if the pattern matched nothing (Q4.1). A non-wildcard
                 ; name simply matches once, exactly as before.
-    IF ROM_BASE >= $4000
-                ; lean cart: the delete loop inline (byte-identical baseline).
-                ld      c,0                 ; C = deleted-any flag
-dk_loop:
-                push    bc
-                call    fat_delete          ; free chain + $E5-mark the first match
-                pop     bc
-                jr      c,dk_done           ; no (further) match -> stop
-                ld      c,1                 ; deleted at least one
-                jr      dk_loop
-dk_done:
-                pop     hl                  ; restore text cursor
-                ld      a,c
-                or      a
-                jp      z,load_error        ; nothing matched -> File not found
-                jp      exec_stmt
-    ELSE
                 ; repack: the loop runs in the dirverb_tenant (sub page 1),
                 ; calling fat_delete sub-locally; DISKOP_STATUS returns the
                 ; deleted-any flag (docs/spec-evict-diskfile-cluster.md §12).
@@ -1295,7 +1220,6 @@ dk_done:
                 or      a
                 jp      z,load_error        ; nothing matched -> File not found
                 jp      exec_stmt
-    ENDIF
 
 ; --- NAME "old" AS "new" — rename a file -----------------------------------
 ; Locate the OLD file, then overwrite its directory entry's 11-byte 8.3 name field
@@ -1350,24 +1274,6 @@ do_name:
                 inc     hl
                 ; read the dir sector, overwrite the 11-byte name, write it back.
                 push    hl                  ; guard text cursor across CALSLT
-    IF ROM_BASE >= $4000
-                ; lean cart: stamp inline (byte-identical baseline).
-                ld      de,(FWR_DIRSEC)
-                ld      hl,FSECTOR_BUF
-                call    read_sector
-                jr      c,nm_fail2
-                ld      hl,FSECTOR_BUF
-                ld      de,(FWR_DIROFF)
-                add     hl,de               ; HL -> the entry in the buffer
-                ex      de,hl               ; DE -> dest name field
-                ld      hl,DISK_FCB_NAME    ; source = the new 8.3 name
-                ld      bc,11
-                ldir                        ; overwrite the 11-byte 8.3 name
-                ld      de,(FWR_DIRSEC)
-                ld      hl,FSECTOR_BUF
-                call    write_sector
-                jr      c,nm_fail2
-    ELSE
                 ; repack: the read+overwrite+write runs in the dirverb_tenant
                 ; (sub page 1). FWR_DIRSEC/FWR_DIROFF (the located OLD entry, set
                 ; by the resident fat_mount+fat_find above) and DISK_FCB_NAME (the
@@ -1380,7 +1286,6 @@ do_name:
                 ld      a,(DISKOP_STATUS)
                 or      a
                 jr      nz,nm_fail2         ; tenant I/O error
-    ENDIF
                 pop     hl                  ; restore text cursor
                 jp      exec_stmt
 nm_fail:
@@ -1398,8 +1303,8 @@ nm_fail2:
 ; is closed first (OUTPUT ones flushed + Ctrl-Z-stamped) and every variable is
 ; CLEARed. zerobas accepts 0..FCH_CEIL, which the repack build sets to the MEASURED
 ; reference ceiling of 15 (D-FCH §3.2: the blocks are carved out of the FRE(0) pool
-; at MAXFILES time, so an unused channel costs nothing and the ceiling was free);
-; the lean cart keeps 2. ⚠️ A larger value is still a `syntax error` where the
+; at MAXFILES time, so an unused channel costs nothing and the ceiling was free).
+; ⚠️ A larger value is still a `syntax error` where the
 ; reference raises ERR 5 Illegal function call — the CLASS is wrong, and is
 ; S-FCH-2's, not this statement's. Entry: HL on the MAX token.
 ; See basic/PROVENANCE.md §MAXFILES.
@@ -1417,7 +1322,6 @@ ex_maxfiles:
                 call    eval                ; DE = requested ceiling
                 ld      a,d
                 or      a
-    IF ROM_BASE < $4000
                 ; S-FCH-2 (first piece): the out-of-domain reject is ERR 5
                 ; `Illegal function call`, as MEASURED — `MAXFILES=16` and
                 ; `MAXFILES=255` both raise it on the CF-3300, read via
@@ -1436,12 +1340,6 @@ ex_maxfiles:
                 ld      a,e
                 cp      FCH_CEIL+1
                 jp      nc,gb_illegal       ; > FCH_CEIL -> ERR 5
-    ELSE
-                jp      nz,stmt_error       ; > 255 -> out of range
-                ld      a,e
-                cp      FCH_CEIL+1
-                jp      nc,stmt_error       ; > FCH_CEIL -> beyond our RAM ceiling
-    ENDIF
                 push    de                  ; guard the requested value
                 push    hl                  ; guard the text cursor across CALSLT
                 call    fch_close_all       ; MAXFILES reinitialises: close everything
@@ -1449,7 +1347,6 @@ ex_maxfiles:
                 pop     de
                 ld      a,e
                 ld      (MAXF),a            ; commit the new ceiling (0..FCH_CEIL)
-    IF ROM_BASE < $4000
                 ; D-FCH §3.2 / characterization §9: MAXFILES CLEARs variables
                 ; UNCONDITIONALLY -- even when the value does not change (the
                 ; `sem_same` row is what pins that; "clears only when it
@@ -1470,9 +1367,6 @@ ex_maxfiles:
                 ; it was 8 bytes, and page 1 had 1. (S-FCH-1's lesson a third
                 ; time: the cost was SITING.)
                 jp      clr_done
-    ELSE
-                jp      exec_stmt
-    ENDIF
 
 ; --- MERGE "name" — merge an ASCII program from disk ------------------------
 ; Reads a SAVE",A"-style ASCII (line-numbered text) program file and stores each

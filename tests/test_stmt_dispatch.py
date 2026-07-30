@@ -46,11 +46,11 @@ So the test has two halves, and it needs both:
 `dw` targets are additionally resolved against the symbol file, so an address
 that is not any `ex_*` label is reported rather than silently accepted.
 
-Both builds are covered, and that is deliberate: D-KW-2 changes SHARED code, so
-it moves the lean 16 KB cart too (`tools/check_reloc.py` LEAN_SHA256 was updated
-in the same commit, which that file's comment requires to be deliberate). The
-lean build is the frozen shipping artifact, so it gets the same per-entry proof
-as the repack build rather than an argument that the change "is just a refactor".
+This used to run TWICE, once per build, because D-KW-2 changed SHARED code and
+so moved the frozen lean 16 KB cart too. That build is retired along with the
+`IF ROM_BASE` gates that selected it (RETIRE THE LEAN 16 KB CART S3,
+docs/spec-lean-retire-s3-gates.md), so there is one image and one column, and
+EXPECTED no longer carries a per-entry guard field.
 
 Oracle: the dispatch contract itself — a handler's `in:` is HL = the statement
 cursor, and control arrives by jump, not call. No reference ROM is involved.
@@ -87,85 +87,85 @@ from msxtest import Machine  # noqa: E402
 # a new statement should not be able to appear in the dispatch without the gate
 # being told about it.
 EXPECTED = [
-    ('COLON', 'ex_sep', ''),
-    ('BLOAD_TOKEN', 'ex_bload', ''),
-    ('CLOAD_TOKEN', 'ex_cload', ''),
-    ('LOAD_TOKEN', 'ex_load', ''),
-    ('RUN_TOKEN', 'ex_run', ''),
-    ('BSAVE_TOKEN', 'ex_bsave', ''),
-    ('SAVE_TOKEN', 'ex_save', ''),
-    ('FILES_TOKEN', 'ex_files', ''),
-    ('MERGE_TOKEN', 'ex_merge', ''),
-    ('OPEN_TOKEN', 'ex_open', ''),
-    ('INPUT_TOKEN', 'ex_input', ''),
-    ('LINE_TOKEN', 'ex_line', ''),
-    ('CLOSE_TOKEN', 'ex_close', ''),
-    ('KILL_TOKEN', 'ex_kill', ''),
-    ('NAME_TOKEN', 'ex_name', ''),
-    ('MAX_TOKEN', 'ex_maxfiles', ''),
-    ('FIELD_TOKEN', 'ex_field', ''),
-    ('LSET_TOKEN', 'ex_lset', ''),
-    ('RSET_TOKEN', 'ex_rset', ''),
-    ('GET_TOKEN', 'ex_get', ''),
-    ('PUT_TOKEN', 'ex_put', ''),
-    ('CALL_TOKEN', 'ex_call', ''),
-    ("'_'", 'ex_call_us', ''),
-    ('CSAVE_TOKEN', 'ex_csave', ''),
-    ('POKE_TOKEN', 'ex_poke', ''),
-    ('VPOKE_TOKEN', 'ex_vpoke', ''),
-    ('OUT_TOKEN', 'ex_out', ''),
-    ('CLEAR_TOKEN', 'ex_clear', ''),
-    ('DEF_TOKEN', 'ex_def', ''),
-    ('PRINT_TOKEN', 'ex_print', ''),
-    ('CLS_TOKEN', 'ex_cls', ''),
-    ('SCREEN_TOKEN', 'ex_screen', ''),
-    ('COLOR_TOKEN', 'ex_color', ''),
-    ('WIDTH_TOKEN', 'ex_width', ''),
-    ('KEY_TOKEN', 'ex_key', ''),
-    ('LIST_TOKEN', 'ex_list', ''),
-    ('REM_TOKEN', 'ex_rem', ''),
-    ('DATA_TOKEN', 'ex_data', ''),
-    ('READ_TOKEN', 'ex_read', ''),
-    ('RESTORE_TOKEN', 'ex_restore', ''),
-    ('GOTO_TOKEN', 'ex_goto', ''),
-    ('GOSUB_TOKEN', 'ex_gosub', ''),
-    ('ON_TOKEN', 'ex_on', ''),
-    ('RETURN_TOKEN', 'ex_return', ''),
-    ('FOR_TOKEN', 'ex_for', ''),
-    ('NEXT_TOKEN', 'ex_next', ''),
-    ('IF_TOKEN', 'ex_if', ''),
-    ('END_TOKEN', 'ex_end', ''),
-    ('STOP_TOKEN', 'ex_stop', ''),
-    ('CONT_TOKEN', 'ex_cont', ''),
-    ('ELSE_TOKEN', 'ex_rem', ''),
-    ('LET_TOKEN', 'ex_letkw', ''),
-    ('PEEK_PREFIX', 'ex_ff_stmt', 'ROM_BASE < $4000'),
-    ('DIM_TOKEN', 'ex_dim', 'ROM_BASE < $4000'),
-    ('ERASE_TOKEN', 'ex_erase', 'ROM_BASE < $4000'),
-    ('ERROR_TOKEN', 'ex_error', 'ROM_BASE < $4000'),
-    ('RESUME_TOKEN', 'ex_resume', 'ROM_BASE < $4000'),
-    ('SOUND_TOKEN', 'ex_sound', 'ROM_BASE < $4000'),
-    ('PLAY_TOKEN', 'ex_play', 'ROM_BASE < $4000'),
-    ('BEEP_TOKEN', 'ex_beep', 'ROM_BASE < $4000'),
-    ('PSET_TOKEN', 'ex_pset', 'ROM_BASE < $4000'),
-    ('PRESET_TOKEN', 'ex_preset', 'ROM_BASE < $4000'),
-    ('CIRCLE_TOKEN', 'ex_circle', 'ROM_BASE < $4000'),
-    ('PAINT_TOKEN', 'ex_paint', 'ROM_BASE < $4000'),
-    ('DRAW_TOKEN', 'ex_draw', 'ROM_BASE < $4000'),
-    ('SPRITE_TOKEN', 'ex_sprite', 'ROM_BASE < $4000'),
-    ('VDP_TOKEN', 'ex_vdp_assign', 'ROM_BASE < $4000'),
-    ('BASE_TOKEN', 'ex_base_assign', 'ROM_BASE < $4000'),
-    ('TIME_TOKEN', 'ex_time_assign', 'ROM_BASE < $4000'),
+    ('COLON', 'ex_sep'),
+    ('BLOAD_TOKEN', 'ex_bload'),
+    ('CLOAD_TOKEN', 'ex_cload'),
+    ('LOAD_TOKEN', 'ex_load'),
+    ('RUN_TOKEN', 'ex_run'),
+    ('BSAVE_TOKEN', 'ex_bsave'),
+    ('SAVE_TOKEN', 'ex_save'),
+    ('FILES_TOKEN', 'ex_files'),
+    ('MERGE_TOKEN', 'ex_merge'),
+    ('OPEN_TOKEN', 'ex_open'),
+    ('INPUT_TOKEN', 'ex_input'),
+    ('LINE_TOKEN', 'ex_line'),
+    ('CLOSE_TOKEN', 'ex_close'),
+    ('KILL_TOKEN', 'ex_kill'),
+    ('NAME_TOKEN', 'ex_name'),
+    ('MAX_TOKEN', 'ex_maxfiles'),
+    ('FIELD_TOKEN', 'ex_field'),
+    ('LSET_TOKEN', 'ex_lset'),
+    ('RSET_TOKEN', 'ex_rset'),
+    ('GET_TOKEN', 'ex_get'),
+    ('PUT_TOKEN', 'ex_put'),
+    ('CALL_TOKEN', 'ex_call'),
+    ("'_'", 'ex_call_us'),
+    ('CSAVE_TOKEN', 'ex_csave'),
+    ('POKE_TOKEN', 'ex_poke'),
+    ('VPOKE_TOKEN', 'ex_vpoke'),
+    ('OUT_TOKEN', 'ex_out'),
+    ('CLEAR_TOKEN', 'ex_clear'),
+    ('DEF_TOKEN', 'ex_def'),
+    ('PRINT_TOKEN', 'ex_print'),
+    ('CLS_TOKEN', 'ex_cls'),
+    ('SCREEN_TOKEN', 'ex_screen'),
+    ('COLOR_TOKEN', 'ex_color'),
+    ('WIDTH_TOKEN', 'ex_width'),
+    ('KEY_TOKEN', 'ex_key'),
+    ('LIST_TOKEN', 'ex_list'),
+    ('REM_TOKEN', 'ex_rem'),
+    ('DATA_TOKEN', 'ex_data'),
+    ('READ_TOKEN', 'ex_read'),
+    ('RESTORE_TOKEN', 'ex_restore'),
+    ('GOTO_TOKEN', 'ex_goto'),
+    ('GOSUB_TOKEN', 'ex_gosub'),
+    ('ON_TOKEN', 'ex_on'),
+    ('RETURN_TOKEN', 'ex_return'),
+    ('FOR_TOKEN', 'ex_for'),
+    ('NEXT_TOKEN', 'ex_next'),
+    ('IF_TOKEN', 'ex_if'),
+    ('END_TOKEN', 'ex_end'),
+    ('STOP_TOKEN', 'ex_stop'),
+    ('CONT_TOKEN', 'ex_cont'),
+    ('ELSE_TOKEN', 'ex_rem'),
+    ('LET_TOKEN', 'ex_letkw'),
+    ('PEEK_PREFIX', 'ex_ff_stmt'),
+    ('DIM_TOKEN', 'ex_dim'),
+    ('ERASE_TOKEN', 'ex_erase'),
+    ('ERROR_TOKEN', 'ex_error'),
+    ('RESUME_TOKEN', 'ex_resume'),
+    ('SOUND_TOKEN', 'ex_sound'),
+    ('PLAY_TOKEN', 'ex_play'),
+    ('BEEP_TOKEN', 'ex_beep'),
+    ('PSET_TOKEN', 'ex_pset'),
+    ('PRESET_TOKEN', 'ex_preset'),
+    ('CIRCLE_TOKEN', 'ex_circle'),
+    ('PAINT_TOKEN', 'ex_paint'),
+    ('DRAW_TOKEN', 'ex_draw'),
+    ('SPRITE_TOKEN', 'ex_sprite'),
+    ('VDP_TOKEN', 'ex_vdp_assign'),
+    ('BASE_TOKEN', 'ex_base_assign'),
+    ('TIME_TOKEN', 'ex_time_assign'),
     # --- the MISSING class (docs/spec-basic-missing-class.md) ----------------
     # These were NEVER in the pre-refactor cp/jp z chain -- they are new
     # statements, not a re-expression of old ones, so unlike every entry above
     # they cannot be recovered from it. Added here deliberately, which is what
     # this test asked for when it flagged them as UNEXPECTED. Repack-only with
     # the rest of the class: the lean cart's entry count must stay 52.
-    ('MOTOR_TOKEN', 'ex_motor', 'ROM_BASE < $4000'),
-    ('TRON_TOKEN', 'ex_tron', 'ROM_BASE < $4000'),
-    ('TROFF_TOKEN', 'ex_troff', 'ROM_BASE < $4000'),
-    ('LOCATE_TOKEN', 'ex_locate', 'ROM_BASE < $4000'),
+    ('MOTOR_TOKEN', 'ex_motor'),
+    ('TRON_TOKEN', 'ex_tron'),
+    ('TROFF_TOKEN', 'ex_troff'),
+    ('LOCATE_TOKEN', 'ex_locate'),
     # SWAP, 2026-07-28. It was split out of the class and gated at
     # SWAP_RESIDENT = 0, so it is the one MISSING word this list never carried.
     # ⚠️ THIS TEST WOULD HAVE CAUGHT THE MISSING DISPATCH ARM. The spec claimed
@@ -173,7 +173,7 @@ EXPECTED = [
     # to be written when the flag was flipped. Had the arm existed all along, this
     # list's absence of SWAP would have flagged it as UNEXPECTED on the first
     # repack build -- the inverse of the real failure, and the same alarm.
-    ('SWAP_TOKEN', 'ex_swap', 'ROM_BASE < $4000'),
+    ('SWAP_TOKEN', 'ex_swap'),
 ]
 
 
@@ -236,20 +236,12 @@ def check_build(src_name, tag, rom_base):
             return ord(name[1])
         return m.sym[name]
 
-    # Every conditional entry in the chain sat under `IF ROM_BASE < $4000`
-    # (the G6/G7/G8_RESIDENT guards are NESTED inside it), so "has a condition"
-    # == "repack-only" and rom_base distinguishes the builds. Asserted rather
-    # than assumed: a future entry under a different guard would otherwise be
-    # silently mis-assigned to one build.
-    for _, _, cond in EXPECTED:
-        assert cond in ("", "ROM_BASE < $4000"), (
-            f"EXPECTED has an entry guarded by {cond!r}; this test only knows "
-            f"how to split entries on ROM_BASE. Teach it the new guard.")
-    want = {}
-    for tname, hname, cond in EXPECTED:
-        if cond and rom_base >= 0x4000:
-            continue                      # repack-only entry, absent from lean
-        want[tokval(tname)] = (tname, hname)
+    # Until 2026-07-29 each entry carried a third field naming the `IF ROM_BASE
+    # < $4000` guard it sat under, and this loop ran TWICE — once per build —
+    # dropping the guarded entries from the lean column. The lean build and its
+    # gates are retired (docs/spec-lean-retire-s3-gates.md), so every entry is
+    # unconditionally resident and the whole table is expected in the one build.
+    want = {tokval(tname): (tname, hname) for tname, hname in EXPECTED}
     got = {t: a for t, a in table}
 
     for tok, (tname, hname) in sorted(want.items()):
@@ -364,8 +356,7 @@ def check_build(src_name, tag, rom_base):
 def main():
     total_fail = []
     for src_name, tag, base, label in (
-            ("main.asm", "lean", 0x4000, "lean 16 KB cart (the frozen artifact)"),
-            ("main-reloc.asm", "reloc", RELOC_BASE, "repack build")):
+            ("main.asm", "reloc", RELOC_BASE, "the BASIC image"),):
         table, fails = check_build(src_name, tag, base)
         print(f"{label}: {len(table)} table entries, "
               f"{len(table) - len([f for f in fails if 'token $' in f])} dispatch OK")
@@ -376,8 +367,8 @@ def main():
     if total_fail:
         print(f"\nFAILED: {len(total_fail)} problem(s)")
         return 1
-    print("\nOK: every stmt_table entry dispatches to its handler, on both "
-          "builds; non-token letter -> ex_let, non-token symbol -> stmt_error, "
+    print("\nOK: every stmt_table entry dispatches to its handler; "
+          "non-token letter -> ex_let, non-token symbol -> stmt_error, "
           "empty statement returns.")
     return 0
 

@@ -1810,7 +1810,38 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       alternative (dropping `MAXFILES` to 1) moves AWAY from a reference that
       supports 15. Message-string placement deferred to implementation.
 
+- [ ] **README "Limitations (this slice)" IS STALE** — pre-existing doc debt, FLAGGED
+      2026-07-29 by S3 of the lean-cart retirement, which deliberately did not fix it
+      (out of scope; S3 was a byte-identical mechanical edit plus its own doc sweep).
+      [`README.md:291`](README.md:291) describes an early game-loader-scoped slice, not
+      today's BASIC. Measured false claims: it lists **`ON … GOTO` as "still out"**
+      (it is implemented — `ON_TOKEN` → `ex_on` in `stmt_table`, gated by
+      `tests/test_stmt_dispatch.py`, and `tests/test_control_flow.py` exercises the
+      branch), and it says **"variables are single-letter integers (`A`–`Z`); no
+      strings, arrays, or multi-character names"** and "no `/`, no string ops", all of
+      which predate the string engine, the float pack and the array engine.
+      A warning banner is in place so a reader is not misled, but the section needs
+      rewriting against the CHARTER (faithful full MSX1 BASIC), not patching
+      claim-by-claim. **Check the neighbouring prose too** — the same slice-era framing
+      likely leaks into the sections around it.
+
 - [ ] **ROM REGION STRUCTURE REVIEW** — full review, **AFTER S3** (user, 2026-07-29).
+      ✅ **S3 IS DONE, so this is UNBLOCKED**: the source now reads with no
+      `IF ROM_BASE` wrappers obscuring which region anything is in.
+      🟢 **FREE CARVE ALREADY IDENTIFIED, MEASURED, AND DELIBERATELY LEFT FOR THIS
+      ITEM** (S3 had to stay byte-identical, so it could not be taken there):
+      [`basic/vars.asm`](basic/vars.asm)'s `var_get_key` and `var_set_key` have
+      **ZERO callers** anywhere in `basic/` or `sub/`, and `var_find` is called only
+      by those two. They are the retired lean build's int-only fixed-pool scalar
+      store; shipped scalars live in the contiguous chain the ARY sub-ROM tenant
+      manages (arrays slice-4b). Their only remaining consumer was
+      `tests/test_vars.py`, which S3 ported off them. **pasmo has been printing
+      `Var var_get_key is never used` all along** — the finding was sitting in the
+      build log, unread, which is its own lesson about warning noise (~230 lines of
+      it). `VARTAB` / `VARENTSZ` / `VARSLOTS` in `sysvars.inc` are likewise read by
+      nothing; `VAREND` must STAY (cells above it are placed relative to it), and its
+      128-byte span `$E1C0..$E240` is freed RAM. **Measure the ROM saving before
+      assuming it is large** — these are small routines, and page 1 is the 7 B wall.
       🔴 **THE FRAMING MEASUREMENT: the main ROM is jammed shut next to 7411 B of
       unused sub-ROM.** Measured at `4cdb69b`:
       | region | free |
@@ -1878,7 +1909,66 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       EU-only. Revisit if a BR/JP user turns up, or when the repack tooling is
       next opened. Measured: [`docs/spec-lean-retire-s2-switch.md`](docs/spec-lean-retire-s2-switch.md) §2.1.
 
-- [ ] **RETIRE THE LEAN 16 KB CART** (decided 2026-07-29). It cannot be the
+- [x] **RETIRE THE LEAN 16 KB CART — ✅ DONE 2026-07-29 (S1 + S2 + S3).**
+      [`docs/spec-lean-retire-s3-gates.md`](docs/spec-lean-retire-s3-gates.md).
+      **S3 deleted all 284 `IF ROM_BASE` directives** (this entry's "311" was a grep
+      count including 22 comment mentions and 7 in PROVENANCE.md), the `ROM_BASE`
+      symbol, and `basic/main-reloc.asm`. `basic/main.asm` is the sole entry point and
+      orgs at an unconditional `BASIC_ORG = $2812`; `$(ROM)` and its rule are gone, so
+      `make build/basic.rom` no longer exists.
+      ✅ **BYTE-IDENTICAL** across the whole change — `basic-reloc.rom`, `sub.rom`,
+      `disk.rom` AND `zerobas-main-eu.rom`. Wall unchanged: **low 0 B, page 1 7 B.**
+      🔴 **THE SUB-ROM DEFINED ITS OWN `ROM_BASE`.** `sub/sub.asm` set it to `$2812`
+      and pulls in 20 shared `basic/*.inc` files, so a large share of the gates were
+      evaluated TWICE. The brief scoped the edit to `basic/` and the gate to the main
+      pair; **`build/sub.rom` had to join the byte-identity gate**, and falsifying that
+      row (fold `sub/strheap.asm` the wrong way → `strheap_engine undefined`) is what
+      proved it was instrumented rather than merely noted.
+      🔴 **`make unit-test` WAS MEASURING THE RETIRED BUILD.** `msxtest.Machine`
+      defaulted `rom_base=0x4000` — the lean org — so **18 of 54 test files** that
+      built `basic/main.asm` without naming a base were asserting against LEAN, right
+      through S2's "lean is no longer measured". Fixed the way S1 fixed probe machines:
+      **`rom_base` is now MANDATORY**, named at all 74 call sites. Making it required
+      found two consumers OUTSIDE `tests/` that no directory sweep would have —
+      including **`probes/disk/bas_tokenise.py`, which tokenises the disk acceptance
+      corpus's `.BAS` fixtures**, i.e. those fixtures were crunched by the LEAN
+      tokeniser. `diskbasic-acceptance` still converges 34/34, now with the shipped one.
+      8 of those tests could not just be re-pointed (they asserted on `STRTAB`, the
+      fixed VARTAB pool, `[len][bytes]` descriptors, `ERRMARK` for `5/0`, or a
+      sub-ROM-evicted routine) — **all 8 ported, 54/54 green.**
+      🔴 **THE FALSIFICATION HARNESS WENT RED FOR THE WRONG REASON, TWICE**, both
+      silently: `git checkout --` restored files to PRE-FOLD HEAD rather than to the
+      folded tree, and `make build/basic-reloc.rom` is a **NO-OP FOLLOWER** target (the
+      grouped-target workaround), so removing only the `.rom` left `@:` to run and the
+      missing file read as "build failed". **A red falsification row reads as success**
+      — the fix was a GREEN control row (comment-only edit → hash unchanged) plus making
+      every row report its own reason.
+      🔴 **F-R CAUGHT A SUCCESSOR THAT DOES NOT EXIST.** `basic_probe_readdata.py` was
+      named from memory; the real successor is `tests/test_control_flow.py` — which this
+      slice had to fix first. Retiring against a successor that was itself testing lean
+      would have been a coverage loss dressed as a consolidation.
+      Probes: **14 ported** to the repack machine, **6 retired** (`_data`, `_loops`,
+      `_controlflow`, `_vdpio`, `_screen`, `_cload`) against verified successors. The S2
+      margin hazard was **measured** (VG-8020 = 2, repack = 1) and applies only to
+      VG-8020↔C-BIOS moves; no ported VRAM reader crosses that boundary, so no `_margin`
+      fix was needed. The cassette corpus was ported but NOT end-to-end run (§6.1).
+      Comment sweep (user chose targeted): the "388 lean mentions" figure was wrong —
+      `grep -i lean` matches **"clean"**, and this tree says *clean-room* constantly.
+      Real count **207**, swept to ~13 deliberate historical ones. `basic/PROVENANCE.md`
+      got an APPENDED dated entry; its 7 in-history mentions are deliberately NOT
+      rewritten (a provenance entry describes a date, a source comment describes the
+      code beside it).
+      ⚠️ **CARVE FOUND, NOT TAKEN:** `vars.asm`'s `var_get_key` / `var_set_key` have
+      **ZERO callers**, and `var_find` is called only by those two — the retired build's
+      int-only fixed-pool store, which pasmo has been reporting as unused all along.
+      `VARTAB` / `VARENTSZ` / `VARSLOTS` are read by nothing. Left alone because S3 was
+      byte-identical by contract; **folded into the ROM REGION STRUCTURE REVIEW below.**
+      Lean's final hash, for the record:
+      `defd6201b78bc922e3ba4db66134d2527c76ad9d81105440a6d667f12511be90` (16384 B). No
+      tag, no frozen artifact — a future lean build is CHERRY-PICKED from the finished
+      tree (user DIRECTION), not resurrected from that hash.
+
+      **Original entry, for context.** It cannot be the
       charter target and has not been one for a long time: it excludes SEVEN
       whole source files (`str-engine`, `input`, `float`, `float-arith`,
       `arrays`, `keytrap`, `subromcall`) — so no strings, no `INPUT`, no floats,

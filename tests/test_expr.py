@@ -38,6 +38,12 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine  # noqa: E402
 
+# The image under test is loaded at its ORG. Named here rather than
+# defaulted: msxtest.Machine's old default was $4000, the retired lean
+# cart's org, so a BASIC test that omitted it silently tested the lean
+# build (docs/spec-lean-retire-s3-gates.md §5, F-U).
+BASIC_BASE = 0x2812
+
 ROM = "/tmp/zb_eval.rom"
 SYM = "/tmp/zb_eval.sym"
 SRC = 0xC000          # ASCII expression source (free RAM, above ROM)
@@ -78,7 +84,7 @@ def eval_tokens(m, token_bytes):
 
 def run():
     build()
-    m = Machine(ROM, SYM)
+    m = Machine(ROM, SYM, rom_base=BASIC_BASE)
     s = m.sym
 
     # Convenience: token constants from the symbol file, so if sysvars.inc changes
@@ -104,7 +110,8 @@ def run():
     VPEEK  = s["VPEEK_TOKEN"]     # $98
     INP    = s["INP_TOKEN"]       # $90
     FFPFX  = s["PEEK_PREFIX"]     # $FF (function-token prefix)
-    ERRMARK_VAL = 0xDD            # zerobas documented error marker (expr.asm div_zero)
+    ERRMARK_VAL = 0xDD            # zerobas error marker (ev_f_err); the div-by-zero
+                                  # path uses FPERR instead -- see Group 6
     TRUE16 = 0xFFFF               # MSX-BASIC truth value = -1 unsigned 16-bit
 
     cases = []  # (description, got, want, errmark_got, errmark_want)
@@ -199,14 +206,26 @@ def run():
 
     # -------------------------------------------------------------------------
     # Group 6: Division by zero
-    # Oracle: zerobas documented contract (expr.asm, div_zero label):
-    #   "Division by zero yields 0 and sets ERRMARK (no crash)"
-    #   ERRMARK = $DD (same $DD as ev_f_err)
+    #
+    # ⚠️ THE CONTRACT IS FPERR, NOT ERRMARK, AND THAT IS A PORT, NOT A REWORDING.
+    # This group used to assert ERRMARK=$DD, which is the LEAN build's int-only
+    # `div_zero` marker. On the shipped build `/` is the float divide, and a zero
+    # divisor sets FPERR=2 (basic/float-arith.asm:1814, "Division by zero"), which
+    # the statement driver turns into ERR 11 via check_expr_errors. ERRMARK is left
+    # at 0. This test ran on the lean build until S3, because msxtest.Machine's
+    # rom_base defaulted to $4000 (docs/spec-lean-retire-s3-gates.md §5, F-U).
+    #
+    # ⚠️ AND A PENDING FPERR POISONS THE NEXT eval. Leaving it set made Group 7's
+    # VPEEK run off into FAT code and die on an invalid opcode -- which is how this
+    # port was found. The real interpreter zeroes FPERR at every statement start
+    # (basic/interp.asm:144), so the test does the same before continuing.
     # -------------------------------------------------------------------------
+    FPERR_DIVZERO = 2
     got, em = eval_expr(m, "5/0")
-    cases.append(("5/0 result=0",   got, 0,           em, ERRMARK_VAL))
-    # Verify ERRMARK separately for clarity.
-    cases.append(("5/0 ERRMARK",    em,  ERRMARK_VAL, 0,  0))
+    fperr = m.mem[s["FPERR"]]
+    cases.append(("5/0 result=0",   got,   0,             em, 0))
+    cases.append(("5/0 FPERR=2",    fperr, FPERR_DIVZERO, 0,  0))
+    m.poke(s["FPERR"], 0)           # statement boundary, as interp.asm:144 does
 
     # -------------------------------------------------------------------------
     # Group 7: VPEEK (Tier-2) — stub RDVRM

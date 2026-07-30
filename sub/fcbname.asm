@@ -8,7 +8,7 @@
 ; basic-interrupt-traps.md §10.4, D-T-8c/D-T-8d) to free repack-main page-1 space
 ; for the interrupt-traps T1 slice. Follows the casmatch/title eviction pattern:
 ; the moved code is VERBATIM (shared via basic/fcbname-body.inc, included both
-; here and at basic/bload.asm's own original position for the lean 16 KB cart --
+; at basic/bload.asm's own original position --
 ; byte-identical there).
 ;
 ; PAGE 1, not page 0: the page-0 dispatch table is FULL (12 rows fill $0010..$0037
@@ -57,7 +57,7 @@ fcbn_store:
 ; in its PAGE 0 (sub/tkfloat.asm, for the page-0 tenants), and that page-0 clone
 ; is unmapped while this PAGE-1 tenant runs (page 0 shows the main slot). So the
 ; shared body's `call fcb_upcase` binds to this co-located page-1 clone; in the
-; lean cart the same name is a zero-byte EQU onto the resident upcase.
+; resident side the same name is a zero-byte EQU onto upcase.
 fcb_upcase:
                 cp      'a'
                 ret     c

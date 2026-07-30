@@ -3,11 +3,9 @@
 
 ; tokenise.inc — the tokeniser body (crunch ASCII line -> token stream).
 ; ===========================================================================
-; Extracted from interp.asm so its PLACEMENT can be gated (subrom arc, wave 2,
-; docs/spec-basic-subrom-wave2-tokeniser.md). Two homes:
-;   * lean 16 KB cart (ROM_BASE >= $4000): interp.asm includes this inline,
-;     byte-identical to the pre-extraction interp.asm.
-;   * sub-ROM (sub/sub.asm, ROM_BASE=$2812): the WHOLE body is evicted to sub-ROM
+; Extracted from interp.asm so its PLACEMENT could be moved (subrom arc, wave 2,
+; docs/spec-basic-subrom-wave2-tokeniser.md). Home:
+;   * sub-ROM (sub/sub.asm): the WHOLE body is evicted to sub-ROM
 ;     page 0, reunited with the tk_float literal crunch (sub/tkfloat.asm) that
 ;     wave 1 already moved there. The repack MAIN ROM keeps only a two-line
 ;     `tokenise` dispatch stub (interp.asm) that CALSLTs this body once per line.
@@ -36,9 +34,7 @@
 tokenise:
                 xor     a
                 ld      (TKNAME),a          ; a fresh line starts outside any name
-    IF ROM_BASE < $4000
                 ld      (TKOVF),a           ; ...and no float-literal overflow yet (F1,
-    ENDIF                                   ;  basic/float.asm); A is still 0 here
 tk_loop:
                 ld      a,(TKNAME)
                 ld      b,a                 ; B = were we inside a name? (digit rule)
@@ -61,12 +57,8 @@ tk_loop:
                 ld      a,b
                 or      a
                 jr      nz,tk_namedig
-    IF ROM_BASE < $4000
                 jp      tk_float            ; '0'..'9' starting a numeric constant
                                              ; (float-aware, basic/float.asm)
-    ELSE
-                jp      tk_number           ; '0'..'9' starting a numeric constant
-    ENDIF
 tk_namedig:
                 ld      a,1
                 ld      (TKNAME),a          ; the digit extends the name
@@ -76,7 +68,6 @@ tk_namedig:
                 inc     hl
                 jp      tk_loop
 tk_nondigit:
-    IF ROM_BASE < $4000
                 cp      '.'                 ; '.'+digit leads a float literal (spec
                 jr      nz,tk_nondot        ; §9.2); a lone '.' (no digit) stays
                 push    hl                  ; verbatim below, like today
@@ -89,7 +80,6 @@ tk_nondigit:
                 jr      nc,tk_nondot
                 jp      tk_float            ; basic/float.asm
 tk_nondot:
-    ENDIF
                 cp      '&'                 ; "&H" hex constant
                 jp      z,tk_hex
                 call    match_kw            ; keyword match runs at EVERY position, so
@@ -123,14 +113,10 @@ tk_notkw:
                 jp      z,tk_op_div
                 cp      '\'
                 jp      z,tk_op_idiv
-    IF ROM_BASE < $4000
-                ; math pack slice 2c (repack-only -- docs/spec-basic-mathpack-
-                ; slice2.md §13.3): '^' -> POW_TOKEN. Guarded so the lean 16 KB
-                ; cart (assembled with this same shared file at ROM_BASE>=$4000)
-                ; stays byte-identical -- lean has no `^` operator.
+                ; math pack slice 2c (docs/spec-basic-mathpack-slice2.md
+                ; §13.3): '^' -> POW_TOKEN.
                 cp      '^'
                 jp      z,tk_op_pow
-    ENDIF
                 cp      '?'                 ; '?' abbreviates PRINT
                 jp      z,tk_print_q
                 cp      '_'                 ; '_' abbreviates CALL: the name is verbatim
@@ -222,7 +208,6 @@ tcn_name:
 tk_end:
                 xor     a
                 ld      (de),a              ; 0x00 terminator
-    IF ROM_BASE < $4000
                 ; D-LINEMAX R-2 (docs/spec-basic-linemax.md §2): the crunch is BOUNDED.
                 ; Refuse a body longer than TOKMAX_BODY (314) -- the reference's measured
                 ; ceiling, where it prints `Line buffer overflow` and stores nothing
@@ -250,7 +235,6 @@ tk_end:
                 ld      (TKOVF),a           ; dispatch_line needs no second constant --
                                             ; page-1 room, see program.asm dl_overflow
 tke_fits:
-    ENDIF
                 ret
 
 ; --- tk_op_*: emit an operator token (spec §4) -----------------------------
@@ -285,85 +269,10 @@ tk_op_div:
 tk_op_idiv:
                 ld      a,IDIV_TOKEN
                 jr      tk_op_emit
-    IF ROM_BASE < $4000
 tk_op_pow:
                 ld      a,POW_TOKEN
                 jr      tk_op_emit
-    ENDIF
 
-    IF ROM_BASE >= $4000
-; --- tk_number: crunch a decimal integer constant (spec §3) ----------------
-;   0..9   -> $11+n          10..255 -> $0F,<byte>
-;   256..  -> $1C,<word LE>  (>=32768 diverges from the reference's float form,
-;                             which is out of scope this step — use &H instead)
-; HL = source cursor, DE = destination cursor. DE is parked on the stack while
-; the value is accumulated in DE; HL is parked during each *10 step.
-;
-; LEAN BUILD ONLY. The repack build routes a leading digit/`.` to tk_float (the
-; float-aware literal crunch, sub/tkfloat.asm), whose integer path exits through
-; tkf_emit_int_bc, so tk_number is never reached there — gating it out keeps it
-; from consuming sub-ROM / repack page bytes (docs/spec-basic-subrom-wave2-
-; tokeniser.md §3). The lean 16 KB cart has no float pack, so it keeps this
-; integer-only crunch inline, byte-identical.
-tk_number:
-                push    de                  ; save destination cursor
-                ld      de,0                ; DE = accumulated value
-tk_num_lp:
-                ld      a,(hl)
-                cp      '0'
-                jr      c,tk_num_done
-                cp      '9'+1
-                jr      nc,tk_num_done
-                sub     '0'                 ; A = digit
-                ld      c,a
-                push    hl                  ; DE = DE*10 + C
-                ld      h,d
-                ld      l,e
-                add     hl,hl               ; 2*acc
-                add     hl,hl               ; 4*acc
-                add     hl,de               ; 5*acc
-                add     hl,hl               ; 10*acc
-                ld      e,c
-                ld      d,0
-                add     hl,de               ; +digit
-                ex      de,hl               ; DE = new acc
-                pop     hl                  ; restore source cursor
-                inc     hl
-                jr      tk_num_lp
-tk_num_done:
-                ld      b,d
-                ld      c,e                 ; BC = value
-                pop     de                  ; restore destination cursor
-                ld      a,b
-                or      a
-                jr      nz,tk_num_w         ; >=256 -> two-byte form
-                ld      a,c
-                cp      10
-                jr      nc,tk_num_b         ; 10..255 -> one-byte form
-                add     a,INT_DIGIT_BASE    ; 0..9 -> $11+n
-                ld      (de),a
-                inc     de
-                jp      tk_loop
-tk_num_b:
-                ld      a,INT1_TOKEN
-                ld      (de),a
-                inc     de
-                ld      a,c
-                ld      (de),a
-                inc     de
-                jp      tk_loop
-tk_num_w:
-                ld      a,INT2_TOKEN
-                ld      (de),a
-                inc     de
-                ld      a,c                 ; value low
-                ld      (de),a
-                inc     de
-                ld      a,b                 ; value high
-                ld      (de),a
-                inc     de
-                jp      tk_loop
-    ENDIF
 
 ; --- tk_hex: crunch "&H" hex / "&O" octal constants -> $0C / $0B,<word LE> ---
 ; Oracle (basic_probe_crunch.py): the reference crunches `&H<hex>` to
@@ -543,13 +452,11 @@ branch_lineno:
                 jr      z,bl_yes
                 cp      RUN_TOKEN
                 jr      z,bl_yes
-    IF ROM_BASE < $4000
                 cp      RESUME_TOKEN        ; RESUME <line> / RESUME 0 (error-handling S2b,
                 jr      z,bl_yes            ; repack-only): crunch the following number as
                                             ; $0E, like GOTO. RESUME NEXT / bare RESUME are
                                             ; unaffected (no digit follows -> bl_num returns
-                                            ; without emitting). Lean stays byte-identical.
-    ENDIF
+                                            ; without emitting).
                 ret                         ; not a branch keyword
 bl_yes:
                 ld      a,(hl)              ; copy spaces verbatim
@@ -579,17 +486,11 @@ bl_num:
                 ; Placed at bl_num rather than in the loop tail so it also covers a
                 ; list whose FIRST slot is empty (`GOSUB ,600`), where the comma
                 ; follows the keyword directly and the loop has not started yet.
-                ; REPACK-ONLY, like the RESUME crunch above and for the same reason:
-                ; these 4 bytes overran the lean 16 KB cart's $8000 ceiling, which
-                ; is byte-full. The lean build therefore KEEPS this bug. That is the
-                ; documented response to a lean overflow (basic/main.asm's ceiling
-                ; guard: "gate the feature on ROM_BASE or trim it"), and it costs
-                ; the lean cart nothing it has: the interrupt traps whose parsers
-                ; this unblocks are themselves repack-only.
-    IF ROM_BASE < $4000
+                ; (These 4 bytes once overran the retired lean 16 KB cart's $8000
+                ; ceiling and were gated off there, like the RESUME crunch above --
+                ; that build kept the bug. Both gates are gone with it.)
                 cp      ','
                 jr      z,bl_list
-    ENDIF
                 cp      '0'                 ; a decimal number must follow
                 ret     c
                 cp      '9'+1

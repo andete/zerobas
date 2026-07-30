@@ -85,7 +85,7 @@ def _run(rom, sym, prefill_clusters, nrec, rs=128, extend=False):
     chain.append((2 + prefill_clusters - 1, EOC))
     disk = E.Disk("DATA.BIN", first_cluster=2, size=prefill_clusters * SECSIZE,
                   chain_links=chain)
-    m = Machine(rom, sym); disk.install(m)
+    m = Machine(rom, sym, rom_base=0x4000); disk.install(m)   # disk.rom is a page-1 image
     m.trap("fat_total_clusters", lambda mm: setattr(mm.cpu, "de", total))
     FCB = 0xDA40
     m.poke(FCB, bytes(37)); m.poke(FCB + 1, E.n83("DATA.BIN"))

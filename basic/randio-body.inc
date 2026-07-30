@@ -14,7 +14,7 @@
 ; mechanism the landed `dirverb` eviction already uses (sub/dirverb.asm).
 ;
 ; Included from TWO homes, the fat-prim-body.inc / format-body.inc pattern:
-;   * lean 16 KB cart (basic/field.asm, ROM_BASE >= $4000): inline, at this
+;   * (retired) the lean 16 KB cart, inline at this
 ;     file's ORIGINAL position (right after LSET/RSET/fld_lookup, before
 ;     "GET [#]f [, recno] / PUT [#]f [, recno]") -- BYTE-IDENTICAL to the
 ;     pre-eviction build (this file is a pure relocation of that exact code,

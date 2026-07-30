@@ -52,24 +52,13 @@
 ; yet (spec §11's empirical rationale). The shared bodies live in
 ; basic/fat-prim-body.inc (dskio_calslt..fat_dir_update) and
 ; basic/fat-delete-body.inc (fat_delete, kept separate only because it sits
-; AFTER the resident cursor in this file — see that file's header); the lean
-; 16 KB cart includes them inline at their original positions
+; AFTER the resident cursor in this file — see that file's header).
 ; (BYTE-IDENTICAL to the pre-eviction build), the repack build emits resident
-; SHIMS under the SAME names instead (this file's `IF ROM_BASE < $4000`
+; SHIMS under the SAME names instead (this file's `IF the repack build`
 ; branches below), keeping every existing call site (`call read_sector`,
 ; `call fat_find`, ...) unchanged. See basic/PROVENANCE.md §FAT12 primitive
 ; eviction.
 
-    IF ROM_BASE >= $4000
-                include "basic/fat-prim-body.inc"      ; lean: inline, byte-identical
-; write_sector: fat-prim-body.inc names its copy `fatprim_write_sector` (the
-; sub-ROM tenant assembly needs that name distinct from sub/format.asm's OWN
-; private write_sector -- see fat-prim-body.inc's header). This alias makes
-; every existing external call site here (field.asm/files.asm's literal
-; `call write_sector`) resolve exactly as before -- EQU emits zero bytes, so
-; this cannot affect lean byte-identity.
-write_sector    equ     fatprim_write_sector
-    ELSE
 ; --- repack: resident shims replacing the FAT12 primitive/sector layer -----
 ; docs/spec-evict-diskfile-cluster.md §11. Every routine below keeps its
 ; ORIGINAL name and calling convention (register-input contract unchanged);
@@ -104,8 +93,7 @@ write_sector    equ     fatprim_write_sector
 ; ORDER MATTERS ONLY FOR REACH: the twelve stubs are contiguous so every `jr`
 ; lands within range of fatprim_bounce directly below them. fat_delete sits
 ; after the resident fat_io_* cursor (~324 B away) and therefore uses `jp`.
-; Repack-only: the lean cart takes the `IF ROM_BASE >= $4000` include above and
-; is byte-frozen either way.
+
 
 ; read_sector — see basic/fat-prim-body.inc for the full contract. (Cy=1 on a
 ; missing sub-ROM is the same disposition class as a real I/O error — the
@@ -262,7 +250,6 @@ fcfs_absent:
 
 
 
-    ENDIF
 
 ; ===========================================================================
 ; Byte-stream I/O layer — the loader-facing API the disk verbs call. This is the
@@ -325,9 +312,6 @@ fia_walk:
                 dec     hl
                 ld      (FAT_WRTMP),hl
                 jr      fia_walk
-    IF ROM_BASE >= $4000
-                include "basic/fiawalked-body.inc"     ; lean: inline, byte-identical
-    ELSE
 ; fia_walked -- resident shim (docs/spec-eviction-g7-space.md, carve 2). The body
 ; is a page-1 fatprim-tenant row; every path in it returns Cy = 0, so the shim
 ; only has to make the call and clear carry.
@@ -339,7 +323,6 @@ fia_walked:
                 ret     c
                 or      a                   ; success: Cy = 0, like the body
                 ret
-    ENDIF
 fia_empty:
                 ; existing but EMPTY file: write from offset 0, reusing the dir entry
                 ; (FWR_DIRSEC/OFF from fat_find; FWR_FIRST = FAT_FIRSTCLUS = 0). Same
@@ -357,9 +340,6 @@ fia_empty:
 
                 include "basic/fatiow-body.inc"        ; fat_io_putbyte/fwr_bytes_inc/fat_io_close
 
-    IF ROM_BASE >= $4000
-                include "basic/fat-delete-body.inc"    ; lean: inline, byte-identical
-    ELSE
 ; fat_delete — resident shim (docs/spec-evict-diskfile-cluster.md §11). See
 ; basic/fat-delete-body.inc for the full contract; same uniform Cy+HL+A
 ; marshalling convention as the other primitive shims above.
@@ -368,4 +348,3 @@ fia_empty:
 fat_delete:
                 ld      a,DISKOP_SEL_FAT_DELETE
                 jp      fatprim_bounce
-    ENDIF

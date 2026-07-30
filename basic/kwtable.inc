@@ -10,9 +10,8 @@
 ; This table is DATA, reached only via `ld ix,kwtable` from match_kw (tokeniser)
 ; and detok_kw2 (LIST detokeniser) — both scan it linearly, so BOTH directions are
 ; data-driven off whichever copy the build placed. The table was extracted into its
-; own file so its PLACEMENT can be gated (string-engine arc S3, spec §5b): the lean
-; 16 KB build includes it inline in interp.asm (byte-identical); the repack build
-; (ROM_BASE < $4000) instead includes it in the reclaimed low region (main.asm),
+; own file so its PLACEMENT could be moved (string-engine arc S3, spec §5b): it is
+; included in the reclaimed low region (main.asm) rather than inline in interp.asm,
 ; freeing page-1 room for the string engine. match_kw is full-keyword (not prefix),
 ; so table order is free except for the documented longest-match notes below.
 ; ===========================================================================
@@ -116,7 +115,6 @@ kwtable:
                 ; Phase 1: CLEAR [<strings>][,<himem>] (MSX2 TH Table 2.20).
                 db      5,"CLEAR",1,CLEAR_TOKEN
                 ; Phase 1: DEF USR / USR + screen verbs (MSX2 TH Table 2.20).
-    IF ROM_BASE < $4000
                 ; math pack slice 1a fallout: adding "INT" as a real keyword
                 ; (below) broke DEFINT specifically -- match_kw's linear,
                 ; boundary-free scan matched plain "DEF" (3 chars) first,
@@ -140,7 +138,6 @@ kwtable:
                 ; trailing '$' DEFSTR's suffix never has), so no matching
                 ; entry is needed for them.
                 db      6,"DEFINT",4,DEF_TOKEN,"INT"
-    ENDIF
                 db      3,"DEF",1,DEF_TOKEN
                 db      3,"USR",1,USR_TOKEN
                 db      4,"LIST",1,LIST_TOKEN
@@ -169,8 +166,7 @@ kwtable:
                 db      3,"XOR",1,XOR_TOKEN
                 db      3,"NOT",1,NOT_TOKEN
                 db      3,"MOD",1,MOD_TOKEN
-    IF ROM_BASE < $4000
-                ; EQV/IMP -- repack only: the lean 16 KB basic.rom is byte-frozen
+                ; EQV/IMP -- repack only:.
                 ; and ships without them (its hand-rolled ev_xor/ev_or/ev_and
                 ; chain has no level for either). Tokens oracle-measured from the
                 ; VG-8020's own crunch emission. Neither shares a prefix with an
@@ -187,8 +183,6 @@ kwtable:
                 db      3,"POS",2,PEEK_PREFIX,POS_TOKEN
                 db      4,"TAB(",1,TAB_TOKEN
                 db      4,"SPC(",1,SPC_TOKEN
-    ENDIF
-    IF ROM_BASE < $4000
                 ; --- string engine (repack build only) — string-engine arc S3 -----
                 ; The core string-function keywords, all $FF-prefixed 2-byte function
                 ; tokens. Selector bytes were black-box-captured from the VG-8020 crunch
@@ -199,7 +193,7 @@ kwtable:
                 ; None share a 2-char prefix with an existing keyword, so order is free.
                 ; Handlers land in S4 (LEN also enables typed OPEN..LEN= — files.asm's
                 ; oo_parse_reclen already expects $FF $92; until now only the unit test
-                ; injected it). Gated reloc-only: the lean table stays byte-identical.
+                ; injected it). Gated reloc-only:.
                 db      3,"LEN",2,PEEK_PREFIX,LEN_TOKEN      ; $FF $92
                 db      5,"LEFT$",2,PEEK_PREFIX,LEFTD_TOKEN  ; $FF $81
                 db      6,"RIGHT$",2,PEEK_PREFIX,RIGHTD_TOKEN; $FF $82
@@ -422,10 +416,7 @@ kwtable:
                 db      3,"PAD",2,PEEK_PREFIX,PAD_TOKEN          ; $FF $A5
     ENDIF
                 ; --- the MISSING class (docs/spec-basic-missing-class.md §3.1) -
-                ; Repack-only, like the whole class: these rows sit inside the
-                ; enclosing `IF ROM_BASE < $4000`, so the lean cart -- which
-                ; includes kwtable INLINE in its byte-full page 1 -- is unchanged
-                ; and LEAN_SHA256 does not move. In the repack build the table is
+                ; The table is
                 ; a sub.rom tenant (wave 3) with ~8 KB free, so these ~39 B cost
                 ; nothing in either tight region.
                 ;
@@ -446,5 +437,4 @@ kwtable:
                 db      5,"TROFF",1,TROFF_TOKEN                  ; $A3
                 db      4,"TRON",1,TRON_TOKEN                    ; $A2
                 db      5,"MOTOR",1,MOTOR_TOKEN                  ; $CE
-    ENDIF
                 db      0

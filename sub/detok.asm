@@ -11,7 +11,7 @@
 ; page-0 tenant run under DI. The leaf-audit (spec §0.1) found NO BIOS reach in any
 ; dt_* path: the only external symbols were `pchar` (the I/O sink), `print_string`
 ; (a pchar loop) and `div10` (pure compute). This file re-binds those three so the
-; SHARED body (basic/detok.inc, byte-for-byte the lean cart's inline detok) appends
+; SHARED body (basic/detok.inc, the shared detok body) appends
 ; into DETOKBUF instead of streaming to the screen/file:
 ;   * pchar        -> db_putc  : append A to DETOKBUF (the "drain" now lives resident)
 ;   * print_string -> a DETOKBUF-append of a 0-terminated NUMBUF string
@@ -93,7 +93,7 @@ sd10_skip:
                 djnz    sd10_lp
                 ret
 
-; --- the shared detok body (byte-for-byte the lean cart's inline detok) -----
+; --- the shared detok body (the shared detok body) -----
 ; Binds pchar/print_string/div10 (above), kwtable (the co-located sub copy), and
 ; NUMBUF (shared RAM) from this assembly. Defines detok/dt_*/detok_op/detok_kw*/
 ; the number renderers + ln_div_entry.

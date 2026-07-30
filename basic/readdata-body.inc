@@ -4,9 +4,7 @@
 ; readdata-body.inc -- the READ/DATA value engine: read_one_value + data_seek +
 ; data_parse_int. ONE body, TWO homes (the casmatch/lineedit pattern):
 ;
-;   * lean cart (ROM_BASE >= $4000): included INLINE by basic/program.asm, so the
-;     lean image is byte-identical to before the carve;
-;   * repack build: included by the PAGE-0 sub-ROM tenant sub/readdata.asm
+;   * included by the PAGE-0 sub-ROM tenant sub/readdata.asm
 ;     (SUBROM_IDX_READVAL), with a thin resident stub left behind in program.asm.
 ;
 ; The carve is page-0 CLEAN: it walks tokenised program RAM and parses ASCII --

@@ -58,7 +58,11 @@ OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bi
 if not (os.path.sep in OMSX and os.path.isfile(OMSX)):
     OMSX = "openmsx"
 
-MACHINE = "C-BIOS_MSX1"
+# ⚠️ zerobas now runs on the REPACK machine, which carries the merged main ROM in
+# slot 0 -- there is no cartridge to insert. It used to be C-BIOS_MSX1 (or the
+# VG-8020) with the retired lean 16 KB cart in a slot; that build is gone
+# (RETIRE THE LEAN 16 KB CART S3, docs/spec-lean-retire-s3-gates.md).
+MACHINE = "C-BIOS_MSX1_EU_REPACK_DISK"
 T = 0xD000          # sentinel A, free RAM (clear of any cart blob)
 U = 0xD001          # sentinel B
 ERRMARK = 0xE010    # zerobas error landmark byte
@@ -113,7 +117,7 @@ def run(cart, events, mems, ctrlstop_at=None, cap_at=None, timeout=70):
     fd, tcl_path = tempfile.mkstemp(suffix=".tcl", prefix="cont_")
     os.write(fd, tcl.encode())
     os.close(fd)
-    cmd = [OMSX, "-machine", MACHINE, "-cart", cart,
+    cmd = [OMSX, "-machine", MACHINE,
            "-command", "set renderer none", "-script", tcl_path]
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
@@ -153,9 +157,7 @@ def lines_for(prog, *tail):
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cart", required=True, help="zerobas basic.rom")
     args = ap.parse_args()
-    cart = args.cart
 
     ok = True
 

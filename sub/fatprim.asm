@@ -29,7 +29,7 @@
 ; The shared bodies are basic/fat-prim-body.inc (dskio_calslt..fat_dir_update)
 ; and basic/fat-delete-body.inc (fat_delete -- kept in a separate file only
 ; because it sits AFTER the resident fat_io_* byte cursor in basic/fat.asm,
-; so the LEAN cart's byte order can't be preserved by concatenating it into
+; so the original byte order can't be preserved by concatenating it into
 ; the first file; see that file's own header). Included here WHOLESALE: since
 ; the primitive/sector layer being moved already STARTS at dskio_calslt/
 ; read_sector/write_sector, this file's own copies of those (via the

@@ -29,9 +29,12 @@ Three assertions:
   3. NO REGRESSION on the tokenised path.  A tokenised ($D3) multi-line program
      still CLOADs byte-identically (the $D3 branch of the 3-way header dispatch).
 
-Typed harness on C-BIOS_MSX1_EU_TAPE --cart build/basic.rom (the established
-cassette-probe method; --cart reads build/basic.rom directly, so `make all`
-suffices).  Clean-room: our own programs, our own cas codec / tokeniser; the
+Typed harness on the repack machine (C-BIOS_MSX1_EU_REPACK_DISK), which carries
+the merged main ROM in slot 0 and its own <CassettePort/>, so no cartridge is
+inserted. Until 2026-07-29 this ran the retired lean 16 KB cart as a `-cart` on
+C-BIOS_MSX1_EU_TAPE (docs/spec-lean-retire-s3-gates.md); that rig is still
+selectable with --machine C-BIOS_MSX1_EU_TAPE + --cart, and is the only mode
+in which --cart means anything.
 reference ROM is never read, and reading the ASCII *data* bytes of a real .cas
 is not a ROM read.
 """
@@ -61,6 +64,14 @@ from omsx_run import _tcl_dquote  # noqa: E402
 
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 MACHINE_TAPE = "C-BIOS_MSX1_EU_TAPE"
+# The zerobas side runs on the REPACK machine, which carries the merged main ROM
+# in slot 0 and ships its own <CassettePort/>. It used to be MACHINE_TAPE below --
+# stock C-BIOS plus the tape patch -- with the retired lean 16 KB cart inserted as
+# a cartridge (RETIRE THE LEAN 16 KB CART S3, docs/spec-lean-retire-s3-gates.md).
+# MACHINE_TAPE is kept because it is still a real rig: stock BIOS + open cassette
+# stack, selectable via --machine / ZEROBAS_BASIC_MACHINE, and the only mode in
+# which a `-cart` is passed at all.
+ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE") or "C-BIOS_MSX1_EU_REPACK_DISK"
 TXTBASE = 0x8001
 ASCII_ID = 0xEA
 
@@ -123,7 +134,9 @@ after time {cap_time} {{ __cap }}
     open(tcl_path, "w").write(tcl)
     if os.path.exists(out):
         os.unlink(out)
-    cmd = [OMSX, "-machine", MACHINE_TAPE, "-cart", cart,
+    cmd = [OMSX, "-machine", ZB_MACHINE]
+    cmd += (["-cart", cart] if ZB_MACHINE == MACHINE_TAPE else [])
+    cmd += [
            "-cassetteplayer", cas_path, "-script", tcl_path]
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                             start_new_session=True)
@@ -143,7 +156,8 @@ after time {cap_time} {{ __cap }}
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cart", default=os.path.join(_ROOT, "build", "basic.rom"))
+    ap.add_argument("--cart", default=None,
+                    help="only used with the %s rig" % MACHINE_TAPE)
     args = ap.parse_args()
 
     ok = True

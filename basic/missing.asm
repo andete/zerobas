@@ -15,14 +15,12 @@
 ;   docs/missing-vg8020-characterization.md   (175 cases + the locrow battery)
 ;
 ; ⚠️ REPACK-ONLY, deliberately (S-MC-5). The whole file is behind one
-; `IF ROM_BASE < $4000`, so the lean 16 KB cart assembles NOTHING from it and
-; stays byte-identical -- LEAN_SHA256 does not move. The five words therefore do
-; not exist on the lean cart, which was confirmed knowingly: the lean cart is
-; byte-full and its kwtable is inline in page 1, where the repack build's
+; (The retired lean 16 KB cart assembled NOTHING from this file, so its five words
+; did not exist there at all -- knowingly: that build was byte-full and its kwtable
+; was inline in page 1, where the
 ; kwtable is a sub.rom tenant with ~8 KB free.
 ; ===========================================================================
 
-    IF ROM_BASE < $4000
 
 ; --- ex_motor: MOTOR | MOTOR ON | MOTOR OFF ---------------------------------
 ; Exactly three forms, and everything else is a Syntax error (measured, spec
@@ -76,13 +74,8 @@ mot_go:
 ; "syntax error" and "type mismatch" (D-2: reference wording is not copied).
 ; The string is HERE, not next to its table, because 17 bytes inserted there
 ; push page 1's dense forward `jr`s out of reach.
-    IF ROM_BASE < $4000
 err_missing_operand:                        ; D-MSGENC: no phrase hit, 18 B -> 16 B.
                 db      "missing operand",0 ; Shrinking here only IMPROVES the `jr`
-    ELSE                                    ; reach the note above is about.
-err_missing_operand:
-                db      "missing operand",13,10,0
-    ENDIF
 
 ; err_linebuf_overflow (the ERR 25 message, D-LINEMAX R-2) is NOT here, despite
 ; this file being the precedent for exactly this constraint. It did not fit: page
@@ -575,4 +568,3 @@ trace_line:
                 pop     hl
                 ret
 
-    ENDIF

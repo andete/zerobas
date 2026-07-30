@@ -8,8 +8,7 @@
 ; dl_is_disk) and so must stay RESIDENT in the repack build even though the
 ; BLOAD verb around it moves to a sub-ROM tenant (docs/spec-traps-t3-key.md §7.6).
 ; Included from THREE places, byte-identically:
-;   * bload-body.inc, at its original position -- keeps the lean 16 KB cart
-;     byte-identical;
+;   * bload-body.inc, at its original position;
 ;   * basic/bload.asm's repack branch -- the resident copy those nine keep calling;
 ;   * transitively into sub/bload.asm (via bload-body.inc) -- the tenant's copy.
 ; The resident and tenant copies differ only in what `build_83_name` binds to:

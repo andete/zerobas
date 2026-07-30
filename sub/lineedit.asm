@@ -287,7 +287,7 @@ rlb_more:
 
 ; --- le_tok_skip: advance HL past one token, including its operand bytes ------
 ; Sub-local duplicate of basic/interp.asm le_tok_skip (own header: skip_to_eol's
-; own dependency, a pure leaf, safe to duplicate). Verbatim (ROM_BASE is
+; own dependency, a pure leaf, safe to duplicate). Verbatim (the org is
 ; $2812 here too, so the repack-only SNG/DBL float-literal cases are
 ; included, matching this sub-ROM's repack-only existence).
 le_tok_skip:

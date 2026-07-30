@@ -64,7 +64,7 @@ SUBROM_IDX_STRHEAP      equ     5
 ; (emit trailing literals). Pure leaves over PU_* RAM + pchar -- the fragile value-
 ; render/deref paths (pu_do_number/pu_do_string/pu_fmt_int) stay resident. The two
 ; tenants render literals into DETOKBUF (sub-local pchar re-bind); their main-ROM
-; stubs (basic/printusing.asm, ROM_BASE<$4000) drain DETOKBUF via print_string
+; stubs (basic/printusing.asm) drain DETOKBUF via print_string
 ; (honouring PRDEST, so the file form PRINT# USING is untouched). TOFIELD returns
 ; the no-field flag in A (0=field found, 1=none). docs/spec-evict-printusing.md.
 SUBROM_IDX_PU_TOFIELD   equ     6

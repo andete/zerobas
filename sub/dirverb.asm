@@ -33,7 +33,7 @@
 ;                   bug-for-bug: a real I/O error mid-loop is treated (as
 ;                   before) as "no further match" -- fat_delete's Cy stops the
 ;                   loop, and success is reported iff at least one entry was
-;                   freed before the error (the resident lean build did exactly
+;                   freed before the error (the earlier resident build did exactly
 ;                   this).
 ;
 ; CLEAN-ROOM: original code (the dispatch/marshalling glue is own-design, the
@@ -59,7 +59,7 @@ dirverb_tenant:
 ; directory entry (the head already ran fat_mount + fat_find via the resident
 ; shims); DISK_FCB_NAME holds the NEW 8.3 name. Read that dir sector, overwrite
 ; the 11-byte name field in place, write it back. Byte-for-byte the same logic
-; as basic/files.asm's lean do_name tail.
+; as basic/files.asm's do_name tail.
 tnt_name_stamp:
                 ld      de,(FWR_DIRSEC)
                 ld      hl,FSECTOR_BUF

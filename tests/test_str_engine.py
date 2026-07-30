@@ -44,7 +44,7 @@ BODY    = 0xC500   # scratch body the SETSRC descriptor points at (slice-4a heap
 
 
 def build():
-    src = os.path.join(ROOT, "basic", "main-reloc.asm")
+    src = os.path.join(ROOT, "basic", "main.asm")
     subprocess.run(["pasmo", "--bin", src, ROM, SYM], check=True, capture_output=True)
 
 

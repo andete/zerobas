@@ -19,7 +19,7 @@
 ; token cursor arrives and leaves through DEFT_PTR (CALSLT clobbers registers),
 ; `jp stmt_error` becomes a status the resident stub raises, and `jp exec_stmt`
 ; becomes a normal return. Nothing about the LANGUAGE changed -- DEFtype is
-; repack-only, so the lean cart never had it and stays byte-identical by
+; repack-only, so the lean cart never had it by
 ; construction (no -body.inc dance needed, unlike the casmatch carve).
 ;
 ; skip_spaces is duplicated sub-locally (5 instructions); `upcase` and

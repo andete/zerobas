@@ -5,8 +5,8 @@
 ; shared body (the numbered-line editor's TXTTAB memmove engine).
 ;
 ; docs/spec-eviction-g4-space.md §4 (carve #2). Extracted verbatim from
-; basic/program.asm so the SAME source feeds two homes:
-;   * lean 16 KB cart (basic/program.asm, ROM_BASE >= $4000): inline, at this
+; basic/program.asm so the SAME source fed two homes until the lean cart retired:
+;   * (retired) inline in basic/program.asm, at this
 ;     file's ORIGINAL position (right after dl_overflow/is_cmd/parse_lineno/
 ;     new_prog/run_prog/do_break/ex_stop/ex_cont/find_line_bc, before
 ;     "ex_gosub: GOSUB <line>") -- BYTE-IDENTICAL to the pre-eviction build
@@ -14,8 +14,7 @@
 ;     removed/reordered).
 ;   * sub-ROM PAGE-1 tenant (sub/lineedit.asm, repack): store_line/relink
 ;     become resident marshalling shims (basic/program.asm's own `IF
-;     ROM_BASE < $4000` branch, right where this file is `include`d for
-;     lean) that `subrom_call` lineedit_tenant; prog_find_del/delete_at/
+;     branch) that `subrom_call` lineedit_tenant; prog_find_del/delete_at/
 ;     open_gap AND the relink LOOP move whole into sub/lineedit.asm (own
 ;     header has the full rationale, incl. why err_mem itself stays
 ;     resident even though sl_oom's code does not).
@@ -81,13 +80,8 @@ sl_delete:
 sl_oom:
                 ld      a,$CC               ; out-of-memory landmark (distinct byte)
                 ld      (ERRMARK),a
-    IF ROM_BASE < $4000
                 ld      a,7                 ; ERR 7: out of memory (error-handling S2a)
                 jp      raise_error
-    ELSE
-                ld      hl,err_mem
-                jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
-    ENDIF
 err_mem:        db      "out of memory",13,10,0
 
 ; --- prog_find_del: locate the slot for SL_NUM, deleting an exact match ------
@@ -219,7 +213,6 @@ rl_lp:
                 jr      nz,rl_more          ;  0000, so we cannot stop on link==0)
                 ld      a,(PRGEND)
                 cp      l
-    IF ROM_BASE < $4000
                 jr      nz,rl_more          ; HL != PRGEND -> more lines to link
                 jp      vars_reset          ; arrays slice-1 (§9.6) + slice-4b (§3b/Q2):
                                             ; every relink call (store_line edits,
@@ -230,10 +223,6 @@ rl_lp:
                                             ; slice-4b "edit clears scalars too"
                                             ; behaviour change (deliberate, MSX-
                                             ; faithful, §7.1).
-    ELSE
-                ret     z                   ; HL == PRGEND -> all lines linked (lean:
-                                            ; byte-identical to the pre-slice-1 form)
-    ENDIF
 rl_more:
                 push    hl                  ; remember this link field
                 inc     hl                  ; skip link (2) + lineno (2)

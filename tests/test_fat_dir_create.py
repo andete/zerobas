@@ -28,6 +28,12 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine, carry  # noqa: E402
 
+# The image under test is loaded at its ORG. Named here rather than
+# defaulted: msxtest.Machine's old default was $4000, the retired lean
+# cart's org, so a BASIC test that omitted it silently tested the lean
+# build (docs/spec-lean-retire-s3-gates.md §5, F-U).
+DISK_BASE = 0x4000
+
 ROM = "/tmp/zb_dircreate_ut.rom"
 SYM = "/tmp/zb_dircreate_ut.sym"
 
@@ -55,7 +61,7 @@ def build():
 def make_machine(entries):
     """entries: list of 32-byte dir entries laid into root sector 0; the rest of
     the root directory is $00 (free)."""
-    m = Machine(ROM, SYM)
+    m = Machine(ROM, SYM, rom_base=DISK_BASE)
     img = bytearray(ROOTSECS * SECSIZE)
     off = 0
     for e in entries:

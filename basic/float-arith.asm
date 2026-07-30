@@ -3,7 +3,7 @@
 
 ; float-arith.asm — math float pack, slice F2: arithmetic + relationals +
 ; signed-int migration (repack build only — the whole file is included only
-; inside `IF ROM_BASE < $4000`, basic/main.asm). docs/spec-basic-float-core.md
+; inside basic/main.asm. docs/spec-basic-float-core.md
 ; §10 is the oracle-pinned behavioural contract this file implements; §9.4 is
 ; the F1 runtime protocol (FAC/FACTYP) it extends. No disassembly anywhere —
 ; every algorithm below is own-design over the MSX2 TH BCD number FORMAT
@@ -41,10 +41,9 @@
 ; cmp16_bits -- RELOCATED HERE (page-0 low region) in the repack build
 ; =============================================================================
 ; Signed 16-bit compare HL(lhs) vs DE(rhs) -> A = 1(lhs<rhs)/2(equal)/4(lhs>rhs).
-; A pure leaf (no calls); clobbers A, HL, flags (DE preserved). Byte-identical to
-; the definition that lives in basic/expr.asm for the LEAN build -- but in the
-; repack build expr.asm gates its copy OUT and it is defined HERE instead, so it
-; lands in the page-0 low region ($2812-$3FFF) rather than page 1 ($4000+).
+; A pure leaf (no calls); clobbers A, HL, flags (DE preserved). Defined HERE
+; rather than in basic/expr.asm where it started, so it lands in the page-0 low
+; region ($2812-$3FFF) rather than page 1 ($4000+).
 ;
 ; WHY (subrom-mathpack migration, 2026-07-13): the resident float core
 ; (fp_mul/fp_cmp + the fp_add/fp_sub/fp_div exponent compares) calls cmp16_bits,
@@ -57,8 +56,7 @@
 ; 9-routine list missed (it enumerated the DIRECT callees, not their callees).
 ; Relocated to page 0 it is reachable from BOTH the normal page-1 interpreter
 ; callers (ev_rel etc. -- page 0 is always mapped when they run) and the page-1
-; tenant's page-0-resident float routines. Lean build is byte-identical (its
-; copy stays in expr.asm, page 1).
+; tenant's page-0-resident float routines.
 cmp16_bits:
                 ld      a,h
                 cp      d
@@ -88,10 +86,9 @@ c16_gt:
 ; div10 -- RELOCATED HERE (page-0 low region) in the repack build
 ; =============================================================================
 ; HL = HL/10, A = remainder (0..9). Shift-and-subtract (standard binary
-; divide); a pure leaf (no calls). Clobbers A, B, HL. Byte-identical to the
-; definition that lives in basic/print.asm for the LEAN build -- but in the
-; repack build print.asm gates its copy OUT and it is defined HERE instead, so
-; it lands in the page-0 low region ($2812-$3FFF) rather than page 1 ($4000+).
+; divide); a pure leaf (no calls). Clobbers A, B, HL. Defined HERE rather than in
+; basic/print.asm where it started, so it lands in the page-0 low region
+; ($2812-$3FFF) rather than page 1 ($4000+).
 ;
 ; WHY (subrom-mathpack migration, 2026-07-13): widen_uint_to (below, page-0
 ; resident) calls div10, AND widen_uint_to runs inside the fp_sqrt PAGE-1
@@ -108,7 +105,7 @@ c16_gt:
 ; prompted; that audit shows these two are the ONLY page-1 escapes. Relocated
 ; to page 0 it is reachable from BOTH the normal page-1 callers (pn_div,
 ; list.asm, printusing.asm -- page 0 is always mapped when they run) and the
-; page-1 tenant's page-0-resident float routines. Lean build is byte-identical
+; page-1 tenant's page-0-resident float routines.
 ; (its copy stays in print.asm, page 1).
 div10:
                 xor     a
@@ -1746,9 +1743,8 @@ cmul_float:
                 call    widen_both_operands
                 jp      fp_mul
 
-; --- combine_div_float: ev_t's '/' site. ALWAYS float in the repack build --
-; (spec §10.1: "'/' is always real division, always double"); the lean
-; build's int fast path is untouched (ev_t_div is repack-gated).
+; --- combine_div_float: ev_t's '/' site. ALWAYS float ----------------------
+; (spec §10.1: "'/' is always real division, always double").
 combine_div_float:
                 call    pop_lhs_and_probe   ; ZF result ignored -- '/' is always
                                             ; float regardless (spec §10.1)

@@ -41,6 +41,12 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine  # noqa: E402
 
+# The image under test is loaded at its ORG. Named here rather than
+# defaulted: msxtest.Machine's old default was $4000, the retired lean
+# cart's org, so a BASIC test that omitted it silently tested the lean
+# build (docs/spec-lean-retire-s3-gates.md §5, F-U).
+BASIC_BASE = 0x2812
+
 ROM = "/tmp/zb_print.rom"
 SYM = "/tmp/zb_print.sym"
 
@@ -72,7 +78,7 @@ def expected_number(value):
 
 def run():
     build()
-    m = Machine(ROM, SYM)
+    m = Machine(ROM, SYM, rom_base=BASIC_BASE)
 
     fails = 0
 

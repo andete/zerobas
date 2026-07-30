@@ -12,7 +12,7 @@ this locks the same behaviour in as a fast, emulator-free regression.
 
 Method: tokenise each line body, store it with `store_line` (line-link editor,
 already unit-tested), trap BREAKX (never pressed) and CHPUT (discard any
-break/error text), then `run_prog` and read variables back via `var_get_key`.
+break/error text), then `run_prog` and read variables back via `var_get`.
 
 Oracle: the documented BASIC semantics (FOR sums, GOSUB nesting, RESTORE resets
 the DATA cursor, ON N branches to the Nth target) — pure program behaviour, not
@@ -29,6 +29,12 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
 from msxtest import Machine  # noqa: E402
+
+# The image under test is loaded at its ORG. Named here rather than
+# defaulted: msxtest.Machine's old default was $4000, the retired lean
+# cart's org, so a BASIC test that omitted it silently tested the lean
+# build (docs/spec-lean-retire-s3-gates.md §5, F-U).
+BASIC_BASE = 0x2812
 
 ROM = "/tmp/zb_cflow.rom"
 SYM = "/tmp/zb_cflow.sym"
@@ -60,8 +66,16 @@ def run_program(m, lines):
 
 
 def var(m, name):
-    """Integer variable `name` (single letter) -> its 16-bit value."""
-    return m.call("var_get_key", b=ord(name), c=0).de
+    """Integer variable `name` (single letter) -> its 16-bit value.
+
+    ⚠️ READ THROUGH var_get, NOT var_get_key. var_get_key walks the fixed VARTAB
+    pool, which is the LEAN build's int-only store; on the shipped image scalars
+    live in the contiguous chain the ARY sub-ROM tenant manages, so var_get_key
+    reads back 0 for every variable a program actually set. This test used to run
+    on the lean build (msxtest.Machine's rom_base defaulted to $4000) and so never
+    noticed. var_get resolves the letter's default type through deftbl_lookup and
+    returns the int16 fast path in DE. docs/spec-lean-retire-s3-gates.md §5, F-U."""
+    return m.call("var_get", a=ord(name)).de
 
 
 def check(fails, label, got, want):
@@ -200,7 +214,7 @@ def run():
     ]
     for title, fn in groups:
         print(f"=== {title} ===")
-        fails = fn(Machine(ROM, SYM), fails)
+        fails = fn(Machine(ROM, SYM, rom_base=BASIC_BASE), fails)
         print()
 
     print("ALL PASS — control-flow executor matches documented BASIC semantics"

@@ -35,9 +35,9 @@
 ; H.TIMI convention. It touches only the PSG ($A0/$A1), the RAM queues, MUSICF, and
 ; the per-voice VCX_FRAMES counters -- never JIFFY or the keyboard.
 ;
-; Repack-only, like ex_sound / ex_play: the whole body is under IF ROM_BASE < $4000
+; Repack-only, like ex_sound / ex_play: the whole body is under IF the repack build
 ; (the H.TIMI seam only makes sense with the servicer present, and the servicer is
-; reachable only in the repacked page-1 window). The lean 16 KB ROM is byte-identical.
+; reachable only in the repacked page-1 window). The.
 ;
 ; CLEAN-ROOM: own-design drain loop + packet decode. The queue packet format is
 ; own-design (sub/playparse.asm); the work-area addresses (MUSICF/QUETAB/VCB) are
@@ -45,7 +45,6 @@
 ; the $0038 ISR contract is the published BIOS work-area appendix. No ROM bytes
 ; lifted ([memory: no-reference-rom-disasm]).
 
-    IF ROM_BASE < $4000
 
 ; play_install: point H.TIMI at htimi_guard (which gates play_service). Called once
 ; at boot from init_ext_roms (basic/initext.asm), after the extension-ROM scan. H.TIMI
@@ -220,4 +219,3 @@ psv_end:
                 ld      (MUSICF),a          ; clear the voice's MUSICF bit
                 ret
 
-    ENDIF

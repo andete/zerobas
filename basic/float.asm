@@ -1,5 +1,5 @@
 ; float.asm — math float pack: RESIDENT half (repack build only, included inside
-; `IF ROM_BASE < $4000`, basic/main.asm). docs/spec-basic-float-core.md.
+; basic/main.asm. docs/spec-basic-float-core.md.
 ;
 ; The float LITERAL CRUNCH (tk_float) was evicted to the sub-ROM as a cold,
 ; pure-computation page-0 tenant (subrom S2b, sub/tkfloat.asm). WAVE 1 kept a thin

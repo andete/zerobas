@@ -17,15 +17,15 @@
 ; polymorphic RAM vector points at it, and that vector is only valid while the
 ; owning code is mapped in). `fat_delete` is ALSO primitive-layer (spec §11's
 ; table), but it sits AFTER the cursor in the original file, so it lives in
-; the separate basic/fat-delete-body.inc (kept out of THIS file only so the
-; lean cart's byte order — primitives, then cursor, then fat_delete — stays
-; unchanged; see that file's own header).
+; the separate basic/fat-delete-body.inc (kept out of THIS file to preserve the
+; original byte order — primitives, then cursor, then fat_delete; see that file's
+; own header).
 ;
-; Included from TWO homes, the format-body.inc / pu-render.inc pattern
-; (docs/spec-evict-call-format.md, docs/spec-evict-printusing.md):
-;   * lean 16 KB cart (basic/fat.asm, ROM_BASE >= $4000): inline, at this
+; Home (the format-body.inc / pu-render.inc pattern,
+; docs/spec-evict-call-format.md, docs/spec-evict-printusing.md):
+;   * (retired) lean 16 KB cart, inline at this
 ;     file's original position (right after the file header, before the
-;     fat_io_* cursor) — BYTE-IDENTICAL to the pre-eviction build (this file
+;     fat_io_* cursor) — byte-identical to the pre-eviction build (this file
 ;     is a pure relocation of that exact code, nothing added/removed/
 ;     reordered).
 ;   * sub-ROM PAGE-1 tenant (sub/fatprim.asm, repack): fatprim_tenant reads
@@ -92,9 +92,9 @@ read_sector:
 ; defines its own private write_sector (FORMAT's sub-local CALSLT write
 ; path, with its own FMT_RESULT stash) in the SAME sub.rom assembly as
 ; this tenant (sub/fatprim.asm) -- pasmo has one flat global namespace, so
-; the two cannot share the name. The lean cart aliases `write_sector equ
-; fatprim_write_sector` right after this include (basic/fat.asm) so every
-; existing external call site (field.asm/files.asm's `call write_sector`)
+; the two cannot share the name. (The retired lean cart aliased `write_sector equ
+; fatprim_write_sector` right after this include, in basic/fat.asm, so every
+; external call site — field.asm/files.asm's `call write_sector` —
 ; is unaffected; the repack build's resident shim (basic/fat.asm) is
 ; independently named `write_sector` already (a different code path, no
 ; collision there). Zero-byte rename either way (EQU never emits bytes).
@@ -445,12 +445,9 @@ frs_eof:
                 scf
                 ret
 
-; ⚠️ REPACK/SUB-ROM ONLY. This file is included INLINE into the lean 16 KB cart
-; (basic/fat.asm's `IF ROM_BASE >= $4000` branch) and that image is byte-full --
-; ungated, this primitive overruns its $8000 ceiling outright. ROM_BASE is $2812
-; in sub/sub.asm and in main-reloc.asm, and $4000 in the lean main.asm, so the
-; gate keeps it in the sub-ROM (its only real home) and out of the cart.
-    IF ROM_BASE < $4000
+; ⚠️ SUB-ROM ONLY, and it stays that way: this primitive is sized for the sub-ROM,
+; its only real home. (It used to be gated out of the retired lean 16 KB cart,
+; which was byte-full and would have overrun its $8000 ceiling outright.)
 ; fat_restage_channel — re-read into FSECTOR_BUF whatever the LIVE channel had
 ; staged there before it was switched away (D-FCH S-FCH-1,
 ; docs/spec-basic-filechan-alloc.md §3.1).
@@ -565,7 +562,6 @@ frst_mul:
                 ex      de, hl
                 ld      hl, FSECTOR_BUF
                 jp      read_sector
-    ENDIF
 
 ; ===========================================================================
 ; FAT12 WRITE-BACK substrate (ported verbatim from disk.asm §FAT12 write-back).

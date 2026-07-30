@@ -46,18 +46,22 @@ import tempfile
 OMSX_RUN = os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib", "omsx_run.py")
 # LIST is pure screen output; any MSX1 BIOS renders it identically. C-BIOS boots
 # fast, so the --time window stays short.
-MACHINE = "C-BIOS_MSX1"
+# ⚠️ zerobas now runs on the REPACK machine, which carries the merged main ROM in
+# slot 0 -- there is no cartridge to insert. It used to be C-BIOS_MSX1 (or the
+# VG-8020) with the retired lean 16 KB cart in a slot; that build is gone
+# (RETIRE THE LEAN 16 KB CART S3, docs/spec-lean-retire-s3-gates.md).
+MACHINE = "C-BIOS_MSX1_EU_REPACK_DISK"
 COLS = 40                 # SCREEN 0 (TEXT1) width
 ROWS = 24
 NAMETBL_LEN = COLS * ROWS
 
 
-def run_list(cart, prog_lines, base=6.0, step=3.0, tail=6.0):
+def run_list(prog_lines, base=6.0, step=3.0, tail=6.0):
     """Type each numbered line (each followed by a separate Enter), then LIST +
     Enter, and capture the SCREEN 0 name table once the dust settles."""
     out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="list_cap_")
     os.close(out_fd)
-    cmd = [sys.executable, OMSX_RUN, "--machine", MACHINE, "--cart", cart]
+    cmd = [sys.executable, OMSX_RUN, "--machine", MACHINE]
     t = base
     for line in list(prog_lines) + ["list"]:
         cmd += ["--type", line, "--type-delay", str(t)]
@@ -94,7 +98,6 @@ def screen_lines(cap):
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cart", required=True, help="zerobas basic.rom")
     args = ap.parse_args()
 
     ok = True
@@ -137,7 +140,7 @@ def main() -> int:
     ]
 
     for label, prog, expected in cases:
-        rows = screen_lines(run_list(args.cart, prog))
+        rows = screen_lines(run_list(prog))
         # Find the contiguous block of LIST output: the expected lines should all
         # appear, in order, somewhere after the typed input echo. We match each
         # expected line as an exact (stripped) screen row.

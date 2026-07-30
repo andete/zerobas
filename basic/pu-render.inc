@@ -9,10 +9,9 @@
 ; eval, no pu_deref_body, no div10 — so they are a clean page-0 sub-ROM tenant
 ; (docs/spec-evict-printusing.md).
 ;
-; Included from TWO homes, exactly the sub/detok.asm pattern:
-;   * lean 16 KB cart (basic/printusing.asm, ROM_BASE >= $4000): inline, `pchar`
-;     = the real print.asm sink → BYTE-IDENTICAL to the pre-eviction build.
-;   * sub-ROM page 0 (sub/printusing.asm, repack): `pchar` is re-bound to a
+; Included from ONE home, the sub/detok.asm pattern (a second, retired home was
+; the lean 16 KB cart's inline copy in basic/printusing.asm):
+;   * sub-ROM page 0 (sub/printusing.asm): `pchar` is re-bound to a
 ;     DETOKBUF append, and the resident stubs drain DETOKBUF through the real
 ;     print_string (honouring PRDEST — so PRINT# USING file form is untouched).
 ; The includer defines BACKSLASH (printusing.asm keeps it for pu_has_field; the

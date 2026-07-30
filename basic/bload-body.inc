@@ -3,25 +3,21 @@
 
 ; bload-body.inc — the BLOAD verb body (parse + dispatch + tape load + disk load).
 ; ===========================================================================
-; Shared, byte-identically, between:
-;   * the LEAN 16 KB cart (basic/bload.asm ELSE branch, ROM_BASE >= $4000) —
-;     inline at its original position, keeping the frozen cart byte-identical;
+; Home:
 ;   * the sub-ROM PAGE-1 tenant (sub/bload.asm, SUBROM_IDX_BLOAD) — evicted there
 ;     in the repack build to free main page-1 space (docs/spec-traps-t3-key.md
 ;     §7.6). The fcbname-body.inc precedent, one level larger.
 ;
 ; WHY THE BODY PORTS UNCHANGED. Every name it calls resolves correctly on BOTH
 ; sides without editing a single line:
-;   parse_disk_fcb / parse_close_run / bl_skip_spaces / bl_upcase — resident routines
-;     in the lean cart; sub-local clones co-located in sub/bload.asm for the
+;   parse_disk_fcb / parse_close_run / bl_skip_spaces / bl_upcase — sub-local
+;     clones co-located in sub/bload.asm for the
 ;     tenant (the resident originals must STAY resident regardless: they have
 ;     61/9/6 external callers between them, so they are not evicted, only copied).
-;   fat_io_open / fat_io_getbyte — resident stubs over the fatprim tenant in the
-;     lean cart; in the sub-ROM they bind to sub-local bodies whose fat_mount /
+;   fat_io_open / fat_io_getbyte — in the sub-ROM these bind to sub-local bodies whose fat_mount /
 ;     fat_find / fat_open / fat_read_file_sector are the REAL implementations
 ;     (sub/fatprim.asm), so the marshalling round-trip disappears entirely.
-;   bl_load_error — the resident reporter (TAPIOF + ERRMARK + print + ret) in the
-;     lean cart; sub-local in the tenant it does TAPIOF + ERRMARK + sets BL_STAT
+;   bl_load_error — sub-local in the tenant, where it does TAPIOF + ERRMARK + sets BL_STAT
 ;     and rets, with the SAME stack behaviour, so control flow is unchanged and
 ;     the resident stub does the reporting once on the way out.
 ;   load_handoff — the ,R exec jump. RESIDENT ON BOTH SIDES: it ends in `jp (hl)`

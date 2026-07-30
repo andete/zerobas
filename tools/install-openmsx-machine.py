@@ -28,13 +28,18 @@ entry. The _TAPE machines below carry no BASIC and stay region-universal.
 It also writes a "<name>_TAPE" machine for EVERY stock MSX1 C-BIOS machine (all four
 regions): the same stock C-BIOS with ONLY the zerobas-tape cassette patch applied (no
 zerobas-BASIC patch), leaving the external cartridge slots free. C-BIOS boots to its
-no-cart screen; insert a zerobas cartridge to drive the open cassette stack against a
-stock BIOS. This is the machine the tape regression's open-stack and round-trip tiers run
-on (probes/basic/basic_probe_bload_openstack.py, tape/tools/run_tape_regression.py). Stock
-C-BIOS already ships a <CassettePort/>, so the _TAPE machine needs nothing but the patch.
-⚠️ The cartridge those tiers insert is `build/basic.rom`, the RETIRED lean build. It still
-assembles (`make build/basic.rom`) but nothing gates it; porting that corpus to the repack
-machine -- which has its own <CassettePort/> -- is S3 of the lean retirement.
+no-cart screen. Stock C-BIOS already ships a <CassettePort/>, so the _TAPE machine
+needs nothing but the patch.
+
+⚠️ THESE MACHINES NO LONGER CARRY A zerobas BASIC, AND NOTHING INSERTS ONE. They used
+to be driven with `-cart build/basic.rom`, the lean 16 KB build, which is retired and
+unbuildable (docs/spec-lean-retire-s3-gates.md). The cassette corpus
+(probes/basic/basic_probe_cas_*.py, _tape_save, _bload_openstack) now runs on the
+REPACK machine, which bakes the merged main ROM into slot 0 and has its own
+<CassettePort/>; those probes still accept `--machine C-BIOS_MSX1_EU_TAPE` if you want
+the stock-BIOS rig, but you must supply your own `--cart`. _TAPE machines are kept
+because tape/tools/run_tape_regression.py and the bios_probe_* carts (which build
+their own Z80 probe ROMs) need a stock BIOS with a cassette port.
 
 With `--disk-rom`, it ALSO writes a "C-BIOS_MSX1_EU_BASIC_DISK" variant:
 the same patch, plus slot 3 expanded so that slot 3-1 holds the standalone
@@ -196,11 +201,11 @@ def zerobas_disk_extension(disk_rom_abs: str) -> str:
     -- a cross-host validation that the whole stack is BIOS-independent (works on a
     real MSX BIOS, not just C-BIOS). Same WD2793 wiring as the C-BIOS _BASIC_DISK
     slot-3-1 block, but slot="any" so openMSX auto-slots it.
-        openmsx -machine Philips_VG_8020 -cart build/basic.rom \\
+        openmsx -machine C-BIOS_MSX1_EU_BASIC \\
                 -ext zerobas-disk -diska disk/test720.dsk
     NOTE: zerobas-disk provides only the sector DRIVER (DSKIO/BDOS), not a Disk BASIC
-    language extension -- so the disk verbs come from the zerobas-BASIC cartridge, not
-    from the host's own BASIC (a bare host BASIC sees no FILES/DSKI$)."""
+    language extension -- so the disk verbs come from zerobas BASIC itself, not from
+    the host's own BASIC (a bare host BASIC sees no FILES/DSKI$)."""
     return (
         '<?xml version="1.0" ?>\n'
         "<!DOCTYPE msxconfig SYSTEM 'msxconfig2.dtd'>\n"

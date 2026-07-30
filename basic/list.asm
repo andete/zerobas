@@ -92,10 +92,7 @@ list_num:
 ; The whole detokeniser body (detok/dt_*/detok_op/detok_kw*/the number renderers
 ; + ln_div_entry) lives in basic/detok.inc. Its home depends on the build (subrom
 ; arc WAVE 3, docs/spec-basic-subrom-wave3-detok.md):
-;   * lean 16 KB cart (ROM_BASE >= $4000): the body is inline here (the include
-;     below), byte-identical to the pre-extraction list.asm — every rendered byte
-;     streams through pchar (the PRDEST sink) exactly as before.
-;   * repack build (ROM_BASE < $4000): the body is EVICTED to sub-ROM page 0
+;   * repack build: the body is EVICTED to sub-ROM page 0
 ;     (sub/detok.asm), where pchar/print_string are re-bound to DETOKBUF appends
 ;     and kwtable is the co-located sub copy. `detok` here is a dispatch stub that
 ;     CALSLTs the core once per line to fill DETOKBUF, then drains it back through
@@ -106,7 +103,6 @@ list_num:
 ;     here: list_num (line numbers) and program.asm's error line-number printing
 ;     reach it by ordinary in-slot call and must not page out — a copy separate
 ;     from detok.inc's sub-side one (which serves the evicted detok_dec).
-    IF ROM_BASE < $4000
 detok:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DETOK
                 call    subrom_call         ; HL=token body in; sub core fills DETOKBUF
@@ -148,8 +144,5 @@ dde_tail:
 ; here for str-engine.asm's HEX$/OCT$ are GONE — HEX$/OCT$ moved their digit-
 ; building bodies into the sub-ROM tenant (sub/strheap.asm sh_hex_build/
 ; sh_oct_build, with their own local digit leaves), so nothing in the repack
-; main ROM references hex_digit/oct_digit any more. detok.inc still carries the
-; lean build's own twins for the inline detokeniser.)
-    ELSE
-                include "basic/detok.inc"
-    ENDIF
+; main ROM references hex_digit/oct_digit any more. detok.inc carries the
+; sub-side twins.)

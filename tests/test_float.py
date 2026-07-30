@@ -55,7 +55,7 @@ TOKBUF = 0xC100    # crunch destination
 
 
 def build():
-    src = os.path.join(ROOT, "basic", "main-reloc.asm")
+    src = os.path.join(ROOT, "basic", "main.asm")
     subprocess.run(["pasmo", "--bin", src, ROM, SYM], check=True, capture_output=True)
     # sub.rom (formatter tenant); -I sub for its includes, cwd=ROOT for basic/sysvars.inc
     subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", SUB_ROM, SUB_SYM],

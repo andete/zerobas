@@ -46,7 +46,6 @@
 ; 5-byte JP hook-vector idiom is the standard MSX H.* hook convention (H.TIMI is
 ; already installed this way by play_install). No reference-ROM bytes.
 
-    IF ROM_BASE < $4000
     IF TRAPS_T3
 
 ; (zkey_install has been PROMOTED to basic/subrom-boot.asm — page 1. It is
@@ -132,5 +131,4 @@ key_entry_index:
                 sub     b
                 ret
 
-    ENDIF
     ENDIF

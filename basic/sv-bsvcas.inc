@@ -10,7 +10,7 @@
 ; primitives are in-page calls instead of cross-slot round trips.
 ;
 ; The text is VERBATIM. basic/save.asm includes it at its ORIGINAL POSITION for
-; ROM_BASE >= $4000, so the lean 16 KB cart stays byte-frozen; the repack build
+; the repack build, so the lean 16 KB cart stays byte-frozen; the repack build
 ; leaves a tenant-call stub under the SAME entry label instead, which is why the
 ; `jr`/fall-through reaching it from the resident PARSE needs no edit.
 ;

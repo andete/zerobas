@@ -81,7 +81,7 @@ ALIASES = {
 
 
 def build():
-    r = subprocess.run(["pasmo", "--bin", "basic/main-reloc.asm", ROM, SYM],
+    r = subprocess.run(["pasmo", "--bin", "basic/main.asm", ROM, SYM],
                        cwd=ROOT, capture_output=True, text=True)
     if r.returncode != 0:
         sys.stderr.write(r.stdout + r.stderr)

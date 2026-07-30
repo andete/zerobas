@@ -40,8 +40,7 @@
 ; interactive menu RESIDENT (console I/O is page-1 main, trivially resident); the
 ; bulk moves to a sub-ROM PAGE-1 tenant (sub/format.asm format_tenant) that carries
 ; its own sub-local CALSLT write path. The bulk's CODE is shared verbatim via
-; basic/format-body.inc (the c3fc2d8 printusing.asm pattern) — the lean 16 KB cart
-; still includes it inline here, BYTE-IDENTICAL to the pre-eviction build.
+; basic/format-body.inc (the c3fc2d8 printusing.asm pattern).
 
 ; --- ex_call / _<name> — extended-statement dispatch -----------------------
 ; HL -> the CALL token (ex_call) or the '_' char (ex_call_us). Only CALL FORMAT is
@@ -102,9 +101,9 @@ fmt_name:       db      "FORMAT"
 ; A real CALL FORMAT lets you choose the disk geometry; with two geometries there now
 ; IS something to choose, so zerobas prompts a minimal 1=360K / 2=720K menu (its own —
 ; zerobas-disk's CHOICE offers none) and reads the answer via the REPL line editor.
-; The MENU stays resident (console I/O is main-BASIC page-1) in both builds; only the
-; build/write engine past the choice differs: lean runs it inline (format-body.inc);
-; repack dispatches it to the sub-ROM page-1 tenant (sub/format.asm format_tenant),
+; The MENU stays resident (console I/O is main-BASIC page-1); the build/write engine
+; past the choice is dispatched to the sub-ROM page-1 tenant (sub/format.asm
+; format_tenant),
 ; marshalling just the 1-byte geometry selector through RAM (FMT_GEOMSEL).
 do_format:
                 ld      a,(DISKSLOT_OK)
@@ -122,7 +121,6 @@ fmt_menu:
                 cp      '2'
                 jr      z,fmt_sel_720
                 jr      fmt_menu            ; invalid -> re-prompt (like the CF-3300 '?')
-    IF ROM_BASE < $4000
 fmt_sel_360:
                 xor     a                   ; A = 0 -> 360k (format_tenant's GEOM select)
                 jr      fmt_dispatch
@@ -146,19 +144,9 @@ fmt_dispatch:
                                             ; it on a completed call)
                 scf                         ; tenant reported a write error -> Cy=1
                 ret
-; fmt_menu_text has its own copy here (repack resident): the lean cart's copy lives
-; INSIDE basic/format-body.inc, at its original position between fmt_boot and
-; fmt_geom_byte (byte-identity, see that file) -- format-body.inc is sub-ROM-only
+; fmt_menu_text has its own copy here (resident); a second copy lives INSIDE
+; basic/format-body.inc, at its original position between fmt_boot and
+; fmt_geom_byte (see that file) -- format-body.inc is sub-ROM-only
 ; in the repack build (sub/format.asm), not included resident here, so the menu
 ; needs its own text. Same 17 bytes, no functional difference.
 fmt_menu_text:  db      "1=360k 2=720k? ",0
-    ELSE
-fmt_sel_360:
-                ld      hl,GEOM_360K
-                jr      fmt_selected
-fmt_sel_720:
-                ld      hl,GEOM_720K
-                include "basic/format-body.inc"    ; lean: inline bulk, byte-identical
-                                                   ; (fmt_menu_text lives inside it,
-                                                   ; at its original position)
-    ENDIF

@@ -6,9 +6,9 @@
 ; Extracted from basic/title.asm so the SAME source serves two homes (the
 ; casmatch-body.inc / cal-refill-body.inc precedent):
 ;
-;   * lean 16 KB cart (ROM_BASE >= $4000): included at its original position in
-;     basic/title.asm — byte-identical to the pre-extraction file;
-;   * repack build (ROM_BASE < $4000): included by sub/title.asm instead, as the
+;   * (retired) the lean 16 KB cart, included at its original position in
+;     basic/title.asm;
+;   * repack build: included by sub/title.asm instead, as the
 ;     sub-ROM PAGE-1 tenant SUBROM_IDX_TITLE, freeing main-ROM page-1 tail space
 ;     to fund the input-devices I2 slice (docs/spec-basic-input-devices.md §9.5).
 ;

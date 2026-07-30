@@ -44,7 +44,7 @@ RELOC_BASE = 0x2812
 
 
 def build():
-    src = os.path.join(ROOT, "basic", "main-reloc.asm")
+    src = os.path.join(ROOT, "basic", "main.asm")
     subprocess.run(["pasmo", "--bin", src, ROM, SYM], check=True, capture_output=True)
 
 

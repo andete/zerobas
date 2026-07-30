@@ -30,9 +30,16 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine  # noqa: E402
 
+# The image under test is loaded at its ORG. Named here rather than
+# defaulted: msxtest.Machine's old default was $4000, the retired lean
+# cart's org, so a BASIC test that omitted it silently tested the lean
+# build (docs/spec-lean-retire-s3-gates.md §5, F-U).
+BASIC_BASE = 0x2812
+
 ROM = "/tmp/zb_field.rom"
 SYM = "/tmp/zb_field.sym"
-SBUF = 0xC300           # scratch [len][bytes] source for lrset_store
+SBUF  = 0xC300          # scratch [len][ptr] descriptor for lrset_store
+SBODY = 0xC340          # the body that descriptor points at
 
 
 def build():
@@ -43,7 +50,7 @@ def build():
 
 def run():
     build()
-    m = Machine(ROM, SYM)
+    m = Machine(ROM, SYM, rom_base=BASIC_BASE)
     s = m.sym
     fails = 0
 
@@ -101,9 +108,17 @@ def run():
     FBUF = s["FSECTOR_BUF"]
 
     def lrset_case(label, text, width, off, just, want):
+        # ⚠️ THE DESCRIPTOR IS [len][ptr], NOT [len][bytes].
+        # The lean build stored a string value's bytes INLINE after the length;
+        # the shipped str-engine build stores a POINTER to a heap body, and
+        # pu_deref_body (str-engine.asm) is what every reader goes through. This
+        # test seeded the lean shape and ran on the lean build until S3
+        # (docs/spec-lean-retire-s3-gates.md §5, F-U), so it never saw the
+        # difference. Body goes in its own buffer; the descriptor points at it.
         src = text.encode("ascii")
+        m.mem[SBODY:SBODY + len(src)] = src
         m.mem[SBUF] = len(src)
-        m.mem[SBUF + 1:SBUF + 1 + len(src)] = src
+        m.poke_w(SBUF + 1, SBODY)
         m.poke_w(s["STRPTR"], SBUF)
         m.poke(s["LRSET_W"], width)
         m.poke_w(s["LRSET_OFF"], off)

@@ -10,7 +10,7 @@ splices the three source components into that combined image:
 
   1. the repacked C-BIOS (page 0 BIOS; its dead ROM-BASIC placeholder dropped so
      $2812-$3FFF is free, contiguous below page 1) -- the base,
-  2. the relocated BASIC ($2812-$7FFF, basic/main-reloc.asm; "AB" header pinned at
+  2. the relocated BASIC ($2812-$7FFF, basic/main.asm; "AB" header pinned at
      $4000, reclaimed low region $2812-$3FFF reserved $00 for now), and
   3. the zerobas-tape page-0 completions (LPTOUT vector $00A5, GTPAD/GTPDL vectors
      $00DB/$00DE, cassette vectors $00E2-$00F6, routine bodies $09EE-tape_end --
@@ -44,7 +44,7 @@ def sym_value(sym_path: str, label: str) -> int:
             return int(parts[-1].rstrip("Hh"), 16)
     raise SystemExit(f"label {label!r} not found in {sym_path}")
 
-BASIC_BASE = 0x2812   # relocated BASIC low boundary (ROM_BASE in main-reloc.asm)
+BASIC_BASE = 0x2812   # relocated BASIC low boundary (BASIC_ORG in basic/main.asm)
 TOP = 0x8000
 TAPE_BIN_BASE = 0x00A5
 LPTOUT_VEC = (0x00A5, 0x00A8)      # C3 JP vector, target repointed to LPTOUT body

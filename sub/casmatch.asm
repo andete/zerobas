@@ -8,7 +8,7 @@
 ; main-ROM page-1 tail space for the G5 PAINT slice. Follows the landed G4-
 ; eviction pattern (sub/randio.asm, sub/lineedit.asm): the moved code is
 ; VERBATIM (shared via basic/casmatch-body.inc, included both here and at
-; basic/cload.asm's own original position for the lean 16 KB cart -- byte-
+; basic/cload.asm's own original position -- byte-
 ; identical there).
 ;
 ; NO MARSHALLING: cas_open_match takes no register inputs and its only

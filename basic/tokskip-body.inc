@@ -28,16 +28,14 @@ tok_skip:
                 jr      z,tsk1
                 cp      PEEK_PREFIX         ; $FF ,function-token byte
                 jr      z,tsk1
-    IF ROM_BASE < $4000
                 cp      SNG_TOKEN           ; $1D ,4 float value bytes (repack only —
-                jr      z,tsk4              ; float literals only exist in the repack
-                cp      DBL_TOKEN           ; build; gated so lean stays byte-identical).
+                jr      z,tsk4
+                cp      DBL_TOKEN
                 jr      z,tsk8              ; $1F ,8 float value bytes. A mantissa byte
                                             ; can be $00 (e.g. .5 -> 1D 40 50 00 00), so
                                             ; without this stride skip_to_eol/if_skip_to_
                                             ; else/data_seek mistake it for the line/stmt
                                             ; terminator -- a stored `10 A=1.5` never RUNs.
-    ENDIF
                 cp      '"'                 ; string literal
                 jr      z,tsk_str
                 cp      REM_TOKEN           ; REM -> rest of line
@@ -52,7 +50,6 @@ tsk2:
                 inc     hl
                 inc     hl
                 ret
-    IF ROM_BASE < $4000
 tsk8:                                       ; DBL_TOKEN: 8 value bytes (4 here + 4 in tsk4)
                 inc     hl
                 inc     hl
@@ -64,7 +61,6 @@ tsk4:                                       ; SNG_TOKEN: 4 value bytes
                 inc     hl
                 inc     hl
                 ret
-    ENDIF
 tsk_str:
                 ld      a,(hl)
                 or      a

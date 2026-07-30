@@ -80,7 +80,6 @@
 ; RAM claim was possible, so the scratch moved from a fixed address to a
 ; stack frame -- same data, same lifetime, different storage.
 
-    IF ROM_BASE < $4000
 
 ; --- ary_engine: the tenant entry point (SUBROM_IDX_ARY, sub/equates.inc) --
 ; Reads ARY_OP and dispatches. op=0 (RESOLVE): read/write element address
@@ -1402,4 +1401,3 @@ aryr_alloc_fail:
                 ld      hl,0
                 ret
 
-    ENDIF

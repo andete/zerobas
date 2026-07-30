@@ -3,10 +3,8 @@
 
 ; str-engine.asm — the string expression engine (repack build only).
 ; ===========================================================================
-; This file is assembled ONLY in the repack build (ROM_BASE < $4000), into the
-; reclaimed page-0 low region ($2812-$3FFF). It is NOT part of the lean 16 KB
-; basic.rom — the byte-full lean image keeps the minimal string-VALUE layer
-; (basic/strvar.asm) and this file's callers fold back to str_eval_one there.
+; This file is assembled into the reclaimed page-0 low region ($2812-$3FFF). The
+; minimal string-VALUE layer it builds on is basic/strvar.asm.
 ; See docs/spec-basic-arrays-slice4a-string-heap.md and basic/PROVENANCE.md.
 ;
 ; REVISED arrays slice-4a (docs/spec-basic-arrays-slice4a-string-heap.md):
@@ -211,8 +209,7 @@ sel_close:
 
 ; --- print_strval (repack): emit the [len][ptr] descriptor at STRPTR via -----
 ; pchar (screen or file per PRDEST). Homed in the low region (page 1 full);
-; print.asm / printusing reach it by in-slot call. The lean build keeps its
-; own inline [len][bytes] copy in strvar.asm. Clobbers A, B, HL.
+; print.asm / printusing reach it by in-slot call. Clobbers A, B, HL.
 print_strval:
                 ld      hl,(STRPTR)
                 ld      b,(hl)              ; B = length
@@ -483,7 +480,7 @@ str_temp_slice:
 
 ; --- LEN/ASC/VAL: string-argument functions in the NUMERIC evaluator -------
 ; Reached from ev_f_ff (basic/expr.asm) via `jp ev_ff_strnum` on an unrecognised
-; $FF selector (repack build only; the lean build's ev_f_ff still `jp ev_f_err`s).
+; $FF selector.
 ; Entered with IX on the function selector byte. Each returns its numeric result in
 ; DE (the factor convention), IX advanced past the call.
 ev_ff_strnum:
@@ -1412,11 +1409,9 @@ exp_maybe_strfn:
 ems_print:
                 pop     de                  ; drop the saved operand-start (balances the
                                              ;  push above; str_eval already clobbers DE)
-    IF ROM_BASE < $4000
                 ld      a,(FPERR)           ; D-F2-1: e.g. print hex$(65536.) — the
                 or      a                   ; overflow happens inside str_eval's HEX$
                 jp      nz,fp_runtime_error ; argument conversion (fac_to_int_addr)
-    ENDIF
                 push    hl                  ; print_strval clobbers HL (token cursor)
                 call    print_strval
                 pop     hl

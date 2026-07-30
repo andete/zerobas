@@ -42,7 +42,8 @@ Each TODO item is largely independent — do one per session, and finish with:
    to reproduce, ship a documented simplification instead and mark it
    `quarantined` in `PROVENANCE.md` (e.g. the USR integer-only convention,
    unsigned `/`, div-by-zero → 0).
-4. **Build clean:** `make` must emit a 16384-byte `build/basic.rom` with no warnings.
+4. **Build clean:** `rm -rf build && make basic-reloc` must assemble with no
+   warnings and print its two wall numbers (low / page-1 free).
 5. **Prove crunch is still byte-identical** (see below) — any tokeniser change
    can regress this.
 6. **Run the regression probes** (control flow / loops / data / statements) —
@@ -165,7 +166,7 @@ python3 probes/lib/omsx_repl.py --selftest C-BIOS_MSX1_EU_REPACK_DISK   # + Phil
 ### Byte-identical crunch probe (run after ANY tokeniser change)
 
 ```sh
-python3 probes/basic/basic_probe_crunch.py --cart build/basic.rom
+python3 probes/basic/basic_probe_crunch.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK
 # want: "ALL PASS — crunch is byte-identical"
 ```
 
@@ -177,14 +178,17 @@ line to `LINES` (executable; `bload` trails) or `CRUNCH_ONLY` (non-executing
 body; `bload` leads) — **then restore the probe to pristine before finishing**;
 those test-line edits are scratch, never committed.
 
-Other regression probes (same invocation shape, `--cart …/build/basic.rom`):
-`basic_probe_controlflow.py`, `basic_probe_loops.py`, `basic_probe_data.py`,
-`basic_probe_statements.py`.
+Other regression probes (same shape, all on the repack machine — run
+`make repack-machine` first): `basic_probe_statements.py`, `basic_probe_list.py`,
+`basic_probe_strvar.py`, `basic_probe_cas_verbs.py`. The stored-program control-flow
+and DATA/READ rows moved to `tests/test_control_flow.py`, which runs against the
+shipped image with no emulator (RETIRE THE LEAN 16 KB CART S3,
+[`spec-lean-retire-s3-gates.md`](spec-lean-retire-s3-gates.md)).
 
 ### omsx_run.py — the headless driver
 
 ```sh
-python3 probes/lib/omsx_run.py --machine C-BIOS_MSX1 --cart build/basic.rom \
+python3 probes/lib/omsx_run.py --machine C-BIOS_MSX1_EU_REPACK_DISK \
     --type 'PRINT 12*12\r' --type-delay 8 \
     --bp 0x7FF0 --reg PC --mem memory:0xE000:4 --out cap.txt
 ```

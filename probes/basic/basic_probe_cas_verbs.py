@@ -26,9 +26,12 @@ cal_getbyte/cal_refill, cas_wbyte/cas_flush_block — so the tests prove the *wi
     since zerobas's subset has no BASIC-level string-length assert). A 2nd read past
     the data hits the Ctrl-Z EOF -> empty string.
 
-Typed harness on C-BIOS_MSX1_EU_TAPE --cart build/basic.rom (the established
-cassette-probe method; --cart reads build/basic.rom directly). Clean-room: our own
-programs, our own cas codec / tokeniser; the reference ROM is never read.
+Typed harness on the repack machine (C-BIOS_MSX1_EU_REPACK_DISK), which carries
+the merged main ROM in slot 0 and its own <CassettePort/>, so no cartridge is
+inserted. Until 2026-07-29 this ran the retired lean 16 KB cart as a `-cart` on
+C-BIOS_MSX1_EU_TAPE (docs/spec-lean-retire-s3-gates.md); that rig is still
+selectable with --machine C-BIOS_MSX1_EU_TAPE + --cart, and is the only mode
+in which --cart means anything.
 """
 from __future__ import annotations
 
@@ -57,6 +60,14 @@ from omsx_run import _tcl_dquote                      # noqa: E402
 
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 MACHINE_TAPE = "C-BIOS_MSX1_EU_TAPE"
+# The zerobas side runs on the REPACK machine, which carries the merged main ROM
+# in slot 0 and ships its own <CassettePort/>. It used to be MACHINE_TAPE below --
+# stock C-BIOS plus the tape patch -- with the retired lean 16 KB cart inserted as
+# a cartridge (RETIRE THE LEAN 16 KB CART S3, docs/spec-lean-retire-s3-gates.md).
+# MACHINE_TAPE is kept because it is still a real rig: stock BIOS + open cassette
+# stack, selectable via --machine / ZEROBAS_BASIC_MACHINE, and the only mode in
+# which a `-cart` is passed at all.
+ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE") or "C-BIOS_MSX1_EU_REPACK_DISK"
 TXTBASE = 0x8001
 WITNESS = 0xD0FF
 POISON = 0x11
@@ -76,12 +87,10 @@ def run_typed(cart: str, cas_path: str, type_cmds: list[tuple[float, str]],
     at emulator keyboard speed; the test then just types RUN). Returns
     (hex_at_cap_addr, witness_byte_or_None).
 
-    machine (default MACHINE_TAPE, the lean "-cart" tape rig) may be overridden
-    to a REPACK machine (e.g. C-BIOS_MSX1_EU_REPACK_DISK, installed by `make
-    repack-machine`) to exercise a repack-only feature (e.g. a sub-ROM page-1
-    tenant) over the cassette port -- that machine already bakes in the merged
-    ROM as its slot-0 primary AND ships a <CassettePort/>, so `cart` is simply
-    unused (no `-cart` flag) in that case; only `-cassetteplayer` is passed.
+    machine defaults to ZB_MACHINE (the repack machine, which bakes in the merged
+    ROM as its slot-0 primary AND ships a <CassettePort/>, so `cart` is unused and
+    no `-cart` flag is passed -- only `-cassetteplayer`). Set it to MACHINE_TAPE to
+    run the stock-BIOS rig instead, which DOES need a `cart`.
     """
     out = tempfile.mktemp(suffix=".txt", prefix="casverb_")
     lines = [
@@ -112,10 +121,10 @@ def run_typed(cart: str, cas_path: str, type_cmds: list[tuple[float, str]],
     open(tcl_path, "w").write(tcl)
     if os.path.exists(out):
         os.unlink(out)
-    zb_machine = machine or MACHINE_TAPE
+    zb_machine = machine or ZB_MACHINE
     cmd = [OMSX, "-machine", zb_machine]
     if zb_machine == MACHINE_TAPE:
-        cmd += ["-cart", cart]          # lean: the ROM IS the cartridge
+        cmd += ["-cart", cart]          # stock-BIOS rig: the ROM IS the cartridge
     cmd += ["-cassetteplayer", cas_path, "-script", tcl_path]
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                             start_new_session=True)
@@ -269,7 +278,10 @@ def test_open_cas_eof(cart: str, tmp: str) -> bool:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cart", default=os.path.join(_ROOT, "build", "basic.rom"))
+    ap.add_argument("--cart", default=None,
+                    help="only used with --machine %s" % MACHINE_TAPE)
+    ap.add_argument("--machine", default=None,
+                    help="zerobas machine (default %s)" % ZB_MACHINE)
     args = ap.parse_args()
 
     tmp = tempfile.mkdtemp(prefix="casverb_")

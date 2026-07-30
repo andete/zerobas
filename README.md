@@ -212,7 +212,10 @@ byte-identical to openMSX's own bundled `cbios_main_msx1_eu.rom`.
 targets the EU ROM. Until 2026-07-29 zerobas also shipped `zerobas-msx1.ips/.bps`, a
 region-universal page-1 splice carrying a **lean 16 KB build** — but that build was
 not a smaller zerobas, it was one missing seven source files (no strings, no `INPUT`,
-no floats, no arrays, no error codes, no KEY traps), so it is retired.
+no floats, no arrays, no error codes, no KEY traps), so it is retired. As of
+2026-07-29 it is gone from the source too: the 284 `IF ROM_BASE` gates that selected
+it are deleted and `basic/main.asm` assembles the one image
+([`docs/spec-lean-retire-s3-gates.md`](docs/spec-lean-retire-s3-gates.md)).
 
 To run it in openMSX without touching any ROM, `make machines` installs ready
 machine configs into your openMSX user dir — a `C-BIOS_MSX1_EU_BASIC` and a
@@ -287,6 +290,15 @@ cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`.
 
 ### Limitations (this slice)
 
+> ⚠️ **THIS SECTION IS STALE AND IS KNOWN DOC DEBT — do not trust it.** It describes
+> a game-loader-scoped slice from early in the project, not today's BASIC. At least
+> two of its claims are flatly false: `ON … GOTO` is listed as "still out" but is
+> implemented and gated, and "variables are single-letter integers; no strings,
+> arrays, or multi-character names" predates the string engine, the float pack and
+> the array engine. Predates the charter change to FAITHFUL FULL MSX1 BASIC.
+> Flagged 2026-07-29 (S3 of the lean-cart retirement, which deliberately did not
+> rewrite it); see the TODO entry **README "Limitations (this slice)" IS STALE**.
+
 - **Stored programs + control flow (Step B).** Numbered lines are stored at the
   real text base (`TXTTAB`/`$F676` = `$8001`, oracle-confirmed) in the real
   line-link format, with insert / replace / delete by line number, plus `NEW`
@@ -310,8 +322,8 @@ cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`.
   `RESTORE [<line>]` rewinds the data cursor. **Still out:** `ON … GOTO` and
   `ELSE <line>` branch lists, and string DATA. See
   [`spec-controlflow.md`](basic/docs/spec-controlflow.md).
-  Validated on openMSX by `basic_probe_controlflow.py`, `basic_probe_loops.py`,
-  `basic_probe_data.py` (stored programs + branches + loops + data) and
+  Validated by `tests/test_control_flow.py` (stored programs + branches + loops +
+  DATA/READ/RESTORE, run against the shipped image) and on openMSX by
   `basic_probe_crunch.py` (byte-identical tokenisation).
 - Variables are single-letter integers (`A`–`Z`); no strings, arrays, or
   multi-character names. Expressions have `+ - *`, the comparisons
@@ -325,39 +337,36 @@ cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`.
 
 Run the oracle probes ([`probes/`](probes)) against this ROM:
 
-⚠️ The probes below take `--cart build/basic.rom` — the **retired lean 16 KB build**.
-It still assembles (`make build/basic.rom`), but nothing builds, ships, or gates it any
-more; porting this corpus to the repack machine is S3 of the lean retirement
-([`docs/spec-lean-retire-s2-switch.md`](docs/spec-lean-retire-s2-switch.md) §4.5). The
-standing gates all run on the repack build — `make diskbasic-acceptance` and friends.
+These run zerobas on the installed repack machine (`make repack-machine` first);
+the reference side, where a probe has one, is a stock Philips VG-8020. Nothing
+inserts a cartridge any more — the merged main ROM is slot 0.
 
 ```sh
 # BLOAD pipeline (tokenise → execute → cassette load → ,R handoff)
 python3 probes/basic/basic_probe_bload.py \
-    --machine Philips_VG_8020 --cart build/basic.rom
+    --machine C-BIOS_MSX1_EU_REPACK_DISK
 
 # REM / POKE / PEEK / expression evaluator (results read back from RAM)
-python3 probes/basic/basic_probe_statements.py \
-    --cart build/basic.rom
+python3 probes/basic/basic_probe_statements.py
 
-# Step A: byte-identical crunch — zerobas TOKBUF vs reference KBUF, per line
+# Byte-identical crunch — zerobas TOKBUF vs reference KBUF, per line
 python3 probes/basic/basic_probe_crunch.py \
-    --machine Philips_VG_8020 --cart build/basic.rom
+    --machine Philips_VG_8020 --zb-machine C-BIOS_MSX1_EU_REPACK_DISK
 
-# Step B: stored programs + control flow (GOTO / IF…THEN…ELSE / comparisons)
-python3 probes/basic/basic_probe_controlflow.py \
-    --cart build/basic.rom
+# LIST / detokeniser round-trip, read off the SCREEN 0 name table
+python3 probes/basic/basic_probe_list.py
 
-# Step B: subroutines + loops (GOSUB/RETURN, FOR…NEXT incl. nesting)
-python3 probes/basic/basic_probe_loops.py \
-    --cart build/basic.rom
-
-# Step B: DATA / READ / RESTORE (ASCII items parsed across lines)
-python3 probes/basic/basic_probe_data.py \
-    --cart build/basic.rom
+# Cassette verbs (CSAVE/CLOAD/SAVE"CAS:"/LOAD"CAS:"/MERGE/OPEN"CAS:")
+python3 probes/basic/basic_probe_cas_verbs.py
 ```
 
-The cartridge boots to its prompt, the probe types a line + Enter, and the
+⚠️ **A probe moved between machines measures the MACHINE too.** Measured
+2026-07-29: a Philips VG-8020 lays SCREEN 0 text out at column **2** and a C-BIOS
+machine at column **1**, so a raw name-table diff across the two reports the margin
+as a PRINT defect. `basic_probe_print.py` pins the margin per capture off that
+capture's own echo row; any new cross-machine screen probe must do the same.
+
+zerobas boots to its prompt, the probe types a line + Enter, and the
 result is observed by dumping RAM (no PRINT). Expected: `ALL PASS` for the
 statements probe, and `PASS marker JONG at 0xE000` / `PASS PC at landmark` for
 BLOAD — byte-for-byte identical to the reference MSX-BASIC's own behaviour.
@@ -398,7 +407,7 @@ zerobas/
 ├── zerobas-main-eu.ips  # shipped BASIC: merged repack main ROM, IPS (EU; used by installer)
 ├── zerobas-main-eu.bps  # shipped BASIC: merged repack main ROM, BPS (CRC-locked)
 ├── basic/
-│   ├── main.asm       # cartridge header + includes + page padding ($00 fill)
+│   ├── main.asm       # org $2812 + "AB" header + includes + page padding ($00 fill)
 │   ├── interp.asm     # tokeniser + statement-loop executor (INIT entry)
 │   ├── title.asm      # startup header lines (INITXT + CHPUT)
 │   ├── repl.asm       # keyboard line editor + read/eval loop (ZB prompt)

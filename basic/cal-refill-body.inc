@@ -7,7 +7,7 @@
 ; docs/spec-eviction-g5-space.md. Extracted verbatim from basic/cload.asm so
 ; the SAME source feeds two homes, both UNCONDITIONAL (cal_refill itself does
 ; not move -- only the reason it needs a second home changed):
-;   * basic/cload.asm (both lean AND repack): included at this file's
+;   * basic/cload.asm: included at this file's
 ;     ORIGINAL position, unchanged -- still the routine cal_getbyte /
 ;     ascii_read_lines call.
 ;   * sub-ROM PAGE-1 tenant (sub/casmatch.asm, repack only): a DUPLICATE,

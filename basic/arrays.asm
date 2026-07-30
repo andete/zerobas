@@ -33,7 +33,6 @@
 ; descriptor layout (owned by sub/arrays.asm) is zerobas's own design. See
 ; sub/arrays.asm's own header for the split rationale and PROVENANCE.md.
 
-    IF ROM_BASE < $4000
 
 ; --- err_subscript / err_redim: fp_runtime_error's message strings for -----
 ; FPERR 5/7 (interp.asm's fre_msgtab). Homed HERE (the low region) rather
@@ -51,7 +50,6 @@
 ; still raise); the negative-subscript case therefore gets its OWN FPERR
 ; code (8) + capitalised string below instead of reusing FPERR=3.
 ; D-MSGENC (docs/spec-basic-msgenc-carve.md §4.4): phrase-encoded. This whole
-; file is already repack-only (the IF above), so these need no lean twin. The
 ; §9.5 capitalisation is UNCHANGED and still spelled out per message -- the
 ; escapes deliberately exclude the leading letter, so "Illegal"/"illegal" and
 ; "Out of"/"out of" share a phrase while each message keeps its own case. The
@@ -76,9 +74,8 @@ err_mem_arr:                                ; FPERR=6 (fre_msgtab entry 6) is se
 err_syntax:                                 ; interp.asm's own stmt_error + fre_msgtab
                 db      "syntax",MSGESC_ERROR,0     ; D-MSGENC: 15 B -> 8 B
                                             ; entry 4 (D-F2-3) both reference this by
-                                            ; absolute address; relocated here (repack
-                                            ; only -- interp.asm keeps its own copy for
-                                            ; the lean build) by the slice-3 space
+                                            ; absolute address; relocated here by the
+                                            ; slice-3 space
                                             ; audit: page-1 was 7 B short even after
                                             ; the ary_op0_resolve dedup, and this
                                             ; string's home is unobserved (arrays
@@ -130,8 +127,7 @@ fre_abort_low:
                                             ; mode (run_prog + ex_cont re-clear ENDFLAG
                                             ; before any run). This is now the single
                                             ; abort funnel: the program.asm/interp.asm
-                                            ; error sites `jp fre_abort_low` too (lean:
-                                            ; aliased to print_string -> byte-identical).
+                                            ; error sites `jp fre_abort_low` too.
                 xor     a
                 ; D-ONEFLG site A (docs/spec-basic-oneflg-reset-scope.md §4): an
                 ; ABORT ends the handler context. Without this, ONEFLG stayed 1
@@ -972,4 +968,3 @@ sea_have_de:
                                             ; above left, both paths do this
                 jp      str_eval_ok
 
-    ENDIF

@@ -5,15 +5,15 @@
 ; cassette Tier-3 name-match / data-skip engine).
 ;
 ; docs/spec-eviction-g5-space.md. Extracted verbatim from basic/cload.asm so
-; the SAME source feeds two homes:
-;   * lean 16 KB cart (basic/cload.asm, ROM_BASE >= $4000): inline, at this
-;     file's ORIGINAL position -- BYTE-IDENTICAL to the pre-eviction build
+; the SAME source fed two homes until the lean cart retired:
+;   * (retired) lean 16 KB cart, inline at this
+;     file's ORIGINAL position -- byte-identical to the pre-eviction build
 ;     (this file is a pure relocation of that exact code, nothing added/
 ;     removed/reordered).
 ;   * sub-ROM PAGE-1 tenant (sub/casmatch.asm, repack): cas_open_match
 ;     becomes a resident marshalling shim (basic/cload.asm's own `IF
-;     ROM_BASE < $4000` branch, right where this file is `include`d for
-;     lean) that `subrom_call`s casmatch_tenant, which runs this body
+;     branch, right where this file used to be `include`d)
+;     that `subrom_call`s casmatch_tenant, which runs this body
 ;     unchanged and converts CF to CM_STATUS.
 ;
 ; Clean-room: our own code, extracted verbatim from basic/cload.asm (see

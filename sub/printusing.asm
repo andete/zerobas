@@ -15,12 +15,12 @@
 ; page-0 tenant run under DI, and the fragile value-render/deref paths
 ; (pu_do_number / pu_do_string / pu_fmt_int) stay RESIDENT and unchanged.
 ;
-; The shared body lives in basic/pu-render.inc (byte-for-byte the lean cart's
+; The shared body lives in basic/pu-render.inc (the shared
 ; inline copy). Here it binds `pchar` to sub/detok.asm's sub-local DETOKBUF
 ; append (both are co-resident page-0 tenants — SUB_PARTS — so pchar is defined
 ; once, there, and shared). The two entry wrappers reset the DETOKBUF cursor,
 ; run the scanner, and 0-terminate the buffer; the resident stubs
-; (basic/printusing.asm, ROM_BASE<$4000) drain DETOKBUF through the real
+; (basic/printusing.asm) drain DETOKBUF through the real
 ; print_string, honouring PRDEST — so the ONE scanner feeds both PRINT USING ->
 ; screen and PRINT# USING -> file (the 003ff70 file-form fix stays main-side).
 ;

@@ -56,7 +56,19 @@ def load_symbols(path):
 
 
 class Machine:
-    def __init__(self, rom_path, sym_path, rom_base=0x4000):
+    # ⚠️ rom_base IS MANDATORY, AND IT USED TO DEFAULT TO $4000.
+    # $4000 was the lean 16 KB page-1-only cartridge's org. Every test that built
+    # basic/main.asm without passing rom_base — 18 of the 54 files — was therefore
+    # assembling and asserting against the LEAN build, right through S2, which had
+    # declared lean "no longer measured". The files that passed RELOC_BASE=$2812
+    # explicitly were the ones testing the shipped image.
+    #
+    # A default is how that happened, so there is no default any more: the base is
+    # named at the CALL SITE, the same fix S1 applied to probe machines
+    # ([[lean-retire-s1-explicit-machine]]). Three legitimate values — $2812 the
+    # BASIC image, $4000 the disk ROM, $0000 the sub ROM — and nothing to silently
+    # pick the wrong one. docs/spec-lean-retire-s3-gates.md §5, F-U.
+    def __init__(self, rom_path, sym_path, rom_base):
         self.mem = bytearray(0x10000)
         with open(rom_path, "rb") as fh:
             rom = fh.read()

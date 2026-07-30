@@ -41,7 +41,7 @@ BUF = 0xC000   # scratch token buffer (free RAM)
 
 
 def build():
-    src = os.path.join(ROOT, "basic", "main-reloc.asm")
+    src = os.path.join(ROOT, "basic", "main.asm")
     subprocess.run(["pasmo", "--bin", src, ROM, SYM], check=True, capture_output=True)
 
 

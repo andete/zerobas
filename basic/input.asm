@@ -27,8 +27,7 @@
 ; re-prompt on a bad/short line, integer numeric fields) are from the public
 ; MSX-BASIC language reference; the re-prompt WORDING is zerobas's own lowercase
 ; (like "syntax error" / "type mismatch"), NOT MSX's verbatim "?Redo from start".
-; No disassembly. Repack-only — the whole file is included only inside
-; `IF ROM_BASE < $4000` (basic/main.asm), so the byte-full lean image is unchanged.
+; No disassembly.
 
 ; --- input_console: the console INPUT / LINE INPUT driver -------------------
 ; in: HL -> first token after INPUT (a '"' prompt or the first variable);
@@ -128,7 +127,6 @@ inpc_vstr:
                 ex      de,hl               ; DE = RVDESC (str_set_key's source arg)
                 call    str_set_key         ; var$[key] = the field bytes
                 pop     hl
-    IF ROM_BASE < $4000
                 ; arrays slice-4c (§7.3) follow-up: a scalar-CHAIN OOM here
                 ; sets FPERR (str_set_key's own ARY_OP=5 path) but does not
                 ; itself abort (var_alloc_or_find's contract) -- was silently
@@ -142,7 +140,6 @@ inpc_vstr:
                 ; plain `ret`, HL (textcur, needed by inpc_after below)
                 ; untouched.
                 call    check_expr_errors_popbc
-    ENDIF
 inpc_after:
                 call    skip_spaces
                 ld      a,(hl)
@@ -204,7 +201,6 @@ inpc_line:
                 ex      de,hl               ; DE = RVDESC (str_set_key's source arg)
                 call    str_set_key
                 pop     hl                  ; text cursor after the variable
-    IF ROM_BASE < $4000
                 ; arrays slice-4c (§7.3) follow-up, same disposition as
                 ; console INPUT's own check just above: a scalar-CHAIN OOM
                 ; here sets FPERR but does not itself abort. SP is at
@@ -213,7 +209,6 @@ inpc_line:
                 ; (no extra word to discard); TMISMATCH is always 0 (LINE
                 ; INPUT never sets it).
                 call    check_expr_errors
-    ENDIF
                 jp      exec_stmt
 
 ; --- inpc_print_q: emit the "? " input prompt to the screen ----------------

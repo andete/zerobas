@@ -40,7 +40,6 @@
 ;
 ; Entry: ex_sound, HL on the SOUND token. On success continue the statement loop
 ; (jp exec_stmt) so the verbs chain on one `:`-separated line.
-    IF ROM_BASE < $4000
 PSG_ADDR        equ     $A0                 ; PSG register-latch port (write reg number)
 PSG_DATW        equ     $A1                 ; PSG data-write port
 PSG_DATR        equ     $A2                 ; PSG data-read port
@@ -134,4 +133,3 @@ ex_beep:
                 jp      c,subrom_absent_error
                 jp      exec_stmt           ; chain the next statement (HL preserved)
 
-    ENDIF

@@ -224,7 +224,7 @@ def build_main(cbios_checkout):
     run([PY, os.path.join(TOOLS, "build_repacked_cbios.py"),
          "--cbios", cbios_checkout, "-o", repacked, "--pristine", pristine])
     print("assembling relocated BASIC ($2812) + tape...")
-    run([PASMO, "--bin", os.path.join(REPO, "basic", "main-reloc.asm"), reloc])
+    run([PASMO, "--bin", os.path.join(REPO, "basic", "main.asm"), reloc])
     with tempfile.TemporaryDirectory() as work:
         tape_bin = os.path.join(work, "tape.bin")
         tape_sym = os.path.join(work, "tape.sym")

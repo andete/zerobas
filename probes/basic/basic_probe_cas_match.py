@@ -17,9 +17,12 @@ images. A matched program POKEs a distinct witness byte, so the witness proves
 WHICH file loaded (i.e. that the right one was found and earlier ones skipped).
 RUN"CAS:name" both finds AND runs, so it witnesses matching in one step.
 
-Typed harness on C-BIOS_MSX1_EU_TAPE --cart build/basic.rom (the established
-cassette-probe method — --cart reads build/basic.rom directly, so a plain
-`make build/basic.rom` suffices, no IPS reinstall). Clean-room: our own programs,
+Typed harness on the repack machine (C-BIOS_MSX1_EU_REPACK_DISK), which carries
+the merged main ROM in slot 0 and its own <CassettePort/>, so no cartridge is
+inserted. Until 2026-07-29 this ran the retired lean 16 KB cart as a `-cart` on
+C-BIOS_MSX1_EU_TAPE (docs/spec-lean-retire-s3-gates.md); that rig is still
+selectable with --machine C-BIOS_MSX1_EU_TAPE + --cart, and is the only mode
+in which --cart means anything.
 our own cas codec / tokeniser; the reference ROM is never read. NB fixture .cas
 files are named by test id (not by the tape-internal name) so macOS's case-
 insensitive FS can't merge an "abc"/"ABC" pair (see the tape memory note).
@@ -32,7 +35,6 @@ exercises the tenant. Setting ZEROBAS_BASIC_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK
 repack-machine`) switches the harness to that machine instead: it already bakes
 in the merged ROM (+ the sub-ROM in slot 3-2) as its own slot-0 primary AND ships
 a <CassettePort/>, so `--cart` is simply unused there (run_typed's own machine
-branch). `--cart` still defaults to build/basic.rom for the lean run.
 """
 from __future__ import annotations
 
@@ -56,7 +58,7 @@ from basic_probe_cas_verbs import (                     # noqa: E402
 
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 DEFAULT_CART = os.path.join(os.path.dirname(_PROBES), "build", "basic.rom")
-ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", MACHINE_TAPE)
+ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE") or "C-BIOS_MSX1_EU_REPACK_DISK"
 
 WA = 0xA1   # witness for file "AAA" / first file
 WB = 0xB2   # witness for file "BBB" / second file
@@ -157,7 +159,7 @@ def main() -> int:
     ap.add_argument("--cart", default=DEFAULT_CART)
     args = ap.parse_args()
     if not os.path.exists(args.cart):
-        print(f"cart not found: {args.cart} (run: make build/basic.rom)")
+        print(f"cart not found: {args.cart}")
         return 2
     print(f"(machine={ZB_MACHINE})")
     tmp = tempfile.mkdtemp(prefix="cas_match_")

@@ -2,7 +2,7 @@
 ; SPDX-License-Identifier: 0BSD
 
 ; subromcall.asm — zerobas-sub discovery recorder + dispatch helper
-; (repack build only — included inside `IF ROM_BASE < $4000`, basic/main.asm,
+; (included by basic/main.asm,
 ; in the PAGE-0 low region freed by evicting the float PRINT formatter).
 ; docs/spec-basic-subrom.md §3c/§3g, WAVE-1 AMENDMENT.
 ;

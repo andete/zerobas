@@ -120,7 +120,7 @@ sv_load_error:
                 include "basic/fatiow-body.inc"      ; fat_io_putbyte/fwr_bytes_inc/
                                                      ; fat_io_close
 
-; --- the four engines themselves, byte-shared with the lean cart ------------
+; --- the four engines themselves, shared with the resident side ------------
                 include "basic/sv-bsvdisk.inc"       ; bsv_open .. bsv_fin
                 include "basic/sv-bsvcas.inc"        ; bsv_cas_open .. bsv_cas_fin
                 include "basic/sv-savdisk.inc"       ; sav_disk_write .. sav_fin

@@ -9,11 +9,9 @@
 ; to zerobas: no header text is copied from any reference ROM (which would be a
 ; clean-room violation and a false copyright claim). See PROVENANCE.md.
 ;
-; The body (show_title + banner_text) lives in basic/title-body.inc, which this
-; file includes for the lean cart and sub/title.asm includes for the repack
-; build — see that file's header for the split rationale.
+; The body (show_title + banner_text) lives in basic/title-body.inc, which
+; sub/title.asm includes — see that file's header for the split rationale.
 
-    IF ROM_BASE < $4000
 ; --- repack: show_title is a sub-ROM PAGE-1 tenant --------------------------
 ; docs/spec-basic-input-devices.md §9.5. The ~74 B of routine + banner text moved
 ; to sub/title.asm (SUBROM_IDX_TITLE) to fund the I2 slice's 55 B page-1 deficit.
@@ -31,6 +29,3 @@
 show_title:
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_TITLE
                 jp      subrom_call         ; CF=1 (absent) -> no header, just return
-    ELSE
-                include "basic/title-body.inc"   ; lean: inline, byte-identical
-    ENDIF

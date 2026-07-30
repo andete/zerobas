@@ -42,14 +42,18 @@ from basic_probe_bload import build_blob, LOAD_ADDR, LANDMARK  # noqa: E402
 from cas_encode import build_cas  # noqa: E402
 
 OMSX_RUN = os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib", "omsx_run.py")
-MACHINE = "Philips_VG_8020"
+# ⚠️ zerobas now runs on the REPACK machine, which carries the merged main ROM in
+# slot 0 -- there is no cartridge to insert. It used to be C-BIOS_MSX1 (or the
+# VG-8020) with the retired lean 16 KB cart in a slot; that build is gone
+# (RETIRE THE LEAN 16 KB CART S3, docs/spec-lean-retire-s3-gates.md).
+MACHINE = "C-BIOS_MSX1_EU_REPACK_DISK"
 T = 0xD000  # POKE target, free RAM
 
 
-def run(machine, cart, cas, line, mems, bp=None, secs=None, type_delay=8):
+def run(machine, cas, line, mems, bp=None, secs=None, type_delay=8):
     out_fd, out_path = tempfile.mkstemp(suffix=".txt", prefix="stmt_cap_")
     os.close(out_fd)
-    cmd = [sys.executable, OMSX_RUN, "--machine", machine, "--cart", cart]
+    cmd = [sys.executable, OMSX_RUN, "--machine", machine]
     if cas:
         cmd += ["--cassette", cas]
     # zerobas REPL: type the line, then a separately-timed Enter (a trailing CR
@@ -84,7 +88,6 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--machine", default=MACHINE)
-    ap.add_argument("--cart", required=True, help="zerobas basic.rom")
     args = ap.parse_args()
 
     cas = build_cas("BLOAD", LOAD_ADDR, LOAD_ADDR, build_blob())
@@ -101,7 +104,7 @@ def main() -> int:
             ok = False
 
     # 1. POKE + BLOAD landmark: poke runs, then bload hands off to the blob.
-    rc, cap = run(args.machine, args.cart, cas_path,
+    rc, cap = run(args.machine, cas_path,
                   f'poke &h{T:04x},65:bload"cas:",r', [f"memory:0x{T:04X}:1"],
                   bp=LANDMARK)
     check("POKE &Hd000,65 then BLOAD,R",
@@ -109,27 +112,27 @@ def main() -> int:
           f"D000={memval(cap, T, 1)} PC@landmark={'yes' if f'0x{LANDMARK:04X}' in cap else 'no'}")
 
     # 2. PEEK + variable + multi-statement.
-    rc, cap = run(args.machine, args.cart, cas_path,
+    rc, cap = run(args.machine, cas_path,
                   f'poke &h{T:04x},123:a=peek(&h{T:04x}):poke &h{T+1:04x},a:bload"cas:",r',
                   [f"memory:0x{T:04X}:2"], bp=LANDMARK)
     check("a=PEEK(...) round-trip", memval(cap, T, 2) == "7b7b",
           f"D000..1={memval(cap, T, 2)}")
 
     # 3. Arithmetic precedence: 2*3+4 == 10 (proves * binds tighter than +).
-    rc, cap = run(args.machine, args.cart, cas_path,
+    rc, cap = run(args.machine, cas_path,
                   f'poke &h{T:04x},2*3+4:bload"cas:",r', [f"memory:0x{T:04X}:1"],
                   bp=LANDMARK)
     check("2*3+4 == 10", memval(cap, T, 1) == "0a", f"D000={memval(cap, T, 1)}")
 
     # 4. REM swallows the rest of the line (--time; the fake poke must not run).
-    rc, cap = run(args.machine, args.cart, None,
+    rc, cap = run(args.machine, None,
                   f'poke &h{T:04x},5:rem poke &h{T:04x},99', [f"memory:0x{T:04X}:1"],
                   secs=18)
     check("REM ignores trailing 'poke ...,99'", memval(cap, T, 1) == "05",
           f"D000={memval(cap, T, 1)}")
 
     # 5. ' (apostrophe) behaves as REM.
-    rc, cap = run(args.machine, args.cart, None,
+    rc, cap = run(args.machine, None,
                   f"poke &h{T:04x},6:'poke &h{T:04x},88", [f"memory:0x{T:04X}:1"],
                   secs=18)
     check("' ignores trailing 'poke ...,88'", memval(cap, T, 1) == "06",

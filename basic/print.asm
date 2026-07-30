@@ -34,13 +34,9 @@ ex_print:
                 cp      '#'
                 jr      nz,exp_loop         ; no '#': ordinary screen PRINT
                 inc     hl
-    IF ROM_BASE < $4000
                 call    eval_chan           ; §5.7 gap 2: surface a channel-expr FP
                                             ; error (Division-by-zero / Overflow) as
                                             ; a run abort, matching INPUT# (files.asm)
-    ELSE
-                call    eval                ; DE = channel number
-    ENDIF
                 ld      a,e
                 call    fch_valid
                 jp      nc,load_error       ; 0 or > MAXF -> bad file number
@@ -108,30 +104,17 @@ exp_loop:
                 call    skip_spaces
                 ld      a,(hl)
                 or      a
-    IF ROM_BASE < $4000
                 jp      z,exp_nl_ret        ; end of line -> newline, done (repack:
                                             ; the F2 driver checks pushed this out of
-                                            ; jr range; lean stays jr, see below)
-    ELSE
-                jr      z,exp_nl_ret
-    ENDIF
+                                            ; jr range, see below)
                 cp      COLON
-    IF ROM_BASE < $4000
                 jp      z,exp_nl_stmt       ; ':' -> newline, then next statement
-    ELSE
-                jr      z,exp_nl_stmt
-    ENDIF
                 cp      ';'
-    IF ROM_BASE < $4000
                 jp      z,exp_semi
-    ELSE
-                jr      z,exp_semi
-    ENDIF
                 cp      ','
                 jp      z,exp_comma
                 cp      '"'
                 jp      z,exp_str
-    IF ROM_BASE < $4000
                 ; TAB( and SPC( are PRINT-ITEM dispatch, NOT $FF factors. Placing
                 ; them here and NOWHERE in ev_f is what makes `X=TAB(5)` and
                 ; `IF TAB(5)=0` a SYNTAX error (MEASURED) with no code at all: the
@@ -148,7 +131,6 @@ exp_loop:
                 jp      z,exp_maybe_strfn   ;  not $FF-prefixed; str_eval handles it, prints)
                 cp      INKEY_TOKEN         ; $EC INKEY$ -> string (single-byte token; str_eval
                 jp      z,exp_maybe_strfn   ;  reads the key, prints it — else PRINT INKEY$ mismatches)
-    ENDIF
                 call    is_letter           ; a `$`-suffixed string variable?
                 jr      nc,exp_num
                 call    var_str_type        ; A=1 if `$` suffix
@@ -156,35 +138,28 @@ exp_loop:
                 jr      nz,exp_strvar       ; string variable -> print its value
 exp_num:
                 call    eval                ; numeric expression -> DE = value
-    IF ROM_BASE < $4000
                 call    check_expr_errors   ; D-2/D-F2-1 (interp.asm): abort the whole
                                             ; line before the newline/next item
                 ld      a,(FACTYP)          ; §9.4: exp_num dispatches on FACTYP after eval
                 cp      2
                 jr      nz,exp_num_float
-    ENDIF
                 push    hl                  ; print_number divides the value in HL,
                 call    print_number        ;  clobbering the token cursor — guard it
                 pop     hl                  ;  (same as exp_strvar does for print_strval)
                 jp      exp_loop
-    IF ROM_BASE < $4000
 exp_num_float:
                 push    hl                  ; flt_out ends in print_string, which guards
                 call    flt_out             ;  HL across CHPUT the same way (basic/float.asm)
                 pop     hl
                 jp      exp_loop
-    ENDIF
 exp_strvar:
-    IF ROM_BASE < $4000
                 ; S2 (spec-basic-print-unparen-compare.md §3): remember the
                 ; operand START before str_eval consumes it -- if a relational
                 ; operator follows the string value, this item is really the
                 ; LHS of an unparenthesized comparison (`PRINT A$="YES"`) and
                 ; must be re-parsed from here via eval/ev_rel instead of printed.
                 push    hl                  ; operand START (peek may reparse via eval)
-    ENDIF
                 call    str_eval            ; STRPTR -> the var's value, HL advanced
-    IF ROM_BASE < $4000
                 jr      nc,exps_fallback    ; defensive: not a string after all
                 call    skip_spaces
                 ld      a,(hl)
@@ -236,13 +211,6 @@ exps_fallback:
                                              ;  HL unmoved on failure, so this restores the
                                              ;  same cursor exp_num would see un-gated)
                 jp      exp_num
-    ELSE
-                jp      nc,exp_num          ; defensive: fall back to numeric
-                push    hl                  ; print_strval clobbers HL (token cursor)
-                call    print_strval        ; emit the descriptor's bytes
-                pop     hl
-                jp      exp_loop
-    ENDIF
 exp_semi:
                 inc     hl                  ; ';' = no spacing
                 call    skip_spaces
@@ -259,7 +227,6 @@ exp_nl_stmt:
                 call    print_crlf
                 jp      exec_stmt           ; HL on ':' -> exec_stmt steps over it
 exp_str:
-    IF ROM_BASE < $4000
                 ; Repack: a PRINT item that LEADS with a string literal but is
                 ; followed by '+' is a string concat (`"a"+"b"`, `"n="+STR$(x)`),
                 ; and one followed by a relop (S2: `PRINT "YES"=A$`) is the LHS of
@@ -271,7 +238,6 @@ exp_str:
                 ; still prints in full (un-clamped).
                 call    str_lit_concat_q    ; ZF=1 if '+' or a relop follows the literal
                 jr      z,exp_strvar        ; HL still @ opening quote -> str_eval
-    ENDIF
                 inc     hl                  ; past the opening quote
 exp_str_lp:
                 ld      a,(hl)
@@ -285,7 +251,6 @@ exp_str_lp:
 exp_str_close:
                 inc     hl                  ; past the closing quote
                 jp      exp_loop
-    IF ROM_BASE < $4000
 ; --- str_lit_concat_q: does '+' or a relop follow this string literal? --------
 ; HL -> the opening '"' of a literal PRINT item. Scans past the closing quote and
 ; the intervening spaces (exactly as str_concat_tail does) and reports whether the
@@ -332,7 +297,6 @@ op_after_str_q:
 oas_yes:
                 cp      a                   ; in range -> force ZF=1
                 ret
-    ENDIF
 exp_comma:
                 inc     hl
                 call    print_comma_zone    ; pad to the next 14-column zone
@@ -391,30 +355,13 @@ pn_tail:
 ; --- div10: HL = HL/10, A = remainder (0..9) -------------------------------
 ; Shift-and-subtract (standard binary divide). Clobbers A, B, HL.
 ;
-; HOME depends on the build (subrom-mathpack migration, 2026-07-13):
-;   * lean 16 KB cart (ROM_BASE >= $4000): defined HERE (page 1), byte-identical
-;     to the pre-migration print.asm.
-;   * repack build (ROM_BASE < $4000): defined in the page-0 low region
+; HOME (subrom-mathpack migration, 2026-07-13): NOT here in page 1, but in
+;     the page-0 low region
 ;     (basic/float-arith.asm) instead, so the fp_sqrt PAGE-1 sub-ROM tenant's
 ;     page-0-resident float core (widen_uint_to) can still reach it while main-
 ;     ROM page 1 is switched out (see float-arith.asm's div10 header). All
 ;     callers here (pn_div, list.asm, printusing.asm) resolve to that page-0
 ;     copy by label, unchanged.
-    IF ROM_BASE >= $4000
-div10:
-                xor     a
-                ld      b,16
-d10_lp:
-                add     hl,hl               ; shift dividend left, into quotient
-                rla                         ; A = running remainder<<1 | carry
-                cp      10
-                jr      c,d10_skip
-                sub     10
-                inc     l                   ; set quotient bit
-d10_skip:
-                djnz    d10_lp
-                ret
-    ENDIF
 
 ; --- print_crlf: CR + LF ---------------------------------------------------
 print_crlf:
@@ -472,7 +419,6 @@ pch_done:
                 pop     hl
                 ret
 
-    IF ROM_BASE < $4000
 ; --- TAB( / SPC( : the two PRINT-positioning items ---------------------------
 ; MEASURED (docs/cursor-vg8020-characterization.md §4), at a pinned WIDTH 40:
 ;   TAB(n)  ABSOLUTE 0-based column. If the cursor is ALREADY AT OR PAST n, do
@@ -524,7 +470,6 @@ exp_pos_arg:
 exp_pos_syn:
                 ld      a,2
                 jp      raise_error         ; ERR 2 syntax error
-    ENDIF
 
 ; --- print_comma_zone: pad with spaces to the next 14-column tab zone -------
 ; MSX PRINT comma zones are 14 characters (public language reference). Reads the
@@ -543,9 +488,7 @@ exp_pos_syn:
 print_comma_zone:
                 ld      a,(CSRX)
                 dec     a                   ; 0-based column
-    IF ROM_BASE < $4000
                 ld      c,a                 ; C = current column (for the fit test
-    ENDIF                                   ;  below; the lean cart is byte-frozen)
 pcz_mod:
                 cp      14
                 jr      c,pcz_have
@@ -556,14 +499,12 @@ pcz_have:
                 ld      a,14
                 sub     b                   ; spaces to the next zone (1..14)
                 ld      b,a
-    IF ROM_BASE < $4000
                 add     a,c                 ; A = the NEXT zone's absolute column
                 add     a,14                ; ... and the column just past that zone
                 ld      c,a
                 ld      a,(LINLEN)
                 cp      c                   ; width < zone end -> the zone does not fit
                 jp      c,print_crlf        ; -> newline instead of padding
-    ENDIF
 pcz_pad:
                 ld      a,' '
                 call    pchar               ; screen or file (PRDEST); preserves BC

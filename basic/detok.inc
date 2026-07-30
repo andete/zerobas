@@ -4,11 +4,8 @@
 ; detok.inc — the LIST / ASCII-SAVE detokeniser body (token stream -> source text).
 ; ===========================================================================
 ; Extracted verbatim from basic/list.asm so its PLACEMENT can be gated (subrom arc
-; WAVE 3, docs/spec-basic-subrom-wave3-detok.md). Two homes:
-;   * lean 16 KB cart (ROM_BASE >= $4000): included inline in list.asm, streaming
-;     each rendered byte through `pchar` (the PRDEST sink) exactly as before —
-;     byte-identical to the pre-extraction list.asm.
-;   * repack build (ROM_BASE < $4000): NOT included resident; evicted to sub-ROM
+; WAVE 3, docs/spec-basic-subrom-wave3-detok.md). Home:
+;   * repack build: NOT included resident; evicted to sub-ROM
 ;     page 0 (sub/detok.asm) where `pchar`/`print_string` are re-bound to buffer
 ;     appends into DETOKBUF, `div10` is a sub-local clone, and `kwtable` is the
 ;     co-located sub copy (shared with the wave-2 tokeniser). The resident `detok`
@@ -393,11 +390,9 @@ detok_op:
                 jr      z,dop_div
                 cp      IDIV_TOKEN          ; '\'
                 jr      z,dop_idiv
-    IF ROM_BASE < $4000
                 cp      POW_TOKEN           ; '^' (math pack slice 2c, repack-
                 jr      z,dop_pow           ; only -- docs/spec-basic-mathpack-
-                                            ; slice2.md §13.3; lean has no `^`)
-    ENDIF
+                                            ; slice2.md §13.3)
                 cp      GT_TOKEN            ; '>'
                 jr      z,dop_gt
                 cp      LT_TOKEN            ; '<'
@@ -416,10 +411,8 @@ dop_div:        ld      a,'/'
                 jr      dop_emit
 dop_idiv:       ld      a,'\'
                 jr      dop_emit
-    IF ROM_BASE < $4000
 dop_pow:        ld      a,'^'
                 jr      dop_emit
-    ENDIF
 dop_gt:         ld      a,'>'
                 jr      dop_emit
 dop_lt:         ld      a,'<'

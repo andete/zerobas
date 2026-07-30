@@ -5,7 +5,7 @@
 ;
 ; docs/spec-eviction-g4-space.md §3 (carve #1). Extracted verbatim from
 ; basic/field.asm so the SAME source feeds two homes:
-;   * lean 16 KB cart (basic/field.asm, ROM_BASE >= $4000): inline, at this
+;   * (retired) the lean 16 KB cart, inline at this
 ;     file's ORIGINAL position (right before "FIELD #f, ... AS v$") --
 ;     BYTE-IDENTICAL to the pre-eviction build.
 ;   * sub-ROM PAGE-1 tenant (sub/randio.asm, repack): fld_fill_record is
@@ -17,7 +17,7 @@
 ; BEFORE the "FIELD #f, ..." section in the original field.asm, while the
 ; fat_rand_* engine sits much further down (after LSET/RSET) -- the SAME
 ; two-file split rationale as basic/fat-prim-body.inc / basic/fat-delete-
-; body.inc (kept apart only so each lean cart's byte ORDER is preserved; see
+; body.inc (kept apart only so the original byte ORDER is preserved; see
 ; that file's own header).
 ;
 ; Clean-room: our own code, extracted verbatim from basic/field.asm (see that

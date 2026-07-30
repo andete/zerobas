@@ -29,6 +29,12 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine, carry  # noqa: E402
 
+# The image under test is loaded at its ORG. Named here rather than
+# defaulted: msxtest.Machine's old default was $4000, the retired lean
+# cart's org, so a BASIC test that omitted it silently tested the lean
+# build (docs/spec-lean-retire-s3-gates.md §5, F-U).
+BASIC_BASE = 0x2812
+
 ROM = "/tmp/zb_vars.rom"
 SYM = "/tmp/zb_vars.sym"
 
@@ -48,28 +54,44 @@ def poke_name(m, addr, text):
 
 def run():
     build()
-    m = Machine(ROM, SYM)
+    m = Machine(ROM, SYM, rom_base=BASIC_BASE)
     s = m.sym
 
-    VARTAB   = s["VARTAB"]
-    VAREND   = s["VAREND"]
-    VARENTSZ = s["VARENTSZ"]      # 4
-    VARSLOTS = s["VARSLOTS"]      # 32
-    STRTAB   = s["STRTAB"]
-    STRENTSZ = s["STRENTSZ"]      # 35
-    STRSLOTS = s["STRSLOTS"]      # 8
+    # ⚠️ THIS TEST NO LONGER DRIVES var_set_key / var_get_key, AND THAT IS THE
+    # WHOLE POINT OF THE PORT. Those two (and var_find beneath them) walk the
+    # fixed 32-slot VARTAB pool, which vars.asm itself calls "the LEAN build's
+    # int-only 4-byte-stride walk". On the shipped build they have ZERO callers:
+    # scalars live in the contiguous chain the ARY sub-ROM tenant manages (arrays
+    # slice-4b), reached through var_store_fac / var_load_fac keyed on
+    # (name0, name1, TYPE). Driving the pool here asserted a store nothing writes
+    # to and nothing reads from -- it only ever passed because msxtest.Machine's
+    # rom_base defaulted to $4000 and this was therefore the LEAN image
+    # (docs/spec-lean-retire-s3-gates.md §5, F-U). STRTAB is gone outright.
+    #
+    # The KEYING rules under test are unchanged, so every case below asserts the
+    # same property against the store the shipped build actually uses.
+    TYPE_INT = 2                  # VARTYPE: 2/4/8 = int16/single/double, 1 = string
 
     fails = 0
 
-    # ------------------------------------------------------------------
-    # Helper: reset variable tables before each group.
-    # ------------------------------------------------------------------
     def reset_tables():
-        # Zero VARTAB (numeric): all name0 bytes become 0 → empty slots.
-        m.poke(VARTAB, bytes(VARSLOTS * VARENTSZ))
-        # Zero STRTAB name0 of every slot (STRENTSZ apart).
-        for i in range(STRSLOTS):
-            m.poke(STRTAB + i * STRENTSZ, 0)
+        """A fresh scalar chain.
+
+        clear_vars deliberately does NOT wipe it -- vars.asm §13a: PRGEND may still
+        be garbage when clear_vars runs at cold boot, so each caller resets the
+        scalar+array region ITSELF afterwards via vars_reset. new_prog is the
+        caller that establishes PRGEND and then tail-jumps to vars_reset."""
+        m.poke_w(s["POOLSIZE"], 200)   # cold-boot default (interp.asm init)
+        m.call("new_prog")
+
+    def set_key(b, c, value):
+        """Store `value` as an int16 scalar under key (b, c)."""
+        m.poke(s["FACTYP"], 2)         # DE carries a plain int16
+        m.call("var_store_fac", b=b, c=c, a=TYPE_INT, de=value)
+
+    def get_key(b, c):
+        """Read the int16 scalar under key (b, c); 0 if unset."""
+        return m.call("var_load_fac", b=b, c=c, a=TYPE_INT).de
 
     # ==================================================================
     # Case 1: round-trip via var_set_key / var_get_key for "A" → 0x1234
@@ -79,21 +101,21 @@ def run():
     # Expected retrieved value: DE = 0x1234.
     # ==================================================================
     reset_tables()
-    m.call("var_set_key", b=ord("A"), c=0, de=0x1234)
-    cpu = m.call("var_get_key", b=ord("A"), c=0)
-    ok = (cpu.de == 0x1234)
+    set_key(ord("A"), 0, 0x1234)
+    got1 = get_key(ord("A"), 0)
+    ok = (got1 == 0x1234)
     fails += not ok
-    print(f"{'PASS' if ok else 'FAIL'}  round-trip A=0x1234: got DE={cpu.de:#06x}")
+    print(f"{'PASS' if ok else 'FAIL'}  round-trip A=0x1234: got DE={got1:#06x}")
 
     # ==================================================================
     # Case 2: unset variable returns 0
     # var_get_key:vgk_zero sets DE=0 when var_find returns CF=0 (not found).
     # ==================================================================
     reset_tables()
-    cpu = m.call("var_get_key", b=ord("Z"), c=0)
-    ok = (cpu.de == 0)
+    got2 = get_key(ord("Z"), 0)
+    ok = (got2 == 0)
     fails += not ok
-    print(f"{'PASS' if ok else 'FAIL'}  unset var returns 0: got DE={cpu.de:#06x}")
+    print(f"{'PASS' if ok else 'FAIL'}  unset var returns 0: got DE={got2:#06x}")
 
     # ==================================================================
     # Case 3: 2-char keying — "AB" and "ABC" resolve to the same key (B,'A','B').
@@ -104,28 +126,26 @@ def run():
     # ==================================================================
     reset_tables()
     # Set AB = 0x5678 directly by key.
-    m.call("var_set_key", b=ord("A"), c=ord("B"), de=0x5678)
+    set_key(ord("A"), ord("B"), 0x5678)
     # Parse "ABC\0" with var_name_key → BC should be ('A','B'); HL advanced.
     poke_name(m, NAMEBUF, "ABC")
     cpu_k = m.call("var_name_key", hl=NAMEBUF)
     bc_abc = cpu_k.bc
-    cpu = m.call("var_get_key", b=(bc_abc >> 8) & 0xFF, c=bc_abc & 0xFF)
-    ok = (cpu.de == 0x5678) and ((bc_abc >> 8) == ord("A")) and ((bc_abc & 0xFF) == ord("B"))
+    got3 = get_key((bc_abc >> 8) & 0xFF, bc_abc & 0xFF)
+    ok = (got3 == 0x5678) and ((bc_abc >> 8) == ord("A")) and ((bc_abc & 0xFF) == ord("B"))
     fails += not ok
     print(f"{'PASS' if ok else 'FAIL'}  'AB' and 'ABC' same key "
-          f"(BC={bc_abc:#06x}, DE={cpu.de:#06x})")
+          f"(BC={bc_abc:#06x}, DE={got3:#06x})")
 
     # ==================================================================
     # Case 4: "AB" and "AC" are DISTINCT keys.
     # name1 differs ('B' vs 'C'); var_find checks both name0 and name1.
     # ==================================================================
     reset_tables()
-    m.call("var_set_key", b=ord("A"), c=ord("B"), de=0x0001)
-    m.call("var_set_key", b=ord("A"), c=ord("C"), de=0x0002)
-    # Note: m.call() returns the same cpu object each time; capture .de immediately
-    # before making another call that would overwrite the shared register state.
-    val_ab = m.call("var_get_key", b=ord("A"), c=ord("B")).de
-    val_ac = m.call("var_get_key", b=ord("A"), c=ord("C")).de
+    set_key(ord("A"), ord("B"), 0x0001)
+    set_key(ord("A"), ord("C"), 0x0002)
+    val_ab = get_key(ord("A"), ord("B"))
+    val_ac = get_key(ord("A"), ord("C"))
     ok = (val_ab == 0x0001) and (val_ac == 0x0002)
     fails += not ok
     print(f"{'PASS' if ok else 'FAIL'}  'AB'=1 and 'AC'=2 are distinct "
@@ -151,34 +171,28 @@ def run():
           f"(want {(ord('A')<<8|ord('B')):#06x})")
 
     # ==================================================================
-    # Case 6: clear_vars resets the numeric table and string-slot name0 bytes.
-    # After storing variables, clear_vars should zero VARTAB..VAREND and
-    # zero name0 of every STRTAB slot.
-    # Oracle: clear_vars code zeros VARSLOTS*VARENTSZ bytes starting at VARTAB
-    # and then steps STRENTSZ bytes per slot setting name0=0.
+    # Case 6: clear_vars + vars_reset drop every scalar.
+    #
+    # ⚠️ IT TAKES BOTH CALLS, AND THAT IS THE CONTRACT, NOT A WORKAROUND.
+    # clear_vars alone does NOT clear the scalar chain on the shipped build --
+    # vars.asm §13a: at cold boot clear_vars runs BEFORE new_prog establishes
+    # PRGEND, so wiping the chain there would write through a garbage pointer.
+    # Every clear_vars caller therefore resets the region itself afterwards
+    # (init -> new_prog -> vars_reset; RUN; CLEAR). Asserting clear_vars alone
+    # would assert a wipe the shipped build deliberately does not do there.
     # ==================================================================
     reset_tables()
-    m.call("var_set_key", b=ord("X"), c=0, de=0xABCD)
-    m.call("var_set_key", b=ord("Y"), c=0, de=0x1111)
-    # Also dirty a STRTAB name0 slot manually.
-    m.poke(STRTAB, ord("A"))
+    set_key(ord("X"), 0, 0xABCD)
+    set_key(ord("Y"), 0, 0x1111)
+    live_x = get_key(ord("X"), 0)          # two-sided: they were really set...
     m.call("clear_vars")
-    # After clear, var_get_key for X and Y must return 0.
-    # Note: m.call() returns the shared cpu object; capture .de before the next call.
-    val_x = m.call("var_get_key", b=ord("X"), c=0).de
-    val_y = m.call("var_get_key", b=ord("Y"), c=0).de
-    # STRTAB slot 0 name0 must be 0 (freed).
-    strtab_name0 = m.mem[STRTAB]
-    ok = (val_x == 0) and (val_y == 0) and (strtab_name0 == 0)
+    m.call("vars_reset")
+    val_x = get_key(ord("X"), 0)           # ...and are really gone afterwards
+    val_y = get_key(ord("Y"), 0)
+    ok = (live_x == 0xABCD) and (val_x == 0) and (val_y == 0)
     fails += not ok
-    print(f"{'PASS' if ok else 'FAIL'}  clear_vars resets tables "
-          f"(X={val_x}, Y={val_y}, STRTAB[0].name0={strtab_name0})")
-
-    # Also verify that the first byte of VARTAB is 0 (name0 cleared).
-    vt_name0 = m.mem[VARTAB]
-    ok2 = (vt_name0 == 0)
-    fails += not ok2
-    print(f"{'PASS' if ok2 else 'FAIL'}  clear_vars VARTAB[0]=0 (got {vt_name0})")
+    print(f"{'PASS' if ok else 'FAIL'}  clear_vars+vars_reset drops scalars "
+          f"(X was {live_x:#06x}, now X={val_x}, Y={val_y})")
 
     # ==================================================================
     # Case 7: var_str_type — '$'-suffixed name → A=1, CF=1.
@@ -222,16 +236,22 @@ def run():
     fails += not ok_shim
     print(f"{'PASS' if ok_shim else 'FAIL'}  var_set/var_get shim 'a'→'A'=0x7777: DE={cpu_g.de:#06x}")
 
-    # Cross-check: var_set_key (B='A', C=0) and var_get (A='A') see the same cell.
+    # Cross-check: a keyed store and the single-letter shim see the SAME cell.
+    # ⚠️ The shim resolves its type through deftbl_lookup, so the keyed store has
+    # to use the letter's DEFAULT type or the two address different entries --
+    # var_find_typed keys on (name, TYPE), and a mismatch reads back an unset 0
+    # rather than failing loudly (vars.asm var_get header calls this out as the
+    # S3b regression). clear_vars resets every letter's default to DOUBLE (8).
     reset_tables()
-    m.call("var_set_key", b=ord("A"), c=0, de=0x3333)
+    m.poke(s["FACTYP"], 2)
+    m.call("var_store_fac", b=ord("A"), c=0, a=8, de=0x3333)   # 8 = DOUBLE default
     cpu_cross = m.call("var_get", a=ord("A"))
     ok_cross = (cpu_cross.de == 0x3333)
     fails += not ok_cross
-    print(f"{'PASS' if ok_cross else 'FAIL'}  var_set_key(A,0)+var_get('A') interop: DE={cpu_cross.de:#06x}")
+    print(f"{'PASS' if ok_cross else 'FAIL'}  keyed store + var_get('A') interop: DE={cpu_cross.de:#06x}")
 
     print()
-    print("ALL PASS — vars.asm integer store + type detection" if not fails
+    print("ALL PASS — vars.asm scalar store + type detection" if not fails
           else f"{fails} CASE(S) FAILED")
     return fails
 

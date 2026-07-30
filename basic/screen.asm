@@ -38,11 +38,9 @@
 
 ; --- ex_screen: SCREEN <mode>[,<extra>]... ---------------------------------
 ex_screen:
-    IF ROM_BASE < $4000
     IF G7_RESIDENT
                 xor     a                   ; graphics G7: the FIRST trailing argument is the
                 ld      (GFX_SARGN),a       ; sprite size, and it is no longer discarded
-    ENDIF
     ENDIF
                 inc     hl                  ; past the SCREEN token
                 call    skip_spaces
@@ -61,16 +59,12 @@ ex_screen:
                 cp      4
                 jp      nc,stmt_error
                 push    hl                  ; A = mode -> switch the VDP mode
-    IF ROM_BASE < $4000
     IF G7_RESIDENT
                 push    af
                 call    spr_mode_save       ; G7: keep the sprite size + the attribute x
                 pop     af                  ; bytes across CHGMOD (spec G7 §5)
                 call    CHGMOD
                 call    spr_mode_restore
-    ELSE
-                call    CHGMOD
-    ENDIF
     ELSE
                 call    CHGMOD
     ENDIF
@@ -90,12 +84,10 @@ scr_extra:                                  ; evaluate + ignore any trailing arg
                 cp      ','                 ; an omitted argument (",,")
                 jr      z,scr_extra
                 call    eval                ; DE = the argument
-    IF ROM_BASE < $4000
     IF G7_RESIDENT
                 push    hl
                 call    spr_extra_arg       ; G7: the first one is the sprite size; the
                 pop     hl                  ; rest (click, baud, printer) stay ignored
-    ENDIF
     ENDIF
                 jr      scr_extra
 
@@ -169,14 +161,11 @@ ex_cls:
 ex_width:
                 inc     hl                  ; past the WIDTH token
                 call    skip_spaces         ; returns A = (HL)
-    IF ROM_BASE < $4000
                 or      a
                 jr      z,wid_missing       ; bare `WIDTH` -> Missing operand (ERR 24)
                 cp      COLON
                 jr      z,wid_missing       ; `WIDTH :` likewise -- both measured
-    ENDIF
                 call    eval                ; DE = column count
-    IF ROM_BASE < $4000
                 ld      a,(TMISMATCH)       ; `WIDTH "40"` -> Type mismatch (measured)
                 or      a
                 jp      nz,type_mismatch_error
@@ -204,26 +193,12 @@ wid_bound:
                 jr      z,wid_illegal       ; `WIDTH 0` -> Illegal function call
                 ld      (LINLEN),a
                 ld      (de),a              ; the mode's per-mode default
-    ELSE
-                ld      a,e                 ; (lean: silent low byte)
-                ld      (LINLEN),a
-                ld      b,a                 ; keep the width across the SCRMOD read
-                ld      a,(SCRMOD)
-                or      a                   ; mode 0 -> text-1 (LINL40)
-                ld      a,b
-                jr      nz,wid_t32
-                ld      (LINL40),a
-                jr      wid_apply
-wid_t32:
-                ld      (LINL32),a          ; mode 1 -> text-2 (LINL32)
-    ENDIF
 wid_apply:
                 ld      a,(SCRMOD)
                 push    hl
                 call    CHGMOD              ; re-init the screen at the new width
                 pop     hl
                 jp      exec_stmt
-    IF ROM_BASE < $4000
                 ; Both rejects run at ex_width's OWN depth (exec_stmt `jp`s here),
                 ; so they need no return-address parking -- the same reason
                 ; ex_swap tests its operands at the handler's depth.
@@ -231,7 +206,6 @@ wid_illegal:
                 jp      gb_illegal          ; ERR 5
 wid_missing:
                 jp      loc_missing         ; ERR 24
-    ENDIF
 
 ; --- ex_key: KEY OFF | KEY ON ----------------------------------------------
 ex_key:

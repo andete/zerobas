@@ -84,7 +84,6 @@
 ; is provably idle whenever a string GC runs. The string engine itself never
 ; touches DETOKBUF / DB_CUR.
 
-    IF ROM_BASE < $4000
 
 ; --- strheap_engine: the tenant entry point (SUBROM_IDX_STRHEAP) -----------
 ; Reads SH_OP and dispatches. op=0 (ALLOC): SH_LEN -> SH_PTR (or SH_ERR=1 on
@@ -2139,4 +2138,3 @@ svp_done:
                 ld      (SH_ERR),a
                 ret
 
-    ENDIF

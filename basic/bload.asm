@@ -25,13 +25,12 @@
 
 ; The shared bodies (bload-body.inc, pdfcb-body.inc) call the interpreter's
 ; helpers under bl_-prefixed names so each side can bind them: resident these are
-; zero-byte EQUs onto the real routines, so the lean cart stays byte-identical;
+; zero-byte EQUs onto the real routines;
 ; in the tenant they bind to page-1-local clones (sub/bload.asm).
 bl_skip_spaces  equ     skip_spaces
 bl_upcase       equ     upcase
 bl_load_error   equ     load_error
 
-    IF ROM_BASE < $4000
 ; --- do_bload: resident marshalling stub (repack build) ---------------------
 ; The whole verb body (do_bload..disk_load_fin) moved to sub/bload.asm, a PAGE-1
 ; tenant co-resident with fatprim (docs/spec-traps-t3-key.md §7.6). Marshal the
@@ -64,9 +63,6 @@ load_handoff:
                 ret     z                   ; plain BLOAD: return to caller
                 ld      hl,(EXECPTR)
                 jp      (hl)
-    ELSE
-                include "basic/bload-body.inc"
-    ENDIF
 
 ; build_83_name — convert the filename at HL into the 11-byte 8.3 field at
 ; DISK_FCB_NAME. EVICTED to a sub-ROM PAGE-1 tenant (SUBROM_IDX_FCBNAME) in the
@@ -75,7 +71,6 @@ load_handoff:
 ; byte-identically via basic/fcbname-body.inc: inline here for the lean 16 KB
 ; cart (ELSE, byte-frozen), sub-ROM-resident in the tenant. The casmatch /
 ; cas_open_match precedent.
-    IF ROM_BASE < $4000
 ; --- build_83_name: resident marshalling shim (repack build) ----------------
 ; The body (build_83_name..bn_star_fill, basic/fcbname-body.inc) moved whole to
 ; sub/fcbname.asm (SUBROM_IDX_FCBNAME, a page-1 tenant). Marshal the one register
@@ -93,13 +88,6 @@ build_83_name:
                 ld      a,(BN_STAT)
                 rra                         ; BN_STAT bit0 -> CF (1 = reject)
                 ret
-    ELSE
-fcb_upcase      equ     upcase              ; lean: the body's upcaser IS the
-                                            ; resident upcase (a zero-byte EQU, so
-                                            ; `call fcb_upcase` == the frozen cart's
-                                            ; `call upcase` byte-for-byte)
-                include "basic/fcbname-body.inc"    ; lean: inline, byte-identical
-    ENDIF
 
 ; parse_close_run — shared tail parse used by BOTH the tape and disk paths.
 ; Consumes the closing '"' and an optional single option flag (,R run or ,S
@@ -176,14 +164,7 @@ load_error:
                 ld      a,$EE
                 ld      (ERRMARK),a
                 ld      hl,err_io
-    IF ROM_BASE < $4000
                 call    print_msg                   ; D-MSGENC
                 ret
 err_io:
                 db      "load",MSGESC_ERROR,0       ; 13 B -> 6 B
-    ELSE
-                call    print_string
-                ret
-err_io:
-                db      "load error",13,10,0
-    ENDIF

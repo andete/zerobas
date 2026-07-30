@@ -130,10 +130,6 @@ fldf_next:
 ; fld_fill_record — moved whole to sub/randio.asm (docs/spec-eviction-g4-
 ; space.md §3, carve #1): its only caller, fat_rand_open, is itself sub-side
 ; now (see below), so no resident shim is needed for the repack build.
-    IF ROM_BASE < $4000
-    ELSE
-                include "basic/fld-fill-body.inc"      ; lean: inline, byte-identical
-    ENDIF
 
 ; ===========================================================================
 ; FIELD #f, w1 AS v1$, w2 AS v2$, ...
@@ -337,7 +333,6 @@ lrs_filled:
                 ld      de,(STRPTR)
                 ld      a,(de)              ; source length
                 ld      c,a                 ; C = source length
-    IF ROM_BASE < $4000
                 push    hl                  ; guard field start
                 ld      h,d
                 ld      l,e                 ; HL = source descriptor addr
@@ -347,9 +342,6 @@ lrs_filled:
                                             ; slack for a 3rd duplicate)
                 ex      de,hl               ; DE = source bytes
                 pop     hl                  ; HL = field start (restored)
-    ELSE
-                inc     de                  ; DE -> source bytes
-    ENDIF
                 ld      a,(LRSET_W)
                 cp      c
                 jr      nc,lrs_ncopy        ; width >= len -> copy len
@@ -385,7 +377,6 @@ lrs_cp:
 ;      CF clear -> not fielded (caller falls back to str_get_key). BC may be clobbered.
 ; Clobbers A,BC,DE,HL.
 ; ===========================================================================
-    IF ROM_BASE < $4000
 ; --- repack: a resident stub over the SUBROM_IDX_FLDLOOK page-0 tenant ------
 ; docs/decision-clearpool-funding.md §6.1 — the D-CLP funding carve. The body
 ; (60 B of main page 1) moved whole to sub/fldlook.asm; this stub is 22 B, so
@@ -423,47 +414,7 @@ fld_lookup:
                 jp      c,subrom_absent_error
                 scf                         ; fielded
                 ret
-    ELSE
-fld_lookup:
-                call    fld_find            ; CF set -> HL -> entry
-                ret     nc
-                ld      a,(hl)              ; chan
-                ld      (FLD_CHAN),a
-                inc     hl
-                inc     hl
-                inc     hl                  ; -> off lo
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)              ; DE = off
-                inc     hl
-                ld      a,(hl)              ; width
-                ld      (FLD_DESC),a        ; descriptor length = width
-                push    de                  ; save offset
-                push    af                  ; save width
-                ld      a,(FLD_CHAN)
-                call    fch_select          ; FSECTOR_BUF = this channel's record buffer
-                pop     af                  ; A = width
-                pop     de                  ; DE = offset
-                ld      hl,FSECTOR_BUF
-                add     hl,de               ; HL = slice start
-                ld      de,FLD_DESC+1       ; DE = descriptor bytes
-                or      a
-                jr      z,fll_done          ; width 0 -> empty
-                ld      b,a
-fll_cp:
-                ld      a,(hl)
-                ld      (de),a
-                inc     hl
-                inc     de
-                djnz    fll_cp
-fll_done:
-                ld      hl,FLD_DESC
-                ld      (STRPTR),hl
-                scf
-                ret
-    ENDIF
 
-    IF ROM_BASE < $4000
 ; --- repack: resident shims replacing the fat_rand_* engine ----------------
 ; docs/spec-eviction-g4-space.md §3 (carve #1). Bodies moved whole to sub/
 ; randio.asm (fatprim.asm's fp_table extended with 3 new selector rows,
@@ -504,9 +455,6 @@ fat_rand_put:
 fat_rand_get:
                 ld      a,DISKOP_SEL_RAND_GET
                 jp      fatprim_bounce
-    ELSE
-                include "basic/randio-body.inc"     ; lean: inline, byte-identical
-    ENDIF
 
 ; ===========================================================================
 ; GET [#]f [, recno]   /   PUT [#]f [, recno]
@@ -514,7 +462,6 @@ fat_rand_get:
 ; Select the channel (must be open RANDOM), then read/write the record. The text
 ; cursor (HL) is guarded across fch_select + the disk op (CALSLT clobbers all).
 ex_put:
-    IF ROM_BASE < $4000
     IF G7_RESIDENT
                 ; `PUT SPRITE ...` is a graphics statement, not a record write --
                 ; two reserved words (PUT $B3 + SPRITE $C7), disambiguated at RUN
@@ -527,15 +474,12 @@ ex_put:
                 jp      z,pus_is_sprite
                 pop     hl
     ENDIF
-    ENDIF
                 ld      a,1                 ; mode = PUT (write)
                 jr      gp_common
-    IF ROM_BASE < $4000
     IF G7_RESIDENT
 pus_is_sprite:
                 pop     af                  ; drop the guarded PUT-token cursor
                 jp      ex_put_sprite       ; HL is ON the SPRITE token
-    ENDIF
     ENDIF
 ex_get:
                 xor     a                   ; mode = GET (read)

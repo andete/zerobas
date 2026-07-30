@@ -45,6 +45,10 @@ sys.path.insert(0, HERE)
 from test_wrblk_body_e2e import Disk, build, n83  # noqa: E402
 from msxtest import Machine  # noqa: E402
 
+# The disk ROM is a slot-3-1 page-1 image. Named at the call site, never
+# defaulted (docs/spec-lean-retire-s3-gates.md §5, F-U).
+DISK_BASE = 0x4000
+
 ROM = "/tmp/zb_wrblk_e2e_ut.rom"     # same build as test_wrblk_body_e2e.py (shared)
 SYM = "/tmp/zb_wrblk_e2e_ut.sym"
 
@@ -53,7 +57,7 @@ DTA = 0xC000
 
 
 def new_machine():
-    return Machine(ROM, SYM)
+    return Machine(ROM, SYM, rom_base=DISK_BASE)
 
 
 def make_file(m, name, data, first_cluster=5, secperclus_bytes=512):

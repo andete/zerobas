@@ -48,7 +48,6 @@ dl_cmd:
                 ld      hl,LINEBUF
                 ld      de,TOKBUF
                 call    tokenise
-    IF ROM_BASE < $4000
                 ld      a,(TKOVF)           ; float-literal crunch-time overflow (F1,
                 or      a                   ; basic/float.asm) -> reject the whole line,
                 jp      nz,dl_overflow      ; own wording (D-F1-1); never execute/store
@@ -79,25 +78,18 @@ dl_cmd:
                 ld      (GOTOFLAG),a        ; and a stale RESUMEFLAG would divert it
                 ld      hl,TOKBUF
                 jp      rp_exec             ; unwinds to the REPL at end of line
-    ELSE
-                ld      hl,TOKBUF
-                jp      exec                ; lean: statement walk only (byte-frozen)
-    ENDIF
 dl_store:
                 call    parse_lineno        ; HL -> first digit; BC = number, HL past
                 push    bc                  ; guard line number across tokenise
                 call    skip_spaces         ; one or more spaces before the body
                 ld      de,TOKBUF
                 call    tokenise            ; crunch the remainder of the line
-    IF ROM_BASE < $4000
                 ld      a,(TKOVF)
                 or      a
                 jr      nz,dl_overflow_pop
-    ENDIF
                 pop     bc
                 ld      hl,TOKBUF
                 jp      store_line          ; returns to the REPL
-    IF ROM_BASE < $4000
 dl_overflow_pop:
                 pop     bc                  ; balance the stack (line number now unused)
 dl_overflow:
@@ -152,18 +144,13 @@ dl_ovf_report:
 ; "in 0" rather than garbage.
 dir_line:       dw      dir_line + 2        ; [link] -> the word below
                 dw      0                   ; [lineno] = 0 == the $0000 end marker
-    ENDIF
 dl_run:
                 jp      run_prog
 dl_new:
-    IF ROM_BASE < $4000
                 ; NEW clears ALL variables (VARTAB / DEFtbl / strings), not just
-                ; the stored program — MS-BASIC semantics. Gated to the repack
-                ; build: the lean 16 KB basic.rom is byte-full at its $8000
-                ; ceiling AND has no typed vars / DEFtbl, so it stays byte-
-                ; identical. LOAD's own new_prog calls stay variable-safe.
+                ; the stored program — MS-BASIC semantics. LOAD's own new_prog
+                ; calls stay variable-safe.
                 call    clear_vars
-    ENDIF
                 jp      new_prog
 
 ; --- is_cmd: does the word at (HL) match the uppercase template at (DE)? ------
@@ -240,27 +227,21 @@ pl_lp:
 new_prog:
                 xor     a
                 ld      (CONTVALID),a       ; NEW wipes the program -> no CONT resume
-    IF ROM_BASE < $4000
                 ld      (TRACEFLAG),a       ; NEW is the ONLY thing that clears TRON.
                                             ; RUN does not reset it, END does not clear
                                             ; it, and a line carrying TROFF is itself
                                             ; traced -- all measured (spec §3.4). A is
                                             ; still 0 from the xor above.
-    ENDIF
                 ld      hl,TXTBASE
                 ld      (TXTTAB),hl         ; keep the real sysvar consistent ($8001)
                 ld      (PRGEND),hl         ; end marker sits at the base
                 ld      hl,0
                 ld      (TXTBASE),hl        ; $0000 end marker at the base
-    IF ROM_BASE < $4000
                 jp      vars_reset          ; arrays slice-1 (§9.6) + slice-4b (§3b):
                                             ; rebase BOTH the scalar region (ARYTAB=
                                             ; PRGEND+2) and the array area's "no
                                             ; arrays" sentinel to the new PRGEND+2
                                             ; (tail call; vars_reset/ary_reset just ret)
-    ELSE
-                ret
-    ENDIF
 
 ; --- run_prog: execute the stored program (RUN) ------------------------------
 ; Clears variables and the control stacks, then runs lines from CURLINE. A
@@ -271,7 +252,6 @@ new_prog:
 ; hands off.
 run_prog:
                 call    clear_vars
-    IF ROM_BASE < $4000
                 call    vars_reset          ; arrays slice-1 (§9.6) + slice-4b (§3b): a
                                             ; fresh RUN has no live scalars/arrays
                                             ; either; PRGEND is already correct here
@@ -281,13 +261,11 @@ run_prog:
                                             ; above (same PRGEND, same result) --
                                             ; harmless, kept for the "four call sites"
                                             ; symmetry (§3b).
-    ENDIF
                 xor     a
                 ld      (CONTVALID),a       ; a fresh RUN has no CONT resume point yet
                 ld      (GOTOFLAG),a
                 ld      (ENDFLAG),a
                 ld      (RESUMEFLAG),a
-    IF ROM_BASE < $4000
                 ld      (DIRECTF),a         ; D-2: run mode (0) — errors get " in <line>"
                 ld      (SAVSTK),sp         ; error-handling S2b §6: run anchor — the
                                             ; trap resets SP here before jumping to
@@ -314,18 +292,10 @@ run_prog:
                                             ; ZTRAP table so a prior run's traps never
                                             ; leak into this one (traps.asm). Inert until
                                             ; the arming statements land (TRAPENA==0).
-    ENDIF
-    IF ROM_BASE >= $4000
-                ld      hl,GOSUB_STK        ; empty return stack
-                ld      (GSP),hl
-                ld      hl,FOR_STK          ; empty FOR stack
-                ld      (FSP),hl
-    ENDIF                                   ; repack: MOVED into clear_vars (called
                                             ; three lines up) so cold boot / NEW /
                                             ; CLEAR reset the control stacks too --
                                             ; docs/spec-basic-direct-ctrl.md §4.
-                                            ; Net zero bytes; the lean cart keeps the
-                                            ; inline copy and stays byte-identical.
+                                            ; Net zero bytes.
                 xor     a                   ; DATA pointer unpositioned (read seeks
                 ld      (DATASTATE),a       ;  from the program start on first READ)
                 ld      hl,TXTBASE
@@ -342,7 +312,6 @@ rp_lp:
                 dec     hl
                 ld      a,d
                 or      e
-    IF ROM_BASE < $4000
                 ; D-ONEFLG site C (docs/spec-basic-oneflg-reset-scope.md §4):
                 ; running off the end of the program TERMINATES the run, so the
                 ; handler context dies here too -- and A is ALREADY 0 on this
@@ -357,14 +326,10 @@ rp_lp:
                 ld      (ONEFLG),a
                 ret
 rp_notend:
-    ELSE
-                ret     z                   ; $0000 link -> end of program
-    ENDIF
                 inc     hl                  ; skip link (2) + lineno (2)
                 inc     hl
                 inc     hl
                 inc     hl                  ; HL -> token body
-    IF ROM_BASE < $4000
                 ; TRON: decorate this line with `[<lineno>]` before it runs
                 ; (basic/missing.asm). THIS IS THE FRESH-LINE-ENTRY POINT, and it
                 ; is the ONLY one -- which is what makes the measured trace shapes
@@ -389,7 +354,6 @@ rp_notend:
                 ld      a,(TRACEFLAG)
                 or      a
                 call    nz,trace_line       ; preserves HL (the token cursor)
-    ENDIF
                 jr      rp_exec
 rp_resume:
                 xor     a
@@ -401,7 +365,6 @@ rp_exec:
                 ; Ctrl-STOP held). If pressed, break here — resume point is HL
                 ; (the statement about to run), CURLINE already correct.
                 push    hl                  ; guard the resume pointer across BREAKX
-    IF ROM_BASE < $4000
                 ; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §5):
                 ; DIRECTF is DERIVED here, not carried. It is exactly "the line I
                 ; am about to run is the typed one", and this is the single point
@@ -425,11 +388,9 @@ rp_exec:
                 inc     a
 rpe_mode:
                 ld      (DIRECTF),a
-    ENDIF
                 call    BREAKX
                 pop     hl
                 jr      c,rp_break
-    IF ROM_BASE < $4000
                 ; Ctrl-STOP is NOT down: RELEASE the STOP entry's edge shadow, so the
                 ; next press reads as a fresh 0->1 edge. This is the release observation
                 ; the run-loop seam needs — rp_break is only reached when the key IS
@@ -459,7 +420,6 @@ rp_trapchk:                                 ; interrupt-trap dispatch point (T1)
                 call    nz,check_traps      ; HL = stmt ptr; CF=1 -> fired, CURLINE=handler
                 jr      c,rp_lp             ; fired: run the handler line fresh (RESUMEFLAG=0)
 rp_run:
-    ENDIF
                 call    exec                ; run line (may set flags or hand off)
                 ld      a,(ENDFLAG)
                 or      a
@@ -484,7 +444,6 @@ rp_goto:
                 ld      (CURLINE),hl
                 jr      rp_lp
 rp_break:
-    IF ROM_BASE < $4000
                 ld      a,(DIRECTF)         ; direct mode: no trap machinery (see
                 or      a                   ; rp_trapchk) -> always the classic break,
                 jr      nz,rp_do_break      ; reported as a bare "break" by do_break
@@ -547,7 +506,6 @@ rp_brk_run:
                 jr      rp_trapchk          ; dispatch now (do NOT break)
 rp_real_break:
                 pop     hl                  ; HL = resume stmt ptr
-    ENDIF
 rp_do_break:
                 ; Ctrl-STOP pressed between lines/statements. HL = the statement
                 ; that was about to run -> the CONT resume point. do_break records
@@ -566,7 +524,6 @@ do_break:
                 ld      (CONTPTR),hl        ; resume token pointer
                 ld      hl,(CURLINE)
                 ld      (CONTLINE),hl       ; line to resume in (link-field addr)
-    IF ROM_BASE < $4000
                 ; ...but a DIRECT-mode break leaves NO resume point (docs/spec-
                 ; basic-direct-ctrl.md §5). MEASURED on the VG-8020: `PRINT 1:STOP:
                 ; PRINT 2` typed at the prompt reports "Break", and the CONT that
@@ -575,9 +532,6 @@ do_break:
                 ; is 0/1, so `xor 1` is the whole gate.
                 ld      a,(DIRECTF)
                 xor     1
-    ELSE
-                ld      a,1
-    ENDIF
                 ld      (CONTVALID),a       ; a CONT resume point is now live
                 ld      a,1
                 ld      (ENDFLAG),a         ; stop the run, fall back to the REPL
@@ -585,7 +539,6 @@ do_break:
                 ; CURLINE+2 (the lineno field after the 2-byte link).
                 ld      hl,brk_msg
                 call    print_string
-    IF ROM_BASE < $4000
                 ; repack (D-2): the " in <lineno>" + CRLF tail is the SHARED
                 ; print_in_lineno routine (below) — the same one fre_abort_low uses
                 ; for a runtime error's " in <line>" suffix. Output in run mode is
@@ -594,24 +547,8 @@ do_break:
                 ; (the reference prints a bare "Break" for a typed STOP -- measured),
                 ; so this tail stays a single unconditional jump.
                 jp      print_in_lineno
-    ELSE
-                ld      hl,(CURLINE)
-                inc     hl
-                inc     hl
-                ld      e,(hl)              ; lineno LE -> DE
-                inc     hl
-                ld      d,(hl)
-                ex      de,hl               ; HL = line number
-                call    ln_div_entry        ; print HL as bare unsigned decimal
-                jp      print_crlf
-    ENDIF
-    IF ROM_BASE < $4000
 brk_msg:        db      "break",0           ; repack: " in " moved into print_in_lineno
-    ELSE
-brk_msg:        db      "break in ",0
-    ENDIF
 
-    IF ROM_BASE < $4000
 ; --- print_in_lineno: " in <CURLINE lineno>" + CRLF (repack, error-handling D-2) --
 ; Shared by do_break ("break in <N>") and fre_abort_low (a runtime error's run-mode
 ; " in <line>" suffix). CURLINE = the current line's link-field address; the line
@@ -700,7 +637,6 @@ msg_phrase_tab:
                 db      "llegal function call",0 ; MSGESC_ILLFN
                 db      " without",0        ; MSGESC_WITHOUT
                 db      "file ",0           ; MSGESC_FILE (S-FCH-2)
-    ENDIF
 
 ; --- ex_stop: STOP statement — break and record a CONT resume point ----------
 ; STOP halts the program exactly like END, but ALSO records where to continue so
@@ -708,18 +644,14 @@ msg_phrase_tab:
 ; the run with no resume point, so CONT after END is "Can't CONTINUE".)
 ; HL enters on the STOP token. Repack (T1): `STOP ON|OFF|STOP` instead arms the
 ; STOP interrupt trap's tri-state (spec-traps-t1-stop-reslice.md §5.2); a bare STOP
-; (EOL / ':' / anything else) still halts. Lean stays `inc hl / jp do_break`
-; byte-identically (both IF blocks vanish).
+; (EOL / ':' / anything else) still halts.
 ex_stop:
                 inc     hl                  ; past STOP token
-    IF ROM_BASE < $4000
                 call    skip_spaces
                 ld      a,(hl)
                 call    onoff_decode        ; STOP ON|OFF|STOP -> A = the ZTS_ state
                 jr      c,es_set
-    ENDIF
                 jp      do_break            ; bare STOP -> record + "Break in <line>"
-    IF ROM_BASE < $4000
 es_set:
                 inc     hl                  ; consume the ON/OFF/STOP sub-keyword
                 push    hl                  ; guard the exec-continue ptr across set_state
@@ -744,7 +676,6 @@ es_set:
                 jp      exec_stmt           ; continue the line -- a bare `ret` here would
                                             ; SWALLOW the rest of the line (STOP ON:STOP OFF
                                             ; left OFF a no-op; VG-8020 differential caught it)
-    ENDIF
 
 ; --- ex_cont: CONT statement — resume a STOPped / broken program -------------
 ; If a CONT resume point is live (set by STOP or Ctrl-STOP and not invalidated by
@@ -783,7 +714,6 @@ ex_cont:
                 ld      (RESUMEPTR),hl
                 ld      a,1
                 ld      (RESUMEFLAG),a      ; resume mid-line at CONTPTR
-    IF ROM_BASE < $4000
                 ; D-CONTD (docs/spec-basic-cont-depth.md §2/§3): re-enter the
                 ; loop at the depth its exit `ret` unwinds FROM. Without this,
                 ; CONT starts a fresh loop iteration from STATEMENT depth -- it
@@ -808,19 +738,13 @@ ex_cont:
                 ; -- they live in their own RAM stacks (GSP/FSP), gated by the
                 ; cont_gosub_live / cont_for_live rows.
                 ld      sp,(SAVSTK)
-    ENDIF
                 jp      rp_lp               ; re-enter the run loop
 ex_cont_no:
                 ld      a,$C9               ; "can't continue" landmark (distinct byte)
                 ld      (ERRMARK),a
                 ld      hl,err_cont
-    IF ROM_BASE < $4000
                 jp      print_msg           ; D-MSGENC: encoded body + emitted CRLF
 err_cont:       db      "can't continue",0  ; (no phrase hit; the 2 B is §4.2's CRLF)
-    ELSE
-                jp      print_string
-err_cont:       db      "can't continue",13,10,0
-    ENDIF
 
 ; --- find_line_bc: locate a stored line by number ----------------------------
 ; in: BC = line number. out: CF set + HL = the line's link-field address if
@@ -856,7 +780,6 @@ flb_no:
                 or      a                   ; CF clear
                 ret
 
-    IF ROM_BASE < $4000
 ; --- store_line / relink: resident marshalling shims -----------------------
 ; docs/spec-eviction-g4-space.md §4 (carve #2). prog_find_del/delete_at/
 ; open_gap AND the relink loop moved whole to sub/lineedit.asm
@@ -891,11 +814,7 @@ store_line:
 ; its ADDRESS directly (`dw err_mem`), which must resolve to a main-ROM
 ; address, never a sub-ROM one. err_stack (further down this file) and
 ; cload.asm's err_prog_mem both `equ err_mem` unchanged.
-    IF ROM_BASE < $4000
 err_mem:        db      "o",MSGESC_UTOF,"memory",0      ; D-MSGENC: 16 B -> 9 B
-    ELSE
-err_mem:        db      "out of memory",13,10,0
-    ENDIF
 
 relink:
                 ld      a,1                 ; LE_OP_RELINK
@@ -904,18 +823,12 @@ relink:
                 call    subrom_call
                 jp      c,subrom_absent_error
                 ret
-    ELSE
-                include "basic/lineedit-body.inc"   ; lean: inline, byte-identical
-    ENDIF
 
-    IF ROM_BASE < $4000
 ; --- gosub_push: push a bounds-checked GOSUB return frame (repack golf) -------
 ; The 4-byte frame is [CURLINE:2][resume-ptr:2]; resume = the token position to
 ; run when RETURN pops it. Factored out of ex_gosub / eon_gosub (which each used
 ; to inline this) so the interrupt-trap dispatcher can reuse it as its GOSUB-into-
-; handler branch (docs/spec-basic-interrupt-traps.md §2.1/§10.1). Repack-only: the
-; lean ROM keeps the original inline push below (byte-frozen), same discipline as
-; the input-devices ev_f_ff golf.
+; handler branch (docs/spec-basic-interrupt-traps.md §2.1/§10.1).
 ;   IN:  HL = resume token pointer; CURLINE = the line to resume in.
 ;   OUT: CF clear = pushed, GSP advanced by 4.  CF set = stack full (nothing pushed).
 ;        Preserves BC (the target line number). Clobbers A, DE, HL.
@@ -977,67 +890,11 @@ ex_gosub:
                 ld      a,1
                 ld      (GOTOFLAG),a
                 ret
-    ELSE
-; --- ex_gosub: GOSUB <line> (lean: inline push, byte-frozen) -----------------
-; Push a return frame [CURLINE:2][resume-ptr:2] (resume = the token position
-; right after this GOSUB statement), then branch to the target line exactly like
-; GOTO. RETURN pops the frame and resumes there. (HL enters on the GOSUB token.)
-ex_gosub:
-                inc     hl                  ; past the GOSUB token
-                call    skip_spaces
-                ld      a,(hl)
-                cp      LINENO_TOKEN        ; $0E,<lineno LE> expected
-                jp      nz,stmt_error
-                inc     hl
-                ld      c,(hl)              ; target line number, LE
-                inc     hl
-                ld      b,(hl)
-                inc     hl                  ; HL = resume point (after the statement)
-                push    bc                  ; guard target line number
-                ; bounds: GSP must stay below GOSUB_STK_END
-                push    hl                  ; save resume ptr
-                ld      hl,(GSP)
-                ld      de,GOSUB_STK_END
-                or      a
-                sbc     hl,de
-                jr      nc,egs_over         ; GSP >= end -> too many GOSUBs
-                ld      de,(GSP)            ; write frame at GSP
-                ld      hl,(CURLINE)
-                ld      a,l
-                ld      (de),a
-                inc     de
-                ld      a,h
-                ld      (de),a
-                inc     de
-                pop     hl                  ; HL = resume ptr
-                ld      a,l
-                ld      (de),a
-                inc     de
-                ld      a,h
-                ld      (de),a
-                inc     de
-                ld      (GSP),de            ; advance (push complete)
-                pop     bc                  ; BC = target line number
-                call    find_line_bc        ; CF set + HL = line addr if found
-                jp      nc,ex_goto_undef
-                ld      (GOTOTGT),hl
-                ld      a,1
-                ld      (GOTOFLAG),a
-                ret
-egs_over:
-                pop     hl                  ; discard saved resume ptr
-                pop     bc                  ; discard saved target
-                ld      a,$CE               ; control-stack overflow landmark
-                ld      (ERRMARK),a
-                ld      hl,err_stack
-                jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
-    ENDIF
 
 ; --- ex_return: RETURN -------------------------------------------------------
 ; Pop the top GOSUB frame and resume at its saved (CURLINE, resume-ptr) via the
 ; RUN loop's mid-line resume path. (HL enters on the RETURN token.)
 ex_return:
-    IF ROM_BASE < $4000
                 ; interrupt-trap re-enable (T1): if any trap is servicing and THIS
                 ; RETURN's frame is the trap's own (GSP match), auto-resume it to ON
                 ; before the normal pop (spec-traps-t1-stop-reslice.md §8). The gate
@@ -1045,7 +902,6 @@ ex_return:
                 ld      a,(TRAPSVC)
                 or      a
                 call    nz,trap_return_check
-    ENDIF
                 ld      hl,(GSP)            ; empty stack -> RETURN without GOSUB
                 ld      de,GOSUB_STK
                 or      a
@@ -1067,7 +923,7 @@ ex_return:
 ; res_setptr (basic/interp.asm, repack-only) jumps in here after its own
 ; `ld (RESUMEPTR),hl`, reusing the RESUMEFLAG:=1 + ret verbatim. A zero-cost
 ; label: RETURN's own bytes/behaviour here are completely unchanged, and this
-; label costs nothing in the lean build either (nothing lean-side jumps to it).
+; label costs nothing: RETURN's own bytes here are unchanged.
 set_resumeflag_ret:
                 ld      a,1
                 ld      (RESUMEFLAG),a
@@ -1075,13 +931,8 @@ set_resumeflag_ret:
 ex_ret_under:
                 ld      a,$CD               ; "return without gosub" landmark
                 ld      (ERRMARK),a
-    IF ROM_BASE < $4000
                 ld      a,3                 ; ERR 3: return without gosub (error-handling S2a)
                 jp      raise_error
-    ELSE
-                ld      hl,err_noret
-                jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
-    ENDIF
 
 ; --- ex_for: FOR <var> = <init> TO <limit> [STEP <step>] ---------------------
 ; Assign init to the loop variable, then push a frame
@@ -1106,14 +957,10 @@ ex_for:
                 inc     hl                  ; consume the letter
                 call    skip_spaces
                 ld      a,(hl)
-    IF ROM_BASE < $4000
                 cp      '$'                 ; `FOR A$=…` is ERR 13, not ERR 2 (measured
                 jp      z,type_mismatch_error ; VG-8020) -- the ONE lvalue shape in this
                                             ; statement that is a type error rather than
-                                            ; a syntax error. Repack-only: the lean cart
-                                            ; has no error-code machinery (and stays
-                                            ; byte-identical).
-    ENDIF
+                                            ; a syntax error.
                 cp      EQ_TOKEN            ; '=' -> $EF
                 jp      nz,stmt_error
                 inc     hl
@@ -1158,13 +1005,8 @@ ef_havestep:
 ef_over:
                 ld      a,$CE
                 ld      (ERRMARK),a
-    IF ROM_BASE < $4000
                 ld      a,7                 ; ERR 7: out of memory (error-handling S2a)
                 jp      raise_error
-    ELSE
-                ld      hl,err_stack
-                jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
-    ENDIF
 
 ; --- ex_next: NEXT [<var>] ---------------------------------------------------
 ; Step the loop variable of the matching FOR frame, test against the limit, and
@@ -1181,7 +1023,6 @@ ex_next:
                 inc     hl                  ; consume the letter
                 jr      nx_find
 nx_notletter:
-    IF ROM_BASE < $4000
                 ; `NEXT 1` is ERR 2 on the reference, not "next without for" --
                 ; only a genuine BARE next (statement terminator) takes the top
                 ; frame. Measured with the rest of the trap-class family.
@@ -1189,7 +1030,6 @@ nx_notletter:
                 jr      z,nx_top
                 cp      COLON
                 jp      nz,stmt_error
-    ENDIF
 nx_top:
                 ld      c,0                 ; 0 = match the top frame (no letter)
 nx_find:
@@ -1264,31 +1104,16 @@ nx_nofor:
                 pop     hl                  ; discard the saved cursor
                 ld      a,$CB               ; "next without for" landmark
                 ld      (ERRMARK),a
-    IF ROM_BASE < $4000
                 ld      a,1                 ; ERR 1: next without for (error-handling S2a)
                 jp      raise_error
-    ELSE
-                ld      hl,err_nofor
-                jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
-    ENDIF
 
-    IF ROM_BASE < $4000
-err_stack       equ     err_mem             ; repack: share sl_oom's "out of memory"
-                                            ; (D-2 self-funding — the string bytes are
-                                            ; identical; lean keeps its own copy below,
-                                            ; byte-identical). Saves 15 B in the repack
-                                            ; page-1 budget for the run-mode " in <line>"
+err_stack       equ     err_mem             ; share sl_oom's "out of memory" (D-2
+                                            ; self-funding — the string bytes are
+                                            ; identical). Saves 15 B in the page-1
+                                            ; budget for the run-mode " in <line>"
                                             ; suffix (docs/spec-basic-error-handling.md S1 D-2).
-    ELSE
-err_stack:      db      "out of memory",13,10,0
-    ENDIF
-    IF ROM_BASE < $4000
 err_noret:      db      "return",MSGESC_WITHOUT," gosub",0  ; D-MSGENC: 23 B -> 14 B
 err_nofor:      db      "next",MSGESC_WITHOUT," for",0      ; D-MSGENC: 19 B -> 10 B
-    ELSE
-err_noret:      db      "return without gosub",13,10,0
-err_nofor:      db      "next without for",13,10,0
-    ENDIF
 
 ; --- ex_read: READ <var> [, <var> ...] ---------------------------------------
 ; Fill each variable from the next DATA item. DATA items are stored as verbatim
@@ -1321,18 +1146,9 @@ exr_nodata:
                 pop     hl                  ; discard exec cursor (balance the stack)
                 ld      a,$CA               ; "out of data" landmark
                 ld      (ERRMARK),a
-    IF ROM_BASE < $4000
                 ld      a,4                 ; ERR 4: out of data (error-handling S2a)
                 jp      raise_error
-    ELSE
-                ld      hl,err_data
-                jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
-    ENDIF
-    IF ROM_BASE < $4000
 err_data:       db      "o",MSGESC_UTOF,"data",0        ; D-MSGENC: 14 B -> 7 B
-    ELSE
-err_data:       db      "out of data",13,10,0
-    ENDIF
 
 ; --- ex_restore: RESTORE [<line>] --------------------------------------------
 ; Reset the DATA cursor to the program start, or to a given line. The optional
@@ -1367,10 +1183,8 @@ ers_undef:
                 jp      ex_goto_undef       ; reuse "undefined line"
 
 ; --- READ/DATA value engine (read_one_value / data_seek / data_parse_int) ---
-; Carved out to a PAGE-0 sub-ROM tenant in the repack build to fund graphics G7
-; (docs/spec-eviction-g7-space.md); the lean cart keeps the body inline and stays
-; byte-identical. The body itself is basic/readdata-body.inc.
-    IF ROM_BASE < $4000
+; Carved out to a PAGE-0 sub-ROM tenant to fund graphics G7
+; (docs/spec-eviction-g7-space.md). The body itself is basic/readdata-body.inc.
 ; Resident stub: CALSLT the tenant, then rebuild the (CF, DE) contract from the
 ; RDV_ST/RDV_VAL cells -- CF cannot ride back through subrom_call.
 read_one_value:
@@ -1386,9 +1200,6 @@ read_one_value:
 rov_stub_none:
                 or      a                   ; CF clear -> out of data
                 ret
-    ELSE
-                include "basic/readdata-body.inc"
-    ENDIF
 
 ; --- ex_on: ON <expr> GOTO/GOSUB <line>[,<line>...] -------------------------
 ; Evaluates expr (1-based index N). Finds the Nth branch target in the
@@ -1397,7 +1208,6 @@ rov_stub_none:
 ; Source: public MSX-BASIC language reference (ON…GOTO/GOSUB semantics).
 ex_on:
                 inc     hl                  ; past ON_TOKEN
-    IF ROM_BASE < $4000
                 call    skip_spaces         ; A = (hl)
                 cp      ERROR_TOKEN         ; ON ERROR GOTO / GOTO 0 (error-handling S2b)
                 jp      z,ex_on_error       ; -- NOT an <expr> ON...GOTO/GOSUB list
@@ -1426,14 +1236,11 @@ ex_on:
                                             ; on the selector for the dec below.
     ENDIF
                 dec     hl
-    ENDIF
 ex_on_expr:                                 ; ON <expr> GOTO/GOSUB -- the ordinary form
                 call    eval                ; DE = N (1-based index), HL past expression
-    IF ROM_BASE < $4000
                 call    get_byte_arg        ; D-F2-2 stage B: ON's selector is a byte 0..255
                                             ; (>int16 ERR 6, 256.. ERR 5); DE=N, D=0 for
                                             ; eon_seek_nth. ON 0 = valid no-branch (falls thru).
-    ENDIF
                 call    skip_spaces
                 ld      a,(hl)
                 cp      GOTO_TOKEN
@@ -1453,7 +1260,6 @@ eon_goto:
                 ld      (GOTOFLAG),a
                 ret
 
-    IF ROM_BASE < $4000
 ; eon_gosub (repack: via gosub_push, sharing gosub_stk_over)
 eon_gosub:
                 inc     hl                  ; past GOSUB token
@@ -1467,51 +1273,6 @@ eon_gosub:
                 ld      a,1
                 ld      (GOTOFLAG),a
                 ret
-    ELSE
-; eon_gosub (lean: original inline push, byte-frozen)
-eon_gosub:
-                inc     hl                  ; past GOSUB token
-                call    eon_seek_nth        ; BC = line number, HL past list; CF set if found
-                jp      nc,exec_stmt        ; N=0 or N > count -> fall through
-                ; push GOSUB frame [CURLINE:2][resume:2]; resume = HL (past the list)
-                push    bc                  ; guard target line number
-                push    hl                  ; save resume ptr
-                ld      hl,(GSP)
-                ld      de,GOSUB_STK_END
-                or      a
-                sbc     hl,de
-                jr      nc,eon_over
-                ld      de,(GSP)
-                ld      hl,(CURLINE)
-                ld      a,l
-                ld      (de),a
-                inc     de
-                ld      a,h
-                ld      (de),a
-                inc     de
-                pop     hl                  ; HL = resume ptr
-                ld      a,l
-                ld      (de),a
-                inc     de
-                ld      a,h
-                ld      (de),a
-                inc     de
-                ld      (GSP),de
-                pop     bc                  ; BC = target line number
-                call    find_line_bc
-                jp      nc,ex_goto_undef
-                ld      (GOTOTGT),hl
-                ld      a,1
-                ld      (GOTOFLAG),a
-                ret
-eon_over:
-                pop     hl                  ; discard resume ptr
-                pop     bc                  ; discard target
-                ld      a,$CE
-                ld      (ERRMARK),a
-                ld      hl,err_stack
-                jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
-    ENDIF
 
 ; --- eon_seek_nth: find Nth $0E entry in an ON...GOTO/GOSUB target list ------
 ; in:  HL = first token after the GOTO/GOSUB token, DE = N (1-based index)
@@ -1603,7 +1364,6 @@ esn_nocf:
 ; falls through to exec_stmt: ON ERROR GOTO is an ordinary non-branching
 ; statement (unlike GOTO/RESUME), so `ON ERROR GOTO 100:PRINT"x"` must still
 ; run the rest of the line. Clobbers A, BC, DE, HL.
-    IF ROM_BASE < $4000
 ex_on_error:
                 inc     hl                  ; past ERROR_TOKEN
                 call    skip_spaces         ; A = (hl)
@@ -2156,5 +1916,4 @@ key_set:
                 call    set_state           ; maintains the TRAPENA "# ON" count
                 pop     hl
                 jp      exec_stmt           ; continue the line (the T1 es_set lesson)
-    ENDIF
     ENDIF

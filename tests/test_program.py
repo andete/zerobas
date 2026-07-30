@@ -39,6 +39,12 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine  # noqa: E402
 
+# The image under test is loaded at its ORG. Named here rather than
+# defaulted: msxtest.Machine's old default was $4000, the retired lean
+# cart's org, so a BASIC test that omitted it silently tested the lean
+# build (docs/spec-lean-retire-s3-gates.md §5, F-U).
+BASIC_BASE = 0x2812
+
 ROM  = "/tmp/zb_prog.rom"
 SYM  = "/tmp/zb_prog.sym"
 TOKBUF_SCRATCH = 0xE160  # TOKBUF from sysvars.inc (safe scratch area)
@@ -62,7 +68,7 @@ def build():
 
 def make_machine():
     """Fresh Machine with safe stubs for CHPUT and BREAKX."""
-    m = Machine(ROM, SYM)
+    m = Machine(ROM, SYM, rom_base=BASIC_BASE)
     # CHPUT: trap and discard (print_string calls it on every error path)
     m.trap("CHPUT", lambda m: None)
     # BREAKX ($00B7): return Cy=0 (not pressed) — insurance; none of the

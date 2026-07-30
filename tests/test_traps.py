@@ -41,7 +41,7 @@ ENTSZ = 3
 
 def build():
     subprocess.run(["pasmo", "--bin",
-                    os.path.join(ROOT, "basic", "main-reloc.asm"), RES_ROM, RES_SYM],
+                    os.path.join(ROOT, "basic", "main.asm"), RES_ROM, RES_SYM],
                    check=True, capture_output=True, cwd=ROOT)
 
 

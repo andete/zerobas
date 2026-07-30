@@ -34,16 +34,11 @@
 ; probe could not see it. "Absent from the keyword table" ≠ "absent from the
 ; language" (docs/spec-basic-interrupt-traps.md §0).
 ;
-; Repack-only (IF ROM_BASE < $4000), like playsvc.asm: the H.TIMI seam and the
-; trap table only exist in the repacked page-1 window. The lean 16 KB ROM is
-; byte-identical (nothing here is assembled into it).
-;
 ; CLEAN-ROOM: own-design table + poll (docs §3, quarantined in PROVENANCE.md).
 ; The trap MODEL (types, ON/OFF/STOP tri-state + auto-suspend, RETURN re-enable)
 ; is the published MSX Technical Handbook contract; the RAM layout and the
 ; TRAPPEND/service-stack mechanism are own-design. No ROM bytes lifted.
 
-    IF ROM_BASE < $4000
 
 ; htimi_service: the H.TIMI seam target (installed by play_install, playsvc.asm).
 ; Poll the traps, then fall into the PLAY drain (its own MUSICF==0 fast-out keeps
@@ -445,4 +440,3 @@ trap_return_check:
                 ld      (TRAPPEND),a         ; yes -> fire again at the next boundary
                 ret
 
-    ENDIF

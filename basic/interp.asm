@@ -26,7 +26,6 @@ init:
                 ld      (POOLSIZE),hl
     ENDIF
                 call    clear_vars          ; deterministic variable table
-    IF ROM_BASE < $4000
                 ; Error-handling S2a: ERR/ERL are zeroed at COLD BOOT ONLY (this is
                 ; the sole cold-only hook; clear_vars also runs on NEW/CLEAR/RUN, which
                 ; the reference does NOT clear -- verified empirically 2026-07-18).
@@ -60,7 +59,6 @@ init:
                 ld      a,(FORCLR)
                 ld      (ATRBYT),a
     ENDIF
-    ENDIF
                 call    clear_usrtab        ; zero the DEF USR vectors
                 call    init_filechan       ; no open channel; PRINT dest = screen
                 call    new_prog            ; empty stored program (Step B)
@@ -73,19 +71,15 @@ init:
 
 ; --- tokenise: ASCII line -> token stream ----------------------------------
 ; The whole crunch body (tokenise/tk_*/tk_hex/match_kw/branch_lineno) lives in
-; basic/tokenise.inc. Its home depends on the build (subrom arc wave 2,
+; basic/tokenise.inc (subrom arc wave 2,
 ; docs/spec-basic-subrom-wave2-tokeniser.md):
-;   * lean 16 KB cart (ROM_BASE >= $4000): the body is inline here, byte-identical
-;     to the pre-extraction interp.asm; a leading digit routes to the inline
-;     integer crunch tk_number.
-;   * repack build (ROM_BASE < $4000): the body is EVICTED to sub-ROM page 0
+;   * the body is EVICTED to sub-ROM page 0
 ;     (sub/sub.asm, reunited with the tk_float crunch wave 1 already moved there).
 ;     `tokenise` is a two-line dispatch stub that CALSLTs the whole body once per
 ;     line — cold path (line-entry / program-LOAD only), so a whole-line DI span
 ;     is cosmetic (post-Enter; drifts JIFFY/TIME only, no functional effect,
 ;     spec §6 R-W2-1(a)). Both program.asm call sites (direct + numbered line)
 ;     and the ASCII LOAD/MERGE/CLOAD funnel reach it through this one label.
-    IF ROM_BASE < $4000
 tokenise:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_TOKENISE
                 call    subrom_call         ; HL=src, DE=dest in; body 0-terminates
@@ -93,21 +87,14 @@ tokenise:
                 ret     nc                  ; call completed -> back to program.asm
                 jp      subrom_absent_error ; reduced build w/o sub-ROM (never on the
                                             ; merged machine, which always ships it)
-    ELSE
-                include "basic/tokenise.inc"
-    ENDIF
 
-; keyword -> token table. Extracted to basic/kwtable.inc so its PLACEMENT can be
-; gated (string-engine arc S3, spec §5b): the lean 16 KB build includes it inline
-; HERE (byte-identical); the repack build (ROM_BASE < $4000) instead assembles it in
-; the reclaimed low region (basic/main.asm), freeing this page-1 room for the string
+; keyword -> token table. Extracted to basic/kwtable.inc so its PLACEMENT could be
+; moved (string-engine arc S3, spec §5b): it is assembled in the reclaimed low
+; region (basic/main.asm), not here, freeing this page-1 room for the string
 ; engine — page 1 is otherwise full to $7FFF. `kwtable:` is reached only via
 ; `ld ix,kwtable` (match_kw, detok_kw2), so relocating the table changes nothing but
 ; where the label resolves. The reloc-only string-function keywords live inside the
-; include, gated, so the lean table stays byte-identical.
-    IF ROM_BASE >= $4000
-                include "basic/kwtable.inc"
-    ENDIF
+; include, gated.
 
 ; --- upcase: fold A to uppercase if it is 'a'..'z' -------------------------
 ; Preserves BC/DE/HL. Source: ASCII (allowed).
@@ -142,7 +129,6 @@ exec:
 exec_stmt:
                 xor     a                   ; each statement starts on the screen;
                 ld      (PRDEST),a          ; only PRINT#'s own item loop sets dest=file
-    IF ROM_BASE < $4000
                 ld      (SAVTXT),hl         ; error-handling S2b §4: capture THIS
                                             ; statement's start for RESUME. HL is
                                             ; still the untouched in: pointer here
@@ -163,7 +149,6 @@ exec_stmt:
                                             ; token buffer) -- clobbering it made every
                                             ; statement dispatch on $E3D4 -> syntax error
                                             ; (Fable review 2026-07-16). DE is dead on entry.
-    ENDIF
                 call    skip_spaces         ; leading spaces are skipped (spec §5)
                 ld      a,(hl)
                 or      a
@@ -331,7 +316,6 @@ stmt_table:
                 dw      ex_rem    ; reached after a true THEN clause -> done
                 db      LET_TOKEN
                 dw      ex_letkw
-    IF ROM_BASE < $4000
                 db      PEEK_PREFIX
                 dw      ex_ff_stmt    ; $FF -> MID$ / STRIG starting a statement
                 db      DIM_TOKEN
@@ -411,14 +395,12 @@ stmt_table:
                 db      SWAP_TOKEN
                 dw      ex_swap    ; SWAP a,b
     ENDIF
-    ENDIF
                 db      0                   ; end of table
 
 ex_sep:
                 inc     hl
                 jp      exec_stmt
 ex_end:
-    IF ROM_BASE < $4000
                 ; D-ONEFLG site B (docs/spec-basic-oneflg-reset-scope.md §4): END
                 ; TERMINATES the run, so the handler context dies with it (spec
                 ; §2 c3/c3c: after a handler ENDs the run, the reference traps the
@@ -431,9 +413,6 @@ ex_end:
                 xor     a
                 ld      (ONEFLG),a
                 inc     a                   ; -> 1
-    ELSE
-                ld      a,1                 ; END / STOP -> stop the run
-    ENDIF
                 ld      (ENDFLAG),a
                 ret
 ex_rem:
@@ -490,7 +469,6 @@ ex_let:
                 jr      nz,ex_let_str       ; string variable -> string assignment
                 call    var_name_key        ; BC = key, HL past the name; (VARTYPE) =
                                             ; the resolved type (F3, repack only)
-    IF ROM_BASE < $4000
                 ld      a,(hl)
                 cp      '('
                 jp      z,ex_let_arr        ; array-element lvalue (arrays slice-1,
@@ -501,7 +479,6 @@ ex_let:
                                             ; factor, clobbering the global (VARTYPE)
                                             ; (e.g. A%=A#: the A# factor would leave
                                             ; VARTYPE=8, mis-storing A% as double)
-    ENDIF
                 push    bc                  ; save key across '=' + eval
                 call    skip_spaces
                 ld      a,(hl)
@@ -509,24 +486,16 @@ ex_let:
                 jr      nz,ex_let_err
                 inc     hl
                 call    eval                ; DE = value, HL = cursor (BC clobbered)
-    IF ROM_BASE < $4000
                 call    check_expr_errors_popbc  ; D-2/D-F2-1 (below): discards the
-    ENDIF                                        ; saved key before erroring
                 pop     bc                  ; BC = key
                 push    hl                  ; guard cursor across the store
-    IF ROM_BASE < $4000
                 ld      a,(LHS_VARTYPE)     ; F3 §11.2: coerce DE/FAC into the LHS's
                 call    var_store_fac       ; LATCHED resolved type and store (vars.asm);
                                             ; may set FPERR on a coercion-time Overflow
-    ELSE
-                call    var_set_key         ; var[key] = DE
-    ENDIF
                 pop     hl
-    IF ROM_BASE < $4000
                 ld      a,(FPERR)           ; store-coercion Overflow (§11.2) aborts the
                 or      a                   ; statement exactly like an eval()-time one
                 jp      nz,fp_runtime_error ; (D-F2-1 pattern); no stack cleanup needed --
-    ENDIF                                   ; this is a plain in-line check, not a "call"ed
                                             ; checker (unlike check_expr_errors_popbc)
                 jp      exec_stmt           ; continue the line
 ex_let_err:
@@ -539,7 +508,6 @@ ex_let_err:
 ; string operand into STRPTR and copy it into the variable's slot.
 ex_let_str:
                 call    var_name_key        ; BC = dest key, HL past name + `$`
-    IF ROM_BASE < $4000
                 ld      a,(hl)
                 cp      '('
                 jp      z,ex_let_arr_str    ; string array-element lvalue (arrays
@@ -548,7 +516,6 @@ ex_let_str:
                                             ; basic/arrays.asm) — the string
                                             ; sibling of ex_let's own numeric
                                             ; '(' peek right above
-    ENDIF
                 push    bc                  ; save key across '=' + str_eval
                 call    skip_spaces
                 ld      a,(hl)
@@ -557,30 +524,21 @@ ex_let_str:
                 inc     hl
                 call    skip_spaces
                 call    str_eval            ; STRPTR -> RHS descriptor, HL advanced
-    IF ROM_BASE < $4000
                 jp      nc,els_typecheck    ; not a string operand -> D-MISS-1: is it a
                                             ; valid NUMERIC one (Type mismatch) or junk
                                             ; (syntax error)? basic/missing.asm.
                                             ; (Was `jr nc,ex_let_err`, sharing ex_let's
-                                            ; "pop bc; jp stmt_error" tail; lean keeps
-                                            ; its own separate els_err below, so its
-                                            ; bytes stay untouched either way.)
-    ELSE
-                jr      nc,els_err          ; not a string operand -> syntax error
-    ENDIF
-    IF ROM_BASE < $4000
+                                            ; "pop bc; jp stmt_error" tail.)
                 call    cepb_fp             ; D-F2-1: e.g. A$=HEX$(65536.) aborts (the
                                             ; overflow happens inside str_eval's HEX$
                                             ; argument conversion, fac_to_int_addr) --
                                             ; enters check_expr_errors_popbc's FPERR-only
                                             ; half directly (str_eval already owns D-2)
-    ENDIF
                 pop     bc                  ; BC = dest key
                 push    hl                  ; guard cursor across str_set_key
                 ld      de,(STRPTR)         ; DE -> source descriptor
                 call    str_set_key         ; A$[key] := descriptor (clamped)
                 pop     hl
-    IF ROM_BASE < $4000
                 ; Arrays slice-4c (docs/spec-basic-arrays-slice4c-string-
                 ; scalar-unification.md §7.3): a scalar-CHAIN OOM (the table-
                 ; full disposition, now dynamic/unbounded rather than the
@@ -596,13 +554,7 @@ ex_let_str:
                 ld      a,(FPERR)
                 or      a
                 jp      nz,fp_runtime_error
-    ENDIF
                 jp      exec_stmt
-    IF ROM_BASE >= $4000
-els_err:
-                pop     bc
-                jp      stmt_error
-    ENDIF
 
 ; --- skip_spaces: advance HL past 0x20 bytes -------------------------------
 skip_spaces:
@@ -612,16 +564,12 @@ skip_spaces:
                 inc     hl
                 jr      skip_spaces
 
-; --- fre_abort_low lean alias --------------------------------------------------
-; The repack build's abort funnel (basic/arrays.asm) sets ENDFLAG (D-1) + emits the
-; fresh-line and prints; the shared error sites in interp.asm/program.asm jump to it.
-; The lean 16 KB build has no abort funnel (untrapped-error abort is a repack-only
-; Phase-3 feature, docs/spec-basic-error-handling.md S1), so there `fre_abort_low`
-; is just `print_string` -- every `jp fre_abort_low` in shared code assembles
-; byte-for-byte to the old `jp print_string`, keeping basic.rom byte-identical.
-    IF ROM_BASE >= $4000
-fre_abort_low   equ     print_string
-    ENDIF
+; --- fre_abort_low -------------------------------------------------------------
+; The abort funnel (basic/arrays.asm) sets ENDFLAG (D-1) + emits the fresh-line and
+; prints; the shared error sites in interp.asm/program.asm jump to it. (The retired
+; lean 16 KB cart had no abort funnel at all -- untrapped-error abort is a Phase-3
+; feature, docs/spec-basic-error-handling.md S1 -- and aliased this to plain
+; `print_string` so those shared `jp`s assembled unchanged.)
 
 ; --- stmt_error: unknown statement — report and return to the prompt -------
 ; A statement-level syntax error is TRAPPABLE (repack build). Measured on the
@@ -638,25 +586,14 @@ stmt_error:
                 ld      (PRDEST),a          ; screen, not the half-written file
                 ld      a,$DD               ; distinct from BLOAD's $EE tape error
                 ld      (ERRMARK),a
-    IF ROM_BASE < $4000
                 ld      a,2                 ; -> trap if armed, else the identical
                 jp      raise_error         ; message + abort (fre_abort_low tail)
-    ELSE
-                ld      hl,err_syntax
-                call    print_string        ; lean: unchanged (byte-identical)
-                ret
-    ENDIF
-    IF ROM_BASE >= $4000
-err_syntax:
-                db      "syntax error",13,10,0
-    ENDIF
     ; repack build: err_syntax now lives in the low region (basic/arrays.asm,
     ; near err_subscript/err_redim/...) instead of here -- page-1 is razor-
     ; thin (arrays slice 3, docs/spec-basic-arrays-slice3-strings.md §5.3
     ; space audit) and this string's home is unobserved (any absolute
     ; address costs the same to `ld hl,err_syntax`/print_string, and every
-    ; OTHER reader -- fre_msgtab entry 4, D-F2-3 -- is itself repack-only).
-    ; The lean build keeps it here (ROM_BASE >= $4000 above), byte-identical.
+    ; OTHER reader -- fre_msgtab entry 4, D-F2-3 -- is near it).
 
 ; --- type_mismatch_error: D-2's statement-level abort (repack build only) ---
 ; string-compare S2 (spec-basic-string-compare.md §3c): the comparator has already
@@ -668,15 +605,13 @@ err_syntax:
 ; statement boundary. Message is zerobas's OWN lowercase wording (like "syntax
 ; error") -- NOT MSX's verbatim "?Type mismatch Error" string (D-2: reference
 ; wording we don't copy).
-    IF ROM_BASE < $4000
 type_mismatch_error:
                 ld      a,13                ; ERR 13: type mismatch (error-handling
                 jp      raise_error         ; S2a §2/(d), below) -- was ld hl,err_
                                             ; type_mismatch + jr fre_abort (byte-
                                             ; neutral: 2+3 vs 3+2)
-err_type_mismatch:                          ; D-MSGENC: repack-only already, so no
-                db      "type mismatch",0   ; lean twin; 16 B -> 14 B (§4.2's CRLF)
-    ENDIF
+err_type_mismatch:                          ; D-MSGENC: 16 B -> 14 B (§4.2's
+                db      "type mismatch",0   ; baked CRLF)
 
 ; --- fp_runtime_error: F2's statement-level abort for runtime numeric ------
 ; errors (spec §10.2 D-F2-1: overflow / division by zero). Mirrors
@@ -690,7 +625,6 @@ err_type_mismatch:                          ; D-MSGENC: repack-only already, so 
 ; crunch-time overflow message) instead of duplicating it; "division by
 ; zero" is new. NOT the reference's verbatim "?Overflow"/"?Division by zero
 ; Error" text (divergence, like D-2).
-    IF ROM_BASE < $4000
 ; Error-handling S2a (spec-basic-error-handling-s2a-packet.md §2/(c)): FPERR
 ; (1..10, this project's own internal deferred-error numbering) maps to the
 ; MSX ERR code via `fperr_to_err`, then funnels into `raise_error` (below) —
@@ -802,21 +736,12 @@ fperr_to_err:
                                             ; message (err_out_of_str, str-engine.asm) and
                                             ; flows through the generic err_msgtab lookup.
     ENDIF
-    IF ROM_BASE < $4000
 err_fp_divzero:                             ; D-MSGENC (§4.4): no phrase hit, -2 for
                 db      "division by zero",0    ; the CRLF.  19 B -> 17 B
 err_illegal_fn:                             ; the single biggest win in the corpus:
                 db      "i",MSGESC_ILLFN,0      ; 24 B -> 3 B
 err_resume_noerr:                           ; error-handling S2b (docs/spec-basic-error-
                 db      "resume",MSGESC_WITHOUT,MSGESC_ERROR,0  ; 23 B -> 9 B
-    ELSE
-err_fp_divzero:
-                db      "division by zero",13,10,0
-err_illegal_fn:
-                db      "illegal function call",13,10,0
-err_resume_noerr:                          ; error-handling S2b (docs/spec-basic-error-
-                db      "resume without error",13,10,0
-    ENDIF
                                             ; handling-s2b-packet.md §5.4, ERR 22): a
                                             ; bare RESUME with ONEFLG=0 (no active trap).
                                             ; House-style lowercase wording (D-2 policy,
@@ -860,16 +785,11 @@ raise_error:
                                            ; -- ERROR n now validates 1..255 upstream, so
                                            ; 0 no longer reaches here, but keep it safe)
                 cp      25                 ; index >= 25  <=>  code 0 (via $FF) or code >= 26
-    IF ROM_BASE < $4000
                 jp      nc,rerr_sparse     ; S-FCH-2: past the dense table -> the SPARSE
                                            ; disk-range arm (main.asm's low region:
                                            ; 52 / 59, else err_unprintable). Costs one
                                            ; byte of page 1 over the `jr` -- the low
                                            ; region is out of `jr` reach.
-    ELSE
-                jr      nc,rerr_unprintable ; -> "unprintable error" (rerr_unprintable
-                                           ; ignores A, so the pre-decrement is harmless)
-    ENDIF
                 add     a,a                ; *2 (word table)
                 ld      e,a
                 ld      d,0
@@ -1042,13 +962,8 @@ err_msgtab:
                                             ; VG-8020 before landing: `ERROR 25` ->
                                             ; `Line buffer overflow`, `ERROR 26` ->
                                             ; `Unprintable error` (so 25 IS the bound).
-    IF ROM_BASE < $4000
 err_unprintable:                            ; D-MSGENC (§4.4): 20 B -> 13 B. Note this
                 db      "unprintable",MSGESC_ERROR,0    ; SHRINKS at the very spot the
-    ELSE                                    ; note below says growth was fatal, so the
-err_unprintable:                            ; `jr` reach here only improves
-                db      "unprintable error",13,10,0
-    ENDIF
                 ; err_missing_operand itself lives in basic/missing.asm. Sited
                 ; there rather than here because 17 bytes inserted at this point
                 ; land between page 1's dense forward `jr`s and their targets --
@@ -1237,8 +1152,7 @@ cee_abort_fp:
 ; --- check_expr_errors_popbc: the same check for drivers that must POP a --
 ; saved key (BC) off the stack before erroring (ex_let: both flags; ex_let_
 ; str enters at cepb_fp directly — str_eval already handles its own D-2
-; case via its own `jr nc` (target: `els_err` lean / `ex_let_err` repack,
-; slice-3 space audit merged the two — same body either way), so only FPERR
+; case via its own `jr nc` to `ex_let_err`), so only FPERR
 ; applies there, e.g. `A$=HEX$(65536.)`). Falls through (returns, BC
 ; untouched) if clear. Same
 ; own-return-address hazard as check_expr_errors above, PLUS the caller's
@@ -1260,7 +1174,6 @@ cepb_abort_fp:
                 pop     hl                  ; discard our own dead resume addr
                 pop     bc                  ; discard the caller's saved key
                 jp      fp_runtime_error
-    ENDIF
 
 ; --- ex_letkw: optional LET keyword before an assignment -------------------
 ex_letkw:
@@ -1277,7 +1190,6 @@ ex_letkw:
                 cp      BASE_TOKEN
                 jp      z,gfx_syntax
     ENDIF
-    IF ROM_BASE < $4000
                 ; `LET TIME=5` is ERR 2 on the reference (spec-basic-time.md
                 ; §1.4) and needs the same explicit guard as VDP/BASE above, for
                 ; the same reason: ex_let would take the token for a variable
@@ -1288,7 +1200,6 @@ ex_letkw:
                 ld      a,(hl)
                 cp      TIME_TOKEN
                 jp      z,tm_err2
-    ENDIF
                 jp      ex_let              ; reuse <letter> = <expr>
 
 ; --- ex_goto: GOTO <line> --------------------------------------------------
@@ -1324,20 +1235,10 @@ goto_resolve:
 ex_goto_undef:
                 ld      a,$DB               ; "undefined line" landmark
                 ld      (ERRMARK),a
-    IF ROM_BASE < $4000
                 ld      a,8                 ; ERR 8: undefined line number
                 jp      raise_error
-    ELSE
-                ld      hl,err_line
-                jp      fre_abort_low       ; abort the RUN (D-1); lean == print_string
-    ENDIF
-    IF ROM_BASE < $4000
 err_line:
                 db      "undefined line",0  ; D-MSGENC: no phrase hit, 17 B -> 15 B
-    ELSE
-err_line:
-                db      "undefined line",13,10,0
-    ENDIF
 
 ; --- ex_if: IF <expr> THEN <clause> [ELSE <clause>] ------------------------
 ; A clause is either a line number (implicit GOTO) or statements. Condition is
@@ -1346,7 +1247,6 @@ ex_if:
                 inc     hl                  ; past the IF token
                 call    skip_spaces
                 call    eval                ; DE = condition, HL after expr
-    IF ROM_BASE < $4000
                 call    check_expr_errors   ; D-2/D-F2-1: `IF A$<5 THEN...` / a runtime
                                             ; numeric error both abort before either clause
                 ; Float truthiness (F2 review live-check, 2026-07-11: the
@@ -1365,7 +1265,6 @@ ex_if:
                 jr      z,exif_truth_ok
                 inc     e                   ; nonzero float -> DE=1 (true)
 exif_truth_ok:
-    ENDIF
                 call    skip_spaces
                 ld      a,(hl)
                 cp      THEN_TOKEN
@@ -1430,7 +1329,6 @@ ste_done:
                 inc     hl                  ; advance past the 00 terminator
                 ret
 
-    IF ROM_BASE < $4000
 ; --- D-F2-2 stage B: the shared Group-B checked-coercion leaves -------------
 ; The int-argument statements/functions NOT wired during F2 (STRING$/SPACE$/ON/
 ; WIDTH byte 0..255; VPOKE/VPEEK VRAM 0..16383) must raise the reference's
@@ -1524,4 +1422,3 @@ get_byte_arg:
 gb_illegal:
                 ld      a,5
                 jp      raise_error         ; ERR 5 illegal function call
-    ENDIF

@@ -27,18 +27,35 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine  # noqa: E402
 
+# ⚠️ frnd_calc IS A SUB-ROM TENANT, so this test drives the SUB image, not the
+# main one. Its body is basic/randio-body.inc, which the main ROM used to inline
+# in the lean build and the shipped build EVICTS to sub/randio.asm. Until S3 this
+# test built basic/main.asm and read frnd_calc out of the main symbol file — which
+# worked only because msxtest.Machine's rom_base defaulted to $4000 and it was
+# therefore assembling the LEAN cart (docs/spec-lean-retire-s3-gates.md §5, F-U).
+# The routine under test is the same source either way; this just loads it from
+# the ROM that actually carries it. The sub image is flat $0000-$7FFF, page-0
+# tenants low and page-1 tenants high, exactly where a real CALSLT maps them.
+# The two halves live in DIFFERENT ROMs, so this test builds both.
+SUB_BASE = 0x0000     # sub image: flat $0000-$7FFF, page-0 low / page-1 high
+BASIC_BASE = 0x2812   # the shipped BASIC image's org
+
+SUB_ROM = "/tmp/zb_openlen_sub.rom"
+SUB_SYM = "/tmp/zb_openlen_sub.sym"
 ROM = "/tmp/zb_openlen.rom"
 SYM = "/tmp/zb_openlen.sym"
 
 
 def build():
-    src = os.path.join(ROOT, "basic", "main.asm")
-    subprocess.run(["pasmo", "--bin", src, ROM, SYM], check=True, capture_output=True)
+    subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", SUB_ROM, SUB_SYM],
+                   check=True, capture_output=True, cwd=ROOT)
+    subprocess.run(["pasmo", "--bin", os.path.join(ROOT, "basic", "main.asm"), ROM, SYM],
+                   check=True, capture_output=True)
 
 
 def run():
     build()
-    m = Machine(ROM, SYM)
+    m = Machine(SUB_ROM, SUB_SYM, rom_base=SUB_BASE)
     s = m.sym
     fails = 0
 
@@ -83,7 +100,11 @@ def run():
     # as $0F+byte (10..255) or $1C+word (expr.asm §const tokens). Absent LEN ->
     # 256, Cy=0; a non-power-of-two or out-of-range r -> Cy=1 (Syntax error).
     # -----------------------------------------------------------------------
+    # oo_parse_reclen is MAIN-ROM resident (basic/files.asm), so this half runs
+    # on the main image while the geometry half above ran on the sub image.
     from msxtest import carry
+    m = Machine(ROM, SYM, rom_base=BASIC_BASE)
+    s = m.sym
     BUF = 0xC400
 
     def i1(v):   # INT1_TOKEN ($0F) + byte

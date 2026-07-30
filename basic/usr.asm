@@ -52,18 +52,13 @@ cut_lp:
 ; also handled (ex_def_type below): those mnemonics are NOT keyword tokens (only
 ; "DEF" is), so after the DEF token they arrive as plain upcased ASCII text
 ; ("INT"/"SNG"/"DBL"/"STR") -- exactly why no new sub-ROM kwtable entry is
-; needed. Anything else (incl. DEF FN, and every DEF form in the lean build)
-; hits stmt_error. On success continues the line.
+; needed. Anything else (incl. DEF FN) hits stmt_error. On success continues the line.
 ex_def:
                 inc     hl                  ; past the DEF token
                 call    skip_spaces
                 ld      a,(hl)
                 cp      USR_TOKEN           ; DEF USR -> machine-code vector
-    IF ROM_BASE < $4000
                 jp      nz,ex_def_type      ; else DEFINT/SNG/DBL/STR (or stmt_error)
-    ELSE
-                jp      nz,stmt_error       ; lean: only DEF USR
-    ENDIF
                 inc     hl                  ; past USR
                 call    usr_index           ; A = vector index 0..9 (HL advanced)
                 push    af                  ; save index across '=' + eval
@@ -130,9 +125,7 @@ ev_usr:
                 cp      ')'
                 jr      nz,ev_usr_err
                 inc     ix
-    IF ROM_BASE < $4000
                 call    flt_int_result      ; USR returns an int even if its arg was a
-    ENDIF                                   ;  float (basic/float.asm; clobbers A only)
                 pop     af                  ; A = index
                 jp      usr_call            ; perform the call (preserves IX) -> DE
 ev_usr_err:
@@ -189,7 +182,6 @@ usr_undef:
                 ld      de,0
                 ret
 
-    IF ROM_BASE < $4000
 ; --- ex_def_type: DEFINT|DEFSNG|DEFDBL|DEFSTR <ranges> ----------------------
 ; (repack build only; docs/spec-basic-float-core.md §11.1) HL -> the first char
 ; after the DEF token (skip_spaces already done): the mnemonic INT/SNG/DBL/STR
@@ -218,4 +210,3 @@ ex_def_type:
                 jp      nz,stmt_error       ; malformed mnemonic / empty or reversed range
                 ld      hl,(DEFT_PTR)       ; the tenant advanced the cursor
                 jp      exec_stmt
-    ENDIF

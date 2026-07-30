@@ -29,6 +29,12 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine, carry  # noqa: E402
 
+# The image under test is loaded at its ORG. Named here rather than
+# defaulted: msxtest.Machine's old default was $4000, the retired lean
+# cart's org, so a BASIC test that omitted it silently tested the lean
+# build (docs/spec-lean-retire-s3-gates.md §5, F-U).
+DISK_BASE = 0x4000
+
 ROM = "/tmp/zb_wrblk_extend_ut.rom"
 SYM = "/tmp/zb_wrblk_extend_ut.sym"
 
@@ -67,7 +73,7 @@ def make_machine(chain=()):
     """Fresh machine + synthetic FAT/data image. `chain` is a list of cluster
     numbers already linked in file order (last one gets EOC); data sectors are
     filled with a byte pattern so a read can be told apart from zero/garbage."""
-    m = Machine(ROM, SYM)
+    m = Machine(ROM, SYM, rom_base=DISK_BASE)
     fat = bytearray(FAT_SECTORS * SECSIZE)
     data = bytearray(TOTAL_CLUSTERS * SECPERCLUS * SECSIZE)
     # pre-existing on-disk content: byte value = (sector_index & 0xFF), so a

@@ -50,6 +50,7 @@ if _TESTS not in sys.path:
 
 from msxtest import Machine  # noqa: E402  (path set up above)
 
+BASIC_BASE = 0x2812   # basic/main.asm's org
 ROM_PATH = "/tmp/zerobas_basic_bastok.rom"
 SYM_PATH = "/tmp/zerobas_basic_bastok.sym"
 SRC_ADDR = 0xC000     # scratch: ASCII source line (free RAM in the host model)
@@ -78,7 +79,12 @@ class Tokeniser:
 
     def __init__(self):
         build_rom()
-        self.m = Machine(ROM_PATH, SYM_PATH)
+        # ⚠️ $2812, and it used to be msxtest.Machine's $4000 DEFAULT -- the retired
+        # lean 16 KB cart's org. This module builds basic/main.asm to get a real
+        # tokeniser for the disk corpus's .BAS fixtures, so until 2026-07-29 those
+        # fixtures were crunched by the LEAN tokeniser. The base is named at the call
+        # site now (docs/spec-lean-retire-s3-gates.md §5, F-U).
+        self.m = Machine(ROM_PATH, SYM_PATH, rom_base=BASIC_BASE)
 
     def crunch(self, body_text: str) -> bytes:
         """Tokenise one statement BODY (no line number) -> bytes INCLUDING the

@@ -35,13 +35,18 @@
 
                 include "equates.inc"
 
-; Shared RAM-cell addresses (TKPOS/TKDIG/TKPC/TKSRCSAVE/... used by tkfloat.asm).
-; ROM_BASE selects the repack cell layout from the SAME sysvars.inc the merged
-; main ROM uses, so a sub-ROM tenant's RAM scratch is byte-address-identical to
-; the main ROM's — no marshalling translation. sysvars.inc is pure equates
-; (emits no bytes), so it does not perturb this ROM's $0000-based layout.
+; Shared RAM-cell addresses (TKPOS/TKDIG/TKPC/TKSRCSAVE/... used by tkfloat.asm),
+; from the SAME sysvars.inc the merged main ROM uses, so a sub-ROM tenant's RAM
+; scratch is byte-address-identical to the main ROM's — no marshalling translation.
+; sysvars.inc is pure equates (emits no bytes), so it does not perturb this ROM's
+; $0000-based layout.
+;
+; This file used to also define `ROM_BASE equ $2812` here, because sysvars.inc and
+; the 20 other shared basic/*.inc files it pulls in carried `IF ROM_BASE` gates that
+; had to be evaluated on THIS side too. Those gates are gone (RETIRE THE LEAN 16 KB
+; CART S3, docs/spec-lean-retire-s3-gates.md §2.1) and nothing here reads the symbol
+; any more. SUB_BUILD stays — it gates body .inc files that genuinely differ by side.
 SUB_BUILD       equ     1   ; shared body .inc files that differ by side test this
-ROM_BASE        equ     $2812
                 include "basic/sysvars.inc"
 
 ; ===========================================================================
@@ -198,7 +203,7 @@ sis_spin:
 ;                                     LIST/detok, which is I/O-bound and can't go
 ;                                     sub-side; a page-0 tenant can't see the
 ;                                     main-ROM low region either, so it needs its
-;                                     own copy). Same kwtable.inc + same ROM_BASE
+;                                     own copy). Same kwtable.inc + same org
 ;                                     gating -> the two images can't drift.
                 include "tkfloat.asm"
                 include "basic/tokenise.inc"
@@ -236,20 +241,19 @@ sis_spin:
                 include "graphics.asm"
                 include "deftype.asm"
 ; --- READ/DATA value engine (G7 eviction, docs/spec-eviction-g7-space.md) ---
-; The largest of the three carves that fund G7's resident half. Shares its body
-; verbatim with the lean cart (basic/readdata-body.inc) and brings page 0 its own
-; tok_skip copy (basic/tokskip-body.inc).
+; The largest of the three carves that fund G7's resident half. Its body is the
+; shared basic/readdata-body.inc, and it brings page 0 its own tok_skip copy
+; (basic/tokskip-body.inc).
                 include "readdata.asm"
 ; --- BEEP body (I1 funding carve, docs/spec-basic-input-devices.md §7) -------
-; Direct PSG blip + busy-wait; no shared .inc, since BEEP is repack-only (the lean
-; 16 KB cart has no sound at all) and so has no resident copy to stay in step with.
+; Direct PSG blip + busy-wait; no shared .inc, since BEEP has no resident copy to
+; stay in step with.
                 include "beep.asm"
 ; --- FIELDed-variable READ hook (D-CLP funding carve, docs/decision-clearpool-
 ; funding.md). A pure RAM leaf: the resident stub (basic/field.asm) has already
 ; located the field-table entry and selected its channel, so this side only
 ; copies the record slice into FLD_DESC and builds the RVDESC descriptor. No
-; shared .inc -- the lean cart keeps the whole routine inline, and the two shapes
-; differ (the lean one has no RVDESC indirection at all).
+; shared .inc -- there is no resident twin of this shape.
                 include "fldlook.asm"
 
 ; --- sub-local is_letter / is_ident_cont (byte-identical own-design clones) --
@@ -285,7 +289,7 @@ siic_no:
                 ret
 
 ; --- sub-local keyword table (duplicate of the resident repack copy, §4) -----
-; Assembled from the SAME basic/kwtable.inc under the SAME ROM_BASE (<$4000) as the
+; Assembled from the SAME basic/kwtable.inc as the
 ; resident repack copy, so the two are byte-identical by construction; the reloc
 ; build's byte-identity assert (tools/check_reloc.py) is the standing guard.
                 include "basic/kwtable.inc"

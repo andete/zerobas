@@ -30,6 +30,12 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine  # noqa: E402
 
+# The image under test is loaded at its ORG. Named here rather than
+# defaulted: msxtest.Machine's old default was $4000, the retired lean
+# cart's org, so a BASIC test that omitted it silently tested the lean
+# build (docs/spec-lean-retire-s3-gates.md §5, F-U).
+BASIC_BASE = 0x2812
+
 ROM = "/tmp/zb_stmt.rom"
 SYM = "/tmp/zb_stmt.sym"
 SRC = 0xC000
@@ -59,7 +65,12 @@ def run_prog_cap(m, lines):
 
 
 def var(m, name):
-    return m.call("var_get_key", b=ord(name), c=0).de
+    # ⚠️ var_get, NOT var_get_key: var_get_key walks the fixed VARTAB pool, the
+    # LEAN build's int-only store. On the shipped image scalars live in the
+    # contiguous chain the ARY sub-ROM tenant manages, so var_get_key reads back 0
+    # for everything a program set. This test ran on the lean build until S3
+    # (docs/spec-lean-retire-s3-gates.md §5, F-U) and so never noticed.
+    return m.call("var_get", a=ord(name)).de
 
 
 def run():
@@ -75,41 +86,41 @@ def run():
 
     # --- PRINT (ex_print): documented MSX integer format + separators --------
     # Non-negative number: leading space (sign slot) + digits + trailing space.
-    check("PRINT 42", run_prog_cap(Machine(ROM, SYM), [(10, "PRINT 42")]),
+    check("PRINT 42", run_prog_cap(Machine(ROM, SYM, rom_base=BASIC_BASE), [(10, "PRINT 42")]),
           b" 42 \r\n")
     # String literal printed verbatim, then CR/LF.
-    check('PRINT "HI"', run_prog_cap(Machine(ROM, SYM), [(10, 'PRINT "HI"')]),
+    check('PRINT "HI"', run_prog_cap(Machine(ROM, SYM, rom_base=BASIC_BASE), [(10, 'PRINT "HI"')]),
           b"HI\r\n")
     # ';' joins with no extra spacing (each number keeps its own framing).
     # Regression for the print_number HL-clobber bug: items after the first
     # numeric one must still print (exp_num now guards the token cursor).
-    check("PRINT 1;2", run_prog_cap(Machine(ROM, SYM), [(10, "PRINT 1;2")]),
+    check("PRINT 1;2", run_prog_cap(Machine(ROM, SYM, rom_base=BASIC_BASE), [(10, "PRINT 1;2")]),
           b" 1  2 \r\n")
-    check("PRINT 1;2;3", run_prog_cap(Machine(ROM, SYM), [(10, "PRINT 1;2;3")]),
+    check("PRINT 1;2;3", run_prog_cap(Machine(ROM, SYM, rom_base=BASIC_BASE), [(10, "PRINT 1;2;3")]),
           b" 1  2  3 \r\n")
     # number followed by a string literal (cursor survives the number -> string).
-    check('PRINT 7;"HI"', run_prog_cap(Machine(ROM, SYM), [(10, 'PRINT 7;"HI"')]),
+    check('PRINT 7;"HI"', run_prog_cap(Machine(ROM, SYM, rom_base=BASIC_BASE), [(10, 'PRINT 7;"HI"')]),
           b" 7 HI\r\n")
     # Trailing ';' suppresses the closing newline.
-    check('PRINT "X";', run_prog_cap(Machine(ROM, SYM), [(10, 'PRINT "X";')]),
+    check('PRINT "X";', run_prog_cap(Machine(ROM, SYM, rom_base=BASIC_BASE), [(10, 'PRINT "X";')]),
           b"X")
     # Bare PRINT prints an empty line.
-    check("PRINT (bare)", run_prog_cap(Machine(ROM, SYM), [(10, "PRINT")]),
+    check("PRINT (bare)", run_prog_cap(Machine(ROM, SYM, rom_base=BASIC_BASE), [(10, "PRINT")]),
           b"\r\n")
 
     # --- GOTO (ex_goto, bare statement form) ---------------------------------
-    m = Machine(ROM, SYM)
+    m = Machine(ROM, SYM, rom_base=BASIC_BASE)
     run_prog_cap(m, [(10, "GOTO 30"), (20, "A=1"), (30, "A=2")])
     check("GOTO skips line 20 (A)", var(m, "A"), 2)
 
     # --- CLEAR ,<himem> (ex_clear / clr_himem records HIMEM) -----------------
-    m = Machine(ROM, SYM)
+    m = Machine(ROM, SYM, rom_base=BASIC_BASE)
     run_prog_cap(m, [(10, "CLEAR ,&HABCD")])
     himem = m.mem[m.sym["HIMEM"]] | (m.mem[m.sym["HIMEM"] + 1] << 8)
     check("CLEAR ,&HABCD sets HIMEM", himem, 0xABCD)
 
     # --- WIDTH n (ex_width sets LINLEN) --------------------------------------
-    m = Machine(ROM, SYM)
+    m = Machine(ROM, SYM, rom_base=BASIC_BASE)
     run_prog_cap(m, [(10, "WIDTH 32")])
     check("WIDTH 32 sets LINLEN", m.mem[m.sym["LINLEN"]], 32)
 

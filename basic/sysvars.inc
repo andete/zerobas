@@ -255,8 +255,7 @@ LEN_TOKEN       equ     $92     ; LEN function-token suffix (after PEEK_PREFIX)
 ; LEN/STR$/VAL above (MSX2 TH Table 2.20) AND black-box-captured from the Philips VG-8020
 ; crunch 2026-07-10 (scratchpad/capture_str_tokens.py; e.g. `a$=left$("hi",1)` -> ...EF FF
 ; 81 28...). The `$` in a keyword is part of the name (like MKI$); the equate drops it (…D).
-; These crunch entries land in kwtable only in the repack build (the byte-full lean build
-; keeps emitting these words verbatim, as it does today). No disassembly.
+; These crunch entries land in kwtable. No disassembly.
 LEFTD_TOKEN     equ     $81     ; LEFT$(a$,n)  -> $FF $81
 RIGHTD_TOKEN    equ     $82     ; RIGHT$(a$,n) -> $FF $82
 MIDD_TOKEN      equ     $83     ; MID$(a$,p,n) -> $FF $83
@@ -376,7 +375,7 @@ BEEP_TOKEN      equ     $C0     ; BEEP (statement, no args; audio close-out, sou
 ; 11 29 00; "PRESET(0,0)" -> C3 ...; "X=POINT(0,0)" -> 58 EF ED ...  So PSET=$C2 (the
 ; value the WRONG SOUND guess used -- now confirmed genuinely PSET), PRESET=$C3, and
 ; POINT=$ED is a FUNCTION token (dispatched in expr.asm like BASE/VARPTR). STEP=$DC
-; already exists. All repack-only kwtable entries (lean cart ships no graphics).
+; already exists.
 PSET_TOKEN      equ     $C2     ; PSET (x,y)[,c]      (statement, basic/graphics.asm)
 PRESET_TOKEN    equ     $C3     ; PRESET (x,y)[,c]    (statement)
 POINT_TOKEN     equ     $ED     ; POINT(x,y)          (function -> pixel colour / -1)
@@ -384,12 +383,11 @@ POINT_TOKEN     equ     $ED     ; POINT(x,y)          (function -> pixel colour 
 ; STATEMENT token (unlike G3's LINE, which reused an existing token). $BC collides
 ; with nothing in the existing table (arc §7); re-confirmed by the G4 characterisation
 ; pass (stored-line crunch, spec §11.1: "CIRCLE(30,30),10" -> BC 28 ... 29 ... 00).
-; Repack-only kwtable entry (lean cart ships no graphics).
 CIRCLE_TOKEN    equ     $BC     ; CIRCLE (x,y),r[,c[,start[,end[,aspect]]]] (statement)
 ; Graphics G5 (docs/spec-basic-graphics-g5.md §7). PAINT is a NEW single-byte
 ; STATEMENT token; pinned by the G5 black-box crunch characterisation pass
 ; (scratchpad/g5_paint_notes.md C1: PAINT=$BF, matches no other keyword's
-; prefix). Repack-only kwtable entry (lean cart ships no graphics).
+; prefix).
 PAINT_TOKEN     equ     $BF     ; PAINT [STEP](x,y)[,[c][,[b]]] (statement)
 ; G6_RESIDENT -- the DRAW statement's RESIDENT half (ex_draw + the pre-pass, and
 ; with it the kwtable row and the interp dispatch arm) is gated OFF until the
@@ -421,16 +419,9 @@ G7_RESIDENT     equ     1
 ; The pool FLOOR itself is nowhere in this ROM: it is derived sub-side as
 ; min(HIMEM,TXTMAX) - POOLSIZE (S-CLP-2, reversed), so the scarce low region
 ; spends nothing on it and `CLEAR ,himem` keeps its size for free.
-; ⚠️ The lean cart's ELSE branch below is NOT a promise to keep it off -- it is
-; structural. The 16 KB image is byte-full and must stay byte-identical, and the
-; sub-ROM the floor derivation lives in does not exist on that machine at all.
-    IF ROM_BASE < $4000
+; (Until 2026-07-29 this had an ELSE branch for the lean 16 KB cart, which had no
+; sub-ROM for the floor derivation to live in. That build is retired.)
 CLEARPOOL       equ     1
-    ELSE
-CLEARPOOL       equ     0       ; lean cart: ALWAYS off. The 16 KB image is byte-full
-                                ; and must stay byte-identical, so the guard is
-                                ; structural here rather than a promise.
-    ENDIF
 ; FPERR code a STRING-HEAP allocation failure defers through (basic/str-engine.asm
 ; str_temp_alloc / str_snapshot_to_temp / sct_append_err / shx_finish /
 ; str_heap_oom_error, all reached from SH_ERR=1). With the partition ON, a heap
@@ -453,78 +444,50 @@ FPERR_STROOM    equ     6       ; -> ERR 7 "Out of memory" (pre-partition)
 ; scratchpad/g8_vdp_notes.md C1). Gated like G6/G7 so the slice can build with the
 ; tenant alone if the page-1 tail runs out; the reads are resident either way
 ; (they are plain work-area fetches -- cheaper than marshalling a subrom_call).
-; The gate is ROM_BASE-conditional as well, because unlike G6/G7 this slice
-; REPLACES an existing lean-build routine (expr.asm's descoped ev_f_base stub):
-; the lean cart has no graphics at all, so it must keep the stub, and
-; `IF !G8_RESIDENT` is what selects it.
-    IF ROM_BASE < $4000
+; Unlike G6/G7 this slice REPLACES an earlier routine (expr.asm's descoped
+; ev_f_base stub); `IF !G8_RESIDENT` is what selects the stub instead.
 G8_RESIDENT     equ     1
-    ELSE
-G8_RESIDENT     equ     0
-    ENDIF
 ; Input devices, slice I1 (docs/spec-basic-input-devices.md §3). STICK/STRIG are
 ; $FF-prefixed FUNCTION tokens (selector byte after PEEK_PREFIX), crunch-pinned on
 ; the VG-8020 (scratchpad/i1_input_notes.md round 1) -- the same shape as PEEK, so
 ; they dispatch through expr.asm's ev_f_ff and need no statement token. PDL ($A4)
 ; and PAD ($A5) are slice I2 and are NOT defined yet: they wait on the zerobas-tape
 ; GTPAD/GTPDL BIOS completions (spec §6.2, decision D-I-6).
-; Gated like G6/G7/G8 so the slice can be dropped if the page-1 tail runs out; the
-; lean 16 KB cart has no input devices at all.
+; Gated like G6/G7/G8 so the slice can be dropped if the page-1 tail runs out.
 ; --- TRAPS_T3: the KEY-trap build gate (docs/spec-traps-t3-key.md §7.2) ------
 ; T3 needs 236 B (60 low-region + 176 page-1). The BLOAD carve funded the page-1
 ; half (main page 1 9 B -> 271 B free), so the flip below is now 1; the low-region
 ; half is funded by promotion (spec §7.4).
-; The gate is ROM_BASE-conditional like G8_RESIDENT/I1_RESIDENT, and MUST be: the
+; Gated like G8_RESIDENT/I1_RESIDENT, and it MUST be: the
 ; T3 parse surface (ex_on_key/ex_key_stmt) lives in the low region, so it exists
 ; only in the repack build, while its two call sites (ex_on's peek in program.asm
-; and ex_key's peek in basic/screen.asm) sit in always-assembled page-1 code. A
-; bare `IF TRAPS_T3` there left the lean build referencing symbols that the lean
-; build does not assemble -- i.e. the gate could not be flipped at all without
-; this ELSE. The lean 16 KB ROM stays byte-identical either way.
-    IF ROM_BASE < $4000
+; and ex_key's peek in basic/screen.asm) sit in always-assembled page-1 code, so
+; a bare `IF TRAPS_T3` there would leave them referencing symbols the disabled
+; build never assembles -- i.e. the gate could not be flipped at all without this
+; ELSE. (It also had to carry the retired lean cart, which assembled neither.)
 TRAPS_T3        equ     1
-    ELSE
-TRAPS_T3        equ     0
-    ENDIF
 
 ; --- TRAPS_T4: the SPRITE-trap build gate (docs/spec-traps-t4-sprite.md §7) --
-; The arc's last slice. ROM_BASE-conditional for exactly T3's reason and NOT a
+; The arc's last slice. Gated for exactly T3's reason and NOT a
 ; bare `equ`: the poll stanza is low-region (repack-only) while its call sites --
 ; ex_on's sibling peek and ex_sprite in graphics.asm -- are always-assembled
-; page-1 code, so a bare gate leaves the lean build referencing symbols it never
-; assembles. T3 lost a round to precisely that. The lean 16 KB ROM stays
-; byte-identical either way.
-    IF ROM_BASE < $4000
+; page-1 code, so a bare gate leaves them referencing symbols the disabled build
+; never assembles. T3 lost a round to precisely that.
 TRAPS_T4        equ     1
-    ELSE
-TRAPS_T4        equ     0
-    ENDIF
 
 ; --- TRAPS_T5: the INTERVAL-trap build gate (docs/spec-traps-t5-interval.md) --
 ; The arc's FIFTH slice -- reopened after "INTERVAL is MSX2" was retracted (arc
 ; spec §0: it is a reserved-word COMPOUND, INT + "ER" + VAL, so it never needed a
-; keyword-table entry to exist). ROM_BASE-conditional for T3/T4's reason: the
+; keyword-table entry to exist). Gated for T3/T4's reason: the
 ; call sites (ex_on's peek, ex_ff_stmt's) are always-assembled page-1 code, so a
-; bare gate leaves the lean build referencing symbols it never assembles.
-    IF ROM_BASE < $4000
+; bare gate leaves them referencing symbols the disabled build never assembles.
 TRAPS_T5        equ     1
-    ELSE
-TRAPS_T5        equ     0
-    ENDIF
 
-    IF ROM_BASE < $4000
 I1_RESIDENT     equ     1
-    ELSE
-I1_RESIDENT     equ     0
-    ENDIF
 ; I2 (PDL/PAD) rides the same repack-only gate as I1: the two functions are thin
 ; wrappers over the zerobas-tape GTPDL/GTPAD BIOS completions (spec §9). Split
 ; from I1_RESIDENT only so the flags read where each slice's code is gated.
-    IF ROM_BASE < $4000
 I2_RESIDENT     equ     1
-    ELSE
-I2_RESIDENT     equ     0
-    ENDIF
 STICK_TOKEN     equ     $A2     ; STICK(n) -> 0..8 direction (0 = centred)
 STRIG_TOKEN     equ     $A3     ; STRIG(n) -> 0 / -1 trigger state
 PDL_TOKEN       equ     $A4     ; PDL(n)   -> 0..255 paddle dial (input devices, I2)
@@ -581,8 +544,7 @@ GFX_REL         equ     $E033   ; parse_coord: 1 = STEP (relative) coordinate, 0
 ; that had to be true for the layout to be safe. D-LINEMAX moved LINEBUF ($E100) and
 ; TOKBUF ($E160) out of page 3 to $BA00/$B700, so in the repack build these cells
 ; overlay NOTHING and simply own free RAM; the precondition is no longer load-bearing
-; and must not be re-derived by a later reader as a live constraint. It still holds
-; unchanged in the lean build, where both buffers stay where they were.
+; and must not be re-derived by a later reader as a live constraint.
 GFX_X1          equ     $E100   ; LINE endpoint 1 X (int16 LE) -- resident marshals, tenant reads
 GFX_Y1          equ     $E102   ; LINE endpoint 1 Y (int16 LE)
 GFX_X2          equ     $E104   ; LINE endpoint 2 X (int16 LE)
@@ -717,12 +679,8 @@ FCH_ACTIVE      equ     $E012   ; channel live in the engine globals, 0 = none (
 ; ⚠️ D-FCH §3.2: the repack build's FCH_CEIL is 15, so this array is 16 B and no
 ; longer fits the 3-byte $E013 slot (INDLR_N sits at $E016). It moves into the
 ; page-3 window S-FCH-1 freed by retiring the static FCH_CTX table ($EA00..$EAFF,
-; below LINEBUF $EB00). The lean cart keeps $E013 — its ceiling is still 2.
-    IF ROM_BASE < $4000
-FCH_MODES       equ     $EA00   ; repack: 16 B ($EA00..$EA0F)
-    ELSE
-FCH_MODES       equ     $E013   ; lean: 3 B ($E013..$E015)
-    ENDIF
+; below LINEBUF $EB00).
+FCH_MODES       equ     $EA00   ; 16 B ($EA00..$EA0F)
 INDLR_N         equ     $E016   ; INPUT$(n,#f): remaining bytes to read (transient, 1)
 MRG_PTR         equ     $E017   ; MERGE: write cursor into LINEBUF for the current line (2)
 ; Random-access (FIELD/LSET/RSET) transient parse/store scratch (Phase 2c slice 1).
@@ -746,7 +704,6 @@ TKRTOK          equ     $E02A   ; tokeniser: &H/&O constant token to emit ($0C/$
 NUMBUF          equ     $E0C0   ; PRINT: decimal-format scratch (8 bytes, 0-term)
 ; MID$-statement: the destination var's descriptor address, stashed for one
 ; MID$(A$,n,m)=B$ so the token cursor can stay in HL through the arg parse.
-    IF ROM_BASE < $4000
 ; Repack (arrays slice-4a): a DEDICATED cell in the freed STRTAB window
 ; (ABOVE the last-used byte TMISMATCH $E3E5, below the $E560 WBUF wall) — it
 ; can NO LONGER alias NUMBUF, because slice-4a moved HEX$/OCT$'s digit-building
@@ -761,11 +718,6 @@ NUMBUF          equ     $E0C0   ; PRINT: decimal-format scratch (8 bytes, 0-term
 ; corruption). Now anchored SYMBOLICALLY to TMISMATCH+1 so it tracks the real
 ; top of the block; $E3E6, 378 B under the wall.
 MIDS_DEST       equ     TMISMATCH + 1
-    ELSE
-; Lean: still borrows NUMBUF (the MID$ statement is repack-only, so this alias
-; is unused in the lean build and keeps it byte-identical).
-MIDS_DEST       equ     NUMBUF
-    ENDIF
 ; Console INPUT (repack build only): the LINEBUF read cursor for linebuf_getbyte
 ; (basic/input.asm). LINEBUF is one PAGE (page-aligned, <= 256 B), so a single low
 ; byte suffices. Aliases NUMBUF like MIDS_DEST — dead during INPUT, which formats no
@@ -790,7 +742,6 @@ INP_CURSOR      equ     NUMBUF   ; console INPUT LINEBUF read cursor (1 B, alias
 ; Page 3 is always-mapped RAM and is NOT paged out by a sub-ROM CALSLT (the
 ; tokenise tenant takes page 0, the fatprim/detok tenants page 1), so both
 ; buffers stay addressable from the tenants that fill them.
-    IF ROM_BASE < $4000
 LINEBUF         equ     $EB00   ; repack: ASCII input line from the keyboard (LINEMAX B)
 LINEMAX         equ     255     ; 254 chars + the 0 terminator (measured reference ceiling)
 ; TOKBUF — the crunch destination. Sized 576 B for a 314-byte LOGICAL body limit, and
@@ -819,16 +770,9 @@ LINEMAX         equ     255     ; 254 chars + the 0 terminator (measured referen
 TOKBUF          equ     $EC00   ; repack: crunch buffer, 576 B ($EC00..$EE3F)
 TOKBUFSZ        equ     576     ; physical size (absorbs one over-long pass, above)
 TOKMAX_BODY     equ     314     ; logical ceiling: a longer body is REFUSED (ERR 25)
-    ELSE
-LINEBUF         equ     $E100   ; lean: ASCII input line from the keyboard (LINEMAX bytes)
-LINEMAX         equ     96      ; lean: LINEBUF capacity; $E100..$E15F stays in page $E1
-TOKBUF          equ     $E160   ; lean: crunch buffer: the tokenised line (0-terminated)
-    ENDIF
-; ⚠️ The lean cart keeps the OLD, UNBOUNDED crunch and the old 96-byte TOKBUF. That is
-; a KNOWN DEFECT OF A RETIRED BUILD, carried forward deliberately (TODO.md, spec §4
-; Q1): lean's own overrun route is line-number references, not floats — `20 ONAGOTO1`
-; + `,1`x42 is 95 characters and 174 bytes, over the LIVE VARTAB, and a variable set
-; before it reads back 0 (§2.2, measured). Not fixed here; the build is going away.
+; (The retired lean 16 KB cart kept the OLD, UNBOUNDED crunch and the old 96-byte
+; TOKBUF — a known defect deliberately carried forward rather than fixed, since the
+; build was on its way out. It is gone; D-LINEMAX's bound is the only crunch now.)
 ; Variable table: dynamically-allocated 4-byte entries [name0][name1][value:2].
 ; Names are significant to 2 characters (public MSX-BASIC language reference);
 ; name1 = 0 for a 1-char name. A name0 of 0 marks the first free slot. Phase 1
@@ -841,19 +785,22 @@ TOKBUF          equ     $E160   ; lean: crunch buffer: the tokenised line (0-ter
 ; VARSLOTS below no longer describe the repack entry shape (there is no single
 ; fixed stride any more), but their PRODUCT still pins the numeric pool to the
 ; same 128-byte span ending at VAREND=$E240 — the hard constraint (STRTAB must
-; not move) — so both constants stay exactly as Phase 1 left them and only the
-; lean build still reads them as a literal stride/count.
-VARTAB          equ     $E1C0   ; base of the variable table
-VARENTSZ        equ     4       ; lean build: [name0:1][name1:1][value:2] stride
-VARSLOTS        equ     32      ; lean build: max distinct variables (128 bytes -> $E240)
-VAREND          equ     VARTAB + VARSLOTS*VARENTSZ  ; $E240 in EITHER build (pinned)
-    IF ROM_BASE < $4000
+; not move) — so both constants stay exactly as Phase 1 left them.
+;
+; ⚠️ NOTHING READS THEM AS A STRIDE/COUNT ANY MORE. They described the retired lean
+; cart's fixed pool; VAREND is still pinned because the cells ABOVE it are placed
+; relative to it. vars.asm's var_find/var_get_key/var_set_key are the last readers
+; and have no callers at all -- a carve candidate, filed under the ROM REGION
+; STRUCTURE REVIEW (TODO.md) rather than taken here, since S3 is byte-identical.
+VARTAB          equ     $E1C0   ; base of the (now unused) fixed variable table
+VARENTSZ        equ     4       ; [name0:1][name1:1][value:2] stride
+VARSLOTS        equ     32      ; max distinct variables (128 bytes -> $E240)
+VAREND          equ     VARTAB + VARSLOTS*VARENTSZ  ; $E240 (pinned)
 ; Arrays slice-4b (docs/spec-basic-arrays-slice4b-scalar-reloc.md §2/Q3):
 ; numeric scalars are RELOCATED out of the fixed VARTAB pool above into the
 ; real-MSX contiguous chain (program text -> scalars -> arrays -> free ->
 ; string heap), joining arrays' own [PRGEND+2, FRETOP) region. VARTAB/VAREND
-; above are therefore DEAD in the repack build from this slice on (the lean
-; build still owns them unchanged, byte-identical) -- their 128-byte span
+; above are therefore DEAD from this slice on -- their 128-byte span
 ; $E1C0..$E240 is freed RAM. ARYTAB is the ONE new STORED live cell the
 ; target model needs (§2/§4): scalar base is DERIVED as (PRGEND)+2 exactly
 ; like the array base used to be; ARYTAB = end of the scalar region = base
@@ -958,7 +905,7 @@ SAVTXT          equ     $E1CF   ; 2 B: the CURRENT statement's text pointer,
 ; TRPTBL address or bit layout — behaviour-faithful, layout own-design (quarantined
 ; in PROVENANCE.md alongside CONTLINE). MUST be zeroed at cold boot (garbage RAM =
 ; phantom armed traps) — trap_init does this; RUN re-arms via the same reset.
-; Repack-only (the whole arc is IF ROM_BASE < $4000).
+; Repack-only (the whole arc is IF the repack build).
 ZTRAP           equ     $E1D1   ; 18 entries * 3 B = 54 B ($E1D1..$E207). Each
                                 ; entry = [state:1][handler_line_link:2].
                                 ; state bits: 1-0 = 00 OFF / 01 ON / 10 STOP(user)
@@ -1053,8 +1000,8 @@ SV_OP_BSV_CAS   equ     1       ; BSAVE to tape   (bsv_cas_open .. bsv_cas_fin)
 SV_OP_SAV_DISK  equ     2       ; SAVE to disk, tokenised (sav_disk_write .. sav_fin)
 SV_OP_SAV_CAS   equ     3       ; SAVE"CAS:" / CSAVE, tokenised (tape_save_basic ..)
 ; --- TRON/TROFF (docs/spec-basic-missing-class.md §3.4) ---------------------
-; 1 B in the free $E226..$E23F window (between SV_STAT and the lean-only STRTAB,
-; which the repack build does not use at all). Nonzero = decorate each STORED
+; 1 B in the free $E226..$E23F window (between SV_STAT and the retired STRTAB
+; span, which nothing uses). Nonzero = decorate each STORED
 ; line with `[<lineno>]` before it runs.
 ;
 ; The measured scope rules are all "one byte, and almost nothing touches it":
@@ -1148,7 +1095,6 @@ POOLSIZE        equ     $E232   ; 2 B: the size CLEAR recorded. Written ONLY by
 ; a 4-byte ROM constant, and CURLINE == dir_line is the sole definition of direct
 ; mode from that slice on. Recorded here because CURLINE is a sysvar and this is
 ; the one value it takes that is NOT an address in the program text.
-    ENDIF
 
 ; --- Phase 1: minimal string-variable store (own-design; see PROVENANCE.md) --
 ; A `$`-suffixed variable (e.g. A$) holds a short string value. This is a
@@ -1165,19 +1111,11 @@ POOLSIZE        equ     $E232   ; 2 B: the size CLEAR recorded. Written ONLY by
 ; §5): on the repack path this fixed pool is RETIRED — string scalars now live
 ; in the unified scalar chain [PRGEND+2, ARYTAB) alongside numeric scalars
 ; (basic/vars.asm str_get_key/str_set_key -> ARY_OP 4/5 glue over sub/
-; arrays.asm scv_find/scv_alloc). STRTAB/STRENTSZ/STRSLOTS/STREND are LEAN-ONLY
-; below; the repack build's $E240..$E268 window they used to occupy is freed
-; RAM. STRMAX stays a repack-wide knob (consulted by string-heap body
+; arrays.asm scv_find/scv_alloc). STRTAB/STRENTSZ/STRSLOTS/STREND belonged to the
+; retired lean cart's fixed pool and are gone; the $E240..$E268 window they
+; occupied is freed RAM. STRMAX stays a repack-wide knob (consulted by string-heap body
 ; allocation, unrelated to where scalar descriptors live) in both branches.
-    IF ROM_BASE < $4000
 STRMAX          equ     255     ; repack build: string heap (slice-4a §8)
-    ELSE
-STRTAB          equ     $E240   ; base of the string-variable store (lean only)
-STRMAX          equ     32      ; lean build: max chars per string var (own choice)
-STRENTSZ        equ     3 + STRMAX  ; [name0][name1][len][bytes:STRMAX] (35 B)
-STRSLOTS        equ     8       ; max distinct string variables
-STREND          equ     STRTAB + STRSLOTS*STRENTSZ   ; $E358 lean
-    ENDIF
 
 ; Expression value-type signalling (own-design VALTYP notion). After eval_any /
 ; a factor, VALTYP says whether the result is a number (0; value in DE as usual)
@@ -1224,7 +1162,6 @@ CAS_IN_MODE     equ     8       ; FCH_MODES value: OPEN"CAS:" FOR INPUT (INPUT# 
 ; ([len:1][bytes:STRMAX]); LET copies from here into the variable's slot. Placed
 ; in page $E3 above the string table (NOT in page $E0, which the C-BIOS keyboard
 ; ISR's work area touches — an EI'd interrupt mid-LET would corrupt a $E0 byte).
-    IF ROM_BASE < $4000
 ; --- repack build: string HEAP RAM (arrays slice-4a, spec-basic-arrays- -----
 ; slice4a-string-heap.md). Shrinking STRTAB to 5-B descriptors (from 8*67=536 B
 ; to 8*5=40 B) frees ~500 B of the STRTAB..$E560 window; this layout spends that
@@ -1568,9 +1505,6 @@ GFX_G8V         equ     GFX_G8N + 2     ; $E55E: written value (int16 LE) (2)
     IF GFX_G8V + 2 > $E560
                 db      G8_MARSHALLING_OVERRAN_E560_DISK_WBUF_WALL
     ENDIF
-    ELSE
-STRSCR          equ     $E360   ; [len][bytes:STRMAX] = 33 bytes ($E360..$E380)
-    ENDIF
 
 ; --- Step B: stored-program text area (numbered lines) ---------------------
 ; Numbered lines are stored in the real MSX line-link format at the real text
@@ -1584,8 +1518,8 @@ STRSCR          equ     $E360   ; [len][bytes:STRMAX] = 33 bytes ($E360..$E380)
 ; provenance as the BIOS and token constants used elsewhere here.
 TXTTAB          equ     $F676   ; sysvar: pointer to the BASIC text base
 TXTBASE         equ     $8001   ; text base (oracle: TXTTAB value after boot)
-; TXTMAX — the program-text ceiling (OUT OF MEMORY threshold). The lean cart keeps
-; the full $C000 BLOAD ceiling; the repack build lowers it 2304 B to reserve
+; TXTMAX — the program-text ceiling (OUT OF MEMORY threshold). Lowered 2304 B
+; below the $C000 BLOAD ceiling to reserve
 ; $B700-$BFFF for the three line buffers (map below): DETOKBUF (subrom wave 3,
 ; docs/spec-basic-subrom-wave3-detok.md §5/Q3-a) plus TOKBUF and LINEBUF, which
 ; D-LINEMAX re-homes out of page 3 because neither fits there at its true size.
@@ -1596,9 +1530,7 @@ TXTBASE         equ     $8001   ; text base (oracle: TXTTAB value after boot)
 ; space is the mechanism the REFERENCE uses — while the alternative (dropping
 ; MAXFILES to 1) moves AWAY from a reference that supports at least 15. Repack
 ; program capacity is 15871 -> 14079 B. It is per-build because
-; TXTMAX is emitted as an immediate (`ld de,TXTMAX` in program.asm / cload.asm), so a
-; single value would change lean bytes (byte-identity gate 6).
-    IF ROM_BASE < $4000
+; TXTMAX is emitted as an immediate (`ld de,TXTMAX` in program.asm / cload.asm).
 ; --- The page-2 buffer window, $B700..$BFFF (D-LINEMAX §3) ------------------
 ;   TOKBUF   $B700..$B93F   576 B  (crunch destination; 314-byte logical body limit)
 ;   (spare)  $B940..$B9FF   192 B
@@ -1627,9 +1559,6 @@ TXTBASE         equ     $8001   ; text base (oracle: TXTTAB value after boot)
 TXTMAX          equ     $BB00   ; repack: text ceiling, 1280 B below the $C000 BLOAD
                                 ; region — DETOKBUF alone now reserves that window.
 DETOKBUF        equ     $BB00   ; repack: 1280 B one-shot detok output buffer.
-    ELSE
-TXTMAX          equ     $C000   ; lean: text must stay below the $C000 BLOAD region
-    ENDIF
 PRGEND          equ     $E026   ; addr of the $0000 end-of-program marker (2 bytes)
 
 ; --- Arrays slice-1, SPLIT design (repack build only, docs/spec-basic- ------
@@ -2391,21 +2320,12 @@ PLAY_OP_END     equ     $FF     ; end of this voice's queue
 ; DERIVED, NEVER STORED — the same S-CLP-2 discipline strheap_floor uses, and
 ; for the same reason: the arithmetic lives sub-side (sub/strheap.asm
 ; strheap_varceil / op 18) where ROM is not scarce, so `CLEAR n`, `CLEAR ,himem`
-; and `MAXFILES=n` are all picked up for free by the next derivation. The lean
-; cart keeps the STATIC table at FCH_CTX below (byte-identity gate).
+; and `MAXFILES=n` are all picked up for free by the next derivation.
 FCH_STATE0      equ     FAT_CURCLUS         ; $E9C9 — base of the per-channel state span
 FCH_STATESZ     equ     FWR_DIROFF+2-FCH_STATE0     ; $E9C9..$E9FA inclusive = 50 bytes
-    IF ROM_BASE < $4000
 FCH_CEIL        equ     15      ; repack: the MEASURED reference ceiling (§3, exactly
                                 ; 15) — free now that unused channels cost nothing
 FCH_CTXSZ       equ     FCH_STATESZ         ; repack: block = state ONLY (no buffer)
-    ELSE
-FCH_CEIL        equ     2       ; lean: static table, RAM-bounded
-FCH_CTXSZ       equ     FCH_STATESZ + 512   ; lean: the old [state][buffer] block --
-                                            ; the 16 KB cart is byte-full and keeps
-                                            ; the memcpy path (basic/files.asm)
-FCH_CTX         equ     $EA00   ; lean: FCH_CEIL static [state][buffer] blocks
-    ENDIF
 ; --- Phase 2c slice 1: random-access FIELD table + fielded-read scratch -----
 ; zerobas stores string vars INLINE in STRTAB ([name0][name1][len][bytes:32]); a
 ; MS-BASIC-style descriptor pointing into a record buffer does not exist. So a
@@ -2452,9 +2372,8 @@ PU_WP           equ     $EEFB   ; pu_fmt_int scratch write pointer (2)
 ; CALL FORMAT loop counter — the current sector being written. write_sector's CALSLT
 ; clobbers every register, so the format loop keeps its position here in RAM. One byte
 ; ($EEFD) in the gap below FLD_DESC. Repack eviction (docs/spec-evict-call-format.md):
-; the sub-ROM page-1 tenant now owns these two cells (it runs the build/write loop);
-; the lean cart's resident do_format still owns them directly. Either way they are
-; RAM, always visible. See basic/format.asm / basic/format-body.inc / sub/format.asm.
+; the sub-ROM page-1 tenant owns these two cells (it runs the build/write loop).
+; They are RAM, always visible. See basic/format.asm / basic/format-body.inc / sub/format.asm.
 FMT_SEC         equ     $EEFD   ; CALL FORMAT: current sector index being written (1)
 FMT_DESC        equ     $EEFE   ; CALL FORMAT: chosen geometry descriptor pointer (2)
 FLD_DESC        equ     $EF00   ; transient fielded-read descriptor [len][bytes:255]
@@ -2469,12 +2388,8 @@ FLD_DESC        equ     $EF00   ; transient fielded-read descriptor [len][bytes:
 ; below the C-BIOS sysvars (~$F380). See basic/field.asm §GET/PUT + files.asm OPEN.
 ; ⚠️ D-FCH §3.2: with FCH_CEIL=15 the repack array is 32 B and would run over
 ; GP_RECLEN/OO_RECLEN_CHAN/FILES_HASPAT/CAS_WANT at $F006..; it moves into the
-; same freed $EA00 page-3 window as FCH_MODES. The lean cart keeps $F000 (6 B).
-    IF ROM_BASE < $4000
-FCH_RECLENS     equ     $EA10   ; repack: 32 B ($EA10..$EA2F); $EA30..$EAFF free
-    ELSE
-FCH_RECLENS     equ     $F000   ; lean: per-channel record length words [0..2] (6 B)
-    ENDIF
+; same freed $EA00 page-3 window as FCH_MODES.
+FCH_RECLENS     equ     $EA10   ; 32 B ($EA10..$EA2F); $EA30..$EAFF free
 GP_RECLEN       equ     $F006   ; active channel's record length (word), loaded per calc
 OO_RECLEN_CHAN  equ     $F008   ; OPEN scratch: channel # stashed across the LEN= eval (1)
 FILES_HASPAT    equ     $F009   ; FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1)
@@ -2561,7 +2476,6 @@ READVAR         equ     $E0BF   ; READ: name of the variable being filled (1)
 ; or not zerobas-disk is present in the combined machine. "own choice — free
 ; RAM" (like every other cell in this section), just relocated off the
 ; spec's suggested addresses to avoid the collision.
-    IF ROM_BASE < $4000
 FACTYP          equ     $F01A   ; 2=int / 4=single / 8=double (1)
 TKOVF           equ     $F01B   ; tokeniser: 1 = a crunched literal overflowed (1)
 FAC             equ     $F01C   ; float accumulator: value bytes as tokenised (8)
@@ -3093,7 +3007,7 @@ SUBROM_IDX_FATPRIM   equ 12     ; fatprim_tenant (sub/fatprim.asm): the FAT12
                                 ; format_tenant/scan_stmt_end (needs no
                                 ; resident-ABI import). Main-ROM stubs are the
                                 ; resident shims in basic/fat.asm (repack,
-                                ; ROM_BASE < $4000), replacing the moved
+                                ; the repack build), replacing the moved
                                 ; bodies under the SAME names (read_sector,
                                 ; write_sector, fat_mount, fat_find, ...).
 SUBROM_IDX_DIRVERB   equ 13     ; dirverb_tenant (sub/dirverb.asm): the
@@ -3226,7 +3140,6 @@ SUBROM_IDX_SAVE      equ 21     ; save_tenant (sub/save.asm): BLOAD's mirror -- 
 ; for convention-compat with a future real SUBROM/EXTROM; our private dispatch
 ; reads SUBSLOT, not EXBRSA (R4). Source: MSX2 Technical Handbook work-area map.
 EXBRSA          equ     $FAF8
-    ENDIF
 
 ; --- D-MSGENC: error-message phrase escapes (repack build only) ---------------
 ; docs/spec-basic-msgenc-carve.md §4.1. These are the BYTE VALUES that appear

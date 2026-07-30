@@ -102,7 +102,11 @@ if not (os.path.sep in OMSX and os.path.isfile(OMSX)):
 
 # Machines
 REF_MACHINE = "Philips_VG_8020"   # real built-in MSX-BASIC
-ZB_MACHINE  = "C-BIOS_MSX1"       # zerobas under test (needs --cart)
+# ⚠️ zerobas now runs on the REPACK machine, which carries the merged main ROM in
+# slot 0 -- there is no cartridge to insert. It used to be C-BIOS_MSX1 (or the
+# VG-8020) with the retired lean 16 KB cart in a slot; that build is gone
+# (RETIRE THE LEAN 16 KB CART S3, docs/spec-lean-retire-s3-gates.md).
+ZB_MACHINE   = "C-BIOS_MSX1_EU_REPACK_DISK"
 
 # Stub and snapshot addresses (free page-3 RAM; same $D000 region as cont.py)
 STUB_ADDR    = 0xD000   # where we write the hand-authored Z80 stub
@@ -304,9 +308,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cart", required=True, help="zerobas basic.rom")
     args = ap.parse_args()
-    cart = args.cart
 
     # Two distinctive argument values to disambiguate byte order and location.
     ARGS = [12345, 258]   # 12345=$3039, 258=$0102
@@ -381,13 +383,13 @@ def main() -> int:
           if ref_snaps[12345] else "no data")
 
     # ------------------------------------------------------------------ #
-    # zerobas side (C-BIOS_MSX1 + cart)                                   #
+    # zerobas side (the repack machine)                                   #
     # We expect: arg in HL, VALTYP ($F663) not set to 2 by zerobas.       #
     # ------------------------------------------------------------------ #
-    print("\n=== zerobas (C-BIOS_MSX1 + cart) ===")
+    print(f"\n=== zerobas ({ZB_MACHINE}) ===")
     zb_snaps = {}
     for av in ARGS:
-        s = run(ZB_MACHINE, cart=cart, arg_val=av)
+        s = run(ZB_MACHINE, cart=None, arg_val=av)
         zb_snaps[av] = s
         print_snap("zb", s, av)
 

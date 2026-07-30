@@ -24,8 +24,7 @@
 ; Technical Handbook (also reserved by our target C-BIOS). No disassembly.
 ;
 ; Entry: ex_play, HL on the PLAY token. Repack-only (the tenant it drives is page-1,
-; which only the repack build reaches); the lean cart ships no PLAY, byte-identical.
-    IF ROM_BASE < $4000
+; which only the repack build reaches); PLAY is dispatched, not resident.
 ex_play:
                 inc     hl                  ; past the PLAY token
                 xor     a
@@ -98,4 +97,3 @@ pl_typeerr:
 pl_absent:
                 ld      a,5                 ; defensive: merged ROM always ships the tenant
                 jp      raise_error
-    ENDIF

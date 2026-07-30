@@ -59,10 +59,9 @@
 ; The `,A` ASCII paths also stay: they drive list_walk/pchar, i.e. the PAGE-0
 ; detokeniser tenant, which a page-1 tenant cannot reach.
 ;
-; Each engine's `IF ROM_BASE < $4000` stub re-declares the SAME entry label the
+; Each engine's `IF the repack build` stub re-declares the SAME entry label the
 ; resident parse already reaches by `jr`/fall-through, so not one parse
-; instruction changes; the ELSE arm includes the verbatim body at its original
-; position, keeping the lean 16 KB cart byte-frozen.
+; instruction changes.
 sv_load_error   equ     load_error          ; resident: a zero-byte EQU, so every
                                             ; `jp sv_load_error` in the shared bodies
                                             ; assembles to the frozen cart's bytes.
@@ -126,13 +125,9 @@ bsv_is_disk:
                 jr      bsv_open
 bsv_set_exec:
                 ld      (EXECPTR),de
-    IF ROM_BASE < $4000
 bsv_open:
                 ld      a,SV_OP_BSV_DISK
                 jp      sv_tenant           ; BSAVE -> disk: the write engine is a tenant
-    ELSE
-                include "basic/sv-bsvdisk.inc"    ; lean: inline, byte-identical
-    ENDIF
 
 ; --- tape BSAVE path ---
 bsv_is_cas:
@@ -161,13 +156,9 @@ bsv_is_cas:
                 jp      load_error          ; A=1: ",S" VRAM-to-tape not supported
 bsv_cas_exec:
                 ld      (EXECPTR),de
-    IF ROM_BASE < $4000
 bsv_cas_open:
                 ld      a,SV_OP_BSV_CAS
                 jp      sv_tenant           ; BSAVE -> tape
-    ELSE
-                include "basic/sv-bsvcas.inc"    ; lean: inline, byte-identical
-    ENDIF
 
 ; ===========================================================================
 ; do_save — SAVE "device:name"   (tokenised-BASIC save; ,A out of scope)
@@ -207,12 +198,8 @@ sav_is_disk:
                 jp      z,sav_ascii_flag    ; SAVE"name",<flag> -> check for ,A
                 or      a
                 jp      nz,load_error       ; trailing junk after the name
-    IF ROM_BASE < $4000
                 ld      a,SV_OP_SAV_DISK
                 jp      sv_tenant           ; SAVE -> disk, tokenised (fall-through entry)
-    ELSE
-                include "basic/sv-savdisk.inc"    ; lean: inline, byte-identical
-    ENDIF
 
 ; --- SAVE"name",A -> ASCII listing save --------------------------------------
 ; sav_ascii_flag: HL is at the ',' after the filename. Accept only ",A" (any
@@ -499,13 +486,9 @@ csav_sp:
                 ; fall into tape_save_basic
 
 ; ===========================================================================
-    IF ROM_BASE < $4000
 tape_save_basic:
                 ld      a,SV_OP_SAV_CAS
                 jp      sv_tenant           ; SAVE"CAS:" / CSAVE -> tape, tokenised
-    ELSE
-                include "basic/sv-tsb.inc"    ; lean: inline, byte-identical
-    ENDIF
 
 ; ===========================================================================
 ; tape_parse_name — extract up to 6 filename chars from the token stream.
@@ -551,9 +534,6 @@ tpn_fill:
                 include "basic/sv-tne.inc"          ; tape_name_emit (copied into the tenant)
 
 ; ===========================================================================
-    IF ROM_BASE >= $4000
-                include "basic/sv-tputw.inc"    ; lean: inline, byte-identical
-    ENDIF
 ; (repack: tape_putword has NO resident caller once the BSAVE tape engine leaves
 ;  — its only callers were bsv_cas_open's three header words — so it does not get
 ;  a stub, it simply moves. The tenant's copy arrives with sv-tputw.inc.)
@@ -634,7 +614,6 @@ expect_comma_eval:
                 include "basic/sv-diskwr.inc"       ; disk_write_* (copied into the tenant)
 
 ; ===========================================================================
-    IF ROM_BASE < $4000
 ; sv_tenant — the one marshalling stub every carved engine jumps to (repack).
 ; Entered by `jp`, never `call`, so the stack top is do_bsave/do_save/do_csave's
 ; OWN return address: exactly what the un-carved `bsv_fin: jp disk_write_end` /
@@ -650,4 +629,3 @@ sv_tenant:
                 or      a
                 jp      nz,load_error       ; the tenant hit sv_load_error: report ONCE
                 ret
-    ENDIF

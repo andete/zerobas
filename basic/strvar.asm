@@ -27,35 +27,24 @@
 ;      CF set on success; CF clear (and VALTYP untouched) if the operand is not a
 ;      recognised string form (caller treats as error). Clobbers A, BC, DE, HL.
 ;
-; str_eval is the PUBLIC entry every caller uses. In the lean build it is exactly
-; str_eval_one (no concat) — byte-identical, since the equate emits no bytes and
-; str_eval_one lands at the same address the old str_eval did. In the repack build
+; str_eval is the PUBLIC entry every caller uses.
 ; (string-engine arc S3) it folds any trailing `+ operand` terms via str_concat_tail
 ; (basic/str-engine.asm, in the reclaimed low region), giving `A$+B$+C$` concatenation
 ; to every string context at once (PRINT, LET, function args, LSET/RSET, PRINT USING).
-    IF ROM_BASE < $4000
 str_eval:
                 call    str_eval_one
                 ret     nc                  ; not a string operand -> propagate
                 jp      str_concat_tail     ; low region: append `+ operand` terms
-    ELSE
-str_eval        equ     str_eval_one        ; lean: a string operand is one operand
-    ENDIF
 str_eval_one:
                 ld      a,(hl)
                 cp      '"'
-    IF ROM_BASE < $4000
                 jp      z,str_eval_lit      ; repack: str_eval_lit is in the low
                                             ; region (str-engine.asm) — out of jr
                                             ; range from here (page 1)
-    ELSE
-                jr      z,str_eval_lit
-    ENDIF
                 cp      INPUT_TOKEN         ; INPUT$(...) ? -> $85 ('INPUT') then '$'
                 jp      z,str_eval_maybe_inputd
                 cp      PEEK_PREFIX         ; $FF + selector -> a function token; MKI$ ?
                 jp      z,str_eval_maybe_mki
-    IF ROM_BASE < $4000
                 cp      STRING_TOKEN        ; $E3 -> STRING$(n,c) (string-functions Group B;
                 jp      z,str_fn_string     ; single-byte reserved word, not $FF-prefixed)
                 cp      INKEY_TOKEN         ; $EC -> INKEY$ (no args; single-byte reserved word)
@@ -64,7 +53,6 @@ str_eval_one:
                 cp      SPRITE_TOKEN        ; $C7 -> SPRITE$(n) (graphics G7; the `$` is
                 jp      z,ev_f_sprite       ; separate ASCII after the token)
     ENDIF
-    ENDIF
                 call    is_letter           ; a `$`-suffixed variable?
                 jp      nc,str_eval_no
                 call    var_str_type        ; A=1 if `$` suffix
@@ -72,7 +60,6 @@ str_eval_one:
                 jp      z,str_eval_no       ; numeric name -> not a string operand
                 ; string variable: key it and point STRPTR at its stored value.
                 call    var_name_key        ; BC = key, HL past name + `$`
-    IF ROM_BASE < $4000
                 ld      a,(hl)
                 cp      '('
                 jp      z,str_eval_arr      ; string array-element rvalue (arrays
@@ -88,7 +75,6 @@ str_eval_one:
                                             ; same disambiguation ev_f_var's
                                             ; numeric array check already relies
                                             ; on
-    ENDIF
                 push    hl                  ; guard cursor across the lookup
                 call    fld_lookup          ; FIELDed var? -> STRPTR=FLD_DESC slice, CF set
                 jr      c,sev_have          ; fielded -> STRPTR already set
@@ -97,45 +83,9 @@ str_eval_one:
 sev_have:
                 pop     hl
                 jp      str_eval_ok
-    IF ROM_BASE < $4000
 ; Arrays slice-4a: the repack str_eval_lit (zero-copy literal-lift into
 ; RVDESC) lives in the low region (basic/str-engine.asm) — page 1 is byte-
 ; full; str_eval_one reaches it by the jp above.
-    ELSE
-str_eval_lit:
-                ; copy the literal's bytes into STRSCR as a [len][bytes] descriptor,
-                ; clamped to STRMAX, advancing HL past the closing quote. HL stays
-                ; the source cursor throughout; DE writes the descriptor.
-                inc     hl                  ; past the opening quote
-                ld      de,STRSCR+1         ; DE -> descriptor bytes
-                ld      b,0                 ; B = length so far
-sel_lp:
-                ld      a,(hl)
-                or      a
-                jr      z,sel_close         ; unterminated -> stop (treat EOL as end)
-                cp      '"'
-                jr      z,sel_close_q
-                ld      a,b
-                cp      STRMAX
-                jr      nc,sel_skip         ; full: drop extra chars (truncate)
-                ld      a,(hl)
-                ld      (de),a
-                inc     de
-                inc     b
-sel_skip:
-                inc     hl
-                jr      sel_lp
-sel_close_q:
-                inc     hl                  ; past the closing quote
-sel_close:
-                ld      a,b
-                ld      (STRSCR),a          ; store the length (HL = advanced cursor)
-                push    hl                  ; guard the advanced source cursor
-                ld      hl,STRSCR
-                ld      (STRPTR),hl
-                pop     hl                  ; HL = cursor past the operand
-                jp      str_eval_ok
-    ENDIF
 str_eval_no:
                 or      a                   ; CF clear -> not a string operand
                 ret
@@ -169,12 +119,7 @@ str_eval_maybe_mki:
                 ld      a,(hl)
                 cp      MKI_TOKEN           ; $AE -> MKI$
                 jr      z,str_mki
-    IF ROM_BASE < $4000
                 jp      str_func_ff         ; repack: CHR$/STR$/LEFT$/RIGHT$/MID$ (HL on selector)
-    ELSE
-                dec     hl                  ; other $FF function -> not a string operand
-                jp      str_eval_no
-    ENDIF
 str_mki:
                 inc     hl                  ; past the MKI$ selector
                 ld      a,(hl)
@@ -193,13 +138,9 @@ str_mki:
                 ld      (STRSCR+1),a        ; low byte of n
                 ld      a,d
                 ld      (STRSCR+2),a        ; high byte of n
-    IF ROM_BASE < $4000
                 call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
                                             ; (arrays slice-4a §10: every STRPTR
                                             ; target is a [len:1][ptr:2] descriptor)
-    ELSE
-                ld      hl,STRSCR
-    ENDIF
                 ld      (STRPTR),hl
                 pop     hl                  ; restore the eval cursor
                 jp      str_eval_ok
@@ -242,12 +183,8 @@ str_inputd:
                 cp      1                   ; must be open FOR INPUT
                 jr      nz,str_inputd_err
                 call    str_inputd_read     ; fill STRSCR [len][bytes] with n bytes
-    IF ROM_BASE < $4000
                 call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
                                             ; (arrays slice-4a §10)
-    ELSE
-                ld      hl,STRSCR           ; set STRPTR while the cursor is still on
-    ENDIF
                 ld      (STRPTR),hl         ; the stack (HL here would clobber it)
                 pop     hl                  ; restore the eval cursor (past ')')
                 jp      str_eval_ok
@@ -292,22 +229,6 @@ sidr_done:
 ; Reads STRPTR (set by str_eval). CHPUT makes no register guarantees, so the
 ; descriptor cursor (HL) and the remaining count (B) are guarded across it.
 ; Clobbers A, B, HL.
-    IF ROM_BASE < $4000
 ; Arrays slice-4a: the repack print_strval lives in the low region (basic/
 ; str-engine.asm) — page 1 is byte-full; print.asm reaches it by in-slot
 ; call. strscr_desc / pu_deref_body live there too.
-    ELSE
-print_strval:
-                ld      hl,(STRPTR)
-                ld      b,(hl)              ; B = length
-                inc     hl                  ; HL -> bytes
-                ld      a,b
-                or      a
-                ret     z                   ; empty string -> nothing to print
-psv_lp:
-                ld      a,(hl)
-                call    pchar               ; screen or file (PRDEST); preserves all
-                inc     hl
-                djnz    psv_lp
-                ret
-    ENDIF

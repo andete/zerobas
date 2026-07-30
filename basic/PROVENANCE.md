@@ -3472,3 +3472,31 @@ own code, relocated verbatim bar the tenant ABI (the leading cursor step and the
 repack-only, so the lean cart is byte-identical by construction. Clean-room: no
 disassembly — this is a move of code we wrote. The `BEEP` language contract is
 unchanged and still pinned by `make beep-acceptance` against the VG-8020.
+
+## 2026-07-29 — the `IF ROM_BASE` gates and the lean 16 KB build are retired
+
+Clean-room status: **unchanged, and nothing here is restated by this entry.**
+
+Until this date the interpreter assembled two ways, selected by a `ROM_BASE`
+symbol: `$2812` for the relocated slot-0 image that ships, and `$4000` for a
+16 KB page-1-only "lean" cartridge that excluded seven source files. 284
+`IF ROM_BASE` directives across `basic/` and `sub/` chose between them.
+
+Step 3 of RETIRE THE LEAN 16 KB CART
+([`docs/spec-lean-retire-s3-gates.md`](../docs/spec-lean-retire-s3-gates.md))
+constant-folded every one of those gates at `ROM_BASE = $2812`, deleted the
+symbol and the `basic/main-reloc.asm` wrapper, and renamed the surviving org
+constant to `BASIC_ORG`. `basic/main.asm` is now the sole entry point.
+
+**No byte moved.** `build/basic-reloc.rom`, `build/sub.rom`, `build/disk.rom` and
+`build/zerobas-main-eu.rom` are byte-identical across the change; that identity
+was the gate the edit was made under.
+
+⚠️ **EARLIER ENTRIES IN THIS FILE ARE NOT REWRITTEN, DELIBERATELY.** Many of them
+describe a routine's placement in terms of "lean cart: inline here / repack:
+evicted there", or note that a change kept the lean image byte-frozen. Those
+statements were true when written and are part of the record of how the code
+reached its present shape — this file is a provenance log, not a description of
+the current tree. Read any `ROM_BASE` / lean/repack framing in an entry dated
+before today as historical. The source comments, by contrast, WERE swept, since
+a comment describes the code it sits beside.

@@ -11,9 +11,10 @@
 ; write_sector disposition, tail-propagated all the way to the caller).
 ;
 ; Included from TWO homes, exactly the printusing.asm / pu-render.inc pattern
-; (docs/spec-evict-printusing.md / commit c3fc2d8):
-;   * lean 16 KB cart (basic/format.asm, ROM_BASE >= $4000): inline, right after
-;     fmt_sel_720 falls through into fmt_selected below — BYTE-IDENTICAL to the
+; (docs/spec-evict-printusing.md / commit c3fc2d8). A second, retired home was the
+; lean 16 KB cart's inline copy in basic/format.asm:
+;   * (retired) inline, right after
+;     fmt_sel_720 falls through into fmt_selected below — byte-identical to the
 ;     pre-eviction build (this file is a pure relocation of that exact code,
 ;     nothing added/removed/reordered).
 ;   * sub-ROM PAGE-1 tenant (sub/format.asm, repack): format_tenant reads
@@ -112,8 +113,7 @@ fmt_boot:
                 jp      write_sector        ; tail: returns its Cy (ok / error)
 
 ; fmt_menu_text — at its ORIGINAL position (do_format's era) between fmt_boot and
-; fmt_geom_byte, so the lean cart's inline byte layout stays IDENTICAL to the
-; pre-eviction build. Unused sub-side (the menu stays main-resident, spec §2) but
+; fmt_geom_byte, preserving the pre-eviction byte layout. Unused sub-side (the menu stays main-resident, spec §2) but
 ; harmless — sub-ROM space is not tight (playbook §1).
 fmt_menu_text:  db      "1=360k 2=720k? ",0
 

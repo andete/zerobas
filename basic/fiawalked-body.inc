@@ -6,9 +6,7 @@
 ; overwrite rule) and prime the write iterator. ONE body, TWO homes, the pattern
 ; the FAT12 eviction established:
 ;
-;   * lean cart (ROM_BASE >= $4000): included INLINE by basic/fat.asm, so the lean
-;     image stays byte-identical;
-;   * repack build: included by the PAGE-1 fatprim tenant (sub/fiawalk.asm, table
+;   * included by the PAGE-1 fatprim tenant (sub/fiawalk.asm, table
 ;     row DISKOP_SEL_FIA_WALKED), with a resident shim under the same name.
 ;
 ; Carve 2 of the three that fund graphics G7 (docs/spec-eviction-g7-space.md). It

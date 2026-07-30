@@ -4,9 +4,11 @@
 
 """Verify the relocated BASIC image (cbios-repack arc -> string-engine arc S3).
 
-The relocated variant (basic/main-reloc.asm, ROM_BASE=$2812) spans $2812-$7FFF and
-now CARRIES FEATURES the lean build cannot fit: the string engine and its keyword
-table live in the reclaimed low region $2812-$3FFF (string-engine arc, spec §5b).
+The image (basic/main.asm, org $2812) spans $2812-$7FFF, with the string engine
+and its keyword table in the reclaimed low region $2812-$3FFF (string-engine arc,
+spec §5b). Until 2026-07-29 a second, page-1-only "lean" build existed that could
+not fit them; it is retired (docs/spec-lean-retire-s3-gates.md), along with this
+file's 4th check, which pinned that build to a frozen baseline.
 
 The original WS-2/S3 gate asserted the reloc page-1 body was byte-identical to the
 shipping basic.rom — a pure-RELOCATION property that only held while the low region

@@ -68,7 +68,7 @@ MACHINE_REF  = "Philips_VG_8020"
 # after `repl = args.repl or bool(args.cart)` typed with the wrong machine's
 # timing and produced a wrong "unverifiable" verdict ([[control-that-fails-must-
 # be-fixed]]).
-ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE") or MACHINE_TAPE
+ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE") or "C-BIOS_MSX1_EU_REPACK_DISK"
 
 
 def zb_args(cart):
@@ -804,7 +804,7 @@ def test_roundtrip_ascii_multiblock(cart: str) -> bool:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cart", default="build/basic.rom",
+    ap.add_argument("--cart", default=None,
                     help="zerobas basic.rom path (ignored when --machine names a "
                          "machine whose built-in ROM is already zerobas)")
     ap.add_argument("--machine", default=None,

@@ -1,8 +1,7 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 
-; subrom-boot.asm — the BOOT-TIME half of the zerobas-sub plumbing
-; (repack build only, guarded below; the lean 16 KB cart has no sub-ROM).
+; subrom-boot.asm — the BOOT-TIME half of the zerobas-sub plumbing.
 ;
 ; WHY THIS FILE EXISTS — A PROMOTION, NOT A NEW FEATURE. Every routine here was
 ; written in basic/subromcall.asm and lived in the page-0 low region. That
@@ -40,7 +39,6 @@
 ; reference BIOS/BASIC ROM; the routines are unchanged from their reviewed form
 ; in subromcall.asm. Sources are recorded there and in basic/PROVENANCE.md.
 
-    IF ROM_BASE < $4000
 
 ; try_sub_slot: if the slot just scanned by try_init_slot (SCAN_SLOT) carries the
 ; MSX2 sub-ROM signature "CD" at $0000 (page 0), record it. Called right after
@@ -122,4 +120,3 @@ zkey_install:
                 ret
     ENDIF
 
-    ENDIF

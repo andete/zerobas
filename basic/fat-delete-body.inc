@@ -7,11 +7,11 @@
 ; SEPARATE from basic/fat-prim-body.inc only because fat_delete sits AFTER the
 ; resident fat_io_* byte cursor in the original basic/fat.asm (mount/find/
 ; next-cluster/alloc/dir-create/dir-update come BEFORE the cursor; fat_delete
-; comes AFTER it) — so the lean cart's byte order (primitives, then cursor,
-; then fat_delete) can only be preserved byte-identically by including this
+; comes AFTER it) — so the original byte order (primitives, then cursor,
+; then fat_delete) can only be preserved by including this
 ; routine at its ORIGINAL position, separately from the earlier bulk. Same
 ; two-home inclusion pattern as fat-prim-body.inc (see that file's header):
-; lean 16 KB cart (basic/fat.asm, ROM_BASE >= $4000) inlines it verbatim at
+; retired lean 16 KB cart inlined it verbatim at
 ; its original position; the sub-ROM PAGE-1 tenant (sub/fatprim.asm) includes
 ; it alongside fat-prim-body.inc (order doesn't matter there — no byte-
 ; identity constraint on the tenant image).

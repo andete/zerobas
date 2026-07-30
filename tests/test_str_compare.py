@@ -65,7 +65,7 @@ BODY = 0xC600      # body the SETSRC descriptor points at (set_var)
 
 
 def build():
-    src = os.path.join(ROOT, "basic", "main-reloc.asm")
+    src = os.path.join(ROOT, "basic", "main.asm")
     subprocess.run(["pasmo", "--bin", src, ROM, SYM], check=True, capture_output=True)
 
 

@@ -60,11 +60,7 @@ ex_print_using:
                 ld      a,PU_FMTMAX
 puf_lenok:
                 ld      (PU_FMTLEN),a
-    IF ROM_BASE < $4000
                 call    pu_deref_body       ; arrays slice-4a: HL(desc)->HL(body)
-    ELSE
-                inc     hl                  ; HL -> format bytes
-    ENDIF
                 ld      de,PU_FMT
                 ld      c,a
                 ld      b,0
@@ -193,14 +189,12 @@ phf_yes:
 
 ; --- pu_to_field / pu_emit_tail: the PRINT USING format literal-scanners ------
 ; docs/spec-evict-printusing.md. These two are pure leaves (PU_* RAM + pchar), so
-; in the repack build they are EVICTED to sub-ROM page 0 (sub/printusing.asm) to
-; free page-1 window space; the lean 16 KB cart keeps them inline (via the shared
-; pu-render.inc → BYTE-IDENTICAL). The repack stubs CALSLT the tenant (which emits
+; they are EVICTED to sub-ROM page 0 (sub/printusing.asm) to free page-1 window
+; space. The resident stubs CALSLT the tenant (which emits
 ; the literals into DETOKBUF), then drain DETOKBUF through print_string, honouring
 ; PRDEST — so PRINT# USING's file form (print.asm PRDEST=1) is untouched. The
 ; fragile value-render/deref paths (pu_do_number/pu_do_string/pu_fmt_int) stay
 ; resident, unchanged.
-    IF ROM_BASE < $4000
 pu_to_field:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_PU_TOFIELD
                 call    subrom_call         ; tenant: emit leading literals -> DETOKBUF,
@@ -220,9 +214,6 @@ pu_emit_tail:
                 jp      c,subrom_absent_error
                 ld      hl,DETOKBUF
                 jp      print_string        ; drain -> pchar (PRDEST), then ret
-    ELSE
-                include "basic/pu-render.inc"
-    ENDIF
 
 ; pu_do_number — eval the next value and emit it right-justified in PU_W; '%' + full
 ; number on overflow. HL = token cursor (guarded across div10). Clobbers everything.
@@ -320,11 +311,7 @@ pu_do_string:
                 ld      hl,(STRPTR)
                 ld      a,(hl)
                 ld      c,a                 ; C = source length
-    IF ROM_BASE < $4000
                 call    pu_deref_body       ; HL -> source bytes
-    ELSE
-                inc     hl                  ; HL -> source bytes
-    ENDIF
                 ld      a,(PU_W)
                 ld      b,a                 ; B = field width
 pus_fx_lp:
@@ -348,11 +335,7 @@ pus_fx_pad:
 pus_whole:
                 ld      hl,(STRPTR)
                 ld      b,(hl)              ; length
-    IF ROM_BASE < $4000
                 call    pu_deref_body       ; HL -> bytes
-    ELSE
-                inc     hl
-    ENDIF
 pus_whole_lp:
                 ld      a,b
                 or      a
@@ -367,13 +350,8 @@ pus_first:
                 ld      a,(hl)
                 or      a
                 jr      z,pus_done          ; empty string -> emit nothing
-    IF ROM_BASE < $4000
                 call    pu_deref_body       ; HL -> bytes
                 ld      a,(hl)              ; A = first byte
-    ELSE
-                inc     hl
-                ld      a,(hl)
-    ENDIF
                 call    pchar
 pus_done:
                 pop     hl

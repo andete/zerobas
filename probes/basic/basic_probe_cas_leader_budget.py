@@ -343,7 +343,7 @@ def main() -> int:
     ap.add_argument("--lines", type=int, default=40,
                     help="lines in the generated program (default 40; the "
                          "threshold knob -- 90 breaks the lean cart too)")
-    ap.add_argument("--cart", default="build/basic.rom",
+    ap.add_argument("--cart", default=None,
                     help="zerobas basic.rom (ignored when --machine names a "
                          "machine whose built-in ROM is already zerobas)")
     ap.add_argument("--machine", default=None,

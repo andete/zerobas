@@ -31,6 +31,12 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine, carry  # noqa: E402
 
+# The image under test is loaded at its ORG. Named here rather than
+# defaulted: msxtest.Machine's old default was $4000, the retired lean
+# cart's org, so a BASIC test that omitted it silently tested the lean
+# build (docs/spec-lean-retire-s3-gates.md §5, F-U).
+DISK_BASE = 0x4000
+
 ROM = "/tmp/zb_wrblk_e2e_ut.rom"
 SYM = "/tmp/zb_wrblk_e2e_ut.sym"
 
@@ -139,7 +145,7 @@ class Disk:
 
 
 def new_machine():
-    return Machine(ROM, SYM)
+    return Machine(ROM, SYM, rom_base=DISK_BASE)
 
 
 def setup_fcb(m, name, rs=128, rr=0):

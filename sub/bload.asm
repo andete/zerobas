@@ -7,7 +7,7 @@
 ; disk load loop — evicted from main page 1 into sub-ROM PAGE 1
 ; (docs/spec-traps-t3-key.md §7.6) to fund the interrupt-traps T3 slice. This is
 ; the fcbname/casmatch eviction pattern one level larger: the moved code is
-; VERBATIM, shared through basic/bload-body.inc, which the lean 16 KB cart still
+; VERBATIM, shared through basic/bload-body.inc, and
 ; includes at its original position so that ROM stays byte-identical.
 ;
 ; WHY PAGE 1, AND WHY THAT IS THE WHOLE POINT. A page-1 tenant runs with main
@@ -174,5 +174,5 @@ dev_cas:
 ; tenant is affordable.
                 include "basic/fatio-body.inc"       ; fat_io_open + fat_io_getbyte
 
-; The verb body itself, byte-shared with the lean cart.
+; The verb body itself, shared with the resident side.
                 include "basic/bload-body.inc"       ; do_bload .. disk_load_fin

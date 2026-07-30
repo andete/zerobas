@@ -14,10 +14,7 @@
 ;
 ; CLEAR also RESETS ALL VARIABLES (VARTAB, the string table, and the per-letter
 ; DEFtbl) — the MS-BASIC / MSX-BASIC semantics: CLEAR frees the variable space,
-; not just resizes the heap. This wipe is gated to the repack build (see the
-; ex_clear IF/ELSE below): the lean 16 KB basic.rom is byte-full at its $8000
-; ceiling and has no typed vars / DEFtbl, so it keeps the original record-only
-; exit and stays byte-identical.
+; not just resizes the heap.
 ;
 ; zerobas's memory model is deliberately minimal: there is NO string heap, and
 ; the RAM layout is fixed (variables live in VARTAB; BLOAD loads to fixed
@@ -43,11 +40,7 @@
 ; The bare/argument parse is shared, but the exit differs by build. In the
 ; repack build CLEAR resets ALL variables (VARTAB / DEFtbl / strings), like NEW
 ; — MS-BASIC semantics; the argument expressions are evaluated first (they may
-; still read variables), then everything is wiped. That wipe is gated to the
-; repack build: the lean 16 KB basic.rom is byte-full at its $8000 ceiling AND
-; has no typed vars / DEFtbl, so it keeps the original (record-only) exit and
-; stays byte-identical.
-    IF ROM_BASE < $4000
+; still read variables), then everything is wiped.
 ex_clear:
                 inc     hl                  ; past the CLEAR token
                 call    skip_spaces
@@ -96,26 +89,3 @@ clr_done:
                                             ; may already exist)
                 pop     hl
                 jp      exec_stmt           ; HL = cursor; run the next statement
-    ELSE
-ex_clear:
-                inc     hl                  ; past the CLEAR token
-                call    skip_spaces
-                ld      a,(hl)
-                or      a
-                jp      z,exec_stmt         ; bare CLEAR (end of line)
-                cp      COLON
-                jp      z,exec_stmt         ; bare CLEAR before ':'
-                cp      ','                 ; "CLEAR ,himem" — string-space omitted
-                jr      z,clr_himem
-                call    eval                ; <string-space> (evaluated, ignored)
-                call    skip_spaces
-                ld      a,(hl)
-                cp      ','                 ; a second (memory-top) arg?
-                jp      nz,exec_stmt        ; no comma -> done
-clr_himem:
-                inc     hl                  ; past the comma
-                call    skip_spaces
-                call    eval                ; DE = memory-top value
-                ld      (HIMEM),de          ; record CLEAR's ceiling (record-only)
-                jp      exec_stmt           ; HL = cursor; run the next statement
-    ENDIF

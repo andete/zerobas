@@ -16,7 +16,7 @@
 ; it in sub/fatprim.asm -- four plain in-page calls. That is the whole trick.
 ;
 ; fat.asm includes this at its ORIGINAL POSITION in both builds, so the file's
-; emitted bytes are unchanged and the lean 16 KB cart stays byte-frozen.
+; emitted bytes are unchanged.
 ;
 ; CLEAN-ROOM: our own code, moved. FAT12 provenance unchanged
 ; (basic/PROVENANCE.md §disk DSKIO host engine).
