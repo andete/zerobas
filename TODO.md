@@ -1825,7 +1825,93 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       claim-by-claim. **Check the neighbouring prose too** — the same slice-era framing
       likely leaks into the sections around it.
 
-- [ ] **ROM REGION STRUCTURE REVIEW** — full review, **AFTER S3** (user, 2026-07-29).
+- [ ] **LAND THE TRANSITIVE DEAD-CODE SWEEP AS A TOOL** (filed 2026-07-30 by the ROM
+      REGION STRUCTURE REVIEW, which built it in a scratchpad and threw it away).
+      It found **122 B** where pasmo's per-symbol warnings showed 80, and it is the
+      only instrument in the tree that can see a routine that IS referenced but only
+      from code that is itself dead (`div_zero`, `var_find`). Worth `tools/`, with a
+      standing gate that reports the dead set — the review's whole point is that this
+      finding sat unread in ~230 lines of warning noise for months.
+      ⚠️ **IT MUST KEEP ALL FOUR APPARATUS FIXES**, each of which produced a confident
+      wrong row while missing: (1) the terminator test must use
+      `check_tenant_closure.py`'s `_is_terminator` — a naive `^(ret|jp|jr)` matches
+      `jp nc,x`/`ret nz` and falsely kills fallthrough-entered routines
+      (`ei_set`/`spr_set`); (2) lines before a file's first label must be attributed
+      to an always-live prologue span, or references made there are invisible
+      (`sp_done`); (3) closure must follow **DATA** references (`ld hl,label`,
+      `dw label`), not just call/jp/jr/djnz — this is the one that read
+      `keytrap.asm`'s `$0038` hook as promotable; (4) 🔴 **"dead" is PER-BUILD** — a
+      body `.inc` shared by main and sub has TWO answers, and `disk_putword` was dead
+      in main, live in sub, with its only caller outside `main.asm`'s include closure.
+      The tool should walk BOTH builds and report per-build, and `IF SUB_BUILD` is the
+      sanctioned fix for the asymmetric case. Seed on build consumers only
+      (`init` + `sub/` + `tools/`): seeding on `tests/`/`probes/` too hides the whole
+      `vars.asm` block, because the ported tests still name it — that seed choice is
+      the difference between 16 dead spans and 4. Falsify both ways (inject a dead
+      routine; then give it one live caller).
+      Also worth landing beside it: the **per-include byte-extent measurement** (inject
+      zero-byte labels around all 111 `include` sites, recursively) whose own control
+      is that both instrumented images assemble BYTE-IDENTICAL to the shipped ROMs —
+      that is what produced every size in the review, and pasmo emits no listing file.
+
+- [x] **ROM REGION STRUCTURE REVIEW — ✅ DONE 2026-07-30, and R1 LANDED.**
+      [`docs/rom-region-structure-review.md`](docs/rom-region-structure-review.md) +
+      [`docs/spec-rom-region-rebalance-r1.md`](docs/spec-rom-region-rebalance-r1.md).
+      **THE WALLS ARE OFF ZERO FOR THE FIRST TIME IN THE ARC: low 0 B -> 80 B free,
+      page 1 7 B -> 49 B free**, `sub.rom` byte-identical (`1dbbfe2f…`). All gates
+      green incl. linemax 60/60 (ERR 25's string moved).
+      🔴 **THE MAIN ROM'S PAGE-1 HALF HAS NO PLACEMENT CONTRACT AT ALL.** All 13
+      sub-ROM page-0 tenants — 709 routines of closure — call **ZERO** main routines,
+      so nothing in page 1 is contract-forced there; all 16377 B of it is
+      pressure-placed. The `$4000` contract points ONE WAY (low-region code that
+      page-1 tenants and the `$0038` ISR reach must stay low). Falsification control:
+      re-seeding the same script with the page-1 tenant table finds 20 main callees,
+      so the zero is a result, not a broken script. Consequence: **page-1 -> low moves
+      are always legal** (only the low wall blocks them); low -> page-1 needs exactly
+      one check, the forced set. 165 of 424 low-region labels are forced;
+      `keytrap.asm` + `sprtrap-body.inc` forced WHOLE; `input.asm` (446 B) and the
+      message pool pressure-placed WHOLE.
+      🔴 **DE-EVICTION IS REFUTED BY MEASUREMENT — closed, do not spend a slice on
+      it.** Largest resident stub is ~42 B (`dirverb`, the only tenant with two call
+      sites, i.e. the case most likely to cross) against the SMALLEST body in the tree
+      at 74 B. Every one of 35 tenants is on the right side by >=35 B. It buys
+      simplification at a 35-155 B main-ROM **LOSS** against a 0 B wall.
+      🔴 **THE CARVE WAS 122 B, NOT 80** — a TRANSITIVE sweep found two blocks
+      pasmo's per-symbol warnings cannot see: `div_de_bc`/`mod_de_bc`/`div_zero`
+      (26 B; **`div_zero` IS referenced — only from the other two**) and
+      `disk_putword` (16 B). Sweep falsified both ways (an injected dead routine is
+      found; the same routine with one live caller is not).
+      ⚠️ **"DEAD" IS PER-BUILD, AND ONLY THE BUILD CAUGHT IT.** `disk_putword` is
+      dead in MAIN and live in SUB: its definition is in the shared
+      `basic/sv-diskwr.inc`, its only caller in `basic/sv-bsvdisk.inc`, which ONLY
+      `sub/save.asm` includes — outside `main.asm`'s walked closure, so invisible.
+      Deleting it failed the assembly. Now an `IF SUB_BUILD` gate (the second in the
+      tree). **Nothing in the review's own apparatus could have found this.**
+      ⚠️ **THE "128 B OF FREED RAM" THIS ITEM CARRIED FORWARD DOES NOT EXIST.** The
+      `$E1C0..$E240` span was already spent by three later slices, each describing
+      itself as homing in "the freed VARTAB window": `ARYTAB` `$E1C0`, `DIRECTF`
+      `$E1C2`, `SAVSTK` `$E1C3`+`SAVTXT`, `ZTRAP` `$E1D1..$E207`. `sysvars.inc`'s own
+      comment still claimed it was free — **corrected in place**. "`VAREND` must stay"
+      was stale too (nothing references it; `STRTAB` is retired). R1 freed 122 ROM
+      bytes and **0 RAM bytes**.
+      ⚠️ **MY APPARATUS WAS WRONG FOUR TIMES BEFORE THE ANSWER WAS RIGHT ONCE**, and
+      one row was actively dangerous: a call-graph-only closure missed
+      `ld hl,zkey_hook` (a DATA reference), so **`keytrap.asm` — the `$0038` keyboard
+      hook — read as PRESSURE-PLACED and would have been nominated for promotion into
+      page 1**, where a page-1 tenant pages it out. There is now an assert on it.
+      Also: a conditional `jp nc,`/`ret nz` read as an unconditional terminator
+      (falsely killed `ei_set`/`spr_set`); lines before a file's first label belonged
+      to no span (falsely killed `sp_done`).
+      **NEXT TIER, costed but NOT opened** (review §7): promote `input.asm` (446 B,
+      pressure-placed whole) — blocked on 446 B of page 1 that does not exist; then
+      per-file eviction to a sub **page-0** tenant (prefer page 0: a page-0 tenant may
+      call main page 1, which is why page-1 tenants force the 457 B of duplication).
+      Closed as answered: the 473 B duplication tax (**457 B contract-forced**), the
+      split/ABI/three-gates question (**leave them alone** — the page-0 walk's vacuous
+      pass is enforcement, not absent coverage), and merging the two regions (never on
+      the table — `$4000` is a hardware contract).
+
+      **Original entry, for context.**
       ✅ **S3 IS DONE, so this is UNBLOCKED**: the source now reads with no
       `IF ROM_BASE` wrappers obscuring which region anything is in.
       🟢 **FREE CARVE ALREADY IDENTIFIED, MEASURED, AND DELIBERATELY LEFT FOR THIS

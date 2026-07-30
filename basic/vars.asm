@@ -183,92 +183,21 @@ vst_yes:
                 scf                          ; string (A=1, CF set)
                 ret
 
-; --- var_find: locate entry for key BC -------------------------------------
-; out: CF set  -> found,     HL = entry address.
-;      CF clear -> not found, HL = first free slot (or VAREND if table full).
-; Clobbers A, HL (BC preserved).
-var_find:
-                ld      hl,VARTAB
-vf_lp:
-                ld      a,h                 ; reached the end of the table?
-                cp      high VAREND
-                jr      nz,vf_test
-                ld      a,l
-                cp      low VAREND
-                jr      z,vf_full
-vf_test:
-                ld      a,(hl)              ; name0
-                or      a
-                jr      z,vf_free           ; empty slot -> not found
-                cp      b
-                jr      nz,vf_next
-                inc     hl
-                ld      a,(hl)              ; name1
-                dec     hl
-                cp      c
-                jr      z,vf_hit
-vf_next:
-                ld      a,VARENTSZ
-                add     a,l
-                ld      l,a
-                jr      nc,vf_lp
-                inc     h
-                jr      vf_lp
-vf_hit:
-                scf                          ; HL = entry start, CF set
-                ret
-vf_free:
-                or      a                    ; CF clear, HL = free slot
-                ret
-vf_full:
-                or      a                    ; CF clear, HL = VAREND (table full)
-                ret
-
-; --- var_get_key: BC = key -> DE = value (0 if unset) ----------------------
-; Clobbers A, HL (BC preserved).
-var_get_key:
-                call    var_find
-                jr      nc,vgk_zero
-                inc     hl
-                inc     hl                  ; HL = value field
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)
-                ret
-vgk_zero:
-                ld      de,0
-                ret
-
-; --- var_set_key: BC = key, DE = value -> stored (allocates if new) ---------
-; A new variable is written into the first free slot (name + value). If the
-; table is full the assignment is silently dropped. Clobbers A, HL (BC, DE kept).
-var_set_key:
-                call    var_find
-                jr      c,vsk_store         ; found existing entry
-                ; not found: HL = free slot (or VAREND if full)
-                ld      a,h
-                cp      high VAREND
-                jr      nz,vsk_new
-                ld      a,l
-                cp      low VAREND
-                ret     z                   ; table full -> drop
-vsk_new:
-                ld      (hl),b              ; write the name into the free slot
-                inc     hl
-                ld      (hl),c
-                dec     hl
-vsk_store:
-                inc     hl
-                inc     hl                  ; HL = value field
-                ld      (hl),e
-                inc     hl
-                ld      (hl),d
-                ret
+; --- (removed) the retired lean cart's int-only fixed-pool scalar store -----
+; `var_find` / `var_get_key` / `var_set_key` lived here: a linear walk over the
+; fixed 4-byte VARTAB pool, keyed on (name0,name1) with no type. Arrays slice-4b
+; relocated shipped scalars into the real-MSX contiguous chain (the ARY sub-ROM
+; tenant's scv_find/scv_alloc), which left all three with ZERO callers -- pasmo
+; had been reporting two of them as unused ever since, inside ~230 lines of
+; warning noise nobody read. Deleted by the ROM REGION STRUCTURE REVIEW's R1
+; carve (docs/spec-rom-region-rebalance-r1.md A1): 80 B of main PAGE 1.
+; The live typed counterparts are var_find_typed / var_alloc_or_find below --
+; ⚠️ SIMILAR NAMES, DIFFERENT ANIMALS; the banner below is the one that matters.
 
 ; =============================================================================
 ; F3 S3a — the typed variable store (docs/spec-basic-float-core.md §11). These
-; are the live counterparts to the dead int-only var_find walk above, keyed on
-; (name0, name1, type) and variable-width.
+; are the live counterparts to the int-only var_find walk that used to sit above
+; (deleted by R1's carve), keyed on (name0, name1, type) and variable-width.
 ;
 ; Arrays slice-4b (docs/spec-basic-arrays-slice4b-scalar-reloc.md §3/§4/§5):
 ; the fixed VARTAB pool walk/room-check that used to live here MOVED into the

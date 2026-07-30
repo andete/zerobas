@@ -773,35 +773,32 @@ TOKMAX_BODY     equ     314     ; logical ceiling: a longer body is REFUSED (ERR
 ; (The retired lean 16 KB cart kept the OLD, UNBOUNDED crunch and the old 96-byte
 ; TOKBUF — a known defect deliberately carried forward rather than fixed, since the
 ; build was on its way out. It is gone; D-LINEMAX's bound is the only crunch now.)
-; Variable table: dynamically-allocated 4-byte entries [name0][name1][value:2].
-; Names are significant to 2 characters (public MSX-BASIC language reference);
-; name1 = 0 for a 1-char name. A name0 of 0 marks the first free slot. Phase 1
-; grew this from the single-letter A..Z store to multi-character names.
+; --- the $E1C0..$E240 window: HISTORY, and what actually lives there --------
+; This span was Phase 1's fixed variable table VARTAB: 32 dynamically-allocated
+; 4-byte entries [name0][name1][value:2], names significant to 2 characters
+; (public MSX-BASIC language reference), name0=0 marking the first free slot.
 ;
-; F3 S3a (repack build only, docs/spec-basic-float-core.md §11): typed numeric
-; variables replace the fixed 4-byte stride with VARIABLE-WIDTH entries
-; [name0:1][name1:1][type:1][value: 2 int / 4 single / 8 double], keyed on
-; (name0,name1,type) so `A`/`A%`/`A!`/`A#` are independent entries. VARENTSZ/
-; VARSLOTS below no longer describe the repack entry shape (there is no single
-; fixed stride any more), but their PRODUCT still pins the numeric pool to the
-; same 128-byte span ending at VAREND=$E240 — the hard constraint (STRTAB must
-; not move) — so both constants stay exactly as Phase 1 left them.
+; It has been dead since arrays slice-4b (docs/spec-basic-arrays-slice4b-scalar-
+; reloc.md §2/Q3) relocated numeric scalars into the real-MSX contiguous chain
+; (program text -> scalars -> arrays -> free -> string heap), sharing arrays'
+; own [PRGEND+2, FRETOP) region. The four constants that described it --
+; VARTAB / VARENTSZ / VARSLOTS / VAREND -- were read ONLY by vars.asm's
+; var_find / var_get_key / var_set_key, and those had no callers at all; all
+; seven were deleted by the ROM REGION STRUCTURE REVIEW's R1 carve
+; (docs/spec-rom-region-rebalance-r1.md A1/A4).
 ;
-; ⚠️ NOTHING READS THEM AS A STRIDE/COUNT ANY MORE. They described the retired lean
-; cart's fixed pool; VAREND is still pinned because the cells ABOVE it are placed
-; relative to it. vars.asm's var_find/var_get_key/var_set_key are the last readers
-; and have no callers at all -- a carve candidate, filed under the ROM REGION
-; STRUCTURE REVIEW (TODO.md) rather than taken here, since S3 is byte-identical.
-VARTAB          equ     $E1C0   ; base of the (now unused) fixed variable table
-VARENTSZ        equ     4       ; [name0:1][name1:1][value:2] stride
-VARSLOTS        equ     32      ; max distinct variables (128 bytes -> $E240)
-VAREND          equ     VARTAB + VARSLOTS*VARENTSZ  ; $E240 (pinned)
-; Arrays slice-4b (docs/spec-basic-arrays-slice4b-scalar-reloc.md §2/Q3):
-; numeric scalars are RELOCATED out of the fixed VARTAB pool above into the
-; real-MSX contiguous chain (program text -> scalars -> arrays -> free ->
-; string heap), joining arrays' own [PRGEND+2, FRETOP) region. VARTAB/VAREND
-; above are therefore DEAD from this slice on -- their 128-byte span
-; $E1C0..$E240 is freed RAM. ARYTAB is the ONE new STORED live cell the
+; ⚠️ THE WINDOW IS NOT FREE RAM, AND THE COMMENTS BELOW USED TO SAY IT WAS.
+; Three later slices already spent it, each describing itself as homing in
+; "the freed VARTAB window" -- so a reader arriving at the R1 carve expecting
+; 128 recoverable bytes finds ARYTAB, DIRECTF, SAVSTK, SAVTXT and ZTRAP sitting
+; in them. Measured 2026-07-30: the only free RAM in the neighbourhood is
+; $E226..$E23F, and it is accounted for on its own below. R1 therefore frees
+; 122 ROM bytes and ZERO RAM bytes (review §4).
+;
+; What lives here now, low to high: ARYTAB $E1C0, DIRECTF $E1C2, SAVSTK $E1C3,
+; SAVTXT ..$E1D1, ZTRAP $E1D1..$E207.
+;
+; ARYTAB is the ONE new STORED live cell the
 ; target model needs (§2/§4): scalar base is DERIVED as (PRGEND)+2 exactly
 ; like the array base used to be; ARYTAB = end of the scalar region = base
 ; of the array region (every array-anchor site that used to read

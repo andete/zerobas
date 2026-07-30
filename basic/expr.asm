@@ -1892,29 +1892,15 @@ mul_skip:
                 jr      nz,mul_lp
                 ret
 
-; --- div_de_bc / mod_de_bc: DE / BC -> quotient / remainder in DE -----------
-; Unsigned 16-bit divide. zerobas treats operands as 0..65535 (address math),
-; diverging from MSX's signed integer divide — documented; signed/float is a
-; later model. Division by zero yields 0 and sets ERRMARK (no crash). Clobber
-; A, BC, HL.
-div_de_bc:
-                ld      a,b
-                or      c
-                jr      z,div_zero          ; divisor 0 -> error, result 0
-                call    udiv16              ; DE = quotient, HL = remainder
-                ret
-mod_de_bc:
-                ld      a,b
-                or      c
-                jr      z,div_zero
-                call    udiv16              ; HL = remainder
-                ex      de,hl               ; DE = remainder
-                ret
-div_zero:
-                ld      a,$DD               ; expression-error marker (cf. ev_f_err)
-                ld      (ERRMARK),a
-                ld      de,0
-                ret
+; --- (removed) div_de_bc / mod_de_bc / div_zero -----------------------------
+; The unsigned-16-bit `/` and MOD front-ends over udiv16, with a shared
+; divide-by-zero arm that set ERRMARK and returned 0. Superseded by the float
+; pack: `/` is float division and `\`/MOD reach udiv16 by their own paths, so
+; all three had no callers left. ⚠️ pasmo could only see TWO of them — `div_zero`
+; IS referenced, but only from the other two, so it took the ROM REGION STRUCTURE
+; REVIEW's transitive sweep to find it (docs/rom-region-structure-review.md §4).
+; Deleted by R1's carve (docs/spec-rom-region-rebalance-r1.md A2): 26 B of
+; main PAGE 1. ⚠️ udiv16 below STAYS — it has live callers.
 
 ; --- udiv16: DE / BC -> DE = quotient, HL = remainder ----------------------
 ; Restoring division: shift the dividend (DE) left into the remainder (HL) one

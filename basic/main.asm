@@ -92,104 +92,19 @@ SUB_BUILD       equ     0
 ; assembler like pasmo; only ORG-based layout needs include order.
                 include "basic/arrays.asm"
 
-; --- Low-region string pool (D-LINEMAX, spec §4 Q2) -------------------------
-; Message text that page-1 code points at but does not execute. A string is pure
-; data with no call graph, so the only question placement has to answer is "is
-; page 0 mapped when it is READ?" — and for a REPL-time report it always is: the
-; reader is resident dispatch_line, never a sub-ROM tenant (a page-0 tenant runs
-; with this whole region switched OUT, which is what pins code here, not data).
-;
-; Sited here because page 1 could not hold it. Q2 deferred placement to
-; implementation with "measure the walls before choosing"; measured from clean at
-; implementation time, page 1 had 10 B free and the low region 32 B, against a
-; 42-byte need — so the choice was not between homes, it was a split across both.
-;
-; ⚠️ THE TWO STRINGS OVERLAP, AND THAT IS LOAD-BEARING, NOT A FLOURISH. ERR 25's
-; text ENDS with ERR 6's text, so `err_overflow` is simply a pointer 12 bytes into
-; `err_linebuf_overflow`: 23 bytes total instead of 34. That 11 bytes is not spare
-; change here -- the split above needed 42 bytes against 10 free in page 1 and 32
-; in the low region, and the overlap is what closed the gap and left both walls
-; with margin instead of landing at exactly zero.
-;
-; ⚠️ CONSEQUENCE FOR ANY LATER EDIT: these are ONE string with two entry points.
-; Re-wording ERR 25's tail, or ERR 6 at all, silently corrupts the other message
-; -- and err_overflow has TWO readers (err_msgtab entry 6 and program.asm's
-; dl_overflow float arm), neither of which is near this line. Split them back into
-; two independent `db`s before changing either, and re-measure both walls.
-; ⚠️ D-MSGENC (docs/spec-basic-msgenc-carve.md §4.4) DELIBERATELY LEFT THE OVERLAP
-; ALONE. Phrase-encoding these as two independent strings costs 21 + 9 = 30 B
-; against the 23 B they already share -- a 7 B LOSS sitting inside a column that
-; still reads as a saving. All the slice takes here is §4.2's baked CRLF, which
-; the overlap does not depend on: 23 B -> 21 B, and ERR 25 still falls through.
-err_linebuf_overflow:
-                db      "Line buffer "      ; ERR 25 (D-LINEMAX R-2) -- falls through
-err_overflow:                               ; ERR 6 -- the shared tail, read on its own
-                db      "overflow",0
+; --- (moved out) the low-region message pool -------------------------------
+; The D-LINEMAX / S-FCH-2 message strings and the ERR 52/59 raisers used to sit
+; here, at the very top of the low region, and only because page 1 could not
+; hold them (see their own header, now in page 1 below). The ROM REGION
+; STRUCTURE REVIEW measured them PRESSURE-PLACED, not contract-forced -- 0 of
+; their 9 labels are in the resident-ABI or $0038-ISR closure, and no sub-ROM
+; source references any of them -- so R1 promoted the whole 80 B block into the
+; page-1 tail that R1's dead-code carve had just freed. That converts a page-1
+; saving into relief on the HARD wall: page 1 and the low region are co-mapped
+; slot-0 pages, so a pressure-placed leaf can be moved between them freely and
+; the walls are COUPLED. docs/spec-rom-region-rebalance-r1.md B,
+; docs/rom-region-structure-review.md §5.
 
-; --- S-FCH-2: the SPARSE disk-range error codes (docs/spec-basic-filechan- ---
-; alloc.md §5c, redesigned 2026-07-29). err_msgtab is DENSE and stops at 25;
-; reaching 52/59 densely would cost 34 more words. These two codes are the only
-; disk-range codes any zerobas verb raises, so raise_error's out-of-table arm
-; comes here instead of straight to `rerr_unprintable`, and a two-entry
-; straight-line compare beats both a dense extension and a walked side-table.
-;
-; Sited in the low region, whole: page 1 pays exactly ONE byte for this (the
-; `jr` -> `jp` at raise_error's range test). Both raisers live here too, so the
-; six OPEN reject sites in files.asm keep their existing 3-byte `jp cc,<label>`.
-;
-; ⚠️ BOTH CODES ARE ORDINARY TRAPPABLE ERRORS, and that is a MEASURED CORRECTION
-; to §5c, which read the gate's `err_badchan` row as "ERR 52 is not trappable"
-; and specced a raiser that forced ONEFLG=1 to reach raise_error's abort arm.
-; Measured on the CF-3300 2026-07-29, two unconfounded ways:
-;   `10 ON ERROR GOTO 100 : 20 OPEN"HI.TXT" FOR INPUT AS #2` -> handler runs, ERR 52
-;   ...AS #0                                                 -> handler runs, ERR 52
-;   `20 B=EOF(1)` on a never-opened channel                  -> handler runs, ERR 59
-; The err_badchan row's non-trap is a CONFOUND: it types `MAXFILES=1` between the
-; arm and the error, and MAXFILES (like a plain CLEAR) DISARMS the handler on the
-; reference. So there is no forced abort here, no ONEFLG store, and §5c's open
-; ONEFLG question does not arise on this path at all.
-rerr_sparse:                                ; A = ERRCODE-1, CF set. Re-read the code
-                ld      a,(ERRCODE)         ; rather than compare 51/58: the table
-                                            ; bound and this arm are already "one fact
-                                            ; in two places" once (err_msgtab's own
-                                            ; comment, and it DRIFTED) -- 3 bytes buys
-                                            ; a test that reads as the code it names.
-                ld      hl,err_bad_filenum
-                cp      52
-                jr      z,rsp_go
-                ld      hl,err_file_notopen
-                cp      59
-                jr      z,rsp_go
-                jp      rerr_unprintable    ; any other out-of-table code, unchanged
-rsp_go:
-                jp      raise_error_hl      ; the SHARED trap decision -- so 52/59 trap
-                                            ; into an armed handler like every other
-                                            ; code, which is what the reference does
-
-; The two raisers. Sited here (not in files.asm/expr.asm) so page 1 pays nothing
-; for them; reached by ordinary in-slot `jp` from page 1, both regions mapped.
-oo_fail_bfn:                                ; OPEN's bad-file-number reject (ERR 52)
-                xor     a                   ; -- same FCH_MODE clear oo_fail_syn does
-                ld      (FCH_MODE),a        ; (the provisional mode must not survive
-                                            ; a failed OPEN)
-                ld      a,52
-                jp      raise_error
-err_notopen_raise:                          ; EOF()/LOF() on a closed channel (ERR 59)
-                ld      a,59
-                jp      raise_error
-
-; D-MSGENC: new messages are phrase-encoded too. Neither of these can use any of
-; the four ORIGINAL escapes, so this slice adds the fifth, MSGESC_FILE ("file "),
-; which both of them share -- 30 B of literal text becomes 22 B plus a 6 B table
-; entry. ⚠️ THE DIRECTION OF THAT TRADE WAS DECIDED BY THE MEASUREMENT, NOT BY
-; THE ARITHMETIC: the phrase table is PAGE 1 and these strings are LOW REGION, so
-; on the FIRST clean build (page 1 19 B free, low 1 B free) it spends the roomy
-; wall to relieve the scarce one. Costed the other way round from an estimate it
-; would have read as a 2-byte loss and been declined.
-err_bad_filenum:
-                db      "bad ",MSGESC_FILE,"number",0   ; ERR 52 -- 16 B -> 12 B
-err_file_notopen:
-                db      MSGESC_FILE,"not open",0        ; ERR 59 -- 14 B -> 10 B
 
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
@@ -356,6 +271,121 @@ __MEAS_LOW_END:
 ; and trap_syntax (program.asm) and ln_div_entry (program.asm), so it follows
 ; program.asm in the include order.
                 include "basic/missing.asm"
+
+; ===========================================================================
+; PROMOTED FROM THE LOW REGION BY R1 (docs/spec-rom-region-rebalance-r1.md B)
+; ===========================================================================
+; This block spent the whole D-LINEMAX / S-FCH-2 era in the page-0 low region,
+; for one reason its own comments state plainly: page 1 could not hold it. It is
+; PRESSURE-PLACED, never contract-forced -- nothing here is reachable from a
+; page-1 sub-ROM tenant's resident-ABI callbacks or from the $0038 ISR, and no
+; sub/ source names any of these 8 symbols (verified, review §5). Meanwhile
+; EVERY reader was already in page 1: err_msgtab (interp.asm), dl_overflow
+; (program.asm), and files.asm's six OPEN reject sites. So the move puts the
+; data beside the code that reads it, and hands the low region its first free
+; bytes since the wall closed.
+; ⚠️ A page-0 sub-ROM tenant can still reach this -- main page 1 stays MAPPED
+; during a page-0 CALSLT (it is page 0 that switches out). Promotion is strictly
+; safer here than the low-region siting was, not merely neutral.
+
+; --- Low-region string pool (D-LINEMAX, spec §4 Q2) -------------------------
+; Message text that page-1 code points at but does not execute. A string is pure
+; data with no call graph, so the only question placement has to answer is "is
+; page 0 mapped when it is READ?" — and for a REPL-time report it always is: the
+; reader is resident dispatch_line, never a sub-ROM tenant (a page-0 tenant runs
+; with this whole region switched OUT, which is what pins code here, not data).
+;
+; Sited here because page 1 could not hold it. Q2 deferred placement to
+; implementation with "measure the walls before choosing"; measured from clean at
+; implementation time, page 1 had 10 B free and the low region 32 B, against a
+; 42-byte need — so the choice was not between homes, it was a split across both.
+;
+; ⚠️ THE TWO STRINGS OVERLAP, AND THAT IS LOAD-BEARING, NOT A FLOURISH. ERR 25's
+; text ENDS with ERR 6's text, so `err_overflow` is simply a pointer 12 bytes into
+; `err_linebuf_overflow`: 23 bytes total instead of 34. That 11 bytes is not spare
+; change here -- the split above needed 42 bytes against 10 free in page 1 and 32
+; in the low region, and the overlap is what closed the gap and left both walls
+; with margin instead of landing at exactly zero.
+;
+; ⚠️ CONSEQUENCE FOR ANY LATER EDIT: these are ONE string with two entry points.
+; Re-wording ERR 25's tail, or ERR 6 at all, silently corrupts the other message
+; -- and err_overflow has TWO readers (err_msgtab entry 6 and program.asm's
+; dl_overflow float arm), neither of which is near this line. Split them back into
+; two independent `db`s before changing either, and re-measure both walls.
+; ⚠️ D-MSGENC (docs/spec-basic-msgenc-carve.md §4.4) DELIBERATELY LEFT THE OVERLAP
+; ALONE. Phrase-encoding these as two independent strings costs 21 + 9 = 30 B
+; against the 23 B they already share -- a 7 B LOSS sitting inside a column that
+; still reads as a saving. All the slice takes here is §4.2's baked CRLF, which
+; the overlap does not depend on: 23 B -> 21 B, and ERR 25 still falls through.
+err_linebuf_overflow:
+                db      "Line buffer "      ; ERR 25 (D-LINEMAX R-2) -- falls through
+err_overflow:                               ; ERR 6 -- the shared tail, read on its own
+                db      "overflow",0
+
+; --- S-FCH-2: the SPARSE disk-range error codes (docs/spec-basic-filechan- ---
+; alloc.md §5c, redesigned 2026-07-29). err_msgtab is DENSE and stops at 25;
+; reaching 52/59 densely would cost 34 more words. These two codes are the only
+; disk-range codes any zerobas verb raises, so raise_error's out-of-table arm
+; comes here instead of straight to `rerr_unprintable`, and a two-entry
+; straight-line compare beats both a dense extension and a walked side-table.
+;
+; Sited in the low region, whole: page 1 pays exactly ONE byte for this (the
+; `jr` -> `jp` at raise_error's range test). Both raisers live here too, so the
+; six OPEN reject sites in files.asm keep their existing 3-byte `jp cc,<label>`.
+;
+; ⚠️ BOTH CODES ARE ORDINARY TRAPPABLE ERRORS, and that is a MEASURED CORRECTION
+; to §5c, which read the gate's `err_badchan` row as "ERR 52 is not trappable"
+; and specced a raiser that forced ONEFLG=1 to reach raise_error's abort arm.
+; Measured on the CF-3300 2026-07-29, two unconfounded ways:
+;   `10 ON ERROR GOTO 100 : 20 OPEN"HI.TXT" FOR INPUT AS #2` -> handler runs, ERR 52
+;   ...AS #0                                                 -> handler runs, ERR 52
+;   `20 B=EOF(1)` on a never-opened channel                  -> handler runs, ERR 59
+; The err_badchan row's non-trap is a CONFOUND: it types `MAXFILES=1` between the
+; arm and the error, and MAXFILES (like a plain CLEAR) DISARMS the handler on the
+; reference. So there is no forced abort here, no ONEFLG store, and §5c's open
+; ONEFLG question does not arise on this path at all.
+rerr_sparse:                                ; A = ERRCODE-1, CF set. Re-read the code
+                ld      a,(ERRCODE)         ; rather than compare 51/58: the table
+                                            ; bound and this arm are already "one fact
+                                            ; in two places" once (err_msgtab's own
+                                            ; comment, and it DRIFTED) -- 3 bytes buys
+                                            ; a test that reads as the code it names.
+                ld      hl,err_bad_filenum
+                cp      52
+                jr      z,rsp_go
+                ld      hl,err_file_notopen
+                cp      59
+                jr      z,rsp_go
+                jp      rerr_unprintable    ; any other out-of-table code, unchanged
+rsp_go:
+                jp      raise_error_hl      ; the SHARED trap decision -- so 52/59 trap
+                                            ; into an armed handler like every other
+                                            ; code, which is what the reference does
+
+; The two raisers. Sited here (not in files.asm/expr.asm) so page 1 pays nothing
+; for them; reached by ordinary in-slot `jp` from page 1, both regions mapped.
+oo_fail_bfn:                                ; OPEN's bad-file-number reject (ERR 52)
+                xor     a                   ; -- same FCH_MODE clear oo_fail_syn does
+                ld      (FCH_MODE),a        ; (the provisional mode must not survive
+                                            ; a failed OPEN)
+                ld      a,52
+                jp      raise_error
+err_notopen_raise:                          ; EOF()/LOF() on a closed channel (ERR 59)
+                ld      a,59
+                jp      raise_error
+
+; D-MSGENC: new messages are phrase-encoded too. Neither of these can use any of
+; the four ORIGINAL escapes, so this slice adds the fifth, MSGESC_FILE ("file "),
+; which both of them share -- 30 B of literal text becomes 22 B plus a 6 B table
+; entry. ⚠️ THE DIRECTION OF THAT TRADE WAS DECIDED BY THE MEASUREMENT, NOT BY
+; THE ARITHMETIC: the phrase table is PAGE 1 and these strings are LOW REGION, so
+; on the FIRST clean build (page 1 19 B free, low 1 B free) it spends the roomy
+; wall to relieve the scarce one. Costed the other way round from an estimate it
+; would have read as a 2-byte loss and been declined.
+err_bad_filenum:
+                db      "bad ",MSGESC_FILE,"number",0   ; ERR 52 -- 16 B -> 12 B
+err_file_notopen:
+                db      MSGESC_FILE,"not open",0        ; ERR 59 -- 14 B -> 10 B
 
 ; --- overflow guard: the image must not overrun the $8000 ceiling ----------
 ; $8000 is the top of slot-0 page 1. If a future feature pushes code past it, the
