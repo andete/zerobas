@@ -110,6 +110,18 @@ NUM = [
     ("num-max",      ["6 5 5 2 9 REMX"]), # S -> 65529, the documented ceiling
     ("num-over",     ["6 5 5 3 0 REMX"]), # S -> 65530: accepted, or refused?
     ("num-huge",     ["9 9 9 9 9 REMX"]), # S -> 99999: wraps, or refused?
+    # ⚠️ THE THREE ROWS ABOVE CANNOT ANSWER THE RANGE QUESTION ON A MACHINE THAT
+    # STOPS AT THE BLANK, and that is a hole in this battery's own denominator.
+    # zerobas reads `6 5 5 3 0 REMX` as line 6 -- so the row diverges for the
+    # BLANK reason and says nothing at all about what it does with 65530. These
+    # three ask the range question with no blank in the way, which separates "the
+    # scan stops early" from "the ceiling is unguarded". It matters because
+    # fixing the blank rule is what makes the big values REACHABLE: without a
+    # range check, `9 9 9 9 9` would stop being a wrong-but-visible line 9 and
+    # start being a SILENTLY WRAPPED line number.
+    ("num-max0",     ["65529 REMX"]),     # CONTROL: the ceiling, no blanks
+    ("num-over0",    ["65530 REMX"]),     # one past it, no blanks
+    ("num-huge0",    ["99999 REMX"]),     # past 65535: wraps, or refused?
     # ⚠️ INFORMATIONAL, NON-GATING. The MSX line editor may expand TAB inside the
     # INPUT BUFFER, in which case this row measures the editor and not the scan.
     # Reported with that caveat whichever way it reads.
@@ -178,6 +190,12 @@ BODY = [
     ("body-z2",      ["0  REMX"]),        # value 0, 2 blanks
     ("body-z0",      ["00 REMX"]),        # value 0 written with 2 digits
     ("body-zl",      ["01 REMX"]),        # a LEADING ZERO: value 1, 2 digits
+    # ⚠️ `00 REMX` vs `01 REMX` says the discriminator is the VALUE and not the
+    # leading digit -- but both reach that value with the digits ADJACENT. This
+    # row reaches value 0 THROUGH a blank, which is the one way left for the rule
+    # to be about the digit run rather than the value. A cell that agrees can
+    # agree for the wrong reason; this is the row that says which.
+    ("body-z00",     ["0 0 REMX"]),       # value 0, two digits, split by a blank
     ("body-x1",      ["1 X=1"]),          # 1 digit, non-REM body
     ("body-x2",      ["12 X=1"]),         # 2 digits, non-REM body
     ("body-x3",      ["123 X=1"]),        # 3 digits, non-REM body
@@ -311,7 +329,40 @@ def echo_missing(raw, lines, prompt):
 
 
 # --- driving one side --------------------------------------------------------
-def run_side(side, cases, repeat, echo):
+def say(raw, lines, margin_lines):
+    """What the machine PRINTED, with the case's own echo stripped off. A screen
+    row built only from characters the CASE ITSELF typed is echo, not output.
+
+    ⚠️ THE ECHO ALPHABET IS DERIVED FROM THE CASE, never hard-coded -- the same
+    discipline basic_probe_linemax.py:364 arrived at after a hard-coded alphabet
+    reported a battery's own echo as machine output on every row.
+
+    This exists for ONE question the stored-line readout cannot answer: a row
+    that reads `REFUSED (empty program)` says the line was rejected but not with
+    WHICH ERROR. A refusal this project has to implement needs the reference's
+    error CLASS, not just the fact of it."""
+    if raw is None:
+        return "NOCAPTURE"
+    # ⚠️ `set(margin_lines)` would be a set of STRINGS, not characters, and would
+    # exclude nothing -- the reset lines' own echo would then be reported as
+    # machine output on every row. Join first.
+    typed = set("".join(lines)) | set("".join(margin_lines))
+    out = []
+    # ⚠️ THE LAST ROW IS NOT OUTPUT -- the references draw the FUNCTION-KEY line
+    # there (`color auto goto list run`) and zerobas draws nothing, so leaving it
+    # in makes every row differ on furniture. Machine-agnostic and changes no
+    # machine state, unlike `KEY OFF` (basic_probe_linemax.py:372).
+    for r in range(omsx_repl.ROWS - 1):
+        row = raw[r * omsx_repl.COLS:(r + 1) * omsx_repl.COLS].strip()
+        for p in omsx_repl.PROMPTS:
+            if row.startswith(p):
+                row = row[len(p):].strip()
+        if row and set(row) - typed:
+            out.append(row)
+    return "|".join(out) if out else "<nothing printed>"
+
+
+def run_side(side, cases, repeat, echo, saymode=False):
     """Deliver `cases` to one machine and return a reading per case.
 
     ⚠️ REPEAT IS NOT OPTIONAL ON A REFERENCE PASS, AND THE REASON IS ASYMMETRIC.
@@ -330,8 +381,8 @@ def run_side(side, cases, repeat, echo):
                                           delete=False).name
         shutil.copy(diska, tmp)
     reset = cfg.pop("reset")
-    if echo:
-        # The echo pass reads the SCREEN, so every case must start from a cleared
+    if echo or saymode:
+        # The echo/say passes read the SCREEN, so every case must start from a cleared
         # one -- otherwise 30+ cases scroll each other off a 24-row display and a
         # missing echo means nothing. `SCREEN 0` is explicit because the CF-3300
         # boots Disk BASIC in SCREEN 1, whose name table this scraper does not
@@ -339,7 +390,7 @@ def run_side(side, cases, repeat, echo):
         # mode-independent, so the memory pass observes each machine in its own
         # boot mode and only the guard pass perturbs it.
         reset = reset + ("SCREEN 0", "CLS")
-    capture = "screen" if echo else ("stored_line", TXTTAB)
+    capture = "screen" if (echo or saymode) else ("stored_line", TXTTAB)
 
     runs = []
     for _ in range(repeat):
@@ -349,6 +400,14 @@ def run_side(side, cases, repeat, echo):
             diska=tmp))
     if tmp:
         os.unlink(tmp)
+
+    if saymode:
+        out = []
+        for i, (label, lines) in enumerate(cases):
+            vals = [say(r[i], lines, reset) for r in runs]
+            out.append(vals[0] if len(set(vals)) == 1
+                       else f"UNSTABLE across {repeat} boots: {vals}")
+        return out
 
     if echo:
         prompt = "ZB" if side == "zb" else "Ok"
@@ -381,6 +440,10 @@ def main():
                     help="run the ECHO GUARD pass (screen capture) instead of "
                          "the measurement: proves the cadence delivers these "
                          "payloads verbatim on this machine")
+    ap.add_argument("--say", action="store_true",
+                    help="report what each machine PRINTED (screen capture) "
+                         "instead of the stored bytes: the only way to see the "
+                         "error CLASS behind a `REFUSED (empty program)` row")
     ap.add_argument("--gate", action="store_true")
     args = ap.parse_args()
 
@@ -398,7 +461,8 @@ def main():
         print("APPARATUS FAILURE: --repeat must be >= 1")
         return 1
 
-    cols = {s: run_side(s, sel, args.repeat, args.echo) for s in sides}
+    cols = {s: run_side(s, sel, args.repeat, args.echo, args.say)
+            for s in sides}
 
     wide = max(len(v) for vs in cols.values() for v in vs)
     wide = min(wide, 60)

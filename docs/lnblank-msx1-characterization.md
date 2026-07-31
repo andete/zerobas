@@ -214,6 +214,131 @@ produces line 20 on both machines. Kept informational for that reason.
   nothing — no geometry handling, no name-table width switch. That is the only
   reason a second oracle was affordable at all.
 
-## 10. What zerobas does
+## 10. Addendum — two rows the first battery could not answer
 
-Deliberately unmeasured at the time of writing. Step 2.
+Added after §1–§9 were locked, oracle-locked in their turn on both references
+(`repeat=2`) **before** being compared with zerobas.
+
+### 10.1 The range question, asked without a blank in the way
+
+⚠️ **`num-over`/`num-huge` cannot answer the range question on a machine that
+stops at the blank** — that was a hole in this battery's own denominator.
+zerobas reads `6 5 5 3 0 REMX` as line **6**, so the row diverges for the *blank*
+reason and says nothing whatever about what zerobas does with 65530.
+
+| row | typed | both references |
+|---|---|---|
+| `num-max0` | `65529 REMX` | `line 65529 \| <8F>X` — accepted |
+| `num-over0` | `65530 REMX` | **`REFUSED (empty program)`** |
+| `num-huge0` | `99999 REMX` | **`REFUSED (empty program)`** |
+
+The refusal is independent of blanks. `--say` gives its **class**, on both
+machines: **`Syntax error`**. `num-max0` prints nothing.
+
+### 10.2 The value-zero rule, reached THROUGH a blank
+
+`00 REMX` vs `01 REMX` (§3) says the discriminator is the value and not the
+leading digit — but both reach their value with the digits *adjacent*. One way
+was left for the rule to be about the digit run instead:
+
+| row | typed | both references |
+|---|---|---|
+| `body-z00` | `0 0 REMX` | `line 0 \| ␣<8F>X` — value 0 through a blank, **still no separator eaten** |
+
+The rule is about the **value**. Confirmed.
+
+## 11. What zerobas does — 18/48 gating rows agree
+
+`make lnblank-acceptance` at `5eaf1d7`. Five distinct divergence groups.
+
+### A. The leading line-number scan stops at the blank *(the filed defect)*
+
+| row | typed | reference | zerobas |
+|---|---|---|---|
+| `num-blank1` | `2 0 REMX` | `line 20 \| <8F>X` | `line 2 \| <11> <8F>X` |
+| `num-blank3` | `2 0 0 REMX` | `line 200 \| <8F>X` | `line 2 \| <11> <11> <8F>X` |
+| `num-mid` | `20 0REMX` | `line 200 \| <8F>X` | `line 20 \| <11><8F>X` |
+| `num-filed` | `20 0#0#0#0#0#` | `line 200 \| #<1F>…` | `line 20 \| <1F>…` |
+| `num-max` | `6 5 5 2 9 REMX` | `line 65529` | `line 6 \| <16> <16> <13> <1A> <8F>X` |
+| `num-only` | `20 REMY` / `2 0` | `REFUSED (empty program)` | `line 2 \| <11>` — **line 20 still there** |
+
+### B. The line-number REFERENCE scan stops too, and the list breaks after it
+
+| row | typed | reference | zerobas |
+|---|---|---|---|
+| `ref-goto` | `20 GOTO 1 0` | `<89> <0E><0A><00>` | `<89> <0E><01><00> <11>` |
+| `ref-onlist` | `20 ON A GOTO 1 0,2 0` | `<95> A <89> <0E><0A><00>,<0E><14><00>` | `<95> A <89> <0E><01><00> <11>,<13> <11>` |
+| `ref-oncomma` | `20 ON A GOTO 1 0 , 2 0` | `… <0E><0A><00> , <0E><14><00>` | `… <0E><01><00> <11> , <13> <11>` |
+
+⚠️ **`ref-oncomma` carries a second defect the blank rule does not explain.**
+The reference converts the *second* list slot to `$0E` as well; zerobas emits an
+ordinary literal for it. `bl_done` tests for `,` at the very next character, so a
+**blank before the comma ends the list** — every later target then crunches as a
+plain number. This is the same class of bug `bl_num`'s own comment already
+records for an *empty* slot ([`basic/tokenise.inc:459`](../basic/tokenise.inc:459)),
+one character to the left of where that one was fixed.
+
+### C. The body offset — zerobas eats every blank, the reference eats one
+
+`dispatch_line` calls `skip_spaces`, which consumes the whole run.
+
+| row | typed | reference | zerobas |
+|---|---|---|---|
+| `num-body1` | `20␣␣REMX` | `line 20 \| ␣<8F>X` | `line 20 \| <8F>X` |
+| `num-body2` | `20␣␣␣REMX` | `line 20 \| ␣␣<8F>X` | `line 20 \| <8F>X` |
+| `body-d1b2` | `1␣␣REMX` | `line 1 \| ␣<8F>X` | `line 1 \| <8F>X` |
+| `num-zero` | `0 REMX` | `line 0 \| ␣<8F>X` | `line 0 \| <8F>X` |
+| `body-z0` | `00 REMX` | `line 0 \| ␣<8F>X` | `line 0 \| <8F>X` |
+| `body-zx` | `0 X=1` | `line 0 \| ␣X<EF><12>` | `line 0 \| X<EF><12>` |
+
+⚠️ **`num-zero` was declared a two-sided CONTROL and it is red.** That
+classification was right about the blank *rule* — T and S both predict line 0 —
+and wrong as a claim about the row, because the row also exercises the body
+offset, which no rule in the spec covered when the label was assigned. A control
+is a claim about *which* variables a row holds still, and this one held fewer
+than its label said.
+
+### D. 🔴 The general decimal-literal scanner — NOT what the TODO filed
+
+| row | typed | reference | zerobas |
+|---|---|---|---|
+| `lit-assign` | `20 A=1 0` | `A<EF><0F><0A>` (literal 10) | `A<EF><12> <11>` (1, blank, 0) |
+| `lit-print` | `20 PRINT 1 0` | `<91> <0F><0A>` | `<91> <12> <11>` |
+| `lit-add` | `20 A=1 0+2 0` | `A<EF><0F><0A><F1><0F><14>` | 1,blank,0,+,2,blank,0 |
+| `lit-float` | `20 A=1 . 5` | `A<EF><1D>A<15><00><00>` (1.5) | — |
+| `lit-exp` | `20 A=1E 2` | `A<EF><1D>C<10><00><00>` (100) | — |
+
+**Filed as its own slice, not fixed here.** The site is `tk_float`
+([`basic/tokenise.inc:57`](../basic/tokenise.inc:57) → the sub-ROM float pack),
+a different ROM from the two scanners the TODO names, and the change would
+affect every numeric literal in every program — it deserves its own
+falsification. The controls that bound it (`lit-str`, `lit-rem`, `lit-hex`) are
+already measured above and go with the item.
+
+### E. 🔴 The line-number ceiling is unguarded — a SILENT WRAP
+
+| row | typed | reference | zerobas |
+|---|---|---|---|
+| `num-max0` | `65529 REMX` | `line 65529` | `line 65529` — agrees |
+| `num-over0` | `65530 REMX` | `REFUSED`, `Syntax error` | **`line 65530`** stored |
+| `num-huge0` | `99999 REMX` | `REFUSED`, `Syntax error` | **`line 34463`** stored |
+
+`parse_lineno`'s header says in as many words that it "wraps past 65535" and that
+line numbers above 65529 are "not guarded here"
+([`basic/program.asm:198`](../basic/program.asm:198)). 99999 − 65536 = **34463**:
+typing `99999 REM` on zerobas today silently creates a line with a *different
+number than the one typed*, and nothing reports it.
+
+⚠️ This is live **now**, independent of blanks — but the blank fix widens its
+reach, because `9 9 9 9 9 REM` goes from a visibly-wrong line 9 to a silently
+wrapped 34463. Spec §7 had scoped the range question out; it is pulled in for
+that reason. Shipping the blank fix without it would repeat D-LINEMAX exactly,
+where fixing one limit turned a previously-safe unbounded buffer into a live
+defect.
+
+### F. Five `$0E` verbs zerobas has no arm for (informational)
+
+`LIST`/`DELETE`/`AUTO`/`RENUM`/`ELSE` — §6. And it is worse than a missing
+`$0E` arm: zerobas has no token for three of these verbs at all —
+`20 DELETE 1 0` crunches to `DE<88>E …` and `20 RENUM 1 0` stores `RENUM`
+verbatim. Filed; a much larger gap than this slice.
