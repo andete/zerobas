@@ -2546,32 +2546,62 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       an unrelated `jr` out of range) **and the probe ran anyway, on the stale
       machine** — five red rows of pure noise. Chain build and probe with `&&`.
 
-- [ ] **ERR 21 `No RESUME` is never raised.** Found 2026-07-29 by the D-ONEFLG
-      battery's c3b row, not aimed at. A program that runs off the END OF THE
-      PROGRAM while still inside an `ON ERROR` handler must abort with
-      `No RESUME in <line>` (VG-8020, measured); zerobas ends the run silently.
-      The code has a table entry; nothing raises it. When it lands, D-ONEFLG's
-      site C (`basic/program.asm` `rp_lp`) becomes redundant with site A and its
-      5 B can be reclaimed, and `oneflg_falloff` can be upgraded from a zb-only
-      row to a full text differential.
-      **✅ CHARACTERIZED 2026-07-29, with its controls.** The raise condition is
-      exactly "the `$0000`-link exit is reached while `ONEFLG` is set": the two
-      controls `e21_handler_end` (the handler `END`s deliberately) and
-      `e21_handler_resume` (the handler `RESUME`s) are silent on BOTH machines,
-      and so is `e21_nohandler` (falling off the end with nothing armed). So it
-      is NOT "falling off the end is an error" — it is "falling off the end
-      still owing a `RESUME`". **ERR/ERL after the abort read `21 , 100`** on the
-      reference (the code, and the HANDLER's line) against zerobas's `5 , 20`
-      (still the ORIGINAL error) — so the raiser must set both, not just print.
-      **✅ THE EXIT IT HOOKS HAS NOW MOVED, as planned — D-CONTR landed
-      2026-07-30 ([`docs/spec-basic-cont-record.md`](docs/spec-basic-cont-record.md)
-      §4).** The raiser goes in as a **PREFIX at the same `rp_lp` label**: test
-      `ONEFLG` BEFORE D-ONEFLG site C clears it, and `jp` to the raiser instead
-      of falling through to the new `ld hl,0 / jp cont_record`. It must NOT fall
-      through to that record — and it does not need to: an ERR 21 abort reaches
-      `ra_abort`, which now records `SAVTXT` like every other abort, so the
-      raiser gets the measured abort resume point for free. Nothing else in §3.3
-      changes. ⚠️ Add a `CONT`-after-ERR-21 row when it lands.
+- [x] **ERR 21 `No RESUME` is never raised.** Found 2026-07-29 by the D-ONEFLG
+      battery's c3b row, not aimed at; characterized 2026-07-29.
+      **✅ FIXED 2026-07-31 as D-ERR21 —
+      [`docs/spec-basic-err21-no-resume.md`](docs/spec-basic-err21-no-resume.md).**
+      **+4 B page 1 (30 → 26 free), +57 B low region (80 → 23 free)** — both
+      estimates exact to the byte, and no `jr` span broke this time.
+      Gate **126/126** (`make error-trap-acceptance`, 24 new `e21_*` rows +
+      `oneflg_falloff` upgraded from one zb-only row to a two-machine text
+      differential), seven falsification builds.
+      🔴 **THE FILED CHARACTERIZATION WAS WRONG IN TWO PLACES AND A THIRD DEFECT
+      WAS HIDING BEHIND THE PLACEMENT QUESTION.**
+      **(a)** The message and `ERL` name the **LAST EXECUTED LINE**, not the
+      handler's — `in 110` with the handler at 100, `in 200` through
+      `100 GOTO 200`. The filed `21 , 100` was taken on a program whose handler
+      line WAS its last line, so the two readings were never discriminated.
+      Falsification **F3 built the filed design** (`CURLINE := ONELIN`) and it
+      prints `in 100` / `21 , 100` on every row — **the wrong implementation
+      reproduces the filed measurement perfectly.**
+      **(b)** The abort resume point is **NOT free from `ra_abort`**: `CONT`
+      after this abort reprints NOTHING, so the point is the FALL-OFF position,
+      not `SAVTXT`. The raiser records it itself, before it moves `CURLINE`.
+      ⚠️ **F4 was caught by whole-screen occurrence COUNTS, not by the tail** —
+      both tails were byte-identical to the want, because the re-printed marker
+      lands after the `CONT`, outside the `RUN`-anchored tail.
+      **(c)** D-ONEFLG **site C was causing a live defect nobody had measured**:
+      a typed line ends by falling through `dir_line`'s own `$0000` link into
+      this very exit, so a benign `PRINT 1` at a `Break in <handler>` prompt
+      killed the handler context and the next `CONT` said `resume without error`.
+      Deleting site C — which this slice does anyway — fixes it.
+      ⚠️ `err_msgtab`'s entry 21 was a **HOLE**, not a working entry, so
+      `ERROR 21` printed `unprintable error` too; wiring it is 0 B.
+      🔴 **F6 CAME BACK GREEN AND THAT WAS THE FALSIFICATION'S FAULT.** It
+      restored site C *after* the new `ONEFLG` test, where `A` is 0 by
+      construction — a no-op. F6b restored its EFFECT on the arm that mattered
+      and bit as designed. **A green falsification is a claim about the patch
+      first and the code second.**
+      ⚠️ `build/sub.rom` changes legitimately: the 57 B of low region shifts
+      `vars_reset`, a resident-ABI address the sub-ROM links against.
+
+- [ ] **`probes/lib/omsx_repl.py` streams audio on every boot.** The
+      `sound_driver null` fix landed in
+      [`probes/disk/omsx_session.py:127`](probes/disk/omsx_session.py:127) only;
+      the REPL driver — which EVERY BASIC acceptance gate boots through — still
+      passes only `set renderer none`. Same defect, one layer over. Found
+      2026-07-31 while running the D-ERR21 characterization (~40 boots, audible).
+      ⚠️ NOT `mute` — that leaves the CoreAudio churn; the fix is
+      `set sound_driver null` in the generated Tcl, beside `renderer none`.
+      *(Ask at WHICH LAYER a lesson already applies.)*
+
+- [ ] **`fre_abort_low`'s header cites a `ret z` that no longer exists.**
+      [`basic/arrays.asm`](basic/arrays.asm) — "the loop's own normal exit is a
+      `ret` at that same depth (rp_lp's `ret z` on the `$0000` link)". D-CONTR
+      replaced that `ret z` with `jp cont_record`, and D-ERR21 put a test above
+      it. The DEPTH argument still holds (`cont_record`'s `ret` is the loop's
+      exit `ret`); only the citation is stale. A comment that names a specific
+      instruction is a CLAIM — cf. [[msgtab-bound-drift]].
 
 - [x] **`CONT` after a plain `END` must continue.** Found 2026-07-29 by the
       D-ONEFLG battery's c7 row, not aimed at; characterized 2026-07-29;

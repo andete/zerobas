@@ -312,18 +312,29 @@ rp_lp:
                 dec     hl
                 ld      a,d
                 or      e
-                ; D-ONEFLG site C (docs/spec-basic-oneflg-reset-scope.md §4):
-                ; running off the end of the program TERMINATES the run, so the
-                ; handler context dies here too -- and A is ALREADY 0 on this
-                ; arm (it is d|e, and the branch is taken exactly when that is
-                ; zero), so the clear costs no `xor a`. 5 B over the `ret z` it
-                ; replaces. ⚠️ The reference does not reach a silent end here at
-                ; all: falling off the end while INSIDE a handler raises ERR 21
-                ; "No RESUME" (spec §2 c3b), which zerobas does not raise --
-                ; filed separately (spec §7). When that lands, this site becomes
-                ; redundant with site A and can be reclaimed.
+                ; D-ERR21 (docs/spec-basic-err21-no-resume.md §3.1): falling off
+                ; the end while STILL OWING A RESUME is an ERROR, not a silent
+                ; stop -- `No RESUME in <line>`. The raise condition is exactly
+                ; "this exit is reached while ONEFLG is set", so the test goes in
+                ; as a PREFIX, above everything else this exit does.
+                ;
+                ; D-ONEFLG SITE C USED TO SIT HERE (`ld (ONEFLG),a`, 3 B) and is
+                ; DELETED: on the arm that survives, ONEFLG is 0 by the test just
+                ; below, so the store was a no-op; on the arm that does not, the
+                ; ERR 21 abort funnels through fre_abort_low, i.e. D-ONEFLG SITE A,
+                ; which clears ONEFLG unconditionally. Deleting it also FIXES a
+                ; third defect the site was causing (spec §2.2, row c1): a TYPED
+                ; line ends by falling through dir_line's own $0000 link into THIS
+                ; exit, so site C silently killed the handler context on every
+                ; benign direct line typed at a `Break in <handler>` prompt. The
+                ; reference keeps it -- measured.
+                ;
+                ; A is d|e, i.e. already 0 on this arm; the test clobbers it, which
+                ; is why the deleted store could not simply have been kept.
                 jr      nz,rp_notend
-                ld      (ONEFLG),a
+                ld      a,(ONEFLG)
+                or      a
+                jp      nz,e21_no_resume    ; basic/arrays.asm, low region
                 ; D-CONTR (docs/spec-basic-cont-record.md §3.3): running off the
                 ; end IS a run stop, so it records a resume point like every other
                 ; one -- CONTPTR = 0, the "re-enter FRESH at CONTLINE" sentinel

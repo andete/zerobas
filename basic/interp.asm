@@ -961,11 +961,14 @@ err_msgtab:
                                             ; hole here)
                 dw      err_unprintable     ; 20: verify error (hole -- cload.asm's own
                                             ; err_verify is a separate, untouched path)
-                dw      err_unprintable     ; 21: no RESUME (hole -- no S2b site raises
-                                            ; it: real MSX raises 21 when a trapped run
-                                            ; falls off the END of the program without a
-                                            ; RESUME, a control-flow edge this slice does
-                                            ; not implement -- deliberately deferred)
+                dw      err_no_resume       ; 21: no resume (D-ERR21, docs/spec-basic-
+                                            ; err21-no-resume.md -- was a hole until the
+                                            ; run loop could raise it: falling off the
+                                            ; END of the program while still owing a
+                                            ; RESUME. The string and e21_no_resume both
+                                            ; live in basic/arrays.asm's low region;
+                                            ; this entry also gives `ERROR 21` the right
+                                            ; message, which it did not have)
                 dw      err_resume_noerr    ; 22: RESUME without error (raised by
                                             ; raise_error_forced, below)
                 dw      err_unprintable     ; 23: unprintable error (self; ERROR n with

@@ -94,7 +94,10 @@ Verified in-tree this session:
   Reused unchanged; the direct-mode 65535 sentinel is already the pinned convention.
 * **`err_msgtab`** (interp.asm:676) — ERR-code-indexed (1..23) message pointer table.
   Codes **21 (No RESUME)** and **22 (RESUME without error)** are currently holes
-  pointing at `err_unprintable`; S2b fills them (§8).
+  pointing at `err_unprintable`; S2b fills them (§8). **(AS-LANDED: 22 filled by
+  S2b; 21 stayed a hole until D-ERR21, 2026-07-31 —
+  [`docs/spec-basic-err21-no-resume.md`](spec-basic-err21-no-resume.md) — which
+  is why `ERROR 21` printed `unprintable error` for a whole arc.)
 * **`ERRCODE`** ($E1C5, 1 B), **`ERRLINE`** ($E1C6, 2 B) — live RAM cells
   (basic/sysvars.inc:448-450). **Not** zeroed by `clear_vars` (S2a adversarial fix,
   commit 5967659): they persist across NEW/CLEAR/RUN, zeroed only at cold boot in

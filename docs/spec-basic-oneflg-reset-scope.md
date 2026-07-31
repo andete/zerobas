@@ -53,6 +53,7 @@ yields `1`; the two can never be confused. This is the same class as
 | c2 | control: same program, no prior error at all | traps | traps | ✅ |
 | c3 | handler `END`s the run → re-arm + re-raise | **traps** | **force-aborts** | ❌ |
 | c3b | handler falls off the end of the program → direct `RESUME` | `No RESUME in 100`, then `RESUME without error` | *silent*, then resumes line 20 | ❌ |
+| | *(post-D-ERR21, 2026-07-31: zerobas now prints `no resume in 100` then `resume without error` — both halves match, and the row is a full text differential)* | | | ✅ |
 | c3c | handler `END`s the run → direct `RESUME` | `RESUME without error` | resumes line 20 | ❌ |
 | c4b | `STOP` in handler → `CONT` → `RESUME 120` | reaches 120 | reaches 120 | ✅ |
 | c5 | nested forced abort → direct `RESUME` | `RESUME without error` | re-raises in 100 | ❌ |
@@ -131,7 +132,19 @@ ex_end:
 ([`basic/interp.asm:327`](../basic/interp.asm:327) dispatches it separately), so
 the c6/c4b asymmetry is structural rather than a test.
 
-**Site C — falling off the end of the program**, `rp_lp`'s `$0000`-link exit
+**Site C — falling off the end of the program** — 🔴 **DELETED 2026-07-31 by
+D-ERR21** ([`docs/spec-basic-err21-no-resume.md`](spec-basic-err21-no-resume.md)
+§2.2/§3.1). It is redundant with site A once the fall-off with `ONEFLG` **set**
+raises ERR 21 (which aborts through `fre_abort_low`, i.e. site A), and on the
+arm that survives `ONEFLG` is already 0. **It was also causing a defect of its
+own that this spec's battery never measured:** a *typed* line ends by falling
+through `dir_line`'s own `$0000` link into this very exit, so site C silently
+killed the handler context on every benign direct line at a `Break in <handler>`
+prompt — the reference keeps it. `oneflg_falloff` now holds down site A here,
+and the new `e21_typed`/`e21_ctl_typed` pair holds down the absence of the
+clear. As filed, the site read:
+
+`rp_lp`'s `$0000`-link exit
 ([`basic/program.asm:338`](../basic/program.asm:338), page 1). **AS-BUILT — 1 B
 cheaper than specced, and the reason is worth keeping:** the branch is taken
 exactly when `A` (which holds `d|e`) is zero, so the clear needs **no `xor a`
@@ -175,7 +188,7 @@ Each row names the site it holds down, so a later carve cannot quietly remove on
 | `oneflg_ctl` | c2 | the two-sidedness (no prior error ⇒ traps anyway) | — |
 | `oneflg_direct_resume` | c5 | Site A, read head-on | reverting A |
 | `oneflg_end` | c3 | Site B | reverting B → force-aborts |
-| `oneflg_falloff` | c3b, zb-only `RESUME` text | Site C | reverting C |
+| `oneflg_falloff` | c3b — ⚠️ **now a full TEXT differential** (D-ERR21) | Site A (was Site C, deleted) | reverting A |
 | `oneflg_keep` | c6 | **over-clearing** — must still force-abort | any prompt/loop-exit placement |
 | `oneflg_suspend_resume` | c4b | over-clearing from the `CONT` side | clearing at `ex_cont`/loop exit |
 
@@ -183,9 +196,11 @@ Each row names the site it holds down, so a later carve cannot quietly remove on
 load-bearing rather than the *existence* of a clear: a fix that simply zeroes
 `ONEFLG` at the prompt passes the first four and fails these two.
 
-`oneflg_falloff` is deliberately **not** a text differential: the reference
-prints `No RESUME in 100` before its `RESUME without error` and zerobas prints
-nothing (§7's filed gap), so the row gates only the `RESUME` response.
+`oneflg_falloff` **was** deliberately not a text differential: the reference
+printed `No RESUME in 100` before its `RESUME without error` and zerobas printed
+nothing (§7's filed gap), so the row gated only the `RESUME` response. 🔴 **That
+reason expired on 2026-07-31 — D-ERR21 raises it, and the row now compares BOTH
+lines on BOTH machines** (case-folded; zerobas is house-style lowercase).
 `oneflg_direct_resume` compares error **classes**, never wording — zerobas's
 messages are house-style lowercase (D-2).
 
@@ -233,7 +248,12 @@ so the whole error surface is the regression surface.
 1. **ERR 21 `No RESUME` is never raised.** A program that runs off the end while
    inside a handler must abort with `No RESUME in <line>` (VG-8020, c3b);
    zerobas ends the run silently. The code exists in `err_msgtab`; the raiser
-   does not.
+   does not. ✅ **FIXED 2026-07-31 as D-ERR21,**
+   [`docs/spec-basic-err21-no-resume.md`](spec-basic-err21-no-resume.md).
+   ⚠️ `err_msgtab`'s entry 21 was a HOLE pointing at `err_unprintable`, not a
+   working entry — `ERROR 21` printed the wrong message too. And the line named
+   is the **last executed** one, not the handler's (§2 c3b could not see the
+   difference: its handler line was also its last line).
 2. **`CONT` after a plain `END` must continue.** VG-8020 resumes at the
    statement after `END` (c7); zerobas reports `can't continue`. The comment at
    [`basic/program.asm:683`](../basic/program.asm:683) asserts the opposite as
@@ -249,7 +269,9 @@ Both are independent of this fix and neither is touched by it.
 2. **Overrun policy** — *land A+B+C and re-scout page 1 if over.* It did not
    overrun: 11 B against 13 + 9 free (§4.1).
 3. **`oneflg_falloff`** — *keep as a zb-only row*, gating the `RESUME` response
-   only, with the missing ERR 21 filed separately (§7.1).
+   only, with the missing ERR 21 filed separately (§7.1). **(SUPERSEDED
+   2026-07-31: §7.1 landed, so the row is now a full two-machine text
+   differential.)**
 
 ## 9. Clean-room
 

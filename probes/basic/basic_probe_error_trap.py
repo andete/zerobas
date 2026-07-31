@@ -48,6 +48,18 @@ structure, never as the sole signal for a numeric fact):
     that just zeroes ONEFLG at the prompt passes the first three and fails these),
     plus the no-prior-error control and a direct-RESUME readout that reads the flag
     head-on ("RESUME without error" == ONEFLG is already 0).
+  * E21_* — D-ERR21 (docs/spec-basic-err21-no-resume.md). Falling off the END of
+    the program while still owing a RESUME is an ERROR, `no resume in <line>`,
+    not a silent stop. Twelve rows: three that pin WHICH LINE is named (the LAST
+    EXECUTED one — the handler's line agrees only when it happens to be last,
+    which is how the filed characterization got it wrong), two that pin WHERE the
+    abort records its CONT resume point (the fall-off position, NOT ra_abort's
+    SAVTXT — visible only in the whole-screen marker COUNTS), two for the
+    err_msgtab entry that `ERROR 21` needs, and five MUST-NOT rows of which
+    `e21_typed` is the placement row: a typed line falls through dir_line's own
+    $0000 link into the same exit, so the raise is DIRECTF-gated and D-ONEFLG's
+    site C had to go. Every row arms `ON ERROR`, which is why they live here and
+    not beside the cont2_* family in basic_probe_abort_depth.py.
   * ONELIN_* — the D-ONELIN reset scope (docs/spec-basic-onelin-reset-scope.md),
     i.e. §7's OTHER half. `ON ERROR` is disarmed exactly when the VARIABLE TABLE
     IS CLEARED: RUN, NEW, CLEAR (direct-mode and in-run, so MAXFILES too) and
@@ -276,11 +288,110 @@ ONEFLG_RESUME_DIFF = Case("oneflg_direct_resume", [
 ONEFLG_RESUME_ZB = Case("oneflg_falloff", [
     "10 ON ERROR GOTO 100", "20 B=SQR(-1)", "30 END", "100 A=1",
     "RUN", "RESUME",
-])  # site C: the handler runs off the END OF THE PROGRAM. zerobas-ONLY on
-    # purpose -- the reference does not end silently here at all, it raises ERR 21
-    # "No RESUME in 100" first (a raiser zerobas lacks, filed separately in
-    # docs/spec-basic-oneflg-reset-scope.md §7). So the row gates the RESUME
-    # RESPONSE, which is the ONEFLG fact, and not the text before it.
+])  # The handler runs off the END OF THE PROGRAM, then a direct RESUME reads the
+    # flag head-on. ⚠️ UPGRADED BY D-ERR21 (2026-07-31) FROM A ZB-ONLY ROW TO A
+    # FULL TWO-MACHINE TEXT DIFFERENTIAL. It was zb-only for exactly one reason --
+    # the reference raised ERR 21 "No RESUME in 100" before its "RESUME without
+    # error" and zerobas raised nothing, so the text before the RESUME differed for
+    # a SECOND reason (docs/spec-basic-oneflg-reset-scope.md §5/§8.3). zerobas now
+    # raises it too, so that reason has expired and BOTH lines are compared.
+    # The site it holds down also moved: D-ONEFLG site C is DELETED, and it is now
+    # site A (the abort funnel) that clears ONEFLG on the way out of the ERR 21
+    # abort -- see docs/spec-basic-err21-no-resume.md §2.2.
+
+# --- D-ERR21: `no resume` -- falling off the END still owing a RESUME ---------
+# docs/spec-basic-err21-no-resume.md. The run loop's $0000-link exit is a RUN STOP
+# when ONEFLG is clear and an ERROR when it is set. Twelve rows; every one arms
+# `ON ERROR`, which is why they live HERE and not beside the cont2_* family in
+# basic_probe_abort_depth.py -- that probe's stated invariant is that NOT ONE ROW
+# MAY ARM `ON ERROR` (arming one selects raise_error's trap branch and silently
+# turns the file into a copy of a different gate; see its docstring).
+#
+# ⚠️ MESSAGE TEXT IS COMPARED CASE-FOLDED. The reference prints `No RESUME`,
+# zerobas prints house-style lowercase `no resume` (D-2, matching `resume without
+# error`). Everything else about the text -- the wording AND the line number --
+# is compared exactly, so this is a real differential, not a class check.
+#
+# ⚠️ Marker discipline as everywhere in this file: `PRINT"R<";n;">"`, never a
+# literal. The echo yields `R<";7;">` and the OUTPUT yields `R< 7 >`, so the
+# occurrence COUNTS below cannot be fooled by the source echo (D-ONEFLG round 1).
+E21 = namedtuple("E21", "label lines anchor want_tail want_r want_counts absent")
+E21_H = "10 ON ERROR GOTO 100"     # the arm
+E21_E = "20 B=SQR(-1)"             # the erroring line -> traps into 100
+# a run SUSPENDED inside the handler, which is the only way ONEFLG reaches the
+# prompt at all (docs/spec-basic-oneflg-reset-scope.md §3 rule 2).
+E21_SUSPEND = [E21_H, E21_E, "30 END", "100 STOP", "110 RESUME 120",
+               '120 PRINT"R<";5;">":END']
+E21_ERRERL = 'PRINT"R<";ERR;",";ERL;">"'
+
+E21_CASES = [
+    # -- MUST RAISE ------------------------------------------------------------
+    # THE DISCRIMINATOR for WHICH LINE is named: the handler is 100 and the LAST
+    # EXECUTED line is 110. The reference says 110. `CURLINE := ONELIN` -- what
+    # docs/spec-basic-cont-record.md §4 planned -- would say 100, and the filed
+    # characterization could not see the difference because its one program's
+    # handler line WAS its last line (spec §2.1(1)).
+    E21("e21_falloff", [E21_H, E21_E, "30 END", "100 A=1", "110 A=2",
+                        "RUN", E21_ERRERL],
+        "RUN", "no resume in 110", "21 , 110", {}, None),
+    # the same fact with the handler BRANCHING away first...
+    E21("e21_falloff_goto", [E21_H, E21_E, "30 END", "100 GOTO 200", "200 A=2",
+                             "RUN", E21_ERRERL],
+        "RUN", "no resume in 200", "21 , 200", {}, None),
+    # ...and with a live GOSUB frame, which changes nothing.
+    E21("e21_falloff_gosub", [E21_H, E21_E, "30 END", "100 GOSUB 200",
+                              "200 A=2", "RUN", E21_ERRERL],
+        "RUN", "no resume in 200", "21 , 200", {}, None),
+    # -- the CONT resume point -------------------------------------------------
+    # THE DISCRIMINATOR for WHERE the abort records: the FALL-OFF position, NOT
+    # ra_abort's SAVTXT. A SAVTXT record would resume at line 110's LAST statement
+    # and reprint `R< 8 >`; a fresh-line record would reprint `R< 7 >` as well.
+    # The reference reprints NEITHER -- so both counts stay 1 (spec §2.1(2)).
+    E21("e21_cont", [E21_H, E21_E, "30 END", "100 A=1",
+                     '110 PRINT"R<";7;">":PRINT"R<";8;">"', "RUN", "CONT"],
+        "RUN", "r< 7 >|r< 8 >|no resume in 110", None,
+        {"R< 7 >": 1, "R< 8 >": 1}, None),
+    # ...and the point is not consumed: the second CONT is silent too. ⚠️ THIS ROW
+    # ALONE CANNOT SEE A WRONG RECORD -- the resumed run stops again and re-records,
+    # which is exactly [[cont-record-every-stop]]'s F4 absorb. e21_cont above is the
+    # row that can.
+    E21("e21_cont_twice", [E21_H, E21_E, "30 END", "100 A=1",
+                           '110 PRINT"R<";7;">"', "RUN", "CONT", "CONT"],
+        "RUN", "r< 7 >|no resume in 110", None, {"R< 7 >": 1}, None),
+    # -- the err_msgtab entry (a second raiser, free) ---------------------------
+    E21("e21_error_n", ["ERROR 21"], "ERROR 21", "no resume", None, {}, None),
+    E21("e21_error_n_prog", ["10 ERROR 21", "RUN", E21_ERRERL],
+        "RUN", "no resume in 10", "21 , 10", {}, None),
+    # -- MUST NOT RAISE --------------------------------------------------------
+    # ⚠️ THE PLACEMENT ROW. A typed line ends by falling through dir_line's OWN
+    # $0000 link into the very exit the raiser hooks, so without the DIRECTF gate
+    # a benign `PRINT 1` at a `Break in 100` prompt aborts with `no resume`. It
+    # ALSO holds down the D-ONEFLG site-C deletion from the other side: with site C
+    # in place the typed line kills the handler context and the CONT reports
+    # `resume without error in 110` instead of reaching 120. RED ON ZEROBAS BEFORE
+    # THIS SLICE, for that second reason (spec §2.2, row c1).
+    E21("e21_typed", E21_SUSPEND + ["RUN", "PRINT 1", "CONT"],
+        "CONT", "r< 5 >", "5", {"R< 5 >": 1}, "no resume"),
+    # its GREEN CONTROL: identical, WITHOUT the typed line. Green on both machines
+    # before AND after -- so a red e21_typed beside a green e21_ctl_typed says the
+    # typed line is what did it, and not the suspension shape.
+    E21("e21_ctl_typed", E21_SUSPEND + ["RUN", "CONT"],
+        "CONT", "r< 5 >", "5", {"R< 5 >": 1}, "no resume"),
+    # no handler armed at all -> falling off the end is an ORDINARY silent stop.
+    E21("e21_ctl_nohandler", ["10 A=1", "20 A=2", "RUN", E21_ERRERL],
+        "RUN", "", "0 , 0", {}, "no resume"),
+    # the handler ENDs the run deliberately -> silent, and ERR/ERL keep the
+    # ORIGINAL error (5 in 20), which is what proves nothing re-raised.
+    E21("e21_ctl_end", [E21_H, E21_E, "30 END", "100 A=1", "110 END",
+                        "RUN", E21_ERRERL],
+        "RUN", "", "5 , 20", {}, "no resume"),
+    # THE RESUME WAS PAID, and the run then falls off the end anyway -> silent.
+    # This is the row that pins the rule as "falling off still OWING a RESUME"
+    # rather than "falling off out of a handler".
+    E21("e21_ctl_resume", [E21_H, E21_E, "30 GOTO 200", "100 RESUME NEXT",
+                           "200 A=3", "RUN", E21_ERRERL],
+        "RUN", "", "0 , 20", {}, "no resume"),
+]
 
 # --- D-ONELIN: WHAT DISARMS `ON ERROR` (spec-basic-onelin-reset-scope.md) ------
 # The §7 reset-scope cases below are CONFOUNDED FOR PLACEMENT: each of them types
@@ -663,16 +774,90 @@ def main() -> int:
             ok = ok and said
             print(f"{'PASS' if said else 'FAIL':5} [{tag}] oneflg_direct_resume "
                   f"'resume without error'={said} (want True)")
-        # site C, zerobas-only (see ONEFLG_RESUME_ZB's note: the reference reports
-        # the ERR 21 "No RESUME" that zerobas does not raise, so the text before
-        # the RESUME differs for a SECOND reason and is deliberately not compared)
-        if not args.ref_only:
-            raw = omsx_repl.run_case(args.zb_machine, "direct", ONEFLG_RESUME_ZB.lines)
-            said = "resume without error" in (raw or "").lower()
-            ok = ok and said
-            print(f"{'PASS' if said else 'FAIL':5} [zb]  oneflg_falloff "
-                  f"'resume without error'={said} (want True -- running off the end "
-                  f"of the program ends the run, so the handler context dies)")
+        # oneflg_falloff -- NOW A FULL TWO-MACHINE TEXT DIFFERENTIAL (D-ERR21).
+        # It was zb-only only because zerobas did not raise the ERR 21 that the
+        # reference prints first; it does now, so BOTH lines are compared, on both
+        # machines, case-folded (D-2 house-style lowercase vs "No RESUME").
+        for machine, tag in ([(args.machine, "ref")] +
+                             ([(args.zb_machine, "zb")] if not args.ref_only else [])):
+            low = (omsx_repl.run_case(machine, "direct",
+                                      ONEFLG_RESUME_ZB.lines) or "").lower()
+            raised = "no resume in 100" in low     # the fall-off IS an error...
+            said = "resume without error" in low   # ...and it cleared ONEFLG (site A)
+            good = raised and said
+            ok = ok and good
+            print(f"{'PASS' if good else 'FAIL':5} [{tag}] oneflg_falloff "
+                  f"'no resume in 100'={raised} 'resume without error'={said} "
+                  f"(want True/True -- falling off the end while still owing a "
+                  f"RESUME aborts, and the abort ends the handler context)")
+
+    # ---------------- D-ERR21: `no resume` (spec-basic-err21-no-resume.md) -----
+    e21cases = [c for c in E21_CASES if not args.only or args.only in c.label]
+    if e21cases:
+        print("\n--- D-ERR21: falling off the END still owing a RESUME ---")
+
+        # ⚠️ THE READOUT IS PART OF THE MEASUREMENT, and this trim is why these rows
+        # can anchor on a command that is NOT the last one. omsx_repl.screen_tail
+        # ends the tail at a row that EQUALS a prompt -- true on the reference,
+        # where "Ok" gets its own row, but NOT on zerobas, which prints "ZB" as a
+        # PREFIX of the next echo row ("ZBCONT"). Every gate that uses screen_tail
+        # today anchors on the LAST command, where the tail ends at a bare prompt
+        # row either way, so the asymmetry has never bitten. These rows must read
+        # the abort text and THEN print ERR/ERL, so they anchor mid-script and see
+        # it: the first run scored eight rows FAIL whose zerobas values were
+        # identical to the reference's. Cut at the first row that BEGINS a new
+        # prompt -- anything at or after it belongs to a later command, and no
+        # expected value here starts with a prompt.
+        def _cut(tail):
+            out = []
+            for row in tail.split("|"):
+                if row == "ok" or row.startswith("zb"):
+                    break
+                out.append(row)
+            return "|".join(out)
+
+        def e21_facts(c, raw):
+            """(tail, r, counts) -- the compared readout. Text case-folded (D-2)."""
+            tail = omsx_repl.screen_tail(raw, c.anchor)
+            return ((tail if tail is None else _cut(tail.strip().lower())),
+                    read_R(raw),
+                    {m: (raw or "").count(m) for m in c.want_counts})
+
+        # Boot-per-case (run_case), not batched: half these rows SUSPEND a run and
+        # resume it from the prompt, and the D-ONELIN note above records that such
+        # a row flaked exactly once on a shared boot -- two extra REPL round trips
+        # are two extra chances to be raced.
+        for c in e21cases:
+            ref_f = None
+            for machine, tag in ([(args.machine, "ref")] +
+                                 ([(args.zb_machine, "zb")] if not args.ref_only else [])):
+                raw = omsx_repl.run_case(machine, "direct", c.lines)
+                tail, r, counts = e21_facts(c, raw)
+                # ⚠️ `absent` is a WHOLE-SCREEN check and it is what makes the
+                # must-NOT rows able to say WHY they failed. The F2 falsification
+                # (DIRECTF gate deleted) and the F6 control build (site C restored)
+                # BOTH turn e21_typed red, and MEASURED, both show the same
+                # `resume without error in 110` at the CONT anchor -- because the
+                # spurious ERR 21 F2 raises aborts through site A, which clears
+                # ONEFLG, which is exactly what F6 does directly. The tail alone
+                # cannot tell them apart; the spurious message, printed earlier
+                # against the typed line, can. (§4.1's first draft claimed the tail
+                # was enough. It is not -- measured, not argued.)
+                seen = c.absent is not None and c.absent in (raw or "").lower()
+                good = (tail == c.want_tail and counts == c.want_counts
+                        and not seen)
+                if c.want_r is not None:
+                    good = good and r == c.want_r
+                if ref_f is not None:
+                    good = good and (tail, r, counts, seen) == ref_f
+                else:
+                    ref_f = (tail, r, counts, seen)
+                ok = ok and good
+                extra = f" counts={counts}" if c.want_counts else ""
+                extra += f" {c.absent!r}-seen={seen}" if c.absent else ""
+                print(f"{'PASS' if good else 'FAIL':5} [{tag}] {c.label:20} "
+                      f"tail={tail!r} (want {c.want_tail!r}) r={r!r}"
+                      f"{extra}")
 
     # ---------------- D-ONELIN: what disarms ON ERROR --------------------------
     olcases = sel(ONELIN_CASES)

@@ -173,6 +173,88 @@ fre_abort_low:
                 call    print_msg_stopcr    ; run: the body alone
                 jp      print_in_lineno     ; run: " in <line>" + CRLF (program.asm)
 
+; --- e21_no_resume: ERR 21 "no resume" -- the run fell off the END of the ----
+; program while still owing a RESUME. docs/spec-basic-err21-no-resume.md §3.2.
+; Reached ONLY by `jp nz` from rp_lp's $0000-link exit (basic/program.asm §3.1),
+; at the run loop's own depth, with ONEFLG != 0 and CURLINE = the address of the
+; $0000 end marker. Never returns except on the direct-mode arm, whose `ret` IS
+; the run loop's own exit `ret` (same depth -- D-CUR-D / D-CONTD rest on it).
+;
+; It lives in the LOW REGION, beside the abort tail it ends in: page 1 is the
+; tighter of the two co-mapped walls and this body is a pressure-placeable leaf
+; with no page-1 contract (docs/rom-region-structure-review.md §5).
+;
+; ⚠️ IT DOES NOT GO THROUGH raise_error, and that is 9 B deliberately spent.
+; raise_error ends in ra_abort, which records SAVTXT -- the FAILING STATEMENT --
+; as the CONT resume point. MEASURED (spec §2.1(2), row a4): after this abort the
+; reference's CONT reprints NOTHING, so the resume point is the FALL-OFF
+; position, i.e. the ordinary `HL = 0 / CONTLINE = the marker` record the silent
+; arm makes. Routing through ra_abort would overwrite it. The trap decision
+; raise_error would add is inert anyway: ONEFLG != 0 IS the raise condition, so
+; raise_error_hl would force-abort every time.
+e21_no_resume:
+                ld      hl,0                ; the fall-off resume point, recorded
+                call    cont_record         ; HERE -- while CURLINE is still the
+                                            ; marker, before the walk moves it
+                ; ⚠️ DIRECT MODE RAISES NOTHING (spec §2.2, row c1). A typed line
+                ; ends by falling through dir_line's OWN $0000 link into this very
+                ; exit (basic/program.asm rp_notend's header spells that path out),
+                ; so without this gate every benign line typed at a `Break in
+                ; <handler>` prompt would abort with "no resume". The reference
+                ; prints the line's own output and keeps the handler context.
+                ; cont_record above already no-oped on this arm (D-CONTR: direct
+                ; mode records nothing and invalidates nothing), so the `ret` here
+                ; leaves the run loop exactly as the silent arm's tail call does.
+                ld      a,(DIRECTF)
+                or      a
+                ret     nz
+                ; CURLINE := the LAST STORED LINE, which is what ERL and the
+                ; " in <line>" suffix must both name -- MEASURED, and NOT the
+                ; handler's line: with the handler at 100 and a line 110 after it
+                ; the reference says `No RESUME in 110`, and `100 GOTO 200` says
+                ; `in 200` (spec §2.1(1), rows a1/a2/a3). `ld hl,(ONELIN)` -- what
+                ; spec-basic-cont-record.md §4 planned -- would say `in 100` on all
+                ; three; the filed characterization could not see it because its
+                ; one program's handler line WAS its last line.
+                ;
+                ; Same link chain find_line_bc walks, and it stops at the same
+                ; $0000 terminator -- by construction the cell CURLINE points at,
+                ; so the walk cannot miss. BC trails HL by one line and is
+                ; pre-seeded, so an empty program (unreachable: RUN clears ONEFLG)
+                ; still writes a defined value instead of running away.
+                ld      hl,TXTBASE
+                ld      b,h
+                ld      c,l
+e21_walk:
+                ld      e,(hl)              ; DE = this line's link
+                inc     hl
+                ld      d,(hl)
+                dec     hl                  ; HL = this line's link-field address
+                ld      a,d
+                or      e
+                jr      z,e21_last          ; HL is the terminator -> BC is the last line
+                ld      b,h                 ; BC := this line, then step HL to the next
+                ld      c,l
+                ex      de,hl
+                jr      e21_walk
+e21_last:
+                ld      (CURLINE),bc
+                ld      a,21
+                ld      (ERRCODE),a
+                call    record_errline      ; ERL := that line (run mode; DIRECTF==0
+                                            ; is exactly what the gate above proved)
+                ld      hl,err_no_resume
+                jp      fre_abort_low       ; D-ONEFLG site A clears ONEFLG on the way
+                                            ; through, which is why rp_lp's site C could
+                                            ; be deleted (spec §2.2); then the message
+                                            ; and " in <line>"
+; House-style lowercase (D-2), like err_resume_noerr's "resume without error";
+; the reference prints "No RESUME". No D-MSGENC phrase hits it -- a "resume"
+; phrase would net 2 B across both messages and is not worth a shared-decoder
+; change. err_msgtab entry 21 (basic/interp.asm) points here, which also makes
+; `ERROR 21` print it (spec §2, rows a7/a8 -- it printed "unprintable error").
+err_no_resume:  db      "no resume",0
+
 ; --- vars_reset: re-anchor ARYTAB = PRGEND+2 (empty scalar region), then ---
 ; fall through into ary_reset to write the "no arrays" sentinel at the (now
 ; freshly re-anchored) ARYTAB. Arrays slice-4b (docs/spec-basic-arrays-

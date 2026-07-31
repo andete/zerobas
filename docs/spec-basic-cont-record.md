@@ -291,7 +291,28 @@ ran. **An estimate that omits a `jr` reach is not a measurement.**
 
 ---
 
-## 4. How the ERR 21 sibling slots in
+## 4. How the ERR 21 sibling slots in — 🔴 **REFUTED ON BOTH COUNTS, 2026-07-31**
+
+> ⚠️ **THIS SECTION IS KEPT AS FILED AND IS WRONG IN TWO PLACES.** D-ERR21
+> ([`docs/spec-basic-err21-no-resume.md`](spec-basic-err21-no-resume.md) §2.1)
+> measured both:
+>
+> 1. **`CURLINE := ONELIN` names the wrong line.** The message and `ERL` name the
+>    **LAST EXECUTED** line, not the handler's. Falsification F3 built exactly
+>    this design: it prints `no resume in 100` where the reference prints
+>    `in 110` / `in 200`. It looked right because the characterization it rested
+>    on used a program whose handler line WAS its last line.
+> 2. **The abort resume point is NOT free.** "an ERR 21 abort reaches `ra_abort`
+>    …so ERR 21 gets the measured abort resume point **for free**" — it gets the
+>    **wrong** one. `ra_abort` records `SAVTXT`, the failing statement; measured,
+>    `CONT` after this abort reprints **nothing**, so the point is the fall-off
+>    position. The raiser records it itself and does not route through
+>    `ra_abort`.
+>
+> The one thing this section got right is the PLACEMENT: a prefix at the same
+> label, testing `ONEFLG` before site C — and site C is now deleted outright.
+
+## 4.0 (as filed)
 
 [`TODO.md`](../TODO.md) ~line 2549 — *ERR 21 `No RESUME` is never raised* —
 hooks **the same `$0000`-link exit**, and its raise condition is exactly *"the
@@ -315,7 +336,9 @@ ordering is also why this slice had to come first: building the raiser against
 today's exit would have built it against a path about to move.
 
 When ERR 21 lands, D-ONEFLG's site C becomes redundant with site A and its 5 B
-can be reclaimed — unchanged by this slice.
+can be reclaimed — unchanged by this slice. **(AS-LANDED: site C was deleted
+outright; it was 3 B in the post-lean single build, and deleting it fixed a
+third defect nobody had measured — D-ERR21 §2.2.)**
 
 ---
 

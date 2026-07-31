@@ -200,7 +200,7 @@ numbering, with the zerobas string + site each code funnels from today:
 | 18 | Undefined user function | *(none yet)* | — |
 | 19 | Device I/O error | (`load error` family) | tape/disk load |
 | 20 | Verify error | `Verify error` | `cload.asm` `err_verify` |
-| 21 | No RESUME | — | S2 (RESUME machinery) |
+| 21 | No RESUME | `no resume` | ✅ D-ERR21 — the run loop's `$0000`-link exit while `ONEFLG` is set (`e21_no_resume`, arrays.asm) **and** `ERROR 21` |
 | 22 | RESUME without error | — | S2 (RESUME machinery) |
 | 23 | Unprintable error | — | S2 (`ERROR n` with n outside the table) |
 
