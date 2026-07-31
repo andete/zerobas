@@ -983,7 +983,7 @@ ev_ff_eof:                                  ; EOF(n): -1 at end of the input fil
                 ld      a,e
                 call    fch_valid
                 jp      nc,ev_f_err
-                call    ev_chan_hasfile     ; device/cassette channels have no length
+                call    fch_mode_class      ; device/cassette channels have no length
                 jp      nc,ev_f_err         ; -> function error (never fch_select them)
                 ld      a,e
                 call    fch_select
@@ -1005,20 +1005,35 @@ ev_ff_lof:                                  ; LOF(n): length of open input file 
                 ld      a,e
                 call    fch_valid
                 jp      nc,ev_f_err
-                call    ev_chan_hasfile     ; device/cassette channels have no length
+                call    fch_mode_class      ; device/cassette channels have no length
                 jp      nc,ev_f_err         ; -> function error (never fch_select them)
                 ld      a,e
                 call    fch_select
                 ld      de,(FAT_FILESIZE)
                 ret
 
-; ev_chan_hasfile — CF set if channel E is a disk file channel (FCH_MODES[E] <
-; LPT_MODE), CF clear if it is a length-less device channel (LPT/CRT/CAS, mode >=
-; LPT_MODE). Lets EOF()/LOF() reject device+cassette channels (which own no fat.asm
-; ctx and would corrupt the engine globals if fch_select'd) as a function error.
-; Preserves E + IX (no CALSLT); clobbers A/HL. FCH_MODES[0] is unused/0, so a 0
-; channel (already rejected by fch_valid) would read as a file channel — harmless.
-ev_chan_hasfile:
+; fch_mode_class — the shared channel-mode classifier. A = FCH_MODES[E]; raises
+; ERR 59 "file not open" if that is 0; CF set if E is a disk file channel
+; (FCH_MODES[E] < LPT_MODE), CF clear if it is a length-less device channel
+; (LPT/CRT/CAS, mode >= LPT_MODE). Preserves E + IX (no CALSLT); clobbers A/HL.
+; FCH_MODES[0] is unused/0, so a 0 channel (already rejected by fch_valid before
+; every call site) would raise 59 here — never reached.
+;
+; ⚠️ FOUR CALLERS, in THREE files — not the two this comment used to claim:
+;   * ev_ff_eof / ev_ff_lof (below): CF clear -> function error, so EOF()/LOF()
+;     reject device+cassette channels (which own no fat.asm ctx and would corrupt
+;     the engine globals if fch_select'd).
+;   * ex_print's `PRINT #n` arm (basic/print.asm) and input_common's `#n` arm
+;     (basic/files.asm, INPUT# *and* LINE INPUT#): they ignore CF and dispatch on
+;     A themselves, but they want the `or a` raise. D-NOTOPEN (docs/spec-basic-
+;     chan-notopen-err59.md): both hand-inlined this routine's first half and
+;     OMITTED the `or a`, so a not-open channel fell through to `load_error` --
+;     zerobas's non-fatal print -- where the CF-3300 raises a trappable ERR 59.
+;     That omission WAS the defect; calling this instead is both the fix and 8
+;     bytes of page 1 back.
+; Renaming a routine four statement drivers call out of the `ev_` (evaluator)
+; namespace is the whole of that rename; it is sited here, beside EOF/LOF, still.
+fch_mode_class:
                 ld      a,e
                 add     a,FCH_MODES & $FF   ; HL = FCH_MODES + E (page-local; array is
                 ld      l,a                 ; well within one page of its base)
@@ -1033,8 +1048,10 @@ ev_chan_hasfile:
                                             ; TRAPS into an armed handler; zerobas used
                                             ; to fch_select the closed slot and return
                                             ; whatever FREAD_LEFT/FAT_FILESIZE held.
-                                            ; Both callers (EOF, LOF) want this — and
-                                            ; they are the ONLY two callers.
+                                            ; ALL FOUR callers want this: D-NOTOPEN
+                                            ; measured PRINT#/INPUT#/LINE INPUT# on
+                                            ; the same never-opened channel raising
+                                            ; 59 and trapping on the CF-3300 too.
                 cp      LPT_MODE
                 ret                         ; CF set (A<LPT_MODE) = disk file channel
 ev_ff_dskf:                                 ; DSKF(d): free clusters on the drive

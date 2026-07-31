@@ -1878,8 +1878,12 @@ rule that fixed the read-path OPEN bug.
 
 **Divergences (own design, quarantined):** single channel; `OPEN FOR APPEND` not
 yet implemented; the comma-zone wrap divergence of screen PRINT (PROVENANCE.md
-§PRINT) applies equally to PRINT#; write errors (disk full / not-open) reuse
-`load_error`. `PRINT# USING` (the file form) IS supported (repack) and CF-3300-
+§PRINT) applies equally to PRINT#; disk-full write errors reuse `load_error`.
+⚠️ **"not-open" is NO LONGER on that list** — D-NOTOPEN (2026-07-31,
+`docs/spec-basic-chan-notopen-err59.md`) measured the CF-3300 raising a trappable
+ERR 59 `File not OPEN` for `PRINT #n` / `INPUT #n` / `LINE INPUT #n` on a channel
+that was never opened, and zerobas now matches (`fch_mode_class`, basic/expr.asm).
+`PRINT# USING` (the file form) IS supported (repack) and CF-3300-
 validated byte-for-byte (`disk_probe_printusing_file.py`); ex_print dispatches a
 USING after a #channel into printusing.asm with PRDEST=1. The format-copy fix that
 made it correct (pu_deref_body must preserve A across the length→ldir-count window,
@@ -2151,14 +2155,24 @@ charges what it uses rather than reserving 217 B/channel that nothing reads. The
 (`FCH_MODES`/`FCH_ACTIVE` and the carved block itself) is zerobas's own, not the
 reference's FCB/buffer map. Out-of-range channel/`MAXFILES` values still reuse
 the `syntax error`/`load error` wording where the reference raises ERR 5 / 52 /
-59 — open, owned by S-FCH-2.
+59 — open, owned by S-FCH-2. ⚠️ **Partly closed 2026-07-31 by D-NOTOPEN**
+(`docs/spec-basic-chan-notopen-err59.md`): a channel that is IN RANGE but NOT OPEN
+now raises the reference's trappable ERR 59 from `PRINT#`/`INPUT#`/`LINE INPUT#`
+as well as from `EOF`/`LOF`. What is still open, and now MEASURED rather than
+asserted, is the OUT-OF-RANGE class (`PRINT #2` → reference ERR 52, zerobas
+`load error`) and `GET`/`PUT`/`FIELD`/`INPUT$` (→ zerobas `syntax error`); both
+are filed in TODO.md with their measurement tables and pinned by
+`diskbasic_probe_lof.py` rows. ⚠️ `PRINT #0` measures ERR **59** on the reference,
+not 52 — channel 0 is legal-but-not-open there, so the out-of-range item is not a
+single `fch_valid` choke point.
 
 ## OPEN … FOR APPEND — extend an existing sequential file (basic/files.asm, basic/fat.asm)
 
 `OPEN "name" FOR APPEND AS #n` opens an existing sequential file and positions the
 write cursor at end-of-file, so the following `PRINT#`/`CLOSE` extends it instead
-of truncating it (which `FOR OUTPUT` does). A missing file is created (append ==
-create).
+of truncating it (which `FOR OUTPUT` does). A missing file is **REFUSED**, not
+created — see the D-APPMISS correction below, which this summary line outlived by
+one slice.
 
 **Tokenisation (already byte-identical — no new token).** "APPEND" is **not** a
 reserved word in the MSX main ROM, so the tokeniser crunches it as the name

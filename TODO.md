@@ -2832,22 +2832,85 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       GREEN. The knife was verified to CUT: `fia_walk` $6361↔$6363 and page-1 free
       22↔20 B moved with it.
 
-- [ ] **`PRINT#`/`INPUT#` into a channel that is NOT OPEN raises `load error`, not
-      ERR 59.** Found 2026-07-31 by D-APPMISS's `append_new_wr` row, not aimed at.
-      The reference answers `PRINT #1,"X"` on an unopened channel with
-      **`File not OPEN`** (ERR 59); zerobas derails to `load error`
-      ([`basic/files.asm`](basic/files.asm)'s `cp 1 / jp nz,load_error` on the
-      INPUT# side, and the PRINT# sibling). ⚠️ **This is NOT a missing error
-      code**: S-FCH-2 landed ERR 59 as an ordinary trappable code and
-      `diskbasic_probe_lof.py`'s `lof_closed` row shows `LOF` on the very same
-      closed channel AGREEING with the reference at ERR 59. It is PRINT#/INPUT#'s
-      own disposition. Consequence beyond wording: `load error` is a `ret`-based
-      print path, so this does not fire an armed `ON ERROR GOTO` where the
-      reference's ERR 59 would.
-      Gated by `diskbasic_probe_lof.py` cases `append_new_wr` and
-      `ctl_prwr_closed` (the attribution control — the same `PRINT #` with no
-      `OPEN` typed at all, which diverges IDENTICALLY), both allowlisted in
-      `KNOWN_DIVERGE` naming this item. Both entries leave together when it lands.
+- [x] ✅ **`PRINT#`/`INPUT#`/`LINE INPUT#` on a channel that is NOT OPEN raise a
+      trappable ERR 59, not `load error`.** LANDED 2026-07-31, D-NOTOPEN,
+      [`docs/spec-basic-chan-notopen-err59.md`](docs/spec-basic-chan-notopen-err59.md).
+      **−8 B, main page 1 22 → 30 B free**, low unchanged at 23 B. Found
+      2026-07-31 by D-APPMISS's `append_new_wr` row, not aimed at.
+      🔴 **THE DEFECT WAS A HAND-INLINED COPY OF AN EXISTING ROUTINE WITH ONE
+      INSTRUCTION MISSING.** `fch_mode_class` (was `ev_chan_hasfile`,
+      [`basic/expr.asm`](basic/expr.asm)) already reads `FCH_MODES[E]` and raises
+      ERR 59 when it is 0 — that is how `LOF(1)` on a closed channel already
+      AGREED with the reference. `ex_print` and `input_common` had each copied its
+      array read inline and **omitted the `or a`**, so a not-open channel matched
+      no device mode, fell into the disk arm and derailed to `load_error`. So the
+      fix was to DELETE the copies and `call` the original: two hunks, no new code
+      path, and 4 bytes of page 1 back at each site.
+      **Trappability was in scope and is the bigger half:** `load_error` is a
+      `ret`-based print path that CONTINUES the program, so an armed
+      `ON ERROR GOTO` never saw it. Measured under a handler that prints `ERR`
+      (where `0` means "nothing was raised", keeping trapped / not-trapped /
+      nothing-happened three distinct readings): reference **59**, zerobas
+      `load error`; now **59 on both**.
+      🔴 **THE PLANNED KNIFE NAMED TWO WITNESSES THAT COULD NOT MOVE.** The spec
+      said `ex_print` and `input_common` must shift under the falsification. Both
+      labels sit BEFORE the edited bytes and are invariant either way — a knife
+      that silently failed to apply would still have passed two of three "cut
+      verified" checks. Only `__MEAS_PAGE1_END` ($7FE2 ↔ $7FEA) and the page-1
+      free number carried the cut. ⚠️ **A cut witness must be DOWNSTREAM of the
+      edit;** "the addresses moved" is evidence only when they COULD have moved.
+      Falsification RUN on the verified cut: `append_new_wr`, `ctl_prwr_closed`,
+      `closed_input`, `closed_lineinp`, `trap_print_closed`, `trap_input_closed`
+      all RED, while `trap_lof_closed` (59/59), `lof_closed`, `ctl_syntax`,
+      `append_exist` 26/26, `roundtrip` 8/8 and the three filed-divergence rows
+      stayed GREEN, 0 mangled.
+      Gate: `diskbasic_probe_lof.py` 18 → **26 cases**; `KNOWN_DIVERGE`'s
+      `append_new_wr` + `ctl_prwr_closed` entries **DELETED, not updated**, and
+      replaced by three rows for the sites deliberately LEFT (below), so the list
+      stays a control that must keep matching rather than an empty box.
+
+- [ ] **`GET`/`PUT`/`FIELD`/`INPUT$(n,#f)` on a NOT-OPEN channel answer
+      `Syntax error`; the reference answers ERR 59.** MEASURED 2026-07-31 by
+      D-NOTOPEN's denominator sweep (spec §2, §7.1) — every channel-touching verb
+      typed with channel 1 never opened, both machines, 0 mangled rows:
+
+      | typed | reference | zerobas |
+      |---|---|---|
+      | `A$=INPUT$(3,#1)` | ERR 59 | `Syntax error` |
+      | `GET #1,1` / `PUT #1,1` | ERR 59 | `Syntax error` |
+      | `FIELD #1,10 AS A$` | ERR 59 | `Syntax error` |
+      | `CLOSE #1` | no error | no error ✅ |
+
+      A DIFFERENT disposition (`stmt_error` / `str_eval_no`, not `load_error`) at
+      DIFFERENT sites, which is why D-NOTOPEN did not sweep them.
+      [`basic/field.asm`](basic/field.asm)'s `FIELD` arm would be a **0-byte**
+      change (`jp z,stmt_error` → `jp z,err_notopen_raise`) and `GET`/`PUT` about
+      4 B — but ⚠️ **`GET`'s site conflates "not open" with "open but not RANDOM"**
+      (`cp 4 / jr nz,gp_err`), and what the reference answers for `GET` on a
+      channel open FOR INPUT is **NOT MEASURED**. Measure that neighbour first;
+      splitting the two conditions is most of the work.
+      Gated by `diskbasic_probe_lof.py` cases `closed_get` and `closed_field`,
+      allowlisted in `KNOWN_DIVERGE` naming this item.
+
+- [ ] **`fch_valid`'s rejects are the wrong error class: ERR 52 `bad file number`
+      comes out as `load error`.** MEASURED 2026-07-31 by D-NOTOPEN (spec §2b,
+      §7.2), which does NOT move them — `fch_valid` rejects one check EARLIER than
+      the mode test that slice fixed:
+
+      | typed | reference | zerobas |
+      |---|---|---|
+      | `PRINT #2,"X"` (2 > MAXFILES=1) | **ERR 52** `bad file number` | `load error` |
+      | `INPUT #2,A$` | **ERR 52** | `load error` |
+      | `PRINT #0,"X"` | **ERR 59** `file not open` | `load error` |
+
+      🔴 **IT DOES NOT GENERALISE, AND THE THIRD ROW IS WHY.** On the reference
+      channel **0 is a legal channel number that is merely not open** (ERR 59),
+      not a bad file number — so the fix is NOT "route `fch_valid`'s failures to
+      52". The six OPEN sites already raise 52 correctly via `oo_fail_bfn`
+      ([`basic/main.asm`](basic/main.asm)), so this is a per-verb disposition item
+      like D-NOTOPEN was, not a single choke point.
+      Gated by `diskbasic_probe_lof.py` case `closed_ch2`, allowlisted in
+      `KNOWN_DIVERGE` naming this item.
 
 - [ ] **A RANDOM `PUT` stamps the on-disk directory size immediately; the
       reference does not.** Found 2026-07-31 by D-APPMISS making

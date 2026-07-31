@@ -440,7 +440,7 @@ gate to re-argue. Page 1 keeps only what cannot leave it.
 | piece | region | bytes |
 |---|---|---|
 | `raise_error`'s range test `jr nc` → `jp nc,rerr_sparse` | page 1, `interp.asm` | **1** |
-| closed-channel test in `ev_chan_hasfile` (EOF/LOF) | page 1, `expr.asm` | **4** |
+| closed-channel test in `fch_mode_class` (then `ev_chan_hasfile`; EOF/LOF) | page 1, `expr.asm` | **4** |
 | `MSGESC_FILE` phrase-table entry | page 1, `program.asm` | **6** |
 | `rerr_sparse` + both raisers + both messages | low, `main.asm` | **59** |
 

@@ -43,11 +43,20 @@ ex_print:
                 ; classify the channel by its stored mode WITHOUT selecting it: a
                 ; device channel (LPT:/CRT:, FCH_MODES 5/6) owns no fat.asm context,
                 ; so fch_select would LDIR a garbage buffer over the engine globals.
-                push    hl                  ; save the text cursor (add hl,de clobbers HL)
-                ld      d,0                 ; DE = channel (e preserved by fch_valid)
-                ld      hl,FCH_MODES
-                add     hl,de
-                ld      a,(hl)              ; A = FCH_MODES[ch]
+                ; D-NOTOPEN (docs/spec-basic-chan-notopen-err59.md): this used to
+                ; hand-inline fch_mode_class's array read and OMIT its `or a`, so a
+                ; NOT-OPEN channel (mode 0) matched none of the device compares,
+                ; fell into the disk arm and derailed to `load_error` -- which
+                ; PRINTS AND CONTINUES. The CF-3300 raises a trappable ERR 59 (and
+                ; so does zerobas's own LOF(1) on the very same closed channel).
+                ; Calling the shared classifier is the fix AND 4 bytes smaller.
+                ; fch_mode_class preserves E (the `ld a,e / call fch_select` below
+                ; needs it) and clobbers only A/HL, which the push/pop already
+                ; guards; D no longer has to be zeroed and is not read after this.
+                ; Raising from between the push and the pop is safe: raise_error
+                ; resets SP from SAVSTK on BOTH the trap and the abort arm.
+                push    hl                  ; save the text cursor (the call clobbers HL)
+                call    fch_mode_class      ; A = FCH_MODES[ch]; ERR 59 if not open
                 pop     hl                  ; restore the text cursor
                 cp      LPT_MODE
                 jr      z,exp_dev_lpt

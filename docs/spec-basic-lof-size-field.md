@@ -55,7 +55,7 @@ Enumerated from the source, not from the probe's path:
 | 4 | **`fat_io_create`** — OPEN FOR OUTPUT, and APPEND-of-missing which `jp`s into it | 🔴 never set | **zero it** |
 | 5 | **`fro_create`** — RANDOM open of a missing file | 🔴 never set | **zero it** |
 | 6 | **`frnd_update_size`** — RANDOM `PUT` | 🔴 grows `FWR_BYTES` only | **mirror it** |
-| 7 | device / cassette channels (LPT/CRT/CAS) | rejected by `ev_chan_hasfile` | ✅ none |
+| 7 | device / cassette channels (LPT/CRT/CAS) | rejected by `fch_mode_class` (then `ev_chan_hasfile`) | ✅ none |
 | 8 | a closed channel | ERR 59 (`lof_closed` agrees) | ✅ none |
 | 9 | `fch_save_active`/`fch_load_ctx` | carry it per channel | ✅ none |
 

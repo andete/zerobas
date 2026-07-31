@@ -775,11 +775,18 @@ input_common:
                 ; the globals). CAS_IN reads via cas_in_getbyte; a disk channel keeps
                 ; the fch_select + FCH_MODE==1 path. read_into_strscr sources bytes
                 ; through the ARL_GETBYTE vector, set here per channel type.
+                ; D-NOTOPEN (docs/spec-basic-chan-notopen-err59.md): this arm serves
+                ; INPUT# *and* LINE INPUT# (both reach input_common), and it used to
+                ; hand-inline fch_mode_class's array read while OMITTING its `or a`
+                ; -- so a NOT-OPEN channel (mode 0) went on to fch_select the closed
+                ; slot and then failed the `cp 1` below into `load_error`, which
+                ; PRINTS AND CONTINUES. The CF-3300 raises a trappable ERR 59, as
+                ; zerobas's own LOF(1) on the same closed channel already does.
+                ; Contract as at the PRINT# site: E preserved (needed by the
+                ; fch_select below), A/HL clobbered under the existing push/pop, D
+                ; no longer zeroed and not read before `ld de,fat_io_getbyte`.
                 push    hl                  ; guard text cursor
-                ld      d,0
-                ld      hl,FCH_MODES
-                add     hl,de
-                ld      a,(hl)
+                call    fch_mode_class      ; A = FCH_MODES[ch]; ERR 59 if not open
                 pop     hl
                 cp      CAS_IN_MODE
                 jr      z,inp_cas

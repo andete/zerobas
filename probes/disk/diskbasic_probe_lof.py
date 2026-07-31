@@ -55,6 +55,12 @@ else is attributable to the subject rather than to the harness:
   * `lof_bin`     `OPEN "TEST.BIN" FOR INPUT` -> 2048 on both. A SECOND known
     size, so the control is not a single point that could agree by accident.
   * `lof_closed`  `LOF(1)` with nothing open -> ERR 59 on both.
+  * `trap_lof_closed`  the same LOF(1) under an armed `ON ERROR GOTO`, handler
+    prints ERR -> 59 on both. GREEN BEFORE D-NOTOPEN AS WELL AS AFTER, which is
+    what makes it a control: without it, a red `trap_print_closed` could not tell
+    "the fix does not trap" from "this probe cannot read a trap at all". Note the
+    handler prints the CODE, so `0` reads as "no error was raised" and the three
+    outcomes stay distinguishable.
   * `roundtrip`   write, CLOSE, re-open FOR INPUT -> the real size on both. This
     is the row that catches a "fix" which zeroes the size field and then lets the
     zero reach the directory at CLOSE.
@@ -183,6 +189,43 @@ CASES = [
     # divergence is that pre-existing class and not something this slice did;
     # without it, "it was already like that" would be an assertion.
     ("ctl_prwr_closed", (['PRINT #1,"X"'], None)),
+
+    # --- D-NOTOPEN (docs/spec-basic-chan-notopen-err59.md) -------------------
+    # The closed-channel DENOMINATOR. `ctl_prwr_closed` above covers PRINT#;
+    # INPUT# and LINE INPUT# are named by the same item and had NO ROW AT ALL
+    # until this slice -- the fix would have landed with two thirds of its own
+    # claim ungated. All three raise ERR 59 on the CF-3300, MEASURED.
+    ("closed_input",   (["INPUT #1,A$"], None)),
+    ("closed_lineinp", (["LINE INPUT #1,A$"], None)),
+
+    # TRAPPABILITY -- the half that makes this a semantics fix and not a wording
+    # fix. zerobas's `load_error` is a ret-based print path: it prints and the
+    # program CONTINUES, so an armed ON ERROR GOTO never sees it. The handler
+    # prints ERR, so the reading is the CODE -- and `0` means NO ERROR WAS RAISED
+    # AT ALL, which is what keeps "trapped", "not trapped" and "nothing happened"
+    # three distinguishable values rather than two (appmiss-slice: a sentinel
+    # that also means "no reading" is not a measurement).
+    ("trap_print_closed", (["10 ON ERROR GOTO 100", '20 PRINT #1,"X"',
+                            "100 PRINT ERR", "RUN"], None)),
+    ("trap_input_closed", (["10 ON ERROR GOTO 100", "20 INPUT #1,A$",
+                            "100 PRINT ERR", "RUN"], None)),
+    # ...and its GREEN CONTROL, which passed BEFORE D-NOTOPEN as well as after:
+    # LOF on the same never-opened channel already raised 59 and already trapped.
+    # Without it, a red trap row above could not tell "the fix does not trap"
+    # from "this probe cannot read a trap".
+    ("trap_lof_closed",   (["10 ON ERROR GOTO 100", "20 A=LOF(1)",
+                            "100 PRINT ERR", "RUN"], None)),
+
+    # The sites D-NOTOPEN DELIBERATELY LEFT, measured and allowlisted below. They
+    # are here so KNOWN_DIVERGE stays a CONTROL THAT MUST KEEP MATCHING rather
+    # than an empty box (memory: deadcode-gate) -- and so that a later slice which
+    # sweeps them, or one which sweeps them BY ACCIDENT, moves a row instead of
+    # landing silently. `closed_ch2` is the ERR 52 class, which is a DIFFERENT
+    # class reached one check earlier (fch_valid), not this item.
+    ("closed_get",     (["GET #1,1"], None)),
+    ("closed_field",   (['FIELD #1,10 AS A$'], None)),
+    ("closed_ch2",     (['PRINT #2,"X"'], None)),
+
     # write -> CLOSE -> re-open: catches a fix that lets its zero reach the dir.
     ("roundtrip",    (['OPEN "ZQ.DAT" FOR OUTPUT AS #1',
                        'PRINT #1,"ABCDE"',
@@ -223,6 +266,27 @@ REF_EXPECT: dict = {
     "ctl_prwr_closed": "FNO",   # PRINT# into an unopened channel: ERR 59 as well
                                 # (measured 2026-07-31 -- the attribution control
                                 # for append_new_wr)
+    # --- D-NOTOPEN, all MEASURED 2026-07-31 on the CF-3300, never guessed.
+    "closed_input":   "FNO",    # INPUT# on a never-opened channel: ERR 59
+    "closed_lineinp": "FNO",    # ...and LINE INPUT#, which shares the same arm
+    "trap_print_closed": 59,    # the handler RAN and printed 59 -- so the
+    "trap_input_closed": 59,    # reference's ERR 59 here is trappable, and a `0`
+    "trap_lof_closed":   59,    # would have meant no error was raised at all
+    "closed_get":     "FNO",    # GET on a never-opened channel: ERR 59 too...
+    "closed_field":   "FNO",    # ...and FIELD. Both LEFT by D-NOTOPEN (its §7.1):
+                                # zerobas answers `Syntax error` from a DIFFERENT
+                                # disposition at DIFFERENT sites (field.asm's
+                                # stmt_error), and what the reference answers for
+                                # GET on a channel open FOR INPUT is NOT measured
+                                # -- sweeping an unmeasured neighbour is the trap.
+    "closed_ch2":     "BFN",    # #2 > MAXFILES=1 -> ERR 52 `bad file number`, a
+                                # DIFFERENT class from 59, rejected one check
+                                # earlier (fch_valid). ⚠️ And it does NOT
+                                # generalise: `PRINT #0,"X"` measures **FNO** on
+                                # the reference, not BFN -- channel 0 is a legal
+                                # channel number that is merely not open. So the
+                                # ERR 52 item cannot be "route fch_valid's
+                                # rejects to 52". D-NOTOPEN §7.2.
     "roundtrip":    8,       # "ABCDE" + CRLF + Ctrl-Z
 }
 
@@ -267,26 +331,33 @@ DIR_EXPECT: dict = {
 # never reached this case.
 # ⚠️ The list did not end up empty: the row added to PROVE the channel was
 # refused (`append_new_wr`) surfaced a DIFFERENT, pre-existing defect one layer
-# down -- see below. It grew LOUDLY, with its own filed item and its own
-# attribution control, which is the only way this list is allowed to grow.
+# down. It grew LOUDLY, with its own filed item and its own attribution control,
+# which is the only way this list is allowed to grow.
+#
+# ✅ D-NOTOPEN LANDED 2026-07-31 (docs/spec-basic-chan-notopen-err59.md): the two
+# entries that defect put here, `append_new_wr` and `ctl_prwr_closed`, are GONE
+# rather than updated -- PRINT#/INPUT#/LINE INPUT# on a not-open channel now raise
+# the same trappable ERR 59 the CF-3300 does, by CALLING the classifier LOF was
+# already reaching (`fch_mode_class`, basic/expr.asm) instead of hand-inlining its
+# array read and omitting its `or a`. Both sites got 4 bytes of page 1 back.
 KNOWN_DIVERGE: dict = {
-    # ⚠️ NOT an APPEND defect, and MEASURED to be none of D-APPMISS's doing.
-    # `PRINT #n` into a channel that is not open surfaces zerobas's `load error`
-    # where the reference raises ERR 59 `File not OPEN` -- and zerobas HAS a real,
-    # trappable ERR 59: `lof_closed` (LOF on the same closed channel) AGREES on
-    # both machines. So it is PRINT#'s own disposition, not a missing error code:
-    # ex_print's channel path falls into `load_error` the way INPUT#'s
-    # `cp 1 / jp nz,load_error` does (basic/files.asm), instead of raising 59.
+    # What D-NOTOPEN MEASURED AND DELIBERATELY LEFT (its §7), each with the row
+    # that pins it. These are not "known bad, ignore" -- they are a CONTROL THAT
+    # MUST KEEP MATCHING: if a later slice sweeps them, or sweeps them by
+    # accident, the value moves and this gate trips.
     #
-    # The ATTRIBUTION is measured, not argued: `ctl_prwr_closed` types the SAME
-    # PRINT# with no OPEN at all and diverges IDENTICALLY (FNO vs LOADERR). That
-    # is why both rows are on this list under ONE item rather than the append row
-    # being blamed on the append path.
-    #
-    # Filed in TODO.md ("PRINT#/INPUT# into a channel that is not open raises
-    # `load error`, not ERR 59"). Both entries leave together when it lands.
-    "append_new_wr":   ("FNO", "LOADERR"),
-    "ctl_prwr_closed": ("FNO", "LOADERR"),
+    # §7.1 -- GET/PUT/FIELD/INPUT$ on a not-open channel answer `Syntax error`
+    # where the reference answers ERR 59. A DIFFERENT disposition (stmt_error /
+    # str_eval_no, not load_error) at DIFFERENT sites (basic/field.asm,
+    # basic/strvar.asm). FIELD's would be a 0-byte change, but GET's site
+    # conflates "not open" with "open but not RANDOM" and what the reference
+    # answers for GET on a channel open FOR INPUT is NOT MEASURED.
+    "closed_get":   ("FNO", "SYNTAX"),
+    "closed_field": ("FNO", "SYNTAX"),
+    # §7.2 -- the ERR 52 class, reached one check EARLIER (fch_valid), so
+    # D-NOTOPEN's change cannot and does not move it. ⚠️ It does not generalise:
+    # `PRINT #0,"X"` measures FNO on the reference, not BFN.
+    "closed_ch2":   ("BFN", "LOADERR"),
 }
 
 # The same, for the directory column.
