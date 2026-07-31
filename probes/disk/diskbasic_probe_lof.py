@@ -176,6 +176,60 @@ CASES = [
                        "PUT #1,1",
                        "PRINT LOF(1)"], "ZQ      DAT")),
 
+    # --- D-RNDDIR (docs/spec-basic-randput-dir-stamp.md) ---------------------
+    # ⚠️ `rand_put` above exits with the channel STILL OPEN. Its filed sentence
+    # ("the reference does not stamp the directory") is only licensed as "has not
+    # stamped it YET" -- NOBODY HAD TYPED A `CLOSE`. Three worlds reproduce that
+    # row exactly: the reference stamps at CLOSE and zerobas merely does it early
+    # (timing only); both stamp DIFFERENT numbers (user-visible); or the
+    # reference never stamps at all. These rows separate them.
+    #
+    # `rnd_put_cl` prints LOF(1) AFTER the CLOSE deliberately. Its subject is the
+    # `dir` column, but a row whose only reading is `dir` cannot tell "CLOSE ran
+    # and stamped 0" from "the CLOSE line never arrived" -- both produce the same
+    # number. The trailing read must be FNO, an independent witness that the
+    # channel really closed (memory: appmiss-slice -- a sentinel that also means
+    # "no reading" is not a measurement).
+    ("rnd_put_cl",   (['OPEN "ZQ.DAT" AS #1',
+                       "FIELD #1,10 AS A$",
+                       'LSET A$="X":PUT #1,1:CLOSE',
+                       "PRINT LOF(1)"], "ZQ      DAT")),
+    # The USER-VISIBLE round trip: what a LATER program reads. Re-opens RANDOM,
+    # not FOR INPUT, because `rand_exist` already pins that a RANDOM open of an
+    # existing file seeds LOF from the directory (26 for HI.TXT, both machines) --
+    # so this row's LOF IS the directory read through BASIC.
+    # ITS ATTRIBUTION CONTROL IS `roundtrip`, WHICH IS ALREADY GREEN: a sequential
+    # write -> CLOSE -> re-open reads 8 on both machines, so CLOSE-stamping works
+    # on both on the SEQUENTIAL path and a red row here is attributable to the
+    # RANDOM path rather than to CLOSE in general.
+    ("rnd_put_rt",   (['OPEN "ZQ.DAT" AS #1',
+                       "FIELD #1,10 AS A$",
+                       'LSET A$="X":PUT #1,1:CLOSE',
+                       'OPEN "ZQ.DAT" AS #1',
+                       "PRINT LOF(1)"], "ZQ      DAT")),
+    # 🔴 THE ONE MEASURED CELL AGREES WITH TWO DIFFERENT RULES. `rand_put` reads
+    # 256, and `OPEN … AS #1` with no LEN= defaults reclen to 256 (files.asm:618),
+    # so 256 is BOTH `recno * reclen` (1 x 256) AND "one 256-byte sector". A fix
+    # aimed with the wrong one would reproduce that cell perfectly and be wrong
+    # everywhere else. LEN=16 predicts 16 under the first rule, 256 under the
+    # second. (LEN=16, not LEN=10: zerobas requires a power-of-two reclen
+    # (files.asm:313), so LEN=10 would measure the LEN= parser instead.)
+    ("rnd_put_len",  (['OPEN "ZQ.DAT" AS #1 LEN=16',
+                       "FIELD #1,16 AS A$",
+                       'LSET A$="X":PUT #1,1',
+                       "PRINT LOF(1)"], "ZQ      DAT")),
+    # ASSIGN or GROW -- and the row that decides what this item is WORTH. The
+    # characterization says a PUT "grows" the field, which presumes max(old,new);
+    # nothing measured rules out a plain assign. TEST.BIN already holds 2048
+    # bytes: `2048` here means grow, `256` means assign. If zerobas ASSIGNS and
+    # also stamps the directory early, this entry is rewritten to 256 and 1792
+    # bytes become unreachable -- data loss, not a timing cosmetic.
+    # (Mutating TEST.BIN is safe: every case runs on its own /tmp copy.)
+    ("rnd_put_big",  (['OPEN "TEST.BIN" AS #1',
+                       "FIELD #1,10 AS A$",
+                       'LSET A$="X":PUT #1,1',
+                       "PRINT LOF(1)"], "TEST    BIN")),
+
     # --- CONTROLS: must agree on both machines.
     ("lof_input",    (['OPEN "HI.TXT" FOR INPUT AS #1',
                        "PRINT LOF(1)"], "HI      TXT")),
@@ -320,6 +374,22 @@ REF_EXPECT: dict = {
     "rand_new":     0,
     "rand_exist":   26,
     "rand_put":     256,     # a RANDOM PUT moves the field LIVE (recno*reclen)
+    # --- D-RNDDIR, all MEASURED 2026-07-31 on the CF-3300, never predicted.
+    "rnd_put_cl":   "FNO",   # LOF read AFTER the CLOSE -> `File not open`. This
+                             # is the WITNESS that the CLOSE ran: a number here
+                             # would mean the channel was still open and the row's
+                             # `dir` reading would be about something else.
+    "rnd_put_rt":   256,     # ...and a LATER program re-opening the file reads
+                             # 256, the same value. The round trip AGREES.
+    "rnd_put_len":  16,      # LEN=16 -> 16, NOT 256. The rule is `recno*reclen`;
+                             # "one 256-byte sector" is REFUTED. `rand_put`'s 256
+                             # could not tell them apart -- 1 x 256 = 256 either
+                             # way -- and this is the row that does.
+    "rnd_put_big":  2048,    # PUT #1,1 (256 bytes) into an EXISTING 2048-byte
+                             # file leaves LOF at 2048. The field is NOT assigned.
+                             # ⚠️ Neither this row nor `rand_put` pins max() on its
+                             # own: `rand_put` shows it GROWS (0 -> 256) and this
+                             # one shows it does NOT SHRINK. The PAIR is the rule.
     "lof_input":    26,
     "lof_bin":      2048,
     "lof_closed":   "FNO",
@@ -393,6 +463,18 @@ DIR_EXPECT: dict = {
     "rand_new":     0,
     "rand_exist":   26,
     "rand_put":     0,       # ...while LOF already reads 256 (characterization §3)
+    # --- D-RNDDIR (docs/spec-basic-randput-dir-stamp.md), measured 2026-07-31.
+    "rnd_put_cl":   256,     # 🔴 THE ANSWER TO THE FILED QUESTION: the reference
+                             # DOES stamp the root-directory entry -- AT CLOSE.
+                             # `rand_put`'s 0 was never "the reference does not
+                             # stamp", only "it has not stamped it YET".
+    "rnd_put_rt":   256,     # ...and it is still 256 after a later RANDOM re-open,
+                             # so nothing about the re-open moves it either.
+    "rnd_put_len":  0,       # LEN=16, no CLOSE: same pre-CLOSE 0 as `rand_put`.
+    "rnd_put_big":  2048,    # an EXISTING 2048-byte entry is NOT truncated by a
+                             # 256-byte PUT -- on EITHER machine. This is the row
+                             # that says the early stamp is a timing difference
+                             # and not data loss.
     "lof_input":    26,
     "lof_bin":      2048,
     "roundtrip":    8,
@@ -440,17 +522,38 @@ DIR_EXPECT: dict = {
 KNOWN_DIVERGE: dict = {}
 
 # The same, for the directory column.
+#
+# ✅ D-RNDDIR MEASURED AND DECIDED 2026-07-31
+# (docs/spec-basic-randput-dir-stamp.md). These two entries are the ONE case in
+# either list that is here PERMANENTLY, by a decision, rather than as an unbuilt
+# item waiting to be deleted -- so the reason has to carry its own measurement.
+#
+# A RANDOM `PUT` stamps the root-directory size field on zerobas IMMEDIATELY
+# (recno * reclen) while the reference leaves the entry alone until `CLOSE`.
+# ⚠️ For an arc this was filed as "the reference does not stamp". It does. Both
+# rows below exit with the channel STILL OPEN, so all they ever licensed was "has
+# not stamped it YET" -- nobody had typed a CLOSE. Typed now:
+#   rnd_put_cl  PUT then CLOSE          -> ref dir 256 (and LOF reads FNO, the
+#                                          witness that the CLOSE really ran)
+#   rnd_put_rt  ...then re-open and LOF -> 256 on BOTH machines
+# The round trip AGREES, so no BASIC program can observe the difference: it is a
+# WHEN, not a WHAT. And `rnd_put_big` shows a 256-byte PUT does not truncate an
+# existing 2048-byte entry on either machine, so the early stamp is not data
+# loss. At a 23 B low-region wall that buys no ROM bytes -- DECIDED, not deferred.
+# ⚠️ Residual, explicitly UNMEASURED: a machine reset BETWEEN the PUT and the
+# CLOSE leaves the two disks different. No probe here can reset mid-program, and
+# the reference merely loses the write in that window, so it is filed rather than
+# claimed either way (TODO.md).
+#
+# These rows are also this gate's own falsification: their LOF columns AGREE and
+# only `dir` separates the machines, so a dir comparison that stayed green here
+# would be measuring nothing.
 DIR_DIVERGE: dict = {
-    # ⚠️ NOT an append defect, and NOT new behaviour -- newly VISIBLE, because
-    # D-APPMISS made this column part of the verdict. A RANDOM `PUT` stamps the
-    # on-disk directory size on zerobas immediately (256 = recno * reclen) while
-    # the reference leaves the entry at 0 and carries the size in RAM only
-    # (characterization §3: ref LOF = 256 with ref dir = 0 -- the row that proved
-    # LOF does not read the directory). Filed in TODO.md as its own item.
-    # It is also this gate's own falsification: a row where the LOF columns AGREE
-    # and only `dir` separates the machines, so a dir comparison that stayed
-    # green here would be measuring nothing.
-    "rand_put":  (0, 256),
+    "rand_put":     (0, 256),   # default reclen 256, no CLOSE
+    # ...and the SAME divergence at a DIFFERENT value. Load-bearing: it shows the
+    # early stamp follows `recno * reclen` (16) and is not some 256-shaped
+    # coincidence of the sector size, which `rand_put` alone cannot say.
+    "rnd_put_len":  (0, 16),    # LEN=16, no CLOSE
 }
 
 ERR_CLASSES = {

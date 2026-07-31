@@ -3004,23 +3004,69 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       their own handler (`RESUME without error`), so it could not separate "the
       trap fired and the write survived" from "line 20 did nothing".
 
-- [ ] **A RANDOM `PUT` stamps the on-disk directory size immediately; the
-      reference does not.** Found 2026-07-31 by D-APPMISS making
-      `diskbasic_probe_lof.py`'s `dir` column part of the verdict — the divergence
-      was visible in
-      [`docs/lof-cf3300-characterization.md`](docs/lof-cf3300-characterization.md)
-      §1 all along and simply was never compared. `OPEN "ZQ.DAT" AS #1 : FIELD
-      #1,10 AS A$ : LSET A$="X" : PUT #1,1` leaves the reference's directory entry
-      at **0** while `LOF` already reads 256 (that gap is what proved `LOF` does
-      not read the directory, characterization §3); zerobas's directory entry
-      already reads **256**. Not known to be user-visible before CLOSE — the open
-      question is whether the reference stamps it at CLOSE and zerobas merely does
-      it early, or whether the two disagree after CLOSE too, which is a
-      round-trip row nobody has typed yet.
-      Gated by `diskbasic_probe_lof.py` case `rand_put`, allowlisted in
-      `DIR_DIVERGE` naming this item. ⚠️ It is also that gate's own falsification:
-      a row whose LOF columns AGREE and which separates ONLY on `dir`, so a dir
-      comparison that stayed green here would be measuring nothing.
+- [x] ✅ **A RANDOM `PUT` stamps the on-disk directory size immediately — and the
+      reference stamps it at `CLOSE`, to the SAME value.** MEASURED AND DECIDED
+      2026-07-31, D-RNDDIR,
+      [`docs/spec-basic-randput-dir-stamp.md`](docs/spec-basic-randput-dir-stamp.md).
+      **Zero ROM bytes: apparatus + documentation, which is what the item asked
+      for.** MSX-DOS 1 has no subdirectories — "the directory" throughout is the
+      FAT12 **root** directory table, and the reading is the size field at offset
+      28 of the file's 32-byte entry.
+
+      🔴 **THE FILED SENTENCE WAS NOT LICENSED BY THE FILED MEASUREMENT.**
+      `rand_put` exits with the channel STILL OPEN, so `ref dir = 0` only ever
+      meant *"has not stamped it YET"* — **nobody had typed a `CLOSE`.** Three
+      worlds reproduced that row identically (timing only / different values /
+      never stamps). Four new rows separate them:
+
+      | row | ref LOF | ref dir | zb LOF | zb dir | |
+      |---|---|---|---|---|---|
+      | `rnd_put_cl` | `File not open` | **256** | `File not open` | 256 | agree |
+      | `rnd_put_rt` | **256** | 256 | 256 | 256 | agree |
+      | `rnd_put_len` | **16** | 0 | 16 | 16 | diverges (`dir`) |
+      | `rnd_put_big` | 2048 | 2048 | 2048 | 2048 | agree |
+
+      The reference stamps at `CLOSE` with the same value, and the **round trip
+      agrees**, so no BASIC program can observe the difference. It is a *when*,
+      not a *what*. zerobas's `fat_rand_put` tails into `jp fat_dir_update`
+      ([`basic/randio-body.inc:373`](basic/randio-body.inc:373)) and stamps on
+      every `PUT`; the reference defers to `CLOSE`.
+      🔴 **AND THE RULE ITSELF HAD BEEN AGREEING FOR TWO REASONS AT ONCE.** The
+      characterization's `recno × reclen` rested on the single **256** — but
+      `OPEN … AS #1` defaults reclen to 256, so `1 × 256 = 256` *and* a 256-byte
+      sector is 256. `LEN=16` reads **16**: the formula holds, sector-granularity
+      is refuted, and the number that had "confirmed" it could not tell them
+      apart. `rnd_put_big` puts a 256-byte record into 2048-byte `TEST.BIN` and
+      reads 2048 in all four columns — **no truncation, no data loss**. ⚠️ `max()`
+      is pinned by the PAIR (`rand_put` grows 0 → 256, `rnd_put_big` does not
+      shrink), by neither row alone.
+      Decided per the spec's pre-committed §5(A): at a 23 B low wall a difference
+      no program can observe buys no ROM bytes. `DIR_DIVERGE` therefore keeps
+      `rand_put` and gains `rnd_put_len`, **rewritten from "filed, open" to
+      "decided, permanent" with the round-trip rows named as the evidence** —
+      the one entry in either list that is not an unbuilt item. ⚠️ Growing an
+      allowlist is allowed only loudly: `rnd_put_len` is load-bearing, it is what
+      shows the early stamp follows `recno × reclen` and not the sector size.
+      Gate: `make lof-acceptance` **41 → 45 cases, 0 unfiled / 0 oracle drift /
+      0 mangled**; `KNOWN_DIVERGE` still EMPTY. K1 CUT (a forced-wrong
+      `DIR_EXPECT` reddens that row ALONE, so the `dir` column is live on the new
+      rows and not merely in principle); K2 PASS (`rnd_put_cl`'s trailing
+      `File not open` is the witness that the `CLOSE` actually ran — a row whose
+      only reading is `dir` cannot tell "stamped 0" from "the line never
+      arrived").
+
+- [ ] **UNMEASURED: a machine reset BETWEEN a RANDOM `PUT` and its `CLOSE`.**
+      Filed 2026-07-31 by D-RNDDIR as the one thing its rows do not reach. In
+      that window the two disks genuinely differ: the reference has stamped
+      nothing and loses the write, while zerobas's root-directory entry is
+      already stamped and points at a chain whose FAT state at that instant
+      NOTHING HAS EXAMINED. ⚠️ Blocked on APPARATUS, not ROM space:
+      `diskbasic_probe_lof.py` reads the disk image after the machine exits
+      normally and has no way to cut power mid-program. It is a robustness
+      question, not a parity one — and it is filed rather than argued in either
+      direction, because "zerobas is more robust here" and "zerobas leaves a
+      dangling entry here" are both plausible from what is known and neither has
+      been typed.
 
 - [ ] **`diskbasic_probe_chancost.py` has no echo guard.** Its rows are short
       `PRINT FRE(0)` reads and it has been stable for many sessions, but it types

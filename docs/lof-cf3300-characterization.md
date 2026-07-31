@@ -62,6 +62,12 @@ passed** — two mangled sides compare equal and would otherwise print `agree`.
 
 zerobas column = the repack build at `761341a` (before any fix).
 
+⚠️ **Except the four `rnd_put_*` rows, which did not exist then.** They were added
+2026-07-31 by D-RNDDIR ([`spec-basic-randput-dir-stamp.md`](spec-basic-randput-dir-stamp.md))
+and their zerobas column is the CURRENT build, i.e. **after** D-LOF fixed the −1.
+Mixing two builds in one column would be a trap, so it is said here rather than
+left for a reader to infer from the absence of a `−1`.
+
 | case | typed | ref LOF | ref dir | zb LOF | zb dir | |
 |---|---|---|---|---|---|---|
 | `ctl_syntax` | `OPEM "HI.TXT" …` | `Syntax error` | — | `syntax error` | — | control ✓ |
@@ -75,7 +81,11 @@ zerobas column = the repack build at `761341a` (before any fix).
 | `append_exist` | `OPEN "HI.TXT" FOR APPEND AS #1` | 26 | 26 | 26 | 26 | agree |
 | `rand_new` | `OPEN "ZQ.DAT" AS #1` | **0** | 0 | **−1** | 0 | 🔴 |
 | `rand_exist` | `OPEN "HI.TXT" AS #1` | 26 | 26 | 26 | 26 | agree |
-| `rand_put` | …`FIELD`/`LSET`/`PUT #1,1` | **256** | **0** | **−1** | 256 | 🔴 §3, §5 |
+| `rand_put` | …`FIELD`/`LSET`/`PUT #1,1` | **256** | **0** | **−1** | 256 | 🔴 §3, §3a, §5 |
+| `rnd_put_cl` | …`PUT #1,1` then **`CLOSE`** | `File not open` | **256** | `File not open` | 256 | §3a |
+| `rnd_put_rt` | …`CLOSE`, re-open RANDOM | 256 | 256 | 256 | 256 | §3a |
+| `rnd_put_len` | `LEN=16`, `PUT #1,1`, no `CLOSE` | **16** | **0** | 16 | 16 | §3a |
+| `rnd_put_big` | `PUT #1,1` into 2048-byte `TEST.BIN` | 2048 | 2048 | 2048 | 2048 | §3a |
 | `lof_input` | `OPEN "HI.TXT" FOR INPUT AS #1` | 26 | 26 | 26 | 26 | control ✓ |
 | `lof_bin` | `OPEN "TEST.BIN" FOR INPUT AS #1` | 2048 | 2048 | 2048 | 2048 | control ✓ |
 | `lof_closed` | `PRINT LOF(1)`, nothing open | ERR 59 | — | ERR 59 | — | control ✓ |
@@ -137,6 +147,67 @@ field is not frozen; a RANDOM `PUT` **moves it live**, while a sequential
 > the directory for an existing file, to **0** for a created one — sequential
 > writes do not move it, and a RANDOM `PUT` grows it to `recno × reclen`.
 
+## 3a. …and the directory IS stamped — at `CLOSE`. What §3 measured was a WHEN
+
+Measured 2026-07-31, D-RNDDIR
+([`spec-basic-randput-dir-stamp.md`](spec-basic-randput-dir-stamp.md)).
+
+§3 above reads `ref dir = 0` after a RANDOM `PUT` and that reading is correct.
+The *sentence* it was carried forward as — "the reference does not stamp the
+directory" — is not. 🔴 **`rand_put` exits with the channel STILL OPEN, so all it
+ever licensed was "has not stamped it YET". Nobody had typed a `CLOSE`.** Three
+worlds reproduce that row identically: the reference stamps at `CLOSE` and
+zerobas merely does it early; both stamp *different numbers*; or the reference
+never stamps at all and its `PUT` data is unreachable. Typed:
+
+| | ref LOF | ref dir | zb LOF | zb dir |
+|---|---|---|---|---|
+| `PUT #1,1` then **`CLOSE`** | `File not open` | **256** | `File not open` | 256 |
+| …then re-open RANDOM and `LOF` | **256** | 256 | **256** | 256 |
+
+The reference **does** stamp the root-directory entry, at `CLOSE`, with the same
+value zerobas writes. **The round trip agrees, so no BASIC program can observe
+the difference.** It is a *when*, not a *what*.
+
+The `File not open` in the first row is not decoration: it is the witness that
+the `CLOSE` actually ran. A row whose only reading is `dir` cannot tell "the
+`CLOSE` ran and stamped 0" from "the `CLOSE` line never arrived" — both produce
+the same number.
+
+**The mechanism, both sides.** zerobas's `fat_rand_put` tails into
+`jp fat_dir_update` ([`basic/randio-body.inc:373`](../basic/randio-body.inc:373)),
+so it rewrites the entry on *every* `PUT`; the reference defers it to `CLOSE`.
+
+**And §3's formula needed separating, not just stating.** The rule was written up
+as `recno × reclen` on the strength of the single **256** — but `OPEN … AS #1`
+with no `LEN=` defaults reclen to 256 ([`basic/files.asm:618`](../basic/files.asm:618)),
+so `1 × 256 = 256` *and* a 256-byte sector is 256. 🔴 **One cell, two rules, no
+way to tell them apart.** `rnd_put_len` (`LEN=16`) reads **16** on both machines:
+`recno × reclen` holds, sector-granularity is refuted. Its `dir` column reads
+0 / 16, which also shows zerobas's early stamp follows the same formula rather
+than being a 256-shaped coincidence.
+
+**`max()`, and the pair that pins it.** "Grows" presumes `max(old, new)`; a plain
+assign fits §3's evidence just as well, and an assign that also stamps early
+would rewrite an existing 2048-byte entry down to 256 and strand 1792 bytes.
+`rnd_put_big` puts a 256-byte record into `TEST.BIN` and reads **2048** on both
+machines and in both columns — **no truncation, no data loss.** ⚠️ Neither row
+pins `max()` alone: `rand_put` shows it GROWS (0 → 256) and `rnd_put_big` shows
+it does NOT SHRINK. The pair is the rule. (zerobas's `frnd_update_size` is
+`ret c` / `ret z` before the store — a real `max()`, which is why it could not
+shrink.)
+
+**Decided, not deferred.** At a 23 B low-region wall a difference no program can
+observe buys no ROM bytes, so the two pre-`CLOSE` rows stay in the probe's
+`DIR_DIVERGE` **permanently and with this measurement attached**, rather than as
+an item waiting to be built.
+
+⚠️ **Residual, explicitly UNMEASURED:** a machine reset *between* the `PUT` and
+the `CLOSE` leaves the two disks different — the reference loses the write, and
+zerobas's entry points at a chain whose FAT state at that instant is unexamined.
+No probe here can reset mid-program. Filed in [`TODO.md`](../TODO.md), not
+claimed in either direction.
+
 ## 4. Incidental (found by the denominator rows, not aimed at)
 
 **✅ FIXED 2026-07-31 — D-APPMISS, [`spec-basic-append-missing-refuse.md`](spec-basic-append-missing-refuse.md)**
@@ -163,9 +234,16 @@ defect, not a `LOF` one. Filed in [`TODO.md`](../TODO.md).
 * zerobas must **grow the size field on a RANDOM `PUT`**, alongside the
   `FWR_BYTES` growth `frnd_update_size` already does.
 * zerobas must **not** grow it on a sequential `PRINT #` (it already does not).
-* The directory is stamped from `FWR_BYTES` at CLOSE
-  ([`basic/fat-prim-body.inc:1247`](../basic/fat-prim-body.inc:1247)), never from
-  the `LOF` field, so none of this can reach the disk — `roundtrip` is the
-  two-sided row that holds that claim.
+* The directory is stamped from `FWR_BYTES`, never from the `LOF` field, so none
+  of this can reach the disk — `roundtrip` is the two-sided row that holds that
+  claim.
+  ⚠️ **Corrected 2026-07-31 (§3a):** this bullet used to say the stamp happens
+  "at CLOSE", citing
+  [`basic/fat-prim-body.inc:1247`](../basic/fat-prim-body.inc:1247). True on the
+  SEQUENTIAL path and incomplete on the RANDOM one — `fat_rand_put` tails into
+  `jp fat_dir_update` ([`basic/randio-body.inc:373`](../basic/randio-body.inc:373))
+  and stamps on every `PUT`. The conclusion the bullet draws is unaffected (the
+  stamp reads `FWR_BYTES` either way), but the *when* was wrong, and it is the
+  exact `when` §3a had to go and measure.
 
 Design and byte cost: [`spec-basic-lof-size-field.md`](spec-basic-lof-size-field.md).
