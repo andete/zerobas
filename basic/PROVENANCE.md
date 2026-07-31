@@ -2179,8 +2179,23 @@ is left in `FSECTOR_BUF`. It then primes the write iterator to RESUME at EOF:
 last partial sector (or starts a fresh one if the last sector was full), `FWR_BUFLEN`
 = bytes already in that sector, `FWR_BYTES` = current size, `FWR_FIRST` = the
 existing first cluster. An empty file resumes from offset 0 reusing its dir entry;
-a missing file tail-calls `fat_io_create`. fat.asm's READ/WRITE primitives are
-otherwise unchanged.
+a **missing file is REFUSED** (`ret c` → `do_open`'s `oo_fail` → `load_error`).
+fat.asm's READ/WRITE primitives are otherwise unchanged.
+
+⚠️ **Corrected 2026-07-31 (D-APPMISS, `docs/spec-basic-append-missing-refuse.md`).**
+This paragraph and `basic/fat.asm`'s comment both used to say a missing file
+tail-calls `fat_io_create` — stated as settled CF-3300 parity, citing
+`disk_probe_append.py`. It is not parity: measured two-sidedly (screen **and** the
+machine's own disk image), the CF-3300 raises `File not found`, opens no channel —
+the following `LOF(1)` reports ERR 59 — and writes **no directory entry at all**
+(`lof-cf3300-characterization.md` §4). The cited probe creates its file with
+OUTPUT first and only ever appends to an EXISTING one, so its parity claim is real
+for the Ctrl-Z resume rule below and never reached the missing-file case. Now
+gated two-sidedly by `diskbasic_probe_lof.py`'s `append_new` (LOF **and** the
+directory column) and `append_new_wr` (a `PRINT #1` into the refused channel,
+which reads the channel state without going through `LOF`), and on the class side
+by `disk_probe_fat_error_disposition.py`'s `append-missing`, beside its
+`open-missing` sibling.
 
 **Ctrl-Z soft-EOF rule (CF-3300-observed).** `disk_probe_append.py --show-ref`: a
 file written + closed as `"first\r\n\x1a"` (the OUTPUT close stamps a trailing
@@ -2201,7 +2216,8 @@ host unit-test files, and every other file probe (read / write / MAXFILES / EOF�
 the append-vs-truncate distinction only matters at open time, so every later
 `PRINT#`/`CLOSE` treats the channel identically; the resume math uses the 16-bit
 low word of the size (a >64 KB append is out of scope — loader text files are
-small); a missing file is created rather than erroring.
+small). **A missing file used to be created rather than erroring; corrected
+2026-07-31 (D-APPMISS) — it now refuses, as the CF-3300 does.**
 
 ## INPUT$(n,#f) — read n raw bytes from a file as a string (basic/strvar.asm)
 

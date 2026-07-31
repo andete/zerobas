@@ -24,6 +24,11 @@ to answer three questions the filed row cannot:
      reading (`dir` column). `exist_out` opens an EXISTING 26-byte file FOR
      OUTPUT and asks both -- if LOF says 0 while the directory still says 26, LOF
      is NOT reading the directory.
+     ⚠️ That column was measured, printed and NEVER COMPARED until D-APPMISS
+     (2026-07-31): the verdict came from the LOF value alone, so a row could only
+     ever go red on one of the two instruments. Both are in the verdict now, each
+     with its own oracle lock (REF_EXPECT / DIR_EXPECT) and its own filed-
+     divergence list (KNOWN_DIVERGE / DIR_DIVERGE).
 
   3. WHAT IS THE DENOMINATOR?  A channel's size field is made live by five
      paths, not one: INPUT (fat_io_open), OUTPUT (fat_io_create), APPEND on an
@@ -142,6 +147,16 @@ CASES = [
     # --- the DENOMINATOR: the other paths that make a size field live.
     ("append_new",   (['OPEN "ZQ.DAT" FOR APPEND AS #1',
                        "PRINT LOF(1)"], "ZQ      DAT")),
+    # ...and the row that SEPARATES "the channel was never opened" from "the
+    # channel WAS opened and LOF is broken". `append_new` cannot: its value is the
+    # LAST error on screen, and `File not open` from the trailing `PRINT LOF(1)`
+    # is what it reads whatever OPEN did. This row drops LOF entirely and pokes
+    # the channel with a DIFFERENT VERB, so its value IS the PRINT# rejection --
+    # an error here means the write was refused, attributable to the channel
+    # state rather than to LOF. (D-APPMISS F3: RED on the pre-fix build, where
+    # OPEN silently created the file and this row raised nothing at all.)
+    ("append_new_wr", (['OPEN "ZQ.DAT" FOR APPEND AS #1',
+                       'PRINT #1,"X"'], "ZQ      DAT")),
     ("append_exist", (['OPEN "HI.TXT" FOR APPEND AS #1',
                        "PRINT LOF(1)"], "HI      TXT")),
     ("rand_new",     (['OPEN "ZQ.DAT" AS #1',
@@ -161,6 +176,13 @@ CASES = [
     ("lof_bin",      (['OPEN "TEST.BIN" FOR INPUT AS #1',
                        "PRINT LOF(1)"], "TEST    BIN")),
     ("lof_closed",   (["PRINT LOF(1)"], None)),
+    # ATTRIBUTION CONTROL for `append_new_wr` (D-APPMISS). Same PRINT# into an
+    # unopened channel, with NO OPEN typed at all -- so whatever it reports is a
+    # property of PRINT#-on-a-closed-channel and has nothing to do with APPEND.
+    # If this row and `append_new_wr` diverge the SAME way, `append_new_wr`'s
+    # divergence is that pre-existing class and not something this slice did;
+    # without it, "it was already like that" would be an assertion.
+    ("ctl_prwr_closed", (['PRINT #1,"X"'], None)),
     # write -> CLOSE -> re-open: catches a fix that lets its zero reach the dir.
     ("roundtrip",    (['OPEN "ZQ.DAT" FOR OUTPUT AS #1',
                        'PRINT #1,"ABCDE"',
@@ -185,6 +207,12 @@ REF_EXPECT: dict = {
                              # channel opened, no directory entry made -- so the
                              # following LOF reports ERR 59. See §4 of the
                              # characterization; owned by its own TODO item.
+    "append_new_wr": "FNO",  # ...and the PRINT# into that unopened channel is
+                             # REFUSED with ERR 59 too (measured 2026-07-31, not
+                             # assumed: it could have been ERR 52 `bad file
+                             # number`). No LOF is typed in this row, so this is
+                             # the channel-state reading that does not go through
+                             # LOF at all.
     "append_exist": 26,      # APPEND of an existing file: its current size
     "rand_new":     0,
     "rand_exist":   26,
@@ -192,7 +220,35 @@ REF_EXPECT: dict = {
     "lof_input":    26,
     "lof_bin":      2048,
     "lof_closed":   "FNO",
+    "ctl_prwr_closed": "FNO",   # PRINT# into an unopened channel: ERR 59 as well
+                                # (measured 2026-07-31 -- the attribution control
+                                # for append_new_wr)
     "roundtrip":    8,       # "ABCDE" + CRLF + Ctrl-Z
+}
+
+# The DIRECTORY oracle -- the SECOND INSTRUMENT's own lock, one entry per case
+# that names a directory. Recorded 2026-07-31 alongside REF_EXPECT.
+#
+# ⚠️ UNTIL D-APPMISS (2026-07-31) THIS COLUMN WAS MEASURED, PRINTED AND NEVER
+# COMPARED. `run_case` returned it and `main` printed it, but the verdict was
+# computed from the LOF value alone -- so the claim it exists to hold ("the
+# reference makes NO directory entry") could not fail the gate. A second
+# instrument that cannot make a row red is decoration. It is part of the verdict
+# now: a row agrees only if BOTH columns agree.
+DIR_EXPECT: dict = {
+    "new_out":      0,
+    "new_out_wr":   0,       # a SEQUENTIAL write does not reach the directory
+    "exist_out":    0,       # OPEN FOR OUTPUT truncates the entry at open
+    "exist_out_wr": 0,
+    "append_new":   "absent",   # the whole point: NO entry is made
+    "append_new_wr": "absent",
+    "append_exist": 26,
+    "rand_new":     0,
+    "rand_exist":   26,
+    "rand_put":     0,       # ...while LOF already reads 256 (characterization §3)
+    "lof_input":    26,
+    "lof_bin":      2048,
+    "roundtrip":    8,
 }
 
 # --- GATE: divergences that are FILED AND EXPECTED, with the item that owns
@@ -200,17 +256,51 @@ REF_EXPECT: dict = {
 # starts diverging DIFFERENTLY still trips the gate (the value is part of the
 # key). The list is the honest statement of what is not built yet; it shrinks as
 # those items land, and it must never grow silently.
+#
+# ✅ D-APPMISS LANDED 2026-07-31 (docs/spec-basic-append-missing-refuse.md): the
+# entry that used to live here, `append_new`, is GONE rather than updated.
+# `OPEN … FOR APPEND` on a missing file now REFUSES on both machines -- one
+# instruction, `basic/fat.asm`'s `jp c,fat_io_create` -> `ret c`. The comment
+# above it had stated the create as settled CF-3300 parity, citing
+# disk_probe_append.py, which creates its file with OUTPUT first and only ever
+# appends to an EXISTING one -- a true claim about the Ctrl-Z resume rule that
+# never reached this case.
+# ⚠️ The list did not end up empty: the row added to PROVE the channel was
+# refused (`append_new_wr`) surfaced a DIFFERENT, pre-existing defect one layer
+# down -- see below. It grew LOUDLY, with its own filed item and its own
+# attribution control, which is the only way this list is allowed to grow.
 KNOWN_DIVERGE: dict = {
-    # ⚠️ NOT a LOF defect. `OPEN "ZQ.DAT" FOR APPEND AS #1` on a MISSING file:
-    # the reference raises `File not found` and creates NOTHING (the `dir`
-    # column reads `absent`); zerobas creates the file and opens the channel,
-    # because fat_io_append does `jp c,fat_io_create` on a fat_find miss and
-    # basic/fat.asm:270 documents that as deliberate CF-3300 parity -- citing
-    # disk_probe_append.py, which only ever appends to an EXISTING file and so
-    # never covered this case. Filed in TODO.md as its own item (an OPEN
-    # semantics change, not a LOF one). zerobas's -1 here becomes 0 once D-LOF
-    # zeroes the create path, so this entry moves with the fix.
-    "append_new":  ("FNO", 0),
+    # ⚠️ NOT an APPEND defect, and MEASURED to be none of D-APPMISS's doing.
+    # `PRINT #n` into a channel that is not open surfaces zerobas's `load error`
+    # where the reference raises ERR 59 `File not OPEN` -- and zerobas HAS a real,
+    # trappable ERR 59: `lof_closed` (LOF on the same closed channel) AGREES on
+    # both machines. So it is PRINT#'s own disposition, not a missing error code:
+    # ex_print's channel path falls into `load_error` the way INPUT#'s
+    # `cp 1 / jp nz,load_error` does (basic/files.asm), instead of raising 59.
+    #
+    # The ATTRIBUTION is measured, not argued: `ctl_prwr_closed` types the SAME
+    # PRINT# with no OPEN at all and diverges IDENTICALLY (FNO vs LOADERR). That
+    # is why both rows are on this list under ONE item rather than the append row
+    # being blamed on the append path.
+    #
+    # Filed in TODO.md ("PRINT#/INPUT# into a channel that is not open raises
+    # `load error`, not ERR 59"). Both entries leave together when it lands.
+    "append_new_wr":   ("FNO", "LOADERR"),
+    "ctl_prwr_closed": ("FNO", "LOADERR"),
+}
+
+# The same, for the directory column.
+DIR_DIVERGE: dict = {
+    # ⚠️ NOT an append defect, and NOT new behaviour -- newly VISIBLE, because
+    # D-APPMISS made this column part of the verdict. A RANDOM `PUT` stamps the
+    # on-disk directory size on zerobas immediately (256 = recno * reclen) while
+    # the reference leaves the entry at 0 and carries the size in RAM only
+    # (characterization §3: ref LOF = 256 with ref dir = 0 -- the row that proved
+    # LOF does not read the directory). Filed in TODO.md as its own item.
+    # It is also this gate's own falsification: a row where the LOF columns AGREE
+    # and only `dir` separates the machines, so a dir comparison that stayed
+    # green here would be measuring nothing.
+    "rand_put":  (0, 256),
 }
 
 ERR_CLASSES = {
@@ -221,6 +311,18 @@ ERR_CLASSES = {
     "FNO":    ("file not open",),
     "OOM":    ("out of memory",),
     "DIO":    ("disk i/o error", "disk offline"),
+    # zerobas's OWN lowercase catch-all for the file/channel family (bload.asm
+    # `load_error`). The reference never prints it, so a LOADERR here is always a
+    # zerobas-side reading and can never be mistaken for an oracle value.
+    #
+    # ⚠️ ADDED 2026-07-31 (D-APPMISS) BECAUSE ITS ABSENCE MADE A ROW UNABLE TO
+    # FAIL. Without it `load error` classifies as None -- and None is also what a
+    # row reads when NOTHING WENT WRONG. On `append_new_wr` those are the two
+    # opposite outcomes the row exists to separate: pre-fix it read None because
+    # the write was SILENTLY ACCEPTED, post-fix it read None because the write
+    # was REFUSED. A value that means both is not a measurement, and a regression
+    # back to silent acceptance would not have moved it.
+    "LOADERR": ("load error",),
 }
 
 
@@ -488,14 +590,33 @@ def main() -> int:
         elif "ref" in sides and label in REF_EXPECT and rv != REF_EXPECT[label]:
             note = f"ORACLE DRIFT (recorded {REF_EXPECT[label]!r})"
             oracle_bad.append(label)
+        elif ("ref" in sides and label in DIR_EXPECT
+                and rd != DIR_EXPECT[label]):
+            note = f"DIR ORACLE DRIFT (recorded {DIR_EXPECT[label]!r})"
+            oracle_bad.append(label)
         elif args.side == "both":
-            if rv == zv:
-                note = "agree"
-            elif KNOWN_DIVERGE.get(label) == (rv, zv):
-                note = "diverges (FILED)"
+            # BOTH columns, and each one names itself in the verdict. The LOF
+            # reading and the directory reading are two INDEPENDENT instruments
+            # (§5b of docs/spec-basic-append-missing-refuse.md); a row where only
+            # one of them separates the machines is exactly the row a
+            # single-column verdict would have called `agree`.
+            vok = rv == zv
+            dok = rd == zd
+            vfiled = KNOWN_DIVERGE.get(label) == (rv, zv)
+            dfiled = DIR_DIVERGE.get(label) == (rd, zd)
+            bad = []
+            if not (vok or vfiled):
+                bad.append("LOF")
+            if not (dok or dfiled):
+                bad.append("dir")
+            if bad:
+                note = "DIVERGES (" + "+".join(bad) + ")"
+                diverge.append((label, (rv, rd), (zv, zd)))
+            elif vfiled or dfiled:
+                note = "diverges (FILED: " + "+".join(
+                    (["LOF"] if vfiled else []) + (["dir"] if dfiled else [])) + ")"
             else:
-                note = "DIVERGES"
-                diverge.append((label, rv, zv))
+                note = "agree"
         print(f"{label:<14} {str(rv):>9} {str(rd):>9} "
               f"{str(zv):>9} {str(zd):>9}   {note}")
         if args.verbose:
@@ -517,14 +638,27 @@ def main() -> int:
               f"error ({ctl}). Every reading above is worthless.")
         return 3
 
+    # --- the ORACLE-COMPLETENESS control. A row with no recorded oracle is not
+    # locked, and an UNLOCKED row is the quiet way a battery stops measuring: it
+    # can only ever report "agree", never "the reference moved". Adding a case
+    # and forgetting to record its answer must be LOUD, so it is a gate failure,
+    # not a comment in the docstring.
+    unlocked = [lbl for lbl, (_, dn) in cases
+                if lbl not in REF_EXPECT
+                or (dn is not None and lbl not in DIR_EXPECT)]
+    if unlocked and "ref" in sides:
+        print(f"\n*** ORACLE NOT RECORDED for {unlocked} -- add the measured "
+              f"answer to REF_EXPECT (and DIR_EXPECT if the case names a "
+              f"directory). Until then those rows are unlocked.")
+
     print(f"\n{len(cases)} cases, {len(diverge)} unfiled divergence(s), "
           f"{len(oracle_bad)} oracle drift(s), {len(mangled)} mangled")
     for label, rv, zv in diverge:
-        print(f"  DIVERGES {label}: ref={rv!r} zb={zv!r}")
+        print(f"  DIVERGES {label}: ref=(LOF,dir){rv!r} zb=(LOF,dir){zv!r}")
     if mangled:
         print(f"  MANGLED (re-run; raise the per-line delay): {mangled}")
         return 3        # ALWAYS fatal, gate or not: it is not a measurement.
-    if args.gate and (diverge or oracle_bad):
+    if args.gate and (diverge or oracle_bad or (unlocked and "ref" in sides)):
         return 1
     return 0
 

@@ -2773,26 +2773,99 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       A `MANGLED` row is fatal with or without `--gate`: two mangled sides compare
       equal and would otherwise print `agree`.
 
-- [ ] **`OPEN … FOR APPEND` on a MISSING file creates it; the reference refuses.**
-      Found 2026-07-31 by D-LOF's denominator rows, not aimed at. Measured on the
-      CF-3300: `OPEN "ZQ.DAT" FOR APPEND AS #1` on a file that does not exist
-      raises **`File not found`**, leaves the channel CLOSED (the following
-      `LOF(1)` reports ERR 59) and — confirmed by reading the machine's own disk
-      image afterwards — **makes no directory entry at all**. zerobas creates the
-      file and opens the channel, because `fat_io_append` does
-      `jp c,fat_io_create` on a `fat_find` miss
-      ([`basic/fat.asm:286`](basic/fat.asm:286)).
-      ⚠️ [`basic/fat.asm:270`](basic/fat.asm:270) states the CURRENT behaviour as
-      settled — *"A missing file is created (append == create)"* — and cites
-      `disk_probe_append.py` for CF-3300 parity. **That probe only ever appends to
-      an EXISTING file, so it never covered this case**: the parity claim is real
-      for what it measured and simply does not reach here. Fix that comment too.
-      Likely **−2 B** (`jp c,fat_io_create` → `ret c`), but confirm the error
-      CLASS that comes out of `oo_fail`/`load_error` is `File not found` and not
-      something else — that is the whole point of the row.
-      Gated by `diskbasic_probe_lof.py` case `append_new`, allowlisted in
-      `KNOWN_DIVERGE` naming this item; see
-      [`docs/lof-cf3300-characterization.md`](docs/lof-cf3300-characterization.md) §4.
+- [x] **✅ D-APPMISS — `OPEN … FOR APPEND` on a MISSING file REFUSES (was: created
+      it), −2 B.** LANDED 2026-07-31,
+      [`docs/spec-basic-append-missing-refuse.md`](docs/spec-basic-append-missing-refuse.md).
+      One instruction: [`basic/fat.asm`](basic/fat.asm)'s `jp c,fat_io_create` →
+      `ret c`, so a `fat_find` miss falls to `do_open`'s `oo_fail` → `load_error`
+      exactly as `OPEN … FOR INPUT` of a missing file already did. **Main page 1
+      20 → 22 B free**, low unchanged at 23 B; dead-code 0/0 both builds.
+      `lof-acceptance` **18 cases, 0 unfiled** with `append_new` AGREEING on BOTH
+      instruments and its `KNOWN_DIVERGE` entry DELETED; `fat-error-acceptance`
+      **8/8 + directory check**.
+      🔴 **THE ERROR CLASS WAS NOT THE ONE THE ITEM ASKED ME TO CONFIRM.** The
+      filed text said to confirm `oo_fail`/`load_error` yields `File not found`.
+      Traced, then measured: it yields zerobas's **`load error`** — and that is
+      CORRECT, because `load error` is zerobas's pinned rendering of the whole
+      file/channel family (PROVENANCE §74) and is precisely what the INPUT
+      sibling already raises. The right question was not "is it `File not found`"
+      but **"is it the SAME class as `open-missing`"**, which is a gate row, not
+      an inspection.
+      🔴 **THE ROW ADDED TO PROVE THE FIX WORKED FOUND A DIFFERENT DEFECT ONE
+      LAYER DOWN.** `append_new_wr` (`PRINT #1,"X"` after the refused OPEN, no
+      `LOF` typed) exists because `append_new` reads the LAST error on screen and
+      so reads `File not open` from its own trailing `LOF` **whatever OPEN did** —
+      it would have AGREED even if OPEN had raised `syntax error`. The new row
+      showed `PRINT #` into an unopened channel raises `load error` where the
+      reference raises ERR 59, while `lof_closed` proves zerobas HAS a real
+      trappable ERR 59. Filed below as its own item, with `ctl_prwr_closed` (the
+      same `PRINT #` with NO `OPEN` typed at all) as the ATTRIBUTION control, so
+      "it was already like that" is measured rather than asserted.
+      🔴 **`None` MEANT TWO OPPOSITE THINGS AND THE ROW COULD NOT FAIL.** Its
+      first version left `load error` unclassified, so it read `None` pre-fix
+      (the write was SILENTLY ACCEPTED) *and* `None` post-fix (the write was
+      REFUSED). A regression back to silent acceptance would not have moved the
+      value. Fixed by adding a `LOADERR` class — reversing this spec's own §5c
+      sign-off answer, which was right for `append_new` and wrong for a row that
+      did not exist when the question was asked.
+      🔴 **THE SECOND INSTRUMENT WAS MEASURED, PRINTED AND NEVER COMPARED.** The
+      `dir` column had been in `diskbasic_probe_lof.py` since D-LOF, but the
+      verdict came from the LOF value alone — so "the reference makes NO directory
+      entry", the central claim here, could not fail the gate. Both columns are in
+      the verdict now (`DIR_EXPECT` / `DIR_DIVERGE`). It cut immediately:
+      `rand_put` has AGREEING LOF columns and separates only on `dir` (filed
+      below) — a row the old single-column verdict called `agree`.
+      🔴 **AND THE GATE I ADDED FOR THE CLASS WAS GREEN OVER A PROVABLY BROKEN
+      SUBJECT.** `fat-error-acceptance` ran with **NO DISK IN THE DRIVE**, so all
+      seven pre-existing cases failed in `fat_mount` and never reached `fat_find`
+      at all — the docstring claimed the find miss, the probe measured the mount
+      miss, and the two are indistinguishable by their answer (`load error`
+      either way). Caught ONLY by the knife: with the fix reverted, `append-missing`
+      stayed **GREEN**. It now mounts a **/tmp COPY** of `test720.dsk` — mandatory,
+      because a build where APPEND still creates actually WRITES `NOSUCH.DAT` into
+      the image (measured) — and parses that image afterwards, so a build that
+      printed `load error` and created the entry anyway cannot pass.
+      Falsification RUN, not planned: with `ret c` reverted, `append_new` and
+      `append_new_wr` go RED on BOTH instruments and `append-missing` goes RED on
+      BOTH, while `append_exist` (26/26), `roundtrip`, `disk_probe_append.py`'s
+      byte-identical Ctrl-Z round trip and the other seven fat-error rows stay
+      GREEN. The knife was verified to CUT: `fia_walk` $6361↔$6363 and page-1 free
+      22↔20 B moved with it.
+
+- [ ] **`PRINT#`/`INPUT#` into a channel that is NOT OPEN raises `load error`, not
+      ERR 59.** Found 2026-07-31 by D-APPMISS's `append_new_wr` row, not aimed at.
+      The reference answers `PRINT #1,"X"` on an unopened channel with
+      **`File not OPEN`** (ERR 59); zerobas derails to `load error`
+      ([`basic/files.asm`](basic/files.asm)'s `cp 1 / jp nz,load_error` on the
+      INPUT# side, and the PRINT# sibling). ⚠️ **This is NOT a missing error
+      code**: S-FCH-2 landed ERR 59 as an ordinary trappable code and
+      `diskbasic_probe_lof.py`'s `lof_closed` row shows `LOF` on the very same
+      closed channel AGREEING with the reference at ERR 59. It is PRINT#/INPUT#'s
+      own disposition. Consequence beyond wording: `load error` is a `ret`-based
+      print path, so this does not fire an armed `ON ERROR GOTO` where the
+      reference's ERR 59 would.
+      Gated by `diskbasic_probe_lof.py` cases `append_new_wr` and
+      `ctl_prwr_closed` (the attribution control — the same `PRINT #` with no
+      `OPEN` typed at all, which diverges IDENTICALLY), both allowlisted in
+      `KNOWN_DIVERGE` naming this item. Both entries leave together when it lands.
+
+- [ ] **A RANDOM `PUT` stamps the on-disk directory size immediately; the
+      reference does not.** Found 2026-07-31 by D-APPMISS making
+      `diskbasic_probe_lof.py`'s `dir` column part of the verdict — the divergence
+      was visible in
+      [`docs/lof-cf3300-characterization.md`](docs/lof-cf3300-characterization.md)
+      §1 all along and simply was never compared. `OPEN "ZQ.DAT" AS #1 : FIELD
+      #1,10 AS A$ : LSET A$="X" : PUT #1,1` leaves the reference's directory entry
+      at **0** while `LOF` already reads 256 (that gap is what proved `LOF` does
+      not read the directory, characterization §3); zerobas's directory entry
+      already reads **256**. Not known to be user-visible before CLOSE — the open
+      question is whether the reference stamps it at CLOSE and zerobas merely does
+      it early, or whether the two disagree after CLOSE too, which is a
+      round-trip row nobody has typed yet.
+      Gated by `diskbasic_probe_lof.py` case `rand_put`, allowlisted in
+      `DIR_DIVERGE` naming this item. ⚠️ It is also that gate's own falsification:
+      a row whose LOF columns AGREE and which separates ONLY on `dir`, so a dir
+      comparison that stayed green here would be measuring nothing.
 
 - [ ] **`diskbasic_probe_chancost.py` has no echo guard.** Its rows are short
       `PRINT FRE(0)` reads and it has been stable for many sessions, but it types

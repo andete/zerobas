@@ -71,7 +71,7 @@ zerobas column = the repack build at `761341a` (before any fix).
 | `stale_big` | `TEST.BIN` INPUT → `CLOSE` → new OUTPUT | **0** | — | **2048** | — | 🔴 |
 | `exist_out` | `OPEN "HI.TXT" FOR OUTPUT AS #1` | **0** | 0 | **−1** | 0 | 🔴 |
 | `exist_out_wr` | …then `PRINT #1,"ABCDE"` | **0** | 0 | **−1** | 0 | 🔴 |
-| `append_new` | `OPEN "ZQ.DAT" FOR APPEND AS #1` | `File not found`, then ERR 59 | **absent** | **−1** | 0 | 🔴 §4 |
+| `append_new` | `OPEN "ZQ.DAT" FOR APPEND AS #1` | `File not found`, then ERR 59 | **absent** | **−1** | 0 | 🔴 §4 — ✅ fixed |
 | `append_exist` | `OPEN "HI.TXT" FOR APPEND AS #1` | 26 | 26 | 26 | 26 | agree |
 | `rand_new` | `OPEN "ZQ.DAT" AS #1` | **0** | 0 | **−1** | 0 | 🔴 |
 | `rand_exist` | `OPEN "HI.TXT" AS #1` | 26 | 26 | 26 | 26 | agree |
@@ -138,6 +138,12 @@ field is not frozen; a RANDOM `PUT` **moves it live**, while a sequential
 > writes do not move it, and a RANDOM `PUT` grows it to `recno × reclen`.
 
 ## 4. Incidental (found by the denominator rows, not aimed at)
+
+**✅ FIXED 2026-07-31 — D-APPMISS, [`spec-basic-append-missing-refuse.md`](spec-basic-append-missing-refuse.md)**
+(−2 B; `append_new` now AGREES on both instruments). The measurement below stands
+as taken; only its status changed. The row added to prove the fix
+(`append_new_wr`) found a SECOND defect one layer down — `PRINT #` into an
+unopened channel raises `load error`, not ERR 59 — filed separately.
 
 **`OPEN … FOR APPEND` on a MISSING file: the reference REFUSES, zerobas CREATES.**
 The reference raises `File not found`, the channel stays closed (the following
